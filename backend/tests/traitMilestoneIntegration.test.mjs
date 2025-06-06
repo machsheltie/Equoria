@@ -49,9 +49,7 @@ jest.unstable_mockModule(join(__dirname, '../utils/logger.mjs'), () => ({
 }));
 
 // Import the functions after mocking
-const { evaluateEpigeneticTagsFromFoalTasks } = await import(
-  join(__dirname, '../utils/traitEvaluation.js')
-);
+const { evaluateEpigeneticTagsFromFoalTasks } = await import(join(__dirname, '../utils/traitEvaluation.js'));
 const { getFoalCareSummary } = await import(join(__dirname, '../utils/foalTaskLogManager.js'));
 
 describe('Trait Milestone Integration', () => {
@@ -148,10 +146,7 @@ describe('Trait Milestone Integration', () => {
       jest.spyOn(Math, 'random').mockReturnValue(0.3); // 30%
 
       // Evaluate traits at age 1 milestone
-      const assignedTraits = evaluateEpigeneticTagsFromFoalTasks(
-        foal.taskLog,
-        foal.daysGroomedInARow,
-      );
+      const assignedTraits = evaluateEpigeneticTagsFromFoalTasks(foal.taskLog, foal.daysGroomedInARow);
 
       // Verify trait assignments with streak bonus
       // Expected trait points with 10-point streak bonus:
@@ -201,10 +196,7 @@ describe('Trait Milestone Integration', () => {
       // Mock random for selective trait assignment
       jest.spyOn(Math, 'random').mockReturnValue(0.07); // 7%
 
-      const assignedTraits = evaluateEpigeneticTagsFromFoalTasks(
-        foal.taskLog,
-        foal.daysGroomedInARow,
-      );
+      const assignedTraits = evaluateEpigeneticTagsFromFoalTasks(foal.taskLog, foal.daysGroomedInARow);
 
       // Expected trait points without streak bonus:
       // bonded: 10% > 7% ✓
@@ -239,10 +231,7 @@ describe('Trait Milestone Integration', () => {
 
       jest.spyOn(Math, 'random').mockReturnValue(0.4); // 40%
 
-      const assignedTraits = evaluateEpigeneticTagsFromFoalTasks(
-        foal.taskLog,
-        foal.daysGroomedInARow,
-      );
+      const assignedTraits = evaluateEpigeneticTagsFromFoalTasks(foal.taskLog, foal.daysGroomedInARow);
 
       // Expected trait points with streak bonus:
       // confident: (50 + 30) + 10 = 90% (capped at 60%) > 40% ✓
@@ -300,10 +289,7 @@ describe('Trait Milestone Integration', () => {
 
       jest.spyOn(Math, 'random').mockReturnValue(0.1);
 
-      const assignedTraits = evaluateEpigeneticTagsFromFoalTasks(
-        foal.taskLog,
-        foal.daysGroomedInARow,
-      );
+      const assignedTraits = evaluateEpigeneticTagsFromFoalTasks(foal.taskLog, foal.daysGroomedInARow);
 
       // No task history = no epigenetic traits
       expect(assignedTraits).toEqual([]);
@@ -335,10 +321,7 @@ describe('Trait Milestone Integration', () => {
       if (foal.age >= 365) {
         jest.spyOn(Math, 'random').mockReturnValue(0.15);
 
-        const assignedTraits = evaluateEpigeneticTagsFromFoalTasks(
-          foal.taskLog,
-          foal.daysGroomedInARow || 0,
-        );
+        const assignedTraits = evaluateEpigeneticTagsFromFoalTasks(foal.taskLog, foal.daysGroomedInARow || 0);
 
         // Verify milestone evaluation occurs
         expect(assignedTraits.length).toBeGreaterThan(0);

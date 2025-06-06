@@ -206,7 +206,7 @@ describe('🐎 INTEGRATION: Horse XP System - Core Functionality Integration', (
       expect(result.data.pagination.hasMore).toBe(false);
 
       // Events should be in reverse chronological order (newest first)
-      const events = result.data.events;
+      const { events } = result.data;
       expect(events[0].amount).toBe(25); // Third competition (most recent)
       expect(events[1].amount).toBe(30); // Second competition
       expect(events[2].amount).toBe(50); // First competition (oldest)
@@ -226,8 +226,9 @@ describe('🐎 INTEGRATION: Horse XP System - Core Functionality Integration', (
       const initialSpeed = horse.speed;
 
       // Step 2: Simulate multiple competition placements to accumulate XP
-      const { awardCompetitionXp, getHorseXpStatus, allocateStatPoint, getHorseXpHistory } =
-        await import('../models/horseXpModel.js');
+      const { awardCompetitionXp, getHorseXpStatus, allocateStatPoint, getHorseXpHistory } = await import(
+        '../models/horseXpModel.js'
+      );
 
       await awardCompetitionXp(testHorseId, '1st', 'Racing'); // 30 XP
       await awardCompetitionXp(testHorseId, '2nd', 'Dressage'); // 27 XP

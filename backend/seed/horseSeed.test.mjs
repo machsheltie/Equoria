@@ -53,8 +53,7 @@ describe('horseSeed', () => {
   beforeAll(async () => {
     mockPrisma = (await import(join(__dirname, '../db/index.js'))).default;
     const seedModule = await import(join(__dirname, './horseSeed.js'));
-    ({ findOrCreateBreed, ensureReferencedRecordsExist, checkHorseExists, seedHorses } =
-      seedModule);
+    ({ findOrCreateBreed, ensureReferencedRecordsExist, checkHorseExists, seedHorses } = seedModule);
   });
 
   afterAll(async () => {
@@ -117,9 +116,7 @@ describe('horseSeed', () => {
       });
       expect(mockPrisma.breed.create).not.toHaveBeenCalled();
       expect(result).toEqual(existingBreed);
-      expect(mockLogger.info).toHaveBeenCalledWith(
-        '[seed] Found existing breed: Thoroughbred (ID: 1)',
-      );
+      expect(mockLogger.info).toHaveBeenCalledWith('[seed] Found existing breed: Thoroughbred (ID: 1)');
     });
 
     it('should create new breed if not found', async () => {
@@ -138,9 +135,7 @@ describe('horseSeed', () => {
         data: { name: 'Arabian', description: 'Seed-created Arabian' },
       });
       expect(result).toEqual(newBreed);
-      expect(mockLogger.info).toHaveBeenCalledWith(
-        '[seed] Breed "Arabian" not found, creating new one.',
-      );
+      expect(mockLogger.info).toHaveBeenCalledWith('[seed] Breed "Arabian" not found, creating new one.');
       expect(mockLogger.info).toHaveBeenCalledWith('[seed] Created breed: Arabian (ID: 2)');
     });
 
@@ -237,12 +232,8 @@ describe('horseSeed', () => {
 
       await ensureReferencedRecordsExist();
 
-      expect(mockLogger.warn).toHaveBeenCalledWith(
-        '[seed] Could not ensure Stable ID 1. Error: Stable DB error',
-      );
-      expect(mockLogger.warn).toHaveBeenCalledWith(
-        '[seed] Could not ensure Stable ID 2. Error: Stable DB error',
-      );
+      expect(mockLogger.warn).toHaveBeenCalledWith('[seed] Could not ensure Stable ID 1. Error: Stable DB error');
+      expect(mockLogger.warn).toHaveBeenCalledWith('[seed] Could not ensure Stable ID 2. Error: Stable DB error');
       expect(mockLogger.info).toHaveBeenCalledWith('[seed] Ensured User ID 1 exists.');
       expect(mockLogger.info).toHaveBeenCalledWith('[seed] Ensured User ID 2 exists.');
     });
@@ -256,9 +247,7 @@ describe('horseSeed', () => {
 
     it('should log a warning and return an empty array if no users are provided', async () => {
       const result = await seedHorses(mockPrisma, []);
-      expect(mockLogger.warn).toHaveBeenCalledWith(
-        'No users provided for horse seeding. Skipping horse creation.',
-      );
+      expect(mockLogger.warn).toHaveBeenCalledWith('No users provided for horse seeding. Skipping horse creation.');
       expect(result).toEqual([]);
     });
 
@@ -406,17 +395,13 @@ describe('horseSeed', () => {
       mockPrisma.stable.upsert.mockResolvedValue({ id: 1 });
       mockPrisma.breed.findUnique.mockResolvedValue({ id: 1, name: 'Thoroughbred' });
       mockPrisma.horse.findFirst.mockResolvedValue(null);
-      const { createHorse: mockCreateHorse } = await import(
-        join(__dirname, '../models/horseModel.js')
-      );
+      const { createHorse: mockCreateHorse } = await import(join(__dirname, '../models/horseModel.js'));
       mockCreateHorse.mockResolvedValue({ id: 1, name: 'Created Horse' });
 
       await actualMain();
 
       expect(mockLogger.info).toHaveBeenCalledWith('[seed] Ensured User ID 1 exists.');
-      expect(mockLogger.info).toHaveBeenCalledWith(
-        expect.stringContaining('Successfully seeded horse:'),
-      );
+      expect(mockLogger.info).toHaveBeenCalledWith(expect.stringContaining('Successfully seeded horse:'));
       expect(mockPrisma.$disconnect).toHaveBeenCalled();
     });
 

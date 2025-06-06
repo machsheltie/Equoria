@@ -148,7 +148,7 @@ describe('Horse Aging Integration', () => {
       expect(updatedFoal.age).toBe(365); // Now 1 year old
 
       // Check trait milestone evaluation
-      const epigeneticModifiers = updatedFoal.epigeneticModifiers;
+      const { epigeneticModifiers } = updatedFoal;
       expect(epigeneticModifiers.epigenetic_tags).toBeDefined();
       expect(Array.isArray(epigeneticModifiers.epigenetic_tags)).toBe(true);
       expect(epigeneticModifiers.epigenetic_tags.length).toBeGreaterThan(0);
@@ -350,9 +350,7 @@ describe('Horse Aging Integration', () => {
       const result = await cronJobService.manualHorseAging();
 
       expect(result.errors).toBe(1);
-      expect(mockLogger.error).toHaveBeenCalledWith(
-        expect.stringContaining('Error processing horse'),
-      );
+      expect(mockLogger.error).toHaveBeenCalledWith(expect.stringContaining('Error processing horse'));
 
       // Restore original function
       prisma.horse.update = originalUpdate;

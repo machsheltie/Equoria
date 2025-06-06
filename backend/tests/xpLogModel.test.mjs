@@ -261,13 +261,7 @@ describe('📊 UNIT: XP Log Model - Experience Point Event Tracking', () => {
 
   describe('getUserXpSummary', () => {
     it('should calculate XP summary correctly', async () => {
-      const mockEvents = [
-        { amount: 20 },
-        { amount: 15 },
-        { amount: 5 },
-        { amount: -5 },
-        { amount: 10 },
-      ];
+      const mockEvents = [{ amount: 20 }, { amount: 15 }, { amount: 5 }, { amount: -5 }, { amount: 10 }];
 
       mockPrismaXpEvent.findMany.mockResolvedValue(mockEvents);
 

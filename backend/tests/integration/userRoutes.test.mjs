@@ -220,9 +220,7 @@ describe('🌐 INTEGRATION: User Routes - HTTP API Endpoints', () => {
       for (const testCase of testCases) {
         mockGetUserById.mockResolvedValue(testCase.user);
 
-        const response = await request(app)
-          .get(`/api/user/${testCase.user.id}/progress`)
-          .expect(200);
+        const response = await request(app).get(`/api/user/${testCase.user.id}/progress`).expect(200);
 
         expect(response.body.data.xpToNextLevel).toBe(testCase.expectedXpToNext);
 

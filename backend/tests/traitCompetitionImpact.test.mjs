@@ -167,21 +167,14 @@ describe('🏆 UNIT: Trait Competition Impact System - Scoring Modifier Calculat
       };
 
       const resultFew = calculateTraitCompetitionImpact(horseFewTraits, 'Show Jumping', baseScore);
-      const resultMany = calculateTraitCompetitionImpact(
-        horseManyTraits,
-        'Show Jumping',
-        baseScore,
-      );
+      const resultMany = calculateTraitCompetitionImpact(horseManyTraits, 'Show Jumping', baseScore);
 
       // Many traits should have diminishing returns applied
       expect(resultMany.appliedTraits).toHaveLength(5);
       expect(resultFew.appliedTraits).toHaveLength(1);
 
       // The per-trait effect should be reduced for the horse with many traits
-      const manyTraitsRawModifier = resultMany.appliedTraits.reduce(
-        (sum, trait) => sum + trait.modifier,
-        0,
-      );
+      const manyTraitsRawModifier = resultMany.appliedTraits.reduce((sum, trait) => sum + trait.modifier, 0);
       expect(resultMany.totalScoreModifier).toBeLessThan(manyTraitsRawModifier);
       expect(resultMany.totalScoreModifier).toBeCloseTo(manyTraitsRawModifier * 0.8, 2); // 5+ traits = 80% effectiveness
     });

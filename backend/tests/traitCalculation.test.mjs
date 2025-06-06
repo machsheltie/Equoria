@@ -84,9 +84,7 @@ describe('🧬 UNIT: Epigenetic Traits Calculation System', () => {
       });
 
       // Minimum stress should generally produce more positive traits
-      expect(minStressResult.positive.length).toBeGreaterThanOrEqual(
-        maxStressResult.positive.length,
-      );
+      expect(minStressResult.positive.length).toBeGreaterThanOrEqual(maxStressResult.positive.length);
     });
 
     it('should handle empty trait arrays', () => {
@@ -186,9 +184,7 @@ describe('🧬 UNIT: Epigenetic Traits Calculation System', () => {
       const resilientCount = results.filter(
         r => r.positive.includes('resilient') || r.hidden.includes('resilient'),
       ).length;
-      const boldCount = results.filter(
-        r => r.positive.includes('bold') || r.hidden.includes('bold'),
-      ).length;
+      const boldCount = results.filter(r => r.positive.includes('bold') || r.hidden.includes('bold')).length;
 
       // Should have reasonable inheritance rates (at least 20%)
       expect(resilientCount).toBeGreaterThan(10);
@@ -213,11 +209,7 @@ describe('🧬 UNIT: Epigenetic Traits Calculation System', () => {
       }
 
       // Collect all traits from all results
-      const allTraits = results.flatMap(result => [
-        ...result.positive,
-        ...result.negative,
-        ...result.hidden,
-      ]);
+      const allTraits = results.flatMap(result => [...result.positive, ...result.negative, ...result.hidden]);
 
       // Check if we have at least one trait that's not in the input traits
       const uniqueTraits = new Set(allTraits);

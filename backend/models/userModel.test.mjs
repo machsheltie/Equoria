@@ -134,30 +134,22 @@ describe('👤 UNIT: User Model - Database Operations & Business Logic', () => {
         select: expectedSelect,
       });
       expect(result).toEqual(mockCreatedUser);
-      expect(mockLogger.info).toHaveBeenCalledWith(
-        expect.stringContaining('User created: testuser'),
-      );
+      expect(mockLogger.info).toHaveBeenCalledWith(expect.stringContaining('User created: testuser'));
     });
 
     it('should throw error if username is missing', async () => {
       const { username: _username, ...incompleteData } = baseUserData;
-      await expect(createUser(incompleteData)).rejects.toThrow(
-        'Username, email, and password are required.',
-      );
+      await expect(createUser(incompleteData)).rejects.toThrow('Username, email, and password are required.');
     });
 
     it('should throw error if email is missing', async () => {
       const { email: _email, ...incompleteData } = baseUserData;
-      await expect(createUser(incompleteData)).rejects.toThrow(
-        'Username, email, and password are required.',
-      );
+      await expect(createUser(incompleteData)).rejects.toThrow('Username, email, and password are required.');
     });
 
     it('should throw error if password is missing', async () => {
       const { password: _password, ...incompleteData } = baseUserData;
-      await expect(createUser(incompleteData)).rejects.toThrow(
-        'Username, email, and password are required.',
-      );
+      await expect(createUser(incompleteData)).rejects.toThrow('Username, email, and password are required.');
     });
 
     it('should throw error on unique constraint violation for username', async () => {
@@ -197,12 +189,8 @@ describe('👤 UNIT: User Model - Database Operations & Business Logic', () => {
     });
 
     it('should throw DatabaseError if ID is not provided', async () => {
-      await expect(getUserById(null)).rejects.toThrow(
-        new DatabaseError('Lookup failed: User ID is required.'),
-      );
-      await expect(getUserById()).rejects.toThrow(
-        new DatabaseError('Lookup failed: User ID is required.'),
-      );
+      await expect(getUserById(null)).rejects.toThrow(new DatabaseError('Lookup failed: User ID is required.'));
+      await expect(getUserById()).rejects.toThrow(new DatabaseError('Lookup failed: User ID is required.'));
     });
   });
 
@@ -219,12 +207,8 @@ describe('👤 UNIT: User Model - Database Operations & Business Logic', () => {
     });
 
     it('should throw DatabaseError if email is not provided', async () => {
-      await expect(getUserByEmail('')).rejects.toThrow(
-        new DatabaseError('Lookup failed: Email required.'),
-      );
-      await expect(getUserByEmail(null)).rejects.toThrow(
-        new DatabaseError('Lookup failed: Email required.'),
-      );
+      await expect(getUserByEmail('')).rejects.toThrow(new DatabaseError('Lookup failed: Email required.'));
+      await expect(getUserByEmail(null)).rejects.toThrow(new DatabaseError('Lookup failed: Email required.'));
     });
   });
 
@@ -242,9 +226,7 @@ describe('👤 UNIT: User Model - Database Operations & Business Logic', () => {
     });
 
     it('should throw DatabaseError if ID is not provided', async () => {
-      await expect(getUserWithHorses(null)).rejects.toThrow(
-        new DatabaseError('Lookup failed: User ID is required.'),
-      );
+      await expect(getUserWithHorses(null)).rejects.toThrow(new DatabaseError('Lookup failed: User ID is required.'));
     });
   });
 
@@ -299,18 +281,14 @@ describe('👤 UNIT: User Model - Database Operations & Business Logic', () => {
     });
 
     it('should throw DatabaseError if ID is not provided', async () => {
-      await expect(deleteUser(null)).rejects.toThrow(
-        new DatabaseError('Delete failed: User ID is required.'),
-      );
+      await expect(deleteUser(null)).rejects.toThrow(new DatabaseError('Delete failed: User ID is required.'));
     });
 
     it('should handle Prisma delete errors', async () => {
       const prismaError = { code: 'P2025', message: 'Record to delete not found.' };
       mockPrisma.user.delete.mockRejectedValue(prismaError);
 
-      await expect(deleteUser(99)).rejects.toThrow(
-        new DatabaseError('Delete failed: Record to delete not found.'),
-      );
+      await expect(deleteUser(99)).rejects.toThrow(new DatabaseError('Delete failed: Record to delete not found.'));
     });
   });
 
@@ -372,9 +350,7 @@ describe('👤 UNIT: User Model - Database Operations & Business Logic', () => {
           error: 'User ID is required.',
         }),
       );
-      expect(mockLogger.error).toHaveBeenCalledWith(
-        expect.stringContaining('Error: User ID is required.'),
-      );
+      expect(mockLogger.error).toHaveBeenCalledWith(expect.stringContaining('Error: User ID is required.'));
     });
 
     it('should return error if user not found', async () => {
@@ -386,9 +362,7 @@ describe('👤 UNIT: User Model - Database Operations & Business Logic', () => {
           error: 'User not found.',
         }),
       );
-      expect(mockLogger.error).toHaveBeenCalledWith(
-        expect.stringContaining('Error: User not found.'),
-      );
+      expect(mockLogger.error).toHaveBeenCalledWith(expect.stringContaining('Error: User not found.'));
     });
   });
 
@@ -416,9 +390,7 @@ describe('👤 UNIT: User Model - Database Operations & Business Logic', () => {
 
     it('should throw DatabaseError if user not found', async () => {
       mockPrisma.user.findUnique.mockResolvedValue(null);
-      await expect(getUserProgress(99)).rejects.toThrow(
-        new DatabaseError('Progress fetch failed: User not found.'),
-      );
+      await expect(getUserProgress(99)).rejects.toThrow(new DatabaseError('Progress fetch failed: User not found.'));
     });
   });
 
@@ -514,9 +486,7 @@ describe('👤 UNIT: User Model - Database Operations & Business Logic', () => {
       expect(result).toBeNull();
     });
     it('should throw DatabaseError if ID is not provided', async () => {
-      await expect(getUserStats(null)).rejects.toThrow(
-        new DatabaseError('Stats fetch failed: User ID is required.'),
-      );
+      await expect(getUserStats(null)).rejects.toThrow(new DatabaseError('Stats fetch failed: User ID is required.'));
     });
   });
 });

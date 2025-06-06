@@ -97,14 +97,7 @@ describe('Groom Personality Effects System', () => {
 
   describe('GROOM_PERSONALITY_EFFECTS Configuration', () => {
     it('should have all required personality types defined', () => {
-      const expectedPersonalities = [
-        'gentle',
-        'playful',
-        'firm',
-        'patient',
-        'high_energy',
-        'aloof',
-      ];
+      const expectedPersonalities = ['gentle', 'playful', 'firm', 'patient', 'high_energy', 'aloof'];
 
       expectedPersonalities.forEach(personality => {
         expect(GROOM_PERSONALITY_EFFECTS).toHaveProperty(personality);
@@ -121,7 +114,7 @@ describe('Groom Personality Effects System', () => {
     });
 
     it('should have correct gentle personality configuration', () => {
-      const gentle = GROOM_PERSONALITY_EFFECTS.gentle;
+      const { gentle } = GROOM_PERSONALITY_EFFECTS;
 
       expect(gentle.bonusTasks).toContain('brushing');
       expect(gentle.bonusTasks).toContain('stall_care');
@@ -133,7 +126,7 @@ describe('Groom Personality Effects System', () => {
     });
 
     it('should have correct aloof personality penalty configuration', () => {
-      const aloof = GROOM_PERSONALITY_EFFECTS.aloof;
+      const { aloof } = GROOM_PERSONALITY_EFFECTS;
 
       expect(aloof.penalty).toBe(true);
       expect(aloof.bonusTasks).toEqual([]);

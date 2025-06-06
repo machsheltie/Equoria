@@ -89,10 +89,7 @@ describe('🔐 INTEGRATION: Authentication System - User Registration & Session 
       }
     } catch (error) {
       // Using console.error for errors
-      console.error(
-        'Database cleanup error (can be ignored if tables do not exist yet):',
-        error.message,
-      );
+      console.error('Database cleanup error (can be ignored if tables do not exist yet):', error.message);
     }
   };
 
@@ -276,10 +273,7 @@ describe('🔐 INTEGRATION: Authentication System - User Registration & Session 
     });
 
     it('should reject refresh with invalid token', async () => {
-      const response = await request(app)
-        .post('/api/auth/refresh')
-        .send({ refreshToken: 'invalid-token' })
-        .expect(401);
+      const response = await request(app).post('/api/auth/refresh').send({ refreshToken: 'invalid-token' }).expect(401);
 
       expect(response.body.success).toBe(false);
       expect(response.body.message).toBe('Invalid or expired refresh token');
@@ -312,10 +306,7 @@ describe('🔐 INTEGRATION: Authentication System - User Registration & Session 
     });
 
     it('should get user profile successfully with valid token', async () => {
-      const response = await request(app)
-        .get('/api/auth/me')
-        .set('Authorization', `Bearer ${authToken}`)
-        .expect(200);
+      const response = await request(app).get('/api/auth/me').set('Authorization', `Bearer ${authToken}`).expect(200);
 
       expect(response.body.status).toBe('success');
       expect(response.body.data.user).toBeDefined();
@@ -333,10 +324,7 @@ describe('🔐 INTEGRATION: Authentication System - User Registration & Session 
     });
 
     it('should reject profile request with invalid token', async () => {
-      const response = await request(app)
-        .get('/api/auth/me')
-        .set('Authorization', 'Bearer invalid-token')
-        .expect(401);
+      const response = await request(app).get('/api/auth/me').set('Authorization', 'Bearer invalid-token').expect(401);
 
       expect(response.body.success).toBe(false);
       expect(response.body.message).toBe('Invalid or expired token');

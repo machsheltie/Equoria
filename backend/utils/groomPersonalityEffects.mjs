@@ -155,7 +155,7 @@ export const GROOM_PERSONALITY_EFFECTS = {
  */
 export function calculatePersonalityEffects(groom, horse, taskType, baseEffects) {
   try {
-    const personality = groom.personality;
+    const { personality } = groom;
     const personalityConfig = GROOM_PERSONALITY_EFFECTS[personality];
 
     if (!personalityConfig) {
@@ -200,7 +200,7 @@ export function calculatePersonalityEffects(groom, horse, taskType, baseEffects)
     );
 
     // Check and apply special conditions
-    const specialConditions = personalityConfig.specialConditions;
+    const { specialConditions } = personalityConfig;
     if (specialConditions) {
       // Horse trait-based bonuses
       if (specialConditions.horseTraits && horse.traits) {
@@ -340,9 +340,15 @@ function categorizeTaskForPersonality(taskType) {
     'quiet_bonding',
   ];
 
-  if (enrichmentTasks.includes(taskType)) return 'enrichment';
-  if (trainingTasks.includes(taskType)) return 'training';
-  if (groomingTasks.includes(taskType)) return 'grooming';
+  if (enrichmentTasks.includes(taskType)) {
+    return 'enrichment';
+  }
+  if (trainingTasks.includes(taskType)) {
+    return 'training';
+  }
+  if (groomingTasks.includes(taskType)) {
+    return 'grooming';
+  }
 
   return 'general';
 }

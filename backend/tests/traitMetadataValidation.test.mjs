@@ -34,17 +34,11 @@ const __filename = fileURLToPath(import.meta.url);
 const __dirname = dirname(__filename);
 
 // Import trait functions and definitions
-const {
-  getTraitDefinition,
-  getTraitsByType,
-  getTraitsByCategory,
-  getTraitMetadata,
-  checkTraitConflict,
-} = await import(join(__dirname, '../utils/epigeneticTraits.js'));
-
-const { TASK_TRAIT_INFLUENCE_MAP } = await import(
-  join(__dirname, '../config/taskInfluenceConfig.js')
+const { getTraitDefinition, getTraitsByType, getTraitsByCategory, getTraitMetadata, checkTraitConflict } = await import(
+  join(__dirname, '../utils/epigeneticTraits.js')
 );
+
+const { TASK_TRAIT_INFLUENCE_MAP } = await import(join(__dirname, '../config/taskInfluenceConfig.js'));
 
 describe('Trait Metadata Validation', () => {
   describe('Required Trait Structure', () => {
@@ -245,9 +239,7 @@ describe('Trait Metadata Validation', () => {
       const allTraits = getTraitsByType('all');
       const commonTraits = allTraits.filter(trait => getTraitMetadata(trait).rarity === 'common');
       const rareTraits = allTraits.filter(trait => getTraitMetadata(trait).rarity === 'rare');
-      const legendaryTraits = allTraits.filter(
-        trait => getTraitMetadata(trait).rarity === 'legendary',
-      );
+      const legendaryTraits = allTraits.filter(trait => getTraitMetadata(trait).rarity === 'legendary');
 
       expect(commonTraits.length).toBeGreaterThan(rareTraits.length);
       expect(rareTraits.length).toBeGreaterThan(legendaryTraits.length);

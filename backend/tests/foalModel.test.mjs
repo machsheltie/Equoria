@@ -75,13 +75,8 @@ jest.unstable_mockModule(join(__dirname, '../utils/logger.mjs'), () => ({
 }));
 
 // Import after mocking
-const {
-  getFoalDevelopment,
-  completeActivity,
-  advanceDay,
-  completeEnrichmentActivity,
-  getAvailableActivities,
-} = await import(join(__dirname, '../models/foalModel.mjs'));
+const { getFoalDevelopment, completeActivity, advanceDay, completeEnrichmentActivity, getAvailableActivities } =
+  await import(join(__dirname, '../models/foalModel.mjs'));
 
 describe('🍼 UNIT: Foal Model - Foal Development & Activity Management', () => {
   beforeEach(() => {
@@ -154,9 +149,7 @@ describe('🍼 UNIT: Foal Model - Foal Development & Activity Management', () =>
 
       mockPrisma.horse.findUnique.mockResolvedValue(mockHorse);
 
-      await expect(getFoalDevelopment(1)).rejects.toThrow(
-        'Horse is not a foal (must be 1 year old or younger)',
-      );
+      await expect(getFoalDevelopment(1)).rejects.toThrow('Horse is not a foal (must be 1 year old or younger)');
     });
 
     it('should throw error for 2-year-old horse (boundary test)', async () => {
@@ -169,9 +162,7 @@ describe('🍼 UNIT: Foal Model - Foal Development & Activity Management', () =>
 
       mockPrisma.horse.findUnique.mockResolvedValue(mockHorse);
 
-      await expect(getFoalDevelopment(1)).rejects.toThrow(
-        'Horse is not a foal (must be 1 year old or younger)',
-      );
+      await expect(getFoalDevelopment(1)).rejects.toThrow('Horse is not a foal (must be 1 year old or younger)');
     });
 
     it('should accept 1-year-old horse (boundary test)', async () => {
@@ -264,9 +255,7 @@ describe('🍼 UNIT: Foal Model - Foal Development & Activity Management', () =>
     });
 
     it('should throw error for invalid foal ID', async () => {
-      await expect(getFoalDevelopment('invalid')).rejects.toThrow(
-        'Foal ID must be a positive integer',
-      );
+      await expect(getFoalDevelopment('invalid')).rejects.toThrow('Foal ID must be a positive integer');
       await expect(getFoalDevelopment(-1)).rejects.toThrow('Foal ID must be a positive integer');
       await expect(getFoalDevelopment(0)).rejects.toThrow('Foal ID must be a positive integer');
     });
@@ -470,15 +459,11 @@ describe('🍼 UNIT: Foal Model - Foal Development & Activity Management', () =>
     it('should throw error for missing development record', async () => {
       mockPrisma.foalDevelopment.findUnique.mockResolvedValue(null);
 
-      await expect(completeActivity(1, 'gentle_touch')).rejects.toThrow(
-        'Foal development record not found',
-      );
+      await expect(completeActivity(1, 'gentle_touch')).rejects.toThrow('Foal development record not found');
     });
 
     it('should throw error for invalid foal ID', async () => {
-      await expect(completeActivity('invalid', 'gentle_touch')).rejects.toThrow(
-        'Foal ID must be a positive integer',
-      );
+      await expect(completeActivity('invalid', 'gentle_touch')).rejects.toThrow('Foal ID must be a positive integer');
     });
 
     it('should throw error for missing activity type', async () => {
@@ -577,12 +562,8 @@ describe('🍼 UNIT: Foal Model - Foal Development & Activity Management', () =>
     });
 
     it('should validate day parameter (0-6)', async () => {
-      await expect(completeEnrichmentActivity(1, -1, 'gentle_touch')).rejects.toThrow(
-        'Day must be between 0 and 6',
-      );
-      await expect(completeEnrichmentActivity(1, 7, 'gentle_touch')).rejects.toThrow(
-        'Day must be between 0 and 6',
-      );
+      await expect(completeEnrichmentActivity(1, -1, 'gentle_touch')).rejects.toThrow('Day must be between 0 and 6');
+      await expect(completeEnrichmentActivity(1, 7, 'gentle_touch')).rejects.toThrow('Day must be between 0 and 6');
       await expect(completeEnrichmentActivity(1, 'invalid', 'gentle_touch')).rejects.toThrow(
         'Day must be between 0 and 6',
       );

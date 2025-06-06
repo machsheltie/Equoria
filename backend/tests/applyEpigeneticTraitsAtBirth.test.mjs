@@ -57,9 +57,7 @@ jest.unstable_mockModule(join(__dirname, '../utils/logger.mjs'), () => ({
 }));
 
 // Import the function after mocking
-const { applyEpigeneticTraitsAtBirth } = await import(
-  join(__dirname, '../utils/applyEpigeneticTraitsAtBirth.js')
-);
+const { applyEpigeneticTraitsAtBirth } = await import(join(__dirname, '../utils/applyEpigeneticTraitsAtBirth.js'));
 
 describe('🧬 UNIT: Apply Epigenetic Traits At Birth - Breeding Condition Analysis', () => {
   beforeEach(() => {
@@ -315,9 +313,7 @@ describe('🧬 UNIT: Apply Epigenetic Traits At Birth - Breeding Condition Analy
         stressLevel: 50,
       });
 
-      expect(
-        result.positive.filter(trait => trait.startsWith('discipline_affinity_')),
-      ).toHaveLength(0);
+      expect(result.positive.filter(trait => trait.startsWith('discipline_affinity_'))).toHaveLength(0);
       expect(result.positive).not.toContain('legacy_talent');
     });
   });

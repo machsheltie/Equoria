@@ -101,22 +101,14 @@ describe('🐴 UNIT: Horse Model Task 7 - Instance-Style Helper Methods Validati
 
     it('should reject invalid inputs in addTrait', async () => {
       // Invalid horse ID
-      await expect(addTrait('invalid', 'trait', 'positive')).rejects.toThrow(
-        'Invalid horse ID provided',
-      );
+      await expect(addTrait('invalid', 'trait', 'positive')).rejects.toThrow('Invalid horse ID provided');
       await expect(addTrait(-1, 'trait', 'positive')).rejects.toThrow('Invalid horse ID provided');
       await expect(addTrait(0, 'trait', 'positive')).rejects.toThrow('Invalid horse ID provided');
 
       // Invalid trait name
-      await expect(addTrait(1, '', 'positive')).rejects.toThrow(
-        'Trait name must be a non-empty string',
-      );
-      await expect(addTrait(1, null, 'positive')).rejects.toThrow(
-        'Trait name must be a non-empty string',
-      );
-      await expect(addTrait(1, 123, 'positive')).rejects.toThrow(
-        'Trait name must be a non-empty string',
-      );
+      await expect(addTrait(1, '', 'positive')).rejects.toThrow('Trait name must be a non-empty string');
+      await expect(addTrait(1, null, 'positive')).rejects.toThrow('Trait name must be a non-empty string');
+      await expect(addTrait(1, 123, 'positive')).rejects.toThrow('Trait name must be a non-empty string');
 
       // Invalid category (should only accept 'positive' and 'negative' for instance-style helper)
       await expect(addTrait(1, 'trait', 'invalid')).rejects.toThrow(
@@ -125,9 +117,7 @@ describe('🐴 UNIT: Horse Model Task 7 - Instance-Style Helper Methods Validati
       await expect(addTrait(1, 'trait', 'hidden')).rejects.toThrow(
         "Invalid category 'hidden'. Must be one of: positive, negative",
       );
-      await expect(addTrait(1, 'trait', '')).rejects.toThrow(
-        "Invalid category ''. Must be one of: positive, negative",
-      );
+      await expect(addTrait(1, 'trait', '')).rejects.toThrow("Invalid category ''. Must be one of: positive, negative");
     });
   });
 
@@ -135,15 +125,9 @@ describe('🐴 UNIT: Horse Model Task 7 - Instance-Style Helper Methods Validati
     it('should handle non-existent horse IDs gracefully', async () => {
       const nonExistentId = 999999;
 
-      await expect(hasTrait(nonExistentId, 'trait')).rejects.toThrow(
-        `Horse with ID ${nonExistentId} not found`,
-      );
-      await expect(getPositiveTraitsArray(nonExistentId)).rejects.toThrow(
-        `Horse with ID ${nonExistentId} not found`,
-      );
-      await expect(getNegativeTraitsArray(nonExistentId)).rejects.toThrow(
-        `Horse with ID ${nonExistentId} not found`,
-      );
+      await expect(hasTrait(nonExistentId, 'trait')).rejects.toThrow(`Horse with ID ${nonExistentId} not found`);
+      await expect(getPositiveTraitsArray(nonExistentId)).rejects.toThrow(`Horse with ID ${nonExistentId} not found`);
+      await expect(getNegativeTraitsArray(nonExistentId)).rejects.toThrow(`Horse with ID ${nonExistentId} not found`);
     });
 
     it('should validate that functions return correct types', async () => {

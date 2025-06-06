@@ -326,12 +326,7 @@ describe('🐴 INTEGRATION: Foal Enrichment API Integration - Complete API Workf
     });
 
     it('should handle all day 3 activities', async () => {
-      const day3Activities = [
-        'Halter Introduction',
-        'Leading Practice',
-        'Handling Exercises',
-        'Trailer Exposure',
-      ];
+      const day3Activities = ['Halter Introduction', 'Leading Practice', 'Handling Exercises', 'Trailer Exposure'];
 
       for (const activity of day3Activities) {
         const response = await request(app)

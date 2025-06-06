@@ -68,29 +68,29 @@ async function scanTestFiles() {
   for (const testDir of TEST_DIRS) {
     try {
       const files = await readdir(testDir, { recursive: true });
-      
+
       for (const file of files) {
         if (file.endsWith('.test.mjs') || file.endsWith('.test.js')) {
           const filePath = join(testDir, file);
           const content = await readFile(filePath, 'utf-8');
-          
+
           const overMockingScore = OVER_MOCKING_PATTERNS.reduce(
             (score, pattern) => score + (pattern.test(content) ? 1 : 0),
-            0
+            0,
           );
-          
+
           const goodMockingScore = GOOD_MOCKING_PATTERNS.reduce(
             (score, pattern) => score + (pattern.test(content) ? 1 : 0),
-            0
+            0,
           );
-          
+
           const analysis = {
             file: filePath,
             overMockingScore,
             goodMockingScore,
             ratio: goodMockingScore / Math.max(overMockingScore, 1),
           };
-          
+
           if (overMockingScore >= 3) {
             results.overMocked.push(analysis);
           } else if (goodMockingScore >= 2) {
@@ -118,31 +118,45 @@ function generateFixReport(results) {
 - **Need Review**: ${results.needsReview.length} files
 
 ## ❌ OVER-MOCKED TESTS (Priority Fix)
-${results.overMocked.map(test => `
+${results.overMocked
+    .map(
+      test => `
 ### ${test.file}
 - Over-mocking Score: ${test.overMockingScore}
 - Good Mocking Score: ${test.goodMockingScore}
 - Ratio: ${test.ratio.toFixed(2)}
 - **Action**: Remove excessive mocks, use real database operations
-`).join('')}
+`,
+    )
+    .join('')}
 
 ## ✅ BALANCED TESTS (Keep as Reference)
-${results.balanced.slice(0, 5).map(test => `
+${results.balanced
+    .slice(0, 5)
+    .map(
+      test => `
 ### ${test.file}
 - Over-mocking Score: ${test.overMockingScore}
 - Good Mocking Score: ${test.goodMockingScore}
 - Ratio: ${test.ratio.toFixed(2)}
 - **Status**: Good example of minimal mocking
-`).join('')}
+`,
+    )
+    .join('')}
 
 ## 🔍 NEED REVIEW
-${results.needsReview.slice(0, 5).map(test => `
+${results.needsReview
+    .slice(0, 5)
+    .map(
+      test => `
 ### ${test.file}
 - Over-mocking Score: ${test.overMockingScore}
 - Good Mocking Score: ${test.goodMockingScore}
 - Ratio: ${test.ratio.toFixed(2)}
 - **Action**: Review and categorize
-`).join('')}
+`,
+    )
+    .join('')}
 
 ## 🎯 FIXING STRATEGY
 
@@ -194,25 +208,25 @@ Following this strategy should restore your **90.1% success rate** by:
 
 async function main() {
   console.log('🔍 Scanning test files for over-mocking patterns...\n');
-  
+
   const results = await scanTestFiles();
   const report = generateFixReport(results);
-  
+
   // Save report
   const reportPath = join(__dirname, '../docs/test-mocking-analysis.md');
   await writeFile(reportPath, report);
-  
+
   console.log('📊 ANALYSIS COMPLETE');
   console.log(`📄 Report saved to: ${reportPath}`);
   console.log(`\n🎯 PRIORITY FIXES NEEDED: ${results.overMocked.length} files`);
-  
+
   if (results.overMocked.length > 0) {
     console.log('\n❌ OVER-MOCKED FILES TO FIX:');
     results.overMocked.forEach((test, index) => {
       console.log(`${index + 1}. ${test.file} (Score: ${test.overMockingScore})`);
     });
   }
-  
+
   console.log(`\n✅ BALANCED FILES (Good Examples): ${results.balanced.length}`);
   console.log('\n💡 Run this script after fixing files to track progress');
 }

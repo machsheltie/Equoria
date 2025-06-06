@@ -98,9 +98,7 @@ describe('🏆 UNIT: Competition Score Calculation - Scoring Algorithm Validatio
     });
 
     it('should apply +5 trait bonus for matching discipline affinity', () => {
-      const horseWithTrait = createTestHorse({ speed: 70, stamina: 60, focus: 50 }, [
-        'discipline_affinity_racing',
-      ]);
+      const horseWithTrait = createTestHorse({ speed: 70, stamina: 60, focus: 50 }, ['discipline_affinity_racing']);
       const horseWithoutTrait = createTestHorse({ speed: 70, stamina: 60, focus: 50 });
 
       // Mock Math.random to eliminate luck variance for this test
@@ -188,25 +186,15 @@ describe('🏆 UNIT: Competition Score Calculation - Scoring Algorithm Validatio
 
     it('should throw error for invalid horse input', () => {
       expect(() => calculateCompetitionScore(null, 'Racing')).toThrow('Horse object is required');
-      expect(() => calculateCompetitionScore(undefined, 'Racing')).toThrow(
-        'Horse object is required',
-      );
-      expect(() => calculateCompetitionScore('invalid', 'Racing')).toThrow(
-        'Horse object is required',
-      );
+      expect(() => calculateCompetitionScore(undefined, 'Racing')).toThrow('Horse object is required');
+      expect(() => calculateCompetitionScore('invalid', 'Racing')).toThrow('Horse object is required');
     });
 
     it('should throw error for invalid event type', () => {
       const horse = createTestHorse();
-      expect(() => calculateCompetitionScore(horse, null)).toThrow(
-        'Event type is required and must be a string',
-      );
-      expect(() => calculateCompetitionScore(horse)).toThrow(
-        'Event type is required and must be a string',
-      );
-      expect(() => calculateCompetitionScore(horse, 123)).toThrow(
-        'Event type is required and must be a string',
-      );
+      expect(() => calculateCompetitionScore(horse, null)).toThrow('Event type is required and must be a string');
+      expect(() => calculateCompetitionScore(horse)).toThrow('Event type is required and must be a string');
+      expect(() => calculateCompetitionScore(horse, 123)).toThrow('Event type is required and must be a string');
     });
 
     it('should handle unknown event types with default calculation', () => {
@@ -269,9 +257,7 @@ describe('🏆 UNIT: Competition Score Calculation - Scoring Algorithm Validatio
       // Use jest.spyOn for more deterministic testing
       const mockRandom = jest.spyOn(Math, 'random');
 
-      const traitHorse = createTestHorse({ speed: 70, stamina: 60, focus: 50 }, [
-        'discipline_affinity_racing',
-      ]);
+      const traitHorse = createTestHorse({ speed: 70, stamina: 60, focus: 50 }, ['discipline_affinity_racing']);
 
       const regularHorse = createTestHorse({ speed: 70, stamina: 60, focus: 50 });
 
@@ -494,9 +480,7 @@ describe('🏆 UNIT: Competition Score Calculation - Scoring Algorithm Validatio
       // Mock Math.random to return 0.5 (middle of range for luck modifier)
       Math.random = () => 0.5;
 
-      const traitHorse = createTestHorse({ speed: 70, stamina: 60, focus: 50 }, [
-        'discipline_affinity_racing',
-      ]);
+      const traitHorse = createTestHorse({ speed: 70, stamina: 60, focus: 50 }, ['discipline_affinity_racing']);
 
       const regularHorse = createTestHorse({ speed: 70, stamina: 60, focus: 50 });
 

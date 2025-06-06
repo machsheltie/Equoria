@@ -341,9 +341,7 @@ describe('🧬 UNIT: Lineage Trait Check - Discipline Affinity Analysis', () => 
     it('should handle empty ancestors or missing target discipline', () => {
       expect(checkSpecificDisciplineAffinity([], 'Racing').hasAffinity).toBe(false);
       expect(checkSpecificDisciplineAffinity(null, 'Racing').hasAffinity).toBe(false);
-      expect(checkSpecificDisciplineAffinity([{ discipline: 'Racing' }], null).hasAffinity).toBe(
-        false,
-      );
+      expect(checkSpecificDisciplineAffinity([{ discipline: 'Racing' }], null).hasAffinity).toBe(false);
     });
   });
 

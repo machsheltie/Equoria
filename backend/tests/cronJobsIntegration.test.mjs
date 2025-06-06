@@ -190,9 +190,7 @@ describe('⏰ INTEGRATION: Cron Jobs System - Automated Trait Evaluation & Admin
 
       const traits = updatedFoal.epigeneticModifiers;
       const totalTraits =
-        (traits.positive?.length || 0) +
-        (traits.negative?.length || 0) +
-        (traits.hidden?.length || 0);
+        (traits.positive?.length || 0) + (traits.negative?.length || 0) + (traits.hidden?.length || 0);
 
       // With good conditions, should have a chance to reveal positive traits
       expect(totalTraits).toBeGreaterThanOrEqual(0);
@@ -243,9 +241,7 @@ describe('⏰ INTEGRATION: Cron Jobs System - Automated Trait Evaluation & Admin
 
       const traits = updatedFoal.epigeneticModifiers;
       const totalTraits =
-        (traits.positive?.length || 0) +
-        (traits.negative?.length || 0) +
-        (traits.hidden?.length || 0);
+        (traits.positive?.length || 0) + (traits.negative?.length || 0) + (traits.hidden?.length || 0);
 
       // With poor conditions, might reveal negative traits
       expect(totalTraits).toBeGreaterThanOrEqual(0);
@@ -361,11 +357,7 @@ describe('⏰ INTEGRATION: Cron Jobs System - Automated Trait Evaluation & Admin
       expect(mockCronJobService.evaluateDailyFoalTraits).toHaveBeenCalled();
 
       const traits = updatedFoal.epigeneticModifiers;
-      const allTraits = [
-        ...(traits.positive || []),
-        ...(traits.negative || []),
-        ...(traits.hidden || []),
-      ];
+      const allTraits = [...(traits.positive || []), ...(traits.negative || []), ...(traits.hidden || [])];
 
       // Should not have duplicates
       const uniqueTraits = [...new Set(allTraits)];

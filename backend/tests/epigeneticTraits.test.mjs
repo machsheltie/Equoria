@@ -42,9 +42,7 @@ describe('🧬 UNIT: Epigenetic Traits System - Breeding & Environmental Trait C
     it('should throw error for missing required parameters', () => {
       expect(() => calculateEpigeneticTraits()).toThrow('Missing required breeding parameters');
       expect(() => calculateEpigeneticTraits({})).toThrow('Missing required breeding parameters');
-      expect(() => calculateEpigeneticTraits({ damTraits: [] })).toThrow(
-        'Missing required breeding parameters',
-      );
+      expect(() => calculateEpigeneticTraits({ damTraits: [] })).toThrow('Missing required breeding parameters');
     });
 
     it('should throw error for invalid trait arrays', () => {
@@ -64,9 +62,7 @@ describe('🧬 UNIT: Epigenetic Traits System - Breeding & Environmental Trait C
         damBondScore: 'invalid',
         damStressLevel: 20,
       };
-      expect(() => calculateEpigeneticTraits(invalidInput)).toThrow(
-        'Bond scores and stress levels must be numbers',
-      );
+      expect(() => calculateEpigeneticTraits(invalidInput)).toThrow('Bond scores and stress levels must be numbers');
     });
 
     it('should throw error for out-of-range values', () => {
@@ -126,9 +122,7 @@ describe('🧬 UNIT: Epigenetic Traits System - Breeding & Environmental Trait C
       }
 
       // Should sometimes inherit resilient, sometimes bold, sometimes both
-      const hasResilient = results.some(
-        r => r.positive.includes('resilient') || r.hidden.includes('resilient'),
-      );
+      const hasResilient = results.some(r => r.positive.includes('resilient') || r.hidden.includes('resilient'));
       const hasBold = results.some(r => r.positive.includes('bold') || r.hidden.includes('bold'));
 
       expect(hasResilient).toBe(true);
@@ -341,8 +335,7 @@ describe('🧬 UNIT: Epigenetic Traits System - Breeding & Environmental Trait C
           // Should not have contradictory traits (e.g., both calm and nervous)
           const allTraits = [...result.positive, ...result.negative, ...result.hidden];
           expect(
-            allTraits.filter(t => t === 'calm').length +
-              allTraits.filter(t => t === 'nervous').length,
+            allTraits.filter(t => t === 'calm').length + allTraits.filter(t => t === 'nervous').length,
           ).toBeLessThanOrEqual(1);
           break;
         }
@@ -444,14 +437,7 @@ describe('🧬 UNIT: Epigenetic Traits System - Breeding & Environmental Trait C
       const result = calculateEpigeneticTraits(input);
 
       // Positive traits should only appear in positive or hidden arrays
-      const positiveTraitList = [
-        'resilient',
-        'intelligent',
-        'bold',
-        'athletic',
-        'calm',
-        'trainability_boost',
-      ];
+      const positiveTraitList = ['resilient', 'intelligent', 'bold', 'athletic', 'calm', 'trainability_boost'];
 
       result.negative.forEach(trait => {
         expect(positiveTraitList).not.toContain(trait);

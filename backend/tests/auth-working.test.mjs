@@ -40,13 +40,7 @@
 import request from 'supertest';
 import express from 'express';
 import { body } from 'express-validator';
-import {
-  register,
-  login,
-  refreshToken,
-  logout,
-  getProfile,
-} from '../controllers/authController.mjs';
+import { register, login, refreshToken, logout, getProfile } from '../controllers/authController.mjs';
 import { authenticateToken } from '../middleware/auth.mjs';
 import prisma from '../db/index.mjs';
 
@@ -67,12 +61,7 @@ const createTestApp = () => {
     register,
   );
 
-  app.post(
-    '/api/auth/login',
-    body('email').isEmail().normalizeEmail(),
-    body('password').notEmpty(),
-    login,
-  );
+  app.post('/api/auth/login', body('email').isEmail().normalizeEmail(), body('password').notEmpty(), login);
 
   app.post('/api/auth/refresh', body('refreshToken').notEmpty(), refreshToken);
 
@@ -246,10 +235,7 @@ describe('🔐 INTEGRATION: Authentication System - Complete Auth Workflow Valid
     });
 
     it('should reject invalid refresh token', async () => {
-      const response = await request(app)
-        .post('/api/auth/refresh')
-        .send({ refreshToken: 'invalid-token' })
-        .expect(401);
+      const response = await request(app).post('/api/auth/refresh').send({ refreshToken: 'invalid-token' }).expect(401);
 
       expect(response.body.success).toBe(false);
       expect(response.body.message).toBe('Invalid or expired refresh token');

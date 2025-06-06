@@ -146,9 +146,7 @@ describe('🏇 INTEGRATION: Horse Overview API - Real Database Integration', () 
         },
       });
 
-      const response = await request(app)
-        .get(`/api/horses/${testHorse.id}/overview`)
-        .expect(200);
+      const response = await request(app).get(`/api/horses/${testHorse.id}/overview`).expect(200);
 
       expect(response.body.success).toBe(true);
       expect(response.body.message).toBe('Horse overview retrieved successfully');
@@ -206,9 +204,7 @@ describe('🏇 INTEGRATION: Horse Overview API - Real Database Integration', () 
     });
 
     it('should handle horse with no training history gracefully', async () => {
-      const response = await request(app)
-        .get(`/api/horses/${testHorse.id}/overview`)
-        .expect(200);
+      const response = await request(app).get(`/api/horses/${testHorse.id}/overview`).expect(200);
 
       const { data } = response.body;
       expect(data.nextTrainingDate).toBeNull();
@@ -233,9 +229,7 @@ describe('🏇 INTEGRATION: Horse Overview API - Real Database Integration', () 
       const expectedNextTraining = new Date(lastTrainingDate);
       expectedNextTraining.setDate(expectedNextTraining.getDate() + 7);
 
-      const response = await request(app)
-        .get(`/api/horses/${testHorse.id}/overview`)
-        .expect(200);
+      const response = await request(app).get(`/api/horses/${testHorse.id}/overview`).expect(200);
 
       const { data } = response.body;
       expect(new Date(data.nextTrainingDate)).toEqual(expectedNextTraining);
@@ -259,9 +253,7 @@ describe('🏇 INTEGRATION: Horse Overview API - Real Database Integration', () 
         },
       });
 
-      const response = await request(app)
-        .get(`/api/horses/${minimalHorse.id}/overview`)
-        .expect(200);
+      const response = await request(app).get(`/api/horses/${minimalHorse.id}/overview`).expect(200);
 
       const { data } = response.body;
       expect(data.name).toBe('TestHorse Minimal');

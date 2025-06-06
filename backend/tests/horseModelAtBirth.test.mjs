@@ -297,9 +297,7 @@ describe('🐴 UNIT: Horse Model At-Birth Traits - Creation Integration Testing'
         damId: 20,
       };
 
-      mockAtBirthTraits.applyEpigeneticTraitsAtBirth.mockRejectedValue(
-        new Error('Trait application failed'),
-      );
+      mockAtBirthTraits.applyEpigeneticTraitsAtBirth.mockRejectedValue(new Error('Trait application failed'));
       mockPrisma.horse.create.mockResolvedValue(mockCreatedHorse);
 
       const result = await createHorse(horseData);
@@ -376,9 +374,7 @@ describe('🐴 UNIT: Horse Model At-Birth Traits - Creation Integration Testing'
       await createHorse(horseData);
 
       expect(mockLogger.info).toHaveBeenCalledWith(
-        expect.stringContaining(
-          'Breeding analysis - Lineage specialization: true, Inbreeding: true',
-        ),
+        expect.stringContaining('Breeding analysis - Lineage specialization: true, Inbreeding: true'),
       );
     });
   });

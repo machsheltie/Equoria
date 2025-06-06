@@ -91,50 +91,26 @@ describe('🧮 UNIT: Groom System Logic - Pure Business Logic Validation', () =>
       const foalCareGroom = { ...mockGroom, speciality: 'foalCare' };
       const generalGroom = { ...mockGroom, speciality: 'general' };
 
-      const foalCareEffects = calculateGroomInteractionEffects(
-        foalCareGroom,
-        mockFoal,
-        'dailyCare',
-        60,
-      );
-      const generalEffects = calculateGroomInteractionEffects(
-        generalGroom,
-        mockFoal,
-        'dailyCare',
-        60,
-      );
+      const foalCareEffects = calculateGroomInteractionEffects(foalCareGroom, mockFoal, 'dailyCare', 60);
+      const generalEffects = calculateGroomInteractionEffects(generalGroom, mockFoal, 'dailyCare', 60);
 
       // Foal care specialist should have better bonding modifier
       expect(foalCareEffects.modifiers.specialty).toBe(1.5);
       expect(generalEffects.modifiers.specialty).toBe(1.0);
-      expect(foalCareEffects.modifiers.specialty).toBeGreaterThan(
-        generalEffects.modifiers.specialty,
-      );
+      expect(foalCareEffects.modifiers.specialty).toBeGreaterThan(generalEffects.modifiers.specialty);
     });
 
     it('should apply skill level modifiers correctly', () => {
       const expertGroom = { ...mockGroom, skillLevel: 'expert' };
       const noviceGroom = { ...mockGroom, skillLevel: 'novice' };
 
-      const expertEffects = calculateGroomInteractionEffects(
-        expertGroom,
-        mockFoal,
-        'dailyCare',
-        60,
-      );
-      const noviceEffects = calculateGroomInteractionEffects(
-        noviceGroom,
-        mockFoal,
-        'dailyCare',
-        60,
-      );
+      const expertEffects = calculateGroomInteractionEffects(expertGroom, mockFoal, 'dailyCare', 60);
+      const noviceEffects = calculateGroomInteractionEffects(noviceGroom, mockFoal, 'dailyCare', 60);
 
       // Expert should have better bonding modifier
       expect(expertEffects.modifiers.skillLevel).toBe(1.3);
       expect(noviceEffects.modifiers.skillLevel).toBe(0.8);
-      expect(expertEffects.modifiers.skillLevel).toBeGreaterThan(
-        noviceEffects.modifiers.skillLevel,
-      );
+      expect(expertEffects.modifiers.skillLevel).toBeGreaterThan(noviceEffects.modifiers.skillLevel);
 
       // Expert should cost more
       expect(expertEffects.cost).toBeGreaterThan(noviceEffects.cost);
@@ -144,45 +120,26 @@ describe('🧮 UNIT: Groom System Logic - Pure Business Logic Validation', () =>
       const gentleGroom = { ...mockGroom, personality: 'gentle' };
       const strictGroom = { ...mockGroom, personality: 'strict' };
 
-      const gentleEffects = calculateGroomInteractionEffects(
-        gentleGroom,
-        mockFoal,
-        'dailyCare',
-        60,
-      );
-      const strictEffects = calculateGroomInteractionEffects(
-        strictGroom,
-        mockFoal,
-        'dailyCare',
-        60,
-      );
+      const gentleEffects = calculateGroomInteractionEffects(gentleGroom, mockFoal, 'dailyCare', 60);
+      const strictEffects = calculateGroomInteractionEffects(strictGroom, mockFoal, 'dailyCare', 60);
 
       // Gentle should have better bonding modifier
       expect(gentleEffects.modifiers.personality).toBe(1.2);
       expect(strictEffects.modifiers.personality).toBe(0.9);
-      expect(gentleEffects.modifiers.personality).toBeGreaterThan(
-        strictEffects.modifiers.personality,
-      );
+      expect(gentleEffects.modifiers.personality).toBeGreaterThan(strictEffects.modifiers.personality);
     });
 
     it('should apply experience bonuses correctly', () => {
       const experiencedGroom = { ...mockGroom, experience: 15 };
       const newGroom = { ...mockGroom, experience: 1 };
 
-      const experiencedEffects = calculateGroomInteractionEffects(
-        experiencedGroom,
-        mockFoal,
-        'dailyCare',
-        60,
-      );
+      const experiencedEffects = calculateGroomInteractionEffects(experiencedGroom, mockFoal, 'dailyCare', 60);
       const newGroomEffects = calculateGroomInteractionEffects(newGroom, mockFoal, 'dailyCare', 60);
 
       // Experience bonus: +1 bonding per 5 years
       expect(experiencedEffects.modifiers.experience).toBe(3); // 15/5 = 3
       expect(newGroomEffects.modifiers.experience).toBe(0); // 1/5 = 0
-      expect(experiencedEffects.modifiers.experience).toBeGreaterThan(
-        newGroomEffects.modifiers.experience,
-      );
+      expect(experiencedEffects.modifiers.experience).toBeGreaterThan(newGroomEffects.modifiers.experience);
     });
 
     it('should scale cost with duration and session rate', () => {
@@ -199,12 +156,7 @@ describe('🧮 UNIT: Groom System Logic - Pure Business Logic Validation', () =>
     });
 
     it('should handle different interaction types', () => {
-      const dailyCareEffects = calculateGroomInteractionEffects(
-        mockGroom,
-        mockFoal,
-        'dailyCare',
-        60,
-      );
+      const dailyCareEffects = calculateGroomInteractionEffects(mockGroom, mockFoal, 'dailyCare', 60);
       const feedingEffects = calculateGroomInteractionEffects(mockGroom, mockFoal, 'feeding', 60);
       const groomingEffects = calculateGroomInteractionEffects(mockGroom, mockFoal, 'grooming', 60);
 
@@ -231,12 +183,7 @@ describe('🧮 UNIT: Groom System Logic - Pure Business Logic Validation', () =>
 
       // High experience groom
       const masterGroom = { ...mockGroom, experience: 20, skillLevel: 'master' };
-      const masterEffects = calculateGroomInteractionEffects(
-        masterGroom,
-        mockFoal,
-        'dailyCare',
-        60,
-      );
+      const masterEffects = calculateGroomInteractionEffects(masterGroom, mockFoal, 'dailyCare', 60);
       expect(masterEffects.modifiers.experience).toBe(4); // 20/5 = 4
       expect(masterEffects.modifiers.skillLevel).toBe(1.6);
     });
@@ -375,12 +322,7 @@ describe('🧮 UNIT: Groom System Logic - Pure Business Logic Validation', () =>
         sessionRate: 25.0,
       };
 
-      const effects = calculateGroomInteractionEffects(
-        testGroom,
-        { bondScore: 50 },
-        'dailyCare',
-        60,
-      );
+      const effects = calculateGroomInteractionEffects(testGroom, { bondScore: 50 }, 'dailyCare', 60);
 
       // Check individual modifiers
       expect(effects.modifiers.specialty).toBe(1.5);
@@ -403,12 +345,7 @@ describe('🧮 UNIT: Groom System Logic - Pure Business Logic Validation', () =>
       };
 
       // Should not throw error, should use defaults
-      const effects = calculateGroomInteractionEffects(
-        invalidGroom,
-        { bondScore: 50 },
-        'dailyCare',
-        60,
-      );
+      const effects = calculateGroomInteractionEffects(invalidGroom, { bondScore: 50 }, 'dailyCare', 60);
 
       expect(effects).toHaveProperty('bondingChange');
       expect(effects).toHaveProperty('stressChange');

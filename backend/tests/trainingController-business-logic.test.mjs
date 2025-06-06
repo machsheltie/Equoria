@@ -51,8 +51,9 @@ dotenv.config({ path: join(__dirname, '../.env.test') });
 
 // Import without mocking for real integration testing
 const { default: prisma } = await import(join(__dirname, '../db/index.mjs'));
-const { canTrain, trainHorse, getTrainingStatus, getTrainableHorses, trainRouteHandler } =
-  await import(join(__dirname, '../controllers/trainingController.mjs'));
+const { canTrain, trainHorse, getTrainingStatus, getTrainableHorses, trainRouteHandler } = await import(
+  join(__dirname, '../controllers/trainingController.mjs')
+);
 
 describe('🏋️ INTEGRATION: Training Controller Business Logic - Complete Training Workflow', () => {
   let testUser = null;
@@ -328,9 +329,7 @@ describe('🏋️ INTEGRATION: Training Controller Business Logic - Complete Tra
     });
 
     it('THROWS error for invalid input parameters', async () => {
-      await expect(canTrain('invalid', 'Dressage')).rejects.toThrow(
-        'Horse ID must be a positive integer',
-      );
+      await expect(canTrain('invalid', 'Dressage')).rejects.toThrow('Horse ID must be a positive integer');
       await expect(canTrain(1, '')).rejects.toThrow('Discipline is required');
       await expect(canTrain(null, 'Dressage')).rejects.toThrow('Horse ID is required');
     });

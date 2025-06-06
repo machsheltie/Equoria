@@ -70,11 +70,7 @@ describe('🏆 INTEGRATION: Task 9 Integration Example - Discipline Affinity Tra
 
     try {
       // Create two identical horses, one with discipline affinity trait
-      const horseWithAffinity = createDemoHorse(
-        1,
-        'JumpSpecialist',
-        'discipline_affinity_show_jumping',
-      );
+      const horseWithAffinity = createDemoHorse(1, 'JumpSpecialist', 'discipline_affinity_show_jumping');
       const horseWithoutAffinity = createDemoHorse(2, 'RegularHorse');
 
       const show = {
@@ -197,11 +193,7 @@ describe('🏆 INTEGRATION: Task 9 Integration Example - Discipline Affinity Tra
 
   it('should not apply bonus when trait does not match discipline', () => {
     // Horse has racing affinity but competing in dressage
-    const horseWithWrongAffinity = createDemoHorse(
-      1,
-      'RacingSpecialist',
-      'discipline_affinity_racing',
-    );
+    const horseWithWrongAffinity = createDemoHorse(1, 'RacingSpecialist', 'discipline_affinity_racing');
     const regularHorse = createDemoHorse(2, 'RegularHorse');
 
     const show = {

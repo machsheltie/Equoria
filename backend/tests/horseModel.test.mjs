@@ -114,12 +114,8 @@ describe('🐎 UNIT: Horse Model - Discipline Score Management', () => {
       const mockUpdatedHorse2 = { id: 1, disciplineScores: { Dressage: 10 } };
 
       mockPrisma.horse.create.mockResolvedValue(mockHorse);
-      mockPrisma.horse.findUnique
-        .mockResolvedValueOnce(mockFoundHorse1)
-        .mockResolvedValueOnce(mockFoundHorse2);
-      mockPrisma.horse.update
-        .mockResolvedValueOnce(mockUpdatedHorse1)
-        .mockResolvedValueOnce(mockUpdatedHorse2);
+      mockPrisma.horse.findUnique.mockResolvedValueOnce(mockFoundHorse1).mockResolvedValueOnce(mockFoundHorse2);
+      mockPrisma.horse.update.mockResolvedValueOnce(mockUpdatedHorse1).mockResolvedValueOnce(mockUpdatedHorse2);
 
       const horse = await createHorse({
         name: 'Test Horse',
@@ -141,12 +137,8 @@ describe('🐎 UNIT: Horse Model - Discipline Score Management', () => {
       const mockUpdatedHorse2 = { id: 1, disciplineScores: { Dressage: 5, 'Show Jumping': 3 } };
 
       mockPrisma.horse.create.mockResolvedValue(mockHorse);
-      mockPrisma.horse.findUnique
-        .mockResolvedValueOnce(mockFoundHorse1)
-        .mockResolvedValueOnce(mockFoundHorse2);
-      mockPrisma.horse.update
-        .mockResolvedValueOnce(mockUpdatedHorse1)
-        .mockResolvedValueOnce(mockUpdatedHorse2);
+      mockPrisma.horse.findUnique.mockResolvedValueOnce(mockFoundHorse1).mockResolvedValueOnce(mockFoundHorse2);
+      mockPrisma.horse.update.mockResolvedValueOnce(mockUpdatedHorse1).mockResolvedValueOnce(mockUpdatedHorse2);
 
       const horse = await createHorse({
         name: 'Test Horse',
@@ -164,21 +156,15 @@ describe('🐎 UNIT: Horse Model - Discipline Score Management', () => {
     });
 
     it('should throw error for invalid horse ID', async () => {
-      await expect(updateDisciplineScore(-1, 'Dressage', 5)).rejects.toThrow(
-        'Invalid horse ID provided',
-      );
+      await expect(updateDisciplineScore(-1, 'Dressage', 5)).rejects.toThrow('Invalid horse ID provided');
 
-      await expect(updateDisciplineScore('invalid', 'Dressage', 5)).rejects.toThrow(
-        'Invalid horse ID provided',
-      );
+      await expect(updateDisciplineScore('invalid', 'Dressage', 5)).rejects.toThrow('Invalid horse ID provided');
     });
 
     it('should throw error for non-existent horse', async () => {
       mockPrisma.horse.findUnique.mockResolvedValue(null);
 
-      await expect(updateDisciplineScore(99999, 'Dressage', 5)).rejects.toThrow(
-        'Horse with ID 99999 not found',
-      );
+      await expect(updateDisciplineScore(99999, 'Dressage', 5)).rejects.toThrow('Horse with ID 99999 not found');
     });
 
     it('should throw error for invalid discipline', async () => {
@@ -201,13 +187,9 @@ describe('🐎 UNIT: Horse Model - Discipline Score Management', () => {
         breedId: 1,
       });
 
-      await expect(updateDisciplineScore(horse.id, '', 5)).rejects.toThrow(
-        'Discipline must be a non-empty string',
-      );
+      await expect(updateDisciplineScore(horse.id, '', 5)).rejects.toThrow('Discipline must be a non-empty string');
 
-      await expect(updateDisciplineScore(horse.id, null, 5)).rejects.toThrow(
-        'Discipline must be a non-empty string',
-      );
+      await expect(updateDisciplineScore(horse.id, null, 5)).rejects.toThrow('Discipline must be a non-empty string');
     });
 
     it('should throw error for invalid points', async () => {

@@ -224,9 +224,7 @@ describe('Trait Routes Integration Tests', () => {
 
   describe('GET /api/traits/discovery-status/:horseId', () => {
     it('should get discovery status successfully', async () => {
-      const response = await request(app)
-        .get(`/api/traits/discovery-status/${testHorse.id}`)
-        .expect(200);
+      const response = await request(app).get(`/api/traits/discovery-status/${testHorse.id}`).expect(200);
 
       expect(response.body.success).toBe(true);
       expect(response.body.data).toHaveProperty('horseId', testHorse.id);

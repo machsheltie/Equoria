@@ -153,10 +153,7 @@ describe('Groom Age Restrictions & Task Eligibility', () => {
       const almostThreeYears = { id: 11, age: 1094, bondScore: 55 };
 
       // Should be eligible for foal enrichment tasks
-      const foalTaskResult = await validateGroomingEligibility(
-        almostThreeYears,
-        'play_interaction',
-      );
+      const foalTaskResult = await validateGroomingEligibility(almostThreeYears, 'play_interaction');
       expect(foalTaskResult.eligible).toBe(true);
     });
   });

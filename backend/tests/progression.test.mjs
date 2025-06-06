@@ -103,17 +103,13 @@ describe('📈 UNIT: Progression Controller - User XP & Level Management', () =>
       db.getUserById.mockImplementation(() => {
         throw new Error('Progress fetch failed: User not found.');
       });
-      await expect(getUserProgress('no_user')).rejects.toThrow(
-        'Progress fetch failed: User not found.',
-      );
+      await expect(getUserProgress('no_user')).rejects.toThrow('Progress fetch failed: User not found.');
     });
   });
 
   describe('Edge Cases and Error Handling', () => {
     test('should handle negative XP amounts in addXpToUser', async () => {
-      await expect(addXpToUser('user8', -5)).rejects.toThrow(
-        'XP amount must be a positive number.',
-      );
+      await expect(addXpToUser('user8', -5)).rejects.toThrow('XP amount must be a positive number.');
     });
 
     test('should handle zero XP amounts in addXpToUser', async () => {
@@ -134,15 +130,11 @@ describe('📈 UNIT: Progression Controller - User XP & Level Management', () =>
     });
 
     test('should handle invalid (empty string) user ID in getUserProgress', async () => {
-      await expect(getUserProgress('')).rejects.toThrow(
-        'Progress fetch failed: Lookup failed: User ID is required.',
-      );
+      await expect(getUserProgress('')).rejects.toThrow('Progress fetch failed: Lookup failed: User ID is required.');
     });
 
     test('should handle null user ID in getUserProgress', async () => {
-      await expect(getUserProgress(null)).rejects.toThrow(
-        'Progress fetch failed: Lookup failed: User ID is required.',
-      );
+      await expect(getUserProgress(null)).rejects.toThrow('Progress fetch failed: Lookup failed: User ID is required.');
     });
   });
 

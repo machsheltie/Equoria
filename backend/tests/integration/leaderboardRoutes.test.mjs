@@ -111,11 +111,7 @@ describe('🏆 INTEGRATION: Leaderboard API - Real Database Integration', () => 
     testUser = testUsers[0];
 
     // Generate auth token for test user
-    testToken = jwt.sign(
-      { id: testUser.id, email: testUser.email },
-      config.jwtSecret,
-      { expiresIn: '1h' }
-    );
+    testToken = jwt.sign({ id: testUser.id, email: testUser.email }, config.jwtSecret, { expiresIn: '1h' });
 
     // Create test horses with varying earnings
     testHorses = await Promise.all([
@@ -224,7 +220,7 @@ describe('🏆 INTEGRATION: Leaderboard API - Real Database Integration', () => 
       expect(response.body.data.rankings).toHaveLength(3);
 
       // Verify proper sorting (level desc, then xp desc)
-      const rankings = response.body.data.rankings;
+      const { rankings } = response.body.data;
       expect(rankings[0].name).toBe('Top Player 1');
       expect(rankings[0].level).toBe(15);
       expect(rankings[1].name).toBe('Top Player 2');
@@ -255,7 +251,7 @@ describe('🏆 INTEGRATION: Leaderboard API - Real Database Integration', () => 
       expect(response.body.data.rankings).toHaveLength(3);
 
       // Verify proper sorting by earnings (desc)
-      const rankings = response.body.data.rankings;
+      const { rankings } = response.body.data;
       expect(rankings[0].name).toBe('TestLeaderboard Champion');
       expect(rankings[0].earnings).toBe(45000);
       expect(rankings[1].name).toBe('TestLeaderboard Silver Star');
@@ -281,7 +277,7 @@ describe('🏆 INTEGRATION: Leaderboard API - Real Database Integration', () => 
       expect(response.body.data.winners).toHaveLength(3);
 
       // Verify proper sorting by date (most recent first)
-      const winners = response.body.data.winners;
+      const { winners } = response.body.data;
       expect(winners[0].horse.name).toBe('TestLeaderboard Champion');
       expect(winners[0].competition.discipline).toBe('Dressage');
       expect(winners[0].competition.showName).toBe('Grand Prix Classic');

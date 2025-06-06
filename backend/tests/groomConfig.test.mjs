@@ -24,21 +24,13 @@
  */
 
 import { describe, it, expect } from '@jest/globals';
-import {
-  GROOM_CONFIG,
-  ELIGIBLE_FOAL_ENRICHMENT_TASKS,
-  FOAL_GROOMING_TASKS,
-} from '../config/groomConfig.mjs';
+import { GROOM_CONFIG, ELIGIBLE_FOAL_ENRICHMENT_TASKS, FOAL_GROOMING_TASKS } from '../config/groomConfig.mjs';
 
 describe('Groom Configuration', () => {
   describe('Foal Task Categories', () => {
     describe('Enrichment Tasks (0-2 years)', () => {
       it('should define correct enrichment tasks for early development', () => {
-        expect(ELIGIBLE_FOAL_ENRICHMENT_TASKS).toEqual([
-          'desensitization',
-          'trust_building',
-          'showground_exposure',
-        ]);
+        expect(ELIGIBLE_FOAL_ENRICHMENT_TASKS).toEqual(['desensitization', 'trust_building', 'showground_exposure']);
       });
 
       it('should have exactly 3 enrichment tasks', () => {
@@ -152,9 +144,7 @@ describe('Groom Configuration', () => {
 
       // Ages 1, 2, 3 should be eligible for grooming
       for (let age = 1; age <= 3; age++) {
-        expect(
-          age >= GROOM_CONFIG.FOAL_GROOMING_MIN_AGE && age <= GROOM_CONFIG.FOAL_GROOMING_MAX_AGE,
-        ).toBe(true);
+        expect(age >= GROOM_CONFIG.FOAL_GROOMING_MIN_AGE && age <= GROOM_CONFIG.FOAL_GROOMING_MAX_AGE).toBe(true);
       }
 
       // Age 4+ should not be eligible for foal grooming
@@ -177,8 +167,7 @@ describe('Groom Configuration', () => {
       // Ages 1 and 2 should be eligible for BOTH enrichment and grooming
       for (let age = 1; age <= 2; age++) {
         const canEnrichment = age <= GROOM_CONFIG.FOAL_ENRICHMENT_MAX_AGE;
-        const canGrooming =
-          age >= GROOM_CONFIG.FOAL_GROOMING_MIN_AGE && age <= GROOM_CONFIG.FOAL_GROOMING_MAX_AGE;
+        const canGrooming = age >= GROOM_CONFIG.FOAL_GROOMING_MIN_AGE && age <= GROOM_CONFIG.FOAL_GROOMING_MAX_AGE;
 
         expect(canEnrichment && canGrooming).toBe(true);
       }

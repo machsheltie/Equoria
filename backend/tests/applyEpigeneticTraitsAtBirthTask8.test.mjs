@@ -111,9 +111,7 @@ describe('🧬 UNIT: Apply Epigenetic Traits At Birth Task 8 - Deterministic Bre
       const result = await applyEpigeneticTraitsAtBirth(breedingData);
 
       expect(result.traits.positive).toContain('hardy');
-      expect(mockLogger.info).toHaveBeenCalledWith(
-        expect.stringContaining('Applied positive trait: hardy'),
-      );
+      expect(mockLogger.info).toHaveBeenCalledWith(expect.stringContaining('Applied positive trait: hardy'));
     });
 
     it('should produce well_bred trait with optimal conditions and no inbreeding', async () => {
@@ -212,19 +210,13 @@ describe('🧬 UNIT: Apply Epigenetic Traits At Birth Task 8 - Deterministic Bre
         // First call: get sire (id: 1) for sire lineage
         .mockResolvedValueOnce([{ id: 1, name: 'Sire', sireId: 100, damId: 101 }])
         // Second call: get sire's parents
-        .mockResolvedValueOnce([
-          commonAncestor,
-          { id: 101, name: 'SireGrandma', sireId: null, damId: null },
-        ])
+        .mockResolvedValueOnce([commonAncestor, { id: 101, name: 'SireGrandma', sireId: null, damId: null }])
         // Third call: no further sire ancestors
         .mockResolvedValueOnce([])
         // Fourth call: get dam (id: 2) for dam lineage
         .mockResolvedValueOnce([{ id: 2, name: 'Dam', sireId: 100, damId: 102 }])
         // Fifth call: get dam's parents (includes same common ancestor)
-        .mockResolvedValueOnce([
-          commonAncestor,
-          { id: 102, name: 'DamGrandma', sireId: null, damId: null },
-        ])
+        .mockResolvedValueOnce([commonAncestor, { id: 102, name: 'DamGrandma', sireId: null, damId: null }])
         // Sixth call: no further dam ancestors
         .mockResolvedValueOnce([])
         // Seventh call: for lineage analysis - get both parents
@@ -233,11 +225,7 @@ describe('🧬 UNIT: Apply Epigenetic Traits At Birth Task 8 - Deterministic Bre
           { id: 2, name: 'Dam', sireId: 100, damId: 102 },
         ])
         // Eighth call: get all ancestors for lineage analysis
-        .mockResolvedValueOnce([
-          commonAncestor,
-          { id: 101, name: 'SireGrandma' },
-          { id: 102, name: 'DamGrandma' },
-        ])
+        .mockResolvedValueOnce([commonAncestor, { id: 101, name: 'SireGrandma' }, { id: 102, name: 'DamGrandma' }])
         // Ninth call: no further ancestors
         .mockResolvedValueOnce([]);
 
@@ -437,10 +425,7 @@ describe('🧬 UNIT: Apply Epigenetic Traits At Birth Task 8 - Deterministic Bre
     });
 
     it('should handle no competition history gracefully', async () => {
-      mockPrisma.horse.findMany
-        .mockResolvedValueOnce([])
-        .mockResolvedValueOnce([])
-        .mockResolvedValueOnce([]);
+      mockPrisma.horse.findMany.mockResolvedValueOnce([]).mockResolvedValueOnce([]).mockResolvedValueOnce([]);
 
       mockPrisma.competitionResult.findMany.mockResolvedValue([]);
 
@@ -550,17 +535,13 @@ describe('🧬 UNIT: Apply Epigenetic Traits At Birth Task 8 - Deterministic Bre
     it('should throw error when sireId is missing', async () => {
       const breedingData = { damId: 2 };
 
-      await expect(applyEpigeneticTraitsAtBirth(breedingData)).rejects.toThrow(
-        'Both sireId and damId are required',
-      );
+      await expect(applyEpigeneticTraitsAtBirth(breedingData)).rejects.toThrow('Both sireId and damId are required');
     });
 
     it('should throw error when damId is missing', async () => {
       const breedingData = { sireId: 1 };
 
-      await expect(applyEpigeneticTraitsAtBirth(breedingData)).rejects.toThrow(
-        'Both sireId and damId are required',
-      );
+      await expect(applyEpigeneticTraitsAtBirth(breedingData)).rejects.toThrow('Both sireId and damId are required');
     });
 
     it('should throw error when mare is not found', async () => {
@@ -571,9 +552,7 @@ describe('🧬 UNIT: Apply Epigenetic Traits At Birth Task 8 - Deterministic Bre
         damId: 999,
       };
 
-      await expect(applyEpigeneticTraitsAtBirth(breedingData)).rejects.toThrow(
-        'Mare with ID 999 not found',
-      );
+      await expect(applyEpigeneticTraitsAtBirth(breedingData)).rejects.toThrow('Mare with ID 999 not found');
     });
 
     it('should handle database errors gracefully in lineage analysis', async () => {

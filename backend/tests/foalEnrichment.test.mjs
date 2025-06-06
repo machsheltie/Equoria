@@ -190,9 +190,7 @@ describe('🐴 UNIT: Foal Enrichment API - Early Training System Validation', ()
         'Day must be between 0 and 6',
       );
 
-      await expect(completeEnrichmentActivity(1, 7, 'Trailer Exposure')).rejects.toThrow(
-        'Day must be between 0 and 6',
-      );
+      await expect(completeEnrichmentActivity(1, 7, 'Trailer Exposure')).rejects.toThrow('Day must be between 0 and 6');
 
       await expect(completeEnrichmentActivity(1, 'invalid', 'Trailer Exposure')).rejects.toThrow(
         'Day must be between 0 and 6',
@@ -200,25 +198,17 @@ describe('🐴 UNIT: Foal Enrichment API - Early Training System Validation', ()
     });
 
     it('should validate activity is required and is a string', async () => {
-      await expect(completeEnrichmentActivity(1, 3, '')).rejects.toThrow(
-        'Activity is required and must be a string',
-      );
+      await expect(completeEnrichmentActivity(1, 3, '')).rejects.toThrow('Activity is required and must be a string');
 
-      await expect(completeEnrichmentActivity(1, 3, null)).rejects.toThrow(
-        'Activity is required and must be a string',
-      );
+      await expect(completeEnrichmentActivity(1, 3, null)).rejects.toThrow('Activity is required and must be a string');
 
-      await expect(completeEnrichmentActivity(1, 3, 123)).rejects.toThrow(
-        'Activity is required and must be a string',
-      );
+      await expect(completeEnrichmentActivity(1, 3, 123)).rejects.toThrow('Activity is required and must be a string');
     });
 
     it('should throw error if foal not found', async () => {
       mockPrisma.horse.findUnique.mockResolvedValue(null);
 
-      await expect(completeEnrichmentActivity(999, 3, 'Trailer Exposure')).rejects.toThrow(
-        'Foal not found',
-      );
+      await expect(completeEnrichmentActivity(999, 3, 'Trailer Exposure')).rejects.toThrow('Foal not found');
     });
 
     it('should throw error if horse is not a foal (age > 1)', async () => {
@@ -295,14 +285,10 @@ describe('🐴 UNIT: Foal Enrichment API - Early Training System Validation', ()
     it('should handle database errors gracefully', async () => {
       mockPrisma.horse.findUnique.mockRejectedValue(new Error('Database connection failed'));
 
-      await expect(completeEnrichmentActivity(1, 3, 'Trailer Exposure')).rejects.toThrow(
-        'Database connection failed',
-      );
+      await expect(completeEnrichmentActivity(1, 3, 'Trailer Exposure')).rejects.toThrow('Database connection failed');
 
       expect(mockLogger.error).toHaveBeenCalledWith(
-        expect.stringContaining(
-          '[foalModel.completeEnrichmentActivity] Error: Database connection failed',
-        ),
+        expect.stringContaining('[foalModel.completeEnrichmentActivity] Error: Database connection failed'),
       );
     });
 
@@ -315,12 +301,7 @@ describe('🐴 UNIT: Foal Enrichment API - Early Training System Validation', ()
       });
       mockPrisma.foalTrainingHistory.create.mockResolvedValue(mockTrainingRecord);
 
-      const day3Activities = [
-        'Halter Introduction',
-        'Leading Practice',
-        'Handling Exercises',
-        'Trailer Exposure',
-      ];
+      const day3Activities = ['Halter Introduction', 'Leading Practice', 'Handling Exercises', 'Trailer Exposure'];
 
       for (const activity of day3Activities) {
         const result = await completeEnrichmentActivity(1, 3, activity);

@@ -236,10 +236,7 @@ describe('🧬 UNIT: At-Birth Traits System - Comprehensive Breeding Analysis Te
         { id: 6, name: 'Dam2', sireId: null, damId: null },
       ];
 
-      mockPrisma.horse.findMany
-        .mockResolvedValueOnce(horses)
-        .mockResolvedValueOnce(parents)
-        .mockResolvedValueOnce([]); // No further ancestors
+      mockPrisma.horse.findMany.mockResolvedValueOnce(horses).mockResolvedValueOnce(parents).mockResolvedValueOnce([]); // No further ancestors
 
       const ancestors = await getAncestors([1, 2], 1);
 
@@ -282,16 +279,10 @@ describe('🧬 UNIT: At-Birth Traits System - Comprehensive Breeding Analysis Te
       // Mock the recursive calls for getAncestors
       mockPrisma.horse.findMany
         .mockResolvedValueOnce([{ id: 1, name: 'Sire', sireId: 100, damId: 11 }]) // Sire's immediate parents
-        .mockResolvedValueOnce([
-          commonAncestor,
-          { id: 11, name: 'SireGrandma', sireId: null, damId: null },
-        ]) // Sire's ancestors
+        .mockResolvedValueOnce([commonAncestor, { id: 11, name: 'SireGrandma', sireId: null, damId: null }]) // Sire's ancestors
         .mockResolvedValueOnce([]) // No further sire ancestors
         .mockResolvedValueOnce([{ id: 2, name: 'Dam', sireId: 100, damId: 21 }]) // Dam's immediate parents
-        .mockResolvedValueOnce([
-          commonAncestor,
-          { id: 21, name: 'DamGrandma', sireId: null, damId: null },
-        ]) // Dam's ancestors
+        .mockResolvedValueOnce([commonAncestor, { id: 21, name: 'DamGrandma', sireId: null, damId: null }]) // Dam's ancestors
         .mockResolvedValueOnce([]); // No further dam ancestors
 
       const result = await detectInbreeding(1, 2);
@@ -335,10 +326,7 @@ describe('🧬 UNIT: At-Birth Traits System - Comprehensive Breeding Analysis Te
     });
 
     it('should handle no competition history', async () => {
-      mockPrisma.horse.findMany
-        .mockResolvedValueOnce([])
-        .mockResolvedValueOnce([])
-        .mockResolvedValueOnce([]);
+      mockPrisma.horse.findMany.mockResolvedValueOnce([]).mockResolvedValueOnce([]).mockResolvedValueOnce([]);
 
       mockPrisma.competitionResult.findMany.mockResolvedValue([]);
 
@@ -448,9 +436,7 @@ describe('🧬 UNIT: At-Birth Traits System - Comprehensive Breeding Analysis Te
       };
 
       expect(evaluateTraitConditions(inbredTraitConditions, conditionsWithInbreeding)).toBe(true);
-      expect(evaluateTraitConditions(inbredTraitConditions, conditionsWithoutInbreeding)).toBe(
-        false,
-      );
+      expect(evaluateTraitConditions(inbredTraitConditions, conditionsWithoutInbreeding)).toBe(false);
     });
 
     it('should apply specialized lineage trait when discipline specialization detected', async () => {
@@ -491,18 +477,12 @@ describe('🧬 UNIT: At-Birth Traits System - Comprehensive Breeding Analysis Te
         damId: 999,
       };
 
-      await expect(applyEpigeneticTraitsAtBirth(breedingData)).rejects.toThrow(
-        'Mare with ID 999 not found',
-      );
+      await expect(applyEpigeneticTraitsAtBirth(breedingData)).rejects.toThrow('Mare with ID 999 not found');
     });
 
     it('should require both sire and dam IDs', async () => {
-      await expect(applyEpigeneticTraitsAtBirth({ sireId: 1 })).rejects.toThrow(
-        'Both sireId and damId are required',
-      );
-      await expect(applyEpigeneticTraitsAtBirth({ damId: 2 })).rejects.toThrow(
-        'Both sireId and damId are required',
-      );
+      await expect(applyEpigeneticTraitsAtBirth({ sireId: 1 })).rejects.toThrow('Both sireId and damId are required');
+      await expect(applyEpigeneticTraitsAtBirth({ damId: 2 })).rejects.toThrow('Both sireId and damId are required');
     });
 
     it('should use mare stress level from database when not provided', async () => {

@@ -62,9 +62,7 @@ describe('🏆 UNIT: Horse Eligibility - Competition Entry Validation', () => {
     });
 
     it('should throw error for undefined horse', () => {
-      expect(() => isHorseEligibleForShow(undefined, validShow)).toThrow(
-        'Horse object is required',
-      );
+      expect(() => isHorseEligibleForShow(undefined, validShow)).toThrow('Horse object is required');
     });
 
     it('should throw error for null show', () => {
@@ -82,9 +80,7 @@ describe('🏆 UNIT: Horse Eligibility - Competition Entry Validation', () => {
     });
 
     it('should throw error for null previousEntries', () => {
-      expect(() => isHorseEligibleForShow(validHorse, validShow, null)).toThrow(
-        'previousEntries must be an array',
-      );
+      expect(() => isHorseEligibleForShow(validHorse, validShow, null)).toThrow('previousEntries must be an array');
     });
   });
 

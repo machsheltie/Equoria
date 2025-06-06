@@ -613,9 +613,7 @@ describe('🏆 UNIT: Leaderboard Controller - Ranking & Statistics APIs', () => 
       const req = {};
       const res = { json: jest.fn() };
 
-      const mockEarningsData = [
-        { userId: 1, _sum: { total_earnings: 20000 }, user: { name: 'Alice' } },
-      ];
+      const mockEarningsData = [{ userId: 1, _sum: { total_earnings: 20000 }, user: { name: 'Alice' } }];
 
       mockPrisma.horse.groupBy.mockResolvedValue(mockEarningsData);
 

@@ -166,9 +166,7 @@ describe('🏋️ UNIT: Training Controller - Horse Training Business Logic', ()
     });
 
     it('should throw error for invalid horse ID', async () => {
-      await expect(canTrain('invalid', 'Dressage')).rejects.toThrow(
-        'Horse ID must be a positive integer',
-      );
+      await expect(canTrain('invalid', 'Dressage')).rejects.toThrow('Horse ID must be a positive integer');
     });
 
     it('should throw error for missing discipline', async () => {
@@ -314,9 +312,7 @@ describe('🏋️ UNIT: Training Controller - Horse Training Business Logic', ()
       });
       mockLogTrainingSession.mockRejectedValue(new Error('Failed to log training'));
 
-      await expect(trainHorse(1, 'Racing')).rejects.toThrow(
-        'Training failed: Failed to log training',
-      );
+      await expect(trainHorse(1, 'Racing')).rejects.toThrow('Training failed: Failed to log training');
     });
 
     it('should award +5 XP and call levelUpIfNeeded after successful training', async () => {

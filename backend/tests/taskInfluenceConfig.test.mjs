@@ -152,9 +152,7 @@ describe('Task Influence Configuration', () => {
     });
 
     it('should have consistent daily values', () => {
-      const dailyValues = Object.values(TASK_TRAIT_INFLUENCE_MAP).map(
-        influence => influence.dailyValue,
-      );
+      const dailyValues = Object.values(TASK_TRAIT_INFLUENCE_MAP).map(influence => influence.dailyValue);
 
       // All daily values should be the same for consistency
       const uniqueValues = [...new Set(dailyValues)];

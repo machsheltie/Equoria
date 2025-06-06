@@ -196,21 +196,14 @@ describe('🏆 UNIT: Discipline Affinity Trait Bonus - Competition Score Enhance
   describe('Multiple Discipline Affinity Traits', () => {
     it('should only apply one +5 bonus even with multiple discipline affinity traits', () => {
       const horseWithMultipleAffinities = createTestHorse(1, 'MultiSpecialist', {
-        positive: [
-          'discipline_affinity_racing',
-          'discipline_affinity_dressage',
-          'discipline_affinity_show_jumping',
-        ],
+        positive: ['discipline_affinity_racing', 'discipline_affinity_dressage', 'discipline_affinity_show_jumping'],
       });
       const horseWithSingleAffinity = createTestHorse(2, 'SingleSpecialist', {
         positive: ['discipline_affinity_racing'],
       });
 
       const show = createTestShow('Racing');
-      const results = simulateCompetition(
-        [horseWithMultipleAffinities, horseWithSingleAffinity],
-        show,
-      );
+      const results = simulateCompetition([horseWithMultipleAffinities, horseWithSingleAffinity], show);
 
       const multiResult = results.find(r => r.horseId === 1);
       const singleResult = results.find(r => r.horseId === 2);

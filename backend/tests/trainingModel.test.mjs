@@ -96,9 +96,7 @@ describe('🏋️ UNIT: Training Model - Training Session Logging & Horse Data',
     });
 
     it('should throw error if horseId is missing', async () => {
-      await expect(logTrainingSession({ discipline: 'Racing' })).rejects.toThrow(
-        'Horse ID is required',
-      );
+      await expect(logTrainingSession({ discipline: 'Racing' })).rejects.toThrow('Horse ID is required');
     });
 
     it('should throw error if discipline is missing', async () => {
@@ -114,9 +112,9 @@ describe('🏋️ UNIT: Training Model - Training Session Logging & Horse Data',
         'Horse ID must be a positive integer',
       );
 
-      await expect(
-        logTrainingSession({ horseId: 'invalid', discipline: 'Racing' }),
-      ).rejects.toThrow('Horse ID must be a positive integer');
+      await expect(logTrainingSession({ horseId: 'invalid', discipline: 'Racing' })).rejects.toThrow(
+        'Horse ID must be a positive integer',
+      );
     });
 
     it('should handle database errors gracefully', async () => {
@@ -158,17 +156,11 @@ describe('🏋️ UNIT: Training Model - Training Session Logging & Horse Data',
     });
 
     it('should throw error if horseId is not a positive integer', async () => {
-      await expect(getLastTrainingDate(-1, 'Racing')).rejects.toThrow(
-        'Horse ID must be a positive integer',
-      );
+      await expect(getLastTrainingDate(-1, 'Racing')).rejects.toThrow('Horse ID must be a positive integer');
 
-      await expect(getLastTrainingDate(0, 'Racing')).rejects.toThrow(
-        'Horse ID must be a positive integer',
-      );
+      await expect(getLastTrainingDate(0, 'Racing')).rejects.toThrow('Horse ID must be a positive integer');
 
-      await expect(getLastTrainingDate('invalid', 'Racing')).rejects.toThrow(
-        'Horse ID must be a positive integer',
-      );
+      await expect(getLastTrainingDate('invalid', 'Racing')).rejects.toThrow('Horse ID must be a positive integer');
     });
 
     it('should throw error if discipline is missing', async () => {
@@ -180,9 +172,7 @@ describe('🏋️ UNIT: Training Model - Training Session Logging & Horse Data',
     it('should handle database errors gracefully', async () => {
       mockTrainingLogFindFirst.mockRejectedValue(new Error('Database connection failed'));
 
-      await expect(getLastTrainingDate(5, 'Racing')).rejects.toThrow(
-        'Database error: Database connection failed',
-      );
+      await expect(getLastTrainingDate(5, 'Racing')).rejects.toThrow('Database error: Database connection failed');
     });
   });
 

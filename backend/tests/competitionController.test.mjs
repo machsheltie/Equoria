@@ -71,9 +71,7 @@ let enterAndRunShow;
 
 beforeEach(async () => {
   const { addXpToUser: importedAddXpToUser } = await import('../models/userModel.mjs');
-  const { enterAndRunShow: importedEnterAndRunShow } = await import(
-    '../controllers/competitionController.mjs'
-  );
+  const { enterAndRunShow: importedEnterAndRunShow } = await import('../controllers/competitionController.mjs');
   addXpToUser = importedAddXpToUser;
   enterAndRunShow = importedEnterAndRunShow;
 });
@@ -175,9 +173,7 @@ describe('🏆 UNIT: Competition Controller - Show Entry & Execution', () => {
         }),
       }));
 
-      const { enterAndRunShow: updatedEnterAndRunShow } = await import(
-        '../controllers/competitionController.js'
-      );
+      const { enterAndRunShow: updatedEnterAndRunShow } = await import('../controllers/competitionController.js');
       enterAndRunShow = updatedEnterAndRunShow;
 
       const horseIds = ['h1', 'h2', 'h3', 'h4', 'h5'];

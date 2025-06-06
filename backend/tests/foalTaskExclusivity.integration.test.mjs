@@ -34,11 +34,7 @@ describe('Foal Task Exclusivity Integration', () => {
   describe('Configuration Integration', () => {
     it('should have correct task categories defined', () => {
       // Verify enrichment tasks
-      expect(ELIGIBLE_FOAL_ENRICHMENT_TASKS).toEqual([
-        'desensitization',
-        'trust_building',
-        'showground_exposure',
-      ]);
+      expect(ELIGIBLE_FOAL_ENRICHMENT_TASKS).toEqual(['desensitization', 'trust_building', 'showground_exposure']);
 
       // Verify grooming tasks
       expect(FOAL_GROOMING_TASKS).toEqual([

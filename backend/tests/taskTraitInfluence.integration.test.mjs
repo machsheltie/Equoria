@@ -230,9 +230,7 @@ describe('Task-Trait Influence Integration', () => {
 
   describe('Business Rule Validation', () => {
     it('should enforce consistent daily values across all tasks', () => {
-      const dailyValues = Object.values(TASK_TRAIT_INFLUENCE_MAP).map(
-        influence => influence.dailyValue,
-      );
+      const dailyValues = Object.values(TASK_TRAIT_INFLUENCE_MAP).map(influence => influence.dailyValue);
       const uniqueValues = [...new Set(dailyValues)];
 
       expect(uniqueValues).toHaveLength(1);
@@ -282,9 +280,7 @@ describe('Task-Trait Influence Integration', () => {
       expect(enrichmentInfluences).toContain('crowd_ready');
 
       // Grooming tasks (1-3 years) should focus on handling and presentation
-      const groomingInfluences = FOAL_GROOMING_TASKS.map(
-        task => TASK_TRAIT_INFLUENCE_MAP[task].traits,
-      ).flat();
+      const groomingInfluences = FOAL_GROOMING_TASKS.map(task => TASK_TRAIT_INFLUENCE_MAP[task].traits).flat();
 
       expect(groomingInfluences).toContain('calm');
       expect(groomingInfluences).toContain('show_calm');

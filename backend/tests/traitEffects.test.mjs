@@ -43,8 +43,9 @@ const __filename = fileURLToPath(import.meta.url);
 const __dirname = dirname(__filename);
 
 // Import the trait effects system
-const { getTraitEffects, getAllTraitEffects, hasTraitEffect, getCombinedTraitEffects } =
-  await import(join(__dirname, '../utils/traitEffects.js'));
+const { getTraitEffects, getAllTraitEffects, hasTraitEffect, getCombinedTraitEffects } = await import(
+  join(__dirname, '../utils/traitEffects.js')
+);
 
 describe('🎭 UNIT: Trait Effects System - Trait Impact Calculation & Combination', () => {
   describe('getTraitEffects', () => {

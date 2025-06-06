@@ -241,8 +241,12 @@ export async function getHorseXpHistory(horseId, options = {}) {
     const where = { horseId };
     if (startDate || endDate) {
       where.timestamp = {};
-      if (startDate) where.timestamp.gte = startDate;
-      if (endDate) where.timestamp.lte = endDate;
+      if (startDate) {
+        where.timestamp.gte = startDate;
+      }
+      if (endDate) {
+        where.timestamp.lte = endDate;
+      }
     }
 
     const events = await prisma.horseXpEvent.findMany({

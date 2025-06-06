@@ -152,9 +152,7 @@ describe('Trait Discovery API Integration Tests', () => {
 
   describe('POST /api/traits/discover/:foalId', () => {
     it('should discover traits for foal with high bonding', async () => {
-      const response = await request(app)
-        .post(`/api/traits/discover/${testFoals[0].id}`)
-        .expect(200);
+      const response = await request(app).post(`/api/traits/discover/${testFoals[0].id}`).expect(200);
 
       expect(response.body.success).toBe(true);
       expect(response.body.data).toHaveProperty('foalId', testFoals[0].id);
@@ -176,9 +174,7 @@ describe('Trait Discovery API Integration Tests', () => {
     });
 
     it('should handle foal with no discoverable traits', async () => {
-      const response = await request(app)
-        .post(`/api/traits/discover/${testFoals[1].id}`)
-        .expect(200);
+      const response = await request(app).post(`/api/traits/discover/${testFoals[1].id}`).expect(200);
 
       expect(response.body.success).toBe(true);
       expect(response.body.data).toHaveProperty('foalId', testFoals[1].id);
@@ -189,9 +185,7 @@ describe('Trait Discovery API Integration Tests', () => {
     });
 
     it('should return 400 for non-foal horse', async () => {
-      const response = await request(app)
-        .post(`/api/traits/discover/${testFoals[2].id}`)
-        .expect(400);
+      const response = await request(app).post(`/api/traits/discover/${testFoals[2].id}`).expect(400);
 
       expect(response.body.success).toBe(false);
       expect(response.body.message).toContain('not a foal');
@@ -214,9 +208,7 @@ describe('Trait Discovery API Integration Tests', () => {
 
   describe('GET /api/traits/progress/:foalId', () => {
     it('should return discovery progress for foal', async () => {
-      const response = await request(app)
-        .get(`/api/traits/progress/${testFoals[0].id}`)
-        .expect(200);
+      const response = await request(app).get(`/api/traits/progress/${testFoals[0].id}`).expect(200);
 
       expect(response.body.success).toBe(true);
       expect(response.body.data).toHaveProperty('foalId', testFoals[0].id);
@@ -347,9 +339,7 @@ describe('Trait Discovery API Integration Tests', () => {
 
   describe('POST /api/traits/check-conditions/:foalId', () => {
     it('should check conditions without triggering discovery', async () => {
-      const response = await request(app)
-        .post(`/api/traits/check-conditions/${testFoals[0].id}`)
-        .expect(200);
+      const response = await request(app).post(`/api/traits/check-conditions/${testFoals[0].id}`).expect(200);
 
       expect(response.body.success).toBe(true);
       expect(response.body.data).toHaveProperty('foalId', testFoals[0].id);
@@ -445,17 +435,13 @@ describe('Trait Discovery API Integration Tests', () => {
       expect(initialHiddenCount).toBeGreaterThan(0);
 
       // 2. Check conditions without discovery
-      const conditionsResponse = await request(app)
-        .post(`/api/traits/check-conditions/${foalId}`)
-        .expect(200);
+      const conditionsResponse = await request(app).post(`/api/traits/check-conditions/${foalId}`).expect(200);
 
       const metConditions = conditionsResponse.body.data.conditions.filter(c => c.met);
       expect(metConditions.length).toBeGreaterThan(0);
 
       // 3. Trigger discovery
-      const discoveryResponse = await request(app)
-        .post(`/api/traits/discover/${foalId}`)
-        .expect(200);
+      const discoveryResponse = await request(app).post(`/api/traits/discover/${foalId}`).expect(200);
 
       // 4. Verify traits were revealed if conditions were met
       if (metConditions.length > 0) {
@@ -470,14 +456,10 @@ describe('Trait Discovery API Integration Tests', () => {
       }
 
       // 5. Check progress again to see changes
-      const finalProgressResponse = await request(app)
-        .get(`/api/traits/progress/${foalId}`)
-        .expect(200);
+      const finalProgressResponse = await request(app).get(`/api/traits/progress/${foalId}`).expect(200);
 
       // Hidden count should be same or less than initial
-      expect(finalProgressResponse.body.data.hiddenTraitsCount).toBeLessThanOrEqual(
-        initialHiddenCount,
-      );
+      expect(finalProgressResponse.body.data.hiddenTraitsCount).toBeLessThanOrEqual(initialHiddenCount);
     });
   });
 });

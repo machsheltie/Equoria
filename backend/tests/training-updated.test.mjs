@@ -103,13 +103,10 @@ describe('🏋️ INTEGRATION: Training System Updated - User Model Integration'
       // Try to train a horse that should be eligible
       const firstHorse = trainableResponse.body.data[0];
 
-      const response = await request(app)
-        .post('/api/training/train')
-        .set('Authorization', `Bearer ${authToken}`)
-        .send({
-          horseId: firstHorse.horseId,
-          discipline: 'Racing',
-        });
+      const response = await request(app).post('/api/training/train').set('Authorization', `Bearer ${authToken}`).send({
+        horseId: firstHorse.horseId,
+        discipline: 'Racing',
+      });
 
       // This should either succeed (if horse is eligible) or fail with a specific reason
       expect(response.status).toBeOneOf([200, 400]);
@@ -142,13 +139,10 @@ describe('🏋️ INTEGRATION: Training System Updated - User Model Integration'
         return;
       }
 
-      const response = await request(app)
-        .post('/api/training/train')
-        .set('Authorization', `Bearer ${authToken}`)
-        .send({
-          horseId: adultHorse.horseId,
-          discipline: 'Racing',
-        });
+      const response = await request(app).post('/api/training/train').set('Authorization', `Bearer ${authToken}`).send({
+        horseId: adultHorse.horseId,
+        discipline: 'Racing',
+      });
 
       expect(response.status).toBe(200);
       expect(response.body.success).toBe(true);
@@ -211,13 +205,10 @@ describe('🏋️ INTEGRATION: Training System Updated - User Model Integration'
 
   describe('Error Handling Tests', () => {
     it('should handle invalid horse ID gracefully', async () => {
-      const response = await request(app)
-        .post('/api/training/train')
-        .set('Authorization', `Bearer ${authToken}`)
-        .send({
-          horseId: 99999, // Non-existent horse
-          discipline: 'Racing',
-        });
+      const response = await request(app).post('/api/training/train').set('Authorization', `Bearer ${authToken}`).send({
+        horseId: 99999, // Non-existent horse
+        discipline: 'Racing',
+      });
 
       expect(response.status).toBe(400);
       expect(response.body.success).toBe(false);
@@ -225,13 +216,10 @@ describe('🏋️ INTEGRATION: Training System Updated - User Model Integration'
     });
 
     it('should handle invalid discipline gracefully', async () => {
-      const response = await request(app)
-        .post('/api/training/train')
-        .set('Authorization', `Bearer ${authToken}`)
-        .send({
-          horseId: 1,
-          discipline: 'InvalidDiscipline',
-        });
+      const response = await request(app).post('/api/training/train').set('Authorization', `Bearer ${authToken}`).send({
+        horseId: 1,
+        discipline: 'InvalidDiscipline',
+      });
 
       expect(response.status).toBe(400);
       expect(response.body.success).toBe(false);

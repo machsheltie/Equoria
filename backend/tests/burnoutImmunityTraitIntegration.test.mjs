@@ -54,9 +54,7 @@ const {
   updateStreakTracking: _updateStreakTracking,
 } = await import(join(__dirname, '../utils/groomBondingSystem.mjs'));
 
-const { evaluateEpigeneticTagsFromFoalTasks } = await import(
-  join(__dirname, '../utils/traitEvaluation.mjs')
-);
+const { evaluateEpigeneticTagsFromFoalTasks } = await import(join(__dirname, '../utils/traitEvaluation.mjs'));
 
 const { getTraitMetadata } = await import(join(__dirname, '../utils/epigeneticTraits.mjs'));
 

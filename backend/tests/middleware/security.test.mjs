@@ -1,11 +1,6 @@
 import request from 'supertest';
 import express from 'express';
-import {
-  corsOptions,
-  createRateLimiter,
-  helmetConfig,
-  createSecurityMiddleware,
-} from '../../middleware/security.mjs';
+import { corsOptions, createRateLimiter, helmetConfig, createSecurityMiddleware } from '../../middleware/security.mjs';
 
 // Simple mock for logger
 const _mockLogger = {

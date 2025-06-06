@@ -1,211 +1,149 @@
-# Equoria Project Architecture
+/**
+ * 🔍 Database Verification Script for Equoria Backend
+ *
+ * This script verifies the test database connection and schema integrity.
+ * It checks that all required tables exist and have the expected structure
+ * for running the comprehensive test suite.
+ *
+ * Usage: node verify-test-db.mjs
+ */
 
-## Overview
-- **Frontend**: React Native with Expo for iOS and Android, JavaScript ES6+ with JSX, Tailwind CSS via NativeWind, modern component architecture
-- **Backend**: Node.js with Express.js, layered architecture with controllers, models, services, and utilities
-- **Database**: PostgreSQL with Prisma ORM, extensive JSONB usage for flexible game data storage
-- **Authentication**: JWT-based authentication with refresh tokens, role-based access control
-- **API**: RESTful endpoints under `/api/` with comprehensive validation and error handling
+import { PrismaClient } from '@prisma/client';
+import logger from './utils/logger.mjs';
 
-## Project Structure
-```
-Equoria/
-├── frontend/               # React Native mobile app
-│   ├── components/        # Reusable UI components
-│   │   ├── TraitDisplay.js
-│   │   ├── FoalDevelopmentTab.js
-│   │   └── __tests__/
-│   ├── screens/           # Main app screens (planned)
-│   ├── navigation/        # Navigation structure (planned)
-│   └── App.js
-├── backend/               # Node.js/Express backend
-│   ├── controllers/       # Business logic layer
-│   │   ├── trainingController.js
-│   │   ├── competitionController.js
-│   │   └── authController.js
-│   ├── models/           # Data access layer
-│   │   ├── horseModel.js
-│   │   ├── userModel.js
-│   │   ├── trainingModel.js
-│   │   └── resultModel.js
-│   ├── routes/           # API endpoint definitions
-│   │   ├── trainingRoutes.js
-│   │   ├── competitionRoutes.js
-│   │   └── authRoutes.js
-│   ├── utils/            # Game mechanics and utilities
-│   │   ├── statMap.js
-│   │   ├── simulateCompetition.js
-│   │   ├── trainingCooldown.js
-│   │   └── isHorseEligible.js
-│   ├── middleware/       # Express middleware
-│   │   ├── auth.js
-│   │   ├── validatePing.js
-│   │   └── errorHandler.js
-│   ├── seed/            # Database seeding
-│   │   ├── horseSeed.js
-│   │   └── seedShows.js
-│   ├── config/          # Configuration management
-│   │   └── config.js
-│   ├── db/              # Database connection
-│   │   └── index.js
-│   ├── app.js           # Express application setup
-│   └── server.js        # Server initialization
-├── tests/               # Comprehensive test suite
-│   ├── unit/           # Unit tests
-│   ├── integration/    # Integration tests
-│   └── ui/            # UI component tests
-├── prisma/             # Database schema and migrations
-│   ├── schema.prisma
-│   └── migrations/
-├── .cursor/            # AI guidance and documentation
-│   ├── rules/         # Modular development rules
-│   └── docs/          # Technical documentation
-└── docs/              # Additional documentation
-```
+const prisma = new PrismaClient({
+  datasources: {
+    db: {
+      url: process.env.DATABASE_URL || 'postgresql://postgres:password@localhost:5432/equoria_test',
+    },
+  },
+});
 
-## Technology Stack
+/**
+ * Verify database connection
+ */
+async function verifyConnection() {
+  try {
+    await prisma.$connect();
+    logger.info('✅ Database connection successful');
+    return true;
+  } catch (error) {
+    logger.error('❌ Database connection failed:', error.message);
+    return false;
+  }
+}
 
-### Frontend (React Native)
-- **React Native + Expo**: Cross-platform mobile development with JavaScript ES6+
-- **Tailwind CSS**: Utility-first styling via NativeWind
-- **React Navigation**: Screen navigation and routing
-- **React Query**: Server state management (planned)
-- **Redux Toolkit**: Global state management (planned)
+/**
+ * Verify required tables exist
+ */
+async function verifyTables() {
+  const requiredTables = [
+    'User',
+    'Horse',
+    'Foal',
+    'Show',
+    'CompetitionResult',
+    'TrainingLog',
+    'Breed',
+    'FoalTaskLog',
+    'Groom',
+    'GroomAssignment',
+  ];
 
-### Backend (Node.js/Express)
-- **Express.js**: Web framework with middleware architecture
-- **Prisma ORM**: Type-safe database operations with PostgreSQL
-- **JWT**: Authentication with access/refresh token system
-- **bcrypt**: Password hashing and security
-- **express-validator**: Request validation and sanitization
-- **helmet**: Security headers and protection
-- **cors**: Cross-origin resource sharing
-- **dotenv**: Environment variable management
+  const results = [];
 
-### Database (PostgreSQL)
-- **Core Tables**: Users, Horses, Foals, Shows, Competition Results, Training Logs
-- **JSONB Fields**: Flexible storage for genetics, traits, discipline scores, settings
-- **Relationships**: Complex foreign key relationships supporting game mechanics
-- **Indexing**: Optimized for game-specific query patterns
-- **Migrations**: Prisma-managed schema evolution
+  for (const table of requiredTables) {
+    try {
+      // Try to count records in each table
+      const count = await prisma[table.toLowerCase()].count();
+      logger.info(`✅ Table ${table}: ${count} records`);
+      results.push({ table, exists: true, count });
+    } catch (error) {
+      logger.error(`❌ Table ${table}: ${error.message}`);
+      results.push({ table, exists: false, error: error.message });
+    }
+  }
 
-### Development Tools
-- **Testing**: Jest for unit/integration tests, React Native Testing Library for UI
-- **Code Quality**: ESLint + Prettier for consistent formatting
-- **Version Control**: Git with GitHub Actions for CI/CD
-- **Development**: Nodemon for auto-restart, comprehensive logging
-- **Documentation**: Comprehensive technical documentation
+  return results;
+}
 
-## Architectural Patterns
+/**
+ * Verify database schema version
+ */
+async function verifySchema() {
+  try {
+    // Check if migrations table exists and get latest migration
+    const migrations = await prisma.$queryRaw`
+      SELECT * FROM "_prisma_migrations"
+      ORDER BY finished_at DESC
+      LIMIT 1
+    `;
 
-### 1. Layered Backend Architecture
-- **Routes Layer**: API endpoint definitions with validation
-- **Controllers Layer**: Business logic and workflow orchestration
-- **Models Layer**: Data access and database operations
-- **Utils Layer**: Game mechanics, calculations, and utilities
-- **Middleware Layer**: Cross-cutting concerns (auth, validation, error handling)
+    if (migrations.length > 0) {
+      logger.info('✅ Database schema is up to date');
+      logger.info(`   Latest migration: ${migrations[0].migration_name}`);
+      return true;
+    } else {
+      logger.warn('⚠️  No migrations found - database may not be initialized');
+      return false;
+    }
+  } catch (error) {
+    logger.error('❌ Schema verification failed:', error.message);
+    return false;
+  }
+}
 
-### 2. Component-Based Frontend
-- **Reusable Components**: TraitDisplay, FoalDevelopmentTab with comprehensive testing
-- **Screen Architecture**: Planned navigation with tab-based structure
-- **State Management**: Local state with planned global state integration
-- **Accessibility**: Full screen reader support and WCAG compliance
+/**
+ * Run comprehensive database verification
+ */
+async function main() {
+  logger.info('🔍 Starting database verification...');
 
-### 3. Database Design Patterns
-- **JSONB Utilization**: Flexible schema for game data (genetics, traits, scores)
-- **Relationship Modeling**: Complex associations supporting breeding, training, competition
-- **Performance Optimization**: Strategic indexing and query optimization
-- **Data Integrity**: Comprehensive validation at multiple layers
+  const connectionOk = await verifyConnection();
+  if (!connectionOk) {
+    process.exit(1);
+  }
 
-## Game Systems Architecture
+  const schemaOk = await verifySchema();
+  const tableResults = await verifyTables();
 
-### 1. Training System
-- **Global Cooldown**: One discipline per week per horse
-- **Age Restrictions**: 3+ years minimum for training participation
-- **Progression**: +5 points per session in chosen discipline
-- **History Tracking**: Complete training logs for analytics
+  const failedTables = tableResults.filter(result => !result.exists);
 
-### 2. Competition System
-- **Eligibility Validation**: Age, level, and previous entry restrictions
-- **Realistic Scoring**: Stat-based calculations with randomization
-- **Result Tracking**: Comprehensive competition history and rankings
-- **Prize Distribution**: Economic integration with game progression
+  if (failedTables.length > 0) {
+    logger.error('❌ Database verification failed');
+    logger.error('Missing tables:', failedTables.map(t => t.table).join(', '));
+    process.exit(1);
+  }
 
-### 3. Breeding System
-- **Complex Genetics**: Multi-allele inheritance with dominant/recessive patterns
-- **Trait Discovery**: Progressive revelation through foal development
-- **Epigenetic Factors**: Environmental influences on trait expression
-- **Lineage Tracking**: Parent relationships and breeding history
+  if (!schemaOk) {
+    logger.warn('⚠️  Schema verification had issues, but tables exist');
+  }
 
-### 4. User Progression
-- **Account System**: UUID-based user accounts with settings
-- **Experience Tracking**: Level, XP, and money progression
-- **Achievement System**: Milestone tracking and rewards (planned)
-- **Social Features**: Leaderboards and competition rankings
+  logger.info('✅ Database verification completed successfully');
+  logger.info('📊 Summary:');
+  logger.info('   - Connection: OK');
+  logger.info(`   - Schema: ${schemaOk ? 'OK' : 'WARNING'}`);
+  logger.info(`   - Tables: ${tableResults.length} verified`);
 
-## Security Architecture
+  await prisma.$disconnect();
+}
 
-### 1. Authentication & Authorization
-- **JWT Implementation**: Access tokens with refresh token rotation
-- **Role-Based Access**: User, Moderator, Admin roles with permissions
-- **Password Security**: bcrypt hashing with configurable salt rounds
-- **Session Management**: Secure token storage and validation
+// Handle errors and cleanup
+process.on('unhandledRejection', async error => {
+  logger.error('Unhandled rejection:', error);
+  await prisma.$disconnect();
+  process.exit(1);
+});
 
-### 2. Data Protection
-- **Input Validation**: express-validator at API boundaries
-- **SQL Injection Prevention**: Prisma ORM parameterized queries
-- **Environment Security**: Sensitive data in environment variables
-- **HTTPS Enforcement**: Secure communication in production
+process.on('SIGINT', async () => {
+  logger.info('Received SIGINT, cleaning up...');
+  await prisma.$disconnect();
+  process.exit(0);
+});
 
-### 3. Rate Limiting & Protection
-- **API Rate Limiting**: Request throttling per endpoint
-- **Security Headers**: helmet middleware for protection
-- **CORS Configuration**: Controlled cross-origin access
-- **Error Handling**: Secure error responses without data leakage
-
-## Performance Considerations
-
-### 1. Database Performance
-- **Connection Pooling**: Optimized database connections
-- **Query Optimization**: Strategic indexing and efficient queries
-- **JSONB Indexing**: GIN indexes for flexible data queries
-- **Relationship Loading**: Selective loading of related data
-
-### 2. API Performance
-- **Response Optimization**: Minimal data transfer with selective loading
-- **Caching Strategy**: Planned implementation for frequently accessed data
-- **Pagination**: Efficient handling of large data sets
-- **Background Processing**: Planned async processing for heavy operations
-
-### 3. Mobile Performance
-- **Component Optimization**: React.memo and efficient re-rendering
-- **Asset Optimization**: Image compression and lazy loading
-- **Bundle Size**: Code splitting and tree shaking
-- **Offline Capability**: Planned offline-first features
-
-## Development Quality
-
-### 1. Testing Strategy
-- **468+ Tests**: Comprehensive test coverage across all systems
-- **TDD Approach**: Test-driven development for all features
-- **Integration Testing**: End-to-end workflow validation
-- **Performance Testing**: Load testing for critical operations
-
-### 2. Code Quality
-- **Consistent Patterns**: Standardized approaches across codebase
-- **Documentation**: Comprehensive function and API documentation
-- **Error Handling**: Graceful error management at all layers
-- **Maintainability**: Modular design for easy feature addition
-
-### 3. Deployment Ready
-- **Environment Management**: Development, testing, production isolation
-- **CI/CD Pipeline**: Automated testing and deployment
-- **Monitoring**: Comprehensive logging and error tracking
-- **Scalability**: Architecture designed for horizontal scaling
-
-## References
-- **API Documentation**: `@docs/api_specs.markdown`
-- **Database Schema**: `@docs/database-infrastructure.md`
-- **Frontend Architecture**: `@docs/frontend-architecture.md`
-- **Backend Details**: `@docs/backend-overview.md`
-- **Testing Strategy**: `@docs/testing-architecture.md`
+// Run the verification
+main().catch(async error => {
+  logger.error('Verification failed:', error);
+  await prisma.$disconnect();
+  process.exit(1);
+});

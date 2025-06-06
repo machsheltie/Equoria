@@ -48,9 +48,7 @@ jest.unstable_mockModule(join(__dirname, '../utils/logger.mjs'), () => ({
 // Import modules after setting up mocks
 const prisma = await import('../db/index.js').then(module => module.default);
 const { hireGroom, getGroomDefinitions } = await import('../controllers/groomController.js');
-const { GROOM_SPECIALTIES, SKILL_LEVELS, PERSONALITY_TRAITS } = await import(
-  '../utils/groomSystem.js'
-);
+const { GROOM_SPECIALTIES, SKILL_LEVELS, PERSONALITY_TRAITS } = await import('../utils/groomSystem.js');
 
 describe('Groom Hiring Workflow Tests', () => {
   let testUser;
@@ -621,10 +619,7 @@ describe('Groom Hiring Workflow Tests', () => {
 
         await hireGroom(req, res);
 
-        if (
-          res.status.mock.calls[0][0] === 400 &&
-          res.json.mock.calls[0][0].message.includes('limit')
-        ) {
+        if (res.status.mock.calls[0][0] === 400 && res.json.mock.calls[0][0].message.includes('limit')) {
           limitReached = true;
           break;
         }
@@ -669,10 +664,7 @@ describe('Groom Hiring Workflow Tests', () => {
       await hireGroom(req, res);
 
       // If funds validation is implemented, this should fail
-      if (
-        res.status.mock.calls[0][0] === 400 &&
-        res.json.mock.calls[0][0].message.includes('funds')
-      ) {
+      if (res.status.mock.calls[0][0] === 400 && res.json.mock.calls[0][0].message.includes('funds')) {
         expect(res.status).toHaveBeenCalledWith(400);
         expect(res.json).toHaveBeenCalledWith(
           expect.objectContaining({
@@ -877,19 +869,19 @@ describe('Groom Hiring Workflow Tests', () => {
       );
 
       // Verify all required specialties are present
-      const specialties = res.json.mock.calls[0][0].data.specialties;
+      const { specialties } = res.json.mock.calls[0][0].data;
       Object.keys(GROOM_SPECIALTIES).forEach(key => {
         expect(specialties).toHaveProperty(key);
       });
 
       // Verify all required skill levels are present
-      const skillLevels = res.json.mock.calls[0][0].data.skillLevels;
+      const { skillLevels } = res.json.mock.calls[0][0].data;
       Object.keys(SKILL_LEVELS).forEach(key => {
         expect(skillLevels).toHaveProperty(key);
       });
 
       // Verify all required personalities are present
-      const personalities = res.json.mock.calls[0][0].data.personalities;
+      const { personalities } = res.json.mock.calls[0][0].data;
       Object.keys(PERSONALITY_TRAITS).forEach(key => {
         expect(personalities).toHaveProperty(key);
       });

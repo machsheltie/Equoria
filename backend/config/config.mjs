@@ -58,8 +58,8 @@ const config = {
   jwtRefreshSecret: JWT_REFRESH_SECRET,
   allowedOrigins: ALLOWED_ORIGINS
     ? ALLOWED_ORIGINS.split(',')
-        .map(origin => origin.trim())
-        .filter(origin => origin)
+      .map(origin => origin.trim())
+      .filter(origin => origin)
     : [],
 };
 

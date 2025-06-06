@@ -60,12 +60,7 @@ const createTestApp = () => {
     register,
   );
 
-  app.post(
-    '/api/auth/login',
-    body('email').isEmail().normalizeEmail(),
-    body('password').notEmpty(),
-    login,
-  );
+  app.post('/api/auth/login', body('email').isEmail().normalizeEmail(), body('password').notEmpty(), login);
 
   // Training routes (simplified)
   app.get('/api/horses/trainable/:playerId', authenticateToken, async (req, res) => {
@@ -286,13 +281,10 @@ describe('🏋️ INTEGRATION: Training System Complete - End-to-End Workflow', 
       const trainableHorse = trainableResponse.body.data[0];
 
       // Train the horse
-      const response = await request(app)
-        .post('/api/training/train')
-        .set('Authorization', `Bearer ${authToken}`)
-        .send({
-          horseId: trainableHorse.horseId,
-          discipline: 'Racing',
-        });
+      const response = await request(app).post('/api/training/train').set('Authorization', `Bearer ${authToken}`).send({
+        horseId: trainableHorse.horseId,
+        discipline: 'Racing',
+      });
 
       expect(response.status).toBe(200);
       expect(response.body.success).toBe(true);
@@ -307,13 +299,10 @@ describe('🏋️ INTEGRATION: Training System Complete - End-to-End Workflow', 
       // Try to train the 2-year-old horse directly
       const youngHorse = testHorses.find(h => h.age === 2);
 
-      const response = await request(app)
-        .post('/api/training/train')
-        .set('Authorization', `Bearer ${authToken}`)
-        .send({
-          horseId: youngHorse.id,
-          discipline: 'Racing',
-        });
+      const response = await request(app).post('/api/training/train').set('Authorization', `Bearer ${authToken}`).send({
+        horseId: youngHorse.id,
+        discipline: 'Racing',
+      });
 
       expect(response.status).toBe(400);
       expect(response.body.success).toBe(false);

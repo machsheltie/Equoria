@@ -57,9 +57,7 @@ jest.unstable_mockModule(join(__dirname, '../utils/logger.mjs'), () => ({
 }));
 
 // Import the function after mocking
-const { applyEpigeneticTraitsAtBirth } = await import(
-  join(__dirname, '../utils/applyEpigeneticTraitsAtBirth.js')
-);
+const { applyEpigeneticTraitsAtBirth } = await import(join(__dirname, '../utils/applyEpigeneticTraitsAtBirth.js'));
 
 describe('🧬 UNIT: Apply Epigenetic Traits At Birth Unit - Pure Logic Validation', () => {
   let mockRandom;
@@ -437,9 +435,7 @@ describe('🧬 UNIT: Apply Epigenetic Traits At Birth Unit - Pure Logic Validati
         stressLevel: 40,
       });
 
-      expect(
-        result.positive.filter(trait => trait.startsWith('discipline_affinity_')),
-      ).toHaveLength(0);
+      expect(result.positive.filter(trait => trait.startsWith('discipline_affinity_'))).toHaveLength(0);
       expect(result.positive).not.toContain('legacy_talent');
     });
 
@@ -466,9 +462,7 @@ describe('🧬 UNIT: Apply Epigenetic Traits At Birth Unit - Pure Logic Validati
         stressLevel: 45,
       });
 
-      expect(
-        result.positive.filter(trait => trait.startsWith('discipline_affinity_')),
-      ).toHaveLength(0);
+      expect(result.positive.filter(trait => trait.startsWith('discipline_affinity_'))).toHaveLength(0);
       expect(result.positive).not.toContain('legacy_talent');
     });
   });

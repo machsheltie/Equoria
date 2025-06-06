@@ -214,9 +214,7 @@ describe('🐎 INTEGRATION: Complete Horse Breeding Workflow', () => {
       });
 
       // APPLY AT-BIRTH TRAITS (Real business logic, no mocking)
-      const { applyEpigeneticTraitsAtBirth } = await import(
-        '../../utils/applyEpigeneticTraitsAtBirth.js'
-      );
+      const { applyEpigeneticTraitsAtBirth } = await import('../../utils/applyEpigeneticTraitsAtBirth.js');
 
       const lineage = [mare, stallion]; // Simplified lineage
       const epigeneticTraits = applyEpigeneticTraitsAtBirth({

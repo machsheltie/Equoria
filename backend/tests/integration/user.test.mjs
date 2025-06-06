@@ -13,9 +13,7 @@ jest.unstable_mockModule(join(__dirname, '../../models/userModel.mjs'), () => ({
 }));
 
 // Import the mocked functions
-const { getUserById, getUserWithHorses, getUserByEmail } = await import(
-  '../../models/userModel.mjs'
-);
+const { getUserById, getUserWithHorses, getUserByEmail } = await import('../../models/userModel.mjs');
 
 describe('User Integration Tests - Mocked Database', () => {
   const testUserId = 'test-user-uuid-123';

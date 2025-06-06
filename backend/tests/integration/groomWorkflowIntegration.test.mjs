@@ -39,12 +39,7 @@
 
 import { describe, it, expect, beforeEach, afterEach, jest } from '@jest/globals';
 import prisma from '../../db/index.mjs';
-import {
-  hireGroom,
-  assignGroom,
-  recordInteraction,
-  getGroomDefinitions,
-} from '../../controllers/groomController.mjs';
+import { hireGroom, assignGroom, recordInteraction, getGroomDefinitions } from '../../controllers/groomController.mjs';
 import { applyGroomTraitInfluence } from '../../utils/traitEvaluation.mjs';
 import { TASK_TRAIT_INFLUENCE_MAP } from '../../utils/taskTraitInfluenceMap.mjs';
 
@@ -274,9 +269,7 @@ describe('1. Complete Groom Hiring Workflow', () => {
     });
 
     // Expert should cost more than novice
-    expect(parseFloat(expertGroom.sessionRate)).toBeGreaterThan(
-      parseFloat(noviceGroom.sessionRate),
-    );
+    expect(parseFloat(expertGroom.sessionRate)).toBeGreaterThan(parseFloat(noviceGroom.sessionRate));
   });
 });
 

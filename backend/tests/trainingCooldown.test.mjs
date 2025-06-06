@@ -250,13 +250,9 @@ describe('⏰ UNIT: Training Cooldown System - Horse Training Restrictions', () 
       const nonExistentId = 999999;
 
       // Mock database error for non-existent horse
-      mockPrisma.horse.update.mockRejectedValueOnce(
-        new Error(`Horse with ID ${nonExistentId} not found`),
-      );
+      mockPrisma.horse.update.mockRejectedValueOnce(new Error(`Horse with ID ${nonExistentId} not found`));
 
-      await expect(setCooldown(nonExistentId)).rejects.toThrow(
-        `Horse with ID ${nonExistentId} not found`,
-      );
+      await expect(setCooldown(nonExistentId)).rejects.toThrow(`Horse with ID ${nonExistentId} not found`);
     });
 
     it('should throw error for null horse ID', async () => {
@@ -268,9 +264,7 @@ describe('⏰ UNIT: Training Cooldown System - Horse Training Restrictions', () 
     });
 
     it('should throw error for invalid horse ID (string)', async () => {
-      await expect(setCooldown('invalid')).rejects.toThrow(
-        'Horse ID must be a valid positive integer',
-      );
+      await expect(setCooldown('invalid')).rejects.toThrow('Horse ID must be a valid positive integer');
     });
 
     it('should throw error for invalid horse ID (negative)', async () => {
