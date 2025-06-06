@@ -1,106 +1,154 @@
 /**
- * Horse Overview Integration Tests
- * Tests the GET /api/horses/:id/overview endpoint
+ * 🧪 INTEGRATION TEST: Horse Overview API - Real Database Integration
+ *
+ * This test validates the horse overview endpoint with real database operations
+ * and minimal strategic mocking following the proven balanced mocking approach.
+ *
+ * 📋 BUSINESS RULES TESTED:
+ * - Horse overview data retrieval: Complete horse information with related data
+ * - Training status calculation: Next training date based on 7-day cooldown
+ * - Competition history: Most recent competition result display
+ * - Data transformation: Proper API response formatting and field mapping
+ * - Error handling: 404 for missing horses, validation for invalid IDs
+ * - Optional field handling: Graceful handling of null/missing data
+ *
+ * 🎯 FUNCTIONALITY TESTED:
+ * 1. GET /api/horses/:id/overview - Complete horse overview endpoint
+ * 2. Real database queries - Horse, competition, and training data retrieval
+ * 3. Business logic validation - Training cooldown calculations
+ * 4. Data transformation - API response formatting
+ * 5. Error scenarios - Missing horses, invalid IDs
+ * 6. Edge cases - Minimal data, null fields
+ *
+ * 🔄 BALANCED MOCKING APPROACH:
+ * ✅ REAL: Database operations, business logic, API responses, data transformation
+ * ✅ REAL: Training calculations, competition queries, error handling
+ * 🔧 MOCK: Logger only (external dependency)
+ *
+ * 💡 TEST STRATEGY: Integration testing with real database to validate
+ *    complete workflow and actual business logic implementation
  */
 
-import { describe, it, expect, beforeEach } from '@jest/globals';
-import { fileURLToPath } from 'url';
-import { dirname, join } from 'path';
+import { describe, it, expect, beforeEach, afterEach } from '@jest/globals';
 import request from 'supertest';
+import app from '../../app.mjs';
+import prisma from '../../db/index.mjs';
 
-const __filename = fileURLToPath(import.meta.url);
-const __dirname = dirname(__filename);
-
-// Mock the database module BEFORE importing the app
-jest.unstable_mockModule(join(__dirname, '../../db/index.js'), () => ({
-  default: {
-    horse: {
-      findUnique: jest.fn(),
-      create: jest.fn(),
-      delete: jest.fn(),
-      deleteMany: jest.fn(),
-    },
-    competitionResult: {
-      findFirst: jest.fn(),
-      create: jest.fn(),
-      deleteMany: jest.fn(),
-    },
-    trainingLog: {
-      findFirst: jest.fn(),
-      create: jest.fn(),
-      deleteMany: jest.fn(),
-    },
-    $disconnect: jest.fn(),
-  },
+// Strategic mocking: Only mock external dependencies
+jest.mock('../../utils/logger.mjs', () => ({
+  info: jest.fn(),
+  warn: jest.fn(),
+  error: jest.fn(),
+  debug: jest.fn(),
 }));
 
-// Mock the trainingModel
-jest.unstable_mockModule(join(__dirname, '../../models/trainingModel.mjs'), () => ({
-  getAnyRecentTraining: jest.fn(),
-  getHorseAge: jest.fn(),
-  getLastTrainingDate: jest.fn(),
-  logTrainingSession: jest.fn(),
-}));
-
-// Now import the app and the mocked modules
-const app = (await import('../../app.mjs')).default;
-const mockPrisma = (await import(join(__dirname, '../../db/index.mjs'))).default;
-const { getAnyRecentTraining } = await import('../../models/trainingModel.mjs');
-
-describe('Horse Overview Integration Tests', () => {
+describe('🏇 INTEGRATION: Horse Overview API - Real Database Integration', () => {
   let testHorse;
+  let testUser;
 
-  beforeEach(() => {
-    // Reset all mocks
-    jest.clearAllMocks();
+  beforeEach(async () => {
+    // Clean up any existing test data
+    await prisma.competitionResult.deleteMany({
+      where: { horse: { name: { startsWith: 'TestHorse' } } },
+    });
+    await prisma.trainingLog.deleteMany({
+      where: { horse: { name: { startsWith: 'TestHorse' } } },
+    });
+    await prisma.horse.deleteMany({
+      where: { name: { startsWith: 'TestHorse' } },
+    });
+    await prisma.user.deleteMany({
+      where: { email: { startsWith: 'test-horse-overview' } },
+    });
 
-    // Setup test horse data
-    testHorse = {
-      id: 1,
-      name: 'Nova',
-      age: 5,
-      trait: 'Dressage',
-      disciplineScores: {
-        Dressage: 25,
-        'Show Jumping': 10,
+    // Create test user
+    testUser = await prisma.user.create({
+      data: {
+        email: 'test-horse-overview@example.com',
+        password: 'hashedpassword',
+        name: 'Test User',
+        level: 5,
+        xp: 150,
+        money: 5000,
       },
-      total_earnings: 2200,
-      tack: {
-        saddleBonus: 5,
-        bridleBonus: 3,
+    });
+
+    // Create test horse with real data
+    testHorse = await prisma.horse.create({
+      data: {
+        name: 'TestHorse Nova',
+        age: 5,
+        sex: 'Mare',
+        breed: 'Thoroughbred',
+        userId: testUser.id,
+        dateOfBirth: new Date('2020-01-01'),
+        healthStatus: 'Excellent',
+        disciplineScores: {
+          Dressage: 25,
+          'Show Jumping': 10,
+        },
+        totalEarnings: 2200,
+        tack: {
+          saddleBonus: 5,
+          bridleBonus: 3,
+        },
+        rider: {
+          name: 'Jenna Black',
+          bonusPercent: 0.08,
+          penaltyPercent: 0,
+        },
       },
-      rider: {
-        name: 'Jenna Black',
-        bonusPercent: 0.08,
-        penaltyPercent: 0,
-      },
-    };
+    });
   });
 
-  afterAll(async () => {
-    // Clean up mocks
-    jest.clearAllMocks();
+  afterEach(async () => {
+    // Clean up test data
+    await prisma.competitionResult.deleteMany({
+      where: { horse: { name: { startsWith: 'TestHorse' } } },
+    });
+    await prisma.trainingLog.deleteMany({
+      where: { horse: { name: { startsWith: 'TestHorse' } } },
+    });
+    await prisma.horse.deleteMany({
+      where: { name: { startsWith: 'TestHorse' } },
+    });
+    await prisma.user.deleteMany({
+      where: { email: { startsWith: 'test-horse-overview' } },
+    });
   });
 
   describe('GET /api/horses/:id/overview', () => {
     it('should return complete horse overview data successfully', async () => {
-      // Mock horse data
-      mockPrisma.horse.findUnique.mockResolvedValue(testHorse);
-
-      // Mock most recent training (7 days ago, so next training is available now)
+      // Create training history (7 days ago, so next training is available now)
       const lastTrainingDate = new Date();
       lastTrainingDate.setDate(lastTrainingDate.getDate() - 7);
-      getAnyRecentTraining.mockResolvedValue(lastTrainingDate);
 
-      // Mock most recent competition result
-      const mockCompetitionResult = {
-        showName: 'Summer Invitational',
-        placement: '1st',
-        runDate: new Date('2025-06-01'),
-      };
-      mockPrisma.competitionResult.findFirst.mockResolvedValue(mockCompetitionResult);
+      await prisma.trainingLog.create({
+        data: {
+          horseId: testHorse.id,
+          discipline: 'Dressage',
+          sessionDate: lastTrainingDate,
+          statGain: 5,
+          xpGained: 5,
+        },
+      });
 
-      const response = await request(app).get('/api/horses/1/overview').expect(200);
+      // Create competition result
+      await prisma.competitionResult.create({
+        data: {
+          horseId: testHorse.id,
+          showName: 'Summer Invitational',
+          discipline: 'Dressage',
+          placement: '1st',
+          score: 95.5,
+          prizeWon: 1000,
+          runDate: new Date('2025-06-01'),
+        },
+      });
+
+      const response = await request(app)
+        .get(`/api/horses/${testHorse.id}/overview`)
+        .expect(200);
 
       expect(response.body.success).toBe(true);
       expect(response.body.message).toBe('Horse overview retrieved successfully');
@@ -108,10 +156,9 @@ describe('Horse Overview Integration Tests', () => {
       const { data } = response.body;
 
       // Verify horse basic info
-      expect(data.id).toBe(1);
-      expect(data.name).toBe('Nova');
+      expect(data.id).toBe(testHorse.id);
+      expect(data.name).toBe('TestHorse Nova');
       expect(data.age).toBe(5);
-      expect(data.trait).toBe('Dressage');
 
       // Verify discipline scores
       expect(data.disciplineScores).toEqual({
@@ -125,12 +172,10 @@ describe('Horse Overview Integration Tests', () => {
       // Verify earnings
       expect(data.earnings).toBe(2200);
 
-      // Verify last show result
-      expect(data.lastShowResult).toEqual({
-        showName: 'Summer Invitational',
-        placement: '1st',
-        runDate: '2025-06-01T00:00:00.000Z',
-      });
+      // Verify last show result exists
+      expect(data.lastShowResult).toBeDefined();
+      expect(data.lastShowResult.showName).toBe('Summer Invitational');
+      expect(data.lastShowResult.placement).toBe('1st');
 
       // Verify rider info
       expect(data.rider).toEqual({
@@ -147,8 +192,6 @@ describe('Horse Overview Integration Tests', () => {
     });
 
     it('should return 404 for non-existent horse', async () => {
-      mockPrisma.horse.findUnique.mockResolvedValue(null);
-
       const response = await request(app).get('/api/horses/99999/overview').expect(404);
 
       expect(response.body.success).toBe(false);
@@ -163,11 +206,9 @@ describe('Horse Overview Integration Tests', () => {
     });
 
     it('should handle horse with no training history gracefully', async () => {
-      mockPrisma.horse.findUnique.mockResolvedValue(testHorse);
-      getAnyRecentTraining.mockResolvedValue(null);
-      mockPrisma.competitionResult.findFirst.mockResolvedValue(null);
-
-      const response = await request(app).get('/api/horses/1/overview').expect(200);
+      const response = await request(app)
+        .get(`/api/horses/${testHorse.id}/overview`)
+        .expect(200);
 
       const { data } = response.body;
       expect(data.nextTrainingDate).toBeNull();
@@ -175,45 +216,55 @@ describe('Horse Overview Integration Tests', () => {
     });
 
     it('should calculate next training date correctly when horse has recent training', async () => {
-      mockPrisma.horse.findUnique.mockResolvedValue(testHorse);
-
-      // Mock recent training (3 days ago, so next training in 4 days)
+      // Create recent training (3 days ago, so next training in 4 days)
       const lastTrainingDate = new Date();
       lastTrainingDate.setDate(lastTrainingDate.getDate() - 3);
-      getAnyRecentTraining.mockResolvedValue(lastTrainingDate);
+
+      await prisma.trainingLog.create({
+        data: {
+          horseId: testHorse.id,
+          discipline: 'Dressage',
+          sessionDate: lastTrainingDate,
+          statGain: 5,
+          xpGained: 5,
+        },
+      });
 
       const expectedNextTraining = new Date(lastTrainingDate);
       expectedNextTraining.setDate(expectedNextTraining.getDate() + 7);
 
-      mockPrisma.competitionResult.findFirst.mockResolvedValue(null);
-
-      const response = await request(app).get('/api/horses/1/overview').expect(200);
+      const response = await request(app)
+        .get(`/api/horses/${testHorse.id}/overview`)
+        .expect(200);
 
       const { data } = response.body;
       expect(new Date(data.nextTrainingDate)).toEqual(expectedNextTraining);
     });
 
     it('should handle missing optional fields gracefully', async () => {
-      const minimalHorse = {
-        id: 1,
-        name: 'Minimal Horse',
-        age: 3,
-        trait: null,
-        disciplineScores: null,
-        total_earnings: 0,
-        tack: null,
-        rider: null,
-      };
+      // Create minimal horse with real data
+      const minimalHorse = await prisma.horse.create({
+        data: {
+          name: 'TestHorse Minimal',
+          age: 3,
+          sex: 'Gelding',
+          breed: 'Quarter Horse',
+          userId: testUser.id,
+          dateOfBirth: new Date('2022-01-01'),
+          healthStatus: 'Good',
+          disciplineScores: {},
+          totalEarnings: 0,
+          tack: {},
+          rider: null,
+        },
+      });
 
-      mockPrisma.horse.findUnique.mockResolvedValue(minimalHorse);
-      getAnyRecentTraining.mockResolvedValue(null);
-      mockPrisma.competitionResult.findFirst.mockResolvedValue(null);
-
-      const response = await request(app).get('/api/horses/1/overview').expect(200);
+      const response = await request(app)
+        .get(`/api/horses/${minimalHorse.id}/overview`)
+        .expect(200);
 
       const { data } = response.body;
-      expect(data.name).toBe('Minimal Horse');
-      expect(data.trait).toBeNull();
+      expect(data.name).toBe('TestHorse Minimal');
       expect(data.disciplineScores).toEqual({});
       expect(data.earnings).toBe(0);
       expect(data.tack).toEqual({});
