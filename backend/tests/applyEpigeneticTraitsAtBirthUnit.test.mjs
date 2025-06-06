@@ -57,7 +57,7 @@ jest.unstable_mockModule(join(__dirname, '../utils/logger.mjs'), () => ({
 }));
 
 // Import the function after mocking
-const { applyEpigeneticTraitsAtBirth } = await import(join(__dirname, '../utils/applyEpigeneticTraitsAtBirth.js'));
+const { applyEpigeneticTraitsAtBirth } = await import(join(__dirname, '../utils/applyEpigeneticTraitsAtBirth.mjs'));
 
 describe('🧬 UNIT: Apply Epigenetic Traits At Birth Unit - Pure Logic Validation', () => {
   let mockRandom;

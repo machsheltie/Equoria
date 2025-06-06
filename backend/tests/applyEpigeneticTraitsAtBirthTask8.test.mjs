@@ -71,7 +71,7 @@ jest.unstable_mockModule(join(__dirname, '../utils/logger.mjs'), () => ({
 }));
 
 // Import the function after mocking
-const { applyEpigeneticTraitsAtBirth } = await import(join(__dirname, '../utils/atBirthTraits.js'));
+const { applyEpigeneticTraitsAtBirth } = await import(join(__dirname, '../utils/atBirthTraits.mjs'));
 
 describe('🧬 UNIT: Apply Epigenetic Traits At Birth Task 8 - Deterministic Breeding Analysis', () => {
   beforeEach(() => {

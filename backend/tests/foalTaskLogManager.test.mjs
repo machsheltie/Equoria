@@ -57,7 +57,7 @@ const {
   validateTaskLog,
   getFoalCareSummary,
   resetFoalCareStreak,
-} = await import(join(__dirname, '../utils/foalTaskLogManager.js'));
+} = await import(join(__dirname, '../utils/foalTaskLogManager.mjs'));
 
 describe('Foal Task Log Manager', () => {
   beforeEach(() => {

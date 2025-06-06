@@ -38,9 +38,6 @@ next-env.d.ts
 # editor config
 .editorconfig
 
-# augment
-.augmentignores
-
 # project cheatsheets
 /Project Cheatsheets
 

@@ -49,7 +49,7 @@ jest.unstable_mockModule(join(__dirname, '../utils/logger.mjs'), () => ({
 
 // Import the functions after mocking
 const { updateConsecutiveDays, checkBurnoutImmunity, updateStreakTracking } = await import(
-  join(__dirname, '../utils/groomBondingSystem.js')
+  join(__dirname, '../utils/groomBondingSystem.mjs')
 );
 
 const { GROOM_CONFIG } = await import(join(__dirname, '../config/groomConfig.js'));

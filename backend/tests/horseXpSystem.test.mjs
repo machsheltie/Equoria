@@ -52,7 +52,7 @@ const mockLogger = {
   error: jest.fn(),
 };
 
-jest.unstable_mockModule(join(__dirname, '../db/index.js'), () => ({
+jest.unstable_mockModule(join(__dirname, '../db/index.mjs'), () => ({
   default: mockPrisma,
 }));
 

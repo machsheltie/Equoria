@@ -2,6 +2,43 @@ import logger from '../utils/logger.mjs';
 // import prisma from '../db/index.mjs'; // TODO: Implement audit logging
 
 /**
+ * Jest Test Setup and Cleanup
+ * Manages Prisma client cleanup for tests
+ */
+
+// Store Prisma instances for cleanup
+const prismaInstances = new Set();
+
+/**
+ * Register a Prisma instance for cleanup after tests
+ */
+export const registerPrismaForCleanup = (prismaInstance) => {
+  prismaInstances.add(prismaInstance);
+};
+
+/**
+ * Clean up all registered Prisma instances
+ */
+export const cleanupPrismaInstances = async () => {
+  for (const prisma of prismaInstances) {
+    try {
+      await prisma.$disconnect();
+    } catch (error) {
+      logger.error('[Jest] Failed to disconnect Prisma instance:', error);
+    }
+  }
+  prismaInstances.clear();
+};
+
+// Register cleanup for Jest
+if (process.env.NODE_ENV === 'test') {
+  // Clean up after all tests complete
+  process.on('exit', cleanupPrismaInstances);
+  process.on('SIGINT', cleanupPrismaInstances);
+  process.on('SIGTERM', cleanupPrismaInstances);
+}
+
+/**
  * Audit Logging Middleware
  * Tracks sensitive operations and detects suspicious patterns
  */

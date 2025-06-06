@@ -50,7 +50,7 @@ const mockLogger = {
 };
 
 // Mock the modules
-jest.unstable_mockModule(join(__dirname, '../models/resultModel.js'), () => ({
+jest.unstable_mockModule(join(__dirname, '../models/resultModel.mjs'), () => ({
   getResultsByHorse: mockGetResultsByHorse,
 }));
 
