@@ -39,7 +39,7 @@ describe('Groom Age Restrictions & Task Eligibility', () => {
     });
 
     it('should define adult horse age threshold at 3 years', () => {
-      expect(GROOM_CONFIG.ADULT_HORSE_AGE_THRESHOLD).toBe(3);
+      expect(GROOM_CONFIG.GENERAL_GROOMING_MIN_AGE).toBe(3);
     });
 
     it('should have foal enrichment tasks defined', () => {

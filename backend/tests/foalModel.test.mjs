@@ -422,7 +422,7 @@ describe('🍼 UNIT: Foal Model - Foal Development & Activity Management', () =>
       await completeActivity(1, 'gentle_touch');
 
       // Verify bonding level is capped at 100
-      const updateCall = mockPrisma.foalDevelopment.update.mock.calls[0][0];
+      const [updateCall] = mockPrisma.foalDevelopment.update.mock.calls[0];
       expect(updateCall.data.bondingLevel).toBeLessThanOrEqual(100);
     });
 
