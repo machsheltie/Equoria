@@ -59,8 +59,5 @@ next-env.d.ts
 # cursor
 /.cursor
 
-# augment
-/augment
-
 # .vscode
 /.vscode
