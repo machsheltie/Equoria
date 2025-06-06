@@ -68,6 +68,33 @@ export const TASK_TRAIT_INFLUENCE_MAP = {
     dailyValue: 5,
   },
 
+  /**
+   * Gentle Touch - Basic handling and bonding development
+   * Introduces gentle physical contact and builds trust
+   */
+  gentle_touch: {
+    traits: ['bonded', 'calm'],
+    dailyValue: 5,
+  },
+
+  /**
+   * Feeding Assistance - Bonding and trust development through care
+   * Builds relationship through feeding interactions
+   */
+  feeding_assistance: {
+    traits: ['bonded', 'resilient'],
+    dailyValue: 5,
+  },
+
+  /**
+   * Environment Exploration - Confidence and resilience building
+   * Encourages exploration and adaptability
+   */
+  environment_exploration: {
+    traits: ['confident', 'resilient'],
+    dailyValue: 5,
+  },
+
   // GROOMING TASKS (1-3 years) - Handling and presentation development
 
   /**

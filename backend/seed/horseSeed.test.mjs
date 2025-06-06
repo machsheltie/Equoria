@@ -17,7 +17,7 @@ jest.unstable_mockModule(join(__dirname, '../utils/logger.mjs'), () => ({
 }));
 
 // Mock other modules
-jest.unstable_mockModule(join(__dirname, '../db/index.js'), () => ({
+jest.unstable_mockModule(join(__dirname, '../db/index.mjs'), () => ({
   default: {
     breed: {
       findUnique: jest.fn(),
@@ -39,7 +39,7 @@ jest.unstable_mockModule(join(__dirname, '../db/index.js'), () => ({
   },
 }));
 
-jest.unstable_mockModule(join(__dirname, '../models/horseModel.js'), () => ({
+jest.unstable_mockModule(join(__dirname, '../models/horseModel.mjs'), () => ({
   createHorse: jest.fn(),
 }));
 
@@ -51,8 +51,8 @@ describe('horseSeed', () => {
   let seedHorses;
 
   beforeAll(async () => {
-    mockPrisma = (await import(join(__dirname, '../db/index.js'))).default;
-    const seedModule = await import(join(__dirname, './horseSeed.js'));
+    mockPrisma = (await import(join(__dirname, '../db/index.mjs'))).default;
+    const seedModule = await import(join(__dirname, './horseSeed.mjs'));
     ({ findOrCreateBreed, ensureReferencedRecordsExist, checkHorseExists, seedHorses } = seedModule);
   });
 
@@ -389,7 +389,7 @@ describe('horseSeed', () => {
 
   describe('main execution (integration)', () => {
     it('should call ensureReferencedRecordsExist and seedHorses with sample data', async () => {
-      const { default: actualMain } = await import(join(__dirname, './horseSeed.js'));
+      const { default: actualMain } = await import(join(__dirname, './horseSeed.mjs'));
 
       mockPrisma.user.upsert.mockResolvedValue({ id: 1 });
       mockPrisma.stable.upsert.mockResolvedValue({ id: 1 });

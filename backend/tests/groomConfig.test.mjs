@@ -55,7 +55,6 @@ describe('Groom Configuration', () => {
     describe('Foal Grooming Tasks (1-3 years)', () => {
       it('should define correct grooming tasks for handling preparation', () => {
         expect(FOAL_GROOMING_TASKS).toEqual([
-          'early_touch',
           'hoof_handling',
           'tying_practice',
           'sponge_bath',
@@ -64,8 +63,8 @@ describe('Groom Configuration', () => {
         ]);
       });
 
-      it('should have exactly 6 grooming tasks', () => {
-        expect(FOAL_GROOMING_TASKS).toHaveLength(6);
+      it('should have exactly 5 grooming tasks', () => {
+        expect(FOAL_GROOMING_TASKS).toHaveLength(5);
       });
 
       it('should contain only string values', () => {

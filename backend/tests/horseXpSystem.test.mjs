@@ -61,7 +61,7 @@ jest.unstable_mockModule(join(__dirname, '../utils/logger.mjs'), () => ({
 }));
 
 // Import the module after mocking
-const horseXpModel = await import(join(__dirname, '../models/horseXpModel.js'));
+const horseXpModel = await import(join(__dirname, '../models/horseXpModel.mjs'));
 
 describe('Horse XP System - Core Business Logic', () => {
   beforeEach(() => {

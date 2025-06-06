@@ -49,8 +49,8 @@ jest.unstable_mockModule(join(__dirname, '../utils/logger.mjs'), () => ({
 }));
 
 // Import the functions after mocking
-const { evaluateEpigeneticTagsFromFoalTasks } = await import(join(__dirname, '../utils/traitEvaluation.js'));
-const { getFoalCareSummary } = await import(join(__dirname, '../utils/foalTaskLogManager.js'));
+const { evaluateEpigeneticTagsFromFoalTasks } = await import(join(__dirname, '../utils/traitEvaluation.mjs'));
+const { getFoalCareSummary } = await import(join(__dirname, '../utils/foalTaskLogManager.mjs'));
 
 describe('Trait Milestone Integration', () => {
   let testUser, testFoal;

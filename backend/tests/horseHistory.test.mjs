@@ -54,12 +54,12 @@ jest.unstable_mockModule(join(__dirname, '../models/resultModel.mjs'), () => ({
   getResultsByHorse: mockGetResultsByHorse,
 }));
 
-jest.unstable_mockModule(join(__dirname, '../utils/logger.mjss'), () => ({
+jest.unstable_mockModule(join(__dirname, '../utils/logger.mjs'), () => ({
   default: mockLogger,
 }));
 
 // Import the function to test after mocking
-const { getHorseHistory } = await import(join(__dirname, '../controllers/horseController.js'));
+const { getHorseHistory } = await import(join(__dirname, '../controllers/horseController.mjs'));
 
 describe('📚 UNIT: Horse History Controller - Competition History Retrieval', () => {
   let req, res;

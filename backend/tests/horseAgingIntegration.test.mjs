@@ -49,7 +49,7 @@ jest.unstable_mockModule(join(__dirname, '../utils/logger.mjs'), () => ({
 }));
 
 // Import the services after mocking
-const cronJobService = (await import(join(__dirname, '../services/cronJobs.js'))).default;
+const cronJobService = (await import(join(__dirname, '../services/cronJobs.mjs'))).default;
 
 describe('Horse Aging Integration', () => {
   let testUser, testBreed;

@@ -52,7 +52,7 @@ const { updateConsecutiveDays, checkBurnoutImmunity, updateStreakTracking } = aw
   join(__dirname, '../utils/groomBondingSystem.mjs')
 );
 
-const { GROOM_CONFIG } = await import(join(__dirname, '../config/groomConfig.js'));
+const { GROOM_CONFIG } = await import(join(__dirname, '../config/groomConfig.mjs'));
 
 describe('Burnout Immunity Grace Period', () => {
   beforeEach(() => {

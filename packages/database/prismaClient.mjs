@@ -1,6 +1,5 @@
 // packages/database/prismaClient.mjs
 import dotenv from 'dotenv';
-import { PrismaClient } from '@prisma/client';
 import path from 'path';
 import { fileURLToPath, pathToFileURL } from 'url'; // Added pathToFileURL
 
@@ -17,6 +16,9 @@ dotenv.config({
       ? path.join(backendDir, '.env.test')
       : path.join(backendDir, '.env'),
 });
+
+// Dynamic import to handle CommonJS Prisma client in ESM environment
+const { PrismaClient } = await import('@prisma/client');
 
 let prisma = null;
 

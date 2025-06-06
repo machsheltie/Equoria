@@ -51,6 +51,7 @@ const mockLogger = {
 
 jest.unstable_mockModule(join(__dirname, '../utils/logger.mjs'), () => ({
   default: mockLogger,
+  logger: mockLogger,
 }));
 
 const { _addTraitSafely, _removeTraitSafely, _getAllTraits } = await import(
