@@ -35,10 +35,10 @@ const __dirname = dirname(__filename);
 
 // Import trait functions and definitions
 const { getTraitDefinition, getTraitsByType, getTraitsByCategory, getTraitMetadata, checkTraitConflict } = await import(
-  join(__dirname, '../utils/epigeneticTraits.js')
+  join(__dirname, '../utils/epigeneticTraits.mjs')
 );
 
-const { TASK_TRAIT_INFLUENCE_MAP } = await import(join(__dirname, '../config/taskInfluenceConfig.js'));
+const { TASK_TRAIT_INFLUENCE_MAP } = await import(join(__dirname, '../config/taskInfluenceConfig.mjs'));
 
 describe('Trait Metadata Validation', () => {
   describe('Required Trait Structure', () => {

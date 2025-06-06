@@ -62,7 +62,7 @@ const {
   getAncestorPreferredDiscipline,
   getMostCommonDisciplineFromHistory,
   getHighestScoringDiscipline,
-} = await import(join(__dirname, '../utils/lineageTraitCheck.js'));
+} = await import(join(__dirname, '../utils/lineageTraitCheck.mjs'));
 
 describe('🧬 UNIT: Lineage Trait Check - Discipline Affinity Analysis', () => {
   beforeEach(() => {

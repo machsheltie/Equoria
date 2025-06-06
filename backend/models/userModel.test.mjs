@@ -58,7 +58,7 @@ jest.unstable_mockModule(join(__dirname, '../db/index.mjs'), () => ({
   },
 }));
 
-jest.unstable_mockModule(join(__dirname, '../utils/logger.mjsss'), () => ({
+jest.unstable_mockModule(join(__dirname, '../utils/logger.mjs'), () => ({
   default: {
     info: jest.fn(),
     error: jest.fn(),
@@ -77,11 +77,11 @@ const {
   addXpToUser,
   getUserProgress,
   getUserStats,
-} = await import(join(__dirname, './userModel.js'));
+} = await import(join(__dirname, './userModel.mjs'));
 
-const mockPrisma = (await import(join(__dirname, '../db/index.js'))).default;
-const mockLogger = (await import(join(__dirname, '../utils/logger.mjss'))).default;
-const { DatabaseError } = await import(join(__dirname, '../errors/index.js'));
+const mockPrisma = (await import(join(__dirname, '../db/index.mjs'))).default;
+const mockLogger = (await import(join(__dirname, '../utils/logger.mjs'))).default;
+const { DatabaseError } = await import(join(__dirname, '../errors/index.mjs'));
 
 describe('👤 UNIT: User Model - Database Operations & Business Logic', () => {
   beforeEach(() => {

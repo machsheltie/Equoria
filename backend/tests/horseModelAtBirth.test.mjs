@@ -76,10 +76,10 @@ jest.unstable_mockModule(join(__dirname, '../utils/logger.mjs'), () => ({
   default: mockLogger,
 }));
 
-jest.unstable_mockModule(join(__dirname, '../utils/atBirthTraits.js'), () => mockAtBirthTraits);
+jest.unstable_mockModule(join(__dirname, '../utils/atBirthTraits.mjs'), () => mockAtBirthTraits);
 
 // Import the function after mocking
-const { createHorse } = await import(join(__dirname, '../models/horseModel.js'));
+const { createHorse } = await import(join(__dirname, '../models/horseModel.mjs'));
 
 describe('🐴 UNIT: Horse Model At-Birth Traits - Creation Integration Testing', () => {
   beforeEach(() => {

@@ -44,7 +44,7 @@ const __dirname = dirname(__filename);
 
 // Import the trait effects system
 const { getTraitEffects, getAllTraitEffects, hasTraitEffect, getCombinedTraitEffects } = await import(
-  join(__dirname, '../utils/traitEffects.js')
+  join(__dirname, '../utils/traitEffects.mjs')
 );
 
 describe('🎭 UNIT: Trait Effects System - Trait Impact Calculation & Combination', () => {

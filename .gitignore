@@ -39,13 +39,13 @@ next-env.d.ts
 .editorconfig
 
 # augment
-.augmentignoreS
+.augmentignores
 
 # project cheatsheets
 /Project Cheatsheets
 
 # code helpers
-/
+/codehelpers
 
 # UI
 /UI

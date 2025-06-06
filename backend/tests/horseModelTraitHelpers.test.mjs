@@ -54,7 +54,7 @@ jest.unstable_mockModule(join(__dirname, '../utils/logger.mjs'), () => ({
 }));
 
 const { _addTraitSafely, _removeTraitSafely, _getAllTraits } = await import(
-  join(__dirname, '../utils/horseModelTraitHelpers.js')
+  join(__dirname, '../utils/horseModelTraitHelpers.mjs')
 );
 
 describe('🐴 UNIT: Horse Model Trait Helpers - Utility Function Validation', () => {
