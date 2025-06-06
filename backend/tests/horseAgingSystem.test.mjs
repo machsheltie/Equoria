@@ -52,7 +52,7 @@ jest.unstable_mockModule(join(__dirname, '../utils/logger.mjs'), () => ({
 
 // Import the functions after mocking
 const { calculateAgeFromBirth, processHorseBirthdays, updateHorseAge, checkForMilestones } = await import(
-  join(__dirname, '../utils/horseAgingSystem.js')
+  join(__dirname, '../utils/horseAgingSystem.mjs')
 );
 
 describe('Horse Aging System', () => {

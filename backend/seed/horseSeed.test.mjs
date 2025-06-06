@@ -395,7 +395,7 @@ describe('horseSeed', () => {
       mockPrisma.stable.upsert.mockResolvedValue({ id: 1 });
       mockPrisma.breed.findUnique.mockResolvedValue({ id: 1, name: 'Thoroughbred' });
       mockPrisma.horse.findFirst.mockResolvedValue(null);
-      const { createHorse: mockCreateHorse } = await import(join(__dirname, '../models/horseModel.js'));
+      const { createHorse: mockCreateHorse } = await import(join(__dirname, '../models/horseModel.mjs'));
       mockCreateHorse.mockResolvedValue({ id: 1, name: 'Created Horse' });
 
       await actualMain();
@@ -406,7 +406,7 @@ describe('horseSeed', () => {
     });
 
     it('should handle errors during main execution and disconnect prisma', async () => {
-      const { default: actualMain } = await import(join(__dirname, './horseSeed.js'));
+      const { default: actualMain } = await import(join(__dirname, './horseSeed.mjs'));
       mockPrisma.user.upsert.mockRejectedValue(new Error('Main execution DB error'));
 
       await expect(actualMain()).rejects.toThrow('Main execution DB error');

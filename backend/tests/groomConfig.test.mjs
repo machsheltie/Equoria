@@ -30,11 +30,19 @@ describe('Groom Configuration', () => {
   describe('Foal Task Categories', () => {
     describe('Enrichment Tasks (0-2 years)', () => {
       it('should define correct enrichment tasks for early development', () => {
-        expect(ELIGIBLE_FOAL_ENRICHMENT_TASKS).toEqual(['desensitization', 'trust_building', 'showground_exposure']);
+        expect(ELIGIBLE_FOAL_ENRICHMENT_TASKS).toEqual([
+          'desensitization',
+          'trust_building',
+          'showground_exposure',
+          'early_touch',
+          'gentle_touch',
+          'feeding_assistance',
+          'environment_exploration',
+        ]);
       });
 
-      it('should have exactly 3 enrichment tasks', () => {
-        expect(ELIGIBLE_FOAL_ENRICHMENT_TASKS).toHaveLength(3);
+      it('should have exactly 7 enrichment tasks', () => {
+        expect(ELIGIBLE_FOAL_ENRICHMENT_TASKS).toHaveLength(7);
       });
 
       it('should contain only string values', () => {

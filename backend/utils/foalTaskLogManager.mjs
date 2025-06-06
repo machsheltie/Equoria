@@ -24,7 +24,7 @@
  * - Currently uses daysGroomedInARow as a proxy for foal care streaks
  */
 
-import { logger } from './logger.mjs';
+import logger from './logger.mjs';
 
 /**
  * Initialize empty task log for a foal

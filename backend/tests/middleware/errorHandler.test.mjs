@@ -36,7 +36,7 @@ describe('Error Handler Middleware', () => {
     expect(statusCode).toBe(400);
     expect(responseData).toEqual({
       success: false,
-      error: 'Test error',
+      message: 'Test error',
     });
   });
 
@@ -48,7 +48,7 @@ describe('Error Handler Middleware', () => {
     expect(statusCode).toBe(500);
     expect(responseData).toEqual({
       success: false,
-      error: 'Generic error',
+      message: 'Generic error',
     });
   });
 
@@ -61,7 +61,7 @@ describe('Error Handler Middleware', () => {
     expect(statusCode).toBe(400);
     expect(responseData).toEqual({
       success: false,
-      error: 'Duplicate field value entered',
+      message: 'Duplicate field value entered',
     });
   });
 
@@ -74,7 +74,7 @@ describe('Error Handler Middleware', () => {
     expect(statusCode).toBe(404);
     expect(responseData).toEqual({
       success: false,
-      error: 'Record not found',
+      message: 'Record not found',
     });
   });
 
@@ -89,7 +89,7 @@ describe('Error Handler Middleware', () => {
 
     expect(responseData).toEqual({
       success: false,
-      error: 'Test error',
+      message: 'Test error',
       stack: 'Error stack trace',
     });
 
@@ -107,7 +107,7 @@ describe('Error Handler Middleware', () => {
 
     expect(responseData).toEqual({
       success: false,
-      error: 'Test error',
+      message: 'Test error',
     });
 
     process.env.NODE_ENV = originalEnv;

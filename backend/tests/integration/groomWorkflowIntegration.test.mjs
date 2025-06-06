@@ -51,7 +51,7 @@ jest.mock('../../utils/logger.mjs', () => ({
   debug: jest.fn(),
 }));
 
-describe('Groom Workflow Integration Tests', async () => {
+describe('Groom Workflow Integration Tests', () => {
   let testUser = null;
   let testFoal = null;
   let testYoungHorse = null;
@@ -74,76 +74,75 @@ describe('Groom Workflow Integration Tests', async () => {
         description: 'Test breed for integration testing',
       },
     });
-  });
 
-  // Create test user
-  testUser = await prisma.user.create({
-    data: {
-      id: 'test-user-groom-integration',
-      username: 'groomtestuser',
-      email: 'groomtest@example.com',
-      password: 'testpassword',
-      firstName: 'Groom',
-      lastName: 'Tester',
-      money: 5000,
-    },
-  });
+    // Create test user
+    testUser = await prisma.user.create({
+      data: {
+        id: 'test-user-groom-integration',
+        username: 'groomtestuser',
+        email: 'groomtest@example.com',
+        password: 'testpassword',
+        firstName: 'Groom',
+        lastName: 'Tester',
+        money: 5000,
+      },
+    });
 
-  // Create test horses of different ages
-  testFoal = await prisma.horse.create({
-    data: {
-      name: 'Test Foal',
-      sex: 'Filly',
-      dateOfBirth: new Date(Date.now() - 365 * 24 * 60 * 60 * 1000), // 1 year old
-      age: 365,
-      user: { connect: { id: testUser.id } },
-      breed: { connect: { id: testBreed.id } },
-      bondScore: 50,
-      stressLevel: 20,
-      taskLog: null,
-      lastGroomed: null,
-      daysGroomedInARow: 0,
-      consecutiveDaysFoalCare: 0,
-      epigeneticModifiers: {},
-    },
-  });
+    // Create test horses of different ages
+    testFoal = await prisma.horse.create({
+      data: {
+        name: 'Test Foal',
+        sex: 'Filly',
+        dateOfBirth: new Date(Date.now() - 365 * 24 * 60 * 60 * 1000), // 1 year old
+        age: 365,
+        user: { connect: { id: testUser.id } },
+        breed: { connect: { id: testBreed.id } },
+        bondScore: 50,
+        stressLevel: 20,
+        taskLog: null,
+        lastGroomed: null,
+        daysGroomedInARow: 0,
+        consecutiveDaysFoalCare: 0,
+        epigeneticModifiers: {},
+      },
+    });
 
-  testYoungHorse = await prisma.horse.create({
-    data: {
-      name: 'Test Young Horse',
-      sex: 'Colt',
-      dateOfBirth: new Date(Date.now() - 2 * 365 * 24 * 60 * 60 * 1000), // 2 years old
-      age: 730,
-      user: { connect: { id: testUser.id } },
-      breed: { connect: { id: testBreed.id } },
-      bondScore: 60,
-      stressLevel: 15,
-      taskLog: null,
-      lastGroomed: null,
-      daysGroomedInARow: 0,
-      consecutiveDaysFoalCare: 0,
-      epigeneticModifiers: {},
-    },
-  });
+    testYoungHorse = await prisma.horse.create({
+      data: {
+        name: 'Test Young Horse',
+        sex: 'Colt',
+        dateOfBirth: new Date(Date.now() - 2 * 365 * 24 * 60 * 60 * 1000), // 2 years old
+        age: 730,
+        user: { connect: { id: testUser.id } },
+        breed: { connect: { id: testBreed.id } },
+        bondScore: 60,
+        stressLevel: 15,
+        taskLog: null,
+        lastGroomed: null,
+        daysGroomedInARow: 0,
+        consecutiveDaysFoalCare: 0,
+        epigeneticModifiers: {},
+      },
+    });
 
-  testAdultHorse = await prisma.horse.create({
-    data: {
-      name: 'Test Adult Horse',
-      sex: 'Mare',
-      dateOfBirth: new Date(Date.now() - 4 * 365 * 24 * 60 * 60 * 1000), // 4 years old
-      age: 1460,
-      user: { connect: { id: testUser.id } },
-      breed: { connect: { id: testBreed.id } },
-      bondScore: 70,
-      stressLevel: 10,
-      taskLog: null,
-      lastGroomed: null,
-      daysGroomedInARow: 0,
-      consecutiveDaysFoalCare: 0,
-      epigeneticModifiers: {},
-    },
+    testAdultHorse = await prisma.horse.create({
+      data: {
+        name: 'Test Adult Horse',
+        sex: 'Mare',
+        dateOfBirth: new Date(Date.now() - 4 * 365 * 24 * 60 * 60 * 1000), // 4 years old
+        age: 1460,
+        user: { connect: { id: testUser.id } },
+        breed: { connect: { id: testBreed.id } },
+        bondScore: 70,
+        stressLevel: 10,
+        taskLog: null,
+        lastGroomed: null,
+        daysGroomedInARow: 0,
+        consecutiveDaysFoalCare: 0,
+        epigeneticModifiers: {},
+      },
+    });
   });
-});
 
 afterEach(async () => {
   // Clean up test data
