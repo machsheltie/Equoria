@@ -1,0 +1,66 @@
+# dependencies
+/node_modules/
+
+# next.js
+/.next/
+/out/
+
+# production
+/build
+
+# debug
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+.pnpm-debug.log*
+
+# vercel
+.vercel
+
+# typescript
+*.tsbuildinfo
+next-env.d.ts
+
+# misc
+.DS_Store
+
+#markdown
+*.md
+
+# prettier
+.prettierrc
+.prettierignore 
+
+# eslint
+.eslintrc.json
+.eslintignore
+
+# editor config
+.editorconfig
+
+# augment
+.augmentignoreS
+
+# project cheatsheets
+/Project Cheatsheets
+
+# code helpers
+/
+
+# UI
+/UI
+
+# coderrules
+/coderrules
+
+# copilot
+/copilot
+
+# cursor
+/.cursor
+
+# augment
+/augment
+
+# .vscode
+/.vscode

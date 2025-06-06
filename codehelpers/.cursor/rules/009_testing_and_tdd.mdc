@@ -1,0 +1,86 @@
+---
+description: Defines rules and structure for Test-Driven Development (TDD), unit testing, and integration testing across Equoria’s full-stack codebase.
+globs: ["test/**/*", "backend/**/*.test.js", "frontend/**/*.test.js", "**/*.test.js"]
+alwaysApply: true
+---
+
+## 🧪 Test-Driven Development (TDD) in Equoria
+
+Equoria follows a TDD-first approach for all features, gameplay logic, and UI modules. Cursor must:
+
+- Encourage tests to be written **before** implementing major logic
+- Update this file as new test types or tools are added
+- Reference tests when generating new routes, utilities, or components
+
+---
+
+## 🛠️ Tools and Frameworks
+
+- **Jest**: Used for all backend and frontend unit tests
+- **React Native Testing Library (RNTL)**: Used for UI testing of mobile screens and interactions
+- **Supertest**: Used for integration testing of Express.js APIs
+- **pgtest / testcontainers**: May be used to test PostgreSQL behavior via a temporary test DB
+
+---
+
+## 📁 Folder and File Structure
+
+```
+test/
+├── unit/
+│   ├── utils/
+│   ├── genetics/
+│   └── auth/
+├── integration/
+│   ├── breeding.test.js
+│   └── riderSynergy.test.js
+└── ui/
+    └── HorseProfileScreen.test.js
+```
+
+- Name files with `.test.js` suffix
+- Group tests by type: unit, integration, ui
+- Each test file should be colocated with the module it tests or mirrored in structure
+
+---
+
+## 🧩 Testing Rules by Type
+
+### 🧪 Unit Tests
+- One function per test block
+- Ensure 100% code coverage for utilities, breeding logic, and phenotype engine
+- Avoid external API or DB calls — use mocks or fakes
+
+### 🔗 Integration Tests
+- Test API endpoints and their behavior
+- Use a dedicated `.env.test` environment with isolated test DB (PostgreSQL)
+- Include setup and teardown hooks to reset DB state before/after each test
+
+### 🎨 UI Tests (React Native)
+- Test rendering, button actions, visual state changes
+- Use `getByText`, `getByTestId`, `fireEvent` from RNTL
+- Avoid testing visual style — focus on user behavior
+
+---
+
+## 🧠 Cursor Directives for TDD
+
+- Prompt user to generate test file **first** before implementation
+- When writing a function or route, automatically suggest test cases
+- Refactor tests if code changes break them
+- Link implementation files to tests with clear comments
+
+**Example:**
+```js
+// tests/unit/genetics/phenotype.test.js
+describe('determinePhenotype', () => {
+  it('resolves correct shade from genotype', () => {
+    const result = determinePhenotype({ ...mockGenotype });
+    expect(result.shade).toBe('burnished');
+  });
+});
+```
+
+---
+
+> Cursor must treat this file as a critical enforcement tool for ensuring code correctness, maintainability, and rapid iteration through test-driven workflows.

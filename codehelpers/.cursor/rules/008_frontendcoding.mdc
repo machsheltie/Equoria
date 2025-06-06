@@ -1,0 +1,77 @@
+---
+description: Covers core frontend coding standards and best practices for Equoria including JavaScript, JSX, and styling conventions.
+globs: ["frontend/**/*", "docs/ux-wireframes/**/*"]
+alwaysApply: true
+---
+
+## 🧠 JavaScript & JSX Standards
+
+- Use modern ES6+ syntax (e.g., arrow functions, `let`/`const`, template literals).
+- Avoid `var` and implicit globals.
+- Prefer declarative patterns and avoid deeply nested callbacks.
+- Use `async/await` for promises instead of `.then()` chains.
+- All components must be function components using React Hooks (no class components).
+- Separate business logic from UI as much as possible (e.g., `utils/`, `hooks/` folders).
+
+**Naming conventions:**
+- Component files: `PascalCase.js`
+- Hooks: `useCamelCase.js`
+- Utilities: `camelCase.js`
+
+---
+
+## 🧱 Structure & Component Design
+
+- One component per file.
+- Keep components focused — split large screens into reusable child components.
+- Avoid prop drilling by using Context or local state encapsulation when needed.
+- Prefer composition over inheritance.
+- Use consistent prop order: `id`, `className`, `style`, `data-*`, `event handlers`, `custom props`.
+
+---
+
+## 🎨 Styling Rules (Tailwind-focused)
+
+- Use Tailwind utility classes instead of writing raw CSS.
+- Avoid inline styles unless dynamically required.
+- Group similar utilities together by function: layout, spacing, typography, color.
+
+**Example:**
+```jsx
+<div className="flex items-center justify-between px-4 py-2 text-white bg-blue-600">
+  Welcome back!
+</div>
+```
+
+- Define shared Tailwind components in `components/ui/` or `components/common/` as needed.
+- Use variants and conditionals with tools like `clsx` or `classnames`.
+
+---
+
+## 🧩 HTML-Like Semantics (React Native Context)
+
+- Use semantic grouping of components (e.g., View for layout, Text for content).
+- Avoid over-nesting — structure should reflect intent (header, content, footer patterns).
+- Use `accessibilityRole` and `accessibilityLabel` for screen readers when applicable.
+
+---
+
+## 🧪 Code Formatting & Linting
+
+- Use ESLint with the React Native + Airbnb base config.
+- Auto-format on save with Prettier.
+- Avoid long files — break up if a component exceeds ~200 lines.
+- Limit functions to ≤ 40 lines for readability.
+
+---
+
+## 🧭 Testing Practices (Unit/UI)
+
+- Use Jest and React Native Testing Library.
+- Write basic tests for every screen and utility function.
+- Prefer testing user-facing behavior over implementation details.
+- Mock API calls and context providers where needed.
+
+---
+
+> These rules help keep Equoria's frontend predictable, scalable, and developer-friendly.

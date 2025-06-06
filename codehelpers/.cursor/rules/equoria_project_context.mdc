@@ -1,0 +1,297 @@
+---
+description: 
+globs: 
+alwaysApply: false
+---
+# Equoria Project Context Rules
+
+You are working on **Equoria**, a sophisticated horse breeding and training game with complex game mechanics, database relationships, and mobile-first design.
+
+## Project Overview
+
+### Game Domain Knowledge
+- **Horse Breeding Game**: Focus on genetics, traits, breeding, training, and competition
+- **Complex Genetics System**: Multi-allele inheritance with dominant/recessive patterns
+- **Training System**: Age-restricted (3+ years), weekly cooldowns, discipline progression
+- **Competition System**: Stat-based scoring with eligibility validation
+- **User Progress**: XP, money, achievements, social features
+
+### Technical Architecture
+- **Frontend**: React Native + Expo with JavaScript ES6+ and Tailwind CSS (NativeWind)
+- **Backend**: Node.js + Express.js with layered architecture
+- **Database**: PostgreSQL with Prisma ORM, extensive JSONB usage
+- **Testing**: Jest with 468+ comprehensive tests
+- **Authentication**: JWT with refresh tokens and role-based access
+
+## Core Game Systems
+
+### 1. Horse Management System
+```javascript
+// Core horse data structure in PostgreSQL:
+// Horse object structure:
+// {
+//   id: string,          // UUID primary key
+//   name: string,        // Horse name
+//   age: number,         // Age in years (affects training eligibility)
+//   sex: 'Mare' | 'Stallion' | 'Gelding',
+//   genetics: JsonValue, // JSONB - complex genetic data
+//   traits: JsonValue,   // JSONB - discovered traits
+//   disciplines: JsonValue, // JSONB - training scores per discipline
+//   parentStallionId?: string, // Breeding relationships
+//   parentMareId?: string,
+//   userId: string     // Owner relationship
+// }
+```
+
+### 2. Training System Rules
+- **Age Restriction**: Horses must be 3+ years old
+- **Global Cooldown**: One discipline per week per horse
+- **Progression**: +5 points per training session
+- **Disciplines**: Dressage, Show Jumping, Cross Country, etc.
+- **Validation**: Check age, cooldown, and ownership
+
+### 3. Competition System Rules
+- **Eligibility**: Age requirements, level restrictions, previous entries
+- **Scoring**: Stat-based with randomization for realism
+- **Results**: Track placements, prizes, and rankings
+- **History**: Complete competition logs for analytics
+
+### 4. Breeding System Rules
+- **Genetics**: Complex multi-allele inheritance
+- **Foal Development**: Progressive trait discovery over time
+- **Breeding Restrictions**: Prevent inbreeding, age minimums
+- **Trait Expression**: Environmental and genetic factors
+
+## Database Schema Patterns
+
+### 1. JSONB Usage for Game Data
+```sql
+-- ALWAYS use JSONB for flexible game data:
+CREATE TABLE horses (
+  id UUID PRIMARY KEY,
+  genetics JSONB NOT NULL,     -- Genetic alleles and expressions
+  traits JSONB DEFAULT '{}',   -- Discovered traits over time
+  disciplines JSONB DEFAULT '{}', -- Training scores per discipline
+  settings JSONB DEFAULT '{}'  -- User-specific settings
+);
+
+-- Index JSONB fields for query performance:
+CREATE INDEX idx_horses_genetics_gin ON horses USING GIN (genetics);
+CREATE INDEX idx_horses_disciplines_gin ON horses USING GIN (disciplines);
+```
+
+### 2. Relationship Modeling
+```sql
+-- Complex relationships for breeding and ownership:
+CREATE TABLE horses (
+  parent_stallion_id UUID REFERENCES horses(id),
+  parent_mare_id UUID REFERENCES horses(id),
+  user_id UUID REFERENCES users(id) NOT NULL
+);
+
+-- Training logs with proper foreign keys:
+CREATE TABLE training_logs (
+  horse_id UUID REFERENCES horses(id) NOT NULL,
+  user_id UUID REFERENCES users(id) NOT NULL,
+  discipline VARCHAR(50) NOT NULL,
+  points_gained INTEGER DEFAULT 5
+);
+```
+
+## Game Logic Patterns
+
+### 1. Training Validation Logic
+```javascript
+// ALWAYS validate training eligibility:
+async function validateTraining(horseId, discipline) {
+  const horse = await prisma.horse.findUnique({
+    where: { id: horseId },
+    include: { trainingLogs: true }
+  });
+
+  // Check age requirement (3+ years)
+  if (horse.age < 3) {
+    throw new Error('Horse must be at least 3 years old to train');
+  }
+
+  // Check weekly cooldown
+  const lastWeek = new Date(Date.now() - 7 * 24 * 60 * 60 * 1000);
+  const recentTraining = horse.trainingLogs.find(
+    log => log.createdAt > lastWeek && log.discipline === discipline
+  );
+
+  if (recentTraining) {
+    throw new Error('Horse already trained this discipline this week');
+  }
+}
+```
+
+### 2. Competition Scoring Logic
+```javascript
+// ALWAYS use realistic stat-based scoring:
+function calculateCompetitionScore(horse, discipline) {
+  const baseScore = horse.disciplines[discipline] || 0;
+  const randomFactor = Math.random() * 20 - 10; // ±10 points variation
+  const ageBonus = Math.min(horse.age - 3, 5); // Experience bonus
+  
+  return Math.max(0, baseScore + randomFactor + ageBonus);
+}
+```
+
+## Component Architecture Patterns
+
+### 1. Reusable Game Components
+```javascript
+// ALWAYS create focused, reusable components:
+// TraitDisplay component props:
+// {
+//   traits: Object,           // Record of trait data
+//   showHidden?: boolean,     // Optional: show hidden traits
+//   onTraitClick?: function   // Optional: trait click handler
+// }
+
+export const TraitDisplay = ({
+  traits,
+  showHidden = false,
+  onTraitClick
+}) => {
+  // Component implementation with proper accessibility
+};
+```
+
+### 2. Game State Management
+```javascript
+// ALWAYS use proper state management for game data:
+const [horse, setHorse] = useState(null);
+const [trainingCooldowns, setTrainingCooldowns] = useState({});
+const [competitionResults, setCompetitionResults] = useState([]);
+```
+
+## API Design Patterns
+
+### 1. Game-Specific Endpoints
+```javascript
+// ALWAYS structure endpoints around game actions:
+// POST /api/training/start     // Start training session
+// GET  /api/horses/:id/stats   // Get horse statistics
+// POST /api/competitions/enter // Enter horse in competition
+// GET  /api/breeding/compatibility // Check breeding compatibility
+```
+
+### 2. Validation Patterns
+```javascript
+// ALWAYS validate game rules at API level:
+export const validateTrainingRequest = [
+  body('horseId').isUUID().withMessage('Valid horse ID required'),
+  body('discipline').isIn(['dressage', 'showjumping', 'crosscountry'])
+    .withMessage('Valid discipline required'),
+  // Custom validator for game rules
+  body().custom(async (value) => {
+    await validateTrainingEligibility(value.horseId, value.discipline);
+    return true;
+  })
+];
+```
+
+## Testing Patterns for Game Logic
+
+### 1. Game Rule Testing
+```javascript
+// ALWAYS test game rules thoroughly:
+describe('Training System', () => {
+  describe('age restrictions', () => {
+    it('should reject training for horses under 3 years old', async () => {
+      const youngHorse = await createTestHorse({ age: 2 });
+      
+      await expect(
+        startTraining(youngHorse.id, 'dressage')
+      ).rejects.toThrow('Horse must be at least 3 years old');
+    });
+  });
+
+  describe('cooldown system', () => {
+    it('should enforce weekly training cooldown', async () => {
+      const horse = await createTestHorse({ age: 4 });
+      
+      // First training should succeed
+      await startTraining(horse.id, 'dressage');
+      
+      // Second training same week should fail
+      await expect(
+        startTraining(horse.id, 'dressage')
+      ).rejects.toThrow('already trained this discipline this week');
+    });
+  });
+});
+```
+
+### 2. Database Integration Testing
+```typescript
+// ALWAYS test database operations with real PostgreSQL:
+describe('Horse Breeding System', () => {
+  it('should correctly inherit traits from parents', async () => {
+    const stallion = await createTestHorse({
+      genetics: { speed: ['A', 'B'], stamina: ['A', 'A'] }
+    });
+    const mare = await createTestHorse({
+      genetics: { speed: ['B', 'C'], stamina: ['B', 'B'] }
+    });
+
+    const foal = await breedHorses(stallion.id, mare.id);
+    
+    expect(foal.genetics.speed).toContain('A', 'B', or 'C');
+    expect(foal.genetics.stamina).toContain('A' or 'B');
+  });
+});
+```
+
+## Performance Considerations
+
+### 1. PostgreSQL Query Optimization
+- **JSONB Indexing**: Use GIN indexes for JSONB queries
+- **Selective Loading**: Only load needed relationships
+- **Query Planning**: Use EXPLAIN ANALYZE for complex queries
+- **Connection Pooling**: Optimize database connections
+
+### 2. Mobile Performance
+- **Component Optimization**: Use React.memo for expensive renders
+- **Data Pagination**: Implement for large horse lists
+- **Image Optimization**: Compress and lazy-load horse images
+- **Offline Support**: Cache critical game data
+
+## Development Priorities
+
+### 1. Core Game Systems (High Priority)
+- Training system with cooldowns and progression
+- Competition system with realistic scoring
+- Breeding system with genetic inheritance
+- User progression and achievements
+
+### 2. User Experience (Medium Priority)
+- Intuitive mobile interface
+- Real-time updates and notifications
+- Social features and leaderboards
+- Comprehensive help system
+
+### 3. Advanced Features (Future)
+- AI-powered breeding recommendations
+- Advanced analytics and statistics
+- Multiuser competitions and guilds
+- Economic simulation features
+
+## Context-Aware Development
+
+### When Working on Game Features:
+- Always consider the game's target audience (horse enthusiasts)
+- Ensure realism in horse breeding and training mechanics
+- Maintain consistency with established game rules
+- Consider long-term user engagement and progression
+
+### When Working on Technical Features:
+- Prioritize data integrity for game state
+- Ensure scalability for growing user base
+- Optimize for mobile device constraints
+- Maintain comprehensive test coverage
+
+
+Remember: Equoria is a complex game with intricate systems. Every piece of code should contribute to creating an engaging, realistic, and technically robust horse breeding and training experience.

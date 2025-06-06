@@ -1,0 +1,18 @@
+---
+description: Overview of the Equoria horse simulation game including goals, gameplay loop, and monetization model.
+globs: ["**/*"]
+alwaysApply: true
+---
+## 🎯 Project Scope
+Equoria is a mobile-first horse simulation game that emphasizes strategic breeding, training, competition, and legacy-based progression. It integrates real-world-inspired color genetics, job-based professions, premium customization options, and a dynamic user economy.
+
+## 📱 Platform
+- iOS and Android only (no desktop version)
+- React (frontend), Node.js (backend), PostgreSQL (database)
+- JSONB-based breed storage
+- Tailwind CSS for styling
+- GitHub-managed with GitHub Actions for CI/CD
+
+## 💰 Monetization
+- Free-to-play core loop
+- Optional IAPs: cosmetics, trait analysis tools, premium riders, seasonal event access

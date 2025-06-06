@@ -1,0 +1,442 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+model User {
+  /// Unique identifier for each user
+  id               String            @id @default(uuid())
+  /// Username used for login or display
+  username         String            @unique
+  /// Email address (must be unique)
+  email            String            @unique
+  /// Hashed password
+  password         String
+  /// First and last name for display purposes
+  firstName        String
+  lastName         String
+  /// In-game currency (or balance)
+  money            Int               @default(1000)
+  /// Current level of the user
+  level            Int               @default(1)
+  /// Experience points toward next level
+  xp               Int               @default(0)
+  /// JSON object for customizable settings (theme, preferences, etc.)
+  settings         Json              @default("{}")
+  /// Timestamps
+  createdAt        DateTime          @default(now())
+  updatedAt        DateTime          @updatedAt
+  groomAssignments GroomAssignment[]
+  grooms           Groom[]
+  horses           Horse[]
+  refreshTokens    RefreshToken[]
+  shows            Show[]
+  xpEvents         XpEvent[]
+
+  @@index([email])
+}
+
+model Breed {
+  /// Unique identifier for each breed
+  id          Int     @id @default(autoincrement())
+  /// Name of the breed
+  name        String
+  /// Description of the breed
+  description String?
+  horses      Horse[]
+
+  @@map("breeds")
+}
+
+model Stable {
+  /// Unique identifier for each stable
+  id       Int     @id @default(autoincrement())
+  /// Name of the stable
+  name     String
+  /// Location of the stable
+  location String?
+  horses   Horse[]
+
+  @@map("stables")
+}
+
+model Horse {
+  /// Unique identifier for each horse
+  id                      Int                   @id @default(autoincrement())
+  /// Name of the horse
+  name                    String
+  /// Sex of the horse
+  sex                     String
+  /// Date of birth
+  dateOfBirth             DateTime              @db.Date
+  /// Foreign keys
+  breedId                 Int?
+  ownerId                 String?
+  stableId                Int?
+  /// Genetics and appearance
+  genotype                Json?
+  phenotypicMarkings      Json?
+  finalDisplayColor       String?
+  shade                   String?
+  imageUrl                String?               @default("/images/samplehorse.JPG")
+  /// Traits and characteristics
+  trait                   String?
+  temperament             String?
+  personality             String?
+  /// Base stats
+  precision               Int?                  @default(0)
+  strength                Int?                  @default(0)
+  speed                   Int?                  @default(0)
+  agility                 Int?                  @default(0)
+  endurance               Int?                  @default(0)
+  intelligence            Int?                  @default(0)
+  /// Additional competition stats
+  stamina                 Int?                  @default(0)
+  balance                 Int?                  @default(0)
+  boldness                Int?                  @default(0)
+  flexibility             Int?                  @default(0)
+  obedience               Int?                  @default(0)
+  focus                   Int?                  @default(0)
+  /// Financial and breeding
+  totalEarnings           Int?                  @default(0)
+  sireId                  Int?
+  damId                   Int?
+  studStatus              String?               @default("Not at Stud")
+  studFee                 Int?                  @default(0)
+  lastBredDate            DateTime?             @db.Date
+  forSale                 Boolean?              @default(false)
+  salePrice               Int?                  @default(0)
+  /// Health and care
+  healthStatus            String?               @default("Excellent")
+  lastVettedDate          DateTime?             @default(now()) @db.Date
+  bondScore               Int?                  @default(0)
+  stressLevel             Int?                  @default(0)
+  /// Groom bonding and burnout prevention
+  daysGroomedInARow       Int?                  @default(0)
+  burnoutStatus           String?               @default("none")
+  /// Foal task logging and streak tracking
+  taskLog                 Json?
+  consecutiveDaysFoalCare Int?                  @default(0)
+  lastGroomed             DateTime?
+  /// Game mechanics
+  tack                    Json?                 @default("{}")
+  age                     Int?
+  userId                  String?
+  trainingCooldown        DateTime?
+  earnings                Decimal?              @default(0) @db.Decimal(10, 2)
+  rider                   Json?
+  disciplineScores        Json?
+  epigeneticModifiers     Json?                 @default("{\"hidden\": [], \"negative\": [], \"positive\": []}")
+  /// Horse XP System
+  horseXp                 Int?                  @default(0)
+  availableStatPoints     Int?                  @default(0)
+  /// Timestamps
+  createdAt               DateTime?             @default(now())
+  updatedAt               DateTime?             @updatedAt
+  competitionResults      CompetitionResult[]
+  foalActivities          FoalActivity[]
+  foalDevelopment         FoalDevelopment?
+  foalTrainingHistory     FoalTrainingHistory[]
+  groomAssignments        GroomAssignment[]
+  groomInteractions       GroomInteraction[]
+  horseXpEvents           HorseXpEvent[]
+  breed                   Breed?                @relation(fields: [breedId], references: [id])
+  dam                     Horse?                @relation("DamLineage", fields: [damId], references: [id])
+  damOffspring            Horse[]               @relation("DamLineage")
+  sire                    Horse?                @relation("SireLineage", fields: [sireId], references: [id])
+  sireOffspring           Horse[]               @relation("SireLineage")
+  stable                  Stable?               @relation(fields: [stableId], references: [id])
+  user                    User?                 @relation(fields: [userId], references: [id])
+  trainingLogs            TrainingLog[]
+
+  @@index([userId])
+  @@index([breedId])
+  @@index([stableId])
+  @@index([ownerId])
+  @@map("horses")
+}
+
+model Groom {
+  /// Unique identifier for each groom
+  id                Int                @id @default(autoincrement())
+  /// Name of the groom
+  name              String
+  /// Speciality area
+  speciality        String
+  /// Experience level (1-20)
+  experience        Int                @default(1)
+  /// Skill level
+  skillLevel        String             @default("novice")
+  /// Personality type
+  personality       String
+  /// Session rate (per session, not hourly)
+  sessionRate       Decimal            @default(15.0) @db.Decimal(10, 2)
+  /// Availability schedule
+  availability      Json               @default("{}")
+  /// Biography
+  bio               String?
+  /// Image URL
+  imageUrl          String?
+  /// Active status
+  isActive          Boolean            @default(true)
+  /// Hire date
+  hiredDate         DateTime           @default(now())
+  /// User association
+  userId            String?
+  /// Timestamps
+  createdAt         DateTime           @default(now())
+  updatedAt         DateTime           @updatedAt
+  groomAssignments  GroomAssignment[]
+  groomInteractions GroomInteraction[]
+  user              User?              @relation(fields: [userId], references: [id])
+
+  @@index([userId])
+  @@map("grooms")
+}
+
+model GroomAssignment {
+  /// Unique identifier for each assignment
+  id                Int                @id @default(autoincrement())
+  /// Assignment period
+  startDate         DateTime           @default(now())
+  endDate           DateTime?
+  /// Status flags
+  isActive          Boolean            @default(true)
+  isDefault         Boolean            @default(false)
+  /// Priority level (1-5)
+  priority          Int                @default(1)
+  /// Notes
+  notes             String?
+  /// Foreign keys
+  foalId            Int
+  groomId           Int
+  userId            String?
+  /// Timestamps
+  createdAt         DateTime           @default(now())
+  updatedAt         DateTime           @updatedAt
+  foal              Horse              @relation(fields: [foalId], references: [id], onDelete: Cascade)
+  groom             Groom              @relation(fields: [groomId], references: [id], onDelete: Cascade)
+  user              User?              @relation(fields: [userId], references: [id])
+  groomInteractions GroomInteraction[]
+
+  @@unique([foalId, groomId, isActive])
+  @@index([foalId])
+  @@index([groomId])
+  @@map("groom_assignments")
+}
+
+model GroomInteraction {
+  /// Unique identifier for each interaction
+  id              Int              @id @default(autoincrement())
+  /// Type of interaction
+  interactionType String
+  /// Duration in minutes
+  duration        Int
+  /// Bonding change (-10 to +10)
+  bondingChange   Int              @default(0)
+  /// Stress change (-10 to +10)
+  stressChange    Int              @default(0)
+  /// Quality of interaction
+  quality         String           @default("good")
+  /// Notes
+  notes           String?
+  /// Cost
+  cost            Decimal          @default(0.0) @db.Decimal(10, 2)
+  /// Foreign keys
+  foalId          Int
+  groomId         Int
+  assignmentId    Int?
+  /// Timestamps
+  timestamp       DateTime         @default(now())
+  createdAt       DateTime         @default(now())
+  assignment      GroomAssignment? @relation(fields: [assignmentId], references: [id])
+  foal            Horse            @relation(fields: [foalId], references: [id], onDelete: Cascade)
+  groom           Groom            @relation(fields: [groomId], references: [id], onDelete: Cascade)
+
+  @@index([foalId])
+  @@index([groomId])
+  @@map("groom_interactions")
+}
+
+model Show {
+  /// Unique identifier for each show
+  id                 Int                 @id @default(autoincrement())
+  /// Name of the show
+  name               String              @unique
+  /// Discipline
+  discipline         String
+  /// Level requirements
+  levelMin           Int
+  levelMax           Int
+  /// Financial details
+  entryFee           Int
+  prize              Int
+  /// Schedule
+  runDate            DateTime
+  /// Host user
+  hostUserId         String?
+  /// Timestamps
+  createdAt          DateTime            @default(now())
+  updatedAt          DateTime            @updatedAt
+  competitionResults CompetitionResult[]
+  hostUser           User?               @relation(fields: [hostUserId], references: [id])
+
+  @@map("shows")
+}
+
+model CompetitionResult {
+  /// Unique identifier for each result
+  id         Int      @id @default(autoincrement())
+  /// Competition details
+  score      Decimal  @db.Decimal(10, 2)
+  placement  String?
+  discipline String
+  runDate    DateTime
+  showName   String
+  /// Rewards
+  prizeWon   Decimal? @default(0) @db.Decimal(10, 2)
+  statGains  Json?
+  /// Foreign keys
+  horseId    Int
+  showId     Int
+  /// Timestamps
+  createdAt  DateTime @default(now())
+  horse      Horse    @relation(fields: [horseId], references: [id], onDelete: Cascade)
+  show       Show     @relation(fields: [showId], references: [id], onDelete: Cascade)
+
+  @@map("competition_results")
+}
+
+model TrainingLog {
+  /// Unique identifier for each training session
+  id         Int      @id @default(autoincrement())
+  /// Training details
+  discipline String
+  trainedAt  DateTime @default(now())
+  /// Foreign key
+  horseId    Int
+  horse      Horse    @relation(fields: [horseId], references: [id], onDelete: Cascade)
+
+  @@map("training_logs")
+}
+
+model FoalDevelopment {
+  /// Unique identifier for each foal development record
+  id                  Int      @id @default(autoincrement())
+  /// Development progress
+  currentDay          Int      @default(0)
+  bondingLevel        Int      @default(50)
+  stressLevel         Int      @default(20)
+  completedActivities Json     @default("{}")
+  /// Foreign key
+  foalId              Int      @unique
+  /// Timestamps
+  createdAt           DateTime @default(now())
+  updatedAt           DateTime @updatedAt
+  foal                Horse    @relation(fields: [foalId], references: [id], onDelete: Cascade)
+
+  @@map("foal_development")
+}
+
+model FoalActivity {
+  /// Unique identifier for each foal activity
+  id            Int      @id @default(autoincrement())
+  /// Activity details
+  day           Int
+  activityType  String
+  outcome       String
+  bondingChange Int
+  stressChange  Int
+  description   String
+  /// Foreign key
+  foalId        Int
+  /// Timestamps
+  createdAt     DateTime @default(now())
+  foal          Horse    @relation(fields: [foalId], references: [id], onDelete: Cascade)
+
+  @@map("foal_activities")
+}
+
+model FoalTrainingHistory {
+  /// Unique identifier for each training history record
+  id           String   @id @default(uuid())
+  /// Training details
+  day          Int
+  activity     String
+  outcome      String
+  bondChange   Int      @default(0)
+  stressChange Int      @default(0)
+  /// Foreign key
+  horseId      Int
+  /// Timestamps
+  timestamp    DateTime @default(now())
+  createdAt    DateTime @default(now())
+  updatedAt    DateTime @updatedAt
+  horse        Horse    @relation(fields: [horseId], references: [id], onDelete: Cascade)
+
+  @@index([horseId])
+  @@index([day])
+  @@index([timestamp])
+  @@index([horseId, day])
+  @@map("foal_training_history")
+}
+
+model XpEvent {
+  /// Unique identifier for each XP event
+  id        Int      @id @default(autoincrement())
+  /// XP details
+  amount    Int
+  reason    String
+  /// Foreign key
+  userId    String
+  /// Timestamps
+  timestamp DateTime @default(now())
+  user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@index([userId])
+  @@index([timestamp])
+  @@index([userId, timestamp])
+  @@map("xp_events")
+}
+
+model RefreshToken {
+  /// Unique identifier for each refresh token
+  id        Int      @id @default(autoincrement())
+  /// The refresh token value
+  token     String   @unique
+  /// User who owns this token
+  userId    String
+  /// Token expiration date
+  expiresAt DateTime
+  /// Timestamps
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+  user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@index([userId])
+  @@index([token])
+  @@index([expiresAt])
+  @@map("refresh_tokens")
+}
+
+model HorseXpEvent {
+  /// Unique identifier for each horse XP event
+  id        Int      @id @default(autoincrement())
+  /// XP details
+  amount    Int
+  reason    String
+  /// Foreign key
+  horseId   Int
+  /// Timestamps
+  timestamp DateTime @default(now())
+  horse     Horse    @relation(fields: [horseId], references: [id], onDelete: Cascade)
+
+  @@index([horseId])
+  @@index([timestamp])
+  @@index([horseId, timestamp])
+  @@map("horse_xp_events")
+}
