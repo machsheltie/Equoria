@@ -559,13 +559,10 @@ function checkLineageForDisciplineAffinity(ancestors) {
       // Method 1: Check if ancestor has a discipline field
       if (ancestor.discipline) {
         preferredDiscipline = ancestor.discipline;
-      } 
-      // Method 2: Check if ancestor has competition history to determine preference
-      else if (ancestor.competitionHistory) {
+      } else if (ancestor.competitionHistory) {
         preferredDiscipline = getMostCommonDisciplineFromHistory(ancestor.competitionHistory);
-      }
       // Method 3: Check if ancestor has discipline scores to determine preference
-      else if (ancestor.disciplineScores) {
+      } else if (ancestor.disciplineScores) {
         preferredDiscipline = getHighestScoringDiscipline(ancestor.disciplineScores);
       }
 

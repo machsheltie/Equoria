@@ -3,7 +3,7 @@
  * Handles user progression, leveling, and advancement logic
  */
 
-import { logger } from '../utils/logger.mjs';
+import logger from '../utils/logger.mjs';
 import { getUserById, addXpToUser as modelAddXpToUser } from '../models/userModel.mjs';
 
 /**

@@ -3,7 +3,7 @@
  * Utility functions for managing horse traits safely
  */
 
-import { logger } from './logger.mjs';
+import logger from './logger.mjs';
 
 /**
  * Safely add a trait to a horse's trait collection

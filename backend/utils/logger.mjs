@@ -25,4 +25,3 @@ const logger = winston.createLogger({
 });
 
 export default logger; // Changed to ES module export
-export { logger }; // Named export for compatibility

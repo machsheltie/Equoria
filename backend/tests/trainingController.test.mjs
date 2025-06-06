@@ -540,7 +540,6 @@ describe('🏋️ UNIT: Training Controller - Horse Training Business Logic', ()
       });
 
 
-
       const trainResult = await trainHorse(1, 'Racing');
       expect(trainResult.success).toBe(true);
 

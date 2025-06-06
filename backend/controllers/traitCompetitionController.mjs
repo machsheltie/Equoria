@@ -205,7 +205,7 @@ export async function compareTraitImpactAcrossDisciplines(req, res) {
     comparisons.sort((a, b) => b.modifier - a.modifier);
 
     // Find best and worst disciplines
-    const bestDiscipline = comparisons[0];
+    const [bestDiscipline] = comparisons;
     const worstDiscipline = comparisons[comparisons.length - 1];
 
     const response = {

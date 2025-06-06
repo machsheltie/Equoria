@@ -22,7 +22,7 @@ async function main() {
               `User email (${JSON.stringify(user.email)}) is not a valid string or does not contain '@'.`,
             );
           }
-          const usernameBase = user.email.split('@')[0];
+          const [usernameBase] = user.email.split('@');
           if (!usernameBase) {
             throw new Error(
               `Username base derived from email (${JSON.stringify(user.email)}) is empty.`,

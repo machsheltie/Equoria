@@ -74,6 +74,8 @@ jest.unstable_mockModule(join(__dirname, '../../models/userModel.mjs'), () => ({
   deleteUser: mockDeleteUser,
   addXpToUser: mockAddXpToUser, // Assumed new function name
   levelUpUserIfNeeded: mockLevelUpUserIfNeeded, // Assumed new function name
+  getUserProgress: jest.fn(), // Add missing getUserProgress mock
+  getUserStats: jest.fn(), // Add missing getUserStats mock
 }));
 
 jest.unstable_mockModule(join(__dirname, '../../utils/logger.mjs'), () => ({

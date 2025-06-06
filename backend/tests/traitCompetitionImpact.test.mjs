@@ -195,7 +195,7 @@ describe('🏆 UNIT: Trait Competition Impact System - Scoring Modifier Calculat
       expect(result.appliedTraits).toHaveLength(1);
       expect(result.traitBonuses).toHaveLength(1);
 
-      const legendaryTrait = result.appliedTraits[0];
+      const [legendaryTrait] = result.appliedTraits;
       expect(legendaryTrait.name).toBe('legendary_bloodline');
       expect(legendaryTrait.isSpecialized).toBe(true);
       expect(legendaryTrait.modifier).toBe(0.1); // 10% for Racing

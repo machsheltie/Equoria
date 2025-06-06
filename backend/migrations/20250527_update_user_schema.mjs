@@ -24,7 +24,7 @@ async function main() {
               `User email (${JSON.stringify(user.email)}) is not a string or does not contain '@'.`,
             );
           }
-          const usernameBase = user.email.split('@')[0];
+          const [usernameBase] = user.email.split('@');
           if (!usernameBase) {
             // Handles cases like "@domain.com" or an empty email part
             throw new Error(

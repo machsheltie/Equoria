@@ -36,25 +36,25 @@ import express from 'express';
 import cors from 'cors';
 import helmet from 'helmet';
 import rateLimit from 'express-rate-limit';
-import config from './config/config.js';
+import config from './config/config.mjs';
 import logger from './utils/logger.mjs';
 
 // Route imports
-import pingRoute from './routes/ping.js';
-import authRoutes from './routes/authRoutes.js';
-import horseRoutes from './routes/horseRoutes.js';
-import userRoutes from './routes/userRoutes.js';
-import trainingRoutes from './routes/trainingRoutes.js';
-import competitionRoutes from './routes/competitionRoutes.js';
-import breedRoutes from './routes/breedRoutes.js';
-import foalRoutes from './routes/foalRoutes.js';
-import traitRoutes from './routes/traitRoutes.js';
-import groomRoutes from './routes/groomRoutes.js';
-import leaderboardRoutes from './routes/leaderboardRoutes.js';
-import adminRoutes from './routes/adminRoutes.js';
+import pingRoute from './routes/ping.mjs';
+import authRoutes from './routes/authRoutes.mjs';
+import horseRoutes from './routes/horseRoutes.mjs';
+import userRoutes from './routes/userRoutes.mjs';
+import trainingRoutes from './routes/trainingRoutes.mjs';
+import competitionRoutes from './routes/competitionRoutes.mjs';
+import breedRoutes from './routes/breedRoutes.mjs';
+import foalRoutes from './routes/foalRoutes.mjs';
+import traitRoutes from './routes/traitRoutes.mjs';
+import groomRoutes from './routes/groomRoutes.mjs';
+import leaderboardRoutes from './routes/leaderboardRoutes.mjs';
+import adminRoutes from './routes/adminRoutes.mjs';
 
 // Middleware imports
-import errorHandler from './middleware/errorHandler.js';
+import errorHandler from './middleware/errorHandler.mjs';
 import { requestLogger, errorRequestLogger } from './middleware/requestLogger.mjs';
 
 const app = express();

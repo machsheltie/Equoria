@@ -44,7 +44,6 @@ const mockLogger = {
 // Mock the logger import
 jest.unstable_mockModule(join(__dirname, '../utils/logger.mjs'), () => ({
   default: mockLogger,
-  logger: mockLogger,
 }));
 
 // Import the functions after mocking

@@ -278,7 +278,7 @@ export async function recordInteraction(req, res) {
 
     // Check for task mutual exclusivity (enrichment vs grooming same day)
     // Get today's date in YYYY-MM-DD format for task log checking
-    const today = new Date().toISOString().split('T')[0];
+    const [today] = new Date().toISOString().split('T');
 
     // Check if foal has already completed a task today
     let existingTaskToday = null;
