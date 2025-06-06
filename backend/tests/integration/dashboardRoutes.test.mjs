@@ -29,7 +29,7 @@
  *    complete dashboard functionality and user experience
  */
 
-import { describe, it, expect, beforeEach, afterEach } from '@jest/globals';
+import { jest, describe, it, expect, beforeEach, afterEach } from '@jest/globals';
 import request from 'supertest';
 import jwt from 'jsonwebtoken';
 import app from '../../app.mjs';

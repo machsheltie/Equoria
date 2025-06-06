@@ -29,6 +29,7 @@
  *    complete leaderboard functionality and ranking algorithms
  */
 
+import { jest, describe, it, expect, beforeEach, afterEach } from '@jest/globals';
 import request from 'supertest';
 import jwt from 'jsonwebtoken';
 import app from '../../app.mjs';

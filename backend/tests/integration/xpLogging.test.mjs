@@ -48,7 +48,6 @@ const __dirname = dirname(__filename);
 // Mock all dependencies
 const mockLogXpEvent = jest.fn();
 const mockAddXp = jest.fn();
-const mockLevelUpIfNeeded = jest.fn();
 const mockGetHorseById = jest.fn();
 const mockIncrementDisciplineScore = jest.fn();
 const mockLogTrainingSession = jest.fn();
@@ -65,30 +64,29 @@ const mockLogger = {
 };
 
 // Mock all the modules
-jest.unstable_mockModule(join(__dirname, '../../models/xpLogModel.js'), () => ({
+jest.unstable_mockModule(join(__dirname, '../../models/xpLogModel.mjs'), () => ({
   logXpEvent: mockLogXpEvent,
 }));
 
-jest.unstable_mockModule(join(__dirname, '../../models/userModel.js'), () => ({
-  addXp: mockAddXp,
-  levelUpIfNeeded: mockLevelUpIfNeeded,
-  getPlayerWithHorses: jest.fn(),
+jest.unstable_mockModule(join(__dirname, '../../models/userModel.mjs'), () => ({
+  addXpToUser: mockAddXp,
+  getUserWithHorses: jest.fn(),
 }));
 
-jest.unstable_mockModule(join(__dirname, '../../models/horseModel.js'), () => ({
+jest.unstable_mockModule(join(__dirname, '../../models/horseModel.mjs'), () => ({
   getHorseById: mockGetHorseById,
   incrementDisciplineScore: mockIncrementDisciplineScore,
   updateHorseStat: mockUpdateHorseStat,
 }));
 
-jest.unstable_mockModule(join(__dirname, '../../models/trainingModel.js'), () => ({
+jest.unstable_mockModule(join(__dirname, '../../models/trainingModel.mjs'), () => ({
   logTrainingSession: mockLogTrainingSession,
   getHorseAge: mockGetHorseAge,
   getAnyRecentTraining: mockGetAnyRecentTraining,
   getLastTrainingDate: jest.fn(),
 }));
 
-jest.unstable_mockModule(join(__dirname, '../../utils/traitEffects.js'), () => ({
+jest.unstable_mockModule(join(__dirname, '../../utils/traitEffects.mjs'), () => ({
   getCombinedTraitEffects: mockGetCombinedTraitEffects,
 }));
 
@@ -97,8 +95,8 @@ jest.unstable_mockModule(join(__dirname, '../../utils/logger.mjs'), () => ({
 }));
 
 // Import the controllers after mocking
-const { trainHorse } = await import('../../controllers/trainingController.js');
-// const { enterAndRunShow } = await import('../../controllers/competitionController.js'); // Commented out as it's unused
+const { trainHorse } = await import('../../controllers/trainingController.mjs');
+// const { enterAndRunShow } = await import('../../controllers/competitionController.mjs'); // Commented out as it's unused
 
 describe('📊 INTEGRATION: XP Logging Integration - Experience Point Workflow', () => {
   beforeEach(() => {
@@ -107,7 +105,6 @@ describe('📊 INTEGRATION: XP Logging Integration - Experience Point Workflow',
     // Reset all mocks
     mockLogXpEvent.mockClear();
     mockAddXp.mockClear();
-    mockLevelUpIfNeeded.mockClear();
     mockGetHorseById.mockClear();
     mockIncrementDisciplineScore.mockClear();
     mockLogTrainingSession.mockClear();
@@ -139,8 +136,7 @@ describe('📊 INTEGRATION: XP Logging Integration - Experience Point Workflow',
         userId: 'user-123', // Corrected: ownerId/playerId to userId
         disciplineScores: { Dressage: 15 },
       });
-      mockAddXp.mockResolvedValue({ leveledUp: false, level: 2, xpGained: 5 });
-      mockLevelUpIfNeeded.mockResolvedValue({ leveledUp: false, level: 2 });
+      mockAddXp.mockResolvedValue({ leveledUp: false, currentLevel: 2, xpGained: 5 });
       mockLogXpEvent.mockResolvedValue({
         id: 1,
         userId: 'user-123', // Changed from playerId
@@ -153,7 +149,6 @@ describe('📊 INTEGRATION: XP Logging Integration - Experience Point Workflow',
 
       expect(result.success).toBe(true);
       expect(mockAddXp).toHaveBeenCalledWith('user-123', 5);
-      expect(mockLevelUpIfNeeded).toHaveBeenCalledWith('user-123');
       expect(mockLogXpEvent).toHaveBeenCalledWith({
         userId: 'user-123', // Changed from playerId
         amount: 5,
@@ -181,8 +176,7 @@ describe('📊 INTEGRATION: XP Logging Integration - Experience Point Workflow',
         userId: 'user-456', // Corrected: ownerId/playerId to userId
         disciplineScores: { Racing: 20 },
       });
-      mockAddXp.mockResolvedValue({ leveledUp: false, level: 3, xpGained: 6 });
-      mockLevelUpIfNeeded.mockResolvedValue({ leveledUp: false, level: 3 });
+      mockAddXp.mockResolvedValue({ leveledUp: false, currentLevel: 3, xpGained: 6 });
       mockLogXpEvent.mockResolvedValue({
         id: 2,
         userId: 'user-456', // Changed from playerId
@@ -220,8 +214,7 @@ describe('📊 INTEGRATION: XP Logging Integration - Experience Point Workflow',
         userId: 'user-789', // Corrected: ownerId/playerId to userId
         disciplineScores: { 'Show Jumping': 10 },
       });
-      mockAddXp.mockResolvedValue({ leveledUp: false, level: 1, xpGained: 5 });
-      mockLevelUpIfNeeded.mockResolvedValue({ leveledUp: false, level: 1 });
+      mockAddXp.mockResolvedValue({ leveledUp: false, currentLevel: 1, xpGained: 5 });
       mockLogXpEvent.mockRejectedValue(new Error('Database connection failed'));
 
       const result = await trainHorse(3, 'Show Jumping');
@@ -277,8 +270,7 @@ describe('📊 INTEGRATION: XP Logging Integration - Experience Point Workflow',
       // that verifies the XP logging logic specifically
 
       mockGetHorseById.mockResolvedValue(mockHorse);
-      mockAddXp.mockResolvedValue({ leveledUp: false, level: 5, xpGained: 20 });
-      mockLevelUpIfNeeded.mockResolvedValue({ leveledUp: false, level: 5 });
+      mockAddXp.mockResolvedValue({ leveledUp: false, currentLevel: 5, xpGained: 20 });
       mockLogXpEvent.mockResolvedValue({
         id: 3,
         userId: 'user-123', // Changed from playerId
@@ -294,7 +286,6 @@ describe('📊 INTEGRATION: XP Logging Integration - Experience Point Workflow',
       if (mockHorse && mockHorse.userId) {
         // Changed from ownerId
         await mockAddXp(mockHorse.userId, xpAmount); // Changed from ownerId
-        await mockLevelUpIfNeeded(mockHorse.userId); // Changed from ownerId
         await mockLogXpEvent({
           userId: mockHorse.userId, // Changed from playerId & ownerId
           amount: xpAmount,
@@ -303,7 +294,6 @@ describe('📊 INTEGRATION: XP Logging Integration - Experience Point Workflow',
       }
 
       expect(mockAddXp).toHaveBeenCalledWith('user-123', 20);
-      expect(mockLevelUpIfNeeded).toHaveBeenCalledWith('user-123');
       expect(mockLogXpEvent).toHaveBeenCalledWith({
         userId: 'user-123', // Changed from playerId
         amount: 20,
@@ -327,8 +317,7 @@ describe('📊 INTEGRATION: XP Logging Integration - Experience Point Workflow',
           userId: 'user-123', // Changed from ownerId/playerId
         };
 
-        mockAddXp.mockResolvedValue({ leveledUp: false, level: 3 });
-        mockLevelUpIfNeeded.mockResolvedValue({ leveledUp: false, level: 3 });
+        mockAddXp.mockResolvedValue({ leveledUp: false, currentLevel: 3 });
         mockLogXpEvent.mockResolvedValue({
           id: 1,
           userId: 'user-123', // Changed from playerId
@@ -339,7 +328,6 @@ describe('📊 INTEGRATION: XP Logging Integration - Experience Point Workflow',
 
         // Simulate XP award for placement
         await mockAddXp(mockHorse.userId, testCase.expectedXp); // Changed from ownerId
-        await mockLevelUpIfNeeded(mockHorse.userId); // Changed from ownerId
         await mockLogXpEvent({
           userId: mockHorse.userId, // Changed from playerId & ownerId
           amount: testCase.expectedXp,

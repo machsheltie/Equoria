@@ -36,6 +36,7 @@
  *    simulation with minimal mocking and validates actual trait bonus effects.
  */
 
+import { jest, describe, it, expect } from '@jest/globals';
 import { simulateCompetition } from '../logic/simulateCompetition.mjs';
 
 describe('🏆 INTEGRATION: Task 9 Integration Example - Discipline Affinity Trait Bonus', () => {
