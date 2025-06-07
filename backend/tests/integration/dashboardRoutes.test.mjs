@@ -82,9 +82,11 @@ describe('🏠 INTEGRATION: Dashboard API - Real Database Integration', () => {
     // Create test user
     testUser = await prisma.user.create({
       data: {
+        username: 'testdashboarduser',
         email: 'test-dashboard@example.com',
         password: 'hashedpassword',
-        name: 'Dashboard Test User',
+        firstName: 'Dashboard',
+        lastName: 'User',
         level: 4,
         xp: 230,
         money: 4250,
@@ -101,8 +103,8 @@ describe('🏠 INTEGRATION: Dashboard API - Real Database Integration', () => {
           name: 'TestDashboard Horse 1',
           age: 5,
           sex: 'Mare',
-          breed: testBreed.name,
-          userId: testUser.id,
+          breedId: testBreed.id,
+          ownerId: testUser.id,
           dateOfBirth: new Date('2020-01-01'),
           healthStatus: 'Good',
           totalEarnings: 1500,
@@ -114,8 +116,8 @@ describe('🏠 INTEGRATION: Dashboard API - Real Database Integration', () => {
           name: 'TestDashboard Horse 2',
           age: 4,
           sex: 'Stallion',
-          breed: testBreed.name,
-          userId: testUser.id,
+          breedId: testBreed.id,
+          ownerId: testUser.id,
           dateOfBirth: new Date('2021-01-01'),
           healthStatus: 'Excellent',
           totalEarnings: 2200,
@@ -127,8 +129,8 @@ describe('🏠 INTEGRATION: Dashboard API - Real Database Integration', () => {
           name: 'TestDashboard Horse 3',
           age: 8,
           sex: 'Gelding',
-          breed: testBreed.name,
-          userId: testUser.id,
+          breedId: testBreed.id,
+          ownerId: testUser.id,
           dateOfBirth: new Date('2017-01-01'),
           healthStatus: 'Good',
           totalEarnings: 3100,
@@ -232,7 +234,7 @@ describe('🏠 INTEGRATION: Dashboard API - Real Database Integration', () => {
       // Verify user info
       expect(data.user).toEqual({
         id: testUser.id,
-        name: testUser.name,
+        name: `${testUser.firstName} ${testUser.lastName}`,
         level: testUser.level,
         xp: testUser.xp,
         money: testUser.money,
@@ -308,7 +310,7 @@ describe('🏠 INTEGRATION: Dashboard API - Real Database Integration', () => {
 
       const { data } = response.body;
 
-      expect(data.user.name).toBe('Empty Dashboard User');
+      expect(data.user.name).toBe('Empty User');
       expect(data.horses.total).toBe(0);
       expect(data.horses.totalEarnings).toBe(0);
       expect(data.shows.upcoming).toHaveLength(2); // Shows still exist
@@ -337,8 +339,8 @@ describe('🏠 INTEGRATION: Dashboard API - Real Database Integration', () => {
           name: 'TestDashboard Inactive Horse',
           age: 3,
           sex: 'Mare',
-          breed: testBreed.name,
-          userId: inactiveUser.id,
+          breedId: testBreed.id,
+          ownerId: inactiveUser.id,
           dateOfBirth: new Date('2022-01-01'),
           healthStatus: 'Good',
           totalEarnings: 0,
@@ -356,7 +358,7 @@ describe('🏠 INTEGRATION: Dashboard API - Real Database Integration', () => {
 
       const { data } = response.body;
 
-      expect(data.user.name).toBe('Inactive Dashboard User');
+      expect(data.user.name).toBe('Inactive User');
       expect(data.horses.total).toBe(1);
       expect(data.horses.totalEarnings).toBe(0);
       expect(data.recent.lastTrained).toBeNull();

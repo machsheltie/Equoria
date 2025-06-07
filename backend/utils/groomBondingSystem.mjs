@@ -360,7 +360,18 @@ export function updateStreakTracking(lastGroomed, currentDate, currentStreak = 0
   // Calculate days since last grooming
   const daysDifference = Math.floor((currentDate - lastGroomed) / (1000 * 60 * 60 * 24));
 
-  if (daysDifference === 1) {
+  if (daysDifference === 0) {
+    // Same day - maintain current streak without incrementing
+    return {
+      consecutiveDays: currentStreak,
+      lastGroomed: currentDate,
+      streakBroken: false,
+      bonusEligible: currentStreak >= GROOM_CONFIG.FOAL_STREAK_BONUS_THRESHOLD,
+      bonusPercentage: currentStreak >= GROOM_CONFIG.FOAL_STREAK_BONUS_THRESHOLD ? 10 : 0,
+      withinGracePeriod: false,
+      sameDay: true,
+    };
+  } else if (daysDifference === 1) {
     // Consecutive day - increment streak
     const newStreak = currentStreak + 1;
     return {

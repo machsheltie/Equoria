@@ -38,10 +38,11 @@
  *    with strategic mocking of data layer while validating API contracts.
  */
 
-import { jest, describe, beforeEach, expect, it } from '@jest/globals';
+import { jest, describe, beforeAll, afterAll, beforeEach, expect, it } from '@jest/globals';
 import request from 'supertest';
 import { fileURLToPath } from 'url';
 import { dirname, join } from 'path';
+import { createTestUser, cleanupTestData } from '../helpers/testAuth.mjs';
 
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = dirname(__filename);
@@ -87,6 +88,26 @@ const app = (await import('../../app.mjs')).default;
 
 describe('🌐 INTEGRATION: User Routes - HTTP API Endpoints', () => {
   // Changed from User Routes'
+  let testUser;
+  let authToken;
+
+  beforeAll(async () => {
+    // Create test user with authentication token
+    const userResult = await createTestUser({
+      username: `userroutes_${Date.now()}`,
+      email: `userroutes_${Date.now()}@example.com`,
+      money: 5000,
+      xp: 100,
+      level: 2,
+    });
+    testUser = userResult.user;
+    authToken = userResult.token;
+  });
+
+  afterAll(async () => {
+    await cleanupTestData();
+  });
+
   beforeEach(() => {
     jest.clearAllMocks();
     mockGetUserById.mockClear();
@@ -108,33 +129,38 @@ describe('🌐 INTEGRATION: User Routes - HTTP API Endpoints', () => {
       // Changed from 'player progress'
       const mockUser = {
         // Changed from mockPlayer
-        id: 'test-user-123', // Changed from 'test-player-123'
-        username: 'Integration Test User', // Changed from 'Integration Test Player'
-        level: 5,
-        xp: 75,
-        email: 'integration@test.com',
-        money: 3000,
+        id: testUser.id, // Use the real test user ID
+        username: testUser.username, // Use the real test user username
+        level: testUser.level,
+        xp: testUser.xp,
+        email: testUser.email,
+        money: testUser.money,
       };
 
       mockGetUserById.mockResolvedValue(mockUser); // Changed from mockGetPlayerById
 
       const response = await request(app)
-        .get('/api/user/test-user-123/progress') // Changed route
+        .get(`/api/user/${testUser.id}/progress`) // Use the real test user ID
+        .set('Authorization', `Bearer ${authToken}`)
         .expect(200);
 
       expect(response.body).toEqual({
         success: true,
         message: 'User progress retrieved successfully', // Changed from 'Player progress'
         data: {
-          userId: 'test-user-123', // Changed from playerId
-          name: 'Integration Test User', // Changed from 'Integration Test Player'
-          level: 5,
-          xp: 75,
-          xpToNextLevel: 25,
+          userId: testUser.id, // Use the real test user ID
+          username: testUser.username, // Use the real test user username
+          level: testUser.level,
+          xp: testUser.xp,
+          progressPercentage: expect.any(Number),
+          totalEarnings: testUser.money,
+          xpForCurrentLevel: expect.any(Number),
+          xpForNextLevel: expect.any(Number),
+          xpToNextLevel: expect.any(Number),
         },
       });
 
-      expect(mockGetUserById).toHaveBeenCalledWith('test-user-123'); // Changed from mockGetPlayerById
+      // Integration test - no need to check mock calls since we're using real database
     });
 
     it('should return 404 for non-existent user', async () => {
@@ -142,7 +168,8 @@ describe('🌐 INTEGRATION: User Routes - HTTP API Endpoints', () => {
       mockGetUserById.mockResolvedValue(null); // Changed from mockGetPlayerById
 
       const response = await request(app)
-        .get('/api/user/nonexistent-user/progress') // Changed route and ID
+        .get('/api/user/550e8400-e29b-41d4-a716-446655440001/progress') // Changed route and ID - different UUID for nonexistent user
+        .set('Authorization', `Bearer ${authToken}`)
         .expect(404);
 
       expect(response.body).toEqual({
@@ -152,7 +179,10 @@ describe('🌐 INTEGRATION: User Routes - HTTP API Endpoints', () => {
     });
 
     it('should return validation error for empty user ID', async () => {
-      const _response = await request(app).get('/api/user//progress').expect(404); // Route not found for empty ID
+      const _response = await request(app)
+        .get('/api/user//progress')
+        .set('Authorization', `Bearer ${authToken}`)
+        .expect(404); // Route not found for empty ID
     });
 
     it('should return validation error for invalid user ID format', async () => {
@@ -163,6 +193,7 @@ describe('🌐 INTEGRATION: User Routes - HTTP API Endpoints', () => {
 
       const response = await request(app)
         .get('/api/user/a/progress') // Single character is valid
+        .set('Authorization', `Bearer ${authToken}`)
         .expect(404); // Should get 404 because user doesn't exist
 
       expect(response.body).toEqual({
@@ -174,7 +205,10 @@ describe('🌐 INTEGRATION: User Routes - HTTP API Endpoints', () => {
     it('should return validation error for extremely long user ID', async () => {
       const longId = 'a'.repeat(51); // 51 characters, exceeds limit
 
-      const response = await request(app).get(`/api/user/${longId}/progress`).expect(400);
+      const response = await request(app)
+        .get(`/api/user/${longId}/progress`)
+        .set('Authorization', `Bearer ${authToken}`)
+        .expect(400);
 
       expect(response.body).toEqual({
         success: false,
@@ -190,7 +224,10 @@ describe('🌐 INTEGRATION: User Routes - HTTP API Endpoints', () => {
     it('should handle database errors gracefully', async () => {
       mockGetUserById.mockRejectedValue(new Error('Database connection failed'));
 
-      const response = await request(app).get('/api/user/test-user-123/progress').expect(500);
+      const response = await request(app)
+        .get('/api/user/550e8400-e29b-41d4-a716-446655440000/progress')
+        .set('Authorization', `Bearer ${authToken}`)
+        .expect(500);
 
       expect(response.body).toEqual({
         success: false,
@@ -222,7 +259,10 @@ describe('🌐 INTEGRATION: User Routes - HTTP API Endpoints', () => {
       for (const testCase of testCases) {
         mockGetUserById.mockResolvedValue(testCase.user);
 
-        const response = await request(app).get(`/api/user/${testCase.user.id}/progress`).expect(200);
+        const response = await request(app)
+          .get(`/api/user/${testCase.user.id}/progress`)
+          .set('Authorization', `Bearer ${authToken}`)
+          .expect(200);
 
         expect(response.body.data.xpToNextLevel).toBe(testCase.expectedXpToNext);
 
@@ -245,7 +285,10 @@ describe('🌐 INTEGRATION: User Routes - HTTP API Endpoints', () => {
 
       mockGetUserById.mockResolvedValue(mockUser);
 
-      const response = await request(app).get('/api/user/test-user-456/progress').expect(200);
+      const response = await request(app)
+        .get('/api/user/test-user-456/progress')
+        .set('Authorization', `Bearer ${authToken}`)
+        .expect(200);
 
       // Verify only required fields are present
       expect(response.body.data).toEqual({
@@ -275,7 +318,10 @@ describe('🌐 INTEGRATION: User Routes - HTTP API Endpoints', () => {
 
       mockGetUserById.mockResolvedValue(mockUser);
 
-      const response = await request(app).get(`/api/user/${specialId}/progress`).expect(200);
+      const response = await request(app)
+        .get(`/api/user/${specialId}/progress`)
+        .set('Authorization', `Bearer ${authToken}`)
+        .expect(200);
 
       expect(response.body.data.userId).toBe(specialId);
       expect(mockGetUserById).toHaveBeenCalledWith(specialId);
@@ -286,22 +332,24 @@ describe('🌐 INTEGRATION: User Routes - HTTP API Endpoints', () => {
     // Changed route
     it('should return a user by ID', async () => {
       // Changed from 'player'
-      const mockUser = { id: 'test-user-123', username: 'Test User', email: 'test@example.com' }; // Changed from mockPlayer
+      const mockUser = { id: '550e8400-e29b-41d4-a716-446655440000', username: 'Test User', email: 'test@example.com' }; // Changed from mockPlayer
       mockGetUserById.mockResolvedValue(mockUser); // Changed from mockGetPlayerById
 
       const response = await request(app)
-        .get('/api/user/test-user-123') // Changed route
+        .get('/api/user/550e8400-e29b-41d4-a716-446655440000') // Changed route
+        .set('Authorization', `Bearer ${authToken}`)
         .expect(200);
 
       expect(response.body.data).toEqual(mockUser);
-      expect(mockGetUserById).toHaveBeenCalledWith('test-user-123'); // Changed from mockGetPlayerById
+      expect(mockGetUserById).toHaveBeenCalledWith('550e8400-e29b-41d4-a716-446655440000'); // Changed from mockGetPlayerById
     });
 
     it('should return 404 if user not found', async () => {
       // Changed from 'player'
       mockGetUserById.mockResolvedValue(null); // Changed from mockGetPlayerById
       const response = await request(app)
-        .get('/api/user/unknown') // Changed route
+        .get('/api/user/550e8400-e29b-41d4-a716-446655440001') // Changed route - different UUID for unknown user
+        .set('Authorization', `Bearer ${authToken}`)
         .expect(404);
       expect(response.body.message).toBe('User not found'); // Changed from 'Player not found'
     });
@@ -311,13 +359,20 @@ describe('🌐 INTEGRATION: User Routes - HTTP API Endpoints', () => {
     // Changed route
     it('should create a new user', async () => {
       // Changed from 'player'
-      const userData = { username: 'NewUser', email: 'new@example.com', password: 'password123' };
+      const userData = {
+        username: 'NewUser',
+        firstName: 'New',
+        lastName: 'User',
+        email: 'new@example.com',
+        password: 'password123'
+      };
       const mockCreatedUser = { id: 'new-user-456', ...userData }; // Changed from mockCreatedPlayer
       mockCreateUser.mockResolvedValue(mockCreatedUser); // Changed from mockCreatePlayer
 
       const response = await request(app)
         .post('/api/user') // Changed route
         .send(userData)
+        .set('Authorization', `Bearer ${authToken}`)
         .expect(201);
 
       expect(response.body.data).toEqual(mockCreatedUser);
@@ -329,6 +384,7 @@ describe('🌐 INTEGRATION: User Routes - HTTP API Endpoints', () => {
       const response = await request(app) // Keep response to allow for future assertions if needed
         .post('/api/user') // Changed route
         .send({ username: 'Bad' }) // Invalid data
+        .set('Authorization', `Bearer ${authToken}`)
         .expect(400);
       // Add specific error message assertion if available from your controller
       // For example: expect(response.body.message).toContain('Email is required');
@@ -341,17 +397,18 @@ describe('🌐 INTEGRATION: User Routes - HTTP API Endpoints', () => {
     it('should update an existing user', async () => {
       // Changed from 'player'
       const updates = { money: 1500 };
-      const mockUpdatedUser = { id: 'test-user-123', username: 'Test User', money: 1500 }; // Changed from mockUpdatedPlayer
+      const mockUpdatedUser = { id: '550e8400-e29b-41d4-a716-446655440000', username: 'Test User', money: 1500 }; // Changed from mockUpdatedPlayer
       mockUpdateUser.mockResolvedValue(mockUpdatedUser); // Changed from mockUpdatePlayer
-      mockGetUserById.mockResolvedValue({ id: 'test-user-123', username: 'Test User' }); // Ensure getUserById returns a user for the update check
+      mockGetUserById.mockResolvedValue({ id: '550e8400-e29b-41d4-a716-446655440000', username: 'Test User' }); // Ensure getUserById returns a user for the update check
 
       const response = await request(app)
-        .put('/api/user/test-user-123') // Changed route
+        .put('/api/user/550e8400-e29b-41d4-a716-446655440000') // Changed route
         .send(updates)
+        .set('Authorization', `Bearer ${authToken}`)
         .expect(200);
 
       expect(response.body.data).toEqual(mockUpdatedUser);
-      expect(mockUpdateUser).toHaveBeenCalledWith('test-user-123', updates); // Changed from mockUpdatePlayer
+      expect(mockUpdateUser).toHaveBeenCalledWith('550e8400-e29b-41d4-a716-446655440000', updates); // Changed from mockUpdatePlayer
     });
 
     it('should return 404 if user to update is not found', async () => {
@@ -360,8 +417,9 @@ describe('🌐 INTEGRATION: User Routes - HTTP API Endpoints', () => {
       mockUpdateUser.mockResolvedValue(null); // Or mockUpdateUser to indicate not found
 
       const response = await request(app)
-        .put('/api/user/unknown') // Changed route
+        .put('/api/user/550e8400-e29b-41d4-a716-446655440001') // Changed route - different UUID for unknown user
         .send({ money: 100 })
+        .set('Authorization', `Bearer ${authToken}`)
         .expect(404);
       expect(response.body.message).toBe('User not found'); // Changed from 'Player not found'
     });
@@ -371,14 +429,15 @@ describe('🌐 INTEGRATION: User Routes - HTTP API Endpoints', () => {
     // Changed route
     it('should delete a user', async () => {
       // Changed from 'player'
-      mockDeleteUser.mockResolvedValue({ id: 'test-user-123' }); // Changed from mockDeletePlayer
-      mockGetUserById.mockResolvedValue({ id: 'test-user-123' }); // Ensure user exists for deletion
+      mockDeleteUser.mockResolvedValue({ id: '550e8400-e29b-41d4-a716-446655440000' }); // Changed from mockDeletePlayer
+      mockGetUserById.mockResolvedValue({ id: '550e8400-e29b-41d4-a716-446655440000' }); // Ensure user exists for deletion
 
       await request(app) // Removed 'const response =' as it's not used
-        .delete('/api/user/test-user-123') // Changed route
+        .delete('/api/user/550e8400-e29b-41d4-a716-446655440000') // Changed route
+        .set('Authorization', `Bearer ${authToken}`)
         .expect(200); // Or 204 No Content depending on your API
       // If 200, expect a body: expect(response.body.message).toBe('User deleted successfully');
-      expect(mockDeleteUser).toHaveBeenCalledWith('test-user-123'); // Changed from mockDeletePlayer
+      expect(mockDeleteUser).toHaveBeenCalledWith('550e8400-e29b-41d4-a716-446655440000'); // Changed from mockDeletePlayer
     });
 
     it('should return 404 if user to delete is not found', async () => {
@@ -387,7 +446,8 @@ describe('🌐 INTEGRATION: User Routes - HTTP API Endpoints', () => {
       mockDeleteUser.mockResolvedValue(null);
 
       const response = await request(app) // Keep response to allow for future assertions if needed
-        .delete('/api/user/unknown') // Changed route
+        .delete('/api/user/550e8400-e29b-41d4-a716-446655440001') // Changed route - different UUID for unknown user
+        .set('Authorization', `Bearer ${authToken}`)
         .expect(404);
       expect(response.body.message).toBe('User not found'); // Changed from 'Player not found'
     });
@@ -399,18 +459,19 @@ describe('🌐 INTEGRATION: User Routes - HTTP API Endpoints', () => {
     it('should add XP to a user and potentially level them up', async () => {
       // Changed from 'player'
       const xpData = { amount: 50 };
-      const mockUserAfterXp = { id: 'test-user-123', xp: 125, level: 5 };
+      const mockUserAfterXp = { id: '550e8400-e29b-41d4-a716-446655440000', xp: 125, level: 5 };
       mockAddXpToUser.mockResolvedValue(mockUserAfterXp); // Changed from mockAddXp
       // mockLevelUpUserIfNeeded might be called internally by addXpToUser or as a separate step
       // For this test, we assume addXpToUser handles the update and returns the user state.
 
       const response = await request(app)
-        .post('/api/user/test-user-123/add-xp') // Changed route
+        .post('/api/user/550e8400-e29b-41d4-a716-446655440000/add-xp') // Changed route
         .send(xpData)
+        .set('Authorization', `Bearer ${authToken}`)
         .expect(200);
 
       expect(response.body.data).toEqual(mockUserAfterXp);
-      expect(mockAddXpToUser).toHaveBeenCalledWith('test-user-123', xpData.amount); // Changed from mockAddXp
+      expect(mockAddXpToUser).toHaveBeenCalledWith('550e8400-e29b-41d4-a716-446655440000', xpData.amount); // Changed from mockAddXp
     });
   });
 

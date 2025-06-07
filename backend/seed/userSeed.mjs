@@ -25,7 +25,8 @@ async function seedUserWithHorses() {
     const testUser = await prisma.user.create({
       data: {
         username: 'testuser',
-        name: 'Test User',
+        firstName: 'Test',
+        lastName: 'User',
         email: 'test@example.com',
         password: hashedPassword,
         money: 5000,

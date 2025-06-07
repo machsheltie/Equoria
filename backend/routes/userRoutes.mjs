@@ -4,8 +4,16 @@
  */
 
 import express from 'express';
-import { param, validationResult } from 'express-validator';
-import { getUserProgressAPI, getDashboardData } from '../controllers/userController.mjs'; // Updated import
+import { param, body, validationResult } from 'express-validator';
+import {
+  getUserProgressAPI,
+  getDashboardData,
+  getUser,
+  createUserController,
+  updateUserController,
+  deleteUserController,
+  addXpController
+} from '../controllers/userController.mjs';
 import { authenticateToken } from '../middleware/auth.mjs';
 import logger from '../utils/logger.mjs';
 
@@ -210,5 +218,33 @@ router.get('/:id/progress', authenticateToken, validateUserId, getUserProgressAP
  *         description: Internal server error
  */
 router.get('/dashboard/:userId', authenticateToken, validateDashboardUserId, getDashboardData);
+
+// CRUD routes for user management
+router.get('/:id', validateUserId, getUser);
+router.post('/', [
+  body('username').notEmpty().withMessage('Username is required'),
+  body('email').isEmail().withMessage('Valid email is required'),
+  body('password').isLength({ min: 6 }).withMessage('Password must be at least 6 characters'),
+  (req, res, next) => {
+    const errors = validationResult(req);
+    if (!errors.isEmpty()) {
+      return res.status(400).json({
+        success: false,
+        message: 'Validation failed',
+        errors: errors.array(),
+      });
+    }
+    next();
+  },
+], createUserController);
+
+router.put('/:id', validateUserId, updateUserController);
+router.delete('/:id', validateUserId, deleteUserController);
+
+// XP management
+router.post('/:id/add-xp', [
+  ...validateUserId,
+  body('amount').isInt({ min: 1 }).withMessage('Amount must be a positive integer'),
+], addXpController);
 
 export default router;

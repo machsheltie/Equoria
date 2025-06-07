@@ -41,7 +41,6 @@ async function createUser(userData) {
         id: true,
         username: true,
         email: true,
-        role: true,
         level: true,
         xp: true,
         money: true,

@@ -23,6 +23,7 @@ import {
   updateTaskLog,
   updateStreakTracking,
   checkTaskMutualExclusivity as _checkTaskMutualExclusivity,
+  checkBurnoutImmunity,
 } from '../utils/groomBondingSystem.mjs';
 import prisma from '../db/index.mjs';
 import logger from '../utils/logger.mjs';
@@ -244,6 +245,7 @@ export async function recordInteraction(req, res) {
           stressLevel: true,
           taskLog: true,
           lastGroomed: true,
+          daysGroomedInARow: true,
         },
       }),
     ]);
@@ -313,7 +315,7 @@ export async function recordInteraction(req, res) {
     const streakUpdate = updateStreakTracking(
       foal.lastGroomed ? new Date(foal.lastGroomed) : null,
       currentDate,
-      0, // TODO: Get actual consecutive days from database
+      foal.daysGroomedInARow || 0, // Use actual consecutive days from database
     );
 
     // Record the interaction
@@ -339,6 +341,9 @@ export async function recordInteraction(req, res) {
       Math.min(100, (foal.stressLevel || 0) + effects.stressChange),
     );
 
+    // Calculate burnout immunity status based on consecutive days
+    const immunityCheck = checkBurnoutImmunity(streakUpdate.consecutiveDays);
+
     await prisma.horse.update({
       where: { id: foalId },
       data: {
@@ -346,6 +351,8 @@ export async function recordInteraction(req, res) {
         stressLevel: newStressLevel,
         taskLog: taskLogUpdate.taskLog,
         lastGroomed: streakUpdate.lastGroomed,
+        daysGroomedInARow: streakUpdate.consecutiveDays,
+        burnoutStatus: immunityCheck.status,
       },
     });
 
@@ -386,6 +393,11 @@ export async function recordInteraction(req, res) {
           bonusEligible: streakUpdate.bonusEligible,
           streakBroken: streakUpdate.streakBroken,
           lastGroomed: streakUpdate.lastGroomed,
+        },
+        burnoutImmunity: {
+          status: immunityCheck.status,
+          immunityGranted: immunityCheck.immunityGranted,
+          daysToImmunity: immunityCheck.daysToImmunity,
         },
       },
     });

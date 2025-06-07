@@ -32,7 +32,7 @@
  */
 
 import { getTrainableHorses } from '../controllers/trainingController.mjs';
-import { getUserProgress } from '../models/userModel.mjs';
+import { getUserProgress, getUserById, createUser, updateUser, deleteUser, addXpToUser } from '../models/userModel.mjs';
 import prisma from '../db/index.mjs';
 import logger from '../utils/logger.mjs';
 import AppError from '../errors/AppError.mjs';
@@ -278,6 +278,156 @@ export const getDashboardData = async (req, res, next) => {
       `[userController.getDashboardData] Error getting dashboard data for user ${userId}: ${error.message}`,
       { stack: error.stack },
     );
+    next(error);
+  }
+};
+
+/**
+ * Get user by ID
+ * @route GET /api/user/:id
+ */
+export const getUser = async (req, res, next) => {
+  try {
+    const { id } = req.params;
+
+    logger.info(`[userController.getUser] Getting user ${id}`);
+
+    const user = await getUserById(id);
+
+    if (!user) {
+      return res.status(404).json({
+        success: false,
+        message: 'User not found',
+      });
+    }
+
+    res.status(200).json({
+      success: true,
+      message: 'User retrieved successfully',
+      data: user,
+    });
+  } catch (error) {
+    logger.error(`[userController.getUser] Error: ${error.message}`);
+    next(error);
+  }
+};
+
+/**
+ * Create new user
+ * @route POST /api/user
+ */
+export const createUserController = async (req, res, next) => {
+  try {
+    const userData = req.body;
+
+    logger.info(`[userController.createUser] Creating user ${userData.username}`);
+
+    const user = await createUser(userData);
+
+    res.status(201).json({
+      success: true,
+      message: 'User created successfully',
+      data: user,
+    });
+  } catch (error) {
+    logger.error(`[userController.createUser] Error: ${error.message}`);
+    if (error.message.includes('required') || error.message.includes('validation')) {
+      return res.status(400).json({
+        success: false,
+        message: error.message,
+      });
+    }
+    next(error);
+  }
+};
+
+/**
+ * Update user
+ * @route PUT /api/user/:id
+ */
+export const updateUserController = async (req, res, next) => {
+  try {
+    const { id } = req.params;
+    const updates = req.body;
+
+    logger.info(`[userController.updateUser] Updating user ${id}`);
+
+    const user = await updateUser(id, updates);
+
+    if (!user) {
+      return res.status(404).json({
+        success: false,
+        message: 'User not found',
+      });
+    }
+
+    res.status(200).json({
+      success: true,
+      message: 'User updated successfully',
+      data: user,
+    });
+  } catch (error) {
+    logger.error(`[userController.updateUser] Error: ${error.message}`);
+    next(error);
+  }
+};
+
+/**
+ * Delete user
+ * @route DELETE /api/user/:id
+ */
+export const deleteUserController = async (req, res, next) => {
+  try {
+    const { id } = req.params;
+
+    logger.info(`[userController.deleteUser] Deleting user ${id}`);
+
+    const result = await deleteUser(id);
+
+    if (!result) {
+      return res.status(404).json({
+        success: false,
+        message: 'User not found',
+      });
+    }
+
+    res.status(200).json({
+      success: true,
+      message: 'User deleted successfully',
+    });
+  } catch (error) {
+    logger.error(`[userController.deleteUser] Error: ${error.message}`);
+    next(error);
+  }
+};
+
+/**
+ * Add XP to user
+ * @route POST /api/user/:id/add-xp
+ */
+export const addXpController = async (req, res, next) => {
+  try {
+    const { id } = req.params;
+    const { amount } = req.body;
+
+    logger.info(`[userController.addXp] Adding ${amount} XP to user ${id}`);
+
+    const user = await addXpToUser(id, amount);
+
+    if (!user) {
+      return res.status(404).json({
+        success: false,
+        message: 'User not found',
+      });
+    }
+
+    res.status(200).json({
+      success: true,
+      message: 'XP added successfully',
+      data: user,
+    });
+  } catch (error) {
+    logger.error(`[userController.addXp] Error: ${error.message}`);
     next(error);
   }
 };
