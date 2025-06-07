@@ -359,7 +359,7 @@ describe('🏋️ INTEGRATION: Training Controller Business Logic - Complete Tra
       });
 
       // Initial status check - should be trainable
-      let status = await getTrainingStatus(workflowHorse.id);
+      let status = await getTrainingStatus(workflowHorse.id, 'Racing'); // Fixed: added required discipline parameter
 
       expect(status).toEqual(
         expect.objectContaining({

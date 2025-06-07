@@ -134,7 +134,7 @@ async function findOrCreateBreed(breedName) {
     return null;
   }
   try {
-    let breed = await prisma.breed.findUnique({
+    let breed = await prisma.breed.findFirst({
       where: { name: breedName },
     });
     if (!breed) {
@@ -158,23 +158,35 @@ async function ensureReferencedRecordsExist() {
   const { default: prisma } = await import('../db/index.js');
   try {
     await prisma.user.upsert({
-      where: { id: 1 },
-      update: { username: 'Default User' },
-      create: { id: 1, username: 'Default User', email: 'user1@example.com', password: 'password' },
+      where: { email: 'owner1@example.com' },
+      update: { username: 'Default Owner' },
+      create: {
+        username: 'Default Owner',
+        email: 'owner1@example.com',
+        password: 'password',
+        firstName: 'Default',
+        lastName: 'Owner',
+      },
     });
-    logger.info('[seed] Ensured User ID 1 exists.');
+    logger.info('[seed] Ensured User owner1@example.com exists.');
   } catch (e) {
-    logger.warn(`[seed] Could not ensure User ID 1. Error: ${e.message}`);
+    logger.warn(`[seed] Could not ensure User owner1@example.com. Error: ${e.message}`);
   }
   try {
     await prisma.user.upsert({
-      where: { id: 2 },
-      update: { username: 'Second User' },
-      create: { id: 2, username: 'Second User', email: 'user2@example.com', password: 'password' },
+      where: { email: 'owner2@example.com' },
+      update: { username: 'Second Owner' },
+      create: {
+        username: 'Second Owner',
+        email: 'owner2@example.com',
+        password: 'password',
+        firstName: 'Second',
+        lastName: 'Owner',
+      },
     });
-    logger.info('[seed] Ensured User ID 2 exists.');
+    logger.info('[seed] Ensured User owner2@example.com exists.');
   } catch (e) {
-    logger.warn(`[seed] Could not ensure User ID 2. Error: ${e.message}`);
+    logger.warn(`[seed] Could not ensure User owner2@example.com. Error: ${e.message}`);
   }
   try {
     await prisma.stable.upsert({
@@ -208,21 +220,27 @@ const seedHorses = async (prisma, users) => {
   const [user] = users;
 
   const breedsData = [
-    { name: 'Thoroughbred', baseSpeed: 80, baseStamina: 70, baseStrength: 60, rarity: 'Common' },
-    { name: 'Arabian', baseSpeed: 75, baseStamina: 80, baseStrength: 50, rarity: 'Rare' },
-    { name: 'Quarter Horse', baseSpeed: 70, baseStamina: 60, baseStrength: 80, rarity: 'Common' },
-    { name: 'Akhal-Teke', baseSpeed: 85, baseStamina: 75, baseStrength: 65, rarity: 'Epic' },
+    { name: 'Thoroughbred', description: 'Fast and athletic racing breed' },
+    { name: 'Arabian', description: 'Enduring and intelligent desert breed' },
+    { name: 'Quarter Horse', description: 'Strong and versatile working breed' },
+    { name: 'Akhal-Teke', description: 'Rare and elegant metallic-coated breed' },
   ];
 
   const createdBreeds = [];
   for (const breedData of breedsData) {
     try {
-      const breed = await prisma.breed.upsert({
+      // Use findFirst + create pattern since name is not unique
+      let breed = await prisma.breed.findFirst({
         where: { name: breedData.name },
-        update: breedData,
-        create: breedData,
       });
-      logger.info(`Upserted breed: ${breed.name}`);
+      if (!breed) {
+        breed = await prisma.breed.create({
+          data: breedData,
+        });
+        logger.info(`Created breed: ${breed.name}`);
+      } else {
+        logger.info(`Found existing breed: ${breed.name}`);
+      }
       createdBreeds.push(breed);
     } catch (error) {
       logger.error(`Error seeding breed ${breedData.name}: ${error.message}`);
@@ -234,9 +252,11 @@ const seedHorses = async (prisma, users) => {
       name: 'Lightning Bolt',
       age: 3,
       sex: 'Stallion',
-      color: 'Bay',
+      finalDisplayColor: 'Bay',
+      dateOfBirth: new Date('2022-01-01'), // Required field
       breedId: createdBreeds.find(b => b.name === 'Thoroughbred')?.id,
       userId: user.id,
+      stableId: 1, // Default stable
       speed: 82,
       stamina: 72,
       strength: 62,
@@ -244,16 +264,18 @@ const seedHorses = async (prisma, users) => {
       endurance: 75,
       intelligence: 60,
       temperament: 'Spirited',
-      health: 100,
+      healthStatus: 'Excellent',
       forSale: false,
     },
     {
       name: 'Desert Rose',
       age: 5,
       sex: 'Mare',
-      color: 'Chestnut',
+      finalDisplayColor: 'Chestnut',
+      dateOfBirth: new Date('2020-01-01'), // Required field
       breedId: createdBreeds.find(b => b.name === 'Arabian')?.id,
       userId: user.id,
+      stableId: 1, // Default stable
       speed: 78,
       stamina: 83,
       strength: 52,
@@ -261,9 +283,9 @@ const seedHorses = async (prisma, users) => {
       endurance: 80,
       intelligence: 65,
       temperament: 'Gentle',
-      health: 100,
+      healthStatus: 'Excellent',
       forSale: true,
-      price: 15000,
+      salePrice: 15000,
     },
   ];
 

@@ -4,7 +4,7 @@
   "type": "module",
   "description": "Root package for the Equoria project, enabling easier script execution for sub-projects.",
   "private": true,
-    "scripts": {
+  "scripts": {
     "test": "jest",
     "test:coverage": "jest --coverage",
     "test:watch": "jest --watchAll",
@@ -36,6 +36,7 @@
   "devDependencies": {
     "@jest/globals": "^29.7.0",
     "@tailwindcss/postcss": "^4.1.8",
+    "@types/node": "^22.15.30",
     "eslint": "^8.57.0",
     "eslint-plugin-import": "^2.31.0",
     "eslint-plugin-prettier": "^5.4.1",
@@ -45,6 +46,8 @@
     "nodemon": "^3.1.4",
     "prettier": "^3.3.2",
     "replace-in-files": "^3.0.0",
-    "supertest": "^7.0.0"
+    "supertest": "^7.0.0",
+    "tailwindcss": "^4.1.8",
+    "tailwindcss-animate": "^1.0.7"
   }
 }

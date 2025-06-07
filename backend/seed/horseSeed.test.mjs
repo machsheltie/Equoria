@@ -85,6 +85,17 @@ describe('Horse Seed Integration Tests', () => {
 
   describe('checkHorseExists - Real Database Operations', () => {
     it('should return true if horse exists in database', async () => {
+      // Create a test user first
+      const testUser = await prisma.user.create({
+        data: {
+          username: 'testuser',
+          email: 'testuser@example.com',
+          password: 'password',
+          firstName: 'Test',
+          lastName: 'User',
+        },
+      });
+
       // Create a real test horse in database
       const testHorse = await prisma.horse.create({
         data: {
@@ -95,7 +106,7 @@ describe('Horse Seed Integration Tests', () => {
           speed: 75,
           stamina: 70,
           strength: 65,
-          userId: 'test-user-id-1', // Fixed: use string UUID instead of integer
+          userId: testUser.id, // Use the created user's ID
           stableId: 1, // Stable IDs are integers, this is correct
           dateOfBirth: new Date('2020-01-01'), // Required field
         },
@@ -107,6 +118,7 @@ describe('Horse Seed Integration Tests', () => {
 
       // Clean up
       await prisma.horse.delete({ where: { id: testHorse.id } });
+      await prisma.user.delete({ where: { id: testUser.id } });
     });
 
     it('should return false if horse does not exist in database', async () => {
@@ -207,8 +219,8 @@ describe('Horse Seed Integration Tests', () => {
       expect(stable2).toBeTruthy();
       expect(stable2.name).toBe('Second Stable');
 
-      expect(mockLogger.info).toHaveBeenCalledWith(expect.stringContaining('Ensured User ID'));
-      expect(mockLogger.info).toHaveBeenCalledWith(expect.stringContaining('Ensured User ID'));
+      expect(mockLogger.info).toHaveBeenCalledWith('[seed] Ensured User owner1@example.com exists.');
+      expect(mockLogger.info).toHaveBeenCalledWith('[seed] Ensured User owner2@example.com exists.');
       expect(mockLogger.info).toHaveBeenCalledWith('[seed] Ensured Stable ID 1 exists.');
       expect(mockLogger.info).toHaveBeenCalledWith('[seed] Ensured Stable ID 2 exists.');
     });
@@ -229,8 +241,8 @@ describe('Horse Seed Integration Tests', () => {
       expect(user1).toBeTruthy();
       expect(user2).toBeTruthy();
 
-      expect(mockLogger.info).toHaveBeenCalledWith(expect.stringContaining('Ensured User ID'));
-      expect(mockLogger.info).toHaveBeenCalledWith(expect.stringContaining('Ensured User ID'));
+      expect(mockLogger.info).toHaveBeenCalledWith('[seed] Ensured User owner1@example.com exists.');
+      expect(mockLogger.info).toHaveBeenCalledWith('[seed] Ensured User owner2@example.com exists.');
     });
 
     it('should handle database constraints gracefully', async () => {
@@ -373,7 +385,7 @@ describe('Horse Seed Integration Tests', () => {
       expect(Array.isArray(result)).toBe(true);
 
       // Verify logging occurred
-      expect(mockLogger.info).toHaveBeenCalledWith(expect.stringContaining('Ensured User ID'));
+      expect(mockLogger.info).toHaveBeenCalledWith('[seed] Ensured User owner1@example.com exists.');
 
       if (result.length > 0) {
         expect(mockLogger.info).toHaveBeenCalledWith(

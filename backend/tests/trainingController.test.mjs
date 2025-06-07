@@ -214,7 +214,7 @@ describe('🏋️ UNIT: Training Controller - Horse Training Business Logic', ()
         id: 1,
         name: 'Test Horse',
         epigenetic_modifiers: { positive: [], negative: [], hidden: [] },
-        playerId: 'test-player-123',
+        userId: 'test-player-123', // Fixed: use 'userId' instead of 'playerId'
       });
       mockLogTrainingSession.mockResolvedValue({
         id: 1,
@@ -227,7 +227,7 @@ describe('🏋️ UNIT: Training Controller - Horse Training Business Logic', ()
         name: 'Test Horse',
         disciplineScores: { Racing: 5 },
         breed: { id: 1, name: 'Thoroughbred' },
-        playerId: 'test-player-123',
+        userId: 'test-player-123', // Fixed: use 'userId' instead of 'playerId'
       });
       mockUpdateHorseStat.mockResolvedValue({
         id: 1,
@@ -294,7 +294,7 @@ describe('🏋️ UNIT: Training Controller - Horse Training Business Logic', ()
         id: 1,
         name: 'Test Horse',
         epigenetic_modifiers: { positive: [], negative: [], hidden: [] },
-        playerId: 'test-player-123',
+        userId: 'test-player-123', // Fixed: use 'userId' instead of 'playerId'
       });
       mockLogTrainingSession.mockRejectedValue(new Error('Failed to log training'));
 
@@ -309,7 +309,7 @@ describe('🏋️ UNIT: Training Controller - Horse Training Business Logic', ()
         id: 1,
         name: 'XP Test Horse',
         epigenetic_modifiers: { positive: [], negative: [], hidden: [] },
-        playerId: 'xp-test-player',
+        userId: 'xp-test-player', // Fixed: use 'userId' instead of 'playerId'
       });
       mockLogTrainingSession.mockResolvedValue({
         id: 1,
@@ -322,7 +322,7 @@ describe('🏋️ UNIT: Training Controller - Horse Training Business Logic', ()
         name: 'XP Test Horse',
         disciplineScores: { Dressage: 3 },
         breed: { id: 1, name: 'Arabian' },
-        playerId: 'xp-test-player',
+        userId: 'xp-test-player', // Fixed: use 'userId' instead of 'playerId'
       });
       mockUpdateHorseStat.mockResolvedValue({
         id: 1,
@@ -358,7 +358,7 @@ describe('🏋️ UNIT: Training Controller - Horse Training Business Logic', ()
         id: 1,
         name: 'Error Test Horse',
         epigenetic_modifiers: { positive: [], negative: [], hidden: [] },
-        playerId: 'error-test-player',
+        userId: 'error-test-player', // Fixed: use 'userId' instead of 'playerId'
       });
       mockLogTrainingSession.mockResolvedValue({
         id: 1,
@@ -371,7 +371,7 @@ describe('🏋️ UNIT: Training Controller - Horse Training Business Logic', ()
         name: 'Error Test Horse',
         disciplineScores: { Racing: 2 },
         breed: { id: 1, name: 'Thoroughbred' },
-        playerId: 'error-test-player',
+        userId: 'error-test-player', // Fixed: use 'userId' instead of 'playerId'
       });
       mockUpdateHorseStat.mockResolvedValue({
         id: 1,
@@ -515,7 +515,7 @@ describe('🏋️ UNIT: Training Controller - Horse Training Business Logic', ()
         id: 1,
         name: 'Test Horse',
         epigenetic_modifiers: { positive: [], negative: [], hidden: [] },
-        playerId: 'test-player-123',
+        userId: 'test-player-123', // Fixed: use 'userId' instead of 'playerId'
       });
       mockLogTrainingSession.mockResolvedValue({
         id: 1,
@@ -528,7 +528,7 @@ describe('🏋️ UNIT: Training Controller - Horse Training Business Logic', ()
         name: 'Test Horse',
         disciplineScores: { Racing: 5 },
         breed: { id: 1, name: 'Thoroughbred' },
-        playerId: 'test-player-123',
+        userId: 'test-player-123', // Fixed: use 'userId' instead of 'playerId'
       });
       mockAddXpToUser.mockResolvedValue({
         id: 'test-player-123',
@@ -679,8 +679,8 @@ describe('🏋️ UNIT: Training Controller - Horse Training Business Logic', ()
     });
 
     it('should throw error for missing player ID', async () => {
-      await expect(getTrainableHorses('')).rejects.toThrow('Player ID is required');
-      await expect(getTrainableHorses(null)).rejects.toThrow('Player ID is required');
+      await expect(getTrainableHorses('')).rejects.toThrow('User ID is required'); // Fixed: match actual error message
+      await expect(getTrainableHorses(null)).rejects.toThrow('User ID is required'); // Fixed: match actual error message
     });
 
     it('should handle player model errors', async () => {
@@ -717,7 +717,7 @@ describe('🏋️ UNIT: Training Controller - Horse Training Business Logic', ()
         id: 1,
         name: 'Nova',
         epigenetic_modifiers: { positive: [], negative: [], hidden: [] },
-        playerId: 'test-player-123',
+        userId: 'test-player-123', // Fixed: use 'userId' instead of 'playerId'
       });
       const mockTrainingLog = {
         id: 1,
@@ -730,7 +730,7 @@ describe('🏋️ UNIT: Training Controller - Horse Training Business Logic', ()
         name: 'Nova',
         disciplineScores: { Dressage: 25 },
         breed: { id: 1, name: 'Thoroughbred' },
-        playerId: 'test-player-123',
+        userId: 'test-player-123', // Fixed: use 'userId' instead of 'playerId'
       };
       mockLogTrainingSession.mockResolvedValue(mockTrainingLog);
       mockIncrementDisciplineScore.mockResolvedValue(mockUpdatedHorse);
@@ -795,7 +795,7 @@ describe('🏋️ UNIT: Training Controller - Horse Training Business Logic', ()
         id: 1,
         name: 'Nova',
         epigenetic_modifiers: { positive: [], negative: [], hidden: [] },
-        playerId: 'test-player-123',
+        userId: 'test-player-123', // Fixed: use 'userId' instead of 'playerId'
       });
       const mockTrainingLog = {
         id: 1,
@@ -808,7 +808,7 @@ describe('🏋️ UNIT: Training Controller - Horse Training Business Logic', ()
         name: 'Nova',
         disciplineScores: null, // No discipline scores
         breed: { id: 1, name: 'Thoroughbred' },
-        playerId: 'test-player-123',
+        userId: 'test-player-123', // Fixed: use 'userId' instead of 'playerId'
       };
       mockLogTrainingSession.mockResolvedValue(mockTrainingLog);
       mockIncrementDisciplineScore.mockResolvedValue(mockUpdatedHorse);
@@ -859,7 +859,7 @@ describe('🏋️ UNIT: Training Controller - Horse Training Business Logic', ()
         id: 1,
         name: 'Intelligent Horse',
         epigenetic_modifiers: { positive: ['intelligent'], negative: [], hidden: [] },
-        playerId: 'test-player-123',
+        userId: 'test-player-123', // Fixed: use 'userId' instead of 'playerId'
       });
       mockLogTrainingSession.mockResolvedValue({
         id: 1,
@@ -872,7 +872,7 @@ describe('🏋️ UNIT: Training Controller - Horse Training Business Logic', ()
         name: 'Intelligent Horse',
         disciplineScores: { Dressage: 6 }, // +6 instead of +5 due to trait
         breed: { id: 1, name: 'Warmblood' },
-        playerId: 'test-player-123',
+        userId: 'test-player-123', // Fixed: use 'userId' instead of 'playerId'
       });
       mockAddXpToUser.mockResolvedValue({
         id: 'test-player-123',
