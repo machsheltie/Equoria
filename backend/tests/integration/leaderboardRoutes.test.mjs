@@ -109,7 +109,7 @@ describe('🏆 INTEGRATION: Leaderboard API - Real Database Integration', () => 
     ]);
 
     // Use first user as test user for authentication
-    testUser = testUsers[0];
+    [testUser] = testUsers;
 
     // Generate auth token for test user
     testToken = jwt.sign({ id: testUser.id, email: testUser.email }, config.jwtSecret, { expiresIn: '1h' });

@@ -101,8 +101,14 @@ const validateFoalCreation = [
   body('dam_id').isInt({ min: 1 }).withMessage('Dam ID must be a positive integer'),
   body('sex')
     .optional()
-    .isIn(['stallion', 'mare', 'gelding', 'filly', 'colt'])
-    .withMessage('Sex must be one of: stallion, mare, gelding, filly, colt'),
+    .custom(async (value) => {
+      const { isValidHorseSex } = await import('../constants/schema.mjs');
+      if (value && !isValidHorseSex(value)) {
+        const { HORSE_SEX_VALUES } = await import('../constants/schema.mjs');
+        throw new Error(`Sex must be one of: ${HORSE_SEX_VALUES.join(', ')}`);
+      }
+      return true;
+    }),
   body('userId')
     .optional()
     .isLength({ min: 1, max: 50 })

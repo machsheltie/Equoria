@@ -104,6 +104,9 @@ describe('🎯 INTEGRATION: User Progress API - Complete Progress Tracking', () 
         email: 'progress-test@example.com',
       },
     });
+
+    // Ensure proper database connection cleanup
+    await prisma.$disconnect();
   });
 
   describe('🔐 STEP 1: User Setup & Initial Progress State', () => {

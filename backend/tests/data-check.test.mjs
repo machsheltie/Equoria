@@ -56,7 +56,7 @@ describe('🔍 INTEGRATION: Database Data Check - Live Data Validation & Debuggi
     // Add new assertion to check if every user object has an email property
     expect(users.every(user => user.id && user.email)).toBe(true);
     if (users.length > 0) {
-      const firstUser = users[0];
+      const [firstUser] = users;
       expect(firstUser.id).toBeDefined();
       expect(firstUser.email).toBeDefined();
       // Removed assertions for fields no longer selected:
@@ -87,7 +87,7 @@ describe('🔍 INTEGRATION: Database Data Check - Live Data Validation & Debuggi
     console.log('Players in database (from user table):', JSON.stringify(players, null, 2));
     expect(Array.isArray(players)).toBe(true);
     if (players.length > 0) {
-      const firstPlayer = players[0];
+      const [firstPlayer] = players;
       expect(firstPlayer.id).toBeDefined();
       expect(firstPlayer.username).toBeDefined();
       expect(firstPlayer.email).toBeDefined();
@@ -115,7 +115,7 @@ describe('🔍 INTEGRATION: Database Data Check - Live Data Validation & Debuggi
     console.log('Horses in database:', JSON.stringify(horses, null, 2));
     expect(Array.isArray(horses)).toBe(true);
     if (horses.length > 0) {
-      const firstHorse = horses[0];
+      const [firstHorse] = horses;
       expect(firstHorse.id).toBeDefined();
       expect(firstHorse.user).toBeDefined();
       if (firstHorse.user) {

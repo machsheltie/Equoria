@@ -1,5 +1,6 @@
 import { body, param } from 'express-validator';
 import { handleValidationErrors } from './validationErrorHandler.mjs'; // Assuming a generic error handler, ensure .js extension
+import { HORSE_SEX_VALUES } from '../constants/schema.mjs';
 
 // Validation rules for creating a new horse
 const validateCreateHorse = [
@@ -14,9 +15,9 @@ const validateCreateHorse = [
   body('sex')
     .isString()
     .withMessage('Sex must be a string.')
-    .isIn(['Stallion', 'Mare', 'Gelding', 'Colt', 'Filly', 'Rig', 'Spayed Mare'])
+    .isIn(HORSE_SEX_VALUES)
     .withMessage(
-      'Invalid sex. Must be one of: Stallion, Mare, Gelding, Colt, Filly, Rig, Spayed Mare.',
+      `Invalid sex. Must be one of: ${HORSE_SEX_VALUES.join(', ')}.`,
     ),
   body('date_of_birth')
     .isISO8601()

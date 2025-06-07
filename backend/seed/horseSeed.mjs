@@ -205,7 +205,7 @@ const seedHorses = async (prisma, users) => {
     return [];
   }
 
-  const user = users[0];
+  const [user] = users;
 
   const breedsData = [
     { name: 'Thoroughbred', baseSpeed: 80, baseStamina: 70, baseStrength: 60, rarity: 'Common' },

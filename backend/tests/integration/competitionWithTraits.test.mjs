@@ -384,7 +384,7 @@ describe('Competition Simulation with Trait Impact', () => {
       expect(results).toHaveLength(1);
       expect(results[0].traitImpact.appliedTraits).toBe(1); // Only 'bold' should be applied
 
-      const appliedTrait = results[0].traitImpact.details[0];
+      const [appliedTrait] = results[0].traitImpact.details;
       expect(appliedTrait.name).toBe('bold');
     });
   });

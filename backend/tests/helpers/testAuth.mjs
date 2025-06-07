@@ -159,5 +159,8 @@ export async function cleanupTestData() {
     });
   } catch (error) {
     console.warn('Cleanup error:', error.message);
+  } finally {
+    // Ensure proper database connection cleanup
+    await prisma.$disconnect();
   }
 }

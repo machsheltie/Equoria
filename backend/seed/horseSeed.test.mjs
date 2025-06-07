@@ -146,7 +146,7 @@ describe('Horse Seed Integration Tests', () => {
       expect(result.name).toBe('TestSeed_Thoroughbred');
       expect(result.id).toBe(testBreed.id);
       expect(mockLogger.info).toHaveBeenCalledWith(
-        `[seed] Found existing breed: TestSeed_Thoroughbred (ID: ${testBreed.id})`
+        `[seed] Found existing breed: TestSeed_Thoroughbred (ID: ${testBreed.id})`,
       );
 
       // Clean up
@@ -176,7 +176,7 @@ describe('Horse Seed Integration Tests', () => {
 
       expect(result).toBeNull();
       expect(mockLogger.warn).toHaveBeenCalledWith(
-        '[seed] Breed name is undefined or null. Skipping breed creation/connection.'
+        '[seed] Breed name is undefined or null. Skipping breed creation/connection.',
       );
     });
 
@@ -271,8 +271,8 @@ describe('Horse Seed Integration Tests', () => {
       await prisma.horse.deleteMany({
         where: {
           name: { in: ['TestSeed_Lightning', 'TestSeed_Desert'] },
-          userId: testUser.id
-        }
+          userId: testUser.id,
+        },
       });
 
       const result = await seedHorses(prisma, [testUser]);
@@ -296,14 +296,14 @@ describe('Horse Seed Integration Tests', () => {
 
       // Verify logging occurred
       expect(mockLogger.info).toHaveBeenCalledWith(
-        expect.stringContaining(`Created horse:`)
+        expect.stringContaining('Created horse:'),
       );
 
       // Clean up created horses
       await prisma.horse.deleteMany({
         where: {
-          id: { in: result.map(h => h.id) }
-        }
+          id: { in: result.map(h => h.id) },
+        },
       });
     });
 
@@ -322,8 +322,8 @@ describe('Horse Seed Integration Tests', () => {
       if (result.length > 0) {
         await prisma.horse.deleteMany({
           where: {
-            id: { in: result.map(h => h.id) }
-          }
+            id: { in: result.map(h => h.id) },
+          },
         });
       }
     });
@@ -353,8 +353,8 @@ describe('Horse Seed Integration Tests', () => {
       if (result.length > 0) {
         await prisma.horse.deleteMany({
           where: {
-            id: { in: result.map(h => h.id) }
-          }
+            id: { in: result.map(h => h.id) },
+          },
         });
       }
     });
@@ -383,7 +383,7 @@ describe('Horse Seed Integration Tests', () => {
 
       if (result.length > 0) {
         expect(mockLogger.info).toHaveBeenCalledWith(
-          expect.stringContaining('Created horse:')
+          expect.stringContaining('Created horse:'),
         );
 
         // Verify horses exist in database
@@ -395,8 +395,8 @@ describe('Horse Seed Integration Tests', () => {
         // Clean up created horses
         await prisma.horse.deleteMany({
           where: {
-            id: { in: result.map(h => h.id) }
-          }
+            id: { in: result.map(h => h.id) },
+          },
         });
       }
     });
@@ -426,8 +426,8 @@ describe('Horse Seed Integration Tests', () => {
       if (result.length > 0) {
         await prisma.horse.deleteMany({
           where: {
-            id: { in: result.map(h => h.id) }
-          }
+            id: { in: result.map(h => h.id) },
+          },
         });
       }
     });

@@ -277,7 +277,7 @@ describe('🧮 UNIT: Groom System Logic - Pure Business Logic Validation', () =>
       expect(DEFAULT_GROOMS.length).toBe(3);
 
       // Check Sarah Johnson (foal care specialist)
-      const sarah = DEFAULT_GROOMS[0];
+      const [sarah] = DEFAULT_GROOMS;
       expect(sarah.name).toBe('Sarah Johnson');
       expect(sarah.speciality).toBe('foal_care');
       expect(sarah.skillLevel).toBe('intermediate');

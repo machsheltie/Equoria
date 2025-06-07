@@ -263,8 +263,8 @@ export const validateTraining = async (req, res, next) => {
     }
 
     // Validate discipline
-    const validDisciplines = ['Racing', 'Show Jumping', 'Dressage', 'Cross Country', 'Western'];
-    if (!validDisciplines.includes(discipline)) {
+    const { isValidDiscipline } = await import('../constants/schema.mjs');
+    if (!isValidDiscipline(discipline)) {
       return res.status(400).json(ApiResponse.badRequest('Invalid discipline'));
     }
 

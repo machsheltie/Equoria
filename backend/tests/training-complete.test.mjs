@@ -67,10 +67,10 @@ const createTestApp = () => {
     try {
       const { playerId } = req.params;
 
-      // Find horses owned by this user (using ownerId since that's what exists)
+      // Find horses owned by this user (using userId since that's what exists)
       const horses = await prisma.horse.findMany({
         where: {
-          ownerId: parseInt(playerId), // Convert to int since ownerId is integer
+          userId: playerId, // userId is a string in the schema
         },
         include: {
           breed: true,
@@ -155,9 +155,11 @@ describe('🏋️ INTEGRATION: Training System Complete - End-to-End Workflow', 
 
     // Create a test user
     const userData = {
-      name: 'Training Test User',
+      username: 'TrainingTestUser',
       email: 'training-test@example.com',
       password: 'TestPassword123!',
+      firstName: 'Training',
+      lastName: 'User',
     };
 
     const registerResponse = await request(app).post('/api/auth/register').send(userData);
@@ -185,9 +187,10 @@ describe('🏋️ INTEGRATION: Training System Complete - End-to-End Workflow', 
           name: 'Training Horse 1',
           age: 4,
           breed: { connect: { id: breed.id } },
-          ownerId: testUser.id, // Link to user
+          user: { connect: { id: testUser.id } }, // Link to user
           sex: 'mare',
           healthStatus: 'Good',
+          dateOfBirth: new Date('2020-01-01'), // 4 years old
         },
       }),
       prisma.horse.create({
@@ -195,9 +198,10 @@ describe('🏋️ INTEGRATION: Training System Complete - End-to-End Workflow', 
           name: 'Training Horse 2',
           age: 5,
           breed: { connect: { id: breed.id } },
-          ownerId: testUser.id, // Link to user
+          user: { connect: { id: testUser.id } }, // Link to user
           sex: 'stallion',
           healthStatus: 'Good',
+          dateOfBirth: new Date('2019-01-01'), // 5 years old
         },
       }),
       prisma.horse.create({
@@ -205,9 +209,10 @@ describe('🏋️ INTEGRATION: Training System Complete - End-to-End Workflow', 
           name: 'Young Horse',
           age: 2,
           breed: { connect: { id: breed.id } },
-          ownerId: testUser.id, // Link to user
+          user: { connect: { id: testUser.id } }, // Link to user
           sex: 'colt',
           healthStatus: 'Good',
+          dateOfBirth: new Date('2022-01-01'), // 2 years old
         },
       }),
     ]);
@@ -258,7 +263,7 @@ describe('🏋️ INTEGRATION: Training System Complete - End-to-End Workflow', 
       // Should have 2 trainable horses (age 4 and 5, not the 2-year-old)
       expect(response.body.data).toHaveLength(2);
 
-      const trainableHorse = response.body.data[0];
+      const [trainableHorse] = response.body.data;
       expect(trainableHorse.horseId).toBeDefined();
       expect(trainableHorse.name).toBeDefined();
       expect(trainableHorse.age).toBeGreaterThanOrEqual(3);
@@ -278,7 +283,7 @@ describe('🏋️ INTEGRATION: Training System Complete - End-to-End Workflow', 
       expect(trainableResponse.status).toBe(200);
       expect(trainableResponse.body.data.length).toBeGreaterThan(0);
 
-      const trainableHorse = trainableResponse.body.data[0];
+      const [trainableHorse] = trainableResponse.body.data;
 
       // Train the horse
       const response = await request(app).post('/api/training/train').set('Authorization', `Bearer ${authToken}`).send({
@@ -316,7 +321,7 @@ describe('🏋️ INTEGRATION: Training System Complete - End-to-End Workflow', 
 
       expect(response.status).toBe(401);
       expect(response.body.success).toBe(false);
-      expect(response.body.message).toBe('Access token required');
+      expect(response.body.message).toBe('Access token is required');
     });
   });
 });

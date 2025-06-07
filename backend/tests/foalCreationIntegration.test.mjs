@@ -150,8 +150,8 @@ describe('🐴 INTEGRATION: Foal Creation Integration - API Endpoint Validation'
     const validFoalData = {
       name: 'Test Foal',
       breedId: 1,
-      sireId: 1,
-      damId: 2,
+      sire_id: 1,
+      dam_id: 2,
       sex: 'colt',
       healthStatus: 'Good',
     };

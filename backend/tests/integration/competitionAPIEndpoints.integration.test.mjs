@@ -311,7 +311,7 @@ describe('🚀 INTEGRATION: Competition API Endpoints', () => {
 
       // Check leaderboard entry structure
       if (response.body.data.leaderboard.length > 0) {
-        const entry = response.body.data.leaderboard[0];
+        const [entry] = response.body.data.leaderboard;
         expect(entry).toHaveProperty('rank');
         expect(entry).toHaveProperty('horseId');
         expect(entry).toHaveProperty('horseName');

@@ -422,8 +422,8 @@ describe('🍼 UNIT: Foal Model - Foal Development & Activity Management', () =>
       await completeActivity(1, 'gentle_touch');
 
       // Verify bonding level is capped at 100
-      const [updateCall] = mockPrisma.foalDevelopment.update.mock.calls[0];
-      expect(updateCall.data.bondingLevel).toBeLessThanOrEqual(100);
+      const [updateArgs] = mockPrisma.foalDevelopment.update.mock.calls[0];
+      expect(updateArgs.data.bondingLevel).toBeLessThanOrEqual(100);
     });
 
     it('should enforce stress level bounds (0-100)', async () => {
@@ -452,7 +452,7 @@ describe('🍼 UNIT: Foal Model - Foal Development & Activity Management', () =>
       await completeActivity(1, 'gentle_touch');
 
       // Verify stress level doesn't go below 0
-      const updateCall = mockPrisma.foalDevelopment.update.mock.calls[0][0];
+      const [updateCall] = mockPrisma.foalDevelopment.update.mock.calls[0];
       expect(updateCall.data.stressLevel).toBeGreaterThanOrEqual(0);
     });
 
