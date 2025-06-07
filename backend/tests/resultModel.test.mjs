@@ -47,6 +47,7 @@ const mockPrisma = {
     create: jest.fn(),
     findMany: jest.fn(),
     findUnique: jest.fn(),
+    findFirst: jest.fn(),
     update: jest.fn(),
     delete: jest.fn(),
   },
@@ -69,6 +70,7 @@ describe('🏆 UNIT: Result Model - Competition Result Management', () => {
     mockPrisma.competitionResult.create.mockResolvedValue({});
     mockPrisma.competitionResult.findMany.mockResolvedValue([]);
     mockPrisma.competitionResult.findUnique.mockResolvedValue(null);
+    mockPrisma.competitionResult.findFirst.mockResolvedValue(null);
     mockPrisma.competitionResult.update.mockResolvedValue({});
     mockPrisma.competitionResult.delete.mockResolvedValue({});
   });
@@ -348,6 +350,137 @@ describe('🏆 UNIT: Result Model - Competition Result Management', () => {
       mockPrisma.competitionResult.create.mockRejectedValue(new Error('Database connection failed'));
 
       await expect(saveResult(resultData)).rejects.toThrow('Database error in saveResult: Database connection failed');
+    });
+
+    it('should update existing placeholder result instead of creating new one', async () => {
+      const resultData = {
+        horseId: 1,
+        showId: 2,
+        score: 85.5,
+        placement: '1st',
+        discipline: 'Racing',
+        runDate: new Date('2024-05-25'),
+        showName: 'Spring Classic',
+        prizeWon: 500,
+      };
+
+      // Mock existing placeholder result
+      const existingPlaceholder = {
+        id: 123,
+        horseId: 1,
+        showId: 2,
+        score: 0,
+        placement: null,
+        discipline: 'Racing',
+        runDate: new Date('2024-05-25'),
+        showName: 'Spring Classic',
+        prizeWon: 0,
+      };
+
+      const updatedResult = {
+        ...existingPlaceholder,
+        score: 85.5,
+        placement: '1st',
+        prizeWon: 500,
+      };
+
+      mockPrisma.competitionResult.findFirst.mockResolvedValue(existingPlaceholder);
+      mockPrisma.competitionResult.update.mockResolvedValue(updatedResult);
+
+      const result = await saveResult(resultData);
+
+      // Should find existing placeholder
+      expect(mockPrisma.competitionResult.findFirst).toHaveBeenCalledWith({
+        where: {
+          horseId: 1,
+          showId: 2,
+          score: 0,
+          placement: null,
+        },
+      });
+
+      // Should update existing result, not create new one
+      expect(mockPrisma.competitionResult.update).toHaveBeenCalledWith({
+        where: { id: 123 },
+        data: {
+          score: 85.5,
+          placement: '1st',
+          prizeWon: 500,
+          statGains: null,
+        },
+        include: {
+          horse: {
+            include: {
+              breed: true,
+            },
+          },
+          show: true,
+        },
+      });
+
+      expect(mockPrisma.competitionResult.create).not.toHaveBeenCalled();
+      expect(result).toEqual(updatedResult);
+    });
+
+    it('should create new result when no placeholder exists', async () => {
+      const resultData = {
+        horseId: 1,
+        showId: 2,
+        score: 85.5,
+        placement: '1st',
+        discipline: 'Racing',
+        runDate: new Date('2024-05-25'),
+        showName: 'Spring Classic',
+        prizeWon: 500,
+      };
+
+      const newResult = {
+        id: 456,
+        ...resultData,
+        createdAt: new Date(),
+      };
+
+      // No existing placeholder found
+      mockPrisma.competitionResult.findFirst.mockResolvedValue(null);
+      mockPrisma.competitionResult.create.mockResolvedValue(newResult);
+
+      const result = await saveResult(resultData);
+
+      // Should check for existing placeholder
+      expect(mockPrisma.competitionResult.findFirst).toHaveBeenCalledWith({
+        where: {
+          horseId: 1,
+          showId: 2,
+          score: 0,
+          placement: null,
+        },
+      });
+
+      // Should create new result since no placeholder exists
+      expect(mockPrisma.competitionResult.create).toHaveBeenCalledWith({
+        data: {
+          horseId: 1,
+          showId: 2,
+          score: 85.5,
+          placement: '1st',
+          discipline: 'Racing',
+          runDate: new Date('2024-05-25'),
+          showName: 'Spring Classic',
+          prizeWon: 500,
+          statGains: null,
+        },
+        include: {
+          horse: {
+            include: {
+              breed: true,
+            },
+          },
+          show: true,
+        },
+      });
+
+      expect(mockPrisma.competitionResult.update).not.toHaveBeenCalled();
+      expect(result).toEqual(newResult);
     });
   });
 

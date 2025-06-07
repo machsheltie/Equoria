@@ -65,12 +65,21 @@ describe('🏇 INTEGRATION: Horse Overview API - Real Database Integration', () 
     testUser = await prisma.user.create({
       data: {
         username: 'testhorseoverviewuser',
+        firstName: 'Test',
+        lastName: 'User',
         email: 'test-horse-overview@example.com',
         password: 'hashedpassword',
-        name: 'Test User',
         level: 5,
         xp: 150,
         money: 5000,
+      },
+    });
+
+    // Create or find test breed
+    const testBreed = await prisma.breed.findFirst() || await prisma.breed.create({
+      data: {
+        name: 'Thoroughbred',
+        description: 'Test breed for horse overview integration',
       },
     });
 
@@ -80,7 +89,8 @@ describe('🏇 INTEGRATION: Horse Overview API - Real Database Integration', () 
         name: 'TestHorse Nova',
         age: 5,
         sex: 'Mare',
-        breed: 'Thoroughbred',
+        breedId: testBreed.id,
+        ownerId: testUser.id,
         userId: testUser.id,
         dateOfBirth: new Date('2020-01-01'),
         healthStatus: 'Excellent',
@@ -128,9 +138,21 @@ describe('🏇 INTEGRATION: Horse Overview API - Real Database Integration', () 
         data: {
           horseId: testHorse.id,
           discipline: 'Dressage',
-          sessionDate: lastTrainingDate,
-          statGain: 5,
-          xpGained: 5,
+          trainedAt: lastTrainingDate,
+        },
+      });
+
+      // Create test show for competition result
+      const testShow = await prisma.show.create({
+        data: {
+          name: 'Summer Invitational',
+          discipline: 'Dressage',
+          levelMin: 1,
+          levelMax: 10,
+          entryFee: 100,
+          prize: 1000,
+          runDate: new Date('2025-06-01'),
+          hostUserId: testUser.id,
         },
       });
 
@@ -138,6 +160,7 @@ describe('🏇 INTEGRATION: Horse Overview API - Real Database Integration', () 
       await prisma.competitionResult.create({
         data: {
           horseId: testHorse.id,
+          showId: testShow.id,
           showName: 'Summer Invitational',
           discipline: 'Dressage',
           placement: '1st',
@@ -221,9 +244,7 @@ describe('🏇 INTEGRATION: Horse Overview API - Real Database Integration', () 
         data: {
           horseId: testHorse.id,
           discipline: 'Dressage',
-          sessionDate: lastTrainingDate,
-          statGain: 5,
-          xpGained: 5,
+          trainedAt: lastTrainingDate,
         },
       });
 
@@ -237,13 +258,22 @@ describe('🏇 INTEGRATION: Horse Overview API - Real Database Integration', () 
     });
 
     it('should handle missing optional fields gracefully', async () => {
+      // Create or find test breed for minimal horse
+      const minimalBreed = await prisma.breed.findFirst() || await prisma.breed.create({
+        data: {
+          name: 'Quarter Horse',
+          description: 'Test breed for minimal horse',
+        },
+      });
+
       // Create minimal horse with real data
       const minimalHorse = await prisma.horse.create({
         data: {
           name: 'TestHorse Minimal',
           age: 3,
           sex: 'Gelding',
-          breed: 'Quarter Horse',
+          breedId: minimalBreed.id,
+          ownerId: testUser.id,
           userId: testUser.id,
           dateOfBirth: new Date('2022-01-01'),
           healthStatus: 'Good',

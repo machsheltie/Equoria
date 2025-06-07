@@ -288,9 +288,11 @@ describe('🏠 INTEGRATION: Dashboard API - Real Database Integration', () => {
       // Create empty user with real data
       const emptyUser = await prisma.user.create({
         data: {
+          username: 'emptydashboarduser',
+          firstName: 'Empty',
+          lastName: 'User',
           email: 'test-dashboard-empty@example.com',
           password: 'hashedpassword',
-          name: 'Empty Dashboard User',
           level: 1,
           xp: 0,
           money: 1000,
@@ -318,9 +320,11 @@ describe('🏠 INTEGRATION: Dashboard API - Real Database Integration', () => {
       // Create inactive user with horse but no activity
       const inactiveUser = await prisma.user.create({
         data: {
+          username: 'inactivedashboarduser',
+          firstName: 'Inactive',
+          lastName: 'User',
           email: 'test-dashboard-inactive@example.com',
           password: 'hashedpassword',
-          name: 'Inactive Dashboard User',
           level: 2,
           xp: 50,
           money: 2000,

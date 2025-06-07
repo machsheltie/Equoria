@@ -70,7 +70,7 @@ const createTestApp = () => {
       // Find horses owned by this user (using userId since that's what exists)
       const horses = await prisma.horse.findMany({
         where: {
-          userId: userId, // userId is a string in the schema
+          userId, // userId is a string in the schema
         },
         include: {
           breed: true,

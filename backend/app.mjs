@@ -174,7 +174,7 @@ app.get('/api', (req, res) => {
       breeds: '/api/breeds',
       foals: '/api/foals',
       traits: '/api/traits',
-      groom: '/api/groom',
+      grooms: '/api/grooms',
       leaderboard: '/api/leaderboard',
       admin: '/api/admin',
     },

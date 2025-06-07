@@ -477,7 +477,7 @@ export async function getDiscoveryProgress(horseId) {
     const allTraits = [
       ...(epigeneticModifiers.positive || []),
       ...(epigeneticModifiers.negative || []),
-      ...(epigeneticModifiers.hidden || [])
+      ...(epigeneticModifiers.hidden || []),
     ];
 
     const totalPossibleTraits = Object.keys(DISCOVERY_CONDITIONS).length;
