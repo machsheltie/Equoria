@@ -121,8 +121,13 @@ export async function createTestHorse(horseData = {}) {
  * Create a test show
  */
 export async function createTestShow(showData = {}) {
+  // Generate highly unique show name to avoid constraint violations
+  const timestamp = Date.now();
+  const randomSuffix = Math.floor(Math.random() * 100000);
+  const processId = process.pid || Math.floor(Math.random() * 10000);
+
   const defaultData = {
-    name: `TestShow_${Date.now()}`,
+    name: `TestShow_${timestamp}_${randomSuffix}_${processId}`,
     discipline: 'Racing',
     levelMin: 1,
     levelMax: 10,
@@ -131,6 +136,11 @@ export async function createTestShow(showData = {}) {
     runDate: new Date(Date.now() + 24 * 60 * 60 * 1000), // Tomorrow
     ...showData,
   };
+
+  // If showData provides a name, make it unique too
+  if (showData.name) {
+    defaultData.name = `${showData.name}_${timestamp}_${randomSuffix}_${processId}`;
+  }
 
   return await prisma.show.create({
     data: defaultData,
