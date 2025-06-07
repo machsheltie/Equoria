@@ -159,20 +159,18 @@ describe('🏆 INTEGRATION: Competition Controller Business Logic - Real Competi
       data: {
         name: 'Competition Star',
         age: 5,
-        breedId: testBreed.id,
-        ownerId: testUser.id, // Remains user.id
-        // playerId: testPlayer.id, // This needs to be updated to use testUser.id
-        userId: testUser.id, // Changed from playerId to userId
-        stableId: testStable.id,
+        breed: { connect: { id: testBreed.id } },
+        user: { connect: { id: testUser.id } },
+        stable: { connect: { id: testStable.id } },
         sex: 'Stallion',
-        date_of_birth: new Date('2019-01-01'),
-        health_status: 'Excellent',
+        dateOfBirth: new Date('2019-01-01'),
+        healthStatus: 'Excellent',
         speed: 85,
         stamina: 80,
         focus: 75,
         disciplineScores: { Racing: 25 },
         rider: { name: 'Test Rider 1', skill: 'Expert' },
-        epigenetic_modifiers: {
+        epigeneticModifiers: {
           positive: ['discipline_affinity_racing'],
           negative: [],
           hidden: [],
@@ -184,20 +182,18 @@ describe('🏆 INTEGRATION: Competition Controller Business Logic - Real Competi
       data: {
         name: 'Competition Runner',
         age: 4,
-        breedId: testBreed.id,
-        ownerId: testUser.id, // Remains user.id
-        // playerId: testPlayer.id, // This needs to be updated to use testUser.id
-        userId: testUser.id, // Changed from playerId to userId
-        stableId: testStable.id,
+        breed: { connect: { id: testBreed.id } },
+        user: { connect: { id: testUser.id } },
+        stable: { connect: { id: testStable.id } },
         sex: 'Mare',
-        date_of_birth: new Date('2020-01-01'),
-        health_status: 'Good',
+        dateOfBirth: new Date('2020-01-01'),
+        healthStatus: 'Good',
         speed: 75,
         stamina: 70,
         focus: 65,
         disciplineScores: { Racing: 15 },
         rider: { name: 'Test Rider 2', skill: 'Intermediate' },
-        epigenetic_modifiers: {
+        epigeneticModifiers: {
           positive: [],
           negative: [],
           hidden: [],
@@ -209,20 +205,18 @@ describe('🏆 INTEGRATION: Competition Controller Business Logic - Real Competi
       data: {
         name: 'Competition Novice',
         age: 3,
-        breedId: testBreed.id,
-        ownerId: testUser.id, // Remains user.id
-        // playerId: testPlayer.id, // This needs to be updated to use testUser.id
-        userId: testUser.id, // Changed from playerId to userId
-        stableId: testStable.id,
+        breed: { connect: { id: testBreed.id } },
+        user: { connect: { id: testUser.id } },
+        stable: { connect: { id: testStable.id } },
         sex: 'Gelding',
-        date_of_birth: new Date('2021-01-01'),
-        health_status: 'Fair',
+        dateOfBirth: new Date('2021-01-01'),
+        healthStatus: 'Fair',
         speed: 60,
         stamina: 55,
         focus: 50,
         disciplineScores: {},
         rider: { name: 'Test Rider 3', skill: 'Beginner' },
-        epigenetic_modifiers: {
+        epigeneticModifiers: {
           positive: [],
           negative: ['nervous_temperament'],
           hidden: [],
@@ -322,7 +316,7 @@ describe('🏆 INTEGRATION: Competition Controller Business Logic - Real Competi
       expect(savedResult).toBeDefined();
       expect(savedResult.horseId).toBe(testHorse1.id);
       expect(savedResult.showId).toBe(testShow.id);
-      expect(savedResult.score).toBe(85.5);
+      expect(Number(savedResult.score)).toBe(85.5);
       expect(savedResult.placement).toBe('1st');
       expect(savedResult.discipline).toBe('Racing');
     });
@@ -356,7 +350,7 @@ describe('🏆 INTEGRATION: Competition Controller Business Logic - Real Competi
       results.forEach(result => {
         expect(result.showId).toBe(testShow.id);
         expect(result.discipline).toBe('Racing');
-        expect(result.score).toBeGreaterThan(0);
+        expect(Number(result.score)).toBeGreaterThan(0);
       });
     });
 

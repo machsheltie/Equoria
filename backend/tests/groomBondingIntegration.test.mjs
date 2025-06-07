@@ -42,7 +42,9 @@ describe('Groom Bonding System Integration', () => {
         id: 'test-user-bonding',
         username: 'testuser',
         email: 'test@example.com',
-        hashedPassword: 'hashedpassword',
+        password: 'hashedpassword',
+        firstName: 'Test',
+        lastName: 'User',
         money: 1000,
       },
     });

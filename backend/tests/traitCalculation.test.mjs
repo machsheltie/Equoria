@@ -329,6 +329,8 @@ describe('🧬 UNIT: Epigenetic Traits Calculation System', () => {
         type: 'positive',
         rarity: 'common',
         conflicts: ['fragile'],
+        description: 'Less likely to be affected by stress.',
+        category: 'epigenetic',
       });
 
       const nervousDef = getTraitDefinition('nervous');
@@ -352,6 +354,8 @@ describe('🧬 UNIT: Epigenetic Traits Calculation System', () => {
         type: 'positive',
         rarity: 'legendary',
         conflicts: [],
+        description: 'Exceptional heritage with legendary performance potential.',
+        category: 'epigenetic',
       });
     });
   });

@@ -36,9 +36,9 @@ export function calculateCompetitionScore(horse, eventType) {
 
       case 'Dressage':
         baseScore =
-          (horse.precision || horse.agility || 0) +
+          (horse.precision || 0) +
           (horse.focus || 0) +
-          (horse.coordination || horse.balance || 0);
+          (horse.coordination || 0);
         break;
 
       case 'Cross Country':
@@ -59,7 +59,7 @@ export function calculateCompetitionScore(horse, eventType) {
 
     // Check for matching discipline affinity trait
     let traitBonus = 0;
-    const epigeneticModifiers = horse.epigenetic_modifiers;
+    const epigeneticModifiers = horse.epigeneticModifiers || horse.epigenetic_modifiers;
 
     if (epigeneticModifiers?.positive && Array.isArray(epigeneticModifiers.positive)) {
       // Convert event type to trait name format

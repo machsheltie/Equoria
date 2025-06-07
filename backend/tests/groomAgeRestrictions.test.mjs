@@ -50,10 +50,10 @@ describe('Groom Age Restrictions & Task Eligibility', () => {
     });
 
     it('should have adult grooming tasks defined', () => {
-      expect(GROOM_CONFIG.ELIGIBLE_GROOMING_TASKS).toBeDefined();
-      expect(GROOM_CONFIG.ELIGIBLE_GROOMING_TASKS.length).toBeGreaterThan(0);
-      expect(GROOM_CONFIG.ELIGIBLE_GROOMING_TASKS).toContain('brushing');
-      expect(GROOM_CONFIG.ELIGIBLE_GROOMING_TASKS).toContain('hand-walking');
+      expect(GROOM_CONFIG.ELIGIBLE_GENERAL_GROOMING_TASKS).toBeDefined();
+      expect(GROOM_CONFIG.ELIGIBLE_GENERAL_GROOMING_TASKS.length).toBeGreaterThan(0);
+      expect(GROOM_CONFIG.ELIGIBLE_GENERAL_GROOMING_TASKS).toContain('brushing');
+      expect(GROOM_CONFIG.ELIGIBLE_GENERAL_GROOMING_TASKS).toContain('hand-walking');
     });
   });
 
@@ -76,7 +76,7 @@ describe('Groom Age Restrictions & Task Eligibility', () => {
 
     it('should allow 1-year-old horse (365 days) to receive enrichment tasks', async () => {
       const yearlingHorse = { id: 3, age: 365, bondScore: 25 };
-      const result = await validateGroomingEligibility(yearlingHorse, 'play_interaction');
+      const result = await validateGroomingEligibility(yearlingHorse, 'gentle_touch');
 
       expect(result.eligible).toBe(true);
       expect(result.reason).toContain('eligible');
@@ -84,7 +84,7 @@ describe('Groom Age Restrictions & Task Eligibility', () => {
 
     it('should allow 2.9-year-old horse (1059 days) to receive enrichment tasks', async () => {
       const youngHorse = { id: 4, age: 1059, bondScore: 40 };
-      const result = await validateGroomingEligibility(youngHorse, 'environment_exploration');
+      const result = await validateGroomingEligibility(youngHorse, 'hoof_handling');
 
       expect(result.eligible).toBe(true);
       expect(result.reason).toContain('eligible');
@@ -153,7 +153,7 @@ describe('Groom Age Restrictions & Task Eligibility', () => {
       const almostThreeYears = { id: 11, age: 1094, bondScore: 55 };
 
       // Should be eligible for foal enrichment tasks
-      const foalTaskResult = await validateGroomingEligibility(almostThreeYears, 'play_interaction');
+      const foalTaskResult = await validateGroomingEligibility(almostThreeYears, 'gentle_touch');
       expect(foalTaskResult.eligible).toBe(true);
     });
   });

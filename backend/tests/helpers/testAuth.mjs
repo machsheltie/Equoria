@@ -65,11 +65,24 @@ export async function createTestUser(userData = {}) {
  * Create a test horse
  */
 export async function createTestHorse(horseData = {}) {
+  // First ensure we have a breed to connect to
+  let breed = await prisma.breed.findFirst({
+    where: { name: 'Thoroughbred' }
+  });
+
+  if (!breed) {
+    breed = await prisma.breed.create({
+      data: {
+        name: 'Thoroughbred',
+        description: 'Test breed for integration tests'
+      }
+    });
+  }
+
   const defaultData = {
     name: `TestHorse_${Date.now()}`,
-    breed: 'Thoroughbred',
+    breed: { connect: { id: breed.id } },
     age: 5,
-    gender: 'Mare',
     sex: 'Female',
     dateOfBirth: new Date(Date.now() - 5 * 365 * 24 * 60 * 60 * 1000), // 5 years ago
     speed: 50,

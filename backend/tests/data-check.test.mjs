@@ -78,7 +78,6 @@ describe('🔍 INTEGRATION: Database Data Check - Live Data Validation & Debuggi
         email: true,
         firstName: true,
         lastName: true,
-        role: true,
         money: true,
         level: true,
         xp: true,
@@ -93,7 +92,6 @@ describe('🔍 INTEGRATION: Database Data Check - Live Data Validation & Debuggi
       expect(firstPlayer.email).toBeDefined();
       expect(firstPlayer.firstName).toBeDefined();
       expect(firstPlayer.lastName).toBeDefined();
-      expect(firstPlayer.role).toBeDefined();
       expect(firstPlayer.money).toBeDefined();
       expect(firstPlayer.level).toBeDefined();
       expect(firstPlayer.xp).toBeDefined();

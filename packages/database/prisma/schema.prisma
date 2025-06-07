@@ -97,6 +97,7 @@ model Horse {
   /// Additional competition stats
   stamina                 Int?                  @default(0)
   balance                 Int?                  @default(0)
+  coordination            Int?                  @default(0)
   boldness                Int?                  @default(0)
   flexibility             Int?                  @default(0)
   obedience               Int?                  @default(0)

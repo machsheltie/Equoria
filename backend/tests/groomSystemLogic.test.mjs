@@ -307,7 +307,7 @@ describe('🧮 UNIT: Groom System Logic - Pure Business Logic Validation', () =>
 
         // Validate numeric values
         expect(groom.experience).toBeGreaterThan(0);
-        expect(groom.hourlyRate).toBeGreaterThan(0);
+        expect(groom.sessionRate).toBeGreaterThan(0);
       });
     });
   });
@@ -341,7 +341,7 @@ describe('🧮 UNIT: Groom System Logic - Pure Business Logic Validation', () =>
         skillLevel: 'invalid_level',
         personality: 'invalid_personality',
         experience: 5,
-        hourlyRate: 18.0,
+        sessionRate: 18.0,
       };
 
       // Should not throw error, should use defaults

@@ -29,6 +29,7 @@ const VALID_HORSE_STATS = [
   'stamina',
   'agility',
   'balance',
+  'coordination',
   'precision',
   'intelligence',
   'boldness',

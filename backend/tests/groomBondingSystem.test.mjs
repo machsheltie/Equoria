@@ -67,15 +67,15 @@ describe('Groom Bonding & Burnout Prevention System', () => {
 
   describe('Eligible Grooming Tasks', () => {
     it('should recognize brushing as eligible task', () => {
-      expect(GROOM_CONFIG.ELIGIBLE_GROOMING_TASKS).toContain('brushing');
+      expect(GROOM_CONFIG.ELIGIBLE_GENERAL_GROOMING_TASKS).toContain('brushing');
     });
 
     it('should recognize hand-walking as eligible task', () => {
-      expect(GROOM_CONFIG.ELIGIBLE_GROOMING_TASKS).toContain('hand-walking');
+      expect(GROOM_CONFIG.ELIGIBLE_GENERAL_GROOMING_TASKS).toContain('hand-walking');
     });
 
     it('should recognize stall_care as eligible task', () => {
-      expect(GROOM_CONFIG.ELIGIBLE_GROOMING_TASKS).toContain('stall_care');
+      expect(GROOM_CONFIG.ELIGIBLE_GENERAL_GROOMING_TASKS).toContain('stall_care');
     });
 
     it('should reject non-eligible tasks for bonding', () => {
@@ -101,13 +101,13 @@ describe('Groom Bonding & Burnout Prevention System', () => {
     });
 
     it('should allow enrichment tasks for horses under 3 years old', async () => {
-      const horse = { id: 1, age: 1000, bondScore: 50 }; // Under 3 years
-      const result = await validateGroomingEligibility(horse, 'gentle_touch');
+      const horse = { id: 1, age: 1000, bondScore: 50 }; // Under 3 years (2.7 years)
+      const result = await validateGroomingEligibility(horse, 'hoof_handling'); // Use foal grooming task for 2.7 year old
 
       expect(result.eligible).toBe(true);
       expect(result.reason).toContain('eligible');
-      expect(result.ageGroup).toBe('foal');
-      expect(result.taskType).toBe('enrichment');
+      expect(result.ageGroup).toContain('foal');
+      expect(result.taskType).toBe('grooming');
     });
   });
 

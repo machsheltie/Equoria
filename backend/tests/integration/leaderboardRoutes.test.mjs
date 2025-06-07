@@ -79,8 +79,10 @@ describe('🏆 INTEGRATION: Leaderboard API - Real Database Integration', () => 
       prisma.user.create({
         data: {
           email: 'test-leaderboard-1@example.com',
+          username: 'topplayer1',
           password: 'hashedpassword',
-          name: 'Top Player 1',
+          firstName: 'Top',
+          lastName: 'Player1',
           level: 15,
           xp: 50,
           money: 25000,
@@ -89,8 +91,10 @@ describe('🏆 INTEGRATION: Leaderboard API - Real Database Integration', () => 
       prisma.user.create({
         data: {
           email: 'test-leaderboard-2@example.com',
+          username: 'topplayer2',
           password: 'hashedpassword',
-          name: 'Top Player 2',
+          firstName: 'Top',
+          lastName: 'Player2',
           level: 14,
           xp: 90,
           money: 18000,
@@ -99,8 +103,10 @@ describe('🏆 INTEGRATION: Leaderboard API - Real Database Integration', () => 
       prisma.user.create({
         data: {
           email: 'test-leaderboard-3@example.com',
+          username: 'topplayer3',
           password: 'hashedpassword',
-          name: 'Top Player 3',
+          firstName: 'Top',
+          lastName: 'Player3',
           level: 14,
           xp: 30,
           money: 21500,
@@ -121,8 +127,8 @@ describe('🏆 INTEGRATION: Leaderboard API - Real Database Integration', () => 
           name: 'TestLeaderboard Champion',
           age: 6,
           sex: 'Stallion',
-          breed: testBreed.name,
-          userId: testUsers[0].id,
+          breed: { connect: { id: testBreed.id } },
+          user: { connect: { id: testUsers[0].id } },
           dateOfBirth: new Date('2019-01-01'),
           healthStatus: 'Excellent',
           totalEarnings: 45000,
@@ -133,8 +139,8 @@ describe('🏆 INTEGRATION: Leaderboard API - Real Database Integration', () => 
           name: 'TestLeaderboard Silver Star',
           age: 5,
           sex: 'Mare',
-          breed: testBreed.name,
-          userId: testUsers[1].id,
+          breed: { connect: { id: testBreed.id } },
+          user: { connect: { id: testUsers[1].id } },
           dateOfBirth: new Date('2020-01-01'),
           healthStatus: 'Excellent',
           totalEarnings: 37500,
@@ -145,8 +151,8 @@ describe('🏆 INTEGRATION: Leaderboard API - Real Database Integration', () => 
           name: 'TestLeaderboard Gold Rush',
           age: 4,
           sex: 'Gelding',
-          breed: testBreed.name,
-          userId: testUsers[2].id,
+          breed: { connect: { id: testBreed.id } },
+          user: { connect: { id: testUsers[2].id } },
           dateOfBirth: new Date('2021-01-01'),
           healthStatus: 'Good',
           totalEarnings: 32000,
@@ -222,12 +228,12 @@ describe('🏆 INTEGRATION: Leaderboard API - Real Database Integration', () => 
 
       // Verify proper sorting (level desc, then xp desc)
       const { rankings } = response.body.data;
-      expect(rankings[0].name).toBe('Top Player 1');
+      expect(rankings[0].firstName).toBe('Top');
       expect(rankings[0].level).toBe(15);
-      expect(rankings[1].name).toBe('Top Player 2');
+      expect(rankings[1].firstName).toBe('Top');
       expect(rankings[1].level).toBe(14);
       expect(rankings[1].xp).toBe(90); // Higher XP than Player 3
-      expect(rankings[2].name).toBe('Top Player 3');
+      expect(rankings[2].firstName).toBe('Top');
       expect(rankings[2].level).toBe(14);
       expect(rankings[2].xp).toBe(30); // Lower XP than Player 2
     });
