@@ -413,32 +413,32 @@ async function getTrainingStatus(horseId, discipline) {
 }
 
 /**
- * Get all horses owned by a player that are eligible for training in at least one discipline
- * @param {string} playerId - UUID of the player
+ * Get all horses owned by a user that are eligible for training in at least one discipline
+ * @param {string} userId - UUID of the user
  * @returns {Array} - Array of horses with their trainable disciplines
  * @throws {Error} - If validation fails or database error occurs
  */
-async function getTrainableHorses(playerId) {
+async function getTrainableHorses(userId) {
   try {
     // Validate input parameters
-    if (!playerId) {
+    if (!userId) {
       throw new Error('User ID is required');
     }
 
     logger.info(
-      `[trainingController.getTrainableHorses] Getting trainable horses for player ${playerId}`,
+      `[trainingController.getTrainableHorses] Getting trainable horses for user ${userId}`,
     );
 
-    // Get player with their horses
-    const player = await getUserWithHorses(playerId);
+    // Get user with their horses
+    const player = await getUserWithHorses(userId);
 
     if (!player) {
-      logger.warn(`[trainingController.getTrainableHorses] User ${playerId} not found`);
+      logger.warn(`[trainingController.getTrainableHorses] User ${userId} not found`);
       return [];
     }
 
     if (!player.horses || player.horses.length === 0) {
-      logger.info(`[trainingController.getTrainableHorses] User ${playerId} has no horses`);
+      logger.info(`[trainingController.getTrainableHorses] User ${userId} has no horses`);
       return [];
     }
 
@@ -502,7 +502,7 @@ async function getTrainableHorses(playerId) {
     }
 
     logger.info(
-      `[trainingController.getTrainableHorses] Found ${trainableHorses.length} trainable horses for player ${playerId}`,
+      `[trainingController.getTrainableHorses] Found ${trainableHorses.length} trainable horses for user ${userId}`,
     );
     return trainableHorses;
   } catch (error) {

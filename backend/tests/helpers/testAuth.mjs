@@ -106,6 +106,12 @@ export async function createTestHorse(horseData = {}) {
     ...horseData,
   };
 
+  // Handle userId conversion to user relation
+  if (defaultData.userId) {
+    defaultData.user = { connect: { id: defaultData.userId } };
+    delete defaultData.userId;
+  }
+
   return await prisma.horse.create({
     data: defaultData,
   });

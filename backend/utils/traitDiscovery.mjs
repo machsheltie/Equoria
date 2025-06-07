@@ -13,46 +13,65 @@ import { getTraitDefinition } from './epigeneticTraits.mjs';
 const DISCOVERY_CONDITIONS = {
   // Bonding-based discoveries
   HIGH_BOND: {
+    name: 'High Bond',
     condition: horse => horse.bond_score >= 80,
     description: 'Strong bond formed',
     priority: 'high',
+    category: 'bonding',
+    revealableTraits: ['loyal', 'trusting', 'calm'],
   },
 
   EXCELLENT_BOND: {
+    name: 'Excellent Bond',
     condition: horse => horse.bond_score >= 95,
     description: 'Exceptional bond achieved',
     priority: 'legendary',
+    category: 'bonding',
+    revealableTraits: ['devoted', 'empathetic', 'intuitive'],
   },
 
   // Stress-based discoveries
   LOW_STRESS: {
+    name: 'Low Stress',
     condition: horse => horse.stress_level <= 20,
     description: 'Stress levels minimized',
     priority: 'medium',
+    category: 'stress',
+    revealableTraits: ['calm', 'relaxed', 'confident'],
   },
 
   MINIMAL_STRESS: {
+    name: 'Minimal Stress',
     condition: horse => horse.stress_level <= 5,
     description: 'Perfect stress management',
     priority: 'high',
+    category: 'stress',
+    revealableTraits: ['zen', 'unflappable', 'serene'],
   },
 
   // Combined conditions
   PERFECT_CARE: {
+    name: 'Perfect Care',
     condition: horse => horse.bond_score >= 80 && horse.stress_level <= 20,
     description: 'Perfect care conditions achieved',
     priority: 'legendary',
+    category: 'milestones',
+    revealableTraits: ['exceptional', 'thriving', 'balanced'],
   },
 
   // Age-based discoveries
   MATURE_BOND: {
+    name: 'Mature Bond',
     condition: horse => horse.age >= 2 && horse.bond_score >= 70,
     description: 'Mature relationship developed',
     priority: 'medium',
+    category: 'milestones',
+    revealableTraits: ['mature', 'stable', 'reliable'],
   },
 
   // Training-based discoveries (requires training data)
   CONSISTENT_TRAINING: {
+    name: 'Consistent Training',
     condition: async horse => {
       const recentTraining = await prisma.trainingLog.count({
         where: {
@@ -66,6 +85,8 @@ const DISCOVERY_CONDITIONS = {
     },
     description: 'Consistent training regimen maintained',
     priority: 'medium',
+    category: 'activities',
+    revealableTraits: ['disciplined', 'focused', 'trainable'],
     async: true,
   },
 };
@@ -445,17 +466,22 @@ export async function getDiscoveryProgress(horseId) {
 
     const horse = await prisma.horse.findUnique({
       where: { id: horseIdInt },
-      include: {
-        traits: true,
-      },
     });
 
     if (!horse) {
       throw new Error(`Horse with ID ${horseId} not found`);
     }
 
+    // Get traits from epigeneticModifiers JSON field
+    const epigeneticModifiers = horse.epigeneticModifiers || { positive: [], negative: [], hidden: [] };
+    const allTraits = [
+      ...(epigeneticModifiers.positive || []),
+      ...(epigeneticModifiers.negative || []),
+      ...(epigeneticModifiers.hidden || [])
+    ];
+
     const totalPossibleTraits = Object.keys(DISCOVERY_CONDITIONS).length;
-    const discoveredTraits = horse.traits.length;
+    const discoveredTraits = allTraits.length;
     const progressPercentage = Math.round((discoveredTraits / totalPossibleTraits) * 100);
 
     return {
@@ -463,7 +489,7 @@ export async function getDiscoveryProgress(horseId) {
       discoveredTraits,
       totalPossibleTraits,
       progressPercentage,
-      traits: horse.traits.map(trait => trait.name),
+      traits: allTraits,
     };
   } catch (error) {
     logger.error(`[traitDiscovery.getDiscoveryProgress] Error for horse ${horseId}:`, error);

@@ -155,7 +155,7 @@ app.use('/api/breeds', breedRoutes);
 app.use('/api/foals', foalRoutes);
 app.use('/api/traits', traitRoutes);
 app.use('/api/traits', traitDiscoveryRoutes);
-app.use('/api/groom', groomRoutes);
+app.use('/api/grooms', groomRoutes);
 app.use('/api/leaderboard', leaderboardRoutes);
 app.use('/api/admin', adminRoutes);
 

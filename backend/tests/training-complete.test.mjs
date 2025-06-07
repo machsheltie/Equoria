@@ -17,7 +17,7 @@
  * 🎯 FUNCTIONALITY TESTED:
  * 1. POST /api/auth/register - User registration with validation
  * 2. POST /api/auth/login - User authentication and token generation
- * 3. GET /api/horses/trainable/:playerId - Trainable horse listing with filtering
+ * 3. GET /api/horses/trainable/:userId - Trainable horse listing with filtering
  * 4. POST /api/training/train - Training execution with business rule validation
  * 5. Authentication middleware: Token validation and access control
  * 6. Age validation: Young horses blocked from training
@@ -63,14 +63,14 @@ const createTestApp = () => {
   app.post('/api/auth/login', body('email').isEmail().normalizeEmail(), body('password').notEmpty(), login);
 
   // Training routes (simplified)
-  app.get('/api/horses/trainable/:playerId', authenticateToken, async (req, res) => {
+  app.get('/api/horses/trainable/:userId', authenticateToken, async (req, res) => {
     try {
-      const { playerId } = req.params;
+      const { userId } = req.params;
 
       // Find horses owned by this user (using userId since that's what exists)
       const horses = await prisma.horse.findMany({
         where: {
-          userId: playerId, // userId is a string in the schema
+          userId: userId, // userId is a string in the schema
         },
         include: {
           breed: true,
