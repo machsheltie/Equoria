@@ -1,4 +1,4 @@
-import { expect, jest, test, describe, beforeEach, afterEach, it } from '@jest/globals';
+import { expect, jest, describe, beforeEach, it } from '@jest/globals';
 
 /**
  * 🧪 UNIT TEST: Groom System - Foal Care Assignment & Management

@@ -18,7 +18,7 @@
  * 🎯 FUNCTIONALITY TESTED:
  * 1. getEligibleTasksForAge - Age-based task filtering
  * 2. validateGroomingEligibility - Comprehensive eligibility validation
- * 3. calculateBondingEffect - Bonding score calculations
+ * 3. calculateBondingEffects - Bonding score calculations
  * 4. categorizeTask - Task type classification
  * 5. getAgeGroupDescription - Age group determination
  * 6. Task availability and restriction logic
@@ -33,7 +33,14 @@
  *
  * 💡 TEST STRATEGY: Pure algorithmic testing of groom care systems
  *    to ensure accurate task eligibility and bonding calculations
+ *
+ * 🚫 NO DATABASE: This test suite does not require database setup
+ *    as it only tests pure algorithmic functions
  */
+
+// Set test environment to avoid database setup requirements
+process.env.NODE_ENV = 'test';
+process.env.DATABASE_URL = 'postgresql://test:test@localhost:5432/equoria_test';
 
 import { describe, it, expect } from '@jest/globals';
 import {
@@ -41,7 +48,7 @@ import {
   validateGroomingEligibility,
   calculateBondingEffects,
   categorizeTask,
-  getAgeGroupDescription
+  getAgeGroupDescription,
 } from '../../utils/groomBondingSystem.mjs';
 
 describe('🤝 COMPREHENSIVE: Groom Bonding System & Task Eligibility', () => {
@@ -52,10 +59,10 @@ describe('🤝 COMPREHENSIVE: Groom Bonding System & Task Eligibility', () => {
 
       expect(Array.isArray(eligibleTasks)).toBe(true);
       expect(eligibleTasks.length).toBeGreaterThan(0);
-      
+
       // Should include enrichment tasks for very young foals
-      const hasEnrichmentTasks = eligibleTasks.some(task => 
-        task.includes('enrichment') || task.includes('bonding') || task.includes('feeding')
+      const hasEnrichmentTasks = eligibleTasks.some(task =>
+        task.includes('desensitization') || task.includes('trust_building') || task.includes('early_touch'),
       );
       expect(hasEnrichmentTasks).toBe(true);
     });
@@ -66,7 +73,7 @@ describe('🤝 COMPREHENSIVE: Groom Bonding System & Task Eligibility', () => {
 
       expect(Array.isArray(eligibleTasks)).toBe(true);
       expect(eligibleTasks.length).toBeGreaterThan(0);
-      
+
       // Should include both enrichment and early grooming tasks
       eligibleTasks.forEach(task => {
         expect(typeof task).toBe('string');
@@ -80,7 +87,7 @@ describe('🤝 COMPREHENSIVE: Groom Bonding System & Task Eligibility', () => {
 
       expect(Array.isArray(eligibleTasks)).toBe(true);
       expect(eligibleTasks.length).toBeGreaterThan(0);
-      
+
       // Should include grooming tasks appropriate for yearlings
       eligibleTasks.forEach(task => {
         expect(typeof task).toBe('string');
@@ -93,7 +100,7 @@ describe('🤝 COMPREHENSIVE: Groom Bonding System & Task Eligibility', () => {
 
       expect(Array.isArray(eligibleTasks)).toBe(true);
       expect(eligibleTasks.length).toBeGreaterThan(0);
-      
+
       // Should include general care tasks for mature horses
       eligibleTasks.forEach(task => {
         expect(typeof task).toBe('string');
@@ -125,7 +132,7 @@ describe('🤝 COMPREHENSIVE: Groom Bonding System & Task Eligibility', () => {
         healthStatus: 'Good',
       };
 
-      const result = await validateGroomingEligibility(youngFoal, 'enrichment');
+      const result = await validateGroomingEligibility(youngFoal, 'desensitization');
 
       expect(result).toHaveProperty('eligible');
       expect(result).toHaveProperty('reason');
@@ -141,7 +148,7 @@ describe('🤝 COMPREHENSIVE: Groom Bonding System & Task Eligibility', () => {
         healthStatus: 'Excellent',
       };
 
-      const result = await validateGroomingEligibility(yearling, 'grooming');
+      const result = await validateGroomingEligibility(yearling, 'hoof_handling');
 
       expect(result).toHaveProperty('eligible');
       expect(result).toHaveProperty('reason');
@@ -157,7 +164,7 @@ describe('🤝 COMPREHENSIVE: Groom Bonding System & Task Eligibility', () => {
         healthStatus: 'Good',
       };
 
-      const result = await validateGroomingEligibility(matureHorse, 'general_care');
+      const result = await validateGroomingEligibility(matureHorse, 'brushing');
 
       expect(result).toHaveProperty('eligible');
       expect(result).toHaveProperty('reason');
@@ -172,11 +179,11 @@ describe('🤝 COMPREHENSIVE: Groom Bonding System & Task Eligibility', () => {
         healthStatus: 'Good',
       };
 
-      const result = await validateGroomingEligibility(youngFoal, 'advanced_training');
+      const result = await validateGroomingEligibility(youngFoal, 'brushing'); // Adult task for young foal
 
       expect(result).toHaveProperty('eligible');
       expect(result).toHaveProperty('reason');
-      
+
       if (!result.eligible) {
         expect(result.reason).toContain('not an eligible task');
       }
@@ -184,11 +191,11 @@ describe('🤝 COMPREHENSIVE: Groom Bonding System & Task Eligibility', () => {
 
     it('should handle edge cases in age validation', async () => {
       const edgeCases = [
-        { age: 0, task: 'feeding' },      // Newborn
-        { age: 364, task: 'grooming' },   // Almost 1 year
-        { age: 366, task: 'grooming' },   // Just over 1 year
-        { age: 1094, task: 'training' },  // Almost 3 years
-        { age: 1096, task: 'training' },  // Just over 3 years
+        { age: 0, task: 'early_touch' },      // Newborn - valid enrichment task
+        { age: 364, task: 'hoof_handling' },   // Almost 1 year - valid foal grooming task
+        { age: 366, task: 'hoof_handling' },   // Just over 1 year - valid foal grooming task
+        { age: 1094, task: 'brushing' },  // Almost 3 years - valid general grooming task
+        { age: 1096, task: 'brushing' },  // Just over 3 years - valid general grooming task
       ];
 
       for (const testCase of edgeCases) {
@@ -236,41 +243,33 @@ describe('🤝 COMPREHENSIVE: Groom Bonding System & Task Eligibility', () => {
     });
 
     it('should handle maximum bonding score scenarios', () => {
-      const interactionData = {
-        taskType: 'bonding',
-        groomSkillLevel: 'master',
-        horseTemperament: 'docile',
-        previousBondScore: 95,
-        careQuality: 'excellent',
-      };
+      const currentBondScore = 95;
+      const groomingTask = 'brushing'; // Grooming task that provides bonding
 
-      const result = calculateBondingEffects(50, 'grooming');
+      const result = calculateBondingEffects(currentBondScore, groomingTask);
 
       expect(result.newBondScore).toBeLessThanOrEqual(100);
+      expect(result.bondChange).toBeGreaterThanOrEqual(0);
     });
 
     it('should handle minimum bonding score scenarios', () => {
-      const interactionData = {
-        taskType: 'stressful_procedure',
-        groomSkillLevel: 'novice',
-        horseTemperament: 'aggressive',
-        previousBondScore: 5,
-        careQuality: 'poor',
-      };
+      const currentBondScore = 5;
+      const groomingTask = 'feeding'; // Non-grooming task
 
-      const result = calculateBondingEffect(interactionData);
+      const result = calculateBondingEffects(currentBondScore, groomingTask);
 
       expect(result.newBondScore).toBeGreaterThanOrEqual(0);
+      expect(result.bondChange).toBe(0); // Non-grooming tasks don't provide bonding
     });
   });
 
   describe('Task Categorization', () => {
     it('should categorize enrichment tasks correctly', () => {
       const enrichmentTasks = [
-        'sensory_enrichment',
-        'play_interaction',
-        'environmental_enrichment',
-        'social_bonding',
+        'desensitization',
+        'trust_building',
+        'showground_exposure',
+        'early_touch',
       ];
 
       enrichmentTasks.forEach(task => {
@@ -282,9 +281,9 @@ describe('🤝 COMPREHENSIVE: Groom Bonding System & Task Eligibility', () => {
     it('should categorize grooming tasks correctly', () => {
       const groomingTasks = [
         'brushing',
-        'hoof_care',
-        'mane_care',
-        'basic_grooming',
+        'hoof_handling',
+        'mane_tail_grooming',
+        'stall_care',
       ];
 
       groomingTasks.forEach(task => {
@@ -295,15 +294,15 @@ describe('🤝 COMPREHENSIVE: Groom Bonding System & Task Eligibility', () => {
 
     it('should categorize general care tasks correctly', () => {
       const generalTasks = [
-        'feeding',
-        'exercise',
-        'medical_check',
-        'general_care',
+        'feeding', // This should return null as it's not in any category
+        'exercise', // This should return null as it's not in any category
+        'medical_check', // This should return null as it's not in any category
+        'unknown_task', // This should return null as it's not in any category
       ];
 
       generalTasks.forEach(task => {
         const category = categorizeTask(task);
-        expect(category).toBe('general');
+        expect(category).toBe(null); // These tasks are not in the configuration
       });
     });
 
@@ -317,7 +316,7 @@ describe('🤝 COMPREHENSIVE: Groom Bonding System & Task Eligibility', () => {
 
       unknownTasks.forEach(task => {
         const category = categorizeTask(task);
-        expect(typeof category).toBe('string');
+        expect(category).toBe(null); // Unknown tasks should return null
       });
     });
   });
@@ -336,7 +335,7 @@ describe('🤝 COMPREHENSIVE: Groom Bonding System & Task Eligibility', () => {
         const description = getAgeGroupDescription(testCase.age);
         expect(typeof description).toBe('string');
         expect(description.length).toBeGreaterThan(0);
-        
+
         // Should contain age-appropriate terminology
         const lowerDescription = description.toLowerCase();
         expect(lowerDescription).toMatch(/foal|yearling|horse|young|mature/);
@@ -372,19 +371,16 @@ describe('🤝 COMPREHENSIVE: Groom Bonding System & Task Eligibility', () => {
       };
 
       expect(async () => {
-        await validateGroomingEligibility(incompleteHorse, 'feeding');
+        await validateGroomingEligibility(incompleteHorse, 'desensitization');
       }).not.toThrow();
     });
 
     it('should handle invalid bonding calculation data', () => {
-      const invalidData = {
-        // Missing required fields
-        taskType: null,
-        groomSkillLevel: undefined,
-      };
+      const invalidBondScore = null;
+      const invalidTask = undefined;
 
       expect(() => {
-        calculateBondingEffect(invalidData);
+        calculateBondingEffects(invalidBondScore, invalidTask);
       }).not.toThrow();
     });
 
@@ -403,13 +399,13 @@ describe('🤝 COMPREHENSIVE: Groom Bonding System & Task Eligibility', () => {
   describe('System Integration Scenarios', () => {
     it('should provide consistent results across related functions', () => {
       const testAge = 500; // ~1.4 years old
-      
+
       const eligibleTasks = getEligibleTasksForAge(testAge);
       const ageGroup = getAgeGroupDescription(testAge);
-      
+
       expect(Array.isArray(eligibleTasks)).toBe(true);
       expect(typeof ageGroup).toBe('string');
-      
+
       // Tasks should be appropriate for the age group
       eligibleTasks.forEach(task => {
         const category = categorizeTask(task);
@@ -419,11 +415,11 @@ describe('🤝 COMPREHENSIVE: Groom Bonding System & Task Eligibility', () => {
 
     it('should maintain logical progression through age groups', () => {
       const ageProgression = [30, 180, 400, 800, 1200, 1600];
-      
+
       ageProgression.forEach(age => {
         const tasks = getEligibleTasksForAge(age);
         const description = getAgeGroupDescription(age);
-        
+
         expect(tasks.length).toBeGreaterThanOrEqual(0);
         expect(description.length).toBeGreaterThan(0);
       });

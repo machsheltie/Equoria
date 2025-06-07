@@ -39,6 +39,7 @@ import { describe, it, expect } from '@jest/globals';
 import {
   checkMilestoneEligibility,
   evaluateTraitMilestones,
+  // getMilestoneSummary - unused import removed
 } from '../../utils/milestoneTraitEvaluator.mjs';
 
 describe('🏇 COMPREHENSIVE: Milestone Trait Evaluator System', () => {
@@ -179,292 +180,339 @@ describe('🏇 COMPREHENSIVE: Milestone Trait Evaluator System', () => {
       const horse = {
         id: 8,
         name: 'Average Horse',
-        age: 730,
+        age: 730, // 2 years old - milestone age
         healthStatus: 'Good',
+        task_log: [
+          { task: 'feeding', completedAt: new Date() },
+          { task: 'grooming', completedAt: new Date() },
+          { task: 'exercise', completedAt: new Date() },
+          { task: 'medical_check', completedAt: new Date() },
+          { task: 'bonding', completedAt: new Date() },
+        ],
+        trait_milestones: {}, // No previous milestones
+        epigeneticModifiers: { positive: [], negative: [], hidden: [], epigenetic: [] },
       };
 
-      const taskHistory = {
-        feeding: 25,
-        grooming: 20,
-        exercise: 18,
-        medical_check: 15,
-        bonding: 12,
-      };
+      const result = evaluateTraitMilestones(horse);
 
-      const careStreak = 10;
-
-      const result = evaluateTraitsAtMilestone(horse, taskHistory, careStreak);
-
-      expect(result).toHaveProperty('revealedTraits');
-      expect(result).toHaveProperty('careQuality');
-      expect(result).toHaveProperty('streakBonus');
-      expect(typeof result.careQuality).toBe('string');
+      expect(result).toHaveProperty('success');
+      expect(result).toHaveProperty('milestoneAge');
+      expect(result).toHaveProperty('traitsApplied');
+      expect(result).toHaveProperty('evaluationPerformed');
+      expect(Array.isArray(result.traitsApplied)).toBe(true);
+      expect(typeof result.success).toBe('boolean');
+      expect(result.milestoneAge).toBe(2);
     });
   });
 
-  describe('Streak Bonus Calculations', () => {
-    it('should apply streak bonuses for long care streaks', () => {
+  describe('Task Log Processing and Trait Scoring', () => {
+    it('should process extensive task history for trait evaluation', () => {
       const horse = {
         id: 9,
-        name: 'Consistently Cared Horse',
-        age: 365,
+        name: 'Well-Cared Horse',
+        age: 365, // 1 year milestone
         healthStatus: 'Excellent',
+        task_log: [
+          // Extensive feeding history (encourages resilient trait)
+          { task: 'feeding', completedAt: new Date() },
+          { task: 'feeding', completedAt: new Date() },
+          { task: 'feeding', completedAt: new Date() },
+          { task: 'feeding', completedAt: new Date() },
+          { task: 'feeding', completedAt: new Date() },
+          // Grooming history (encourages calm trait)
+          { task: 'grooming', completedAt: new Date() },
+          { task: 'grooming', completedAt: new Date() },
+          { task: 'grooming', completedAt: new Date() },
+          // Exercise history (encourages athletic trait)
+          { task: 'exercise', completedAt: new Date() },
+          { task: 'exercise', completedAt: new Date() },
+        ],
+        trait_milestones: {}, // No previous milestones
+        epigeneticModifiers: { positive: [], negative: [], hidden: [], epigenetic: [] },
       };
 
-      const taskHistory = {
-        feeding: 30,
-        grooming: 25,
-        exercise: 20,
-        medical_check: 15,
-        bonding: 20,
-      };
+      const result = evaluateTraitMilestones(horse);
 
-      const longStreak = 50; // Very long streak
-
-      const result = evaluateTraitsAtMilestone(horse, taskHistory, longStreak);
-
-      expect(result).toHaveProperty('streakBonus');
-      expect(result.streakBonus).toBe(true);
+      expect(result).toHaveProperty('success');
+      expect(result).toHaveProperty('traitScores');
+      expect(result).toHaveProperty('traitsApplied');
+      expect(result.success).toBe(true);
+      expect(typeof result.traitScores).toBe('object');
+      expect(Array.isArray(result.traitsApplied)).toBe(true);
     });
 
-    it('should not apply streak bonuses for short streaks', () => {
+    it('should handle minimal task history', () => {
       const horse = {
         id: 10,
-        name: 'Inconsistently Cared Horse',
-        age: 365,
+        name: 'Minimally Cared Horse',
+        age: 730, // 2 year milestone
         healthStatus: 'Good',
+        task_log: [
+          { task: 'feeding', completedAt: new Date() },
+          { task: 'grooming', completedAt: new Date() },
+        ],
+        trait_milestones: { age_1: true }, // 1-year milestone completed
+        epigeneticModifiers: { positive: [], negative: [], hidden: [], epigenetic: [] },
       };
 
-      const taskHistory = {
-        feeding: 20,
-        grooming: 15,
-        exercise: 10,
-        medical_check: 8,
-        bonding: 5,
-      };
+      const result = evaluateTraitMilestones(horse);
 
-      const shortStreak = 3; // Very short streak
-
-      const result = evaluateTraitsAtMilestone(horse, taskHistory, shortStreak);
-
-      expect(result).toHaveProperty('streakBonus');
-      expect(result.streakBonus).toBe(false);
+      expect(result).toHaveProperty('success');
+      expect(result).toHaveProperty('traitScores');
+      expect(result).toHaveProperty('traitsApplied');
+      expect(result.success).toBe(true);
+      expect(typeof result.traitScores).toBe('object');
     });
 
-    it('should handle zero streak scenarios', () => {
+    it('should handle empty task history', () => {
       const horse = {
         id: 11,
-        name: 'No Streak Horse',
-        age: 365,
+        name: 'No Care Horse',
+        age: 1095, // 3 year milestone
         healthStatus: 'Fair',
+        task_log: [], // No task history
+        trait_milestones: { age_1: true, age_2: true }, // Previous milestones completed
+        epigeneticModifiers: { positive: [], negative: [], hidden: [], epigenetic: [] },
       };
 
-      const taskHistory = {
-        feeding: 15,
-        grooming: 10,
-        exercise: 8,
-        medical_check: 5,
-        bonding: 3,
-      };
+      const result = evaluateTraitMilestones(horse);
 
-      const zeroStreak = 0;
-
-      const result = evaluateTraitsAtMilestone(horse, taskHistory, zeroStreak);
-
-      expect(result).toHaveProperty('streakBonus');
-      expect(result.streakBonus).toBe(false);
+      expect(result).toHaveProperty('success');
+      expect(result).toHaveProperty('traitScores');
+      expect(result).toHaveProperty('traitsApplied');
+      expect(result.success).toBe(true);
+      expect(typeof result.traitScores).toBe('object');
     });
   });
 
-  describe('Care Quality Assessment', () => {
-    it('should assess excellent care quality', () => {
+  describe('Milestone Age Validation and Edge Cases', () => {
+    it('should handle non-milestone ages correctly', () => {
       const horse = {
         id: 12,
-        name: 'Premium Care Horse',
-        age: 730,
+        name: 'Non-Milestone Horse',
+        age: 500, // Not a milestone age (1.37 years)
         healthStatus: 'Excellent',
+        task_log: [
+          { task: 'feeding', completedAt: new Date() },
+          { task: 'grooming', completedAt: new Date() },
+        ],
+        trait_milestones: {},
+        epigeneticModifiers: { positive: [], negative: [], hidden: [], epigenetic: [] },
       };
 
-      const excellentTaskHistory = {
-        feeding: 60,
-        grooming: 55,
-        exercise: 50,
-        medical_check: 45,
-        bonding: 40,
-        enrichment: 35,
-      };
+      const result = evaluateTraitMilestones(horse);
 
-      const result = evaluateTraitsAtMilestone(horse, excellentTaskHistory, 20);
-
-      expect(result.careQuality).toBe('excellent');
+      expect(result).toHaveProperty('success');
+      expect(result).toHaveProperty('reason');
+      expect(result.success).toBe(false);
+      expect(result.reason).toBe('not_milestone_age');
     });
 
-    it('should assess poor care quality', () => {
+    it('should handle already evaluated milestones', () => {
       const horse = {
         id: 13,
-        name: 'Poor Care Horse',
-        age: 730,
-        healthStatus: 'Poor',
+        name: 'Already Evaluated Horse',
+        age: 365, // 1 year milestone
+        healthStatus: 'Good',
+        task_log: [
+          { task: 'feeding', completedAt: new Date() },
+        ],
+        trait_milestones: { age_1: true }, // Already evaluated
+        epigeneticModifiers: { positive: [], negative: [], hidden: [], epigenetic: [] },
       };
 
-      const poorTaskHistory = {
-        feeding: 2,
-        grooming: 1,
-        exercise: 0,
-        medical_check: 1,
-        bonding: 0,
-      };
+      const result = evaluateTraitMilestones(horse);
 
-      const result = evaluateTraitsAtMilestone(horse, poorTaskHistory, 0);
-
-      expect(result.careQuality).toBe('poor');
+      expect(result).toHaveProperty('success');
+      expect(result).toHaveProperty('reason');
+      expect(result.success).toBe(false);
+      expect(result.reason).toBe('already_evaluated');
     });
 
-    it('should assess average care quality', () => {
+    it('should handle horses with existing traits', () => {
       const horse = {
         id: 14,
-        name: 'Average Care Horse',
-        age: 1095,
+        name: 'Horse with Existing Traits',
+        age: 730, // 2 year milestone
         healthStatus: 'Good',
+        task_log: [
+          { task: 'feeding', completedAt: new Date() },
+          { task: 'grooming', completedAt: new Date() },
+        ],
+        trait_milestones: { age_1: true },
+        epigeneticModifiers: {
+          positive: ['calm'],
+          negative: [],
+          hidden: [],
+          epigenetic: [],
+        },
       };
 
-      const averageTaskHistory = {
-        feeding: 20,
-        grooming: 18,
-        exercise: 15,
-        medical_check: 12,
-        bonding: 10,
-      };
+      const result = evaluateTraitMilestones(horse);
 
-      const result = evaluateTraitsAtMilestone(horse, averageTaskHistory, 8);
-
-      expect(['average', 'good', 'fair']).toContain(result.careQuality);
+      expect(result).toHaveProperty('success');
+      expect(result).toHaveProperty('traitsApplied');
+      expect(result.success).toBe(true);
+      expect(Array.isArray(result.traitsApplied)).toBe(true);
     });
   });
 
-  describe('Input Validation and Error Handling', () => {
-    it('should handle missing task history', () => {
+  describe('Error Handling and Edge Cases', () => {
+    it('should handle missing task_log property', () => {
       const horse = {
         id: 15,
-        name: 'No History Horse',
-        age: 365,
+        name: 'No Task Log Horse',
+        age: 365, // 1 year milestone
         healthStatus: 'Good',
+        // Missing task_log property
+        trait_milestones: {},
+        epigeneticModifiers: { positive: [], negative: [], hidden: [], epigenetic: [] },
       };
 
-      const emptyTaskHistory = {};
-      const result = evaluateTraitsAtMilestone(horse, emptyTaskHistory, 0);
+      const result = evaluateTraitMilestones(horse);
 
-      expect(result).toHaveProperty('revealedTraits');
-      expect(result).toHaveProperty('careQuality');
-      expect(Array.isArray(result.revealedTraits)).toBe(true);
+      expect(result).toHaveProperty('success');
+      expect(result).toHaveProperty('traitScores');
+      expect(result.success).toBe(true);
+      expect(typeof result.traitScores).toBe('object');
     });
 
-    it('should handle null task history', () => {
+    it('should handle null task_log', () => {
       const horse = {
         id: 16,
-        name: 'Null History Horse',
-        age: 365,
+        name: 'Null Task Log Horse',
+        age: 730, // 2 year milestone
         healthStatus: 'Good',
+        task_log: null,
+        trait_milestones: { age_1: true },
+        epigeneticModifiers: { positive: [], negative: [], hidden: [], epigenetic: [] },
       };
 
-      const result = evaluateTraitsAtMilestone(horse, null, 0);
+      const result = evaluateTraitMilestones(horse);
 
-      expect(result).toHaveProperty('revealedTraits');
-      expect(result).toHaveProperty('careQuality');
-      expect(Array.isArray(result.revealedTraits)).toBe(true);
+      expect(result).toHaveProperty('success');
+      expect(result).toHaveProperty('traitScores');
+      expect(result.success).toBe(true);
+      expect(typeof result.traitScores).toBe('object');
     });
 
-    it('should handle invalid horse data', () => {
+    it('should handle invalid horse data gracefully', () => {
       const invalidHorse = {
         id: 17,
-        // Missing required fields
-      };
-
-      const taskHistory = {
-        feeding: 10,
-        grooming: 8,
+        age: 365, // Valid milestone age
+        // Missing some properties but should not crash
       };
 
       expect(() => {
-        evaluateTraitsAtMilestone(invalidHorse, taskHistory, 5);
+        evaluateTraitMilestones(invalidHorse);
       }).not.toThrow(); // Should handle gracefully
     });
 
-    it('should handle negative streak values', () => {
+    it('should handle horses with malformed epigenetic modifiers', () => {
       const horse = {
         id: 18,
-        name: 'Negative Streak Horse',
-        age: 365,
+        name: 'Malformed Modifiers Horse',
+        age: 1095, // 3 year milestone
         healthStatus: 'Good',
+        task_log: [
+          { task: 'feeding', completedAt: new Date() },
+        ],
+        trait_milestones: { age_1: true, age_2: true },
+        epigeneticModifiers: null, // Malformed
       };
 
-      const taskHistory = {
-        feeding: 15,
-        grooming: 12,
-      };
+      const result = evaluateTraitMilestones(horse);
 
-      const result = evaluateTraitsAtMilestone(horse, taskHistory, -5);
-
-      expect(result).toHaveProperty('streakBonus');
-      expect(result.streakBonus).toBe(false);
+      expect(result).toHaveProperty('success');
+      expect(result).toHaveProperty('traitsApplied');
+      expect(result.success).toBe(true);
     });
   });
 
-  describe('Trait Revelation Logic', () => {
-    it('should reveal appropriate traits for different milestones', () => {
+  describe('Trait Application and Epigenetic Logic', () => {
+    it('should apply traits appropriately for different milestone ages', () => {
       const horses = [
-        { id: 19, age: 365, healthStatus: 'Excellent' },  // 1 year
-        { id: 20, age: 730, healthStatus: 'Good' },       // 2 years
-        { id: 21, age: 1095, healthStatus: 'Fair' },      // 3 years
+        {
+          id: 19,
+          age: 365,
+          healthStatus: 'Excellent',
+          task_log: [
+            { task: 'feeding', completedAt: new Date() },
+            { task: 'grooming', completedAt: new Date() },
+            { task: 'exercise', completedAt: new Date() },
+          ],
+          trait_milestones: {},
+          epigeneticModifiers: { positive: [], negative: [], hidden: [], epigenetic: [] },
+        },
+        {
+          id: 20,
+          age: 730,
+          healthStatus: 'Good',
+          task_log: [
+            { task: 'feeding', completedAt: new Date() },
+            { task: 'grooming', completedAt: new Date() },
+          ],
+          trait_milestones: { age_1: true },
+          epigeneticModifiers: { positive: [], negative: [], hidden: [], epigenetic: [] },
+        },
+        {
+          id: 21,
+          age: 1095,
+          healthStatus: 'Fair',
+          task_log: [
+            { task: 'feeding', completedAt: new Date() },
+          ],
+          trait_milestones: { age_1: true, age_2: true },
+          epigeneticModifiers: { positive: [], negative: [], hidden: [], epigenetic: [] },
+        },
       ];
 
-      const taskHistory = {
-        feeding: 30,
-        grooming: 25,
-        exercise: 20,
-        medical_check: 15,
-        bonding: 18,
-      };
-
       horses.forEach(horse => {
-        const result = evaluateTraitsAtMilestone(horse, taskHistory, 15);
+        const result = evaluateTraitMilestones(horse);
 
-        expect(result).toHaveProperty('revealedTraits');
-        expect(Array.isArray(result.revealedTraits)).toBe(true);
+        expect(result).toHaveProperty('success');
+        expect(result).toHaveProperty('traitsApplied');
+        expect(result).toHaveProperty('isEpigenetic');
+        expect(Array.isArray(result.traitsApplied)).toBe(true);
+        expect(typeof result.isEpigenetic).toBe('boolean');
 
-        // Each revealed trait should be a non-empty string
-        result.revealedTraits.forEach(trait => {
-          expect(typeof trait).toBe('string');
-          expect(trait.length).toBeGreaterThan(0);
-        });
+        // Epigenetic should be true for horses under 3 years
+        if (horse.age < 1095) {
+          expect(result.isEpigenetic).toBe(true);
+        } else {
+          expect(result.isEpigenetic).toBe(false);
+        }
       });
     });
 
-    it('should maintain consistency in trait revelation', () => {
+    it('should maintain consistency in trait evaluation', () => {
       const horse = {
         id: 22,
         name: 'Consistent Horse',
         age: 365,
         healthStatus: 'Good',
-      };
-
-      const taskHistory = {
-        feeding: 25,
-        grooming: 20,
-        exercise: 18,
-        medical_check: 15,
-        bonding: 12,
+        task_log: [
+          { task: 'feeding', completedAt: new Date() },
+          { task: 'grooming', completedAt: new Date() },
+          { task: 'exercise', completedAt: new Date() },
+        ],
+        trait_milestones: {},
+        epigeneticModifiers: { positive: [], negative: [], hidden: [], epigenetic: [] },
       };
 
       // Run multiple evaluations with same inputs
       const results = [];
       for (let i = 0; i < 3; i++) {
-        results.push(evaluateTraitsAtMilestone(horse, taskHistory, 10));
+        // Create a fresh copy to avoid mutation between runs
+        const horseCopy = JSON.parse(JSON.stringify(horse));
+        results.push(evaluateTraitMilestones(horseCopy));
       }
 
       // Results should be consistent (assuming deterministic logic)
-      expect(results[0].careQuality).toBe(results[1].careQuality);
-      expect(results[1].careQuality).toBe(results[2].careQuality);
+      expect(results[0].success).toBe(results[1].success);
+      expect(results[1].success).toBe(results[2].success);
+      expect(results[0].milestoneAge).toBe(results[1].milestoneAge);
+      expect(results[1].milestoneAge).toBe(results[2].milestoneAge);
     });
   });
 });

@@ -38,7 +38,7 @@
  *    workflows with actual database operations and validates business requirements.
  */
 
-import { jest, describe, it, expect, beforeAll, afterAll, beforeEach } from '@jest/globals';
+import { describe, it, expect, beforeAll, afterAll } from '@jest/globals';
 import { fileURLToPath } from 'url';
 import { dirname, join } from 'path';
 import dotenv from 'dotenv';
@@ -61,6 +61,7 @@ describe('🏋️ INTEGRATION: Training Controller Business Logic - Complete Tra
   let youngHorse = null; // Under 3 years old, not eligible
   let trainedHorse = null; // Horse that has been trained recently
   let userWithHorses = null;
+  let breed = null; // Test breed for horse creation
 
   beforeAll(async () => {
     // Kept async() as per previous lint fix attempt
@@ -133,7 +134,7 @@ describe('🏋️ INTEGRATION: Training Controller Business Logic - Complete Tra
     });
 
     // Ensure we have a breed
-    let breed = await prisma.breed.findFirst();
+    breed = await prisma.breed.findFirst();
     if (!breed) {
       breed = await prisma.breed.create({
         data: {

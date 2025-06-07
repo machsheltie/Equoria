@@ -39,9 +39,11 @@
 
 import { describe, it, expect, beforeEach, afterEach, jest } from '@jest/globals';
 import prisma from '../../db/index.mjs';
-import { hireGroom, assignGroom, recordInteraction, getGroomDefinitions } from '../../controllers/groomController.mjs';
-import { applyGroomTraitInfluence } from '../../utils/traitEvaluation.mjs';
-import { TASK_TRAIT_INFLUENCE_MAP } from '../../utils/taskTraitInfluenceMap.mjs';
+import { hireGroom, assignGroom, recordInteraction } from '../../controllers/groomController.mjs';
+// Unused imports removed to fix linting errors
+// import { getGroomDefinitions } from '../../controllers/groomController.mjs';
+// import { applyGroomTraitInfluence } from '../../utils/traitEvaluation.mjs';
+// import { TASK_TRAIT_INFLUENCE_MAP } from '../../utils/taskTraitInfluenceMap.mjs';
 
 // Strategic mocking: Only mock external dependencies, not business logic
 jest.mock('../../utils/logger.mjs', () => ({

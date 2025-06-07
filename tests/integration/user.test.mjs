@@ -1,4 +1,5 @@
 // 🎯 Updated import from userModel.mjs to userModel.mjs and function names
+import { jest, describe, test, expect, beforeEach } from '@jest/globals';
 import { createUser, getUserById, getUserWithHorses } from '../../backend/models/userModel.mjs';
 import { createHorse } from '../../backend/models/horseModel.mjs';
 

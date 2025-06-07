@@ -98,7 +98,7 @@ export async function assignGroom(req, res) {
 export async function ensureDefaultAssignment(req, res) {
   try {
     const { foalId } = req.params;
-    const userId = req.user?.id || 'default-user'; // TODO: Get from auth
+    // TODO: Get userId from auth when implementing service
 
     const parsedFoalId = parseInt(foalId, 10);
     if (isNaN(parsedFoalId) || parsedFoalId <= 0) {

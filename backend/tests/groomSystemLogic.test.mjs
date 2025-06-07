@@ -202,8 +202,8 @@ describe('🧮 UNIT: Groom System Logic - Pure Business Logic Validation', () =>
       expect(foal_care.bondingModifier).toBe(1.5);
       expect(foal_care.stressReduction).toBe(1.3);
       expect(foal_care.preferredActivities).toContain('daily_care');
-      expect(foalCare.preferredActivities).toContain('feeding');
-      expect(foalCare.preferredActivities).toContain('grooming');
+      expect(foal_care.preferredActivities).toContain('feeding');
+      expect(foal_care.preferredActivities).toContain('grooming');
 
       // Check all specialties have required properties
       Object.values(GROOM_SPECIALTIES).forEach(specialty => {

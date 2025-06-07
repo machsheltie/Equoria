@@ -62,10 +62,6 @@ const { findOrCreateBreed, ensureReferencedRecordsExist, checkHorseExists, seedH
 );
 
 describe('Horse Seed Integration Tests', () => {
-  let testUser;
-  let testStable;
-  let testBreed;
-
   beforeAll(async () => {
     // Clean up any existing test data
     await prisma.horse.deleteMany({ where: { name: { startsWith: 'TestSeed_' } } });

@@ -101,6 +101,20 @@ const TRAIT_DEFINITIONS = {
     description: 'Exceptional learning ability and training response.',
     category: 'epigenetic',
   },
+  eager_learner: {
+    type: 'positive',
+    rarity: 'common',
+    conflicts: ['lazy', 'stubborn'],
+    description: 'Shows enthusiasm for learning new skills and training.',
+    category: 'epigenetic',
+  },
+  social: {
+    type: 'positive',
+    rarity: 'common',
+    conflicts: ['antisocial', 'aggressive'],
+    description: 'Enjoys interaction with other horses and humans.',
+    category: 'epigenetic',
+  },
 
   // Negative traits
   nervous: {
@@ -134,8 +148,15 @@ const TRAIT_DEFINITIONS = {
   lazy: {
     type: 'negative',
     rarity: 'common',
-    conflicts: ['intelligent', 'athletic'],
+    conflicts: ['intelligent', 'athletic', 'eager_learner'],
     description: 'Low motivation and energy for training.',
+    category: 'epigenetic',
+  },
+  antisocial: {
+    type: 'negative',
+    rarity: 'common',
+    conflicts: ['social', 'bonded'],
+    description: 'Prefers isolation and avoids interaction with others.',
     category: 'epigenetic',
   },
 
@@ -179,8 +200,8 @@ const TRAIT_DEFINITIONS = {
 
 // Environmental trait pools that can emerge based on conditions
 const ENVIRONMENTAL_TRAITS = {
-  positive: ['resilient', 'calm', 'intelligent', 'confident', 'bonded'],
-  negative: ['nervous', 'fragile', 'lazy'],
+  positive: ['resilient', 'calm', 'intelligent', 'confident', 'bonded', 'eager_learner', 'social'],
+  negative: ['nervous', 'fragile', 'lazy', 'antisocial'],
   rare: ['weather_immunity', 'night_vision', 'legendary_bloodline'],
   situational: ['presentation_boosted', 'show_calm', 'crowd_ready'],
 };

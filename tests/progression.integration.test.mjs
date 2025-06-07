@@ -37,13 +37,13 @@ const mockLogger = {
   warn: jest.fn(),
 };
 
-jest.mock('../utils/logger.mjs', () => ({
+jest.mock('../backend/utils/logger.mjs', () => ({
   default: mockLogger,
 }));
 
 // Import real modules
-import prisma from '../db/index.mjs';
-import { addXpToUser, getUserProgress } from '../controllers/progressionController.mjs';
+import prisma from '../backend/db/index.mjs';
+import { addXpToUser, getUserProgress } from '../backend/controllers/progressionController.mjs';
 
 describe('📈 INTEGRATION: Progression Controller - Real Database Operations', () => {
   let testUsers = [];

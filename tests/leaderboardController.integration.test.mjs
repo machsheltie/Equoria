@@ -28,19 +28,19 @@ const mockLogger = {
   warn: jest.fn(),
 };
 
-jest.mock('../utils/logger.mjs', () => ({
+jest.mock('../backend/utils/logger.mjs', () => ({
   default: mockLogger,
 }));
 
 // Import real modules
-import prisma from '../db/index.mjs';
+import prisma from '../backend/db/index.mjs';
 
 // Import the module under test
 const {
   getTopPlayersByLevel,
   getTopPlayersByXP,
   getTopHorsesByEarnings,
-} = await import(join(__dirname, '../controllers/leaderboardController.mjs'));
+} = await import(join(__dirname, '../backend/controllers/leaderboardController.mjs'));
 
 describe('🏆 INTEGRATION: Leaderboard Controller - Real Database Operations', () => {
   let testUsers = [];

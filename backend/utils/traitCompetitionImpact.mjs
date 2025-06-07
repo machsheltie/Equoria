@@ -145,6 +145,36 @@ const TRAIT_COMPETITION_EFFECTS = {
     },
   },
 
+  eager_learner: {
+    name: 'Eager Learner',
+    type: 'positive',
+    general: {
+      scoreModifier: 0.035, // +3.5% to final score
+      adaptabilityBonus: 0.2, // 20% better adaptation to new challenges
+      description: 'Shows enthusiasm and quick learning in competitive environments',
+    },
+    disciplines: {
+      Dressage: { scoreModifier: 0.05, description: 'Quickly masters complex movements' },
+      Reining: { scoreModifier: 0.045, description: 'Learns intricate patterns rapidly' },
+      Eventing: { scoreModifier: 0.04, description: 'Adapts well to varied challenges' },
+    },
+  },
+
+  social: {
+    name: 'Social',
+    type: 'positive',
+    general: {
+      scoreModifier: 0.025, // +2.5% to final score
+      crowdComfort: 0.15, // 15% less stress from crowds
+      description: 'Thrives in social environments and enjoys interaction',
+    },
+    disciplines: {
+      'Show Jumping': { scoreModifier: 0.03, description: 'Comfortable performing for audiences' },
+      Dressage: { scoreModifier: 0.035, description: 'Enjoys the attention and presentation' },
+      'Western Pleasure': { scoreModifier: 0.03, description: 'Calm and confident in group settings' },
+    },
+  },
+
   // Negative traits
   nervous: {
     name: 'Nervous',
@@ -218,6 +248,21 @@ const TRAIT_COMPETITION_EFFECTS = {
       Racing: { scoreModifier: -0.06, description: 'Lacks competitive drive' },
       Endurance: { scoreModifier: -0.05, description: 'Gives up when tired' },
       'Cross Country': { scoreModifier: -0.04, description: 'Loses motivation on long courses' },
+    },
+  },
+
+  antisocial: {
+    name: 'Antisocial',
+    type: 'negative',
+    general: {
+      scoreModifier: -0.035, // -3.5% to final score
+      crowdStress: 0.2, // 20% more stress from crowds
+      description: 'Struggles in social environments and prefers isolation',
+    },
+    disciplines: {
+      Dressage: { scoreModifier: -0.05, description: 'Uncomfortable with audience attention' },
+      'Show Jumping': { scoreModifier: -0.045, description: 'Distracted by crowd noise and activity' },
+      'Western Pleasure': { scoreModifier: -0.04, description: 'Stressed in group competition settings' },
     },
   },
 };

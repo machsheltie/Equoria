@@ -37,38 +37,16 @@ import {
   HORSE_SEX,
   HORSE_SEX_VALUES,
   HORSE_TEMPERAMENT,
-  HORSE_TEMPERAMENT_VALUES,
-  HORSE_HEALTH_STATUS,
-  HORSE_HEALTH_STATUS_VALUES,
   DISCIPLINES,
   DISCIPLINE_VALUES,
-  COMPETITION_PLACEMENTS,
-  COMPETITION_PLACEMENT_VALUES,
   GROOM_SPECIALTIES,
   GROOM_SPECIALTY_VALUES,
   GROOM_SKILL_LEVELS,
-  GROOM_SKILL_LEVEL_VALUES,
-  GROOM_PERSONALITIES,
-  GROOM_PERSONALITY_VALUES,
-  GROOM_INTERACTION_TYPES,
-  GROOM_INTERACTION_TYPE_VALUES,
-  HORSE_STATS,
-  HORSE_STAT_VALUES,
-  TRAINING_LIMITS,
-  COMPETITION_LIMITS,
-  BREEDING_LIMITS,
-  USER_PROGRESSION,
-  SCORE_RANGES,
   isValidHorseSex,
   isValidTemperament,
-  isValidHealthStatus,
   isValidDiscipline,
-  isValidPlacement,
   isValidGroomSpecialty,
   isValidGroomSkillLevel,
-  isValidGroomPersonality,
-  isValidInteractionType,
-  isValidHorseStat,
   isTrainingAge,
   isCompetitionAge,
   isBreedingAge,
@@ -256,7 +234,7 @@ describe('🏇 UNIT: Schema Constants Validation', () => {
 
   describe('Constant Integrity', () => {
     it('should have no duplicate values in arrays', () => {
-      const checkNoDuplicates = (arr, name) => {
+      const checkNoDuplicates = (arr, _name) => {
         const unique = [...new Set(arr)];
         expect(unique.length).toBe(arr.length);
       };

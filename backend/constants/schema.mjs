@@ -262,12 +262,13 @@ export const calculateXpForLevel = (level) => {
 };
 
 export const calculateLevelFromXp = (xp) => {
-  if (xp < 0) return 1;
+  if (xp < 0) { return 1; }
 
   let level = 1;
   let totalXpSpent = 0;
 
   // Keep advancing levels while we have enough XP
+  // eslint-disable-next-line no-constant-condition
   while (true) {
     const xpNeededForNextLevel = calculateXpForLevel(level + 1);
     if (totalXpSpent + xpNeededForNextLevel > xp) {

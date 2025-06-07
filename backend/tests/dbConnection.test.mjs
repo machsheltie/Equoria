@@ -36,7 +36,7 @@
  */
 
 import { describe, it, expect, afterAll } from '@jest/globals';
-import prisma from '../../packages/database/prismaClient.mjs';
+import prisma from '../db/index.mjs';
 
 describe('🔌 INTEGRATION: Database Connection - Alternative Prisma Client Path Testing', () => {
   afterAll(async () => {
