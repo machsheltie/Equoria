@@ -236,11 +236,7 @@ export async function getHorseXpHistory(req, res) {
       data: {
         events: result.events,
         count: result.count,
-        pagination: {
-          limit,
-          offset,
-          hasMore: result.events.length === limit,
-        },
+        pagination: result.pagination,
       },
     });
   } catch (error) {

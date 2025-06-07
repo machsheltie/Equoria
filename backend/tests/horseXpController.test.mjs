@@ -37,6 +37,7 @@ const mockPrismaHorse = {
 const mockPrismaHorseXpEvent = {
   create: jest.fn(),
   findMany: jest.fn(),
+  count: jest.fn(),
 };
 
 const mockPrisma = {
@@ -69,6 +70,7 @@ describe('Horse XP Controller - API Endpoints', () => {
     mockPrismaHorse.update.mockClear();
     mockPrismaHorseXpEvent.create.mockClear();
     mockPrismaHorseXpEvent.findMany.mockClear();
+    mockPrismaHorseXpEvent.count.mockClear();
     mockLogger.info.mockClear();
     mockLogger.warn.mockClear();
     mockLogger.error.mockClear();
@@ -281,6 +283,7 @@ describe('Horse XP Controller - API Endpoints', () => {
 
       mockPrismaHorse.findUnique.mockResolvedValue(mockHorse);
       mockPrismaHorseXpEvent.findMany.mockResolvedValue(mockEvents);
+      mockPrismaHorseXpEvent.count.mockResolvedValue(2);
 
       const req = {
         params: { horseId: '1' },

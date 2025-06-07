@@ -11,6 +11,7 @@
 
 import prisma from '../db/index.mjs';
 import logger from '../utils/logger.mjs';
+import { saveResult } from '../models/resultModel.mjs';
 import {
   calculateCompetitionScore,
   calculatePrizeAmount,
@@ -146,25 +147,23 @@ export async function executeEnhancedCompetition(show, entries) {
         statGain = calculateStatGain(placement, show.discipline);
       }
 
-      // Create competition result record
-      await prisma.competitionResult.create({
-        data: {
-          horseId: horse.id,
-          showId: show.id,
-          score,
-          placement: placement.toString(),
-          discipline: show.discipline,
-          runDate: show.runDate,
-          showName: show.name,
-          prizeWon,
-          statGains: statGain
-            ? {
-              stat: statGain.stat,
-              amount: statGain.amount,
-              awarded: true,
-            }
-            : null,
-        },
+      // Save competition result (updates placeholder if exists, creates new if not)
+      await saveResult({
+        horseId: horse.id,
+        showId: show.id,
+        score,
+        placement: placement.toString(),
+        discipline: show.discipline,
+        runDate: show.runDate,
+        showName: show.name,
+        prizeWon,
+        statGains: statGain
+          ? {
+            stat: statGain.stat,
+            amount: statGain.amount,
+            awarded: true,
+          }
+          : null,
       });
 
       // Update user money and XP

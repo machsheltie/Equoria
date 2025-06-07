@@ -436,8 +436,15 @@ export async function batchRevealTraits(horseIds, options = {}) {
  */
 export async function getDiscoveryProgress(horseId) {
   try {
+    // Convert horseId to integer if it's a string
+    const horseIdInt = typeof horseId === 'string' ? parseInt(horseId, 10) : horseId;
+
+    if (isNaN(horseIdInt)) {
+      throw new Error(`Invalid horse ID: ${horseId}`);
+    }
+
     const horse = await prisma.horse.findUnique({
-      where: { id: horseId },
+      where: { id: horseIdInt },
       include: {
         traits: true,
       },

@@ -67,15 +67,15 @@ export async function createTestUser(userData = {}) {
 export async function createTestHorse(horseData = {}) {
   // First ensure we have a breed to connect to
   let breed = await prisma.breed.findFirst({
-    where: { name: 'Thoroughbred' }
+    where: { name: 'Thoroughbred' },
   });
 
   if (!breed) {
     breed = await prisma.breed.create({
       data: {
         name: 'Thoroughbred',
-        description: 'Test breed for integration tests'
-      }
+        description: 'Test breed for integration tests',
+      },
     });
   }
 

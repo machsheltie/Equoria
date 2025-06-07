@@ -3,6 +3,7 @@ import logger from '../utils/logger.mjs';
 
 /**
  * Save a competition result to the database
+ * Updates existing placeholder result if found, otherwise creates new result
  * @param {Object} resultData - Result data object
  * @param {number} resultData.horseId - Horse ID
  * @param {number} resultData.showId - Show ID
@@ -13,7 +14,7 @@ import logger from '../utils/logger.mjs';
  * @param {string} resultData.showName - Name of the show for history
  * @param {number} resultData.prizeWon - Prize amount won (default 0)
  * @param {Object|null} resultData.statGains - Stat gains from winning (default null)
- * @returns {Object} - Created result object with relations
+ * @returns {Object} - Created or updated result object with relations
  */
 async function saveResult(resultData) {
   const {
@@ -61,32 +62,68 @@ async function saveResult(resultData) {
   }
 
   try {
-    // Create the result
-    const result = await prisma.competitionResult.create({
-      data: {
+    // Check if there's already a placeholder result for this horse/show combination
+    const existingResult = await prisma.competitionResult.findFirst({
+      where: {
         horseId,
         showId,
-        score,
-        placement,
-        discipline,
-        runDate: new Date(runDate),
-        showName,
-        prizeWon: parseFloat(prizeWon),
-        statGains: statGains ? JSON.stringify(statGains) : null,
-      },
-      include: {
-        horse: {
-          include: {
-            breed: true,
-          },
-        },
-        show: true,
+        score: 0, // Placeholder results have score 0
+        placement: null, // Placeholder results have null placement
       },
     });
 
-    logger.info(
-      `[resultModel.saveResult] Successfully saved result for horse ${horseId} in show ${showId} with score ${score}`,
-    );
+    let result;
+    if (existingResult) {
+      // Update the existing placeholder result
+      result = await prisma.competitionResult.update({
+        where: { id: existingResult.id },
+        data: {
+          score,
+          placement,
+          prizeWon: parseFloat(prizeWon),
+          statGains: statGains ? JSON.stringify(statGains) : null,
+          // Keep original entry data (horseId, showId, discipline, runDate, showName)
+        },
+        include: {
+          horse: {
+            include: {
+              breed: true,
+            },
+          },
+          show: true,
+        },
+      });
+      logger.info(
+        `[resultModel.saveResult] Successfully updated placeholder result for horse ${horseId} in show ${showId} with score ${score}`,
+      );
+    } else {
+      // Create new result (for cases where no placeholder exists)
+      result = await prisma.competitionResult.create({
+        data: {
+          horseId,
+          showId,
+          score,
+          placement,
+          discipline,
+          runDate: new Date(runDate),
+          showName,
+          prizeWon: parseFloat(prizeWon),
+          statGains: statGains ? JSON.stringify(statGains) : null,
+        },
+        include: {
+          horse: {
+            include: {
+              breed: true,
+            },
+          },
+          show: true,
+        },
+      });
+      logger.info(
+        `[resultModel.saveResult] Successfully created new result for horse ${horseId} in show ${showId} with score ${score}`,
+      );
+    }
+
     return result;
   } catch (error) {
     logger.error('[resultModel.saveResult] Database error: %o', error);

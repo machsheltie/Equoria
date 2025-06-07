@@ -227,12 +227,25 @@ export async function allocateStatPoint(horseId, statName) {
 /**
  * Get horse XP event history
  * @param {number} horseId - Horse ID
- * @param {Object} options - Query options (limit, offset, startDate, endDate)
+ * @param {number|Object} limitOrOptions - Limit (for backward compatibility) or options object
+ * @param {number} offset - Offset (for backward compatibility)
  * @returns {Promise<Object>} Result object with XP events
  */
-export async function getHorseXpHistory(horseId, options = {}) {
+export async function getHorseXpHistory(horseId, limitOrOptions = {}, offset = 0) {
   try {
-    const { limit = 50, offset = 0, startDate, endDate } = options;
+    // Handle both old signature (horseId, limit, offset) and new signature (horseId, options)
+    let limit, startDate, endDate;
+    if (typeof limitOrOptions === 'number') {
+      // Old signature: getHorseXpHistory(horseId, limit, offset)
+      limit = limitOrOptions;
+    } else {
+      // New signature: getHorseXpHistory(horseId, options)
+      ({ limit = 50, offset = 0, startDate, endDate } = limitOrOptions);
+    }
+
+    if (limit === undefined) {
+      limit = 50;
+    }
 
     if (!horseId) {
       throw new Error('Horse ID is required.');
@@ -257,6 +270,9 @@ export async function getHorseXpHistory(horseId, options = {}) {
       skip: offset,
     });
 
+    // Get total count for pagination
+    const totalCount = await prisma.horseXpEvent.count({ where });
+
     logger.info(
       `[horseXpModel.getHorseXpHistory] Retrieved ${events.length} XP events for horse ${horseId}`,
     );
@@ -265,6 +281,11 @@ export async function getHorseXpHistory(horseId, options = {}) {
       success: true,
       events,
       count: events.length,
+      pagination: {
+        limit,
+        offset,
+        hasMore: offset + events.length < totalCount,
+      },
     };
   } catch (error) {
     logger.error(`[horseXpModel.getHorseXpHistory] Error: ${error.message}`);
@@ -317,6 +338,57 @@ export async function awardCompetitionXp(horseId, placement, discipline) {
       success: false,
       error: error.message,
       xpAwarded: 0,
+    };
+  }
+}
+
+/**
+ * Get horse XP status with progression information
+ * @param {number} horseId - Horse ID
+ * @returns {Promise<Object>} Result object with XP status
+ */
+export async function getHorseXpStatus(horseId) {
+  try {
+    if (!horseId) {
+      throw new Error('Horse ID is required.');
+    }
+
+    const horse = await prisma.horse.findUnique({
+      where: { id: horseId },
+      select: {
+        id: true,
+        name: true,
+        horseXp: true,
+        availableStatPoints: true,
+      },
+    });
+
+    if (!horse) {
+      throw new Error('Horse not found.');
+    }
+
+    // Calculate XP progression info
+    const currentXP = horse.horseXp || 0;
+    const availableStatPoints = horse.availableStatPoints || 0;
+    const nextStatPointAt = (Math.floor(currentXP / XP_PER_STAT_POINT) + 1) * XP_PER_STAT_POINT;
+    const xpToNextStatPoint = nextStatPointAt - currentXP;
+
+    return {
+      success: true,
+      data: {
+        horseId: horse.id,
+        horseName: horse.name,
+        currentXP,
+        availableStatPoints,
+        nextStatPointAt,
+        xpToNextStatPoint,
+      },
+    };
+  } catch (error) {
+    logger.error(`[horseXpModel.getHorseXpStatus] Error: ${error.message}`);
+    return {
+      success: false,
+      error: error.message,
     };
   }
 }

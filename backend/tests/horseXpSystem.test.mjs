@@ -38,6 +38,7 @@ const mockPrismaHorse = {
 const mockPrismaHorseXpEvent = {
   create: jest.fn(),
   findMany: jest.fn(),
+  count: jest.fn(),
 };
 
 const mockPrisma = {
@@ -70,6 +71,7 @@ describe('Horse XP System - Core Business Logic', () => {
     mockPrismaHorse.update.mockClear();
     mockPrismaHorseXpEvent.create.mockClear();
     mockPrismaHorseXpEvent.findMany.mockClear();
+    mockPrismaHorseXpEvent.count.mockClear();
     mockLogger.info.mockClear();
     mockLogger.warn.mockClear();
     mockLogger.error.mockClear();
@@ -304,6 +306,7 @@ describe('Horse XP System - Core Business Logic', () => {
       ];
 
       mockPrismaHorseXpEvent.findMany.mockResolvedValue(mockEvents);
+      mockPrismaHorseXpEvent.count.mockResolvedValue(2);
 
       const result = await horseXpModel.getHorseXpHistory(1, { limit: 10 });
 
@@ -328,6 +331,7 @@ describe('Horse XP System - Integration with Competition System', () => {
     mockPrismaHorse.update.mockClear();
     mockPrismaHorseXpEvent.create.mockClear();
     mockPrismaHorseXpEvent.findMany.mockClear();
+    mockPrismaHorseXpEvent.count.mockClear();
     mockLogger.info.mockClear();
     mockLogger.warn.mockClear();
     mockLogger.error.mockClear();

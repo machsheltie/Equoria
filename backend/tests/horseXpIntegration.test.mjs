@@ -144,7 +144,7 @@ describe('🐎 INTEGRATION: Horse XP System - Core Functionality Integration', (
   describe('Horse XP Model Integration', () => {
     it('should get horse XP status directly from model', async () => {
       // First, give the horse some XP
-      const { addXpToHorse, getHorseXpStatus } = await import('../models/horseXpModel.js');
+      const { addXpToHorse, getHorseXpStatus } = await import('../models/horseXpModel.mjs');
       await addXpToHorse(testHorseId, 150, 'Test XP');
 
       const result = await getHorseXpStatus(testHorseId);
@@ -160,7 +160,7 @@ describe('🐎 INTEGRATION: Horse XP System - Core Functionality Integration', (
 
     it('should allocate stat points directly via model', async () => {
       // Give horse some stat points
-      const { addXpToHorse, allocateStatPoint } = await import('../models/horseXpModel.js');
+      const { addXpToHorse, allocateStatPoint } = await import('../models/horseXpModel.mjs');
       await addXpToHorse(testHorseId, 200, 'Test XP for stat allocation');
 
       // Get initial speed stat
@@ -191,7 +191,7 @@ describe('🐎 INTEGRATION: Horse XP System - Core Functionality Integration', (
 
     it('should get horse XP history directly from model', async () => {
       // Add some XP events
-      const { addXpToHorse, getHorseXpHistory } = await import('../models/horseXpModel.js');
+      const { addXpToHorse, getHorseXpHistory } = await import('../models/horseXpModel.mjs');
       await addXpToHorse(testHorseId, 50, 'First competition');
       await addXpToHorse(testHorseId, 30, 'Second competition');
       await addXpToHorse(testHorseId, 25, 'Third competition');
@@ -227,7 +227,7 @@ describe('🐎 INTEGRATION: Horse XP System - Core Functionality Integration', (
 
       // Step 2: Simulate multiple competition placements to accumulate XP
       const { awardCompetitionXp, getHorseXpStatus, allocateStatPoint, getHorseXpHistory } = await import(
-        '../models/horseXpModel.js'
+        '../models/horseXpModel.mjs'
       );
 
       await awardCompetitionXp(testHorseId, '1st', 'Racing'); // 30 XP
