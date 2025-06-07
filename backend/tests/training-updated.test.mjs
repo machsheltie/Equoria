@@ -101,7 +101,7 @@ describe('🏋️ INTEGRATION: Training System Updated - User Model Integration'
       }
 
       // Try to train a horse that should be eligible
-      const firstHorse = trainableResponse.body.data[0];
+      const [firstHorse] = trainableResponse.body.data;
 
       const response = await request(app).post('/api/training/train').set('Authorization', `Bearer ${authToken}`).send({
         horseId: firstHorse.horseId,

@@ -157,7 +157,7 @@ describe('🧬 COMPREHENSIVE: Epigenetic Traits Calculation System', () => {
       // Should resolve conflicts appropriately
       const allTraits = [...result.positive, ...result.negative, ...result.hidden];
       expect(allTraits.length).toBeGreaterThanOrEqual(0);
-      
+
       // Check for no duplicate traits across categories
       const uniqueTraits = new Set(allTraits);
       expect(uniqueTraits.size).toBe(allTraits.length);
@@ -280,7 +280,7 @@ describe('🧬 COMPREHENSIVE: Epigenetic Traits Calculation System', () => {
 
       // Should handle complex inheritance patterns
       expect(result.positive.length + result.negative.length + result.hidden.length).toBeGreaterThanOrEqual(0);
-      
+
       // All traits should be strings
       [...result.positive, ...result.negative, ...result.hidden].forEach(trait => {
         expect(typeof trait).toBe('string');

@@ -595,7 +595,7 @@ describe('🏋️ INTEGRATION: Training System - Complete Business Logic Validat
       });
 
       expect(trainingLogs).toHaveLength(1);
-      const log = trainingLogs[0];
+      const [log] = trainingLogs;
       expect(log.horseId).toBe(logTestHorse.id);
       expect(log.discipline).toBe('Reining');
       expect(new Date(log.trainedAt)).toBeInstanceOf(Date);
