@@ -41,13 +41,13 @@ async function completeEnrichmentActivity(foalId, day, activity) {
       console.log(`✅ Success! ${data.message}`);
       console.log('   📊 Updated Levels:');
       console.log(
-        `      🤝 Bond Score: ${data.data.updated_levels.bond_score} (${data.data.changes.bond_change >= 0 ? '+' : ''}${data.data.changes.bond_change})`,
+        `      🤝 Bond Score: ${data.data.updatedLevels.bondScore} (${data.data.changes.bondChange >= 0 ? '+' : ''}${data.data.changes.bondChange})`,
       );
       console.log(
-        `      😰 Stress Level: ${data.data.updated_levels.stress_level} (${data.data.changes.stress_change >= 0 ? '+' : ''}${data.data.changes.stress_change})`,
+        `      😰 Stress Level: ${data.data.updatedLevels.stressLevel} (${data.data.changes.stressChange >= 0 ? '+' : ''}${data.data.changes.stressChange})`,
       );
       console.log(`   🎭 Outcome: ${data.data.activity.outcome}`);
-      console.log(`   📝 Training Record ID: ${data.data.training_record_id}`);
+      console.log(`   📝 Training Record ID: ${data.data.trainingRecordId}`);
 
       return data.data;
     } else {
@@ -118,7 +118,7 @@ async function runDemo() {
   console.log('\n🔧 API Endpoint Details:');
   console.log('POST /api/foals/{foalId}/enrichment');
   console.log('Request Body: { "day": 0-6, "activity": "Activity Name" }');
-  console.log('Response: Updated bond_score and stress_level with activity outcome');
+  console.log('Response: Updated bondScore and stressLevel with activity outcome');
 }
 
 /**

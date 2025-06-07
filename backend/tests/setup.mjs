@@ -6,8 +6,8 @@ import { dirname, join } from 'path';
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = dirname(__filename);
 
-// Load test environment variables
-dotenv.config({ path: join(__dirname, '..', '.env.test') });
+// Load test environment variables (override any existing env vars)
+dotenv.config({ path: join(__dirname, '..', '.env.test'), override: true });
 
 // Set NODE_ENV to test if not already set
 if (!process.env.NODE_ENV) {

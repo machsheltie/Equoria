@@ -96,7 +96,20 @@ describe('Horse Aging Integration', () => {
   describe('Complete Aging Workflow', () => {
     it('should process foal birthday with trait milestone evaluation', async () => {
       const mockNow = new Date('2025-06-01T12:00:00Z');
-      jest.spyOn(Date, 'now').mockReturnValue(mockNow.getTime());
+
+      // Mock the Date constructor to return our mock date
+      const OriginalDate = global.Date;
+      global.Date = class extends OriginalDate {
+        constructor(...args) {
+          if (args.length === 0) {
+            return mockNow;
+          }
+          return new OriginalDate(...args);
+        }
+        static now() {
+          return mockNow.getTime();
+        }
+      };
 
       // Mock Math.random for deterministic trait assignment
       jest.spyOn(Math, 'random').mockReturnValue(0.15); // 15% - will trigger some traits
@@ -171,11 +184,27 @@ describe('Horse Aging Integration', () => {
       // Verify existing traits were preserved
       expect(epigeneticModifiers.positive).toContain('athletic');
       expect(epigeneticModifiers.hidden).toContain('mysterious_lineage');
+
+      // Restore original Date
+      global.Date = OriginalDate;
     });
 
     it('should handle multiple horses with different milestone scenarios', async () => {
       const mockNow = new Date('2025-06-01T12:00:00Z');
-      jest.spyOn(Date, 'now').mockReturnValue(mockNow.getTime());
+
+      // Mock the Date constructor to return our mock date
+      const OriginalDate = global.Date;
+      global.Date = class extends OriginalDate {
+        constructor(...args) {
+          if (args.length === 0) {
+            return mockNow;
+          }
+          return new OriginalDate(...args);
+        }
+        static now() {
+          return mockNow.getTime();
+        }
+      };
 
       jest.spyOn(Math, 'random').mockReturnValue(0.2); // 20%
 
@@ -246,11 +275,27 @@ describe('Horse Aging Integration', () => {
       // No birthday horse should remain unchanged
       const noBirthdayHorse = updatedHorses.find(h => h.name === 'No Birthday Horse');
       expect(noBirthdayHorse.age).toBe(882); // Unchanged
+
+      // Restore original Date
+      global.Date = OriginalDate;
     });
 
     it('should handle foal with minimal task history', async () => {
       const mockNow = new Date('2025-06-01T12:00:00Z');
-      jest.spyOn(Date, 'now').mockReturnValue(mockNow.getTime());
+
+      // Mock the Date constructor to return our mock date
+      const OriginalDate = global.Date;
+      global.Date = class extends OriginalDate {
+        constructor(...args) {
+          if (args.length === 0) {
+            return mockNow;
+          }
+          return new OriginalDate(...args);
+        }
+        static now() {
+          return mockNow.getTime();
+        }
+      };
 
       jest.spyOn(Math, 'random').mockReturnValue(0.5); // 50% - high threshold
 
@@ -288,11 +333,27 @@ describe('Horse Aging Integration', () => {
       // calm: 5% < 50% ✗
       const epigeneticTags = updatedFoal.epigeneticModifiers?.epigenetic_tags || [];
       expect(epigeneticTags.length).toBe(0);
+
+      // Restore original Date
+      global.Date = OriginalDate;
     });
 
     it('should handle foal with no task history', async () => {
       const mockNow = new Date('2025-06-01T12:00:00Z');
-      jest.spyOn(Date, 'now').mockReturnValue(mockNow.getTime());
+
+      // Mock the Date constructor to return our mock date
+      const OriginalDate = global.Date;
+      global.Date = class extends OriginalDate {
+        constructor(...args) {
+          if (args.length === 0) {
+            return mockNow;
+          }
+          return new OriginalDate(...args);
+        }
+        static now() {
+          return mockNow.getTime();
+        }
+      };
 
       jest.spyOn(Math, 'random').mockReturnValue(0.1);
 
@@ -324,6 +385,9 @@ describe('Horse Aging Integration', () => {
       // No task history = no traits
       const epigeneticTags = updatedFoal.epigeneticModifiers?.epigenetic_tags || [];
       expect(epigeneticTags.length).toBe(0);
+
+      // Restore original Date
+      global.Date = OriginalDate;
     });
 
     // TODO: Add cron job service status test when service is properly initialized

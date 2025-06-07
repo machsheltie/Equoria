@@ -100,7 +100,6 @@ describe('Horse Aging System', () => {
   describe('Age Calculation', () => {
     it('should calculate age correctly from dateOfBirth', () => {
       const mockNow = new Date('2025-06-01T12:00:00Z');
-      jest.spyOn(Date, 'now').mockReturnValue(mockNow.getTime());
 
       // Test various ages (accounting for leap years)
       const testCases = [
@@ -113,29 +112,28 @@ describe('Horse Aging System', () => {
 
       testCases.forEach(({ birth, expectedDays }) => {
         const birthDate = new Date(birth);
-        const ageInDays = calculateAgeFromBirth(birthDate);
+        // Pass the mock date explicitly to avoid Date constructor mocking issues
+        const ageInDays = calculateAgeFromBirth(birthDate, mockNow);
         expect(ageInDays).toBe(expectedDays);
       });
     });
 
     it('should handle leap years correctly', () => {
       const mockNow = new Date('2025-03-01T12:00:00Z');
-      jest.spyOn(Date, 'now').mockReturnValue(mockNow.getTime());
 
       // Born in leap year
       const birthDate = new Date('2024-02-29');
-      const ageInDays = calculateAgeFromBirth(birthDate);
+      const ageInDays = calculateAgeFromBirth(birthDate, mockNow);
 
-      // From Feb 29, 2024 to Mar 1, 2025 = 366 days (2024 leap year) + 92 days (Jan 1 - Mar 1, 2025)
-      expect(ageInDays).toBe(458);
+      // From Feb 29, 2024 to Mar 1, 2025 = 366 days (2024 is leap year)
+      expect(ageInDays).toBe(366);
     });
 
     it('should handle timezone differences', () => {
       const mockNow = new Date('2025-06-01T23:59:59Z');
-      jest.spyOn(Date, 'now').mockReturnValue(mockNow.getTime());
 
       const birthDate = new Date('2025-06-01T00:00:00Z');
-      const ageInDays = calculateAgeFromBirth(birthDate);
+      const ageInDays = calculateAgeFromBirth(birthDate, mockNow);
 
       expect(ageInDays).toBe(0); // Same day regardless of time
     });
@@ -144,7 +142,20 @@ describe('Horse Aging System', () => {
   describe('Horse Age Updates', () => {
     it('should update horse age when birthday occurs', async () => {
       const mockNow = new Date('2025-06-01T12:00:00Z');
-      jest.spyOn(Date, 'now').mockReturnValue(mockNow.getTime());
+
+      // Mock the Date constructor to return our mock date
+      const OriginalDate = global.Date;
+      global.Date = class extends OriginalDate {
+        constructor(...args) {
+          if (args.length === 0) {
+            return mockNow;
+          }
+          return new OriginalDate(...args);
+        }
+        static now() {
+          return mockNow.getTime();
+        }
+      };
 
       // Create horse born 1 year ago
       const horse = await prisma.horse.create({
@@ -177,11 +188,27 @@ describe('Horse Aging System', () => {
         where: { id: horse.id },
       });
       expect(updatedHorse.age).toBe(365);
+
+      // Restore original Date
+      global.Date = OriginalDate;
     });
 
     it('should not update age when no birthday occurs', async () => {
       const mockNow = new Date('2025-06-01T12:00:00Z');
-      jest.spyOn(Date, 'now').mockReturnValue(mockNow.getTime());
+
+      // Mock the Date constructor to return our mock date
+      const OriginalDate = global.Date;
+      global.Date = class extends OriginalDate {
+        constructor(...args) {
+          if (args.length === 0) {
+            return mockNow;
+          }
+          return new OriginalDate(...args);
+        }
+        static now() {
+          return mockNow.getTime();
+        }
+      };
 
       // Create horse born 6 months ago
       const horse = await prisma.horse.create({
@@ -200,11 +227,27 @@ describe('Horse Aging System', () => {
       expect(result.ageUpdated).toBe(false);
       expect(result.newAge).toBe(182);
       expect(result.hadBirthday).toBe(false);
+
+      // Restore original Date
+      global.Date = OriginalDate;
     });
 
     it('should handle horses with incorrect stored age', async () => {
       const mockNow = new Date('2025-06-01T12:00:00Z');
-      jest.spyOn(Date, 'now').mockReturnValue(mockNow.getTime());
+
+      // Mock the Date constructor to return our mock date
+      const OriginalDate = global.Date;
+      global.Date = class extends OriginalDate {
+        constructor(...args) {
+          if (args.length === 0) {
+            return mockNow;
+          }
+          return new OriginalDate(...args);
+        }
+        static now() {
+          return mockNow.getTime();
+        }
+      };
 
       // Create horse with incorrect stored age
       const horse = await prisma.horse.create({
@@ -223,6 +266,9 @@ describe('Horse Aging System', () => {
       expect(result.ageUpdated).toBe(true);
       expect(result.newAge).toBe(517); // Correct calculated age
       expect(result.hadBirthday).toBe(true); // Age increased, so considered a birthday
+
+      // Restore original Date
+      global.Date = OriginalDate;
     });
   });
 
@@ -293,7 +339,20 @@ describe('Horse Aging System', () => {
   describe('Batch Processing', () => {
     it('should process multiple horses with birthdays', async () => {
       const mockNow = new Date('2025-06-01T12:00:00Z');
-      jest.spyOn(Date, 'now').mockReturnValue(mockNow.getTime());
+
+      // Mock the Date constructor to return our mock date
+      const OriginalDate = global.Date;
+      global.Date = class extends OriginalDate {
+        constructor(...args) {
+          if (args.length === 0) {
+            return mockNow;
+          }
+          return new OriginalDate(...args);
+        }
+        static now() {
+          return mockNow.getTime();
+        }
+      };
 
       // Create multiple horses with different birthday scenarios
       const horses = await Promise.all([
@@ -303,7 +362,7 @@ describe('Horse Aging System', () => {
             name: 'Milestone Horse 1',
             sex: 'Colt',
             dateOfBirth: new Date('2024-06-01'),
-            age: 364, // Will turn 366 due to leap year, but milestone triggers at 365
+            age: 364, // Will turn 365 (1 year = 365 days), milestone triggers at 365
             user: { connect: { id: testUser.id } },
             breed: { connect: { id: testBreed.id } },
             taskLog: { trust_building: 5 },
@@ -353,6 +412,9 @@ describe('Horse Aging System', () => {
       expect(updatedHorses[0].age).toBe(365); // Milestone horse
       expect(updatedHorses[1].age).toBe(517); // No birthday horse (corrected age)
       expect(updatedHorses[2].age).toBe(731); // Regular birthday horse
+
+      // Restore original Date
+      global.Date = OriginalDate;
     });
 
     // TODO: Add error handling test when mocking is properly set up
@@ -361,7 +423,20 @@ describe('Horse Aging System', () => {
   describe('Integration with Existing Systems', () => {
     it('should maintain compatibility with training age requirements', async () => {
       const mockNow = new Date('2025-06-01T12:00:00Z');
-      jest.spyOn(Date, 'now').mockReturnValue(mockNow.getTime());
+
+      // Mock the Date constructor to return our mock date
+      const OriginalDate = global.Date;
+      global.Date = class extends OriginalDate {
+        constructor(...args) {
+          if (args.length === 0) {
+            return mockNow;
+          }
+          return new OriginalDate(...args);
+        }
+        static now() {
+          return mockNow.getTime();
+        }
+      };
 
       // Create horse turning 3 (training eligible)
       const horse = await prisma.horse.create({
@@ -387,11 +462,27 @@ describe('Horse Aging System', () => {
       const ageInYears = Math.floor(updatedHorse.age / 365);
       expect(ageInYears).toBe(3);
       expect(updatedHorse.age >= 1095).toBe(true); // Training eligible
+
+      // Restore original Date
+      global.Date = OriginalDate;
     });
 
     it('should handle retirement at age 21', async () => {
       const mockNow = new Date('2025-06-01T12:00:00Z');
-      jest.spyOn(Date, 'now').mockReturnValue(mockNow.getTime());
+
+      // Mock the Date constructor to return our mock date
+      const OriginalDate = global.Date;
+      global.Date = class extends OriginalDate {
+        constructor(...args) {
+          if (args.length === 0) {
+            return mockNow;
+          }
+          return new OriginalDate(...args);
+        }
+        static now() {
+          return mockNow.getTime();
+        }
+      };
 
       // Create horse turning 21 (retirement age)
       const horse = await prisma.horse.create({
@@ -409,6 +500,9 @@ describe('Horse Aging System', () => {
 
       expect(milestoneResult.milestonesTriggered).toContain('retirement');
       expect(milestoneResult.retirementTriggered).toBe(true);
+
+      // Restore original Date
+      global.Date = OriginalDate;
     });
   });
 });

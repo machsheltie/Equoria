@@ -152,9 +152,9 @@ describe('🐴 INTEGRATION: Foal Enrichment API Integration - Complete API Workf
       expect(response.body.message).toContain('Trailer Exposure');
       expect(response.body.data).toHaveProperty('foal');
       expect(response.body.data).toHaveProperty('activity');
-      expect(response.body.data).toHaveProperty('updated_levels');
+      expect(response.body.data).toHaveProperty('updatedLevels');
       expect(response.body.data).toHaveProperty('changes');
-      expect(response.body.data).toHaveProperty('training_record_id');
+      expect(response.body.data).toHaveProperty('trainingRecordId');
 
       // Verify foal data
       expect(response.body.data.foal.id).toBe(testFoal.id);
@@ -166,10 +166,10 @@ describe('🐴 INTEGRATION: Foal Enrichment API Integration - Complete API Workf
       expect(response.body.data.activity.outcome).toMatch(/success|excellent|challenging/);
 
       // Verify levels are within bounds
-      expect(response.body.data.updated_levels.bond_score).toBeGreaterThanOrEqual(0);
-      expect(response.body.data.updated_levels.bond_score).toBeLessThanOrEqual(100);
-      expect(response.body.data.updated_levels.stress_level).toBeGreaterThanOrEqual(0);
-      expect(response.body.data.updated_levels.stress_level).toBeLessThanOrEqual(100);
+      expect(response.body.data.updatedLevels.bondScore).toBeGreaterThanOrEqual(0);
+      expect(response.body.data.updatedLevels.bondScore).toBeLessThanOrEqual(100);
+      expect(response.body.data.updatedLevels.stressLevel).toBeGreaterThanOrEqual(0);
+      expect(response.body.data.updatedLevels.stressLevel).toBeLessThanOrEqual(100);
 
       // Verify changes are reported
       expect(response.body.data.changes).toHaveProperty('bondChange');
@@ -218,8 +218,8 @@ describe('🐴 INTEGRATION: Foal Enrichment API Integration - Complete API Workf
       });
 
       // Verify response contains updated levels
-      expect(response.body.data.updated_levels).toHaveProperty('bond_score');
-      expect(response.body.data.updated_levels).toHaveProperty('stress_level');
+      expect(response.body.data.updatedLevels).toHaveProperty('bondScore');
+      expect(response.body.data.updatedLevels).toHaveProperty('stressLevel');
     });
 
     it('should validate request parameters', async () => {
@@ -410,8 +410,8 @@ describe('🐴 INTEGRATION: Foal Enrichment API Integration - Complete API Workf
         .expect(200);
 
       // Values should be capped at bounds
-      expect(response.body.data.updated_levels.bond_score).toBeLessThanOrEqual(100);
-      expect(response.body.data.updated_levels.stress_level).toBeGreaterThanOrEqual(0);
+      expect(response.body.data.updatedLevels.bondScore).toBeLessThanOrEqual(100);
+      expect(response.body.data.updatedLevels.stressLevel).toBeGreaterThanOrEqual(0);
     });
   });
 });

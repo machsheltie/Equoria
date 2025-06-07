@@ -230,15 +230,15 @@ router.post(
         data: {
           foal: result.foal,
           activity: result.activity,
-          updated_levels: {
-            bond_score: result.levels.bond_score,
-            stress_level: result.levels.stress_level,
+          updatedLevels: {
+            bondScore: result.levels.bond_score,
+            stressLevel: result.levels.stress_level,
           },
           changes: {
-            bond_change: result.levels.bond_change,
-            stress_change: result.levels.stress_change,
+            bondChange: result.levels.bond_change,
+            stressChange: result.levels.stress_change,
           },
-          training_record_id: result.training_record_id,
+          trainingRecordId: result.training_record_id,
         },
       });
     } catch (error) {

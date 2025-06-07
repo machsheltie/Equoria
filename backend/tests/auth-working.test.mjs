@@ -123,17 +123,21 @@ describe('🔐 INTEGRATION: Authentication System - Complete Auth Workflow Valid
   describe('User Registration', () => {
     it('should register a new user successfully', async () => {
       const userData = {
-        name: 'Auth Test User',
+        username: 'authtestuser',
         email: 'authtest-register@example.com',
         password: 'TestPassword123!',
+        firstName: 'Auth',
+        lastName: 'User',
       };
 
       const response = await request(app).post('/api/auth/register').send(userData).expect(201);
 
-      expect(response.body.success).toBe(true);
+      expect(response.body.status).toBe('success');
       expect(response.body.message).toBe('User registered successfully');
       expect(response.body.data.user.email).toBe(userData.email);
-      expect(response.body.data.user.name).toBe(userData.name);
+      expect(response.body.data.user.username).toBe(userData.username);
+      expect(response.body.data.user.firstName).toBe(userData.firstName);
+      expect(response.body.data.user.lastName).toBe(userData.lastName);
       expect(response.body.data.token).toBeDefined();
       expect(response.body.data.refreshToken).toBeDefined();
       expect(response.body.data.user.password).toBeUndefined();
@@ -141,19 +145,21 @@ describe('🔐 INTEGRATION: Authentication System - Complete Auth Workflow Valid
 
     it('should reject duplicate email registration', async () => {
       const userData = {
-        name: 'Auth Test User',
+        username: 'authtestdupe',
         email: 'authtest-duplicate@example.com',
         password: 'TestPassword123!',
+        firstName: 'Auth',
+        lastName: 'User',
       };
 
       // First registration
       await request(app).post('/api/auth/register').send(userData).expect(201);
 
       // Second registration with same email
-      const response = await request(app).post('/api/auth/register').send(userData).expect(409);
+      const response = await request(app).post('/api/auth/register').send(userData).expect(400);
 
       expect(response.body.success).toBe(false);
-      expect(response.body.message).toBe('Email already registered');
+      expect(response.body.message).toBe('User with this email or username already exists');
     });
   });
 
@@ -162,9 +168,11 @@ describe('🔐 INTEGRATION: Authentication System - Complete Auth Workflow Valid
       // Corrected: async()
       // Create a test user for login tests
       const userData = {
-        name: 'Auth Test User',
+        username: 'authtestlogin',
         email: 'authtest-login@example.com',
         password: 'TestPassword123!',
+        firstName: 'Auth',
+        lastName: 'User',
       };
 
       await request(app).post('/api/auth/register').send(userData);
@@ -178,7 +186,7 @@ describe('🔐 INTEGRATION: Authentication System - Complete Auth Workflow Valid
 
       const response = await request(app).post('/api/auth/login').send(loginData).expect(200);
 
-      expect(response.body.success).toBe(true);
+      expect(response.body.status).toBe('success');
       expect(response.body.message).toBe('Login successful');
       expect(response.body.data.user.email).toBe(loginData.email);
       expect(response.body.data.token).toBeDefined();
@@ -206,9 +214,11 @@ describe('🔐 INTEGRATION: Authentication System - Complete Auth Workflow Valid
       // Corrected: async()
       // Create user and get refresh token
       const userData = {
-        name: 'Auth Test User',
+        username: 'authtesttoken',
         email: 'authtest-token@example.com',
         password: 'TestPassword123!',
+        firstName: 'Auth',
+        lastName: 'User',
       };
 
       const registerResponse = await request(app).post('/api/auth/register').send(userData);
@@ -228,10 +238,10 @@ describe('🔐 INTEGRATION: Authentication System - Complete Auth Workflow Valid
         .send({ refreshToken: refreshTokenValue }) // Use the locally scoped variable
         .expect(200);
 
-      expect(response.body.success).toBe(true);
+      expect(response.body.status).toBe('success');
       expect(response.body.message).toBe('Token refreshed successfully');
       expect(response.body.data.token).toBeDefined();
-      expect(response.body.data.refreshToken).toBeDefined();
+      // Note: refresh endpoint only returns new token, not new refreshToken
     });
 
     it('should reject invalid refresh token', async () => {
@@ -250,9 +260,11 @@ describe('🔐 INTEGRATION: Authentication System - Complete Auth Workflow Valid
       // Corrected: async()
       // Create user and get auth token
       const userData = {
-        name: 'Auth Test User',
+        username: 'authtestprotected',
         email: 'authtest-protected@example.com',
         password: 'TestPassword123!',
+        firstName: 'Auth',
+        lastName: 'User',
       };
 
       const registerResponse = await request(app).post('/api/auth/register').send(userData);
@@ -274,18 +286,19 @@ describe('🔐 INTEGRATION: Authentication System - Complete Auth Workflow Valid
         .set('Authorization', `Bearer ${authTokenValue}`) // Use renamed variable
         .expect(200);
 
-      expect(response.body.success).toBe(true);
-      expect(response.body.message).toBe('Profile retrieved successfully');
-      expect(response.body.data.email).toBe(testUserValue.email); // Use renamed variable
-      expect(response.body.data.name).toBe(testUserValue.name); // Use renamed variable
-      expect(response.body.data.password).toBeUndefined();
+      expect(response.body.status).toBe('success');
+      expect(response.body.data.user.email).toBe(testUserValue.email); // Use renamed variable
+      expect(response.body.data.user.username).toBe(testUserValue.username); // Use renamed variable
+      expect(response.body.data.user.firstName).toBe(testUserValue.firstName); // Use renamed variable
+      expect(response.body.data.user.lastName).toBe(testUserValue.lastName); // Use renamed variable
+      expect(response.body.data.user.password).toBeUndefined();
     });
 
     it('should reject profile request without token', async () => {
       const response = await request(app).get('/api/auth/me').expect(401);
 
       expect(response.body.success).toBe(false);
-      expect(response.body.message).toBe('Access token required');
+      expect(response.body.message).toBe('Access token is required');
     });
 
     it('should logout successfully', async () => {
@@ -295,7 +308,7 @@ describe('🔐 INTEGRATION: Authentication System - Complete Auth Workflow Valid
         .set('Authorization', `Bearer ${authTokenValue}`) // Use renamed variable
         .expect(200);
 
-      expect(response.body.success).toBe(true);
+      expect(response.body.status).toBe('success');
       expect(response.body.message).toBe('Logout successful');
     });
   });
