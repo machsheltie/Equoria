@@ -165,7 +165,8 @@ describe('🌐 INTEGRATION: User Routes - HTTP API Endpoints', () => {
 
     it('should return 500 for non-existent user', async () => {
       // API returns 500 for user not found in progress endpoint
-      const nonExistentUuid = '00000000-0000-0000-0000-000000000001';
+      // Use a valid UUID format but one that doesn't exist in database
+      const nonExistentUuid = '550e8400-e29b-41d4-a716-446655440999';
 
       const response = await request(app)
         .get(`/api/user/${nonExistentUuid}/progress`)
@@ -233,7 +234,8 @@ describe('🌐 INTEGRATION: User Routes - HTTP API Endpoints', () => {
 
     it('should handle database errors gracefully', async () => {
       // Use a non-existent UUID to trigger database error
-      const nonExistentUuid = '00000000-0000-0000-0000-000000000002';
+      // Use a valid UUID format but one that doesn't exist in database
+      const nonExistentUuid = '550e8400-e29b-41d4-a716-446655440998';
 
       const response = await request(app)
         .get(`/api/user/${nonExistentUuid}/progress`)

@@ -86,14 +86,14 @@ describe('Groom Bonding & Burnout Prevention System', () => {
 
   describe('Age Restrictions', () => {
     it('should allow grooming for horses 3+ years old', async () => {
-      const horse = { id: 1, age: 1095, bondScore: 50 }; // 3 years old
+      const horse = { id: 1, age: 21, bondScore: 50 }; // 3 years old (21 days = 3 years in game time)
       const result = await validateGroomingEligibility(horse, 'brushing');
 
       expect(result.eligible).toBe(true);
     });
 
     it('should reject adult grooming tasks for horses under 3 years old', async () => {
-      const horse = { id: 1, age: 1000, bondScore: 50 }; // Under 3 years
+      const horse = { id: 1, age: 20, bondScore: 50 }; // Under 3 years (20 days = 2.86 years)
       const result = await validateGroomingEligibility(horse, 'brushing');
 
       expect(result.eligible).toBe(false);
@@ -101,13 +101,13 @@ describe('Groom Bonding & Burnout Prevention System', () => {
     });
 
     it('should allow enrichment tasks for horses under 3 years old', async () => {
-      const horse = { id: 1, age: 1000, bondScore: 50 }; // Under 3 years (2.7 years)
-      const result = await validateGroomingEligibility(horse, 'hoof_handling'); // Use foal grooming task for 2.7 year old
+      const horse = { id: 1, age: 10, bondScore: 30 }; // Young horse (10 days = 1.43 years)
+      const result = await validateGroomingEligibility(horse, 'trust_building');
 
       expect(result.eligible).toBe(true);
       expect(result.reason).toContain('eligible');
       expect(result.ageGroup).toContain('foal');
-      expect(result.taskType).toBe('grooming');
+      expect(result.taskType).toBe('enrichment');
     });
   });
 

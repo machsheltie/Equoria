@@ -578,7 +578,7 @@ export async function hireGroom(req, res) {
           bio,
           availability: availability || {},
           userId,
-          hiringCost, // Store the hiring cost for record keeping
+          // Note: hiringCost is not stored in groom model, only used for transaction
         },
       });
 

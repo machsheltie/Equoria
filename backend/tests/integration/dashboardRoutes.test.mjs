@@ -154,7 +154,7 @@ describe('🏠 INTEGRATION: Dashboard API - Real Database Integration', () => {
           levelMin: 1,
           levelMax: 5,
           entryFee: 100,
-          prizePool: 1000,
+          prize: 1000, // Fixed: was prizePool, should be prize
         },
       }),
       prisma.show.create({
@@ -165,7 +165,7 @@ describe('🏠 INTEGRATION: Dashboard API - Real Database Integration', () => {
           levelMin: 2,
           levelMax: 6,
           entryFee: 150,
-          prizePool: 1500,
+          prize: 1500, // Fixed: was prizePool, should be prize
         },
       }),
     ]);
@@ -178,9 +178,8 @@ describe('🏠 INTEGRATION: Dashboard API - Real Database Integration', () => {
       data: {
         horseId: testHorses[0].id,
         discipline: 'Dressage',
-        sessionDate: recentTrainingDate,
-        statGain: 3,
-        xpGained: 5,
+        trainedAt: recentTrainingDate, // Fixed: was sessionDate, should be trainedAt
+        // Note: statGain and xpGained are not fields in TrainingLog model
       },
     });
 

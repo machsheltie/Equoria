@@ -315,7 +315,7 @@ export async function ensureDefaultGroomAssignment(foalId, userId) {
       let groom = await prisma.groom.findFirst({
         where: {
           userId,
-          speciality: 'foalCare',
+          speciality: 'foal_care',
           isActive: true,
         },
       });
@@ -324,7 +324,7 @@ export async function ensureDefaultGroomAssignment(foalId, userId) {
         groom = await prisma.groom.create({
           data: {
             name: 'Sarah Johnson',
-            speciality: 'foalCare',
+            speciality: 'foal_care',
             skillLevel: 'intermediate',
             personality: 'gentle',
             experience: 5,
@@ -532,9 +532,7 @@ export async function recordGroomInteraction(
  */
 export function calculateGroomInteractionEffects(groom, foal, interactionType, duration) {
   try {
-    // Map 'foalCare' to 'foal_care' for backward compatibility with tests
-    const specialtyKey = groom.speciality === 'foalCare' ? 'foal_care' : groom.speciality;
-    const specialty = GROOM_SPECIALTIES[specialtyKey] || GROOM_SPECIALTIES.general;
+    const specialty = GROOM_SPECIALTIES[groom.speciality] || GROOM_SPECIALTIES.general;
     const skillLevel = SKILL_LEVELS[groom.skillLevel] || SKILL_LEVELS.intermediate;
     const personality = PERSONALITY_TRAITS[groom.personality] || PERSONALITY_TRAITS.gentle;
 

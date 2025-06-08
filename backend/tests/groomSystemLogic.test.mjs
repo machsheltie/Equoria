@@ -49,7 +49,7 @@ describe('🧮 UNIT: Groom System Logic - Pure Business Logic Validation', () =>
     const mockGroom = {
       id: 1,
       name: 'Sarah Johnson',
-      speciality: 'foalCare',
+      speciality: 'foal_care',
       skillLevel: 'intermediate',
       personality: 'gentle',
       experience: 5,
@@ -88,7 +88,7 @@ describe('🧮 UNIT: Groom System Logic - Pure Business Logic Validation', () =>
     });
 
     it('should apply foal care specialty bonuses correctly', () => {
-      const foalCareGroom = { ...mockGroom, speciality: 'foalCare' };
+      const foalCareGroom = { ...mockGroom, speciality: 'foal_care' };
       const generalGroom = { ...mockGroom, speciality: 'general' };
 
       const foalCareEffects = calculateGroomInteractionEffects(foalCareGroom, mockFoal, 'dailyCare', 60);
@@ -315,7 +315,7 @@ describe('🧮 UNIT: Groom System Logic - Pure Business Logic Validation', () =>
   describe('Modifier Calculations', () => {
     it('should combine modifiers correctly', () => {
       const testGroom = {
-        speciality: 'foalCare', // 1.5x bonding
+        speciality: 'foal_care', // 1.5x bonding
         skillLevel: 'expert', // 1.3x bonding
         personality: 'gentle', // 1.2x bonding
         experience: 10, // +2 bonding (10/5)

@@ -132,7 +132,7 @@ describe('Groom Workflow Integration Tests', () => {
         name: 'Test Adult Horse',
         sex: 'Mare',
         dateOfBirth: new Date(Date.now() - 4 * 365 * 24 * 60 * 60 * 1000), // 4 years old
-        age: 1460,
+        age: 28, // 4 years old (28 days = 4 years in game time)
         user: { connect: { id: testUser.id } },
         breed: { connect: { id: testBreed.id } },
         bondScore: 70,
@@ -564,9 +564,9 @@ describe('Groom Workflow Integration Tests', () => {
         body: {
           foalId: testAdultHorse.id,
           groomId: testGroom.id,
-          interactionType: 'full_groom',
+          interactionType: 'brushing', // Use valid adult grooming task
           duration: 60,
-          notes: 'Full grooming for adult horse',
+          notes: 'Brushing for adult horse',
         },
         user: { id: testUser.id },
       };
@@ -584,7 +584,7 @@ describe('Groom Workflow Integration Tests', () => {
           success: true,
           data: expect.objectContaining({
             interaction: expect.objectContaining({
-              interactionType: 'full_groom',
+              interactionType: 'brushing',
             }),
             effects: expect.any(Object),
           }),
@@ -595,7 +595,7 @@ describe('Groom Workflow Integration Tests', () => {
       const interaction = await prisma.groomInteraction.findFirst({
         where: {
           foalId: testAdultHorse.id,
-          interactionType: 'full_groom',
+          interactionType: 'brushing',
         },
       });
       expect(interaction).toBeTruthy();

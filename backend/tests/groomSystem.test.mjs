@@ -108,7 +108,7 @@ describe('👩‍🔧 UNIT: Groom System - Foal Care Assignment & Management', (
     const mockGroom = {
       id: 1,
       name: 'Sarah Johnson',
-      speciality: 'foalCare',
+      speciality: 'foal_care',
       skillLevel: 'intermediate',
       isActive: true,
       availability: { monday: true, tuesday: true },
