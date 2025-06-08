@@ -175,9 +175,9 @@ describe('🐎 INTEGRATION: Horse XP System - Core Functionality Integration', (
       const result = await allocateStatPoint(testHorseId, 'speed');
 
       expect(result.success).toBe(true);
-      expect(result.data.statName).toBe('speed');
-      expect(result.data.newStatValue).toBe(initialHorse.speed + 1);
-      expect(result.data.remainingStatPoints).toBe(1);
+      expect(result.statName).toBe('speed');
+      expect(result.newStatValue).toBe(initialHorse.speed + 1);
+      expect(result.remainingStatPoints).toBe(1);
 
       // Verify in database
       const updatedHorse = await prisma.horse.findUnique({
@@ -199,14 +199,14 @@ describe('🐎 INTEGRATION: Horse XP System - Core Functionality Integration', (
       const result = await getHorseXpHistory(testHorseId, 10, 0);
 
       expect(result.success).toBe(true);
-      expect(result.data.events).toHaveLength(3);
-      expect(result.data.count).toBe(3);
-      expect(result.data.pagination.limit).toBe(10);
-      expect(result.data.pagination.offset).toBe(0);
-      expect(result.data.pagination.hasMore).toBe(false);
+      expect(result.events).toHaveLength(3);
+      expect(result.count).toBe(3);
+      expect(result.pagination.limit).toBe(10);
+      expect(result.pagination.offset).toBe(0);
+      expect(result.pagination.hasMore).toBe(false);
 
       // Events should be in reverse chronological order (newest first)
-      const { events } = result.data;
+      const { events } = result;
       expect(events[0].amount).toBe(25); // Third competition (most recent)
       expect(events[1].amount).toBe(30); // Second competition
       expect(events[2].amount).toBe(50); // First competition (oldest)
@@ -247,8 +247,8 @@ describe('🐎 INTEGRATION: Horse XP System - Core Functionality Integration', (
       const allocateResult = await allocateStatPoint(testHorseId, 'speed');
 
       expect(allocateResult.success).toBe(true);
-      expect(allocateResult.data.newStatValue).toBe(initialSpeed + 1);
-      expect(allocateResult.data.remainingStatPoints).toBe(0);
+      expect(allocateResult.newStatValue).toBe(initialSpeed + 1);
+      expect(allocateResult.remainingStatPoints).toBe(0);
 
       // Step 5: Verify final state
       horse = await prisma.horse.findUnique({
@@ -264,8 +264,8 @@ describe('🐎 INTEGRATION: Horse XP System - Core Functionality Integration', (
       const historyResult = await getHorseXpHistory(testHorseId, 10, 0);
 
       expect(historyResult.success).toBe(true);
-      expect(historyResult.data.events).toHaveLength(4);
-      expect(historyResult.data.events.every(event => event.amount > 0)).toBe(true);
+      expect(historyResult.events).toHaveLength(4);
+      expect(historyResult.events.every(event => event.amount > 0)).toBe(true);
     });
   });
 });

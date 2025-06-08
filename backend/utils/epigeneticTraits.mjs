@@ -65,7 +65,7 @@ const TRAIT_DEFINITIONS = {
   bonded: {
     type: 'positive',
     rarity: 'common',
-    conflicts: ['aggressive'],
+    conflicts: ['aggressive', 'antisocial'],
     description: 'Forms deeper trust with specific handlers.',
     category: 'bond',
   },
@@ -127,7 +127,7 @@ const TRAIT_DEFINITIONS = {
   stubborn: {
     type: 'negative',
     rarity: 'common',
-    conflicts: ['trainability_boost'],
+    conflicts: ['trainability_boost', 'eager_learner'],
     description: 'Resistant to training and new commands.',
     category: 'epigenetic',
   },
@@ -141,7 +141,7 @@ const TRAIT_DEFINITIONS = {
   aggressive: {
     type: 'negative',
     rarity: 'common',
-    conflicts: ['calm', 'bonded'],
+    conflicts: ['calm', 'bonded', 'social'],
     description: 'Difficult to handle and may show hostility.',
     category: 'epigenetic',
   },

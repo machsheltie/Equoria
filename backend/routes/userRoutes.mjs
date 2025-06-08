@@ -12,7 +12,7 @@ import {
   createUserController,
   updateUserController,
   deleteUserController,
-  addXpController
+  addXpController,
 } from '../controllers/userController.mjs';
 import { authenticateToken } from '../middleware/auth.mjs';
 import logger from '../utils/logger.mjs';

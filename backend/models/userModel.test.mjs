@@ -103,7 +103,6 @@ describe('👤 UNIT: User Model - Database Operations & Business Logic', () => {
       id: true,
       username: true,
       email: true,
-      role: true,
       level: true,
       xp: true,
       money: true,

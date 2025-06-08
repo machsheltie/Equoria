@@ -243,22 +243,8 @@ async function getUserStats(userId) {
   }
 }
 
-// Deprecated
-function addUserXp(userId, amount) {
-  logger.warn('[addUserXp] DEPRECATED: Use addXpToUser instead.');
-  return addXpToUser(userId, amount);
-}
-
-async function checkAndLevelUpUser(userId) {
-  logger.warn('[checkAndLevelUpUser] DEPRECATED: XP is auto-managed now.');
-  const user = await getUserById(userId);
-  return {
-    ...user,
-    leveledUp: false,
-    levelsGained: 0,
-    message: 'Deprecated: use addXpToUser.',
-  };
-}
+// Note: Deprecated functions removed as part of Task 2 naming normalization
+// All XP management now uses addXpToUser() with automatic leveling
 
 // ✅ Named exports only — no default export
 export {
@@ -271,6 +257,4 @@ export {
   addXpToUser,
   getUserProgress,
   getUserStats,
-  addUserXp,
-  checkAndLevelUpUser,
 };

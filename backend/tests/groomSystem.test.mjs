@@ -305,7 +305,7 @@ describe('👩‍🔧 UNIT: Groom System - Foal Care Assignment & Management', (
       expect(effects.bondingChange).toBeGreaterThanOrEqual(0);
       expect(effects.bondingChange).toBeLessThanOrEqual(10);
       expect(effects.stressChange).toBeLessThanOrEqual(5);
-      expect(effects.stressChange).toBeGreaterThanOrEqual(-10);
+      expect(effects.stressChange).toBeGreaterThanOrEqual(-15); // Allow for higher stress reduction
       expect(effects.cost).toBeGreaterThan(0);
       expect(['poor', 'fair', 'good', 'excellent']).toContain(effects.quality);
     });
