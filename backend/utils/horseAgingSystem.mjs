@@ -5,8 +5,8 @@
  * 🎯 FEATURES:
  * - Automatic age calculation from dateOfBirth
  * - Daily aging process with birthday detection
- * - Trait milestone evaluation at age 1 (365 days)
- * - Retirement detection at age 21 (7665 days)
+ * - Trait milestone evaluation at age 1 (7 days)
+ * - Retirement detection at age 21 (147 days)
  * - Integration with existing cron job system
  * - Batch processing for daily updates
  *
@@ -17,16 +17,16 @@
  * - logger (logging)
  *
  * 📋 BUSINESS RULES:
- * - Age calculated as days since dateOfBirth
+ * - Age calculated as days since dateOfBirth (1 year = 7 days)
  * - Birthday triggers age increment and milestone checks
- * - Age 1 milestone (365 days) triggers trait evaluation from task history
- * - Horses retire at age 21 (7665 days)
+ * - Age 1 milestone (7 days) triggers trait evaluation from task history
+ * - Horses retire at age 21 (147 days)
  * - Age affects training/competition eligibility
  * - Process runs daily via cron job integration
  *
  * 🎯 MILESTONES:
- * - Age 1 (365 days): Epigenetic trait evaluation from foal task history
- * - Age 21 (7665 days): Retirement from competition
+ * - Age 1 (7 days): Epigenetic trait evaluation from foal task history
+ * - Age 21 (147 days): Retirement from competition
  */
 
 import prisma from '../db/index.mjs';
@@ -158,9 +158,9 @@ export async function checkForMilestones(horseId, previousAge, newAge) {
       `[horseAgingSystem.checkForMilestones] Checking milestones for horse ${horseId}: ${previousAge} → ${newAge} days`,
     );
 
-    // Age 1 milestone (365 days) - Trait evaluation
-    // Trigger when crossing the 365-day threshold
-    if (previousAge < 365 && newAge >= 365) {
+    // Age 1 milestone (7 days) - Trait evaluation
+    // Trigger when crossing the 7-day threshold
+    if (previousAge < 7 && newAge >= 7) {
       logger.info(
         `[horseAgingSystem.checkForMilestones] Horse ${horseId} reached age 1 milestone - evaluating traits`,
       );
@@ -222,11 +222,11 @@ export async function checkForMilestones(horseId, previousAge, newAge) {
     }
 
     // Enhanced milestone trait evaluation (ages 2 and 3) - New comprehensive system
-    const additionalMilestoneAges = [730, 1095]; // 2, 3 years in days
+    const additionalMilestoneAges = [14, 21]; // 2, 3 years in days (1 year = 7 days)
 
     for (const milestoneAge of additionalMilestoneAges) {
       if (previousAge < milestoneAge && newAge >= milestoneAge) {
-        const milestoneYear = Math.floor(milestoneAge / 365);
+        const milestoneYear = Math.floor(milestoneAge / 7);
         logger.info(
           `[horseAgingSystem.checkForMilestones] Horse ${horseId} reached age ${milestoneYear} milestone - evaluating traits`,
         );
@@ -314,8 +314,8 @@ export async function checkForMilestones(horseId, previousAge, newAge) {
       }
     }
 
-    // Retirement milestone (21 years = 7665 days)
-    if (previousAge < 7665 && newAge >= 7665) {
+    // Retirement milestone (21 years = 147 days)
+    if (previousAge < 147 && newAge >= 147) {
       logger.info(
         `[horseAgingSystem.checkForMilestones] Horse ${horseId} reached retirement age (21 years)`,
       );

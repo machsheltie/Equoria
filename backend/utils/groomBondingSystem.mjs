@@ -45,7 +45,7 @@ import logger from './logger.mjs';
  * @returns {Array} Array of eligible task names
  */
 export function getEligibleTasksForAge(ageInDays) {
-  const ageInYears = ageInDays / 365;
+  const ageInYears = ageInDays / 7; // 1 year = 7 days in game time
   const eligibleTasks = [];
 
   // Ages 0-2: Enrichment tasks
@@ -98,7 +98,7 @@ export function categorizeTask(taskName) {
  * @returns {string} Age group description
  */
 export function getAgeGroupDescription(ageInDays) {
-  const ageInYears = ageInDays / 365;
+  const ageInYears = ageInDays / 7; // 1 year = 7 days in game time
 
   if (ageInYears <= GROOM_CONFIG.FOAL_ENRICHMENT_MAX_AGE) {
     return 'young foal (0-2 years)';
@@ -148,7 +148,7 @@ export function calculateBondingEffects(currentBondScore, groomingTask) {
  */
 export async function validateGroomingEligibility(horse, groomingTask) {
   // Check minimum age requirement (now 0 - allows foals from birth)
-  const minAgeInDays = GROOM_CONFIG.MIN_AGE_FOR_GROOMING_TASKS * 365;
+  const minAgeInDays = GROOM_CONFIG.MIN_AGE_FOR_GROOMING_TASKS * 7; // 1 year = 7 days in game time
 
   if (horse.age < minAgeInDays) {
     return {

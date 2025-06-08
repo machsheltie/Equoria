@@ -53,8 +53,8 @@ import {
 
 describe('🤝 COMPREHENSIVE: Groom Bonding System & Task Eligibility', () => {
   describe('Age-Based Task Eligibility', () => {
-    it('should return enrichment tasks for newborn foals (0-30 days)', () => {
-      const ageInDays = 15; // 2 weeks old
+    it('should return enrichment tasks for newborn foals (0-2 years)', () => {
+      const ageInDays = 5; // 5 days old = 0.7 years in game time
       const eligibleTasks = getEligibleTasksForAge(ageInDays);
 
       expect(Array.isArray(eligibleTasks)).toBe(true);
@@ -67,8 +67,8 @@ describe('🤝 COMPREHENSIVE: Groom Bonding System & Task Eligibility', () => {
       expect(hasEnrichmentTasks).toBe(true);
     });
 
-    it('should return appropriate tasks for young foals (1-6 months)', () => {
-      const ageInDays = 120; // 4 months old
+    it('should return appropriate tasks for young foals (1-2 years)', () => {
+      const ageInDays = 10; // 10 days old = 1.4 years in game time
       const eligibleTasks = getEligibleTasksForAge(ageInDays);
 
       expect(Array.isArray(eligibleTasks)).toBe(true);
@@ -82,7 +82,7 @@ describe('🤝 COMPREHENSIVE: Groom Bonding System & Task Eligibility', () => {
     });
 
     it('should return grooming tasks for yearlings (1-2 years)', () => {
-      const ageInDays = 450; // ~1.2 years old
+      const ageInDays = 10; // 10 days = 1.4 years in game time
       const eligibleTasks = getEligibleTasksForAge(ageInDays);
 
       expect(Array.isArray(eligibleTasks)).toBe(true);
@@ -95,7 +95,7 @@ describe('🤝 COMPREHENSIVE: Groom Bonding System & Task Eligibility', () => {
     });
 
     it('should return general tasks for mature horses (3+ years)', () => {
-      const ageInDays = 1200; // ~3.3 years old
+      const ageInDays = 25; // 25 days = 3.6 years in game time
       const eligibleTasks = getEligibleTasksForAge(ageInDays);
 
       expect(Array.isArray(eligibleTasks)).toBe(true);
@@ -110,9 +110,9 @@ describe('🤝 COMPREHENSIVE: Groom Bonding System & Task Eligibility', () => {
 
     it('should handle age boundary conditions correctly', () => {
       const boundaryAges = [
-        365,   // Exactly 1 year
-        730,   // Exactly 2 years
-        1095,  // Exactly 3 years
+        7,   // Exactly 1 year in game time
+        14,  // Exactly 2 years in game time
+        21,  // Exactly 3 years in game time
       ];
 
       boundaryAges.forEach(age => {

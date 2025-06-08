@@ -3,7 +3,8 @@
  * Tests for age-based task eligibility in the groom system
  *
  * 🎯 FEATURES TESTED:
- * - Foal enrichment task eligibility (0-3 years old)
+ * - Foal enrichment task eligibility (0-2 years old)
+ * - Foal grooming task eligibility (1-3 years old)
  * - Adult grooming task eligibility (3+ years old)
  * - Age threshold validation and boundary conditions
  * - Task pool differentiation by age group
@@ -14,7 +15,8 @@
  * - groomConfig.mjs (age thresholds and task definitions)
  *
  * 📋 BUSINESS RULES TESTED:
- * - Foals (0-3 years): Can receive enrichment tasks for epigenetic development
+ * - Young foals (0-2 years): Can receive enrichment tasks for epigenetic development
+ * - Foals (1-3 years): Can receive grooming tasks for presentation prep
  * - Adult horses (3+ years): Can receive bonding tasks for burnout prevention
  * - Age boundaries: Exactly 3 years (1095 days) is the transition point
  * - Task separation: Different task pools for different age groups
@@ -57,7 +59,7 @@ describe('Groom Age Restrictions & Task Eligibility', () => {
     });
   });
 
-  describe('Foal Enrichment Task Eligibility (0-3 years)', () => {
+  describe('Foal Enrichment Task Eligibility (0-2 years)', () => {
     it('should allow newborn foal (0 days) to receive enrichment tasks', async () => {
       const newbornFoal = { id: 1, age: 0, bondScore: 0 };
       const result = await validateGroomingEligibility(newbornFoal, 'gentle_touch');
@@ -149,12 +151,16 @@ describe('Groom Age Restrictions & Task Eligibility', () => {
       expect(foalTaskResult.eligible).toBe(true);
     });
 
-    it('should handle day before 3rd birthday (1094 days)', async () => {
-      const almostThreeYears = { id: 11, age: 1094, bondScore: 55 };
+    it('should handle day before 3rd birthday (20 days)', async () => {
+      const almostThreeYears = { id: 11, age: 20, bondScore: 55 }; // 20 days = 2.86 years
 
-      // Should be eligible for foal enrichment tasks
+      // Should NOT be eligible for foal enrichment tasks (age > 2 years)
       const foalTaskResult = await validateGroomingEligibility(almostThreeYears, 'gentle_touch');
-      expect(foalTaskResult.eligible).toBe(true);
+      expect(foalTaskResult.eligible).toBe(false);
+
+      // Should be eligible for foal grooming tasks (1-3 years)
+      const groomingTaskResult = await validateGroomingEligibility(almostThreeYears, 'hoof_handling');
+      expect(groomingTaskResult.eligible).toBe(true);
     });
   });
 

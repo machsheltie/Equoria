@@ -5,10 +5,10 @@
  * 🎯 FEATURES TESTED:
  * - Automatic age calculation from dateOfBirth
  * - Daily aging process with birthday detection
- * - Trait milestone evaluation at age 1 (365 days)
+ * - Trait milestone evaluation at age 1 (7 days)
  * - Integration with existing cron job system
  * - Age-based eligibility updates
- * - Retirement at age 21
+ * - Retirement at age 21 (147 days)
  *
  * 🔧 DEPENDENCIES:
  * - horseAgingSystem.mjs (aging logic)
@@ -101,13 +101,13 @@ describe('Horse Aging System', () => {
     it('should calculate age correctly from dateOfBirth', () => {
       const mockNow = new Date('2025-06-01T12:00:00Z');
 
-      // Test various ages (accounting for leap years)
+      // Test various ages (1 year = 7 days in game time)
       const testCases = [
         { birth: '2025-06-01', expectedDays: 0 }, // Born today
         { birth: '2025-05-31', expectedDays: 1 }, // Born yesterday
-        { birth: '2024-06-01', expectedDays: 365 }, // Born 1 year ago
-        { birth: '2023-06-01', expectedDays: 731 }, // Born 2 years ago (366 + 365)
-        { birth: '2004-06-01', expectedDays: 7670 }, // Born 21 years ago
+        { birth: '2025-05-25', expectedDays: 7 }, // Born 1 week ago (1 year in game time)
+        { birth: '2025-05-18', expectedDays: 14 }, // Born 2 weeks ago (2 years in game time)
+        { birth: '2025-01-05', expectedDays: 147 }, // Born 21 weeks ago (21 years in game time)
       ];
 
       testCases.forEach(({ birth, expectedDays }) => {
@@ -125,7 +125,7 @@ describe('Horse Aging System', () => {
       const birthDate = new Date('2024-02-29');
       const ageInDays = calculateAgeFromBirth(birthDate, mockNow);
 
-      // From Feb 29, 2024 to Mar 1, 2025 = 366 days (2024 is leap year)
+      // From Feb 29, 2024 to Mar 1, 2025 = 366 days (52.3 years in game time)
       expect(ageInDays).toBe(366);
     });
 
@@ -157,13 +157,13 @@ describe('Horse Aging System', () => {
         }
       };
 
-      // Create horse born 1 year ago
+      // Create horse born 1 week ago (1 year in game time)
       const horse = await prisma.horse.create({
         data: {
           name: 'Birthday Horse',
           sex: 'Colt',
-          dateOfBirth: new Date('2024-06-01'), // Exactly 1 year ago
-          age: 364, // Currently 364 days old (will turn 365)
+          dateOfBirth: new Date('2025-05-25'), // Exactly 1 week ago (1 year in game time)
+          age: 6, // Currently 6 days old (will turn 7 = 1 year)
           user: { connect: { id: testUser.id } },
           breed: { connect: { id: testBreed.id } },
           bondScore: 75,
@@ -180,14 +180,14 @@ describe('Horse Aging System', () => {
       const result = await updateHorseAge(horse.id);
 
       expect(result.ageUpdated).toBe(true);
-      expect(result.newAge).toBe(365);
+      expect(result.newAge).toBe(7); // 1 year in game time
       expect(result.hadBirthday).toBe(true);
 
       // Verify database was updated
       const updatedHorse = await prisma.horse.findUnique({
         where: { id: horse.id },
       });
-      expect(updatedHorse.age).toBe(365);
+      expect(updatedHorse.age).toBe(7); // 1 year in game time
 
       // Restore original Date
       global.Date = OriginalDate;
@@ -306,7 +306,7 @@ describe('Horse Aging System', () => {
         },
       });
 
-      const result = await checkForMilestones(horse.id, 364, 365);
+      const result = await checkForMilestones(horse.id, 6, 7); // 6 days → 7 days (1 year)
 
       expect(result.milestonesTriggered).toContain('age_1_trait_evaluation');
       expect(result.traitsAssigned).toBeDefined();
@@ -329,7 +329,7 @@ describe('Horse Aging System', () => {
     });
 
     it('should detect retirement milestone at age 21', async () => {
-      const result = await checkForMilestones(456, 7664, 7665);
+      const result = await checkForMilestones(456, 146, 147); // 146 days → 147 days (21 years)
 
       expect(result.milestonesTriggered).toContain('retirement');
       expect(result.retirementTriggered).toBe(true);
@@ -361,8 +361,8 @@ describe('Horse Aging System', () => {
           data: {
             name: 'Milestone Horse 1',
             sex: 'Colt',
-            dateOfBirth: new Date('2024-06-01'),
-            age: 364, // Will turn 365 (1 year = 365 days), milestone triggers at 365
+            dateOfBirth: new Date('2025-05-25'), // 1 week ago (1 year in game time)
+            age: 6, // Will turn 7 (1 year = 7 days), milestone triggers at 7
             user: { connect: { id: testUser.id } },
             breed: { connect: { id: testBreed.id } },
             taskLog: { trust_building: 5 },
@@ -375,8 +375,8 @@ describe('Horse Aging System', () => {
           data: {
             name: 'Regular Birthday Horse',
             sex: 'Filly',
-            dateOfBirth: new Date('2023-06-01'),
-            age: 730, // Will turn 731 (no milestone)
+            dateOfBirth: new Date('2025-05-17'), // 15 days ago (2.14 years in game time)
+            age: 14, // Will turn 15 (no milestone at 15)
             user: { connect: { id: testUser.id } },
             breed: { connect: { id: testBreed.id } },
           },
@@ -386,8 +386,8 @@ describe('Horse Aging System', () => {
           data: {
             name: 'No Birthday Horse',
             sex: 'Colt',
-            dateOfBirth: new Date('2024-01-01'),
-            age: 400, // Incorrect age, will be corrected to 517 (no milestone crossing)
+            dateOfBirth: new Date('2025-05-01'), // 31 days ago (4.4 years in game time)
+            age: 25, // Incorrect age, will be corrected to 31 (no milestone crossing)
             user: { connect: { id: testUser.id } },
             breed: { connect: { id: testBreed.id } },
           },
@@ -409,9 +409,9 @@ describe('Horse Aging System', () => {
         orderBy: { name: 'asc' },
       });
 
-      expect(updatedHorses[0].age).toBe(365); // Milestone horse
-      expect(updatedHorses[1].age).toBe(517); // No birthday horse (corrected age)
-      expect(updatedHorses[2].age).toBe(731); // Regular birthday horse
+      expect(updatedHorses[0].age).toBe(7); // Milestone horse (1 year)
+      expect(updatedHorses[1].age).toBe(31); // No birthday horse (corrected age)
+      expect(updatedHorses[2].age).toBe(15); // Regular birthday horse (no milestone)
 
       // Restore original Date
       global.Date = OriginalDate;
@@ -443,8 +443,8 @@ describe('Horse Aging System', () => {
         data: {
           name: 'Training Ready Horse',
           sex: 'Colt',
-          dateOfBirth: new Date('2022-06-01'), // 3 years ago
-          age: 1095, // About to turn 1096 (accounting for leap year)
+          dateOfBirth: new Date('2025-05-11'), // 3 weeks ago (3 years in game time)
+          age: 20, // About to turn 21 (3 years = 21 days)
           user: { connect: { id: testUser.id } },
           breed: { connect: { id: testBreed.id } },
         },
@@ -452,16 +452,16 @@ describe('Horse Aging System', () => {
 
       const result = await updateHorseAge(horse.id);
 
-      expect(result.newAge).toBe(1096); // 3 years old (accounting for leap year)
+      expect(result.newAge).toBe(21); // 3 years old in game time
 
-      // Verify training eligibility (age >= 3 years = 1095 days)
+      // Verify training eligibility (age >= 3 years = 21 days)
       const updatedHorse = await prisma.horse.findUnique({
         where: { id: horse.id },
       });
 
-      const ageInYears = Math.floor(updatedHorse.age / 365);
+      const ageInYears = Math.floor(updatedHorse.age / 7); // 1 year = 7 days
       expect(ageInYears).toBe(3);
-      expect(updatedHorse.age >= 1095).toBe(true); // Training eligible
+      expect(updatedHorse.age >= 21).toBe(true); // Training eligible
 
       // Restore original Date
       global.Date = OriginalDate;
@@ -489,14 +489,14 @@ describe('Horse Aging System', () => {
         data: {
           name: 'Retiring Horse',
           sex: 'Mare',
-          dateOfBirth: new Date('2004-06-01'), // 21 years ago
-          age: 7664, // About to turn 7665 (21 years)
+          dateOfBirth: new Date('2025-01-05'), // 21 weeks ago (21 years in game time)
+          age: 146, // About to turn 147 (21 years = 147 days)
           user: { connect: { id: testUser.id } },
           breed: { connect: { id: testBreed.id } },
         },
       });
 
-      const milestoneResult = await checkForMilestones(horse.id, 7664, 7665);
+      const milestoneResult = await checkForMilestones(horse.id, 146, 147); // 146 days → 147 days (21 years)
 
       expect(milestoneResult.milestonesTriggered).toContain('retirement');
       expect(milestoneResult.retirementTriggered).toBe(true);
