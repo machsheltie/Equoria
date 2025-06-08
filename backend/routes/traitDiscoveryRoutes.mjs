@@ -108,7 +108,13 @@ router.post(
           foalId: discoveryResults.foalId,
           foalName: discoveryResults.foalName,
           conditionsMet: discoveryResults.conditionsMet,
-          traitsRevealed: discoveryResults.traitsRevealed,
+          traitsRevealed: (discoveryResults.traitsRevealed || []).map(trait => ({
+            traitKey: trait.trait || trait.name,
+            traitName: trait.trait || trait.name,
+            category: trait.definition?.type || 'unknown',
+            revealedBy: trait.discoveryReason || 'discovery condition met',
+            definition: trait.definition,
+          })),
           hiddenTraitsRemaining: discoveryResults.totalHiddenAfter,
           summary: {
             totalConditionsMet: discoveryResults.conditionsMet.length,
@@ -169,9 +175,29 @@ router.get(
 
       const progress = await getDiscoveryProgress(foalId);
 
+      // Transform conditions from array to object format expected by tests
+      const metConditions = progress.conditions || [];
+      const conditionsObject = {};
+
+      // Create conditions object with snake_case keys as expected by tests
+      Object.entries(DISCOVERY_CONDITIONS).forEach(([key, condition]) => {
+        const snakeKey = key.toLowerCase();
+        const isMetCondition = metConditions.find(c => c.name === key);
+        conditionsObject[snakeKey] = {
+          name: condition.name,
+          description: condition.description,
+          met: !!isMetCondition,
+          progress: isMetCondition ? 100 : 0,
+          revealableTraits: condition.revealableTraits,
+        };
+      });
+
       res.json({
         success: true,
-        data: progress,
+        data: {
+          ...progress,
+          conditions: conditionsObject,
+        },
       });
     } catch (error) {
       logger.error(
@@ -258,15 +284,21 @@ router.post(
       // Get progress which includes condition checking
       const progress = await getDiscoveryProgress(foalId);
 
-      // Extract just the condition status
-      const conditionStatus = Object.entries(progress.conditions).map(([key, condition]) => ({
-        key,
-        name: condition.name,
-        description: condition.description,
-        met: condition.met,
-        progress: condition.progress,
-        revealableTraits: condition.revealableTraits,
-      }));
+      // Extract just the condition status - conditions is an array of met conditions
+      const metConditions = progress.conditions || [];
+
+      // Create full condition status including unmet conditions
+      const conditionStatus = Object.entries(DISCOVERY_CONDITIONS).map(([key, condition]) => {
+        const isMetCondition = metConditions.find(c => c.name === key);
+        return {
+          key,
+          name: condition.name,
+          description: condition.description,
+          met: !!isMetCondition,
+          progress: isMetCondition ? 100 : 0,
+          revealableTraits: condition.revealableTraits,
+        };
+      });
 
       res.json({
         success: true,

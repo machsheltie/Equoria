@@ -14,7 +14,7 @@ const DISCOVERY_CONDITIONS = {
   // Bonding-based discoveries
   HIGH_BOND: {
     name: 'High Bond',
-    condition: horse => horse.bond_score >= 80,
+    condition: horse => (horse.bondScore || horse.bond_score || 0) >= 80,
     description: 'Strong bond formed',
     priority: 'high',
     category: 'bonding',
@@ -23,7 +23,7 @@ const DISCOVERY_CONDITIONS = {
 
   EXCELLENT_BOND: {
     name: 'Excellent Bond',
-    condition: horse => horse.bond_score >= 95,
+    condition: horse => (horse.bondScore || horse.bond_score || 0) >= 95,
     description: 'Exceptional bond achieved',
     priority: 'legendary',
     category: 'bonding',
@@ -33,7 +33,7 @@ const DISCOVERY_CONDITIONS = {
   // Stress-based discoveries
   LOW_STRESS: {
     name: 'Low Stress',
-    condition: horse => horse.stress_level <= 20,
+    condition: horse => (horse.stressLevel || horse.stress_level || 100) <= 20,
     description: 'Stress levels minimized',
     priority: 'medium',
     category: 'stress',
@@ -42,7 +42,7 @@ const DISCOVERY_CONDITIONS = {
 
   MINIMAL_STRESS: {
     name: 'Minimal Stress',
-    condition: horse => horse.stress_level <= 5,
+    condition: horse => (horse.stressLevel || horse.stress_level || 100) <= 5,
     description: 'Perfect stress management',
     priority: 'high',
     category: 'stress',
@@ -52,7 +52,7 @@ const DISCOVERY_CONDITIONS = {
   // Combined conditions
   PERFECT_CARE: {
     name: 'Perfect Care',
-    condition: horse => horse.bond_score >= 80 && horse.stress_level <= 20,
+    condition: horse => (horse.bondScore || horse.bond_score || 0) >= 80 && (horse.stressLevel || horse.stress_level || 100) <= 20,
     description: 'Perfect care conditions achieved',
     priority: 'legendary',
     category: 'milestones',
@@ -62,7 +62,7 @@ const DISCOVERY_CONDITIONS = {
   // Age-based discoveries
   MATURE_BOND: {
     name: 'Mature Bond',
-    condition: horse => horse.age >= 2 && horse.bond_score >= 70,
+    condition: horse => horse.age >= 2 && (horse.bondScore || horse.bond_score || 0) >= 70,
     description: 'Mature relationship developed',
     priority: 'medium',
     category: 'milestones',
@@ -141,11 +141,18 @@ const ENRICHMENT_DISCOVERIES = {
  */
 export async function revealTraits(horseId, options = {}) {
   try {
-    logger.info(`[traitDiscovery.revealTraits] Starting trait discovery for horse ${horseId}`);
+    // Convert horseId to integer if it's a string
+    const horseIdInt = typeof horseId === 'string' ? parseInt(horseId, 10) : horseId;
+
+    if (isNaN(horseIdInt)) {
+      throw new Error(`Invalid horse ID: ${horseId}`);
+    }
+
+    logger.info(`[traitDiscovery.revealTraits] Starting trait discovery for horse ${horseIdInt}`);
 
     // Get horse data with current traits
     const horse = await prisma.horse.findUnique({
-      where: { id: horseId },
+      where: { id: horseIdInt },
       include: {
         breed: true,
         foalActivities: options.checkEnrichment
@@ -158,19 +165,32 @@ export async function revealTraits(horseId, options = {}) {
     });
 
     if (!horse) {
-      throw new Error(`Horse with ID ${horseId} not found`);
+      throw new Error(`Horse with ID ${horseIdInt} not found`);
+    }
+
+    // Check if horse is a foal (age < 2 years)
+    if (horse.age >= 2) {
+      throw new Error(`Horse with ID ${horseIdInt} is not a foal (age: ${horse.age})`);
     }
 
     // Parse current traits
-    const currentTraits = horse.epigenetic_modifiers || { positive: [], negative: [], hidden: [] };
+    const currentTraits = horse.epigeneticModifiers || { positive: [], negative: [], hidden: [] };
     const hiddenTraits = currentTraits.hidden || [];
 
     if (hiddenTraits.length === 0) {
-      logger.info(`[traitDiscovery.revealTraits] No hidden traits to reveal for horse ${horseId}`);
+      logger.info(`[traitDiscovery.revealTraits] No hidden traits to reveal for horse ${horseIdInt}`);
       return {
         success: true,
+        foalId: horseIdInt,
+        foalName: horse.name,
+        horseId: horseIdInt,
+        horseName: horse.name,
         revealed: [],
         conditions: [],
+        conditionsMet: [],
+        traitsRevealed: [],
+        totalHiddenBefore: 0,
+        totalHiddenAfter: 0,
         message: 'No hidden traits available for discovery',
       };
     }
@@ -187,11 +207,19 @@ export async function revealTraits(horseId, options = {}) {
     const allConditions = [...metConditions, ...enrichmentConditions];
 
     if (allConditions.length === 0) {
-      logger.info(`[traitDiscovery.revealTraits] No discovery conditions met for horse ${horseId}`);
+      logger.info(`[traitDiscovery.revealTraits] No discovery conditions met for horse ${horseIdInt}`);
       return {
         success: true,
+        foalId: horseIdInt,
+        foalName: horse.name,
+        horseId: horseIdInt,
+        horseName: horse.name,
         revealed: [],
         conditions: [],
+        conditionsMet: [],
+        traitsRevealed: [],
+        totalHiddenBefore: hiddenTraits.length,
+        totalHiddenAfter: hiddenTraits.length,
         message: 'No discovery conditions currently met',
       };
     }
@@ -201,31 +229,51 @@ export async function revealTraits(horseId, options = {}) {
 
     if (traitsToReveal.length === 0) {
       logger.info(
-        `[traitDiscovery.revealTraits] No suitable traits selected for revelation for horse ${horseId}`,
+        `[traitDiscovery.revealTraits] No suitable traits selected for revelation for horse ${horseIdInt}`,
       );
       return {
         success: true,
+        foalId: horseIdInt,
+        foalName: horse.name,
+        horseId: horseIdInt,
+        horseName: horse.name,
         revealed: [],
         conditions: allConditions,
+        conditionsMet: allConditions,
+        traitsRevealed: [],
+        totalHiddenBefore: hiddenTraits.length,
+        totalHiddenAfter: hiddenTraits.length,
         message: 'Discovery conditions met but no suitable traits found',
       };
     }
 
     // Update horse traits in database
-    const updatedTraits = await updateHorseTraits(horseId, currentTraits, traitsToReveal);
+    const updatedTraits = await updateHorseTraits(horseIdInt, currentTraits, traitsToReveal);
 
     logger.info(
-      `[traitDiscovery.revealTraits] Successfully revealed ${traitsToReveal.length} traits for horse ${horseId}: ${traitsToReveal.join(', ')}`,
+      `[traitDiscovery.revealTraits] Successfully revealed ${traitsToReveal.length} traits for horse ${horseIdInt}: ${traitsToReveal.join(', ')}`,
     );
 
     return {
       success: true,
+      foalId: horseIdInt,
+      foalName: horse.name,
+      horseId: horseIdInt,
+      horseName: horse.name,
       revealed: traitsToReveal.map(trait => ({
         trait,
         definition: getTraitDefinition(trait),
         discoveryReason: getDiscoveryReason(trait, allConditions),
       })),
       conditions: allConditions,
+      conditionsMet: allConditions,
+      traitsRevealed: traitsToReveal.map(trait => ({
+        trait,
+        definition: getTraitDefinition(trait),
+        discoveryReason: getDiscoveryReason(trait, allConditions),
+      })),
+      totalHiddenBefore: hiddenTraits.length,
+      totalHiddenAfter: updatedTraits.hidden.length,
       updatedTraits,
       message: `Discovered ${traitsToReveal.length} new trait${traitsToReveal.length > 1 ? 's' : ''}!`,
     };
@@ -396,7 +444,7 @@ async function updateHorseTraits(horseId, currentTraits, traitsToReveal) {
   await prisma.horse.update({
     where: { id: horseId },
     data: {
-      epigenetic_modifiers: updatedTraits,
+      epigeneticModifiers: updatedTraits,
     },
   });
 
@@ -433,17 +481,26 @@ function getDiscoveryReason(trait, conditions) {
  * Batch reveal traits for multiple horses
  * @param {Array} horseIds - Array of horse IDs
  * @param {Object} options - Discovery options
- * @returns {Object} Batch discovery results
+ * @returns {Array} Batch discovery results
  */
 export async function batchRevealTraits(horseIds, options = {}) {
-  const results = {};
+  const results = [];
 
   for (const horseId of horseIds) {
     try {
-      results[horseId] = await revealTraits(horseId, options);
+      const result = await revealTraits(horseId, options);
+      results.push({
+        foalId: horseId,
+        success: true,
+        ...result,
+      });
     } catch (error) {
       logger.error(`[traitDiscovery.batchRevealTraits] Error for horse ${horseId}:`, error);
-      results[horseId] = { error: error.message };
+      results.push({
+        foalId: horseId,
+        success: false,
+        error: error.message,
+      });
     }
   }
 
@@ -466,6 +523,9 @@ export async function getDiscoveryProgress(horseId) {
 
     const horse = await prisma.horse.findUnique({
       where: { id: horseIdInt },
+      include: {
+        foalDevelopment: true,
+      },
     });
 
     if (!horse) {
@@ -474,22 +534,39 @@ export async function getDiscoveryProgress(horseId) {
 
     // Get traits from epigeneticModifiers JSON field
     const epigeneticModifiers = horse.epigeneticModifiers || { positive: [], negative: [], hidden: [] };
-    const allTraits = [
+    const hiddenTraits = epigeneticModifiers.hidden || [];
+    const visibleTraits = [
       ...(epigeneticModifiers.positive || []),
       ...(epigeneticModifiers.negative || []),
-      ...(epigeneticModifiers.hidden || []),
     ];
+    const allTraits = [...visibleTraits, ...hiddenTraits];
 
     const totalPossibleTraits = Object.keys(DISCOVERY_CONDITIONS).length;
     const discoveredTraits = allTraits.length;
     const progressPercentage = Math.round((discoveredTraits / totalPossibleTraits) * 100);
 
+    // Get current stats for condition checking
+    const currentStats = {
+      bondScore: horse.bondScore || horse.bond_score || 50,
+      stressLevel: horse.stressLevel || horse.stress_level || 0,
+      developmentDay: horse.foalDevelopment?.currentDay || 0,
+    };
+
+    // Check discovery conditions
+    const conditions = await checkDiscoveryConditions(horse);
+
     return {
-      horseId,
+      foalId: horseIdInt,
+      foalName: horse.name,
+      horseId: horseIdInt,
       discoveredTraits,
       totalPossibleTraits,
       progressPercentage,
       traits: allTraits,
+      hiddenTraitsCount: hiddenTraits.length,
+      visibleTraitsCount: visibleTraits.length,
+      currentStats,
+      conditions,
     };
   } catch (error) {
     logger.error(`[traitDiscovery.getDiscoveryProgress] Error for horse ${horseId}:`, error);

@@ -34,13 +34,22 @@ export async function discoverTraits(req, res) {
     // Check if horse exists
     const horse = await prisma.horse.findUnique({
       where: { id: parsedHorseId },
-      select: { id: true, name: true },
+      select: { id: true, name: true, age: true },
     });
 
     if (!horse) {
       return res.status(404).json({
         success: false,
         message: 'Horse not found',
+        data: null,
+      });
+    }
+
+    // Check if horse is a foal (age < 2 years)
+    if (horse.age >= 2) {
+      return res.status(400).json({
+        success: false,
+        message: `Horse with ID ${parsedHorseId} is not a foal (age: ${horse.age})`,
         data: null,
       });
     }
@@ -62,8 +71,25 @@ export async function discoverTraits(req, res) {
       success: true,
       message: discoveryResult.message,
       data: {
+        foalId: parsedHorseId,
+        foalName: horse.name,
         horseId: parsedHorseId,
         horseName: horse.name,
+        conditionsMet: discoveryResult.conditionsMet || discoveryResult.conditions || [],
+        traitsRevealed: (discoveryResult.traitsRevealed || discoveryResult.revealed || []).map(trait => ({
+          traitKey: trait.trait || trait.name,
+          traitName: trait.trait || trait.name,
+          category: trait.definition?.type || 'unknown',
+          revealedBy: trait.discoveryReason || 'discovery condition met',
+          definition: trait.definition,
+        })),
+        hiddenTraitsRemaining: discoveryResult.totalHiddenAfter || 0,
+        summary: {
+          totalConditionsMet: (discoveryResult.conditionsMet || discoveryResult.conditions || []).length,
+          totalTraitsRevealed: (discoveryResult.traitsRevealed || discoveryResult.revealed || []).length,
+          hiddenBefore: discoveryResult.totalHiddenBefore || 0,
+          hiddenAfter: discoveryResult.totalHiddenAfter || 0,
+        },
         ...discoveryResult,
       },
     });

@@ -225,22 +225,22 @@ describe('Trait Discovery API Integration Tests', () => {
 
       // Should have all discovery conditions
       const { conditions } = response.body.data;
-      expect(conditions).toHaveProperty('high_bonding');
+      expect(conditions).toHaveProperty('high_bond');
       expect(conditions).toHaveProperty('low_stress');
-      expect(conditions).toHaveProperty('social_activities');
       expect(conditions).toHaveProperty('perfect_care');
+      expect(conditions).toHaveProperty('consistent_training');
 
-      // High bonding condition should be met
-      expect(conditions.high_bonding.met).toBe(true);
-      expect(conditions.high_bonding.progress).toBe(100);
+      // High bond condition should be met
+      expect(conditions.high_bond.met).toBe(true);
+      expect(conditions.high_bond.progress).toBe(100);
 
       // Low stress condition should be met
       expect(conditions.low_stress.met).toBe(true);
       expect(conditions.low_stress.progress).toBe(100);
 
-      // Social activities should be met (3 activities)
-      expect(conditions.social_activities.met).toBe(true);
-      expect(conditions.social_activities.progress).toBe(100);
+      // Perfect care should be met (high bond + low stress)
+      expect(conditions.perfect_care.met).toBe(true);
+      expect(conditions.perfect_care.progress).toBe(100);
     });
 
     it('should return 404 for non-existent foal', async () => {

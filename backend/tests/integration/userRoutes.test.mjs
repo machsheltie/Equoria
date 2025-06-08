@@ -54,9 +54,10 @@ const mockGetUserWithHorses = jest.fn();
 const mockCreateUser = jest.fn();
 const mockUpdateUser = jest.fn();
 const mockDeleteUser = jest.fn();
-// Assuming XP and level functions are part of userModel or a related service
+// XP management uses addXpToUser with automatic leveling (no separate levelUp function)
 const mockAddXpToUser = jest.fn();
-const mockLevelUpUserIfNeeded = jest.fn();
+const mockGetUserProgress = jest.fn();
+const mockGetUserStats = jest.fn();
 
 // Mock logger
 const mockLogger = {
@@ -73,10 +74,9 @@ jest.unstable_mockModule(join(__dirname, '../../models/userModel.mjs'), () => ({
   createUser: mockCreateUser,
   updateUser: mockUpdateUser,
   deleteUser: mockDeleteUser,
-  addXpToUser: mockAddXpToUser, // Assumed new function name
-  levelUpUserIfNeeded: mockLevelUpUserIfNeeded, // Assumed new function name
-  getUserProgress: jest.fn(), // Add missing getUserProgress mock
-  getUserStats: jest.fn(), // Add missing getUserStats mock
+  addXpToUser: mockAddXpToUser, // XP management with automatic leveling
+  getUserProgress: mockGetUserProgress, // User progress calculations
+  getUserStats: mockGetUserStats, // User statistics
 }));
 
 jest.unstable_mockModule(join(__dirname, '../../utils/logger.mjs'), () => ({
@@ -116,8 +116,9 @@ describe('🌐 INTEGRATION: User Routes - HTTP API Endpoints', () => {
     mockCreateUser.mockClear();
     mockUpdateUser.mockClear();
     mockDeleteUser.mockClear();
-    mockAddXpToUser.mockClear(); // Clear new mock
-    mockLevelUpUserIfNeeded.mockClear(); // Clear new mock
+    mockAddXpToUser.mockClear(); // Clear XP mock
+    mockGetUserProgress.mockClear(); // Clear progress mock
+    mockGetUserStats.mockClear(); // Clear stats mock
     mockLogger.info.mockClear();
     mockLogger.warn.mockClear();
     mockLogger.error.mockClear();
