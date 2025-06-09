@@ -30,7 +30,8 @@ export const getTopUsersByLevel = async (req, res) => {
       orderBy: [{ level: 'desc' }, { xp: 'desc' }],
       select: {
         id: true,
-        name: true,
+        firstName: true,
+        lastName: true,
         level: true,
         xp: true,
         money: true,
@@ -46,7 +47,7 @@ export const getTopUsersByLevel = async (req, res) => {
       return {
         rank,
         userId: user.id,
-        name: user.name,
+        name: `${user.firstName} ${user.lastName}`.trim(),
         level: user.level,
         xp: user.xp,
         xpToNext,
@@ -115,10 +116,10 @@ export const getTopUsersByXP = async (req, res) => {
     const userIds = xpData.map(item => item.userId);
     const users = await prisma.user.findMany({
       where: { id: { in: userIds } },
-      select: { id: true, name: true },
+      select: { id: true, firstName: true, lastName: true },
     });
 
-    const userMap = Object.fromEntries(users.map(u => [u.id, u.name]));
+    const userMap = Object.fromEntries(users.map(u => [u.id, `${u.firstName} ${u.lastName}`.trim()]));
 
     const rankedUsers = xpData.map((item, index) => ({
       rank: numericOffset + index + 1,
@@ -159,7 +160,7 @@ export const getTopHorsesByPerformance = async (req, res) => {
         id: true,
         name: true,
         breed: { select: { name: true } },
-        user: { select: { name: true } },
+        user: { select: { firstName: true, lastName: true } },
         performanceScore: true,
       },
     });
@@ -169,7 +170,7 @@ export const getTopHorsesByPerformance = async (req, res) => {
       horseId: horse.id,
       name: horse.name,
       breed: horse.breed?.name || 'Unknown',
-      owner: horse.user?.name || 'Unknown',
+      owner: horse.user ? `${horse.user.firstName} ${horse.user.lastName}`.trim() : 'Unknown',
       performanceScore: horse.performanceScore,
     }));
 
@@ -193,7 +194,7 @@ export const getTopHorsesByEarnings = async (req, res) => {
 
   try {
     const whereClause = {
-      total_earnings: { gt: 0 },
+      totalEarnings: { gt: 0 },
     };
 
     if (breed) {
@@ -204,17 +205,17 @@ export const getTopHorsesByEarnings = async (req, res) => {
       select: {
         id: true,
         name: true,
-        total_earnings: true,
+        totalEarnings: true,
         userId: true,
         user: {
-          select: { name: true },
+          select: { firstName: true, lastName: true },
         },
         breed: {
           select: { name: true },
         },
       },
       where: whereClause,
-      orderBy: { total_earnings: 'desc' },
+      orderBy: { totalEarnings: 'desc' },
       take: numericLimit,
       skip: numericOffset,
     });
@@ -227,8 +228,8 @@ export const getTopHorsesByEarnings = async (req, res) => {
       rank: numericOffset + index + 1,
       horseId: horse.id,
       name: horse.name,
-      earnings: horse.total_earnings,
-      ownerName: horse.user.name,
+      earnings: horse.totalEarnings,
+      ownerName: horse.user ? `${horse.user.firstName} ${horse.user.lastName}`.trim() : 'Unknown',
       breedName: horse.breed.name,
     }));
 
@@ -257,24 +258,24 @@ export const getTopUsersByHorseEarnings = async (req, res) => {
   try {
     const result = await prisma.horse.groupBy({
       by: ['userId'],
-      _sum: { total_earnings: true },
-      orderBy: { _sum: { total_earnings: 'desc' } },
+      _sum: { totalEarnings: true },
+      orderBy: { _sum: { totalEarnings: 'desc' } },
       take: 10,
     });
 
     const userIds = result.map(r => r.userId);
     const users = await prisma.user.findMany({
       where: { id: { in: userIds } },
-      select: { id: true, name: true },
+      select: { id: true, firstName: true, lastName: true },
     });
 
-    const userMap = Object.fromEntries(users.map(u => [u.id, u.name]));
+    const userMap = Object.fromEntries(users.map(u => [u.id, `${u.firstName} ${u.lastName}`.trim()]));
 
     const rankings = result.map((entry, index) => ({
       rank: index + 1,
       userId: entry.userId,
       name: userMap[entry.userId] || 'Unknown',
-      totalEarnings: entry._sum.total_earnings,
+      totalEarnings: entry._sum.totalEarnings,
     }));
 
     res.json({
@@ -290,18 +291,31 @@ export const getTopUsersByHorseEarnings = async (req, res) => {
 
 export const getRecentWinners = async (req, res) => {
   try {
-    const results = await prisma.competitionEntry.findMany({
-      where: { placement: 1 },
+    const { discipline } = req.query;
+    const whereClause = {
+      OR: [
+        { placement: '1' },
+        { placement: '1st' },
+      ],
+    };
+
+    if (discipline) {
+      whereClause.discipline = discipline;
+    }
+
+    const results = await prisma.competitionResult.findMany({
+      where: whereClause,
       orderBy: { runDate: 'desc' },
       take: 10,
       select: {
         id: true,
         runDate: true,
         showName: true,
+        discipline: true,
         horse: {
           select: {
             name: true,
-            user: { select: { name: true } },
+            user: { select: { firstName: true, lastName: true } },
           },
         },
       },
@@ -311,14 +325,20 @@ export const getRecentWinners = async (req, res) => {
       id: entry.id,
       show: entry.showName,
       runDate: entry.runDate,
-      horse: entry.horse?.name || 'Unknown Horse',
-      owner: entry.horse?.user?.name || 'Unknown Owner',
+      horse: { name: entry.horse?.name || 'Unknown Horse' },
+      owner: entry.horse?.user ? `${entry.horse.user.firstName} ${entry.horse.user.lastName}`.trim() : 'Unknown Owner',
+      competition: { discipline: entry.discipline },
     }));
+
+    const responseData = { winners };
+    if (discipline) {
+      responseData.discipline = discipline;
+    }
 
     res.json({
       success: true,
       message: 'Recent winners retrieved successfully',
-      data: { winners },
+      data: responseData,
     });
   } catch (error) {
     logger.error(`[leaderboardController.getRecentWinners] Error: ${error.message}`);
@@ -330,10 +350,10 @@ export const getLeaderboardStats = async (req, res) => {
   try {
     const userCount = await prisma.user.count();
     const horseCount = await prisma.horse.count();
-    const showCount = await prisma.competitionEntry.count();
+    const showCount = await prisma.competitionResult.count();
 
     const { _sum: earningsSum } = await prisma.horse.aggregate({
-      _sum: { total_earnings: true },
+      _sum: { totalEarnings: true },
     });
 
     const { _sum: xpSum } = await prisma.xpEvent.aggregate({
@@ -347,7 +367,7 @@ export const getLeaderboardStats = async (req, res) => {
         userCount,
         horseCount,
         showCount,
-        totalEarnings: earningsSum.total_earnings || 0,
+        totalEarnings: earningsSum.totalEarnings || 0,
         totalXp: xpSum.amount || 0,
       },
     });

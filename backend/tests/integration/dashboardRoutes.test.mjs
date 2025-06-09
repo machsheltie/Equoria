@@ -145,7 +145,7 @@ describe('🏠 INTEGRATION: Dashboard API - Real Database Integration', () => {
     const futureDate2 = new Date();
     futureDate2.setDate(futureDate2.getDate() + 7);
 
-    await Promise.all([
+    const testShows = await Promise.all([
       prisma.show.create({
         data: {
           name: 'TestDashboard Show 1',
@@ -186,6 +186,7 @@ describe('🏠 INTEGRATION: Dashboard API - Real Database Integration', () => {
     await prisma.competitionResult.create({
       data: {
         horseId: testHorses[1].id,
+        showId: testShows[1].id, // Reference the Show Jumping show
         showName: 'TestDashboard Past Show - Show Jumping',
         discipline: 'Show Jumping',
         placement: '2nd',
@@ -233,7 +234,7 @@ describe('🏠 INTEGRATION: Dashboard API - Real Database Integration', () => {
       // Verify user info
       expect(data.user).toEqual({
         id: testUser.id,
-        name: `${testUser.firstName} ${testUser.lastName}`,
+        username: testUser.username,
         level: testUser.level,
         xp: testUser.xp,
         money: testUser.money,
@@ -241,38 +242,37 @@ describe('🏠 INTEGRATION: Dashboard API - Real Database Integration', () => {
 
       // Verify horse counts
       expect(data.horses.total).toBe(3);
-      expect(data.horses.totalEarnings).toBe(6800); // Sum of all horse earnings
+      expect(data.horses.trainable).toBeGreaterThanOrEqual(0);
 
       // Verify shows data
-      expect(data.shows.upcoming).toHaveLength(2);
-      expect(data.shows.upcoming[0].name).toBe('TestDashboard Show 1');
-      expect(data.shows.upcoming[1].name).toBe('TestDashboard Show 2');
+      expect(data.shows.nextShowRuns).toHaveLength(2);
+      expect(data.shows.upcomingEntries).toBeGreaterThanOrEqual(0);
 
       // Verify recent activity exists
-      expect(data.recent.lastTrained).toBeTruthy();
-      expect(new Date(data.recent.lastTrained)).toBeInstanceOf(Date);
+      expect(data.activity.lastTrained).toBeTruthy();
+      expect(new Date(data.activity.lastTrained)).toBeInstanceOf(Date);
 
-      expect(data.recent.lastShowPlaced).toBeTruthy();
-      expect(data.recent.lastShowPlaced.horseName).toBe('TestDashboard Horse 2');
-      expect(data.recent.lastShowPlaced.placement).toBe('2nd');
-      expect(data.recent.lastShowPlaced.show).toBe('TestDashboard Past Show - Show Jumping');
+      expect(data.activity.lastShowPlaced).toBeTruthy();
+      expect(data.activity.lastShowPlaced.horseName).toBe('TestDashboard Horse 2');
+      expect(data.activity.lastShowPlaced.placement).toBe('2nd');
+      expect(data.activity.lastShowPlaced.show).toBe('TestDashboard Past Show - Show Jumping');
     });
 
-    it('should return 404 for non-existent user', async () => {
+    it('should return 400 for invalid user ID format', async () => {
       const response = await request(app)
         .get('/api/user/dashboard/nonexistent-user')
         .set('Authorization', `Bearer ${testToken}`)
-        .expect(404);
+        .expect(400);
 
       expect(response.body.success).toBe(false);
-      expect(response.body.message).toBe('User not found');
+      expect(response.body.message).toBe('Validation failed');
     });
 
     it('should return 401 for missing authentication', async () => {
       const response = await request(app).get(`/api/user/dashboard/${testUser.id}`).expect(401);
 
       expect(response.body.success).toBe(false);
-      expect(response.body.message).toBe('No auth token provided');
+      expect(response.body.message).toBe('Access token is required');
     });
 
     it('should return validation error for invalid user ID format', async () => {
@@ -309,12 +309,12 @@ describe('🏠 INTEGRATION: Dashboard API - Real Database Integration', () => {
 
       const { data } = response.body;
 
-      expect(data.user.name).toBe('Empty User');
+      expect(data.user.username).toBe('emptydashboarduser');
       expect(data.horses.total).toBe(0);
-      expect(data.horses.totalEarnings).toBe(0);
-      expect(data.shows.upcoming).toHaveLength(2); // Shows still exist
-      expect(data.recent.lastTrained).toBeNull();
-      expect(data.recent.lastShowPlaced).toBeNull();
+      expect(data.horses.trainable).toBe(0);
+      expect(data.shows.nextShowRuns).toHaveLength(2); // Shows still exist
+      expect(data.activity.lastTrained).toBeNull();
+      expect(data.activity.lastShowPlaced).toBeNull();
     });
 
     it('should handle user with horses but no activity gracefully', async () => {

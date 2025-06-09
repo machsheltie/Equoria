@@ -145,7 +145,7 @@ describe('🏇 INTEGRATION: Horse Overview API - Real Database Integration', () 
       // Create test show for competition result
       const testShow = await prisma.show.create({
         data: {
-          name: 'Summer Invitational',
+          name: `Summer Invitational ${Date.now()}`,
           discipline: 'Dressage',
           levelMin: 1,
           levelMax: 10,

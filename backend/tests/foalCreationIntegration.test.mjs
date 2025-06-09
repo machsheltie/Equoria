@@ -158,6 +158,10 @@ describe('🐴 INTEGRATION: Foal Creation Integration - API Endpoint Validation'
 
     const response = await request(app).post('/api/horses/foals').send(validFoalData);
 
+    if (response.status === 400) {
+      console.log('Validation errors:', response.body);
+    }
+
     expect(response.status).not.toBe(400);
   });
 });

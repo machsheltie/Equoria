@@ -260,14 +260,21 @@ describe('🏆 INTEGRATION: Complete Competition Workflow', () => {
       expect(competitionScore).toBeGreaterThan(0);
       expect(competitionScore).toBeLessThanOrEqual(100);
 
-      // Record competition result
-      competitionResult = await prisma.competitionResult.create({
-        data: {
+      // Update the existing competition result (created during entry)
+      const existingResult = await prisma.competitionResult.findFirst({
+        where: {
           horseId: horse.id,
           showId: show.id,
-          discipline: show.discipline,
-          runDate: show.runDate,
-          showName: show.name,
+          placement: null, // Find the placeholder result
+        },
+      });
+
+      expect(existingResult).toBeTruthy(); // Should exist from entry step
+
+      // Update with actual competition results
+      competitionResult = await prisma.competitionResult.update({
+        where: { id: existingResult.id },
+        data: {
           score: competitionScore,
           placement: '1', // Will be calculated based on all entries
           prizeWon: show.prize * 0.5, // 50% for first place

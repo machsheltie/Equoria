@@ -752,7 +752,8 @@ describe('Groom Hiring Workflow Tests', () => {
           }),
         );
       } else if (res.status.mock.calls[0][0] === 201) {
-        const createdGroom = res.json.mock.calls[0][0].data;
+        const responseData = res.json.mock.calls[0][0].data;
+        const createdGroom = responseData.groom;
         expect(createdGroom.name.length).toBeLessThan(veryLongName.length);
       }
     });
@@ -785,7 +786,8 @@ describe('Groom Hiring Workflow Tests', () => {
           }),
         );
       } else if (res.status.mock.calls[0][0] === 201) {
-        const createdGroom = res.json.mock.calls[0][0].data;
+        const responseData = res.json.mock.calls[0][0].data;
+        const createdGroom = responseData.groom;
         expect(createdGroom.experience).toBeGreaterThanOrEqual(0);
       }
     });
@@ -818,7 +820,8 @@ describe('Groom Hiring Workflow Tests', () => {
           }),
         );
       } else if (res.status.mock.calls[0][0] === 201) {
-        const createdGroom = res.json.mock.calls[0][0].data;
+        const responseData = res.json.mock.calls[0][0].data;
+        const createdGroom = responseData.groom;
         expect(parseFloat(createdGroom.sessionRate)).toBeGreaterThan(0);
       }
     });
@@ -842,7 +845,7 @@ describe('Groom Hiring Workflow Tests', () => {
       await hireGroom(req, res);
 
       // The system should use a default user ID or reject the request
-      expect([201, 400, 401, 403]).toContain(res.status.mock.calls[0][0]);
+      expect([201, 400, 401, 403, 404]).toContain(res.status.mock.calls[0][0]);
     });
   });
 

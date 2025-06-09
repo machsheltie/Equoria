@@ -485,6 +485,7 @@ describe('Foal Task Log and Streak Data', () => {
         data: {
           taskLog,
           consecutiveDaysFoalCare: 7,
+          lastGroomed: new Date(), // Set a date for testing
         },
       });
 
