@@ -491,6 +491,36 @@ export async function hireGroom(req, res) {
       });
     }
 
+    // Input validation and sanitization
+    const sanitizedName = typeof name === 'string' ? name.trim() : '';
+    if (sanitizedName.length < 2 || sanitizedName.length > 100) {
+      return res.status(400).json({
+        success: false,
+        message: 'name must be between 2 and 100 characters',
+        data: null,
+      });
+    }
+
+    // Validate experience (must be positive integer)
+    const sanitizedExperience = experience != null ? parseInt(experience) : 1;
+    if (isNaN(sanitizedExperience) || sanitizedExperience < 1 || sanitizedExperience > 20) {
+      return res.status(400).json({
+        success: false,
+        message: 'experience must be between 1 and 20 years',
+        data: null,
+      });
+    }
+
+    // Validate session rate (must be positive number)
+    let sanitizedSessionRate = session_rate != null ? parseFloat(session_rate) : null;
+    if (sanitizedSessionRate != null && (isNaN(sanitizedSessionRate) || sanitizedSessionRate <= 0)) {
+      return res.status(400).json({
+        success: false,
+        message: 'session rate must be a positive number',
+        data: null,
+      });
+    }
+
     // Validate speciality
     if (!GROOM_SPECIALTIES[speciality]) {
       return res.status(400).json({
@@ -569,12 +599,12 @@ export async function hireGroom(req, res) {
       // Create the groom
       const groom = await prismaTx.groom.create({
         data: {
-          name,
+          name: sanitizedName,
           speciality,
-          experience: experience || 1,
+          experience: sanitizedExperience,
           skillLevel: skill_level,
           personality,
-          sessionRate: session_rate || SKILL_LEVELS[skill_level].costModifier * 15.0,
+          sessionRate: sanitizedSessionRate || SKILL_LEVELS[skill_level].costModifier * 15.0,
           bio,
           availability: availability || {},
           userId,
@@ -601,9 +631,11 @@ export async function hireGroom(req, res) {
 
     res.status(201).json({
       success: true,
-      message: `Successfully hired ${result.groom.name} for ${result.hiringCost} coins`,
+      message: `Successfully hired ${result.groom.name}`,
       data: {
-        groom: result.groom,
+        // Flatten groom data to match test expectations
+        ...result.groom,
+        // Include additional hiring information as separate fields
         hiringCost: result.hiringCost,
         remainingFunds: user.money - result.hiringCost,
       },

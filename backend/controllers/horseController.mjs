@@ -70,35 +70,35 @@ export async function createFoal(req, res) {
     const {
       name,
       breedId,
-      sire_id,
-      dam_id,
+      sireId,
+      damId,
       sex,
       ownerId,
       playerId,
       stableId,
-      health_status = 'Good',
+      healthStatus = 'Good',
     } = req.body;
 
     logger.info(
-      `[horseController.createFoal] Creating foal: ${name} with sire ${sire_id} and dam ${dam_id}`,
+      `[horseController.createFoal] Creating foal: ${name} with sire ${sireId} and dam ${damId}`,
     );
 
     // Validate required fields
-    if (!name || !breedId || !sire_id || !dam_id) {
+    if (!name || !breedId || !sireId || !damId) {
       return res.status(400).json({
         success: false,
-        message: 'Name, breedId, sire_id, and dam_id are required for foal creation',
+        message: 'Name, breedId, sireId, and damId are required for foal creation',
         data: null,
       });
     }
 
     // Validate that sire and dam exist
-    const [sire, dam] = await Promise.all([getHorseById(sire_id), getHorseById(dam_id)]);
+    const [sire, dam] = await Promise.all([getHorseById(sireId), getHorseById(damId)]);
 
     if (!sire) {
       return res.status(404).json({
         success: false,
-        message: `Sire with ID ${sire_id} not found`,
+        message: `Sire with ID ${sireId} not found`,
         data: null,
       });
     }
@@ -106,7 +106,7 @@ export async function createFoal(req, res) {
     if (!dam) {
       return res.status(404).json({
         success: false,
-        message: `Dam with ID ${dam_id} not found`,
+        message: `Dam with ID ${damId} not found`,
         data: null,
       });
     }
@@ -115,19 +115,19 @@ export async function createFoal(req, res) {
     const mare = {
       id: dam.id,
       name: dam.name,
-      stress_level: dam.stress_level || 50,
-      bond_score: dam.bond_score || 50,
-      health_status: dam.health_status || 'Good',
+      stressLevel: dam.stressLevel || 50,
+      bondScore: dam.bondScore || 50,
+      healthStatus: dam.healthStatus || 'Good',
     };
 
     // Gather lineage up to 3 generations
-    const lineage = await gatherLineage(sire_id, dam_id, 3);
+    const lineage = await gatherLineage(sireId, damId, 3);
 
     // Extract feed quality from mare's health status and care quality
     const feedQuality = assessFeedQualityFromMare(mare);
 
     // Extract stress level from mare
-    const stressLevel = mare.stress_level;
+    const { stressLevel } = mare;
 
     logger.info(
       `[horseController.createFoal] Mare stress: ${stressLevel}, Feed quality: ${feedQuality}, Lineage count: ${lineage.length}`,
@@ -150,15 +150,15 @@ export async function createFoal(req, res) {
       name,
       age: 0, // Newborn foal
       breedId,
-      sire_id,
-      dam_id,
+      sireId,
+      damId,
       sex,
       ownerId,
       playerId,
       stableId,
-      health_status,
-      date_of_birth: new Date().toISOString(),
-      epigenetic_modifiers: {
+      healthStatus,
+      dateOfBirth: new Date().toISOString(),
+      epigeneticModifiers: {
         positive: epigeneticTraits.positive || [],
         negative: epigeneticTraits.negative || [],
         hidden: [], // Hidden traits are revealed later through trait discovery
@@ -234,8 +234,8 @@ async function gatherLineage(sireId, damId, generations) {
         select: {
           id: true,
           name: true,
-          sire_id: true,
-          dam_id: true,
+          sireId: true,
+          damId: true,
           disciplineScores: true,
           // Include any discipline-related fields
           trait: true,
@@ -268,11 +268,11 @@ async function gatherLineage(sireId, damId, generations) {
         });
 
         // Add parents to processing queue for next generation
-        if (horse.sire_id && generation + 1 < generations) {
-          toProcess.push({ id: horse.sire_id, generation: generation + 1 });
+        if (horse.sireId && generation + 1 < generations) {
+          toProcess.push({ id: horse.sireId, generation: generation + 1 });
         }
-        if (horse.dam_id && generation + 1 < generations) {
-          toProcess.push({ id: horse.dam_id, generation: generation + 1 });
+        if (horse.damId && generation + 1 < generations) {
+          toProcess.push({ id: horse.damId, generation: generation + 1 });
         }
       }
     }
@@ -287,7 +287,7 @@ async function gatherLineage(sireId, damId, generations) {
 
 /**
  * Assess feed quality from mare's health status and care indicators
- * @param {Object} mare - Mare object with health_status and other properties
+ * @param {Object} mare - Mare object with healthStatus and other properties
  * @returns {number} - Feed quality score (0-100)
  */
 function assessFeedQualityFromMare(mare) {
@@ -295,7 +295,7 @@ function assessFeedQualityFromMare(mare) {
     let feedQuality = 50; // Base quality
 
     // Assess based on health status
-    switch (mare.health_status) {
+    switch (mare.healthStatus) {
       case 'Excellent':
         feedQuality = 90;
         break;
@@ -316,7 +316,7 @@ function assessFeedQualityFromMare(mare) {
     }
 
     // Adjust based on bond score (higher bond = better care)
-    const bondScore = mare.bond_score || 50;
+    const bondScore = mare.bondScore || 50;
     if (bondScore >= 80) {
       feedQuality += 10;
     } else if (bondScore >= 60) {
@@ -330,7 +330,7 @@ function assessFeedQualityFromMare(mare) {
     feedQuality = Math.max(feedQuality, 0);
 
     logger.info(
-      `[horseController.assessFeedQualityFromMare] Mare ${mare.name} feed quality: ${feedQuality} (health: ${mare.health_status}, bond: ${bondScore})`,
+      `[horseController.assessFeedQualityFromMare] Mare ${mare.name} feed quality: ${feedQuality} (health: ${mare.healthStatus}, bond: ${bondScore})`,
     );
 
     return feedQuality;

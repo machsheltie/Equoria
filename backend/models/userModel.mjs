@@ -116,6 +116,11 @@ async function updateUser(id, updateData) {
       data: updateData,
     });
   } catch (error) {
+    // Handle Prisma "record not found" error specifically
+    if (error.code === 'P2025') {
+      logger.error(`[updateUser] User not found for update: ID ${id}`);
+      return null; // Return null to indicate user not found
+    }
     logger.error(`[updateUser] Error: ${error.message}`);
     throw new DatabaseError(`Update failed: ${error.message}`);
   }
@@ -128,6 +133,11 @@ async function deleteUser(id) {
     }
     return await prisma.user.delete({ where: { id } });
   } catch (error) {
+    // Handle Prisma "record not found" error specifically
+    if (error.code === 'P2025') {
+      logger.error(`[deleteUser] User not found for deletion: ID ${id}`);
+      return null; // Return null to indicate user not found
+    }
     logger.error(`[deleteUser] Error: ${error.message}`);
     throw new DatabaseError(`Delete failed: ${error.message}`);
   }

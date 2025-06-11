@@ -97,8 +97,8 @@ const validateFoalCreation = [
     .isLength({ min: 1, max: 100 })
     .withMessage('Name must be between 1 and 100 characters'),
   body('breedId').isInt({ min: 1 }).withMessage('Breed ID must be a positive integer'),
-  body('sire_id').isInt({ min: 1 }).withMessage('Sire ID must be a positive integer'),
-  body('dam_id').isInt({ min: 1 }).withMessage('Dam ID must be a positive integer'),
+  body('sireId').isInt({ min: 1 }).withMessage('Sire ID must be a positive integer'),
+  body('damId').isInt({ min: 1 }).withMessage('Dam ID must be a positive integer'),
   body('sex')
     .optional()
     .custom(async (value) => {
@@ -114,7 +114,7 @@ const validateFoalCreation = [
     .isLength({ min: 1, max: 50 })
     .withMessage('User ID must be between 1 and 50 characters'),
   body('stableId').optional().isInt({ min: 1 }).withMessage('Stable ID must be a positive integer'),
-  body('health_status')
+  body('healthStatus')
     .optional()
     .isIn(['Excellent', 'Good', 'Fair', 'Poor', 'Critical'])
     .withMessage('Health status must be one of: Excellent, Good, Fair, Poor, Critical'),

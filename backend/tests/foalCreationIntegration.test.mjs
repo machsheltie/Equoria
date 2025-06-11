@@ -152,7 +152,7 @@ describe('🐴 INTEGRATION: Foal Creation Integration - API Endpoint Validation'
       breedId: 1,
       sireId: 1,
       damId: 2,
-      sex: 'colt',
+      sex: 'Colt',
       healthStatus: 'Good',
     };
 

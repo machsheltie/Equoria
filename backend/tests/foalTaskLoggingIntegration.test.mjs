@@ -371,13 +371,14 @@ describe('Foal Task Logging Integration', () => {
 
     it('should reject grooming tasks for horses too young', async () => {
       // Update foal to be 6 months old (too young for grooming tasks)
+      // In game time: 6 months = ~3 days (0.4 years), which is under 1 year minimum for foal grooming
       const youngBirthDate = new Date();
-      youngBirthDate.setMonth(youngBirthDate.getMonth() - 6); // 6 months ago
+      youngBirthDate.setDate(youngBirthDate.getDate() - 3); // 3 days ago (6 months in game time)
 
       await prisma.horse.update({
         where: { id: testFoal.id },
         data: {
-          age: 180, // 6 months old
+          age: 3, // 3 days old (6 months in game time)
           dateOfBirth: youngBirthDate,
         },
       });

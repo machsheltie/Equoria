@@ -265,7 +265,7 @@ export const getDashboardData = async (req, res, next) => {
     };
 
     logger.info(
-      `[userController.getDashboardData] Successfully retrieved dashboard data for user ${user.name} (${totalHorses} horses, ${trainableHorsesCount} trainable)`,
+      `[userController.getDashboardData] Successfully retrieved dashboard data for user ${user.username} (${totalHorses} horses, ${trainableHorsesCount} trainable)`,
     );
 
     res.status(200).json({

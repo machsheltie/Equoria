@@ -377,10 +377,10 @@ router.post(
     body('personality')
       .isIn(['gentle', 'energetic', 'patient', 'strict'])
       .withMessage('personality must be one of: gentle, energetic, patient, strict'),
-    body('hourly_rate')
+    body('session_rate')
       .optional()
       .isFloat({ min: 5, max: 100 })
-      .withMessage('hourly_rate must be between 5 and 100'),
+      .withMessage('session_rate must be between 5 and 100'),
     body('bio').optional().isLength({ max: 500 }).withMessage('bio must be 500 characters or less'),
     body('availability').optional().isObject().withMessage('availability must be an object'),
     handleValidationErrors,
