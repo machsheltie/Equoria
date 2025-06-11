@@ -161,7 +161,7 @@ describe('Groom Workflow Integration Tests', () => {
       const req = {
         body: {
           name: 'Sarah Johnson',
-          speciality: 'foal_care',
+          speciality: 'foalCare',
           skill_level: 'expert',
           personality: 'gentle',
           experience: 8,
@@ -185,7 +185,7 @@ describe('Groom Workflow Integration Tests', () => {
           message: 'Successfully hired Sarah Johnson',
           data: expect.objectContaining({
             name: 'Sarah Johnson',
-            speciality: 'foal_care',
+            speciality: 'foalCare',
             skillLevel: 'expert',
             personality: 'gentle',
             experience: 8,
@@ -200,7 +200,7 @@ describe('Groom Workflow Integration Tests', () => {
         where: { name: 'Sarah Johnson' },
       });
       expect(groom).toBeTruthy();
-      expect(groom.speciality).toBe('foal_care');
+      expect(groom.speciality).toBe('foalCare');
       expect(groom.skillLevel).toBe('expert');
     });
 
@@ -233,7 +233,7 @@ describe('Groom Workflow Integration Tests', () => {
       const expertReq = {
         body: {
           name: 'Expert Groom',
-          speciality: 'foal_care',
+          speciality: 'foalCare',
           skill_level: 'expert',
           personality: 'gentle',
         },
@@ -282,7 +282,7 @@ describe('Groom Workflow Integration Tests', () => {
       testGroom = await prisma.groom.create({
         data: {
           name: 'Test Assignment Groom',
-          speciality: 'foal_care',
+          speciality: 'foalCare',
           skillLevel: 'intermediate',
           personality: 'gentle',
           sessionRate: 20.0,
@@ -350,7 +350,7 @@ describe('Groom Workflow Integration Tests', () => {
       const secondGroom = await prisma.groom.create({
         data: {
           name: 'Second Test Groom',
-          speciality: 'foal_care',
+          speciality: 'foalCare',
           skillLevel: 'expert',
           personality: 'patient',
           sessionRate: 25.0,
@@ -438,7 +438,7 @@ describe('Groom Workflow Integration Tests', () => {
       testGroom = await prisma.groom.create({
         data: {
           name: 'Age Test Groom',
-          speciality: 'foal_care',
+          speciality: 'foalCare',
           skillLevel: 'expert',
           personality: 'gentle',
           sessionRate: 25.0,

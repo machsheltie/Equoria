@@ -365,8 +365,8 @@ router.post(
       .isLength({ min: 2, max: 100 })
       .withMessage('name must be between 2 and 100 characters'),
     body('speciality')
-      .isIn(['foal_care', 'general', 'training', 'medical'])
-      .withMessage('speciality must be one of: foal_care, general, training, medical'),
+      .isIn(['foalCare', 'general', 'training', 'medical'])
+      .withMessage('speciality must be one of: foalCare, general, training, medical'),
     body('experience')
       .optional()
       .isInt({ min: 1, max: 20 })

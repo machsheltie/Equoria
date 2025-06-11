@@ -311,7 +311,7 @@ describe('👩‍🔧 UNIT: Groom System - Foal Care Assignment & Management', (
     });
 
     it('should apply specialty modifiers correctly', () => {
-      const foalCareGroom = { ...mockGroom, speciality: 'foalCare' };
+      const foalCareGroom = { ...mockGroom, speciality: 'foalCare' }; // Use correct camelCase key
       const generalGroom = { ...mockGroom, speciality: 'general' };
 
       const foalCareEffects = calculateGroomInteractionEffects(foalCareGroom, mockFoal, 'dailyCare', 60);
@@ -351,7 +351,7 @@ describe('👩‍🔧 UNIT: Groom System - Foal Care Assignment & Management', (
 
   describe('System Constants', () => {
     it('should have all required groom specialties', () => {
-      expect(GROOM_SPECIALTIES).toHaveProperty('foal_care');
+      expect(GROOM_SPECIALTIES).toHaveProperty('foalCare');
       expect(GROOM_SPECIALTIES).toHaveProperty('general');
       expect(GROOM_SPECIALTIES).toHaveProperty('training');
       expect(GROOM_SPECIALTIES).toHaveProperty('medical');

@@ -52,16 +52,29 @@ describe('🏆 INTEGRATION: Leaderboard API - Real Database Integration', () => 
   let testBreed;
 
   beforeEach(async () => {
-    // Clean up existing test data
+    // Clean up existing test data - comprehensive cleanup for isolated testing
     await prisma.competitionResult.deleteMany({
       where: { horse: { name: { startsWith: 'TestLeaderboard' } } },
     });
     await prisma.horse.deleteMany({
       where: { name: { startsWith: 'TestLeaderboard' } },
     });
+
+    // Clean up all test users to ensure isolated test environment
+    // This includes users from other integration tests that might affect leaderboard counts
     await prisma.user.deleteMany({
-      where: { email: { startsWith: 'test-leaderboard' } },
+      where: {
+        OR: [
+          { email: { startsWith: 'test-leaderboard' } },
+          { email: { contains: '@example.com' } }, // Common test email pattern
+          { username: { startsWith: 'userroutes_' } }, // From user routes tests
+          { username: { startsWith: 'crud_user_' } }, // From user routes tests
+          { username: { startsWith: 'delete_user_' } }, // From user routes tests
+          { username: { startsWith: 'NewUser_' } }, // From user routes tests
+        ],
+      },
     });
+
     await prisma.breed.deleteMany({
       where: { name: { startsWith: 'TestBreed' } },
     });
@@ -240,16 +253,28 @@ describe('🏆 INTEGRATION: Leaderboard API - Real Database Integration', () => 
   });
 
   afterEach(async () => {
-    // Clean up test data
+    // Clean up test data - comprehensive cleanup for isolated testing
     await prisma.competitionResult.deleteMany({
       where: { horse: { name: { startsWith: 'TestLeaderboard' } } },
     });
     await prisma.horse.deleteMany({
       where: { name: { startsWith: 'TestLeaderboard' } },
     });
+
+    // Clean up all test users to ensure isolated test environment
     await prisma.user.deleteMany({
-      where: { email: { startsWith: 'test-leaderboard' } },
+      where: {
+        OR: [
+          { email: { startsWith: 'test-leaderboard' } },
+          { email: { contains: '@example.com' } }, // Common test email pattern
+          { username: { startsWith: 'userroutes_' } }, // From user routes tests
+          { username: { startsWith: 'crud_user_' } }, // From user routes tests
+          { username: { startsWith: 'delete_user_' } }, // From user routes tests
+          { username: { startsWith: 'NewUser_' } }, // From user routes tests
+        ],
+      },
     });
+
     await prisma.breed.deleteMany({
       where: { name: { startsWith: 'TestBreed' } },
     });

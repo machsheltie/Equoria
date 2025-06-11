@@ -12,16 +12,16 @@ import { ELIGIBLE_FOAL_ENRICHMENT_TASKS, FOAL_GROOMING_TASKS } from '../config/g
  * Groom specialties and their bonding modifiers
  */
 export const GROOM_SPECIALTIES = {
-  foal_care: {
+  foalCare: {
     name: 'Foal Care Specialist',
     description: 'Specialized in caring for young horses',
     bondingModifier: 1.5,
     stressReduction: 1.3,
-    preferredActivities: ['daily_care', 'feeding', 'grooming'],
+    preferredActivities: ['dailyCare', 'feeding', 'grooming'],
   },
   general: {
     name: 'General Caretaker',
-    description: 'Well-rounded horse care experience',
+    description: 'well-rounded horse care experience',
     bondingModifier: 1.0,
     stressReduction: 1.0,
     preferredActivities: ['dailyCare', 'grooming', 'exercise'],
@@ -38,7 +38,7 @@ export const GROOM_SPECIALTIES = {
     description: 'Medical care and health monitoring',
     bondingModifier: 0.9,
     stressReduction: 1.5,
-    preferredActivities: ['medical_check', 'dailyCare', 'feeding'],
+    preferredActivities: ['medicalCheck', 'dailyCare', 'feeding'],
   },
 };
 
@@ -112,7 +112,7 @@ export const PERSONALITY_TRAITS = {
 export const DEFAULT_GROOMS = [
   {
     name: 'Sarah Johnson',
-    speciality: 'foal_care',
+    speciality: 'foalCare',
     experience: 5,
     skillLevel: 'intermediate',
     personality: 'gentle',
@@ -315,7 +315,7 @@ export async function ensureDefaultGroomAssignment(foalId, userId) {
       let groom = await prisma.groom.findFirst({
         where: {
           userId,
-          speciality: 'foal_care',
+          speciality: 'foalCare',
           isActive: true,
         },
       });
@@ -324,7 +324,7 @@ export async function ensureDefaultGroomAssignment(foalId, userId) {
         groom = await prisma.groom.create({
           data: {
             name: 'Sarah Johnson',
-            speciality: 'foal_care',
+            speciality: 'foalCare',
             skillLevel: 'intermediate',
             personality: 'gentle',
             experience: 5,
@@ -385,7 +385,7 @@ export async function getOrCreateDefaultGroom(userId) {
       where: {
         userId,
         isActive: true,
-        speciality: 'foal_care',
+        speciality: 'foalCare',
       },
     });
 

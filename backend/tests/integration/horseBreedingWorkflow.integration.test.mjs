@@ -261,7 +261,7 @@ describe('🐎 INTEGRATION: Complete Horse Breeding Workflow', () => {
       });
 
       expect(dbAssignment).toBeTruthy();
-      expect(dbAssignment.groom.speciality).toBe('foal_care');
+      expect(dbAssignment.groom.speciality).toBe('foalCare');
 
       assignedGroom = dbAssignment.groom;
     });
@@ -346,7 +346,7 @@ describe('🐎 INTEGRATION: Complete Horse Breeding Workflow', () => {
 
       // Groom care system
       expect(foalWithFamily.groomAssignments).toHaveLength(1);
-      expect(foalWithFamily.groomAssignments[0].groom.speciality).toBe('foal_care');
+      expect(foalWithFamily.groomAssignments[0].groom.speciality).toBe('foalCare');
       expect(foalWithFamily.groomInteractions).toHaveLength(1);
 
       // Development tracking
@@ -372,7 +372,7 @@ describe('🐎 INTEGRATION: Complete Horse Breeding Workflow', () => {
       expect(Array.isArray(foal.epigeneticModifiers.positive)).toBe(true);
 
       // Groom specialization rules
-      expect(assignedGroom.speciality).toBe('foal_care'); // Correct specialty for foal
+      expect(assignedGroom.speciality).toBe('foalCare'); // Correct specialty for foal
 
       // Data integrity
       expect(foal.sireId).toBe(stallion.id);

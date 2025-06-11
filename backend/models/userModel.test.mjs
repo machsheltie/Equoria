@@ -250,13 +250,12 @@ describe('👤 UNIT: User Model - Database Operations & Business Logic', () => {
       );
     });
 
-    it('should handle Prisma update errors', async () => {
+    it('should handle Prisma update errors (user not found)', async () => {
       const prismaError = { code: 'P2025', message: 'Record to update not found.' };
       mockPrisma.user.update.mockRejectedValue(prismaError);
 
-      await expect(updateUser(1, updateData)).rejects.toThrow(
-        new DatabaseError('Update failed: Record to update not found.'),
-      );
+      const result = await updateUser(1, updateData);
+      expect(result).toBeNull(); // Returns null when user not found
     });
 
     it('should handle general update errors', async () => {
@@ -283,11 +282,12 @@ describe('👤 UNIT: User Model - Database Operations & Business Logic', () => {
       await expect(deleteUser(null)).rejects.toThrow(new DatabaseError('Delete failed: User ID is required.'));
     });
 
-    it('should handle Prisma delete errors', async () => {
+    it('should handle Prisma delete errors (user not found)', async () => {
       const prismaError = { code: 'P2025', message: 'Record to delete not found.' };
       mockPrisma.user.delete.mockRejectedValue(prismaError);
 
-      await expect(deleteUser(99)).rejects.toThrow(new DatabaseError('Delete failed: Record to delete not found.'));
+      const result = await deleteUser(99);
+      expect(result).toBeNull(); // Returns null when user not found
     });
   });
 

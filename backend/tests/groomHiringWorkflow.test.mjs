@@ -109,7 +109,7 @@ describe('Groom Hiring Workflow Tests', () => {
       const req = {
         body: {
           // Missing name
-          speciality: 'foal_care',
+          speciality: 'foalCare',
           skill_level: 'expert',
           personality: 'gentle',
         },
@@ -163,7 +163,7 @@ describe('Groom Hiring Workflow Tests', () => {
       const req = {
         body: {
           name: 'Test Groom',
-          speciality: 'foal_care',
+          speciality: 'foalCare',
           // Missing skill_level
           personality: 'gentle',
         },
@@ -190,7 +190,7 @@ describe('Groom Hiring Workflow Tests', () => {
       const req = {
         body: {
           name: 'Test Groom',
-          speciality: 'foal_care',
+          speciality: 'foalCare',
           skill_level: 'expert',
           // Missing personality
         },
@@ -270,7 +270,7 @@ describe('Groom Hiring Workflow Tests', () => {
       const req = {
         body: {
           name: 'Test Groom',
-          speciality: 'foal_care',
+          speciality: 'foalCare',
           skill_level: 'invalid_level', // Invalid value
           personality: 'gentle',
         },
@@ -297,7 +297,7 @@ describe('Groom Hiring Workflow Tests', () => {
       const req = {
         body: {
           name: 'Test Groom',
-          speciality: 'foal_care',
+          speciality: 'foalCare',
           skill_level: 'expert',
           personality: 'invalid_personality', // Invalid value
         },
@@ -346,9 +346,7 @@ describe('Groom Hiring Workflow Tests', () => {
             expect.objectContaining({
               success: true,
               data: expect.objectContaining({
-                groom: expect.objectContaining({
-                  speciality,
-                }),
+                speciality,
               }),
             }),
           );
@@ -364,7 +362,7 @@ describe('Groom Hiring Workflow Tests', () => {
         const req = {
           body: {
             name: `${skillLevel} Groom`,
-            speciality: 'foal_care',
+            speciality: 'foalCare',
             skill_level: skillLevel,
             personality: 'gentle',
           },
@@ -383,9 +381,7 @@ describe('Groom Hiring Workflow Tests', () => {
           expect.objectContaining({
             success: true,
             data: expect.objectContaining({
-              groom: expect.objectContaining({
-                skillLevel,
-              }),
+              skillLevel,
             }),
           }),
         );
@@ -398,7 +394,7 @@ describe('Groom Hiring Workflow Tests', () => {
         const req = {
           body: {
             name: `${personality} Groom`,
-            speciality: 'foal_care',
+            speciality: 'foalCare',
             skill_level: 'expert',
             personality,
           },
@@ -417,9 +413,7 @@ describe('Groom Hiring Workflow Tests', () => {
           expect.objectContaining({
             success: true,
             data: expect.objectContaining({
-              groom: expect.objectContaining({
-                personality,
-              }),
+              personality,
             }),
           }),
         );
@@ -432,7 +426,7 @@ describe('Groom Hiring Workflow Tests', () => {
       const req = {
         body: {
           name: 'Default Experience Groom',
-          speciality: 'foal_care',
+          speciality: 'foalCare',
           skill_level: 'expert',
           personality: 'gentle',
           // No experience provided
@@ -452,9 +446,7 @@ describe('Groom Hiring Workflow Tests', () => {
         expect.objectContaining({
           success: true,
           data: expect.objectContaining({
-            groom: expect.objectContaining({
-              experience: 1, // Default value
-            }),
+            experience: 1, // Default value
           }),
         }),
       );
@@ -464,7 +456,7 @@ describe('Groom Hiring Workflow Tests', () => {
       const req = {
         body: {
           name: 'Default Rate Groom',
-          speciality: 'foal_care',
+          speciality: 'foalCare',
           skill_level: 'expert',
           personality: 'gentle',
           // No session_rate provided
@@ -486,7 +478,7 @@ describe('Groom Hiring Workflow Tests', () => {
       const expectedRate = expertModifier * 15.0;
 
       // Check that the session rate was calculated correctly
-      const responseData = res.json.mock.calls[0][0].data.groom;
+      const responseData = res.json.mock.calls[0][0].data;
       expect(parseFloat(responseData.sessionRate)).toBeCloseTo(expectedRate);
     });
 
@@ -495,7 +487,7 @@ describe('Groom Hiring Workflow Tests', () => {
       const req = {
         body: {
           name: 'Custom Rate Groom',
-          speciality: 'foal_care',
+          speciality: 'foalCare',
           skill_level: 'expert',
           personality: 'gentle',
           session_rate: customRate,
@@ -513,7 +505,7 @@ describe('Groom Hiring Workflow Tests', () => {
       expect(res.status).toHaveBeenCalledWith(201);
 
       // Check that the provided session rate was used
-      const responseData = res.json.mock.calls[0][0].data.groom;
+      const responseData = res.json.mock.calls[0][0].data;
       expect(parseFloat(responseData.sessionRate)).toBeCloseTo(customRate);
     });
 
@@ -522,7 +514,7 @@ describe('Groom Hiring Workflow Tests', () => {
       const req = {
         body: {
           name: 'Bio Groom',
-          speciality: 'foal_care',
+          speciality: 'foalCare',
           skill_level: 'expert',
           personality: 'gentle',
           bio: customBio,
@@ -542,9 +534,7 @@ describe('Groom Hiring Workflow Tests', () => {
         expect.objectContaining({
           success: true,
           data: expect.objectContaining({
-            groom: expect.objectContaining({
-              bio: customBio,
-            }),
+            bio: customBio,
           }),
         }),
       );
@@ -564,7 +554,7 @@ describe('Groom Hiring Workflow Tests', () => {
       const req = {
         body: {
           name: 'Availability Groom',
-          speciality: 'foal_care',
+          speciality: 'foalCare',
           skill_level: 'expert',
           personality: 'gentle',
           availability: customAvailability,
@@ -584,9 +574,7 @@ describe('Groom Hiring Workflow Tests', () => {
         expect.objectContaining({
           success: true,
           data: expect.objectContaining({
-            groom: expect.objectContaining({
-              availability: customAvailability,
-            }),
+            availability: customAvailability,
           }),
         }),
       );
@@ -605,7 +593,7 @@ describe('Groom Hiring Workflow Tests', () => {
         const req = {
           body: {
             name: `Limit Test Groom ${i}`,
-            speciality: 'foal_care',
+            speciality: 'foalCare',
             skill_level: 'novice',
             personality: 'gentle',
           },
@@ -648,7 +636,7 @@ describe('Groom Hiring Workflow Tests', () => {
       const req = {
         body: {
           name: 'Expensive Master Groom',
-          speciality: 'foal_care',
+          speciality: 'foalCare',
           skill_level: 'master', // Most expensive
           personality: 'gentle',
           session_rate: 100.0, // Very high rate
@@ -682,7 +670,7 @@ describe('Groom Hiring Workflow Tests', () => {
       const req = {
         body: {
           name: 'Premium Master Groom',
-          speciality: 'foal_care',
+          speciality: 'foalCare',
           skill_level: 'master',
           personality: 'gentle',
           session_rate: 100.0, // High rate
@@ -707,7 +695,7 @@ describe('Groom Hiring Workflow Tests', () => {
       const req = {
         body: {
           name: '', // Empty string
-          speciality: 'foal_care',
+          speciality: 'foalCare',
           skill_level: 'expert',
           personality: 'gentle',
         },
@@ -729,7 +717,7 @@ describe('Groom Hiring Workflow Tests', () => {
       const req = {
         body: {
           name: veryLongName,
-          speciality: 'foal_care',
+          speciality: 'foalCare',
           skill_level: 'expert',
           personality: 'gentle',
         },
@@ -753,8 +741,7 @@ describe('Groom Hiring Workflow Tests', () => {
         );
       } else if (res.status.mock.calls[0][0] === 201) {
         const responseData = res.json.mock.calls[0][0].data;
-        const createdGroom = responseData.groom;
-        expect(createdGroom.name.length).toBeLessThan(veryLongName.length);
+        expect(responseData.name.length).toBeLessThan(veryLongName.length);
       }
     });
 
@@ -762,7 +749,7 @@ describe('Groom Hiring Workflow Tests', () => {
       const req = {
         body: {
           name: 'Negative Experience Groom',
-          speciality: 'foal_care',
+          speciality: 'foalCare',
           skill_level: 'expert',
           personality: 'gentle',
           experience: -5, // Negative value
@@ -787,8 +774,7 @@ describe('Groom Hiring Workflow Tests', () => {
         );
       } else if (res.status.mock.calls[0][0] === 201) {
         const responseData = res.json.mock.calls[0][0].data;
-        const createdGroom = responseData.groom;
-        expect(createdGroom.experience).toBeGreaterThanOrEqual(0);
+        expect(responseData.experience).toBeGreaterThanOrEqual(0);
       }
     });
 
@@ -796,7 +782,7 @@ describe('Groom Hiring Workflow Tests', () => {
       const req = {
         body: {
           name: 'Negative Rate Groom',
-          speciality: 'foal_care',
+          speciality: 'foalCare',
           skill_level: 'expert',
           personality: 'gentle',
           session_rate: -20.0, // Negative value
@@ -821,8 +807,7 @@ describe('Groom Hiring Workflow Tests', () => {
         );
       } else if (res.status.mock.calls[0][0] === 201) {
         const responseData = res.json.mock.calls[0][0].data;
-        const createdGroom = responseData.groom;
-        expect(parseFloat(createdGroom.sessionRate)).toBeGreaterThan(0);
+        expect(parseFloat(responseData.sessionRate)).toBeGreaterThan(0);
       }
     });
 
@@ -830,7 +815,7 @@ describe('Groom Hiring Workflow Tests', () => {
       const req = {
         body: {
           name: 'No User Groom',
-          speciality: 'foal_care',
+          speciality: 'foalCare',
           skill_level: 'expert',
           personality: 'gentle',
         },
