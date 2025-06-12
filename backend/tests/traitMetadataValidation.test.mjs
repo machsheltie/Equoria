@@ -82,9 +82,9 @@ describe('Trait Metadata Validation', () => {
     it('should have situational traits', () => {
       const situationalTraits = getTraitsByCategory('situational');
 
-      expect(situationalTraits).toContain('presentation_boosted');
-      expect(situationalTraits).toContain('show_calm');
-      expect(situationalTraits).toContain('crowd_ready');
+      expect(situationalTraits).toContain('presentationBoosted');
+      expect(situationalTraits).toContain('showCalm');
+      expect(situationalTraits).toContain('crowdReady');
       expect(situationalTraits.length).toBeGreaterThanOrEqual(3);
     });
 
@@ -116,8 +116,8 @@ describe('Trait Metadata Validation', () => {
       expect(metadata.category).toBe('epigenetic');
     });
 
-    it('should have proper description format for presentation_boosted trait', () => {
-      const metadata = getTraitMetadata('presentation_boosted');
+    it('should have proper description format for presentationBoosted trait', () => {
+      const metadata = getTraitMetadata('presentationBoosted');
 
       expect(metadata.description).toBe('Scores higher in appearance-based events.');
       expect(metadata.type).toBe('positive');
@@ -224,11 +224,11 @@ describe('Trait Metadata Validation', () => {
       expect(TASK_TRAIT_INFLUENCE_MAP.trust_building.traits).toContain('bonded');
       expect(TASK_TRAIT_INFLUENCE_MAP.trust_building.traits).toContain('resilient');
 
-      // Sponge bath -> presentation_boosted, show_calm
-      expect(TASK_TRAIT_INFLUENCE_MAP.sponge_bath.traits).toContain('presentation_boosted');
-      expect(TASK_TRAIT_INFLUENCE_MAP.sponge_bath.traits).toContain('show_calm');
+      // Sponge bath -> presentationBoosted, showCalm
+      expect(TASK_TRAIT_INFLUENCE_MAP.sponge_bath.traits).toContain('presentationBoosted');
+      expect(TASK_TRAIT_INFLUENCE_MAP.sponge_bath.traits).toContain('showCalm');
 
-      // Showground exposure -> crowd_ready, confident
+      // Showground exposure -> crowdReady, confident
       expect(TASK_TRAIT_INFLUENCE_MAP.showground_exposure.traits).toContain('crowd_ready');
       expect(TASK_TRAIT_INFLUENCE_MAP.showground_exposure.traits).toContain('confident');
     });
@@ -280,7 +280,7 @@ describe('Trait Metadata Validation', () => {
     });
 
     it('should support presentation and show traits', () => {
-      const showTraits = ['presentation_boosted', 'show_calm', 'crowd_ready'];
+      const showTraits = ['presentationBoosted', 'showCalm', 'crowdReady'];
 
       showTraits.forEach(trait => {
         const metadata = getTraitMetadata(trait);

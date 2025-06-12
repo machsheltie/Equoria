@@ -68,8 +68,8 @@ describe('Task-Trait Influence Integration', () => {
       });
 
       // Should include presentation and handling traits
-      expect(groomingTraits.has('show_calm')).toBe(true);
-      expect(groomingTraits.has('presentation_boosted')).toBe(true);
+      expect(groomingTraits.has('showCalm')).toBe(true);
+      expect(groomingTraits.has('presentationBoosted')).toBe(true);
       expect(groomingTraits.has('calm')).toBe(true);
     });
   });
@@ -107,9 +107,9 @@ describe('Task-Trait Influence Integration', () => {
       expect(traitPoints.bonded).toBe(15); // trust_building: 3 * 5
       expect(traitPoints.resilient).toBe(15); // trust_building: 3 * 5
       expect(traitPoints.confident).toBe(10); // showground_exposure: 2 * 5
-      expect(traitPoints.crowd_ready).toBe(10); // showground_exposure: 2 * 5
+      expect(traitPoints.crowdReady).toBe(10); // showground_exposure: 2 * 5
       expect(traitPoints.calm).toBe(20); // early_touch: 4 * 5
-      expect(traitPoints.show_calm).toBe(10); // hoof_handling: 2 * 5
+      expect(traitPoints.showCalm).toBe(10); // hoof_handling: 2 * 5
     });
 
     it('should calculate trait points for advanced development (2-3 years)', () => {
