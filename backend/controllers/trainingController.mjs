@@ -219,15 +219,29 @@ async function trainHorse(horseId, discipline) {
 
       // Determine which stat to improve based on discipline
       const disciplineStatMap = {
-        Racing: ['speed', 'stamina', 'focus'],
-        Dressage: ['balance', 'obedience', 'flexibility'],
-        'Show Jumping': ['boldness', 'balance', 'focus'],
-        'Cross Country': ['stamina', 'boldness', 'balance'],
-        Endurance: ['stamina', 'focus', 'balance'],
-        Reining: ['obedience', 'balance', 'focus'],
-        Driving: ['obedience', 'focus', 'stamina'],
-        Trail: ['focus', 'balance', 'stamina'],
-        Eventing: ['stamina', 'boldness', 'balance'],
+        'Western Pleasure': ['obedience', 'focus', 'precision'],
+        Reining: ['precision', 'agility', 'focus'],
+        Cutting: ['agility', 'strength', 'intelligence'],
+        'Barrel Racing': ['speed', 'agility', 'stamina'],
+        Roping: ['strength', 'precision', 'focus'],
+        'Team Penning': ['intelligence', 'agility', 'obedience'],
+        Rodeo: ['strength', 'agility', 'endurance'],
+        Hunter: ['precision', 'endurance', 'agility'],
+        Saddleseat: ['flexibility', 'obedience', 'precision'],
+        Endurance: ['endurance', 'stamina', 'speed'],
+        Eventing: ['endurance', 'precision', 'agility'],
+        Dressage: ['precision', 'obedience', 'focus'],
+        'Show Jumping': ['agility', 'precision', 'intelligence'],
+        Vaulting: ['strength', 'flexibility', 'endurance'],
+        Polo: ['speed', 'agility', 'intelligence'],
+        'Cross Country': ['endurance', 'intelligence', 'agility'],
+        'Combined Driving': ['obedience', 'strength', 'focus'],
+        'Fine Harness': ['precision', 'flexibility', 'obedience'],
+        Gaited: ['flexibility', 'obedience', 'focus'],
+        Gymkhana: ['speed', 'flexibility', 'stamina'],
+        Steeplechase: ['speed', 'endurance', 'stamina'],
+        Racing: ['speed', 'stamina', 'intelligence'],
+        'Harness Racing': ['speed', 'precision', 'stamina'],
       };
 
       const relevantStats = disciplineStatMap[discipline] || ['speed', 'stamina', 'focus'];
