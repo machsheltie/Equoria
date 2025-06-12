@@ -92,6 +92,18 @@ async function createHorse(horseData) {
       }
     }
 
+    // Set default conformation scores (1-100 scale, default 20)
+    const defaultConformationScores = {
+      head: 20,
+      neck: 20,
+      shoulders: 20,
+      back: 20,
+      legs: 20,
+      hooves: 20,
+      topline: 20,
+      hindquarters: 20,
+    };
+
     // Apply at-birth traits if this is a newborn with parents
     let epigeneticModifiers = horseData.epigeneticModifiers || {
       positive: [],
@@ -177,6 +189,7 @@ async function createHorse(horseData) {
         ...(last_vetted_date && { last_vetted_date: new Date(last_vetted_date) }),
         ...(tack && { tack }),
         epigeneticModifiers,
+        conformationScores: horseData.conformationScores || defaultConformationScores,
       },
       include: {
         breed: true,
@@ -367,13 +380,17 @@ async function updateHorseStat(horseId, statName, amount) {
     // Validate stat name
     const validStats = [
       'speed',
-      'stamina',
+      'agility',
+      'endurance',
+      'strength',
+      'precision',
       'balance',
       'coordination',
+      'intelligence',
+      'focus',
+      'obedience',
       'boldness',
       'flexibility',
-      'obedience',
-      'focus',
     ];
     if (!validStats.includes(statName)) {
       throw new Error(`Invalid stat name: ${statName}. Valid stats: ${validStats.join(', ')}`);

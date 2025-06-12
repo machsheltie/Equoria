@@ -42,11 +42,14 @@ import {
   GROOM_SPECIALTIES,
   GROOM_SPECIALTY_VALUES,
   GROOM_SKILL_LEVELS,
+  HORSE_STATS,
+  HORSE_STAT_VALUES,
   isValidHorseSex,
   isValidTemperament,
   isValidDiscipline,
   isValidGroomSpecialty,
   isValidGroomSkillLevel,
+  isValidHorseStat,
   isTrainingAge,
   isCompetitionAge,
   isBreedingAge,
@@ -232,6 +235,50 @@ describe('🏇 UNIT: Schema Constants Validation', () => {
     });
   });
 
+  describe('Horse Stats Validation', () => {
+    it('should have all required horse stats defined', () => {
+      const expectedStats = [
+        'speed',
+        'agility',
+        'endurance',
+        'strength',
+        'precision',
+        'balance',
+        'coordination',
+        'intelligence',
+        'focus',
+        'obedience',
+        'boldness',
+        'flexibility', // This should be included
+      ];
+
+      expectedStats.forEach(stat => {
+        expect(HORSE_STAT_VALUES).toContain(stat);
+      });
+
+      // Verify flexibility is specifically included
+      expect(HORSE_STATS.FLEXIBILITY).toBe('flexibility');
+      expect(HORSE_STAT_VALUES).toContain('flexibility');
+    });
+
+    it('should validate horse stats correctly', () => {
+      // Valid stats
+      expect(isValidHorseStat('speed')).toBe(true);
+      expect(isValidHorseStat('flexibility')).toBe(true);
+      expect(isValidHorseStat('intelligence')).toBe(true);
+
+      // Invalid stats
+      expect(isValidHorseStat('invalid_stat')).toBe(false);
+      expect(isValidHorseStat('')).toBe(false);
+      expect(isValidHorseStat(null)).toBe(false);
+      expect(isValidHorseStat(undefined)).toBe(false);
+    });
+
+    it('should have consistent stat object and array values', () => {
+      expect(Object.values(HORSE_STATS)).toEqual(HORSE_STAT_VALUES);
+    });
+  });
+
   describe('Constant Integrity', () => {
     it('should have no duplicate values in arrays', () => {
       const checkNoDuplicates = (arr, _name) => {
@@ -242,12 +289,14 @@ describe('🏇 UNIT: Schema Constants Validation', () => {
       checkNoDuplicates(HORSE_SEX_VALUES, 'HORSE_SEX_VALUES');
       checkNoDuplicates(DISCIPLINE_VALUES, 'DISCIPLINE_VALUES');
       checkNoDuplicates(GROOM_SPECIALTY_VALUES, 'GROOM_SPECIALTY_VALUES');
+      checkNoDuplicates(HORSE_STAT_VALUES, 'HORSE_STAT_VALUES');
     });
 
     it('should have consistent object and array values', () => {
       expect(Object.values(HORSE_SEX)).toEqual(HORSE_SEX_VALUES);
       expect(Object.values(DISCIPLINES)).toEqual(DISCIPLINE_VALUES);
       expect(Object.values(GROOM_SPECIALTIES)).toEqual(GROOM_SPECIALTY_VALUES);
+      expect(Object.values(HORSE_STATS)).toEqual(HORSE_STAT_VALUES);
     });
   });
 });

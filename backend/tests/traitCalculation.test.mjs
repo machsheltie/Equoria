@@ -328,7 +328,7 @@ describe('🧬 UNIT: Epigenetic Traits Calculation System', () => {
       expect(resilientDef).toEqual({
         type: 'positive',
         rarity: 'common',
-        conflicts: ['fragile'],
+        conflicts: ['fragile', 'easilyOverwhelmed'],
         description: 'Less likely to be affected by stress.',
         category: 'epigenetic',
       });
@@ -338,7 +338,9 @@ describe('🧬 UNIT: Epigenetic Traits Calculation System', () => {
       expect(nervousDef).toEqual({
         type: 'negative',
         rarity: 'common',
-        conflicts: ['bold', 'calm'],
+        conflicts: ['bold', 'calm', 'confident', 'show_calm', 'crowd_ready'],
+        description: 'Easily startled and stressed by new situations.',
+        category: 'epigenetic',
       });
     });
 

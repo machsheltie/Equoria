@@ -512,7 +512,7 @@ export async function hireGroom(req, res) {
     }
 
     // Validate session rate (must be positive number)
-    let sanitizedSessionRate = session_rate != null ? parseFloat(session_rate) : null;
+    const sanitizedSessionRate = session_rate != null ? parseFloat(session_rate) : null;
     if (sanitizedSessionRate != null && (isNaN(sanitizedSessionRate) || sanitizedSessionRate <= 0)) {
       return res.status(400).json({
         success: false,

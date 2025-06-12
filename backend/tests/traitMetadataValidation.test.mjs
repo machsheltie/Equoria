@@ -42,7 +42,7 @@ const { TASK_TRAIT_INFLUENCE_MAP } = await import(join(__dirname, '../config/tas
 
 describe('Trait Metadata Validation', () => {
   describe('Required Trait Structure', () => {
-    const requiredTraits = ['confident', 'resilient', 'presentation_boosted', 'bonded'];
+    const requiredTraits = ['confident', 'resilient', 'presentation_boosted', 'bonded', 'fearful', 'easilyOverwhelmed'];
 
     requiredTraits.forEach(trait => {
       it(`should have complete metadata for ${trait}`, () => {
@@ -67,7 +67,9 @@ describe('Trait Metadata Validation', () => {
       expect(epigeneticTraits).toContain('confident');
       expect(epigeneticTraits).toContain('resilient');
       expect(epigeneticTraits).toContain('calm');
-      expect(epigeneticTraits.length).toBeGreaterThan(5);
+      expect(epigeneticTraits).toContain('fearful');
+      expect(epigeneticTraits).toContain('easilyOverwhelmed');
+      expect(epigeneticTraits.length).toBeGreaterThan(7);
     });
 
     it('should have bond traits', () => {
@@ -128,6 +130,24 @@ describe('Trait Metadata Validation', () => {
       expect(metadata.description).toBe('Forms deeper trust with specific handlers.');
       expect(metadata.type).toBe('positive');
       expect(metadata.category).toBe('bond');
+    });
+
+    it('should have proper description format for fearful trait', () => {
+      const metadata = getTraitMetadata('fearful');
+
+      expect(metadata).not.toBeNull();
+      expect(metadata.description).toBe('Hesitation or spook-prone behavior under stress.');
+      expect(metadata.type).toBe('negative');
+      expect(metadata.category).toBe('epigenetic');
+    });
+
+    it('should have proper description format for easilyOverwhelmed trait', () => {
+      const metadata = getTraitMetadata('easilyOverwhelmed');
+
+      expect(metadata).not.toBeNull();
+      expect(metadata.description).toBe('Slower recovery from mistakes or chaotic settings.');
+      expect(metadata.type).toBe('negative');
+      expect(metadata.category).toBe('epigenetic');
     });
 
     it('should have descriptions for all traits', () => {

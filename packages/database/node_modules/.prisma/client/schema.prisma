@@ -132,6 +132,8 @@ model Horse {
   rider                   Json?
   disciplineScores        Json?
   epigeneticModifiers     Json?                 @default("{\"hidden\": [], \"negative\": [], \"positive\": []}")
+  /// Conformation scoring (1-100 scale per body region)
+  conformationScores      Json?                 @default("{\"head\": 20, \"neck\": 20, \"shoulders\": 20, \"back\": 20, \"legs\": 20, \"hooves\": 20, \"topline\": 20, \"hindquarters\": 20}")
   /// Horse XP System
   horseXp                 Int?                  @default(0)
   availableStatPoints     Int?                  @default(0)

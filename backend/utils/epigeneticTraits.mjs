@@ -21,14 +21,14 @@ const TRAIT_DEFINITIONS = {
   resilient: {
     type: 'positive',
     rarity: 'common',
-    conflicts: ['fragile'],
+    conflicts: ['fragile', 'easilyOverwhelmed'],
     description: 'Less likely to be affected by stress.',
     category: 'epigenetic',
   },
   bold: {
     type: 'positive',
     rarity: 'common',
-    conflicts: ['nervous'],
+    conflicts: ['nervous', 'fearful'],
     description: 'Shows courage in challenging situations.',
     category: 'epigenetic',
   },
@@ -49,7 +49,7 @@ const TRAIT_DEFINITIONS = {
   calm: {
     type: 'positive',
     rarity: 'common',
-    conflicts: ['nervous', 'aggressive'],
+    conflicts: ['nervous', 'aggressive', 'easilyOverwhelmed'],
     description: 'Maintains composure in stressful situations.',
     category: 'epigenetic',
   },
@@ -58,7 +58,7 @@ const TRAIT_DEFINITIONS = {
   confident: {
     type: 'positive',
     rarity: 'common',
-    conflicts: ['nervous'],
+    conflicts: ['nervous', 'fearful'],
     description: 'This horse is brave in new situations.',
     category: 'epigenetic',
   },
@@ -159,6 +159,20 @@ const TRAIT_DEFINITIONS = {
     description: 'Prefers isolation and avoids interaction with others.',
     category: 'epigenetic',
   },
+  fearful: {
+    type: 'negative',
+    rarity: 'common',
+    conflicts: ['confident', 'bold'],
+    description: 'Hesitation or spook-prone behavior under stress.',
+    category: 'epigenetic',
+  },
+  easilyOverwhelmed: {
+    type: 'negative',
+    rarity: 'common',
+    conflicts: ['resilient', 'calm'],
+    description: 'Slower recovery from mistakes or chaotic settings.',
+    category: 'epigenetic',
+  },
 
   // Rare traits (usually hidden)
   legendary_bloodline: {
@@ -201,7 +215,7 @@ const TRAIT_DEFINITIONS = {
 // Environmental trait pools that can emerge based on conditions
 const ENVIRONMENTAL_TRAITS = {
   positive: ['resilient', 'calm', 'intelligent', 'confident', 'bonded', 'eager_learner', 'social'],
-  negative: ['nervous', 'fragile', 'lazy', 'antisocial'],
+  negative: ['nervous', 'fragile', 'lazy', 'antisocial', 'fearful', 'easilyOverwhelmed'],
   rare: ['weather_immunity', 'night_vision', 'legendary_bloodline'],
   situational: ['presentation_boosted', 'show_calm', 'crowd_ready'],
 };

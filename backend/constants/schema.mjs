@@ -167,6 +167,7 @@ export const HORSE_STATS = {
   FOCUS: 'focus',
   OBEDIENCE: 'obedience',
   BOLDNESS: 'boldness',
+  FLEXIBILITY: 'flexibility',
 };
 
 export const HORSE_STAT_VALUES = Object.values(HORSE_STATS);
