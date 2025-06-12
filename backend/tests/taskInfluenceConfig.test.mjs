@@ -140,15 +140,15 @@ describe('Task Influence Configuration', () => {
       expect(TASK_TRAIT_INFLUENCE_MAP.early_touch.traits).toContain('calm');
 
       // hoof_handling should influence show calmness
-      expect(TASK_TRAIT_INFLUENCE_MAP.hoof_handling.traits).toContain('show_calm');
+      expect(TASK_TRAIT_INFLUENCE_MAP.hoof_handling.traits).toContain('showCalm');
 
       // tying_practice should influence show calmness
-      expect(TASK_TRAIT_INFLUENCE_MAP.tying_practice.traits).toContain('show_calm');
+      expect(TASK_TRAIT_INFLUENCE_MAP.tying_practice.traits).toContain('showCalm');
 
       // presentation tasks should influence presentation traits
-      expect(TASK_TRAIT_INFLUENCE_MAP.sponge_bath.traits).toContain('presentation_boosted');
-      expect(TASK_TRAIT_INFLUENCE_MAP.coat_check.traits).toContain('presentation_boosted');
-      expect(TASK_TRAIT_INFLUENCE_MAP.mane_tail_grooming.traits).toContain('presentation_boosted');
+      expect(TASK_TRAIT_INFLUENCE_MAP.sponge_bath.traits).toContain('presentationBoosted');
+      expect(TASK_TRAIT_INFLUENCE_MAP.coat_check.traits).toContain('presentationBoosted');
+      expect(TASK_TRAIT_INFLUENCE_MAP.mane_tail_grooming.traits).toContain('presentationBoosted');
     });
 
     it('should have consistent daily values', () => {
@@ -254,7 +254,7 @@ describe('Task Influence Configuration', () => {
 
           // Trait names should be descriptive
           expect(trait.length).toBeGreaterThan(3);
-          expect(trait).toMatch(/^[a-z_]+$/); // Snake case format
+          expect(trait).toMatch(/^[a-zA-Z]+$/); // camelCase format
         });
       });
 
@@ -271,8 +271,8 @@ describe('Task Influence Configuration', () => {
 
       Object.values(TASK_TRAIT_INFLUENCE_MAP).forEach(influence => {
         influence.traits.forEach(trait => {
-          // Trait names should use snake_case
-          expect(trait).toMatch(/^[a-z_]+$/);
+          // Trait names should use camelCase
+          expect(trait).toMatch(/^[a-zA-Z]+$/);
         });
       });
     });
@@ -301,7 +301,7 @@ describe('Task Influence Configuration', () => {
         const traits = getTraitsInfluencedByTask('showground_exposure');
 
         expect(Array.isArray(traits)).toBe(true);
-        expect(traits).toContain('crowd_ready');
+        expect(traits).toContain('crowdReady');
         expect(traits).toContain('confident');
       });
 
@@ -345,8 +345,8 @@ describe('Task Influence Configuration', () => {
         expect(tasks).toEqual([]);
       });
 
-      it('should return all tasks for presentation_boosted trait', () => {
-        const tasks = getTasksInfluencingTrait('presentation_boosted');
+      it('should return all tasks for presentationBoosted trait', () => {
+        const tasks = getTasksInfluencingTrait('presentationBoosted');
 
         expect(tasks).toContain('sponge_bath');
         expect(tasks).toContain('coat_check');
@@ -365,8 +365,8 @@ describe('Task Influence Configuration', () => {
         expect(traits).toContain('confident');
         expect(traits).toContain('bonded');
         expect(traits).toContain('calm');
-        expect(traits).toContain('show_calm');
-        expect(traits).toContain('presentation_boosted');
+        expect(traits).toContain('showCalm');
+        expect(traits).toContain('presentationBoosted');
       });
 
       it('should return sorted array', () => {
@@ -416,7 +416,7 @@ describe('Task Influence Configuration', () => {
 
         // Both tasks influence 'confident' trait
         expect(traitPoints.confident).toBe(15); // (2 * 5) + (1 * 5)
-        expect(traitPoints.crowd_ready).toBe(5); // showground_exposure: 1 * 5
+        expect(traitPoints.crowdReady).toBe(5); // showground_exposure: 1 * 5
       });
 
       it('should ignore invalid tasks', () => {

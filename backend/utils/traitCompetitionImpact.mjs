@@ -101,7 +101,7 @@ const TRAIT_COMPETITION_EFFECTS = {
     },
   },
 
-  legendary_bloodline: {
+  legendaryBloodline: {
     name: 'Legendary Bloodline',
     type: 'positive',
     general: {

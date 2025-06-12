@@ -42,7 +42,7 @@ const { TASK_TRAIT_INFLUENCE_MAP } = await import(join(__dirname, '../config/tas
 
 describe('Trait Metadata Validation', () => {
   describe('Required Trait Structure', () => {
-    const requiredTraits = ['confident', 'resilient', 'presentation_boosted', 'bonded', 'fearful', 'easilyOverwhelmed'];
+    const requiredTraits = ['confident', 'resilient', 'presentationBoosted', 'bonded', 'fearful', 'easilyOverwhelmed'];
 
     requiredTraits.forEach(trait => {
       it(`should have complete metadata for ${trait}`, () => {

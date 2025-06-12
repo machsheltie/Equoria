@@ -71,21 +71,21 @@ const TRAIT_DEFINITIONS = {
   },
 
   // Positive traits - Situational (from specific training)
-  presentation_boosted: {
+  presentationBoosted: {
     type: 'positive',
     rarity: 'common',
     conflicts: [],
     description: 'Scores higher in appearance-based events.',
     category: 'situational',
   },
-  show_calm: {
+  showCalm: {
     type: 'positive',
     rarity: 'common',
     conflicts: ['nervous'],
     description: 'Remains composed during competitions and shows.',
     category: 'situational',
   },
-  crowd_ready: {
+  crowdReady: {
     type: 'positive',
     rarity: 'common',
     conflicts: ['nervous'],
@@ -94,14 +94,14 @@ const TRAIT_DEFINITIONS = {
   },
 
   // Positive traits - Rare
-  trainability_boost: {
+  trainabilityBoost: {
     type: 'positive',
     rarity: 'rare',
     conflicts: ['stubborn'],
     description: 'Exceptional learning ability and training response.',
     category: 'epigenetic',
   },
-  eager_learner: {
+  eagerLearner: {
     type: 'positive',
     rarity: 'common',
     conflicts: ['lazy', 'stubborn'],
@@ -120,14 +120,14 @@ const TRAIT_DEFINITIONS = {
   nervous: {
     type: 'negative',
     rarity: 'common',
-    conflicts: ['bold', 'calm', 'confident', 'show_calm', 'crowd_ready'],
+    conflicts: ['bold', 'calm', 'confident', 'showCalm', 'crowdReady'],
     description: 'Easily startled and stressed by new situations.',
     category: 'epigenetic',
   },
   stubborn: {
     type: 'negative',
     rarity: 'common',
-    conflicts: ['trainability_boost', 'eager_learner'],
+    conflicts: ['trainabilityBoost', 'eagerLearner'],
     description: 'Resistant to training and new commands.',
     category: 'epigenetic',
   },
@@ -148,7 +148,7 @@ const TRAIT_DEFINITIONS = {
   lazy: {
     type: 'negative',
     rarity: 'common',
-    conflicts: ['intelligent', 'athletic', 'eager_learner'],
+    conflicts: ['intelligent', 'athletic', 'eagerLearner'],
     description: 'Low motivation and energy for training.',
     category: 'epigenetic',
   },
@@ -175,49 +175,21 @@ const TRAIT_DEFINITIONS = {
   },
 
   // Rare traits (usually hidden)
-  legendary_bloodline: {
+  legendaryBloodline: {
     type: 'positive',
     rarity: 'legendary',
     conflicts: [],
     description: 'Exceptional heritage with legendary performance potential.',
     category: 'epigenetic',
   },
-  weather_immunity: {
-    type: 'positive',
-    rarity: 'rare',
-    conflicts: [],
-    description: 'Unaffected by weather conditions during events.',
-    category: 'epigenetic',
-  },
-  fire_resistance: {
-    type: 'positive',
-    rarity: 'rare',
-    conflicts: [],
-    description: 'Enhanced tolerance to heat and fire-related stress.',
-    category: 'epigenetic',
-  },
-  water_phobia: {
-    type: 'negative',
-    rarity: 'rare',
-    conflicts: [],
-    description: 'Extreme fear of water and water-related activities.',
-    category: 'epigenetic',
-  },
-  night_vision: {
-    type: 'positive',
-    rarity: 'rare',
-    conflicts: [],
-    description: 'Enhanced performance during night events.',
-    category: 'epigenetic',
-  },
 };
 
 // Environmental trait pools that can emerge based on conditions
 const ENVIRONMENTAL_TRAITS = {
-  positive: ['resilient', 'calm', 'intelligent', 'confident', 'bonded', 'eager_learner', 'social'],
+  positive: ['resilient', 'calm', 'intelligent', 'confident', 'bonded', 'eagerLearner', 'social'],
   negative: ['nervous', 'fragile', 'lazy', 'antisocial', 'fearful', 'easilyOverwhelmed'],
-  rare: ['weather_immunity', 'night_vision', 'legendary_bloodline'],
-  situational: ['presentation_boosted', 'show_calm', 'crowd_ready'],
+  rare: ['legendaryBloodline'],
+  situational: ['presentationBoosted', 'showCalm', 'crowdReady'],
 };
 
 /**

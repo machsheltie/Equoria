@@ -23,7 +23,7 @@
  *
  * 💡 TRAIT CATEGORIES:
  * - Foundational: confident, bonded, resilient, calm
- * - Show/Presentation: show_calm, presentation_boosted, crowd_ready
+ * - Show/Presentation: showCalm, presentationBoosted, crowdReady
  * - Development: These traits influence future behavior and performance
  */
 
@@ -64,7 +64,7 @@ export const TASK_TRAIT_INFLUENCE_MAP = {
    * Prepares foals for competition and public environments
    */
   showground_exposure: {
-    traits: ['crowd_ready', 'confident'],
+    traits: ['crowdReady', 'confident'],
     dailyValue: 5,
   },
 
@@ -111,7 +111,7 @@ export const TASK_TRAIT_INFLUENCE_MAP = {
    * Critical for veterinary care and show presentation
    */
   hoof_handling: {
-    traits: ['show_calm'],
+    traits: ['showCalm'],
     dailyValue: 5,
   },
 
@@ -120,7 +120,7 @@ export const TASK_TRAIT_INFLUENCE_MAP = {
    * Essential for safe handling and show preparation
    */
   tying_practice: {
-    traits: ['show_calm'],
+    traits: ['showCalm'],
     dailyValue: 5,
   },
 
@@ -129,7 +129,7 @@ export const TASK_TRAIT_INFLUENCE_MAP = {
    * Combines handling with appearance preparation
    */
   sponge_bath: {
-    traits: ['show_calm', 'presentation_boosted'],
+    traits: ['showCalm', 'presentationBoosted'],
     dailyValue: 5,
   },
 
@@ -138,7 +138,7 @@ export const TASK_TRAIT_INFLUENCE_MAP = {
    * Develops acceptance of detailed examination
    */
   coat_check: {
-    traits: ['presentation_boosted'],
+    traits: ['presentationBoosted'],
     dailyValue: 5,
   },
 
@@ -147,7 +147,7 @@ export const TASK_TRAIT_INFLUENCE_MAP = {
    * Advanced grooming for show preparation
    */
   mane_tail_grooming: {
-    traits: ['presentation_boosted'],
+    traits: ['presentationBoosted'],
     dailyValue: 5,
   },
 };
