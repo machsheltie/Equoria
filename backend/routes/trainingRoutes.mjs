@@ -6,6 +6,7 @@ import {
   trainRouteHandler,
   getTrainableHorses,
 } from '../controllers/trainingController.mjs';
+import { getAllDisciplines } from '../utils/statMap.mjs';
 import logger from '../utils/logger.mjs';
 
 const router = express.Router();
@@ -141,7 +142,7 @@ router.get(
         `[trainingRoutes.getStatusAll] Getting all training statuses for horse ${horseId}`,
       );
 
-      const disciplines = ['Racing', 'Show Jumping', 'Dressage', 'Cross Country', 'Western'];
+      const disciplines = getAllDisciplines();
       const statusPromises = disciplines.map(async discipline => {
         return getTrainingStatus(parseInt(horseId), discipline);
       });

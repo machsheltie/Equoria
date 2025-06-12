@@ -104,7 +104,7 @@ export const TRAINING_SYSTEM_TASKS = {
         "backend/routes/trainingRoutes.mjs",
         "backend/routes/horseRoutes.mjs"
       ],
-      implementation: "POST /train, GET /status/:horseId/:discipline, GET /trainable/:userId",
+      implementation: "POST /train, GET /status/:horseId/:discipline, GET /status/:horseId, GET /trainable/:userId, GET /eligibility/:horseId/:discipline",
       testResults: "API endpoint tests in integration/trainingProgression.integration.test.mjs",
       status: "COMPLETE"
     },
@@ -118,6 +118,18 @@ export const TRAINING_SYSTEM_TASKS = {
       ],
       implementation: "TrainingLog model, horse.trainingCooldown field, disciplineScores JSON",
       testResults: "Database operations tested in trainingModel.test.mjs",
+      status: "COMPLETE"
+    },
+
+    disciplineListUpdate: {
+      name: "Dynamic Discipline List Implementation",
+      description: "Replace hardcoded discipline arrays with dynamic discipline fetching",
+      targetFiles: [
+        "backend/routes/trainingRoutes.mjs",
+        "backend/utils/statMap.mjs"
+      ],
+      implementation: "Updated trainingRoutes.mjs to import getAllDisciplines() and use dynamic discipline list instead of hardcoded array of 5 disciplines",
+      testResults: "All 23 disciplines now available in GET /status/:horseId endpoint",
       status: "COMPLETE"
     }
   },
@@ -278,8 +290,8 @@ export const TRAINING_SYSTEM_TASKS = {
  * Export implementation status for tracking
  */
 export const TRAINING_SYSTEM_STATUS = {
-  totalComponents: 9,
-  completedComponents: 9,
+  totalComponents: 10,
+  completedComponents: 10,
   completionPercentage: 100,
   totalDisciplines: 23,
   maintenanceTasks: 2,
@@ -293,9 +305,10 @@ export const TRAINING_SYSTEM_STATUS = {
 export const TRAINING_API_ENDPOINTS = {
   trainHorse: "POST /api/training/train",
   getTrainingStatus: "GET /api/training/status/:horseId/:discipline",
-  getTrainableHorses: "GET /api/horses/trainable/:userId",
-  getTrainingHistory: "GET /api/training/history/:horseId",
-  getTrainingStats: "GET /api/training/stats/:userId"
+  getAllTrainingStatuses: "GET /api/training/status/:horseId",
+  getTrainingEligibility: "GET /api/training/eligibility/:horseId/:discipline",
+  getTrainableHorses: "GET /api/training/trainable/:userId",
+  getTrainableHorsesFromHorseRoutes: "GET /api/horses/trainable/:userId"
 };
 
 /**
