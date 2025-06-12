@@ -48,15 +48,16 @@ export const TRAINING_SYSTEM_TASKS = {
     },
 
     disciplineSystem: {
-      name: "Multi-Discipline Training System",
-      description: "Support for 9 major training disciplines with stat mapping",
+      name: "Comprehensive Multi-Discipline Training System",
+      description: "Support for 23 major training disciplines with accurate stat mapping",
       targetFiles: [
         "backend/constants/schema.mjs",
         "backend/controllers/trainingController.mjs",
-        "backend/utils/statMap.mjs"
+        "backend/utils/statMap.mjs",
+        "backend/utils/competitionLogic.mjs"
       ],
-      implementation: "Racing, Dressage, Show Jumping, Cross Country, Endurance, Reining, Driving, Trail, Eventing",
-      testResults: "Discipline validation and stat mapping tests passing",
+      implementation: "All 23 disciplines: Western Pleasure, Reining, Cutting, Barrel Racing, Roping, Team Penning, Rodeo, Hunter, Saddleseat, Endurance, Eventing, Dressage, Show Jumping, Vaulting, Polo, Cross Country, Combined Driving, Fine Harness, Gaited, Gymkhana, Steeplechase, Racing, Harness Racing",
+      testResults: "Discipline validation and stat mapping tests updated for all disciplines",
       status: "COMPLETE"
     },
 
@@ -280,6 +281,7 @@ export const TRAINING_SYSTEM_STATUS = {
   totalComponents: 9,
   completedComponents: 9,
   completionPercentage: 100,
+  totalDisciplines: 23,
   maintenanceTasks: 2,
   enhancementTasks: 4,
   overallStatus: "PRODUCTION_READY"
