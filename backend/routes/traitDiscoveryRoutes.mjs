@@ -1,13 +1,10 @@
 import express from 'express';
 import { body, param, validationResult } from 'express-validator';
 import {
-  revealTraits,
   batchRevealTraits,
   getDiscoveryProgress,
   DISCOVERY_CONDITIONS,
 } from '../utils/traitDiscovery.mjs';
-import { isFoalAge } from '../constants/schema.mjs';
-import prisma from '../db/index.mjs';
 import logger from '../utils/logger.mjs';
 
 const router = express.Router();
@@ -74,107 +71,8 @@ router.post(
   },
 );
 
-/**
- * POST /api/traits/discover/:horseId
- * Trigger trait discovery for a specific horse (validates foal age)
- */
-router.post(
-  '/discover/:horseId',
-  [param('horseId').isInt({ min: 1 }).withMessage('Horse ID must be a positive integer')],
-  async (req, res) => {
-    try {
-      // Check for validation errors
-      const errors = validationResult(req);
-      if (!errors.isEmpty()) {
-        return res.status(400).json({
-          success: false,
-          message: 'Validation failed',
-          errors: errors.array(),
-        });
-      }
-
-      const { horseId } = req.params;
-      logger.info(
-        `[traitDiscoveryRoutes] POST /discover/${horseId} - Manual trait discovery triggered`,
-      );
-
-      // First check if the horse exists and is actually a foal
-      const horse = await prisma.horse.findUnique({
-        where: { id: parseInt(horseId, 10) },
-        select: { id: true, name: true, age: true },
-      });
-
-      if (!horse) {
-        return res.status(404).json({
-          success: false,
-          message: `Horse with ID ${horseId} not found`,
-        });
-      }
-
-      // Check if horse is actually a foal (age < 3)
-      if (!isFoalAge(horse.age)) {
-        return res.status(400).json({
-          success: false,
-          message: `Horse with ID ${horseId} is not a foal (age: ${horse.age}). This endpoint is for foals only.`,
-        });
-      }
-
-      const discoveryResults = await revealTraits(horseId);
-
-      res.json({
-        success: true,
-        message:
-          discoveryResults.traitsRevealed.length > 0
-            ? `Discovered ${discoveryResults.traitsRevealed.length} new traits!`
-            : 'No new traits discovered at this time',
-        data: {
-          horseId: discoveryResults.horseId,
-          horseName: discoveryResults.horseName,
-          conditionsMet: discoveryResults.conditionsMet,
-          traitsRevealed: (discoveryResults.traitsRevealed || []).map(trait => ({
-            traitKey: trait.trait || trait.name,
-            traitName: trait.trait || trait.name,
-            category: trait.definition?.type || 'unknown',
-            revealedBy: trait.discoveryReason || 'discovery condition met',
-            definition: trait.definition,
-          })),
-          revealed: discoveryResults.revealed || discoveryResults.traitsRevealed || [], // For backward compatibility
-          updatedTraits: discoveryResults.updatedTraits || discoveryResults.revealed || discoveryResults.traitsRevealed || [], // For backward compatibility
-          hiddenTraitsRemaining: discoveryResults.totalHiddenAfter,
-          summary: {
-            totalConditionsMet: discoveryResults.conditionsMet.length,
-            totalTraitsRevealed: discoveryResults.traitsRevealed.length,
-            hiddenBefore: discoveryResults.totalHiddenBefore,
-            hiddenAfter: discoveryResults.totalHiddenAfter,
-          },
-        },
-      });
-    } catch (error) {
-      logger.error(
-        `[traitDiscoveryRoutes] POST /discover/${req.params.horseId} error: ${error.message}`,
-      );
-
-      if (error.message.includes('not found')) {
-        return res.status(404).json({
-          success: false,
-          message: error.message,
-        });
-      }
-
-      if (error.message.includes('not a foal')) {
-        return res.status(400).json({
-          success: false,
-          message: error.message,
-        });
-      }
-
-      res.status(500).json({
-        success: false,
-        message: 'Internal server error during trait discovery',
-      });
-    }
-  },
-);
+// NOTE: Individual horse discovery route moved to traitRoutes.mjs to avoid conflicts
+// The /discover/:horseId route is now handled by traitRoutes.mjs
 
 /**
  * GET /api/traits/progress/:horseId

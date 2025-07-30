@@ -184,11 +184,18 @@ describe('Trait Discovery API Integration Tests', () => {
       expect(response.body.data.conditionsMet.length).toBeLessThanOrEqual(1);
     });
 
-    it('should return 400 for non-foal horse', async () => {
-      const response = await request(app).post(`/api/traits/discover/${testFoals[2].id}`).expect(400);
+    it('should allow trait discovery for adult horses', async () => {
+      const response = await request(app).post(`/api/traits/discover/${testFoals[2].id}`).expect(200);
 
-      expect(response.body.success).toBe(false);
-      expect(response.body.message).toContain('not a foal');
+      expect(response.body.success).toBe(true);
+      expect(response.body.data).toHaveProperty('horseId', testFoals[2].id);
+      expect(response.body.data).toHaveProperty('horseName', 'Adult Horse');
+      expect(response.body.data).toHaveProperty('conditionsMet');
+      expect(response.body.data).toHaveProperty('traitsRevealed');
+
+      // Adult horses can discover traits (e.g., mature bond traits)
+      expect(Array.isArray(response.body.data.conditionsMet)).toBe(true);
+      expect(Array.isArray(response.body.data.traitsRevealed)).toBe(true);
     });
 
     it('should return 404 for non-existent foal', async () => {
