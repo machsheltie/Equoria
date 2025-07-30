@@ -1,51 +1,51 @@
 /**
  * Horse Model Trait Helpers
- * Utility functions for managing horse traits safely
+ * Utility functions for managing horse traits safely with categorized trait system
  */
 
 import logger from './logger.mjs';
 
 /**
- * Safely add a trait to a horse's trait collection
- * @param {Object} horse - Horse object
+ * Safely add a trait to a trait collection category
+ * @param {Object} traits - Traits object with positive, negative, hidden arrays
  * @param {string} traitName - Name of the trait to add
- * @param {Object} traitData - Trait data object
- * @returns {Object} Updated horse object
+ * @param {string} category - Category to add to ('positive', 'negative', 'hidden')
+ * @returns {Object} Updated traits object
  */
-export function _addTraitSafely(horse, traitName, traitData = {}) {
+export function _addTraitSafely(traits, traitName, category) {
   try {
-    if (!horse) {
-      throw new Error('Horse object is required');
+    if (!traits || typeof traits !== 'object') {
+      throw new Error('Traits object is required');
     }
 
     if (!traitName || typeof traitName !== 'string') {
       throw new Error('Valid trait name is required');
     }
 
-    // Initialize traits if not present
-    if (!horse.traits) {
-      horse.traits = {};
+    if (!category || !['positive', 'negative', 'hidden'].includes(category)) {
+      throw new Error('Valid category is required (positive, negative, hidden)');
     }
 
-    // Ensure trait data has required structure
-    const safeTraitData = {
-      name: traitName,
-      type: traitData.type || 'unknown',
-      rarity: traitData.rarity || 'common',
-      effect: traitData.effect || {},
-      discoveredAt: traitData.discoveredAt || new Date().toISOString(),
-      isActive: traitData.isActive !== undefined ? traitData.isActive : true,
-      ...traitData,
+    // Create a deep copy to avoid mutation
+    const updatedTraits = {
+      positive: [...(traits.positive || [])],
+      negative: [...(traits.negative || [])],
+      hidden: [...(traits.hidden || [])],
     };
 
-    // Add the trait
-    horse.traits[traitName] = safeTraitData;
+    // Check if trait already exists in the category
+    if (!updatedTraits[category].includes(traitName)) {
+      updatedTraits[category].push(traitName);
+      logger.info(
+        `[horseModelTraitHelpers._addTraitSafely] Added trait '${traitName}' to ${category} category`,
+      );
+    } else {
+      logger.warn(
+        `[horseModelTraitHelpers._addTraitSafely] Trait '${traitName}' already exists in ${category} category`,
+      );
+    }
 
-    logger.info(
-      `[horseModelTraitHelpers._addTraitSafely] Added trait '${traitName}' to horse ${horse.id || 'unknown'}`,
-    );
-
-    return horse;
+    return updatedTraits;
   } catch (error) {
     logger.error(
       `[horseModelTraitHelpers._addTraitSafely] Error adding trait '${traitName}': ${error.message}`,
@@ -55,43 +55,48 @@ export function _addTraitSafely(horse, traitName, traitData = {}) {
 }
 
 /**
- * Safely remove a trait from a horse's trait collection
- * @param {Object} horse - Horse object
+ * Safely remove a trait from a trait collection category
+ * @param {Object} traits - Traits object with positive, negative, hidden arrays
  * @param {string} traitName - Name of the trait to remove
- * @returns {Object} Updated horse object
+ * @param {string} category - Category to remove from ('positive', 'negative', 'hidden')
+ * @returns {Object} Updated traits object
  */
-export function _removeTraitSafely(horse, traitName) {
+export function _removeTraitSafely(traits, traitName, category) {
   try {
-    if (!horse) {
-      throw new Error('Horse object is required');
+    if (!traits || typeof traits !== 'object') {
+      throw new Error('Traits object is required');
     }
 
     if (!traitName || typeof traitName !== 'string') {
       throw new Error('Valid trait name is required');
     }
 
-    // Initialize traits if not present
-    if (!horse.traits) {
-      horse.traits = {};
-      return horse;
+    if (!category || !['positive', 'negative', 'hidden'].includes(category)) {
+      throw new Error('Valid category is required (positive, negative, hidden)');
     }
 
-    // Check if trait exists
-    if (!horse.traits[traitName]) {
-      logger.warn(
-        `[horseModelTraitHelpers._removeTraitSafely] Trait '${traitName}' not found on horse ${horse.id || 'unknown'}`,
+    // Create a deep copy to avoid mutation
+    const updatedTraits = {
+      positive: [...(traits.positive || [])],
+      negative: [...(traits.negative || [])],
+      hidden: [...(traits.hidden || [])],
+    };
+
+    // Remove the trait from the specified category
+    const initialLength = updatedTraits[category].length;
+    updatedTraits[category] = updatedTraits[category].filter(trait => trait !== traitName);
+
+    if (updatedTraits[category].length < initialLength) {
+      logger.info(
+        `[horseModelTraitHelpers._removeTraitSafely] Removed trait '${traitName}' from ${category} category`,
       );
-      return horse;
+    } else {
+      logger.warn(
+        `[horseModelTraitHelpers._removeTraitSafely] Trait '${traitName}' not found in ${category} category`,
+      );
     }
 
-    // Remove the trait
-    delete horse.traits[traitName];
-
-    logger.info(
-      `[horseModelTraitHelpers._removeTraitSafely] Removed trait '${traitName}' from horse ${horse.id || 'unknown'}`,
-    );
-
-    return horse;
+    return updatedTraits;
   } catch (error) {
     logger.error(
       `[horseModelTraitHelpers._removeTraitSafely] Error removing trait '${traitName}': ${error.message}`,
@@ -101,68 +106,44 @@ export function _removeTraitSafely(horse, traitName) {
 }
 
 /**
- * Get all traits from a horse
- * @param {Object} horse - Horse object
- * @returns {Object} All traits object
+ * Get all traits from a trait collection as a flattened array
+ * @param {Object} traits - Traits object with positive, negative, hidden arrays
+ * @returns {Array} Flattened array of all traits
  */
-export function _getAllTraits(horse) {
+export function _getAllTraits(traits) {
   try {
-    if (!horse) {
-      throw new Error('Horse object is required');
+    if (!traits || typeof traits !== 'object') {
+      return [];
     }
 
-    // Return empty object if no traits
-    if (!horse.traits || typeof horse.traits !== 'object') {
-      return {};
-    }
+    // Flatten all trait categories into a single array
+    const allTraits = [
+      ...(traits.positive || []),
+      ...(traits.negative || []),
+      ...(traits.hidden || []),
+    ];
 
-    // Return a copy to prevent mutation
-    return { ...horse.traits };
+    return allTraits;
   } catch (error) {
     logger.error(`[horseModelTraitHelpers._getAllTraits] Error getting traits: ${error.message}`);
-    return {};
+    return [];
   }
 }
 
 /**
- * Get active traits from a horse
- * @param {Object} horse - Horse object
- * @returns {Object} Active traits object
- */
-export function getActiveTraits(horse) {
-  try {
-    const allTraits = _getAllTraits(horse);
-    const activeTraits = {};
-
-    for (const [traitName, traitData] of Object.entries(allTraits)) {
-      if (traitData.isActive !== false) {
-        activeTraits[traitName] = traitData;
-      }
-    }
-
-    return activeTraits;
-  } catch (error) {
-    logger.error(
-      `[horseModelTraitHelpers.getActiveTraits] Error getting active traits: ${error.message}`,
-    );
-    return {};
-  }
-}
-
-/**
- * Check if horse has a specific trait
- * @param {Object} horse - Horse object
+ * Check if a trait collection has a specific trait in any category
+ * @param {Object} traits - Traits object with positive, negative, hidden arrays
  * @param {string} traitName - Name of the trait to check
- * @returns {boolean} True if horse has the trait
+ * @returns {boolean} True if trait exists in any category
  */
-export function hasTrait(horse, traitName) {
+export function hasTrait(traits, traitName) {
   try {
-    if (!horse || !traitName) {
+    if (!traits || !traitName) {
       return false;
     }
 
-    const traits = _getAllTraits(horse);
-    return Object.prototype.hasOwnProperty.call(traits, traitName);
+    const allTraits = _getAllTraits(traits);
+    return allTraits.includes(traitName);
   } catch (error) {
     logger.error(
       `[horseModelTraitHelpers.hasTrait] Error checking trait '${traitName}': ${error.message}`,
@@ -172,88 +153,84 @@ export function hasTrait(horse, traitName) {
 }
 
 /**
- * Get trait by name
- * @param {Object} horse - Horse object
- * @param {string} traitName - Name of the trait to get
- * @returns {Object|null} Trait data or null if not found
+ * Get the category of a specific trait
+ * @param {Object} traits - Traits object with positive, negative, hidden arrays
+ * @param {string} traitName - Name of the trait to find
+ * @returns {string|null} Category name or null if not found
  */
-export function getTrait(horse, traitName) {
+export function getTraitCategory(traits, traitName) {
   try {
-    if (!horse || !traitName) {
+    if (!traits || !traitName) {
       return null;
     }
 
-    const traits = _getAllTraits(horse);
-    return traits[traitName] || null;
+    if ((traits.positive || []).includes(traitName)) return 'positive';
+    if ((traits.negative || []).includes(traitName)) return 'negative';
+    if ((traits.hidden || []).includes(traitName)) return 'hidden';
+
+    return null;
   } catch (error) {
     logger.error(
-      `[horseModelTraitHelpers.getTrait] Error getting trait '${traitName}': ${error.message}`,
+      `[horseModelTraitHelpers.getTraitCategory] Error finding trait '${traitName}': ${error.message}`,
     );
     return null;
   }
 }
 
 /**
- * Get traits by type
- * @param {Object} horse - Horse object
- * @param {string} type - Type of traits to get
- * @returns {Object} Traits of the specified type
+ * Move a trait from one category to another
+ * @param {Object} traits - Traits object with positive, negative, hidden arrays
+ * @param {string} traitName - Name of the trait to move
+ * @param {string} fromCategory - Source category
+ * @param {string} toCategory - Destination category
+ * @returns {Object} Updated traits object
  */
-export function getTraitsByType(horse, type) {
+export function moveTraitBetweenCategories(traits, traitName, fromCategory, toCategory) {
   try {
-    const allTraits = _getAllTraits(horse);
-    const typeTraits = {};
-
-    for (const [traitName, traitData] of Object.entries(allTraits)) {
-      if (traitData.type === type) {
-        typeTraits[traitName] = traitData;
-      }
+    if (!traits || !traitName || !fromCategory || !toCategory) {
+      throw new Error('All parameters are required');
     }
 
-    return typeTraits;
+    if (!['positive', 'negative', 'hidden'].includes(fromCategory) ||
+        !['positive', 'negative', 'hidden'].includes(toCategory)) {
+      throw new Error('Invalid category specified');
+    }
+
+    // Remove from source category
+    const afterRemoval = _removeTraitSafely(traits, traitName, fromCategory);
+
+    // Add to destination category
+    const afterAddition = _addTraitSafely(afterRemoval, traitName, toCategory);
+
+    logger.info(
+      `[horseModelTraitHelpers.moveTraitBetweenCategories] Moved trait '${traitName}' from ${fromCategory} to ${toCategory}`,
+    );
+
+    return afterAddition;
   } catch (error) {
     logger.error(
-      `[horseModelTraitHelpers.getTraitsByType] Error getting traits by type '${type}': ${error.message}`,
+      `[horseModelTraitHelpers.moveTraitBetweenCategories] Error moving trait '${traitName}': ${error.message}`,
     );
-    return {};
+    throw error;
   }
 }
 
 /**
- * Get traits by rarity
- * @param {Object} horse - Horse object
- * @param {string} rarity - Rarity level to filter by
- * @returns {Object} Traits of the specified rarity
+ * Count total traits in a trait collection
+ * @param {Object} traits - Traits object with positive, negative, hidden arrays
+ * @returns {number} Total number of traits across all categories
  */
-export function getTraitsByRarity(horse, rarity) {
+export function countTraits(traits) {
   try {
-    const allTraits = _getAllTraits(horse);
-    const rarityTraits = {};
-
-    for (const [traitName, traitData] of Object.entries(allTraits)) {
-      if (traitData.rarity === rarity) {
-        rarityTraits[traitName] = traitData;
-      }
+    if (!traits || typeof traits !== 'object') {
+      return 0;
     }
 
-    return rarityTraits;
-  } catch (error) {
-    logger.error(
-      `[horseModelTraitHelpers.getTraitsByRarity] Error getting traits by rarity '${rarity}': ${error.message}`,
-    );
-    return {};
-  }
-}
+    const totalTraits = (traits.positive || []).length +
+                       (traits.negative || []).length +
+                       (traits.hidden || []).length;
 
-/**
- * Count total traits on a horse
- * @param {Object} horse - Horse object
- * @returns {number} Number of traits
- */
-export function countTraits(horse) {
-  try {
-    const traits = _getAllTraits(horse);
-    return Object.keys(traits).length;
+    return totalTraits;
   } catch (error) {
     logger.error(`[horseModelTraitHelpers.countTraits] Error counting traits: ${error.message}`);
     return 0;
@@ -261,38 +238,53 @@ export function countTraits(horse) {
 }
 
 /**
- * Validate trait data structure
- * @param {Object} traitData - Trait data to validate
+ * Count traits in a specific category
+ * @param {Object} traits - Traits object with positive, negative, hidden arrays
+ * @param {string} category - Category to count ('positive', 'negative', 'hidden')
+ * @returns {number} Number of traits in the specified category
+ */
+export function countTraitsByCategory(traits, category) {
+  try {
+    if (!traits || typeof traits !== 'object') {
+      return 0;
+    }
+
+    if (!['positive', 'negative', 'hidden'].includes(category)) {
+      throw new Error('Invalid category specified');
+    }
+
+    return (traits[category] || []).length;
+  } catch (error) {
+    logger.error(
+      `[horseModelTraitHelpers.countTraitsByCategory] Error counting traits in category '${category}': ${error.message}`,
+    );
+    return 0;
+  }
+}
+
+/**
+ * Validate trait collection structure
+ * @param {Object} traits - Traits object to validate
  * @returns {boolean} True if valid
  */
-export function validateTraitData(traitData) {
+export function validateTraitStructure(traits) {
   try {
-    if (!traitData || typeof traitData !== 'object') {
+    if (!traits || typeof traits !== 'object') {
       return false;
     }
 
-    // Required fields
-    if (!traitData.name || typeof traitData.name !== 'string') {
-      return false;
-    }
-
-    // Optional but should be valid if present
-    if (traitData.type && typeof traitData.type !== 'string') {
-      return false;
-    }
-
-    if (traitData.rarity && typeof traitData.rarity !== 'string') {
-      return false;
-    }
-
-    if (traitData.isActive !== undefined && typeof traitData.isActive !== 'boolean') {
-      return false;
+    // Check that all categories are arrays (or undefined)
+    const categories = ['positive', 'negative', 'hidden'];
+    for (const category of categories) {
+      if (traits[category] !== undefined && !Array.isArray(traits[category])) {
+        return false;
+      }
     }
 
     return true;
   } catch (error) {
     logger.error(
-      `[horseModelTraitHelpers.validateTraitData] Error validating trait data: ${error.message}`,
+      `[horseModelTraitHelpers.validateTraitStructure] Error validating trait structure: ${error.message}`,
     );
     return false;
   }

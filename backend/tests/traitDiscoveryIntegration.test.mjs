@@ -155,8 +155,8 @@ describe('Trait Discovery API Integration Tests', () => {
       const response = await request(app).post(`/api/traits/discover/${testFoals[0].id}`).expect(200);
 
       expect(response.body.success).toBe(true);
-      expect(response.body.data).toHaveProperty('foalId', testFoals[0].id);
-      expect(response.body.data).toHaveProperty('foalName', 'High Bond Foal');
+      expect(response.body.data).toHaveProperty('horseId', testFoals[0].id);
+      expect(response.body.data).toHaveProperty('horseName', 'High Bond Foal');
       expect(response.body.data).toHaveProperty('conditionsMet');
       expect(response.body.data).toHaveProperty('traitsRevealed');
       expect(response.body.data).toHaveProperty('summary');
@@ -177,8 +177,8 @@ describe('Trait Discovery API Integration Tests', () => {
       const response = await request(app).post(`/api/traits/discover/${testFoals[1].id}`).expect(200);
 
       expect(response.body.success).toBe(true);
-      expect(response.body.data).toHaveProperty('foalId', testFoals[1].id);
-      expect(response.body.data).toHaveProperty('foalName', 'Low Stats Foal');
+      expect(response.body.data).toHaveProperty('horseId', testFoals[1].id);
+      expect(response.body.data).toHaveProperty('horseName', 'Low Stats Foal');
 
       // Low stats foal should not meet many conditions
       expect(response.body.data.conditionsMet.length).toBeLessThanOrEqual(1);
@@ -211,8 +211,8 @@ describe('Trait Discovery API Integration Tests', () => {
       const response = await request(app).get(`/api/traits/progress/${testFoals[0].id}`).expect(200);
 
       expect(response.body.success).toBe(true);
-      expect(response.body.data).toHaveProperty('foalId', testFoals[0].id);
-      expect(response.body.data).toHaveProperty('foalName', 'High Bond Foal');
+      expect(response.body.data).toHaveProperty('horseId', testFoals[0].id);
+      expect(response.body.data).toHaveProperty('horseName', 'High Bond Foal');
       expect(response.body.data).toHaveProperty('currentStats');
       expect(response.body.data).toHaveProperty('conditions');
       expect(response.body.data).toHaveProperty('hiddenTraitsCount');
@@ -258,7 +258,7 @@ describe('Trait Discovery API Integration Tests', () => {
       const response = await request(app)
         .post('/api/traits/discover/batch')
         .send({
-          foalIds: [testFoals[0].id, testFoals[1].id],
+          horseIds: [testFoals[0].id, testFoals[1].id],
         });
 
       if (response.status !== 200) {
@@ -282,7 +282,7 @@ describe('Trait Discovery API Integration Tests', () => {
       const response = await request(app)
         .post('/api/traits/discover/batch')
         .send({
-          foalIds: [testFoals[0].id, 99999, testFoals[2].id], // Valid foal, non-existent, adult horse
+          horseIds: [testFoals[0].id, 99999, testFoals[2].id], // Valid foal, non-existent, adult horse
         })
         .expect(200);
 
@@ -342,8 +342,8 @@ describe('Trait Discovery API Integration Tests', () => {
       const response = await request(app).post(`/api/traits/check-conditions/${testFoals[0].id}`).expect(200);
 
       expect(response.body.success).toBe(true);
-      expect(response.body.data).toHaveProperty('foalId', testFoals[0].id);
-      expect(response.body.data).toHaveProperty('foalName', 'High Bond Foal');
+      expect(response.body.data).toHaveProperty('horseId', testFoals[0].id);
+      expect(response.body.data).toHaveProperty('horseName', 'High Bond Foal');
       expect(response.body.data).toHaveProperty('currentStats');
       expect(response.body.data).toHaveProperty('conditions');
       expect(response.body.data).toHaveProperty('summary');

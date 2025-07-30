@@ -6,6 +6,7 @@
 import prisma from '../db/index.mjs';
 import logger from './logger.mjs';
 import { getTraitDefinition } from './epigeneticTraits.mjs';
+import { isFoalAge, FOAL_LIMITS } from '../constants/schema.mjs';
 
 /**
  * Discovery conditions that trigger trait revelation
@@ -62,11 +63,11 @@ const DISCOVERY_CONDITIONS = {
   // Age-based discoveries
   MATURE_BOND: {
     name: 'Mature Bond',
-    condition: horse => horse.age >= 2 && (horse.bondScore || horse.bond_score || 0) >= 70,
-    description: 'Mature relationship developed',
+    condition: horse => horse.age >= 3 && (horse.bondScore || horse.bond_score || 0) >= 70,
+    description: 'Mature relationship developed with adult horse',
     priority: 'medium',
     category: 'milestones',
-    revealableTraits: ['mature', 'stable', 'reliable'],
+    revealableTraits: ['resilient', 'calm', 'confident', 'bonded'],
   },
 
   // Training-based discoveries (requires training data)
@@ -168,21 +169,26 @@ export async function revealTraits(horseId, options = {}) {
       throw new Error(`Horse with ID ${horseIdInt} not found`);
     }
 
-    // Check if horse is a foal (age < 2 years)
-    if (horse.age >= 2) {
-      throw new Error(`Horse with ID ${horseIdInt} is not a foal (age: ${horse.age})`);
+    // Check if horse is eligible for trait discovery
+    // Foals (under 3) can discover any traits, adults (3+) can only discover mature traits
+    const isEligibleForTraitDiscovery = isFoalAge(horse.age) || horse.age >= FOAL_LIMITS.ADULT_AGE;
+
+    if (!isEligibleForTraitDiscovery) {
+      throw new Error(`Horse with ID ${horseIdInt} is not eligible for trait discovery (age: ${horse.age}).`);
     }
 
-    // Parse current traits
-    const currentTraits = horse.epigeneticModifiers || { positive: [], negative: [], hidden: [] };
+    // Parse current traits - handle both camelCase and snake_case for compatibility
+    const currentTraits = horse.epigeneticModifiers || horse.epigenetic_modifiers || { positive: [], negative: [], hidden: [] };
     const hiddenTraits = currentTraits.hidden || [];
+
+    logger.info(
+      `[traitDiscovery.revealTraits] Found ${hiddenTraits.length} hidden traits for horse ${horseIdInt}`,
+    );
 
     if (hiddenTraits.length === 0) {
       logger.info(`[traitDiscovery.revealTraits] No hidden traits to reveal for horse ${horseIdInt}`);
       return {
         success: true,
-        foalId: horseIdInt,
-        foalName: horse.name,
         horseId: horseIdInt,
         horseName: horse.name,
         revealed: [],
@@ -204,14 +210,26 @@ export async function revealTraits(horseId, options = {}) {
       enrichmentConditions = checkEnrichmentDiscoveries(horse.foalActivities);
     }
 
-    const allConditions = [...metConditions, ...enrichmentConditions];
+    // Filter conditions based on horse age
+    const isAdult = horse.age >= FOAL_LIMITS.ADULT_AGE;
+    const ageAppropriateConditions = [...metConditions, ...enrichmentConditions].filter(condition => {
+      // Adults (3+) can trigger mature bonds and milestone conditions
+      if (isAdult) {
+        return condition.name === 'Mature Bond' ||
+               condition.category === 'milestones' ||
+               condition.category === 'bonding' ||
+               condition.category === 'stress';
+      }
+      // Foals (under 3) can trigger all conditions except mature bond
+      return condition.name !== 'Mature Bond';
+    });
+
+    const allConditions = ageAppropriateConditions;
 
     if (allConditions.length === 0) {
       logger.info(`[traitDiscovery.revealTraits] No discovery conditions met for horse ${horseIdInt}`);
       return {
         success: true,
-        foalId: horseIdInt,
-        foalName: horse.name,
         horseId: horseIdInt,
         horseName: horse.name,
         revealed: [],
@@ -233,8 +251,6 @@ export async function revealTraits(horseId, options = {}) {
       );
       return {
         success: true,
-        foalId: horseIdInt,
-        foalName: horse.name,
         horseId: horseIdInt,
         horseName: horse.name,
         revealed: [],
@@ -256,8 +272,6 @@ export async function revealTraits(horseId, options = {}) {
 
     return {
       success: true,
-      foalId: horseIdInt,
-      foalName: horse.name,
       horseId: horseIdInt,
       horseName: horse.name,
       revealed: traitsToReveal.map(trait => ({
@@ -308,6 +322,7 @@ async function checkDiscoveryConditions(horse) {
           name: conditionName,
           description: condition.description,
           priority: condition.priority,
+          category: condition.category,
           type: 'condition',
         });
       }
@@ -490,14 +505,14 @@ export async function batchRevealTraits(horseIds, options = {}) {
     try {
       const result = await revealTraits(horseId, options);
       results.push({
-        foalId: horseId,
+        horseId: horseId,
         success: true,
         ...result,
       });
     } catch (error) {
       logger.error(`[traitDiscovery.batchRevealTraits] Error for horse ${horseId}:`, error);
       results.push({
-        foalId: horseId,
+        horseId: horseId,
         success: false,
         error: error.message,
       });
@@ -556,9 +571,8 @@ export async function getDiscoveryProgress(horseId) {
     const conditions = await checkDiscoveryConditions(horse);
 
     return {
-      foalId: horseIdInt,
-      foalName: horse.name,
       horseId: horseIdInt,
+      horseName: horse.name,
       discoveredTraits,
       totalPossibleTraits,
       progressPercentage,

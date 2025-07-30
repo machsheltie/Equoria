@@ -199,6 +199,14 @@ export const BREEDING_LIMITS = {
 };
 
 /**
+ * Foal trait discovery age limits
+ */
+export const FOAL_LIMITS = {
+  MAX_TRAIT_DISCOVERY_AGE: 3, // Foals can discover traits until age 3
+  ADULT_AGE: 3, // Horses are considered adults at age 3
+};
+
+/**
  * User progression constants
  */
 export const USER_PROGRESSION = {
@@ -247,6 +255,8 @@ export const isBreedingAge = (age, sex) => {
   }
   return false;
 };
+export const isFoalAge = (age) => age < FOAL_LIMITS.MAX_TRAIT_DISCOVERY_AGE;
+export const isAdultAge = (age) => age >= FOAL_LIMITS.ADULT_AGE;
 
 /**
  * Score validation helpers
@@ -306,6 +316,7 @@ export default {
   TRAINING_LIMITS,
   COMPETITION_LIMITS,
   BREEDING_LIMITS,
+  FOAL_LIMITS,
   USER_PROGRESSION,
   SCORE_RANGES,
   isValidHorseSex,
@@ -321,6 +332,8 @@ export default {
   isTrainingAge,
   isCompetitionAge,
   isBreedingAge,
+  isFoalAge,
+  isAdultAge,
   isValidScore,
   isValidDisciplineScore,
   calculateXpForLevel,

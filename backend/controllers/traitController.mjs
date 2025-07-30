@@ -5,6 +5,7 @@
 
 import { revealTraits } from '../utils/traitDiscovery.mjs';
 import { getTraitDefinition, getTraitsByType } from '../utils/epigeneticTraits.mjs';
+import { isFoalAge, FOAL_LIMITS } from '../constants/schema.mjs';
 import prisma from '../db/index.mjs';
 import logger from '../utils/logger.mjs';
 
@@ -45,11 +46,14 @@ export async function discoverTraits(req, res) {
       });
     }
 
-    // Check if horse is a foal (age < 2 years)
-    if (horse.age >= 2) {
+    // Check if horse is eligible for trait discovery
+    // Foals (under 3) can discover any traits, adults (3+) can discover mature traits
+    const isEligibleForTraitDiscovery = isFoalAge(horse.age) || horse.age >= FOAL_LIMITS.ADULT_AGE;
+
+    if (!isEligibleForTraitDiscovery) {
       return res.status(400).json({
         success: false,
-        message: `Horse with ID ${parsedHorseId} is not a foal (age: ${horse.age})`,
+        message: `Horse with ID ${parsedHorseId} is not eligible for trait discovery (age: ${horse.age}).`,
         data: null,
       });
     }
@@ -67,6 +71,8 @@ export async function discoverTraits(req, res) {
       );
     }
 
+    const revealedTraits = discoveryResult.traitsRevealed || discoveryResult.revealed || [];
+
     res.status(200).json({
       success: true,
       message: discoveryResult.message,
@@ -74,17 +80,19 @@ export async function discoverTraits(req, res) {
         horseId: parsedHorseId,
         horseName: horse.name,
         conditionsMet: discoveryResult.conditionsMet || discoveryResult.conditions || [],
-        traitsRevealed: (discoveryResult.traitsRevealed || discoveryResult.revealed || []).map(trait => ({
+        traitsRevealed: revealedTraits.map(trait => ({
           traitKey: trait.trait || trait.name,
           traitName: trait.trait || trait.name,
           category: trait.definition?.type || 'unknown',
           revealedBy: trait.discoveryReason || 'discovery condition met',
           definition: trait.definition,
         })),
+        revealed: revealedTraits, // For backward compatibility
+        updatedTraits: revealedTraits, // For backward compatibility
         hiddenTraitsRemaining: discoveryResult.totalHiddenAfter || 0,
         summary: {
           totalConditionsMet: (discoveryResult.conditionsMet || discoveryResult.conditions || []).length,
-          totalTraitsRevealed: (discoveryResult.traitsRevealed || discoveryResult.revealed || []).length,
+          totalTraitsRevealed: revealedTraits.length,
           hiddenBefore: discoveryResult.totalHiddenBefore || 0,
           hiddenAfter: discoveryResult.totalHiddenAfter || 0,
         },
@@ -168,8 +176,8 @@ export async function getHorseTraits(req, res) {
       data: {
         horseId: parsedHorseId,
         horseName: horse.name,
-        bondScore: horse.bond_score,
-        stressLevel: horse.stress_level,
+        bondScore: horse.bondScore || horse.bond_score,
+        stressLevel: horse.stressLevel || horse.stress_level,
         age: horse.age,
         traits: enhancedTraits,
         summary: {
@@ -301,8 +309,8 @@ export async function getDiscoveryStatus(req, res) {
         horseId: parsedHorseId,
         horseName: horse.name,
         currentStats: {
-          bondScore: horse.bond_score,
-          stressLevel: horse.stress_level,
+          bondScore: horse.bondScore || horse.bond_score,
+          stressLevel: horse.stressLevel || horse.stress_level,
           age: horse.age,
         },
         traitCounts: {

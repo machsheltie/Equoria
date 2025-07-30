@@ -274,16 +274,19 @@ describe('🧬 UNIT: At-Birth Traits System - Comprehensive Breeding Analysis Te
     });
 
     it('should detect inbreeding when common ancestors exist', async () => {
+      // Reset the mock to clear any previous calls
+      mockPrisma.horse.findMany.mockReset();
+
       const commonAncestor = { id: 100, name: 'CommonAncestor', sireId: null, damId: null };
 
-      // Mock the recursive calls for getAncestors
+      // Mock the recursive calls for getAncestors in the exact order they will be called
       mockPrisma.horse.findMany
-        .mockResolvedValueOnce([{ id: 1, name: 'Sire', sireId: 100, damId: 11 }]) // Sire's immediate parents
-        .mockResolvedValueOnce([commonAncestor, { id: 11, name: 'SireGrandma', sireId: null, damId: null }]) // Sire's ancestors
-        .mockResolvedValueOnce([]) // No further sire ancestors
-        .mockResolvedValueOnce([{ id: 2, name: 'Dam', sireId: 100, damId: 21 }]) // Dam's immediate parents
-        .mockResolvedValueOnce([commonAncestor, { id: 21, name: 'DamGrandma', sireId: null, damId: null }]) // Dam's ancestors
-        .mockResolvedValueOnce([]); // No further dam ancestors
+        .mockResolvedValueOnce([{ id: 1, name: 'Sire', sireId: 100, damId: 11 }]) // getAncestors([1], 3) - get sire
+        .mockResolvedValueOnce([commonAncestor, { id: 11, name: 'SireGrandma', sireId: null, damId: null }]) // get sire's parents
+        .mockResolvedValueOnce([]) // get sire's grandparents (none)
+        .mockResolvedValueOnce([{ id: 2, name: 'Dam', sireId: 100, damId: 21 }]) // getAncestors([2], 3) - get dam
+        .mockResolvedValueOnce([commonAncestor, { id: 21, name: 'DamGrandma', sireId: null, damId: null }]) // get dam's parents
+        .mockResolvedValueOnce([]); // get dam's grandparents (none)
 
       const result = await detectInbreeding(1, 2);
 

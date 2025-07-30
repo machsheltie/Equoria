@@ -44,11 +44,11 @@ describe('Trait Routes Integration Tests', () => {
     testHorse = {
       id: 1,
       name: `Test Discovery Horse ${Date.now()}`,
-      age: 1,
+      age: 2, // Valid foal age for trait discovery (under 3)
       breedId: testBreed.id,
-      bond_score: 85,
-      stress_level: 15,
-      epigenetic_modifiers: {
+      bondScore: 85,
+      stressLevel: 15,
+      epigeneticModifiers: {
         positive: ['resilient'],
         negative: [],
         hidden: ['bold', 'trainability_boost'],
@@ -61,9 +61,16 @@ describe('Trait Routes Integration Tests', () => {
     jest.clearAllMocks();
 
     // Setup database mocks
-    mockPrisma.horse.findUnique.mockImplementation(({ where }) => {
+    mockPrisma.horse.findUnique.mockImplementation(({ where, include }) => {
       if (where.id === testHorse.id) {
-        return Promise.resolve(testHorse);
+        const horse = { ...testHorse };
+        if (include?.breed) {
+          horse.breed = testBreed;
+        }
+        if (include?.foalActivities) {
+          horse.foalActivities = [];
+        }
+        return Promise.resolve(horse);
       } else if (where.id === 99999) {
         return Promise.resolve(null);
       }
@@ -98,8 +105,6 @@ describe('Trait Routes Integration Tests', () => {
         .expect(200);
 
       expect(response.body.success).toBe(true);
-      expect(response.body.data).toHaveProperty('foalId', testHorse.id);
-      expect(response.body.data).toHaveProperty('foalName', testHorse.name);
       expect(response.body.data).toHaveProperty('horseId', testHorse.id);
       expect(response.body.data).toHaveProperty('horseName', testHorse.name);
       expect(response.body.data).toHaveProperty('traitsRevealed');
@@ -107,6 +112,53 @@ describe('Trait Routes Integration Tests', () => {
       expect(response.body.data).toHaveProperty('updatedTraits');
 
       // Should have discovered at least one trait due to high bond score and low stress
+      expect(response.body.data.revealed.length).toBeGreaterThan(0);
+    });
+
+    it('should trigger mature bond discovery for adult horses', async () => {
+      // Create an adult horse with high bond score
+      const adultHorse = {
+        id: 2,
+        name: 'Adult Test Horse',
+        age: 5, // Adult horse
+        breedId: testBreed.id,
+        bondScore: 75, // High enough for mature bond
+        stressLevel: 15,
+        epigeneticModifiers: {
+          positive: ['resilient'],
+          negative: [],
+          hidden: ['resilient', 'calm'],
+        },
+      };
+
+      // Update mock to include adult horse
+      mockPrisma.horse.findUnique.mockImplementation(({ where, include }) => {
+        if (where.id === testHorse.id) {
+          const horse = { ...testHorse };
+          if (include?.breed) horse.breed = testBreed;
+          if (include?.foalActivities) horse.foalActivities = [];
+          return Promise.resolve(horse);
+        } else if (where.id === adultHorse.id) {
+          const horse = { ...adultHorse };
+          if (include?.breed) horse.breed = testBreed;
+          if (include?.foalActivities) horse.foalActivities = [];
+          return Promise.resolve(horse);
+        } else if (where.id === 99999) {
+          return Promise.resolve(null);
+        }
+        return Promise.resolve(null);
+      });
+
+      const response = await request(app)
+        .post('/api/traits/discover/2')
+        .expect(200);
+
+      expect(response.body.success).toBe(true);
+      expect(response.body.data).toHaveProperty('horseId', 2);
+      expect(response.body.data).toHaveProperty('horseName', 'Adult Test Horse');
+      expect(response.body.data).toHaveProperty('revealed');
+
+      // Should discover mature traits due to mature bond condition
       expect(response.body.data.revealed.length).toBeGreaterThan(0);
     });
 
