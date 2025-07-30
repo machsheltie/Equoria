@@ -58,7 +58,7 @@ router.post(
 
       res.json({
         success: true,
-        message: `Batch discovery completed for ${foalIds.length} foals`,
+        message: `Batch discovery completed for ${horseIds.length} horses`,
         data: {
           results,
           summary,

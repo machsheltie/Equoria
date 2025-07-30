@@ -273,7 +273,7 @@ describe('Trait Discovery API Integration Tests', () => {
       expect(response.body.data).toHaveProperty('summary');
 
       expect(response.body.data.results).toHaveLength(2);
-      expect(response.body.data.summary).toHaveProperty('totalFoals', 2);
+      expect(response.body.data.summary).toHaveProperty('totalHorses', 2);
       expect(response.body.data.summary).toHaveProperty('successfulDiscoveries');
       expect(response.body.data.summary).toHaveProperty('failedDiscoveries');
     });
@@ -298,7 +298,7 @@ describe('Trait Discovery API Integration Tests', () => {
       const response = await request(app)
         .post('/api/traits/discover/batch')
         .send({
-          foalIds: [],
+          horseIds: [],
         })
         .expect(400);
 

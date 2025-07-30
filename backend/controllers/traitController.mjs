@@ -41,7 +41,7 @@ export async function discoverTraits(req, res) {
     if (!horse) {
       return res.status(404).json({
         success: false,
-        message: 'Horse not found',
+        message: `Horse with ID ${horseId} not found`,
         data: null,
       });
     }
