@@ -182,13 +182,20 @@ const TRAIT_DEFINITIONS = {
     description: 'Exceptional heritage with legendary performance potential.',
     category: 'epigenetic',
   },
+  weatherImmunity: {
+    type: 'positive',
+    rarity: 'rare',
+    conflicts: [],
+    description: 'Exceptional resistance to weather conditions and environmental stress.',
+    category: 'epigenetic',
+  },
 };
 
 // Environmental trait pools that can emerge based on conditions
 const ENVIRONMENTAL_TRAITS = {
   positive: ['resilient', 'calm', 'intelligent', 'confident', 'bonded', 'eagerLearner', 'social'],
   negative: ['nervous', 'fragile', 'lazy', 'antisocial', 'fearful', 'easilyOverwhelmed'],
-  rare: ['legendaryBloodline'],
+  rare: ['legendaryBloodline', 'trainabilityBoost', 'weatherImmunity'],
   situational: ['presentationBoosted', 'showCalm', 'crowdReady'],
 };
 

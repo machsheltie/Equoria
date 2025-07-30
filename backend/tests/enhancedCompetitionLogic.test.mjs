@@ -215,8 +215,8 @@ describe('🏆 UNIT: Enhanced Competition Logic - Complete Competition System Va
 
     test('should have correct stats for each discipline', () => {
       expect(getDisciplineConfig('Racing').stats).toEqual(['speed', 'stamina', 'intelligence']);
-      expect(getDisciplineConfig('Dressage').stats).toEqual(['precision', 'focus', 'obedience']);
-      expect(getDisciplineConfig('Western Pleasure').stats).toEqual(['focus', 'obedience', 'intelligence']);
+      expect(getDisciplineConfig('Dressage').stats).toEqual(['precision', 'obedience', 'focus']);
+      expect(getDisciplineConfig('Western Pleasure').stats).toEqual(['obedience', 'focus', 'precision']);
       expect(getDisciplineConfig('Gaited').stats).toEqual(['flexibility', 'obedience', 'focus']);
     });
 

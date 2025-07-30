@@ -232,7 +232,6 @@ function evaluateTraitRevelation(foal, currentTraits, currentDay) {
   try {
     logger.info(
       `[traitEvaluation.evaluateTraitRevelation] Evaluating traits for foal ${foal.id} on day ${currentDay}`,
-      `[traitEvaluation.evaluateTraitRevelation] Evaluating traits for foal ${foal.id} on day ${currentDay}`,
     );
 
     const bondScore = foal.bond_score || 50;

@@ -307,9 +307,9 @@ describe('🧬 UNIT: Epigenetic Traits System - Breeding & Environmental Trait C
 
       const allHiddenTraits = results.flatMap(r => r.hidden);
 
-      // Should sometimes generate rare traits like trainability_boost
+      // Should sometimes generate rare traits like trainabilityBoost
       const hasRareTraits = allHiddenTraits.some(trait =>
-        ['trainability_boost', 'legendary_bloodline', 'weather_immunity'].includes(trait),
+        ['trainabilityBoost', 'legendaryBloodline', 'weatherImmunity'].includes(trait),
       );
 
       expect(hasRareTraits).toBe(true);
