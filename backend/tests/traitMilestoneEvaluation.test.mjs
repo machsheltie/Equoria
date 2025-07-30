@@ -173,7 +173,7 @@ describe('Trait Milestone Evaluation', () => {
 
       // confident should get points from both tasks: 10 + 5 = 15%
       expect(result).toContain('confident');
-      expect(result).toContain('crowd_ready'); // 5% chance
+      expect(result).toContain('crowdReady'); // 5% chance
     });
 
     it('should return unique traits only', () => {
@@ -227,9 +227,9 @@ describe('Trait Milestone Evaluation', () => {
       expect(result).toContain('resilient');
       expect(result).toContain('confident');
       expect(result).toContain('calm');
-      expect(result).toContain('show_calm');
-      expect(result).not.toContain('crowd_ready');
-      expect(result).not.toContain('presentation_boosted');
+      expect(result).toContain('showCalm');
+      expect(result).not.toContain('crowdReady');
+      expect(result).not.toContain('presentationBoosted');
     });
 
     it('should handle edge case with zero task counts', () => {

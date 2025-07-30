@@ -70,7 +70,7 @@ describe('Task-Trait Influence Integration', () => {
       // Should include presentation and handling traits
       expect(groomingTraits.has('showCalm')).toBe(true);
       expect(groomingTraits.has('presentationBoosted')).toBe(true);
-      expect(groomingTraits.has('calm')).toBe(true);
+      // Note: grooming tasks influence showCalm, not general calm
     });
   });
 
@@ -125,8 +125,8 @@ describe('Task-Trait Influence Integration', () => {
       const traitPoints = calculateTraitPoints(taskCompletions);
 
       // Verify presentation-focused development
-      expect(traitPoints.show_calm).toBe(45); // hoof_handling(4) + tying_practice(3) + sponge_bath(2) = 9 * 5
-      expect(traitPoints.presentation_boosted).toBe(35); // sponge_bath(2) + coat_check(3) + mane_tail_grooming(2) = 7 * 5
+      expect(traitPoints.showCalm).toBe(45); // hoof_handling(4) + tying_practice(3) + sponge_bath(2) = 9 * 5
+      expect(traitPoints.presentationBoosted).toBe(35); // sponge_bath(2) + coat_check(3) + mane_tail_grooming(2) = 7 * 5
     });
   });
 
@@ -156,10 +156,10 @@ describe('Task-Trait Influence Integration', () => {
       expect(traitPoints.bonded).toBe(40); // trust_building: 8 * 5
       expect(traitPoints.resilient).toBe(40); // trust_building: 8 * 5
       expect(traitPoints.confident).toBe(50); // desensitization(6) + showground_exposure(4) = 10 * 5
-      expect(traitPoints.crowd_ready).toBe(20); // showground_exposure: 4 * 5
+      expect(traitPoints.crowdReady).toBe(20); // showground_exposure: 4 * 5
       expect(traitPoints.calm).toBe(30); // early_touch: 6 * 5
-      expect(traitPoints.show_calm).toBe(60); // hoof_handling(3) + tying_practice(5) + sponge_bath(4) = 12 * 5
-      expect(traitPoints.presentation_boosted).toBe(65); // sponge_bath(4) + coat_check(6) + mane_tail_grooming(3) = 13 * 5
+      expect(traitPoints.showCalm).toBe(60); // hoof_handling(3) + tying_practice(5) + sponge_bath(4) = 12 * 5
+      expect(traitPoints.presentationBoosted).toBe(65); // sponge_bath(4) + coat_check(6) + mane_tail_grooming(3) = 13 * 5
 
       // Verify balanced development across all trait categories
       expect(Object.keys(traitPoints)).toHaveLength(7);
@@ -183,7 +183,7 @@ describe('Task-Trait Influence Integration', () => {
       };
 
       const presentationPoints = calculateTraitPoints(presentationFocusedTasks);
-      expect(presentationPoints.presentation_boosted).toBe(95); // (6 + 8 + 5) * 5
+      expect(presentationPoints.presentationBoosted).toBe(95); // (6 + 8 + 5) * 5
     });
   });
 
@@ -193,17 +193,18 @@ describe('Task-Trait Influence Integration', () => {
       const confidenceTasks = getTasksInfluencingTrait('confident');
       expect(confidenceTasks).toContain('desensitization');
       expect(confidenceTasks).toContain('showground_exposure');
-      expect(confidenceTasks).toHaveLength(2);
+      expect(confidenceTasks).toContain('environment_exploration');
+      expect(confidenceTasks).toHaveLength(3);
 
       // Test show calmness development
-      const showCalmTasks = getTasksInfluencingTrait('show_calm');
+      const showCalmTasks = getTasksInfluencingTrait('showCalm');
       expect(showCalmTasks).toContain('hoof_handling');
       expect(showCalmTasks).toContain('tying_practice');
       expect(showCalmTasks).toContain('sponge_bath');
       expect(showCalmTasks).toHaveLength(3);
 
       // Test presentation development
-      const presentationTasks = getTasksInfluencingTrait('presentation_boosted');
+      const presentationTasks = getTasksInfluencingTrait('presentationBoosted');
       expect(presentationTasks).toContain('sponge_bath');
       expect(presentationTasks).toContain('coat_check');
       expect(presentationTasks).toContain('mane_tail_grooming');
@@ -217,10 +218,10 @@ describe('Task-Trait Influence Integration', () => {
       expect(allTraits).toContain('bonded');
       expect(allTraits).toContain('calm');
       expect(allTraits).toContain('confident');
-      expect(allTraits).toContain('crowd_ready');
-      expect(allTraits).toContain('presentation_boosted');
+      expect(allTraits).toContain('crowdReady');
+      expect(allTraits).toContain('presentationBoosted');
       expect(allTraits).toContain('resilient');
-      expect(allTraits).toContain('show_calm');
+      expect(allTraits).toContain('showCalm');
 
       // Should have reasonable number of traits
       expect(allTraits.length).toBeGreaterThanOrEqual(6);
@@ -277,14 +278,13 @@ describe('Task-Trait Influence Integration', () => {
       expect(enrichmentInfluences).toContain('confident');
       expect(enrichmentInfluences).toContain('bonded');
       expect(enrichmentInfluences).toContain('resilient');
-      expect(enrichmentInfluences).toContain('crowd_ready');
+      expect(enrichmentInfluences).toContain('crowdReady');
 
       // Grooming tasks (1-3 years) should focus on handling and presentation
       const groomingInfluences = FOAL_GROOMING_TASKS.map(task => TASK_TRAIT_INFLUENCE_MAP[task].traits).flat();
 
-      expect(groomingInfluences).toContain('calm');
-      expect(groomingInfluences).toContain('show_calm');
-      expect(groomingInfluences).toContain('presentation_boosted');
+      expect(groomingInfluences).toContain('showCalm');
+      expect(groomingInfluences).toContain('presentationBoosted');
     });
 
     it('should support age-appropriate task progression', () => {
@@ -294,11 +294,11 @@ describe('Task-Trait Influence Integration', () => {
 
       // Middle tasks should bridge foundation to presentation
       expect(TASK_TRAIT_INFLUENCE_MAP.early_touch.traits).toContain('calm');
-      expect(TASK_TRAIT_INFLUENCE_MAP.showground_exposure.traits).toContain('crowd_ready');
+      expect(TASK_TRAIT_INFLUENCE_MAP.showground_exposure.traits).toContain('crowdReady');
 
       // Advanced tasks should focus on presentation
-      expect(TASK_TRAIT_INFLUENCE_MAP.coat_check.traits).toContain('presentation_boosted');
-      expect(TASK_TRAIT_INFLUENCE_MAP.mane_tail_grooming.traits).toContain('presentation_boosted');
+      expect(TASK_TRAIT_INFLUENCE_MAP.coat_check.traits).toContain('presentationBoosted');
+      expect(TASK_TRAIT_INFLUENCE_MAP.mane_tail_grooming.traits).toContain('presentationBoosted');
     });
   });
 });

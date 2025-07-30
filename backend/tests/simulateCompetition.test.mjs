@@ -45,28 +45,27 @@ describe('🏇 UNIT: Competition Simulation System - Horse Performance & Ranking
     const testHorse = {
       speed: 80,
       stamina: 70,
-      focus: 60,
+      intelligence: 60,
       agility: 50,
-      balance: 40,
+      precision: 40,
     };
 
     it('should calculate correct weighted score for Racing discipline', () => {
-      // Racing uses: ["speed", "stamina", "focus"] = 50/30/20
+      // Racing uses: ["speed", "stamina", "intelligence"] = 50/30/20
       const score = getStatScore(testHorse, 'Racing');
       const expected = 80 * 0.5 + 70 * 0.3 + 60 * 0.2; // 40 + 21 + 12 = 73
       expect(score).toBe(expected);
     });
 
     it('should calculate correct weighted score for Show Jumping discipline', () => {
-      // Show Jumping uses: ["balance", "agility", "boldness"]
-      const horseWithBoldness = { ...testHorse, boldness: 30 };
-      const score = getStatScore(horseWithBoldness, 'Show Jumping');
-      const expected = 40 * 0.5 + 50 * 0.3 + 30 * 0.2; // 20 + 15 + 6 = 41
+      // Show Jumping uses: ["agility", "precision", "intelligence"] = 50/30/20
+      const score = getStatScore(testHorse, 'Show Jumping');
+      const expected = 50 * 0.5 + 40 * 0.3 + 60 * 0.2; // 25 + 12 + 12 = 49
       expect(score).toBe(expected);
     });
 
     it('should handle missing stats by defaulting to 0', () => {
-      const incompleteHorse = { speed: 50 }; // missing stamina and focus
+      const incompleteHorse = { speed: 50 }; // missing stamina and intelligence
       const score = getStatScore(incompleteHorse, 'Racing');
       const expected = 50 * 0.5 + 0 * 0.3 + 0 * 0.2; // 25 + 0 + 0 = 25
       expect(score).toBe(expected);

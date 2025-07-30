@@ -131,7 +131,7 @@ describe('Task Influence Configuration', () => {
       expect(TASK_TRAIT_INFLUENCE_MAP.trust_building.traits).toContain('resilient');
 
       // showground_exposure should influence crowd readiness and confidence
-      expect(TASK_TRAIT_INFLUENCE_MAP.showground_exposure.traits).toContain('crowd_ready');
+      expect(TASK_TRAIT_INFLUENCE_MAP.showground_exposure.traits).toContain('crowdReady');
       expect(TASK_TRAIT_INFLUENCE_MAP.showground_exposure.traits).toContain('confident');
     });
 

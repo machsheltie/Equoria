@@ -98,10 +98,12 @@ describe('Trait Routes Integration Tests', () => {
         .expect(200);
 
       expect(response.body.success).toBe(true);
+      expect(response.body.data).toHaveProperty('foalId', testHorse.id);
+      expect(response.body.data).toHaveProperty('foalName', testHorse.name);
       expect(response.body.data).toHaveProperty('horseId', testHorse.id);
       expect(response.body.data).toHaveProperty('horseName', testHorse.name);
-      expect(response.body.data).toHaveProperty('revealed');
-      expect(response.body.data).toHaveProperty('conditions');
+      expect(response.body.data).toHaveProperty('traitsRevealed');
+      expect(response.body.data).toHaveProperty('conditionsMet');
       expect(response.body.data).toHaveProperty('updatedTraits');
 
       // Should have discovered at least one trait due to high bond score and low stress
@@ -120,7 +122,7 @@ describe('Trait Routes Integration Tests', () => {
       const response = await request(app).post('/api/traits/discover/99999').send({}).expect(404);
 
       expect(response.body.success).toBe(false);
-      expect(response.body.message).toBe('Horse not found');
+      expect(response.body.message).toBe('Horse with ID 99999 not found');
     });
 
     it('should handle optional parameters correctly', async () => {
@@ -133,7 +135,7 @@ describe('Trait Routes Integration Tests', () => {
         .expect(200);
 
       expect(response.body.success).toBe(true);
-      expect(response.body.data).toHaveProperty('revealed');
+      expect(response.body.data).toHaveProperty('traitsRevealed');
     });
   });
 

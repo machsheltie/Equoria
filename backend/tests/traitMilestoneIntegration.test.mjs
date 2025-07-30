@@ -160,10 +160,10 @@ describe('Trait Milestone Integration', () => {
       expect(assignedTraits).toContain('bonded');
       expect(assignedTraits).toContain('resilient');
       expect(assignedTraits).toContain('confident');
-      expect(assignedTraits).toContain('crowd_ready');
+      expect(assignedTraits).toContain('crowdReady');
       expect(assignedTraits).toContain('calm');
-      expect(assignedTraits).toContain('show_calm');
-      expect(assignedTraits).toContain('presentation_boosted');
+      expect(assignedTraits).toContain('showCalm');
+      expect(assignedTraits).toContain('presentationBoosted');
 
       expect(assignedTraits.length).toBe(7); // All traits assigned
     });

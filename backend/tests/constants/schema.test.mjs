@@ -109,7 +109,7 @@ describe('🏇 UNIT: Schema Constants Validation', () => {
       expect(DISCIPLINES.SHOW_JUMPING).toBe('Show Jumping');
       expect(DISCIPLINES.DRESSAGE).toBe('Dressage');
       expect(DISCIPLINES.CROSS_COUNTRY).toBe('Cross Country');
-      expect(DISCIPLINES.WESTERN).toBe('Western');
+      expect(DISCIPLINES.WESTERN_PLEASURE).toBe('Western Pleasure');
     });
 
     it('should validate disciplines correctly', () => {

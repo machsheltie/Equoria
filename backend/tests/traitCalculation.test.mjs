@@ -338,7 +338,7 @@ describe('🧬 UNIT: Epigenetic Traits Calculation System', () => {
       expect(nervousDef).toEqual({
         type: 'negative',
         rarity: 'common',
-        conflicts: ['bold', 'calm', 'confident', 'show_calm', 'crowd_ready'],
+        conflicts: ['bold', 'calm', 'confident', 'showCalm', 'crowdReady'],
         description: 'Easily startled and stressed by new situations.',
         category: 'epigenetic',
       });
@@ -350,7 +350,7 @@ describe('🧬 UNIT: Epigenetic Traits Calculation System', () => {
     });
 
     it('should return correct definition for rare traits', () => {
-      const legendaryDef = getTraitDefinition('legendary_bloodline');
+      const legendaryDef = getTraitDefinition('legendaryBloodline');
 
       expect(legendaryDef).toEqual({
         type: 'positive',
@@ -370,7 +370,7 @@ describe('🧬 UNIT: Epigenetic Traits Calculation System', () => {
       expect(allTraits.length).toBeGreaterThan(10);
       expect(allTraits).toContain('resilient');
       expect(allTraits).toContain('nervous');
-      expect(allTraits).toContain('legendary_bloodline');
+      expect(allTraits).toContain('legendaryBloodline');
     });
 
     it('should return only positive traits when type is "positive"', () => {

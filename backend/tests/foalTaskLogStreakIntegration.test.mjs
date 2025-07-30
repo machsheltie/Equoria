@@ -221,7 +221,7 @@ describe('Foal Task Log and Streak Data Integration', () => {
       expect(traitPoints.resilient).toBe(25); // trust_building: 5 * 5
       expect(traitPoints.confident).toBe(25); // desensitization(3) + showground_exposure(2) = 5 * 5
       expect(traitPoints.calm).toBe(20); // early_touch: 4 * 5
-      expect(traitPoints.crowd_ready).toBe(10); // showground_exposure: 2 * 5
+      expect(traitPoints.crowdReady).toBe(10); // showground_exposure: 2 * 5
     });
 
     it('should track task progression over time', async () => {
@@ -258,7 +258,7 @@ describe('Foal Task Log and Streak Data Integration', () => {
       // Later development should include handling traits
       expect(traitPoints.bonded).toBe(25);
       expect(traitPoints.calm).toBe(15);
-      expect(traitPoints.show_calm).toBe(10);
+      expect(traitPoints.showCalm).toBe(10);
     });
   });
 

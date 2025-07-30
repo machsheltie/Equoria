@@ -189,7 +189,7 @@ describe('Competition Simulation with Trait Impact', () => {
           id: 1,
           name: 'Legendary Horse',
           epigenetic_modifiers: {
-            positive: ['legendary_bloodline'],
+            positive: ['legendaryBloodline'],
             negative: [],
             hidden: [],
           },
@@ -215,7 +215,7 @@ describe('Competition Simulation with Trait Impact', () => {
       expect(legendaryHorse.traitImpact.adjustment).toBeGreaterThan(regularHorse.traitImpact.adjustment);
 
       // Check that legendary trait is properly identified
-      const legendaryTrait = legendaryHorse.traitImpact.details.find(t => t.name === 'legendary_bloodline');
+      const legendaryTrait = legendaryHorse.traitImpact.details.find(t => t.name === 'legendaryBloodline');
       expect(legendaryTrait).toBeDefined();
       expect(legendaryTrait.type).toBe('positive');
     });

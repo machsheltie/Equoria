@@ -62,7 +62,7 @@ describe('🏆 UNIT: Competition Score Calculation - Scoring Algorithm Validatio
 
   describe('calculateCompetitionScore', () => {
     it('should calculate correct base score for Racing discipline', () => {
-      const horse = createTestHorse({ speed: 80, stamina: 70, focus: 60 });
+      const horse = createTestHorse({ speed: 80, stamina: 70, intelligence: 60 });
       const score = calculateCompetitionScore(horse, 'Racing');
 
       // Base score should be 80 + 70 + 60 = 210, plus/minus luck and trait bonus
@@ -98,8 +98,8 @@ describe('🏆 UNIT: Competition Score Calculation - Scoring Algorithm Validatio
     });
 
     it('should apply +5 trait bonus for matching discipline affinity', () => {
-      const horseWithTrait = createTestHorse({ speed: 70, stamina: 60, focus: 50 }, ['discipline_affinity_racing']);
-      const horseWithoutTrait = createTestHorse({ speed: 70, stamina: 60, focus: 50 });
+      const horseWithTrait = createTestHorse({ speed: 70, stamina: 60, intelligence: 50 }, ['discipline_affinity_racing']);
+      const horseWithoutTrait = createTestHorse({ speed: 70, stamina: 60, intelligence: 50 });
 
       // Mock Math.random to eliminate luck variance for this test
       const originalRandom = Math.random;
@@ -116,7 +116,7 @@ describe('🏆 UNIT: Competition Score Calculation - Scoring Algorithm Validatio
 
     it('should NOT apply trait bonus for non-matching discipline', () => {
       const horse = createTestHorse(
-        { speed: 70, stamina: 60, focus: 50 },
+        { speed: 70, stamina: 60, intelligence: 50 },
         ['discipline_affinity_dressage'], // Wrong trait for Racing
       );
 
@@ -134,7 +134,7 @@ describe('🏆 UNIT: Competition Score Calculation - Scoring Algorithm Validatio
     });
 
     it('should apply ±9% random luck modifier', () => {
-      const horse = createTestHorse({ speed: 100, stamina: 100, focus: 100 }); // Base score: 300
+      const horse = createTestHorse({ speed: 100, stamina: 100, intelligence: 100 }); // Base score: 300
       const scores = [];
 
       // Generate multiple scores to test variance
@@ -152,7 +152,7 @@ describe('🏆 UNIT: Competition Score Calculation - Scoring Algorithm Validatio
     });
 
     it('should handle missing stats by defaulting to 0', () => {
-      const horse = createTestHorse({ speed: undefined, stamina: null, focus: 80 });
+      const horse = createTestHorse({ speed: undefined, stamina: null, intelligence: 80 });
       const score = calculateCompetitionScore(horse, 'Racing');
 
       // Should use 0 + 0 + 80 = 80 as base score
@@ -198,7 +198,7 @@ describe('🏆 UNIT: Competition Score Calculation - Scoring Algorithm Validatio
     });
 
     it('should handle unknown event types with default calculation', () => {
-      const horse = createTestHorse({ speed: 70, stamina: 60, focus: 50 });
+      const horse = createTestHorse({ speed: 70, stamina: 60, intelligence: 50 });
       const score = calculateCompetitionScore(horse, 'Unknown Event');
 
       // Should use Racing calculation as default
@@ -208,7 +208,7 @@ describe('🏆 UNIT: Competition Score Calculation - Scoring Algorithm Validatio
     });
 
     it('should return rounded integer scores', () => {
-      const horse = createTestHorse({ speed: 70, stamina: 60, focus: 50 });
+      const horse = createTestHorse({ speed: 70, stamina: 60, intelligence: 50 });
       const score = calculateCompetitionScore(horse, 'Racing');
 
       expect(Number.isInteger(score)).toBe(true);
@@ -257,9 +257,9 @@ describe('🏆 UNIT: Competition Score Calculation - Scoring Algorithm Validatio
       // Use jest.spyOn for more deterministic testing
       const mockRandom = jest.spyOn(Math, 'random');
 
-      const traitHorse = createTestHorse({ speed: 70, stamina: 60, focus: 50 }, ['discipline_affinity_racing']);
+      const traitHorse = createTestHorse({ speed: 70, stamina: 60, intelligence: 50 }, ['discipline_affinity_racing']);
 
-      const regularHorse = createTestHorse({ speed: 70, stamina: 60, focus: 50 });
+      const regularHorse = createTestHorse({ speed: 70, stamina: 60, intelligence: 50 });
 
       let traitWins = 0;
       const totalRuns = 20;
@@ -362,11 +362,11 @@ describe('🏆 UNIT: Competition Score Calculation - Scoring Algorithm Validatio
       const mockRandom = jest.spyOn(Math, 'random');
 
       const jumpTraitHorse = createTestHorse(
-        { speed: 70, stamina: 60, focus: 50 },
+        { speed: 70, stamina: 60, intelligence: 50 },
         ['discipline_affinity_show_jumping'], // Jump trait for Racing discipline
       );
 
-      const regularHorse = createTestHorse({ speed: 70, stamina: 60, focus: 50 });
+      const regularHorse = createTestHorse({ speed: 70, stamina: 60, intelligence: 50 });
 
       let traitWins = 0;
       const totalRuns = 20;
@@ -416,11 +416,11 @@ describe('🏆 UNIT: Competition Score Calculation - Scoring Algorithm Validatio
         name: 'No Modifiers Horse',
         speed: 70,
         stamina: 60,
-        focus: 50,
+        intelligence: 50,
         // No epigeneticModifiers field
       };
 
-      const regularHorse = createTestHorse({ speed: 70, stamina: 60, focus: 50 });
+      const regularHorse = createTestHorse({ speed: 70, stamina: 60, intelligence: 50 });
 
       let noModifiersWins = 0;
       const totalRuns = 20;
@@ -480,9 +480,9 @@ describe('🏆 UNIT: Competition Score Calculation - Scoring Algorithm Validatio
       // Mock Math.random to return 0.5 (middle of range for luck modifier)
       Math.random = () => 0.5;
 
-      const traitHorse = createTestHorse({ speed: 70, stamina: 60, focus: 50 }, ['discipline_affinity_racing']);
+      const traitHorse = createTestHorse({ speed: 70, stamina: 60, intelligence: 50 }, ['discipline_affinity_racing']);
 
-      const regularHorse = createTestHorse({ speed: 70, stamina: 60, focus: 50 });
+      const regularHorse = createTestHorse({ speed: 70, stamina: 60, intelligence: 50 });
 
       const traitScore = calculateCompetitionScore(traitHorse, 'Racing');
       const regularScore = calculateCompetitionScore(regularHorse, 'Racing');
@@ -496,7 +496,7 @@ describe('🏆 UNIT: Competition Score Calculation - Scoring Algorithm Validatio
       // Mock Math.random to return 0 (minimum luck modifier: -9%)
       Math.random = () => 0;
 
-      const horse = createTestHorse({ speed: 100, stamina: 100, focus: 100 });
+      const horse = createTestHorse({ speed: 100, stamina: 100, intelligence: 100 });
       const score = calculateCompetitionScore(horse, 'Racing');
 
       // Base score: 300, with -9% luck modifier should be exactly 273
@@ -507,7 +507,7 @@ describe('🏆 UNIT: Competition Score Calculation - Scoring Algorithm Validatio
       // Mock Math.random to return 1 (maximum luck modifier: +9%)
       Math.random = () => 1;
 
-      const horse = createTestHorse({ speed: 100, stamina: 100, focus: 100 });
+      const horse = createTestHorse({ speed: 100, stamina: 100, intelligence: 100 });
       const score = calculateCompetitionScore(horse, 'Racing');
 
       // Base score: 300, with +9% luck modifier should be exactly 327
@@ -547,7 +547,7 @@ describe('🏆 UNIT: Competition Score Calculation - Scoring Algorithm Validatio
         {
           name: 'Racing',
           trait: 'discipline_affinity_racing',
-          stats: { speed: 70, stamina: 60, focus: 50 },
+          stats: { speed: 70, stamina: 60, intelligence: 50 },
         },
         {
           name: 'Show Jumping',
@@ -581,11 +581,11 @@ describe('🏆 UNIT: Competition Score Calculation - Scoring Algorithm Validatio
       Math.random = () => 0.5; // Neutral luck modifier
 
       const jumpTraitHorse = createTestHorse(
-        { speed: 70, stamina: 60, focus: 50 },
+        { speed: 70, stamina: 60, intelligence: 50 },
         ['discipline_affinity_show_jumping'], // Jump trait
       );
 
-      const regularHorse = createTestHorse({ speed: 70, stamina: 60, focus: 50 });
+      const regularHorse = createTestHorse({ speed: 70, stamina: 60, intelligence: 50 });
 
       // Test in Racing (trait doesn't match)
       const traitScore = calculateCompetitionScore(jumpTraitHorse, 'Racing');
@@ -601,7 +601,7 @@ describe('🏆 UNIT: Competition Score Calculation - Scoring Algorithm Validatio
       expect(weights).toEqual({
         speed: 1.0,
         stamina: 1.0,
-        focus: 1.0,
+        intelligence: 1.0,
       });
     });
 
@@ -619,14 +619,14 @@ describe('🏆 UNIT: Competition Score Calculation - Scoring Algorithm Validatio
       expect(weights).toEqual({
         speed: 1.0,
         stamina: 1.0,
-        focus: 1.0,
+        intelligence: 1.0,
       });
     });
   });
 
   describe('validateHorseForCompetition', () => {
     it('should return true for valid horse with required stats', () => {
-      const horse = createTestHorse({ speed: 70, stamina: 60, focus: 50 });
+      const horse = createTestHorse({ speed: 70, stamina: 60, intelligence: 50 });
       expect(validateHorseForCompetition(horse, 'Racing')).toBe(true);
     });
 

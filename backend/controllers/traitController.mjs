@@ -71,8 +71,6 @@ export async function discoverTraits(req, res) {
       success: true,
       message: discoveryResult.message,
       data: {
-        foalId: parsedHorseId,
-        foalName: horse.name,
         horseId: parsedHorseId,
         horseName: horse.name,
         conditionsMet: discoveryResult.conditionsMet || discoveryResult.conditions || [],
@@ -90,7 +88,6 @@ export async function discoverTraits(req, res) {
           hiddenBefore: discoveryResult.totalHiddenBefore || 0,
           hiddenAfter: discoveryResult.totalHiddenAfter || 0,
         },
-        ...discoveryResult,
       },
     });
   } catch (error) {

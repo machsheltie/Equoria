@@ -409,7 +409,7 @@ function getDisciplineConfigurations() {
       detrimental: ['slow', 'lazy', 'nervous'],
     },
     'Harness Racing': {
-      stats: ['speed', 'precision', 'stamina'],
+      stats: ['speed', 'precision', 'endurance'],
       beneficial: ['fast', 'precise', 'resilient', 'focused'],
       detrimental: ['slow', 'clumsy', 'weak'],
     },

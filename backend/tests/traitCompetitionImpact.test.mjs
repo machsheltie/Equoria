@@ -184,7 +184,7 @@ describe('🏆 UNIT: Trait Competition Impact System - Scoring Modifier Calculat
         id: 1,
         name: 'Legendary Horse',
         epigenetic_modifiers: {
-          positive: ['legendary_bloodline'],
+          positive: ['legendaryBloodline'],
           negative: [],
           hidden: [],
         },
@@ -196,7 +196,7 @@ describe('🏆 UNIT: Trait Competition Impact System - Scoring Modifier Calculat
       expect(result.traitBonuses).toHaveLength(1);
 
       const [legendaryTrait] = result.appliedTraits;
-      expect(legendaryTrait.name).toBe('legendary_bloodline');
+      expect(legendaryTrait.name).toBe('legendaryBloodline');
       expect(legendaryTrait.isSpecialized).toBe(true);
       expect(legendaryTrait.modifier).toBe(0.1); // 10% for Racing
       expect(result.finalScoreAdjustment).toBe(10); // 100 * 0.10

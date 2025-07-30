@@ -25,7 +25,7 @@ export function calculateCompetitionScore(horse, eventType) {
 
     switch (normalizedEventType) {
       case 'Racing':
-        baseScore = (horse.speed || 0) + (horse.stamina || 0) + (horse.focus || 0);
+        baseScore = (horse.speed || 0) + (horse.stamina || 0) + (horse.intelligence || 0);
         break;
 
       case 'Show Jumping':
@@ -49,7 +49,7 @@ export function calculateCompetitionScore(horse, eventType) {
         logger.warn(
           `[calculateCompetitionScore] Unknown event type: ${normalizedEventType}, using default calculation`,
         );
-        baseScore = (horse.speed || 0) + (horse.stamina || 0) + (horse.focus || 0);
+        baseScore = (horse.speed || 0) + (horse.stamina || 0) + (horse.intelligence || 0);
     }
 
     logger.info(
@@ -139,7 +139,7 @@ export function getDisciplineStatWeights(eventType) {
     Racing: {
       speed: 1.0,
       stamina: 1.0,
-      focus: 1.0,
+      intelligence: 1.0,
     },
     'Show Jumping': {
       precision: 1.0,
