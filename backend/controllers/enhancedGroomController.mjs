@@ -51,10 +51,10 @@ export async function getEnhancedInteractions(req, res) {
         select: {
           id: true,
           name: true,
-          age: true,
+          dateOfBirth: true,
           bondScore: true,
           stressLevel: true,
-          userId: true
+          ownerId: true
         }
       })
     ]);
@@ -68,13 +68,17 @@ export async function getEnhancedInteractions(req, res) {
       });
     }
 
-    if (!horse || horse.userId !== userId) {
+    if (!horse || horse.ownerId !== userId) {
       return res.status(404).json({
         success: false,
         message: 'Horse not found or not owned by user',
         data: null
       });
     }
+
+    // Calculate age from date of birth
+    const ageInDays = Math.floor((Date.now() - new Date(horse.dateOfBirth).getTime()) / (1000 * 60 * 60 * 24));
+    horse.age = ageInDays;
 
     // Get relationship level
     const relationshipLevel = calculateRelationshipLevel(horse.bondScore || 0);
@@ -211,10 +215,10 @@ export async function performEnhancedInteraction(req, res) {
         select: {
           id: true,
           name: true,
-          age: true,
+          dateOfBirth: true,
           bondScore: true,
           stressLevel: true,
-          userId: true
+          ownerId: true
         }
       })
     ]);
@@ -228,13 +232,17 @@ export async function performEnhancedInteraction(req, res) {
       });
     }
 
-    if (!horse || horse.userId !== userId) {
+    if (!horse || horse.ownerId !== userId) {
       return res.status(404).json({
         success: false,
         message: 'Horse not found or not owned by user',
         data: null
       });
     }
+
+    // Calculate age from date of birth
+    const ageInDays = Math.floor((Date.now() - new Date(horse.dateOfBirth).getTime()) / (1000 * 60 * 60 * 24));
+    horse.age = ageInDays;
 
     // Calculate enhanced effects
     const effects = calculateEnhancedEffects(groom, horse, interactionType, variation, duration);
@@ -348,10 +356,10 @@ export async function getRelationshipDetails(req, res) {
     // Get current horse data
     const horse = await prisma.horse.findUnique({
       where: { id: parseInt(horseId) },
-      select: { bondScore: true, name: true, userId: true }
+      select: { bondScore: true, name: true, ownerId: true }
     });
 
-    if (!horse || horse.userId !== userId) {
+    if (!horse || horse.ownerId !== userId) {
       return res.status(404).json({
         success: false,
         message: 'Horse not found or not owned by user',

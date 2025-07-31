@@ -4,9 +4,9 @@
  */
 
 import express from 'express';
-import { body, param } from 'express-validator';
-import { validateRequest } from '../middleware/validation.mjs';
+import { body, param, validationResult } from 'express-validator';
 import { authenticateToken } from '../middleware/auth.mjs';
+import logger from '../utils/logger.mjs';
 import {
   getEnhancedInteractions,
   performEnhancedInteraction,
@@ -14,6 +14,22 @@ import {
 } from '../controllers/enhancedGroomController.mjs';
 
 const router = express.Router();
+
+/**
+ * Validation middleware for handling validation errors
+ */
+const handleValidationErrors = (req, res, next) => {
+  const errors = validationResult(req);
+  if (!errors.isEmpty()) {
+    logger.warn(`[enhancedGroomRoutes] Validation errors: ${JSON.stringify(errors.array())}`);
+    return res.status(400).json({
+      success: false,
+      message: 'Validation failed',
+      errors: errors.array(),
+    });
+  }
+  next();
+};
 
 // Apply authentication to all routes
 router.use(authenticateToken);
@@ -32,7 +48,7 @@ router.get(
       .isInt({ min: 1 })
       .withMessage('Horse ID must be a positive integer')
   ],
-  validateRequest,
+  handleValidationErrors,
   getEnhancedInteractions
 );
 
@@ -66,7 +82,7 @@ router.post(
       .isLength({ max: 500 })
       .withMessage('Notes must be a string (max 500 characters)')
   ],
-  validateRequest,
+  handleValidationErrors,
   performEnhancedInteraction
 );
 
@@ -84,7 +100,7 @@ router.get(
       .isInt({ min: 1 })
       .withMessage('Horse ID must be a positive integer')
   ],
-  validateRequest,
+  handleValidationErrors,
   getRelationshipDetails
 );
 
@@ -92,7 +108,7 @@ router.get(
  * GET /api/grooms/enhanced/interactions/types
  * Get all available interaction types and their details
  */
-router.get('/interactions/types', (req, res) => {
+router.get('/interactions/types', async (req, res) => {
   try {
     const { ENHANCED_INTERACTIONS } = await import('../services/enhancedGroomInteractions.mjs');
     
@@ -137,9 +153,9 @@ router.get('/interactions/types', (req, res) => {
  * GET /api/grooms/enhanced/relationship-levels
  * Get information about relationship levels
  */
-router.get('/relationship-levels', (req, res) => {
+router.get('/relationship-levels', async (req, res) => {
   try {
-    const { RELATIONSHIP_LEVELS } = require('../services/enhancedGroomInteractions.mjs');
+    const { RELATIONSHIP_LEVELS } = await import('../services/enhancedGroomInteractions.mjs');
     
     const levels = Object.values(RELATIONSHIP_LEVELS).map(level => ({
       level: level.level,
@@ -179,9 +195,9 @@ router.get('/relationship-levels', (req, res) => {
  * GET /api/grooms/enhanced/special-events
  * Get information about special events that can occur
  */
-router.get('/special-events', (req, res) => {
+router.get('/special-events', async (req, res) => {
   try {
-    const { SPECIAL_EVENTS } = require('../services/enhancedGroomInteractions.mjs');
+    const { SPECIAL_EVENTS } = await import('../services/enhancedGroomInteractions.mjs');
     
     const events = Object.entries(SPECIAL_EVENTS).map(([id, event]) => ({
       id,
