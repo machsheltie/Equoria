@@ -505,14 +505,14 @@ export async function batchRevealTraits(horseIds, options = {}) {
     try {
       const result = await revealTraits(horseId, options);
       results.push({
-        horseId: horseId,
+        horseId,
         success: true,
         ...result,
       });
     } catch (error) {
       logger.error(`[traitDiscovery.batchRevealTraits] Error for horse ${horseId}:`, error);
       results.push({
-        horseId: horseId,
+        horseId,
         success: false,
         error: error.message,
       });

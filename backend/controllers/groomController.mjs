@@ -502,7 +502,7 @@ export async function hireGroom(req, res) {
     }
 
     // Validate experience (must be positive integer)
-    const sanitizedExperience = experience != null ? parseInt(experience) : 1;
+    const sanitizedExperience = experience !== null ? parseInt(experience) : 1;
     if (isNaN(sanitizedExperience) || sanitizedExperience < 1 || sanitizedExperience > 20) {
       return res.status(400).json({
         success: false,
@@ -512,8 +512,8 @@ export async function hireGroom(req, res) {
     }
 
     // Validate session rate (must be positive number)
-    const sanitizedSessionRate = session_rate != null ? parseFloat(session_rate) : null;
-    if (sanitizedSessionRate != null && (isNaN(sanitizedSessionRate) || sanitizedSessionRate <= 0)) {
+    const sanitizedSessionRate = session_rate !== null ? parseFloat(session_rate) : null;
+    if (sanitizedSessionRate !== null && (isNaN(sanitizedSessionRate) || sanitizedSessionRate <= 0)) {
       return res.status(400).json({
         success: false,
         message: 'session rate must be a positive number',

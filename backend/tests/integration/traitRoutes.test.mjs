@@ -135,13 +135,13 @@ describe('Trait Routes Integration Tests', () => {
       mockPrisma.horse.findUnique.mockImplementation(({ where, include }) => {
         if (where.id === testHorse.id) {
           const horse = { ...testHorse };
-          if (include?.breed) horse.breed = testBreed;
-          if (include?.foalActivities) horse.foalActivities = [];
+          if (include?.breed) { horse.breed = testBreed; }
+          if (include?.foalActivities) { horse.foalActivities = []; }
           return Promise.resolve(horse);
         } else if (where.id === adultHorse.id) {
           const horse = { ...adultHorse };
-          if (include?.breed) horse.breed = testBreed;
-          if (include?.foalActivities) horse.foalActivities = [];
+          if (include?.breed) { horse.breed = testBreed; }
+          if (include?.foalActivities) { horse.foalActivities = []; }
           return Promise.resolve(horse);
         } else if (where.id === 99999) {
           return Promise.resolve(null);

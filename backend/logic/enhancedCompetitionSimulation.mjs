@@ -117,7 +117,7 @@ export async function executeEnhancedCompetition(show, entries) {
     const competitionEntries = entries.map(({ horse, user }) => {
       const rawScore = calculateCompetitionScore(horse, show.discipline);
       // Ensure score is a valid decimal value (Prisma requires Decimal type)
-      const score = rawScore != null && !isNaN(rawScore) ? Number(rawScore) : 0;
+      const score = rawScore !== null && !isNaN(rawScore) ? Number(rawScore) : 0;
 
       logger.info(
         `[enhancedCompetitionSimulation] Horse ${horse.name} (ID: ${horse.id}) scored ${score} in ${show.discipline}`,

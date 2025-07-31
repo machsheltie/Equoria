@@ -164,9 +164,9 @@ export function getTraitCategory(traits, traitName) {
       return null;
     }
 
-    if ((traits.positive || []).includes(traitName)) return 'positive';
-    if ((traits.negative || []).includes(traitName)) return 'negative';
-    if ((traits.hidden || []).includes(traitName)) return 'hidden';
+    if ((traits.positive || []).includes(traitName)) { return 'positive'; }
+    if ((traits.negative || []).includes(traitName)) { return 'negative'; }
+    if ((traits.hidden || []).includes(traitName)) { return 'hidden'; }
 
     return null;
   } catch (error) {

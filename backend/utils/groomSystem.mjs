@@ -607,8 +607,9 @@ export function calculateGroomInteractionEffects(groom, foal, interactionType, d
     // Apply personality effects to modify base calculations
     const finalEffects = calculatePersonalityEffects(groom, foal, interactionType, baseEffects);
 
-    // Ensure bondingChange stays within reasonable bounds after all modifications
+    // Ensure both bondingChange and stressChange stay within reasonable bounds after all modifications
     finalEffects.bondingChange = Math.max(0, Math.min(10, finalEffects.bondingChange));
+    finalEffects.stressChange = Math.max(-10, Math.min(5, finalEffects.stressChange));
 
     logger.info(
       `[groomSystem.calculateGroomInteractionEffects] Applied personality effects for ${groom.personality}: ${finalEffects.personalityEffects?.bonusesApplied?.join(', ') || 'none'}`,

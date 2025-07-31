@@ -38,7 +38,7 @@
  *    with strategic mocking of data layer while validating API contracts.
  */
 
-import { jest, describe, beforeAll, afterAll, beforeEach, expect, it } from '@jest/globals';
+import { describe, beforeAll, afterAll, expect, it } from '@jest/globals';
 import request from 'supertest';
 import { createTestUser, cleanupTestData } from '../helpers/testAuth.mjs';
 
