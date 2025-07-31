@@ -55,12 +55,16 @@ import groomMarketplaceRoutes from './routes/groomMarketplaceRoutes.mjs';
 import enhancedGroomRoutes from './routes/enhancedGroomRoutes.mjs';
 import groomAssignmentRoutes from './routes/groomAssignmentRoutes.mjs';
 import groomHandlerRoutes from './routes/groomHandlerRoutes.mjs';
+import groomSalaryRoutes from './routes/groomSalaryRoutes.mjs';
 import leaderboardRoutes from './routes/leaderboardRoutes.mjs';
 import adminRoutes from './routes/adminRoutes.mjs';
 
 // Middleware imports
 import errorHandler from './middleware/errorHandler.mjs';
 import { requestLogger, errorRequestLogger } from './middleware/requestLogger.mjs';
+
+// Service imports
+import { initializeCronJobs, stopCronJobs } from './services/cronJobService.mjs';
 
 const app = express();
 
@@ -163,6 +167,7 @@ app.use('/api/grooms', groomRoutes);
 app.use('/api/grooms/enhanced', enhancedGroomRoutes);
 app.use('/api/groom-assignments', groomAssignmentRoutes);
 app.use('/api/groom-handlers', groomHandlerRoutes);
+app.use('/api/groom-salaries', groomSalaryRoutes);
 app.use('/api/groom-marketplace', groomMarketplaceRoutes);
 app.use('/api/leaderboard', leaderboardRoutes);
 app.use('/api/admin', adminRoutes);
@@ -208,13 +213,18 @@ app.use(errorRequestLogger);
 app.use(errorHandler);
 
 // Graceful shutdown handling
+// Initialize cron jobs
+initializeCronJobs();
+
 process.on('SIGTERM', () => {
   logger.info('SIGTERM received, shutting down gracefully');
+  stopCronJobs();
   process.exit(0);
 });
 
 process.on('SIGINT', () => {
   logger.info('SIGINT received, shutting down gracefully');
+  stopCronJobs();
   process.exit(0);
 });
 

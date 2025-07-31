@@ -36,7 +36,7 @@
     "express-validator": "^7.0.1",
     "helmet": "^7.1.0",
     "jsonwebtoken": "^9.0.2",
-    "node-cron": "^4.1.0",
+    "node-cron": "^4.2.1",
     "pg": "^8.16.0",
     "winston": "^3.11.0"
   },

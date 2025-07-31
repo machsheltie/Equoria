@@ -90,7 +90,6 @@ export const SPECIALTY_DISCIPLINE_BONUSES = {
 
 /**
  * Calculate groom handler performance bonus (ONLY for conformation shows)
- * This function should NOT be used for performance competitions
  * @param {Object} groom - Groom object with skills and personality
  * @param {Object} horse - Horse object
  * @param {string} classNameOrDiscipline - Conformation class name or discipline
@@ -139,61 +138,6 @@ export function calculateHandlerBonus(groom, horse, classNameOrDiscipline, assig
       groomSpecialty: groom.speciality,
       groomPersonality: groom.personality,
       isConformationShow: true
-    };
-
-    // 1. Skill Level Bonus
-    const skillConfig = HANDLER_SKILL_BONUSES[groom.skillLevel] || HANDLER_SKILL_BONUSES.novice;
-    bonusBreakdown.skillBonus = skillConfig.baseBonus;
-    totalBonus += bonusBreakdown.skillBonus;
-
-    // 2. Experience Bonus (capped at max)
-    const experienceBonus = Math.min(
-      (groom.experience || 0) * skillConfig.experienceMultiplier,
-      skillConfig.maxBonus - skillConfig.baseBonus
-    );
-    bonusBreakdown.experienceBonus = experienceBonus;
-    totalBonus += experienceBonus;
-
-    // 3. Personality-Discipline Synergy
-    const personalitySynergy = PERSONALITY_DISCIPLINE_SYNERGY[groom.personality];
-    if (personalitySynergy && personalitySynergy.beneficial.includes(discipline)) {
-      bonusBreakdown.personalityBonus = personalitySynergy.bonus;
-      totalBonus += personalitySynergy.bonus;
-    }
-
-    // 4. Specialty-Discipline Matching
-    const specialtyConfig = SPECIALTY_DISCIPLINE_BONUSES[groom.speciality];
-    if (specialtyConfig && specialtyConfig.disciplines.includes(discipline)) {
-      bonusBreakdown.specialtyBonus = specialtyConfig.bonus;
-      totalBonus += specialtyConfig.bonus;
-    } else if (specialtyConfig) {
-      // General bonus for any specialty
-      bonusBreakdown.specialtyBonus = specialtyConfig.bonus;
-      totalBonus += specialtyConfig.bonus;
-    }
-
-    // 5. Bond Score Bonus (relationship quality)
-    if (assignment && horse.bondScore) {
-      // Bond score affects handler effectiveness (0-100 scale)
-      const bondMultiplier = Math.max(0.5, horse.bondScore / 100); // 50% to 100% effectiveness
-      const bondBonus = totalBonus * (bondMultiplier - 1); // Additional bonus based on bond
-      bonusBreakdown.bondBonus = Math.max(0, bondBonus);
-      totalBonus += bonusBreakdown.bondBonus;
-    }
-
-    // Cap total bonus at reasonable maximum (30%)
-    totalBonus = Math.min(totalBonus, 0.30);
-    bonusBreakdown.totalBonus = totalBonus;
-
-    logger.info(`[groomHandlerService] Handler bonus calculated: ${(totalBonus * 100).toFixed(1)}% for ${groom.name} in ${discipline}`);
-
-    return {
-      handlerBonus: totalBonus,
-      bonusBreakdown,
-      groomName: groom.name,
-      groomSkillLevel: groom.skillLevel,
-      groomSpecialty: groom.speciality,
-      groomPersonality: groom.personality
     };
 
   } catch (error) {
