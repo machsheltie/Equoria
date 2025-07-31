@@ -12,6 +12,7 @@
  */
 
 import logger from '../utils/logger.mjs';
+import { recordGroomPerformance } from './groomPerformanceService.mjs';
 
 // Enhanced interaction types with contextual variations
 export const ENHANCED_INTERACTIONS = {
