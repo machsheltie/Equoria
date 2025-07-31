@@ -52,6 +52,7 @@ import traitRoutes from './routes/traitRoutes.mjs';
 import traitDiscoveryRoutes from './routes/traitDiscoveryRoutes.mjs';
 import groomRoutes from './routes/groomRoutes.mjs';
 import groomMarketplaceRoutes from './routes/groomMarketplaceRoutes.mjs';
+import enhancedGroomRoutes from './routes/enhancedGroomRoutes.mjs';
 import leaderboardRoutes from './routes/leaderboardRoutes.mjs';
 import adminRoutes from './routes/adminRoutes.mjs';
 
@@ -157,6 +158,7 @@ app.use('/api/foals', foalRoutes);
 app.use('/api/traits', traitDiscoveryRoutes);
 app.use('/api/traits', traitRoutes);
 app.use('/api/grooms', groomRoutes);
+app.use('/api/grooms/enhanced', enhancedGroomRoutes);
 app.use('/api/groom-marketplace', groomMarketplaceRoutes);
 app.use('/api/leaderboard', leaderboardRoutes);
 app.use('/api/admin', adminRoutes);
