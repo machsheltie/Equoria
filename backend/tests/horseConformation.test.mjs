@@ -269,7 +269,7 @@ describe('🐎 UNIT: Horse Conformation Scoring System', () => {
       ];
 
       invalidUpdates.forEach(update => {
-        const [, score] = Object.entries(update)[0];
+        const [[, score]] = [Object.entries(update)[0]];
         if (typeof score === 'number') {
           expect(score < 1 || score > 100).toBe(true);
         } else {
