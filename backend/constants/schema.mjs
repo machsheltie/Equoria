@@ -89,7 +89,22 @@ export const DISCIPLINES = {
   HARNESS_RACING: 'Harness Racing',
 };
 
+/**
+ * Conformation show classes (separate from performance disciplines)
+ * These are not added to DISCIPLINES as they're a separate competition system
+ */
+export const CONFORMATION_CLASSES = {
+  FOALS_YOUNGSTOCK: 'Foals/Youngstock',
+  MARES: 'Mares',
+  STALLIONS: 'Stallions',
+  GELDINGS: 'Geldings',
+  VETERANS: 'Veterans',
+  OPEN_ALL_BREED: 'Open All-Breed',
+  BREED_SPECIFIC: 'Breed-Specific'
+};
+
 export const DISCIPLINE_VALUES = Object.values(DISCIPLINES);
+export const CONFORMATION_CLASS_VALUES = Object.values(CONFORMATION_CLASSES);
 
 /**
  * Competition placements
