@@ -43,7 +43,6 @@ describe('Groom Salary System', () => {
         dateOfBirth: new Date(Date.now() - (5 * 365 * 24 * 60 * 60 * 1000)), // 5 years old
         age: 5,
         sex: 'male',
-        color: 'Bay',
         health: 'Excellent',
         speed: 50,
         agility: 50,

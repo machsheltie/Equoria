@@ -163,7 +163,7 @@ app.use('/api/training', trainingRoutes);
 app.use('/api/competition', competitionRoutes);
 app.use('/api/breeds', breedRoutes);
 app.use('/api/foals', foalRoutes);
-app.use('/api/traits', traitDiscoveryRoutes);
+app.use('/api/trait-discovery', traitDiscoveryRoutes);
 app.use('/api/traits', traitRoutes);
 app.use('/api/grooms', groomRoutes);
 app.use('/api/grooms/enhanced', enhancedGroomRoutes);

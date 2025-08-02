@@ -166,7 +166,7 @@ describe('🏪 INTEGRATION: Groom Marketplace API', () => {
 
     it('should allow premium refresh with force=true', async () => {
       // Get user's initial money
-      const initialResponse = await request(app)
+      const _initialResponse = await request(app)
         .get('/api/groom-marketplace')
         .set('Authorization', `Bearer ${authToken}`);
 
