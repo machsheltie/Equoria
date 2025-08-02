@@ -166,7 +166,7 @@ describe('Trait Routes Integration Tests', () => {
       const response = await request(app).post('/api/trait-discovery/discover/invalid').send({}).expect(400);
 
       expect(response.body.success).toBe(false);
-      expect(response.body.message).toBe('Validation failed');
+      expect(response.body.message).toBe('Horse ID must be a positive integer');
       expect(response.body.errors).toBeDefined();
     });
 
@@ -179,7 +179,7 @@ describe('Trait Routes Integration Tests', () => {
 
     it('should handle optional parameters correctly', async () => {
       const response = await request(app)
-        .post(`/api/traits/discover/${testHorse.id}`)
+        .post(`/api/trait-discovery/discover/${testHorse.id}`)
         .send({
           checkEnrichment: false,
           forceCheck: true,
@@ -223,7 +223,7 @@ describe('Trait Routes Integration Tests', () => {
       const response = await request(app).get('/api/traits/horse/invalid').expect(400);
 
       expect(response.body.success).toBe(false);
-      expect(response.body.message).toBe('Validation failed');
+      expect(response.body.message).toBe('Horse ID must be a positive integer');
     });
 
     it('should return 404 for non-existent horse', async () => {
@@ -272,13 +272,13 @@ describe('Trait Routes Integration Tests', () => {
       const response = await request(app).get('/api/traits/definitions?type=invalid').expect(400);
 
       expect(response.body.success).toBe(false);
-      expect(response.body.message).toBe('Validation failed');
+      expect(response.body.message).toBe('Type must be either "all", "positive", or "negative"');
     });
   });
 
-  describe('GET /api/traits/discovery-status/:horseId', () => {
+  describe('GET /api/trait-discovery/discovery-status/:horseId', () => {
     it('should get discovery status successfully', async () => {
-      const response = await request(app).get(`/api/traits/discovery-status/${testHorse.id}`).expect(200);
+      const response = await request(app).get(`/api/trait-discovery/discovery-status/${testHorse.id}`).expect(200);
 
       expect(response.body.success).toBe(true);
       expect(response.body.data).toHaveProperty('horseId', testHorse.id);
@@ -306,24 +306,24 @@ describe('Trait Routes Integration Tests', () => {
     });
 
     it('should return validation error for invalid horse ID', async () => {
-      const response = await request(app).get('/api/traits/discovery-status/invalid').expect(400);
+      const response = await request(app).get('/api/trait-discovery/discovery-status/invalid').expect(400);
 
       expect(response.body.success).toBe(false);
-      expect(response.body.message).toBe('Validation failed');
+      expect(response.body.message).toBe('Horse ID must be a positive integer');
     });
 
     it('should return 404 for non-existent horse', async () => {
-      const response = await request(app).get('/api/traits/discovery-status/99999').expect(404);
+      const response = await request(app).get('/api/trait-discovery/discovery-status/99999').expect(404);
 
       expect(response.body.success).toBe(false);
       expect(response.body.message).toBe('Horse not found');
     });
   });
 
-  describe('POST /api/traits/batch-discover', () => {
+  describe('POST /api/trait-discovery/batch-discover', () => {
     it('should process batch discovery successfully', async () => {
       const response = await request(app)
-        .post('/api/traits/batch-discover')
+        .post('/api/trait-discovery/batch-discover')
         .send({
           horseIds: [testHorse.id],
           checkEnrichment: true,
@@ -345,45 +345,45 @@ describe('Trait Routes Integration Tests', () => {
 
     it('should return validation error for empty horse IDs array', async () => {
       const response = await request(app)
-        .post('/api/traits/batch-discover')
+        .post('/api/trait-discovery/batch-discover')
         .send({
           horseIds: [],
         })
         .expect(400);
 
       expect(response.body.success).toBe(false);
-      expect(response.body.message).toBe('Validation failed');
+      expect(response.body.message).toBe('horseIds must be an array with 1-10 elements');
     });
 
     it('should return validation error for too many horse IDs', async () => {
       const tooManyIds = Array.from({ length: 11 }, (_, i) => i + 1);
 
       const response = await request(app)
-        .post('/api/traits/batch-discover')
+        .post('/api/trait-discovery/batch-discover')
         .send({
           horseIds: tooManyIds,
         })
         .expect(400);
 
       expect(response.body.success).toBe(false);
-      expect(response.body.message).toBe('Validation failed');
+      expect(response.body.message).toBe('horseIds must be an array with 1-10 elements');
     });
 
     it('should return validation error for invalid horse IDs', async () => {
       const response = await request(app)
-        .post('/api/traits/batch-discover')
+        .post('/api/trait-discovery/batch-discover')
         .send({
           horseIds: ['invalid', 'ids'],
         })
         .expect(400);
 
       expect(response.body.success).toBe(false);
-      expect(response.body.message).toBe('Validation failed');
+      expect(response.body.message).toBe('All horse IDs must be positive integers');
     });
 
     it('should handle mix of valid and invalid horse IDs', async () => {
       const response = await request(app)
-        .post('/api/traits/batch-discover')
+        .post('/api/trait-discovery/batch-discover')
         .send({
           horseIds: [testHorse.id, 99999], // One valid, one invalid
         })

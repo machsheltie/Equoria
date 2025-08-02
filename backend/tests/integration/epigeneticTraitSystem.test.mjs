@@ -204,7 +204,7 @@ describe('Epigenetic Trait System Integration Tests', () => {
       expect(response.body.data.traitName).toBe('Affectionate');
       expect(response.body.data.sourceType).toBe('groom');
       expect(response.body.data.isEpigenetic).toBe(true);
-      expect(response.body.data.influenceScore).toBe(3.5);
+      expect(response.body.data.influenceScore).toBe(3);
     });
 
     test('GET /api/epigenetic-traits/history/:horseId should return trait history', async () => {

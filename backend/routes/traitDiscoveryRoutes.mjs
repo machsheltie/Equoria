@@ -5,6 +5,8 @@ import {
   getDiscoveryProgress,
   DISCOVERY_CONDITIONS,
 } from '../utils/traitDiscovery.mjs';
+import { discoverTraits, getDiscoveryStatus, batchDiscoverTraits } from '../controllers/traitController.mjs';
+import { handleValidationErrors } from '../middleware/validationErrorHandler.mjs';
 import logger from '../utils/logger.mjs';
 
 const router = express.Router();
@@ -280,5 +282,55 @@ function categorizeCondition(conditionKey) {
   }
   return 'other';
 }
+
+/**
+ * POST /api/trait-discovery/discover/:horseId
+ * Trigger trait discovery for a specific horse
+ */
+router.post(
+  '/discover/:horseId',
+  [
+    param('horseId').isInt({ min: 1 }).withMessage('Horse ID must be a positive integer'),
+    body('checkEnrichment').optional().isBoolean().withMessage('checkEnrichment must be a boolean'),
+    body('forceCheck').optional().isBoolean().withMessage('forceCheck must be a boolean'),
+    handleValidationErrors,
+  ],
+  discoverTraits,
+);
+
+/**
+ * GET /api/trait-discovery/discovery-status/:horseId
+ * Get discovery status and conditions for a horse
+ */
+router.get(
+  '/discovery-status/:horseId',
+  [
+    param('horseId').isInt({ min: 1 }).withMessage('Horse ID must be a positive integer'),
+    handleValidationErrors,
+  ],
+  getDiscoveryStatus,
+);
+
+/**
+ * POST /api/trait-discovery/batch-discover
+ * Trigger trait discovery for multiple horses
+ */
+router.post(
+  '/batch-discover',
+  [
+    body('horseIds')
+      .isArray({ min: 1, max: 10 })
+      .withMessage('horseIds must be an array with 1-10 elements')
+      .custom(horseIds => {
+        if (!horseIds.every(id => Number.isInteger(Number(id)) && Number(id) > 0)) {
+          throw new Error('All horse IDs must be positive integers');
+        }
+        return true;
+      }),
+    body('checkEnrichment').optional().isBoolean().withMessage('checkEnrichment must be a boolean'),
+    handleValidationErrors,
+  ],
+  batchDiscoverTraits,
+);
 
 export default router;

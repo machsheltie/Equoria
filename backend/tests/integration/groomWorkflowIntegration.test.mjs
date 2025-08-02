@@ -200,7 +200,7 @@ describe('Groom Workflow Integration Tests', () => {
         where: { name: 'Sarah Johnson' },
       });
       expect(groom).toBeTruthy();
-      expect(groom.speciality).toBe('foalCare');
+      expect(groom.speciality).toBe('foal_care');
       expect(groom.skillLevel).toBe('expert');
     });
 

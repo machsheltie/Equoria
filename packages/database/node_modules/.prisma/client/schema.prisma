@@ -226,6 +226,8 @@ model GroomAssignment {
   isDefault         Boolean            @default(false)
   /// Priority level (1-5)
   priority          Int                @default(1)
+  /// Bond score between groom and foal (0-100)
+  bondScore         Int                @default(0)
   /// Notes
   notes             String?
   /// Foreign keys
