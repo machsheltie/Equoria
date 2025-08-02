@@ -52,31 +52,49 @@ describe('🏆 INTEGRATION: Leaderboard API - Real Database Integration', () => 
   let testBreed;
 
   beforeEach(async () => {
-    // Clean up existing test data - comprehensive cleanup for isolated testing
+    // Clean up existing test data - more specific cleanup for isolated testing
+    // First clean up competition results that might reference our test data
     await prisma.competitionResult.deleteMany({
-      where: { horse: { name: { startsWith: 'TestLeaderboard' } } },
-    });
-    await prisma.horse.deleteMany({
-      where: { name: { startsWith: 'TestLeaderboard' } },
+      where: {
+        OR: [
+          { horse: { name: { startsWith: 'TestLeaderboard' } } },
+          { horse: { name: { contains: 'API Test' } } },
+          { showName: { contains: 'API Test' } },
+          { showName: { contains: 'Grand Prix Classic' } },
+          { showName: { contains: 'Regional Championship' } },
+          { showName: { contains: 'Evening Classic' } },
+        ],
+      },
     });
 
-    // Clean up all test users to ensure isolated test environment
-    // This includes users from other integration tests that might affect leaderboard counts
+    // Clean up shows that might interfere
+    await prisma.show.deleteMany({
+      where: {
+        OR: [
+          { name: { contains: 'API Test' } },
+          { name: { contains: 'Grand Prix Classic' } },
+          { name: { contains: 'Regional Championship' } },
+          { name: { contains: 'Evening Classic' } },
+        ],
+      },
+    });
+
+    // Clean up horses
+    await prisma.horse.deleteMany({
+      where: {
+        OR: [
+          { name: { startsWith: 'TestLeaderboard' } },
+          { name: { contains: 'API Test' } },
+        ],
+      },
+    });
+
+    // Clean up only specific test users for this test suite
     await prisma.user.deleteMany({
       where: {
         OR: [
           { email: { startsWith: 'test-leaderboard' } },
-          { email: { contains: '@example.com' } }, // Common test email pattern
-          { username: { startsWith: 'userroutes_' } }, // From user routes tests
-          { username: { startsWith: 'crud_user_' } }, // From user routes tests
-          { username: { startsWith: 'delete_user_' } }, // From user routes tests
-          { username: { startsWith: 'NewUser_' } }, // From user routes tests
-          { firstName: 'Test' }, // From auth tests and other integration tests
-          { lastName: 'User' }, // From auth tests and other integration tests
-          { firstName: 'TestUser' }, // From auth tests
-          { lastName: 'TestUser' }, // From auth tests
-          { username: { contains: 'test' } }, // Catch all test users
-          { email: { contains: 'test' } }, // Catch all test emails
+          { username: { startsWith: 'topplayer' } },
         ],
       },
     });
@@ -259,30 +277,49 @@ describe('🏆 INTEGRATION: Leaderboard API - Real Database Integration', () => 
   });
 
   afterEach(async () => {
-    // Clean up test data - comprehensive cleanup for isolated testing
+    // Clean up test data - specific cleanup for isolated testing
+    // First clean up competition results that might reference our test data
     await prisma.competitionResult.deleteMany({
-      where: { horse: { name: { startsWith: 'TestLeaderboard' } } },
-    });
-    await prisma.horse.deleteMany({
-      where: { name: { startsWith: 'TestLeaderboard' } },
+      where: {
+        OR: [
+          { horse: { name: { startsWith: 'TestLeaderboard' } } },
+          { horse: { name: { contains: 'API Test' } } },
+          { showName: { contains: 'API Test' } },
+          { showName: { contains: 'Grand Prix Classic' } },
+          { showName: { contains: 'Regional Championship' } },
+          { showName: { contains: 'Evening Classic' } },
+        ],
+      },
     });
 
-    // Clean up all test users to ensure isolated test environment
+    // Clean up shows that might interfere
+    await prisma.show.deleteMany({
+      where: {
+        OR: [
+          { name: { contains: 'API Test' } },
+          { name: { contains: 'Grand Prix Classic' } },
+          { name: { contains: 'Regional Championship' } },
+          { name: { contains: 'Evening Classic' } },
+        ],
+      },
+    });
+
+    // Clean up horses
+    await prisma.horse.deleteMany({
+      where: {
+        OR: [
+          { name: { startsWith: 'TestLeaderboard' } },
+          { name: { contains: 'API Test' } },
+        ],
+      },
+    });
+
+    // Clean up only specific test users for this test suite
     await prisma.user.deleteMany({
       where: {
         OR: [
           { email: { startsWith: 'test-leaderboard' } },
-          { email: { contains: '@example.com' } }, // Common test email pattern
-          { username: { startsWith: 'userroutes_' } }, // From user routes tests
-          { username: { startsWith: 'crud_user_' } }, // From user routes tests
-          { username: { startsWith: 'delete_user_' } }, // From user routes tests
-          { username: { startsWith: 'NewUser_' } }, // From user routes tests
-          { firstName: 'Test' }, // From auth tests and other integration tests
-          { lastName: 'User' }, // From auth tests and other integration tests
-          { firstName: 'TestUser' }, // From auth tests
-          { lastName: 'TestUser' }, // From auth tests
-          { username: { contains: 'test' } }, // Catch all test users
-          { email: { contains: 'test' } }, // Catch all test emails
+          { username: { startsWith: 'topplayer' } },
         ],
       },
     });
