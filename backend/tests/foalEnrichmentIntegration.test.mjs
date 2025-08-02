@@ -387,8 +387,8 @@ describe('🐴 INTEGRATION: Foal Enrichment API Integration - Complete API Workf
         name: 'Extreme Test Foal',
         age: 0,
         breedId: testBreed.id,
-        bond_score: 95,
-        stress_level: 5,
+        bondScore: 95,
+        stressLevel: 5,
       };
 
       // Setup mock to return extreme foal
@@ -397,8 +397,8 @@ describe('🐴 INTEGRATION: Foal Enrichment API Integration - Complete API Workf
       // Setup mock for updated extreme foal (values should be capped)
       mockPrisma.horse.update.mockResolvedValueOnce({
         ...extremeFoal,
-        bond_score: 100, // Capped at maximum
-        stress_level: 0, // Capped at minimum
+        bondScore: 100, // Capped at maximum
+        stressLevel: 0, // Capped at minimum
       });
 
       const response = await request(app)

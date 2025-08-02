@@ -415,23 +415,23 @@ npx prisma generate
 -- Get user with all horses
 SELECT p.*, h.name as horse_name, h.age, b.name as breed_name
 FROM users p
-LEFT JOIN horses h ON p.id = h.user_id
-LEFT JOIN breeds b ON h.breed_id = b.id
+LEFT JOIN horses h ON p.id = h."userId"
+LEFT JOIN breeds b ON h."breedId" = b.id
 WHERE p.id = $1;
 
 -- Get trainable horses (age 3+, no recent training)
 SELECT h.*, p.name as user_name
 FROM horses h
-JOIN users p ON h.user_id = p.id
-WHERE h.age >= 3 
-AND (h.training_cooldown IS NULL OR h.training_cooldown <= NOW());
+JOIN users p ON h."userId" = p.id
+WHERE h.age >= 3
+AND (h."trainingCooldown" IS NULL OR h."trainingCooldown" <= NOW());
 
 -- Get competition results for horse
 SELECT cr.*, s.name as show_name, s.discipline
 FROM competition_results cr
-JOIN shows s ON cr.show_id = s.id
-WHERE cr.horse_id = $1
-ORDER BY cr.run_date DESC;
+JOIN shows s ON cr."showId" = s.id
+WHERE cr."horseId" = $1
+ORDER BY cr."runDate" DESC;
 
 -- Get horses with specific traits
 SELECT h.*, h.epigenetic_modifiers->'positive' as positive_traits

@@ -171,8 +171,8 @@ async function completeEnrichmentActivity(foalId, day, activity) {
     const outcome = calculateActivityOutcome(activityDefinition);
 
     // Get current bonding and stress levels (use defaults if null)
-    const currentBondScore = foal.bond_score ?? 50;
-    const currentStressLevel = foal.stress_level ?? 0;
+    const currentBondScore = foal.bondScore ?? 50;
+    const currentStressLevel = foal.stressLevel ?? 0;
 
     // Calculate new levels with bounds checking
     const newBondScore = Math.max(0, Math.min(100, currentBondScore + outcome.bondingChange));
@@ -182,8 +182,8 @@ async function completeEnrichmentActivity(foalId, day, activity) {
     await prisma.horse.update({
       where: { id: parsedFoalId },
       data: {
-        bond_score: newBondScore,
-        stress_level: newStressLevel,
+        bondScore: newBondScore,
+        stressLevel: newStressLevel,
       },
     });
 
