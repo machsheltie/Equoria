@@ -476,3 +476,131 @@ export async function getHorseOverview(req, res) {
     });
   }
 }
+
+/**
+ * Get most compatible grooms for a horse based on temperament
+ * @param {Object} req - Express request object
+ * @param {Object} res - Express response object
+ */
+export async function getHorsePersonalityImpact(req, res) {
+  try {
+    const { id } = req.params;
+    const horseId = parseInt(id, 10);
+
+    if (isNaN(horseId) || horseId <= 0) {
+      return res.status(400).json({
+        success: false,
+        message: 'Invalid horse ID. Must be a positive integer.',
+      });
+    }
+
+    // Get horse with temperament
+    const horse = await prisma.horse.findUnique({
+      where: { id: horseId },
+      select: {
+        id: true,
+        name: true,
+        temperament: true,
+        bondScore: true,
+        ownerId: true,
+      },
+    });
+
+    if (!horse) {
+      return res.status(404).json({
+        success: false,
+        message: 'Horse not found',
+      });
+    }
+
+    if (!horse.temperament) {
+      return res.status(400).json({
+        success: false,
+        message: 'Horse temperament not set. Cannot calculate personality compatibility.',
+      });
+    }
+
+    // Get all grooms for the user
+    const grooms = await prisma.groom.findMany({
+      where: { userId: horse.ownerId },
+      select: {
+        id: true,
+        name: true,
+        personality: true,
+        speciality: true,
+        skillLevel: true,
+        experience: true,
+        sessionRate: true,
+        isActive: true,
+      },
+    });
+
+    // Calculate compatibility for each groom
+    const { getCompatibleGroomsForTemperament, calculatePersonalityCompatibility } = await import('../utils/groomPersonalityTraitBonus.mjs');
+
+    const groomCompatibility = grooms.map(groom => {
+      const compatibility = calculatePersonalityCompatibility(
+        groom.personality,
+        horse.temperament,
+        horse.bondScore || 50
+      );
+
+      return {
+        groom: {
+          id: groom.id,
+          name: groom.name,
+          personality: groom.personality,
+          speciality: groom.speciality,
+          skillLevel: groom.skillLevel,
+          experience: groom.experience,
+          sessionRate: groom.sessionRate,
+          isActive: groom.isActive,
+        },
+        compatibility: {
+          isMatch: compatibility.isMatch,
+          isStrongMatch: compatibility.isStrongMatch,
+          traitModifier: compatibility.traitModifierScore,
+          stressReduction: Math.abs(compatibility.stressResistanceBonus * 100), // Convert to percentage
+          bondModifier: compatibility.bondModifier,
+          description: compatibility.description,
+          recommendation: compatibility.isMatch
+            ? 'Excellent match for this horse\'s temperament'
+            : 'May not be the best match for this horse\'s temperament',
+        },
+      };
+    });
+
+    // Sort by compatibility (matches first, then by trait modifier)
+    groomCompatibility.sort((a, b) => {
+      if (a.compatibility.isMatch && !b.compatibility.isMatch) return -1;
+      if (!a.compatibility.isMatch && b.compatibility.isMatch) return 1;
+      return b.compatibility.traitModifier - a.compatibility.traitModifier;
+    });
+
+    // Get general compatibility info for this temperament
+    const generalCompatibility = getCompatibleGroomsForTemperament(horse.temperament);
+
+    logger.info(`[horseController.getHorsePersonalityImpact] Retrieved personality compatibility for horse ${horseId} (${horse.temperament})`);
+
+    res.json({
+      success: true,
+      horse: {
+        id: horse.id,
+        name: horse.name,
+        temperament: horse.temperament,
+        bondScore: horse.bondScore,
+      },
+      groomCompatibility,
+      generalCompatibility,
+      totalGrooms: grooms.length,
+      compatibleGrooms: groomCompatibility.filter(g => g.compatibility.isMatch).length,
+    });
+  } catch (error) {
+    logger.error(`[horseController.getHorsePersonalityImpact] Error: ${error.message}`);
+    res.status(500).json({
+      success: false,
+      message: 'Failed to calculate personality compatibility',
+      error: process.env.NODE_ENV === 'development' ? error.message : 'Internal server error',
+    });
+  }
+}

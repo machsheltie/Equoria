@@ -5,6 +5,7 @@
 
 import express from 'express';
 import { body, param, validationResult } from 'express-validator';
+import { authenticateToken } from '../middleware/auth.mjs';
 // TODO: Add query validation when needed for filtering/pagination
 // import { query } from 'express-validator';
 import {
@@ -16,6 +17,9 @@ import {
   getUserGrooms,
   hireGroom,
   getGroomDefinitions,
+  getGroomProfile,
+  getGroomBonusTraits,
+  updateGroomBonusTraits,
 } from '../controllers/groomController.mjs';
 import { GROOM_CONFIG } from '../config/groomConfig.mjs';
 import {
@@ -406,6 +410,96 @@ router.post(
  *         description: Internal server error
  */
 router.get('/definitions', getGroomDefinitions);
+
+/**
+ * @swagger
+ * /api/grooms/{id}/profile:
+ *   get:
+ *     summary: Get groom profile including personality
+ *     tags: [Grooms]
+ *     parameters:
+ *       - in: path
+ *         name: id
+ *         required: true
+ *         schema:
+ *           type: integer
+ *         description: Groom ID
+ *     responses:
+ *       200:
+ *         description: Groom profile retrieved successfully
+ *       404:
+ *         description: Groom not found
+ *       500:
+ *         description: Internal server error
+ */
+router.get('/:id/profile', param('id').isInt().withMessage('Groom ID must be an integer'), getGroomProfile);
+
+/**
+ * @swagger
+ * /api/grooms/{id}/bonus-traits:
+ *   get:
+ *     summary: Get groom bonus traits
+ *     tags: [Grooms]
+ *     parameters:
+ *       - in: path
+ *         name: id
+ *         required: true
+ *         schema:
+ *           type: integer
+ *         description: Groom ID
+ *     responses:
+ *       200:
+ *         description: Bonus traits retrieved successfully
+ *       404:
+ *         description: Groom not found
+ *       500:
+ *         description: Internal server error
+ */
+router.get('/:id/bonus-traits',
+  authenticateToken,
+  param('id').isInt().withMessage('Groom ID must be an integer'),
+  getGroomBonusTraits
+);
+
+/**
+ * @swagger
+ * /api/grooms/{id}/bonus-traits:
+ *   put:
+ *     summary: Update groom bonus traits
+ *     tags: [Grooms]
+ *     parameters:
+ *       - in: path
+ *         name: id
+ *         required: true
+ *         schema:
+ *           type: integer
+ *         description: Groom ID
+ *     requestBody:
+ *       required: true
+ *       content:
+ *         application/json:
+ *           schema:
+ *             type: object
+ *             properties:
+ *               bonusTraits:
+ *                 type: object
+ *                 description: Object mapping trait names to bonus percentages
+ *     responses:
+ *       200:
+ *         description: Bonus traits updated successfully
+ *       400:
+ *         description: Invalid bonus traits
+ *       404:
+ *         description: Groom not found
+ *       500:
+ *         description: Internal server error
+ */
+router.put('/:id/bonus-traits',
+  authenticateToken,
+  param('id').isInt().withMessage('Groom ID must be an integer'),
+  body('bonusTraits').isObject().withMessage('Bonus traits must be an object'),
+  updateGroomBonusTraits
+);
 
 // Test cleanup endpoint (for testing only)
 router.delete('/test/cleanup', cleanupTestData);

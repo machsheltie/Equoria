@@ -1,7 +1,7 @@
 import express from 'express';
 import { param, body, validationResult } from 'express-validator';
 import { getTrainableHorses } from '../controllers/trainingController.mjs';
-import { getHorseOverview } from '../controllers/horseController.mjs';
+import { getHorseOverview, getHorsePersonalityImpact } from '../controllers/horseController.mjs';
 import { authenticateToken } from '../middleware/auth.mjs';
 import * as horseXpController from '../controllers/horseXpController.mjs';
 
@@ -239,5 +239,11 @@ router.post('/:id/award-xp', authenticateToken, validateHorseId, async (req, res
     });
   }
 });
+
+/**
+ * GET /api/horses/:id/personality-impact
+ * Get most compatible grooms for a horse based on temperament
+ */
+router.get('/:id/personality-impact', authenticateToken, validateHorseId, getHorsePersonalityImpact);
 
 export default router;

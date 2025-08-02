@@ -41,7 +41,7 @@ export async function evaluateMilestone(req, res) {
       select: {
         id: true,
         name: true,
-        userId: true,
+        ownerId: true,
         dateOfBirth: true,
         bondScore: true,
       },
@@ -56,7 +56,7 @@ export async function evaluateMilestone(req, res) {
     }
 
     // Check ownership (assuming req.user is set by auth middleware)
-    if (req.user && horse.userId !== req.user.id) {
+    if (req.user && horse.ownerId !== req.user.id) {
       return res.status(403).json({
         success: false,
         message: 'You do not have permission to evaluate milestones for this horse',

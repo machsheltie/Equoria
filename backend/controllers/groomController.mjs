@@ -777,3 +777,208 @@ export async function cleanupTestData(_req, res) {
     });
   }
 }
+
+/**
+ * Get groom profile including personality information
+ * @param {Object} req - Express request object
+ * @param {Object} res - Express response object
+ */
+export async function getGroomProfile(req, res) {
+  try {
+    const { id } = req.params;
+    const groomId = parseInt(id, 10);
+
+    if (isNaN(groomId)) {
+      return res.status(400).json({
+        success: false,
+        message: 'Invalid groom ID',
+      });
+    }
+
+    const groom = await prisma.groom.findUnique({
+      where: { id: groomId },
+      include: {
+        groomMetrics: true,
+        groomAssignments: {
+          where: { isActive: true },
+          include: {
+            foal: {
+              select: {
+                id: true,
+                name: true,
+                temperament: true,
+                bondScore: true,
+              },
+            },
+          },
+        },
+      },
+    });
+
+    if (!groom) {
+      return res.status(404).json({
+        success: false,
+        message: 'Groom not found',
+      });
+    }
+
+    // Calculate personality compatibility with current assignments
+    const { calculatePersonalityCompatibility } = await import('../utils/groomPersonalityTraitBonus.mjs');
+    const personalityCompatibility = groom.groomAssignments.map(assignment => {
+      if (assignment.foal.temperament) {
+        const compatibility = calculatePersonalityCompatibility(
+          groom.personality,
+          assignment.foal.temperament,
+          assignment.foal.bondScore || 50
+        );
+
+        return {
+          foalId: assignment.foal.id,
+          foalName: assignment.foal.name,
+          foalTemperament: assignment.foal.temperament,
+          compatibility,
+        };
+      }
+      return null;
+    }).filter(Boolean);
+
+    const profile = {
+      id: groom.id,
+      name: groom.name,
+      speciality: groom.speciality,
+      experience: groom.experience,
+      skillLevel: groom.skillLevel,
+      personality: groom.personality,
+      groomPersonality: groom.groomPersonality,
+      sessionRate: groom.sessionRate,
+      bio: groom.bio,
+      imageUrl: groom.imageUrl,
+      isActive: groom.isActive,
+      hiredDate: groom.hiredDate,
+      availability: groom.availability,
+      metrics: groom.groomMetrics,
+      currentAssignments: groom.groomAssignments.length,
+      personalityCompatibility,
+    };
+
+    logger.info(`[groomController.getGroomProfile] Retrieved profile for groom ${groomId}`);
+
+    res.json({
+      success: true,
+      groom: profile,
+    });
+  } catch (error) {
+    logger.error(`[groomController.getGroomProfile] Error: ${error.message}`);
+    res.status(500).json({
+      success: false,
+      message: 'Failed to retrieve groom profile',
+      error: process.env.NODE_ENV === 'development' ? error.message : 'Internal server error',
+    });
+  }
+}
+
+/**
+ * GET /api/grooms/:id/bonus-traits
+ * Get groom bonus traits
+ */
+export async function getGroomBonusTraits(req, res) {
+  try {
+    const { id } = req.params;
+    const groomId = parseInt(id, 10);
+
+    if (isNaN(groomId)) {
+      return res.status(400).json({
+        success: false,
+        message: 'Invalid groom ID',
+      });
+    }
+
+    logger.info(`[groomController.getGroomBonusTraits] Getting bonus traits for groom ${groomId}`);
+
+    const { getBonusTraits } = await import('../services/groomBonusTraitService.mjs');
+    const bonusTraits = await getBonusTraits(groomId);
+
+    res.json({
+      success: true,
+      message: 'Bonus traits retrieved successfully',
+      data: {
+        groomId,
+        bonusTraits,
+        hasBonusTraits: Object.keys(bonusTraits).length > 0,
+        bonusTraitCount: Object.keys(bonusTraits).length,
+      },
+    });
+  } catch (error) {
+    logger.error(`[groomController.getGroomBonusTraits] Error: ${error.message}`);
+
+    if (error.message.includes('not found')) {
+      return res.status(404).json({
+        success: false,
+        message: error.message,
+      });
+    }
+
+    res.status(500).json({
+      success: false,
+      message: 'Failed to retrieve bonus traits',
+      error: process.env.NODE_ENV === 'development' ? error.message : 'Internal server error',
+    });
+  }
+}
+
+/**
+ * PUT /api/grooms/:id/bonus-traits
+ * Update groom bonus traits
+ */
+export async function updateGroomBonusTraits(req, res) {
+  try {
+    const { id } = req.params;
+    const { bonusTraits } = req.body;
+    const groomId = parseInt(id, 10);
+
+    if (isNaN(groomId)) {
+      return res.status(400).json({
+        success: false,
+        message: 'Invalid groom ID',
+      });
+    }
+
+    logger.info(`[groomController.updateGroomBonusTraits] Updating bonus traits for groom ${groomId}`);
+
+    const { assignBonusTraits } = await import('../services/groomBonusTraitService.mjs');
+    const result = await assignBonusTraits(groomId, bonusTraits);
+
+    res.json({
+      success: true,
+      message: 'Bonus traits updated successfully',
+      data: {
+        groomId: result.groomId,
+        groomName: result.groomName,
+        bonusTraits: result.bonusTraits,
+        bonusTraitCount: Object.keys(result.bonusTraits).length,
+      },
+    });
+  } catch (error) {
+    logger.error(`[groomController.updateGroomBonusTraits] Error: ${error.message}`);
+
+    if (error.message.includes('not found')) {
+      return res.status(404).json({
+        success: false,
+        message: error.message,
+      });
+    }
+
+    if (error.message.includes('constraints violated')) {
+      return res.status(400).json({
+        success: false,
+        message: error.message,
+      });
+    }
+
+    res.status(500).json({
+      success: false,
+      message: 'Failed to update bonus traits',
+      error: process.env.NODE_ENV === 'development' ? error.message : 'Internal server error',
+    });
+  }
+}

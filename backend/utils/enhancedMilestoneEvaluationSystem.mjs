@@ -15,6 +15,7 @@
 
 import prisma from '../db/index.mjs';
 import logger from '../utils/logger.mjs';
+import { applyPersonalityEffectsToMilestone } from './personalityModifierEngine.mjs';
 
 // Milestone types and their developmental windows
 export const MILESTONE_TYPES = {
@@ -152,8 +153,33 @@ export async function evaluateEnhancedMilestone(horseId, milestoneType, options 
     // Calculate care gaps penalty
     const careGapsPenalty = calculateCareGapsPenalty(groomCareHistory, window);
 
-    // Calculate final score
-    const finalScore = baseScore + bondModifier + taskConsistencyModifier - careGapsPenalty;
+    // Calculate base score before personality effects
+    const baseScoreBeforePersonality = baseScore + bondModifier + taskConsistencyModifier - careGapsPenalty;
+
+    // Apply personality compatibility effects if groom and horse temperament are available
+    let personalityEffects = null;
+    let finalScore = baseScoreBeforePersonality;
+
+    if (currentGroom && currentGroom.personality && horse.temperament) {
+      personalityEffects = applyPersonalityEffectsToMilestone({
+        groomPersonality: currentGroom.personality,
+        foalTemperament: horse.temperament,
+        bondScore: horse.bondScore || 50,
+        baseMilestoneScore: baseScoreBeforePersonality,
+        baseStressLevel: horse.stressLevel || 0,
+        baseBondingRate: 0,
+      });
+
+      finalScore = personalityEffects.modifiedMilestoneScore;
+
+      logger.info(
+        `[enhancedMilestoneEvaluationSystem] Applied personality effects: ${currentGroom.personality} + ${horse.temperament} = ${personalityEffects.personalityMatchScore} modifier`
+      );
+    } else {
+      logger.info(
+        `[enhancedMilestoneEvaluationSystem] No personality effects applied - missing groom personality or horse temperament`
+      );
+    }
 
     // Determine trait outcome
     const traitOutcome = determineTraitOutcome(finalScore, milestoneType);
@@ -170,12 +196,21 @@ export async function evaluateEnhancedMilestone(horseId, milestoneType, options 
         taskDiversity: groomCareHistory.taskDiversity,
         taskConsistency: groomCareHistory.taskConsistency,
         careGapsPenalty,
+        personalityMatchScore: personalityEffects?.personalityMatchScore || 0,
+        personalityEffectApplied: personalityEffects?.personalityEffectApplied || false,
         modifiersApplied: {
           bondModifier,
           taskConsistencyModifier,
           careGapsPenalty,
+          personalityEffects: personalityEffects ? {
+            groomPersonality: currentGroom.personality,
+            foalTemperament: horse.temperament,
+            traitModifier: personalityEffects.personalityMatchScore,
+            stressReduction: personalityEffects.effects.stressReduction,
+            bondingBonus: personalityEffects.effects.bondingRateChange,
+          } : null,
         },
-        reasoning: traitOutcome.reasoning,
+        reasoning: traitOutcome.reasoning + (personalityEffects ? ` (Personality: ${personalityEffects.personalityMatchScore > 0 ? '+' : ''}${personalityEffects.personalityMatchScore})` : ''),
         ageInDays,
       },
     });
@@ -191,8 +226,10 @@ export async function evaluateEnhancedMilestone(horseId, milestoneType, options 
         bondModifier,
         taskConsistencyModifier,
         careGapsPenalty,
+        personalityEffects,
       },
       groomCareHistory,
+      personalityCompatibility: personalityEffects?.personalityCompatibility || null,
     };
 
   } catch (error) {
