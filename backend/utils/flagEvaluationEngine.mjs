@@ -317,11 +317,6 @@ export async function getEligibleHorses(evaluationDate = new Date()) {
         dateOfBirth: {
           gte: minBirthDate,
           lte: maxBirthDate
-        },
-        epigeneticFlags: {
-          array_length: {
-            lt: MAX_FLAGS_PER_HORSE
-          }
         }
       },
       select: {
@@ -332,7 +327,12 @@ export async function getEligibleHorses(evaluationDate = new Date()) {
       }
     });
 
-    return eligibleHorses.map(horse => horse.id);
+    // Filter horses with less than max flags in JavaScript
+    const filteredHorses = eligibleHorses.filter(horse =>
+      (horse.epigeneticFlags || []).length < MAX_FLAGS_PER_HORSE
+    );
+
+    return filteredHorses.map(horse => horse.id);
   } catch (error) {
     logger.error(`[flagEvaluationEngine] Error getting eligible horses: ${error.message}`);
     throw error;
