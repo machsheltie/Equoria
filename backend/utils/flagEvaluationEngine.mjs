@@ -1,11 +1,11 @@
 /**
  * Flag Evaluation Engine
  * Core engine for evaluating and assigning epigenetic flags based on care patterns
- * 
+ *
  * 🎯 PURPOSE:
  * Runs weekly evaluation between birth and age 3 to determine which epigenetic flags
  * should be assigned based on cumulative care patterns and trigger conditions.
- * 
+ *
  * 📋 BUSINESS RULES:
  * - Evaluates horses aged 0-3 years only
  * - Maximum 5 flags per horse
@@ -17,10 +17,10 @@
 
 import prisma from '../db/index.mjs';
 import logger from './logger.mjs';
-import { 
-  EPIGENETIC_FLAG_DEFINITIONS, 
+import {
+  EPIGENETIC_FLAG_DEFINITIONS,
   MAX_FLAGS_PER_HORSE,
-  FLAG_EVALUATION_AGE_RANGE 
+  FLAG_EVALUATION_AGE_RANGE,
 } from '../config/epigeneticFlagDefinitions.mjs';
 import { analyzeCarePatterns } from './carePatternAnalysis.mjs';
 
@@ -43,8 +43,8 @@ export async function evaluateHorseFlags(horseId, evaluationDate = new Date()) {
         dateOfBirth: true,
         epigeneticFlags: true,
         bondScore: true,
-        stressLevel: true
-      }
+        stressLevel: true,
+      },
     });
 
     if (!horse) {
@@ -53,7 +53,7 @@ export async function evaluateHorseFlags(horseId, evaluationDate = new Date()) {
 
     // Check age eligibility
     const ageInYears = (evaluationDate - new Date(horse.dateOfBirth)) / (1000 * 60 * 60 * 24 * 365.25);
-    
+
     if (ageInYears < FLAG_EVALUATION_AGE_RANGE.MIN || ageInYears >= FLAG_EVALUATION_AGE_RANGE.MAX) {
       return {
         success: false,
@@ -61,7 +61,7 @@ export async function evaluateHorseFlags(horseId, evaluationDate = new Date()) {
         horseId,
         horseName: horse.name,
         currentFlags: horse.epigeneticFlags || [],
-        newFlags: []
+        newFlags: [],
       };
     }
 
@@ -74,13 +74,13 @@ export async function evaluateHorseFlags(horseId, evaluationDate = new Date()) {
         horseId,
         horseName: horse.name,
         currentFlags,
-        newFlags: []
+        newFlags: [],
       };
     }
 
     // Analyze care patterns
     const careAnalysis = await analyzeCarePatterns(horseId, evaluationDate);
-    
+
     if (!careAnalysis.eligible) {
       return {
         success: false,
@@ -88,7 +88,7 @@ export async function evaluateHorseFlags(horseId, evaluationDate = new Date()) {
         horseId,
         horseName: horse.name,
         currentFlags,
-        newFlags: []
+        newFlags: [],
       };
     }
 
@@ -109,7 +109,7 @@ export async function evaluateHorseFlags(horseId, evaluationDate = new Date()) {
         flagType: flagDef.type,
         triggered: evaluation.triggered,
         score: evaluation.score,
-        conditions: evaluation.conditions
+        conditions: evaluation.conditions,
       });
 
       // If triggered and we haven't reached the limit, assign the flag
@@ -125,8 +125,8 @@ export async function evaluateHorseFlags(horseId, evaluationDate = new Date()) {
       await prisma.horse.update({
         where: { id: horseId },
         data: {
-          epigeneticFlags: updatedFlags
-        }
+          epigeneticFlags: updatedFlags,
+        },
       });
 
       logger.info(`[flagEvaluationEngine] Assigned ${newFlags.length} new flags to horse ${horseId}: ${newFlags.join(', ')}`);
@@ -142,7 +142,7 @@ export async function evaluateHorseFlags(horseId, evaluationDate = new Date()) {
       totalFlags: currentFlags.length + newFlags.length,
       careAnalysis,
       flagEvaluations,
-      evaluationDate
+      evaluationDate,
     };
 
   } catch (error) {
@@ -160,8 +160,8 @@ export async function evaluateHorseFlags(horseId, evaluationDate = new Date()) {
 function evaluateFlagTriggers(flagDefinition, carePatterns) {
   const conditions = flagDefinition.triggerConditions;
   const evaluationResults = {};
-  let totalScore = 0;
-  let maxScore = 0;
+  const totalScore = 0;
+  const maxScore = 0;
   let triggered = false;
 
   // Evaluate each trigger condition based on flag type
@@ -205,7 +205,7 @@ function evaluateFlagTriggers(flagDefinition, carePatterns) {
   return {
     triggered,
     score,
-    conditions: evaluationResults
+    conditions: evaluationResults,
   };
 }
 
@@ -214,28 +214,28 @@ function evaluateBraveTriggers(conditions, patterns, results) {
   results.noveltyExposure = patterns.noveltyExposure.meetsBraveThreshold;
   results.bondScore = patterns.bondingPatterns.currentBondScore >= 30;
   results.calmGroomPresent = patterns.noveltyExposure.calmGroomPresent;
-  
+
   return results.noveltyExposure && results.bondScore && results.calmGroomPresent;
 }
 
 function evaluateConfidentTriggers(conditions, patterns, results) {
   results.consistentCare = patterns.consistentCare.meetsConsistentCareThreshold;
   results.positiveInteractions = patterns.bondingPatterns.meetsConfidentThreshold;
-  
+
   return results.consistentCare && results.positiveInteractions;
 }
 
 function evaluateAffectionateTriggers(conditions, patterns, results) {
   results.dailyGrooming = patterns.bondingPatterns.meetsAffectionateThreshold;
   results.humanInteraction = patterns.consistentCare.qualityInteractions >= 5;
-  
+
   return results.dailyGrooming && results.humanInteraction;
 }
 
 function evaluateResilientTriggers(conditions, patterns, results) {
   results.stressRecovery = patterns.stressManagement.meetsResilientThreshold;
   results.moderateStress = patterns.stressManagement.stressEvents >= 2;
-  
+
   return results.stressRecovery && results.moderateStress;
 }
 
@@ -243,21 +243,21 @@ function evaluateFearfulTriggers(conditions, patterns, results) {
   results.fearEvents = patterns.noveltyExposure.fearEvents >= 2;
   results.lowBond = patterns.bondingPatterns.currentBondScore <= 20;
   results.noSupport = patterns.noveltyExposure.noveltyWithSupport === 0;
-  
+
   return results.fearEvents && results.lowBond && results.noSupport;
 }
 
 function evaluateInsecureTriggers(conditions, patterns, results) {
   results.neglect = patterns.neglectPatterns.meetsInsecureThreshold;
   results.inconsistentCare = patterns.neglectPatterns.poorQualityInteractions >= 3;
-  
+
   return results.neglect || results.inconsistentCare;
 }
 
 function evaluateAloofTriggers(conditions, patterns, results) {
   results.limitedInteraction = patterns.neglectPatterns.meetsAloofThreshold;
   results.lowEngagement = patterns.bondingPatterns.positiveInteractions <= 2;
-  
+
   return results.limitedInteraction && results.lowEngagement;
 }
 
@@ -265,14 +265,14 @@ function evaluateSkittishTriggers(conditions, patterns, results) {
   results.startleEvents = patterns.environmentalFactors.meetsSkittishThreshold;
   results.noGroomPresent = patterns.noveltyExposure.noveltyWithSupport === 0;
   results.lowBond = patterns.bondingPatterns.currentBondScore <= 25;
-  
+
   return results.startleEvents && (results.noGroomPresent || results.lowBond);
 }
 
 function evaluateFragileTriggers(conditions, patterns, results) {
   results.multipleStressSpikes = patterns.stressManagement.meetsFragileThreshold;
   results.inadequateSupport = patterns.stressManagement.recoveryEvents === 0;
-  
+
   return results.multipleStressSpikes && results.inadequateSupport;
 }
 
@@ -284,7 +284,7 @@ function evaluateFragileTriggers(conditions, patterns, results) {
  */
 export async function batchEvaluateFlags(horseIds, evaluationDate = new Date()) {
   const results = [];
-  
+
   for (const horseId of horseIds) {
     try {
       const result = await evaluateHorseFlags(horseId, evaluationDate);
@@ -294,11 +294,11 @@ export async function batchEvaluateFlags(horseIds, evaluationDate = new Date()) 
       results.push({
         success: false,
         horseId,
-        error: error.message
+        error: error.message,
       });
     }
   }
-  
+
   return results;
 }
 
@@ -316,20 +316,20 @@ export async function getEligibleHorses(evaluationDate = new Date()) {
       where: {
         dateOfBirth: {
           gte: minBirthDate,
-          lte: maxBirthDate
-        }
+          lte: maxBirthDate,
+        },
       },
       select: {
         id: true,
         name: true,
         dateOfBirth: true,
-        epigeneticFlags: true
-      }
+        epigeneticFlags: true,
+      },
     });
 
     // Filter horses with less than max flags in JavaScript
     const filteredHorses = eligibleHorses.filter(horse =>
-      (horse.epigeneticFlags || []).length < MAX_FLAGS_PER_HORSE
+      (horse.epigeneticFlags || []).length < MAX_FLAGS_PER_HORSE,
     );
 
     return filteredHorses.map(horse => horse.id);
@@ -343,5 +343,5 @@ export default {
   evaluateHorseFlags,
   batchEvaluateFlags,
   getEligibleHorses,
-  evaluateFlagTriggers
+  evaluateFlagTriggers,
 };

@@ -1,12 +1,12 @@
 /**
  * Epigenetic Flag Definitions
  * Configuration for epigenetic flags that can be assigned to horses based on early care patterns
- * 
+ *
  * 🎯 PURPOSE:
  * Defines the 9 starter epigenetic flags with their properties, triggers, and influences.
  * These flags represent learned, conditioned, or emotionally ingrained tendencies that
  * persist across life stages and influence temperament, behavior, and trait probability.
- * 
+ *
  * 📋 BUSINESS RULES:
  * - Flags are permanent once assigned (no overwrites)
  * - Maximum 5 flags per horse for gameplay clarity
@@ -19,7 +19,7 @@
 export const FLAG_TYPES = {
   POSITIVE: 'positive',
   NEGATIVE: 'negative',
-  ADAPTIVE: 'adaptive'
+  ADAPTIVE: 'adaptive',
 };
 
 // Source categories for flag triggers
@@ -27,7 +27,7 @@ export const SOURCE_CATEGORIES = {
   GROOMING: 'grooming',
   BONDING: 'bonding',
   ENVIRONMENT: 'environment',
-  NOVELTY: 'novelty'
+  NOVELTY: 'novelty',
 };
 
 // Maximum flags per horse
@@ -36,7 +36,7 @@ export const MAX_FLAGS_PER_HORSE = 5;
 // Age range for flag evaluation (in years)
 export const FLAG_EVALUATION_AGE_RANGE = {
   MIN: 0,
-  MAX: 3
+  MAX: 3,
 };
 
 /**
@@ -61,23 +61,23 @@ export const EPIGENETIC_FLAG_DEFINITIONS = {
       traitWeightModifiers: {
         bold: 0.3,
         spooky: -0.4,
-        confident: 0.2
+        confident: 0.2,
       },
       behaviorModifiers: {
         statRecoveryBonus: 0.05,
-        stressResistance: 0.1
-      }
+        stressResistance: 0.1,
+      },
     },
     triggerConditions: {
       noveltyExposure: {
         minEvents: 3,
         withCalmGroomPresent: true,
-        duringFearWindow: true
+        duringFearWindow: true,
       },
       bondScore: {
-        minimum: 30
-      }
-    }
+        minimum: 30,
+      },
+    },
   },
 
   CONFIDENT: {
@@ -90,23 +90,23 @@ export const EPIGENETIC_FLAG_DEFINITIONS = {
       traitWeightModifiers: {
         bold: 0.25,
         timid: -0.3,
-        leader: 0.2
+        leader: 0.2,
       },
       behaviorModifiers: {
         competitionBonus: 0.03,
-        trainingEfficiency: 0.05
-      }
+        trainingEfficiency: 0.05,
+      },
     },
     triggerConditions: {
       consistentCare: {
         minDays: 7,
-        bondThreshold: 40
+        bondThreshold: 40,
       },
       positiveInteractions: {
         minCount: 10,
-        qualityThreshold: 'good'
-      }
-    }
+        qualityThreshold: 'good',
+      },
+    },
   },
 
   AFFECTIONATE: {
@@ -119,23 +119,23 @@ export const EPIGENETIC_FLAG_DEFINITIONS = {
       traitWeightModifiers: {
         friendly: 0.4,
         aloof: -0.3,
-        social: 0.2
+        social: 0.2,
       },
       behaviorModifiers: {
         bondingRate: 0.15,
-        groomEffectiveness: 0.1
-      }
+        groomEffectiveness: 0.1,
+      },
     },
     triggerConditions: {
       dailyGrooming: {
         consecutiveDays: 7,
-        bondThreshold: 50
+        bondThreshold: 50,
       },
       humanInteraction: {
         frequency: 'daily',
-        quality: 'good'
-      }
-    }
+        quality: 'good',
+      },
+    },
   },
 
   RESILIENT: {
@@ -148,24 +148,24 @@ export const EPIGENETIC_FLAG_DEFINITIONS = {
       traitWeightModifiers: {
         hardy: 0.3,
         fragile: -0.4,
-        steady: 0.2
+        steady: 0.2,
       },
       behaviorModifiers: {
         stressRecovery: 0.2,
-        healthBonus: 0.05
-      }
+        healthBonus: 0.05,
+      },
     },
     triggerConditions: {
       stressRecovery: {
         minEvents: 3,
         withGroomSupport: true,
-        recoveryTime: 'fast'
+        recoveryTime: 'fast',
       },
       moderateStress: {
         exposureCount: 3,
-        managedRecovery: true
-      }
-    }
+        managedRecovery: true,
+      },
+    },
   },
 
   // Negative Flags
@@ -179,24 +179,24 @@ export const EPIGENETIC_FLAG_DEFINITIONS = {
       traitWeightModifiers: {
         spooky: 0.4,
         bold: -0.3,
-        timid: 0.2
+        timid: 0.2,
       },
       behaviorModifiers: {
         stressVulnerability: 0.15,
-        competitionPenalty: -0.05
-      }
+        competitionPenalty: -0.05,
+      },
     },
     triggerConditions: {
       fearEvents: {
         minCount: 2,
         noGroomSupport: true,
-        highStressResponse: true
+        highStressResponse: true,
       },
       lowBond: {
         threshold: 20,
-        duration: 'persistent'
-      }
-    }
+        duration: 'persistent',
+      },
+    },
   },
 
   INSECURE: {
@@ -209,23 +209,23 @@ export const EPIGENETIC_FLAG_DEFINITIONS = {
       traitWeightModifiers: {
         timid: 0.3,
         confident: -0.4,
-        dependent: 0.2
+        dependent: 0.2,
       },
       behaviorModifiers: {
         independenceReduction: -0.1,
-        separationAnxiety: 0.2
-      }
+        separationAnxiety: 0.2,
+      },
     },
     triggerConditions: {
       neglect: {
         consecutiveDaysWithoutCare: 4,
-        bondBelow: 25
+        bondBelow: 25,
       },
       inconsistentCare: {
         irregularPattern: true,
-        qualityVariation: 'high'
-      }
-    }
+        qualityVariation: 'high',
+      },
+    },
   },
 
   ALOOF: {
@@ -238,23 +238,23 @@ export const EPIGENETIC_FLAG_DEFINITIONS = {
       traitWeightModifiers: {
         independent: 0.3,
         friendly: -0.3,
-        distant: 0.2
+        distant: 0.2,
       },
       behaviorModifiers: {
         bondingResistance: 0.15,
-        socialReduction: -0.1
-      }
+        socialReduction: -0.1,
+      },
     },
     triggerConditions: {
       limitedInteraction: {
         lowFrequency: true,
-        emotionalDistance: true
+        emotionalDistance: true,
       },
       selfReliance: {
         forcedIndependence: true,
-        minimalSupport: true
-      }
-    }
+        minimalSupport: true,
+      },
+    },
   },
 
   SKITTISH: {
@@ -267,24 +267,24 @@ export const EPIGENETIC_FLAG_DEFINITIONS = {
       traitWeightModifiers: {
         nervous: 0.4,
         calm: -0.3,
-        reactive: 0.2
+        reactive: 0.2,
       },
       behaviorModifiers: {
         startleResponse: 0.2,
-        environmentalSensitivity: 0.15
-      }
+        environmentalSensitivity: 0.15,
+      },
     },
     triggerConditions: {
       startleEvents: {
         minCount: 2,
         noGroomPresent: true,
-        lowBondScore: true
+        lowBondScore: true,
       },
       unpredictableEnvironment: {
         suddenChanges: true,
-        lackOfRoutine: true
-      }
-    }
+        lackOfRoutine: true,
+      },
+    },
   },
 
   FRAGILE: {
@@ -297,26 +297,26 @@ export const EPIGENETIC_FLAG_DEFINITIONS = {
       traitWeightModifiers: {
         delicate: 0.4,
         hardy: -0.4,
-        sensitive: 0.3
+        sensitive: 0.3,
       },
       behaviorModifiers: {
         stressVulnerability: 0.25,
         healthPenalty: -0.1,
-        recoveryDelay: 0.2
-      }
+        recoveryDelay: 0.2,
+      },
     },
     triggerConditions: {
       multipleStressSpikes: {
         minCount: 3,
         noSoothingFollowUp: true,
-        poorRecovery: true
+        poorRecovery: true,
       },
       inadequateSupport: {
         lackOfCareAfterStress: true,
-        repeatedNeglect: true
-      }
-    }
-  }
+        repeatedNeglect: true,
+      },
+    },
+  },
 };
 
 /**
@@ -363,5 +363,5 @@ export default {
   getAllFlagDefinitions,
   getFlagDefinition,
   getFlagsByType,
-  getFlagsBySourceCategory
+  getFlagsBySourceCategory,
 };

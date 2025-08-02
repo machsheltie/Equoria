@@ -1,15 +1,15 @@
 /**
  * Enhanced Milestone Evaluation Controller
- * 
+ *
  * Handles API endpoints for the enhanced milestone evaluation system that integrates
  * groom care history, bond consistency, and task diversity into trait determination.
  */
 
 import { body, param, validationResult } from 'express-validator';
-import { 
-  evaluateEnhancedMilestone, 
+import {
+  evaluateEnhancedMilestone,
   MILESTONE_TYPES,
-  DEVELOPMENTAL_WINDOWS 
+  DEVELOPMENTAL_WINDOWS,
 } from '../utils/enhancedMilestoneEvaluationSystem.mjs';
 import prisma from '../db/index.mjs';
 import logger from '../utils/logger.mjs';
@@ -27,7 +27,7 @@ export async function evaluateMilestone(req, res) {
         success: false,
         message: 'Validation failed',
         errors: errors.array(),
-        data: null
+        data: null,
       });
     }
 
@@ -38,20 +38,20 @@ export async function evaluateMilestone(req, res) {
     // Validate horse exists and user owns it
     const horse = await prisma.horse.findUnique({
       where: { id: horseId },
-      select: { 
-        id: true, 
-        name: true, 
-        userId: true, 
+      select: {
+        id: true,
+        name: true,
+        userId: true,
         dateOfBirth: true,
-        bondScore: true 
-      }
+        bondScore: true,
+      },
     });
 
     if (!horse) {
       return res.status(404).json({
         success: false,
         message: `Horse with ID ${horseId} not found`,
-        data: null
+        data: null,
       });
     }
 
@@ -60,7 +60,7 @@ export async function evaluateMilestone(req, res) {
       return res.status(403).json({
         success: false,
         message: 'You do not have permission to evaluate milestones for this horse',
-        data: null
+        data: null,
       });
     }
 
@@ -68,14 +68,14 @@ export async function evaluateMilestone(req, res) {
     if (groomId) {
       const groom = await prisma.groom.findUnique({
         where: { id: groomId },
-        select: { id: true, name: true, userId: true }
+        select: { id: true, name: true, userId: true },
       });
 
       if (!groom) {
         return res.status(404).json({
           success: false,
           message: `Groom with ID ${groomId} not found`,
-          data: null
+          data: null,
         });
       }
 
@@ -84,7 +84,7 @@ export async function evaluateMilestone(req, res) {
         return res.status(403).json({
           success: false,
           message: 'You do not have permission to use this groom',
-          data: null
+          data: null,
         });
       }
     }
@@ -93,14 +93,14 @@ export async function evaluateMilestone(req, res) {
     const evaluationResult = await evaluateEnhancedMilestone(horseId, milestoneType, {
       forceReevaluate: forceReevaluate || false,
       providedBondScore: bondScore,
-      providedTaskLog: taskLog
+      providedTaskLog: taskLog,
     });
 
     if (!evaluationResult.success) {
       return res.status(400).json({
         success: false,
         message: evaluationResult.reason,
-        data: evaluationResult
+        data: evaluationResult,
       });
     }
 
@@ -122,9 +122,9 @@ export async function evaluateMilestone(req, res) {
           totalInteractions: evaluationResult.groomCareHistory.totalInteractions,
           taskDiversity: evaluationResult.groomCareHistory.taskDiversity,
           taskConsistency: evaluationResult.groomCareHistory.taskConsistency,
-          averageQuality: evaluationResult.groomCareHistory.averageQuality
-        }
-      }
+          averageQuality: evaluationResult.groomCareHistory.averageQuality,
+        },
+      },
     });
 
   } catch (error) {
@@ -133,7 +133,7 @@ export async function evaluateMilestone(req, res) {
       success: false,
       message: 'Internal server error during milestone evaluation',
       error: process.env.NODE_ENV === 'development' ? error.message : undefined,
-      data: null
+      data: null,
     });
   }
 }
@@ -151,26 +151,26 @@ export async function getMilestoneStatus(req, res) {
       return res.status(400).json({
         success: false,
         message: 'Invalid horse ID. Must be a positive integer.',
-        data: null
+        data: null,
       });
     }
 
     // Get horse data
     const horse = await prisma.horse.findUnique({
       where: { id: parsedHorseId },
-      select: { 
-        id: true, 
-        name: true, 
-        userId: true, 
-        dateOfBirth: true 
-      }
+      select: {
+        id: true,
+        name: true,
+        userId: true,
+        dateOfBirth: true,
+      },
     });
 
     if (!horse) {
       return res.status(404).json({
         success: false,
         message: `Horse with ID ${horseId} not found`,
-        data: null
+        data: null,
       });
     }
 
@@ -179,7 +179,7 @@ export async function getMilestoneStatus(req, res) {
       return res.status(403).json({
         success: false,
         message: 'You do not have permission to view this horse',
-        data: null
+        data: null,
       });
     }
 
@@ -189,7 +189,7 @@ export async function getMilestoneStatus(req, res) {
     // Get existing milestone evaluations
     const milestoneEvaluations = await prisma.milestoneTraitLog.findMany({
       where: { horseId: parsedHorseId },
-      orderBy: { timestamp: 'desc' }
+      orderBy: { timestamp: 'desc' },
     });
 
     // Determine available milestones based on age
@@ -207,7 +207,7 @@ export async function getMilestoneStatus(req, res) {
         isInWindow,
         isCompleted,
         isPastWindow,
-        canEvaluate: isInWindow && !isCompleted
+        canEvaluate: isInWindow && !isCompleted,
       });
     }
 
@@ -221,8 +221,8 @@ export async function getMilestoneStatus(req, res) {
         availableMilestones,
         completedEvaluations: milestoneEvaluations,
         totalCompleted: milestoneEvaluations.length,
-        eligibleForEvaluation: ageInDays < 1095 // Under 3 years
-      }
+        eligibleForEvaluation: ageInDays < 1095, // Under 3 years
+      },
     });
 
   } catch (error) {
@@ -231,7 +231,7 @@ export async function getMilestoneStatus(req, res) {
       success: false,
       message: 'Internal server error retrieving milestone status',
       error: process.env.NODE_ENV === 'development' ? error.message : undefined,
-      data: null
+      data: null,
     });
   }
 }
@@ -250,14 +250,14 @@ export async function getMilestoneDefinitions(req, res) {
         developmentalWindows: DEVELOPMENTAL_WINDOWS,
         traitThresholds: {
           confirm: 3,
-          deny: -3
+          deny: -3,
         },
         scoringFactors: {
           bondModifier: 'Based on average bond score during window (-2 to +2)',
           taskConsistency: 'Based on task completion and diversity (+0 to +3)',
-          careGapsPenalty: 'Penalty for missed care or low bond (-0 to -2)'
-        }
-      }
+          careGapsPenalty: 'Penalty for missed care or low bond (-0 to -2)',
+        },
+      },
     });
 
   } catch (error) {
@@ -266,7 +266,7 @@ export async function getMilestoneDefinitions(req, res) {
       success: false,
       message: 'Internal server error retrieving milestone definitions',
       error: process.env.NODE_ENV === 'development' ? error.message : undefined,
-      data: null
+      data: null,
     });
   }
 }
@@ -294,12 +294,12 @@ export const validateMilestoneEvaluation = [
   body('forceReevaluate')
     .optional()
     .isBoolean()
-    .withMessage('Force reevaluate must be a boolean')
+    .withMessage('Force reevaluate must be a boolean'),
 ];
 
 // Validation middleware for horse ID parameter
 export const validateHorseIdParam = [
   param('horseId')
     .isInt({ min: 1 })
-    .withMessage('Horse ID must be a positive integer')
+    .withMessage('Horse ID must be a positive integer'),
 ];

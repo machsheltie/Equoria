@@ -1,11 +1,11 @@
 /**
  * Epigenetic Flag Influence System
  * Integrates epigenetic flags with trait generation and competition behavior
- * 
+ *
  * 🎯 PURPOSE:
  * Applies epigenetic flag influences to trait weight modifiers and behavior
  * modifiers, integrating with the existing trait discovery and competition systems.
- * 
+ *
  * 📋 BUSINESS RULES:
  * - Flag influences are applied as weight modifiers to trait generation
  * - Behavior modifiers affect competition performance and training efficiency
@@ -28,25 +28,25 @@ export function applyFlagInfluencesToTraitWeights(epigeneticFlags, baseTraitWeig
   }
 
   const modifiedWeights = { ...baseTraitWeights };
-  
+
   try {
     epigeneticFlags.forEach(flagName => {
       const flagDefinition = getFlagDefinition(flagName);
-      
+
       if (!flagDefinition) {
         logger.warn(`[epigeneticFlagInfluence] Unknown flag: ${flagName}`);
         return;
       }
 
       const traitModifiers = flagDefinition.influences.traitWeightModifiers;
-      
+
       // Apply each trait weight modifier
       Object.entries(traitModifiers).forEach(([traitName, modifier]) => {
         if (modifiedWeights[traitName] !== undefined) {
           const originalWeight = modifiedWeights[traitName];
           const newWeight = Math.max(0, Math.min(1, originalWeight + modifier));
           modifiedWeights[traitName] = newWeight;
-          
+
           logger.debug(`[epigeneticFlagInfluence] Flag '${flagName}' modified trait '${traitName}': ${originalWeight} -> ${newWeight} (${modifier > 0 ? '+' : ''}${modifier})`);
         }
       });
@@ -72,18 +72,18 @@ export function calculateBehaviorModifiers(epigeneticFlags) {
   }
 
   const aggregatedModifiers = {};
-  
+
   try {
     epigeneticFlags.forEach(flagName => {
       const flagDefinition = getFlagDefinition(flagName);
-      
+
       if (!flagDefinition) {
         logger.warn(`[epigeneticFlagInfluence] Unknown flag: ${flagName}`);
         return;
       }
 
-      const behaviorModifiers = flagDefinition.influences.behaviorModifiers;
-      
+      const { behaviorModifiers } = flagDefinition.influences;
+
       // Aggregate behavior modifiers
       Object.entries(behaviorModifiers).forEach(([modifierName, value]) => {
         if (aggregatedModifiers[modifierName] === undefined) {
@@ -114,7 +114,7 @@ export function applyFlagInfluencesToCompetition(baseScore, epigeneticFlags, dis
     return {
       modifiedScore: baseScore,
       appliedModifiers: {},
-      totalModifier: 0
+      totalModifier: 0,
     };
   }
 
@@ -156,7 +156,7 @@ export function applyFlagInfluencesToCompetition(baseScore, epigeneticFlags, dis
     return {
       modifiedScore,
       appliedModifiers,
-      totalModifier
+      totalModifier,
     };
 
   } catch (error) {
@@ -164,7 +164,7 @@ export function applyFlagInfluencesToCompetition(baseScore, epigeneticFlags, dis
     return {
       modifiedScore: baseScore,
       appliedModifiers: {},
-      totalModifier: 0
+      totalModifier: 0,
     };
   }
 }
@@ -180,7 +180,7 @@ export function applyFlagInfluencesToTraining(baseEfficiency, epigeneticFlags) {
     return {
       modifiedEfficiency: baseEfficiency,
       appliedModifiers: {},
-      totalModifier: 0
+      totalModifier: 0,
     };
   }
 
@@ -215,7 +215,7 @@ export function applyFlagInfluencesToTraining(baseEfficiency, epigeneticFlags) {
     return {
       modifiedEfficiency,
       appliedModifiers,
-      totalModifier
+      totalModifier,
     };
 
   } catch (error) {
@@ -223,7 +223,7 @@ export function applyFlagInfluencesToTraining(baseEfficiency, epigeneticFlags) {
     return {
       modifiedEfficiency: baseEfficiency,
       appliedModifiers: {},
-      totalModifier: 0
+      totalModifier: 0,
     };
   }
 }
@@ -239,7 +239,7 @@ export function applyFlagInfluencesToBonding(baseBondingChange, epigeneticFlags)
     return {
       modifiedBondingChange: baseBondingChange,
       appliedModifiers: {},
-      totalModifier: 0
+      totalModifier: 0,
     };
   }
 
@@ -274,7 +274,7 @@ export function applyFlagInfluencesToBonding(baseBondingChange, epigeneticFlags)
     return {
       modifiedBondingChange,
       appliedModifiers,
-      totalModifier
+      totalModifier,
     };
 
   } catch (error) {
@@ -282,7 +282,7 @@ export function applyFlagInfluencesToBonding(baseBondingChange, epigeneticFlags)
     return {
       modifiedBondingChange: baseBondingChange,
       appliedModifiers: {},
-      totalModifier: 0
+      totalModifier: 0,
     };
   }
 }
@@ -299,7 +299,7 @@ export function getFlagInfluenceSummary(epigeneticFlags) {
       flags: [],
       traitInfluences: {},
       behaviorModifiers: {},
-      summary: 'No epigenetic flags assigned'
+      summary: 'No epigenetic flags assigned',
     };
   }
 
@@ -312,19 +312,19 @@ export function getFlagInfluenceSummary(epigeneticFlags) {
         type: definition.type,
         sourceCategory: definition.sourceCategory,
         traitInfluences: definition.influences.traitWeightModifiers,
-        behaviorModifiers: definition.influences.behaviorModifiers
+        behaviorModifiers: definition.influences.behaviorModifiers,
       } : {
         name: flagName,
         displayName: flagName,
         type: 'unknown',
         sourceCategory: 'unknown',
         traitInfluences: {},
-        behaviorModifiers: {}
+        behaviorModifiers: {},
       };
     });
 
     const behaviorModifiers = calculateBehaviorModifiers(epigeneticFlags);
-    
+
     // Aggregate trait influences
     const traitInfluences = {};
     flagDetails.forEach(flag => {
@@ -338,7 +338,7 @@ export function getFlagInfluenceSummary(epigeneticFlags) {
 
     const positiveFlags = flagDetails.filter(f => f.type === 'positive').length;
     const negativeFlags = flagDetails.filter(f => f.type === 'negative').length;
-    
+
     const summary = `${epigeneticFlags.length} flags (${positiveFlags} positive, ${negativeFlags} negative)`;
 
     return {
@@ -346,7 +346,7 @@ export function getFlagInfluenceSummary(epigeneticFlags) {
       flags: flagDetails,
       traitInfluences,
       behaviorModifiers,
-      summary
+      summary,
     };
 
   } catch (error) {
@@ -356,7 +356,7 @@ export function getFlagInfluenceSummary(epigeneticFlags) {
       flags: [],
       traitInfluences: {},
       behaviorModifiers: {},
-      summary: 'Error generating summary'
+      summary: 'Error generating summary',
     };
   }
 }
@@ -367,5 +367,5 @@ export default {
   applyFlagInfluencesToCompetition,
   applyFlagInfluencesToTraining,
   applyFlagInfluencesToBonding,
-  getFlagInfluenceSummary
+  getFlagInfluenceSummary,
 };

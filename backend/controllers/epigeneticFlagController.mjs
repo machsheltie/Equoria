@@ -1,11 +1,11 @@
 /**
  * Epigenetic Flag Controller
  * API endpoints for epigenetic flag evaluation and management
- * 
+ *
  * 🎯 PURPOSE:
  * Provides REST API endpoints for evaluating and retrieving epigenetic flags
  * based on care patterns and trigger conditions.
- * 
+ *
  * 📋 BUSINESS RULES:
  * - POST /flags/evaluate - Evaluate flags for a specific horse
  * - GET /horses/:id/flags - Get all flags for a horse
@@ -20,12 +20,12 @@ import logger from '../utils/logger.mjs';
 import {
   evaluateHorseFlags,
   batchEvaluateFlags as batchEvaluateFlagsEngine,
-  getEligibleHorses
+  getEligibleHorses,
 } from '../utils/flagEvaluationEngine.mjs';
-import { 
-  getAllFlagDefinitions, 
+import {
+  getAllFlagDefinitions,
   getFlagDefinition,
-  getFlagsByType 
+  getFlagsByType,
 } from '../config/epigeneticFlagDefinitions.mjs';
 import { analyzeCarePatterns } from '../utils/carePatternAnalysis.mjs';
 
@@ -41,7 +41,7 @@ export async function evaluateFlags(req, res) {
       return res.status(400).json({
         success: false,
         message: 'Validation failed',
-        errors: errors.array()
+        errors: errors.array(),
       });
     }
 
@@ -56,14 +56,14 @@ export async function evaluateFlags(req, res) {
         name: true,
         ownerId: true,
         dateOfBirth: true,
-        epigeneticFlags: true
-      }
+        epigeneticFlags: true,
+      },
     });
 
     if (!horse) {
       return res.status(404).json({
         success: false,
-        message: 'Horse not found'
+        message: 'Horse not found',
       });
     }
 
@@ -71,7 +71,7 @@ export async function evaluateFlags(req, res) {
     if (req.user?.role !== 'admin' && horse.ownerId !== userId) {
       return res.status(403).json({
         success: false,
-        message: 'You do not have permission to evaluate flags for this horse'
+        message: 'You do not have permission to evaluate flags for this horse',
       });
     }
 
@@ -84,7 +84,7 @@ export async function evaluateFlags(req, res) {
     return res.status(200).json({
       success: true,
       message: 'Flag evaluation completed successfully',
-      data: evaluationResult
+      data: evaluationResult,
     });
 
   } catch (error) {
@@ -92,7 +92,7 @@ export async function evaluateFlags(req, res) {
     return res.status(500).json({
       success: false,
       message: 'Internal server error during flag evaluation',
-      error: process.env.NODE_ENV === 'development' ? error.message : undefined
+      error: process.env.NODE_ENV === 'development' ? error.message : undefined,
     });
   }
 }
@@ -109,7 +109,7 @@ export async function getHorseFlags(req, res) {
     if (isNaN(horseId)) {
       return res.status(400).json({
         success: false,
-        message: 'Invalid horse ID'
+        message: 'Invalid horse ID',
       });
     }
 
@@ -123,14 +123,14 @@ export async function getHorseFlags(req, res) {
         dateOfBirth: true,
         epigeneticFlags: true,
         bondScore: true,
-        stressLevel: true
-      }
+        stressLevel: true,
+      },
     });
 
     if (!horse) {
       return res.status(404).json({
         success: false,
-        message: 'Horse not found'
+        message: 'Horse not found',
       });
     }
 
@@ -138,7 +138,7 @@ export async function getHorseFlags(req, res) {
     if (req.user?.role !== 'admin' && horse.ownerId !== userId) {
       return res.status(403).json({
         success: false,
-        message: 'You do not have permission to view flags for this horse'
+        message: 'You do not have permission to view flags for this horse',
       });
     }
 
@@ -151,14 +151,14 @@ export async function getHorseFlags(req, res) {
         description: definition.description,
         type: definition.type,
         sourceCategory: definition.sourceCategory,
-        influences: definition.influences
+        influences: definition.influences,
       } : {
         name: flagName,
         displayName: flagName,
         description: 'Unknown flag',
         type: 'unknown',
         sourceCategory: 'unknown',
-        influences: {}
+        influences: {},
       };
     });
 
@@ -178,8 +178,8 @@ export async function getHorseFlags(req, res) {
         flagCount: flagDetails.length,
         flags: flagDetails,
         maxFlags: 5,
-        canReceiveMoreFlags: flagDetails.length < 5 && parseFloat(ageInYears) < 3
-      }
+        canReceiveMoreFlags: flagDetails.length < 5 && parseFloat(ageInYears) < 3,
+      },
     });
 
   } catch (error) {
@@ -187,7 +187,7 @@ export async function getHorseFlags(req, res) {
     return res.status(500).json({
       success: false,
       message: 'Internal server error retrieving horse flags',
-      error: process.env.NODE_ENV === 'development' ? error.message : undefined
+      error: process.env.NODE_ENV === 'development' ? error.message : undefined,
     });
   }
 }
@@ -214,7 +214,7 @@ export async function getFlagDefinitions(req, res) {
       description: flag.description,
       type: flag.type,
       sourceCategory: flag.sourceCategory,
-      influences: flag.influences
+      influences: flag.influences,
     }));
 
     return res.status(200).json({
@@ -222,8 +222,8 @@ export async function getFlagDefinitions(req, res) {
       message: 'Flag definitions retrieved successfully',
       data: {
         count: formattedDefinitions.length,
-        flags: formattedDefinitions
-      }
+        flags: formattedDefinitions,
+      },
     });
 
   } catch (error) {
@@ -231,7 +231,7 @@ export async function getFlagDefinitions(req, res) {
     return res.status(500).json({
       success: false,
       message: 'Internal server error retrieving flag definitions',
-      error: process.env.NODE_ENV === 'development' ? error.message : undefined
+      error: process.env.NODE_ENV === 'development' ? error.message : undefined,
     });
   }
 }
@@ -246,7 +246,7 @@ export async function batchEvaluateFlags(req, res) {
     if (req.user?.role !== 'admin') {
       return res.status(403).json({
         success: false,
-        message: 'Admin access required for batch evaluation'
+        message: 'Admin access required for batch evaluation',
       });
     }
 
@@ -255,17 +255,17 @@ export async function batchEvaluateFlags(req, res) {
     if (!Array.isArray(horseIds) || horseIds.length === 0) {
       return res.status(400).json({
         success: false,
-        message: 'horseIds must be a non-empty array'
+        message: 'horseIds must be a non-empty array',
       });
     }
 
     // Validate all horse IDs are numbers
     const validHorseIds = horseIds.filter(id => !isNaN(parseInt(id))).map(id => parseInt(id));
-    
+
     if (validHorseIds.length !== horseIds.length) {
       return res.status(400).json({
         success: false,
-        message: 'All horse IDs must be valid numbers'
+        message: 'All horse IDs must be valid numbers',
       });
     }
 
@@ -277,7 +277,7 @@ export async function batchEvaluateFlags(req, res) {
       totalHorses: results.length,
       successful: results.filter(r => r.success).length,
       failed: results.filter(r => !r.success).length,
-      newFlagsAssigned: results.reduce((sum, r) => sum + (r.newFlags?.length || 0), 0)
+      newFlagsAssigned: results.reduce((sum, r) => sum + (r.newFlags?.length || 0), 0),
     };
 
     logger.info(`[epigeneticFlagController] Batch evaluation completed: ${summary.successful}/${summary.totalHorses} successful`);
@@ -287,8 +287,8 @@ export async function batchEvaluateFlags(req, res) {
       message: 'Batch flag evaluation completed',
       data: {
         summary,
-        results
-      }
+        results,
+      },
     });
 
   } catch (error) {
@@ -296,7 +296,7 @@ export async function batchEvaluateFlags(req, res) {
     return res.status(500).json({
       success: false,
       message: 'Internal server error during batch evaluation',
-      error: process.env.NODE_ENV === 'development' ? error.message : undefined
+      error: process.env.NODE_ENV === 'development' ? error.message : undefined,
     });
   }
 }
@@ -313,7 +313,7 @@ export async function getCarePatterns(req, res) {
     if (isNaN(horseId)) {
       return res.status(400).json({
         success: false,
-        message: 'Invalid horse ID'
+        message: 'Invalid horse ID',
       });
     }
 
@@ -324,14 +324,14 @@ export async function getCarePatterns(req, res) {
         id: true,
         name: true,
         ownerId: true,
-        dateOfBirth: true
-      }
+        dateOfBirth: true,
+      },
     });
 
     if (!horse) {
       return res.status(404).json({
         success: false,
-        message: 'Horse not found'
+        message: 'Horse not found',
       });
     }
 
@@ -339,7 +339,7 @@ export async function getCarePatterns(req, res) {
     if (req.user?.role !== 'admin' && horse.ownerId !== userId) {
       return res.status(403).json({
         success: false,
-        message: 'You do not have permission to view care patterns for this horse'
+        message: 'You do not have permission to view care patterns for this horse',
       });
     }
 
@@ -349,7 +349,7 @@ export async function getCarePatterns(req, res) {
     return res.status(200).json({
       success: true,
       message: 'Care pattern analysis retrieved successfully',
-      data: careAnalysis
+      data: careAnalysis,
     });
 
   } catch (error) {
@@ -357,7 +357,7 @@ export async function getCarePatterns(req, res) {
     return res.status(500).json({
       success: false,
       message: 'Internal server error retrieving care patterns',
-      error: process.env.NODE_ENV === 'development' ? error.message : undefined
+      error: process.env.NODE_ENV === 'development' ? error.message : undefined,
     });
   }
 }
@@ -367,5 +367,5 @@ export default {
   getHorseFlags,
   getFlagDefinitions,
   batchEvaluateFlags,
-  getCarePatterns
+  getCarePatterns,
 };

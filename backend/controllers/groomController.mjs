@@ -32,7 +32,7 @@ import {
 } from '../utils/groomBondingSystem.mjs';
 import {
   DEVELOPMENTAL_WINDOWS,
-  MILESTONE_TYPES
+  MILESTONE_TYPES,
 } from '../utils/enhancedMilestoneEvaluationSystem.mjs';
 import prisma from '../db/index.mjs';
 import logger from '../utils/logger.mjs';
@@ -73,7 +73,7 @@ function determineTaskType(interactionType, ageInDays) {
     'feeding': 'feeding',
     'grooming': ageInDays < 14 ? 'early_handling' : 'grooming',
     'exercise': ageInDays < 21 ? 'play_interaction' : 'exercise',
-    'medical_check': 'health_monitoring'
+    'medical_check': 'health_monitoring',
   };
 
   return taskTypeMapping[interactionType] || interactionType;
@@ -373,8 +373,8 @@ export async function recordInteraction(req, res) {
     const ageInDays = Math.floor((Date.now() - new Date(foal.dateOfBirth)) / (1000 * 60 * 60 * 24));
     const taskType = determineTaskType(interactionType, ageInDays);
     const qualityScore = effects.quality === 'excellent' ? 1.0 :
-                        effects.quality === 'good' ? 0.75 :
-                        effects.quality === 'fair' ? 0.5 : 0.25;
+      effects.quality === 'good' ? 0.75 :
+        effects.quality === 'fair' ? 0.5 : 0.25;
 
     // Record the interaction
     const interaction = await prisma.groomInteraction.create({

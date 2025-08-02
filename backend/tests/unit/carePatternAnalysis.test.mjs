@@ -1,7 +1,7 @@
 /**
  * Care Pattern Analysis Tests
  * Unit tests for care pattern analysis and evaluation logic
- * 
+ *
  * 🧪 TESTING APPROACH: Balanced Mocking
  * - Mock Prisma database calls only
  * - Test real business logic and pattern analysis
@@ -14,12 +14,12 @@ import { describe, test, expect, jest, beforeEach } from '@jest/globals';
 // Mock Prisma
 const mockPrisma = {
   horse: {
-    findUnique: jest.fn()
-  }
+    findUnique: jest.fn(),
+  },
 };
 
 jest.unstable_mockModule('../../db/index.mjs', () => ({
-  default: mockPrisma
+  default: mockPrisma,
 }));
 
 // Mock logger
@@ -28,8 +28,8 @@ jest.unstable_mockModule('../../utils/logger.mjs', () => ({
     info: jest.fn(),
     error: jest.fn(),
     warn: jest.fn(),
-    debug: jest.fn()
-  }
+    debug: jest.fn(),
+  },
 }));
 
 // Import after mocking
@@ -42,7 +42,7 @@ describe('Care Pattern Analysis', () => {
     dateOfBirth: new Date('2024-01-01'),
     bondScore: 50,
     stressLevel: 20,
-    groomInteractions: []
+    groomInteractions: [],
   };
 
   beforeEach(() => {
@@ -71,7 +71,7 @@ describe('Care Pattern Analysis', () => {
     test('should reject horse too old for evaluation', async () => {
       const oldHorse = {
         ...mockHorse,
-        dateOfBirth: new Date('2020-01-01') // 4+ years old
+        dateOfBirth: new Date('2020-01-01'), // 4+ years old
       };
       mockPrisma.horse.findUnique.mockResolvedValue(oldHorse);
 
@@ -98,7 +98,7 @@ describe('Care Pattern Analysis', () => {
             quality: 'good',
             bondingChange: 5,
             stressChange: -2,
-            createdAt: new Date('2024-05-25')
+            createdAt: new Date('2024-05-25'),
           },
           {
             id: 2,
@@ -106,7 +106,7 @@ describe('Care Pattern Analysis', () => {
             quality: 'excellent',
             bondingChange: 7,
             stressChange: -3,
-            createdAt: new Date('2024-05-26')
+            createdAt: new Date('2024-05-26'),
           },
           {
             id: 3,
@@ -114,9 +114,9 @@ describe('Care Pattern Analysis', () => {
             quality: 'good',
             bondingChange: 4,
             stressChange: -1,
-            createdAt: new Date('2024-05-27')
-          }
-        ]
+            createdAt: new Date('2024-05-27'),
+          },
+        ],
       };
       mockPrisma.horse.findUnique.mockResolvedValue(horseWithConsistentCare);
 
@@ -139,7 +139,7 @@ describe('Care Pattern Analysis', () => {
             quality: 'good',
             bondingChange: 3,
             stressChange: 1,
-            createdAt: new Date('2024-05-25')
+            createdAt: new Date('2024-05-25'),
           },
           {
             id: 2,
@@ -147,7 +147,7 @@ describe('Care Pattern Analysis', () => {
             quality: 'excellent',
             bondingChange: 5,
             stressChange: 0,
-            createdAt: new Date('2024-05-26')
+            createdAt: new Date('2024-05-26'),
           },
           {
             id: 3,
@@ -155,7 +155,7 @@ describe('Care Pattern Analysis', () => {
             quality: 'good',
             bondingChange: 2,
             stressChange: 2,
-            createdAt: new Date('2024-05-27')
+            createdAt: new Date('2024-05-27'),
           },
           {
             id: 4,
@@ -163,9 +163,9 @@ describe('Care Pattern Analysis', () => {
             quality: 'poor',
             bondingChange: -5,
             stressChange: 8,
-            createdAt: new Date('2024-05-28')
-          }
-        ]
+            createdAt: new Date('2024-05-28'),
+          },
+        ],
       };
       mockPrisma.horse.findUnique.mockResolvedValue(horseWithNoveltyExposure);
 
@@ -189,7 +189,7 @@ describe('Care Pattern Analysis', () => {
             quality: 'poor',
             bondingChange: -2,
             stressChange: 6,
-            createdAt: new Date('2024-05-25T10:00:00Z')
+            createdAt: new Date('2024-05-25T10:00:00Z'),
           },
           {
             id: 2,
@@ -197,7 +197,7 @@ describe('Care Pattern Analysis', () => {
             quality: 'good',
             bondingChange: 3,
             stressChange: -4,
-            createdAt: new Date('2024-05-25T14:00:00Z') // Recovery within 24h
+            createdAt: new Date('2024-05-25T14:00:00Z'), // Recovery within 24h
           },
           {
             id: 3,
@@ -205,7 +205,7 @@ describe('Care Pattern Analysis', () => {
             quality: 'fair',
             bondingChange: 0,
             stressChange: 5,
-            createdAt: new Date('2024-05-26T10:00:00Z')
+            createdAt: new Date('2024-05-26T10:00:00Z'),
           },
           {
             id: 4,
@@ -213,9 +213,9 @@ describe('Care Pattern Analysis', () => {
             quality: 'excellent',
             bondingChange: 5,
             stressChange: -6,
-            createdAt: new Date('2024-05-26T16:00:00Z') // Recovery within 24h
-          }
-        ]
+            createdAt: new Date('2024-05-26T16:00:00Z'), // Recovery within 24h
+          },
+        ],
       };
       mockPrisma.horse.findUnique.mockResolvedValue(horseWithStressEvents);
 
@@ -238,7 +238,7 @@ describe('Care Pattern Analysis', () => {
             quality: 'excellent',
             bondingChange: 8,
             stressChange: -2,
-            createdAt: new Date('2024-05-20')
+            createdAt: new Date('2024-05-20'),
           },
           {
             id: 2,
@@ -246,7 +246,7 @@ describe('Care Pattern Analysis', () => {
             quality: 'good',
             bondingChange: 6,
             stressChange: -1,
-            createdAt: new Date('2024-05-21')
+            createdAt: new Date('2024-05-21'),
           },
           {
             id: 3,
@@ -254,9 +254,9 @@ describe('Care Pattern Analysis', () => {
             quality: 'excellent',
             bondingChange: 7,
             stressChange: 0,
-            createdAt: new Date('2024-05-22')
-          }
-        ]
+            createdAt: new Date('2024-05-22'),
+          },
+        ],
       };
       mockPrisma.horse.findUnique.mockResolvedValue(horseWithBondingPatterns);
 
@@ -279,7 +279,7 @@ describe('Care Pattern Analysis', () => {
             quality: 'poor',
             bondingChange: -3,
             stressChange: 4,
-            createdAt: new Date('2024-05-21')
+            createdAt: new Date('2024-05-21'),
           },
           {
             id: 2,
@@ -287,9 +287,9 @@ describe('Care Pattern Analysis', () => {
             quality: 'fair',
             bondingChange: -1,
             stressChange: 2,
-            createdAt: new Date('2024-05-26') // 5-day gap
-          }
-        ]
+            createdAt: new Date('2024-05-26'), // 5-day gap
+          },
+        ],
       };
       mockPrisma.horse.findUnique.mockResolvedValue(horseWithNeglect);
 
@@ -313,7 +313,7 @@ describe('Care Pattern Analysis', () => {
             bondingChange: 2,
             stressChange: 7, // High stress = startle event
             notes: 'Horse startled by loud noise',
-            createdAt: new Date('2024-05-25')
+            createdAt: new Date('2024-05-25'),
           },
           {
             id: 2,
@@ -321,7 +321,7 @@ describe('Care Pattern Analysis', () => {
             quality: 'good',
             bondingChange: 3,
             stressChange: 0,
-            createdAt: new Date('2024-05-26')
+            createdAt: new Date('2024-05-26'),
           },
           {
             id: 3,
@@ -329,9 +329,9 @@ describe('Care Pattern Analysis', () => {
             quality: 'good',
             bondingChange: 2,
             stressChange: 6, // Another startle event
-            createdAt: new Date('2024-05-27')
-          }
-        ]
+            createdAt: new Date('2024-05-27'),
+          },
+        ],
       };
       mockPrisma.horse.findUnique.mockResolvedValue(horseWithEnvironmentalFactors);
 
@@ -348,7 +348,7 @@ describe('Care Pattern Analysis', () => {
     test('should handle horse with no interactions', async () => {
       const horseWithNoInteractions = {
         ...mockHorse,
-        groomInteractions: []
+        groomInteractions: [],
       };
       mockPrisma.horse.findUnique.mockResolvedValue(horseWithNoInteractions);
 
@@ -371,7 +371,7 @@ describe('Care Pattern Analysis', () => {
       mockPrisma.horse.findUnique.mockResolvedValue(mockHorse);
 
       const result = await analyzeCarePatterns(1, new Date('invalid'));
-      
+
       // Should still work with current date
       expect(result.eligible).toBe(true);
     });

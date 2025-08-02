@@ -1,7 +1,7 @@
 /**
  * Epigenetic Flag Definitions Tests
  * Unit tests for epigenetic flag configuration and definitions
- * 
+ *
  * 🧪 TESTING APPROACH: Balanced Mocking
  * - No external dependencies to mock
  * - Pure configuration testing
@@ -19,7 +19,7 @@ import {
   getAllFlagDefinitions,
   getFlagDefinition,
   getFlagsByType,
-  getFlagsBySourceCategory
+  getFlagsBySourceCategory,
 } from '../../config/epigeneticFlagDefinitions.mjs';
 
 describe('Epigenetic Flag Definitions', () => {
@@ -28,7 +28,7 @@ describe('Epigenetic Flag Definitions', () => {
       expect(FLAG_TYPES).toEqual({
         POSITIVE: 'positive',
         NEGATIVE: 'negative',
-        ADAPTIVE: 'adaptive'
+        ADAPTIVE: 'adaptive',
       });
     });
 
@@ -37,7 +37,7 @@ describe('Epigenetic Flag Definitions', () => {
         GROOMING: 'grooming',
         BONDING: 'bonding',
         ENVIRONMENT: 'environment',
-        NOVELTY: 'novelty'
+        NOVELTY: 'novelty',
       });
     });
 
@@ -48,7 +48,7 @@ describe('Epigenetic Flag Definitions', () => {
     test('should have correct age range', () => {
       expect(FLAG_EVALUATION_AGE_RANGE).toEqual({
         MIN: 0,
-        MAX: 3
+        MAX: 3,
       });
     });
   });
@@ -62,9 +62,9 @@ describe('Epigenetic Flag Definitions', () => {
     test('should have all required starter flags', () => {
       const expectedFlags = [
         'BRAVE', 'CONFIDENT', 'AFFECTIONATE', 'RESILIENT',
-        'FEARFUL', 'INSECURE', 'ALOOF', 'SKITTISH', 'FRAGILE'
+        'FEARFUL', 'INSECURE', 'ALOOF', 'SKITTISH', 'FRAGILE',
       ];
-      
+
       expectedFlags.forEach(flagName => {
         expect(EPIGENETIC_FLAG_DEFINITIONS).toHaveProperty(flagName);
       });
@@ -79,7 +79,7 @@ describe('Epigenetic Flag Definitions', () => {
         expect(flag).toHaveProperty('sourceCategory');
         expect(flag).toHaveProperty('influences');
         expect(flag).toHaveProperty('triggerConditions');
-        
+
         // Validate types
         expect(typeof flag.name).toBe('string');
         expect(typeof flag.displayName).toBe('string');
@@ -95,14 +95,14 @@ describe('Epigenetic Flag Definitions', () => {
       Object.values(EPIGENETIC_FLAG_DEFINITIONS).forEach(flag => {
         expect(flag.influences).toHaveProperty('traitWeightModifiers');
         expect(flag.influences).toHaveProperty('behaviorModifiers');
-        
+
         // Trait weight modifiers should be numbers between -1 and 1
         Object.values(flag.influences.traitWeightModifiers).forEach(modifier => {
           expect(typeof modifier).toBe('number');
           expect(modifier).toBeGreaterThanOrEqual(-1);
           expect(modifier).toBeLessThanOrEqual(1);
         });
-        
+
         // Behavior modifiers should be numbers
         Object.values(flag.influences.behaviorModifiers).forEach(modifier => {
           expect(typeof modifier).toBe('number');
@@ -116,13 +116,13 @@ describe('Epigenetic Flag Definitions', () => {
       const flagsByType = {
         positive: 0,
         negative: 0,
-        adaptive: 0
+        adaptive: 0,
       };
-      
+
       Object.values(EPIGENETIC_FLAG_DEFINITIONS).forEach(flag => {
         flagsByType[flag.type]++;
       });
-      
+
       expect(flagsByType.positive).toBe(4); // BRAVE, CONFIDENT, AFFECTIONATE, RESILIENT
       expect(flagsByType.negative).toBe(5); // FEARFUL, INSECURE, ALOOF, SKITTISH, FRAGILE
       expect(flagsByType.adaptive).toBe(0); // None in starter set
@@ -133,13 +133,13 @@ describe('Epigenetic Flag Definitions', () => {
         grooming: 0,
         bonding: 0,
         environment: 0,
-        novelty: 0
+        novelty: 0,
       };
-      
+
       Object.values(EPIGENETIC_FLAG_DEFINITIONS).forEach(flag => {
         flagsBySource[flag.sourceCategory]++;
       });
-      
+
       expect(flagsBySource.bonding).toBeGreaterThan(0);
       expect(flagsBySource.novelty).toBeGreaterThan(0);
       expect(flagsBySource.environment).toBeGreaterThan(0);
@@ -186,7 +186,7 @@ describe('Epigenetic Flag Definitions', () => {
         positiveFlags.forEach(flag => {
           expect(flag.type).toBe('positive');
         });
-        
+
         const flagNames = positiveFlags.map(f => f.name);
         expect(flagNames).toContain('brave');
         expect(flagNames).toContain('confident');
@@ -200,7 +200,7 @@ describe('Epigenetic Flag Definitions', () => {
         negativeFlags.forEach(flag => {
           expect(flag.type).toBe('negative');
         });
-        
+
         const flagNames = negativeFlags.map(f => f.name);
         expect(flagNames).toContain('fearful');
         expect(flagNames).toContain('insecure');

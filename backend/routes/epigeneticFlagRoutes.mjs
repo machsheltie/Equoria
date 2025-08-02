@@ -1,11 +1,11 @@
 /**
  * Epigenetic Flag Routes
  * API routes for epigenetic flag evaluation and management
- * 
+ *
  * 🎯 PURPOSE:
  * Defines REST API endpoints for the epigenetic flag system including
  * flag evaluation, retrieval, and care pattern analysis.
- * 
+ *
  * 📋 API ENDPOINTS:
  * - POST /api/flags/evaluate - Evaluate flags for a horse
  * - GET /api/horses/:id/flags - Get horse flags
@@ -21,7 +21,7 @@ import {
   getHorseFlags,
   getFlagDefinitions,
   batchEvaluateFlags,
-  getCarePatterns
+  getCarePatterns,
 } from '../controllers/epigeneticFlagController.mjs';
 import { authenticateToken } from '../middleware/auth.mjs';
 import logger from '../utils/logger.mjs';
@@ -71,11 +71,11 @@ const validateFlagTypeQuery = [
 /**
  * POST /api/flags/evaluate
  * Evaluate epigenetic flags for a specific horse
- * 
+ *
  * @body {number} horseId - ID of the horse to evaluate
  * @returns {Object} Evaluation results with newly assigned flags
  */
-router.post('/evaluate', 
+router.post('/evaluate',
   authenticateToken,
   validateFlagEvaluation,
   async (req, res) => {
@@ -86,16 +86,16 @@ router.post('/evaluate',
       res.status(500).json({
         success: false,
         message: 'Internal server error',
-        error: process.env.NODE_ENV === 'development' ? error.message : undefined
+        error: process.env.NODE_ENV === 'development' ? error.message : undefined,
       });
     }
-  }
+  },
 );
 
 /**
  * GET /api/horses/:id/flags
  * Get all epigenetic flags for a specific horse
- * 
+ *
  * @param {number} id - Horse ID
  * @returns {Object} Horse flags with definitions and details
  */
@@ -110,16 +110,16 @@ router.get('/horses/:id/flags',
       res.status(500).json({
         success: false,
         message: 'Internal server error',
-        error: process.env.NODE_ENV === 'development' ? error.message : undefined
+        error: process.env.NODE_ENV === 'development' ? error.message : undefined,
       });
     }
-  }
+  },
 );
 
 /**
  * GET /api/flags/definitions
  * Get epigenetic flag definitions
- * 
+ *
  * @query {string} [type] - Filter by flag type (positive, negative, adaptive)
  * @returns {Object} Flag definitions
  */
@@ -134,16 +134,16 @@ router.get('/definitions',
       res.status(500).json({
         success: false,
         message: 'Internal server error',
-        error: process.env.NODE_ENV === 'development' ? error.message : undefined
+        error: process.env.NODE_ENV === 'development' ? error.message : undefined,
       });
     }
-  }
+  },
 );
 
 /**
  * POST /api/flags/batch-evaluate
  * Batch evaluate flags for multiple horses (Admin only)
- * 
+ *
  * @body {number[]} horseIds - Array of horse IDs to evaluate
  * @returns {Object} Batch evaluation results
  */
@@ -158,16 +158,16 @@ router.post('/batch-evaluate',
       res.status(500).json({
         success: false,
         message: 'Internal server error',
-        error: process.env.NODE_ENV === 'development' ? error.message : undefined
+        error: process.env.NODE_ENV === 'development' ? error.message : undefined,
       });
     }
-  }
+  },
 );
 
 /**
  * GET /api/horses/:id/care-patterns
  * Get care pattern analysis for a horse (Debug/Admin endpoint)
- * 
+ *
  * @param {number} id - Horse ID
  * @returns {Object} Care pattern analysis results
  */
@@ -182,10 +182,10 @@ router.get('/horses/:id/care-patterns',
       res.status(500).json({
         success: false,
         message: 'Internal server error',
-        error: process.env.NODE_ENV === 'development' ? error.message : undefined
+        error: process.env.NODE_ENV === 'development' ? error.message : undefined,
       });
     }
-  }
+  },
 );
 
 /**
@@ -196,7 +196,7 @@ router.use((error, req, res, next) => {
     return res.status(400).json({
       success: false,
       message: 'Validation failed',
-      errors: error.array()
+      errors: error.array(),
     });
   }
   next(error);
@@ -211,7 +211,7 @@ router.get('/health', (req, res) => {
     success: true,
     message: 'Epigenetic flag system is operational',
     timestamp: new Date().toISOString(),
-    version: '1.0.0'
+    version: '1.0.0',
   });
 });
 

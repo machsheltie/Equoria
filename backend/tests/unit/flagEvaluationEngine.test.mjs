@@ -1,7 +1,7 @@
 /**
  * Flag Evaluation Engine Tests
  * Unit tests for flag evaluation logic and assignment
- * 
+ *
  * 🧪 TESTING APPROACH: Balanced Mocking
  * - Mock Prisma database calls only
  * - Mock care pattern analysis module
@@ -16,12 +16,12 @@ const mockPrisma = {
   horse: {
     findUnique: jest.fn(),
     findMany: jest.fn(),
-    update: jest.fn()
-  }
+    update: jest.fn(),
+  },
 };
 
 jest.unstable_mockModule('../../db/index.mjs', () => ({
-  default: mockPrisma
+  default: mockPrisma,
 }));
 
 // Mock logger
@@ -30,21 +30,21 @@ jest.unstable_mockModule('../../utils/logger.mjs', () => ({
     info: jest.fn(),
     error: jest.fn(),
     warn: jest.fn(),
-    debug: jest.fn()
-  }
+    debug: jest.fn(),
+  },
 }));
 
 // Mock care pattern analysis
 const mockAnalyzeCarePatterns = jest.fn();
 jest.unstable_mockModule('../../utils/carePatternAnalysis.mjs', () => ({
-  analyzeCarePatterns: mockAnalyzeCarePatterns
+  analyzeCarePatterns: mockAnalyzeCarePatterns,
 }));
 
 // Import after mocking
 const {
   evaluateHorseFlags,
   batchEvaluateFlags,
-  getEligibleHorses
+  getEligibleHorses,
 } = await import('../../utils/flagEvaluationEngine.mjs');
 
 describe('Flag Evaluation Engine', () => {
@@ -59,7 +59,7 @@ describe('Flag Evaluation Engine', () => {
       dateOfBirth: new Date('2024-01-01'),
       epigeneticFlags: [],
       bondScore: 50,
-      stressLevel: 20
+      stressLevel: 20,
     };
 
     const mockCareAnalysis = {
@@ -71,14 +71,14 @@ describe('Flag Evaluation Engine', () => {
           groomingInteractions: 8,
           qualityInteractions: 7,
           averageBondChange: 5.2,
-          meetsConsistentCareThreshold: true
+          meetsConsistentCareThreshold: true,
         },
         noveltyExposure: {
           noveltyEvents: 4,
           noveltyWithSupport: 4,
           fearEvents: 0,
           calmGroomPresent: true,
-          meetsBraveThreshold: true
+          meetsBraveThreshold: true,
         },
         stressManagement: {
           stressEvents: 3,
@@ -86,7 +86,7 @@ describe('Flag Evaluation Engine', () => {
           stressWithSupport: 3,
           currentStressLevel: 20,
           meetsResilientThreshold: true,
-          meetsFragileThreshold: false
+          meetsFragileThreshold: false,
         },
         bondingPatterns: {
           positiveInteractions: 12,
@@ -95,7 +95,7 @@ describe('Flag Evaluation Engine', () => {
           currentBondScore: 60,
           averageBondChange: 5.2,
           meetsAffectionateThreshold: true,
-          meetsConfidentThreshold: true
+          meetsConfidentThreshold: true,
         },
         neglectPatterns: {
           maxConsecutiveDaysWithoutCare: 0,
@@ -103,16 +103,16 @@ describe('Flag Evaluation Engine', () => {
           negativeInteractions: 0,
           currentBondScore: 60,
           meetsInsecureThreshold: false,
-          meetsAloofThreshold: false
+          meetsAloofThreshold: false,
         },
         environmentalFactors: {
           startleEvents: 0,
           routineInteractions: 8,
           environmentalChanges: 0,
           meetsSkittishThreshold: false,
-          hasRoutine: true
-        }
-      }
+          hasRoutine: true,
+        },
+      },
     };
 
     test('should evaluate and assign flags for eligible horse', async () => {
@@ -132,15 +132,15 @@ describe('Flag Evaluation Engine', () => {
       expect(mockPrisma.horse.update).toHaveBeenCalledWith({
         where: { id: 1 },
         data: {
-          epigeneticFlags: expect.arrayContaining(['brave', 'confident'])
-        }
+          epigeneticFlags: expect.arrayContaining(['brave', 'confident']),
+        },
       });
     });
 
     test('should reject horse outside age range', async () => {
       const oldHorse = {
         ...mockHorse,
-        dateOfBirth: new Date('2020-01-01') // 4+ years old
+        dateOfBirth: new Date('2020-01-01'), // 4+ years old
       };
       mockPrisma.horse.findUnique.mockResolvedValue(oldHorse);
 
@@ -155,7 +155,7 @@ describe('Flag Evaluation Engine', () => {
     test('should reject horse with maximum flags', async () => {
       const horseWithMaxFlags = {
         ...mockHorse,
-        epigeneticFlags: ['brave', 'confident', 'affectionate', 'resilient', 'fearful']
+        epigeneticFlags: ['brave', 'confident', 'affectionate', 'resilient', 'fearful'],
       };
       mockPrisma.horse.findUnique.mockResolvedValue(horseWithMaxFlags);
 
@@ -171,7 +171,7 @@ describe('Flag Evaluation Engine', () => {
     test('should not assign duplicate flags', async () => {
       const horseWithExistingFlags = {
         ...mockHorse,
-        epigeneticFlags: ['brave', 'confident']
+        epigeneticFlags: ['brave', 'confident'],
       };
       mockPrisma.horse.findUnique.mockResolvedValue(horseWithExistingFlags);
       mockAnalyzeCarePatterns.mockResolvedValue(mockCareAnalysis);
@@ -189,7 +189,7 @@ describe('Flag Evaluation Engine', () => {
     test('should respect flag limit during assignment', async () => {
       const horseNearLimit = {
         ...mockHorse,
-        epigeneticFlags: ['brave', 'confident', 'affectionate', 'resilient'] // 4 flags
+        epigeneticFlags: ['brave', 'confident', 'affectionate', 'resilient'], // 4 flags
       };
       mockPrisma.horse.findUnique.mockResolvedValue(horseNearLimit);
       mockAnalyzeCarePatterns.mockResolvedValue({
@@ -198,13 +198,13 @@ describe('Flag Evaluation Engine', () => {
           ...mockCareAnalysis.patterns,
           neglectPatterns: {
             ...mockCareAnalysis.patterns.neglectPatterns,
-            meetsInsecureThreshold: true // Would trigger insecure flag
-          }
-        }
+            meetsInsecureThreshold: true, // Would trigger insecure flag
+          },
+        },
       });
       mockPrisma.horse.update.mockResolvedValue({
         ...horseNearLimit,
-        epigeneticFlags: [...horseNearLimit.epigeneticFlags, 'insecure']
+        epigeneticFlags: [...horseNearLimit.epigeneticFlags, 'insecure'],
       });
 
       const result = await evaluateHorseFlags(1);
@@ -218,7 +218,7 @@ describe('Flag Evaluation Engine', () => {
       mockPrisma.horse.findUnique.mockResolvedValue(mockHorse);
       mockAnalyzeCarePatterns.mockResolvedValue({
         eligible: false,
-        reason: 'Insufficient interaction data'
+        reason: 'Insufficient interaction data',
       });
 
       const result = await evaluateHorseFlags(1);
@@ -250,7 +250,7 @@ describe('Flag Evaluation Engine', () => {
         dateOfBirth: new Date('2024-01-01'),
         epigeneticFlags: [],
         bondScore: 35,
-        stressLevel: 15
+        stressLevel: 15,
       };
 
       const bravePatterns = {
@@ -259,16 +259,16 @@ describe('Flag Evaluation Engine', () => {
           noveltyExposure: {
             meetsBraveThreshold: true,
             calmGroomPresent: true,
-            noveltyWithSupport: 4
+            noveltyWithSupport: 4,
           },
           bondingPatterns: {
-            currentBondScore: 35
+            currentBondScore: 35,
           },
           consistentCare: { meetsConsistentCareThreshold: false },
           stressManagement: { meetsResilientThreshold: false },
           neglectPatterns: { meetsInsecureThreshold: false, meetsAloofThreshold: false },
-          environmentalFactors: { meetsSkittishThreshold: false }
-        }
+          environmentalFactors: { meetsSkittishThreshold: false },
+        },
       };
 
       mockPrisma.horse.findUnique.mockResolvedValue(mockHorse);
@@ -288,7 +288,7 @@ describe('Flag Evaluation Engine', () => {
         dateOfBirth: new Date('2024-01-01'),
         epigeneticFlags: [],
         bondScore: 15,
-        stressLevel: 60
+        stressLevel: 60,
       };
 
       const fearfulPatterns = {
@@ -297,18 +297,18 @@ describe('Flag Evaluation Engine', () => {
           noveltyExposure: {
             fearEvents: 3,
             noveltyWithSupport: 0,
-            meetsBraveThreshold: false
+            meetsBraveThreshold: false,
           },
           bondingPatterns: {
             currentBondScore: 15,
             meetsConfidentThreshold: false,
-            meetsAffectionateThreshold: false
+            meetsAffectionateThreshold: false,
           },
           consistentCare: { meetsConsistentCareThreshold: false },
           stressManagement: { meetsResilientThreshold: false, meetsFragileThreshold: false },
           neglectPatterns: { meetsInsecureThreshold: false, meetsAloofThreshold: false },
-          environmentalFactors: { meetsSkittishThreshold: false }
-        }
+          environmentalFactors: { meetsSkittishThreshold: false },
+        },
       };
 
       mockPrisma.horse.findUnique.mockResolvedValue(mockHorse);
@@ -325,7 +325,7 @@ describe('Flag Evaluation Engine', () => {
   describe('batchEvaluateFlags', () => {
     test('should evaluate multiple horses', async () => {
       const horseIds = [1, 2, 3];
-      
+
       // Mock successful evaluations
       mockPrisma.horse.findUnique
         .mockResolvedValueOnce({ id: 1, name: 'Horse 1', dateOfBirth: new Date('2024-01-01'), epigeneticFlags: [] })
@@ -340,8 +340,8 @@ describe('Flag Evaluation Engine', () => {
           stressManagement: { meetsResilientThreshold: false, meetsFragileThreshold: false },
           bondingPatterns: { meetsConfidentThreshold: false, meetsAffectionateThreshold: false },
           neglectPatterns: { meetsInsecureThreshold: false, meetsAloofThreshold: false },
-          environmentalFactors: { meetsSkittishThreshold: false }
-        }
+          environmentalFactors: { meetsSkittishThreshold: false },
+        },
       });
 
       const results = await batchEvaluateFlags(horseIds);
@@ -352,7 +352,7 @@ describe('Flag Evaluation Engine', () => {
 
     test('should handle mixed success/failure in batch', async () => {
       const horseIds = [1, 2];
-      
+
       mockPrisma.horse.findUnique
         .mockResolvedValueOnce({ id: 1, name: 'Horse 1', dateOfBirth: new Date('2024-01-01'), epigeneticFlags: [] })
         .mockResolvedValueOnce(null); // Horse 2 not found
@@ -365,8 +365,8 @@ describe('Flag Evaluation Engine', () => {
           stressManagement: { meetsResilientThreshold: false, meetsFragileThreshold: false },
           bondingPatterns: { meetsConfidentThreshold: false, meetsAffectionateThreshold: false },
           neglectPatterns: { meetsInsecureThreshold: false, meetsAloofThreshold: false },
-          environmentalFactors: { meetsSkittishThreshold: false }
-        }
+          environmentalFactors: { meetsSkittishThreshold: false },
+        },
       });
 
       const results = await batchEvaluateFlags(horseIds);
@@ -382,7 +382,7 @@ describe('Flag Evaluation Engine', () => {
     test('should return eligible horses within age range', async () => {
       const eligibleHorses = [
         { id: 1, name: 'Young Horse 1', dateOfBirth: new Date('2024-01-01'), epigeneticFlags: [] },
-        { id: 2, name: 'Young Horse 2', dateOfBirth: new Date('2023-06-01'), epigeneticFlags: ['brave'] }
+        { id: 2, name: 'Young Horse 2', dateOfBirth: new Date('2023-06-01'), epigeneticFlags: ['brave'] },
       ];
 
       mockPrisma.horse.findMany.mockResolvedValue(eligibleHorses);
@@ -394,15 +394,15 @@ describe('Flag Evaluation Engine', () => {
         where: {
           dateOfBirth: {
             gte: expect.any(Date),
-            lte: expect.any(Date)
-          }
+            lte: expect.any(Date),
+          },
         },
         select: {
           id: true,
           name: true,
           dateOfBirth: true,
-          epigeneticFlags: true
-        }
+          epigeneticFlags: true,
+        },
       });
     });
 

@@ -1,9 +1,9 @@
 /**
  * Enhanced Milestone Evaluation System
- * 
+ *
  * Implements the comprehensive milestone evaluation system that integrates groom care history,
  * bond consistency, and task diversity into trait determination logic for foals under 3 years.
- * 
+ *
  * Features:
  * - Developmental window tracking (Day 1, Week 1-4)
  * - Groom assignment and history integration
@@ -19,10 +19,10 @@ import logger from '../utils/logger.mjs';
 // Milestone types and their developmental windows
 export const MILESTONE_TYPES = {
   IMPRINTING: 'imprinting',
-  SOCIALIZATION: 'socialization', 
+  SOCIALIZATION: 'socialization',
   CURIOSITY_PLAY: 'curiosity_play',
   TRUST_HANDLING: 'trust_handling',
-  CONFIDENCE_REACTIVITY: 'confidence_reactivity'
+  CONFIDENCE_REACTIVITY: 'confidence_reactivity',
 };
 
 // Developmental windows in days
@@ -31,37 +31,37 @@ export const DEVELOPMENTAL_WINDOWS = {
   [MILESTONE_TYPES.SOCIALIZATION]: { start: 1, end: 7 },
   [MILESTONE_TYPES.CURIOSITY_PLAY]: { start: 8, end: 14 },
   [MILESTONE_TYPES.TRUST_HANDLING]: { start: 15, end: 21 },
-  [MILESTONE_TYPES.CONFIDENCE_REACTIVITY]: { start: 22, end: 28 }
+  [MILESTONE_TYPES.CONFIDENCE_REACTIVITY]: { start: 22, end: 28 },
 };
 
 // Trait thresholds for confirmation
 export const TRAIT_THRESHOLDS = {
   CONFIRM: 3,
-  DENY: -3
+  DENY: -3,
 };
 
 // Milestone-specific trait pools
 export const MILESTONE_TRAIT_POOLS = {
   [MILESTONE_TYPES.IMPRINTING]: {
     positive: ['bonded', 'trusting', 'calm'],
-    negative: ['fearful', 'reactive', 'withdrawn']
+    negative: ['fearful', 'reactive', 'withdrawn'],
   },
   [MILESTONE_TYPES.SOCIALIZATION]: {
     positive: ['social', 'confident', 'curious'],
-    negative: ['antisocial', 'nervous', 'shy']
+    negative: ['antisocial', 'nervous', 'shy'],
   },
   [MILESTONE_TYPES.CURIOSITY_PLAY]: {
     positive: ['playful', 'intelligent', 'bold'],
-    negative: ['lazy', 'dull', 'timid']
+    negative: ['lazy', 'dull', 'timid'],
   },
   [MILESTONE_TYPES.TRUST_HANDLING]: {
     positive: ['trusting', 'calm', 'cooperative'],
-    negative: ['hesitant', 'reactive', 'wary']
+    negative: ['hesitant', 'reactive', 'wary'],
   },
   [MILESTONE_TYPES.CONFIDENCE_REACTIVITY]: {
     positive: ['confident', 'brave', 'resilient'],
-    negative: ['anxious', 'fearful', 'fragile']
-  }
+    negative: ['anxious', 'fearful', 'fragile'],
+  },
 };
 
 /**
@@ -86,9 +86,9 @@ export async function evaluateEnhancedMilestone(horseId, milestoneType, options 
       include: {
         groomAssignments: {
           where: { isActive: true },
-          include: { groom: true }
-        }
-      }
+          include: { groom: true },
+        },
+      },
     });
 
     if (!horse) {
@@ -97,13 +97,13 @@ export async function evaluateEnhancedMilestone(horseId, milestoneType, options 
 
     // Calculate horse age in days
     const ageInDays = Math.floor((Date.now() - new Date(horse.dateOfBirth)) / (1000 * 60 * 60 * 24));
-    
+
     // Only evaluate horses under 3 years (1095 days)
     if (ageInDays >= 1095) {
       return {
         success: false,
         reason: 'Horse too old for milestone evaluation',
-        ageInDays
+        ageInDays,
       };
     }
 
@@ -114,7 +114,7 @@ export async function evaluateEnhancedMilestone(horseId, milestoneType, options 
         success: false,
         reason: 'Horse not in appropriate age window for this milestone',
         ageInDays,
-        window
+        window,
       };
     }
 
@@ -122,33 +122,33 @@ export async function evaluateEnhancedMilestone(horseId, milestoneType, options 
     const existingEvaluation = await prisma.milestoneTraitLog.findFirst({
       where: {
         horseId,
-        milestoneType
-      }
+        milestoneType,
+      },
     });
 
     if (existingEvaluation && !options.forceReevaluate) {
       return {
         success: false,
         reason: 'Milestone already evaluated',
-        existingEvaluation
+        existingEvaluation,
       };
     }
 
     // Get groom care history for milestone window
     const groomCareHistory = await getGroomCareHistory(horseId, window);
-    
+
     // Get current groom assignment
     const currentGroom = horse.groomAssignments.length > 0 ? horse.groomAssignments[0].groom : null;
 
     // Calculate base milestone score
-    let baseScore = 0;
+    const baseScore = 0;
 
     // Calculate bond modifier
     const bondModifier = calculateBondModifier(groomCareHistory, horse.bondScore || 50);
-    
+
     // Calculate task consistency modifier
     const taskConsistencyModifier = calculateTaskConsistencyModifier(groomCareHistory);
-    
+
     // Calculate care gaps penalty
     const careGapsPenalty = calculateCareGapsPenalty(groomCareHistory, window);
 
@@ -173,11 +173,11 @@ export async function evaluateEnhancedMilestone(horseId, milestoneType, options 
         modifiersApplied: {
           bondModifier,
           taskConsistencyModifier,
-          careGapsPenalty
+          careGapsPenalty,
         },
         reasoning: traitOutcome.reasoning,
-        ageInDays
-      }
+        ageInDays,
+      },
     });
 
     logger.info(`[enhancedMilestoneEvaluationSystem.evaluateEnhancedMilestone] Completed evaluation for horse ${horseId}: ${traitOutcome.trait || 'no trait'} (score: ${finalScore})`);
@@ -190,9 +190,9 @@ export async function evaluateEnhancedMilestone(horseId, milestoneType, options 
       modifiers: {
         bondModifier,
         taskConsistencyModifier,
-        careGapsPenalty
+        careGapsPenalty,
       },
-      groomCareHistory
+      groomCareHistory,
     };
 
   } catch (error) {
@@ -216,15 +216,15 @@ async function getGroomCareHistory(horseId, window) {
       foalId: horseId,
       timestamp: {
         gte: windowStart,
-        lte: windowEnd
-      }
+        lte: windowEnd,
+      },
     },
     include: {
-      groom: true
+      groom: true,
     },
     orderBy: {
-      timestamp: 'asc'
-    }
+      timestamp: 'asc',
+    },
   });
 
   // Calculate task diversity
@@ -234,7 +234,7 @@ async function getGroomCareHistory(horseId, window) {
   // Calculate task consistency
   const totalDays = window.end - window.start + 1;
   const daysWithInteractions = new Set(
-    interactions.map(i => i.timestamp.toDateString())
+    interactions.map(i => i.timestamp.toDateString()),
   ).size;
   const taskConsistency = Math.round((daysWithInteractions / totalDays) * 5); // Max 5 points for consistency
 
@@ -243,9 +243,9 @@ async function getGroomCareHistory(horseId, window) {
     taskDiversity,
     taskConsistency,
     totalInteractions: interactions.length,
-    averageQuality: interactions.length > 0 
-      ? interactions.reduce((sum, i) => sum + (i.qualityScore || 0.75), 0) / interactions.length 
-      : 0
+    averageQuality: interactions.length > 0
+      ? interactions.reduce((sum, i) => sum + (i.qualityScore || 0.75), 0) / interactions.length
+      : 0,
   };
 }
 
@@ -256,10 +256,10 @@ async function getGroomCareHistory(horseId, window) {
  * @returns {number} Bond modifier (-2 to +2)
  */
 function calculateBondModifier(groomCareHistory, currentBondScore) {
-  if (currentBondScore >= 80) return 2;
-  if (currentBondScore >= 60) return 1;
-  if (currentBondScore >= 40) return 0;
-  if (currentBondScore >= 20) return -1;
+  if (currentBondScore >= 80) { return 2; }
+  if (currentBondScore >= 60) { return 1; }
+  if (currentBondScore >= 40) { return 0; }
+  if (currentBondScore >= 20) { return -1; }
   return -2;
 }
 
@@ -270,22 +270,22 @@ function calculateBondModifier(groomCareHistory, currentBondScore) {
  */
 function calculateTaskConsistencyModifier(groomCareHistory) {
   let modifier = 0;
-  
+
   // +1 if ≥3 relevant tasks were completed
   if (groomCareHistory.totalInteractions >= 3) {
     modifier += 1;
   }
-  
+
   // +1 if tasks were diverse (≥2 task types)
   if (groomCareHistory.taskDiversity >= 2) {
     modifier += 1;
   }
-  
+
   // +1 if task quality average > 0.8
   if (groomCareHistory.averageQuality > 0.8) {
     modifier += 1;
   }
-  
+
   return modifier;
 }
 
@@ -297,17 +297,17 @@ function calculateTaskConsistencyModifier(groomCareHistory) {
  */
 function calculateCareGapsPenalty(groomCareHistory, window) {
   let penalty = 0;
-  
+
   // -1 if no tasks completed
   if (groomCareHistory.totalInteractions === 0) {
     penalty += 1;
   }
-  
+
   // -2 if bond < 20 during window (handled in bond modifier, but additional penalty)
   if (groomCareHistory.interactions.length === 0) {
     penalty += 2;
   }
-  
+
   return penalty;
 }
 
@@ -319,22 +319,22 @@ function calculateCareGapsPenalty(groomCareHistory, window) {
  */
 function determineTraitOutcome(finalScore, milestoneType) {
   const traitPool = MILESTONE_TRAIT_POOLS[milestoneType];
-  
+
   if (finalScore >= TRAIT_THRESHOLDS.CONFIRM) {
     // Confirm positive trait
     const trait = traitPool.positive[Math.floor(Math.random() * traitPool.positive.length)];
     return {
       trait,
       type: 'positive',
-      reasoning: `Score ${finalScore} >= ${TRAIT_THRESHOLDS.CONFIRM}: Positive trait confirmed`
+      reasoning: `Score ${finalScore} >= ${TRAIT_THRESHOLDS.CONFIRM}: Positive trait confirmed`,
     };
   } else if (finalScore <= TRAIT_THRESHOLDS.DENY) {
     // Confirm negative trait
     const trait = traitPool.negative[Math.floor(Math.random() * traitPool.negative.length)];
     return {
       trait,
-      type: 'negative', 
-      reasoning: `Score ${finalScore} <= ${TRAIT_THRESHOLDS.DENY}: Negative trait confirmed`
+      type: 'negative',
+      reasoning: `Score ${finalScore} <= ${TRAIT_THRESHOLDS.DENY}: Negative trait confirmed`,
     };
   } else {
     // Randomized within candidate pool
@@ -344,7 +344,7 @@ function determineTraitOutcome(finalScore, milestoneType) {
     return {
       trait,
       type,
-      reasoning: `Score ${finalScore} in neutral range: Random trait from candidate pool`
+      reasoning: `Score ${finalScore} in neutral range: Random trait from candidate pool`,
     };
   }
 }
