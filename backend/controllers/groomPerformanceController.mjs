@@ -1,6 +1,6 @@
 /**
  * Groom Performance Controller
- * 
+ *
  * Handles API endpoints for groom performance tracking and reputation management
  */
 
@@ -10,7 +10,7 @@ import {
   recordGroomPerformance,
   getGroomPerformanceSummary,
   getTopPerformingGrooms,
-  PERFORMANCE_CONFIG
+  PERFORMANCE_CONFIG,
 } from '../services/groomPerformanceService.mjs';
 
 /**
@@ -28,7 +28,7 @@ export async function recordPerformance(req, res) {
       taskSuccess = true,
       wellbeingImpact = 0,
       duration = 0,
-      playerRating = null
+      playerRating = null,
     } = req.body;
 
     logger.info(`[groomPerformanceController] Recording performance for groom ${groomId}`);
@@ -36,14 +36,14 @@ export async function recordPerformance(req, res) {
     // Validate groom ownership
     const groom = await prisma.groom.findUnique({
       where: { id: parseInt(groomId) },
-      select: { id: true, name: true, userId: true }
+      select: { id: true, name: true, userId: true },
     });
 
     if (!groom) {
       return res.status(404).json({
         success: false,
         message: 'Groom not found',
-        data: null
+        data: null,
       });
     }
 
@@ -51,7 +51,7 @@ export async function recordPerformance(req, res) {
       return res.status(403).json({
         success: false,
         message: 'You do not own this groom',
-        data: null
+        data: null,
       });
     }
 
@@ -59,14 +59,14 @@ export async function recordPerformance(req, res) {
     if (horseId) {
       const horse = await prisma.horse.findUnique({
         where: { id: parseInt(horseId) },
-        select: { id: true, ownerId: true }
+        select: { id: true, ownerId: true },
       });
 
       if (!horse || horse.ownerId !== userId) {
         return res.status(403).json({
           success: false,
           message: 'You do not own this horse',
-          data: null
+          data: null,
         });
       }
     }
@@ -82,14 +82,14 @@ export async function recordPerformance(req, res) {
         taskSuccess: Boolean(taskSuccess),
         wellbeingImpact: parseFloat(wellbeingImpact),
         duration: parseInt(duration),
-        playerRating: playerRating ? parseInt(playerRating) : null
-      }
+        playerRating: playerRating ? parseInt(playerRating) : null,
+      },
     );
 
     res.status(201).json({
       success: true,
       message: 'Performance recorded successfully',
-      data: performanceRecord
+      data: performanceRecord,
     });
 
   } catch (error) {
@@ -97,7 +97,7 @@ export async function recordPerformance(req, res) {
     res.status(500).json({
       success: false,
       message: 'Failed to record performance',
-      data: null
+      data: null,
     });
   }
 }
@@ -119,21 +119,21 @@ export async function getGroomPerformance(req, res) {
       return res.status(400).json({
         success: false,
         message: 'Invalid groom ID',
-        data: null
+        data: null,
       });
     }
 
     // Check groom ownership
     const groom = await prisma.groom.findUnique({
       where: { id: parsedGroomId },
-      select: { id: true, userId: true }
+      select: { id: true, userId: true },
     });
 
     if (!groom) {
       return res.status(404).json({
         success: false,
         message: 'Groom not found',
-        data: null
+        data: null,
       });
     }
 
@@ -141,7 +141,7 @@ export async function getGroomPerformance(req, res) {
       return res.status(403).json({
         success: false,
         message: 'You do not own this groom',
-        data: null
+        data: null,
       });
     }
 
@@ -151,7 +151,7 @@ export async function getGroomPerformance(req, res) {
     res.json({
       success: true,
       message: 'Groom performance retrieved successfully',
-      data: performanceSummary
+      data: performanceSummary,
     });
 
   } catch (error) {
@@ -159,7 +159,7 @@ export async function getGroomPerformance(req, res) {
     res.status(500).json({
       success: false,
       message: 'Failed to get groom performance',
-      data: null
+      data: null,
     });
   }
 }
@@ -179,7 +179,7 @@ export async function getTopPerformers(req, res) {
       return res.status(400).json({
         success: false,
         message: 'Limit must be between 1 and 20',
-        data: null
+        data: null,
       });
     }
 
@@ -190,8 +190,8 @@ export async function getTopPerformers(req, res) {
       message: 'Top performing grooms retrieved successfully',
       data: {
         grooms: topPerformers,
-        count: topPerformers.length
-      }
+        count: topPerformers.length,
+      },
     });
 
   } catch (error) {
@@ -199,7 +199,7 @@ export async function getTopPerformers(req, res) {
     res.status(500).json({
       success: false,
       message: 'Failed to get top performing grooms',
-      data: null
+      data: null,
     });
   }
 }
@@ -222,8 +222,8 @@ export async function getPerformanceConfig(req, res) {
         metricWeights: PERFORMANCE_CONFIG.METRIC_WEIGHTS,
         minInteractionsForReputation: PERFORMANCE_CONFIG.MIN_INTERACTIONS_FOR_REPUTATION,
         excellenceBonusThreshold: PERFORMANCE_CONFIG.EXCELLENCE_BONUS_THRESHOLD,
-        consistencyStreakThreshold: PERFORMANCE_CONFIG.CONSISTENCY_STREAK_THRESHOLD
-      }
+        consistencyStreakThreshold: PERFORMANCE_CONFIG.CONSISTENCY_STREAK_THRESHOLD,
+      },
     });
 
   } catch (error) {
@@ -231,7 +231,7 @@ export async function getPerformanceConfig(req, res) {
     res.status(500).json({
       success: false,
       message: 'Failed to get performance configuration',
-      data: null
+      data: null,
     });
   }
 }
@@ -254,21 +254,21 @@ export async function getGroomAnalytics(req, res) {
       return res.status(400).json({
         success: false,
         message: 'Invalid groom ID',
-        data: null
+        data: null,
       });
     }
 
     // Check groom ownership
     const groom = await prisma.groom.findUnique({
       where: { id: parsedGroomId },
-      select: { id: true, name: true, userId: true }
+      select: { id: true, name: true, userId: true },
     });
 
     if (!groom) {
       return res.status(404).json({
         success: false,
         message: 'Groom not found',
-        data: null
+        data: null,
       });
     }
 
@@ -276,7 +276,7 @@ export async function getGroomAnalytics(req, res) {
       return res.status(403).json({
         success: false,
         message: 'You do not own this groom',
-        data: null
+        data: null,
       });
     }
 
@@ -288,40 +288,40 @@ export async function getGroomAnalytics(req, res) {
       where: {
         groomId: parsedGroomId,
         recordedAt: {
-          gte: startDate
-        }
+          gte: startDate,
+        },
       },
       include: {
         horse: {
-          select: { id: true, name: true }
-        }
+          select: { id: true, name: true },
+        },
       },
-      orderBy: { recordedAt: 'desc' }
+      orderBy: { recordedAt: 'desc' },
     });
 
     // Calculate analytics
     const analytics = {
       totalInteractions: records.length,
-      averageBondGain: records.length > 0 
-        ? records.reduce((sum, r) => sum + r.bondGain, 0) / records.length 
+      averageBondGain: records.length > 0
+        ? records.reduce((sum, r) => sum + r.bondGain, 0) / records.length
         : 0,
-      successRate: records.length > 0 
-        ? (records.filter(r => r.taskSuccess).length / records.length) * 100 
+      successRate: records.length > 0
+        ? (records.filter(r => r.taskSuccess).length / records.length) * 100
         : 0,
-      averageWellbeingImpact: records.length > 0 
-        ? records.reduce((sum, r) => sum + r.wellbeingImpact, 0) / records.length 
+      averageWellbeingImpact: records.length > 0
+        ? records.reduce((sum, r) => sum + r.wellbeingImpact, 0) / records.length
         : 0,
-      averageDuration: records.length > 0 
-        ? records.reduce((sum, r) => sum + r.duration, 0) / records.length 
+      averageDuration: records.length > 0
+        ? records.reduce((sum, r) => sum + r.duration, 0) / records.length
         : 0,
       interactionTypes: {},
       dailyActivity: {},
-      horsesWorkedWith: []
+      horsesWorkedWith: [],
     };
 
     // Group by interaction type
     records.forEach(record => {
-      analytics.interactionTypes[record.interactionType] = 
+      analytics.interactionTypes[record.interactionType] =
         (analytics.interactionTypes[record.interactionType] || 0) + 1;
     });
 
@@ -335,7 +335,7 @@ export async function getGroomAnalytics(req, res) {
     const uniqueHorses = [...new Map(
       records
         .filter(r => r.horse)
-        .map(r => [r.horse.id, r.horse])
+        .map(r => [r.horse.id, r.horse]),
     ).values()];
     analytics.horsesWorkedWith = uniqueHorses;
 
@@ -345,16 +345,16 @@ export async function getGroomAnalytics(req, res) {
       data: {
         groom: {
           id: groom.id,
-          name: groom.name
+          name: groom.name,
         },
         period: {
           days,
           startDate,
-          endDate: new Date()
+          endDate: new Date(),
         },
         analytics,
-        records: records.slice(0, 20) // Return last 20 records
-      }
+        records: records.slice(0, 20), // Return last 20 records
+      },
     });
 
   } catch (error) {
@@ -362,7 +362,7 @@ export async function getGroomAnalytics(req, res) {
     res.status(500).json({
       success: false,
       message: 'Failed to get groom analytics',
-      data: null
+      data: null,
     });
   }
 }

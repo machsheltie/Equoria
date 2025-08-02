@@ -23,8 +23,8 @@ describe('Enhanced Groom Interactions Integration Tests', () => {
         password: 'hashedpassword',
         firstName: 'Enhanced',
         lastName: 'TestUser',
-        money: 10000
-      }
+        money: 10000,
+      },
     });
 
     authToken = generateTestToken({ id: testUser.id, username: testUser.username });
@@ -37,9 +37,9 @@ describe('Enhanced Groom Interactions Integration Tests', () => {
         dateOfBirth: new Date(Date.now() - 365 * 24 * 60 * 60 * 1000), // 1 year old
         ownerId: testUser.id,
         bondScore: 25,
-        stressLevel: 40
+        stressLevel: 40,
         // breedId is optional, so we'll omit it for the test
-      }
+      },
     });
 
     // Create test groom
@@ -52,8 +52,8 @@ describe('Enhanced Groom Interactions Integration Tests', () => {
         personality: 'gentle',
         experience: 5,
         sessionRate: 25.00,
-        bio: 'Test groom for enhanced interactions'
-      }
+        bio: 'Test groom for enhanced interactions',
+      },
     });
 
     // Test setup complete
@@ -63,18 +63,18 @@ describe('Enhanced Groom Interactions Integration Tests', () => {
     // Clean up test data
     if (testGroom?.id) {
       await prisma.groomInteraction.deleteMany({
-        where: { groomId: testGroom.id }
+        where: { groomId: testGroom.id },
       });
     }
     if (testUser?.id) {
       await prisma.groom.deleteMany({
-        where: { userId: testUser.id }
+        where: { userId: testUser.id },
       });
       await prisma.horse.deleteMany({
-        where: { ownerId: testUser.id }
+        where: { ownerId: testUser.id },
       });
       await prisma.user.delete({
-        where: { id: testUser.id }
+        where: { id: testUser.id },
       });
     }
   });
@@ -155,7 +155,7 @@ describe('Enhanced Groom Interactions Integration Tests', () => {
         interactionType: 'daily_care',
         variation: 'Morning Routine',
         duration: 30,
-        notes: 'Test enhanced interaction'
+        notes: 'Test enhanced interaction',
       };
 
       const response = await request(app)
@@ -204,8 +204,8 @@ describe('Enhanced Groom Interactions Integration Tests', () => {
           dateOfBirth: new Date(Date.now() - 365 * 24 * 60 * 60 * 1000), // 1 year old
           ownerId: testUser.id,
           bondScore: 30,
-          stressLevel: 35
-        }
+          stressLevel: 35,
+        },
       });
 
       const interactionData = {
@@ -214,7 +214,7 @@ describe('Enhanced Groom Interactions Integration Tests', () => {
         interactionType: 'enrichment',
         variation: 'Sensory Exploration',
         duration: 45,
-        notes: 'Enrichment activity test'
+        notes: 'Enrichment activity test',
       };
 
       const response = await request(app)
@@ -242,8 +242,8 @@ describe('Enhanced Groom Interactions Integration Tests', () => {
           dateOfBirth: new Date(Date.now() - 365 * 24 * 60 * 60 * 1000), // 1 year old
           ownerId: testUser.id,
           bondScore: 20,
-          stressLevel: 50
-        }
+          stressLevel: 50,
+        },
       });
 
       // First interaction should succeed
@@ -252,7 +252,7 @@ describe('Enhanced Groom Interactions Integration Tests', () => {
         horseId: thirdHorse.id,
         interactionType: 'bonding_time',
         variation: 'Trust Building',
-        duration: 40
+        duration: 40,
       };
 
       const firstResponse = await request(app)
@@ -301,7 +301,7 @@ describe('Enhanced Groom Interactions Integration Tests', () => {
         horseId: testHorse.id,
         interactionType: 'invalid_type',
         variation: 'Test Variation',
-        duration: 30
+        duration: 30,
       };
 
       const response = await request(app)
@@ -320,7 +320,7 @@ describe('Enhanced Groom Interactions Integration Tests', () => {
         horseId: testHorse.id,
         interactionType: 'daily_care',
         variation: 'Morning Routine',
-        duration: 200 // Too long
+        duration: 200, // Too long
       };
 
       const response = await request(app)
@@ -403,7 +403,7 @@ describe('Enhanced Groom Interactions Integration Tests', () => {
         `/api/grooms/enhanced/interactions/${testGroom.id}/${testHorse.id}`,
         '/api/grooms/enhanced/interact',
         `/api/grooms/enhanced/relationship/${testGroom.id}/${testHorse.id}`,
-        '/api/grooms/enhanced/interactions/types'
+        '/api/grooms/enhanced/interactions/types',
       ];
 
       for (const endpoint of endpoints) {
@@ -420,8 +420,8 @@ describe('Enhanced Groom Interactions Integration Tests', () => {
           email: 'other-enhanced-test@example.com',
           password: 'hashedpassword',
           firstName: 'Other',
-          lastName: 'TestUser'
-        }
+          lastName: 'TestUser',
+        },
       });
 
       const otherToken = generateTestToken({ id: otherUser.id, username: otherUser.username });

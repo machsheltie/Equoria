@@ -11,7 +11,7 @@ import {
   calculateHandlerBonus,
   HANDLER_SKILL_BONUSES,
   PERSONALITY_DISCIPLINE_SYNERGY,
-  SPECIALTY_DISCIPLINE_BONUSES
+  SPECIALTY_DISCIPLINE_BONUSES,
 } from '../services/groomHandlerService.mjs';
 import { getDisciplineConfig, getAllDisciplines } from '../utils/competitionLogic.mjs';
 import { isValidConformationClass, CONFORMATION_SHOW_CONFIG } from '../services/conformationShowService.mjs';
@@ -34,21 +34,21 @@ export async function getHorseHandler(req, res) {
       return res.status(400).json({
         success: false,
         message: 'Invalid horse ID',
-        data: null
+        data: null,
       });
     }
 
     // Check horse ownership
     const horse = await prisma.horse.findUnique({
       where: { id: parsedHorseId },
-      select: { id: true, name: true, ownerId: true }
+      select: { id: true, name: true, ownerId: true },
     });
 
     if (!horse) {
       return res.status(404).json({
         success: false,
         message: 'Horse not found',
-        data: null
+        data: null,
       });
     }
 
@@ -56,7 +56,7 @@ export async function getHorseHandler(req, res) {
       return res.status(403).json({
         success: false,
         message: 'You do not own this horse',
-        data: null
+        data: null,
       });
     }
 
@@ -65,14 +65,14 @@ export async function getHorseHandler(req, res) {
 
     res.status(200).json({
       success: true,
-      message: handlerData.hasHandler 
-        ? `Handler ${handlerData.groom.name} is assigned to ${horse.name}` 
+      message: handlerData.hasHandler
+        ? `Handler ${handlerData.groom.name} is assigned to ${horse.name}`
         : `No handler assigned to ${horse.name}`,
       data: {
         hasHandler: handlerData.hasHandler,
         horse: {
           id: horse.id,
-          name: horse.name
+          name: horse.name,
         },
         handler: handlerData.hasHandler ? {
           id: handlerData.groom.id,
@@ -80,14 +80,14 @@ export async function getHorseHandler(req, res) {
           skillLevel: handlerData.groom.skillLevel,
           speciality: handlerData.groom.speciality,
           personality: handlerData.groom.personality,
-          experience: handlerData.groom.experience
+          experience: handlerData.groom.experience,
         } : null,
         assignment: handlerData.hasHandler ? {
           id: handlerData.assignment.id,
           priority: handlerData.assignment.priority,
-          createdAt: handlerData.assignment.createdAt
-        } : null
-      }
+          createdAt: handlerData.assignment.createdAt,
+        } : null,
+      },
     });
 
   } catch (error) {
@@ -95,7 +95,7 @@ export async function getHorseHandler(req, res) {
     res.status(500).json({
       success: false,
       message: 'Internal server error',
-      data: null
+      data: null,
     });
   }
 }
@@ -117,7 +117,7 @@ export async function checkHandlerEligibility(req, res) {
       return res.status(400).json({
         success: false,
         message: 'Invalid horse ID',
-        data: null
+        data: null,
       });
     }
 
@@ -129,15 +129,15 @@ export async function checkHandlerEligibility(req, res) {
         name: true,
         ownerId: true,
         bondScore: true,
-        stressLevel: true
-      }
+        stressLevel: true,
+      },
     });
 
     if (!horse) {
       return res.status(404).json({
         success: false,
         message: 'Horse not found',
-        data: null
+        data: null,
       });
     }
 
@@ -145,7 +145,7 @@ export async function checkHandlerEligibility(req, res) {
       return res.status(403).json({
         success: false,
         message: 'You do not own this horse',
-        data: null
+        data: null,
       });
     }
 
@@ -154,7 +154,7 @@ export async function checkHandlerEligibility(req, res) {
       return res.status(400).json({
         success: false,
         message: 'Invalid conformation class',
-        data: null
+        data: null,
       });
     }
 
@@ -168,7 +168,7 @@ export async function checkHandlerEligibility(req, res) {
         horse: {
           id: horse.id,
           name: horse.name,
-          bondScore: horse.bondScore
+          bondScore: horse.bondScore,
         },
         className,
         eligible: eligibility.eligible,
@@ -182,10 +182,10 @@ export async function checkHandlerEligibility(req, res) {
           skillLevel: eligibility.groom.skillLevel,
           speciality: eligibility.groom.speciality,
           personality: eligibility.groom.personality,
-          experience: eligibility.groom.experience
+          experience: eligibility.groom.experience,
         } : null,
-        isConformationShow: true
-      }
+        isConformationShow: true,
+      },
     });
 
   } catch (error) {
@@ -193,7 +193,7 @@ export async function checkHandlerEligibility(req, res) {
     res.status(500).json({
       success: false,
       message: 'Internal server error',
-      data: null
+      data: null,
     });
   }
 }
@@ -216,9 +216,9 @@ export async function getHandlerConfig(req, res) {
         description: {
           skillBonuses: 'Base and maximum bonuses by skill level',
           personalitySynergy: 'Bonus for personality-discipline matches',
-          specialtyBonuses: 'Bonus for specialty-discipline matches'
-        }
-      }
+          specialtyBonuses: 'Bonus for specialty-discipline matches',
+        },
+      },
     });
 
   } catch (error) {
@@ -226,7 +226,7 @@ export async function getHandlerConfig(req, res) {
     res.status(500).json({
       success: false,
       message: 'Internal server error',
-      data: null
+      data: null,
     });
   }
 }
@@ -249,27 +249,27 @@ export async function getHandlerRecommendations(req, res) {
       return res.status(400).json({
         success: false,
         message: 'Invalid horse ID',
-        data: null
+        data: null,
       });
     }
 
     // Check horse ownership
     const horse = await prisma.horse.findUnique({
       where: { id: parsedHorseId },
-      select: { 
-        id: true, 
-        name: true, 
+      select: {
+        id: true,
+        name: true,
         ownerId: true,
         bondScore: true,
-        stressLevel: true
-      }
+        stressLevel: true,
+      },
     });
 
     if (!horse) {
       return res.status(404).json({
         success: false,
         message: 'Horse not found',
-        data: null
+        data: null,
       });
     }
 
@@ -277,15 +277,15 @@ export async function getHandlerRecommendations(req, res) {
       return res.status(403).json({
         success: false,
         message: 'You do not own this horse',
-        data: null
+        data: null,
       });
     }
 
     // Get all user's grooms
     const grooms = await prisma.groom.findMany({
-      where: { 
+      where: {
         userId,
-        isActive: true
+        isActive: true,
       },
       select: {
         id: true,
@@ -293,8 +293,8 @@ export async function getHandlerRecommendations(req, res) {
         skillLevel: true,
         speciality: true,
         personality: true,
-        experience: true
-      }
+        experience: true,
+      },
     });
 
     // Calculate potential bonuses for each groom
@@ -305,7 +305,7 @@ export async function getHandlerRecommendations(req, res) {
         groom,
         bonus: bonus.handlerBonus,
         bonusBreakdown: bonus.bonusBreakdown,
-        isCurrentHandler: false // Will be updated below
+        isCurrentHandler: false, // Will be updated below
       });
     }
 
@@ -328,15 +328,15 @@ export async function getHandlerRecommendations(req, res) {
         horse: {
           id: horse.id,
           name: horse.name,
-          bondScore: horse.bondScore
+          bondScore: horse.bondScore,
         },
         className: className || 'General',
         recommendations,
         currentHandler: currentHandler.hasHandler ? {
           id: currentHandler.groom.id,
-          name: currentHandler.groom.name
-        } : null
-      }
+          name: currentHandler.groom.name,
+        } : null,
+      },
     });
 
   } catch (error) {
@@ -344,7 +344,7 @@ export async function getHandlerRecommendations(req, res) {
     res.status(500).json({
       success: false,
       message: 'Internal server error',
-      data: null
+      data: null,
     });
   }
 }

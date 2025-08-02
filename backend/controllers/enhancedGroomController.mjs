@@ -9,7 +9,7 @@ import {
   calculateEnhancedEffects,
   getAvailableInteractions,
   calculateRelationshipLevel,
-  ENHANCED_INTERACTIONS
+  ENHANCED_INTERACTIONS,
 } from '../services/enhancedGroomInteractions.mjs';
 
 /**
@@ -28,7 +28,7 @@ export async function getEnhancedInteractions(req, res) {
       return res.status(400).json({
         success: false,
         message: 'Groom ID and Horse ID are required',
-        data: null
+        data: null,
       });
     }
 
@@ -43,8 +43,8 @@ export async function getEnhancedInteractions(req, res) {
           skillLevel: true,
           personality: true,
           sessionRate: true,
-          userId: true
-        }
+          userId: true,
+        },
       }),
       prisma.horse.findUnique({
         where: { id: parseInt(horseId) },
@@ -54,9 +54,9 @@ export async function getEnhancedInteractions(req, res) {
           dateOfBirth: true,
           bondScore: true,
           stressLevel: true,
-          ownerId: true
-        }
-      })
+          ownerId: true,
+        },
+      }),
     ]);
 
     // Validate ownership
@@ -64,7 +64,7 @@ export async function getEnhancedInteractions(req, res) {
       return res.status(404).json({
         success: false,
         message: 'Groom not found or not owned by user',
-        data: null
+        data: null,
       });
     }
 
@@ -72,7 +72,7 @@ export async function getEnhancedInteractions(req, res) {
       return res.status(404).json({
         success: false,
         message: 'Horse not found or not owned by user',
-        data: null
+        data: null,
       });
     }
 
@@ -92,8 +92,8 @@ export async function getEnhancedInteractions(req, res) {
         groomId: parseInt(groomId),
         foalId: parseInt(horseId),
         timestamp: {
-          gte: new Date(Date.now() - 7 * 24 * 60 * 60 * 1000) // Last 7 days
-        }
+          gte: new Date(Date.now() - 7 * 24 * 60 * 60 * 1000), // Last 7 days
+        },
       },
       orderBy: { timestamp: 'desc' },
       take: 10,
@@ -104,8 +104,8 @@ export async function getEnhancedInteractions(req, res) {
         bondingChange: true,
         stressChange: true,
         timestamp: true,
-        notes: true
-      }
+        notes: true,
+      },
     });
 
     res.status(200).json({
@@ -118,26 +118,26 @@ export async function getEnhancedInteractions(req, res) {
           speciality: groom.speciality,
           skillLevel: groom.skillLevel,
           personality: groom.personality,
-          sessionRate: groom.sessionRate
+          sessionRate: groom.sessionRate,
         },
         horse: {
           id: horse.id,
           name: horse.name,
           age: horse.age,
           bondScore: horse.bondScore,
-          stressLevel: horse.stressLevel
+          stressLevel: horse.stressLevel,
         },
         relationship: {
           level: relationshipLevel.name,
           levelNumber: relationshipLevel.level,
           bondingPoints: horse.bondScore || 0,
           nextThreshold: getNextThreshold(relationshipLevel.level),
-          multiplier: relationshipLevel.multiplier
+          multiplier: relationshipLevel.multiplier,
         },
         availableInteractions,
         recentInteractions,
-        recommendations: generateInteractionRecommendations(groom, horse, relationshipLevel)
-      }
+        recommendations: generateInteractionRecommendations(groom, horse, relationshipLevel),
+      },
     });
 
   } catch (error) {
@@ -145,7 +145,7 @@ export async function getEnhancedInteractions(req, res) {
     res.status(500).json({
       success: false,
       message: 'Internal server error',
-      data: null
+      data: null,
     });
   }
 }
@@ -166,7 +166,7 @@ export async function performEnhancedInteraction(req, res) {
       return res.status(400).json({
         success: false,
         message: 'groomId, horseId, interactionType, variation, and duration are required',
-        data: null
+        data: null,
       });
     }
 
@@ -176,7 +176,7 @@ export async function performEnhancedInteraction(req, res) {
       return res.status(400).json({
         success: false,
         message: 'Invalid interaction type',
-        data: null
+        data: null,
       });
     }
 
@@ -191,9 +191,9 @@ export async function performEnhancedInteraction(req, res) {
         foalId: parseInt(horseId),
         timestamp: {
           gte: today,
-          lt: tomorrow
-        }
-      }
+          lt: tomorrow,
+        },
+      },
     });
 
     if (todaysInteractions.length > 0) {
@@ -202,8 +202,8 @@ export async function performEnhancedInteraction(req, res) {
         message: 'Horse has already had a groom interaction today',
         data: {
           dailyLimitReached: true,
-          lastInteraction: todaysInteractions[todaysInteractions.length - 1]
-        }
+          lastInteraction: todaysInteractions[todaysInteractions.length - 1],
+        },
       });
     }
 
@@ -218,9 +218,9 @@ export async function performEnhancedInteraction(req, res) {
           dateOfBirth: true,
           bondScore: true,
           stressLevel: true,
-          ownerId: true
-        }
-      })
+          ownerId: true,
+        },
+      }),
     ]);
 
     // Validate ownership
@@ -228,7 +228,7 @@ export async function performEnhancedInteraction(req, res) {
       return res.status(404).json({
         success: false,
         message: 'Groom not found or not owned by user',
-        data: null
+        data: null,
       });
     }
 
@@ -236,7 +236,7 @@ export async function performEnhancedInteraction(req, res) {
       return res.status(404).json({
         success: false,
         message: 'Horse not found or not owned by user',
-        data: null
+        data: null,
       });
     }
 
@@ -258,8 +258,8 @@ export async function performEnhancedInteraction(req, res) {
         stressChange: effects.stressChange,
         quality: effects.quality,
         cost: effects.cost,
-        notes: notes || `Enhanced ${interactionType}: ${variation}${effects.specialEvent ? ` - ${effects.specialEvent.name}!` : ''}`
-      }
+        notes: notes || `Enhanced ${interactionType}: ${variation}${effects.specialEvent ? ` - ${effects.specialEvent.name}!` : ''}`,
+      },
     });
 
     // Update horse's bond score and stress level
@@ -270,8 +270,8 @@ export async function performEnhancedInteraction(req, res) {
       where: { id: parseInt(horseId) },
       data: {
         bondScore: newBondScore,
-        stressLevel: newStressLevel
-      }
+        stressLevel: newStressLevel,
+      },
     });
 
     // Check for relationship level change
@@ -299,29 +299,29 @@ export async function performEnhancedInteraction(req, res) {
           variation: effects.variation,
           quality: effects.quality,
           duration,
-          cost: effects.cost
+          cost: effects.cost,
         },
         effects: {
           bondingChange: effects.bondingChange,
           stressChange: effects.stressChange,
           newBondScore,
-          newStressLevel
+          newStressLevel,
         },
         relationship: {
           oldLevel: oldLevel.name,
           newLevel: newLevel.name,
           levelUp,
           currentPoints: newBondScore,
-          nextThreshold: getNextThreshold(newLevel.level)
+          nextThreshold: getNextThreshold(newLevel.level),
         },
         specialEvent: effects.specialEvent,
         horse: {
           id: horse.id,
           name: horse.name,
           bondScore: newBondScore,
-          stressLevel: newStressLevel
-        }
-      }
+          stressLevel: newStressLevel,
+        },
+      },
     });
 
   } catch (error) {
@@ -329,7 +329,7 @@ export async function performEnhancedInteraction(req, res) {
     res.status(500).json({
       success: false,
       message: 'Internal server error',
-      data: null
+      data: null,
     });
   }
 }
@@ -347,28 +347,28 @@ export async function getRelationshipDetails(req, res) {
     const interactions = await prisma.groomInteraction.findMany({
       where: {
         groomId: parseInt(groomId),
-        foalId: parseInt(horseId)
+        foalId: parseInt(horseId),
       },
       orderBy: { timestamp: 'desc' },
-      take: 50
+      take: 50,
     });
 
     // Get current horse data
     const horse = await prisma.horse.findUnique({
       where: { id: parseInt(horseId) },
-      select: { bondScore: true, name: true, ownerId: true }
+      select: { bondScore: true, name: true, ownerId: true },
     });
 
     if (!horse || horse.ownerId !== userId) {
       return res.status(404).json({
         success: false,
         message: 'Horse not found or not owned by user',
-        data: null
+        data: null,
       });
     }
 
     const relationshipLevel = calculateRelationshipLevel(horse.bondScore || 0);
-    
+
     // Calculate relationship statistics
     const stats = calculateRelationshipStats(interactions);
 
@@ -381,12 +381,12 @@ export async function getRelationshipDetails(req, res) {
           levelNumber: relationshipLevel.level,
           bondingPoints: horse.bondScore || 0,
           nextThreshold: getNextThreshold(relationshipLevel.level),
-          multiplier: relationshipLevel.multiplier
+          multiplier: relationshipLevel.multiplier,
         },
         statistics: stats,
         recentInteractions: interactions.slice(0, 10),
-        milestones: generateRelationshipMilestones(interactions, relationshipLevel)
-      }
+        milestones: generateRelationshipMilestones(interactions, relationshipLevel),
+      },
     });
 
   } catch (error) {
@@ -394,7 +394,7 @@ export async function getRelationshipDetails(req, res) {
     res.status(500).json({
       success: false,
       message: 'Internal server error',
-      data: null
+      data: null,
     });
   }
 }
@@ -408,44 +408,44 @@ function getNextThreshold(currentLevel) {
 
 function generateInteractionRecommendations(groom, horse, relationshipLevel) {
   const recommendations = [];
-  
+
   // Based on stress level
   if (horse.stressLevel > 60) {
     recommendations.push({
       type: 'bonding_time',
       variation: 'Quiet Companionship',
-      reason: 'High stress levels - calming interaction recommended'
+      reason: 'High stress levels - calming interaction recommended',
     });
   }
-  
+
   // Based on relationship level
   if (relationshipLevel.level < 2) {
     recommendations.push({
       type: 'daily_care',
       variation: 'Thorough Inspection',
-      reason: 'Build familiarity through consistent care'
+      reason: 'Build familiarity through consistent care',
     });
   }
-  
+
   // Based on groom specialty
   if (groom.speciality === 'foalCare' && horse.age < 1095) {
     recommendations.push({
       type: 'enrichment',
       variation: 'Sensory Exploration',
-      reason: 'Perfect match for foal care specialist'
+      reason: 'Perfect match for foal care specialist',
     });
   }
-  
+
   return recommendations;
 }
 
 function calculateRelationshipStats(interactions) {
   const totalInteractions = interactions.length;
   const totalBonding = interactions.reduce((sum, i) => sum + (i.bondingChange || 0), 0);
-  const averageQuality = interactions.length > 0 
-    ? interactions.filter(i => i.quality).length / interactions.length 
+  const averageQuality = interactions.length > 0
+    ? interactions.filter(i => i.quality).length / interactions.length
     : 0;
-  
+
   const qualityDistribution = interactions.reduce((dist, i) => {
     if (i.quality) {
       dist[i.quality] = (dist[i.quality] || 0) + 1;
@@ -459,39 +459,39 @@ function calculateRelationshipStats(interactions) {
     averageQuality: Math.round(averageQuality * 100),
     qualityDistribution,
     firstInteraction: interactions[interactions.length - 1]?.timestamp || null,
-    lastInteraction: interactions[0]?.timestamp || null
+    lastInteraction: interactions[0]?.timestamp || null,
   };
 }
 
 function generateRelationshipMilestones(interactions, currentLevel) {
   const milestones = [];
-  
+
   if (interactions.length >= 1) {
     milestones.push({
       name: 'First Meeting',
       description: 'The beginning of a beautiful friendship',
       achieved: true,
-      date: interactions[interactions.length - 1]?.timestamp
+      date: interactions[interactions.length - 1]?.timestamp,
     });
   }
-  
+
   if (interactions.length >= 10) {
     milestones.push({
       name: 'Getting to Know Each Other',
       description: '10 interactions completed',
       achieved: true,
-      date: interactions[interactions.length - 10]?.timestamp
+      date: interactions[interactions.length - 10]?.timestamp,
     });
   }
-  
+
   if (currentLevel.level >= 3) {
     milestones.push({
       name: 'Trusted Companion',
       description: 'Reached trusted relationship level',
       achieved: true,
-      date: null // Would need to track when level was reached
+      date: null, // Would need to track when level was reached
     });
   }
-  
+
   return milestones;
 }

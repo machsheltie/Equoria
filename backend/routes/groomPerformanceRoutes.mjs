@@ -1,6 +1,6 @@
 /**
  * Groom Performance Routes
- * 
+ *
  * API endpoints for groom performance tracking and reputation management
  */
 
@@ -13,7 +13,7 @@ import {
   getGroomPerformance,
   getTopPerformers,
   getPerformanceConfig,
-  getGroomAnalytics
+  getGroomAnalytics,
 } from '../controllers/groomPerformanceController.mjs';
 
 const router = express.Router();
@@ -58,10 +58,10 @@ router.post(
     body('playerRating')
       .optional()
       .isInt({ min: 1, max: 5 })
-      .withMessage('Player rating must be between 1 and 5')
+      .withMessage('Player rating must be between 1 and 5'),
   ],
   handleValidationErrors,
-  recordPerformance
+  recordPerformance,
 );
 
 /**
@@ -73,10 +73,10 @@ router.get(
   [
     param('groomId')
       .isInt({ min: 1 })
-      .withMessage('Groom ID must be a positive integer')
+      .withMessage('Groom ID must be a positive integer'),
   ],
   handleValidationErrors,
-  getGroomPerformance
+  getGroomPerformance,
 );
 
 /**
@@ -92,10 +92,10 @@ router.get(
     query('days')
       .optional()
       .isInt({ min: 1, max: 365 })
-      .withMessage('Days must be between 1 and 365')
+      .withMessage('Days must be between 1 and 365'),
   ],
   handleValidationErrors,
-  getGroomAnalytics
+  getGroomAnalytics,
 );
 
 /**
@@ -108,10 +108,10 @@ router.get(
     query('limit')
       .optional()
       .isInt({ min: 1, max: 20 })
-      .withMessage('Limit must be between 1 and 20')
+      .withMessage('Limit must be between 1 and 20'),
   ],
   handleValidationErrors,
-  getTopPerformers
+  getTopPerformers,
 );
 
 /**

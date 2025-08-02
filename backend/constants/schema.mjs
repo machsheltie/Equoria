@@ -100,7 +100,7 @@ export const CONFORMATION_CLASSES = {
   GELDINGS: 'Geldings',
   VETERANS: 'Veterans',
   OPEN_ALL_BREED: 'Open All-Breed',
-  BREED_SPECIFIC: 'Breed-Specific'
+  BREED_SPECIFIC: 'Breed-Specific',
 };
 
 export const DISCIPLINE_VALUES = Object.values(DISCIPLINES);

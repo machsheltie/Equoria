@@ -1,6 +1,6 @@
 /**
  * Groom Salary Routes
- * 
+ *
  * API endpoints for groom salary management
  */
 
@@ -14,7 +14,7 @@ import {
   getGroomSalary,
   triggerSalaryProcessingEndpoint,
   getCronStatus,
-  getSalarySummary
+  getSalarySummary,
 } from '../controllers/groomSalaryController.mjs';
 
 const router = express.Router();
@@ -44,10 +44,10 @@ router.get(
     query('limit')
       .optional()
       .isInt({ min: 1, max: 100 })
-      .withMessage('Limit must be between 1 and 100')
+      .withMessage('Limit must be between 1 and 100'),
   ],
   handleValidationErrors,
-  getSalaryHistory
+  getSalaryHistory,
 );
 
 /**
@@ -59,10 +59,10 @@ router.get(
   [
     param('groomId')
       .isInt({ min: 1 })
-      .withMessage('Groom ID must be a positive integer')
+      .withMessage('Groom ID must be a positive integer'),
   ],
   handleValidationErrors,
-  getGroomSalary
+  getGroomSalary,
 );
 
 /**

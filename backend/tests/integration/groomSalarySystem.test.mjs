@@ -1,6 +1,6 @@
 /**
  * Groom Salary System Integration Tests
- * 
+ *
  * Tests the weekly salary automation system
  */
 
@@ -8,10 +8,10 @@ import request from 'supertest';
 import app from '../../app.mjs';
 import prisma from '../../db/index.mjs';
 import { generateTestToken } from '../helpers/authHelper.mjs';
-import { 
-  calculateWeeklySalary, 
+import {
+  calculateWeeklySalary,
   processWeeklySalaries,
-  calculateUserSalaryCost 
+  calculateUserSalaryCost,
 } from '../../services/groomSalaryService.mjs';
 
 describe('Groom Salary System', () => {
@@ -29,8 +29,8 @@ describe('Groom Salary System', () => {
         password: 'hashedPassword',
         firstName: 'Salary',
         lastName: 'Test',
-        money: 1000
-      }
+        money: 1000,
+      },
     });
 
     authToken = generateTestToken(testUser.id);
@@ -48,8 +48,8 @@ describe('Groom Salary System', () => {
         speed: 50,
         agility: 50,
         stamina: 50,
-        temperament: 'calm'
-      }
+        temperament: 'calm',
+      },
     });
 
     // Create test groom
@@ -60,8 +60,8 @@ describe('Groom Salary System', () => {
         speciality: 'showHandling',
         personality: 'gentle',
         experience: 50,
-        userId: testUser.id
-      }
+        userId: testUser.id,
+      },
     });
 
     // Create groom assignment
@@ -71,34 +71,34 @@ describe('Groom Salary System', () => {
         foalId: testHorse.id,
         userId: testUser.id,
         isActive: true,
-        bondScore: 75
-      }
+        bondScore: 75,
+      },
     });
   });
 
   afterAll(async () => {
     // Clean up test data
     await prisma.groomSalaryPayment.deleteMany({
-      where: { userId: testUser.id }
+      where: { userId: testUser.id },
     });
     await prisma.groomAssignment.deleteMany({
-      where: { userId: testUser.id }
+      where: { userId: testUser.id },
     });
     await prisma.groom.deleteMany({
-      where: { userId: testUser.id }
+      where: { userId: testUser.id },
     });
     await prisma.horse.deleteMany({
-      where: { ownerId: testUser.id }
+      where: { ownerId: testUser.id },
     });
     await prisma.user.delete({
-      where: { id: testUser.id }
+      where: { id: testUser.id },
     });
   });
 
   describe('Salary Calculation', () => {
     it('should calculate correct weekly salary for expert groom with specialty', () => {
       const salary = calculateWeeklySalary(testGroom);
-      
+
       // Expert: $100 base + $15 showHandling specialty = $115
       expect(salary).toBe(115);
     });
@@ -106,18 +106,18 @@ describe('Groom Salary System', () => {
     it('should calculate correct salary for novice groom', () => {
       const noviceGroom = {
         skillLevel: 'novice',
-        speciality: 'general'
+        speciality: 'general',
       };
-      
+
       const salary = calculateWeeklySalary(noviceGroom);
-      
+
       // Novice: $50 base + $0 general = $50
       expect(salary).toBe(50);
     });
 
     it('should calculate user total salary cost', async () => {
       const salaryCost = await calculateUserSalaryCost(testUser.id);
-      
+
       expect(salaryCost.totalWeeklyCost).toBe(115);
       expect(salaryCost.groomCount).toBe(1);
       expect(salaryCost.breakdown).toHaveLength(1);
@@ -149,7 +149,7 @@ describe('Groom Salary System', () => {
       expect(response.body.data).toHaveProperty('currentMoney');
       expect(response.body.data).toHaveProperty('weeksAffordable');
       expect(response.body.data).toHaveProperty('nextPaymentDate');
-      
+
       // User has $1000, weekly cost is $115, so can afford 8 weeks
       expect(response.body.data.weeksAffordable).toBe(8);
     });
@@ -196,8 +196,8 @@ describe('Groom Salary System', () => {
           email: 'othersalary@test.com',
           password: 'hashedPassword',
           firstName: 'Other',
-          lastName: 'User'
-        }
+          lastName: 'User',
+        },
       });
 
       const otherGroom = await prisma.groom.create({
@@ -206,8 +206,8 @@ describe('Groom Salary System', () => {
           skillLevel: 'novice',
           speciality: 'general',
           personality: 'gentle',
-          userId: otherUser.id
-        }
+          userId: otherUser.id,
+        },
       });
 
       const response = await request(app)
@@ -227,16 +227,16 @@ describe('Groom Salary System', () => {
   describe('Salary Processing', () => {
     it('should process weekly salaries successfully', async () => {
       const results = await processWeeklySalaries();
-      
+
       expect(results.processed).toBeGreaterThan(0);
       expect(results.successful).toBeGreaterThan(0);
       expect(results.totalAmount).toBeGreaterThan(0);
-      
+
       // Check that payment was recorded
       const payments = await prisma.groomSalaryPayment.findMany({
-        where: { userId: testUser.id }
+        where: { userId: testUser.id },
       });
-      
+
       expect(payments.length).toBeGreaterThan(0);
       expect(payments[0].amount).toBe(115);
       expect(payments[0].status).toBe('paid');
@@ -246,25 +246,25 @@ describe('Groom Salary System', () => {
       // Set user money to insufficient amount
       await prisma.user.update({
         where: { id: testUser.id },
-        data: { money: 50 } // Less than $115 needed
+        data: { money: 50 }, // Less than $115 needed
       });
 
       const results = await processWeeklySalaries();
-      
+
       expect(results.failed).toBeGreaterThan(0);
       expect(results.errors.length).toBeGreaterThan(0);
-      
+
       // Check that user is in grace period
       const updatedUser = await prisma.user.findUnique({
-        where: { id: testUser.id }
+        where: { id: testUser.id },
       });
-      
+
       expect(updatedUser.groomSalaryGracePeriod).not.toBeNull();
-      
+
       // Reset user money for other tests
       await prisma.user.update({
         where: { id: testUser.id },
-        data: { money: 1000, groomSalaryGracePeriod: null }
+        data: { money: 1000, groomSalaryGracePeriod: null },
       });
     });
 

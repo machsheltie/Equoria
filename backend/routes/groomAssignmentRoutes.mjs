@@ -15,7 +15,7 @@ import {
   getGroomLimits,
   getSalaryCosts,
   validateAssignment,
-  getAssignmentDashboard
+  getAssignmentDashboard,
 } from '../controllers/groomAssignmentController.mjs';
 
 const router = express.Router();
@@ -64,10 +64,10 @@ router.post(
     body('replacePrimary')
       .optional()
       .isBoolean()
-      .withMessage('replacePrimary must be a boolean')
+      .withMessage('replacePrimary must be a boolean'),
   ],
   handleValidationErrors,
-  createGroomAssignment
+  createGroomAssignment,
 );
 
 /**
@@ -84,10 +84,10 @@ router.delete(
       .optional()
       .isString()
       .isLength({ max: 200 })
-      .withMessage('Reason must be a string (max 200 characters)')
+      .withMessage('Reason must be a string (max 200 characters)'),
   ],
   handleValidationErrors,
-  removeGroomAssignment
+  removeGroomAssignment,
 );
 
 /**
@@ -108,10 +108,10 @@ router.get(
     query('horseId')
       .optional()
       .isInt({ min: 1 })
-      .withMessage('horseId must be a positive integer')
+      .withMessage('horseId must be a positive integer'),
   ],
   handleValidationErrors,
-  getMyAssignments
+  getMyAssignments,
 );
 
 /**
@@ -123,10 +123,10 @@ router.get(
   [
     param('groomId')
       .isInt({ min: 1 })
-      .withMessage('Groom ID must be a positive integer')
+      .withMessage('Groom ID must be a positive integer'),
   ],
   handleValidationErrors,
-  getGroomLimits
+  getGroomLimits,
 );
 
 /**
@@ -147,10 +147,10 @@ router.post(
       .withMessage('Groom ID must be a positive integer'),
     body('horseId')
       .isInt({ min: 1 })
-      .withMessage('Horse ID must be a positive integer')
+      .withMessage('Horse ID must be a positive integer'),
   ],
   handleValidationErrors,
-  validateAssignment
+  validateAssignment,
 );
 
 /**
@@ -166,7 +166,7 @@ router.get('/dashboard', getAssignmentDashboard);
 router.get('/config', async (req, res) => {
   try {
     const { ASSIGNMENT_CONFIG } = await import('../services/groomAssignmentService.mjs');
-    
+
     res.status(200).json({
       success: true,
       message: 'Assignment configuration retrieved successfully',
@@ -178,9 +178,9 @@ router.get('/config', async (req, res) => {
         description: {
           maxAssignments: 'Maximum number of horses a groom can be assigned to based on skill level',
           weeklySalary: 'Base weekly salary for grooms by skill level',
-          salaryMultipliers: 'Salary multipliers based on number of assignments (efficiency bonus/penalty)'
-        }
-      }
+          salaryMultipliers: 'Salary multipliers based on number of assignments (efficiency bonus/penalty)',
+        },
+      },
     });
 
   } catch (error) {
@@ -188,7 +188,7 @@ router.get('/config', async (req, res) => {
     res.status(500).json({
       success: false,
       message: 'Error retrieving assignment configuration',
-      data: null
+      data: null,
     });
   }
 });
@@ -213,22 +213,22 @@ router.get('/statistics', async (req, res) => {
     const [totalAssignments, recentAssignments, assignmentHistory] = await Promise.all([
       // Total assignments (all time)
       prisma.groomAssignment.count({
-        where: { userId }
+        where: { userId },
       }),
-      
+
       // Recent assignments
       prisma.groomAssignment.count({
         where: {
           userId,
-          createdAt: { gte: startDate }
-        }
+          createdAt: { gte: startDate },
+        },
       }),
-      
+
       // Assignment history with trends
       prisma.groomAssignment.findMany({
         where: {
           userId,
-          createdAt: { gte: startDate }
+          createdAt: { gte: startDate },
         },
         select: {
           id: true,
@@ -239,12 +239,12 @@ router.get('/statistics', async (req, res) => {
           groom: {
             select: {
               skillLevel: true,
-              speciality: true
-            }
-          }
+              speciality: true,
+            },
+          },
         },
-        orderBy: { createdAt: 'desc' }
-      })
+        orderBy: { createdAt: 'desc' },
+      }),
     ]);
 
     // Analyze assignment patterns
@@ -255,7 +255,7 @@ router.get('/statistics', async (req, res) => {
     }, {});
 
     const specialityDistribution = assignmentHistory.reduce((acc, assignment) => {
-      const speciality = assignment.groom.speciality;
+      const { speciality } = assignment.groom;
       acc[speciality] = (acc[speciality] || 0) + 1;
       return acc;
     }, {});
@@ -273,20 +273,20 @@ router.get('/statistics', async (req, res) => {
           recentAssignments,
           activeAssignments,
           completedAssignments,
-          averageAssignmentsPerDay: daysBack > 0 ? Math.round((recentAssignments / daysBack) * 10) / 10 : 0
+          averageAssignmentsPerDay: daysBack > 0 ? Math.round((recentAssignments / daysBack) * 10) / 10 : 0,
         },
         distributions: {
           skillLevels: skillLevelDistribution,
-          specialities: specialityDistribution
+          specialities: specialityDistribution,
         },
         trends: {
           assignmentGrowth: recentAssignments > 0 ? 'positive' : 'stable',
-          mostUsedSkillLevel: Object.keys(skillLevelDistribution).reduce((a, b) => 
+          mostUsedSkillLevel: Object.keys(skillLevelDistribution).reduce((a, b) =>
             skillLevelDistribution[a] > skillLevelDistribution[b] ? a : b, 'novice'),
-          mostUsedSpeciality: Object.keys(specialityDistribution).reduce((a, b) => 
-            specialityDistribution[a] > specialityDistribution[b] ? a : b, 'general')
-        }
-      }
+          mostUsedSpeciality: Object.keys(specialityDistribution).reduce((a, b) =>
+            specialityDistribution[a] > specialityDistribution[b] ? a : b, 'general'),
+        },
+      },
     });
 
   } catch (error) {
@@ -294,7 +294,7 @@ router.get('/statistics', async (req, res) => {
     res.status(500).json({
       success: false,
       message: 'Error retrieving assignment statistics',
-      data: null
+      data: null,
     });
   }
 });

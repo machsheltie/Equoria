@@ -1,6 +1,6 @@
 /**
  * Groom Salary Controller
- * 
+ *
  * Handles API endpoints for groom salary management
  */
 
@@ -9,7 +9,7 @@ import logger from '../utils/logger.mjs';
 import {
   calculateUserSalaryCost,
   getSalaryPaymentHistory,
-  calculateWeeklySalary
+  calculateWeeklySalary,
 } from '../services/groomSalaryService.mjs';
 import { triggerSalaryProcessing, getCronJobStatus } from '../services/cronJobService.mjs';
 
@@ -28,7 +28,7 @@ export async function getUserSalaryCost(req, res) {
     res.json({
       success: true,
       message: 'Salary cost retrieved successfully',
-      data: salaryCost
+      data: salaryCost,
     });
 
   } catch (error) {
@@ -36,7 +36,7 @@ export async function getUserSalaryCost(req, res) {
     res.status(500).json({
       success: false,
       message: 'Failed to get salary cost',
-      data: null
+      data: null,
     });
   }
 }
@@ -56,7 +56,7 @@ export async function getSalaryHistory(req, res) {
       return res.status(400).json({
         success: false,
         message: 'Limit must be between 1 and 100',
-        data: null
+        data: null,
       });
     }
 
@@ -67,8 +67,8 @@ export async function getSalaryHistory(req, res) {
       message: 'Salary history retrieved successfully',
       data: {
         payments: paymentHistory,
-        count: paymentHistory.length
-      }
+        count: paymentHistory.length,
+      },
     });
 
   } catch (error) {
@@ -76,7 +76,7 @@ export async function getSalaryHistory(req, res) {
     res.status(500).json({
       success: false,
       message: 'Failed to get salary history',
-      data: null
+      data: null,
     });
   }
 }
@@ -98,7 +98,7 @@ export async function getGroomSalary(req, res) {
       return res.status(400).json({
         success: false,
         message: 'Invalid groom ID',
-        data: null
+        data: null,
       });
     }
 
@@ -110,15 +110,15 @@ export async function getGroomSalary(req, res) {
         name: true,
         skillLevel: true,
         speciality: true,
-        userId: true
-      }
+        userId: true,
+      },
     });
 
     if (!groom) {
       return res.status(404).json({
         success: false,
         message: 'Groom not found',
-        data: null
+        data: null,
       });
     }
 
@@ -126,7 +126,7 @@ export async function getGroomSalary(req, res) {
       return res.status(403).json({
         success: false,
         message: 'You do not own this groom',
-        data: null
+        data: null,
       });
     }
 
@@ -140,10 +140,10 @@ export async function getGroomSalary(req, res) {
           id: groom.id,
           name: groom.name,
           skillLevel: groom.skillLevel,
-          speciality: groom.speciality
+          speciality: groom.speciality,
         },
-        weeklySalary
-      }
+        weeklySalary,
+      },
     });
 
   } catch (error) {
@@ -151,7 +151,7 @@ export async function getGroomSalary(req, res) {
     res.status(500).json({
       success: false,
       message: 'Failed to get groom salary',
-      data: null
+      data: null,
     });
   }
 }
@@ -169,7 +169,7 @@ export async function triggerSalaryProcessingEndpoint(req, res) {
     // Check if user is admin (you may want to implement proper admin role checking)
     const user = await prisma.user.findUnique({
       where: { id: userId },
-      select: { username: true }
+      select: { username: true },
     });
 
     // For now, allow any user to trigger (you can restrict this later)
@@ -178,7 +178,7 @@ export async function triggerSalaryProcessingEndpoint(req, res) {
     res.json({
       success: true,
       message: 'Salary processing completed',
-      data: results
+      data: results,
     });
 
   } catch (error) {
@@ -186,7 +186,7 @@ export async function triggerSalaryProcessingEndpoint(req, res) {
     res.status(500).json({
       success: false,
       message: 'Failed to trigger salary processing',
-      data: null
+      data: null,
     });
   }
 }
@@ -206,7 +206,7 @@ export async function getCronStatus(req, res) {
     res.json({
       success: true,
       message: 'Cron job status retrieved successfully',
-      data: status
+      data: status,
     });
 
   } catch (error) {
@@ -214,7 +214,7 @@ export async function getCronStatus(req, res) {
     res.status(500).json({
       success: false,
       message: 'Failed to get cron status',
-      data: null
+      data: null,
     });
   }
 }
@@ -240,19 +240,19 @@ export async function getSalarySummary(req, res) {
       where: { id: userId },
       select: {
         money: true,
-        groomSalaryGracePeriod: true
-      }
+        groomSalaryGracePeriod: true,
+      },
     });
 
     // Calculate weeks user can afford
-    const weeksAffordable = salaryCost.totalWeeklyCost > 0 
+    const weeksAffordable = salaryCost.totalWeeklyCost > 0
       ? Math.floor(user.money / salaryCost.totalWeeklyCost)
       : Infinity;
 
     // Check grace period status
     const inGracePeriod = user.groomSalaryGracePeriod !== null;
     let gracePeriodDaysRemaining = 0;
-    
+
     if (inGracePeriod) {
       const gracePeriodEnd = new Date(user.groomSalaryGracePeriod);
       gracePeriodEnd.setDate(gracePeriodEnd.getDate() + 7); // 7 day grace period
@@ -269,8 +269,8 @@ export async function getSalarySummary(req, res) {
         inGracePeriod,
         gracePeriodDaysRemaining,
         recentPayments: recentPayments.slice(0, 5), // Last 5 payments
-        nextPaymentDate: getNextPaymentDate()
-      }
+        nextPaymentDate: getNextPaymentDate(),
+      },
     });
 
   } catch (error) {
@@ -278,7 +278,7 @@ export async function getSalarySummary(req, res) {
     res.status(500).json({
       success: false,
       message: 'Failed to get salary summary',
-      data: null
+      data: null,
     });
   }
 }
@@ -290,7 +290,7 @@ export async function getSalarySummary(req, res) {
 function getNextPaymentDate() {
   const now = new Date();
   const nextMonday = new Date(now);
-  
+
   // Get days until next Monday (1 = Monday)
   const daysUntilMonday = (1 + 7 - now.getDay()) % 7;
   if (daysUntilMonday === 0 && now.getHours() >= 9) {
@@ -299,8 +299,8 @@ function getNextPaymentDate() {
   } else {
     nextMonday.setDate(now.getDate() + daysUntilMonday);
   }
-  
+
   nextMonday.setHours(9, 0, 0, 0); // 9:00 AM
-  
+
   return nextMonday;
 }

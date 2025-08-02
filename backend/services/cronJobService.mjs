@@ -1,6 +1,6 @@
 /**
  * Cron Job Service
- * 
+ *
  * Handles scheduled tasks including weekly salary processing
  */
 
@@ -23,7 +23,7 @@ export function initializeCronJobs() {
       await runSalaryProcessing();
     }, {
       scheduled: false,
-      timezone: 'UTC'
+      timezone: 'UTC',
     });
 
     runningJobs.set('weeklySalaries', salaryJob);
@@ -44,9 +44,9 @@ export function initializeCronJobs() {
 async function runSalaryProcessing() {
   try {
     logger.info('[cronJobService] Starting weekly salary processing...');
-    
+
     const results = await processWeeklySalaries();
-    
+
     logger.info(`[cronJobService] Weekly salary processing completed. Results: ${JSON.stringify(results)}`);
 
     // Log summary
@@ -97,13 +97,13 @@ export function getCronJobStatus() {
     for (const [jobName, job] of runningJobs.entries()) {
       status[jobName] = {
         running: job.running,
-        scheduled: job.scheduled
+        scheduled: job.scheduled,
       };
     }
 
     return {
       totalJobs: runningJobs.size,
-      jobs: status
+      jobs: status,
     };
 
   } catch (error) {
@@ -111,7 +111,7 @@ export function getCronJobStatus() {
     return {
       totalJobs: 0,
       jobs: {},
-      error: error.message
+      error: error.message,
     };
   }
 }
@@ -123,11 +123,11 @@ export function getCronJobStatus() {
 export async function triggerSalaryProcessing() {
   try {
     logger.info('[cronJobService] Manually triggering salary processing...');
-    
+
     const results = await processWeeklySalaries();
-    
+
     logger.info(`[cronJobService] Manual salary processing completed: ${JSON.stringify(results)}`);
-    
+
     return results;
 
   } catch (error) {
@@ -138,7 +138,7 @@ export async function triggerSalaryProcessing() {
       failed: 1,
       terminated: 0,
       totalAmount: 0,
-      errors: [error.message]
+      errors: [error.message],
     };
   }
 }

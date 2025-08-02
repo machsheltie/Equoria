@@ -1,6 +1,6 @@
 /**
  * Groom Performance Service
- * 
+ *
  * Tracks groom effectiveness, builds reputation scores, and provides performance analytics
  * Implements advanced groom features for enhanced gameplay experience
  */
@@ -16,7 +16,7 @@ export const PERFORMANCE_CONFIG = {
     POOR: { min: 21, max: 40, label: 'Poor', color: '#ea580c' },
     AVERAGE: { min: 41, max: 60, label: 'Average', color: '#ca8a04' },
     GOOD: { min: 61, max: 80, label: 'Good', color: '#16a34a' },
-    EXCELLENT: { min: 81, max: 100, label: 'Excellent', color: '#059669' }
+    EXCELLENT: { min: 81, max: 100, label: 'Excellent', color: '#059669' },
   },
 
   // Performance metrics weights
@@ -26,7 +26,7 @@ export const PERFORMANCE_CONFIG = {
     horseWellbeing: 0.20,          // 20% - Impact on horse health/happiness
     showPerformance: 0.15,         // 15% - Conformation show results
     consistency: 0.10,             // 10% - Consistency over time
-    playerSatisfaction: 0.10       // 10% - Player ratings
+    playerSatisfaction: 0.10,       // 10% - Player ratings
   },
 
   // Minimum interactions for reliable reputation
@@ -37,7 +37,7 @@ export const PERFORMANCE_CONFIG = {
 
   // Bonus thresholds
   EXCELLENCE_BONUS_THRESHOLD: 85,
-  CONSISTENCY_STREAK_THRESHOLD: 7
+  CONSISTENCY_STREAK_THRESHOLD: 7,
 };
 
 /**
@@ -56,7 +56,7 @@ export async function recordGroomPerformance(groomId, userId, interactionType, p
       taskSuccess = true,
       wellbeingImpact = 0,
       duration = 0,
-      playerRating = null
+      playerRating = null,
     } = performanceData;
 
     // Create performance record
@@ -71,8 +71,8 @@ export async function recordGroomPerformance(groomId, userId, interactionType, p
         wellbeingImpact,
         duration,
         playerRating,
-        recordedAt: new Date()
-      }
+        recordedAt: new Date(),
+      },
     });
 
     // Update groom's aggregate performance metrics
@@ -98,10 +98,10 @@ async function updateGroomMetrics(groomId) {
     const records = await prisma.groomPerformanceRecord.findMany({
       where: { groomId },
       orderBy: { recordedAt: 'desc' },
-      take: 100 // Consider last 100 interactions for metrics
+      take: 100, // Consider last 100 interactions for metrics
     });
 
-    if (records.length === 0) return;
+    if (records.length === 0) { return; }
 
     // Calculate metrics
     const metrics = calculatePerformanceMetrics(records);
@@ -111,13 +111,13 @@ async function updateGroomMetrics(groomId) {
       where: { groomId },
       update: {
         ...metrics,
-        lastUpdated: new Date()
+        lastUpdated: new Date(),
       },
       create: {
         groomId,
         ...metrics,
-        lastUpdated: new Date()
-      }
+        lastUpdated: new Date(),
+      },
     });
 
     logger.info(`[groomPerformanceService] Updated metrics for groom ${groomId}`);
@@ -134,7 +134,7 @@ async function updateGroomMetrics(groomId) {
  */
 function calculatePerformanceMetrics(records) {
   const totalRecords = records.length;
-  
+
   // Bonding effectiveness (average bond gain per interaction)
   const avgBondGain = records.reduce((sum, r) => sum + r.bondGain, 0) / totalRecords;
   const bondingEffectiveness = Math.min(100, (avgBondGain / 5) * 100); // Normalize to 0-100
@@ -168,7 +168,7 @@ function calculatePerformanceMetrics(records) {
     (horseWellbeing * PERFORMANCE_CONFIG.METRIC_WEIGHTS.horseWellbeing) +
     (showPerformance * PERFORMANCE_CONFIG.METRIC_WEIGHTS.showPerformance) +
     (consistency * PERFORMANCE_CONFIG.METRIC_WEIGHTS.consistency) +
-    (playerSatisfaction * PERFORMANCE_CONFIG.METRIC_WEIGHTS.playerSatisfaction)
+    (playerSatisfaction * PERFORMANCE_CONFIG.METRIC_WEIGHTS.playerSatisfaction),
   );
 
   return {
@@ -179,7 +179,7 @@ function calculatePerformanceMetrics(records) {
     showPerformance: Math.round(showPerformance),
     consistency: Math.round(consistency),
     playerSatisfaction: Math.round(playerSatisfaction),
-    reputationScore: Math.max(0, Math.min(100, reputationScore))
+    reputationScore: Math.max(0, Math.min(100, reputationScore)),
   };
 }
 
@@ -189,8 +189,8 @@ function calculatePerformanceMetrics(records) {
  * @returns {number} Variance
  */
 function calculateVariance(values) {
-  if (values.length === 0) return 0;
-  
+  if (values.length === 0) { return 0; }
+
   const mean = values.reduce((sum, val) => sum + val, 0) / values.length;
   const squaredDiffs = values.map(val => Math.pow(val - mean, 2));
   return squaredDiffs.reduce((sum, val) => sum + val, 0) / values.length;
@@ -211,8 +211,8 @@ export async function getGroomPerformanceSummary(groomId) {
         name: true,
         skillLevel: true,
         speciality: true,
-        experience: true
-      }
+        experience: true,
+      },
     });
 
     if (!groom) {
@@ -221,7 +221,7 @@ export async function getGroomPerformanceSummary(groomId) {
 
     // Get metrics
     const metrics = await prisma.groomMetrics.findUnique({
-      where: { groomId }
+      where: { groomId },
     });
 
     // Get recent performance records
@@ -231,9 +231,9 @@ export async function getGroomPerformanceSummary(groomId) {
       take: 10,
       include: {
         horse: {
-          select: { id: true, name: true }
-        }
-      }
+          select: { id: true, name: true },
+        },
+      },
     });
 
     // Determine reputation tier
@@ -249,7 +249,7 @@ export async function getGroomPerformanceSummary(groomId) {
       reputationTier,
       recentRecords,
       trends,
-      hasReliableReputation: (metrics?.totalInteractions || 0) >= PERFORMANCE_CONFIG.MIN_INTERACTIONS_FOR_REPUTATION
+      hasReliableReputation: (metrics?.totalInteractions || 0) >= PERFORMANCE_CONFIG.MIN_INTERACTIONS_FOR_REPUTATION,
     };
 
   } catch (error) {
@@ -287,21 +287,20 @@ function calculatePerformanceTrends(records) {
   const olderBondGains = records.slice(5, 10).map(r => r.bondGain);
 
   const recentAvg = recentBondGains.reduce((sum, val) => sum + val, 0) / recentBondGains.length;
-  const olderAvg = olderBondGains.length > 0 
+  const olderAvg = olderBondGains.length > 0
     ? olderBondGains.reduce((sum, val) => sum + val, 0) / olderBondGains.length
     : recentAvg;
 
   const improvement = recentAvg - olderAvg;
-  
+
   let direction = 'stable';
-  if (improvement > 0.5) direction = 'improving';
-  else if (improvement < -0.5) direction = 'declining';
+  if (improvement > 0.5) { direction = 'improving'; } else if (improvement < -0.5) { direction = 'declining'; }
 
   return {
     trend: 'calculated',
     direction,
     improvement: Math.round(improvement * 100) / 100,
-    recentAverage: Math.round(recentAvg * 100) / 100
+    recentAverage: Math.round(recentAvg * 100) / 100,
   };
 }
 
@@ -318,7 +317,7 @@ function getDefaultMetrics() {
     showPerformance: 50,
     consistency: 50,
     playerSatisfaction: 75,
-    reputationScore: 50
+    reputationScore: 50,
   };
 }
 
@@ -333,14 +332,14 @@ export async function getTopPerformingGrooms(userId, limit = 5) {
     const grooms = await prisma.groom.findMany({
       where: { userId },
       include: {
-        groomMetrics: true
+        groomMetrics: true,
       },
       orderBy: {
         groomMetrics: {
-          reputationScore: 'desc'
-        }
+          reputationScore: 'desc',
+        },
       },
-      take: limit
+      take: limit,
     });
 
     return grooms.map(groom => ({
@@ -350,7 +349,7 @@ export async function getTopPerformingGrooms(userId, limit = 5) {
       speciality: groom.speciality,
       reputationScore: groom.groomMetrics?.reputationScore || 50,
       reputationTier: getReputationTier(groom.groomMetrics?.reputationScore || 50),
-      totalInteractions: groom.groomMetrics?.totalInteractions || 0
+      totalInteractions: groom.groomMetrics?.totalInteractions || 0,
     }));
 
   } catch (error) {

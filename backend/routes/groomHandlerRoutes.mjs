@@ -11,13 +11,13 @@ import prisma from '../db/index.mjs';
 import {
   PERSONALITY_DISCIPLINE_SYNERGY,
   SPECIALTY_DISCIPLINE_BONUSES,
-  HANDLER_SKILL_BONUSES
+  HANDLER_SKILL_BONUSES,
 } from '../services/groomHandlerService.mjs';
 import {
   getHorseHandler,
   checkHandlerEligibility,
   getHandlerConfig,
-  getHandlerRecommendations
+  getHandlerRecommendations,
 } from '../controllers/groomHandlerController.mjs';
 
 const router = express.Router();
@@ -50,10 +50,10 @@ router.get(
   [
     param('horseId')
       .isInt({ min: 1 })
-      .withMessage('Horse ID must be a positive integer')
+      .withMessage('Horse ID must be a positive integer'),
   ],
   handleValidationErrors,
-  getHorseHandler
+  getHorseHandler,
 );
 
 /**
@@ -69,10 +69,10 @@ router.get(
     param('className')
       .isString()
       .isLength({ min: 1, max: 50 })
-      .withMessage('Class name must be a valid string')
+      .withMessage('Class name must be a valid string'),
   ],
   handleValidationErrors,
-  checkHandlerEligibility
+  checkHandlerEligibility,
 );
 
 /**
@@ -95,10 +95,10 @@ router.get(
       .optional()
       .isString()
       .isLength({ min: 1, max: 50 })
-      .withMessage('Class name must be a valid string')
+      .withMessage('Class name must be a valid string'),
   ],
   handleValidationErrors,
-  getHandlerRecommendations
+  getHandlerRecommendations,
 );
 
 /**
@@ -121,31 +121,31 @@ router.get('/statistics', async (req, res) => {
     const results = await prisma.competitionResult.findMany({
       where: {
         horse: {
-          ownerId: userId
+          ownerId: userId,
         },
         runDate: {
-          gte: startDate
-        }
+          gte: startDate,
+        },
       },
       include: {
         horse: {
           select: {
             id: true,
             name: true,
-            ownerId: true
-          }
+            ownerId: true,
+          },
         },
         show: {
           select: {
             id: true,
             name: true,
-            discipline: true
-          }
-        }
+            discipline: true,
+          },
+        },
       },
       orderBy: {
-        runDate: 'desc'
-      }
+        runDate: 'desc',
+      },
     });
 
     // Analyze handler performance
@@ -156,7 +156,7 @@ router.get('/statistics', async (req, res) => {
       averagePlacementWithHandler: 0,
       averagePlacementWithoutHandler: 0,
       topPerformingHandlers: {},
-      disciplinePerformance: {}
+      disciplinePerformance: {},
     };
 
     let placementSumWithHandler = 0;
@@ -164,22 +164,22 @@ router.get('/statistics', async (req, res) => {
 
     for (const result of results) {
       const placement = parseInt(result.placement) || 999;
-      
+
       // Check if this result had handler info (stored in statGains or other field)
       // For now, we'll simulate this check - in production, you'd store handler info in results
       const hadHandler = Math.random() > 0.3; // Simulate 70% had handlers
-      
+
       if (hadHandler) {
         handlerStats.competitionsWithHandlers++;
         placementSumWithHandler += placement;
-        
+
         // Track discipline performance
-        const discipline = result.show.discipline;
+        const { discipline } = result.show;
         if (!handlerStats.disciplinePerformance[discipline]) {
           handlerStats.disciplinePerformance[discipline] = {
             competitions: 0,
             averagePlacement: 0,
-            totalPlacement: 0
+            totalPlacement: 0,
           };
         }
         handlerStats.disciplinePerformance[discipline].competitions++;
@@ -192,27 +192,27 @@ router.get('/statistics', async (req, res) => {
 
     // Calculate averages
     if (handlerStats.competitionsWithHandlers > 0) {
-      handlerStats.averagePlacementWithHandler = 
+      handlerStats.averagePlacementWithHandler =
         Math.round((placementSumWithHandler / handlerStats.competitionsWithHandlers) * 10) / 10;
     }
 
     if (handlerStats.competitionsWithoutHandlers > 0) {
-      handlerStats.averagePlacementWithoutHandler = 
+      handlerStats.averagePlacementWithoutHandler =
         Math.round((placementSumWithoutHandler / handlerStats.competitionsWithoutHandlers) * 10) / 10;
     }
 
     // Calculate discipline averages
     Object.keys(handlerStats.disciplinePerformance).forEach(discipline => {
       const disciplineData = handlerStats.disciplinePerformance[discipline];
-      disciplineData.averagePlacement = 
+      disciplineData.averagePlacement =
         Math.round((disciplineData.totalPlacement / disciplineData.competitions) * 10) / 10;
       delete disciplineData.totalPlacement; // Remove intermediate calculation
     });
 
     // Calculate improvement percentage
-    const improvementPercentage = handlerStats.averagePlacementWithoutHandler > 0 && 
+    const improvementPercentage = handlerStats.averagePlacementWithoutHandler > 0 &&
                                  handlerStats.averagePlacementWithHandler > 0 ?
-      Math.round(((handlerStats.averagePlacementWithoutHandler - handlerStats.averagePlacementWithHandler) / 
+      Math.round(((handlerStats.averagePlacementWithoutHandler - handlerStats.averagePlacementWithHandler) /
                   handlerStats.averagePlacementWithoutHandler) * 100) : 0;
 
     res.status(200).json({
@@ -222,14 +222,14 @@ router.get('/statistics', async (req, res) => {
         timeframe: `${daysBack} days`,
         summary: handlerStats,
         insights: {
-          handlerImpact: improvementPercentage > 0 ? 
+          handlerImpact: improvementPercentage > 0 ?
             `Handlers improve average placement by ${improvementPercentage}%` :
             'Insufficient data to calculate handler impact',
           recommendation: handlerStats.competitionsWithoutHandlers > handlerStats.competitionsWithHandlers ?
             'Consider assigning handlers to more horses for better performance' :
-            'Good handler utilization - keep it up!'
-        }
-      }
+            'Good handler utilization - keep it up!',
+        },
+      },
     });
 
   } catch (error) {
@@ -237,7 +237,7 @@ router.get('/statistics', async (req, res) => {
     res.status(500).json({
       success: false,
       message: 'Error retrieving handler statistics',
-      data: null
+      data: null,
     });
   }
 });
@@ -261,7 +261,7 @@ router.get('/disciplines', async (req, res) => {
         .filter(([personality, config]) => config.beneficial.includes(discipline.name))
         .map(([personality, config]) => ({
           personality,
-          bonus: config.bonus
+          bonus: config.bonus,
         }));
 
       // Find specialty bonuses
@@ -269,7 +269,7 @@ router.get('/disciplines', async (req, res) => {
         .filter(([specialty, config]) => config.disciplines.includes(discipline.name))
         .map(([specialty, config]) => ({
           specialty,
-          bonus: config.bonus
+          bonus: config.bonus,
         }));
 
       return {
@@ -280,9 +280,9 @@ router.get('/disciplines', async (req, res) => {
           maxPossibleBonus: Math.max(
             ...personalitySynergies.map(p => p.bonus),
             ...specialtyBonuses.map(s => s.bonus),
-            0
-          ) + HANDLER_SKILL_BONUSES.master.maxBonus // Add max skill bonus
-        }
+            0,
+          ) + HANDLER_SKILL_BONUSES.master.maxBonus, // Add max skill bonus
+        },
       };
     });
 
@@ -291,8 +291,8 @@ router.get('/disciplines', async (req, res) => {
       message: 'Disciplines with handler information retrieved successfully',
       data: {
         disciplines: disciplinesWithHandlerInfo,
-        totalDisciplines: disciplinesWithHandlerInfo.length
-      }
+        totalDisciplines: disciplinesWithHandlerInfo.length,
+      },
     });
 
   } catch (error) {
@@ -300,7 +300,7 @@ router.get('/disciplines', async (req, res) => {
     res.status(500).json({
       success: false,
       message: 'Error retrieving disciplines',
-      data: null
+      data: null,
     });
   }
 });

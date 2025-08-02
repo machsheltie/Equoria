@@ -57,6 +57,7 @@ import groomAssignmentRoutes from './routes/groomAssignmentRoutes.mjs';
 import groomHandlerRoutes from './routes/groomHandlerRoutes.mjs';
 import groomSalaryRoutes from './routes/groomSalaryRoutes.mjs';
 import groomPerformanceRoutes from './routes/groomPerformanceRoutes.mjs';
+import epigeneticTraitRoutes from './routes/epigeneticTraitRoutes.mjs';
 import leaderboardRoutes from './routes/leaderboardRoutes.mjs';
 import adminRoutes from './routes/adminRoutes.mjs';
 
@@ -171,6 +172,7 @@ app.use('/api/groom-handlers', groomHandlerRoutes);
 app.use('/api/groom-salaries', groomSalaryRoutes);
 app.use('/api/groom-performance', groomPerformanceRoutes);
 app.use('/api/groom-marketplace', groomMarketplaceRoutes);
+app.use('/api/epigenetic-traits', epigeneticTraitRoutes);
 app.use('/api/leaderboard', leaderboardRoutes);
 app.use('/api/admin', adminRoutes);
 

@@ -25,8 +25,8 @@ describe('Enhanced Groom Assignment System Integration Tests', () => {
         password: 'hashedpassword',
         firstName: 'Assignment',
         lastName: 'TestUser',
-        money: 10000
-      }
+        money: 10000,
+      },
     });
 
     authToken = generateTestToken({ id: testUser.id, username: testUser.username });
@@ -39,8 +39,8 @@ describe('Enhanced Groom Assignment System Integration Tests', () => {
         dateOfBirth: new Date(Date.now() - 365 * 24 * 60 * 60 * 1000), // 1 year old
         ownerId: testUser.id,
         bondScore: 30,
-        stressLevel: 40
-      }
+        stressLevel: 40,
+      },
     });
 
     testHorse2 = await prisma.horse.create({
@@ -50,8 +50,8 @@ describe('Enhanced Groom Assignment System Integration Tests', () => {
         dateOfBirth: new Date(Date.now() - 730 * 24 * 60 * 60 * 1000), // 2 years old
         ownerId: testUser.id,
         bondScore: 45,
-        stressLevel: 25
-      }
+        stressLevel: 25,
+      },
     });
 
     // Create test grooms
@@ -64,8 +64,8 @@ describe('Enhanced Groom Assignment System Integration Tests', () => {
         personality: 'gentle',
         experience: 5,
         sessionRate: 25.00,
-        bio: 'Test groom for assignment system'
-      }
+        bio: 'Test groom for assignment system',
+      },
     });
 
     testGroom2 = await prisma.groom.create({
@@ -77,8 +77,8 @@ describe('Enhanced Groom Assignment System Integration Tests', () => {
         personality: 'energetic',
         experience: 8,
         sessionRate: 35.00,
-        bio: 'Expert test groom for assignment system'
-      }
+        bio: 'Expert test groom for assignment system',
+      },
     });
   });
 
@@ -86,16 +86,16 @@ describe('Enhanced Groom Assignment System Integration Tests', () => {
     // Clean up test data
     if (testUser?.id) {
       await prisma.groomAssignment.deleteMany({
-        where: { userId: testUser.id }
+        where: { userId: testUser.id },
       });
       await prisma.groom.deleteMany({
-        where: { userId: testUser.id }
+        where: { userId: testUser.id },
       });
       await prisma.horse.deleteMany({
-        where: { ownerId: testUser.id }
+        where: { ownerId: testUser.id },
       });
       await prisma.user.delete({
-        where: { id: testUser.id }
+        where: { id: testUser.id },
       });
     }
   });
@@ -106,7 +106,7 @@ describe('Enhanced Groom Assignment System Integration Tests', () => {
         groomId: testGroom1.id,
         horseId: testHorse1.id,
         priority: 1,
-        notes: 'Primary assignment for foal care'
+        notes: 'Primary assignment for foal care',
       };
 
       const response = await request(app)
@@ -131,7 +131,7 @@ describe('Enhanced Groom Assignment System Integration Tests', () => {
         groomId: testGroom1.id,
         horseId: testHorse2.id,
         priority: 2,
-        notes: 'Secondary assignment'
+        notes: 'Secondary assignment',
       };
 
       const response = await request(app)
@@ -147,7 +147,7 @@ describe('Enhanced Groom Assignment System Integration Tests', () => {
       const assignmentData = {
         groomId: testGroom1.id,
         horseId: testHorse1.id,
-        priority: 1
+        priority: 1,
       };
 
       const response = await request(app)
@@ -162,7 +162,7 @@ describe('Enhanced Groom Assignment System Integration Tests', () => {
 
     it('should validate required fields', async () => {
       const invalidData = {
-        groomId: testGroom1.id
+        groomId: testGroom1.id,
         // Missing horseId
       };
 
@@ -184,8 +184,8 @@ describe('Enhanced Groom Assignment System Integration Tests', () => {
           email: 'other-assignment@example.com',
           password: 'hashedpassword',
           firstName: 'Other',
-          lastName: 'User'
-        }
+          lastName: 'User',
+        },
       });
 
       const otherHorse = await prisma.horse.create({
@@ -193,14 +193,14 @@ describe('Enhanced Groom Assignment System Integration Tests', () => {
           name: 'Other User Horse',
           sex: 'male',
           dateOfBirth: new Date(Date.now() - 365 * 24 * 60 * 60 * 1000),
-          ownerId: otherUser.id
-        }
+          ownerId: otherUser.id,
+        },
       });
 
       try {
         const assignmentData = {
           groomId: testGroom1.id,
-          horseId: otherHorse.id
+          horseId: otherHorse.id,
         };
 
         const response = await request(app)
@@ -297,8 +297,8 @@ describe('Enhanced Groom Assignment System Integration Tests', () => {
             name: `Limit Test Horse ${i + 1}`,
             sex: 'male',
             dateOfBirth: new Date(Date.now() - 365 * 24 * 60 * 60 * 1000),
-            ownerId: testUser.id
-          }
+            ownerId: testUser.id,
+          },
         });
         horses.push(horse);
       }
@@ -314,7 +314,7 @@ describe('Enhanced Groom Assignment System Integration Tests', () => {
             .set('Authorization', `Bearer ${authToken}`)
             .send({
               groomId: testGroom1.id,
-              horseId: horse.id
+              horseId: horse.id,
             });
 
           if (response.status === 201) {
@@ -372,7 +372,7 @@ describe('Enhanced Groom Assignment System Integration Tests', () => {
         .set('Authorization', `Bearer ${authToken}`)
         .send({
           groomId: testGroom2.id,
-          horseId: testHorse1.id
+          horseId: testHorse1.id,
         });
 
       expect(response.status).toBe(200);
@@ -404,7 +404,7 @@ describe('Enhanced Groom Assignment System Integration Tests', () => {
         .delete(`/api/groom-assignments/${assignment.id}`)
         .set('Authorization', `Bearer ${authToken}`)
         .send({
-          reason: 'Test removal'
+          reason: 'Test removal',
         });
 
       expect(response.status).toBe(200);
@@ -421,7 +421,7 @@ describe('Enhanced Groom Assignment System Integration Tests', () => {
         .delete('/api/groom-assignments/99999')
         .set('Authorization', `Bearer ${authToken}`)
         .send({
-          reason: 'Test removal'
+          reason: 'Test removal',
         });
 
       expect(response.status).toBe(400);
@@ -468,7 +468,7 @@ describe('Enhanced Groom Assignment System Integration Tests', () => {
         { method: 'get', path: '/api/groom-assignments' },
         { method: 'post', path: '/api/groom-assignments' },
         { method: 'get', path: '/api/groom-assignments/dashboard' },
-        { method: 'get', path: '/api/groom-assignments/salary-costs' }
+        { method: 'get', path: '/api/groom-assignments/salary-costs' },
       ];
 
       for (const endpoint of endpoints) {

@@ -24,8 +24,8 @@ describe('Groom Handler System Integration Tests', () => {
         password: 'hashedpassword',
         firstName: 'Handler',
         lastName: 'TestUser',
-        money: 10000
-      }
+        money: 10000,
+      },
     });
 
     authToken = generateTestToken({ id: testUser.id, username: testUser.username });
@@ -38,8 +38,8 @@ describe('Groom Handler System Integration Tests', () => {
         dateOfBirth: new Date(Date.now() - 365 * 24 * 60 * 60 * 1000), // 1 year old
         ownerId: testUser.id,
         bondScore: 50,
-        stressLevel: 30
-      }
+        stressLevel: 30,
+      },
     });
 
     // Create test groom
@@ -52,8 +52,8 @@ describe('Groom Handler System Integration Tests', () => {
         personality: 'confident',
         experience: 10,
         sessionRate: 35.00,
-        bio: 'Test groom for handler system'
-      }
+        bio: 'Test groom for handler system',
+      },
     });
 
     // Create test assignment
@@ -64,8 +64,8 @@ describe('Groom Handler System Integration Tests', () => {
         userId: testUser.id,
         priority: 1,
         isActive: true,
-        notes: 'Test assignment for handler system'
-      }
+        notes: 'Test assignment for handler system',
+      },
     });
   });
 
@@ -73,16 +73,16 @@ describe('Groom Handler System Integration Tests', () => {
     // Clean up test data
     if (testUser?.id) {
       await prisma.groomAssignment.deleteMany({
-        where: { userId: testUser.id }
+        where: { userId: testUser.id },
       });
       await prisma.groom.deleteMany({
-        where: { userId: testUser.id }
+        where: { userId: testUser.id },
       });
       await prisma.horse.deleteMany({
-        where: { ownerId: testUser.id }
+        where: { ownerId: testUser.id },
       });
       await prisma.user.delete({
-        where: { id: testUser.id }
+        where: { id: testUser.id },
       });
     }
   });
@@ -115,8 +115,8 @@ describe('Groom Handler System Integration Tests', () => {
           dateOfBirth: new Date(Date.now() - 730 * 24 * 60 * 60 * 1000), // 2 years old
           ownerId: testUser.id,
           bondScore: 30,
-          stressLevel: 40
-        }
+          stressLevel: 40,
+        },
       });
 
       try {
@@ -144,8 +144,8 @@ describe('Groom Handler System Integration Tests', () => {
           email: 'other-handler@example.com',
           password: 'hashedpassword',
           firstName: 'Other',
-          lastName: 'User'
-        }
+          lastName: 'User',
+        },
       });
 
       const otherHorse = await prisma.horse.create({
@@ -153,8 +153,8 @@ describe('Groom Handler System Integration Tests', () => {
           name: 'Other User Horse',
           sex: 'male',
           dateOfBirth: new Date(Date.now() - 365 * 24 * 60 * 60 * 1000),
-          ownerId: otherUser.id
-        }
+          ownerId: otherUser.id,
+        },
       });
 
       try {
@@ -232,7 +232,7 @@ describe('Groom Handler System Integration Tests', () => {
       const additionalGrooms = [];
       const groomData = [
         { name: 'Rec Groom 1', speciality: 'racing', skillLevel: 'novice', personality: 'energetic' },
-        { name: 'Rec Groom 2', speciality: 'western', skillLevel: 'intermediate', personality: 'patient' }
+        { name: 'Rec Groom 2', speciality: 'western', skillLevel: 'intermediate', personality: 'patient' },
       ];
 
       for (const data of groomData) {
@@ -242,8 +242,8 @@ describe('Groom Handler System Integration Tests', () => {
             userId: testUser.id,
             experience: 3,
             sessionRate: 20.00,
-            bio: 'Test groom for recommendations'
-          }
+            bio: 'Test groom for recommendations',
+          },
         });
         additionalGrooms.push(groom);
       }
@@ -261,10 +261,10 @@ describe('Groom Handler System Integration Tests', () => {
         const { recommendations, currentHandler } = response.body.data;
         expect(Array.isArray(recommendations)).toBe(true);
         expect(recommendations.length).toBeGreaterThanOrEqual(3); // Original + 2 additional
-        
+
         // Check if recommendations are sorted by bonus (highest first)
         for (let i = 1; i < recommendations.length; i++) {
-          expect(recommendations[i-1].bonus).toBeGreaterThanOrEqual(recommendations[i].bonus);
+          expect(recommendations[i - 1].bonus).toBeGreaterThanOrEqual(recommendations[i].bonus);
         }
 
         // Check current handler
@@ -285,7 +285,7 @@ describe('Groom Handler System Integration Tests', () => {
         { method: 'get', path: `/api/groom-handlers/horse/${testHorse.id}` },
         { method: 'get', path: `/api/groom-handlers/eligibility/${testHorse.id}/Mares` },
         { method: 'get', path: '/api/groom-handlers/config' },
-        { method: 'get', path: `/api/groom-handlers/recommendations/${testHorse.id}` }
+        { method: 'get', path: `/api/groom-handlers/recommendations/${testHorse.id}` },
       ];
 
       for (const endpoint of endpoints) {

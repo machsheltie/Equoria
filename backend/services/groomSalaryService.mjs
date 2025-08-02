@@ -1,6 +1,6 @@
 /**
  * Groom Salary Service
- * 
+ *
  * Handles weekly salary deductions for hired grooms
  * Implements automatic salary processing and payment tracking
  */
@@ -15,14 +15,14 @@ export const SALARY_CONFIG = {
     novice: 50,      // $50/week
     intermediate: 75, // $75/week
     expert: 100,     // $100/week
-    master: 150      // $150/week
+    master: 150,      // $150/week
   },
 
   // Specialty bonuses (added to base salary)
   SPECIALTY_BONUSES: {
     foalCare: 10,        // +$10/week for foal care specialty
     showHandling: 15,    // +$15/week for show handling specialty
-    general: 0           // No bonus for general grooms
+    general: 0,           // No bonus for general grooms
   },
 
   // Payment processing day (0 = Sunday, 1 = Monday, etc.)
@@ -32,7 +32,7 @@ export const SALARY_CONFIG = {
   GRACE_PERIOD_DAYS: 7,
 
   // Minimum balance required to keep grooms
-  MINIMUM_BALANCE: 0
+  MINIMUM_BALANCE: 0,
 };
 
 /**
@@ -44,7 +44,7 @@ export function calculateWeeklySalary(groom) {
   try {
     const baseSalary = SALARY_CONFIG.WEEKLY_SALARIES[groom.skillLevel] || SALARY_CONFIG.WEEKLY_SALARIES.novice;
     const specialtyBonus = SALARY_CONFIG.SPECIALTY_BONUSES[groom.speciality] || 0;
-    
+
     return baseSalary + specialtyBonus;
   } catch (error) {
     logger.error(`[groomSalaryService] Error calculating salary for groom ${groom.id}: ${error.message}`);
@@ -63,12 +63,12 @@ export async function processWeeklySalaries() {
     // Get all active groom assignments
     const activeAssignments = await prisma.groomAssignment.findMany({
       where: {
-        isActive: true
+        isActive: true,
       },
       include: {
         groom: true,
-        user: true
-      }
+        user: true,
+      },
     });
 
     const results = {
@@ -77,26 +77,26 @@ export async function processWeeklySalaries() {
       failed: 0,
       terminated: 0,
       totalAmount: 0,
-      errors: []
+      errors: [],
     };
 
     // Group assignments by user to batch process payments
     const userGroups = {};
     for (const assignment of activeAssignments) {
-      const userId = assignment.userId;
+      const { userId } = assignment;
       if (!userGroups[userId]) {
         userGroups[userId] = {
           user: assignment.user,
           assignments: [],
-          totalSalary: 0
+          totalSalary: 0,
         };
       }
-      
+
       const salary = calculateWeeklySalary(assignment.groom);
       userGroups[userId].assignments.push({
         assignment,
         groom: assignment.groom,
-        salary
+        salary,
       });
       userGroups[userId].totalSalary += salary;
     }
@@ -107,7 +107,7 @@ export async function processWeeklySalaries() {
         results.processed++;
 
         // Check if user has sufficient funds
-        const user = userGroup.user;
+        const { user } = userGroup;
         if (user.money < userGroup.totalSalary) {
           // Insufficient funds - start grace period or terminate
           await handleInsufficientFunds(userId, userGroup);
@@ -121,9 +121,9 @@ export async function processWeeklySalaries() {
           where: { id: userId },
           data: {
             money: {
-              decrement: userGroup.totalSalary
-            }
-          }
+              decrement: userGroup.totalSalary,
+            },
+          },
         });
 
         // Log individual salary payments
@@ -131,12 +131,12 @@ export async function processWeeklySalaries() {
           await prisma.groomSalaryPayment.create({
             data: {
               groomId: groom.id,
-              userId: userId,
+              userId,
               amount: salary,
               paymentDate: new Date(),
               paymentType: 'weekly_salary',
-              status: 'paid'
-            }
+              status: 'paid',
+            },
           });
 
           logger.info(`[groomSalaryService] Paid $${salary} salary to groom ${groom.name} for user ${user.username}`);
@@ -166,7 +166,7 @@ export async function processWeeklySalaries() {
       failed: 0,
       terminated: 0,
       totalAmount: 0,
-      errors: [error.message]
+      errors: [error.message],
     };
   }
 }
@@ -179,7 +179,7 @@ export async function processWeeklySalaries() {
 async function handleInsufficientFunds(userId, userGroup) {
   try {
     // Check if user is already in grace period
-    const user = userGroup.user;
+    const { user } = userGroup;
     const gracePeriodStart = user.groomSalaryGracePeriod;
 
     if (!gracePeriodStart) {
@@ -187,8 +187,8 @@ async function handleInsufficientFunds(userId, userGroup) {
       await prisma.user.update({
         where: { id: userId },
         data: {
-          groomSalaryGracePeriod: new Date()
-        }
+          groomSalaryGracePeriod: new Date(),
+        },
       });
 
       logger.warn(`[groomSalaryService] Started grace period for user ${user.username} - insufficient funds for groom salaries`);
@@ -198,12 +198,12 @@ async function handleInsufficientFunds(userId, userGroup) {
         await prisma.groomSalaryPayment.create({
           data: {
             groomId: groom.id,
-            userId: userId,
+            userId,
             amount: salary,
             paymentDate: new Date(),
             paymentType: 'weekly_salary',
-            status: 'missed_insufficient_funds'
-          }
+            status: 'missed_insufficient_funds',
+          },
         });
       }
 
@@ -219,18 +219,18 @@ async function handleInsufficientFunds(userId, userGroup) {
       } else {
         // Still in grace period
         logger.warn(`[groomSalaryService] User ${user.username} still in grace period for groom salary payments`);
-        
+
         // Log missed payment
         for (const { groom, salary } of userGroup.assignments) {
           await prisma.groomSalaryPayment.create({
             data: {
               groomId: groom.id,
-              userId: userId,
+              userId,
               amount: salary,
               paymentDate: new Date(),
               paymentType: 'weekly_salary',
-              status: 'missed_grace_period'
-            }
+              status: 'missed_grace_period',
+            },
           });
         }
       }
@@ -251,22 +251,22 @@ async function terminateGroomsForNonPayment(userId, userGroup) {
     // Deactivate all groom assignments
     await prisma.groomAssignment.updateMany({
       where: {
-        userId: userId,
-        isActive: true
+        userId,
+        isActive: true,
       },
       data: {
         isActive: false,
         endDate: new Date(),
-        terminationReason: 'non_payment'
-      }
+        terminationReason: 'non_payment',
+      },
     });
 
     // Clear grace period
     await prisma.user.update({
       where: { id: userId },
       data: {
-        groomSalaryGracePeriod: null
-      }
+        groomSalaryGracePeriod: null,
+      },
     });
 
     // Log termination payments
@@ -274,12 +274,12 @@ async function terminateGroomsForNonPayment(userId, userGroup) {
       await prisma.groomSalaryPayment.create({
         data: {
           groomId: groom.id,
-          userId: userId,
+          userId,
           amount: salary,
           paymentDate: new Date(),
           paymentType: 'weekly_salary',
-          status: 'terminated_non_payment'
-        }
+          status: 'terminated_non_payment',
+        },
       });
     }
 
@@ -300,7 +300,7 @@ export async function getSalaryPaymentHistory(userId, limit = 50) {
   try {
     const payments = await prisma.groomSalaryPayment.findMany({
       where: {
-        userId: userId
+        userId,
       },
       include: {
         groom: {
@@ -308,14 +308,14 @@ export async function getSalaryPaymentHistory(userId, limit = 50) {
             id: true,
             name: true,
             skillLevel: true,
-            speciality: true
-          }
-        }
+            speciality: true,
+          },
+        },
       },
       orderBy: {
-        paymentDate: 'desc'
+        paymentDate: 'desc',
       },
-      take: limit
+      take: limit,
     });
 
     return payments;
@@ -335,12 +335,12 @@ export async function calculateUserSalaryCost(userId) {
   try {
     const activeAssignments = await prisma.groomAssignment.findMany({
       where: {
-        userId: userId,
-        isActive: true
+        userId,
+        isActive: true,
       },
       include: {
-        groom: true
-      }
+        groom: true,
+      },
     });
 
     let totalWeeklyCost = 0;
@@ -349,20 +349,20 @@ export async function calculateUserSalaryCost(userId) {
     for (const assignment of activeAssignments) {
       const salary = calculateWeeklySalary(assignment.groom);
       totalWeeklyCost += salary;
-      
+
       breakdown.push({
         groomId: assignment.groom.id,
         groomName: assignment.groom.name,
         skillLevel: assignment.groom.skillLevel,
         speciality: assignment.groom.speciality,
-        weeklySalary: salary
+        weeklySalary: salary,
       });
     }
 
     return {
       totalWeeklyCost,
       groomCount: activeAssignments.length,
-      breakdown
+      breakdown,
     };
 
   } catch (error) {
@@ -370,7 +370,7 @@ export async function calculateUserSalaryCost(userId) {
     return {
       totalWeeklyCost: 0,
       groomCount: 0,
-      breakdown: []
+      breakdown: [],
     };
   }
 }

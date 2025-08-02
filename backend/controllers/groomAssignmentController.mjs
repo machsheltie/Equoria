@@ -11,7 +11,7 @@ import {
   getUserAssignments,
   getGroomAssignmentLimits,
   calculateWeeklySalaryCosts,
-  validateAssignmentEligibility
+  validateAssignmentEligibility,
 } from '../services/groomAssignmentService.mjs';
 
 /**
@@ -30,7 +30,7 @@ export async function createGroomAssignment(req, res) {
       return res.status(400).json({
         success: false,
         message: 'groomId and horseId are required',
-        data: null
+        data: null,
       });
     }
 
@@ -38,15 +38,15 @@ export async function createGroomAssignment(req, res) {
     const result = await createAssignment(groomId, horseId, userId, {
       priority: priority || 1,
       notes,
-      replacePrimary: replacePrimary || false
+      replacePrimary: replacePrimary || false,
     });
 
     res.status(201).json({
       success: true,
       message: result.message,
       data: {
-        assignment: result.assignment
-      }
+        assignment: result.assignment,
+      },
     });
 
   } catch (error) {
@@ -54,7 +54,7 @@ export async function createGroomAssignment(req, res) {
     res.status(400).json({
       success: false,
       message: error.message,
-      data: null
+      data: null,
     });
   }
 }
@@ -77,7 +77,7 @@ export async function removeGroomAssignment(req, res) {
       return res.status(400).json({
         success: false,
         message: 'Invalid assignment ID',
-        data: null
+        data: null,
       });
     }
 
@@ -88,8 +88,8 @@ export async function removeGroomAssignment(req, res) {
       success: true,
       message: result.message,
       data: {
-        assignment: result.assignment
-      }
+        assignment: result.assignment,
+      },
     });
 
   } catch (error) {
@@ -97,7 +97,7 @@ export async function removeGroomAssignment(req, res) {
     res.status(400).json({
       success: false,
       message: error.message,
-      data: null
+      data: null,
     });
   }
 }
@@ -117,7 +117,7 @@ export async function getMyAssignments(req, res) {
     const filters = {
       includeInactive: includeInactive === 'true',
       groomId: groomId ? parseInt(groomId) : null,
-      horseId: horseId ? parseInt(horseId) : null
+      horseId: horseId ? parseInt(horseId) : null,
     };
 
     // Get assignments
@@ -129,8 +129,8 @@ export async function getMyAssignments(req, res) {
       data: {
         assignments: result.assignments,
         assignmentsByGroom: result.assignmentsByGroom,
-        statistics: result.stats
-      }
+        statistics: result.stats,
+      },
     });
 
   } catch (error) {
@@ -138,7 +138,7 @@ export async function getMyAssignments(req, res) {
     res.status(500).json({
       success: false,
       message: 'Internal server error',
-      data: null
+      data: null,
     });
   }
 }
@@ -160,7 +160,7 @@ export async function getGroomLimits(req, res) {
       return res.status(400).json({
         success: false,
         message: 'Invalid groom ID',
-        data: null
+        data: null,
       });
     }
 
@@ -171,15 +171,15 @@ export async function getGroomLimits(req, res) {
         id: true,
         name: true,
         skillLevel: true,
-        userId: true
-      }
+        userId: true,
+      },
     });
 
     if (!groom) {
       return res.status(404).json({
         success: false,
         message: 'Groom not found',
-        data: null
+        data: null,
       });
     }
 
@@ -187,7 +187,7 @@ export async function getGroomLimits(req, res) {
       return res.status(403).json({
         success: false,
         message: 'You do not own this groom',
-        data: null
+        data: null,
       });
     }
 
@@ -201,10 +201,10 @@ export async function getGroomLimits(req, res) {
         groom: {
           id: groom.id,
           name: groom.name,
-          skillLevel: groom.skillLevel
+          skillLevel: groom.skillLevel,
         },
-        limits
-      }
+        limits,
+      },
     });
 
   } catch (error) {
@@ -212,7 +212,7 @@ export async function getGroomLimits(req, res) {
     res.status(500).json({
       success: false,
       message: 'Internal server error',
-      data: null
+      data: null,
     });
   }
 }
@@ -239,9 +239,9 @@ export async function getSalaryCosts(req, res) {
         summary: {
           totalAssignments: costs.assignmentCount,
           groomsWithAssignments: costs.groomCount,
-          averageCostPerGroom: costs.groomCount > 0 ? Math.round(costs.totalWeeklyCost / costs.groomCount) : 0
-        }
-      }
+          averageCostPerGroom: costs.groomCount > 0 ? Math.round(costs.totalWeeklyCost / costs.groomCount) : 0,
+        },
+      },
     });
 
   } catch (error) {
@@ -249,7 +249,7 @@ export async function getSalaryCosts(req, res) {
     res.status(500).json({
       success: false,
       message: 'Internal server error',
-      data: null
+      data: null,
     });
   }
 }
@@ -270,7 +270,7 @@ export async function validateAssignment(req, res) {
       return res.status(400).json({
         success: false,
         message: 'groomId and horseId are required',
-        data: null
+        data: null,
       });
     }
 
@@ -286,13 +286,13 @@ export async function validateAssignment(req, res) {
         groom: validation.groom ? {
           id: validation.groom.id,
           name: validation.groom.name,
-          skillLevel: validation.groom.skillLevel
+          skillLevel: validation.groom.skillLevel,
         } : null,
         horse: validation.horse ? {
           id: validation.horse.id,
-          name: validation.horse.name
-        } : null
-      }
+          name: validation.horse.name,
+        } : null,
+      },
     });
 
   } catch (error) {
@@ -300,7 +300,7 @@ export async function validateAssignment(req, res) {
     res.status(500).json({
       success: false,
       message: 'Internal server error',
-      data: null
+      data: null,
     });
   }
 }
@@ -318,13 +318,13 @@ export async function getAssignmentDashboard(req, res) {
     // Get assignments and salary costs in parallel
     const [assignmentsResult, salaryCosts] = await Promise.all([
       getUserAssignments(userId, { includeInactive: false }),
-      calculateWeeklySalaryCosts(userId)
+      calculateWeeklySalaryCosts(userId),
     ]);
 
     // Get groom limits for all grooms
     const groomLimits = {};
     const uniqueGrooms = Object.values(assignmentsResult.assignmentsByGroom);
-    
+
     for (const groomData of uniqueGrooms) {
       const limits = await getGroomAssignmentLimits(groomData.groom);
       groomLimits[groomData.groom.id] = limits;
@@ -343,9 +343,9 @@ export async function getAssignmentDashboard(req, res) {
           totalActiveAssignments: assignmentsResult.stats.activeAssignments,
           totalWeeklyCost: salaryCosts.totalWeeklyCost,
           groomsWithAssignments: assignmentsResult.stats.groomsWithAssignments,
-          averageAssignmentsPerGroom: Math.round(assignmentsResult.stats.averageAssignmentsPerGroom * 10) / 10
-        }
-      }
+          averageAssignmentsPerGroom: Math.round(assignmentsResult.stats.averageAssignmentsPerGroom * 10) / 10,
+        },
+      },
     });
 
   } catch (error) {
@@ -353,7 +353,7 @@ export async function getAssignmentDashboard(req, res) {
     res.status(500).json({
       success: false,
       message: 'Internal server error',
-      data: null
+      data: null,
     });
   }
 }

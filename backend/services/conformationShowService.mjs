@@ -1,9 +1,9 @@
 /**
  * Conformation Show Service
- * 
+ *
  * Handles conformation-based competitions where grooms act as handlers
  * This is a SEPARATE competition system from performance disciplines
- * 
+ *
  * Scoring breakdown per conformationshows.md:
  * - 60-70% conformation stats
  * - 15-25% groom's show handling skill
@@ -28,7 +28,7 @@ export const CONFORMATION_SHOW_CONFIG = {
 
   // Age requirements
   MIN_AGE: 1, // 1 year old minimum
-  MAX_AGE: 999 // No maximum age
+  MAX_AGE: 999, // No maximum age
 };
 
 /**
@@ -60,7 +60,7 @@ export function calculateConformationScore(conformationScores) {
       legs: 0.18,        // 18% - Leg conformation and soundness
       hooves: 0.10,      // 10% - Hoof quality and shape
       topline: 0.12,     // 12% - Topline and muscle development
-      hindquarters: 0.05 // 5% - Hip and hindquarter development
+      hindquarters: 0.05, // 5% - Hip and hindquarter development
     };
 
     let totalScore = 0;
@@ -87,7 +87,7 @@ export function calculateHandlerEffectiveness(groom) {
       novice: { base: 0.70, max: 0.85 },
       intermediate: { base: 0.80, max: 0.95 },
       expert: { base: 0.90, max: 1.05 },
-      master: { base: 1.00, max: 1.15 }
+      master: { base: 1.00, max: 1.15 },
     };
 
     const skillConfig = skillBonuses[groom.skillLevel] || skillBonuses.novice;
@@ -96,7 +96,7 @@ export function calculateHandlerEffectiveness(groom) {
     // Experience bonus (up to max effectiveness)
     const experienceBonus = Math.min(
       (groom.experience || 0) * 0.01, // 1% per experience point
-      skillConfig.max - skillConfig.base
+      skillConfig.max - skillConfig.base,
     );
     effectiveness += experienceBonus;
 
@@ -113,7 +113,7 @@ export function calculateHandlerEffectiveness(groom) {
       baseEffectiveness: skillConfig.base,
       experienceBonus,
       specialtyBonus: groom.speciality === 'showHandling' ? 0.05 : 0,
-      maxPossible: skillConfig.max
+      maxPossible: skillConfig.max,
     };
 
   } catch (error) {
@@ -123,7 +123,7 @@ export function calculateHandlerEffectiveness(groom) {
       baseEffectiveness: 0.70,
       experienceBonus: 0,
       specialtyBonus: 0,
-      maxPossible: 0.85
+      maxPossible: 0.85,
     };
   }
 }
@@ -143,23 +143,23 @@ export function calculateTemperamentSynergy(horse, groom) {
       calm: {
         beneficial: ['gentle', 'patient', 'calm'],
         detrimental: ['energetic', 'strict'],
-        bonus: 0.10
+        bonus: 0.10,
       },
       spirited: {
         beneficial: ['energetic', 'confident', 'strict'],
         detrimental: ['gentle', 'patient'],
-        bonus: 0.12
+        bonus: 0.12,
       },
       nervous: {
         beneficial: ['gentle', 'patient', 'calm'],
         detrimental: ['energetic', 'strict', 'confident'],
-        bonus: 0.15
+        bonus: 0.15,
       },
       aggressive: {
         beneficial: ['strict', 'confident'],
         detrimental: ['gentle', 'patient'],
-        bonus: 0.08
-      }
+        bonus: 0.08,
+      },
     };
 
     let synergyScore = 0.5; // Neutral baseline (50%)
@@ -183,7 +183,7 @@ export function calculateTemperamentSynergy(horse, groom) {
       synergyScore,
       synergyType,
       temperament,
-      personality
+      personality,
     };
   } catch (error) {
     logger.error(`[conformationShowService] Error calculating temperament synergy: ${error.message}`);
@@ -191,7 +191,7 @@ export function calculateTemperamentSynergy(horse, groom) {
       synergyScore: 0.5,
       synergyType: 'neutral',
       temperament: 'unknown',
-      personality: 'unknown'
+      personality: 'unknown',
     };
   }
 }
@@ -243,7 +243,7 @@ export function calculateConformationShowScore(horse, groom, className) {
         handlerComponent: Math.round(handlerComponent * 10) / 10,
         temperamentComponent: Math.round(temperamentComponent * 10) / 10,
         bondComponent: Math.round(bondComponent * 10) / 10,
-        randomFactor: Math.round(randomFactor * 1000) / 1000
+        randomFactor: Math.round(randomFactor * 1000) / 1000,
       },
       handlerEffectiveness,
       temperamentSynergy,
@@ -252,8 +252,8 @@ export function calculateConformationShowScore(horse, groom, className) {
         conformation: CONFORMATION_SHOW_CONFIG.CONFORMATION_WEIGHT,
         handler: CONFORMATION_SHOW_CONFIG.HANDLER_WEIGHT,
         temperament: CONFORMATION_SHOW_CONFIG.TEMPERAMENT_WEIGHT,
-        bond: CONFORMATION_SHOW_CONFIG.BOND_WEIGHT
-      }
+        bond: CONFORMATION_SHOW_CONFIG.BOND_WEIGHT,
+      },
     };
 
   } catch (error) {
@@ -266,12 +266,12 @@ export function calculateConformationShowScore(horse, groom, className) {
         handlerComponent: 0,
         temperamentComponent: 0,
         bondComponent: 0,
-        randomFactor: 1.0
+        randomFactor: 1.0,
       },
       handlerEffectiveness: { effectiveness: 0 },
       temperamentSynergy: { synergyScore: 0 },
       bondMultiplier: 0,
-      weights: CONFORMATION_SHOW_CONFIG
+      weights: CONFORMATION_SHOW_CONFIG,
     };
   }
 }
@@ -310,8 +310,8 @@ export async function validateConformationEntry(horse, groom, className, userId)
         groomId: groom.id,
         foalId: horse.id,
         userId,
-        isActive: true
-      }
+        isActive: true,
+      },
     });
 
     if (!assignment) {
@@ -351,7 +351,7 @@ export async function validateConformationEntry(horse, groom, className, userId)
       valid: errors.length === 0,
       errors,
       warnings,
-      assignment
+      assignment,
     };
 
   } catch (error) {
@@ -360,7 +360,7 @@ export async function validateConformationEntry(horse, groom, className, userId)
       valid: false,
       errors: ['Validation error occurred'],
       warnings: [],
-      assignment: null
+      assignment: null,
     };
   }
 }

@@ -1,7 +1,7 @@
 /**
  * Groom Marketplace API Integration Tests
  * Tests for the complete groom marketplace API workflow
- * 
+ *
  * Test Coverage:
  * - Get marketplace
  * - Refresh marketplace
@@ -25,7 +25,7 @@ describe('🏪 INTEGRATION: Groom Marketplace API', () => {
     const userData = await createTestUser({
       username: `marketplace-test-user-${timestamp}`,
       email: `marketplace-${timestamp}@test.com`,
-      money: 10000 // Give user plenty of money for testing
+      money: 10000, // Give user plenty of money for testing
     });
     testUser = userData.user;
     authToken = userData.token;
@@ -42,7 +42,7 @@ describe('🏪 INTEGRATION: Groom Marketplace API', () => {
         { method: 'get', path: '/api/groom-marketplace' },
         { method: 'post', path: '/api/groom-marketplace/refresh' },
         { method: 'post', path: '/api/groom-marketplace/hire' },
-        { method: 'get', path: '/api/groom-marketplace/stats' }
+        { method: 'get', path: '/api/groom-marketplace/stats' },
       ];
 
       for (const endpoint of endpoints) {
@@ -62,7 +62,7 @@ describe('🏪 INTEGRATION: Groom Marketplace API', () => {
       expect(response.status).toBe(200);
       expect(response.body.success).toBe(true);
       expect(response.body.message).toBe('Marketplace retrieved successfully');
-      
+
       const { data } = response.body;
       expect(data).toHaveProperty('grooms');
       expect(data).toHaveProperty('lastRefresh');
@@ -190,7 +190,7 @@ describe('🏪 INTEGRATION: Groom Marketplace API', () => {
       const response = await request(app)
         .get('/api/groom-marketplace')
         .set('Authorization', `Bearer ${authToken}`);
-      
+
       marketplaceGroom = response.body.data.grooms[0];
     });
 
@@ -226,7 +226,7 @@ describe('🏪 INTEGRATION: Groom Marketplace API', () => {
       const initialResponse = await request(app)
         .get('/api/groom-marketplace')
         .set('Authorization', `Bearer ${authToken}`);
-      
+
       const initialGroomCount = initialResponse.body.data.grooms.length;
       const groomToHire = initialResponse.body.data.grooms[0];
 
@@ -243,7 +243,7 @@ describe('🏪 INTEGRATION: Groom Marketplace API', () => {
 
       const updatedGrooms = updatedResponse.body.data.grooms;
       expect(updatedGrooms.length).toBe(initialGroomCount - 1);
-      
+
       // Hired groom should not be in marketplace anymore
       const hiredGroomStillThere = updatedGrooms.find(g => g.marketplaceId === groomToHire.marketplaceId);
       expect(hiredGroomStillThere).toBeUndefined();
@@ -255,7 +255,7 @@ describe('🏪 INTEGRATION: Groom Marketplace API', () => {
       const poorUserData = await createTestUser({
         username: `poor-marketplace-user-${timestamp}`,
         email: `poor-${timestamp}@test.com`,
-        money: 10 // Very little money
+        money: 10, // Very little money
       });
 
       // Get marketplace for poor user
@@ -339,7 +339,7 @@ describe('🏪 INTEGRATION: Groom Marketplace API', () => {
       const timestamp = Date.now();
       const newUserData = await createTestUser({
         username: `no-marketplace-user-${timestamp}`,
-        email: `nomarket-${timestamp}@test.com`
+        email: `nomarket-${timestamp}@test.com`,
       });
 
       const response = await request(app)

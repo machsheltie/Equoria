@@ -10,7 +10,7 @@ import logger from '../utils/logger.mjs';
 import {
   getEnhancedInteractions,
   performEnhancedInteraction,
-  getRelationshipDetails
+  getRelationshipDetails,
 } from '../controllers/enhancedGroomController.mjs';
 
 const router = express.Router();
@@ -46,10 +46,10 @@ router.get(
       .withMessage('Groom ID must be a positive integer'),
     param('horseId')
       .isInt({ min: 1 })
-      .withMessage('Horse ID must be a positive integer')
+      .withMessage('Horse ID must be a positive integer'),
   ],
   handleValidationErrors,
-  getEnhancedInteractions
+  getEnhancedInteractions,
 );
 
 /**
@@ -80,10 +80,10 @@ router.post(
       .optional()
       .isString()
       .isLength({ max: 500 })
-      .withMessage('Notes must be a string (max 500 characters)')
+      .withMessage('Notes must be a string (max 500 characters)'),
   ],
   handleValidationErrors,
-  performEnhancedInteraction
+  performEnhancedInteraction,
 );
 
 /**
@@ -98,10 +98,10 @@ router.get(
       .withMessage('Groom ID must be a positive integer'),
     param('horseId')
       .isInt({ min: 1 })
-      .withMessage('Horse ID must be a positive integer')
+      .withMessage('Horse ID must be a positive integer'),
   ],
   handleValidationErrors,
-  getRelationshipDetails
+  getRelationshipDetails,
 );
 
 /**
@@ -111,7 +111,7 @@ router.get(
 router.get('/interactions/types', async (req, res) => {
   try {
     const { ENHANCED_INTERACTIONS } = await import('../services/enhancedGroomInteractions.mjs');
-    
+
     const interactionTypes = Object.entries(ENHANCED_INTERACTIONS).map(([key, interaction]) => ({
       id: interaction.id,
       name: interaction.name,
@@ -121,8 +121,8 @@ router.get('/interactions/types', async (req, res) => {
         name: v.name,
         context: v.context,
         bonusMultiplier: v.bonusMultiplier,
-        description: generateVariationDescription(v.name, v.context)
-      }))
+        description: generateVariationDescription(v.name, v.context),
+      })),
     }));
 
     res.status(200).json({
@@ -135,16 +135,16 @@ router.get('/interactions/types', async (req, res) => {
           enrichment: 'Mental and physical stimulation activities',
           training: 'Training support and skill development',
           medical: 'Health assessment and medical care',
-          bonding: 'Relationship building and trust exercises'
-        }
-      }
+          bonding: 'Relationship building and trust exercises',
+        },
+      },
     });
 
   } catch (error) {
     res.status(500).json({
       success: false,
       message: 'Error retrieving interaction types',
-      data: null
+      data: null,
     });
   }
 });
@@ -156,13 +156,13 @@ router.get('/interactions/types', async (req, res) => {
 router.get('/relationship-levels', async (req, res) => {
   try {
     const { RELATIONSHIP_LEVELS } = await import('../services/enhancedGroomInteractions.mjs');
-    
+
     const levels = Object.values(RELATIONSHIP_LEVELS).map(level => ({
       level: level.level,
       name: level.name,
       threshold: level.threshold,
       multiplier: level.multiplier,
-      description: generateLevelDescription(level.name, level.level)
+      description: generateLevelDescription(level.name, level.level),
     }));
 
     res.status(200).json({
@@ -176,17 +176,17 @@ router.get('/relationship-levels', async (req, res) => {
             'Higher bonding multipliers',
             'Increased interaction effectiveness',
             'Access to special events',
-            'Better groom performance'
-          ]
-        }
-      }
+            'Better groom performance',
+          ],
+        },
+      },
     });
 
   } catch (error) {
     res.status(500).json({
       success: false,
       message: 'Error retrieving relationship levels',
-      data: null
+      data: null,
     });
   }
 });
@@ -198,14 +198,14 @@ router.get('/relationship-levels', async (req, res) => {
 router.get('/special-events', async (req, res) => {
   try {
     const { SPECIAL_EVENTS } = await import('../services/enhancedGroomInteractions.mjs');
-    
+
     const events = Object.entries(SPECIAL_EVENTS).map(([id, event]) => ({
       id,
       name: event.name,
       probability: `${(event.probability * 100).toFixed(1)}%`,
       conditions: event.conditions,
       effects: event.effects,
-      description: generateEventDescription(event.name, event.effects)
+      description: generateEventDescription(event.name, event.effects),
     }));
 
     res.status(200).json({
@@ -220,17 +220,17 @@ router.get('/special-events', async (req, res) => {
             'Horse stress level',
             'Horse age',
             'Groom specialty match',
-            'Random chance'
-          ]
-        }
-      }
+            'Random chance',
+          ],
+        },
+      },
     });
 
   } catch (error) {
     res.status(500).json({
       success: false,
       message: 'Error retrieving special events',
-      data: null
+      data: null,
     });
   }
 });
@@ -253,9 +253,9 @@ function generateVariationDescription(name, context) {
     'Preventive Care': 'Proactive health maintenance and prevention',
     'Quiet Companionship': 'Peaceful time together building trust',
     'Trust Building': 'Focused exercises to develop mutual trust',
-    'Confidence Building': 'Activities to boost horse\'s self-assurance'
+    'Confidence Building': 'Activities to boost horse\'s self-assurance',
   };
-  
+
   return descriptions[name] || `${context}-focused interaction`;
 }
 
@@ -267,9 +267,9 @@ function generateLevelDescription(name, level) {
     'Trusted': 'Strong trust developed - horse seeks groom\'s presence',
     'Bonded': 'Deep emotional connection - exceptional cooperation',
     'Devoted': 'Profound mutual attachment - intuitive understanding',
-    'Soulmate': 'Perfect harmony - telepathic-like communication'
+    'Soulmate': 'Perfect harmony - telepathic-like communication',
   };
-  
+
   return descriptions[name] || `Relationship level ${level}`;
 }
 
@@ -279,9 +279,9 @@ function generateEventDescription(name, effects) {
     'Perfect Harmony': 'Groom and horse work in perfect synchronization',
     'Learning Moment': 'Young horse gains valuable life experience',
     'Comfort in Distress': 'Groom provides exactly the right comfort when needed',
-    'Playful Moment': 'Spontaneous play brings joy to both groom and horse'
+    'Playful Moment': 'Spontaneous play brings joy to both groom and horse',
   };
-  
+
   return descriptions[name] || 'A special moment occurs during the interaction';
 }
 
