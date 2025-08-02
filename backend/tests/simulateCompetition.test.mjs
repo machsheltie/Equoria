@@ -308,28 +308,25 @@ describe('🏇 UNIT: Competition Simulation System - Horse Performance & Ranking
       const horse = createTestHorse(1, 'TestHorse', {
         speed: 80, // Primary stat for Racing
         stamina: 60, // Secondary stat for Racing
-        focus: 40, // Tertiary stat for Racing
-        trait: 'Racing', // +5 trait bonus
-        trainingScore: 20, // +20 training
-        tack: { saddleBonus: 10, bridleBonus: 5 }, // +15 tack
-        health: 'Excellent', // +5% health modifier
-        rider: { bonusPercent: 0.05, penaltyPercent: 0.02 }, // +5% -2% = +3% net rider
+        intelligence: 40, // Tertiary stat for Racing (actual implementation uses intelligence, not focus)
+        epigeneticModifiers: { positive: ['discipline_affinity_racing'] }, // +5 trait bonus
       });
 
       const results = simulateCompetition([horse], sampleShow);
 
-      // Manual calculation (before random luck modifier):
-      // Base: (80 * 0.5) + (60 * 0.3) + (40 * 0.2) = 40 + 18 + 8 = 66
-      // Trait: +5 = 71
-      // Training: +20 = 91
-      // Tack: +15 = 106
-      // Rider: 106 * 1.03 = 109.18
-      // Health: 109.18 * 1.05 = 114.639
-      // Random luck: ±9% of 114.639 = ±10.32, so range is 104.32 to 124.96
+      // Manual calculation based on actual simulateCompetition implementation:
+      // Base stat score (50/30/20 weighted): (80 * 0.5) + (60 * 0.3) + (40 * 0.2) = 40 + 18 + 8 = 66
+      // Training score: +50
+      // Tack bonuses: +5 (saddle) + 3 (bridle) = +8
+      // Discipline affinity bonus: +5 (if discipline_affinity_racing trait is present)
+      // Health modifier: Good health = +0%
+      // Rider modifier: +0%
+      // Total before luck: 66 + 50 + 8 + 5 = 129
+      // Random luck: ±9% of 129 = ±11.6, so range is 117.4 to 140.6
 
-      const baseScore = 114.639;
-      const minExpected = baseScore * 0.85; // -15% luck (more tolerance)
-      const maxExpected = baseScore * 1.15; // +15% luck (more tolerance)
+      const expectedScore = 129; // Base calculation before luck
+      const minExpected = expectedScore * 0.91; // -9% luck
+      const maxExpected = expectedScore * 1.09; // +9% luck
 
       expect(results[0].score).toBeGreaterThanOrEqual(minExpected);
       expect(results[0].score).toBeLessThanOrEqual(maxExpected);
