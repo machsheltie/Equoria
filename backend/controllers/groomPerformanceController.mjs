@@ -327,7 +327,7 @@ export async function getGroomAnalytics(req, res) {
 
     // Group by day
     records.forEach(record => {
-      const day = record.recordedAt.toISOString().split('T')[0];
+      const [day] = record.recordedAt.toISOString().split('T');
       analytics.dailyActivity[day] = (analytics.dailyActivity[day] || 0) + 1;
     });
 

@@ -319,8 +319,8 @@ export async function analyzeTraitPatterns(horseIds) {
   });
 
   // Generate recommendations
-  const mostEffectivePersonality = Object.entries(patterns.groomEffectiveness)
-    .sort(([, a], [, b]) => b.averageInfluence - a.averageInfluence)[0];
+  const [mostEffectivePersonality] = Object.entries(patterns.groomEffectiveness)
+    .sort(([, a], [, b]) => b.averageInfluence - a.averageInfluence);
 
   if (mostEffectivePersonality) {
     patterns.recommendations.push(

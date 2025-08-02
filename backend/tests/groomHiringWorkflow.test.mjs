@@ -109,7 +109,7 @@ describe('Groom Hiring Workflow Tests', () => {
       const req = {
         body: {
           // Missing name
-          speciality: 'foalCare',
+          speciality: 'foal_care',
           skill_level: 'expert',
           personality: 'gentle',
         },
@@ -163,7 +163,7 @@ describe('Groom Hiring Workflow Tests', () => {
       const req = {
         body: {
           name: 'Test Groom',
-          speciality: 'foalCare',
+          speciality: 'foal_care',
           // Missing skill_level
           personality: 'gentle',
         },
@@ -190,7 +190,7 @@ describe('Groom Hiring Workflow Tests', () => {
       const req = {
         body: {
           name: 'Test Groom',
-          speciality: 'foalCare',
+          speciality: 'foal_care',
           skill_level: 'expert',
           // Missing personality
         },
@@ -244,6 +244,7 @@ describe('Groom Hiring Workflow Tests', () => {
         body: {
           name: 'Test Groom',
           speciality: 'invalid_speciality', // Invalid value
+          experience: 10, // Valid experience to get past experience validation
           skill_level: 'expert',
           personality: 'gentle',
         },
@@ -270,7 +271,8 @@ describe('Groom Hiring Workflow Tests', () => {
       const req = {
         body: {
           name: 'Test Groom',
-          speciality: 'foalCare',
+          speciality: 'foal_care',
+          experience: 10, // Valid experience to get past experience validation
           skill_level: 'invalid_level', // Invalid value
           personality: 'gentle',
         },
@@ -297,7 +299,8 @@ describe('Groom Hiring Workflow Tests', () => {
       const req = {
         body: {
           name: 'Test Groom',
-          speciality: 'foalCare',
+          speciality: 'foal_care',
+          experience: 10, // Valid experience to get past experience validation
           skill_level: 'expert',
           personality: 'invalid_personality', // Invalid value
         },
@@ -362,7 +365,7 @@ describe('Groom Hiring Workflow Tests', () => {
         const req = {
           body: {
             name: `${skillLevel} Groom`,
-            speciality: 'foalCare',
+            speciality: 'foal_care',
             skill_level: skillLevel,
             personality: 'gentle',
           },
@@ -394,7 +397,7 @@ describe('Groom Hiring Workflow Tests', () => {
         const req = {
           body: {
             name: `${personality} Groom`,
-            speciality: 'foalCare',
+            speciality: 'foal_care',
             skill_level: 'expert',
             personality,
           },
@@ -426,7 +429,7 @@ describe('Groom Hiring Workflow Tests', () => {
       const req = {
         body: {
           name: 'Default Experience Groom',
-          speciality: 'foalCare',
+          speciality: 'foal_care',
           skill_level: 'expert',
           personality: 'gentle',
           // No experience provided
@@ -456,7 +459,7 @@ describe('Groom Hiring Workflow Tests', () => {
       const req = {
         body: {
           name: 'Default Rate Groom',
-          speciality: 'foalCare',
+          speciality: 'foal_care',
           skill_level: 'expert',
           personality: 'gentle',
           // No session_rate provided
@@ -487,7 +490,7 @@ describe('Groom Hiring Workflow Tests', () => {
       const req = {
         body: {
           name: 'Custom Rate Groom',
-          speciality: 'foalCare',
+          speciality: 'foal_care',
           skill_level: 'expert',
           personality: 'gentle',
           session_rate: customRate,
@@ -514,7 +517,7 @@ describe('Groom Hiring Workflow Tests', () => {
       const req = {
         body: {
           name: 'Bio Groom',
-          speciality: 'foalCare',
+          speciality: 'foal_care',
           skill_level: 'expert',
           personality: 'gentle',
           bio: customBio,
@@ -554,7 +557,7 @@ describe('Groom Hiring Workflow Tests', () => {
       const req = {
         body: {
           name: 'Availability Groom',
-          speciality: 'foalCare',
+          speciality: 'foal_care',
           skill_level: 'expert',
           personality: 'gentle',
           availability: customAvailability,
@@ -593,7 +596,7 @@ describe('Groom Hiring Workflow Tests', () => {
         const req = {
           body: {
             name: `Limit Test Groom ${i}`,
-            speciality: 'foalCare',
+            speciality: 'foal_care',
             skill_level: 'novice',
             personality: 'gentle',
           },
@@ -636,7 +639,7 @@ describe('Groom Hiring Workflow Tests', () => {
       const req = {
         body: {
           name: 'Expensive Master Groom',
-          speciality: 'foalCare',
+          speciality: 'foal_care',
           skill_level: 'master', // Most expensive
           personality: 'gentle',
           session_rate: 100.0, // Very high rate
@@ -670,7 +673,7 @@ describe('Groom Hiring Workflow Tests', () => {
       const req = {
         body: {
           name: 'Premium Master Groom',
-          speciality: 'foalCare',
+          speciality: 'foal_care',
           skill_level: 'master',
           personality: 'gentle',
           session_rate: 100.0, // High rate
@@ -695,7 +698,7 @@ describe('Groom Hiring Workflow Tests', () => {
       const req = {
         body: {
           name: '', // Empty string
-          speciality: 'foalCare',
+          speciality: 'foal_care',
           skill_level: 'expert',
           personality: 'gentle',
         },
@@ -717,7 +720,7 @@ describe('Groom Hiring Workflow Tests', () => {
       const req = {
         body: {
           name: veryLongName,
-          speciality: 'foalCare',
+          speciality: 'foal_care',
           skill_level: 'expert',
           personality: 'gentle',
         },
@@ -749,7 +752,7 @@ describe('Groom Hiring Workflow Tests', () => {
       const req = {
         body: {
           name: 'Negative Experience Groom',
-          speciality: 'foalCare',
+          speciality: 'foal_care',
           skill_level: 'expert',
           personality: 'gentle',
           experience: -5, // Negative value
@@ -782,7 +785,7 @@ describe('Groom Hiring Workflow Tests', () => {
       const req = {
         body: {
           name: 'Negative Rate Groom',
-          speciality: 'foalCare',
+          speciality: 'foal_care',
           skill_level: 'expert',
           personality: 'gentle',
           session_rate: -20.0, // Negative value
@@ -815,7 +818,7 @@ describe('Groom Hiring Workflow Tests', () => {
       const req = {
         body: {
           name: 'No User Groom',
-          speciality: 'foalCare',
+          speciality: 'foal_care',
           skill_level: 'expert',
           personality: 'gentle',
         },

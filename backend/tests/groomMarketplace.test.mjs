@@ -10,7 +10,7 @@
  * - Bio generation
  */
 
-import { describe, it, expect, beforeEach } from '@jest/globals';
+import { describe, it, expect } from '@jest/globals';
 import {
   generateRandomGroom,
   generateMarketplace,
@@ -184,7 +184,8 @@ describe('🏪 Groom Marketplace System', () => {
 
     it('should not need refresh when not enough time has passed', () => {
       const recentDate = new Date();
-      recentDate.setHours(recentDate.getHours() - 1); // 1 hour ago
+      // In test environment, refresh interval is 0.0001 hours, so use a very recent time
+      recentDate.setMilliseconds(recentDate.getMilliseconds() - 1); // 1 millisecond ago
 
       expect(needsRefresh(recentDate)).toBe(false);
     });
@@ -197,7 +198,8 @@ describe('🏪 Groom Marketplace System', () => {
 
       // Paid refresh when not needed
       const recentDate = new Date();
-      recentDate.setHours(recentDate.getHours() - 1);
+      // In test environment, use a very recent time that doesn't need refresh
+      recentDate.setMilliseconds(recentDate.getMilliseconds() - 1);
       expect(getRefreshCost(recentDate)).toBe(MARKETPLACE_CONFIG.PREMIUM_REFRESH_COST);
 
       // Free refresh when no last refresh

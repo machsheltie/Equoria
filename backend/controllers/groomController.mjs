@@ -19,6 +19,11 @@ import {
   DEFAULT_GROOMS,
 } from '../utils/groomSystem.mjs';
 import {
+  GROOM_SPECIALTY_VALUES,
+  GROOM_SKILL_LEVEL_VALUES,
+  GROOM_PERSONALITY_VALUES,
+} from '../constants/schema.mjs';
+import {
   validateGroomingEligibility,
   updateTaskLog,
   updateStreakTracking,
@@ -501,9 +506,9 @@ export async function hireGroom(req, res) {
       });
     }
 
-    // Validate experience (must be positive integer)
-    const sanitizedExperience = experience !== null ? parseInt(experience) : 1;
-    if (isNaN(sanitizedExperience) || sanitizedExperience < 1 || sanitizedExperience > 20) {
+    // Validate experience (must be positive integer if provided)
+    const sanitizedExperience = experience !== undefined && experience !== null ? parseInt(experience) : 1;
+    if (experience !== undefined && experience !== null && (isNaN(sanitizedExperience) || sanitizedExperience < 1 || sanitizedExperience > 20)) {
       return res.status(400).json({
         success: false,
         message: 'experience must be between 1 and 20 years',
@@ -511,9 +516,9 @@ export async function hireGroom(req, res) {
       });
     }
 
-    // Validate session rate (must be positive number)
-    const sanitizedSessionRate = session_rate !== null ? parseFloat(session_rate) : null;
-    if (sanitizedSessionRate !== null && (isNaN(sanitizedSessionRate) || sanitizedSessionRate <= 0)) {
+    // Validate session rate (must be positive number if provided)
+    const sanitizedSessionRate = session_rate !== undefined && session_rate !== null ? parseFloat(session_rate) : null;
+    if (session_rate !== undefined && session_rate !== null && (isNaN(sanitizedSessionRate) || sanitizedSessionRate <= 0)) {
       return res.status(400).json({
         success: false,
         message: 'session rate must be a positive number',
@@ -522,28 +527,28 @@ export async function hireGroom(req, res) {
     }
 
     // Validate speciality
-    if (!GROOM_SPECIALTIES[speciality]) {
+    if (!GROOM_SPECIALTY_VALUES.includes(speciality)) {
       return res.status(400).json({
         success: false,
-        message: `Invalid speciality. Must be one of: ${Object.keys(GROOM_SPECIALTIES).join(', ')}`,
+        message: `Invalid speciality. Must be one of: ${GROOM_SPECIALTY_VALUES.join(', ')}`,
         data: null,
       });
     }
 
     // Validate skill level
-    if (!SKILL_LEVELS[skill_level]) {
+    if (!GROOM_SKILL_LEVEL_VALUES.includes(skill_level)) {
       return res.status(400).json({
         success: false,
-        message: `Invalid skill level. Must be one of: ${Object.keys(SKILL_LEVELS).join(', ')}`,
+        message: `Invalid skill level. Must be one of: ${GROOM_SKILL_LEVEL_VALUES.join(', ')}`,
         data: null,
       });
     }
 
     // Validate personality
-    if (!PERSONALITY_TRAITS[personality]) {
+    if (!GROOM_PERSONALITY_VALUES.includes(personality)) {
       return res.status(400).json({
         success: false,
-        message: `Invalid personality. Must be one of: ${Object.keys(PERSONALITY_TRAITS).join(', ')}`,
+        message: `Invalid personality. Must be one of: ${GROOM_PERSONALITY_VALUES.join(', ')}`,
         data: null,
       });
     }

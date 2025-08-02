@@ -167,7 +167,7 @@ export async function triggerSalaryProcessingEndpoint(req, res) {
     logger.info(`[groomSalaryController] Manual salary processing triggered by user ${userId}`);
 
     // Check if user is admin (you may want to implement proper admin role checking)
-    const user = await prisma.user.findUnique({
+    const _user = await prisma.user.findUnique({
       where: { id: userId },
       select: { username: true },
     });

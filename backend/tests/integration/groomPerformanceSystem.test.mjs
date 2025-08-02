@@ -73,7 +73,7 @@ describe('Groom Performance System', () => {
       },
     });
 
-    authToken = generateTestToken(testUser.id);
+    authToken = generateTestToken({ id: testUser.id });
 
     // Create test horse with minimal required fields
     testHorse = await prisma.horse.create({
@@ -91,7 +91,7 @@ describe('Groom Performance System', () => {
       data: {
         name: 'Performance Test Groom',
         skillLevel: 'expert',
-        speciality: 'showHandling',
+        speciality: 'general',
         personality: 'gentle',
         experience: 50,
         userId: testUser.id,

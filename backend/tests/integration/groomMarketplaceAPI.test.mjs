@@ -16,7 +16,7 @@ import { createTestUser, cleanupTestData } from '../helpers/testAuth.mjs';
 import app from '../../app.mjs';
 
 describe('🏪 INTEGRATION: Groom Marketplace API', () => {
-  let testUser;
+  let _testUser;
   let authToken;
 
   beforeAll(async () => {
@@ -27,7 +27,7 @@ describe('🏪 INTEGRATION: Groom Marketplace API', () => {
       email: `marketplace-${timestamp}@test.com`,
       money: 10000, // Give user plenty of money for testing
     });
-    testUser = userData.user;
+    _testUser = userData.user;
     authToken = userData.token;
   });
 
@@ -76,7 +76,7 @@ describe('🏪 INTEGRATION: Groom Marketplace API', () => {
       expect(data.grooms.length).toBeGreaterThan(0);
 
       // Check first groom structure
-      const firstGroom = data.grooms[0];
+      const [firstGroom] = data.grooms;
       expect(firstGroom).toHaveProperty('firstName');
       expect(firstGroom).toHaveProperty('lastName');
       expect(firstGroom).toHaveProperty('specialty');
@@ -191,7 +191,7 @@ describe('🏪 INTEGRATION: Groom Marketplace API', () => {
         .get('/api/groom-marketplace')
         .set('Authorization', `Bearer ${authToken}`);
 
-      marketplaceGroom = response.body.data.grooms[0];
+      [marketplaceGroom] = response.body.data.grooms;
     });
 
     it('should hire groom from marketplace successfully', async () => {
@@ -228,7 +228,7 @@ describe('🏪 INTEGRATION: Groom Marketplace API', () => {
         .set('Authorization', `Bearer ${authToken}`);
 
       const initialGroomCount = initialResponse.body.data.grooms.length;
-      const groomToHire = initialResponse.body.data.grooms[0];
+      const [groomToHire] = initialResponse.body.data.grooms;
 
       // Hire the groom
       await request(app)

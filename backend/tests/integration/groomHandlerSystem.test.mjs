@@ -13,7 +13,7 @@ describe('Groom Handler System Integration Tests', () => {
   let testUser;
   let testGroom;
   let testHorse;
-  let testAssignment;
+
 
   beforeAll(async () => {
     // Create test user
@@ -57,7 +57,7 @@ describe('Groom Handler System Integration Tests', () => {
     });
 
     // Create test assignment
-    testAssignment = await prisma.groomAssignment.create({
+    await prisma.groomAssignment.create({
       data: {
         groomId: testGroom.id,
         foalId: testHorse.id,

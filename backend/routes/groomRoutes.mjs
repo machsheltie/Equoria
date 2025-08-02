@@ -18,6 +18,11 @@ import {
   getGroomDefinitions,
 } from '../controllers/groomController.mjs';
 import { GROOM_CONFIG } from '../config/groomConfig.mjs';
+import {
+  GROOM_SPECIALTY_VALUES,
+  GROOM_SKILL_LEVEL_VALUES,
+  GROOM_PERSONALITY_VALUES,
+} from '../constants/schema.mjs';
 import logger from '../utils/logger.mjs';
 
 const router = express.Router();
@@ -365,18 +370,18 @@ router.post(
       .isLength({ min: 2, max: 100 })
       .withMessage('name must be between 2 and 100 characters'),
     body('speciality')
-      .isIn(['foalCare', 'general', 'training', 'medical'])
-      .withMessage('speciality must be one of: foalCare, general, training, medical'),
+      .isIn(GROOM_SPECIALTY_VALUES)
+      .withMessage(`speciality must be one of: ${GROOM_SPECIALTY_VALUES.join(', ')}`),
     body('experience')
       .optional()
       .isInt({ min: 1, max: 20 })
       .withMessage('experience must be between 1 and 20 years'),
     body('skill_level')
-      .isIn(['novice', 'intermediate', 'expert', 'master'])
-      .withMessage('skill_level must be one of: novice, intermediate, expert, master'),
+      .isIn(GROOM_SKILL_LEVEL_VALUES)
+      .withMessage(`skill_level must be one of: ${GROOM_SKILL_LEVEL_VALUES.join(', ')}`),
     body('personality')
-      .isIn(['gentle', 'energetic', 'patient', 'strict'])
-      .withMessage('personality must be one of: gentle, energetic, patient, strict'),
+      .isIn(GROOM_PERSONALITY_VALUES)
+      .withMessage(`personality must be one of: ${GROOM_PERSONALITY_VALUES.join(', ')}`),
     body('session_rate')
       .optional()
       .isFloat({ min: 5, max: 100 })
@@ -385,7 +390,6 @@ router.post(
     body('availability').optional().isObject().withMessage('availability must be an object'),
     handleValidationErrors,
   ],
-  hireGroom,
   hireGroom,
 );
 
