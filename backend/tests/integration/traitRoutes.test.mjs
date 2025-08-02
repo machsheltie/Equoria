@@ -94,10 +94,10 @@ describe('Trait Routes Integration Tests', () => {
     mockPrisma.breed.findUnique.mockResolvedValue(testBreed);
   });
 
-  describe('POST /api/traits/discover/:horseId', () => {
+  describe('POST /api/trait-discovery/discover/:horseId', () => {
     it('should trigger trait discovery successfully', async () => {
       const response = await request(app)
-        .post(`/api/traits/discover/${testHorse.id}`)
+        .post(`/api/trait-discovery/discover/${testHorse.id}`)
         .send({
           checkEnrichment: true,
           forceCheck: false,
@@ -163,7 +163,7 @@ describe('Trait Routes Integration Tests', () => {
     });
 
     it('should return validation error for invalid horse ID', async () => {
-      const response = await request(app).post('/api/traits/discover/invalid').send({}).expect(400);
+      const response = await request(app).post('/api/trait-discovery/discover/invalid').send({}).expect(400);
 
       expect(response.body.success).toBe(false);
       expect(response.body.message).toBe('Validation failed');
@@ -171,7 +171,7 @@ describe('Trait Routes Integration Tests', () => {
     });
 
     it('should return 404 for non-existent horse', async () => {
-      const response = await request(app).post('/api/traits/discover/99999').send({}).expect(404);
+      const response = await request(app).post('/api/trait-discovery/discover/99999').send({}).expect(404);
 
       expect(response.body.success).toBe(false);
       expect(response.body.message).toBe('Horse with ID 99999 not found');

@@ -191,6 +191,7 @@ app.get('/api', (req, res) => {
       breeds: '/api/breeds',
       foals: '/api/foals',
       traits: '/api/traits',
+      traitDiscovery: '/api/trait-discovery',
       grooms: '/api/grooms',
       leaderboard: '/api/leaderboard',
       admin: '/api/admin',
