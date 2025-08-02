@@ -70,8 +70,8 @@ describe('🎮 UNIT: Trait Integration System - Gameplay Effect Application', ()
     it('should apply trait penalties to bonding for antisocial horses', () => {
       const horse = {
         id: 1,
-        bond_score: 50,
-        epigenetic_modifiers: {
+        bondScore: 50,
+        epigeneticModifiers: {
           positive: [],
           negative: ['antisocial', 'nervous'],
           hidden: [],

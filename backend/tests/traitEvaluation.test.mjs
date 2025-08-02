@@ -76,8 +76,8 @@ describe('🔬 UNIT: Trait Evaluation System - Trait Revelation & Validation', (
       id: 1,
       name: 'Test Foal',
       age: 0,
-      bond_score: 75,
-      stress_level: 20,
+      bondScore: 75,
+      stressLevel: 20,
     };
 
     const mockCurrentTraits = {
