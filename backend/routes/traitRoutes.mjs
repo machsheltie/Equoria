@@ -27,11 +27,12 @@ const router = express.Router();
 const handleValidationErrors = (req, res, next) => {
   const errors = validationResult(req);
   if (!errors.isEmpty()) {
-    logger.warn(`[traitRoutes] Validation errors: ${JSON.stringify(errors.array())}`);
+    const errorArray = errors.array();
+    logger.warn(`[traitRoutes] Validation errors: ${JSON.stringify(errorArray)}`);
     return res.status(400).json({
       success: false,
-      message: 'Validation failed',
-      errors: errors.array(),
+      message: errorArray[0].msg, // Use specific error message
+      errors: errorArray,
     });
   }
   next();
@@ -233,7 +234,7 @@ router.get(
     query('type')
       .optional()
       .isIn(['positive', 'negative', 'all'])
-      .withMessage('Type must be positive, negative, or all'),
+      .withMessage('Type must be either "all", "positive", or "negative"'),
     handleValidationErrors,
   ],
   getTraitDefinitions,

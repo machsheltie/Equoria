@@ -71,6 +71,12 @@ describe('🏆 INTEGRATION: Leaderboard API - Real Database Integration', () => 
           { username: { startsWith: 'crud_user_' } }, // From user routes tests
           { username: { startsWith: 'delete_user_' } }, // From user routes tests
           { username: { startsWith: 'NewUser_' } }, // From user routes tests
+          { firstName: 'Test' }, // From auth tests and other integration tests
+          { lastName: 'User' }, // From auth tests and other integration tests
+          { firstName: 'TestUser' }, // From auth tests
+          { lastName: 'TestUser' }, // From auth tests
+          { username: { contains: 'test' } }, // Catch all test users
+          { email: { contains: 'test' } }, // Catch all test emails
         ],
       },
     });
@@ -271,6 +277,12 @@ describe('🏆 INTEGRATION: Leaderboard API - Real Database Integration', () => 
           { username: { startsWith: 'crud_user_' } }, // From user routes tests
           { username: { startsWith: 'delete_user_' } }, // From user routes tests
           { username: { startsWith: 'NewUser_' } }, // From user routes tests
+          { firstName: 'Test' }, // From auth tests and other integration tests
+          { lastName: 'User' }, // From auth tests and other integration tests
+          { firstName: 'TestUser' }, // From auth tests
+          { lastName: 'TestUser' }, // From auth tests
+          { username: { contains: 'test' } }, // Catch all test users
+          { email: { contains: 'test' } }, // Catch all test emails
         ],
       },
     });

@@ -20,8 +20,8 @@ router.post(
   '/discover/batch',
   [
     body('horseIds')
-      .isArray({ min: 1 })
-      .withMessage('horseIds must be a non-empty array')
+      .isArray({ min: 1, max: 10 })
+      .withMessage('horseIds must be an array with 1-10 elements')
       .custom(horseIds => {
         if (!horseIds.every(id => Number.isInteger(Number(id)) && Number(id) > 0)) {
           throw new Error('All horse IDs must be positive integers');
@@ -36,7 +36,7 @@ router.post(
       if (!errors.isEmpty()) {
         return res.status(400).json({
           success: false,
-          message: 'Validation failed',
+          message: errors.array()[0].msg, // Use specific error message
           errors: errors.array(),
         });
       }
