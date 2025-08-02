@@ -13,9 +13,9 @@ import {
   PERSONALITY_DISCIPLINE_SYNERGY,
   SPECIALTY_DISCIPLINE_BONUSES,
 } from '../services/groomHandlerService.mjs';
-import { getDisciplineConfig, getAllDisciplines } from '../utils/competitionLogic.mjs';
-import { isValidConformationClass, CONFORMATION_SHOW_CONFIG } from '../services/conformationShowService.mjs';
-import { CONFORMATION_CLASSES } from '../constants/schema.mjs';
+import { getDisciplineConfig as _getDisciplineConfig, getAllDisciplines as _getAllDisciplines } from '../utils/competitionLogic.mjs';
+import { isValidConformationClass, CONFORMATION_SHOW_CONFIG as _CONFORMATION_SHOW_CONFIG } from '../services/conformationShowService.mjs';
+import { CONFORMATION_CLASSES as _CONFORMATION_CLASSES } from '../constants/schema.mjs';
 
 /**
  * GET /api/groom-handlers/horse/:horseId

@@ -5,7 +5,7 @@
 
 import prisma from '../db/index.mjs';
 import logger from '../utils/logger.mjs';
-import { getDisciplineConfig } from '../utils/competitionLogic.mjs';
+import { getDisciplineConfig as _getDisciplineConfig } from '../utils/competitionLogic.mjs';
 import { isValidConformationClass } from './conformationShowService.mjs';
 
 // Handler skill bonuses by skill level
@@ -96,7 +96,7 @@ export const SPECIALTY_DISCIPLINE_BONUSES = {
  * @param {Object} assignment - Groom assignment with bond data
  * @returns {Object} Handler performance calculation
  */
-export function calculateHandlerBonus(groom, horse, classNameOrDiscipline, assignment) {
+export function calculateHandlerBonus(groom, horse, classNameOrDiscipline, _assignment) {
   try {
     // Check if this is a conformation show class
     if (!isValidConformationClass(classNameOrDiscipline)) {

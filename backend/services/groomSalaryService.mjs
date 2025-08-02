@@ -127,7 +127,7 @@ export async function processWeeklySalaries() {
         });
 
         // Log individual salary payments
-        for (const { assignment, groom, salary } of userGroup.assignments) {
+        for (const { assignment: _assignment, groom, salary } of userGroup.assignments) {
           await prisma.groomSalaryPayment.create({
             data: {
               groomId: groom.id,

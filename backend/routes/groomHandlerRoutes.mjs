@@ -258,7 +258,7 @@ router.get('/disciplines', async (req, res) => {
     const disciplinesWithHandlerInfo = disciplines.map(discipline => {
       // Find personality synergies
       const personalitySynergies = Object.entries(PERSONALITY_DISCIPLINE_SYNERGY)
-        .filter(([personality, config]) => config.beneficial.includes(discipline.name))
+        .filter(([_personality, config]) => config.beneficial.includes(discipline.name))
         .map(([personality, config]) => ({
           personality,
           bonus: config.bonus,
@@ -266,7 +266,7 @@ router.get('/disciplines', async (req, res) => {
 
       // Find specialty bonuses
       const specialtyBonuses = Object.entries(SPECIALTY_DISCIPLINE_BONUSES)
-        .filter(([specialty, config]) => config.disciplines.includes(discipline.name))
+        .filter(([_specialty, config]) => config.disciplines.includes(discipline.name))
         .map(([specialty, config]) => ({
           specialty,
           bonus: config.bonus,

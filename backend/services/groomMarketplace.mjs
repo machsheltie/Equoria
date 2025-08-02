@@ -10,7 +10,7 @@
  * - Availability tracking
  */
 
-import { GROOM_CONFIG } from '../config/groomConfig.mjs';
+import { GROOM_CONFIG as _GROOM_CONFIG } from '../config/groomConfig.mjs';
 
 // Marketplace configuration
 export const MARKETPLACE_CONFIG = {
@@ -60,10 +60,10 @@ export const MARKETPLACE_CONFIG = {
 const PERSONALITIES = ['gentle', 'energetic', 'patient', 'strict'];
 
 // Available specialties
-const SPECIALTIES = ['general', 'foalCare', 'training', 'medical'];
+const _SPECIALTIES = ['general', 'foalCare', 'training', 'medical'];
 
 // Available skill levels
-const SKILL_LEVELS = ['novice', 'intermediate', 'expert', 'master'];
+const _SKILL_LEVELS = ['novice', 'intermediate', 'expert', 'master'];
 
 /**
  * Generate a random groom for the marketplace

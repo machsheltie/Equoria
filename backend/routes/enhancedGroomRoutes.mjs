@@ -112,7 +112,7 @@ router.get('/interactions/types', async (req, res) => {
   try {
     const { ENHANCED_INTERACTIONS } = await import('../services/enhancedGroomInteractions.mjs');
 
-    const interactionTypes = Object.entries(ENHANCED_INTERACTIONS).map(([key, interaction]) => ({
+    const interactionTypes = Object.entries(ENHANCED_INTERACTIONS).map(([_key, interaction]) => ({
       id: interaction.id,
       name: interaction.name,
       category: interaction.category,
@@ -273,7 +273,7 @@ function generateLevelDescription(name, level) {
   return descriptions[name] || `Relationship level ${level}`;
 }
 
-function generateEventDescription(name, effects) {
+function generateEventDescription(name, _effects) {
   const descriptions = {
     'Breakthrough Moment': 'A sudden moment of understanding creates a lasting positive memory',
     'Perfect Harmony': 'Groom and horse work in perfect synchronization',

@@ -186,7 +186,7 @@ export function calculateRelationshipLevel(totalBondingPoints) {
  * @returns {Object|null} Special event or null
  */
 export function checkForSpecialEvent(context) {
-  const { groom, horse, relationshipLevel, interactionType } = context;
+  const { groom: _groom, horse: _horse, relationshipLevel: _relationshipLevel, interactionType: _interactionType } = context;
 
   for (const [eventId, event] of Object.entries(SPECIAL_EVENTS)) {
     // Check probability
@@ -367,7 +367,7 @@ function calculateInteractionCost(groom, duration) {
 export function getAvailableInteractions(groom, horse) {
   const available = [];
 
-  for (const [key, interaction] of Object.entries(ENHANCED_INTERACTIONS)) {
+  for (const [_key, interaction] of Object.entries(ENHANCED_INTERACTIONS)) {
     // Check if groom can perform this interaction type
     if (canPerformInteraction(groom, horse, interaction)) {
       const interactionData = {
