@@ -39,15 +39,7 @@ jest.unstable_mockModule('../../utils/logger.mjs', () => ({
   default: mockLogger
 }));
 
-// Mock authentication middleware
-const mockAuthenticateToken = jest.fn((req, res, next) => {
-  req.user = { id: 'user123', role: 'user' };
-  next();
-});
-
-jest.unstable_mockModule('../../middleware/auth.mjs', () => ({
-  authenticateToken: mockAuthenticateToken
-}));
+// We'll use real authentication in integration tests
 
 // Mock flag evaluation engine
 const mockEvaluateHorseFlagsEngine = jest.fn();
@@ -69,20 +61,61 @@ jest.unstable_mockModule('../../utils/carePatternAnalysis.mjs', () => ({
 
 describe('Epigenetic Flag Routes Integration Tests', () => {
   let app;
+  let authToken;
+  let adminToken;
+  let testUser;
+  let adminUser;
+
+  beforeAll(async () => {
+    // Import the full app for integration testing
+    const { default: fullApp } = await import('../../app.mjs');
+    app = fullApp;
+
+    // Create test user and get auth token
+    const userResponse = await request(app)
+      .post('/api/auth/register')
+      .send({
+        email: 'testuser@example.com',
+        password: 'TestPassword123!',
+        firstName: 'Test',
+        lastName: 'User',
+        username: 'testuser'
+      });
+
+    authToken = userResponse.body.data.token;
+    testUser = userResponse.body.data.user;
+
+    // Create admin user and get admin token
+    const adminResponse = await request(app)
+      .post('/api/auth/register')
+      .send({
+        email: 'admin@example.com',
+        password: 'AdminPassword123!',
+        firstName: 'Admin',
+        lastName: 'User',
+        username: 'adminuser'
+      });
+
+    adminToken = adminResponse.body.data.token;
+    adminUser = adminResponse.body.data.user;
+
+    // Update admin user role (this would normally be done through admin interface)
+    // For testing purposes, we'll mock this by updating the user object
+    adminUser.role = 'admin';
+  });
 
   beforeEach(async () => {
     jest.clearAllMocks();
-    
-    app = express();
-    app.use(express.json());
-    app.use('/api/flags', epigeneticFlagRoutes);
-    
-    // Default auth setup
-    mockAuthenticateToken.mockImplementation((req, res, next) => {
-      req.user = { id: 'user123', role: 'user' };
-      next();
-    });
   });
+
+  // Helper function to make authenticated requests
+  const authenticatedRequest = (method, url) => {
+    return request(app)[method](url).set('Authorization', `Bearer ${authToken}`);
+  };
+
+  const adminRequest = (method, url) => {
+    return request(app)[method](url).set('Authorization', `Bearer ${adminToken}`);
+  };
 
   afterEach(() => {
     jest.clearAllMocks();
@@ -111,8 +144,7 @@ describe('Epigenetic Flag Routes Integration Tests', () => {
       mockPrisma.horse.findUnique.mockResolvedValue(mockHorse);
       mockEvaluateHorseFlagsEngine.mockResolvedValue(mockEvaluationResult);
 
-      const response = await request(app)
-        .post('/api/flags/evaluate')
+      const response = await authenticatedRequest('post', '/api/flags/evaluate')
         .send({ horseId: 1 });
 
       expect(response.status).toBe(200);
@@ -123,8 +155,7 @@ describe('Epigenetic Flag Routes Integration Tests', () => {
     });
 
     test('should return 400 for invalid horse ID', async () => {
-      const response = await request(app)
-        .post('/api/flags/evaluate')
+      const response = await authenticatedRequest('post', '/api/flags/evaluate')
         .send({ horseId: 'invalid' });
 
       expect(response.status).toBe(400);
@@ -135,8 +166,7 @@ describe('Epigenetic Flag Routes Integration Tests', () => {
     test('should return 404 for non-existent horse', async () => {
       mockPrisma.horse.findUnique.mockResolvedValue(null);
 
-      const response = await request(app)
-        .post('/api/flags/evaluate')
+      const response = await authenticatedRequest('post', '/api/flags/evaluate')
         .send({ horseId: 999 });
 
       expect(response.status).toBe(404);
@@ -155,8 +185,7 @@ describe('Epigenetic Flag Routes Integration Tests', () => {
 
       mockPrisma.horse.findUnique.mockResolvedValue(mockHorse);
 
-      const response = await request(app)
-        .post('/api/flags/evaluate')
+      const response = await authenticatedRequest('post', '/api/flags/evaluate')
         .send({ horseId: 1 });
 
       expect(response.status).toBe(403);
@@ -165,11 +194,6 @@ describe('Epigenetic Flag Routes Integration Tests', () => {
     });
 
     test('should allow admin access to any horse', async () => {
-      mockAuthenticateToken.mockImplementation((req, res, next) => {
-        req.user = { id: 'admin123', role: 'admin' };
-        next();
-      });
-
       const mockHorse = {
         id: 1,
         name: 'Test Horse',
@@ -188,8 +212,7 @@ describe('Epigenetic Flag Routes Integration Tests', () => {
       mockPrisma.horse.findUnique.mockResolvedValue(mockHorse);
       mockEvaluateHorseFlagsEngine.mockResolvedValue(mockEvaluationResult);
 
-      const response = await request(app)
-        .post('/api/flags/evaluate')
+      const response = await adminRequest('post', '/api/flags/evaluate')
         .send({ horseId: 1 });
 
       expect(response.status).toBe(200);
@@ -211,8 +234,7 @@ describe('Epigenetic Flag Routes Integration Tests', () => {
 
       mockPrisma.horse.findUnique.mockResolvedValue(mockHorse);
 
-      const response = await request(app)
-        .get('/api/flags/horses/1/flags');
+      const response = await authenticatedRequest('get', '/api/flags/horses/1/flags');
 
       expect(response.status).toBe(200);
       expect(response.body.success).toBe(true);
@@ -226,8 +248,7 @@ describe('Epigenetic Flag Routes Integration Tests', () => {
     });
 
     test('should return 400 for invalid horse ID', async () => {
-      const response = await request(app)
-        .get('/api/flags/horses/invalid/flags');
+      const response = await authenticatedRequest('get', '/api/flags/horses/invalid/flags');
 
       expect(response.status).toBe(400);
       expect(response.body.success).toBe(false);
@@ -237,8 +258,7 @@ describe('Epigenetic Flag Routes Integration Tests', () => {
     test('should return 404 for non-existent horse', async () => {
       mockPrisma.horse.findUnique.mockResolvedValue(null);
 
-      const response = await request(app)
-        .get('/api/flags/horses/999/flags');
+      const response = await authenticatedRequest('get', '/api/flags/horses/999/flags');
 
       expect(response.status).toBe(404);
       expect(response.body.success).toBe(false);
@@ -258,8 +278,7 @@ describe('Epigenetic Flag Routes Integration Tests', () => {
 
       mockPrisma.horse.findUnique.mockResolvedValue(mockHorse);
 
-      const response = await request(app)
-        .get('/api/flags/horses/1/flags');
+      const response = await authenticatedRequest('get', '/api/flags/horses/1/flags');
 
       expect(response.status).toBe(403);
       expect(response.body.success).toBe(false);
@@ -269,8 +288,7 @@ describe('Epigenetic Flag Routes Integration Tests', () => {
 
   describe('GET /api/flags/definitions', () => {
     test('should return all flag definitions', async () => {
-      const response = await request(app)
-        .get('/api/flags/definitions');
+      const response = await authenticatedRequest('get', '/api/flags/definitions');
 
       expect(response.status).toBe(200);
       expect(response.body.success).toBe(true);
@@ -282,8 +300,7 @@ describe('Epigenetic Flag Routes Integration Tests', () => {
     });
 
     test('should filter flag definitions by type', async () => {
-      const response = await request(app)
-        .get('/api/flags/definitions?type=positive');
+      const response = await authenticatedRequest('get', '/api/flags/definitions?type=positive');
 
       expect(response.status).toBe(200);
       expect(response.body.success).toBe(true);
@@ -292,8 +309,7 @@ describe('Epigenetic Flag Routes Integration Tests', () => {
     });
 
     test('should return 400 for invalid flag type', async () => {
-      const response = await request(app)
-        .get('/api/flags/definitions?type=invalid');
+      const response = await authenticatedRequest('get', '/api/flags/definitions?type=invalid');
 
       expect(response.status).toBe(400);
       expect(response.body.success).toBe(false);

@@ -17,10 +17,10 @@
 import { validationResult } from 'express-validator';
 import prisma from '../db/index.mjs';
 import logger from '../utils/logger.mjs';
-import { 
-  evaluateHorseFlags, 
-  batchEvaluateFlags, 
-  getEligibleHorses 
+import {
+  evaluateHorseFlags,
+  batchEvaluateFlags as batchEvaluateFlagsEngine,
+  getEligibleHorses
 } from '../utils/flagEvaluationEngine.mjs';
 import { 
   getAllFlagDefinitions, 
@@ -240,7 +240,7 @@ export async function getFlagDefinitions(req, res) {
  * Batch evaluate flags for multiple horses (Admin only)
  * POST /api/flags/batch-evaluate
  */
-export async function batchEvaluateFlagsController(req, res) {
+export async function batchEvaluateFlags(req, res) {
   try {
     // Check admin permission
     if (req.user?.role !== 'admin') {
@@ -270,7 +270,7 @@ export async function batchEvaluateFlagsController(req, res) {
     }
 
     // Perform batch evaluation
-    const results = await batchEvaluateFlags(validHorseIds);
+    const results = await batchEvaluateFlagsEngine(validHorseIds);
 
     // Summarize results
     const summary = {
@@ -366,6 +366,6 @@ export default {
   evaluateFlags,
   getHorseFlags,
   getFlagDefinitions,
-  batchEvaluateFlags: batchEvaluateFlagsController,
+  batchEvaluateFlags,
   getCarePatterns
 };

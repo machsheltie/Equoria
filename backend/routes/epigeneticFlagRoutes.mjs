@@ -20,7 +20,7 @@ import {
   evaluateFlags,
   getHorseFlags,
   getFlagDefinitions,
-  batchEvaluateFlags: batchEvaluateFlagsController,
+  batchEvaluateFlags,
   getCarePatterns
 } from '../controllers/epigeneticFlagController.mjs';
 import { authenticateToken } from '../middleware/auth.mjs';
@@ -152,7 +152,7 @@ router.post('/batch-evaluate',
   validateBatchEvaluation,
   async (req, res) => {
     try {
-      await batchEvaluateFlagsController(req, res);
+      await batchEvaluateFlags(req, res);
     } catch (error) {
       logger.error(`[epigeneticFlagRoutes] Error in /batch-evaluate: ${error.message}`);
       res.status(500).json({
