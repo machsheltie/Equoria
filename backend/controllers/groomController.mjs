@@ -30,9 +30,54 @@ import {
   checkTaskMutualExclusivity as _checkTaskMutualExclusivity,
   checkBurnoutImmunity,
 } from '../utils/groomBondingSystem.mjs';
+import {
+  DEVELOPMENTAL_WINDOWS,
+  MILESTONE_TYPES
+} from '../utils/enhancedMilestoneEvaluationSystem.mjs';
 import prisma from '../db/index.mjs';
 import logger from '../utils/logger.mjs';
 // import { ensureDefaultGroomAssignment } from '../services/groomService'; // TODO: Implement when needed
+
+/**
+ * Determine the current milestone window for a horse based on age
+ * @param {Date} dateOfBirth - Horse's date of birth
+ * @returns {string|null} Current milestone window ID or null if not in any window
+ */
+function getCurrentMilestoneWindow(dateOfBirth) {
+  const ageInDays = Math.floor((Date.now() - new Date(dateOfBirth)) / (1000 * 60 * 60 * 24));
+
+  // Only track milestone windows for horses under 3 years (1095 days)
+  if (ageInDays >= 1095) {
+    return null;
+  }
+
+  for (const [milestoneType, window] of Object.entries(DEVELOPMENTAL_WINDOWS)) {
+    if (ageInDays >= window.start && ageInDays <= window.end) {
+      return `${milestoneType}_${Math.floor(ageInDays / 7)}`; // Include week for uniqueness
+    }
+  }
+
+  return null;
+}
+
+/**
+ * Determine task type based on interaction type and horse age
+ * @param {string} interactionType - Type of groom interaction
+ * @param {number} ageInDays - Horse age in days
+ * @returns {string} Task type for milestone evaluation
+ */
+function determineTaskType(interactionType, ageInDays) {
+  // Map interaction types to milestone-relevant task types
+  const taskTypeMapping = {
+    'daily_care': ageInDays < 7 ? 'imprinting_care' : 'routine_care',
+    'feeding': 'feeding',
+    'grooming': ageInDays < 14 ? 'early_handling' : 'grooming',
+    'exercise': ageInDays < 21 ? 'play_interaction' : 'exercise',
+    'medical_check': 'health_monitoring'
+  };
+
+  return taskTypeMapping[interactionType] || interactionType;
+}
 
 /**
  * POST /api/grooms/assign
@@ -323,6 +368,14 @@ export async function recordInteraction(req, res) {
       foal.daysGroomedInARow || 0, // Use actual consecutive days from database
     );
 
+    // Determine milestone window and task type for enhanced evaluation
+    const milestoneWindowId = getCurrentMilestoneWindow(foal.dateOfBirth);
+    const ageInDays = Math.floor((Date.now() - new Date(foal.dateOfBirth)) / (1000 * 60 * 60 * 24));
+    const taskType = determineTaskType(interactionType, ageInDays);
+    const qualityScore = effects.quality === 'excellent' ? 1.0 :
+                        effects.quality === 'good' ? 0.75 :
+                        effects.quality === 'fair' ? 0.5 : 0.25;
+
     // Record the interaction
     const interaction = await prisma.groomInteraction.create({
       data: {
@@ -336,6 +389,9 @@ export async function recordInteraction(req, res) {
         quality: effects.quality,
         cost: effects.cost,
         notes,
+        taskType,
+        qualityScore,
+        milestoneWindowId,
       },
     });
 
