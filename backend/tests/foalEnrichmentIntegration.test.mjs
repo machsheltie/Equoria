@@ -212,8 +212,8 @@ describe('🐴 INTEGRATION: Foal Enrichment API Integration - Complete API Workf
       expect(mockPrisma.horse.update).toHaveBeenCalledWith({
         where: { id: testFoal.id },
         data: expect.objectContaining({
-          bond_score: expect.any(Number),
-          stress_level: expect.any(Number),
+          bondScore: expect.any(Number),
+          stressLevel: expect.any(Number),
         }),
       });
 

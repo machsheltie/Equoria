@@ -7,6 +7,7 @@
  */
 
 import { EPIGENETIC_FLAGS, GROOM_PERSONALITIES, evaluateEpigeneticFlags } from './epigeneticFlags.mjs';
+import { evaluateUltraRareTriggers, evaluateExoticUnlocks } from './ultraRareTriggerEngine.mjs';
 // Note: Using existing trait effects system instead of separate definitions
 
 /**
@@ -46,12 +47,46 @@ export async function evaluateEnhancedMilestone(horse, groomCareHistory, current
     horse,
   );
 
+  // Evaluate ultra-rare and exotic traits at milestone completion
+  let ultraRareEvaluation = null;
+  try {
+    const ultraRareResults = await evaluateUltraRareTriggers(horse.id, {
+      triggerSource: 'milestone_completion',
+      milestoneType: milestoneData.type,
+      groomId: currentGroom?.id,
+      careHistory: groomCareHistory,
+    });
+
+    const exoticResults = await evaluateExoticUnlocks(horse.id, {
+      triggerSource: 'milestone_completion',
+      milestoneType: milestoneData.type,
+      groomId: currentGroom?.id,
+      careHistory: groomCareHistory,
+    });
+
+    ultraRareEvaluation = {
+      ultraRareTriggered: ultraRareResults,
+      exoticUnlocked: exoticResults,
+      totalRareTraits: ultraRareResults.length + exoticResults.length,
+    };
+  } catch (error) {
+    // Log error but don't fail milestone evaluation
+    console.warn('[enhancedMilestoneEvaluation] Ultra-rare trait evaluation failed:', error.message);
+    ultraRareEvaluation = {
+      ultraRareTriggered: [],
+      exoticUnlocked: [],
+      totalRareTraits: 0,
+      error: error.message,
+    };
+  }
+
   return {
     ...baseMilestone,
     recommendedTraits: enhancedTraits,
     epigeneticFlags,
     careConsistencyBonus,
     personalityBonuses,
+    ultraRareEvaluation,
     enhancementFactors: {
       groomPersonality: currentGroom?.groomPersonality || 'balanced',
       careQuality: calculateCareQuality(groomCareHistory),

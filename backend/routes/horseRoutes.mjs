@@ -246,4 +246,157 @@ router.post('/:id/award-xp', authenticateToken, validateHorseId, async (req, res
  */
 router.get('/:id/personality-impact', authenticateToken, validateHorseId, getHorsePersonalityImpact);
 
+/**
+ * @swagger
+ * /api/horses/{id}/legacy-score:
+ *   get:
+ *     summary: Get horse legacy score with trait integration
+ *     tags: [Horses]
+ *     parameters:
+ *       - in: path
+ *         name: id
+ *         required: true
+ *         schema:
+ *           type: integer
+ *         description: Horse ID
+ *     responses:
+ *       200:
+ *         description: Legacy score retrieved successfully
+ *       404:
+ *         description: Horse not found
+ *       500:
+ *         description: Internal server error
+ */
+router.get('/:id/legacy-score', authenticateToken, validateHorseId, async (req, res) => {
+  try {
+    const horseId = parseInt(req.params.id, 10);
+
+    const { calculateLegacyScore } = await import('../services/legacyScoreCalculator.mjs');
+    const legacyScore = await calculateLegacyScore(horseId);
+
+    res.json({
+      success: true,
+      message: 'Legacy score retrieved successfully',
+      data: {
+        legacyScore,
+      },
+    });
+  } catch (error) {
+    if (error.message.includes('not found')) {
+      return res.status(404).json({
+        success: false,
+        message: error.message,
+      });
+    }
+
+    res.status(500).json({
+      success: false,
+      message: 'Failed to calculate legacy score',
+      error: process.env.NODE_ENV === 'development' ? error.message : 'Internal server error',
+    });
+  }
+});
+
+/**
+ * @swagger
+ * /api/horses/{id}/trait-card:
+ *   get:
+ *     summary: Get horse trait timeline card
+ *     tags: [Horses]
+ *     parameters:
+ *       - in: path
+ *         name: id
+ *         required: true
+ *         schema:
+ *           type: integer
+ *         description: Horse ID
+ *     responses:
+ *       200:
+ *         description: Trait timeline card retrieved successfully
+ *       404:
+ *         description: Horse not found
+ *       500:
+ *         description: Internal server error
+ */
+router.get('/:id/trait-card', authenticateToken, validateHorseId, async (req, res) => {
+  try {
+    const horseId = parseInt(req.params.id, 10);
+
+    const { generateTraitTimeline } = await import('../services/traitTimelineService.mjs');
+    const timeline = await generateTraitTimeline(horseId);
+
+    res.json({
+      success: true,
+      message: 'Trait timeline card retrieved successfully',
+      data: {
+        timeline,
+      },
+    });
+  } catch (error) {
+    if (error.message.includes('not found')) {
+      return res.status(404).json({
+        success: false,
+        message: error.message,
+      });
+    }
+
+    res.status(500).json({
+      success: false,
+      message: 'Failed to generate trait timeline',
+      error: process.env.NODE_ENV === 'development' ? error.message : 'Internal server error',
+    });
+  }
+});
+
+/**
+ * @swagger
+ * /api/horses/{id}/breeding-data:
+ *   get:
+ *     summary: Get horse breeding data with trait predictions
+ *     tags: [Horses]
+ *     parameters:
+ *       - in: path
+ *         name: id
+ *         required: true
+ *         schema:
+ *           type: integer
+ *         description: Horse ID
+ *     responses:
+ *       200:
+ *         description: Breeding data retrieved successfully
+ *       404:
+ *         description: Horse not found
+ *       500:
+ *         description: Internal server error
+ */
+router.get('/:id/breeding-data', authenticateToken, validateHorseId, async (req, res) => {
+  try {
+    const horseId = parseInt(req.params.id, 10);
+
+    const { generateBreedingData } = await import('../services/breedingPredictionService.mjs');
+    const breedingData = await generateBreedingData(horseId);
+
+    res.json({
+      success: true,
+      message: 'Breeding data retrieved successfully',
+      data: {
+        breedingData,
+      },
+    });
+  } catch (error) {
+    if (error.message.includes('not found')) {
+      return res.status(404).json({
+        success: false,
+        message: error.message,
+      });
+    }
+
+    res.status(500).json({
+      success: false,
+      message: 'Failed to generate breeding data',
+      error: process.env.NODE_ENV === 'development' ? error.message : 'Internal server error',
+    });
+  }
+});
+
 export default router;

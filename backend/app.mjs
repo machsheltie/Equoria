@@ -61,6 +61,7 @@ import epigeneticTraitRoutes from './routes/epigeneticTraitRoutes.mjs';
 import epigeneticFlagRoutes from './routes/epigeneticFlagRoutes.mjs';
 import enhancedMilestoneRoutes from './routes/enhancedMilestoneRoutes.mjs';
 import leaderboardRoutes from './routes/leaderboardRoutes.mjs';
+import ultraRareTraitRoutes from './routes/ultraRareTraitRoutes.mjs';
 import adminRoutes from './routes/adminRoutes.mjs';
 
 // Middleware imports
@@ -177,6 +178,7 @@ app.use('/api/groom-marketplace', groomMarketplaceRoutes);
 app.use('/api/epigenetic-traits', epigeneticTraitRoutes);
 app.use('/api/flags', epigeneticFlagRoutes);
 app.use('/api/traits', enhancedMilestoneRoutes);
+app.use('/api/ultra-rare-traits', ultraRareTraitRoutes);
 app.use('/api/leaderboard', leaderboardRoutes);
 app.use('/api/admin', adminRoutes);
 

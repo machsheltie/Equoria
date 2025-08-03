@@ -71,7 +71,7 @@ describe('🎮 UNIT: Trait Integration System - Gameplay Effect Application', ()
       const horse = {
         id: 1,
         bondScore: 50,
-        epigeneticModifiers: {
+        epigenetic_modifiers: {
           positive: [],
           negative: ['antisocial', 'nervous'],
           hidden: [],
