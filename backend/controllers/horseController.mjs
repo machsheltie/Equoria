@@ -542,7 +542,7 @@ export async function getHorsePersonalityImpact(req, res) {
       const compatibility = calculatePersonalityCompatibility(
         groom.personality,
         horse.temperament,
-        horse.bondScore || 50
+        horse.bondScore || 50,
       );
 
       return {
@@ -572,8 +572,8 @@ export async function getHorsePersonalityImpact(req, res) {
 
     // Sort by compatibility (matches first, then by trait modifier)
     groomCompatibility.sort((a, b) => {
-      if (a.compatibility.isMatch && !b.compatibility.isMatch) return -1;
-      if (!a.compatibility.isMatch && b.compatibility.isMatch) return 1;
+      if (a.compatibility.isMatch && !b.compatibility.isMatch) { return -1; }
+      if (!a.compatibility.isMatch && b.compatibility.isMatch) { return 1; }
       return b.compatibility.traitModifier - a.compatibility.traitModifier;
     });
 

@@ -2,7 +2,7 @@
  * Ultra-Rare & Exotic Traits System Tests
  * Comprehensive test suite for ultra-rare and exotic trait functionality
  * Tests trait definitions, trigger evaluation, mechanical effects, and API endpoints
- * 
+ *
  * Testing Approach: TDD with real database operations (no mocking)
  * Focus: Business logic validation, trigger conditions, mechanical effects
  */
@@ -105,10 +105,10 @@ describe('Ultra-Rare & Exotic Traits System', () => {
   describe('Trait Definitions System', () => {
     test('should retrieve all ultra-rare trait definitions', () => {
       const ultraRareTraits = getAllUltraRareTraits();
-      
+
       expect(ultraRareTraits).toBeDefined();
       expect(Object.keys(ultraRareTraits)).toHaveLength(5);
-      
+
       // Verify Phoenix-Born trait definition
       expect(ultraRareTraits['phoenix-born']).toBeDefined();
       expect(ultraRareTraits['phoenix-born'].name).toBe('Phoenix-Born');
@@ -119,10 +119,10 @@ describe('Ultra-Rare & Exotic Traits System', () => {
 
     test('should retrieve all exotic trait definitions', () => {
       const exoticTraits = getAllExoticTraits();
-      
+
       expect(exoticTraits).toBeDefined();
       expect(Object.keys(exoticTraits)).toHaveLength(5);
-      
+
       // Verify Fey-Kissed trait definition
       expect(exoticTraits['fey-kissed']).toBeDefined();
       expect(exoticTraits['fey-kissed'].name).toBe('Fey-Kissed');
@@ -134,11 +134,11 @@ describe('Ultra-Rare & Exotic Traits System', () => {
       const phoenixBorn = getUltraRareTraitDefinition('phoenix-born');
       expect(phoenixBorn).toBeDefined();
       expect(phoenixBorn.tier).toBe('ultra-rare');
-      
+
       const soulbonded = getUltraRareTraitDefinition('soulbonded');
       expect(soulbonded).toBeDefined();
       expect(soulbonded.tier).toBe('exotic');
-      
+
       const nonExistent = getUltraRareTraitDefinition('non-existent-trait');
       expect(nonExistent).toBeNull();
     });
@@ -158,10 +158,10 @@ describe('Ultra-Rare & Exotic Traits System', () => {
 
     test('should evaluate exotic trait unlocks with complex conditions', async () => {
       const exoticResults = await evaluateExoticUnlocks(testHorse.id);
-      
+
       expect(exoticResults).toBeDefined();
       expect(Array.isArray(exoticResults)).toBe(true);
-      
+
       // Most exotic traits require very specific conditions that won't be met in basic test
       // This validates the evaluation system works without errors
     });
@@ -180,10 +180,10 @@ describe('Ultra-Rare & Exotic Traits System', () => {
       };
 
       const assignedPerks = await assignRareTraitBoosterPerks(testGroom.id, groomData);
-      
+
       expect(assignedPerks).toBeDefined();
       expect(typeof assignedPerks).toBe('object');
-      
+
       // Should assign Phoenix Whisperer perk due to mindful + guardian tags
       if (assignedPerks['phoenix-born-booster']) {
         expect(assignedPerks['phoenix-born-booster'].name).toBe('Phoenix Whisperer');
@@ -213,7 +213,7 @@ describe('Ultra-Rare & Exotic Traits System', () => {
       };
 
       const result = applyRareTraitBoosterEffects('phoenix-born', baseChance, groomData, conditions);
-      
+
       expect(result.originalChance).toBe(0.02);
       expect(result.modifiedChance).toBeGreaterThan(0.02);
       expect(result.appliedPerks).toHaveLength(2); // Base bonus + stacked bonus
@@ -232,7 +232,7 @@ describe('Ultra-Rare & Exotic Traits System', () => {
 
       const baseStress = 50;
       const result = applyUltraRareStressEffects(horseWithPhoenixBorn, baseStress);
-      
+
       expect(result.originalStress).toBe(50);
       expect(result.modifiedStress).toBeLessThan(50); // 20% stress resistance
       expect(result.appliedEffects).toHaveLength(1);
@@ -251,11 +251,11 @@ describe('Ultra-Rare & Exotic Traits System', () => {
       const baseScore = 100;
       const competitionContext = { isPairEvent: false };
       const result = applyUltraRareCompetitionEffects(horseWithBornLeader, baseScore, competitionContext);
-      
+
       expect(result.originalScore).toBe(100);
       expect(result.modifiedScore).toBeGreaterThan(100);
       expect(result.appliedEffects.length).toBeGreaterThan(0);
-      
+
       // Should have competition presence bonus
       const presenceEffect = result.appliedEffects.find(effect => effect.effect === 'competition_presence');
       expect(presenceEffect).toBeDefined();
@@ -279,7 +279,7 @@ describe('Ultra-Rare & Exotic Traits System', () => {
 
       expect(hasUltraRareAbility(horseWithIronWilled, 'burnout_immunity')).toBe(true);
       expect(hasUltraRareAbility(horseWithIronWilled, 'stress_immunity')).toBe(false);
-      
+
       expect(hasUltraRareAbility(horseWithGhostwalker, 'stress_immunity')).toBe(true);
       expect(hasUltraRareAbility(horseWithGhostwalker, 'burnout_immunity')).toBe(false);
     });
@@ -351,8 +351,8 @@ describe('Ultra-Rare & Exotic Traits System', () => {
       const otherUser = await prisma.user.create({
         data: {
           id: 'other-ultra-rare-user',
-          email: 'other@example.com',
-          username: 'otheruser',
+          email: 'other-ultra-rare@example.com',
+          username: 'other-ultra-rare-user',
           firstName: 'Other',
           lastName: 'User',
           password: 'TestPassword123',

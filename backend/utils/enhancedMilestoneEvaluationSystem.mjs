@@ -173,11 +173,11 @@ export async function evaluateEnhancedMilestone(horseId, milestoneType, options 
       finalScore = personalityEffects.modifiedMilestoneScore;
 
       logger.info(
-        `[enhancedMilestoneEvaluationSystem] Applied personality effects: ${currentGroom.personality} + ${horse.temperament} = ${personalityEffects.personalityMatchScore} modifier`
+        `[enhancedMilestoneEvaluationSystem] Applied personality effects: ${currentGroom.personality} + ${horse.temperament} = ${personalityEffects.personalityMatchScore} modifier`,
       );
     } else {
       logger.info(
-        `[enhancedMilestoneEvaluationSystem] No personality effects applied - missing groom personality or horse temperament`
+        '[enhancedMilestoneEvaluationSystem] No personality effects applied - missing groom personality or horse temperament',
       );
     }
 

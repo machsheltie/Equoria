@@ -1,18 +1,18 @@
 /**
  * Legacy Score Calculator Service
- * 
+ *
  * Service for calculating comprehensive legacy scores for horses that incorporate
  * multiple components including base stats, achievements, competition performance,
  * and trait development quality. This score influences a horse's value as a breeder
  * and contributes to its prestige record.
- * 
+ *
  * Features:
  * - Base stats scoring component
  * - Achievement and competition performance scoring
  * - Trait development scoring integration
  * - Breeding value assessment
  * - Legacy score breakdown and analysis
- * 
+ *
  * Components:
  * - Base Stats (max 30 points): Average of all 10 core stats
  * - Achievements (max 25 points): Competition wins, records, milestones
@@ -136,7 +136,7 @@ function calculateBaseStatsScore(horse) {
 
   const totalStats = stats.reduce((sum, stat) => sum + stat, 0);
   const averageStats = totalStats / stats.length;
-  
+
   // Scale to max 30 points (average of 100 = 30 points)
   const score = Math.round((averageStats / 100) * MAX_BASE_STATS_SCORE);
 
@@ -168,7 +168,7 @@ function calculateBaseStatsScore(horse) {
  */
 async function calculateAchievementsScore(horse) {
   const results = horse.competitionResults || [];
-  
+
   // Count wins by placement
   const firstPlaces = results.filter(r => r.placement === 1).length;
   const secondPlaces = results.filter(r => r.placement === 2).length;
@@ -182,15 +182,15 @@ async function calculateAchievementsScore(horse) {
   score += thirdPlaces * 1; // 1 point per third place
 
   // Bonus for competition participation
-  if (totalCompetitions >= 10) score += 2;
-  if (totalCompetitions >= 25) score += 3;
-  if (totalCompetitions >= 50) score += 5;
+  if (totalCompetitions >= 10) { score += 2; }
+  if (totalCompetitions >= 25) { score += 3; }
+  if (totalCompetitions >= 50) { score += 5; }
 
   // Bonus for win rate
   const winRate = totalCompetitions > 0 ? firstPlaces / totalCompetitions : 0;
-  if (winRate >= 0.5) score += 3; // 50%+ win rate
-  if (winRate >= 0.3) score += 2; // 30%+ win rate
-  if (winRate >= 0.1) score += 1; // 10%+ win rate
+  if (winRate >= 0.5) { score += 3; } // 50%+ win rate
+  if (winRate >= 0.3) { score += 2; } // 30%+ win rate
+  if (winRate >= 0.1) { score += 1; } // 10%+ win rate
 
   return {
     score: Math.min(score, MAX_ACHIEVEMENTS_SCORE),
@@ -202,7 +202,7 @@ async function calculateAchievementsScore(horse) {
       winRate: Math.round(winRate * 1000) / 10, // Percentage with 1 decimal
       competitionBonus: Math.min(
         (totalCompetitions >= 50 ? 5 : totalCompetitions >= 25 ? 3 : totalCompetitions >= 10 ? 2 : 0),
-        10
+        10,
       ),
       winRateBonus: winRate >= 0.5 ? 3 : winRate >= 0.3 ? 2 : winRate >= 0.1 ? 1 : 0,
     },
@@ -224,8 +224,8 @@ function calculateBreedingValueScore(horse) {
   score += Math.min(offspringCount * 2, 10); // 2 points per offspring, max 10
 
   // Bonus for being an active breeder
-  if (offspringCount >= 5) score += 3;
-  if (offspringCount >= 10) score += 5;
+  if (offspringCount >= 5) { score += 3; }
+  if (offspringCount >= 10) { score += 5; }
 
   // Future: Could add offspring performance analysis
   // For now, just base on breeding activity
@@ -246,11 +246,11 @@ function calculateBreedingValueScore(horse) {
  * @returns {string} Legacy grade (S, A, B, C, D)
  */
 function calculateLegacyGrade(totalScore) {
-  if (totalScore >= 90) return 'S'; // Legendary
-  if (totalScore >= 80) return 'A'; // Exceptional
-  if (totalScore >= 70) return 'B'; // Outstanding
-  if (totalScore >= 60) return 'C'; // Good
-  if (totalScore >= 50) return 'D'; // Average
+  if (totalScore >= 90) { return 'S'; } // Legendary
+  if (totalScore >= 80) { return 'A'; } // Exceptional
+  if (totalScore >= 70) { return 'B'; } // Outstanding
+  if (totalScore >= 60) { return 'C'; } // Good
+  if (totalScore >= 50) { return 'D'; } // Average
   return 'F'; // Below Average
 }
 
@@ -276,7 +276,7 @@ export async function calculateMultipleLegacyScores(horseIds) {
             grade: 'F',
           };
         }
-      })
+      }),
     );
 
     logger.info(`[legacyScoreCalculator.calculateMultipleLegacyScores] Calculated ${results.length} legacy scores`);

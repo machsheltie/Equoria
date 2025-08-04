@@ -1,10 +1,10 @@
 /**
  * Breeding Prediction Test Suite
- * 
+ *
  * Tests the breeding prediction system that provides epigenetic preview functionality
  * for the breeding screen. This system analyzes parent trait development history to
  * predict trait and flag inheritance probabilities for potential offspring.
- * 
+ *
  * Features tested:
  * - Inheritance probability logic based on trait_history_log
  * - Trait summary generation for breeding parents
@@ -13,7 +13,7 @@
  * - Temperament and influence modifier calculations
  * - Child prediction algorithms with probability ranges
  * - API extension for /api/horses/:id/breeding-data
- * 
+ *
  * Testing approach: Real database operations with zero mocking to validate actual business logic
  */
 
@@ -177,20 +177,20 @@ describe('Breeding Prediction System', () => {
 
       // Test will fail initially - need to implement breedingPredictionService
       const { calculateInheritanceProbabilities } = await import('../services/breedingPredictionService.mjs');
-      
+
       const predictions = await calculateInheritanceProbabilities(testStallion.id, testMare.id);
-      
+
       expect(predictions.stallionId).toBe(testStallion.id);
       expect(predictions.mareId).toBe(testMare.id);
       expect(predictions.traitProbabilities).toBeDefined();
       expect(predictions.traitProbabilities.length).toBeGreaterThan(0);
-      
+
       // Check specific trait inheritance
       const sensitiveInheritance = predictions.traitProbabilities.find(t => t.traitName === 'sensitive');
       expect(sensitiveInheritance).toBeDefined();
       expect(sensitiveInheritance.probability).toBeGreaterThan(0);
       expect(sensitiveInheritance.probability).toBeLessThanOrEqual(50); // Max 50% without stacking
-      
+
       expect(predictions.summary.totalTraitsConsidered).toBe(6);
       expect(predictions.summary.epigeneticTraits).toBe(4);
       expect(predictions.summary.averageInheritanceChance).toBeGreaterThan(0);
@@ -227,9 +227,9 @@ describe('Breeding Prediction System', () => {
       });
 
       const { calculateFlagInheritanceScore } = await import('../services/breedingPredictionService.mjs');
-      
+
       const flagScore = await calculateFlagInheritanceScore(testStallion.id, testMare.id);
-      
+
       expect(flagScore.stallionFlags).toBeDefined();
       expect(flagScore.mareFlags).toBeDefined();
       expect(flagScore.combinedScore).toBeGreaterThan(0);
@@ -240,9 +240,9 @@ describe('Breeding Prediction System', () => {
     it('should handle horses with no trait history', async () => {
       // Test horses with no traits
       const { calculateInheritanceProbabilities } = await import('../services/breedingPredictionService.mjs');
-      
+
       const predictions = await calculateInheritanceProbabilities(testStallion.id, testMare.id);
-      
+
       expect(predictions.stallionId).toBe(testStallion.id);
       expect(predictions.mareId).toBe(testMare.id);
       expect(predictions.traitProbabilities).toHaveLength(0);
@@ -282,9 +282,9 @@ describe('Breeding Prediction System', () => {
       });
 
       const { calculateTemperamentInfluence } = await import('../services/breedingPredictionService.mjs');
-      
+
       const influence = await calculateTemperamentInfluence(testStallion.id, testMare.id);
-      
+
       expect(influence.stallionTemperament).toBe('spirited');
       expect(influence.mareTemperament).toBe('calm');
       expect(influence.compatibilityScore).toBeGreaterThan(0);
@@ -322,18 +322,18 @@ describe('Breeding Prediction System', () => {
       }
 
       const { predictOffspringTraits } = await import('../services/breedingPredictionService.mjs');
-      
+
       const prediction = await predictOffspringTraits(testStallion.id, testMare.id);
-      
+
       expect(prediction.categoryProbabilities).toBeDefined();
       expect(prediction.categoryProbabilities.empathy).toBeGreaterThan(0);
       expect(prediction.categoryProbabilities.boldness).toBeGreaterThan(0);
       expect(prediction.categoryProbabilities.physical).toBeGreaterThan(0);
-      
+
       expect(prediction.estimatedTraitCount).toBeDefined();
       expect(prediction.estimatedTraitCount.min).toBeGreaterThanOrEqual(0);
       expect(prediction.estimatedTraitCount.max).toBeGreaterThan(prediction.estimatedTraitCount.min);
-      
+
       expect(prediction.confidenceLevel).toBeDefined();
       expect(prediction.isEstimate).toBe(true);
     });
@@ -341,7 +341,7 @@ describe('Breeding Prediction System', () => {
     it('should handle epigenetic flag inheritance with stacking limits', async () => {
       // Create matching epigenetic traits in both parents
       const matchingTraits = ['sensitive', 'noble'];
-      
+
       for (const traitName of matchingTraits) {
         await prisma.traitHistoryLog.create({
           data: {
@@ -373,9 +373,9 @@ describe('Breeding Prediction System', () => {
       }
 
       const { calculateInheritanceProbabilities } = await import('../services/breedingPredictionService.mjs');
-      
+
       const predictions = await calculateInheritanceProbabilities(testStallion.id, testMare.id);
-      
+
       // Check that trait stacking increases probability but caps at reasonable limits
       const sensitiveInheritance = predictions.traitProbabilities.find(t => t.traitName === 'sensitive');
       expect(sensitiveInheritance.probability).toBeGreaterThan(25); // Higher due to both parents

@@ -1,17 +1,17 @@
 /**
  * Legacy Score Trait Integration Test Suite
- * 
+ *
  * Tests the integration of trait scoring into the legacy score calculation system.
  * This system incorporates the depth and quality of a horse's trait development
  * into its final Legacy Score, influencing its value as a breeder and prestige record.
- * 
+ *
  * Features tested:
  * - Trait score calculation based on count, diversity, rarity, and groom care consistency
  * - Integration with existing trait history and milestone evaluation data
  * - Legacy score calculation with trait scoring component
  * - API endpoints for legacy score retrieval with trait breakdown
  * - Business rules enforcement (traits before age 4, negative trait penalties)
- * 
+ *
  * Testing approach: Real database operations with zero mocking to validate actual business logic
  */
 
@@ -146,9 +146,9 @@ describe('Legacy Score Trait Integration System', () => {
 
       // Test will fail initially - need to implement legacyScoreTraitCalculator
       const { calculateTraitScore } = await import('../services/legacyScoreTraitCalculator.mjs');
-      
+
       const traitScore = await calculateTraitScore(testHorse.id);
-      
+
       // Expected scoring:
       // - Trait count: 5 traits = 5 points (max 10)
       // - Diversity: 3 different source types = 3 points (max 5)
@@ -189,9 +189,9 @@ describe('Legacy Score Trait Integration System', () => {
       }
 
       const { calculateTraitScore } = await import('../services/legacyScoreTraitCalculator.mjs');
-      
+
       const traitScore = await calculateTraitScore(testHorse.id);
-      
+
       // Should have penalties for negative traits
       expect(traitScore.breakdown.negativeTraitPenalty).toBeLessThan(0);
       expect(traitScore.totalScore).toBeLessThan(10); // Lower due to negative traits
@@ -222,9 +222,9 @@ describe('Legacy Score Trait Integration System', () => {
       }
 
       const { calculateTraitScore } = await import('../services/legacyScoreTraitCalculator.mjs');
-      
+
       const traitScore = await calculateTraitScore(testHorse.id);
-      
+
       // Should only count 2 traits (before age 4), not 3
       expect(traitScore.breakdown.traitCount).toBe(2);
       expect(traitScore.breakdown.traitsConsidered).toHaveLength(2);
@@ -271,9 +271,9 @@ describe('Legacy Score Trait Integration System', () => {
       });
 
       const { calculateTraitScore } = await import('../services/legacyScoreTraitCalculator.mjs');
-      
+
       const traitScore = await calculateTraitScore(testHorse.id);
-      
+
       // Should have good groom care consistency score
       expect(traitScore.breakdown.groomCareConsistency).toBeGreaterThan(2);
       expect(traitScore.breakdown.milestoneData).toHaveLength(3);
@@ -299,9 +299,9 @@ describe('Legacy Score Trait Integration System', () => {
 
       // Test will fail initially - need to implement legacy score calculator
       const { calculateLegacyScore } = await import('../services/legacyScoreCalculator.mjs');
-      
+
       const legacyScore = await calculateLegacyScore(testHorse.id);
-      
+
       expect(legacyScore.totalScore).toBeGreaterThan(0);
       expect(legacyScore.components.traitScore).toBeDefined();
       expect(legacyScore.components.traitScore.score).toBeGreaterThan(0);
@@ -312,9 +312,9 @@ describe('Legacy Score Trait Integration System', () => {
     it('should calculate legacy score without traits', async () => {
       // Test horse with no trait history
       const { calculateLegacyScore } = await import('../services/legacyScoreCalculator.mjs');
-      
+
       const legacyScore = await calculateLegacyScore(testHorse.id);
-      
+
       expect(legacyScore.totalScore).toBeGreaterThan(0);
       expect(legacyScore.components.traitScore.score).toBe(0);
       expect(legacyScore.components.baseStats).toBeDefined();

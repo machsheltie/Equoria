@@ -1,10 +1,10 @@
 /**
  * Personality Modifier Engine
  * Core logic engine for applying groom personality-temperament compatibility effects
- * 
+ *
  * This module implements the personality modifier engine that calculates trait_modifier_score,
  * stress_resistance_bonus, and bond_modifier based on groom-foal personality compatibility.
- * Integrates with the milestone evaluation system to apply personality effects during 
+ * Integrates with the milestone evaluation system to apply personality effects during
  * trait development calculations.
  */
 
@@ -13,7 +13,7 @@ import logger from './logger.mjs';
 
 /**
  * Apply personality compatibility effects to milestone evaluation
- * 
+ *
  * @param {Object} params - Parameters for personality effect calculation
  * @param {string} params.groomPersonality - Groom's personality type
  * @param {string} params.foalTemperament - Foal's temperament type
@@ -60,7 +60,7 @@ export function applyPersonalityEffectsToMilestone(params) {
     const compatibility = calculatePersonalityCompatibility(
       groomPersonality,
       foalTemperament,
-      bondScore
+      bondScore,
     );
 
     // Apply trait modifier score to milestone score
@@ -88,11 +88,11 @@ export function applyPersonalityEffectsToMilestone(params) {
       personalityCompatibility: compatibility,
       personalityMatchScore: compatibility.traitModifierScore,
       personalityEffectApplied: true,
-      
+
       // Effect summary
       effects: {
         milestoneScoreChange: compatibility.traitModifierScore,
-        stressReduction: stressReduction,
+        stressReduction,
         bondingRateChange: compatibility.bondModifier,
         isMatch: compatibility.isMatch,
         isStrongMatch: compatibility.isStrongMatch,
@@ -100,13 +100,13 @@ export function applyPersonalityEffectsToMilestone(params) {
     };
 
     logger.info(
-      `[personalityModifierEngine] Applied personality effects: ${groomPersonality} + ${foalTemperament} = ${compatibility.traitModifierScore} trait modifier, ${stressReduction.toFixed(1)} stress reduction, ${compatibility.bondModifier} bonding bonus`
+      `[personalityModifierEngine] Applied personality effects: ${groomPersonality} + ${foalTemperament} = ${compatibility.traitModifierScore} trait modifier, ${stressReduction.toFixed(1)} stress reduction, ${compatibility.bondModifier} bonding bonus`,
     );
 
     return result;
   } catch (error) {
     logger.error(`[personalityModifierEngine] Error applying personality effects: ${error.message}`);
-    
+
     // Return original values with no modifications on error
     return {
       baseMilestoneScore: params.baseMilestoneScore || 0,
@@ -132,7 +132,7 @@ export function applyPersonalityEffectsToMilestone(params) {
 /**
  * Calculate personality bonus for trait development
  * Implements the specification rules for trait development effects
- * 
+ *
  * @param {Object} params - Parameters for trait development calculation
  * @param {string} params.groomPersonality - Groom's personality type
  * @param {string} params.foalTemperament - Foal's temperament type
@@ -147,7 +147,7 @@ export function calculateTraitDevelopmentBonus(params) {
     const compatibility = calculatePersonalityCompatibility(
       groomPersonality,
       foalTemperament,
-      bondScore
+      bondScore,
     );
 
     let traitModifier = 0;
@@ -194,7 +194,7 @@ export function calculateTraitDevelopmentBonus(params) {
     };
   } catch (error) {
     logger.error(`[personalityModifierEngine] Error calculating trait development bonus: ${error.message}`);
-    
+
     return {
       traitModifier: 0,
       finalScore: params.baseMilestoneScore || 0,
@@ -209,7 +209,7 @@ export function calculateTraitDevelopmentBonus(params) {
 
 /**
  * Get personality effect preview for UI display
- * 
+ *
  * @param {string} groomPersonality - Groom's personality type
  * @param {string} foalTemperament - Foal's temperament type
  * @param {number} bondScore - Current bond score
@@ -220,7 +220,7 @@ export function getPersonalityEffectPreview(groomPersonality, foalTemperament, b
     const compatibility = calculatePersonalityCompatibility(
       groomPersonality,
       foalTemperament,
-      bondScore
+      bondScore,
     );
 
     return {
@@ -230,13 +230,13 @@ export function getPersonalityEffectPreview(groomPersonality, foalTemperament, b
       stressReduction: Math.abs(compatibility.stressResistanceBonus * 100), // Convert to percentage
       bondingBonus: compatibility.bondModifier,
       description: compatibility.description,
-      recommendation: compatibility.isMatch 
+      recommendation: compatibility.isMatch
         ? 'This groom is well-suited for this foal\'s temperament'
         : 'This groom may not be the best match for this foal\'s temperament',
     };
   } catch (error) {
     logger.error(`[personalityModifierEngine] Error getting personality effect preview: ${error.message}`);
-    
+
     return {
       isCompatible: false,
       compatibilityLevel: 'unknown',

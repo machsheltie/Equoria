@@ -1,10 +1,10 @@
 /**
  * Trait Timeline Test Suite
- * 
+ *
  * Tests the trait timeline system that creates visual trait development cards showing
  * trait and flag acquisition by age, milestone evaluation results, and groom involvement.
  * This system provides a comprehensive growth summary for horse development analysis.
- * 
+ *
  * Features tested:
  * - Trait timeline data aggregation from trait history and milestone logs
  * - Timeline formatting with age-based organization
@@ -13,7 +13,7 @@
  * - Age-based filtering (only traits before age 4)
  * - Trait type distinctions (epigenetic, inherited, rare, negative)
  * - API endpoint for trait timeline card retrieval
- * 
+ *
  * Testing approach: Real database operations with zero mocking to validate actual business logic
  */
 
@@ -152,21 +152,21 @@ describe('Trait Timeline System', () => {
 
       // Test will fail initially - need to implement traitTimelineService
       const { generateTraitTimeline } = await import('../services/traitTimelineService.mjs');
-      
+
       const timeline = await generateTraitTimeline(testHorse.id);
-      
+
       expect(timeline.horseId).toBe(testHorse.id);
       expect(timeline.timelineEvents).toHaveLength(5);
       expect(timeline.ageRanges).toBeDefined();
       expect(timeline.summary.totalTraits).toBe(5);
       expect(timeline.summary.epigeneticTraits).toBe(3);
       expect(timeline.summary.sourceTypes).toHaveLength(4);
-      
+
       // Check timeline organization by age
       const firstWeekEvents = timeline.ageRanges.firstWeek;
       expect(firstWeekEvents).toHaveLength(1);
       expect(firstWeekEvents[0].traitName).toBe('sensitive');
-      
+
       const firstMonthEvents = timeline.ageRanges.firstMonth;
       expect(firstMonthEvents).toHaveLength(1);
       expect(firstMonthEvents[0].traitName).toBe('noble');
@@ -204,9 +204,9 @@ describe('Trait Timeline System', () => {
       });
 
       const { generateTraitTimeline } = await import('../services/traitTimelineService.mjs');
-      
+
       const timeline = await generateTraitTimeline(testHorse.id);
-      
+
       const traitEvent = timeline.timelineEvents[0];
       expect(traitEvent.traitName).toBe('empathic');
       expect(traitEvent.groomContext).toBeDefined();
@@ -243,9 +243,9 @@ describe('Trait Timeline System', () => {
       }
 
       const { generateTraitTimeline } = await import('../services/traitTimelineService.mjs');
-      
+
       const timeline = await generateTraitTimeline(testHorse.id);
-      
+
       expect(timeline.timelineEvents).toHaveLength(1);
       expect(timeline.timelineEvents[0].traitName).toBe('early_trait');
       expect(timeline.summary.totalTraits).toBe(1);
@@ -279,9 +279,9 @@ describe('Trait Timeline System', () => {
       }
 
       const { generateTraitTimeline } = await import('../services/traitTimelineService.mjs');
-      
+
       const timeline = await generateTraitTimeline(testHorse.id);
-      
+
       expect(timeline.summary.rareTraits).toBe(2);
       expect(timeline.summary.negativeTraits).toBe(1);
       expect(timeline.categorization.rare).toHaveLength(2);
@@ -292,9 +292,9 @@ describe('Trait Timeline System', () => {
     it('should handle horses with no trait history', async () => {
       // Test horse with no traits
       const { generateTraitTimeline } = await import('../services/traitTimelineService.mjs');
-      
+
       const timeline = await generateTraitTimeline(testHorse.id);
-      
+
       expect(timeline.horseId).toBe(testHorse.id);
       expect(timeline.timelineEvents).toHaveLength(0);
       expect(timeline.summary.totalTraits).toBe(0);
@@ -332,9 +332,9 @@ describe('Trait Timeline System', () => {
       }
 
       const { generateTraitTimeline } = await import('../services/traitTimelineService.mjs');
-      
+
       const timeline = await generateTraitTimeline(testHorse.id);
-      
+
       expect(timeline.ageRanges.firstWeek).toHaveLength(1);
       expect(timeline.ageRanges.firstMonth).toHaveLength(1);
       expect(timeline.ageRanges.firstThreeMonths).toHaveLength(1);
@@ -370,9 +370,9 @@ describe('Trait Timeline System', () => {
       }
 
       const { generateTraitTimeline } = await import('../services/traitTimelineService.mjs');
-      
+
       const timeline = await generateTraitTimeline(testHorse.id);
-      
+
       expect(timeline.bondStressTrend).toBeDefined();
       expect(timeline.bondStressTrend.bondTrend).toBe('improving'); // 60 -> 85
       expect(timeline.bondStressTrend.stressTrend).toBe('decreasing'); // 40 -> 15

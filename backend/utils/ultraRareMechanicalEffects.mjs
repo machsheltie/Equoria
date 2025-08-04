@@ -18,16 +18,16 @@ export function applyUltraRareStressEffects(horse, baseStress, stressSource = 'g
   try {
     const ultraRareTraits = horse.ultraRareTraits || { ultraRare: [], exotic: [] };
     const allTraits = [...ultraRareTraits.ultraRare, ...ultraRareTraits.exotic];
-    
+
     let modifiedStress = baseStress;
     const appliedEffects = [];
-    
+
     for (const traitData of allTraits) {
       const traitDef = getUltraRareTraitDefinition(traitData.name);
-      if (!traitDef || !traitDef.mechanicalEffects) continue;
-      
+      if (!traitDef || !traitDef.mechanicalEffects) { continue; }
+
       const effects = traitDef.mechanicalEffects;
-      
+
       // Apply stress resistance
       if (effects.stressResistance) {
         const reduction = baseStress * effects.stressResistance;
@@ -36,10 +36,10 @@ export function applyUltraRareStressEffects(horse, baseStress, stressSource = 'g
           trait: traitDef.name,
           effect: 'stress_resistance',
           value: effects.stressResistance,
-          reduction: reduction,
+          reduction,
         });
       }
-      
+
       // Apply competition stress resistance
       if (effects.competitionStressResistance && stressSource === 'competition') {
         const reduction = baseStress * effects.competitionStressResistance;
@@ -48,10 +48,10 @@ export function applyUltraRareStressEffects(horse, baseStress, stressSource = 'g
           trait: traitDef.name,
           effect: 'competition_stress_resistance',
           value: effects.competitionStressResistance,
-          reduction: reduction,
+          reduction,
         });
       }
-      
+
       // Apply stress immunity (Ghostwalker)
       if (effects.stressImmunity) {
         modifiedStress = 0;
@@ -63,7 +63,7 @@ export function applyUltraRareStressEffects(horse, baseStress, stressSource = 'g
         });
         break; // Immunity overrides all other effects
       }
-      
+
       // Apply stress gain multiplier (Stormtouched)
       if (effects.stressGainMultiplier) {
         const increase = baseStress * (effects.stressGainMultiplier - 1);
@@ -72,14 +72,14 @@ export function applyUltraRareStressEffects(horse, baseStress, stressSource = 'g
           trait: traitDef.name,
           effect: 'stress_gain_multiplier',
           value: effects.stressGainMultiplier,
-          increase: increase,
+          increase,
         });
       }
     }
-    
+
     // Ensure stress doesn't go below 0
     modifiedStress = Math.max(0, modifiedStress);
-    
+
     return {
       originalStress: baseStress,
       modifiedStress,
@@ -107,16 +107,16 @@ export function applyUltraRareStressDecayEffects(horse, baseDecay) {
   try {
     const ultraRareTraits = horse.ultraRareTraits || { ultraRare: [], exotic: [] };
     const allTraits = [...ultraRareTraits.ultraRare, ...ultraRareTraits.exotic];
-    
+
     let modifiedDecay = baseDecay;
     const appliedEffects = [];
-    
+
     for (const traitData of allTraits) {
       const traitDef = getUltraRareTraitDefinition(traitData.name);
-      if (!traitDef || !traitDef.mechanicalEffects) continue;
-      
+      if (!traitDef || !traitDef.mechanicalEffects) { continue; }
+
       const effects = traitDef.mechanicalEffects;
-      
+
       // Apply stress decay multiplier (Phoenix-Born)
       if (effects.stressDecayMultiplier) {
         const bonus = baseDecay * (effects.stressDecayMultiplier - 1);
@@ -125,11 +125,11 @@ export function applyUltraRareStressDecayEffects(horse, baseDecay) {
           trait: traitDef.name,
           effect: 'stress_decay_multiplier',
           value: effects.stressDecayMultiplier,
-          bonus: bonus,
+          bonus,
         });
       }
     }
-    
+
     return {
       originalDecay: baseDecay,
       modifiedDecay,
@@ -157,16 +157,16 @@ export function applyUltraRareTrainingEffects(horse, trainingData) {
   try {
     const ultraRareTraits = horse.ultraRareTraits || { ultraRare: [], exotic: [] };
     const allTraits = [...ultraRareTraits.ultraRare, ...ultraRareTraits.exotic];
-    
-    let modifiedTrainingData = { ...trainingData };
+
+    const modifiedTrainingData = { ...trainingData };
     const appliedEffects = [];
-    
+
     for (const traitData of allTraits) {
       const traitDef = getUltraRareTraitDefinition(traitData.name);
-      if (!traitDef || !traitDef.mechanicalEffects) continue;
-      
+      if (!traitDef || !traitDef.mechanicalEffects) { continue; }
+
       const effects = traitDef.mechanicalEffects;
-      
+
       // Apply training fatigue immunity (Iron-Willed)
       if (effects.trainingFatigueImmunity) {
         modifiedTrainingData.fatigueImmune = true;
@@ -176,7 +176,7 @@ export function applyUltraRareTrainingEffects(horse, trainingData) {
           value: true,
         });
       }
-      
+
       // Apply training consistency bonus (Iron-Willed)
       if (effects.trainingConsistencyBonus) {
         const consistencyBonus = effects.trainingConsistencyBonus;
@@ -187,7 +187,7 @@ export function applyUltraRareTrainingEffects(horse, trainingData) {
           value: consistencyBonus,
         });
       }
-      
+
       // Apply stat growth bonus (Stormtouched)
       if (effects.statGrowthBonus) {
         const growthBonus = effects.statGrowthBonus;
@@ -198,7 +198,7 @@ export function applyUltraRareTrainingEffects(horse, trainingData) {
           value: growthBonus,
         });
       }
-      
+
       // Apply group training bonus (Born Leader)
       if (effects.groupTrainingBonus && trainingData.isGroupTraining) {
         const groupBonus = effects.groupTrainingBonus;
@@ -209,7 +209,7 @@ export function applyUltraRareTrainingEffects(horse, trainingData) {
           value: groupBonus,
         });
       }
-      
+
       // Apply double training bonus for twins (Dreamtwin)
       if (effects.doubleTraining && trainingData.withTwin) {
         const twinBonus = effects.doubleTraining;
@@ -221,7 +221,7 @@ export function applyUltraRareTrainingEffects(horse, trainingData) {
         });
       }
     }
-    
+
     return {
       originalTrainingData: trainingData,
       modifiedTrainingData,
@@ -248,16 +248,16 @@ export function applyUltraRareCompetitionEffects(horse, baseScore, competitionCo
   try {
     const ultraRareTraits = horse.ultraRareTraits || { ultraRare: [], exotic: [] };
     const allTraits = [...ultraRareTraits.ultraRare, ...ultraRareTraits.exotic];
-    
+
     let modifiedScore = baseScore;
     const appliedEffects = [];
-    
+
     for (const traitData of allTraits) {
       const traitDef = getUltraRareTraitDefinition(traitData.name);
-      if (!traitDef || !traitDef.mechanicalEffects) continue;
-      
+      if (!traitDef || !traitDef.mechanicalEffects) { continue; }
+
       const effects = traitDef.mechanicalEffects;
-      
+
       // Apply competition score modifier
       if (effects.competitionScoreModifier) {
         const bonus = baseScore * effects.competitionScoreModifier;
@@ -266,10 +266,10 @@ export function applyUltraRareCompetitionEffects(horse, baseScore, competitionCo
           trait: traitDef.name,
           effect: 'competition_score_modifier',
           value: effects.competitionScoreModifier,
-          bonus: bonus,
+          bonus,
         });
       }
-      
+
       // Apply presence bonus (Fey-Kissed, Born Leader)
       if (effects.presenceBonus) {
         const bonus = baseScore * effects.presenceBonus;
@@ -278,10 +278,10 @@ export function applyUltraRareCompetitionEffects(horse, baseScore, competitionCo
           trait: traitDef.name,
           effect: 'presence_bonus',
           value: effects.presenceBonus,
-          bonus: bonus,
+          bonus,
         });
       }
-      
+
       // Apply competition presence (Born Leader)
       if (effects.competitionPresence) {
         const bonus = baseScore * effects.competitionPresence;
@@ -290,10 +290,10 @@ export function applyUltraRareCompetitionEffects(horse, baseScore, competitionCo
           trait: traitDef.name,
           effect: 'competition_presence',
           value: effects.competitionPresence,
-          bonus: bonus,
+          bonus,
         });
       }
-      
+
       // Apply pair event bonus (Empathic Mirror)
       if (effects.pairEventBonus && competitionContext.isPairEvent) {
         const bonus = baseScore * effects.pairEventBonus;
@@ -302,10 +302,10 @@ export function applyUltraRareCompetitionEffects(horse, baseScore, competitionCo
           trait: traitDef.name,
           effect: 'pair_event_bonus',
           value: effects.pairEventBonus,
-          bonus: bonus,
+          bonus,
         });
       }
-      
+
       // Apply loyalty bonus (Shadow-Follower)
       if (effects.loyaltyBonus && competitionContext.withBondedHandler) {
         const bonus = baseScore * effects.loyaltyBonus;
@@ -314,10 +314,10 @@ export function applyUltraRareCompetitionEffects(horse, baseScore, competitionCo
           trait: traitDef.name,
           effect: 'loyalty_bonus',
           value: effects.loyaltyBonus,
-          bonus: bonus,
+          bonus,
         });
       }
-      
+
       // Apply same groom performance bonus (Soulbonded)
       if (effects.sameGroomPerformanceBonus && competitionContext.withSameGroom) {
         const bonus = baseScore * effects.sameGroomPerformanceBonus;
@@ -326,10 +326,10 @@ export function applyUltraRareCompetitionEffects(horse, baseScore, competitionCo
           trait: traitDef.name,
           effect: 'same_groom_performance_bonus',
           value: effects.sameGroomPerformanceBonus,
-          bonus: bonus,
+          bonus,
         });
       }
-      
+
       // Apply independence bonus (Ghostwalker)
       if (effects.independenceBonus && competitionContext.workingAlone) {
         const bonus = baseScore * effects.independenceBonus;
@@ -338,10 +338,10 @@ export function applyUltraRareCompetitionEffects(horse, baseScore, competitionCo
           trait: traitDef.name,
           effect: 'independence_bonus',
           value: effects.independenceBonus,
-          bonus: bonus,
+          bonus,
         });
       }
-      
+
       // Apply novelty bonus (Stormtouched)
       if (effects.noveltyBonus && competitionContext.newExperience) {
         const bonus = baseScore * effects.noveltyBonus;
@@ -350,11 +350,11 @@ export function applyUltraRareCompetitionEffects(horse, baseScore, competitionCo
           trait: traitDef.name,
           effect: 'novelty_bonus',
           value: effects.noveltyBonus,
-          bonus: bonus,
+          bonus,
         });
       }
     }
-    
+
     return {
       originalScore: baseScore,
       modifiedScore,
@@ -389,7 +389,7 @@ export function applyUltraRareBondingEffects(horse, baseBondChange, bondingConte
 
     for (const traitData of allTraits) {
       const traitDef = getUltraRareTraitDefinition(traitData.name);
-      if (!traitDef || !traitDef.mechanicalEffects) continue;
+      if (!traitDef || !traitDef.mechanicalEffects) { continue; }
 
       const effects = traitDef.mechanicalEffects;
 
@@ -401,7 +401,7 @@ export function applyUltraRareBondingEffects(horse, baseBondChange, bondingConte
           trait: traitDef.name,
           effect: 'bonding_rate_multiplier',
           value: effects.bondingRateMultiplier,
-          bonus: bonus,
+          bonus,
         });
       }
 
@@ -413,7 +413,7 @@ export function applyUltraRareBondingEffects(horse, baseBondChange, bondingConte
           trait: traitDef.name,
           effect: 'first_handler_bond_bonus',
           value: bonus,
-          bonus: bonus,
+          bonus,
         });
       }
 
@@ -478,7 +478,7 @@ export function applyUltraRareBurnoutEffects(horse, baseBurnoutDays) {
 
     for (const traitData of allTraits) {
       const traitDef = getUltraRareTraitDefinition(traitData.name);
-      if (!traitDef || !traitDef.mechanicalEffects) continue;
+      if (!traitDef || !traitDef.mechanicalEffects) { continue; }
 
       const effects = traitDef.mechanicalEffects;
 
@@ -502,7 +502,7 @@ export function applyUltraRareBurnoutEffects(horse, baseBurnoutDays) {
           trait: traitDef.name,
           effect: 'burnout_recovery_bonus',
           value: effects.burnoutRecoveryBonus,
-          reduction: reduction,
+          reduction,
         });
       }
     }
@@ -538,12 +538,12 @@ export function applyUltraRareStatEffects(horse, baseStats) {
     const ultraRareTraits = horse.ultraRareTraits || { ultraRare: [], exotic: [] };
     const allTraits = [...ultraRareTraits.ultraRare, ...ultraRareTraits.exotic];
 
-    let modifiedStats = { ...baseStats };
+    const modifiedStats = { ...baseStats };
     const appliedEffects = [];
 
     for (const traitData of allTraits) {
       const traitDef = getUltraRareTraitDefinition(traitData.name);
-      if (!traitDef || !traitDef.mechanicalEffects) continue;
+      if (!traitDef || !traitDef.mechanicalEffects) { continue; }
 
       const effects = traitDef.mechanicalEffects;
 
@@ -599,31 +599,31 @@ export function hasUltraRareAbility(horse, abilityType) {
 
     for (const traitData of allTraits) {
       const traitDef = getUltraRareTraitDefinition(traitData.name);
-      if (!traitDef || !traitDef.mechanicalEffects) continue;
+      if (!traitDef || !traitDef.mechanicalEffects) { continue; }
 
       const effects = traitDef.mechanicalEffects;
 
       switch (abilityType) {
         case 'stress_immunity':
-          if (effects.stressImmunity) return true;
+          if (effects.stressImmunity) { return true; }
           break;
         case 'burnout_immunity':
-          if (effects.burnoutImmunity) return true;
+          if (effects.burnoutImmunity) { return true; }
           break;
         case 'training_fatigue_immunity':
-          if (effects.trainingFatigueImmunity) return true;
+          if (effects.trainingFatigueImmunity) { return true; }
           break;
         case 'weather_immunity':
-          if (effects.weatherImmunity) return true;
+          if (effects.weatherImmunity) { return true; }
           break;
         case 'mystical_resilience':
-          if (effects.mysticalResilience) return true;
+          if (effects.mysticalResilience) { return true; }
           break;
         case 'exclusive_bonding':
-          if (effects.exclusiveBonding) return true;
+          if (effects.exclusiveBonding) { return true; }
           break;
         case 'reassignment_impossible':
-          if (effects.reassignmentImpossible) return true;
+          if (effects.reassignmentImpossible) { return true; }
           break;
         default:
           return false;

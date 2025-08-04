@@ -1,15 +1,15 @@
 /**
  * Groom Bonus Trait Service
- * 
+ *
  * Service for managing groom bonus traits that provide probability bonuses for rare trait acquisition.
  * This service handles the assignment, validation, and retrieval of bonus traits for grooms.
- * 
+ *
  * Features:
  * - Assign bonus traits to grooms with validation
  * - Retrieve groom bonus traits
  * - Validate bonus trait constraints (max 3 traits, max 30% bonus per trait)
  * - Integration with trait assignment probability calculations
- * 
+ *
  * Business Rules:
  * - Maximum 3 bonus traits per groom
  * - Maximum 30% bonus per individual trait

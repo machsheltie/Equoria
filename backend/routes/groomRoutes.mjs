@@ -458,7 +458,7 @@ router.get('/:id/profile', param('id').isInt().withMessage('Groom ID must be an 
 router.get('/:id/bonus-traits',
   authenticateToken,
   param('id').isInt().withMessage('Groom ID must be an integer'),
-  getGroomBonusTraits
+  getGroomBonusTraits,
 );
 
 /**
@@ -498,7 +498,7 @@ router.put('/:id/bonus-traits',
   authenticateToken,
   param('id').isInt().withMessage('Groom ID must be an integer'),
   body('bonusTraits').isObject().withMessage('Bonus traits must be an object'),
-  updateGroomBonusTraits
+  updateGroomBonusTraits,
 );
 
 // Test cleanup endpoint (for testing only)

@@ -1,16 +1,16 @@
 /**
  * Trait Assignment Logic Utility
- * 
+ *
  * Utility for calculating trait assignment probabilities with groom bonus effects.
  * This module integrates with the groom bonus trait system to apply probability
  * modifiers when conditions are met (bond > 60, 75% coverage).
- * 
+ *
  * Features:
  * - Calculate trait probability with groom bonuses
  * - Validate bonus application conditions
  * - Integration with milestone evaluation system
  * - Support for randomized trait assignment
- * 
+ *
  * Business Rules:
  * - Bonuses only apply to randomized traits (not guaranteed traits)
  * - Requires bond score > 60
@@ -54,7 +54,7 @@ export async function calculateTraitProbabilityWithBonus(horseId, traitName, bas
 
     // Get groom bonus traits
     const bonusTraits = await getBonusTraits(groomId);
-    
+
     // Check if groom has bonus for this trait
     if (!bonusTraits[traitName]) {
       result.reason = 'Groom has no bonus for this trait';
@@ -64,7 +64,7 @@ export async function calculateTraitProbabilityWithBonus(horseId, traitName, bas
 
     // Check if groom qualifies for bonus application
     const eligibility = await checkBonusEligibility(horseId, groomId);
-    
+
     if (!eligibility.eligible) {
       result.reason = eligibility.reason;
       result.eligibilityDetails = {
@@ -111,7 +111,7 @@ export async function applyGroomBonusesToTraitCandidates(horseId, traitCandidate
     logger.info(`[traitAssignmentLogic.applyGroomBonusesToTraitCandidates] Applying groom bonuses to ${traitCandidates.length} trait candidates for horse ${horseId}`);
 
     if (!groomId) {
-      logger.info(`[traitAssignmentLogic.applyGroomBonusesToTraitCandidates] No groom assigned, returning original probabilities`);
+      logger.info('[traitAssignmentLogic.applyGroomBonusesToTraitCandidates] No groom assigned, returning original probabilities');
       return traitCandidates.map(candidate => ({
         ...candidate,
         finalProbability: candidate.baseProbability,
@@ -122,7 +122,7 @@ export async function applyGroomBonusesToTraitCandidates(horseId, traitCandidate
 
     // Get groom bonus traits once
     const bonusTraits = await getBonusTraits(groomId);
-    
+
     // Check eligibility once
     const eligibility = await checkBonusEligibility(horseId, groomId);
 
@@ -130,9 +130,9 @@ export async function applyGroomBonusesToTraitCandidates(horseId, traitCandidate
     const updatedCandidates = traitCandidates.map(candidate => {
       const hasBonus = bonusTraits[candidate.name];
       const canApplyBonus = hasBonus && eligibility.eligible;
-      
+
       const bonusAmount = canApplyBonus ? bonusTraits[candidate.name] : 0;
-      const finalProbability = canApplyBonus 
+      const finalProbability = canApplyBonus
         ? Math.min(1.0, candidate.baseProbability + bonusAmount)
         : candidate.baseProbability;
 
@@ -176,7 +176,7 @@ export async function selectTraitsWithGroomBonuses(horseId, traitCandidates, gro
     const selectionDetails = [];
 
     for (const candidate of candidatesWithBonuses) {
-      if (selectedTraits.length >= maxTraits) break;
+      if (selectedTraits.length >= maxTraits) { break; }
 
       const randomValue = Math.random();
       const selected = randomValue < candidate.finalProbability;

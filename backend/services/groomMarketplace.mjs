@@ -10,6 +10,7 @@
  * - Availability tracking
  */
 
+import crypto from 'crypto';
 import { GROOM_CONFIG as _GROOM_CONFIG } from '../config/groomConfig.mjs';
 
 // Marketplace configuration
@@ -212,7 +213,16 @@ function generateRandomBio(firstName, skillLevel, specialty, experience) {
  * @returns {string} Unique marketplace ID
  */
 function generateMarketplaceId() {
-  return `mkt_${Date.now()}_${Math.floor(Math.random() * 10000)}`;
+  // Use crypto.randomUUID if available, otherwise fallback to timestamp + random
+  if (typeof crypto !== 'undefined' && crypto.randomUUID) {
+    return `mkt_${crypto.randomUUID()}`;
+  }
+
+  // Fallback for environments without crypto.randomUUID
+  const timestamp = Date.now();
+  const random1 = Math.floor(Math.random() * 1000000);
+  const random2 = Math.floor(Math.random() * 1000000);
+  return `mkt_${timestamp}_${random1}_${random2}`;
 }
 
 /**

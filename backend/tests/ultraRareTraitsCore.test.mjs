@@ -1,7 +1,7 @@
 /**
  * Ultra-Rare & Exotic Traits Core Functionality Tests
  * Tests the core trait definitions and mechanical effects without database dependencies
- * 
+ *
  * Testing Approach: Pure unit tests for core functionality
  * Focus: Trait definitions, mechanical effects, groom perks
  */
@@ -15,10 +15,10 @@ describe('Ultra-Rare & Exotic Traits Core Functionality', () => {
   describe('Trait Definitions System', () => {
     test('should retrieve all ultra-rare trait definitions', () => {
       const ultraRareTraits = getAllUltraRareTraits();
-      
+
       expect(ultraRareTraits).toBeDefined();
       expect(Object.keys(ultraRareTraits)).toHaveLength(5);
-      
+
       // Verify Phoenix-Born trait definition
       expect(ultraRareTraits['phoenix-born']).toBeDefined();
       expect(ultraRareTraits['phoenix-born'].name).toBe('Phoenix-Born');
@@ -29,10 +29,10 @@ describe('Ultra-Rare & Exotic Traits Core Functionality', () => {
 
     test('should retrieve all exotic trait definitions', () => {
       const exoticTraits = getAllExoticTraits();
-      
+
       expect(exoticTraits).toBeDefined();
       expect(Object.keys(exoticTraits)).toHaveLength(5);
-      
+
       // Verify Fey-Kissed trait definition
       expect(exoticTraits['fey-kissed']).toBeDefined();
       expect(exoticTraits['fey-kissed'].name).toBe('Fey-Kissed');
@@ -44,18 +44,18 @@ describe('Ultra-Rare & Exotic Traits Core Functionality', () => {
       const phoenixBorn = getUltraRareTraitDefinition('phoenix-born');
       expect(phoenixBorn).toBeDefined();
       expect(phoenixBorn.tier).toBe('ultra-rare');
-      
+
       const soulbonded = getUltraRareTraitDefinition('soulbonded');
       expect(soulbonded).toBeDefined();
       expect(soulbonded.tier).toBe('exotic');
-      
+
       const nonExistent = getUltraRareTraitDefinition('non-existent-trait');
       expect(nonExistent).toBeNull();
     });
 
     test('should have correct trait structure for all ultra-rare traits', () => {
       const ultraRareTraits = getAllUltraRareTraits();
-      
+
       Object.values(ultraRareTraits).forEach(trait => {
         expect(trait).toHaveProperty('name');
         expect(trait).toHaveProperty('rarity', 'ultra-rare');
@@ -70,7 +70,7 @@ describe('Ultra-Rare & Exotic Traits Core Functionality', () => {
 
     test('should have correct trait structure for all exotic traits', () => {
       const exoticTraits = getAllExoticTraits();
-      
+
       Object.values(exoticTraits).forEach(trait => {
         expect(trait).toHaveProperty('name');
         expect(trait).toHaveProperty('rarity', 'exotic');
@@ -103,7 +103,7 @@ describe('Ultra-Rare & Exotic Traits Core Functionality', () => {
       };
 
       const result = applyRareTraitBoosterEffects('phoenix-born', baseChance, groomData, conditions);
-      
+
       expect(result.originalChance).toBe(0.02);
       expect(result.modifiedChance).toBeGreaterThan(0.02);
       expect(result.appliedPerks).toHaveLength(2); // Base bonus + stacked bonus
@@ -129,7 +129,7 @@ describe('Ultra-Rare & Exotic Traits Core Functionality', () => {
       const conditions = {};
 
       const result = applyRareTraitBoosterEffects('phoenix-born', baseChance, groomData, conditions);
-      
+
       expect(result.originalChance).toBe(0);
       expect(result.modifiedChance).toBe(0);
       expect(result.appliedPerks).toHaveLength(0);
@@ -148,7 +148,7 @@ describe('Ultra-Rare & Exotic Traits Core Functionality', () => {
 
       const baseStress = 50;
       const result = applyUltraRareStressEffects(horseWithPhoenixBorn, baseStress);
-      
+
       expect(result.originalStress).toBe(50);
       expect(result.modifiedStress).toBeLessThan(50); // 20% stress resistance
       expect(result.modifiedStress).toBe(40); // 50 - (50 * 0.2) = 40
@@ -168,11 +168,11 @@ describe('Ultra-Rare & Exotic Traits Core Functionality', () => {
       const baseScore = 100;
       const competitionContext = { isPairEvent: false };
       const result = applyUltraRareCompetitionEffects(horseWithBornLeader, baseScore, competitionContext);
-      
+
       expect(result.originalScore).toBe(100);
       expect(result.modifiedScore).toBeGreaterThan(100);
       expect(result.appliedEffects.length).toBeGreaterThan(0);
-      
+
       // Should have competition presence bonus
       const presenceEffect = result.appliedEffects.find(effect => effect.effect === 'competition_presence');
       expect(presenceEffect).toBeDefined();
@@ -196,7 +196,7 @@ describe('Ultra-Rare & Exotic Traits Core Functionality', () => {
 
       expect(hasUltraRareAbility(horseWithIronWilled, 'burnout_immunity')).toBe(true);
       expect(hasUltraRareAbility(horseWithIronWilled, 'stress_immunity')).toBe(false);
-      
+
       expect(hasUltraRareAbility(horseWithGhostwalker, 'stress_immunity')).toBe(true);
       expect(hasUltraRareAbility(horseWithGhostwalker, 'burnout_immunity')).toBe(false);
     });
@@ -237,7 +237,7 @@ describe('Ultra-Rare & Exotic Traits Core Functionality', () => {
 
       const baseStress = 100;
       const result = applyUltraRareStressEffects(horseWithGhostwalker, baseStress);
-      
+
       expect(result.originalStress).toBe(100);
       expect(result.modifiedStress).toBe(0); // Complete immunity
       expect(result.appliedEffects).toHaveLength(1);
@@ -251,7 +251,7 @@ describe('Ultra-Rare & Exotic Traits Core Functionality', () => {
       const phoenixBorn = getUltraRareTraitDefinition('phoenix-born');
       expect(phoenixBorn.conflicts).toContain('fragile');
       expect(phoenixBorn.conflicts).toContain('nervous');
-      
+
       const ghostwalker = getUltraRareTraitDefinition('ghostwalker');
       expect(ghostwalker.conflicts).toContain('social');
       expect(ghostwalker.conflicts).toContain('empathic-mirror');
@@ -261,7 +261,7 @@ describe('Ultra-Rare & Exotic Traits Core Functionality', () => {
       const phoenixBorn = getUltraRareTraitDefinition('phoenix-born');
       expect(phoenixBorn.stacksWith).toContain('resilient');
       expect(phoenixBorn.stacksWith).toContain('calm');
-      
+
       const feyKissed = getUltraRareTraitDefinition('fey-kissed');
       expect(feyKissed.stacksWith).toContain('all');
     });

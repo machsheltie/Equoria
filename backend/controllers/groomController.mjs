@@ -32,7 +32,7 @@ import {
 } from '../utils/groomBondingSystem.mjs';
 import {
   DEVELOPMENTAL_WINDOWS,
-  MILESTONE_TYPES,
+  MILESTONE_TYPES as _MILESTONE_TYPES,
 } from '../utils/enhancedMilestoneEvaluationSystem.mjs';
 import prisma from '../db/index.mjs';
 import logger from '../utils/logger.mjs';
@@ -829,7 +829,7 @@ export async function getGroomProfile(req, res) {
         const compatibility = calculatePersonalityCompatibility(
           groom.personality,
           assignment.foal.temperament,
-          assignment.foal.bondScore || 50
+          assignment.foal.bondScore || 50,
         );
 
         return {

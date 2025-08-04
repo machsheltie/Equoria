@@ -390,14 +390,25 @@ describe('🧬 UNIT: Epigenetic Traits System - Breeding & Environmental Trait C
         damStressLevel: 95,
       };
 
-      const result = calculateEpigeneticTraits(input);
+      // Run multiple iterations to account for randomness
+      let totalTraitsGenerated = 0;
+      let totalNegativeTraits = 0;
+      let totalPositiveTraits = 0;
 
-      // Poor conditions should increase negative trait probability
-      const totalNegative = result.negative.length;
-      const totalPositive = result.positive.length;
+      for (let i = 0; i < 10; i++) {
+        const result = calculateEpigeneticTraits(input);
+        totalNegativeTraits += result.negative.length;
+        totalPositiveTraits += result.positive.length;
+        totalTraitsGenerated += result.negative.length + result.positive.length;
+      }
 
-      // In poor conditions, negative traits should be more likely
-      expect(totalNegative + totalPositive).toBeGreaterThan(0); // Should generate some traits
+      // Over multiple runs, poor conditions should generate some traits
+      expect(totalTraitsGenerated).toBeGreaterThan(0); // Should generate some traits across runs
+
+      // In poor conditions, negative traits should be more likely than positive
+      if (totalTraitsGenerated > 0) {
+        expect(totalNegativeTraits).toBeGreaterThanOrEqual(totalPositiveTraits);
+      }
     });
   });
 

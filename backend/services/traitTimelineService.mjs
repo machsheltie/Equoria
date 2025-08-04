@@ -1,10 +1,10 @@
 /**
  * Trait Timeline Service
- * 
+ *
  * Service for generating trait timeline cards that show trait and flag acquisition
  * by age, milestone evaluation results, and groom involvement. This service creates
  * comprehensive growth summaries for horse development analysis.
- * 
+ *
  * Features:
  * - Trait timeline data aggregation from trait history and milestone logs
  * - Timeline formatting with age-based organization
@@ -13,7 +13,7 @@
  * - Age-based filtering (only traits before age 4)
  * - Trait type distinctions (epigenetic, inherited, rare, negative)
  * - Bond and stress trend analysis
- * 
+ *
  * Business Rules:
  * - Only traits gained before age 4 (1460 days) are included in timeline
  * - Timeline organized by age ranges: first week, month, 3 months, years 1-3
@@ -39,12 +39,12 @@ const AGE_RANGES = {
 // Trait categorization
 const RARE_TRAITS = [
   'sensitive', 'noble', 'legacy_talent', 'exceptional', 'prodigy',
-  'natural_leader', 'empathic', 'intuitive', 'charismatic', 'legendary'
+  'natural_leader', 'empathic', 'intuitive', 'charismatic', 'legendary',
 ];
 
 const NEGATIVE_TRAITS = [
   'stubborn', 'anxious', 'aggressive', 'fearful', 'lazy', 'unpredictable',
-  'difficult', 'nervous', 'spooky', 'resistant'
+  'difficult', 'nervous', 'spooky', 'resistant',
 ];
 
 /**
@@ -176,10 +176,10 @@ export async function generateTraitTimeline(horseId) {
  * @returns {string} Human-readable age description
  */
 function formatAgeDescription(ageInDays) {
-  if (ageInDays <= 7) return `Day ${ageInDays}`;
-  if (ageInDays <= 30) return `${Math.floor(ageInDays / 7)} weeks`;
-  if (ageInDays <= 90) return `${Math.floor(ageInDays / 30)} months`;
-  if (ageInDays <= 365) return `${Math.floor(ageInDays / 30)} months`;
+  if (ageInDays <= 7) { return `Day ${ageInDays}`; }
+  if (ageInDays <= 30) { return `${Math.floor(ageInDays / 7)} weeks`; }
+  if (ageInDays <= 90) { return `${Math.floor(ageInDays / 30)} months`; }
+  if (ageInDays <= 365) { return `${Math.floor(ageInDays / 30)} months`; }
   return `${Math.floor(ageInDays / 365)} years`;
 }
 
@@ -190,7 +190,7 @@ function formatAgeDescription(ageInDays) {
  */
 function organizeByAgeRanges(timelineEvents) {
   const organized = {};
-  
+
   Object.keys(AGE_RANGES).forEach(rangeName => {
     organized[rangeName] = [];
   });
@@ -294,13 +294,13 @@ function analyzeBondStressTrend(timelineEvents) {
   const firstStress = dataPoints[0].stressLevel;
   const lastStress = dataPoints[dataPoints.length - 1].stressLevel;
 
-  const bondTrend = lastBond > firstBond + 5 ? 'improving' 
-    : lastBond < firstBond - 5 ? 'declining' 
-    : 'stable';
+  const bondTrend = lastBond > firstBond + 5 ? 'improving'
+    : lastBond < firstBond - 5 ? 'declining'
+      : 'stable';
 
   const stressTrend = lastStress < firstStress - 5 ? 'decreasing'
     : lastStress > firstStress + 5 ? 'increasing'
-    : 'stable';
+      : 'stable';
 
   return {
     bondTrend,
@@ -349,38 +349,33 @@ export async function getTraitTimelineSummary(horseId) {
  * @returns {string} Development quality assessment
  */
 function calculateDevelopmentQuality(timeline) {
-  if (timeline.isEmpty) return 'no_development';
+  if (timeline.isEmpty) { return 'no_development'; }
 
   const { summary, bondStressTrend } = timeline;
   let score = 0;
 
   // Trait quantity (max 3 points)
-  if (summary.totalTraits >= 5) score += 3;
-  else if (summary.totalTraits >= 3) score += 2;
-  else if (summary.totalTraits >= 1) score += 1;
+  if (summary.totalTraits >= 5) { score += 3; } else if (summary.totalTraits >= 3) { score += 2; } else if (summary.totalTraits >= 1) { score += 1; }
 
   // Trait diversity (max 2 points)
-  if (summary.sourceTypeCount >= 3) score += 2;
-  else if (summary.sourceTypeCount >= 2) score += 1;
+  if (summary.sourceTypeCount >= 3) { score += 2; } else if (summary.sourceTypeCount >= 2) { score += 1; }
 
   // Rare traits (max 2 points)
-  if (summary.rareTraits >= 2) score += 2;
-  else if (summary.rareTraits >= 1) score += 1;
+  if (summary.rareTraits >= 2) { score += 2; } else if (summary.rareTraits >= 1) { score += 1; }
 
   // Bond trend (max 2 points)
-  if (bondStressTrend.bondTrend === 'improving') score += 2;
-  else if (bondStressTrend.bondTrend === 'stable') score += 1;
+  if (bondStressTrend.bondTrend === 'improving') { score += 2; } else if (bondStressTrend.bondTrend === 'stable') { score += 1; }
 
   // Stress trend (max 1 point)
-  if (bondStressTrend.stressTrend === 'decreasing') score += 1;
+  if (bondStressTrend.stressTrend === 'decreasing') { score += 1; }
 
   // Negative trait penalty
-  if (summary.negativeTraits > 0) score -= summary.negativeTraits;
+  if (summary.negativeTraits > 0) { score -= summary.negativeTraits; }
 
   // Determine quality level
-  if (score >= 8) return 'exceptional';
-  if (score >= 6) return 'excellent';
-  if (score >= 4) return 'good';
-  if (score >= 2) return 'fair';
+  if (score >= 8) { return 'exceptional'; }
+  if (score >= 6) { return 'excellent'; }
+  if (score >= 4) { return 'good'; }
+  if (score >= 2) { return 'fair'; }
   return 'poor';
 }

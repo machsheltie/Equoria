@@ -1,10 +1,10 @@
 /**
  * Legacy Score Trait Calculator Service
- * 
+ *
  * Service for calculating trait-based scoring components of a horse's legacy score.
  * This service analyzes trait development history to determine the depth and quality
  * of a horse's trait development, influencing its value as a breeder and prestige record.
- * 
+ *
  * Features:
  * - Trait count scoring (max 10 points)
  * - Trait diversity scoring (max 5 points)
@@ -12,7 +12,7 @@
  * - Groom care consistency scoring (max 5 points)
  * - Negative trait penalties
  * - Age-based trait filtering (only traits before age 4)
- * 
+ *
  * Business Rules:
  * - Only traits gained before age 4 (1460 days) count toward legacy score
  * - Negative traits reduce score (-1 to -3 each)
@@ -33,12 +33,12 @@ const AGE_CUTOFF_DAYS = 1460; // 4 years in days
 // Trait categorization
 const RARE_TRAITS = [
   'sensitive', 'noble', 'legacy_talent', 'exceptional', 'prodigy',
-  'natural_leader', 'empathic', 'intuitive', 'charismatic', 'legendary'
+  'natural_leader', 'empathic', 'intuitive', 'charismatic', 'legendary',
 ];
 
 const NEGATIVE_TRAITS = [
   'stubborn', 'anxious', 'aggressive', 'fearful', 'lazy', 'unpredictable',
-  'difficult', 'nervous', 'spooky', 'resistant'
+  'difficult', 'nervous', 'spooky', 'resistant',
 ];
 
 const NEGATIVE_TRAIT_PENALTIES = {
@@ -113,12 +113,12 @@ export async function calculateTraitScore(horseId) {
     const groomCareScore = calculateGroomCareConsistency(milestoneData);
 
     // Calculate total trait score
-    const totalScore = Math.max(0, 
-      traitCountScore + 
-      diversityScore + 
-      rareTraitScore + 
-      groomCareScore + 
-      negativeTraitPenalty
+    const totalScore = Math.max(0,
+      traitCountScore +
+      diversityScore +
+      rareTraitScore +
+      groomCareScore +
+      negativeTraitPenalty,
     );
 
     const result = {
@@ -200,7 +200,7 @@ export async function getTraitScoreSummary(horseId) {
     logger.info(`[legacyScoreTraitCalculator.getTraitScoreSummary] Getting trait score summary for horse ${horseId}`);
 
     const traitScore = await calculateTraitScore(horseId);
-    
+
     const summary = {
       horseId,
       currentScore: traitScore.totalScore,

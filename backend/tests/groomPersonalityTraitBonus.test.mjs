@@ -1,10 +1,10 @@
 /**
  * Comprehensive Tests for Groom Personality Trait Bonus System
- * 
+ *
  * Tests the complete groom personality-temperament compatibility system using
  * REAL database operations and REAL business logic. NO MOCKING approach as
  * required by user specifications.
- * 
+ *
  * This test suite validates:
  * - Personality-temperament compatibility matrix
  * - Trait development bonus calculations
@@ -104,12 +104,12 @@ describe('Groom Personality Trait Bonus System - REAL SYSTEM TESTS', () => {
       await prisma.milestoneTraitLog.deleteMany({ where: { groomId: testGroom.id } });
       await prisma.groom.delete({ where: { id: testGroom.id } });
     }
-    
+
     if (testHorse) {
       await prisma.milestoneTraitLog.deleteMany({ where: { horseId: testHorse.id } });
       await prisma.horse.delete({ where: { id: testHorse.id } });
     }
-    
+
     if (testUser) {
       await prisma.user.delete({ where: { id: testUser.id } });
     }
@@ -125,7 +125,7 @@ describe('Groom Personality Trait Bonus System - REAL SYSTEM TESTS', () => {
       const compatibility = calculatePersonalityCompatibility(
         GROOM_PERSONALITY_TYPES.CALM,
         FOAL_TEMPERAMENT_TYPES.SPIRITED,
-        65
+        65,
       );
 
       expect(compatibility.isMatch).toBe(true);
@@ -140,7 +140,7 @@ describe('Groom Personality Trait Bonus System - REAL SYSTEM TESTS', () => {
       const compatibility = calculatePersonalityCompatibility(
         GROOM_PERSONALITY_TYPES.RESERVED,
         FOAL_TEMPERAMENT_TYPES.PLAYFUL,
-        40
+        40,
       );
 
       expect(compatibility.isMatch).toBe(false);
@@ -155,7 +155,7 @@ describe('Groom Personality Trait Bonus System - REAL SYSTEM TESTS', () => {
       const compatibility = calculatePersonalityCompatibility(
         GROOM_PERSONALITY_TYPES.ENERGETIC,
         FOAL_TEMPERAMENT_TYPES.LAZY,
-        45 // Below 60 threshold
+        45, // Below 60 threshold
       );
 
       expect(compatibility.isMatch).toBe(true);
@@ -219,7 +219,7 @@ describe('Groom Personality Trait Bonus System - REAL SYSTEM TESTS', () => {
       const result = await evaluateEnhancedMilestone(
         testHorse.id,
         'imprinting',
-        { forceReevaluate: true }
+        { forceReevaluate: true },
       );
 
       expect(result.success).toBe(true);
@@ -235,7 +235,7 @@ describe('Groom Personality Trait Bonus System - REAL SYSTEM TESTS', () => {
       const result = await evaluateEnhancedMilestone(
         testHorse.id,
         'imprinting',
-        { forceReevaluate: true }
+        { forceReevaluate: true },
       );
 
       expect(result.success).toBe(true);

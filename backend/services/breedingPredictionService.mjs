@@ -1,11 +1,11 @@
 /**
  * Breeding Prediction Service
- * 
+ *
  * Service for calculating inheritance probabilities and breeding predictions based on
  * parent trait development history. This service provides epigenetic preview functionality
  * for the breeding screen, analyzing trait inheritance, flag inheritance scores, and
  * child prediction algorithms.
- * 
+ *
  * Features:
  * - Inheritance probability logic based on trait_history_log
  * - Trait summary generation for breeding parents
@@ -13,7 +13,7 @@
  * - Epigenetic flag analysis and inheritance prediction
  * - Temperament and influence modifier calculations
  * - Child prediction algorithms with probability ranges
- * 
+ *
  * Business Rules:
  * - Flag inheritance odds capped at 50% without trait stacking
  * - Trait stacking can increase probabilities up to 75%
@@ -42,12 +42,12 @@ const TRAIT_CATEGORIES = {
 
 const RARE_TRAITS = [
   'sensitive', 'noble', 'legacy_talent', 'exceptional', 'prodigy',
-  'natural_leader', 'empathic', 'intuitive', 'charismatic', 'legendary'
+  'natural_leader', 'empathic', 'intuitive', 'charismatic', 'legendary',
 ];
 
 const NEGATIVE_TRAITS = [
   'stubborn', 'anxious', 'aggressive', 'fearful', 'lazy', 'unpredictable',
-  'difficult', 'nervous', 'spooky', 'resistant'
+  'difficult', 'nervous', 'spooky', 'resistant',
 ];
 
 /**
@@ -122,22 +122,22 @@ export async function calculateInheritanceProbabilities(stallionId, mareId) {
       } else if (trait.stallionHas || trait.mareHas) {
         // One parent has trait
         probability = BASE_INHERITANCE_RATE;
-        
+
         // Bonus for rare traits
         if (trait.isRare) {
           probability += 10;
         }
-        
+
         // Penalty for negative traits
         if (trait.isNegative) {
           probability -= 5;
         }
-        
+
         // Bonus for epigenetic traits
         if (trait.isEpigenetic) {
           probability += 5;
         }
-        
+
         probability = Math.min(probability, MAX_SINGLE_TRAIT_RATE);
       }
 
@@ -201,7 +201,7 @@ export async function calculateFlagInheritanceScore(stallionId, mareId) {
     logger.info(`[breedingPredictionService.calculateFlagInheritanceScore] Calculating flag inheritance for stallion ${stallionId} and mare ${mareId}`);
 
     const inheritanceData = await calculateInheritanceProbabilities(stallionId, mareId);
-    
+
     // Categorize traits by type
     const inheritanceCategories = {};
     Object.keys(TRAIT_CATEGORIES).forEach(category => {
@@ -257,8 +257,8 @@ async function calculateIndividualFlags(horseId) {
 
   const flags = {};
   Object.keys(TRAIT_CATEGORIES).forEach(category => {
-    flags[category] = traits.filter(trait => 
-      TRAIT_CATEGORIES[category].includes(trait.traitName)
+    flags[category] = traits.filter(trait =>
+      TRAIT_CATEGORIES[category].includes(trait.traitName),
     ).length;
   });
 
@@ -378,10 +378,10 @@ export async function predictOffspringTraits(stallionId, mareId) {
     };
 
     // Calculate confidence level
-    const confidenceLevel = inheritanceData.hasInsufficientData ? 'low' 
+    const confidenceLevel = inheritanceData.hasInsufficientData ? 'low'
       : parentTraitCounts >= 6 ? 'high'
-      : parentTraitCounts >= 3 ? 'medium'
-      : 'low';
+        : parentTraitCounts >= 3 ? 'medium'
+          : 'low';
 
     const result = {
       stallionId,
@@ -465,7 +465,7 @@ export async function generateBreedingData(horseId) {
     // Categorize traits
     Object.keys(TRAIT_CATEGORIES).forEach(category => {
       traitSummary.traitsByCategory[category] = traitHistory.filter(trait =>
-        TRAIT_CATEGORIES[category].includes(trait.traitName)
+        TRAIT_CATEGORIES[category].includes(trait.traitName),
       ).length;
     });
 
@@ -557,28 +557,24 @@ function calculateBreedingQuality(traitSummary, epigeneticFlags) {
   let score = 0;
 
   // Trait quantity (max 3 points)
-  if (traitSummary.totalTraits >= 6) score += 3;
-  else if (traitSummary.totalTraits >= 4) score += 2;
-  else if (traitSummary.totalTraits >= 2) score += 1;
+  if (traitSummary.totalTraits >= 6) { score += 3; } else if (traitSummary.totalTraits >= 4) { score += 2; } else if (traitSummary.totalTraits >= 2) { score += 1; }
 
   // Rare traits (max 2 points)
-  if (traitSummary.rareTraits >= 2) score += 2;
-  else if (traitSummary.rareTraits >= 1) score += 1;
+  if (traitSummary.rareTraits >= 2) { score += 2; } else if (traitSummary.rareTraits >= 1) { score += 1; }
 
   // Epigenetic flags (max 2 points)
-  if (epigeneticFlags.totalFlags >= 3) score += 2;
-  else if (epigeneticFlags.totalFlags >= 1) score += 1;
+  if (epigeneticFlags.totalFlags >= 3) { score += 2; } else if (epigeneticFlags.totalFlags >= 1) { score += 1; }
 
   // Negative trait penalty
   score -= traitSummary.negativeTraits;
 
   // Bond score bonus (max 1 point)
-  if (traitSummary.averageBondScore >= 80) score += 1;
+  if (traitSummary.averageBondScore >= 80) { score += 1; }
 
   // Determine quality level
-  if (score >= 7) return 'exceptional';
-  if (score >= 5) return 'excellent';
-  if (score >= 3) return 'good';
-  if (score >= 1) return 'fair';
+  if (score >= 7) { return 'exceptional'; }
+  if (score >= 5) { return 'excellent'; }
+  if (score >= 3) { return 'good'; }
+  if (score >= 1) { return 'fair'; }
   return 'poor';
 }

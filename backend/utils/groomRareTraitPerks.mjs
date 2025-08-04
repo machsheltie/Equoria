@@ -24,7 +24,7 @@ export const RARE_TRAIT_BOOSTER_PERKS = {
     requiredExperience: 5, // Years of experience
     revealCondition: 'after_2_successful_triggers',
   },
-  
+
   'iron-will-forger': {
     name: 'Iron Will Forger',
     description: 'Masters the art of building unbreakable mental fortitude',
@@ -35,7 +35,7 @@ export const RARE_TRAIT_BOOSTER_PERKS = {
     requiredExperience: 7,
     revealCondition: 'after_2_successful_triggers',
   },
-  
+
   'empathy-weaver': {
     name: 'Empathy Weaver',
     description: 'Creates profound emotional connections between horse and handler',
@@ -46,7 +46,7 @@ export const RARE_TRAIT_BOOSTER_PERKS = {
     requiredExperience: 4,
     revealCondition: 'after_2_successful_triggers',
   },
-  
+
   'leadership-cultivator': {
     name: 'Leadership Cultivator',
     description: 'Recognizes and nurtures natural leadership qualities',
@@ -57,7 +57,7 @@ export const RARE_TRAIT_BOOSTER_PERKS = {
     requiredExperience: 6,
     revealCondition: 'after_2_successful_triggers',
   },
-  
+
   'storm-caller': {
     name: 'Storm Caller',
     description: 'Channels chaotic energy into extraordinary potential',
@@ -68,7 +68,7 @@ export const RARE_TRAIT_BOOSTER_PERKS = {
     requiredExperience: 8,
     revealCondition: 'after_2_successful_triggers',
   },
-  
+
   // Exotic trait boosters
   'shadow-guide': {
     name: 'Shadow Guide',
@@ -80,7 +80,7 @@ export const RARE_TRAIT_BOOSTER_PERKS = {
     requiredExperience: 6,
     revealCondition: 'after_2_successful_triggers',
   },
-  
+
   'soul-binder': {
     name: 'Soul Binder',
     description: 'Creates transcendent bonds that last a lifetime',
@@ -91,7 +91,7 @@ export const RARE_TRAIT_BOOSTER_PERKS = {
     requiredExperience: 10,
     revealCondition: 'after_2_successful_triggers',
   },
-  
+
   'fey-touched': {
     name: 'Fey-Touched',
     description: 'Blessed with otherworldly insight and mystical abilities',
@@ -102,7 +102,7 @@ export const RARE_TRAIT_BOOSTER_PERKS = {
     requiredExperience: 12,
     revealCondition: 'lineage_analysis_or_2_triggers',
   },
-  
+
   'twin-harmonizer': {
     name: 'Twin Harmonizer',
     description: 'Understands and nurtures the mystical bond between twins',
@@ -124,13 +124,13 @@ export const RARE_TRAIT_BOOSTER_PERKS = {
 export async function assignRareTraitBoosterPerks(groomId, groomData) {
   try {
     logger.info(`[groomRareTraitPerks] Assigning rare trait booster perks for groom ${groomId}`);
-    
+
     const assignedPerks = {};
-    
+
     // Evaluate each perk for assignment
     for (const [perkKey, perkDef] of Object.entries(RARE_TRAIT_BOOSTER_PERKS)) {
       const isEligible = evaluatePerkEligibility(groomData, perkDef);
-      
+
       if (isEligible) {
         assignedPerks[perkKey] = {
           ...perkDef,
@@ -138,11 +138,11 @@ export async function assignRareTraitBoosterPerks(groomId, groomData) {
           revealed: false, // Initially hidden
           triggerCount: 0,
         };
-        
+
         logger.info(`[groomRareTraitPerks] Assigned perk: ${perkDef.name} to groom ${groomId}`);
       }
     }
-    
+
     // Update groom's rare trait perks in database
     await prisma.groom.update({
       where: { id: groomId },
@@ -150,7 +150,7 @@ export async function assignRareTraitBoosterPerks(groomId, groomData) {
         rareTraitPerks: assignedPerks,
       },
     });
-    
+
     return assignedPerks;
   } catch (error) {
     logger.error(`[groomRareTraitPerks] Error assigning perks: ${error.message}`);
@@ -169,19 +169,19 @@ function evaluatePerkEligibility(groomData, perkDef) {
   if (groomData.experience < perkDef.requiredExperience) {
     return false;
   }
-  
+
   // Check required tags
   const groomTags = groomData.personality?.tags || [];
-  const requiredTags = perkDef.requiredTags;
-  
+  const { requiredTags } = perkDef;
+
   if (requiredTags.includes('any-with-3-rare-bonuses')) {
     // Special case: groom needs 3+ rare trait bonuses
-    const rareTraitBonuses = Object.keys(groomData.bonusTraitMap || {}).filter(trait => 
-      isRareTraitBonus(trait)
+    const rareTraitBonuses = Object.keys(groomData.bonusTraitMap || {}).filter(trait =>
+      isRareTraitBonus(trait),
     );
     return rareTraitBonuses.length >= 3;
   }
-  
+
   // Check if groom has all required tags
   return requiredTags.every(tag => groomTags.includes(tag));
 }
@@ -193,7 +193,7 @@ function evaluatePerkEligibility(groomData, perkDef) {
  */
 function isRareTraitBonus(traitName) {
   const normalizedName = traitName.toLowerCase().replace(/[^a-z0-9]/g, '-');
-  return Object.keys(ULTRA_RARE_TRAITS).includes(normalizedName) || 
+  return Object.keys(ULTRA_RARE_TRAITS).includes(normalizedName) ||
          Object.keys(EXOTIC_TRAITS).includes(normalizedName);
 }
 
@@ -209,14 +209,14 @@ export function applyRareTraitBoosterEffects(traitName, baseChance, groomData, c
   try {
     const normalizedTraitName = traitName.toLowerCase().replace(/[^a-z0-9]/g, '-');
     const groomPerks = groomData.rareTraitPerks || {};
-    
+
     let modifiedChance = baseChance;
-    let appliedPerks = [];
-    
+    const appliedPerks = [];
+
     // Find applicable perks for this trait
     for (const [perkKey, perkData] of Object.entries(groomPerks)) {
       const perkDef = RARE_TRAIT_BOOSTER_PERKS[perkKey];
-      
+
       if (perkDef && perkDef.targetTrait === normalizedTraitName) {
         // Apply base bonus if base chance exists
         if (baseChance > 0) {
@@ -227,7 +227,7 @@ export function applyRareTraitBoosterEffects(traitName, baseChance, groomData, c
             type: 'base_bonus',
           });
         }
-        
+
         // Apply stacked bonus if multiple conditions are met
         const conditionCount = Object.values(conditions).filter(Boolean).length;
         if (conditionCount >= 2) {
@@ -238,10 +238,10 @@ export function applyRareTraitBoosterEffects(traitName, baseChance, groomData, c
             type: 'stacked_bonus',
           });
         }
-        
+
         // Track perk usage for revelation mechanics
         perkData.triggerCount = (perkData.triggerCount || 0) + 1;
-        
+
         // Check if perk should be revealed
         if (!perkData.revealed && shouldRevealPerk(perkData, perkDef)) {
           perkData.revealed = true;
@@ -249,10 +249,10 @@ export function applyRareTraitBoosterEffects(traitName, baseChance, groomData, c
         }
       }
     }
-    
+
     // Cap the final probability at 100%
     modifiedChance = Math.min(modifiedChance, 1.0);
-    
+
     return {
       originalChance: baseChance,
       modifiedChance,
@@ -278,15 +278,15 @@ export function applyRareTraitBoosterEffects(traitName, baseChance, groomData, c
  */
 function shouldRevealPerk(perkData, perkDef) {
   const triggerCount = perkData.triggerCount || 0;
-  
+
   switch (perkDef.revealCondition) {
     case 'after_2_successful_triggers':
       return triggerCount >= 2;
-    
+
     case 'lineage_analysis_or_2_triggers':
       // For now, just use trigger count (lineage analysis would be a future feature)
       return triggerCount >= 2;
-    
+
     default:
       return triggerCount >= 2;
   }
@@ -303,13 +303,13 @@ export async function getRevealedPerks(groomId) {
       where: { id: groomId },
       select: { rareTraitPerks: true },
     });
-    
+
     if (!groom || !groom.rareTraitPerks) {
       return [];
     }
-    
+
     const revealedPerks = [];
-    
+
     for (const [perkKey, perkData] of Object.entries(groom.rareTraitPerks)) {
       if (perkData.revealed) {
         const perkDef = RARE_TRAIT_BOOSTER_PERKS[perkKey];
@@ -323,7 +323,7 @@ export async function getRevealedPerks(groomId) {
         });
       }
     }
-    
+
     return revealedPerks;
   } catch (error) {
     logger.error(`[groomRareTraitPerks] Error getting revealed perks: ${error.message}`);

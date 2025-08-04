@@ -39,7 +39,7 @@ router.get('/definitions', async (req, res) => {
   try {
     const ultraRareTraits = getAllUltraRareTraits();
     const exoticTraits = getAllExoticTraits();
-    
+
     res.json({
       success: true,
       data: {
@@ -73,33 +73,33 @@ router.post('/evaluate/:horseId',
     try {
       const { horseId } = req.params;
       const { evaluationContext = {} } = req.body;
-      
+
       // Verify horse ownership
       const horse = await prisma.horse.findUnique({
         where: { id: parseInt(horseId) },
         select: { id: true, userId: true, name: true },
       });
-      
+
       if (!horse) {
         return res.status(404).json({
           success: false,
           message: 'Horse not found',
         });
       }
-      
+
       if (horse.userId !== req.user.id) {
         return res.status(403).json({
           success: false,
           message: 'You do not own this horse',
         });
       }
-      
+
       // Evaluate ultra-rare triggers
       const ultraRareResults = await evaluateUltraRareTriggers(parseInt(horseId), evaluationContext);
-      
+
       // Evaluate exotic unlocks
       const exoticResults = await evaluateExoticUnlocks(parseInt(horseId), evaluationContext);
-      
+
       // Log evaluation events
       const allResults = [...ultraRareResults, ...exoticResults];
       for (const result of allResults) {
@@ -117,7 +117,7 @@ router.post('/evaluate/:horseId',
           },
         });
       }
-      
+
       res.json({
         success: true,
         data: {
@@ -135,7 +135,7 @@ router.post('/evaluate/:horseId',
         error: error.message,
       });
     }
-  }
+  },
 );
 
 /**
@@ -151,7 +151,7 @@ router.get('/horse/:horseId',
   async (req, res) => {
     try {
       const { horseId } = req.params;
-      
+
       // Get horse with ultra-rare traits
       const horse = await prisma.horse.findUnique({
         where: { id: parseInt(horseId) },
@@ -166,21 +166,21 @@ router.get('/horse/:horseId',
           },
         },
       });
-      
+
       if (!horse) {
         return res.status(404).json({
           success: false,
           message: 'Horse not found',
         });
       }
-      
+
       if (horse.userId !== req.user.id) {
         return res.status(403).json({
           success: false,
           message: 'You do not own this horse',
         });
       }
-      
+
       // Enrich trait data with definitions
       const ultraRareTraits = horse.ultraRareTraits || { ultraRare: [], exotic: [] };
       const enrichedTraits = {
@@ -193,7 +193,7 @@ router.get('/horse/:horseId',
           definition: getUltraRareTraitDefinition(trait.name),
         })),
       };
-      
+
       res.json({
         success: true,
         data: {
@@ -214,7 +214,7 @@ router.get('/horse/:horseId',
         error: error.message,
       });
     }
-  }
+  },
 );
 
 /**
@@ -230,7 +230,7 @@ router.post('/groom/:groomId/assign-perks',
   async (req, res) => {
     try {
       const { groomId } = req.params;
-      
+
       // Verify groom ownership
       const groom = await prisma.groom.findUnique({
         where: { id: parseInt(groomId) },
@@ -244,24 +244,24 @@ router.post('/groom/:groomId/assign-perks',
           bonusTraitMap: true,
         },
       });
-      
+
       if (!groom) {
         return res.status(404).json({
           success: false,
           message: 'Groom not found',
         });
       }
-      
+
       if (groom.userId !== req.user.id) {
         return res.status(403).json({
           success: false,
           message: 'You do not own this groom',
         });
       }
-      
+
       // Assign rare trait booster perks
       const assignedPerks = await assignRareTraitBoosterPerks(parseInt(groomId), groom);
-      
+
       res.json({
         success: true,
         data: {
@@ -281,7 +281,7 @@ router.post('/groom/:groomId/assign-perks',
         error: error.message,
       });
     }
-  }
+  },
 );
 
 /**
@@ -297,30 +297,30 @@ router.get('/groom/:groomId/perks',
   async (req, res) => {
     try {
       const { groomId } = req.params;
-      
+
       // Verify groom ownership
       const groom = await prisma.groom.findUnique({
         where: { id: parseInt(groomId) },
         select: { id: true, name: true, userId: true },
       });
-      
+
       if (!groom) {
         return res.status(404).json({
           success: false,
           message: 'Groom not found',
         });
       }
-      
+
       if (groom.userId !== req.user.id) {
         return res.status(403).json({
           success: false,
           message: 'You do not own this groom',
         });
       }
-      
+
       // Get revealed perks
       const revealedPerks = await getRevealedPerks(parseInt(groomId));
-      
+
       res.json({
         success: true,
         data: {
@@ -340,7 +340,7 @@ router.get('/groom/:groomId/perks',
         error: error.message,
       });
     }
-  }
+  },
 );
 
 /**
@@ -359,7 +359,7 @@ router.post('/effects/calculate',
   async (req, res) => {
     try {
       const { horseId, effectType, baseValue, context = {} } = req.body;
-      
+
       // Get horse with ultra-rare traits
       const horse = await prisma.horse.findUnique({
         where: { id: parseInt(horseId) },
@@ -371,23 +371,23 @@ router.post('/effects/calculate',
           bondScore: true,
         },
       });
-      
+
       if (!horse) {
         return res.status(404).json({
           success: false,
           message: 'Horse not found',
         });
       }
-      
+
       if (horse.userId !== req.user.id) {
         return res.status(403).json({
           success: false,
           message: 'You do not own this horse',
         });
       }
-      
+
       let effectResult;
-      
+
       switch (effectType) {
         case 'stress':
           effectResult = applyUltraRareStressEffects(horse, parseFloat(baseValue), context.stressSource);
@@ -401,7 +401,7 @@ router.post('/effects/calculate',
             message: 'Effect type not yet implemented',
           });
       }
-      
+
       res.json({
         success: true,
         data: {
@@ -423,7 +423,7 @@ router.post('/effects/calculate',
         error: error.message,
       });
     }
-  }
+  },
 );
 
 export default router;
