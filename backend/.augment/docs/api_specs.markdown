@@ -51,6 +51,20 @@ All API responses follow a consistent format:
   - Response: Updated user object
   - Status: 200 (success), 400 (validation error), 404 (not found)
 
+### Milestone System
+- **POST /api/milestones/evaluate-milestone**: Evaluate milestone for a horse
+  - Body: `{ horseId, milestoneType, groomId?, bondScore?, taskLog?, forceReevaluate? }`
+  - Response: Milestone evaluation result with trait determination
+  - Status: 200 (success), 400 (validation error), 404 (horse not found)
+
+- **GET /api/milestones/milestone-status/:horseId**: Get milestone evaluation status
+  - Response: Horse milestone status, available milestones, completed evaluations
+  - Status: 200 (success), 404 (horse not found)
+
+- **GET /api/milestones/milestone-definitions**: Get milestone type definitions
+  - Response: Milestone types, developmental windows, trait thresholds
+  - Status: 200 (success)
+
 ### Training System
 - **POST /api/training/check-eligibility**: Check training eligibility
   - Body: `{ horseId, discipline }`

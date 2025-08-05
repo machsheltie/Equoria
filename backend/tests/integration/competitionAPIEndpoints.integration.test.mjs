@@ -5,7 +5,7 @@
  * - POST /api/competition/execute
  * - GET /api/competition/eligibility/:horseId/:discipline
  * - GET /api/competition/disciplines
- * - GET /api/leaderboard/competition
+ * - GET /api/leaderboards/competition
  */
 
 import request from 'supertest';

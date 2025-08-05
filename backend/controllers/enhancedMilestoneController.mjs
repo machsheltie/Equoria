@@ -15,7 +15,7 @@ import prisma from '../db/index.mjs';
 import logger from '../utils/logger.mjs';
 
 /**
- * POST /api/traits/evaluate-milestone
+ * POST /api/milestones/evaluate-milestone
  * Evaluate milestone for a horse with enhanced groom care integration
  */
 export async function evaluateMilestone(req, res) {
@@ -139,7 +139,7 @@ export async function evaluateMilestone(req, res) {
 }
 
 /**
- * GET /api/traits/milestone-status/:horseId
+ * GET /api/milestones/milestone-status/:horseId
  * Get milestone evaluation status for a horse
  */
 export async function getMilestoneStatus(req, res) {
@@ -237,7 +237,7 @@ export async function getMilestoneStatus(req, res) {
 }
 
 /**
- * GET /api/traits/milestone-definitions
+ * GET /api/milestones/milestone-definitions
  * Get milestone type definitions and developmental windows
  */
 export async function getMilestoneDefinitions(req, res) {
