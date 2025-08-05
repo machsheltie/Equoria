@@ -1,5 +1,6 @@
 # dependencies
 /node_modules/
+/build/
 
 # next.js
 /.next/
@@ -29,7 +30,14 @@ next-env.d.ts
 
 # prettier
 .prettierrc
-.prettierignore 
+.prettierignore
+
+# .env
+.env
+.env.local
+.env.development.local
+.env.test.local
+.env.production.local
 
 # eslint
 .eslintrc.json
