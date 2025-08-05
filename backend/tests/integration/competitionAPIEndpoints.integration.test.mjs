@@ -297,7 +297,7 @@ describe('🚀 INTEGRATION: Competition API Endpoints', () => {
   describe('🏆 GET /api/leaderboard/competition', () => {
     test('should get competition leaderboard by wins', async () => {
       const response = await request(app)
-        .get('/api/leaderboard/competition?metric=wins&limit=10')
+        .get('/api/leaderboards/competition?metric=wins&limit=10')
         .set('Authorization', `Bearer ${authToken}`)
         .expect(200);
 
@@ -325,7 +325,7 @@ describe('🚀 INTEGRATION: Competition API Endpoints', () => {
 
     test('should get competition leaderboard by earnings', async () => {
       const response = await request(app)
-        .get('/api/leaderboard/competition?metric=earnings&discipline=Racing')
+        .get('/api/leaderboards/competition?metric=earnings&discipline=Racing')
         .set('Authorization', `Bearer ${authToken}`)
         .expect(200);
 
@@ -336,7 +336,7 @@ describe('🚀 INTEGRATION: Competition API Endpoints', () => {
 
     test('should reject invalid metric', async () => {
       const response = await request(app)
-        .get('/api/leaderboard/competition?metric=invalid')
+        .get('/api/leaderboards/competition?metric=invalid')
         .set('Authorization', `Bearer ${authToken}`)
         .expect(400);
 

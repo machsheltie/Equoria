@@ -222,7 +222,7 @@ describe('🏠 INTEGRATION: Dashboard API - Real Database Integration', () => {
   describe('GET /api/user/dashboard/:userId', () => {
     it('should return complete dashboard data successfully', async () => {
       const response = await request(app)
-        .get(`/api/user/dashboard/${testUser.id}`)
+        .get(`/api/users/dashboard/${testUser.id}`)
         .set('Authorization', `Bearer ${testToken}`)
         .expect(200);
 
@@ -260,7 +260,7 @@ describe('🏠 INTEGRATION: Dashboard API - Real Database Integration', () => {
 
     it('should return 400 for invalid user ID format', async () => {
       const response = await request(app)
-        .get('/api/user/dashboard/nonexistent-user')
+        .get('/api/users/dashboard/nonexistent-user')
         .set('Authorization', `Bearer ${testToken}`)
         .expect(400);
 
@@ -269,7 +269,7 @@ describe('🏠 INTEGRATION: Dashboard API - Real Database Integration', () => {
     });
 
     it('should return 401 for missing authentication', async () => {
-      const response = await request(app).get(`/api/user/dashboard/${testUser.id}`).expect(401);
+      const response = await request(app).get(`/api/users/dashboard/${testUser.id}`).expect(401);
 
       expect(response.body.success).toBe(false);
       expect(response.body.message).toBe('Access token is required');
@@ -277,7 +277,7 @@ describe('🏠 INTEGRATION: Dashboard API - Real Database Integration', () => {
 
     it('should return validation error for invalid user ID format', async () => {
       const response = await request(app)
-        .get(`/api/user/dashboard/${'x'.repeat(100)}`) // Too long
+        .get(`/api/users/dashboard/${'x'.repeat(100)}`) // Too long
         .set('Authorization', `Bearer ${testToken}`)
         .expect(400);
 
@@ -303,7 +303,7 @@ describe('🏠 INTEGRATION: Dashboard API - Real Database Integration', () => {
       const emptyToken = jwt.sign({ id: emptyUser.id, email: emptyUser.email }, config.jwtSecret, { expiresIn: '1h' });
 
       const response = await request(app)
-        .get(`/api/user/dashboard/${emptyUser.id}`)
+        .get(`/api/users/dashboard/${emptyUser.id}`)
         .set('Authorization', `Bearer ${emptyToken}`)
         .expect(200);
 
@@ -351,7 +351,7 @@ describe('🏠 INTEGRATION: Dashboard API - Real Database Integration', () => {
       });
 
       const response = await request(app)
-        .get(`/api/user/dashboard/${inactiveUser.id}`)
+        .get(`/api/users/dashboard/${inactiveUser.id}`)
         .set('Authorization', `Bearer ${inactiveToken}`)
         .expect(200);
 

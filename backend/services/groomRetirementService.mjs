@@ -14,10 +14,8 @@
  * - Retired grooms become inactive but retain data
  */
 
-import { PrismaClient } from '@prisma/client';
+import prisma from '../../packages/database/prismaClient.mjs';
 import logger from '../utils/logger.mjs';
-
-const prisma = new PrismaClient();
 
 /**
  * Retirement reasons enum

@@ -12,7 +12,7 @@
  */
 
 import { jest } from '@jest/globals';
-import { PrismaClient } from '@prisma/client';
+import prisma from '../../../packages/database/prismaClient.mjs';
 import groomRetirementService, {
   incrementCareerWeeks,
   checkRetirementEligibility,
@@ -22,8 +22,6 @@ import groomRetirementService, {
   RETIREMENT_REASONS,
   CAREER_CONSTANTS
 } from '../../services/groomRetirementService.mjs';
-
-const prisma = new PrismaClient();
 
 describe('Groom Retirement Service', () => {
   let testUser;
@@ -36,7 +34,9 @@ describe('Groom Retirement Service', () => {
       data: {
         username: `testuser_retirement_${Date.now()}`,
         email: `test_retirement_${Date.now()}@example.com`,
-        password: 'hashedpassword123'
+        password: 'hashedpassword123',
+        firstName: 'Test',
+        lastName: 'User'
       }
     });
 
@@ -60,8 +60,7 @@ describe('Groom Retirement Service', () => {
         name: `Test Groom ${Date.now()}`,
         personality: 'calm',
         skillLevel: 'intermediate',
-        specialty: 'foal_care',
-        baseSalary: 500,
+        speciality: 'foal_care',
         userId: testUser.id,
         careerWeeks: 0,
         level: 1,
