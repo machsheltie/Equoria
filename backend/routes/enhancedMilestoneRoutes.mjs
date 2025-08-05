@@ -18,7 +18,7 @@ import { authenticateToken } from '../middleware/auth.mjs';
 const router = express.Router();
 
 /**
- * POST /api/traits/evaluate-milestone
+ * POST /api/milestones/evaluate-milestone
  * Evaluate milestone for a horse with enhanced groom care integration
  *
  * Body:
@@ -37,7 +37,7 @@ router.post(
 );
 
 /**
- * GET /api/traits/milestone-status/:horseId
+ * GET /api/milestones/milestone-status/:horseId
  * Get milestone evaluation status for a horse
  *
  * Params:
@@ -57,7 +57,7 @@ router.get(
 );
 
 /**
- * GET /api/traits/milestone-definitions
+ * GET /api/milestones/milestone-definitions
  * Get milestone type definitions and developmental windows
  *
  * Returns:

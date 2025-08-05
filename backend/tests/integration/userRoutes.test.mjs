@@ -15,12 +15,12 @@
  * - HTTP compliance: Proper status codes, response formats, error messages
  *
  * 🎯 FUNCTIONALITY TESTED:
- * 1. GET /api/user/:id/progress - User progress with XP calculations
- * 2. GET /api/user/:id - User lookup by ID
- * 3. POST /api/user - User creation with validation
- * 4. PUT /api/user/:id - User updates with existence checks
- * 5. DELETE /api/user/:id - User deletion with proper responses
- * 6. POST /api/user/:id/add-xp - XP addition with level progression
+ * 1. GET /api/users/:id/progress - User progress with XP calculations
+ * 2. GET /api/users/:id - User lookup by ID
+ * 3. POST /api/users - User creation with validation
+ * 4. PUT /api/users/:id - User updates with existence checks
+ * 5. DELETE /api/users/:id - User deletion with proper responses
+ * 6. POST /api/users/:id/add-xp - XP addition with level progression
  * 7. Input validation: ID constraints, data validation, error responses
  * 8. Error scenarios: Missing users, invalid data, server errors
  * 9. Response formatting: Data transformation, field filtering, security
@@ -77,11 +77,11 @@ describe('🌐 INTEGRATION: User Routes - HTTP API Endpoints', () => {
     await cleanupTestData();
   });
 
-  describe('GET /api/user/:id/progress', () => {
-    // Changed route from /api/player to /api/user
+  describe('GET /api/users/:id/progress', () => {
+    // Changed route from /api/player to /api/users
     it('should return user progress successfully', async () => {
       const response = await request(app)
-        .get(`/api/user/${testUser.id}/progress`)
+        .get(`/api/users/${testUser.id}/progress`)
         .set('Authorization', `Bearer ${authToken}`)
         .expect(200);
 
@@ -111,7 +111,7 @@ describe('🌐 INTEGRATION: User Routes - HTTP API Endpoints', () => {
       const nonExistentUuid = '550e8400-e29b-41d4-a716-446655440999';
 
       const response = await request(app)
-        .get(`/api/user/${nonExistentUuid}/progress`)
+        .get(`/api/users/${nonExistentUuid}/progress`)
         .set('Authorization', `Bearer ${authToken}`)
         .expect(500); // API returns 500 for user not found
 
@@ -123,7 +123,7 @@ describe('🌐 INTEGRATION: User Routes - HTTP API Endpoints', () => {
 
     it('should return validation error for empty user ID', async () => {
       const response = await request(app)
-        .get('/api/user//progress')
+        .get('/api/users//progress')
         .set('Authorization', `Bearer ${authToken}`)
         .expect(400); // Validation error for empty ID
 
@@ -140,7 +140,7 @@ describe('🌐 INTEGRATION: User Routes - HTTP API Endpoints', () => {
 
     it('should return validation error for invalid user ID format', async () => {
       const response = await request(app)
-        .get('/api/user/a/progress') // Invalid UUID format
+        .get('/api/users/a/progress') // Invalid UUID format
         .set('Authorization', `Bearer ${authToken}`)
         .expect(400); // Validation error for invalid UUID
 
@@ -159,7 +159,7 @@ describe('🌐 INTEGRATION: User Routes - HTTP API Endpoints', () => {
       const longId = 'a'.repeat(51); // 51 characters, exceeds limit
 
       const response = await request(app)
-        .get(`/api/user/${longId}/progress`)
+        .get(`/api/users/${longId}/progress`)
         .set('Authorization', `Bearer ${authToken}`)
         .expect(400);
 
@@ -180,7 +180,7 @@ describe('🌐 INTEGRATION: User Routes - HTTP API Endpoints', () => {
       const nonExistentUuid = '550e8400-e29b-41d4-a716-446655440998';
 
       const response = await request(app)
-        .get(`/api/user/${nonExistentUuid}/progress`)
+        .get(`/api/users/${nonExistentUuid}/progress`)
         .set('Authorization', `Bearer ${authToken}`)
         .expect(500);
 
@@ -193,7 +193,7 @@ describe('🌐 INTEGRATION: User Routes - HTTP API Endpoints', () => {
     it('should calculate xpToNextLevel correctly for edge cases', async () => {
       // Use the real test user for XP calculation tests
       const response = await request(app)
-        .get(`/api/user/${testUser.id}/progress`)
+        .get(`/api/users/${testUser.id}/progress`)
         .set('Authorization', `Bearer ${authToken}`)
         .expect(200);
 
@@ -209,7 +209,7 @@ describe('🌐 INTEGRATION: User Routes - HTTP API Endpoints', () => {
     it('should only return required fields in response', async () => {
       // Use the real test user to verify field filtering
       const response = await request(app)
-        .get(`/api/user/${testUser.id}/progress`)
+        .get(`/api/users/${testUser.id}/progress`)
         .set('Authorization', `Bearer ${authToken}`)
         .expect(200);
 
@@ -234,7 +234,7 @@ describe('🌐 INTEGRATION: User Routes - HTTP API Endpoints', () => {
       const specialId = 'user-123_test';
 
       const response = await request(app)
-        .get(`/api/user/${specialId}/progress`)
+        .get(`/api/users/${specialId}/progress`)
         .set('Authorization', `Bearer ${authToken}`)
         .expect(400); // Invalid UUID format
 
@@ -250,10 +250,10 @@ describe('🌐 INTEGRATION: User Routes - HTTP API Endpoints', () => {
     });
   });
 
-  describe('GET /api/user/:id', () => {
+  describe('GET /api/users/:id', () => {
     it('should return a user by ID', async () => {
       const response = await request(app)
-        .get(`/api/user/${testUserForCrud.id}`) // Use real test user
+        .get(`/api/users/${testUserForCrud.id}`) // Use real test user
         .set('Authorization', `Bearer ${authToken}`)
         .expect(200);
 
@@ -273,7 +273,7 @@ describe('🌐 INTEGRATION: User Routes - HTTP API Endpoints', () => {
     it('should return 404 if user not found', async () => {
       const nonExistentUuid = '550e8400-e29b-41d4-a716-446655440001';
       const response = await request(app)
-        .get(`/api/user/${nonExistentUuid}`)
+        .get(`/api/users/${nonExistentUuid}`)
         .set('Authorization', `Bearer ${authToken}`)
         .expect(404);
       expect(response.body.success).toBe(false);
@@ -281,7 +281,7 @@ describe('🌐 INTEGRATION: User Routes - HTTP API Endpoints', () => {
     });
   });
 
-  describe('POST /api/user', () => {
+  describe('POST /api/users', () => {
     it('should create a new user', async () => {
       const userData = {
         username: `NewUser_${Date.now()}`,
@@ -292,7 +292,7 @@ describe('🌐 INTEGRATION: User Routes - HTTP API Endpoints', () => {
       };
 
       const response = await request(app)
-        .post('/api/user')
+        .post('/api/users')
         .send(userData)
         .set('Authorization', `Bearer ${authToken}`)
         .expect(201);
@@ -318,7 +318,7 @@ describe('🌐 INTEGRATION: User Routes - HTTP API Endpoints', () => {
 
     it('should return 400 for invalid user data', async () => {
       const response = await request(app)
-        .post('/api/user')
+        .post('/api/users')
         .send({ username: 'Bad' }) // Missing required fields
         .set('Authorization', `Bearer ${authToken}`)
         .expect(400);
@@ -327,12 +327,12 @@ describe('🌐 INTEGRATION: User Routes - HTTP API Endpoints', () => {
     });
   });
 
-  describe('PUT /api/user/:id', () => {
+  describe('PUT /api/users/:id', () => {
     it('should update an existing user', async () => {
       const updates = { money: 2500 };
 
       const response = await request(app)
-        .put(`/api/user/${testUserForCrud.id}`)
+        .put(`/api/users/${testUserForCrud.id}`)
         .send(updates)
         .set('Authorization', `Bearer ${authToken}`)
         .expect(200);
@@ -350,7 +350,7 @@ describe('🌐 INTEGRATION: User Routes - HTTP API Endpoints', () => {
     it('should return 404 if user to update is not found', async () => {
       const nonExistentUuid = '550e8400-e29b-41d4-a716-446655440001';
       const response = await request(app)
-        .put(`/api/user/${nonExistentUuid}`)
+        .put(`/api/users/${nonExistentUuid}`)
         .send({ money: 100 })
         .set('Authorization', `Bearer ${authToken}`)
         .expect(404);
@@ -359,7 +359,7 @@ describe('🌐 INTEGRATION: User Routes - HTTP API Endpoints', () => {
     });
   });
 
-  describe('DELETE /api/user/:id', () => {
+  describe('DELETE /api/users/:id', () => {
     it('should delete a user', async () => {
       // Create a user specifically for deletion test
       const deleteUserResult = await createTestUser({
@@ -369,7 +369,7 @@ describe('🌐 INTEGRATION: User Routes - HTTP API Endpoints', () => {
       });
 
       const response = await request(app)
-        .delete(`/api/user/${deleteUserResult.user.id}`)
+        .delete(`/api/users/${deleteUserResult.user.id}`)
         .set('Authorization', `Bearer ${authToken}`)
         .expect(200);
 
@@ -380,7 +380,7 @@ describe('🌐 INTEGRATION: User Routes - HTTP API Endpoints', () => {
     it('should return 404 if user to delete is not found', async () => {
       const nonExistentUuid = '550e8400-e29b-41d4-a716-446655440001';
       const response = await request(app)
-        .delete(`/api/user/${nonExistentUuid}`)
+        .delete(`/api/users/${nonExistentUuid}`)
         .set('Authorization', `Bearer ${authToken}`)
         .expect(404);
       expect(response.body.success).toBe(false);
@@ -388,12 +388,12 @@ describe('🌐 INTEGRATION: User Routes - HTTP API Endpoints', () => {
     });
   });
 
-  describe('POST /api/user/:id/add-xp', () => {
+  describe('POST /api/users/:id/add-xp', () => {
     it('should add XP to a user and potentially level them up', async () => {
       const xpData = { amount: 50 };
 
       const response = await request(app)
-        .post(`/api/user/${testUserForCrud.id}/add-xp`)
+        .post(`/api/users/${testUserForCrud.id}/add-xp`)
         .send(xpData)
         .set('Authorization', `Bearer ${authToken}`)
         .expect(200);
@@ -417,7 +417,7 @@ describe('🌐 INTEGRATION: User Routes - HTTP API Endpoints', () => {
     it('should return 404 if user not found for XP addition', async () => {
       const nonExistentUuid = '550e8400-e29b-41d4-a716-446655440001';
       const response = await request(app)
-        .post(`/api/user/${nonExistentUuid}/add-xp`)
+        .post(`/api/users/${nonExistentUuid}/add-xp`)
         .send({ amount: 50 })
         .set('Authorization', `Bearer ${authToken}`)
         .expect(200); // addXpToUser returns success:false instead of throwing

@@ -27,8 +27,9 @@
  * - /api/training - Training sessions and progression
  * - /api/competition - Competition entry and results
  * - /api/breeding - Breeding operations and foal management
- * - /api/user - User profile and dashboard
- * - /api/leaderboard - Rankings and statistics
+ * - /api/users - User profile and dashboard
+ * - /api/leaderboards - Rankings and statistics
+ * - /api/milestones - Milestone evaluation system
  * - /api/admin - Administrative operations
  */
 
@@ -161,7 +162,7 @@ app.get('/health', (req, res) => {
 app.use('/ping', pingRoute);
 app.use('/api/auth', authRoutes);
 app.use('/api/horses', horseRoutes);
-app.use('/api/user', userRoutes);
+app.use('/api/users', userRoutes);
 app.use('/api/training', trainingRoutes);
 app.use('/api/competition', competitionRoutes);
 app.use('/api/breeds', breedRoutes);
@@ -177,9 +178,9 @@ app.use('/api/groom-performance', groomPerformanceRoutes);
 app.use('/api/groom-marketplace', groomMarketplaceRoutes);
 app.use('/api/epigenetic-traits', epigeneticTraitRoutes);
 app.use('/api/flags', epigeneticFlagRoutes);
-app.use('/api/traits', enhancedMilestoneRoutes);
+app.use('/api/milestones', enhancedMilestoneRoutes);
 app.use('/api/ultra-rare-traits', ultraRareTraitRoutes);
-app.use('/api/leaderboard', leaderboardRoutes);
+app.use('/api/leaderboards', leaderboardRoutes);
 app.use('/api/admin', adminRoutes);
 
 // API documentation endpoint
@@ -191,15 +192,16 @@ app.get('/api', (req, res) => {
     endpoints: {
       auth: '/api/auth',
       horses: '/api/horses',
-      user: '/api/user',
+      users: '/api/users',
       training: '/api/training',
       competition: '/api/competition',
       breeds: '/api/breeds',
       foals: '/api/foals',
       traits: '/api/traits',
       traitDiscovery: '/api/trait-discovery',
+      milestones: '/api/milestones',
       grooms: '/api/grooms',
-      leaderboard: '/api/leaderboard',
+      leaderboards: '/api/leaderboards',
       admin: '/api/admin',
     },
     health: '/health',

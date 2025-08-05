@@ -13,12 +13,12 @@
  * - Data filtering: Discipline-specific filtering and pagination
  *
  * 🎯 FUNCTIONALITY TESTED:
- * 1. GET /api/leaderboard/players/level - Top players by level
- * 2. GET /api/leaderboard/players/xp - Top players by XP
- * 3. GET /api/leaderboard/horses/earnings - Top horses by earnings
- * 4. GET /api/leaderboard/horses/performance - Top horses by performance
- * 5. GET /api/leaderboard/recent-winners - Recent competition winners
- * 6. GET /api/leaderboard/stats - Comprehensive statistics
+ * 1. GET /api/leaderboards/players/level - Top players by level
+ * 2. GET /api/leaderboards/players/xp - Top players by XP
+ * 3. GET /api/leaderboards/horses/earnings - Top horses by earnings
+ * 4. GET /api/leaderboards/horses/performance - Top horses by performance
+ * 5. GET /api/leaderboards/recent-winners - Recent competition winners
+ * 6. GET /api/leaderboards/stats - Comprehensive statistics
  *
  * 🔄 BALANCED MOCKING APPROACH:
  * ✅ REAL: Database operations, business logic, API responses, data aggregation
@@ -329,10 +329,10 @@ describe('🏆 INTEGRATION: Leaderboard API - Real Database Integration', () => 
     });
   });
 
-  describe('GET /api/leaderboard/players/level', () => {
+  describe('GET /api/leaderboards/players/level', () => {
     it('should return top players by level', async () => {
       const response = await request(app)
-        .get('/api/leaderboard/players/level')
+        .get('/api/leaderboards/players/level')
         .set('Authorization', `Bearer ${testToken}`)
         .query({ limit: 10, offset: 0 })
         .expect(200);
@@ -354,17 +354,17 @@ describe('🏆 INTEGRATION: Leaderboard API - Real Database Integration', () => 
     });
 
     it('should handle unauthorized access', async () => {
-      const response = await request(app).get('/api/leaderboard/players/level').expect(401);
+      const response = await request(app).get('/api/leaderboards/players/level').expect(401);
 
       expect(response.body.success).toBe(false);
       expect(response.body.message).toBe('Access token is required');
     });
   });
 
-  describe('GET /api/leaderboard/horses/earnings', () => {
+  describe('GET /api/leaderboards/horses/earnings', () => {
     it('should return top horses by earnings', async () => {
       const response = await request(app)
-        .get('/api/leaderboard/horses/earnings')
+        .get('/api/leaderboards/horses/earnings')
         .set('Authorization', `Bearer ${testToken}`)
         .expect(200);
 
@@ -387,10 +387,10 @@ describe('🏆 INTEGRATION: Leaderboard API - Real Database Integration', () => 
     });
   });
 
-  describe('GET /api/leaderboard/recent-winners', () => {
+  describe('GET /api/leaderboards/recent-winners', () => {
     it('should return recent competition winners', async () => {
       const response = await request(app)
-        .get('/api/leaderboard/recent-winners')
+        .get('/api/leaderboards/recent-winners')
         .set('Authorization', `Bearer ${testToken}`)
         .expect(200);
 
@@ -412,7 +412,7 @@ describe('🏆 INTEGRATION: Leaderboard API - Real Database Integration', () => 
 
     it('should filter by discipline', async () => {
       const response = await request(app)
-        .get('/api/leaderboard/recent-winners')
+        .get('/api/leaderboards/recent-winners')
         .query({ discipline: 'Dressage' })
         .set('Authorization', `Bearer ${testToken}`)
         .expect(200);
@@ -424,10 +424,10 @@ describe('🏆 INTEGRATION: Leaderboard API - Real Database Integration', () => 
     });
   });
 
-  describe('GET /api/leaderboard/stats', () => {
+  describe('GET /api/leaderboards/stats', () => {
     it('should return comprehensive leaderboard statistics', async () => {
       const response = await request(app)
-        .get('/api/leaderboard/stats')
+        .get('/api/leaderboards/stats')
         .set('Authorization', `Bearer ${testToken}`)
         .expect(200);
 

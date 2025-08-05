@@ -148,7 +148,7 @@ describe('🎯 INTEGRATION: User Progress API - Complete Progress Tracking', () 
 
     it('should return correct initial progress data via API', async () => {
       const response = await request(app)
-        .get(`/api/user/${testUser.id}/progress`)
+        .get(`/api/users/${testUser.id}/progress`)
         .set('Authorization', `Bearer ${authToken}`)
         .expect(200);
 
@@ -226,7 +226,7 @@ describe('🎯 INTEGRATION: User Progress API - Complete Progress Tracking', () 
 
       // STEP 2: Verify progress updated correctly
       const progressResponse = await request(app)
-        .get(`/api/user/${testUser.id}/progress`)
+        .get(`/api/users/${testUser.id}/progress`)
         .set('Authorization', `Bearer ${authToken}`)
         .expect(200);
 
@@ -277,7 +277,7 @@ describe('🎯 INTEGRATION: User Progress API - Complete Progress Tracking', () 
 
       // STEP 2: Verify accumulated XP (should be 55 total, still level 1 - appropriate pacing)
       const progressResponse = await request(app)
-        .get(`/api/user/${testUser.id}/progress`)
+        .get(`/api/users/${testUser.id}/progress`)
         .set('Authorization', `Bearer ${authToken}`)
         .expect(200);
 
@@ -325,7 +325,7 @@ describe('🎯 INTEGRATION: User Progress API - Complete Progress Tracking', () 
 
       // STEP 3: Verify level-up occurred
       const progressResponse = await request(app)
-        .get(`/api/user/${testUser.id}/progress`)
+        .get(`/api/users/${testUser.id}/progress`)
         .set('Authorization', `Bearer ${authToken}`)
         .expect(200);
 
@@ -355,7 +355,7 @@ describe('🎯 INTEGRATION: User Progress API - Complete Progress Tracking', () 
 
       // STEP 2: Verify multi-level progression
       const progressResponse = await request(app)
-        .get(`/api/user/${testUser.id}/progress`)
+        .get(`/api/users/${testUser.id}/progress`)
         .set('Authorization', `Bearer ${authToken}`)
         .expect(200);
 
@@ -376,7 +376,7 @@ describe('🎯 INTEGRATION: User Progress API - Complete Progress Tracking', () 
   describe('📊 STEP 5: Dashboard Data Integration', () => {
     it('should return comprehensive dashboard data with progress integration', async () => {
       const dashboardResponse = await request(app)
-        .get(`/api/user/dashboard/${testUser.id}`)
+        .get(`/api/users/dashboard/${testUser.id}`)
         .set('Authorization', `Bearer ${authToken}`)
         .expect(200);
 
@@ -408,7 +408,7 @@ describe('🎯 INTEGRATION: User Progress API - Complete Progress Tracking', () 
   describe('🔍 STEP 6: API Consistency & Edge Cases', () => {
     it('should handle invalid user ID gracefully', async () => {
       const response = await request(app)
-        .get('/api/user/999999/progress')
+        .get('/api/users/999999/progress')
         .set('Authorization', `Bearer ${authToken}`)
         .expect(400); // UUID validation fails before user lookup
 
@@ -418,7 +418,7 @@ describe('🎯 INTEGRATION: User Progress API - Complete Progress Tracking', () 
 
     it('should validate user ID format', async () => {
       const response = await request(app)
-        .get('/api/user/invalid/progress')
+        .get('/api/users/invalid/progress')
         .set('Authorization', `Bearer ${authToken}`)
         .expect(400);
 
@@ -427,7 +427,7 @@ describe('🎯 INTEGRATION: User Progress API - Complete Progress Tracking', () 
     });
 
     it('should require authentication for progress endpoints', async () => {
-      const response = await request(app).get(`/api/user/${testUser.id}/progress`).expect(401);
+      const response = await request(app).get(`/api/users/${testUser.id}/progress`).expect(401);
 
       expect(response.body.success).toBe(false);
     });
@@ -450,7 +450,7 @@ describe('🎯 INTEGRATION: User Progress API - Complete Progress Tracking', () 
 
       // STEP 3: Verify progress API consistency
       const progressResponse = await request(app)
-        .get(`/api/user/${testUser.id}/progress`)
+        .get(`/api/users/${testUser.id}/progress`)
         .set('Authorization', `Bearer ${authToken}`)
         .expect(200);
 

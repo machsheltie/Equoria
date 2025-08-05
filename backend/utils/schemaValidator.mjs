@@ -16,23 +16,11 @@ import logger from './logger.mjs';
 const requiredSchemaElements = [
   {
     model: 'Horse',
-    fields: ['id', 'name', 'breed', 'age', 'userId'],
+    fields: ['id', 'name', 'breed', 'age', 'userId', 'consecutiveDaysFoalCare', 'taskLog', 'epigeneticModifiers'],
   },
   {
     model: 'User',
     fields: ['id', 'email', 'username', 'firstName', 'lastName'],
-  },
-  {
-    model: 'Foal',
-    fields: [
-      'id',
-      'name',
-      'age',
-      'userId',
-      'consecutiveDaysFoalCare',
-      'dailyTaskRecord',
-      'epigeneticModifiers',
-    ],
   },
 ];
 
@@ -78,26 +66,7 @@ export async function validateDatabaseSchema({ throwOnError = false } = {}) {
       }
     }
 
-    // Special check for the fields mentioned in the TODO
-    try {
-      await prisma.foal.findFirst({
-        select: {
-          consecutiveDaysFoalCare: true,
-          epigeneticModifiers: true,
-          dailyTaskRecord: true,
-        },
-        take: 0,
-      });
-      logger.info('✓ Foal model has all required special fields');
-    } catch (error) {
-      if (error.message.includes('Unknown field')) {
-        const missingField =
-          error.message.match(/Unknown field [`']([^'`]+)[`']/)?.[1] || 'unknown';
-        validationErrors.push(`Foal model is missing special field: ${missingField}`);
-      } else {
-        validationErrors.push(`Error validating Foal special fields: ${error.message}`);
-      }
-    }
+    // Note: Foal-specific fields are now part of the Horse model validation above
 
     // Log validation results
     if (validationErrors.length > 0) {

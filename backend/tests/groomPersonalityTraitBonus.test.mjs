@@ -345,7 +345,7 @@ describe('Groom Personality Trait Bonus System - REAL SYSTEM TESTS', () => {
       });
     });
 
-    describe('POST /api/traits/evaluate-milestone (with personality impact)', () => {
+    describe('POST /api/milestones/evaluate-milestone (with personality impact)', () => {
       it('should evaluate milestone with personality effects', async () => {
         // Create groom assignment
         await prisma.groomAssignment.create({
@@ -359,7 +359,7 @@ describe('Groom Personality Trait Bonus System - REAL SYSTEM TESTS', () => {
         });
 
         const response = await request(app)
-          .post('/api/traits/evaluate-milestone')
+          .post('/api/milestones/evaluate-milestone')
           .set('Authorization', authToken)
           .send({
             horseId: testHorse.id,
