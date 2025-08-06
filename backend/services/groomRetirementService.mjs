@@ -1,12 +1,12 @@
 /**
  * Groom Retirement Service
- * 
+ *
  * This service handles all aspects of groom retirement including:
  * - Career week tracking and progression
  * - Retirement eligibility checking
  * - Retirement processing and status management
  * - Integration with existing groom systems
- * 
+ *
  * Retirement Rules:
  * - Mandatory retirement at 104 weeks (2 years)
  * - Early retirement triggers: Level 10, 12+ assignments
@@ -24,7 +24,7 @@ export const RETIREMENT_REASONS = {
   MANDATORY_CAREER_LIMIT: 'mandatory_career_limit',
   EARLY_LEVEL_CAP: 'early_level_cap',
   EARLY_ASSIGNMENT_LIMIT: 'early_assignment_limit',
-  VOLUNTARY: 'voluntary'
+  VOLUNTARY: 'voluntary',
 };
 
 /**
@@ -34,7 +34,7 @@ export const CAREER_CONSTANTS = {
   MANDATORY_RETIREMENT_WEEKS: 104, // 2 years
   EARLY_RETIREMENT_LEVEL: 10,
   EARLY_RETIREMENT_ASSIGNMENTS: 12,
-  RETIREMENT_NOTICE_WEEKS: 1
+  RETIREMENT_NOTICE_WEEKS: 1,
 };
 
 /**
@@ -48,12 +48,12 @@ export async function incrementCareerWeeks(groomId) {
       where: { id: groomId },
       data: {
         careerWeeks: {
-          increment: 1
-        }
+          increment: 1,
+        },
       },
       include: {
-        groomAssignmentLogs: true
-      }
+        groomAssignmentLogs: true,
+      },
     });
 
     logger.info(`Incremented career weeks for groom ${groomId} to ${updatedGroom.careerWeeks}`);
@@ -74,8 +74,8 @@ export async function checkRetirementEligibility(groomId) {
     const groom = await prisma.groom.findUnique({
       where: { id: groomId },
       include: {
-        groomAssignmentLogs: true
-      }
+        groomAssignmentLogs: true,
+      },
     });
 
     if (!groom) {
@@ -87,7 +87,7 @@ export async function checkRetirementEligibility(groomId) {
         eligible: false,
         reason: 'already_retired',
         weeksUntilRetirement: 0,
-        noticeRequired: false
+        noticeRequired: false,
       };
     }
 
@@ -102,7 +102,7 @@ export async function checkRetirementEligibility(groomId) {
         reason: RETIREMENT_REASONS.MANDATORY_CAREER_LIMIT,
         weeksUntilRetirement: 0,
         noticeRequired: false,
-        mandatory: true
+        mandatory: true,
       };
     }
 
@@ -113,7 +113,7 @@ export async function checkRetirementEligibility(groomId) {
         reason: RETIREMENT_REASONS.EARLY_LEVEL_CAP,
         weeksUntilRetirement: weeksUntilMandatory,
         noticeRequired,
-        mandatory: false
+        mandatory: false,
       };
     }
 
@@ -124,7 +124,7 @@ export async function checkRetirementEligibility(groomId) {
         reason: RETIREMENT_REASONS.EARLY_ASSIGNMENT_LIMIT,
         weeksUntilRetirement: weeksUntilMandatory,
         noticeRequired,
-        mandatory: false
+        mandatory: false,
       };
     }
 
@@ -134,7 +134,7 @@ export async function checkRetirementEligibility(groomId) {
       reason: 'not_eligible',
       weeksUntilRetirement: weeksUntilMandatory,
       noticeRequired,
-      mandatory: false
+      mandatory: false,
     };
 
   } catch (error) {
@@ -153,7 +153,7 @@ export async function checkRetirementEligibility(groomId) {
 export async function processRetirement(groomId, reason = null, voluntary = false) {
   try {
     const eligibility = await checkRetirementEligibility(groomId);
-    
+
     if (!eligibility.eligible && !voluntary) {
       throw new Error(`Groom ${groomId} is not eligible for retirement`);
     }
@@ -168,27 +168,27 @@ export async function processRetirement(groomId, reason = null, voluntary = fals
         retired: true,
         retirementReason,
         retirementTimestamp,
-        isActive: false // Mark as inactive
+        isActive: false, // Mark as inactive
       },
       include: {
         groomAssignmentLogs: true,
-        groomHorseSynergies: true
-      }
+        groomHorseSynergies: true,
+      },
     });
 
     // Remove from any active assignments
     await prisma.groomAssignment.deleteMany({
-      where: { groomId }
+      where: { groomId },
     });
 
     logger.info(`Processed retirement for groom ${groomId} with reason: ${retirementReason}`);
-    
+
     return {
       groom: retiredGroom,
       retirementReason,
       retirementTimestamp,
       assignmentCount: retiredGroom.groomAssignmentLogs.length,
-      synergyRecords: retiredGroom.groomHorseSynergies.length
+      synergyRecords: retiredGroom.groomHorseSynergies.length,
     };
 
   } catch (error) {
@@ -205,18 +205,18 @@ export async function processRetirement(groomId, reason = null, voluntary = fals
 export async function getGroomsApproachingRetirement(userId) {
   try {
     const noticeThreshold = CAREER_CONSTANTS.MANDATORY_RETIREMENT_WEEKS - CAREER_CONSTANTS.RETIREMENT_NOTICE_WEEKS;
-    
+
     const grooms = await prisma.groom.findMany({
       where: {
         userId,
         retired: false,
         careerWeeks: {
-          gte: noticeThreshold
-        }
+          gte: noticeThreshold,
+        },
       },
       include: {
-        groomAssignmentLogs: true
-      }
+        groomAssignmentLogs: true,
+      },
     });
 
     const groomsWithEligibility = await Promise.all(
@@ -224,9 +224,9 @@ export async function getGroomsApproachingRetirement(userId) {
         const eligibility = await checkRetirementEligibility(groom.id);
         return {
           ...groom,
-          eligibility
+          eligibility,
         };
-      })
+      }),
     );
 
     return groomsWithEligibility;
@@ -246,25 +246,122 @@ export async function getRetirementStatistics(userId) {
   try {
     const [activeGrooms, retiredGrooms, approachingRetirement] = await Promise.all([
       prisma.groom.count({
-        where: { userId, retired: false }
+        where: { userId, retired: false },
       }),
       prisma.groom.count({
-        where: { userId, retired: true }
+        where: { userId, retired: true },
       }),
-      getGroomsApproachingRetirement(userId)
+      getGroomsApproachingRetirement(userId),
     ]);
+
+    // Get retirement reasons breakdown
+    const retirementReasons = await prisma.groom.groupBy({
+      by: ['retirementReason'],
+      where: { userId, retired: true },
+      _count: { retirementReason: true },
+    });
+
+    // Calculate average career length for retired grooms
+    const retiredGroomsData = await prisma.groom.findMany({
+      where: { userId, retired: true },
+      select: { careerWeeks: true },
+    });
+
+    const averageCareerLength = retiredGroomsData.length > 0
+      ? retiredGroomsData.reduce((sum, groom) => sum + groom.careerWeeks, 0) / retiredGroomsData.length
+      : 0;
 
     return {
       activeGrooms,
       retiredGrooms,
       totalGrooms: activeGrooms + retiredGrooms,
       approachingRetirement: approachingRetirement.length,
-      retirementRate: retiredGrooms / (activeGrooms + retiredGrooms) || 0
+      retirementRate: retiredGrooms / (activeGrooms + retiredGrooms) || 0,
+      retirementReasons: retirementReasons.reduce((acc, reason) => {
+        acc[reason.retirementReason] = reason._count.retirementReason;
+        return acc;
+      }, {}),
+      averageCareerLength: Math.round(averageCareerLength * 100) / 100,
     };
 
   } catch (error) {
     logger.error(`Error getting retirement statistics for user ${userId}:`, error);
     throw error;
+  }
+}
+
+/**
+ * Process weekly career progression for all active grooms
+ * This function should be called weekly (e.g., every Monday) to:
+ * - Increment career weeks for all active grooms
+ * - Check for retirement eligibility
+ * - Process automatic retirements
+ *
+ * @returns {Promise<Object>} Processing results with statistics
+ */
+export async function processWeeklyCareerProgression() {
+  try {
+    logger.info('Starting weekly career progression processing');
+
+    // Get all active (non-retired) grooms
+    const activeGrooms = await prisma.groom.findMany({
+      where: {
+        retired: false,
+        isActive: true,
+      },
+      include: {
+        groomAssignmentLogs: true,
+      },
+    });
+
+    const results = {
+      processed: 0,
+      retired: 0,
+      errors: [],
+      retirements: [],
+    };
+
+    // Process each groom
+    for (const groom of activeGrooms) {
+      try {
+        // Increment career weeks
+        await incrementCareerWeeks(groom.id);
+        results.processed++;
+
+        // Check retirement eligibility
+        const eligibility = await checkRetirementEligibility(groom.id);
+
+        // Process automatic retirements
+        if (eligibility.eligible && (eligibility.mandatory || eligibility.reason === RETIREMENT_REASONS.EARLY_LEVEL_CAP)) {
+          await processRetirement(groom.id, eligibility.reason);
+          results.retired++;
+          results.retirements.push({
+            groomId: groom.id,
+            groomName: groom.name,
+            reason: eligibility.reason,
+            careerWeeks: groom.careerWeeks + 1,
+            level: groom.level,
+          });
+
+          logger.info(`Groom ${groom.name} (ID: ${groom.id}) retired: ${eligibility.reason}`);
+        }
+
+      } catch (error) {
+        logger.error(`Error processing groom ${groom.id}:`, error);
+        results.errors.push({
+          groomId: groom.id,
+          groomName: groom.name,
+          error: error.message,
+        });
+      }
+    }
+
+    logger.info(`Weekly career progression completed: ${results.processed} processed, ${results.retired} retired, ${results.errors.length} errors`);
+
+    return results;
+  } catch (error) {
+    logger.error('Error in weekly career progression:', error);
+    throw new Error('Failed to process weekly career progression');
   }
 }
 
@@ -274,6 +371,7 @@ export default {
   processRetirement,
   getGroomsApproachingRetirement,
   getRetirementStatistics,
+  processWeeklyCareerProgression,
   RETIREMENT_REASONS,
-  CAREER_CONSTANTS
+  CAREER_CONSTANTS,
 };
