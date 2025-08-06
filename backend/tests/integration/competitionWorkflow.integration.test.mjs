@@ -347,7 +347,7 @@ describe('🏆 INTEGRATION: Complete Competition Workflow', () => {
     it('should update leaderboards with competition results using API', async () => {
       // Test the new leaderboard API endpoint
       const response = await request(app)
-        .get('/api/leaderboard/competition?metric=wins&limit=10')
+        .get('/api/leaderboards/competition?metric=wins&limit=10')
         .set('Authorization', `Bearer ${authToken}`)
         .expect(200);
 

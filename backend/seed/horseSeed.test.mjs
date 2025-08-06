@@ -107,7 +107,7 @@ describe('Horse Seed Integration Tests', () => {
           stamina: 70,
           strength: 65,
           userId: testUser.id, // Use the created user's ID
-          stableId: 1, // Stable IDs are integers, this is correct
+          // stableId is optional, removing to avoid foreign key constraint issues
           dateOfBirth: new Date('2020-01-01'), // Required field
         },
       });

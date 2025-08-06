@@ -345,7 +345,7 @@ describe('🚀 INTEGRATION: Competition API Endpoints', () => {
     });
 
     test('should reject unauthorized access', async () => {
-      await request(app).get('/api/leaderboard/competition').expect(401);
+      await request(app).get('/api/leaderboards/competition').expect(401);
     });
   });
 });
