@@ -212,7 +212,7 @@ const traitEffects = {
     description: 'Benefits from specialized bloodline heritage',
   },
 
-  people_trusting: {
+  peopleTrusting: {
     // Bonding effects
     bondingBonus: 0.3, // 30% faster bonding with humans
     handlerCompatibility: 0.25, // 25% better handler relationships
