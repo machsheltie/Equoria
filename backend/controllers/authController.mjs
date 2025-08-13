@@ -9,8 +9,6 @@ import prisma from '../db/index.mjs';
  * Register a new user and create a corresponding user record.
  */
 export const register = async (req, res, next) => {
-  // eslint-disable-next-line no-console
-  console.log('REGISTER BODY:', req.body); // TEMPORARY FOR DEBUGGING
   try {
     const { username, email, password, firstName, lastName, money, level, xp, settings } = req.body; // Removed 'name' and 'role' from destructuring
 
