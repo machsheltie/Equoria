@@ -111,7 +111,7 @@ describe('🧬 COMPREHENSIVE: Epigenetic Traits Calculation System', () => {
 
     it('should handle high bonding score scenarios', () => {
       const params = {
-        damTraits: ['resilient', 'people_trusting'],
+        damTraits: ['resilient', 'peopleTrusting'],
         sireTraits: ['calm', 'intelligent'],
         damBondScore: 95, // Very high bonding
         damStressLevel: 20,

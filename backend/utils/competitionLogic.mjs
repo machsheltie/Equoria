@@ -46,7 +46,7 @@ export function calculateCompetitionScore(disciplineScore, traits, age, discipli
     const disciplineConfig = {
       'Western Pleasure': {
         stats: ['focus', 'obedience', 'intelligence'],
-        beneficial: ['calm', 'people_trusting', 'focused', 'intelligent'],
+        beneficial: ['calm', 'peopleTrusting', 'focused', 'intelligent'],
         detrimental: ['nervous', 'aggressive', 'stubborn'],
       },
       Reining: {
@@ -86,7 +86,7 @@ export function calculateCompetitionScore(disciplineScore, traits, age, discipli
       },
       Saddleseat: {
         stats: ['flexibility', 'balance', 'obedience'],
-        beneficial: ['flexible', 'balanced', 'people_trusting', 'focused'],
+        beneficial: ['flexible', 'balanced', 'peopleTrusting', 'focused'],
         detrimental: ['stiff', 'clumsy', 'stubborn'],
       },
       Endurance: {
@@ -101,7 +101,7 @@ export function calculateCompetitionScore(disciplineScore, traits, age, discipli
       },
       Dressage: {
         stats: ['precision', 'focus', 'obedience'],
-        beneficial: ['focused', 'intelligent', 'calm', 'people_trusting'],
+        beneficial: ['focused', 'intelligent', 'calm', 'peopleTrusting'],
         detrimental: ['nervous', 'aggressive', 'stubborn'],
       },
       'Show Jumping': {
@@ -111,7 +111,7 @@ export function calculateCompetitionScore(disciplineScore, traits, age, discipli
       },
       Vaulting: {
         stats: ['flexibility', 'balance', 'obedience'],
-        beneficial: ['flexible', 'balanced', 'calm', 'people_trusting'],
+        beneficial: ['flexible', 'balanced', 'calm', 'peopleTrusting'],
         detrimental: ['stiff', 'nervous', 'aggressive'],
       },
       Polo: {
@@ -126,7 +126,7 @@ export function calculateCompetitionScore(disciplineScore, traits, age, discipli
       },
       'Combined Driving': {
         stats: ['obedience', 'stamina', 'focus'],
-        beneficial: ['people_trusting', 'resilient', 'focused', 'intelligent'],
+        beneficial: ['peopleTrusting', 'resilient', 'focused', 'intelligent'],
         detrimental: ['stubborn', 'nervous', 'weak'],
       },
       'Fine Harness': {
@@ -162,7 +162,7 @@ export function calculateCompetitionScore(disciplineScore, traits, age, discipli
       },
       'Obedience Training': {
         stats: ['obedience', 'precision', 'intelligence'],
-        beneficial: ['people_trusting', 'intelligent', 'focused', 'calm'],
+        beneficial: ['peopleTrusting', 'intelligent', 'focused', 'calm'],
         detrimental: ['stubborn', 'aggressive', 'nervous'],
       },
     };
@@ -299,7 +299,7 @@ function getDisciplineConfigurations() {
   return {
     'Western Pleasure': {
       stats: ['obedience', 'focus', 'precision'],
-      beneficial: ['calm', 'people_trusting', 'focused', 'intelligent'],
+      beneficial: ['calm', 'peopleTrusting', 'focused', 'intelligent'],
       detrimental: ['nervous', 'aggressive', 'stubborn'],
     },
     Reining: {
@@ -339,7 +339,7 @@ function getDisciplineConfigurations() {
     },
     Saddleseat: {
       stats: ['flexibility', 'obedience', 'precision'],
-      beneficial: ['flexible', 'balanced', 'people_trusting', 'focused'],
+      beneficial: ['flexible', 'balanced', 'peopleTrusting', 'focused'],
       detrimental: ['stiff', 'clumsy', 'stubborn'],
     },
     Endurance: {
@@ -354,7 +354,7 @@ function getDisciplineConfigurations() {
     },
     Dressage: {
       stats: ['precision', 'obedience', 'focus'],
-      beneficial: ['focused', 'intelligent', 'calm', 'people_trusting'],
+      beneficial: ['focused', 'intelligent', 'calm', 'peopleTrusting'],
       detrimental: ['nervous', 'aggressive', 'stubborn'],
     },
     'Show Jumping': {
@@ -364,7 +364,7 @@ function getDisciplineConfigurations() {
     },
     Vaulting: {
       stats: ['strength', 'flexibility', 'endurance'],
-      beneficial: ['flexible', 'balanced', 'calm', 'people_trusting'],
+      beneficial: ['flexible', 'balanced', 'calm', 'peopleTrusting'],
       detrimental: ['stiff', 'nervous', 'aggressive'],
     },
     Polo: {
@@ -379,7 +379,7 @@ function getDisciplineConfigurations() {
     },
     'Combined Driving': {
       stats: ['obedience', 'strength', 'focus'],
-      beneficial: ['people_trusting', 'resilient', 'focused', 'intelligent'],
+      beneficial: ['peopleTrusting', 'resilient', 'focused', 'intelligent'],
       detrimental: ['stubborn', 'nervous', 'weak'],
     },
     'Fine Harness': {
@@ -415,7 +415,7 @@ function getDisciplineConfigurations() {
     },
     'Obedience Training': {
       stats: ['obedience', 'precision', 'intelligence'],
-      beneficial: ['people_trusting', 'intelligent', 'focused', 'calm'],
+      beneficial: ['peopleTrusting', 'intelligent', 'focused', 'calm'],
       detrimental: ['stubborn', 'aggressive', 'nervous'],
     },
   };
