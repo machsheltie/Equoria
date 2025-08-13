@@ -1,13 +1,13 @@
 import React from 'react';
 import { render, fireEvent, waitFor } from '@testing-library/react-native';
 import TraitDisplay from '../TraitDisplay';
+import { View } from 'react-native';
 
 // Mock expo-linear-gradient
 jest.mock('expo-linear-gradient', () => ({
-  LinearGradient: ({ children, ...props }) => {
-    const { View } = require('react-native');
-    return <View {...props}>{children}</View>;
-  },
+  LinearGradient: ({ children, ...props }) => (
+    <View {...props}>{children}</View>
+  ),
 }));
 
 // Mock react-native components
