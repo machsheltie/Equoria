@@ -1,2 +1,4 @@
 // Simple test file
-var x = 1
+const x = 1;
+
+export default x;

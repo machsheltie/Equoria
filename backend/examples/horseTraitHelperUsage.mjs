@@ -236,7 +236,7 @@ async function exampleCompleteWorkflow(horseId) {
 
     // 2. Check for specific traits
     console.log('\n2. Checking for specific traits:');
-    const importantTraits = ['resilient', 'bold', 'nervous', 'spooky', 'people_trusting'];
+    const importantTraits = ['resilient', 'bold', 'nervous', 'spooky', 'peopleTrusting'];
 
     for (const trait of importantTraits) {
       const hasTrait_ = await hasTrait(horseId, trait);

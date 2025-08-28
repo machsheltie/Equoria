@@ -5,7 +5,7 @@
  * foal traits based on breeding conditions, lineage, and environmental factors.
  *
  * 📋 BUSINESS RULES TESTED:
- * - Environmental conditions: Low stress + premium feed → positive traits (resilient, people_trusting)
+ * - Environmental conditions: Low stress + premium feed → positive traits (resilient, peopleTrusting)
  * - Inbreeding detection: Common ancestors → negative traits (fragile, reactive, low_immunity)
  * - Discipline specialization: 3+ ancestors same discipline → discipline_affinity traits
  * - Legacy talent: 4+ ancestors same discipline → legacy_talent trait
@@ -106,7 +106,7 @@ describe('🧬 UNIT: Apply Epigenetic Traits At Birth - Breeding Condition Analy
       expect(result.positive).toContain('resilient');
     });
 
-    it('should assign people_trusting trait with low stress and premium feed', () => {
+    it('should assign peopleTrusting trait with low stress and premium feed', () => {
       jest.spyOn(Math, 'random').mockReturnValue(0.4); // Below 0.60 threshold
 
       const mare = { stressLevel: 20 };
@@ -116,7 +116,7 @@ describe('🧬 UNIT: Apply Epigenetic Traits At Birth - Breeding Condition Analy
         stressLevel: 20,
       });
 
-      expect(result.positive).toContain('people_trusting');
+      expect(result.positive).toContain('peopleTrusting');
     });
 
     it('should not assign positive traits with high stress', () => {
@@ -128,7 +128,7 @@ describe('🧬 UNIT: Apply Epigenetic Traits At Birth - Breeding Condition Analy
       });
 
       expect(result.positive).not.toContain('resilient');
-      expect(result.positive).not.toContain('people_trusting');
+      expect(result.positive).not.toContain('peopleTrusting');
     });
 
     it('should not assign positive traits with poor feed quality', () => {
@@ -140,7 +140,7 @@ describe('🧬 UNIT: Apply Epigenetic Traits At Birth - Breeding Condition Analy
       });
 
       expect(result.positive).not.toContain('resilient');
-      expect(result.positive).not.toContain('people_trusting');
+      expect(result.positive).not.toContain('peopleTrusting');
     });
   });
 

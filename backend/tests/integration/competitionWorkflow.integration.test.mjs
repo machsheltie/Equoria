@@ -133,7 +133,7 @@ describe('🏆 INTEGRATION: Complete Competition Workflow', () => {
             'Cross Country': 70,
           },
           epigeneticModifiers: {
-            positive: ['fast', 'athletic', 'focused', 'brave', 'resilient', 'people_trusting'],
+            positive: ['fast', 'athletic', 'focused', 'brave', 'resilient', 'peopleTrusting'],
             negative: [],
             hidden: ['champion_heart'],
           },
