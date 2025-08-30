@@ -1,4 +1,5 @@
-// This file is temporarily cleared as environment variables will be loaded via the Jest command.
+// Jest setup file for backend tests
+// Loads environment variables for test environment
 
 import path from 'path';
 import dotenv from 'dotenv';
