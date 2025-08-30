@@ -5,18 +5,18 @@
  * with minimal mocking to focus on the core breeding trait calculation algorithms.
  *
  * 📋 BUSINESS RULES TESTED:
- * - Positive trait conditions: Low stress (≤20) + premium feed (≥80) → resilient, people_trusting
+ * - Positive trait conditions: Low stress (≤20) + premium feed (≥80) → resilient, peopleTrusting
  * - Negative trait conditions: Inbreeding (repeated ancestor IDs) → fragile, reactive, low_immunity
  * - Discipline specialization: 3+ ancestors same discipline → discipline_affinity_* traits
  * - Legacy talent: 4+ ancestors same discipline → legacy_talent trait
- * - Probability thresholds: resilient (75%), people_trusting (60%), discipline_affinity (70%), legacy_talent (40%)
+ * - Probability thresholds: resilient (75%), peopleTrusting (60%), discipline_affinity (70%), legacy_talent (40%)
  * - Inbreeding severity: High (4+ repeats), moderate (3 repeats), low (2 repeats)
  * - Random behavior: Deterministic testing with controlled Math.random() values
  * - Edge cases: Missing discipline fields, diverse lineage, no specialization
  *
  * 🎯 FUNCTIONALITY TESTED:
  * 1. applyEpigeneticTraitsAtBirth() - Core trait application logic with direct parameters
- * 2. Positive trait assignment: resilient and people_trusting with optimal conditions
+ * 2. Positive trait assignment: resilient and peopleTrusting with optimal conditions
  * 3. Negative trait assignment: fragile, reactive, low_immunity with inbreeding
  * 4. Discipline specialization: Racing, Dressage, Show Jumping affinity detection
  * 5. Legacy talent: Enhanced trait for strong discipline specialization
@@ -94,8 +94,8 @@ describe('🧬 UNIT: Apply Epigenetic Traits At Birth Unit - Pure Logic Validati
       expect(result.negative).toEqual([]);
     });
 
-    it('should assign people_trusting trait when mare has low stress and premium feed', () => {
-      // Mock random to ensure trait assignment (below 0.60 threshold for people_trusting)
+    it('should assign peopleTrusting trait when mare has low stress and premium feed', () => {
+      // Mock random to ensure trait assignment (below 0.60 threshold for peopleTrusting)
       mockRandom.mockReturnValue(0.4);
 
       const mare = {
@@ -111,7 +111,7 @@ describe('🧬 UNIT: Apply Epigenetic Traits At Birth Unit - Pure Logic Validati
         stressLevel: 20,
       });
 
-      expect(result.positive).toContain('people_trusting');
+      expect(result.positive).toContain('peopleTrusting');
       expect(result.negative).toEqual([]);
     });
 
@@ -119,7 +119,7 @@ describe('🧬 UNIT: Apply Epigenetic Traits At Birth Unit - Pure Logic Validati
       // Mock random to ensure both traits are assigned
       mockRandom
         .mockReturnValueOnce(0.3) // Below 0.75 for resilient
-        .mockReturnValueOnce(0.2); // Below 0.60 for people_trusting
+        .mockReturnValueOnce(0.2); // Below 0.60 for peopleTrusting
 
       const mare = {
         id: 1,
@@ -135,7 +135,7 @@ describe('🧬 UNIT: Apply Epigenetic Traits At Birth Unit - Pure Logic Validati
       });
 
       expect(result.positive).toContain('resilient');
-      expect(result.positive).toContain('people_trusting');
+      expect(result.positive).toContain('peopleTrusting');
       expect(result.negative).toEqual([]);
     });
 
@@ -156,7 +156,7 @@ describe('🧬 UNIT: Apply Epigenetic Traits At Birth Unit - Pure Logic Validati
       });
 
       expect(result.positive).not.toContain('resilient');
-      expect(result.positive).not.toContain('people_trusting');
+      expect(result.positive).not.toContain('peopleTrusting');
     });
 
     it('should not assign positive traits when feed quality is too low', () => {
@@ -176,7 +176,7 @@ describe('🧬 UNIT: Apply Epigenetic Traits At Birth Unit - Pure Logic Validati
       });
 
       expect(result.positive).not.toContain('resilient');
-      expect(result.positive).not.toContain('people_trusting');
+      expect(result.positive).not.toContain('peopleTrusting');
     });
   });
 
@@ -472,7 +472,7 @@ describe('🧬 UNIT: Apply Epigenetic Traits At Birth Unit - Pure Logic Validati
       // Set specific random values for reproducible results
       mockRandom
         .mockReturnValueOnce(0.5) // resilient trait
-        .mockReturnValueOnce(0.4) // people_trusting trait
+        .mockReturnValueOnce(0.4) // peopleTrusting trait
         .mockReturnValueOnce(0.6) // discipline affinity trait
         .mockReturnValueOnce(0.3); // legacy talent trait
 
@@ -498,7 +498,7 @@ describe('🧬 UNIT: Apply Epigenetic Traits At Birth Unit - Pure Logic Validati
 
       // Should get positive traits from optimal conditions and racing lineage
       expect(result.positive).toContain('resilient');
-      expect(result.positive).toContain('people_trusting');
+      expect(result.positive).toContain('peopleTrusting');
       expect(result.positive).toContain('discipline_affinity_racing');
       expect(result.positive).toContain('legacy_talent');
       expect(result.negative).toEqual([]);

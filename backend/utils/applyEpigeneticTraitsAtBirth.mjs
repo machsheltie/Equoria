@@ -47,11 +47,11 @@ export function applyEpigeneticTraitsAtBirth({ mare, lineage, feedQuality, stres
         );
       }
 
-      // Good chance for people_trusting trait
+      // Good chance for peopleTrusting trait
       if (Math.random() < 0.6) {
-        positive.push('people_trusting');
+        positive.push('peopleTrusting');
         logger.info(
-          '[applyEpigeneticTraitsAtBirth] Applied people_trusting trait (low stress + premium feed)',
+          '[applyEpigeneticTraitsAtBirth] Applied peopleTrusting trait (low stress + premium feed)',
         );
       }
     }

@@ -1,7 +1,4 @@
 import React from 'react';
-import TraitDisplay from '../TraitDisplay.mjs';
-
-// Mocks are handled by Jest configuration and __mocks__ directory
 
 describe('TraitDisplay Component', () => {
   const mockTraits = {

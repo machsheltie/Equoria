@@ -1,23 +1,23 @@
 /**
  * Groom Progression & Personality System Tests
- * 
+ *
  * Tests the complete groom progression system including:
  * - XP gain and leveling mechanics
  * - Groom-horse synergy tracking
  * - Assignment history logging
  * - Enhanced profile API
- * 
+ *
  * Following TDD approach with NO MOCKING as specified in project guidelines.
  * Tests validate real system behavior with actual database operations.
  */
 
 import { PrismaClient } from '../../packages/database/node_modules/@prisma/client/index.js';
-import { 
-  awardGroomXP, 
-  calculateGroomLevel, 
+import {
+  awardGroomXP,
+  calculateGroomLevel,
   updateGroomSynergy,
   logGroomAssignment,
-  getGroomProfile
+  getGroomProfile,
 } from '../services/groomProgressionService.mjs';
 
 const prisma = new PrismaClient();
@@ -97,7 +97,7 @@ describe('Groom Progression System', () => {
   describe('XP and Leveling System', () => {
     test('Should award XP for milestone completion', async () => {
       const result = await awardGroomXP(testGroom.id, 'milestone_completion', 20);
-      
+
       expect(result.success).toBe(true);
       expect(result.xpGained).toBe(20);
       expect(result.newExperience).toBe(20);
@@ -107,7 +107,7 @@ describe('Groom Progression System', () => {
 
     test('Should award XP for trait shaping', async () => {
       const result = await awardGroomXP(testGroom.id, 'trait_shaped', 10);
-      
+
       expect(result.success).toBe(true);
       expect(result.xpGained).toBe(10);
       expect(result.newExperience).toBe(10);
@@ -115,7 +115,7 @@ describe('Groom Progression System', () => {
 
     test('Should award XP for show wins', async () => {
       const result = await awardGroomXP(testGroom.id, 'show_win', 15);
-      
+
       expect(result.success).toBe(true);
       expect(result.xpGained).toBe(15);
       expect(result.newExperience).toBe(15);
@@ -124,7 +124,7 @@ describe('Groom Progression System', () => {
     test('Should level up when reaching XP threshold', async () => {
       // Award 100 XP to reach level 2 (100 * 1 = 100 XP required)
       const result = await awardGroomXP(testGroom.id, 'milestone_completion', 100);
-      
+
       expect(result.success).toBe(true);
       expect(result.xpGained).toBe(100);
       expect(result.newExperience).toBe(100);
@@ -144,7 +144,7 @@ describe('Groom Progression System', () => {
     test('Should cap level at 10', async () => {
       // Award massive XP to test level cap
       const result = await awardGroomXP(testGroom.id, 'milestone_completion', 10000);
-      
+
       expect(result.newLevel).toBeLessThanOrEqual(10);
     });
   });
@@ -152,7 +152,7 @@ describe('Groom Progression System', () => {
   describe('Groom-Horse Synergy System', () => {
     test('Should create synergy record for new groom-horse pair', async () => {
       const result = await updateGroomSynergy(testGroom.id, testHorse.id, 'milestone_completed', 1);
-      
+
       expect(result.success).toBe(true);
       expect(result.synergyGained).toBe(1);
       expect(result.newSynergyScore).toBe(1);
@@ -162,11 +162,11 @@ describe('Groom Progression System', () => {
     test('Should award correct synergy for different actions', async () => {
       // Test milestone completion (+1)
       await updateGroomSynergy(testGroom.id, testHorse.id, 'milestone_completed', 1);
-      
+
       // Test trait shaped (+2)
       const traitResult = await updateGroomSynergy(testGroom.id, testHorse.id, 'trait_shaped', 1);
       expect(traitResult.newSynergyScore).toBe(3); // 1 + 2
-      
+
       // Test rare trait influenced (+3)
       const rareResult = await updateGroomSynergy(testGroom.id, testHorse.id, 'rare_trait_influenced', 1);
       expect(rareResult.newSynergyScore).toBe(6); // 3 + 3
@@ -175,7 +175,7 @@ describe('Groom Progression System', () => {
     test('Should penalize synergy for reassignment', async () => {
       // Build up some synergy first
       await updateGroomSynergy(testGroom.id, testHorse.id, 'milestone_completed', 5);
-      
+
       // Test reassignment penalty (-5)
       const result = await updateGroomSynergy(testGroom.id, testHorse.id, 'reassigned_early', 1);
       expect(result.newSynergyScore).toBe(0); // 5 - 5, minimum 0
@@ -184,11 +184,11 @@ describe('Groom Progression System', () => {
     test('Should track sessions together', async () => {
       await updateGroomSynergy(testGroom.id, testHorse.id, 'milestone_completed', 1);
       await updateGroomSynergy(testGroom.id, testHorse.id, 'trait_shaped', 1);
-      
+
       const synergy = await prisma.groomHorseSynergy.findFirst({
-        where: { groomId: testGroom.id, horseId: testHorse.id }
+        where: { groomId: testGroom.id, horseId: testHorse.id },
       });
-      
+
       expect(synergy.sessionsTogether).toBe(2);
     });
   });
@@ -196,7 +196,7 @@ describe('Groom Progression System', () => {
   describe('Assignment History Logging', () => {
     test('Should log assignment start', async () => {
       const result = await logGroomAssignment(testGroom.id, testHorse.id, 'assigned');
-      
+
       expect(result.success).toBe(true);
       expect(result.assignmentLog).toBeDefined();
       expect(result.assignmentLog.assignedAt).toBeDefined();
@@ -206,14 +206,14 @@ describe('Groom Progression System', () => {
     test('Should log assignment completion with performance data', async () => {
       // Start assignment
       await logGroomAssignment(testGroom.id, testHorse.id, 'assigned');
-      
+
       // Complete assignment with performance data
       const result = await logGroomAssignment(testGroom.id, testHorse.id, 'unassigned', {
         milestonesCompleted: 2,
         traitsShaped: ['confident', 'calm'],
-        xpGained: 30
+        xpGained: 30,
       });
-      
+
       expect(result.success).toBe(true);
       expect(result.assignmentLog.unassignedAt).toBeDefined();
       expect(result.assignmentLog.milestonesCompleted).toBe(2);
@@ -228,9 +228,9 @@ describe('Groom Progression System', () => {
       await awardGroomXP(testGroom.id, 'milestone_completion', 150); // Level 2
       await updateGroomSynergy(testGroom.id, testHorse.id, 'milestone_completed', 3);
       await logGroomAssignment(testGroom.id, testHorse.id, 'assigned');
-      
+
       const profile = await getGroomProfile(testGroom.id);
-      
+
       expect(profile.success).toBe(true);
       expect(profile.groom).toBeDefined();
       expect(profile.groom.id).toBe(testGroom.id);

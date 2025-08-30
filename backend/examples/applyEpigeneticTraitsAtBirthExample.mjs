@@ -27,7 +27,7 @@ const optimalResult = applyEpigeneticTraitsAtBirth({
 });
 
 console.log('Result:', JSON.stringify(optimalResult, null, 2));
-console.log('Expected: resilient and people_trusting traits\n');
+console.log('Expected: resilient and peopleTrusting traits\n');
 
 // Example 2: Inbreeding Scenario
 console.log('⚠️ Example 2: Inbreeding Scenario');
@@ -230,11 +230,11 @@ const edgeResult = applyEpigeneticTraitsAtBirth({
 });
 
 console.log('Result:', JSON.stringify(edgeResult, null, 2));
-console.log('Expected: resilient, people_trusting, and discipline_affinity_endurance\n');
+console.log('Expected: resilient, peopleTrusting, and discipline_affinity_endurance\n');
 
 console.log('✅ All examples completed!');
 console.log('\n📝 Key Usage Patterns:');
-console.log('- Low stress (≤20) + Premium feed (≥80) → resilient, people_trusting');
+console.log('- Low stress (≤20) + Premium feed (≥80) → resilient, peopleTrusting');
 console.log('- Inbreeding detected → fragile, reactive, low_immunity');
 console.log('- 3+ ancestors same discipline → discipline_affinity_*');
 console.log('- 4+ ancestors same discipline → legacy_talent chance');

@@ -1,10 +1,10 @@
 /**
  * Groom Progression Service
- * 
+ *
  * Handles groom experience, leveling, synergy tracking, and assignment history.
  * Implements the groom progression and personality system as specified in
  * groomprogressionpersonality.md.
- * 
+ *
  * Features:
  * - XP gain and leveling system (cap at level 10)
  * - Groom-horse synergy tracking with effects
@@ -32,8 +32,8 @@ const LEVEL_CAP = 10;
  * @returns {number} Current level (1-10)
  */
 export function calculateGroomLevel(experience) {
-  if (experience < 100) return 1;
-  
+  if (experience < 100) { return 1; }
+
   let totalXpRequired = 0;
   for (let level = 1; level <= LEVEL_CAP; level++) {
     const xpForThisLevel = 100 * level;
@@ -42,7 +42,7 @@ export function calculateGroomLevel(experience) {
     }
     totalXpRequired += xpForThisLevel;
   }
-  
+
   return LEVEL_CAP; // Cap at level 10
 }
 
@@ -60,7 +60,7 @@ export async function awardGroomXP(groomId, source, amount) {
     // Get current groom data
     const groom = await prisma.groom.findUnique({
       where: { id: groomId },
-      select: { experience: true, level: true }
+      select: { experience: true, level: true },
     });
 
     if (!groom) {
@@ -78,8 +78,8 @@ export async function awardGroomXP(groomId, source, amount) {
       where: { id: groomId },
       data: {
         experience: newExperience,
-        level: newLevel
-      }
+        level: newLevel,
+      },
     });
 
     logger.info(`[groomProgressionService.awardGroomXP] Groom ${groomId} gained ${amount} XP: ${oldExperience} → ${newExperience} (Level ${oldLevel} → ${newLevel})`);
@@ -91,14 +91,14 @@ export async function awardGroomXP(groomId, source, amount) {
       newExperience,
       oldLevel,
       newLevel,
-      levelUp
+      levelUp,
     };
 
   } catch (error) {
     logger.error(`[groomProgressionService.awardGroomXP] Error awarding XP to groom ${groomId}:`, error);
     return {
       success: false,
-      error: error.message
+      error: error.message,
     };
   }
 }
@@ -120,14 +120,14 @@ export async function updateGroomSynergy(groomId, horseId, action, sessions = 1)
       milestone_completed: 1,
       trait_shaped: 2,
       rare_trait_influenced: 3,
-      reassigned_early: -5
+      reassigned_early: -5,
     };
 
     const synergyGain = synergyGains[action] || 0;
 
     // Find or create synergy record
     let synergyRecord = await prisma.groomHorseSynergy.findFirst({
-      where: { groomId, horseId }
+      where: { groomId, horseId },
     });
 
     if (!synergyRecord) {
@@ -137,8 +137,8 @@ export async function updateGroomSynergy(groomId, horseId, action, sessions = 1)
           horseId,
           synergyScore: Math.max(0, synergyGain), // Minimum 0
           sessionsTogether: sessions,
-          lastAssignedAt: new Date()
-        }
+          lastAssignedAt: new Date(),
+        },
       });
     } else {
       const newSynergyScore = Math.max(0, synergyRecord.synergyScore + synergyGain);
@@ -147,8 +147,8 @@ export async function updateGroomSynergy(groomId, horseId, action, sessions = 1)
         data: {
           synergyScore: newSynergyScore,
           sessionsTogether: synergyRecord.sessionsTogether + sessions,
-          lastAssignedAt: new Date()
-        }
+          lastAssignedAt: new Date(),
+        },
       });
     }
 
@@ -158,14 +158,14 @@ export async function updateGroomSynergy(groomId, horseId, action, sessions = 1)
       success: true,
       synergyGained: synergyGain,
       newSynergyScore: synergyRecord.synergyScore,
-      sessionsTogether: synergyRecord.sessionsTogether
+      sessionsTogether: synergyRecord.sessionsTogether,
     };
 
   } catch (error) {
-    logger.error(`[groomProgressionService.updateGroomSynergy] Error updating synergy:`, error);
+    logger.error('[groomProgressionService.updateGroomSynergy] Error updating synergy:', error);
     return {
       success: false,
-      error: error.message
+      error: error.message,
     };
   }
 }
@@ -191,13 +191,13 @@ export async function logGroomAssignment(groomId, horseId, action, performanceDa
           assignedAt: new Date(),
           milestonesCompleted: 0,
           traitsShaped: [],
-          xpGained: 0
-        }
+          xpGained: 0,
+        },
       });
 
       return {
         success: true,
-        assignmentLog
+        assignmentLog,
       };
 
     } else if (action === 'unassigned') {
@@ -206,9 +206,9 @@ export async function logGroomAssignment(groomId, horseId, action, performanceDa
         where: {
           groomId,
           horseId,
-          unassignedAt: null
+          unassignedAt: null,
         },
-        orderBy: { assignedAt: 'desc' }
+        orderBy: { assignedAt: 'desc' },
       });
 
       if (!assignmentLog) {
@@ -221,23 +221,23 @@ export async function logGroomAssignment(groomId, horseId, action, performanceDa
           unassignedAt: new Date(),
           milestonesCompleted: performanceData.milestonesCompleted || 0,
           traitsShaped: performanceData.traitsShaped || [],
-          xpGained: performanceData.xpGained || 0
-        }
+          xpGained: performanceData.xpGained || 0,
+        },
       });
 
       return {
         success: true,
-        assignmentLog: updatedLog
+        assignmentLog: updatedLog,
       };
     }
 
     throw new Error(`Invalid action: ${action}`);
 
   } catch (error) {
-    logger.error(`[groomProgressionService.logGroomAssignment] Error logging assignment:`, error);
+    logger.error('[groomProgressionService.logGroomAssignment] Error logging assignment:', error);
     return {
       success: false,
-      error: error.message
+      error: error.message,
     };
   }
 }
@@ -259,11 +259,11 @@ export async function getGroomProfile(groomId) {
           where: { isActive: true },
           include: {
             foal: {
-              select: { id: true, name: true }
-            }
-          }
-        }
-      }
+              select: { id: true, name: true },
+            },
+          },
+        },
+      },
     });
 
     if (!groom) {
@@ -275,15 +275,15 @@ export async function getGroomProfile(groomId) {
       where: { groomId },
       include: {
         horse: {
-          select: { id: true, name: true }
-        }
-      }
+          select: { id: true, name: true },
+        },
+      },
     });
 
     // Calculate synergy effects
     const synergyWithEffects = synergyRecords.map(synergy => ({
       ...synergy,
-      effects: calculateSynergyEffects(synergy.synergyScore)
+      effects: calculateSynergyEffects(synergy.synergyScore),
     }));
 
     // Get assignment history
@@ -291,11 +291,11 @@ export async function getGroomProfile(groomId) {
       where: { groomId },
       include: {
         horse: {
-          select: { id: true, name: true }
-        }
+          select: { id: true, name: true },
+        },
       },
       orderBy: { assignedAt: 'desc' },
-      take: 10 // Last 10 assignments
+      take: 10, // Last 10 assignments
     });
 
     return {
@@ -304,15 +304,15 @@ export async function getGroomProfile(groomId) {
         ...groom,
         synergyRecords: synergyWithEffects,
         assignmentHistory,
-        currentAssignments: groom.groomAssignments
-      }
+        currentAssignments: groom.groomAssignments,
+      },
     };
 
   } catch (error) {
-    logger.error(`[groomProgressionService.getGroomProfile] Error getting groom profile:`, error);
+    logger.error('[groomProgressionService.getGroomProfile] Error getting groom profile:', error);
     return {
       success: false,
-      error: error.message
+      error: error.message,
     };
   }
 }
@@ -326,7 +326,7 @@ function calculateSynergyEffects(synergyScore) {
   const effects = {
     bondGrowthBonus: 0,
     milestoneTraitModifier: 0,
-    cosmeticBonus: null
+    cosmeticBonus: null,
   };
 
   if (synergyScore >= 25) {

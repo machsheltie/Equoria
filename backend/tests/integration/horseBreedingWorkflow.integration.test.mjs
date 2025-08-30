@@ -173,7 +173,7 @@ describe('🐎 INTEGRATION: Complete Horse Breeding Workflow', () => {
             'Show Jumping': 82,
           },
           epigeneticModifiers: {
-            positive: ['powerful', 'brave', 'athletic', 'people_trusting'],
+            positive: ['powerful', 'brave', 'athletic', 'peopleTrusting'],
             negative: [],
             hidden: ['endurance'],
           },

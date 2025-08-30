@@ -5,7 +5,7 @@
  * and provides a structured approach for any future enhancements or maintenance tasks.
  */
 
-export const TRAINING_SYSTEM_TASKS = {
+export const trainingSystemTasks = {
   // ✅ COMPLETED IMPLEMENTATION
   completed: {
     coreSystem: {
@@ -29,7 +29,7 @@ export const TRAINING_SYSTEM_TASKS = {
         "backend/constants/schema.mjs",
         "backend/controllers/trainingController.mjs"
       ],
-      implementation: "TRAINING_LIMITS constants with MIN_AGE: 3, MAX_AGE: 20, COOLDOWN_DAYS: 7",
+      implementation: "trainingLimits constants with minAge: 3, maxAge: 20, cooldownDays: 7",
       testResults: "Age validation tests passing in trainingController.test.mjs",
       status: "COMPLETE"
     },
@@ -289,20 +289,20 @@ export const TRAINING_SYSTEM_TASKS = {
 /**
  * Export implementation status for tracking
  */
-export const TRAINING_SYSTEM_STATUS = {
+export const trainingSystemStatus = {
   totalComponents: 10,
   completedComponents: 10,
   completionPercentage: 100,
   totalDisciplines: 23,
   maintenanceTasks: 2,
   enhancementTasks: 4,
-  overallStatus: "PRODUCTION_READY"
+  overallStatus: "productionReady"
 };
 
 /**
  * Export API endpoints for frontend integration
  */
-export const TRAINING_API_ENDPOINTS = {
+export const trainingApiEndpoints = {
   trainHorse: "POST /api/training/train",
   getTrainingStatus: "GET /api/training/status/:horseId/:discipline",
   getAllTrainingStatuses: "GET /api/training/status/:horseId",
@@ -314,11 +314,11 @@ export const TRAINING_API_ENDPOINTS = {
 /**
  * Export database schema requirements
  */
-export const TRAINING_DATABASE_SCHEMA = {
+export const trainingDatabaseSchema = {
   horseFields: [
     "disciplineScores (JSON) - Stores score per discipline",
     "trainingCooldown (DateTime) - Next eligible training date",
-    "epigenetic_modifiers (JSON) - Traits affecting training",
+    "epigeneticModifiers (JSON) - Traits affecting training",
     "stats (Individual fields) - Speed, stamina, agility, etc."
   ],
   trainingLogFields: [
@@ -330,4 +330,4 @@ export const TRAINING_DATABASE_SCHEMA = {
   ]
 };
 
-export default TRAINING_SYSTEM_TASKS;
+export default trainingSystemTasks;
