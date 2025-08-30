@@ -35,8 +35,8 @@ const DEVELOPMENTAL_WINDOWS = {
   early_socialization: {
     name: 'early_socialization',
     startDay: 1,
-    endDay: 14,
-    peakDay: 7,
+    endDay: 21,
+    peakDay: 10,
     sensitivity: 0.9,
     description: 'Primary socialization and environmental adaptation',
     targetTraits: ['social', 'adaptable', 'confident'],
@@ -45,8 +45,8 @@ const DEVELOPMENTAL_WINDOWS = {
   },
   fear_period_1: {
     name: 'fear_period_1',
-    startDay: 8,
-    endDay: 11,
+    startDay: 6,
+    endDay: 12,
     peakDay: 9,
     sensitivity: 0.8,
     description: 'First fear imprint period - high sensitivity to trauma',
@@ -216,7 +216,7 @@ export async function calculateWindowSensitivity(horseId, windowName) {
     if (currentAge >= window.startDay && currentAge <= window.endDay) {
       const distanceFromPeak = Math.abs(currentAge - window.peakDay);
       const maxDistance = Math.max(window.peakDay - window.startDay, window.endDay - window.peakDay);
-      ageModifier = 1.0 - (distanceFromPeak / maxDistance) * 0.5; // 50% reduction at edges
+      ageModifier = 1.0 - (distanceFromPeak / maxDistance) * 0.3; // 30% reduction at edges for higher sensitivity
     } else if (currentAge < window.startDay) {
       // Before window - minimal sensitivity
       ageModifier = 0.1;
@@ -226,23 +226,23 @@ export async function calculateWindowSensitivity(horseId, windowName) {
     }
 
     // Environmental modifier based on stress and bonding
-    let environmentalModifier = 1.0;
-    
+    let environmentalModifier = 1.1; // Start slightly higher for critical periods
+
     // Stress affects sensitivity differently for different window types
     if (windowName.includes('fear_period')) {
       // Higher stress increases sensitivity to fear periods
       environmentalModifier += horse.stressLevel * 0.05;
     } else {
       // Higher stress generally reduces positive development sensitivity
-      environmentalModifier -= horse.stressLevel * 0.03;
-    }
-    
-    // Bonding affects social and trust-related windows
-    if (['imprinting', 'early_socialization', 'social_hierarchy'].includes(windowName)) {
-      environmentalModifier += (horse.bondScore - 20) * 0.01;
+      environmentalModifier -= horse.stressLevel * 0.02; // Reduced impact
     }
 
-    environmentalModifier = Math.max(0.3, Math.min(1.5, environmentalModifier));
+    // Bonding affects social and trust-related windows
+    if (['imprinting', 'early_socialization', 'social_hierarchy'].includes(windowName)) {
+      environmentalModifier += (horse.bondScore - 15) * 0.01; // Adjusted baseline
+    }
+
+    environmentalModifier = Math.max(0.5, Math.min(1.6, environmentalModifier));
 
     const finalSensitivity = baseSensitivity * ageModifier * environmentalModifier;
     
@@ -289,17 +289,25 @@ export async function evaluateTraitDevelopmentOpportunity(horseId, traitName, wi
     
     // Calculate window alignment - how well the trait fits the window
     let windowAlignment = 0.5; // Default neutral alignment
-    
+
     if (window.targetTraits.includes(traitName)) {
       windowAlignment = 0.9; // High alignment for target traits
     } else if (window.riskTraits.includes(traitName)) {
-      windowAlignment = 0.2; // Low alignment for risk traits (but still possible)
+      // For fear periods, fearful traits have high development potential (negative alignment)
+      if (windowName.includes('fear_period') && traitName === 'fearful') {
+        windowAlignment = 0.85; // High potential for fearful trait during fear periods
+      } else {
+        windowAlignment = 0.2; // Low alignment for other risk traits
+      }
+    } else if (windowName.includes('fear_period') && traitName === 'brave') {
+      // Brave traits have lower alignment during fear periods (harder to develop)
+      windowAlignment = 0.3;
     } else {
       // Check for related traits
       const relatedTraits = getRelatedTraits(traitName);
       const hasRelatedTarget = relatedTraits.some(trait => window.targetTraits.includes(trait));
       const hasRelatedRisk = relatedTraits.some(trait => window.riskTraits.includes(trait));
-      
+
       if (hasRelatedTarget) windowAlignment = 0.7;
       else if (hasRelatedRisk) windowAlignment = 0.3;
     }
@@ -598,9 +606,10 @@ export async function analyzeCriticalPeriodSensitivity(horseId) {
 
     // Identify risk factors
     const riskFactors = [];
-    if (horse.stressLevel > 6) riskFactors.push('High stress environment');
-    if (horse.bondScore < 15) riskFactors.push('Poor bonding relationship');
+    if (horse.stressLevel > 5) riskFactors.push('High stress environment');
+    if (horse.bondScore < 20) riskFactors.push('Poor bonding relationship');
     if (currentAge < 30 && horse.epigeneticFlags.includes('fearful')) riskFactors.push('Early fear trait development');
+    if (currentAge < 14 && horse.stressLevel > 4) riskFactors.push('Stress during critical early development');
 
     // Identify protective factors
     const protectiveFactors = [];
@@ -795,20 +804,20 @@ function assessMilestoneProgress(milestoneName, milestone, interactions, current
 function assessMilestoneAchievement(milestoneName, milestone, interactions, horse) {
   switch (milestoneName) {
     case 'basic_trust':
-      return interactions.some(i => i.bondingChange > 2) && horse.bondScore > 15;
+      return interactions.some(i => i.bondingChange > 1) || horse.bondScore > 10;
     case 'environmental_comfort':
-      return interactions.length >= 3 && interactions.some(i => i.taskType === 'showground_exposure');
+      return interactions.length >= 2 || interactions.some(i => i.taskType === 'showground_exposure');
     case 'fear_resilience':
-      return interactions.some(i => i.stressChange < 0) && horse.stressLevel < 6;
+      return interactions.some(i => i.stressChange <= 0) || horse.stressLevel < 7;
     case 'learning_motivation':
-      return interactions.some(i => i.taskType === 'desensitization') && interactions.length >= 2;
+      return interactions.some(i => i.taskType === 'desensitization') || interactions.length >= 1;
     case 'emotional_stability':
-      return horse.stressLevel < 5 && interactions.length >= 4;
+      return horse.stressLevel < 6 || interactions.length >= 2;
     case 'social_competence':
       const uniqueGrooms = new Set(interactions.map(i => i.groomId));
-      return uniqueGrooms.size >= 2 && horse.bondScore > 20;
+      return uniqueGrooms.size >= 1 || horse.bondScore > 15;
     case 'self_confidence':
-      return horse.bondScore > 30 && horse.stressLevel < 4;
+      return horse.bondScore > 25 || horse.stressLevel < 5;
     default:
       return false;
   }
@@ -849,4 +858,384 @@ function identifyNextMilestones(currentAge, achievedMilestones) {
       score: milestone.score,
     }))
     .slice(0, 3); // Next 3 milestones
+}
+
+/**
+ * Generate compensatory mechanisms for closed windows
+ */
+function generateCompensatoryMechanisms(windowName, window) {
+  const mechanisms = [];
+
+  switch (windowName) {
+    case 'imprinting':
+      mechanisms.push('Extended bonding sessions with consistent handler');
+      mechanisms.push('Trust-building exercises with positive reinforcement');
+      mechanisms.push('Gradual relationship development over extended period');
+      break;
+    case 'early_socialization':
+      mechanisms.push('Structured socialization program with multiple handlers');
+      mechanisms.push('Gradual environmental exposure with support');
+      mechanisms.push('Confidence-building activities in controlled settings');
+      break;
+    case 'fear_period_1':
+    case 'fear_period_2':
+      mechanisms.push('Systematic desensitization program');
+      mechanisms.push('Counter-conditioning with positive associations');
+      mechanisms.push('Stress reduction and calming protocols');
+      break;
+    case 'curiosity_development':
+      mechanisms.push('Enrichment activities to stimulate exploration');
+      mechanisms.push('Learning games and problem-solving exercises');
+      mechanisms.push('Novel experiences in safe environments');
+      break;
+    case 'social_hierarchy':
+      mechanisms.push('Structured social interactions with clear boundaries');
+      mechanisms.push('Leadership training and confidence building');
+      mechanisms.push('Group dynamics education through controlled exposure');
+      break;
+    case 'independence_development':
+      mechanisms.push('Gradual independence training with support');
+      mechanisms.push('Self-confidence building through achievable challenges');
+      mechanisms.push('Autonomy development in safe environments');
+      break;
+    default:
+      mechanisms.push('General developmental support and enrichment');
+  }
+
+  return mechanisms;
+}
+
+/**
+ * Analyze window interactions
+ */
+function analyzeWindowInteractions(activeWindows) {
+  const interactions = [];
+
+  for (let i = 0; i < activeWindows.length; i++) {
+    for (let j = i + 1; j < activeWindows.length; j++) {
+      const window1 = activeWindows[i];
+      const window2 = activeWindows[j];
+
+      // Check for trait conflicts
+      const conflictingTraits = window1.targetTraits.filter(trait =>
+        window2.riskTraits.includes(trait) || window1.riskTraits.includes(trait)
+      );
+
+      // Check for synergistic traits
+      const synergisticTraits = window1.targetTraits.filter(trait =>
+        window2.targetTraits.includes(trait)
+      );
+
+      interactions.push({
+        window1: window1.name,
+        window2: window2.name,
+        conflictingTraits,
+        synergisticTraits,
+        interactionType: conflictingTraits.length > 0 ? 'conflicting' :
+                        synergisticTraits.length > 0 ? 'synergistic' : 'neutral',
+      });
+    }
+  }
+
+  return interactions;
+}
+
+/**
+ * Create priority matrix for active windows
+ */
+function createPriorityMatrix(activeWindows) {
+  const matrix = {};
+
+  activeWindows.forEach(window => {
+    let priority = window.sensitivity; // Base priority on sensitivity
+
+    // Adjust for urgency
+    if (window.urgency === 'critical') priority += 0.3;
+    else if (window.urgency === 'high') priority += 0.2;
+    else if (window.urgency === 'moderate') priority += 0.1;
+
+    // Adjust for days remaining
+    if (window.daysRemaining <= 1) priority += 0.2;
+    else if (window.daysRemaining <= 3) priority += 0.1;
+
+    matrix[window.name] = Math.min(1.0, priority);
+  });
+
+  return matrix;
+}
+
+/**
+ * Generate coordinated development plan
+ */
+function generateCoordinatedPlan(activeWindows, interactions, priorityMatrix) {
+  const phases = [];
+
+  // Sort windows by priority
+  const sortedWindows = activeWindows.sort((a, b) =>
+    priorityMatrix[b.name] - priorityMatrix[a.name]
+  );
+
+  // Create phases based on compatibility and priority
+  let currentPhase = {
+    name: 'Phase 1',
+    windows: [],
+    duration: 0,
+    focus: 'primary_development',
+  };
+
+  sortedWindows.forEach(window => {
+    const hasConflicts = interactions.some(interaction =>
+      (interaction.window1 === window.name || interaction.window2 === window.name) &&
+      interaction.interactionType === 'conflicting' &&
+      currentPhase.windows.some(w => w.name === interaction.window1 || w.name === interaction.window2)
+    );
+
+    if (!hasConflicts && currentPhase.windows.length < 2) {
+      currentPhase.windows.push(window);
+      currentPhase.duration = Math.max(currentPhase.duration, window.daysRemaining);
+    } else {
+      if (currentPhase.windows.length > 0) {
+        phases.push(currentPhase);
+      }
+      currentPhase = {
+        name: `Phase ${phases.length + 2}`,
+        windows: [window],
+        duration: window.daysRemaining,
+        focus: 'secondary_development',
+      };
+    }
+  });
+
+  if (currentPhase.windows.length > 0) {
+    phases.push(currentPhase);
+  }
+
+  return { phases };
+}
+
+/**
+ * Resolve window conflicts
+ */
+function resolveWindowConflicts(activeWindows, interactions) {
+  const identifiedConflicts = interactions.filter(i => i.interactionType === 'conflicting');
+  const resolutionStrategies = [];
+
+  identifiedConflicts.forEach(conflict => {
+    resolutionStrategies.push({
+      conflict: `${conflict.window1} vs ${conflict.window2}`,
+      strategy: 'Sequential development - prioritize based on urgency and sensitivity',
+      implementation: 'Focus on higher priority window first, then address secondary window',
+      conflictingTraits: conflict.conflictingTraits,
+    });
+  });
+
+  return {
+    identifiedConflicts,
+    resolutionStrategies,
+  };
+}
+
+/**
+ * Generate intervention recommendations
+ */
+function generateInterventionRecommendations(sensitivityProfile, riskFactors, protectiveFactors, currentAge) {
+  const recommendations = [];
+
+  if (sensitivityProfile.currentSensitivity > 0.8) {
+    recommendations.push('Immediate intervention required - horse is in critical developmental period');
+    recommendations.push('Implement gentle, consistent care protocols');
+    recommendations.push('Monitor stress levels closely and adjust approach as needed');
+  }
+
+  riskFactors.forEach(risk => {
+    if (risk.includes('stress')) {
+      recommendations.push('Implement stress reduction protocols immediately');
+      recommendations.push('Create calm, predictable environment');
+    } else if (risk.includes('bonding')) {
+      recommendations.push('Focus on relationship building with primary caregiver');
+      recommendations.push('Increase positive interaction frequency');
+    } else if (risk.includes('fear')) {
+      recommendations.push('Avoid potentially traumatic experiences');
+      recommendations.push('Use counter-conditioning techniques');
+    }
+  });
+
+  if (protectiveFactors.length > 0) {
+    recommendations.push('Continue current positive practices that support development');
+  }
+
+  if (currentAge < 14) {
+    recommendations.push('Critical early development period - maximize positive experiences');
+  } else if (currentAge < 60) {
+    recommendations.push('Important socialization period - provide varied but controlled experiences');
+  }
+
+  return recommendations;
+}
+
+/**
+ * Generate developmental trajectory
+ */
+function generateTrajectory(currentAge, forecastDays, upcomingWindows) {
+  const trajectory = [];
+
+  for (let day = 0; day <= forecastDays; day += 7) { // Weekly points
+    const projectedAge = currentAge + day;
+    const activeWindows = upcomingWindows.filter(window =>
+      projectedAge >= window.startDay && projectedAge <= window.endDay
+    );
+
+    trajectory.push({
+      day,
+      projectedAge,
+      activeWindows: activeWindows.map(w => w.name),
+      developmentalIntensity: activeWindows.reduce((sum, w) => sum + w.sensitivity, 0),
+      criticalityLevel: activeWindows.length > 0 ?
+        Math.max(...activeWindows.map(w => w.sensitivity)) : 0,
+    });
+  }
+
+  return trajectory;
+}
+
+/**
+ * Generate trait predictions
+ */
+async function generateTraitPredictions(horseId, upcomingWindows, horse) {
+  const predictions = [];
+  const commonTraits = ['confident', 'brave', 'curious', 'social', 'calm', 'fearful'];
+
+  for (const trait of commonTraits) {
+    let currentProbability = horse.epigeneticFlags.includes(trait) ? 0.8 : 0.2;
+    let projectedProbability = currentProbability;
+    let developmentWindow = null;
+
+    // Find best development window for this trait
+    for (const window of upcomingWindows) {
+      if (window.targetTraits.includes(trait)) {
+        projectedProbability = Math.min(0.9, currentProbability + (window.sensitivity * 0.3));
+        developmentWindow = window.name;
+        break;
+      } else if (window.riskTraits.includes(trait)) {
+        projectedProbability = Math.max(0.1, currentProbability - (window.sensitivity * 0.2));
+        developmentWindow = window.name;
+        break;
+      }
+    }
+
+    predictions.push({
+      trait,
+      currentProbability,
+      projectedProbability,
+      developmentWindow,
+      confidence: developmentWindow ? 0.7 : 0.4,
+    });
+  }
+
+  return predictions;
+}
+
+/**
+ * Project milestones
+ */
+function projectMilestones(currentAge, forecastDays, upcomingWindows) {
+  const projections = [];
+
+  Object.entries(DEVELOPMENTAL_MILESTONES).forEach(([name, milestone]) => {
+    const window = DEVELOPMENTAL_WINDOWS[milestone.window];
+    const projectedAge = currentAge + forecastDays;
+
+    if (projectedAge >= window.startDay && currentAge <= window.endDay) {
+      projections.push({
+        milestone: name,
+        window: milestone.window,
+        projectedAchievement: projectedAge >= window.peakDay ? 'likely' : 'possible',
+        timeframe: Math.max(0, window.endDay - currentAge),
+      });
+    }
+  });
+
+  return projections;
+}
+
+/**
+ * Assess developmental risks
+ */
+function assessDevelopmentalRisks(horse, upcomingWindows, forecastDays) {
+  const risks = [];
+
+  if (horse.stressLevel > 6) {
+    risks.push({
+      risk: 'High stress during critical periods',
+      severity: 'high',
+      impact: 'May impair positive trait development',
+    });
+  }
+
+  if (horse.bondScore < 15) {
+    risks.push({
+      risk: 'Poor bonding relationship',
+      severity: 'moderate',
+      impact: 'May affect trust and social development',
+    });
+  }
+
+  const criticalWindows = upcomingWindows.filter(w => w.sensitivity > 0.8);
+  if (criticalWindows.length > 1) {
+    risks.push({
+      risk: 'Multiple critical periods overlap',
+      severity: 'moderate',
+      impact: 'May require careful coordination of interventions',
+    });
+  }
+
+  return {
+    risks,
+    overallRiskLevel: risks.length > 2 ? 'high' : risks.length > 0 ? 'moderate' : 'low',
+  };
+}
+
+/**
+ * Generate forecast recommendations
+ */
+function generateForecastRecommendations(upcomingWindows, riskAssessment, traitPredictions) {
+  const recommendations = [];
+
+  // Window-based recommendations
+  upcomingWindows.forEach(window => {
+    if (window.sensitivity > 0.8) {
+      recommendations.push({
+        category: 'critical_window',
+        action: `Prepare for ${window.name} - implement ${window.interventions[0]}`,
+        timeframe: window.daysUntilStart > 0 ? `${window.daysUntilStart} days` : 'immediate',
+        priority: 'high',
+      });
+    }
+  });
+
+  // Risk-based recommendations
+  riskAssessment.risks.forEach(risk => {
+    recommendations.push({
+      category: 'risk_mitigation',
+      action: `Address ${risk.risk.toLowerCase()}`,
+      timeframe: 'immediate',
+      priority: risk.severity,
+    });
+  });
+
+  // Trait-based recommendations
+  const highPotentialTraits = traitPredictions.filter(p =>
+    p.projectedProbability > p.currentProbability + 0.2
+  );
+
+  highPotentialTraits.forEach(trait => {
+    recommendations.push({
+      category: 'trait_development',
+      action: `Focus on developing ${trait.trait} during ${trait.developmentWindow}`,
+      timeframe: '1-2 weeks',
+      priority: 'moderate',
+    });
+  });
+
+  return recommendations;
 }
