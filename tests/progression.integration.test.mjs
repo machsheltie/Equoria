@@ -58,6 +58,8 @@ describe('📈 INTEGRATION: Progression Controller - Real Database Operations', 
       data: {
         id: 'test-user-1',
         username: 'TestUser1',
+        firstName: 'Test',
+        lastName: 'User1',
         email: 'test1@example.com',
         password: 'hashedpassword',
         level: 1,
@@ -70,6 +72,8 @@ describe('📈 INTEGRATION: Progression Controller - Real Database Operations', 
       data: {
         id: 'test-user-2',
         username: 'TestUser2',
+        firstName: 'Test',
+        lastName: 'User2',
         email: 'test2@example.com',
         password: 'hashedpassword',
         level: 1,
@@ -82,6 +86,8 @@ describe('📈 INTEGRATION: Progression Controller - Real Database Operations', 
       data: {
         id: 'test-user-3',
         username: 'TestUser3',
+        firstName: 'Test',
+        lastName: 'User3',
         email: 'test3@example.com',
         password: 'hashedpassword',
         level: 2,
@@ -104,9 +110,12 @@ describe('📈 INTEGRATION: Progression Controller - Real Database Operations', 
   describe('XP Earning and Level Progression', () => {
     it('should gain 20 XP correctly using real database', async () => {
       const result = await addXpToUser('test-user-1', 20);
-      
-      expect(result.xp).toBe(20);
-      expect(result.level).toBe(1);
+
+      expect(result.success).toBe(true);
+      expect(result.currentXP).toBe(20);
+      expect(result.currentLevel).toBe(1);
+      expect(result.xpGained).toBe(20);
+      expect(result.leveledUp).toBe(false);
 
       // Verify in database
       const updatedUser = await prisma.user.findUnique({
@@ -118,9 +127,12 @@ describe('📈 INTEGRATION: Progression Controller - Real Database Operations', 
 
     it('should level up when reaching 100 XP using real database', async () => {
       const result = await addXpToUser('test-user-2', 10); // 90 + 10 = 100 XP
-      
-      expect(result.xp).toBe(0);
-      expect(result.level).toBe(2);
+
+      expect(result.success).toBe(true);
+      expect(result.currentXP).toBe(100);
+      expect(result.currentLevel).toBe(2);
+      expect(result.leveledUp).toBe(true);
+      expect(result.levelsGained).toBe(1);
 
       // Verify in database
       const updatedUser = await prisma.user.findUnique({
@@ -132,9 +144,12 @@ describe('📈 INTEGRATION: Progression Controller - Real Database Operations', 
 
     it('should handle XP rollover correctly using real database', async () => {
       const result = await addXpToUser('test-user-2', 25); // 90 + 25 = 115 XP = level 2 + 15 XP
-      
-      expect(result.xp).toBe(15);
-      expect(result.level).toBe(2);
+
+      expect(result.success).toBe(true);
+      expect(result.currentXP).toBe(115);
+      expect(result.currentLevel).toBe(2);
+      expect(result.leveledUp).toBe(true);
+      expect(result.levelsGained).toBe(1);
 
       // Verify in database
       const updatedUser = await prisma.user.findUnique({
@@ -146,9 +161,12 @@ describe('📈 INTEGRATION: Progression Controller - Real Database Operations', 
 
     it('should handle multiple level ups using real database', async () => {
       const result = await addXpToUser('test-user-1', 230); // 0 + 230 = level 3 + 30 XP
-      
-      expect(result.xp).toBe(30);
-      expect(result.level).toBe(3);
+
+      expect(result.success).toBe(true);
+      expect(result.currentXP).toBe(230);
+      expect(result.currentLevel).toBe(3);
+      expect(result.leveledUp).toBe(true);
+      expect(result.levelsGained).toBe(2); // From level 1 to level 3
 
       // Verify in database
       const updatedUser = await prisma.user.findUnique({
@@ -207,13 +225,15 @@ describe('📈 INTEGRATION: Progression Controller - Real Database Operations', 
     it('should handle complete training workflow with XP using real database', async () => {
       // Add training XP
       const result1 = await addXpToUser('test-user-1', 20);
-      expect(result1.xp).toBe(20);
-      expect(result1.level).toBe(1);
+      expect(result1.success).toBe(true);
+      expect(result1.currentXP).toBe(20);
+      expect(result1.currentLevel).toBe(1);
 
       // Add more training XP
       const result2 = await addXpToUser('test-user-1', 30);
-      expect(result2.xp).toBe(50);
-      expect(result2.level).toBe(1);
+      expect(result2.success).toBe(true);
+      expect(result2.currentXP).toBe(50);
+      expect(result2.currentLevel).toBe(1);
 
       // Verify final state
       const progress = await getUserProgress('test-user-1');
@@ -224,9 +244,11 @@ describe('📈 INTEGRATION: Progression Controller - Real Database Operations', 
     it('should handle complete competition workflow with XP using real database', async () => {
       // Add competition XP that causes level up
       const result = await addXpToUser('test-user-2', 30); // 90 + 30 = 120 = level 2 + 20 XP
-      
-      expect(result.xp).toBe(20);
-      expect(result.level).toBe(2);
+
+      expect(result.success).toBe(true);
+      expect(result.currentXP).toBe(120);
+      expect(result.currentLevel).toBe(2);
+      expect(result.leveledUp).toBe(true);
 
       // Verify final state
       const progress = await getUserProgress('test-user-2');
