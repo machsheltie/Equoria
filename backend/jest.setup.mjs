@@ -1,4 +1,4 @@
-import logger from '../utils/logger.mjs';
+import logger from './utils/logger.mjs';
 // import prisma from '../db/index.mjs'; // TODO: Implement audit logging
 
 /**
@@ -36,6 +36,17 @@ if (process.env.NODE_ENV === 'test') {
   process.on('exit', cleanupPrismaInstances);
   process.on('SIGINT', cleanupPrismaInstances);
   process.on('SIGTERM', cleanupPrismaInstances);
+  process.on('beforeExit', cleanupPrismaInstances);
+
+  // Global teardown for Jest
+  global.afterAll = global.afterAll || (() => {});
+  const originalAfterAll = global.afterAll;
+  global.afterAll = async (fn) => {
+    if (fn) {
+      await originalAfterAll(fn);
+    }
+    await cleanupPrismaInstances();
+  };
 }
 
 /**

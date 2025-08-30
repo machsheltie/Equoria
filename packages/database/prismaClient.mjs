@@ -20,11 +20,28 @@ const { PrismaClient } = await import('@prisma/client');
 
 let prisma = null;
 
+// Connection pool configuration for tests
+const connectionConfig = {
+  datasources: {
+    db: {
+      url: process.env.DATABASE_URL,
+    },
+  },
+  // Limit connections for test environment
+  ...(process.env.NODE_ENV === 'test' && {
+    datasources: {
+      db: {
+        url: `${process.env.DATABASE_URL}?connection_limit=5&pool_timeout=20`,
+      },
+    },
+  }),
+};
+
 if (process.env.NODE_ENV === 'production') {
-  prisma = new PrismaClient();
+  prisma = new PrismaClient(connectionConfig);
 } else {
   if (!global.__prisma) {
-    global.__prisma = new PrismaClient();
+    global.__prisma = new PrismaClient(connectionConfig);
   }
   prisma = global.__prisma;
 }

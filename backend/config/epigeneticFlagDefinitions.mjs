@@ -1,20 +1,15 @@
 /**
  * Epigenetic Flag Definitions
  * 
- * Defines all epigenetic flags that can be assigned to horses based on care patterns.
- * These flags influence trait development, competition performance, and breeding outcomes.
- * 
- * Business Rules:
- * - Maximum 5 flags per horse
- * - Flags are permanent once assigned
- * - Conflicting flags cannot coexist
- * - Trigger conditions must be met for assignment
+ * Defines epigenetic flags that can be applied to horses based on their care history,
+ * environmental factors, and developmental milestones. These flags influence trait
+ * development probabilities and behavioral characteristics.
  */
 
 export const FLAG_TYPES = {
   POSITIVE: 'positive',
   NEGATIVE: 'negative',
-  NEUTRAL: 'neutral',
+  ADAPTIVE: 'adaptive',
 };
 
 export const MAX_FLAGS_PER_HORSE = 5;
@@ -24,16 +19,32 @@ export const FLAG_EVALUATION_AGE_RANGE = {
   MAX: 3,
 };
 
+export const SOURCE_CATEGORIES = {
+  GROOMING: 'grooming',
+  BONDING: 'bonding',
+  ENVIRONMENT: 'environment',
+  NOVELTY: 'novelty',
+};
+
 export const EPIGENETIC_FLAG_DEFINITIONS = {
-  // Positive Behavioral Flags
+  // POSITIVE FLAGS (4)
   BRAVE: {
     name: 'brave',
+    displayName: 'Brave',
     type: FLAG_TYPES.POSITIVE,
+    sourceCategory: SOURCE_CATEGORIES.NOVELTY,
     description: 'Horse shows courage and confidence in new situations',
-    effects: {
-      traitProbability: { confident: +0.2, fearful: -0.3 },
-      competitionBonus: { showJumping: +2, crossCountry: +3 },
-      stressReduction: +0.1,
+    influences: {
+      traitWeightModifiers: {
+        bold: 0.3,
+        spooky: -0.4,
+        confident: 0.2,
+        fearful: -0.3,
+      },
+      behaviorModifiers: {
+        stressReduction: 0.1,
+        competitionBonus: 0.15,
+      },
     },
     conflictsWith: ['fearful', 'anxious'],
     triggerConditions: {
@@ -44,32 +55,23 @@ export const EPIGENETIC_FLAG_DEFINITIONS = {
     },
   },
 
-  AFFECTIONATE: {
-    name: 'affectionate',
-    type: FLAG_TYPES.POSITIVE,
-    description: 'Horse forms strong bonds with handlers and shows trust',
-    effects: {
-      traitProbability: { social: +0.3, antisocial: -0.4 },
-      bondingBonus: +0.2,
-      groomEffectiveness: +0.15,
-    },
-    conflictsWith: ['antisocial', 'withdrawn'],
-    triggerConditions: {
-      frequentInteractions: true,
-      positiveBondTrend: true,
-      consistentGroom: true,
-      highPositiveRatio: 0.7,
-    },
-  },
-
   CONFIDENT: {
     name: 'confident',
+    displayName: 'Confident',
     type: FLAG_TYPES.POSITIVE,
+    sourceCategory: SOURCE_CATEGORIES.BONDING,
     description: 'Horse displays self-assurance and composure',
-    effects: {
-      traitProbability: { bold: +0.25, insecure: -0.3 },
-      competitionBonus: { dressage: +2, racing: +1 },
-      stressResistance: +0.2,
+    influences: {
+      traitWeightModifiers: {
+        bold: 0.25,
+        insecure: -0.3,
+        self_assured: 0.3,
+        timid: -0.25,
+      },
+      behaviorModifiers: {
+        stressResistance: 0.2,
+        competitionBonus: 0.1,
+      },
     },
     conflictsWith: ['insecure', 'fearful'],
     triggerConditions: {
@@ -80,163 +82,203 @@ export const EPIGENETIC_FLAG_DEFINITIONS = {
     },
   },
 
-  SOCIAL: {
-    name: 'social',
+  AFFECTIONATE: {
+    name: 'affectionate',
+    displayName: 'Affectionate',
     type: FLAG_TYPES.POSITIVE,
-    description: 'Horse enjoys interaction and responds well to handlers',
-    effects: {
-      traitProbability: { friendly: +0.3, shy: -0.2 },
-      groomEffectiveness: +0.1,
-      bondingSpeed: +0.15,
+    sourceCategory: SOURCE_CATEGORIES.BONDING,
+    description: 'Horse forms strong bonds with handlers and shows trust',
+    influences: {
+      traitWeightModifiers: {
+        social: 0.3,
+        antisocial: -0.4,
+        friendly: 0.25,
+        withdrawn: -0.3,
+      },
+      behaviorModifiers: {
+        bondingBonus: 0.2,
+        groomEffectiveness: 0.15,
+      },
     },
-    conflictsWith: ['antisocial', 'aggressive'],
+    conflictsWith: ['antisocial', 'withdrawn'],
     triggerConditions: {
-      multipleGroomInteractions: true,
-      positiveResponseRate: 0.8,
-      socialExposure: true,
+      frequentInteractions: true,
+      positiveBondTrend: true,
+      consistentGroom: true,
+      highPositiveRatio: 0.7,
     },
   },
 
-  CALM: {
-    name: 'calm',
+  RESILIENT: {
+    name: 'resilient',
+    displayName: 'Resilient',
     type: FLAG_TYPES.POSITIVE,
-    description: 'Horse maintains composure under pressure',
-    effects: {
-      traitProbability: { steady: +0.25, reactive: -0.3 },
-      stressResistance: +0.25,
-      competitionBonus: { dressage: +3, endurance: +2 },
+    sourceCategory: SOURCE_CATEGORIES.ENVIRONMENT,
+    description: 'Horse recovers quickly from stress and adapts well to challenges',
+    influences: {
+      traitWeightModifiers: {
+        hardy: 0.4,
+        fragile: -0.5,
+        adaptable: 0.3,
+        sensitive: -0.3,
+      },
+      behaviorModifiers: {
+        stressRecovery: 0.2,
+        adaptability: 0.25,
+      },
     },
-    conflictsWith: ['reactive', 'nervous'],
+    conflictsWith: ['fragile', 'sensitive'],
     triggerConditions: {
-      lowStressSpikes: true,
-      consistentBehavior: true,
       stressRecovery: 'fast',
+      adaptabilityShown: true,
+      challengeOvercome: true,
     },
   },
 
-  // Negative Behavioral Flags
+  // NEGATIVE FLAGS (5)
   FEARFUL: {
     name: 'fearful',
+    displayName: 'Fearful',
     type: FLAG_TYPES.NEGATIVE,
-    description: 'Horse shows excessive fear and anxiety',
-    effects: {
-      traitProbability: { anxious: +0.3, brave: -0.4 },
-      competitionPenalty: { showJumping: -3, crossCountry: -4 },
-      stressIncrease: +0.2,
+    sourceCategory: SOURCE_CATEGORIES.NOVELTY,
+    description: 'Horse shows excessive fear and anxiety in new situations',
+    influences: {
+      traitWeightModifiers: {
+        spooky: 0.4,
+        bold: -0.3,
+        anxious: 0.3,
+        confident: -0.4,
+      },
+      behaviorModifiers: {
+        stressIncrease: 0.2,
+        competitionPenalty: -0.15,
+      },
     },
     conflictsWith: ['brave', 'confident'],
     triggerConditions: {
-      highStressSpikes: true,
-      poorStressManagement: true,
-      inconsistentCare: true,
       careGaps: 'frequent',
+      highStressSpikes: true,
+      inconsistentCare: true,
+      poorStressManagement: true,
     },
   },
 
   INSECURE: {
     name: 'insecure',
+    displayName: 'Insecure',
     type: FLAG_TYPES.NEGATIVE,
+    sourceCategory: SOURCE_CATEGORIES.BONDING,
     description: 'Horse lacks confidence and seeks constant reassurance',
-    effects: {
-      traitProbability: { dependent: +0.25, confident: -0.3 },
-      bondingDifficulty: +0.15,
-      competitionPenalty: { racing: -2, polo: -2 },
+    influences: {
+      traitWeightModifiers: {
+        confident: -0.3,
+        dependent: 0.25,
+        timid: 0.3,
+        bold: -0.2,
+      },
+      behaviorModifiers: {
+        bondingDifficulty: 0.15,
+        competitionPenalty: -0.1,
+      },
     },
     conflictsWith: ['confident', 'brave'],
     triggerConditions: {
-      frequentGroomChanges: true,
       decliningBond: true,
+      frequentGroomChanges: true,
       lowPositiveRatio: true,
       neglectPeriods: true,
     },
   },
 
-  ANTISOCIAL: {
-    name: 'antisocial',
+  ALOOF: {
+    name: 'aloof',
+    displayName: 'Aloof',
     type: FLAG_TYPES.NEGATIVE,
-    description: 'Horse avoids interaction and shows resistance to handling',
-    effects: {
-      traitProbability: { aggressive: +0.2, friendly: -0.4 },
-      groomEffectiveness: -0.2,
-      bondingDifficulty: +0.25,
+    sourceCategory: SOURCE_CATEGORIES.BONDING,
+    description: 'Horse maintains emotional distance and resists bonding',
+    influences: {
+      traitWeightModifiers: {
+        antisocial: 0.3,
+        friendly: -0.4,
+        withdrawn: 0.25,
+        social: -0.3,
+      },
+      behaviorModifiers: {
+        bondingDifficulty: 0.2,
+        groomEffectiveness: -0.15,
+      },
     },
-    conflictsWith: ['social', 'affectionate'],
+    conflictsWith: ['affectionate', 'social'],
     triggerConditions: {
-      negativeInteractions: 'frequent',
       avoidanceBehavior: true,
-      poorHandlerRelationship: true,
+      lowInteractionQuality: true,
+      emotionalWithdrawal: true,
+      resistanceToHandling: true,
     },
   },
 
-  FRAGILE: {
-    name: 'fragile',
+  SKITTISH: {
+    name: 'skittish',
+    displayName: 'Skittish',
     type: FLAG_TYPES.NEGATIVE,
-    description: 'Horse is emotionally sensitive and easily overwhelmed',
-    effects: {
-      traitProbability: { sensitive: +0.3, resilient: -0.3 },
-      stressIncrease: +0.3,
-      competitionPenalty: { racing: -2, eventing: -3 },
-    },
-    conflictsWith: ['resilient', 'steady'],
-    triggerConditions: {
-      overwhelmingSituations: true,
-      poorStressRecovery: true,
-      sensitiveReactions: true,
-    },
-  },
-
-  REACTIVE: {
-    name: 'reactive',
-    type: FLAG_TYPES.NEGATIVE,
-    description: 'Horse overreacts to stimuli and situations',
-    effects: {
-      traitProbability: { explosive: +0.25, calm: -0.3 },
-      stressIncrease: +0.15,
-      competitionPenalty: { dressage: -3, endurance: -2 },
+    sourceCategory: SOURCE_CATEGORIES.ENVIRONMENT,
+    description: 'Horse is easily startled and overreacts to environmental stimuli',
+    influences: {
+      traitWeightModifiers: {
+        spooky: 0.4,
+        calm: -0.3,
+        reactive: 0.3,
+        steady: -0.25,
+      },
+      behaviorModifiers: {
+        stressIncrease: 0.15,
+        environmentalSensitivity: 0.2,
+      },
     },
     conflictsWith: ['calm', 'steady'],
     triggerConditions: {
       overreactions: 'frequent',
       stimuliSensitivity: 'high',
       unpredictableBehavior: true,
+      environmentalStress: true,
     },
   },
 
-  // Neutral/Specialized Flags
-  CURIOUS: {
-    name: 'curious',
-    type: FLAG_TYPES.NEUTRAL,
-    description: 'Horse shows interest in new experiences and learning',
-    effects: {
-      traitProbability: { intelligent: +0.2, stubborn: -0.1 },
-      trainingEffectiveness: +0.1,
-      adaptability: +0.15,
+  FRAGILE: {
+    name: 'fragile',
+    displayName: 'Fragile',
+    type: FLAG_TYPES.NEGATIVE,
+    sourceCategory: SOURCE_CATEGORIES.ENVIRONMENT,
+    description: 'Horse is emotionally sensitive and easily overwhelmed',
+    influences: {
+      traitWeightModifiers: {
+        resilient: -0.3,
+        sensitive: 0.3,
+        hardy: -0.4,
+        delicate: 0.25,
+      },
+      behaviorModifiers: {
+        stressIncrease: 0.3,
+        recoveryTime: 0.2,
+      },
     },
-    conflictsWith: ['withdrawn', 'fearful'],
+    conflictsWith: ['resilient', 'hardy'],
     triggerConditions: {
-      exploratoryBehavior: true,
-      noveltyExposure: true,
-      learningEngagement: true,
-    },
-  },
-
-  INDEPENDENT: {
-    name: 'independent',
-    type: FLAG_TYPES.NEUTRAL,
-    description: 'Horse prefers to work autonomously',
-    effects: {
-      traitProbability: { selfReliant: +0.2, dependent: -0.2 },
-      competitionBonus: { endurance: +2, racing: +1 },
-      groomDependency: -0.1,
-    },
-    conflictsWith: ['dependent', 'clingy'],
-    triggerConditions: {
-      selfDirectedBehavior: true,
-      lowGroomDependency: true,
-      autonomousDecisions: true,
+      overwhelmingSituations: true,
+      poorStressRecovery: true,
+      sensitiveReactions: true,
+      emotionalBreakdowns: true,
     },
   },
 };
+
+/**
+ * Get all flag definitions
+ * @returns {Object} All epigenetic flag definitions
+ */
+export function getAllFlagDefinitions() {
+  return EPIGENETIC_FLAG_DEFINITIONS;
+}
 
 /**
  * Get flag definition by name
@@ -250,7 +292,7 @@ export function getFlagDefinition(flagName) {
 
 /**
  * Get all flags of a specific type
- * @param {string} type - Flag type (positive, negative, neutral)
+ * @param {string} type - Flag type (positive, negative, adaptive)
  * @returns {Array} Array of flag definitions
  */
 export function getFlagsByType(type) {
@@ -259,54 +301,16 @@ export function getFlagsByType(type) {
 }
 
 /**
- * Check if two flags conflict with each other
- * @param {string} flag1 - First flag name
- * @param {string} flag2 - Second flag name
- * @returns {boolean} True if flags conflict
+ * Get flags by source category
+ * @param {string} category - Source category (bonding, novelty, environment, grooming)
+ * @returns {Array} Flags of the specified source category
  */
-export function flagsConflict(flag1, flag2) {
-  const def1 = getFlagDefinition(flag1);
-  const def2 = getFlagDefinition(flag2);
-  
-  if (!def1 || !def2) return false;
-  
-  return (def1.conflictsWith && def1.conflictsWith.includes(flag2.toLowerCase())) ||
-         (def2.conflictsWith && def2.conflictsWith.includes(flag1.toLowerCase()));
-}
-
-/**
- * Get all valid flags that can be assigned to a horse
- * @param {Array} currentFlags - Current flags on the horse
- * @returns {Array} Array of valid flag names
- */
-export function getValidFlags(currentFlags = []) {
-  const availableFlags = [];
-  
-  for (const [flagKey, flagDef] of Object.entries(EPIGENETIC_FLAG_DEFINITIONS)) {
-    const flagName = flagDef.name;
-    
-    // Skip if horse already has this flag
-    if (currentFlags.includes(flagName)) continue;
-    
-    // Check for conflicts with existing flags
-    const hasConflict = currentFlags.some(existingFlag => 
-      flagsConflict(flagName, existingFlag)
-    );
-    
-    if (!hasConflict) {
-      availableFlags.push(flagName);
+export function getFlagsBySourceCategory(category) {
+  const flagsByCategory = [];
+  Object.values(EPIGENETIC_FLAG_DEFINITIONS).forEach(flag => {
+    if (flag.sourceCategory === category) {
+      flagsByCategory.push(flag);
     }
-  }
-  
-  return availableFlags;
+  });
+  return flagsByCategory;
 }
-
-/**
- * Get all flag definitions
- * @returns {Object} All epigenetic flag definitions
- */
-export function getAllFlagDefinitions() {
-  return EPIGENETIC_FLAG_DEFINITIONS;
-}
-
-
