@@ -63,6 +63,8 @@ import epigeneticFlagRoutes from './routes/epigeneticFlagRoutes.mjs';
 import enhancedMilestoneRoutes from './routes/enhancedMilestoneRoutes.mjs';
 import leaderboardRoutes from './routes/leaderboardRoutes.mjs';
 import ultraRareTraitRoutes from './routes/ultraRareTraitRoutes.mjs';
+import advancedEpigeneticRoutes from './routes/advancedEpigeneticRoutes.mjs';
+import enhancedReportingRoutes from './routes/enhancedReportingRoutes.mjs';
 import adminRoutes from './routes/adminRoutes.mjs';
 
 // Middleware imports
@@ -180,6 +182,8 @@ app.use('/api/epigenetic-traits', epigeneticTraitRoutes);
 app.use('/api/flags', epigeneticFlagRoutes);
 app.use('/api/milestones', enhancedMilestoneRoutes);
 app.use('/api/ultra-rare-traits', ultraRareTraitRoutes);
+app.use('/api', advancedEpigeneticRoutes);
+app.use('/api', enhancedReportingRoutes);
 app.use('/api/leaderboards', leaderboardRoutes);
 app.use('/api/admin', adminRoutes);
 

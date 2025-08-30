@@ -295,13 +295,13 @@ export async function evaluateTraitDevelopmentOpportunity(horseId, traitName, wi
     } else if (window.riskTraits.includes(traitName)) {
       // For fear periods, fearful traits have high development potential (negative alignment)
       if (windowName.includes('fear_period') && traitName === 'fearful') {
-        windowAlignment = 0.85; // High potential for fearful trait during fear periods
+        windowAlignment = 0.95; // Very high potential for fearful trait during fear periods
       } else {
         windowAlignment = 0.2; // Low alignment for other risk traits
       }
     } else if (windowName.includes('fear_period') && traitName === 'brave') {
       // Brave traits have lower alignment during fear periods (harder to develop)
-      windowAlignment = 0.3;
+      windowAlignment = 0.25;
     } else {
       // Check for related traits
       const relatedTraits = getRelatedTraits(traitName);

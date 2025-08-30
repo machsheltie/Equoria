@@ -17,6 +17,13 @@ export const FLAG_TYPES = {
   NEUTRAL: 'neutral',
 };
 
+export const MAX_FLAGS_PER_HORSE = 5;
+
+export const FLAG_EVALUATION_AGE_RANGE = {
+  MIN: 0,
+  MAX: 3,
+};
+
 export const EPIGENETIC_FLAG_DEFINITIONS = {
   // Positive Behavioral Flags
   BRAVE: {
@@ -293,3 +300,13 @@ export function getValidFlags(currentFlags = []) {
   
   return availableFlags;
 }
+
+/**
+ * Get all flag definitions
+ * @returns {Object} All epigenetic flag definitions
+ */
+export function getAllFlagDefinitions() {
+  return EPIGENETIC_FLAG_DEFINITIONS;
+}
+
+
