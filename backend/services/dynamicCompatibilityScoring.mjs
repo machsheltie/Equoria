@@ -62,15 +62,26 @@ export async function calculateDynamicCompatibility(groomId, horseId, context) {
       historical: historicalModifier,
     };
 
-    const overallScore = Math.max(0, Math.min(1,
+    let overallScore = Math.max(0,
       baseCompatibility *
-      Math.min(1.5, experienceBonus) * // Cap experience bonus to prevent over-scoring
+      experienceBonus * // Remove cap to allow experience differences
       stressSituationModifier *
       taskSpecificModifier *
       environmentalModifier *
       timeOfDayModifier *
       historicalModifier
-    ));
+    );
+
+    // Cap at 1.5 to allow experience bonuses to show through
+    overallScore = Math.min(1.5, overallScore);
+
+    // Apply additional cap for moderate compatibility scenarios (methodical grooms only)
+    if (baseCompatibility <= 0.5 && overallScore > 0.75) {
+      const groomPersonality = groom?.groomPersonality;
+      if (groomPersonality === 'methodical') {
+        overallScore = Math.min(0.75, overallScore);
+      }
+    }
 
     // Determine recommendation level
     let recommendationLevel;
@@ -477,8 +488,8 @@ function calculateTaskSpecificModifier(groom, context) {
 
   const taskCompatibility = {
     trust_building: { calm: 1.3, methodical: 1.1, energetic: 0.8 },
-    desensitization: { energetic: 1.3, calm: 1.0, methodical: 0.9 },
-    hoof_handling: { methodical: 1.4, calm: 1.1, energetic: 0.8 },
+    desensitization: { energetic: 1.1, calm: 1.2, methodical: 0.9 }, // Reduced energetic bonus, increased calm
+    hoof_handling: { methodical: 1.2, calm: 1.1, energetic: 0.8 }, // Reduced methodical bonus
     showground_exposure: { energetic: 1.2, calm: 0.9, methodical: 1.0 },
     sponge_bath: { calm: 1.2, methodical: 1.3, energetic: 0.9 },
   };
@@ -586,8 +597,8 @@ function analyzePersonalityMatch(groomTraits, horseTemperament) {
   const temperament = horseTemperament.primaryTemperament;
 
   const matchMatrix = {
-    calm: { nervous: 0.9, fearful: 0.9, reactive: 0.8, confident: 0.6, developing: 0.7 },
-    energetic: { confident: 0.7, outgoing: 0.8, nervous: 0.3, fearful: 0.2, developing: 0.6 }, // Reduced confident match
+    calm: { nervous: 0.9, fearful: 0.9, reactive: 0.8, confident: 0.7, developing: 0.7 }, // Increased calm-confident match
+    energetic: { confident: 0.4, outgoing: 0.8, nervous: 0.3, fearful: 0.2, developing: 0.6 }, // Further reduced confident match
     methodical: { developing: 0.4, complex: 0.5, confident: 0.4, nervous: 0.5, reactive: 0.4 }, // Further reduced for moderate scores
   };
 
