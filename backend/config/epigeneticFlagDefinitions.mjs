@@ -314,3 +314,30 @@ export function getFlagsBySourceCategory(category) {
   });
   return flagsByCategory;
 }
+
+/**
+ * Check if two flags conflict with each other
+ * @param {string} flag1 - First flag name
+ * @param {string} flag2 - Second flag name
+ * @returns {boolean} True if flags conflict
+ */
+export function flagsConflict(flag1, flag2) {
+  const flag1Def = getFlagDefinition(flag1);
+  const flag2Def = getFlagDefinition(flag2);
+
+  if (!flag1Def || !flag2Def) {
+    return false;
+  }
+
+  // Check if flag1 conflicts with flag2
+  if (flag1Def.conflictsWith && flag1Def.conflictsWith.includes(flag2.toLowerCase())) {
+    return true;
+  }
+
+  // Check if flag2 conflicts with flag1
+  if (flag2Def.conflictsWith && flag2Def.conflictsWith.includes(flag1.toLowerCase())) {
+    return true;
+  }
+
+  return false;
+}

@@ -38,14 +38,21 @@ if (process.env.NODE_ENV === 'test') {
   process.on('SIGTERM', cleanupPrismaInstances);
   process.on('beforeExit', cleanupPrismaInstances);
 
-  // Global teardown for Jest
-  global.afterAll = global.afterAll || (() => {});
-  const originalAfterAll = global.afterAll;
-  global.afterAll = async (fn) => {
-    if (fn) {
-      await originalAfterAll(fn);
+  // Force cleanup after each test file
+  global.afterEach = global.afterEach || (() => {});
+  const originalAfterEach = global.afterEach;
+  global.afterEach = async (fn) => {
+    if (fn && typeof fn === 'function') {
+      await fn();
+    } else if (originalAfterEach && typeof originalAfterEach === 'function') {
+      await originalAfterEach(fn);
     }
-    await cleanupPrismaInstances();
+    // Force disconnect after each test
+    try {
+      await cleanupPrismaInstances();
+    } catch (error) {
+      // Ignore cleanup errors
+    }
   };
 }
 

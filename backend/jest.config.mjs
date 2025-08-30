@@ -11,6 +11,7 @@ export default {
 
   // Setup files
   setupFilesAfterEnv: ['<rootDir>/tests/setup.mjs'],
+  globalTeardown: '<rootDir>/tests/teardown.mjs',
 
   // Test file patterns
   testMatch: ['**/*.test.mjs', '**/*.test.js'],
@@ -74,4 +75,7 @@ export default {
 
   // Detect open handles
   detectOpenHandles: true,
+
+  // Force close after tests
+  openHandlesTimeout: 1000,
 };

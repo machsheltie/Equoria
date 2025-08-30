@@ -24,16 +24,15 @@ let prisma = null;
 const connectionConfig = {
   datasources: {
     db: {
-      url: process.env.DATABASE_URL,
+      url: process.env.NODE_ENV === 'test'
+        ? `${process.env.DATABASE_URL}?connection_limit=1&pool_timeout=5&connect_timeout=5`
+        : process.env.DATABASE_URL,
     },
   },
-  // Limit connections for test environment
+  // Additional test-specific configuration
   ...(process.env.NODE_ENV === 'test' && {
-    datasources: {
-      db: {
-        url: `${process.env.DATABASE_URL}?connection_limit=5&pool_timeout=20`,
-      },
-    },
+    log: [], // No logging in tests
+    errorFormat: 'minimal',
   }),
 };
 
