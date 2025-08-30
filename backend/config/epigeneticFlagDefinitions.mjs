@@ -44,6 +44,8 @@ export const EPIGENETIC_FLAG_DEFINITIONS = {
       behaviorModifiers: {
         stressReduction: 0.1,
         competitionBonus: 0.15,
+        statRecoveryBonus: 0.05,
+        stressResistance: 0.1,
       },
     },
     conflictsWith: ['fearful', 'anxious'],
@@ -71,6 +73,7 @@ export const EPIGENETIC_FLAG_DEFINITIONS = {
       behaviorModifiers: {
         stressResistance: 0.2,
         competitionBonus: 0.1,
+        trainingEfficiency: 0.05,
       },
     },
     conflictsWith: ['insecure', 'fearful'],
@@ -98,6 +101,7 @@ export const EPIGENETIC_FLAG_DEFINITIONS = {
       behaviorModifiers: {
         bondingBonus: 0.2,
         groomEffectiveness: 0.15,
+        bondingRate: 0.15,
       },
     },
     conflictsWith: ['antisocial', 'withdrawn'],
@@ -125,6 +129,7 @@ export const EPIGENETIC_FLAG_DEFINITIONS = {
       behaviorModifiers: {
         stressRecovery: 0.2,
         adaptability: 0.25,
+        healthBonus: 0.05,
       },
     },
     conflictsWith: ['fragile', 'sensitive'],
@@ -146,12 +151,13 @@ export const EPIGENETIC_FLAG_DEFINITIONS = {
       traitWeightModifiers: {
         spooky: 0.4,
         bold: -0.3,
-        anxious: 0.3,
+        timid: 0.2,
         confident: -0.4,
       },
       behaviorModifiers: {
         stressIncrease: 0.2,
         competitionPenalty: -0.15,
+        stressVulnerability: 0.15,
       },
     },
     conflictsWith: ['brave', 'confident'],
@@ -206,6 +212,7 @@ export const EPIGENETIC_FLAG_DEFINITIONS = {
       behaviorModifiers: {
         bondingDifficulty: 0.2,
         groomEffectiveness: -0.15,
+        bondingResistance: 0.15,
       },
     },
     conflictsWith: ['affectionate', 'social'],
@@ -260,6 +267,7 @@ export const EPIGENETIC_FLAG_DEFINITIONS = {
       behaviorModifiers: {
         stressIncrease: 0.3,
         recoveryTime: 0.2,
+        stressVulnerability: 0.25,
       },
     },
     conflictsWith: ['resilient', 'hardy'],

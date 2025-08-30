@@ -8,6 +8,7 @@ import prisma from '../db/index.mjs';
 describe('Schema Validation', () => {
   let testUser;
   let testBreed;
+  let uniqueId;
 
   beforeAll(async () => {
     // Clean up any existing test data
@@ -15,7 +16,12 @@ describe('Schema Validation', () => {
       where: { name: { startsWith: 'Schema Test' } },
     });
     await prisma.user.deleteMany({
-      where: { email: 'schema-test@example.com' },
+      where: {
+        OR: [
+          { email: { startsWith: 'schema-test-' } },
+          { id: { startsWith: 'schema-test-user-' } }
+        ]
+      },
     });
     await prisma.breed.deleteMany({
       where: { name: 'Schema Test Breed' },
@@ -28,7 +34,12 @@ describe('Schema Validation', () => {
       where: { name: { startsWith: 'Schema Test' } },
     });
     await prisma.user.deleteMany({
-      where: { email: 'schema-test@example.com' },
+      where: {
+        OR: [
+          { email: { startsWith: 'schema-test-' } },
+          { id: { startsWith: 'schema-test-user-' } }
+        ]
+      },
     });
     await prisma.breed.deleteMany({
       where: { name: 'Schema Test Breed' },
@@ -37,6 +48,9 @@ describe('Schema Validation', () => {
   });
 
   beforeEach(async () => {
+    // Generate unique ID for this test
+    uniqueId = `schema-test-user-${Date.now()}-${Math.random().toString(36).substr(2, 9)}`;
+
     // Create test breed
     testBreed = await prisma.breed.create({
       data: {
@@ -48,9 +62,9 @@ describe('Schema Validation', () => {
     // Create test user
     testUser = await prisma.user.create({
       data: {
-        id: 'schema-test-user',
-        username: 'schematestuser',
-        email: 'schema-test@example.com',
+        id: uniqueId,
+        username: `schematestuser${Date.now()}`,
+        email: `schema-test-${Date.now()}@example.com`,
         password: 'testpassword',
         firstName: 'Schema',
         lastName: 'Tester',
@@ -65,7 +79,12 @@ describe('Schema Validation', () => {
       where: { name: { startsWith: 'Schema Test' } },
     });
     await prisma.user.deleteMany({
-      where: { email: 'schema-test@example.com' },
+      where: {
+        OR: [
+          { email: { startsWith: 'schema-test-' } },
+          { id: { startsWith: 'schema-test-user-' } }
+        ]
+      },
     });
     await prisma.breed.deleteMany({
       where: { name: 'Schema Test Breed' },

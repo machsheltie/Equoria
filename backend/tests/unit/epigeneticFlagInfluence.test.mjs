@@ -67,11 +67,11 @@ describe('Epigenetic Flag Influence System', () => {
       const result = applyFlagInfluencesToTraitWeights(['brave', 'confident'], baseWeights);
 
       // Brave: bold +0.3, spooky -0.4, confident +0.2
-      // Confident: bold +0.25, timid -0.3
+      // Confident: bold +0.25, insecure -0.3, self_assured +0.3, timid -0.25
       expect(result.bold).toBe(1); // 0.5 + 0.3 + 0.25, clamped to 1
       expect(result.spooky).toBe(0); // 0.3 - 0.4, clamped to 0
       expect(result.confident).toBeCloseTo(0.6); // 0.4 + 0.2
-      expect(result.timid).toBe(0); // 0.3 - 0.3
+      expect(result.timid).toBeCloseTo(0.05); // 0.3 - 0.25
     });
 
     test('should handle unknown flags gracefully', () => {
@@ -134,28 +134,35 @@ describe('Epigenetic Flag Influence System', () => {
     test('should apply competition bonus correctly', () => {
       const result = applyFlagInfluencesToCompetition(100, ['confident'], 'racing');
 
-      expect(result.modifiedScore).toBe(103); // 100 + (100 * 0.03)
-      expect(result.totalModifier).toBe(3);
-      expect(result.appliedModifiers.competitionBonus).toBe(3);
+      // Confident has competitionBonus 0.1 and stressResistance 0.2 (applied as 0.2 * 0.3 = 0.06)
+      // competitionBonus: 100 * 0.1 = 10
+      // stressResistance: 100 * 0.06 = 6
+      // Total: 100 + 10 + 6 = 116
+      expect(result.modifiedScore).toBe(116);
+      expect(result.totalModifier).toBe(16);
+      expect(result.appliedModifiers.competitionBonus).toBe(10);
     });
 
     test('should apply competition penalty correctly', () => {
       const result = applyFlagInfluencesToCompetition(100, ['fearful'], 'racing');
 
-      // Fearful has competitionPenalty -0.05 and stressVulnerability 0.15
-      // competitionPenalty: 100 * -0.05 = -5
+      // Fearful has competitionPenalty -0.15 and stressVulnerability 0.15
+      // competitionPenalty: 100 * -0.15 = -15
       // stressVulnerability: 100 * (-0.15 * 0.5) = -7.5
-      // Total: 100 - 5 - 7.5 = 87.5
-      expect(result.modifiedScore).toBe(87.5);
-      expect(result.appliedModifiers.competitionPenalty).toBe(-5);
+      // Total: 100 - 15 - 7.5 = 77.5
+      expect(result.modifiedScore).toBe(77.5);
+      expect(result.appliedModifiers.competitionPenalty).toBe(-15);
       expect(result.appliedModifiers.stressVulnerability).toBe(-7.5);
     });
 
     test('should apply stress modifiers correctly', () => {
       const result = applyFlagInfluencesToCompetition(100, ['brave'], 'racing');
 
-      // Brave has stressResistance 0.1, applied as 0.1 * 0.3 = 0.03
-      expect(result.modifiedScore).toBe(103); // 100 + (100 * 0.03)
+      // Brave has competitionBonus 0.15 and stressResistance 0.1 (applied as 0.1 * 0.3 = 0.03)
+      // competitionBonus: 100 * 0.15 = 15
+      // stressResistance: 100 * 0.03 = 3
+      // Total: 100 + 15 + 3 = 118
+      expect(result.modifiedScore).toBe(118);
       expect(result.appliedModifiers.stressResistance).toBe(3);
     });
 
@@ -208,10 +215,10 @@ describe('Epigenetic Flag Influence System', () => {
     test('should apply bonding rate modifier', () => {
       const result = applyFlagInfluencesToBonding(5, ['affectionate']);
 
-      // Affectionate has bondingRate 0.15 and groomEffectiveness 0.1
+      // Affectionate has bondingRate 0.15 and groomEffectiveness 0.15
       const expectedRate = 5 * 0.15; // 0.75
-      const expectedGroom = 5 * 0.1; // 0.5
-      const expectedTotal = 5 + expectedRate + expectedGroom; // 6.25
+      const expectedGroom = 5 * 0.15; // 0.75
+      const expectedTotal = 5 + expectedRate + expectedGroom; // 6.5
 
       expect(result.modifiedBondingChange).toBe(expectedTotal);
       expect(result.appliedModifiers.bondingRate).toBe(expectedRate);
@@ -221,9 +228,10 @@ describe('Epigenetic Flag Influence System', () => {
     test('should apply bonding resistance penalty', () => {
       const result = applyFlagInfluencesToBonding(5, ['aloof']);
 
-      // Aloof has bondingResistance 0.15
+      // Aloof has bondingResistance 0.15 and groomEffectiveness -0.15
       const expectedPenalty = 5 * (-0.15); // -0.75
-      const expectedTotal = 5 + expectedPenalty; // 4.25
+      const expectedGroom = 5 * (-0.15); // -0.75
+      const expectedTotal = 5 + expectedPenalty + expectedGroom; // 3.5
 
       expect(result.modifiedBondingChange).toBe(expectedTotal);
       expect(result.appliedModifiers.bondingResistance).toBe(expectedPenalty);
@@ -255,10 +263,10 @@ describe('Epigenetic Flag Influence System', () => {
       const result = getFlagInfluenceSummary(['brave', 'fearful']);
 
       // Brave: bold +0.3, spooky -0.4, confident +0.2
-      // Fearful: bold -0.3, spooky +0.4, timid +0.2
+      // Fearful: bold -0.3, spooky +0.4, confident -0.4, timid +0.2
       expect(result.traitInfluences.bold).toBe(0); // 0.3 - 0.3
       expect(result.traitInfluences.spooky).toBe(0); // -0.4 + 0.4
-      expect(result.traitInfluences.confident).toBe(0.2);
+      expect(result.traitInfluences.confident).toBe(-0.2); // 0.2 - 0.4
       expect(result.traitInfluences.timid).toBe(0.2);
     });
 
