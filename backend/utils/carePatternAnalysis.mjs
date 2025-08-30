@@ -276,7 +276,7 @@ function groupInteractionsByDay(interactions) {
  * @returns {number} Number of consecutive days
  */
 function calculateConsecutiveDays(dailyInteractions) {
-  const days = Object.keys(dailyInteractions).sort();
+  const days = Object.keys(dailyInteractions).sort((a, b) => new Date(a) - new Date(b));
   let consecutiveDays = 0;
   let currentStreak = 0;
 
@@ -306,7 +306,7 @@ function calculateConsecutiveDays(dailyInteractions) {
  * @returns {number} Maximum consecutive days without care
  */
 function calculateDaysWithoutCare(dailyInteractions) {
-  const days = Object.keys(dailyInteractions).sort();
+  const days = Object.keys(dailyInteractions).sort((a, b) => new Date(a) - new Date(b));
   let maxGap = 0;
 
   for (let i = 1; i < days.length; i++) {
