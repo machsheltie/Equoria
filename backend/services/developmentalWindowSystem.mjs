@@ -631,3 +631,222 @@ export async function analyzeCriticalPeriodSensitivity(horseId) {
     throw error;
   }
 }
+
+/**
+ * Generate comprehensive developmental forecast
+ * @param {number} horseId - ID of the horse
+ * @param {number} forecastDays - Number of days to forecast
+ * @returns {Object} Developmental forecast
+ */
+export async function generateDevelopmentalForecast(horseId, forecastDays) {
+  try {
+    const horse = await prisma.horse.findUnique({
+      where: { id: horseId },
+      select: { dateOfBirth: true, epigeneticFlags: true, stressLevel: true, bondScore: true },
+    });
+
+    const currentAge = Math.floor((Date.now() - horse.dateOfBirth.getTime()) / (1000 * 60 * 60 * 24));
+    const forecastEndAge = currentAge + forecastDays;
+
+    // Identify upcoming windows
+    const upcomingWindows = Object.values(DEVELOPMENTAL_WINDOWS).filter(window =>
+      window.startDay <= forecastEndAge && window.endDay >= currentAge
+    ).map(window => ({
+      ...window,
+      daysUntilStart: Math.max(0, window.startDay - currentAge),
+      daysUntilEnd: Math.max(0, window.endDay - currentAge),
+      isActive: currentAge >= window.startDay && currentAge <= window.endDay,
+    }));
+
+    // Generate developmental trajectory
+    const developmentalTrajectory = generateTrajectory(currentAge, forecastDays, upcomingWindows);
+
+    // Predict trait development
+    const traitDevelopmentPredictions = await generateTraitPredictions(horseId, upcomingWindows, horse);
+
+    // Project milestones
+    const milestoneProjections = projectMilestones(currentAge, forecastDays, upcomingWindows);
+
+    // Assess risks
+    const riskAssessment = assessDevelopmentalRisks(horse, upcomingWindows, forecastDays);
+
+    // Generate recommendations
+    const recommendations = generateForecastRecommendations(upcomingWindows, riskAssessment, traitDevelopmentPredictions);
+
+    return {
+      horseId,
+      forecastPeriod: forecastDays,
+      upcomingWindows,
+      developmentalTrajectory,
+      traitDevelopmentPredictions,
+      milestoneProjections,
+      riskAssessment,
+      recommendations,
+      analysisTimestamp: new Date(),
+    };
+
+  } catch (error) {
+    logger.error(`Error generating developmental forecast for horse ${horseId}:`, error);
+    throw error;
+  }
+}
+
+/**
+ * Get related traits for a given trait
+ */
+function getRelatedTraits(traitName) {
+  const traitRelations = {
+    confident: ['brave', 'secure', 'assertive'],
+    brave: ['confident', 'bold', 'fearless'],
+    social: ['outgoing', 'friendly', 'cooperative'],
+    curious: ['exploratory', 'inquisitive', 'intelligent'],
+    fearful: ['anxious', 'timid', 'insecure'],
+    calm: ['peaceful', 'stable', 'patient'],
+    intelligent: ['smart', 'clever', 'adaptable'],
+  };
+
+  return traitRelations[traitName] || [];
+}
+
+/**
+ * Generate development recommendations
+ */
+function generateDevelopmentRecommendations(traitName, windowName, opportunity) {
+  const recommendations = [];
+  const window = DEVELOPMENTAL_WINDOWS[windowName];
+
+  if (opportunity > 0.7) {
+    recommendations.push(`Excellent opportunity to develop ${traitName} - implement intensive ${window.interventions[0]}`);
+    recommendations.push(`Focus on ${window.interventions.join(', ')} during this critical period`);
+  } else if (opportunity > 0.5) {
+    recommendations.push(`Good opportunity for ${traitName} development - use ${window.interventions[0]}`);
+    recommendations.push(`Monitor progress and adjust approach based on response`);
+  } else if (opportunity > 0.3) {
+    recommendations.push(`Limited opportunity for ${traitName} - gentle approach recommended`);
+    recommendations.push(`Consider alternative developmental strategies`);
+  } else {
+    recommendations.push(`Low opportunity for ${traitName} development in this window`);
+    recommendations.push(`Focus on other traits or wait for more suitable developmental period`);
+  }
+
+  // Add trait-specific recommendations
+  if (traitName === 'confident') {
+    recommendations.push('Provide success experiences and positive reinforcement');
+  } else if (traitName === 'curious') {
+    recommendations.push('Offer safe exploration opportunities and novel experiences');
+  } else if (traitName === 'social') {
+    recommendations.push('Facilitate positive interactions with multiple handlers');
+  }
+
+  return recommendations;
+}
+
+/**
+ * Assess milestone progress
+ */
+function assessMilestoneProgress(milestoneName, milestone, interactions, currentAge, horse) {
+  const window = DEVELOPMENTAL_WINDOWS[milestone.window];
+
+  // Check if window has passed
+  if (currentAge > window.endDay) {
+    // Assess based on interactions during the window
+    const windowInteractions = interactions.filter(interaction => {
+      const interactionAge = Math.floor((interaction.createdAt.getTime() - horse.dateOfBirth.getTime()) / (1000 * 60 * 60 * 24));
+      return interactionAge >= window.startDay && interactionAge <= window.endDay;
+    });
+
+    const achieved = assessMilestoneAchievement(milestoneName, milestone, windowInteractions, horse);
+
+    return {
+      achieved,
+      achievedAt: achieved ? new Date(horse.dateOfBirth.getTime() + window.endDay * 24 * 60 * 60 * 1000) : null,
+      score: achieved ? milestone.score : 0,
+      completionPercentage: achieved ? 100 : calculatePartialCompletion(windowInteractions),
+    };
+  } else if (currentAge >= window.startDay) {
+    // Currently in window - assess progress
+    const windowInteractions = interactions.filter(interaction => {
+      const interactionAge = Math.floor((interaction.createdAt.getTime() - horse.dateOfBirth.getTime()) / (1000 * 60 * 60 * 1000));
+      return interactionAge >= window.startDay;
+    });
+
+    const completionPercentage = calculatePartialCompletion(windowInteractions);
+
+    return {
+      achieved: false,
+      achievedAt: null,
+      score: 0,
+      completionPercentage,
+    };
+  } else {
+    // Window not yet reached
+    return {
+      achieved: false,
+      achievedAt: null,
+      score: 0,
+      completionPercentage: 0,
+    };
+  }
+}
+
+/**
+ * Assess milestone achievement
+ */
+function assessMilestoneAchievement(milestoneName, milestone, interactions, horse) {
+  switch (milestoneName) {
+    case 'basic_trust':
+      return interactions.some(i => i.bondingChange > 2) && horse.bondScore > 15;
+    case 'environmental_comfort':
+      return interactions.length >= 3 && interactions.some(i => i.taskType === 'showground_exposure');
+    case 'fear_resilience':
+      return interactions.some(i => i.stressChange < 0) && horse.stressLevel < 6;
+    case 'learning_motivation':
+      return interactions.some(i => i.taskType === 'desensitization') && interactions.length >= 2;
+    case 'emotional_stability':
+      return horse.stressLevel < 5 && interactions.length >= 4;
+    case 'social_competence':
+      const uniqueGrooms = new Set(interactions.map(i => i.groomId));
+      return uniqueGrooms.size >= 2 && horse.bondScore > 20;
+    case 'self_confidence':
+      return horse.bondScore > 30 && horse.stressLevel < 4;
+    default:
+      return false;
+  }
+}
+
+/**
+ * Calculate partial completion percentage
+ */
+function calculatePartialCompletion(interactions) {
+  if (interactions.length === 0) return 0;
+
+  const qualityScore = interactions.reduce((sum, i) => {
+    const scores = { poor: 1, fair: 2, good: 3, excellent: 4 };
+    return sum + (scores[i.quality] || 2);
+  }, 0) / interactions.length;
+
+  const frequencyScore = Math.min(1, interactions.length / 5) * 100;
+  const qualityPercentage = (qualityScore / 4) * 100;
+
+  return Math.min(100, (frequencyScore + qualityPercentage) / 2);
+}
+
+/**
+ * Identify next milestones
+ */
+function identifyNextMilestones(currentAge, achievedMilestones) {
+  const achievedNames = achievedMilestones.map(m => m.name);
+
+  return Object.entries(DEVELOPMENTAL_MILESTONES)
+    .filter(([name, milestone]) => {
+      const window = DEVELOPMENTAL_WINDOWS[milestone.window];
+      return !achievedNames.includes(name) && currentAge <= window.endDay + 30; // Include recently closed windows
+    })
+    .map(([name, milestone]) => ({
+      name,
+      window: milestone.window,
+      requirement: milestone.requirement,
+      score: milestone.score,
+    }))
+    .slice(0, 3); // Next 3 milestones
+}
