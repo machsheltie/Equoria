@@ -68,20 +68,30 @@ import enhancedReportingRoutes from './routes/enhancedReportingRoutes.mjs';
 import dynamicCompatibilityRoutes from './routes/dynamicCompatibilityRoutes.mjs';
 import personalityEvolutionRoutes from './routes/personalityEvolutionRoutes.mjs';
 import apiOptimizationRoutes from './routes/apiOptimizationRoutes.mjs';
+import memoryManagementRoutes from './routes/memoryManagementRoutes.mjs';
+import documentationRoutes from './routes/documentationRoutes.mjs';
 import adminRoutes from './routes/adminRoutes.mjs';
 
 // Middleware imports
 import errorHandler from './middleware/errorHandler.mjs';
 import { requestLogger, errorRequestLogger } from './middleware/requestLogger.mjs';
+import { setupSwaggerDocs, addDocumentationHeaders } from './middleware/swaggerSetup.mjs';
 import {
   responseOptimization,
   paginationMiddleware,
   performanceMonitoring
 } from './middleware/responseOptimization.mjs';
 import { createCompressionMiddleware } from './services/apiResponseOptimizationService.mjs';
+import {
+  createResourceManagementMiddleware,
+  memoryMonitoringMiddleware,
+  databaseConnectionMiddleware,
+  requestTimeoutMiddleware,
+} from './middleware/resourceManagement.mjs';
 
 // Service imports
 import { initializeCronJobs, stopCronJobs } from './services/cronJobService.mjs';
+import { initializeMemoryManagement, shutdownMemoryManagement } from './services/memoryResourceManagementService.mjs';
 
 const app = express();
 
@@ -158,11 +168,29 @@ app.use(express.urlencoded({ extended: true, limit: '10mb' }));
 // Request logging
 app.use(requestLogger);
 
+// Documentation headers
+app.use(addDocumentationHeaders());
+
 // Response optimization middleware
 app.use(createCompressionMiddleware());
 app.use(responseOptimization());
 app.use(paginationMiddleware());
 app.use(performanceMonitoring());
+
+// Memory and resource management middleware
+app.use(createResourceManagementMiddleware({
+  trackMemoryUsage: true,
+  trackPerformance: true,
+  enableCleanup: true,
+  memoryThreshold: 100 * 1024 * 1024, // 100MB
+  performanceThreshold: 5000, // 5 seconds
+}));
+app.use(memoryMonitoringMiddleware({
+  threshold: 500 * 1024 * 1024, // 500MB
+  enableGC: process.env.NODE_ENV === 'production',
+}));
+app.use(databaseConnectionMiddleware(prisma));
+app.use(requestTimeoutMiddleware(30000)); // 30 second timeout
 
 // Health check endpoint
 app.get('/health', (req, res) => {
@@ -202,8 +230,13 @@ app.use('/api', enhancedReportingRoutes);
 app.use('/api/compatibility', dynamicCompatibilityRoutes);
 app.use('/api/personality-evolution', personalityEvolutionRoutes);
 app.use('/api/optimization', apiOptimizationRoutes);
+app.use('/api/memory', memoryManagementRoutes);
+app.use('/api/docs', documentationRoutes);
 app.use('/api/leaderboards', leaderboardRoutes);
 app.use('/api/admin', adminRoutes);
+
+// Setup Swagger documentation
+setupSwaggerDocs(app);
 
 // API documentation endpoint
 app.get('/api', (req, res) => {
@@ -248,18 +281,27 @@ app.use(errorRequestLogger);
 app.use(errorHandler);
 
 // Graceful shutdown handling
-// Initialize cron jobs
+// Initialize cron jobs and memory management
 initializeCronJobs();
+initializeMemoryManagement({
+  memoryThreshold: 500 * 1024 * 1024, // 500MB
+  gcInterval: 60000, // 1 minute
+  monitoringInterval: 10000, // 10 seconds
+  alertThreshold: 0.8, // 80%
+  enableGCOptimization: process.env.NODE_ENV === 'production',
+});
 
 process.on('SIGTERM', () => {
   logger.info('SIGTERM received, shutting down gracefully');
   stopCronJobs();
+  shutdownMemoryManagement();
   process.exit(0);
 });
 
 process.on('SIGINT', () => {
   logger.info('SIGINT received, shutting down gracefully');
   stopCronJobs();
+  shutdownMemoryManagement();
   process.exit(0);
 });
 

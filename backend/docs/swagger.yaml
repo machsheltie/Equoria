@@ -1,0 +1,197 @@
+openapi: 3.0.3
+info:
+    title: 'Equoria API'
+    description: "# 🐎 Equoria Horse Breeding & Competition Simulation API\n\nWelcome to the Equoria API - a comprehensive horse breeding and competition simulation system.\n\n## Features\n- **Horse Management**: Complete CRUD operations for horses with detailed attributes\n- **Breeding System**: Advanced genetics and epigenetic trait management\n- **Competition System**: 24 disciplines with realistic scoring and progression\n- **Groom Management**: Professional groom system with career progression and talent trees\n- **Training System**: Multi-discipline training with age restrictions and cooldowns\n- **User Management**: Authentication, progression, and profile management\n- **Performance Optimization**: Response compression, pagination, and memory management\n\n## Authentication\nThis API uses JWT (JSON Web Tokens) for authentication. Include the token in the Authorization header:\n```\nAuthorization: Bearer <your-jwt-token>\n```\n\n## Rate Limiting\nAPI requests are rate-limited to ensure fair usage and system stability.\n\n## Response Format\nAll API responses follow a consistent format:\n```json\n{\n  \"success\": true,\n  \"message\": \"Operation completed successfully\",\n  \"data\": { ... },\n  \"meta\": { ... }\n}\n```\n\n## Error Handling\nErrors are returned with appropriate HTTP status codes and detailed error messages:\n```json\n{\n  \"success\": false,\n  \"message\": \"Error description\",\n  \"error\": \"Detailed error information\",\n  \"errors\": [ ... ]\n}\n```\n"
+    version: 1.2.0
+    contact:
+        name: 'Equoria API Support'
+        email: support@equoria.com
+    license:
+        name: MIT
+        url: 'https://opensource.org/licenses/MIT'
+    x-generated:
+        timestamp: '2025-08-31T08:21:32.299Z'
+        endpointCount: 0
+        schemaCount: 2
+        generator: ApiDocumentationService
+servers:
+    -
+        url: 'http://localhost:3000/api'
+        description: 'Development server'
+    -
+        url: 'https://api.equoria.com/api'
+        description: 'Production server'
+tags:
+    -
+        name: Authentication
+        description: 'User authentication and authorization'
+    -
+        name: Users
+        description: 'User management and profiles'
+    -
+        name: Horses
+        description: 'Horse management and attributes'
+    -
+        name: Breeding
+        description: 'Horse breeding and genetics'
+    -
+        name: Training
+        description: 'Horse training and skill development'
+    -
+        name: Competition
+        description: 'Competition management and results'
+    -
+        name: Grooms
+        description: 'Groom management and interactions'
+    -
+        name: Traits
+        description: 'Epigenetic trait management'
+    -
+        name: Performance
+        description: 'Performance monitoring and optimization'
+    -
+        name: Memory
+        description: 'Memory and resource management'
+paths:
+    /auth/register:
+        post:
+            tags: [Authentication]
+            summary: 'Register a new user'
+            description: 'Create a new user account with email and password'
+            requestBody: {required: true, content: {application/json: {schema: {type: object, required: [username, email, password, firstName, lastName], properties: {username: {type: string, minLength: 3, maxLength: 50, example: horselover123}, email: {type: string, format: email, example: user@example.com}, password: {type: string, minLength: 8, example: SecurePassword123!}, firstName: {type: string, minLength: 1, maxLength: 50, example: John}, lastName: {type: string, minLength: 1, maxLength: 50, example: Doe}}}}}}
+            responses: {'201': {description: 'User registered successfully', content: {application/json: {schema: {$ref: '#/components/schemas/AuthResponse'}}}}, '400': {description: 'Validation error', content: {application/json: {schema: {$ref: '#/components/schemas/ErrorResponse'}}}}, '409': {description: 'User already exists', content: {application/json: {schema: {$ref: '#/components/schemas/ErrorResponse'}}}}}
+    /auth/login:
+        post:
+            tags: [Authentication]
+            summary: 'Login user'
+            description: 'Authenticate user and return JWT token'
+            requestBody: {required: true, content: {application/json: {schema: {type: object, required: [email, password], properties: {email: {type: string, format: email, example: user@example.com}, password: {type: string, example: SecurePassword123!}}}}}}
+            responses: {'200': {description: 'Login successful', content: {application/json: {schema: {$ref: '#/components/schemas/AuthResponse'}}}}, '401': {description: 'Invalid credentials', content: {application/json: {schema: {$ref: '#/components/schemas/ErrorResponse'}}}}}
+    /auth/logout:
+        post:
+            tags: [Authentication]
+            summary: 'Logout user'
+            description: 'Invalidate user session and JWT token'
+            security: [{bearerAuth: []}]
+            responses: {'200': {description: 'Logout successful', content: {application/json: {schema: {$ref: '#/components/schemas/SuccessResponse'}}}}, '401': {description: Unauthorized, content: {application/json: {schema: {$ref: '#/components/schemas/ErrorResponse'}}}}}
+    /auth/profile:
+        get:
+            tags: [Authentication]
+            summary: 'Get user profile'
+            description: 'Retrieve current user''s profile information'
+            security: [{bearerAuth: []}]
+            responses: {'200': {description: 'Profile retrieved successfully', content: {application/json: {schema: {allOf: [{$ref: '#/components/schemas/SuccessResponse'}, {type: object, properties: {data: {$ref: '#/components/schemas/User'}}}]}}}}, '401': {description: Unauthorized, content: {application/json: {schema: {$ref: '#/components/schemas/ErrorResponse'}}}}}
+    /horses:
+        get:
+            tags: [Horses]
+            summary: 'List horses'
+            description: 'Retrieve a list of horses with optional filtering and pagination'
+            security: [{bearerAuth: []}]
+            parameters: [{name: page, in: query, description: 'Page number for pagination', schema: {type: integer, minimum: 1, default: 1}}, {name: limit, in: query, description: 'Number of items per page', schema: {type: integer, minimum: 1, maximum: 100, default: 20}}, {name: breed, in: query, description: 'Filter by breed name', schema: {type: string}}, {name: sex, in: query, description: 'Filter by horse sex', schema: {type: string, enum: [Stallion, Mare, Gelding]}}, {name: minAge, in: query, description: 'Minimum age filter', schema: {type: integer, minimum: 0}}, {name: maxAge, in: query, description: 'Maximum age filter', schema: {type: integer, minimum: 0}}, {name: fields, in: query, description: 'Comma-separated list of fields to include', schema: {type: string, example: 'id,name,age,breed'}}]
+            responses: {'200': {description: 'Horses retrieved successfully', content: {application/json: {schema: {allOf: [{$ref: '#/components/schemas/SuccessResponse'}, {type: object, properties: {data: {type: array, items: {$ref: '#/components/schemas/Horse'}}, pagination: {$ref: '#/components/schemas/PaginationInfo'}}}]}}}}, '401': {description: Unauthorized, content: {application/json: {schema: {$ref: '#/components/schemas/ErrorResponse'}}}}}
+        post:
+            tags: [Horses]
+            summary: 'Create a new horse'
+            description: 'Create a new horse with specified attributes'
+            security: [{bearerAuth: []}]
+            requestBody: {required: true, content: {application/json: {schema: {$ref: '#/components/schemas/CreateHorseRequest'}}}}
+            responses: {'201': {description: 'Horse created successfully', content: {application/json: {schema: {allOf: [{$ref: '#/components/schemas/SuccessResponse'}, {type: object, properties: {data: {$ref: '#/components/schemas/Horse'}}}]}}}}, '400': {description: 'Validation error', content: {application/json: {schema: {$ref: '#/components/schemas/ErrorResponse'}}}}, '401': {description: Unauthorized, content: {application/json: {schema: {$ref: '#/components/schemas/ErrorResponse'}}}}}
+    '/horses/{id}':
+        get:
+            tags: [Horses]
+            summary: 'Get horse by ID'
+            description: 'Retrieve detailed information about a specific horse'
+            security: [{bearerAuth: []}]
+            parameters: [{name: id, in: path, required: true, description: 'Horse ID', schema: {type: string, format: uuid}}, {name: fields, in: query, description: 'Comma-separated list of fields to include', schema: {type: string, example: 'id,name,age,breed,stats'}}]
+            responses: {'200': {description: 'Horse retrieved successfully', content: {application/json: {schema: {allOf: [{$ref: '#/components/schemas/SuccessResponse'}, {type: object, properties: {data: {$ref: '#/components/schemas/Horse'}}}]}}}}, '401': {description: Unauthorized, content: {application/json: {schema: {$ref: '#/components/schemas/ErrorResponse'}}}}, '404': {description: 'Horse not found', content: {application/json: {schema: {$ref: '#/components/schemas/ErrorResponse'}}}}}
+        put:
+            tags: [Horses]
+            summary: 'Update horse'
+            description: 'Update horse information'
+            security: [{bearerAuth: []}]
+            parameters: [{name: id, in: path, required: true, description: 'Horse ID', schema: {type: string, format: uuid}}]
+            requestBody: {required: true, content: {application/json: {schema: {$ref: '#/components/schemas/UpdateHorseRequest'}}}}
+            responses: {'200': {description: 'Horse updated successfully', content: {application/json: {schema: {allOf: [{$ref: '#/components/schemas/SuccessResponse'}, {type: object, properties: {data: {$ref: '#/components/schemas/Horse'}}}]}}}}, '401': {description: Unauthorized, content: {application/json: {schema: {$ref: '#/components/schemas/ErrorResponse'}}}}, '404': {description: 'Horse not found', content: {application/json: {schema: {$ref: '#/components/schemas/ErrorResponse'}}}}}
+        delete:
+            tags: [Horses]
+            summary: 'Delete horse'
+            description: 'Remove a horse from the system'
+            security: [{bearerAuth: []}]
+            parameters: [{name: id, in: path, required: true, description: 'Horse ID', schema: {type: string, format: uuid}}]
+            responses: {'200': {description: 'Horse deleted successfully', content: {application/json: {schema: {$ref: '#/components/schemas/SuccessResponse'}}}}, '401': {description: Unauthorized, content: {application/json: {schema: {$ref: '#/components/schemas/ErrorResponse'}}}}, '404': {description: 'Horse not found', content: {application/json: {schema: {$ref: '#/components/schemas/ErrorResponse'}}}}}
+    /competition/enter:
+        post:
+            tags: [Competition]
+            summary: 'Enter horse in competition'
+            description: 'Enter a horse in a specific competition discipline'
+            security: [{bearerAuth: []}]
+            requestBody: {required: true, content: {application/json: {schema: {type: object, required: [horseId, discipline, showId], properties: {horseId: {type: string, format: uuid, example: 123e4567-e89b-12d3-a456-426614174000}, discipline: {type: string, enum: [Racing, Dressage, ShowJumping, CrossCountry, Western, Gaited, Hunter, Saddleseat, Endurance, Eventing, Vaulting, Polo, CombinedDriving, FineHarness, Gymkhana, Steeplechase, HarnessRacing, ObedienceTraining, WesternPleasure, Reining, Cutting, BarrelRacing, Roping, TeamPenning, Rodeo], example: Racing}, showId: {type: string, format: uuid, example: 123e4567-e89b-12d3-a456-426614174000}}}}}}
+            responses: {'201': {description: 'Horse entered in competition successfully', content: {application/json: {schema: {allOf: [{$ref: '#/components/schemas/SuccessResponse'}, {type: object, properties: {data: {$ref: '#/components/schemas/CompetitionEntry'}}}]}}}}, '400': {description: 'Invalid entry (age, eligibility, etc.)', content: {application/json: {schema: {$ref: '#/components/schemas/ErrorResponse'}}}}, '401': {description: Unauthorized, content: {application/json: {schema: {$ref: '#/components/schemas/ErrorResponse'}}}}}
+    /competition/execute:
+        post:
+            tags: [Competition]
+            summary: 'Execute competition'
+            description: 'Run a competition and generate results'
+            security: [{bearerAuth: []}]
+            requestBody: {required: true, content: {application/json: {schema: {type: object, required: [showId, discipline], properties: {showId: {type: string, format: uuid, example: 123e4567-e89b-12d3-a456-426614174000}, discipline: {type: string, example: Racing}}}}}}
+            responses: {'200': {description: 'Competition executed successfully', content: {application/json: {schema: {allOf: [{$ref: '#/components/schemas/SuccessResponse'}, {type: object, properties: {data: {$ref: '#/components/schemas/CompetitionResults'}}}]}}}}, '400': {description: 'Invalid competition parameters', content: {application/json: {schema: {$ref: '#/components/schemas/ErrorResponse'}}}}, '401': {description: Unauthorized, content: {application/json: {schema: {$ref: '#/components/schemas/ErrorResponse'}}}}}
+    /grooms/hire:
+        post:
+            tags: [Grooms]
+            summary: 'Hire a new groom'
+            description: 'Hire a groom with specified skills and personality'
+            security: [{bearerAuth: []}]
+            requestBody: {required: true, content: {application/json: {schema: {type: object, required: [name, skillLevel, personality, specialization], properties: {name: {type: string, example: 'Sarah Johnson'}, skillLevel: {type: integer, minimum: 1, maximum: 10, example: 5}, personality: {type: string, enum: [calm, energetic, methodical], example: calm}, specialization: {type: string, enum: [foal_care, general_grooming, specialized_disciplines], example: foal_care}}}}}}
+            responses: {'201': {description: 'Groom hired successfully', content: {application/json: {schema: {allOf: [{$ref: '#/components/schemas/SuccessResponse'}, {type: object, properties: {data: {$ref: '#/components/schemas/Groom'}}}]}}}}, '400': {description: 'Validation error', content: {application/json: {schema: {$ref: '#/components/schemas/ErrorResponse'}}}}, '401': {description: Unauthorized, content: {application/json: {schema: {$ref: '#/components/schemas/ErrorResponse'}}}}}
+    /api/users:
+        get:
+            tags: [Users]
+            summary: 'List users'
+            description: 'Get all users'
+            parameters: []
+            requestBody: null
+            responses: {'200': {description: Success}}
+            security: []
+            deprecated: false
+components:
+    securitySchemes:
+        bearerAuth:
+            type: http
+            scheme: bearer
+            bearerFormat: JWT
+    schemas:
+        SuccessResponse:
+            type: object
+            properties: {success: {type: boolean, example: true}, message: {type: string, example: 'Operation completed successfully'}, data: {type: object}, meta: {type: object}}
+        ErrorResponse:
+            type: object
+            properties: {success: {type: boolean, example: false}, message: {type: string, example: 'Error description'}, error: {type: string, example: 'Detailed error information'}, errors: {type: array, items: {type: object}}}
+        AuthResponse:
+            allOf: [{$ref: '#/components/schemas/SuccessResponse'}, {type: object, properties: {data: {type: object, properties: {user: {$ref: '#/components/schemas/User'}, token: {type: string, example: eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9...}, refreshToken: {type: string, example: refresh_token_here}}}}}]
+        User:
+            type: object
+            properties: {id: {type: string}}
+            registeredAt: '2025-08-31T08:21:32.266Z'
+        Horse:
+            type: object
+            properties: {id: {type: string}}
+            registeredAt: '2025-08-31T08:21:32.281Z'
+        CreateHorseRequest:
+            type: object
+            required: [name, breedId, sex, dateOfBirth]
+            properties: {name: {type: string, minLength: 1, maxLength: 100, example: 'Thunder Bolt'}, breedId: {type: string, format: uuid, example: 123e4567-e89b-12d3-a456-426614174000}, sex: {type: string, enum: [Stallion, Mare, Gelding], example: Stallion}, dateOfBirth: {type: string, format: date-time, example: '2018-03-15T00:00:00.000Z'}, temperament: {type: string, enum: [calm, confident, energetic, nervous, aggressive], example: confident}}
+        PaginationInfo:
+            type: object
+            properties: {page: {type: integer, example: 1}, limit: {type: integer, example: 20}, totalCount: {type: integer, example: 150}, totalPages: {type: integer, example: 8}, hasNextPage: {type: boolean, example: true}, hasPrevPage: {type: boolean, example: false}}
+        UpdateHorseRequest:
+            type: object
+            properties: {name: {type: string, minLength: 1, maxLength: 100, example: 'Thunder Bolt Updated'}, healthStatus: {type: string, enum: [Excellent, Good, Fair, Poor, Injured], example: Good}, temperament: {type: string, enum: [calm, confident, energetic, nervous, aggressive], example: confident}}
+        CompetitionEntry:
+            type: object
+            properties: {id: {type: string, format: uuid, example: 123e4567-e89b-12d3-a456-426614174000}, horseId: {type: string, format: uuid, example: 123e4567-e89b-12d3-a456-426614174000}, showId: {type: string, format: uuid, example: 123e4567-e89b-12d3-a456-426614174000}, discipline: {type: string, example: Racing}, entryTime: {type: string, format: date-time, example: '2023-01-01T00:00:00.000Z'}, status: {type: string, enum: [entered, completed, withdrawn], example: entered}}
+        CompetitionResults:
+            type: object
+            properties: {showId: {type: string, format: uuid, example: 123e4567-e89b-12d3-a456-426614174000}, discipline: {type: string, example: Racing}, results: {type: array, items: {type: object, properties: {placement: {type: integer, example: 1}, horseId: {type: string, format: uuid, example: 123e4567-e89b-12d3-a456-426614174000}, horseName: {type: string, example: 'Thunder Bolt'}, ownerName: {type: string, example: 'John Doe'}, prize: {type: number, format: decimal, example: 1000}, xpAwarded: {type: integer, example: 30}}}}, executedAt: {type: string, format: date-time, example: '2023-01-01T00:00:00.000Z'}}
+        Groom:
+            type: object
+            properties: {id: {type: string, format: uuid, example: 123e4567-e89b-12d3-a456-426614174000}, name: {type: string, example: 'Sarah Johnson'}, userId: {type: string, format: uuid, example: 123e4567-e89b-12d3-a456-426614174000}, skillLevel: {type: integer, minimum: 1, maximum: 10, example: 5}, experience: {type: integer, example: 150}, personality: {type: string, enum: [calm, energetic, methodical], example: calm}, specialization: {type: string, enum: [foal_care, general_grooming, specialized_disciplines], example: foal_care}, careerWeeks: {type: integer, example: 25}, level: {type: integer, example: 3}, isRetired: {type: boolean, example: false}, talents: {type: array, items: {type: string}, example: [gentle_touch, patience_master]}, createdAt: {type: string, format: date-time, example: '2023-01-01T00:00:00.000Z'}, updatedAt: {type: string, format: date-time, example: '2023-01-01T00:00:00.000Z'}}
