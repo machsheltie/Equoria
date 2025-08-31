@@ -93,6 +93,7 @@ import {
 // Service imports
 import { initializeCronJobs, stopCronJobs } from './services/cronJobService.mjs';
 import { initializeMemoryManagement, shutdownMemoryManagement } from './services/memoryResourceManagementService.mjs';
+import prisma from '../packages/database/prismaClient.mjs';
 
 const app = express();
 
