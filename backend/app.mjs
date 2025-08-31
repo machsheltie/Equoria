@@ -70,6 +70,7 @@ import personalityEvolutionRoutes from './routes/personalityEvolutionRoutes.mjs'
 import apiOptimizationRoutes from './routes/apiOptimizationRoutes.mjs';
 import memoryManagementRoutes from './routes/memoryManagementRoutes.mjs';
 import documentationRoutes from './routes/documentationRoutes.mjs';
+import userDocumentationRoutes from './routes/userDocumentationRoutes.mjs';
 import adminRoutes from './routes/adminRoutes.mjs';
 
 // Middleware imports
@@ -232,6 +233,7 @@ app.use('/api/personality-evolution', personalityEvolutionRoutes);
 app.use('/api/optimization', apiOptimizationRoutes);
 app.use('/api/memory', memoryManagementRoutes);
 app.use('/api/docs', documentationRoutes);
+app.use('/api/user-docs', userDocumentationRoutes);
 app.use('/api/leaderboards', leaderboardRoutes);
 app.use('/api/admin', adminRoutes);
 
