@@ -65,6 +65,8 @@ import leaderboardRoutes from './routes/leaderboardRoutes.mjs';
 import ultraRareTraitRoutes from './routes/ultraRareTraitRoutes.mjs';
 import advancedEpigeneticRoutes from './routes/advancedEpigeneticRoutes.mjs';
 import enhancedReportingRoutes from './routes/enhancedReportingRoutes.mjs';
+import dynamicCompatibilityRoutes from './routes/dynamicCompatibilityRoutes.mjs';
+import personalityEvolutionRoutes from './routes/personalityEvolutionRoutes.mjs';
 import adminRoutes from './routes/adminRoutes.mjs';
 
 // Middleware imports
@@ -184,6 +186,8 @@ app.use('/api/milestones', enhancedMilestoneRoutes);
 app.use('/api/ultra-rare-traits', ultraRareTraitRoutes);
 app.use('/api', advancedEpigeneticRoutes);
 app.use('/api', enhancedReportingRoutes);
+app.use('/api/compatibility', dynamicCompatibilityRoutes);
+app.use('/api/personality-evolution', personalityEvolutionRoutes);
 app.use('/api/leaderboards', leaderboardRoutes);
 app.use('/api/admin', adminRoutes);
 
