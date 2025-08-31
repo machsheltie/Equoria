@@ -67,11 +67,18 @@ import advancedEpigeneticRoutes from './routes/advancedEpigeneticRoutes.mjs';
 import enhancedReportingRoutes from './routes/enhancedReportingRoutes.mjs';
 import dynamicCompatibilityRoutes from './routes/dynamicCompatibilityRoutes.mjs';
 import personalityEvolutionRoutes from './routes/personalityEvolutionRoutes.mjs';
+import apiOptimizationRoutes from './routes/apiOptimizationRoutes.mjs';
 import adminRoutes from './routes/adminRoutes.mjs';
 
 // Middleware imports
 import errorHandler from './middleware/errorHandler.mjs';
 import { requestLogger, errorRequestLogger } from './middleware/requestLogger.mjs';
+import {
+  responseOptimization,
+  paginationMiddleware,
+  performanceMonitoring
+} from './middleware/responseOptimization.mjs';
+import { createCompressionMiddleware } from './services/apiResponseOptimizationService.mjs';
 
 // Service imports
 import { initializeCronJobs, stopCronJobs } from './services/cronJobService.mjs';
@@ -151,6 +158,12 @@ app.use(express.urlencoded({ extended: true, limit: '10mb' }));
 // Request logging
 app.use(requestLogger);
 
+// Response optimization middleware
+app.use(createCompressionMiddleware());
+app.use(responseOptimization());
+app.use(paginationMiddleware());
+app.use(performanceMonitoring());
+
 // Health check endpoint
 app.get('/health', (req, res) => {
   res.status(200).json({
@@ -188,6 +201,7 @@ app.use('/api', advancedEpigeneticRoutes);
 app.use('/api', enhancedReportingRoutes);
 app.use('/api/compatibility', dynamicCompatibilityRoutes);
 app.use('/api/personality-evolution', personalityEvolutionRoutes);
+app.use('/api/optimization', apiOptimizationRoutes);
 app.use('/api/leaderboards', leaderboardRoutes);
 app.use('/api/admin', adminRoutes);
 
