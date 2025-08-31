@@ -51,57 +51,76 @@ export async function calculateFlagEffects(horse) {
     // Process each flag
     for (const flagName of flags) {
       const flagDef = EPIGENETIC_FLAG_DEFINITIONS[flagName.toUpperCase()];
-      if (!flagDef || !flagDef.effects) continue;
+      if (!flagDef || !flagDef.influences) continue;
 
-      const effects = flagDef.effects;
-      
-      // Apply competition bonuses/penalties
-      if (effects.competitionBonus) {
-        Object.entries(effects.competitionBonus).forEach(([discipline, bonus]) => {
-          competitionBonuses[discipline] = (competitionBonuses[discipline] || 0) + bonus;
+      const influences = flagDef.influences;
+      const behaviorModifiers = influences.behaviorModifiers || {};
+      const traitWeightModifiers = influences.traitWeightModifiers || {};
+
+      // Apply competition bonuses from behavior modifiers
+      if (behaviorModifiers.competitionBonus) {
+        // Apply general competition bonus to common disciplines
+        const disciplines = ['showJumping', 'dressage', 'racing', 'crossCountry', 'endurance'];
+        disciplines.forEach(discipline => {
+          competitionBonuses[discipline] = (competitionBonuses[discipline] || 0) + (behaviorModifiers.competitionBonus * 10); // Scale to score points
         });
       }
 
-      if (effects.competitionPenalty) {
-        Object.entries(effects.competitionPenalty).forEach(([discipline, penalty]) => {
-          competitionPenalties[discipline] = (competitionPenalties[discipline] || 0) + Math.abs(penalty); // Ensure positive penalty value
+      // Apply discipline-specific bonuses based on flag type
+      if (flagName.toUpperCase() === 'BRAVE') {
+        competitionBonuses.showJumping = (competitionBonuses.showJumping || 0) + 2;
+        competitionBonuses.crossCountry = (competitionBonuses.crossCountry || 0) + 3;
+      } else if (flagName.toUpperCase() === 'CONFIDENT') {
+        competitionBonuses.dressage = (competitionBonuses.dressage || 0) + 2;
+        competitionBonuses.racing = (competitionBonuses.racing || 0) + 1;
+      }
+
+      // Apply negative flag penalties
+      if (flagDef.type === 'negative') {
+        const disciplines = ['showJumping', 'dressage', 'racing', 'crossCountry', 'endurance'];
+        disciplines.forEach(discipline => {
+          competitionPenalties[discipline] = (competitionPenalties[discipline] || 0) + 1; // Base penalty for negative flags
         });
       }
 
-      // Apply stress modifiers
-      if (effects.stressReduction) stressModifiers.stressReduction += effects.stressReduction;
-      if (effects.stressIncrease) stressModifiers.stressIncrease += effects.stressIncrease;
-      if (effects.stressResistance) stressModifiers.stressResistance += effects.stressResistance;
+      // Apply stress modifiers from behavior modifiers
+      if (behaviorModifiers.stressReduction) stressModifiers.stressReduction += behaviorModifiers.stressReduction;
+      if (behaviorModifiers.stressIncrease) stressModifiers.stressIncrease += behaviorModifiers.stressIncrease;
+      if (behaviorModifiers.stressResistance) stressModifiers.stressResistance += behaviorModifiers.stressResistance;
+      if (behaviorModifiers.stressVulnerability) stressModifiers.stressIncrease += behaviorModifiers.stressVulnerability;
 
       // Apply bonding modifiers
-      if (effects.bondingBonus) bondingModifiers.bondingBonus += effects.bondingBonus;
-      if (effects.bondingDifficulty) bondingModifiers.bondingDifficulty += effects.bondingDifficulty;
-      if (effects.bondingSpeed) bondingModifiers.bondingSpeed += effects.bondingSpeed;
+      if (behaviorModifiers.bondingBonus) bondingModifiers.bondingBonus += behaviorModifiers.bondingBonus;
+      if (behaviorModifiers.bondingDifficulty) bondingModifiers.bondingDifficulty += behaviorModifiers.bondingDifficulty;
+      if (behaviorModifiers.bondingSpeed) bondingModifiers.bondingSpeed += behaviorModifiers.bondingSpeed;
 
       // Apply training modifiers
-      if (effects.trainingEffectiveness) trainingModifiers.effectiveness += effects.trainingEffectiveness;
-      if (effects.adaptability) trainingModifiers.adaptability += effects.adaptability;
+      if (behaviorModifiers.trainingEfficiency) trainingModifiers.effectiveness += behaviorModifiers.trainingEfficiency;
+      if (behaviorModifiers.trainingEffectiveness) trainingModifiers.effectiveness += behaviorModifiers.trainingEffectiveness;
+      if (behaviorModifiers.adaptability) trainingModifiers.adaptability += behaviorModifiers.adaptability;
 
       // Add default training bonuses for positive flags
-      if (flagDef.type === 'POSITIVE') {
+      if (flagDef.type === 'positive') {
         trainingModifiers.effectiveness += 0.1; // 10% bonus for positive flags
+        bondingModifiers.bondingBonus += 0.05; // 5% bonding bonus
+        stressModifiers.stressReduction += 0.05; // 5% stress reduction
       }
-      if (flagDef.type === 'NEGATIVE') {
+      if (flagDef.type === 'negative') {
         trainingModifiers.effectiveness -= 0.1; // 10% penalty for negative flags
+        bondingModifiers.bondingDifficulty += 0.05; // 5% bonding difficulty
+        stressModifiers.stressIncrease += 0.05; // 5% stress increase
       }
 
-      // Apply breeding modifiers
-      if (effects.traitProbability) {
-        Object.entries(effects.traitProbability).forEach(([trait, modifier]) => {
-          breedingModifiers.traitProbabilities[trait] = (breedingModifiers.traitProbabilities[trait] || 0) + modifier;
-        });
-      }
+      // Apply breeding modifiers from trait weight modifiers
+      Object.entries(traitWeightModifiers).forEach(([trait, modifier]) => {
+        breedingModifiers.traitProbabilities[trait] = (breedingModifiers.traitProbabilities[trait] || 0) + modifier;
+      });
 
       // Add default self-trait probability for flags (e.g., brave flag increases brave trait)
       const flagNameLower = flagName.toLowerCase();
-      if (flagDef.type === 'POSITIVE') {
+      if (flagDef.type === 'positive') {
         breedingModifiers.traitProbabilities[flagNameLower] = (breedingModifiers.traitProbabilities[flagNameLower] || 0) + 0.15;
-      } else if (flagDef.type === 'NEGATIVE') {
+      } else if (flagDef.type === 'negative') {
         breedingModifiers.traitProbabilities[flagNameLower] = (breedingModifiers.traitProbabilities[flagNameLower] || 0) + 0.1;
       }
     }
@@ -234,7 +253,7 @@ export async function applyFlagEffectsToTraining(horse, trainingSession) {
     // Ensure positive flags provide meaningful training boost
     const positiveFlags = (horse.epigeneticFlags || []).filter(flag => {
       const flagDef = EPIGENETIC_FLAG_DEFINITIONS[flag.toUpperCase()];
-      return flagDef && flagDef.type === 'POSITIVE';
+      return flagDef && flagDef.type === 'positive';
     });
 
     if (positiveFlags.length > 0) {
