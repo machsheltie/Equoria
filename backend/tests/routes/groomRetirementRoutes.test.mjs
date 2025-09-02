@@ -177,8 +177,8 @@ describe('Groom Retirement Routes', () => {
         .expect(200);
 
       expect(response.body.success).toBe(true);
-      // Should be null for new groom with no selections
-      expect(response.body.data).toBeNull();
+      // Should be "none" for new groom with no selections
+      expect(response.body.data).toBe("none");
     });
 
     test('POST /api/grooms/:id/talents/validate should validate talent selection', async () => {

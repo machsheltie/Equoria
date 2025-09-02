@@ -390,7 +390,7 @@ export async function getHorseOverview(req, res) {
     }
 
     // Calculate next training date
-    let nextTrainingDate = null;
+    let nextTrainingDate = "never";
     try {
       const lastTrainingDate = await getAnyRecentTraining(horseId);
       if (lastTrainingDate) {
@@ -411,7 +411,7 @@ export async function getHorseOverview(req, res) {
     }
 
     // Get most recent show result
-    let lastShowResult = null;
+    let lastShowResult = "never";
     try {
       const recentResult = await prisma.competitionResult.findFirst({
         where: {
@@ -451,7 +451,7 @@ export async function getHorseOverview(req, res) {
       nextTrainingDate,
       earnings: horse.totalEarnings || 0,
       lastShowResult,
-      rider: horse.rider,
+      rider: horse.rider || "none",
       tack: horse.tack || {},
     };
 

@@ -26,11 +26,13 @@ describe('🧬 Advanced Breeding Genetics API Integration', () => {
       .post('/api/auth/register')
       .send({
         username: 'geneticsTestUser',
+        firstName: 'Genetics',
+        lastName: 'TestUser',
         email: 'genetics@test.com',
         password: 'TestPassword123!'
       });
 
-    testUser = userResponse.body.user;
+    testUser = userResponse.body.data?.user;
 
     const loginResponse = await request(app)
       .post('/api/auth/login')
@@ -39,7 +41,7 @@ describe('🧬 Advanced Breeding Genetics API Integration', () => {
         password: 'TestPassword123!'
       });
 
-    authToken = loginResponse.body.token;
+    authToken = loginResponse.body.data?.token;
   });
 
   beforeEach(async () => {
@@ -49,6 +51,7 @@ describe('🧬 Advanced Breeding Genetics API Integration', () => {
       .set('Authorization', `Bearer ${authToken}`)
       .send({
         name: 'Genetic Test Stallion',
+        breedId: 1,
         sex: 'Stallion',
         dateOfBirth: '2020-01-01',
         speed: 95,

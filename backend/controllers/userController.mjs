@@ -187,7 +187,7 @@ export const getDashboardData = async (req, res, next) => {
 
     const nextShowRuns = upcomingShows.slice(0, 2).map(show => show.runDate);
 
-    let lastTrained = null;
+    let lastTrained = "never";
     try {
       const recentTraining = await prisma.trainingLog.findFirst({
         where: {
@@ -199,14 +199,14 @@ export const getDashboardData = async (req, res, next) => {
           trainedAt: 'desc',
         },
       });
-      lastTrained = recentTraining?.trainedAt ? recentTraining.trainedAt.toISOString() : null;
+      lastTrained = recentTraining?.trainedAt ? recentTraining.trainedAt.toISOString() : "never";
     } catch (error) {
       logger.warn(
         `[userController.getDashboardData] Error getting recent training for user ${userId}: ${error.message}`,
       );
     }
 
-    let lastShowPlaced = null;
+    let lastShowPlaced = "never";
     try {
       const recentPlacement = await prisma.competitionResult.findFirst({
         where: {
@@ -259,8 +259,8 @@ export const getDashboardData = async (req, res, next) => {
         nextShowRuns,
       },
       activity: {
-        lastTrained: lastTrained || null,
-        lastShowPlaced: lastShowPlaced || null,
+        lastTrained: lastTrained || "never",
+        lastShowPlaced: lastShowPlaced || "never",
       },
     };
 

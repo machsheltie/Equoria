@@ -81,12 +81,12 @@ export async function getHorseHandler(req, res) {
           speciality: handlerData.groom.speciality,
           personality: handlerData.groom.personality,
           experience: handlerData.groom.experience,
-        } : null,
+        } : "none",
         assignment: handlerData.hasHandler ? {
           id: handlerData.assignment.id,
           priority: handlerData.assignment.priority,
           createdAt: handlerData.assignment.createdAt,
-        } : null,
+        } : "none",
       },
     });
 
