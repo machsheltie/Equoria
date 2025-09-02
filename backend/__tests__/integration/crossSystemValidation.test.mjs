@@ -20,7 +20,7 @@ import { jest } from '@jest/globals';
 import request from 'supertest';
 import app from '../../app.mjs';
 import prisma from '../../../packages/database/prismaClient.mjs';
-import { getMemoryResourceManager } from '../../services/memoryResourceManagementService.mjs';
+import { getMemoryManager } from '../../services/memoryResourceManagementService.mjs';
 import logger from '../../utils/logger.mjs';
 
 describe('Cross-System Validation Tests', () => {
@@ -89,7 +89,7 @@ describe('Cross-System Validation Tests', () => {
         skillLevel: 6,
         experience: 200,
         personality: 'methodical',
-        specialization: 'general_grooming',
+        speciality: 'general_grooming',
         level: 4,
       },
     });

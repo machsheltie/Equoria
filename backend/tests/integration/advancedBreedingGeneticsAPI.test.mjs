@@ -19,6 +19,7 @@ describe('🧬 Advanced Breeding Genetics API Integration', () => {
   let testUser;
   let testStallion, testMare;
   let testPopulation = [];
+  let testBreed;
 
   beforeAll(async () => {
     // Create test user and get auth token
@@ -42,6 +43,17 @@ describe('🧬 Advanced Breeding Genetics API Integration', () => {
       });
 
     authToken = loginResponse.body.data?.token;
+
+    // Create or find a test breed
+    testBreed = await prisma.breed.findFirst();
+    if (!testBreed) {
+      testBreed = await prisma.breed.create({
+        data: {
+          name: 'Thoroughbred',
+          description: 'Test breed for genetics API tests',
+        },
+      });
+    }
   });
 
   beforeEach(async () => {
@@ -51,18 +63,9 @@ describe('🧬 Advanced Breeding Genetics API Integration', () => {
       .set('Authorization', `Bearer ${authToken}`)
       .send({
         name: 'Genetic Test Stallion',
-        breedId: 1,
-        sex: 'Stallion',
-        dateOfBirth: '2020-01-01',
-        speed: 95,
-        stamina: 88,
-        agility: 82,
-        intelligence: 78,
-        epigeneticModifiers: {
-          positive: ['athletic', 'fast'],
-          negative: [],
-          hidden: ['legendary_speed']
-        }
+        breedId: testBreed.id,
+        sex: 'stallion',
+        age: 5
       });
 
     testStallion = stallionResponse.body;
@@ -72,17 +75,9 @@ describe('🧬 Advanced Breeding Genetics API Integration', () => {
       .set('Authorization', `Bearer ${authToken}`)
       .send({
         name: 'Genetic Test Mare',
-        sex: 'Mare',
-        dateOfBirth: '2020-02-01',
-        speed: 78,
-        stamina: 92,
-        agility: 85,
-        intelligence: 90,
-        epigeneticModifiers: {
-          positive: ['calm', 'intelligent'],
-          negative: [],
-          hidden: ['perfect_balance']
-        }
+        breedId: testBreed.id,
+        sex: 'mare',
+        age: 4
       });
 
     testMare = mareResponse.body;
@@ -94,24 +89,18 @@ describe('🧬 Advanced Breeding Genetics API Integration', () => {
         .set('Authorization', `Bearer ${authToken}`)
         .send({
           name: 'Population Horse 1',
-          sex: 'Stallion',
-          dateOfBirth: '2019-01-01',
-          speed: 85,
-          stamina: 80,
-          agility: 88,
-          intelligence: 82
+          breedId: testBreed.id,
+          sex: 'stallion',
+          age: 6
         }),
       request(app)
         .post('/api/horses')
         .set('Authorization', `Bearer ${authToken}`)
         .send({
           name: 'Population Horse 2',
-          sex: 'Mare',
-          dateOfBirth: '2019-02-01',
-          speed: 80,
-          stamina: 85,
-          agility: 90,
-          intelligence: 88
+          breedId: testBreed.id,
+          sex: 'mare',
+          age: 7
         })
     ]);
 
