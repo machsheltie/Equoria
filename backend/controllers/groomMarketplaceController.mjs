@@ -311,16 +311,20 @@ export async function getMarketplaceStats(req, res) {
     const userMarketplace = userMarketplaces.get(userId);
 
     if (!userMarketplace) {
+      const responseData = {
+        totalGrooms: 0,
+        lastRefresh: "never",
+        refreshCount: 0,
+        qualityDistribution: {},
+        specialtyDistribution: {},
+      };
+
+      logger.info(`[groomMarketplace.getStats] Returning empty stats: ${JSON.stringify(responseData)}`);
+
       return res.status(200).json({
         success: true,
         message: 'No marketplace data available',
-        data: {
-          totalGrooms: 0,
-          lastRefresh: null,
-          refreshCount: 0,
-          qualityDistribution: {},
-          specialtyDistribution: {},
-        },
+        data: responseData,
       });
     }
 
