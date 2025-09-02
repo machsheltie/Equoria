@@ -950,7 +950,7 @@ router.get('/:id/talents',
 
       res.json({
         success: true,
-        data: selections,
+        data: selections || null,
       });
     } catch (error) {
       logger.error('Error getting talent selections:', error);

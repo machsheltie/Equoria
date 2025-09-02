@@ -199,7 +199,7 @@ export const getDashboardData = async (req, res, next) => {
           trainedAt: 'desc',
         },
       });
-      lastTrained = recentTraining?.trainedAt || null;
+      lastTrained = recentTraining?.trainedAt ? recentTraining.trainedAt.toISOString() : null;
     } catch (error) {
       logger.warn(
         `[userController.getDashboardData] Error getting recent training for user ${userId}: ${error.message}`,
@@ -259,8 +259,8 @@ export const getDashboardData = async (req, res, next) => {
         nextShowRuns,
       },
       activity: {
-        lastTrained,
-        lastShowPlaced,
+        lastTrained: lastTrained || null,
+        lastShowPlaced: lastShowPlaced || null,
       },
     };
 

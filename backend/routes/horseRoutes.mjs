@@ -4,8 +4,42 @@ import { getTrainableHorses } from '../controllers/trainingController.mjs';
 import { getHorseOverview, getHorsePersonalityImpact } from '../controllers/horseController.mjs';
 import { authenticateToken } from '../middleware/auth.mjs';
 import * as horseXpController from '../controllers/horseXpController.mjs';
+import { createHorse, getHorseById } from '../models/horseModel.mjs';
+import prisma from '../db/index.mjs';
+import logger from '../utils/logger.mjs';
 
 const router = express.Router();
+
+/**
+ * Validation middleware for horse creation
+ */
+const validateHorseCreation = [
+  body('name')
+    .isLength({ min: 1, max: 100 })
+    .withMessage('Name must be between 1 and 100 characters'),
+  body('breedId').isInt({ min: 1 }).withMessage('Breed ID must be a positive integer'),
+  body('age').optional().isInt({ min: 0, max: 50 }).withMessage('Age must be between 0 and 50'),
+  body('sex')
+    .optional()
+    .isIn(['stallion', 'mare', 'gelding'])
+    .withMessage('Sex must be stallion, mare, or gelding'),
+  body('userId')
+    .optional()
+    .isLength({ min: 1, max: 50 })
+    .withMessage('User ID must be between 1 and 50 characters'),
+
+  (req, res, next) => {
+    const errors = validationResult(req);
+    if (!errors.isEmpty()) {
+      return res.status(400).json({
+        success: false,
+        message: 'Validation failed',
+        errors: errors.array(),
+      });
+    }
+    next();
+  },
+];
 
 /**
  * Validation middleware for horse ID parameter
@@ -46,6 +80,185 @@ const validateUserId = [
     next();
   },
 ];
+
+/**
+ * GET /horses
+ * Get all horses with optional filtering
+ */
+router.get('/', async (req, res) => {
+  try {
+    const { userId, breedId, limit = 50, offset = 0 } = req.query;
+
+    const where = {};
+    if (userId) where.userId = userId;
+    if (breedId) where.breedId = parseInt(breedId);
+
+    const horses = await prisma.horse.findMany({
+      where,
+      take: parseInt(limit),
+      skip: parseInt(offset),
+      include: {
+        breed: true,
+        user: {
+          select: { id: true, username: true }
+        }
+      },
+      orderBy: { createdAt: 'desc' }
+    });
+
+    res.json({
+      success: true,
+      message: `Found ${horses.length} horses`,
+      data: horses,
+    });
+  } catch (error) {
+    logger.error(`[horseRoutes] Error getting horses: ${error.message}`);
+    res.status(500).json({
+      success: false,
+      message: 'Internal server error',
+      error: process.env.NODE_ENV === 'development' ? error.message : 'Something went wrong',
+    });
+  }
+});
+
+/**
+ * GET /horses/:id
+ * Get a specific horse by ID
+ */
+router.get('/:id', validateHorseId, async (req, res) => {
+  try {
+    const horseId = parseInt(req.params.id);
+    const horse = await getHorseById(horseId);
+
+    if (!horse) {
+      return res.status(404).json({
+        success: false,
+        message: 'Horse not found',
+      });
+    }
+
+    res.json({
+      success: true,
+      data: horse,
+    });
+  } catch (error) {
+    logger.error(`[horseRoutes] Error getting horse: ${error.message}`);
+    res.status(500).json({
+      success: false,
+      message: 'Internal server error',
+      error: process.env.NODE_ENV === 'development' ? error.message : 'Something went wrong',
+    });
+  }
+});
+
+/**
+ * POST /horses
+ * Create a new horse
+ */
+router.post('/', validateHorseCreation, async (req, res) => {
+  try {
+    const horseData = {
+      ...req.body,
+      dateOfBirth: new Date().toISOString(),
+      healthStatus: req.body.healthStatus || 'Good',
+    };
+
+    const newHorse = await createHorse(horseData);
+
+    logger.info(`[horseRoutes] Created new horse: ${newHorse.name} (ID: ${newHorse.id})`);
+
+    res.status(201).json({
+      success: true,
+      message: 'Horse created successfully',
+      data: newHorse,
+    });
+  } catch (error) {
+    logger.error(`[horseRoutes] Error creating horse: ${error.message}`);
+    res.status(500).json({
+      success: false,
+      message: 'Internal server error',
+      error: process.env.NODE_ENV === 'development' ? error.message : 'Something went wrong',
+    });
+  }
+});
+
+/**
+ * PUT /horses/:id
+ * Update a horse
+ */
+router.put('/:id', validateHorseId, async (req, res) => {
+  try {
+    const horseId = parseInt(req.params.id);
+
+    const updatedHorse = await prisma.horse.update({
+      where: { id: horseId },
+      data: req.body,
+      include: {
+        breed: true,
+        user: {
+          select: { id: true, username: true }
+        }
+      }
+    });
+
+    logger.info(`[horseRoutes] Updated horse: ${updatedHorse.name} (ID: ${horseId})`);
+
+    res.json({
+      success: true,
+      message: 'Horse updated successfully',
+      data: updatedHorse,
+    });
+  } catch (error) {
+    if (error.code === 'P2025') {
+      return res.status(404).json({
+        success: false,
+        message: 'Horse not found',
+      });
+    }
+
+    logger.error(`[horseRoutes] Error updating horse: ${error.message}`);
+    res.status(500).json({
+      success: false,
+      message: 'Internal server error',
+      error: process.env.NODE_ENV === 'development' ? error.message : 'Something went wrong',
+    });
+  }
+});
+
+/**
+ * DELETE /horses/:id
+ * Delete a horse
+ */
+router.delete('/:id', validateHorseId, async (req, res) => {
+  try {
+    const horseId = parseInt(req.params.id);
+
+    await prisma.horse.delete({
+      where: { id: horseId }
+    });
+
+    logger.info(`[horseRoutes] Deleted horse ID: ${horseId}`);
+
+    res.json({
+      success: true,
+      message: 'Horse deleted successfully',
+    });
+  } catch (error) {
+    if (error.code === 'P2025') {
+      return res.status(404).json({
+        success: false,
+        message: 'Horse not found',
+      });
+    }
+
+    logger.error(`[horseRoutes] Error deleting horse: ${error.message}`);
+    res.status(500).json({
+      success: false,
+      message: 'Internal server error',
+      error: process.env.NODE_ENV === 'development' ? error.message : 'Something went wrong',
+    });
+  }
+});
 
 /**
  * GET /horses/trainable/:userId

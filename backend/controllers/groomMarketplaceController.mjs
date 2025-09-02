@@ -257,7 +257,7 @@ export async function hireFromMarketplace(req, res) {
         skillLevel: groomData.skillLevel,
         personality: groomData.personality,
         experience: groomData.experience,
-        sessionRate: groomData.sessionRate,
+        sessionRate: Number(groomData.sessionRate),
         bio: groomData.bio,
         availability: JSON.stringify({ available: true }),
         hiredDate: new Date(),
@@ -280,7 +280,10 @@ export async function hireFromMarketplace(req, res) {
       success: true,
       message: 'Groom hired successfully',
       data: {
-        groom: newGroom,
+        groom: {
+          ...newGroom,
+          sessionRate: Number(newGroom.sessionRate), // Convert Decimal to number
+        },
         cost: hiringCost,
         remainingMoney: user.money - hiringCost,
       },
