@@ -71,6 +71,7 @@ import apiOptimizationRoutes from './routes/apiOptimizationRoutes.mjs';
 import memoryManagementRoutes from './routes/memoryManagementRoutes.mjs';
 import documentationRoutes from './routes/documentationRoutes.mjs';
 import userDocumentationRoutes from './routes/userDocumentationRoutes.mjs';
+import advancedBreedingGeneticsRoutes from './routes/advancedBreedingGeneticsRoutes.mjs';
 import adminRoutes from './routes/adminRoutes.mjs';
 
 // Middleware imports
@@ -237,6 +238,7 @@ app.use('/api/docs', documentationRoutes);
 app.use('/api/user-docs', userDocumentationRoutes);
 app.use('/api/leaderboards', leaderboardRoutes);
 app.use('/api/admin', adminRoutes);
+app.use('/api', advancedBreedingGeneticsRoutes);
 
 // Setup Swagger documentation
 setupSwaggerDocs(app);

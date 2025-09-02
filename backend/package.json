@@ -7,14 +7,30 @@
   "scripts": {
     "start": "node server.mjs",
     "dev": "nodemon server.mjs",
+    "build": "echo 'Backend build completed - ES modules ready for production'",
     "test": "node --experimental-vm-modules node_modules/jest/bin/jest.js",
     "test:watch": "node --experimental-vm-modules node_modules/jest/bin/jest.js --watchAll",
-    "test:coverage": "node --experimental-vm-modules node_modules/jest/bin/jest.js --coverage",
+    "test:coverage": "node --experimental-vm-modules node_modules/jest/bin/jest.js --coverage --coverageReporters=text --coverageReporters=lcov --coverageReporters=html --coverageReporters=json --coverageReporters=cobertura",
+    "test:coverage:ci": "node --experimental-vm-modules node_modules/jest/bin/jest.js --coverage --coverageReporters=text-summary --coverageReporters=lcov --coverageReporters=json --ci --watchAll=false",
+    "test:coverage:threshold": "node --experimental-vm-modules node_modules/jest/bin/jest.js --coverage --coverageReporters=text --passWithNoTests=false",
+    "test:integration": "node --experimental-vm-modules node_modules/jest/bin/jest.js --testPathPattern=integration --coverage",
+    "coverage:report": "node scripts/coverage-report.mjs",
+    "coverage:badge": "node scripts/generate-coverage-badge.mjs",
+    "coverage:upload": "codecov -f coverage/lcov.info",
+    "test:performance": "node scripts/performance-tests.mjs",
+    "test:performance:regression": "node scripts/performance-regression-tests.mjs",
+    "test:migration": "node scripts/database-migration-tests.mjs",
     "lint": "eslint .",
     "lint:fix": "eslint . --fix",
     "format": "prettier --write .",
+    "format:check": "prettier --check .",
     "migrate": "node scripts/migrate.mjs",
-    "seed": "node seed/seedDatabase.mjs"
+    "seed": "node seed/seedDatabase.mjs",
+    "seed:test": "NODE_ENV=test node seed/seedDatabase.mjs",
+    "seed:performance": "NODE_ENV=test node seed/seedPerformanceData.mjs",
+    "health-check": "node scripts/health-check.mjs",
+    "validate-env": "node scripts/validate-environment.mjs",
+    "validate-pipeline": "node scripts/test-pipeline-validation.mjs"
   },
   "keywords": [
     "equoria",
@@ -47,9 +63,12 @@
   "devDependencies": {
     "@eslint/js": "^9.28.0",
     "@jest/globals": "^29.7.0",
+    "c8": "^8.0.1",
+    "codecov": "^3.8.3",
     "eslint": "^8.57.0",
     "jest": "^29.7.0",
     "nodemon": "^3.1.4",
+    "nyc": "^15.1.0",
     "prettier": "^3.3.2",
     "supertest": "^7.0.0"
   }

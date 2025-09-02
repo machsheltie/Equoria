@@ -80,16 +80,49 @@ export default {
     '!**/node_modules/**',
     '!**/coverage/**',
     '!**/tests/**',
+    '!**/test/**',
     '!**/examples/**',
     '!**/docs/**',
     '!**/migrations/**',
     '!**/seed/**',
+    '!**/scripts/**',
+    '!**/dist/**',
+    '!**/build/**',
     '!jest.config.js',
+    '!jest.setup.mjs',
     '!babel.config.js',
     '!eslint.config.mjs',
     '!**/server.mjs',
+    '!**/*.test.{js,mjs}',
+    '!**/*.spec.{js,mjs}',
   ],
 
   coverageDirectory: 'coverage',
-  coverageReporters: ['text', 'lcov', 'html'],
+  coverageReporters: ['text', 'text-summary', 'lcov', 'html', 'json', 'json-summary', 'cobertura'],
+  coverageThreshold: {
+    global: {
+      branches: 80,
+      functions: 80,
+      lines: 85,
+      statements: 85
+    },
+    './backend/controllers/': {
+      branches: 85,
+      functions: 90,
+      lines: 90,
+      statements: 90
+    },
+    './backend/services/': {
+      branches: 85,
+      functions: 90,
+      lines: 90,
+      statements: 90
+    },
+    './backend/utils/': {
+      branches: 80,
+      functions: 85,
+      lines: 85,
+      statements: 85
+    }
+  },
 };
