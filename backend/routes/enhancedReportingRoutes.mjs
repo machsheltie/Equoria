@@ -57,7 +57,7 @@ const router = express.Router();
 async function validateHorseOwnership(req, res, next) {
   try {
     const horseId = parseInt(req.params.id);
-    const userId = req.user.userId;
+    const userId = req.user.id;
 
     const horse = await prisma.horse.findUnique({
       where: { id: horseId },
@@ -151,7 +151,7 @@ router.get('/horses/:id/enhanced-trait-history',
       // Generate insights
       const insights = generateTraitHistoryInsights(traitHistory, environmentalContext, traitInteractions);
 
-      logger.info(`Enhanced trait history generated for horse ${horseId} by user ${req.user.userId}`);
+      logger.info(`Enhanced trait history generated for horse ${horseId} by user ${req.user.id}`);
       
       res.json({
         success: true,
@@ -219,7 +219,7 @@ router.get('/horses/:id/epigenetic-insights',
         developmentalProgress
       );
 
-      logger.info(`Epigenetic insights generated for horse ${horseId} by user ${req.user.userId}`);
+      logger.info(`Epigenetic insights generated for horse ${horseId} by user ${req.user.id}`);
       
       res.json({
         success: true,
@@ -313,7 +313,7 @@ router.get('/horses/:id/trait-timeline',
 router.get('/users/:id/stable-epigenetic-report',
   authenticateToken,
   param('id').custom((value, { req }) => {
-    if (value !== req.user.userId) {
+    if (value !== req.user.id) {
       throw new Error('Access denied: Can only access your own stable report');
     }
     return true;
@@ -387,7 +387,7 @@ router.post('/horses/compare-epigenetics',
   async (req, res) => {
     try {
       const { horseIds } = req.body;
-      const userId = req.user.userId;
+      const userId = req.user.id;
 
       // Validate horse ownership
       const horses = await prisma.horse.findMany({

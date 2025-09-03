@@ -669,18 +669,23 @@ function analyzeLineagePatterns(lineage) {
   const traitFrequency = {};
   let totalHorses = 0;
 
-  // Collect all traits from lineage
-  lineage.forEach(generation => {
-    generation.horses.forEach(horse => {
-      totalHorses++;
-      const traits = horse.traits || { positive: [], negative: [], hidden: [] };
-      const allHorseTraits = [...traits.positive, ...traits.negative, ...traits.hidden];
+  // Handle case where lineage is an object with generations property
+  const generations = lineage?.generations || lineage || [];
 
-      allHorseTraits.forEach(trait => {
-        if (!traitFrequency[trait]) traitFrequency[trait] = 0;
-        traitFrequency[trait]++;
+  // Collect all traits from lineage
+  generations.forEach(generation => {
+    if (generation.horses) {
+      generation.horses.forEach(horse => {
+        totalHorses++;
+        const traits = horse.traits || { positive: [], negative: [], hidden: [] };
+        const allHorseTraits = [...traits.positive, ...traits.negative, ...traits.hidden];
+
+        allHorseTraits.forEach(trait => {
+          if (!traitFrequency[trait]) traitFrequency[trait] = 0;
+          traitFrequency[trait]++;
+        });
       });
-    });
+    }
   });
 
   // Identify strengths (common positive traits)
@@ -710,7 +715,9 @@ function analyzeLineagePatterns(lineage) {
 
 // Calculate inbreeding coefficient
 function calculateInbreedingCoefficient(stallion, mare, lineage) {
-  if (!lineage || lineage.length < 2) return 0;
+  // Handle case where lineage is an object with generations property
+  const generations = lineage?.generations || lineage || [];
+  if (!generations || generations.length < 2) return 0;
 
   // Simple inbreeding detection - check for shared ancestors
   const stallionAncestors = new Set();
@@ -723,11 +730,13 @@ function calculateInbreedingCoefficient(stallion, mare, lineage) {
   if (mare.damId) mareAncestors.add(mare.damId);
 
   // Add lineage ancestors
-  lineage.forEach(generation => {
-    generation.horses.forEach(horse => {
-      stallionAncestors.add(horse.id);
-      mareAncestors.add(horse.id);
-    });
+  generations.forEach(generation => {
+    if (generation.horses) {
+      generation.horses.forEach(horse => {
+        stallionAncestors.add(horse.id);
+        mareAncestors.add(horse.id);
+      });
+    }
   });
 
   // Calculate shared ancestors
@@ -764,19 +773,23 @@ function calculateGeneticDiversityScore(stallion, mare, lineage) {
 
   // Add lineage diversity bonus
   let lineageBonus = 0;
-  if (lineage && lineage.length > 0) {
+  // Handle case where lineage is an object with generations property
+  const generations = lineage?.generations || lineage || [];
+  if (generations && generations.length > 0) {
     const lineageTraits = new Set();
-    lineage.forEach(generation => {
-      generation.horses.forEach(horse => {
-        const traits = horse.traits || { positive: [], negative: [], hidden: [] };
-        const positive = Array.isArray(traits.positive) ? traits.positive : [];
-        const negative = Array.isArray(traits.negative) ? traits.negative : [];
-        const hidden = Array.isArray(traits.hidden) ? traits.hidden : [];
+    generations.forEach(generation => {
+      if (generation.horses) {
+        generation.horses.forEach(horse => {
+          const traits = horse.traits || { positive: [], negative: [], hidden: [] };
+          const positive = Array.isArray(traits.positive) ? traits.positive : [];
+          const negative = Array.isArray(traits.negative) ? traits.negative : [];
+          const hidden = Array.isArray(traits.hidden) ? traits.hidden : [];
 
-        [...positive, ...negative, ...hidden].forEach(trait => {
-          lineageTraits.add(trait);
+          [...positive, ...negative, ...hidden].forEach(trait => {
+            lineageTraits.add(trait);
+          });
         });
-      });
+      }
     });
 
     lineageBonus = Math.min(20, lineageTraits.size * 2);
@@ -1174,28 +1187,32 @@ function simulateSingleBreedingOutcome(stallion, mare, rng = Math.random) {
 
 export function calculateMultiGenerationalPredictions(stallion, mare, lineage) {
   try {
+    // Handle case where lineage is an object with generations property
+    const generations = lineage?.generations || lineage || [];
+
     logger.info('Calculating multi-generational predictions', {
       stallionId: stallion.id,
       mareId: mare.id,
-      generations: lineage.length
+      generations: generations.length
     });
 
     const generationalImpact = {};
     const ancestralTraitInfluence = {};
 
     // Analyze each generation's influence
-    lineage.forEach((generation, index) => {
+    generations.forEach((generation, index) => {
       const generationNumber = index + 1;
       const weight = Math.pow(GENETIC_CONSTANTS.GENERATION_WEIGHT_DECAY, index);
 
+      const horses = generation.horses || [];
       generationalImpact[`generation${generationNumber}`] = {
         weight,
-        horseCount: generation.horses.length,
-        influence: weight * generation.horses.length
+        horseCount: horses.length,
+        influence: weight * horses.length
       };
 
       // Calculate trait influence from this generation
-      const traitInfluence = calculateGenerationTraitInfluence(generation.horses, weight);
+      const traitInfluence = calculateGenerationTraitInfluence(horses, weight);
       ancestralTraitInfluence[`generation${generationNumber}`] = traitInfluence;
     });
 

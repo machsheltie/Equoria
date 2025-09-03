@@ -86,7 +86,7 @@ describe('Cross-System Validation Tests', () => {
       data: {
         name: 'Cross System Test Groom',
         userId: testUser.id,
-        skillLevel: 6,
+        skillLevel: 'expert',
         experience: 200,
         personality: 'methodical',
         speciality: 'general_grooming',

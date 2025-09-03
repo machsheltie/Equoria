@@ -61,11 +61,11 @@ async function createHorse(horseData) {
         breedRelation = { breed };
       }
     } else if (breedId) {
-      // Handle direct breedId
-      breedRelation = { breedId };
+      // Handle direct breedId using relationship
+      breedRelation = { breed: { connect: { id: breedId } } };
     } else if (breed && typeof breed === 'number') {
       // Handle case where breed is passed as a number (treat as breedId)
-      breedRelation = { breedId: breed };
+      breedRelation = { breed: { connect: { id: breed } } };
     } else {
       throw new Error(
         'Invalid breed format. Use breedId (number) or breed: { connect: { id: number } }',

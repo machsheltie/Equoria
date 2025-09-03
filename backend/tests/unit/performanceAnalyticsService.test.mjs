@@ -41,7 +41,7 @@ describe('Performance Analytics Service', () => {
     // Create test show
     testShow = await prisma.show.create({
       data: {
-        name: 'Test Show',
+        name: `Test Show ${Date.now()}`,
         discipline: 'dressage',
         levelMin: 1,
         levelMax: 10,

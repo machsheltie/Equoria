@@ -54,7 +54,7 @@ const router = express.Router();
 async function validateHorseOwnership(req, res, next) {
   try {
     const horseId = parseInt(req.params.id);
-    const userId = req.user.userId;
+    const userId = req.user.id;
 
     const horse = await prisma.horse.findUnique({
       where: { id: horseId },
@@ -118,7 +118,7 @@ router.get('/horses/:id/environmental-analysis',
       
       const environmentalReport = await generateEnvironmentalReport(horseId);
       
-      logger.info(`Environmental analysis generated for horse ${horseId} by user ${req.user.userId}`);
+      logger.info(`Environmental analysis generated for horse ${horseId} by user ${req.user.id}`);
       
       res.json({
         success: true,
@@ -221,7 +221,7 @@ router.get('/horses/:id/trait-interactions',
       const conflicts = await identifyTraitConflicts(horseId);
       const dominance = await evaluateTraitDominance(horseId);
       
-      logger.info(`Trait interactions analyzed for horse ${horseId} by user ${req.user.userId}`);
+      logger.info(`Trait interactions analyzed for horse ${horseId} by user ${req.user.id}`);
       
       res.json({
         success: true,
@@ -258,7 +258,7 @@ router.get('/horses/:id/trait-matrix',
       
       const matrix = await generateInteractionMatrix(horseId);
       
-      logger.info(`Trait interaction matrix generated for horse ${horseId} by user ${req.user.userId}`);
+      logger.info(`Trait interaction matrix generated for horse ${horseId} by user ${req.user.id}`);
       
       res.json({
         success: true,
@@ -289,7 +289,7 @@ router.get('/horses/:id/trait-stability',
       
       const stability = await assessInteractionStability(horseId);
       
-      logger.info(`Trait stability analyzed for horse ${horseId} by user ${req.user.userId}`);
+      logger.info(`Trait stability analyzed for horse ${horseId} by user ${req.user.id}`);
       
       res.json({
         success: true,
@@ -322,7 +322,7 @@ router.get('/horses/:id/developmental-windows',
 
       const windows = await identifyDevelopmentalWindows(horseId);
 
-      logger.info(`Developmental windows identified for horse ${horseId} by user ${req.user.userId}`);
+      logger.info(`Developmental windows identified for horse ${horseId} by user ${req.user.id}`);
 
       res.json({
         success: true,
@@ -417,7 +417,7 @@ router.post('/horses/:id/coordinate-development',
 
       const coordination = await coordinateMultiWindowDevelopment(horseId);
 
-      logger.info(`Development coordination generated for horse ${horseId} by user ${req.user.userId}`);
+      logger.info(`Development coordination generated for horse ${horseId} by user ${req.user.id}`);
 
       res.json({
         success: true,

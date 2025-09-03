@@ -54,7 +54,7 @@ describe('Environmental Trigger System', () => {
           name: `Calm Groom ${Date.now()}`,
           personality: 'calm',
           groomPersonality: 'calm',
-          skillLevel: 'experienced',
+          skillLevel: 'expert',
           speciality: 'foal_care',
           userId: testUser.id,
           sessionRate: 30.0,

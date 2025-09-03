@@ -155,10 +155,11 @@ router.get('/:id', validateHorseId, async (req, res) => {
  * POST /horses
  * Create a new horse
  */
-router.post('/', validateHorseCreation, async (req, res) => {
+router.post('/', authenticateToken, validateHorseCreation, async (req, res) => {
   try {
     const horseData = {
       ...req.body,
+      userId: req.user.id, // Set the owner from the authenticated user
       dateOfBirth: new Date().toISOString(),
       healthStatus: req.body.healthStatus || 'Good',
     };

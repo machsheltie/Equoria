@@ -69,7 +69,7 @@ const verifyHorseOwnership = async (req, res, next) => {
       const horses = await prisma.horse.findMany({
         where: {
           id: { in: horseIdsToCheck },
-          ownerId: userId
+          userId: userId
         },
         select: { id: true }
       });
