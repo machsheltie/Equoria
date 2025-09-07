@@ -143,7 +143,7 @@ describe('🐴 UNIT: Horse Model At-Birth Traits - Creation Integration Testing'
         data: expect.objectContaining({
           name: 'Test Foal',
           age: 0,
-          breedId: 1,
+          breed: { connect: { id: 1 } },
           sireId: 10,
           damId: 20,
           epigeneticModifiers: {

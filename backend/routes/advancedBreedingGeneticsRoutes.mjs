@@ -136,6 +136,10 @@ router.post('/breeding/genetic-probability',
 
       const probabilities = calculateEnhancedGeneticProbabilities(stallion, mare);
 
+      // Calculate compatibility analysis
+      const { calculateGeneticCompatibilityScore } = await import('../services/enhancedGeneticProbabilityService.mjs');
+      const compatibilityAnalysis = calculateGeneticCompatibilityScore(stallion, mare);
+
       // Add lineage analysis if requested
       let lineageAnalysis = null;
       if (includeLineage) {
@@ -149,6 +153,7 @@ router.post('/breeding/genetic-probability',
 
       const result = {
         ...probabilities,
+        compatibilityAnalysis,
         ...(lineageAnalysis && { lineageAnalysis })
       };
 

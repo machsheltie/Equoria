@@ -1,10 +1,10 @@
 /**
  * Advanced Epigenetic API Routes
- * 
+ *
  * Provides API endpoints for environmental triggers, trait interactions, and developmental windows.
  * Integrates with the advanced epigenetic services to expose sophisticated functionality
  * for environmental analysis, trait interaction matrices, and developmental forecasting.
- * 
+ *
  * Business Rules:
  * - Authentication required for all endpoints
  * - Horse ownership validation for all horse-specific endpoints
@@ -20,30 +20,30 @@ import logger from '../utils/logger.mjs';
 import prisma from '../../packages/database/prismaClient.mjs';
 
 // Import advanced epigenetic services
-import { 
+import {
   detectEnvironmentalTriggers,
   calculateTriggerThresholds,
   evaluateTraitExpressionProbability,
-  generateEnvironmentalReport
+  generateEnvironmentalReport,
 } from '../services/environmentalTriggerSystem.mjs';
 
-import { 
+import {
   analyzeTraitInteractions,
   calculateTraitSynergies,
   identifyTraitConflicts,
   evaluateTraitDominance,
   assessInteractionStability,
-  generateInteractionMatrix
+  generateInteractionMatrix,
 } from '../services/traitInteractionMatrix.mjs';
 
-import { 
+import {
   identifyDevelopmentalWindows,
   calculateWindowSensitivity,
   evaluateTraitDevelopmentOpportunity,
   trackDevelopmentalMilestones,
   coordinateMultiWindowDevelopment,
   analyzeCriticalPeriodSensitivity,
-  generateDevelopmentalForecast
+  generateDevelopmentalForecast,
 } from '../services/developmentalWindowSystem.mjs';
 
 const router = express.Router();
@@ -115,11 +115,11 @@ router.get('/horses/:id/environmental-analysis',
   async (req, res) => {
     try {
       const horseId = parseInt(req.params.id);
-      
+
       const environmentalReport = await generateEnvironmentalReport(horseId);
-      
+
       logger.info(`Environmental analysis generated for horse ${horseId} by user ${req.user.id}`);
-      
+
       res.json({
         success: true,
         data: environmentalReport,
@@ -131,7 +131,7 @@ router.get('/horses/:id/environmental-analysis',
         message: 'Failed to generate environmental analysis',
       });
     }
-  }
+  },
 );
 
 /**
@@ -148,11 +148,11 @@ router.get('/horses/:id/environmental-forecast',
     try {
       const horseId = parseInt(req.params.id);
       const days = parseInt(req.query.days) || 30;
-      
+
       const forecast = await generateDevelopmentalForecast(horseId, days);
-      
+
       logger.info(`Environmental forecast generated for horse ${horseId} (${days} days) by user ${req.user.userId}`);
-      
+
       res.json({
         success: true,
         data: forecast,
@@ -164,7 +164,7 @@ router.get('/horses/:id/environmental-forecast',
         message: 'Failed to generate environmental forecast',
       });
     }
-  }
+  },
 );
 
 /**
@@ -182,11 +182,11 @@ router.post('/horses/:id/evaluate-trait-opportunity',
     try {
       const horseId = parseInt(req.params.id);
       const { traitName, windowName } = req.body;
-      
+
       const opportunity = await evaluateTraitDevelopmentOpportunity(horseId, traitName, windowName);
-      
+
       logger.info(`Trait opportunity evaluated for horse ${horseId} (${traitName} in ${windowName}) by user ${req.user.userId}`);
-      
+
       res.json({
         success: true,
         data: opportunity,
@@ -198,7 +198,7 @@ router.post('/horses/:id/evaluate-trait-opportunity',
         message: 'Failed to evaluate trait development opportunity',
       });
     }
-  }
+  },
 );
 
 // ===== TRAIT INTERACTION ENDPOINTS =====
@@ -215,14 +215,14 @@ router.get('/horses/:id/trait-interactions',
   async (req, res) => {
     try {
       const horseId = parseInt(req.params.id);
-      
+
       const interactions = await analyzeTraitInteractions(horseId);
       const synergies = await calculateTraitSynergies(horseId);
       const conflicts = await identifyTraitConflicts(horseId);
       const dominance = await evaluateTraitDominance(horseId);
-      
+
       logger.info(`Trait interactions analyzed for horse ${horseId} by user ${req.user.id}`);
-      
+
       res.json({
         success: true,
         data: {
@@ -240,7 +240,7 @@ router.get('/horses/:id/trait-interactions',
         message: 'Failed to analyze trait interactions',
       });
     }
-  }
+  },
 );
 
 /**
@@ -255,11 +255,11 @@ router.get('/horses/:id/trait-matrix',
   async (req, res) => {
     try {
       const horseId = parseInt(req.params.id);
-      
+
       const matrix = await generateInteractionMatrix(horseId);
-      
+
       logger.info(`Trait interaction matrix generated for horse ${horseId} by user ${req.user.id}`);
-      
+
       res.json({
         success: true,
         data: matrix,
@@ -271,7 +271,7 @@ router.get('/horses/:id/trait-matrix',
         message: 'Failed to generate trait interaction matrix',
       });
     }
-  }
+  },
 );
 
 /**
@@ -286,11 +286,11 @@ router.get('/horses/:id/trait-stability',
   async (req, res) => {
     try {
       const horseId = parseInt(req.params.id);
-      
+
       const stability = await assessInteractionStability(horseId);
-      
+
       logger.info(`Trait stability analyzed for horse ${horseId} by user ${req.user.id}`);
-      
+
       res.json({
         success: true,
         data: stability,
@@ -302,7 +302,7 @@ router.get('/horses/:id/trait-stability',
         message: 'Failed to analyze trait stability',
       });
     }
-  }
+  },
 );
 
 // ===== DEVELOPMENTAL WINDOW ENDPOINTS =====
@@ -335,7 +335,7 @@ router.get('/horses/:id/developmental-windows',
         message: 'Failed to identify developmental windows',
       });
     }
-  }
+  },
 );
 
 /**
@@ -368,7 +368,7 @@ router.get('/horses/:id/developmental-forecast',
         message: 'Failed to generate developmental forecast',
       });
     }
-  }
+  },
 );
 
 /**
@@ -399,7 +399,7 @@ router.get('/horses/:id/critical-period-analysis',
         message: 'Failed to analyze critical periods',
       });
     }
-  }
+  },
 );
 
 /**
@@ -430,7 +430,7 @@ router.post('/horses/:id/coordinate-development',
         message: 'Failed to coordinate development',
       });
     }
-  }
+  },
 );
 
 export default router;

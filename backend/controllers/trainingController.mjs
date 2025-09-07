@@ -373,10 +373,28 @@ async function getTrainingStatus(horseId, discipline) {
     // Get eligibility check (now uses global cooldown)
     const eligibilityCheck = await canTrain(horseId, discipline);
 
-    // Get additional status information
-    const age = await getHorseAge(horseId);
-    const lastTrainingDateInDiscipline = await getLastTrainingDate(horseId, discipline);
-    const lastTrainingDateAny = await getAnyRecentTraining(horseId);
+    // Get additional status information with error handling
+    let age = null;
+    let lastTrainingDateInDiscipline = null;
+    let lastTrainingDateAny = null;
+
+    try {
+      age = await getHorseAge(horseId);
+    } catch (error) {
+      logger.warn(`[trainingController.getTrainingStatus] Error getting horse age: ${error.message}`);
+    }
+
+    try {
+      lastTrainingDateInDiscipline = await getLastTrainingDate(horseId, discipline);
+    } catch (error) {
+      logger.warn(`[trainingController.getTrainingStatus] Error getting last training date: ${error.message}`);
+    }
+
+    try {
+      lastTrainingDateAny = await getAnyRecentTraining(horseId);
+    } catch (error) {
+      logger.warn(`[trainingController.getTrainingStatus] Error getting recent training: ${error.message}`);
+    }
 
     let cooldownInfo = null;
     if (lastTrainingDateAny) {

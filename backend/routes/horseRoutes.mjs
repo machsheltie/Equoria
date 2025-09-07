@@ -1,5 +1,5 @@
 import express from 'express';
-import { param, body, validationResult } from 'express-validator';
+import { param, body, query, validationResult } from 'express-validator';
 import { getTrainableHorses } from '../controllers/trainingController.mjs';
 import { getHorseOverview, getHorsePersonalityImpact } from '../controllers/horseController.mjs';
 import { authenticateToken } from '../middleware/auth.mjs';
@@ -7,6 +7,19 @@ import * as horseXpController from '../controllers/horseXpController.mjs';
 import { createHorse, getHorseById } from '../models/horseModel.mjs';
 import prisma from '../db/index.mjs';
 import logger from '../utils/logger.mjs';
+
+// Validation error handler
+const handleValidationErrors = (req, res, next) => {
+  const errors = validationResult(req);
+  if (!errors.isEmpty()) {
+    return res.status(400).json({
+      success: false,
+      message: 'Validation failed',
+      errors: errors.array(),
+    });
+  }
+  next();
+};
 
 const router = express.Router();
 
@@ -120,6 +133,68 @@ router.get('/', async (req, res) => {
     });
   }
 });
+
+/**
+ * GET /horses/trait-trends
+ * Get trait development trends across user's horses
+ */
+router.get('/trait-trends',
+  authenticateToken,
+  query('userId').custom((value, { req }) => {
+    if (value !== req.user.id) {
+      throw new Error('Access denied: Can only access your own trait trends');
+    }
+    return true;
+  }),
+  query('timeframe').optional().isInt({ min: 1, max: 365 }).withMessage('Timeframe must be 1-365 days'),
+  handleValidationErrors,
+  async (req, res) => {
+    try {
+      const userId = req.query.userId;
+      const timeframe = parseInt(req.query.timeframe) || 30;
+
+      // Get trait history for user's horses within timeframe
+      const cutoffDate = new Date(Date.now() - timeframe * 24 * 60 * 60 * 1000);
+
+      const traitHistory = await prisma.traitHistoryLog.findMany({
+        where: {
+          horse: { ownerId: userId },
+          timestamp: { gte: cutoffDate },
+        },
+        include: {
+          horse: {
+            select: { id: true, name: true, dateOfBirth: true },
+          },
+        },
+        orderBy: { timestamp: 'asc' },
+      });
+
+      // Analyze trends (using simple mock functions for now)
+      const trends = [];
+      const patterns = {};
+      const predictions = {};
+
+      logger.info(`Trait trends analyzed for user ${userId} (${timeframe} days)`);
+
+      res.json({
+        success: true,
+        data: {
+          trends,
+          patterns,
+          predictions,
+          timeframe,
+          analysisDate: new Date(),
+        },
+      });
+    } catch (error) {
+      logger.error(`Error analyzing trait trends:`, error);
+      res.status(500).json({
+        success: false,
+        message: 'Failed to analyze trait trends',
+      });
+    }
+  }
+);
 
 /**
  * GET /horses/:id

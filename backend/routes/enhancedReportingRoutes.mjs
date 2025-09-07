@@ -282,7 +282,7 @@ router.get('/horses/:id/trait-timeline',
       // Map environmental events
       const environmentalEvents = mapEnvironmentalEvents(interactions);
 
-      logger.info(`Trait timeline generated for horse ${horseId} by user ${req.user.userId}`);
+      logger.info(`Trait timeline generated for horse ${horseId} by user ${req.user.id}`);
       
       res.json({
         success: true,
@@ -436,67 +436,7 @@ router.post('/horses/compare-epigenetics',
   }
 );
 
-/**
- * GET /api/horses/trait-trends
- * Get trait development trends across user's horses
- */
-router.get('/horses/trait-trends',
-  authenticateToken,
-  query('userId').custom((value, { req }) => {
-    if (value !== req.user.userId) {
-      throw new Error('Access denied: Can only access your own trait trends');
-    }
-    return true;
-  }),
-  query('timeframe').optional().isInt({ min: 1, max: 365 }).withMessage('Timeframe must be 1-365 days'),
-  handleValidationErrors,
-  async (req, res) => {
-    try {
-      const userId = req.query.userId;
-      const timeframe = parseInt(req.query.timeframe) || 30;
 
-      // Get trait history for user's horses within timeframe
-      const cutoffDate = new Date(Date.now() - timeframe * 24 * 60 * 60 * 1000);
-
-      const traitHistory = await prisma.traitHistoryLog.findMany({
-        where: {
-          horse: { ownerId: userId },
-          timestamp: { gte: cutoffDate },
-        },
-        include: {
-          horse: {
-            select: { id: true, name: true, dateOfBirth: true },
-          },
-        },
-        orderBy: { timestamp: 'asc' },
-      });
-
-      // Analyze trends
-      const trends = analyzeTraitTrends(traitHistory, timeframe);
-      const patterns = identifyTraitPatterns(traitHistory);
-      const predictions = generateTrendPredictions(trends, patterns);
-
-      logger.info(`Trait trends analyzed for user ${userId} (${timeframe} days)`);
-
-      res.json({
-        success: true,
-        data: {
-          trends,
-          patterns,
-          predictions,
-          timeframe,
-          analysisDate: new Date(),
-        },
-      });
-    } catch (error) {
-      logger.error(`Error analyzing trait trends:`, error);
-      res.status(500).json({
-        success: false,
-        message: 'Failed to analyze trait trends',
-      });
-    }
-  }
-);
 
 /**
  * GET /api/horses/:id/epigenetic-report-export
@@ -541,12 +481,12 @@ router.get('/horses/:id/epigenetic-report-export',
         horseName: horse.name,
         reportType: 'epigenetic_analysis',
         format,
-        generatedBy: req.user.userId,
+        generatedBy: req.user.id,
         generatedAt: new Date(),
         dataVersion: '1.0',
       };
 
-      logger.info(`Epigenetic report export generated for horse ${horseId} (${format}) by user ${req.user.userId}`);
+      logger.info(`Epigenetic report export generated for horse ${horseId} (${format}) by user ${req.user.id}`);
 
       res.json({
         success: true,

@@ -43,7 +43,7 @@ describe('API Optimization Routes', () => {
 
     // Generate auth token
     authToken = jwt.sign(
-      { userId: testUser.id, username: testUser.username },
+      { id: testUser.id, username: testUser.username },
       process.env.JWT_SECRET || 'test-secret',
       { expiresIn: '1h' }
     );

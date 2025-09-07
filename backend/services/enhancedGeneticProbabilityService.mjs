@@ -122,15 +122,13 @@ function calculateTraitInheritanceProbabilities(stallion, mare) {
  * Calculate stat inheritance probabilities
  */
 function calculateStatInheritanceProbabilities(stallion, mare) {
-  const stallionStats = stallion.stats || {};
-  const mareStats = mare.stats || {};
+  // Extract stats from horse objects (they're stored as individual fields, not in a stats object)
+  const statNames = ['speed', 'stamina', 'agility', 'balance', 'coordination', 'precision', 'intelligence', 'boldness', 'flexibility', 'obedience', 'focus', 'endurance'];
   const statProbabilities = {};
 
-  const allStats = new Set([...Object.keys(stallionStats), ...Object.keys(mareStats)]);
-
-  allStats.forEach(stat => {
-    const stallionValue = stallionStats[stat] || 50;
-    const mareValue = mareStats[stat] || 50;
+  statNames.forEach(stat => {
+    const stallionValue = stallion[stat] || 50;
+    const mareValue = mare[stat] || 50;
     
     const averageValue = (stallionValue + mareValue) / 2;
     const variance = GENETIC_CONSTANTS.STAT_INHERITANCE_VARIANCE;
@@ -150,6 +148,11 @@ function calculateStatInheritanceProbabilities(stallion, mare) {
         max: Math.round(maxValue)
       },
       variance,
+      distribution: {
+        type: 'normal',
+        mean: expectedValue,
+        standardDeviation: variance / 3
+      },
       parentalContribution: {
         stallion: stallionValue,
         mare: mareValue

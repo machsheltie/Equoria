@@ -42,7 +42,7 @@ describe('Enhanced Reporting API Routes', () => {
 
     // Generate auth token
     authToken = jwt.sign(
-      { userId: testUser.id, username: testUser.username },
+      { id: testUser.id, username: testUser.username },
       process.env.JWT_SECRET,
       { expiresIn: '1h' }
     );
