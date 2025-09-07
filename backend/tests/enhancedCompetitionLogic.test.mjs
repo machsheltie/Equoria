@@ -100,16 +100,16 @@ describe('🏆 UNIT: Enhanced Competition Logic - Complete Competition System Va
   });
 
   describe('🎂 Age Requirements', () => {
-    test('should accept horses aged 3-21', () => {
-      expect(checkAgeRequirements({ age: 3 })).toBe(true);
-      expect(checkAgeRequirements({ age: 10 })).toBe(true);
-      expect(checkAgeRequirements({ age: 21 })).toBe(true);
+    test('should accept horses aged 3-21 (in days)', () => {
+      expect(checkAgeRequirements({ age: 21 })).toBe(true); // 3 years = 21 days
+      expect(checkAgeRequirements({ age: 70 })).toBe(true); // 10 years = 70 days
+      expect(checkAgeRequirements({ age: 147 })).toBe(true); // 21 years = 147 days
     });
 
-    test('should reject horses under 3 or over 21', () => {
-      expect(checkAgeRequirements({ age: 2 })).toBe(false);
-      expect(checkAgeRequirements({ age: 22 })).toBe(false);
-      expect(checkAgeRequirements({ age: 0 })).toBe(false);
+    test('should reject horses under 3 or over 21 (in days)', () => {
+      expect(checkAgeRequirements({ age: 14 })).toBe(false); // 2 years = 14 days
+      expect(checkAgeRequirements({ age: 154 })).toBe(false); // 22 years = 154 days
+      expect(checkAgeRequirements({ age: 0 })).toBe(false); // 0 years = 0 days
     });
   });
 

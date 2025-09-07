@@ -82,7 +82,7 @@ export async function validateAssignmentEligibility(groomId, horseId, userId) {
           name: true,
           skillLevel: true,
           isActive: true,
-          userId: true,
+          userId: true, // Correct field name for groom ownership
         },
       }),
       prisma.horse.findUnique({

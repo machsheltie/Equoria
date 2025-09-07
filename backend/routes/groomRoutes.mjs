@@ -136,6 +136,7 @@ const handleValidationErrors = (req, res, next) => {
  */
 router.post(
   '/assign',
+  authenticateToken,
   [
     body('foalId').isInt({ min: 1 }).withMessage('foalId must be a positive integer'),
     body('groomId').isInt({ min: 1 }).withMessage('groomId must be a positive integer'),
@@ -149,7 +150,6 @@ router.post(
       .withMessage('notes must be 500 characters or less'),
     handleValidationErrors,
   ],
-  assignGroom,
   assignGroom,
 );
 

@@ -137,8 +137,8 @@ async function completeEnrichmentActivity(foalId, day, activity) {
         id: true,
         name: true,
         age: true,
-        bond_score: true,
-        stress_level: true,
+        bondScore: true,
+        stressLevel: true,
       },
     });
 

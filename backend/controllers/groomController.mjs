@@ -36,6 +36,7 @@ import {
 } from '../utils/enhancedMilestoneEvaluationSystem.mjs';
 import prisma from '../db/index.mjs';
 import logger from '../utils/logger.mjs';
+import { awardGroomXP } from '../services/groomProgressionService.mjs';
 // import { ensureDefaultGroomAssignment } from '../services/groomService'; // TODO: Implement when needed
 
 /**
@@ -86,7 +87,16 @@ function determineTaskType(interactionType, ageInDays) {
 export async function assignGroom(req, res) {
   try {
     const { foalId, groomId, priority = 1, notes } = req.body;
-    const userId = req.user?.id || '83970fb4-f086-46b3-9e76-ae71720d2918'; // TODO: Get from auth
+    const userId = req.user?.id;
+
+    if (!userId) {
+      logger.error('[groomController.assignGroom] No authenticated user ID found');
+      return res.status(401).json({
+        success: false,
+        message: 'Authentication required',
+        data: null,
+      });
+    }
 
     logger.info(`[groomController.assignGroom] Assigning groom ${groomId} to foal ${foalId}`);
 
@@ -102,7 +112,7 @@ export async function assignGroom(req, res) {
     // Ownership check: Only the owner can assign a groom
     const foal = await prisma.horse.findUnique({
       where: { id: foalId },
-      select: { id: true, userId: true },
+      select: { id: true, ownerId: true },
     });
     if (!foal) {
       return res.status(404).json({
@@ -111,7 +121,7 @@ export async function assignGroom(req, res) {
         data: null,
       });
     }
-    if (foal.userId !== userId) {
+    if (foal.ownerId !== userId) {
       return res.status(403).json({
         success: false,
         error: 'Forbidden: You do not own this horse',
@@ -427,6 +437,16 @@ export async function recordInteraction(req, res) {
       logger.info(
         `[groomController.recordInteraction] Personality effects applied (${groom.personality}): ${effects.personalityEffects.bonusesApplied.join(', ')} - ${effects.personalityEffects.description}`,
       );
+    }
+
+    // Award experience to the groom for the interaction
+    try {
+      const experienceGain = 2; // 2 XP per interaction (consistent with groomPersonalityTraits.mjs)
+      await awardGroomXP(groomId, 'interaction_completed', experienceGain);
+      logger.info(`[groomController.recordInteraction] Awarded ${experienceGain} XP to groom ${groomId} for interaction`);
+    } catch (xpError) {
+      logger.error(`[groomController.recordInteraction] Failed to award XP to groom ${groomId}: ${xpError.message}`);
+      // Don't fail the interaction if XP awarding fails
     }
 
     res.status(200).json({

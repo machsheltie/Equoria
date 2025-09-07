@@ -111,6 +111,7 @@ describe('👩‍🔧 UNIT: Groom System - Foal Care Assignment & Management', (
       speciality: 'foal_care',
       skillLevel: 'intermediate',
       isActive: true,
+      userId: 'player-1', // Add userId for ownership validation
       availability: { monday: true, tuesday: true },
     };
 

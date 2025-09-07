@@ -226,7 +226,7 @@ router.post(
         });
       }
 
-      if (horse.userId !== userId) {
+      if (horse.ownerId !== userId) {
         return res.status(403).json({
           success: false,
           message: 'You do not own this horse',
@@ -400,6 +400,7 @@ router.post(
           horse: {
             include: {
               user: true,
+              breed: true,
             },
           },
         },
@@ -508,7 +509,7 @@ router.get(
         });
       }
 
-      if (horse.userId !== userId) {
+      if (horse.ownerId !== userId) {
         return res.status(403).json({
           success: false,
           message: 'You do not own this horse',

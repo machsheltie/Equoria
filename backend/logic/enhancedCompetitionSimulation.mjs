@@ -12,8 +12,9 @@
 import prisma from '../db/index.mjs';
 import logger from '../utils/logger.mjs';
 import { saveResult } from '../models/resultModel.mjs';
+import { calculateCompetitionScore } from '../utils/competitionScore.mjs';
+import { awardCompetitionXp } from '../models/horseXpModel.mjs';
 import {
-  calculateCompetitionScore,
   calculatePrizeAmount,
   calculateCompetitionXP,
   calculatePlacements,
@@ -154,12 +155,15 @@ export async function executeEnhancedCompetition(show, entries) {
         statGain = calculateStatGain(placement, show.discipline);
       }
 
+      // Convert placement number to ordinal string
+      const placementString = placement === 1 ? '1st' : placement === 2 ? '2nd' : placement === 3 ? '3rd' : `${placement}th`;
+
       // Save competition result (updates placeholder if exists, creates new if not)
       await saveResult({
         horseId: horse.id,
         showId: show.id,
         score,
-        placement: placement.toString(),
+        placement: placementString,
         discipline: show.discipline,
         runDate: show.runDate,
         showName: show.name,
@@ -211,6 +215,29 @@ export async function executeEnhancedCompetition(show, entries) {
         },
       });
 
+      // Award Horse XP for competition participation
+      try {
+        const horseXpResult = await awardCompetitionXp(
+          horse.id,
+          placementString,
+          show.discipline,
+        );
+
+        if (horseXpResult.success) {
+          logger.info(
+            `[enhancedCompetitionSimulation] Awarded ${horseXpResult.xpAwarded} Horse XP to ${horse.name} for ${placementString} place${horseXpResult.statPointsGained > 0 ? ` - Gained ${horseXpResult.statPointsGained} stat points!` : ''}`,
+          );
+        } else {
+          logger.warn(
+            `[enhancedCompetitionSimulation] Failed to award Horse XP to ${horse.name}: ${horseXpResult.error}`,
+          );
+        }
+      } catch (horseXpError) {
+        logger.error(
+          `[enhancedCompetitionSimulation] Error awarding Horse XP to ${horse.name}: ${horseXpError.message}`,
+        );
+      }
+
       results.push({
         horseId: horse.id,
         horseName: horse.name,
@@ -258,11 +285,11 @@ export async function executeEnhancedCompetition(show, entries) {
   } catch (error) {
     logger.error(
       '[enhancedCompetitionSimulation.executeEnhancedCompetition] Error:',
-      error.message,
+      error,
     );
     return {
       success: false,
-      error: error.message,
+      error: error?.message || error?.toString() || 'Unknown error occurred',
       showId: show.id,
       results: [],
     };

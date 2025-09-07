@@ -200,11 +200,16 @@ export async function assignGroomToFoal(foalId, groomId, userId, options = {}) {
         skillLevel: true,
         isActive: true,
         availability: true,
+        userId: true, // Correct field name for groom ownership
       },
     });
 
     if (!groom) {
       throw new Error(`Groom with ID ${groomId} not found`);
+    }
+
+    if (groom.userId !== userId) {
+      throw new Error(`You do not own groom ${groom.name}`);
     }
 
     if (!groom.isActive) {

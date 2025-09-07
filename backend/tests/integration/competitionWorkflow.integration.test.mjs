@@ -119,7 +119,7 @@ describe('🏆 INTEGRATION: Complete Competition Workflow', () => {
       competitionHorse = await prisma.horse.create({
         data: {
           name: 'Competition Integration Champion',
-          age: 5, // Mature and experienced
+          age: 35, // 5 years = 35 days (mature and experienced)
           breedId: breed.id,
           ownerId: testUser.id,
           userId: testUser.id,

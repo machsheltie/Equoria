@@ -497,8 +497,9 @@ export function calculateHorseLevel(horse, discipline) {
  */
 export function checkAgeRequirements(horse) {
   try {
-    const age = horse.age || 0;
-    return age >= 3 && age <= 21;
+    const ageInDays = horse.age || 0;
+    const ageInYears = Math.floor(ageInDays / 7); // Convert days to years (1 year = 7 days)
+    return ageInYears >= 3 && ageInYears <= 21;
   } catch (error) {
     logger.error('[competitionLogic.checkAgeRequirements] Error:', error.message);
     return false;

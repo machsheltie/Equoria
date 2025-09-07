@@ -161,7 +161,7 @@ export async function getMilestoneStatus(req, res) {
       select: {
         id: true,
         name: true,
-        userId: true,
+        ownerId: true,
         dateOfBirth: true,
       },
     });
@@ -175,7 +175,7 @@ export async function getMilestoneStatus(req, res) {
     }
 
     // Check ownership
-    if (req.user && horse.userId !== req.user.id) {
+    if (req.user && horse.ownerId !== req.user.id) {
       return res.status(403).json({
         success: false,
         message: 'You do not have permission to view this horse',

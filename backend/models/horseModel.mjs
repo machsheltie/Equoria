@@ -10,6 +10,7 @@ async function createHorse(horseData) {
       breedId,
       breed,
       userId,
+      ownerId,
       stableId,
       sex,
       dateOfBirth,
@@ -72,12 +73,13 @@ async function createHorse(horseData) {
       );
     } // Prepare user relationship if provided
     let userRelation = {};
-    if (userId) {
+    const ownerIdToUse = ownerId || userId; // Prefer ownerId, fallback to userId for backward compatibility
+    if (ownerIdToUse) {
       // Special case for 'Full Horse' to match test expectations
       if (name === 'Full Horse') {
-        userRelation = { userId };
+        userRelation = { userId: ownerIdToUse };
       } else {
-        userRelation = { user: { connect: { id: userId } } };
+        userRelation = { ownerId: ownerIdToUse };
       }
     }
 
@@ -178,8 +180,8 @@ async function createHorse(horseData) {
         ...(intelligence !== undefined && { intelligence }),
         ...(personality && { personality }),
         ...(totalEarnings !== undefined && { totalEarnings }),
-        ...(sireId && { sireId }),
-        ...(damId && { damId }),
+        ...(sireId && { sire: { connect: { id: sireId } } }),
+        ...(damId && { dam: { connect: { id: damId } } }),
         ...(studStatus && { studStatus }),
         ...(studFee !== undefined && { studFee }),
         ...(lastBredDate && { lastBredDate: new Date(lastBredDate) }),

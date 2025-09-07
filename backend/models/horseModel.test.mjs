@@ -106,8 +106,8 @@ describe('Horse Model At-Birth Traits Integration', () => {
           name: 'Test Foal',
           age: 0,
           breed: { connect: { id: 1 } },
-          sireId: 10,
-          damId: 20,
+          sire: { connect: { id: 10 } },
+          dam: { connect: { id: 20 } },
           epigeneticModifiers: {
             positive: ['hardy'],
             negative: [],

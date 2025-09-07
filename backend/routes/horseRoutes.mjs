@@ -425,8 +425,11 @@ const validateFoalCreation = [
  * POST /horses/foals
  * Create a new foal with epigenetic traits applied at birth
  */
-router.post('/foals', validateFoalCreation, async (req, res) => {
+router.post('/foals', authenticateToken, validateFoalCreation, async (req, res) => {
   try {
+    // Set the owner from the authenticated user
+    req.body.ownerId = req.user.id;
+
     // Dynamic import for ES module
     const { createFoal } = await import('../controllers/horseController.js');
     await createFoal(req, res);
