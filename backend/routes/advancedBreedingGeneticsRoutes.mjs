@@ -66,15 +66,22 @@ const verifyHorseOwnership = async (req, res, next) => {
     if (req.params.mareId) horseIdsToCheck.push(parseInt(req.params.mareId));
 
     if (horseIdsToCheck.length > 0) {
-      const horses = await prisma.horse.findMany({
+      // First check if all horses exist
+      const allHorses = await prisma.horse.findMany({
         where: {
-          id: { in: horseIdsToCheck },
-          userId: userId
+          id: { in: horseIdsToCheck }
         },
-        select: { id: true }
+        select: { id: true, userId: true }
       });
 
-      if (horses.length !== horseIdsToCheck.length) {
+      // If some horses don't exist, let the route handler deal with it (404)
+      if (allHorses.length !== horseIdsToCheck.length) {
+        return next(); // Let route handler return 404
+      }
+
+      // Check if user owns all existing horses
+      const ownedHorses = allHorses.filter(horse => horse.userId === userId);
+      if (ownedHorses.length !== horseIdsToCheck.length) {
         return res.status(403).json({
           success: false,
           error: 'Access denied: You do not own all specified horses'
