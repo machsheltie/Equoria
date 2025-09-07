@@ -86,7 +86,7 @@ describe('System-Wide Integration Tests', () => {
         speciality: 'foal_care',
         level: 1,
         careerWeeks: 0,
-        isRetired: false,
+        retired: false,
       },
     });
   });
@@ -214,8 +214,9 @@ describe('System-Wide Integration Tests', () => {
       for (let i = 0; i < 5; i++) {
         const interactionData = {
           groomId: currentGroom.id,
-          horseId: testHorse.id,
-          taskType: 'hand_walking',
+          foalId: testHorse.id,
+          interactionType: 'hand-walking',
+          duration: 30,
         };
 
         // Skip if daily limit reached
@@ -239,7 +240,7 @@ describe('System-Wide Integration Tests', () => {
         .expect(200);
 
       expect(groomResponse.body.success).toBe(true);
-      const grooms = groomResponse.body.data;
+      const grooms = groomResponse.body.grooms;
       const updatedGroom = grooms.find(g => g.id === currentGroom.id);
       expect(updatedGroom.experience).toBeGreaterThan(0);
 
@@ -420,7 +421,7 @@ describe('System-Wide Integration Tests', () => {
         .post('/api/training/train')
         .set('Authorization', `Bearer ${authToken}`)
         .send(trainingData)
-        .expect(201);
+        .expect(200);
 
       expect(trainingResponse.body.success).toBe(true);
 
@@ -430,7 +431,7 @@ describe('System-Wide Integration Tests', () => {
         .set('Authorization', `Bearer ${authToken}`)
         .expect(200);
 
-      const finalXP = finalProgress.body.data.totalXP;
+      const finalXP = finalProgress.body.data.xp;
       const finalLevel = finalProgress.body.data.level;
 
       // XP should have increased
