@@ -514,7 +514,7 @@ router.get('/horses/:id/developmental-forecast',
 
       const forecast = await generateDevelopmentalForecast(horseId, days);
 
-      logger.info(`Developmental forecast generated for horse ${horseId} (${days} days) by user ${req.user.userId}`);
+      logger.info(`Developmental forecast generated for horse ${horseId} (${days} days) by user ${req.user.id}`);
 
       res.json({
         success: true,
@@ -545,7 +545,7 @@ router.get('/horses/:id/critical-period-analysis',
 
       const analysis = await analyzeCriticalPeriodSensitivity(horseId);
 
-      logger.info(`Critical period analysis generated for horse ${horseId} by user ${req.user.userId}`);
+      logger.info(`Critical period analysis generated for horse ${horseId} by user ${req.user.id}`);
 
       res.json({
         success: true,
