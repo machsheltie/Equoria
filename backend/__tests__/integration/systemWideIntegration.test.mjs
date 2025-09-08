@@ -365,7 +365,7 @@ describe('System-Wide Integration Tests', () => {
     test('Database transaction integrity across systems', async () => {
       // Test that related data remains consistent across operations
       const initialHorseCount = await prisma.horse.count({
-        where: { userId: testUser.id }
+        where: { ownerId: testUser.id }
       });
 
       const initialGroomCount = await prisma.groom.count({
@@ -392,7 +392,7 @@ describe('System-Wide Integration Tests', () => {
 
       // Verify data consistency
       const finalHorseCount = await prisma.horse.count({
-        where: { userId: testUser.id }
+        where: { ownerId: testUser.id }
       });
 
       expect(finalHorseCount).toBe(initialHorseCount + 1);
@@ -402,7 +402,7 @@ describe('System-Wide Integration Tests', () => {
         where: { id: newHorse.id }
       });
 
-      expect(createdHorse.userId).toBe(testUser.id);
+      expect(createdHorse.ownerId).toBe(testUser.id);
 
       // Verify groom count remains unchanged
       const finalGroomCount = await prisma.groom.count({

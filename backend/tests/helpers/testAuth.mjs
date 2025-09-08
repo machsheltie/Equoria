@@ -106,8 +106,9 @@ export async function createTestHorse(horseData = {}) {
     ...horseData,
   };
 
-  // Handle userId conversion to user relation
+  // Handle userId conversion to ownerId and user relation
   if (defaultData.userId) {
+    defaultData.ownerId = defaultData.userId;
     defaultData.user = { connect: { id: defaultData.userId } };
     delete defaultData.userId;
   }

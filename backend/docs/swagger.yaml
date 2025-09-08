@@ -10,7 +10,7 @@ info:
         name: MIT
         url: 'https://opensource.org/licenses/MIT'
     x-generated:
-        timestamp: '2025-09-07T08:44:12.980Z'
+        timestamp: '2025-09-07T10:50:03.484Z'
         endpointCount: 0
         schemaCount: 2
         generator: ApiDocumentationService
@@ -191,11 +191,11 @@ components:
         User:
             type: object
             properties: {id: {type: string}}
-            registeredAt: '2025-09-07T08:44:12.948Z'
+            registeredAt: '2025-09-07T10:50:03.457Z'
         Horse:
             type: object
             properties: {id: {type: string}}
-            registeredAt: '2025-09-07T08:44:12.964Z'
+            registeredAt: '2025-09-07T10:50:03.470Z'
         CreateHorseRequest:
             type: object
             required: [name, breedId, sex, dateOfBirth]
@@ -219,8 +219,8 @@ components:
             type: object
             properties: {id: {type: string, description: 'Unique identifier'}, name: {type: string, description: 'Test name'}, timestamp: {type: string, format: date-time}}
             required: [id, name]
-            registeredAt: '2025-09-07T08:43:30.273Z'
+            registeredAt: '2025-09-07T10:49:29.424Z'
         CreateTestSchema:
             type: object
             properties: {name: {type: string}}
-            registeredAt: '2025-09-07T08:43:30.389Z'
+            registeredAt: '2025-09-07T10:49:29.536Z'

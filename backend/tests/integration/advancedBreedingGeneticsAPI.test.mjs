@@ -400,7 +400,9 @@ describe('🧬 Advanced Breeding Genetics API Integration', () => {
         .send({
           username: 'otherUser',
           email: 'other@test.com',
-          password: 'TestPassword123!'
+          password: 'TestPassword123!',
+          firstName: 'Other',
+          lastName: 'User'
         });
 
       const otherLoginResponse = await request(app)
@@ -410,7 +412,7 @@ describe('🧬 Advanced Breeding Genetics API Integration', () => {
           password: 'TestPassword123!'
         });
 
-      const otherToken = otherLoginResponse.body.token;
+      const otherToken = otherLoginResponse.body.data?.token;
 
       // Try to access genetic analysis with horses not owned by the user
       const response = await request(app)
@@ -424,7 +426,7 @@ describe('🧬 Advanced Breeding Genetics API Integration', () => {
       expect(response.status).toBe(403);
 
       // Cleanup other user
-      await prisma.user.delete({ where: { id: otherUserResponse.body.user.id } }).catch(() => {});
+      await prisma.user.delete({ where: { id: otherUserResponse.body.data?.user?.id } }).catch(() => {});
     });
   });
 });

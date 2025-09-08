@@ -135,6 +135,101 @@ router.get('/horses/:id/environmental-analysis',
 );
 
 /**
+ * GET /api/horses/:id/environmental-triggers
+ * Detect environmental triggers from interaction patterns for a horse
+ */
+router.get('/horses/:id/environmental-triggers',
+  authenticateToken,
+  param('id').isInt({ min: 1 }).withMessage('Horse ID must be a positive integer'),
+  handleValidationErrors,
+  validateHorseOwnership,
+  async (req, res) => {
+    try {
+      const horseId = parseInt(req.params.id);
+
+      const triggers = await detectEnvironmentalTriggers(horseId);
+
+      logger.info(`Environmental triggers detected for horse ${horseId} by user ${req.user.id}`);
+
+      res.json({
+        success: true,
+        data: triggers,
+      });
+    } catch (error) {
+      logger.error(`Error detecting environmental triggers for horse ${req.params.id}:`, error);
+      res.status(500).json({
+        success: false,
+        message: 'Failed to detect environmental triggers',
+      });
+    }
+  },
+);
+
+/**
+ * GET /api/horses/:id/trigger-thresholds
+ * Calculate age-appropriate trigger thresholds for a horse
+ */
+router.get('/horses/:id/trigger-thresholds',
+  authenticateToken,
+  param('id').isInt({ min: 1 }).withMessage('Horse ID must be a positive integer'),
+  handleValidationErrors,
+  validateHorseOwnership,
+  async (req, res) => {
+    try {
+      const horseId = parseInt(req.params.id);
+
+      const thresholds = await calculateTriggerThresholds(horseId);
+
+      logger.info(`Trigger thresholds calculated for horse ${horseId} by user ${req.user.id}`);
+
+      res.json({
+        success: true,
+        data: thresholds,
+      });
+    } catch (error) {
+      logger.error(`Error calculating trigger thresholds for horse ${req.params.id}:`, error);
+      res.status(500).json({
+        success: false,
+        message: 'Failed to calculate trigger thresholds',
+      });
+    }
+  },
+);
+
+/**
+ * POST /api/horses/:id/trait-expression-probability
+ * Evaluate trait expression probability based on environmental exposure
+ */
+router.post('/horses/:id/trait-expression-probability',
+  authenticateToken,
+  param('id').isInt({ min: 1 }).withMessage('Horse ID must be a positive integer'),
+  body('traitName').notEmpty().withMessage('Trait name is required'),
+  handleValidationErrors,
+  validateHorseOwnership,
+  async (req, res) => {
+    try {
+      const horseId = parseInt(req.params.id);
+      const { traitName } = req.body;
+
+      const probability = await evaluateTraitExpressionProbability(horseId, traitName);
+
+      logger.info(`Trait expression probability evaluated for horse ${horseId} (${traitName}) by user ${req.user.id}`);
+
+      res.json({
+        success: true,
+        data: probability,
+      });
+    } catch (error) {
+      logger.error(`Error evaluating trait expression probability for horse ${req.params.id}:`, error);
+      res.status(500).json({
+        success: false,
+        message: 'Failed to evaluate trait expression probability',
+      });
+    }
+  },
+);
+
+/**
  * GET /api/horses/:id/environmental-forecast
  * Get environmental forecast for a horse over specified time period
  */
@@ -151,7 +246,7 @@ router.get('/horses/:id/environmental-forecast',
 
       const forecast = await generateDevelopmentalForecast(horseId, days);
 
-      logger.info(`Environmental forecast generated for horse ${horseId} (${days} days) by user ${req.user.userId}`);
+      logger.info(`Environmental forecast generated for horse ${horseId} (${days} days) by user ${req.user.id}`);
 
       res.json({
         success: true,
@@ -185,7 +280,7 @@ router.post('/horses/:id/evaluate-trait-opportunity',
 
       const opportunity = await evaluateTraitDevelopmentOpportunity(horseId, traitName, windowName);
 
-      logger.info(`Trait opportunity evaluated for horse ${horseId} (${traitName} in ${windowName}) by user ${req.user.userId}`);
+      logger.info(`Trait opportunity evaluated for horse ${horseId} (${traitName} in ${windowName}) by user ${req.user.id}`);
 
       res.json({
         success: true,
@@ -333,6 +428,70 @@ router.get('/horses/:id/developmental-windows',
       res.status(500).json({
         success: false,
         message: 'Failed to identify developmental windows',
+      });
+    }
+  },
+);
+
+/**
+ * POST /api/horses/:id/window-sensitivity
+ * Calculate sensitivity for a specific developmental window
+ */
+router.post('/horses/:id/window-sensitivity',
+  authenticateToken,
+  param('id').isInt({ min: 1 }).withMessage('Horse ID must be a positive integer'),
+  body('windowName').notEmpty().withMessage('Window name is required'),
+  handleValidationErrors,
+  validateHorseOwnership,
+  async (req, res) => {
+    try {
+      const horseId = parseInt(req.params.id);
+      const { windowName } = req.body;
+
+      const sensitivity = await calculateWindowSensitivity(horseId, windowName);
+
+      logger.info(`Window sensitivity calculated for horse ${horseId} (${windowName}) by user ${req.user.id}`);
+
+      res.json({
+        success: true,
+        data: sensitivity,
+      });
+    } catch (error) {
+      logger.error(`Error calculating window sensitivity for horse ${req.params.id}:`, error);
+      res.status(500).json({
+        success: false,
+        message: 'Failed to calculate window sensitivity',
+      });
+    }
+  },
+);
+
+/**
+ * GET /api/horses/:id/developmental-milestones
+ * Track developmental milestones for a horse
+ */
+router.get('/horses/:id/developmental-milestones',
+  authenticateToken,
+  param('id').isInt({ min: 1 }).withMessage('Horse ID must be a positive integer'),
+  handleValidationErrors,
+  validateHorseOwnership,
+  async (req, res) => {
+    try {
+      const horseId = parseInt(req.params.id);
+
+      const milestones = await trackDevelopmentalMilestones(horseId);
+
+      logger.info(`Developmental milestones tracked for horse ${horseId} by user ${req.user.id}`);
+
+      res.json({
+        success: true,
+        data: milestones,
+      });
+    } catch (error) {
+      logger.error(`Error tracking developmental milestones for horse ${req.params.id}:`, error);
+      res.status(500).json({
+        success: false,
+        message: 'Failed to track developmental milestones',
       });
     }
   },

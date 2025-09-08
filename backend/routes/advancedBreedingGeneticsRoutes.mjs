@@ -71,7 +71,7 @@ const verifyHorseOwnership = async (req, res, next) => {
         where: {
           id: { in: horseIdsToCheck }
         },
-        select: { id: true, userId: true }
+        select: { id: true, userId: true, ownerId: true }
       });
 
       // If some horses don't exist, let the route handler deal with it (404)
@@ -79,8 +79,8 @@ const verifyHorseOwnership = async (req, res, next) => {
         return next(); // Let route handler return 404
       }
 
-      // Check if user owns all existing horses
-      const ownedHorses = allHorses.filter(horse => horse.userId === userId);
+      // Check if user owns all existing horses (check both userId and ownerId for compatibility)
+      const ownedHorses = allHorses.filter(horse => horse.userId === userId || horse.ownerId === userId);
       if (ownedHorses.length !== horseIdsToCheck.length) {
         return res.status(403).json({
           success: false,
@@ -381,7 +381,7 @@ router.post('/genetics/inbreeding-analysis',
 router.get('/genetics/diversity-report/:userId',
   authenticateToken,
   [
-    param('userId').isInt({ min: 1 }).withMessage('Valid user ID is required')
+    param('userId').isUUID().withMessage('Valid user ID is required')
   ],
   validateRequest,
   async (req, res) => {
@@ -390,7 +390,7 @@ router.get('/genetics/diversity-report/:userId',
       const requestingUserId = req.user.id;
 
       // Verify user can access this report (own report or admin)
-      if (parseInt(userId) !== requestingUserId && req.user.role !== 'admin') {
+      if (userId !== requestingUserId && req.user.role !== 'admin') {
         return res.status(403).json({
           success: false,
           error: 'Access denied: You can only view your own genetic diversity report'
@@ -399,9 +399,14 @@ router.get('/genetics/diversity-report/:userId',
 
       logger.info(`[advancedBreedingGeneticsRoutes.diversity-report] Generating report for user ${userId}`);
 
-      // Get all horses owned by the user
+      // Get all horses owned by the user (check both userId and ownerId for compatibility)
       const userHorses = await prisma.horse.findMany({
-        where: { ownerId: parseInt(userId) },
+        where: {
+          OR: [
+            { ownerId: userId },
+            { userId: userId }
+          ]
+        },
         select: { id: true }
       });
 

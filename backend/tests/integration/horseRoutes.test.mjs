@@ -97,7 +97,7 @@ describe('Horse Routes Integration Tests', () => {
     });
 
     it('should return validation error for invalid user ID', async () => {
-      await request(app).get('/api/horses/trainable/').expect(404); // Route not found for empty user ID
+      await request(app).get('/api/horses/trainable/').expect(400); // Validation error for empty user ID
     });
 
     it('should return validation error for user ID that is too long', async () => {
