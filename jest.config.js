@@ -15,13 +15,14 @@ export default {
       testEnvironment: 'node',
       setupFilesAfterEnv: ['<rootDir>/jest.setup.mjs'],
       preset: null,
-
-      transform: {},
+      transform: {
+        '^.+\\.mjs$': 'babel-jest',
+      },
       moduleNameMapper: {
         '^(\\.{1,2}/.*)\\.js$': '$1',
       },
       globals: {
-        jest: {
+        'ts-jest': {
           useESM: true,
         },
       },
@@ -35,10 +36,10 @@ export default {
     // Frontend tests configuration
     {
       displayName: 'frontend',
-      testMatch: ['<rootDir>/frontend/**/*.test.{js,jsx}'],
+      testMatch: ['<rootDir>/frontend/**/*.test.{js,jsx,ts,tsx}'],
       testEnvironment: 'jsdom',
       transform: {
-        '^.+\\.(js|jsx|mjs)$': 'babel-jest',
+        '^.+\\.(js|jsx|mjs|ts|tsx)$': 'babel-jest',
       },
       moduleNameMapper: {
         '\\.(css|less|scss|sass)$': 'identity-obj-proxy',
