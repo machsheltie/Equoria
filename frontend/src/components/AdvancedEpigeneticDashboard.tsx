@@ -38,6 +38,7 @@ const AdvancedEpigeneticDashboard: React.FC<AdvancedEpigeneticDashboardProps> = 
   const [environmentalData, setEnvironmentalData] = useState<any>(null);
   const [traitData, setTraitData] = useState<any>(null);
   const [developmentalData, setDevelopmentalData] = useState<any>(null);
+  const [forecastData, setForecastData] = useState<any>(null);
   const [isLoading, setIsLoading] = useState(true);
 
   // Responsive design detection
@@ -85,6 +86,13 @@ const AdvancedEpigeneticDashboard: React.FC<AdvancedEpigeneticDashboardProps> = 
         if (devResponse.ok) {
           const devData = await devResponse.json();
           setDevelopmentalData(devData.data);
+        }
+
+        // Fetch forecast data
+        const forecastResponse = await fetch(`/api/horses/${horseId}/forecast`);
+        if (forecastResponse.ok) {
+          const forecastDataResponse = await forecastResponse.json();
+          setForecastData(forecastDataResponse.data);
         }
 
         setIsLoading(false);
@@ -218,7 +226,7 @@ const AdvancedEpigeneticDashboard: React.FC<AdvancedEpigeneticDashboardProps> = 
             developmentalData.upcomingWindows.map((window: any, index: number) => (
               <div key={index}>
                 <div>{window.name}</div>
-                <div>{window.timeframe}</div>
+                <div>{window.startsIn ? `Starts in ${window.startsIn}` : window.timeframe}</div>
               </div>
             ))
           ) : !isLoading && (
@@ -237,8 +245,8 @@ const AdvancedEpigeneticDashboard: React.FC<AdvancedEpigeneticDashboardProps> = 
             developmentalData.predictions.map((prediction: any, index: number) => (
               <div key={index}>
                 <div>{prediction.trait}</div>
-                <div>{prediction.probability}</div>
-                <div>{prediction.confidence}</div>
+                <div>{Math.round(prediction.probability * 100)}%</div>
+                <div>{Math.round(prediction.confidence * 100)}%</div>
               </div>
             ))
           ) : !isLoading && (
@@ -253,8 +261,8 @@ const AdvancedEpigeneticDashboard: React.FC<AdvancedEpigeneticDashboardProps> = 
             developmentalData.recommendations.map((rec: any, index: number) => (
               <div key={index}>
                 <div>{rec.action}</div>
-                <div>{rec.priority}</div>
-                <div>{rec.benefit}</div>
+                <div>{rec.priority.charAt(0).toUpperCase() + rec.priority.slice(1)} Priority</div>
+                <div>{rec.expectedBenefit}</div>
               </div>
             ))
           ) : !isLoading && (
@@ -267,7 +275,7 @@ const AdvancedEpigeneticDashboard: React.FC<AdvancedEpigeneticDashboardProps> = 
           <div>Risk Assessment</div>
           {developmentalData?.riskAssessment ? (
             <>
-              <div>{developmentalData.riskAssessment.overall}</div>
+              <div>Overall Risk: {developmentalData.riskAssessment.overall.charAt(0).toUpperCase() + developmentalData.riskAssessment.overall.slice(1)}</div>
               <div>{developmentalData.riskAssessment.factors?.[0]}</div>
             </>
           ) : !isLoading && (
