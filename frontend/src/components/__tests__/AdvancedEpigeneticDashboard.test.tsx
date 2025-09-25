@@ -243,8 +243,6 @@ describe('AdvancedEpigeneticDashboard', () => {
     });
   });
 
-});
-
   describe('Developmental Timeline', () => {
     test('shows current developmental window with progress', async () => {
       global.fetch = jest.fn()
