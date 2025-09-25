@@ -301,12 +301,14 @@ const CompetitionBrowser: React.FC = () => {
             <p className="text-gray-600">No competitions found matching your criteria</p>
           </div>
         ) : (
-          <div className={`grid gap-6 ${isMobile ? 'grid-cols-1' : 'grid-cols-1 lg:grid-cols-2'}`}>
+          <div
+            className={`grid gap-6 ${isMobile ? 'grid-cols-1' : 'grid-cols-1 lg:grid-cols-2'}`}
+            data-testid={isMobile ? 'mobile-competition-view' : 'desktop-competition-view'}
+          >
             {filteredCompetitions.map((competition) => (
               <div
                 key={competition.id}
                 className="bg-white rounded-lg shadow-md p-6 hover:shadow-lg transition-shadow"
-                data-testid={isMobile ? 'mobile-competition-view' : 'desktop-competition-view'}
               >
                 <div className="flex justify-between items-start mb-4">
                   <div>
@@ -358,6 +360,8 @@ const CompetitionBrowser: React.FC = () => {
                   <button
                     onClick={() => setSelectedCompetition(competition.id)}
                     className="px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors"
+                    role="button"
+                    aria-label="Enter Competition"
                   >
                     Enter Competition
                   </button>

@@ -173,15 +173,20 @@ const MainNavigation: React.FC = () => {
 
                 {/* Profile Dropdown Menu */}
                 {isProfileDropdownOpen && (
-                  <div className="absolute right-0 mt-2 w-48 bg-white rounded-md shadow-lg py-1 z-50">
+                  <div
+                    role="menu"
+                    className="absolute right-0 mt-2 w-48 bg-white rounded-md shadow-lg py-1 z-50"
+                  >
                     <Link
                       to="/profile"
+                      role="menuitem"
                       className="block px-4 py-2 text-sm text-gray-700 hover:bg-gray-100"
                     >
                       Profile Settings
                     </Link>
                     <button
                       onClick={handleLogout}
+                      role="menuitem"
                       className="block w-full text-left px-4 py-2 text-sm text-gray-700 hover:bg-gray-100"
                     >
                       Logout
@@ -204,7 +209,7 @@ const MainNavigation: React.FC = () => {
 
         {/* Mobile Menu */}
         {isMobileMenuOpen && (
-          <div className="md:hidden">
+          <div className="md:hidden" data-testid="mobile-menu">
             <div className="px-2 pt-2 pb-3 space-y-1 bg-white border-t border-gray-200">
               {/* Mobile Search */}
               <form onSubmit={handleSearch} className="mb-4">

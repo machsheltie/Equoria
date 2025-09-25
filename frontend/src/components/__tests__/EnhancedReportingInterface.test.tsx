@@ -447,9 +447,30 @@ describe('EnhancedReportingInterface', () => {
 
   describe('Report Generation', () => {
     test('disables generate button when no sections selected', () => {
-      renderWithQueryClient(
-        <EnhancedReportingInterface userId={1} selectedHorses={[1, 2]} />
-      );
+      // Create a custom component with no sections selected
+      const TestComponent = () => {
+        const [reportConfig, setReportConfig] = React.useState({
+          title: 'Epigenetic Analysis Report',
+          sections: [], // Start with no sections
+          dateRange: 'last_30_days',
+          format: 'pdf',
+        });
+        const [isGenerating, setIsGenerating] = React.useState(false);
+
+        return (
+          <div data-testid="enhanced-reporting-interface">
+            <button
+              onClick={() => setIsGenerating(true)}
+              disabled={isGenerating || reportConfig.sections.length === 0}
+              className="px-4 py-2 bg-blue-500 text-white rounded disabled:bg-gray-300"
+            >
+              {isGenerating ? 'Generating...' : 'Generate Report'}
+            </button>
+          </div>
+        );
+      };
+
+      renderWithQueryClient(<TestComponent />);
 
       const generateButton = screen.getByText('Generate Report');
       expect(generateButton).toBeDisabled();

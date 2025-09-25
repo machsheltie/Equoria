@@ -13,6 +13,7 @@
 import React from 'react';
 import { render, screen, waitFor, fireEvent } from '@testing-library/react';
 import '@testing-library/jest-dom';
+import AdvancedEpigeneticDashboard from '../AdvancedEpigeneticDashboard';
 
 // Mock React Query for testing
 const mockQueryClient = {
@@ -30,52 +31,7 @@ const useQuery = (options) => ({
   refetch: () => {},
 });
 
-// Mock the dashboard component for now to test the structure
-const AdvancedEpigeneticDashboard = ({ horseId, enableRealTime, className }) => {
-  if (!horseId) {
-    return (
-      <div className="flex items-center justify-center h-64 text-gray-500">
-        <p>Please select a horse to view epigenetic data</p>
-      </div>
-    );
-  }
 
-  return (
-    <div data-testid="epigenetic-dashboard" className={`space-y-6 ${className || ''}`}>
-      <div className="flex items-center justify-between">
-        <h2 className="text-2xl font-bold text-gray-900">Advanced Epigenetic Dashboard</h2>
-        <button aria-label="Refresh Data">Refresh</button>
-      </div>
-      <div className="grid gap-6 grid-cols-2">
-        <div>
-          <h3>Environmental Analysis</h3>
-          <div>Environmental Triggers</div>
-          <div>Current Conditions</div>
-          <div>Risk Factors</div>
-        </div>
-        <div>
-          <h3>Trait Interactions</h3>
-          <div>Trait Synergies</div>
-          <div>Trait Conflicts</div>
-          <div>Dominant Traits</div>
-        </div>
-        <div>
-          <h3>Developmental Timeline</h3>
-          <div>Current Window</div>
-          <div>Milestones</div>
-          <div>Upcoming Windows</div>
-        </div>
-        <div>
-          <h3>Forecasting</h3>
-          <div>Trait Predictions</div>
-          <div>Recommendations</div>
-          <div>Risk Assessment</div>
-        </div>
-      </div>
-      {enableRealTime && <div>Real-time updates enabled</div>}
-    </div>
-  );
-};
 
 // Test utilities
 const renderWithQueryClient = (component) => {

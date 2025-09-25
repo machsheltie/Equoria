@@ -14,7 +14,7 @@
  */
 
 import React from 'react';
-import { render, screen, waitFor, fireEvent } from '@testing-library/react';
+import { render, screen, waitFor, fireEvent, within } from '@testing-library/react';
 import '@testing-library/jest-dom';
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
 import { BrowserRouter, MemoryRouter } from 'react-router-dom';
@@ -53,7 +53,7 @@ describe('MainNavigation Component', () => {
         </TestWrapper>
       );
 
-      expect(screen.getByRole('navigation')).toBeInTheDocument();
+      expect(screen.getByTestId('main-navigation')).toBeInTheDocument();
     });
 
     test('renders navigation with proper structure', async () => {
@@ -64,10 +64,10 @@ describe('MainNavigation Component', () => {
       );
 
       await waitFor(() => {
-        expect(screen.getByRole('navigation')).toBeInTheDocument();
+        expect(screen.getByTestId('main-navigation')).toBeInTheDocument();
       });
 
-      expect(screen.getByRole('navigation')).toHaveClass('main-navigation');
+      expect(screen.getByTestId('main-navigation')).toHaveClass('main-navigation');
     });
   });
 
@@ -80,10 +80,11 @@ describe('MainNavigation Component', () => {
       );
 
       await waitFor(() => {
-        expect(screen.getByRole('link', { name: /dashboard/i })).toBeInTheDocument();
-        expect(screen.getByRole('link', { name: /stable/i })).toBeInTheDocument();
-        expect(screen.getByRole('link', { name: /training/i })).toBeInTheDocument();
-        expect(screen.getByRole('link', { name: /competition/i })).toBeInTheDocument();
+        const desktopNav = screen.getByTestId('desktop-navigation');
+        expect(within(desktopNav).getByRole('link', { name: /dashboard/i })).toBeInTheDocument();
+        expect(within(desktopNav).getByRole('link', { name: /stable/i })).toBeInTheDocument();
+        expect(within(desktopNav).getByRole('link', { name: /training/i })).toBeInTheDocument();
+        expect(within(desktopNav).getByRole('link', { name: /competition/i })).toBeInTheDocument();
       });
     });
 
@@ -136,7 +137,8 @@ describe('MainNavigation Component', () => {
         </TestWrapper>
       );
 
-      const stableLink = await screen.findByRole('link', { name: /stable/i });
+      const desktopNav = screen.getByTestId('desktop-navigation');
+      const stableLink = await within(desktopNav).findByRole('link', { name: /stable/i });
       fireEvent.click(stableLink);
 
       await waitFor(() => {
@@ -274,7 +276,7 @@ describe('MainNavigation Component', () => {
 
       // This would be based on user role from API
       await waitFor(() => {
-        expect(screen.getByRole('navigation')).toBeInTheDocument();
+        expect(screen.getByTestId('main-navigation')).toBeInTheDocument();
       });
     });
 
@@ -286,7 +288,7 @@ describe('MainNavigation Component', () => {
       );
 
       await waitFor(() => {
-        expect(screen.getByRole('navigation')).toBeInTheDocument();
+        expect(screen.getByTestId('main-navigation')).toBeInTheDocument();
       });
     });
   });
@@ -316,8 +318,9 @@ describe('MainNavigation Component', () => {
       );
 
       await waitFor(() => {
-        expect(screen.getByText(/stable/i)).toBeInTheDocument();
-        expect(screen.getByText(/horses/i)).toBeInTheDocument();
+        const breadcrumbNav = screen.getByRole('navigation', { name: /breadcrumb/i });
+        expect(within(breadcrumbNav).getByText(/stable/i)).toBeInTheDocument();
+        expect(within(breadcrumbNav).getByText(/horses/i)).toBeInTheDocument();
       });
     });
   });
@@ -387,7 +390,7 @@ describe('MainNavigation Component', () => {
 
       // Component should handle API errors gracefully
       await waitFor(() => {
-        expect(screen.getByRole('navigation')).toBeInTheDocument();
+        expect(screen.getByTestId('main-navigation')).toBeInTheDocument();
       });
     });
 
@@ -399,7 +402,7 @@ describe('MainNavigation Component', () => {
       );
 
       await waitFor(() => {
-        expect(screen.getByRole('navigation')).toBeInTheDocument();
+        expect(screen.getByTestId('main-navigation')).toBeInTheDocument();
       });
     });
   });
@@ -413,7 +416,7 @@ describe('MainNavigation Component', () => {
       );
 
       await waitFor(() => {
-        expect(screen.getByRole('navigation')).toHaveAttribute('aria-label', 'Main navigation');
+        expect(screen.getByTestId('main-navigation')).toHaveAttribute('aria-label', 'Main navigation');
       });
     });
 
@@ -424,7 +427,8 @@ describe('MainNavigation Component', () => {
         </TestWrapper>
       );
 
-      const firstLink = await screen.findByRole('link');
+      const allLinks = await screen.findAllByRole('link');
+      const firstLink = allLinks[0];
       firstLink.focus();
 
       expect(document.activeElement).toBe(firstLink);
@@ -454,7 +458,7 @@ describe('MainNavigation Component', () => {
       );
 
       await waitFor(() => {
-        expect(screen.getByRole('navigation')).toBeInTheDocument();
+        expect(screen.getByTestId('main-navigation')).toBeInTheDocument();
       });
 
       const loadTime = Date.now() - startTime;
