@@ -1,6 +1,6 @@
 /**
  * Training Analytics Service
- * 
+ *
  * Provides simple training history tracking without optimization.
  * Focuses on training session logs, stat progression, facility impact,
  * and discipline training balance for individual horses.
@@ -21,7 +21,7 @@ export const trainingAnalyticsService = {
   async getTrainingHistory(horseId) {
     // Verify horse exists
     const horse = await prisma.horse.findUnique({
-      where: { id: horseId }
+      where: { id: horseId },
     });
 
     if (!horse) {
@@ -31,7 +31,7 @@ export const trainingAnalyticsService = {
     // Get all training history for the horse
     const trainingHistory = await prisma.trainingLog.findMany({
       where: { horseId },
-      orderBy: { trainedAt: 'desc' }
+      orderBy: { trainedAt: 'desc' },
     });
 
     // If no training history, return empty analytics
@@ -42,8 +42,8 @@ export const trainingAnalyticsService = {
         trainingFrequency: {
           totalSessions: 0,
           sessionsPerDiscipline: {},
-          recentActivity: []
-        }
+          recentActivity: [],
+        },
       };
     }
 
@@ -54,7 +54,7 @@ export const trainingAnalyticsService = {
     return {
       trainingHistory,
       disciplineBalance,
-      trainingFrequency
+      trainingFrequency,
     };
   },
 
@@ -69,7 +69,7 @@ export const trainingAnalyticsService = {
 
     // Count sessions per discipline
     trainingHistory.forEach(session => {
-      const discipline = session.discipline;
+      const { discipline } = session;
       if (!sessionsPerDiscipline[discipline]) {
         sessionsPerDiscipline[discipline] = 0;
       }
@@ -82,13 +82,13 @@ export const trainingAnalyticsService = {
       .filter(session => new Date(session.trainedAt) >= thirtyDaysAgo)
       .map(session => ({
         date: session.trainedAt,
-        discipline: session.discipline
+        discipline: session.discipline,
       }));
 
     return {
       totalSessions,
       sessionsPerDiscipline,
-      recentActivity
+      recentActivity,
     };
   },
 
@@ -101,13 +101,13 @@ export const trainingAnalyticsService = {
     const disciplineStats = {};
 
     trainingHistory.forEach(session => {
-      const discipline = session.discipline;
+      const { discipline } = session;
 
       if (!disciplineStats[discipline]) {
         disciplineStats[discipline] = {
           sessionCount: 0,
           lastTrainingDate: null,
-          firstTrainingDate: null
+          firstTrainingDate: null,
         };
       }
 
@@ -131,5 +131,5 @@ export const trainingAnalyticsService = {
     });
 
     return disciplineStats;
-  }
+  },
 };

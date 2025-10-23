@@ -1,13 +1,13 @@
 /**
  * Care Pattern Analyzer Service
- * 
+ *
  * Analyzes groom care patterns for flag triggers including:
  * - Care consistency and frequency
  * - Bond trend analysis over time
  * - Stress spike detection and recovery patterns
  * - Neglect pattern identification
  * - Task diversity and quality assessment
- * 
+ *
  * Used by the weekly flag evaluation system to determine epigenetic flag eligibility.
  */
 
@@ -124,7 +124,7 @@ export async function analyzeCarePatterns(horseId) {
 function analyzeCareConsistency(interactions, startDate, endDate) {
   const totalDays = Math.ceil((endDate - startDate) / (1000 * 60 * 60 * 24));
   const daysWithCare = new Set();
-  
+
   interactions.forEach(interaction => {
     const day = interaction.createdAt.toDateString();
     daysWithCare.add(day);
@@ -136,7 +136,7 @@ function analyzeCareConsistency(interactions, startDate, endDate) {
   // Detect care gaps (periods of 3+ days without interaction)
   const careGaps = [];
   let lastCareDate = startDate;
-  
+
   interactions.forEach(interaction => {
     const daysSinceLastCare = (interaction.createdAt - lastCareDate) / (1000 * 60 * 60 * 24);
     if (daysSinceLastCare >= 3) {
@@ -176,8 +176,7 @@ function analyzeBondTrends(interactions) {
 
   // Determine trend
   let trend = 'stable';
-  if (averageChange > 1) trend = 'improving';
-  else if (averageChange < -1) trend = 'declining';
+  if (averageChange > 1) { trend = 'improving'; } else if (averageChange < -1) { trend = 'declining'; }
 
   // Analyze consistency of positive interactions
   const positiveInteractions = bondChanges.filter(change => change > 0).length;
@@ -216,8 +215,8 @@ function analyzeStressPatterns(interactions) {
 
   // Calculate stress reduction effectiveness
   const stressReductions = stressChanges.filter(change => change < 0);
-  const averageReduction = stressReductions.length > 0 
-    ? stressReductions.reduce((sum, change) => sum + change, 0) / stressReductions.length 
+  const averageReduction = stressReductions.length > 0
+    ? stressReductions.reduce((sum, change) => sum + change, 0) / stressReductions.length
     : 0;
 
   return {
@@ -239,7 +238,7 @@ function analyzeTaskDiversity(interactions) {
 
   const taskTypes = [...new Set(interactions.map(i => i.taskType))];
   const qualityDistribution = {};
-  
+
   interactions.forEach(interaction => {
     const quality = interaction.quality || 'unknown';
     qualityDistribution[quality] = (qualityDistribution[quality] || 0) + 1;
@@ -281,7 +280,7 @@ function analyzeGroomConsistency(assignments, interactions) {
  */
 function detectNeglectPatterns(interactions, startDate, endDate) {
   const totalDays = Math.ceil((endDate - startDate) / (1000 * 60 * 60 * 24));
-  
+
   // Calculate days without any care
   const daysWithCare = new Set();
   interactions.forEach(interaction => {
@@ -491,7 +490,7 @@ export async function analyzeGroomEffectiveness(horseId) {
     // Group interactions by groom
     const groomGroups = {};
     interactions.forEach(interaction => {
-      const groomId = interaction.groomId;
+      const { groomId } = interaction;
       if (!groomGroups[groomId]) {
         groomGroups[groomId] = {
           groom: interaction.groom,
@@ -579,10 +578,7 @@ export async function calculateCareRiskScore(horseId) {
 
     // Determine risk level
     let riskLevel;
-    if (overallRisk >= 0.8) riskLevel = 'critical';
-    else if (overallRisk >= 0.6) riskLevel = 'high';
-    else if (overallRisk >= 0.4) riskLevel = 'moderate';
-    else riskLevel = 'low';
+    if (overallRisk >= 0.8) { riskLevel = 'critical'; } else if (overallRisk >= 0.6) { riskLevel = 'high'; } else if (overallRisk >= 0.4) { riskLevel = 'moderate'; } else { riskLevel = 'low'; }
 
     // Generate recommendations based on risk factors
     const recommendations = generateRiskRecommendations({
@@ -618,12 +614,12 @@ export async function calculateCareRiskScore(horseId) {
  * Calculate frequency consistency (regularity of interactions)
  */
 function calculateFrequencyConsistency(interactions) {
-  if (interactions.length < 2) return 0;
+  if (interactions.length < 2) { return 0; }
 
   // Calculate intervals between interactions
   const intervals = [];
   for (let i = 1; i < interactions.length; i++) {
-    const interval = (interactions[i].createdAt - interactions[i-1].createdAt) / (1000 * 60 * 60 * 24);
+    const interval = (interactions[i].createdAt - interactions[i - 1].createdAt) / (1000 * 60 * 60 * 24);
     intervals.push(interval);
   }
 
@@ -641,12 +637,12 @@ function calculateFrequencyConsistency(interactions) {
  * Calculate quality consistency (variance in interaction quality)
  */
 function calculateQualityConsistency(interactions) {
-  if (interactions.length === 0) return 0;
+  if (interactions.length === 0) { return 0; }
 
   const qualityScores = { poor: 1, fair: 2, good: 3, excellent: 4 };
   const scores = interactions.map(i => qualityScores[i.quality] || 2);
 
-  if (scores.length < 2) return scores[0] ? scores[0] / 4 : 0;
+  if (scores.length < 2) { return scores[0] ? scores[0] / 4 : 0; }
 
   const mean = scores.reduce((sum, score) => sum + score, 0) / scores.length;
   const variance = scores.reduce((sum, score) => sum + Math.pow(score - mean, 2), 0) / scores.length;
@@ -663,11 +659,11 @@ function calculateQualityConsistency(interactions) {
  * Calculate duration consistency (variance in interaction duration)
  */
 function calculateDurationConsistency(interactions) {
-  if (interactions.length === 0) return 0;
+  if (interactions.length === 0) { return 0; }
 
   const durations = interactions.map(i => i.duration || 30); // Default 30 minutes
 
-  if (durations.length < 2) return 0.8; // Assume good if only one data point
+  if (durations.length < 2) { return 0.8; } // Assume good if only one data point
 
   const mean = durations.reduce((sum, duration) => sum + duration, 0) / durations.length;
   const variance = durations.reduce((sum, duration) => sum + Math.pow(duration - mean, 2), 0) / durations.length;
@@ -682,7 +678,7 @@ function calculateDurationConsistency(interactions) {
  * Calculate groom consistency (stability of groom assignments)
  */
 function calculateGroomConsistency(interactions) {
-  if (interactions.length === 0) return 0;
+  if (interactions.length === 0) { return 0; }
 
   const uniqueGrooms = new Set(interactions.map(i => i.groomId));
   const groomChanges = uniqueGrooms.size - 1;
@@ -698,7 +694,7 @@ function calculateGroomConsistency(interactions) {
  * Calculate timing consistency (regularity of interaction times)
  */
 function calculateTimingConsistency(interactions) {
-  if (interactions.length < 2) return 0.8; // Assume good if insufficient data
+  if (interactions.length < 2) { return 0.8; } // Assume good if insufficient data
 
   // Extract hour of day for each interaction
   const hours = interactions.map(i => i.createdAt.getHours());
@@ -760,9 +756,7 @@ function calculateLinearTrend(values) {
   const strength = Math.abs(slope);
 
   let direction;
-  if (slope > 0.1) direction = 'improving';
-  else if (slope < -0.1) direction = 'declining';
-  else direction = 'stable';
+  if (slope > 0.1) { direction = 'improving'; } else if (slope < -0.1) { direction = 'declining'; } else { direction = 'stable'; }
 
   return { direction, slope, strength };
 }
@@ -784,8 +778,8 @@ function projectOutcome(qualityTrend, bondTrend, stressTrend, trendStrength) {
   const decliningCount = [qualityTrend, bondTrend, stressTrend]
     .filter(trend => trend.direction === 'declining').length;
 
-  if (improvingCount >= 2 && trendStrength > 0.3) return 'positive';
-  if (decliningCount >= 2 && trendStrength > 0.3) return 'negative';
+  if (improvingCount >= 2 && trendStrength > 0.3) { return 'positive'; }
+  if (decliningCount >= 2 && trendStrength > 0.3) { return 'negative'; }
   return 'neutral';
 }
 
@@ -847,7 +841,7 @@ function generateGroomRecommendations(groomStats) {
     recommendations.push('Overall groom effectiveness is low. Consider training or replacing underperforming grooms.');
   }
 
-  const topGroom = groomStats[0];
+  const [topGroom] = groomStats;
   const bottomGroom = groomStats[groomStats.length - 1];
 
   if (topGroom.effectivenessScore > 0.7) {
@@ -862,7 +856,7 @@ function generateGroomRecommendations(groomStats) {
   const personalityGroups = {};
   groomStats.forEach(stat => {
     const personality = stat.groomPersonality;
-    if (!personalityGroups[personality]) personalityGroups[personality] = [];
+    if (!personalityGroups[personality]) { personalityGroups[personality] = []; }
     personalityGroups[personality].push(stat);
   });
 
@@ -880,7 +874,7 @@ function generateGroomRecommendations(groomStats) {
  * Calculate consistency risk factor
  */
 function calculateConsistencyRisk(interactions) {
-  if (interactions.length === 0) return 1.0; // Maximum risk if no data
+  if (interactions.length === 0) { return 1.0; } // Maximum risk if no data
 
   const frequencyConsistency = calculateFrequencyConsistency(interactions);
   const qualityConsistency = calculateQualityConsistency(interactions);
@@ -894,7 +888,7 @@ function calculateConsistencyRisk(interactions) {
  * Calculate quality risk factor
  */
 function calculateQualityRisk(interactions) {
-  if (interactions.length === 0) return 1.0;
+  if (interactions.length === 0) { return 1.0; }
 
   const qualityScores = { poor: 1, fair: 2, good: 3, excellent: 4 };
   const avgQuality = interactions.reduce((sum, i) => sum + (qualityScores[i.quality] || 2), 0) / interactions.length;
@@ -921,7 +915,7 @@ function calculateFrequencyRisk(interactions) {
  * Calculate groom stability risk factor
  */
 function calculateGroomStabilityRisk(interactions) {
-  if (interactions.length === 0) return 1.0;
+  if (interactions.length === 0) { return 1.0; }
 
   const uniqueGrooms = new Set(interactions.map(i => i.groomId));
   const groomChanges = uniqueGrooms.size - 1;
@@ -934,7 +928,7 @@ function calculateGroomStabilityRisk(interactions) {
  * Calculate stress risk factor
  */
 function calculateStressRisk(interactions) {
-  if (interactions.length === 0) return 0.5; // Neutral risk if no data
+  if (interactions.length === 0) { return 0.5; } // Neutral risk if no data
 
   const stressChanges = interactions.map(i => i.stressChange || 0);
   const avgStressChange = stressChanges.reduce((sum, change) => sum + change, 0) / stressChanges.length;

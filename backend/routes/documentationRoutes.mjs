@@ -1,13 +1,13 @@
 /**
  * 📚 Documentation Management Routes
- * 
+ *
  * REST API endpoints for managing and monitoring API documentation:
  * - Documentation health and metrics
  * - Specification validation and generation
  * - Endpoint registration and management
  * - Schema management and validation
  * - Documentation analytics and insights
- * 
+ *
  * Features:
  * - Real-time documentation metrics
  * - Specification validation
@@ -55,9 +55,9 @@ router.get('/health',
   async (req, res) => {
     try {
       logger.info('[DocumentationRoutes] Getting documentation health status');
-      
+
       const healthReport = getDocumentationHealth();
-      
+
       res.json({
         success: true,
         message: 'Documentation health retrieved successfully',
@@ -71,7 +71,7 @@ router.get('/health',
         error: error.message,
       });
     }
-  }
+  },
 );
 
 /**
@@ -83,9 +83,9 @@ router.get('/metrics',
   async (req, res) => {
     try {
       logger.info('[DocumentationRoutes] Getting documentation metrics');
-      
+
       const metrics = getDocumentationMetrics();
-      
+
       // Calculate additional analytics
       const analytics = {
         coverageGrade: getCoverageGrade(metrics.coverage),
@@ -97,7 +97,7 @@ router.get('/metrics',
           validationStatus: metrics.validationErrors.length === 0 ? 'passing' : 'failing',
         },
       };
-      
+
       res.json({
         success: true,
         message: 'Documentation metrics retrieved successfully',
@@ -115,7 +115,7 @@ router.get('/metrics',
         error: error.message,
       });
     }
-  }
+  },
 );
 
 /**
@@ -127,19 +127,19 @@ router.get('/validation',
   async (req, res) => {
     try {
       logger.info('[DocumentationRoutes] Validating OpenAPI specification');
-      
+
       const docService = getApiDocumentationService();
       const validationResult = docService.validateSpecification();
-      
+
       const summary = {
         isValid: validationResult.valid,
         errorCount: validationResult.errors.length,
-        severity: validationResult.errors.length === 0 ? 'none' : 
-                 validationResult.errors.length < 5 ? 'low' : 
-                 validationResult.errors.length < 10 ? 'medium' : 'high',
+        severity: validationResult.errors.length === 0 ? 'none' :
+          validationResult.errors.length < 5 ? 'low' :
+            validationResult.errors.length < 10 ? 'medium' : 'high',
         recommendations: generateValidationRecommendations(validationResult.errors),
       };
-      
+
       res.json({
         success: true,
         message: 'Specification validation completed',
@@ -156,7 +156,7 @@ router.get('/validation',
         error: error.message,
       });
     }
-  }
+  },
 );
 
 /**
@@ -168,10 +168,10 @@ router.post('/generate',
   async (req, res) => {
     try {
       logger.info('[DocumentationRoutes] Generating API documentation');
-      
+
       const specification = generateDocumentation();
       const metrics = getDocumentationMetrics();
-      
+
       res.json({
         success: true,
         message: 'Documentation generated successfully',
@@ -191,7 +191,7 @@ router.post('/generate',
         error: error.message,
       });
     }
-  }
+  },
 );
 
 /**
@@ -209,9 +209,9 @@ router.post('/endpoints',
   async (req, res) => {
     try {
       const { method, path, summary, description, tags, parameters, requestBody, responses, security } = req.body;
-      
+
       logger.info(`[DocumentationRoutes] Registering endpoint: ${method} ${path}`);
-      
+
       const endpointInfo = registerEndpoint(method, path, {
         summary,
         description,
@@ -221,7 +221,7 @@ router.post('/endpoints',
         responses: responses || {},
         security: security || [],
       });
-      
+
       res.status(201).json({
         success: true,
         message: 'Endpoint registered successfully',
@@ -235,7 +235,7 @@ router.post('/endpoints',
         error: error.message,
       });
     }
-  }
+  },
 );
 
 /**
@@ -250,11 +250,11 @@ router.post('/schemas',
   async (req, res) => {
     try {
       const { name, schema } = req.body;
-      
+
       logger.info(`[DocumentationRoutes] Registering schema: ${name}`);
-      
+
       registerSchema(name, schema);
-      
+
       res.status(201).json({
         success: true,
         message: 'Schema registered successfully',
@@ -271,7 +271,7 @@ router.post('/schemas',
         error: error.message,
       });
     }
-  }
+  },
 );
 
 /**
@@ -283,17 +283,17 @@ router.get('/coverage',
   async (req, res) => {
     try {
       logger.info('[DocumentationRoutes] Getting documentation coverage analysis');
-      
+
       const metrics = getDocumentationMetrics();
       const docService = getApiDocumentationService();
       const spec = docService.loadSpecification();
-      
+
       // Analyze coverage by tag
       const coverageByTag = analyzeCoverageByTag(spec);
-      
+
       // Analyze missing documentation
       const missingDocumentation = findMissingDocumentation(spec);
-      
+
       const coverageAnalysis = {
         overall: {
           percentage: metrics.coverage,
@@ -305,7 +305,7 @@ router.get('/coverage',
         missing: missingDocumentation,
         recommendations: generateCoverageRecommendations(metrics.coverage, missingDocumentation),
       };
-      
+
       res.json({
         success: true,
         message: 'Coverage analysis completed',
@@ -319,7 +319,7 @@ router.get('/coverage',
         error: error.message,
       });
     }
-  }
+  },
 );
 
 /**
@@ -333,12 +333,12 @@ router.get('/analytics',
   async (req, res) => {
     try {
       const timeframe = req.query.timeframe || '30d';
-      
+
       logger.info(`[DocumentationRoutes] Getting documentation analytics for timeframe: ${timeframe}`);
-      
+
       const metrics = getDocumentationMetrics();
       const health = getDocumentationHealth();
-      
+
       const analytics = {
         summary: {
           totalEndpoints: metrics.totalEndpoints,
@@ -359,7 +359,7 @@ router.get('/analytics',
           priorities: generatePriorities(metrics, health),
         },
       };
-      
+
       res.json({
         success: true,
         message: 'Documentation analytics retrieved successfully',
@@ -373,103 +373,103 @@ router.get('/analytics',
         error: error.message,
       });
     }
-  }
+  },
 );
 
 // Helper functions
 function getCoverageGrade(coverage) {
-  if (coverage >= 90) return 'A';
-  if (coverage >= 80) return 'B';
-  if (coverage >= 70) return 'C';
-  if (coverage >= 60) return 'D';
+  if (coverage >= 90) { return 'A'; }
+  if (coverage >= 80) { return 'B'; }
+  if (coverage >= 70) { return 'C'; }
+  if (coverage >= 60) { return 'D'; }
   return 'F';
 }
 
 function getCompletionStatus(metrics) {
-  if (metrics.coverage >= 95) return 'complete';
-  if (metrics.coverage >= 80) return 'mostly_complete';
-  if (metrics.coverage >= 50) return 'in_progress';
+  if (metrics.coverage >= 95) { return 'complete'; }
+  if (metrics.coverage >= 80) { return 'mostly_complete'; }
+  if (metrics.coverage >= 50) { return 'in_progress'; }
   return 'incomplete';
 }
 
 function calculateQualityScore(metrics) {
   let score = 0;
-  
+
   // Coverage weight: 40%
   score += (metrics.coverage / 100) * 40;
-  
+
   // Validation weight: 30%
   score += (metrics.validationErrors.length === 0 ? 1 : 0) * 30;
-  
+
   // Schema count weight: 15%
   score += Math.min(metrics.schemaCount / 20, 1) * 15;
-  
+
   // Tag organization weight: 15%
   score += Math.min(metrics.tagCount / 10, 1) * 15;
-  
+
   return Math.round(score);
 }
 
 function generateValidationRecommendations(errors) {
   const recommendations = [];
-  
+
   if (errors.some(e => e.includes('Missing responses'))) {
     recommendations.push('Add response definitions for all endpoints');
   }
-  
+
   if (errors.some(e => e.includes('Missing summary'))) {
     recommendations.push('Add summaries to all endpoints for better documentation');
   }
-  
+
   if (errors.some(e => e.includes('Missing tags'))) {
     recommendations.push('Organize endpoints with appropriate tags');
   }
-  
+
   return recommendations;
 }
 
 function analyzeCoverageByTag(spec) {
   const tagCoverage = {};
-  
-  for (const [path, methods] of Object.entries(spec.paths || {})) {
-    for (const [method, operation] of Object.entries(methods)) {
+
+  for (const [_path, methods] of Object.entries(spec.paths || {})) {
+    for (const [_method, operation] of Object.entries(methods)) {
       const tags = operation.tags || ['untagged'];
-      
+
       for (const tag of tags) {
         if (!tagCoverage[tag]) {
           tagCoverage[tag] = { total: 0, documented: 0 };
         }
-        
+
         tagCoverage[tag].total++;
-        
+
         if (operation.summary && operation.description && operation.responses) {
           tagCoverage[tag].documented++;
         }
       }
     }
   }
-  
+
   // Calculate percentages
   for (const tag of Object.keys(tagCoverage)) {
     const { total, documented } = tagCoverage[tag];
     tagCoverage[tag].percentage = total > 0 ? (documented / total) * 100 : 0;
   }
-  
+
   return tagCoverage;
 }
 
 function findMissingDocumentation(spec) {
   const missing = [];
-  
+
   for (const [path, methods] of Object.entries(spec.paths || {})) {
     for (const [method, operation] of Object.entries(methods)) {
       const issues = [];
-      
-      if (!operation.summary) issues.push('summary');
-      if (!operation.description) issues.push('description');
-      if (!operation.responses) issues.push('responses');
-      if (!operation.tags || operation.tags.length === 0) issues.push('tags');
-      
+
+      if (!operation.summary) { issues.push('summary'); }
+      if (!operation.description) { issues.push('description'); }
+      if (!operation.responses) { issues.push('responses'); }
+      if (!operation.tags || operation.tags.length === 0) { issues.push('tags'); }
+
       if (issues.length > 0) {
         missing.push({
           endpoint: `${method.toUpperCase()} ${path}`,
@@ -478,79 +478,79 @@ function findMissingDocumentation(spec) {
       }
     }
   }
-  
+
   return missing;
 }
 
 function generateCoverageRecommendations(coverage, missing) {
   const recommendations = [];
-  
+
   if (coverage < 50) {
     recommendations.push('Focus on documenting core API endpoints first');
   }
-  
+
   if (missing.length > 10) {
     recommendations.push('Prioritize adding summaries and descriptions to endpoints');
   }
-  
+
   if (coverage < 80) {
     recommendations.push('Add comprehensive response documentation');
   }
-  
+
   return recommendations;
 }
 
-function generateStrengths(metrics, health) {
+function generateStrengths(metrics, _health) {
   const strengths = [];
-  
+
   if (metrics.coverage > 80) {
     strengths.push('High documentation coverage');
   }
-  
+
   if (metrics.validationErrors.length === 0) {
     strengths.push('Valid OpenAPI specification');
   }
-  
+
   if (metrics.schemaCount > 15) {
     strengths.push('Good schema reusability');
   }
-  
+
   return strengths;
 }
 
-function generateImprovements(metrics, health) {
+function generateImprovements(metrics, _health) {
   const improvements = [];
-  
+
   if (metrics.coverage < 80) {
     improvements.push('Increase documentation coverage');
   }
-  
+
   if (metrics.validationErrors.length > 0) {
     improvements.push('Fix specification validation errors');
   }
-  
+
   if (metrics.tagCount < 5) {
     improvements.push('Better organize endpoints with tags');
   }
-  
+
   return improvements;
 }
 
 function generatePriorities(metrics, health) {
   const priorities = [];
-  
+
   if (health.status === 'needs_attention') {
     priorities.push('Address documentation health issues');
   }
-  
+
   if (metrics.coverage < 60) {
     priorities.push('Increase basic documentation coverage');
   }
-  
+
   if (metrics.validationErrors.length > 5) {
     priorities.push('Fix critical validation errors');
   }
-  
+
   return priorities;
 }
 

@@ -1,15 +1,15 @@
 /**
  * Advanced Lineage Analysis System Tests
- * 
+ *
  * Tests for sophisticated lineage analysis with tree structures, genetic diversity metrics,
  * and performance analysis capabilities for breeding decision support.
- * 
+ *
  * Testing Approach: TDD with NO MOCKING - Real system validation
  * Business Rules: Tree visualization, genetic diversity, performance tracking
  */
 
 import { describe, test, expect, beforeEach } from '@jest/globals';
-import logger from '../../utils/logger.mjs';
+import _logger from '../../utils/_logger.mjs';
 import prisma from '../../db/index.mjs';
 import {
   generateLineageTree,
@@ -18,7 +18,7 @@ import {
   createVisualizationData,
   calculateInbreedingCoefficient,
   identifyGeneticBottlenecks,
-  generateBreedingRecommendations
+  generateBreedingRecommendations,
 } from '../../services/advancedLineageAnalysisService.mjs';
 
 describe('🌳 Advanced Lineage Analysis System', () => {
@@ -36,8 +36,8 @@ describe('🌳 Advanced Lineage Analysis System', () => {
       disciplineScores: { racing: 92, jumping: 65 },
       competitionResults: [
         { discipline: 'racing', placement: 1, score: 95 },
-        { discipline: 'racing', placement: 2, score: 88 }
-      ]
+        { discipline: 'racing', placement: 2, score: 88 },
+      ],
     };
 
     // Test mare with balanced genetics
@@ -51,15 +51,15 @@ describe('🌳 Advanced Lineage Analysis System', () => {
       disciplineScores: { dressage: 88, jumping: 82 },
       competitionResults: [
         { discipline: 'dressage', placement: 1, score: 90 },
-        { discipline: 'jumping', placement: 3, score: 78 }
-      ]
+        { discipline: 'jumping', placement: 3, score: 78 },
+      ],
     };
 
     // Test lineage data with multiple generations
     testLineageData = [
       {
         generation: 0,
-        horses: [testStallion, testMare]
+        horses: [testStallion, testMare],
       },
       {
         generation: 1,
@@ -67,8 +67,8 @@ describe('🌳 Advanced Lineage Analysis System', () => {
           { id: 3, name: 'Storm King', sireId: 7, damId: 8, stats: { speed: 90, stamina: 85 }, traits: { positive: ['athletic'], negative: [], hidden: [] } },
           { id: 4, name: 'Swift Mare', sireId: 9, damId: 10, stats: { speed: 88, stamina: 80 }, traits: { positive: ['fast'], negative: [], hidden: [] } },
           { id: 5, name: 'Noble Sire', sireId: 11, damId: 12, stats: { intelligence: 88, agility: 82 }, traits: { positive: ['intelligent'], negative: [], hidden: [] } },
-          { id: 6, name: 'Gentle Dam', sireId: 13, damId: 14, stats: { stamina: 90, intelligence: 85 }, traits: { positive: ['calm'], negative: [], hidden: [] } }
-        ]
+          { id: 6, name: 'Gentle Dam', sireId: 13, damId: 14, stats: { stamina: 90, intelligence: 85 }, traits: { positive: ['calm'], negative: [], hidden: [] } },
+        ],
       },
       {
         generation: 2,
@@ -76,9 +76,9 @@ describe('🌳 Advanced Lineage Analysis System', () => {
           { id: 7, name: 'Ancient King', stats: { speed: 85, stamina: 88 }, traits: { positive: ['legendary'], negative: [], hidden: [] } },
           { id: 8, name: 'Royal Mare', stats: { speed: 82, agility: 90 }, traits: { positive: ['noble'], negative: [], hidden: [] } },
           { id: 9, name: 'Speed Demon', stats: { speed: 92, stamina: 75 }, traits: { positive: ['fast', 'athletic'], negative: ['nervous'], hidden: [] } },
-          { id: 10, name: 'Fleet Foot', stats: { speed: 85, agility: 88 }, traits: { positive: ['agile'], negative: [], hidden: [] } }
-        ]
-      }
+          { id: 10, name: 'Fleet Foot', stats: { speed: 85, agility: 88 }, traits: { positive: ['agile'], negative: [], hidden: [] } },
+        ],
+      },
     ];
   });
 
@@ -94,8 +94,8 @@ describe('🌳 Advanced Lineage Analysis System', () => {
           stamina: testStallion.stats.stamina,
           agility: testStallion.stats.agility,
           intelligence: testStallion.stats.intelligence,
-          epigeneticModifiers: testStallion.traits
-        }
+          epigeneticModifiers: testStallion.traits,
+        },
       });
 
       const mare = await prisma.horse.create({
@@ -107,8 +107,8 @@ describe('🌳 Advanced Lineage Analysis System', () => {
           stamina: testMare.stats.stamina,
           agility: testMare.stats.agility,
           intelligence: testMare.stats.intelligence,
-          epigeneticModifiers: testMare.traits
-        }
+          epigeneticModifiers: testMare.traits,
+        },
       });
 
       const tree = await generateLineageTree(stallion.id, mare.id, 3);
@@ -144,8 +144,8 @@ describe('🌳 Advanced Lineage Analysis System', () => {
           speed: 85,
           stamina: 80,
           agility: 75,
-          intelligence: 70
-        }
+          intelligence: 70,
+        },
       });
 
       const stallion = await prisma.horse.create({
@@ -158,8 +158,8 @@ describe('🌳 Advanced Lineage Analysis System', () => {
           agility: testStallion.stats.agility,
           intelligence: testStallion.stats.intelligence,
           sireId: sire.id,
-          epigeneticModifiers: testStallion.traits
-        }
+          epigeneticModifiers: testStallion.traits,
+        },
       });
 
       const mare = await prisma.horse.create({
@@ -171,8 +171,8 @@ describe('🌳 Advanced Lineage Analysis System', () => {
           stamina: testMare.stats.stamina,
           agility: testMare.stats.agility,
           intelligence: testMare.stats.intelligence,
-          epigeneticModifiers: testMare.traits
-        }
+          epigeneticModifiers: testMare.traits,
+        },
       });
 
       const tree = await generateLineageTree(stallion.id, mare.id, 2);
@@ -233,9 +233,9 @@ describe('🌳 Advanced Lineage Analysis System', () => {
       const bottlenecks = await identifyGeneticBottlenecks(testLineageData);
 
       expect(Array.isArray(bottlenecks)).toBe(true);
-      
+
       if (bottlenecks.length > 0) {
-        const bottleneck = bottlenecks[0];
+        const [bottleneck] = bottlenecks;
         expect(bottleneck).toHaveProperty('generation');
         expect(bottleneck).toHaveProperty('severity');
         expect(bottleneck).toHaveProperty('affectedTraits');
@@ -264,8 +264,9 @@ describe('🌳 Advanced Lineage Analysis System', () => {
 
       // Verify generational trends
       expect(Array.isArray(analysis.generationalTrends)).toBe(true);
-      
+
       if (analysis.generationalTrends.length > 0) {
+        // eslint-disable-next-line prefer-destructuring
         const trend = analysis.generationalTrends[0];
         expect(trend).toHaveProperty('generation');
         expect(trend).toHaveProperty('averageStats');
@@ -285,6 +286,7 @@ describe('🌳 Advanced Lineage Analysis System', () => {
       expect(Array.isArray(analysis.performanceMetrics.topPerformers)).toBe(true);
 
       if (analysis.performanceMetrics.topPerformers.length > 0) {
+        // eslint-disable-next-line prefer-destructuring
         const performer = analysis.performanceMetrics.topPerformers[0];
         expect(performer).toHaveProperty('id');
         expect(performer).toHaveProperty('name');
@@ -306,8 +308,8 @@ describe('🌳 Advanced Lineage Analysis System', () => {
           stamina: testStallion.stats.stamina,
           agility: testStallion.stats.agility,
           intelligence: testStallion.stats.intelligence,
-          epigeneticModifiers: testStallion.traits
-        }
+          epigeneticModifiers: testStallion.traits,
+        },
       });
 
       const mare = await prisma.horse.create({
@@ -319,8 +321,8 @@ describe('🌳 Advanced Lineage Analysis System', () => {
           stamina: testMare.stats.stamina,
           agility: testMare.stats.agility,
           intelligence: testMare.stats.intelligence,
-          epigeneticModifiers: testMare.traits
-        }
+          epigeneticModifiers: testMare.traits,
+        },
       });
 
       const vizData = await createVisualizationData(stallion.id, mare.id, 3);
@@ -334,6 +336,7 @@ describe('🌳 Advanced Lineage Analysis System', () => {
       // Verify nodes structure
       expect(Array.isArray(vizData.nodes)).toBe(true);
       if (vizData.nodes.length > 0) {
+        // eslint-disable-next-line prefer-destructuring
         const node = vizData.nodes[0];
         expect(node).toHaveProperty('id');
         expect(node).toHaveProperty('name');
@@ -346,6 +349,7 @@ describe('🌳 Advanced Lineage Analysis System', () => {
       // Verify edges structure
       expect(Array.isArray(vizData.edges)).toBe(true);
       if (vizData.edges.length > 0) {
+        // eslint-disable-next-line prefer-destructuring
         const edge = vizData.edges[0];
         expect(edge).toHaveProperty('from');
         expect(edge).toHaveProperty('to');
@@ -374,8 +378,8 @@ describe('🌳 Advanced Lineage Analysis System', () => {
           stamina: testStallion.stats.stamina,
           agility: testStallion.stats.agility,
           intelligence: testStallion.stats.intelligence,
-          epigeneticModifiers: testStallion.traits
-        }
+          epigeneticModifiers: testStallion.traits,
+        },
       });
 
       const mare = await prisma.horse.create({
@@ -387,8 +391,8 @@ describe('🌳 Advanced Lineage Analysis System', () => {
           stamina: testMare.stats.stamina,
           agility: testMare.stats.agility,
           intelligence: testMare.stats.intelligence,
-          epigeneticModifiers: testMare.traits
-        }
+          epigeneticModifiers: testMare.traits,
+        },
       });
 
       const recommendations = await generateBreedingRecommendations(stallion.id, mare.id);
@@ -408,6 +412,7 @@ describe('🌳 Advanced Lineage Analysis System', () => {
       // Verify suggestions are actionable
       expect(Array.isArray(recommendations.suggestions)).toBe(true);
       if (recommendations.suggestions.length > 0) {
+        // eslint-disable-next-line prefer-destructuring
         const suggestion = recommendations.suggestions[0];
         expect(suggestion).toHaveProperty('type');
         expect(suggestion).toHaveProperty('description');
@@ -430,8 +435,8 @@ describe('🌳 Advanced Lineage Analysis System', () => {
           stamina: testStallion.stats.stamina,
           agility: testStallion.stats.agility,
           intelligence: testStallion.stats.intelligence,
-          epigeneticModifiers: testStallion.traits
-        }
+          epigeneticModifiers: testStallion.traits,
+        },
       });
 
       const mare = await prisma.horse.create({
@@ -443,8 +448,8 @@ describe('🌳 Advanced Lineage Analysis System', () => {
           stamina: testMare.stats.stamina,
           agility: testMare.stats.agility,
           intelligence: testMare.stats.intelligence,
-          epigeneticModifiers: testMare.traits
-        }
+          epigeneticModifiers: testMare.traits,
+        },
       });
 
       const recommendations = await generateBreedingRecommendations(stallion.id, mare.id);
@@ -452,6 +457,7 @@ describe('🌳 Advanced Lineage Analysis System', () => {
       expect(Array.isArray(recommendations.risks)).toBe(true);
 
       if (recommendations.risks.length > 0) {
+        // eslint-disable-next-line prefer-destructuring
         const risk = recommendations.risks[0];
         expect(risk).toHaveProperty('type');
         expect(risk).toHaveProperty('severity');

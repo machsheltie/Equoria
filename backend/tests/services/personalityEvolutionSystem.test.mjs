@@ -1,9 +1,9 @@
 /**
  * Personality Evolution System Tests
- * 
+ *
  * Tests comprehensive personality evolution for both grooms and horses based on experience and interactions.
  * Uses TDD approach with NO MOCKING - real database operations for authentic validation.
- * 
+ *
  * Business Rules Tested:
  * - Groom personality evolution based on interaction patterns and experience
  * - Horse temperament evolution based on care history and environmental factors
@@ -13,7 +13,7 @@
  * - Cross-species personality influence (groom-horse personality convergence)
  */
 
-import { jest } from '@jest/globals';
+// jest import removed - not used in this file
 import prisma from '../../../packages/database/prismaClient.mjs';
 import {
   evolveGroomPersonality,

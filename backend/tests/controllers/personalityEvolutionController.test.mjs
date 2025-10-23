@@ -1,10 +1,10 @@
 /**
  * Personality Evolution Controller API Tests
- * 
+ *
  * Tests comprehensive personality evolution API endpoints including groom and horse evolution,
  * triggers analysis, stability assessment, prediction capabilities, and batch processing.
  * Uses TDD approach with NO MOCKING - real database operations for authentic validation.
- * 
+ *
  * Business Rules Tested:
  * - Groom personality evolution API with interaction pattern validation
  * - Horse temperament evolution API with care history analysis
@@ -17,7 +17,7 @@
  * - System configuration endpoint validation
  */
 
-import { jest } from '@jest/globals';
+// jest import removed - not used in this file
 import request from 'supertest';
 import app from '../../app.mjs';
 import prisma from '../../../packages/database/prismaClient.mjs';

@@ -1,13 +1,13 @@
 /**
  * 📚 User Documentation Routes
- * 
+ *
  * REST API endpoints for serving user-friendly documentation including:
  * - Feature guides and tutorials
  * - Strategy guides and advanced techniques
  * - Troubleshooting guides and problem resolution
  * - FAQ sections and common questions
  * - Documentation search and analytics
- * 
+ *
  * Features:
  * - Content serving with caching
  * - Full-text search capabilities
@@ -53,10 +53,10 @@ router.get('/',
   async (req, res) => {
     try {
       logger.info('[UserDocRoutes] Getting all documentation list');
-      
+
       const documents = getAllDocuments();
       const toc = getTableOfContents();
-      
+
       res.json({
         success: true,
         message: 'Documentation list retrieved successfully',
@@ -74,7 +74,7 @@ router.get('/',
         error: error.message,
       });
     }
-  }
+  },
 );
 
 /**
@@ -90,15 +90,15 @@ router.get('/search',
   async (req, res) => {
     try {
       const { q: query, limit = 10, includeContent = false, highlight = true } = req.query;
-      
+
       logger.info(`[UserDocRoutes] Searching documentation for: "${query}"`);
-      
+
       const searchResults = searchDocumentation(query, {
         limit: parseInt(limit),
         includeContent: includeContent === 'true',
         highlightMatches: highlight === 'true',
       });
-      
+
       res.json({
         success: true,
         message: 'Search completed successfully',
@@ -112,7 +112,7 @@ router.get('/search',
         error: error.message,
       });
     }
-  }
+  },
 );
 
 /**
@@ -123,16 +123,16 @@ router.get('/analytics',
   async (req, res) => {
     try {
       logger.info('[UserDocRoutes] Getting documentation analytics');
-      
+
       const analytics = getDocumentationAnalytics();
-      
+
       if (!analytics) {
         return res.status(500).json({
           success: false,
           message: 'Failed to retrieve analytics data',
         });
       }
-      
+
       res.json({
         success: true,
         message: 'Analytics retrieved successfully',
@@ -146,7 +146,7 @@ router.get('/analytics',
         error: error.message,
       });
     }
-  }
+  },
 );
 
 /**
@@ -157,9 +157,9 @@ router.get('/toc',
   async (req, res) => {
     try {
       logger.info('[UserDocRoutes] Getting table of contents');
-      
+
       const toc = getTableOfContents();
-      
+
       res.json({
         success: true,
         message: 'Table of contents retrieved successfully',
@@ -176,7 +176,7 @@ router.get('/toc',
         error: error.message,
       });
     }
-  }
+  },
 );
 
 /**
@@ -187,10 +187,10 @@ router.post('/refresh',
   async (req, res) => {
     try {
       logger.info('[UserDocRoutes] Refreshing documentation cache');
-      
+
       const docService = getUserDocumentationService();
       const success = docService.refreshDocumentation();
-      
+
       if (success) {
         res.json({
           success: true,
@@ -214,7 +214,7 @@ router.post('/refresh',
         error: error.message,
       });
     }
-  }
+  },
 );
 
 /**
@@ -249,7 +249,7 @@ router.get('/health',
         error: error.message,
       });
     }
-  }
+  },
 );
 
 /**
@@ -261,11 +261,11 @@ router.get('/:docName',
     try {
       const { docName } = req.params;
       const { format = 'json' } = req.query;
-      
+
       logger.info(`[UserDocRoutes] Getting document: ${docName}`);
-      
+
       const document = getDocument(docName);
-      
+
       if (!document) {
         return res.status(404).json({
           success: false,
@@ -273,20 +273,20 @@ router.get('/:docName',
           availableDocuments: getAllDocuments().map(doc => doc.name),
         });
       }
-      
+
       // Handle different response formats
       if (format === 'markdown' || format === 'md') {
         res.setHeader('Content-Type', 'text/markdown');
         res.send(document.content);
         return;
       }
-      
+
       if (format === 'text' || format === 'txt') {
         res.setHeader('Content-Type', 'text/plain');
-        res.send(document.content.replace(/[#*`\[\]()]/g, ''));
+        res.send(document.content.replace(/[#*`[\]()]/g, ''));
         return;
       }
-      
+
       // Default JSON response
       res.json({
         success: true,
@@ -301,7 +301,7 @@ router.get('/:docName',
         error: error.message,
       });
     }
-  }
+  },
 );
 
 /**
@@ -312,18 +312,18 @@ router.get('/:docName/sections',
   async (req, res) => {
     try {
       const { docName } = req.params;
-      
+
       logger.info(`[UserDocRoutes] Getting sections for document: ${docName}`);
-      
+
       const document = getDocument(docName);
-      
+
       if (!document) {
         return res.status(404).json({
           success: false,
           message: `Documentation "${docName}" not found`,
         });
       }
-      
+
       const sections = document.sections.map(section => ({
         title: section.title,
         level: section.level,
@@ -332,7 +332,7 @@ router.get('/:docName/sections',
           .replace(/[^\w\s-]/g, '')
           .replace(/\s+/g, '-'),
       }));
-      
+
       res.json({
         success: true,
         message: 'Document sections retrieved successfully',
@@ -351,7 +351,7 @@ router.get('/:docName/sections',
         error: error.message,
       });
     }
-  }
+  },
 );
 
 /**
@@ -366,34 +366,34 @@ router.get('/:docName/search',
     try {
       const { docName } = req.params;
       const { q: query, highlight = true } = req.query;
-      
+
       logger.info(`[UserDocRoutes] Searching in document "${docName}" for: "${query}"`);
-      
+
       const document = getDocument(docName);
-      
+
       if (!document) {
         return res.status(404).json({
           success: false,
           message: `Documentation "${docName}" not found`,
         });
       }
-      
+
       // Simple search within document content
       const searchTerms = query.toLowerCase().split(/\s+/);
-      const content = document.content.toLowerCase();
-      
+      const _content = document.content.toLowerCase();
+
       const matches = [];
       const lines = document.content.split('\n');
-      
+
       for (let i = 0; i < lines.length; i++) {
         const line = lines[i];
         const lowerLine = line.toLowerCase();
-        
+
         for (const term of searchTerms) {
           if (lowerLine.includes(term)) {
             matches.push({
               lineNumber: i + 1,
-              content: highlight === 'true' 
+              content: highlight === 'true'
                 ? line.replace(new RegExp(term, 'gi'), `**${term}**`)
                 : line,
               context: {
@@ -405,7 +405,7 @@ router.get('/:docName/search',
           }
         }
       }
-      
+
       res.json({
         success: true,
         message: 'Document search completed successfully',
@@ -425,7 +425,7 @@ router.get('/:docName/search',
         error: error.message,
       });
     }
-  }
+  },
 );
 
 export default router;

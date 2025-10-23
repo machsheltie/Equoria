@@ -1,10 +1,10 @@
 /**
  * Enhanced Reporting Service
- * 
+ *
  * Provides advanced reporting and analysis functions for epigenetic data.
  * Supports comprehensive trait analysis, multi-horse comparisons, trend analysis,
  * and export capabilities with various levels of detail.
- * 
+ *
  * Business Rules:
  * - Comprehensive trait history analysis with environmental context
  * - Multi-horse comparison and ranking capabilities
@@ -14,7 +14,7 @@
  */
 
 import logger from '../utils/logger.mjs';
-import prisma from '../../packages/database/prismaClient.mjs';
+import _prisma from '../../packages/database/prismaClient.mjs';
 import { generateEnvironmentalReport } from './environmentalTriggerSystem.mjs';
 
 /**
@@ -22,7 +22,7 @@ import { generateEnvironmentalReport } from './environmentalTriggerSystem.mjs';
  */
 export function generateTraitHistoryInsights(traitHistory, environmentalContext, traitInteractions) {
   const insights = [];
-  
+
   if (traitHistory.length === 0) {
     insights.push('No trait history available for analysis');
     return insights;
@@ -34,8 +34,9 @@ export function generateTraitHistoryInsights(traitHistory, environmentalContext,
     sourceMethods[log.sourceType] = (sourceMethods[log.sourceType] || 0) + 1;
   });
 
+  // eslint-disable-next-line prefer-destructuring
   const primaryMethod = Object.entries(sourceMethods).reduce((a, b) =>
-    sourceMethods[a[0]] > sourceMethods[b[0]] ? a : b
+    sourceMethods[a[0]] > sourceMethods[b[0]] ? a : b,
   )[0];
 
   insights.push(`Primary trait discovery source: ${primaryMethod}`);
@@ -69,10 +70,10 @@ export function generateTraitHistoryInsights(traitHistory, environmentalContext,
  */
 export function generateEpigeneticRecommendations(horse, environmentalInfluences, traitAnalysis, developmentalProgress) {
   const recommendations = [];
-  
+
   // Age-based recommendations
   const ageInDays = Math.floor((Date.now() - horse.dateOfBirth.getTime()) / (1000 * 60 * 60 * 24));
-  
+
   if (ageInDays < 30) {
     recommendations.push('Critical early development period - focus on consistent, gentle care');
   } else if (ageInDays < 90) {
@@ -112,7 +113,7 @@ export function generateEpigeneticRecommendations(horse, environmentalInfluences
  */
 export function buildTraitTimeline(traitHistory, interactions) {
   const timeline = [];
-  
+
   // Add trait discoveries to timeline
   traitHistory.forEach(log => {
     timeline.push({
@@ -143,22 +144,22 @@ export function buildTraitTimeline(traitHistory, interactions) {
 
   // Sort timeline by date
   timeline.sort((a, b) => new Date(a.date) - new Date(b.date));
-  
+
   return timeline;
 }
 
 /**
  * Identify critical periods in timeline
  */
-export function identifyCriticalPeriods(timeline, milestones) {
+export function identifyCriticalPeriods(timeline, _milestones) {
   const criticalPeriods = [];
-  
+
   // Group events by time periods
   const periods = {};
   timeline.forEach(event => {
     const date = new Date(event.date);
     const weekKey = `${date.getFullYear()}-W${Math.ceil(date.getDate() / 7)}`;
-    
+
     if (!periods[weekKey]) {
       periods[weekKey] = [];
     }
@@ -170,7 +171,7 @@ export function identifyCriticalPeriods(timeline, milestones) {
     if (events.length >= 3) {
       const traitDiscoveries = events.filter(e => e.type === 'trait_discovery').length;
       const significantInteractions = events.filter(e => e.type === 'significant_interaction').length;
-      
+
       if (traitDiscoveries > 0 || significantInteractions > 1) {
         criticalPeriods.push({
           period,
@@ -191,11 +192,11 @@ export function identifyCriticalPeriods(timeline, milestones) {
  */
 export function mapEnvironmentalEvents(interactions) {
   const environmentalEvents = [];
-  
+
   interactions.forEach(interaction => {
     // Identify environmental factors from task types
     let environmentalFactor = null;
-    
+
     switch (interaction.taskType) {
       case 'showground_exposure':
         environmentalFactor = 'Novel environment exposure';
@@ -249,12 +250,12 @@ export function generateStableOverview(horses) {
   horses.forEach(horse => {
     const ageInDays = Math.floor((Date.now() - horse.dateOfBirth.getTime()) / (1000 * 60 * 60 * 24));
     const ageCategory = ageInDays < 30 ? 'newborn' : ageInDays < 90 ? 'young' : ageInDays < 365 ? 'juvenile' : 'mature';
-    
+
     overview.ageDistribution[ageCategory] = (overview.ageDistribution[ageCategory] || 0) + 1;
-    
+
     totalBond += horse.bondScore;
     totalStress += horse.stressLevel;
-    
+
     horse.epigeneticFlags.forEach(trait => {
       overview.traitCounts[trait] = (overview.traitCounts[trait] || 0) + 1;
     });
@@ -288,7 +289,7 @@ export function analyzeTraitDistribution(horses) {
 
   // Identify common and rare traits
   const sortedTraits = Object.entries(distribution.traitFrequency)
-    .sort(([,a], [,b]) => b - a);
+    .sort(([, a], [, b]) => b - a);
 
   distribution.commonTraits = sortedTraits.slice(0, 3).map(([trait, count]) => ({ trait, count }));
   distribution.rareTraits = sortedTraits.slice(-3).map(([trait, count]) => ({ trait, count }));
@@ -310,11 +311,8 @@ export function analyzeDevelopmentalStages(horses) {
 
   horses.forEach(horse => {
     const ageInDays = Math.floor((Date.now() - horse.dateOfBirth.getTime()) / (1000 * 60 * 60 * 24));
-    
-    if (ageInDays < 14) stages.critical++;
-    else if (ageInDays < 60) stages.developing++;
-    else if (ageInDays < 365) stages.stable++;
-    else stages.mature++;
+
+    if (ageInDays < 14) { stages.critical++; } else if (ageInDays < 60) { stages.developing++; } else if (ageInDays < 365) { stages.stable++; } else { stages.mature++; }
   });
 
   return stages;
@@ -331,7 +329,7 @@ export async function analyzeStableEnvironmentalFactors(horses) {
     recommendations: [],
   };
 
-  if (horses.length === 0) return factors;
+  if (horses.length === 0) { return factors; }
 
   // Analyze environmental factors for each horse
   let totalTriggerStrength = 0;
@@ -430,7 +428,7 @@ export function identifyTraitSimilarities(horses) {
       const horse2 = horses[j];
 
       const commonTraits = horse1.epigeneticFlags.filter(trait =>
-        horse2.epigeneticFlags.includes(trait)
+        horse2.epigeneticFlags.includes(trait),
       );
 
       if (commonTraits.length > 0) {
@@ -459,11 +457,11 @@ export function identifyTraitDifferences(horses) {
       const horse2 = horses[j];
 
       const uniqueToHorse1 = horse1.epigeneticFlags.filter(trait =>
-        !horse2.epigeneticFlags.includes(trait)
+        !horse2.epigeneticFlags.includes(trait),
       );
 
       const uniqueToHorse2 = horse2.epigeneticFlags.filter(trait =>
-        !horse1.epigeneticFlags.includes(trait)
+        !horse1.epigeneticFlags.includes(trait),
       );
 
       if (uniqueToHorse1.length > 0 || uniqueToHorse2.length > 0) {
@@ -515,12 +513,12 @@ export function generateComparisonInsights(comparison, similarities, differences
   const insights = [];
 
   if (similarities.length > 0) {
-    const topSimilarity = similarities[0];
+    const [topSimilarity] = similarities;
     insights.push(`Highest similarity: ${topSimilarity.horse1.name} and ${topSimilarity.horse2.name} (${Math.round(topSimilarity.similarityScore * 100)}% similar)`);
   }
 
   if (differences.length > 0) {
-    const topDifference = differences[0];
+    const [topDifference] = differences;
     insights.push(`Most different: ${topDifference.horse1.name} and ${topDifference.horse2.name}`);
   }
 
@@ -538,7 +536,7 @@ export function generateComparisonInsights(comparison, similarities, differences
 /**
  * Analyze trait trends over time
  */
-export function analyzeTraitTrends(traitHistory, timeframe) {
+export function analyzeTraitTrends(traitHistory, _timeframe) {
   const trends = [];
 
   // Group by trait
@@ -600,7 +598,7 @@ export function identifyTraitPatterns(traitHistory) {
 /**
  * Generate trend predictions
  */
-export function generateTrendPredictions(trends, patterns) {
+export function generateTrendPredictions(trends, _patterns) {
   const predictions = [];
 
   trends.forEach(trend => {
@@ -684,9 +682,9 @@ export async function generateComprehensiveReport(horse) {
 function getAgeCategory(dateOfBirth) {
   const ageInDays = Math.floor((Date.now() - dateOfBirth.getTime()) / (1000 * 60 * 60 * 24));
 
-  if (ageInDays < 30) return 'newborn';
-  if (ageInDays < 90) return 'young';
-  if (ageInDays < 365) return 'juvenile';
+  if (ageInDays < 30) { return 'newborn'; }
+  if (ageInDays < 90) { return 'young'; }
+  if (ageInDays < 365) { return 'juvenile'; }
   return 'mature';
 }
 
@@ -696,9 +694,9 @@ function getAgeCategory(dateOfBirth) {
 function getDevelopmentalStage(dateOfBirth) {
   const ageInDays = Math.floor((Date.now() - dateOfBirth.getTime()) / (1000 * 60 * 60 * 24));
 
-  if (ageInDays < 14) return 'critical_period';
-  if (ageInDays < 60) return 'active_development';
-  if (ageInDays < 365) return 'stabilization';
+  if (ageInDays < 14) { return 'critical_period'; }
+  if (ageInDays < 60) { return 'active_development'; }
+  if (ageInDays < 365) { return 'stabilization'; }
   return 'mature_expression';
 }
 

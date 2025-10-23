@@ -349,7 +349,7 @@ describe('🏪 INTEGRATION: Groom Marketplace API', () => {
       expect(response.status).toBe(200);
       expect(response.body.success).toBe(true);
       expect(response.body.data.totalGrooms).toBe(0);
-      expect(response.body.data.lastRefresh).toBe("never");
+      expect(response.body.data.lastRefresh).toBe('never');
       expect(response.body.data.refreshCount).toBe(0);
     });
   });

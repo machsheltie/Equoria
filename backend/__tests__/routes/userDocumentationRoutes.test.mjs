@@ -1,13 +1,13 @@
 /**
  * 🧪 User Documentation Routes Tests
- * 
+ *
  * Comprehensive test suite for user documentation API endpoints including:
  * - Documentation listing and retrieval
  * - Search functionality across all documents
  * - Analytics and usage tracking
  * - Table of contents generation
  * - Multiple response formats (JSON, Markdown, Text)
- * 
+ *
  * Testing Approach: TDD with NO MOCKING
  * - Real API endpoint testing with actual documentation
  * - Authentic search functionality with real content
@@ -15,7 +15,7 @@
  * - Production-like documentation scenarios
  */
 
-import { jest } from '@jest/globals';
+// jest import removed - not used in this file
 import request from 'supertest';
 import express from 'express';
 import { writeFileSync, unlinkSync, existsSync, mkdirSync } from 'fs';
@@ -109,7 +109,7 @@ A: Complete the tutorial and hire a professional groom.
 
 ## Horse Care
 **Q: Why can't I train my horse?**
-A: Horses must be 3+ years old and respect training cooldowns.`
+A: Horses must be 3+ years old and respect training cooldowns.`,
     };
 
     // Write test files
@@ -152,8 +152,8 @@ A: Horses must be 3+ years old and respect training cooldowns.`
       expect(response.body.data.documents).toBeDefined();
       expect(response.body.data.tableOfContents).toBeDefined();
       expect(response.body.data.totalDocuments).toBe(4);
-      
-      const documents = response.body.data.documents;
+
+      const { documents } = response.body.data;
       expect(documents.length).toBe(4);
       expect(documents[0]).toHaveProperty('name');
       expect(documents[0]).toHaveProperty('title');
@@ -169,7 +169,7 @@ A: Horses must be 3+ years old and respect training cooldowns.`
       const toc = response.body.data.tableOfContents;
       expect(Array.isArray(toc)).toBe(true);
       expect(toc.length).toBe(4);
-      
+
       const featureGuideToc = toc.find(doc => doc.name === 'feature-guide');
       expect(featureGuideToc).toBeDefined();
       expect(featureGuideToc.title).toBe('🐎 Feature Guide');
@@ -187,8 +187,8 @@ A: Horses must be 3+ years old and respect training cooldowns.`
       expect(response.body.data.query).toBe('horse training');
       expect(response.body.data.results).toBeDefined();
       expect(response.body.data.totalResults).toBeGreaterThan(0);
-      
-      const results = response.body.data.results;
+
+      const { results } = response.body.data;
       expect(results.length).toBeGreaterThan(0);
       expect(results[0]).toHaveProperty('name');
       expect(results[0]).toHaveProperty('title');
@@ -210,9 +210,9 @@ A: Horses must be 3+ years old and respect training cooldowns.`
         .get('/api/user-docs/search?q=horse&limit=2&includeContent=true&highlight=true')
         .expect(200);
 
-      const results = response.body.data.results;
+      const { results } = response.body.data;
       expect(results.length).toBeLessThanOrEqual(2);
-      
+
       if (results.length > 0) {
         expect(results[0]).toHaveProperty('content');
         expect(results[0].content).toContain('**horse**');
@@ -243,7 +243,7 @@ A: Horses must be 3+ years old and respect training cooldowns.`
 
       expect(response.body.success).toBe(true);
       expect(response.body.data).toBeDefined();
-      
+
       const analytics = response.body.data;
       expect(analytics.totalDocuments).toBe(4);
       expect(analytics.totalViews).toBeGreaterThan(0);
@@ -263,7 +263,7 @@ A: Horses must be 3+ years old and respect training cooldowns.`
       expect(response.body.success).toBe(true);
       expect(response.body.data.tableOfContents).toBeDefined();
       expect(response.body.data.generatedAt).toBeDefined();
-      
+
       const toc = response.body.data.tableOfContents;
       expect(Array.isArray(toc)).toBe(true);
       expect(toc.length).toBe(4);
@@ -318,7 +318,7 @@ A: Horses must be 3+ years old and respect training cooldowns.`
       // View document multiple times
       await request(testApp).get('/api/user-docs/feature-guide');
       await request(testApp).get('/api/user-docs/feature-guide');
-      
+
       const response = await request(testApp)
         .get('/api/user-docs/feature-guide')
         .expect(200);
@@ -338,8 +338,8 @@ A: Horses must be 3+ years old and respect training cooldowns.`
       expect(response.body.data.documentTitle).toBe('🐎 Feature Guide');
       expect(response.body.data.sections).toBeDefined();
       expect(response.body.data.totalSections).toBeGreaterThan(0);
-      
-      const sections = response.body.data.sections;
+
+      const { sections } = response.body.data;
       expect(sections[0]).toHaveProperty('title');
       expect(sections[0]).toHaveProperty('level');
       expect(sections[0]).toHaveProperty('anchor');
@@ -366,8 +366,8 @@ A: Horses must be 3+ years old and respect training cooldowns.`
       expect(response.body.data.query).toBe('training');
       expect(response.body.data.matches).toBeDefined();
       expect(response.body.data.totalMatches).toBeGreaterThan(0);
-      
-      const matches = response.body.data.matches;
+
+      const { matches } = response.body.data;
       expect(matches[0]).toHaveProperty('lineNumber');
       expect(matches[0]).toHaveProperty('content');
       expect(matches[0]).toHaveProperty('context');
@@ -387,7 +387,7 @@ A: Horses must be 3+ years old and respect training cooldowns.`
         .get('/api/user-docs/feature-guide/search?q=horse&highlight=true')
         .expect(200);
 
-      const matches = response.body.data.matches;
+      const { matches } = response.body.data;
       if (matches.length > 0) {
         expect(matches[0].content).toContain('**horse**');
       }
@@ -432,7 +432,7 @@ A: Horses must be 3+ years old and respect training cooldowns.`
 
   describe('Error Handling', () => {
     test('handles invalid route gracefully', async () => {
-      const response = await request(testApp)
+      const _response = await request(testApp)
         .get('/api/user-docs/invalid/invalid/invalid')
         .expect(404);
 

@@ -1,9 +1,9 @@
 /**
  * Enhanced Reporting API Routes Tests
- * 
+ *
  * Tests enhanced trait history API with advanced epigenetic data and insights.
  * Uses TDD approach with NO MOCKING - real database operations for authentic validation.
- * 
+ *
  * Business Rules Tested:
  * - Enhanced trait history reporting with environmental context
  * - Comprehensive epigenetic insights and analysis reports
@@ -44,7 +44,7 @@ describe('Enhanced Reporting API Routes', () => {
     authToken = jwt.sign(
       { id: testUser.id, username: testUser.username },
       process.env.JWT_SECRET,
-      { expiresIn: '1h' }
+      { expiresIn: '1h' },
     );
 
     // Create test grooms
@@ -127,7 +127,7 @@ describe('Enhanced Reporting API Routes', () => {
               cost: 40.0,
               createdAt: new Date(now.getTime() - (i + 1) * 24 * 60 * 60 * 1000),
             },
-          })
+          }),
         );
       }
     }
@@ -144,12 +144,12 @@ describe('Enhanced Reporting API Routes', () => {
               horseId: horse.id,
               traitName: trait,
               sourceType: 'groom_interaction',
-              ageInDays: ageInDays,
+              ageInDays,
               timestamp: new Date(now.getTime() - 5 * 24 * 60 * 60 * 1000),
               isEpigenetic: true,
               influenceScore: 5,
             },
-          })
+          }),
         );
       }
     }
@@ -253,7 +253,7 @@ describe('Enhanced Reporting API Routes', () => {
         .post('/api/horses/compare-epigenetics')
         .set('Authorization', `Bearer ${authToken}`)
         .send({
-          horseIds: [testHorses[0].id, testHorses[1].id, testHorses[2].id]
+          horseIds: [testHorses[0].id, testHorses[1].id, testHorses[2].id],
         })
         .expect(200);
 
@@ -292,7 +292,7 @@ describe('Enhanced Reporting API Routes', () => {
           traitType: 'positive',
           discoveryMethod: 'milestone_evaluation',
           dateFrom: new Date(Date.now() - 10 * 24 * 60 * 60 * 1000).toISOString(),
-          dateTo: new Date().toISOString()
+          dateTo: new Date().toISOString(),
         })
         .set('Authorization', `Bearer ${authToken}`)
         .expect(200);
@@ -366,7 +366,7 @@ describe('Enhanced Reporting API Routes', () => {
         .post('/api/horses/compare-epigenetics')
         .set('Authorization', `Bearer ${authToken}`)
         .send({
-          horseIds: [] // Empty array should be invalid
+          horseIds: [], // Empty array should be invalid
         })
         .expect(400);
     });

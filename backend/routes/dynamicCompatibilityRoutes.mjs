@@ -1,9 +1,9 @@
 /**
  * Dynamic Compatibility Routes
- * 
+ *
  * API routes for advanced real-time compatibility analysis between groom personalities and horse temperaments.
  * Provides endpoints for compatibility scoring, factor analysis, outcome prediction, and recommendations.
- * 
+ *
  * Business Rules:
  * - Real-time compatibility scoring with contextual factors
  * - Environmental and situational modifiers

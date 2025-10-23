@@ -1,9 +1,9 @@
 /**
  * Enhanced Flag Assignment Engine Tests
- * 
+ *
  * Tests advanced flag assignment logic with personality-based modifiers and sophisticated trigger conditions.
  * Uses TDD approach with NO MOCKING - real database operations for authentic validation.
- * 
+ *
  * Business Rules Tested:
  * - Personality-based trigger condition modifiers
  * - Advanced pattern recognition for complex flags
@@ -14,11 +14,11 @@
  */
 
 import prisma from '../../../packages/database/prismaClient.mjs';
-import { 
+import {
   evaluateFlagTriggers,
   evaluatePersonalityModifiedTriggers,
   calculateFlagAssignmentScore,
-  analyzeTemporalPatterns
+  analyzeTemporalPatterns,
 } from '../../services/flagAssignmentEngine.mjs';
 
 describe('Enhanced Flag Assignment Engine', () => {
@@ -143,8 +143,8 @@ describe('Enhanced Flag Assignment Engine', () => {
 
   describe('evaluatePersonalityModifiedTriggers', () => {
     test('should apply calm groom personality modifiers correctly', async () => {
-      const horse = testHorses[0]; // Very young, high stress foal
-      
+      const [horse] = testHorses; // Very young, high stress foal
+
       // Create interactions with calm groom
       await prisma.groomInteraction.create({
         data: {
@@ -178,7 +178,7 @@ describe('Enhanced Flag Assignment Engine', () => {
       };
 
       const result = await evaluatePersonalityModifiedTriggers(horse, carePatterns);
-      
+
       expect(result).toBeDefined();
       expect(result.personalityModifiers).toBeDefined();
       expect(result.personalityModifiers.calm).toBeDefined();
@@ -186,8 +186,9 @@ describe('Enhanced Flag Assignment Engine', () => {
     });
 
     test('should apply energetic groom personality modifiers correctly', async () => {
+      // eslint-disable-next-line prefer-destructuring
       const horse = testHorses[1]; // 1 month old foal
-      
+
       // Create interactions with energetic groom
       await prisma.groomInteraction.create({
         data: {
@@ -228,7 +229,7 @@ describe('Enhanced Flag Assignment Engine', () => {
       };
 
       const result = await evaluatePersonalityModifiedTriggers(horse, carePatterns);
-      
+
       expect(result).toBeDefined();
       expect(result.personalityModifiers).toBeDefined();
       expect(result.personalityModifiers.energetic).toBeDefined();
@@ -237,9 +238,9 @@ describe('Enhanced Flag Assignment Engine', () => {
 
   describe('calculateFlagAssignmentScore', () => {
     test('should calculate comprehensive flag assignment scores', async () => {
-      const horse = testHorses[0];
+      const [horse] = testHorses;
       const flagName = 'brave';
-      
+
       const carePatterns = {
         consistency: { consistencyScore: 0.8 },
         bondTrends: { averageChange: 2.5, positiveRatio: 0.9 },
@@ -248,7 +249,7 @@ describe('Enhanced Flag Assignment Engine', () => {
       };
 
       const score = await calculateFlagAssignmentScore(horse, flagName, carePatterns);
-      
+
       expect(score).toBeDefined();
       expect(typeof score.totalScore).toBe('number');
       expect(score.components).toBeDefined();
@@ -260,9 +261,10 @@ describe('Enhanced Flag Assignment Engine', () => {
     });
 
     test('should apply age-based sensitivity modifiers', async () => {
-      const youngHorse = testHorses[0]; // 1 week old
+      const [youngHorse] = testHorses; // 1 week old
+      // eslint-disable-next-line prefer-destructuring
       const olderHorse = testHorses[2]; // 6 months old
-      
+
       const carePatterns = {
         consistency: { consistencyScore: 0.6 },
         bondTrends: { averageChange: 1, positiveRatio: 0.7 },
@@ -272,7 +274,7 @@ describe('Enhanced Flag Assignment Engine', () => {
 
       const youngScore = await calculateFlagAssignmentScore(youngHorse, 'brave', carePatterns);
       const olderScore = await calculateFlagAssignmentScore(olderHorse, 'brave', carePatterns);
-      
+
       // Younger horses should be more sensitive to triggers
       expect(youngScore.components.ageModifier).toBeGreaterThan(olderScore.components.ageModifier);
     });
@@ -280,8 +282,9 @@ describe('Enhanced Flag Assignment Engine', () => {
 
   describe('analyzeTemporalPatterns', () => {
     test('should analyze temporal patterns in care quality', async () => {
+      // eslint-disable-next-line prefer-destructuring
       const horse = testHorses[1];
-      
+
       // Create a series of interactions over time with varying quality
       const interactions = [];
       for (let i = 0; i < 5; i++) {
@@ -302,7 +305,7 @@ describe('Enhanced Flag Assignment Engine', () => {
       }
 
       const patterns = await analyzeTemporalPatterns(horse.id);
-      
+
       expect(patterns).toBeDefined();
       expect(patterns.trendAnalysis).toBeDefined();
       expect(patterns.trendAnalysis.bondTrend).toBeDefined();
@@ -313,8 +316,8 @@ describe('Enhanced Flag Assignment Engine', () => {
     });
 
     test('should identify critical periods for flag assignment', async () => {
-      const horse = testHorses[0]; // Very young foal
-      
+      const [horse] = testHorses; // Very young foal
+
       // Create interactions that simulate a critical period
       await prisma.groomInteraction.create({
         data: {
@@ -331,10 +334,10 @@ describe('Enhanced Flag Assignment Engine', () => {
       });
 
       const patterns = await analyzeTemporalPatterns(horse.id);
-      
+
       expect(patterns.criticalPeriods).toBeDefined();
       expect(Array.isArray(patterns.criticalPeriods)).toBe(true);
-      
+
       if (patterns.criticalPeriods.length > 0) {
         expect(patterns.criticalPeriods[0]).toHaveProperty('period');
         expect(patterns.criticalPeriods[0]).toHaveProperty('severity');
@@ -345,8 +348,9 @@ describe('Enhanced Flag Assignment Engine', () => {
 
   describe('Advanced Flag Assignment Integration', () => {
     test('should integrate all enhancement features for comprehensive evaluation', async () => {
+      // eslint-disable-next-line prefer-destructuring
       const horse = testHorses[2]; // 6 months old
-      
+
       // Create a complex care pattern with multiple grooms and varying quality
       await Promise.all([
         prisma.groomInteraction.create({
@@ -386,15 +390,15 @@ describe('Enhanced Flag Assignment Engine', () => {
       };
 
       const evaluation = await evaluateFlagTriggers(horse, carePatterns);
-      
+
       expect(evaluation).toBeDefined();
       expect(evaluation.eligibleFlags).toBeDefined();
       expect(Array.isArray(evaluation.eligibleFlags)).toBe(true);
       expect(evaluation.triggerConditions).toBeDefined();
-      
+
       // Should identify positive flags due to excellent care
-      const positiveFlags = evaluation.eligibleFlags.filter(flag => 
-        ['brave', 'confident', 'affectionate', 'social'].includes(flag)
+      const positiveFlags = evaluation.eligibleFlags.filter(flag =>
+        ['brave', 'confident', 'affectionate', 'social'].includes(flag),
       );
       expect(positiveFlags.length).toBeGreaterThan(0);
     });

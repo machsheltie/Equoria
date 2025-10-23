@@ -1,13 +1,13 @@
 /**
  * 🧪 API Optimization Routes Tests
- * 
+ *
  * Comprehensive test suite for API optimization management endpoints including:
  * - Performance metrics retrieval
  * - Compression statistics and analytics
  * - Cache performance monitoring
  * - Optimization testing tools
  * - Recommendation generation
- * 
+ *
  * Testing Approach: TDD with NO MOCKING
  * - Real API endpoint testing with authentication
  * - Authentic performance metrics validation
@@ -15,13 +15,13 @@
  * - Production-like optimization scenarios
  */
 
-import { jest } from '@jest/globals';
+// jest import removed - not used in this file
 import request from 'supertest';
 import express from 'express';
 import jwt from 'jsonwebtoken';
 import apiOptimizationRoutes from '../../routes/apiOptimizationRoutes.mjs';
 import { responseHandler } from '../../utils/apiResponse.mjs';
-import { authenticateToken } from '../../middleware/auth.mjs';
+// authenticateToken import removed - not used in this file
 import prisma from '../../../packages/database/prismaClient.mjs';
 
 describe('API Optimization Routes', () => {
@@ -45,7 +45,7 @@ describe('API Optimization Routes', () => {
     authToken = jwt.sign(
       { id: testUser.id, username: testUser.username },
       process.env.JWT_SECRET || 'test-secret',
-      { expiresIn: '1h' }
+      { expiresIn: '1h' },
     );
 
     // Create test Express app
@@ -106,7 +106,7 @@ describe('API Optimization Routes', () => {
 
     test('accepts different timeframe parameters', async () => {
       const timeframes = ['1h', '24h', '7d', '30d'];
-      
+
       for (const timeframe of timeframes) {
         const response = await request(testApp)
           .get(`/api/optimization/performance?timeframe=${timeframe}`)

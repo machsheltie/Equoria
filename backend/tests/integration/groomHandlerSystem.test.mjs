@@ -127,8 +127,8 @@ describe('Groom Handler System Integration Tests', () => {
         expect(response.status).toBe(200);
         expect(response.body.success).toBe(true);
         expect(response.body.data.hasHandler).toBe(false);
-        expect(response.body.data.handler).toBe("none");
-        expect(response.body.data.assignment).toBe("none");
+        expect(response.body.data.handler).toBe('none');
+        expect(response.body.data.assignment).toBe('none');
         expect(response.body.data.horse.id).toBe(noHandlerHorse.id);
       } finally {
         // Clean up

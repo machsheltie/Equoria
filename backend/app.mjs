@@ -82,7 +82,7 @@ import { setupSwaggerDocs, addDocumentationHeaders } from './middleware/swaggerS
 import {
   responseOptimization,
   paginationMiddleware,
-  performanceMonitoring
+  performanceMonitoring,
 } from './middleware/responseOptimization.mjs';
 import { createCompressionMiddleware } from './services/apiResponseOptimizationService.mjs';
 import {

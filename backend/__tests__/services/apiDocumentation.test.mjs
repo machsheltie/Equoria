@@ -1,13 +1,13 @@
 /**
  * 🧪 API Documentation Service Tests
- * 
+ *
  * Comprehensive test suite for API documentation service including:
  * - OpenAPI specification loading and validation
  * - Endpoint registration and management
  * - Schema registration and validation
  * - Documentation generation and metrics
  * - Health monitoring and analytics
- * 
+ *
  * Testing Approach: TDD with NO MOCKING
  * - Real file system operations with test specifications
  * - Authentic OpenAPI validation
@@ -15,7 +15,7 @@
  * - Production-like documentation scenarios
  */
 
-import { jest } from '@jest/globals';
+// jest import removed - not used in this file
 import { writeFileSync, unlinkSync, existsSync } from 'fs';
 import { join, dirname } from 'path';
 import { fileURLToPath } from 'url';
@@ -23,7 +23,7 @@ import {
   getApiDocumentationService,
   registerEndpoint,
   registerSchema,
-  generateDocumentation,
+  _generateDocumentation,
   getDocumentationMetrics,
   getDocumentationHealth,
 } from '../../services/apiDocumentationService.mjs';
@@ -64,9 +64,9 @@ components:
         name:
           type: string
 `;
-    
+
     writeFileSync(testSwaggerPath, testSpec.trim());
-    
+
     // Create service instance with test path
     docService = getApiDocumentationService();
     docService.swaggerPath = testSwaggerPath;
@@ -77,7 +77,7 @@ components:
     if (existsSync(testSwaggerPath)) {
       unlinkSync(testSwaggerPath);
     }
-    
+
     // Reset service state
     docService.endpointRegistry.clear();
     docService.schemaRegistry.clear();
@@ -86,7 +86,7 @@ components:
   describe('Specification Loading and Saving', () => {
     test('loads OpenAPI specification correctly', () => {
       const spec = docService.loadSpecification();
-      
+
       expect(spec).toBeDefined();
       expect(spec.openapi).toBe('3.0.3');
       expect(spec.info.title).toBe('Test API');
@@ -98,16 +98,16 @@ components:
     test('saves OpenAPI specification correctly', () => {
       const spec = docService.loadSpecification();
       spec.info.description = 'Updated description';
-      
+
       docService.saveSpecification(spec);
-      
+
       const reloadedSpec = docService.loadSpecification();
       expect(reloadedSpec.info.description).toBe('Updated description');
     });
 
     test('throws error when specification file not found', () => {
       unlinkSync(testSwaggerPath);
-      
+
       expect(() => {
         docService.loadSpecification();
       }).toThrow('OpenAPI specification file not found');
@@ -133,7 +133,7 @@ components:
       expect(endpointInfo.summary).toBe('Create user');
       expect(endpointInfo.tags).toEqual(['Users']);
       expect(endpointInfo.registeredAt).toBeDefined();
-      
+
       expect(docService.endpointRegistry.has('POST /api/users')).toBe(true);
     });
 
@@ -142,12 +142,12 @@ components:
         summary: 'List users',
         tags: ['Users'],
       });
-      
+
       docService.registerEndpoint('POST', '/api/users', {
         summary: 'Create user',
         tags: ['Users'],
       });
-      
+
       docService.registerEndpoint('GET', '/api/horses', {
         summary: 'List horses',
         tags: ['Horses'],

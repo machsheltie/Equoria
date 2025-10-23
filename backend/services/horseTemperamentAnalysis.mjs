@@ -1,9 +1,9 @@
 /**
  * Horse Temperament Analysis Service
- * 
+ *
  * Analyzes horse temperaments based on interaction history and flag patterns.
  * Provides comprehensive temperament classification and behavioral analysis.
- * 
+ *
  * Business Rules:
  * - Temperament analysis from interaction patterns and epigenetic flags
  * - Behavioral trend analysis over time
@@ -156,7 +156,7 @@ export async function analyzeHorseTemperament(horseId) {
 
     // Analyze temperament using available data
     const temperamentAnalysis = await performTemperamentAnalysis(horse, interactions, dataSource);
-    
+
     return {
       horseId: horse.id,
       horseName: horse.name,
@@ -197,18 +197,18 @@ export async function classifyTemperamentFromFlags(flags) {
 
     // Score each temperament type based on flag matches
     const temperamentScores = {};
-    
+
     Object.entries(TEMPERAMENT_CLASSIFICATIONS).forEach(([tempType, tempDef]) => {
       let score = 0;
       let matches = 0;
-      
+
       tempDef.traits.forEach(trait => {
         if (flags.includes(trait)) {
           score += 1;
           matches += 1;
         }
       });
-      
+
       // Normalize score by number of possible traits
       temperamentScores[tempType] = {
         score: tempDef.traits.length > 0 ? score / tempDef.traits.length : 0,
@@ -242,14 +242,14 @@ export async function classifyTemperamentFromFlags(flags) {
     // Check for conflicting flags
     const positiveFlags = flags.filter(flag => ['brave', 'confident', 'social', 'calm'].includes(flag));
     const negativeFlags = flags.filter(flag => ['fearful', 'insecure', 'reactive', 'fragile'].includes(flag));
-    
+
     if (positiveFlags.length > 0 && negativeFlags.length > 0) {
       bestMatch = 'complex';
       confidence = Math.min(confidence, 0.7);
     }
 
     const classification = TEMPERAMENT_CLASSIFICATIONS[bestMatch];
-    
+
     return {
       primaryTemperament: bestMatch,
       temperamentTraits: classification.traits,
@@ -303,9 +303,7 @@ export async function analyzeBehavioralTrends(horseId) {
     const avgTrendScore = trendScores.reduce((sum, score) => sum + score, 0) / trendScores.length;
 
     let overallDirection;
-    if (avgTrendScore > 0.3) overallDirection = 'positive';
-    else if (avgTrendScore < -0.3) overallDirection = 'negative';
-    else overallDirection = 'stable';
+    if (avgTrendScore > 0.3) { overallDirection = 'positive'; } else if (avgTrendScore < -0.3) { overallDirection = 'negative'; } else { overallDirection = 'stable'; }
 
     const trendStrength = Math.abs(avgTrendScore);
 
@@ -431,7 +429,7 @@ export async function analyzeBondingPreferences(horseId) {
 
     interactions.forEach(interaction => {
       const personality = interaction.groom?.groomPersonality;
-      const interactionType = interaction.interactionType;
+      const { interactionType } = interaction;
       const bondingChange = interaction.bondingChange || 0;
 
       if (personality) {
@@ -530,9 +528,7 @@ export async function detectTemperamentChanges(horseId) {
     const changeStrength = Math.abs(overallChange);
 
     let changeDirection;
-    if (overallChange > 0.5) changeDirection = 'positive';
-    else if (overallChange < -0.5) changeDirection = 'negative';
-    else changeDirection = 'neutral';
+    if (overallChange > 0.5) { changeDirection = 'positive'; } else if (overallChange < -0.5) { changeDirection = 'negative'; } else { changeDirection = 'neutral'; }
 
     const changeDetected = changeStrength > 0.3;
 
@@ -603,9 +599,9 @@ async function performTemperamentAnalysis(horse, interactions, dataSource) {
     analysis.confidenceLevel = Math.max(0.1, Math.min(0.9, horse.bondScore / 40));
     analysis.stressResilience = Math.max(0.1, Math.min(0.9, (10 - horse.stressLevel) / 10));
     analysis.socialTendency = horse.epigeneticFlags.includes('social') ? 0.8 :
-                             horse.epigeneticFlags.includes('antisocial') ? 0.2 : 0.5;
+      horse.epigeneticFlags.includes('antisocial') ? 0.2 : 0.5;
     analysis.adaptability = horse.epigeneticFlags.includes('curious') ? 0.7 :
-                           horse.epigeneticFlags.includes('fearful') ? 0.3 : 0.5;
+      horse.epigeneticFlags.includes('fearful') ? 0.3 : 0.5;
   } else {
     // Basic stats only
     analysis.confidenceLevel = Math.max(0.1, Math.min(0.9, horse.bondScore / 40));
@@ -675,9 +671,7 @@ function calculateTrend(values) {
   const slope = (n * sumXY - sumX * sumY) / (n * sumXX - sumX * sumX);
 
   let direction;
-  if (slope > 0.1) direction = 'improving';
-  else if (slope < -0.1) direction = 'declining';
-  else direction = 'stable';
+  if (slope > 0.1) { direction = 'improving'; } else if (slope < -0.1) { direction = 'declining'; } else { direction = 'stable'; }
 
   return {
     direction,
@@ -701,7 +695,7 @@ function calculateQualityTrend(interactions) {
 function calculateStressThreshold(horse, interactions) {
   const baseThreshold = (10 - horse.stressLevel) / 10; // Higher stress = lower threshold
 
-  if (interactions.length === 0) return baseThreshold;
+  if (interactions.length === 0) { return baseThreshold; }
 
   const stressSpikes = interactions.filter(i => (i.stressChange || 0) >= 3).length;
   const spikeRatio = stressSpikes / interactions.length;
@@ -713,7 +707,7 @@ function calculateStressThreshold(horse, interactions) {
  * Calculate recovery rate
  */
 function calculateRecoveryRate(interactions) {
-  if (interactions.length === 0) return 0.5;
+  if (interactions.length === 0) { return 0.5; }
 
   const stressReductions = interactions.filter(i => (i.stressChange || 0) <= -2).length;
   return Math.min(1.0, stressReductions / (interactions.length * 0.3)); // Expect 30% to be stress-reducing
@@ -757,7 +751,7 @@ function identifyCopingMechanisms(interactions) {
  * Calculate trust level
  */
 function calculateTrustLevel(interactions) {
-  if (interactions.length === 0) return 0.5;
+  if (interactions.length === 0) { return 0.5; }
 
   const positiveInteractions = interactions.filter(i => (i.bondingChange || 0) > 0).length;
   const excellentInteractions = interactions.filter(i => i.quality === 'excellent').length;

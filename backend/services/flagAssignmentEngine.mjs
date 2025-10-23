@@ -1,10 +1,10 @@
 /**
  * Flag Assignment Engine
- * 
+ *
  * Core flag assignment logic with trigger condition validation.
  * Evaluates care patterns against epigenetic flag definitions to determine
  * which flags should be assigned to horses based on their care history.
- * 
+ *
  * Business Rules:
  * - Maximum 5 flags per horse
  * - Flags are permanent once assigned
@@ -30,7 +30,7 @@ export async function evaluateFlagTriggers(horse, carePatterns) {
     const currentFlags = horse.epigeneticFlags || [];
 
     // Evaluate each flag definition against care patterns
-    for (const [flagKey, flagDef] of Object.entries(EPIGENETIC_FLAG_DEFINITIONS)) {
+    for (const [_flagKey, flagDef] of Object.entries(EPIGENETIC_FLAG_DEFINITIONS)) {
       const flagName = flagDef.name;
 
       // Skip if horse already has this flag
@@ -50,11 +50,11 @@ export async function evaluateFlagTriggers(horse, carePatterns) {
 
       // Evaluate trigger conditions
       const triggerResult = evaluateTriggerConditions(flagDef, carePatterns, horse);
-      
+
       if (triggerResult.triggered) {
         eligibleFlags.push(flagName);
         triggerConditions[flagName] = triggerResult.conditions;
-        
+
         logger.info(`Flag ${flagName} triggered for horse ${horse.name}: ${triggerResult.reason}`);
       }
     }
@@ -111,38 +111,38 @@ function hasConflictingFlags(flagDef, currentFlags) {
  */
 function evaluateTriggerConditions(flagDef, carePatterns, horse) {
   const conditions = flagDef.triggerConditions;
-  const triggered = { triggered: false, reason: '', conditions: {} };
+  const _triggered = { triggered: false, reason: '', conditions: {} };
 
   try {
     // Evaluate based on flag name and common patterns
     switch (flagDef.name) {
       case 'brave':
         return evaluateBraveTriggers(conditions, carePatterns, horse);
-      
+
       case 'affectionate':
         return evaluateAffectionateTriggers(conditions, carePatterns, horse);
-      
+
       case 'confident':
         return evaluateConfidentTriggers(conditions, carePatterns, horse);
-      
+
       case 'social':
         return evaluateSocialTriggers(conditions, carePatterns, horse);
-      
+
       case 'calm':
         return evaluateCalmTriggers(conditions, carePatterns, horse);
-      
+
       case 'fearful':
         return evaluateFearfulTriggers(conditions, carePatterns, horse);
-      
+
       case 'insecure':
         return evaluateInsecureTriggers(conditions, carePatterns, horse);
-      
+
       case 'antisocial':
         return evaluateAntisocialTriggers(conditions, carePatterns, horse);
-      
+
       case 'fragile':
         return evaluateFragileTriggers(conditions, carePatterns, horse);
-      
+
       default:
         // Generic evaluation for undefined flags
         return evaluateGenericTriggers(flagDef, carePatterns, horse);
@@ -157,9 +157,9 @@ function evaluateTriggerConditions(flagDef, carePatterns, horse) {
 /**
  * Evaluate triggers for BRAVE flag
  */
-function evaluateBraveTriggers(conditions, carePatterns, horse) {
+function evaluateBraveTriggers(conditions, carePatterns, _horse) {
   const { consistency, stressPatterns, taskDiversity } = carePatterns;
-  
+
   // Brave flag: consistent care with stress management and task variety
   const consistentCare = consistency.consistencyScore > 0.7;
   const goodStressManagement = stressPatterns.averageReduction < -1; // Effective stress reduction
@@ -183,9 +183,9 @@ function evaluateBraveTriggers(conditions, carePatterns, horse) {
 /**
  * Evaluate triggers for AFFECTIONATE flag
  */
-function evaluateAffectionateTriggers(conditions, carePatterns, horse) {
+function evaluateAffectionateTriggers(conditions, carePatterns, _horse) {
   const { consistency, bondTrends, groomConsistency } = carePatterns;
-  
+
   // Affectionate flag: frequent positive interactions with consistent groom
   const frequentCare = consistency.averageInteractionsPerDay > 0.8;
   const positiveBondTrend = bondTrends.trend === 'improving' || bondTrends.averageChange > 0;
@@ -210,8 +210,8 @@ function evaluateAffectionateTriggers(conditions, carePatterns, horse) {
  * Evaluate triggers for CONFIDENT flag
  */
 function evaluateConfidentTriggers(conditions, carePatterns, horse) {
-  const { bondTrends, stressPatterns, taskDiversity } = carePatterns;
-  
+  const { bondTrends, _stressPatterns, taskDiversity } = carePatterns;
+
   // Confident flag: positive bond development with diverse experiences
   const strongBondGrowth = bondTrends.averageChange > 1.5;
   const lowStress = horse.stressLevel < 5;
@@ -235,9 +235,9 @@ function evaluateConfidentTriggers(conditions, carePatterns, horse) {
 /**
  * Evaluate triggers for FEARFUL flag (negative)
  */
-function evaluateFearfulTriggers(conditions, carePatterns, horse) {
-  const { stressPatterns, neglectPatterns, consistency } = carePatterns;
-  
+function evaluateFearfulTriggers(conditions, carePatterns, _horse) {
+  const { stressPatterns, _neglectPatterns, consistency } = carePatterns;
+
   // Fearful flag: high stress with poor care consistency
   const highStressSpikes = stressPatterns.stressSpikes.length > 3;
   const poorStressManagement = stressPatterns.averageReduction > -0.5;
@@ -261,9 +261,9 @@ function evaluateFearfulTriggers(conditions, carePatterns, horse) {
 /**
  * Evaluate triggers for INSECURE flag (negative)
  */
-function evaluateInsecureTriggers(conditions, carePatterns, horse) {
+function evaluateInsecureTriggers(conditions, carePatterns, _horse) {
   const { groomConsistency, bondTrends, neglectPatterns } = carePatterns;
-  
+
   // Insecure flag: frequent groom changes with declining bond
   const frequentGroomChanges = groomConsistency.groomChanges > 2;
   const decliningBond = bondTrends.trend === 'declining';
@@ -287,12 +287,12 @@ function evaluateInsecureTriggers(conditions, carePatterns, horse) {
 /**
  * Generic trigger evaluation for undefined flags
  */
-function evaluateGenericTriggers(flagDef, carePatterns, horse) {
+function evaluateGenericTriggers(flagDef, carePatterns, _horse) {
   // Basic evaluation based on flag type
   if (flagDef.type === FLAG_TYPES.POSITIVE) {
     const goodCare = carePatterns.consistency.consistencyScore > 0.6;
     const positiveBond = carePatterns.bondTrends.averageChange > 0;
-    
+
     return {
       triggered: goodCare && positiveBond,
       reason: 'Generic positive flag evaluation',
@@ -301,7 +301,7 @@ function evaluateGenericTriggers(flagDef, carePatterns, horse) {
   } else if (flagDef.type === FLAG_TYPES.NEGATIVE) {
     const poorCare = carePatterns.consistency.consistencyScore < 0.4;
     const negativeBond = carePatterns.bondTrends.averageChange < 0;
-    
+
     return {
       triggered: poorCare || negativeBond,
       reason: 'Generic negative flag evaluation',
@@ -317,19 +317,19 @@ function evaluateGenericTriggers(flagDef, carePatterns, horse) {
 }
 
 // Placeholder functions for other flag types
-function evaluateSocialTriggers(conditions, carePatterns, horse) {
+function evaluateSocialTriggers(_conditions, _carePatterns, _horse) {
   return { triggered: false, reason: 'Not implemented', conditions: {} };
 }
 
-function evaluateCalmTriggers(conditions, carePatterns, horse) {
+function evaluateCalmTriggers(_conditions, _carePatterns, _horse) {
   return { triggered: false, reason: 'Not implemented', conditions: {} };
 }
 
-function evaluateAntisocialTriggers(conditions, carePatterns, horse) {
+function evaluateAntisocialTriggers(_conditions, _carePatterns, _horse) {
   return { triggered: false, reason: 'Not implemented', conditions: {} };
 }
 
-function evaluateFragileTriggers(conditions, carePatterns, horse) {
+function evaluateFragileTriggers(_conditions, _carePatterns, _horse) {
   return { triggered: false, reason: 'Not implemented', conditions: {} };
 }
 
@@ -521,7 +521,7 @@ function analyzeGroomPersonalities(interactions) {
 /**
  * Calculate personality-based modifiers for flag triggers
  */
-function calculatePersonalityModifiers(personalityStats, horse) {
+function calculatePersonalityModifiers(personalityStats, _horse) {
   const modifiers = {};
 
   // Calm personality effects
@@ -536,7 +536,7 @@ function calculatePersonalityModifiers(personalityStats, horse) {
 
   // Energetic personality effects
   if (personalityStats.effects.energetic) {
-    const energeticEffects = personalityStats.effects.energetic;
+    const _energeticEffects = personalityStats.effects.energetic;
     modifiers.energetic = {
       stimulationBonus: 1.2, // Better for curious, brave flags
       stressSensitivity: 1.1, // Slightly more stress-inducing
@@ -546,7 +546,7 @@ function calculatePersonalityModifiers(personalityStats, horse) {
 
   // Methodical personality effects
   if (personalityStats.effects.methodical) {
-    const methodicalEffects = personalityStats.effects.methodical;
+    const _methodicalEffects = personalityStats.effects.methodical;
     modifiers.methodical = {
       consistencyBonus: 1.3, // Excellent for consistent care
       qualityBonus: 1.2, // Higher quality interactions
@@ -628,14 +628,14 @@ function calculateBaseScore(flagDef, carePatterns) {
  */
 function calculateAgeModifier(horse) {
   const ageInDays = Math.floor(
-    (Date.now() - new Date(horse.dateOfBirth)) / (1000 * 60 * 60 * 24)
+    (Date.now() - new Date(horse.dateOfBirth)) / (1000 * 60 * 60 * 24),
   );
 
   // Younger horses are more sensitive to flag triggers
-  if (ageInDays <= 30) return 1.5; // Very young (0-1 month)
-  if (ageInDays <= 90) return 1.3; // Young (1-3 months)
-  if (ageInDays <= 180) return 1.1; // Moderate (3-6 months)
-  if (ageInDays <= 365) return 1.0; // Older (6-12 months)
+  if (ageInDays <= 30) { return 1.5; } // Very young (0-1 month)
+  if (ageInDays <= 90) { return 1.3; } // Young (1-3 months)
+  if (ageInDays <= 180) { return 1.1; } // Moderate (3-6 months)
+  if (ageInDays <= 365) { return 1.0; } // Older (6-12 months)
   return 0.8; // Mature (1+ years)
 }
 
@@ -657,7 +657,7 @@ async function calculatePersonalityModifier(horse, flagName) {
       },
     });
 
-    if (recentInteractions.length === 0) return 1.0;
+    if (recentInteractions.length === 0) { return 1.0; }
 
     const personalityStats = analyzeGroomPersonalities(recentInteractions);
     const modifiers = calculatePersonalityModifiers(personalityStats, horse);
@@ -729,11 +729,14 @@ function calculateAssignmentThreshold(flagDef, horse) {
 
   // Adjust based on horse age (younger horses have lower thresholds)
   const ageInDays = Math.floor(
-    (Date.now() - new Date(horse.dateOfBirth)) / (1000 * 60 * 60 * 24)
+    (Date.now() - new Date(horse.dateOfBirth)) / (1000 * 60 * 60 * 24),
   );
 
-  if (ageInDays <= 30) baseThreshold *= 0.8; // Very young
-  else if (ageInDays <= 90) baseThreshold *= 0.9; // Young
+  if (ageInDays <= 30) {
+    baseThreshold *= 0.8; // Very young
+  } else if (ageInDays <= 90) {
+    baseThreshold *= 0.9; // Young
+  }
 
   return baseThreshold;
 }
@@ -769,11 +772,11 @@ function analyzeTrends(interactions) {
 
   return {
     bondTrend: lateBond > earlyBond + 0.5 ? 'improving' :
-               lateBond < earlyBond - 0.5 ? 'declining' : 'stable',
+      lateBond < earlyBond - 0.5 ? 'declining' : 'stable',
     stressTrend: lateStress < earlyStress - 0.5 ? 'decreasing' :
-                 lateStress > earlyStress + 0.5 ? 'increasing' : 'stable',
+      lateStress > earlyStress + 0.5 ? 'increasing' : 'stable',
     qualityTrend: lateQuality > earlyQuality + 0.3 ? 'improving' :
-                  lateQuality < earlyQuality - 0.3 ? 'declining' : 'stable',
+      lateQuality < earlyQuality - 0.3 ? 'declining' : 'stable',
   };
 }
 
@@ -788,7 +791,7 @@ function identifyPeriodicPatterns(interactions) {
   const dayGroups = {};
   interactions.forEach(interaction => {
     const dayOfWeek = interaction.createdAt.getDay();
-    if (!dayGroups[dayOfWeek]) dayGroups[dayOfWeek] = [];
+    if (!dayGroups[dayOfWeek]) { dayGroups[dayOfWeek] = []; }
     dayGroups[dayOfWeek].push(interaction);
   });
 

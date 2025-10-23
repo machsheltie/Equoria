@@ -1,9 +1,9 @@
 /**
  * Dynamic Compatibility Scoring Tests
- * 
+ *
  * Tests advanced real-time compatibility analysis between groom personalities and horse temperaments.
  * Uses TDD approach with NO MOCKING - real database operations for authentic validation.
- * 
+ *
  * Business Rules Tested:
  * - Real-time compatibility scoring with contextual factors
  * - Environmental and situational modifiers
@@ -14,13 +14,13 @@
  */
 
 import prisma from '../../../packages/database/prismaClient.mjs';
-import { 
+import {
   calculateDynamicCompatibility,
   analyzeCompatibilityFactors,
   predictInteractionOutcome,
   updateCompatibilityHistory,
   getOptimalGroomRecommendations,
-  analyzeCompatibilityTrends
+  analyzeCompatibilityTrends,
 } from '../../services/dynamicCompatibilityScoring.mjs';
 
 describe('Dynamic Compatibility Scoring', () => {
@@ -152,9 +152,9 @@ describe('Dynamic Compatibility Scoring', () => {
 
   describe('calculateDynamicCompatibility', () => {
     test('should calculate high compatibility for calm groom with fearful horse', async () => {
-      const calmGroom = testGrooms[0]; // Expert calm groom
-      const fearfulHorse = testHorses[0]; // High-stress fearful horse
-      
+      const [calmGroom] = testGrooms; // Expert calm groom
+      const [fearfulHorse] = testHorses; // High-stress fearful horse
+
       const context = {
         taskType: 'trust_building',
         timeOfDay: 'morning',
@@ -164,7 +164,7 @@ describe('Dynamic Compatibility Scoring', () => {
       };
 
       const compatibility = await calculateDynamicCompatibility(calmGroom.id, fearfulHorse.id, context);
-      
+
       expect(compatibility).toBeDefined();
       expect(compatibility.overallScore).toBeGreaterThan(0.7); // High compatibility
       expect(compatibility.baseCompatibility).toBeDefined();
@@ -173,15 +173,16 @@ describe('Dynamic Compatibility Scoring', () => {
       expect(compatibility.stressSituationModifier).toBeDefined();
       expect(compatibility.taskSpecificModifier).toBeDefined();
       expect(compatibility.confidence).toBeGreaterThan(0.8);
-      
+
       // Should identify this as an excellent match
       expect(compatibility.recommendationLevel).toBe('highly_recommended');
     });
 
     test('should calculate low compatibility for energetic groom with fearful horse', async () => {
+      // eslint-disable-next-line prefer-destructuring
       const energeticGroom = testGrooms[1]; // Novice energetic groom
-      const fearfulHorse = testHorses[0]; // High-stress fearful horse
-      
+      const [fearfulHorse] = testHorses; // High-stress fearful horse
+
       const context = {
         taskType: 'trust_building',
         timeOfDay: 'afternoon',
@@ -191,16 +192,18 @@ describe('Dynamic Compatibility Scoring', () => {
       };
 
       const compatibility = await calculateDynamicCompatibility(energeticGroom.id, fearfulHorse.id, context);
-      
+
       expect(compatibility.overallScore).toBeLessThan(0.4); // Low compatibility
       expect(compatibility.stressSituationModifier).toBeLessThan(1.0); // Penalty for high stress
       expect(compatibility.recommendationLevel).toBe('not_recommended');
     });
 
     test('should calculate moderate compatibility with contextual improvements', async () => {
+      // eslint-disable-next-line prefer-destructuring
       const methodicalGroom = testGrooms[2]; // Experienced methodical groom
+      // eslint-disable-next-line prefer-destructuring
       const moderateHorse = testHorses[2]; // Moderate temperament horse
-      
+
       const context = {
         taskType: 'hoof_handling',
         timeOfDay: 'morning',
@@ -210,7 +213,7 @@ describe('Dynamic Compatibility Scoring', () => {
       };
 
       const compatibility = await calculateDynamicCompatibility(methodicalGroom.id, moderateHorse.id, context);
-      
+
       expect(compatibility.overallScore).toBeGreaterThan(0.5);
       expect(compatibility.overallScore).toBeLessThan(0.8);
       expect(compatibility.taskSpecificModifier).toBeGreaterThan(1.0); // Methodical good for technical tasks
@@ -218,10 +221,12 @@ describe('Dynamic Compatibility Scoring', () => {
     });
 
     test('should apply experience bonuses correctly', async () => {
-      const expertGroom = testGrooms[0]; // Expert level
+      const [expertGroom] = testGrooms; // Expert level
+      // eslint-disable-next-line prefer-destructuring
       const noviceGroom = testGrooms[1]; // Novice level
+      // eslint-disable-next-line prefer-destructuring
       const horse = testHorses[1]; // Confident horse
-      
+
       const context = {
         taskType: 'desensitization',
         timeOfDay: 'morning',
@@ -232,7 +237,7 @@ describe('Dynamic Compatibility Scoring', () => {
 
       const expertCompatibility = await calculateDynamicCompatibility(expertGroom.id, horse.id, context);
       const noviceCompatibility = await calculateDynamicCompatibility(noviceGroom.id, horse.id, context);
-      
+
       expect(expertCompatibility.experienceBonus).toBeGreaterThan(noviceCompatibility.experienceBonus);
       expect(expertCompatibility.overallScore).toBeGreaterThan(noviceCompatibility.overallScore);
     });
@@ -240,11 +245,11 @@ describe('Dynamic Compatibility Scoring', () => {
 
   describe('analyzeCompatibilityFactors', () => {
     test('should analyze all compatibility factors comprehensively', async () => {
-      const groom = testGrooms[0];
-      const horse = testHorses[0];
-      
+      const [groom] = testGrooms;
+      const [horse] = testHorses;
+
       const factors = await analyzeCompatibilityFactors(groom.id, horse.id);
-      
+
       expect(factors).toBeDefined();
       expect(factors.personalityMatch).toBeDefined();
       expect(factors.experienceLevel).toBeDefined();
@@ -255,30 +260,31 @@ describe('Dynamic Compatibility Scoring', () => {
       expect(Array.isArray(factors.riskFactors)).toBe(true);
       expect(factors.strengthFactors).toBeDefined();
       expect(Array.isArray(factors.strengthFactors)).toBe(true);
-      
+
       // Should identify specific factors
       expect(factors.personalityMatch.score).toBeGreaterThan(0.6);
       expect(factors.stressCompatibility.score).toBeGreaterThan(0.7);
     });
 
     test('should identify risk factors for poor matches', async () => {
+      // eslint-disable-next-line prefer-destructuring
       const energeticGroom = testGrooms[1];
-      const fearfulHorse = testHorses[0];
-      
+      const [fearfulHorse] = testHorses;
+
       const factors = await analyzeCompatibilityFactors(energeticGroom.id, fearfulHorse.id);
-      
+
       expect(factors.riskFactors.length).toBeGreaterThan(0);
-      expect(factors.riskFactors.some(factor => 
-        factor.includes('energetic') || factor.includes('stress') || factor.includes('fearful')
+      expect(factors.riskFactors.some(factor =>
+        factor.includes('energetic') || factor.includes('stress') || factor.includes('fearful'),
       )).toBe(true);
     });
   });
 
   describe('predictInteractionOutcome', () => {
     test('should predict positive outcome for good compatibility', async () => {
-      const calmGroom = testGrooms[0];
-      const fearfulHorse = testHorses[0];
-      
+      const [calmGroom] = testGrooms;
+      const [fearfulHorse] = testHorses;
+
       const context = {
         taskType: 'trust_building',
         duration: 30,
@@ -286,14 +292,14 @@ describe('Dynamic Compatibility Scoring', () => {
       };
 
       const prediction = await predictInteractionOutcome(calmGroom.id, fearfulHorse.id, context);
-      
+
       expect(prediction).toBeDefined();
       expect(prediction.predictedBondingChange).toBeDefined();
       expect(prediction.predictedStressChange).toBeDefined();
       expect(prediction.predictedQuality).toBeDefined();
       expect(prediction.successProbability).toBeDefined();
       expect(prediction.confidence).toBeDefined();
-      
+
       // Should predict positive outcomes
       expect(prediction.predictedBondingChange).toBeGreaterThan(0);
       expect(prediction.predictedStressChange).toBeLessThan(2); // Low stress increase
@@ -302,9 +308,10 @@ describe('Dynamic Compatibility Scoring', () => {
     });
 
     test('should predict negative outcome for poor compatibility', async () => {
+      // eslint-disable-next-line prefer-destructuring
       const energeticGroom = testGrooms[1];
-      const fearfulHorse = testHorses[0];
-      
+      const [fearfulHorse] = testHorses;
+
       const context = {
         taskType: 'desensitization',
         duration: 30,
@@ -312,7 +319,7 @@ describe('Dynamic Compatibility Scoring', () => {
       };
 
       const prediction = await predictInteractionOutcome(energeticGroom.id, fearfulHorse.id, context);
-      
+
       expect(prediction.predictedBondingChange).toBeLessThan(2); // Low bonding gain
       expect(prediction.predictedStressChange).toBeGreaterThan(1); // Stress increase
       expect(prediction.successProbability).toBeLessThan(0.5);
@@ -321,9 +328,10 @@ describe('Dynamic Compatibility Scoring', () => {
 
   describe('updateCompatibilityHistory', () => {
     test('should update compatibility history with interaction results', async () => {
-      const groom = testGrooms[0];
+      const [groom] = testGrooms;
+      // eslint-disable-next-line prefer-destructuring
       const horse = testHorses[1];
-      
+
       // Create an interaction first
       const interaction = await prisma.groomInteraction.create({
         data: {
@@ -340,13 +348,13 @@ describe('Dynamic Compatibility Scoring', () => {
       });
 
       const result = await updateCompatibilityHistory(groom.id, horse.id, interaction.id);
-      
+
       expect(result).toBeDefined();
       expect(result.historyUpdated).toBe(true);
       expect(result.compatibilityTrend).toBeDefined();
       expect(result.learningAdjustment).toBeDefined();
       expect(result.newBaselineScore).toBeDefined();
-      
+
       // Should show positive trend for good interaction
       expect(['improving', 'stable'].includes(result.compatibilityTrend)).toBe(true);
     });
@@ -354,8 +362,8 @@ describe('Dynamic Compatibility Scoring', () => {
 
   describe('getOptimalGroomRecommendations', () => {
     test('should recommend optimal grooms for specific horse and context', async () => {
-      const horse = testHorses[0]; // Fearful horse
-      
+      const [horse] = testHorses; // Fearful horse
+
       const context = {
         taskType: 'trust_building',
         timeOfDay: 'morning',
@@ -364,14 +372,15 @@ describe('Dynamic Compatibility Scoring', () => {
       };
 
       const recommendations = await getOptimalGroomRecommendations(horse.id, context);
-      
+
       expect(recommendations).toBeDefined();
       expect(Array.isArray(recommendations.rankedGrooms)).toBe(true);
       expect(recommendations.rankedGrooms.length).toBeGreaterThan(0);
       expect(recommendations.topRecommendation).toBeDefined();
       expect(recommendations.alternativeOptions).toBeDefined();
-      
+
       // Should rank calm groom highest for fearful horse
+      // eslint-disable-next-line prefer-destructuring
       const topGroom = recommendations.rankedGrooms[0];
       expect(topGroom.groomId).toBe(testGrooms[0].id); // Calm expert groom
       expect(topGroom.compatibilityScore).toBeGreaterThan(0.7);
@@ -379,8 +388,9 @@ describe('Dynamic Compatibility Scoring', () => {
     });
 
     test('should provide alternative recommendations', async () => {
+      // eslint-disable-next-line prefer-destructuring
       const horse = testHorses[1]; // Confident horse
-      
+
       const context = {
         taskType: 'desensitization',
         timeOfDay: 'afternoon',
@@ -389,7 +399,7 @@ describe('Dynamic Compatibility Scoring', () => {
       };
 
       const recommendations = await getOptimalGroomRecommendations(horse.id, context);
-      
+
       expect(recommendations.alternativeOptions.length).toBeGreaterThan(0);
       expect(recommendations.contextualNotes).toBeDefined();
       expect(Array.isArray(recommendations.contextualNotes)).toBe(true);
@@ -398,9 +408,11 @@ describe('Dynamic Compatibility Scoring', () => {
 
   describe('analyzeCompatibilityTrends', () => {
     test('should analyze compatibility trends over time', async () => {
+      // eslint-disable-next-line prefer-destructuring
       const groom = testGrooms[2];
+      // eslint-disable-next-line prefer-destructuring
       const horse = testHorses[2];
-      
+
       // Create a series of interactions showing trend
       for (let i = 0; i < 3; i++) {
         await prisma.groomInteraction.create({
@@ -420,14 +432,14 @@ describe('Dynamic Compatibility Scoring', () => {
       }
 
       const trends = await analyzeCompatibilityTrends(groom.id, horse.id);
-      
+
       expect(trends).toBeDefined();
       expect(trends.overallTrend).toBeDefined();
       expect(trends.trendStrength).toBeDefined();
       expect(trends.improvementRate).toBeDefined();
       expect(trends.stabilityScore).toBeDefined();
       expect(trends.projectedCompatibility).toBeDefined();
-      
+
       // Should detect improving trend
       expect(trends.overallTrend).toBe('improving');
       expect(trends.trendStrength).toBeGreaterThan(0.5);

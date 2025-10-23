@@ -330,8 +330,8 @@ describe('🏇 UNIT: Competition Simulation System - Horse Performance & Ranking
       // Random luck: ±9% of 129 = ±11.6, so range is 117.4 to 140.6
 
       const expectedScore = 129; // Base calculation before luck
-      const minExpected = expectedScore * 0.91; // -9% luck
-      const maxExpected = expectedScore * 1.09; // +9% luck
+      const _minExpected = expectedScore * 0.91; // -9% luck
+      const _maxExpected = expectedScore * 1.09; // +9% luck
 
       // All scores should be within a reasonable range (allowing for calculation differences)
       scores.forEach(score => {

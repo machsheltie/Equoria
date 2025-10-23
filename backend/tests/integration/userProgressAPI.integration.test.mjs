@@ -399,7 +399,7 @@ describe('🎯 INTEGRATION: User Progress API - Complete Progress Tracking', () 
         },
         activity: {
           lastTrained: expect.any(String), // Training is now working correctly
-          lastShowPlaced: "never", // No competition results yet
+          lastShowPlaced: 'never', // No competition results yet
         },
       });
     });

@@ -1,13 +1,13 @@
 /**
  * 🧪 User Documentation Service Tests
- * 
+ *
  * Comprehensive test suite for user documentation service including:
  * - Documentation loading and content management
  * - Search functionality and indexing
  * - Analytics tracking and reporting
  * - Content parsing and metadata extraction
  * - Table of contents generation
- * 
+ *
  * Testing Approach: TDD with NO MOCKING
  * - Real file system operations with test documentation
  * - Authentic search functionality with real content
@@ -15,7 +15,7 @@
  * - Production-like documentation scenarios
  */
 
-import { jest } from '@jest/globals';
+// jest import removed - not used in this file
 import { writeFileSync, unlinkSync, existsSync, mkdirSync } from 'fs';
 import { join, dirname } from 'path';
 import { fileURLToPath } from 'url';
@@ -102,7 +102,7 @@ A: Complete the tutorial and hire a groom.
 
 ## Horse Care
 **Q: Why can't I train my horse?**
-A: Horses must be 3+ years old and respect training cooldowns.`
+A: Horses must be 3+ years old and respect training cooldowns.`,
     };
 
     // Write test files
@@ -146,7 +146,7 @@ A: Horses must be 3+ years old and respect training cooldowns.`
 
     test('extracts document metadata correctly', () => {
       const featureGuide = docService.contentCache.get('feature-guide');
-      
+
       expect(featureGuide.title).toBe('🐎 Feature Guide');
       expect(featureGuide.wordCount).toBeGreaterThan(0);
       expect(featureGuide.sections).toBeDefined();
@@ -157,24 +157,24 @@ A: Horses must be 3+ years old and respect training cooldowns.`
 
     test('extracts sections correctly', () => {
       const featureGuide = docService.contentCache.get('feature-guide');
-      const sections = featureGuide.sections;
-      
+      const { sections } = featureGuide;
+
       expect(sections.length).toBeGreaterThanOrEqual(4);
-      
+
       // Check main sections
       const mainSection = sections.find(s => s.title === '🐎 Feature Guide');
       expect(mainSection.level).toBe(1);
-      
+
       const horseSection = sections.find(s => s.title === 'Horse Management');
       expect(horseSection.level).toBe(2);
-      
+
       const trainingSection = sections.find(s => s.title === 'Training System');
       expect(trainingSection.level).toBe(3);
     });
 
     test('builds search index correctly', () => {
       expect(docService.searchIndex.size).toBeGreaterThan(0);
-      
+
       // Check that common words are indexed
       expect(docService.searchIndex.has('horse')).toBe(true);
       expect(docService.searchIndex.has('training')).toBe(true);
@@ -186,7 +186,7 @@ A: Horses must be 3+ years old and respect training cooldowns.`
   describe('Document Retrieval', () => {
     test('retrieves existing document correctly', () => {
       const document = docService.getDocument('feature-guide');
-      
+
       expect(document).toBeDefined();
       expect(document.name).toBe('feature-guide');
       expect(document.title).toBe('🐎 Feature Guide');
@@ -204,14 +204,14 @@ A: Horses must be 3+ years old and respect training cooldowns.`
       docService.getDocument('feature-guide');
       docService.getDocument('feature-guide');
       docService.getDocument('strategy-guide');
-      
+
       expect(docService.analytics.viewCounts.get('feature-guide')).toBe(2);
       expect(docService.analytics.viewCounts.get('strategy-guide')).toBe(1);
     });
 
     test('gets all documents correctly', () => {
       const documents = docService.getAllDocuments();
-      
+
       expect(documents).toHaveLength(4);
       expect(documents[0]).toHaveProperty('name');
       expect(documents[0]).toHaveProperty('title');
@@ -224,12 +224,12 @@ A: Horses must be 3+ years old and respect training cooldowns.`
   describe('Search Functionality', () => {
     test('searches documentation content successfully', () => {
       const results = docService.searchDocumentation('horse training');
-      
+
       expect(results.query).toBe('horse training');
       expect(results.results).toBeDefined();
       expect(results.totalResults).toBeGreaterThan(0);
       expect(results.searchTime).toBeDefined();
-      
+
       // Should find documents containing these terms
       const resultNames = results.results.map(r => r.name);
       expect(resultNames).toContain('feature-guide');
@@ -237,7 +237,7 @@ A: Horses must be 3+ years old and respect training cooldowns.`
 
     test('handles single word searches', () => {
       const results = docService.searchDocumentation('breeding');
-      
+
       expect(results.results.length).toBeGreaterThan(0);
       const breedingDoc = results.results.find(r => r.name === 'feature-guide');
       expect(breedingDoc).toBeDefined();
@@ -246,7 +246,7 @@ A: Horses must be 3+ years old and respect training cooldowns.`
 
     test('returns empty results for non-matching search', () => {
       const results = docService.searchDocumentation('nonexistentterm12345');
-      
+
       expect(results.results).toHaveLength(0);
       expect(results.totalResults).toBe(0);
     });
@@ -255,7 +255,7 @@ A: Horses must be 3+ years old and respect training cooldowns.`
       docService.searchDocumentation('horse');
       docService.searchDocumentation('training');
       docService.searchDocumentation('competition');
-      
+
       expect(docService.analytics.searchQueries).toHaveLength(3);
       expect(docService.analytics.searchQueries[0].query).toBe('horse');
       expect(docService.analytics.searchQueries[1].query).toBe('training');
@@ -264,11 +264,11 @@ A: Horses must be 3+ years old and respect training cooldowns.`
 
     test('finds matching sections in search results', () => {
       const results = docService.searchDocumentation('training system');
-      
+
       const featureGuideResult = results.results.find(r => r.name === 'feature-guide');
       expect(featureGuideResult).toBeDefined();
       expect(featureGuideResult.sections).toBeDefined();
-      
+
       const trainingSection = featureGuideResult.sections.find(s => s.title === 'Training System');
       expect(trainingSection).toBeDefined();
     });
@@ -279,9 +279,9 @@ A: Horses must be 3+ years old and respect training cooldowns.`
         includeContent: true,
         highlightMatches: true,
       });
-      
+
       expect(results.results.length).toBeLessThanOrEqual(2);
-      
+
       if (results.results.length > 0) {
         expect(results.results[0]).toHaveProperty('content');
         expect(results.results[0].content).toContain('**horse**');
@@ -296,9 +296,9 @@ A: Horses must be 3+ years old and respect training cooldowns.`
       docService.getDocument('strategy-guide');
       docService.searchDocumentation('horse');
       docService.searchDocumentation('training');
-      
+
       const analytics = docService.getAnalytics();
-      
+
       expect(analytics).toBeDefined();
       expect(analytics.totalDocuments).toBe(4);
       expect(analytics.totalViews).toBe(2);
@@ -315,10 +315,10 @@ A: Horses must be 3+ years old and respect training cooldowns.`
       docService.getDocument('feature-guide');
       docService.getDocument('feature-guide');
       docService.getDocument('strategy-guide');
-      
+
       const analytics = docService.getAnalytics();
       const popularDocs = analytics.popularDocuments;
-      
+
       expect(popularDocs).toHaveLength(2);
       expect(popularDocs[0][0]).toBe('feature-guide'); // Most popular
       expect(popularDocs[0][1]).toBe(3); // 3 views
@@ -331,7 +331,7 @@ A: Horses must be 3+ years old and respect training cooldowns.`
       for (let i = 0; i < 15; i++) {
         docService.searchDocumentation(`query${i}`);
       }
-      
+
       const analytics = docService.getAnalytics();
       expect(analytics.recentSearches).toHaveLength(10); // Limited to 10
       expect(analytics.totalSearches).toBe(15); // But total count is accurate
@@ -341,17 +341,17 @@ A: Horses must be 3+ years old and respect training cooldowns.`
   describe('Table of Contents', () => {
     test('generates table of contents correctly', () => {
       const toc = docService.getTableOfContents();
-      
+
       expect(toc).toHaveLength(4);
-      
+
       const featureGuideToc = toc.find(doc => doc.name === 'feature-guide');
       expect(featureGuideToc).toBeDefined();
       expect(featureGuideToc.title).toBe('🐎 Feature Guide');
       expect(featureGuideToc.sections).toBeDefined();
       expect(featureGuideToc.sections.length).toBeGreaterThan(0);
-      
+
       // Check section structure
-      const sections = featureGuideToc.sections;
+      const { sections } = featureGuideToc;
       expect(sections[0]).toHaveProperty('title');
       expect(sections[0]).toHaveProperty('level');
       expect(sections[0]).toHaveProperty('anchor');
@@ -360,10 +360,10 @@ A: Horses must be 3+ years old and respect training cooldowns.`
     test('creates proper anchors for sections', () => {
       const toc = docService.getTableOfContents();
       const featureGuideToc = toc.find(doc => doc.name === 'feature-guide');
-      
+
       const trainingSection = featureGuideToc.sections.find(s => s.title === 'Training System');
       expect(trainingSection.anchor).toBe('training-system');
-      
+
       const horseSection = featureGuideToc.sections.find(s => s.title === 'Horse Management');
       expect(horseSection.anchor).toBe('horse-management');
     });
@@ -379,13 +379,13 @@ A: Horses must be 3+ years old and respect training cooldowns.`
     test('extracts searchable words correctly', () => {
       const content = 'Horse training is important for competition success.';
       const words = docService.extractSearchableWords(content);
-      
+
       expect(words.has('horse')).toBe(true);
       expect(words.has('training')).toBe(true);
       expect(words.has('important')).toBe(true);
       expect(words.has('competition')).toBe(true);
       expect(words.has('success')).toBe(true);
-      
+
       // Should not include stop words
       expect(words.has('is')).toBe(false);
       expect(words.has('for')).toBe(false);
@@ -394,7 +394,7 @@ A: Horses must be 3+ years old and respect training cooldowns.`
     test('normalizes search queries correctly', () => {
       const query = 'Horse Training AND Competition';
       const normalized = docService.normalizeSearchQuery(query);
-      
+
       expect(normalized).toContain('horse');
       expect(normalized).toContain('training');
       expect(normalized).toContain('competition');
@@ -415,13 +415,13 @@ A: Horses must be 3+ years old and respect training cooldowns.`
       // Add a new document
       const newDocPath = join(testDocsPath, 'new-guide.md');
       writeFileSync(newDocPath, '# New Guide\n\nThis is a new guide.');
-      
+
       const success = docService.refreshDocumentation();
-      
+
       expect(success).toBe(true);
       expect(docService.contentCache.size).toBe(5); // Now includes new document
       expect(docService.contentCache.has('new-guide')).toBe(true);
-      
+
       // Cleanup
       unlinkSync(newDocPath);
     });

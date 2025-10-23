@@ -1,6 +1,6 @@
 /**
  * Breeding Analytics Service Tests
- * 
+ *
  * Tests for breeding program analytics including lineage tracking,
  * trait inheritance patterns, breeding success rates, and foal development
  * using TDD with NO MOCKING approach.
@@ -26,16 +26,16 @@ describe('Breeding Analytics Service', () => {
         email: `breeding_${timestamp}@test.com`,
         password: 'test_password',
         firstName: 'Breeding',
-        lastName: 'Test'
-      }
+        lastName: 'Test',
+      },
     });
 
     // Create test breed
     testBreed = await prisma.breed.create({
       data: {
         name: 'Breeding Test Breed',
-        description: 'Test breed for breeding analytics'
-      }
+        description: 'Test breed for breeding analytics',
+      },
     });
 
     // Create test stallion
@@ -60,9 +60,9 @@ describe('Breeding Analytics Service', () => {
         epigeneticModifiers: {
           positive: ['athletic', 'intelligent'],
           negative: [],
-          hidden: ['discipline_affinity_racing']
-        }
-      }
+          hidden: ['discipline_affinity_racing'],
+        },
+      },
     });
 
     // Create test mare
@@ -87,9 +87,9 @@ describe('Breeding Analytics Service', () => {
         epigeneticModifiers: {
           positive: ['calm', 'resilient'],
           negative: ['nervous'],
-          hidden: ['discipline_affinity_dressage']
-        }
-      }
+          hidden: ['discipline_affinity_dressage'],
+        },
+      },
     });
 
     // Create test foals from this breeding pair
@@ -118,9 +118,9 @@ describe('Breeding Analytics Service', () => {
           epigeneticModifiers: {
             positive: i % 2 === 0 ? ['athletic'] : ['calm'],
             negative: i % 3 === 0 ? ['nervous'] : [],
-            hidden: []
-          }
-        }
+            hidden: [],
+          },
+        },
       });
       testFoals.push(foal);
     }
@@ -130,14 +130,14 @@ describe('Breeding Analytics Service', () => {
     // Clean up test data
     if (testUser) {
       await prisma.horse.deleteMany({
-        where: { userId: testUser.id }
+        where: { userId: testUser.id },
       });
       await prisma.user.delete({
-        where: { id: testUser.id }
+        where: { id: testUser.id },
       });
       if (testBreed) {
         await prisma.breed.delete({
-          where: { id: testBreed.id }
+          where: { id: testBreed.id },
         });
       }
     }
@@ -147,13 +147,14 @@ describe('Breeding Analytics Service', () => {
   describe('Lineage Tracking', () => {
     test('should track breeding pair lineage', async () => {
       const analytics = await breedingAnalyticsService.getBreedingAnalytics(testUser.id);
-      
+
       expect(analytics).toBeDefined();
       expect(analytics.breedingPairs).toBeDefined();
       expect(Array.isArray(analytics.breedingPairs)).toBe(true);
       expect(analytics.breedingPairs.length).toBeGreaterThan(0);
-      
+
       // Check breeding pair data structure
+      // eslint-disable-next-line prefer-destructuring
       const pair = analytics.breedingPairs[0];
       expect(pair.stallion).toBeDefined();
       expect(pair.mare).toBeDefined();
@@ -163,15 +164,15 @@ describe('Breeding Analytics Service', () => {
 
     test('should identify parent-offspring relationships', async () => {
       const analytics = await breedingAnalyticsService.getBreedingAnalytics(testUser.id);
-      
-      const pair = analytics.breedingPairs.find(p => 
-        p.stallion.id === testStallion.id && p.mare.id === testMare.id
+
+      const pair = analytics.breedingPairs.find(p =>
+        p.stallion.id === testStallion.id && p.mare.id === testMare.id,
       );
-      
+
       expect(pair).toBeDefined();
       expect(pair.foalCount).toBe(5);
       expect(pair.foals.length).toBe(5);
-      
+
       // Check that all foals have correct parentage
       pair.foals.forEach(foal => {
         expect(foal.sireId).toBe(testStallion.id);
@@ -183,7 +184,7 @@ describe('Breeding Analytics Service', () => {
   describe('Trait Inheritance Analysis', () => {
     test('should analyze trait inheritance patterns', async () => {
       const analytics = await breedingAnalyticsService.getBreedingAnalytics(testUser.id);
-      
+
       expect(analytics.traitInheritance).toBeDefined();
       expect(typeof analytics.traitInheritance).toBe('object');
       expect(analytics.traitInheritance.positiveTraits).toBeDefined();
@@ -193,10 +194,10 @@ describe('Breeding Analytics Service', () => {
 
     test('should calculate trait inheritance rates', async () => {
       const analytics = await breedingAnalyticsService.getBreedingAnalytics(testUser.id);
-      
+
       const inheritance = analytics.traitInheritance;
       expect(typeof inheritance.inheritanceRates).toBe('object');
-      
+
       // Check that inheritance rates are calculated for traits present in parents
       Object.keys(inheritance.inheritanceRates).forEach(trait => {
         const rate = inheritance.inheritanceRates[trait];
@@ -210,7 +211,7 @@ describe('Breeding Analytics Service', () => {
   describe('Breeding Success Metrics', () => {
     test('should calculate breeding success rates', async () => {
       const analytics = await breedingAnalyticsService.getBreedingAnalytics(testUser.id);
-      
+
       expect(analytics.successMetrics).toBeDefined();
       expect(typeof analytics.successMetrics).toBe('object');
       expect(analytics.successMetrics.totalBreedings).toBeDefined();
@@ -221,7 +222,7 @@ describe('Breeding Analytics Service', () => {
 
     test('should track foal development outcomes', async () => {
       const analytics = await breedingAnalyticsService.getBreedingAnalytics(testUser.id);
-      
+
       expect(analytics.foalDevelopment).toBeDefined();
       expect(typeof analytics.foalDevelopment).toBe('object');
       expect(analytics.foalDevelopment.totalFoals).toBe(5);
@@ -233,7 +234,7 @@ describe('Breeding Analytics Service', () => {
   describe('Statistical Analysis', () => {
     test('should calculate average offspring stats', async () => {
       const analytics = await breedingAnalyticsService.getBreedingAnalytics(testUser.id);
-      
+
       const avgStats = analytics.foalDevelopment.averageStats;
       expect(avgStats.speed).toBeDefined();
       expect(avgStats.stamina).toBeDefined();
@@ -245,7 +246,7 @@ describe('Breeding Analytics Service', () => {
       expect(avgStats.flexibility).toBeDefined();
       expect(avgStats.obedience).toBeDefined();
       expect(avgStats.focus).toBeDefined();
-      
+
       // Check that averages are reasonable numbers
       Object.values(avgStats).forEach(stat => {
         expect(typeof stat).toBe('number');
@@ -256,7 +257,7 @@ describe('Breeding Analytics Service', () => {
 
     test('should compare offspring to parent averages', async () => {
       const analytics = await breedingAnalyticsService.getBreedingAnalytics(testUser.id);
-      
+
       expect(analytics.parentComparison).toBeDefined();
       expect(typeof analytics.parentComparison).toBe('object');
       expect(analytics.parentComparison.parentAverages).toBeDefined();
@@ -273,17 +274,17 @@ describe('Breeding Analytics Service', () => {
           email: `no_breeding_${Date.now()}@test.com`,
           password: 'test_password',
           firstName: 'No',
-          lastName: 'Breeding'
-        }
+          lastName: 'Breeding',
+        },
       });
 
       const analytics = await breedingAnalyticsService.getBreedingAnalytics(newUser.id);
-      
+
       expect(analytics).toBeDefined();
       expect(analytics.breedingPairs).toEqual([]);
       expect(analytics.successMetrics.totalBreedings).toBe(0);
       expect(analytics.foalDevelopment.totalFoals).toBe(0);
-      
+
       // Clean up
       await prisma.user.delete({ where: { id: newUser.id } });
     });

@@ -19,8 +19,8 @@ describe('Schema Validation', () => {
       where: {
         OR: [
           { email: { startsWith: 'schema-test-' } },
-          { id: { startsWith: 'schema-test-user-' } }
-        ]
+          { id: { startsWith: 'schema-test-user-' } },
+        ],
       },
     });
     await prisma.breed.deleteMany({
@@ -37,8 +37,8 @@ describe('Schema Validation', () => {
       where: {
         OR: [
           { email: { startsWith: 'schema-test-' } },
-          { id: { startsWith: 'schema-test-user-' } }
-        ]
+          { id: { startsWith: 'schema-test-user-' } },
+        ],
       },
     });
     await prisma.breed.deleteMany({
@@ -82,8 +82,8 @@ describe('Schema Validation', () => {
       where: {
         OR: [
           { email: { startsWith: 'schema-test-' } },
-          { id: { startsWith: 'schema-test-user-' } }
-        ]
+          { id: { startsWith: 'schema-test-user-' } },
+        ],
       },
     });
     await prisma.breed.deleteMany({

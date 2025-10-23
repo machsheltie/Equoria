@@ -4,7 +4,7 @@
  * and unique mechanical effects for prestige gameplay elements
  */
 
-import logger from './logger.mjs';
+import _logger from './_logger.mjs';
 
 /**
  * Ultra-Rare Traits Registry

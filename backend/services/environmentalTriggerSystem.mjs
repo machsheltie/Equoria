@@ -1,10 +1,10 @@
 /**
  * Environmental Trigger System Service
- * 
+ *
  * Implements comprehensive environmental factors that trigger epigenetic trait expression.
  * Analyzes interaction patterns, environmental conditions, and developmental windows
  * to determine trait expression probabilities and environmental influences.
- * 
+ *
  * Business Rules:
  * - Environmental factor detection from interaction patterns and conditions
  * - Age-based trigger threshold calculations with developmental sensitivity
@@ -129,7 +129,7 @@ export async function detectEnvironmentalTriggers(horseId) {
     // Analyze interaction patterns for environmental triggers
     Object.entries(ENVIRONMENTAL_TRIGGERS).forEach(([triggerType, triggerDef]) => {
       const triggerScore = calculateTriggerScore(interactions, triggerType, triggerDef);
-      
+
       if (triggerScore > 0.3) { // Threshold for trigger detection
         detectedTriggers.push({
           type: triggerType,
@@ -138,7 +138,7 @@ export async function detectEnvironmentalTriggers(horseId) {
           affectedTraits: triggerDef.traits_affected,
           factors: identifyActiveTriggerFactors(interactions, triggerDef.factors),
         });
-        
+
         totalTriggerStrength += triggerScore;
         environmentalFactors.push(...triggerDef.factors);
       }
@@ -180,16 +180,21 @@ export async function calculateTriggerThresholds(horseId) {
     }
 
     const ageInDays = Math.floor((Date.now() - horse.dateOfBirth.getTime()) / (1000 * 60 * 60 * 24));
-    
+
     // Base threshold (lower = more sensitive)
-    let baseThreshold = 0.5;
-    
+    const baseThreshold = 0.5;
+
     // Age modifier - younger horses are more sensitive
     let ageModifier = 1.0;
-    if (ageInDays <= 7) ageModifier = 0.6; // Very young - highly sensitive
-    else if (ageInDays <= 30) ageModifier = 0.7; // Young - moderately sensitive
-    else if (ageInDays <= 90) ageModifier = 0.8; // Developing - somewhat sensitive
-    else ageModifier = 1.0; // Mature - normal sensitivity
+    if (ageInDays <= 7) {
+      ageModifier = 0.6; // Very young - highly sensitive
+    } else if (ageInDays <= 30) {
+      ageModifier = 0.7; // Young - moderately sensitive
+    } else if (ageInDays <= 90) {
+      ageModifier = 0.8; // Developing - somewhat sensitive
+    } else {
+      ageModifier = 1.0; // Mature - normal sensitivity
+    }
 
     // Stress modifier - stressed horses are more sensitive
     const stressModifier = Math.max(0.5, 1.0 - (horse.stressLevel / 20)); // Higher stress = lower threshold
@@ -230,10 +235,10 @@ export async function evaluateTraitExpressionProbability(horseId, traitName) {
     });
 
     const triggers = await detectEnvironmentalTriggers(horseId);
-    const thresholds = await calculateTriggerThresholds(horseId);
+    const _thresholds = await calculateTriggerThresholds(horseId);
 
     // Base probability for trait expression
-    let baseProbability = 0.1; // 10% base chance
+    const baseProbability = 0.1; // 10% base chance
 
     // Environmental modifier based on relevant triggers
     let environmentalModifier = 1.0;
@@ -246,15 +251,19 @@ export async function evaluateTraitExpressionProbability(horseId, traitName) {
     // Age modifier - younger horses more likely to express new traits
     const ageInDays = Math.floor((Date.now() - horse.dateOfBirth.getTime()) / (1000 * 60 * 60 * 24));
     let ageModifier = 1.0;
-    if (ageInDays <= 30) ageModifier = 1.5; // Young foals
-    else if (ageInDays <= 90) ageModifier = 1.2; // Developing foals
-    else ageModifier = 0.8; // Older horses
+    if (ageInDays <= 30) {
+      ageModifier = 1.5; // Young foals
+    } else if (ageInDays <= 90) {
+      ageModifier = 1.2; // Developing foals
+    } else {
+      ageModifier = 0.8; // Older horses
+    }
 
     // Stress modifier - affects different traits differently
     let stressModifier = 1.0;
     const negativeTraits = ['fearful', 'reactive', 'insecure', 'fragile', 'antisocial'];
     const positiveTraits = ['brave', 'confident', 'social', 'curious', 'calm'];
-    
+
     if (negativeTraits.includes(traitName)) {
       stressModifier = 1.0 + (horse.stressLevel / 20); // Higher stress increases negative traits
     } else if (positiveTraits.includes(traitName)) {
@@ -262,17 +271,13 @@ export async function evaluateTraitExpressionProbability(horseId, traitName) {
     }
 
     // Calculate final probability
-    const finalProbability = Math.max(0, Math.min(1, 
-      baseProbability * environmentalModifier * ageModifier * stressModifier
+    const finalProbability = Math.max(0, Math.min(1,
+      baseProbability * environmentalModifier * ageModifier * stressModifier,
     ));
 
     // Determine expression likelihood
     let expressionLikelihood;
-    if (finalProbability >= 0.7) expressionLikelihood = 'very_likely';
-    else if (finalProbability >= 0.5) expressionLikelihood = 'likely';
-    else if (finalProbability >= 0.3) expressionLikelihood = 'possible';
-    else if (finalProbability >= 0.1) expressionLikelihood = 'unlikely';
-    else expressionLikelihood = 'very_unlikely';
+    if (finalProbability >= 0.7) { expressionLikelihood = 'very_likely'; } else if (finalProbability >= 0.5) { expressionLikelihood = 'likely'; } else if (finalProbability >= 0.3) { expressionLikelihood = 'possible'; } else if (finalProbability >= 0.1) { expressionLikelihood = 'unlikely'; } else { expressionLikelihood = 'very_unlikely'; }
 
     return {
       horseId,
@@ -376,7 +381,7 @@ export async function analyzeStressEnvironmentTriggers(horseId) {
       // Identify specific stress triggers
       const taskTypes = {};
       interactions.forEach(interaction => {
-        const taskType = interaction.taskType;
+        const { taskType } = interaction;
         if (!taskTypes[taskType]) {
           taskTypes[taskType] = { count: 0, totalStress: 0 };
         }
@@ -449,7 +454,7 @@ export async function trackCumulativeExposure(horseId) {
       totalExposure += exposureValue;
 
       // Track by task type
-      const taskType = interaction.taskType;
+      const { taskType } = interaction;
       if (!exposureByType[taskType]) {
         exposureByType[taskType] = 0;
       }
@@ -504,7 +509,7 @@ export async function assessCriticalPeriodSensitivity(horseId) {
 
     // Identify active critical periods
     const activeWindows = CRITICAL_PERIODS.filter(period =>
-      currentAge >= period.start && currentAge <= period.end
+      currentAge >= period.start && currentAge <= period.end,
     );
 
     // Calculate overall sensitivity level
@@ -514,7 +519,7 @@ export async function assessCriticalPeriodSensitivity(horseId) {
     } else {
       // Calculate residual sensitivity for horses outside critical periods
       const daysSinceLastPeriod = Math.min(...CRITICAL_PERIODS.map(period =>
-        currentAge > period.end ? currentAge - period.end : Infinity
+        currentAge > period.end ? currentAge - period.end : Infinity,
       ));
 
       if (daysSinceLastPeriod < 30) {
@@ -554,18 +559,18 @@ export async function generateEnvironmentalReport(horseId) {
       environmentalTriggers,
       triggerThresholds,
       cumulativeExposure,
-      criticalPeriodSensitivity
+      criticalPeriodSensitivity,
     ] = await Promise.all([
       detectEnvironmentalTriggers(horseId),
       calculateTriggerThresholds(horseId),
       trackCumulativeExposure(horseId),
-      assessCriticalPeriodSensitivity(horseId)
+      assessCriticalPeriodSensitivity(horseId),
     ]);
 
     // Evaluate trait expression probabilities for common traits
     const commonTraits = ['brave', 'fearful', 'confident', 'curious', 'calm', 'reactive', 'social'];
     const traitExpressionProbabilities = await Promise.all(
-      commonTraits.map(trait => evaluateTraitExpressionProbability(horseId, trait))
+      commonTraits.map(trait => evaluateTraitExpressionProbability(horseId, trait)),
     );
 
     // Generate recommendations based on analysis
@@ -573,7 +578,7 @@ export async function generateEnvironmentalReport(horseId) {
       environmentalTriggers,
       triggerThresholds,
       criticalPeriodSensitivity,
-      traitExpressionProbabilities
+      traitExpressionProbabilities,
     );
 
     return {
@@ -596,7 +601,7 @@ export async function generateEnvironmentalReport(horseId) {
 /**
  * Calculate trigger score for a specific trigger type
  */
-function calculateTriggerScore(interactions, triggerType, triggerDef) {
+function calculateTriggerScore(interactions, triggerType, _triggerDef) {
   let score = 0;
   let relevantInteractions = 0;
 
@@ -605,26 +610,26 @@ function calculateTriggerScore(interactions, triggerType, triggerDef) {
 
     // Analyze interaction characteristics
     if (triggerType === 'stress_inducing') {
-      if (interaction.stressChange > 2) interactionScore += 0.3;
-      if (interaction.quality === 'poor') interactionScore += 0.2;
-      if (interaction.bondingChange < 0) interactionScore += 0.2;
+      if (interaction.stressChange > 2) { interactionScore += 0.3; }
+      if (interaction.quality === 'poor') { interactionScore += 0.2; }
+      if (interaction.bondingChange < 0) { interactionScore += 0.2; }
     } else if (triggerType === 'confidence_building') {
-      if (interaction.bondingChange > 1) interactionScore += 0.3;
-      if (interaction.quality === 'excellent') interactionScore += 0.2;
-      if (interaction.stressChange <= 0) interactionScore += 0.2;
+      if (interaction.bondingChange > 1) { interactionScore += 0.3; }
+      if (interaction.quality === 'excellent') { interactionScore += 0.2; }
+      if (interaction.stressChange <= 0) { interactionScore += 0.2; }
     } else if (triggerType === 'social_stimulation') {
-      if (interaction.interactionType === 'enrichment') interactionScore += 0.2;
-      if (interaction.duration > 30) interactionScore += 0.1;
+      if (interaction.interactionType === 'enrichment') { interactionScore += 0.2; }
+      if (interaction.duration > 30) { interactionScore += 0.1; }
     } else if (triggerType === 'isolation_stress') {
-      if (interaction.bondingChange < -1) interactionScore += 0.3;
-      if (interaction.duration < 15) interactionScore += 0.2;
+      if (interaction.bondingChange < -1) { interactionScore += 0.3; }
+      if (interaction.duration < 15) { interactionScore += 0.2; }
     } else if (triggerType === 'sensory_enrichment') {
-      if (interaction.taskType === 'desensitization') interactionScore += 0.3;
-      if (interaction.taskType === 'showground_exposure') interactionScore += 0.2;
+      if (interaction.taskType === 'desensitization') { interactionScore += 0.3; }
+      if (interaction.taskType === 'showground_exposure') { interactionScore += 0.2; }
     } else if (triggerType === 'routine_stability') {
       // Check for consistent groom assignments
-      if (interaction.groom?.groomPersonality === 'calm') interactionScore += 0.2;
-      if (interaction.quality === 'good' || interaction.quality === 'excellent') interactionScore += 0.1;
+      if (interaction.groom?.groomPersonality === 'calm') { interactionScore += 0.2; }
+      if (interaction.quality === 'good' || interaction.quality === 'excellent') { interactionScore += 0.1; }
     }
 
     if (interactionScore > 0) {
@@ -655,10 +660,11 @@ function identifyActiveTriggerFactors(interactions, possibleFactors) {
       case 'patient_handling':
         factorPresent = interactions.some(i => i.bondingChange > 1 && i.quality === 'excellent');
         break;
-      case 'multiple_handlers':
+      case 'multiple_handlers': {
         const uniqueGrooms = new Set(interactions.map(i => i.groomId));
         factorPresent = uniqueGrooms.size > 1;
         break;
+      }
       case 'limited_contact':
         factorPresent = interactions.length < 3;
         break;
@@ -744,10 +750,10 @@ function calculateInteractionExposure(interaction) {
   let exposure = interaction.duration / 60; // Base exposure in hours
 
   // Modify based on interaction intensity
-  if (interaction.stressChange > 2) exposure *= 1.5; // High stress = more exposure
-  if (interaction.bondingChange > 2) exposure *= 1.3; // High bonding = more exposure
-  if (interaction.quality === 'excellent') exposure *= 1.2;
-  if (interaction.quality === 'poor') exposure *= 0.8;
+  if (interaction.stressChange > 2) { exposure *= 1.5; } // High stress = more exposure
+  if (interaction.bondingChange > 2) { exposure *= 1.3; } // High bonding = more exposure
+  if (interaction.quality === 'excellent') { exposure *= 1.2; }
+  if (interaction.quality === 'poor') { exposure *= 0.8; }
 
   return exposure;
 }
@@ -774,7 +780,7 @@ function analyzeCumulativeEffects(interactions) {
 /**
  * Generate critical period recommendations
  */
-function generateCriticalPeriodRecommendations(activeWindows, currentAge) {
+function generateCriticalPeriodRecommendations(activeWindows, _currentAge) {
   const recommendations = [];
 
   activeWindows.forEach(window => {

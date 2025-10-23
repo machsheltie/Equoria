@@ -1,6 +1,6 @@
 /**
  * Performance Regression Testing System for CI/CD Pipeline
- * 
+ *
  * This script provides automated performance validation including:
  * - Benchmark testing against baseline performance
  * - Response time monitoring and regression detection
@@ -24,16 +24,16 @@ const REGRESSION_CONFIG = {
   thresholds: {
     responseTime: {
       warning: 1.2,    // 20% slower than baseline
-      critical: 1.5    // 50% slower than baseline
+      critical: 1.5,    // 50% slower than baseline
     },
     memory: {
       warning: 1.3,    // 30% more memory than baseline
-      critical: 1.8    // 80% more memory than baseline
+      critical: 1.8,    // 80% more memory than baseline
     },
     throughput: {
       warning: 0.8,    // 20% less throughput than baseline
-      critical: 0.6    // 40% less throughput than baseline
-    }
+      critical: 0.6,    // 40% less throughput than baseline
+    },
   },
   testDuration: 30000, // 30 seconds
   warmupDuration: 5000, // 5 seconds
@@ -43,8 +43,8 @@ const REGRESSION_CONFIG = {
     { path: '/health', method: 'GET', weight: 1 },
     { path: '/api/auth/login', method: 'POST', weight: 2, body: { email: 'test@example.com', password: 'testpass' } },
     { path: '/api/horses', method: 'GET', weight: 3, requiresAuth: true },
-    { path: '/api/competition/disciplines', method: 'GET', weight: 2 }
-  ]
+    { path: '/api/competition/disciplines', method: 'GET', weight: 2 },
+  ],
 };
 
 /**
@@ -67,15 +67,15 @@ async function loadBaseline() {
 async function startPerformanceTestServer() {
   return new Promise((resolve, reject) => {
     console.log('🚀 Starting performance test server...');
-    
+
     const server = spawn('node', ['server.mjs'], {
       cwd: path.resolve(__dirname, '..'),
       env: {
         ...process.env,
         NODE_ENV: 'test',
-        PORT: '3002'
+        PORT: '3002',
       },
-      stdio: 'pipe'
+      stdio: 'pipe',
     });
 
     let serverReady = false;
@@ -112,10 +112,10 @@ async function startPerformanceTestServer() {
 async function performRequest(endpoint, baseUrl = 'http://localhost:3002', authToken = null) {
   const startTime = performance.now();
   const memBefore = process.memoryUsage();
-  
+
   try {
     const headers = {
-      'Content-Type': 'application/json'
+      'Content-Type': 'application/json',
     };
 
     if (authToken && endpoint.requiresAuth) {
@@ -124,7 +124,7 @@ async function performRequest(endpoint, baseUrl = 'http://localhost:3002', authT
 
     const requestOptions = {
       method: endpoint.method,
-      headers
+      headers,
     };
 
     if (endpoint.body) {
@@ -132,10 +132,10 @@ async function performRequest(endpoint, baseUrl = 'http://localhost:3002', authT
     }
 
     const response = await fetch(`${baseUrl}${endpoint.path}`, requestOptions);
-    
+
     const endTime = performance.now();
     const memAfter = process.memoryUsage();
-    
+
     return {
       endpoint: endpoint.path,
       method: endpoint.method,
@@ -143,7 +143,7 @@ async function performRequest(endpoint, baseUrl = 'http://localhost:3002', authT
       status: response.status,
       success: response.ok,
       memoryDelta: memAfter.heapUsed - memBefore.heapUsed,
-      timestamp: Date.now()
+      timestamp: Date.now(),
     };
   } catch (error) {
     const endTime = performance.now();
@@ -155,7 +155,7 @@ async function performRequest(endpoint, baseUrl = 'http://localhost:3002', authT
       success: false,
       error: error.message,
       memoryDelta: 0,
-      timestamp: Date.now()
+      timestamp: Date.now(),
     };
   }
 }
@@ -165,13 +165,13 @@ async function performRequest(endpoint, baseUrl = 'http://localhost:3002', authT
  */
 async function runPerformanceBenchmark() {
   console.log('🔄 Running performance benchmark...');
-  
+
   const results = {
     startTime: Date.now(),
     endTime: null,
     requests: [],
     summary: {},
-    memoryProfile: []
+    memoryProfile: [],
   };
 
   // Start memory monitoring
@@ -182,7 +182,7 @@ async function runPerformanceBenchmark() {
       heapUsed: memUsage.heapUsed,
       heapTotal: memUsage.heapTotal,
       external: memUsage.external,
-      rss: memUsage.rss
+      rss: memUsage.rss,
     });
   }, 1000);
 
@@ -191,6 +191,7 @@ async function runPerformanceBenchmark() {
     console.log('🔥 Warming up...');
     const warmupEnd = Date.now() + REGRESSION_CONFIG.warmupDuration;
     while (Date.now() < warmupEnd) {
+      // eslint-disable-next-line prefer-destructuring
       const endpoint = REGRESSION_CONFIG.endpoints[0]; // Use simple endpoint for warmup
       await performRequest(endpoint);
       await new Promise(resolve => setTimeout(resolve, 100));
@@ -207,8 +208,9 @@ async function runPerformanceBenchmark() {
         const totalWeight = REGRESSION_CONFIG.endpoints.reduce((sum, ep) => sum + ep.weight, 0);
         const random = Math.random() * totalWeight;
         let currentWeight = 0;
+        // eslint-disable-next-line prefer-destructuring
         let selectedEndpoint = REGRESSION_CONFIG.endpoints[0];
-        
+
         for (const endpoint of REGRESSION_CONFIG.endpoints) {
           currentWeight += endpoint.weight;
           if (random <= currentWeight) {
@@ -221,7 +223,7 @@ async function runPerformanceBenchmark() {
           results.requests.push(result);
           return result;
         });
-        
+
         promises.push(promise);
       }
 
@@ -230,7 +232,7 @@ async function runPerformanceBenchmark() {
 
     // Wait for all requests to complete
     await Promise.all(promises);
-    
+
     results.endTime = Date.now();
     clearInterval(memoryMonitor);
 
@@ -251,7 +253,7 @@ async function runPerformanceBenchmark() {
  */
 function calculatePerformanceSummary(results) {
   const { requests, memoryProfile, startTime, endTime } = results;
-  
+
   if (requests.length === 0) {
     throw new Error('No performance data collected');
   }
@@ -259,11 +261,11 @@ function calculatePerformanceSummary(results) {
   // Response time statistics
   const responseTimes = requests.map(r => r.responseTime);
   const successfulRequests = requests.filter(r => r.success);
-  
+
   const avgResponseTime = responseTimes.reduce((a, b) => a + b, 0) / responseTimes.length;
   const maxResponseTime = Math.max(...responseTimes);
   const minResponseTime = Math.min(...responseTimes);
-  
+
   const sortedTimes = [...responseTimes].sort((a, b) => a - b);
   const p50ResponseTime = sortedTimes[Math.floor(sortedTimes.length * 0.5)];
   const p95ResponseTime = sortedTimes[Math.floor(sortedTimes.length * 0.95)];
@@ -276,7 +278,7 @@ function calculatePerformanceSummary(results) {
 
   // Memory statistics
   const memoryUsages = memoryProfile.map(m => m.heapUsed);
-  const avgMemoryUsage = memoryUsages.length > 0 
+  const avgMemoryUsage = memoryUsages.length > 0
     ? memoryUsages.reduce((a, b) => a + b, 0) / memoryUsages.length
     : 0;
   const maxMemoryUsage = memoryUsages.length > 0 ? Math.max(...memoryUsages) : 0;
@@ -292,7 +294,7 @@ function calculatePerformanceSummary(results) {
         requests: endpointRequests.length,
         avgResponseTime: endpointTimes.reduce((a, b) => a + b, 0) / endpointTimes.length,
         maxResponseTime: Math.max(...endpointTimes),
-        successRate: (endpointRequests.filter(r => r.success).length / endpointRequests.length) * 100
+        successRate: (endpointRequests.filter(r => r.success).length / endpointRequests.length) * 100,
       };
     }
   });
@@ -304,18 +306,18 @@ function calculatePerformanceSummary(results) {
       max: maxResponseTime,
       p50: p50ResponseTime,
       p95: p95ResponseTime,
-      p99: p99ResponseTime
+      p99: p99ResponseTime,
     },
     memory: {
       average: avgMemoryUsage,
       min: minMemoryUsage,
-      max: maxMemoryUsage
+      max: maxMemoryUsage,
     },
     throughput,
     successRate,
     totalRequests: requests.length,
     duration: durationSeconds,
-    endpointStats
+    endpointStats,
   };
 }
 
@@ -326,7 +328,7 @@ function compareWithBaseline(currentResults, baseline) {
   if (!baseline) {
     return {
       hasBaseline: false,
-      message: 'No baseline available - current results will be used as new baseline'
+      message: 'No baseline available - current results will be used as new baseline',
     };
   }
 
@@ -334,7 +336,7 @@ function compareWithBaseline(currentResults, baseline) {
     hasBaseline: true,
     regressions: [],
     improvements: [],
-    status: 'passed'
+    status: 'passed',
   };
 
   const current = currentResults.summary;
@@ -349,7 +351,7 @@ function compareWithBaseline(currentResults, baseline) {
       current: current.responseTime.average,
       baseline: base.responseTime.average,
       ratio: responseTimeRatio,
-      message: `Response time is ${((responseTimeRatio - 1) * 100).toFixed(1)}% slower than baseline`
+      message: `Response time is ${((responseTimeRatio - 1) * 100).toFixed(1)}% slower than baseline`,
     });
     comparison.status = 'failed';
   } else if (responseTimeRatio > REGRESSION_CONFIG.thresholds.responseTime.warning) {
@@ -359,16 +361,16 @@ function compareWithBaseline(currentResults, baseline) {
       current: current.responseTime.average,
       baseline: base.responseTime.average,
       ratio: responseTimeRatio,
-      message: `Response time is ${((responseTimeRatio - 1) * 100).toFixed(1)}% slower than baseline`
+      message: `Response time is ${((responseTimeRatio - 1) * 100).toFixed(1)}% slower than baseline`,
     });
-    if (comparison.status === 'passed') comparison.status = 'warning';
+    if (comparison.status === 'passed') { comparison.status = 'warning'; }
   } else if (responseTimeRatio < 0.9) {
     comparison.improvements.push({
       metric: 'responseTime',
       current: current.responseTime.average,
       baseline: base.responseTime.average,
       ratio: responseTimeRatio,
-      message: `Response time improved by ${((1 - responseTimeRatio) * 100).toFixed(1)}%`
+      message: `Response time improved by ${((1 - responseTimeRatio) * 100).toFixed(1)}%`,
     });
   }
 
@@ -381,7 +383,7 @@ function compareWithBaseline(currentResults, baseline) {
       current: current.memory.max,
       baseline: base.memory.max,
       ratio: memoryRatio,
-      message: `Memory usage is ${((memoryRatio - 1) * 100).toFixed(1)}% higher than baseline`
+      message: `Memory usage is ${((memoryRatio - 1) * 100).toFixed(1)}% higher than baseline`,
     });
     comparison.status = 'failed';
   } else if (memoryRatio > REGRESSION_CONFIG.thresholds.memory.warning) {
@@ -391,9 +393,9 @@ function compareWithBaseline(currentResults, baseline) {
       current: current.memory.max,
       baseline: base.memory.max,
       ratio: memoryRatio,
-      message: `Memory usage is ${((memoryRatio - 1) * 100).toFixed(1)}% higher than baseline`
+      message: `Memory usage is ${((memoryRatio - 1) * 100).toFixed(1)}% higher than baseline`,
     });
-    if (comparison.status === 'passed') comparison.status = 'warning';
+    if (comparison.status === 'passed') { comparison.status = 'warning'; }
   }
 
   // Throughput comparison
@@ -405,7 +407,7 @@ function compareWithBaseline(currentResults, baseline) {
       current: current.throughput,
       baseline: base.throughput,
       ratio: throughputRatio,
-      message: `Throughput decreased by ${((1 - throughputRatio) * 100).toFixed(1)}%`
+      message: `Throughput decreased by ${((1 - throughputRatio) * 100).toFixed(1)}%`,
     });
     comparison.status = 'failed';
   } else if (throughputRatio < REGRESSION_CONFIG.thresholds.throughput.warning) {
@@ -415,16 +417,16 @@ function compareWithBaseline(currentResults, baseline) {
       current: current.throughput,
       baseline: base.throughput,
       ratio: throughputRatio,
-      message: `Throughput decreased by ${((1 - throughputRatio) * 100).toFixed(1)}%`
+      message: `Throughput decreased by ${((1 - throughputRatio) * 100).toFixed(1)}%`,
     });
-    if (comparison.status === 'passed') comparison.status = 'warning';
+    if (comparison.status === 'passed') { comparison.status = 'warning'; }
   } else if (throughputRatio > 1.1) {
     comparison.improvements.push({
       metric: 'throughput',
       current: current.throughput,
       baseline: base.throughput,
       ratio: throughputRatio,
-      message: `Throughput improved by ${((throughputRatio - 1) * 100).toFixed(1)}%`
+      message: `Throughput improved by ${((throughputRatio - 1) * 100).toFixed(1)}%`,
     });
   }
 
@@ -444,7 +446,7 @@ async function savePerformanceResults(results, comparison) {
   await fs.writeFile(resultsPath, JSON.stringify({
     timestamp: new Date().toISOString(),
     results,
-    comparison
+    comparison,
   }, null, 2));
 
   // Update baseline if no regressions or if no baseline exists
@@ -453,7 +455,7 @@ async function savePerformanceResults(results, comparison) {
     await fs.writeFile(baselinePath, JSON.stringify({
       timestamp: new Date().toISOString(),
       summary: results.summary,
-      config: REGRESSION_CONFIG
+      config: REGRESSION_CONFIG,
     }, null, 2));
     console.log('📊 Baseline performance data updated');
   }
@@ -466,12 +468,12 @@ async function savePerformanceResults(results, comparison) {
     hasBaseline: comparison.hasBaseline,
     regressions: comparison.regressions?.length || 0,
     improvements: comparison.improvements?.length || 0,
-    summary: results.summary
+    summary: results.summary,
   }, null, 2));
 
   return {
     resultsPath,
-    summaryPath
+    summaryPath,
   };
 }
 
@@ -482,7 +484,7 @@ function displayResults(results, comparison) {
   console.log('\n📊 Performance Regression Test Results');
   console.log('======================================');
 
-  const summary = results.summary;
+  const { summary } = results;
   console.log(`Duration: ${summary.duration.toFixed(1)}s`);
   console.log(`Total Requests: ${summary.totalRequests}`);
   console.log(`Success Rate: ${summary.successRate.toFixed(1)}%`);
@@ -494,7 +496,7 @@ function displayResults(results, comparison) {
   if (comparison.hasBaseline) {
     console.log('\n🔍 Regression Analysis:');
     console.log(`Status: ${comparison.status.toUpperCase()}`);
-    
+
     if (comparison.regressions.length > 0) {
       console.log('\n❌ Performance Regressions:');
       comparison.regressions.forEach(regression => {
@@ -523,7 +525,7 @@ function displayResults(results, comparison) {
  */
 async function runPerformanceRegressionTests() {
   let server = null;
-  
+
   try {
     console.log('🧪 Starting Performance Regression Tests');
     console.log('=========================================');
@@ -533,7 +535,7 @@ async function runPerformanceRegressionTests() {
 
     // Start test server
     server = await startPerformanceTestServer();
-    
+
     // Wait for server to be ready
     await new Promise(resolve => setTimeout(resolve, 2000));
 
@@ -577,9 +579,9 @@ if (import.meta.url === `file://${process.argv[1]}`) {
   runPerformanceRegressionTests();
 }
 
-export { 
-  runPerformanceRegressionTests, 
-  runPerformanceBenchmark, 
-  compareWithBaseline, 
-  calculatePerformanceSummary 
+export {
+  runPerformanceRegressionTests,
+  runPerformanceBenchmark,
+  compareWithBaseline,
+  calculatePerformanceSummary,
 };

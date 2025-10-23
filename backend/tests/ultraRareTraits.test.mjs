@@ -7,7 +7,7 @@
  * Focus: Business logic validation, trigger conditions, mechanical effects
  */
 
-import { jest } from '@jest/globals';
+// jest import removed - not used in this file
 import request from 'supertest';
 import app from '../app.mjs';
 import prisma from '../db/index.mjs';

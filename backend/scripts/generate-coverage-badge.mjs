@@ -1,6 +1,6 @@
 /**
  * Coverage Badge Generator for CI/CD Pipeline
- * 
+ *
  * This script generates coverage badges for README and documentation including:
  * - SVG badge generation
  * - Shields.io compatible format
@@ -22,19 +22,19 @@ const BADGE_CONFIG = {
     good: '#97ca00',        // 80-89% coverage
     fair: '#dfb317',        // 70-79% coverage
     poor: '#fe7d37',        // 60-69% coverage
-    critical: '#e05d44'     // <60% coverage
+    critical: '#e05d44',     // <60% coverage
   },
   thresholds: {
     excellent: 90,
     good: 80,
     fair: 70,
-    poor: 60
+    poor: 60,
   },
   width: {
     label: 63,
     message: 47,
-    total: 110
-  }
+    total: 110,
+  },
 };
 
 /**
@@ -52,8 +52,8 @@ async function readCoverageSummary() {
         lines: { pct: 0 },
         statements: { pct: 0 },
         functions: { pct: 0 },
-        branches: { pct: 0 }
-      }
+        branches: { pct: 0 },
+      },
     };
   }
 }
@@ -63,7 +63,7 @@ async function readCoverageSummary() {
  */
 function calculateOverallCoverage(coverageData) {
   const { total } = coverageData;
-  
+
   if (!total) {
     return 0;
   }
@@ -72,11 +72,11 @@ function calculateOverallCoverage(coverageData) {
     total.lines.pct,
     total.statements.pct,
     total.functions.pct,
-    total.branches.pct
+    total.branches.pct,
   ];
 
   const validMetrics = metrics.filter(metric => typeof metric === 'number' && !isNaN(metric));
-  
+
   if (validMetrics.length === 0) {
     return 0;
   }
@@ -108,7 +108,7 @@ function generateSvgBadge(label, message, color) {
   const labelWidth = BADGE_CONFIG.width.label;
   const messageWidth = BADGE_CONFIG.width.message;
   const totalWidth = BADGE_CONFIG.width.total;
-  
+
   return `<svg xmlns="http://www.w3.org/2000/svg" xmlns:xlink="http://www.w3.org/1999/xlink" width="${totalWidth}" height="20" role="img" aria-label="${label}: ${message}">
   <title>${label}: ${message}</title>
   <linearGradient id="s" x2="0" y2="100%">
@@ -139,7 +139,7 @@ function generateShieldsUrl(label, message, color) {
   const encodedLabel = encodeURIComponent(label);
   const encodedMessage = encodeURIComponent(message);
   const encodedColor = encodeURIComponent(color.replace('#', ''));
-  
+
   return `https://img.shields.io/badge/${encodedLabel}-${encodedMessage}-${encodedColor}`;
 }
 
@@ -150,7 +150,7 @@ function generateBadgeData(coveragePercentage) {
   const percentage = Math.round(coveragePercentage * 10) / 10; // Round to 1 decimal
   const message = `${percentage}%`;
   const color = getCoverageColor(percentage);
-  
+
   return {
     label: 'coverage',
     message,
@@ -158,7 +158,7 @@ function generateBadgeData(coveragePercentage) {
     percentage,
     svg: generateSvgBadge('coverage', message, color),
     shieldsUrl: generateShieldsUrl('coverage', message, color),
-    grade: getCoverageGrade(percentage)
+    grade: getCoverageGrade(percentage),
   };
 }
 
@@ -166,14 +166,14 @@ function generateBadgeData(coveragePercentage) {
  * Get coverage grade
  */
 function getCoverageGrade(percentage) {
-  if (percentage >= 95) return 'A+';
-  if (percentage >= 90) return 'A';
-  if (percentage >= 85) return 'B+';
-  if (percentage >= 80) return 'B';
-  if (percentage >= 75) return 'C+';
-  if (percentage >= 70) return 'C';
-  if (percentage >= 65) return 'D+';
-  if (percentage >= 60) return 'D';
+  if (percentage >= 95) { return 'A+'; }
+  if (percentage >= 90) { return 'A'; }
+  if (percentage >= 85) { return 'B+'; }
+  if (percentage >= 80) { return 'B'; }
+  if (percentage >= 75) { return 'C+'; }
+  if (percentage >= 70) { return 'C'; }
+  if (percentage >= 65) { return 'D+'; }
+  if (percentage >= 60) { return 'D'; }
   return 'F';
 }
 
@@ -183,7 +183,7 @@ function getCoverageGrade(percentage) {
 function generateDetailedBadges(coverageData) {
   const { total } = coverageData;
   const badges = {};
-  
+
   if (!total) {
     return badges;
   }
@@ -192,7 +192,7 @@ function generateDetailedBadges(coverageData) {
     lines: total.lines.pct,
     statements: total.statements.pct,
     functions: total.functions.pct,
-    branches: total.branches.pct
+    branches: total.branches.pct,
   };
 
   Object.entries(metrics).forEach(([metric, percentage]) => {
@@ -237,9 +237,9 @@ async function saveBadgeFiles(badgeData, detailedBadges) {
     urls: {
       overall: badgeData.shieldsUrl,
       detailed: Object.fromEntries(
-        Object.entries(detailedBadges).map(([metric, badge]) => [metric, badge.shieldsUrl])
-      )
-    }
+        Object.entries(detailedBadges).map(([metric, badge]) => [metric, badge.shieldsUrl]),
+      ),
+    },
   }, null, 2));
   savedFiles.push(badgeDataPath);
 
@@ -258,7 +258,7 @@ async function saveBadgeFiles(badgeData, detailedBadges) {
 function generateReadmeSnippet(badgeData, detailedBadges) {
   let snippet = '<!-- Coverage Badges -->\n';
   snippet += `![Coverage](${badgeData.shieldsUrl})\n`;
-  
+
   if (Object.keys(detailedBadges).length > 0) {
     snippet += '\n<!-- Detailed Coverage Badges -->\n';
     Object.entries(detailedBadges).forEach(([metric, badge]) => {
@@ -266,7 +266,7 @@ function generateReadmeSnippet(badgeData, detailedBadges) {
       snippet += `![${capitalizedMetric} Coverage](${badge.shieldsUrl})\n`;
     });
   }
-  
+
   snippet += '\n<!-- End Coverage Badges -->\n';
   return snippet;
 }
@@ -299,7 +299,7 @@ async function generateCoverageBadge() {
     console.log(`Overall Coverage: ${badgeData.percentage}% (Grade: ${badgeData.grade})`);
     console.log(`Badge Color: ${badgeData.color}`);
     console.log(`Shields.io URL: ${badgeData.shieldsUrl}`);
-    
+
     if (Object.keys(detailedBadges).length > 0) {
       console.log('\nDetailed Metrics:');
       Object.entries(detailedBadges).forEach(([metric, badge]) => {
@@ -325,10 +325,10 @@ if (import.meta.url === `file://${process.argv[1]}`) {
   generateCoverageBadge();
 }
 
-export { 
-  generateCoverageBadge, 
-  generateBadgeData, 
-  generateDetailedBadges, 
+export {
+  generateCoverageBadge,
+  generateBadgeData,
+  generateDetailedBadges,
   generateSvgBadge,
-  generateShieldsUrl 
+  generateShieldsUrl,
 };

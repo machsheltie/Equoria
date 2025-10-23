@@ -109,7 +109,7 @@ export function calculateBehaviorModifiers(epigeneticFlags) {
  * @param {string} discipline - Competition discipline
  * @returns {Object} Modified score and applied modifiers
  */
-export function applyFlagInfluencesToCompetition(baseScore, epigeneticFlags, discipline) {
+export function applyFlagInfluencesToCompetition(baseScore, epigeneticFlags, _discipline) {
   if (!epigeneticFlags || epigeneticFlags.length === 0) {
     return {
       modifiedScore: baseScore,

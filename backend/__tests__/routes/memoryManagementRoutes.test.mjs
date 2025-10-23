@@ -1,13 +1,13 @@
 /**
  * 🧪 Memory Management Routes Tests
- * 
+ *
  * Comprehensive test suite for memory management API endpoints including:
  * - Memory status and metrics retrieval
  * - Resource analytics and monitoring
  * - Garbage collection management
  * - System health assessment
  * - Performance monitoring and alerting
- * 
+ *
  * Testing Approach: TDD with NO MOCKING
  * - Real API endpoint testing with authentication
  * - Authentic memory monitoring validation
@@ -15,17 +15,17 @@
  * - Production-like memory scenarios
  */
 
-import { jest } from '@jest/globals';
+// jest import removed - not used in this file
 import request from 'supertest';
 import express from 'express';
 import jwt from 'jsonwebtoken';
 import memoryManagementRoutes from '../../routes/memoryManagementRoutes.mjs';
 import { responseHandler } from '../../utils/apiResponse.mjs';
-import { authenticateToken } from '../../middleware/auth.mjs';
-import { 
-  getMemoryManager, 
+// authenticateToken import removed - not used in this file
+import {
+  // getMemoryManager import removed - not used in this file
   shutdownMemoryManagement,
-  initializeMemoryManagement 
+  initializeMemoryManagement,
 } from '../../services/memoryResourceManagementService.mjs';
 import prisma from '../../../packages/database/prismaClient.mjs';
 
@@ -33,7 +33,7 @@ describe('Memory Management Routes', () => {
   let testApp;
   let testUser;
   let authToken;
-  let memoryManager;
+  let _memoryManager;
 
   beforeAll(async () => {
     // Create test user
@@ -51,7 +51,7 @@ describe('Memory Management Routes', () => {
     authToken = jwt.sign(
       { id: testUser.id, username: testUser.username },
       process.env.JWT_SECRET || 'test-secret',
-      { expiresIn: '1h' }
+      { expiresIn: '1h' },
     );
 
     // Create test Express app
@@ -61,7 +61,7 @@ describe('Memory Management Routes', () => {
     testApp.use('/api/memory', memoryManagementRoutes);
 
     // Initialize memory management
-    memoryManager = initializeMemoryManagement({
+    _memoryManager = initializeMemoryManagement({
       memoryThreshold: 50 * 1024 * 1024, // 50MB for testing
       monitoringInterval: 1000, // 1 second for testing
       gcInterval: 2000, // 2 seconds for testing
@@ -71,7 +71,7 @@ describe('Memory Management Routes', () => {
   afterAll(async () => {
     // Cleanup memory management
     shutdownMemoryManagement();
-    
+
     // Cleanup test data
     await prisma.user.delete({
       where: { id: testUser.id },
@@ -124,7 +124,7 @@ describe('Memory Management Routes', () => {
 
     test('accepts different timeframe parameters', async () => {
       const timeframes = ['1h', '6h', '24h', '7d'];
-      
+
       for (const timeframe of timeframes) {
         const response = await request(testApp)
           .get(`/api/memory/metrics?timeframe=${timeframe}`)
@@ -276,7 +276,7 @@ describe('Memory Management Routes', () => {
 
     test('filters alerts by severity', async () => {
       const severities = ['info', 'warning', 'critical'];
-      
+
       for (const severity of severities) {
         const response = await request(testApp)
           .get(`/api/memory/alerts?severity=${severity}`)
@@ -333,7 +333,7 @@ describe('Memory Management Routes', () => {
       expect(response.body.data.resources).toBeDefined();
       expect(response.body.data.uptime).toBeDefined();
       expect(response.body.data.recommendations).toBeDefined();
-      
+
       expect(typeof response.body.data.score).toBe('number');
       expect(response.body.data.score).toBeGreaterThanOrEqual(0);
       expect(response.body.data.score).toBeLessThanOrEqual(100);
@@ -391,8 +391,8 @@ describe('Memory Management Routes', () => {
         .set('Authorization', `Bearer ${authToken}`)
         .expect(200);
 
-      const analytics = response.body.data.analytics;
-      
+      const { analytics } = response.body.data;
+
       expect(analytics.averageHeapUsed).toBeGreaterThan(0);
       expect(analytics.peakHeapUsed).toBeGreaterThan(0);
       expect(analytics.averageHeapUtilization).toBeGreaterThan(0);
@@ -405,8 +405,8 @@ describe('Memory Management Routes', () => {
         .set('Authorization', `Bearer ${authToken}`)
         .expect(200);
 
-      const data = response.body.data;
-      
+      const { data } = response.body;
+
       expect(data.efficiency).toBeGreaterThanOrEqual(0);
       expect(data.efficiency).toBeLessThanOrEqual(100);
       expect(data.current).toBeDefined();
@@ -420,7 +420,7 @@ describe('Memory Management Routes', () => {
         .expect(200);
 
       const health = response.body.data;
-      
+
       expect(health.score).toBeGreaterThan(0);
       expect(health.recommendations).toBeDefined();
       expect(health.memory.utilization).toBeGreaterThan(0);
@@ -442,7 +442,7 @@ describe('Memory Management Routes', () => {
     test('metrics endpoint provides recent data', async () => {
       // Wait a moment for metrics to be collected
       await new Promise(resolve => setTimeout(resolve, 1500));
-      
+
       const response = await request(testApp)
         .get('/api/memory/metrics')
         .set('Authorization', `Bearer ${authToken}`)

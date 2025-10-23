@@ -1,6 +1,6 @@
 /**
  * Coverage Report Generator for CI/CD Pipeline
- * 
+ *
  * This script generates comprehensive coverage reports including:
  * - Coverage summary analysis
  * - Threshold validation
@@ -22,29 +22,29 @@ const COVERAGE_CONFIG = {
       branches: 80,
       functions: 80,
       lines: 85,
-      statements: 85
+      statements: 85,
     },
     controllers: {
       branches: 85,
       functions: 90,
       lines: 90,
-      statements: 90
+      statements: 90,
     },
     services: {
       branches: 85,
       functions: 90,
       lines: 90,
-      statements: 90
+      statements: 90,
     },
     utils: {
       branches: 80,
       functions: 85,
       lines: 85,
-      statements: 85
-    }
+      statements: 85,
+    },
   },
   reportFormats: ['text', 'html', 'json', 'lcov'],
-  outputDir: '../coverage'
+  outputDir: '../coverage',
 };
 
 /**
@@ -69,7 +69,7 @@ function analyzeCoverage(coverageData) {
     byDirectory: {},
     byFile: {},
     thresholdResults: {},
-    summary: {}
+    summary: {},
   };
 
   // Extract overall coverage
@@ -78,15 +78,15 @@ function analyzeCoverage(coverageData) {
       lines: coverageData.total.lines.pct,
       statements: coverageData.total.statements.pct,
       functions: coverageData.total.functions.pct,
-      branches: coverageData.total.branches.pct
+      branches: coverageData.total.branches.pct,
     };
   }
 
   // Analyze by directory
   const directories = {};
   Object.entries(coverageData).forEach(([filePath, data]) => {
-    if (filePath === 'total') return;
-    
+    if (filePath === 'total') { return; }
+
     const dir = path.dirname(filePath);
     if (!directories[dir]) {
       directories[dir] = {
@@ -94,7 +94,7 @@ function analyzeCoverage(coverageData) {
         lines: { covered: 0, total: 0 },
         statements: { covered: 0, total: 0 },
         functions: { covered: 0, total: 0 },
-        branches: { covered: 0, total: 0 }
+        branches: { covered: 0, total: 0 },
       };
     }
 
@@ -116,7 +116,7 @@ function analyzeCoverage(coverageData) {
       lines: data.lines.total > 0 ? (data.lines.covered / data.lines.total * 100).toFixed(2) : 0,
       statements: data.statements.total > 0 ? (data.statements.covered / data.statements.total * 100).toFixed(2) : 0,
       functions: data.functions.total > 0 ? (data.functions.covered / data.functions.total * 100).toFixed(2) : 0,
-      branches: data.branches.total > 0 ? (data.branches.covered / data.branches.total * 100).toFixed(2) : 0
+      branches: data.branches.total > 0 ? (data.branches.covered / data.branches.total * 100).toFixed(2) : 0,
     };
   });
 
@@ -135,7 +135,7 @@ function analyzeCoverage(coverageData) {
 function checkCoverageThresholds(overall, byDirectory) {
   const results = {
     global: { passed: true, failures: [] },
-    directories: {}
+    directories: {},
   };
 
   // Check global thresholds
@@ -146,7 +146,7 @@ function checkCoverageThresholds(overall, byDirectory) {
         metric,
         actual: overall[metric],
         threshold,
-        difference: (threshold - overall[metric]).toFixed(2)
+        difference: (threshold - overall[metric]).toFixed(2),
       });
     }
   });
@@ -171,7 +171,7 @@ function checkCoverageThresholds(overall, byDirectory) {
           metric,
           actual,
           threshold,
-          difference: (threshold - actual).toFixed(2)
+          difference: (threshold - actual).toFixed(2),
         });
       }
     });
@@ -185,17 +185,17 @@ function checkCoverageThresholds(overall, byDirectory) {
  */
 function generateCoverageSummary(analysis) {
   const { overall, thresholdResults } = analysis;
-  
+
   const totalFailures = thresholdResults.global.failures.length +
     Object.values(thresholdResults.directories).reduce((sum, dir) => sum + dir.failures.length, 0);
 
   return {
-    overallPassed: thresholdResults.global.passed && 
+    overallPassed: thresholdResults.global.passed &&
       Object.values(thresholdResults.directories).every(dir => dir.passed),
     totalFailures,
     coverage: overall,
     grade: getCoverageGrade(overall),
-    recommendations: generateRecommendations(analysis)
+    recommendations: generateRecommendations(analysis),
   };
 }
 
@@ -204,15 +204,15 @@ function generateCoverageSummary(analysis) {
  */
 function getCoverageGrade(coverage) {
   const avgCoverage = (coverage.lines + coverage.statements + coverage.functions + coverage.branches) / 4;
-  
-  if (avgCoverage >= 95) return 'A+';
-  if (avgCoverage >= 90) return 'A';
-  if (avgCoverage >= 85) return 'B+';
-  if (avgCoverage >= 80) return 'B';
-  if (avgCoverage >= 75) return 'C+';
-  if (avgCoverage >= 70) return 'C';
-  if (avgCoverage >= 65) return 'D+';
-  if (avgCoverage >= 60) return 'D';
+
+  if (avgCoverage >= 95) { return 'A+'; }
+  if (avgCoverage >= 90) { return 'A'; }
+  if (avgCoverage >= 85) { return 'B+'; }
+  if (avgCoverage >= 80) { return 'B'; }
+  if (avgCoverage >= 75) { return 'C+'; }
+  if (avgCoverage >= 70) { return 'C'; }
+  if (avgCoverage >= 65) { return 'D+'; }
+  if (avgCoverage >= 60) { return 'D'; }
   return 'F';
 }
 
@@ -267,7 +267,7 @@ function formatConsoleReport(analysis) {
     report += '✅ All coverage thresholds PASSED\n\n';
   } else {
     report += '❌ Coverage thresholds FAILED\n\n';
-    
+
     if (thresholdResults.global.failures.length > 0) {
       report += '🔴 Global threshold failures:\n';
       thresholdResults.global.failures.forEach(failure => {
@@ -302,19 +302,16 @@ function formatConsoleReport(analysis) {
 function generateBadgeData(analysis) {
   const { overall, summary } = analysis;
   const avgCoverage = (overall.lines + overall.statements + overall.functions + overall.branches) / 4;
-  
+
   let color = 'red';
-  if (avgCoverage >= 90) color = 'brightgreen';
-  else if (avgCoverage >= 80) color = 'green';
-  else if (avgCoverage >= 70) color = 'yellow';
-  else if (avgCoverage >= 60) color = 'orange';
+  if (avgCoverage >= 90) { color = 'brightgreen'; } else if (avgCoverage >= 80) { color = 'green'; } else if (avgCoverage >= 70) { color = 'yellow'; } else if (avgCoverage >= 60) { color = 'orange'; }
 
   return {
     schemaVersion: 1,
     label: 'coverage',
     message: `${avgCoverage.toFixed(1)}%`,
     color,
-    grade: summary.grade
+    grade: summary.grade,
   };
 }
 
@@ -336,7 +333,7 @@ async function saveCoverageReports(analysis) {
     passed: analysis.summary.overallPassed,
     coverage: analysis.overall,
     grade: analysis.summary.grade,
-    failures: analysis.summary.totalFailures
+    failures: analysis.summary.totalFailures,
   }, null, 2));
 
   // Save badge data
@@ -347,7 +344,7 @@ async function saveCoverageReports(analysis) {
   return {
     analysisPath,
     summaryPath,
-    badgePath
+    badgePath,
   };
 }
 
@@ -392,9 +389,9 @@ if (import.meta.url === `file://${process.argv[1]}`) {
   generateCoverageReport();
 }
 
-export { 
-  generateCoverageReport, 
-  analyzeCoverage, 
-  checkCoverageThresholds, 
-  generateBadgeData 
+export {
+  generateCoverageReport,
+  analyzeCoverage,
+  checkCoverageThresholds,
+  generateBadgeData,
 };

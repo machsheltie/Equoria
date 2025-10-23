@@ -1,24 +1,24 @@
 /**
  * Environmental Factor Engine Tests
- * 
+ *
  * Tests for core environmental calculation system with weather patterns, seasonal cycles,
  * environmental triggers, and factor calculations affecting horse development and performance.
- * 
+ *
  * Testing Approach: TDD with NO MOCKING - Real system validation
  * Business Rules: Environmental impact on horse development, seasonal variations, weather effects
  */
 
-import { describe, test, expect, beforeEach, afterEach } from '@jest/globals';
-import logger from '../../utils/logger.mjs';
+import { describe, test, expect, beforeEach, _afterEach } from '@jest/globals';
+import _logger from '../../utils/_logger.mjs';
 import {
   calculateCurrentWeather,
   getSeasonalFactors,
   calculateEnvironmentalTriggers,
   calculateEnvironmentalImpact,
   generateWeatherForecast,
-  getEnvironmentalHistory,
+  _getEnvironmentalHistory,
   calculateComfortZone,
-  assessEnvironmentalStress
+  assessEnvironmentalStress,
 } from '../../services/environmentalFactorEngineService.mjs';
 
 // Helper function to calculate seasonal temperature averages
@@ -42,14 +42,14 @@ describe('🌤️ Environmental Factor Engine', () => {
       latitude: 40.7128,
       longitude: -74.0060,
       region: 'temperate',
-      elevation: 10
+      elevation: 10,
     };
     testHorse = {
       id: 1,
       age: 5,
       health: 85,
       traits: ['heat_tolerant', 'calm'],
-      stats: { stamina: 80, intelligence: 75 }
+      stats: { stamina: 80, intelligence: 75 },
     };
   });
 
@@ -112,14 +112,14 @@ describe('🌤️ Environmental Factor Engine', () => {
         latitude: 25.7617,
         longitude: -80.1918,
         region: 'tropical',
-        elevation: 2
+        elevation: 2,
       };
 
       const arcticLocation = {
         latitude: 71.0486,
         longitude: -8.0751,
         region: 'arctic',
-        elevation: 50
+        elevation: 50,
       };
 
       const tropicalWeather = calculateCurrentWeather(testDate, tropicalLocation);
@@ -211,14 +211,14 @@ describe('🌤️ Environmental Factor Engine', () => {
         temperature: 38, // Very hot
         humidity: 95,    // Very humid
         windSpeed: 25,   // Strong wind
-        conditions: 'stormy'
+        conditions: 'stormy',
       };
 
       const mildWeather = {
         temperature: 22, // Comfortable
         humidity: 60,    // Moderate
         windSpeed: 5,    // Light breeze
-        conditions: 'sunny'
+        conditions: 'sunny',
       };
 
       // Mock weather calculation for testing
@@ -232,19 +232,19 @@ describe('🌤️ Environmental Factor Engine', () => {
     test('should account for horse traits in trigger calculation', () => {
       const heatSensitiveHorse = {
         ...testHorse,
-        traits: ['heat_sensitive', 'nervous']
+        traits: ['heat_sensitive', 'nervous'],
       };
 
       const heatTolerantHorse = {
         ...testHorse,
-        traits: ['heat_tolerant', 'calm']
+        traits: ['heat_tolerant', 'calm'],
       };
 
       const hotWeather = {
         temperature: 35,
         humidity: 80,
         windSpeed: 2,
-        conditions: 'sunny'
+        conditions: 'sunny',
       };
 
       const sensitiveTriggersHot = calculateEnvironmentalTriggers(testDate, testLocation, heatSensitiveHorse, hotWeather);
@@ -291,14 +291,14 @@ describe('🌤️ Environmental Factor Engine', () => {
         temperature: 20,
         humidity: 50,
         windSpeed: 8,
-        conditions: 'sunny'
+        conditions: 'sunny',
       };
 
       const harshConditions = {
         temperature: 40,
         humidity: 90,
         windSpeed: 30,
-        conditions: 'stormy'
+        conditions: 'stormy',
       };
 
       const idealImpact = calculateEnvironmentalImpact(testDate, testLocation, testHorse, idealConditions);
@@ -377,12 +377,12 @@ describe('🌤️ Environmental Factor Engine', () => {
     test('should adjust comfort zone based on horse traits', () => {
       const coldTolerantHorse = {
         ...testHorse,
-        traits: ['cold_tolerant', 'hardy']
+        traits: ['cold_tolerant', 'hardy'],
       };
 
       const heatTolerantHorse = {
         ...testHorse,
-        traits: ['heat_tolerant', 'desert_adapted']
+        traits: ['heat_tolerant', 'desert_adapted'],
       };
 
       const coldComfort = calculateComfortZone(coldTolerantHorse);
@@ -419,7 +419,7 @@ describe('🌤️ Environmental Factor Engine', () => {
         temperature: 42,
         humidity: 95,
         windSpeed: 35,
-        conditions: 'stormy'
+        conditions: 'stormy',
       };
 
       const stressAssessment = assessEnvironmentalStress(testDate, testLocation, testHorse, highStressWeather);

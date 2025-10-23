@@ -118,10 +118,10 @@ describe('🔐 Authentication System Integration Tests', () => {
   beforeEach(async () => {
     // Clean up any existing test data
     await prisma.refreshToken.deleteMany({
-      where: { user: { email: { contains: 'authintegration' } } }
+      where: { user: { email: { contains: 'authintegration' } } },
     });
     await prisma.user.deleteMany({
-      where: { email: { contains: 'authintegration' } }
+      where: { email: { contains: 'authintegration' } },
     });
 
     // Create test user and get authentication tokens
@@ -130,7 +130,7 @@ describe('🔐 Authentication System Integration Tests', () => {
       username: 'authintegrationuser',
       password: 'testpassword123',
       firstName: 'Auth',
-      lastName: 'Integration'
+      lastName: 'Integration',
     };
 
     const registerResponse = await request(app)
@@ -148,10 +148,10 @@ describe('🔐 Authentication System Integration Tests', () => {
   afterEach(async () => {
     // Clean up test data
     await prisma.refreshToken.deleteMany({
-      where: { user: { email: { contains: 'authintegration' } } }
+      where: { user: { email: { contains: 'authintegration' } } },
     });
     await prisma.user.deleteMany({
-      where: { email: { contains: 'authintegration' } }
+      where: { email: { contains: 'authintegration' } },
     });
   });
 
@@ -165,7 +165,7 @@ describe('🔐 Authentication System Integration Tests', () => {
         '/api/grooms/my-grooms',
         '/api/traits/my-discoveries',
         '/api/dashboard/overview',
-        '/api/health/protected'
+        '/api/health/protected',
       ];
 
       for (const endpoint of protectedEndpoints) {
@@ -189,7 +189,7 @@ describe('🔐 Authentication System Integration Tests', () => {
         '/api/grooms/my-grooms',
         '/api/traits/my-discoveries',
         '/api/dashboard/overview',
-        '/api/health/protected'
+        '/api/health/protected',
       ];
 
       for (const endpoint of protectedEndpoints) {
@@ -207,7 +207,7 @@ describe('🔐 Authentication System Integration Tests', () => {
         '/api/users/profile',
         '/api/horses',
         '/api/competition/my-entries',
-        '/api/training/status'
+        '/api/training/status',
       ];
 
       for (const endpoint of protectedEndpoints) {
@@ -244,7 +244,7 @@ describe('🔐 Authentication System Integration Tests', () => {
       const testEndpoints = [
         '/api/users/profile',
         '/api/horses',
-        '/api/dashboard/overview'
+        '/api/dashboard/overview',
       ];
 
       for (const endpoint of testEndpoints) {
@@ -264,7 +264,7 @@ describe('🔐 Authentication System Integration Tests', () => {
       const endpoints = [
         '/api/users/profile',
         '/api/horses',
-        '/api/competition/my-entries'
+        '/api/competition/my-entries',
       ];
 
       for (const endpoint of endpoints) {
@@ -282,7 +282,7 @@ describe('🔐 Authentication System Integration Tests', () => {
         'InvalidFormat',
         'Bearer',
         'Bearer ',
-        'NotBearer token123'
+        'NotBearer token123',
       ];
 
       for (const header of malformedHeaders) {

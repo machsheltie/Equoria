@@ -1,9 +1,9 @@
 /**
  * Weekly Flag Evaluation Service
- * 
+ *
  * Automated weekly flag evaluation system for horses 0-3 years old.
  * Analyzes care patterns, bond trends, and stress patterns to assign epigenetic flags.
- * 
+ *
  * Business Rules:
  * - Only evaluates horses under 3 years old (1095 days)
  * - Maximum 5 flags per horse
@@ -95,7 +95,7 @@ export async function processHorseForFlagEvaluation(horseId) {
 
     // Calculate horse age in days
     const ageInDays = Math.floor(
-      (Date.now() - new Date(horse.dateOfBirth)) / (1000 * 60 * 60 * 24)
+      (Date.now() - new Date(horse.dateOfBirth)) / (1000 * 60 * 60 * 24),
     );
 
     // Skip if horse is over 3 years old
@@ -195,7 +195,7 @@ export async function evaluateWeeklyFlags() {
       try {
         const evaluation = await processHorseForFlagEvaluation(horse.id);
         results.horsesProcessed.push(evaluation);
-        
+
         if (evaluation.flagsAssigned) {
           results.flagsAssigned += evaluation.flagsAssigned.length;
         }
@@ -228,7 +228,7 @@ export async function triggerWeeklyFlagEvaluation() {
     // Check if it's time for weekly evaluation (could be based on day of week or interval)
     const now = new Date();
     const dayOfWeek = now.getDay(); // 0 = Sunday, 1 = Monday, etc.
-    
+
     // Run weekly evaluation on Mondays (day 1)
     if (dayOfWeek === 1) {
       return await evaluateWeeklyFlags();

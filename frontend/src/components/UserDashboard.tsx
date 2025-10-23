@@ -34,6 +34,10 @@ import {
 
 interface UserDashboardProps {
   userId: number;
+  // Optional data props (if provided, component won't fetch)
+  progressData?: UserProgress;
+  dashboardData?: DashboardData;
+  activityData?: ActivityItem[];
 }
 
 interface UserProgress {
@@ -83,16 +87,21 @@ interface ActivityItem {
   timestamp: string;
 }
 
-const UserDashboard: React.FC<UserDashboardProps> = ({ userId }) => {
+const UserDashboard: React.FC<UserDashboardProps> = ({
+  userId,
+  progressData: propProgressData,
+  dashboardData: propDashboardData,
+  activityData: propActivityData
+}) => {
   const navigate = useNavigate();
   const [activityPage, setActivityPage] = useState(1);
 
-  // Fetch user progress data
-  const { 
-    data: progressData, 
-    isLoading: progressLoading, 
+  // Fetch user progress data (only if not provided as props)
+  const {
+    data: progressData = propProgressData,
+    isLoading: progressLoading,
     error: progressError,
-    refetch: refetchProgress 
+    refetch: refetchProgress
   } = useQuery<UserProgress>({
     queryKey: ['userProgress', userId],
     queryFn: async () => {
@@ -102,14 +111,15 @@ const UserDashboard: React.FC<UserDashboardProps> = ({ userId }) => {
       }
       return response.json();
     },
+    enabled: !propProgressData && typeof fetch !== 'undefined',
   });
 
-  // Fetch dashboard data
-  const { 
-    data: dashboardData, 
-    isLoading: dashboardLoading, 
+  // Fetch dashboard data (only if not provided as props)
+  const {
+    data: dashboardData = propDashboardData,
+    isLoading: dashboardLoading,
     error: dashboardError,
-    refetch: refetchDashboard 
+    refetch: refetchDashboard
   } = useQuery<DashboardData>({
     queryKey: ['dashboard', userId],
     queryFn: async () => {
@@ -119,13 +129,14 @@ const UserDashboard: React.FC<UserDashboardProps> = ({ userId }) => {
       }
       return response.json();
     },
+    enabled: !propDashboardData && typeof fetch !== 'undefined',
   });
 
-  // Fetch activity feed
-  const { 
-    data: activityData, 
+  // Fetch activity feed (only if not provided as props)
+  const {
+    data: activityData = propActivityData,
     isLoading: activityLoading,
-    error: activityError 
+    error: activityError
   } = useQuery<ActivityItem[]>({
     queryKey: ['userActivity', userId, activityPage],
     queryFn: async () => {
@@ -135,6 +146,7 @@ const UserDashboard: React.FC<UserDashboardProps> = ({ userId }) => {
       }
       return response.json();
     },
+    enabled: !propActivityData && typeof fetch !== 'undefined',
   });
 
   // Calculate progress percentage
@@ -144,9 +156,9 @@ const UserDashboard: React.FC<UserDashboardProps> = ({ userId }) => {
     return (currentLevelXP / 100) * 100;
   }, [progressData]);
 
-  // Handle loading states
-  const isLoading = progressLoading || dashboardLoading;
-  const hasError = progressError || dashboardError || activityError;
+  // Handle loading states (only show loading if not using prop data)
+  const isLoading = (progressLoading || dashboardLoading) && !propProgressData && !propDashboardData;
+  const hasError = (progressError || dashboardError || activityError) && !propProgressData && !propDashboardData && !propActivityData;
 
   // Handle refresh
   const handleRefresh = () => {

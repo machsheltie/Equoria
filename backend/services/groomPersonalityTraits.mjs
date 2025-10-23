@@ -1,9 +1,9 @@
 /**
  * Groom Personality Traits Service
- * 
+ *
  * Implements detailed personality traits for grooms with specific interaction modifiers.
  * Handles personality-based compatibility analysis and trait development over time.
- * 
+ *
  * Business Rules:
  * - Each personality type has specific traits with defined effects
  * - Experience level influences trait strength and expression
@@ -234,7 +234,7 @@ export async function getGroomPersonalityTraits(groomId) {
 export async function calculatePersonalityModifiers(groomId, horseId, taskType) {
   try {
     const groomTraits = await getGroomPersonalityTraits(groomId);
-    
+
     const horse = await prisma.horse.findUnique({
       where: { id: horseId },
       select: {
@@ -314,7 +314,7 @@ export async function calculatePersonalityModifiers(groomId, horseId, taskType) 
     };
 
   } catch (error) {
-    logger.error(`Error calculating personality modifiers:`, error);
+    logger.error('Error calculating personality modifiers:', error);
     throw error;
   }
 }
@@ -392,7 +392,7 @@ export async function analyzePersonalityCompatibility(groomId, horseId) {
     };
 
   } catch (error) {
-    logger.error(`Error analyzing personality compatibility:`, error);
+    logger.error('Error analyzing personality compatibility:', error);
     throw error;
   }
 }
@@ -506,9 +506,9 @@ export async function getPersonalityTraitDefinitions() {
  * Calculate experience level based on experience points
  */
 function calculateExperienceLevel(experience) {
-  if (experience <= 50) return 'low';
-  if (experience <= 100) return 'medium';
-  if (experience <= 200) return 'high';
+  if (experience <= 50) { return 'low'; }
+  if (experience <= 100) { return 'medium'; }
+  if (experience <= 200) { return 'high'; }
   return 'expert';
 }
 
@@ -608,10 +608,10 @@ function calculateOverallCompatibility(groomTraits, horse) {
  * Get compatibility level description
  */
 function getCompatibilityLevel(score) {
-  if (score >= 0.8) return 'excellent';
-  if (score >= 0.6) return 'good';
-  if (score >= 0.4) return 'moderate';
-  if (score >= 0.2) return 'poor';
+  if (score >= 0.8) { return 'excellent'; }
+  if (score >= 0.6) { return 'good'; }
+  if (score >= 0.4) { return 'moderate'; }
+  if (score >= 0.2) { return 'poor'; }
   return 'very_poor';
 }
 

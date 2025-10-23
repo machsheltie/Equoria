@@ -1,9 +1,9 @@
 /**
  * Advanced Epigenetic API Routes Tests
- * 
+ *
  * Tests API endpoints for environmental triggers, trait interactions, and developmental windows.
  * Uses TDD approach with NO MOCKING - real database operations for authentic validation.
- * 
+ *
  * Business Rules Tested:
  * - Environmental trigger analysis API endpoints with authentication
  * - Trait interaction matrix API endpoints with proper data formatting
@@ -44,7 +44,7 @@ describe('Advanced Epigenetic API Routes', () => {
     authToken = jwt.sign(
       { id: testUser.id, username: testUser.username },
       process.env.JWT_SECRET,
-      { expiresIn: '1h' }
+      { expiresIn: '1h' },
     );
 
     // Create test grooms
@@ -182,7 +182,7 @@ describe('Advanced Epigenetic API Routes', () => {
         .set('Authorization', `Bearer ${authToken}`)
         .send({
           traitName: 'confident',
-          windowName: 'early_socialization'
+          windowName: 'early_socialization',
         })
         .expect(200);
 
@@ -355,7 +355,7 @@ describe('Advanced Epigenetic API Routes', () => {
         .set('Authorization', `Bearer ${authToken}`)
         .send({
           traitName: '', // Invalid empty trait name
-          windowName: 'early_socialization'
+          windowName: 'early_socialization',
         })
         .expect(400);
     });

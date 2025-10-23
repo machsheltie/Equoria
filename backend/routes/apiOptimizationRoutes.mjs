@@ -1,13 +1,13 @@
 /**
  * 🚀 API Optimization Routes
- * 
+ *
  * REST API endpoints for managing and monitoring API response optimization:
  * - Performance metrics and monitoring
  * - Compression statistics
  * - Cache hit rates and efficiency
  * - Response size analytics
  * - Optimization configuration
- * 
+ *
  * Features:
  * - Real-time performance metrics
  * - Optimization configuration management
@@ -24,7 +24,7 @@ import {
   getPerformanceMetrics,
   PaginationService,
   SerializationService,
-  ResponseCacheService,
+  _ResponseCacheService,
 } from '../services/apiResponseOptimizationService.mjs';
 import logger from '../utils/logger.mjs';
 
@@ -51,7 +51,7 @@ const validateRequest = (req, res, next) => {
  */
 router.get('/metrics',
   authenticateToken,
-  getOptimizationMetrics
+  getOptimizationMetrics,
 );
 
 /**
@@ -65,11 +65,11 @@ router.get('/performance',
   async (req, res) => {
     try {
       const timeframe = req.query.timeframe || '24h';
-      
+
       logger.info(`[ApiOptimization] Getting performance metrics for timeframe: ${timeframe}`);
-      
+
       const metrics = getPerformanceMetrics();
-      
+
       // Calculate performance insights
       const insights = {
         averageResponseTime: calculateAverageResponseTime(metrics.serializationTime),
@@ -77,7 +77,7 @@ router.get('/performance',
         cacheEffectiveness: metrics.cacheHitRate,
         responseOptimization: analyzeResponseOptimization(metrics),
       };
-      
+
       res.json({
         success: true,
         message: 'Performance metrics retrieved successfully',
@@ -96,7 +96,7 @@ router.get('/performance',
         error: error.message,
       });
     }
-  }
+  },
 );
 
 /**
@@ -108,16 +108,16 @@ router.get('/compression-stats',
   async (req, res) => {
     try {
       logger.info('[ApiOptimization] Getting compression statistics');
-      
+
       const metrics = getPerformanceMetrics();
-      
+
       const compressionStats = {
         averageCompressionRatio: calculateAverageCompressionRatio(metrics.compressionRatio),
         totalBytesSaved: calculateTotalBytesSaved(metrics.responseSize, metrics.compressionRatio),
         compressionEfficiency: calculateCompressionEfficiency(metrics.compressionRatio),
         recommendedSettings: generateCompressionRecommendations(metrics),
       };
-      
+
       res.json({
         success: true,
         message: 'Compression statistics retrieved successfully',
@@ -131,7 +131,7 @@ router.get('/compression-stats',
         error: error.message,
       });
     }
-  }
+  },
 );
 
 /**
@@ -143,16 +143,16 @@ router.get('/cache-analytics',
   async (req, res) => {
     try {
       logger.info('[ApiOptimization] Getting cache analytics');
-      
+
       const metrics = getPerformanceMetrics();
-      
+
       const cacheAnalytics = {
         hitRate: metrics.cacheHitRate,
         totalRequests: metrics.totalRequests,
         cacheEfficiency: analyzeCacheEfficiency(metrics),
         recommendations: generateCacheRecommendations(metrics),
       };
-      
+
       res.json({
         success: true,
         message: 'Cache analytics retrieved successfully',
@@ -166,7 +166,7 @@ router.get('/cache-analytics',
         error: error.message,
       });
     }
-  }
+  },
 );
 
 /**
@@ -181,16 +181,16 @@ router.post('/test-compression',
   async (req, res) => {
     try {
       const { data, algorithm = 'gzip' } = req.body;
-      
+
       logger.info(`[ApiOptimization] Testing compression with algorithm: ${algorithm}`);
-      
+
       const originalSize = JSON.stringify(data).length;
       const optimizedData = SerializationService.optimizeResponse(data, { compress: true });
       const optimizedSize = JSON.stringify(optimizedData).length;
-      
+
       const compressionRatio = (originalSize - optimizedSize) / originalSize;
       const bytesSaved = originalSize - optimizedSize;
-      
+
       res.json({
         success: true,
         message: 'Compression test completed successfully',
@@ -212,7 +212,7 @@ router.post('/test-compression',
         error: error.message,
       });
     }
-  }
+  },
 );
 
 /**
@@ -228,9 +228,9 @@ router.post('/test-pagination',
   async (req, res) => {
     try {
       const { dataSize, pageSize = 20, paginationType = 'offset' } = req.body;
-      
+
       logger.info(`[ApiOptimization] Testing ${paginationType} pagination with ${dataSize} items`);
-      
+
       // Generate test data
       const testData = Array.from({ length: dataSize }, (_, i) => ({
         id: i + 1,
@@ -238,9 +238,9 @@ router.post('/test-pagination',
         value: Math.random() * 100,
         timestamp: new Date(Date.now() - Math.random() * 86400000).toISOString(),
       }));
-      
+
       const startTime = Date.now();
-      
+
       let paginationResult;
       if (paginationType === 'cursor') {
         paginationResult = PaginationService.createCursorPagination({
@@ -256,9 +256,9 @@ router.post('/test-pagination',
           totalCount: dataSize,
         });
       }
-      
+
       const processingTime = Date.now() - startTime;
-      
+
       res.json({
         success: true,
         message: 'Pagination test completed successfully',
@@ -282,7 +282,7 @@ router.post('/test-pagination',
         error: error.message,
       });
     }
-  }
+  },
 );
 
 /**
@@ -294,10 +294,10 @@ router.get('/recommendations',
   async (req, res) => {
     try {
       logger.info('[ApiOptimization] Generating optimization recommendations');
-      
+
       const metrics = getPerformanceMetrics();
       const recommendations = generateOptimizationRecommendations(metrics);
-      
+
       res.json({
         success: true,
         message: 'Optimization recommendations generated successfully',
@@ -316,7 +316,7 @@ router.get('/recommendations',
         error: error.message,
       });
     }
-  }
+  },
 );
 
 // Helper functions
@@ -352,63 +352,63 @@ function analyzeResponseOptimization(metrics) {
 }
 
 function analyzeCacheEfficiency(metrics) {
-  if (metrics.cacheHitRate > 0.8) return 'excellent';
-  if (metrics.cacheHitRate > 0.6) return 'good';
-  if (metrics.cacheHitRate > 0.3) return 'fair';
+  if (metrics.cacheHitRate > 0.8) { return 'excellent'; }
+  if (metrics.cacheHitRate > 0.6) { return 'good'; }
+  if (metrics.cacheHitRate > 0.3) { return 'fair'; }
   return 'poor';
 }
 
 function generateCompressionRecommendations(metrics) {
   const recommendations = [];
-  
+
   if (calculateCompressionEfficiency(metrics.compressionRatio) < 0.3) {
     recommendations.push('Consider enabling Brotli compression for better efficiency');
   }
-  
+
   if (Object.keys(metrics.compressionRatio).length === 0) {
     recommendations.push('Enable response compression to reduce bandwidth usage');
   }
-  
+
   return recommendations;
 }
 
 function generateCacheRecommendations(metrics) {
   const recommendations = [];
-  
+
   if (metrics.cacheHitRate < 0.5) {
     recommendations.push('Increase cache TTL for frequently accessed data');
     recommendations.push('Implement more aggressive caching strategies');
   }
-  
+
   if (metrics.totalRequests > 1000 && metrics.cacheHitRate === 0) {
     recommendations.push('Enable response caching to improve performance');
   }
-  
+
   return recommendations;
 }
 
 function generateCompressionRecommendation(ratio) {
-  if (ratio > 0.7) return 'Excellent compression ratio';
-  if (ratio > 0.5) return 'Good compression ratio';
-  if (ratio > 0.3) return 'Moderate compression ratio';
+  if (ratio > 0.7) { return 'Excellent compression ratio'; }
+  if (ratio > 0.5) { return 'Good compression ratio'; }
+  if (ratio > 0.3) { return 'Moderate compression ratio'; }
   return 'Poor compression ratio - consider data structure optimization';
 }
 
 function generateOptimizationRecommendations(metrics) {
   const recommendations = [];
-  
+
   // Compression recommendations
   recommendations.push(...generateCompressionRecommendations(metrics));
-  
+
   // Cache recommendations
   recommendations.push(...generateCacheRecommendations(metrics));
-  
+
   // Performance recommendations
   const avgResponseTime = calculateAverageResponseTime(metrics.serializationTime);
   if (avgResponseTime > 100) {
     recommendations.push('Optimize data serialization to reduce response times');
   }
-  
+
   return recommendations;
 }
 

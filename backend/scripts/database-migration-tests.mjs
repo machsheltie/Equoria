@@ -1,6 +1,6 @@
 /**
  * Database Migration Testing Pipeline for CI/CD
- * 
+ *
  * This script provides automated database migration validation including:
  * - Schema change testing and validation
  * - Migration rollback testing
@@ -25,10 +25,10 @@ const MIGRATION_CONFIG = {
   performanceThresholds: {
     migrationTime: 30000,    // 30 seconds max per migration
     rollbackTime: 15000,     // 15 seconds max per rollback
-    dataIntegrityCheck: 10000 // 10 seconds max for integrity checks
+    dataIntegrityCheck: 10000, // 10 seconds max for integrity checks
   },
   prismaPath: '../../packages/database',
-  backupRetention: 5 // Keep 5 backup files
+  backupRetention: 5, // Keep 5 backup files
 };
 
 /**
@@ -43,8 +43,8 @@ function executeCommand(command, options = {}) {
       env: {
         ...process.env,
         DATABASE_URL: MIGRATION_CONFIG.testDatabaseUrl,
-        ...options.env
-      }
+        ...options.env,
+      },
     });
     return { success: true, output: result.trim() };
   } catch (error) {
@@ -52,7 +52,7 @@ function executeCommand(command, options = {}) {
       success: false,
       error: error.message,
       output: error.stdout ? error.stdout.toString() : '',
-      stderr: error.stderr ? error.stderr.toString() : ''
+      stderr: error.stderr ? error.stderr.toString() : '',
     };
   }
 }
@@ -62,24 +62,24 @@ function executeCommand(command, options = {}) {
  */
 async function getDatabaseSchema() {
   console.log('📋 Retrieving current database schema...');
-  
+
   const introspectResult = executeCommand('npx prisma db pull --print --schema=prisma/schema.prisma');
-  
+
   if (!introspectResult.success) {
     throw new Error(`Failed to introspect database: ${introspectResult.error}`);
   }
 
   // Get table information
   const tablesResult = executeCommand(`psql "${MIGRATION_CONFIG.testDatabaseUrl}" -c "SELECT table_name FROM information_schema.tables WHERE table_schema = 'public';" -t`);
-  
-  const tables = tablesResult.success 
+
+  const tables = tablesResult.success
     ? tablesResult.output.split('\n').filter(line => line.trim()).map(line => line.trim())
     : [];
 
   return {
     schema: introspectResult.output,
     tables,
-    timestamp: new Date().toISOString()
+    timestamp: new Date().toISOString(),
   };
 }
 
@@ -88,15 +88,15 @@ async function getDatabaseSchema() {
  */
 async function createDatabaseBackup() {
   console.log('💾 Creating database backup...');
-  
+
   const timestamp = new Date().toISOString().replace(/[:.]/g, '-');
   const backupDir = path.resolve(__dirname, '../migration-backups');
   await fs.mkdir(backupDir, { recursive: true });
-  
+
   const backupFile = path.join(backupDir, `backup-${timestamp}.sql`);
-  
+
   const backupResult = executeCommand(`pg_dump "${MIGRATION_CONFIG.testDatabaseUrl}" > "${backupFile}"`);
-  
+
   if (!backupResult.success) {
     throw new Error(`Failed to create backup: ${backupResult.error}`);
   }
@@ -119,7 +119,7 @@ async function cleanupOldBackups(backupDir) {
       .map(file => ({
         name: file,
         path: path.join(backupDir, file),
-        stat: null
+        stat: null,
       }));
 
     // Get file stats
@@ -139,7 +139,7 @@ async function cleanupOldBackups(backupDir) {
     // Remove old backups beyond retention limit
     if (validBackups.length > MIGRATION_CONFIG.backupRetention) {
       const filesToDelete = validBackups.slice(MIGRATION_CONFIG.backupRetention);
-      
+
       for (const file of filesToDelete) {
         await fs.unlink(file.path);
         console.log(`🗑️ Removed old backup: ${file.name}`);
@@ -155,9 +155,9 @@ async function cleanupOldBackups(backupDir) {
  */
 async function testMigrationExecution() {
   console.log('🔄 Testing migration execution...');
-  
+
   const startTime = performance.now();
-  
+
   // Generate Prisma client
   const generateResult = executeCommand('npx prisma generate --schema=prisma/schema.prisma');
   if (!generateResult.success) {
@@ -166,7 +166,7 @@ async function testMigrationExecution() {
 
   // Run migrations
   const migrateResult = executeCommand('npx prisma migrate deploy --schema=prisma/schema.prisma');
-  
+
   const endTime = performance.now();
   const migrationTime = endTime - startTime;
 
@@ -176,7 +176,7 @@ async function testMigrationExecution() {
       error: migrateResult.error,
       migrationTime,
       output: migrateResult.output,
-      stderr: migrateResult.stderr
+      stderr: migrateResult.stderr,
     };
   }
 
@@ -184,7 +184,7 @@ async function testMigrationExecution() {
   const performanceIssue = migrationTime > MIGRATION_CONFIG.performanceThresholds.migrationTime;
 
   console.log(`✅ Migration completed in ${migrationTime.toFixed(2)}ms`);
-  
+
   if (performanceIssue) {
     console.warn(`⚠️ Migration time (${migrationTime.toFixed(2)}ms) exceeds threshold (${MIGRATION_CONFIG.performanceThresholds.migrationTime}ms)`);
   }
@@ -193,7 +193,7 @@ async function testMigrationExecution() {
     success: true,
     migrationTime,
     performanceIssue,
-    output: migrateResult.output
+    output: migrateResult.output,
   };
 }
 
@@ -202,65 +202,65 @@ async function testMigrationExecution() {
  */
 async function testDataIntegrity() {
   console.log('🔍 Testing data integrity...');
-  
+
   const startTime = performance.now();
   const integrityChecks = [];
 
   // Check foreign key constraints
   const fkCheckResult = executeCommand(`psql "${MIGRATION_CONFIG.testDatabaseUrl}" -c "SELECT conname, conrelid::regclass, confrelid::regclass FROM pg_constraint WHERE contype = 'f';" -t`);
-  
+
   if (fkCheckResult.success) {
     integrityChecks.push({
       check: 'foreign_keys',
       status: 'passed',
-      details: 'All foreign key constraints are valid'
+      details: 'All foreign key constraints are valid',
     });
   } else {
     integrityChecks.push({
       check: 'foreign_keys',
       status: 'failed',
-      error: fkCheckResult.error
+      error: fkCheckResult.error,
     });
   }
 
   // Check for orphaned records (basic check)
   const orphanCheckQueries = [
-    "SELECT COUNT(*) as orphaned_horses FROM horses WHERE \"userId\" NOT IN (SELECT id FROM users);",
-    "SELECT COUNT(*) as orphaned_results FROM competition_results WHERE \"userId\" NOT IN (SELECT id FROM users);",
-    "SELECT COUNT(*) as orphaned_grooms FROM grooms WHERE \"userId\" NOT IN (SELECT id FROM users);"
+    'SELECT COUNT(*) as orphaned_horses FROM horses WHERE "userId" NOT IN (SELECT id FROM users);',
+    'SELECT COUNT(*) as orphaned_results FROM competition_results WHERE "userId" NOT IN (SELECT id FROM users);',
+    'SELECT COUNT(*) as orphaned_grooms FROM grooms WHERE "userId" NOT IN (SELECT id FROM users);',
   ];
 
   for (const query of orphanCheckQueries) {
     const checkResult = executeCommand(`psql "${MIGRATION_CONFIG.testDatabaseUrl}" -c "${query}" -t`);
-    
+
     if (checkResult.success) {
       const count = parseInt(checkResult.output.trim()) || 0;
       integrityChecks.push({
         check: `orphaned_records_${query.split(' ')[3]}`,
         status: count === 0 ? 'passed' : 'warning',
         count,
-        details: count === 0 ? 'No orphaned records found' : `Found ${count} orphaned records`
+        details: count === 0 ? 'No orphaned records found' : `Found ${count} orphaned records`,
       });
     }
   }
 
   // Check table existence
   const expectedTables = [
-    'users', 'horses', 'breeds', 'grooms', 'shows', 
-    'competition_results', 'training_logs', 'xp_events'
+    'users', 'horses', 'breeds', 'grooms', 'shows',
+    'competition_results', 'training_logs', 'xp_events',
   ];
 
   for (const table of expectedTables) {
     const tableCheckResult = executeCommand(`psql "${MIGRATION_CONFIG.testDatabaseUrl}" -c "SELECT to_regclass('public.${table}');" -t`);
-    
-    const tableExists = tableCheckResult.success && 
-                       tableCheckResult.output.trim() !== '' && 
+
+    const tableExists = tableCheckResult.success &&
+                       tableCheckResult.output.trim() !== '' &&
                        !tableCheckResult.output.includes('does not exist');
 
     integrityChecks.push({
       check: `table_${table}`,
       status: tableExists ? 'passed' : 'failed',
-      details: tableExists ? `Table ${table} exists` : `Table ${table} missing`
+      details: tableExists ? `Table ${table} exists` : `Table ${table} missing`,
     });
   }
 
@@ -282,8 +282,8 @@ async function testDataIntegrity() {
     summary: {
       passed: integrityChecks.filter(c => c.status === 'passed').length,
       warnings: warningChecks.length,
-      failed: failedChecks.length
-    }
+      failed: failedChecks.length,
+    },
   };
 }
 
@@ -292,12 +292,12 @@ async function testDataIntegrity() {
  */
 async function testMigrationRollback(backupFile) {
   console.log('↩️ Testing migration rollback...');
-  
+
   const startTime = performance.now();
-  
+
   // Restore from backup
   const restoreResult = executeCommand(`psql "${MIGRATION_CONFIG.testDatabaseUrl}" < "${backupFile}"`);
-  
+
   const endTime = performance.now();
   const rollbackTime = endTime - startTime;
 
@@ -306,7 +306,7 @@ async function testMigrationRollback(backupFile) {
       success: false,
       error: restoreResult.error,
       rollbackTime,
-      stderr: restoreResult.stderr
+      stderr: restoreResult.stderr,
     };
   }
 
@@ -316,7 +316,7 @@ async function testMigrationRollback(backupFile) {
   const performanceIssue = rollbackTime > MIGRATION_CONFIG.performanceThresholds.rollbackTime;
 
   console.log(`✅ Rollback completed in ${rollbackTime.toFixed(2)}ms`);
-  
+
   if (performanceIssue) {
     console.warn(`⚠️ Rollback time (${rollbackTime.toFixed(2)}ms) exceeds threshold (${MIGRATION_CONFIG.performanceThresholds.rollbackTime}ms)`);
   }
@@ -325,7 +325,7 @@ async function testMigrationRollback(backupFile) {
     success: true,
     rollbackTime,
     performanceIssue,
-    schemaAfterRollback
+    schemaAfterRollback,
   };
 }
 
@@ -344,17 +344,17 @@ async function generateMigrationReport(results) {
     testDatabaseUrl: MIGRATION_CONFIG.testDatabaseUrl.replace(/\/\/.*@/, '//***:***@'), // Hide credentials
     results,
     summary: {
-      overallSuccess: results.migration.success && 
-                     results.dataIntegrity.success && 
+      overallSuccess: results.migration.success &&
+                     results.dataIntegrity.success &&
                      results.rollback.success,
-      totalTime: results.migration.migrationTime + 
-                results.dataIntegrity.integrityCheckTime + 
+      totalTime: results.migration.migrationTime +
+                results.dataIntegrity.integrityCheckTime +
                 results.rollback.rollbackTime,
       performanceIssues: [
         results.migration.performanceIssue,
-        results.rollback.performanceIssue
-      ].filter(Boolean).length
-    }
+        results.rollback.performanceIssue,
+      ].filter(Boolean).length,
+    },
   };
 
   await fs.writeFile(reportPath, JSON.stringify(report, null, 2));
@@ -366,7 +366,7 @@ async function generateMigrationReport(results) {
     success: report.summary.overallSuccess,
     totalTime: report.summary.totalTime,
     performanceIssues: report.summary.performanceIssues,
-    integrityChecks: results.dataIntegrity.summary
+    integrityChecks: results.dataIntegrity.summary,
   }, null, 2));
 
   return { reportPath, summaryPath };
@@ -389,7 +389,7 @@ async function runDatabaseMigrationTests() {
       backup: null,
       migration: null,
       dataIntegrity: null,
-      rollback: null
+      rollback: null,
     };
 
     // Get initial schema
@@ -427,9 +427,9 @@ async function runDatabaseMigrationTests() {
     console.log(`Migration: ${results.migration.success ? '✅ PASSED' : '❌ FAILED'}`);
     console.log(`Data Integrity: ${results.dataIntegrity.success ? '✅ PASSED' : '❌ FAILED'}`);
     console.log(`Rollback: ${results.rollback.success ? '✅ PASSED' : '❌ FAILED'}`);
-    
-    const totalTime = results.migration.migrationTime + 
-                     results.dataIntegrity.integrityCheckTime + 
+
+    const totalTime = results.migration.migrationTime +
+                     results.dataIntegrity.integrityCheckTime +
                      results.rollback.rollbackTime;
     console.log(`Total Time: ${totalTime.toFixed(2)}ms`);
 
@@ -440,8 +440,8 @@ async function runDatabaseMigrationTests() {
     console.log(`📁 Report saved: ${reportFiles.reportPath}`);
 
     // Exit with appropriate code
-    const overallSuccess = results.migration.success && 
-                          results.dataIntegrity.success && 
+    const overallSuccess = results.migration.success &&
+                          results.dataIntegrity.success &&
                           results.rollback.success;
 
     if (overallSuccess) {
@@ -463,10 +463,10 @@ if (import.meta.url === `file://${process.argv[1]}`) {
   runDatabaseMigrationTests();
 }
 
-export { 
-  runDatabaseMigrationTests, 
-  testMigrationExecution, 
-  testDataIntegrity, 
+export {
+  runDatabaseMigrationTests,
+  testMigrationExecution,
+  testDataIntegrity,
   testMigrationRollback,
-  getDatabaseSchema 
+  getDatabaseSchema,
 };

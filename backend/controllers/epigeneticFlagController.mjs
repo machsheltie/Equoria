@@ -20,7 +20,7 @@ import logger from '../utils/logger.mjs';
 import {
   evaluateHorseFlags,
   batchEvaluateFlags as batchEvaluateFlagsEngine,
-  getEligibleHorses,
+  _getEligibleHorses,
 } from '../utils/flagEvaluationEngine.mjs';
 import {
   getAllFlagDefinitions,

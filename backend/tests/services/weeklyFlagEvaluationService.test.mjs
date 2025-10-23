@@ -1,9 +1,9 @@
 /**
  * Weekly Flag Evaluation Service Tests
- * 
+ *
  * Tests the automated weekly flag evaluation system for horses 0-3 years old.
  * Uses TDD approach with NO MOCKING - real database operations for authentic validation.
- * 
+ *
  * Business Rules Tested:
  * - Weekly evaluation for horses under 3 years old
  * - Pattern recognition for care consistency, bond trends, stress patterns
@@ -13,10 +13,10 @@
  */
 
 import prisma from '../../../packages/database/prismaClient.mjs';
-import { 
+import {
   evaluateWeeklyFlags,
   processHorseForFlagEvaluation,
-  getEligibleHorsesForFlagEvaluation
+  getEligibleHorsesForFlagEvaluation,
 } from '../../services/weeklyFlagEvaluationService.mjs';
 
 describe('Weekly Flag Evaluation Service', () => {
@@ -144,12 +144,12 @@ describe('Weekly Flag Evaluation Service', () => {
   describe('getEligibleHorsesForFlagEvaluation', () => {
     test('should return only horses under 3 years old', async () => {
       const eligibleHorses = await getEligibleHorsesForFlagEvaluation();
-      
+
       // Should include the 3 young horses but not the 4-year-old
       const testHorseIds = eligibleHorses
         .filter(horse => testHorses.some(th => th.id === horse.id))
         .map(horse => horse.id);
-      
+
       expect(testHorseIds).toHaveLength(3);
       expect(testHorseIds).toContain(testHorses[0].id); // 1 week old
       expect(testHorseIds).toContain(testHorses[1].id); // 1 month old
@@ -159,7 +159,7 @@ describe('Weekly Flag Evaluation Service', () => {
 
     test('should include horses with existing flags', async () => {
       const eligibleHorses = await getEligibleHorsesForFlagEvaluation();
-      
+
       const horseWithFlags = eligibleHorses.find(h => h.id === testHorses[1].id);
       expect(horseWithFlags).toBeDefined();
       expect(horseWithFlags.epigeneticFlags).toContain('AFFECTIONATE');
@@ -168,8 +168,8 @@ describe('Weekly Flag Evaluation Service', () => {
 
   describe('processHorseForFlagEvaluation', () => {
     test('should evaluate horse for new flags based on care patterns', async () => {
-      const horse = testHorses[0]; // 1 week old foal
-      
+      const [horse] = testHorses; // 1 week old foal
+
       // Create some groom interactions to establish patterns
       await prisma.groomInteraction.create({
         data: {
@@ -186,7 +186,7 @@ describe('Weekly Flag Evaluation Service', () => {
       });
 
       const result = await processHorseForFlagEvaluation(horse.id);
-      
+
       expect(result).toBeDefined();
       expect(result.horseId).toBe(horse.id);
       expect(result.evaluated).toBe(true);
@@ -209,10 +209,10 @@ describe('Weekly Flag Evaluation Service', () => {
       });
 
       const result = await processHorseForFlagEvaluation(horseWithMaxFlags.id);
-      
+
       expect(result.flagsAssigned).toHaveLength(0);
       expect(result.reason).toContain('maximum');
-      
+
       // Cleanup
       await prisma.horse.delete({ where: { id: horseWithMaxFlags.id } });
     });
@@ -221,7 +221,7 @@ describe('Weekly Flag Evaluation Service', () => {
   describe('evaluateWeeklyFlags', () => {
     test('should process all eligible horses and return summary', async () => {
       const result = await evaluateWeeklyFlags();
-      
+
       expect(result).toBeDefined();
       expect(result.totalHorsesEvaluated).toBeGreaterThanOrEqual(3);
       expect(result.flagsAssigned).toBeGreaterThanOrEqual(0);
@@ -231,7 +231,7 @@ describe('Weekly Flag Evaluation Service', () => {
 
     test('should handle horses with no groom interactions gracefully', async () => {
       const result = await evaluateWeeklyFlags();
-      
+
       // Should not throw errors even for horses with no interaction history
       expect(result.errors).toEqual([]);
       expect(result.totalHorsesEvaluated).toBeGreaterThan(0);

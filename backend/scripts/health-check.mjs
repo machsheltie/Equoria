@@ -1,6 +1,6 @@
 /**
  * Health Check Script for CI/CD Pipeline
- * 
+ *
  * This script performs comprehensive health checks including:
  * - Database connectivity validation
  * - Environment variable validation
@@ -17,8 +17,8 @@ const HEALTH_CONFIG = {
   retries: 3,
   endpoints: [
     '/ping',
-    '/health'
-  ]
+    '/health',
+  ],
 };
 
 /**
@@ -27,28 +27,28 @@ const HEALTH_CONFIG = {
 async function checkDatabase() {
   try {
     logger.info('🔍 Checking database connectivity...');
-    
+
     // Test basic connection
     await prisma.$connect();
-    
+
     // Test query execution
     await prisma.$queryRaw`SELECT 1 as test`;
-    
+
     // Test table access
     const userCount = await prisma.user.count();
-    
+
     logger.info(`✅ Database connection successful (${userCount} users)`);
     return {
       status: 'healthy',
       message: 'Database connection successful',
-      userCount
+      userCount,
     };
   } catch (error) {
     logger.error('❌ Database connection failed:', error.message);
     return {
       status: 'unhealthy',
       message: `Database connection failed: ${error.message}`,
-      error: error.message
+      error: error.message,
     };
   }
 }
@@ -58,12 +58,12 @@ async function checkDatabase() {
  */
 function checkEnvironmentVariables() {
   logger.info('🔍 Checking environment variables...');
-  
+
   const requiredVars = [
     'DATABASE_URL',
     'JWT_SECRET',
     'JWT_REFRESH_SECRET',
-    'NODE_ENV'
+    'NODE_ENV',
   ];
 
   const missing = [];
@@ -82,7 +82,7 @@ function checkEnvironmentVariables() {
     return {
       status: 'healthy',
       message: 'All required environment variables present',
-      present
+      present,
     };
   } else {
     logger.error(`❌ Missing environment variables: ${missing.join(', ')}`);
@@ -90,7 +90,7 @@ function checkEnvironmentVariables() {
       status: 'unhealthy',
       message: `Missing environment variables: ${missing.join(', ')}`,
       missing,
-      present
+      present,
     };
   }
 }
@@ -100,25 +100,25 @@ function checkEnvironmentVariables() {
  */
 async function checkApiEndpoints(baseUrl = 'http://localhost:3000') {
   logger.info('🔍 Checking API endpoints...');
-  
+
   const results = [];
 
   for (const endpoint of HEALTH_CONFIG.endpoints) {
     try {
       const response = await fetch(`${baseUrl}${endpoint}`, {
         method: 'GET',
-        timeout: HEALTH_CONFIG.timeout
+        timeout: HEALTH_CONFIG.timeout,
       });
 
       const result = {
         endpoint,
         status: response.status,
         healthy: response.ok,
-        responseTime: 0 // Will be calculated if needed
+        responseTime: 0, // Will be calculated if needed
       };
 
       results.push(result);
-      
+
       if (response.ok) {
         logger.info(`✅ Endpoint ${endpoint} is healthy`);
       } else {
@@ -130,7 +130,7 @@ async function checkApiEndpoints(baseUrl = 'http://localhost:3000') {
         endpoint,
         status: 0,
         healthy: false,
-        error: error.message
+        error: error.message,
       });
     }
   }
@@ -141,7 +141,7 @@ async function checkApiEndpoints(baseUrl = 'http://localhost:3000') {
   return {
     status: healthyEndpoints === totalEndpoints ? 'healthy' : 'unhealthy',
     message: `${healthyEndpoints}/${totalEndpoints} endpoints healthy`,
-    endpoints: results
+    endpoints: results,
   };
 }
 
@@ -150,7 +150,7 @@ async function checkApiEndpoints(baseUrl = 'http://localhost:3000') {
  */
 function checkSystemResources() {
   logger.info('🔍 Checking system resources...');
-  
+
   const memUsage = process.memoryUsage();
   const uptime = process.uptime();
 
@@ -172,9 +172,9 @@ function checkSystemResources() {
       heapUsed: heapUsedMB,
       heapTotal: heapTotalMB,
       rss: rssMB,
-      external: Math.round(memUsage.external / 1024 / 1024)
+      external: Math.round(memUsage.external / 1024 / 1024),
     },
-    uptime: Math.round(uptime)
+    uptime: Math.round(uptime),
   };
 }
 
@@ -183,7 +183,7 @@ function checkSystemResources() {
  */
 async function performHealthCheck(options = {}) {
   const startTime = Date.now();
-  
+
   logger.info('🏥 Starting comprehensive health check...');
   logger.info('=========================================');
 
@@ -191,7 +191,7 @@ async function performHealthCheck(options = {}) {
     timestamp: new Date().toISOString(),
     status: 'healthy',
     checks: {},
-    duration: 0
+    duration: 0,
   };
 
   try {
@@ -229,10 +229,10 @@ async function performHealthCheck(options = {}) {
     logger.info('=======================');
     logger.info(`Overall Status: ${results.status.toUpperCase()}`);
     logger.info(`Duration: ${results.duration}ms`);
-    
+
     Object.entries(results.checks).forEach(([checkName, check]) => {
-      const statusIcon = check.status === 'healthy' ? '✅' : 
-                        check.status === 'warning' ? '⚠️' : '❌';
+      const statusIcon = check.status === 'healthy' ? '✅' :
+        check.status === 'warning' ? '⚠️' : '❌';
       logger.info(`${statusIcon} ${checkName}: ${check.status} - ${check.message}`);
     });
 
@@ -256,7 +256,7 @@ async function runHealthCheck() {
   try {
     const options = {
       checkEndpoints: process.argv.includes('--check-endpoints'),
-      baseUrl: process.env.HEALTH_CHECK_URL || 'http://localhost:3000'
+      baseUrl: process.env.HEALTH_CHECK_URL || 'http://localhost:3000',
     };
 
     const results = await performHealthCheck(options);

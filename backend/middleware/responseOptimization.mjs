@@ -1,6 +1,6 @@
 /**
  * 🚀 Response Optimization Middleware
- * 
+ *
  * Express middleware for optimizing API responses including:
  * - Automatic response compression
  * - ETag generation and validation
@@ -8,7 +8,7 @@
  * - Field selection support
  * - Lazy loading integration
  * - Performance metrics collection
- * 
+ *
  * Features:
  * - Intelligent compression based on content type and size
  * - Automatic ETag generation for cacheable responses
@@ -76,12 +76,12 @@ export function responseOptimization(options = {}) {
         // Generate ETag for cacheable responses
         if (enableETag && ResponseCacheService.shouldCache(req, res)) {
           const etag = ResponseCacheService.generateETag(optimizedData);
-          
+
           // Check if client has cached version
           if (req.headers['if-none-match'] === etag) {
             return res.status(304).end();
           }
-          
+
           res.setHeader('ETag', etag);
           ResponseCacheService.setCacheHeaders(res, {
             maxAge: 300, // 5 minutes
@@ -93,7 +93,7 @@ export function responseOptimization(options = {}) {
         // Monitor response size
         if (enableSizeMonitoring) {
           const responseSize = JSON.stringify(optimizedData).length;
-          
+
           if (responseSize > maxResponseSize) {
             logger.error(`[ResponseOptimization] Response size exceeds limit: ${responseSize} bytes for ${req.method} ${req.path}`);
             return res.status(413).json({
@@ -102,7 +102,7 @@ export function responseOptimization(options = {}) {
               meta: { responseSize, maxSize: maxResponseSize },
             });
           }
-          
+
           if (responseSize > warningSizeThreshold) {
             logger.warn(`[ResponseOptimization] Large response detected: ${responseSize} bytes for ${req.method} ${req.path}`);
           }
@@ -154,7 +154,7 @@ export function paginationMiddleware(options = {}) {
     // Parse pagination parameters
     const page = parseInt(req.query.page) || 1;
     const limit = Math.min(parseInt(req.query.limit) || defaultLimit, maxLimit);
-    const cursor = req.query.cursor;
+    const { cursor } = req.query;
     const orderBy = req.query.orderBy || 'id';
     const orderDirection = req.query.orderDirection || 'asc';
 
@@ -224,15 +224,15 @@ export function lazyLoadingMiddleware(options = {}) {
  */
 export function compressionMiddleware(options = {}) {
   const {
-    threshold = 1024,
-    level = 6,
+    _threshold = 1024,
+    _level = 6,
     enableBrotli = true,
   } = options;
 
   return (req, res, next) => {
     // Set compression preferences
     const acceptEncoding = req.headers['accept-encoding'] || '';
-    
+
     if (enableBrotli && acceptEncoding.includes('br')) {
       res.setHeader('Content-Encoding', 'br');
     } else if (acceptEncoding.includes('gzip')) {
@@ -287,7 +287,7 @@ export function performanceMonitoring(options = {}) {
 export function getOptimizationMetrics(req, res) {
   try {
     const metrics = getPerformanceMetrics();
-    
+
     res.json({
       success: true,
       message: 'API optimization metrics retrieved',

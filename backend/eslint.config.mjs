@@ -26,6 +26,9 @@ export default [
         clearInterval: 'readonly',
         setImmediate: 'readonly',
         clearImmediate: 'readonly',
+        fetch: 'readonly', // Node.js 18+ global
+        URL: 'readonly', // Node.js global
+        performance: 'readonly', // Node.js global
       },
     },
     rules: {

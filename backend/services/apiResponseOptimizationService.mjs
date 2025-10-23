@@ -1,6 +1,6 @@
 /**
  * 🚀 API Response Optimization Service
- * 
+ *
  * Comprehensive service for optimizing API response performance including:
  * - Response compression and encoding
  * - Advanced pagination with cursor-based navigation
@@ -8,7 +8,7 @@
  * - Lazy loading and selective field inclusion
  * - Response caching and ETags
  * - Payload size optimization
- * 
+ *
  * Features:
  * - Gzip/Brotli compression with intelligent selection
  * - Cursor-based pagination for large datasets
@@ -40,8 +40,8 @@ export function createCompressionMiddleware(options = {}) {
     level: 6, // Balanced compression level
     filter: (req, res) => {
       // Don't compress if client doesn't support it
-      if (!req.headers['accept-encoding']) return false;
-      
+      if (!req.headers['accept-encoding']) { return false; }
+
       // Don't compress images, videos, or already compressed content
       const contentType = res.getHeader('content-type');
       if (contentType && (
@@ -52,7 +52,7 @@ export function createCompressionMiddleware(options = {}) {
       )) {
         return false;
       }
-      
+
       return compression.filter(req, res);
     },
     ...options,
@@ -74,13 +74,13 @@ export class PaginationService {
       cursor,
       limit = 20,
       orderBy = 'id',
-      orderDirection = 'asc',
+      _orderDirection = 'asc',
       totalCount,
     } = options;
 
     const hasNextPage = data.length === limit;
     const hasPrevPage = !!cursor;
-    
+
     const nextCursor = hasNextPage ? data[data.length - 1][orderBy] : null;
     const prevCursor = hasPrevPage ? data[0][orderBy] : null;
 
@@ -165,7 +165,7 @@ export class SerializationService {
    */
   static optimizeResponse(data, options = {}) {
     const startTime = Date.now();
-    
+
     const {
       fields,
       exclude,
@@ -225,8 +225,8 @@ export class SerializationService {
    * Select fields from a single object
    */
   static selectFieldsFromObject(obj, fields) {
-    if (!obj || typeof obj !== 'object') return obj;
-    
+    if (!obj || typeof obj !== 'object') { return obj; }
+
     const result = {};
     for (const field of fields) {
       if (field.includes('.')) {
@@ -235,7 +235,7 @@ export class SerializationService {
         if (obj[parent]) {
           result[parent] = this.selectFieldsFromObject(obj[parent], [nested.join('.')]);
         }
-      } else if (obj.hasOwnProperty(field)) {
+      } else if (Object.prototype.hasOwnProperty.call(obj, field)) {
         result[field] = obj[field];
       }
     }
@@ -246,8 +246,8 @@ export class SerializationService {
    * Exclude fields from a single object
    */
   static excludeFieldsFromObject(obj, excludeFields) {
-    if (!obj || typeof obj !== 'object') return obj;
-    
+    if (!obj || typeof obj !== 'object') { return obj; }
+
     const result = { ...obj };
     for (const field of excludeFields) {
       if (field.includes('.')) {
@@ -268,19 +268,19 @@ export class SerializationService {
    */
   static compressDataStructure(data) {
     if (Array.isArray(data)) {
-      return data.map(item => this.compressDataStructure(item)).filter(item => item != null);
+      return data.map(item => this.compressDataStructure(item)).filter(item => item !== null);
     }
-    
+
     if (data && typeof data === 'object') {
       const compressed = {};
       for (const [key, value] of Object.entries(data)) {
-        if (value != null) {
+        if (value !== null) {
           compressed[key] = this.compressDataStructure(value);
         }
       }
       return compressed;
     }
-    
+
     return data;
   }
 }
@@ -294,7 +294,7 @@ export class LazyLoadingService {
    */
   static createLazyConfig(baseQuery, lazyFields = []) {
     const config = { ...baseQuery };
-    
+
     // Remove expensive includes by default
     if (config.include) {
       const optimizedInclude = {};
@@ -314,7 +314,7 @@ export class LazyLoadingService {
    */
   static async loadRelatedData(model, id, relations, prisma) {
     const relatedData = {};
-    
+
     for (const relation of relations) {
       try {
         relatedData[relation] = await this.loadSingleRelation(model, id, relation, prisma);
@@ -359,14 +359,14 @@ export class ResponseCacheService {
    */
   static shouldCache(req, res) {
     // Don't cache POST, PUT, DELETE requests
-    if (!['GET', 'HEAD'].includes(req.method)) return false;
-    
+    if (!['GET', 'HEAD'].includes(req.method)) { return false; }
+
     // Don't cache error responses
-    if (res.statusCode >= 400) return false;
-    
+    if (res.statusCode >= 400) { return false; }
+
     // Don't cache if explicitly disabled
-    if (res.getHeader('Cache-Control')?.includes('no-cache')) return false;
-    
+    if (res.getHeader('Cache-Control')?.includes('no-cache')) { return false; }
+
     return true;
   }
 
@@ -381,7 +381,7 @@ export class ResponseCacheService {
     } = options;
 
     res.setHeader('Cache-Control', `public, max-age=${maxAge}, stale-while-revalidate=${staleWhileRevalidate}`);
-    
+
     if (etag) {
       res.setHeader('ETag', etag);
     }

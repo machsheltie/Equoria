@@ -313,8 +313,8 @@ describe('🏠 INTEGRATION: Dashboard API - Real Database Integration', () => {
       expect(data.horses.total).toBe(0);
       expect(data.horses.trainable).toBe(0);
       expect(data.shows.nextShowRuns).toHaveLength(2); // Shows still exist
-      expect(data.activity.lastTrained).toBe("never");
-      expect(data.activity.lastShowPlaced).toBe("never");
+      expect(data.activity.lastTrained).toBe('never');
+      expect(data.activity.lastShowPlaced).toBe('never');
     });
 
     it('should handle user with horses but no activity gracefully', async () => {
@@ -360,8 +360,8 @@ describe('🏠 INTEGRATION: Dashboard API - Real Database Integration', () => {
       expect(data.user.username).toBe('inactivedashboarduser');
       expect(data.horses.total).toBe(1);
       expect(data.horses.trainable).toBeGreaterThanOrEqual(0);
-      expect(data.activity.lastTrained).toBe("never");
-      expect(data.activity.lastShowPlaced).toBe("never");
+      expect(data.activity.lastTrained).toBe('never');
+      expect(data.activity.lastShowPlaced).toBe('never');
     });
   });
 });

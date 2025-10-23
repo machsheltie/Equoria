@@ -103,8 +103,8 @@ router.get('/', async (req, res) => {
     const { userId, breedId, limit = 50, offset = 0 } = req.query;
 
     const where = {};
-    if (userId) where.userId = userId;
-    if (breedId) where.breedId = parseInt(breedId);
+    if (userId) { where.userId = userId; }
+    if (breedId) { where.breedId = parseInt(breedId); }
 
     const horses = await prisma.horse.findMany({
       where,
@@ -113,10 +113,10 @@ router.get('/', async (req, res) => {
       include: {
         breed: true,
         user: {
-          select: { id: true, username: true }
-        }
+          select: { id: true, username: true },
+        },
       },
-      orderBy: { createdAt: 'desc' }
+      orderBy: { createdAt: 'desc' },
     });
 
     res.json({
@@ -150,13 +150,13 @@ router.get('/trait-trends',
   handleValidationErrors,
   async (req, res) => {
     try {
-      const userId = req.query.userId;
+      const { userId } = req.query;
       const timeframe = parseInt(req.query.timeframe) || 30;
 
       // Get trait history for user's horses within timeframe
       const cutoffDate = new Date(Date.now() - timeframe * 24 * 60 * 60 * 1000);
 
-      const traitHistory = await prisma.traitHistoryLog.findMany({
+      const _traitHistory = await prisma.traitHistoryLog.findMany({
         where: {
           horse: { ownerId: userId },
           timestamp: { gte: cutoffDate },
@@ -187,13 +187,13 @@ router.get('/trait-trends',
         },
       });
     } catch (error) {
-      logger.error(`Error analyzing trait trends:`, error);
+      logger.error('Error analyzing trait trends:', error);
       res.status(500).json({
         success: false,
         message: 'Failed to analyze trait trends',
       });
     }
-  }
+  },
 );
 
 /**
@@ -272,9 +272,9 @@ router.put('/:id', validateHorseId, async (req, res) => {
       include: {
         breed: true,
         user: {
-          select: { id: true, username: true }
-        }
-      }
+          select: { id: true, username: true },
+        },
+      },
     });
 
     logger.info(`[horseRoutes] Updated horse: ${updatedHorse.name} (ID: ${horseId})`);
@@ -310,7 +310,7 @@ router.delete('/:id', validateHorseId, async (req, res) => {
     const horseId = parseInt(req.params.id);
 
     await prisma.horse.delete({
-      where: { id: horseId }
+      where: { id: horseId },
     });
 
     logger.info(`[horseRoutes] Deleted horse ID: ${horseId}`);

@@ -89,7 +89,7 @@ const createTestApp = () => {
     res.json({
       success: true,
       message: 'Test resources created',
-      data: { timerId: timer, intervalId: interval }
+      data: { timerId: timer, intervalId: interval },
     });
   });
 
@@ -99,11 +99,11 @@ const createTestApp = () => {
     for (let i = 0; i < 1000; i++) {
       arrays.push(new Array(1000).fill(Math.random()));
     }
-    
+
     res.json({
       success: true,
       message: 'Memory load created',
-      data: { arraysCreated: arrays.length }
+      data: { arraysCreated: arrays.length },
     });
   });
 
@@ -112,13 +112,13 @@ const createTestApp = () => {
 
 describe('🧠 Memory Management Integration Tests', () => {
   let app;
-  let testUser;
+  let _testUser;
   let authToken;
   let memoryManager;
 
   beforeAll(async () => {
     app = createTestApp();
-    
+
     // Initialize memory management with test settings
     memoryManager = initializeMemoryManagement({
       memoryThreshold: 100 * 1024 * 1024, // 100MB for testing
@@ -131,10 +131,10 @@ describe('🧠 Memory Management Integration Tests', () => {
   beforeEach(async () => {
     // Clean up any existing test data
     await prisma.refreshToken.deleteMany({
-      where: { user: { email: { contains: 'memoryintegration' } } }
+      where: { user: { email: { contains: 'memoryintegration' } } },
     });
     await prisma.user.deleteMany({
-      where: { email: { contains: 'memoryintegration' } }
+      where: { email: { contains: 'memoryintegration' } },
     });
 
     // Create test user and get authentication token
@@ -143,7 +143,7 @@ describe('🧠 Memory Management Integration Tests', () => {
       username: 'memoryintegrationuser',
       password: 'testpassword123',
       firstName: 'Memory',
-      lastName: 'Integration'
+      lastName: 'Integration',
     };
 
     const registerResponse = await request(app)
@@ -151,17 +151,17 @@ describe('🧠 Memory Management Integration Tests', () => {
       .send(userData);
 
     expect(registerResponse.status).toBe(201);
-    testUser = registerResponse.body.data.user;
+    _testUser = registerResponse.body.data.user;
     authToken = registerResponse.body.data.token;
   });
 
   afterEach(async () => {
     // Clean up test data
     await prisma.refreshToken.deleteMany({
-      where: { user: { email: { contains: 'memoryintegration' } } }
+      where: { user: { email: { contains: 'memoryintegration' } } },
     });
     await prisma.user.deleteMany({
-      where: { email: { contains: 'memoryintegration' } }
+      where: { email: { contains: 'memoryintegration' } },
     });
 
     // Clean up memory manager resources
@@ -354,7 +354,7 @@ describe('🧠 Memory Management Integration Tests', () => {
         '/api/memory/status',
         '/api/memory/metrics',
         '/api/memory/resources',
-        '/api/memory/alerts'
+        '/api/memory/alerts',
       ];
 
       for (const endpoint of endpoints) {

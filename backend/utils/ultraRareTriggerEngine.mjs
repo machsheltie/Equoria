@@ -143,7 +143,7 @@ async function getHorseWithHistory(horseId) {
  * @param {Object} context - Evaluation context
  * @returns {Promise<boolean>} True if conditions are met
  */
-async function evaluateTraitTriggerConditions(horse, traitDef, context) {
+async function evaluateTraitTriggerConditions(horse, traitDef, _context) {
   const conditions = traitDef.triggerConditions;
 
   switch (traitDef.name) {
@@ -175,7 +175,7 @@ async function evaluateTraitTriggerConditions(horse, traitDef, context) {
  * @param {Object} context - Evaluation context
  * @returns {Promise<boolean>} True if conditions are met
  */
-async function evaluateExoticUnlockConditions(horse, traitDef, context) {
+async function evaluateExoticUnlockConditions(horse, traitDef, _context) {
   const conditions = traitDef.unlockConditions;
 
   switch (traitDef.name) {
@@ -203,7 +203,7 @@ async function evaluateExoticUnlockConditions(horse, traitDef, context) {
 /**
  * Phoenix-Born: 3+ stress events + 2 successful emotional recoveries
  */
-async function evaluatePhoenixBornConditions(horse, conditions) {
+async function evaluatePhoenixBornConditions(horse, _conditions) {
   try {
     // Use groom interactions and competition results as proxy for stress events
     const groomInteractions = horse.groomInteractions || [];
@@ -434,7 +434,7 @@ async function evaluateShadowFollowerConditions(horse, conditions) {
     const missedSocializationEvents = totalSocializationOpportunities - socializationMilestones.length;
 
     // Check for late bond formation (first significant bond after age 2)
-    const ageInDays = (horse.dailyCareLogs || []).length; // Approximate age from care log count
+    const _ageInDays = (horse.dailyCareLogs || []).length; // Approximate age from care log count
     const earlyBondLogs = (horse.dailyCareLogs || []).slice(0, Math.min(730, (horse.dailyCareLogs || []).length)); // First 2 years
     const lateBondLogs = (horse.dailyCareLogs || []).slice(730); // After 2 years
 
@@ -463,7 +463,7 @@ async function evaluateShadowFollowerConditions(horse, conditions) {
 /**
  * Ghostwalker: Low bond throughout youth + resilient flag
  */
-async function evaluateGhostwalkerConditions(horse, conditions) {
+async function evaluateGhostwalkerConditions(horse, _conditions) {
   try {
     // Check bond scores throughout youth (first 3 years)
     const youthCareLogs = (horse.dailyCareLogs || []).slice(0, Math.min(1095, (horse.dailyCareLogs || []).length)); // First 3 years
@@ -503,7 +503,7 @@ async function evaluateGhostwalkerConditions(horse, conditions) {
 /**
  * Soulbonded: Same groom for all milestones + >90 bond during each
  */
-async function evaluateSoulbondedConditions(horse, conditions) {
+async function evaluateSoulbondedConditions(horse, _conditions) {
   try {
     // Check if same groom was used for all milestones
     const milestoneGrooms = (horse.milestoneTraitLogs || [])
@@ -550,7 +550,7 @@ async function evaluateSoulbondedConditions(horse, conditions) {
 /**
  * Fey-Kissed: Both parents ultra-rare + perfect grooming history
  */
-async function evaluateFeyKissedConditions(horse, conditions) {
+async function evaluateFeyKissedConditions(horse, _conditions) {
   try {
     // Check if both parents have ultra-rare traits
     const sireUltraRareTraits = horse.sire?.traitHistoryLogs?.filter(log =>
@@ -564,7 +564,7 @@ async function evaluateFeyKissedConditions(horse, conditions) {
     const bothParentsUltraRare = sireUltraRareTraits.length > 0 && damUltraRareTraits.length > 0;
 
     // Check for perfect grooming history in foal stage (first 365 days)
-    const foalCareLogs = (horse.dailyCareLogs || []).slice(0, Math.min(365, (horse.dailyCareLogs || []).length));
+    const _foalCareLogs = (horse.dailyCareLogs || []).slice(0, Math.min(365, (horse.dailyCareLogs || []).length));
     const foalGroomingTasks = (horse.groomTaskLogs || []).filter(log => {
       const logDate = new Date(log.timestamp);
       const birthDate = new Date(horse.dateOfBirth);
@@ -590,7 +590,7 @@ async function evaluateFeyKissedConditions(horse, conditions) {
 /**
  * Dreamtwin: Twin birth + raised together + same groom + matching flags
  */
-async function evaluateDreamtwinConditions(horse, conditions) {
+async function evaluateDreamtwinConditions(horse, _conditions) {
   try {
     // Check for twin birth (sibling born on same day)
     const siblings = horse.siblings || [];
@@ -606,7 +606,7 @@ async function evaluateDreamtwinConditions(horse, conditions) {
       return false; // No twin, cannot have Dreamtwin trait
     }
 
-    const twin = twins[0];
+    const [twin] = twins;
 
     // Check if raised together (similar care patterns)
     const horseCareDays = horse.dailyCareLogs.length;

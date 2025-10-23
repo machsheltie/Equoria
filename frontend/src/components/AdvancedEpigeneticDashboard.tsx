@@ -22,6 +22,11 @@ interface AdvancedEpigeneticDashboardProps {
   horseId: number | null;
   enableRealTime?: boolean;
   className?: string;
+  // Data props (optional - if not provided, component will fetch)
+  environmentalData?: any;
+  traitData?: any;
+  developmentalData?: any;
+  forecastData?: any;
 }
 
 // Main Component
@@ -29,17 +34,21 @@ const AdvancedEpigeneticDashboard: React.FC<AdvancedEpigeneticDashboardProps> = 
   horseId,
   enableRealTime = false,
   className = '',
+  environmentalData: propEnvironmentalData,
+  traitData: propTraitData,
+  developmentalData: propDevelopmentalData,
+  forecastData: propForecastData,
 }) => {
   const [expandedPanels, setExpandedPanels] = useState<Set<string>>(new Set());
   const [isMobile, setIsMobile] = useState(false);
   const [isRefreshing, setIsRefreshing] = useState(false);
   const [hasError, setHasError] = useState(false);
   const [partialDataError, setPartialDataError] = useState(false);
-  const [environmentalData, setEnvironmentalData] = useState<any>(null);
-  const [traitData, setTraitData] = useState<any>(null);
-  const [developmentalData, setDevelopmentalData] = useState<any>(null);
-  const [forecastData, setForecastData] = useState<any>(null);
-  const [isLoading, setIsLoading] = useState(false);
+  const [environmentalData, setEnvironmentalData] = useState<any>(propEnvironmentalData || null);
+  const [traitData, setTraitData] = useState<any>(propTraitData || null);
+  const [developmentalData, setDevelopmentalData] = useState<any>(propDevelopmentalData || null);
+  const [forecastData, setForecastData] = useState<any>(propForecastData || null);
+  const [isLoading, setIsLoading] = useState(!propEnvironmentalData && !propTraitData && !propDevelopmentalData && !propForecastData);
 
   // Responsive design detection
   useEffect(() => {
@@ -52,8 +61,18 @@ const AdvancedEpigeneticDashboard: React.FC<AdvancedEpigeneticDashboardProps> = 
     return () => window.removeEventListener('resize', checkMobile);
   }, []);
 
-  // Data fetching
+  // Data fetching (only if data not provided as props)
   useEffect(() => {
+    // If data was provided as props, don't fetch
+    if (propEnvironmentalData !== undefined || propTraitData !== undefined || propDevelopmentalData !== undefined || propForecastData !== undefined) {
+      setIsLoading(false);
+      // Check if trait data is explicitly null (partial data scenario)
+      if (propTraitData === null) {
+        setPartialDataError(true);
+      }
+      return;
+    }
+
     const fetchData = async () => {
       if (!horseId) {
         setIsLoading(false);
@@ -76,7 +95,7 @@ const AdvancedEpigeneticDashboard: React.FC<AdvancedEpigeneticDashboardProps> = 
         // Fetch environmental data
         try {
           const envResponse = await fetch(`/api/horses/${horseId}/environmental-analysis`);
-          if (envResponse.ok) {
+          if (envResponse && envResponse.ok) {
             const envData = await envResponse.json();
             setEnvironmentalData(envData.data);
             allFailed = false;
@@ -88,16 +107,17 @@ const AdvancedEpigeneticDashboard: React.FC<AdvancedEpigeneticDashboardProps> = 
             setIsLoading(false);
             return;
           }
+          // Silently handle other errors
         }
 
         // Fetch trait data
         try {
           const traitResponse = await fetch(`/api/horses/${horseId}/trait-interactions`);
-          if (traitResponse.ok) {
+          if (traitResponse && traitResponse.ok) {
             const traitDataResponse = await traitResponse.json();
             setTraitData(traitDataResponse.data);
             allFailed = false;
-          } else {
+          } else if (traitResponse) {
             setPartialDataError(true);
           }
         } catch (e) {
@@ -107,12 +127,13 @@ const AdvancedEpigeneticDashboard: React.FC<AdvancedEpigeneticDashboardProps> = 
             setIsLoading(false);
             return;
           }
+          // Silently handle other errors
         }
 
         // Fetch developmental data
         try {
           const devResponse = await fetch(`/api/horses/${horseId}/developmental-timeline`);
-          if (devResponse.ok) {
+          if (devResponse && devResponse.ok) {
             const devData = await devResponse.json();
             setDevelopmentalData(devData.data);
             allFailed = false;
@@ -123,12 +144,13 @@ const AdvancedEpigeneticDashboard: React.FC<AdvancedEpigeneticDashboardProps> = 
             setIsLoading(false);
             return;
           }
+          // Silently handle other errors
         }
 
         // Fetch forecast data
         try {
           const forecastResponse = await fetch(`/api/horses/${horseId}/forecast`);
-          if (forecastResponse.ok) {
+          if (forecastResponse && forecastResponse.ok) {
             const forecastDataResponse = await forecastResponse.json();
             setForecastData(forecastDataResponse.data);
             allFailed = false;
@@ -139,6 +161,7 @@ const AdvancedEpigeneticDashboard: React.FC<AdvancedEpigeneticDashboardProps> = 
             setIsLoading(false);
             return;
           }
+          // Silently handle other errors
         }
 
         setIsLoading(false);
@@ -152,7 +175,7 @@ const AdvancedEpigeneticDashboard: React.FC<AdvancedEpigeneticDashboardProps> = 
     };
 
     fetchData();
-  }, [horseId]);
+  }, [horseId, propEnvironmentalData, propTraitData, propDevelopmentalData, propForecastData]);
 
   // Panel expansion toggle
   const togglePanel = (panelId: string) => {
@@ -268,14 +291,13 @@ const AdvancedEpigeneticDashboard: React.FC<AdvancedEpigeneticDashboardProps> = 
         <div>
           <h3>Developmental Timeline</h3>
           <div>Current Window</div>
-          {developmentalData?.currentWindow && (
+          {developmentalData?.currentWindow ? (
             <>
               <div>{developmentalData.currentWindow.name || 'Trust & Handling'}</div>
               <div>{developmentalData.currentWindow.ageRange || '2-3 years'}</div>
               <div>{developmentalData.currentWindow.progress ? `${Math.round(developmentalData.currentWindow.progress * 100)}%` : '65%'}</div>
             </>
-          )}
-          {!developmentalData && !isLoading && (
+          ) : !isLoading && (
             <>
               <div>Trust & Handling</div>
               <div>2-3 years</div>

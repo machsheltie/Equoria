@@ -1,15 +1,15 @@
 /**
  * Genetic Diversity Tracking System Tests
- * 
+ *
  * Tests for advanced genetic diversity algorithms, inbreeding coefficient calculations,
  * and comprehensive breeding recommendations for population-level genetic management.
- * 
+ *
  * Testing Approach: TDD with NO MOCKING - Real system validation
  * Business Rules: Population genetics, diversity tracking, breeding optimization
  */
 
 import { describe, test, expect, beforeEach, afterEach } from '@jest/globals';
-import logger from '../../utils/logger.mjs';
+import _logger from '../../utils/_logger.mjs';
 import prisma from '../../db/index.mjs';
 import {
   calculateAdvancedGeneticDiversity,
@@ -21,7 +21,7 @@ import {
   identifyGeneticFounders,
   assessBreedingPairCompatibility,
   trackGeneticDiversityOverTime,
-  generateGeneticDiversityReport
+  generateGeneticDiversityReport,
 } from '../../services/geneticDiversityTrackingService.mjs';
 
 describe('🧬 Genetic Diversity Tracking System', () => {
@@ -36,8 +36,8 @@ describe('🧬 Genetic Diversity Tracking System', () => {
           sex: 'Stallion',
           dateOfBirth: new Date('2015-01-01'),
           speed: 90, stamina: 85, agility: 80, intelligence: 75,
-          epigeneticModifiers: { positive: ['athletic', 'fast'], negative: [], hidden: ['legendary_speed'] }
-        }
+          epigeneticModifiers: { positive: ['athletic', 'fast'], negative: [], hidden: ['legendary_speed'] },
+        },
       }),
       prisma.horse.create({
         data: {
@@ -45,8 +45,8 @@ describe('🧬 Genetic Diversity Tracking System', () => {
           sex: 'Mare',
           dateOfBirth: new Date('2015-02-01'),
           speed: 75, stamina: 95, agility: 85, intelligence: 90,
-          epigeneticModifiers: { positive: ['calm', 'intelligent'], negative: [], hidden: ['perfect_balance'] }
-        }
+          epigeneticModifiers: { positive: ['calm', 'intelligent'], negative: [], hidden: ['perfect_balance'] },
+        },
       }),
       prisma.horse.create({
         data: {
@@ -54,8 +54,8 @@ describe('🧬 Genetic Diversity Tracking System', () => {
           sex: 'Stallion',
           dateOfBirth: new Date('2015-03-01'),
           speed: 85, stamina: 80, agility: 95, intelligence: 85,
-          epigeneticModifiers: { positive: ['agile', 'bold'], negative: [], hidden: ['natural_jumper'] }
-        }
+          epigeneticModifiers: { positive: ['agile', 'bold'], negative: [], hidden: ['natural_jumper'] },
+        },
       }),
       prisma.horse.create({
         data: {
@@ -63,9 +63,9 @@ describe('🧬 Genetic Diversity Tracking System', () => {
           sex: 'Mare',
           dateOfBirth: new Date('2015-04-01'),
           speed: 80, stamina: 90, agility: 75, intelligence: 95,
-          epigeneticModifiers: { positive: ['wise', 'steady'], negative: [], hidden: ['dressage_master'] }
-        }
-      })
+          epigeneticModifiers: { positive: ['wise', 'steady'], negative: [], hidden: ['dressage_master'] },
+        },
+      }),
     ]);
 
     // Create second generation with some inbreeding
@@ -78,8 +78,8 @@ describe('🧬 Genetic Diversity Tracking System', () => {
           sireId: testFounders[0].id,
           damId: testFounders[1].id,
           speed: 82, stamina: 90, agility: 82, intelligence: 82,
-          epigeneticModifiers: { positive: ['athletic', 'calm'], negative: [], hidden: [] }
-        }
+          epigeneticModifiers: { positive: ['athletic', 'calm'], negative: [], hidden: [] },
+        },
       }),
       prisma.horse.create({
         data: {
@@ -89,9 +89,9 @@ describe('🧬 Genetic Diversity Tracking System', () => {
           sireId: testFounders[2].id,
           damId: testFounders[3].id,
           speed: 82, stamina: 85, agility: 85, intelligence: 90,
-          epigeneticModifiers: { positive: ['agile', 'wise'], negative: [], hidden: [] }
-        }
-      })
+          epigeneticModifiers: { positive: ['agile', 'wise'], negative: [], hidden: [] },
+        },
+      }),
     ]);
 
     // Create third generation with potential inbreeding
@@ -103,16 +103,16 @@ describe('🧬 Genetic Diversity Tracking System', () => {
         sireId: secondGen[0].id,
         damId: testFounders[1].id, // Same dam as sire's dam - inbreeding
         speed: 80, stamina: 88, agility: 80, intelligence: 85,
-        epigeneticModifiers: { positive: ['athletic'], negative: ['nervous'], hidden: [] }
-      }
+        epigeneticModifiers: { positive: ['athletic'], negative: ['nervous'], hidden: [] },
+      },
     });
 
     testPopulation = [...testFounders, ...secondGen, thirdGen];
-    
+
     testBreedingPairs = [
       { stallionId: testFounders[0].id, mareId: testFounders[1].id },
       { stallionId: testFounders[2].id, mareId: testFounders[3].id },
-      { stallionId: secondGen[0].id, mareId: secondGen[1].id }
+      { stallionId: secondGen[0].id, mareId: secondGen[1].id },
     ];
   });
 
@@ -171,7 +171,7 @@ describe('🧬 Genetic Diversity Tracking System', () => {
       expect(founders.length).toBeGreaterThan(0);
 
       if (founders.length > 0) {
-        const founder = founders[0];
+        const [founder] = founders;
         expect(founder).toHaveProperty('id');
         expect(founder).toHaveProperty('name');
         expect(founder).toHaveProperty('contribution');
@@ -189,7 +189,7 @@ describe('🧬 Genetic Diversity Tracking System', () => {
     test('should calculate detailed inbreeding coefficients', async () => {
       const inbreeding = await calculateDetailedInbreedingCoefficient(
         testBreedingPairs[0].stallionId,
-        testBreedingPairs[0].mareId
+        testBreedingPairs[0].mareId,
       );
 
       expect(inbreeding).toHaveProperty('coefficient');
@@ -211,14 +211,14 @@ describe('🧬 Genetic Diversity Tracking System', () => {
 
     test('should detect inbreeding in population', async () => {
       // Test with the inbred horse we created - this is a case where the mare is also the grandmother
-      const thirdGenHorse = testPopulation.find(h => h.name === 'Third Gen Inbred');
+      const _thirdGenHorse = testPopulation.find(h => h.name === 'Third Gen Inbred');
       const secondGenSire = testPopulation.find(h => h.name === 'Second Gen A');
 
       // The inbreeding is: Second Gen A (sire) x Founder Beta (mare)
       // But Second Gen A's dam is also Founder Beta, making Founder Beta both dam and grandmother
       const inbreeding = await calculateDetailedInbreedingCoefficient(
         secondGenSire.id,
-        testFounders[1].id // Founder Beta - same mare that is the sire's dam
+        testFounders[1].id, // Founder Beta - same mare that is the sire's dam
       );
 
       // This should detect inbreeding since Founder Beta appears in both lineages
@@ -266,6 +266,7 @@ describe('🧬 Genetic Diversity Tracking System', () => {
       // Verify generational analysis
       expect(Array.isArray(trends.generationalAnalysis)).toBe(true);
       if (trends.generationalAnalysis.length > 0) {
+        // eslint-disable-next-line prefer-destructuring
         const generation = trends.generationalAnalysis[0];
         expect(generation).toHaveProperty('generation');
         expect(generation).toHaveProperty('diversity');
@@ -282,7 +283,7 @@ describe('🧬 Genetic Diversity Tracking System', () => {
   describe('🎯 Optimal Breeding Recommendations', () => {
     test('should generate optimal breeding recommendations', async () => {
       const recommendations = await generateOptimalBreedingRecommendations(
-        testPopulation.map(h => h.id)
+        testPopulation.map(h => h.id),
       );
 
       expect(recommendations).toHaveProperty('optimalPairs');
@@ -294,6 +295,7 @@ describe('🧬 Genetic Diversity Tracking System', () => {
       // Verify optimal pairs structure
       expect(Array.isArray(recommendations.optimalPairs)).toBe(true);
       if (recommendations.optimalPairs.length > 0) {
+        // eslint-disable-next-line prefer-destructuring
         const pair = recommendations.optimalPairs[0];
         expect(pair).toHaveProperty('stallionId');
         expect(pair).toHaveProperty('mareId');
@@ -308,6 +310,7 @@ describe('🧬 Genetic Diversity Tracking System', () => {
       // Verify avoid pairs structure
       expect(Array.isArray(recommendations.avoidPairs)).toBe(true);
       if (recommendations.avoidPairs.length > 0) {
+        // eslint-disable-next-line prefer-destructuring
         const avoidPair = recommendations.avoidPairs[0];
         expect(avoidPair).toHaveProperty('stallionId');
         expect(avoidPair).toHaveProperty('mareId');
@@ -319,7 +322,7 @@ describe('🧬 Genetic Diversity Tracking System', () => {
     test('should assess breeding pair compatibility', async () => {
       const compatibility = await assessBreedingPairCompatibility(
         testBreedingPairs[0].stallionId,
-        testBreedingPairs[0].mareId
+        testBreedingPairs[0].mareId,
       );
 
       expect(compatibility).toHaveProperty('overallScore');
@@ -347,6 +350,7 @@ describe('🧬 Genetic Diversity Tracking System', () => {
       // Verify timeline structure
       expect(Array.isArray(tracking.timeline)).toBe(true);
       if (tracking.timeline.length > 0) {
+        // eslint-disable-next-line prefer-destructuring
         const timepoint = tracking.timeline[0];
         expect(timepoint).toHaveProperty('date');
         expect(timepoint).toHaveProperty('diversity');

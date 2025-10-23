@@ -1,10 +1,10 @@
 /**
  * Trait Interaction Matrix Service
- * 
+ *
  * Implements complex trait interaction system with synergies and conflicts.
  * Analyzes how multiple epigenetic traits interact, amplify, or suppress each other
  * to create emergent behavioral patterns and characteristics.
- * 
+ *
  * Business Rules:
  * - Trait synergy detection and amplification effects
  * - Trait conflict identification and suppression effects
@@ -127,7 +127,7 @@ export async function analyzeTraitInteractions(horseId) {
     }
 
     const traits = horse.epigeneticFlags;
-    
+
     if (traits.length === 0) {
       return {
         horseId,
@@ -185,7 +185,7 @@ export async function calculateTraitSynergies(horseId) {
 
     const traits = horse.epigeneticFlags;
     const synergyPairs = findTraitSynergies(traits);
-    
+
     // Calculate amplification effects
     const amplificationEffects = {};
     const synergyCategories = {};
@@ -201,9 +201,9 @@ export async function calculateTraitSynergies(horseId) {
             synergyCount: 0,
           };
         }
-        
+
         amplificationEffects[trait].amplificationFactor *= synergy.amplificationFactor;
-        amplificationEffects[trait].amplifiedStrength = 
+        amplificationEffects[trait].amplifiedStrength =
           amplificationEffects[trait].baseStrength * amplificationEffects[trait].amplificationFactor;
         amplificationEffects[trait].synergyCount++;
       });
@@ -247,7 +247,7 @@ export async function identifyTraitConflicts(horseId) {
 
     const traits = horse.epigeneticFlags;
     const conflictPairs = findTraitConflicts(traits);
-    
+
     // Calculate suppression effects
     const suppressionEffects = {};
     const conflictCategories = {};
@@ -263,9 +263,9 @@ export async function identifyTraitConflicts(horseId) {
             conflictCount: 0,
           };
         }
-        
+
         suppressionEffects[trait].suppressionFactor *= conflict.suppressionFactor;
-        suppressionEffects[trait].suppressedStrength = 
+        suppressionEffects[trait].suppressedStrength =
           suppressionEffects[trait].baseStrength * suppressionEffects[trait].suppressionFactor;
         suppressionEffects[trait].conflictCount++;
       });
@@ -308,12 +308,12 @@ export async function evaluateTraitDominance(horseId) {
     });
 
     const traits = horse.epigeneticFlags;
-    
+
     // Calculate dominance scores for each trait
     const dominanceHierarchy = traits.map(trait => {
       const dominanceInfo = getTraitDominanceInfo(trait);
       const environmentalModifier = calculateEnvironmentalDominanceModifier(horse, trait);
-      
+
       return {
         trait,
         baseDominanceScore: dominanceInfo.dominance_score,
@@ -415,20 +415,20 @@ export async function assessInteractionStability(horseId) {
     const stressInstability = horse.stressLevel * 0.05;
 
     const overallStability = Math.max(0, Math.min(1,
-      synergyStability - conflictInstability - stressInstability
+      synergyStability - conflictInstability - stressInstability,
     ));
 
     // Identify stability factors
     const stabilityFactors = [];
-    if (synergies.length > 0) stabilityFactors.push('trait_synergies');
-    if (horse.bondScore > 30) stabilityFactors.push('strong_bonding');
-    if (horse.stressLevel < 4) stabilityFactors.push('low_stress');
+    if (synergies.length > 0) { stabilityFactors.push('trait_synergies'); }
+    if (horse.bondScore > 30) { stabilityFactors.push('strong_bonding'); }
+    if (horse.stressLevel < 4) { stabilityFactors.push('low_stress'); }
 
     // Identify volatility risks
     const volatilityRisks = [];
-    if (conflicts.length > 2) volatilityRisks.push('multiple_trait_conflicts');
-    if (horse.stressLevel > 7) volatilityRisks.push('high_stress_environment');
-    if (traits.includes('reactive')) volatilityRisks.push('reactive_temperament');
+    if (conflicts.length > 2) { volatilityRisks.push('multiple_trait_conflicts'); }
+    if (horse.stressLevel > 7) { volatilityRisks.push('high_stress_environment'); }
+    if (traits.includes('reactive')) { volatilityRisks.push('reactive_temperament'); }
 
     // Generate recommendations
     const recommendations = generateStabilityRecommendations(overallStability, volatilityRisks);
@@ -507,7 +507,7 @@ export async function generateInteractionMatrix(horseId) {
       dominance,
       complexInteractions,
       stability,
-      temporalModel
+      temporalModel,
     ] = await Promise.all([
       analyzeTraitInteractions(horseId),
       calculateTraitSynergies(horseId),
@@ -515,7 +515,7 @@ export async function generateInteractionMatrix(horseId) {
       evaluateTraitDominance(horseId),
       processComplexInteractions(horseId),
       assessInteractionStability(horseId),
-      modelTemporalInteractions(horseId, 30)
+      modelTemporalInteractions(horseId, 30),
     ]);
 
     // Create matrix visualization data
@@ -666,7 +666,7 @@ function calculateEnvironmentalDominanceModifier(horse, trait) {
  * Calculate harmony score between synergies and conflicts
  */
 function calculateHarmonyScore(synergyScore, conflictScore, traitCount) {
-  if (traitCount === 0) return 0.5;
+  if (traitCount === 0) { return 0.5; }
 
   const normalizedSynergy = synergyScore / traitCount;
   const normalizedConflict = conflictScore / traitCount;
@@ -877,7 +877,7 @@ function modelInteractionEvolution(traits, timeWindow, ageInDays) {
       stabilityScore: calculateHarmonyScore(
         synergies.reduce((sum, s) => sum + s.strength, 0),
         conflicts.reduce((sum, c) => sum + c.strength, 0),
-        traits.length
+        traits.length,
       ),
     });
   }

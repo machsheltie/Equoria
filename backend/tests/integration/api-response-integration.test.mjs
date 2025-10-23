@@ -41,7 +41,7 @@ import { body } from 'express-validator';
 import { register, login } from '../../controllers/authController.mjs';
 import { authenticateToken } from '../../middleware/auth.mjs';
 import { handleValidationErrors } from '../../middleware/validationErrorHandler.mjs';
-import { responseHandler, ApiResponse } from '../../utils/apiResponse.mjs';
+import { responseHandler, _ApiResponse } from '../../utils/apiResponse.mjs';
 import { responseOptimization, performanceMonitoring } from '../../middleware/responseOptimization.mjs';
 import { handlePing, handleHealthCheck } from '../../controllers/pingController.mjs';
 import prisma from '../../db/index.mjs';
@@ -95,7 +95,7 @@ const createTestApp = () => {
     res.apiSuccess('Test success response', {
       userId: req.user.id,
       timestamp: new Date().toISOString(),
-      testData: 'success'
+      testData: 'success',
     });
   });
 
@@ -109,7 +109,7 @@ const createTestApp = () => {
 
   app.get('/api/test/validation-error', authenticateToken, (req, res) => {
     res.apiValidationError('Test validation failed', [
-      { field: 'testField', message: 'Test field is required' }
+      { field: 'testField', message: 'Test field is required' },
     ]);
   });
 
@@ -184,10 +184,10 @@ describe('🔄 API Response Integration Tests', () => {
   beforeEach(async () => {
     // Clean up any existing test data
     await prisma.refreshToken.deleteMany({
-      where: { user: { email: { contains: 'apiresponseintegration' } } }
+      where: { user: { email: { contains: 'apiresponseintegration' } } },
     });
     await prisma.user.deleteMany({
-      where: { email: { contains: 'apiresponseintegration' } }
+      where: { email: { contains: 'apiresponseintegration' } },
     });
 
     // Create test user and get authentication token
@@ -196,7 +196,7 @@ describe('🔄 API Response Integration Tests', () => {
       username: 'apiresponseintegrationuser',
       password: 'testpassword123',
       firstName: 'API',
-      lastName: 'Response'
+      lastName: 'Response',
     };
 
     const registerResponse = await request(app)
@@ -211,10 +211,10 @@ describe('🔄 API Response Integration Tests', () => {
   afterEach(async () => {
     // Clean up test data
     await prisma.refreshToken.deleteMany({
-      where: { user: { email: { contains: 'apiresponseintegration' } } }
+      where: { user: { email: { contains: 'apiresponseintegration' } } },
     });
     await prisma.user.deleteMany({
-      where: { email: { contains: 'apiresponseintegration' } }
+      where: { email: { contains: 'apiresponseintegration' } },
     });
   });
 
@@ -283,7 +283,7 @@ describe('🔄 API Response Integration Tests', () => {
       expect(response.body).toHaveProperty('meta');
       expect(response.body.meta).toHaveProperty('pagination');
 
-      const pagination = response.body.meta.pagination;
+      const { pagination } = response.body.meta;
       expect(pagination).toHaveProperty('page', 1);
       expect(pagination).toHaveProperty('limit', 5);
       expect(pagination).toHaveProperty('total', 100);
@@ -298,7 +298,7 @@ describe('🔄 API Response Integration Tests', () => {
         .set('Authorization', `Bearer ${authToken}`);
 
       expect(response.status).toBe(200);
-      const pagination = response.body.meta.pagination;
+      const { pagination } = response.body.meta;
       expect(pagination.page).toBe(20);
       expect(pagination.hasNext).toBe(false);
       expect(pagination.hasPrev).toBe(true);
@@ -395,7 +395,7 @@ describe('🔄 API Response Integration Tests', () => {
         .post('/api/auth/login')
         .send({
           email: 'apiresponseintegration@test.com',
-          password: 'testpassword123'
+          password: 'testpassword123',
         });
 
       expect(loginResponse.status).toBe(200);
@@ -417,8 +417,8 @@ describe('🔄 API Response Integration Tests', () => {
         expect(response.body).toHaveProperty('success', true);
         // Health endpoints may have timestamp in different locations
         expect(
-          response.body.hasOwnProperty('timestamp') ||
-          (response.body.data && response.body.data.hasOwnProperty('timestamp'))
+          Object.prototype.hasOwnProperty.call(response.body, 'timestamp') ||
+          (response.body.data && Object.prototype.hasOwnProperty.call(response.body.data, 'timestamp')),
         ).toBe(true);
       }
     });
@@ -427,7 +427,7 @@ describe('🔄 API Response Integration Tests', () => {
       const protectedEndpoints = [
         '/api/test/success',
         '/api/test/error',
-        '/api/test/large-data'
+        '/api/test/large-data',
       ];
 
       for (const endpoint of protectedEndpoints) {

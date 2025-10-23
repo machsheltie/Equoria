@@ -1,9 +1,9 @@
 /**
  * Dynamic Compatibility Controller
- * 
+ *
  * Provides API endpoints for advanced real-time compatibility analysis between groom personalities and horse temperaments.
  * Exposes the dynamic compatibility scoring system through RESTful endpoints.
- * 
+ *
  * Business Rules:
  * - Real-time compatibility scoring with contextual factors
  * - Environmental and situational modifiers
@@ -14,13 +14,13 @@
  */
 
 import logger from '../utils/logger.mjs';
-import { 
+import {
   calculateDynamicCompatibility,
   analyzeCompatibilityFactors,
   predictInteractionOutcome,
   updateCompatibilityHistory,
   getOptimalGroomRecommendations,
-  analyzeCompatibilityTrends
+  analyzeCompatibilityTrends,
 } from '../services/dynamicCompatibilityScoring.mjs';
 
 /**
@@ -53,7 +53,7 @@ export async function calculateCompatibility(req, res) {
     });
 
   } catch (error) {
-    logger.error(`[dynamicCompatibilityController.calculateCompatibility] Error:`, error);
+    logger.error('[dynamicCompatibilityController.calculateCompatibility] Error:', error);
     res.status(500).json({
       success: false,
       message: 'Failed to calculate dynamic compatibility',
@@ -83,7 +83,7 @@ export async function getCompatibilityFactors(req, res) {
     });
 
   } catch (error) {
-    logger.error(`[dynamicCompatibilityController.getCompatibilityFactors] Error:`, error);
+    logger.error('[dynamicCompatibilityController.getCompatibilityFactors] Error:', error);
     res.status(500).json({
       success: false,
       message: 'Failed to analyze compatibility factors',
@@ -121,7 +121,7 @@ export async function predictOutcome(req, res) {
     });
 
   } catch (error) {
-    logger.error(`[dynamicCompatibilityController.predictOutcome] Error:`, error);
+    logger.error('[dynamicCompatibilityController.predictOutcome] Error:', error);
     res.status(500).json({
       success: false,
       message: 'Failed to predict interaction outcome',
@@ -159,7 +159,7 @@ export async function getRecommendations(req, res) {
     });
 
   } catch (error) {
-    logger.error(`[dynamicCompatibilityController.getRecommendations] Error:`, error);
+    logger.error('[dynamicCompatibilityController.getRecommendations] Error:', error);
     res.status(500).json({
       success: false,
       message: 'Failed to generate groom recommendations',
@@ -189,7 +189,7 @@ export async function getCompatibilityTrends(req, res) {
     });
 
   } catch (error) {
-    logger.error(`[dynamicCompatibilityController.getCompatibilityTrends] Error:`, error);
+    logger.error('[dynamicCompatibilityController.getCompatibilityTrends] Error:', error);
     res.status(500).json({
       success: false,
       message: 'Failed to analyze compatibility trends',
@@ -227,7 +227,7 @@ export async function updateHistory(req, res) {
     });
 
   } catch (error) {
-    logger.error(`[dynamicCompatibilityController.updateHistory] Error:`, error);
+    logger.error('[dynamicCompatibilityController.updateHistory] Error:', error);
     res.status(500).json({
       success: false,
       message: 'Failed to update compatibility history',
@@ -242,7 +242,7 @@ export async function updateHistory(req, res) {
  */
 export async function getCompatibilityConfig(req, res) {
   try {
-    logger.info(`[dynamicCompatibilityController.getCompatibilityConfig] Getting compatibility system configuration`);
+    logger.info('[dynamicCompatibilityController.getCompatibilityConfig] Getting compatibility system configuration');
 
     const config = {
       personalityTypes: ['calm', 'energetic', 'methodical'],
@@ -262,7 +262,7 @@ export async function getCompatibilityConfig(req, res) {
     });
 
   } catch (error) {
-    logger.error(`[dynamicCompatibilityController.getCompatibilityConfig] Error:`, error);
+    logger.error('[dynamicCompatibilityController.getCompatibilityConfig] Error:', error);
     res.status(500).json({
       success: false,
       message: 'Failed to get compatibility configuration',

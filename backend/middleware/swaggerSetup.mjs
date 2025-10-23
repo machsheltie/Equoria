@@ -1,10 +1,10 @@
 /**
  * 📚 Swagger Documentation Setup
- * 
+ *
  * Express middleware for serving interactive API documentation using Swagger UI.
  * Provides comprehensive API documentation with examples, authentication guides,
  * and interactive testing capabilities.
- * 
+ *
  * Features:
  * - Interactive API explorer with Swagger UI
  * - OpenAPI 3.0 specification
@@ -31,7 +31,7 @@ function loadSwaggerSpec() {
   try {
     const swaggerPath = join(__dirname, '../docs/swagger.yaml');
     const swaggerDocument = YAML.load(swaggerPath);
-    
+
     // Add dynamic server configuration based on environment
     const baseUrl = process.env.API_BASE_URL || 'http://localhost:3000';
     swaggerDocument.servers = [
@@ -40,7 +40,7 @@ function loadSwaggerSpec() {
         description: process.env.NODE_ENV === 'production' ? 'Production server' : 'Development server',
       },
     ];
-    
+
     // Add build information
     swaggerDocument.info.version = process.env.API_VERSION || '1.2.0';
     swaggerDocument.info['x-build'] = {
@@ -48,7 +48,7 @@ function loadSwaggerSpec() {
       environment: process.env.NODE_ENV || 'development',
       nodeVersion: process.version,
     };
-    
+
     logger.info('[SwaggerSetup] OpenAPI specification loaded successfully');
     return swaggerDocument;
   } catch (error) {
@@ -225,20 +225,20 @@ const customCss = `
 export function setupSwaggerDocs(app) {
   try {
     const swaggerDocument = loadSwaggerSpec();
-    
+
     // Serve Swagger UI at /api-docs
     app.use('/api-docs', swaggerUi.serve);
     app.get('/api-docs', swaggerUi.setup(swaggerDocument, {
       ...swaggerOptions,
-      customCss: customCss,
+      customCss,
     }));
-    
+
     // Serve raw OpenAPI spec at /api-docs/swagger.json
     app.get('/api-docs/swagger.json', (req, res) => {
       res.setHeader('Content-Type', 'application/json');
       res.send(swaggerDocument);
     });
-    
+
     // Serve OpenAPI spec in YAML format at /api-docs/swagger.yaml
     app.get('/api-docs/swagger.yaml', (req, res) => {
       try {
@@ -250,7 +250,7 @@ export function setupSwaggerDocs(app) {
         res.status(500).json({ error: 'Failed to load YAML specification' });
       }
     });
-    
+
     // Health check for documentation
     app.get('/api-docs/health', (req, res) => {
       res.json({
@@ -265,12 +265,12 @@ export function setupSwaggerDocs(app) {
         lastUpdated: swaggerDocument.info['x-build']?.timestamp,
       });
     });
-    
+
     logger.info('[SwaggerSetup] API documentation setup completed');
     logger.info('[SwaggerSetup] Interactive docs available at: /api-docs');
     logger.info('[SwaggerSetup] OpenAPI JSON available at: /api-docs/swagger.json');
     logger.info('[SwaggerSetup] OpenAPI YAML available at: /api-docs/swagger.yaml');
-    
+
   } catch (error) {
     logger.error(`[SwaggerSetup] Failed to setup Swagger documentation: ${error.message}`);
     throw error;
@@ -286,7 +286,7 @@ export function addDocumentationHeaders() {
     res.setHeader('X-API-Docs', '/api-docs');
     res.setHeader('X-API-Spec-JSON', '/api-docs/swagger.json');
     res.setHeader('X-API-Spec-YAML', '/api-docs/swagger.yaml');
-    
+
     next();
   };
 }

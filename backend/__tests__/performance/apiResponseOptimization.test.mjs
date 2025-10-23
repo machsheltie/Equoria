@@ -1,6 +1,6 @@
 /**
  * 🧪 API Response Optimization Tests
- * 
+ *
  * Comprehensive test suite for API response optimization system including:
  * - Response compression and encoding
  * - Pagination services (cursor and offset-based)
@@ -8,7 +8,7 @@
  * - Lazy loading functionality
  * - Response caching with ETags
  * - Performance monitoring and metrics
- * 
+ *
  * Testing Approach: TDD with NO MOCKING
  * - Real compression testing with actual data
  * - Authentic pagination with database operations
@@ -17,7 +17,7 @@
  * - Production-like performance scenarios
  */
 
-import { jest } from '@jest/globals';
+// jest import removed - not used in this file
 import request from 'supertest';
 import express from 'express';
 import {
@@ -37,7 +37,7 @@ import prisma from '../../../packages/database/prismaClient.mjs';
 
 describe('API Response Optimization System', () => {
   let testUserId;
-  let testHorseIds = [];
+  const testHorseIds = [];
   let testApp;
 
   beforeAll(async () => {
@@ -108,7 +108,7 @@ describe('API Response Optimization System', () => {
         take: req.pagination.limit,
         skip: req.pagination.offset,
       });
-      
+
       const totalCount = await prisma.horse.count({
         where: { ownerId: testUserId },
       });
@@ -165,7 +165,7 @@ describe('API Response Optimization System', () => {
   describe('Pagination Service', () => {
     test('creates offset-based pagination correctly', () => {
       const testData = Array.from({ length: 5 }, (_, i) => ({ id: i + 1, name: `Item ${i + 1}` }));
-      
+
       const result = PaginationService.createOffsetPagination({
         data: testData,
         page: 1,
@@ -184,7 +184,7 @@ describe('API Response Optimization System', () => {
 
     test('creates cursor-based pagination correctly', () => {
       const testData = Array.from({ length: 5 }, (_, i) => ({ id: i + 1, name: `Item ${i + 1}` }));
-      
+
       const result = PaginationService.createCursorPagination({
         data: testData,
         limit: 5,
@@ -296,10 +296,10 @@ describe('API Response Optimization System', () => {
   describe('Response Cache Service', () => {
     test('generates consistent ETags for same data', () => {
       const testData = { id: 1, name: 'Test' };
-      
+
       const etag1 = ResponseCacheService.generateETag(testData);
       const etag2 = ResponseCacheService.generateETag(testData);
-      
+
       expect(etag1).toBe(etag2);
       expect(etag1).toMatch(/^"[a-f0-9]{32}"$/);
     });
@@ -307,22 +307,22 @@ describe('API Response Optimization System', () => {
     test('generates different ETags for different data', () => {
       const testData1 = { id: 1, name: 'Test 1' };
       const testData2 = { id: 2, name: 'Test 2' };
-      
+
       const etag1 = ResponseCacheService.generateETag(testData1);
       const etag2 = ResponseCacheService.generateETag(testData2);
-      
+
       expect(etag1).not.toBe(etag2);
     });
 
     test('determines cacheable requests correctly', () => {
       const mockReq = { method: 'GET' };
       const mockRes = { statusCode: 200, getHeader: () => null };
-      
+
       expect(ResponseCacheService.shouldCache(mockReq, mockRes)).toBe(true);
-      
+
       mockReq.method = 'POST';
       expect(ResponseCacheService.shouldCache(mockReq, mockRes)).toBe(false);
-      
+
       mockReq.method = 'GET';
       mockRes.statusCode = 404;
       expect(ResponseCacheService.shouldCache(mockReq, mockRes)).toBe(false);
@@ -378,7 +378,7 @@ describe('API Response Optimization System', () => {
 
       expect(response.body.success).toBe(true);
       expect(response.body.data).toHaveLength(5);
-      
+
       // Check that only selected fields are present
       response.body.data.forEach(horse => {
         expect(horse.id).toBeDefined();
@@ -406,7 +406,7 @@ describe('API Response Optimization System', () => {
       expect(response.body.success).toBe(true);
       expect(response.body.data).toHaveLength(1000);
       expect(response.headers['x-response-size']).toBeDefined();
-      
+
       const responseSize = parseInt(response.headers['x-response-size']);
       expect(responseSize).toBeGreaterThan(0);
     });
@@ -442,7 +442,7 @@ describe('API Response Optimization System', () => {
   describe('ETag and Caching', () => {
     test('generates and validates ETags correctly', async () => {
       const testData = { id: 1, name: 'Test Data' };
-      const etag = ResponseCacheService.generateETag(testData);
+      const _etag = ResponseCacheService.generateETag(testData);
 
       // Create a test route that uses ETags
       testApp.get('/test/etag', (req, res) => {

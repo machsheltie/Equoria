@@ -1,6 +1,6 @@
 /**
  * Performance Test Data Seeding Script
- * 
+ *
  * This script seeds the database with performance test data including:
  * - Large datasets for load testing
  * - Complex relationships for query performance testing
@@ -18,7 +18,7 @@ const PERFORMANCE_DATA_CONFIG = {
   showsPerUser: 10,
   competitionResultsPerHorse: 50,
   groomsPerUser: 5,
-  trainingSessionsPerHorse: 30
+  trainingSessionsPerHorse: 30,
 };
 
 /**
@@ -26,7 +26,7 @@ const PERFORMANCE_DATA_CONFIG = {
  */
 async function seedPerformanceUsers() {
   logger.info('🔄 Seeding performance test users...');
-  
+
   const users = [];
   const hashedPassword = await bcrypt.hash('testpassword123', 10);
 
@@ -35,21 +35,21 @@ async function seedPerformanceUsers() {
       email: `perftest${i}@equoria.com`,
       username: `perfuser${i}`,
       password: hashedPassword,
-      firstName: `Performance`,
+      firstName: 'Performance',
       lastName: `User${i}`,
       money: 10000,
       xp: Math.floor(Math.random() * 5000),
       level: Math.floor(Math.random() * 20) + 1,
       settings: {
         notifications: true,
-        theme: 'default'
-      }
+        theme: 'default',
+      },
     });
   }
 
   await prisma.user.createMany({
     data: users,
-    skipDuplicates: true
+    skipDuplicates: true,
   });
 
   logger.info(`✅ Created ${users.length} performance test users`);
@@ -61,13 +61,13 @@ async function seedPerformanceUsers() {
  */
 async function seedPerformanceHorses() {
   logger.info('🔄 Seeding performance test horses...');
-  
+
   const users = await prisma.user.findMany({
     where: {
       email: {
-        startsWith: 'perftest'
-      }
-    }
+        startsWith: 'perftest',
+      },
+    },
   });
 
   const breeds = await prisma.breed.findMany();
@@ -77,7 +77,7 @@ async function seedPerformanceHorses() {
     for (let i = 1; i <= PERFORMANCE_DATA_CONFIG.horsesPerUser; i++) {
       const breed = breeds[Math.floor(Math.random() * breeds.length)];
       const age = Math.floor(Math.random() * 20) + 1;
-      
+
       horses.push({
         name: `PerfHorse${user.id}_${i}`,
         sex: Math.random() > 0.5 ? 'stallion' : 'mare',
@@ -98,7 +98,7 @@ async function seedPerformanceHorses() {
           boldness: Math.floor(Math.random() * 50) + 50,
           flexibility: Math.floor(Math.random() * 50) + 50,
           obedience: Math.floor(Math.random() * 50) + 50,
-          focus: Math.floor(Math.random() * 50) + 50
+          focus: Math.floor(Math.random() * 50) + 50,
         },
         disciplineScores: {
           racing: Math.floor(Math.random() * 100),
@@ -106,15 +106,15 @@ async function seedPerformanceHorses() {
           showJumping: Math.floor(Math.random() * 100),
           crossCountry: Math.floor(Math.random() * 100),
           western: Math.floor(Math.random() * 100),
-          gaited: Math.floor(Math.random() * 100)
+          gaited: Math.floor(Math.random() * 100),
         },
         traits: {
           positive: [],
           negative: [],
-          hidden: []
+          hidden: [],
         },
         taskLog: {},
-        lastGroomed: new Date()
+        lastGroomed: new Date(),
       });
     }
   }
@@ -125,7 +125,7 @@ async function seedPerformanceHorses() {
     const batch = horses.slice(i, i + batchSize);
     await prisma.horse.createMany({
       data: batch,
-      skipDuplicates: true
+      skipDuplicates: true,
     });
   }
 
@@ -138,18 +138,18 @@ async function seedPerformanceHorses() {
  */
 async function seedPerformanceShows() {
   logger.info('🔄 Seeding performance test shows...');
-  
+
   const users = await prisma.user.findMany({
     where: {
       email: {
-        startsWith: 'perftest'
-      }
-    }
+        startsWith: 'perftest',
+      },
+    },
   });
 
   const disciplines = [
-    'racing', 'dressage', 'showJumping', 'crossCountry', 
-    'western', 'gaited', 'endurance', 'eventing'
+    'racing', 'dressage', 'showJumping', 'crossCountry',
+    'western', 'gaited', 'endurance', 'eventing',
   ];
 
   const shows = [];
@@ -158,7 +158,7 @@ async function seedPerformanceShows() {
     for (let i = 1; i <= PERFORMANCE_DATA_CONFIG.showsPerUser; i++) {
       const discipline = disciplines[Math.floor(Math.random() * disciplines.length)];
       const showDate = new Date(Date.now() + Math.random() * 30 * 24 * 60 * 60 * 1000);
-      
+
       shows.push({
         name: `Performance Show ${user.id}_${i}`,
         discipline,
@@ -168,14 +168,14 @@ async function seedPerformanceShows() {
         maxEntries: Math.floor(Math.random() * 50) + 20,
         currentEntries: 0,
         status: 'upcoming',
-        hostId: user.id
+        hostId: user.id,
       });
     }
   }
 
   await prisma.show.createMany({
     data: shows,
-    skipDuplicates: true
+    skipDuplicates: true,
   });
 
   logger.info(`✅ Created ${shows.length} performance test shows`);
@@ -187,28 +187,28 @@ async function seedPerformanceShows() {
  */
 async function seedPerformanceCompetitionResults() {
   logger.info('🔄 Seeding performance test competition results...');
-  
+
   const horses = await prisma.horse.findMany({
     where: {
       user: {
         email: {
-          startsWith: 'perftest'
-        }
-      }
+          startsWith: 'perftest',
+        },
+      },
     },
     include: {
-      user: true
-    }
+      user: true,
+    },
   });
 
   const shows = await prisma.show.findMany({
     where: {
       host: {
         email: {
-          startsWith: 'perftest'
-        }
-      }
-    }
+          startsWith: 'perftest',
+        },
+      },
+    },
   });
 
   const results = [];
@@ -216,9 +216,9 @@ async function seedPerformanceCompetitionResults() {
   for (const horse of horses) {
     const numResults = Math.min(
       PERFORMANCE_DATA_CONFIG.competitionResultsPerHorse,
-      shows.length
+      shows.length,
     );
-    
+
     const selectedShows = shows
       .sort(() => 0.5 - Math.random())
       .slice(0, numResults);
@@ -227,7 +227,7 @@ async function seedPerformanceCompetitionResults() {
       const placement = Math.floor(Math.random() * 10) + 1;
       const score = Math.floor(Math.random() * 1000) + 500;
       const prizeWon = placement <= 3 ? Math.floor(show.prize / placement) : 0;
-      
+
       results.push({
         horseId: horse.id,
         showId: show.id,
@@ -236,7 +236,7 @@ async function seedPerformanceCompetitionResults() {
         score,
         prizeWon,
         discipline: show.discipline,
-        competitionDate: new Date(Date.now() - Math.random() * 365 * 24 * 60 * 60 * 1000)
+        competitionDate: new Date(Date.now() - Math.random() * 365 * 24 * 60 * 60 * 1000),
       });
     }
   }
@@ -247,7 +247,7 @@ async function seedPerformanceCompetitionResults() {
     const batch = results.slice(i, i + batchSize);
     await prisma.competitionResult.createMany({
       data: batch,
-      skipDuplicates: true
+      skipDuplicates: true,
     });
   }
 
@@ -260,13 +260,13 @@ async function seedPerformanceCompetitionResults() {
  */
 async function seedPerformanceGrooms() {
   logger.info('🔄 Seeding performance test grooms...');
-  
+
   const users = await prisma.user.findMany({
     where: {
       email: {
-        startsWith: 'perftest'
-      }
-    }
+        startsWith: 'perftest',
+      },
+    },
   });
 
   const personalities = ['calm', 'energetic', 'methodical'];
@@ -277,7 +277,7 @@ async function seedPerformanceGrooms() {
     for (let i = 1; i <= PERFORMANCE_DATA_CONFIG.groomsPerUser; i++) {
       const personality = personalities[Math.floor(Math.random() * personalities.length)];
       const specialty = specialties[Math.floor(Math.random() * specialties.length)];
-      
+
       grooms.push({
         name: `PerfGroom${user.id}_${i}`,
         personality,
@@ -287,14 +287,14 @@ async function seedPerformanceGrooms() {
         userId: user.id,
         isActive: true,
         careerWeeks: Math.floor(Math.random() * 50),
-        level: Math.floor(Math.random() * 10) + 1
+        level: Math.floor(Math.random() * 10) + 1,
       });
     }
   }
 
   await prisma.groom.createMany({
     data: grooms,
-    skipDuplicates: true
+    skipDuplicates: true,
   });
 
   logger.info(`✅ Created ${grooms.length} performance test grooms`);
@@ -306,15 +306,15 @@ async function seedPerformanceGrooms() {
  */
 async function seedPerformanceTrainingSessions() {
   logger.info('🔄 Seeding performance test training sessions...');
-  
+
   const horses = await prisma.horse.findMany({
     where: {
       user: {
         email: {
-          startsWith: 'perftest'
-        }
-      }
-    }
+          startsWith: 'perftest',
+        },
+      },
+    },
   });
 
   const disciplines = ['racing', 'dressage', 'showJumping', 'crossCountry', 'western', 'gaited'];
@@ -324,13 +324,13 @@ async function seedPerformanceTrainingSessions() {
     for (let i = 1; i <= PERFORMANCE_DATA_CONFIG.trainingSessionsPerHorse; i++) {
       const discipline = disciplines[Math.floor(Math.random() * disciplines.length)];
       const sessionDate = new Date(Date.now() - Math.random() * 365 * 24 * 60 * 60 * 1000);
-      
+
       sessions.push({
         horseId: horse.id,
         discipline,
         trainedAt: sessionDate,
         skillImprovement: Math.floor(Math.random() * 10) + 1,
-        notes: `Performance training session ${i} for ${discipline}`
+        notes: `Performance training session ${i} for ${discipline}`,
       });
     }
   }
@@ -341,7 +341,7 @@ async function seedPerformanceTrainingSessions() {
     const batch = sessions.slice(i, i + batchSize);
     await prisma.trainingLog.createMany({
       data: batch,
-      skipDuplicates: true
+      skipDuplicates: true,
     });
   }
 
@@ -363,10 +363,10 @@ async function seedPerformanceData() {
       where: {
         user: {
           email: {
-            startsWith: 'perftest'
-          }
-        }
-      }
+            startsWith: 'perftest',
+          },
+        },
+      },
     });
 
     await prisma.trainingLog.deleteMany({
@@ -374,49 +374,49 @@ async function seedPerformanceData() {
         horse: {
           user: {
             email: {
-              startsWith: 'perftest'
-            }
-          }
-        }
-      }
+              startsWith: 'perftest',
+            },
+          },
+        },
+      },
     });
 
     await prisma.groom.deleteMany({
       where: {
         user: {
           email: {
-            startsWith: 'perftest'
-          }
-        }
-      }
+            startsWith: 'perftest',
+          },
+        },
+      },
     });
 
     await prisma.horse.deleteMany({
       where: {
         user: {
           email: {
-            startsWith: 'perftest'
-          }
-        }
-      }
+            startsWith: 'perftest',
+          },
+        },
+      },
     });
 
     await prisma.show.deleteMany({
       where: {
         host: {
           email: {
-            startsWith: 'perftest'
-          }
-        }
-      }
+            startsWith: 'perftest',
+          },
+        },
+      },
     });
 
     await prisma.user.deleteMany({
       where: {
         email: {
-          startsWith: 'perftest'
-        }
-      }
+          startsWith: 'perftest',
+        },
+      },
     });
 
     // Seed performance test data

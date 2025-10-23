@@ -1,6 +1,6 @@
 /**
  * 🧪 Cross-System Validation Tests
- * 
+ *
  * Comprehensive tests validating integration between different game systems
  * and ensuring data consistency across system boundaries including:
  * - Epigenetic trait system integration with breeding and care
@@ -8,7 +8,7 @@
  * - Groom system integration with horse care and trait development
  * - Memory and performance system integration with all operations
  * - Documentation system integration with API endpoints
- * 
+ *
  * Testing Approach: TDD with NO MOCKING
  * - Real cross-system operations with authentic data flows
  * - Genuine system boundary validation
@@ -16,12 +16,12 @@
  * - Complete workflow validation
  */
 
-import { jest } from '@jest/globals';
+// jest import removed - not used in this file
 import request from 'supertest';
 import app from '../../app.mjs';
 import prisma from '../../../packages/database/prismaClient.mjs';
-import { getMemoryManager } from '../../services/memoryResourceManagementService.mjs';
-import logger from '../../utils/logger.mjs';
+// getMemoryManager import removed - not used in this file
+// logger import removed - not used in this file
 
 describe('Cross-System Validation Tests', () => {
   let testUser;
@@ -47,7 +47,7 @@ describe('Cross-System Validation Tests', () => {
     authToken = jwt.default.sign(
       { id: testUser.id, username: testUser.username },
       process.env.JWT_SECRET || 'test-secret',
-      { expiresIn: '1h' }
+      { expiresIn: '1h' },
     );
 
     // Create test breed
@@ -96,6 +96,7 @@ describe('Cross-System Validation Tests', () => {
         personality: 'methodical',
         speciality: 'general_grooming',
         level: 4,
+      // eslint-disable-next-line prefer-destructuring
       },
     });
   });
@@ -116,6 +117,7 @@ describe('Cross-System Validation Tests', () => {
         breedId: testBreed.id,
         sex: 'Stallion',
         dateOfBirth: new Date(), // Newborn
+        // eslint-disable-next-line prefer-destructuring
         sireId: testHorse.id,
         damId: testHorse.id,
       };
@@ -126,7 +128,7 @@ describe('Cross-System Validation Tests', () => {
         .send(foalData)
         .expect(201);
 
-      const foal = foalResponse.body.data.foal;
+      const { foal } = foalResponse.body.data;
 
       // Perform groom interactions during critical development period
       const enrichmentData = {
@@ -183,7 +185,7 @@ describe('Cross-System Validation Tests', () => {
 
     test('Environmental trigger system integration', async () => {
       // Test environmental factors affecting trait expression
-      const environmentalData = {
+      const _environmentalData = {
         horseId: testHorse.id,
         environmentalFactors: {
           temperature: 22,
@@ -322,7 +324,7 @@ describe('Cross-System Validation Tests', () => {
       // Verify horse appears in results if competed
       const results = leaderboardResponse.body.data.leaderboard;
       const horseResult = results.find(r => r.horseId === testHorse.id);
-      
+
       if (horseResult) {
         expect(horseResult.horseName).toBe(testHorse.name);
         expect(horseResult.totalEarnings).toBeGreaterThanOrEqual(0);
@@ -413,6 +415,7 @@ describe('Cross-System Validation Tests', () => {
       expect(assignmentsResponse.body.success).toBe(true);
       expect(assignmentsResponse.body.data.assignments.length).toBeGreaterThan(0);
 
+      // eslint-disable-next-line prefer-destructuring
       const assignment = assignmentsResponse.body.data.assignments[0];
       expect(assignment.groomId).toBe(testGroom.id);
       expect(assignment.foalId).toBe(testHorse.id);
@@ -428,7 +431,7 @@ describe('Cross-System Validation Tests', () => {
         .expect(200);
 
       expect(initialMemoryResponse.body.success).toBe(true);
-      const initialMemory = initialMemoryResponse.body.data;
+      const _initialMemory = initialMemoryResponse.body.data;
 
       // Perform memory-intensive operations
       const operations = [];
@@ -436,7 +439,7 @@ describe('Cross-System Validation Tests', () => {
         operations.push(
           request(app)
             .get('/api/horses')
-            .set('Authorization', `Bearer ${authToken}`)
+            .set('Authorization', `Bearer ${authToken}`),
         );
       }
 
@@ -474,7 +477,7 @@ describe('Cross-System Validation Tests', () => {
         .expect(200);
 
       expect(compressedResponse.body.success).toBe(true);
-      
+
       // Verify response headers indicate optimization
       expect(compressedResponse.headers['x-response-time']).toBeDefined();
 

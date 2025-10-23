@@ -1,6 +1,6 @@
 /**
  * Performance Analytics Service
- * 
+ *
  * Provides personal performance tracking and analytics for individual horses.
  * Focuses on win rates, discipline strengths, historical performance tracking,
  * and performance improvement analysis without competitor comparisons.
@@ -21,7 +21,7 @@ export const performanceAnalyticsService = {
   async getPerformanceAnalytics(horseId) {
     // Verify horse exists
     const horse = await prisma.horse.findUnique({
-      where: { id: horseId }
+      where: { id: horseId },
     });
 
     if (!horse) {
@@ -31,7 +31,7 @@ export const performanceAnalyticsService = {
     // Get all competition results for the horse
     const competitionResults = await prisma.competitionResult.findMany({
       where: { horseId },
-      orderBy: { runDate: 'desc' }
+      orderBy: { runDate: 'desc' },
     });
 
     // If no competition history, return empty analytics
@@ -46,10 +46,10 @@ export const performanceAnalyticsService = {
         performanceImprovement: {
           recentAverage: 0,
           historicalAverage: 0,
-          improvementTrend: 'stable'
+          improvementTrend: 'stable',
         },
         strongestDisciplines: [],
-        weakestDisciplines: []
+        weakestDisciplines: [],
       };
     }
 
@@ -71,7 +71,7 @@ export const performanceAnalyticsService = {
       earningsByDiscipline,
       performanceImprovement,
       strongestDisciplines: disciplineStrengths.strongest,
-      weakestDisciplines: disciplineStrengths.weakest
+      weakestDisciplines: disciplineStrengths.weakest,
     };
   },
 
@@ -81,7 +81,7 @@ export const performanceAnalyticsService = {
    * @returns {number} Win rate percentage
    */
   calculateOverallWinRate(results) {
-    if (results.length === 0) return 0;
+    if (results.length === 0) { return 0; }
 
     const wins = results.filter(result => parseInt(result.placement) === 1).length;
     return Math.round((wins / results.length) * 100);
@@ -94,7 +94,7 @@ export const performanceAnalyticsService = {
    */
   calculateDisciplineWinRates(results) {
     const disciplineStats = {};
-    
+
     results.forEach(result => {
       if (!disciplineStats[result.discipline]) {
         disciplineStats[result.discipline] = { total: 0, wins: 0 };
@@ -124,7 +124,7 @@ export const performanceAnalyticsService = {
       date: result.runDate,
       placement: parseInt(result.placement),
       discipline: result.discipline,
-      prizeWon: result.prizeWon
+      prizeWon: result.prizeWon,
     }));
   },
 
@@ -134,22 +134,22 @@ export const performanceAnalyticsService = {
    * @returns {number} Consistency score (0-100)
    */
   calculateConsistencyScore(results) {
-    if (results.length === 0) return 0;
-    
+    if (results.length === 0) { return 0; }
+
     const placements = results.map(result => parseInt(result.placement));
     const average = placements.reduce((sum, placement) => sum + placement, 0) / placements.length;
-    
+
     // Calculate variance
     const variance = placements.reduce((sum, placement) => {
       return sum + Math.pow(placement - average, 2);
     }, 0) / placements.length;
-    
+
     // Convert to consistency score (lower variance = higher consistency)
     // Normalize to 0-100 scale where 100 is perfect consistency
     const standardDeviation = Math.sqrt(variance);
     const maxPossibleStdDev = 5; // Assuming placements 1-10, max std dev would be around 5
     const consistencyScore = Math.max(0, 100 - (standardDeviation / maxPossibleStdDev) * 100);
-    
+
     return Math.round(consistencyScore);
   },
 
@@ -160,7 +160,7 @@ export const performanceAnalyticsService = {
    */
   calculateEarningsByDiscipline(results) {
     const earnings = {};
-    
+
     results.forEach(result => {
       if (!earnings[result.discipline]) {
         earnings[result.discipline] = 0;
@@ -181,7 +181,7 @@ export const performanceAnalyticsService = {
       return {
         recentAverage: 0,
         historicalAverage: 0,
-        improvementTrend: 'insufficient_data'
+        improvementTrend: 'insufficient_data',
       };
     }
 
@@ -195,7 +195,7 @@ export const performanceAnalyticsService = {
 
     let improvementTrend = 'stable';
     const difference = historicalAverage - recentAverage; // Lower placement = better performance
-    
+
     if (difference > 0.5) {
       improvementTrend = 'improving';
     } else if (difference < -0.5) {
@@ -205,7 +205,7 @@ export const performanceAnalyticsService = {
     return {
       recentAverage: Math.round(recentAverage * 10) / 10,
       historicalAverage: Math.round(historicalAverage * 10) / 10,
-      improvementTrend
+      improvementTrend,
     };
   },
 
@@ -216,14 +216,14 @@ export const performanceAnalyticsService = {
    */
   analyzeDisciplineStrengths(results) {
     const disciplineStats = {};
-    
+
     results.forEach(result => {
       if (!disciplineStats[result.discipline]) {
-        disciplineStats[result.discipline] = { 
-          total: 0, 
-          wins: 0, 
+        disciplineStats[result.discipline] = {
+          total: 0,
+          wins: 0,
           totalPlacement: 0,
-          name: result.discipline 
+          name: result.discipline,
         };
       }
       disciplineStats[result.discipline].total++;
@@ -238,7 +238,7 @@ export const performanceAnalyticsService = {
       name: stats.name,
       winRate: Math.round((stats.wins / stats.total) * 100),
       averagePlacement: Math.round((stats.totalPlacement / stats.total) * 10) / 10,
-      totalCompetitions: stats.total
+      totalCompetitions: stats.total,
     }));
 
     // Sort by win rate (descending) then by average placement (ascending)
@@ -251,7 +251,7 @@ export const performanceAnalyticsService = {
 
     return {
       strongest: disciplines.slice(0, Math.min(3, disciplines.length)),
-      weakest: disciplines.slice(-Math.min(3, disciplines.length)).reverse()
+      weakest: disciplines.slice(-Math.min(3, disciplines.length)).reverse(),
     };
-  }
+  },
 };

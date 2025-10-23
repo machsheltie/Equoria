@@ -1,6 +1,6 @@
 /**
  * Performance Analytics Service Tests
- * 
+ *
  * Tests for personal performance tracking and analytics without competitor analysis.
  * Focuses on individual horse performance metrics, win rates, discipline strengths,
  * and historical performance tracking using TDD with NO MOCKING approach.
@@ -26,16 +26,16 @@ describe('Performance Analytics Service', () => {
         email: `analytics_${timestamp}@test.com`,
         password: 'test_password',
         firstName: 'Analytics',
-        lastName: 'Test'
-      }
+        lastName: 'Test',
+      },
     });
 
     // Create test breed
     testBreed = await prisma.breed.create({
       data: {
         name: 'Test Breed',
-        description: 'Test breed for analytics'
-      }
+        description: 'Test breed for analytics',
+      },
     });
 
     // Create test show
@@ -47,8 +47,8 @@ describe('Performance Analytics Service', () => {
         levelMax: 10,
         entryFee: 100,
         prize: 1000,
-        runDate: new Date()
-      }
+        runDate: new Date(),
+      },
     });
 
     // Create test horse
@@ -69,8 +69,8 @@ describe('Performance Analytics Service', () => {
         boldness: 76,
         flexibility: 74,
         obedience: 88,
-        focus: 79
-      }
+        focus: 79,
+      },
     });
 
     // Create test competition results for analytics
@@ -88,8 +88,8 @@ describe('Performance Analytics Service', () => {
           score: Math.random() * 100,
           runDate: new Date(Date.now() - (i * 7 * 24 * 60 * 60 * 1000)),
           showName: `Test Show ${i + 1}`,
-          prizeWon: placements[i % placements.length] <= 3 ? 1000 - (placements[i % placements.length] * 200) : 0
-        }
+          prizeWon: placements[i % placements.length] <= 3 ? 1000 - (placements[i % placements.length] * 200) : 0,
+        },
       });
       testCompetitionResults.push(result);
     }
@@ -99,22 +99,22 @@ describe('Performance Analytics Service', () => {
     // Clean up test data
     if (testUser) {
       await prisma.competitionResult.deleteMany({
-        where: { horseId: testHorse?.id }
+        where: { horseId: testHorse?.id },
       });
       await prisma.horse.deleteMany({
-        where: { userId: testUser.id }
+        where: { userId: testUser.id },
       });
       await prisma.user.delete({
-        where: { id: testUser.id }
+        where: { id: testUser.id },
       });
       if (testShow) {
         await prisma.show.delete({
-          where: { id: testShow.id }
+          where: { id: testShow.id },
         });
       }
       if (testBreed) {
         await prisma.breed.delete({
-          where: { id: testBreed.id }
+          where: { id: testBreed.id },
         });
       }
     }
@@ -124,7 +124,7 @@ describe('Performance Analytics Service', () => {
   describe('Personal Performance Metrics', () => {
     test('should calculate overall win rate correctly', async () => {
       const analytics = await performanceAnalyticsService.getPerformanceAnalytics(testHorse.id);
-      
+
       expect(analytics).toBeDefined();
       expect(analytics.overallWinRate).toBeDefined();
       expect(typeof analytics.overallWinRate).toBe('number');
@@ -134,7 +134,7 @@ describe('Performance Analytics Service', () => {
 
     test('should calculate win rate by discipline', async () => {
       const analytics = await performanceAnalyticsService.getPerformanceAnalytics(testHorse.id);
-      
+
       expect(analytics.disciplineWinRates).toBeDefined();
       expect(typeof analytics.disciplineWinRates).toBe('object');
       expect(analytics.disciplineWinRates.dressage).toBeDefined();
@@ -145,12 +145,13 @@ describe('Performance Analytics Service', () => {
 
     test('should track placement trends over time', async () => {
       const analytics = await performanceAnalyticsService.getPerformanceAnalytics(testHorse.id);
-      
+
       expect(analytics.placementTrends).toBeDefined();
       expect(Array.isArray(analytics.placementTrends)).toBe(true);
       expect(analytics.placementTrends.length).toBeGreaterThan(0);
-      
+
       // Check trend data structure
+      // eslint-disable-next-line prefer-destructuring
       const trend = analytics.placementTrends[0];
       expect(trend.date).toBeDefined();
       expect(trend.placement).toBeDefined();
@@ -159,7 +160,7 @@ describe('Performance Analytics Service', () => {
 
     test('should calculate performance consistency score', async () => {
       const analytics = await performanceAnalyticsService.getPerformanceAnalytics(testHorse.id);
-      
+
       expect(analytics.consistencyScore).toBeDefined();
       expect(typeof analytics.consistencyScore).toBe('number');
       expect(analytics.consistencyScore).toBeGreaterThanOrEqual(0);
@@ -170,12 +171,13 @@ describe('Performance Analytics Service', () => {
   describe('Historical Performance Tracking', () => {
     test('should provide complete competition history', async () => {
       const analytics = await performanceAnalyticsService.getPerformanceAnalytics(testHorse.id);
-      
+
       expect(analytics.competitionHistory).toBeDefined();
       expect(Array.isArray(analytics.competitionHistory)).toBe(true);
       expect(analytics.competitionHistory.length).toBe(20);
-      
+
       // Check history data structure
+      // eslint-disable-next-line prefer-destructuring
       const competition = analytics.competitionHistory[0];
       expect(competition.discipline).toBeDefined();
       expect(competition.placement).toBeDefined();
@@ -185,7 +187,7 @@ describe('Performance Analytics Service', () => {
 
     test('should track total earnings by discipline', async () => {
       const analytics = await performanceAnalyticsService.getPerformanceAnalytics(testHorse.id);
-      
+
       expect(analytics.earningsByDiscipline).toBeDefined();
       expect(typeof analytics.earningsByDiscipline).toBe('object');
       expect(analytics.earningsByDiscipline.dressage).toBeDefined();
@@ -196,7 +198,7 @@ describe('Performance Analytics Service', () => {
 
     test('should track performance improvement over time', async () => {
       const analytics = await performanceAnalyticsService.getPerformanceAnalytics(testHorse.id);
-      
+
       expect(analytics.performanceImprovement).toBeDefined();
       expect(typeof analytics.performanceImprovement).toBe('object');
       expect(analytics.performanceImprovement.recentAverage).toBeDefined();
@@ -208,12 +210,13 @@ describe('Performance Analytics Service', () => {
   describe('Discipline Analysis', () => {
     test('should identify strongest disciplines', async () => {
       const analytics = await performanceAnalyticsService.getPerformanceAnalytics(testHorse.id);
-      
+
       expect(analytics.strongestDisciplines).toBeDefined();
       expect(Array.isArray(analytics.strongestDisciplines)).toBe(true);
       expect(analytics.strongestDisciplines.length).toBeGreaterThan(0);
-      
+
       // Check discipline strength data
+      // eslint-disable-next-line prefer-destructuring
       const discipline = analytics.strongestDisciplines[0];
       expect(discipline.name).toBeDefined();
       expect(discipline.winRate).toBeDefined();
@@ -222,12 +225,13 @@ describe('Performance Analytics Service', () => {
 
     test('should identify weakest disciplines', async () => {
       const analytics = await performanceAnalyticsService.getPerformanceAnalytics(testHorse.id);
-      
+
       expect(analytics.weakestDisciplines).toBeDefined();
       expect(Array.isArray(analytics.weakestDisciplines)).toBe(true);
       expect(analytics.weakestDisciplines.length).toBeGreaterThan(0);
-      
+
       // Check discipline weakness data
+      // eslint-disable-next-line prefer-destructuring
       const discipline = analytics.weakestDisciplines[0];
       expect(discipline.name).toBeDefined();
       expect(discipline.winRate).toBeDefined();
@@ -259,16 +263,16 @@ describe('Performance Analytics Service', () => {
           boldness: 50,
           flexibility: 50,
           obedience: 50,
-          focus: 50
-        }
+          focus: 50,
+        },
       });
 
       const analytics = await performanceAnalyticsService.getPerformanceAnalytics(newHorse.id);
-      
+
       expect(analytics).toBeDefined();
       expect(analytics.overallWinRate).toBe(0);
       expect(analytics.competitionHistory).toEqual([]);
-      
+
       // Clean up
       await prisma.horse.delete({ where: { id: newHorse.id } });
     });

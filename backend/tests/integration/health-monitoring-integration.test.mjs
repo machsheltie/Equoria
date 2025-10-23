@@ -80,7 +80,7 @@ const createTestApp = () => {
         success: true,
         status: 'ready',
         message: 'Server is ready to accept requests',
-        timestamp: new Date().toISOString()
+        timestamp: new Date().toISOString(),
       });
     } catch (error) {
       res.status(503).json({
@@ -88,7 +88,7 @@ const createTestApp = () => {
         status: 'not_ready',
         message: 'Server is not ready - database unavailable',
         error: error.message,
-        timestamp: new Date().toISOString()
+        timestamp: new Date().toISOString(),
       });
     }
   });
@@ -107,8 +107,8 @@ const createTestApp = () => {
       data: {
         userId: req.user.id,
         timestamp: new Date().toISOString(),
-        systemStatus: 'operational'
-      }
+        systemStatus: 'operational',
+      },
     });
   });
 
@@ -117,15 +117,15 @@ const createTestApp = () => {
 
 describe('🏥 Health Monitoring Integration Tests', () => {
   let app;
-  let testUser;
+  let _testUser;
   let authToken;
-  let memoryManager;
+  let _memoryManager;
 
   beforeAll(async () => {
     app = createTestApp();
-    
+
     // Initialize memory management for health testing
-    memoryManager = initializeMemoryManagement({
+    _memoryManager = initializeMemoryManagement({
       memoryThreshold: 100 * 1024 * 1024, // 100MB for testing
       monitoringInterval: 1000, // 1 second for testing
       gcInterval: 2000, // 2 seconds for testing
@@ -135,10 +135,10 @@ describe('🏥 Health Monitoring Integration Tests', () => {
   beforeEach(async () => {
     // Clean up any existing test data
     await prisma.refreshToken.deleteMany({
-      where: { user: { email: { contains: 'healthintegration' } } }
+      where: { user: { email: { contains: 'healthintegration' } } },
     });
     await prisma.user.deleteMany({
-      where: { email: { contains: 'healthintegration' } }
+      where: { email: { contains: 'healthintegration' } },
     });
 
     // Create test user and get authentication token
@@ -147,7 +147,7 @@ describe('🏥 Health Monitoring Integration Tests', () => {
       username: 'healthintegrationuser',
       password: 'testpassword123',
       firstName: 'Health',
-      lastName: 'Integration'
+      lastName: 'Integration',
     };
 
     const registerResponse = await request(app)
@@ -155,17 +155,17 @@ describe('🏥 Health Monitoring Integration Tests', () => {
       .send(userData);
 
     expect(registerResponse.status).toBe(201);
-    testUser = registerResponse.body.data.user;
+    _testUser = registerResponse.body.data.user;
     authToken = registerResponse.body.data.token;
   });
 
   afterEach(async () => {
     // Clean up test data
     await prisma.refreshToken.deleteMany({
-      where: { user: { email: { contains: 'healthintegration' } } }
+      where: { user: { email: { contains: 'healthintegration' } } },
     });
     await prisma.user.deleteMany({
-      where: { email: { contains: 'healthintegration' } }
+      where: { email: { contains: 'healthintegration' } },
     });
   });
 
@@ -249,7 +249,7 @@ describe('🏥 Health Monitoring Integration Tests', () => {
 
       expect(response.status).toBe(200);
       const healthData = response.body.data;
-      
+
       expect(healthData.score).toBeGreaterThanOrEqual(0);
       expect(healthData.score).toBeLessThanOrEqual(100);
       expect(['excellent', 'good', 'fair', 'poor']).toContain(healthData.status);
@@ -307,12 +307,12 @@ describe('🏥 Health Monitoring Integration Tests', () => {
         { path: '/api/memory/health', requiresAuth: true },
         { path: '/api/docs/health', requiresAuth: true },
         { path: '/api/user-docs/health', requiresAuth: false },
-        { path: '/api/flags/health', requiresAuth: false }
+        { path: '/api/flags/health', requiresAuth: false },
       ];
 
       for (const endpoint of healthEndpoints) {
         const request_builder = request(app).get(endpoint.path);
-        
+
         if (endpoint.requiresAuth) {
           request_builder.set('Authorization', `Bearer ${authToken}`);
         }
@@ -321,7 +321,7 @@ describe('🏥 Health Monitoring Integration Tests', () => {
 
         expect(response.status).toBe(200);
         expect(response.body.success).toBe(true);
-        
+
         // Validate common health response structure
         expect(response.body).toHaveProperty('success');
         if (response.body.data) {
@@ -335,18 +335,18 @@ describe('🏥 Health Monitoring Integration Tests', () => {
         request(app).get('/health'),
         request(app).get('/api/memory/health').set('Authorization', `Bearer ${authToken}`),
         request(app).get('/api/user-docs/health'),
-        request(app).get('/api/flags/health')
+        request(app).get('/api/flags/health'),
       ]);
 
       responses.forEach(response => {
         expect(response.status).toBe(200);
         expect(response.body.success).toBe(true);
         expect(response.body).toHaveProperty('success');
-        
+
         // Each should have either message or data
         expect(
-          response.body.hasOwnProperty('message') || 
-          response.body.hasOwnProperty('data')
+          Object.prototype.hasOwnProperty.call(response.body, 'message') ||
+          Object.prototype.hasOwnProperty.call(response.body, 'data'),
         ).toBe(true);
       });
     });
@@ -355,7 +355,7 @@ describe('🏥 Health Monitoring Integration Tests', () => {
   describe('⚡ Performance Health Monitoring', () => {
     test('should monitor health endpoint response times', async () => {
       const startTime = Date.now();
-      
+
       const response = await request(app)
         .get('/health');
 
@@ -373,7 +373,7 @@ describe('🏥 Health Monitoring Integration Tests', () => {
       expect(response.status).toBe(200);
       expect(response.body.data.services.database.status).toBe('healthy');
       expect(response.body.data.services.database.responseTime).toBeDefined();
-      
+
       // Parse response time and validate it's reasonable
       const responseTime = parseInt(response.body.data.services.database.responseTime);
       expect(responseTime).toBeGreaterThan(0);
@@ -386,7 +386,7 @@ describe('🏥 Health Monitoring Integration Tests', () => {
       const protectedEndpoints = [
         '/api/memory/health',
         '/api/docs/health',
-        '/api/test/health-status'
+        '/api/test/health-status',
       ];
 
       for (const endpoint of protectedEndpoints) {
@@ -404,7 +404,7 @@ describe('🏥 Health Monitoring Integration Tests', () => {
         '/health',
         '/ready',
         '/api/user-docs/health',
-        '/api/flags/health'
+        '/api/flags/health',
       ];
 
       for (const endpoint of publicEndpoints) {

@@ -1,9 +1,9 @@
 /**
  * Enhanced Care Pattern Analyzer Tests
- * 
+ *
  * Tests advanced care pattern analysis with sophisticated metrics and trend detection.
  * Uses TDD approach with NO MOCKING - real database operations for authentic validation.
- * 
+ *
  * Business Rules Tested:
  * - Advanced consistency scoring with weighted factors
  * - Multi-dimensional trend analysis (bond, stress, quality, frequency)
@@ -19,7 +19,7 @@ import {
   calculateAdvancedConsistencyScore,
   detectCareQualityTrends,
   analyzeGroomEffectiveness,
-  calculateCareRiskScore
+  calculateCareRiskScore,
 } from '../../services/carePatternAnalyzer.mjs';
 
 describe('Enhanced Care Pattern Analyzer', () => {
@@ -143,8 +143,8 @@ describe('Enhanced Care Pattern Analyzer', () => {
 
   describe('calculateAdvancedConsistencyScore', () => {
     test('should calculate weighted consistency score with multiple factors', async () => {
-      const horse = testHorses[0]; // Consistent care horse
-      
+      const [horse] = testHorses; // Consistent care horse
+
       // Create consistent high-quality interactions
       const interactions = [];
       for (let i = 0; i < 7; i++) {
@@ -166,7 +166,7 @@ describe('Enhanced Care Pattern Analyzer', () => {
       }
 
       const score = await calculateAdvancedConsistencyScore(horse.id);
-      
+
       expect(score).toBeDefined();
       expect(score.overallScore).toBeGreaterThan(0.8); // High consistency
       expect(score.components).toBeDefined();
@@ -177,13 +177,14 @@ describe('Enhanced Care Pattern Analyzer', () => {
     });
 
     test('should detect inconsistent care patterns', async () => {
+      // eslint-disable-next-line prefer-destructuring
       const horse = testHorses[1]; // Declining care horse
-      
+
       // Create inconsistent interactions with varying quality
       const qualities = ['excellent', 'good', 'poor', 'fair', 'poor'];
       const bondChanges = [3, 2, -1, 1, -2];
       const stressChanges = [-2, -1, 3, 0, 4];
-      
+
       for (let i = 0; i < 5; i++) {
         await prisma.groomInteraction.create({
           data: {
@@ -202,7 +203,7 @@ describe('Enhanced Care Pattern Analyzer', () => {
       }
 
       const score = await calculateAdvancedConsistencyScore(horse.id);
-      
+
       expect(score.overallScore).toBeLessThan(0.6); // Low consistency
       expect(score.components.qualityConsistency).toBeLessThan(0.5);
       expect(score.components.groomConsistency).toBeLessThan(0.7);
@@ -211,8 +212,9 @@ describe('Enhanced Care Pattern Analyzer', () => {
 
   describe('detectCareQualityTrends', () => {
     test('should detect improving care quality trends', async () => {
+      // eslint-disable-next-line prefer-destructuring
       const horse = testHorses[2]; // Improving care horse
-      
+
       // Create improving trend: poor -> fair -> good -> excellent
       const trendData = [
         { quality: 'poor', bond: -1, stress: 3 },
@@ -220,7 +222,7 @@ describe('Enhanced Care Pattern Analyzer', () => {
         { quality: 'good', bond: 2, stress: -1 },
         { quality: 'excellent', bond: 4, stress: -3 },
       ];
-      
+
       for (let i = 0; i < trendData.length; i++) {
         await prisma.groomInteraction.create({
           data: {
@@ -239,7 +241,7 @@ describe('Enhanced Care Pattern Analyzer', () => {
       }
 
       const trends = await detectCareQualityTrends(horse.id);
-      
+
       expect(trends).toBeDefined();
       expect(trends.qualityTrend).toBe('improving');
       expect(trends.bondTrend).toBe('improving');
@@ -249,8 +251,9 @@ describe('Enhanced Care Pattern Analyzer', () => {
     });
 
     test('should detect declining care quality trends', async () => {
+      // eslint-disable-next-line prefer-destructuring
       const horse = testHorses[1]; // Use declining care horse
-      
+
       // Add more declining interactions
       const trendData = [
         { quality: 'excellent', bond: 3, stress: -2 },
@@ -258,7 +261,7 @@ describe('Enhanced Care Pattern Analyzer', () => {
         { quality: 'fair', bond: 0, stress: 1 },
         { quality: 'poor', bond: -2, stress: 3 },
       ];
-      
+
       for (let i = 0; i < trendData.length; i++) {
         await prisma.groomInteraction.create({
           data: {
@@ -277,7 +280,7 @@ describe('Enhanced Care Pattern Analyzer', () => {
       }
 
       const trends = await detectCareQualityTrends(horse.id);
-      
+
       expect(trends.qualityTrend).toBe('declining');
       expect(trends.bondTrend).toBe('declining');
       expect(trends.stressTrend).toBe('declining'); // Stress increasing is declining
@@ -287,16 +290,17 @@ describe('Enhanced Care Pattern Analyzer', () => {
 
   describe('analyzeGroomEffectiveness', () => {
     test('should analyze individual groom effectiveness', async () => {
-      const horse = testHorses[0];
-      
+      const [horse] = testHorses;
+
       const effectiveness = await analyzeGroomEffectiveness(horse.id);
-      
+
       expect(effectiveness).toBeDefined();
       expect(Array.isArray(effectiveness.groomStats)).toBe(true);
       expect(effectiveness.overallEffectiveness).toBeDefined();
       expect(effectiveness.recommendations).toBeDefined();
-      
+
       if (effectiveness.groomStats.length > 0) {
+        // eslint-disable-next-line prefer-destructuring
         const groomStat = effectiveness.groomStats[0];
         expect(groomStat).toHaveProperty('groomId');
         expect(groomStat).toHaveProperty('groomName');
@@ -308,13 +312,14 @@ describe('Enhanced Care Pattern Analyzer', () => {
     });
 
     test('should identify most and least effective grooms', async () => {
+      // eslint-disable-next-line prefer-destructuring
       const horse = testHorses[1]; // Horse with multiple grooms
-      
+
       const effectiveness = await analyzeGroomEffectiveness(horse.id);
-      
+
       expect(effectiveness.mostEffective).toBeDefined();
       expect(effectiveness.leastEffective).toBeDefined();
-      
+
       if (effectiveness.mostEffective && effectiveness.leastEffective) {
         expect(effectiveness.mostEffective.effectivenessScore)
           .toBeGreaterThanOrEqual(effectiveness.leastEffective.effectivenessScore);
@@ -324,10 +329,11 @@ describe('Enhanced Care Pattern Analyzer', () => {
 
   describe('calculateCareRiskScore', () => {
     test('should calculate comprehensive care risk assessment', async () => {
+      // eslint-disable-next-line prefer-destructuring
       const horse = testHorses[1]; // Declining care horse
-      
+
       const riskScore = await calculateCareRiskScore(horse.id);
-      
+
       expect(riskScore).toBeDefined();
       expect(typeof riskScore.overallRisk).toBe('number');
       expect(riskScore.overallRisk).toBeGreaterThanOrEqual(0);
@@ -340,10 +346,11 @@ describe('Enhanced Care Pattern Analyzer', () => {
     });
 
     test('should identify specific risk factors', async () => {
+      // eslint-disable-next-line prefer-destructuring
       const horse = testHorses[1];
-      
+
       const riskScore = await calculateCareRiskScore(horse.id);
-      
+
       expect(riskScore.riskFactors).toBeDefined();
       expect(riskScore.riskFactors.consistencyRisk).toBeDefined();
       expect(riskScore.riskFactors.qualityRisk).toBeDefined();
@@ -355,10 +362,10 @@ describe('Enhanced Care Pattern Analyzer', () => {
 
   describe('Enhanced Care Pattern Integration', () => {
     test('should integrate all enhanced features for comprehensive analysis', async () => {
-      const horse = testHorses[0];
-      
+      const [horse] = testHorses;
+
       const patterns = await analyzeCarePatterns(horse.id);
-      
+
       expect(patterns).toBeDefined();
       expect(patterns.horseId).toBe(horse.id);
       expect(patterns.analysisWindow).toBeDefined();
@@ -368,7 +375,7 @@ describe('Enhanced Care Pattern Analyzer', () => {
       expect(patterns.taskDiversity).toBeDefined();
       expect(patterns.groomConsistency).toBeDefined();
       expect(patterns.neglectPatterns).toBeDefined();
-      
+
       // Verify enhanced metrics are included
       expect(patterns.totalInteractions).toBeGreaterThan(0);
       expect(patterns.currentBond).toBeDefined();

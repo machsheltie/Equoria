@@ -6,7 +6,7 @@
  * Focus: Trait definitions, mechanical effects, groom perks
  */
 
-import { jest } from '@jest/globals';
+// jest import removed - not used in this file
 import { getAllUltraRareTraits, getAllExoticTraits, getUltraRareTraitDefinition } from '../utils/ultraRareTraits.mjs';
 import { applyRareTraitBoosterEffects } from '../utils/groomRareTraitPerks.mjs';
 import { applyUltraRareStressEffects, applyUltraRareCompetitionEffects, hasUltraRareAbility } from '../utils/ultraRareMechanicalEffects.mjs';

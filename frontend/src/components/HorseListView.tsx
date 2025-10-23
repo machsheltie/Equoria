@@ -57,6 +57,8 @@ interface Horse {
 
 interface HorseListViewProps {
   userId: number;
+  // Optional horses data prop (if provided, component won't fetch)
+  horses?: Horse[];
 }
 
 interface SortConfig {
@@ -90,7 +92,7 @@ const fetchHorses = async (userId: number): Promise<Horse[]> => {
   return data.data || [];
 };
 
-const HorseListView: React.FC<HorseListViewProps> = ({ userId }) => {
+const HorseListView: React.FC<HorseListViewProps> = ({ userId, horses: propHorses }) => {
   const navigate = useNavigate();
   const [currentPage, setCurrentPage] = useState(1);
   const [sortConfig, setSortConfig] = useState<SortConfig>({ key: null, direction: 'asc' });
@@ -106,9 +108,9 @@ const HorseListView: React.FC<HorseListViewProps> = ({ userId }) => {
 
   const itemsPerPage = 10;
 
-  // React Query for data fetching
+  // React Query for data fetching (only if horses not provided as props)
   const {
-    data: horses = [],
+    data: horses = propHorses || [],
     isLoading,
     error,
     refetch,
@@ -117,6 +119,7 @@ const HorseListView: React.FC<HorseListViewProps> = ({ userId }) => {
     queryFn: () => fetchHorses(userId),
     staleTime: 5 * 60 * 1000, // 5 minutes
     refetchOnWindowFocus: false,
+    enabled: !propHorses && typeof fetch !== 'undefined', // Only fetch if horses not provided and fetch is available
   });
 
   // Handle window resize for responsive design
@@ -189,8 +192,8 @@ const HorseListView: React.FC<HorseListViewProps> = ({ userId }) => {
     navigate(`/competition/enter/${horseId}`);
   };
 
-  // Loading state
-  if (isLoading) {
+  // Loading state (only show if not using prop horses)
+  if (isLoading && !propHorses) {
     return (
       <div className="flex items-center justify-center min-h-64">
         <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-blue-600"></div>
@@ -199,8 +202,8 @@ const HorseListView: React.FC<HorseListViewProps> = ({ userId }) => {
     );
   }
 
-  // Error state
-  if (error) {
+  // Error state (only show if not using prop horses)
+  if (error && !propHorses) {
     return (
       <div className="text-center py-12">
         <div className="text-red-600 mb-4">

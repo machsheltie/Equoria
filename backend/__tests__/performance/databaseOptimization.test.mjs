@@ -1,17 +1,17 @@
 /**
  * Database Query Optimization Tests
- * 
+ *
  * Tests for database performance optimization including:
  * - Query performance analysis and benchmarking
  * - Index optimization for epigenetic queries
  * - Connection pooling and caching strategy
  * - Complex query optimization (JSONB, joins, aggregations)
- * 
+ *
  * Following TDD with NO MOCKING approach for authentic performance validation
  * Target: < 100ms response times, 100+ concurrent users, 99.9% uptime
  */
 
-import { jest } from '@jest/globals';
+// jest import removed - not used in this file
 import prisma from '../../../packages/database/prismaClient.mjs';
 import {
   analyzeQueryPerformance,
@@ -19,13 +19,13 @@ import {
   implementConnectionPooling,
   setupQueryCaching,
   createOptimizedIndexes,
-  benchmarkDatabaseOperations
+  benchmarkDatabaseOperations,
 } from '../../services/databaseOptimizationService.mjs';
 
 describe('Database Query Optimization', () => {
   let testUserId;
-  let testHorseIds = [];
-  let performanceBaseline = {};
+  const testHorseIds = [];
+  let _performanceBaseline = {};
   let testBreed;
 
   beforeAll(async () => {
@@ -60,10 +60,10 @@ describe('Database Query Optimization', () => {
           name: `TestHorse${i}`,
           ownerId: testUserId,
           breed: {
-            connect: { id: testBreed.id }
+            connect: { id: testBreed.id },
           },
           sex: i % 2 === 0 ? 'Stallion' : 'Mare',
-          age: age,
+          age,
           dateOfBirth: birthDate,
           epigeneticFlags: ['BRAVE', 'INTELLIGENT', 'ATHLETIC'],
           disciplineScores: {
@@ -94,7 +94,7 @@ describe('Database Query Optimization', () => {
     }
 
     // Establish performance baseline
-    performanceBaseline = await benchmarkDatabaseOperations();
+    _performanceBaseline = await benchmarkDatabaseOperations();
   });
 
   afterAll(async () => {
@@ -113,7 +113,7 @@ describe('Database Query Optimization', () => {
   describe('Query Performance Analysis', () => {
     test('analyzes complex epigenetic queries for performance bottlenecks', async () => {
       const startTime = Date.now();
-      
+
       const analysis = await analyzeQueryPerformance({
         queryType: 'epigenetic_trait_search',
         userId: testUserId,
@@ -181,7 +181,7 @@ describe('Database Query Optimization', () => {
       expect(indexResults.created).toBeInstanceOf(Array);
       expect(indexResults.created.length).toBeGreaterThan(0);
       expect(indexResults.performanceImpact).toBeDefined();
-      
+
       // Verify index creation attempts
       for (const index of indexResults.created) {
         expect(['created', 'failed']).toContain(index.status);
@@ -247,7 +247,7 @@ describe('Database Query Optimization', () => {
           where: { userId: testUserId },
           take: 10,
           skip: i * 10,
-        })
+        }),
       );
 
       const startTime = Date.now();
@@ -256,7 +256,7 @@ describe('Database Query Optimization', () => {
 
       expect(results).toHaveLength(50);
       expect(executionTime).toBeLessThan(2000); // < 2 seconds for 50 concurrent requests
-      
+
       // Verify no connection pool exhaustion
       const poolStatus = await implementConnectionPooling({ action: 'status' });
       expect(poolStatus.errors).toHaveLength(0);
@@ -352,7 +352,7 @@ describe('Database Query Optimization', () => {
         iterations: 100,
       });
 
-      for (const [operation, metrics] of Object.entries(benchmarks)) {
+      for (const [_operation, metrics] of Object.entries(benchmarks)) {
         expect(metrics.averageTime).toBeLessThan(100); // < 100ms
         expect(metrics.p95Time).toBeLessThan(200); // 95th percentile < 200ms
         expect(metrics.errorRate).toBe(0);

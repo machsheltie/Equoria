@@ -1,10 +1,10 @@
 /**
  * Enhanced Reporting API Routes
- * 
+ *
  * Provides enhanced trait history API with advanced epigenetic data and insights.
  * Integrates with advanced epigenetic services to provide comprehensive reporting,
  * multi-horse analysis, trend analysis, and export capabilities.
- * 
+ *
  * Business Rules:
  * - Authentication required for all endpoints
  * - Horse ownership validation for horse-specific endpoints
@@ -41,9 +41,9 @@ import {
   identifyTraitDifferences,
   generateHorseRankings,
   generateComparisonInsights,
-  analyzeTraitTrends,
-  identifyTraitPatterns,
-  generateTrendPredictions,
+  _analyzeTraitTrends,
+  _identifyTraitPatterns,
+  _generateTrendPredictions,
   generateSummaryReport,
   generateDetailedReport,
   generateComprehensiveReport,
@@ -123,14 +123,14 @@ router.get('/horses/:id/enhanced-trait-history',
     try {
       const horseId = parseInt(req.params.id);
       const { traitType, discoveryMethod, dateFrom, dateTo } = req.query;
-      
+
       // Build filter conditions
       const whereConditions = { horseId };
-      if (discoveryMethod) whereConditions.sourceType = discoveryMethod; // Map discoveryMethod to sourceType
+      if (discoveryMethod) { whereConditions.sourceType = discoveryMethod; } // Map discoveryMethod to sourceType
       if (dateFrom || dateTo) {
         whereConditions.timestamp = {};
-        if (dateFrom) whereConditions.timestamp.gte = new Date(dateFrom);
-        if (dateTo) whereConditions.timestamp.lte = new Date(dateTo);
+        if (dateFrom) { whereConditions.timestamp.gte = new Date(dateFrom); }
+        if (dateTo) { whereConditions.timestamp.lte = new Date(dateTo); }
       }
 
       // Get trait history
@@ -141,10 +141,10 @@ router.get('/horses/:id/enhanced-trait-history',
 
       // Get environmental context
       const environmentalContext = await generateEnvironmentalReport(horseId);
-      
+
       // Get developmental timeline
       const developmentalTimeline = await trackDevelopmentalMilestones(horseId);
-      
+
       // Get trait interactions
       const traitInteractions = await generateInteractionMatrix(horseId);
 
@@ -152,7 +152,7 @@ router.get('/horses/:id/enhanced-trait-history',
       const insights = generateTraitHistoryInsights(traitHistory, environmentalContext, traitInteractions);
 
       logger.info(`Enhanced trait history generated for horse ${horseId} by user ${req.user.id}`);
-      
+
       res.json({
         success: true,
         data: {
@@ -172,7 +172,7 @@ router.get('/horses/:id/enhanced-trait-history',
         message: 'Failed to generate enhanced trait history',
       });
     }
-  }
+  },
 );
 
 /**
@@ -187,7 +187,7 @@ router.get('/horses/:id/epigenetic-insights',
   async (req, res) => {
     try {
       const horseId = parseInt(req.params.id);
-      
+
       // Get horse details
       const horse = await prisma.horse.findUnique({
         where: { id: horseId },
@@ -203,12 +203,12 @@ router.get('/horses/:id/epigenetic-insights',
         environmentalInfluences,
         traitAnalysis,
         developmentalProgress,
-        predictiveInsights
+        predictiveInsights,
       ] = await Promise.all([
         generateEnvironmentalReport(horseId),
         generateInteractionMatrix(horseId),
         trackDevelopmentalMilestones(horseId),
-        generateDevelopmentalForecast(horseId, 60)
+        generateDevelopmentalForecast(horseId, 60),
       ]);
 
       // Generate recommendations
@@ -216,11 +216,11 @@ router.get('/horses/:id/epigenetic-insights',
         horse,
         environmentalInfluences,
         traitAnalysis,
-        developmentalProgress
+        developmentalProgress,
       );
 
       logger.info(`Epigenetic insights generated for horse ${horseId} by user ${req.user.id}`);
-      
+
       res.json({
         success: true,
         data: {
@@ -239,7 +239,7 @@ router.get('/horses/:id/epigenetic-insights',
         message: 'Failed to generate epigenetic insights',
       });
     }
-  }
+  },
 );
 
 /**
@@ -254,7 +254,7 @@ router.get('/horses/:id/trait-timeline',
   async (req, res) => {
     try {
       const horseId = parseInt(req.params.id);
-      
+
       // Get trait history and interactions
       const [traitHistory, milestones, interactions] = await Promise.all([
         prisma.traitHistoryLog.findMany({
@@ -270,20 +270,20 @@ router.get('/horses/:id/trait-timeline',
               select: { name: true, groomPersonality: true },
             },
           },
-        })
+        }),
       ]);
 
       // Build timeline
       const timeline = buildTraitTimeline(traitHistory, interactions);
-      
+
       // Identify critical periods
       const criticalPeriods = identifyCriticalPeriods(timeline, milestones);
-      
+
       // Map environmental events
       const environmentalEvents = mapEnvironmentalEvents(interactions);
 
       logger.info(`Trait timeline generated for horse ${horseId} by user ${req.user.id}`);
-      
+
       res.json({
         success: true,
         data: {
@@ -301,7 +301,7 @@ router.get('/horses/:id/trait-timeline',
         message: 'Failed to generate trait timeline',
       });
     }
-  }
+  },
 );
 
 // ===== MULTI-HORSE ANALYSIS ENDPOINTS =====
@@ -322,7 +322,7 @@ router.get('/users/:id/stable-epigenetic-report',
   async (req, res) => {
     try {
       const userId = req.params.id;
-      
+
       // Get all user's horses
       const horses = await prisma.horse.findMany({
         where: { ownerId: userId },
@@ -353,7 +353,7 @@ router.get('/users/:id/stable-epigenetic-report',
       const recommendations = generateStableRecommendations(stableOverview, traitDistribution, developmentalStages);
 
       logger.info(`Stable epigenetic report generated for user ${userId}`);
-      
+
       res.json({
         success: true,
         data: {
@@ -372,7 +372,7 @@ router.get('/users/:id/stable-epigenetic-report',
         message: 'Failed to generate stable epigenetic report',
       });
     }
-  }
+  },
 );
 
 /**
@@ -427,15 +427,14 @@ router.post('/horses/compare-epigenetics',
         },
       });
     } catch (error) {
-      logger.error(`Error comparing horses:`, error);
+      logger.error('Error comparing horses:', error);
       res.status(500).json({
         success: false,
         message: 'Failed to compare horses',
       });
     }
-  }
+  },
 );
-
 
 
 /**
@@ -504,7 +503,7 @@ router.get('/horses/:id/epigenetic-report-export',
         message: 'Failed to generate epigenetic report export',
       });
     }
-  }
+  },
 );
 
 export default router;

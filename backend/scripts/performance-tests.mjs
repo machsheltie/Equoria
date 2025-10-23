@@ -1,6 +1,6 @@
 /**
  * Performance Testing Script for Equoria Backend
- * 
+ *
  * This script runs comprehensive performance tests including:
  * - API endpoint response time testing
  * - Database query performance validation
@@ -29,8 +29,8 @@ const PERFORMANCE_CONFIG = {
     '/health',
     '/api/auth/login',
     '/api/horses',
-    '/api/competition/disciplines'
-  ]
+    '/api/competition/disciplines',
+  ],
 };
 
 // Performance metrics storage
@@ -40,7 +40,7 @@ const performanceMetrics = {
   errorRate: 0,
   throughput: 0,
   startTime: null,
-  endTime: null
+  endTime: null,
 };
 
 /**
@@ -49,15 +49,15 @@ const performanceMetrics = {
 async function startTestServer() {
   return new Promise((resolve, reject) => {
     console.log('🚀 Starting test server...');
-    
+
     const server = spawn('node', ['server.mjs'], {
       cwd: path.resolve(__dirname, '..'),
       env: {
         ...process.env,
         NODE_ENV: 'test',
-        PORT: '3001'
+        PORT: '3001',
       },
-      stdio: 'pipe'
+      stdio: 'pipe',
     });
 
     let serverReady = false;
@@ -94,13 +94,13 @@ async function startTestServer() {
  */
 async function testEndpointPerformance(endpoint, baseUrl = 'http://localhost:3001') {
   const startTime = performance.now();
-  
+
   try {
     const response = await fetch(`${baseUrl}${endpoint}`, {
       method: 'GET',
       headers: {
-        'Content-Type': 'application/json'
-      }
+        'Content-Type': 'application/json',
+      },
     });
 
     const endTime = performance.now();
@@ -110,7 +110,7 @@ async function testEndpointPerformance(endpoint, baseUrl = 'http://localhost:300
       endpoint,
       responseTime,
       status: response.status,
-      success: response.ok
+      success: response.ok,
     };
   } catch (error) {
     const endTime = performance.now();
@@ -119,7 +119,7 @@ async function testEndpointPerformance(endpoint, baseUrl = 'http://localhost:300
       responseTime: endTime - startTime,
       status: 0,
       success: false,
-      error: error.message
+      error: error.message,
     };
   }
 }
@@ -134,7 +134,7 @@ function monitorMemoryUsage() {
     heapUsed: memUsage.heapUsed,
     heapTotal: memUsage.heapTotal,
     external: memUsage.external,
-    rss: memUsage.rss
+    rss: memUsage.rss,
   });
 }
 
@@ -143,7 +143,7 @@ function monitorMemoryUsage() {
  */
 async function runLoadTest() {
   console.log('🔄 Running load test...');
-  
+
   const promises = [];
   const startTime = Date.now();
   let totalRequests = 0;
@@ -160,7 +160,7 @@ async function runLoadTest() {
       const endpoint = PERFORMANCE_CONFIG.endpoints[
         Math.floor(Math.random() * PERFORMANCE_CONFIG.endpoints.length)
       ];
-      
+
       const promise = testEndpointPerformance(endpoint).then(result => {
         totalRequests++;
         if (result.success) {
@@ -169,7 +169,7 @@ async function runLoadTest() {
         performanceMetrics.responseTime.push(result.responseTime);
         return result;
       });
-      
+
       promises.push(promise);
     }
 
@@ -179,7 +179,7 @@ async function runLoadTest() {
 
   // Wait for all requests to complete
   await Promise.all(promises);
-  
+
   // Stop memory monitoring
   clearInterval(memoryMonitor);
 
@@ -205,17 +205,17 @@ function analyzePerformanceResults() {
   const avgResponseTime = responseTimes.reduce((a, b) => a + b, 0) / responseTimes.length;
   const maxResponseTime = Math.max(...responseTimes);
   const minResponseTime = Math.min(...responseTimes);
-  
+
   // Sort for percentiles
   const sortedTimes = [...responseTimes].sort((a, b) => a - b);
   const p95ResponseTime = sortedTimes[Math.floor(sortedTimes.length * 0.95)];
   const p99ResponseTime = sortedTimes[Math.floor(sortedTimes.length * 0.99)];
 
   // Memory analysis
-  const avgMemoryUsage = memoryUsages.length > 0 
+  const avgMemoryUsage = memoryUsages.length > 0
     ? memoryUsages.reduce((sum, usage) => sum + usage.heapUsed, 0) / memoryUsages.length
     : 0;
-  const maxMemoryUsage = memoryUsages.length > 0 
+  const maxMemoryUsage = memoryUsages.length > 0
     ? Math.max(...memoryUsages.map(usage => usage.heapUsed))
     : 0;
 
@@ -225,14 +225,14 @@ function analyzePerformanceResults() {
       min: minResponseTime,
       max: maxResponseTime,
       p95: p95ResponseTime,
-      p99: p99ResponseTime
+      p99: p99ResponseTime,
     },
     memory: {
       average: avgMemoryUsage,
-      max: maxMemoryUsage
+      max: maxMemoryUsage,
     },
     errorRate: performanceMetrics.errorRate,
-    throughput: performanceMetrics.throughput
+    throughput: performanceMetrics.throughput,
   };
 }
 
@@ -249,8 +249,8 @@ async function generatePerformanceReport(results) {
     passed: {
       responseTime: results.responseTime.average <= PERFORMANCE_CONFIG.responseTimeThreshold,
       memory: results.memory.max <= PERFORMANCE_CONFIG.memoryThreshold,
-      errorRate: results.errorRate <= 5 // 5% error rate threshold
-    }
+      errorRate: results.errorRate <= 5, // 5% error rate threshold
+    },
   };
 
   // Create performance results directory
@@ -269,7 +269,7 @@ async function generatePerformanceReport(results) {
     avgResponseTime: results.responseTime.average,
     maxMemoryUsage: results.memory.max,
     errorRate: results.errorRate,
-    throughput: results.throughput
+    throughput: results.throughput,
   }, null, 2));
 
   return report;
@@ -280,14 +280,14 @@ async function generatePerformanceReport(results) {
  */
 async function runPerformanceTests() {
   let server = null;
-  
+
   try {
     console.log('🧪 Starting Equoria Performance Tests');
     console.log('=====================================');
 
     // Start test server
     server = await startTestServer();
-    
+
     // Wait for server to be fully ready
     await new Promise(resolve => setTimeout(resolve, 2000));
 
@@ -318,7 +318,7 @@ async function runPerformanceTests() {
 
     // Check if tests passed
     const allPassed = Object.values(report.passed).every(Boolean);
-    
+
     if (allPassed) {
       console.log('\n✅ All performance tests PASSED');
       process.exit(0);

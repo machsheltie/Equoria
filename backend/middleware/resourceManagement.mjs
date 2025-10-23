@@ -1,13 +1,13 @@
 /**
  * 🔧 Resource Management Middleware
- * 
+ *
  * Express middleware for automatic resource tracking and cleanup:
  * - Request-scoped resource tracking
  * - Automatic cleanup on request completion
  * - Memory usage monitoring per request
  * - Resource leak detection
  * - Performance monitoring
- * 
+ *
  * Features:
  * - Track database connections, timers, and event listeners per request
  * - Automatic cleanup on response finish
@@ -52,10 +52,10 @@ export function createResourceManagementMiddleware(options = {}) {
     };
 
     // Add resource tracking helpers to request
-    req.trackResource = (type, resource, metadata = {}) => {
+    req.trackResource = (type, resource, _metadata = {}) => {
       if (req.resources[type]) {
         req.resources[type].add(resource);
-        
+
         if (config.logResourceUsage) {
           logger.debug(`[ResourceManagement] Request ${requestId}: Tracking ${type} resource`);
         }
@@ -65,7 +65,7 @@ export function createResourceManagementMiddleware(options = {}) {
     req.untrackResource = (type, resource) => {
       if (req.resources[type]) {
         req.resources[type].delete(resource);
-        
+
         if (config.logResourceUsage) {
           logger.debug(`[ResourceManagement] Request ${requestId}: Untracked ${type} resource`);
         }
@@ -79,7 +79,7 @@ export function createResourceManagementMiddleware(options = {}) {
         req.untrackResource('timers', timer);
         callback(...callbackArgs);
       }, delay, ...args);
-      
+
       req.trackResource('timers', timer);
       return timer;
     };
@@ -169,7 +169,7 @@ export function createResourceManagementMiddleware(options = {}) {
 
     // Override res.end to add headers before response is sent
     const originalEnd = res.end;
-    res.end = function(...args) {
+    res.end = function (...args) {
       const endTime = performance.now();
       const duration = endTime - startTime;
       const endMemory = config.trackMemoryUsage ? process.memoryUsage() : null;
@@ -274,8 +274,8 @@ export function memoryMonitoringMiddleware(options = {}) {
     ...options,
   };
 
-  const memoryManager = getMemoryManager();
-  
+  const _memoryManager = getMemoryManager();
+
   return (req, res, next) => {
     // Add memory info to response headers
     const memUsage = process.memoryUsage();
@@ -286,7 +286,7 @@ export function memoryMonitoringMiddleware(options = {}) {
     // Check memory threshold
     if (memUsage.heapUsed > config.threshold) {
       logger.warn(`[MemoryMonitoring] Memory threshold exceeded: ${Math.round(memUsage.heapUsed / 1024 / 1024)}MB`);
-      
+
       if (config.enableGC && global.gc) {
         try {
           global.gc();
@@ -308,7 +308,7 @@ export function databaseConnectionMiddleware(prisma) {
   return (req, res, next) => {
     const originalQuery = prisma.$queryRaw;
     const originalExecute = prisma.$executeRaw;
-    
+
     let queryCount = 0;
     const startTime = Date.now();
 
@@ -325,7 +325,7 @@ export function databaseConnectionMiddleware(prisma) {
 
     // Override res.end to add DB headers before response is sent
     const originalEnd = res.end;
-    res.end = function(...args) {
+    res.end = function (...args) {
       const duration = Date.now() - startTime;
 
       if (queryCount > 0 && !res.headersSent) {
@@ -366,12 +366,12 @@ export function requestTimeoutMiddleware(timeout = 30000) {
     const timer = setTimeout(() => {
       if (!res.headersSent) {
         logger.warn(`[ResourceManagement] Request timeout: ${req.method} ${req.url}`);
-        
+
         // Cleanup resources before timeout
         if (req.cleanupResources) {
           req.cleanupResources();
         }
-        
+
         res.status(408).json({
           success: false,
           message: 'Request timeout',

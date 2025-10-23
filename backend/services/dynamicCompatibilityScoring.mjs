@@ -1,9 +1,9 @@
 /**
  * Dynamic Compatibility Scoring Service
- * 
+ *
  * Provides advanced real-time compatibility analysis between groom personalities and horse temperaments.
  * Includes contextual factors, environmental modifiers, and adaptive learning from interaction history.
- * 
+ *
  * Business Rules:
  * - Real-time compatibility scoring with contextual factors
  * - Environmental and situational modifiers
@@ -69,7 +69,7 @@ export async function calculateDynamicCompatibility(groomId, horseId, context) {
       taskSpecificModifier *
       environmentalModifier *
       timeOfDayModifier *
-      historicalModifier
+      historicalModifier,
     );
 
     // Cap at 1.5 to allow experience bonuses to show through
@@ -85,10 +85,7 @@ export async function calculateDynamicCompatibility(groomId, horseId, context) {
 
     // Determine recommendation level
     let recommendationLevel;
-    if (overallScore >= 0.8) recommendationLevel = 'highly_recommended';
-    else if (overallScore >= 0.6) recommendationLevel = 'recommended';
-    else if (overallScore >= 0.4) recommendationLevel = 'acceptable';
-    else recommendationLevel = 'not_recommended';
+    if (overallScore >= 0.8) { recommendationLevel = 'highly_recommended'; } else if (overallScore >= 0.6) { recommendationLevel = 'recommended'; } else if (overallScore >= 0.4) { recommendationLevel = 'acceptable'; } else { recommendationLevel = 'not_recommended'; }
 
     // Calculate confidence based on data quality
     const confidence = calculateConfidence(groom, horse, context, historicalModifier);
@@ -112,7 +109,7 @@ export async function calculateDynamicCompatibility(groomId, horseId, context) {
     };
 
   } catch (error) {
-    logger.error(`Error calculating dynamic compatibility:`, error);
+    logger.error('Error calculating dynamic compatibility:', error);
     throw error;
   }
 }
@@ -135,19 +132,19 @@ export async function analyzeCompatibilityFactors(groomId, horseId) {
 
     // Analyze personality match
     const personalityMatch = analyzePersonalityMatch(groomTraits, horseTemperament);
-    
+
     // Analyze experience level impact
     const experienceLevel = analyzeExperienceLevel(groomTraits);
-    
+
     // Analyze stress compatibility
     const stressCompatibility = analyzeStressCompatibility(groomTraits, horse);
-    
+
     // Analyze bonding potential
     const bondingPotential = analyzeBondingPotential(groomTraits, horse);
-    
+
     // Analyze task effectiveness
     const taskEffectiveness = analyzeTaskEffectiveness(groomTraits, horseTemperament);
-    
+
     // Identify risk and strength factors
     const riskFactors = identifyRiskFactors(groomTraits, horseTemperament, horse);
     const strengthFactors = identifyStrengthFactors(groomTraits, horseTemperament, horse);
@@ -164,7 +161,7 @@ export async function analyzeCompatibilityFactors(groomId, horseId) {
     };
 
   } catch (error) {
-    logger.error(`Error analyzing compatibility factors:`, error);
+    logger.error('Error analyzing compatibility factors:', error);
     throw error;
   }
 }
@@ -180,7 +177,7 @@ export async function predictInteractionOutcome(groomId, horseId, context) {
   try {
     const compatibility = await calculateDynamicCompatibility(groomId, horseId, context);
     const groomTraits = await getGroomPersonalityTraits(groomId);
-    
+
     const horse = await prisma.horse.findUnique({
       where: { id: horseId },
       select: { stressLevel: true, bondScore: true, epigeneticFlags: true },
@@ -197,10 +194,7 @@ export async function predictInteractionOutcome(groomId, horseId, context) {
 
     // Predict quality
     let predictedQuality;
-    if (compatibility.overallScore >= 0.8) predictedQuality = 'excellent';
-    else if (compatibility.overallScore >= 0.6) predictedQuality = 'good';
-    else if (compatibility.overallScore >= 0.4) predictedQuality = 'fair';
-    else predictedQuality = 'poor';
+    if (compatibility.overallScore >= 0.8) { predictedQuality = 'excellent'; } else if (compatibility.overallScore >= 0.6) { predictedQuality = 'good'; } else if (compatibility.overallScore >= 0.4) { predictedQuality = 'fair'; } else { predictedQuality = 'poor'; }
 
     // Calculate success probability
     const successProbability = Math.max(0.1, Math.min(0.95, compatibility.overallScore));
@@ -232,7 +226,7 @@ export async function predictInteractionOutcome(groomId, horseId, context) {
     };
 
   } catch (error) {
-    logger.error(`Error predicting interaction outcome:`, error);
+    logger.error('Error predicting interaction outcome:', error);
     throw error;
   }
 }
@@ -276,10 +270,10 @@ export async function updateCompatibilityHistory(groomId, horseId, interactionId
 
     // Analyze compatibility trend
     const compatibilityTrend = analyzeCompatibilityTrendFromInteractions(recentInteractions);
-    
+
     // Calculate learning adjustment
     const learningAdjustment = calculateLearningAdjustment(interaction, recentInteractions);
-    
+
     // Calculate new baseline score
     const newBaselineScore = calculateNewBaselineScore(recentInteractions);
 
@@ -296,7 +290,7 @@ export async function updateCompatibilityHistory(groomId, horseId, interactionId
     };
 
   } catch (error) {
-    logger.error(`Error updating compatibility history:`, error);
+    logger.error('Error updating compatibility history:', error);
     throw error;
   }
 }
@@ -353,7 +347,7 @@ export async function getOptimalGroomRecommendations(horseId, context) {
           confidence: compatibility.confidence,
           reasoning: generateRecommendationReasoning(compatibility, groom),
         };
-      })
+      }),
     );
 
     // Sort by compatibility score
@@ -377,7 +371,7 @@ export async function getOptimalGroomRecommendations(horseId, context) {
     };
 
   } catch (error) {
-    logger.error(`Error getting optimal groom recommendations:`, error);
+    logger.error('Error getting optimal groom recommendations:', error);
     throw error;
   }
 }
@@ -422,9 +416,7 @@ export async function analyzeCompatibilityTrends(groomId, horseId) {
 
     // Determine overall trend direction
     let overallTrend;
-    if (trend.slope > 0.05) overallTrend = 'improving';
-    else if (trend.slope < -0.05) overallTrend = 'declining';
-    else overallTrend = 'stable';
+    if (trend.slope > 0.05) { overallTrend = 'improving'; } else if (trend.slope < -0.05) { overallTrend = 'declining'; } else { overallTrend = 'stable'; }
 
     // Calculate improvement rate (change per interaction)
     const improvementRate = trend.slope;
@@ -453,7 +445,7 @@ export async function analyzeCompatibilityTrends(groomId, horseId) {
     };
 
   } catch (error) {
-    logger.error(`Error analyzing compatibility trends:`, error);
+    logger.error('Error analyzing compatibility trends:', error);
     throw error;
   }
 }
@@ -473,9 +465,9 @@ function calculateExperienceBonus(groom) {
 function calculateStressSituationModifier(horse, context) {
   const currentStress = context.horseCurrentStress || horse.stressLevel;
 
-  if (currentStress <= 3) return 1.1; // Low stress - slight bonus
-  if (currentStress <= 6) return 1.0; // Moderate stress - neutral
-  if (currentStress <= 8) return 0.9; // High stress - slight penalty
+  if (currentStress <= 3) { return 1.1; } // Low stress - slight bonus
+  if (currentStress <= 6) { return 1.0; } // Moderate stress - neutral
+  if (currentStress <= 8) { return 0.9; } // High stress - slight penalty
   return 0.7; // Very high stress - significant penalty
 }
 
@@ -483,7 +475,7 @@ function calculateStressSituationModifier(horse, context) {
  * Calculate task-specific modifier
  */
 function calculateTaskSpecificModifier(groom, context) {
-  const taskType = context.taskType;
+  const { taskType } = context;
   const personality = groom.groomPersonality;
 
   const taskCompatibility = {
@@ -524,7 +516,7 @@ function calculateEnvironmentalModifier(context) {
  * Calculate time of day modifier
  */
 function calculateTimeOfDayModifier(context) {
-  const timeOfDay = context.timeOfDay;
+  const { timeOfDay } = context;
 
   switch (timeOfDay) {
     case 'morning': return 1.1; // Generally better for interactions
@@ -550,7 +542,7 @@ async function calculateHistoricalModifier(groomId, horseId) {
       take: 10,
     });
 
-    if (recentInteractions.length === 0) return 1.0;
+    if (recentInteractions.length === 0) { return 1.0; }
 
     // Calculate average performance
     const qualityScores = { poor: 1, fair: 2, good: 3, excellent: 4 };
@@ -581,10 +573,10 @@ function calculateConfidence(groom, horse, context, historicalModifier) {
   confidence += Math.min(0.1, horse.epigeneticFlags.length * 0.02);
 
   // Higher confidence with historical data
-  if (historicalModifier !== 1.0) confidence += 0.1;
+  if (historicalModifier !== 1.0) { confidence += 0.1; }
 
   // Lower confidence with high stress situations
-  if (horse.stressLevel > 7) confidence -= 0.1;
+  if (horse.stressLevel > 7) { confidence -= 0.1; }
 
   return Math.max(0.3, Math.min(0.95, confidence));
 }
@@ -616,8 +608,8 @@ function analyzePersonalityMatch(groomTraits, horseTemperament) {
  * Analyze experience level impact
  */
 function analyzeExperienceLevel(groomTraits) {
-  const experienceLevel = groomTraits.experienceLevel;
-  const traitStrength = groomTraits.traitStrength;
+  const { experienceLevel } = groomTraits;
+  const { traitStrength } = groomTraits;
 
   return {
     level: experienceLevel,
@@ -632,12 +624,10 @@ function analyzeExperienceLevel(groomTraits) {
  */
 function analyzeStressCompatibility(groomTraits, horse) {
   const personality = groomTraits.primaryPersonality;
-  const stressLevel = horse.stressLevel;
+  const { stressLevel } = horse;
 
   let score = 0.5;
-  if (personality === 'calm' && stressLevel > 6) score = 0.9;
-  else if (personality === 'energetic' && stressLevel > 7) score = 0.2;
-  else if (personality === 'methodical') score = 0.7;
+  if (personality === 'calm' && stressLevel > 6) { score = 0.9; } else if (personality === 'energetic' && stressLevel > 7) { score = 0.2; } else if (personality === 'methodical') { score = 0.7; }
 
   return {
     score,
@@ -655,9 +645,7 @@ function analyzeBondingPotential(groomTraits, horse) {
   const personality = groomTraits.primaryPersonality;
 
   let potential = 0.5;
-  if (personality === 'calm' && currentBond < 20) potential = 0.8;
-  else if (personality === 'energetic' && currentBond > 25) potential = 0.7;
-  else if (personality === 'methodical') potential = 0.6;
+  if (personality === 'calm' && currentBond < 20) { potential = 0.8; } else if (personality === 'energetic' && currentBond > 25) { potential = 0.7; } else if (personality === 'methodical') { potential = 0.6; }
 
   return {
     potential,
@@ -718,7 +706,7 @@ function identifyRiskFactors(groomTraits, horseTemperament, horse) {
 /**
  * Identify strength factors for good compatibility
  */
-function identifyStrengthFactors(groomTraits, horseTemperament, horse) {
+function identifyStrengthFactors(groomTraits, horseTemperament, _horse) {
   const strengthFactors = [];
   const personality = groomTraits.primaryPersonality;
   const temperament = horseTemperament.primaryTemperament;
@@ -781,11 +769,12 @@ function generatePredictionRecommendations(compatibility, context) {
  * Analyze compatibility trend from interactions
  */
 function analyzeCompatibilityTrendFromInteractions(interactions) {
-  if (interactions.length === 0) return 'insufficient_data';
+  if (interactions.length === 0) { return 'insufficient_data'; }
 
   // For single interaction, always return stable for good quality
   if (interactions.length === 1) {
-    const quality = interactions[0].quality;
+    // eslint-disable-next-line prefer-destructuring
+    const { quality } = interactions[0];
     return ['good', 'excellent'].includes(quality) ? 'stable' : 'stable';
   }
 
@@ -794,8 +783,8 @@ function analyzeCompatibilityTrendFromInteractions(interactions) {
 
   const trend = calculateLinearTrend(scores);
 
-  if (trend.slope > 0.05) return 'improving'; // More sensitive threshold
-  if (trend.slope < -0.05) return 'declining';
+  if (trend.slope > 0.05) { return 'improving'; } // More sensitive threshold
+  if (trend.slope < -0.05) { return 'declining'; }
   return 'stable';
 }
 
@@ -817,7 +806,7 @@ function calculateLearningAdjustment(interaction, recentInteractions) {
  * Calculate new baseline score
  */
 function calculateNewBaselineScore(recentInteractions) {
-  if (recentInteractions.length === 0) return 0.5;
+  if (recentInteractions.length === 0) { return 0.5; }
 
   const qualityScores = { poor: 1, fair: 2, good: 3, excellent: 4 };
   const avgQuality = recentInteractions.reduce((sum, i) => sum + (qualityScores[i.quality] || 2), 0) / recentInteractions.length;

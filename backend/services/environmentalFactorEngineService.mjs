@@ -1,6 +1,6 @@
 /**
  * Environmental Factor Engine Service
- * 
+ *
  * Core environmental calculation system with weather patterns, seasonal cycles,
  * environmental triggers, and factor calculations affecting horse development and performance.
  */
@@ -22,22 +22,22 @@ export function calculateCurrentWeather(date, location) {
 
     // Base temperature calculation with seasonal variation
     const baseTemp = calculateBaseTemperature(dayOfYear, latitude, region);
-    
+
     // Add daily variation and location factors
     const temperature = Math.round((baseTemp + getDailyVariation(date) + getElevationEffect(elevation)) * 10) / 10;
-    
+
     // Calculate humidity based on season and region
     const humidity = Math.round(calculateHumidity(dayOfYear, region, temperature));
-    
+
     // Calculate precipitation probability
     const precipitation = calculatePrecipitation(dayOfYear, region, humidity);
-    
+
     // Calculate wind speed
     const windSpeed = Math.round(calculateWindSpeed(dayOfYear, region, elevation) * 10) / 10;
-    
+
     // Calculate atmospheric pressure
     const pressure = Math.round(calculatePressure(elevation, temperature) * 10) / 10;
-    
+
     // Determine weather conditions
     const conditions = determineWeatherConditions(temperature, humidity, precipitation, windSpeed);
 
@@ -49,7 +49,7 @@ export function calculateCurrentWeather(date, location) {
       pressure,
       conditions,
       timestamp: date.toISOString(),
-      location: `${latitude}, ${longitude}`
+      location: `${latitude}, ${longitude}`,
     };
 
   } catch (error) {
@@ -67,9 +67,9 @@ export function getSeasonalFactors(date) {
   try {
     const dayOfYear = getDayOfYear(date);
     const season = getSeason(dayOfYear);
-    
+
     let growthModifier, healthModifier, trainingEffectiveness, stressLevel, description;
-    
+
     switch (season) {
       case 'spring':
         growthModifier = 1.2; // 20% growth bonus
@@ -120,7 +120,7 @@ export function getSeasonalFactors(date) {
       stressLevel: Math.round(stressLevel),
       description,
       dayOfYear,
-      transitionEffect: transitionEffect.isTransition
+      transitionEffect: transitionEffect.isTransition,
     };
 
   } catch (error) {
@@ -142,10 +142,10 @@ export function calculateEnvironmentalTriggers(date, location, horse, weather = 
     const currentWeather = weather || calculateCurrentWeather(date, location);
     const seasonalFactors = getSeasonalFactors(date);
     const comfortZone = calculateComfortZone(horse);
-    
+
     const triggers = [];
     let intensity = 0;
-    
+
     // Temperature triggers
     if (currentWeather.temperature > comfortZone.temperatureRange.max) {
       triggers.push('heat_stress');
@@ -154,19 +154,19 @@ export function calculateEnvironmentalTriggers(date, location, horse, weather = 
       triggers.push('cold_stress');
       intensity += Math.min(25, (comfortZone.temperatureRange.min - currentWeather.temperature) * 1.5);
     }
-    
+
     // Humidity triggers
     if (currentWeather.humidity > comfortZone.humidityRange.max) {
       triggers.push('high_humidity');
       intensity += Math.min(20, (currentWeather.humidity - comfortZone.humidityRange.max) * 0.5);
     }
-    
+
     // Wind triggers
     if (currentWeather.windSpeed > 20) {
       triggers.push('strong_wind');
       intensity += Math.min(15, (currentWeather.windSpeed - 20) * 0.8);
     }
-    
+
     // Weather condition triggers
     if (currentWeather.conditions === 'stormy') {
       triggers.push('storm_stress');
@@ -175,22 +175,22 @@ export function calculateEnvironmentalTriggers(date, location, horse, weather = 
       triggers.push('wet_conditions');
       intensity += 10;
     }
-    
+
     // Seasonal triggers
     if (seasonalFactors.stressLevel > 30) {
       triggers.push('seasonal_stress');
       intensity += seasonalFactors.stressLevel - 30;
     }
-    
+
     // Apply trait modifiers
     intensity = applyTraitModifiers(intensity, triggers, horse.traits);
-    
+
     // Calculate trait expression probability
     const traitExpressionProbability = Math.min(1, intensity / 100);
-    
+
     // Generate recommendations
     const recommendations = generateTriggerRecommendations(triggers, intensity, horse);
-    
+
     return {
       activeTriggersCount: triggers.length,
       triggerTypes: triggers,
@@ -198,7 +198,7 @@ export function calculateEnvironmentalTriggers(date, location, horse, weather = 
       traitExpressionProbability: Math.round(traitExpressionProbability * 100) / 100,
       recommendations,
       weather: currentWeather,
-      seasonalFactors
+      seasonalFactors,
     };
 
   } catch (error) {
@@ -221,45 +221,45 @@ export function calculateEnvironmentalImpact(date, location, horse, weather = nu
     const seasonalFactors = getSeasonalFactors(date);
     const triggers = calculateEnvironmentalTriggers(date, location, horse, currentWeather);
     const comfortZone = calculateComfortZone(horse);
-    
+
     // Calculate overall impact score (-100 to +100)
     let overallImpact = 0;
-    
+
     // Temperature impact
     const tempDiff = Math.abs(currentWeather.temperature - comfortZone.temperatureRange.optimal);
     overallImpact -= tempDiff * 2;
-    
+
     // Humidity impact
     const humidityDiff = Math.abs(currentWeather.humidity - comfortZone.humidityRange.optimal);
     overallImpact -= humidityDiff * 0.5;
-    
+
     // Seasonal bonus/penalty
     overallImpact += (seasonalFactors.growthModifier - 1) * 50;
-    
+
     // Weather condition impact
     const conditionImpact = {
       'sunny': 10,
       'cloudy': 0,
       'rainy': -15,
       'stormy': -30,
-      'foggy': -10
+      'foggy': -10,
     };
     overallImpact += conditionImpact[currentWeather.conditions] || 0;
-    
+
     // Apply trait modifiers to overall impact
     overallImpact = applyTraitModifiersToImpact(overallImpact, horse.traits, currentWeather);
-    
+
     // Calculate stat modifiers
     const statModifiers = calculateStatModifiers(overallImpact, seasonalFactors, triggers);
-    
+
     // Calculate specific effects
     const healthEffect = Math.round((overallImpact * 0.2) + (seasonalFactors.healthModifier - 1) * 10);
     const developmentEffect = Math.round(overallImpact * 0.5);
     const performanceEffect = Math.round((overallImpact * 0.3) + (seasonalFactors.trainingEffectiveness - 1) * 20);
-    
+
     // Generate recommendations
     const recommendations = generateImpactRecommendations(overallImpact, triggers, seasonalFactors);
-    
+
     return {
       overallImpact: Math.round(Math.max(-100, Math.min(100, overallImpact))),
       statModifiers,
@@ -269,7 +269,7 @@ export function calculateEnvironmentalImpact(date, location, horse, weather = nu
       recommendations,
       weather: currentWeather,
       seasonalFactors,
-      triggers: triggers.triggerTypes
+      triggers: triggers.triggerTypes,
     };
 
   } catch (error) {
@@ -288,23 +288,23 @@ export function calculateEnvironmentalImpact(date, location, horse, weather = nu
 export function generateWeatherForecast(startDate, location, days) {
   try {
     const forecast = [];
-    
+
     for (let i = 0; i < days; i++) {
       const forecastDate = new Date(startDate);
       forecastDate.setDate(forecastDate.getDate() + i);
-      
+
       const weather = calculateCurrentWeather(forecastDate, location);
       const environmentalImpact = assessForecastImpact(weather);
       const recommendations = generateForecastRecommendations(weather, environmentalImpact);
-      
+
       forecast.push({
         date: forecastDate.toISOString(),
         weather,
         environmentalImpact,
-        recommendations
+        recommendations,
       });
     }
-    
+
     return forecast;
 
   } catch (error) {
@@ -323,61 +323,61 @@ export function calculateComfortZone(horse) {
     // Base comfort zone for average horse
     let tempMin = 5, tempMax = 30, tempOptimal = 18;
     let humidityMin = 30, humidityMax = 70, humidityOptimal = 50;
-    
+
     // Adjust based on traits
     if (horse.traits.includes('heat_tolerant')) {
       tempMax += 8;
       tempOptimal += 5;
       humidityMax += 15;
     }
-    
+
     if (horse.traits.includes('cold_tolerant')) {
       tempMin -= 10;
       tempOptimal -= 3;
     }
-    
+
     if (horse.traits.includes('desert_adapted')) {
       tempMax += 12;
       tempOptimal += 8;
       humidityMin -= 10;
       humidityOptimal -= 15;
     }
-    
+
     if (horse.traits.includes('heat_sensitive')) {
       tempMax -= 5;
       tempOptimal -= 3;
       humidityMax -= 10;
     }
-    
+
     if (horse.traits.includes('hardy')) {
       tempMin -= 5;
       tempMax += 5;
       humidityMin -= 5;
       humidityMax += 10;
     }
-    
+
     return {
       temperatureRange: {
         min: tempMin,
         max: tempMax,
-        optimal: tempOptimal
+        optimal: tempOptimal,
       },
       humidityRange: {
         min: Math.max(0, humidityMin),
         max: Math.min(100, humidityMax),
-        optimal: humidityOptimal
+        optimal: humidityOptimal,
       },
       optimalConditions: {
         temperature: tempOptimal,
         humidity: humidityOptimal,
         windSpeed: 8,
-        conditions: 'sunny'
+        conditions: 'sunny',
       },
       stressThresholds: {
         temperature: { low: tempMin - 5, high: tempMax + 5 },
         humidity: { low: humidityMin - 10, high: humidityMax + 15 },
-        windSpeed: 25
-      }
+        windSpeed: 25,
+      },
     };
 
   } catch (error) {
@@ -438,10 +438,7 @@ export function assessEnvironmentalStress(date, location, horse, weather = null)
 
     // Determine severity
     let severity;
-    if (stressLevel >= 80) severity = 'critical';
-    else if (stressLevel >= 60) severity = 'high';
-    else if (stressLevel >= 30) severity = 'moderate';
-    else severity = 'low';
+    if (stressLevel >= 80) { severity = 'critical'; } else if (stressLevel >= 60) { severity = 'high'; } else if (stressLevel >= 30) { severity = 'moderate'; } else { severity = 'low'; }
 
     // Generate mitigation recommendations
     const mitigationRecommendations = generateStressMitigationRecommendations(stressLevel, stressFactors, horse);
@@ -456,7 +453,7 @@ export function assessEnvironmentalStress(date, location, horse, weather = null)
       mitigationRecommendations,
       timeToRecovery,
       triggers: triggers.triggerTypes,
-      weather: currentWeather
+      weather: currentWeather,
     };
 
   } catch (error) {
@@ -477,9 +474,10 @@ export function getEnvironmentalHistory(startDate, endDate, location) {
     // This would typically query a database of historical weather data
     // For now, return simulated historical data
     const history = [];
-    const currentDate = new Date(startDate);
+    let currentDate = new Date(startDate);
+    const finalDate = new Date(endDate);
 
-    while (currentDate <= endDate) {
+    while (currentDate <= finalDate) {
       const weather = calculateCurrentWeather(currentDate, location);
       const seasonalFactors = getSeasonalFactors(currentDate);
 
@@ -487,9 +485,10 @@ export function getEnvironmentalHistory(startDate, endDate, location) {
         date: currentDate.toISOString(),
         weather,
         seasonalFactors,
-        environmentalQuality: calculateEnvironmentalQuality(weather, seasonalFactors)
+        environmentalQuality: calculateEnvironmentalQuality(weather, seasonalFactors),
       });
 
+      currentDate = new Date(currentDate);
       currentDate.setDate(currentDate.getDate() + 1);
     }
 
@@ -531,7 +530,7 @@ function calculateBaseTemperature(dayOfYear, latitude, region) {
     'temperate': 15,
     'arctic': -5,
     'desert': 25,
-    'coastal': 18
+    'coastal': 18,
   };
 
   const base = regionBase[region] || 15;
@@ -577,7 +576,7 @@ function calculateHumidity(dayOfYear, region, temperature) {
     'temperate': 60,
     'arctic': 70,
     'desert': 25,
-    'coastal': 75
+    'coastal': 75,
   };
 
   const baseHumidity = regionHumidity[region] || 60;
@@ -604,7 +603,7 @@ function calculatePrecipitation(dayOfYear, region, humidity) {
     'temperate': 0.3,
     'arctic': 0.2,
     'desert': 0.05,
-    'coastal': 0.35
+    'coastal': 0.35,
   };
 
   const basePrecip = regionPrecip[region] || 0.3;
@@ -626,7 +625,7 @@ function calculateWindSpeed(dayOfYear, region, elevation) {
     'temperate': 15,
     'arctic': 20,
     'desert': 18,
-    'coastal': 22
+    'coastal': 22,
   };
 
   const baseWind = regionWind[region] || 15;
@@ -664,11 +663,11 @@ function calculatePressure(elevation, temperature) {
  * @returns {string} Weather condition
  */
 function determineWeatherConditions(temperature, humidity, precipitation, windSpeed) {
-  if (precipitation > 0.7 && windSpeed > 25) return 'stormy';
-  if (precipitation > 0.4) return 'rainy';
-  if (humidity < 30 && temperature > 25) return 'sunny';
-  if (humidity > 85) return 'foggy';
-  if (humidity > 70) return 'cloudy';
+  if (precipitation > 0.7 && windSpeed > 25) { return 'stormy'; }
+  if (precipitation > 0.4) { return 'rainy'; }
+  if (humidity < 30 && temperature > 25) { return 'sunny'; }
+  if (humidity > 85) { return 'foggy'; }
+  if (humidity > 70) { return 'cloudy'; }
   return 'sunny';
 }
 
@@ -678,9 +677,9 @@ function determineWeatherConditions(temperature, humidity, precipitation, windSp
  * @returns {string} Season name
  */
 function getSeason(dayOfYear) {
-  if (dayOfYear >= 80 && dayOfYear < 172) return 'spring'; // Mar 21 - Jun 20
-  if (dayOfYear >= 172 && dayOfYear < 266) return 'summer'; // Jun 21 - Sep 22
-  if (dayOfYear >= 266 && dayOfYear < 355) return 'autumn'; // Sep 23 - Dec 20
+  if (dayOfYear >= 80 && dayOfYear < 172) { return 'spring'; } // Mar 21 - Jun 20
+  if (dayOfYear >= 172 && dayOfYear < 266) { return 'summer'; } // Jun 21 - Sep 22
+  if (dayOfYear >= 266 && dayOfYear < 355) { return 'autumn'; } // Sep 23 - Dec 20
   return 'winter'; // Dec 21 - Mar 20
 }
 
@@ -715,7 +714,7 @@ function getSeasonTransitionEffect(dayOfYear) {
       return {
         isTransition: true,
         growth: 1 + (intensity * growthEffect),
-        training: 1 + (intensity * 0.05)
+        training: 1 + (intensity * 0.05),
       };
     }
   }
@@ -723,7 +722,7 @@ function getSeasonTransitionEffect(dayOfYear) {
   return {
     isTransition: false,
     growth: 1.0,
-    training: 1.0
+    training: 1.0,
   };
 }
 
@@ -767,14 +766,14 @@ function applyTraitModifiers(intensity, triggers, traits) {
  * @param {Object} horse - Horse data
  * @returns {Array} Recommendations
  */
-function generateTriggerRecommendations(triggers, intensity, horse) {
+function generateTriggerRecommendations(triggers, intensity, _horse) {
   const recommendations = [];
 
   if (triggers.includes('heat_stress')) {
     recommendations.push({
       action: 'Provide shade and extra water',
       priority: intensity > 50 ? 'high' : 'medium',
-      effectiveness: 80
+      effectiveness: 80,
     });
   }
 
@@ -782,7 +781,7 @@ function generateTriggerRecommendations(triggers, intensity, horse) {
     recommendations.push({
       action: 'Provide shelter and blankets',
       priority: intensity > 40 ? 'high' : 'medium',
-      effectiveness: 75
+      effectiveness: 75,
     });
   }
 
@@ -790,7 +789,7 @@ function generateTriggerRecommendations(triggers, intensity, horse) {
     recommendations.push({
       action: 'Move to indoor shelter',
       priority: 'critical',
-      effectiveness: 90
+      effectiveness: 90,
     });
   }
 
@@ -798,7 +797,7 @@ function generateTriggerRecommendations(triggers, intensity, horse) {
     recommendations.push({
       action: 'Improve ventilation',
       priority: 'medium',
-      effectiveness: 60
+      effectiveness: 60,
     });
   }
 
@@ -806,7 +805,7 @@ function generateTriggerRecommendations(triggers, intensity, horse) {
     recommendations.push({
       action: 'Monitor horse closely for stress signs',
       priority: 'high',
-      effectiveness: 70
+      effectiveness: 70,
     });
   }
 
@@ -849,14 +848,14 @@ function applyTraitModifiersToImpact(impact, traits, weather) {
  * @param {Object} triggers - Environmental triggers
  * @returns {Object} Stat modifiers
  */
-function calculateStatModifiers(overallImpact, seasonalFactors, triggers) {
+function calculateStatModifiers(overallImpact, seasonalFactors, _triggers) {
   const baseModifier = overallImpact / 100; // Convert to decimal
 
   return {
     speed: Math.round((baseModifier * 0.8 + (seasonalFactors.trainingEffectiveness - 1) * 0.5) * 100) / 100,
     stamina: Math.round((baseModifier * 1.2 + (seasonalFactors.healthModifier - 1) * 0.8) * 100) / 100,
     agility: Math.round((baseModifier * 0.9 + (seasonalFactors.trainingEffectiveness - 1) * 0.6) * 100) / 100,
-    intelligence: Math.round((baseModifier * 0.6) * 100) / 100
+    intelligence: Math.round((baseModifier * 0.6) * 100) / 100,
   };
 }
 
@@ -874,7 +873,7 @@ function generateImpactRecommendations(overallImpact, triggers, seasonalFactors)
     recommendations.push({
       action: 'Consider facility improvements',
       priority: 'high',
-      reason: 'Poor environmental conditions affecting horse development'
+      reason: 'Poor environmental conditions affecting horse development',
     });
   }
 
@@ -882,7 +881,7 @@ function generateImpactRecommendations(overallImpact, triggers, seasonalFactors)
     recommendations.push({
       action: 'Increase feed rations and provide warm shelter',
       priority: 'medium',
-      reason: 'Winter conditions require additional care'
+      reason: 'Winter conditions require additional care',
     });
   }
 
@@ -890,7 +889,7 @@ function generateImpactRecommendations(overallImpact, triggers, seasonalFactors)
     recommendations.push({
       action: 'Adjust training schedule to cooler hours',
       priority: 'high',
-      reason: 'Heat stress can impact performance and health'
+      reason: 'Heat stress can impact performance and health',
     });
   }
 
@@ -898,7 +897,7 @@ function generateImpactRecommendations(overallImpact, triggers, seasonalFactors)
     recommendations.push({
       action: 'Take advantage of optimal conditions for training',
       priority: 'low',
-      reason: 'Favorable environmental conditions support development'
+      reason: 'Favorable environmental conditions support development',
     });
   }
 
@@ -926,7 +925,7 @@ function assessForecastImpact(weather) {
   // High humidity
   if (weather.humidity > 85) {
     score += 15;
-    if (severity === 'low') severity = 'moderate';
+    if (severity === 'low') { severity = 'moderate'; }
   }
 
   // Strong winds
@@ -948,8 +947,8 @@ function assessForecastImpact(weather) {
       temperature: weather.temperature > 35 || weather.temperature < 0,
       humidity: weather.humidity > 85,
       wind: weather.windSpeed > 25,
-      conditions: weather.conditions === 'stormy'
-    }
+      conditions: weather.conditions === 'stormy',
+    },
   };
 }
 
@@ -987,11 +986,11 @@ function generateForecastRecommendations(weather, impact) {
 function applyStressTraitModifiers(stressLevel, traits) {
   let modifier = 1.0;
 
-  if (traits.includes('calm')) modifier *= 0.8;
-  if (traits.includes('nervous')) modifier *= 1.3;
-  if (traits.includes('hardy')) modifier *= 0.7;
-  if (traits.includes('sensitive')) modifier *= 1.2;
-  if (traits.includes('resilient')) modifier *= 0.6;
+  if (traits.includes('calm')) { modifier *= 0.8; }
+  if (traits.includes('nervous')) { modifier *= 1.3; }
+  if (traits.includes('hardy')) { modifier *= 0.7; }
+  if (traits.includes('sensitive')) { modifier *= 1.2; }
+  if (traits.includes('resilient')) { modifier *= 0.6; }
 
   return stressLevel * modifier;
 }
@@ -1010,7 +1009,7 @@ function generateStressMitigationRecommendations(stressLevel, stressFactors, hor
     recommendations.push({
       action: 'Provide immediate cooling (fans, cold water)',
       priority: 'critical',
-      effectiveness: 85
+      effectiveness: 85,
     });
   }
 
@@ -1018,7 +1017,7 @@ function generateStressMitigationRecommendations(stressLevel, stressFactors, hor
     recommendations.push({
       action: 'Move to heated shelter immediately',
       priority: 'critical',
-      effectiveness: 90
+      effectiveness: 90,
     });
   }
 
@@ -1026,7 +1025,7 @@ function generateStressMitigationRecommendations(stressLevel, stressFactors, hor
     recommendations.push({
       action: 'Provide calm, secure indoor environment',
       priority: 'high',
-      effectiveness: 80
+      effectiveness: 80,
     });
   }
 
@@ -1034,13 +1033,13 @@ function generateStressMitigationRecommendations(stressLevel, stressFactors, hor
     recommendations.push({
       action: 'Reduce training intensity',
       priority: 'high',
-      effectiveness: 70
+      effectiveness: 70,
     });
 
     recommendations.push({
       action: 'Increase monitoring frequency',
       priority: 'medium',
-      effectiveness: 60
+      effectiveness: 60,
     });
   }
 
@@ -1048,7 +1047,7 @@ function generateStressMitigationRecommendations(stressLevel, stressFactors, hor
     recommendations.push({
       action: 'Provide calming supplements or techniques',
       priority: 'medium',
-      effectiveness: 65
+      effectiveness: 65,
     });
   }
 
@@ -1065,10 +1064,10 @@ function calculateRecoveryTime(stressLevel, horse) {
   let baseRecovery = stressLevel * 0.5; // Base: 0.5 hours per stress point
 
   // Trait modifiers
-  if (horse.traits.includes('hardy')) baseRecovery *= 0.7;
-  if (horse.traits.includes('resilient')) baseRecovery *= 0.6;
-  if (horse.traits.includes('sensitive')) baseRecovery *= 1.3;
-  if (horse.traits.includes('calm')) baseRecovery *= 0.8;
+  if (horse.traits.includes('hardy')) { baseRecovery *= 0.7; }
+  if (horse.traits.includes('resilient')) { baseRecovery *= 0.6; }
+  if (horse.traits.includes('sensitive')) { baseRecovery *= 1.3; }
+  if (horse.traits.includes('calm')) { baseRecovery *= 0.8; }
 
   // Age factor (younger horses recover faster)
   const ageFactor = horse.age > 15 ? 1.2 : horse.age < 5 ? 0.8 : 1.0;
@@ -1101,9 +1100,13 @@ function calculateEnvironmentalQuality(weather, seasonalFactors) {
   quality -= humidityDiff * 0.5;
 
   // Wind quality (light breeze is optimal)
-  if (weather.windSpeed < 5) quality -= 5; // Too still
-  else if (weather.windSpeed > 20) quality -= (weather.windSpeed - 20) * 1.5; // Too windy
-  else quality += 5; // Good breeze
+  if (weather.windSpeed < 5) {
+    quality -= 5; // Too still
+  } else if (weather.windSpeed > 20) {
+    quality -= (weather.windSpeed - 20) * 1.5; // Too windy
+  } else {
+    quality += 5; // Good breeze
+  }
 
   // Weather condition quality
   const conditionQuality = {
@@ -1111,7 +1114,7 @@ function calculateEnvironmentalQuality(weather, seasonalFactors) {
     'cloudy': 5,
     'rainy': -10,
     'stormy': -25,
-    'foggy': -5
+    'foggy': -5,
   };
   quality += conditionQuality[weather.conditions] || 0;
 

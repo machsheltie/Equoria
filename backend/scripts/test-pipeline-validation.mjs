@@ -1,6 +1,6 @@
 /**
  * Automated Testing Pipeline Validation Script
- * 
+ *
  * This script validates the entire automated testing pipeline including:
  * - CI/CD workflow validation
  * - Test coverage reporting
@@ -31,7 +31,7 @@ const VALIDATION_CONFIG = {
     'coverage:report',
     'coverage:badge',
     'health-check',
-    'validate-env'
+    'validate-env',
   ],
   requiredFiles: [
     '.github/workflows/ci-cd.yml',
@@ -42,13 +42,13 @@ const VALIDATION_CONFIG = {
     'scripts/coverage-report.mjs',
     'scripts/generate-coverage-badge.mjs',
     'scripts/health-check.mjs',
-    'scripts/validate-environment.mjs'
+    'scripts/validate-environment.mjs',
   ],
   requiredDependencies: [
     'c8',
     'nyc',
-    'codecov'
-  ]
+    'codecov',
+  ],
 };
 
 /**
@@ -60,7 +60,7 @@ function executeCommand(command, options = {}) {
       encoding: 'utf8',
       timeout: options.timeout || VALIDATION_CONFIG.timeout,
       cwd: options.cwd || path.resolve(__dirname, '..'),
-      stdio: options.silent ? 'pipe' : 'inherit'
+      stdio: options.silent ? 'pipe' : 'inherit',
     });
     return { success: true, output: result.trim() };
   } catch (error) {
@@ -68,7 +68,7 @@ function executeCommand(command, options = {}) {
       success: false,
       error: error.message,
       output: error.stdout ? error.stdout.toString() : '',
-      stderr: error.stderr ? error.stderr.toString() : ''
+      stderr: error.stderr ? error.stderr.toString() : '',
     };
   }
 }
@@ -78,14 +78,14 @@ function executeCommand(command, options = {}) {
  */
 async function validatePackageScripts() {
   console.log('📋 Validating package.json scripts...');
-  
+
   const packageJsonPath = path.resolve(__dirname, '../package.json');
   const packageJson = JSON.parse(await fs.readFile(packageJsonPath, 'utf8'));
-  
+
   const results = {
     valid: true,
     missing: [],
-    present: []
+    present: [],
   };
 
   for (const script of VALIDATION_CONFIG.requiredScripts) {
@@ -107,16 +107,16 @@ async function validatePackageScripts() {
  */
 async function validateRequiredFiles() {
   console.log('📁 Validating required files...');
-  
+
   const results = {
     valid: true,
     missing: [],
-    present: []
+    present: [],
   };
 
   for (const file of VALIDATION_CONFIG.requiredFiles) {
     const filePath = path.resolve(__dirname, '..', file);
-    
+
     try {
       await fs.access(filePath);
       results.present.push(file);
@@ -136,19 +136,19 @@ async function validateRequiredFiles() {
  */
 async function validateDependencies() {
   console.log('📦 Validating dependencies...');
-  
+
   const packageJsonPath = path.resolve(__dirname, '../package.json');
   const packageJson = JSON.parse(await fs.readFile(packageJsonPath, 'utf8'));
-  
+
   const allDeps = {
     ...packageJson.dependencies,
-    ...packageJson.devDependencies
+    ...packageJson.devDependencies,
   };
 
   const results = {
     valid: true,
     missing: [],
-    present: []
+    present: [],
   };
 
   for (const dep of VALIDATION_CONFIG.requiredDependencies) {
@@ -170,9 +170,9 @@ async function validateDependencies() {
  */
 async function testEnvironmentValidation() {
   console.log('🔧 Testing environment validation...');
-  
+
   const result = executeCommand('npm run validate-env', { silent: true });
-  
+
   if (result.success) {
     console.log('✅ Environment validation passed');
     return { success: true };
@@ -188,9 +188,9 @@ async function testEnvironmentValidation() {
  */
 async function testHealthCheck() {
   console.log('🏥 Testing health check functionality...');
-  
+
   const result = executeCommand('npm run health-check', { silent: true });
-  
+
   if (result.success) {
     console.log('✅ Health check passed');
     return { success: true };
@@ -206,10 +206,10 @@ async function testHealthCheck() {
  */
 async function testCoverageReporting() {
   console.log('📊 Testing coverage reporting...');
-  
+
   // Run a quick test with coverage
   const testResult = executeCommand('npm run test:coverage:ci', { silent: true });
-  
+
   if (!testResult.success) {
     console.error('❌ Coverage test execution failed');
     return { success: false, error: testResult.error };
@@ -217,7 +217,7 @@ async function testCoverageReporting() {
 
   // Test coverage report generation
   const reportResult = executeCommand('npm run coverage:report', { silent: true });
-  
+
   if (!reportResult.success) {
     console.error('❌ Coverage report generation failed');
     return { success: false, error: reportResult.error };
@@ -225,7 +225,7 @@ async function testCoverageReporting() {
 
   // Test badge generation
   const badgeResult = executeCommand('npm run coverage:badge', { silent: true });
-  
+
   if (!badgeResult.success) {
     console.error('❌ Coverage badge generation failed');
     return { success: false, error: badgeResult.error };
@@ -240,12 +240,12 @@ async function testCoverageReporting() {
  */
 async function validateGitHubWorkflow() {
   console.log('🔄 Validating GitHub Actions workflow...');
-  
+
   const workflowPath = path.resolve(__dirname, '../../.github/workflows/ci-cd.yml');
-  
+
   try {
     const workflowContent = await fs.readFile(workflowPath, 'utf8');
-    
+
     // Check for required jobs
     const requiredJobs = [
       'code-quality',
@@ -254,13 +254,13 @@ async function validateGitHubWorkflow() {
       'integration-tests',
       'performance-tests',
       'security-scan',
-      'build-validation'
+      'build-validation',
     ];
 
     const results = {
       valid: true,
       missing: [],
-      present: []
+      present: [],
     };
 
     for (const job of requiredJobs) {
@@ -303,8 +303,8 @@ async function generateValidationReport(results) {
       environmentValid: results.environment.success,
       healthCheckValid: results.healthCheck.success,
       coverageValid: results.coverage.success,
-      workflowValid: results.workflow.valid
-    }
+      workflowValid: results.workflow.valid,
+    },
   };
 
   await fs.writeFile(reportPath, JSON.stringify(report, null, 2));
@@ -314,7 +314,7 @@ async function generateValidationReport(results) {
   await fs.writeFile(summaryPath, JSON.stringify({
     timestamp: report.timestamp,
     valid: report.overallValid,
-    summary: report.summary
+    summary: report.summary,
   }, null, 2));
 
   return { reportPath, summaryPath };
@@ -353,8 +353,8 @@ async function validateTestingPipeline() {
     console.log(`Coverage Reporting: ${results.coverage.success ? '✅ WORKING' : '❌ FAILED'}`);
     console.log(`GitHub Workflow: ${results.workflow.valid ? '✅ VALID' : '❌ INVALID'}`);
 
-    const overallValid = Object.values(results).every(result => 
-      result.success !== false && result.valid !== false
+    const overallValid = Object.values(results).every(result =>
+      result.success !== false && result.valid !== false,
     );
 
     console.log(`\n📁 Validation report saved: ${reportFiles.reportPath}`);
@@ -380,13 +380,13 @@ if (import.meta.url === `file://${process.argv[1]}`) {
   validateTestingPipeline();
 }
 
-export { 
-  validateTestingPipeline, 
-  validatePackageScripts, 
-  validateRequiredFiles, 
+export {
+  validateTestingPipeline,
+  validatePackageScripts,
+  validateRequiredFiles,
   validateDependencies,
   testEnvironmentValidation,
   testHealthCheck,
   testCoverageReporting,
-  validateGitHubWorkflow 
+  validateGitHubWorkflow,
 };

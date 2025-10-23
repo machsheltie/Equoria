@@ -1,6 +1,6 @@
 /**
  * Advanced Breeding Genetics Routes
- * 
+ *
  * API endpoints for enhanced genetic probability calculations, advanced lineage analysis,
  * and genetic diversity tracking systems for comprehensive breeding management.
  */
@@ -18,7 +18,7 @@ import {
   calculateGeneticDiversityMetrics,
   analyzeLineagePerformance,
   createVisualizationData,
-  generateBreedingRecommendations
+  generateBreedingRecommendations,
 } from '../services/advancedLineageAnalysisService.mjs';
 import {
   calculateAdvancedGeneticDiversity,
@@ -26,7 +26,7 @@ import {
   calculateDetailedInbreedingCoefficient,
   generateOptimalBreedingRecommendations,
   analyzeGeneticTrends,
-  generateGeneticDiversityReport
+  generateGeneticDiversityReport,
 } from '../services/geneticDiversityTrackingService.mjs';
 
 const router = express.Router();
@@ -40,7 +40,7 @@ const validateRequest = (req, res, next) => {
     return res.status(400).json({
       success: false,
       error: 'Validation failed',
-      details: errors.array()
+      details: errors.array(),
     });
   }
   next();
@@ -55,23 +55,23 @@ const verifyHorseOwnership = async (req, res, next) => {
     const { stallionId, mareId, horseIds } = req.body;
     const horseIdsToCheck = [];
 
-    if (stallionId) horseIdsToCheck.push(parseInt(stallionId));
-    if (mareId) horseIdsToCheck.push(parseInt(mareId));
+    if (stallionId) { horseIdsToCheck.push(parseInt(stallionId)); }
+    if (mareId) { horseIdsToCheck.push(parseInt(mareId)); }
     if (horseIds && Array.isArray(horseIds)) {
       horseIdsToCheck.push(...horseIds.map(id => parseInt(id)));
     }
 
     // Check URL parameters as well
-    if (req.params.stallionId) horseIdsToCheck.push(parseInt(req.params.stallionId));
-    if (req.params.mareId) horseIdsToCheck.push(parseInt(req.params.mareId));
+    if (req.params.stallionId) { horseIdsToCheck.push(parseInt(req.params.stallionId)); }
+    if (req.params.mareId) { horseIdsToCheck.push(parseInt(req.params.mareId)); }
 
     if (horseIdsToCheck.length > 0) {
       // First check if all horses exist
       const allHorses = await prisma.horse.findMany({
         where: {
-          id: { in: horseIdsToCheck }
+          id: { in: horseIdsToCheck },
         },
-        select: { id: true, userId: true, ownerId: true }
+        select: { id: true, userId: true, ownerId: true },
       });
 
       // If some horses don't exist, let the route handler deal with it (404)
@@ -84,7 +84,7 @@ const verifyHorseOwnership = async (req, res, next) => {
       if (ownedHorses.length !== horseIdsToCheck.length) {
         return res.status(403).json({
           success: false,
-          error: 'Access denied: You do not own all specified horses'
+          error: 'Access denied: You do not own all specified horses',
         });
       }
     }
@@ -94,7 +94,7 @@ const verifyHorseOwnership = async (req, res, next) => {
     logger.error(`[advancedBreedingGeneticsRoutes.verifyHorseOwnership] Error: ${error.message}`);
     res.status(500).json({
       success: false,
-      error: 'Failed to verify horse ownership'
+      error: 'Failed to verify horse ownership',
     });
   }
 };
@@ -111,7 +111,7 @@ router.post('/breeding/genetic-probability',
     body('stallionId').isInt({ min: 1 }).withMessage('Valid stallion ID is required'),
     body('mareId').isInt({ min: 1 }).withMessage('Valid mare ID is required'),
     body('includeLineage').optional().isBoolean().withMessage('includeLineage must be boolean'),
-    body('generations').optional().isInt({ min: 1, max: 5 }).withMessage('generations must be 1-5')
+    body('generations').optional().isInt({ min: 1, max: 5 }).withMessage('generations must be 1-5'),
   ],
   validateRequest,
   verifyHorseOwnership,
@@ -124,13 +124,13 @@ router.post('/breeding/genetic-probability',
       // Get horse data first
       const [stallion, mare] = await Promise.all([
         prisma.horse.findUnique({ where: { id: parseInt(stallionId) } }),
-        prisma.horse.findUnique({ where: { id: parseInt(mareId) } })
+        prisma.horse.findUnique({ where: { id: parseInt(mareId) } }),
       ]);
 
       if (!stallion || !mare) {
         return res.status(404).json({
           success: false,
-          error: 'One or both horses not found'
+          error: 'One or both horses not found',
         });
       }
 
@@ -147,37 +147,37 @@ router.post('/breeding/genetic-probability',
         const lineageTree = await generateLineageTree(parseInt(stallionId), parseInt(mareId), generations);
         lineageAnalysis = {
           diversityImpact: calculateGeneticDiversityImpact(stallion, mare, lineageTree),
-          multiGenerationalPredictions: calculateMultiGenerationalPredictions(stallion, mare, lineageTree)
+          multiGenerationalPredictions: calculateMultiGenerationalPredictions(stallion, mare, lineageTree),
         };
       }
 
       const result = {
         ...probabilities,
         compatibilityAnalysis,
-        ...(lineageAnalysis && { lineageAnalysis })
+        ...(lineageAnalysis && { lineageAnalysis }),
       };
 
       res.json({
         success: true,
-        data: result
+        data: result,
       });
 
     } catch (error) {
       logger.error(`[advancedBreedingGeneticsRoutes.genetic-probability] Error: ${error.message}`);
-      
+
       if (error.message.includes('not found')) {
         return res.status(404).json({
           success: false,
-          error: 'One or both horses not found'
+          error: 'One or both horses not found',
         });
       }
 
       res.status(500).json({
         success: false,
-        error: 'Failed to calculate genetic probabilities'
+        error: 'Failed to calculate genetic probabilities',
       });
     }
-  }
+  },
 );
 
 // ===== ADVANCED LINEAGE ANALYSIS ROUTES =====
@@ -191,7 +191,7 @@ router.get('/breeding/lineage-analysis/:stallionId/:mareId',
   [
     param('stallionId').isInt({ min: 1 }).withMessage('Valid stallion ID is required'),
     param('mareId').isInt({ min: 1 }).withMessage('Valid mare ID is required'),
-    query('generations').optional().isInt({ min: 1, max: 5 }).withMessage('generations must be 1-5')
+    query('generations').optional().isInt({ min: 1, max: 5 }).withMessage('generations must be 1-5'),
   ],
   validateRequest,
   verifyHorseOwnership,
@@ -205,13 +205,13 @@ router.get('/breeding/lineage-analysis/:stallionId/:mareId',
       // Check if horses exist
       const [stallion, mare] = await Promise.all([
         prisma.horse.findUnique({ where: { id: parseInt(stallionId) } }),
-        prisma.horse.findUnique({ where: { id: parseInt(mareId) } })
+        prisma.horse.findUnique({ where: { id: parseInt(mareId) } }),
       ]);
 
       if (!stallion || !mare) {
         return res.status(404).json({
           success: false,
-          error: 'One or both horses not found'
+          error: 'One or both horses not found',
         });
       }
 
@@ -219,7 +219,7 @@ router.get('/breeding/lineage-analysis/:stallionId/:mareId',
         generateLineageTree(parseInt(stallionId), parseInt(mareId), generations),
         calculateGeneticDiversityMetrics([{ generation: 0, horses: [stallion, mare] }]),
         analyzeLineagePerformance([{ generation: 0, horses: [stallion, mare] }]),
-        createVisualizationData(parseInt(stallionId), parseInt(mareId), generations)
+        createVisualizationData(parseInt(stallionId), parseInt(mareId), generations),
       ]);
 
       res.json({
@@ -228,18 +228,18 @@ router.get('/breeding/lineage-analysis/:stallionId/:mareId',
           lineageTree,
           diversityMetrics,
           performanceAnalysis,
-          visualizationData
-        }
+          visualizationData,
+        },
       });
 
     } catch (error) {
       logger.error(`[advancedBreedingGeneticsRoutes.lineage-analysis] Error: ${error.message}`);
       res.status(500).json({
         success: false,
-        error: 'Failed to analyze lineage'
+        error: 'Failed to analyze lineage',
       });
     }
-  }
+  },
 );
 
 /**
@@ -250,7 +250,7 @@ router.post('/breeding/breeding-recommendations',
   authenticateToken,
   [
     body('stallionId').isInt({ min: 1 }).withMessage('Valid stallion ID is required'),
-    body('mareId').isInt({ min: 1 }).withMessage('Valid mare ID is required')
+    body('mareId').isInt({ min: 1 }).withMessage('Valid mare ID is required'),
   ],
   validateRequest,
   verifyHorseOwnership,
@@ -262,30 +262,30 @@ router.post('/breeding/breeding-recommendations',
 
       const recommendations = await generateBreedingRecommendations(
         parseInt(stallionId),
-        parseInt(mareId)
+        parseInt(mareId),
       );
 
       res.json({
         success: true,
-        data: recommendations
+        data: recommendations,
       });
 
     } catch (error) {
       logger.error(`[advancedBreedingGeneticsRoutes.breeding-recommendations] Error: ${error.message}`);
-      
+
       if (error.message.includes('not found')) {
         return res.status(404).json({
           success: false,
-          error: 'One or both horses not found'
+          error: 'One or both horses not found',
         });
       }
 
       res.status(500).json({
         success: false,
-        error: 'Failed to generate breeding recommendations'
+        error: 'Failed to generate breeding recommendations',
       });
     }
-  }
+  },
 );
 
 // ===== GENETIC DIVERSITY TRACKING ROUTES =====
@@ -298,7 +298,7 @@ router.post('/genetics/population-analysis',
   authenticateToken,
   [
     body('horseIds').isArray({ min: 1 }).withMessage('horseIds array is required'),
-    body('horseIds.*').isInt({ min: 1 }).withMessage('All horse IDs must be valid integers')
+    body('horseIds.*').isInt({ min: 1 }).withMessage('All horse IDs must be valid integers'),
   ],
   validateRequest,
   verifyHorseOwnership,
@@ -313,7 +313,7 @@ router.post('/genetics/population-analysis',
         calculateAdvancedGeneticDiversity(horseIdsInt),
         trackPopulationGeneticHealth(horseIdsInt),
         analyzeGeneticTrends(horseIdsInt),
-        generateOptimalBreedingRecommendations(horseIdsInt)
+        generateOptimalBreedingRecommendations(horseIdsInt),
       ]);
 
       res.json({
@@ -322,18 +322,18 @@ router.post('/genetics/population-analysis',
           diversityMetrics,
           populationHealth,
           geneticTrends,
-          breedingRecommendations
-        }
+          breedingRecommendations,
+        },
       });
 
     } catch (error) {
       logger.error(`[advancedBreedingGeneticsRoutes.population-analysis] Error: ${error.message}`);
       res.status(500).json({
         success: false,
-        error: 'Failed to analyze population genetics'
+        error: 'Failed to analyze population genetics',
       });
     }
-  }
+  },
 );
 
 /**
@@ -344,7 +344,7 @@ router.post('/genetics/inbreeding-analysis',
   authenticateToken,
   [
     body('stallionId').isInt({ min: 1 }).withMessage('Valid stallion ID is required'),
-    body('mareId').isInt({ min: 1 }).withMessage('Valid mare ID is required')
+    body('mareId').isInt({ min: 1 }).withMessage('Valid mare ID is required'),
   ],
   validateRequest,
   verifyHorseOwnership,
@@ -356,22 +356,22 @@ router.post('/genetics/inbreeding-analysis',
 
       const inbreedingAnalysis = await calculateDetailedInbreedingCoefficient(
         parseInt(stallionId),
-        parseInt(mareId)
+        parseInt(mareId),
       );
 
       res.json({
         success: true,
-        data: inbreedingAnalysis
+        data: inbreedingAnalysis,
       });
 
     } catch (error) {
       logger.error(`[advancedBreedingGeneticsRoutes.inbreeding-analysis] Error: ${error.message}`);
       res.status(500).json({
         success: false,
-        error: 'Failed to analyze inbreeding'
+        error: 'Failed to analyze inbreeding',
       });
     }
-  }
+  },
 );
 
 /**
@@ -381,7 +381,7 @@ router.post('/genetics/inbreeding-analysis',
 router.get('/genetics/diversity-report/:userId',
   authenticateToken,
   [
-    param('userId').isUUID().withMessage('Valid user ID is required')
+    param('userId').isUUID().withMessage('Valid user ID is required'),
   ],
   validateRequest,
   async (req, res) => {
@@ -393,7 +393,7 @@ router.get('/genetics/diversity-report/:userId',
       if (userId !== requestingUserId && req.user.role !== 'admin') {
         return res.status(403).json({
           success: false,
-          error: 'Access denied: You can only view your own genetic diversity report'
+          error: 'Access denied: You can only view your own genetic diversity report',
         });
       }
 
@@ -404,16 +404,16 @@ router.get('/genetics/diversity-report/:userId',
         where: {
           OR: [
             { ownerId: userId },
-            { userId: userId }
-          ]
+            { userId },
+          ],
         },
-        select: { id: true }
+        select: { id: true },
       });
 
       if (userHorses.length === 0) {
         return res.status(404).json({
           success: false,
-          error: 'No horses found for this user'
+          error: 'No horses found for this user',
         });
       }
 
@@ -422,17 +422,17 @@ router.get('/genetics/diversity-report/:userId',
 
       res.json({
         success: true,
-        data: report
+        data: report,
       });
 
     } catch (error) {
       logger.error(`[advancedBreedingGeneticsRoutes.diversity-report] Error: ${error.message}`);
       res.status(500).json({
         success: false,
-        error: 'Failed to generate genetic diversity report'
+        error: 'Failed to generate genetic diversity report',
       });
     }
-  }
+  },
 );
 
 /**
@@ -443,7 +443,7 @@ router.post('/genetics/optimal-breeding',
   authenticateToken,
   [
     body('horseIds').isArray({ min: 2 }).withMessage('At least 2 horse IDs are required'),
-    body('horseIds.*').isInt({ min: 1 }).withMessage('All horse IDs must be valid integers')
+    body('horseIds.*').isInt({ min: 1 }).withMessage('All horse IDs must be valid integers'),
   ],
   validateRequest,
   verifyHorseOwnership,
@@ -458,17 +458,17 @@ router.post('/genetics/optimal-breeding',
 
       res.json({
         success: true,
-        data: recommendations
+        data: recommendations,
       });
 
     } catch (error) {
       logger.error(`[advancedBreedingGeneticsRoutes.optimal-breeding] Error: ${error.message}`);
       res.status(500).json({
         success: false,
-        error: 'Failed to generate optimal breeding recommendations'
+        error: 'Failed to generate optimal breeding recommendations',
       });
     }
-  }
+  },
 );
 
 /**
@@ -479,7 +479,7 @@ router.post('/genetics/breeding-compatibility',
   authenticateToken,
   [
     body('stallionId').isInt({ min: 1 }).withMessage('Valid stallion ID is required'),
-    body('mareId').isInt({ min: 1 }).withMessage('Valid mare ID is required')
+    body('mareId').isInt({ min: 1 }).withMessage('Valid mare ID is required'),
   ],
   validateRequest,
   verifyHorseOwnership,
@@ -494,22 +494,22 @@ router.post('/genetics/breeding-compatibility',
 
       const compatibility = await assessBreedingPairCompatibility(
         parseInt(stallionId),
-        parseInt(mareId)
+        parseInt(mareId),
       );
 
       res.json({
         success: true,
-        data: compatibility
+        data: compatibility,
       });
 
     } catch (error) {
       logger.error(`[advancedBreedingGeneticsRoutes.breeding-compatibility] Error: ${error.message}`);
       res.status(500).json({
         success: false,
-        error: 'Failed to assess breeding compatibility'
+        error: 'Failed to assess breeding compatibility',
       });
     }
-  }
+  },
 );
 
 /**
@@ -519,7 +519,7 @@ router.post('/genetics/breeding-compatibility',
 router.get('/genetics/population-health/:userId',
   authenticateToken,
   [
-    param('userId').isInt({ min: 1 }).withMessage('Valid user ID is required')
+    param('userId').isInt({ min: 1 }).withMessage('Valid user ID is required'),
   ],
   validateRequest,
   async (req, res) => {
@@ -531,7 +531,7 @@ router.get('/genetics/population-health/:userId',
       if (parseInt(userId) !== requestingUserId && req.user.role !== 'admin') {
         return res.status(403).json({
           success: false,
-          error: 'Access denied: You can only view your own population health data'
+          error: 'Access denied: You can only view your own population health data',
         });
       }
 
@@ -540,13 +540,13 @@ router.get('/genetics/population-health/:userId',
       // Get all horses owned by the user
       const userHorses = await prisma.horse.findMany({
         where: { ownerId: parseInt(userId) },
-        select: { id: true }
+        select: { id: true },
       });
 
       if (userHorses.length === 0) {
         return res.status(404).json({
           success: false,
-          error: 'No horses found for this user'
+          error: 'No horses found for this user',
         });
       }
 
@@ -555,27 +555,27 @@ router.get('/genetics/population-health/:userId',
 
       res.json({
         success: true,
-        data: populationHealth
+        data: populationHealth,
       });
 
     } catch (error) {
       logger.error(`[advancedBreedingGeneticsRoutes.population-health] Error: ${error.message}`);
       res.status(500).json({
         success: false,
-        error: 'Failed to get population health data'
+        error: 'Failed to get population health data',
       });
     }
-  }
+  },
 );
 
 /**
  * Error handling middleware
  */
-router.use((error, req, res, next) => {
+router.use((error, req, res, _next) => {
   logger.error(`[advancedBreedingGeneticsRoutes] Unhandled error: ${error.message}`);
   res.status(500).json({
     success: false,
-    error: 'Internal server error in genetic analysis'
+    error: 'Internal server error in genetic analysis',
   });
 });
 

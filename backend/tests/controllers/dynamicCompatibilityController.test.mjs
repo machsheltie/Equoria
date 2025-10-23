@@ -1,9 +1,9 @@
 /**
  * Dynamic Compatibility Controller Tests
- * 
+ *
  * Tests API endpoints for advanced real-time compatibility analysis between groom personalities and horse temperaments.
  * Uses TDD approach with NO MOCKING - real database operations for authentic validation.
- * 
+ *
  * Business Rules Tested:
  * - Real-time compatibility scoring with contextual factors
  * - Environmental and situational modifiers
@@ -22,8 +22,8 @@ import { generateTestToken } from '../helpers/authHelper.mjs';
 describe('Dynamic Compatibility Controller API', () => {
   let testUser;
   let testToken;
-  let testGrooms = [];
-  let testHorses = [];
+  const testGrooms = [];
+  const testHorses = [];
 
   beforeAll(async () => {
     // Create test user
@@ -121,9 +121,9 @@ describe('Dynamic Compatibility Controller API', () => {
 
   describe('POST /api/compatibility/calculate', () => {
     test('should calculate high compatibility for calm groom with fearful horse', async () => {
-      const calmGroom = testGrooms[0];
-      const fearfulHorse = testHorses[0];
-      
+      const [calmGroom] = testGrooms;
+      const [fearfulHorse] = testHorses;
+
       const requestBody = {
         groomId: calmGroom.id,
         horseId: fearfulHorse.id,
@@ -150,9 +150,10 @@ describe('Dynamic Compatibility Controller API', () => {
     });
 
     test('should calculate low compatibility for energetic groom with fearful horse', async () => {
+      // eslint-disable-next-line prefer-destructuring
       const energeticGroom = testGrooms[1];
-      const fearfulHorse = testHorses[0];
-      
+      const [fearfulHorse] = testHorses;
+
       const requestBody = {
         groomId: energeticGroom.id,
         horseId: fearfulHorse.id,
@@ -204,8 +205,8 @@ describe('Dynamic Compatibility Controller API', () => {
 
   describe('GET /api/compatibility/factors/:groomId/:horseId', () => {
     test('should analyze compatibility factors comprehensively', async () => {
-      const calmGroom = testGrooms[0];
-      const fearfulHorse = testHorses[0];
+      const [calmGroom] = testGrooms;
+      const [fearfulHorse] = testHorses;
 
       const response = await request(app)
         .get(`/api/compatibility/factors/${calmGroom.id}/${fearfulHorse.id}`)
@@ -236,9 +237,9 @@ describe('Dynamic Compatibility Controller API', () => {
 
   describe('POST /api/compatibility/predict', () => {
     test('should predict positive outcome for good compatibility', async () => {
-      const calmGroom = testGrooms[0];
-      const fearfulHorse = testHorses[0];
-      
+      const [calmGroom] = testGrooms;
+      const [fearfulHorse] = testHorses;
+
       const requestBody = {
         groomId: calmGroom.id,
         horseId: fearfulHorse.id,
@@ -264,9 +265,10 @@ describe('Dynamic Compatibility Controller API', () => {
     });
 
     test('should predict negative outcome for poor compatibility', async () => {
+      // eslint-disable-next-line prefer-destructuring
       const energeticGroom = testGrooms[1];
-      const fearfulHorse = testHorses[0];
-      
+      const [fearfulHorse] = testHorses;
+
       const requestBody = {
         groomId: energeticGroom.id,
         horseId: fearfulHorse.id,
@@ -292,8 +294,8 @@ describe('Dynamic Compatibility Controller API', () => {
 
   describe('POST /api/compatibility/recommendations', () => {
     test('should recommend optimal grooms for specific horse and context', async () => {
-      const fearfulHorse = testHorses[0];
-      
+      const [fearfulHorse] = testHorses;
+
       const requestBody = {
         horseId: fearfulHorse.id,
         context: {
@@ -316,8 +318,9 @@ describe('Dynamic Compatibility Controller API', () => {
       expect(response.body.data.rankedGrooms.length).toBeGreaterThan(0);
       expect(response.body.data.topRecommendation).toBeDefined();
       expect(response.body.data.alternativeOptions).toBeDefined();
-      
+
       // Should rank calm groom highest for fearful horse
+      // eslint-disable-next-line prefer-destructuring
       const topGroom = response.body.data.rankedGrooms[0];
       expect(topGroom.groomId).toBe(testGrooms[0].id); // Calm expert groom
       expect(topGroom.compatibilityScore).toBeGreaterThan(0.7);
@@ -326,8 +329,8 @@ describe('Dynamic Compatibility Controller API', () => {
 
   describe('GET /api/compatibility/trends/:groomId/:horseId', () => {
     test('should analyze compatibility trends with insufficient data', async () => {
-      const groom = testGrooms[0];
-      const horse = testHorses[0];
+      const [groom] = testGrooms;
+      const [horse] = testHorses;
 
       const response = await request(app)
         .get(`/api/compatibility/trends/${groom.id}/${horse.id}`)

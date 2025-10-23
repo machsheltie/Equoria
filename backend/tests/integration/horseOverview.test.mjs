@@ -189,7 +189,7 @@ describe('🏇 INTEGRATION: Horse Overview API - Real Database Integration', () 
       });
 
       // Verify next training date (should be "never" since 7 days have passed)
-      expect(data.nextTrainingDate).toBe("never");
+      expect(data.nextTrainingDate).toBe('never');
 
       // Verify earnings
       expect(data.earnings).toBe(2200);
@@ -231,8 +231,8 @@ describe('🏇 INTEGRATION: Horse Overview API - Real Database Integration', () 
       const response = await request(app).get(`/api/horses/${testHorse.id}/overview`).expect(200);
 
       const { data } = response.body;
-      expect(data.nextTrainingDate).toBe("never");
-      expect(data.lastShowResult).toBe("never");
+      expect(data.nextTrainingDate).toBe('never');
+      expect(data.lastShowResult).toBe('never');
     });
 
     it('should calculate next training date correctly when horse has recent training', async () => {
@@ -291,7 +291,7 @@ describe('🏇 INTEGRATION: Horse Overview API - Real Database Integration', () 
       expect(data.disciplineScores).toEqual({});
       expect(data.earnings).toBe(0);
       expect(data.tack).toEqual({});
-      expect(data.rider).toBe("none");
+      expect(data.rider).toBe('none');
     });
   });
 });

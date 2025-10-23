@@ -1,13 +1,13 @@
 /**
  * 🧪 Documentation Routes Tests
- * 
+ *
  * Comprehensive test suite for documentation management API endpoints including:
  * - Documentation health and metrics retrieval
  * - Specification validation and generation
  * - Endpoint and schema registration
  * - Coverage analysis and analytics
  * - Documentation management operations
- * 
+ *
  * Testing Approach: TDD with NO MOCKING
  * - Real API endpoint testing with authentication
  * - Authentic documentation service integration
@@ -15,13 +15,13 @@
  * - Production-like documentation scenarios
  */
 
-import { jest } from '@jest/globals';
+// jest import removed - not used in this file
 import request from 'supertest';
 import express from 'express';
 import jwt from 'jsonwebtoken';
 import documentationRoutes from '../../routes/documentationRoutes.mjs';
 import { responseHandler } from '../../utils/apiResponse.mjs';
-import { authenticateToken } from '../../middleware/auth.mjs';
+// authenticateToken import removed - not used in this file
 import { getApiDocumentationService } from '../../services/apiDocumentationService.mjs';
 import prisma from '../../../packages/database/prismaClient.mjs';
 
@@ -47,7 +47,7 @@ describe('Documentation Routes', () => {
     authToken = jwt.sign(
       { id: testUser.id, username: testUser.username },
       process.env.JWT_SECRET || 'test-secret',
-      { expiresIn: '1h' }
+      { expiresIn: '1h' },
     );
 
     // Create test Express app
@@ -111,14 +111,14 @@ describe('Documentation Routes', () => {
       expect(response.body.data.metrics).toBeDefined();
       expect(response.body.data.analytics).toBeDefined();
       expect(response.body.data.timestamp).toBeDefined();
-      
-      const metrics = response.body.data.metrics;
+
+      const { metrics } = response.body.data;
       expect(metrics.totalEndpoints).toBeDefined();
       expect(metrics.documentedEndpoints).toBeDefined();
       expect(metrics.coverage).toBeDefined();
       expect(metrics.lastUpdated).toBeDefined();
-      
-      const analytics = response.body.data.analytics;
+
+      const { analytics } = response.body.data;
       expect(analytics.coverageGrade).toBeDefined();
       expect(analytics.completionStatus).toBeDefined();
       expect(analytics.qualityScore).toBeDefined();
@@ -138,7 +138,7 @@ describe('Documentation Routes', () => {
         .set('Authorization', `Bearer ${authToken}`)
         .expect(200);
 
-      const analytics = response.body.data.analytics;
+      const { analytics } = response.body.data;
       expect(['A', 'B', 'C', 'D', 'F']).toContain(analytics.coverageGrade);
       expect(['complete', 'mostly_complete', 'in_progress', 'incomplete']).toContain(analytics.completionStatus);
       expect(analytics.qualityScore).toBeGreaterThanOrEqual(0);
@@ -156,14 +156,14 @@ describe('Documentation Routes', () => {
       expect(response.body.success).toBe(true);
       expect(response.body.data.validation).toBeDefined();
       expect(response.body.data.summary).toBeDefined();
-      
-      const validation = response.body.data.validation;
+
+      const { validation } = response.body.data;
       expect(validation.valid).toBeDefined();
       expect(validation.errors).toBeDefined();
       expect(Array.isArray(validation.errors)).toBe(true);
       expect(validation.timestamp).toBeDefined();
-      
-      const summary = response.body.data.summary;
+
+      const { summary } = response.body.data;
       expect(summary.isValid).toBeDefined();
       expect(summary.errorCount).toBeDefined();
       expect(['none', 'low', 'medium', 'high']).toContain(summary.severity);
@@ -249,7 +249,7 @@ describe('Documentation Routes', () => {
 
     test('accepts valid HTTP methods', async () => {
       const methods = ['GET', 'POST', 'PUT', 'DELETE', 'PATCH'];
-      
+
       for (const method of methods) {
         const endpointData = {
           method,
@@ -340,13 +340,13 @@ describe('Documentation Routes', () => {
       expect(response.body.data.byTag).toBeDefined();
       expect(response.body.data.missing).toBeDefined();
       expect(response.body.data.recommendations).toBeDefined();
-      
-      const overall = response.body.data.overall;
+
+      const { overall } = response.body.data;
       expect(overall.percentage).toBeDefined();
       expect(['A', 'B', 'C', 'D', 'F']).toContain(overall.grade);
       expect(overall.documented).toBeDefined();
       expect(overall.total).toBeDefined();
-      
+
       expect(Array.isArray(response.body.data.missing)).toBe(true);
       expect(Array.isArray(response.body.data.recommendations)).toBe(true);
     });
@@ -363,20 +363,20 @@ describe('Documentation Routes', () => {
       expect(response.body.data.summary).toBeDefined();
       expect(response.body.data.trends).toBeDefined();
       expect(response.body.data.insights).toBeDefined();
-      
-      const summary = response.body.data.summary;
+
+      const { summary } = response.body.data;
       expect(summary.totalEndpoints).toBeDefined();
       expect(summary.documentedEndpoints).toBeDefined();
       expect(summary.coverage).toBeDefined();
       expect(summary.qualityScore).toBeDefined();
       expect(['healthy', 'needs_attention']).toContain(summary.healthStatus);
-      
-      const trends = response.body.data.trends;
+
+      const { trends } = response.body.data;
       expect(trends.timeframe).toBe('30d');
       expect(trends.coverageTrend).toBeDefined();
       expect(trends.qualityTrend).toBeDefined();
-      
-      const insights = response.body.data.insights;
+
+      const { insights } = response.body.data;
       expect(Array.isArray(insights.strengths)).toBe(true);
       expect(Array.isArray(insights.improvements)).toBe(true);
       expect(Array.isArray(insights.priorities)).toBe(true);
@@ -384,7 +384,7 @@ describe('Documentation Routes', () => {
 
     test('accepts different timeframe parameters', async () => {
       const timeframes = ['1d', '7d', '30d'];
-      
+
       for (const timeframe of timeframes) {
         const response = await request(testApp)
           .get(`/api/docs/analytics?timeframe=${timeframe}`)
@@ -452,7 +452,7 @@ describe('Documentation Routes', () => {
         .set('Authorization', `Bearer ${authToken}`)
         .expect(200);
 
-      const metrics = response.body.data.metrics;
+      const { metrics } = response.body.data;
       expect(metrics.totalEndpoints).toBeGreaterThanOrEqual(3);
     });
 

@@ -1,15 +1,15 @@
 /**
  * Facility Management System Tests
- * 
+ *
  * Tests for stable environment optimization with facility upgrades, environmental mitigation,
  * and effectiveness tracking for horse management and environmental impact reduction.
- * 
+ *
  * Testing Approach: TDD with NO MOCKING - Real system validation
  * Business Rules: Facility upgrades, environmental mitigation, cost-benefit analysis
  */
 
 import { describe, test, expect, beforeEach, afterEach } from '@jest/globals';
-import logger from '../../utils/logger.mjs';
+import _logger from '../../utils/_logger.mjs';
 import prisma from '../../db/index.mjs';
 import {
   getFacilityTypes,
@@ -21,7 +21,7 @@ import {
   generateFacilityRecommendations,
   calculateMaintenanceCosts,
   getFacilityUpgradeHistory,
-  calculateFacilityROI
+  calculateFacilityROI,
 } from '../../services/facilityManagementService.mjs';
 
 describe('🏢 Facility Management System', () => {
@@ -37,8 +37,8 @@ describe('🏢 Facility Management System', () => {
         password: 'hashedPassword',
         firstName: 'Test',
         lastName: 'User',
-        money: 10000
-      }
+        money: 10000,
+      },
     });
 
     // Create test facilities
@@ -53,11 +53,11 @@ describe('🏢 Facility Management System', () => {
             advanced_training: 1,
             automated_care: 0,
             medical_center: 0,
-            stable_management: 1
+            stable_management: 1,
           },
           maintenanceCost: 100,
-          effectiveness: 60
-        }
+          effectiveness: 60,
+        },
       }),
       prisma.facility.create({
         data: {
@@ -70,12 +70,12 @@ describe('🏢 Facility Management System', () => {
             automated_care: 2,
             medical_center: 2,
             stable_management: 3,
-            competition_hosting: 1
+            competition_hosting: 1,
           },
           maintenanceCost: 350,
-          effectiveness: 85
-        }
-      })
+          effectiveness: 85,
+        },
+      }),
     ]);
   });
 
@@ -165,7 +165,7 @@ describe('🏢 Facility Management System', () => {
 
       // Master facility should have better mitigation than basic
       expect(masterFacility.environmentalMitigation.overall).toBeGreaterThanOrEqual(
-        basicFacility.environmentalMitigation.overall
+        basicFacility.environmentalMitigation.overall,
       );
     });
   });
@@ -252,7 +252,7 @@ describe('🏢 Facility Management System', () => {
       // Update user to have minimal money
       await prisma.user.update({
         where: { id: testUser.id },
-        data: { money: 10 }
+        data: { money: 10 },
       });
 
       const facilityId = testFacilities[0].id;
@@ -277,8 +277,8 @@ describe('🏢 Facility Management System', () => {
           password: 'hashedPassword',
           firstName: 'Other',
           lastName: 'User',
-          money: 5000
-        }
+          money: 5000,
+        },
       });
 
       const facilityId = testFacilities[0].id;
@@ -298,12 +298,13 @@ describe('🏢 Facility Management System', () => {
 
   describe('🌿 Environmental Mitigation', () => {
     test('should calculate environmental mitigation effects', () => {
+      // eslint-disable-next-line prefer-destructuring
       const facility = testFacilities[1]; // Premium facility
       const environmentalConditions = {
         temperature: 35, // Hot
         humidity: 85,    // High humidity
         windSpeed: 25,   // Strong wind
-        conditions: 'stormy'
+        conditions: 'stormy',
       };
 
       const mitigation = calculateEnvironmentalMitigation(facility, environmentalConditions);
@@ -321,13 +322,14 @@ describe('🏢 Facility Management System', () => {
     });
 
     test('should provide better mitigation for higher-level facilities', () => {
-      const basicFacility = testFacilities[0];
+      const [basicFacility] = testFacilities;
+      // eslint-disable-next-line prefer-destructuring
       const masterFacility = testFacilities[1];
       const harshConditions = {
         temperature: 40,
         humidity: 90,
         windSpeed: 30,
-        conditions: 'stormy'
+        conditions: 'stormy',
       };
 
       const basicMitigation = calculateEnvironmentalMitigation(basicFacility, harshConditions);
@@ -408,11 +410,11 @@ describe('🏢 Facility Management System', () => {
         for (let i = 0; i < recommendations.priority.length - 1; i++) {
           const current = recommendations.priority[i];
           const next = recommendations.priority[i + 1];
-          
+
           const priorityOrder = ['critical', 'high', 'medium', 'low'];
           const currentIndex = priorityOrder.indexOf(current.priority);
           const nextIndex = priorityOrder.indexOf(next.priority);
-          
+
           expect(currentIndex).toBeLessThanOrEqual(nextIndex);
         }
       }

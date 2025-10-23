@@ -1,10 +1,10 @@
 /**
  * 📚 API Documentation Service
- * 
+ *
  * Service for generating, managing, and maintaining API documentation.
  * Provides automated documentation generation, endpoint discovery,
  * schema validation, and documentation health monitoring.
- * 
+ *
  * Features:
  * - Automatic endpoint discovery and documentation
  * - Schema validation and type checking
@@ -14,7 +14,7 @@
  * - Documentation analytics
  */
 
-import { readFileSync, writeFileSync, existsSync } from 'fs';
+import { _readFileSync, writeFileSync, existsSync } from 'fs';
 import { join, dirname } from 'path';
 import { fileURLToPath } from 'url';
 import YAML from 'yamljs';
@@ -74,7 +74,7 @@ class ApiDocumentationService {
    */
   registerEndpoint(method, path, options = {}) {
     const key = `${method.toUpperCase()} ${path}`;
-    
+
     const endpointInfo = {
       method: method.toUpperCase(),
       path,
@@ -92,7 +92,7 @@ class ApiDocumentationService {
 
     this.endpointRegistry.set(key, endpointInfo);
     logger.debug(`[ApiDocService] Registered endpoint: ${key}`);
-    
+
     return endpointInfo;
   }
 
@@ -104,7 +104,7 @@ class ApiDocumentationService {
       ...schema,
       registeredAt: new Date().toISOString(),
     });
-    
+
     logger.debug(`[ApiDocService] Registered schema: ${name}`);
   }
 
@@ -114,16 +114,16 @@ class ApiDocumentationService {
   generateDocumentation() {
     try {
       const spec = this.loadSpecification();
-      
+
       // Update paths with registered endpoints
-      for (const [key, endpoint] of this.endpointRegistry) {
+      for (const [_key, endpoint] of this.endpointRegistry) {
         const pathKey = endpoint.path;
         const methodKey = endpoint.method.toLowerCase();
-        
+
         if (!spec.paths[pathKey]) {
           spec.paths[pathKey] = {};
         }
-        
+
         spec.paths[pathKey][methodKey] = {
           tags: endpoint.tags,
           summary: endpoint.summary,
@@ -134,13 +134,13 @@ class ApiDocumentationService {
           security: endpoint.security,
           deprecated: endpoint.deprecated,
         };
-        
+
         // Add examples if provided
         if (endpoint.examples && Object.keys(endpoint.examples).length > 0) {
           spec.paths[pathKey][methodKey]['x-examples'] = endpoint.examples;
         }
       }
-      
+
       // Update schemas with registered schemas
       if (!spec.components) {
         spec.components = {};
@@ -148,11 +148,11 @@ class ApiDocumentationService {
       if (!spec.components.schemas) {
         spec.components.schemas = {};
       }
-      
+
       for (const [name, schema] of this.schemaRegistry) {
         spec.components.schemas[name] = schema;
       }
-      
+
       // Update metadata
       spec.info['x-generated'] = {
         timestamp: new Date().toISOString(),
@@ -160,10 +160,10 @@ class ApiDocumentationService {
         schemaCount: this.schemaRegistry.size,
         generator: 'ApiDocumentationService',
       };
-      
+
       this.saveSpecification(spec);
       this.updateMetrics();
-      
+
       logger.info(`[ApiDocService] Documentation generated for ${this.endpointRegistry.size} endpoints`);
       return spec;
     } catch (error) {
@@ -179,37 +179,37 @@ class ApiDocumentationService {
     try {
       const spec = this.loadSpecification();
       const errors = [];
-      
+
       // Basic validation
       if (!spec.openapi) {
         errors.push('Missing OpenAPI version');
       }
-      
+
       if (!spec.info || !spec.info.title || !spec.info.version) {
         errors.push('Missing or incomplete info section');
       }
-      
+
       if (!spec.paths || Object.keys(spec.paths).length === 0) {
         errors.push('No paths defined');
       }
-      
+
       // Validate paths
       for (const [path, methods] of Object.entries(spec.paths || {})) {
         for (const [method, operation] of Object.entries(methods)) {
           if (!operation.responses) {
             errors.push(`Missing responses for ${method.toUpperCase()} ${path}`);
           }
-          
+
           if (!operation.summary) {
             errors.push(`Missing summary for ${method.toUpperCase()} ${path}`);
           }
-          
+
           if (!operation.tags || operation.tags.length === 0) {
             errors.push(`Missing tags for ${method.toUpperCase()} ${path}`);
           }
         }
       }
-      
+
       // Validate schemas
       if (spec.components && spec.components.schemas) {
         for (const [schemaName, schema] of Object.entries(spec.components.schemas)) {
@@ -218,15 +218,15 @@ class ApiDocumentationService {
           }
         }
       }
-      
+
       this.documentationMetrics.validationErrors = errors;
-      
+
       if (errors.length === 0) {
         logger.info('[ApiDocService] OpenAPI specification validation passed');
       } else {
         logger.warn(`[ApiDocService] OpenAPI specification validation found ${errors.length} issues`);
       }
-      
+
       return {
         valid: errors.length === 0,
         errors,
@@ -244,21 +244,21 @@ class ApiDocumentationService {
   updateMetrics() {
     try {
       const spec = this.loadSpecification();
-      
+
       let totalEndpoints = 0;
       let documentedEndpoints = 0;
-      
-      for (const [path, methods] of Object.entries(spec.paths || {})) {
-        for (const [method, operation] of Object.entries(methods)) {
+
+      for (const [_path, methods] of Object.entries(spec.paths || {})) {
+        for (const [_method, operation] of Object.entries(methods)) {
           totalEndpoints++;
-          
+
           // Consider an endpoint documented if it has summary, description, and responses
           if (operation.summary && operation.description && operation.responses) {
             documentedEndpoints++;
           }
         }
       }
-      
+
       this.documentationMetrics = {
         totalEndpoints,
         documentedEndpoints,
@@ -269,10 +269,10 @@ class ApiDocumentationService {
         tagCount: new Set(
           Object.values(spec.paths || {})
             .flatMap(methods => Object.values(methods))
-            .flatMap(operation => operation.tags || [])
+            .flatMap(operation => operation.tags || []),
         ).size,
       };
-      
+
       logger.debug(`[ApiDocService] Metrics updated: ${documentedEndpoints}/${totalEndpoints} endpoints documented`);
     } catch (error) {
       logger.error(`[ApiDocService] Failed to update metrics: ${error.message}`);
@@ -293,7 +293,7 @@ class ApiDocumentationService {
   generateExampleResponse(schema, statusCode = 200) {
     try {
       const example = this.generateSchemaExample(schema);
-      
+
       return {
         [statusCode]: {
           description: this.getStatusDescription(statusCode),
@@ -321,26 +321,27 @@ class ApiDocumentationService {
 
     switch (schema.type) {
       case 'string':
-        if (schema.format === 'email') return 'user@example.com';
-        if (schema.format === 'date-time') return new Date().toISOString();
-        if (schema.format === 'uuid') return '123e4567-e89b-12d3-a456-426614174000';
-        if (schema.enum) return schema.enum[0];
+        if (schema.format === 'email') { return 'user@example.com'; }
+        if (schema.format === 'date-time') { return new Date().toISOString(); }
+        if (schema.format === 'uuid') { return '123e4567-e89b-12d3-a456-426614174000'; }
+        if (schema.enum) { return schema.enum[0]; }
         return schema.example || 'string';
-        
+
       case 'integer':
         return schema.example || 42;
-        
+
       case 'number':
         return schema.example || 3.14;
-        
+
       case 'boolean':
         return schema.example !== undefined ? schema.example : true;
-        
-      case 'array':
+
+      case 'array': {
         const itemExample = this.generateSchemaExample(schema.items);
         return [itemExample];
-        
-      case 'object':
+      }
+
+      case 'object': {
         const obj = {};
         if (schema.properties) {
           for (const [key, prop] of Object.entries(schema.properties)) {
@@ -348,7 +349,8 @@ class ApiDocumentationService {
           }
         }
         return obj;
-        
+      }
+
       default:
         if (schema.allOf) {
           return schema.allOf.reduce((acc, subSchema) => ({
@@ -375,7 +377,7 @@ class ApiDocumentationService {
       422: 'Unprocessable entity - validation failed',
       500: 'Internal server error',
     };
-    
+
     return descriptions[statusCode] || 'Response';
   }
 
@@ -385,7 +387,7 @@ class ApiDocumentationService {
   getHealthReport() {
     const metrics = this.getMetrics();
     const validation = this.validateSpecification();
-    
+
     return {
       status: validation.valid && metrics.coverage > 80 ? 'healthy' : 'needs_attention',
       metrics,
@@ -400,27 +402,27 @@ class ApiDocumentationService {
    */
   generateRecommendations(metrics, validation) {
     const recommendations = [];
-    
+
     if (metrics.coverage < 50) {
       recommendations.push('Low documentation coverage - consider documenting more endpoints');
     }
-    
+
     if (metrics.coverage < 80) {
       recommendations.push('Documentation coverage could be improved');
     }
-    
+
     if (validation.errors.length > 0) {
       recommendations.push('Fix validation errors to improve documentation quality');
     }
-    
+
     if (metrics.schemaCount < 10) {
       recommendations.push('Consider adding more reusable schemas to improve consistency');
     }
-    
+
     if (metrics.tagCount < 5) {
       recommendations.push('Add more tags to better organize API endpoints');
     }
-    
+
     return recommendations;
   }
 }

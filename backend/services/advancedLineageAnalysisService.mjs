@@ -1,6 +1,6 @@
 /**
  * Advanced Lineage Analysis Service
- * 
+ *
  * Provides sophisticated lineage analysis with tree structures, genetic diversity metrics,
  * and performance analysis capabilities for breeding decision support.
  */
@@ -26,26 +26,26 @@ export async function generateLineageTree(stallionId, mareId, maxGenerations = 3
         include: {
           sire: true,
           dam: true,
-          competitionResults: true
-        }
+          competitionResults: true,
+        },
       }),
       prisma.horse.findUnique({
         where: { id: mareId },
         include: {
           sire: true,
           dam: true,
-          competitionResults: true
-        }
-      })
+          competitionResults: true,
+        },
+      }),
     ]);
 
     if (!stallion || !mare) {
-      logger.warn(`[advancedLineageAnalysisService.generateLineageTree] Missing parent horses`);
+      logger.warn('[advancedLineageAnalysisService.generateLineageTree] Missing parent horses');
       return {
         root: { stallion: null, mare: null },
         generations: [],
         totalHorses: 0,
-        maxDepth: 0
+        maxDepth: 0,
       };
     }
 
@@ -53,11 +53,11 @@ export async function generateLineageTree(stallionId, mareId, maxGenerations = 3
     const tree = {
       root: {
         stallion: await buildHorseNode(stallion, 0, maxGenerations),
-        mare: await buildHorseNode(mare, 0, maxGenerations)
+        mare: await buildHorseNode(mare, 0, maxGenerations),
       },
       generations: [],
       totalHorses: 0,
-      maxDepth: maxGenerations
+      maxDepth: maxGenerations,
     };
 
     // Organize by generations
@@ -93,24 +93,24 @@ async function buildHorseNode(horse, currentDepth, maxDepth) {
       speed: horse.speed || 50,
       stamina: horse.stamina || 50,
       agility: horse.agility || 50,
-      intelligence: horse.intelligence || 50
+      intelligence: horse.intelligence || 50,
     },
     traits: {
       positive: horse.positiveTraits || [],
       negative: horse.negativeTraits || [],
-      hidden: horse.hiddenTraits || []
+      hidden: horse.hiddenTraits || [],
     },
     disciplineScores: horse.disciplineScores || {},
     competitionResults: horse.competitionResults || [],
     sire: null,
-    dam: null
+    dam: null,
   };
 
   // Recursively build parent nodes
   if (horse.sire && currentDepth + 1 < maxDepth) {
     const sireData = await prisma.horse.findUnique({
       where: { id: horse.sire.id },
-      include: { sire: true, dam: true, competitionResults: true }
+      include: { sire: true, dam: true, competitionResults: true },
     });
     node.sire = await buildHorseNode(sireData, currentDepth + 1, maxDepth);
   }
@@ -118,7 +118,7 @@ async function buildHorseNode(horse, currentDepth, maxDepth) {
   if (horse.dam && currentDepth + 1 < maxDepth) {
     const damData = await prisma.horse.findUnique({
       where: { id: horse.dam.id },
-      include: { sire: true, dam: true, competitionResults: true }
+      include: { sire: true, dam: true, competitionResults: true },
     });
     node.dam = await buildHorseNode(damData, currentDepth + 1, maxDepth);
   }
@@ -143,14 +143,14 @@ async function organizeByGenerations(stallionId, mareId, maxGenerations) {
     const nextGeneration = [];
 
     for (const horseId of currentGeneration) {
-      if (processed.has(horseId)) continue;
+      if (processed.has(horseId)) { continue; }
       processed.add(horseId);
 
       const horse = await prisma.horse.findUnique({
         where: { id: horseId },
         include: {
-          competitionResults: true
-        }
+          competitionResults: true,
+        },
       });
 
       if (horse) {
@@ -163,27 +163,27 @@ async function organizeByGenerations(stallionId, mareId, maxGenerations) {
             speed: horse.speed || 50,
             stamina: horse.stamina || 50,
             agility: horse.agility || 50,
-            intelligence: horse.intelligence || 50
+            intelligence: horse.intelligence || 50,
           },
           traits: {
             positive: horse.positiveTraits || [],
             negative: horse.negativeTraits || [],
-            hidden: horse.hiddenTraits || []
+            hidden: horse.hiddenTraits || [],
           },
           disciplineScores: horse.disciplineScores || {},
-          competitionResults: horse.competitionResults || []
+          competitionResults: horse.competitionResults || [],
         });
 
         // Add parents to next generation
-        if (horse.sireId) nextGeneration.push(horse.sireId);
-        if (horse.damId) nextGeneration.push(horse.damId);
+        if (horse.sireId) { nextGeneration.push(horse.sireId); }
+        if (horse.damId) { nextGeneration.push(horse.damId); }
       }
     }
 
     if (horses.length > 0) {
       generations.push({
         generation: gen,
-        horses
+        horses,
       });
     }
 
@@ -210,12 +210,12 @@ export async function calculateGeneticDiversityMetrics(lineageData) {
     allHorses.forEach(horse => {
       const traits = horse.traits || { positive: [], negative: [], hidden: [] };
       allTraits.push(...traits.positive, ...traits.negative, ...traits.hidden);
-      
+
       const stats = horse.stats || {};
-      if (stats.speed) allStats.speed.push(stats.speed);
-      if (stats.stamina) allStats.stamina.push(stats.stamina);
-      if (stats.agility) allStats.agility.push(stats.agility);
-      if (stats.intelligence) allStats.intelligence.push(stats.intelligence);
+      if (stats.speed) { allStats.speed.push(stats.speed); }
+      if (stats.stamina) { allStats.stamina.push(stats.stamina); }
+      if (stats.agility) { allStats.agility.push(stats.agility); }
+      if (stats.intelligence) { allStats.intelligence.push(stats.intelligence); }
     });
 
     // Calculate trait diversity
@@ -245,7 +245,7 @@ export async function calculateGeneticDiversityMetrics(lineageData) {
         statVariance[stat] = {
           mean: Math.round(mean),
           variance: Math.round(variance * 100) / 100,
-          standardDeviation: Math.round(Math.sqrt(variance) * 100) / 100
+          standardDeviation: Math.round(Math.sqrt(variance) * 100) / 100,
         };
       }
     });
@@ -260,11 +260,11 @@ export async function calculateGeneticDiversityMetrics(lineageData) {
       traitDiversity: {
         uniqueTraits: uniqueTraits.length,
         traitFrequency,
-        diversityIndex: Math.round(shannonIndex * 100) / 100
+        diversityIndex: Math.round(shannonIndex * 100) / 100,
       },
       statVariance,
       inbreedingRisk: await calculateInbreedingRisk(lineageData),
-      geneticBottlenecks: await identifyGeneticBottlenecks(lineageData)
+      geneticBottlenecks: await identifyGeneticBottlenecks(lineageData),
     };
 
   } catch (error) {
@@ -291,14 +291,14 @@ async function calculateInbreedingRisk(lineageData) {
     }
   });
 
-  const riskLevel = duplicates.length > 0 ? 'high' : 
-                   allHorses.length < 8 ? 'medium' : 'low';
+  const riskLevel = duplicates.length > 0 ? 'high' :
+    allHorses.length < 8 ? 'medium' : 'low';
 
   return {
     level: riskLevel,
     duplicateAncestors: duplicates.length,
     totalAncestors: horseIds.size,
-    coefficient: duplicates.length / Math.max(1, allHorses.length)
+    coefficient: duplicates.length / Math.max(1, allHorses.length),
   };
 }
 
@@ -311,9 +311,9 @@ export async function identifyGeneticBottlenecks(lineageData) {
   const bottlenecks = [];
 
   lineageData.forEach((generation, index) => {
-    const horses = generation.horses;
+    const { horses } = generation;
     const traitCounts = {};
-    
+
     // Count trait occurrences in this generation
     horses.forEach(horse => {
       const traits = horse.traits || { positive: [], negative: [], hidden: [] };
@@ -333,7 +333,7 @@ export async function identifyGeneticBottlenecks(lineageData) {
           frequency: Math.round(frequency * 100),
           severity: frequency > 0.9 ? 'high' : 'medium',
           affectedTraits: [trait],
-          recommendation: `Consider introducing genetic diversity to reduce ${trait} dominance`
+          recommendation: `Consider introducing genetic diversity to reduce ${trait} dominance`,
         });
       }
     });
@@ -400,7 +400,7 @@ export async function calculateInbreedingCoefficient(stallionId, mareId) {
  */
 function isAncestorOf(ancestorId, descendantId, allHorses) {
   const descendant = allHorses.find(h => h.id === descendantId);
-  if (!descendant) return false;
+  if (!descendant) { return false; }
 
   if (descendant.sireId === ancestorId || descendant.damId === ancestorId) {
     return true;
@@ -432,7 +432,7 @@ export async function analyzeLineagePerformance(lineageData) {
 
     // Analyze each generation
     lineageData.forEach((generation, index) => {
-      const horses = generation.horses;
+      const { horses } = generation;
       const stats = { speed: [], stamina: [], agility: [], intelligence: [] };
       const disciplineScores = {};
       const topPerformers = [];
@@ -441,7 +441,7 @@ export async function analyzeLineagePerformance(lineageData) {
         // Collect stats
         if (horse.stats) {
           Object.keys(stats).forEach(stat => {
-            if (horse.stats[stat]) stats[stat].push(horse.stats[stat]);
+            if (horse.stats[stat]) { stats[stat].push(horse.stats[stat]); }
           });
         }
 
@@ -449,7 +449,7 @@ export async function analyzeLineagePerformance(lineageData) {
         if (horse.disciplineScores) {
           Object.entries(horse.disciplineScores).forEach(([discipline, score]) => {
             allDisciplines.add(discipline);
-            if (!disciplineScores[discipline]) disciplineScores[discipline] = [];
+            if (!disciplineScores[discipline]) { disciplineScores[discipline] = []; }
             disciplineScores[discipline].push(score);
           });
         }
@@ -469,7 +469,7 @@ export async function analyzeLineagePerformance(lineageData) {
           performanceScore,
           specialties: Object.entries(horse.disciplineScores || {})
             .filter(([_, score]) => score > 80)
-            .map(([discipline, _]) => discipline)
+            .map(([discipline, _]) => discipline),
         });
 
         if (performanceScore > 75) {
@@ -479,7 +479,7 @@ export async function analyzeLineagePerformance(lineageData) {
             performanceScore: Math.round(performanceScore),
             specialties: Object.entries(horse.disciplineScores || {})
               .filter(([_, score]) => score > 80)
-              .map(([discipline, _]) => discipline)
+              .map(([discipline, _]) => discipline),
           });
         }
       });
@@ -505,7 +505,7 @@ export async function analyzeLineagePerformance(lineageData) {
         horseCount: horses.length,
         averageStats,
         averageDisciplines,
-        topPerformers: topPerformers.slice(0, 3) // Top 3 performers
+        topPerformers: topPerformers.slice(0, 3), // Top 3 performers
       });
     });
 
@@ -524,10 +524,10 @@ export async function analyzeLineagePerformance(lineageData) {
           .slice(0, 10),
         averagePerformance: Math.round(
           performanceData.reduce((sum, horse) => sum + horse.performanceScore, 0) /
-          Math.max(1, performanceData.length)
-        )
+          Math.max(1, performanceData.length),
+        ),
       },
-      improvementAreas
+      improvementAreas,
     };
 
   } catch (error) {
@@ -563,21 +563,21 @@ function analyzeDisciplineStrengths(lineageData, allDisciplines) {
 
   // Sort disciplines by average score
   const sortedDisciplines = Object.entries(disciplineAverages)
-    .sort(([,a], [,b]) => b - a);
+    .sort(([, a], [, b]) => b - a);
 
   return {
     strongest: sortedDisciplines.slice(0, 3).map(([discipline, avg]) => ({
       discipline,
-      averageScore: Math.round(avg)
+      averageScore: Math.round(avg),
     })),
     weakest: sortedDisciplines.slice(-3).map(([discipline, avg]) => ({
       discipline,
-      averageScore: Math.round(avg)
+      averageScore: Math.round(avg),
     })),
-    balanced: sortedDisciplines.filter(([,avg]) => avg >= 70 && avg <= 85).map(([discipline, avg]) => ({
+    balanced: sortedDisciplines.filter(([, avg]) => avg >= 70 && avg <= 85).map(([discipline, avg]) => ({
       discipline,
-      averageScore: Math.round(avg)
-    }))
+      averageScore: Math.round(avg),
+    })),
   };
 }
 
@@ -589,10 +589,10 @@ function analyzeDisciplineStrengths(lineageData, allDisciplines) {
 function identifyImprovementAreas(generationalTrends) {
   const improvements = [];
 
-  if (generationalTrends.length < 2) return improvements;
+  if (generationalTrends.length < 2) { return improvements; }
 
   // Compare recent vs older generations
-  const recent = generationalTrends[0];
+  const [recent] = generationalTrends;
   const older = generationalTrends[generationalTrends.length - 1];
 
   // Check stat trends
@@ -605,7 +605,7 @@ function identifyImprovementAreas(generationalTrends) {
         area: `${stat} decline`,
         description: `${stat} has decreased from ${olderAvg} to ${recentAvg} across generations`,
         priority: 'medium',
-        suggestion: `Focus on breeding for improved ${stat} characteristics`
+        suggestion: `Focus on breeding for improved ${stat} characteristics`,
       });
     }
   });
@@ -616,7 +616,7 @@ function identifyImprovementAreas(generationalTrends) {
       area: 'genetic diversity',
       description: 'Limited number of horses in recent generation may reduce genetic diversity',
       priority: 'high',
-      suggestion: 'Introduce new bloodlines to increase genetic diversity'
+      suggestion: 'Introduce new bloodlines to increase genetic diversity',
     });
   }
 
@@ -640,7 +640,7 @@ export async function createVisualizationData(stallionId, mareId, maxGenerations
 
     // Convert tree to nodes and edges
     function processNode(horse, generation, parentId = null, relationship = null) {
-      if (!horse) return;
+      if (!horse) { return; }
 
       const nodeId = `horse_${horse.id}`;
 
@@ -651,12 +651,12 @@ export async function createVisualizationData(stallionId, mareId, maxGenerations
         generation,
         position: {
           x: generation * 200,
-          y: nodes.filter(n => n.generation === generation).length * 100
+          y: nodes.filter(n => n.generation === generation).length * 100,
         },
         stats: horse.stats,
         traits: horse.traits,
         disciplineScores: horse.disciplineScores || {},
-        type: 'horse'
+        type: 'horse',
       });
 
       // Add edge to parent
@@ -665,7 +665,7 @@ export async function createVisualizationData(stallionId, mareId, maxGenerations
           from: nodeId,
           to: parentId,
           relationship,
-          type: 'lineage'
+          type: 'lineage',
         });
       }
 
@@ -693,14 +693,14 @@ export async function createVisualizationData(stallionId, mareId, maxGenerations
         type: 'hierarchical',
         dimensions: {
           width: maxGenerations * 200,
-          height: Math.max(nodes.length * 50, 400)
-        }
+          height: Math.max(nodes.length * 50, 400),
+        },
       },
       metadata: {
         totalHorses: nodes.length,
         maxGenerations,
-        createdAt: new Date().toISOString()
-      }
+        createdAt: new Date().toISOString(),
+      },
     };
 
   } catch (error) {
@@ -723,12 +723,12 @@ export async function generateBreedingRecommendations(stallionId, mareId) {
     const [stallion, mare] = await Promise.all([
       prisma.horse.findUnique({
         where: { id: stallionId },
-        include: { competitionResults: true }
+        include: { competitionResults: true },
       }),
       prisma.horse.findUnique({
         where: { id: mareId },
-        include: { competitionResults: true }
-      })
+        include: { competitionResults: true },
+      }),
     ]);
 
     if (!stallion || !mare) {
@@ -763,7 +763,7 @@ export async function generateBreedingRecommendations(stallionId, mareId) {
       strengths,
       risks,
       suggestions,
-      expectedOutcomes
+      expectedOutcomes,
     };
 
   } catch (error) {
@@ -792,7 +792,7 @@ function calculateBreedingCompatibility(stallion, mare, diversityMetrics, inbree
     name: 'Genetic Diversity',
     score: diversityScore,
     weight: 40,
-    description: `Overall genetic diversity: ${diversityScore}%`
+    description: `Overall genetic diversity: ${diversityScore}%`,
   });
 
   // Inbreeding risk factor (30% weight)
@@ -803,7 +803,7 @@ function calculateBreedingCompatibility(stallion, mare, diversityMetrics, inbree
     name: 'Inbreeding Risk',
     score: inbreedingScore,
     weight: 30,
-    description: `Low inbreeding risk: ${Math.round(inbreedingScore)}%`
+    description: `Low inbreeding risk: ${Math.round(inbreedingScore)}%`,
   });
 
   // Complementary traits factor (20% weight)
@@ -814,7 +814,7 @@ function calculateBreedingCompatibility(stallion, mare, diversityMetrics, inbree
     name: 'Trait Compatibility',
     score: traitCompatibility,
     weight: 20,
-    description: `Complementary traits: ${Math.round(traitCompatibility)}%`
+    description: `Complementary traits: ${Math.round(traitCompatibility)}%`,
   });
 
   // Performance potential factor (10% weight)
@@ -825,12 +825,12 @@ function calculateBreedingCompatibility(stallion, mare, diversityMetrics, inbree
     name: 'Performance Potential',
     score: performancePotential,
     weight: 10,
-    description: `Expected performance: ${Math.round(performancePotential)}%`
+    description: `Expected performance: ${Math.round(performancePotential)}%`,
   });
 
   return {
     score: Math.round(totalScore),
-    factors
+    factors,
   };
 }
 
@@ -844,12 +844,12 @@ function calculateTraitCompatibility(stallion, mare) {
   const stallionTraits = [
     ...(stallion.positiveTraits || []),
     ...(stallion.negativeTraits || []),
-    ...(stallion.hiddenTraits || [])
+    ...(stallion.hiddenTraits || []),
   ];
   const mareTraits = [
     ...(mare.positiveTraits || []),
     ...(mare.negativeTraits || []),
-    ...(mare.hiddenTraits || [])
+    ...(mare.hiddenTraits || []),
   ];
 
   const sharedTraits = stallionTraits.filter(trait => mareTraits.includes(trait));
@@ -858,8 +858,8 @@ function calculateTraitCompatibility(stallion, mare) {
   // Moderate overlap is good (complementary), too much overlap reduces diversity
   const overlapRatio = sharedTraits.length / Math.max(1, totalUniqueTraits);
 
-  if (overlapRatio < 0.2) return 60; // Too different
-  if (overlapRatio > 0.8) return 40; // Too similar
+  if (overlapRatio < 0.2) { return 60; } // Too different
+  if (overlapRatio > 0.8) { return 40; } // Too similar
   return 85; // Good balance
 }
 
@@ -886,7 +886,7 @@ function calculateAverageStats(horse) {
     horse.speed || 50,
     horse.stamina || 50,
     horse.agility || 50,
-    horse.intelligence || 50
+    horse.intelligence || 50,
   ];
   return stats.reduce((sum, stat) => sum + stat, 0) / stats.length;
 }
@@ -906,13 +906,13 @@ function identifyBreedingStrengths(stallion, mare, performanceAnalysis) {
     speed: stallion.speed || 50,
     stamina: stallion.stamina || 50,
     agility: stallion.agility || 50,
-    intelligence: stallion.intelligence || 50
+    intelligence: stallion.intelligence || 50,
   };
   const mareStats = {
     speed: mare.speed || 50,
     stamina: mare.stamina || 50,
     agility: mare.agility || 50,
-    intelligence: mare.intelligence || 50
+    intelligence: mare.intelligence || 50,
   };
 
   Object.keys(stallionStats).forEach(stat => {
@@ -920,7 +920,7 @@ function identifyBreedingStrengths(stallion, mare, performanceAnalysis) {
       strengths.push({
         type: 'stat',
         description: `Strong ${stat} genetics from ${stallionStats[stat] > mareStats[stat] ? 'stallion' : 'mare'}`,
-        value: Math.max(stallionStats[stat], mareStats[stat])
+        value: Math.max(stallionStats[stat], mareStats[stat]),
       });
     }
   });
@@ -930,7 +930,7 @@ function identifyBreedingStrengths(stallion, mare, performanceAnalysis) {
     strengths.push({
       type: 'discipline',
       description: `Strong lineage in ${performanceAnalysis.disciplineStrengths.strongest[0].discipline}`,
-      value: performanceAnalysis.disciplineStrengths.strongest[0].averageScore
+      value: performanceAnalysis.disciplineStrengths.strongest[0].averageScore,
     });
   }
 
@@ -954,7 +954,7 @@ function identifyBreedingRisks(stallion, mare, diversityMetrics, inbreedingCoeff
       type: 'inbreeding',
       severity: inbreedingCoeff > 0.25 ? 'high' : 'medium',
       description: `Elevated inbreeding risk (${Math.round(inbreedingCoeff * 100)}%)`,
-      mitigation: 'Consider alternative breeding partners with more distant lineage'
+      mitigation: 'Consider alternative breeding partners with more distant lineage',
     });
   }
 
@@ -964,7 +964,7 @@ function identifyBreedingRisks(stallion, mare, diversityMetrics, inbreedingCoeff
       type: 'diversity',
       severity: 'medium',
       description: 'Limited genetic diversity in combined lineage',
-      mitigation: 'Introduce new bloodlines to increase genetic variation'
+      mitigation: 'Introduce new bloodlines to increase genetic variation',
     });
   }
 
@@ -974,7 +974,7 @@ function identifyBreedingRisks(stallion, mare, diversityMetrics, inbreedingCoeff
       type: 'bottleneck',
       severity: 'medium',
       description: `${diversityMetrics.geneticBottlenecks.length} genetic bottlenecks identified`,
-      mitigation: 'Monitor offspring for trait concentration and diversify future breeding'
+      mitigation: 'Monitor offspring for trait concentration and diversify future breeding',
     });
   }
 
@@ -997,7 +997,7 @@ function generateBreedingSuggestions(stallion, mare, risks, strengths) {
     suggestions.push({
       type: 'risk_mitigation',
       description: risk.mitigation,
-      priority: risk.severity === 'high' ? 'high' : 'medium'
+      priority: risk.severity === 'high' ? 'high' : 'medium',
     });
   });
 
@@ -1006,7 +1006,7 @@ function generateBreedingSuggestions(stallion, mare, risks, strengths) {
     suggestions.push({
       type: 'strength_optimization',
       description: 'Focus on developing identified genetic strengths in offspring',
-      priority: 'medium'
+      priority: 'medium',
     });
   }
 
@@ -1014,7 +1014,7 @@ function generateBreedingSuggestions(stallion, mare, risks, strengths) {
   suggestions.push({
     type: 'monitoring',
     description: 'Monitor offspring development closely during first 6 months',
-    priority: 'low'
+    priority: 'low',
   });
 
   return suggestions;
@@ -1036,10 +1036,10 @@ function predictBreedingOutcomes(stallion, mare, performanceAnalysis) {
       speed: Math.round((stallion.speed || 50 + mare.speed || 50) / 2),
       stamina: Math.round((stallion.stamina || 50 + mare.stamina || 50) / 2),
       agility: Math.round((stallion.agility || 50 + mare.agility || 50) / 2),
-      intelligence: Math.round((stallion.intelligence || 50 + mare.intelligence || 50) / 2)
+      intelligence: Math.round((stallion.intelligence || 50 + mare.intelligence || 50) / 2),
     },
     expectedPerformance: Math.round((stallionAvg + mareAvg) / 2),
     likelyDisciplines: performanceAnalysis.disciplineStrengths.strongest.slice(0, 2).map(d => d.discipline),
-    confidenceLevel: 75
+    confidenceLevel: 75,
   };
 }

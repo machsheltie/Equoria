@@ -37,10 +37,10 @@
 
 import request from 'supertest';
 import express from 'express';
-import { readFileSync, existsSync } from 'fs';
-import { join, dirname } from 'path';
+import { _readFileSync, _existsSync } from 'fs';
+import { _join, dirname } from 'path';
 import { fileURLToPath } from 'url';
-import YAML from 'js-yaml';
+import _YAML from 'js-yaml';
 import { body } from 'express-validator';
 import { register, login } from '../../controllers/authController.mjs';
 import { authenticateToken } from '../../middleware/auth.mjs';
@@ -85,7 +85,7 @@ const createTestApp = () => {
     res.json({
       success: true,
       message: 'Documented endpoint response',
-      data: { userId: req.user.id, timestamp: new Date().toISOString() }
+      data: { userId: req.user.id, timestamp: new Date().toISOString() },
     });
   });
 
@@ -93,7 +93,7 @@ const createTestApp = () => {
     res.json({
       success: true,
       message: 'Undocumented endpoint response',
-      data: { userId: req.user.id }
+      data: { userId: req.user.id },
     });
   });
 
@@ -127,20 +127,20 @@ describe('📚 Documentation System Integration Tests', () => {
   let app;
   let testUser;
   let authToken;
-  let docService;
+  let _docService;
 
   beforeAll(async () => {
     app = createTestApp();
-    docService = getApiDocumentationService();
+    _docService = getApiDocumentationService();
   });
 
   beforeEach(async () => {
     // Clean up any existing test data
     await prisma.refreshToken.deleteMany({
-      where: { user: { email: { contains: 'docintegration' } } }
+      where: { user: { email: { contains: 'docintegration' } } },
     });
     await prisma.user.deleteMany({
-      where: { email: { contains: 'docintegration' } }
+      where: { email: { contains: 'docintegration' } },
     });
 
     // Create test user and get authentication token
@@ -149,7 +149,7 @@ describe('📚 Documentation System Integration Tests', () => {
       username: 'docintegrationuser',
       password: 'testpassword123',
       firstName: 'Doc',
-      lastName: 'Integration'
+      lastName: 'Integration',
     };
 
     const registerResponse = await request(app)
@@ -164,10 +164,10 @@ describe('📚 Documentation System Integration Tests', () => {
   afterEach(async () => {
     // Clean up test data
     await prisma.refreshToken.deleteMany({
-      where: { user: { email: { contains: 'docintegration' } } }
+      where: { user: { email: { contains: 'docintegration' } } },
     });
     await prisma.user.deleteMany({
-      where: { email: { contains: 'docintegration' } }
+      where: { email: { contains: 'docintegration' } },
     });
   });
 
@@ -222,8 +222,8 @@ describe('📚 Documentation System Integration Tests', () => {
         tags: ['Testing'],
         responses: {
           '200': { description: 'Success response' },
-          '401': { description: 'Unauthorized' }
-        }
+          '401': { description: 'Unauthorized' },
+        },
       };
 
       const response = await request(app)
@@ -246,10 +246,10 @@ describe('📚 Documentation System Integration Tests', () => {
           properties: {
             id: { type: 'string', description: 'Unique identifier' },
             name: { type: 'string', description: 'Test name' },
-            timestamp: { type: 'string', format: 'date-time' }
+            timestamp: { type: 'string', format: 'date-time' },
           },
-          required: ['id', 'name']
-        }
+          required: ['id', 'name'],
+        },
       };
 
       const response = await request(app)
@@ -274,7 +274,7 @@ describe('📚 Documentation System Integration Tests', () => {
           path: '/api/test/create',
           summary: 'Create test resource',
           tags: ['Testing'],
-          responses: { '201': { description: 'Created' } }
+          responses: { '201': { description: 'Created' } },
         });
 
       await request(app)
@@ -282,7 +282,7 @@ describe('📚 Documentation System Integration Tests', () => {
         .set('Authorization', `Bearer ${authToken}`)
         .send({
           name: 'CreateTestSchema',
-          schema: { type: 'object', properties: { name: { type: 'string' } } }
+          schema: { type: 'object', properties: { name: { type: 'string' } } },
         });
 
       const response = await request(app)
@@ -385,7 +385,7 @@ describe('📚 Documentation System Integration Tests', () => {
         method: 'GET',
         path: '/api/test/unauthorized',
         summary: 'Test endpoint',
-        responses: { '200': { description: 'Success' } }
+        responses: { '200': { description: 'Success' } },
       };
 
       const response = await request(app)
@@ -401,7 +401,7 @@ describe('📚 Documentation System Integration Tests', () => {
       const invalidEndpointData = {
         method: 'INVALID',
         path: '',
-        summary: ''
+        summary: '',
       };
 
       const response = await request(app)

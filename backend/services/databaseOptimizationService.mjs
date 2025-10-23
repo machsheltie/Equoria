@@ -1,13 +1,13 @@
 /**
  * Database Optimization Service
- * 
+ *
  * Comprehensive database performance optimization including:
  * - Query performance analysis and monitoring
  * - Index optimization for epigenetic and JSONB queries
  * - Connection pooling configuration and management
  * - Query caching with Redis integration
  * - Performance benchmarking and monitoring
- * 
+ *
  * Target Performance Goals:
  * - < 100ms response times for 95% of queries
  * - Support for 100+ concurrent users
@@ -68,13 +68,13 @@ async function initializeRedis() {
  */
 export async function analyzeQueryPerformance(options) {
   const startTime = Date.now();
-  
+
   try {
     logger.info(`[databaseOptimization] Analyzing query performance for ${options.queryType}`);
-    
+
     let queryResult;
-    let queryPlan;
-    
+    let _queryPlan;
+
     switch (options.queryType) {
       case 'epigenetic_trait_search':
         queryResult = await analyzeEpigeneticTraitQuery(options);
@@ -88,16 +88,16 @@ export async function analyzeQueryPerformance(options) {
       default:
         throw new Error(`Unknown query type: ${options.queryType}`);
     }
-    
+
     const executionTime = Date.now() - startTime;
-    
+
     // Store performance metrics
     performanceMetrics.queryTimes.set(options.queryType, {
       lastExecution: executionTime,
       averageTime: calculateAverageTime(options.queryType, executionTime),
       timestamp: new Date(),
     });
-    
+
     return {
       queryType: options.queryType,
       executionTime,
@@ -111,7 +111,7 @@ export async function analyzeQueryPerformance(options) {
       nPlusOneRisks: queryResult.nPlusOneRisks,
     };
   } catch (error) {
-    logger.error(`[databaseOptimization] Query analysis failed:`, error);
+    logger.error('[databaseOptimization] Query analysis failed:', error);
     throw error;
   }
 }
@@ -152,7 +152,7 @@ async function analyzeEpigeneticTraitQuery(options) {
  */
 async function analyzeJsonbQuery(options) {
   const { userId, filters } = options;
-  
+
   const horses = await prisma.horse.findMany({
     where: {
       userId,
@@ -167,7 +167,7 @@ async function analyzeJsonbQuery(options) {
       disciplineScores: true,
     },
   });
-  
+
   return {
     resultCount: horses.length,
     jsonbOptimizations: ['GIN index on disciplineScores JSONB field'],
@@ -181,7 +181,7 @@ async function analyzeJsonbQuery(options) {
  */
 async function analyzeComplexJoinQuery(options) {
   const { userId, includeRelations } = options;
-  
+
   const horses = await prisma.horse.findMany({
     where: { userId },
     include: {
@@ -196,7 +196,7 @@ async function analyzeComplexJoinQuery(options) {
       } : false,
     },
   });
-  
+
   return {
     resultCount: horses.length,
     joinOptimizations: ['Use SELECT with specific fields', 'Implement pagination'],
@@ -213,10 +213,10 @@ async function analyzeComplexJoinQuery(options) {
 export async function createOptimizedIndexes(options) {
   try {
     logger.info('[databaseOptimization] Creating optimized indexes');
-    
+
     const createdIndexes = [];
     const indexQueries = [];
-    
+
     if (options.queryPatterns) {
       // Create indexes based on query patterns
       for (const pattern of options.queryPatterns) {
@@ -226,7 +226,7 @@ export async function createOptimizedIndexes(options) {
         }
       }
     }
-    
+
     if (options.jsonbFields) {
       // Create JSONB indexes with correct column names
       const fieldMapping = {
@@ -242,7 +242,7 @@ export async function createOptimizedIndexes(options) {
         indexQueries.push(`CREATE INDEX IF NOT EXISTS idx_horses_${field}_gin ON horses USING GIN (${columnName})`);
       }
     }
-    
+
     if (options.compositePatterns) {
       // Create composite indexes with correct column names
       const columnMapping = {
@@ -263,7 +263,7 @@ export async function createOptimizedIndexes(options) {
         indexQueries.push(indexQuery);
       }
     }
-    
+
     // Execute index creation queries
     for (const query of indexQueries) {
       try {
@@ -282,15 +282,14 @@ export async function createOptimizedIndexes(options) {
         });
       }
     }
-    
+
     return {
       created: createdIndexes,
       performanceImpact: calculateIndexImpact(createdIndexes),
       ginIndexes: createdIndexes.filter(idx => idx.query.includes('GIN')),
       btreeIndexes: createdIndexes.filter(idx => !idx.query.includes('GIN')),
-      queryPatternsCovered: createdIndexes.filter(idx => idx.status === 'created').length,
-      performanceGains: estimatePerformanceGains(createdIndexes),
       queryPatternsCovered: options.queryPatterns?.length || 0,
+      performanceGains: estimatePerformanceGains(createdIndexes),
     };
   } catch (error) {
     logger.error('[databaseOptimization] Index creation failed:', error);
@@ -306,7 +305,7 @@ export async function createOptimizedIndexes(options) {
 export async function implementConnectionPooling(config) {
   try {
     logger.info('[databaseOptimization] Configuring connection pooling');
-    
+
     if (config.action === 'status') {
       return {
         activeConnections: 5, // Mock current active connections
@@ -314,7 +313,7 @@ export async function implementConnectionPooling(config) {
         errors: [],
       };
     }
-    
+
     if (config.action === 'lifecycle_test') {
       // Simulate connection lifecycle testing
       return {
@@ -324,7 +323,7 @@ export async function implementConnectionPooling(config) {
         averageConnectionTime: 45,
       };
     }
-    
+
     // Configure connection pool
     const poolConfig = {
       max: config.maxConnections || 20,
@@ -332,10 +331,10 @@ export async function implementConnectionPooling(config) {
       acquireTimeoutMillis: config.acquireTimeoutMillis || 30000,
       idleTimeoutMillis: config.idleTimeoutMillis || 600000,
     };
-    
+
     // Update Prisma connection pool (simulated)
     logger.info('[databaseOptimization] Connection pool configured:', poolConfig);
-    
+
     return {
       status: 'configured',
       activeConnections: 5,
@@ -372,7 +371,7 @@ export async function setupQueryCaching(config) {
         logger.warn('[databaseOptimization] Redis config failed, using defaults:', configError.message);
       }
     }
-    
+
     return {
       status: redis ? 'active' : 'disabled',
       redisAvailable: !!redis,
@@ -420,9 +419,9 @@ export async function optimizeEpigeneticQueries(options) {
         performanceMetrics.cacheMisses++;
       }
     }
-    
+
     const startTime = Date.now();
-    
+
     // Execute the actual query
     let result;
     if (options.userId) {
@@ -430,9 +429,9 @@ export async function optimizeEpigeneticQueries(options) {
     } else if (options.horseId) {
       result = await executeHorseEpigeneticAnalysis(options);
     }
-    
+
     const executionTime = Date.now() - startTime;
-    
+
     // Cache the result
     if (options.useCache && redisClient && result) {
       try {
@@ -441,7 +440,7 @@ export async function optimizeEpigeneticQueries(options) {
         logger.warn('[databaseOptimization] Cache write failed:', cacheError.message);
       }
     }
-    
+
     return {
       data: result,
       fromCache: false,
@@ -461,7 +460,7 @@ export async function optimizeEpigeneticQueries(options) {
 export async function benchmarkDatabaseOperations(options = {}) {
   try {
     logger.info('[databaseOptimization] Running database benchmarks');
-    
+
     if (options.operations) {
       const results = {};
       for (const operation of options.operations) {
@@ -469,15 +468,15 @@ export async function benchmarkDatabaseOperations(options = {}) {
       }
       return results;
     }
-    
+
     if (options.concurrentUsers) {
       return await benchmarkConcurrentLoad(options);
     }
-    
+
     if (options.scenario === 'production_simulation') {
       return await benchmarkProductionScenario(options);
     }
-    
+
     // Default benchmark
     return {
       averageQueryTime: 45,
@@ -495,13 +494,12 @@ export async function benchmarkDatabaseOperations(options = {}) {
 // Helper functions
 function calculateAverageTime(queryType, newTime) {
   const existing = performanceMetrics.queryTimes.get(queryType);
-  if (!existing) return newTime;
+  if (!existing) { return newTime; }
   return (existing.averageTime + newTime) / 2;
 }
 
 
-
-function calculateQueryComplexity(result) {
+function _calculateQueryComplexity(_result) {
   return 300; // Complexity score
 }
 
@@ -513,7 +511,7 @@ function calculateIndexImpact(indexes) {
   };
 }
 
-function estimatePerformanceGains(indexes) {
+function estimatePerformanceGains(_indexes) {
   return {
     querySpeedup: '60%',
     throughputIncrease: '40%',
@@ -530,7 +528,7 @@ async function benchmarkConcurrentLoad(options) {
   };
 }
 
-async function benchmarkProductionScenario(options) {
+async function benchmarkProductionScenario(_options) {
   return {
     scenario: 'production_simulation',
     uptime: 0.9995,
@@ -555,17 +553,16 @@ function generateCacheKey(options) {
   return `epigenetic_query_${JSON.stringify(options)}`.replace(/[^a-zA-Z0-9_]/g, '_');
 }
 
-function extractIndexUsage(result) {
+function _extractIndexUsage(_result) {
   return ['Primary index used', 'JSONB index recommended'];
 }
-
 
 
 function generateIndexQuery(pattern) {
   return `CREATE INDEX IF NOT EXISTS idx_${pattern} ON horses ("${pattern}")`;
 }
 
-function generateOptimizationRecommendations(queryResult) {
+function generateOptimizationRecommendations(_queryResult) {
   return [
     'Add appropriate indexes for frequent queries',
     'Consider query result caching',
@@ -606,8 +603,6 @@ async function benchmarkSingleOperation(operation, iterations) {
     errorRate: 0,
   };
 }
-
-
 
 
 export default {

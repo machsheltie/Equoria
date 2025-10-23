@@ -1,6 +1,6 @@
 /**
  * Epigenetic Flag Definitions
- * 
+ *
  * Defines epigenetic flags that can be applied to horses based on their care history,
  * environmental factors, and developmental milestones. These flags influence trait
  * development probabilities and behavioral characteristics.

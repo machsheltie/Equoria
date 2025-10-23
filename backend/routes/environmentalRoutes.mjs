@@ -1,6 +1,6 @@
 /**
  * Environmental Routes
- * 
+ *
  * API endpoints for environmental factor engine including current conditions,
  * forecasts, and environmental impact calculations for horse management.
  */
@@ -20,7 +20,7 @@ import {
   generateWeatherForecast,
   getEnvironmentalHistory,
   calculateComfortZone,
-  assessEnvironmentalStress
+  assessEnvironmentalStress,
 } from '../services/environmentalFactorEngineService.mjs';
 
 const router = express.Router();
@@ -34,7 +34,7 @@ const validateRequest = (req, res, next) => {
     return res.status(400).json({
       success: false,
       error: 'Validation failed',
-      details: errors.array()
+      details: errors.array(),
     });
   }
   next();
@@ -50,18 +50,18 @@ router.get('/current',
     query('latitude').optional().isFloat({ min: -90, max: 90 }).withMessage('Latitude must be between -90 and 90'),
     query('longitude').optional().isFloat({ min: -180, max: 180 }).withMessage('Longitude must be between -180 and 180'),
     query('region').optional().isIn(['tropical', 'temperate', 'arctic', 'desert', 'coastal']).withMessage('Invalid region'),
-    query('elevation').optional().isInt({ min: 0 }).withMessage('Elevation must be a positive integer')
+    query('elevation').optional().isInt({ min: 0 }).withMessage('Elevation must be a positive integer'),
   ],
   validateRequest,
   async (req, res) => {
     try {
       const { latitude = 40.7128, longitude = -74.0060, region = 'temperate', elevation = 10 } = req.query;
-      
+
       const location = {
         latitude: parseFloat(latitude),
         longitude: parseFloat(longitude),
         region,
-        elevation: parseInt(elevation)
+        elevation: parseInt(elevation),
       };
 
       logger.info(`[environmentalRoutes.current] Getting current conditions for ${location.latitude}, ${location.longitude}`);
@@ -75,18 +75,18 @@ router.get('/current',
           weather: currentWeather,
           seasonal: seasonalFactors,
           location,
-          timestamp: new Date().toISOString()
-        }
+          timestamp: new Date().toISOString(),
+        },
       });
 
     } catch (error) {
       logger.error(`[environmentalRoutes.current] Error: ${error.message}`);
       res.status(500).json({
         success: false,
-        error: 'Failed to get current environmental conditions'
+        error: 'Failed to get current environmental conditions',
       });
     }
-  }
+  },
 );
 
 /**
@@ -100,18 +100,18 @@ router.get('/forecast',
     query('longitude').optional().isFloat({ min: -180, max: 180 }).withMessage('Longitude must be between -180 and 180'),
     query('region').optional().isIn(['tropical', 'temperate', 'arctic', 'desert', 'coastal']).withMessage('Invalid region'),
     query('elevation').optional().isInt({ min: 0 }).withMessage('Elevation must be a positive integer'),
-    query('days').optional().isInt({ min: 1, max: 14 }).withMessage('Days must be between 1 and 14')
+    query('days').optional().isInt({ min: 1, max: 14 }).withMessage('Days must be between 1 and 14'),
   ],
   validateRequest,
   async (req, res) => {
     try {
       const { latitude = 40.7128, longitude = -74.0060, region = 'temperate', elevation = 10, days = 7 } = req.query;
-      
+
       const location = {
         latitude: parseFloat(latitude),
         longitude: parseFloat(longitude),
         region,
-        elevation: parseInt(elevation)
+        elevation: parseInt(elevation),
       };
 
       logger.info(`[environmentalRoutes.forecast] Generating ${days}-day forecast for ${location.latitude}, ${location.longitude}`);
@@ -124,18 +124,18 @@ router.get('/forecast',
           forecast,
           location,
           days: parseInt(days),
-          generatedAt: new Date().toISOString()
-        }
+          generatedAt: new Date().toISOString(),
+        },
       });
 
     } catch (error) {
       logger.error(`[environmentalRoutes.forecast] Error: ${error.message}`);
       res.status(500).json({
         success: false,
-        error: 'Failed to generate weather forecast'
+        error: 'Failed to generate weather forecast',
       });
     }
-  }
+  },
 );
 
 /**
@@ -151,7 +151,7 @@ router.post('/calculate-impact',
     body('location.latitude').optional().isFloat({ min: -90, max: 90 }).withMessage('Latitude must be between -90 and 90'),
     body('location.longitude').optional().isFloat({ min: -180, max: 180 }).withMessage('Longitude must be between -180 and 180'),
     body('location.region').optional().isIn(['tropical', 'temperate', 'arctic', 'desert', 'coastal']).withMessage('Invalid region'),
-    body('location.elevation').optional().isInt({ min: 0 }).withMessage('Elevation must be a positive integer')
+    body('location.elevation').optional().isInt({ min: 0 }).withMessage('Elevation must be a positive integer'),
   ],
   validateRequest,
   async (req, res) => {
@@ -163,7 +163,7 @@ router.post('/calculate-impact',
       const horses = await prisma.horse.findMany({
         where: {
           id: { in: horseIds.map(id => parseInt(id)) },
-          ownerId: userId
+          ownerId: userId,
         },
         select: {
           id: true,
@@ -174,14 +174,14 @@ router.post('/calculate-impact',
           speed: true,
           stamina: true,
           agility: true,
-          intelligence: true
-        }
+          intelligence: true,
+        },
       });
 
       if (horses.length !== horseIds.length) {
         return res.status(403).json({
           success: false,
-          error: 'Access denied: You do not own all specified horses'
+          error: 'Access denied: You do not own all specified horses',
         });
       }
 
@@ -189,7 +189,7 @@ router.post('/calculate-impact',
         latitude: 40.7128,
         longitude: -74.0060,
         region: 'temperate',
-        elevation: 10
+        elevation: 10,
       };
 
       logger.info(`[environmentalRoutes.calculate-impact] Calculating impact for ${horses.length} horses`);
@@ -203,14 +203,14 @@ router.post('/calculate-impact',
           traits: [
             ...(horse.epigeneticModifiers?.positive || []),
             ...(horse.epigeneticModifiers?.negative || []),
-            ...(horse.epigeneticModifiers?.hidden || [])
+            ...(horse.epigeneticModifiers?.hidden || []),
           ],
           stats: {
             speed: horse.speed || 50,
             stamina: horse.stamina || 50,
             agility: horse.agility || 50,
-            intelligence: horse.intelligence || 50
-          }
+            intelligence: horse.intelligence || 50,
+          },
         };
 
         const impact = calculateEnvironmentalImpact(new Date(), location, horseData);
@@ -224,7 +224,7 @@ router.post('/calculate-impact',
           impact,
           triggers,
           stress,
-          comfortZone
+          comfortZone,
         });
       }
 
@@ -233,18 +233,18 @@ router.post('/calculate-impact',
         data: {
           results,
           location,
-          timestamp: new Date().toISOString()
-        }
+          timestamp: new Date().toISOString(),
+        },
       });
 
     } catch (error) {
       logger.error(`[environmentalRoutes.calculate-impact] Error: ${error.message}`);
       res.status(500).json({
         success: false,
-        error: 'Failed to calculate environmental impact'
+        error: 'Failed to calculate environmental impact',
       });
     }
-  }
+  },
 );
 
 /**
@@ -259,18 +259,18 @@ router.get('/history',
     query('latitude').optional().isFloat({ min: -90, max: 90 }).withMessage('Latitude must be between -90 and 90'),
     query('longitude').optional().isFloat({ min: -180, max: 180 }).withMessage('Longitude must be between -180 and 180'),
     query('region').optional().isIn(['tropical', 'temperate', 'arctic', 'desert', 'coastal']).withMessage('Invalid region'),
-    query('elevation').optional().isInt({ min: 0 }).withMessage('Elevation must be a positive integer')
+    query('elevation').optional().isInt({ min: 0 }).withMessage('Elevation must be a positive integer'),
   ],
   validateRequest,
   async (req, res) => {
     try {
       const { startDate, endDate, latitude = 40.7128, longitude = -74.0060, region = 'temperate', elevation = 10 } = req.query;
-      
+
       const location = {
         latitude: parseFloat(latitude),
         longitude: parseFloat(longitude),
         region,
-        elevation: parseInt(elevation)
+        elevation: parseInt(elevation),
       };
 
       const start = new Date(startDate);
@@ -281,7 +281,7 @@ router.get('/history',
       if (daysDiff > 90) {
         return res.status(400).json({
           success: false,
-          error: 'History period cannot exceed 90 days'
+          error: 'History period cannot exceed 90 days',
         });
       }
 
@@ -297,19 +297,19 @@ router.get('/history',
           period: {
             start: startDate,
             end: endDate,
-            days: daysDiff
-          }
-        }
+            days: daysDiff,
+          },
+        },
       });
 
     } catch (error) {
       logger.error(`[environmentalRoutes.history] Error: ${error.message}`);
       res.status(500).json({
         success: false,
-        error: 'Failed to get environmental history'
+        error: 'Failed to get environmental history',
       });
     }
-  }
+  },
 );
 
 /**
@@ -319,7 +319,7 @@ router.get('/history',
 router.get('/comfort-zone/:horseId',
   authenticateToken,
   [
-    param('horseId').isInt({ min: 1 }).withMessage('Valid horse ID is required')
+    param('horseId').isInt({ min: 1 }).withMessage('Valid horse ID is required'),
   ],
   validateRequest,
   async (req, res) => {
@@ -331,19 +331,19 @@ router.get('/comfort-zone/:horseId',
       const horse = await prisma.horse.findFirst({
         where: {
           id: parseInt(horseId),
-          ownerId: userId
+          ownerId: userId,
         },
         select: {
           id: true,
           name: true,
-          epigeneticModifiers: true
-        }
+          epigeneticModifiers: true,
+        },
       });
 
       if (!horse) {
         return res.status(404).json({
           success: false,
-          error: 'Horse not found or access denied'
+          error: 'Horse not found or access denied',
         });
       }
 
@@ -352,8 +352,8 @@ router.get('/comfort-zone/:horseId',
         traits: [
           ...(horse.epigeneticModifiers?.positive || []),
           ...(horse.epigeneticModifiers?.negative || []),
-          ...(horse.epigeneticModifiers?.hidden || [])
-        ]
+          ...(horse.epigeneticModifiers?.hidden || []),
+        ],
       };
 
       logger.info(`[environmentalRoutes.comfort-zone] Calculating comfort zone for horse ${horseId}`);
@@ -366,28 +366,28 @@ router.get('/comfort-zone/:horseId',
           horseId: horse.id,
           horseName: horse.name,
           comfortZone,
-          traits: horseData.traits
-        }
+          traits: horseData.traits,
+        },
       });
 
     } catch (error) {
       logger.error(`[environmentalRoutes.comfort-zone] Error: ${error.message}`);
       res.status(500).json({
         success: false,
-        error: 'Failed to calculate comfort zone'
+        error: 'Failed to calculate comfort zone',
       });
     }
-  }
+  },
 );
 
 /**
  * Error handling middleware
  */
-router.use((error, req, res, next) => {
+router.use((error, req, res, _next) => {
   logger.error(`[environmentalRoutes] Unhandled error: ${error.message}`);
   res.status(500).json({
     success: false,
-    error: 'Internal server error in environmental system'
+    error: 'Internal server error in environmental system',
   });
 });
 

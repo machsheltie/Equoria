@@ -1,6 +1,6 @@
 /**
  * 🧪 System-Wide Integration Tests
- * 
+ *
  * Comprehensive end-to-end integration tests validating complete user journeys
  * and cross-system integration across all Equoria game systems including:
  * - User registration and authentication flows
@@ -9,7 +9,7 @@
  * - Training and competition workflows
  * - Groom management and career progression
  * - Documentation and API system integration
- * 
+ *
  * Testing Approach: TDD with NO MOCKING
  * - Real database operations with complete data workflows
  * - Authentic API integration testing
@@ -17,12 +17,12 @@
  * - Production-like user journey scenarios
  */
 
-import { jest } from '@jest/globals';
+// jest import removed - not used in this file
 import request from 'supertest';
 import jwt from 'jsonwebtoken';
 import app from '../../app.mjs';
 import prisma from '../../../packages/database/prismaClient.mjs';
-import logger from '../../utils/logger.mjs';
+// logger import removed - not used in this file
 
 describe('System-Wide Integration Tests', () => {
   let testUser;
@@ -59,7 +59,7 @@ describe('System-Wide Integration Tests', () => {
     authToken = jwt.sign(
       { id: testUser.id, username: testUser.username },
       process.env.JWT_SECRET,
-      { expiresIn: '1h' }
+      { expiresIn: '1h' },
     );
 
     // Create test horse for global tests
@@ -223,7 +223,7 @@ describe('System-Wide Integration Tests', () => {
       });
 
       // Test groom level progression
-      let currentGroom = testGroomForThisUser;
+      const currentGroom = testGroomForThisUser;
 
       // Perform a single groom interaction to gain experience
       // Use 'early_touch' which is in the eligible tasks list (workaround for age categorization bug)
@@ -249,7 +249,7 @@ describe('System-Wide Integration Tests', () => {
         .expect(200);
 
       expect(groomResponse.body.success).toBe(true);
-      const grooms = groomResponse.body.grooms;
+      const { grooms } = groomResponse.body;
       const updatedGroom = grooms.find(g => g.id === currentGroom.id);
       expect(updatedGroom).toBeDefined();
       expect(updatedGroom.experience).toBeGreaterThan(0);
@@ -307,14 +307,14 @@ describe('System-Wide Integration Tests', () => {
   describe('Performance and Load Testing', () => {
     test('API response times under load', async () => {
       const startTime = Date.now();
-      
+
       // Simulate concurrent requests
       const promises = [];
       for (let i = 0; i < 10; i++) {
         promises.push(
           request(app)
             .get('/api/horses')
-            .set('Authorization', `Bearer ${authToken}`)
+            .set('Authorization', `Bearer ${authToken}`),
         );
       }
 
@@ -330,7 +330,7 @@ describe('System-Wide Integration Tests', () => {
 
       // Verify reasonable response time (should complete within 5 seconds)
       expect(totalTime).toBeLessThan(5000);
-      
+
       // Average response time should be reasonable
       const avgResponseTime = totalTime / responses.length;
       expect(avgResponseTime).toBeLessThan(1000);
@@ -338,24 +338,24 @@ describe('System-Wide Integration Tests', () => {
 
     test('Memory usage monitoring during operations', async () => {
       const initialMemory = process.memoryUsage();
-      
+
       // Perform memory-intensive operations
       const operations = [];
       for (let i = 0; i < 20; i++) {
         operations.push(
           request(app)
-            .get('/api/user-docs/search?q=horse&includeContent=true')
+            .get('/api/user-docs/search?q=horse&includeContent=true'),
         );
       }
 
       await Promise.all(operations);
-      
+
       const finalMemory = process.memoryUsage();
-      
+
       // Memory usage should not increase dramatically
       const memoryIncrease = finalMemory.heapUsed - initialMemory.heapUsed;
       const memoryIncreasePercent = (memoryIncrease / initialMemory.heapUsed) * 100;
-      
+
       // Memory increase should be reasonable (less than 50% increase)
       expect(memoryIncreasePercent).toBeLessThan(50);
     });
@@ -365,11 +365,11 @@ describe('System-Wide Integration Tests', () => {
     test('Database transaction integrity across systems', async () => {
       // Test that related data remains consistent across operations
       const initialHorseCount = await prisma.horse.count({
-        where: { ownerId: testUser.id }
+        where: { ownerId: testUser.id },
       });
 
       const initialGroomCount = await prisma.groom.count({
-        where: { userId: testUser.id }
+        where: { userId: testUser.id },
       });
 
       // Perform operations that should maintain consistency
@@ -392,21 +392,21 @@ describe('System-Wide Integration Tests', () => {
 
       // Verify data consistency
       const finalHorseCount = await prisma.horse.count({
-        where: { ownerId: testUser.id }
+        where: { ownerId: testUser.id },
       });
 
       expect(finalHorseCount).toBe(initialHorseCount + 1);
 
       // Verify horse ownership is correctly set
       const createdHorse = await prisma.horse.findUnique({
-        where: { id: newHorse.id }
+        where: { id: newHorse.id },
       });
 
       expect(createdHorse.ownerId).toBe(testUser.id);
 
       // Verify groom count remains unchanged
       const finalGroomCount = await prisma.groom.count({
-        where: { userId: testUser.id }
+        where: { userId: testUser.id },
       });
 
       expect(finalGroomCount).toBe(initialGroomCount);
@@ -432,7 +432,7 @@ describe('System-Wide Integration Tests', () => {
         .expect(200);
 
       const initialXP = initialProgress.body.data.xp;
-      const initialLevel = initialProgress.body.data.level;
+      const _initialLevel = initialProgress.body.data.level;
 
       // Perform XP-earning activity (training)
       const trainingData = {
@@ -465,7 +465,7 @@ describe('System-Wide Integration Tests', () => {
 
       // XP should have increased
       expect(finalXP).toBeGreaterThan(initialXP);
-      
+
       // Level should be calculated correctly
       const expectedLevel = Math.floor(finalXP / 100) + 1;
       expect(finalLevel).toBe(expectedLevel);

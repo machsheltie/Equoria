@@ -1,6 +1,6 @@
 /**
  * Facility Management Service
- * 
+ *
  * Provides stable environment optimization with facility upgrades, environmental mitigation,
  * and effectiveness tracking for horse management and environmental impact reduction.
  */
@@ -24,7 +24,7 @@ export function getFacilityTypes() {
       availableUpgrades: ['advanced_training', 'automated_care', 'medical_center', 'stable_management'],
       maintenanceMultiplier: 1.0,
       capacity: 10, // Max horses
-      specialization: 'general'
+      specialization: 'general',
     },
     {
       id: 'training_center',
@@ -36,7 +36,7 @@ export function getFacilityTypes() {
       availableUpgrades: ['advanced_training', 'recovery_center', 'specialized_grounds', 'feed_laboratory', 'tack_workshop', 'stable_management'],
       maintenanceMultiplier: 1.4,
       capacity: 20,
-      specialization: 'training'
+      specialization: 'training',
     },
     {
       id: 'breeding_complex',
@@ -48,7 +48,7 @@ export function getFacilityTypes() {
       availableUpgrades: ['breeding_optimization', 'genetic_analysis', 'foal_development', 'feed_laboratory', 'medical_center', 'visitor_center'],
       maintenanceMultiplier: 2.0,
       capacity: 35,
-      specialization: 'breeding'
+      specialization: 'breeding',
     },
     {
       id: 'competition_complex',
@@ -60,7 +60,7 @@ export function getFacilityTypes() {
       availableUpgrades: ['competition_hosting', 'prestige_stable', 'tack_workshop', 'specialized_grounds', 'recovery_center', 'visitor_center', 'stable_management'],
       maintenanceMultiplier: 2.5,
       capacity: 40,
-      specialization: 'competition'
+      specialization: 'competition',
     },
     {
       id: 'master_facility',
@@ -72,8 +72,8 @@ export function getFacilityTypes() {
       availableUpgrades: ['advanced_training', 'recovery_center', 'specialized_grounds', 'automated_care', 'medical_center', 'feed_laboratory', 'breeding_optimization', 'genetic_analysis', 'foal_development', 'stable_management', 'competition_hosting', 'prestige_stable', 'tack_workshop', 'visitor_center'],
       maintenanceMultiplier: 3.0,
       capacity: 75,
-      specialization: 'master'
-    }
+      specialization: 'master',
+    },
   ];
 }
 
@@ -90,9 +90,9 @@ export async function getUserFacilities(userId) {
       where: { userId },
       include: {
         upgrades_history: {
-          orderBy: { purchaseDate: 'desc' }
-        }
-      }
+          orderBy: { purchaseDate: 'desc' },
+        },
+      },
     });
 
     // Calculate environmental mitigation for each facility
@@ -101,12 +101,12 @@ export async function getUserFacilities(userId) {
         temperature: 25, // Standard conditions for baseline
         humidity: 60,
         windSpeed: 10,
-        conditions: 'cloudy'
+        conditions: 'cloudy',
       });
 
       return {
         ...facility,
-        environmentalMitigation
+        environmentalMitigation,
       };
     });
 
@@ -153,7 +153,7 @@ export function calculateUpgradeCost(facilityId, upgradeType, currentLevel, targ
         level,
         cost: Math.round(levelCost),
         time: levelTime,
-        materials
+        materials,
       });
 
       totalCost += levelCost;
@@ -167,7 +167,7 @@ export function calculateUpgradeCost(facilityId, upgradeType, currentLevel, targ
       totalCost: Math.round(totalCost),
       breakdown,
       timeRequired: totalTime,
-      prerequisites
+      prerequisites,
     };
 
   } catch (error) {
@@ -192,33 +192,33 @@ export async function purchaseFacilityUpgrade(userId, facilityId, upgradeType, t
     const facility = await prisma.facility.findFirst({
       where: {
         id: facilityId,
-        userId
-      }
+        userId,
+      },
     });
 
     if (!facility) {
       return {
         success: false,
-        error: 'Facility not found or access denied'
+        error: 'Facility not found or access denied',
       };
     }
 
     // Get current upgrade level
     const currentLevel = facility.upgrades[upgradeType] || 0;
-    
+
     // Calculate cost
     const costCalculation = calculateUpgradeCost(facilityId, upgradeType, currentLevel, targetLevel);
-    
+
     // Check user funds
     const user = await prisma.user.findUnique({
       where: { id: userId },
-      select: { money: true }
+      select: { money: true },
     });
 
     if (user.money < costCalculation.totalCost) {
       return {
         success: false,
-        error: 'insufficient funds for this upgrade'
+        error: 'insufficient funds for this upgrade',
       };
     }
 
@@ -227,7 +227,7 @@ export async function purchaseFacilityUpgrade(userId, facilityId, upgradeType, t
       // Deduct money
       const updatedUser = await tx.user.update({
         where: { id: userId },
-        data: { money: { decrement: costCalculation.totalCost } }
+        data: { money: { decrement: costCalculation.totalCost } },
       });
 
       // Update facility upgrades
@@ -238,8 +238,8 @@ export async function purchaseFacilityUpgrade(userId, facilityId, upgradeType, t
         where: { id: facilityId },
         data: {
           upgrades: newUpgrades,
-          effectiveness: calculateFacilityEffectiveness(newUpgrades)
-        }
+          effectiveness: calculateFacilityEffectiveness(newUpgrades),
+        },
       });
 
       // Record upgrade history
@@ -251,14 +251,14 @@ export async function purchaseFacilityUpgrade(userId, facilityId, upgradeType, t
           newLevel: targetLevel,
           cost: costCalculation.totalCost,
           purchaseDate: new Date(),
-          effectiveness: calculateUpgradeEffectiveness(upgradeType, targetLevel)
-        }
+          effectiveness: calculateUpgradeEffectiveness(upgradeType, targetLevel),
+        },
       });
 
       return {
         upgrade,
         updatedFacility,
-        remainingMoney: updatedUser.money
+        remainingMoney: updatedUser.money,
       };
     });
 
@@ -267,14 +267,14 @@ export async function purchaseFacilityUpgrade(userId, facilityId, upgradeType, t
       upgrade: result.upgrade,
       newFacilityStatus: result.updatedFacility,
       costPaid: costCalculation.totalCost,
-      remainingMoney: result.remainingMoney
+      remainingMoney: result.remainingMoney,
     };
 
   } catch (error) {
     logger.error(`[facilityManagementService.purchaseFacilityUpgrade] Error: ${error.message}`);
     return {
       success: false,
-      error: 'Failed to process upgrade purchase'
+      error: 'Failed to process upgrade purchase',
     };
   }
 }
@@ -288,7 +288,7 @@ export async function purchaseFacilityUpgrade(userId, facilityId, upgradeType, t
 export function calculateEnvironmentalMitigation(facility, environmentalConditions) {
   try {
     const upgrades = facility.upgrades || {};
-    
+
     // Calculate mitigation for each environmental factor
     const temperatureMitigation = calculateTemperatureMitigation(upgrades, environmentalConditions.temperature);
     const humidityMitigation = calculateHumidityMitigation(upgrades, environmentalConditions.humidity);
@@ -297,7 +297,7 @@ export function calculateEnvironmentalMitigation(facility, environmentalConditio
 
     // Calculate overall mitigation effectiveness
     const overall = Math.round((temperatureMitigation + humidityMitigation + windMitigation + stormMitigation) / 4);
-    
+
     // Calculate facility effectiveness based on upgrades
     const effectiveness = calculateFacilityEffectiveness(upgrades);
 
@@ -307,7 +307,7 @@ export function calculateEnvironmentalMitigation(facility, environmentalConditio
       humidityMitigation: Math.round(humidityMitigation),
       windMitigation: Math.round(windMitigation),
       stormMitigation: Math.round(stormMitigation),
-      effectiveness: Math.round(effectiveness)
+      effectiveness: Math.round(effectiveness),
     };
 
   } catch (error) {
@@ -328,8 +328,8 @@ export async function assessFacilityEffectiveness(facilityId) {
     const facility = await prisma.facility.findUnique({
       where: { id: facilityId },
       include: {
-        upgrades_history: true
-      }
+        upgrades_history: true,
+      },
     });
 
     if (!facility) {
@@ -337,10 +337,10 @@ export async function assessFacilityEffectiveness(facilityId) {
     }
 
     const upgrades = facility.upgrades || {};
-    
+
     // Calculate overall effectiveness
     const overallEffectiveness = calculateFacilityEffectiveness(upgrades);
-    
+
     // Calculate upgrade-specific effectiveness
     const upgradeEffectiveness = {};
     Object.keys(upgrades).forEach(upgradeType => {
@@ -349,13 +349,13 @@ export async function assessFacilityEffectiveness(facilityId) {
 
     // Assess maintenance status
     const maintenanceStatus = assessMaintenanceStatus(facility);
-    
+
     // Calculate environmental performance
     const environmentalPerformance = calculateEnvironmentalPerformance(upgrades);
-    
+
     // Calculate cost efficiency
     const costEfficiency = calculateCostEfficiency(facility);
-    
+
     // Generate recommendations
     const recommendations = generateEffectivenessRecommendations(facility, upgradeEffectiveness);
 
@@ -365,7 +365,7 @@ export async function assessFacilityEffectiveness(facilityId) {
       maintenanceStatus,
       environmentalPerformance: Math.round(environmentalPerformance),
       costEfficiency: Math.round(costEfficiency),
-      recommendations
+      recommendations,
     };
 
   } catch (error) {
@@ -386,19 +386,19 @@ export async function generateFacilityRecommendations(userId) {
     const facilities = await getUserFacilities(userId);
     const user = await prisma.user.findUnique({
       where: { id: userId },
-      select: { money: true }
+      select: { money: true },
     });
 
     const recommendations = {
       priority: [],
       costEffective: [],
       environmental: [],
-      maintenance: []
+      maintenance: [],
     };
 
     for (const facility of facilities) {
       const facilityRecs = await generateFacilitySpecificRecommendations(facility, user.money);
-      
+
       recommendations.priority.push(...facilityRecs.priority);
       recommendations.costEffective.push(...facilityRecs.costEffective);
       recommendations.environmental.push(...facilityRecs.environmental);
@@ -431,7 +431,7 @@ export async function calculateMaintenanceCosts(facilityId) {
     logger.info(`[facilityManagementService.calculateMaintenanceCosts] Calculating maintenance for facility ${facilityId}`);
 
     const facility = await prisma.facility.findUnique({
-      where: { id: facilityId }
+      where: { id: facilityId },
     });
 
     if (!facility) {
@@ -449,7 +449,7 @@ export async function calculateMaintenanceCosts(facilityId) {
     breakdown.push({
       category: 'Base Facility',
       cost: Math.round(monthlyCost * 0.4),
-      frequency: 'monthly'
+      frequency: 'monthly',
     });
 
     // Upgrade maintenance costs
@@ -460,7 +460,7 @@ export async function calculateMaintenanceCosts(facilityId) {
       breakdown.push({
         category: `${upgradeType.charAt(0).toUpperCase() + upgradeType.slice(1)} System`,
         cost: upgradeCost,
-        frequency: 'monthly'
+        frequency: 'monthly',
       });
     });
 
@@ -477,7 +477,7 @@ export async function calculateMaintenanceCosts(facilityId) {
       monthly: Math.round(monthlyCost),
       annual: Math.round(monthlyCost * 12),
       breakdown,
-      nextMaintenance: nextMaintenance.toISOString()
+      nextMaintenance: nextMaintenance.toISOString(),
     };
 
   } catch (error) {
@@ -497,7 +497,7 @@ export async function getFacilityUpgradeHistory(facilityId) {
 
     const history = await prisma.facilityUpgrade.findMany({
       where: { facilityId },
-      orderBy: { purchaseDate: 'desc' }
+      orderBy: { purchaseDate: 'desc' },
     });
 
     return history;
@@ -520,8 +520,8 @@ export async function calculateFacilityROI(facilityId) {
     const facility = await prisma.facility.findUnique({
       where: { id: facilityId },
       include: {
-        upgrades_history: true
-      }
+        upgrades_history: true,
+      },
     });
 
     if (!facility) {
@@ -551,15 +551,15 @@ export async function calculateFacilityROI(facilityId) {
     return {
       totalInvestment: Math.round(totalInvestment),
       monthlyBenefit: roundedMonthlyBenefit,
-      annualBenefit: annualBenefit,
+      annualBenefit,
       paybackPeriod: Math.round(paybackPeriod * 10) / 10,
       roiPercentage: Math.round(roiPercentage * 10) / 10,
       benefitBreakdown: {
         environmentalMitigation: Math.round(benefitBreakdown.environmentalMitigation),
         horseHealthImprovement: Math.round(benefitBreakdown.horseHealthImprovement),
         trainingEfficiency: Math.round(benefitBreakdown.trainingEfficiency),
-        maintenanceReduction: Math.round(benefitBreakdown.maintenanceReduction)
-      }
+        maintenanceReduction: Math.round(benefitBreakdown.maintenanceReduction),
+      },
     };
 
   } catch (error) {
@@ -586,8 +586,8 @@ function getUpgradeSpecifications() {
       benefits: {
         trainingEffectiveness: 0.20, // +20% per level
         specializedMethods: true, // Unlock specialized training
-        description: 'Improves training effectiveness and unlocks specialized training methods'
-      }
+        description: 'Improves training effectiveness and unlocks specialized training methods',
+      },
     },
     recovery_center: {
       name: 'Recovery Center',
@@ -599,8 +599,8 @@ function getUpgradeSpecifications() {
       benefits: {
         stressRecovery: 0.50, // +50% faster stress recovery per level
         trainingFrequency: 0.25, // +25% more frequent training per level
-        description: 'Accelerates horse recovery and enables more frequent training'
-      }
+        description: 'Accelerates horse recovery and enables more frequent training',
+      },
     },
     specialized_grounds: {
       name: 'Specialized Training Grounds',
@@ -612,8 +612,8 @@ function getUpgradeSpecifications() {
       benefits: {
         disciplineBonus: 0.15, // +15% bonus for chosen disciplines per level
         unlockSpecialized: true, // Unlock discipline-specific training
-        description: 'Provides discipline-specific training bonuses for chosen specializations'
-      }
+        description: 'Provides discipline-specific training bonuses for chosen specializations',
+      },
     },
     automated_care: {
       name: 'Automated Care Systems',
@@ -625,8 +625,8 @@ function getUpgradeSpecifications() {
       benefits: {
         careCostReduction: 0.40, // -40% daily care costs per level
         groomCostReduction: 0.30, // -30% groom labor costs per level
-        description: 'Reduces daily care and groom labor costs through automation'
-      }
+        description: 'Reduces daily care and groom labor costs through automation',
+      },
     },
     medical_center: {
       name: 'Medical Center',
@@ -639,8 +639,8 @@ function getUpgradeSpecifications() {
         vetCostReduction: 0.60, // -60% veterinary costs per level
         injuryRecovery: 0.50, // +50% faster injury recovery per level
         preventiveCare: 0.25, // +25% injury prevention per level
-        description: 'Reduces veterinary costs, speeds recovery, and provides preventive care'
-      }
+        description: 'Reduces veterinary costs, speeds recovery, and provides preventive care',
+      },
     },
     feed_laboratory: {
       name: 'Specialized Feed Laboratory',
@@ -653,8 +653,8 @@ function getUpgradeSpecifications() {
         specializedFeeds: true, // Unlock specialized feed creation
         statBoostChance: 0.05, // 5% chance per level for stat increases from feeds
         feedEffectiveness: 0.25, // +25% feed effectiveness per level
-        description: 'Create specialized feeds with stat-boosting properties and enhanced effectiveness'
-      }
+        description: 'Create specialized feeds with stat-boosting properties and enhanced effectiveness',
+      },
     },
     breeding_optimization: {
       name: 'Breeding Optimization Lab',
@@ -666,8 +666,8 @@ function getUpgradeSpecifications() {
       benefits: {
         positiveTraitChance: 0.30, // +30% chance for positive trait expression per level
         traitOptimization: true, // Optimize breeding for desired traits
-        description: 'Increases positive trait expression and optimizes breeding outcomes (breeding always succeeds when horses are healthy)'
-      }
+        description: 'Increases positive trait expression and optimizes breeding outcomes (breeding always succeeds when horses are healthy)',
+      },
     },
     genetic_analysis: {
       name: 'Genetic Analysis Center',
@@ -680,8 +680,8 @@ function getUpgradeSpecifications() {
         geneticInsight: true, // See detailed genetic potential before breeding
         breedingOptimization: true, // Optimize pairings for best outcomes
         hiddenTraitDetection: 0.50, // +50% chance to detect hidden traits per level
-        description: 'Provides detailed genetic analysis and breeding optimization'
-      }
+        description: 'Provides detailed genetic analysis and breeding optimization',
+      },
     },
     foal_development: {
       name: 'Foal Development Center',
@@ -693,8 +693,8 @@ function getUpgradeSpecifications() {
       benefits: {
         foalDevelopmentBonus: 0.25, // +25% foal development bonuses per level
         earlyCareBonus: 0.30, // +30% early care effectiveness per level
-        description: 'Enhances foal development and early care outcomes'
-      }
+        description: 'Enhances foal development and early care outcomes',
+      },
     },
     stable_management: {
       name: 'Stable Management System',
@@ -707,8 +707,8 @@ function getUpgradeSpecifications() {
         batchOperations: true, // Enable batch operations
         autoScheduling: true, // Automatic scheduling features
         micromanagementReduction: 0.40, // -40% time spent on routine tasks per level
-        description: 'Reduces micromanagement through batch operations and auto-scheduling'
-      }
+        description: 'Reduces micromanagement through batch operations and auto-scheduling',
+      },
     },
     competition_hosting: {
       name: 'Competition Hosting Facility',
@@ -721,8 +721,8 @@ function getUpgradeSpecifications() {
         hostingRevenue: 3000, // Base hosting revenue per event per level
         attractBetterHorses: true, // Attract higher quality horses for sale
         prestigeBonus: 0.20, // +20% prestige gain per level
-        description: 'Enables hosting competitions, earning fees, and attracting quality horses'
-      }
+        description: 'Enables hosting competitions, earning fees, and attracting quality horses',
+      },
     },
     prestige_stable: {
       name: 'Prestige Stable',
@@ -735,8 +735,8 @@ function getUpgradeSpecifications() {
         prizeMoney: 0.20, // +20% prize money from competitions per level
         sponsorshipDeals: true, // Attract sponsorship opportunities
         reputationBonus: 0.25, // +25% reputation gain per level
-        description: 'Increases prize money and attracts lucrative sponsorship deals'
-      }
+        description: 'Increases prize money and attracts lucrative sponsorship deals',
+      },
     },
     tack_workshop: {
       name: 'Tack & Equipment Workshop',
@@ -749,8 +749,8 @@ function getUpgradeSpecifications() {
         customTack: true, // Craft custom tack with stat bonuses
         equipmentCostReduction: 0.35, // -35% equipment costs per level
         tackBonuses: 0.10, // +10% tack effectiveness per level
-        description: 'Craft custom tack with bonuses and reduce equipment costs'
-      }
+        description: 'Craft custom tack with bonuses and reduce equipment costs',
+      },
     },
 
     visitor_center: {
@@ -764,9 +764,9 @@ function getUpgradeSpecifications() {
         passiveIncome: 500, // $500 passive income per month per level
         reputationGain: 0.30, // +30% reputation gain per level
         tourRevenue: 200, // Additional $200 per tour per level
-        description: 'Generates passive income from tours and increases stable reputation'
-      }
-    }
+        description: 'Generates passive income from tours and increases stable reputation',
+      },
+    },
   };
 }
 
@@ -787,7 +787,7 @@ function calculateMaterialsForLevel(upgradeType, level) {
     genetic_laboratory: ['advanced_lab_equipment', 'genetic_sequencers', 'specialized_software'],
     ai_optimization: ['ai_hardware', 'machine_learning_software', 'data_storage'],
     environmental_control: ['climate_systems', 'environmental_sensors', 'control_software'],
-    competition_hosting: ['event_infrastructure', 'timing_systems', 'spectator_facilities']
+    competition_hosting: ['event_infrastructure', 'timing_systems', 'spectator_facilities'],
   };
 
   const materials = baseMaterials[upgradeType] || ['basic_materials'];
@@ -801,13 +801,13 @@ function calculateMaterialsForLevel(upgradeType, level) {
     genetic_laboratory: 500,
     ai_optimization: 400,
     environmental_control: 175,
-    competition_hosting: 800
+    competition_hosting: 800,
   };
 
   return materials.map(material => ({
     type: material,
     quantity: level * 2,
-    cost: level * (costMultiplier[upgradeType] || 100)
+    cost: level * (costMultiplier[upgradeType] || 100),
   }));
 }
 
@@ -877,7 +877,7 @@ function calculateFacilityEffectiveness(upgrades) {
  */
 function calculateUpgradeEffectiveness(upgradeType, level) {
   const specs = getUpgradeSpecifications();
-  if (!specs[upgradeType]) return 0;
+  if (!specs[upgradeType]) { return 0; }
 
   return Math.min(100, level * specs[upgradeType].effectiveness * 20);
 }
@@ -888,7 +888,7 @@ function calculateUpgradeEffectiveness(upgradeType, level) {
  * @param {number} temperature - Current temperature
  * @returns {number} Mitigation percentage
  */
-function calculateTemperatureMitigation(upgrades, temperature) {
+function calculateTemperatureMitigation(upgrades, _temperature) {
   let mitigation = 20; // Base facility protection
 
   // Environmental Control provides comprehensive temperature management
@@ -917,7 +917,7 @@ function calculateTemperatureMitigation(upgrades, temperature) {
  * @param {number} humidity - Current humidity
  * @returns {number} Mitigation percentage
  */
-function calculateHumidityMitigation(upgrades, humidity) {
+function calculateHumidityMitigation(upgrades, _humidity) {
   let mitigation = 15; // Base facility protection
 
   // Environmental Control provides comprehensive humidity management
@@ -946,7 +946,7 @@ function calculateHumidityMitigation(upgrades, humidity) {
  * @param {number} windSpeed - Current wind speed
  * @returns {number} Mitigation percentage
  */
-function calculateWindMitigation(upgrades, windSpeed) {
+function calculateWindMitigation(upgrades, _windSpeed) {
   let mitigation = 50; // Base shelter provides some wind protection
 
   // Environmental Control provides wind resistance
@@ -1027,7 +1027,7 @@ function assessMaintenanceStatus(facility) {
     status,
     urgency,
     daysSinceMaintenance,
-    nextMaintenanceRecommended: daysSinceMaintenance > 30
+    nextMaintenanceRecommended: daysSinceMaintenance > 30,
   };
 }
 
@@ -1049,7 +1049,7 @@ function calculateEnvironmentalPerformance(upgrades) {
       security: 3,
       automation: 9,
       climate_control: 12,
-      air_filtration: 10
+      air_filtration: 10,
     };
 
     score += (contribution[upgradeType] || 5) * level;
@@ -1091,7 +1091,7 @@ function generateEffectivenessRecommendations(facility, upgradeEffectiveness) {
         upgradeType,
         currentEffectiveness: effectiveness,
         recommendation: `Consider upgrading ${upgradeType} system for better performance`,
-        priority: effectiveness < 40 ? 'high' : 'medium'
+        priority: effectiveness < 40 ? 'high' : 'medium',
       });
     }
   });
@@ -1102,7 +1102,7 @@ function generateEffectivenessRecommendations(facility, upgradeEffectiveness) {
       type: 'missing_upgrade',
       upgradeType: 'ventilation',
       recommendation: 'Improve ventilation for better air quality and humidity control',
-      priority: 'high'
+      priority: 'high',
     });
   }
 
@@ -1110,7 +1110,7 @@ function generateEffectivenessRecommendations(facility, upgradeEffectiveness) {
     recommendations.push({
       type: 'overall_improvement',
       recommendation: 'Overall facility effectiveness is below optimal - consider comprehensive upgrades',
-      priority: 'medium'
+      priority: 'medium',
     });
   }
 
@@ -1134,7 +1134,7 @@ function calculateUpgradeMaintenanceCost(upgradeType, level) {
     genetic_laboratory: 300,      // Advanced lab equipment maintenance
     ai_optimization: 200,         // AI system maintenance
     environmental_control: 70,    // Environmental system maintenance
-    competition_hosting: 250      // Event facility maintenance
+    competition_hosting: 250,      // Event facility maintenance
   };
 
   const baseCost = baseCosts[upgradeType] || 50;
@@ -1152,7 +1152,7 @@ async function generateFacilitySpecificRecommendations(facility, userMoney) {
     priority: [],
     costEffective: [],
     environmental: [],
-    maintenance: []
+    maintenance: [],
   };
 
   const upgrades = facility.upgrades || {};
@@ -1178,7 +1178,7 @@ async function generateFacilitySpecificRecommendations(facility, userMoney) {
           cost: cost.totalCost,
           benefit,
           priority,
-          reasoning: generateUpgradeReasoning(upgradeType, currentLevel, facility)
+          reasoning: generateUpgradeReasoning(upgradeType, currentLevel, facility),
         };
 
         recommendations.priority.push(recommendation);
@@ -1203,7 +1203,7 @@ async function generateFacilitySpecificRecommendations(facility, userMoney) {
       urgency: maintenanceStatus.urgency,
       daysSince: maintenanceStatus.daysSinceMaintenance,
       recommendation: 'Schedule facility maintenance',
-      priority: maintenanceStatus.urgency
+      priority: maintenanceStatus.urgency,
     });
   }
 
@@ -1218,19 +1218,19 @@ async function generateFacilitySpecificRecommendations(facility, userMoney) {
 function calculateFacilityBenefits(facility) {
   const upgrades = facility.upgrades || {};
   const specs = getUpgradeSpecifications();
-  let benefits = {
+  const benefits = {
     trainingEfficiencyBonus: 0,
     competitionPerformanceBonus: 0,
     costReductions: 0,
     recoverySpeedBonus: 0,
     breedingOptimizationBonus: 0,
-    hostingRevenue: 0
+    hostingRevenue: 0,
   };
 
   // Calculate benefits from each upgrade
   Object.entries(upgrades).forEach(([upgradeType, level]) => {
     const spec = specs[upgradeType];
-    if (!spec || !spec.benefits) return;
+    if (!spec || !spec.benefits) { return; }
 
     const upgradeBenefits = spec.benefits;
 
@@ -1287,10 +1287,10 @@ function calculateUpgradeBenefit(upgradeType, level) {
   const specs = getUpgradeSpecifications();
   const spec = specs[upgradeType];
 
-  if (!spec || !spec.benefits) return 100 * level;
+  if (!spec || !spec.benefits) { return 100 * level; }
 
   let monthlyBenefit = 0;
-  const benefits = spec.benefits;
+  const { benefits } = spec;
 
   // Training efficiency benefits
   if (benefits.trainingEffectiveness) {
@@ -1416,7 +1416,7 @@ function generateUpgradeReasoning(upgradeType, currentLevel, facility) {
       genetic_laboratory: `Adding Genetic Laboratory will unlock advanced breeding techniques and increase beneficial trait expression by ${spec.benefits.traitManipulation * 100}%`,
       ai_optimization: `Installing AI Optimization will enable automatic training scheduling and boost efficiency by ${spec.benefits.trainingEfficiency * 100}%`,
       environmental_control: `Adding Environmental Control will provide ${spec.benefits.weatherProtection * 100}% weather protection with automatic management`,
-      competition_hosting: `Installing Competition Hosting Facility will generate $${spec.benefits.hostingRevenue} per event and boost prestige by ${spec.benefits.prestigeBonus * 100}%`
+      competition_hosting: `Installing Competition Hosting Facility will generate $${spec.benefits.hostingRevenue} per event and boost prestige by ${spec.benefits.prestigeBonus * 100}%`,
     };
 
     return reasoningMap[upgradeType] || `Adding ${spec.name} will provide significant gameplay advantages`;

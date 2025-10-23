@@ -1,6 +1,6 @@
 /**
  * Environment Validation Script for CI/CD Pipeline
- * 
+ *
  * This script validates the environment configuration including:
  * - Required environment variables
  * - Database connection string format
@@ -9,7 +9,7 @@
  * - Package dependencies
  */
 
-import { execSync } from 'child_process';
+// execSync removed - not used in this file
 import fs from 'fs/promises';
 import path from 'path';
 import { fileURLToPath } from 'url';
@@ -23,16 +23,16 @@ const ENV_CONFIG = {
     'DATABASE_URL',
     'JWT_SECRET',
     'JWT_REFRESH_SECRET',
-    'NODE_ENV'
+    'NODE_ENV',
   ],
   optionalVars: [
     'PORT',
     'REDIS_URL',
     'LOG_LEVEL',
-    'CORS_ORIGIN'
+    'CORS_ORIGIN',
   ],
   nodeVersionMin: '18.0.0',
-  jwtSecretMinLength: 32
+  jwtSecretMinLength: 32,
 };
 
 /**
@@ -40,14 +40,14 @@ const ENV_CONFIG = {
  */
 function validateNodeVersion() {
   console.log('🔍 Validating Node.js version...');
-  
+
   const currentVersion = process.version;
   const requiredVersion = ENV_CONFIG.nodeVersionMin;
-  
+
   // Simple version comparison (assumes semantic versioning)
   const current = currentVersion.slice(1).split('.').map(Number);
   const required = requiredVersion.split('.').map(Number);
-  
+
   let isValid = false;
   for (let i = 0; i < 3; i++) {
     if (current[i] > required[i]) {
@@ -57,7 +57,7 @@ function validateNodeVersion() {
       break;
     }
     // If equal, continue to next part
-    if (i === 2) isValid = true;
+    if (i === 2) { isValid = true; }
   }
 
   if (isValid) {
@@ -65,7 +65,7 @@ function validateNodeVersion() {
     return {
       valid: true,
       current: currentVersion,
-      required: requiredVersion
+      required: requiredVersion,
     };
   } else {
     console.error(`❌ Node.js version ${currentVersion} does not meet requirement (>= ${requiredVersion})`);
@@ -73,7 +73,7 @@ function validateNodeVersion() {
       valid: false,
       current: currentVersion,
       required: requiredVersion,
-      error: `Node.js version ${currentVersion} is below required ${requiredVersion}`
+      error: `Node.js version ${currentVersion} is below required ${requiredVersion}`,
     };
   }
 }
@@ -83,12 +83,12 @@ function validateNodeVersion() {
  */
 function validateEnvironmentVariables() {
   console.log('🔍 Validating environment variables...');
-  
+
   const results = {
     valid: true,
     required: {},
     optional: {},
-    errors: []
+    errors: [],
   };
 
   // Check required variables
@@ -97,13 +97,13 @@ function validateEnvironmentVariables() {
     if (value) {
       results.required[varName] = {
         present: true,
-        length: value.length
+        length: value.length,
       };
       console.log(`✅ ${varName}: Present (${value.length} characters)`);
     } else {
       results.required[varName] = {
         present: false,
-        error: 'Missing required environment variable'
+        error: 'Missing required environment variable',
       };
       results.errors.push(`Missing required environment variable: ${varName}`);
       results.valid = false;
@@ -117,12 +117,12 @@ function validateEnvironmentVariables() {
     if (value) {
       results.optional[varName] = {
         present: true,
-        value: varName === 'PORT' ? value : '[REDACTED]'
+        value: varName === 'PORT' ? value : '[REDACTED]',
       };
       console.log(`ℹ️ ${varName}: Present`);
     } else {
       results.optional[varName] = {
-        present: false
+        present: false,
       };
       console.log(`⚪ ${varName}: Not set (optional)`);
     }
@@ -136,22 +136,22 @@ function validateEnvironmentVariables() {
  */
 function validateJwtSecrets() {
   console.log('🔍 Validating JWT secrets...');
-  
+
   const results = {
     valid: true,
     secrets: {},
-    errors: []
+    errors: [],
   };
 
   const secretVars = ['JWT_SECRET', 'JWT_REFRESH_SECRET'];
 
   for (const varName of secretVars) {
     const secret = process.env[varName];
-    
+
     if (!secret) {
       results.secrets[varName] = {
         present: false,
-        error: 'Secret not found'
+        error: 'Secret not found',
       };
       results.errors.push(`${varName} is missing`);
       results.valid = false;
@@ -159,7 +159,7 @@ function validateJwtSecrets() {
       continue;
     }
 
-    const length = secret.length;
+    const { length } = secret;
     const hasUppercase = /[A-Z]/.test(secret);
     const hasLowercase = /[a-z]/.test(secret);
     const hasNumbers = /[0-9]/.test(secret);
@@ -177,8 +177,8 @@ function validateJwtSecrets() {
         hasUppercase,
         hasLowercase,
         hasNumbers,
-        hasSpecialChars
-      }
+        hasSpecialChars,
+      },
     };
 
     if (isStrong) {
@@ -198,20 +198,20 @@ function validateJwtSecrets() {
  */
 function validateDatabaseUrl() {
   console.log('🔍 Validating database URL...');
-  
+
   const databaseUrl = process.env.DATABASE_URL;
-  
+
   if (!databaseUrl) {
     console.error('❌ DATABASE_URL: Missing');
     return {
       valid: false,
-      error: 'DATABASE_URL environment variable is missing'
+      error: 'DATABASE_URL environment variable is missing',
     };
   }
 
   try {
     const url = new URL(databaseUrl);
-    
+
     const isPostgres = url.protocol === 'postgresql:' || url.protocol === 'postgres:';
     const hasHost = !!url.hostname;
     const hasDatabase = !!url.pathname && url.pathname !== '/';
@@ -220,7 +220,7 @@ function validateDatabaseUrl() {
     const isValid = isPostgres && hasHost && hasDatabase;
 
     if (isValid) {
-      console.log(`✅ DATABASE_URL: Valid PostgreSQL connection string`);
+      console.log('✅ DATABASE_URL: Valid PostgreSQL connection string');
       console.log(`   Host: ${url.hostname}:${url.port || 5432}`);
       console.log(`   Database: ${url.pathname.slice(1)}`);
       console.log(`   User: ${url.username || 'not specified'}`);
@@ -239,15 +239,15 @@ function validateDatabaseUrl() {
         isPostgres,
         hasHost,
         hasDatabase,
-        hasCredentials
-      }
+        hasCredentials,
+      },
     };
 
   } catch (error) {
     console.error(`❌ DATABASE_URL: Invalid URL format - ${error.message}`);
     return {
       valid: false,
-      error: `Invalid URL format: ${error.message}`
+      error: `Invalid URL format: ${error.message}`,
     };
   }
 }
@@ -257,15 +257,15 @@ function validateDatabaseUrl() {
  */
 async function validateDependencies() {
   console.log('🔍 Validating package dependencies...');
-  
+
   try {
     const packageJsonPath = path.resolve(__dirname, '../package.json');
     const packageJson = JSON.parse(await fs.readFile(packageJsonPath, 'utf8'));
-    
+
     // Check if node_modules exists
     const nodeModulesPath = path.resolve(__dirname, '../node_modules');
     let nodeModulesExists = false;
-    
+
     try {
       await fs.access(nodeModulesPath);
       nodeModulesExists = true;
@@ -293,14 +293,14 @@ async function validateDependencies() {
       productionDependencies: prodDeps,
       developmentDependencies: devDeps,
       packageName: packageJson.name,
-      packageVersion: packageJson.version
+      packageVersion: packageJson.version,
     };
 
   } catch (error) {
     console.error(`❌ Dependencies: Error reading package.json - ${error.message}`);
     return {
       valid: false,
-      error: error.message
+      error: error.message,
     };
   }
 }
@@ -310,11 +310,11 @@ async function validateDependencies() {
  */
 async function validateModuleConfiguration() {
   console.log('🔍 Validating module configuration...');
-  
+
   try {
     const packageJsonPath = path.resolve(__dirname, '../package.json');
     const packageJson = JSON.parse(await fs.readFile(packageJsonPath, 'utf8'));
-    
+
     const isESModule = packageJson.type === 'module';
     const hasMainField = !!packageJson.main;
     const mainFile = packageJson.main;
@@ -336,14 +336,14 @@ async function validateModuleConfiguration() {
       isESModule,
       hasMainField,
       mainFile,
-      moduleType: isESModule ? 'module' : 'commonjs'
+      moduleType: isESModule ? 'module' : 'commonjs',
     };
 
   } catch (error) {
     console.error(`❌ Module configuration: Error - ${error.message}`);
     return {
       valid: false,
-      error: error.message
+      error: error.message,
     };
   }
 }
@@ -360,7 +360,7 @@ async function validateEnvironment() {
     valid: true,
     checks: {},
     errors: [],
-    warnings: []
+    warnings: [],
   };
 
   try {
@@ -389,7 +389,7 @@ async function validateEnvironment() {
     console.log('\n📋 Environment Validation Summary');
     console.log('=================================');
     console.log(`Overall Status: ${results.valid ? 'VALID' : 'INVALID'}`);
-    
+
     Object.entries(results.checks).forEach(([checkName, check]) => {
       const statusIcon = check.valid ? '✅' : '❌';
       console.log(`${statusIcon} ${checkName}: ${check.valid ? 'PASSED' : 'FAILED'}`);
@@ -442,12 +442,12 @@ if (import.meta.url === `file://${process.argv[1]}`) {
   runEnvironmentValidation();
 }
 
-export { 
-  validateEnvironment, 
-  validateNodeVersion, 
-  validateEnvironmentVariables, 
-  validateJwtSecrets, 
+export {
+  validateEnvironment,
+  validateNodeVersion,
+  validateEnvironmentVariables,
+  validateJwtSecrets,
   validateDatabaseUrl,
   validateDependencies,
-  validateModuleConfiguration 
+  validateModuleConfiguration,
 };

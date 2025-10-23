@@ -1,9 +1,9 @@
 /**
  * Flag Effect Integration Tests
- * 
+ *
  * Tests integration of epigenetic flag effects with competition system and breeding outcomes.
  * Uses TDD approach with NO MOCKING - real database operations for authentic validation.
- * 
+ *
  * Business Rules Tested:
  * - Flag effects on competition performance bonuses/penalties
  * - Flag effects on stress resistance and bonding
@@ -14,12 +14,12 @@
  */
 
 import prisma from '../../../packages/database/prismaClient.mjs';
-import { 
+import {
   calculateFlagEffects,
   applyFlagEffectsToCompetition,
   applyFlagEffectsToTraining,
   applyFlagEffectsToBreeding,
-  resolveFlagConflicts
+  resolveFlagConflicts,
 } from '../../services/flagEffectIntegration.mjs';
 
 describe('Flag Effect Integration', () => {
@@ -104,17 +104,17 @@ describe('Flag Effect Integration', () => {
 
   describe('calculateFlagEffects', () => {
     test('should calculate cumulative effects for positive flags', async () => {
-      const horse = testHorses[0]; // Positive flags: brave, confident, affectionate
-      
+      const [horse] = testHorses; // Positive flags: brave, confident, affectionate
+
       const effects = await calculateFlagEffects(horse);
-      
+
       expect(effects).toBeDefined();
       expect(effects.competitionBonuses).toBeDefined();
       expect(effects.stressModifiers).toBeDefined();
       expect(effects.bondingModifiers).toBeDefined();
       expect(effects.trainingModifiers).toBeDefined();
       expect(effects.breedingModifiers).toBeDefined();
-      
+
       // Should have positive effects
       expect(effects.stressModifiers.stressReduction).toBeGreaterThan(0);
       expect(effects.bondingModifiers.bondingBonus).toBeGreaterThan(0);
@@ -122,12 +122,13 @@ describe('Flag Effect Integration', () => {
     });
 
     test('should calculate cumulative effects for negative flags', async () => {
+      // eslint-disable-next-line prefer-destructuring
       const horse = testHorses[1]; // Negative flags: fearful, insecure, reactive
-      
+
       const effects = await calculateFlagEffects(horse);
-      
+
       expect(effects).toBeDefined();
-      
+
       // Should have negative effects
       expect(effects.stressModifiers.stressIncrease).toBeGreaterThan(0);
       expect(effects.bondingModifiers.bondingDifficulty).toBeGreaterThan(0);
@@ -135,10 +136,11 @@ describe('Flag Effect Integration', () => {
     });
 
     test('should handle conflicting flags appropriately', async () => {
+      // eslint-disable-next-line prefer-destructuring
       const horse = testHorses[2]; // Mixed flags: brave, social, reactive
-      
+
       const effects = await calculateFlagEffects(horse);
-      
+
       expect(effects).toBeDefined();
       expect(effects.conflictResolution).toBeDefined();
       expect(effects.conflictResolution.conflictsDetected).toBeDefined();
@@ -146,10 +148,11 @@ describe('Flag Effect Integration', () => {
     });
 
     test('should return neutral effects for horses with no flags', async () => {
+      // eslint-disable-next-line prefer-destructuring
       const horse = testHorses[3]; // No flags
-      
+
       const effects = await calculateFlagEffects(horse);
-      
+
       expect(effects).toBeDefined();
       expect(effects.competitionBonuses).toEqual({});
       expect(effects.competitionPenalties).toEqual({});
@@ -160,15 +163,15 @@ describe('Flag Effect Integration', () => {
 
   describe('applyFlagEffectsToCompetition', () => {
     test('should apply positive flag effects to competition performance', async () => {
-      const horse = testHorses[0]; // Positive flags
+      const [horse] = testHorses; // Positive flags
       const basePerformance = {
         discipline: 'showJumping',
         baseScore: 100,
         stats: { speed: 50, agility: 60, balance: 55 },
       };
-      
+
       const result = await applyFlagEffectsToCompetition(horse, basePerformance);
-      
+
       expect(result).toBeDefined();
       expect(result.modifiedScore).toBeGreaterThan(basePerformance.baseScore);
       expect(result.flagEffectsApplied).toBeDefined();
@@ -177,15 +180,16 @@ describe('Flag Effect Integration', () => {
     });
 
     test('should apply negative flag effects to competition performance', async () => {
+      // eslint-disable-next-line prefer-destructuring
       const horse = testHorses[1]; // Negative flags
       const basePerformance = {
         discipline: 'dressage',
         baseScore: 100,
         stats: { precision: 50, intelligence: 60, focus: 55 },
       };
-      
+
       const result = await applyFlagEffectsToCompetition(horse, basePerformance);
-      
+
       expect(result).toBeDefined();
       expect(result.modifiedScore).toBeLessThan(basePerformance.baseScore);
       expect(result.flagEffectsApplied).toBeDefined();
@@ -193,29 +197,29 @@ describe('Flag Effect Integration', () => {
     });
 
     test('should handle discipline-specific flag effects', async () => {
-      const horse = testHorses[0]; // Brave, confident, affectionate
-      
+      const [horse] = testHorses; // Brave, confident, affectionate
+
       // Test show jumping (should benefit from brave flag)
       const showJumpingPerformance = {
         discipline: 'showJumping',
         baseScore: 100,
         stats: { speed: 50, agility: 60, balance: 55 },
       };
-      
+
       const showJumpingResult = await applyFlagEffectsToCompetition(horse, showJumpingPerformance);
-      
+
       // Test dressage (should benefit from confident flag)
       const dressagePerformance = {
         discipline: 'dressage',
         baseScore: 100,
         stats: { precision: 50, intelligence: 60, focus: 55 },
       };
-      
+
       const dressageResult = await applyFlagEffectsToCompetition(horse, dressagePerformance);
-      
+
       expect(showJumpingResult.modifiedScore).toBeGreaterThan(100);
       expect(dressageResult.modifiedScore).toBeGreaterThan(100);
-      
+
       // Both should have positive effects but potentially different magnitudes
       expect(showJumpingResult.totalBonus).toBeGreaterThan(0);
       expect(dressageResult.totalBonus).toBeGreaterThan(0);
@@ -224,16 +228,16 @@ describe('Flag Effect Integration', () => {
 
   describe('applyFlagEffectsToTraining', () => {
     test('should apply flag effects to training effectiveness', async () => {
-      const horse = testHorses[0]; // Positive flags
+      const [horse] = testHorses; // Positive flags
       const trainingSession = {
         discipline: 'showJumping',
         baseEffectiveness: 1.0,
         duration: 60,
         groomPersonality: 'calm',
       };
-      
+
       const result = await applyFlagEffectsToTraining(horse, trainingSession);
-      
+
       expect(result).toBeDefined();
       expect(result.modifiedEffectiveness).toBeGreaterThan(trainingSession.baseEffectiveness);
       expect(result.flagEffectsApplied).toBeDefined();
@@ -242,6 +246,7 @@ describe('Flag Effect Integration', () => {
     });
 
     test('should reduce training effectiveness for negative flags', async () => {
+      // eslint-disable-next-line prefer-destructuring
       const horse = testHorses[1]; // Negative flags
       const trainingSession = {
         discipline: 'dressage',
@@ -249,9 +254,9 @@ describe('Flag Effect Integration', () => {
         duration: 60,
         groomPersonality: 'energetic',
       };
-      
+
       const result = await applyFlagEffectsToTraining(horse, trainingSession);
-      
+
       expect(result).toBeDefined();
       expect(result.modifiedEffectiveness).toBeLessThan(trainingSession.baseEffectiveness);
       expect(result.stressImpact).toBeGreaterThan(0); // More stress
@@ -260,9 +265,10 @@ describe('Flag Effect Integration', () => {
 
   describe('applyFlagEffectsToBreeding', () => {
     test('should apply flag effects to breeding trait probabilities', async () => {
-      const mare = testHorses[0]; // Positive flags
+      const [mare] = testHorses; // Positive flags
+      // eslint-disable-next-line prefer-destructuring
       const stallion = testHorses[3]; // No flags (control)
-      
+
       const breedingOutcome = {
         baseTraitProbabilities: {
           confident: 0.3,
@@ -271,25 +277,26 @@ describe('Flag Effect Integration', () => {
           social: 0.25,
         },
       };
-      
+
       const result = await applyFlagEffectsToBreeding(mare, stallion, breedingOutcome);
-      
+
       expect(result).toBeDefined();
       expect(result.modifiedTraitProbabilities).toBeDefined();
       expect(result.flagInfluences).toBeDefined();
-      
+
       // Positive flags should increase probability of positive traits
       expect(result.modifiedTraitProbabilities.confident).toBeGreaterThan(breedingOutcome.baseTraitProbabilities.confident);
       expect(result.modifiedTraitProbabilities.brave).toBeGreaterThan(breedingOutcome.baseTraitProbabilities.brave);
-      
+
       // Should decrease probability of negative traits
       expect(result.modifiedTraitProbabilities.fearful).toBeLessThan(breedingOutcome.baseTraitProbabilities.fearful);
     });
 
     test('should handle breeding between horses with conflicting flags', async () => {
-      const mare = testHorses[0]; // Positive flags
+      const [mare] = testHorses; // Positive flags
+      // eslint-disable-next-line prefer-destructuring
       const stallion = testHorses[1]; // Negative flags
-      
+
       const breedingOutcome = {
         baseTraitProbabilities: {
           confident: 0.3,
@@ -298,19 +305,19 @@ describe('Flag Effect Integration', () => {
           insecure: 0.1,
         },
       };
-      
+
       const result = await applyFlagEffectsToBreeding(mare, stallion, breedingOutcome);
-      
+
       expect(result).toBeDefined();
       expect(result.conflictResolution).toBeDefined();
       expect(result.conflictResolution.method).toBeDefined();
-      
+
       // Should show balanced effects from conflicting parents
       const totalPositiveChange = (result.modifiedTraitProbabilities.confident - breedingOutcome.baseTraitProbabilities.confident) +
                                   (result.modifiedTraitProbabilities.brave - breedingOutcome.baseTraitProbabilities.brave);
       const totalNegativeChange = (result.modifiedTraitProbabilities.fearful - breedingOutcome.baseTraitProbabilities.fearful) +
                                   (result.modifiedTraitProbabilities.insecure - breedingOutcome.baseTraitProbabilities.insecure);
-      
+
       // Effects should be moderated due to conflicting parents
       expect(Math.abs(totalPositiveChange)).toBeLessThan(0.3);
       expect(Math.abs(totalNegativeChange)).toBeLessThan(0.3);
@@ -320,15 +327,15 @@ describe('Flag Effect Integration', () => {
   describe('resolveFlagConflicts', () => {
     test('should identify and resolve flag conflicts', async () => {
       const conflictingFlags = ['brave', 'fearful', 'confident', 'insecure'];
-      
+
       const resolution = await resolveFlagConflicts(conflictingFlags);
-      
+
       expect(resolution).toBeDefined();
       expect(resolution.conflictsDetected).toBeDefined();
       expect(resolution.conflictsDetected.length).toBeGreaterThan(0);
       expect(resolution.resolutionMethod).toBeDefined();
       expect(resolution.resolvedEffects).toBeDefined();
-      
+
       // Should identify brave vs fearful and confident vs insecure conflicts
       const conflicts = resolution.conflictsDetected;
       expect(conflicts.some(c => c.flags.includes('brave') && c.flags.includes('fearful'))).toBe(true);
@@ -337,9 +344,9 @@ describe('Flag Effect Integration', () => {
 
     test('should handle no conflicts gracefully', async () => {
       const nonConflictingFlags = ['brave', 'confident', 'social'];
-      
+
       const resolution = await resolveFlagConflicts(nonConflictingFlags);
-      
+
       expect(resolution).toBeDefined();
       expect(resolution.conflictsDetected).toEqual([]);
       expect(resolution.resolutionMethod).toBe('none_needed');

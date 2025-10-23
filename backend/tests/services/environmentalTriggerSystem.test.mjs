@@ -1,9 +1,9 @@
 /**
  * Environmental Trigger System Tests
- * 
+ *
  * Tests comprehensive environmental factors that trigger epigenetic trait expression.
  * Uses TDD approach with NO MOCKING - real database operations for authentic validation.
- * 
+ *
  * Business Rules Tested:
  * - Environmental factor detection and classification
  * - Trigger threshold calculations and accumulation
@@ -16,7 +16,7 @@
  */
 
 import prisma from '../../../packages/database/prismaClient.mjs';
-import { 
+import {
   detectEnvironmentalTriggers,
   calculateTriggerThresholds,
   evaluateTraitExpressionProbability,
@@ -24,7 +24,7 @@ import {
   analyzeStressEnvironmentTriggers,
   trackCumulativeExposure,
   assessCriticalPeriodSensitivity,
-  generateEnvironmentalReport
+  generateEnvironmentalReport,
 } from '../../services/environmentalTriggerSystem.mjs';
 
 describe('Environmental Trigger System', () => {
@@ -142,8 +142,8 @@ describe('Environmental Trigger System', () => {
 
   describe('detectEnvironmentalTriggers', () => {
     test('should detect environmental triggers from interaction patterns', async () => {
-      const horse = testHorses[0]; // Young foal
-      
+      const [horse] = testHorses; // Young foal
+
       // Create interactions with environmental factors
       await Promise.all([
         prisma.groomInteraction.create({
@@ -177,7 +177,7 @@ describe('Environmental Trigger System', () => {
       ]);
 
       const triggers = await detectEnvironmentalTriggers(horse.id);
-      
+
       expect(triggers).toBeDefined();
       expect(triggers.horseId).toBe(horse.id);
       expect(triggers.detectedTriggers).toBeDefined();
@@ -185,25 +185,27 @@ describe('Environmental Trigger System', () => {
       expect(triggers.triggerStrength).toBeDefined();
       expect(triggers.environmentalFactors).toBeDefined();
       expect(triggers.analysisWindow).toBeDefined();
-      
+
       // Should detect stress-inducing environmental factors
       expect(triggers.detectedTriggers.length).toBeGreaterThan(0);
       expect(triggers.triggerStrength).toBeGreaterThan(0);
     });
 
     test('should handle horses with no environmental exposure', async () => {
+      // eslint-disable-next-line prefer-destructuring
       const horse = testHorses[1]; // Older foal with no interactions
-      
+
       const triggers = await detectEnvironmentalTriggers(horse.id);
-      
+
       expect(triggers.detectedTriggers).toEqual([]);
       expect(triggers.triggerStrength).toBe(0);
       expect(triggers.environmentalFactors).toEqual([]);
     });
 
     test('should detect multiple environmental trigger types', async () => {
+      // eslint-disable-next-line prefer-destructuring
       const horse = testHorses[2]; // Stressed foal
-      
+
       // Create diverse environmental interactions
       await Promise.all([
         prisma.groomInteraction.create({
@@ -235,7 +237,7 @@ describe('Environmental Trigger System', () => {
       ]);
 
       const triggers = await detectEnvironmentalTriggers(horse.id);
-      
+
       expect(triggers.detectedTriggers.length).toBeGreaterThan(1);
       expect(triggers.environmentalFactors.length).toBeGreaterThan(1);
     });
@@ -243,31 +245,34 @@ describe('Environmental Trigger System', () => {
 
   describe('calculateTriggerThresholds', () => {
     test('should calculate age-appropriate trigger thresholds', async () => {
-      const youngHorse = testHorses[0];
+      const [youngHorse] = testHorses;
+      // eslint-disable-next-line prefer-destructuring
       const olderHorse = testHorses[1];
-      
+
       const youngThresholds = await calculateTriggerThresholds(youngHorse.id);
       const olderThresholds = await calculateTriggerThresholds(olderHorse.id);
-      
+
       expect(youngThresholds).toBeDefined();
       expect(olderThresholds).toBeDefined();
-      
+
       expect(youngThresholds.baseThreshold).toBeDefined();
       expect(youngThresholds.ageModifier).toBeDefined();
       expect(youngThresholds.stressModifier).toBeDefined();
       expect(youngThresholds.finalThreshold).toBeDefined();
-      
+
       // Younger horses should have lower thresholds (more sensitive)
       expect(youngThresholds.finalThreshold).toBeLessThan(olderThresholds.finalThreshold);
     });
 
     test('should apply stress-based threshold modifications', async () => {
+      // eslint-disable-next-line prefer-destructuring
       const stressedHorse = testHorses[2]; // High stress
+      // eslint-disable-next-line prefer-destructuring
       const calmHorse = testHorses[1]; // Lower stress
-      
+
       const stressedThresholds = await calculateTriggerThresholds(stressedHorse.id);
       const calmThresholds = await calculateTriggerThresholds(calmHorse.id);
-      
+
       // Stressed horses should have lower thresholds (more sensitive to triggers)
       expect(stressedThresholds.finalThreshold).toBeLessThan(calmThresholds.finalThreshold);
       expect(stressedThresholds.stressModifier).toBeLessThan(1.0);
@@ -276,8 +281,8 @@ describe('Environmental Trigger System', () => {
 
   describe('evaluateTraitExpressionProbability', () => {
     test('should calculate trait expression probability based on environmental exposure', async () => {
-      const horse = testHorses[0];
-      
+      const [horse] = testHorses;
+
       // Create environmental exposure
       await prisma.groomInteraction.create({
         data: {
@@ -294,7 +299,7 @@ describe('Environmental Trigger System', () => {
       });
 
       const probability = await evaluateTraitExpressionProbability(horse.id, 'confident');
-      
+
       expect(probability).toBeDefined();
       expect(probability.traitName).toBe('confident');
       expect(probability.baseProbability).toBeDefined();
@@ -303,20 +308,21 @@ describe('Environmental Trigger System', () => {
       expect(probability.stressModifier).toBeDefined();
       expect(probability.finalProbability).toBeDefined();
       expect(probability.expressionLikelihood).toBeDefined();
-      
+
       expect(probability.finalProbability).toBeGreaterThanOrEqual(0);
       expect(probability.finalProbability).toBeLessThanOrEqual(1);
     });
 
     test('should handle trait expression for different trait types', async () => {
+      // eslint-disable-next-line prefer-destructuring
       const horse = testHorses[2]; // Stressed horse
-      
+
       const fearfulProb = await evaluateTraitExpressionProbability(horse.id, 'fearful');
       const braveProb = await evaluateTraitExpressionProbability(horse.id, 'brave');
-      
+
       expect(fearfulProb.finalProbability).toBeDefined();
       expect(braveProb.finalProbability).toBeDefined();
-      
+
       // Stressed horse should have higher probability for fearful traits
       expect(fearfulProb.finalProbability).toBeGreaterThan(braveProb.finalProbability);
     });
@@ -324,10 +330,11 @@ describe('Environmental Trigger System', () => {
 
   describe('processSeasonalTriggers', () => {
     test('should process seasonal environmental triggers', async () => {
+      // eslint-disable-next-line prefer-destructuring
       const horse = testHorses[1];
-      
+
       const seasonalTriggers = await processSeasonalTriggers(horse.id, 'winter');
-      
+
       expect(seasonalTriggers).toBeDefined();
       expect(seasonalTriggers.season).toBe('winter');
       expect(seasonalTriggers.seasonalFactors).toBeDefined();
@@ -337,11 +344,11 @@ describe('Environmental Trigger System', () => {
     });
 
     test('should handle different seasonal variations', async () => {
-      const horse = testHorses[0];
-      
+      const [horse] = testHorses;
+
       const winterTriggers = await processSeasonalTriggers(horse.id, 'winter');
       const summerTriggers = await processSeasonalTriggers(horse.id, 'summer');
-      
+
       expect(winterTriggers.seasonalFactors).not.toEqual(summerTriggers.seasonalFactors);
       expect(winterTriggers.triggerModifications).toBeDefined();
       expect(summerTriggers.triggerModifications).toBeDefined();
@@ -350,8 +357,9 @@ describe('Environmental Trigger System', () => {
 
   describe('analyzeStressEnvironmentTriggers', () => {
     test('should analyze stress-based environmental triggers', async () => {
+      // eslint-disable-next-line prefer-destructuring
       const stressedHorse = testHorses[2];
-      
+
       // Create stress-inducing interactions
       await prisma.groomInteraction.create({
         data: {
@@ -368,14 +376,14 @@ describe('Environmental Trigger System', () => {
       });
 
       const stressTriggers = await analyzeStressEnvironmentTriggers(stressedHorse.id);
-      
+
       expect(stressTriggers).toBeDefined();
       expect(stressTriggers.stressLevel).toBeDefined();
       expect(stressTriggers.stressTriggers).toBeDefined();
       expect(Array.isArray(stressTriggers.stressTriggers)).toBe(true);
       expect(stressTriggers.triggerIntensity).toBeDefined();
       expect(stressTriggers.recommendedInterventions).toBeDefined();
-      
+
       expect(stressTriggers.stressLevel).toBeGreaterThan(5);
       expect(stressTriggers.stressTriggers.length).toBeGreaterThan(0);
     });
@@ -383,8 +391,9 @@ describe('Environmental Trigger System', () => {
 
   describe('trackCumulativeExposure', () => {
     test('should track cumulative environmental exposure over time', async () => {
+      // eslint-disable-next-line prefer-destructuring
       const horse = testHorses[1];
-      
+
       // Create multiple interactions over time
       for (let i = 0; i < 3; i++) {
         await prisma.groomInteraction.create({
@@ -404,14 +413,14 @@ describe('Environmental Trigger System', () => {
       }
 
       const exposure = await trackCumulativeExposure(horse.id);
-      
+
       expect(exposure).toBeDefined();
       expect(exposure.totalExposure).toBeDefined();
       expect(exposure.exposureByType).toBeDefined();
       expect(exposure.exposureTimeline).toBeDefined();
       expect(Array.isArray(exposure.exposureTimeline)).toBe(true);
       expect(exposure.cumulativeEffects).toBeDefined();
-      
+
       expect(exposure.totalExposure).toBeGreaterThan(0);
       expect(exposure.exposureTimeline.length).toBe(3);
     });
@@ -419,10 +428,10 @@ describe('Environmental Trigger System', () => {
 
   describe('assessCriticalPeriodSensitivity', () => {
     test('should assess critical period environmental sensitivity', async () => {
-      const youngHorse = testHorses[0]; // Very young foal
-      
+      const [youngHorse] = testHorses; // Very young foal
+
       const sensitivity = await assessCriticalPeriodSensitivity(youngHorse.id);
-      
+
       expect(sensitivity).toBeDefined();
       expect(sensitivity.currentAge).toBeDefined();
       expect(sensitivity.criticalPeriods).toBeDefined();
@@ -430,25 +439,26 @@ describe('Environmental Trigger System', () => {
       expect(sensitivity.sensitivityLevel).toBeDefined();
       expect(sensitivity.activeWindows).toBeDefined();
       expect(sensitivity.recommendations).toBeDefined();
-      
+
       // Young foal should be in critical period
       expect(sensitivity.sensitivityLevel).toBeGreaterThan(0.7);
       expect(sensitivity.activeWindows.length).toBeGreaterThan(0);
     });
 
     test('should show reduced sensitivity for older horses', async () => {
+      // eslint-disable-next-line prefer-destructuring
       const olderHorse = testHorses[1];
-      
+
       const sensitivity = await assessCriticalPeriodSensitivity(olderHorse.id);
-      
+
       expect(sensitivity.sensitivityLevel).toBeLessThan(0.8);
     });
   });
 
   describe('generateEnvironmentalReport', () => {
     test('should generate comprehensive environmental analysis report', async () => {
-      const horse = testHorses[0];
-      
+      const [horse] = testHorses;
+
       // Create some environmental interactions
       await prisma.groomInteraction.create({
         data: {
@@ -465,7 +475,7 @@ describe('Environmental Trigger System', () => {
       });
 
       const report = await generateEnvironmentalReport(horse.id);
-      
+
       expect(report).toBeDefined();
       expect(report.horseId).toBe(horse.id);
       expect(report.environmentalTriggers).toBeDefined();
@@ -476,7 +486,7 @@ describe('Environmental Trigger System', () => {
       expect(report.recommendations).toBeDefined();
       expect(Array.isArray(report.recommendations)).toBe(true);
       expect(report.reportTimestamp).toBeDefined();
-      
+
       expect(report.traitExpressionProbabilities.length).toBeGreaterThan(0);
     });
   });

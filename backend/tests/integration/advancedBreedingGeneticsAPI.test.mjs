@@ -1,9 +1,9 @@
 /**
  * Advanced Breeding Genetics API Integration Tests
- * 
+ *
  * Tests for API endpoints that integrate enhanced genetic probability calculations,
  * advanced lineage analysis, and genetic diversity tracking systems.
- * 
+ *
  * Testing Approach: TDD with NO MOCKING - Real API validation
  * Business Rules: Complete breeding genetics workflow integration
  */
@@ -12,7 +12,7 @@ import { describe, test, expect, beforeAll, afterAll, beforeEach, afterEach } fr
 import request from 'supertest';
 import app from '../../app.mjs';
 import prisma from '../../db/index.mjs';
-import logger from '../../utils/logger.mjs';
+import _logger from '../../utils/_logger.mjs';
 
 describe('🧬 Advanced Breeding Genetics API Integration', () => {
   let authToken;
@@ -30,7 +30,7 @@ describe('🧬 Advanced Breeding Genetics API Integration', () => {
         firstName: 'Genetics',
         lastName: 'TestUser',
         email: 'genetics@test.com',
-        password: 'TestPassword123!'
+        password: 'TestPassword123!',
       });
 
     testUser = userResponse.body.data?.user;
@@ -39,7 +39,7 @@ describe('🧬 Advanced Breeding Genetics API Integration', () => {
       .post('/api/auth/login')
       .send({
         email: 'genetics@test.com',
-        password: 'TestPassword123!'
+        password: 'TestPassword123!',
       });
 
     authToken = loginResponse.body.data?.token;
@@ -65,7 +65,7 @@ describe('🧬 Advanced Breeding Genetics API Integration', () => {
         name: 'Genetic Test Stallion',
         breedId: testBreed.id,
         sex: 'stallion',
-        age: 5
+        age: 5,
       });
 
     testStallion = stallionResponse.body;
@@ -77,7 +77,7 @@ describe('🧬 Advanced Breeding Genetics API Integration', () => {
         name: 'Genetic Test Mare',
         breedId: testBreed.id,
         sex: 'mare',
-        age: 4
+        age: 4,
       });
 
     testMare = mareResponse.body;
@@ -91,7 +91,7 @@ describe('🧬 Advanced Breeding Genetics API Integration', () => {
           name: 'Population Horse 1',
           breedId: testBreed.id,
           sex: 'stallion',
-          age: 6
+          age: 6,
         }),
       request(app)
         .post('/api/horses')
@@ -100,8 +100,8 @@ describe('🧬 Advanced Breeding Genetics API Integration', () => {
           name: 'Population Horse 2',
           breedId: testBreed.id,
           sex: 'mare',
-          age: 7
-        })
+          age: 7,
+        }),
     ]);
 
     testPopulation = [testStallion.data, testMare.data, ...additionalHorses.map(r => r.body.data)];
@@ -132,7 +132,7 @@ describe('🧬 Advanced Breeding Genetics API Integration', () => {
         .send({
           stallionId: testStallion.data.id,
           mareId: testMare.data.id,
-          includeLineage: true
+          includeLineage: true,
         });
 
       expect(response.status).toBe(200);
@@ -159,7 +159,7 @@ describe('🧬 Advanced Breeding Genetics API Integration', () => {
         .set('Authorization', `Bearer ${authToken}`)
         .send({
           stallionId: 99999,
-          mareId: testMare.data.id
+          mareId: testMare.data.id,
         });
 
       expect(response.status).toBe(404);
@@ -172,7 +172,7 @@ describe('🧬 Advanced Breeding Genetics API Integration', () => {
         .post('/api/breeding/genetic-probability')
         .send({
           stallionId: testStallion.data.id,
-          mareId: testMare.data.id
+          mareId: testMare.data.id,
         });
 
       expect(response.status).toBe(401);
@@ -219,7 +219,7 @@ describe('🧬 Advanced Breeding Genetics API Integration', () => {
         .set('Authorization', `Bearer ${authToken}`)
         .send({
           stallionId: testStallion.data.id,
-          mareId: testMare.data.id
+          mareId: testMare.data.id,
         });
 
       expect(response.status).toBe(200);
@@ -243,7 +243,7 @@ describe('🧬 Advanced Breeding Genetics API Integration', () => {
   describe('📊 Genetic Diversity Tracking API', () => {
     test('POST /api/genetics/population-analysis should analyze population genetics', async () => {
       const horseIds = testPopulation.map(h => h.id);
-      
+
       const response = await request(app)
         .post('/api/genetics/population-analysis')
         .set('Authorization', `Bearer ${authToken}`)
@@ -274,7 +274,7 @@ describe('🧬 Advanced Breeding Genetics API Integration', () => {
         .set('Authorization', `Bearer ${authToken}`)
         .send({
           stallionId: testStallion.data.id,
-          mareId: testMare.data.id
+          mareId: testMare.data.id,
         });
 
       expect(response.status).toBe(200);
@@ -320,7 +320,7 @@ describe('🧬 Advanced Breeding Genetics API Integration', () => {
 
     test('POST /api/genetics/optimal-breeding should recommend optimal breeding pairs', async () => {
       const horseIds = testPopulation.map(h => h.id);
-      
+
       const response = await request(app)
         .post('/api/genetics/optimal-breeding')
         .set('Authorization', `Bearer ${authToken}`)
@@ -336,6 +336,7 @@ describe('🧬 Advanced Breeding Genetics API Integration', () => {
       // Verify optimal pairs structure
       expect(Array.isArray(response.body.data.optimalPairs)).toBe(true);
       if (response.body.data.optimalPairs.length > 0) {
+        // eslint-disable-next-line prefer-destructuring
         const pair = response.body.data.optimalPairs[0];
         expect(pair).toHaveProperty('stallionId');
         expect(pair).toHaveProperty('mareId');
@@ -355,7 +356,7 @@ describe('🧬 Advanced Breeding Genetics API Integration', () => {
         { method: 'post', path: '/api/genetics/population-analysis' },
         { method: 'post', path: '/api/genetics/inbreeding-analysis' },
         { method: 'get', path: `/api/genetics/diversity-report/${testUser.id}` },
-        { method: 'post', path: '/api/genetics/optimal-breeding' }
+        { method: 'post', path: '/api/genetics/optimal-breeding' },
       ];
 
       for (const endpoint of endpoints) {
@@ -379,7 +380,7 @@ describe('🧬 Advanced Breeding Genetics API Integration', () => {
         .set('Authorization', `Bearer ${authToken}`)
         .send({
           stallionId: 'invalid',
-          mareId: 'invalid'
+          mareId: 'invalid',
         });
 
       expect(response2.status).toBe(400);
@@ -402,14 +403,14 @@ describe('🧬 Advanced Breeding Genetics API Integration', () => {
           email: 'other@test.com',
           password: 'TestPassword123!',
           firstName: 'Other',
-          lastName: 'User'
+          lastName: 'User',
         });
 
       const otherLoginResponse = await request(app)
         .post('/api/auth/login')
         .send({
           email: 'other@test.com',
-          password: 'TestPassword123!'
+          password: 'TestPassword123!',
         });
 
       const otherToken = otherLoginResponse.body.data?.token;
@@ -420,7 +421,7 @@ describe('🧬 Advanced Breeding Genetics API Integration', () => {
         .set('Authorization', `Bearer ${otherToken}`)
         .send({
           stallionId: testStallion.data.id,
-          mareId: testMare.data.id
+          mareId: testMare.data.id,
         });
 
       expect(response.status).toBe(403);

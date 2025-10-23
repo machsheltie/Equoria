@@ -1,9 +1,9 @@
 /**
  * Personality Evolution Controller
- * 
+ *
  * Handles API endpoints for personality evolution system including groom and horse personality development,
  * evolution triggers, stability analysis, and prediction capabilities.
- * 
+ *
  * Business Rules:
  * - Groom personalities evolve based on interaction patterns and experience
  * - Horse temperaments evolve based on care history and environmental factors
@@ -30,14 +30,14 @@ import {
 export async function evolveGroomPersonalityController(req, res) {
   try {
     const { groomId } = req.params;
-    
+
     logger.info(`[personalityEvolutionController.evolveGroomPersonalityController] Processing groom evolution for ID: ${groomId}`);
 
     const result = await evolveGroomPersonality(parseInt(groomId));
 
     res.status(200).json({
       success: true,
-      message: result.personalityEvolved 
+      message: result.personalityEvolved
         ? 'Groom personality evolution completed successfully'
         : 'Groom personality evolution not triggered',
       data: result,
@@ -60,14 +60,14 @@ export async function evolveGroomPersonalityController(req, res) {
 export async function evolveHorseTemperamentController(req, res) {
   try {
     const { horseId } = req.params;
-    
+
     logger.info(`[personalityEvolutionController.evolveHorseTemperamentController] Processing horse evolution for ID: ${horseId}`);
 
     const result = await evolveHorseTemperament(parseInt(horseId));
 
     res.status(200).json({
       success: true,
-      message: result.temperamentEvolved 
+      message: result.temperamentEvolved
         ? 'Horse temperament evolution completed successfully'
         : 'Horse temperament evolution not triggered',
       data: result,
@@ -90,7 +90,7 @@ export async function evolveHorseTemperamentController(req, res) {
 export async function getEvolutionTriggersController(req, res) {
   try {
     const { entityType, entityId } = req.params;
-    
+
     if (!['groom', 'horse'].includes(entityType)) {
       return res.status(400).json({
         success: false,
@@ -125,7 +125,7 @@ export async function getEvolutionTriggersController(req, res) {
 export async function getPersonalityStabilityController(req, res) {
   try {
     const { entityType, entityId } = req.params;
-    
+
     if (!['groom', 'horse'].includes(entityType)) {
       return res.status(400).json({
         success: false,
@@ -161,7 +161,7 @@ export async function predictPersonalityEvolutionController(req, res) {
   try {
     const { entityType, entityId } = req.params;
     const { timeframeDays = 30 } = req.query;
-    
+
     if (!['groom', 'horse'].includes(entityType)) {
       return res.status(400).json({
         success: false,
@@ -204,7 +204,7 @@ export async function predictPersonalityEvolutionController(req, res) {
 export async function getPersonalityEvolutionHistoryController(req, res) {
   try {
     const { entityType, entityId } = req.params;
-    
+
     if (!['groom', 'horse'].includes(entityType)) {
       return res.status(400).json({
         success: false,
@@ -239,11 +239,11 @@ export async function getPersonalityEvolutionHistoryController(req, res) {
 export async function applyPersonalityEvolutionEffectsController(req, res) {
   try {
     const evolutionData = req.body;
-    
+
     // Validate required fields
     const requiredFields = ['entityId', 'entityType', 'evolutionType'];
     const missingFields = requiredFields.filter(field => !evolutionData[field]);
-    
+
     if (missingFields.length > 0) {
       return res.status(400).json({
         success: false,
@@ -285,7 +285,7 @@ export async function applyPersonalityEvolutionEffectsController(req, res) {
 export async function batchEvolvePersonalitiesController(req, res) {
   try {
     const { entities } = req.body;
-    
+
     if (!Array.isArray(entities) || entities.length === 0) {
       return res.status(400).json({
         success: false,
@@ -296,7 +296,7 @@ export async function batchEvolvePersonalitiesController(req, res) {
     logger.info(`[personalityEvolutionController.batchEvolvePersonalitiesController] Processing batch evolution for ${entities.length} entities`);
 
     const results = [];
-    
+
     for (const entity of entities) {
       try {
         let result;
@@ -307,7 +307,7 @@ export async function batchEvolvePersonalitiesController(req, res) {
         } else {
           result = { success: false, error: 'Invalid entity type' };
         }
-        
+
         results.push({
           entityId: entity.entityId,
           entityType: entity.entityType,

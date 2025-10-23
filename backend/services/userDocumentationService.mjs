@@ -1,10 +1,10 @@
 /**
  * 📚 User Documentation Service
- * 
+ *
  * Service for managing and serving user-friendly documentation including
  * feature guides, strategy guides, troubleshooting guides, and FAQ sections.
  * Provides content management, search functionality, and analytics.
- * 
+ *
  * Features:
  * - Documentation content management and serving
  * - Search functionality across all documentation
@@ -33,7 +33,7 @@ class UserDocumentationService {
       popularSections: new Map(),
       lastUpdated: new Date().toISOString(),
     };
-    
+
     this.initializeDocumentation();
   }
 
@@ -62,13 +62,13 @@ class UserDocumentationService {
       }
 
       const files = readdirSync(this.docsPath);
-      
+
       for (const file of files) {
         if (extname(file) === '.md') {
           const filePath = join(this.docsPath, file);
           const content = readFileSync(filePath, 'utf8');
           const docName = file.replace('.md', '');
-          
+
           const document = {
             name: docName,
             title: this.extractTitle(content),
@@ -78,12 +78,12 @@ class UserDocumentationService {
             sections: this.extractSections(content),
             metadata: this.extractMetadata(content),
           };
-          
+
           this.contentCache.set(docName, document);
           logger.debug(`[UserDocService] Loaded document: ${docName}`);
         }
       }
-      
+
       logger.info(`[UserDocService] Loaded ${this.contentCache.size} documentation files`);
     } catch (error) {
       logger.error(`[UserDocService] Failed to load documents: ${error.message}`);
@@ -97,10 +97,10 @@ class UserDocumentationService {
   buildSearchIndex() {
     try {
       this.searchIndex.clear();
-      
+
       for (const [docName, document] of this.contentCache) {
         const words = this.extractSearchableWords(document.content);
-        
+
         for (const word of words) {
           if (!this.searchIndex.has(word)) {
             this.searchIndex.set(word, new Set());
@@ -108,7 +108,7 @@ class UserDocumentationService {
           this.searchIndex.get(word).add(docName);
         }
       }
-      
+
       logger.info(`[UserDocService] Built search index with ${this.searchIndex.size} terms`);
     } catch (error) {
       logger.error(`[UserDocService] Failed to build search index: ${error.message}`);
@@ -121,15 +121,15 @@ class UserDocumentationService {
   getDocument(docName) {
     try {
       const document = this.contentCache.get(docName);
-      
+
       if (!document) {
         logger.warn(`[UserDocService] Document not found: ${docName}`);
         return null;
       }
-      
+
       // Track view analytics
       this.trackView(docName);
-      
+
       return {
         ...document,
         viewCount: this.analytics.viewCounts.get(docName) || 0,
@@ -146,7 +146,7 @@ class UserDocumentationService {
   getAllDocuments() {
     try {
       const documents = [];
-      
+
       for (const [docName, document] of this.contentCache) {
         documents.push({
           name: docName,
@@ -157,7 +157,7 @@ class UserDocumentationService {
           viewCount: this.analytics.viewCounts.get(docName) || 0,
         });
       }
-      
+
       return documents.sort((a, b) => a.title.localeCompare(b.title));
     } catch (error) {
       logger.error(`[UserDocService] Failed to get all documents: ${error.message}`);
@@ -175,33 +175,33 @@ class UserDocumentationService {
         includeContent = false,
         highlightMatches = true,
       } = options;
-      
+
       // Track search analytics
       this.trackSearch(query);
-      
+
       const searchTerms = this.normalizeSearchQuery(query);
       const results = new Map();
-      
+
       // Find documents containing search terms
       for (const term of searchTerms) {
         const matchingDocs = this.searchIndex.get(term) || new Set();
-        
+
         for (const docName of matchingDocs) {
           if (!results.has(docName)) {
             results.set(docName, { score: 0, matches: [] });
           }
-          
+
           const result = results.get(docName);
           result.score += 1;
           result.matches.push(term);
         }
       }
-      
+
       // Sort by relevance score
       const sortedResults = Array.from(results.entries())
         .sort(([, a], [, b]) => b.score - a.score)
         .slice(0, limit);
-      
+
       // Format results
       const formattedResults = sortedResults.map(([docName, result]) => {
         const document = this.contentCache.get(docName);
@@ -212,16 +212,16 @@ class UserDocumentationService {
           matches: result.matches,
           sections: this.findMatchingSections(document, searchTerms),
         };
-        
+
         if (includeContent) {
-          searchResult.content = highlightMatches 
+          searchResult.content = highlightMatches
             ? this.highlightSearchTerms(document.content, searchTerms)
             : document.content;
         }
-        
+
         return searchResult;
       });
-      
+
       return {
         query,
         results: formattedResults,
@@ -246,15 +246,15 @@ class UserDocumentationService {
     try {
       const totalViews = Array.from(this.analytics.viewCounts.values())
         .reduce((sum, count) => sum + count, 0);
-      
+
       const popularDocs = Array.from(this.analytics.viewCounts.entries())
         .sort(([, a], [, b]) => b - a)
         .slice(0, 5);
-      
+
       const recentSearches = this.analytics.searchQueries
         .slice(-10)
         .reverse();
-      
+
       return {
         totalDocuments: this.contentCache.size,
         totalViews,
@@ -276,7 +276,7 @@ class UserDocumentationService {
   getTableOfContents() {
     try {
       const toc = [];
-      
+
       for (const [docName, document] of this.contentCache) {
         toc.push({
           name: docName,
@@ -288,7 +288,7 @@ class UserDocumentationService {
           })),
         });
       }
-      
+
       return toc;
     } catch (error) {
       logger.error(`[UserDocService] Failed to generate table of contents: ${error.message}`);
@@ -302,7 +302,7 @@ class UserDocumentationService {
   trackView(docName) {
     const currentCount = this.analytics.viewCounts.get(docName) || 0;
     this.analytics.viewCounts.set(docName, currentCount + 1);
-    
+
     // Update popular sections
     const sectionCount = this.analytics.popularSections.get(docName) || 0;
     this.analytics.popularSections.set(docName, sectionCount + 1);
@@ -316,7 +316,7 @@ class UserDocumentationService {
       query: query.toLowerCase(),
       timestamp: new Date().toISOString(),
     });
-    
+
     // Keep only last 1000 searches
     if (this.analytics.searchQueries.length > 1000) {
       this.analytics.searchQueries = this.analytics.searchQueries.slice(-1000);
@@ -337,7 +337,7 @@ class UserDocumentationService {
   extractSections(content) {
     const sections = [];
     const lines = content.split('\n');
-    
+
     for (const line of lines) {
       const headerMatch = line.match(/^(#{1,6})\s+(.+)$/);
       if (headerMatch) {
@@ -348,7 +348,7 @@ class UserDocumentationService {
         });
       }
     }
-    
+
     return sections;
   }
 
@@ -370,7 +370,7 @@ class UserDocumentationService {
    */
   countWords(content) {
     return content
-      .replace(/[#*`\[\]()]/g, '') // Remove markdown syntax
+      .replace(/[#*`[\]()]/g, '') // Remove markdown syntax
       .split(/\s+/)
       .filter(word => word.length > 0)
       .length;
@@ -381,21 +381,21 @@ class UserDocumentationService {
    */
   extractSearchableWords(content) {
     const words = new Set();
-    
+
     // Remove markdown syntax and extract words
     const cleanContent = content
-      .replace(/[#*`\[\]()]/g, ' ')
+      .replace(/[#*`[\]()]/g, ' ')
       .replace(/\n/g, ' ')
       .toLowerCase();
-    
+
     const wordMatches = cleanContent.match(/\b\w{3,}\b/g) || [];
-    
+
     for (const word of wordMatches) {
       if (word.length >= 3 && !this.isStopWord(word)) {
         words.add(word);
       }
     }
-    
+
     return words;
   }
 
@@ -419,7 +419,7 @@ class UserDocumentationService {
       'how', 'its', 'may', 'new', 'now', 'old', 'see', 'two', 'who', 'boy',
       'did', 'she', 'use', 'way', 'will', 'with', 'this', 'that', 'have',
     ]);
-    
+
     return stopWords.has(word);
   }
 
@@ -428,10 +428,10 @@ class UserDocumentationService {
    */
   findMatchingSections(document, searchTerms) {
     const matchingSections = [];
-    
+
     for (const section of document.sections) {
       const sectionText = section.title.toLowerCase();
-      
+
       for (const term of searchTerms) {
         if (sectionText.includes(term)) {
           matchingSections.push({
@@ -443,7 +443,7 @@ class UserDocumentationService {
         }
       }
     }
-    
+
     return matchingSections;
   }
 
@@ -452,12 +452,12 @@ class UserDocumentationService {
    */
   highlightSearchTerms(content, searchTerms) {
     let highlightedContent = content;
-    
+
     for (const term of searchTerms) {
       const regex = new RegExp(`\\b${term}\\b`, 'gi');
       highlightedContent = highlightedContent.replace(regex, `**${term}**`);
     }
-    
+
     return highlightedContent;
   }
 
@@ -481,7 +481,7 @@ class UserDocumentationService {
       this.loadAllDocuments();
       this.buildSearchIndex();
       this.analytics.lastUpdated = new Date().toISOString();
-      
+
       logger.info('[UserDocService] Documentation refreshed successfully');
       return true;
     } catch (error) {

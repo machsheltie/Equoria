@@ -1,6 +1,6 @@
 /**
  * 🧠 Memory and Resource Management Service
- * 
+ *
  * Comprehensive memory monitoring and resource management system for Node.js applications:
  * - Memory leak detection and monitoring
  * - Resource cleanup and lifecycle management
@@ -9,7 +9,7 @@
  * - Database connection pool management
  * - Event listener cleanup
  * - Timer and interval management
- * 
+ *
  * Features:
  * - Real-time memory usage tracking
  * - Automatic resource cleanup
@@ -26,7 +26,7 @@ import logger from '../utils/logger.mjs';
 class MemoryResourceManager extends EventEmitter {
   constructor(options = {}) {
     super();
-    
+
     this.options = {
       memoryThreshold: options.memoryThreshold || 500 * 1024 * 1024, // 500MB default
       gcInterval: options.gcInterval || 30000, // 30 seconds
@@ -37,7 +37,7 @@ class MemoryResourceManager extends EventEmitter {
       enableMemoryProfiling: options.enableMemoryProfiling !== false,
       ...options,
     };
-    
+
     this.metrics = {
       memoryUsage: [],
       gcEvents: [],
@@ -45,7 +45,7 @@ class MemoryResourceManager extends EventEmitter {
       performanceMarks: new Map(),
       alerts: [],
     };
-    
+
     this.resources = {
       timers: new Set(),
       intervals: new Set(),
@@ -53,11 +53,11 @@ class MemoryResourceManager extends EventEmitter {
       streams: new Set(),
       connections: new Set(),
     };
-    
+
     this.isMonitoring = false;
     this.monitoringTimer = null;
     this.gcTimer = null;
-    
+
     this.setupEventListeners();
   }
 
@@ -153,10 +153,10 @@ class MemoryResourceManager extends EventEmitter {
    */
   checkMemoryThresholds() {
     const current = this.metrics.memoryUsage[this.metrics.memoryUsage.length - 1];
-    if (!current) return;
+    if (!current) { return; }
 
     const alertThreshold = this.options.memoryThreshold * this.options.alertThreshold;
-    
+
     if (current.heapUsed > alertThreshold) {
       const alert = {
         type: 'memory_threshold',
@@ -171,7 +171,7 @@ class MemoryResourceManager extends EventEmitter {
 
       this.metrics.alerts.push(alert);
       this.emit('alert', alert);
-      
+
       logger.warn(`[MemoryManager] Memory threshold alert: ${Math.round(current.heapUsed / 1024 / 1024)}MB used`);
     }
   }
@@ -180,7 +180,7 @@ class MemoryResourceManager extends EventEmitter {
    * Detect potential memory leaks
    */
   detectMemoryLeaks() {
-    if (this.metrics.memoryUsage.length < 10) return;
+    if (this.metrics.memoryUsage.length < 10) { return; }
 
     const recent = this.metrics.memoryUsage.slice(-10);
     const trend = this.calculateMemoryTrend(recent);
@@ -200,7 +200,7 @@ class MemoryResourceManager extends EventEmitter {
 
       this.metrics.alerts.push(alert);
       this.emit('alert', alert);
-      
+
       logger.warn(`[MemoryManager] Potential memory leak detected: ${alert.data.growthRate}`);
     }
   }
@@ -219,7 +219,7 @@ class MemoryResourceManager extends EventEmitter {
     const sumXX = x.reduce((sum, xi) => sum + xi * xi, 0);
 
     const slope = (n * sumXY - sumX * sumY) / (n * sumXX - sumX * sumX);
-    
+
     // Calculate correlation coefficient
     const meanX = sumX / n;
     const meanY = sumY / n;
@@ -245,10 +245,10 @@ class MemoryResourceManager extends EventEmitter {
 
     try {
       global.gc();
-      
+
       const afterGC = process.memoryUsage();
       const duration = performance.now() - startTime;
-      
+
       const gcEvent = {
         timestamp: Date.now(),
         duration,
@@ -258,7 +258,7 @@ class MemoryResourceManager extends EventEmitter {
       };
 
       this.metrics.gcEvents.push(gcEvent);
-      
+
       // Keep only last 100 GC events
       if (this.metrics.gcEvents.length > 100) {
         this.metrics.gcEvents = this.metrics.gcEvents.slice(-100);
@@ -266,7 +266,7 @@ class MemoryResourceManager extends EventEmitter {
 
       logger.debug(`[MemoryManager] GC completed: freed ${Math.round(gcEvent.memoryFreed / 1024 / 1024)}MB in ${Math.round(duration)}ms`);
       this.emit('gc:completed', gcEvent);
-      
+
     } catch (error) {
       logger.error(`[MemoryManager] GC optimization failed: ${error.message}`);
     }
@@ -281,7 +281,7 @@ class MemoryResourceManager extends EventEmitter {
     }
 
     this.resources[type].add(resource);
-    
+
     // Store metadata for complex resources
     if (metadata && Object.keys(metadata).length > 0) {
       if (!this.resources.metadata) {
@@ -313,7 +313,7 @@ class MemoryResourceManager extends EventEmitter {
    */
   getResourceCounts() {
     const counts = {};
-    
+
     for (const [type, resources] of Object.entries(this.resources)) {
       if (type !== 'metadata') {
         counts[type] = resources.size;
@@ -442,12 +442,12 @@ class MemoryResourceManager extends EventEmitter {
   getReport() {
     const currentMetrics = this.collectMemoryMetrics();
     const resourceCounts = this.getResourceCounts();
-    
+
     return {
       timestamp: Date.now(),
       memory: {
         current: currentMetrics,
-        trend: this.metrics.memoryUsage.length > 1 ? 
+        trend: this.metrics.memoryUsage.length > 1 ?
           this.calculateMemoryTrend(this.metrics.memoryUsage.slice(-10)) : null,
         alerts: this.metrics.alerts.slice(-10),
       },
@@ -456,7 +456,7 @@ class MemoryResourceManager extends EventEmitter {
         tracked: Object.fromEntries(
           Object.entries(this.resources)
             .filter(([key]) => key !== 'metadata')
-            .map(([key, value]) => [key, value.size])
+            .map(([key, value]) => [key, value.size]),
         ),
       },
       gc: {

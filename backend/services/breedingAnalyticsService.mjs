@@ -1,6 +1,6 @@
 /**
  * Breeding Analytics Service
- * 
+ *
  * Provides breeding program analytics including lineage tracking,
  * trait inheritance patterns, breeding success rates, and foal development
  * for individual users' breeding programs.
@@ -21,7 +21,7 @@ export const breedingAnalyticsService = {
   async getBreedingAnalytics(userId) {
     // Verify user exists
     const user = await prisma.user.findUnique({
-      where: { id: userId }
+      where: { id: userId },
     });
 
     if (!user) {
@@ -33,8 +33,8 @@ export const breedingAnalyticsService = {
       where: { userId },
       include: {
         sire: true,
-        dam: true
-      }
+        dam: true,
+      },
     });
 
     // If no horses, return empty analytics
@@ -44,7 +44,7 @@ export const breedingAnalyticsService = {
 
     // Separate foals (horses with parents) from breeding stock
     const foals = userHorses.filter(horse => horse.sireId && horse.damId);
-    const breedingStock = userHorses.filter(horse => !horse.sireId && !horse.damId);
+    const _breedingStock = userHorses.filter(horse => !horse.sireId && !horse.damId);
 
     // Calculate analytics
     const breedingPairs = this.identifyBreedingPairs(foals);
@@ -58,7 +58,7 @@ export const breedingAnalyticsService = {
       traitInheritance,
       successMetrics,
       foalDevelopment,
-      parentComparison
+      parentComparison,
     };
   },
 
@@ -72,23 +72,23 @@ export const breedingAnalyticsService = {
       traitInheritance: {
         positiveTraits: {},
         negativeTraits: {},
-        inheritanceRates: {}
+        inheritanceRates: {},
       },
       successMetrics: {
         totalBreedings: 0,
         successfulBreedings: 0,
         successRate: 0,
-        averageFoalsPerBreeding: 0
+        averageFoalsPerBreeding: 0,
       },
       foalDevelopment: {
         totalFoals: 0,
-        averageStats: {}
+        averageStats: {},
       },
       parentComparison: {
         parentAverages: {},
         offspringAverages: {},
-        improvement: {}
-      }
+        improvement: {},
+      },
     };
   },
 
@@ -102,13 +102,13 @@ export const breedingAnalyticsService = {
 
     foals.forEach(foal => {
       const pairKey = `${foal.sireId}-${foal.damId}`;
-      
+
       if (!pairMap.has(pairKey)) {
         pairMap.set(pairKey, {
           stallion: foal.sire,
           mare: foal.dam,
           foals: [],
-          foalCount: 0
+          foalCount: 0,
         });
       }
 
@@ -132,16 +132,16 @@ export const breedingAnalyticsService = {
 
     foals.forEach(foal => {
       const modifiers = foal.epigeneticModifiers || { positive: [], negative: [] };
-      
+
       // Count positive traits
       (modifiers.positive || []).forEach(trait => {
-        if (!positiveTraits[trait]) positiveTraits[trait] = 0;
+        if (!positiveTraits[trait]) { positiveTraits[trait] = 0; }
         positiveTraits[trait]++;
       });
 
       // Count negative traits
       (modifiers.negative || []).forEach(trait => {
-        if (!negativeTraits[trait]) negativeTraits[trait] = 0;
+        if (!negativeTraits[trait]) { negativeTraits[trait] = 0; }
         negativeTraits[trait]++;
       });
     });
@@ -160,7 +160,7 @@ export const breedingAnalyticsService = {
     return {
       positiveTraits,
       negativeTraits,
-      inheritanceRates
+      inheritanceRates,
     };
   },
 
@@ -180,7 +180,7 @@ export const breedingAnalyticsService = {
       totalBreedings,
       successfulBreedings,
       successRate,
-      averageFoalsPerBreeding
+      averageFoalsPerBreeding,
     };
   },
 
@@ -191,11 +191,11 @@ export const breedingAnalyticsService = {
    */
   analyzeFoalDevelopment(foals) {
     const totalFoals = foals.length;
-    
+
     if (totalFoals === 0) {
       return {
         totalFoals: 0,
-        averageStats: {}
+        averageStats: {},
       };
     }
 
@@ -210,7 +210,7 @@ export const breedingAnalyticsService = {
       boldness: 0,
       flexibility: 0,
       obedience: 0,
-      focus: 0
+      focus: 0,
     };
 
     foals.forEach(foal => {
@@ -226,7 +226,7 @@ export const breedingAnalyticsService = {
 
     return {
       totalFoals,
-      averageStats
+      averageStats,
     };
   },
 
@@ -240,19 +240,19 @@ export const breedingAnalyticsService = {
       return {
         parentAverages: {},
         offspringAverages: {},
-        improvement: {}
+        improvement: {},
       };
     }
 
     // Get unique parents
     const parents = new Map();
     foals.forEach(foal => {
-      if (foal.sire) parents.set(foal.sire.id, foal.sire);
-      if (foal.dam) parents.set(foal.dam.id, foal.dam);
+      if (foal.sire) { parents.set(foal.sire.id, foal.sire); }
+      if (foal.dam) { parents.set(foal.dam.id, foal.dam); }
     });
 
     const parentArray = Array.from(parents.values());
-    
+
     // Calculate parent averages
     const parentAverages = this.calculateStatAverages(parentArray);
     const offspringAverages = this.calculateStatAverages(foals);
@@ -266,7 +266,7 @@ export const breedingAnalyticsService = {
     return {
       parentAverages,
       offspringAverages,
-      improvement
+      improvement,
     };
   },
 
@@ -276,7 +276,7 @@ export const breedingAnalyticsService = {
    * @returns {Object} Average stats
    */
   calculateStatAverages(horses) {
-    if (horses.length === 0) return {};
+    if (horses.length === 0) { return {}; }
 
     const statTotals = {
       speed: 0,
@@ -288,7 +288,7 @@ export const breedingAnalyticsService = {
       boldness: 0,
       flexibility: 0,
       obedience: 0,
-      focus: 0
+      focus: 0,
     };
 
     horses.forEach(horse => {
@@ -303,5 +303,5 @@ export const breedingAnalyticsService = {
     });
 
     return averages;
-  }
+  },
 };

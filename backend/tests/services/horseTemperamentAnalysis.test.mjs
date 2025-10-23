@@ -1,9 +1,9 @@
 /**
  * Horse Temperament Analysis Tests
- * 
+ *
  * Tests horse temperament analysis based on interaction history and flag patterns.
  * Uses TDD approach with NO MOCKING - real database operations for authentic validation.
- * 
+ *
  * Business Rules Tested:
  * - Temperament analysis from interaction patterns
  * - Flag-based temperament classification
@@ -14,13 +14,13 @@
  */
 
 import prisma from '../../../packages/database/prismaClient.mjs';
-import { 
+import {
   analyzeHorseTemperament,
   classifyTemperamentFromFlags,
   analyzeBehavioralTrends,
   identifyStressResponsePatterns,
   analyzeBondingPreferences,
-  detectTemperamentChanges
+  detectTemperamentChanges,
 } from '../../services/horseTemperamentAnalysis.mjs';
 
 describe('Horse Temperament Analysis', () => {
@@ -144,8 +144,8 @@ describe('Horse Temperament Analysis', () => {
 
   describe('analyzeHorseTemperament', () => {
     test('should analyze temperament for nervous horse with interaction history', async () => {
-      const nervousHorse = testHorses[0];
-      
+      const [nervousHorse] = testHorses;
+
       // Create interaction history showing nervous behavior
       await Promise.all([
         prisma.groomInteraction.create({
@@ -177,7 +177,7 @@ describe('Horse Temperament Analysis', () => {
       ]);
 
       const temperament = await analyzeHorseTemperament(nervousHorse.id);
-      
+
       expect(temperament).toBeDefined();
       expect(temperament.horseId).toBe(nervousHorse.id);
       expect(temperament.primaryTemperament).toBeDefined();
@@ -187,7 +187,7 @@ describe('Horse Temperament Analysis', () => {
       expect(temperament.stressResilience).toBeDefined();
       expect(temperament.socialTendency).toBeDefined();
       expect(temperament.adaptability).toBeDefined();
-      
+
       // Should identify nervous/reactive temperament
       expect(['nervous', 'reactive', 'sensitive'].includes(temperament.primaryTemperament)).toBe(true);
       expect(temperament.confidenceLevel).toBeLessThan(0.5);
@@ -195,8 +195,9 @@ describe('Horse Temperament Analysis', () => {
     });
 
     test('should analyze temperament for confident horse', async () => {
+      // eslint-disable-next-line prefer-destructuring
       const confidentHorse = testHorses[1];
-      
+
       // Create interaction history showing confident behavior
       await Promise.all([
         prisma.groomInteraction.create({
@@ -228,7 +229,7 @@ describe('Horse Temperament Analysis', () => {
       ]);
 
       const temperament = await analyzeHorseTemperament(confidentHorse.id);
-      
+
       expect(temperament.primaryTemperament).toBeDefined();
       expect(['confident', 'bold', 'outgoing'].includes(temperament.primaryTemperament)).toBe(true);
       expect(temperament.confidenceLevel).toBeGreaterThan(0.6);
@@ -237,10 +238,11 @@ describe('Horse Temperament Analysis', () => {
     });
 
     test('should analyze temperament for horse with no interaction history', async () => {
+      // eslint-disable-next-line prefer-destructuring
       const developingHorse = testHorses[3];
-      
+
       const temperament = await analyzeHorseTemperament(developingHorse.id);
-      
+
       expect(temperament).toBeDefined();
       expect(temperament.primaryTemperament).toBe('developing');
       expect(temperament.dataSource).toBe('basic_stats'); // No flags, so uses basic stats
@@ -251,24 +253,24 @@ describe('Horse Temperament Analysis', () => {
   describe('classifyTemperamentFromFlags', () => {
     test('should classify temperament from positive flags', async () => {
       const flags = ['brave', 'confident', 'social'];
-      
+
       const classification = await classifyTemperamentFromFlags(flags);
-      
+
       expect(classification).toBeDefined();
       expect(classification.primaryTemperament).toBeDefined();
       expect(classification.temperamentTraits).toBeDefined();
       expect(Array.isArray(classification.temperamentTraits)).toBe(true);
       expect(classification.confidence).toBeGreaterThan(0.7);
-      
+
       // Should identify confident/outgoing temperament
       expect(['confident', 'bold', 'outgoing'].includes(classification.primaryTemperament)).toBe(true);
     });
 
     test('should classify temperament from negative flags', async () => {
       const flags = ['fearful', 'insecure', 'reactive'];
-      
+
       const classification = await classifyTemperamentFromFlags(flags);
-      
+
       expect(classification.primaryTemperament).toBeDefined();
       expect(['nervous', 'reactive', 'sensitive'].includes(classification.primaryTemperament)).toBe(true);
       expect(classification.confidence).toBeGreaterThan(0.6); // High confidence in clear negative pattern
@@ -276,9 +278,9 @@ describe('Horse Temperament Analysis', () => {
 
     test('should handle mixed flags appropriately', async () => {
       const flags = ['brave', 'reactive', 'social'];
-      
+
       const classification = await classifyTemperamentFromFlags(flags);
-      
+
       expect(classification.primaryTemperament).toBeDefined();
       expect(['complex', 'mixed', 'variable'].includes(classification.primaryTemperament)).toBe(true);
       expect(classification.confidence).toBeLessThan(0.8); // Lower confidence for mixed signals
@@ -286,9 +288,9 @@ describe('Horse Temperament Analysis', () => {
 
     test('should handle empty flags array', async () => {
       const flags = [];
-      
+
       const classification = await classifyTemperamentFromFlags(flags);
-      
+
       expect(classification.primaryTemperament).toBe('undetermined');
       expect(classification.confidence).toBeLessThan(0.3);
     });
@@ -296,8 +298,9 @@ describe('Horse Temperament Analysis', () => {
 
   describe('analyzeBehavioralTrends', () => {
     test('should analyze behavioral trends over time', async () => {
+      // eslint-disable-next-line prefer-destructuring
       const horse = testHorses[2]; // Mixed temperament horse
-      
+
       // Create a series of interactions showing behavioral trends
       const interactions = [];
       for (let i = 0; i < 5; i++) {
@@ -319,14 +322,14 @@ describe('Horse Temperament Analysis', () => {
       }
 
       const trends = await analyzeBehavioralTrends(horse.id);
-      
+
       expect(trends).toBeDefined();
       expect(trends.bondingTrend).toBeDefined();
       expect(trends.stressTrend).toBeDefined();
       expect(trends.qualityTrend).toBeDefined();
       expect(trends.overallDirection).toBeDefined();
       expect(trends.trendStrength).toBeDefined();
-      
+
       // Should detect improving trends
       expect(trends.bondingTrend).toBe('improving');
       expect(trends.stressTrend).toBe('improving'); // Stress decreasing is improving
@@ -337,10 +340,10 @@ describe('Horse Temperament Analysis', () => {
 
   describe('identifyStressResponsePatterns', () => {
     test('should identify stress response patterns', async () => {
-      const horse = testHorses[0]; // Nervous horse
-      
+      const [horse] = testHorses; // Nervous horse
+
       const patterns = await identifyStressResponsePatterns(horse.id);
-      
+
       expect(patterns).toBeDefined();
       expect(patterns.stressThreshold).toBeDefined();
       expect(patterns.recoveryRate).toBeDefined();
@@ -348,7 +351,7 @@ describe('Horse Temperament Analysis', () => {
       expect(Array.isArray(patterns.triggerFactors)).toBe(true);
       expect(patterns.copingMechanisms).toBeDefined();
       expect(patterns.responseType).toBeDefined();
-      
+
       // Should identify high stress sensitivity
       expect(patterns.stressThreshold).toBeLessThan(0.6);
       expect(['high_sensitivity', 'reactive', 'anxious'].includes(patterns.responseType)).toBe(true);
@@ -357,10 +360,11 @@ describe('Horse Temperament Analysis', () => {
 
   describe('analyzeBondingPreferences', () => {
     test('should analyze bonding preferences', async () => {
+      // eslint-disable-next-line prefer-destructuring
       const horse = testHorses[1]; // Confident horse
-      
+
       const preferences = await analyzeBondingPreferences(horse.id);
-      
+
       expect(preferences).toBeDefined();
       expect(preferences.preferredGroomTypes).toBeDefined();
       expect(Array.isArray(preferences.preferredGroomTypes)).toBe(true);
@@ -368,7 +372,7 @@ describe('Horse Temperament Analysis', () => {
       expect(preferences.bondingSpeed).toBeDefined();
       expect(preferences.socialNature).toBeDefined();
       expect(preferences.trustLevel).toBeDefined();
-      
+
       // Should show preferences based on interaction history
       expect(preferences.bondingSpeed).toBeGreaterThan(0.5);
       expect(preferences.socialNature).toBeGreaterThan(0.5);
@@ -377,8 +381,9 @@ describe('Horse Temperament Analysis', () => {
 
   describe('detectTemperamentChanges', () => {
     test('should detect temperament changes over time', async () => {
+      // eslint-disable-next-line prefer-destructuring
       const horse = testHorses[3]; // Developing horse
-      
+
       // Create interactions showing temperament development
       await Promise.all([
         prisma.groomInteraction.create({
@@ -412,14 +417,14 @@ describe('Horse Temperament Analysis', () => {
       ]);
 
       const changes = await detectTemperamentChanges(horse.id);
-      
+
       expect(changes).toBeDefined();
       expect(changes.changeDetected).toBeDefined();
       expect(changes.changeDirection).toBeDefined();
       expect(changes.changeStrength).toBeDefined();
       expect(changes.timeframe).toBeDefined();
       expect(changes.contributingFactors).toBeDefined();
-      
+
       if (changes.changeDetected) {
         expect(['positive', 'negative', 'neutral'].includes(changes.changeDirection)).toBe(true);
         expect(changes.changeStrength).toBeGreaterThan(0);

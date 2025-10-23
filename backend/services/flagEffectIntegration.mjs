@@ -1,9 +1,9 @@
 /**
  * Flag Effect Integration Service
- * 
+ *
  * Integrates epigenetic flag effects with competition system, training, and breeding outcomes.
  * Handles cumulative effects, conflict resolution, and discipline-specific bonuses/penalties.
- * 
+ *
  * Business Rules:
  * - Flags provide bonuses/penalties to specific disciplines
  * - Cumulative effects from multiple flags
@@ -24,7 +24,7 @@ import { EPIGENETIC_FLAG_DEFINITIONS, flagsConflict } from '../config/epigenetic
 export async function calculateFlagEffects(horse) {
   try {
     const flags = horse.epigeneticFlags || [];
-    
+
     if (flags.length === 0) {
       return {
         competitionBonuses: {},
@@ -39,7 +39,7 @@ export async function calculateFlagEffects(horse) {
 
     // Detect and resolve conflicts
     const conflictResolution = await resolveFlagConflicts(flags);
-    
+
     // Calculate cumulative effects
     const competitionBonuses = {};
     const competitionPenalties = {};
@@ -51,9 +51,9 @@ export async function calculateFlagEffects(horse) {
     // Process each flag
     for (const flagName of flags) {
       const flagDef = EPIGENETIC_FLAG_DEFINITIONS[flagName.toUpperCase()];
-      if (!flagDef || !flagDef.influences) continue;
+      if (!flagDef || !flagDef.influences) { continue; }
 
-      const influences = flagDef.influences;
+      const { influences } = flagDef;
       const behaviorModifiers = influences.behaviorModifiers || {};
       const traitWeightModifiers = influences.traitWeightModifiers || {};
 
@@ -84,20 +84,20 @@ export async function calculateFlagEffects(horse) {
       }
 
       // Apply stress modifiers from behavior modifiers
-      if (behaviorModifiers.stressReduction) stressModifiers.stressReduction += behaviorModifiers.stressReduction;
-      if (behaviorModifiers.stressIncrease) stressModifiers.stressIncrease += behaviorModifiers.stressIncrease;
-      if (behaviorModifiers.stressResistance) stressModifiers.stressResistance += behaviorModifiers.stressResistance;
-      if (behaviorModifiers.stressVulnerability) stressModifiers.stressIncrease += behaviorModifiers.stressVulnerability;
+      if (behaviorModifiers.stressReduction) { stressModifiers.stressReduction += behaviorModifiers.stressReduction; }
+      if (behaviorModifiers.stressIncrease) { stressModifiers.stressIncrease += behaviorModifiers.stressIncrease; }
+      if (behaviorModifiers.stressResistance) { stressModifiers.stressResistance += behaviorModifiers.stressResistance; }
+      if (behaviorModifiers.stressVulnerability) { stressModifiers.stressIncrease += behaviorModifiers.stressVulnerability; }
 
       // Apply bonding modifiers
-      if (behaviorModifiers.bondingBonus) bondingModifiers.bondingBonus += behaviorModifiers.bondingBonus;
-      if (behaviorModifiers.bondingDifficulty) bondingModifiers.bondingDifficulty += behaviorModifiers.bondingDifficulty;
-      if (behaviorModifiers.bondingSpeed) bondingModifiers.bondingSpeed += behaviorModifiers.bondingSpeed;
+      if (behaviorModifiers.bondingBonus) { bondingModifiers.bondingBonus += behaviorModifiers.bondingBonus; }
+      if (behaviorModifiers.bondingDifficulty) { bondingModifiers.bondingDifficulty += behaviorModifiers.bondingDifficulty; }
+      if (behaviorModifiers.bondingSpeed) { bondingModifiers.bondingSpeed += behaviorModifiers.bondingSpeed; }
 
       // Apply training modifiers
-      if (behaviorModifiers.trainingEfficiency) trainingModifiers.effectiveness += behaviorModifiers.trainingEfficiency;
-      if (behaviorModifiers.trainingEffectiveness) trainingModifiers.effectiveness += behaviorModifiers.trainingEffectiveness;
-      if (behaviorModifiers.adaptability) trainingModifiers.adaptability += behaviorModifiers.adaptability;
+      if (behaviorModifiers.trainingEfficiency) { trainingModifiers.effectiveness += behaviorModifiers.trainingEfficiency; }
+      if (behaviorModifiers.trainingEffectiveness) { trainingModifiers.effectiveness += behaviorModifiers.trainingEffectiveness; }
+      if (behaviorModifiers.adaptability) { trainingModifiers.adaptability += behaviorModifiers.adaptability; }
 
       // Add default training bonuses for positive flags
       if (flagDef.type === 'positive') {
@@ -164,7 +164,7 @@ export async function applyFlagEffectsToCompetition(horse, basePerformance) {
   try {
     const flagEffects = await calculateFlagEffects(horse);
     const { discipline, baseScore } = basePerformance;
-    
+
     let modifiedScore = baseScore;
     const flagEffectsApplied = [];
     let totalBonus = 0;
@@ -233,8 +233,8 @@ export async function applyFlagEffectsToCompetition(horse, basePerformance) {
 export async function applyFlagEffectsToTraining(horse, trainingSession) {
   try {
     const flagEffects = await calculateFlagEffects(horse);
-    const { baseEffectiveness, discipline, groomPersonality } = trainingSession;
-    
+    const { baseEffectiveness, _discipline, groomPersonality } = trainingSession;
+
     let modifiedEffectiveness = baseEffectiveness;
     const flagEffectsApplied = [];
     let stressImpact = 0;
@@ -279,7 +279,7 @@ export async function applyFlagEffectsToTraining(horse, trainingSession) {
 
     // Calculate stress impact from training
     stressImpact = flagEffects.stressModifiers.stressIncrease - flagEffects.stressModifiers.stressReduction;
-    
+
     // Calculate bonding impact
     bondingImpact = flagEffects.bondingModifiers.bondingBonus - flagEffects.bondingModifiers.bondingDifficulty;
 
@@ -293,7 +293,7 @@ export async function applyFlagEffectsToTraining(horse, trainingSession) {
       // For negative compatibility, apply a smaller penalty to not override flag benefits
       modifiedEffectiveness *= Math.max(0.9, personalityCompatibility);
     }
-    
+
     if (personalityCompatibility !== 1.0) {
       flagEffectsApplied.push({
         type: 'personality_compatibility',
@@ -362,7 +362,7 @@ export async function applyFlagEffectsToBreeding(mare, stallion, breedingOutcome
     Object.entries(combinedTraitModifiers).forEach(([trait, modifier]) => {
       if (modifiedTraitProbabilities[trait] !== undefined) {
         modifiedTraitProbabilities[trait] = Math.max(0, Math.min(1,
-          modifiedTraitProbabilities[trait] + modifier
+          modifiedTraitProbabilities[trait] + modifier,
         ));
       } else {
         // Add new trait probability if it doesn't exist in base
@@ -402,7 +402,7 @@ export async function applyFlagEffectsToBreeding(mare, stallion, breedingOutcome
     };
 
   } catch (error) {
-    logger.error(`Error applying flag effects to breeding:`, error);
+    logger.error('Error applying flag effects to breeding:', error);
     throw error;
   }
 }
@@ -444,9 +444,7 @@ export async function resolveFlagConflicts(flags) {
     const maxSeverity = Math.max(...conflictsDetected.map(c => c.severity));
     let resolutionMethod;
 
-    if (maxSeverity >= 0.8) resolutionMethod = 'dominant_flag';
-    else if (maxSeverity >= 0.5) resolutionMethod = 'partial_cancellation';
-    else resolutionMethod = 'minor_reduction';
+    if (maxSeverity >= 0.8) { resolutionMethod = 'dominant_flag'; } else if (maxSeverity >= 0.5) { resolutionMethod = 'partial_cancellation'; } else { resolutionMethod = 'minor_reduction'; }
 
     const resolvedEffects = calculateResolvedEffects(conflictsDetected, resolutionMethod);
 
@@ -469,7 +467,7 @@ export async function resolveFlagConflicts(flags) {
 function applyConflictAdjustments(conflictResolution, effects) {
   const { resolutionMethod, conflictsDetected } = conflictResolution;
 
-  if (resolutionMethod === 'none_needed') return;
+  if (resolutionMethod === 'none_needed') { return; }
 
   const reductionFactor = getReductionFactor(resolutionMethod, conflictsDetected.length);
 
@@ -500,31 +498,31 @@ function applyConflictAdjustments(conflictResolution, effects) {
  * Calculate groom personality compatibility with horse flags
  */
 function calculateGroomPersonalityCompatibility(flags, groomPersonality) {
-  if (!flags || flags.length === 0) return 1.0;
+  if (!flags || flags.length === 0) { return 1.0; }
 
   let compatibilityScore = 1.0;
 
   // Calm grooms work well with fearful/reactive horses
   if (groomPersonality === 'calm') {
-    if (flags.includes('fearful')) compatibilityScore += 0.2;
-    if (flags.includes('reactive')) compatibilityScore += 0.15;
-    if (flags.includes('insecure')) compatibilityScore += 0.1;
+    if (flags.includes('fearful')) { compatibilityScore += 0.2; }
+    if (flags.includes('reactive')) { compatibilityScore += 0.15; }
+    if (flags.includes('insecure')) { compatibilityScore += 0.1; }
   }
 
   // Energetic grooms work well with confident/brave horses
   if (groomPersonality === 'energetic') {
-    if (flags.includes('brave')) compatibilityScore += 0.15;
-    if (flags.includes('confident')) compatibilityScore += 0.1;
-    if (flags.includes('curious')) compatibilityScore += 0.2;
+    if (flags.includes('brave')) { compatibilityScore += 0.15; }
+    if (flags.includes('confident')) { compatibilityScore += 0.1; }
+    if (flags.includes('curious')) { compatibilityScore += 0.2; }
     // But may stress fearful horses
-    if (flags.includes('fearful')) compatibilityScore -= 0.1;
-    if (flags.includes('fragile')) compatibilityScore -= 0.15;
+    if (flags.includes('fearful')) { compatibilityScore -= 0.1; }
+    if (flags.includes('fragile')) { compatibilityScore -= 0.15; }
   }
 
   // Methodical grooms provide consistent care for all
   if (groomPersonality === 'methodical') {
     compatibilityScore += 0.05; // Small bonus for all horses
-    if (flags.includes('insecure')) compatibilityScore += 0.1; // Extra for insecure horses
+    if (flags.includes('insecure')) { compatibilityScore += 0.1; } // Extra for insecure horses
   }
 
   return Math.max(0.5, Math.min(1.5, compatibilityScore)); // Clamp between 50% and 150%

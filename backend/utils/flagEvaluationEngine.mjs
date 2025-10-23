@@ -96,7 +96,7 @@ export async function evaluateHorseFlags(horseId, evaluationDate = new Date()) {
     const flagEvaluations = [];
     const newFlags = [];
 
-    for (const [flagKey, flagDef] of Object.entries(EPIGENETIC_FLAG_DEFINITIONS)) {
+    for (const [_flagKey, flagDef] of Object.entries(EPIGENETIC_FLAG_DEFINITIONS)) {
       // Skip if horse already has this flag
       if (currentFlags.includes(flagDef.name)) {
         continue;
@@ -160,8 +160,8 @@ export async function evaluateHorseFlags(horseId, evaluationDate = new Date()) {
 function evaluateFlagTriggers(flagDefinition, carePatterns) {
   const conditions = flagDefinition.triggerConditions;
   const evaluationResults = {};
-  const totalScore = 0;
-  const maxScore = 0;
+  const _totalScore = 0;
+  const _maxScore = 0;
   let triggered = false;
 
   // Evaluate each trigger condition based on flag type

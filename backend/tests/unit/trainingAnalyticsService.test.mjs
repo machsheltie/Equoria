@@ -1,6 +1,6 @@
 /**
  * Training Analytics Service Tests
- * 
+ *
  * Tests for simple training history tracking without optimization.
  * Focuses on training session logs, stat progression, facility impact,
  * and discipline training balance using TDD with NO MOCKING approach.
@@ -25,16 +25,16 @@ describe('Training Analytics Service', () => {
         email: `training_${timestamp}@test.com`,
         password: 'test_password',
         firstName: 'Training',
-        lastName: 'Test'
-      }
+        lastName: 'Test',
+      },
     });
 
     // Create test breed
     testBreed = await prisma.breed.create({
       data: {
         name: 'Training Test Breed',
-        description: 'Test breed for training analytics'
-      }
+        description: 'Test breed for training analytics',
+      },
     });
 
     // Create test horse
@@ -55,8 +55,8 @@ describe('Training Analytics Service', () => {
         boldness: 66,
         flexibility: 54,
         obedience: 78,
-        focus: 69
-      }
+        focus: 69,
+      },
     });
 
     // Create test training history
@@ -68,8 +68,8 @@ describe('Training Analytics Service', () => {
         data: {
           horseId: testHorse.id,
           discipline: disciplines[i % disciplines.length],
-          trainedAt: new Date(Date.now() - (i * 7 * 24 * 60 * 60 * 1000)) // Weekly training
-        }
+          trainedAt: new Date(Date.now() - (i * 7 * 24 * 60 * 60 * 1000)), // Weekly training
+        },
       });
       testTrainingHistory.push(training);
     }
@@ -79,17 +79,17 @@ describe('Training Analytics Service', () => {
     // Clean up test data
     if (testUser) {
       await prisma.trainingLog.deleteMany({
-        where: { horseId: testHorse?.id }
+        where: { horseId: testHorse?.id },
       });
       await prisma.horse.deleteMany({
-        where: { userId: testUser.id }
+        where: { userId: testUser.id },
       });
       await prisma.user.delete({
-        where: { id: testUser.id }
+        where: { id: testUser.id },
       });
       if (testBreed) {
         await prisma.breed.delete({
-          where: { id: testBreed.id }
+          where: { id: testBreed.id },
         });
       }
     }
@@ -106,6 +106,7 @@ describe('Training Analytics Service', () => {
       expect(analytics.trainingHistory.length).toBe(12);
 
       // Check training session data structure
+      // eslint-disable-next-line prefer-destructuring
       const session = analytics.trainingHistory[0];
       expect(session.discipline).toBeDefined();
       expect(session.trainedAt).toBeDefined();
@@ -117,7 +118,7 @@ describe('Training Analytics Service', () => {
 
       const dates = analytics.trainingHistory.map(session => new Date(session.trainedAt));
       for (let i = 1; i < dates.length; i++) {
-        expect(dates[i-1].getTime()).toBeGreaterThanOrEqual(dates[i].getTime());
+        expect(dates[i - 1].getTime()).toBeGreaterThanOrEqual(dates[i].getTime());
       }
     });
   });
@@ -136,7 +137,7 @@ describe('Training Analytics Service', () => {
     test('should calculate sessions per discipline correctly', async () => {
       const analytics = await trainingAnalyticsService.getTrainingHistory(testHorse.id);
 
-      const sessionsPerDiscipline = analytics.trainingFrequency.sessionsPerDiscipline;
+      const { sessionsPerDiscipline } = analytics.trainingFrequency;
       expect(sessionsPerDiscipline.dressage).toBe(3);
       expect(sessionsPerDiscipline.show_jumping).toBe(3);
       expect(sessionsPerDiscipline.racing).toBe(3);
@@ -171,7 +172,6 @@ describe('Training Analytics Service', () => {
   });
 
 
-
   describe('Error Handling', () => {
     test('should handle non-existent horse gracefully', async () => {
       await expect(trainingAnalyticsService.getTrainingHistory(99999))
@@ -196,8 +196,8 @@ describe('Training Analytics Service', () => {
           boldness: 50,
           flexibility: 50,
           obedience: 50,
-          focus: 50
-        }
+          focus: 50,
+        },
       });
 
       const analytics = await trainingAnalyticsService.getTrainingHistory(newHorse.id);

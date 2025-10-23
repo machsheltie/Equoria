@@ -207,6 +207,7 @@ describe('Trait Timeline System', () => {
 
       const timeline = await generateTraitTimeline(testHorse.id);
 
+      // eslint-disable-next-line prefer-destructuring
       const traitEvent = timeline.timelineEvents[0];
       expect(traitEvent.traitName).toBe('empathic');
       expect(traitEvent.groomContext).toBeDefined();

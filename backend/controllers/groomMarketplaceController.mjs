@@ -313,7 +313,7 @@ export async function getMarketplaceStats(req, res) {
     if (!userMarketplace) {
       const responseData = {
         totalGrooms: 0,
-        lastRefresh: "never",
+        lastRefresh: 'never',
         refreshCount: 0,
         qualityDistribution: {},
         specialtyDistribution: {},

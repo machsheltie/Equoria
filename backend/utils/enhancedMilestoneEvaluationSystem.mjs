@@ -332,7 +332,7 @@ function calculateTaskConsistencyModifier(groomCareHistory) {
  * @param {Object} window - Developmental window
  * @returns {number} Care gaps penalty (0 to +2)
  */
-function calculateCareGapsPenalty(groomCareHistory, window) {
+function calculateCareGapsPenalty(groomCareHistory, _window) {
   let penalty = 0;
 
   // -1 if no tasks completed

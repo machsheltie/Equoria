@@ -1,9 +1,9 @@
 /**
  * Personality Evolution Routes
- * 
+ *
  * Defines API routes for personality evolution system including groom and horse personality development,
  * evolution triggers, stability analysis, prediction capabilities, and batch processing.
- * 
+ *
  * Routes:
  * - POST /groom/:groomId/evolve - Evolve groom personality
  * - POST /horse/:horseId/evolve - Evolve horse temperament
@@ -62,7 +62,7 @@ router.post('/groom/:groomId/evolve',
       .withMessage('Groom ID must be a positive integer'),
   ],
   validateRequest,
-  evolveGroomPersonalityController
+  evolveGroomPersonalityController,
 );
 
 /**
@@ -76,7 +76,7 @@ router.post('/horse/:horseId/evolve',
       .withMessage('Horse ID must be a positive integer'),
   ],
   validateRequest,
-  evolveHorseTemperamentController
+  evolveHorseTemperamentController,
 );
 
 /**
@@ -93,7 +93,7 @@ router.get('/:entityType/:entityId/triggers',
       .withMessage('Entity ID must be a positive integer'),
   ],
   validateRequest,
-  getEvolutionTriggersController
+  getEvolutionTriggersController,
 );
 
 /**
@@ -110,7 +110,7 @@ router.get('/:entityType/:entityId/stability',
       .withMessage('Entity ID must be a positive integer'),
   ],
   validateRequest,
-  getPersonalityStabilityController
+  getPersonalityStabilityController,
 );
 
 /**
@@ -131,7 +131,7 @@ router.get('/:entityType/:entityId/predict',
       .withMessage('Timeframe must be between 1 and 365 days'),
   ],
   validateRequest,
-  predictPersonalityEvolutionController
+  predictPersonalityEvolutionController,
 );
 
 /**
@@ -148,7 +148,7 @@ router.get('/:entityType/:entityId/history',
       .withMessage('Entity ID must be a positive integer'),
   ],
   validateRequest,
-  getPersonalityEvolutionHistoryController
+  getPersonalityEvolutionHistoryController,
 );
 
 /**
@@ -195,7 +195,7 @@ router.post('/apply-effects',
       .withMessage('Effect strength must be between 0 and 1'),
   ],
   validateRequest,
-  applyPersonalityEvolutionEffectsController
+  applyPersonalityEvolutionEffectsController,
 );
 
 /**
@@ -215,7 +215,7 @@ router.post('/batch-evolve',
       .withMessage('Each entity type must be either "groom" or "horse"'),
   ],
   validateRequest,
-  batchEvolvePersonalitiesController
+  batchEvolvePersonalitiesController,
 );
 
 /**
