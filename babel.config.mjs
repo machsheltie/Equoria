@@ -13,10 +13,14 @@ export default {
       },
       modules: 'auto'
     }],
+    '@babel/preset-flow',
     ['@babel/preset-react', {
       runtime: 'automatic'
     }],
-    '@babel/preset-typescript'
+    ['@babel/preset-typescript', {
+      allExtensions: true,
+      isTSX: true,
+    }]
   ],
   plugins: [
     '@babel/plugin-transform-modules-commonjs'
@@ -24,16 +28,11 @@ export default {
   env: {
     test: {
       presets: [
-        ['@babel/preset-env', {
-          targets: {
-            node: 'current'
-          },
-          modules: 'commonjs'
-        }],
-        ['@babel/preset-react', {
-          runtime: 'automatic'
-        }],
-        '@babel/preset-typescript'
+        '@react-native/babel-preset',
+        ['@babel/preset-typescript', {
+          allExtensions: true,
+          isTSX: true,
+        }]
       ]
     }
   }
