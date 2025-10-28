@@ -560,4 +560,129 @@ describe('UserDashboard Component', () => {
       expect(document.activeElement).toBe(firstButton);
     });
   });
+
+  describe('Weekly Salary Reminder', () => {
+    const mockSalarySummaryData = {
+      weeklyCost: 325,
+      totalPaid: 1300,
+      groomCount: 3,
+      unassignedGroomsCount: 1,
+      breakdown: [
+        { groomId: 1, groomName: 'Sarah Johnson', weeklyCost: 100, assignmentCount: 2 },
+        { groomId: 2, groomName: 'Mike Rodriguez', weeklyCost: 75, assignmentCount: 0 },
+        { groomId: 3, groomName: 'Emma Thompson', weeklyCost: 150, assignmentCount: 1 },
+      ],
+    };
+
+    test('displays weekly salary cost when grooms are hired', () => {
+      render(
+        <TestWrapper>
+          <UserDashboard
+            userId={1}
+            progressData={mockProgressData}
+            dashboardData={mockDashboardData}
+            activityData={mockActivityData}
+            salarySummaryData={mockSalarySummaryData}
+          />
+        </TestWrapper>
+      );
+
+      expect(screen.getByText(/weekly groom salaries/i)).toBeInTheDocument();
+      expect(screen.getByText(/\$325/)).toBeInTheDocument();
+    });
+
+    test('displays unassigned grooms warning', () => {
+      render(
+        <TestWrapper>
+          <UserDashboard
+            userId={1}
+            progressData={mockProgressData}
+            dashboardData={mockDashboardData}
+            activityData={mockActivityData}
+            salarySummaryData={mockSalarySummaryData}
+          />
+        </TestWrapper>
+      );
+
+      expect(screen.getByText(/1 groom with no assignments/i)).toBeInTheDocument();
+    });
+
+    test('displays link to groom management dashboard', () => {
+      render(
+        <TestWrapper>
+          <UserDashboard
+            userId={1}
+            progressData={mockProgressData}
+            dashboardData={mockDashboardData}
+            activityData={mockActivityData}
+            salarySummaryData={mockSalarySummaryData}
+          />
+        </TestWrapper>
+      );
+
+      const manageLink = screen.getByRole('link', { name: /manage grooms/i });
+      expect(manageLink).toBeInTheDocument();
+      expect(manageLink).toHaveAttribute('href', '/grooms');
+    });
+
+    test('does not display salary reminder when no grooms hired', () => {
+      const noGroomsSalaryData = {
+        weeklyCost: 0,
+        totalPaid: 0,
+        groomCount: 0,
+        unassignedGroomsCount: 0,
+        breakdown: [],
+      };
+
+      render(
+        <TestWrapper>
+          <UserDashboard
+            userId={1}
+            progressData={mockProgressData}
+            dashboardData={mockDashboardData}
+            activityData={mockActivityData}
+            salarySummaryData={noGroomsSalaryData}
+          />
+        </TestWrapper>
+      );
+
+      expect(screen.queryByText(/weekly groom salaries/i)).not.toBeInTheDocument();
+    });
+
+    test('dismisses salary reminder when close button clicked', () => {
+      render(
+        <TestWrapper>
+          <UserDashboard
+            userId={1}
+            progressData={mockProgressData}
+            dashboardData={mockDashboardData}
+            activityData={mockActivityData}
+            salarySummaryData={mockSalarySummaryData}
+          />
+        </TestWrapper>
+      );
+
+      const closeButton = screen.getByRole('button', { name: /dismiss salary reminder/i });
+      fireEvent.click(closeButton);
+
+      expect(screen.queryByText(/weekly groom salaries/i)).not.toBeInTheDocument();
+    });
+
+    test('displays total paid amount', () => {
+      render(
+        <TestWrapper>
+          <UserDashboard
+            userId={1}
+            progressData={mockProgressData}
+            dashboardData={mockDashboardData}
+            activityData={mockActivityData}
+            salarySummaryData={mockSalarySummaryData}
+          />
+        </TestWrapper>
+      );
+
+      expect(screen.getByText(/total paid this month/i)).toBeInTheDocument();
+      expect(screen.getByText(/\$1,300/)).toBeInTheDocument();
+    });
+  });
 });

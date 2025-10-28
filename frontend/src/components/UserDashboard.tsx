@@ -32,12 +32,26 @@ import {
   Star
 } from 'lucide-react';
 
+interface SalarySummary {
+  weeklyCost: number;
+  totalPaid: number;
+  groomCount: number;
+  unassignedGroomsCount: number;
+  breakdown: Array<{
+    groomId: number;
+    groomName: string;
+    weeklyCost: number;
+    assignmentCount: number;
+  }>;
+}
+
 interface UserDashboardProps {
   userId: number;
   // Optional data props (if provided, component won't fetch)
   progressData?: UserProgress;
   dashboardData?: DashboardData;
   activityData?: ActivityItem[];
+  salarySummaryData?: SalarySummary;
 }
 
 interface UserProgress {
@@ -91,10 +105,12 @@ const UserDashboard: React.FC<UserDashboardProps> = ({
   userId,
   progressData: propProgressData,
   dashboardData: propDashboardData,
-  activityData: propActivityData
+  activityData: propActivityData,
+  salarySummaryData: propSalarySummaryData
 }) => {
   const navigate = useNavigate();
   const [activityPage, setActivityPage] = useState(1);
+  const [isSalaryReminderDismissed, setIsSalaryReminderDismissed] = useState(false);
 
   // Fetch user progress data (only if not provided as props)
   const {
@@ -147,6 +163,27 @@ const UserDashboard: React.FC<UserDashboardProps> = ({
       return response.json();
     },
     enabled: !propActivityData && typeof fetch !== 'undefined',
+  });
+
+  // Fetch salary summary data (only if not provided as props)
+  const {
+    data: salarySummaryData = propSalarySummaryData,
+    isLoading: salarySummaryLoading
+  } = useQuery<SalarySummary>({
+    queryKey: ['groomSalarySummary', userId],
+    queryFn: async () => {
+      const response = await fetch('/api/groom-salaries/summary', {
+        headers: {
+          Authorization: `Bearer ${localStorage.getItem('token')}`,
+        },
+      });
+      if (!response.ok) {
+        throw new Error('Failed to fetch salary summary');
+      }
+      const result = await response.json();
+      return result.data;
+    },
+    enabled: !propSalarySummaryData && typeof fetch !== 'undefined',
   });
 
   // Calculate progress percentage
@@ -306,6 +343,48 @@ const UserDashboard: React.FC<UserDashboardProps> = ({
             </div>
           </div>
         </div>
+
+        {/* Weekly Salary Reminder */}
+        {salarySummaryData && salarySummaryData.groomCount > 0 && !isSalaryReminderDismissed && (
+          <div className="bg-blue-50 border-l-4 border-blue-400 p-6 rounded-lg shadow-md" data-testid="salary-reminder">
+            <div className="flex items-start justify-between">
+              <div className="flex-1">
+                <h3 className="text-lg font-semibold text-blue-900 mb-2">Weekly Groom Salaries</h3>
+                <div className="space-y-2">
+                  <p className="text-sm text-blue-800">
+                    You paid <span className="font-bold">${salarySummaryData.weeklyCost.toLocaleString()}</span> in groom salaries this week.
+                  </p>
+                  <p className="text-sm text-blue-800">
+                    Total paid this month: <span className="font-bold">${salarySummaryData.totalPaid.toLocaleString()}</span>
+                  </p>
+                  {salarySummaryData.unassignedGroomsCount > 0 && (
+                    <p className="text-sm text-yellow-700 font-medium mt-2">
+                      ⚠️ {salarySummaryData.unassignedGroomsCount} groom{salarySummaryData.unassignedGroomsCount > 1 ? 's' : ''} with no assignments - consider assigning them to save money!
+                    </p>
+                  )}
+                </div>
+                <div className="mt-4">
+                  <a
+                    href="/grooms"
+                    className="inline-flex items-center text-sm font-medium text-blue-600 hover:text-blue-800"
+                  >
+                    Manage Grooms
+                    <ChevronRight className="w-4 h-4 ml-1" />
+                  </a>
+                </div>
+              </div>
+              <button
+                onClick={() => setIsSalaryReminderDismissed(true)}
+                className="ml-4 text-blue-400 hover:text-blue-600"
+                aria-label="Dismiss salary reminder"
+              >
+                <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
+                </svg>
+              </button>
+            </div>
+          </div>
+        )}
 
         {/* Quick Actions */}
         <div className="bg-white rounded-lg shadow-md p-6" data-testid="quick-actions-section">
