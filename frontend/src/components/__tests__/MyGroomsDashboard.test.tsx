@@ -155,7 +155,7 @@ describe('MyGroomsDashboard Component', () => {
 
       // When no data is provided and queries aren't loading yet, component shows empty state
       // This is expected behavior since queries are disabled in test environment
-      expect(screen.getByRole('heading', { name: /my grooms/i })).toBeInTheDocument();
+      expect(screen.getByRole('heading', { name: /no grooms hired/i })).toBeInTheDocument();
     });
 
     it('displays empty state when no grooms hired', () => {

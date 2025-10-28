@@ -101,7 +101,8 @@ describe('AssignGroomModal Component', () => {
       );
 
       expect(screen.getByTestId('assign-groom-modal')).toBeInTheDocument();
-      expect(screen.getByText(/assign groom/i)).toBeInTheDocument();
+      // Check for the main heading "Assign Groom"
+      expect(screen.getByRole('heading', { name: /^assign groom$/i })).toBeInTheDocument();
     });
 
     test('does not render modal when isOpen is false', () => {
@@ -281,6 +282,13 @@ describe('AssignGroomModal Component', () => {
         </TestWrapper>
       );
 
+      // First select a groom (priority field only shows when groom is selected)
+      await waitFor(() => {
+        const groomRadio = screen.getByLabelText(/sarah johnson/i);
+        fireEvent.click(groomRadio);
+      });
+
+      // Then test priority selection
       await waitFor(() => {
         const prioritySelect = screen.getByLabelText(/priority/i) as HTMLSelectElement;
         fireEvent.change(prioritySelect, { target: { value: '2' } });
@@ -302,6 +310,13 @@ describe('AssignGroomModal Component', () => {
         </TestWrapper>
       );
 
+      // First select a groom (notes field only shows when groom is selected)
+      await waitFor(() => {
+        const groomRadio = screen.getByLabelText(/sarah johnson/i);
+        fireEvent.click(groomRadio);
+      });
+
+      // Then test notes input
       await waitFor(() => {
         const notesInput = screen.getByLabelText(/notes/i) as HTMLTextAreaElement;
         fireEvent.change(notesInput, { target: { value: 'Focus on bonding exercises' } });
@@ -323,11 +338,13 @@ describe('AssignGroomModal Component', () => {
         </TestWrapper>
       );
 
+      // First select a groom (priority field only shows when groom is selected)
       await waitFor(() => {
-        const prioritySelect = screen.getByLabelText(/priority/i);
-        fireEvent.change(prioritySelect, { target: { value: '1' } });
+        const groomRadio = screen.getByLabelText(/sarah johnson/i);
+        fireEvent.click(groomRadio);
       });
 
+      // Priority defaults to 1, so replace primary checkbox should be visible
       await waitFor(() => {
         expect(screen.getByLabelText(/replace.*primary/i)).toBeInTheDocument();
       });
