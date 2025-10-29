@@ -56,6 +56,8 @@ const GroomListScreen = ({
   const [showFilterModal, setShowFilterModal] = useState(false);
   const [tempFilterSkill, setTempFilterSkill] = useState('all');
   const [tempFilterSpecialty, setTempFilterSpecialty] = useState('all');
+  const [showSortModal, setShowSortModal] = useState(false);
+  const [tempSort, setTempSort] = useState('name');
 
   // Load saved preferences from AsyncStorage on mount
   useEffect(() => {
@@ -256,6 +258,31 @@ const GroomListScreen = ({
     }
 
     setShowFilterModal(false);
+  };
+
+  // Handle sort modal open
+  const handleOpenSortModal = () => {
+    setTempSort(sortBy);
+    setShowSortModal(true);
+  };
+
+  // Handle sort modal close
+  const handleCloseSortModal = () => {
+    setShowSortModal(false);
+  };
+
+  // Handle apply sort
+  const handleApplySort = async () => {
+    setSortBy(tempSort);
+
+    // Save to AsyncStorage
+    try {
+      await AsyncStorage.setItem(STORAGE_KEY_SORT, tempSort);
+    } catch (error) {
+      console.error('Error saving sort preference:', error);
+    }
+
+    setShowSortModal(false);
   };
 
   // Inline styles (avoid StyleSheet.create to prevent mocking complications)
@@ -470,10 +497,10 @@ const GroomListScreen = ({
 
       {/* Filter and Sort Controls */}
       <View style={styles.controls}>
-        <TouchableOpacity style={styles.controlButton}>
+        <TouchableOpacity style={styles.controlButton} onPress={handleOpenFilterModal}>
           <Text style={styles.controlButtonText}>Filter</Text>
         </TouchableOpacity>
-        <TouchableOpacity style={styles.controlButton}>
+        <TouchableOpacity style={styles.controlButton} onPress={handleOpenSortModal}>
           <Text style={styles.controlButtonText}>Sort</Text>
         </TouchableOpacity>
       </View>
@@ -520,6 +547,346 @@ const GroomListScreen = ({
           ))}
         </View>
       )}
+
+      {/* Filter Modal */}
+      <Modal
+        visible={showFilterModal}
+        transparent={true}
+        animationType="fade"
+        onRequestClose={handleCloseFilterModal}
+      >
+        <View style={styles.modalOverlay}>
+          <View style={styles.modalContent}>
+            <Text style={styles.modalTitle}>Filter Grooms</Text>
+
+            {/* Skill Level Filter */}
+            <View style={styles.filterSection}>
+              <Text style={styles.filterLabel}>Skill Level</Text>
+              <TouchableOpacity
+                style={[
+                  styles.filterOption,
+                  tempFilterSkill === 'all' && styles.filterOptionSelected,
+                ]}
+                onPress={() => setTempFilterSkill('all')}
+                testID="filter-skill-all"
+              >
+                <Text
+                  style={[
+                    styles.filterOptionText,
+                    tempFilterSkill === 'all' && styles.filterOptionTextSelected,
+                  ]}
+                >
+                  All Levels
+                </Text>
+              </TouchableOpacity>
+              <TouchableOpacity
+                style={[
+                  styles.filterOption,
+                  tempFilterSkill === 'novice' && styles.filterOptionSelected,
+                ]}
+                onPress={() => setTempFilterSkill('novice')}
+                testID="filter-skill-novice"
+              >
+                <Text
+                  style={[
+                    styles.filterOptionText,
+                    tempFilterSkill === 'novice' && styles.filterOptionTextSelected,
+                  ]}
+                >
+                  Novice
+                </Text>
+              </TouchableOpacity>
+              <TouchableOpacity
+                style={[
+                  styles.filterOption,
+                  tempFilterSkill === 'intermediate' && styles.filterOptionSelected,
+                ]}
+                onPress={() => setTempFilterSkill('intermediate')}
+                testID="filter-skill-intermediate"
+              >
+                <Text
+                  style={[
+                    styles.filterOptionText,
+                    tempFilterSkill === 'intermediate' && styles.filterOptionTextSelected,
+                  ]}
+                >
+                  Intermediate
+                </Text>
+              </TouchableOpacity>
+              <TouchableOpacity
+                style={[
+                  styles.filterOption,
+                  tempFilterSkill === 'expert' && styles.filterOptionSelected,
+                ]}
+                onPress={() => setTempFilterSkill('expert')}
+                testID="filter-skill-expert"
+              >
+                <Text
+                  style={[
+                    styles.filterOptionText,
+                    tempFilterSkill === 'expert' && styles.filterOptionTextSelected,
+                  ]}
+                >
+                  Expert
+                </Text>
+              </TouchableOpacity>
+              <TouchableOpacity
+                style={[
+                  styles.filterOption,
+                  tempFilterSkill === 'master' && styles.filterOptionSelected,
+                ]}
+                onPress={() => setTempFilterSkill('master')}
+                testID="filter-skill-master"
+              >
+                <Text
+                  style={[
+                    styles.filterOptionText,
+                    tempFilterSkill === 'master' && styles.filterOptionTextSelected,
+                  ]}
+                >
+                  Master
+                </Text>
+              </TouchableOpacity>
+            </View>
+
+            {/* Specialty Filter */}
+            <View style={styles.filterSection}>
+              <Text style={styles.filterLabel}>Specialty</Text>
+              <TouchableOpacity
+                style={[
+                  styles.filterOption,
+                  tempFilterSpecialty === 'all' && styles.filterOptionSelected,
+                ]}
+                onPress={() => setTempFilterSpecialty('all')}
+                testID="filter-specialty-all"
+              >
+                <Text
+                  style={[
+                    styles.filterOptionText,
+                    tempFilterSpecialty === 'all' && styles.filterOptionTextSelected,
+                  ]}
+                >
+                  All Specialties
+                </Text>
+              </TouchableOpacity>
+              <TouchableOpacity
+                style={[
+                  styles.filterOption,
+                  tempFilterSpecialty === 'foalCare' && styles.filterOptionSelected,
+                ]}
+                onPress={() => setTempFilterSpecialty('foalCare')}
+                testID="filter-specialty-foalCare"
+              >
+                <Text
+                  style={[
+                    styles.filterOptionText,
+                    tempFilterSpecialty === 'foalCare' && styles.filterOptionTextSelected,
+                  ]}
+                >
+                  Foal Care
+                </Text>
+              </TouchableOpacity>
+              <TouchableOpacity
+                style={[
+                  styles.filterOption,
+                  tempFilterSpecialty === 'training' && styles.filterOptionSelected,
+                ]}
+                onPress={() => setTempFilterSpecialty('training')}
+                testID="filter-specialty-training"
+              >
+                <Text
+                  style={[
+                    styles.filterOptionText,
+                    tempFilterSpecialty === 'training' && styles.filterOptionTextSelected,
+                  ]}
+                >
+                  Training
+                </Text>
+              </TouchableOpacity>
+              <TouchableOpacity
+                style={[
+                  styles.filterOption,
+                  tempFilterSpecialty === 'generalCare' && styles.filterOptionSelected,
+                ]}
+                onPress={() => setTempFilterSpecialty('generalCare')}
+                testID="filter-specialty-generalCare"
+              >
+                <Text
+                  style={[
+                    styles.filterOptionText,
+                    tempFilterSpecialty === 'generalCare' && styles.filterOptionTextSelected,
+                  ]}
+                >
+                  General Care
+                </Text>
+              </TouchableOpacity>
+              <TouchableOpacity
+                style={[
+                  styles.filterOption,
+                  tempFilterSpecialty === 'showHandling' && styles.filterOptionSelected,
+                ]}
+                onPress={() => setTempFilterSpecialty('showHandling')}
+                testID="filter-specialty-showHandling"
+              >
+                <Text
+                  style={[
+                    styles.filterOptionText,
+                    tempFilterSpecialty === 'showHandling' && styles.filterOptionTextSelected,
+                  ]}
+                >
+                  Show Handling
+                </Text>
+              </TouchableOpacity>
+            </View>
+
+            {/* Modal Buttons */}
+            <View style={styles.modalButtons}>
+              <TouchableOpacity
+                style={[styles.modalButton, styles.modalButtonSecondary]}
+                onPress={handleResetFilters}
+              >
+                <Text style={styles.modalButtonText}>Reset</Text>
+              </TouchableOpacity>
+              <TouchableOpacity
+                style={[styles.modalButton, styles.modalButtonPrimary]}
+                onPress={handleApplyFilters}
+              >
+                <Text style={styles.modalButtonText}>Apply</Text>
+              </TouchableOpacity>
+            </View>
+          </View>
+        </View>
+      </Modal>
+
+      {/* Sort Modal */}
+      <Modal
+        visible={showSortModal}
+        transparent={true}
+        animationType="fade"
+        onRequestClose={handleCloseSortModal}
+      >
+        <View style={styles.modalOverlay}>
+          <View style={styles.modalContent}>
+            <Text style={styles.modalTitle}>Sort Grooms</Text>
+
+            {/* Sort Options */}
+            <View style={styles.filterSection}>
+              <Text style={styles.filterLabel}>Sort By</Text>
+
+              {/* Name (A-Z) */}
+              <TouchableOpacity
+                style={[
+                  styles.filterOption,
+                  tempSort === 'name' && styles.filterOptionSelected,
+                ]}
+                onPress={() => setTempSort('name')}
+                testID="sort-option-name"
+              >
+                <Text
+                  style={[
+                    styles.filterOptionText,
+                    tempSort === 'name' && styles.filterOptionTextSelected,
+                  ]}
+                >
+                  Name (A-Z)
+                </Text>
+              </TouchableOpacity>
+
+              {/* Price (Low to High) */}
+              <TouchableOpacity
+                style={[
+                  styles.filterOption,
+                  tempSort === 'price-asc' && styles.filterOptionSelected,
+                ]}
+                onPress={() => setTempSort('price-asc')}
+                testID="sort-option-price-asc"
+              >
+                <Text
+                  style={[
+                    styles.filterOptionText,
+                    tempSort === 'price-asc' && styles.filterOptionTextSelected,
+                  ]}
+                >
+                  Price (Low to High)
+                </Text>
+              </TouchableOpacity>
+
+              {/* Price (High to Low) */}
+              <TouchableOpacity
+                style={[
+                  styles.filterOption,
+                  tempSort === 'price-desc' && styles.filterOptionSelected,
+                ]}
+                onPress={() => setTempSort('price-desc')}
+                testID="sort-option-price-desc"
+              >
+                <Text
+                  style={[
+                    styles.filterOptionText,
+                    tempSort === 'price-desc' && styles.filterOptionTextSelected,
+                  ]}
+                >
+                  Price (High to Low)
+                </Text>
+              </TouchableOpacity>
+
+              {/* Experience (Low to High) */}
+              <TouchableOpacity
+                style={[
+                  styles.filterOption,
+                  tempSort === 'experience-asc' && styles.filterOptionSelected,
+                ]}
+                onPress={() => setTempSort('experience-asc')}
+                testID="sort-option-experience-asc"
+              >
+                <Text
+                  style={[
+                    styles.filterOptionText,
+                    tempSort === 'experience-asc' && styles.filterOptionTextSelected,
+                  ]}
+                >
+                  Experience (Low to High)
+                </Text>
+              </TouchableOpacity>
+
+              {/* Experience (High to Low) */}
+              <TouchableOpacity
+                style={[
+                  styles.filterOption,
+                  tempSort === 'experience-desc' && styles.filterOptionSelected,
+                ]}
+                onPress={() => setTempSort('experience-desc')}
+                testID="sort-option-experience-desc"
+              >
+                <Text
+                  style={[
+                    styles.filterOptionText,
+                    tempSort === 'experience-desc' && styles.filterOptionTextSelected,
+                  ]}
+                >
+                  Experience (High to Low)
+                </Text>
+              </TouchableOpacity>
+            </View>
+
+            {/* Modal Buttons */}
+            <View style={styles.modalButtons}>
+              <TouchableOpacity
+                style={[styles.modalButton, styles.modalButtonSecondary]}
+                onPress={handleCloseSortModal}
+              >
+                <Text style={styles.modalButtonText}>Cancel</Text>
+              </TouchableOpacity>
+              <TouchableOpacity
+                style={[styles.modalButton, styles.modalButtonPrimary]}
+                onPress={handleApplySort}
+              >
+                <Text style={styles.modalButtonText}>Apply</Text>
+              </TouchableOpacity>
+            </View>
+          </View>
+        </View>
+      </Modal>
     </View>
   );
 };
