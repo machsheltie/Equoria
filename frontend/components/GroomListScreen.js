@@ -34,7 +34,7 @@
  */
 
 import React, { useState, useEffect, useMemo } from 'react';
-import { View, Text, TouchableOpacity, Modal } from 'react-native';
+import { View, Text, TouchableOpacity, Modal, Alert } from 'react-native';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 
 const STORAGE_KEY_FILTER_SKILL = 'groom_marketplace_filter_skill';
@@ -58,6 +58,40 @@ const GroomListScreen = ({
   const [tempFilterSpecialty, setTempFilterSpecialty] = useState('all');
   const [showSortModal, setShowSortModal] = useState(false);
   const [tempSort, setTempSort] = useState('name');
+  const [countdown, setCountdown] = useState('');
+
+  // Countdown timer for next free refresh
+  useEffect(() => {
+    if (!marketplaceData?.nextFreeRefresh) {
+      return;
+    }
+
+    const updateCountdown = () => {
+      const now = new Date();
+      const nextRefresh = new Date(marketplaceData.nextFreeRefresh);
+      const diff = nextRefresh - now;
+
+      if (diff <= 0) {
+        setCountdown('Free refresh available!');
+        return;
+      }
+
+      const hours = Math.floor(diff / (1000 * 60 * 60));
+      const minutes = Math.floor((diff % (1000 * 60 * 60)) / (1000 * 60));
+      const seconds = Math.floor((diff % (1000 * 60)) / 1000);
+
+      setCountdown(`${hours}h ${minutes}m ${seconds}s`);
+    };
+
+    // Update immediately
+    updateCountdown();
+
+    // Update every second
+    const interval = setInterval(updateCountdown, 1000);
+
+    // Cleanup on unmount
+    return () => clearInterval(interval);
+  }, [marketplaceData?.nextFreeRefresh]);
 
   // Load saved preferences from AsyncStorage on mount
   useEffect(() => {
@@ -157,6 +191,13 @@ const GroomListScreen = ({
     return userData.money >= calculateHiringCost(sessionRate);
   };
 
+  // Handle refresh button click
+  const handleRefreshClick = () => {
+    if (onRefreshMarketplace) {
+      onRefreshMarketplace();
+    }
+  };
+
   // Handle hire button click
   const handleHireClick = (groom) => {
     setSelectedGroom(groom);
@@ -165,9 +206,26 @@ const GroomListScreen = ({
 
   // Handle hire confirmation
   const handleHireConfirm = () => {
-    if (selectedGroom && onGroomHired) {
+    if (!selectedGroom || !userData) {
+      return;
+    }
+
+    // Check if user can afford the groom
+    const hireCost = calculateHiringCost(selectedGroom.sessionRate);
+    if (userData.money < hireCost) {
+      Alert.alert(
+        'Insufficient Funds',
+        `You do not have enough money to hire this groom. Cost: ${formatCurrency(hireCost)}, Your funds: ${formatCurrency(userData.money)}`
+      );
+      return;
+    }
+
+    // Call the onGroomHired callback
+    if (onGroomHired) {
       onGroomHired(selectedGroom);
     }
+
+    // Close modal and clear selection
     setShowHireModal(false);
     setSelectedGroom(null);
   };
@@ -307,10 +365,27 @@ const GroomListScreen = ({
       borderRadius: 8,
       marginBottom: 16,
     },
+    refreshTextContainer: {
+      marginBottom: 12,
+    },
     refreshText: {
       fontSize: 14,
       color: '#1E40AF',
       marginBottom: 4,
+    },
+    refreshButton: {
+      backgroundColor: '#3B82F6',
+      padding: 12,
+      borderRadius: 8,
+      alignItems: 'center',
+    },
+    refreshButtonFree: {
+      backgroundColor: '#10B981',
+    },
+    refreshButtonText: {
+      color: '#FFFFFF',
+      fontSize: 14,
+      fontWeight: 'bold',
     },
     controls: {
       flexDirection: 'row',
@@ -465,6 +540,47 @@ const GroomListScreen = ({
       fontWeight: 'bold',
       textAlign: 'center',
     },
+    modalButtonDisabled: {
+      backgroundColor: '#9CA3AF',
+      opacity: 0.6,
+    },
+    hireModalSection: {
+      marginBottom: 16,
+      paddingBottom: 16,
+      borderBottomWidth: 1,
+      borderBottomColor: '#E5E7EB',
+    },
+    hireModalGroomName: {
+      fontSize: 20,
+      fontWeight: 'bold',
+      color: '#1F2937',
+      marginBottom: 8,
+    },
+    hireModalDetail: {
+      fontSize: 14,
+      color: '#4B5563',
+      marginBottom: 4,
+    },
+    hireModalSectionTitle: {
+      fontSize: 16,
+      fontWeight: 'bold',
+      color: '#1F2937',
+      marginBottom: 8,
+    },
+    warningBox: {
+      backgroundColor: '#FEF2F2',
+      borderWidth: 1,
+      borderColor: '#FCA5A5',
+      borderRadius: 8,
+      padding: 12,
+      marginBottom: 16,
+    },
+    warningText: {
+      color: '#DC2626',
+      fontSize: 14,
+      fontWeight: '600',
+      textAlign: 'center',
+    },
   };
 
   // Show loading state while AsyncStorage loads
@@ -486,12 +602,33 @@ const GroomListScreen = ({
       {/* Refresh Information */}
       {marketplaceData && (
         <View style={styles.refreshInfo}>
-          <Text style={styles.refreshText}>
-            Last Refresh: {formatDate(marketplaceData.lastRefresh)}
-          </Text>
-          <Text style={styles.refreshText}>
-            Next Free Refresh: {formatDate(marketplaceData.nextFreeRefresh)}
-          </Text>
+          <View style={styles.refreshTextContainer}>
+            <Text style={styles.refreshText}>
+              Last Refresh: {formatDate(marketplaceData.lastRefresh)}
+            </Text>
+            <Text style={styles.refreshText}>
+              Next Free Refresh: {formatDate(marketplaceData.nextFreeRefresh)}
+            </Text>
+            {countdown && (
+              <Text style={styles.refreshText} testID="refresh-countdown">
+                {countdown}
+              </Text>
+            )}
+          </View>
+          <TouchableOpacity
+            style={[
+              styles.refreshButton,
+              marketplaceData.canRefreshFree && styles.refreshButtonFree,
+            ]}
+            onPress={handleRefreshClick}
+            testID="refresh-button"
+          >
+            <Text style={styles.refreshButtonText}>
+              {marketplaceData.canRefreshFree
+                ? 'Free Refresh Available'
+                : `Premium Refresh ($${marketplaceData.refreshCost})`}
+            </Text>
+          </TouchableOpacity>
         </View>
       )}
 
@@ -535,9 +672,9 @@ const GroomListScreen = ({
                   !canAffordGroom(groom.sessionRate) && styles.hireButtonDisabled,
                 ]}
                 onPress={() => handleHireClick(groom)}
-                disabled={!canAffordGroom(groom.sessionRate)}
                 accessibilityLabel={`Hire ${groom.firstName} ${groom.lastName}`}
                 accessibilityRole="button"
+                testID={`hire-button-${groom.marketplaceId}`}
               >
                 <Text style={styles.hireButtonText}>
                   Hire for {formatCurrency(calculateHiringCost(groom.sessionRate))}
@@ -882,6 +1019,86 @@ const GroomListScreen = ({
                 onPress={handleApplySort}
               >
                 <Text style={styles.modalButtonText}>Apply</Text>
+              </TouchableOpacity>
+            </View>
+          </View>
+        </View>
+      </Modal>
+
+      {/* Hire Modal */}
+      <Modal
+        visible={showHireModal}
+        transparent={true}
+        animationType="fade"
+        onRequestClose={handleHireCancel}
+        testID="hire-modal"
+      >
+        <View style={styles.modalOverlay}>
+          <View style={styles.modalContent}>
+            <Text style={styles.modalTitle}>Hire Groom</Text>
+
+            {selectedGroom && (
+              <>
+                {/* Groom Details */}
+                <View style={styles.hireModalSection}>
+                  <Text style={styles.hireModalGroomName}>
+                    {selectedGroom.firstName} {selectedGroom.lastName}
+                  </Text>
+                  <Text style={styles.hireModalDetail}>
+                    Specialty: {formatSpecialty(selectedGroom.specialty)}
+                  </Text>
+                  <Text style={styles.hireModalDetail}>
+                    Skill Level: {selectedGroom.skillLevel.charAt(0).toUpperCase() + selectedGroom.skillLevel.slice(1)}
+                  </Text>
+                  <Text style={styles.hireModalDetail}>
+                    Experience: {selectedGroom.experience} {selectedGroom.experience === 1 ? 'year' : 'years'}
+                  </Text>
+                </View>
+
+                {/* Cost Breakdown */}
+                <View style={styles.hireModalSection}>
+                  <Text style={styles.hireModalSectionTitle}>Cost Breakdown</Text>
+                  <Text style={styles.hireModalDetail}>
+                    Session Rate: {formatCurrency(selectedGroom.sessionRate)}
+                  </Text>
+                  <Text style={styles.hireModalDetail}>
+                    Weekly Cost (7 sessions): {formatCurrency(calculateHiringCost(selectedGroom.sessionRate))}
+                  </Text>
+                  <Text style={styles.hireModalDetail}>
+                    Your Funds: {formatCurrency(userData?.money || 0)}
+                  </Text>
+                </View>
+
+                {/* Insufficient Funds Warning */}
+                {!canAffordGroom(selectedGroom.sessionRate) && (
+                  <View style={styles.warningBox}>
+                    <Text style={styles.warningText}>
+                      Insufficient funds to hire this groom
+                    </Text>
+                  </View>
+                )}
+              </>
+            )}
+
+            {/* Modal Buttons */}
+            <View style={styles.modalButtons}>
+              <TouchableOpacity
+                style={[styles.modalButton, styles.modalButtonSecondary]}
+                onPress={handleHireCancel}
+              >
+                <Text style={styles.modalButtonText}>Cancel</Text>
+              </TouchableOpacity>
+              <TouchableOpacity
+                style={[
+                  styles.modalButton,
+                  styles.modalButtonPrimary,
+                  selectedGroom && !canAffordGroom(selectedGroom.sessionRate) && styles.modalButtonDisabled,
+                ]}
+                onPress={handleHireConfirm}
+                accessibilityState={{ disabled: selectedGroom && !canAffordGroom(selectedGroom.sessionRate) }}
+                testID="hire-confirm-button"
+              >
+                <Text style={styles.modalButtonText}>Confirm Hire</Text>
               </TouchableOpacity>
             </View>
           </View>

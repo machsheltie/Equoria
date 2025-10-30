@@ -14,6 +14,7 @@
 
 import React from 'react';
 import { render, screen, fireEvent, waitFor } from '@testing-library/react-native';
+import { Alert } from 'react-native';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import GroomListScreen from '../GroomListScreen.js';
 
@@ -29,9 +30,9 @@ jest.mock('react-native/Libraries/Modal/Modal', () => {
   const React = require('react');
   const { View } = require('react-native');
 
-  return ({ visible, children }) => {
+  return ({ visible, children, testID }) => {
     if (!visible) return null;
-    return <View testID="modal-container">{children}</View>;
+    return <View testID={testID || "modal-container"}>{children}</View>;
   };
 });
 
@@ -590,6 +591,307 @@ describe('GroomListScreen Component', () => {
         expect(groomCards[2].props.testID).toBe('groom-card-groom-3'); // 5 years
         expect(groomCards[3].props.testID).toBe('groom-card-groom-4'); // 2 years
       });
+    });
+  });
+
+  // ========================================
+  // HIRING TESTS (5 tests)
+  // ========================================
+
+  describe('Hiring', () => {
+    let alertSpy;
+
+    beforeEach(() => {
+      // Spy on Alert.alert (infrastructure - prevents native alerts during testing)
+      alertSpy = jest.spyOn(Alert, 'alert').mockImplementation(() => {});
+    });
+
+    afterEach(() => {
+      // Restore Alert.alert after each test
+      if (alertSpy) {
+        alertSpy.mockRestore();
+      }
+    });
+
+    test('opens hire modal when hire button is pressed', async () => {
+      const { getByTestId } = render(
+        <GroomListScreen
+          marketplaceData={mockMarketplaceData}
+          userData={mockUserData}
+        />
+      );
+
+      // Wait for component to load
+      await waitFor(() => {
+        expect(getByTestId('groom-list-scroll')).toBeTruthy();
+      });
+
+      // Click hire button for first groom (Sarah Johnson - $75/session)
+      const hireButton = screen.getByTestId('hire-button-groom-1');
+      fireEvent.press(hireButton);
+
+      // Verify hire modal appears
+      await waitFor(() => {
+        expect(screen.getByTestId('hire-modal')).toBeTruthy();
+      });
+
+      // Verify modal shows groom details
+      expect(screen.getByText(/hire groom/i)).toBeTruthy();
+      expect(screen.getAllByText(/sarah johnson/i).length).toBeGreaterThan(0);
+      expect(screen.getAllByText(/foal care/i).length).toBeGreaterThan(0);
+      expect(screen.getAllByText(/expert/i).length).toBeGreaterThan(0);
+
+      // Verify modal shows hire cost (7 sessions * $75 = $525)
+      expect(screen.getAllByText(/\$525/).length).toBeGreaterThan(0);
+    });
+
+    test('calls onGroomHired callback when hire is confirmed', async () => {
+      const mockOnGroomHired = jest.fn();
+      const { getByTestId } = render(
+        <GroomListScreen
+          marketplaceData={mockMarketplaceData}
+          userData={mockUserData}
+          onGroomHired={mockOnGroomHired}
+        />
+      );
+
+      // Wait for component to load
+      await waitFor(() => {
+        expect(getByTestId('groom-list-scroll')).toBeTruthy();
+      });
+
+      // Open hire modal for first groom
+      const hireButton = screen.getByTestId('hire-button-groom-1');
+      fireEvent.press(hireButton);
+
+      // Wait for modal to appear
+      await waitFor(() => {
+        expect(screen.getByTestId('hire-modal')).toBeTruthy();
+      });
+
+      // Click confirm button
+      const confirmButton = screen.getByTestId('hire-confirm-button');
+      fireEvent.press(confirmButton);
+
+      // Verify callback was called with correct groom data
+      await waitFor(() => {
+        expect(mockOnGroomHired).toHaveBeenCalledTimes(1);
+        expect(mockOnGroomHired).toHaveBeenCalledWith(
+          expect.objectContaining({
+            marketplaceId: 'groom-1',
+            firstName: 'Sarah',
+            lastName: 'Johnson',
+          })
+        );
+      });
+    });
+
+    test('shows insufficient funds error when user cannot afford groom', async () => {
+      // User with low funds ($100)
+      const poorUserData = {
+        ...mockUserData,
+        money: 100,
+      };
+
+      const { getByTestId } = render(
+        <GroomListScreen
+          marketplaceData={mockMarketplaceData}
+          userData={poorUserData}
+        />
+      );
+
+      // Wait for component to load
+      await waitFor(() => {
+        expect(getByTestId('groom-list-scroll')).toBeTruthy();
+      });
+
+      // Try to hire expensive groom (Sarah - $525 total)
+      const hireButton = screen.getByTestId('hire-button-groom-1');
+      fireEvent.press(hireButton);
+
+      // Wait for modal to appear
+      await waitFor(() => {
+        expect(screen.getByTestId('hire-modal')).toBeTruthy();
+      });
+
+      // Verify insufficient funds warning is shown in modal
+      expect(screen.getByText(/insufficient funds/i)).toBeTruthy();
+
+      // Verify confirm button is disabled
+      const confirmButton = screen.getByTestId('hire-confirm-button');
+      expect(confirmButton.props.accessibilityState.disabled).toBe(true);
+    });
+
+    test('disables hire button when user cannot afford groom', async () => {
+      // User with low funds ($100)
+      const poorUserData = {
+        ...mockUserData,
+        money: 100,
+      };
+
+      const { getByTestId } = render(
+        <GroomListScreen
+          marketplaceData={mockMarketplaceData}
+          userData={poorUserData}
+        />
+      );
+
+      // Wait for component to load
+      await waitFor(() => {
+        expect(getByTestId('groom-list-scroll')).toBeTruthy();
+      });
+
+      // Open hire modal for expensive groom (Sarah - $525 total)
+      const hireButton = screen.getByTestId('hire-button-groom-1');
+      fireEvent.press(hireButton);
+
+      // Wait for modal to appear
+      await waitFor(() => {
+        expect(screen.getByTestId('hire-modal')).toBeTruthy();
+      });
+
+      // Verify confirm button is disabled
+      const confirmButton = screen.getByTestId('hire-confirm-button');
+      expect(confirmButton.props.accessibilityState.disabled).toBe(true);
+    });
+
+    test('closes hire modal after successful hire', async () => {
+      const mockOnGroomHired = jest.fn();
+      const { getByTestId } = render(
+        <GroomListScreen
+          marketplaceData={mockMarketplaceData}
+          userData={mockUserData}
+          onGroomHired={mockOnGroomHired}
+        />
+      );
+
+      // Wait for component to load
+      await waitFor(() => {
+        expect(getByTestId('groom-list-scroll')).toBeTruthy();
+      });
+
+      // Open hire modal
+      const hireButton = screen.getByTestId('hire-button-groom-1');
+      fireEvent.press(hireButton);
+
+      // Wait for modal to appear
+      await waitFor(() => {
+        expect(screen.getByTestId('hire-modal')).toBeTruthy();
+      });
+
+      // Confirm hire
+      const confirmButton = screen.getByTestId('hire-confirm-button');
+      fireEvent.press(confirmButton);
+
+      // Verify modal closes
+      await waitFor(() => {
+        expect(screen.queryByTestId('hire-modal')).toBeNull();
+      });
+
+      // Verify callback was triggered
+      expect(mockOnGroomHired).toHaveBeenCalledTimes(1);
+    });
+  });
+
+  describe('Refresh', () => {
+    test('calls onRefreshMarketplace callback when refresh button is pressed', async () => {
+      const mockOnRefreshMarketplace = jest.fn();
+
+      const { getByTestId } = render(
+        <GroomListScreen
+          marketplaceData={mockMarketplaceData}
+          userData={mockUserData}
+          onRefreshMarketplace={mockOnRefreshMarketplace}
+        />
+      );
+
+      // Wait for component to load
+      await waitFor(() => {
+        expect(getByTestId('groom-list-scroll')).toBeTruthy();
+      });
+
+      // Press refresh button
+      const refreshButton = screen.getByTestId('refresh-button');
+      fireEvent.press(refreshButton);
+
+      // Verify callback was called
+      expect(mockOnRefreshMarketplace).toHaveBeenCalledTimes(1);
+    });
+
+    test('shows free refresh available when canRefreshFree is true', async () => {
+      const freeRefreshData = {
+        ...mockMarketplaceData,
+        canRefreshFree: true,
+        refreshCost: 0,
+      };
+
+      const { getByTestId } = render(
+        <GroomListScreen
+          marketplaceData={freeRefreshData}
+          userData={mockUserData}
+        />
+      );
+
+      // Wait for component to load
+      await waitFor(() => {
+        expect(getByTestId('groom-list-scroll')).toBeTruthy();
+      });
+
+      // Verify free refresh text is shown
+      expect(screen.getByText(/free refresh available/i)).toBeTruthy();
+    });
+
+    test('shows premium refresh cost when canRefreshFree is false', async () => {
+      const premiumRefreshData = {
+        ...mockMarketplaceData,
+        canRefreshFree: false,
+        refreshCost: 100,
+      };
+
+      const { getByTestId } = render(
+        <GroomListScreen
+          marketplaceData={premiumRefreshData}
+          userData={mockUserData}
+        />
+      );
+
+      // Wait for component to load
+      await waitFor(() => {
+        expect(getByTestId('groom-list-scroll')).toBeTruthy();
+      });
+
+      // Verify premium refresh cost is shown
+      const costElements = screen.getAllByText(/\$100/);
+      expect(costElements.length).toBeGreaterThan(0);
+    });
+
+    test('displays countdown timer until next free refresh', async () => {
+      // Set next free refresh to 1 hour from now
+      const oneHourFromNow = new Date();
+      oneHourFromNow.setHours(oneHourFromNow.getHours() + 1);
+
+      const timerData = {
+        ...mockMarketplaceData,
+        canRefreshFree: false,
+        nextFreeRefresh: oneHourFromNow.toISOString(),
+      };
+
+      const { getByTestId } = render(
+        <GroomListScreen
+          marketplaceData={timerData}
+          userData={mockUserData}
+        />
+      );
+
+      // Wait for component to load
+      await waitFor(() => {
+        expect(getByTestId('groom-list-scroll')).toBeTruthy();
+      });
+
+      // Verify countdown timer is displayed (should show hours and minutes)
+      const timerElement = screen.getByTestId('refresh-countdown');
+      expect(timerElement).toBeTruthy();
+      expect(timerElement.props.children).toMatch(/\d+h|\d+m|\d+s/);
     });
   });
 });

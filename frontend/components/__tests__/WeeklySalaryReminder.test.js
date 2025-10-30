@@ -43,6 +43,7 @@ describe('WeeklySalaryReminder Component', () => {
   beforeEach(() => {
     jest.clearAllMocks();
     AsyncStorage.getItem.mockResolvedValue(null);
+    AsyncStorage.setItem.mockResolvedValue(null);
   });
 
   describe('Rendering and Display', () => {
