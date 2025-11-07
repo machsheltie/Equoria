@@ -15,9 +15,8 @@ export default {
       testEnvironment: 'node',
       setupFilesAfterEnv: ['<rootDir>/jest.setup.mjs'],
       preset: null,
-      transform: {
-        '^.+\\.mjs$': 'babel-jest',
-      },
+      // Do not transform backend ESM files; run them natively via Node ESM
+      transform: {},
       moduleNameMapper: {
         '^(\\.{1,2}/.*)\\.js$': '$1',
       },
