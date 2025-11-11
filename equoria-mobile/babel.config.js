@@ -22,9 +22,10 @@ module.exports = function(api) {
             '@config': './src/config'
           }
         }
-      ],
-      // IMPORTANT: react-native-reanimated/plugin must be listed LAST
-      'react-native-reanimated/plugin'
+      ]
+      // IMPORTANT: react-native-reanimated/plugin must be listed LAST when enabled
+      // Temporarily disabled until animations are implemented in Week 2+
+      // 'react-native-reanimated/plugin'
     ]
   };
 };

@@ -1,0 +1,81 @@
+{
+  "mcpServers": {
+    "sequential-thinking": {
+      "command": "python",
+      "args": [
+        "-m",
+        "mcp_server_mas_sequential_thinking"
+      ],
+      "cwd": "C:\\Users\\heirr\\OneDrive\\Desktop\\Equoria\\SequentialThinking\\mcp-server-mas-sequential-thinking",
+      "env": {
+        "PYTHONPATH": "C:\\Users\\heirr\\OneDrive\\Desktop\\Equoria\\SequentialThinking\\mcp-server-mas-sequential-thinking"
+      }
+    },
+    "context7": {
+      "command": "npx",
+      "args": [
+        "-y",
+        "@context7/mcp-server"
+      ]
+    },
+    "task-manager": {
+      "command": "npx",
+      "args": [
+        "-y",
+        "@taskmanager/mcp-server"
+      ]
+    },
+    "serenity": {
+      "command": "npx",
+      "args": [
+        "-y",
+        "@serenity/mcp-server"
+      ]
+    },
+    "chrome-dev-tools": {
+      "command": "npx",
+      "args": [
+        "-y",
+        "@chrome-devtools/mcp-server"
+      ]
+    },
+    "filesystem": {
+      "command": "npx",
+      "args": [
+        "-y",
+        "@modelcontextprotocol/server-filesystem",
+        "C:\\Users\\heirr\\OneDrive\\Desktop\\Equoria"
+      ]
+    },
+    "git": {
+      "command": "npx",
+      "args": [
+        "-y",
+        "@modelcontextprotocol/server-git",
+        "--repository",
+        "C:\\Users\\heirr\\OneDrive\\Desktop\\Equoria"
+      ]
+    },
+    "github": {
+      "command": "npx",
+      "args": [
+        "-y",
+        "@modelcontextprotocol/server-github"
+      ],
+      "env": {
+        "GITHUB_PERSONAL_ACCESS_TOKEN": "REPLACE_WITH_YOUR_GITHUB_TOKEN"
+      }
+    },
+    "postgres": {
+      "command": "npx",
+      "args": [
+        "-y",
+        "@modelcontextprotocol/server-postgres",
+        "postgresql://localhost/equoria"
+      ],
+      "env": {
+        "POSTGRES_CONNECTION_STRING": "postgresql://localhost/equoria"
+      }
+    }
+  }
+}

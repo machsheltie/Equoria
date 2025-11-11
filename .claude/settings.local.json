@@ -1,0 +1,39 @@
+{
+  "permissions": {
+    "allow": [
+      "Bash(npm test:*)",
+      "Bash(cat:*)",
+      "Bash(powershell.exe -ExecutionPolicy Bypass -File \"C:\\Users\\heirr\\OneDrive\\Desktop\\Equoria\\setup-mcp-servers.ps1\")",
+      "Bash(powershell.exe -Command \"Test-Path ''$env:APPDATA\\Claude''\")",
+      "Bash(powershell.exe -Command \"if (!(Test-Path ''$env:APPDATA\\Claude'')) { New-Item -ItemType Directory -Path ''$env:APPDATA\\Claude'' -Force | Out-Null }; Copy-Item ''C:\\Users\\heirr\\OneDrive\\Desktop\\Equoria\\.claude\\mcp_config.json'' ''$env:APPDATA\\Claude\\claude_desktop_config.json'' -Force; Write-Host ''Configuration copied successfully''\")",
+      "Bash(powershell.exe -Command \"Get-Content ''''$env:APPDATA\\Claude\\claude_desktop_config.json''''\")",
+      "Bash(node --version:*)",
+      "Bash(npm --version:*)",
+      "Bash(git --version:*)",
+      "Bash(npx expo:*)",
+      "Bash(curl:*)",
+      "Bash(npm run dev:*)",
+      "Bash(npm install:*)",
+      "Bash(npx prisma generate:*)",
+      "Bash(npx create-expo-app@latest:*)",
+      "Bash(npm run type-check:*)",
+      "Bash(npx tsc --noEmit)",
+      "Bash(npm start)",
+      "Bash(netstat:*)",
+      "Bash(findstr:*)",
+      "Bash(npm start:*)",
+      "Bash(taskkill:*)",
+      "Bash(npm uninstall:*)",
+      "Bash(test:*)",
+      "Bash(powershell.exe -Command \"Stop-Process -Id 60228 -Force; Stop-Process -Id 62452 -Force\")",
+      "Bash(git add:*)",
+      "Bash(git commit:*)",
+      "Bash(git log:*)",
+      "Bash(powershell.exe -ExecutionPolicy Bypass -File \"C:\\Users\\heirr\\OneDrive\\Desktop\\Equoria\\verify-mcp-servers.ps1\")",
+      "Bash(npm run test:coverage:*)",
+      "Bash(move:*)"
+    ],
+    "deny": [],
+    "ask": []
+  }
+}

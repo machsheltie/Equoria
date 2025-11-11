@@ -1,9 +1,14 @@
 import { StatusBar } from 'expo-status-bar';
 import { StyleSheet, Text, View, Button, ActivityIndicator } from 'react-native';
 import { useEffect, useState, useCallback } from 'react';
+import { Provider } from 'react-redux';
+import { PersistGate } from 'redux-persist/integration/react';
+import { QueryClientProvider } from '@tanstack/react-query';
+import { store, persistor } from './src/state/store';
+import { queryClient } from './src/state/queryClient';
 import { testApiConnection } from './src/api/test';
 
-export default function App() {
+function AppContent() {
   const [apiConnected, setApiConnected] = useState<boolean | null>(null);
   const [isChecking, setIsChecking] = useState(false);
 
@@ -22,7 +27,7 @@ export default function App() {
     <View style={styles.container}>
       <Text style={styles.title}>Equoria Mobile</Text>
       <Text style={styles.subtitle}>Horse Breeding Simulation</Text>
-      <Text style={styles.version}>Version 0.1.0 - Week 1 Day 1</Text>
+      <Text style={styles.version}>Version 0.2.0 - Week 1 Day 2</Text>
 
       <View style={styles.statusContainer}>
         <Text style={styles.statusLabel}>Backend API Status:</Text>
@@ -57,17 +62,30 @@ export default function App() {
       />
 
       <View style={styles.completedContainer}>
-        <Text style={styles.completedTitle}>✅ Day 1 Completed:</Text>
-        <Text style={styles.completedItem}>• Expo project initialized</Text>
-        <Text style={styles.completedItem}>• Folder structure created</Text>
-        <Text style={styles.completedItem}>• Dependencies installed</Text>
-        <Text style={styles.completedItem}>• TypeScript configured</Text>
-        <Text style={styles.completedItem}>• API client setup</Text>
-        <Text style={styles.completedItem}>• Environment config ready</Text>
+        <Text style={styles.completedTitle}>✅ Day 2 Progress:</Text>
+        <Text style={styles.completedItem}>• Redux Toolkit integrated</Text>
+        <Text style={styles.completedItem}>• React Query configured</Text>
+        <Text style={styles.completedItem}>• Redux Persist enabled</Text>
+        <Text style={styles.completedItem}>• Auth state management</Text>
+        <Text style={styles.completedItem}>• Query hooks (login/logout)</Text>
+        <Text style={styles.completedItem}>• TDD with 100% coverage</Text>
       </View>
 
       <StatusBar style="auto" />
     </View>
+  );
+}
+
+// Provider wrapper component
+export default function App() {
+  return (
+    <Provider store={store}>
+      <PersistGate loading={<ActivityIndicator />} persistor={persistor}>
+        <QueryClientProvider client={queryClient}>
+          <AppContent />
+        </QueryClientProvider>
+      </PersistGate>
+    </Provider>
   );
 }
 
