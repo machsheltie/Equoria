@@ -1,0 +1,101 @@
+{
+  "name": "equoria-mobile",
+  "version": "1.0.0",
+  "main": "index.ts",
+  "scripts": {
+    "start": "expo start",
+    "android": "expo start --android",
+    "ios": "expo start --ios",
+    "web": "expo start --web",
+    "test": "jest",
+    "test:watch": "jest --watch",
+    "test:coverage": "jest --coverage",
+    "lint": "eslint . --ext .ts,.tsx",
+    "lint:fix": "eslint . --ext .ts,.tsx --fix",
+    "format": "prettier --write \"**/*.{ts,tsx,json}\"",
+    "format:check": "prettier --check \"**/*.{ts,tsx,json}\"",
+    "type-check": "tsc --noEmit"
+  },
+  "dependencies": {
+    "@hookform/resolvers": "^5.2.2",
+    "@react-native-async-storage/async-storage": "^2.2.0",
+    "@react-navigation/bottom-tabs": "^7.8.4",
+    "@react-navigation/drawer": "^7.7.2",
+    "@react-navigation/native": "^7.1.19",
+    "@react-navigation/native-stack": "^7.6.2",
+    "@reduxjs/toolkit": "^2.10.1",
+    "@tanstack/react-query": "^5.90.7",
+    "axios": "^1.13.2",
+    "babel-preset-expo": "^54.0.7",
+    "expo": "~54.0.23",
+    "expo-constants": "^18.0.10",
+    "expo-secure-store": "^15.0.7",
+    "expo-status-bar": "~3.0.8",
+    "react": "19.1.0",
+    "react-dom": "^18.3.1",
+    "react-hook-form": "^7.66.0",
+    "react-native": "0.81.5",
+    "react-native-gesture-handler": "^2.29.1",
+    "react-native-reanimated": "^4.1.4",
+    "react-native-safe-area-context": "^5.6.2",
+    "react-native-screens": "^4.18.0",
+    "react-native-web": "^0.19.13",
+    "react-native-worklets-core": "^1.6.2",
+    "react-redux": "^9.2.0",
+    "redux-persist": "^6.0.0",
+    "yup": "^1.7.1"
+  },
+  "devDependencies": {
+    "@tanstack/react-query-devtools": "^5.90.2",
+    "@testing-library/jest-native": "^5.4.3",
+    "@testing-library/react-native": "^13.3.3",
+    "@types/react": "~19.1.0",
+    "@typescript-eslint/eslint-plugin": "^8.46.3",
+    "@typescript-eslint/parser": "^8.46.3",
+    "babel-plugin-module-resolver": "^5.0.2",
+    "eslint": "^9.39.1",
+    "eslint-plugin-react": "^7.37.5",
+    "eslint-plugin-react-hooks": "^7.0.1",
+    "jest-expo": "^54.0.13",
+    "prettier": "^3.6.2",
+    "typescript": "~5.9.2"
+  },
+  "jest": {
+    "preset": "jest-expo",
+    "transformIgnorePatterns": [
+      "node_modules/(?!((jest-)?react-native|@react-native(-community)?)|expo(nent)?|@expo(nent)?/.*|@expo-google-fonts/.*|react-navigation|@react-navigation/.*|@unimodules/.*|unimodules|sentry-expo|native-base|react-native-svg)"
+    ],
+    "collectCoverageFrom": [
+      "src/**/*.{ts,tsx}",
+      "!src/**/*.d.ts",
+      "!src/**/__tests__/**",
+      "!src/**/__mocks__/**"
+    ],
+    "coverageThreshold": {
+      "global": {
+        "branches": 80,
+        "functions": 80,
+        "lines": 80,
+        "statements": 80
+      }
+    },
+    "setupFilesAfterEnv": [
+      "@testing-library/jest-native/extend-expect"
+    ],
+    "moduleNameMapper": {
+      "^@/(.*)$": "<rootDir>/src/$1",
+      "^@components/(.*)$": "<rootDir>/src/components/$1",
+      "^@screens/(.*)$": "<rootDir>/src/screens/$1",
+      "^@navigation/(.*)$": "<rootDir>/src/navigation/$1",
+      "^@state/(.*)$": "<rootDir>/src/state/$1",
+      "^@api/(.*)$": "<rootDir>/src/api/$1",
+      "^@utils/(.*)$": "<rootDir>/src/utils/$1",
+      "^@types/(.*)$": "<rootDir>/src/types/$1",
+      "^@constants/(.*)$": "<rootDir>/src/constants/$1",
+      "^@hooks/(.*)$": "<rootDir>/src/hooks/$1",
+      "^@theme/(.*)$": "<rootDir>/src/theme/$1",
+      "^@config/(.*)$": "<rootDir>/src/config/$1"
+    }
+  },
+  "private": true
+}
