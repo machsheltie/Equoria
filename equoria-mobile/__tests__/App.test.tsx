@@ -21,39 +21,68 @@ jest.mock('expo-status-bar', () => ({
 describe('App', () => {
   beforeEach(() => {
     jest.clearAllMocks();
+    jest.clearAllTimers();
+  });
+
+  afterEach(() => {
+    jest.clearAllMocks();
+    jest.clearAllTimers();
+    jest.restoreAllMocks();
+  });
+
+  afterAll(() => {
+    jest.clearAllTimers();
+    jest.restoreAllMocks();
   });
 
   describe('rendering', () => {
-    it('should render the app title', () => {
+    it('should render the app title', async () => {
       (testApiConnection as jest.Mock).mockResolvedValue(true);
 
       const { getByText } = render(<App />);
 
       expect(getByText('Equoria Mobile')).toBeTruthy();
+
+      // Wait for async operations to complete
+      await waitFor(() => {
+        expect(testApiConnection).toHaveBeenCalled();
+      });
     });
 
-    it('should render the subtitle', () => {
+    it('should render the subtitle', async () => {
       (testApiConnection as jest.Mock).mockResolvedValue(true);
 
       const { getByText } = render(<App />);
 
       expect(getByText('Horse Breeding Simulation')).toBeTruthy();
+
+      await waitFor(() => {
+        expect(testApiConnection).toHaveBeenCalled();
+      });
     });
 
-    it('should render the version information', () => {
+    it('should render the version information', async () => {
       (testApiConnection as jest.Mock).mockResolvedValue(true);
 
       const { getByText } = render(<App />);
 
       expect(getByText('Version 0.2.0 - Week 1 Day 2')).toBeTruthy();
+
+      await waitFor(() => {
+        expect(testApiConnection).toHaveBeenCalled();
+      });
     });
 
-    it('should render backend API status label', () => {
+    it('should render backend API status label', async () => {
       (testApiConnection as jest.Mock).mockResolvedValue(true);
 
       const { getByText } = render(<App />);
 
       expect(getByText('Backend API Status:')).toBeTruthy();
+
+      await waitFor(() => {
+        expect(testApiConnection).toHaveBeenCalled();
+      });
     });
 
     it('should render test connection button', async () => {
@@ -69,7 +98,7 @@ describe('App', () => {
       expect(getByText('Test Connection')).toBeTruthy();
     });
 
-    it('should render completed items list', () => {
+    it('should render completed items list', async () => {
       (testApiConnection as jest.Mock).mockResolvedValue(true);
 
       const { getByText } = render(<App />);
@@ -81,6 +110,10 @@ describe('App', () => {
       expect(getByText(/Auth state management/)).toBeTruthy();
       expect(getByText(/Query hooks \(login\/logout\)/)).toBeTruthy();
       expect(getByText(/TDD with 100% coverage/)).toBeTruthy();
+
+      await waitFor(() => {
+        expect(testApiConnection).toHaveBeenCalled();
+      });
     });
   });
 
@@ -100,7 +133,7 @@ describe('App', () => {
         () => new Promise(resolve => setTimeout(() => resolve(true), 100))
       );
 
-      const { getByTestId, UNSAFE_queryByType } = render(<App />);
+      const { UNSAFE_queryByType } = render(<App />);
 
       // ActivityIndicator should be visible initially
       const activityIndicator = UNSAFE_queryByType(
@@ -176,6 +209,10 @@ describe('App', () => {
 
       // Resolve the promise to cleanup
       resolveTest!(true);
+
+      await waitFor(() => {
+        expect(getByText('Test Connection')).toBeTruthy();
+      });
     });
 
     it('should update button text to "Testing..." while checking', async () => {
@@ -187,6 +224,10 @@ describe('App', () => {
 
       await waitFor(() => {
         expect(getByText('Testing...')).toBeTruthy();
+      });
+
+      await waitFor(() => {
+        expect(getByText('Test Connection')).toBeTruthy();
       });
     });
 

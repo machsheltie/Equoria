@@ -25,7 +25,7 @@
             <div class='fl pad1y space-right2'>
                 <span class="strong">100% </span>
                 <span class="quiet">Statements</span>
-                <span class='fraction'>11/11</span>
+                <span class='fraction'>12/12</span>
             </div>
         
             
@@ -39,14 +39,14 @@
             <div class='fl pad1y space-right2'>
                 <span class="strong">100% </span>
                 <span class="quiet">Functions</span>
-                <span class='fraction'>3/3</span>
+                <span class='fraction'>4/4</span>
             </div>
         
             
             <div class='fl pad1y space-right2'>
                 <span class="strong">100% </span>
                 <span class="quiet">Lines</span>
-                <span class='fraction'>11/11</span>
+                <span class='fraction'>12/12</span>
             </div>
         
             
@@ -200,7 +200,30 @@
 <a name='L135'></a><a href='#L135'>135</a>
 <a name='L136'></a><a href='#L136'>136</a>
 <a name='L137'></a><a href='#L137'>137</a>
-<a name='L138'></a><a href='#L138'>138</a></td><td class="line-coverage quiet"><span class="cline-any cline-neutral">&nbsp;</span>
+<a name='L138'></a><a href='#L138'>138</a>
+<a name='L139'></a><a href='#L139'>139</a>
+<a name='L140'></a><a href='#L140'>140</a>
+<a name='L141'></a><a href='#L141'>141</a>
+<a name='L142'></a><a href='#L142'>142</a>
+<a name='L143'></a><a href='#L143'>143</a>
+<a name='L144'></a><a href='#L144'>144</a>
+<a name='L145'></a><a href='#L145'>145</a>
+<a name='L146'></a><a href='#L146'>146</a>
+<a name='L147'></a><a href='#L147'>147</a>
+<a name='L148'></a><a href='#L148'>148</a>
+<a name='L149'></a><a href='#L149'>149</a>
+<a name='L150'></a><a href='#L150'>150</a>
+<a name='L151'></a><a href='#L151'>151</a>
+<a name='L152'></a><a href='#L152'>152</a>
+<a name='L153'></a><a href='#L153'>153</a>
+<a name='L154'></a><a href='#L154'>154</a>
+<a name='L155'></a><a href='#L155'>155</a>
+<a name='L156'></a><a href='#L156'>156</a></td><td class="line-coverage quiet"><span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
@@ -263,6 +286,19 @@
 <span class="cline-any cline-neutral">&nbsp;</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-neutral">&nbsp;</span>
+<span class="cline-any cline-yes">27x</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
 <span class="cline-any cline-neutral">&nbsp;</span>
@@ -340,9 +376,14 @@
 <span class="cline-any cline-neutral">&nbsp;</span></td><td class="text"><pre class="prettyprint lang-js">import { StatusBar } from 'expo-status-bar';
 import { StyleSheet, Text, View, Button, ActivityIndicator } from 'react-native';
 import { useEffect, useState, useCallback } from 'react';
+import { Provider } from 'react-redux';
+import { PersistGate } from 'redux-persist/integration/react';
+import { QueryClientProvider } from '@tanstack/react-query';
+import { store, persistor } from './src/state/store';
+import { queryClient } from './src/state/queryClient';
 import { testApiConnection } from './src/api/test';
 &nbsp;
-export default function App() {
+function AppContent() {
   const [apiConnected, setApiConnected] = useState&lt;boolean | null&gt;(null);
   const [isChecking, setIsChecking] = useState(false);
 &nbsp;
@@ -361,7 +402,7 @@ export default function App() {
     &lt;View style={styles.container}&gt;
       &lt;Text style={styles.title}&gt;Equoria Mobile&lt;/Text&gt;
       &lt;Text style={styles.subtitle}&gt;Horse Breeding Simulation&lt;/Text&gt;
-      &lt;Text style={styles.version}&gt;Version 0.1.0 - Week 1 Day 1&lt;/Text&gt;
+      &lt;Text style={styles.version}&gt;Version 0.2.0 - Week 1 Day 2&lt;/Text&gt;
 &nbsp;
       &lt;View style={styles.statusContainer}&gt;
         &lt;Text style={styles.statusLabel}&gt;Backend API Status:&lt;/Text&gt;
@@ -396,17 +437,30 @@ export default function App() {
       /&gt;
 &nbsp;
       &lt;View style={styles.completedContainer}&gt;
-        &lt;Text style={styles.completedTitle}&gt;✅ Day 1 Completed:&lt;/Text&gt;
-        &lt;Text style={styles.completedItem}&gt;• Expo project initialized&lt;/Text&gt;
-        &lt;Text style={styles.completedItem}&gt;• Folder structure created&lt;/Text&gt;
-        &lt;Text style={styles.completedItem}&gt;• Dependencies installed&lt;/Text&gt;
-        &lt;Text style={styles.completedItem}&gt;• TypeScript configured&lt;/Text&gt;
-        &lt;Text style={styles.completedItem}&gt;• API client setup&lt;/Text&gt;
-        &lt;Text style={styles.completedItem}&gt;• Environment config ready&lt;/Text&gt;
+        &lt;Text style={styles.completedTitle}&gt;✅ Day 2 Progress:&lt;/Text&gt;
+        &lt;Text style={styles.completedItem}&gt;• Redux Toolkit integrated&lt;/Text&gt;
+        &lt;Text style={styles.completedItem}&gt;• React Query configured&lt;/Text&gt;
+        &lt;Text style={styles.completedItem}&gt;• Redux Persist enabled&lt;/Text&gt;
+        &lt;Text style={styles.completedItem}&gt;• Auth state management&lt;/Text&gt;
+        &lt;Text style={styles.completedItem}&gt;• Query hooks (login/logout)&lt;/Text&gt;
+        &lt;Text style={styles.completedItem}&gt;• TDD with 100% coverage&lt;/Text&gt;
       &lt;/View&gt;
 &nbsp;
       &lt;StatusBar style="auto" /&gt;
     &lt;/View&gt;
+  );
+}
+&nbsp;
+// Provider wrapper component
+export default function App() {
+  return (
+    &lt;Provider store={store}&gt;
+      &lt;PersistGate loading={&lt;ActivityIndicator /&gt;} persistor={persistor}&gt;
+        &lt;QueryClientProvider client={queryClient}&gt;
+          &lt;AppContent /&gt;
+        &lt;/QueryClientProvider&gt;
+      &lt;/PersistGate&gt;
+    &lt;/Provider&gt;
   );
 }
 &nbsp;
@@ -481,7 +535,7 @@ const styles = StyleSheet.create({
             <div class='footer quiet pad2 space-top1 center small'>
                 Code coverage generated by
                 <a href="https://istanbul.js.org/" target="_blank" rel="noopener noreferrer">istanbul</a>
-                at 2025-11-11T11:16:24.800Z
+                at 2025-11-11T14:13:17.213Z
             </div>
         <script src="../prettify.js"></script>
         <script>

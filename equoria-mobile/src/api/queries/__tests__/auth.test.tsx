@@ -39,6 +39,13 @@ const createWrapper = () => {
 describe('useLogin', () => {
   beforeEach(() => {
     jest.clearAllMocks();
+    jest.clearAllTimers();
+  });
+
+  afterEach(() => {
+    jest.clearAllMocks();
+    jest.clearAllTimers();
+    jest.restoreAllMocks();
   });
 
   it('should login successfully and update state', async () => {
@@ -172,6 +179,13 @@ describe('useLogin', () => {
 describe('useLogout', () => {
   beforeEach(() => {
     jest.clearAllMocks();
+    jest.clearAllTimers();
+  });
+
+  afterEach(() => {
+    jest.clearAllMocks();
+    jest.clearAllTimers();
+    jest.restoreAllMocks();
   });
 
   it('should logout successfully and clear state', async () => {
