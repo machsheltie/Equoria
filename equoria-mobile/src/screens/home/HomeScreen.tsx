@@ -4,7 +4,7 @@ import type { HomeStackScreenProps } from '@navigation/types';
 
 type Props = HomeStackScreenProps<'Home'>;
 
-export function HomeScreen({ navigation }: Props) {
+export function HomeScreen({ navigation: _navigation }: Props) {
   return (
     <View style={styles.container} testID="home-screen">
       <Text style={styles.title}>Home Screen</Text>

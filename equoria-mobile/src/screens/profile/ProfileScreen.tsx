@@ -4,7 +4,7 @@ import type { ProfileStackScreenProps } from '@navigation/types';
 
 type Props = ProfileStackScreenProps<'Profile'>;
 
-export function ProfileScreen({ navigation }: Props) {
+export function ProfileScreen({ navigation: _navigation }: Props) {
   return (
     <View style={styles.container} testID="profile-screen">
       <Text style={styles.title}>Profile Screen</Text>

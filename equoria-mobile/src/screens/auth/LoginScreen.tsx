@@ -4,7 +4,7 @@ import type { AuthStackScreenProps } from '@navigation/types';
 
 type Props = AuthStackScreenProps<'Login'>;
 
-export function LoginScreen({ navigation }: Props) {
+export function LoginScreen({ navigation: _navigation }: Props) {
   return (
     <View style={styles.container} testID="login-screen">
       <Text style={styles.title}>Login Screen</Text>

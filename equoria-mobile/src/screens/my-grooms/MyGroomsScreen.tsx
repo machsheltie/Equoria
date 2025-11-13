@@ -4,7 +4,7 @@ import type { MyGroomsStackScreenProps } from '@navigation/types';
 
 type Props = MyGroomsStackScreenProps<'MyGrooms'>;
 
-export function MyGroomsScreen({ navigation, route }: Props) {
+export function MyGroomsScreen({ navigation: _navigation, route: _route }: Props) {
   return (
     <View style={styles.container} testID="my-grooms-screen">
       <Text style={styles.title}>My Grooms Screen</Text>

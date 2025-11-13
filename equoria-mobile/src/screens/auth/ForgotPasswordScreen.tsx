@@ -4,7 +4,7 @@ import type { AuthStackScreenProps } from '@navigation/types';
 
 type Props = AuthStackScreenProps<'ForgotPassword'>;
 
-export function ForgotPasswordScreen({ navigation }: Props) {
+export function ForgotPasswordScreen({ navigation: _navigation }: Props) {
   return (
     <View style={styles.container} testID="forgot-password-screen">
       <Text style={styles.title}>Forgot Password Screen</Text>

@@ -61,6 +61,11 @@
   },
   "jest": {
     "preset": "jest-expo",
+    "maxWorkers": "50%",
+    "testTimeout": 120000,
+    "bail": false,
+    "detectOpenHandles": true,
+    "forceExit": true,
     "testMatch": [
       "**/__tests__/**/*.[jt]s?(x)",
       "**/?(*.)+(spec|test).[jt]s?(x)"

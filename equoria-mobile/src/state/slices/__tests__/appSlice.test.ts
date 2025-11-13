@@ -3,6 +3,7 @@ import appReducer, {
   setLanguage,
   toggleNotifications,
   toggleSound,
+  AppState,
 } from '../appSlice';
 
 describe('appSlice', () => {
@@ -78,7 +79,7 @@ describe('appSlice', () => {
     });
 
     it('should change from one language to another', () => {
-      let state = appReducer(initialState, setLanguage('es'));
+      let state: AppState = appReducer(initialState, setLanguage('es'));
       expect(state.language).toBe('es');
 
       state = appReducer(state, setLanguage('fr'));
@@ -107,7 +108,7 @@ describe('appSlice', () => {
     });
 
     it('should toggle multiple times correctly', () => {
-      let state = initialState;
+      let state: AppState = initialState;
 
       state = appReducer(state, toggleNotifications());
       expect(state.notificationsEnabled).toBe(false);
@@ -141,7 +142,7 @@ describe('appSlice', () => {
     });
 
     it('should toggle multiple times correctly', () => {
-      let state = initialState;
+      let state: AppState = initialState;
 
       state = appReducer(state, toggleSound());
       expect(state.soundEnabled).toBe(false);
@@ -164,7 +165,7 @@ describe('appSlice', () => {
 
   describe('multiple actions', () => {
     it('should handle multiple state updates correctly', () => {
-      let state = initialState;
+      let state: AppState = initialState;
 
       state = appReducer(state, setTheme('dark'));
       expect(state.theme).toBe('dark');
@@ -186,7 +187,7 @@ describe('appSlice', () => {
     });
 
     it('should maintain state consistency across different action sequences', () => {
-      let state = initialState;
+      let state: AppState = initialState;
 
       // Change all settings
       state = appReducer(state, setTheme('light'));
@@ -213,7 +214,7 @@ describe('appSlice', () => {
 
   describe('edge cases', () => {
     it('should handle setting the same theme multiple times', () => {
-      let state = appReducer(initialState, setTheme('dark'));
+      let state: AppState = appReducer(initialState, setTheme('dark'));
       state = appReducer(state, setTheme('dark'));
       state = appReducer(state, setTheme('dark'));
 
@@ -221,7 +222,7 @@ describe('appSlice', () => {
     });
 
     it('should handle setting the same language multiple times', () => {
-      let state = appReducer(initialState, setLanguage('es'));
+      let state: AppState = appReducer(initialState, setLanguage('es'));
       state = appReducer(state, setLanguage('es'));
       state = appReducer(state, setLanguage('es'));
 
@@ -229,7 +230,7 @@ describe('appSlice', () => {
     });
 
     it('should handle rapid toggle operations', () => {
-      let state = initialState;
+      let state: AppState = initialState;
 
       for (let i = 0; i < 10; i++) {
         state = appReducer(state, toggleNotifications());

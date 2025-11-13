@@ -4,7 +4,7 @@ import type { AuthStackScreenProps } from '@navigation/types';
 
 type Props = AuthStackScreenProps<'Register'>;
 
-export function RegisterScreen({ navigation }: Props) {
+export function RegisterScreen({ navigation: _navigation }: Props) {
   return (
     <View style={styles.container} testID="register-screen">
       <Text style={styles.title}>Register Screen</Text>

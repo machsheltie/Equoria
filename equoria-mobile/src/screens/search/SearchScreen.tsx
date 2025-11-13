@@ -4,7 +4,7 @@ import type { SearchStackScreenProps } from '@navigation/types';
 
 type Props = SearchStackScreenProps<'Search'>;
 
-export function SearchScreen({ navigation, route }: Props) {
+export function SearchScreen({ navigation: _navigation, route: _route }: Props) {
   return (
     <View style={styles.container} testID="search-screen">
       <Text style={styles.title}>Search Screen</Text>

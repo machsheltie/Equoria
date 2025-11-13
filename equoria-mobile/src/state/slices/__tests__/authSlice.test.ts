@@ -1,4 +1,4 @@
-import authReducer, { setUser, clearUser, setLoading } from '../authSlice';
+import authReducer, { setUser, clearUser, setLoading, AuthState } from '../authSlice';
 
 describe('authSlice', () => {
   const initialState = {
@@ -156,7 +156,7 @@ describe('authSlice', () => {
 
   describe('edge cases', () => {
     it('should handle multiple state updates correctly', () => {
-      let state = initialState;
+      let state: AuthState = initialState;
 
       // Set user
       const user = {
