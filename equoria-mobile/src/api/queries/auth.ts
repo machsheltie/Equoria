@@ -22,6 +22,54 @@ interface LoginResponse {
   refreshToken: string;
 }
 
+interface RegisterCredentials {
+  email: string;
+  password: string;
+  firstName: string;
+  lastName: string;
+}
+
+interface RegisterResponse {
+  user: User;
+  accessToken: string;
+  refreshToken: string;
+}
+
+interface ForgotPasswordRequest {
+  email: string;
+}
+
+interface ForgotPasswordResponse {
+  message: string;
+}
+
+/**
+ * Plain login function for direct API calls
+ * Used for testing and simple login flows
+ */
+export const login = async (credentials: LoginCredentials): Promise<LoginResponse> => {
+  const response = await apiClient.post<LoginResponse>('/auth/login', credentials);
+  return response;
+};
+
+/**
+ * Plain register function for direct API calls
+ * Used for testing and simple registration flows
+ */
+export const register = async (credentials: RegisterCredentials): Promise<RegisterResponse> => {
+  const response = await apiClient.post<RegisterResponse>('/auth/register', credentials);
+  return response;
+};
+
+/**
+ * Plain forgot password function for direct API calls
+ * Sends a password reset link to the user's email
+ */
+export const forgotPassword = async (request: ForgotPasswordRequest): Promise<ForgotPasswordResponse> => {
+  const response = await apiClient.post<ForgotPasswordResponse>('/auth/forgot-password', request);
+  return response;
+};
+
 /**
  * Custom hook for user login
  * Handles authentication, token storage, and Redux state updates
