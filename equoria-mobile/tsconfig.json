@@ -16,6 +16,14 @@
       "@hooks/*": ["src/hooks/*"],
       "@theme/*": ["src/theme/*"],
       "@config/*": ["src/config/*"]
-    }
-  }
+    },
+    "types": ["react-native", "jest"]
+  },
+  "include": [
+    "**/*.ts",
+    "**/*.tsx",
+    ".expo/types/**/*.ts",
+    "expo-env.d.ts",
+    "src/types/**/*.d.ts"
+  ]
 }
