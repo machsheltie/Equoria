@@ -17,7 +17,7 @@
 
 import prisma from '../db/index.mjs';
 import logger from './logger.mjs';
-import { _EPIGENETIC_FLAG_DEFINITIONS } from '../config/epigeneticFlagDefinitions.mjs';
+import { EPIGENETIC_FLAG_DEFINITIONS } from '../config/epigeneticFlagDefinitions.mjs';
 
 /**
  * Analyze care patterns for a specific horse
