@@ -1,0 +1,23 @@
+# IGNORE MOBILE APP (created in error)
+# The project is a WEB BROWSER game, not a mobile app
+# This folder was created 2025-11-13 to 2025-11-17 by mistake
+equoria-mobile/
+!equoria-mobile/README_DEPRECATED.md
+
+# Legacy/deprecated directories
+claude/
+database/
+game_plans/
+codehelpers/
+.venv/
+
+# Standard ignores
+node_modules/
+dist/
+build/
+.DS_Store
+*.log
+coverage/
+.env
+.env.*
+!.env.example

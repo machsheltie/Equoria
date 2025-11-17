@@ -1,0 +1,92 @@
+{
+  "project": {
+    "name": "Equoria",
+    "type": "full-stack-web",
+    "description": "Web browser-based horse breeding simulation game with React frontend and Node.js backend",
+    "version": "1.0.0",
+    "platform": "web-browser",
+    "style": "old-school text/graphics (Horseland, Ludus Equinus, Equus Ipsum)"
+  },
+  "workspace": {
+    "rootPath": ".",
+    "frontendPath": "./frontend",
+    "backendPath": "./backend",
+    "deprecatedPaths": {
+      "equoria-mobile": "DO NOT USE - Created in error (2025-11-13 to 2025-11-17). Project is web-based, not mobile. Keep for potential future mobile version."
+    }
+  },
+  "development": {
+    "primaryLanguage": "typescript",
+    "frameworks": {
+      "frontend": "react",
+      "frontendVersion": "19",
+      "styling": "tailwindcss",
+      "backend": "express",
+      "testing": "jest"
+    },
+    "testDriven": true,
+    "strictMode": true,
+    "platformNote": "WEB BROWSER GAME - NOT mobile app"
+  },
+  "testing": {
+    "framework": "jest",
+    "coverage": {
+      "enabled": true,
+      "threshold": 80,
+      "currentCoverage": 100
+    },
+    "parallel": {
+      "enabled": true,
+      "maxWorkers": "50%"
+    },
+    "tdd": {
+      "enabled": true,
+      "methodology": "red-green-refactor"
+    }
+  },
+  "codeQuality": {
+    "linting": {
+      "enabled": true,
+      "style": "airbnb"
+    },
+    "formatting": {
+      "enabled": true,
+      "prettier": true
+    },
+    "typeChecking": {
+      "enabled": true,
+      "strict": true
+    }
+  },
+  "git": {
+    "hooks": {
+      "preCommit": [
+        "npm run lint",
+        "npm run type-check",
+        "npm test -- --onlyChanged"
+      ],
+      "prePush": [
+        "npm test"
+      ]
+    },
+    "commitMessageFormat": "conventional"
+  },
+  "agents": {
+    "enabled": true,
+    "preferred": [
+      "typescript-pro",
+      "test-automator",
+      "code-reviewer",
+      "backend-architect"
+    ]
+  },
+  "mcp": {
+    "enabled": true,
+    "configFile": "../.mcp.json"
+  },
+  "documentation": {
+    "mainFile": "CLAUDE.md",
+    "autoUpdate": true,
+    "includeMetrics": true
+  }
+}
