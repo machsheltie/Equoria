@@ -1,0 +1,271 @@
+name: HttpOnly Cookie Authentication Tests
+
+on:
+  push:
+    branches: [master, develop]
+    paths:
+      - 'backend/controllers/authController.mjs'
+      - 'backend/middleware/auth.mjs'
+      - 'backend/app.mjs'
+      - 'frontend/src/lib/api-client.ts'
+      - 'frontend/src/hooks/useAuth.ts'
+      - 'backend/__tests__/integration/auth-cookies.test.mjs'
+      - 'frontend/src/**/__tests__/**'
+  pull_request:
+    branches: [master, develop]
+
+jobs:
+  backend-auth-tests:
+    name: Backend Cookie Authentication Tests
+    runs-on: ubuntu-latest
+
+    services:
+      postgres:
+        image: postgres:14
+        env:
+          POSTGRES_USER: postgres
+          POSTGRES_PASSWORD: postgres
+          POSTGRES_DB: equoria_test
+        options: >-
+          --health-cmd pg_isready
+          --health-interval 10s
+          --health-timeout 5s
+          --health-retries 5
+        ports:
+          - 5432:5432
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v3
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v3
+        with:
+          node-version: '18'
+          cache: 'npm'
+          cache-dependency-path: backend/package-lock.json
+
+      - name: Install dependencies
+        working-directory: backend
+        run: npm ci
+
+      - name: Run database migrations
+        working-directory: backend
+        env:
+          DATABASE_URL: postgresql://postgres:postgres@localhost:5432/equoria_test
+          NODE_ENV: test
+        run: npx prisma migrate deploy
+
+      - name: Run httpOnly cookie authentication tests
+        working-directory: backend
+        env:
+          DATABASE_URL: postgresql://postgres:postgres@localhost:5432/equoria_test
+          JWT_SECRET: test_secret_key_for_ci
+          NODE_ENV: test
+        run: npm test -- __tests__/integration/auth-cookies.test.mjs --verbose
+
+      - name: Upload backend test results
+        if: always()
+        uses: actions/upload-artifact@v3
+        with:
+          name: backend-auth-test-results
+          path: backend/coverage/
+
+  frontend-auth-tests:
+    name: Frontend Cookie Authentication Tests
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v3
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v3
+        with:
+          node-version: '18'
+          cache: 'npm'
+          cache-dependency-path: frontend/package-lock.json
+
+      - name: Install dependencies
+        working-directory: frontend
+        run: npm ci
+
+      - name: Run API client tests
+        working-directory: frontend
+        run: npm test -- src/lib/__tests__/api-client.test.ts
+
+      - name: Run useAuth hooks tests
+        working-directory: frontend
+        run: npm test -- src/hooks/__tests__/useAuth.test.ts
+
+      - name: Upload frontend test results
+        if: always()
+        uses: actions/upload-artifact@v3
+        with:
+          name: frontend-auth-test-results
+          path: frontend/coverage/
+
+  security-audit:
+    name: Security Audit - Cookie Configuration
+    runs-on: ubuntu-latest
+    needs: [backend-auth-tests, frontend-auth-tests]
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v3
+
+      - name: Verify httpOnly cookie configuration
+        run: |
+          echo "=== Verifying Backend Cookie Security ==="
+
+          # Check for httpOnly flag
+          if grep -r "httpOnly: true" backend/controllers/authController.mjs; then
+            echo "✅ httpOnly flag found"
+          else
+            echo "❌ ERROR: httpOnly flag missing"
+            exit 1
+          fi
+
+          # Check for sameSite flag
+          if grep -r "sameSite: 'strict'" backend/controllers/authController.mjs; then
+            echo "✅ sameSite=Strict flag found"
+          else
+            echo "❌ ERROR: sameSite flag missing"
+            exit 1
+          fi
+
+          # Check for secure flag in production
+          if grep -r "secure: process.env.NODE_ENV === 'production'" backend/controllers/authController.mjs; then
+            echo "✅ Secure flag configured for production"
+          else
+            echo "❌ ERROR: Secure flag not configured"
+            exit 1
+          fi
+
+          echo "=== Verifying Frontend Credentials Configuration ==="
+
+          # Check for credentials: 'include'
+          if grep -r "credentials: 'include'" frontend/src/lib/api-client.ts; then
+            echo "✅ credentials: 'include' found"
+          else
+            echo "❌ ERROR: credentials: 'include' missing"
+            exit 1
+          fi
+
+          # Verify NO localStorage usage for tokens
+          if grep -r "localStorage.setItem.*token" frontend/src/lib/api-client.ts frontend/src/hooks/useAuth.ts; then
+            echo "❌ ERROR: localStorage token storage found (XSS vulnerability)"
+            exit 1
+          else
+            echo "✅ No localStorage token storage (XSS protected)"
+          fi
+
+          echo "=== Security Audit PASSED ==="
+
+  integration-test:
+    name: E2E Authentication Flow
+    runs-on: ubuntu-latest
+    needs: [backend-auth-tests, frontend-auth-tests]
+
+    services:
+      postgres:
+        image: postgres:14
+        env:
+          POSTGRES_USER: postgres
+          POSTGRES_PASSWORD: postgres
+          POSTGRES_DB: equoria_test
+        options: >-
+          --health-cmd pg_isready
+          --health-interval 10s
+          --health-timeout 5s
+          --health-retries 5
+        ports:
+          - 5432:5432
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v3
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v3
+        with:
+          node-version: '18'
+
+      - name: Install backend dependencies
+        working-directory: backend
+        run: npm ci
+
+      - name: Install frontend dependencies
+        working-directory: frontend
+        run: npm ci
+
+      - name: Run database migrations
+        working-directory: backend
+        env:
+          DATABASE_URL: postgresql://postgres:postgres@localhost:5432/equoria_test
+        run: npx prisma migrate deploy
+
+      - name: Start backend server
+        working-directory: backend
+        env:
+          DATABASE_URL: postgresql://postgres:postgres@localhost:5432/equoria_test
+          JWT_SECRET: test_secret_key_for_ci
+          NODE_ENV: test
+        run: |
+          npm start &
+          sleep 5
+          curl http://localhost:3000/health || exit 1
+
+      - name: Test complete authentication flow
+        run: |
+          echo "=== Testing Register → Login → Profile → Logout ==="
+
+          # Register
+          REGISTER_RESPONSE=$(curl -i -X POST http://localhost:3000/api/auth/register \
+            -H "Content-Type: application/json" \
+            -d '{"username":"e2etest","email":"e2e@test.com","password":"Test123!"}' \
+            -c cookies.txt)
+
+          if echo "$REGISTER_RESPONSE" | grep -q "Set-Cookie.*accessToken"; then
+            echo "✅ Register sets httpOnly cookies"
+          else
+            echo "❌ Register failed to set cookies"
+            exit 1
+          fi
+
+          # Login
+          LOGIN_RESPONSE=$(curl -i -X POST http://localhost:3000/api/auth/login \
+            -H "Content-Type: application/json" \
+            -d '{"email":"e2e@test.com","password":"Test123!"}' \
+            -c cookies.txt)
+
+          if echo "$LOGIN_RESPONSE" | grep -q "Set-Cookie.*accessToken"; then
+            echo "✅ Login sets httpOnly cookies"
+          else
+            echo "❌ Login failed to set cookies"
+            exit 1
+          fi
+
+          # Get Profile (using cookies)
+          PROFILE_RESPONSE=$(curl -s http://localhost:3000/api/auth/profile \
+            -b cookies.txt)
+
+          if echo "$PROFILE_RESPONSE" | grep -q "e2e@test.com"; then
+            echo "✅ Profile accessed with httpOnly cookies"
+          else
+            echo "❌ Profile access failed"
+            exit 1
+          fi
+
+          # Logout
+          LOGOUT_RESPONSE=$(curl -i -X POST http://localhost:3000/api/auth/logout \
+            -b cookies.txt)
+
+          if echo "$LOGOUT_RESPONSE" | grep -q "Logout successful"; then
+            echo "✅ Logout successful"
+          else
+            echo "❌ Logout failed"
+            exit 1
+          fi
+
+          echo "=== E2E Authentication Flow PASSED ==="
