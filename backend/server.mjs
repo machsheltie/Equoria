@@ -1,68 +1,101 @@
-import { PrismaClient } from '../packages/database/node_modules/@prisma/client/index.mjs';
+/**
+ * 🏇 EQUORIA BACKEND - Server Entry Point
+ *
+ * Main server startup file with environment validation and error handling.
+ * Validates all required environment variables before starting the Express app.
+ *
+ * 🔐 SECURITY:
+ * - Environment validation at startup (fail-fast)
+ * - Strong JWT secret requirements
+ * - Database password validation
+ *
+ * 🚀 STARTUP SEQUENCE:
+ * 1. Load environment variables (.env)
+ * 2. Validate environment configuration
+ * 3. Initialize Express app
+ * 4. Start HTTP server
+ * 5. Initialize cron jobs
+ * 6. Handle graceful shutdown
+ */
 
-async function testConnections() {
-  const connectionStrings = [
-    'postgresql://postgres@localhost:5432/postgres', // No password
-    'postgresql://postgres:@localhost:5432/postgres', // Empty password
-    'postgresql://postgres:postgres@localhost:5432/postgres', // postgres password
-    'postgresql://postgres:admin@localhost:5432/postgres', // admin password
-    'postgresql://postgres:123456@localhost:5432/postgres', // 123456 password
-    'postgresql://postgres:password@localhost:5432/postgres', // password password
-  ];
+import dotenv from 'dotenv';
+import { validateEnvironment } from './utils/validateEnvironment.mjs';
+import app from './app.mjs';
+import logger from './utils/logger.mjs';
+import { initializeCronJobs, stopCronJobs } from './services/cronJobService.mjs';
+import prisma from '../packages/database/prismaClient.mjs';
 
-  for (const connectionString of connectionStrings) {
-    console.log(`\nTrying: ${connectionString.replace(/:([^:@]+)@/, ':***@')}`);
+// Load environment variables FIRST
+dotenv.config();
 
-    const prisma = new PrismaClient({
-      datasources: {
-        db: {
-          url: connectionString,
-        },
-      },
-    });
+// Validate environment variables BEFORE starting server
+logger.info('🔍 Validating environment configuration...');
+validateEnvironment();
+
+// Get port from environment
+const PORT = parseInt(process.env.PORT || '3000', 10);
+const NODE_ENV = process.env.NODE_ENV || 'development';
+
+// Start HTTP server
+const server = app.listen(PORT, () => {
+  logger.info(`🚀 Server running in ${NODE_ENV} mode on port ${PORT}`);
+  logger.info(`📝 API documentation available at http://localhost:${PORT}/api-docs`);
+  logger.info(`🏥 Health check available at http://localhost:${PORT}/health`);
+
+  // Initialize cron jobs in production
+  if (NODE_ENV === 'production') {
+    logger.info('⏰ Initializing cron jobs...');
+    initializeCronJobs();
+  }
+});
+
+// Graceful shutdown handler
+const shutdown = async (signal) => {
+  logger.info(`\n${signal} received. Starting graceful shutdown...`);
+
+  server.close(async () => {
+    logger.info('HTTP server closed');
 
     try {
-      await prisma.$connect();
-      console.log('✅ Connection successful!');
-
-      // Try to list databases
-      try {
-        const result =
-          await prisma.$queryRaw`SELECT datname FROM pg_database WHERE datistemplate = false;`;
-        console.log(
-          '📋 Available databases:',
-          result.map(r => r.datname),
-        );
-
-        // Check if equoria database exists
-        const equoriaExists = result.some(r => r.datname === 'equoria');
-        if (!equoriaExists) {
-          console.log('🔧 Creating equoria database...');
-          await prisma.$executeRaw`CREATE DATABASE equoria;`;
-          console.log('✅ Equoria database created!');
-        } else {
-          console.log('✅ Equoria database already exists');
-        }
-      } catch (error) {
-        console.log('⚠️ Could not list/create databases:', error.message);
+      // Stop cron jobs
+      if (NODE_ENV === 'production') {
+        logger.info('Stopping cron jobs...');
+        stopCronJobs();
       }
 
+      // Disconnect Prisma
+      logger.info('Disconnecting database...');
       await prisma.$disconnect();
-      return connectionString; // Return successful connection string
+
+      logger.info('✅ Graceful shutdown complete');
+      process.exit(0);
     } catch (error) {
-      console.log('❌ Failed:', error.message);
-      await prisma.$disconnect();
+      logger.error('Error during shutdown:', error);
+      process.exit(1);
     }
-  }
+  });
 
-  console.log('\n❌ All connection attempts failed');
-  return null;
-}
+  // Force shutdown after 10 seconds
+  setTimeout(() => {
+    logger.error('❌ Forced shutdown after timeout');
+    process.exit(1);
+  }, 10000);
+};
 
-testConnections()
-  .then(successfulConnection => {
-    if (successfulConnection) {
-      console.log(`\n🎉 Use this connection string: ${successfulConnection}`);
-    }
-  })
-  .catch(console.error);
+// Handle termination signals
+process.on('SIGTERM', () => shutdown('SIGTERM'));
+process.on('SIGINT', () => shutdown('SIGINT'));
+
+// Handle uncaught exceptions
+process.on('uncaughtException', (error) => {
+  logger.error('Uncaught Exception:', error);
+  shutdown('UNCAUGHT_EXCEPTION');
+});
+
+// Handle unhandled promise rejections
+process.on('unhandledRejection', (reason, promise) => {
+  logger.error('Unhandled Rejection at:', promise, 'reason:', reason);
+  shutdown('UNHANDLED_REJECTION');
+});
+
+export default server;
