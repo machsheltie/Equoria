@@ -37,6 +37,7 @@ import express from 'express';
 import cors from 'cors';
 import helmet from 'helmet';
 import rateLimit from 'express-rate-limit';
+import cookieParser from 'cookie-parser';
 import config from './config/config.mjs';
 import logger from './utils/logger.mjs';
 
@@ -168,6 +169,9 @@ app.use('/api/', limiter);
 // Body parsing middleware
 app.use(express.json({ limit: '10mb' }));
 app.use(express.urlencoded({ extended: true, limit: '10mb' }));
+
+// Cookie parsing middleware for httpOnly cookies
+app.use(cookieParser());
 
 // Request logging
 app.use(requestLogger);

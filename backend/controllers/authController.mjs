@@ -61,6 +61,21 @@ export const register = async (req, res, next) => {
       },
     });
 
+    // Set httpOnly cookies for security (prevents XSS attacks)
+    res.cookie('accessToken', token, {
+      httpOnly: true, // Cannot be accessed by JavaScript
+      secure: process.env.NODE_ENV === 'production', // HTTPS only in production
+      sameSite: 'strict', // CSRF protection
+      maxAge: 15 * 60 * 1000, // 15 minutes
+    });
+
+    res.cookie('refreshToken', refreshTokenValue, {
+      httpOnly: true,
+      secure: process.env.NODE_ENV === 'production',
+      sameSite: 'strict',
+      maxAge: 7 * 24 * 60 * 60 * 1000, // 7 days
+    });
+
     res.status(201).json({
       status: 'success',
       message: 'User registered successfully',
@@ -75,8 +90,7 @@ export const register = async (req, res, next) => {
           level: user.level,
           xp: user.xp,
         },
-        token,
-        refreshToken: refreshTokenValue,
+        // Tokens now in httpOnly cookies, not in response body
       },
     });
   } catch (error) {
@@ -122,6 +136,21 @@ export const login = async (req, res, next) => {
       },
     });
 
+    // Set httpOnly cookies for security (prevents XSS attacks)
+    res.cookie('accessToken', token, {
+      httpOnly: true,
+      secure: process.env.NODE_ENV === 'production',
+      sameSite: 'strict',
+      maxAge: 15 * 60 * 1000, // 15 minutes
+    });
+
+    res.cookie('refreshToken', refreshTokenValue, {
+      httpOnly: true,
+      secure: process.env.NODE_ENV === 'production',
+      sameSite: 'strict',
+      maxAge: 7 * 24 * 60 * 60 * 1000, // 7 days
+    });
+
     res.status(200).json({
       status: 'success',
       message: 'Login successful',
@@ -131,8 +160,7 @@ export const login = async (req, res, next) => {
           username: user.username,
           email: user.email,
         },
-        token,
-        refreshToken: refreshTokenValue,
+        // Tokens now in httpOnly cookies, not in response body
       },
     });
   } catch (error) {
@@ -149,7 +177,8 @@ export const login = async (req, res, next) => {
  */
 export const refreshToken = async (req, res, next) => {
   try {
-    const { refreshToken: providedRefreshToken } = req.body; // Renamed to avoid conflict
+    // Read refresh token from httpOnly cookie
+    const providedRefreshToken = req.cookies.refreshToken;
 
     if (!providedRefreshToken) {
       throw new AppError('Refresh token is required', 400);
@@ -171,13 +200,22 @@ export const refreshToken = async (req, res, next) => {
       throw new AppError('Invalid or expired refresh token', 401);
     }
 
+    // Generate new access token
     const token = generateToken(storedToken.user);
+
+    // Set new access token in httpOnly cookie
+    res.cookie('accessToken', token, {
+      httpOnly: true,
+      secure: process.env.NODE_ENV === 'production',
+      sameSite: 'strict',
+      maxAge: 15 * 60 * 1000, // 15 minutes
+    });
 
     res.status(200).json({
       status: 'success',
       message: 'Token refreshed successfully',
       data: {
-        token,
+        // Token now in httpOnly cookie
       },
     });
   } catch (error) {
@@ -285,13 +323,24 @@ export const updateProfile = async (req, res, next) => {
  */
 export const logout = async (req, res, next) => {
   try {
-    // const { refreshToken: _unusedRefreshToken } = req.body; // Marked as unused if not needed for specific token invalidation
-
     if (req.user && req.user.id) {
       await prisma.refreshToken.deleteMany({
         where: { userId: req.user.id },
       });
     }
+
+    // Clear httpOnly cookies
+    res.clearCookie('accessToken', {
+      httpOnly: true,
+      secure: process.env.NODE_ENV === 'production',
+      sameSite: 'strict',
+    });
+
+    res.clearCookie('refreshToken', {
+      httpOnly: true,
+      secure: process.env.NODE_ENV === 'production',
+      sameSite: 'strict',
+    });
 
     res.status(200).json({
       status: 'success',

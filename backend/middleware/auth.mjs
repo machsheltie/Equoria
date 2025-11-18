@@ -8,8 +8,14 @@ import logger from '../utils/logger.mjs';
  */
 export const authenticateToken = (req, res, next) => {
   try {
-    const authHeader = req.headers['authorization'];
-    const token = authHeader && authHeader.split(' ')[1]; // Bearer TOKEN
+    // Read token from httpOnly cookie (primary method)
+    let token = req.cookies?.accessToken;
+
+    // Fallback to Authorization header for backward compatibility
+    if (!token) {
+      const authHeader = req.headers['authorization'];
+      token = authHeader && authHeader.split(' ')[1]; // Bearer TOKEN
+    }
 
     if (!token) {
       logger.warn(`[auth] Missing token for ${req.method} ${req.path} from ${req.ip}`);
@@ -65,8 +71,14 @@ export const authenticateToken = (req, res, next) => {
  */
 export const optionalAuth = (req, res, next) => {
   try {
-    const authHeader = req.headers['authorization'];
-    const token = authHeader && authHeader.split(' ')[1];
+    // Read token from httpOnly cookie (primary method)
+    let token = req.cookies?.accessToken;
+
+    // Fallback to Authorization header
+    if (!token) {
+      const authHeader = req.headers['authorization'];
+      token = authHeader && authHeader.split(' ')[1];
+    }
 
     if (!token) {
       return next(); // No token, continue without user
