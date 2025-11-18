@@ -34,3 +34,11 @@ next-env.d.ts
 
 # editor config
 .editorconfig
+
+# environment variables (SECURITY: Never commit these)
+.env
+.env.local
+.env.*.local
+.env.production
+.env.development
+test-connection-debug.mjs
