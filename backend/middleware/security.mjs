@@ -137,7 +137,74 @@ export const validateApiKey = (req, res, next) => {
   next();
 };
 
+/**
+ * HTTPS Enforcement Middleware (CWE-319: Cleartext Transmission)
+ * Redirects HTTP requests to HTTPS in production
+ */
+export const enforceHttps = (req, res, next) => {
+  // Only enforce HTTPS in production
+  if (process.env.NODE_ENV !== 'production') {
+    return next();
+  }
+
+  // Check if request is already HTTPS
+  const isHttps =
+    req.secure ||
+    req.headers['x-forwarded-proto'] === 'https' ||
+    req.headers['x-forwarded-ssl'] === 'on';
+
+  if (!isHttps) {
+    logger.warn('[HTTPS] Insecure HTTP request detected, redirecting to HTTPS', {
+      url: req.originalUrl,
+      method: req.method,
+      ip: req.ip,
+      userAgent: req.get('User-Agent'),
+    });
+
+    // Redirect to HTTPS
+    const httpsUrl = `https://${req.headers.host}${req.url}`;
+    return res.redirect(301, httpsUrl);
+  }
+
+  next();
+};
+
+/**
+ * Strict Transport Security Middleware (CWE-319)
+ * Adds HSTS header to enforce HTTPS for future requests
+ */
+export const addSecurityHeaders = (req, res, next) => {
+  // HSTS: Force HTTPS for 1 year (already in helmet, but adding explicitly)
+  if (process.env.NODE_ENV === 'production') {
+    res.setHeader('Strict-Transport-Security', 'max-age=31536000; includeSubDomains; preload');
+  }
+
+  // Prevent clickjacking
+  res.setHeader('X-Frame-Options', 'DENY');
+
+  // Prevent MIME type sniffing
+  res.setHeader('X-Content-Type-Options', 'nosniff');
+
+  // XSS protection (legacy browsers)
+  res.setHeader('X-XSS-Protection', '1; mode=block');
+
+  // Referrer policy (don't leak URLs)
+  res.setHeader('Referrer-Policy', 'strict-origin-when-cross-origin');
+
+  // Permissions policy (disable sensitive features)
+  res.setHeader('Permissions-Policy', 'camera=(), microphone=(), geolocation=()');
+
+  next();
+};
+
 // Security middleware factory
 export const createSecurityMiddleware = () => {
-  return [helmet(helmetConfig), cors(corsOptions), validateApiKey, apiLimiter];
+  return [
+    enforceHttps,           // Redirect HTTP to HTTPS (production only)
+    addSecurityHeaders,     // Add security headers
+    helmet(helmetConfig),   // Helmet security headers
+    cors(corsOptions),      // CORS validation
+    validateApiKey,         // API key validation
+    apiLimiter,             // Rate limiting
+  ];
 };

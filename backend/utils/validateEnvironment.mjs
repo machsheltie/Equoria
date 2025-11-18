@@ -94,6 +94,35 @@ export function validateEnvironment() {
     }
   }
 
+  // Additional validation: HTTPS enforcement in production (CWE-319)
+  if (process.env.NODE_ENV === 'production') {
+    // Warn if ALLOWED_ORIGINS contains non-HTTPS URLs
+    if (process.env.ALLOWED_ORIGINS) {
+      const origins = process.env.ALLOWED_ORIGINS.split(',');
+      const httpOrigins = origins.filter((origin) => origin.startsWith('http://'));
+
+      if (httpOrigins.length > 0) {
+        logger.warn(
+          '[validateEnvironment] SECURITY WARNING: ALLOWED_ORIGINS contains HTTP URLs in production',
+        );
+        logger.warn(
+          `  HTTP origins detected: ${httpOrigins.join(', ')}`,
+        );
+        logger.warn('  These should be HTTPS in production to prevent man-in-the-middle attacks');
+        // Don't fail, just warn - some reverse proxies handle HTTPS termination
+      }
+    }
+
+    // Check if PORT is set to default HTTP (80) or HTTPS (443)
+    const port = parseInt(process.env.PORT || '3000', 10);
+    if (port === 80) {
+      logger.warn(
+        '[validateEnvironment] SECURITY WARNING: PORT is set to 80 (HTTP) in production',
+      );
+      logger.warn('  Consider using HTTPS (443) or a reverse proxy with HTTPS termination');
+    }
+  }
+
   // Log results
   if (errors.length > 0) {
     logger.error('❌ Environment validation failed:');
