@@ -7,6 +7,7 @@
 import cron from 'node-cron';
 import logger from '../utils/logger.mjs';
 import { processWeeklySalaries } from './groomSalaryService.mjs';
+import prisma from '../db/index.mjs';
 
 // Track running jobs
 const runningJobs = new Map();
@@ -28,8 +29,19 @@ export function initializeCronJobs() {
 
     runningJobs.set('weeklySalaries', salaryJob);
 
+    // Token cleanup - Daily at 3:00 AM (CWE-613: Insufficient Session Expiration)
+    const tokenCleanupJob = cron.schedule('0 3 * * *', async () => {
+      await runTokenCleanup();
+    }, {
+      scheduled: false,
+      timezone: 'UTC',
+    });
+
+    runningJobs.set('tokenCleanup', tokenCleanupJob);
+
     // Start all jobs
     salaryJob.start();
+    tokenCleanupJob.start();
 
     logger.info('[cronJobService] All cron jobs initialized and started');
 
@@ -117,6 +129,41 @@ export function getCronJobStatus() {
 }
 
 /**
+ * Run token cleanup - Remove expired refresh tokens (CWE-613)
+ */
+async function runTokenCleanup() {
+  try {
+    logger.info('[cronJobService] Starting expired token cleanup...');
+
+    const now = new Date();
+
+    // Delete expired refresh tokens
+    const result = await prisma.refreshToken.deleteMany({
+      where: {
+        expiresAt: {
+          lt: now,
+        },
+      },
+    });
+
+    logger.info(`[cronJobService] Token cleanup completed. Removed ${result.count} expired tokens`);
+
+    return {
+      removed: result.count,
+      timestamp: now.toISOString(),
+    };
+
+  } catch (error) {
+    logger.error(`[cronJobService] Error in token cleanup: ${error.message}`);
+    return {
+      removed: 0,
+      timestamp: new Date().toISOString(),
+      error: error.message,
+    };
+  }
+}
+
+/**
  * Manually trigger salary processing (for testing/admin use)
  * @returns {Object} Processing results
  */
@@ -139,6 +186,30 @@ export async function triggerSalaryProcessing() {
       terminated: 0,
       totalAmount: 0,
       errors: [error.message],
+    };
+  }
+}
+
+/**
+ * Manually trigger token cleanup (for testing/admin use)
+ * @returns {Object} Cleanup results
+ */
+export async function triggerTokenCleanup() {
+  try {
+    logger.info('[cronJobService] Manually triggering token cleanup...');
+
+    const results = await runTokenCleanup();
+
+    logger.info(`[cronJobService] Manual token cleanup completed: ${JSON.stringify(results)}`);
+
+    return results;
+
+  } catch (error) {
+    logger.error(`[cronJobService] Error in manual token cleanup: ${error.message}`);
+    return {
+      removed: 0,
+      timestamp: new Date().toISOString(),
+      error: error.message,
     };
   }
 }
