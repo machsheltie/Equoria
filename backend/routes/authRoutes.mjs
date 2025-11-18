@@ -2,6 +2,7 @@ import express from 'express';
 import { body } from 'express-validator';
 import { handleValidationErrors } from '../middleware/validationErrorHandler.mjs';
 import { authenticateToken } from '../middleware/auth.mjs';
+import { authLimiter } from '../middleware/security.mjs';
 import * as authController from '../controllers/authController.mjs';
 
 const router = express.Router();
@@ -147,6 +148,7 @@ const router = express.Router();
  */
 router.post(
   '/register',
+  authLimiter, // Rate limit: 5 requests per 15 minutes
   [
     body('email').isEmail().withMessage('Valid email is required').normalizeEmail(),
     body('username')
@@ -218,6 +220,7 @@ router.post(
  */
 router.post(
   '/login',
+  authLimiter, // Rate limit: 5 requests per 15 minutes
   [
     body('email').isEmail().withMessage('Valid email is required').normalizeEmail(),
     body('password').notEmpty().withMessage('Password is required'),
@@ -281,6 +284,7 @@ router.post(
  */
 router.post(
   '/refresh',
+  authLimiter, // Rate limit: 5 requests per 15 minutes
   [
     body('refreshToken').notEmpty().withMessage('Refresh token is required'),
     handleValidationErrors,
