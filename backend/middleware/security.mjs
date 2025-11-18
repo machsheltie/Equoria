@@ -11,11 +11,6 @@ import logger from '../utils/logger.mjs';
 // CORS configuration
 export const corsOptions = {
   origin(origin, callback) {
-    // Allow requests with no origin (like mobile apps or curl requests)
-    if (!origin) {
-      return callback(null, true);
-    }
-
     const allowedOrigins = [
       'http://localhost:3000',
       'http://localhost:3001',
@@ -28,6 +23,13 @@ export const corsOptions = {
       allowedOrigins.push(...process.env.ALLOWED_ORIGINS.split(','));
     }
 
+    // Allow requests with no origin IF they have a valid API key (CWE-942)
+    // NOTE: This is temporary backward compatibility - will be removed in Phase 3
+    if (!origin) {
+      logger.warn('[CORS] Request with no origin detected - API key validation required');
+      return callback(null, true); // Still allowed for backward compatibility
+    }
+
     if (allowedOrigins.indexOf(origin) !== -1) {
       callback(null, true);
     } else {
@@ -37,7 +39,7 @@ export const corsOptions = {
   },
   credentials: true,
   methods: ['GET', 'POST', 'PUT', 'DELETE', 'PATCH', 'OPTIONS'],
-  allowedHeaders: ['Content-Type', 'Authorization', 'X-Requested-With'],
+  allowedHeaders: ['Content-Type', 'Authorization', 'X-Requested-With', 'X-API-Key'],
 };
 
 // Rate limiting configuration
@@ -96,7 +98,46 @@ export const apiLimiter = createRateLimiter(15 * 60 * 1000, 100); // 100 request
 export const strictLimiter = createRateLimiter(15 * 60 * 1000, 20); // 20 requests per 15 minutes
 export const authLimiter = createRateLimiter(15 * 60 * 1000, 5); // 5 requests per 15 minutes
 
+/**
+ * API Key validation middleware (CWE-942: Permissive Cross-domain Policy)
+ * Validates X-API-Key header for requests with no origin
+ */
+export const validateApiKey = (req, res, next) => {
+  // Only validate API key for requests with no origin
+  const origin = req.get('origin');
+
+  if (!origin) {
+    const apiKey = req.get('X-API-Key');
+    const validApiKey = process.env.API_KEY;
+
+    // If API_KEY is not configured, log warning but allow (backward compatibility)
+    if (!validApiKey) {
+      logger.warn('[API Key] API_KEY not configured - requests with no origin are allowed (INSECURE)');
+      return next();
+    }
+
+    // If API key is missing or invalid, reject
+    if (!apiKey || apiKey !== validApiKey) {
+      logger.warn('[API Key] Invalid or missing API key', {
+        ip: req.ip,
+        userAgent: req.get('User-Agent'),
+        url: req.originalUrl,
+        hasApiKey: !!apiKey,
+      });
+
+      return res.status(403).json({
+        success: false,
+        error: 'API key required for requests without origin header',
+      });
+    }
+
+    logger.debug('[API Key] Valid API key provided');
+  }
+
+  next();
+};
+
 // Security middleware factory
 export const createSecurityMiddleware = () => {
-  return [helmet(helmetConfig), cors(corsOptions), apiLimiter];
+  return [helmet(helmetConfig), cors(corsOptions), validateApiKey, apiLimiter];
 };
