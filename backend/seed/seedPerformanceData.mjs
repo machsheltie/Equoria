@@ -28,7 +28,9 @@ async function seedPerformanceUsers() {
   logger.info('🔄 Seeding performance test users...');
 
   const users = [];
-  const hashedPassword = await bcrypt.hash('testpassword123', 10);
+  // Use configurable bcrypt rounds (default: 12 for 2025 security standards)
+  const saltRounds = parseInt(process.env.BCRYPT_SALT_ROUNDS || '12', 10);
+  const hashedPassword = await bcrypt.hash('testpassword123', saltRounds);
 
   for (let i = 1; i <= PERFORMANCE_DATA_CONFIG.users; i++) {
     users.push({

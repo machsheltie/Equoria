@@ -28,8 +28,9 @@ export const register = async (req, res, next) => {
       throw new AppError('User with this email or username already exists', 400);
     }
 
-    // Hash password
-    const hashedPassword = await bcrypt.hash(password, 10);
+    // Hash password with configurable salt rounds (default: 12 for 2025 security standards)
+    const saltRounds = parseInt(process.env.BCRYPT_SALT_ROUNDS || '12', 10);
+    const hashedPassword = await bcrypt.hash(password, saltRounds);
 
     // Name construction logic removed - was unused
 
