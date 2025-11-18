@@ -1,6 +1,6 @@
 import express from 'express';
 import { body } from 'express-validator';
-import { handleValidationErrors } from '../middleware/validationErrorHandler.mjs';
+import { handleValidationErrors, sanitizeRequestData } from '../middleware/validationErrorHandler.mjs';
 import { authenticateToken } from '../middleware/auth.mjs';
 import { authLimiter } from '../middleware/security.mjs';
 import * as authController from '../controllers/authController.mjs';
@@ -150,12 +150,17 @@ router.post(
   '/register',
   authLimiter, // Rate limit: 5 requests per 15 minutes
   [
-    body('email').isEmail().withMessage('Valid email is required').normalizeEmail(),
+    body('email')
+      .isEmail().withMessage('Valid email is required')
+      .normalizeEmail()
+      .trim(),
     body('username')
       .isLength({ min: 3, max: 30 })
       .withMessage('Username must be between 3 and 30 characters')
       .matches(/^[a-zA-Z0-9_]+$/)
-      .withMessage('Username can only contain letters, numbers, and underscores'),
+      .withMessage('Username can only contain letters, numbers, and underscores')
+      .trim()
+      .escape(), // XSS prevention (CWE-79)
     body('password')
       .isLength({ min: 8 })
       .withMessage('Password must be at least 8 characters long')
@@ -166,12 +171,15 @@ router.post(
     body('firstName')
       .trim()
       .isLength({ min: 1, max: 50 })
-      .withMessage('First name must be between 1 and 50 characters'),
+      .withMessage('First name must be between 1 and 50 characters')
+      .escape(), // XSS prevention (CWE-79)
     body('lastName')
       .trim()
       .isLength({ min: 1, max: 50 })
-      .withMessage('Last name must be between 1 and 50 characters'),
+      .withMessage('Last name must be between 1 and 50 characters')
+      .escape(), // XSS prevention (CWE-79)
     handleValidationErrors,
+    sanitizeRequestData, // Remove non-validated fields (CWE-20)
   ],
   authController.register,
 );
@@ -402,19 +410,24 @@ router.put(
       .optional()
       .trim()
       .isLength({ min: 1, max: 50 })
-      .withMessage('First name must be between 1 and 50 characters'),
+      .withMessage('First name must be between 1 and 50 characters')
+      .escape(), // XSS prevention (CWE-79)
     body('lastName')
       .optional()
       .trim()
       .isLength({ min: 1, max: 50 })
-      .withMessage('Last name must be between 1 and 50 characters'),
+      .withMessage('Last name must be between 1 and 50 characters')
+      .escape(), // XSS prevention (CWE-79)
     body('username')
       .optional()
       .isLength({ min: 3, max: 30 })
       .withMessage('Username must be between 3 and 30 characters')
       .matches(/^[a-zA-Z0-9_]+$/)
-      .withMessage('Username can only contain letters, numbers, and underscores'),
+      .withMessage('Username can only contain letters, numbers, and underscores')
+      .trim()
+      .escape(), // XSS prevention (CWE-79)
     handleValidationErrors,
+    sanitizeRequestData, // Remove non-validated fields (CWE-20)
   ],
   authController.updateProfile,
 );
