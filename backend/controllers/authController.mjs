@@ -4,6 +4,19 @@ import { generateToken, generateRefreshToken } from '../middleware/auth.mjs';
 import { AppError, ValidationError } from '../errors/index.mjs';
 import logger from '../utils/logger.mjs';
 import prisma from '../db/index.mjs';
+import { resetAuthRateLimit } from '../middleware/authRateLimiter.mjs';
+import {
+  createTokenPair,
+  rotateRefreshToken,
+  invalidateTokenFamily,
+} from '../utils/tokenRotationService.mjs';
+import {
+  createVerificationToken,
+  verifyEmailToken,
+  resendVerificationEmail,
+  checkVerificationStatus,
+} from '../utils/emailVerificationService.mjs';
+import { sendVerificationEmail, sendWelcomeEmail } from '../utils/emailService.mjs';
 
 /**
  * Register a new user and create a corresponding user record.
@@ -49,28 +62,39 @@ export const register = async (req, res, next) => {
       },
     });
 
-    // Generate tokens based on the User identity
-    const token = generateToken(user);
-    const refreshTokenValue = generateRefreshToken(user);
+    // Create new token family for this registration
+    const tokenPair = await createTokenPair(user.id);
 
-    // Store refresh token
-    await prisma.refreshToken.create({
-      data: {
-        token: refreshTokenValue,
-        userId: user.id,
-        expiresAt: new Date(Date.now() + 7 * 24 * 60 * 60 * 1000), // 7 days
-      },
+    // Create email verification token
+    const ipAddress = req.ip || req.headers['x-forwarded-for'] || req.connection.remoteAddress;
+    const userAgent = req.headers['user-agent'];
+
+    const verificationToken = await createVerificationToken(user.id, user.email, {
+      ipAddress,
+      userAgent,
     });
 
+    // Send verification email (don't block registration on email send failure)
+    try {
+      await sendVerificationEmail(user.email, verificationToken.token, user);
+      logger.info('[authController.register] Verification email sent', {
+        userId: user.id,
+        email: user.email,
+      });
+    } catch (emailError) {
+      logger.error('[authController.register] Failed to send verification email:', emailError);
+      // Continue with registration even if email fails
+    }
+
     // Set httpOnly cookies for security (prevents XSS attacks)
-    res.cookie('accessToken', token, {
+    res.cookie('accessToken', tokenPair.accessToken, {
       httpOnly: true, // Cannot be accessed by JavaScript
       secure: process.env.NODE_ENV === 'production', // HTTPS only in production
       sameSite: 'strict', // CSRF protection
       maxAge: 15 * 60 * 1000, // 15 minutes
     });
 
-    res.cookie('refreshToken', refreshTokenValue, {
+    res.cookie('refreshToken', tokenPair.refreshToken, {
       httpOnly: true,
       secure: process.env.NODE_ENV === 'production',
       sameSite: 'strict',
@@ -79,7 +103,7 @@ export const register = async (req, res, next) => {
 
     res.status(201).json({
       status: 'success',
-      message: 'User registered successfully',
+      message: 'User registered successfully. Please check your email to verify your account.',
       data: {
         user: {
           id: user.id,
@@ -90,8 +114,10 @@ export const register = async (req, res, next) => {
           money: user.money,
           level: user.level,
           xp: user.xp,
+          emailVerified: user.emailVerified,
         },
         // Tokens now in httpOnly cookies, not in response body
+        emailVerificationSent: true,
       },
     });
   } catch (error) {
@@ -117,40 +143,36 @@ export const login = async (req, res, next) => {
     });
 
     if (!user) {
-      throw new AppError('Invalid email or password', 401);
+      throw new AppError('Invalid credentials', 401);
     }
 
     const isPasswordValid = await bcrypt.compare(password, user.password);
 
     if (!isPasswordValid) {
-      throw new AppError('Invalid email or password', 401);
+      throw new AppError('Invalid credentials', 401);
     }
 
-    const token = generateToken(user);
-    const refreshTokenValue = generateRefreshToken(user);
-
-    await prisma.refreshToken.create({
-      data: {
-        token: refreshTokenValue,
-        userId: user.id,
-        expiresAt: new Date(Date.now() + 7 * 24 * 60 * 60 * 1000), // 7 days
-      },
-    });
+    // Create new token family for this login session
+    const tokenPair = await createTokenPair(user.id);
 
     // Set httpOnly cookies for security (prevents XSS attacks)
-    res.cookie('accessToken', token, {
+    res.cookie('accessToken', tokenPair.accessToken, {
       httpOnly: true,
       secure: process.env.NODE_ENV === 'production',
       sameSite: 'strict',
       maxAge: 15 * 60 * 1000, // 15 minutes
     });
 
-    res.cookie('refreshToken', refreshTokenValue, {
+    res.cookie('refreshToken', tokenPair.refreshToken, {
       httpOnly: true,
       secure: process.env.NODE_ENV === 'production',
       sameSite: 'strict',
       maxAge: 7 * 24 * 60 * 60 * 1000, // 7 days
     });
+
+    // Reset rate limit on successful login (brute force protection)
+    const ip = req.ip || req.headers['x-forwarded-for'] || req.connection.remoteAddress;
+    resetAuthRateLimit(ip);
 
     res.status(200).json({
       status: 'success',
@@ -174,7 +196,8 @@ export const login = async (req, res, next) => {
 };
 
 /**
- * Refresh access token
+ * Refresh access token with token rotation
+ * Phase 1, Day 4-5: Token Rotation with Reuse Detection
  */
 export const refreshToken = async (req, res, next) => {
   try {
@@ -185,38 +208,45 @@ export const refreshToken = async (req, res, next) => {
       throw new AppError('Refresh token is required', 400);
     }
 
-    const storedToken = await prisma.refreshToken.findFirst({
-      where: { token: providedRefreshToken },
-      include: { user: true },
-    });
+    // Use token rotation service to handle the rotation
+    const rotationResult = await rotateRefreshToken(providedRefreshToken);
 
-    if (!storedToken) {
-      throw new AppError('Invalid or expired refresh token', 401);
+    if (!rotationResult.success) {
+      // Handle different types of failures
+      if (rotationResult.familyInvalidated) {
+        logger.warn('[authController.refreshToken] Token family invalidated due to reuse detection');
+        throw new AppError('Token reuse detected - please login again', 401);
+      }
+
+      logger.warn('[authController.refreshToken] Token rotation failed:', rotationResult.error);
+      throw new AppError('Invalid refresh token', 401);
     }
 
-    try {
-      jwt.verify(providedRefreshToken, process.env.JWT_SECRET);
-    } catch (jwtError) {
-      logger.warn('[authController.refreshToken] JWT verification failed:', jwtError.message);
-      throw new AppError('Invalid or expired refresh token', 401);
-    }
+    const { newTokenPair } = rotationResult;
 
-    // Generate new access token
-    const token = generateToken(storedToken.user);
-
-    // Set new access token in httpOnly cookie
-    res.cookie('accessToken', token, {
+    // Set new tokens in httpOnly cookies
+    res.cookie('accessToken', newTokenPair.accessToken, {
       httpOnly: true,
       secure: process.env.NODE_ENV === 'production',
       sameSite: 'strict',
       maxAge: 15 * 60 * 1000, // 15 minutes
     });
 
+    res.cookie('refreshToken', newTokenPair.refreshToken, {
+      httpOnly: true,
+      secure: process.env.NODE_ENV === 'production',
+      sameSite: 'strict',
+      maxAge: 7 * 24 * 60 * 60 * 1000, // 7 days
+    });
+
+    logger.info('[authController.refreshToken] Token rotation successful');
+
     res.status(200).json({
       status: 'success',
       message: 'Token refreshed successfully',
       data: {
-        // Token now in httpOnly cookie
+        // Tokens now in httpOnly cookies
+        rotated: true,
       },
     });
   } catch (error) {
@@ -350,5 +380,144 @@ export const logout = async (req, res, next) => {
   } catch (error) {
     logger.error('[authController.logout] Error logging out user:', error);
     next(new AppError('Logout failed due to an unexpected error.', 500));
+  }
+};
+
+/**
+ * Verify Email
+ * Validates email verification token and marks email as verified
+ * Phase 1, Day 6-7: Email Verification System
+ */
+export const verifyEmail = async (req, res, next) => {
+  try {
+    const { token } = req.query;
+
+    if (!token) {
+      throw new ValidationError('Verification token is required');
+    }
+
+    // Get IP and user agent for audit trail
+    const ipAddress = req.ip || req.headers['x-forwarded-for'] || req.connection.remoteAddress;
+    const userAgent = req.headers['user-agent'];
+
+    // Verify the token
+    const result = await verifyEmailToken(token, { ipAddress, userAgent });
+
+    if (!result.success) {
+      throw new AppError(result.error, 400);
+    }
+
+    // Send welcome email (optional, don't block on failure)
+    try {
+      await sendWelcomeEmail(result.user.email, result.user);
+    } catch (emailError) {
+      logger.error('[authController.verifyEmail] Failed to send welcome email:', emailError);
+      // Continue even if welcome email fails
+    }
+
+    res.status(200).json({
+      status: 'success',
+      message: 'Email verified successfully',
+      data: {
+        user: result.user,
+        verified: true,
+      },
+    });
+  } catch (error) {
+    logger.error('[authController.verifyEmail] Error verifying email:', error);
+    if (error instanceof AppError || error instanceof ValidationError) {
+      return next(error);
+    }
+    next(new AppError('Email verification failed due to an unexpected error.', 500));
+  }
+};
+
+/**
+ * Resend Verification Email
+ * Sends a new verification email to the user
+ * Phase 1, Day 6-7: Email Verification System
+ */
+export const resendVerification = async (req, res, next) => {
+  try {
+    // User must be authenticated to resend verification
+    if (!req.user || !req.user.id) {
+      throw new AppError('Authentication required', 401);
+    }
+
+    // Get IP and user agent for audit trail
+    const ipAddress = req.ip || req.headers['x-forwarded-for'] || req.connection.remoteAddress;
+    const userAgent = req.headers['user-agent'];
+
+    // Resend verification email
+    const result = await resendVerificationEmail(req.user.id, { ipAddress, userAgent });
+
+    // Get user data for email
+    const user = await prisma.user.findUnique({
+      where: { id: req.user.id },
+      select: {
+        id: true,
+        email: true,
+        firstName: true,
+        username: true,
+      },
+    });
+
+    // Send verification email (don't block on failure)
+    try {
+      await sendVerificationEmail(user.email, result.token, user);
+    } catch (emailError) {
+      logger.error('[authController.resendVerification] Failed to send email:', emailError);
+      throw new AppError('Failed to send verification email. Please try again later.', 500);
+    }
+
+    res.status(200).json({
+      status: 'success',
+      message: 'Verification email sent successfully',
+      data: {
+        emailSent: true,
+        expiresAt: result.expiresAt,
+      },
+    });
+  } catch (error) {
+    logger.error('[authController.resendVerification] Error resending verification:', error);
+    if (error instanceof AppError || error instanceof ValidationError) {
+      return next(error);
+    }
+    next(new AppError('Failed to resend verification email due to an unexpected error.', 500));
+  }
+};
+
+/**
+ * Check Verification Status
+ * Returns the current verification status of the authenticated user
+ * Phase 1, Day 6-7: Email Verification System
+ */
+export const getVerificationStatus = async (req, res, next) => {
+  try {
+    // User must be authenticated
+    if (!req.user || !req.user.id) {
+      throw new AppError('Authentication required', 401);
+    }
+
+    const status = await checkVerificationStatus(req.user.id);
+
+    if (status.error) {
+      throw new AppError(status.error, 404);
+    }
+
+    res.status(200).json({
+      status: 'success',
+      data: {
+        verified: status.verified,
+        email: status.email,
+        verifiedAt: status.verifiedAt,
+      },
+    });
+  } catch (error) {
+    logger.error('[authController.getVerificationStatus] Error checking status:', error);
+    if (error instanceof AppError) {
+      return next(error);
+    }
+    next(new AppError('Failed to check verification status due to an unexpected error.', 500));
   }
 };

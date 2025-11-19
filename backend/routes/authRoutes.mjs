@@ -2,7 +2,7 @@ import express from 'express';
 import { body } from 'express-validator';
 import { handleValidationErrors, sanitizeRequestData } from '../middleware/validationErrorHandler.mjs';
 import { authenticateToken } from '../middleware/auth.mjs';
-import { authLimiter } from '../middleware/security.mjs';
+import { authRateLimiter } from '../middleware/authRateLimiter.mjs';
 import * as authController from '../controllers/authController.mjs';
 
 const router = express.Router();
@@ -148,7 +148,7 @@ const router = express.Router();
  */
 router.post(
   '/register',
-  authLimiter, // Rate limit: 5 requests per 15 minutes
+  authRateLimiter, // Rate limit: 5 requests per 15 minutes
   [
     body('email')
       .isEmail().withMessage('Valid email is required')
@@ -228,7 +228,7 @@ router.post(
  */
 router.post(
   '/login',
-  authLimiter, // Rate limit: 5 requests per 15 minutes
+  authRateLimiter, // Rate limit: 5 requests per 15 minutes
   [
     body('email').isEmail().withMessage('Valid email is required').normalizeEmail(),
     body('password').notEmpty().withMessage('Password is required'),
@@ -292,11 +292,18 @@ router.post(
  */
 router.post(
   '/refresh',
-  authLimiter, // Rate limit: 5 requests per 15 minutes
+  authRateLimiter, // Rate limit: 5 requests per 15 minutes
   [
     body('refreshToken').notEmpty().withMessage('Refresh token is required'),
     handleValidationErrors,
   ],
+  authController.refreshToken,
+);
+
+// Alias for /refresh (for cookie-based refresh)
+router.post(
+  '/refresh-token',
+  authRateLimiter,
   authController.refreshToken,
 );
 
@@ -461,5 +468,127 @@ router.put(
  *         $ref: '#/components/responses/InternalError'
  */
 router.post('/logout', authenticateToken, authController.logout);
+
+/**
+ * @swagger
+ * /api/auth/verify-email:
+ *   get:
+ *     summary: Verify email address
+ *     description: Verify user email address using token from verification email
+ *     tags: [Authentication]
+ *     parameters:
+ *       - in: query
+ *         name: token
+ *         required: true
+ *         schema:
+ *           type: string
+ *         description: Email verification token
+ *     responses:
+ *       200:
+ *         description: Email verified successfully
+ *         content:
+ *           application/json:
+ *             schema:
+ *               type: object
+ *               properties:
+ *                 status:
+ *                   type: string
+ *                   example: "success"
+ *                 message:
+ *                   type: string
+ *                   example: "Email verified successfully"
+ *                 data:
+ *                   type: object
+ *                   properties:
+ *                     verified:
+ *                       type: boolean
+ *                       example: true
+ *                     user:
+ *                       type: object
+ *       400:
+ *         description: Invalid or expired token
+ *       500:
+ *         $ref: '#/components/responses/InternalError'
+ */
+router.get('/verify-email', authController.verifyEmail);
+
+/**
+ * @swagger
+ * /api/auth/resend-verification:
+ *   post:
+ *     summary: Resend verification email
+ *     description: Send a new verification email to authenticated user
+ *     tags: [Authentication]
+ *     security:
+ *       - bearerAuth: []
+ *     responses:
+ *       200:
+ *         description: Verification email sent successfully
+ *         content:
+ *           application/json:
+ *             schema:
+ *               type: object
+ *               properties:
+ *                 status:
+ *                   type: string
+ *                   example: "success"
+ *                 message:
+ *                   type: string
+ *                   example: "Verification email sent successfully"
+ *                 data:
+ *                   type: object
+ *                   properties:
+ *                     emailSent:
+ *                       type: boolean
+ *                       example: true
+ *                     expiresAt:
+ *                       type: string
+ *                       format: date-time
+ *       401:
+ *         $ref: '#/components/responses/Unauthorized'
+ *       500:
+ *         $ref: '#/components/responses/InternalError'
+ */
+router.post('/resend-verification', authenticateToken, authController.resendVerification);
+
+/**
+ * @swagger
+ * /api/auth/verification-status:
+ *   get:
+ *     summary: Get email verification status
+ *     description: Check if the authenticated user's email is verified
+ *     tags: [Authentication]
+ *     security:
+ *       - bearerAuth: []
+ *     responses:
+ *       200:
+ *         description: Verification status retrieved successfully
+ *         content:
+ *           application/json:
+ *             schema:
+ *               type: object
+ *               properties:
+ *                 status:
+ *                   type: string
+ *                   example: "success"
+ *                 data:
+ *                   type: object
+ *                   properties:
+ *                     verified:
+ *                       type: boolean
+ *                       example: false
+ *                     email:
+ *                       type: string
+ *                       example: "user@example.com"
+ *                     verifiedAt:
+ *                       type: string
+ *                       format: date-time
+ *                       nullable: true
+ *       401:
+ *         $ref: '#/components/responses/Unauthorized'
+ *       500:
+ *         $ref: '#/components/responses/InternalError'
+ */
+router.get('/verification-status', authenticateToken, authController.getVerificationStatus);
 
 export default router;

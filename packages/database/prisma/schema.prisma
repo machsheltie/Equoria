@@ -30,6 +30,9 @@ model User {
   settings         Json              @default("{}")
   /// Grace period start date for groom salary payments
   groomSalaryGracePeriod DateTime?
+  /// Email verification status
+  emailVerified    Boolean           @default(false)
+  emailVerifiedAt  DateTime?
   /// Timestamps
   createdAt        DateTime          @default(now())
   updatedAt        DateTime          @updatedAt
@@ -42,8 +45,10 @@ model User {
   shows                   Show[]
   xpEvents                XpEvent[]
   facilities              Facility[]
+  emailVerificationTokens EmailVerificationToken[]
 
   @@index([email])
+  @@index([emailVerified])
 }
 
 model Breed {
@@ -469,8 +474,14 @@ model RefreshToken {
   token          String    @unique
   /// User who owns this token
   userId         String
+  /// Token family ID for rotation tracking
+  familyId       String?
   /// Token expiration date
   expiresAt      DateTime
+  /// Whether token is currently active
+  isActive       Boolean   @default(true)
+  /// Whether token has been invalidated due to security breach
+  isInvalidated  Boolean   @default(false)
   /// Last activity timestamp (for session timeout tracking - CWE-613)
   lastActivityAt DateTime?
   /// Timestamps
@@ -482,7 +493,39 @@ model RefreshToken {
   @@index([token])
   @@index([expiresAt])
   @@index([lastActivityAt])
+  @@index([familyId])
+  @@index([isActive, isInvalidated])
+  @@index([familyId, isActive, isInvalidated])
   @@map("refresh_tokens")
+}
+
+model EmailVerificationToken {
+  /// Unique identifier for each email verification token
+  id         Int       @id @default(autoincrement())
+  /// The verification token value (256-bit cryptographic randomness)
+  token      String    @unique @db.VarChar(64)
+  /// User who owns this token
+  userId     String
+  /// Email address being verified
+  email      String    @db.VarChar(255)
+  /// Token expiration date (24 hours from creation)
+  expiresAt  DateTime
+  /// Timestamp when token was created
+  createdAt  DateTime  @default(now())
+  /// Timestamp when token was used (null if not yet used)
+  usedAt     DateTime?
+  /// IP address from which verification was initiated (audit trail)
+  ipAddress  String?   @db.VarChar(45)
+  /// User agent from which verification was initiated (audit trail)
+  userAgent  String?   @db.Text
+  /// Relation to user
+  user       User      @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@index([token])
+  @@index([userId])
+  @@index([expiresAt])
+  @@index([email])
+  @@map("email_verification_tokens")
 }
 
 model HorseXpEvent {
