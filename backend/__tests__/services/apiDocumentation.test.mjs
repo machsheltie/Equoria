@@ -23,7 +23,7 @@ import {
   getApiDocumentationService,
   registerEndpoint,
   registerSchema,
-  _generateDocumentation,
+  generateDocumentation,
   getDocumentationMetrics,
   getDocumentationHealth,
 } from '../../services/apiDocumentationService.mjs';

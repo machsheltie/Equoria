@@ -24,7 +24,7 @@ import {
   getPerformanceMetrics,
   PaginationService,
   SerializationService,
-  _ResponseCacheService,
+  ResponseCacheService,
 } from '../services/apiResponseOptimizationService.mjs';
 import logger from '../utils/logger.mjs';
 

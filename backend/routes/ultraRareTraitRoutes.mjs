@@ -5,12 +5,12 @@
  */
 
 import express from 'express';
-import { body, param, _query, validationResult } from 'express-validator';
+import { body, param, validationResult } from 'express-validator';
 import { authenticateToken } from '../middleware/auth.mjs';
 import { evaluateUltraRareTriggers, evaluateExoticUnlocks } from '../utils/ultraRareTriggerEngine.mjs';
-import { assignRareTraitBoosterPerks, getRevealedPerks, _applyRareTraitBoosterEffects } from '../utils/groomRareTraitPerks.mjs';
+import { assignRareTraitBoosterPerks, getRevealedPerks, applyRareTraitBoosterEffects } from '../utils/groomRareTraitPerks.mjs';
 import { getAllUltraRareTraits, getAllExoticTraits, getUltraRareTraitDefinition } from '../utils/ultraRareTraits.mjs';
-import { applyUltraRareStressEffects, applyUltraRareCompetitionEffects, _hasUltraRareAbility } from '../utils/ultraRareMechanicalEffects.mjs';
+import { applyUltraRareStressEffects, applyUltraRareCompetitionEffects, hasUltraRareAbility } from '../utils/ultraRareMechanicalEffects.mjs';
 import prisma from '../db/index.mjs';
 import logger from '../utils/logger.mjs';
 

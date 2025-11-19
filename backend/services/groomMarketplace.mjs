@@ -11,7 +11,6 @@
  */
 
 import crypto from 'crypto';
-import { GROOM_CONFIG as _GROOM_CONFIG } from '../config/groomConfig.mjs';
 
 // Marketplace configuration
 export const MARKETPLACE_CONFIG = {

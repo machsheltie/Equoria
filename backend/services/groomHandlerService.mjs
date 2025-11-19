@@ -5,7 +5,6 @@
 
 import prisma from '../db/index.mjs';
 import logger from '../utils/logger.mjs';
-import { getDisciplineConfig as _getDisciplineConfig } from '../utils/competitionLogic.mjs';
 import { isValidConformationClass } from './conformationShowService.mjs';
 
 // Handler skill bonuses by skill level
