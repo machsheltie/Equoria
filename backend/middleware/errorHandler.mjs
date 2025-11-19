@@ -70,9 +70,11 @@ const errorHandler = (err, req, res, next) => {
 
   // Send error response
   try {
+    const errorMessage = error.message || 'Server Error';
     res.status(error.statusCode || 500).json({
       success: false,
-      message: error.message || 'Server Error',
+      message: errorMessage,
+      error: errorMessage, // Include for backward compatibility with tests
       ...(process.env.NODE_ENV === 'development' && { stack: err.stack }),
     });
   } catch (responseError) {
@@ -85,3 +87,4 @@ const errorHandler = (err, req, res, next) => {
 };
 
 export default errorHandler;
+

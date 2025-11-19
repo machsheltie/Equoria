@@ -28,7 +28,7 @@ export const authenticateToken = (req, res, next) => {
       throw new AppError('Authentication configuration error', 500);
     }
 
-    jwt.verify(token, secret, (err, user) => {
+    jwt.verify(token, secret, (err, decoded) => {
       if (err) {
         logger.warn(
           `[auth] Invalid token for ${req.method} ${req.path} from ${req.ip}: ${err.message}`,
@@ -42,6 +42,12 @@ export const authenticateToken = (req, res, next) => {
           throw new AppError('Token verification failed', 401);
         }
       }
+
+      // Map userId to id for backward compatibility
+      const user = {
+        ...decoded,
+        id: decoded.userId || decoded.id,
+      };
 
       req.user = user;
       logger.info(`[auth] Authenticated user ${user.id} for ${req.method} ${req.path}`);
@@ -90,8 +96,13 @@ export const optionalAuth = (req, res, next) => {
       return next(); // Continue without user if JWT not configured
     }
 
-    jwt.verify(token, secret, (err, user) => {
-      if (!err && user) {
+    jwt.verify(token, secret, (err, decoded) => {
+      if (!err && decoded) {
+        // Map userId to id for backward compatibility
+        const user = {
+          ...decoded,
+          id: decoded.userId || decoded.id,
+        };
         req.user = user;
         logger.info(`[auth] Optional auth: authenticated user ${user.id}`);
       }
