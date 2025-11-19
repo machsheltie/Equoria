@@ -37,10 +37,10 @@
 
 import request from 'supertest';
 import express from 'express';
-import { _readFileSync, _existsSync } from 'fs';
-import { _join, dirname } from 'path';
+import { readFileSync, existsSync } from 'fs';
+import { join, dirname } from 'path';
 import { fileURLToPath } from 'url';
-import _YAML from 'js-yaml';
+import YAML from 'js-yaml';
 import { body } from 'express-validator';
 import { register, login } from '../../controllers/authController.mjs';
 import { authenticateToken } from '../../middleware/auth.mjs';

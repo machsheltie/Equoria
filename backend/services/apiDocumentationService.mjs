@@ -14,7 +14,7 @@
  * - Documentation analytics
  */
 
-import { _readFileSync, writeFileSync, existsSync } from 'fs';
+import { readFileSync, writeFileSync, existsSync } from 'fs';
 import { join, dirname } from 'path';
 import { fileURLToPath } from 'url';
 import YAML from 'yamljs';
