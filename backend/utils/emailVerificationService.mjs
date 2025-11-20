@@ -18,6 +18,7 @@
 import crypto from 'crypto';
 import prisma from '../db/index.mjs';
 import logger from './logger.mjs';
+import { AppError } from '../errors/index.mjs';
 
 // Email verification configuration
 const EMAIL_CONFIG = {
@@ -58,8 +59,9 @@ export async function createVerificationToken(userId, email, metadata = {}) {
     });
 
     if (pendingTokens >= EMAIL_CONFIG.MAX_PENDING_TOKENS) {
-      throw new Error(
-        `Maximum pending verification tokens (${EMAIL_CONFIG.MAX_PENDING_TOKENS}) reached`
+      throw new AppError(
+        `Maximum pending verification tokens (${EMAIL_CONFIG.MAX_PENDING_TOKENS}) reached`,
+        400
       );
     }
 
@@ -75,8 +77,9 @@ export async function createVerificationToken(userId, email, metadata = {}) {
 
       if (timeSinceLastToken < cooldownMs) {
         const remainingSeconds = Math.ceil((cooldownMs - timeSinceLastToken) / 1000);
-        throw new Error(
-          `Please wait ${remainingSeconds} seconds before requesting another verification email`
+        throw new AppError(
+          `Please wait ${remainingSeconds} seconds before requesting another verification email`,
+          500
         );
       }
     }
@@ -147,16 +150,7 @@ export async function verifyEmailToken(token, metadata = {}) {
       };
     }
 
-    // Check if already used
-    if (tokenRecord.usedAt) {
-      return {
-        success: false,
-        error: 'Verification token has already been used',
-        code: 'TOKEN_ALREADY_USED',
-      };
-    }
-
-    // Check expiration
+    // Check expiration (before transaction for performance)
     if (new Date() > tokenRecord.expiresAt) {
       return {
         success: false,
@@ -165,13 +159,22 @@ export async function verifyEmailToken(token, metadata = {}) {
       };
     }
 
-    // Use transaction to ensure atomicity
+    // Use transaction to ensure atomicity with race condition protection
     const result = await prisma.$transaction(async (prisma) => {
-      // Mark token as used
-      await prisma.emailVerificationToken.update({
-        where: { token },
+      // Atomic update: only update if token hasn't been used yet
+      // This prevents race conditions where two requests try to use the same token
+      const updateResult = await prisma.emailVerificationToken.updateMany({
+        where: {
+          token,
+          usedAt: null, // Only update if not already used
+        },
         data: { usedAt: new Date() },
       });
+
+      // If no rows were updated, token was already used by another request
+      if (updateResult.count === 0) {
+        throw new AppError('Verification token has already been used', 400);
+      }
 
       // Mark user email as verified
       const updatedUser = await prisma.user.update({
@@ -205,6 +208,15 @@ export async function verifyEmailToken(token, metadata = {}) {
     };
   } catch (error) {
     logger.error('[EmailVerification] Error verifying email token:', error);
+
+    // If it's an AppError (like TOKEN_ALREADY_USED), return its message
+    if (error instanceof AppError) {
+      return {
+        success: false,
+        error: error.message,
+        code: 'TOKEN_ALREADY_USED',
+      };
+    }
 
     return {
       success: false,
@@ -240,10 +252,21 @@ export async function checkVerificationStatus(userId) {
       };
     }
 
+    // Explicitly handle emailVerifiedAt to ensure null not undefined
+    const verifiedAt = user.emailVerifiedAt !== undefined ? user.emailVerifiedAt : null;
+
+    logger.info('[EmailVerification] Verification status check', {
+      userId,
+      emailVerified: user.emailVerified,
+      emailVerifiedAtType: typeof user.emailVerifiedAt,
+      emailVerifiedAtValue: user.emailVerifiedAt,
+      verifiedAtResult: verifiedAt,
+    });
+
     return {
       verified: user.emailVerified,
       email: user.email,
-      verifiedAt: user.emailVerifiedAt,
+      verifiedAt,
     };
   } catch (error) {
     logger.error('[EmailVerification] Error checking verification status:', error);
@@ -275,11 +298,11 @@ export async function resendVerificationEmail(userId, metadata = {}) {
     });
 
     if (!user) {
-      throw new Error('User not found');
+      throw new AppError('User not found', 404);
     }
 
     if (user.emailVerified) {
-      throw new Error('Email is already verified');
+      throw new AppError('Email is already verified', 500);
     }
 
     // Invalidate old unused tokens (optional cleanup)

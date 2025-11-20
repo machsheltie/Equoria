@@ -26,9 +26,6 @@ const errorHandler = (err, req, res, next) => {
     });
     return next(err); // Pass to Express default handler
   }
-  let error = { ...err };
-  error.message = err.message;
-
   // Log error details
   logger.error(`Error ${err.message}`, {
     error: err.message,
@@ -39,22 +36,31 @@ const errorHandler = (err, req, res, next) => {
     userAgent: req?.get('User-Agent'),
   });
 
-  // Mongoose bad ObjectId
-  if (err.name === 'CastError') {
-    const message = 'Resource not found';
-    error = new AppError(message, 404);
-  }
+  // If it's already our custom error class (AppError or subclass), use it directly
+  let error = err;
 
-  // Mongoose duplicate key
-  if (err.code === 11000) {
-    const message = 'Duplicate field value entered';
-    error = new AppError(message, 400);
-  }
+  // Only process/transform if it's NOT already an AppError instance
+  if (!(err instanceof AppError)) {
+    error = { ...err };
+    error.message = err.message;
 
-  // Mongoose validation error
-  if (err.name === 'ValidationError') {
-    const message = Object.values(err.errors).map(val => val.message);
-    error = new AppError(message, 400);
+    // Mongoose bad ObjectId
+    if (err.name === 'CastError') {
+      const message = 'Resource not found';
+      error = new AppError(message, 404);
+    }
+
+    // Mongoose duplicate key
+    if (err.code === 11000) {
+      const message = 'Duplicate field value entered';
+      error = new AppError(message, 400);
+    }
+
+    // Mongoose validation error (check for errors property to distinguish from our ValidationError)
+    if (err.name === 'ValidationError' && err.errors) {
+      const message = Object.values(err.errors).map(val => val.message);
+      error = new AppError(message, 400);
+    }
   }
 
   // Prisma errors

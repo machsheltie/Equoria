@@ -268,13 +268,14 @@ export class SerializationService {
    */
   static compressDataStructure(data) {
     if (Array.isArray(data)) {
-      return data.map(item => this.compressDataStructure(item)).filter(item => item !== null);
+      return data.map(item => this.compressDataStructure(item)).filter(item => item !== null && item !== undefined);
     }
 
     if (data && typeof data === 'object') {
       const compressed = {};
       for (const [key, value] of Object.entries(data)) {
-        if (value !== null) {
+        // Only remove undefined values, keep null values (null is a valid API response value)
+        if (value !== undefined) {
           compressed[key] = this.compressDataStructure(value);
         }
       }

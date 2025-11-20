@@ -425,7 +425,7 @@ export const verifyEmail = async (req, res, next) => {
     });
   } catch (error) {
     logger.error('[authController.verifyEmail] Error verifying email:', error);
-    if (error instanceof AppError || error instanceof ValidationError) {
+    if (error instanceof AppError) {
       return next(error);
     }
     next(new AppError('Email verification failed due to an unexpected error.', 500));
@@ -480,7 +480,7 @@ export const resendVerification = async (req, res, next) => {
     });
   } catch (error) {
     logger.error('[authController.resendVerification] Error resending verification:', error);
-    if (error instanceof AppError || error instanceof ValidationError) {
+    if (error instanceof AppError) {
       return next(error);
     }
     next(new AppError('Failed to resend verification email due to an unexpected error.', 500));
@@ -510,7 +510,7 @@ export const getVerificationStatus = async (req, res, next) => {
       data: {
         verified: status.verified,
         email: status.email,
-        verifiedAt: status.verifiedAt,
+        verifiedAt: status.verifiedAt ?? null, // Ensure null instead of undefined
       },
     });
   } catch (error) {
