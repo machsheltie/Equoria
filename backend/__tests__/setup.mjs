@@ -82,13 +82,16 @@ async function cleanupDatabase() {
  * Create test user with default values
  */
 export async function createTestUser(overrides = {}) {
+  const timestamp = Date.now();
+  const randomId = Math.random().toString(36).substring(7);
   const defaultUser = {
-    id: `test-${Date.now()}-${Math.random().toString(36).substring(7)}`,
-    email: `test-${Date.now()}@example.com`,
+    id: `test-${timestamp}-${randomId}`,
+    username: overrides.username || `testuser-${timestamp}-${randomId}`,
+    email: overrides.email || `test-${timestamp}@example.com`,
     firstName: 'Test',
     lastName: 'User',
     password: '$2b$12$LQv3c1yqBWVHxkd0LHAkCOYz6TtxMQJqhN8/LewY5GyGJ4lxPcxqy', // 'password123'
-    isEmailVerified: true,
+    emailVerified: true, // Fixed: schema uses emailVerified, not isEmailVerified
   };
 
   return prisma.user.create({

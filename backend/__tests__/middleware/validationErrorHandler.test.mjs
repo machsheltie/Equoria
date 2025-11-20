@@ -59,6 +59,7 @@ describe('Validation Error Handler', () => {
       expect(res.status).toHaveBeenCalledWith(400);
       expect(res.json).toHaveBeenCalledWith({
         success: false,
+        message: 'Email is required', // First error message
         errors: [
           { msg: 'Email is required', path: 'email' },
           { msg: 'Password must be at least 8 characters', path: 'password' },
@@ -78,6 +79,7 @@ describe('Validation Error Handler', () => {
       expect(res.status).toHaveBeenCalledWith(400);
       expect(res.json).toHaveBeenCalledWith({
         success: false,
+        message: 'Invalid email format', // First error message
         errors: [{ msg: 'Invalid email format', path: 'email' }],
       });
     });
@@ -93,6 +95,7 @@ describe('Validation Error Handler', () => {
       expect(res.status).toHaveBeenCalledWith(400);
       expect(res.json).toHaveBeenCalledWith({
         success: false,
+        message: 'Invalid address', // First error message
         errors: [{ msg: 'Invalid address', path: 'user.address.street' }],
       });
     });
