@@ -304,7 +304,7 @@ describe('Email Verification Service - Unit Tests', () => {
 
       expect(status.verified).toBe(false);
       expect(status.email).toBe(testUser.email);
-      expect(status.verifiedAt).toBeUndefined();
+      expect(status.verifiedAt).toBeNull();
     });
 
     it('should_handle_non_existent_user', async () => {
