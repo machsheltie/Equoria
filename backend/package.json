@@ -27,6 +27,8 @@
     "test:performance": "node scripts/performance-tests.mjs",
     "test:performance:regression": "node scripts/performance-regression-tests.mjs",
     "test:migration": "node scripts/database-migration-tests.mjs",
+    "test:security": "node --experimental-vm-modules node_modules/jest/bin/jest.js --config=jest.config.security.mjs",
+    "test:security:coverage": "node --experimental-vm-modules node_modules/jest/bin/jest.js --config=jest.config.security.mjs --coverage",
     "prepare": "husky install",
     "lint": "eslint .",
     "lint:fix": "eslint . --fix",

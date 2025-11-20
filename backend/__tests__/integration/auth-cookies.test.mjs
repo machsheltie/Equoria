@@ -372,6 +372,8 @@ describe('Authentication with HttpOnly Cookies', () => {
           username: 'fallbacktest',
           email: 'fallback@example.com',
           password: hashedPassword,
+          firstName: 'Fallback', // Required field
+          lastName: 'Test',       // Required field
         },
       });
 
