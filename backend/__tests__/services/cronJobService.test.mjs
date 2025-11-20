@@ -6,30 +6,31 @@
  */
 
 import { describe, it, expect, jest, beforeEach, afterEach } from '@jest/globals';
-import {
-  initializeCronJobs,
-  stopCronJobs,
-  getCronJobStatus,
-  triggerTokenCleanup,
-} from '../../services/cronJobService.mjs';
 import { createTestUser, createTestRefreshToken } from '../setup.mjs';
 import prisma from '../../db/index.mjs';
 
-// Mock node-cron
-jest.mock('node-cron', () => ({
-  schedule: jest.fn((pattern, callback, options) => {
-    return {
-      start: jest.fn(),
-      stop: jest.fn(),
-      running: false,
-      scheduled: options?.scheduled !== false,
-      _callback: callback, // Store for testing
-      _pattern: pattern,
-    };
-  }),
+// Mock node-cron BEFORE importing anything that uses it (ESM pattern)
+const mockSchedule = jest.fn((pattern, callback, options) => {
+  return {
+    start: jest.fn(),
+    stop: jest.fn(),
+    running: false,
+    scheduled: options?.scheduled !== false,
+    _callback: callback, // Store for testing
+    _pattern: pattern,
+  };
+});
+
+jest.unstable_mockModule('node-cron', () => ({
+  default: {
+    schedule: mockSchedule,
+  },
 }));
 
-import cron from 'node-cron';
+// Import AFTER mocking
+const { initializeCronJobs, stopCronJobs, getCronJobStatus, triggerTokenCleanup } =
+  await import('../../services/cronJobService.mjs');
+const cron = await import('node-cron');
 
 describe('Cron Job Service', () => {
   beforeEach(() => {
@@ -46,7 +47,7 @@ describe('Cron Job Service', () => {
     it('should initialize weekly salary job', () => {
       initializeCronJobs();
 
-      expect(cron.schedule).toHaveBeenCalledWith(
+      expect(mockSchedule).toHaveBeenCalledWith(
         '0 9 * * 1', // Monday 9AM
         expect.any(Function),
         expect.objectContaining({
@@ -59,7 +60,7 @@ describe('Cron Job Service', () => {
     it('should initialize token cleanup job', () => {
       initializeCronJobs();
 
-      expect(cron.schedule).toHaveBeenCalledWith(
+      expect(mockSchedule).toHaveBeenCalledWith(
         '0 3 * * *', // Daily 3AM
         expect.any(Function),
         expect.objectContaining({
@@ -72,7 +73,7 @@ describe('Cron Job Service', () => {
     it('should start all jobs after initialization', () => {
       initializeCronJobs();
 
-      const mockCalls = cron.schedule.mock.results;
+      const mockCalls = mockSchedule.mock.results;
       mockCalls.forEach((call) => {
         expect(call.value.start).toHaveBeenCalled();
       });
@@ -81,13 +82,13 @@ describe('Cron Job Service', () => {
     it('should initialize exactly 2 cron jobs', () => {
       initializeCronJobs();
 
-      expect(cron.schedule).toHaveBeenCalledTimes(2);
+      expect(mockSchedule).toHaveBeenCalledTimes(2);
     });
 
     it('should use UTC timezone for all jobs', () => {
       initializeCronJobs();
 
-      cron.schedule.mock.calls.forEach((call) => {
+      mockSchedule.mock.calls.forEach((call) => {
         const options = call[2];
         expect(options.timezone).toBe('UTC');
       });
@@ -98,7 +99,7 @@ describe('Cron Job Service', () => {
     it('should stop all running jobs', () => {
       initializeCronJobs();
 
-      const jobs = cron.schedule.mock.results.map((r) => r.value);
+      const jobs = mockSchedule.mock.results.map((r) => r.value);
 
       stopCronJobs();
 
@@ -295,7 +296,7 @@ describe('Cron Job Service', () => {
     it('should schedule daily cleanup at 3 AM UTC', () => {
       initializeCronJobs();
 
-      const tokenCleanupCall = cron.schedule.mock.calls.find((call) => call[0] === '0 3 * * *');
+      const tokenCleanupCall = mockSchedule.mock.calls.find((call) => call[0] === '0 3 * * *');
 
       expect(tokenCleanupCall).toBeDefined();
       expect(tokenCleanupCall[2].timezone).toBe('UTC');
@@ -310,7 +311,7 @@ describe('Cron Job Service', () => {
       });
 
       // Get the cleanup job callback
-      const tokenCleanupCall = cron.schedule.mock.calls.find((call) => call[0] === '0 3 * * *');
+      const tokenCleanupCall = mockSchedule.mock.calls.find((call) => call[0] === '0 3 * * *');
       const cleanupCallback = tokenCleanupCall[1];
 
       // Execute the callback

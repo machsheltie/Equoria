@@ -31,7 +31,12 @@ beforeAll(async () => {
 afterAll(async () => {
   // Clean up and disconnect
   await cleanupDatabase();
+
+  // Force close all connections
   await prisma.$disconnect();
+
+  // Wait for all async operations to complete
+  await new Promise((resolve) => setTimeout(resolve, 100));
 });
 
 /**
@@ -49,27 +54,26 @@ afterEach(async () => {
   // Clear any lingering data
   jest.clearAllMocks();
   jest.restoreAllMocks();
+
+  // Ensure all async operations complete before next test
+  await new Promise((resolve) => setImmediate(resolve));
 });
 
 /**
  * Clean all test data from database
- * Order matters due to foreign key constraints
+ * Order matters due to foreign key constraints - delete child records first!
  */
 async function cleanupDatabase() {
-  const tables = [
-    'RefreshToken',
-    'User',
-    // Add more tables as needed
-  ];
-
-  for (const table of tables) {
-    try {
-      await prisma[table.charAt(0).toLowerCase() + table.slice(1)].deleteMany({});
-    } catch (error) {
-      // Table might not exist yet, ignore
-      if (!error.message.includes('does not exist')) {
-        console.error(`Error cleaning ${table}:`, error.message);
-      }
+  try {
+    // Delete in correct order: children before parents
+    // RefreshToken has FK to User, so delete it first
+    await prisma.refreshToken.deleteMany({});
+    await prisma.user.deleteMany({});
+    // Add more tables here as needed, children before parents
+  } catch (error) {
+    // Ignore "table does not exist" errors
+    if (!error.message?.includes('does not exist')) {
+      console.error('Error cleaning database:', error.message);
     }
   }
 }
