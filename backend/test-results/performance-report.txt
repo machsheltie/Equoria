@@ -1,0 +1,16 @@
+
+================================
+Performance Report
+================================
+
+Total Tests: 0
+Total Duration: 0ms (0.00s)
+Average Duration: 0ms
+Max Duration: undefinedms
+Min Duration: undefinedms
+
+No slow tests detected ✓
+
+================================
+Generated: 2025-11-18T20:11:58.077Z
+================================

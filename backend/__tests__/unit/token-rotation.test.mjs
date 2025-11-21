@@ -27,7 +27,14 @@ describe('Token Rotation Service - Unit Tests', () => {
 
   beforeEach(async () => {
     // Clear all tokens
-    await prisma.refreshToken.deleteMany({});
+    await prisma.refreshToken.deleteMany({
+      where: { user: { email: { contains: 'tokenunit' } } }
+    });
+
+    // Clear test users
+    await prisma.user.deleteMany({
+      where: { email: { contains: 'tokenunit' } }
+    });
 
     // Create test user with unique timestamp
     const timestamp = Date.now() + Math.floor(Math.random() * 1000);
@@ -38,8 +45,24 @@ describe('Token Rotation Service - Unit Tests', () => {
     testUser = userData;
   });
 
+  afterAll(async () => {
+    // Clean up all test data
+    await prisma.refreshToken.deleteMany({
+      where: { user: { email: { contains: 'tokenunit' } } }
+    });
+    await prisma.user.deleteMany({
+      where: { email: { contains: 'tokenunit' } }
+    });
+    await prisma.$disconnect();
+  });
+
   afterEach(async () => {
-    await prisma.refreshToken.deleteMany({});
+    // Clean up tokens for current test
+    if (testUser?.id) {
+      await prisma.refreshToken.deleteMany({
+        where: { userId: testUser.id }
+      });
+    }
   });
 
   describe('generateTokenFamily()', () => {

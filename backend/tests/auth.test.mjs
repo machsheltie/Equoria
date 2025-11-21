@@ -41,6 +41,7 @@ import request from 'supertest';
 import app from '../app.mjs';
 import { createTestUser, createLoginData } from './helpers/authHelper.mjs';
 import prisma from '../db/index.mjs';
+import { resetAllAuthRateLimits } from '../middleware/authRateLimiter.mjs';
 
 describe('🔐 INTEGRATION: Authentication System - User Registration & Session Management', () => {
   // Clean up test data before and after tests
@@ -95,6 +96,8 @@ describe('🔐 INTEGRATION: Authentication System - User Registration & Session 
 
   beforeEach(async () => {
     await cleanupTestData();
+    // Reset rate limits to prevent test interference
+    resetAllAuthRateLimits();
   });
 
   afterAll(async () => {

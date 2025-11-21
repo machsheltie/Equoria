@@ -31,8 +31,12 @@ import {
 
 describe('Rate Limiting System', () => {
   let testUser;
+  let server;
 
   beforeAll(async () => {
+    // Start server once for all tests
+    server = app.listen(0);
+
     // Create test user for authentication tests
     testUser = await createTestUser({
       username: 'ratelimituser',
@@ -43,6 +47,11 @@ describe('Rate Limiting System', () => {
   afterAll(async () => {
     // Clean up test data
     await cleanupTestUser(testUser?.id);
+
+    // Close server and disconnect
+    if (server) {
+      await new Promise((resolve) => server.close(resolve));
+    }
     await prisma.$disconnect();
   });
 

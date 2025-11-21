@@ -24,13 +24,37 @@ import { createTestUser, resetRateLimitStore } from '../config/test-helpers.mjs'
 describe('Token Rotation and Reuse Detection System', () => {
   let testUser;
   let testPassword;
+  let server;
+
+  beforeAll(async () => {
+    // Start server once for all tests
+    server = app.listen(0); // Use random port
+  });
+
+  afterAll(async () => {
+    // Clean up all test data
+    await prisma.refreshToken.deleteMany({
+      where: { user: { email: { contains: 'tokentest' } } }
+    });
+    await prisma.user.deleteMany({
+      where: { email: { contains: 'tokentest' } }
+    });
+
+    // Close server and disconnect from database
+    if (server) {
+      await new Promise((resolve) => server.close(resolve));
+    }
+    await prisma.$disconnect();
+  });
 
   beforeEach(async () => {
     // Reset rate limits to avoid interference
     resetRateLimitStore();
 
     // Clean up any existing tokens and users
-    await prisma.refreshToken.deleteMany({});
+    await prisma.refreshToken.deleteMany({
+      where: { user: { email: { contains: 'tokentest' } } }
+    });
     await prisma.user.deleteMany({
       where: { email: { contains: 'tokentest' } }
     });
@@ -46,8 +70,12 @@ describe('Token Rotation and Reuse Detection System', () => {
   });
 
   afterEach(async () => {
-    // Clean up tokens
-    await prisma.refreshToken.deleteMany({});
+    // Clean up tokens for this specific test
+    if (testUser?.id) {
+      await prisma.refreshToken.deleteMany({
+        where: { userId: testUser.id }
+      });
+    }
   });
 
   describe('Basic Token Rotation', () => {

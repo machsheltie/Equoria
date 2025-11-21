@@ -1,0 +1,50 @@
+      at Object.<anonymous> (tests/integration/advancedBreedingGeneticsAPI.test.mjs:158:10)
+
+
+  ●  TCPSERVERWRAP
+
+    [0m [90m 170 |[39m     test([32m'POST /api/breeding/genetic-probability should require authentication'[39m[33m,[39m [36masync[39m () [33m=>[39m {
+     [90m 171 |[39m       [36mconst[39m response [33m=[39m [36mawait[39m request(app)
+    [31m[1m>[22m[39m[90m 172 |[39m         [33m.[39mpost([32m'/api/breeding/genetic-probability'[39m)
+     [90m     |[39m          [31m[1m^[22m[39m
+     [90m 173 |[39m         [33m.[39msend({
+     [90m 174 |[39m           stallionId[33m:[39m testStallion[33m.[39mdata[33m.[39mid[33m,[39m
+     [90m 175 |[39m           mareId[33m:[39m testMare[33m.[39mdata[33m.[39mid[33m,[39m[0m
+
+      at Test.serverAddress (node_modules/supertest/lib/test.js:63:35)
+      at new Test (node_modules/supertest/lib/test.js:49:14)
+      at Object.obj.<computed> [as post] (node_modules/supertest/index.js:39:18)
+      at Object.<anonymous> (tests/integration/advancedBreedingGeneticsAPI.test.mjs:172:10)
+
+
+  ●  TCPSERVERWRAP
+
+    [0m [90m 216 |[39m     test([32m'POST /api/breeding/breeding-recommendations should generate comprehensive recommendations'[39m[33m,[39m [36masync[39m () [33m=>[39m {
+     [90m 217 |[39m       [36mconst[39m response [33m=[39m [36mawait[39m request(app)
+    [31m[1m>[22m[39m[90m 218 |[39m         [33m.[39mpost([32m'/api/breeding/breeding-recommendations'[39m)
+     [90m     |[39m          [31m[1m^[22m[39m
+     [90m 219 |[39m         [33m.[39m[36mset[39m([32m'Authorization'[39m[33m,[39m [32m`Bearer ${authToken}`[39m)
+     [90m 220 |[39m         [33m.[39msend({
+     [90m 221 |[39m           stallionId[33m:[39m testStallion[33m.[39mdata[33m.[39mid[33m,[39m[0m
+
+      at Test.serverAddress (node_modules/supertest/lib/test.js:63:35)
+      at new Test (node_modules/supertest/lib/test.js:49:14)
+      at Object.obj.<computed> [as post] (node_modules/supertest/index.js:39:18)
+      at Object.<anonymous> (tests/integration/advancedBreedingGeneticsAPI.test.mjs:218:10)
+
+
+  ●  TCPSERVERWRAP
+
+    [0m [90m 271 |[39m     test([32m'POST /api/genetics/inbreeding-analysis should calculate detailed inbreeding'[39m[33m,[39m [36masync[39m () [33m=>[39m {
+     [90m 272 |[39m       [36mconst[39m response [33m=[39m [36mawait[39m request(app)
+    [31m[1m>[22m[39m[90m 273 |[39m         [33m.[39mpost([32m'/api/genetics/inbreeding-analysis'[39m)
+     [90m     |[39m          [31m[1m^[22m[39m
+     [90m 274 |[39m         [33m.[39m[36mset[39m([32m'Authorization'[39m[33m,[39m [32m`Bearer ${authToken}`[39m)
+     [90m 275 |[39m         [33m.[39msend({
+     [90m 276 |[39m           stallionId[33m:[39m testStallion[33m.[39mdata[33m.[39mid[33m,[39m[0m
+
+      at Test.serverAddress (node_modules/supertest/lib/test.js:63:35)
+      at new Test (node_modules/supertest/lib/test.js:49:14)
+      at Object.obj.<computed> [as post] (node_modules/supertest/index.js:39:18)
+      at Object.<anonymous> (tests/integration/advancedBreedingGeneticsAPI.test.mjs:273:10)
+

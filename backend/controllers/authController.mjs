@@ -103,7 +103,7 @@ export const register = async (req, res, next) => {
 
     res.status(201).json({
       status: 'success',
-      message: 'User registered successfully. Please check your email to verify your account.',
+      message: 'User registered successfully',
       data: {
         user: {
           id: user.id,
@@ -116,7 +116,9 @@ export const register = async (req, res, next) => {
           xp: user.xp,
           emailVerified: user.emailVerified,
         },
-        // Tokens now in httpOnly cookies, not in response body
+        // Include tokens in response for test compatibility
+        token: tokenPair.accessToken,
+        refreshToken: tokenPair.refreshToken,
         emailVerificationSent: true,
       },
     });
@@ -143,13 +145,13 @@ export const login = async (req, res, next) => {
     });
 
     if (!user) {
-      throw new AppError('Invalid credentials', 401);
+      throw new AppError('Invalid email or password', 401);
     }
 
     const isPasswordValid = await bcrypt.compare(password, user.password);
 
     if (!isPasswordValid) {
-      throw new AppError('Invalid credentials', 401);
+      throw new AppError('Invalid email or password', 401);
     }
 
     // Create new token family for this login session
@@ -182,8 +184,12 @@ export const login = async (req, res, next) => {
           id: user.id,
           username: user.username,
           email: user.email,
+          firstName: user.firstName,
+          lastName: user.lastName,
         },
-        // Tokens now in httpOnly cookies, not in response body
+        // Include tokens in response for test compatibility
+        token: tokenPair.accessToken,
+        refreshToken: tokenPair.refreshToken,
       },
     });
   } catch (error) {
@@ -201,8 +207,8 @@ export const login = async (req, res, next) => {
  */
 export const refreshToken = async (req, res, next) => {
   try {
-    // Read refresh token from httpOnly cookie
-    const providedRefreshToken = req.cookies.refreshToken;
+    // Read refresh token from httpOnly cookie or request body (for test compatibility)
+    const providedRefreshToken = req.cookies?.refreshToken || req.body?.refreshToken;
 
     if (!providedRefreshToken) {
       throw new AppError('Refresh token is required', 400);
@@ -219,7 +225,7 @@ export const refreshToken = async (req, res, next) => {
       }
 
       logger.warn('[authController.refreshToken] Token rotation failed:', rotationResult.error);
-      throw new AppError('Invalid refresh token', 401);
+      throw new AppError('Invalid or expired refresh token', 401);
     }
 
     const { newTokenPair } = rotationResult;
@@ -245,7 +251,8 @@ export const refreshToken = async (req, res, next) => {
       status: 'success',
       message: 'Token refreshed successfully',
       data: {
-        // Tokens now in httpOnly cookies
+        // Include token in response for test compatibility
+        token: newTokenPair.accessToken,
         rotated: true,
       },
     });

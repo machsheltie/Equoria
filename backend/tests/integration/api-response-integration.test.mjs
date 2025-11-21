@@ -176,9 +176,28 @@ describe('🔄 API Response Integration Tests', () => {
   let app;
   let testUser;
   let authToken;
+  let server;
 
   beforeAll(async () => {
     app = createTestApp();
+    // Start server once for all tests
+    server = app.listen(0);
+  });
+
+  afterAll(async () => {
+    // Clean up all test data
+    await prisma.refreshToken.deleteMany({
+      where: { user: { email: { contains: 'apiresponseintegration' } } },
+    });
+    await prisma.user.deleteMany({
+      where: { email: { contains: 'apiresponseintegration' } },
+    });
+
+    // Close server and disconnect
+    if (server) {
+      await new Promise((resolve) => server.close(resolve));
+    }
+    await prisma.$disconnect();
   });
 
   beforeEach(async () => {
@@ -209,13 +228,12 @@ describe('🔄 API Response Integration Tests', () => {
   });
 
   afterEach(async () => {
-    // Clean up test data
-    await prisma.refreshToken.deleteMany({
-      where: { user: { email: { contains: 'apiresponseintegration' } } },
-    });
-    await prisma.user.deleteMany({
-      where: { email: { contains: 'apiresponseintegration' } },
-    });
+    // Clean up test data for current test
+    if (testUser?.id) {
+      await prisma.refreshToken.deleteMany({
+        where: { userId: testUser.id },
+      });
+    }
   });
 
   describe('📋 Response Format Standardization', () => {

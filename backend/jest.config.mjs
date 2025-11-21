@@ -45,10 +45,11 @@ export default {
   coverageReporters: ['text', 'lcov', 'html'],
 
   // Test timeout
-  testTimeout: 30000, // 30 seconds for database operations
+  testTimeout: 60000, // 60 seconds for database operations and integration tests
 
   // Parallel execution for performance
-  maxWorkers: '50%', // Use 50% of available CPU cores for parallel test execution
+  // Run tests sequentially to avoid database connection pool exhaustion
+  maxWorkers: 1, // Run tests sequentially to prevent connection pool issues
 
   // Bail on N failures (0 = don't bail, useful for CI)
   bail: 0,

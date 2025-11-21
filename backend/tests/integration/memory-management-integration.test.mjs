@@ -115,9 +115,12 @@ describe('🧠 Memory Management Integration Tests', () => {
   let _testUser;
   let authToken;
   let memoryManager;
+  let server;
 
   beforeAll(async () => {
     app = createTestApp();
+    // Start server once for all tests
+    server = app.listen(0);
 
     // Initialize memory management with test settings
     memoryManager = initializeMemoryManagement({
@@ -126,6 +129,25 @@ describe('🧠 Memory Management Integration Tests', () => {
       gcInterval: 2000, // 2 seconds for testing
       alertThreshold: 0.5, // 50% for testing
     });
+  });
+
+  afterAll(async () => {
+    // Clean up all test data
+    await prisma.refreshToken.deleteMany({
+      where: { user: { email: { contains: 'memoryintegration' } } },
+    });
+    await prisma.user.deleteMany({
+      where: { email: { contains: 'memoryintegration' } },
+    });
+
+    // Shutdown memory management
+    shutdownMemoryManagement();
+
+    // Close server and disconnect
+    if (server) {
+      await new Promise((resolve) => server.close(resolve));
+    }
+    await prisma.$disconnect();
   });
 
   beforeEach(async () => {
@@ -156,23 +178,17 @@ describe('🧠 Memory Management Integration Tests', () => {
   });
 
   afterEach(async () => {
-    // Clean up test data
-    await prisma.refreshToken.deleteMany({
-      where: { user: { email: { contains: 'memoryintegration' } } },
-    });
-    await prisma.user.deleteMany({
-      where: { email: { contains: 'memoryintegration' } },
-    });
+    // Clean up test data for current test
+    if (_testUser?.id) {
+      await prisma.refreshToken.deleteMany({
+        where: { userId: _testUser.id },
+      });
+    }
 
     // Clean up memory manager resources
     if (memoryManager) {
       memoryManager.cleanupAllResources();
     }
-  });
-
-  afterAll(async () => {
-    // Shutdown memory management
-    shutdownMemoryManagement();
   });
 
   describe('🔍 Memory Monitoring Integration', () => {

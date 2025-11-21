@@ -1,0 +1,15 @@
+
+================================
+Test Suite Execution Summary
+================================
+
+Environment: test
+Database: ✓ Connected
+Timestamp: 2025-11-18T20:11:58.079Z
+
+Test Results:
+- See detailed results in test-results/
+- Coverage report: coverage/lcov-report/index.html
+- Performance report: test-results/performance-report.txt
+
+================================

@@ -1,0 +1,79 @@
+--- a/packages/database/prismaClient.mjs
++++ b/packages/database/prismaClient.mjs
+@@ -20,15 +20,46 @@ const { PrismaClient } = await import('@prisma/client');
+
+ let prisma = null;
+
+-// Connection pool configuration for tests
++// Connection pool configuration
++// TEST ENVIRONMENT: Higher limits for Jest parallel test execution
++// - connection_limit=10: Allows up to 10 concurrent connections (typical for Jest with --maxWorkers)
++// - pool_timeout=20: 20s timeout allows time for setup/teardown across all test workers
++// - connect_timeout=10: 10s connection timeout prevents indefinite hangs
++// PRODUCTION: Uses DATABASE_URL as-is (Prisma defaults handle pooling)
++const CONNECTION_POOL_CONFIG = {
++  TEST: {
++    CONNECTION_LIMIT: 10, // Supports Jest parallel execution (typical --maxWorkers=50%)
++    POOL_TIMEOUT: 20, // 20s allows time for test setup/teardown
++    CONNECT_TIMEOUT: 10, // 10s prevents indefinite hangs
++  },
++  PRODUCTION: {
++    // Production relies on DATABASE_URL connection string
++    // Adjust these values in your DATABASE_URL if needed
++  },
++};
++
+ const connectionConfig = {
+   datasources: {
+     db: {
+       url: process.env.NODE_ENV === 'test'
+-        ? `${process.env.DATABASE_URL}?connection_limit=1&pool_timeout=5&connect_timeout=5`
++        ? `${process.env.DATABASE_URL}?connection_limit=${CONNECTION_POOL_CONFIG.TEST.CONNECTION_LIMIT}&pool_timeout=${CONNECTION_POOL_CONFIG.TEST.POOL_TIMEOUT}&connect_timeout=${CONNECTION_POOL_CONFIG.TEST.CONNECT_TIMEOUT}`
+         : process.env.DATABASE_URL,
+     },
+   },
+   // Additional test-specific configuration
+   ...(process.env.NODE_ENV === 'test' && {
+     log: [], // No logging in tests
+     errorFormat: 'minimal',
+   }),
+ };
+
+ if (process.env.NODE_ENV === 'production') {
+   prisma = new PrismaClient(connectionConfig);
+ } else {
+
+===== SUMMARY OF CHANGES =====
+
+File: packages/database/prismaClient.mjs
+Lines Changed: 23-54 (32 total lines)
+
+BEFORE:
+- connection_limit=1 (HARDCODED - causes timeouts)
+- pool_timeout=5 (HARDCODED - too short)
+- connect_timeout=5 (HARDCODED - too aggressive)
+- No configuration constants
+- Minimal documentation
+
+AFTER:
+- CONNECTION_POOL_CONFIG.TEST.CONNECTION_LIMIT = 10
+- CONNECTION_POOL_CONFIG.TEST.POOL_TIMEOUT = 20
+- CONNECTION_POOL_CONFIG.TEST.CONNECT_TIMEOUT = 10
+- Centralized configuration object
+- Comprehensive documentation
+
+IMPROVEMENTS:
+✓ Connection limit increased 10x (1 → 10)
+✓ Pool timeout increased 4x (5s → 20s)
+✓ Connect timeout increased 2x (5s → 10s)
+✓ Configuration centralized in constants
+✓ Better documentation
+✓ No changes to production behavior
+✓ Backward compatible
+
+RISK ASSESSMENT:
+- Risk Level: Very Low
+- Breaking Changes: None
+- Affected Tests: All (positive impact)
+- Production Impact: None
+- Rollback: Trivial (revert constants)

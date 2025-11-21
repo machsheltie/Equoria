@@ -128,10 +128,29 @@ describe('📚 Documentation System Integration Tests', () => {
   let testUser;
   let authToken;
   let _docService;
+  let server;
 
   beforeAll(async () => {
     app = createTestApp();
+    // Start server once for all tests
+    server = app.listen(0);
     _docService = getApiDocumentationService();
+  });
+
+  afterAll(async () => {
+    // Clean up all test data
+    await prisma.refreshToken.deleteMany({
+      where: { user: { email: { contains: 'docintegration' } } },
+    });
+    await prisma.user.deleteMany({
+      where: { email: { contains: 'docintegration' } },
+    });
+
+    // Close server and disconnect
+    if (server) {
+      await new Promise((resolve) => server.close(resolve));
+    }
+    await prisma.$disconnect();
   });
 
   beforeEach(async () => {
@@ -162,13 +181,12 @@ describe('📚 Documentation System Integration Tests', () => {
   });
 
   afterEach(async () => {
-    // Clean up test data
-    await prisma.refreshToken.deleteMany({
-      where: { user: { email: { contains: 'docintegration' } } },
-    });
-    await prisma.user.deleteMany({
-      where: { email: { contains: 'docintegration' } },
-    });
+    // Clean up test data for current test
+    if (testUser?.id) {
+      await prisma.refreshToken.deleteMany({
+        where: { userId: testUser.id },
+      });
+    }
   });
 
   describe('📋 Swagger/OpenAPI Specification Validation', () => {

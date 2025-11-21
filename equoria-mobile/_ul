@@ -1,0 +1,4 @@
+
+> equoria-mobile@1.0.0 test
+> jest --coverage --testResultsProcessor=jest-sonar-reporter 2
+

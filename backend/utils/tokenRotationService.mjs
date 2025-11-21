@@ -228,8 +228,9 @@ export async function detectTokenReuse(token) {
     });
 
     if (!tokenRecord) {
+      // Token not found is NOT reuse - it's just an invalid token
       return {
-        isReuse: true,
+        isReuse: false,
         familyId: null,
         shouldInvalidateFamily: false,
         reason: 'Token not found',

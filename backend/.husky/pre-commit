@@ -1,0 +1,13 @@
+#!/usr/bin/env sh
+. "$(dirname -- "$0")/_/husky.sh"
+
+# Pre-commit hook for Equoria Backend
+# Runs fast tests on changed files only
+
+echo "🔒 Running pre-commit checks..."
+
+# Run pre-commit tests
+node scripts/pre-commit-tests.mjs
+
+# Exit with test result code
+exit $?

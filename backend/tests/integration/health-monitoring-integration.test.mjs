@@ -120,9 +120,12 @@ describe('🏥 Health Monitoring Integration Tests', () => {
   let _testUser;
   let authToken;
   let _memoryManager;
+  let server;
 
   beforeAll(async () => {
     app = createTestApp();
+    // Start server once for all tests
+    server = app.listen(0);
 
     // Initialize memory management for health testing
     _memoryManager = initializeMemoryManagement({
@@ -130,6 +133,25 @@ describe('🏥 Health Monitoring Integration Tests', () => {
       monitoringInterval: 1000, // 1 second for testing
       gcInterval: 2000, // 2 seconds for testing
     });
+  });
+
+  afterAll(async () => {
+    // Clean up all test data
+    await prisma.refreshToken.deleteMany({
+      where: { user: { email: { contains: 'healthintegration' } } },
+    });
+    await prisma.user.deleteMany({
+      where: { email: { contains: 'healthintegration' } },
+    });
+
+    // Shutdown memory management
+    shutdownMemoryManagement();
+
+    // Close server and disconnect
+    if (server) {
+      await new Promise((resolve) => server.close(resolve));
+    }
+    await prisma.$disconnect();
   });
 
   beforeEach(async () => {
@@ -160,18 +182,12 @@ describe('🏥 Health Monitoring Integration Tests', () => {
   });
 
   afterEach(async () => {
-    // Clean up test data
-    await prisma.refreshToken.deleteMany({
-      where: { user: { email: { contains: 'healthintegration' } } },
-    });
-    await prisma.user.deleteMany({
-      where: { email: { contains: 'healthintegration' } },
-    });
-  });
-
-  afterAll(async () => {
-    // Shutdown memory management
-    shutdownMemoryManagement();
+    // Clean up test data for current test
+    if (_testUser?.id) {
+      await prisma.refreshToken.deleteMany({
+        where: { userId: _testUser.id },
+      });
+    }
   });
 
   describe('🔍 Main Health Endpoints', () => {

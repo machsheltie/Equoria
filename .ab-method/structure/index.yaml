@@ -1,0 +1,42 @@
+# AB Method Structure Index
+# This file defines the expected structure for AB Method documentation and tasks
+
+project_structure:
+  # ROOT OF THE PROJECT AND NOT THE DOTFILE
+  docs:
+    architecture:
+      files:
+        - tech-stack.md
+        - entry-points.md
+        - frontend-patterns.md
+        - backend-patterns.md
+        - external-services.md
+        - project-constraints.md
+        - testing-strategy.md
+
+    tasks:
+      # Example task structure
+      todo-table-creation:
+        files:
+          - progress-tracker.md
+          - mission-1-plan-and-implement-backend.md
+          - mission-2-plan-and-implement-frontend.md
+        folders:
+          - sub-agents-outputs/
+      # Additional tasks will follow this pattern:
+      # task-name:
+      #   files:
+      #     - progress-tracker.md
+      #     - mission-1-[description].md
+      #     - mission-2-[description].md
+      #     - ...
+      #   folders:
+      #     - sub-agents-outputs/
+
+# Workflow output destinations
+workflow_outputs:
+  analyze-project: docs/architecture/
+  analyze-frontend: docs/architecture/frontend-patterns.md
+  analyze-backend: docs/architecture/backend-patterns.md
+  create-task: docs/tasks/[task-name]/
+  create-mission: docs/tasks/[task-name]/mission-[number]-[description].md

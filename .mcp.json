@@ -1,0 +1,90 @@
+{
+  "mcpServers": {
+    "sequential-thinking": {
+      "command": "python",
+      "args": [
+        "-m",
+        "mcp_server_mas_sequential_thinking"
+      ],
+      "cwd": "./SequentialThinking/mcp-server-mas-sequential-thinking",
+      "env": {
+        "PYTHONPATH": "./SequentialThinking/mcp-server-mas-sequential-thinking"
+      },
+      "description": "Advanced sequential thinking and reasoning capabilities"
+    },
+    "context7": {
+      "command": "npx",
+      "args": [
+        "-y",
+        "@context7/mcp-server"
+      ],
+      "description": "Context management and knowledge graph capabilities"
+    },
+    "task-manager": {
+      "command": "npx",
+      "args": [
+        "-y",
+        "@taskmanager/mcp-server"
+      ],
+      "description": "Task and TODO management system"
+    },
+    "serena": {
+      "command": "npx",
+      "args": [
+        "-y",
+        "@serena/mcp-server"
+      ],
+      "description": "AI-powered development assistant (Serena)"
+    },
+    "chrome-dev-tools": {
+      "command": "npx",
+      "args": [
+        "-y",
+        "@chrome-devtools/mcp-server"
+      ],
+      "description": "Browser debugging and automation tools"
+    },
+    "filesystem": {
+      "command": "npx",
+      "args": [
+        "-y",
+        "@modelcontextprotocol/server-filesystem",
+        "."
+      ],
+      "description": "File system operations for the project"
+    },
+    "git": {
+      "command": "npx",
+      "args": [
+        "-y",
+        "@modelcontextprotocol/server-git",
+        "--repository",
+        "."
+      ],
+      "description": "Git version control operations"
+    },
+    "github": {
+      "command": "npx",
+      "args": [
+        "-y",
+        "@modelcontextprotocol/server-github"
+      ],
+      "env": {
+        "GITHUB_PERSONAL_ACCESS_TOKEN": "${GITHUB_TOKEN}"
+      },
+      "description": "GitHub API integration"
+    },
+    "postgres": {
+      "command": "npx",
+      "args": [
+        "-y",
+        "@modelcontextprotocol/server-postgres",
+        "postgresql://postgres:YOUR_PASSWORD@localhost:5432/equoria_test"
+      ],
+      "env": {
+        "POSTGRES_CONNECTION_STRING": "postgresql://postgres:YOUR_PASSWORD@localhost:5432/equoria_test"
+      },
+      "description": "PostgreSQL database operations (TEST database)"
+    }
+  }
+}
