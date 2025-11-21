@@ -491,11 +491,15 @@ describe('Session Management Middleware', () => {
     });
 
     it('should handle database errors', async () => {
-      req.user = { id: 'invalid-user-id' };
+      req.user = { id: 1 };
+
+      // Mock Prisma to throw a database error
+      const findManyError = new Error('Database connection lost');
+      jest.spyOn(prisma.refreshToken, 'findMany').mockRejectedValueOnce(findManyError);
 
       await getActiveSessions(req, res, next);
 
-      expect(next).toHaveBeenCalled();
+      expect(next).toHaveBeenCalledWith(findManyError);
     });
   });
 

@@ -85,7 +85,8 @@ export function validateEnvironment() {
 
     // Check for common weak passwords in URL
     const weakPasswords = ['password', 'admin', '123456', 'postgres'];
-    const urlMatch = dbUrl.match(/:([^@]+)@/);
+    // Match password in format: postgresql://user:password@host
+    const urlMatch = dbUrl.match(/\/\/[^:]+:([^@]+)@/);
     if (urlMatch) {
       const password = urlMatch[1];
       if (weakPasswords.includes(password.toLowerCase())) {

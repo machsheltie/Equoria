@@ -6,29 +6,36 @@
  */
 
 import { describe, it, expect, jest, beforeEach, afterEach } from '@jest/globals';
+import logger from '../../utils/logger.mjs';
 import { validateEnvironment } from '../../utils/validateEnvironment.mjs';
 
 describe('validateEnvironment()', () => {
   let originalEnv;
-  let consoleErrorSpy;
   let processExitSpy;
+  let loggerErrorSpy;
+  let loggerWarnSpy;
+  let loggerInfoSpy;
 
   beforeEach(() => {
     // Save original environment
     originalEnv = { ...process.env };
 
-    // Mock console.error and process.exit
-    consoleErrorSpy = jest.spyOn(console, 'error').mockImplementation();
+    // Mock process.exit and logger methods
     processExitSpy = jest.spyOn(process, 'exit').mockImplementation();
+    loggerErrorSpy = jest.spyOn(logger, 'error').mockImplementation();
+    loggerWarnSpy = jest.spyOn(logger, 'warn').mockImplementation();
+    loggerInfoSpy = jest.spyOn(logger, 'info').mockImplementation();
   });
 
   afterEach(() => {
     // Restore original environment
     process.env = originalEnv;
 
-    // Restore mocks
-    consoleErrorSpy.mockRestore();
+    // Restore all mocks
     processExitSpy.mockRestore();
+    loggerErrorSpy.mockRestore();
+    loggerWarnSpy.mockRestore();
+    loggerInfoSpy.mockRestore();
   });
 
   describe('Required variables validation', () => {
@@ -51,9 +58,10 @@ describe('validateEnvironment()', () => {
 
       validateEnvironment();
 
-      expect(consoleErrorSpy).toHaveBeenCalledWith(
-        expect.stringContaining('Missing required environment variable: DATABASE_URL'),
-      );
+      // Check if any logger.error call contains the expected message
+      const errorCalls = loggerErrorSpy.mock.calls.map((call) => call[0]);
+      const allErrors = errorCalls.join(' ');
+      expect(allErrors).toContain('Missing required environment variable: DATABASE_URL');
       expect(processExitSpy).toHaveBeenCalledWith(1);
     });
 
@@ -65,9 +73,9 @@ describe('validateEnvironment()', () => {
 
       validateEnvironment();
 
-      expect(consoleErrorSpy).toHaveBeenCalledWith(
-        expect.stringContaining('Missing required environment variable: JWT_SECRET'),
-      );
+      const errorCalls = loggerErrorSpy.mock.calls.map((call) => call[0]);
+      const allErrors = errorCalls.join(' ');
+      expect(allErrors).toContain('Missing required environment variable: JWT_SECRET');
       expect(processExitSpy).toHaveBeenCalledWith(1);
     });
 
@@ -79,9 +87,9 @@ describe('validateEnvironment()', () => {
 
       validateEnvironment();
 
-      expect(consoleErrorSpy).toHaveBeenCalledWith(
-        expect.stringContaining('Missing required environment variable: NODE_ENV'),
-      );
+      const errorCalls = loggerErrorSpy.mock.calls.map((call) => call[0]);
+      const allErrors = errorCalls.join(' ');
+      expect(allErrors).toContain('Missing required environment variable: NODE_ENV');
       expect(processExitSpy).toHaveBeenCalledWith(1);
     });
 
@@ -93,9 +101,9 @@ describe('validateEnvironment()', () => {
 
       validateEnvironment();
 
-      expect(consoleErrorSpy).toHaveBeenCalledWith(
-        expect.stringContaining('Missing required environment variable: PORT'),
-      );
+      const errorCalls = loggerErrorSpy.mock.calls.map((call) => call[0]);
+      const allErrors = errorCalls.join(' ');
+      expect(allErrors).toContain('Missing required environment variable: PORT');
       expect(processExitSpy).toHaveBeenCalledWith(1);
     });
   });
@@ -109,9 +117,9 @@ describe('validateEnvironment()', () => {
 
       validateEnvironment();
 
-      expect(consoleErrorSpy).toHaveBeenCalledWith(
-        expect.stringContaining('DATABASE_URL must be at least 20 characters'),
-      );
+      const errorCalls = loggerErrorSpy.mock.calls.map((call) => call[0]);
+      const allErrors = errorCalls.join(' ');
+      expect(allErrors).toContain('DATABASE_URL must be at least 20 characters');
       expect(processExitSpy).toHaveBeenCalledWith(1);
     });
 
@@ -123,9 +131,9 @@ describe('validateEnvironment()', () => {
 
       validateEnvironment();
 
-      expect(consoleErrorSpy).toHaveBeenCalledWith(
-        expect.stringContaining('JWT_SECRET must be at least 32 characters'),
-      );
+      const errorCalls = loggerErrorSpy.mock.calls.map((call) => call[0]);
+      const allErrors = errorCalls.join(' ');
+      expect(allErrors).toContain('JWT_SECRET must be at least 32 characters');
       expect(processExitSpy).toHaveBeenCalledWith(1);
     });
 
@@ -183,9 +191,9 @@ describe('validateEnvironment()', () => {
 
       validateEnvironment();
 
-      expect(consoleErrorSpy).toHaveBeenCalledWith(
-        expect.stringContaining('NODE_ENV must be one of: development, production, test'),
-      );
+      const errorCalls = loggerErrorSpy.mock.calls.map((call) => call[0]);
+      const allErrors = errorCalls.join(' ');
+      expect(allErrors).toContain('NODE_ENV must be one of: development, production, test');
       expect(processExitSpy).toHaveBeenCalledWith(1);
     });
   });
@@ -210,9 +218,9 @@ describe('validateEnvironment()', () => {
 
       validateEnvironment();
 
-      expect(consoleErrorSpy).toHaveBeenCalledWith(
-        expect.stringContaining('PORT must be a number'),
-      );
+      const errorCalls = loggerErrorSpy.mock.calls.map((call) => call[0]);
+      const allErrors = errorCalls.join(' ');
+      expect(allErrors).toContain('PORT must be a number');
       expect(processExitSpy).toHaveBeenCalledWith(1);
     });
   });
@@ -226,9 +234,9 @@ describe('validateEnvironment()', () => {
 
       validateEnvironment();
 
-      expect(consoleErrorSpy).toHaveBeenCalledWith(
-        expect.stringContaining('JWT_SECRET appears to be a placeholder value'),
-      );
+      const errorCalls = loggerErrorSpy.mock.calls.map((call) => call[0]);
+      const allErrors = errorCalls.join(' ');
+      expect(allErrors).toContain('JWT_SECRET appears to be a placeholder value');
       expect(processExitSpy).toHaveBeenCalledWith(1);
     });
 
@@ -240,9 +248,9 @@ describe('validateEnvironment()', () => {
 
       validateEnvironment();
 
-      expect(consoleErrorSpy).toHaveBeenCalledWith(
-        expect.stringContaining('JWT_SECRET appears to be a placeholder value'),
-      );
+      const errorCalls = loggerErrorSpy.mock.calls.map((call) => call[0]);
+      const allErrors = errorCalls.join(' ');
+      expect(allErrors).toContain('JWT_SECRET appears to be a placeholder value');
       expect(processExitSpy).toHaveBeenCalledWith(1);
     });
 
@@ -254,9 +262,9 @@ describe('validateEnvironment()', () => {
 
       validateEnvironment();
 
-      expect(consoleErrorSpy).toHaveBeenCalledWith(
-        expect.stringContaining('JWT_SECRET appears to be a placeholder value'),
-      );
+      const errorCalls = loggerErrorSpy.mock.calls.map((call) => call[0]);
+      const allErrors = errorCalls.join(' ');
+      expect(allErrors).toContain('JWT_SECRET appears to be a placeholder value');
       expect(processExitSpy).toHaveBeenCalledWith(1);
     });
 
@@ -268,9 +276,9 @@ describe('validateEnvironment()', () => {
 
       validateEnvironment();
 
-      expect(consoleErrorSpy).toHaveBeenCalledWith(
-        expect.stringContaining('JWT_SECRET appears to be a placeholder value'),
-      );
+      const errorCalls = loggerErrorSpy.mock.calls.map((call) => call[0]);
+      const allErrors = errorCalls.join(' ');
+      expect(allErrors).toContain('JWT_SECRET appears to be a placeholder value');
       expect(processExitSpy).toHaveBeenCalledWith(1);
     });
   });
@@ -306,9 +314,9 @@ describe('validateEnvironment()', () => {
 
       validateEnvironment();
 
-      expect(consoleErrorSpy).toHaveBeenCalledWith(
-        expect.stringContaining('DATABASE_URL must start with postgresql:// or postgres://'),
-      );
+      const errorCalls = loggerErrorSpy.mock.calls.map((call) => call[0]);
+      const allErrors = errorCalls.join(' ');
+      expect(allErrors).toContain('DATABASE_URL must start with postgresql:// or postgres://');
       expect(processExitSpy).toHaveBeenCalledWith(1);
     });
 
@@ -320,9 +328,9 @@ describe('validateEnvironment()', () => {
 
       validateEnvironment();
 
-      expect(consoleErrorSpy).toHaveBeenCalledWith(
-        expect.stringContaining('DATABASE_URL contains a weak password'),
-      );
+      const errorCalls = loggerErrorSpy.mock.calls.map((call) => call[0]);
+      const allErrors = errorCalls.join(' ');
+      expect(allErrors).toContain('DATABASE_URL contains a weak password');
       expect(processExitSpy).toHaveBeenCalledWith(1);
     });
 
@@ -334,9 +342,9 @@ describe('validateEnvironment()', () => {
 
       validateEnvironment();
 
-      expect(consoleErrorSpy).toHaveBeenCalledWith(
-        expect.stringContaining('DATABASE_URL contains a weak password'),
-      );
+      const errorCalls = loggerErrorSpy.mock.calls.map((call) => call[0]);
+      const allErrors = errorCalls.join(' ');
+      expect(allErrors).toContain('DATABASE_URL contains a weak password');
       expect(processExitSpy).toHaveBeenCalledWith(1);
     });
 
@@ -348,9 +356,9 @@ describe('validateEnvironment()', () => {
 
       validateEnvironment();
 
-      expect(consoleErrorSpy).toHaveBeenCalledWith(
-        expect.stringContaining('DATABASE_URL contains a weak password'),
-      );
+      const errorCalls = loggerErrorSpy.mock.calls.map((call) => call[0]);
+      const allErrors = errorCalls.join(' ');
+      expect(allErrors).toContain('DATABASE_URL contains a weak password');
       expect(processExitSpy).toHaveBeenCalledWith(1);
     });
 
@@ -362,9 +370,9 @@ describe('validateEnvironment()', () => {
 
       validateEnvironment();
 
-      expect(consoleErrorSpy).toHaveBeenCalledWith(
-        expect.stringContaining('DATABASE_URL contains a weak password'),
-      );
+      const errorCalls = loggerErrorSpy.mock.calls.map((call) => call[0]);
+      const allErrors = errorCalls.join(' ');
+      expect(allErrors).toContain('DATABASE_URL contains a weak password');
       expect(processExitSpy).toHaveBeenCalledWith(1);
     });
   });
@@ -378,59 +386,49 @@ describe('validateEnvironment()', () => {
     });
 
     it('should warn about HTTP origins in production', () => {
-      const warnSpy = jest.spyOn(console, 'warn').mockImplementation();
       process.env.ALLOWED_ORIGINS = 'http://example.com,https://secure.com';
 
       validateEnvironment();
 
-      expect(warnSpy).toHaveBeenCalledWith(
-        expect.stringContaining('ALLOWED_ORIGINS contains HTTP URLs in production'),
-      );
+      const warnCalls = loggerWarnSpy.mock.calls.map((call) => call[0]);
+      const allWarnings = warnCalls.join(' ');
+      expect(allWarnings).toContain('ALLOWED_ORIGINS contains HTTP URLs in production');
       expect(processExitSpy).not.toHaveBeenCalled(); // Warning, not error
-
-      warnSpy.mockRestore();
     });
 
     it('should NOT warn about HTTPS origins in production', () => {
-      const warnSpy = jest.spyOn(console, 'warn').mockImplementation();
       process.env.ALLOWED_ORIGINS = 'https://example.com,https://secure.com';
 
       validateEnvironment();
 
-      const httpsWarningCall = warnSpy.mock.calls.find((call) =>
-        call[0].includes('ALLOWED_ORIGINS contains HTTP URLs'),
+      const warnCalls = loggerWarnSpy.mock.calls.map((call) => call[0]);
+      const httpsWarningCall = warnCalls.find((msg) =>
+        msg.includes('ALLOWED_ORIGINS contains HTTP URLs'),
       );
       expect(httpsWarningCall).toBeUndefined();
-
-      warnSpy.mockRestore();
     });
 
     it('should warn about PORT 80 in production', () => {
-      const warnSpy = jest.spyOn(console, 'warn').mockImplementation();
       process.env.PORT = '80';
 
       validateEnvironment();
 
-      expect(warnSpy).toHaveBeenCalledWith(
-        expect.stringContaining('PORT is set to 80 (HTTP) in production'),
-      );
+      const warnCalls = loggerWarnSpy.mock.calls.map((call) => call[0]);
+      const allWarnings = warnCalls.join(' ');
+      expect(allWarnings).toContain('PORT is set to 80 (HTTP) in production');
       expect(processExitSpy).not.toHaveBeenCalled(); // Warning, not error
-
-      warnSpy.mockRestore();
     });
 
     it('should NOT warn about PORT 443 in production', () => {
-      const warnSpy = jest.spyOn(console, 'warn').mockImplementation();
       process.env.PORT = '443';
 
       validateEnvironment();
 
-      const portWarningCall = warnSpy.mock.calls.find((call) =>
-        call[0].includes('PORT is set to 80'),
+      const warnCalls = loggerWarnSpy.mock.calls.map((call) => call[0]);
+      const portWarningCall = warnCalls.find((msg) =>
+        msg.includes('PORT is set to 80'),
       );
       expect(portWarningCall).toBeUndefined();
-
-      warnSpy.mockRestore();
     });
   });
 
@@ -443,14 +441,11 @@ describe('validateEnvironment()', () => {
 
       validateEnvironment();
 
-      expect(consoleErrorSpy).toHaveBeenCalledWith(
-        expect.stringContaining('Environment validation failed'),
-      );
-
       // Check that all errors were logged
-      const errorCalls = consoleErrorSpy.mock.calls.map((call) => call[0]);
+      const errorCalls = loggerErrorSpy.mock.calls.map((call) => call[0]);
       const allErrors = errorCalls.join(' ');
 
+      expect(allErrors).toContain('Environment validation failed');
       expect(allErrors).toContain('DATABASE_URL must be at least 20 characters');
       expect(allErrors).toContain('JWT_SECRET must be at least 32 characters');
       expect(allErrors).toContain('NODE_ENV must be one of');

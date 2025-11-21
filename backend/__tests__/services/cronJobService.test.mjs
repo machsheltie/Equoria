@@ -279,16 +279,15 @@ describe('Cron Job Service', () => {
     });
 
     it('should include error message on failure', async () => {
-      // Force an error by disconnecting from database
-      await prisma.$disconnect();
+      // Mock Prisma to throw an error
+      const mockError = new Error('Database connection failed');
+      jest.spyOn(prisma.refreshToken, 'deleteMany').mockRejectedValueOnce(mockError);
 
       const result = await triggerTokenCleanup();
 
       expect(result.removed).toBe(0);
       expect(result.error).toBeDefined();
-
-      // Reconnect for cleanup
-      await prisma.$connect();
+      expect(result.error).toBe('Database connection failed');
     });
   });
 
