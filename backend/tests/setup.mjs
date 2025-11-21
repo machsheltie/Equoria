@@ -36,3 +36,15 @@ if (!process.env.DATABASE_URL || !process.env.DATABASE_URL.includes('equoria_tes
 
 console.log('🧪 Test environment loaded');
 console.log('📊 Database:', process.env.DATABASE_URL?.replace(/:[^:@]*@/, ':***@')); // Hide password in logs
+
+// Import Prisma cleanup function
+const { cleanupPrismaInstances } = await import('../jest.setup.mjs');
+
+// Register cleanup after each test file completes (afterAll hook)
+afterAll(async () => {
+  try {
+    await cleanupPrismaInstances();
+  } catch (error) {
+    // Silently ignore cleanup errors to avoid breaking tests
+  }
+});
