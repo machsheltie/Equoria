@@ -234,8 +234,9 @@ describe('API Response Optimization System', () => {
 
       expect(optimized.id).toBe(1);
       expect(optimized.name).toBe('Test Horse');
-      expect(optimized.metadata).toBeUndefined();
-      expect(optimized.nestedData.nullValue).toBeUndefined();
+      // Null is a valid API response value and should be preserved
+      expect(optimized.metadata).toBeNull();
+      expect(optimized.nestedData.nullValue).toBeNull();
     });
 
     test('selects specific fields correctly', () => {
