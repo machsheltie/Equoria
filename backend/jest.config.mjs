@@ -47,6 +47,16 @@ export default {
   // Test timeout
   testTimeout: 30000, // 30 seconds for database operations
 
+  // Parallel execution for performance
+  maxWorkers: '50%', // Use 50% of available CPU cores for parallel test execution
+
+  // Bail on N failures (0 = don't bail, useful for CI)
+  bail: 0,
+
+  // Cache for faster subsequent runs
+  cache: true,
+  cacheDirectory: '.jest-cache',
+
   // Globals for ES modules
   globals: {
     jest: {
