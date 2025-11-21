@@ -25,7 +25,7 @@ const connectionConfig = {
   datasources: {
     db: {
       url: process.env.NODE_ENV === 'test'
-        ? `${process.env.DATABASE_URL}?connection_limit=5&pool_timeout=30&connect_timeout=15`
+        ? `${process.env.DATABASE_URL}?connection_limit=1&pool_timeout=5&connect_timeout=5`
         : process.env.DATABASE_URL,
     },
   },
