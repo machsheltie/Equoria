@@ -136,9 +136,17 @@ describe('Email Verification Service - Unit Tests', () => {
     });
 
     it('should_enforce_maximum_pending_tokens_limit', async () => {
-      // Create 5 pending tokens (max limit)
+      // Create 5 pending tokens directly in database (bypassing cooldown)
       for (let i = 0; i < 5; i++) {
-        await createVerificationToken(testUser.id, testUser.email);
+        await prisma.emailVerificationToken.create({
+          data: {
+            token: `old-token-${i}-${Date.now()}-${Math.random()}`,
+            userId: testUser.id,
+            email: testUser.email,
+            expiresAt: new Date(Date.now() + 24 * 60 * 60 * 1000),
+            createdAt: new Date(Date.now() - (10 + i) * 60 * 1000), // Backdate 10+ minutes
+          },
+        });
       }
 
       // 6th token should fail
@@ -328,6 +336,13 @@ describe('Email Verification Service - Unit Tests', () => {
       // Verify user first
       const tokenData = await createVerificationToken(testUser.id, testUser.email);
       await verifyEmailToken(tokenData.token);
+
+      // Verify the user still exists and is marked as verified
+      const verifiedUser = await prisma.user.findUnique({
+        where: { id: testUser.id },
+      });
+      expect(verifiedUser).toBeDefined();
+      expect(verifiedUser.emailVerified).toBe(true);
 
       await expect(resendVerificationEmail(testUser.id)).rejects.toThrow(
         'Email is already verified'
