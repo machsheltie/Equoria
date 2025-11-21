@@ -38,22 +38,8 @@ if (process.env.NODE_ENV === 'test') {
   process.on('SIGTERM', cleanupPrismaInstances);
   process.on('beforeExit', cleanupPrismaInstances);
 
-  // Force cleanup after each test file
-  global.afterEach = global.afterEach || (() => {});
-  const originalAfterEach = global.afterEach;
-  global.afterEach = async (fn) => {
-    if (fn && typeof fn === 'function') {
-      await fn();
-    } else if (originalAfterEach && typeof originalAfterEach === 'function') {
-      await originalAfterEach(fn);
-    }
-    // Force disconnect after each test
-    try {
-      await cleanupPrismaInstances();
-    } catch (error) {
-      // Ignore cleanup errors
-    }
-  };
+  // NOTE: Per-test-file cleanup is now handled in tests/setup.mjs via afterAll hook
+  // The broken global.afterEach override has been removed as it interfered with test execution
 }
 
 /**
