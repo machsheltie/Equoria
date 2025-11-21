@@ -133,7 +133,7 @@ describe('Security Middleware', () => {
     it('should create security middleware array', () => {
       const middleware = createSecurityMiddleware();
       expect(Array.isArray(middleware)).toBe(true);
-      expect(middleware).toHaveLength(3);
+      expect(middleware).toHaveLength(6); // enforceHttps, addSecurityHeaders, helmet, cors, validateApiKey, rateLimiter
 
       // Each item should be a function (middleware)
       middleware.forEach(mw => {
