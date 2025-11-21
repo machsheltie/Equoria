@@ -158,7 +158,11 @@ describe('🔐 INTEGRATION: Authentication Controller Simple - Core Auth Workflo
 
     expect(response.body.status).toBe('success');
     expect(response.body.data.user.email).toBe(userData.email);
-    expect(response.body.data.token).toBeDefined();
+    // Tokens are now in httpOnly cookies for security, not in response body
+    expect(response.headers['set-cookie']).toBeDefined();
+    const cookies = response.headers['set-cookie'];
+    expect(cookies.some(cookie => cookie.startsWith('accessToken='))).toBe(true);
+    expect(cookies.some(cookie => cookie.startsWith('refreshToken='))).toBe(true);
   }, 10000);
 
   it('should login with valid credentials', async () => {
@@ -183,6 +187,10 @@ describe('🔐 INTEGRATION: Authentication Controller Simple - Core Auth Workflo
 
     expect(response.body.status).toBe('success');
     expect(response.body.data.user.email).toBe(loginData.email);
-    expect(response.body.data.token).toBeDefined();
+    // Tokens are now in httpOnly cookies for security, not in response body
+    expect(response.headers['set-cookie']).toBeDefined();
+    const cookies = response.headers['set-cookie'];
+    expect(cookies.some(cookie => cookie.startsWith('accessToken='))).toBe(true);
+    expect(cookies.some(cookie => cookie.startsWith('refreshToken='))).toBe(true);
   }, 10000);
 });
