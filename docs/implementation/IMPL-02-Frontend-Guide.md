@@ -15,3 +15,4 @@ Guide for the Vite/React web client consuming /api/v1.
 
 ## Source references
 - docs/history/claude-architecture/FRONTEND_ARCHITECTURE.md
+- docs/history/claude-docs/PRODUCT_REQUIREMENTS_DOCUMENT.md (for UX cues)

@@ -9,6 +9,7 @@ Provide developers a concise guide to the Express/Prisma backend, domain modules
 ## Source references
 - docs/history/claude-architecture/TECH_STACK_DOCUMENTATION.md
 - docs/history/claude-architecture/BACKEND_DOCUMENTATION_VERIFICATION.md
+- docs/history/backend-docs/* (legacy backend docs now archived)
 
 ## To Include
 - How to run: dev, test, lint, seed, migrate.

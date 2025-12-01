@@ -10,6 +10,10 @@ Document the Equoria architecture at a high level for the web stack: Express API
 - Infra: TBD (CI/CD, hosting, logging) - to be added.
 - Reference sources to merge: docs/history/claude-architecture/TECH_STACK_DOCUMENTATION.md, BACKEND_DOCUMENTATION_VERIFICATION.md, FRONTEND_ARCHITECTURE.md.
 
+## Integration Notes
+- Use schemas in backend/schemas to generate OpenAPI for Swagger UI.
+- Align data model and migrations with documents in docs/history/backend-docs (imported legacy backend docs).
+
 ## Key Responsibilities
 - Keep API contracts in sync with OpenAPI.
 - Maintain clear ownership per domain module.

@@ -6,7 +6,23 @@
     responses: {
       200: {
         description: 'List of horses',
-        content: { 'application/json': { schema: { type: 'array', items: { type: 'object', properties: { id: { type: 'string' }, name: { type: 'string' } } } } } },
+        content: {
+          'application/json': {
+            schema: {
+              type: 'array',
+              items: {
+                type: 'object',
+                properties: {
+                  id: { type: 'string' },
+                  name: { type: 'string' },
+                  age: { type: 'number' },
+                  discipline: { type: 'string' },
+                  rarity: { type: 'string' },
+                },
+              },
+            },
+          },
+        },
       },
     },
     tags: ['horses'],
@@ -22,14 +38,28 @@
           name: { type: 'string' },
           age: { type: 'number' },
           discipline: { type: 'string' },
+          rarity: { type: 'string' },
         },
-        required: ['name'],
+        required: ['name', 'discipline'],
       },
     },
     responses: {
       201: {
         description: 'Created',
-        content: { 'application/json': { schema: { type: 'object', properties: { id: { type: 'string' }, name: { type: 'string' } } } } },
+        content: {
+          'application/json': {
+            schema: {
+              type: 'object',
+              properties: {
+                id: { type: 'string' },
+                name: { type: 'string' },
+                age: { type: 'number' },
+                discipline: { type: 'string' },
+                rarity: { type: 'string' },
+              },
+            },
+          },
+        },
       },
     },
     tags: ['horses'],

@@ -16,11 +16,27 @@
         properties: {
           horseId: { type: 'string' },
           eventId: { type: 'string' },
+          entryFee: { type: 'number' },
         },
         required: ['horseId', 'eventId'],
       },
     },
-    responses: { 201: { description: 'Entry created' } },
+    responses: {
+      201: {
+        description: 'Entry created',
+        content: {
+          'application/json': {
+            schema: {
+              type: 'object',
+              properties: {
+                entryId: { type: 'string' },
+                status: { type: 'string' },
+              },
+            },
+          },
+        },
+      },
+    },
     tags: ['competition'],
   },
 ];

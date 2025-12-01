@@ -92,6 +92,12 @@ paths:
                       type: string
                     name:
                       type: string
+                    age:
+                      type: number
+                    discipline:
+                      type: string
+                    rarity:
+                      type: string
     post:
       summary: Create horse
       tags:
@@ -108,8 +114,11 @@ paths:
                   type: number
                 discipline:
                   type: string
+                rarity:
+                  type: string
               required:
                 - name
+                - discipline
       responses:
         201:
           description: Created
@@ -121,6 +130,12 @@ paths:
                   id:
                     type: string
                   name:
+                    type: string
+                  age:
+                    type: number
+                  discipline:
+                    type: string
+                  rarity:
                     type: string
   /api/v1/breeding/requests:
     post:
@@ -139,12 +154,25 @@ paths:
                   type: string
                 notes:
                   type: string
+                targetTraits:
+                  type: array
+                  items:
+                    type: string
               required:
                 - sireId
                 - damId
       responses:
         201:
           description: Breeding request created
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  requestId:
+                    type: string
+                  status:
+                    type: string
   /api/v1/traits:
     get:
       summary: List traits
@@ -176,12 +204,25 @@ paths:
                   type: string
                 sessionType:
                   type: string
+                durationMinutes:
+                  type: number
+                intensity:
+                  type: string
               required:
                 - horseId
                 - sessionType
       responses:
         201:
           description: Session scheduled
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  sessionId:
+                    type: string
+                  status:
+                    type: string
     get:
       summary: List training sessions
       tags:
@@ -212,12 +253,23 @@ paths:
                   type: string
                 eventId:
                   type: string
+                entryFee:
+                  type: number
               required:
                 - horseId
                 - eventId
       responses:
         201:
           description: Entry created
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  entryId:
+                    type: string
+                  status:
+                    type: string
   /api/v1/grooms:
     get:
       summary: List grooms
@@ -241,11 +293,22 @@ paths:
                   type: string
                 horseId:
                   type: string
+                salary:
+                  type: number
               required:
                 - groomId
       responses:
         201:
           description: Groom hired
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  groomId:
+                    type: string
+                  assignment:
+                    type: string
   /api/v1/leaderboards:
     get:
       summary: List leaderboards
