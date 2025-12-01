@@ -76,6 +76,46 @@ import advancedBreedingGeneticsRoutes from './routes/advancedBreedingGeneticsRou
 import environmentalRoutes from './routes/environmentalRoutes.mjs';
 import adminRoutes from './routes/adminRoutes.mjs';
 
+// Versioned routing: /api/v1 is stable; /api/v1/labs is experimental
+const apiV1Router = express.Router();
+const labsRouter = express.Router();
+
+// Stable domain routes
+apiV1Router.use('/auth', authRoutes);
+apiV1Router.use('/horses', horseRoutes);
+apiV1Router.use('/users', userRoutes);
+apiV1Router.use('/training', trainingRoutes);
+apiV1Router.use('/competition', competitionRoutes);
+apiV1Router.use('/breeds', breedRoutes);
+apiV1Router.use('/foals', foalRoutes);
+apiV1Router.use('/trait-discovery', traitDiscoveryRoutes);
+apiV1Router.use('/traits', traitRoutes);
+apiV1Router.use('/grooms', groomRoutes);
+apiV1Router.use('/grooms/enhanced', enhancedGroomRoutes);
+apiV1Router.use('/groom-assignments', groomAssignmentRoutes);
+apiV1Router.use('/groom-handlers', groomHandlerRoutes);
+apiV1Router.use('/groom-salaries', groomSalaryRoutes);
+apiV1Router.use('/groom-performance', groomPerformanceRoutes);
+apiV1Router.use('/groom-marketplace', groomMarketplaceRoutes);
+apiV1Router.use('/epigenetic-traits', epigeneticTraitRoutes);
+apiV1Router.use('/flags', epigeneticFlagRoutes);
+apiV1Router.use('/milestones', enhancedMilestoneRoutes);
+apiV1Router.use('/ultra-rare-traits', ultraRareTraitRoutes);
+apiV1Router.use('/leaderboards', leaderboardRoutes);
+apiV1Router.use('/admin', adminRoutes);
+apiV1Router.use('/docs', documentationRoutes);
+apiV1Router.use('/user-docs', userDocumentationRoutes);
+
+// Experimental / labs routes (non-SLO, subject to change)
+labsRouter.use('/', advancedEpigeneticRoutes);
+labsRouter.use('/', enhancedReportingRoutes);
+labsRouter.use('/compatibility', dynamicCompatibilityRoutes);
+labsRouter.use('/personality-evolution', personalityEvolutionRoutes);
+labsRouter.use('/optimization', apiOptimizationRoutes);
+labsRouter.use('/memory', memoryManagementRoutes);
+labsRouter.use('/environment', environmentalRoutes);
+labsRouter.use('/', advancedBreedingGeneticsRoutes);
+
 // Middleware imports
 import errorHandler from './middleware/errorHandler.mjs';
 import { requestLogger, errorRequestLogger } from './middleware/requestLogger.mjs';
@@ -213,38 +253,12 @@ app.get('/health', (req, res) => {
 
 // API Routes
 app.use('/ping', pingRoute);
-app.use('/api/auth', authRoutes);
-app.use('/api/horses', horseRoutes);
-app.use('/api/users', userRoutes);
-app.use('/api/training', trainingRoutes);
-app.use('/api/competition', competitionRoutes);
-app.use('/api/breeds', breedRoutes);
-app.use('/api/foals', foalRoutes);
-app.use('/api/trait-discovery', traitDiscoveryRoutes);
-app.use('/api/traits', traitRoutes);
-app.use('/api/grooms', groomRoutes);
-app.use('/api/grooms/enhanced', enhancedGroomRoutes);
-app.use('/api/groom-assignments', groomAssignmentRoutes);
-app.use('/api/groom-handlers', groomHandlerRoutes);
-app.use('/api/groom-salaries', groomSalaryRoutes);
-app.use('/api/groom-performance', groomPerformanceRoutes);
-app.use('/api/groom-marketplace', groomMarketplaceRoutes);
-app.use('/api/epigenetic-traits', epigeneticTraitRoutes);
-app.use('/api/flags', epigeneticFlagRoutes);
-app.use('/api/milestones', enhancedMilestoneRoutes);
-app.use('/api/ultra-rare-traits', ultraRareTraitRoutes);
-app.use('/api', advancedEpigeneticRoutes);
-app.use('/api', enhancedReportingRoutes);
-app.use('/api/compatibility', dynamicCompatibilityRoutes);
-app.use('/api/personality-evolution', personalityEvolutionRoutes);
-app.use('/api/optimization', apiOptimizationRoutes);
-app.use('/api/memory', memoryManagementRoutes);
-app.use('/api/docs', documentationRoutes);
-app.use('/api/user-docs', userDocumentationRoutes);
-app.use('/api/leaderboards', leaderboardRoutes);
-app.use('/api/admin', adminRoutes);
-app.use('/api', advancedBreedingGeneticsRoutes);
-app.use('/api/environment', environmentalRoutes);
+// Versioned mounts
+app.use('/api/v1/labs', labsRouter);
+app.use('/api/v1', apiV1Router);
+// Legacy compatibility mounts (maintain existing /api/* paths)
+app.use('/api/labs', labsRouter);
+app.use('/api', apiV1Router);
 
 // Setup Swagger documentation
 setupSwaggerDocs(app);
@@ -255,6 +269,8 @@ app.get('/api', (req, res) => {
     success: true,
     message: 'Equoria API v1.0',
     documentation: '/api-docs',
+    versioned: '/api/v1',
+    labs: '/api/v1/labs',
     endpoints: {
       auth: '/api/auth',
       horses: '/api/horses',

@@ -1,0 +1,40 @@
+﻿openapi: 3.1.0
+info:
+  title: Equoria API
+  version: 0.1.0
+  description: >-
+    Versioned API for the Equoria web horse simulation game. This file will be
+    generated from source once schemas are in place.
+servers:
+  - url: http://localhost:3000/api/v1
+    description: Local dev
+  - url: https://api.equoria.example.com/api/v1
+    description: Production (placeholder)
+paths:
+  /health:
+    get:
+      summary: Health check
+      responses:
+        '200':
+          description: OK
+  /auth/login:
+    post:
+      summary: Placeholder login endpoint (spec to be generated from source)
+      requestBody:
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                email:
+                  type: string
+                password:
+                  type: string
+      responses:
+        '200':
+          description: Authenticated
+components:
+  schemas:
+    Placeholder:
+      type: object
+      description: Replace with generated schemas.
