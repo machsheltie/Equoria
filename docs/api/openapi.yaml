@@ -1,25 +1,21 @@
-﻿openapi: 3.1.0
+openapi: 3.1.0
 info:
   title: Equoria API
   version: 0.1.0
-  description: >-
-    Versioned API for the Equoria web horse simulation game. This file will be
-    generated from source once schemas are in place.
+  description: Generated from schema stubs. Replace with real schemas per route.
 servers:
-  - url: http://localhost:3000/api/v1
+  - 
+    url: http://localhost:3000/api/v1
     description: Local dev
-  - url: https://api.equoria.example.com/api/v1
+  - 
+    url: https://api.equoria.example.com/api/v1
     description: Production (placeholder)
 paths:
-  /health:
-    get:
-      summary: Health check
-      responses:
-        '200':
-          description: OK
-  /auth/login:
+  /api/v1/auth/login:
     post:
-      summary: Placeholder login endpoint (spec to be generated from source)
+      summary: Authenticate user
+      tags:
+        - auth
       requestBody:
         content:
           application/json:
@@ -28,13 +24,257 @@ paths:
               properties:
                 email:
                   type: string
+                  format: email
                 password:
                   type: string
+              required:
+                - email
+                - password
       responses:
-        '200':
+        200:
           description: Authenticated
-components:
-  schemas:
-    Placeholder:
-      type: object
-      description: Replace with generated schemas.
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  token:
+                    type: string
+  /api/v1/auth/register:
+    post:
+      summary: Register user
+      tags:
+        - auth
+      requestBody:
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                email:
+                  type: string
+                  format: email
+                password:
+                  type: string
+                name:
+                  type: string
+              required:
+                - email
+                - password
+      responses:
+        201:
+          description: Created
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  id:
+                    type: string
+                  email:
+                    type: string
+  /api/v1/horses:
+    get:
+      summary: List horses
+      tags:
+        - horses
+      responses:
+        200:
+          description: List of horses
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  type: object
+                  properties:
+                    id:
+                      type: string
+                    name:
+                      type: string
+    post:
+      summary: Create horse
+      tags:
+        - horses
+      requestBody:
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                name:
+                  type: string
+                age:
+                  type: number
+                discipline:
+                  type: string
+              required:
+                - name
+      responses:
+        201:
+          description: Created
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  id:
+                    type: string
+                  name:
+                    type: string
+  /api/v1/breeding/requests:
+    post:
+      summary: Create breeding request
+      tags:
+        - breeding
+      requestBody:
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                sireId:
+                  type: string
+                damId:
+                  type: string
+                notes:
+                  type: string
+              required:
+                - sireId
+                - damId
+      responses:
+        201:
+          description: Breeding request created
+  /api/v1/traits:
+    get:
+      summary: List traits
+      tags:
+        - traits
+      responses:
+        200:
+          description: Traits returned
+  /api/v1/trait-discovery:
+    get:
+      summary: Trait discovery status
+      tags:
+        - traits
+      responses:
+        200:
+          description: Discovery info returned
+  /api/v1/training/sessions:
+    post:
+      summary: Schedule training session
+      tags:
+        - training
+      requestBody:
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                horseId:
+                  type: string
+                sessionType:
+                  type: string
+              required:
+                - horseId
+                - sessionType
+      responses:
+        201:
+          description: Session scheduled
+    get:
+      summary: List training sessions
+      tags:
+        - training
+      responses:
+        200:
+          description: Sessions returned
+  /api/v1/competition/events:
+    get:
+      summary: List competition events
+      tags:
+        - competition
+      responses:
+        200:
+          description: Events returned
+  /api/v1/competition/entries:
+    post:
+      summary: Enter competition
+      tags:
+        - competition
+      requestBody:
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                horseId:
+                  type: string
+                eventId:
+                  type: string
+              required:
+                - horseId
+                - eventId
+      responses:
+        201:
+          description: Entry created
+  /api/v1/grooms:
+    get:
+      summary: List grooms
+      tags:
+        - grooms
+      responses:
+        200:
+          description: Grooms returned
+  /api/v1/grooms/hire:
+    post:
+      summary: Hire groom
+      tags:
+        - grooms
+      requestBody:
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                groomId:
+                  type: string
+                horseId:
+                  type: string
+              required:
+                - groomId
+      responses:
+        201:
+          description: Groom hired
+  /api/v1/leaderboards:
+    get:
+      summary: List leaderboards
+      tags:
+        - leaderboards
+      responses:
+        200:
+          description: Leaderboards returned
+  /api/v1/admin/metrics:
+    get:
+      summary: Admin metrics overview
+      tags:
+        - admin
+      responses:
+        200:
+          description: Metrics returned
+  /api/v1/docs:
+    get:
+      summary: API docs descriptor
+      tags:
+        - docs
+      responses:
+        200:
+          description: Docs served
+  /api/v1/labs/epigenetics:
+    get:
+      summary: Experimental epigenetics insights
+      tags:
+        - labs
+      responses:
+        200:
+          description: Experimental output
