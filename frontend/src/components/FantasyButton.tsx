@@ -6,19 +6,24 @@ interface FantasyButtonProps {
   variant?: 'primary' | 'secondary';
   size?: 'default' | 'large';
   className?: string;
+  type?: 'button' | 'submit' | 'reset';
+  disabled?: boolean;
 }
 
-const FantasyButton = ({ 
-  children, 
-  onClick, 
+const FantasyButton = ({
+  children,
+  onClick,
   variant = 'primary',
   size = 'default',
-  className = '' 
+  className = '',
+  type = 'button',
+  disabled = false,
 }: FantasyButtonProps) => {
   const [isPressed, setIsPressed] = useState(false);
   const [showShimmer, setShowShimmer] = useState(false);
 
   const handleClick = () => {
+    if (disabled) return;
     setIsPressed(true);
     setShowShimmer(true);
     setTimeout(() => setIsPressed(false), 150);
@@ -27,6 +32,7 @@ const FantasyButton = ({
   };
 
   const baseClasses = "relative rounded-lg font-fantasy-body font-bold uppercase tracking-wider transition-all duration-200 overflow-hidden";
+  const disabledClasses = disabled ? "opacity-50 cursor-not-allowed" : "";
   
   const sizeClasses = size === 'large' 
     ? "px-8 py-4 text-lg" 
@@ -40,9 +46,11 @@ const FantasyButton = ({
 
   return (
     <button
-      className={`${baseClasses} ${sizeClasses} ${variantClasses} ${pressedClasses} ${className}`}
+      type={type}
+      disabled={disabled}
+      className={`${baseClasses} ${sizeClasses} ${variantClasses} ${pressedClasses} ${disabledClasses} ${className}`}
       onClick={handleClick}
-      onMouseEnter={() => setShowShimmer(true)}
+      onMouseEnter={() => !disabled && setShowShimmer(true)}
       onMouseLeave={() => setShowShimmer(false)}
     >
       <span className="relative z-10 parchment-texture">
