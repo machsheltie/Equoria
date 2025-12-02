@@ -125,3 +125,71 @@ export function useIsAuthenticated() {
   const { data, isSuccess } = useProfile();
   return isSuccess && !!data?.user;
 }
+
+/**
+ * Hook to verify email with token
+ * Token comes from email verification link
+ */
+export function useVerifyEmail() {
+  const queryClient = useQueryClient();
+
+  return useMutation<
+    { verified: boolean; user: { id: number; email: string; username: string } },
+    ApiError,
+    string
+  >({
+    mutationFn: authApi.verifyEmail,
+    onSuccess: () => {
+      // Invalidate profile to get updated verification status
+      queryClient.invalidateQueries({ queryKey: ['profile'] });
+      queryClient.invalidateQueries({ queryKey: ['verificationStatus'] });
+    },
+  });
+}
+
+/**
+ * Hook to resend verification email
+ * Requires authentication
+ */
+export function useResendVerification() {
+  return useMutation<{ emailSent: boolean; expiresAt: string }, ApiError>({
+    mutationFn: authApi.resendVerification,
+  });
+}
+
+/**
+ * Hook to get email verification status
+ * Requires authentication
+ */
+export function useVerificationStatus() {
+  return useQuery<{ verified: boolean; email: string; verifiedAt: string | null }, ApiError>({
+    queryKey: ['verificationStatus'],
+    queryFn: authApi.getVerificationStatus,
+    retry: false,
+    staleTime: 5 * 60 * 1000, // 5 minutes
+  });
+}
+
+/**
+ * Hook to request password reset email
+ * Note: Requires backend endpoint (not yet implemented)
+ */
+export function useForgotPassword() {
+  return useMutation<{ message: string }, ApiError, string>({
+    mutationFn: authApi.forgotPassword,
+  });
+}
+
+/**
+ * Hook to reset password with token
+ * Note: Requires backend endpoint (not yet implemented)
+ */
+export function useResetPassword() {
+  return useMutation<
+    { message: string },
+    ApiError,
+    { token: string; newPassword: string }
+  >({
+    mutationFn: ({ token, newPassword }) => authApi.resetPassword(token, newPassword),
+  });
+}
