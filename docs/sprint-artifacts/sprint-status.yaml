@@ -1,6 +1,477 @@
-﻿# sprint-status.yaml (scaffold)
+# Sprint Status - Equoria Frontend Implementation
+# Generated: 2025-12-03
+# Source: docs/epics.md
 
-# Track sprint-level status. Replace with real data.
-sprint: TBD
-status: planned
-items: []
+sprint:
+  name: "Sprint 1 - Authentication Foundation"
+  start_date: 2025-12-03
+  status: in_progress
+  epic: "Epic 1: Authentication & User Foundation"
+
+development_status:
+  # Epic 1: Authentication & User Foundation (P0 - BLOCKING)
+  epic-1:
+    title: "Authentication & User Foundation"
+    status: in_progress
+    priority: P0
+    frs: [FR-U1, FR-U2, FR-U3, FR-U4]
+
+  1-1-user-registration:
+    title: "User Registration"
+    status: ready-for-dev
+    priority: P0
+    fr: FR-U1
+    epic: 1
+    story: 1
+    prerequisites: []
+    story_file: "docs/sprint-artifacts/1-1-user-registration.md"
+    created_date: "2025-12-03"
+
+  1-2-user-login:
+    title: "User Login"
+    status: backlog
+    priority: P0
+    fr: FR-U2
+    epic: 1
+    story: 2
+    prerequisites: [1-1-user-registration]
+
+  1-3-session-management:
+    title: "Session Management"
+    status: backlog
+    priority: P0
+    fr: FR-U2
+    epic: 1
+    story: 3
+    prerequisites: [1-2-user-login]
+
+  1-4-password-reset-request:
+    title: "Password Reset Request"
+    status: backlog
+    priority: P0
+    fr: FR-U3
+    epic: 1
+    story: 4
+    prerequisites: [1-1-user-registration]
+
+  1-5-password-reset-completion:
+    title: "Password Reset Completion"
+    status: backlog
+    priority: P0
+    fr: FR-U3
+    epic: 1
+    story: 5
+    prerequisites: [1-4-password-reset-request]
+
+  1-6-role-based-access-control:
+    title: "Role-Based Access Control"
+    status: backlog
+    priority: P0
+    fr: FR-U4
+    epic: 1
+    story: 6
+    prerequisites: [1-2-user-login]
+
+  epic-1-retrospective:
+    title: "Epic 1 Retrospective"
+    status: pending
+    prerequisites: [1-1-user-registration, 1-2-user-login, 1-3-session-management, 1-4-password-reset-request, 1-5-password-reset-completion, 1-6-role-based-access-control]
+
+  # Epic 2: User Dashboard & Profile (P0)
+  epic-2:
+    title: "User Dashboard & Profile"
+    status: pending
+    priority: P0
+    frs: [FR-U5, FR-U6, FR-U7, FR-U8]
+    prerequisites: [epic-1]
+
+  2-1-profile-management:
+    title: "Profile Management"
+    status: backlog
+    priority: P1
+    fr: FR-U5
+    epic: 2
+    story: 1
+    prerequisites: [epic-1]
+
+  2-2-xp-level-display:
+    title: "XP & Level Display"
+    status: backlog
+    priority: P0
+    fr: FR-U6
+    epic: 2
+    story: 2
+    prerequisites: [2-1-profile-management]
+
+  2-3-currency-management:
+    title: "Currency Management"
+    status: backlog
+    priority: P0
+    fr: FR-U7
+    epic: 2
+    story: 3
+    prerequisites: [2-1-profile-management]
+
+  2-4-statistics-dashboard:
+    title: "Statistics Dashboard"
+    status: backlog
+    priority: P0
+    fr: FR-U8
+    epic: 2
+    story: 4
+    prerequisites: [2-1-profile-management]
+
+  2-5-activity-feed:
+    title: "Activity Feed"
+    status: backlog
+    priority: P0
+    fr: FR-U8
+    epic: 2
+    story: 5
+    prerequisites: [2-4-statistics-dashboard]
+
+  epic-2-retrospective:
+    title: "Epic 2 Retrospective"
+    status: pending
+    prerequisites: [2-1-profile-management, 2-2-xp-level-display, 2-3-currency-management, 2-4-statistics-dashboard, 2-5-activity-feed]
+
+  # Epic 3: Horse Management (P0)
+  epic-3:
+    title: "Horse Management"
+    status: pending
+    priority: P0
+    frs: [FR-H1, FR-H2, FR-H3, FR-H4, FR-H5]
+    prerequisites: [epic-1]
+
+  3-1-horse-list-view:
+    title: "Horse List View"
+    status: backlog
+    priority: P0
+    fr: FR-H1
+    epic: 3
+    story: 1
+    prerequisites: [epic-1]
+
+  3-2-horse-detail-view:
+    title: "Horse Detail View"
+    status: backlog
+    priority: P0
+    fr: FR-H1
+    epic: 3
+    story: 2
+    prerequisites: [3-1-horse-list-view]
+
+  3-3-horse-attributes-panel:
+    title: "Horse Attributes Panel"
+    status: backlog
+    priority: P0
+    fr: FR-H2
+    epic: 3
+    story: 3
+    prerequisites: [3-2-horse-detail-view]
+
+  3-4-xp-progression-display:
+    title: "XP & Progression Display"
+    status: backlog
+    priority: P0
+    fr: FR-H3
+    epic: 3
+    story: 4
+    prerequisites: [3-2-horse-detail-view]
+
+  3-5-conformation-scoring-ui:
+    title: "Conformation Scoring UI"
+    status: backlog
+    priority: P1
+    fr: FR-H4
+    epic: 3
+    story: 5
+    prerequisites: [3-2-horse-detail-view]
+
+  3-6-horse-search-filter:
+    title: "Horse Search & Filter"
+    status: backlog
+    priority: P1
+    fr: FR-H5
+    epic: 3
+    story: 6
+    prerequisites: [3-1-horse-list-view]
+
+  epic-3-retrospective:
+    title: "Epic 3 Retrospective"
+    status: pending
+    prerequisites: [3-1-horse-list-view, 3-2-horse-detail-view, 3-3-horse-attributes-panel, 3-4-xp-progression-display, 3-5-conformation-scoring-ui, 3-6-horse-search-filter]
+
+  # Epic 4: Training System (P0)
+  epic-4:
+    title: "Training System"
+    status: pending
+    priority: P0
+    frs: [FR-T1, FR-T2, FR-T3, FR-T4, FR-T5]
+    prerequisites: [epic-3]
+
+  4-1-training-session-interface:
+    title: "Training Session Interface"
+    status: backlog
+    priority: P0
+    fr: FR-T1
+    epic: 4
+    story: 1
+    prerequisites: [epic-3]
+
+  4-2-training-eligibility-display:
+    title: "Training Eligibility Display"
+    status: backlog
+    priority: P0
+    fr: FR-T2
+    epic: 4
+    story: 2
+    prerequisites: [4-1-training-session-interface]
+
+  4-3-score-progression-display:
+    title: "Score Progression Display"
+    status: backlog
+    priority: P0
+    fr: FR-T3
+    epic: 4
+    story: 3
+    prerequisites: [4-1-training-session-interface]
+
+  4-4-trait-bonus-integration:
+    title: "Trait Bonus Integration"
+    status: backlog
+    priority: P0
+    fr: FR-T4
+    epic: 4
+    story: 4
+    prerequisites: [4-1-training-session-interface]
+
+  4-5-training-dashboard:
+    title: "Training Dashboard"
+    status: backlog
+    priority: P1
+    fr: FR-T5
+    epic: 4
+    story: 5
+    prerequisites: [4-1-training-session-interface, 4-2-training-eligibility-display, 4-3-score-progression-display, 4-4-trait-bonus-integration]
+
+  epic-4-retrospective:
+    title: "Epic 4 Retrospective"
+    status: pending
+    prerequisites: [4-1-training-session-interface, 4-2-training-eligibility-display, 4-3-score-progression-display, 4-4-trait-bonus-integration, 4-5-training-dashboard]
+
+  # Epic 5: Competition System (P0)
+  epic-5:
+    title: "Competition System"
+    status: pending
+    priority: P0
+    frs: [FR-C1, FR-C2, FR-C3, FR-C4, FR-C5]
+    prerequisites: [epic-3, epic-4]
+
+  5-1-competition-entry:
+    title: "Competition Entry"
+    status: backlog
+    priority: P0
+    fr: FR-C1
+    epic: 5
+    story: 1
+    prerequisites: [epic-3, epic-4]
+
+  5-2-competition-results:
+    title: "Competition Results"
+    status: backlog
+    priority: P0
+    fr: FR-C2
+    epic: 5
+    story: 2
+    prerequisites: [5-1-competition-entry]
+
+  5-3-prize-distribution-display:
+    title: "Prize Distribution Display"
+    status: backlog
+    priority: P0
+    fr: FR-C3
+    epic: 5
+    story: 3
+    prerequisites: [5-2-competition-results]
+
+  5-4-xp-award-notifications:
+    title: "XP Award Notifications"
+    status: backlog
+    priority: P0
+    fr: FR-C4
+    epic: 5
+    story: 4
+    prerequisites: [5-2-competition-results]
+
+  5-5-leaderboards:
+    title: "Leaderboards"
+    status: backlog
+    priority: P1
+    fr: FR-C5
+    epic: 5
+    story: 5
+    prerequisites: [5-2-competition-results]
+
+  epic-5-retrospective:
+    title: "Epic 5 Retrospective"
+    status: pending
+    prerequisites: [5-1-competition-entry, 5-2-competition-results, 5-3-prize-distribution-display, 5-4-xp-award-notifications, 5-5-leaderboards]
+
+  # Epic 6: Breeding & Foal Development (P0)
+  epic-6:
+    title: "Breeding & Foal Development"
+    status: pending
+    priority: P0
+    frs: [FR-B1, FR-B2, FR-B3, FR-B4, FR-B5, FR-E1, FR-E2, FR-E3, FR-E4, FR-E5]
+    prerequisites: [epic-3]
+
+  6-1-breeding-pair-selection:
+    title: "Breeding Pair Selection"
+    status: backlog
+    priority: P0
+    fr: FR-B1
+    epic: 6
+    story: 1
+    prerequisites: [epic-3]
+
+  6-2-foal-milestone-timeline:
+    title: "Foal Milestone Timeline"
+    status: backlog
+    priority: P0
+    fr: FR-B2
+    epic: 6
+    story: 2
+    prerequisites: [6-1-breeding-pair-selection]
+
+  6-3-enrichment-activity-ui:
+    title: "Enrichment Activity UI"
+    status: backlog
+    priority: P0
+    fr: FR-B3
+    epic: 6
+    story: 3
+    prerequisites: [6-2-foal-milestone-timeline]
+
+  6-4-milestone-evaluation-display:
+    title: "Milestone Evaluation Display"
+    status: backlog
+    priority: P0
+    fr: FR-B4
+    epic: 6
+    story: 4
+    prerequisites: [6-2-foal-milestone-timeline]
+
+  6-5-breeding-predictions:
+    title: "Breeding Predictions"
+    status: backlog
+    priority: P1
+    fr: FR-B5
+    epic: 6
+    story: 5
+    prerequisites: [6-1-breeding-pair-selection]
+
+  6-6-epigenetic-trait-system:
+    title: "Epigenetic Trait System"
+    status: backlog
+    priority: P0
+    fr: [FR-E1, FR-E2, FR-E3, FR-E4, FR-E5]
+    epic: 6
+    story: 6
+    prerequisites: [epic-3, 6-4-milestone-evaluation-display]
+
+  epic-6-retrospective:
+    title: "Epic 6 Retrospective"
+    status: pending
+    prerequisites: [6-1-breeding-pair-selection, 6-2-foal-milestone-timeline, 6-3-enrichment-activity-ui, 6-4-milestone-evaluation-display, 6-5-breeding-predictions, 6-6-epigenetic-trait-system]
+
+  # Epic 7: Groom System (P0/P1/P2 mixed)
+  epic-7:
+    title: "Groom System"
+    status: pending
+    priority: P0
+    frs: [FR-G1, FR-G2, FR-G3, FR-G4, FR-G5, FR-G6, FR-G7, FR-R1, FR-R2, FR-R3, FR-R4]
+    prerequisites: [epic-2]
+
+  7-1-groom-hiring-interface:
+    title: "Groom Hiring Interface"
+    status: backlog
+    priority: P0
+    fr: FR-G1
+    epic: 7
+    story: 1
+    prerequisites: [epic-2]
+
+  7-2-groom-personality-display:
+    title: "Groom Personality Display"
+    status: backlog
+    priority: P0
+    fr: FR-G2
+    epic: 7
+    story: 2
+    prerequisites: [7-1-groom-hiring-interface]
+
+  7-3-task-assignment-ui:
+    title: "Task Assignment UI"
+    status: backlog
+    priority: P0
+    fr: FR-G3
+    epic: 7
+    story: 3
+    prerequisites: [7-1-groom-hiring-interface, 7-2-groom-personality-display]
+
+  7-4-career-lifecycle-dashboard:
+    title: "Career Lifecycle Dashboard"
+    status: backlog
+    priority: P1
+    fr: FR-G4
+    epic: 7
+    story: 4
+    prerequisites: [7-3-task-assignment-ui]
+
+  7-5-legacy-system-ui:
+    title: "Legacy System UI"
+    status: backlog
+    priority: P2
+    fr: FR-G5
+    epic: 7
+    story: 5
+    prerequisites: [7-4-career-lifecycle-dashboard]
+
+  7-6-talent-tree-visualization:
+    title: "Talent Tree Visualization"
+    status: backlog
+    priority: P2
+    fr: FR-G6
+    epic: 7
+    story: 6
+    prerequisites: [7-4-career-lifecycle-dashboard]
+
+  7-7-show-handling-rare-traits:
+    title: "Show Handling & Rare Traits"
+    status: backlog
+    priority: P1
+    fr: [FR-G7, FR-R1, FR-R2, FR-R3, FR-R4]
+    epic: 7
+    story: 7
+    prerequisites: [7-3-task-assignment-ui, epic-6]
+
+  epic-7-retrospective:
+    title: "Epic 7 Retrospective"
+    status: pending
+    prerequisites: [7-1-groom-hiring-interface, 7-2-groom-personality-display, 7-3-task-assignment-ui, 7-4-career-lifecycle-dashboard, 7-5-legacy-system-ui, 7-6-talent-tree-visualization, 7-7-show-handling-rare-traits]
+
+# Summary
+summary:
+  total_epics: 7
+  total_stories: 40
+  p0_stories: 28
+  p1_stories: 9
+  p2_stories: 3
+  fr_coverage: "44/44 (100%)"
+  current_epic: 1
+  current_story: "1-1-user-registration"
+  stories_completed: 0
+  stories_in_progress: 0
+  stories_ready_for_dev: 1
+  stories_backlog: 39
