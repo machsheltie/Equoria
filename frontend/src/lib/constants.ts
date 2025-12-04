@@ -5,7 +5,10 @@
  * and configuration values used across the application.
  *
  * Story 1.1: User Registration - Task 1 Foundation
+ * Story 2.1: Profile Management - Added profileSchema
  */
+
+import { z } from 'zod';
 
 // =============================================================================
 // Validation Rules
@@ -46,6 +49,9 @@ export const VALIDATION_RULES = {
   displayName: {
     minLength: 3,
     maxLength: 30,
+  },
+  bio: {
+    maxLength: 500,
   },
 } as const;
 
@@ -96,6 +102,10 @@ export const VALIDATION_ERRORS = {
     required: 'Display name is required',
     tooShort: `Display name must be at least ${VALIDATION_RULES.displayName.minLength} characters`,
     tooLong: `Display name must be at most ${VALIDATION_RULES.displayName.maxLength} characters`,
+  },
+  // Bio
+  bio: {
+    tooLong: `Bio must be at most ${VALIDATION_RULES.bio.maxLength} characters`,
   },
 } as const;
 
@@ -176,6 +186,19 @@ export const PASSWORD_STRENGTH = {
 // =============================================================================
 
 export const UI_TEXT = {
+  profile: {
+    title: 'My Profile',
+    subtitle: 'Manage your profile information',
+    displayNameLabel: 'Display Name',
+    displayNamePlaceholder: 'Enter your display name',
+    bioLabel: 'Bio',
+    bioPlaceholder: 'Tell us about yourself...',
+    avatarLabel: 'Profile Picture',
+    saveButton: 'Save Changes',
+    savingButton: 'Saving...',
+    cancelButton: 'Cancel',
+    charactersRemaining: (count: number) => `${count} characters remaining`,
+  },
   auth: {
     login: {
       title: 'Welcome Back',
@@ -268,3 +291,25 @@ export const API_ENDPOINTS = {
 
 export type PasswordStrengthLevel = (typeof PASSWORD_STRENGTH.levels)[number];
 export type Route = (typeof ROUTES)[keyof typeof ROUTES];
+
+// =============================================================================
+// Zod Validation Schemas
+// =============================================================================
+
+/**
+ * Profile form validation schema
+ * Story 2.1: Profile Management
+ */
+export const profileSchema = z.object({
+  username: z
+    .string()
+    .min(VALIDATION_RULES.displayName.minLength, VALIDATION_ERRORS.displayName.tooShort)
+    .max(VALIDATION_RULES.displayName.maxLength, VALIDATION_ERRORS.displayName.tooLong),
+  bio: z
+    .string()
+    .max(VALIDATION_RULES.bio.maxLength, VALIDATION_ERRORS.bio.tooLong)
+    .optional()
+    .or(z.literal('')),
+});
+
+export type ProfileFormData = z.infer<typeof profileSchema>;

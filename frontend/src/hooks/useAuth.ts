@@ -23,6 +23,10 @@ export interface User {
   email: string;
   firstName?: string;
   lastName?: string;
+  /** User bio for profile (max 500 characters) */
+  bio?: string;
+  /** URL to user's avatar image */
+  avatarUrl?: string;
   money?: number;
   level?: number;
   xp?: number;

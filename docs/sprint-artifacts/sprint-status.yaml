@@ -113,12 +113,16 @@ development_status:
 
   2-1-profile-management:
     title: "Profile Management"
-    status: backlog
+    status: completed
     priority: P1
     fr: FR-U5
     epic: 2
     story: 1
     prerequisites: [epic-1]
+    story_file: "docs/sprint-artifacts/2-1-profile-management.md"
+    created_date: "2025-12-04"
+    completed_date: "2025-12-04"
+    completion_notes: "32/32 tests passing, ProfilePage.tsx with Zod validation, useProfile/useUpdateProfile hooks, bio character counter, cancel resets form"
 
   2-2-xp-level-display:
     title: "XP & Level Display"
@@ -496,10 +500,10 @@ summary:
   p2_stories: 3
   fr_coverage: "44/44 (100%)"
   current_epic: 2
-  current_story: "2-1-profile-management"
+  current_story: "2-2-xp-level-display"
   epics_completed: 1
-  stories_completed: 6
+  stories_completed: 7
   stories_in_progress: 0
-  stories_ready_for_dev: 1
-  stories_backlog: 33
-  total_tests_passing: 211
+  stories_ready_for_dev: 4
+  stories_backlog: 29
+  total_tests_passing: 243
