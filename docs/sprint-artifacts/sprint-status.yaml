@@ -57,12 +57,16 @@ development_status:
 
   1-4-password-reset-request:
     title: "Password Reset Request"
-    status: backlog
+    status: completed
     priority: P0
     fr: FR-U3
     epic: 1
     story: 4
     prerequisites: [1-1-user-registration]
+    story_file: "docs/sprint-artifacts/1-4-password-reset-request.md"
+    created_date: "2025-12-04"
+    completed_date: "2025-12-04"
+    completion_notes: "32/32 tests passing, ForgotPasswordPage.tsx with Zod validation, success/error states, API integration, fireEvent.submit pattern for jsdom reliability"
 
   1-5-password-reset-completion:
     title: "Password Reset Completion"
@@ -480,8 +484,8 @@ summary:
   p2_stories: 3
   fr_coverage: "44/44 (100%)"
   current_epic: 1
-  current_story: "1-4-password-reset-request"
-  stories_completed: 3
+  current_story: "1-5-password-reset-completion"
+  stories_completed: 4
   stories_in_progress: 0
-  stories_ready_for_dev: 0
-  stories_backlog: 37
+  stories_ready_for_dev: 1
+  stories_backlog: 35
