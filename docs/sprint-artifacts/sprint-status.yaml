@@ -70,12 +70,16 @@ development_status:
 
   1-5-password-reset-completion:
     title: "Password Reset Completion"
-    status: backlog
+    status: completed
     priority: P0
     fr: FR-U3
     epic: 1
     story: 5
     prerequisites: [1-4-password-reset-request]
+    story_file: "docs/sprint-artifacts/1-5-password-reset-completion.md"
+    created_date: "2025-12-04"
+    completed_date: "2025-12-04"
+    completion_notes: "41/41 tests passing, ResetPasswordPage.tsx with token validation, password strength indicator, Zod validation, success/error states"
 
   1-6-role-based-access-control:
     title: "Role-Based Access Control"
@@ -484,8 +488,8 @@ summary:
   p2_stories: 3
   fr_coverage: "44/44 (100%)"
   current_epic: 1
-  current_story: "1-5-password-reset-completion"
-  stories_completed: 4
+  current_story: "1-6-role-based-access-control"
+  stories_completed: 5
   stories_in_progress: 0
   stories_ready_for_dev: 1
-  stories_backlog: 35
+  stories_backlog: 34
