@@ -11,6 +11,7 @@ import React, { useState, useEffect } from 'react';
 import { User, FileText, Save, X } from 'lucide-react';
 import { FantasyInput, FantasyTextarea } from '../components/FantasyForm';
 import FantasyButton from '../components/FantasyButton';
+import XPLevelDisplay from '../components/XPLevelDisplay';
 import { profileSchema, type ProfileFormData, VALIDATION_RULES, UI_TEXT, SUCCESS_MESSAGES } from '../lib/constants';
 import { useProfile, useUpdateProfile } from '../hooks/useAuth';
 
@@ -158,6 +159,15 @@ const ProfilePage: React.FC = () => {
             <div className="bg-aged-bronze/10 rounded-lg p-3">
               <p className="fantasy-body text-xs text-aged-bronze uppercase mb-1">Email</p>
               <p className="fantasy-body text-midnight-ink">{profileData?.user?.email}</p>
+            </div>
+
+            {/* XP & Level Display (Story 2.2) */}
+            <div className="bg-aged-bronze/10 rounded-lg p-3">
+              <XPLevelDisplay
+                xp={profileData?.user?.xp}
+                level={profileData?.user?.level}
+                size="md"
+              />
             </div>
 
             {/* Form */}

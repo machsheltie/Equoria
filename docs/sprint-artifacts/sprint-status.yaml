@@ -126,12 +126,16 @@ development_status:
 
   2-2-xp-level-display:
     title: "XP & Level Display"
-    status: backlog
+    status: completed
     priority: P0
     fr: FR-U6
     epic: 2
     story: 2
     prerequisites: [2-1-profile-management]
+    story_file: "docs/sprint-artifacts/2-2-xp-level-display.md"
+    created_date: "2025-12-04"
+    completed_date: "2025-12-04"
+    completion_notes: "72/72 tests passing (43 xp-utils + 29 XPLevelDisplay), XPLevelDisplay component with level badge, progress bar, size variants, integrated into ProfilePage"
 
   2-3-currency-management:
     title: "Currency Management"
