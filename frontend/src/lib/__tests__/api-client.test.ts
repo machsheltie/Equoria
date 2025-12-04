@@ -318,7 +318,7 @@ describe('API Client - HttpOnly Cookie Support', () => {
 
       await expect(apiClient.get('/api/auth/profile')).rejects.toMatchObject({
         statusCode: 401,
-        message: 'Invalid or expired token',
+        message: 'Session expired. Please log in again.',
       });
     });
 

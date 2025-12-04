@@ -18,6 +18,7 @@
 import React from 'react';
 import { render, screen, waitFor, fireEvent, within } from '@testing-library/react';
 import '@testing-library/jest-dom';
+import { vi } from 'vitest';
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
 import { BrowserRouter } from 'react-router-dom';
 import AssignGroomModal from '../AssignGroomModal';
@@ -398,7 +399,7 @@ describe('AssignGroomModal Component', () => {
 
   describe('Modal Close', () => {
     test('calls onClose when close button clicked', () => {
-      const onClose = jest.fn();
+      const onClose = vi.fn();
       render(
         <TestWrapper>
           <AssignGroomModal
@@ -417,7 +418,7 @@ describe('AssignGroomModal Component', () => {
     });
 
     test('calls onClose when cancel button clicked', () => {
-      const onClose = jest.fn();
+      const onClose = vi.fn();
       render(
         <TestWrapper>
           <AssignGroomModal

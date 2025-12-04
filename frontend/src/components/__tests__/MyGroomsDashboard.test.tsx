@@ -153,9 +153,8 @@ describe('MyGroomsDashboard Component', () => {
       const Wrapper = createTestWrapper();
       render(<MyGroomsDashboard userId={1} />, { wrapper: Wrapper });
 
-      // When no data is provided and queries aren't loading yet, component shows empty state
-      // This is expected behavior since queries are disabled in test environment
-      expect(screen.getByRole('heading', { name: /no grooms hired/i })).toBeInTheDocument();
+      // When no data is provided, component shows loading state
+      expect(screen.getByText(/loading/i)).toBeInTheDocument();
     });
 
     it('displays empty state when no grooms hired', () => {

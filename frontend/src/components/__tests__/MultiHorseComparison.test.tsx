@@ -13,6 +13,7 @@
 import React from 'react';
 import { render, screen, waitFor, fireEvent } from '@testing-library/react';
 import '@testing-library/jest-dom';
+import { vi, beforeEach } from 'vitest';
 
 // Mock React Query for testing
 const mockQueryClient = {
@@ -237,12 +238,10 @@ const renderWithQueryClient = (component) => {
 };
 
 describe('MultiHorseComparison', () => {
-  const mockOnHorseSelectionChange = jest.fn ? jest.fn() : () => {};
+  const mockOnHorseSelectionChange = vi.fn();
 
   beforeEach(() => {
-    if (typeof jest !== 'undefined') {
-      jest.clearAllMocks();
-    }
+    vi.clearAllMocks();
   });
 
   describe('Component Rendering', () => {

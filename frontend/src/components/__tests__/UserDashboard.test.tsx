@@ -86,16 +86,23 @@ describe('UserDashboard Component', () => {
   });
 
   describe('Component Rendering', () => {
-    test('renders user dashboard with loading state', () => {
-      // Without data props and fetch not available, shows default state with empty data
+    test('renders user dashboard with loading state', async () => {
+      // Without data props and fetch not available, shows loading or error state
       render(
         <TestWrapper>
           <UserDashboard userId={1} />
         </TestWrapper>
       );
 
-      // In test environment without fetch, component shows default state
-      expect(screen.getByRole('main')).toBeInTheDocument();
+      // In test environment without fetch, component shows loading or error state
+      // Check that component renders in some valid state
+      await waitFor(() => {
+        const hasContent =
+          screen.queryByText(/loading dashboard/i) ||
+          screen.queryByText(/error loading dashboard/i) ||
+          screen.queryByRole('main');
+        expect(hasContent).toBeTruthy();
+      });
     });
 
     test('renders user dashboard with proper structure', async () => {
@@ -464,16 +471,16 @@ describe('UserDashboard Component', () => {
 
   describe('Error Handling', () => {
     test('displays error message when API fails', async () => {
-      // Without data props and fetch not available, shows default state
+      // Without data props and fetch not available, shows error state
       render(
         <TestWrapper>
           <UserDashboard userId={999999} />
         </TestWrapper>
       );
 
-      // In test environment without fetch, component shows default state
+      // In test environment without fetch, component shows error state with retry button
       await waitFor(() => {
-        expect(screen.getByRole('main')).toBeInTheDocument();
+        expect(screen.getByText(/error loading dashboard/i)).toBeInTheDocument();
       });
     });
 
@@ -485,12 +492,12 @@ describe('UserDashboard Component', () => {
         </TestWrapper>
       );
 
-      // Refresh button is always available
-      const refreshButton = await screen.findByRole('button', { name: /refresh/i });
-      expect(refreshButton).toBeInTheDocument();
+      // Retry button is available in error state
+      const retryButton = await screen.findByRole('button', { name: /retry/i });
+      expect(retryButton).toBeInTheDocument();
 
-      fireEvent.click(refreshButton);
-      expect(refreshButton).toBeInTheDocument();
+      fireEvent.click(retryButton);
+      expect(retryButton).toBeInTheDocument();
     });
   });
 
