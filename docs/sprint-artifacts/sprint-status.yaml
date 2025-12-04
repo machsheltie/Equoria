@@ -139,12 +139,16 @@ development_status:
 
   2-3-currency-management:
     title: "Currency Management"
-    status: backlog
+    status: completed
     priority: P0
     fr: FR-U7
     epic: 2
     story: 3
     prerequisites: [2-1-profile-management]
+    story_file: "docs/sprint-artifacts/2-3-currency-management.md"
+    created_date: "2025-12-04"
+    completed_date: "2025-12-04"
+    completion_notes: "60/60 tests passing (34 currency-utils + 26 CurrencyDisplay), CurrencyDisplay component with coin icon, size variants, compact mode (K/M/B), integrated into ProfilePage"
 
   2-4-statistics-dashboard:
     title: "Statistics Dashboard"
@@ -504,10 +508,10 @@ summary:
   p2_stories: 3
   fr_coverage: "44/44 (100%)"
   current_epic: 2
-  current_story: "2-2-xp-level-display"
+  current_story: "2-3-currency-management"
   epics_completed: 1
-  stories_completed: 7
+  stories_completed: 8
   stories_in_progress: 0
-  stories_ready_for_dev: 4
+  stories_ready_for_dev: 3
   stories_backlog: 29
-  total_tests_passing: 243
+  total_tests_passing: 303

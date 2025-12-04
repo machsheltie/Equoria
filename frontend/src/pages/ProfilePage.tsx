@@ -12,6 +12,7 @@ import { User, FileText, Save, X } from 'lucide-react';
 import { FantasyInput, FantasyTextarea } from '../components/FantasyForm';
 import FantasyButton from '../components/FantasyButton';
 import XPLevelDisplay from '../components/XPLevelDisplay';
+import CurrencyDisplay from '../components/CurrencyDisplay';
 import { profileSchema, type ProfileFormData, VALIDATION_RULES, UI_TEXT, SUCCESS_MESSAGES } from '../lib/constants';
 import { useProfile, useUpdateProfile } from '../hooks/useAuth';
 
@@ -167,6 +168,16 @@ const ProfilePage: React.FC = () => {
                 xp={profileData?.user?.xp}
                 level={profileData?.user?.level}
                 size="md"
+              />
+            </div>
+
+            {/* Currency Display (Story 2.3) */}
+            <div className="bg-aged-bronze/10 rounded-lg p-3">
+              <CurrencyDisplay
+                amount={profileData?.user?.money}
+                label="Balance"
+                size="md"
+                isLoading={isLoading}
               />
             </div>
 
