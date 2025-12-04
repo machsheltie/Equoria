@@ -13,6 +13,8 @@ import { FantasyInput, FantasyTextarea } from '../components/FantasyForm';
 import FantasyButton from '../components/FantasyButton';
 import XPLevelDisplay from '../components/XPLevelDisplay';
 import CurrencyDisplay from '../components/CurrencyDisplay';
+import StatisticsCard from '../components/StatisticsCard';
+import { StatisticType } from '../lib/statistics-utils';
 import { profileSchema, type ProfileFormData, VALIDATION_RULES, UI_TEXT, SUCCESS_MESSAGES } from '../lib/constants';
 import { useProfile, useUpdateProfile } from '../hooks/useAuth';
 
@@ -179,6 +181,44 @@ const ProfilePage: React.FC = () => {
                 size="md"
                 isLoading={isLoading}
               />
+            </div>
+
+            {/* Statistics Dashboard (Story 2.4) */}
+            {/* Mock data for now - will use API stats when backend endpoint is ready */}
+            <div className="space-y-2">
+              <p className="fantasy-body text-xs text-aged-bronze uppercase tracking-wide">
+                Game Statistics
+              </p>
+              <div className="grid grid-cols-2 gap-3">
+                <StatisticsCard
+                  value={3}
+                  label="Horses Owned"
+                  type={StatisticType.HORSES_OWNED}
+                  size="sm"
+                  isLoading={isLoading}
+                />
+                <StatisticsCard
+                  value={7}
+                  label="Competitions Won"
+                  type={StatisticType.COMPETITIONS_WON}
+                  size="sm"
+                  isLoading={isLoading}
+                />
+                <StatisticsCard
+                  value={2}
+                  label="Breeding Count"
+                  type={StatisticType.BREEDING_COUNT}
+                  size="sm"
+                  isLoading={isLoading}
+                />
+                <StatisticsCard
+                  value={58}
+                  label="Win Rate"
+                  type={StatisticType.WIN_RATE}
+                  size="sm"
+                  isLoading={isLoading}
+                />
+              </div>
             </div>
 
             {/* Form */}
