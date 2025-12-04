@@ -83,12 +83,16 @@ development_status:
 
   1-6-role-based-access-control:
     title: "Role-Based Access Control"
-    status: backlog
+    status: completed
     priority: P0
     fr: FR-U4
     epic: 1
     story: 6
     prerequisites: [1-2-user-login]
+    story_file: "docs/sprint-artifacts/1-6-role-based-access-control.md"
+    created_date: "2025-12-04"
+    completed_date: "2025-12-04"
+    completion_notes: "43/43 tests passing (28 useRoleGuard + 15 RoleProtectedRoute), UserRole type, role helpers in AuthContext (hasRole, hasAnyRole, isAdmin, isModerator)"
 
   epic-1-retrospective:
     title: "Epic 1 Retrospective"
@@ -488,8 +492,8 @@ summary:
   p2_stories: 3
   fr_coverage: "44/44 (100%)"
   current_epic: 1
-  current_story: "1-6-role-based-access-control"
-  stories_completed: 5
+  current_story: "epic-1-retrospective"
+  stories_completed: 6
   stories_in_progress: 0
-  stories_ready_for_dev: 1
+  stories_ready_for_dev: 0
   stories_backlog: 34

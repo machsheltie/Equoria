@@ -1,5 +1,5 @@
 /**
- * Auth Context Provider
+ * Auth Context Provider (Story 1-6: Role-Based Access Control)
  *
  * Provides authentication state and actions throughout the app.
  * Uses React Query hooks for data fetching and caching.
@@ -10,10 +10,11 @@
  * - Loading states
  * - Logout action
  * - Email verification status
+ * - Role-based access helpers (hasRole, hasAnyRole, isAdmin, isModerator)
  */
 
 import { createContext, useContext, ReactNode, useMemo, useCallback } from 'react';
-import { useProfile, useLogout, useVerificationStatus, User } from '../hooks/useAuth';
+import { useProfile, useLogout, useVerificationStatus, User, UserRole } from '../hooks/useAuth';
 import type { ApiError } from '../lib/api-client';
 
 /**
@@ -36,6 +37,18 @@ interface AuthContextValue {
   isLoggingOut: boolean;
   /** Refetch user profile */
   refetchProfile: () => void;
+
+  // Role-based access helpers (Story 1-6)
+  /** Current user's role (defaults to 'user' if not set) */
+  userRole: UserRole;
+  /** Check if user has a specific role */
+  hasRole: (role: UserRole) => boolean;
+  /** Check if user has any of the given roles */
+  hasAnyRole: (roles: UserRole[]) => boolean;
+  /** Convenience check for admin role */
+  isAdmin: boolean;
+  /** Convenience check for moderator role */
+  isModerator: boolean;
 }
 
 /**
@@ -54,6 +67,12 @@ const defaultContextValue: AuthContextValue = {
   refetchProfile: () => {
     console.warn('AuthContext: refetchProfile called outside of AuthProvider');
   },
+  // Role helpers (default to 'user' role)
+  userRole: 'user',
+  hasRole: () => false,
+  hasAnyRole: () => false,
+  isAdmin: false,
+  isModerator: false,
 };
 
 /**
@@ -94,6 +113,28 @@ export function AuthProvider({ children }: AuthProviderProps) {
   const isAuthenticated = !!user;
   const isEmailVerified = verificationData?.verified ?? false;
 
+  // Role helpers (Story 1-6)
+  const userRole: UserRole = user?.role ?? 'user';
+  const isAdmin = userRole === 'admin';
+  const isModerator = userRole === 'moderator' || userRole === 'admin';
+
+  // Role check functions
+  const hasRole = useCallback(
+    (role: UserRole): boolean => {
+      if (!isAuthenticated) return false;
+      return userRole === role;
+    },
+    [isAuthenticated, userRole]
+  );
+
+  const hasAnyRole = useCallback(
+    (roles: UserRole[]): boolean => {
+      if (!isAuthenticated) return false;
+      return roles.includes(userRole);
+    },
+    [isAuthenticated, userRole]
+  );
+
   // Logout handler
   const logout = useCallback(() => {
     logoutMutate();
@@ -110,6 +151,12 @@ export function AuthProvider({ children }: AuthProviderProps) {
       logout,
       isLoggingOut,
       refetchProfile: () => refetchProfile(),
+      // Role helpers (Story 1-6)
+      userRole,
+      hasRole,
+      hasAnyRole,
+      isAdmin,
+      isModerator,
     }),
     [
       user,
@@ -120,6 +167,11 @@ export function AuthProvider({ children }: AuthProviderProps) {
       logout,
       isLoggingOut,
       refetchProfile,
+      userRole,
+      hasRole,
+      hasAnyRole,
+      isAdmin,
+      isModerator,
     ]
   );
 
@@ -150,3 +202,6 @@ export function useAuth(): AuthContextValue {
  */
 export { AuthContext };
 export type { AuthContextValue };
+
+// Re-export UserRole type for convenience (Story 1-6)
+export type { UserRole } from '../hooks/useAuth';

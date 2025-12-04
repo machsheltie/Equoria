@@ -9,6 +9,12 @@ import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import { authApi, ApiError } from '../lib/api-client';
 
 /**
+ * Available user roles in the system.
+ * Hierarchy: admin > moderator > user
+ */
+export type UserRole = 'user' | 'admin' | 'moderator';
+
+/**
  * User data shape
  */
 export interface User {
@@ -20,6 +26,8 @@ export interface User {
   money?: number;
   level?: number;
   xp?: number;
+  /** User's role for access control. Defaults to 'user' if not set. */
+  role?: UserRole;
 }
 
 /**

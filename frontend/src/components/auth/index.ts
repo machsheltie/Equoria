@@ -24,3 +24,9 @@ export {
   type AuthErrorProps,
   type AuthFooterLinkProps,
 } from './AuthLayout';
+
+export {
+  RoleProtectedRoute,
+  type RoleProtectedRouteProps,
+  type UserRole,
+} from './RoleProtectedRoute';
