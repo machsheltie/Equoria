@@ -97,12 +97,12 @@ So that **I can quickly find and select a horse to manage**.
 - [x] **Task 1: Story File** (AC: Foundation)
   - [x] Create story file with current status analysis
 
-- [ ] **Task 2: Add View Toggle** (AC: 2)
-  - [ ] Add toggle button (grid/list icons)
-  - [ ] Add view state management
-  - [ ] Implement grid layout CSS
-  - [ ] Persist view preference in localStorage
-  - [ ] Update tests for view toggle
+- [x] **Task 2: Add View Toggle** (AC: 2)
+  - [x] Add toggle button (grid/list icons)
+  - [x] Add view state management
+  - [x] Implement grid layout CSS
+  - [x] Persist view preference in localStorage
+  - [x] Update tests for view toggle
 
 - [ ] **Task 3: Add Horse Thumbnails** (AC: 3)
   - [ ] Update Horse interface with imageUrl field
