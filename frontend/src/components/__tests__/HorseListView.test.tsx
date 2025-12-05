@@ -861,6 +861,190 @@ describe('HorseListView Component', () => {
     });
   });
 
+  describe('Primary Discipline Display', () => {
+    test('displays primary discipline in mobile card view instead of health', async () => {
+      Object.defineProperty(window, 'innerWidth', {
+        writable: true,
+        configurable: true,
+        value: 375,
+      });
+
+      render(
+        <TestWrapper>
+          <HorseListView userId={1} horses={mockHorses} />
+        </TestWrapper>
+      );
+
+      await waitFor(() => {
+        expect(screen.getByTestId('mobile-layout')).toBeInTheDocument();
+      });
+
+      // Thunder's highest discipline score is Western Pleasure (85)
+      expect(screen.getByText(/western pleasure/i)).toBeInTheDocument();
+
+      // Lightning's highest is Endurance (90)
+      expect(screen.getByText(/endurance/i)).toBeInTheDocument();
+
+      // Storm's highest is Barrel Racing (88)
+      expect(screen.getByText(/barrel racing/i)).toBeInTheDocument();
+
+      // Health percentage should NOT be displayed
+      expect(screen.queryByText(/health:/i)).not.toBeInTheDocument();
+      expect(screen.queryByText(/95%/)).not.toBeInTheDocument();
+    });
+
+    test('displays primary discipline in desktop grid view', async () => {
+      Object.defineProperty(window, 'innerWidth', {
+        writable: true,
+        configurable: true,
+        value: 1024,
+      });
+
+      localStorage.setItem('horseListViewMode', 'grid');
+
+      render(
+        <TestWrapper>
+          <HorseListView userId={1} horses={mockHorses} />
+        </TestWrapper>
+      );
+
+      await waitFor(() => {
+        expect(screen.getByTestId('desktop-grid-layout')).toBeInTheDocument();
+      });
+
+      expect(screen.getByText(/western pleasure/i)).toBeInTheDocument();
+      expect(screen.getByText(/endurance/i)).toBeInTheDocument();
+      expect(screen.getByText(/barrel racing/i)).toBeInTheDocument();
+
+      // Health label should NOT be displayed
+      expect(screen.queryByText(/health:/i)).not.toBeInTheDocument();
+    });
+
+    test('displays primary discipline in desktop table view', async () => {
+      Object.defineProperty(window, 'innerWidth', {
+        writable: true,
+        configurable: true,
+        value: 1024,
+      });
+
+      localStorage.setItem('horseListViewMode', 'list');
+
+      render(
+        <TestWrapper>
+          <HorseListView userId={1} horses={mockHorses} />
+        </TestWrapper>
+      );
+
+      await waitFor(() => {
+        expect(screen.getByTestId('desktop-layout')).toBeInTheDocument();
+      });
+
+      // Table header should show "Primary Discipline" instead of "Health"
+      expect(screen.getByText(/primary discipline/i)).toBeInTheDocument();
+      expect(screen.queryByText(/^health$/i)).not.toBeInTheDocument();
+
+      // Discipline values should be displayed
+      expect(screen.getByText(/western pleasure/i)).toBeInTheDocument();
+      expect(screen.getByText(/endurance/i)).toBeInTheDocument();
+      expect(screen.getByText(/barrel racing/i)).toBeInTheDocument();
+    });
+
+    test('shows "None" when horse has no disciplines', async () => {
+      const horseWithNoDisciplines = {
+        ...mockHorses[0],
+        id: 999,
+        name: 'Untrained',
+        disciplineScores: {},
+      };
+
+      Object.defineProperty(window, 'innerWidth', {
+        writable: true,
+        configurable: true,
+        value: 1024,
+      });
+
+      localStorage.setItem('horseListViewMode', 'grid');
+
+      render(
+        <TestWrapper>
+          <HorseListView userId={1} horses={[horseWithNoDisciplines]} />
+        </TestWrapper>
+      );
+
+      await waitFor(() => {
+        expect(screen.getByTestId('desktop-grid-layout')).toBeInTheDocument();
+      });
+
+      expect(screen.getByText(/none/i)).toBeInTheDocument();
+    });
+
+    test('tooltip shows all disciplines on hover (mobile)', async () => {
+      Object.defineProperty(window, 'innerWidth', {
+        writable: true,
+        configurable: true,
+        value: 375,
+      });
+
+      const { container } = render(
+        <TestWrapper>
+          <HorseListView userId={1} horses={mockHorses} />
+        </TestWrapper>
+      );
+
+      await waitFor(() => {
+        expect(screen.getByTestId('mobile-layout')).toBeInTheDocument();
+      });
+
+      // Find discipline display element with title attribute
+      const disciplineElements = container.querySelectorAll('[title*="Discipline"]');
+      expect(disciplineElements.length).toBeGreaterThan(0);
+
+      // Thunder's tooltip should show all disciplines
+      const thunderDiscipline = Array.from(disciplineElements).find(
+        el => el.textContent?.includes('Western Pleasure')
+      );
+      expect(thunderDiscipline).toBeTruthy();
+      expect(thunderDiscipline?.getAttribute('title')).toContain('Western Pleasure: 85');
+      expect(thunderDiscipline?.getAttribute('title')).toContain('Dressage: 70');
+    });
+
+    test('calculatePrimaryDiscipline function handles edge cases', async () => {
+      // Horse with tied scores (should pick first alphabetically or first in object)
+      const tiedScoresHorse = {
+        ...mockHorses[0],
+        id: 888,
+        name: 'Tied',
+        disciplineScores: {
+          'Dressage': 80,
+          'Show Jumping': 80,
+        },
+      };
+
+      Object.defineProperty(window, 'innerWidth', {
+        writable: true,
+        configurable: true,
+        value: 1024,
+      });
+
+      localStorage.setItem('horseListViewMode', 'grid');
+
+      render(
+        <TestWrapper>
+          <HorseListView userId={1} horses={[tiedScoresHorse]} />
+        </TestWrapper>
+      );
+
+      await waitFor(() => {
+        expect(screen.getByTestId('desktop-grid-layout')).toBeInTheDocument();
+      });
+
+      // Should display one of the tied disciplines
+      const hasDressage = screen.queryByText(/dressage/i);
+      const hasShowJumping = screen.queryByText(/show jumping/i);
+      expect(hasDressage || hasShowJumping).toBeTruthy();
+    });
+  });
+
   describe('Error Handling', () => {
     test('displays error message when API fails', async () => {
       // In test environment without fetch available, the component shows error state

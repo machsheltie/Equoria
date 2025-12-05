@@ -110,11 +110,11 @@ So that **I can quickly find and select a horse to manage**.
   - [x] Display thumbnails in both card and table views
   - [x] Update tests for thumbnail display
 
-- [ ] **Task 4: Show Primary Discipline** (AC: 3)
-  - [ ] Add calculatePrimaryDiscipline utility function
-  - [ ] Update display to show primary discipline instead of health
-  - [ ] Add tooltip showing all disciplines on hover
-  - [ ] Update tests for primary discipline display
+- [x] **Task 4: Show Primary Discipline** (AC: 3)
+  - [x] Add calculatePrimaryDiscipline utility function
+  - [x] Update display to show primary discipline instead of health
+  - [x] Add tooltip showing all disciplines on hover
+  - [x] Update tests for primary discipline display
 
 - [ ] **Task 5: Update API Integration** (Technical)
   - [ ] Update API endpoint to /api/v1/horses

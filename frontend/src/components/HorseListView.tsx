@@ -80,6 +80,30 @@ interface FilterConfig {
 
 type ViewMode = 'grid' | 'list';
 
+// Utility function to calculate primary discipline
+const calculatePrimaryDiscipline = (disciplineScores: Record<string, number>): string => {
+  if (!disciplineScores || Object.keys(disciplineScores).length === 0) {
+    return 'None';
+  }
+
+  const entries = Object.entries(disciplineScores);
+  const highest = entries.reduce((max, current) =>
+    current[1] > max[1] ? current : max
+  );
+
+  return highest[0];
+};
+
+// Utility function to format all disciplines for tooltip
+const formatDisciplinesTooltip = (disciplineScores: Record<string, number>): string => {
+  if (!disciplineScores || Object.keys(disciplineScores).length === 0) {
+    return 'No disciplines';
+  }
+  return Object.entries(disciplineScores)
+    .map(([discipline, score]) => `${discipline}: ${score}`)
+    .join(', ');
+};
+
 // API function to fetch horses
 const fetchHorses = async (userId: number): Promise<Horse[]> => {
   const response = await fetch(`/api/horses?userId=${userId}`, {
@@ -403,8 +427,11 @@ const HorseListView: React.FC<HorseListViewProps> = ({ userId, horses: propHorse
                         <Trophy className="w-4 h-4" />
                       </button>
                     </div>
-                    <div className="text-xs text-gray-500">
-                      Health: {horse.health}%
+                    <div
+                      className="text-xs text-gray-500"
+                      title={`Disciplines: ${formatDisciplinesTooltip(horse.disciplineScores)}`}
+                    >
+                      {calculatePrimaryDiscipline(horse.disciplineScores)}
                     </div>
                   </div>
                 </div>
@@ -439,9 +466,12 @@ const HorseListView: React.FC<HorseListViewProps> = ({ userId, horses: propHorse
                     <span className="text-gray-500">Level:</span>
                     <span className="font-medium">{horse.level}</span>
                   </div>
-                  <div className="flex justify-between">
-                    <span className="text-gray-500">Health:</span>
-                    <span className="font-medium">{horse.health}%</span>
+                  <div
+                    className="flex justify-between"
+                    title={`Disciplines: ${formatDisciplinesTooltip(horse.disciplineScores)}`}
+                  >
+                    <span className="text-gray-500">Primary:</span>
+                    <span className="font-medium">{calculatePrimaryDiscipline(horse.disciplineScores)}</span>
                   </div>
                 </div>
 
@@ -533,7 +563,7 @@ const HorseListView: React.FC<HorseListViewProps> = ({ userId, horses: propHorse
                   </div>
                 </th>
                 <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                  Health
+                  Primary Discipline
                 </th>
                 <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
                   Actions
@@ -562,8 +592,11 @@ const HorseListView: React.FC<HorseListViewProps> = ({ userId, horses: propHorse
                   <td className="px-6 py-4 whitespace-nowrap">
                     <div className="text-sm text-gray-900">{horse.level}</div>
                   </td>
-                  <td className="px-6 py-4 whitespace-nowrap">
-                    <div className="text-sm text-gray-900">{horse.health}%</div>
+                  <td
+                    className="px-6 py-4 whitespace-nowrap"
+                    title={`Disciplines: ${formatDisciplinesTooltip(horse.disciplineScores)}`}
+                  >
+                    <div className="text-sm text-gray-900">{calculatePrimaryDiscipline(horse.disciplineScores)}</div>
                   </td>
                   <td className="px-6 py-4 whitespace-nowrap text-sm font-medium">
                     <div className="flex space-x-2">
