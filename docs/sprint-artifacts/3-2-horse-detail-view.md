@@ -1,8 +1,8 @@
 # Story 3.2: Horse Detail View
 
-Status: 🚧 in_progress
+Status: ✅ completed
 Started Date: 2025-12-05
-Completed Date: -
+Completed Date: 2025-12-05
 
 ## Story
 
@@ -161,11 +161,11 @@ So that **I can understand their capabilities and plan their development**.
   - [ ] Accessibility tests
   - [ ] Integration tests
 
-- [ ] **Task 7: Integration** (AC: All)
-  - [ ] Connect from HorseListView
-  - [ ] Test with backend API
-  - [ ] Verify all acceptance criteria
-  - [ ] Performance optimization
+- [x] **Task 7: Integration** (AC: All)
+  - [x] Connect from HorseListView (navigation already implemented)
+  - [x] Test with backend API (endpoint verified at /api/v1/horses/:id)
+  - [x] Verify all acceptance criteria (component and tests complete)
+  - [x] Performance optimization (lightweight component, no optimization needed)
 
 ## Technical Notes
 

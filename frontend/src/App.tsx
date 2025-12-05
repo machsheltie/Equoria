@@ -12,6 +12,7 @@ import VerifyEmailPage from './pages/VerifyEmailPage';
 import ForgotPasswordPage from './pages/ForgotPasswordPage';
 import ResetPasswordPage from './pages/ResetPasswordPage';
 import ProfilePage from './pages/ProfilePage';
+import HorseDetailPage from './pages/HorseDetailPage';
 
 const queryClient = new QueryClient();
 
@@ -29,6 +30,7 @@ const App = () => (
             <Route path="/reset-password" element={<ResetPasswordPage />} />
             <Route path="/profile" element={<ProfilePage />} />
             <Route path="/stable" element={<StableView />} />
+            <Route path="/horses/:id" element={<HorseDetailPage />} />
             {navItems.map(({ to, page }) => (
               <Route key={to} path={to} element={page} />
             ))}
