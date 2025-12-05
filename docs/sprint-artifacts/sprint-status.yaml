@@ -165,12 +165,16 @@ development_status:
 
   2-5-activity-feed:
     title: "Activity Feed"
-    status: backlog
+    status: completed
     priority: P0
     fr: FR-U8
     epic: 2
     story: 5
     prerequisites: [2-4-statistics-dashboard]
+    story_file: "docs/sprint-artifacts/2-5-activity-feed.md"
+    created_date: "2025-12-05"
+    completed_date: "2025-12-05"
+    completion_notes: "127/127 tests passing (60 activity-utils + 36 ActivityFeedItem + 31 ActivityFeed), ActivityFeed container with filtering, pagination, loading/empty states, integrated into ProfilePage with mock data (API ready)"
 
   epic-2-retrospective:
     title: "Epic 2 Retrospective"
@@ -512,10 +516,10 @@ summary:
   p2_stories: 3
   fr_coverage: "44/44 (100%)"
   current_epic: 2
-  current_story: "2-4-statistics-dashboard"
+  current_story: "2-5-activity-feed"
   epics_completed: 1
-  stories_completed: 9
+  stories_completed: 10
   stories_in_progress: 0
-  stories_ready_for_dev: 3
+  stories_ready_for_dev: 2
   stories_backlog: 28
-  total_tests_passing: 407
+  total_tests_passing: 534

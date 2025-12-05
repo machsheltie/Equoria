@@ -14,9 +14,45 @@ import FantasyButton from '../components/FantasyButton';
 import XPLevelDisplay from '../components/XPLevelDisplay';
 import CurrencyDisplay from '../components/CurrencyDisplay';
 import StatisticsCard from '../components/StatisticsCard';
+import ActivityFeed from '../components/ActivityFeed';
 import { StatisticType } from '../lib/statistics-utils';
+import { ActivityType, type Activity } from '../lib/activity-utils';
 import { profileSchema, type ProfileFormData, VALIDATION_RULES, UI_TEXT, SUCCESS_MESSAGES } from '../lib/constants';
 import { useProfile, useUpdateProfile } from '../hooks/useAuth';
+
+// Mock activities for demonstration (will be replaced with API data)
+const mockActivities: Activity[] = [
+  {
+    id: '1',
+    type: ActivityType.TRAINING,
+    timestamp: new Date(Date.now() - 1000 * 60 * 30), // 30 minutes ago
+    data: { horseName: 'Thunder', skill: 'Speed', level: 5 },
+  },
+  {
+    id: '2',
+    type: ActivityType.COMPETITION,
+    timestamp: new Date(Date.now() - 1000 * 60 * 60 * 2), // 2 hours ago
+    data: { horseName: 'Storm', competitionName: 'Spring Derby', placement: 1 },
+  },
+  {
+    id: '3',
+    type: ActivityType.BREEDING,
+    timestamp: new Date(Date.now() - 1000 * 60 * 60 * 24), // 1 day ago
+    data: { horseName: 'Lightning', foalName: 'Spark' },
+  },
+  {
+    id: '4',
+    type: ActivityType.ACHIEVEMENT,
+    timestamp: new Date(Date.now() - 1000 * 60 * 60 * 48), // 2 days ago
+    data: { achievementName: 'First Victory' },
+  },
+  {
+    id: '5',
+    type: ActivityType.LEVEL_UP,
+    timestamp: new Date(Date.now() - 1000 * 60 * 60 * 72), // 3 days ago
+    data: { newLevel: 10 },
+  },
+];
 
 const ProfilePage: React.FC = () => {
   const { data: profileData, isLoading, isError, error: profileError } = useProfile();
@@ -219,6 +255,19 @@ const ProfilePage: React.FC = () => {
                   isLoading={isLoading}
                 />
               </div>
+            </div>
+
+            {/* Activity Feed (Story 2.5) */}
+            {/* Mock data for now - will use API activities when backend endpoint is ready */}
+            <div className="bg-aged-bronze/10 rounded-lg p-3">
+              <ActivityFeed
+                activities={mockActivities}
+                title="Recent Activity"
+                maxItems={3}
+                showViewAll
+                size="sm"
+                isLoading={isLoading}
+              />
             </div>
 
             {/* Form */}
