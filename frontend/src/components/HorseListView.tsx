@@ -106,7 +106,7 @@ const formatDisciplinesTooltip = (disciplineScores: Record<string, number>): str
 
 // API function to fetch horses
 const fetchHorses = async (userId: number): Promise<Horse[]> => {
-  const response = await fetch(`/api/horses?userId=${userId}`, {
+  const response = await fetch('/api/v1/horses', {
     headers: {
       'Authorization': `Bearer ${localStorage.getItem('authToken')}`,
       'Content-Type': 'application/json',
@@ -114,7 +114,8 @@ const fetchHorses = async (userId: number): Promise<Horse[]> => {
   });
 
   if (!response.ok) {
-    throw new Error('Failed to fetch horses');
+    const errorData = await response.json().catch(() => ({ message: 'Failed to fetch horses' }));
+    throw new Error(errorData.message || `HTTP ${response.status}: Failed to fetch horses`);
   }
 
   const data = await response.json();

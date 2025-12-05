@@ -116,11 +116,11 @@ So that **I can quickly find and select a horse to manage**.
   - [x] Add tooltip showing all disciplines on hover
   - [x] Update tests for primary discipline display
 
-- [ ] **Task 5: Update API Integration** (Technical)
-  - [ ] Update API endpoint to /api/v1/horses
-  - [ ] Move userId from query param to auth header
-  - [ ] Test API integration with backend
-  - [ ] Update error handling for API changes
+- [x] **Task 5: Update API Integration** (Technical)
+  - [x] Update API endpoint to /api/v1/horses
+  - [x] Move userId from query param to auth header
+  - [x] Test API integration with backend
+  - [x] Update error handling for API changes
 
 - [ ] **Task 6: Integration Testing** (AC: All)
   - [ ] Test view toggle functionality
