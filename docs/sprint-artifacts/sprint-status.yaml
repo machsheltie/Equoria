@@ -537,11 +537,13 @@ action_items:
   action-3-2:
     id: "action-3-2"
     title: "Complete Epic 1 P1 Action Items"
-    status: pending
+    status: completed
     priority: P0
     owner: "Charlie (Senior Dev)"
     epic: 3
     created_date: "2025-12-05"
+    started_date: "2025-12-05"
+    completed_date: "2025-12-05"
     due_date: "Before Epic 3 Story 3-1 starts"
     description: "Document fireEvent.submit pattern and extract reusable form validation schemas"
     acceptance_criteria:
