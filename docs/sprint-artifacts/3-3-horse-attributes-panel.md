@@ -155,12 +155,13 @@ So that **I can make informed breeding and training decisions**.
   - [x] Review backend API endpoints for genetics
   - [x] Document current Genetics tab implementation
 
-- [ ] **Task 1: TraitCard Component** (AC: All)
-  - [ ] Create TraitCard.tsx component
-  - [ ] Implement tooltip system
-  - [ ] Add color coding for trait categories
-  - [ ] Add rarity indicators
-  - [ ] Add inheritance badges
+- [x] **Task 1: TraitCard Component** (AC: All)
+  - [x] Create TraitCard.tsx component (320 lines)
+  - [x] Implement tooltip system (hover-based with full trait details)
+  - [x] Add color coding for trait categories (genetic=blue, epigenetic=purple, rare=gold, legendary=rainbow)
+  - [x] Add rarity indicators (common/rare/legendary badges)
+  - [x] Add inheritance badges (sire/dam/mutation with icons)
+  - [x] Write comprehensive tests (43 tests, 100% passing)
 
 - [ ] **Task 2: Data Fetching Layer** (AC: All)
   - [ ] Create React Query hooks for genetics endpoints
