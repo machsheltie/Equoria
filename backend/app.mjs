@@ -76,45 +76,77 @@ import advancedBreedingGeneticsRoutes from './routes/advancedBreedingGeneticsRou
 import environmentalRoutes from './routes/environmentalRoutes.mjs';
 import adminRoutes from './routes/adminRoutes.mjs';
 
-// Versioned routing: /api/v1 is stable; /api/v1/labs is experimental
-const apiV1Router = express.Router();
-const labsRouter = express.Router();
+/**
+ * 🔒 SECURITY ROUTER ARCHITECTURE
+ *
+ * Three-tier router system for granular authentication control:
+ * - publicRouter: No authentication required (health, docs, auth endpoints)
+ * - authRouter: Authenticated users only (all game features)
+ * - adminRouter: Admin role required (system administration)
+ */
 
-// Stable domain routes
-apiV1Router.use('/auth', authRoutes);
-apiV1Router.use('/horses', horseRoutes);
-apiV1Router.use('/users', userRoutes);
-apiV1Router.use('/training', trainingRoutes);
-apiV1Router.use('/competition', competitionRoutes);
-apiV1Router.use('/breeds', breedRoutes);
-apiV1Router.use('/foals', foalRoutes);
-apiV1Router.use('/trait-discovery', traitDiscoveryRoutes);
-apiV1Router.use('/traits', traitRoutes);
-apiV1Router.use('/grooms', groomRoutes);
-apiV1Router.use('/grooms/enhanced', enhancedGroomRoutes);
-apiV1Router.use('/groom-assignments', groomAssignmentRoutes);
-apiV1Router.use('/groom-handlers', groomHandlerRoutes);
-apiV1Router.use('/groom-salaries', groomSalaryRoutes);
-apiV1Router.use('/groom-performance', groomPerformanceRoutes);
-apiV1Router.use('/groom-marketplace', groomMarketplaceRoutes);
-apiV1Router.use('/epigenetic-traits', epigeneticTraitRoutes);
-apiV1Router.use('/flags', epigeneticFlagRoutes);
-apiV1Router.use('/milestones', enhancedMilestoneRoutes);
-apiV1Router.use('/ultra-rare-traits', ultraRareTraitRoutes);
-apiV1Router.use('/leaderboards', leaderboardRoutes);
-apiV1Router.use('/admin', adminRoutes);
-apiV1Router.use('/docs', documentationRoutes);
-apiV1Router.use('/user-docs', userDocumentationRoutes);
+// Import authentication middleware
+import { authenticateToken, requireRole } from './middleware/auth.mjs';
 
-// Experimental / labs routes (non-SLO, subject to change)
-labsRouter.use('/', advancedEpigeneticRoutes);
-labsRouter.use('/', enhancedReportingRoutes);
-labsRouter.use('/compatibility', dynamicCompatibilityRoutes);
-labsRouter.use('/personality-evolution', personalityEvolutionRoutes);
-labsRouter.use('/optimization', apiOptimizationRoutes);
-labsRouter.use('/memory', memoryManagementRoutes);
-labsRouter.use('/environment', environmentalRoutes);
-labsRouter.use('/', advancedBreedingGeneticsRoutes);
+// Public router - No authentication required
+const publicRouter = express.Router();
+
+// Authenticated router - Requires valid JWT token
+const authRouter = express.Router();
+authRouter.use(authenticateToken);
+
+// Admin router - Requires valid JWT token + admin role
+const adminRouter = express.Router();
+adminRouter.use(authenticateToken, requireRole('admin'));
+
+// PUBLIC ROUTES (No authentication)
+// Auth endpoints (login, register, password reset)
+publicRouter.use('/auth', authRoutes);
+// Documentation endpoints
+publicRouter.use('/docs', documentationRoutes);
+publicRouter.use('/user-docs', userDocumentationRoutes);
+
+// AUTHENTICATED ROUTES (Valid JWT required)
+// Core game features
+authRouter.use('/horses', horseRoutes);
+authRouter.use('/users', userRoutes);
+authRouter.use('/training', trainingRoutes);
+authRouter.use('/competition', competitionRoutes);
+authRouter.use('/breeds', breedRoutes);
+authRouter.use('/foals', foalRoutes);
+authRouter.use('/trait-discovery', traitDiscoveryRoutes);
+authRouter.use('/traits', traitRoutes);
+
+// Groom management system
+authRouter.use('/grooms', groomRoutes);
+authRouter.use('/grooms/enhanced', enhancedGroomRoutes);
+authRouter.use('/groom-assignments', groomAssignmentRoutes);
+authRouter.use('/groom-handlers', groomHandlerRoutes);
+authRouter.use('/groom-salaries', groomSalaryRoutes);
+authRouter.use('/groom-performance', groomPerformanceRoutes);
+authRouter.use('/groom-marketplace', groomMarketplaceRoutes);
+
+// Advanced game features
+authRouter.use('/epigenetic-traits', epigeneticTraitRoutes);
+authRouter.use('/flags', epigeneticFlagRoutes);
+authRouter.use('/milestones', enhancedMilestoneRoutes);
+authRouter.use('/ultra-rare-traits', ultraRareTraitRoutes);
+authRouter.use('/leaderboards', leaderboardRoutes);
+
+// Advanced epigenetic and genetics features
+authRouter.use('/', advancedEpigeneticRoutes); // Mounts horse-specific routes at /horses/:id/...
+authRouter.use('/', enhancedReportingRoutes); // Enhanced reporting endpoints
+authRouter.use('/', advancedBreedingGeneticsRoutes); // Advanced breeding mechanics
+
+// Performance optimization and environmental systems
+authRouter.use('/optimization', apiOptimizationRoutes);
+authRouter.use('/memory', memoryManagementRoutes);
+authRouter.use('/environment', environmentalRoutes);
+authRouter.use('/compatibility', dynamicCompatibilityRoutes);
+authRouter.use('/personality-evolution', personalityEvolutionRoutes);
+
+// ADMIN ROUTES (Admin role required)
+adminRouter.use('/admin', adminRoutes);
 
 // Middleware imports
 import errorHandler from './middleware/errorHandler.mjs';
@@ -240,8 +272,19 @@ app.use(memoryMonitoringMiddleware({
 app.use(databaseConnectionMiddleware(prisma));
 app.use(requestTimeoutMiddleware(30000)); // 30 second timeout
 
+/**
+ * 🔒 MOUNT SECURITY ROUTERS
+ *
+ * Router mounting order (CRITICAL - DO NOT CHANGE):
+ * 1. Public routes first (no auth)
+ * 2. Admin routes (highest security)
+ * 3. Authenticated routes (standard auth)
+ * 4. Labs routes (experimental, authenticated)
+ */
+
+// PUBLIC ROUTES - No authentication required
 // Health check endpoint
-app.get('/health', (req, res) => {
+publicRouter.get('/health', (req, res) => {
   res.status(200).json({
     success: true,
     message: 'Server is healthy',
@@ -251,20 +294,11 @@ app.get('/health', (req, res) => {
   });
 });
 
-// API Routes
-app.use('/ping', pingRoute);
-// Versioned mounts
-app.use('/api/v1/labs', labsRouter);
-app.use('/api/v1', apiV1Router);
-// Legacy compatibility mounts (maintain existing /api/* paths)
-app.use('/api/labs', labsRouter);
-app.use('/api', apiV1Router);
-
-// Setup Swagger documentation
-setupSwaggerDocs(app);
+// Ping endpoint
+publicRouter.use('/ping', pingRoute);
 
 // API documentation endpoint
-app.get('/api', (req, res) => {
+publicRouter.get('/api-info', (req, res) => {
   res.json({
     success: true,
     message: 'Equoria API v1.0',
@@ -289,6 +323,21 @@ app.get('/api', (req, res) => {
     health: '/health',
   });
 });
+
+// Setup Swagger documentation (public)
+setupSwaggerDocs(app);
+
+// MOUNT ROUTERS
+// Public routes (health, ping, auth, docs)
+app.use('/', publicRouter);
+
+// Admin routes (requires auth + admin role)
+app.use('/api/v1/admin', adminRouter);
+app.use('/api/admin', adminRouter);
+
+// Authenticated routes (requires auth)
+app.use('/api/v1', authRouter);
+app.use('/api', authRouter);
 
 // 404 handler for undefined routes
 app.use('*', (req, res) => {
