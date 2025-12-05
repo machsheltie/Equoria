@@ -10,7 +10,7 @@ import { Link } from 'react-router-dom';
 import { Mail, ArrowLeft, CheckCircle, Sparkles } from 'lucide-react';
 import { FantasyInput } from '../components/FantasyForm';
 import FantasyButton from '../components/FantasyButton';
-import { forgotPasswordSchema, type ForgotPasswordFormData } from '../lib/validations/auth';
+import { forgotPasswordSchema, type ForgotPasswordFormData } from '../lib/validation-schemas';
 import { useForgotPassword } from '../hooks/useAuth';
 
 const ForgotPasswordPage: React.FC = () => {

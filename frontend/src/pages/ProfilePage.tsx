@@ -17,7 +17,8 @@ import StatisticsCard from '../components/StatisticsCard';
 import ActivityFeed from '../components/ActivityFeed';
 import { StatisticType } from '../lib/statistics-utils';
 import { ActivityType, type Activity } from '../lib/activity-utils';
-import { profileSchema, type ProfileFormData, VALIDATION_RULES, UI_TEXT, SUCCESS_MESSAGES } from '../lib/constants';
+import { profileSchema, type ProfileFormData } from '../lib/validation-schemas';
+import { VALIDATION_RULES, UI_TEXT, SUCCESS_MESSAGES } from '../lib/constants';
 import { useProfile, useUpdateProfile } from '../hooks/useAuth';
 
 // Mock activities for demonstration (will be replaced with API data)

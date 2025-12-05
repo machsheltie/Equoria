@@ -10,7 +10,7 @@ import { useNavigate, Link } from 'react-router-dom';
 import { Eye, EyeOff, Mail, Lock, Sparkles } from 'lucide-react';
 import { FantasyInput } from '../components/FantasyForm';
 import FantasyButton from '../components/FantasyButton';
-import { loginSchema, type LoginFormData } from '../lib/validations/auth';
+import { loginSchema, type LoginFormData } from '../lib/validation-schemas';
 import { useLogin } from '../hooks/useAuth';
 
 const LoginPage: React.FC = () => {

@@ -15,7 +15,7 @@ import {
   registerSchema,
   calculatePasswordStrength,
   type RegisterFormData,
-} from '../lib/validations/auth';
+} from '../lib/validation-schemas';
 import { useRegister } from '../hooks/useAuth';
 
 const RegisterPage: React.FC = () => {

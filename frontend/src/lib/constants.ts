@@ -296,20 +296,5 @@ export type Route = (typeof ROUTES)[keyof typeof ROUTES];
 // Zod Validation Schemas
 // =============================================================================
 
-/**
- * Profile form validation schema
- * Story 2.1: Profile Management
- */
-export const profileSchema = z.object({
-  username: z
-    .string()
-    .min(VALIDATION_RULES.displayName.minLength, VALIDATION_ERRORS.displayName.tooShort)
-    .max(VALIDATION_RULES.displayName.maxLength, VALIDATION_ERRORS.displayName.tooLong),
-  bio: z
-    .string()
-    .max(VALIDATION_RULES.bio.maxLength, VALIDATION_ERRORS.bio.tooLong)
-    .optional()
-    .or(z.literal('')),
-});
-
-export type ProfileFormData = z.infer<typeof profileSchema>;
+// NOTE: All validation schemas have been moved to validation-schemas.ts
+// See: frontend/src/lib/validation-schemas.ts
