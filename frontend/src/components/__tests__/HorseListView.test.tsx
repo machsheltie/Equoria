@@ -29,6 +29,7 @@ const mockHorses = [
     level: 10,
     health: 95,
     xp: 1500,
+    imageUrl: 'https://example.com/horses/thunder.jpg',
     stats: {
       speed: 85,
       stamina: 80,
@@ -54,6 +55,7 @@ const mockHorses = [
     level: 5,
     health: 100,
     xp: 500,
+    imageUrl: 'https://example.com/horses/lightning.jpg',
     stats: {
       speed: 90,
       stamina: 85,
@@ -79,6 +81,7 @@ const mockHorses = [
     level: 15,
     health: 90,
     xp: 3000,
+    // No imageUrl - should use placeholder
     stats: {
       speed: 80,
       stamina: 75,
@@ -671,6 +674,190 @@ describe('HorseListView Component', () => {
 
       const competeButtons = screen.getAllByRole('button', { name: /compete/i });
       expect(competeButtons.length).toBe(3);
+    });
+  });
+
+  describe('Horse Thumbnails', () => {
+    test('displays horse thumbnails in mobile card view', async () => {
+      // Mock mobile viewport
+      Object.defineProperty(window, 'innerWidth', {
+        writable: true,
+        configurable: true,
+        value: 375,
+      });
+
+      render(
+        <TestWrapper>
+          <HorseListView userId={1} horses={mockHorses} />
+        </TestWrapper>
+      );
+
+      await waitFor(() => {
+        expect(screen.getByTestId('mobile-layout')).toBeInTheDocument();
+      });
+
+      // Check that thumbnails are rendered with proper alt text
+      const thunderImg = screen.getByAltText('Thunder');
+      expect(thunderImg).toBeInTheDocument();
+      expect(thunderImg).toHaveAttribute('src', 'https://example.com/horses/thunder.jpg');
+
+      const lightningImg = screen.getByAltText('Lightning');
+      expect(lightningImg).toBeInTheDocument();
+      expect(lightningImg).toHaveAttribute('src', 'https://example.com/horses/lightning.jpg');
+    });
+
+    test('displays horse thumbnails in desktop grid view', async () => {
+      // Mock desktop viewport
+      Object.defineProperty(window, 'innerWidth', {
+        writable: true,
+        configurable: true,
+        value: 1024,
+      });
+
+      // Set to grid view
+      localStorage.setItem('horseListViewMode', 'grid');
+
+      render(
+        <TestWrapper>
+          <HorseListView userId={1} horses={mockHorses} />
+        </TestWrapper>
+      );
+
+      await waitFor(() => {
+        expect(screen.getByTestId('desktop-grid-layout')).toBeInTheDocument();
+      });
+
+      // Check that thumbnails are rendered
+      const thunderImg = screen.getByAltText('Thunder');
+      expect(thunderImg).toBeInTheDocument();
+      expect(thunderImg).toHaveAttribute('src', 'https://example.com/horses/thunder.jpg');
+
+      const lightningImg = screen.getByAltText('Lightning');
+      expect(lightningImg).toBeInTheDocument();
+      expect(lightningImg).toHaveAttribute('src', 'https://example.com/horses/lightning.jpg');
+    });
+
+    test('displays horse thumbnails in desktop table view', async () => {
+      // Mock desktop viewport
+      Object.defineProperty(window, 'innerWidth', {
+        writable: true,
+        configurable: true,
+        value: 1024,
+      });
+
+      // Set to list view
+      localStorage.setItem('horseListViewMode', 'list');
+
+      render(
+        <TestWrapper>
+          <HorseListView userId={1} horses={mockHorses} />
+        </TestWrapper>
+      );
+
+      await waitFor(() => {
+        expect(screen.getByTestId('desktop-layout')).toBeInTheDocument();
+      });
+
+      // Check that thumbnails are rendered in table
+      const thunderImg = screen.getByAltText('Thunder');
+      expect(thunderImg).toBeInTheDocument();
+      expect(thunderImg).toHaveAttribute('src', 'https://example.com/horses/thunder.jpg');
+
+      const lightningImg = screen.getByAltText('Lightning');
+      expect(lightningImg).toBeInTheDocument();
+      expect(lightningImg).toHaveAttribute('src', 'https://example.com/horses/lightning.jpg');
+    });
+
+    test('uses placeholder image when imageUrl is not provided', async () => {
+      // Mock desktop viewport
+      Object.defineProperty(window, 'innerWidth', {
+        writable: true,
+        configurable: true,
+        value: 1024,
+      });
+
+      // Set to grid view
+      localStorage.setItem('horseListViewMode', 'grid');
+
+      render(
+        <TestWrapper>
+          <HorseListView userId={1} horses={mockHorses} />
+        </TestWrapper>
+      );
+
+      await waitFor(() => {
+        expect(screen.getByTestId('desktop-grid-layout')).toBeInTheDocument();
+      });
+
+      // Storm doesn't have imageUrl, should use placeholder
+      const stormImg = screen.getByAltText('Storm');
+      expect(stormImg).toBeInTheDocument();
+      expect(stormImg).toHaveAttribute('src', '/images/horse-placeholder.png');
+    });
+
+    test('thumbnails have proper styling and sizing', async () => {
+      // Mock desktop viewport
+      Object.defineProperty(window, 'innerWidth', {
+        writable: true,
+        configurable: true,
+        value: 1024,
+      });
+
+      // Set to grid view
+      localStorage.setItem('horseListViewMode', 'grid');
+
+      render(
+        <TestWrapper>
+          <HorseListView userId={1} horses={mockHorses} />
+        </TestWrapper>
+      );
+
+      await waitFor(() => {
+        expect(screen.getByTestId('desktop-grid-layout')).toBeInTheDocument();
+      });
+
+      const thunderImg = screen.getByAltText('Thunder');
+      expect(thunderImg).toHaveClass('w-full', 'h-32', 'object-cover', 'rounded-t-lg');
+    });
+
+    test('thumbnails are responsive in different layouts', async () => {
+      // Test mobile first
+      Object.defineProperty(window, 'innerWidth', {
+        writable: true,
+        configurable: true,
+        value: 375,
+      });
+
+      const { rerender } = render(
+        <TestWrapper>
+          <HorseListView userId={1} horses={mockHorses} />
+        </TestWrapper>
+      );
+
+      await waitFor(() => {
+        expect(screen.getByTestId('mobile-layout')).toBeInTheDocument();
+      });
+
+      let thunderImg = screen.getByAltText('Thunder');
+      expect(thunderImg).toBeInTheDocument();
+
+      // Switch to desktop
+      Object.defineProperty(window, 'innerWidth', {
+        writable: true,
+        configurable: true,
+        value: 1024,
+      });
+
+      // Force re-render by changing component props
+      rerender(
+        <TestWrapper>
+          <HorseListView userId={1} horses={mockHorses} />
+        </TestWrapper>
+      );
+
+      // Should still have thumbnail
+      thunderImg = await screen.findByAltText('Thunder');
+      expect(thunderImg).toBeInTheDocument();
     });
   });
 

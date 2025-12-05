@@ -104,11 +104,11 @@ So that **I can quickly find and select a horse to manage**.
   - [x] Persist view preference in localStorage
   - [x] Update tests for view toggle
 
-- [ ] **Task 3: Add Horse Thumbnails** (AC: 3)
-  - [ ] Update Horse interface with imageUrl field
-  - [ ] Add placeholder images for horses without photos
-  - [ ] Display thumbnails in both card and table views
-  - [ ] Update tests for thumbnail display
+- [x] **Task 3: Add Horse Thumbnails** (AC: 3)
+  - [x] Update Horse interface with imageUrl field
+  - [x] Add placeholder images for horses without photos
+  - [x] Display thumbnails in both card and table views
+  - [x] Update tests for thumbnail display
 
 - [ ] **Task 4: Show Primary Discipline** (AC: 3)
   - [ ] Add calculatePrimaryDiscipline utility function

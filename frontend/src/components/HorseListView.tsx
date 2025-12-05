@@ -41,6 +41,7 @@ interface Horse {
   level: number;
   health: number;
   xp: number;
+  imageUrl?: string; // Optional horse thumbnail/avatar image URL
   stats: {
     speed: number;
     stamina: number;
@@ -358,44 +359,53 @@ const HorseListView: React.FC<HorseListViewProps> = ({ userId, horses: propHorse
         <div data-testid="mobile-layout" className="space-y-4">
           <div data-testid="horse-cards-container">
             {paginatedHorses.map((horse) => (
-              <div key={horse.id} className="bg-white rounded-lg shadow-md p-4 border">
-                <div className="flex justify-between items-start mb-3">
-                  <div>
-                    <h3 className="text-lg font-semibold text-gray-900">{horse.name}</h3>
-                    <p className="text-sm text-gray-600">{horse.breed}</p>
-                  </div>
-                  <div className="text-right">
-                    <p className="text-sm font-medium">Level {horse.level}</p>
-                    <p className="text-xs text-gray-500">{horse.age} years old</p>
-                  </div>
-                </div>
+              <div key={horse.id} className="bg-white rounded-lg shadow-md border overflow-hidden">
+                {/* Horse Thumbnail */}
+                <img
+                  src={horse.imageUrl || '/images/horse-placeholder.png'}
+                  alt={horse.name}
+                  className="w-full h-32 object-cover"
+                />
 
-                <div className="flex justify-between items-center">
-                  <div className="flex space-x-2">
-                    <button
-                      onClick={() => handleViewDetails(horse.id)}
-                      className="p-2 text-blue-600 hover:bg-blue-50 rounded-lg transition-colors"
-                      aria-label="View details"
-                    >
-                      <Eye className="w-4 h-4" />
-                    </button>
-                    <button
-                      onClick={() => handleTrain(horse.id)}
-                      className="p-2 text-green-600 hover:bg-green-50 rounded-lg transition-colors"
-                      aria-label="Train"
-                    >
-                      <Dumbbell className="w-4 h-4" />
-                    </button>
-                    <button
-                      onClick={() => handleCompete(horse.id)}
-                      className="p-2 text-purple-600 hover:bg-purple-50 rounded-lg transition-colors"
-                      aria-label="Compete"
-                    >
-                      <Trophy className="w-4 h-4" />
-                    </button>
+                <div className="p-4">
+                  <div className="flex justify-between items-start mb-3">
+                    <div>
+                      <h3 className="text-lg font-semibold text-gray-900">{horse.name}</h3>
+                      <p className="text-sm text-gray-600">{horse.breed}</p>
+                    </div>
+                    <div className="text-right">
+                      <p className="text-sm font-medium">Level {horse.level}</p>
+                      <p className="text-xs text-gray-500">{horse.age} years old</p>
+                    </div>
                   </div>
-                  <div className="text-xs text-gray-500">
-                    Health: {horse.health}%
+
+                  <div className="flex justify-between items-center">
+                    <div className="flex space-x-2">
+                      <button
+                        onClick={() => handleViewDetails(horse.id)}
+                        className="p-2 text-blue-600 hover:bg-blue-50 rounded-lg transition-colors"
+                        aria-label="View details"
+                      >
+                        <Eye className="w-4 h-4" />
+                      </button>
+                      <button
+                        onClick={() => handleTrain(horse.id)}
+                        className="p-2 text-green-600 hover:bg-green-50 rounded-lg transition-colors"
+                        aria-label="Train"
+                      >
+                        <Dumbbell className="w-4 h-4" />
+                      </button>
+                      <button
+                        onClick={() => handleCompete(horse.id)}
+                        className="p-2 text-purple-600 hover:bg-purple-50 rounded-lg transition-colors"
+                        aria-label="Compete"
+                      >
+                        <Trophy className="w-4 h-4" />
+                      </button>
+                    </div>
+                    <div className="text-xs text-gray-500">
+                      Health: {horse.health}%
+                    </div>
                   </div>
                 </div>
               </div>
@@ -406,7 +416,14 @@ const HorseListView: React.FC<HorseListViewProps> = ({ userId, horses: propHorse
         // Desktop Grid View
         <div data-testid="desktop-grid-layout" className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-4">
           {paginatedHorses.map((horse) => (
-            <div key={horse.id} className="bg-white rounded-lg shadow-md border hover:shadow-lg transition-shadow">
+            <div key={horse.id} className="bg-white rounded-lg shadow-md border hover:shadow-lg transition-shadow overflow-hidden">
+              {/* Horse Thumbnail */}
+              <img
+                src={horse.imageUrl || '/images/horse-placeholder.png'}
+                alt={horse.name}
+                className="w-full h-32 object-cover rounded-t-lg"
+              />
+
               <div className="p-4">
                 <div className="mb-3">
                   <h3 className="text-lg font-semibold text-gray-900 mb-1">{horse.name}</h3>
@@ -464,6 +481,9 @@ const HorseListView: React.FC<HorseListViewProps> = ({ userId, horses: propHorse
           <table className="min-w-full divide-y divide-gray-200" aria-label="Horses table">
             <thead className="bg-gray-50">
               <tr>
+                <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                  Image
+                </th>
                 <th
                   className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider cursor-pointer hover:bg-gray-100"
                   onClick={() => handleSort('name')}
@@ -523,6 +543,13 @@ const HorseListView: React.FC<HorseListViewProps> = ({ userId, horses: propHorse
             <tbody className="bg-white divide-y divide-gray-200">
               {paginatedHorses.map((horse) => (
                 <tr key={horse.id} className="hover:bg-gray-50">
+                  <td className="px-6 py-4 whitespace-nowrap">
+                    <img
+                      src={horse.imageUrl || '/images/horse-placeholder.png'}
+                      alt={horse.name}
+                      className="w-12 h-12 object-cover rounded"
+                    />
+                  </td>
                   <td className="px-6 py-4 whitespace-nowrap">
                     <div className="text-sm font-medium text-gray-900">{horse.name}</div>
                   </td>
