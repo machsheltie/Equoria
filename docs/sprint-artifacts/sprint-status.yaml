@@ -195,12 +195,18 @@ development_status:
 
   3-1-horse-list-view:
     title: "Horse List View"
-    status: backlog
+    status: in_progress
     priority: P0
     fr: FR-H1
     epic: 3
     story: 1
     prerequisites: [epic-1]
+    story_file: "docs/sprint-artifacts/3-1-horse-list-view.md"
+    started_date: "2025-12-05"
+    notes: |
+      Component 90% complete with comprehensive tests.
+      Remaining: view toggle, thumbnails, primary discipline display, API endpoint update.
+      Estimated 3-4 hours to complete.
 
   3-2-horse-detail-view:
     title: "Horse Detail View"

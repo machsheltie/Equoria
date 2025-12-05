@@ -15,19 +15,21 @@
  * - Accessibility support with ARIA labels
  */
 
-import React, { useState, useMemo } from 'react';
+import React, { useState, useMemo, useEffect } from 'react';
 import { useQuery } from '@tanstack/react-query';
 import { useNavigate } from 'react-router-dom';
-import { 
-  Search, 
-  Filter, 
-  ChevronUp, 
-  ChevronDown, 
-  Eye, 
-  Dumbbell, 
+import {
+  Search,
+  Filter,
+  ChevronUp,
+  ChevronDown,
+  Eye,
+  Dumbbell,
   Trophy,
   ChevronLeft,
-  ChevronRight
+  ChevronRight,
+  LayoutGrid,
+  List
 } from 'lucide-react';
 
 // Types
@@ -75,6 +77,8 @@ interface FilterConfig {
   search: string;
 }
 
+type ViewMode = 'grid' | 'list';
+
 // API function to fetch horses
 const fetchHorses = async (userId: number): Promise<Horse[]> => {
   const response = await fetch(`/api/horses?userId=${userId}`, {
@@ -105,6 +109,11 @@ const HorseListView: React.FC<HorseListViewProps> = ({ userId, horses: propHorse
     search: '',
   });
   const [isMobile, setIsMobile] = useState(window.innerWidth < 768);
+  const [viewMode, setViewMode] = useState<ViewMode>(() => {
+    // Load from localStorage, default to 'list'
+    const saved = localStorage.getItem('horseListViewMode');
+    return (saved as ViewMode) || 'list';
+  });
 
   const itemsPerPage = 10;
 
@@ -132,13 +141,23 @@ const HorseListView: React.FC<HorseListViewProps> = ({ userId, horses: propHorse
     return () => window.removeEventListener('resize', handleResize);
   }, []);
 
+  // Save viewMode to localStorage whenever it changes
+  useEffect(() => {
+    localStorage.setItem('horseListViewMode', viewMode);
+  }, [viewMode]);
+
+  // Toggle view mode
+  const toggleView = () => {
+    setViewMode((prev) => (prev === 'grid' ? 'list' : 'grid'));
+  };
+
   // Filter and sort horses
   const filteredAndSortedHorses = useMemo(() => {
     let filtered = horses.filter((horse) => {
       const matchesBreed = !filters.breed || horse.breed.toLowerCase().includes(filters.breed.toLowerCase());
       const matchesAge = horse.age >= filters.ageMin && horse.age <= filters.ageMax;
       const matchesLevel = horse.level >= filters.levelMin && horse.level <= filters.levelMax;
-      const matchesSearch = !filters.search || 
+      const matchesSearch = !filters.search ||
         horse.name.toLowerCase().includes(filters.search.toLowerCase()) ||
         horse.breed.toLowerCase().includes(filters.search.toLowerCase());
 
@@ -223,9 +242,33 @@ const HorseListView: React.FC<HorseListViewProps> = ({ userId, horses: propHorse
   return (
     <main className="horse-list-container p-6" aria-label="Horse list">
       {/* Header */}
-      <div className="mb-6">
-        <h1 className="text-3xl font-bold text-gray-900 mb-2">My Horses</h1>
-        <p className="text-gray-600">Manage your stable of {horses.length} horses</p>
+      <div className="mb-6 flex justify-between items-center">
+        <div>
+          <h1 className="text-3xl font-bold text-gray-900 mb-2">My Horses</h1>
+          <p className="text-gray-600">Manage your stable of {horses.length} horses</p>
+        </div>
+
+        {/* View Toggle Button (Desktop only) */}
+        {!isMobile && (
+          <button
+            onClick={toggleView}
+            className="flex items-center gap-2 px-4 py-2 border border-gray-300 rounded-lg hover:bg-gray-50 transition-colors"
+            aria-label={`Switch to ${viewMode === 'grid' ? 'list' : 'grid'} view`}
+            title={`Switch to ${viewMode === 'grid' ? 'list' : 'grid'} view`}
+          >
+            {viewMode === 'grid' ? (
+              <>
+                <List className="w-5 h-5" />
+                <span className="text-sm">List View</span>
+              </>
+            ) : (
+              <>
+                <LayoutGrid className="w-5 h-5" />
+                <span className="text-sm">Grid View</span>
+              </>
+            )}
+          </button>
+        )}
       </div>
 
       {/* Filters and Search */}
@@ -326,7 +369,7 @@ const HorseListView: React.FC<HorseListViewProps> = ({ userId, horses: propHorse
                     <p className="text-xs text-gray-500">{horse.age} years old</p>
                   </div>
                 </div>
-                
+
                 <div className="flex justify-between items-center">
                   <div className="flex space-x-2">
                     <button
@@ -359,6 +402,62 @@ const HorseListView: React.FC<HorseListViewProps> = ({ userId, horses: propHorse
             ))}
           </div>
         </div>
+      ) : viewMode === 'grid' ? (
+        // Desktop Grid View
+        <div data-testid="desktop-grid-layout" className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-4">
+          {paginatedHorses.map((horse) => (
+            <div key={horse.id} className="bg-white rounded-lg shadow-md border hover:shadow-lg transition-shadow">
+              <div className="p-4">
+                <div className="mb-3">
+                  <h3 className="text-lg font-semibold text-gray-900 mb-1">{horse.name}</h3>
+                  <p className="text-sm text-gray-600">{horse.breed}</p>
+                </div>
+
+                <div className="space-y-1 text-sm mb-4">
+                  <div className="flex justify-between">
+                    <span className="text-gray-500">Age:</span>
+                    <span className="font-medium">{horse.age} years</span>
+                  </div>
+                  <div className="flex justify-between">
+                    <span className="text-gray-500">Level:</span>
+                    <span className="font-medium">{horse.level}</span>
+                  </div>
+                  <div className="flex justify-between">
+                    <span className="text-gray-500">Health:</span>
+                    <span className="font-medium">{horse.health}%</span>
+                  </div>
+                </div>
+
+                <div className="flex justify-between border-t pt-3">
+                  <button
+                    onClick={() => handleViewDetails(horse.id)}
+                    className="p-2 text-blue-600 hover:bg-blue-50 rounded-lg transition-colors"
+                    aria-label="View details"
+                    title="View details"
+                  >
+                    <Eye className="w-4 h-4" />
+                  </button>
+                  <button
+                    onClick={() => handleTrain(horse.id)}
+                    className="p-2 text-green-600 hover:bg-green-50 rounded-lg transition-colors"
+                    aria-label="Train"
+                    title="Train"
+                  >
+                    <Dumbbell className="w-4 h-4" />
+                  </button>
+                  <button
+                    onClick={() => handleCompete(horse.id)}
+                    className="p-2 text-purple-600 hover:bg-purple-50 rounded-lg transition-colors"
+                    aria-label="Compete"
+                    title="Compete"
+                  >
+                    <Trophy className="w-4 h-4" />
+                  </button>
+                </div>
+              </div>
+            </div>
+          ))}
+        </div>
       ) : (
         // Desktop Table View
         <div data-testid="desktop-layout" className="bg-white rounded-lg shadow overflow-hidden">
@@ -368,7 +467,7 @@ const HorseListView: React.FC<HorseListViewProps> = ({ userId, horses: propHorse
                 <th
                   className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider cursor-pointer hover:bg-gray-100"
                   onClick={() => handleSort('name')}
-                  aria-sort={sortConfig.key === 'name' ? sortConfig.direction : undefined}
+                  aria-sort={sortConfig.key === 'name' ? (sortConfig.direction === 'asc' ? 'ascending' : 'descending') : undefined}
                 >
                   <div className="flex items-center">
                     Name
@@ -380,7 +479,7 @@ const HorseListView: React.FC<HorseListViewProps> = ({ userId, horses: propHorse
                 <th
                   className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider cursor-pointer hover:bg-gray-100"
                   onClick={() => handleSort('breed')}
-                  aria-sort={sortConfig.key === 'breed' ? sortConfig.direction : undefined}
+                  aria-sort={sortConfig.key === 'breed' ? (sortConfig.direction === 'asc' ? 'ascending' : 'descending') : undefined}
                 >
                   <div className="flex items-center">
                     Breed
@@ -392,7 +491,7 @@ const HorseListView: React.FC<HorseListViewProps> = ({ userId, horses: propHorse
                 <th
                   className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider cursor-pointer hover:bg-gray-100"
                   onClick={() => handleSort('age')}
-                  aria-sort={sortConfig.key === 'age' ? sortConfig.direction : undefined}
+                  aria-sort={sortConfig.key === 'age' ? (sortConfig.direction === 'asc' ? 'ascending' : 'descending') : undefined}
                 >
                   <div className="flex items-center">
                     Age
@@ -404,7 +503,7 @@ const HorseListView: React.FC<HorseListViewProps> = ({ userId, horses: propHorse
                 <th
                   className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider cursor-pointer hover:bg-gray-100"
                   onClick={() => handleSort('level')}
-                  aria-sort={sortConfig.key === 'level' ? sortConfig.direction : undefined}
+                  aria-sort={sortConfig.key === 'level' ? (sortConfig.direction === 'asc' ? 'ascending' : 'descending') : undefined}
                 >
                   <div className="flex items-center">
                     Level
@@ -510,22 +609,21 @@ const HorseListView: React.FC<HorseListViewProps> = ({ userId, horses: propHorse
                 >
                   <ChevronLeft className="w-5 h-5" />
                 </button>
-                
+
                 {/* Page numbers */}
                 {Array.from({ length: totalPages }, (_, i) => i + 1).map((page) => (
                   <button
                     key={page}
                     onClick={() => setCurrentPage(page)}
-                    className={`relative inline-flex items-center px-4 py-2 border text-sm font-medium ${
-                      page === currentPage
+                    className={`relative inline-flex items-center px-4 py-2 border text-sm font-medium ${page === currentPage
                         ? 'z-10 bg-blue-50 border-blue-500 text-blue-600'
                         : 'bg-white border-gray-300 text-gray-500 hover:bg-gray-50'
-                    }`}
+                      }`}
                   >
                     {page}
                   </button>
                 ))}
-                
+
                 <button
                   onClick={() => setCurrentPage(prev => Math.min(prev + 1, totalPages))}
                   disabled={currentPage === totalPages}
