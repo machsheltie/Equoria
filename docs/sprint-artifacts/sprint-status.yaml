@@ -512,7 +512,9 @@ development_status:
     prerequisites: [7-1-groom-hiring-interface, 7-2-groom-personality-display, 7-3-task-assignment-ui, 7-4-career-lifecycle-dashboard, 7-5-legacy-system-ui, 7-6-talent-tree-visualization, 7-7-show-handling-rare-traits]
 
 # Action Items from Retrospectives
-# NOTE: When marking a story completed in this file, immediately update the story markdown file status to "completed"
+# REMINDER: When marking a story as "completed", immediately update the
+# corresponding story markdown file (e.g., 2-1-profile-management.md)
+# See: docs/sprint-artifacts/STORY_STATUS_UPDATE_PROCESS.md
 action_items:
   # Epic 3 Action Items (from Epic 2 Retrospective - 2025-12-05)
   action-3-1:
@@ -576,19 +578,53 @@ action_items:
   action-3-4:
     id: "action-3-4"
     title: "Update Story Status Files Immediately"
-    status: pending
+    status: completed
     priority: P1
     owner: "All Team Members"
     epic: 3
     created_date: "2025-12-05"
+    started_date: "2025-12-05"
+    completed_date: "2025-12-05"
     due_date: "Immediate for 2-1/2-2, ongoing"
     description: "Establish process for updating story markdown files when status changes"
+    completion_notes: |
+      COMPLETED: All acceptance criteria met
+
+      WORK COMPLETED:
+      1. Updated Stories 2-1 and 2-2 markdown files to completed status
+         - 2-1-profile-management.md: Status changed to "✅ completed", all tasks marked [x], completion notes added
+         - 2-2-xp-level-display.md: Status changed to "✅ completed", all tasks marked [x], completion notes added
+
+      2. Process fully documented in STORY_STATUS_UPDATE_PROCESS.md
+         - Step-by-step process for updating both files
+         - Story completion checklist template
+         - Good/bad examples for clarity
+         - Quick reference for file locations
+
+      3. Enhanced reminder comment in sprint-status.yaml (line 515-517)
+         - Added reference to process documentation
+         - Clear instruction to update markdown files
+
+      4. Process is now part of standard workflow
+         - Checklist available for all team members
+         - Examples provided for consistency
+         - Enforcement via code review
+
+      IMPACT:
+      - Stories 2-1 and 2-2 now accurately reflect completed status
+      - Clear process prevents future sync issues
+      - Team has reference documentation for all story completions
     acceptance_criteria:
-      - "Update Stories 2-1 and 2-2 markdown files to completed status"
-      - "Process documented: when marking story completed in sprint-status.yaml, immediately update markdown file"
-      - "Add reminder comment in sprint-status.yaml (DONE - see line 511)"
-      - "Make part of story completion checklist"
+      - "✅ Update Stories 2-1 and 2-2 markdown files to completed status (DONE)"
+      - "✅ Process documented: when marking story completed in sprint-status.yaml, immediately update markdown file (DONE - STORY_STATUS_UPDATE_PROCESS.md)"
+      - "✅ Add reminder comment in sprint-status.yaml (DONE - enhanced at lines 515-517)"
+      - "✅ Make part of story completion checklist (DONE - checklist in process doc)"
+    artifacts:
+      - "docs/sprint-artifacts/2-1-profile-management.md - Updated to completed status"
+      - "docs/sprint-artifacts/2-2-xp-level-display.md - Updated to completed status"
+      - "docs/sprint-artifacts/STORY_STATUS_UPDATE_PROCESS.md - Complete process documentation"
     time_estimate: "30 minutes one-time, then 2 minutes per story"
+    actual_time: "45 minutes (included comprehensive process documentation)"
 
   action-3-5:
     id: "action-3-5"
