@@ -103,13 +103,15 @@ development_status:
     prerequisites: [1-1-user-registration, 1-2-user-login, 1-3-session-management, 1-4-password-reset-request, 1-5-password-reset-completion, 1-6-role-based-access-control]
     retro_file: "docs/sprint-artifacts/epic-1-retro-2025-12-04.md"
 
-  # Epic 2: User Dashboard & Profile (P0)
+  # Epic 2: User Dashboard & Profile (P0 - COMPLETE)
   epic-2:
     title: "User Dashboard & Profile"
-    status: pending
+    status: completed
+    completed_date: "2025-12-05"
     priority: P0
     frs: [FR-U5, FR-U6, FR-U7, FR-U8]
     prerequisites: [epic-1]
+    total_tests: 395
 
   2-1-profile-management:
     title: "Profile Management"
@@ -178,8 +180,10 @@ development_status:
 
   epic-2-retrospective:
     title: "Epic 2 Retrospective"
-    status: pending
+    status: completed
+    completed_date: "2025-12-05"
     prerequisites: [2-1-profile-management, 2-2-xp-level-display, 2-3-currency-management, 2-4-statistics-dashboard, 2-5-activity-feed]
+    retro_file: "docs/sprint-artifacts/epic-2-retro-2025-12-05.md"
 
   # Epic 3: Horse Management (P0)
   epic-3:
@@ -507,6 +511,140 @@ development_status:
     status: pending
     prerequisites: [7-1-groom-hiring-interface, 7-2-groom-personality-display, 7-3-task-assignment-ui, 7-4-career-lifecycle-dashboard, 7-5-legacy-system-ui, 7-6-talent-tree-visualization, 7-7-show-handling-rare-traits]
 
+# Action Items from Retrospectives
+# NOTE: When marking a story completed in this file, immediately update the story markdown file status to "completed"
+action_items:
+  # Epic 3 Action Items (from Epic 2 Retrospective - 2025-12-05)
+  action-3-1:
+    id: "action-3-1"
+    title: "Implement Action Item Tracking in sprint-status.yaml"
+    status: completed
+    priority: P0
+    owner: "Bob (Scrum Master)"
+    epic: 3
+    created_date: "2025-12-05"
+    completed_date: "2025-12-05"
+    description: "Add action-items section to sprint-status.yaml with structured tracking (ID, status, priority, assignee, acceptance criteria)"
+    acceptance_criteria:
+      - "Action items have unique IDs (action-3-1, action-3-2, etc.)"
+      - "Status field (pending/in_progress/completed)"
+      - "Priority field (P0/P1/P2)"
+      - "Assignee field"
+      - "Acceptance criteria documented"
+      - "Reviewed during sprint planning"
+    time_estimate: "1 hour"
+
+  action-3-2:
+    id: "action-3-2"
+    title: "Complete Epic 1 P1 Action Items"
+    status: pending
+    priority: P0
+    owner: "Charlie (Senior Dev)"
+    epic: 3
+    created_date: "2025-12-05"
+    due_date: "Before Epic 3 Story 3-1 starts"
+    description: "Document fireEvent.submit pattern and extract reusable form validation schemas"
+    acceptance_criteria:
+      - "Create docs/patterns/testing-patterns.md with fireEvent.submit pattern"
+      - "Extract loginSchema, registerSchema, profileSchema into frontend/src/lib/validation-schemas.ts"
+      - "Update all forms to use shared schemas"
+      - "Add JSDoc comments to schemas"
+      - "Test all forms still work with extracted schemas"
+    time_estimate: "2-3 hours"
+
+  action-3-3:
+    id: "action-3-3"
+    title: "Create Form Component Patterns Documentation"
+    status: pending
+    priority: P1
+    owner: "Charlie (Senior Dev) + Elena (Junior Dev)"
+    epic: 3
+    created_date: "2025-12-05"
+    due_date: "After Epic 3 Story 3-1 completed"
+    description: "Document form patterns for Epic 3 CRUD operations"
+    acceptance_criteria:
+      - "Create docs/patterns/form-patterns.md"
+      - "Document React Hook Form + Zod integration"
+      - "Document validation error handling patterns"
+      - "Document form submission patterns"
+      - "Include code examples for each pattern"
+      - "Document loading states for form submission"
+    time_estimate: "3-4 hours"
+
+  action-3-4:
+    id: "action-3-4"
+    title: "Update Story Status Files Immediately"
+    status: pending
+    priority: P1
+    owner: "All Team Members"
+    epic: 3
+    created_date: "2025-12-05"
+    due_date: "Immediate for 2-1/2-2, ongoing"
+    description: "Establish process for updating story markdown files when status changes"
+    acceptance_criteria:
+      - "Update Stories 2-1 and 2-2 markdown files to completed status"
+      - "Process documented: when marking story completed in sprint-status.yaml, immediately update markdown file"
+      - "Add reminder comment in sprint-status.yaml (DONE - see line 511)"
+      - "Make part of story completion checklist"
+    time_estimate: "30 minutes one-time, then 2 minutes per story"
+
+  action-3-5:
+    id: "action-3-5"
+    title: "Define Horse Data Model & API Contracts"
+    status: pending
+    priority: P1
+    owner: "Alice (Product Owner) + Charlie (Senior Dev)"
+    epic: 3
+    created_date: "2025-12-05"
+    due_date: "Before Epic 3 Story 3-1 starts"
+    description: "Document complete horse data model before Epic 3 starts"
+    acceptance_criteria:
+      - "TypeScript interface for Horse type with all attributes"
+      - "All form fields specified with types"
+      - "Validation rules documented for each field"
+      - "API endpoints documented (GET, POST, PUT, DELETE)"
+      - "Example request/response payloads for each endpoint"
+      - "Error response formats defined"
+    time_estimate: "2-3 hours"
+
+  action-3-6:
+    id: "action-3-6"
+    title: "Create Pattern Documentation Guide"
+    status: pending
+    priority: P2
+    owner: "Elena (Junior Dev)"
+    epic: 3
+    created_date: "2025-12-05"
+    due_date: "Mid-Epic 3"
+    description: "Create comprehensive pattern documentation in docs/patterns/"
+    acceptance_criteria:
+      - "Create docs/patterns/README.md as pattern index"
+      - "Document size variant pattern with examples"
+      - "Document loading/empty state pattern"
+      - "Document icon mapping pattern"
+      - "Document utils → component → test pattern"
+      - "Include when to use guidance for each pattern"
+    time_estimate: "2-3 hours"
+
+  action-3-7:
+    id: "action-3-7"
+    title: "Schedule API Integration Milestone"
+    status: pending
+    priority: P2
+    owner: "Alice (Product Owner)"
+    epic: 3
+    created_date: "2025-12-05"
+    due_date: "During Epic 3 planning"
+    description: "Plan explicit milestone for connecting Epic 2 + 3 components to real backend"
+    acceptance_criteria:
+      - "Define integration story or spike"
+      - "Estimate effort (1-2 days likely)"
+      - "Schedule in Epic 3 or Epic 4"
+      - "Document API endpoints needed for Epic 2"
+      - "Document API endpoints needed for Epic 3"
+      - "Define integration success criteria"
+    time_estimate: "1 hour planning"
+
 # Summary
 summary:
   total_epics: 7
@@ -515,11 +653,14 @@ summary:
   p1_stories: 9
   p2_stories: 3
   fr_coverage: "44/44 (100%)"
-  current_epic: 2
-  current_story: "2-5-activity-feed"
-  epics_completed: 1
-  stories_completed: 10
+  current_epic: 3
+  current_story: "epic-3-preparation"
+  epics_completed: 2
+  stories_completed: 11
   stories_in_progress: 0
-  stories_ready_for_dev: 2
-  stories_backlog: 28
-  total_tests_passing: 534
+  stories_ready_for_dev: 6
+  stories_backlog: 23
+  total_tests_passing: 606
+  action_items_total: 7
+  action_items_completed: 1
+  action_items_pending: 6
