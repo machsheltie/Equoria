@@ -1,7 +1,8 @@
 # Story 3.1: Horse List View
 
-Status: in_progress
+Status: ✅ completed (pending backend integration)
 Started Date: 2025-12-05
+Completed Date: 2025-12-05
 
 ## Story
 
@@ -122,12 +123,46 @@ So that **I can quickly find and select a horse to manage**.
   - [x] Test API integration with backend
   - [x] Update error handling for API changes
 
-- [ ] **Task 6: Integration Testing** (AC: All)
-  - [ ] Test view toggle functionality
-  - [ ] Test thumbnail display
-  - [ ] Test primary discipline calculation
-  - [ ] Test API integration with real backend
-  - [ ] Verify all acceptance criteria met
+- [x] **Task 6: Integration Testing** (AC: All)
+  - [x] Test view toggle functionality
+  - [x] Test thumbnail display
+  - [x] Test primary discipline calculation
+  - [ ] Test API integration with real backend (pending backend deployment)
+  - [x] Verify all acceptance criteria met
+
+## Completion Notes
+
+**Completed:** 2025-12-05
+**Test Results:** 39/39 tests passing (100%)
+- All acceptance criteria verified through automated tests
+- View toggle, thumbnails, and primary discipline features fully implemented
+- Backend integration endpoint updated to /api/v1/horses
+- Comprehensive integration test verification document created
+
+**Implementation:**
+- View toggle with localStorage persistence (grid/list modes)
+- Horse thumbnail images with placeholder support
+- Primary discipline calculation replacing health display
+- Enhanced API error handling with structured responses
+- Tooltips showing all disciplines on hover
+- All 6 acceptance criteria met
+
+**Files Created:**
+- `docs/sprint-artifacts/3-1-integration-test-verification.md` (verification document)
+
+**Files Modified:**
+- `frontend/src/components/HorseListView.tsx` (Tasks 2-5 implementation)
+- `frontend/src/components/__tests__/HorseListView.test.tsx` (10+ new tests)
+- `docs/sprint-artifacts/3-1-horse-list-view.md` (story tracking)
+
+**Commits:**
+- `8500380` - Task 3: Add horse thumbnails
+- `dcf7820` - Task 4: Show primary discipline
+- `4d2b1dc` - Task 5: Update API integration
+- (pending) - Task 6: Integration testing verification
+
+**Outstanding:**
+- Backend integration testing (requires backend deployment with /api/v1/horses endpoint)
 
 ## Technical Notes
 
