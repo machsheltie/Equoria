@@ -1,6 +1,6 @@
 # Story 3.1: Horse List View
 
-Status: ✅ completed (pending backend integration)
+Status: ✅ completed
 Started Date: 2025-12-05
 Completed Date: 2025-12-05
 
@@ -136,8 +136,9 @@ So that **I can quickly find and select a horse to manage**.
 **Test Results:** 39/39 tests passing (100%)
 - All acceptance criteria verified through automated tests
 - View toggle, thumbnails, and primary discipline features fully implemented
-- Backend integration endpoint updated to /api/v1/horses
+- Backend integration endpoint corrected to /api/horses (matches backend implementation)
 - Comprehensive integration test verification document created
+- Documentation reconciliation completed (epic structure conflicts resolved)
 
 **Implementation:**
 - View toggle with localStorage persistence (grid/list modes)
