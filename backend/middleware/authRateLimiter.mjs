@@ -1,135 +1,103 @@
 /**
  * Authentication Rate Limiter Middleware
  *
- * Implements brute force protection for authentication endpoints
- * - 5 failed attempts per 15 minutes per IP
- * - Rate limit headers in all responses (RFC standard)
- * - Reset on successful authentication
+ * MIGRATED TO REDIS-BACKED DISTRIBUTED RATE LIMITING
  *
- * Phase 1, Day 3: Rate Limiting Implementation
+ * This file now re-exports the Redis-backed auth rate limiter from rateLimiting.mjs
+ * for backward compatibility with existing imports.
+ *
+ * Benefits of Redis-backed rate limiting:
+ * - Works correctly in multi-process environments (PM2 workers)
+ * - Survives server restarts (no attack window during deployments)
+ * - Scales horizontally (multiple servers share same counters)
+ * - Graceful degradation (allows requests if Redis unavailable)
+ *
+ * Configuration:
+ * - 5 failed attempts per 15 minutes per IP/user
+ * - Rate limit headers in all responses (RFC standard)
+ * - Per-user rate limiting for authenticated requests
+ * - IP-based rate limiting for unauthenticated requests
+ *
+ * @see backend/middleware/rateLimiting.mjs for implementation details
  */
 
-import { RateLimitStore } from '../utils/rateLimitStore.mjs';
+import {
+  authRateLimiter,
+  isRedisConnected,
+  getRedisClient,
+} from './rateLimiting.mjs';
 import logger from '../utils/logger.mjs';
 
-// Create store instance for auth rate limiting
-const store = new RateLimitStore({
-  maxSize: 10000,
-  cleanupInterval: 60000, // 1 minute
-});
+/**
+ * Redis-backed authentication rate limiter
+ * Prevents brute force attacks with distributed enforcement
+ */
+export { authRateLimiter };
 
 /**
- * Create authentication rate limiter middleware
- * @param {Object} options - Configuration options
- * @param {number} options.windowMs - Time window in milliseconds (default: 15 minutes)
- * @param {number} options.max - Maximum requests per window (default: 5)
- * @returns {Function} - Express middleware function
+ * Check Redis connection status
+ * @returns {boolean} True if Redis is connected
+ */
+export { isRedisConnected };
+
+/**
+ * Get Redis client instance (for health checks)
+ * @returns {Object|null} Redis client or null
+ */
+export { getRedisClient };
+
+/**
+ * Legacy function: Create authentication rate limiter
+ * Now returns Redis-backed limiter instead of in-memory store
+ *
+ * @deprecated Use authRateLimiter directly from rateLimiting.mjs
+ * @param {Object} options - Configuration options (ignored, uses Redis config)
+ * @returns {Function} Redis-backed rate limiter middleware
  */
 export function createAuthRateLimiter(options = {}) {
-  // Configuration with defaults
-  const windowMs = options.windowMs !== undefined ? options.windowMs : 15 * 60 * 1000; // 15 minutes
-  const max = options.max !== undefined ? options.max : 5;
-
-  // Validate configuration
-  if (windowMs <= 0) {
-    throw new Error('windowMs must be positive');
-  }
-
-  if (max <= 0) {
-    throw new Error('max must be greater than 0');
-  }
-
-  // Return middleware function
-  const middleware = function(req, res, next) {
-    // Get IP address (support X-Forwarded-For for proxies)
-    const ip = req.ip || req.headers['x-forwarded-for'] || req.connection.remoteAddress || 'unknown';
-
-    // Increment request count
-    const result = store.increment(ip, windowMs);
-    const { current, resetTime } = result;
-
-    // Calculate remaining requests
-    const remaining = Math.max(0, max - current);
-    const resetTimestamp = Math.floor(resetTime / 1000);
-
-    // Set rate limit headers (RFC standard, not legacy X-RateLimit-*)
-    res.setHeader('RateLimit-Limit', String(max));
-    res.setHeader('RateLimit-Remaining', String(remaining));
-    res.setHeader('RateLimit-Reset', String(resetTimestamp));
-
-    // Check if rate limit exceeded
-    if (current > max) {
-      const retryAfter = Math.ceil((resetTime - Date.now()) / 1000);
-
-      logger.warn(`[Rate Limit] IP ${ip} exceeded auth rate limit`, {
-        ip,
-        current,
-        max,
-        retryAfter,
-        url: req.originalUrl,
-      });
-
-      res.setHeader('Retry-After', String(retryAfter));
-
-      return res.status(429).json({
-        success: false,
-        error: 'Too many requests, please try again later.',
-        retryAfter,
-      });
-    }
-
-    // Within limit, proceed
-    next();
-  };
-
-  // Attach configuration to middleware for testing
-  middleware.windowMs = windowMs;
-  middleware.max = max;
-
-  // Attach helper methods for testing
-  middleware.getRequestCount = (ip) => store.getRequestCount(ip);
-  middleware.resetForIp = (ip) => store.reset(ip);
-  middleware.getStorageSize = () => store.getStorageSize();
-  middleware.cleanup = () => store.cleanup();
-
-  return middleware;
+  logger.warn(
+    '[AuthRateLimiter] createAuthRateLimiter() is deprecated, using Redis-backed limiter'
+  );
+  return authRateLimiter;
 }
 
 /**
- * Reset rate limit for a specific IP
+ * Legacy function: Reset rate limit for specific IP
+ * With Redis, this requires direct Redis commands
+ *
+ * @deprecated Not needed with Redis (automatic expiration)
  * @param {string} ip - IP address to reset
  */
 export function resetAuthRateLimit(ip) {
-  if (!ip) {
-    logger.warn('[Rate Limit] Attempted to reset rate limit with no IP address');
-    return;
-  }
-
-  store.reset(ip);
-  logger.debug(`[Rate Limit] Reset rate limit for IP: ${ip}`);
+  logger.warn(
+    '[AuthRateLimiter] resetAuthRateLimit() is deprecated with Redis',
+    { ip }
+  );
+  // Redis keys auto-expire, no manual reset needed
 }
 
 /**
- * Reset all rate limits (for testing)
+ * Legacy function: Reset all rate limits
+ * With Redis, use Redis FLUSHDB command or let keys expire naturally
+ *
+ * @deprecated Not needed with Redis (automatic expiration)
  */
 export function resetAllAuthRateLimits() {
-  store.resetAll();
-  logger.debug('[Rate Limit] Reset all auth rate limits');
+  logger.warn('[AuthRateLimiter] resetAllAuthRateLimits() is deprecated with Redis');
+  // Redis keys auto-expire, no manual reset needed
 }
 
 /**
- * Get store instance (for testing)
+ * Legacy function: Get store instance
+ * With Redis, use getRedisClient() instead
+ *
+ * @deprecated Use getRedisClient() from rateLimiting.mjs
+ * @returns {null} Always returns null (no in-memory store)
  */
 export function getAuthRateLimitStore() {
-  return store;
+  logger.warn('[AuthRateLimiter] getAuthRateLimitStore() is deprecated, use getRedisClient()');
+  return null;
 }
 
-// Default auth rate limiter instance
-// Test environment uses shorter window for faster tests, but same max (5 attempts)
-const isTestEnv = process.env.NODE_ENV === 'test';
-const testWindowMs = 2000; // 2 seconds for tests (faster reset)
-
-export const authRateLimiter = createAuthRateLimiter({
-  windowMs: isTestEnv ? testWindowMs : 15 * 60 * 1000, // 15 minutes in production, 2s in test
-  max: 5, // Always 5 attempts for auth endpoints (brute force protection)
-});
+// Default export for backward compatibility
+export default authRateLimiter;

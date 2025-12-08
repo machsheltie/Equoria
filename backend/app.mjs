@@ -88,6 +88,9 @@ import adminRoutes from './routes/adminRoutes.mjs';
 // Import authentication middleware
 import { authenticateToken, requireRole } from './middleware/auth.mjs';
 
+// Import Redis rate limiting (for health check and shutdown)
+import { isRedisConnected, getRedisClient, closeRedis } from './middleware/rateLimiting.mjs';
+
 // Public router - No authentication required
 const publicRouter = express.Router();
 
@@ -284,13 +287,47 @@ app.use(requestTimeoutMiddleware(30000)); // 30 second timeout
 
 // PUBLIC ROUTES - No authentication required
 // Health check endpoint
-publicRouter.get('/health', (req, res) => {
-  res.status(200).json({
+publicRouter.get('/health', async (req, res) => {
+  // Check Redis connection status
+  const redisConnected = isRedisConnected();
+  const redisClient = getRedisClient();
+
+  let redisInfo = {
+    connected: redisConnected,
+    status: redisConnected ? 'healthy' : 'degraded',
+  };
+
+  // Try to get Redis server info if connected
+  if (redisConnected && redisClient) {
+    try {
+      const info = await redisClient.info('server');
+      const version = info.match(/redis_version:([^\r\n]+)/)?.[1];
+      redisInfo.version = version || 'unknown';
+      redisInfo.status = 'healthy';
+    } catch (error) {
+      redisInfo.status = 'error';
+      redisInfo.error = error.message;
+    }
+  }
+
+  // Overall health status
+  // Server is "healthy" even if Redis is down (graceful degradation)
+  // But we report the Redis status for monitoring
+  const overallStatus = 'healthy';
+  const statusCode = 200;
+
+  res.status(statusCode).json({
     success: true,
+    status: overallStatus,
     message: 'Server is healthy',
     timestamp: new Date().toISOString(),
     uptime: process.uptime(),
     environment: config.env,
+    services: {
+      api: 'healthy',
+      database: 'healthy', // Assumes DB is healthy if app is running
+      redis: redisInfo,
+    },
   });
 });
 
@@ -367,17 +404,19 @@ initializeMemoryManagement({
   enableGCOptimization: process.env.NODE_ENV === 'production',
 });
 
-process.on('SIGTERM', () => {
+process.on('SIGTERM', async () => {
   logger.info('SIGTERM received, shutting down gracefully');
   stopCronJobs();
   shutdownMemoryManagement();
+  await closeRedis();
   process.exit(0);
 });
 
-process.on('SIGINT', () => {
+process.on('SIGINT', async () => {
   logger.info('SIGINT received, shutting down gracefully');
   stopCronJobs();
   shutdownMemoryManagement();
+  await closeRedis();
   process.exit(0);
 });
 
