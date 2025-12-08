@@ -5,15 +5,57 @@
 
 import express from 'express';
 import { getUserXpEvents, getUserXpSummary, getRecentXpEvents } from '../models/xpLogModel.mjs';
+import { authenticateToken } from '../middleware/auth.mjs';
 import logger from '../utils/logger.mjs';
 
 const router = express.Router();
 
 /**
+ * Self-access validation middleware
+ * Ensures users can only access their own XP data (prevents CWE-639)
+ */
+const requireSelfAccess = (idParam = 'userId') => {
+  return (req, res, next) => {
+    // Ensure user is authenticated
+    if (!req.user || !req.user.id) {
+      logger.warn('[xpRoutes] Missing authenticated user for self-access check');
+      return res.status(401).json({
+        success: false,
+        message: 'Authentication required',
+      });
+    }
+
+    // Extract target user ID from params
+    const targetUserId = req.params[idParam];
+    if (!targetUserId) {
+      logger.warn(`[xpRoutes] Missing ${idParam} parameter for self-access check`);
+      return res.status(400).json({
+        success: false,
+        message: 'User ID required',
+      });
+    }
+
+    // Validate self-access: authenticated user can only access their own data
+    if (req.user.id !== targetUserId) {
+      logger.warn(
+        `[xpRoutes] Self-access violation: user ${req.user.id} attempted to access user ${targetUserId} XP data`,
+      );
+      return res.status(403).json({
+        success: false,
+        message: 'You can only access your own XP data',
+      });
+    }
+
+    logger.info(`[xpRoutes] Self-access validated: user ${req.user.id} accessing own XP data`);
+    next();
+  };
+};
+
+/**
  * GET /api/xp/user/:userId/events
  * Get XP events for a specific user
  */
-router.get('/user/:userId/events', async (req, res) => {
+router.get('/user/:userId/events', authenticateToken, requireSelfAccess(), async (req, res) => {
   try {
     const { userId } = req.params;
     const { limit = 50, offset = 0, startDate, endDate } = req.query;
@@ -85,7 +127,7 @@ router.get('/user/:userId/events', async (req, res) => {
  * GET /api/xp/user/:userId/summary
  * Get XP summary for a specific user
  */
-router.get('/user/:userId/summary', async (req, res) => {
+router.get('/user/:userId/summary', authenticateToken, requireSelfAccess(), async (req, res) => {
   try {
     const { userId } = req.params;
     const { startDate, endDate } = req.query;
