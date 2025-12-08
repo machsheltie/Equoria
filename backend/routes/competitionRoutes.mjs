@@ -5,6 +5,7 @@ import { getHorseById } from '../models/horseModel.mjs';
 import { getUserById } from '../models/userModel.mjs';
 import { enterAndRunShow } from '../controllers/competitionController.mjs';
 import { getResultsByShow, getResultsByHorse } from '../models/resultModel.mjs';
+import { requireOwnership, findOwnedResource } from '../middleware/ownership.mjs';
 import {
   validateCompetitionEntry,
   executeEnhancedCompetition,
@@ -144,39 +145,40 @@ router.get('/show/:showId/results', async (req, res) => {
 /**
  * GET /horse/:horseId/results
  * Get all competition results for a specific horse
+ *
+ * Security: Validates horse ownership before returning results
  */
-router.get('/horse/:horseId/results', async (req, res) => {
-  try {
-    const horseId = parseInt(req.params.horseId, 10);
+router.get(
+  '/horse/:horseId/results',
+  auth,
+  [param('horseId').isInt({ min: 1 }).withMessage('Horse ID must be a positive integer')],
+  requireOwnership('horse', { idParam: 'horseId' }),
+  async (req, res) => {
+    try {
+      const horseId = parseInt(req.params.horseId, 10);
 
-    if (isNaN(horseId) || horseId <= 0) {
-      return res.status(400).json({
+      const results = await getResultsByHorse(horseId);
+
+      logger.info(
+        `[competitionRoutes.GET /horse/${horseId}/results] Retrieved ${results.length} results`,
+      );
+
+      res.json({
+        success: true,
+        horseId,
+        results,
+        count: results.length,
+      });
+    } catch (error) {
+      logger.error(`[competitionRoutes.GET /horse/:horseId/results] Error: ${error.message}`);
+      res.status(500).json({
         success: false,
-        message: 'Invalid horse ID',
+        message: 'Internal server error',
+        error: process.env.NODE_ENV === 'development' ? error.message : 'Something went wrong',
       });
     }
-
-    const results = await getResultsByHorse(horseId);
-
-    logger.info(
-      `[competitionRoutes.GET /horse/${horseId}/results] Retrieved ${results.length} results`,
-    );
-
-    res.json({
-      success: true,
-      horseId,
-      results,
-      count: results.length,
-    });
-  } catch (error) {
-    logger.error(`[competitionRoutes.GET /horse/:horseId/results] Error: ${error.message}`);
-    res.status(500).json({
-      success: false,
-      message: 'Internal server error',
-      error: process.env.NODE_ENV === 'development' ? error.message : 'Something went wrong',
-    });
-  }
-});
+  },
+);
 
 /**
  * POST /api/competition/enter
@@ -187,6 +189,8 @@ router.get('/horse/:horseId/results', async (req, res) => {
  *   "horseId": 1,
  *   "showId": 1
  * }
+ *
+ * Security: Validates horse ownership using findOwnedResource helper
  */
 router.post(
   '/enter',
@@ -217,19 +221,12 @@ router.post(
         `[competitionRoutes.POST /enter] User ${userId} entering horse ${horseId} in show ${showId}`,
       );
 
-      // Get horse and validate ownership
-      const horse = await getHorseById(horseId);
+      // Validate horse ownership (atomic single-query validation)
+      const horse = await findOwnedResource('horse', horseId, userId);
       if (!horse) {
         return res.status(404).json({
           success: false,
           message: 'Horse not found',
-        });
-      }
-
-      if (horse.ownerId !== userId) {
-        return res.status(403).json({
-          success: false,
-          message: 'You do not own this horse',
         });
       }
 
@@ -467,6 +464,8 @@ router.post(
 /**
  * GET /api/competition/eligibility/:horseId/:discipline
  * Check horse eligibility for a specific discipline
+ *
+ * Security: Validates horse ownership before checking eligibility
  */
 router.get(
   '/eligibility/:horseId/:discipline',
@@ -478,6 +477,7 @@ router.get(
       .isLength({ min: 1 })
       .withMessage('Discipline must be a non-empty string'),
   ],
+  requireOwnership('horse', { idParam: 'horseId' }),
   async (req, res) => {
     try {
       // Check for validation errors
@@ -494,27 +494,11 @@ router.get(
       }
 
       const { horseId, discipline } = req.params;
-      const userId = req.user.id;
+      const horse = req.horse; // Cached by requireOwnership middleware
 
       logger.info(
         `[competitionRoutes.GET /eligibility] Checking eligibility for horse ${horseId} in ${discipline}`,
       );
-
-      // Get horse and validate ownership
-      const horse = await getHorseById(parseInt(horseId));
-      if (!horse) {
-        return res.status(404).json({
-          success: false,
-          message: 'Horse not found',
-        });
-      }
-
-      if (horse.ownerId !== userId) {
-        return res.status(403).json({
-          success: false,
-          message: 'You do not own this horse',
-        });
-      }
 
       // Validate discipline
       const availableDisciplines = getAllDisciplines();
