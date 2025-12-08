@@ -7,6 +7,7 @@
 import express from 'express';
 import { body, param, validationResult } from 'express-validator';
 import { authenticateToken } from '../middleware/auth.mjs';
+import { requireOwnership } from '../middleware/ownership.mjs';
 import { evaluateUltraRareTriggers, evaluateExoticUnlocks } from '../utils/ultraRareTriggerEngine.mjs';
 import { assignRareTraitBoosterPerks, getRevealedPerks, applyRareTraitBoosterEffects } from '../utils/groomRareTraitPerks.mjs';
 import { getAllUltraRareTraits, getAllExoticTraits, getUltraRareTraitDefinition } from '../utils/ultraRareTraits.mjs';
@@ -69,28 +70,19 @@ router.post('/evaluate/:horseId',
     body('evaluationContext').optional().isObject().withMessage('Evaluation context must be an object'),
   ],
   validateRequest,
+  requireOwnership('horse', { idParam: 'horseId' }),
   async (req, res) => {
     try {
       const { horseId } = req.params;
       const { evaluationContext = {} } = req.body;
 
-      // Verify horse ownership
-      const horse = await prisma.horse.findUnique({
-        where: { id: parseInt(horseId) },
-        select: { id: true, userId: true, name: true },
-      });
-
+      // Horse ownership already validated by requireOwnership middleware
+      const horse = req.validatedResources?.horse;
       if (!horse) {
+        logger.error('[ultraRareTraitRoutes.evaluate] Horse not found in validated resources');
         return res.status(404).json({
           success: false,
-          message: 'Horse not found',
-        });
-      }
-
-      if (horse.userId !== req.user.id) {
-        return res.status(403).json({
-          success: false,
-          message: 'You do not own this horse',
+          message: 'Horse not found or you do not own this horse',
         });
       }
 
@@ -148,17 +140,18 @@ router.get('/horse/:horseId',
     param('horseId').isInt({ min: 1 }).withMessage('Horse ID must be a positive integer'),
   ],
   validateRequest,
+  requireOwnership('horse', { idParam: 'horseId' }),
   async (req, res) => {
     try {
       const { horseId } = req.params;
 
-      // Get horse with ultra-rare traits
+      // Horse ownership already validated by requireOwnership middleware
+      // Need to re-fetch with additional fields for ultra-rare traits
       const horse = await prisma.horse.findUnique({
         where: { id: parseInt(horseId) },
         select: {
           id: true,
           name: true,
-          userId: true,
           ultraRareTraits: true,
           ultraRareTraitEvents: {
             orderBy: { timestamp: 'desc' },
@@ -168,16 +161,10 @@ router.get('/horse/:horseId',
       });
 
       if (!horse) {
+        logger.error('[ultraRareTraitRoutes.horse] Horse not found after ownership validation');
         return res.status(404).json({
           success: false,
           message: 'Horse not found',
-        });
-      }
-
-      if (horse.userId !== req.user.id) {
-        return res.status(403).json({
-          success: false,
-          message: 'You do not own this horse',
         });
       }
 
@@ -227,17 +214,18 @@ router.post('/groom/:groomId/assign-perks',
     param('groomId').isInt({ min: 1 }).withMessage('Groom ID must be a positive integer'),
   ],
   validateRequest,
+  requireOwnership('groom', { idParam: 'groomId' }),
   async (req, res) => {
     try {
       const { groomId } = req.params;
 
-      // Verify groom ownership
+      // Groom ownership already validated by requireOwnership middleware
+      // Need to re-fetch with additional fields for perk assignment
       const groom = await prisma.groom.findUnique({
         where: { id: parseInt(groomId) },
         select: {
           id: true,
           name: true,
-          userId: true,
           experience: true,
           personality: true,
           groomPersonality: true,
@@ -246,16 +234,10 @@ router.post('/groom/:groomId/assign-perks',
       });
 
       if (!groom) {
+        logger.error('[ultraRareTraitRoutes.assign-perks] Groom not found after ownership validation');
         return res.status(404).json({
           success: false,
           message: 'Groom not found',
-        });
-      }
-
-      if (groom.userId !== req.user.id) {
-        return res.status(403).json({
-          success: false,
-          message: 'You do not own this groom',
         });
       }
 
@@ -294,27 +276,18 @@ router.get('/groom/:groomId/perks',
     param('groomId').isInt({ min: 1 }).withMessage('Groom ID must be a positive integer'),
   ],
   validateRequest,
+  requireOwnership('groom', { idParam: 'groomId' }),
   async (req, res) => {
     try {
       const { groomId } = req.params;
 
-      // Verify groom ownership
-      const groom = await prisma.groom.findUnique({
-        where: { id: parseInt(groomId) },
-        select: { id: true, name: true, userId: true },
-      });
-
+      // Groom ownership already validated by requireOwnership middleware
+      const groom = req.validatedResources?.groom;
       if (!groom) {
+        logger.error('[ultraRareTraitRoutes.perks] Groom not found in validated resources');
         return res.status(404).json({
           success: false,
-          message: 'Groom not found',
-        });
-      }
-
-      if (groom.userId !== req.user.id) {
-        return res.status(403).json({
-          success: false,
-          message: 'You do not own this groom',
+          message: 'Groom not found or you do not own this groom',
         });
       }
 
