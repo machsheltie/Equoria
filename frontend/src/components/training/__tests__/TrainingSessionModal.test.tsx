@@ -11,7 +11,7 @@ const mockHorse = {
   level: 5,
   breed: 'Arabian',
   ageYears: 4,
-  bestDisciplines: ['dressage', 'racing'],
+  bestDisciplines: ['Dressage', 'Racing'],
   nextEligibleAt: null,
 };
 
@@ -116,27 +116,42 @@ describe('TrainingSessionModal', () => {
       expect(screen.getByLabelText(/Discipline/i)).toBeInTheDocument();
     });
 
-    it('has dressage as default discipline', () => {
+    it('has Barrel Racing as default discipline', () => {
       render(
         <TrainingSessionModal horse={mockHorse} onClose={mockOnClose} onCompleted={mockOnCompleted} />
       );
       const select = screen.getByLabelText(/Discipline/i) as HTMLSelectElement;
-      expect(select.value).toBe('dressage');
+      expect(select.value).toBe('Barrel Racing');
     });
 
-    it('includes all 8 disciplines', () => {
+    it('includes all 23 disciplines', () => {
       render(
         <TrainingSessionModal horse={mockHorse} onClose={mockOnClose} onCompleted={mockOnCompleted} />
       );
       const disciplines = [
-        'dressage',
-        'show jumping',
-        'eventing',
-        'racing',
-        'cross country',
-        'endurance',
-        'reining',
-        'vaulting',
+        'Barrel Racing',
+        'Combined Driving',
+        'Cross Country',
+        'Cutting',
+        'Dressage',
+        'Endurance',
+        'Eventing',
+        'Fine Harness',
+        'Gaited',
+        'Gymkhana',
+        'Harness Racing',
+        'Hunter',
+        'Polo',
+        'Racing',
+        'Reining',
+        'Rodeo',
+        'Roping',
+        'Saddleseat',
+        'Show Jumping',
+        'Steeplechase',
+        'Team Penning',
+        'Vaulting',
+        'Western Pleasure',
       ];
       disciplines.forEach((d) => {
         expect(screen.getByRole('option', { name: d })).toBeInTheDocument();
@@ -148,8 +163,8 @@ describe('TrainingSessionModal', () => {
         <TrainingSessionModal horse={mockHorse} onClose={mockOnClose} onCompleted={mockOnCompleted} />
       );
       const select = screen.getByLabelText(/Discipline/i) as HTMLSelectElement;
-      fireEvent.change(select, { target: { value: 'racing' } });
-      expect(select.value).toBe('racing');
+      fireEvent.change(select, { target: { value: 'Racing' } });
+      expect(select.value).toBe('Racing');
     });
   });
 
@@ -224,7 +239,7 @@ describe('TrainingSessionModal', () => {
       await waitFor(() => {
         expect(mockCheckEligibility).toHaveBeenCalledWith({
           horseId: 1,
-          discipline: 'dressage',
+          discipline: 'Barrel Racing',
         });
       });
     });
@@ -334,7 +349,7 @@ describe('TrainingSessionModal', () => {
     it('calls runTraining when Start Training button is clicked', async () => {
       mockRunTraining.mockResolvedValue({
         success: true,
-        gains: { dressage: 5 },
+        gains: { Dressage: 5 },
       });
 
       render(
@@ -347,13 +362,13 @@ describe('TrainingSessionModal', () => {
       await waitFor(() => {
         expect(mockRunTraining).toHaveBeenCalledWith({
           horseId: 1,
-          discipline: 'dressage',
+          discipline: 'Barrel Racing',
         });
       });
     });
 
     it('calls onCompleted callback when training succeeds', async () => {
-      const trainingResult = { success: true, gains: { dressage: 5 } };
+      const trainingResult = { success: true, gains: { Dressage: 5 } };
       mockRunTraining.mockResolvedValue(trainingResult);
 
       render(
@@ -469,7 +484,7 @@ describe('TrainingSessionModal', () => {
 
       // Change discipline
       const select = screen.getByLabelText(/Discipline/i);
-      fireEvent.change(select, { target: { value: 'racing' } });
+      fireEvent.change(select, { target: { value: 'Racing' } });
 
       await waitFor(() => {
         expect(screen.queryByText('Network error')).not.toBeInTheDocument();
@@ -481,16 +496,16 @@ describe('TrainingSessionModal', () => {
     it('trains with selected discipline after changing it', async () => {
       mockRunTraining.mockResolvedValue({
         success: true,
-        gains: { racing: 10 },
+        gains: { Racing: 10 },
       });
 
       render(
         <TrainingSessionModal horse={mockHorse} onClose={mockOnClose} onCompleted={mockOnCompleted} />
       );
 
-      // Change discipline to racing
+      // Change discipline to Racing
       const select = screen.getByLabelText(/Discipline/i);
-      fireEvent.change(select, { target: { value: 'racing' } });
+      fireEvent.change(select, { target: { value: 'Racing' } });
 
       // Start training
       const trainButton = screen.getByRole('button', { name: /Start Training/i });
@@ -499,7 +514,7 @@ describe('TrainingSessionModal', () => {
       await waitFor(() => {
         expect(mockRunTraining).toHaveBeenCalledWith({
           horseId: 1,
-          discipline: 'racing',
+          discipline: 'Racing',
         });
       });
     });
