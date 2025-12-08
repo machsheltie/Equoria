@@ -42,7 +42,8 @@ export async function analyzeHorseTraitImpact(req, res) {
       });
     }
 
-    // Fetch horse with traits
+    // Horse ownership already validated by requireOwnership middleware
+    // Fetch full horse data with needed fields (ownership check already done by middleware)
     const horse = await prisma.horse.findUnique({
       where: { id: parseInt(horseId) },
       select: {
@@ -60,6 +61,7 @@ export async function analyzeHorseTraitImpact(req, res) {
     });
 
     if (!horse) {
+      logger.error(`[traitCompetitionController.analyzeHorseTraitImpact] Horse ${horseId} not found after middleware validation`);
       return res.status(404).json({
         success: false,
         message: 'Horse not found',
@@ -160,7 +162,8 @@ export async function compareTraitImpactAcrossDisciplines(req, res) {
       });
     }
 
-    // Fetch horse
+    // Horse ownership already validated by requireOwnership middleware
+    // Fetch full horse data with needed fields (ownership check already done by middleware)
     const horse = await prisma.horse.findUnique({
       where: { id: parseInt(horseId) },
       select: {
@@ -171,6 +174,7 @@ export async function compareTraitImpactAcrossDisciplines(req, res) {
     });
 
     if (!horse) {
+      logger.error(`[traitCompetitionController.compareTraitImpactAcrossDisciplines] Horse ${horseId} not found after middleware validation`);
       return res.status(404).json({
         success: false,
         message: 'Horse not found',

@@ -5,6 +5,7 @@
 
 import express from 'express';
 import { body, param, query, validationResult } from 'express-validator';
+import { requireOwnership } from '../middleware/ownership.mjs';
 import {
   discoverTraits,
   getHorseTraits,
@@ -121,6 +122,7 @@ router.post(
     body('checkEnrichment').optional().isBoolean().withMessage('checkEnrichment must be a boolean'),
     body('forceCheck').optional().isBoolean().withMessage('forceCheck must be a boolean'),
     handleValidationErrors,
+    requireOwnership('horse', { idParam: 'horseId' }),
   ],
   discoverTraits,
 );
@@ -187,6 +189,7 @@ router.get(
   [
     param('horseId').isInt({ min: 1 }).withMessage('Horse ID must be a positive integer'),
     handleValidationErrors,
+    requireOwnership('horse', { idParam: 'horseId' }),
   ],
   getHorseTraits,
 );
@@ -293,6 +296,7 @@ router.get(
   [
     param('horseId').isInt({ min: 1 }).withMessage('Horse ID must be a positive integer'),
     handleValidationErrors,
+    requireOwnership('horse', { idParam: 'horseId' }),
   ],
   getDiscoveryStatus,
 );
@@ -443,6 +447,7 @@ router.get(
       ])
       .withMessage('Invalid discipline'),
     handleValidationErrors,
+    requireOwnership('horse', { idParam: 'horseId' }),
   ],
   analyzeHorseTraitImpact,
 );
@@ -496,6 +501,7 @@ router.get(
   [
     param('horseId').isInt({ min: 1 }).withMessage('Horse ID must be a positive integer'),
     handleValidationErrors,
+    requireOwnership('horse', { idParam: 'horseId' }),
   ],
   compareTraitImpactAcrossDisciplines,
 );

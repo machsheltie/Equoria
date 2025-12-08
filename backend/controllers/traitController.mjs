@@ -8,6 +8,7 @@ import { getTraitDefinition, getTraitsByType } from '../utils/epigeneticTraits.m
 import { isFoalAge, FOAL_LIMITS } from '../constants/schema.mjs';
 import prisma from '../db/index.mjs';
 import logger from '../utils/logger.mjs';
+import { findOwnedResource } from '../middleware/ownership.mjs';
 
 /**
  * POST /api/traits/discover/:horseId
@@ -32,13 +33,12 @@ export async function discoverTraits(req, res) {
       `[traitController.discoverTraits] Triggering trait discovery for horse ${parsedHorseId}`,
     );
 
-    // Check if horse exists
-    const horse = await prisma.horse.findUnique({
-      where: { id: parsedHorseId },
-      select: { id: true, name: true, age: true },
-    });
+    // Horse ownership already validated by requireOwnership middleware
+    // Middleware attaches validated horse to req.validatedResources
+    const horse = req.validatedResources?.horse || null;
 
     if (!horse) {
+      logger.error(`[traitController.discoverTraits] Horse not found in validated resources for horse ${horseId}`);
       return res.status(404).json({
         success: false,
         message: `Horse with ID ${horseId} not found`,
@@ -128,20 +128,24 @@ export async function getHorseTraits(req, res) {
 
     logger.info(`[traitController.getHorseTraits] Getting traits for horse ${parsedHorseId}`);
 
-    // Get horse with traits
+    // Horse ownership already validated by requireOwnership middleware
+    // Fetch full horse data with needed fields (ownership check already done by middleware)
     const horse = await prisma.horse.findUnique({
       where: { id: parsedHorseId },
       select: {
         id: true,
         name: true,
         epigenetic_modifiers: true,
+        bondScore: true,
         bond_score: true,
+        stressLevel: true,
         stress_level: true,
         age: true,
       },
     });
 
     if (!horse) {
+      logger.error(`[traitController.getHorseTraits] Horse ${parsedHorseId} not found after middleware validation`);
       return res.status(404).json({
         success: false,
         message: 'Horse not found',
@@ -272,7 +276,8 @@ export async function getDiscoveryStatus(req, res) {
       `[traitController.getDiscoveryStatus] Getting discovery status for horse ${parsedHorseId}`,
     );
 
-    // Get horse data
+    // Horse ownership already validated by requireOwnership middleware
+    // Fetch full horse data with needed fields (ownership check already done by middleware)
     const horse = await prisma.horse.findUnique({
       where: { id: parsedHorseId },
       include: {
@@ -284,6 +289,7 @@ export async function getDiscoveryStatus(req, res) {
     });
 
     if (!horse) {
+      logger.error(`[traitController.getDiscoveryStatus] Horse ${parsedHorseId} not found after middleware validation`);
       return res.status(404).json({
         success: false,
         message: 'Horse not found',
@@ -344,6 +350,7 @@ export async function getDiscoveryStatus(req, res) {
 export async function batchDiscoverTraits(req, res) {
   try {
     const { horseIds, checkEnrichment = true } = req.body;
+    const userId = req.user?.id;
 
     // Validate input
     if (!Array.isArray(horseIds) || horseIds.length === 0) {
@@ -369,12 +376,19 @@ export async function batchDiscoverTraits(req, res) {
     const results = [];
     const errors = [];
 
-    // Process each horse
+    // Process each horse with ownership validation
     for (const horseId of horseIds) {
       try {
         const parsedHorseId = parseInt(horseId, 10);
         if (isNaN(parsedHorseId) || parsedHorseId <= 0) {
           errors.push({ horseId, error: 'Invalid horse ID' });
+          continue;
+        }
+
+        // Validate horse ownership atomically (single-query validation)
+        const horse = await findOwnedResource('horse', parsedHorseId, userId);
+        if (!horse) {
+          errors.push({ horseId: parsedHorseId, error: 'Horse not found or not owned by user' });
           continue;
         }
 
