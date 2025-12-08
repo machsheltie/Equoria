@@ -28,9 +28,17 @@ import {
   Users,
   AlertCircle,
   Loader2,
+  Filter,
+  ChevronDown,
 } from 'lucide-react';
 import FantasyButton from '../components/FantasyButton';
 import HorseCard from '../components/HorseCard';
+import TraitCard from '../components/TraitCard';
+import {
+  useHorseEpigeneticInsights,
+  useHorseTraitInteractions,
+  useHorseTraitTimeline,
+} from '../hooks/useHorseGenetics';
 
 // Types
 interface HorseStats {
@@ -408,59 +416,295 @@ const DisciplinesTab: React.FC<{ horse: Horse }> = ({ horse }) => {
   );
 };
 
-// Genetics Tab Component
-const GeneticsTab: React.FC<{ horse: Horse }> = ({ horse }) => (
-  <div className="space-y-6">
-    <div>
-      <h3 className="fantasy-title text-xl text-midnight-ink mb-3">Genetic Information</h3>
-      <p className="fantasy-body text-aged-bronze mb-6">
-        Detailed genetic analysis and traits will be displayed here.
-      </p>
+// Genetics Tab Component (Enhanced with TraitCard, filtering, and sorting)
+const GeneticsTab: React.FC<{ horse: Horse }> = ({ horse }) => {
+  // Fetch genetics data using hooks
+  const {
+    data: epigeneticData,
+    isLoading: epigeneticLoading,
+    error: epigeneticError,
+  } = useHorseEpigeneticInsights(horse.id);
 
-      {horse.traits && horse.traits.length > 0 && (
+  const {
+    data: interactionsData,
+    isLoading: interactionsLoading,
+    error: interactionsError,
+  } = useHorseTraitInteractions(horse.id);
+
+  const {
+    data: timelineData,
+    isLoading: timelineLoading,
+    error: timelineError,
+  } = useHorseTraitTimeline(horse.id);
+
+  // Filter and sort state
+  const [filterType, setFilterType] = useState<'all' | 'genetic' | 'epigenetic'>('all');
+  const [filterRarity, setFilterRarity] = useState<
+    'all' | 'common' | 'rare' | 'legendary'
+  >('all');
+  const [filterSource, setFilterSource] = useState<
+    'all' | 'sire' | 'dam' | 'mutation'
+  >('all');
+  const [sortBy, setSortBy] = useState<
+    'name' | 'rarity' | 'strength' | 'discoveryDate'
+  >('name');
+
+  // Filter and sort functions
+  const getFilteredAndSortedTraits = () => {
+    if (!epigeneticData?.traits) return [];
+
+    let filtered = [...epigeneticData.traits];
+
+    // Apply filters
+    if (filterType !== 'all') {
+      filtered = filtered.filter((trait) => trait.type === filterType);
+    }
+    if (filterRarity !== 'all') {
+      filtered = filtered.filter((trait) => trait.rarity === filterRarity);
+    }
+    if (filterSource !== 'all') {
+      filtered = filtered.filter((trait) => trait.source === filterSource);
+    }
+
+    // Apply sorting
+    filtered.sort((a, b) => {
+      switch (sortBy) {
+        case 'name':
+          return a.name.localeCompare(b.name);
+        case 'rarity': {
+          const rarityOrder = { common: 0, rare: 1, legendary: 2 };
+          return rarityOrder[b.rarity] - rarityOrder[a.rarity];
+        }
+        case 'strength':
+          return b.strength - a.strength;
+        case 'discoveryDate':
+          if (!a.discoveryDate || !b.discoveryDate) return 0;
+          return (
+            new Date(b.discoveryDate).getTime() - new Date(a.discoveryDate).getTime()
+          );
+        default:
+          return 0;
+      }
+    });
+
+    return filtered;
+  };
+
+  const filteredTraits = getFilteredAndSortedTraits();
+
+  // Separate traits by type for section display
+  const geneticTraits = filteredTraits.filter((t) => t.type === 'genetic');
+  const epigeneticTraits = filteredTraits.filter((t) => t.type === 'epigenetic');
+
+  // Loading state
+  if (epigeneticLoading || interactionsLoading || timelineLoading) {
+    return (
+      <div className="flex items-center justify-center py-12">
+        <Loader2 className="w-8 h-8 animate-spin text-burnished-gold" />
+        <span className="ml-3 text-aged-bronze">Loading genetics data...</span>
+      </div>
+    );
+  }
+
+  // Error state
+  if (epigeneticError || interactionsError || timelineError) {
+    return (
+      <div className="p-6 bg-red-50 border border-red-200 rounded-lg">
+        <div className="flex items-center text-red-700 mb-2">
+          <AlertCircle className="w-5 h-5 mr-2" />
+          <h4 className="font-semibold">Error Loading Genetics Data</h4>
+        </div>
+        <p className="text-red-600 text-sm">
+          {epigeneticError?.message ||
+            interactionsError?.message ||
+            timelineError?.message}
+        </p>
+      </div>
+    );
+  }
+
+  return (
+    <div className="space-y-6">
+      {/* Filters and Sorting */}
+      <div className="bg-parchment/30 p-4 rounded-lg border border-aged-bronze">
+        <div className="flex items-center mb-4">
+          <Filter className="w-5 h-5 text-aged-bronze mr-2" />
+          <h4 className="font-semibold text-midnight-ink">Filters & Sorting</h4>
+        </div>
+
+        <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
+          {/* Type Filter */}
+          <div>
+            <label className="block text-sm text-aged-bronze mb-2">Type</label>
+            <select
+              value={filterType}
+              onChange={(e) =>
+                setFilterType(e.target.value as 'all' | 'genetic' | 'epigenetic')
+              }
+              className="w-full p-2 bg-parchment border border-aged-bronze rounded text-midnight-ink"
+            >
+              <option value="all">All Types</option>
+              <option value="genetic">Genetic</option>
+              <option value="epigenetic">Epigenetic</option>
+            </select>
+          </div>
+
+          {/* Rarity Filter */}
+          <div>
+            <label className="block text-sm text-aged-bronze mb-2">Rarity</label>
+            <select
+              value={filterRarity}
+              onChange={(e) =>
+                setFilterRarity(
+                  e.target.value as 'all' | 'common' | 'rare' | 'legendary'
+                )
+              }
+              className="w-full p-2 bg-parchment border border-aged-bronze rounded text-midnight-ink"
+            >
+              <option value="all">All Rarities</option>
+              <option value="common">Common</option>
+              <option value="rare">Rare</option>
+              <option value="legendary">Legendary</option>
+            </select>
+          </div>
+
+          {/* Source Filter */}
+          <div>
+            <label className="block text-sm text-aged-bronze mb-2">Source</label>
+            <select
+              value={filterSource}
+              onChange={(e) =>
+                setFilterSource(e.target.value as 'all' | 'sire' | 'dam' | 'mutation')
+              }
+              className="w-full p-2 bg-parchment border border-aged-bronze rounded text-midnight-ink"
+            >
+              <option value="all">All Sources</option>
+              <option value="sire">From Sire</option>
+              <option value="dam">From Dam</option>
+              <option value="mutation">Mutation</option>
+            </select>
+          </div>
+
+          {/* Sort By */}
+          <div>
+            <label className="block text-sm text-aged-bronze mb-2">Sort By</label>
+            <select
+              value={sortBy}
+              onChange={(e) =>
+                setSortBy(
+                  e.target.value as 'name' | 'rarity' | 'strength' | 'discoveryDate'
+                )
+              }
+              className="w-full p-2 bg-parchment border border-aged-bronze rounded text-midnight-ink"
+            >
+              <option value="name">Name (A-Z)</option>
+              <option value="rarity">Rarity (High to Low)</option>
+              <option value="strength">Strength (High to Low)</option>
+              <option value="discoveryDate">Discovery Date (Recent First)</option>
+            </select>
+          </div>
+        </div>
+      </div>
+
+      {/* Genetic Traits Section */}
+      {geneticTraits.length > 0 && (
         <div>
-          <h4 className="fantasy-body text-midnight-ink mb-3">Inherited Traits</h4>
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
-            {horse.traits.map((trait, index) => (
+          <h3 className="fantasy-title text-xl text-midnight-ink mb-4">
+            Genetic Traits ({geneticTraits.length})
+          </h3>
+          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+            {geneticTraits.map((trait) => (
+              <TraitCard key={`${trait.name}-${trait.type}`} trait={trait} />
+            ))}
+          </div>
+        </div>
+      )}
+
+      {/* Epigenetic Traits Section */}
+      {epigeneticTraits.length > 0 && (
+        <div>
+          <h3 className="fantasy-title text-xl text-midnight-ink mb-4">
+            Epigenetic Traits ({epigeneticTraits.length})
+          </h3>
+          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+            {epigeneticTraits.map((trait) => (
+              <TraitCard key={`${trait.name}-${trait.type}`} trait={trait} />
+            ))}
+          </div>
+        </div>
+      )}
+
+      {/* Trait Interactions Section */}
+      {interactionsData?.interactions && interactionsData.interactions.length > 0 && (
+        <div>
+          <h3 className="fantasy-title text-xl text-midnight-ink mb-4">
+            Trait Interactions ({interactionsData.interactions.length})
+          </h3>
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+            {interactionsData.interactions.map((interaction, index) => (
               <div
                 key={index}
-                className="p-4 bg-parchment/50 rounded border border-burnished-gold"
+                className="p-4 bg-parchment/50 rounded-lg border-2 border-purple-300"
               >
-                <p className="fantasy-body text-midnight-ink">{trait}</p>
+                <div className="flex items-center justify-between mb-2">
+                  <span className="text-sm font-semibold text-purple-700">
+                    {interaction.trait1} + {interaction.trait2}
+                  </span>
+                  <span
+                    className={`text-xs px-2 py-1 rounded-full ${
+                      interaction.strength >= 75
+                        ? 'bg-green-100 text-green-700'
+                        : interaction.strength >= 50
+                        ? 'bg-yellow-100 text-yellow-700'
+                        : 'bg-gray-100 text-gray-700'
+                    }`}
+                  >
+                    Strength: {interaction.strength}
+                  </span>
+                </div>
+                <p className="text-sm text-midnight-ink">{interaction.effect}</p>
               </div>
             ))}
           </div>
         </div>
       )}
-    </div>
 
-    {horse.parentIds && (
-      <div>
-        <h4 className="fantasy-body text-midnight-ink mb-3">Lineage</h4>
-        <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-          {horse.parentIds.sireId && (
-            <button
-              onClick={() => (window.location.href = `/horses/${horse.parentIds.sireId}`)}
-              className="p-4 bg-parchment/50 rounded border border-aged-bronze hover:border-burnished-gold transition-colors text-left"
-            >
-              <p className="fantasy-caption text-aged-bronze mb-1">Sire</p>
-              <p className="fantasy-body text-midnight-ink">View Sire Details →</p>
-            </button>
-          )}
-          {horse.parentIds.damId && (
-            <button
-              onClick={() => (window.location.href = `/horses/${horse.parentIds.damId}`)}
-              className="p-4 bg-parchment/50 rounded border border-aged-bronze hover:border-burnished-gold transition-colors text-left"
-            >
-              <p className="fantasy-caption text-aged-bronze mb-1">Dam</p>
-              <p className="fantasy-body text-midnight-ink">View Dam Details →</p>
-            </button>
-          )}
+      {/* No Traits Message */}
+      {filteredTraits.length === 0 && (
+        <div className="text-center py-8 text-aged-bronze">
+          <p>No traits match the current filters.</p>
         </div>
-      </div>
-    )}
-  </div>
-);
+      )}
+
+      {/* Lineage Section (Preserved from original) */}
+      {horse.parentIds && (
+        <div>
+          <h3 className="fantasy-title text-xl text-midnight-ink mb-4">Lineage</h3>
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+            {horse.parentIds.sireId && (
+              <button
+                onClick={() => (window.location.href = `/horses/${horse.parentIds.sireId}`)}
+                className="p-4 bg-parchment/50 rounded border border-aged-bronze hover:border-burnished-gold transition-colors text-left"
+              >
+                <p className="fantasy-caption text-aged-bronze mb-1">Sire</p>
+                <p className="fantasy-body text-midnight-ink">View Sire Details →</p>
+              </button>
+            )}
+            {horse.parentIds.damId && (
+              <button
+                onClick={() => (window.location.href = `/horses/${horse.parentIds.damId}`)}
+                className="p-4 bg-parchment/50 rounded border border-aged-bronze hover:border-burnished-gold transition-colors text-left"
+              >
+                <p className="fantasy-caption text-aged-bronze mb-1">Dam</p>
+                <p className="fantasy-body text-midnight-ink">View Dam Details →</p>
+              </button>
+            )}
+          </div>
+        </div>
+      )}
+    </div>
+  );
+};
 
 // Placeholder Tab Component
 const PlaceholderTab: React.FC<{ title: string }> = ({ title }) => (
