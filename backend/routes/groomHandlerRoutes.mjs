@@ -6,6 +6,7 @@
 import express from 'express';
 import { param, query, validationResult } from 'express-validator';
 import { authenticateToken } from '../middleware/auth.mjs';
+import { requireOwnership } from '../middleware/ownership.mjs';
 import logger from '../utils/logger.mjs';
 import prisma from '../db/index.mjs';
 import {
@@ -44,6 +45,8 @@ router.use(authenticateToken);
 /**
  * GET /api/groom-handlers/horse/:horseId
  * Get the assigned handler for a horse
+ *
+ * Security: Validates horse ownership before returning handler information
  */
 router.get(
   '/horse/:horseId',
@@ -53,12 +56,15 @@ router.get(
       .withMessage('Horse ID must be a positive integer'),
   ],
   handleValidationErrors,
+  requireOwnership('horse', { idParam: 'horseId' }),
   getHorseHandler,
 );
 
 /**
  * GET /api/groom-handlers/eligibility/:horseId/:className
  * Check handler eligibility for a specific conformation class
+ *
+ * Security: Validates horse ownership before checking eligibility
  */
 router.get(
   '/eligibility/:horseId/:className',
@@ -72,6 +78,7 @@ router.get(
       .withMessage('Class name must be a valid string'),
   ],
   handleValidationErrors,
+  requireOwnership('horse', { idParam: 'horseId' }),
   checkHandlerEligibility,
 );
 
@@ -84,6 +91,8 @@ router.get('/config', getHandlerConfig);
 /**
  * GET /api/groom-handlers/recommendations/:horseId
  * Get handler recommendations for a horse in conformation shows
+ *
+ * Security: Validates horse ownership before providing recommendations
  */
 router.get(
   '/recommendations/:horseId',
@@ -98,6 +107,7 @@ router.get(
       .withMessage('Class name must be a valid string'),
   ],
   handleValidationErrors,
+  requireOwnership('horse', { idParam: 'horseId' }),
   getHandlerRecommendations,
 );
 

@@ -6,6 +6,7 @@
 
 import prisma from '../db/index.mjs';
 import logger from '../utils/logger.mjs';
+import { findOwnedResource } from '../middleware/ownership.mjs';
 import {
   recordGroomPerformance,
   getGroomPerformanceSummary,
@@ -33,39 +34,23 @@ export async function recordPerformance(req, res) {
 
     logger.info(`[groomPerformanceController] Recording performance for groom ${groomId}`);
 
-    // Validate groom ownership
-    const groom = await prisma.groom.findUnique({
-      where: { id: parseInt(groomId) },
-      select: { id: true, name: true, userId: true },
-    });
-
+    // Validate groom ownership (atomic single-query validation)
+    const groom = await findOwnedResource('groom', parseInt(groomId), userId);
     if (!groom) {
       return res.status(404).json({
         success: false,
-        message: 'Groom not found',
+        message: 'Groom not found or not owned by user',
         data: null,
       });
     }
 
-    if (groom.userId !== userId) {
-      return res.status(403).json({
-        success: false,
-        message: 'You do not own this groom',
-        data: null,
-      });
-    }
-
-    // Validate horse ownership if provided
+    // Validate horse ownership if provided (atomic single-query validation)
     if (horseId) {
-      const horse = await prisma.horse.findUnique({
-        where: { id: parseInt(horseId) },
-        select: { id: true, ownerId: true },
-      });
-
-      if (!horse || horse.ownerId !== userId) {
-        return res.status(403).json({
+      const horse = await findOwnedResource('horse', parseInt(horseId), userId);
+      if (!horse) {
+        return res.status(404).json({
           success: false,
-          message: 'You do not own this horse',
+          message: 'Horse not found or not owned by user',
           data: null,
         });
       }

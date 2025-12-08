@@ -6,6 +6,7 @@
 import express from 'express';
 import { body, param, validationResult } from 'express-validator';
 import { authenticateToken } from '../middleware/auth.mjs';
+import { requireOwnership } from '../middleware/ownership.mjs';
 import logger from '../utils/logger.mjs';
 import {
   getEnhancedInteractions,
@@ -37,6 +38,8 @@ router.use(authenticateToken);
 /**
  * GET /api/grooms/enhanced/interactions/:groomId/:horseId
  * Get available enhanced interactions for a specific groom-horse pair
+ *
+ * Security: Validates both groom and horse ownership before returning interactions
  */
 router.get(
   '/interactions/:groomId/:horseId',
@@ -49,12 +52,16 @@ router.get(
       .withMessage('Horse ID must be a positive integer'),
   ],
   handleValidationErrors,
+  requireOwnership('groom', { idParam: 'groomId' }),
+  requireOwnership('horse', { idParam: 'horseId' }),
   getEnhancedInteractions,
 );
 
 /**
  * POST /api/grooms/enhanced/interact
  * Perform an enhanced interaction between groom and horse
+ *
+ * Security: Controller uses atomic validation to verify both groom and horse ownership
  */
 router.post(
   '/interact',
@@ -89,6 +96,8 @@ router.post(
 /**
  * GET /api/grooms/enhanced/relationship/:groomId/:horseId
  * Get detailed relationship information between groom and horse
+ *
+ * Security: Validates both groom and horse ownership before returning relationship data
  */
 router.get(
   '/relationship/:groomId/:horseId',
@@ -101,6 +110,8 @@ router.get(
       .withMessage('Horse ID must be a positive integer'),
   ],
   handleValidationErrors,
+  requireOwnership('groom', { idParam: 'groomId' }),
+  requireOwnership('horse', { idParam: 'horseId' }),
   getRelationshipDetails,
 );
 

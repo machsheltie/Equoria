@@ -5,6 +5,7 @@
 
 import prisma from '../db/index.mjs';
 import logger from '../utils/logger.mjs';
+import { findOwnedResource } from '../middleware/ownership.mjs';
 import {
   calculateEnhancedEffects,
   getAvailableInteractions,
@@ -32,7 +33,8 @@ export async function getEnhancedInteractions(req, res) {
       });
     }
 
-    // Get groom and horse data
+    // Use validated resources from middleware (ownership already verified by requireOwnership middleware)
+    // Fetch full groom and horse data with all needed fields
     const [groom, horse] = await Promise.all([
       prisma.groom.findUnique({
         where: { id: parseInt(groomId) },
@@ -43,7 +45,6 @@ export async function getEnhancedInteractions(req, res) {
           skillLevel: true,
           personality: true,
           sessionRate: true,
-          userId: true,
         },
       }),
       prisma.horse.findUnique({
@@ -54,27 +55,12 @@ export async function getEnhancedInteractions(req, res) {
           dateOfBirth: true,
           bondScore: true,
           stressLevel: true,
-          ownerId: true,
         },
       }),
     ]);
 
-    // Validate ownership
-    if (!groom || groom.userId !== userId) {
-      return res.status(404).json({
-        success: false,
-        message: 'Groom not found or not owned by user',
-        data: null,
-      });
-    }
-
-    if (!horse || horse.ownerId !== userId) {
-      return res.status(404).json({
-        success: false,
-        message: 'Horse not found or not owned by user',
-        data: null,
-      });
-    }
+    // Resources are guaranteed to exist and be owned by user due to middleware validation
+    // No additional checks needed
 
     // Calculate age from date of birth
     const ageInDays = Math.floor((Date.now() - new Date(horse.dateOfBirth).getTime()) / (1000 * 60 * 60 * 24));
@@ -207,24 +193,9 @@ export async function performEnhancedInteraction(req, res) {
       });
     }
 
-    // Get groom and horse data
-    const [groom, horse] = await Promise.all([
-      prisma.groom.findUnique({ where: { id: parseInt(groomId) } }),
-      prisma.horse.findUnique({
-        where: { id: parseInt(horseId) },
-        select: {
-          id: true,
-          name: true,
-          dateOfBirth: true,
-          bondScore: true,
-          stressLevel: true,
-          ownerId: true,
-        },
-      }),
-    ]);
-
-    // Validate ownership
-    if (!groom || groom.userId !== userId) {
+    // Validate groom ownership (atomic single-query validation)
+    const groom = await findOwnedResource('groom', parseInt(groomId), userId);
+    if (!groom) {
       return res.status(404).json({
         success: false,
         message: 'Groom not found or not owned by user',
@@ -232,7 +203,22 @@ export async function performEnhancedInteraction(req, res) {
       });
     }
 
-    if (!horse || horse.ownerId !== userId) {
+    // Validate horse ownership and fetch needed fields (atomic single-query validation)
+    const horse = await prisma.horse.findFirst({
+      where: {
+        id: parseInt(horseId),
+        ownerId: userId,
+      },
+      select: {
+        id: true,
+        name: true,
+        dateOfBirth: true,
+        bondScore: true,
+        stressLevel: true,
+      },
+    });
+
+    if (!horse) {
       return res.status(404).json({
         success: false,
         message: 'Horse not found or not owned by user',

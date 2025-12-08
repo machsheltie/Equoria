@@ -7,6 +7,7 @@
 import express from 'express';
 import { body, param, query } from 'express-validator';
 import { authenticateToken } from '../middleware/auth.mjs';
+import { requireOwnership, findOwnedResource } from '../middleware/ownership.mjs';
 import { handleValidationErrors } from '../middleware/validationErrorHandler.mjs';
 import {
   recordPerformance,
@@ -67,6 +68,8 @@ router.post(
 /**
  * GET /api/groom-performance/groom/:groomId
  * Get performance summary for a specific groom
+ *
+ * Security: Validates groom ownership before returning performance data
  */
 router.get(
   '/groom/:groomId',
@@ -76,12 +79,15 @@ router.get(
       .withMessage('Groom ID must be a positive integer'),
   ],
   handleValidationErrors,
+  requireOwnership('groom', { idParam: 'groomId' }),
   getGroomPerformance,
 );
 
 /**
  * GET /api/groom-performance/analytics/:groomId
  * Get detailed analytics for a specific groom
+ *
+ * Security: Validates groom ownership before returning analytics data
  */
 router.get(
   '/analytics/:groomId',
@@ -95,6 +101,7 @@ router.get(
       .withMessage('Days must be between 1 and 365'),
   ],
   handleValidationErrors,
+  requireOwnership('groom', { idParam: 'groomId' }),
   getGroomAnalytics,
 );
 

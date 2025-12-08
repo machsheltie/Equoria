@@ -7,6 +7,7 @@
 import express from 'express';
 import { param, query } from 'express-validator';
 import { authenticateToken } from '../middleware/auth.mjs';
+import { requireOwnership } from '../middleware/ownership.mjs';
 import { handleValidationErrors } from '../middleware/validationErrorHandler.mjs';
 import {
   getUserSalaryCost,
@@ -53,6 +54,8 @@ router.get(
 /**
  * GET /api/groom-salaries/groom/:groomId/salary
  * Get weekly salary for a specific groom
+ *
+ * Security: Validates groom ownership before returning salary information
  */
 router.get(
   '/groom/:groomId/salary',
@@ -62,6 +65,7 @@ router.get(
       .withMessage('Groom ID must be a positive integer'),
   ],
   handleValidationErrors,
+  requireOwnership('groom', { idParam: 'groomId' }),
   getGroomSalary,
 );
 
