@@ -8,6 +8,7 @@ import {
 } from '../models/foalModel.mjs';
 import { enrichmentDiscoveryMiddleware } from '../middleware/traitDiscoveryMiddleware.mjs';
 import { ensureDefaultGroomAssignment } from '../utils/groomSystem.mjs';
+import { requireOwnership } from '../middleware/ownership.mjs';
 import logger from '../utils/logger.mjs';
 
 const router = express.Router();
@@ -15,10 +16,13 @@ const router = express.Router();
 /**
  * GET /api/foals/:foalId/development
  * Get foal development data including current status and activity history
+ *
+ * Security: Validates foal ownership before returning development data
  */
 router.get(
   '/:foalId/development',
   [param('foalId').isInt({ min: 1 }).withMessage('Foal ID must be a positive integer')],
+  requireOwnership('foal', { idParam: 'foalId' }),
   async (req, res) => {
     try {
       // Check for validation errors
@@ -71,6 +75,8 @@ router.get(
 /**
  * POST /api/foals/:foalId/activity
  * Complete a foal enrichment activity
+ *
+ * Security: Validates foal ownership before allowing activity completion
  */
 router.post(
   '/:foalId/activity',
@@ -82,6 +88,7 @@ router.post(
       .isString()
       .withMessage('Activity type must be a string'),
   ],
+  requireOwnership('foal', { idParam: 'foalId' }),
   async (req, res) => {
     try {
       // Check for validation errors
@@ -134,10 +141,13 @@ router.post(
 /**
  * POST /api/foals/:foalId/advance-day
  * Advance foal to next day (admin/cron endpoint)
+ *
+ * Security: Validates foal ownership before advancing day
  */
 router.post(
   '/:foalId/advance-day',
   [param('foalId').isInt({ min: 1 }).withMessage('Foal ID must be a positive integer')],
+  requireOwnership('foal', { idParam: 'foalId' }),
   async (req, res) => {
     try {
       // Check for validation errors
@@ -188,6 +198,8 @@ router.post(
 /**
  * POST /api/foals/:foalId/enrichment
  * Complete a foal enrichment activity (Task 5 API)
+ *
+ * Security: Validates foal ownership before enrichment activity
  */
 router.post(
   '/:foalId/enrichment',
@@ -202,6 +214,7 @@ router.post(
       .isLength({ min: 1, max: 100 })
       .withMessage('Activity must be between 1 and 100 characters'),
   ],
+  requireOwnership('foal', { idParam: 'foalId' }),
   enrichmentDiscoveryMiddleware(),
   async (req, res) => {
     try {
