@@ -17,6 +17,7 @@ import express from 'express';
 import { body, param, query } from 'express-validator';
 import { handleValidationErrors } from '../middleware/validationErrorHandler.mjs';
 import { authenticateToken } from '../middleware/auth.mjs';
+import { requireOwnership } from '../middleware/ownership.mjs';
 import {
   calculateCompatibility,
   getCompatibilityFactors,
@@ -89,6 +90,8 @@ router.get(
       .withMessage('Horse ID must be a positive integer'),
   ],
   handleValidationErrors,
+  requireOwnership('groom', { idParam: 'groomId' }),
+  requireOwnership('horse', { idParam: 'horseId' }),
   getCompatibilityFactors,
 );
 
@@ -180,6 +183,8 @@ router.get(
       .withMessage('Days must be between 1 and 365'),
   ],
   handleValidationErrors,
+  requireOwnership('groom', { idParam: 'groomId' }),
+  requireOwnership('horse', { idParam: 'horseId' }),
   getCompatibilityTrends,
 );
 

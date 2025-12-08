@@ -14,6 +14,7 @@
  */
 
 import logger from '../utils/logger.mjs';
+import { findOwnedResource } from '../middleware/ownership.mjs';
 import {
   calculateDynamicCompatibility,
   analyzeCompatibilityFactors,
@@ -30,6 +31,7 @@ import {
 export async function calculateCompatibility(req, res) {
   try {
     const { groomId, horseId, context } = req.body;
+    const userId = req.user.id;
 
     logger.info(`[dynamicCompatibilityController.calculateCompatibility] Calculating compatibility for groom ${groomId} and horse ${horseId}`);
 
@@ -38,6 +40,24 @@ export async function calculateCompatibility(req, res) {
       return res.status(400).json({
         success: false,
         message: 'Missing required fields: groomId, horseId, and context are required',
+      });
+    }
+
+    // Validate groom ownership (atomic)
+    const groom = await findOwnedResource('groom', parseInt(groomId), userId);
+    if (!groom) {
+      return res.status(404).json({
+        success: false,
+        message: 'Groom not found or you do not own this groom',
+      });
+    }
+
+    // Validate horse ownership (atomic)
+    const horse = await findOwnedResource('horse', parseInt(horseId), userId);
+    if (!horse) {
+      return res.status(404).json({
+        success: false,
+        message: 'Horse not found or you do not own this horse',
       });
     }
 
@@ -99,6 +119,7 @@ export async function getCompatibilityFactors(req, res) {
 export async function predictOutcome(req, res) {
   try {
     const { groomId, horseId, context } = req.body;
+    const userId = req.user.id;
 
     logger.info(`[dynamicCompatibilityController.predictOutcome] Predicting outcome for groom ${groomId} and horse ${horseId}`);
 
@@ -107,6 +128,24 @@ export async function predictOutcome(req, res) {
       return res.status(400).json({
         success: false,
         message: 'Missing required fields: groomId, horseId, and context are required',
+      });
+    }
+
+    // Validate groom ownership (atomic)
+    const groom = await findOwnedResource('groom', parseInt(groomId), userId);
+    if (!groom) {
+      return res.status(404).json({
+        success: false,
+        message: 'Groom not found or you do not own this groom',
+      });
+    }
+
+    // Validate horse ownership (atomic)
+    const horse = await findOwnedResource('horse', parseInt(horseId), userId);
+    if (!horse) {
+      return res.status(404).json({
+        success: false,
+        message: 'Horse not found or you do not own this horse',
       });
     }
 
@@ -137,6 +176,7 @@ export async function predictOutcome(req, res) {
 export async function getRecommendations(req, res) {
   try {
     const { horseId, context } = req.body;
+    const userId = req.user.id;
 
     logger.info(`[dynamicCompatibilityController.getRecommendations] Getting recommendations for horse ${horseId}`);
 
@@ -145,6 +185,15 @@ export async function getRecommendations(req, res) {
       return res.status(400).json({
         success: false,
         message: 'Missing required fields: horseId and context are required',
+      });
+    }
+
+    // Validate horse ownership (atomic)
+    const horse = await findOwnedResource('horse', parseInt(horseId), userId);
+    if (!horse) {
+      return res.status(404).json({
+        success: false,
+        message: 'Horse not found or you do not own this horse',
       });
     }
 
@@ -205,6 +254,7 @@ export async function getCompatibilityTrends(req, res) {
 export async function updateHistory(req, res) {
   try {
     const { groomId, horseId, interactionId } = req.body;
+    const userId = req.user.id;
 
     logger.info(`[dynamicCompatibilityController.updateHistory] Updating history for groom ${groomId}, horse ${horseId}, interaction ${interactionId}`);
 
@@ -215,6 +265,27 @@ export async function updateHistory(req, res) {
         message: 'Missing required fields: groomId, horseId, and interactionId are required',
       });
     }
+
+    // Validate groom ownership (atomic)
+    const groom = await findOwnedResource('groom', parseInt(groomId), userId);
+    if (!groom) {
+      return res.status(404).json({
+        success: false,
+        message: 'Groom not found or you do not own this groom',
+      });
+    }
+
+    // Validate horse ownership (atomic)
+    const horse = await findOwnedResource('horse', parseInt(horseId), userId);
+    if (!horse) {
+      return res.status(404).json({
+        success: false,
+        message: 'Horse not found or you do not own this horse',
+      });
+    }
+
+    // Note: interactionId validation depends on service implementation
+    // The service should verify interaction belongs to this groom-horse pair
 
     const result = await updateCompatibilityHistory(groomId, horseId, interactionId);
 
