@@ -6,6 +6,7 @@
 import express from 'express';
 import { body, param, query, validationResult } from 'express-validator';
 import { authenticateToken } from '../middleware/auth.mjs';
+import { requireOwnership } from '../middleware/ownership.mjs';
 import logger from '../utils/logger.mjs';
 import prisma from '../db/index.mjs';
 import {
@@ -73,6 +74,8 @@ router.post(
 /**
  * DELETE /api/groom-assignments/:assignmentId
  * Remove a groom assignment
+ *
+ * Security: Validates assignment ownership before removal
  */
 router.delete(
   '/:assignmentId',
@@ -87,6 +90,7 @@ router.delete(
       .withMessage('Reason must be a string (max 200 characters)'),
   ],
   handleValidationErrors,
+  requireOwnership('groom-assignment', { idParam: 'assignmentId' }),
   removeGroomAssignment,
 );
 
@@ -117,6 +121,8 @@ router.get(
 /**
  * GET /api/groom-assignments/groom/:groomId/limits
  * Get assignment limits for a specific groom
+ *
+ * Security: Validates groom ownership before returning limits
  */
 router.get(
   '/groom/:groomId/limits',
@@ -126,6 +132,7 @@ router.get(
       .withMessage('Groom ID must be a positive integer'),
   ],
   handleValidationErrors,
+  requireOwnership('groom', { idParam: 'groomId' }),
   getGroomLimits,
 );
 
