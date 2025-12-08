@@ -6,6 +6,7 @@
 import express from 'express';
 import { body, param, validationResult } from 'express-validator';
 import { authenticateToken } from '../middleware/auth.mjs';
+import { requireOwnership } from '../middleware/ownership.mjs';
 // TODO: Add query validation when needed for filtering/pagination
 // import { query } from 'express-validator';
 import {
@@ -449,7 +450,12 @@ router.get('/definitions', getGroomDefinitions);
  *       500:
  *         description: Internal server error
  */
-router.get('/:id/profile', param('id').isInt().withMessage('Groom ID must be an integer'), getGroomProfile);
+router.get(
+  '/:id/profile',
+  param('id').isInt().withMessage('Groom ID must be an integer'),
+  requireOwnership('groom'),
+  getGroomProfile
+);
 
 /**
  * @swagger
@@ -472,10 +478,11 @@ router.get('/:id/profile', param('id').isInt().withMessage('Groom ID must be an 
  *       500:
  *         description: Internal server error
  */
-router.get('/:id/bonus-traits',
-  authenticateToken,
+router.get(
+  '/:id/bonus-traits',
   param('id').isInt().withMessage('Groom ID must be an integer'),
-  getGroomBonusTraits,
+  requireOwnership('groom'),
+  getGroomBonusTraits
 );
 
 /**
@@ -511,11 +518,12 @@ router.get('/:id/bonus-traits',
  *       500:
  *         description: Internal server error
  */
-router.put('/:id/bonus-traits',
-  authenticateToken,
+router.put(
+  '/:id/bonus-traits',
   param('id').isInt().withMessage('Groom ID must be an integer'),
   body('bonusTraits').isObject().withMessage('Bonus traits must be an object'),
-  updateGroomBonusTraits,
+  requireOwnership('groom'),
+  updateGroomBonusTraits
 );
 
 // Test cleanup endpoint (for testing only)
@@ -546,10 +554,11 @@ router.delete('/test/cleanup', cleanupTestData);
  *       500:
  *         description: Internal server error
  */
-router.get('/:id/retirement/eligibility',
-  authenticateToken,
+router.get(
+  '/:id/retirement/eligibility',
   param('id').isInt().withMessage('Groom ID must be an integer'),
   handleValidationErrors,
+  requireOwnership('groom'),
   async (req, res) => {
     try {
       const groomId = parseInt(req.params.id);
@@ -567,7 +576,7 @@ router.get('/:id/retirement/eligibility',
         error: error.message,
       });
     }
-  },
+  }
 );
 
 /**
@@ -608,12 +617,13 @@ router.get('/:id/retirement/eligibility',
  *       500:
  *         description: Internal server error
  */
-router.post('/:id/retirement/process',
-  authenticateToken,
+router.post(
+  '/:id/retirement/process',
   param('id').isInt().withMessage('Groom ID must be an integer'),
   body('reason').optional().isString().withMessage('Reason must be a string'),
   body('force').optional().isBoolean().withMessage('Force must be a boolean'),
   handleValidationErrors,
+  requireOwnership('groom'),
   async (req, res) => {
     try {
       const groomId = parseInt(req.params.id);
@@ -633,7 +643,7 @@ router.post('/:id/retirement/process',
         message: error.message,
       });
     }
-  },
+  }
 );
 
 /**
@@ -733,10 +743,11 @@ router.get('/retirement/statistics',
  *       500:
  *         description: Internal server error
  */
-router.get('/:id/legacy/eligibility',
-  authenticateToken,
+router.get(
+  '/:id/legacy/eligibility',
   param('id').isInt().withMessage('Groom ID must be an integer'),
   handleValidationErrors,
+  requireOwnership('groom'),
   async (req, res) => {
     try {
       const groomId = parseInt(req.params.id);
@@ -754,7 +765,7 @@ router.get('/:id/legacy/eligibility',
         error: error.message,
       });
     }
-  },
+  }
 );
 
 /**
@@ -816,8 +827,8 @@ router.get('/:id/legacy/eligibility',
  *       500:
  *         description: Internal server error
  */
-router.post('/:id/legacy/create',
-  authenticateToken,
+router.post(
+  '/:id/legacy/create',
   param('id').isInt().withMessage('Groom ID must be an integer'),
   body('name').isLength({ min: 2, max: 100 }).withMessage('Name must be between 2 and 100 characters'),
   body('personality').isIn(['calm', 'energetic', 'methodical']).withMessage('Invalid personality'),
@@ -827,6 +838,7 @@ router.post('/:id/legacy/create',
   body('bio').optional().isLength({ max: 500 }).withMessage('Bio must be 500 characters or less'),
   body('availability').optional().isObject().withMessage('Availability must be an object'),
   handleValidationErrors,
+  requireOwnership('groom'),
   async (req, res) => {
     try {
       const mentorGroomId = parseInt(req.params.id);
@@ -847,7 +859,7 @@ router.post('/:id/legacy/create',
         message: error.message,
       });
     }
-  },
+  }
 );
 
 /**
@@ -939,10 +951,11 @@ router.get('/talents/definitions', (req, res) => {
  *       500:
  *         description: Internal server error
  */
-router.get('/:id/talents',
-  authenticateToken,
+router.get(
+  '/:id/talents',
   param('id').isInt().withMessage('Groom ID must be an integer'),
   handleValidationErrors,
+  requireOwnership('groom'),
   async (req, res) => {
     try {
       const groomId = parseInt(req.params.id);
@@ -1001,12 +1014,13 @@ router.get('/:id/talents',
  *       500:
  *         description: Internal server error
  */
-router.post('/:id/talents/validate',
-  authenticateToken,
+router.post(
+  '/:id/talents/validate',
   param('id').isInt().withMessage('Groom ID must be an integer'),
   body('tier').isIn(['tier1', 'tier2', 'tier3']).withMessage('Invalid tier'),
   body('talentId').isString().withMessage('Talent ID must be a string'),
   handleValidationErrors,
+  requireOwnership('groom'),
   async (req, res) => {
     try {
       const groomId = parseInt(req.params.id);
@@ -1067,12 +1081,13 @@ router.post('/:id/talents/validate',
  *       500:
  *         description: Internal server error
  */
-router.post('/:id/talents/select',
-  authenticateToken,
+router.post(
+  '/:id/talents/select',
   param('id').isInt().withMessage('Groom ID must be an integer'),
   body('tier').isIn(['tier1', 'tier2', 'tier3']).withMessage('Invalid tier'),
   body('talentId').isString().withMessage('Talent ID must be a string'),
   handleValidationErrors,
+  requireOwnership('groom'),
   async (req, res) => {
     try {
       const groomId = parseInt(req.params.id);
