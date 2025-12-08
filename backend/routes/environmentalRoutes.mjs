@@ -8,6 +8,7 @@
 import express from 'express';
 import { body, param, query, validationResult } from 'express-validator';
 import { authenticateToken } from '../middleware/auth.mjs';
+import { requireOwnership } from '../middleware/ownership.mjs';
 import prisma from '../db/index.mjs';
 import logger from '../utils/logger.mjs';
 
@@ -322,28 +323,16 @@ router.get('/comfort-zone/:horseId',
     param('horseId').isInt({ min: 1 }).withMessage('Valid horse ID is required'),
   ],
   validateRequest,
+  requireOwnership('horse', { idParam: 'horseId' }),
   async (req, res) => {
     try {
-      const { horseId } = req.params;
-      const userId = req.user.id;
-
-      // Verify horse ownership
-      const horse = await prisma.horse.findFirst({
-        where: {
-          id: parseInt(horseId),
-          ownerId: userId,
-        },
-        select: {
-          id: true,
-          name: true,
-          epigeneticModifiers: true,
-        },
-      });
-
+      // Horse ownership already validated by requireOwnership middleware
+      const horse = req.validatedResources?.horse;
       if (!horse) {
+        logger.error('[environmentalRoutes.comfort-zone] Horse not found in validated resources');
         return res.status(404).json({
           success: false,
-          error: 'Horse not found or access denied',
+          error: 'Horse not found or you do not own this horse',
         });
       }
 
@@ -356,7 +345,7 @@ router.get('/comfort-zone/:horseId',
         ],
       };
 
-      logger.info(`[environmentalRoutes.comfort-zone] Calculating comfort zone for horse ${horseId}`);
+      logger.info(`[environmentalRoutes.comfort-zone] Calculating comfort zone for horse ${horse.id}`);
 
       const comfortZone = calculateComfortZone(horseData);
 
