@@ -13,6 +13,7 @@
 
 import express from 'express';
 import { authenticateToken } from '../middleware/auth.mjs';
+import { requireOwnership } from '../middleware/ownership.mjs';
 import * as horseXpController from '../controllers/horseXpController.mjs';
 
 const router = express.Router();
@@ -27,7 +28,7 @@ router.use(authenticateToken);
  * @param {number} horseId - Horse ID
  * @returns {Object} Horse XP status with current XP, available stat points, and progression info
  */
-router.get('/:horseId/xp', horseXpController.getHorseXpStatus);
+router.get('/:horseId/xp', requireOwnership('horse', { idParam: 'horseId' }), horseXpController.getHorseXpStatus);
 
 /**
  * @route POST /api/horses/:horseId/allocate-stat
@@ -37,7 +38,7 @@ router.get('/:horseId/xp', horseXpController.getHorseXpStatus);
  * @body {string} statName - Name of the stat to increase (speed, stamina, etc.)
  * @returns {Object} Updated stat value and remaining stat points
  */
-router.post('/:horseId/allocate-stat', horseXpController.allocateStatPoint);
+router.post('/:horseId/allocate-stat', requireOwnership('horse', { idParam: 'horseId' }), horseXpController.allocateStatPoint);
 
 /**
  * @route GET /api/horses/:horseId/xp-history
@@ -48,7 +49,7 @@ router.post('/:horseId/allocate-stat', horseXpController.allocateStatPoint);
  * @query {number} offset - Number of events to skip (default: 0)
  * @returns {Object} Paginated list of horse XP events
  */
-router.get('/:horseId/xp-history', horseXpController.getHorseXpHistory);
+router.get('/:horseId/xp-history', requireOwnership('horse', { idParam: 'horseId' }), horseXpController.getHorseXpHistory);
 
 /**
  * @route POST /api/horses/:horseId/award-xp
@@ -59,6 +60,6 @@ router.get('/:horseId/xp-history', horseXpController.getHorseXpHistory);
  * @body {string} reason - Reason for XP award
  * @returns {Object} Updated horse XP status
  */
-router.post('/:horseId/award-xp', horseXpController.awardXpToHorse);
+router.post('/:horseId/award-xp', requireOwnership('horse', { idParam: 'horseId' }), horseXpController.awardXpToHorse);
 
 export default router;
