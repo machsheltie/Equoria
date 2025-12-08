@@ -16,6 +16,7 @@
 import express from 'express';
 import { body, param, query, validationResult } from 'express-validator';
 import { authenticateToken } from '../middleware/auth.mjs';
+import { requireOwnership } from '../middleware/ownership.mjs';
 import logger from '../utils/logger.mjs';
 import prisma from '../../packages/database/prismaClient.mjs';
 
@@ -49,44 +50,6 @@ import {
 const router = express.Router();
 
 /**
- * Middleware to validate horse ownership
- */
-async function validateHorseOwnership(req, res, next) {
-  try {
-    const horseId = parseInt(req.params.id);
-    const userId = req.user.id;
-
-    const horse = await prisma.horse.findUnique({
-      where: { id: horseId },
-      select: { id: true, ownerId: true },
-    });
-
-    if (!horse) {
-      return res.status(404).json({
-        success: false,
-        message: 'Horse not found',
-      });
-    }
-
-    if (horse.ownerId !== userId) {
-      return res.status(403).json({
-        success: false,
-        message: 'Access denied: You do not own this horse',
-      });
-    }
-
-    req.horse = horse;
-    next();
-  } catch (error) {
-    logger.error('Error validating horse ownership:', error);
-    res.status(500).json({
-      success: false,
-      message: 'Internal server error',
-    });
-  }
-}
-
-/**
  * Handle validation errors
  */
 function handleValidationErrors(req, res, next) {
@@ -111,7 +74,7 @@ router.get('/horses/:id/environmental-analysis',
   authenticateToken,
   param('id').isInt({ min: 1 }).withMessage('Horse ID must be a positive integer'),
   handleValidationErrors,
-  validateHorseOwnership,
+  requireOwnership('horse', { idParam: 'id' }),
   async (req, res) => {
     try {
       const horseId = parseInt(req.params.id);
@@ -142,7 +105,7 @@ router.get('/horses/:id/environmental-triggers',
   authenticateToken,
   param('id').isInt({ min: 1 }).withMessage('Horse ID must be a positive integer'),
   handleValidationErrors,
-  validateHorseOwnership,
+  requireOwnership('horse', { idParam: 'id' }),
   async (req, res) => {
     try {
       const horseId = parseInt(req.params.id);
@@ -173,7 +136,7 @@ router.get('/horses/:id/trigger-thresholds',
   authenticateToken,
   param('id').isInt({ min: 1 }).withMessage('Horse ID must be a positive integer'),
   handleValidationErrors,
-  validateHorseOwnership,
+  requireOwnership('horse', { idParam: 'id' }),
   async (req, res) => {
     try {
       const horseId = parseInt(req.params.id);
@@ -205,7 +168,7 @@ router.post('/horses/:id/trait-expression-probability',
   param('id').isInt({ min: 1 }).withMessage('Horse ID must be a positive integer'),
   body('traitName').notEmpty().withMessage('Trait name is required'),
   handleValidationErrors,
-  validateHorseOwnership,
+  requireOwnership('horse', { idParam: 'id' }),
   async (req, res) => {
     try {
       const horseId = parseInt(req.params.id);
@@ -238,7 +201,7 @@ router.get('/horses/:id/environmental-forecast',
   param('id').isInt({ min: 1 }).withMessage('Horse ID must be a positive integer'),
   query('days').optional().isInt({ min: 1, max: 365 }).withMessage('Days must be between 1 and 365'),
   handleValidationErrors,
-  validateHorseOwnership,
+  requireOwnership('horse', { idParam: 'id' }),
   async (req, res) => {
     try {
       const horseId = parseInt(req.params.id);
@@ -272,7 +235,7 @@ router.post('/horses/:id/evaluate-trait-opportunity',
   body('traitName').notEmpty().withMessage('Trait name is required'),
   body('windowName').notEmpty().withMessage('Window name is required'),
   handleValidationErrors,
-  validateHorseOwnership,
+  requireOwnership('horse', { idParam: 'id' }),
   async (req, res) => {
     try {
       const horseId = parseInt(req.params.id);
@@ -306,7 +269,7 @@ router.get('/horses/:id/trait-interactions',
   authenticateToken,
   param('id').isInt({ min: 1 }).withMessage('Horse ID must be a positive integer'),
   handleValidationErrors,
-  validateHorseOwnership,
+  requireOwnership('horse', { idParam: 'id' }),
   async (req, res) => {
     try {
       const horseId = parseInt(req.params.id);
@@ -346,7 +309,7 @@ router.get('/horses/:id/trait-matrix',
   authenticateToken,
   param('id').isInt({ min: 1 }).withMessage('Horse ID must be a positive integer'),
   handleValidationErrors,
-  validateHorseOwnership,
+  requireOwnership('horse', { idParam: 'id' }),
   async (req, res) => {
     try {
       const horseId = parseInt(req.params.id);
@@ -377,7 +340,7 @@ router.get('/horses/:id/trait-stability',
   authenticateToken,
   param('id').isInt({ min: 1 }).withMessage('Horse ID must be a positive integer'),
   handleValidationErrors,
-  validateHorseOwnership,
+  requireOwnership('horse', { idParam: 'id' }),
   async (req, res) => {
     try {
       const horseId = parseInt(req.params.id);
@@ -410,7 +373,7 @@ router.get('/horses/:id/developmental-windows',
   authenticateToken,
   param('id').isInt({ min: 1 }).withMessage('Horse ID must be a positive integer'),
   handleValidationErrors,
-  validateHorseOwnership,
+  requireOwnership('horse', { idParam: 'id' }),
   async (req, res) => {
     try {
       const horseId = parseInt(req.params.id);
@@ -442,7 +405,7 @@ router.post('/horses/:id/window-sensitivity',
   param('id').isInt({ min: 1 }).withMessage('Horse ID must be a positive integer'),
   body('windowName').notEmpty().withMessage('Window name is required'),
   handleValidationErrors,
-  validateHorseOwnership,
+  requireOwnership('horse', { idParam: 'id' }),
   async (req, res) => {
     try {
       const horseId = parseInt(req.params.id);
@@ -474,7 +437,7 @@ router.get('/horses/:id/developmental-milestones',
   authenticateToken,
   param('id').isInt({ min: 1 }).withMessage('Horse ID must be a positive integer'),
   handleValidationErrors,
-  validateHorseOwnership,
+  requireOwnership('horse', { idParam: 'id' }),
   async (req, res) => {
     try {
       const horseId = parseInt(req.params.id);
@@ -506,7 +469,7 @@ router.get('/horses/:id/developmental-forecast',
   param('id').isInt({ min: 1 }).withMessage('Horse ID must be a positive integer'),
   query('days').optional().isInt({ min: 1, max: 365 }).withMessage('Days must be between 1 and 365'),
   handleValidationErrors,
-  validateHorseOwnership,
+  requireOwnership('horse', { idParam: 'id' }),
   async (req, res) => {
     try {
       const horseId = parseInt(req.params.id);
@@ -538,7 +501,7 @@ router.get('/horses/:id/critical-period-analysis',
   authenticateToken,
   param('id').isInt({ min: 1 }).withMessage('Horse ID must be a positive integer'),
   handleValidationErrors,
-  validateHorseOwnership,
+  requireOwnership('horse', { idParam: 'id' }),
   async (req, res) => {
     try {
       const horseId = parseInt(req.params.id);
@@ -569,7 +532,7 @@ router.post('/horses/:id/coordinate-development',
   authenticateToken,
   param('id').isInt({ min: 1 }).withMessage('Horse ID must be a positive integer'),
   handleValidationErrors,
-  validateHorseOwnership,
+  requireOwnership('horse', { idParam: 'id' }),
   async (req, res) => {
     try {
       const horseId = parseInt(req.params.id);
