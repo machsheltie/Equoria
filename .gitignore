@@ -2,6 +2,8 @@
 /node_modules/
 /build/
 
+
+
 # next.js
 /.next/
 /out/
@@ -24,9 +26,6 @@ next-env.d.ts
 
 # misc
 .DS_Store
-
-#markdown
-*.md
 
 # prettier
 .prettierrc
@@ -66,3 +65,11 @@ next-env.d.ts
 
 # .vscode
 /.vscode
+
+# Equoria-Mobile
+/equoria-mobile
+
+# Testing
+.jest-cache/
+**/test-output*.txt
+coverage/
