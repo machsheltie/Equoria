@@ -14,6 +14,7 @@ import {
   validateHorseIdParam,
 } from '../controllers/enhancedMilestoneController.mjs';
 import { authenticateToken } from '../middleware/auth.mjs';
+import { requireOwnership } from '../middleware/ownership.mjs';
 
 const router = express.Router();
 
@@ -53,6 +54,7 @@ router.get(
   '/milestone-status/:horseId',
   authenticateToken,
   validateHorseIdParam,
+  requireOwnership('horse', { idParam: 'horseId' }),
   getMilestoneStatus,
 );
 

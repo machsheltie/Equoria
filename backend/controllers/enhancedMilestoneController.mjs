@@ -13,6 +13,7 @@ import {
 } from '../utils/enhancedMilestoneEvaluationSystem.mjs';
 import prisma from '../db/index.mjs';
 import logger from '../utils/logger.mjs';
+import { findOwnedResource } from '../middleware/ownership.mjs';
 
 /**
  * POST /api/milestones/evaluate-milestone
@@ -32,58 +33,27 @@ export async function evaluateMilestone(req, res) {
     }
 
     const { horseId, milestoneType, groomId, bondScore, taskLog, forceReevaluate } = req.body;
+    const userId = req.user.id;
 
     logger.info(`[enhancedMilestoneController.evaluateMilestone] Evaluating milestone ${milestoneType} for horse ${horseId}`);
 
-    // Validate horse exists and user owns it
-    const horse = await prisma.horse.findUnique({
-      where: { id: horseId },
-      select: {
-        id: true,
-        name: true,
-        ownerId: true,
-        dateOfBirth: true,
-        bondScore: true,
-      },
-    });
-
+    // Validate horse ownership (atomic)
+    const horse = await findOwnedResource('horse', horseId, userId);
     if (!horse) {
       return res.status(404).json({
         success: false,
-        message: `Horse with ID ${horseId} not found`,
+        message: 'Horse not found or you do not own this horse',
         data: null,
       });
     }
 
-    // Check ownership (assuming req.user is set by auth middleware)
-    if (req.user && horse.ownerId !== req.user.id) {
-      return res.status(403).json({
-        success: false,
-        message: 'You do not have permission to evaluate milestones for this horse',
-        data: null,
-      });
-    }
-
-    // Validate groom exists if provided
+    // Validate groom ownership if provided (atomic)
     if (groomId) {
-      const groom = await prisma.groom.findUnique({
-        where: { id: groomId },
-        select: { id: true, name: true, userId: true },
-      });
-
+      const groom = await findOwnedResource('groom', groomId, userId);
       if (!groom) {
         return res.status(404).json({
           success: false,
-          message: `Groom with ID ${groomId} not found`,
-          data: null,
-        });
-      }
-
-      // Check groom ownership
-      if (req.user && groom.userId !== req.user.id) {
-        return res.status(403).json({
-          success: false,
-          message: 'You do not have permission to use this groom',
+          message: 'Groom not found or you do not own this groom',
           data: null,
         });
       }
@@ -144,44 +114,19 @@ export async function evaluateMilestone(req, res) {
  */
 export async function getMilestoneStatus(req, res) {
   try {
-    const { horseId } = req.params;
-    const parsedHorseId = parseInt(horseId, 10);
-
-    if (isNaN(parsedHorseId) || parsedHorseId <= 0) {
-      return res.status(400).json({
-        success: false,
-        message: 'Invalid horse ID. Must be a positive integer.',
-        data: null,
-      });
-    }
-
-    // Get horse data
-    const horse = await prisma.horse.findUnique({
-      where: { id: parsedHorseId },
-      select: {
-        id: true,
-        name: true,
-        ownerId: true,
-        dateOfBirth: true,
-      },
-    });
-
+    // Horse ownership already validated by requireOwnership middleware
+    // Middleware caches validated horse in req.validatedResources
+    const horse = req.validatedResources?.horse;
     if (!horse) {
+      logger.error('[enhancedMilestoneController.getMilestoneStatus] Horse not found in validated resources');
       return res.status(404).json({
         success: false,
-        message: `Horse with ID ${horseId} not found`,
+        message: 'Horse not found or you do not own this horse',
         data: null,
       });
     }
 
-    // Check ownership
-    if (req.user && horse.ownerId !== req.user.id) {
-      return res.status(403).json({
-        success: false,
-        message: 'You do not have permission to view this horse',
-        data: null,
-      });
-    }
+    const parsedHorseId = horse.id;
 
     // Calculate horse age in days
     const ageInDays = Math.floor((Date.now() - new Date(horse.dateOfBirth)) / (1000 * 60 * 60 * 24));
