@@ -270,12 +270,14 @@ development_status:
 
   3-4-xp-progression-display:
     title: "XP & Progression Display"
-    status: backlog
+    status: in_progress
     priority: P0
     fr: FR-H3
     epic: 3
     story: 4
     prerequisites: [3-2-horse-detail-view]
+    story_file: "docs/sprint-artifacts/3-4-xp-progression-display.md"
+    started_date: "2025-12-08"
 
   3-5-conformation-scoring-ui:
     title: "Conformation Scoring UI"
