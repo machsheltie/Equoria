@@ -18,6 +18,7 @@
 import express from 'express';
 import { body, param, query, validationResult } from 'express-validator';
 import { authenticateToken } from '../middleware/auth.mjs';
+import { requireOwnership } from '../middleware/ownership.mjs';
 import logger from '../utils/logger.mjs';
 import {
   evolveGroomPersonalityController,
@@ -62,6 +63,7 @@ router.post('/groom/:groomId/evolve',
       .withMessage('Groom ID must be a positive integer'),
   ],
   validateRequest,
+  requireOwnership('groom', { idParam: 'groomId' }),
   evolveGroomPersonalityController,
 );
 
@@ -76,6 +78,7 @@ router.post('/horse/:horseId/evolve',
       .withMessage('Horse ID must be a positive integer'),
   ],
   validateRequest,
+  requireOwnership('horse', { idParam: 'horseId' }),
   evolveHorseTemperamentController,
 );
 

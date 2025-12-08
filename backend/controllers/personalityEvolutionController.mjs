@@ -13,6 +13,7 @@
  */
 
 import logger from '../utils/logger.mjs';
+import { findOwnedResource } from '../middleware/ownership.mjs';
 import {
   evolveGroomPersonality,
   evolveHorseTemperament,
@@ -90,6 +91,7 @@ export async function evolveHorseTemperamentController(req, res) {
 export async function getEvolutionTriggersController(req, res) {
   try {
     const { entityType, entityId } = req.params;
+    const userId = req.user.id;
 
     if (!['groom', 'horse'].includes(entityType)) {
       return res.status(400).json({
@@ -99,6 +101,15 @@ export async function getEvolutionTriggersController(req, res) {
     }
 
     logger.info(`[personalityEvolutionController.getEvolutionTriggersController] Analyzing triggers for ${entityType} ID: ${entityId}`);
+
+    // Validate entity ownership (atomic)
+    const entity = await findOwnedResource(entityType, parseInt(entityId), userId);
+    if (!entity) {
+      return res.status(404).json({
+        success: false,
+        message: `${entityType.charAt(0).toUpperCase() + entityType.slice(1)} not found or you do not own this ${entityType}`,
+      });
+    }
 
     const result = await calculatePersonalityEvolutionTriggers(parseInt(entityId), entityType);
 
@@ -125,6 +136,7 @@ export async function getEvolutionTriggersController(req, res) {
 export async function getPersonalityStabilityController(req, res) {
   try {
     const { entityType, entityId } = req.params;
+    const userId = req.user.id;
 
     if (!['groom', 'horse'].includes(entityType)) {
       return res.status(400).json({
@@ -134,6 +146,15 @@ export async function getPersonalityStabilityController(req, res) {
     }
 
     logger.info(`[personalityEvolutionController.getPersonalityStabilityController] Analyzing stability for ${entityType} ID: ${entityId}`);
+
+    // Validate entity ownership (atomic)
+    const entity = await findOwnedResource(entityType, parseInt(entityId), userId);
+    if (!entity) {
+      return res.status(404).json({
+        success: false,
+        message: `${entityType.charAt(0).toUpperCase() + entityType.slice(1)} not found or you do not own this ${entityType}`,
+      });
+    }
 
     const result = await analyzePersonalityStability(parseInt(entityId), entityType);
 
@@ -161,6 +182,7 @@ export async function predictPersonalityEvolutionController(req, res) {
   try {
     const { entityType, entityId } = req.params;
     const { timeframeDays = 30 } = req.query;
+    const userId = req.user.id;
 
     if (!['groom', 'horse'].includes(entityType)) {
       return res.status(400).json({
@@ -178,6 +200,15 @@ export async function predictPersonalityEvolutionController(req, res) {
     }
 
     logger.info(`[personalityEvolutionController.predictPersonalityEvolutionController] Predicting evolution for ${entityType} ID: ${entityId} over ${timeframe} days`);
+
+    // Validate entity ownership (atomic)
+    const entity = await findOwnedResource(entityType, parseInt(entityId), userId);
+    if (!entity) {
+      return res.status(404).json({
+        success: false,
+        message: `${entityType.charAt(0).toUpperCase() + entityType.slice(1)} not found or you do not own this ${entityType}`,
+      });
+    }
 
     const result = await predictPersonalityEvolution(parseInt(entityId), entityType, timeframe);
 
@@ -204,6 +235,7 @@ export async function predictPersonalityEvolutionController(req, res) {
 export async function getPersonalityEvolutionHistoryController(req, res) {
   try {
     const { entityType, entityId } = req.params;
+    const userId = req.user.id;
 
     if (!['groom', 'horse'].includes(entityType)) {
       return res.status(400).json({
@@ -213,6 +245,15 @@ export async function getPersonalityEvolutionHistoryController(req, res) {
     }
 
     logger.info(`[personalityEvolutionController.getPersonalityEvolutionHistoryController] Getting evolution history for ${entityType} ID: ${entityId}`);
+
+    // Validate entity ownership (atomic)
+    const entity = await findOwnedResource(entityType, parseInt(entityId), userId);
+    if (!entity) {
+      return res.status(404).json({
+        success: false,
+        message: `${entityType.charAt(0).toUpperCase() + entityType.slice(1)} not found or you do not own this ${entityType}`,
+      });
+    }
 
     const result = await getPersonalityEvolutionHistory(parseInt(entityId), entityType);
 
