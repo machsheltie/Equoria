@@ -67,6 +67,47 @@ const validateDashboardUserId = [
 ];
 
 /**
+ * Self-access validation middleware
+ * Ensures users can only access their own data (prevents CWE-639)
+ */
+const requireSelfAccess = (idParam = 'id') => {
+  return (req, res, next) => {
+    // Ensure user is authenticated
+    if (!req.user || !req.user.id) {
+      logger.warn('[userRoutes] Missing authenticated user for self-access check');
+      return res.status(401).json({
+        success: false,
+        message: 'Authentication required',
+      });
+    }
+
+    // Extract target user ID from params
+    const targetUserId = req.params[idParam];
+    if (!targetUserId) {
+      logger.warn(`[userRoutes] Missing ${idParam} parameter for self-access check`);
+      return res.status(400).json({
+        success: false,
+        message: 'User ID required',
+      });
+    }
+
+    // Validate self-access: authenticated user can only access their own data
+    if (req.user.id !== targetUserId) {
+      logger.warn(
+        `[userRoutes] Self-access violation: user ${req.user.id} attempted to access user ${targetUserId}`,
+      );
+      return res.status(403).json({
+        success: false,
+        message: 'You can only access your own user data',
+      });
+    }
+
+    logger.info(`[userRoutes] Self-access validated: user ${req.user.id} accessing own data`);
+    next();
+  };
+};
+
+/**
  * @swagger
  * /api/user/{id}/progress:
  *   get:
@@ -118,7 +159,7 @@ const validateDashboardUserId = [
  *       500:
  *         description: Internal server error
  */
-router.get('/:id/progress', authenticateToken, validateUserId, getUserProgressAPI);
+router.get('/:id/progress', authenticateToken, requireSelfAccess(), validateUserId, getUserProgressAPI);
 
 /**
  * @swagger
@@ -217,10 +258,10 @@ router.get('/:id/progress', authenticateToken, validateUserId, getUserProgressAP
  *       500:
  *         description: Internal server error
  */
-router.get('/dashboard/:userId', authenticateToken, validateDashboardUserId, getDashboardData);
+router.get('/dashboard/:userId', authenticateToken, requireSelfAccess('userId'), validateDashboardUserId, getDashboardData);
 
 // CRUD routes for user management
-router.get('/:id', validateUserId, getUser);
+router.get('/:id', authenticateToken, requireSelfAccess(), validateUserId, getUser);
 router.post('/', [
   body('username').notEmpty().withMessage('Username is required'),
   body('email').isEmail().withMessage('Valid email is required'),
@@ -238,11 +279,13 @@ router.post('/', [
   },
 ], createUserController);
 
-router.put('/:id', validateUserId, updateUserController);
-router.delete('/:id', validateUserId, deleteUserController);
+router.put('/:id', authenticateToken, requireSelfAccess(), validateUserId, updateUserController);
+router.delete('/:id', authenticateToken, requireSelfAccess(), validateUserId, deleteUserController);
 
 // XP management
 router.post('/:id/add-xp', [
+  authenticateToken,
+  requireSelfAccess(),
   ...validateUserId,
   body('amount').isInt({ min: 1 }).withMessage('Amount must be a positive integer'),
 ], addXpController);
