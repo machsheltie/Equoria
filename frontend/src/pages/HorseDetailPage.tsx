@@ -606,6 +606,195 @@ const GeneticsTab: React.FC<{ horse: Horse }> = ({ horse }) => {
         </div>
       </div>
 
+      {/* Genetic Overview Section */}
+      {allTraits.length > 0 && (
+        <div className="bg-gradient-to-br from-blue-50 to-purple-50 p-6 rounded-lg border-2 border-burnished-gold">
+          <h3 className="fantasy-title text-2xl text-midnight-ink mb-6 flex items-center">
+            <Sparkles className="w-6 h-6 mr-2 text-burnished-gold" />
+            Genetic Overview
+          </h3>
+          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
+            {/* Genetic Potential */}
+            <div className="bg-white/80 p-4 rounded-lg border border-blue-300">
+              <div className="text-sm text-aged-bronze mb-2 flex items-center">
+                <TrendingUp className="w-4 h-4 mr-1" />
+                Genetic Potential
+              </div>
+              <div className="text-3xl font-bold text-midnight-ink mb-2">
+                {(() => {
+                  const rarityScores = allTraits.map(t =>
+                    t.rarity === 'legendary' ? 100 :
+                    t.rarity === 'rare' ? 70 : 40
+                  );
+                  const avgScore = Math.round(
+                    rarityScores.reduce((a, b) => a + b, 0) / rarityScores.length
+                  );
+                  return avgScore;
+                })()}
+                /100
+              </div>
+              <div className="h-3 bg-gray-200 rounded-full overflow-hidden">
+                <div
+                  className={`h-full ${
+                    (() => {
+                      const rarityScores = allTraits.map(t =>
+                        t.rarity === 'legendary' ? 100 :
+                        t.rarity === 'rare' ? 70 : 40
+                      );
+                      const avgScore = Math.round(
+                        rarityScores.reduce((a, b) => a + b, 0) / rarityScores.length
+                      );
+                      return avgScore >= 80
+                        ? 'bg-gradient-to-r from-green-500 to-emerald-600'
+                        : avgScore >= 60
+                        ? 'bg-gradient-to-r from-blue-500 to-blue-600'
+                        : avgScore >= 40
+                        ? 'bg-gradient-to-r from-yellow-500 to-yellow-600'
+                        : 'bg-gradient-to-r from-gray-400 to-gray-500';
+                    })()
+                  }`}
+                  style={{
+                    width: `${(() => {
+                      const rarityScores = allTraits.map(t =>
+                        t.rarity === 'legendary' ? 100 :
+                        t.rarity === 'rare' ? 70 : 40
+                      );
+                      return Math.round(
+                        rarityScores.reduce((a, b) => a + b, 0) / rarityScores.length
+                      );
+                    })()}%`,
+                  }}
+                />
+              </div>
+              <p className="text-xs text-aged-bronze mt-2">
+                Based on {allTraits.length} trait{allTraits.length !== 1 ? 's' : ''}
+              </p>
+            </div>
+
+            {/* Trait Stability */}
+            <div className="bg-white/80 p-4 rounded-lg border border-purple-300">
+              <div className="text-sm text-aged-bronze mb-2 flex items-center">
+                <Shield className="w-4 h-4 mr-1" />
+                Trait Stability
+              </div>
+              <div className="text-3xl font-bold text-midnight-ink mb-2">
+                {(() => {
+                  const geneticCount = geneticTraits.length;
+                  const totalCount = allTraits.length;
+                  const stability = totalCount > 0
+                    ? Math.round((geneticCount / totalCount) * 100)
+                    : 0;
+                  return stability;
+                })()}%
+              </div>
+              <div className="h-3 bg-gray-200 rounded-full overflow-hidden">
+                <div
+                  className={`h-full ${
+                    (() => {
+                      const geneticCount = geneticTraits.length;
+                      const totalCount = allTraits.length;
+                      const stability = totalCount > 0
+                        ? Math.round((geneticCount / totalCount) * 100)
+                        : 0;
+                      return stability >= 75
+                        ? 'bg-gradient-to-r from-green-500 to-emerald-600'
+                        : stability >= 50
+                        ? 'bg-gradient-to-r from-blue-500 to-blue-600'
+                        : 'bg-gradient-to-r from-yellow-500 to-yellow-600';
+                    })()
+                  }`}
+                  style={{
+                    width: `${(() => {
+                      const geneticCount = geneticTraits.length;
+                      const totalCount = allTraits.length;
+                      return totalCount > 0
+                        ? Math.round((geneticCount / totalCount) * 100)
+                        : 0;
+                    })()}%`,
+                  }}
+                />
+              </div>
+              <p className="text-xs text-aged-bronze mt-2">
+                {geneticTraits.length} genetic / {allTraits.length} total
+              </p>
+            </div>
+
+            {/* Breeding Value */}
+            <div className="bg-white/80 p-4 rounded-lg border border-amber-300">
+              <div className="text-sm text-aged-bronze mb-2 flex items-center">
+                <Award className="w-4 h-4 mr-1" />
+                Breeding Value
+              </div>
+              <div className="text-3xl font-bold text-midnight-ink mb-2">
+                {(() => {
+                  const legendaryCount = allTraits.filter(t => t.rarity === 'legendary').length;
+                  const rareCount = allTraits.filter(t => t.rarity === 'rare').length;
+                  const value = Math.min(100, legendaryCount * 30 + rareCount * 10 + geneticTraits.length * 2);
+                  return value;
+                })()}
+                /100
+              </div>
+              <div className="h-3 bg-gray-200 rounded-full overflow-hidden">
+                <div
+                  className={`h-full ${
+                    (() => {
+                      const legendaryCount = allTraits.filter(t => t.rarity === 'legendary').length;
+                      const rareCount = allTraits.filter(t => t.rarity === 'rare').length;
+                      const value = Math.min(100, legendaryCount * 30 + rareCount * 10 + geneticTraits.length * 2);
+                      return value >= 70
+                        ? 'bg-gradient-to-r from-amber-500 to-amber-600'
+                        : value >= 40
+                        ? 'bg-gradient-to-r from-blue-500 to-blue-600'
+                        : 'bg-gradient-to-r from-gray-400 to-gray-500';
+                    })()
+                  }`}
+                  style={{
+                    width: `${(() => {
+                      const legendaryCount = allTraits.filter(t => t.rarity === 'legendary').length;
+                      const rareCount = allTraits.filter(t => t.rarity === 'rare').length;
+                      return Math.min(100, legendaryCount * 30 + rareCount * 10 + geneticTraits.length * 2);
+                    })()}%`,
+                  }}
+                />
+              </div>
+              <p className="text-xs text-aged-bronze mt-2">
+                {allTraits.filter(t => t.rarity !== 'common').length} rare+ traits
+              </p>
+            </div>
+
+            {/* Optimal Combinations */}
+            <div className="bg-white/80 p-4 rounded-lg border border-green-300">
+              <div className="text-sm text-aged-bronze mb-2 flex items-center">
+                <Sparkles className="w-4 h-4 mr-1" />
+                Optimal Combos
+              </div>
+              <div className="text-3xl font-bold text-midnight-ink mb-2">
+                {interactionsData?.interactions?.filter((i) => i.strength >= 75).length || 0}
+              </div>
+              <div className="text-sm text-aged-bronze mb-2">
+                {interactionsData?.interactions?.filter((i) => i.strength >= 50 && i.strength < 75).length || 0} good
+              </div>
+              <p className="text-xs text-aged-bronze mt-2">
+                High-value trait synergies
+              </p>
+            </div>
+          </div>
+
+          {/* Breeding Recommendations */}
+          {interactionsData?.interactions && interactionsData.interactions.some((i) => i.strength >= 75) && (
+            <div className="mt-4 p-4 bg-green-50 rounded-lg border border-green-300">
+              <p className="text-sm text-green-800 flex items-center">
+                <Award className="w-4 h-4 mr-2" />
+                <strong>Prime Breeding Candidate:</strong>{' '}
+                This horse has {interactionsData.interactions.filter((i) => i.strength >= 75).length} optimal trait
+                combination{interactionsData.interactions.filter((i) => i.strength >= 75).length !== 1 ? 's' : ''}{' '}
+                making them highly valuable for breeding programs.
+              </p>
+            </div>
+          )}
+        </div>
+      )}
+
       {/* Genetic Traits Section */}
       {geneticTraits.length > 0 && (
         <div>
@@ -731,10 +920,98 @@ const GeneticsTab: React.FC<{ horse: Horse }> = ({ horse }) => {
         </div>
       )}
 
-      {/* Lineage Section (Preserved from original) */}
+      {/* Lineage Section with Genetic Contribution */}
       {horse.parentIds && (
         <div>
-          <h3 className="fantasy-title text-xl text-midnight-ink mb-4">Lineage</h3>
+          <h3 className="fantasy-title text-xl text-midnight-ink mb-4">Lineage & Genetic Contribution</h3>
+
+          {/* Genetic Contribution Visualization */}
+          {allTraits.length > 0 && (
+            <div className="mb-6 p-4 bg-gradient-to-br from-blue-50 to-purple-50 rounded-lg border border-aged-bronze">
+              <h4 className="text-sm font-semibold text-midnight-ink mb-3">Genetic Contribution</h4>
+
+              {(() => {
+                const sireTraits = allTraits.filter(t => t.source === 'sire').length;
+                const damTraits = allTraits.filter(t => t.source === 'dam').length;
+                const mutationTraits = allTraits.filter(t => t.source === 'mutation').length;
+                const inheritedTotal = sireTraits + damTraits;
+
+                const sirePercentage = inheritedTotal > 0 ? Math.round((sireTraits / inheritedTotal) * 100) : 0;
+                const damPercentage = inheritedTotal > 0 ? Math.round((damTraits / inheritedTotal) * 100) : 0;
+
+                return (
+                  <>
+                    {/* Contribution Bar */}
+                    <div className="flex h-8 rounded-lg overflow-hidden border border-aged-bronze mb-3">
+                      {sireTraits > 0 && (
+                        <div
+                          className="bg-gradient-to-r from-blue-500 to-blue-600 flex items-center justify-center text-white text-xs font-semibold"
+                          style={{ width: `${sirePercentage}%` }}
+                        >
+                          {sirePercentage}%
+                        </div>
+                      )}
+                      {damTraits > 0 && (
+                        <div
+                          className="bg-gradient-to-r from-purple-500 to-purple-600 flex items-center justify-center text-white text-xs font-semibold"
+                          style={{ width: `${damPercentage}%` }}
+                        >
+                          {damPercentage}%
+                        </div>
+                      )}
+                    </div>
+
+                    {/* Legend */}
+                    <div className="grid grid-cols-3 gap-2 text-xs">
+                      <div className="flex items-center gap-2">
+                        <div className="w-3 h-3 rounded bg-gradient-to-r from-blue-500 to-blue-600"></div>
+                        <span className="text-midnight-ink">
+                          Sire: <strong>{sireTraits}</strong> ({sirePercentage}%)
+                        </span>
+                      </div>
+                      <div className="flex items-center gap-2">
+                        <div className="w-3 h-3 rounded bg-gradient-to-r from-purple-500 to-purple-600"></div>
+                        <span className="text-midnight-ink">
+                          Dam: <strong>{damTraits}</strong> ({damPercentage}%)
+                        </span>
+                      </div>
+                      {mutationTraits > 0 && (
+                        <div className="flex items-center gap-2">
+                          <div className="w-3 h-3 rounded bg-gradient-to-r from-amber-500 to-amber-600"></div>
+                          <span className="text-midnight-ink">
+                            Mutations: <strong>{mutationTraits}</strong>
+                          </span>
+                        </div>
+                      )}
+                    </div>
+
+                    {/* Analysis */}
+                    {inheritedTotal > 0 && (
+                      <div className="mt-3 pt-3 border-t border-aged-bronze/30">
+                        <p className="text-xs text-aged-bronze">
+                          {sirePercentage > damPercentage + 10 ? (
+                            <>
+                              <strong>Sire-Dominant:</strong> This horse inherited significantly more traits from the sire lineage.
+                            </>
+                          ) : damPercentage > sirePercentage + 10 ? (
+                            <>
+                              <strong>Dam-Dominant:</strong> This horse inherited significantly more traits from the dam lineage.
+                            </>
+                          ) : (
+                            <>
+                              <strong>Balanced Inheritance:</strong> This horse has a well-balanced genetic contribution from both parents.
+                            </>
+                          )}
+                        </p>
+                      </div>
+                    )}
+                  </>
+                );
+              })()}
+            </div>
+          )}
+
+          {/* Parent Links */}
           <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
             {horse.parentIds.sireId && (
               <button
