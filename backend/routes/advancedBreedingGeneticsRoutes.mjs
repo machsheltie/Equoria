@@ -8,6 +8,7 @@
 import express from 'express';
 import { body, param, query, validationResult } from 'express-validator';
 import { authenticateToken } from '../middleware/auth.mjs';
+import { findOwnedResource } from '../middleware/ownership.mjs';
 import prisma from '../db/index.mjs';
 import logger from '../utils/logger.mjs';
 
@@ -47,56 +48,24 @@ const validateRequest = (req, res, next) => {
 };
 
 /**
- * Middleware to verify horse ownership
+ * Helper to validate batch horse ownership (for routes with multiple horses)
+ * Uses single-query atomic validation to prevent CWE-639
  */
-const verifyHorseOwnership = async (req, res, next) => {
-  try {
-    const userId = req.user.id;
-    const { stallionId, mareId, horseIds } = req.body;
-    const horseIdsToCheck = [];
+const validateBatchOwnership = async (horseIds, userId) => {
+  const horseIdsInt = Array.isArray(horseIds) ? horseIds.map(id => parseInt(id)) : [parseInt(horseIds)];
 
-    if (stallionId) { horseIdsToCheck.push(parseInt(stallionId)); }
-    if (mareId) { horseIdsToCheck.push(parseInt(mareId)); }
-    if (horseIds && Array.isArray(horseIds)) {
-      horseIdsToCheck.push(...horseIds.map(id => parseInt(id)));
-    }
+  const horses = await prisma.horse.findMany({
+    where: {
+      id: { in: horseIdsInt },
+      OR: [
+        { userId },
+        { ownerId: userId },
+      ],
+    },
+  });
 
-    // Check URL parameters as well
-    if (req.params.stallionId) { horseIdsToCheck.push(parseInt(req.params.stallionId)); }
-    if (req.params.mareId) { horseIdsToCheck.push(parseInt(req.params.mareId)); }
-
-    if (horseIdsToCheck.length > 0) {
-      // First check if all horses exist
-      const allHorses = await prisma.horse.findMany({
-        where: {
-          id: { in: horseIdsToCheck },
-        },
-        select: { id: true, userId: true, ownerId: true },
-      });
-
-      // If some horses don't exist, let the route handler deal with it (404)
-      if (allHorses.length !== horseIdsToCheck.length) {
-        return next(); // Let route handler return 404
-      }
-
-      // Check if user owns all existing horses (check both userId and ownerId for compatibility)
-      const ownedHorses = allHorses.filter(horse => horse.userId === userId || horse.ownerId === userId);
-      if (ownedHorses.length !== horseIdsToCheck.length) {
-        return res.status(403).json({
-          success: false,
-          error: 'Access denied: You do not own all specified horses',
-        });
-      }
-    }
-
-    next();
-  } catch (error) {
-    logger.error(`[advancedBreedingGeneticsRoutes.verifyHorseOwnership] Error: ${error.message}`);
-    res.status(500).json({
-      success: false,
-      error: 'Failed to verify horse ownership',
-    });
-  }
+  // Return null if not all horses found or not all owned
+  return horses.length === horseIdsInt.length ? horses : null;
 };
 
 // ===== ENHANCED GENETIC PROBABILITY ROUTES =====
@@ -104,6 +73,8 @@ const verifyHorseOwnership = async (req, res, next) => {
 /**
  * POST /api/breeding/genetic-probability
  * Calculate enhanced genetic probabilities for breeding pair
+ *
+ * Security: Validates stallion and mare ownership atomically
  */
 router.post('/breeding/genetic-probability',
   authenticateToken,
@@ -114,25 +85,23 @@ router.post('/breeding/genetic-probability',
     body('generations').optional().isInt({ min: 1, max: 5 }).withMessage('generations must be 1-5'),
   ],
   validateRequest,
-  verifyHorseOwnership,
   async (req, res) => {
     try {
       const { stallionId, mareId, includeLineage = false, generations = 3 } = req.body;
+      const userId = req.user.id;
 
-      logger.info(`[advancedBreedingGeneticsRoutes.genetic-probability] Calculating for stallion ${stallionId} and mare ${mareId}`);
+      logger.info(`[advancedBreedingGeneticsRoutes.genetic-probability] User ${userId} calculating for stallion ${stallionId} and mare ${mareId}`);
 
-      // Get horse data first
-      const [stallion, mare] = await Promise.all([
-        prisma.horse.findUnique({ where: { id: parseInt(stallionId) } }),
-        prisma.horse.findUnique({ where: { id: parseInt(mareId) } }),
-      ]);
-
-      if (!stallion || !mare) {
+      // Validate ownership of both horses atomically
+      const horses = await validateBatchOwnership([stallionId, mareId], userId);
+      if (!horses) {
         return res.status(404).json({
           success: false,
           error: 'One or both horses not found',
         });
       }
+
+      const [stallion, mare] = horses;
 
       const probabilities = calculateEnhancedGeneticProbabilities(stallion, mare);
 
@@ -185,6 +154,8 @@ router.post('/breeding/genetic-probability',
 /**
  * GET /api/breeding/lineage-analysis/:stallionId/:mareId
  * Generate comprehensive lineage analysis
+ *
+ * Security: Validates stallion and mare ownership atomically
  */
 router.get('/breeding/lineage-analysis/:stallionId/:mareId',
   authenticateToken,
@@ -194,26 +165,24 @@ router.get('/breeding/lineage-analysis/:stallionId/:mareId',
     query('generations').optional().isInt({ min: 1, max: 5 }).withMessage('generations must be 1-5'),
   ],
   validateRequest,
-  verifyHorseOwnership,
   async (req, res) => {
     try {
       const { stallionId, mareId } = req.params;
       const generations = parseInt(req.query.generations) || 3;
+      const userId = req.user.id;
 
-      logger.info(`[advancedBreedingGeneticsRoutes.lineage-analysis] Analyzing lineage for stallion ${stallionId} and mare ${mareId}`);
+      logger.info(`[advancedBreedingGeneticsRoutes.lineage-analysis] User ${userId} analyzing lineage for stallion ${stallionId} and mare ${mareId}`);
 
-      // Check if horses exist
-      const [stallion, mare] = await Promise.all([
-        prisma.horse.findUnique({ where: { id: parseInt(stallionId) } }),
-        prisma.horse.findUnique({ where: { id: parseInt(mareId) } }),
-      ]);
-
-      if (!stallion || !mare) {
+      // Validate ownership of both horses atomically
+      const horses = await validateBatchOwnership([stallionId, mareId], userId);
+      if (!horses) {
         return res.status(404).json({
           success: false,
           error: 'One or both horses not found',
         });
       }
+
+      const [stallion, mare] = horses;
 
       const [lineageTree, diversityMetrics, performanceAnalysis, visualizationData] = await Promise.all([
         generateLineageTree(parseInt(stallionId), parseInt(mareId), generations),
@@ -245,6 +214,8 @@ router.get('/breeding/lineage-analysis/:stallionId/:mareId',
 /**
  * POST /api/breeding/breeding-recommendations
  * Generate comprehensive breeding recommendations
+ *
+ * Security: Validates stallion and mare ownership atomically
  */
 router.post('/breeding/breeding-recommendations',
   authenticateToken,
@@ -253,12 +224,21 @@ router.post('/breeding/breeding-recommendations',
     body('mareId').isInt({ min: 1 }).withMessage('Valid mare ID is required'),
   ],
   validateRequest,
-  verifyHorseOwnership,
   async (req, res) => {
     try {
       const { stallionId, mareId } = req.body;
+      const userId = req.user.id;
 
-      logger.info(`[advancedBreedingGeneticsRoutes.breeding-recommendations] Generating recommendations for stallion ${stallionId} and mare ${mareId}`);
+      logger.info(`[advancedBreedingGeneticsRoutes.breeding-recommendations] User ${userId} generating recommendations for stallion ${stallionId} and mare ${mareId}`);
+
+      // Validate ownership of both horses atomically
+      const horses = await validateBatchOwnership([stallionId, mareId], userId);
+      if (!horses) {
+        return res.status(404).json({
+          success: false,
+          error: 'One or both horses not found',
+        });
+      }
 
       const recommendations = await generateBreedingRecommendations(
         parseInt(stallionId),
@@ -293,6 +273,8 @@ router.post('/breeding/breeding-recommendations',
 /**
  * POST /api/genetics/population-analysis
  * Analyze population-level genetic diversity
+ *
+ * Security: Validates ownership of all horses in array atomically
  */
 router.post('/genetics/population-analysis',
   authenticateToken,
@@ -301,13 +283,23 @@ router.post('/genetics/population-analysis',
     body('horseIds.*').isInt({ min: 1 }).withMessage('All horse IDs must be valid integers'),
   ],
   validateRequest,
-  verifyHorseOwnership,
   async (req, res) => {
     try {
       const { horseIds } = req.body;
-      const horseIdsInt = horseIds.map(id => parseInt(id));
+      const userId = req.user.id;
 
-      logger.info(`[advancedBreedingGeneticsRoutes.population-analysis] Analyzing ${horseIdsInt.length} horses`);
+      logger.info(`[advancedBreedingGeneticsRoutes.population-analysis] User ${userId} analyzing ${horseIds.length} horses`);
+
+      // Validate ownership of all horses atomically
+      const horses = await validateBatchOwnership(horseIds, userId);
+      if (!horses) {
+        return res.status(404).json({
+          success: false,
+          error: 'One or more horses not found',
+        });
+      }
+
+      const horseIdsInt = horseIds.map(id => parseInt(id));
 
       const [diversityMetrics, populationHealth, geneticTrends, breedingRecommendations] = await Promise.all([
         calculateAdvancedGeneticDiversity(horseIdsInt),
@@ -339,6 +331,8 @@ router.post('/genetics/population-analysis',
 /**
  * POST /api/genetics/inbreeding-analysis
  * Calculate detailed inbreeding coefficient
+ *
+ * Security: Validates stallion and mare ownership atomically
  */
 router.post('/genetics/inbreeding-analysis',
   authenticateToken,
@@ -347,12 +341,21 @@ router.post('/genetics/inbreeding-analysis',
     body('mareId').isInt({ min: 1 }).withMessage('Valid mare ID is required'),
   ],
   validateRequest,
-  verifyHorseOwnership,
   async (req, res) => {
     try {
       const { stallionId, mareId } = req.body;
+      const userId = req.user.id;
 
-      logger.info(`[advancedBreedingGeneticsRoutes.inbreeding-analysis] Analyzing inbreeding for stallion ${stallionId} and mare ${mareId}`);
+      logger.info(`[advancedBreedingGeneticsRoutes.inbreeding-analysis] User ${userId} analyzing inbreeding for stallion ${stallionId} and mare ${mareId}`);
+
+      // Validate ownership of both horses atomically
+      const horses = await validateBatchOwnership([stallionId, mareId], userId);
+      if (!horses) {
+        return res.status(404).json({
+          success: false,
+          error: 'One or both horses not found',
+        });
+      }
 
       const inbreedingAnalysis = await calculateDetailedInbreedingCoefficient(
         parseInt(stallionId),
@@ -438,6 +441,8 @@ router.get('/genetics/diversity-report/:userId',
 /**
  * POST /api/genetics/optimal-breeding
  * Generate optimal breeding recommendations for population
+ *
+ * Security: Validates ownership of all horses in array atomically
  */
 router.post('/genetics/optimal-breeding',
   authenticateToken,
@@ -446,13 +451,23 @@ router.post('/genetics/optimal-breeding',
     body('horseIds.*').isInt({ min: 1 }).withMessage('All horse IDs must be valid integers'),
   ],
   validateRequest,
-  verifyHorseOwnership,
   async (req, res) => {
     try {
       const { horseIds } = req.body;
-      const horseIdsInt = horseIds.map(id => parseInt(id));
+      const userId = req.user.id;
 
-      logger.info(`[advancedBreedingGeneticsRoutes.optimal-breeding] Generating optimal breeding for ${horseIdsInt.length} horses`);
+      logger.info(`[advancedBreedingGeneticsRoutes.optimal-breeding] User ${userId} generating optimal breeding for ${horseIds.length} horses`);
+
+      // Validate ownership of all horses atomically
+      const horses = await validateBatchOwnership(horseIds, userId);
+      if (!horses) {
+        return res.status(404).json({
+          success: false,
+          error: 'One or more horses not found',
+        });
+      }
+
+      const horseIdsInt = horseIds.map(id => parseInt(id));
 
       const recommendations = await generateOptimalBreedingRecommendations(horseIdsInt);
 
@@ -474,6 +489,8 @@ router.post('/genetics/optimal-breeding',
 /**
  * POST /api/genetics/breeding-compatibility
  * Assess breeding pair compatibility
+ *
+ * Security: Validates stallion and mare ownership atomically
  */
 router.post('/genetics/breeding-compatibility',
   authenticateToken,
@@ -482,12 +499,21 @@ router.post('/genetics/breeding-compatibility',
     body('mareId').isInt({ min: 1 }).withMessage('Valid mare ID is required'),
   ],
   validateRequest,
-  verifyHorseOwnership,
   async (req, res) => {
     try {
       const { stallionId, mareId } = req.body;
+      const userId = req.user.id;
 
-      logger.info(`[advancedBreedingGeneticsRoutes.breeding-compatibility] Assessing compatibility for stallion ${stallionId} and mare ${mareId}`);
+      logger.info(`[advancedBreedingGeneticsRoutes.breeding-compatibility] User ${userId} assessing compatibility for stallion ${stallionId} and mare ${mareId}`);
+
+      // Validate ownership of both horses atomically
+      const horses = await validateBatchOwnership([stallionId, mareId], userId);
+      if (!horses) {
+        return res.status(404).json({
+          success: false,
+          error: 'One or both horses not found',
+        });
+      }
 
       // Import the compatibility assessment function
       const { assessBreedingPairCompatibility } = await import('../services/geneticDiversityTrackingService.mjs');
