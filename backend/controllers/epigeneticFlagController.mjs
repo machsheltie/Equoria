@@ -17,6 +17,7 @@
 import { validationResult } from 'express-validator';
 import prisma from '../db/index.mjs';
 import logger from '../utils/logger.mjs';
+import { findOwnedResource } from '../middleware/ownership.mjs';
 import {
   evaluateHorseFlags,
   batchEvaluateFlags as batchEvaluateFlagsEngine,
@@ -45,32 +46,16 @@ export async function evaluateFlags(req, res) {
     }
 
     const { horseId } = req.body;
-    const userId = req.user?.id;
+    const userId = req.user.id;
 
-    // Validate horse exists and user has access
-    const horse = await prisma.horse.findUnique({
-      where: { id: parseInt(horseId) },
-      select: {
-        id: true,
-        name: true,
-        ownerId: true,
-        dateOfBirth: true,
-        epigeneticFlags: true,
-      },
-    });
+    logger.info(`[epigeneticFlagController.evaluateFlags] Evaluating flags for horse ${horseId}`);
 
+    // Validate horse ownership (atomic) - admin bypass handled by middleware
+    const horse = await findOwnedResource('horse', parseInt(horseId), userId);
     if (!horse) {
       return res.status(404).json({
         success: false,
-        message: 'Horse not found',
-      });
-    }
-
-    // Check ownership (unless admin)
-    if (req.user?.role !== 'admin' && horse.ownerId !== userId) {
-      return res.status(403).json({
-        success: false,
-        message: 'You do not have permission to evaluate flags for this horse',
+        message: 'Horse not found or you do not own this horse',
       });
     }
 
@@ -102,44 +87,18 @@ export async function evaluateFlags(req, res) {
  */
 export async function getHorseFlags(req, res) {
   try {
-    const horseId = parseInt(req.params.id);
-    const userId = req.user?.id;
-
-    if (isNaN(horseId)) {
-      return res.status(400).json({
-        success: false,
-        message: 'Invalid horse ID',
-      });
-    }
-
-    // Get horse with flags
-    const horse = await prisma.horse.findUnique({
-      where: { id: horseId },
-      select: {
-        id: true,
-        name: true,
-        ownerId: true,
-        dateOfBirth: true,
-        epigeneticFlags: true,
-        bondScore: true,
-        stressLevel: true,
-      },
-    });
-
+    // Horse ownership already validated by requireOwnership middleware
+    // Middleware caches validated horse in req.validatedResources
+    const horse = req.validatedResources?.horse;
     if (!horse) {
+      logger.error('[epigeneticFlagController.getHorseFlags] Horse not found in validated resources');
       return res.status(404).json({
         success: false,
-        message: 'Horse not found',
+        message: 'Horse not found or you do not own this horse',
       });
     }
 
-    // Check ownership (unless admin)
-    if (req.user?.role !== 'admin' && horse.ownerId !== userId) {
-      return res.status(403).json({
-        success: false,
-        message: 'You do not have permission to view flags for this horse',
-      });
-    }
+    const horseId = horse.id;
 
     // Get flag definitions for assigned flags
     const flagDetails = (horse.epigeneticFlags || []).map(flagName => {
@@ -306,41 +265,18 @@ export async function batchEvaluateFlags(req, res) {
  */
 export async function getCarePatterns(req, res) {
   try {
-    const horseId = parseInt(req.params.id);
-    const userId = req.user?.id;
-
-    if (isNaN(horseId)) {
-      return res.status(400).json({
-        success: false,
-        message: 'Invalid horse ID',
-      });
-    }
-
-    // Get horse and check ownership
-    const horse = await prisma.horse.findUnique({
-      where: { id: horseId },
-      select: {
-        id: true,
-        name: true,
-        ownerId: true,
-        dateOfBirth: true,
-      },
-    });
-
+    // Horse ownership already validated by requireOwnership middleware
+    // Middleware caches validated horse in req.validatedResources
+    const horse = req.validatedResources?.horse;
     if (!horse) {
+      logger.error('[epigeneticFlagController.getCarePatterns] Horse not found in validated resources');
       return res.status(404).json({
         success: false,
-        message: 'Horse not found',
+        message: 'Horse not found or you do not own this horse',
       });
     }
 
-    // Check ownership (unless admin)
-    if (req.user?.role !== 'admin' && horse.ownerId !== userId) {
-      return res.status(403).json({
-        success: false,
-        message: 'You do not have permission to view care patterns for this horse',
-      });
-    }
+    const horseId = horse.id;
 
     // Analyze care patterns
     const careAnalysis = await analyzeCarePatterns(horseId);

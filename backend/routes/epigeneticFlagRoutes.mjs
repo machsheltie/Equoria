@@ -24,6 +24,7 @@ import {
   getCarePatterns,
 } from '../controllers/epigeneticFlagController.mjs';
 import { authenticateToken } from '../middleware/auth.mjs';
+import { requireOwnership } from '../middleware/ownership.mjs';
 import logger from '../utils/logger.mjs';
 
 const router = express.Router();
@@ -102,6 +103,7 @@ router.post('/evaluate',
 router.get('/horses/:id/flags',
   authenticateToken,
   validateHorseIdParam,
+  requireOwnership('horse', { idParam: 'id' }),
   async (req, res) => {
     try {
       await getHorseFlags(req, res);
@@ -174,6 +176,7 @@ router.post('/batch-evaluate',
 router.get('/horses/:id/care-patterns',
   authenticateToken,
   validateHorseIdParam,
+  requireOwnership('horse', { idParam: 'id' }),
   async (req, res) => {
     try {
       await getCarePatterns(req, res);
