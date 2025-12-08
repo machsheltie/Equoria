@@ -17,6 +17,7 @@ import {
   checkVerificationStatus,
 } from '../utils/emailVerificationService.mjs';
 import { sendVerificationEmail, sendWelcomeEmail } from '../utils/emailService.mjs';
+import { COOKIE_OPTIONS, CLEAR_COOKIE_OPTIONS } from '../utils/cookieConfig.mjs';
 
 /**
  * Register a new user and create a corresponding user record.
@@ -87,19 +88,9 @@ export const register = async (req, res, next) => {
     }
 
     // Set httpOnly cookies for security (prevents XSS attacks)
-    res.cookie('accessToken', tokenPair.accessToken, {
-      httpOnly: true, // Cannot be accessed by JavaScript
-      secure: process.env.NODE_ENV === 'production', // HTTPS only in production
-      sameSite: 'strict', // CSRF protection
-      maxAge: 15 * 60 * 1000, // 15 minutes
-    });
-
-    res.cookie('refreshToken', tokenPair.refreshToken, {
-      httpOnly: true,
-      secure: process.env.NODE_ENV === 'production',
-      sameSite: 'strict',
-      maxAge: 7 * 24 * 60 * 60 * 1000, // 7 days
-    });
+    // Using centralized cookie configuration for consistency
+    res.cookie('accessToken', tokenPair.accessToken, COOKIE_OPTIONS.accessToken);
+    res.cookie('refreshToken', tokenPair.refreshToken, COOKIE_OPTIONS.refreshToken);
 
     res.status(201).json({
       status: 'success',
@@ -156,19 +147,9 @@ export const login = async (req, res, next) => {
     const tokenPair = await createTokenPair(user.id);
 
     // Set httpOnly cookies for security (prevents XSS attacks)
-    res.cookie('accessToken', tokenPair.accessToken, {
-      httpOnly: true,
-      secure: process.env.NODE_ENV === 'production',
-      sameSite: 'strict',
-      maxAge: 15 * 60 * 1000, // 15 minutes
-    });
-
-    res.cookie('refreshToken', tokenPair.refreshToken, {
-      httpOnly: true,
-      secure: process.env.NODE_ENV === 'production',
-      sameSite: 'strict',
-      maxAge: 7 * 24 * 60 * 60 * 1000, // 7 days
-    });
+    // Using centralized cookie configuration for consistency
+    res.cookie('accessToken', tokenPair.accessToken, COOKIE_OPTIONS.accessToken);
+    res.cookie('refreshToken', tokenPair.refreshToken, COOKIE_OPTIONS.refreshToken);
 
     // Reset rate limit on successful login (brute force protection)
     const ip = req.ip || req.headers['x-forwarded-for'] || req.connection.remoteAddress;
@@ -225,19 +206,9 @@ export const refreshToken = async (req, res, next) => {
     const { newTokenPair } = rotationResult;
 
     // Set new tokens in httpOnly cookies
-    res.cookie('accessToken', newTokenPair.accessToken, {
-      httpOnly: true,
-      secure: process.env.NODE_ENV === 'production',
-      sameSite: 'strict',
-      maxAge: 15 * 60 * 1000, // 15 minutes
-    });
-
-    res.cookie('refreshToken', newTokenPair.refreshToken, {
-      httpOnly: true,
-      secure: process.env.NODE_ENV === 'production',
-      sameSite: 'strict',
-      maxAge: 7 * 24 * 60 * 60 * 1000, // 7 days
-    });
+    // Using centralized cookie configuration for consistency
+    res.cookie('accessToken', newTokenPair.accessToken, COOKIE_OPTIONS.accessToken);
+    res.cookie('refreshToken', newTokenPair.refreshToken, COOKIE_OPTIONS.refreshToken);
 
     logger.info('[authController.refreshToken] Token rotation successful');
 
@@ -361,17 +332,9 @@ export const logout = async (req, res, next) => {
     }
 
     // Clear httpOnly cookies
-    res.clearCookie('accessToken', {
-      httpOnly: true,
-      secure: process.env.NODE_ENV === 'production',
-      sameSite: 'strict',
-    });
-
-    res.clearCookie('refreshToken', {
-      httpOnly: true,
-      secure: process.env.NODE_ENV === 'production',
-      sameSite: 'strict',
-    });
+    // Using centralized clear cookie options for consistency
+    res.clearCookie('accessToken', CLEAR_COOKIE_OPTIONS.accessToken);
+    res.clearCookie('refreshToken', CLEAR_COOKIE_OPTIONS.refreshToken);
 
     res.status(200).json({
       status: 'success',
