@@ -6,7 +6,11 @@ import {
   trainRouteHandler,
   getTrainableHorses,
 } from '../controllers/trainingController.mjs';
+import { authenticateToken } from '../middleware/auth.mjs';
+import { trainingLimiter } from '../middleware/trainingRateLimit.mjs';
+import { requireOwnership, findOwnedResource } from '../middleware/ownership.mjs';
 import { getAllDisciplines } from '../utils/statMap.mjs';
+import { AppError } from '../errors/index.mjs';
 import logger from '../utils/logger.mjs';
 
 const router = express.Router();
@@ -30,9 +34,12 @@ const handleValidationErrors = (req, res, next) => {
 /**
  * POST /api/training/check-eligibility
  * Check if a horse is eligible to train in a specific discipline
+ *
+ * Security: Validates horse ownership before checking eligibility
  */
 router.post(
   '/check-eligibility',
+  trainingLimiter,
   [
     body('horseId').isInt({ min: 1 }).withMessage('Horse ID must be a positive integer'),
     body('discipline')
@@ -46,8 +53,14 @@ router.post(
     try {
       const { horseId, discipline } = req.body;
 
+      // Validate horse ownership
+      const horse = await findOwnedResource('horse', horseId, req.user.id);
+      if (!horse) {
+        throw new AppError('Horse not found', 404);
+      }
+
       logger.info(
-        `[trainingRoutes.checkEligibility] Checking eligibility for horse ${horseId} in ${discipline}`,
+        `[trainingRoutes.checkEligibility] User ${req.user.id} checking eligibility for horse ${horseId} in ${discipline}`,
       );
 
       const result = await canTrain(horseId, discipline);
@@ -70,9 +83,12 @@ router.post(
 /**
  * POST /api/training/train
  * Train a horse in a specific discipline
+ *
+ * Security: Validates horse ownership before training
  */
 router.post(
   '/train',
+  trainingLimiter,
   [
     body('horseId').isInt({ min: 1 }).withMessage('Horse ID must be a positive integer'),
     body('discipline')
@@ -82,15 +98,46 @@ router.post(
       .withMessage('Discipline must be between 1 and 50 characters'),
     handleValidationErrors,
   ],
-  trainRouteHandler,
+  async (req, res, next) => {
+    try {
+      const { horseId } = req.body;
+
+      // Validate horse ownership before training
+      const horse = await findOwnedResource('horse', horseId, req.user.id);
+      if (!horse) {
+        throw new AppError('Horse not found', 404);
+      }
+
+      // Attach validated horse to request for handler
+      req.horse = horse;
+
+      // Proceed to training handler
+      return trainRouteHandler(req, res, next);
+    } catch (error) {
+      if (error instanceof AppError) {
+        return res.status(error.statusCode).json({
+          success: false,
+          message: error.message,
+        });
+      }
+      logger.error(`[trainingRoutes.train] Error: ${error.message}`);
+      return res.status(500).json({
+        success: false,
+        message: 'Internal server error',
+      });
+    }
+  },
 );
 
 /**
  * GET /api/training/status/:horseId/:discipline
  * Get training status for a horse in a specific discipline
+ *
+ * Security: Validates horse ownership before returning training status
  */
 router.get(
   '/status/:horseId/:discipline',
+  trainingLimiter,
   [
     param('horseId').isInt({ min: 1 }).withMessage('Horse ID must be a positive integer'),
     param('discipline')
@@ -100,12 +147,13 @@ router.get(
       .withMessage('Discipline must be between 1 and 50 characters'),
     handleValidationErrors,
   ],
+  requireOwnership('horse', { idParam: 'horseId' }),
   async (req, res) => {
     try {
       const { horseId, discipline } = req.params;
 
       logger.info(
-        `[trainingRoutes.getStatus] Getting training status for horse ${horseId} in ${discipline}`,
+        `[trainingRoutes.getStatus] User ${req.user.id} getting training status for horse ${horseId} in ${discipline}`,
       );
 
       const status = await getTrainingStatus(parseInt(horseId), discipline);
@@ -128,18 +176,22 @@ router.get(
 /**
  * GET /api/training/status/:horseId
  * Get training status for a horse across all disciplines
+ *
+ * Security: Validates horse ownership before returning all training statuses
  */
 router.get(
   '/status/:horseId',
+  trainingLimiter,
   [
     param('horseId').isInt({ min: 1 }).withMessage('Horse ID must be a positive integer'),
     handleValidationErrors,
   ],
+  requireOwnership('horse', { idParam: 'horseId' }),
   async (req, res) => {
     try {
       const { horseId } = req.params;
       logger.info(
-        `[trainingRoutes.getStatusAll] Getting all training statuses for horse ${horseId}`,
+        `[trainingRoutes.getStatusAll] User ${req.user.id} getting all training statuses for horse ${horseId}`,
       );
 
       const disciplines = getAllDisciplines();
@@ -172,10 +224,21 @@ router.get(
  */
 router.get(
   '/trainable/:userId',
+  trainingLimiter,
+  authenticateToken,
   [param('userId').isUUID().withMessage('User ID must be a valid UUID'), handleValidationErrors],
   async (req, res) => {
     try {
       const { userId } = req.params;
+      if (!req.user || req.user.id !== userId) {
+        logger.warn(
+          `[trainingRoutes.getTrainableHorses] Unauthorized access for user ${userId} by ${req.user?.id}`,
+        );
+        return res.status(403).json({
+          success: false,
+          message: 'Forbidden: cannot access trainable horses for another user',
+        });
+      }
 
       logger.info(
         `[trainingRoutes.getTrainableHorses] Getting trainable horses for user ${userId}`,
