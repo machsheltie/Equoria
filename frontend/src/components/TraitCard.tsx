@@ -28,7 +28,7 @@ export interface TraitCardProps {
  */
 const getTraitColors = (type: 'genetic' | 'epigenetic', rarity: string) => {
   // Base colors by type
-  const typeColors = {
+  const typeColors: Record<string, { border: string; bg: string; text: string; accent?: string; animation?: string }> = {
     genetic: {
       border: 'border-blue-500',
       bg: 'bg-blue-50',

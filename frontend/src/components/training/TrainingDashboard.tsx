@@ -13,7 +13,8 @@ interface TrainingDashboardProps {
 const TrainingDashboard = ({ userId = 'me' }: TrainingDashboardProps) => {
   const [selectedHorse, setSelectedHorse] = useState<TrainableHorse | null>(null);
   const [filter, setFilter] = useState<EligibilityFilter>('all');
-  const { data: horses, isLoading, error, refetch } = useTrainableHorses(userId);
+  const normalizedUserId = typeof userId === 'number' ? String(userId) : userId;
+  const { data: horses, isLoading, error, refetch } = useTrainableHorses(normalizedUserId);
 
   // Filter horses based on eligibility
   const filteredHorses = useMemo(() => {

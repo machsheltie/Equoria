@@ -19,13 +19,13 @@
 
 import React, { useState, useMemo } from 'react';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
-import { 
-  Search, 
-  Filter, 
-  Calendar, 
-  Trophy, 
-  DollarSign, 
-  Users, 
+import {
+  Search,
+  Filter,
+  Calendar,
+  Trophy,
+  DollarSign,
+  Users,
   Clock,
   CheckCircle,
   XCircle,
@@ -76,10 +76,10 @@ const CompetitionBrowser: React.FC = () => {
   const [selectedCompetition, setSelectedCompetition] = useState<number | null>(null);
 
   // Fetch competitions
-  const { 
-    data: competitions = [], 
-    isLoading: competitionsLoading, 
-    error: competitionsError 
+  const {
+    data: competitions = [],
+    isLoading: competitionsLoading,
+    error: competitionsError
   } = useQuery<Competition[]>({
     queryKey: ['competitions'],
     queryFn: async () => {
@@ -92,9 +92,9 @@ const CompetitionBrowser: React.FC = () => {
   });
 
   // Fetch disciplines
-  const { 
-    data: disciplines = [], 
-    isLoading: disciplinesLoading 
+  const {
+    data: disciplines = [],
+    isLoading: disciplinesLoading
   } = useQuery<string[]>({
     queryKey: ['disciplines'],
     queryFn: async () => {
@@ -107,9 +107,9 @@ const CompetitionBrowser: React.FC = () => {
   });
 
   // Fetch eligibility for selected competition
-  const { 
-    data: eligibility, 
-    isLoading: eligibilityLoading 
+  const {
+    data: eligibility,
+    isLoading: eligibilityLoading
   } = useQuery<EligibilityResponse>({
     queryKey: ['eligibility', selectedCompetition],
     queryFn: async () => {
@@ -139,8 +139,8 @@ const CompetitionBrowser: React.FC = () => {
       return response.json();
     },
     onSuccess: () => {
-      queryClient.invalidateQueries(['competitions']);
-      queryClient.invalidateQueries(['eligibility']);
+      queryClient.invalidateQueries({ queryKey: ['competitions'] });
+      queryClient.invalidateQueries({ queryKey: ['eligibility'] });
     },
   });
 
@@ -148,9 +148,9 @@ const CompetitionBrowser: React.FC = () => {
   const filteredCompetitions = useMemo(() => {
     let filtered = competitions.filter(competition => {
       const matchesSearch = competition.name.toLowerCase().includes(searchQuery.toLowerCase()) ||
-                           competition.description.toLowerCase().includes(searchQuery.toLowerCase());
+        competition.description.toLowerCase().includes(searchQuery.toLowerCase());
       const matchesDiscipline = selectedDiscipline === 'all' || competition.discipline === selectedDiscipline;
-      
+
       return matchesSearch && matchesDiscipline;
     });
 
@@ -211,7 +211,7 @@ const CompetitionBrowser: React.FC = () => {
   const isMobile = window.innerWidth < 768;
 
   return (
-    <main 
+    <main
       role="main"
       className="competition-browser p-6 max-w-7xl mx-auto"
       data-testid="competition-browser"
@@ -222,7 +222,7 @@ const CompetitionBrowser: React.FC = () => {
       </div>
 
       {/* Filters and Search */}
-      <div 
+      <div
         className="bg-white rounded-lg shadow-md p-6 mb-6"
         data-testid="competition-filters"
       >
@@ -275,7 +275,7 @@ const CompetitionBrowser: React.FC = () => {
       </div>
 
       {/* Competition List */}
-      <div 
+      <div
         className={`competition-list ${isMobile ? 'mobile-view' : 'desktop-view'}`}
         data-testid="competition-list"
       >
@@ -289,7 +289,7 @@ const CompetitionBrowser: React.FC = () => {
             <XCircle className="w-12 h-12 text-red-500 mx-auto mb-4" />
             <p className="text-red-600 mb-4">Failed to load competitions</p>
             <button
-              onClick={() => queryClient.invalidateQueries(['competitions'])}
+              onClick={() => queryClient.invalidateQueries({ queryKey: ['competitions'] })}
               className="px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700"
             >
               Retry
@@ -347,16 +347,15 @@ const CompetitionBrowser: React.FC = () => {
                 <div className="flex justify-between items-center">
                   <div data-testid="eligibility-status">
                     {selectedCompetition === competition.id && eligibility ? (
-                      <span className={`text-sm font-medium ${
-                        eligibility.eligible ? 'text-green-600' : 'text-red-600'
-                      }`}>
+                      <span className={`text-sm font-medium ${eligibility.eligible ? 'text-green-600' : 'text-red-600'
+                        }`}>
                         {eligibility.eligible ? 'Horses eligible' : 'No eligible horses'}
                       </span>
                     ) : (
                       <span className="text-sm text-gray-500">Click to check eligibility</span>
                     )}
                   </div>
-                  
+
                   <button
                     onClick={() => setSelectedCompetition(competition.id)}
                     className="px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors"
@@ -381,10 +380,10 @@ const CompetitionBrowser: React.FC = () => {
                             <span className="font-medium">{horse.name}</span>
                             <button
                               onClick={() => handleEntry(competition.id, horse.id)}
-                              disabled={entryMutation.isLoading}
+                              disabled={entryMutation.isPending}
                               className="px-3 py-1 bg-green-600 text-white text-sm rounded hover:bg-green-700 disabled:opacity-50"
                             >
-                              {entryMutation.isLoading ? 'Entering...' : 'Enter'}
+                              {entryMutation.isPending ? 'Entering...' : 'Enter'}
                             </button>
                           </div>
                         ))}
@@ -402,7 +401,7 @@ const CompetitionBrowser: React.FC = () => {
 
       {/* Entry Confirmation */}
       {entryMutation.isSuccess && (
-        <div 
+        <div
           className="fixed bottom-4 right-4 bg-green-600 text-white p-4 rounded-lg shadow-lg"
           data-testid="entry-confirmation"
         >

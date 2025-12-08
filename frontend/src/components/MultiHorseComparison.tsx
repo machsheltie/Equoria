@@ -19,13 +19,13 @@
 
 import React, { useState, useEffect, useMemo } from 'react';
 import { useQuery } from '@tanstack/react-query';
-import { 
-  Search, 
-  Filter, 
-  ArrowUpDown, 
-  Download, 
-  Save, 
-  Eye, 
+import {
+  Search,
+  Filter,
+  ArrowUpDown,
+  Download,
+  Save,
+  Eye,
   EyeOff,
   BarChart3,
   TrendingUp
@@ -83,7 +83,7 @@ interface ComparisonData {
 }
 
 // API Base URL
-const API_BASE_URL = process.env.REACT_APP_API_URL || 'http://localhost:3000/api';
+const API_BASE_URL = import.meta.env.VITE_API_URL || 'http://localhost:3000/api';
 
 // Custom hooks for data fetching
 const useUserHorses = (userId: number | null) => {
@@ -177,7 +177,7 @@ const MultiHorseComparison: React.FC<MultiHorseComparisonProps> = ({
 
   // Filter and sort horses
   const filteredAndSortedHorses = useMemo(() => {
-    let filtered = horses.filter(horse => 
+    let filtered = horses.filter(horse =>
       horse.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
       horse.breed.toLowerCase().includes(searchTerm.toLowerCase()) ||
       horse.traits.some(trait => trait.toLowerCase().includes(searchTerm.toLowerCase()))
@@ -213,7 +213,7 @@ const MultiHorseComparison: React.FC<MultiHorseComparisonProps> = ({
 
   // Handle horse selection
   const handleHorseSelect = (horse: Horse) => {
-    const newSelection = selectedHorses.includes(horse.id) 
+    const newSelection = selectedHorses.includes(horse.id)
       ? selectedHorses.filter(id => id !== horse.id)
       : [...selectedHorses, horse.id];
     onHorseSelectionChange(newSelection);
@@ -245,7 +245,7 @@ const MultiHorseComparison: React.FC<MultiHorseComparisonProps> = ({
   };
 
   return (
-    <div 
+    <div
       data-testid="multi-horse-comparison"
       className={`space-y-6 ${className}`}
     >
@@ -282,7 +282,7 @@ const MultiHorseComparison: React.FC<MultiHorseComparisonProps> = ({
               {selectedHorses.length === filteredAndSortedHorses.length ? 'Deselect All' : 'Select All'}
             </button>
           </div>
-          
+
           {/* Search and Filter Controls */}
           <div className="flex flex-wrap gap-4 mb-4">
             <div className="flex-1 min-w-64">
@@ -298,7 +298,7 @@ const MultiHorseComparison: React.FC<MultiHorseComparisonProps> = ({
                 />
               </div>
             </div>
-            
+
             <select
               value={sortBy}
               onChange={(e) => setSortBy(e.target.value as any)}
@@ -333,7 +333,7 @@ const MultiHorseComparison: React.FC<MultiHorseComparisonProps> = ({
                 viewMode={viewMode}
               />
             ))}
-            
+
             {filteredAndSortedHorses.length === 0 && (
               <div className="text-center py-8 text-gray-500">
                 <p>No horses found matching your search criteria</p>
@@ -426,20 +426,18 @@ const HorseSelectionItem: React.FC<HorseSelectionItemProps> = ({
 }) => {
   return (
     <div
-      className={`p-3 border rounded-lg cursor-pointer transition-colors ${
-        isSelected
+      className={`p-3 border rounded-lg cursor-pointer transition-colors ${isSelected
           ? 'bg-blue-50 border-blue-300 ring-2 ring-blue-200'
           : 'hover:bg-gray-50 border-gray-200'
-      }`}
+        }`}
       onClick={onSelect}
       data-testid={`horse-item-${horse.id}`}
     >
       <div className="flex items-center justify-between">
         <div className="flex-1">
           <div className="flex items-center space-x-3">
-            <div className={`w-4 h-4 rounded border-2 flex items-center justify-center ${
-              isSelected ? 'bg-blue-500 border-blue-500' : 'border-gray-300'
-            }`}>
+            <div className={`w-4 h-4 rounded border-2 flex items-center justify-center ${isSelected ? 'bg-blue-500 border-blue-500' : 'border-gray-300'
+              }`}>
               {isSelected && <div className="w-2 h-2 bg-white rounded-full"></div>}
             </div>
             <div>

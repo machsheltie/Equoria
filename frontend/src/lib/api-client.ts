@@ -12,7 +12,7 @@
  * - Comprehensive error handling
  */
 
-const API_BASE_URL = import.meta.env.VITE_API_URL || 'http://localhost:3000';
+const API_BASE_URL = import.meta.env.VITE_API_URL || 'http://localhost:3001';
 
 // Track if a token refresh is in progress to avoid multiple concurrent refreshes
 let isRefreshing = false;
@@ -29,6 +29,98 @@ interface ApiResponse<T> {
   status: string;
   message?: string;
   data?: T;
+}
+
+interface TrainableHorse {
+  id: number;
+  name: string;
+  level?: number;
+  breed?: string;
+  gender?: string;
+  sex?: string;
+  ageYears?: number;
+  bestDisciplines?: string[];
+  nextEligibleAt?: string | null;
+}
+
+interface TrainingRequest {
+  horseId: number;
+  discipline: string;
+}
+
+interface TrainingEligibility {
+  eligible: boolean;
+  reason?: string;
+  cooldownEndsAt?: string | null;
+}
+
+interface DisciplineStatus {
+  discipline: string;
+  score?: number;
+  nextEligibleDate?: string | null;
+  lastTrainedAt?: string | null;
+}
+
+interface TrainingResult {
+  updatedScore: number;
+  nextEligibleDate: string;
+  discipline: string;
+  horseId: number;
+  message?: string;
+}
+
+interface BreedRequest {
+  sireId: number;
+  damId: number;
+  userId?: string;
+}
+
+interface FoalDevelopment {
+  stage?: string;
+  progress?: number;
+  bonding?: number;
+  stress?: number;
+  enrichmentLevel?: number;
+}
+
+interface Foal {
+  id: number;
+  name?: string;
+  sireId?: number;
+  damId?: number;
+  ageDays?: number;
+  traits?: string[];
+  development?: FoalDevelopment;
+}
+
+interface BreedResponse {
+  success?: boolean;
+  message?: string;
+  foalId?: number;
+  foal?: Foal;
+}
+
+interface FoalActivity {
+  id?: number;
+  activity: string;
+  duration?: number;
+  createdAt?: string;
+}
+
+interface HorseSummary {
+  id: number;
+  name: string;
+  breed?: string;
+  age?: number;
+  gender?: string;
+}
+
+interface HorseTrainingHistoryEntry {
+  id?: number;
+  discipline?: string;
+  score?: number;
+  trainedAt?: string;
+  notes?: string;
 }
 
 /**
@@ -226,6 +318,69 @@ export const apiClient = {
 };
 
 /**
+ * Training API surface
+ */
+export const trainingApi = {
+  getTrainableHorses: (userId: string | number) => {
+    return apiClient.get<TrainableHorse[]>(`/api/training/trainable/${userId}`);
+  },
+  checkEligibility: (payload: TrainingRequest) => {
+    return apiClient.post<TrainingEligibility>('/api/training/check-eligibility', payload);
+  },
+  train: (payload: TrainingRequest) => {
+    return apiClient.post<TrainingResult>('/api/training/train', payload);
+  },
+  getDisciplineStatus: (horseId: number, discipline: string) => {
+    return apiClient.get<DisciplineStatus>(
+      `/api/training/status/${horseId}/${encodeURIComponent(discipline)}`
+    );
+  },
+  getHorseStatus: (horseId: number) => {
+    return apiClient.get<DisciplineStatus[]>(`/api/training/horse/${horseId}/all-status`);
+  },
+};
+
+/**
+ * Breeding/Foal API surface
+ */
+export const breedingApi = {
+  breedFoal: (payload: BreedRequest) => {
+    return apiClient.post<BreedResponse>('/api/foals/breeding/breed', payload);
+  },
+  getFoal: (foalId: number) => {
+    return apiClient.get<Foal>(`/api/foals/${foalId}`);
+  },
+  getFoalDevelopment: (foalId: number) => {
+    return apiClient.get<FoalDevelopment>(`/api/foals/${foalId}/development`);
+  },
+  getFoalActivities: (foalId: number) => {
+    return apiClient.get<FoalActivity[]>(`/api/foals/${foalId}/activities`);
+  },
+  logFoalActivity: (foalId: number, activity: FoalActivity) => {
+    return apiClient.post<FoalActivity>(`/api/foals/${foalId}/activity`, activity);
+  },
+  enrichFoal: (foalId: number, activity: FoalActivity) => {
+    return apiClient.post<FoalActivity>(`/api/foals/${foalId}/enrich`, activity);
+  },
+  revealTraits: (foalId: number) => {
+    return apiClient.post<{ traits: string[] }>(`/api/foals/${foalId}/reveal-traits`);
+  },
+  developFoal: (foalId: number, updates: Partial<FoalDevelopment>) => {
+    return apiClient.put<FoalDevelopment>(`/api/foals/${foalId}/develop`, updates);
+  },
+};
+
+/**
+ * Horses API surface
+ */
+export const horsesApi = {
+  list: () => apiClient.get<HorseSummary[]>('/api/horses'),
+  get: (horseId: number) => apiClient.get<HorseSummary>(`/api/horses/${horseId}`),
+  getTrainingHistory: (horseId: number) =>
+    apiClient.get<HorseTrainingHistoryEntry[]>(`/api/horses/${horseId}/training-history`),
+};
+
+/**
  * Authentication API endpoints
  */
 export const authApi = {
@@ -283,13 +438,16 @@ export const authApi = {
 
   /**
    * Update user profile
+   * Supports updating username (display name), bio, and avatar
    */
-  updateProfile: (updates: { username?: string; email?: string }) => {
+  updateProfile: (updates: { username?: string; email?: string; bio?: string; avatarUrl?: string }) => {
     return apiClient.put<{
       user: {
         id: number;
         username: string;
         email: string;
+        bio?: string;
+        avatarUrl?: string;
       };
     }>('/api/auth/profile', updates);
   },
@@ -372,4 +530,19 @@ export const authApi = {
  * Export both for convenience
  */
 export default apiClient;
-export type { ApiError, ApiResponse };
+export type {
+  ApiError,
+  ApiResponse,
+  BreedRequest,
+  BreedResponse,
+  DisciplineStatus,
+  Foal,
+  FoalActivity,
+  FoalDevelopment,
+  HorseSummary,
+  HorseTrainingHistoryEntry,
+  TrainableHorse,
+  TrainingEligibility,
+  TrainingRequest,
+  TrainingResult,
+};

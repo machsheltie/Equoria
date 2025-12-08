@@ -30,6 +30,8 @@ import {
   Loader2,
   Filter,
   ChevronDown,
+  Sparkles,
+  TrendingUp,
 } from 'lucide-react';
 import FantasyButton from '../components/FantasyButton';
 import HorseCard from '../components/HorseCard';
@@ -495,6 +497,7 @@ const GeneticsTab: React.FC<{ horse: Horse }> = ({ horse }) => {
   // Separate traits by type for section display
   const geneticTraits = filteredTraits.filter((t) => t.type === 'genetic');
   const epigeneticTraits = filteredTraits.filter((t) => t.type === 'epigenetic');
+  const allTraits = filteredTraits; // Used by Genetic Overview and Lineage sections
 
   // Loading state
   if (epigeneticLoading || interactionsLoading || timelineLoading) {

@@ -20,12 +20,12 @@
 
 import React, { useState, useEffect, useMemo } from 'react';
 import { useQuery, useMutation } from '@tanstack/react-query';
-import { 
-  FileText, 
-  Download, 
-  Calendar, 
-  TrendingUp, 
-  Brain, 
+import {
+  FileText,
+  Download,
+  Calendar,
+  TrendingUp,
+  Brain,
   Settings,
   Eye,
   Save,
@@ -113,7 +113,7 @@ interface ReportData {
 }
 
 // API Base URL
-const API_BASE_URL = process.env.REACT_APP_API_URL || 'http://localhost:3000/api';
+const API_BASE_URL = import.meta.env.VITE_API_URL || 'http://localhost:3000/api';
 
 // Custom hooks for data fetching
 const useReportMetrics = () => {
@@ -256,7 +256,7 @@ const EnhancedReportingInterface: React.FC<EnhancedReportingInterfaceProps> = ({
         config: reportConfig,
         horseIds: selectedHorses,
       });
-      
+
       // Create download link
       const url = window.URL.createObjectURL(blob);
       const a = document.createElement('a');
@@ -279,7 +279,7 @@ const EnhancedReportingInterface: React.FC<EnhancedReportingInterfaceProps> = ({
   };
 
   return (
-    <div 
+    <div
       data-testid="enhanced-reporting-interface"
       className={`space-y-6 ${className}`}
     >
@@ -327,11 +327,10 @@ const EnhancedReportingInterface: React.FC<EnhancedReportingInterfaceProps> = ({
             <button
               key={tab.id}
               onClick={() => setActiveTab(tab.id as any)}
-              className={`py-2 px-1 border-b-2 font-medium text-sm flex items-center space-x-2 ${
-                activeTab === tab.id
+              className={`py-2 px-1 border-b-2 font-medium text-sm flex items-center space-x-2 ${activeTab === tab.id
                   ? 'border-blue-500 text-blue-600'
                   : 'border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300'
-              }`}
+                }`}
             >
               <tab.icon className="w-4 h-4" />
               <span>{tab.label}</span>
@@ -372,7 +371,7 @@ const EnhancedReportingInterface: React.FC<EnhancedReportingInterfaceProps> = ({
           <Download className="w-5 h-5" />
           <span>Export Manager</span>
         </h3>
-        
+
         <div className="grid grid-cols-2 md:grid-cols-4 gap-4" data-testid="export-options">
           {[
             { format: 'pdf' as const, label: 'PDF', description: 'Formatted Report', icon: FileText },
@@ -383,9 +382,8 @@ const EnhancedReportingInterface: React.FC<EnhancedReportingInterfaceProps> = ({
             <button
               key={option.format}
               onClick={() => handleExport(option.format)}
-              className={`p-4 border rounded-lg hover:bg-gray-50 text-center transition-colors ${
-                reportConfig.format === option.format ? 'border-blue-500 bg-blue-50' : 'border-gray-200'
-              }`}
+              className={`p-4 border rounded-lg hover:bg-gray-50 text-center transition-colors ${reportConfig.format === option.format ? 'border-blue-500 bg-blue-50' : 'border-gray-200'
+                }`}
             >
               <option.icon className="w-6 h-6 mx-auto mb-2 text-gray-600" />
               <div className="text-lg font-medium">{option.label}</div>
@@ -533,21 +531,19 @@ const ReportBuilderTab: React.FC<ReportBuilderTabProps> = ({
                 {metrics.map(metric => (
                   <div
                     key={metric.id}
-                    className={`p-3 border rounded-lg cursor-pointer transition-colors ${
-                      reportConfig.sections.includes(metric.id)
+                    className={`p-3 border rounded-lg cursor-pointer transition-colors ${reportConfig.sections.includes(metric.id)
                         ? 'bg-blue-50 border-blue-300 ring-2 ring-blue-200'
                         : 'hover:bg-gray-50 border-gray-200'
-                    }`}
+                      }`}
                     onClick={() => onSectionToggle(metric.id)}
                     data-testid={`metric-${metric.id}`}
                   >
                     <div className="flex items-center justify-between mb-2">
                       <span className="text-sm font-medium text-gray-900">{metric.label}</span>
-                      <div className={`w-4 h-4 rounded border-2 flex items-center justify-center ${
-                        reportConfig.sections.includes(metric.id)
+                      <div className={`w-4 h-4 rounded border-2 flex items-center justify-center ${reportConfig.sections.includes(metric.id)
                           ? 'bg-blue-500 border-blue-500'
                           : 'border-gray-300'
-                      }`}>
+                        }`}>
                         {reportConfig.sections.includes(metric.id) && (
                           <div className="w-2 h-2 bg-white rounded-full"></div>
                         )}
@@ -701,10 +697,9 @@ const ReportPreviewTab: React.FC<ReportPreviewTabProps> = ({
                   <span className="text-sm">{point.date}</span>
                   <div className="flex items-center space-x-2">
                     <span className="text-sm font-medium">{point.value}%</span>
-                    <span className={`text-xs ${
-                      point.trend === 'up' ? 'text-green-600' :
-                      point.trend === 'down' ? 'text-red-600' : 'text-gray-600'
-                    }`}>
+                    <span className={`text-xs ${point.trend === 'up' ? 'text-green-600' :
+                        point.trend === 'down' ? 'text-red-600' : 'text-gray-600'
+                      }`}>
                       {point.trend === 'up' ? '↗' : point.trend === 'down' ? '↘' : '→'}
                     </span>
                   </div>

@@ -106,7 +106,7 @@ const formatDisciplinesTooltip = (disciplineScores: Record<string, number>): str
 
 // API function to fetch horses
 const fetchHorses = async (userId: number): Promise<Horse[]> => {
-  const response = await fetch('/api/horses', {
+  const response = await fetch('/api/v1/horses', {
     headers: {
       'Authorization': `Bearer ${localStorage.getItem('authToken')}`,
       'Content-Type': 'application/json',
