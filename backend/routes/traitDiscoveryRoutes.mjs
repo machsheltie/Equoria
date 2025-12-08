@@ -7,9 +7,14 @@ import {
 } from '../utils/traitDiscovery.mjs';
 import { discoverTraits, getDiscoveryStatus, batchDiscoverTraits } from '../controllers/traitController.mjs';
 import { handleValidationErrors } from '../middleware/validationErrorHandler.mjs';
+import { authenticateToken } from '../middleware/auth.mjs';
+import { requireOwnership, findOwnedResource } from '../middleware/ownership.mjs';
 import logger from '../utils/logger.mjs';
 
 const router = express.Router();
+
+// Apply authentication to all routes
+router.use(authenticateToken);
 
 /**
  * POST /api/traits/discover/batch
@@ -42,14 +47,43 @@ router.post(
       }
 
       const { horseIds } = req.body;
+      const userId = req.user.id;
       logger.info(
-        `[traitDiscoveryRoutes] POST /discover/batch - Processing ${horseIds.length} horses`,
+        `[traitDiscoveryRoutes] POST /discover/batch - Processing ${horseIds.length} horses for user ${userId}`,
       );
 
-      const results = await batchRevealTraits(horseIds);
+      // Validate ownership for each horse (atomic)
+      const validatedHorses = [];
+      const ownershipErrors = [];
+
+      for (const horseId of horseIds) {
+        const horse = await findOwnedResource('horse', parseInt(horseId), userId);
+        if (horse) {
+          validatedHorses.push(parseInt(horseId));
+        } else {
+          ownershipErrors.push({
+            horseId,
+            error: 'Horse not found or you do not own this horse',
+          });
+        }
+      }
+
+      // If no horses are valid, return error
+      if (validatedHorses.length === 0) {
+        return res.status(403).json({
+          success: false,
+          message: 'No valid horses found - all horses failed ownership validation',
+          errors: ownershipErrors,
+        });
+      }
+
+      // Process only validated horses
+      const results = await batchRevealTraits(validatedHorses);
 
       const summary = {
         totalHorses: horseIds.length,
+        validatedHorses: validatedHorses.length,
+        ownershipErrors: ownershipErrors.length,
         successfulDiscoveries: results.filter(r => !r.error).length,
         failedDiscoveries: results.filter(r => r.error).length,
         totalTraitsRevealed: results.reduce((sum, r) => sum + (r.traitsRevealed?.length || 0), 0),
@@ -57,9 +91,10 @@ router.post(
 
       res.json({
         success: true,
-        message: `Batch discovery completed for ${horseIds.length} horses`,
+        message: `Batch discovery completed for ${validatedHorses.length} validated horses`,
         data: {
           results,
+          ownershipErrors,
           summary,
         },
       });
@@ -83,6 +118,7 @@ router.post(
 router.get(
   '/progress/:horseId',
   [param('horseId').isInt({ min: 1 }).withMessage('Horse ID must be a positive integer')],
+  requireOwnership('horse', { idParam: 'horseId' }),
   async (req, res) => {
     try {
       // Check for validation errors
@@ -189,6 +225,7 @@ router.get('/conditions', async (req, res) => {
 router.post(
   '/check-conditions/:horseId',
   [param('horseId').isInt({ min: 1 }).withMessage('Horse ID must be a positive integer')],
+  requireOwnership('horse', { idParam: 'horseId' }),
   async (req, res) => {
     try {
       // Check for validation errors
@@ -295,6 +332,7 @@ router.post(
     body('forceCheck').optional().isBoolean().withMessage('forceCheck must be a boolean'),
     handleValidationErrors,
   ],
+  requireOwnership('horse', { idParam: 'horseId' }),
   discoverTraits,
 );
 
@@ -308,6 +346,7 @@ router.get(
     param('horseId').isInt({ min: 1 }).withMessage('Horse ID must be a positive integer'),
     handleValidationErrors,
   ],
+  requireOwnership('horse', { idParam: 'horseId' }),
   getDiscoveryStatus,
 );
 
