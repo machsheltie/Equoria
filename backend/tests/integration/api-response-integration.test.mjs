@@ -224,7 +224,11 @@ describe('🔄 API Response Integration Tests', () => {
 
     expect(registerResponse.status).toBe(201);
     testUser = registerResponse.body.data.user;
-    authToken = registerResponse.body.data.token;
+
+    // Extract accessToken from httpOnly cookie
+    const cookies = registerResponse.headers['set-cookie'];
+    const accessTokenCookie = cookies.find(cookie => cookie.startsWith('accessToken='));
+    authToken = accessTokenCookie.split(';')[0].split('=')[1];
   });
 
   afterEach(async () => {
@@ -421,8 +425,11 @@ describe('🔄 API Response Integration Tests', () => {
       expect(loginResponse.body).toHaveProperty('message');
       expect(loginResponse.body).toHaveProperty('data');
       // Auth endpoints may not have timestamp in root, check for consistent structure
-      expect(loginResponse.body.data).toHaveProperty('token');
+      // Note: Tokens are now in httpOnly cookies, not response body
       expect(loginResponse.body.data).toHaveProperty('user');
+      expect(loginResponse.headers['set-cookie']).toBeDefined();
+      const hasAccessToken = loginResponse.headers['set-cookie'].some(cookie => cookie.startsWith('accessToken='));
+      expect(hasAccessToken).toBe(true);
     });
 
     test('should maintain consistent response format across health endpoints', async () => {
