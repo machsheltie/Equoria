@@ -8,6 +8,7 @@
 import express from 'express';
 import { body, param, query, validationResult } from 'express-validator';
 import { authenticateToken } from '../middleware/auth.mjs';
+import { requireOwnership, findOwnedResource } from '../middleware/ownership.mjs';
 import { evaluateEnhancedMilestone } from '../utils/enhancedMilestoneEvaluation.mjs';
 import {
   logTraitAssignment,
@@ -49,6 +50,8 @@ router.get('/definitions', (req, res) => {
 /**
  * POST /api/epigenetic-traits/evaluate-milestone/:horseId
  * Evaluate enhanced milestone with epigenetic factors
+ *
+ * Security: Validates horse ownership using requireOwnership middleware (atomic, prevents CWE-639)
  */
 router.post('/evaluate-milestone/:horseId',
   authenticateToken,
@@ -57,6 +60,7 @@ router.post('/evaluate-milestone/:horseId',
     body('milestoneData').optional().isObject().withMessage('Milestone data must be an object'),
     body('includeHistory').optional().isBoolean().withMessage('Include history must be boolean'),
   ],
+  requireOwnership('horse', { idParam: 'horseId' }),
   async (req, res) => {
     try {
       const errors = validationResult(req);
@@ -72,12 +76,9 @@ router.post('/evaluate-milestone/:horseId',
       const { milestoneData = {}, includeHistory = true } = req.body;
       const userId = req.user.id;
 
-      // Verify horse ownership
-      const horse = await prisma.horse.findFirst({
-        where: {
-          id: parseInt(horseId),
-          ownerId: userId,
-        },
+      // Ownership already validated by middleware, fetch full horse with includes
+      const horse = await prisma.horse.findUnique({
+        where: { id: parseInt(horseId) },
         include: {
           groomAssignments: {
             where: { isActive: true },
@@ -95,13 +96,6 @@ router.post('/evaluate-milestone/:horseId',
           },
         },
       });
-
-      if (!horse) {
-        return res.status(404).json({
-          success: false,
-          error: 'Horse not found or not owned by user',
-        });
-      }
 
       // Get groom care history
       let groomCareHistory = {};
@@ -144,6 +138,9 @@ router.post('/evaluate-milestone/:horseId',
 /**
  * POST /api/epigenetic-traits/log-trait
  * Log a trait assignment to history
+ *
+ * Security: Validates horse ownership using findOwnedResource helper (atomic, prevents CWE-639)
+ * Note: Uses helper directly since horseId is in body, not params
  */
 router.post('/log-trait',
   authenticateToken,
@@ -172,14 +169,8 @@ router.post('/log-trait',
       const userId = req.user.id;
       const { horseId } = req.body;
 
-      // Verify horse ownership
-      const horse = await prisma.horse.findFirst({
-        where: {
-          id: horseId,
-          ownerId: userId,
-        },
-      });
-
+      // Validate horse ownership (atomic single-query validation)
+      const horse = await findOwnedResource('horse', horseId, userId);
       if (!horse) {
         return res.status(404).json({
           success: false,
@@ -208,6 +199,8 @@ router.post('/log-trait',
 /**
  * GET /api/epigenetic-traits/history/:horseId
  * Get trait development history for a horse
+ *
+ * Security: Validates horse ownership using requireOwnership middleware (atomic, prevents CWE-639)
  */
 router.get('/history/:horseId',
   authenticateToken,
@@ -220,6 +213,7 @@ router.get('/history/:horseId',
     query('startDate').optional().isISO8601(),
     query('endDate').optional().isISO8601(),
   ],
+  requireOwnership('horse', { idParam: 'horseId' }),
   async (req, res) => {
     try {
       const errors = validationResult(req);
@@ -232,23 +226,7 @@ router.get('/history/:horseId',
       }
 
       const { horseId } = req.params;
-      const userId = req.user.id;
-
-      // Verify horse ownership
-      const horse = await prisma.horse.findFirst({
-        where: {
-          id: parseInt(horseId),
-          ownerId: userId,
-        },
-        select: { id: true, name: true },
-      });
-
-      if (!horse) {
-        return res.status(404).json({
-          success: false,
-          error: 'Horse not found or not owned by user',
-        });
-      }
+      const horse = req.horse; // Cached by middleware
 
       // Get trait history
       const options = {
@@ -286,12 +264,15 @@ router.get('/history/:horseId',
 /**
  * GET /api/epigenetic-traits/summary/:horseId
  * Get trait development summary for a horse
+ *
+ * Security: Validates horse ownership using requireOwnership middleware (atomic, prevents CWE-639)
  */
 router.get('/summary/:horseId',
   authenticateToken,
   [
     param('horseId').isInt().withMessage('Horse ID must be an integer'),
   ],
+  requireOwnership('horse', { idParam: 'horseId' }),
   async (req, res) => {
     try {
       const errors = validationResult(req);
@@ -304,23 +285,7 @@ router.get('/summary/:horseId',
       }
 
       const { horseId } = req.params;
-      const userId = req.user.id;
-
-      // Verify horse ownership
-      const horse = await prisma.horse.findFirst({
-        where: {
-          id: parseInt(horseId),
-          ownerId: userId,
-        },
-        select: { id: true, name: true },
-      });
-
-      if (!horse) {
-        return res.status(404).json({
-          success: false,
-          error: 'Horse not found or not owned by user',
-        });
-      }
+      const horse = req.horse; // Cached by middleware
 
       // Get development summary
       const summary = await getTraitDevelopmentSummary(parseInt(horseId));
@@ -346,12 +311,15 @@ router.get('/summary/:horseId',
 /**
  * GET /api/epigenetic-traits/breeding-insights/:horseId
  * Get breeding insights based on trait development
+ *
+ * Security: Validates horse ownership using requireOwnership middleware (atomic, prevents CWE-639)
  */
 router.get('/breeding-insights/:horseId',
   authenticateToken,
   [
     param('horseId').isInt().withMessage('Horse ID must be an integer'),
   ],
+  requireOwnership('horse', { idParam: 'horseId' }),
   async (req, res) => {
     try {
       const errors = validationResult(req);
@@ -364,23 +332,7 @@ router.get('/breeding-insights/:horseId',
       }
 
       const { horseId } = req.params;
-      const userId = req.user.id;
-
-      // Verify horse ownership
-      const horse = await prisma.horse.findFirst({
-        where: {
-          id: parseInt(horseId),
-          ownerId: userId,
-        },
-        select: { id: true, name: true },
-      });
-
-      if (!horse) {
-        return res.status(404).json({
-          success: false,
-          error: 'Horse not found or not owned by user',
-        });
-      }
+      const horse = req.horse; // Cached by middleware
 
       // Get breeding insights
       const insights = await getBreedingInsights(parseInt(horseId));
