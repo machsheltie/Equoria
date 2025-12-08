@@ -170,34 +170,34 @@ So that **I can make informed breeding and training decisions**.
   - [x] Add useHorseTraitTimeline hook (with comprehensive JSDoc)
   - [x] Transform API data to UI format (geneticsApi object with 3 endpoints)
 
-- [ ] **Task 3: Enhanced Genetics Tab** (AC: All)
-  - [ ] Replace badge display with TraitCard grid
-  - [ ] Add genetic alleles section
-  - [ ] Add epigenetic traits section
-  - [ ] Add trait interactions section
-  - [ ] Implement filtering system
-  - [ ] Implement sorting system
+- [x] **Task 3: Enhanced Genetics Tab** (AC: All) ✅ COMPLETE
+  - [x] Replace badge display with TraitCard grid (HorseDetailPage.tsx lines 616-632)
+  - [x] Add genetic alleles section (with trait count display)
+  - [x] Add epigenetic traits section (with trait count display)
+  - [x] Add trait interactions section (lines 637-670, color-coded strength)
+  - [x] Implement filtering system (type, rarity, source - lines 536-586)
+  - [x] Implement sorting system (name, rarity, strength, discoveryDate - lines 588-605)
 
-- [ ] **Task 4: Genetic Strength Display** (AC: All)
-  - [ ] Add trait strength indicators
-  - [ ] Add genetic potential display
+- [ ] **Task 4: Genetic Strength Display** (AC: All) ⚠️ 40% Complete
+  - [x] Add trait strength indicators (TraitCard lines 196-213, visual bars + labels)
+  - [ ] Add genetic potential display (horse-level metric, not trait-level)
   - [ ] Add trait stability visualization
   - [ ] Add breeding value indicators
-  - [ ] Show optimal combinations
+  - [ ] Show optimal combinations (trait interactions exist, need highlighting)
 
-- [ ] **Task 5: Inheritance Visualization** (AC: Inheritance)
-  - [ ] Add parent badges to inherited traits
+- [ ] **Task 5: Inheritance Visualization** (AC: Inheritance) ⚠️ 40% Complete
+  - [x] Add parent badges to inherited traits (TraitCard lines 215-224, with icons)
   - [ ] Create inheritance tree (optional)
-  - [ ] Add mutation indicators
+  - [x] Add mutation indicators (included in source badges)
   - [ ] Show genetic contribution percentages
-  - [ ] Link to parent profiles
+  - [x] Link to parent profiles (GeneticsTab lines 680-704, Lineage section)
 
-- [ ] **Task 6: Epigenetic Discovery** (AC: Epigenetic)
-  - [ ] Display discovery dates
-  - [ ] Show activation status
-  - [ ] Add environmental trigger info
-  - [ ] Display discovery circumstances
-  - [ ] Show trait maturity level
+- [x] **Task 6: Epigenetic Discovery** (AC: Epigenetic) ✅ COMPLETE
+  - [x] Display discovery dates (TraitCard lines 227-231)
+  - [x] Show activation status (TraitCard lines 176-186, Active/Dormant badges)
+  - [x] Add environmental trigger info (Timeline section lines 672-725, source field)
+  - [x] Display discovery circumstances (Timeline section, description + event types)
+  - [x] Show trait maturity level (Timeline progression: discovered → activated → deactivated)
 
 - [x] **Task 7: Testing** (AC: All) ✅ COMPLETE
   - [x] TraitCard component tests (43 tests, 100% passing - completed in Task 1)

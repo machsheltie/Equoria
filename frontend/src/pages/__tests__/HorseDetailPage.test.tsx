@@ -56,6 +56,48 @@ const mockHorse = {
 // Mock fetch globally
 const originalFetch = global.fetch;
 
+// Helper to create fetch mock that handles both horse data AND genetics endpoints
+const createFetchMock = (horseResponse?: any) => {
+  return vi.fn(((url: string, ...args) => {
+    const urlStr = typeof url === 'string' ? url : url.toString();
+
+    // Handle genetics endpoints
+    if (urlStr.includes('/epigenetic-insights')) {
+      return Promise.resolve({
+        ok: true,
+        status: 200,
+        json: () => Promise.resolve({ success: true, data: { traits: [] } }),
+      } as Response);
+    }
+    if (urlStr.includes('/trait-interactions')) {
+      return Promise.resolve({
+        ok: true,
+        status: 200,
+        json: () => Promise.resolve({ success: true, data: { interactions: [] } }),
+      } as Response);
+    }
+    if (urlStr.includes('/trait-timeline')) {
+      return Promise.resolve({
+        ok: true,
+        status: 200,
+        json: () => Promise.resolve({ success: true, data: { timeline: [] } }),
+      } as Response);
+    }
+
+    // Handle horse data endpoint if response provided
+    if (horseResponse !== undefined) {
+      return Promise.resolve({
+        ok: horseResponse.ok ?? true,
+        status: horseResponse.status ?? 200,
+        json: () => Promise.resolve(horseResponse),
+      } as Response);
+    }
+
+    // Fall back to original fetch
+    return originalFetch(url, ...args);
+  }) as typeof fetch);
+};
+
 // Test wrapper with required providers and routing
 const createTestWrapper = (horseId: string = '1') => {
   const queryClient = new QueryClient({
@@ -78,8 +120,8 @@ const createTestWrapper = (horseId: string = '1') => {
 
 describe('HorseDetailPage Component', () => {
   beforeEach(() => {
-    // Reset fetch before each test
-    global.fetch = originalFetch;
+    // Set default mock that handles genetics endpoints
+    global.fetch = createFetchMock();
   });
 
   afterEach(() => {
@@ -139,13 +181,7 @@ describe('HorseDetailPage Component', () => {
     });
 
     test('renders all stat displays correctly', async () => {
-      global.fetch = vi.fn(() =>
-        Promise.resolve({
-          ok: true,
-          status: 200,
-          json: () => Promise.resolve({ success: true, data: mockHorse }),
-        } as Response)
-      );
+      global.fetch = createFetchMock({ success: true, data: mockHorse });
 
       const TestWrapper = createTestWrapper('1');
       window.history.pushState({}, 'Test', '/horses/1');
@@ -160,13 +196,13 @@ describe('HorseDetailPage Component', () => {
         expect(screen.getByText('Thunder')).toBeInTheDocument();
       });
 
-      // Verify all stats are displayed (using getAllByText since description may contain these words)
+      // Verify all stats are displayed (using getAllByText since multiple elements may contain these words)
       expect(screen.getAllByText(/speed/i).length).toBeGreaterThan(0);
       expect(screen.getAllByText(/stamina/i).length).toBeGreaterThan(0);
-      expect(screen.getByText(/agility/i)).toBeInTheDocument();
-      expect(screen.getByText(/strength/i)).toBeInTheDocument();
-      expect(screen.getByText(/intelligence/i)).toBeInTheDocument();
-      expect(screen.getByText(/health/i)).toBeInTheDocument();
+      expect(screen.getAllByText(/agility/i).length).toBeGreaterThan(0);
+      expect(screen.getAllByText(/strength/i).length).toBeGreaterThan(0);
+      expect(screen.getAllByText(/intelligence/i).length).toBeGreaterThan(0);
+      expect(screen.getAllByText(/health/i).length).toBeGreaterThan(0);
     });
   });
 
@@ -269,13 +305,7 @@ describe('HorseDetailPage Component', () => {
     });
 
     test('displays traits in genetics tab', async () => {
-      global.fetch = vi.fn(() =>
-        Promise.resolve({
-          ok: true,
-          status: 200,
-          json: () => Promise.resolve({ success: true, data: mockHorse }),
-        } as Response)
-      );
+      global.fetch = createFetchMock({ success: true, data: mockHorse });
 
       const TestWrapper = createTestWrapper('1');
       window.history.pushState({}, 'Test', '/horses/1');
@@ -372,13 +402,12 @@ describe('HorseDetailPage Component', () => {
   describe('Error Handling', () => {
     test('displays error message when fetch fails', async () => {
       // Mock failed fetch
-      global.fetch = vi.fn(() =>
-        Promise.resolve({
-          ok: false,
-          status: 500,
-          json: () => Promise.resolve({ success: false, message: 'Internal server error' }),
-        } as Response)
-      );
+      global.fetch = createFetchMock({
+        ok: false,
+        status: 500,
+        success: false,
+        message: 'Internal server error'
+      });
 
       const TestWrapper = createTestWrapper('1');
       window.history.pushState({}, 'Test', '/horses/1');
@@ -425,8 +454,34 @@ describe('HorseDetailPage Component', () => {
     test('retry button refetches data after error', async () => {
       let fetchCount = 0;
 
-      // Mock fetch to fail first, then succeed
-      global.fetch = vi.fn(() => {
+      // Mock fetch to fail first, then succeed (also handle genetics endpoints)
+      global.fetch = vi.fn(((url: string) => {
+        const urlStr = typeof url === 'string' ? url : url.toString();
+
+        // Handle genetics endpoints
+        if (urlStr.includes('/epigenetic-insights')) {
+          return Promise.resolve({
+            ok: true,
+            status: 200,
+            json: () => Promise.resolve({ success: true, data: { traits: [] } }),
+          } as Response);
+        }
+        if (urlStr.includes('/trait-interactions')) {
+          return Promise.resolve({
+            ok: true,
+            status: 200,
+            json: () => Promise.resolve({ success: true, data: { interactions: [] } }),
+          } as Response);
+        }
+        if (urlStr.includes('/trait-timeline')) {
+          return Promise.resolve({
+            ok: true,
+            status: 200,
+            json: () => Promise.resolve({ success: true, data: { timeline: [] } }),
+          } as Response);
+        }
+
+        // Handle horse endpoint with retry logic
         fetchCount++;
         if (fetchCount === 1) {
           return Promise.resolve({
@@ -440,7 +495,7 @@ describe('HorseDetailPage Component', () => {
           status: 200,
           json: () => Promise.resolve({ success: true, data: mockHorse }),
         } as Response);
-      });
+      }) as typeof fetch);
 
       const TestWrapper = createTestWrapper('1');
       window.history.pushState({}, 'Test', '/horses/1');

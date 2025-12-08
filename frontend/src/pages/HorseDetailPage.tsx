@@ -669,6 +669,61 @@ const GeneticsTab: React.FC<{ horse: Horse }> = ({ horse }) => {
         </div>
       )}
 
+      {/* Trait Timeline Section */}
+      {timelineData?.timeline && timelineData.timeline.length > 0 && (
+        <div>
+          <h3 className="fantasy-title text-xl text-midnight-ink mb-4">
+            Trait Development Timeline ({timelineData.timeline.length})
+          </h3>
+          <div className="space-y-3">
+            {timelineData.timeline.map((entry) => (
+              <div
+                key={entry.id}
+                className="p-4 bg-parchment/50 rounded-lg border-l-4 border-aged-bronze"
+              >
+                <div className="flex items-start justify-between mb-2">
+                  <div className="flex items-center gap-2">
+                    <span
+                      className={`text-xs px-2 py-1 rounded-full font-semibold ${
+                        entry.eventType === 'discovered'
+                          ? 'bg-purple-100 text-purple-700'
+                          : entry.eventType === 'activated'
+                          ? 'bg-green-100 text-green-700'
+                          : entry.eventType === 'deactivated'
+                          ? 'bg-gray-100 text-gray-700'
+                          : entry.eventType === 'mutated'
+                          ? 'bg-amber-100 text-amber-700'
+                          : 'bg-blue-100 text-blue-700'
+                      }`}
+                    >
+                      {entry.eventType.charAt(0).toUpperCase() +
+                        entry.eventType.slice(1)}
+                    </span>
+                    <span className="text-sm font-semibold text-midnight-ink">
+                      {entry.traitName}
+                    </span>
+                  </div>
+                  <span className="text-xs text-aged-bronze">
+                    {new Date(entry.timestamp).toLocaleDateString()}
+                  </span>
+                </div>
+                {entry.description && (
+                  <p className="text-sm text-midnight-ink mb-2">{entry.description}</p>
+                )}
+                {entry.source && (
+                  <div className="flex items-center gap-2">
+                    <span className="text-xs text-aged-bronze">
+                      Source:{' '}
+                      <span className="capitalize font-semibold">{entry.source}</span>
+                    </span>
+                  </div>
+                )}
+              </div>
+            ))}
+          </div>
+        </div>
+      )}
+
       {/* No Traits Message */}
       {filteredTraits.length === 0 && (
         <div className="text-center py-8 text-aged-bronze">
