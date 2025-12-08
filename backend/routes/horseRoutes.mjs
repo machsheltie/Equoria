@@ -3,6 +3,7 @@ import { param, body, query, validationResult } from 'express-validator';
 import { getTrainableHorses } from '../controllers/trainingController.mjs';
 import { getHorseOverview, getHorsePersonalityImpact } from '../controllers/horseController.mjs';
 import { authenticateToken } from '../middleware/auth.mjs';
+import { requireOwnership } from '../middleware/ownership.mjs';
 import * as horseXpController from '../controllers/horseXpController.mjs';
 import { createHorse, getHorseById } from '../models/horseModel.mjs';
 import prisma from '../db/index.mjs';
@@ -199,32 +200,35 @@ router.get('/trait-trends',
 /**
  * GET /horses/:id
  * Get a specific horse by ID
+ *
+ * Security: Validates horse ownership before returning data
  */
-router.get('/:id', validateHorseId, async (req, res) => {
-  try {
-    const horseId = parseInt(req.params.id);
-    const horse = await getHorseById(horseId);
+router.get(
+  '/:id',
+  validateHorseId,
+  requireOwnership('horse', {
+    include: ['breed', 'user'],
+  }),
+  async (req, res) => {
+    try {
+      // Horse already validated and attached to req.horse by ownership middleware
+      // No need for additional database query!
+      const horse = req.horse;
 
-    if (!horse) {
-      return res.status(404).json({
+      res.json({
+        success: true,
+        data: horse,
+      });
+    } catch (error) {
+      logger.error(`[horseRoutes] Error getting horse: ${error.message}`);
+      res.status(500).json({
         success: false,
-        message: 'Horse not found',
+        message: 'Internal server error',
+        error: process.env.NODE_ENV === 'development' ? error.message : 'Something went wrong',
       });
     }
-
-    res.json({
-      success: true,
-      data: horse,
-    });
-  } catch (error) {
-    logger.error(`[horseRoutes] Error getting horse: ${error.message}`);
-    res.status(500).json({
-      success: false,
-      message: 'Internal server error',
-      error: process.env.NODE_ENV === 'development' ? error.message : 'Something went wrong',
-    });
-  }
-});
+  },
+);
 
 /**
  * POST /horses
@@ -261,59 +265,76 @@ router.post('/', authenticateToken, validateHorseCreation, async (req, res) => {
 /**
  * PUT /horses/:id
  * Update a horse
+ *
+ * Security: Validates horse ownership before allowing updates
  */
-router.put('/:id', validateHorseId, async (req, res) => {
-  try {
-    const horseId = parseInt(req.params.id);
+router.put(
+  '/:id',
+  validateHorseId,
+  requireOwnership('horse'),
+  async (req, res) => {
+    try {
+      const horseId = parseInt(req.params.id);
 
-    const updatedHorse = await prisma.horse.update({
-      where: { id: horseId },
-      data: req.body,
-      include: {
-        breed: true,
-        user: {
-          select: { id: true, username: true },
+      // Ownership already validated by middleware
+      const updatedHorse = await prisma.horse.update({
+        where: { id: horseId },
+        data: req.body,
+        include: {
+          breed: true,
+          user: {
+            select: { id: true, username: true },
+          },
         },
-      },
-    });
+      });
 
-    logger.info(`[horseRoutes] Updated horse: ${updatedHorse.name} (ID: ${horseId})`);
+      logger.info(
+        `[horseRoutes] User ${req.user.id} updated horse: ${updatedHorse.name} (ID: ${horseId})`,
+      );
 
-    res.json({
-      success: true,
-      message: 'Horse updated successfully',
-      data: updatedHorse,
-    });
-  } catch (error) {
-    if (error.code === 'P2025') {
-      return res.status(404).json({
+      res.json({
+        success: true,
+        message: 'Horse updated successfully',
+        data: updatedHorse,
+      });
+    } catch (error) {
+      if (error.code === 'P2025') {
+        return res.status(404).json({
+          success: false,
+          message: 'Horse not found',
+        });
+      }
+
+      logger.error(`[horseRoutes] Error updating horse: ${error.message}`);
+      res.status(500).json({
         success: false,
-        message: 'Horse not found',
+        message: 'Internal server error',
+        error: process.env.NODE_ENV === 'development' ? error.message : 'Something went wrong',
       });
     }
-
-    logger.error(`[horseRoutes] Error updating horse: ${error.message}`);
-    res.status(500).json({
-      success: false,
-      message: 'Internal server error',
-      error: process.env.NODE_ENV === 'development' ? error.message : 'Something went wrong',
-    });
-  }
-});
+  },
+);
 
 /**
  * DELETE /horses/:id
  * Delete a horse
+ *
+ * Security: Validates horse ownership before allowing deletion
  */
-router.delete('/:id', validateHorseId, async (req, res) => {
-  try {
-    const horseId = parseInt(req.params.id);
+router.delete(
+  '/:id',
+  validateHorseId,
+  requireOwnership('horse'),
+  async (req, res) => {
+    try {
+      const horseId = parseInt(req.params.id);
 
-    await prisma.horse.delete({
-      where: { id: horseId },
-    });
+      // Ownership already validated by middleware
+      await prisma.horse.delete({
+        where: { id: horseId },
+      });
 
-    logger.info(`[horseRoutes] Deleted horse ID: ${horseId}`);
+      logger.info(`[horseRoutes] User ${req.user.id} deleted horse ID: ${horseId}`);
 
     res.json({
       success: true,
@@ -339,10 +360,23 @@ router.delete('/:id', validateHorseId, async (req, res) => {
 /**
  * GET /horses/trainable/:userId
  * Get all horses owned by a user that are eligible for training
+ *
+ * Security: Validates that user can only access their own trainable horses
  */
 router.get('/trainable/:userId', validateUserId, async (req, res) => {
   try {
     const { userId } = req.params;
+
+    // Verify user can only access their own trainable horses
+    if (!req.user || req.user.id !== userId) {
+      logger.warn(
+        `[horseRoutes] User ${req.user?.id} attempted to access trainable horses for user ${userId}`
+      );
+      return res.status(403).json({
+        success: false,
+        message: 'Forbidden: Cannot access trainable horses for another user',
+      });
+    }
 
     const trainableHorses = await getTrainableHorses(userId);
 
@@ -363,8 +397,14 @@ router.get('/trainable/:userId', validateUserId, async (req, res) => {
 /**
  * GET /horses/:id/history
  * Get competition history for a specific horse
+ *
+ * Security: Validates horse ownership before returning history
  */
-router.get('/:id/history', validateHorseId, async (req, res) => {
+router.get(
+  '/:id/history',
+  validateHorseId,
+  requireOwnership('horse'),
+  async (req, res) => {
   try {
     // Dynamic import for ES module
     const { getHorseHistory } = await import('../controllers/horseController.js');
@@ -445,8 +485,14 @@ router.post('/foals', authenticateToken, validateFoalCreation, async (req, res) 
 /**
  * GET /horses/:id/overview
  * Get comprehensive overview data for a specific horse
+ *
+ * Security: Validates horse ownership before returning overview
  */
-router.get('/:id/overview', validateHorseId, async (req, res) => {
+router.get(
+  '/:id/overview',
+  validateHorseId,
+  requireOwnership('horse'),
+  async (req, res) => {
   try {
     await getHorseOverview(req, res);
   } catch (error) {
@@ -463,8 +509,14 @@ router.get('/:id/overview', validateHorseId, async (req, res) => {
 /**
  * GET /horses/:id/xp
  * Get horse XP status and progression information
+ *
+ * Security: Validates horse ownership before returning XP data
  */
-router.get('/:id/xp', authenticateToken, validateHorseId, async (req, res) => {
+router.get(
+  '/:id/xp',
+  validateHorseId,
+  requireOwnership('horse'),
+  async (req, res) => {
   try {
     // Map :id to :horseId for the controller
     req.params.horseId = req.params.id;
@@ -481,8 +533,14 @@ router.get('/:id/xp', authenticateToken, validateHorseId, async (req, res) => {
 /**
  * POST /horses/:id/allocate-stat
  * Allocate a stat point to a specific horse stat
+ *
+ * Security: Validates horse ownership before allowing stat allocation
  */
-router.post('/:id/allocate-stat', authenticateToken, validateHorseId, async (req, res) => {
+router.post(
+  '/:id/allocate-stat',
+  validateHorseId,
+  requireOwnership('horse'),
+  async (req, res) => {
   try {
     // Map :id to :horseId for the controller
     req.params.horseId = req.params.id;
@@ -499,8 +557,14 @@ router.post('/:id/allocate-stat', authenticateToken, validateHorseId, async (req
 /**
  * GET /horses/:id/xp-history
  * Get horse XP event history with pagination
+ *
+ * Security: Validates horse ownership before returning XP history
  */
-router.get('/:id/xp-history', authenticateToken, validateHorseId, async (req, res) => {
+router.get(
+  '/:id/xp-history',
+  validateHorseId,
+  requireOwnership('horse'),
+  async (req, res) => {
   try {
     // Map :id to :horseId for the controller
     req.params.horseId = req.params.id;
@@ -517,8 +581,14 @@ router.get('/:id/xp-history', authenticateToken, validateHorseId, async (req, re
 /**
  * POST /horses/:id/award-xp
  * Award XP to a horse (for system/admin use)
+ *
+ * Security: Validates horse ownership before awarding XP
  */
-router.post('/:id/award-xp', authenticateToken, validateHorseId, async (req, res) => {
+router.post(
+  '/:id/award-xp',
+  validateHorseId,
+  requireOwnership('horse'),
+  async (req, res) => {
   try {
     // Map :id to :horseId for the controller
     req.params.horseId = req.params.id;
@@ -535,8 +605,15 @@ router.post('/:id/award-xp', authenticateToken, validateHorseId, async (req, res
 /**
  * GET /api/horses/:id/personality-impact
  * Get most compatible grooms for a horse based on temperament
+ *
+ * Security: Validates horse ownership before returning personality data
  */
-router.get('/:id/personality-impact', authenticateToken, validateHorseId, getHorsePersonalityImpact);
+router.get(
+  '/:id/personality-impact',
+  validateHorseId,
+  requireOwnership('horse'),
+  getHorsePersonalityImpact
+);
 
 /**
  * @swagger
@@ -558,10 +635,16 @@ router.get('/:id/personality-impact', authenticateToken, validateHorseId, getHor
  *         description: Horse not found
  *       500:
  *         description: Internal server error
+ *
+ * Security: Validates horse ownership before calculating legacy score
  */
-router.get('/:id/legacy-score', authenticateToken, validateHorseId, async (req, res) => {
-  try {
-    const horseId = parseInt(req.params.id, 10);
+router.get(
+  '/:id/legacy-score',
+  validateHorseId,
+  requireOwnership('horse'),
+  async (req, res) => {
+    try {
+      const horseId = parseInt(req.params.id, 10);
 
     const { calculateLegacyScore } = await import('../services/legacyScoreCalculator.mjs');
     const legacyScore = await calculateLegacyScore(horseId);
@@ -609,9 +692,15 @@ router.get('/:id/legacy-score', authenticateToken, validateHorseId, async (req, 
  *         description: Horse not found
  *       500:
  *         description: Internal server error
+ *
+ * Security: Validates horse ownership before returning trait card
  */
-router.get('/:id/trait-card', authenticateToken, validateHorseId, async (req, res) => {
-  try {
+router.get(
+  '/:id/trait-card',
+  validateHorseId,
+  requireOwnership('horse'),
+  async (req, res) => {
+    try {
     const horseId = parseInt(req.params.id, 10);
 
     const { generateTraitTimeline } = await import('../services/traitTimelineService.mjs');
@@ -660,10 +749,16 @@ router.get('/:id/trait-card', authenticateToken, validateHorseId, async (req, re
  *         description: Horse not found
  *       500:
  *         description: Internal server error
+ *
+ * Security: Validates horse ownership before returning breeding data
  */
-router.get('/:id/breeding-data', authenticateToken, validateHorseId, async (req, res) => {
-  try {
-    const horseId = parseInt(req.params.id, 10);
+router.get(
+  '/:id/breeding-data',
+  validateHorseId,
+  requireOwnership('horse'),
+  async (req, res) => {
+    try {
+      const horseId = parseInt(req.params.id, 10);
 
     const { generateBreedingData } = await import('../services/breedingPredictionService.mjs');
     const breedingData = await generateBreedingData(horseId);
