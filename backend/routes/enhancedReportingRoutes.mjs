@@ -16,6 +16,7 @@
 import express from 'express';
 import { body, param, query, validationResult } from 'express-validator';
 import { authenticateToken } from '../middleware/auth.mjs';
+import { requireOwnership } from '../middleware/ownership.mjs';
 import logger from '../utils/logger.mjs';
 import prisma from '../../packages/database/prismaClient.mjs';
 
@@ -52,44 +53,6 @@ import {
 const router = express.Router();
 
 /**
- * Middleware to validate horse ownership
- */
-async function validateHorseOwnership(req, res, next) {
-  try {
-    const horseId = parseInt(req.params.id);
-    const userId = req.user.id;
-
-    const horse = await prisma.horse.findUnique({
-      where: { id: horseId },
-      select: { id: true, ownerId: true },
-    });
-
-    if (!horse) {
-      return res.status(404).json({
-        success: false,
-        message: 'Horse not found',
-      });
-    }
-
-    if (horse.ownerId !== userId) {
-      return res.status(403).json({
-        success: false,
-        message: 'Access denied: You do not own this horse',
-      });
-    }
-
-    req.horse = horse;
-    next();
-  } catch (error) {
-    logger.error('Error validating horse ownership:', error);
-    res.status(500).json({
-      success: false,
-      message: 'Internal server error',
-    });
-  }
-}
-
-/**
  * Handle validation errors
  */
 function handleValidationErrors(req, res, next) {
@@ -118,7 +81,7 @@ router.get('/horses/:id/enhanced-trait-history',
   query('dateFrom').optional().isISO8601().withMessage('Date from must be a valid ISO date'),
   query('dateTo').optional().isISO8601().withMessage('Date to must be a valid ISO date'),
   handleValidationErrors,
-  validateHorseOwnership,
+  requireOwnership('horse', { idParam: 'id' }),
   async (req, res) => {
     try {
       const horseId = parseInt(req.params.id);
@@ -183,7 +146,7 @@ router.get('/horses/:id/epigenetic-insights',
   authenticateToken,
   param('id').isInt({ min: 1 }).withMessage('Horse ID must be a positive integer'),
   handleValidationErrors,
-  validateHorseOwnership,
+  requireOwnership('horse', { idParam: 'id' }),
   async (req, res) => {
     try {
       const horseId = parseInt(req.params.id);
@@ -250,7 +213,7 @@ router.get('/horses/:id/trait-timeline',
   authenticateToken,
   param('id').isInt({ min: 1 }).withMessage('Horse ID must be a positive integer'),
   handleValidationErrors,
-  validateHorseOwnership,
+  requireOwnership('horse', { idParam: 'id' }),
   async (req, res) => {
     try {
       const horseId = parseInt(req.params.id);
@@ -446,7 +409,7 @@ router.get('/horses/:id/epigenetic-report-export',
   param('id').isInt({ min: 1 }).withMessage('Horse ID must be a positive integer'),
   query('format').optional().isIn(['summary', 'detailed', 'comprehensive']).withMessage('Invalid format'),
   handleValidationErrors,
-  validateHorseOwnership,
+  requireOwnership('horse', { idParam: 'id' }),
   async (req, res) => {
     try {
       const horseId = parseInt(req.params.id);
