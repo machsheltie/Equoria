@@ -14,12 +14,14 @@ const BreedingCenter = () => {
   const { mutateAsync: breedFoal, isPending, data, error } = useBreedFoal();
   const { data: horses, isLoading: horsesLoading, error: horsesError } = useHorses();
 
-  const mares = horses?.filter(
-    (horse) => horse.gender?.toLowerCase() === 'mare' || horse.gender?.toLowerCase() === 'female'
-  );
-  const stallions = horses?.filter(
-    (horse) => horse.gender?.toLowerCase() === 'stallion' || horse.gender?.toLowerCase() === 'male'
-  );
+  const mares = horses?.filter((horse) => {
+    const sexOrGender = (horse.sex || horse.gender)?.toLowerCase();
+    return sexOrGender === 'mare' || sexOrGender === 'female';
+  });
+  const stallions = horses?.filter((horse) => {
+    const sexOrGender = (horse.sex || horse.gender)?.toLowerCase();
+    return sexOrGender === 'stallion' || sexOrGender === 'male';
+  });
 
   // Get unique breeds for filter
   const breeds = Array.from(new Set(stallions?.map((h) => h.breed).filter(Boolean))) as string[];

@@ -137,6 +137,7 @@ interface HorseSummary {
   age?: number;
   ageYears?: number;
   gender?: string;
+  sex?: string;
   level?: number;
 }
 
@@ -428,6 +429,37 @@ export const horsesApi = {
   get: (horseId: number) => apiClient.get<HorseSummary>(`/api/horses/${horseId}`),
   getTrainingHistory: (horseId: number) =>
     apiClient.get<HorseTrainingHistoryEntry[]>(`/api/horses/${horseId}/training-history`),
+  getBreedingData: (horseId: number) =>
+    apiClient.get<any>(`/api/horses/${horseId}/breeding-data`),
+};
+
+/**
+ * Breeding Prediction API surface
+ */
+export const breedingPredictionApi = {
+  /**
+   * Calculate inbreeding coefficient for a breeding pair
+   */
+  getInbreedingAnalysis: (payload: { stallionId: number; mareId: number }) =>
+    apiClient.post<any>('/api/genetics/inbreeding-analysis', payload),
+
+  /**
+   * Get lineage analysis for a breeding pair
+   */
+  getLineageAnalysis: (stallionId: number, mareId: number) =>
+    apiClient.get<any>(`/api/breeding/lineage-analysis/${stallionId}/${mareId}`),
+
+  /**
+   * Calculate genetic probability for offspring
+   */
+  getGeneticProbability: (payload: { stallionId: number; mareId: number }) =>
+    apiClient.post<any>('/api/breeding/genetic-probability', payload),
+
+  /**
+   * Get breeding compatibility score
+   */
+  getBreedingCompatibility: (payload: { stallionId: number; mareId: number }) =>
+    apiClient.post<any>('/api/genetics/breeding-compatibility', payload),
 };
 
 /**
