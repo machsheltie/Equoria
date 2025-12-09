@@ -149,6 +149,32 @@ interface HorseTrainingHistoryEntry {
   notes?: string;
 }
 
+interface HorseXP {
+  horseId: number;
+  horseName: string;
+  currentXP: number;
+  availableStatPoints: number;
+  nextStatPointAt: number;
+  xpToNextStatPoint: number;
+}
+
+interface HorseXPEvent {
+  id: number;
+  amount: number;
+  reason: string;
+  timestamp: string;
+}
+
+interface HorseXPHistory {
+  events: HorseXPEvent[];
+  count: number;
+  pagination: {
+    limit: number;
+    offset: number;
+    hasMore: boolean;
+  };
+}
+
 /**
  * Attempt to refresh the access token using the refresh token cookie
  */
@@ -431,6 +457,15 @@ export const horsesApi = {
     apiClient.get<HorseTrainingHistoryEntry[]>(`/api/horses/${horseId}/training-history`),
   getBreedingData: (horseId: number) =>
     apiClient.get<any>(`/api/horses/${horseId}/breeding-data`),
+  getXP: (horseId: number) =>
+    apiClient.get<HorseXP>(`/api/horses/${horseId}/xp`),
+  getXPHistory: (horseId: number, options?: { limit?: number; offset?: number }) => {
+    const params = new URLSearchParams();
+    if (options?.limit) params.append('limit', options.limit.toString());
+    if (options?.offset) params.append('offset', options.offset.toString());
+    const queryString = params.toString() ? `?${params.toString()}` : '';
+    return apiClient.get<HorseXPHistory>(`/api/horses/${horseId}/xp-history${queryString}`);
+  },
 };
 
 /**
@@ -623,6 +658,9 @@ export type {
   FoalDevelopment,
   HorseSummary,
   HorseTrainingHistoryEntry,
+  HorseXP,
+  HorseXPEvent,
+  HorseXPHistory,
   StatGain,
   TrainableHorse,
   TrainingEligibility,
