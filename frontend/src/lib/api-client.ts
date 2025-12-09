@@ -175,6 +175,35 @@ interface HorseXPHistory {
   };
 }
 
+interface HorseAge {
+  horseId: number;
+  horseName: string;
+  currentAge: {
+    years: number;
+    months: number;
+  };
+  ageInDays: number;
+  nextMilestone: {
+    name: string;
+    ageYears: number;
+    daysRemaining: number;
+    monthsRemaining: number;
+    expectedStatGains: {
+      speed: number;
+      stamina: number;
+      agility: number;
+      strength: number;
+      intelligence: number;
+      temperament: number;
+    };
+  } | null;
+  trainingWindow: {
+    isPrimeWindow: boolean;
+    windowName: string;
+    endsInDays: number | null;
+  };
+}
+
 /**
  * Attempt to refresh the access token using the refresh token cookie
  */
@@ -466,6 +495,8 @@ export const horsesApi = {
     const queryString = params.toString() ? `?${params.toString()}` : '';
     return apiClient.get<HorseXPHistory>(`/api/horses/${horseId}/xp-history${queryString}`);
   },
+  getAge: (horseId: number) =>
+    apiClient.get<HorseAge>(`/api/horses/${horseId}/age`),
 };
 
 /**
@@ -656,6 +687,7 @@ export type {
   Foal,
   FoalActivity,
   FoalDevelopment,
+  HorseAge,
   HorseSummary,
   HorseTrainingHistoryEntry,
   HorseXP,
