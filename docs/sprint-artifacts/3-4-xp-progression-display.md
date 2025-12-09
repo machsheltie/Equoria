@@ -60,10 +60,25 @@ So that **I can track their development over time**.
 
 #### Task 0: Story File Creation & API Investigation (AC: Foundation)
 **Time Estimate:** 1-2 hours
+**Status:** ✅ COMPLETE
+**Completion Date:** 2025-12-09
+
 - [x] Create story file with analysis and plan
-- [ ] Investigate backend API for progression endpoints
-- [ ] Document data structures for XP/stats
-- [ ] Verify Chart.js availability or select charting library
+- [x] Investigate backend API for progression endpoints
+- [x] Document data structures for XP/stats
+- [x] Document available vs needed endpoints
+- [x] Select charting library → **DECISION: Chart.js**
+- [x] Decide implementation approach → **DECISION: Frontend-First with mock data**
+
+**Detailed Investigation:** See [3-4-api-investigation.md](./3-4-api-investigation.md) for complete API analysis.
+
+**Key Findings:**
+- ✅ XP progression API exists (GET /api/horses/:id/xp)
+- ⚠️ Stat history needs creation or exposure through existing endpoints
+- ❌ Age progression API missing (needs creation)
+- ❌ Training recommendations API missing (needs creation)
+
+**Decision:** Implement frontend components with mock data first, integrate real API later.
 
 #### Task 1: XP Progress Component (AC: XP progress bar)
 **Time Estimate:** 2-3 hours
