@@ -48,7 +48,9 @@ const TrainingDashboard = ({ userId }: TrainingDashboardProps) => {
         <div>
           <div className="flex items-center justify-between">
             <div className="text-lg font-semibold text-slate-900">{horse.name}</div>
-            <span className="text-sm text-slate-500">Level {horse.level ?? '—'}</span>
+            <span className="text-sm text-slate-500">
+              Level {horse.level != null ? horse.level : '—'}
+            </span>
           </div>
           <div className="mt-1 text-sm text-slate-600">
             Best: {horse.bestDisciplines?.join(', ') || 'TBD'}

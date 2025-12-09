@@ -6,17 +6,19 @@ interface TrainingHistoryPanelProps {
 }
 
 const TrainingHistoryPanel = ({ horseId }: TrainingHistoryPanelProps) => {
-  const { data, isLoading, error } = useTrainingOverview(horseId ?? 0);
+  // Only query when we have a valid horseId - hooks have enabled guards
+  const { data, isLoading, error } = useTrainingOverview(horseId || 0);
   const {
     data: history,
     isLoading: historyLoading,
     error: historyError,
-  } = useHorseTrainingHistory(horseId ?? 0);
+  } = useHorseTrainingHistory(horseId || 0);
 
+  // Early return if no horse selected - queries won't execute due to enabled guards
   if (!horseId) {
     return (
       <div className="rounded-md border border-slate-200 bg-white px-4 py-3 text-sm text-slate-600 shadow-sm">
-        Select a horse to view discipline status and recent gains.
+        Select a horse above to view discipline status and training history.
       </div>
     );
   }
