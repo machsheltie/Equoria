@@ -204,6 +204,33 @@ interface HorseAge {
   };
 }
 
+interface HorseStats {
+  horseId: number;
+  horseName: string;
+  age: {
+    years: number;
+    months: number;
+  };
+  currentStats: {
+    speed: number;
+    stamina: number;
+    agility: number;
+    strength: number;
+    intelligence: number;
+    temperament: number;
+  };
+  geneticPotential: {
+    speed: number;
+    stamina: number;
+    agility: number;
+    strength: number;
+    intelligence: number;
+    temperament: number;
+  };
+  trainingWindow: 'too young' | 'prime' | 'maintenance' | 'senior';
+  discipline?: string;
+}
+
 /**
  * Attempt to refresh the access token using the refresh token cookie
  */
@@ -497,6 +524,8 @@ export const horsesApi = {
   },
   getAge: (horseId: number) =>
     apiClient.get<HorseAge>(`/api/horses/${horseId}/age`),
+  getStats: (horseId: number) =>
+    apiClient.get<HorseStats>(`/api/horses/${horseId}/stats`),
 };
 
 /**
@@ -688,6 +717,7 @@ export type {
   FoalActivity,
   FoalDevelopment,
   HorseAge,
+  HorseStats,
   HorseSummary,
   HorseTrainingHistoryEntry,
   HorseXP,
