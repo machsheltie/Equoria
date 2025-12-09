@@ -7,14 +7,13 @@ import TrainingHistoryPanel from './TrainingHistoryPanel';
 type EligibilityFilter = 'all' | 'ready' | 'cooldown';
 
 interface TrainingDashboardProps {
-  userId?: string | number;
+  userId?: string;
 }
 
-const TrainingDashboard = ({ userId = 'me' }: TrainingDashboardProps) => {
+const TrainingDashboard = ({ userId }: TrainingDashboardProps) => {
   const [selectedHorse, setSelectedHorse] = useState<TrainableHorse | null>(null);
   const [filter, setFilter] = useState<EligibilityFilter>('all');
-  const normalizedUserId = typeof userId === 'number' ? String(userId) : userId;
-  const { data: horses, isLoading, error, refetch } = useTrainableHorses(normalizedUserId);
+  const { data: horses, isLoading, error, refetch } = useTrainableHorses(userId!);
 
   // Filter horses based on eligibility
   const filteredHorses = useMemo(() => {
