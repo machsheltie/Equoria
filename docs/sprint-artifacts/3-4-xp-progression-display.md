@@ -310,12 +310,18 @@ Dec 5, 2025
   - [x] Add summary statistics (total, count, average)
   - [x] Write tests (35 tests, 100% passing)
 
-- [ ] **Task 4: Age-Up Prediction** (AC: When horse will age up)
-  - [ ] Create AgeUpCounter.tsx
-  - [ ] Calculate age milestones
-  - [ ] Show countdown timer
-  - [ ] Display stat predictions
-  - [ ] Write tests (15+ tests)
+- [x] **Task 4: Age-Up Prediction** (AC: When horse will age up)
+  - [x] Create AgeUpCounter.tsx (259 lines)
+  - [x] Calculate age milestones (formatCountdown helper)
+  - [x] Show countdown timer (days/months with visual emphasis)
+  - [x] Display stat predictions (color-coded gains/losses)
+  - [x] Training window status (prime/maintenance/too young)
+  - [x] Hover tooltips (age, milestone, stats)
+  - [x] Educational tooltip (age mechanics)
+  - [x] Write tests (34 tests, 100% passing)
+  - [x] Add HorseAge type to api-client.ts
+  - [x] Add getAge endpoint to horsesApi
+  - [x] Fix stat display format for test compliance
 
 - [ ] **Task 5: Training Recommendations** (AC: Training recommendations)
   - [ ] Create TrainingRecommendations.tsx
