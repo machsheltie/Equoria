@@ -24,6 +24,9 @@ import app from './app.mjs';
 import logger from './utils/logger.mjs';
 import { initializeCronJobs, stopCronJobs } from './services/cronJobService.mjs';
 import prisma from '../packages/database/prismaClient.mjs';
+import { shutdownMemoryManagement } from './services/memoryResourceManagementService.mjs';
+import { closeRedis } from './middleware/rateLimiting.mjs';
+import { closeRedisConnection } from './utils/cacheHelper.mjs';
 
 // Load environment variables FIRST
 dotenv.config();
@@ -57,11 +60,23 @@ const shutdown = async (signal) => {
     logger.info('HTTP server closed');
 
     try {
-      // Stop cron jobs
+      // Stop cron jobs (production only)
       if (NODE_ENV === 'production') {
         logger.info('Stopping cron jobs...');
         stopCronJobs();
       }
+
+      // Shutdown memory management
+      logger.info('Shutting down memory management...');
+      shutdownMemoryManagement();
+
+      // Close rate limiting Redis connection
+      logger.info('Closing rate limiting Redis connection...');
+      await closeRedis();
+
+      // Close caching Redis connection (if initialized)
+      logger.info('Closing caching Redis connection...');
+      await closeRedisConnection();
 
       // Disconnect Prisma
       logger.info('Disconnecting database...');

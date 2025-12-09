@@ -88,6 +88,9 @@ import adminRoutes from './routes/adminRoutes.mjs';
 // Import authentication middleware
 import { authenticateToken, requireRole } from './middleware/auth.mjs';
 
+// Import CSRF protection middleware
+import { applyCsrfProtection, csrfErrorHandler } from './middleware/csrf.mjs';
+
 // Import Redis rate limiting (for health check and shutdown)
 import { isRedisConnected, getRedisClient, closeRedis } from './middleware/rateLimiting.mjs';
 
@@ -97,13 +100,17 @@ const publicRouter = express.Router();
 // Authenticated router - Requires valid JWT token
 const authRouter = express.Router();
 authRouter.use(authenticateToken);
+// Apply CSRF protection to all state-changing operations (POST/PUT/DELETE/PATCH)
+authRouter.use(applyCsrfProtection);
 
 // Admin router - Requires valid JWT token + admin role
 const adminRouter = express.Router();
 adminRouter.use(authenticateToken, requireRole('admin'));
+// Apply CSRF protection to all state-changing operations (POST/PUT/DELETE/PATCH)
+adminRouter.use(applyCsrfProtection);
 
 // PUBLIC ROUTES (No authentication)
-// Auth endpoints (login, register, password reset)
+// Auth endpoints (login, register, password reset, CSRF token)
 publicRouter.use('/auth', authRoutes);
 // Documentation endpoints
 publicRouter.use('/docs', documentationRoutes);
@@ -222,7 +229,7 @@ const corsOptions = {
   },
   credentials: true,
   methods: ['GET', 'POST', 'PUT', 'DELETE', 'PATCH', 'OPTIONS'],
-  allowedHeaders: ['Content-Type', 'Authorization', 'X-Requested-With'],
+  allowedHeaders: ['Content-Type', 'Authorization', 'X-Requested-With', 'X-CSRF-Token'],
 };
 
 app.use(cors(corsOptions));
@@ -390,6 +397,9 @@ app.use('*', (req, res) => {
 // Error request logging
 app.use(errorRequestLogger);
 
+// CSRF error handler (must be before global error handler)
+app.use(csrfErrorHandler);
+
 // Global error handler
 app.use(errorHandler);
 
@@ -404,21 +414,9 @@ initializeMemoryManagement({
   enableGCOptimization: process.env.NODE_ENV === 'production',
 });
 
-process.on('SIGTERM', async () => {
-  logger.info('SIGTERM received, shutting down gracefully');
-  stopCronJobs();
-  shutdownMemoryManagement();
-  await closeRedis();
-  process.exit(0);
-});
-
-process.on('SIGINT', async () => {
-  logger.info('SIGINT received, shutting down gracefully');
-  stopCronJobs();
-  shutdownMemoryManagement();
-  await closeRedis();
-  process.exit(0);
-});
+// Graceful shutdown handlers moved to server.mjs (single source of truth)
+// server.mjs handles: HTTP server close, cron jobs, memory mgmt, both Redis clients, Prisma
+// This ensures proper shutdown order and prevents duplicate signal handler execution
 
 // Unhandled promise rejection handler
 process.on('unhandledRejection', (reason, promise) => {
