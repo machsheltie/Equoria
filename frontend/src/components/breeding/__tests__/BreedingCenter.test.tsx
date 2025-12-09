@@ -7,7 +7,7 @@ import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
 import BreedingCenter from '../BreedingCenter';
 import * as useBreedingHooks from '@/hooks/api/useBreeding';
 import * as useHorsesHooks from '@/hooks/api/useHorses';
-import type { Horse } from '@/lib/api-client';
+import type { HorseSummary } from '@/lib/api-client';
 
 // Mock the hooks
 vi.mock('@/hooks/api/useBreeding');
@@ -16,7 +16,7 @@ vi.mock('@/hooks/api/useHorses');
 describe('BreedingCenter', () => {
   let queryClient: QueryClient;
 
-  const mockMares: Horse[] = [
+  const mockMares: HorseSummary[] = [
     {
       id: 1,
       name: 'Thunder Mare',
@@ -37,7 +37,7 @@ describe('BreedingCenter', () => {
     },
   ];
 
-  const mockStallions: Horse[] = [
+  const mockStallions: HorseSummary[] = [
     {
       id: 3,
       name: 'Storm Stallion',
@@ -314,7 +314,7 @@ describe('BreedingCenter', () => {
       const user = userEvent.setup();
 
       // Use only mares (no stallions) to test empty state
-      const customMares: Horse[] = [
+      const customMares: HorseSummary[] = [
         {
           id: 1,
           name: 'Thunder Mare',
