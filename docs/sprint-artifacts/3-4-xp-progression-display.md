@@ -151,13 +151,32 @@ So that **I can track their development over time**.
 
 #### Task 3: Recent Gains Display (AC: Recent gains)
 **Time Estimate:** 2-3 hours
-- [ ] Create `RecentGains.tsx` component
-- [ ] Show stat gains from last 7-30 days
-- [ ] Group by training sessions or time periods
-- [ ] Visual indicators (green for gains, red for losses)
-- [ ] Expandable detail view for each gain
-- [ ] Sort by date or stat type
-- [ ] Write tests (rendering, sorting, filtering)
+**Status:** ✅ COMPLETE
+**Completion Date:** 2025-12-09
+
+- [x] Create `RecentGains.tsx` component
+- [x] Show XP gains from last 7-30 days
+- [x] Group by date with date headers
+- [x] Visual indicators (green text + ArrowUp icon for gains)
+- [x] Expandable detail view for each gain (click to expand)
+- [x] Sort by date or amount
+- [x] Time range selector (7d/30d) with refetch
+- [x] Summary statistics (total XP, event count, average)
+- [x] Write comprehensive tests (35 tests, 100% passing)
+
+**Implementation Details:**
+- Component: `frontend/src/components/horse/RecentGains.tsx` (275 lines)
+- Tests: `frontend/src/components/horse/__tests__/RecentGains.test.tsx` (509 lines, 35 tests)
+- Hook: `frontend/src/hooks/api/useHorseXP.ts` (uses useHorseXPHistory)
+- Test Coverage: 100% (35/35 tests passing)
+  - AC-1: Component rendering ✅
+  - AC-2: Date grouping ✅
+  - AC-3: Visual indicators (green + ArrowUp icon) ✅
+  - AC-4: Time range selector (7d/30d) ✅
+  - AC-5: Sorting options (date/amount) ✅
+  - AC-6: Expandable detail view ✅
+  - AC-7: Summary statistics ✅
+- Features: Loading states, error handling, empty states, keyboard accessibility
 
 **Display Format:**
 ```
@@ -282,12 +301,14 @@ Dec 5, 2025
   - [ ] Add hover tooltips
   - [ ] Write tests (25+ tests)
 
-- [ ] **Task 3: Recent Gains Display** (AC: Recent gains)
-  - [ ] Create RecentGains.tsx
-  - [ ] Implement gains list
-  - [ ] Add visual indicators
-  - [ ] Add sorting/filtering
-  - [ ] Write tests (20+ tests)
+- [x] **Task 3: Recent Gains Display** (AC: Recent gains)
+  - [x] Create RecentGains.tsx
+  - [x] Implement gains list with date grouping
+  - [x] Add visual indicators (green + ArrowUp)
+  - [x] Add sorting (date/amount) and time range filtering (7d/30d)
+  - [x] Add expandable detail view
+  - [x] Add summary statistics (total, count, average)
+  - [x] Write tests (35 tests, 100% passing)
 
 - [ ] **Task 4: Age-Up Prediction** (AC: When horse will age up)
   - [ ] Create AgeUpCounter.tsx
