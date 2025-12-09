@@ -231,6 +231,48 @@ interface HorseStats {
   discipline?: string;
 }
 
+interface HorseProgression {
+  horseId: number;
+  horseName: string;
+  currentLevel: number;
+  currentXP: number;
+  xpToNextLevel: number;
+  totalXP: number;
+  progressPercentage: number;
+  recentLevelUps: Array<{
+    level: number;
+    timestamp: string;
+    xpGained: number;
+  }>;
+}
+
+interface StatHistory {
+  horseId: number;
+  horseName: string;
+  timeRange: string;
+  statData: Array<{
+    timestamp: string;
+    speed: number;
+    stamina: number;
+    agility: number;
+    strength: number;
+    intelligence: number;
+    temperament: number;
+  }>;
+}
+
+interface RecentGains {
+  horseId: number;
+  horseName: string;
+  days: number;
+  gains: Array<{
+    stat: string;
+    change: number;
+    percentage: number;
+    timestamp: string;
+  }>;
+}
+
 /**
  * Attempt to refresh the access token using the refresh token cookie
  */
@@ -526,6 +568,12 @@ export const horsesApi = {
     apiClient.get<HorseAge>(`/api/horses/${horseId}/age`),
   getStats: (horseId: number) =>
     apiClient.get<HorseStats>(`/api/horses/${horseId}/stats`),
+  getProgression: (horseId: number) =>
+    apiClient.get<HorseProgression>(`/api/horses/${horseId}/progression`),
+  getStatHistory: (horseId: number, timeRange = '30d') =>
+    apiClient.get<StatHistory>(`/api/horses/${horseId}/stats/history?range=${timeRange}`),
+  getRecentGains: (horseId: number, days = 30) =>
+    apiClient.get<RecentGains>(`/api/horses/${horseId}/gains/recent?days=${days}`),
 };
 
 /**
@@ -717,13 +765,16 @@ export type {
   FoalActivity,
   FoalDevelopment,
   HorseAge,
+  HorseProgression,
   HorseStats,
   HorseSummary,
   HorseTrainingHistoryEntry,
   HorseXP,
   HorseXPEvent,
   HorseXPHistory,
+  RecentGains,
   StatGain,
+  StatHistory,
   TrainableHorse,
   TrainingEligibility,
   TrainingRequest,
