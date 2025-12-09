@@ -11,16 +11,24 @@ import {
 
 const trainingKeys = {
   all: ['training'] as const,
-  trainable: (userId: string | number) => ['training', 'trainable-horses', userId] as const,
+  trainable: (userId: string) => ['training', 'trainable-horses', userId] as const,
   overview: (horseId: number) => ['training', horseId, 'status'] as const,
   status: (horseId: number, discipline: string) =>
     ['training', horseId, 'status', discipline] as const,
 };
 
-export const useTrainableHorses = (userId: string | number = 'me') =>
+/**
+ * Get trainable horses for a user
+ * @param userId - UUID of the user (must be authenticated user's UUID from auth context)
+ * @example
+ * const { user } = useAuth();
+ * const { data: horses } = useTrainableHorses(user?.id);
+ */
+export const useTrainableHorses = (userId: string) =>
   useQuery<TrainableHorse[], ApiError>({
     queryKey: trainingKeys.trainable(userId),
-    queryFn: () => trainingApi.getTrainableHorses(typeof userId === 'number' ? String(userId) : userId),
+    queryFn: () => trainingApi.getTrainableHorses(userId),
+    enabled: Boolean(userId),
     staleTime: 60 * 1000,
   });
 
@@ -57,14 +65,20 @@ export const useTrainingEligibility = () =>
     mutationFn: (payload) => trainingApi.checkEligibility(payload),
   });
 
-export const useTrainingSession = (userIdForInvalidate: string | number = 'me') => {
+/**
+ * Mutation hook for training a horse
+ * @param userIdForInvalidate - UUID of the user (for cache invalidation after training)
+ */
+export const useTrainingSession = (userIdForInvalidate?: string) => {
   const queryClient = useQueryClient();
 
   return useMutation<TrainingResult, ApiError, TrainingRequest>({
     mutationFn: (payload) => trainingApi.train(payload),
     onSuccess: (_data, variables) => {
       queryClient.invalidateQueries({ queryKey: trainingKeys.overview(variables.horseId) });
-      queryClient.invalidateQueries({ queryKey: trainingKeys.trainable(userIdForInvalidate) });
+      if (userIdForInvalidate) {
+        queryClient.invalidateQueries({ queryKey: trainingKeys.trainable(userIdForInvalidate) });
+      }
       queryClient.invalidateQueries({ queryKey: trainingKeys.all });
       queryClient.invalidateQueries({ queryKey: ['horses'] });
     },

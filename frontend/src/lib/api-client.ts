@@ -61,12 +61,35 @@ interface DisciplineStatus {
   lastTrainedAt?: string | null;
 }
 
+interface StatGain {
+  stat: string;
+  amount: number;
+  traitModified: boolean;
+}
+
+interface TraitEffects {
+  appliedTraits: string[];
+  scoreModifier: number;
+  xpModifier: number;
+}
+
 interface TrainingResult {
-  updatedScore: number;
-  nextEligibleDate: string;
-  discipline: string;
-  horseId: number;
-  message?: string;
+  success: boolean;
+  updatedHorse: {
+    id: number;
+    name: string;
+    discipline_scores?: Record<string, number>;
+    userId?: string;
+  } | null;
+  message: string;
+  nextEligible: string | null;
+  statGain: StatGain | null;
+  traitEffects?: TraitEffects;
+  // Deprecated fields for backward compatibility (will be removed)
+  updatedScore?: number;
+  nextEligibleDate?: string;
+  discipline?: string;
+  horseId?: number;
 }
 
 interface BreedRequest {
@@ -112,7 +135,9 @@ interface HorseSummary {
   name: string;
   breed?: string;
   age?: number;
+  ageYears?: number;
   gender?: string;
+  level?: number;
 }
 
 interface HorseTrainingHistoryEntry {
@@ -321,14 +346,39 @@ export const apiClient = {
  * Training API surface
  */
 export const trainingApi = {
-  getTrainableHorses: (userId: string | number) => {
+  /**
+   * Get trainable horses for a user
+   * @param userId - UUID of the user (must be authenticated user's UUID)
+   */
+  getTrainableHorses: (userId: string) => {
     return apiClient.get<TrainableHorse[]>(`/api/training/trainable/${userId}`);
   },
   checkEligibility: (payload: TrainingRequest) => {
     return apiClient.post<TrainingEligibility>('/api/training/check-eligibility', payload);
   },
-  train: (payload: TrainingRequest) => {
-    return apiClient.post<TrainingResult>('/api/training/train', payload);
+  train: async (payload: TrainingRequest): Promise<TrainingResult> => {
+    const result = await apiClient.post<TrainingResult>('/api/training/train', payload);
+
+    // Add backward-compatible fields for existing components
+    if (result.updatedHorse && result.updatedHorse.discipline_scores) {
+      const score = result.updatedHorse.discipline_scores[payload.discipline];
+      return {
+        ...result,
+        updatedScore: score ?? 0,
+        nextEligibleDate: result.nextEligible ?? '',
+        discipline: payload.discipline,
+        horseId: payload.horseId,
+      };
+    }
+
+    // Fallback if no updated horse or scores
+    return {
+      ...result,
+      updatedScore: 0,
+      nextEligibleDate: result.nextEligible ?? '',
+      discipline: payload.discipline,
+      horseId: payload.horseId,
+    };
   },
   getDisciplineStatus: (horseId: number, discipline: string) => {
     return apiClient.get<DisciplineStatus>(
@@ -336,7 +386,7 @@ export const trainingApi = {
     );
   },
   getHorseStatus: (horseId: number) => {
-    return apiClient.get<DisciplineStatus[]>(`/api/training/horse/${horseId}/all-status`);
+    return apiClient.get<DisciplineStatus[] | Record<string, Omit<DisciplineStatus, 'discipline'>>>(`/api/training/status/${horseId}`);
   },
 };
 
@@ -541,8 +591,10 @@ export type {
   FoalDevelopment,
   HorseSummary,
   HorseTrainingHistoryEntry,
+  StatGain,
   TrainableHorse,
   TrainingEligibility,
   TrainingRequest,
   TrainingResult,
+  TraitEffects,
 };
