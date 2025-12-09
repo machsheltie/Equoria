@@ -67,7 +67,10 @@ describe('TrainingSessionModal', () => {
       render(
         <TrainingSessionModal horse={mockHorse} onClose={mockOnClose} onCompleted={mockOnCompleted} />
       );
-      expect(screen.getByText('Thunder')).toBeInTheDocument();
+      // Horse name appears in both header and stats card
+      const horseNames = screen.getAllByText('Thunder');
+      expect(horseNames.length).toBeGreaterThanOrEqual(1);
+      expect(horseNames[0]).toBeInTheDocument();
     });
 
     it('displays Training Session header', () => {

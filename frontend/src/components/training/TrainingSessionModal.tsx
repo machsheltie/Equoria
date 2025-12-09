@@ -6,6 +6,7 @@ import {
 } from '@/hooks/api/useTraining';
 import type { TrainableHorse, TrainingResult } from '@/lib/api-client';
 import DisciplineSelector from './DisciplineSelector';
+import HorseStatsCard from './HorseStatsCard';
 
 interface TrainingSessionModalProps {
   horse: TrainableHorse;
@@ -74,6 +75,11 @@ const TrainingSessionModal = ({ horse, onClose, onCompleted }: TrainingSessionMo
           >
             Close
           </button>
+        </div>
+
+        {/* Horse Stats Display */}
+        <div className="mt-4">
+          <HorseStatsCard horse={horse} />
         </div>
 
         {/* Use new DisciplineSelector component */}
