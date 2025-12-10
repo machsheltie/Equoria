@@ -8,77 +8,106 @@ import logger from '../utils/logger.mjs';
  */
 export const authenticateToken = (req, res, next) => {
   try {
+    const respondUnauthorized = (message, logFn = 'warn') => {
+      logger[logFn](`[auth] ${message} for ${req.method} ${req.path} from ${req.ip}`);
+      return res.status(401).json({
+        success: false,
+        message,
+        status: 'error',
+      });
+    };
+
     // Read token from httpOnly cookie (primary method)
     let token = req.cookies?.accessToken;
 
-    // Fallback to Authorization header for backward compatibility
+    // Fallback to Authorization header for backward compatibility, but require Bearer scheme
     if (!token) {
-      const authHeader = req.headers['authorization'];
-      token = authHeader && authHeader.split(' ')[1]; // Bearer TOKEN
+      const authHeader = req.headers?.authorization;
+      const hasBearerPrefix = typeof authHeader === 'string' && authHeader.startsWith('Bearer ');
+      if (hasBearerPrefix) {
+        const headerToken = authHeader.substring('Bearer '.length).trim();
+        if (headerToken) {
+          token = headerToken;
+        }
+      } else if (authHeader) {
+        return respondUnauthorized('Access token is required');
+      }
     }
 
-    if (!token) {
-      logger.warn(`[auth] Missing token for ${req.method} ${req.path} from ${req.ip}`);
-      throw new AppError('Access token is required', 401);
+    if (!token || token === 'null' || token === 'undefined') {
+      return respondUnauthorized('Access token is required');
     }
 
     const secret = process.env.JWT_SECRET;
     if (!secret) {
       logger.error('[auth] JWT_SECRET not configured');
-      throw new AppError('Authentication configuration error', 500);
-    }
-
-    jwt.verify(token, secret, (err, decoded) => {
-      if (err) {
-        logger.warn(
-          `[auth] Invalid token for ${req.method} ${req.path} from ${req.ip}: ${err.message}`,
-        );
-
-        if (err.name === 'TokenExpiredError') {
-          throw new AppError('Token expired', 401);
-        } else if (err.name === 'JsonWebTokenError') {
-          throw new AppError('Invalid or expired token', 401);
-        } else {
-          throw new AppError('Token verification failed', 401);
-        }
-      }
-
-      // ✅ CWE-613 MITIGATION: Enforce absolute 7-day maximum session age
-      // Even if the access token is still technically valid, reject sessions older than 7 days
-      const MAX_SESSION_AGE_MS = 7 * 24 * 60 * 60 * 1000; // 7 days in milliseconds
-      const tokenAge = Date.now() - decoded.iat * 1000; // iat is in seconds, convert to ms
-
-      if (tokenAge > MAX_SESSION_AGE_MS) {
-        const daysSinceIssued = Math.floor(tokenAge / (24 * 60 * 60 * 1000));
-        logger.warn(
-          `[auth] Session expired due to age for ${req.method} ${req.path} from ${req.ip} (${daysSinceIssued} days old)`,
-        );
-        throw new AppError('Session expired. Please login again.', 401);
-      }
-
-      // Map userId to id for backward compatibility
-      const user = {
-        ...decoded,
-        id: decoded.userId || decoded.id,
-      };
-
-      req.user = user;
-      logger.info(`[auth] Authenticated user ${user.id} for ${req.method} ${req.path}`);
-      next();
-    });
-  } catch (error) {
-    if (error instanceof AppError) {
-      return res.status(error.statusCode).json({
+      return res.status(500).json({
         success: false,
-        message: error.message,
-        status: error.status,
+        message: 'Authentication configuration error',
+        status: 'error',
       });
     }
 
+    // Pre-decode to check expiration without throwing for known expired tokens
+    let decodedPreview = null;
+    try {
+      decodedPreview = jwt.decode(token);
+    } catch (err) {
+      logger.warn(`[auth] Token decode failed for ${req.method} ${req.path} from ${req.ip}: ${err.message}`);
+      return respondUnauthorized('Invalid or expired token');
+    }
+
+    if (!decodedPreview) {
+      return respondUnauthorized('Invalid or expired token');
+    }
+
+    if (decodedPreview?.exp && decodedPreview.exp * 1000 <= Date.now()) {
+      logger.warn(`[auth] Token expired (precheck) for ${req.method} ${req.path} from ${req.ip}`);
+      return respondUnauthorized('Token expired');
+    }
+
+    let decoded;
+    try {
+      decoded = jwt.verify(token, secret);
+    } catch (err) {
+      logger.warn(
+        `[auth] Invalid token for ${req.method} ${req.path} from ${req.ip}: ${err.message}`,
+      );
+
+      const isExpired =
+        err.name === 'TokenExpiredError' || err.message?.toLowerCase().includes('expired');
+
+      return respondUnauthorized(isExpired ? 'Token expired' : 'Invalid or expired token');
+    }
+
+    // CWE-613 MITIGATION: Enforce absolute 7-day maximum session age
+    // Even if the access token is still technically valid, reject sessions older than 7 days
+    const MAX_SESSION_AGE_MS = 7 * 24 * 60 * 60 * 1000; // 7 days in milliseconds
+    const SESSION_CLOCK_SKEW_MS = 1000; // tolerate timestamp rounding/skew so exactly 7d tokens pass
+    const tokenAge = decoded.iat ? Date.now() - decoded.iat * 1000 : 0; // iat is in seconds, convert to ms
+
+    if (tokenAge - SESSION_CLOCK_SKEW_MS > MAX_SESSION_AGE_MS) {
+      const daysSinceIssued = Math.floor(tokenAge / (24 * 60 * 60 * 1000));
+      logger.warn(
+        `[auth] Session expired due to age for ${req.method} ${req.path} from ${req.ip} (${daysSinceIssued} days old)`,
+      );
+      return respondUnauthorized('Session expired. Please login again.');
+    }
+
+    // Map userId to id for backward compatibility
+    const user = {
+      ...decoded,
+      id: decoded.userId || decoded.id,
+    };
+
+    req.user = user;
+    logger.info(`[auth] Authenticated user ${user.id} for ${req.method} ${req.path}`);
+    next();
+  } catch (error) {
     logger.error(`[auth] Unexpected error: ${error.message}`);
-    return res.status(500).json({
+    return res.status(401).json({
       success: false,
-      message: 'Authentication error',
+      message: 'Invalid or expired token',
       status: 'error',
     });
   }

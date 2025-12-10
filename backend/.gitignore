@@ -42,3 +42,8 @@ next-env.d.ts
 .env.production
 .env.development
 test-connection-debug.mjs
+
+# test coverage (auto-generated, never commit)
+/coverage/
+/coverage-security/
+/.jest-cache/

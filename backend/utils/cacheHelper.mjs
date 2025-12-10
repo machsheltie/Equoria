@@ -148,12 +148,11 @@ export async function getCachedQuery(cacheKey, queryFn, ttl = 60) {
     return await queryFn();
   }
 
+  // Try to get from cache
   try {
-    // Try to get from cache
     const cached = await redis.get(cacheKey);
 
     if (cached) {
-      // Cache hit!
       cacheStats.hits++;
       cacheStats.lastUpdate = new Date();
       logger.debug(`[cacheHelper] Cache HIT: ${cacheKey}`);
@@ -165,29 +164,27 @@ export async function getCachedQuery(cacheKey, queryFn, ttl = 60) {
         // Fall through to re-fetch
       }
     }
-
-    // Cache miss - execute query
-    cacheStats.misses++;
-    logger.debug(`[cacheHelper] Cache MISS: ${cacheKey}`);
-
-    const result = await queryFn();
-
-    // Cache the result
-    try {
-      await redis.setex(cacheKey, ttl, JSON.stringify(result));
-      logger.debug(`[cacheHelper] Cached result for ${cacheKey} (TTL: ${ttl}s)`);
-    } catch (cacheError) {
-      logger.warn(`[cacheHelper] Failed to cache result for ${cacheKey}:`, cacheError.message);
-      cacheStats.errors++;
-    }
-
-    return result;
   } catch (error) {
-    // On any cache error, fall back to direct query
-    logger.error(`[cacheHelper] Cache operation failed for ${cacheKey}:`, error.message);
+    logger.error(`[cacheHelper] Cache read failed for ${cacheKey}:`, error.message);
     cacheStats.errors++;
     return await queryFn();
   }
+
+  // Cache miss - execute query
+  cacheStats.misses++;
+  logger.debug(`[cacheHelper] Cache MISS: ${cacheKey}`);
+
+  const result = await queryFn();
+
+  try {
+    await redis.setex(cacheKey, ttl, JSON.stringify(result));
+    logger.debug(`[cacheHelper] Cached result for ${cacheKey} (TTL: ${ttl}s)`);
+  } catch (cacheError) {
+    logger.warn(`[cacheHelper] Failed to cache result for ${cacheKey}:`, cacheError.message);
+    cacheStats.errors++;
+  }
+
+  return result;
 }
 
 /**

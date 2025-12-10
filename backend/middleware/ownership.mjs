@@ -96,8 +96,11 @@ export const requireOwnership = (resourceType, options = {}) => {
       }
 
       // Extract resource ID from params
-      const resourceId = parseInt(req.params[idParam], 10);
-      if (isNaN(resourceId)) {
+      const rawId = req.params[idParam];
+      const isNumericId = typeof rawId === 'string' && /^[0-9]+$/.test(rawId);
+      const resourceId = isNumericId ? parseInt(rawId, 10) : NaN;
+
+      if (!isNumericId || isNaN(resourceId) || resourceId < 0) {
         logger.warn(`[ownership] Invalid ${resourceType} ID: ${req.params[idParam]}`);
         throw new AppError(`Invalid ${resourceType} ID`, 400);
       }
@@ -126,7 +129,12 @@ export const requireOwnership = (resourceType, options = {}) => {
 
       // Resource not found OR user doesn't own it
       // Return 404 in both cases to prevent ownership disclosure
-      if (!resource && required) {
+      if (!resource) {
+        if (!required) {
+          req[resourceType] = undefined;
+          return next();
+        }
+
         logger.warn(
           `[ownership] ${resourceType} ${resourceId} not found or not owned by user ${req.user.id}`
         );
