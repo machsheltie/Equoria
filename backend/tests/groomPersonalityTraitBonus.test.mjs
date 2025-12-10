@@ -62,6 +62,7 @@ describe('Groom Personality Trait Bonus System - REAL SYSTEM TESTS', () => {
       data: {
         name: `TestHorse_${Date.now()}`,
         ownerId: testUser.id,
+        userId: testUser.id,
         dateOfBirth: new Date(Date.now() - 0 * 24 * 60 * 60 * 1000), // 0 days old (newborn for imprinting)
         temperament: FOAL_TEMPERAMENT_TYPES.SPIRITED,
         bondScore: 65,
@@ -267,6 +268,7 @@ describe('Groom Personality Trait Bonus System - REAL SYSTEM TESTS', () => {
       it('should return groom profile with personality information', async () => {
         const response = await request(app)
           .get(`/api/grooms/${testGroom.id}/profile`)
+          .set('Authorization', authToken)
           .expect(200);
 
         expect(response.body.success).toBe(true);
@@ -279,6 +281,7 @@ describe('Groom Personality Trait Bonus System - REAL SYSTEM TESTS', () => {
       it('should return 404 for non-existent groom', async () => {
         const response = await request(app)
           .get('/api/grooms/99999/profile')
+          .set('Authorization', authToken)
           .expect(404);
 
         expect(response.body.success).toBe(false);
@@ -288,6 +291,7 @@ describe('Groom Personality Trait Bonus System - REAL SYSTEM TESTS', () => {
       it('should return 400 for invalid groom ID', async () => {
         const response = await request(app)
           .get('/api/grooms/invalid/profile')
+          .set('Authorization', authToken)
           .expect(400);
 
         expect(response.body.success).toBe(false);
@@ -326,6 +330,7 @@ describe('Groom Personality Trait Bonus System - REAL SYSTEM TESTS', () => {
           data: {
             name: 'NoTemperamentHorse',
             ownerId: testUser.id,
+            userId: testUser.id,
             dateOfBirth: new Date(),
             sex: 'colt',
             breedId: testBreed.id,
@@ -358,9 +363,18 @@ describe('Groom Personality Trait Bonus System - REAL SYSTEM TESTS', () => {
           },
         });
 
+        // Get CSRF token for POST request
+        const csrfResponse = await request(app).get('/auth/csrf-token');
+        const csrfToken = csrfResponse.body.csrfToken;
+        const csrfCookie = csrfResponse.headers['set-cookie']
+          .find((cookie) => cookie.startsWith('_csrf='))
+          .split(';')[0];
+
         const response = await request(app)
           .post('/api/milestones/evaluate-milestone')
           .set('Authorization', authToken)
+          .set('Cookie', csrfCookie)
+          .set('X-CSRF-Token', csrfToken)
           .send({
             horseId: testHorse.id,
             milestoneType: 'imprinting',

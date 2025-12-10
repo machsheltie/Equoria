@@ -7,6 +7,7 @@
 import cron from 'node-cron';
 import logger from '../utils/logger.mjs';
 import { processWeeklySalaries } from './groomSalaryService.mjs';
+import { cleanupExpiredTokens } from '../utils/tokenRotationService.mjs';
 import prisma from '../db/index.mjs';
 
 // Track running jobs
@@ -130,27 +131,32 @@ export function getCronJobStatus() {
 
 /**
  * Run token cleanup - Remove expired refresh tokens (CWE-613)
+ * Uses tokenRotationService for comprehensive cleanup including expired and old invalidated tokens
  */
 async function runTokenCleanup() {
   try {
     logger.info('[cronJobService] Starting expired token cleanup...');
 
-    const now = new Date();
+    // Use tokenRotationService for comprehensive cleanup
+    // This removes both expired tokens AND old invalidated tokens (30+ days)
+    const result = await cleanupExpiredTokens({ olderThanDays: 30 });
 
-    // Delete expired refresh tokens
-    const result = await prisma.refreshToken.deleteMany({
-      where: {
-        expiresAt: {
-          lt: now,
-        },
-      },
-    });
+    if (result.error) {
+      logger.error(`[cronJobService] Token cleanup error: ${result.error}`);
+      return {
+        removed: 0,
+        timestamp: new Date().toISOString(),
+        error: result.error,
+      };
+    }
 
-    logger.info(`[cronJobService] Token cleanup completed. Removed ${result.count} expired tokens`);
+    logger.info(`[cronJobService] Token cleanup completed. Removed ${result.removedCount} expired/invalidated tokens`);
 
     return {
-      removed: result.count,
-      timestamp: now.toISOString(),
+      removed: result.removedCount,
+      expired: result.expiredCount,
+      invalidated: result.invalidatedCount,
+      timestamp: new Date().toISOString(),
     };
 
   } catch (error) {

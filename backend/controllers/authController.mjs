@@ -143,6 +143,12 @@ export const login = async (req, res, next) => {
       throw new AppError('Invalid credentials', 401);
     }
 
+    // ✅ CWE-384 MITIGATION: Invalidate ALL existing sessions for this user
+    // This prevents session fixation attacks by ensuring only the new login session is valid
+    await prisma.refreshToken.deleteMany({
+      where: { userId: user.id },
+    });
+
     // Create new token family for this login session
     const tokenPair = await createTokenPair(user.id);
 
@@ -343,6 +349,87 @@ export const logout = async (req, res, next) => {
   } catch (error) {
     logger.error('[authController.logout] Error logging out user:', error);
     next(new AppError('Logout failed due to an unexpected error.', 500));
+  }
+};
+
+/**
+ * Change Password
+ * Validates old password, updates to new password, and invalidates all sessions
+ * CWE-613: Forces logout from all devices for security
+ */
+export const changePassword = async (req, res, next) => {
+  try {
+    const { oldPassword, newPassword } = req.body;
+
+    // Validate input
+    if (!oldPassword || !newPassword) {
+      throw new ValidationError('Old password and new password are required');
+    }
+
+    // Validate new password strength
+    if (newPassword.length < 8) {
+      throw new ValidationError('New password must be at least 8 characters long');
+    }
+
+    // User must be authenticated
+    if (!req.user || !req.user.id) {
+      throw new AppError('Authentication required', 401);
+    }
+
+    // Get current user with password
+    const user = await prisma.user.findUnique({
+      where: { id: req.user.id },
+    });
+
+    if (!user) {
+      throw new AppError('User not found', 404);
+    }
+
+    // Verify old password
+    const isOldPasswordValid = await bcrypt.compare(oldPassword, user.password);
+
+    if (!isOldPasswordValid) {
+      throw new AppError('Current password is incorrect', 401);
+    }
+
+    // Hash new password
+    const saltRounds = parseInt(process.env.BCRYPT_SALT_ROUNDS || '12', 10);
+    const hashedPassword = await bcrypt.hash(newPassword, saltRounds);
+
+    // Update password in database
+    await prisma.user.update({
+      where: { id: req.user.id },
+      data: { password: hashedPassword },
+    });
+
+    // ✅ CWE-613 MITIGATION: Invalidate ALL sessions across all devices
+    // This forces the user to re-login everywhere after password change for security
+    await prisma.refreshToken.deleteMany({
+      where: { userId: req.user.id },
+    });
+
+    logger.info('[authController.changePassword] Password changed successfully', {
+      userId: req.user.id,
+      email: user.email,
+    });
+
+    // Clear cookies for current session
+    res.clearCookie('accessToken', CLEAR_COOKIE_OPTIONS.accessToken);
+    res.clearCookie('refreshToken', CLEAR_COOKIE_OPTIONS.refreshToken);
+
+    res.status(200).json({
+      status: 'success',
+      message: 'Password changed successfully. Please login again.',
+      data: {
+        sessionInvalidated: true,
+      },
+    });
+  } catch (error) {
+    logger.error('[authController.changePassword] Error changing password:', error);
+    if (error instanceof AppError || error instanceof ValidationError) {
+      return next(error);
+    }
+    next(new AppError('Password change failed due to an unexpected error.', 500));
   }
 };
 

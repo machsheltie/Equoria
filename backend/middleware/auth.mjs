@@ -43,6 +43,19 @@ export const authenticateToken = (req, res, next) => {
         }
       }
 
+      // ✅ CWE-613 MITIGATION: Enforce absolute 7-day maximum session age
+      // Even if the access token is still technically valid, reject sessions older than 7 days
+      const MAX_SESSION_AGE_MS = 7 * 24 * 60 * 60 * 1000; // 7 days in milliseconds
+      const tokenAge = Date.now() - decoded.iat * 1000; // iat is in seconds, convert to ms
+
+      if (tokenAge > MAX_SESSION_AGE_MS) {
+        const daysSinceIssued = Math.floor(tokenAge / (24 * 60 * 60 * 1000));
+        logger.warn(
+          `[auth] Session expired due to age for ${req.method} ${req.path} from ${req.ip} (${daysSinceIssued} days old)`,
+        );
+        throw new AppError('Session expired. Please login again.', 401);
+      }
+
       // Map userId to id for backward compatibility
       const user = {
         ...decoded,

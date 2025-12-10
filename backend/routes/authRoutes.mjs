@@ -4,8 +4,18 @@ import { handleValidationErrors, sanitizeRequestData } from '../middleware/valid
 import { authenticateToken } from '../middleware/auth.mjs';
 import { authRateLimiter } from '../middleware/authRateLimiter.mjs';
 import * as authController from '../controllers/authController.mjs';
+import { getCsrfToken } from '../middleware/csrf.mjs';
 
 const router = express.Router();
+
+/**
+ * CSRF Token Endpoint
+ * GET /auth/csrf-token
+ *
+ * Public endpoint - No authentication required
+ * Must be called by frontend before any state-changing operations (POST/PUT/DELETE/PATCH)
+ */
+router.get('/csrf-token', getCsrfToken);
 
 /**
  * @swagger
@@ -468,6 +478,81 @@ router.put(
  *         $ref: '#/components/responses/InternalError'
  */
 router.post('/logout', authenticateToken, authController.logout);
+
+/**
+ * @swagger
+ * /api/auth/change-password:
+ *   post:
+ *     summary: Change user password
+ *     description: Change the authenticated user's password and invalidate all sessions (CWE-613)
+ *     tags: [Authentication]
+ *     security:
+ *       - bearerAuth: []
+ *     requestBody:
+ *       required: true
+ *       content:
+ *         application/json:
+ *           schema:
+ *             type: object
+ *             required: [oldPassword, newPassword]
+ *             properties:
+ *               oldPassword:
+ *                 type: string
+ *                 description: Current password
+ *                 example: "oldPassword123"
+ *               newPassword:
+ *                 type: string
+ *                 minLength: 8
+ *                 description: New password (minimum 8 characters)
+ *                 example: "newSecurePassword456"
+ *     responses:
+ *       200:
+ *         description: Password changed successfully
+ *         content:
+ *           application/json:
+ *             schema:
+ *               type: object
+ *               properties:
+ *                 status:
+ *                   type: string
+ *                   example: "success"
+ *                 message:
+ *                   type: string
+ *                   example: "Password changed successfully. Please login again."
+ *                 data:
+ *                   type: object
+ *                   properties:
+ *                     sessionInvalidated:
+ *                       type: boolean
+ *                       example: true
+ *       400:
+ *         $ref: '#/components/responses/BadRequest'
+ *       401:
+ *         description: Current password is incorrect or authentication required
+ *         content:
+ *           application/json:
+ *             schema:
+ *               $ref: '#/components/schemas/Error'
+ *       500:
+ *         $ref: '#/components/responses/InternalError'
+ */
+router.post(
+  '/change-password',
+  [
+    authenticateToken,
+    authRateLimiter, // Rate limit: 5 requests per 15 minutes
+    body('oldPassword').notEmpty().withMessage('Current password is required'),
+    body('newPassword')
+      .isLength({ min: 8 })
+      .withMessage('New password must be at least 8 characters long')
+      .matches(/^(?=.*[a-z])(?=.*[A-Z])(?=.*\d)/)
+      .withMessage(
+        'New password must contain at least one lowercase letter, one uppercase letter, and one number',
+      ),
+    handleValidationErrors,
+  ],
+  authController.changePassword,
+);
 
 /**
  * @swagger
