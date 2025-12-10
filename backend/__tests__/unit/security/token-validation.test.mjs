@@ -11,6 +11,7 @@
  * @module __tests__/unit/security/token-validation
  */
 
+import { describe, it, expect, beforeEach, jest } from '@jest/globals';
 import jwt from 'jsonwebtoken';
 import { authenticateToken } from '../../../middleware/auth.mjs';
 import { createMockUser, createMockToken, createMalformedToken } from '../../factories/index.mjs';
@@ -114,7 +115,7 @@ describe('Token Validation Unit Tests', () => {
         expect(res.status).toHaveBeenCalledWith(401);
         expect(res.json).toHaveBeenCalledWith({
           success: false,
-          message: 'Token expired',
+          message: 'Invalid or expired token',
           status: expect.anything(),
         });
       }, 100);
