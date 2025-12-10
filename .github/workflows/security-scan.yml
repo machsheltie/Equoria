@@ -1,0 +1,233 @@
+name: OWASP ZAP Security Scan
+
+on:
+  push:
+    branches: [master, develop]
+  pull_request:
+    branches: [master, develop]
+  schedule:
+    # Run weekly security scan every Monday at 2 AM UTC
+    - cron: '0 2 * * 1'
+  workflow_dispatch: # Allow manual trigger
+
+permissions:
+  contents: read
+  security-events: write
+  issues: write
+
+jobs:
+  zap-scan:
+    name: OWASP ZAP API Security Scan
+    runs-on: ubuntu-latest
+
+    services:
+      postgres:
+        image: postgres:14
+        env:
+          POSTGRES_USER: postgres
+          POSTGRES_PASSWORD: postgres
+          POSTGRES_DB: equoria_test
+        ports:
+          - 5432:5432
+        options: >-
+          --health-cmd pg_isready
+          --health-interval 10s
+          --health-timeout 5s
+          --health-retries 5
+
+      redis:
+        image: redis:7-alpine
+        ports:
+          - 6379:6379
+        options: >-
+          --health-cmd "redis-cli ping"
+          --health-interval 10s
+          --health-timeout 5s
+          --health-retries 5
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: '18'
+          cache: 'npm'
+          cache-dependency-path: backend/package-lock.json
+
+      - name: Install dependencies
+        working-directory: backend
+        run: npm ci
+
+      - name: Setup database schema
+        working-directory: backend
+        env:
+          DATABASE_URL: postgresql://postgres:postgres@localhost:5432/equoria_test
+        run: npx prisma migrate deploy
+
+      - name: Generate Prisma Client
+        working-directory: backend
+        run: npx prisma generate
+
+      - name: Create .env file
+        working-directory: backend
+        run: |
+          cat > .env << EOF
+          NODE_ENV=test
+          PORT=3000
+          DATABASE_URL=postgresql://postgres:postgres@localhost:5432/equoria_test
+          JWT_SECRET=test_jwt_secret_key_minimum_32_characters_long
+          REFRESH_SECRET=test_refresh_secret_key_minimum_32_characters
+          REDIS_HOST=localhost
+          REDIS_PORT=6379
+          SESSION_SECRET=test_session_secret_minimum_32_characters_long
+          COOKIE_SECRET=test_cookie_secret_minimum_32_characters_long
+          CSRF_SECRET=test_csrf_secret_minimum_32_characters_long
+          EMAIL_USER=test@example.com
+          EMAIL_PASS=test_password
+          FRONTEND_URL=http://localhost:5173
+          ENABLE_RATE_LIMITING=true
+          ENABLE_CSRF=true
+          LOG_LEVEL=error
+          EOF
+
+      - name: Start API server
+        working-directory: backend
+        run: |
+          npm start &
+          echo $! > server.pid
+          # Wait for server to be ready
+          npx wait-on http://localhost:3000/health -t 30000
+
+      - name: Generate OpenAPI spec for ZAP
+        working-directory: backend
+        run: |
+          # Export OpenAPI spec from running server
+          curl -o openapi-spec.json http://localhost:3000/api-docs/swagger.json
+          # Validate the spec exists
+          if [ ! -f openapi-spec.json ]; then
+            echo "Failed to download OpenAPI spec"
+            exit 1
+          fi
+
+      - name: ZAP Baseline Scan
+        uses: zaproxy/action-baseline@v0.10.0
+        with:
+          target: 'http://localhost:3000'
+          rules_file_name: '.github/zap-rules.tsv'
+          cmd_options: '-a -j -m 5 -T 30 -z "-config formhandler.fields.field.remove=password"'
+          allow_issue_writing: true
+          fail_action: ${{ github.event_name == 'push' && 'true' || 'false' }}
+
+      - name: ZAP API Scan
+        uses: zaproxy/action-api-scan@v0.6.0
+        with:
+          target: 'http://localhost:3000'
+          format: openapi
+          api_file: 'backend/openapi-spec.json'
+          cmd_options: '-I -a -j -T 30 -z "-config formhandler.fields.field.remove=password"'
+          allow_issue_writing: true
+          fail_action: ${{ github.event_name == 'push' && 'true' || 'false' }}
+
+      - name: ZAP Full Scan (Weekly)
+        if: github.event_name == 'schedule'
+        uses: zaproxy/action-full-scan@v0.9.0
+        with:
+          target: 'http://localhost:3000'
+          rules_file_name: '.github/zap-rules.tsv'
+          cmd_options: '-a -j -m 5 -T 120 -z "-config formhandler.fields.field.remove=password"'
+          allow_issue_writing: true
+
+      - name: Upload ZAP Baseline Report
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: zap-baseline-report
+          path: report_html.html
+
+      - name: Upload ZAP API Report
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: zap-api-report
+          path: report_json.json
+
+      - name: Process ZAP Results
+        if: always()
+        run: |
+          # Count findings by severity
+          if [ -f report_json.json ]; then
+            HIGH=$(jq '[.site[].alerts[] | select(.riskcode == "3")] | length' report_json.json)
+            MEDIUM=$(jq '[.site[].alerts[] | select(.riskcode == "2")] | length' report_json.json)
+            LOW=$(jq '[.site[].alerts[] | select(.riskcode == "1")] | length' report_json.json)
+
+            echo "### ZAP Security Scan Results" >> $GITHUB_STEP_SUMMARY
+            echo "" >> $GITHUB_STEP_SUMMARY
+            echo "| Severity | Count |" >> $GITHUB_STEP_SUMMARY
+            echo "|----------|-------|" >> $GITHUB_STEP_SUMMARY
+            echo "| High | $HIGH |" >> $GITHUB_STEP_SUMMARY
+            echo "| Medium | $MEDIUM |" >> $GITHUB_STEP_SUMMARY
+            echo "| Low | $LOW |" >> $GITHUB_STEP_SUMMARY
+
+            # Fail if high severity findings
+            if [ "$HIGH" -gt 0 ]; then
+              echo "❌ Found $HIGH high severity security issues!"
+              exit 1
+            fi
+          fi
+
+      - name: Create Security Issue for High Findings
+        if: failure() && github.event_name == 'push'
+        uses: actions/github-script@v7
+        with:
+          script: |
+            const fs = require('fs');
+            const reportPath = 'report_json.json';
+
+            if (fs.existsSync(reportPath)) {
+              const report = JSON.parse(fs.readFileSync(reportPath, 'utf8'));
+              const highAlerts = report.site[0].alerts.filter(a => a.riskcode === "3");
+
+              if (highAlerts.length > 0) {
+                let body = '## 🚨 High Severity Security Vulnerabilities Detected\n\n';
+                body += `OWASP ZAP scan found **${highAlerts.length} high severity issues**:\n\n`;
+
+                highAlerts.forEach((alert, i) => {
+                  body += `### ${i + 1}. ${alert.name}\n`;
+                  body += `- **Risk**: ${alert.riskdesc}\n`;
+                  body += `- **Confidence**: ${alert.confidence}\n`;
+                  body += `- **Description**: ${alert.desc}\n`;
+                  body += `- **Solution**: ${alert.solution}\n`;
+                  body += `- **Reference**: ${alert.reference}\n\n`;
+                });
+
+                body += `\n---\n`;
+                body += `Scan triggered by: ${context.sha.substring(0, 7)}\n`;
+                body += `Branch: ${context.ref}\n`;
+
+                await github.rest.issues.create({
+                  owner: context.repo.owner,
+                  repo: context.repo.repo,
+                  title: `🚨 Security: ${highAlerts.length} High Severity Vulnerabilities`,
+                  body: body,
+                  labels: ['security', 'high-priority', 'zap-scan']
+                });
+              }
+            }
+
+      - name: Stop API server
+        if: always()
+        working-directory: backend
+        run: |
+          if [ -f server.pid ]; then
+            kill $(cat server.pid) || true
+            rm server.pid
+          fi
+
+      - name: Upload to GitHub Security
+        if: always()
+        uses: github/codeql-action/upload-sarif@v3
+        with:
+          sarif_file: report_sarif.sarif
+          category: zap-scan

@@ -1,0 +1,150 @@
+# ZAP Scanning Rules Configuration
+# Format: ID	THRESHOLD	[IGNORE]	[COMMENT]
+# ID: ZAP rule identifier
+# THRESHOLD: OFF, DEFAULT, LOW, MEDIUM, HIGH
+# IGNORE: Optional, set to IGNORE to disable alerts
+# COMMENT: Optional explanation
+
+# High Priority Rules (Security)
+10023	HIGH		# SQL Injection
+10024	HIGH		# SQL Injection (SQLite)
+10025	HIGH		# SQL Injection (MySQL)
+10026	HIGH		# SQL Injection (PostgreSQL)
+40018	HIGH		# SQL Injection - Authentication Bypass
+40019	HIGH		# SQL Injection - Hypersonic SQL
+40020	HIGH		# SQL Injection - MsSQL
+40021	HIGH		# SQL Injection - Oracle
+90018	HIGH		# SQL Injection - SQLite
+90019	HIGH		# SQL Injection - Oracle
+90020	HIGH		# SQL Injection - MySQL
+90021	HIGH		# SQL Injection - PostgreSQL
+90022	HIGH		# SQL Injection - Hypersonic SQL
+90023	HIGH		# SQL Injection - MsSQL
+90024	HIGH		# SQL Injection - SQLMap
+
+# Authentication & Session Management
+10040	HIGH		# Secure Pages Include Mixed Content
+10041	HIGH		# HTTP to HTTPS Insecure Transition
+10042	HIGH		# HTTPS to HTTP Insecure Transition
+10043	HIGH		# User Controllable JavaScript Event
+10044	HIGH		# Big Redirect Detected
+10045	HIGH		# Source Code Disclosure
+10047	HIGH		# HTTPS Content Available via HTTP
+10048	HIGH		# Remote Code Execution
+10049	HIGH		# Path Traversal
+10050	HIGH		# Directory Browsing
+10051	HIGH		# Cookie Without Secure Flag
+10052	HIGH		# Cookie Without SameSite Attribute
+10053	HIGH		# Cookie Without HttpOnly Flag
+10054	HIGH		# Cookie Poisoning
+10055	HIGH		# CSP Scanner
+10056	HIGH		# X-Frame-Options Header
+10057	HIGH		# Cross-Domain Misconfiguration
+10058	HIGH		# GET for POST
+10059	HIGH		# Cookie No HttpOnly Flag
+10060	HIGH		# Cookie Without Secure Flag
+
+# XSS Vulnerabilities
+40012	HIGH		# Cross Site Scripting (Reflected)
+40013	HIGH		# Cross Site Scripting (Persistent)
+40014	HIGH		# Cross Site Scripting (DOM Based)
+40016	HIGH		# Cross Site Scripting (Persistent) - Prime
+40017	HIGH		# Cross Site Scripting (Persistent) - Spider
+90019	HIGH		# Code Injection
+
+# CSRF Protection
+10202	HIGH		# Absence of Anti-CSRF Tokens
+
+# Injection Attacks
+7	HIGH		# Remote File Inclusion
+40003	HIGH		# CRLF Injection
+40008	HIGH		# Parameter Tampering
+40009	HIGH		# Server Side Include
+40028	HIGH		# URL Redirector Abuse
+90003	HIGH		# XML External Entity Attack
+90004	HIGH		# XXE - External Entity Attack
+90029	HIGH		# LDAP Injection
+
+# Authentication Bypass
+10105	HIGH		# Weak Authentication Method
+
+# Rate Limiting & DoS
+90030	HIGH		# Application Error Disclosure
+
+# Medium Priority Rules (Configuration Issues)
+10010	MEDIUM		# Cookie No HttpOnly Flag (Medium)
+10011	MEDIUM		# Cookie Without Secure Flag (Medium)
+10015	MEDIUM		# Incomplete or No Cache-control
+10017	MEDIUM		# Cross-Domain JavaScript Source File Inclusion
+10019	MEDIUM		# Content-Type Header Missing
+10020	MEDIUM		# X-Frame-Options Header Not Set
+10021	MEDIUM		# X-Content-Type-Options Header Missing
+10035	MEDIUM		# Strict-Transport-Security Header Not Set
+10036	MEDIUM		# HTTP Server Response Header
+10037	MEDIUM		# Server Leaks Information via "X-Powered-By"
+10038	MEDIUM		# Content Security Policy (CSP) Header Not Set
+10039	MEDIUM		# X-Backend-Server Header Information Leak
+10063	MEDIUM		# Feature Policy Header Not Set
+10096	MEDIUM		# Timestamp Disclosure
+10098	MEDIUM		# Cross-Domain Misconfiguration
+10109	MEDIUM		# Modern Web Application
+10110	MEDIUM		# Dangerous JS Functions
+
+# Information Disclosure
+10094	MEDIUM		# Base64 Disclosure
+10095	MEDIUM		# Credit Card Number Disclosure
+10097	MEDIUM		# Hash Disclosure
+
+# Low Priority Rules (Informational)
+10003	LOW		# Vulnerable JS Library
+10027	LOW		# Information Disclosure - Suspicious Comments
+10032	LOW		# Viewstate
+10061	LOW		# X-AspNet-Version Response Header
+10062	LOW		# PII Disclosure
+10070	LOW		# Cookie Slack Detector
+10071	LOW		# User Agent Fuzzer
+10104	LOW		# User Agent Fuzzer
+10108	LOW		# Reverse Tabnabbing
+2	LOW		# Private IP Disclosure
+
+# Ignore False Positives
+10016	IGNORE		# Web Browser XSS Protection Not Enabled (often false positive)
+10202	DEFAULT		# Anti-CSRF tokens (we implement custom CSRF, may cause false positives)
+
+# API-Specific Rules
+90033	HIGH		# Loosely Scoped Cookie
+90034	HIGH		# Cloud Metadata Potentially Exposed
+
+# Rate Limiting Detection
+10107	MEDIUM		# Httpoxy - Proxy Header Misuse
+
+# Content Type Rules
+10019	MEDIUM		# Content Type Missing
+
+# Passive Scan Rules (Always enabled)
+10015	LOW		# Re-examine Cache-control Directives
+10027	LOW		# Information Disclosure - Suspicious Comments
+10028	LOW		# Open Redirect
+10029	LOW		# Cookie Poisoning
+10030	LOW		# User Controllable Charset
+10031	LOW		# User Controllable HTML Element Attribute (Potential XSS)
+
+# Active Scan Rules (Configurable thresholds)
+40018	HIGH		# SQL Injection
+40019	HIGH		# SQL Injection - Hypersonic SQL
+40020	HIGH		# SQL Injection - MsSQL
+40021	HIGH		# SQL Injection - Oracle
+40022	HIGH		# SQL Injection - PostgreSQL
+40023	HIGH		# Possible Username Enumeration
+40024	HIGH		# SQL Injection - SQLite
+40025	HIGH		# Expression Language Injection
+40026	HIGH		# Cross Site Scripting (DOM Based)
+40027	HIGH		# SQL Injection - Boolean Based
+40028	HIGH		# ELMAH Information Leak
+
+# Ignore Development/Test Artifacts
+10049	IGNORE		# Path Traversal (often false positive in REST APIs)
+10098	IGNORE		# Cross-Domain Misconfiguration (expected for CORS)
+
+# Authentication Test Rules
+40023	MEDIUM		# Possible Username Enumeration (reduce noise)
