@@ -39,6 +39,7 @@
 
 import request from 'supertest';
 import express from 'express';
+import cookieParser from 'cookie-parser';
 import { body } from 'express-validator';
 import { register, login, refreshToken, logout, getProfile } from '../controllers/authController.mjs';
 import { authenticateToken } from '../middleware/auth.mjs';
@@ -52,6 +53,7 @@ const createTestApp = () => {
   // Basic middleware only
   app.use(express.json({ limit: '10mb' }));
   app.use(express.urlencoded({ extended: true, limit: '10mb' }));
+  app.use(cookieParser()); // Required for req.cookies in refreshToken endpoint
 
   // Auth routes with minimal validation
   app.post(
@@ -64,7 +66,7 @@ const createTestApp = () => {
 
   app.post('/api/auth/login', body('email').isEmail().normalizeEmail(), body('password').notEmpty(), login);
 
-  app.post('/api/auth/refresh', body('refreshToken').notEmpty(), refreshToken);
+  app.post('/api/auth/refresh', refreshToken); // No body validation - token comes from cookies
 
   app.post('/api/auth/logout', authenticateToken, logout);
 
@@ -139,8 +141,11 @@ describe('🔐 INTEGRATION: Authentication System - Complete Auth Workflow Valid
       expect(response.body.data.user.username).toBe(userData.username);
       expect(response.body.data.user.firstName).toBe(userData.firstName);
       expect(response.body.data.user.lastName).toBe(userData.lastName);
-      expect(response.body.data.token).toBeDefined();
-      expect(response.body.data.refreshToken).toBeDefined();
+      // Tokens are now in httpOnly cookies for security, not in response body
+      expect(response.headers['set-cookie']).toBeDefined();
+      const cookies = response.headers['set-cookie'];
+      expect(cookies.some(cookie => cookie.startsWith('accessToken='))).toBe(true);
+      expect(cookies.some(cookie => cookie.startsWith('refreshToken='))).toBe(true);
       expect(response.body.data.user.password).toBeUndefined();
     });
 
@@ -190,8 +195,11 @@ describe('🔐 INTEGRATION: Authentication System - Complete Auth Workflow Valid
       expect(response.body.status).toBe('success');
       expect(response.body.message).toBe('Login successful');
       expect(response.body.data.user.email).toBe(loginData.email);
-      expect(response.body.data.token).toBeDefined();
-      expect(response.body.data.refreshToken).toBeDefined();
+      // Tokens are now in httpOnly cookies for security, not in response body
+      expect(response.headers['set-cookie']).toBeDefined();
+      const cookies = response.headers['set-cookie'];
+      expect(cookies.some(cookie => cookie.startsWith('accessToken='))).toBe(true);
+      expect(cookies.some(cookie => cookie.startsWith('refreshToken='))).toBe(true);
       expect(response.body.data.user.password).toBeUndefined();
     });
 
@@ -224,10 +232,16 @@ describe('🔐 INTEGRATION: Authentication System - Complete Auth Workflow Valid
 
       const registerResponse = await request(app).post('/api/auth/register').send(userData);
 
-      if (registerResponse.body && registerResponse.body.data) {
-        refreshTokenValue = registerResponse.body.data.refreshToken;
+      // Extract refreshToken from httpOnly cookie
+      if (registerResponse.headers && registerResponse.headers['set-cookie']) {
+        const cookies = registerResponse.headers['set-cookie'];
+        const refreshTokenCookie = cookies.find(cookie => cookie.startsWith('refreshToken='));
+        if (refreshTokenCookie) {
+          refreshTokenValue = refreshTokenCookie.split(';')[0].split('=')[1];
+        } else {
+          refreshTokenValue = null;
+        }
       } else {
-        // console.error("Auth-Test: Failed to get refreshTokenValue during setup:", registerResponse.status, registerResponse.body);
         refreshTokenValue = null;
       }
     });
@@ -236,20 +250,27 @@ describe('🔐 INTEGRATION: Authentication System - Complete Auth Workflow Valid
       // Corrected: async()
       const response = await request(app)
         .post('/api/auth/refresh')
-        .send({ refreshToken: refreshTokenValue }) // Use the locally scoped variable
+        .set('Cookie', `refreshToken=${refreshTokenValue}`) // Send as cookie header, not body
         .expect(200);
 
       expect(response.body.status).toBe('success');
       expect(response.body.message).toBe('Token refreshed successfully');
-      expect(response.body.data.token).toBeDefined();
-      // Note: refresh endpoint only returns new token, not new refreshToken
+      // Tokens are in httpOnly cookies, not response body
+      expect(response.headers['set-cookie']).toBeDefined();
+      const cookies = response.headers['set-cookie'];
+      expect(cookies.some(cookie => cookie.startsWith('accessToken='))).toBe(true);
+      expect(cookies.some(cookie => cookie.startsWith('refreshToken='))).toBe(true);
     });
 
     it('should reject invalid refresh token', async () => {
-      const response = await request(app).post('/api/auth/refresh').send({ refreshToken: 'invalid-token' }).expect(401);
+      const response = await request(app)
+        .post('/api/auth/refresh')
+        .set('Cookie', 'refreshToken=invalid-token') // Send as cookie header, not body
+        .expect(401);
 
       expect(response.body.success).toBe(false);
-      expect(response.body.message).toBe('Invalid or expired refresh token');
+      // Token rotation service detects invalid tokens as potential reuse
+      expect(response.body.message).toBe('Token reuse detected - please login again');
     });
   });
 
