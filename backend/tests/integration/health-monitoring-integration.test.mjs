@@ -48,6 +48,7 @@ import userDocumentationRoutes from '../../routes/userDocumentationRoutes.mjs';
 import epigeneticFlagRoutes from '../../routes/epigeneticFlagRoutes.mjs';
 import { initializeMemoryManagement, shutdownMemoryManagement } from '../../services/memoryResourceManagementService.mjs';
 import prisma from '../../db/index.mjs';
+import { generateTestToken } from '../helpers/authHelper.mjs';
 
 // Create test app with health monitoring
 const createTestApp = () => {
@@ -163,7 +164,7 @@ describe('🏥 Health Monitoring Integration Tests', () => {
       where: { email: { contains: 'healthintegration' } },
     });
 
-    // Create test user and get authentication token
+    // Create test user
     const userData = {
       email: 'healthintegration@test.com',
       username: 'healthintegrationuser',
@@ -178,7 +179,9 @@ describe('🏥 Health Monitoring Integration Tests', () => {
 
     expect(registerResponse.status).toBe(201);
     _testUser = registerResponse.body.data.user;
-    authToken = registerResponse.body.data.token;
+
+    // Generate JWT token for authentication using test helper
+    authToken = generateTestToken({ id: _testUser.id, email: _testUser.email });
   });
 
   afterEach(async () => {

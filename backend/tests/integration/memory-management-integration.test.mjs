@@ -51,6 +51,7 @@ import {
   getMemoryReport,
 } from '../../services/memoryResourceManagementService.mjs';
 import prisma from '../../db/index.mjs';
+import { generateTestToken } from '../helpers/authHelper.mjs';
 
 // Create test app with memory management
 const createTestApp = () => {
@@ -174,7 +175,9 @@ describe('🧠 Memory Management Integration Tests', () => {
 
     expect(registerResponse.status).toBe(201);
     _testUser = registerResponse.body.data.user;
-    authToken = registerResponse.body.data.token;
+
+    // Generate JWT token for authentication using test helper
+    authToken = generateTestToken({ id: _testUser.id, email: _testUser.email });
   });
 
   afterEach(async () => {

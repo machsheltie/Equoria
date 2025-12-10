@@ -33,6 +33,7 @@ import { jest, describe, it, expect, beforeEach, afterEach } from '@jest/globals
 import request from 'supertest';
 import app from '../../app.mjs';
 import prisma from '../../db/index.mjs';
+import { generateTestToken } from '../helpers/authHelper.mjs';
 
 // Strategic mocking: Only mock external dependencies
 jest.mock('../../utils/logger.mjs', () => ({
@@ -45,6 +46,7 @@ jest.mock('../../utils/logger.mjs', () => ({
 describe('🏇 INTEGRATION: Horse Overview API - Real Database Integration', () => {
   let testHorse;
   let testUser;
+  let authToken;
 
   beforeEach(async () => {
     // Clean up any existing test data
@@ -74,6 +76,9 @@ describe('🏇 INTEGRATION: Horse Overview API - Real Database Integration', () 
         money: 5000,
       },
     });
+
+    // Generate JWT token for authentication
+    authToken = generateTestToken({ id: testUser.id, email: testUser.email });
 
     // Create or find test breed
     const testBreed = await prisma.breed.findFirst() || await prisma.breed.create({
@@ -170,7 +175,10 @@ describe('🏇 INTEGRATION: Horse Overview API - Real Database Integration', () 
         },
       });
 
-      const response = await request(app).get(`/api/horses/${testHorse.id}/overview`).expect(200);
+      const response = await request(app)
+        .get(`/api/horses/${testHorse.id}/overview`)
+        .set('Authorization', `Bearer ${authToken}`)
+        .expect(200);
 
       expect(response.body.success).toBe(true);
       expect(response.body.message).toBe('Horse overview retrieved successfully');
@@ -214,21 +222,30 @@ describe('🏇 INTEGRATION: Horse Overview API - Real Database Integration', () 
     });
 
     it('should return 404 for non-existent horse', async () => {
-      const response = await request(app).get('/api/horses/99999/overview').expect(404);
+      const response = await request(app)
+        .get('/api/horses/99999/overview')
+        .set('Authorization', `Bearer ${authToken}`)
+        .expect(404);
 
       expect(response.body.success).toBe(false);
       expect(response.body.message).toBe('Horse not found');
     });
 
     it('should return validation error for invalid horse ID', async () => {
-      const response = await request(app).get('/api/horses/invalid/overview').expect(400);
+      const response = await request(app)
+        .get('/api/horses/invalid/overview')
+        .set('Authorization', `Bearer ${authToken}`)
+        .expect(400);
 
       expect(response.body.success).toBe(false);
       expect(response.body.message).toBe('Validation failed');
     });
 
     it('should handle horse with no training history gracefully', async () => {
-      const response = await request(app).get(`/api/horses/${testHorse.id}/overview`).expect(200);
+      const response = await request(app)
+        .get(`/api/horses/${testHorse.id}/overview`)
+        .set('Authorization', `Bearer ${authToken}`)
+        .expect(200);
 
       const { data } = response.body;
       expect(data.nextTrainingDate).toBe('never');
@@ -251,7 +268,10 @@ describe('🏇 INTEGRATION: Horse Overview API - Real Database Integration', () 
       const expectedNextTraining = new Date(lastTrainingDate);
       expectedNextTraining.setDate(expectedNextTraining.getDate() + 7);
 
-      const response = await request(app).get(`/api/horses/${testHorse.id}/overview`).expect(200);
+      const response = await request(app)
+        .get(`/api/horses/${testHorse.id}/overview`)
+        .set('Authorization', `Bearer ${authToken}`)
+        .expect(200);
 
       const { data } = response.body;
       expect(new Date(data.nextTrainingDate)).toEqual(expectedNextTraining);
@@ -284,7 +304,10 @@ describe('🏇 INTEGRATION: Horse Overview API - Real Database Integration', () 
         },
       });
 
-      const response = await request(app).get(`/api/horses/${minimalHorse.id}/overview`).expect(200);
+      const response = await request(app)
+        .get(`/api/horses/${minimalHorse.id}/overview`)
+        .set('Authorization', `Bearer ${authToken}`)
+        .expect(200);
 
       const { data } = response.body;
       expect(data.name).toBe('TestHorse Minimal');
