@@ -41,6 +41,11 @@ import {
   useHorseTraitInteractions,
   useHorseTraitTimeline,
 } from '../hooks/useHorseGenetics';
+import XPProgressBar from '../components/horse/XPProgressBar';
+import StatProgressionChart from '../components/horse/StatProgressionChart';
+import RecentGains from '../components/horse/RecentGains';
+import AgeUpCounter from '../components/horse/AgeUpCounter';
+import TrainingRecommendations from '../components/horse/TrainingRecommendations';
 
 // Types
 interface HorseStats {
@@ -71,7 +76,13 @@ interface Horse {
   };
 }
 
-type TabType = 'overview' | 'disciplines' | 'genetics' | 'training' | 'competition';
+type TabType =
+  | 'overview'
+  | 'disciplines'
+  | 'genetics'
+  | 'progression'
+  | 'training'
+  | 'competition';
 
 // Stat icon mapping (consistent with HorseCard)
 const getStatIcon = (statName: string) => {
@@ -185,6 +196,7 @@ const HorseDetailPage: React.FC = () => {
     { id: 'overview', label: 'Overview', icon: <Star className="w-4 h-4" /> },
     { id: 'disciplines', label: 'Disciplines', icon: <Trophy className="w-4 h-4" /> },
     { id: 'genetics', label: 'Genetics', icon: <Users className="w-4 h-4" /> },
+    { id: 'progression', label: 'Progression', icon: <TrendingUp className="w-4 h-4" /> },
     { id: 'training', label: 'Training', icon: <Dumbbell className="w-4 h-4" /> },
     { id: 'competition', label: 'Competitions', icon: <Award className="w-4 h-4" /> },
   ];
@@ -321,6 +333,7 @@ const HorseDetailPage: React.FC = () => {
             {activeTab === 'overview' && <OverviewTab horse={horse} />}
             {activeTab === 'disciplines' && <DisciplinesTab horse={horse} />}
             {activeTab === 'genetics' && <GeneticsTab horse={horse} />}
+            {activeTab === 'progression' && <ProgressionTab horse={horse} />}
             {activeTab === 'training' && <PlaceholderTab title="Training History" />}
             {activeTab === 'competition' && <PlaceholderTab title="Competition Results" />}
           </div>
@@ -1040,6 +1053,36 @@ const GeneticsTab: React.FC<{ horse: Horse }> = ({ horse }) => {
     </div>
   );
 };
+
+// Progression Tab Component
+const ProgressionTab: React.FC<{ horse: Horse }> = ({ horse }) => (
+  <div className="space-y-6">
+    {/* XP Progress Bar - Full Width */}
+    <div className="col-span-full">
+      <XPProgressBar horseId={horse.id} />
+    </div>
+
+    {/* Stat Progression Chart - Full Width */}
+    <div className="col-span-full">
+      <StatProgressionChart horseId={horse.id} />
+    </div>
+
+    {/* Recent Gains and Age Counter - Two Column Grid */}
+    <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+      <div className="col-span-1">
+        <RecentGains horseId={horse.id} />
+      </div>
+      <div className="col-span-1">
+        <AgeUpCounter horseId={horse.id} />
+      </div>
+    </div>
+
+    {/* Training Recommendations - Full Width */}
+    <div className="col-span-full">
+      <TrainingRecommendations horseId={horse.id} />
+    </div>
+  </div>
+);
 
 // Placeholder Tab Component
 const PlaceholderTab: React.FC<{ title: string }> = ({ title }) => (
