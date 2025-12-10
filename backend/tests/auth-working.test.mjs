@@ -43,6 +43,7 @@ import { body } from 'express-validator';
 import { register, login, refreshToken, logout, getProfile } from '../controllers/authController.mjs';
 import { authenticateToken } from '../middleware/auth.mjs';
 import prisma from '../db/index.mjs';
+import { generateTestToken } from './helpers/authHelper.mjs';
 
 // Create a minimal test app without problematic middleware
 const createTestApp = () => {
@@ -133,7 +134,7 @@ describe('🔐 INTEGRATION: Authentication System - Complete Auth Workflow Valid
       const response = await request(app).post('/api/auth/register').send(userData).expect(201);
 
       expect(response.body.status).toBe('success');
-      expect(response.body.message).toBe('User registered successfully');
+      expect(response.body.message).toBe('User registered successfully. Please check your email to verify your account.');
       expect(response.body.data.user.email).toBe(userData.email);
       expect(response.body.data.user.username).toBe(userData.username);
       expect(response.body.data.user.firstName).toBe(userData.firstName);
@@ -203,7 +204,7 @@ describe('🔐 INTEGRATION: Authentication System - Complete Auth Workflow Valid
       const response = await request(app).post('/api/auth/login').send(loginData).expect(401);
 
       expect(response.body.success).toBe(false);
-      expect(response.body.message).toBe('Invalid email or password');
+      expect(response.body.message).toBe('Invalid credentials');
     });
   });
 
@@ -258,7 +259,7 @@ describe('🔐 INTEGRATION: Authentication System - Complete Auth Workflow Valid
 
     beforeEach(async () => {
       // Corrected: async()
-      // Create user and get auth token
+      // Create user and generate auth token using helper
       const userData = {
         username: 'authtestprotected',
         email: 'authtest-protected@example.com',
@@ -270,10 +271,11 @@ describe('🔐 INTEGRATION: Authentication System - Complete Auth Workflow Valid
       const registerResponse = await request(app).post('/api/auth/register').send(userData);
 
       if (registerResponse.body && registerResponse.body.data) {
-        authTokenValue = registerResponse.body.data.token;
         testUserValue = registerResponse.body.data.user;
+        // Generate JWT token for authentication using test helper
+        authTokenValue = generateTestToken({ id: testUserValue.id, email: testUserValue.email });
       } else {
-        // console.error("Auth-Test: Failed to get authTokenValue/testUserValue during setup:", registerResponse.status, registerResponse.body);
+        // console.error("Auth-Test: Failed to get testUserValue during setup:", registerResponse.status, registerResponse.body);
         authTokenValue = null;
         testUserValue = null;
       }
