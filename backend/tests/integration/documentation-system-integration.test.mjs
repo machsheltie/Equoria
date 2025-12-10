@@ -49,6 +49,7 @@ import documentationRoutes from '../../routes/documentationRoutes.mjs';
 import { setupSwaggerDocs } from '../../middleware/swaggerSetup.mjs';
 import { getApiDocumentationService } from '../../services/apiDocumentationService.mjs';
 import prisma from '../../db/index.mjs';
+import { generateTestToken } from '../helpers/authHelper.mjs';
 
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = dirname(__filename);
@@ -177,7 +178,9 @@ describe('📚 Documentation System Integration Tests', () => {
 
     expect(registerResponse.status).toBe(201);
     testUser = registerResponse.body.data.user;
-    authToken = registerResponse.body.data.token;
+
+    // Generate JWT token for authentication using test helper
+    authToken = generateTestToken({ id: testUser.id, email: testUser.email });
   });
 
   afterEach(async () => {
