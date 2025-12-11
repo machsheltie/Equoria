@@ -462,7 +462,7 @@ describe('Rate Limit Enforcement Integration Tests', () => {
       );
 
       const response = await request(app)
-        .get('/api/users/profile')
+        .get('/api/auth/profile')
         .set('Authorization', `Bearer ${validToken}`)
         .expect(429);
 
@@ -487,7 +487,7 @@ describe('Rate Limit Enforcement Integration Tests', () => {
       );
 
       const response1 = await request(app)
-        .get('/api/users/profile')
+        .get('/api/auth/profile')
         .set('Authorization', `Bearer ${validToken}`)
         .expect(429);
 
@@ -506,7 +506,7 @@ describe('Rate Limit Enforcement Integration Tests', () => {
       );
 
       const response2 = await request(app)
-        .get('/api/users/profile')
+        .get('/api/auth/profile')
         .set('Authorization', `Bearer ${validToken}`)
         .expect(429);
 
@@ -527,7 +527,7 @@ describe('Rate Limit Enforcement Integration Tests', () => {
       );
 
       const response1 = await request(app)
-        .get('/api/users/profile')
+        .get('/api/auth/profile')
         .set('Authorization', `Bearer ${validToken}`)
         .expect(429);
 
@@ -538,7 +538,7 @@ describe('Rate Limit Enforcement Integration Tests', () => {
 
       // Should be able to make requests again with reset backoff
       const response2 = await request(app)
-        .get('/api/users/profile')
+        .get('/api/auth/profile')
         .set('Authorization', `Bearer ${validToken}`)
         .expect(200);
 
@@ -573,7 +573,7 @@ describe('Rate Limit Enforcement Integration Tests', () => {
 
       // User 1 should be blocked
       const user1Response = await request(app)
-        .get('/api/users/profile')
+        .get('/api/auth/profile')
         .set('Authorization', `Bearer ${validToken}`)
         .expect(429);
 
@@ -581,7 +581,7 @@ describe('Rate Limit Enforcement Integration Tests', () => {
       const user2Requests = await Promise.all(
         Array(30).fill(null).map(() =>
           request(app)
-            .get('/api/users/profile')
+            .get('/api/auth/profile')
             .set('Authorization', `Bearer ${token2}`)
         )
       );
@@ -612,7 +612,7 @@ describe('Rate Limit Enforcement Integration Tests', () => {
       const unverifiedResponses = await Promise.all(
         Array(20).fill(null).map(() =>
           request(app)
-            .get('/api/users/profile')
+            .get('/api/auth/profile')
             .set('Authorization', `Bearer ${unverifiedToken}`)
         )
       );
@@ -623,7 +623,7 @@ describe('Rate Limit Enforcement Integration Tests', () => {
       const verifiedResponses = await Promise.all(
         Array(20).fill(null).map(() =>
           request(app)
-            .get('/api/users/profile')
+            .get('/api/auth/profile')
             .set('Authorization', `Bearer ${validToken}`)
         )
       );
@@ -645,7 +645,7 @@ describe('Rate Limit Enforcement Integration Tests', () => {
       await Promise.all(
         Array(10).fill(null).map(() =>
           request(app)
-            .get('/api/users/profile')
+            .get('/api/auth/profile')
             .set('Authorization', `Bearer ${validToken}`)
         )
       );
@@ -664,7 +664,7 @@ describe('Rate Limit Enforcement Integration Tests', () => {
       await Promise.all(
         Array(100).fill(null).map(() =>
           request(app)
-            .get('/api/users/profile')
+            .get('/api/auth/profile')
             .set('Authorization', `Bearer ${validToken}`)
         )
       );
