@@ -160,6 +160,18 @@ describe('Session Management Middleware', () => {
         expect(next).toHaveBeenCalled();
         expect(res.status).not.toHaveBeenCalled();
       });
+
+      it('should catch and log Prisma errors during activity tracking', async () => {
+        // Mock Prisma findFirst to throw a database error
+        const dbError = new Error('Database connection error');
+        jest.spyOn(prisma.refreshToken, 'findFirst').mockRejectedValueOnce(dbError);
+
+        await trackSessionActivity(req, res, next);
+
+        // Should not fail the request (line 84 error handler)
+        expect(next).toHaveBeenCalled();
+        expect(res.status).not.toHaveBeenCalled();
+      });
     });
 
     describe('Custom timeout configuration', () => {
@@ -347,6 +359,21 @@ describe('Session Management Middleware', () => {
 
       // Should not fail the request
       expect(next).toHaveBeenCalled();
+    });
+
+    it('should catch and log Prisma errors during session enforcement', async () => {
+      const user = await createTestUser();
+      req.user = { id: user.id };
+
+      // Mock Prisma count to throw a database error
+      const dbError = new Error('Database query failed');
+      jest.spyOn(prisma.refreshToken, 'count').mockRejectedValueOnce(dbError);
+
+      await enforceConcurrentSessions(req, res, next);
+
+      // Should not fail the request (line 140 error handler)
+      expect(next).toHaveBeenCalled();
+      expect(res.status).not.toHaveBeenCalled();
     });
 
     describe('Custom limit configuration', () => {

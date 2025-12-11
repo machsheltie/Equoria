@@ -281,6 +281,21 @@ describe('validateEnvironment()', () => {
       expect(allErrors).toContain('JWT_SECRET appears to be a placeholder value');
       expect(processExitSpy).toHaveBeenCalledWith(1);
     });
+
+    it('should warn when JWT_SECRET lacks character variety (line 72)', () => {
+      process.env.DATABASE_URL = 'postgresql://user:pass@localhost:5432/equoria';
+      // 32+ characters but all special characters (no letters or numbers)
+      process.env.JWT_SECRET = '!@#$%^&*()_+-=[]{}|;:,.<>?/~!@#$%^&*()_+-=[]{}|;:,.<>?/~';
+      process.env.NODE_ENV = 'development';
+      process.env.PORT = '3000';
+
+      validateEnvironment();
+
+      const warnCalls = loggerWarnSpy.mock.calls.map((call) => call[0]);
+      const allWarnings = warnCalls.join(' ');
+      expect(allWarnings).toContain('JWT_SECRET should contain a mix of characters');
+      expect(processExitSpy).not.toHaveBeenCalled(); // Warning, not error
+    });
   });
 
   describe('DATABASE_URL format validation', () => {

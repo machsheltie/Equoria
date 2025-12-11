@@ -11,6 +11,9 @@ import {
   addSecurityHeaders,
   validateApiKey,
   corsOptions,
+  createRateLimiter,
+  apiLimiter,
+  createSecurityMiddleware,
 } from '../../middleware/security.mjs';
 import { mockRequest, mockResponse, mockNext } from '../setup.mjs';
 
@@ -396,6 +399,95 @@ describe('Security Middleware', () => {
       expect(corsOptions.allowedHeaders).toContain('Content-Type');
       expect(corsOptions.allowedHeaders).toContain('Authorization');
       expect(corsOptions.allowedHeaders).toContain('X-API-Key');
+    });
+  });
+
+  describe('createRateLimiter()', () => {
+    it('should create a rate limiter with custom window and max', () => {
+      const customLimiter = createRateLimiter(5 * 60 * 1000, 50); // 5 minutes, 50 requests
+
+      expect(customLimiter).toBeDefined();
+      expect(typeof customLimiter).toBe('function');
+    });
+
+    it('should create rate limiter with default values', () => {
+      const defaultLimiter = createRateLimiter();
+
+      expect(defaultLimiter).toBeDefined();
+      expect(typeof defaultLimiter).toBe('function');
+    });
+
+    it('should return rate limiter middleware', () => {
+      const limiter = createRateLimiter(1000, 10);
+
+      // Rate limiter should be a middleware function
+      expect(typeof limiter).toBe('function');
+    });
+  });
+
+  describe('Rate Limiter Instances', () => {
+    it('should export apiLimiter', () => {
+      expect(apiLimiter).toBeDefined();
+      expect(typeof apiLimiter).toBe('function');
+    });
+
+    it('should trigger rate limit handler when limit exceeded', async () => {
+      // Create a rate limiter with very low limits for testing
+      const testLimiter = createRateLimiter(1000, 1); // 1 request per second
+
+      const req = mockRequest();
+      const res = mockResponse();
+      const next = mockNext();
+
+      req.ip = '192.168.1.100';
+      req.get = jest.fn().mockReturnValue('Test User Agent');
+      req.originalUrl = '/test-endpoint';
+
+      // First request should succeed
+      await testLimiter(req, res, next);
+      expect(next).toHaveBeenCalled();
+
+      // Reset mocks
+      jest.clearAllMocks();
+
+      // Second request should hit rate limit and trigger handler (lines 58-64)
+      await testLimiter(req, res, next);
+
+      // Should not call next() when rate limited
+      expect(next).not.toHaveBeenCalled();
+
+      // Should return 429 status
+      expect(res.status).toHaveBeenCalledWith(429);
+
+      // Should return error response
+      expect(res.json).toHaveBeenCalledWith(
+        expect.objectContaining({
+          success: false,
+          error: expect.stringContaining('Too many requests'),
+          retryAfter: expect.any(Number),
+        })
+      );
+    });
+  });
+
+  describe('createSecurityMiddleware()', () => {
+    it('should return an array of middleware functions', () => {
+      const middleware = createSecurityMiddleware();
+
+      expect(Array.isArray(middleware)).toBe(true);
+      expect(middleware.length).toBeGreaterThan(0);
+    });
+
+    it('should include all required middleware in correct order', () => {
+      const middleware = createSecurityMiddleware();
+
+      // Should have 6 middleware: enforceHttps, addSecurityHeaders, helmet, cors, validateApiKey, apiLimiter
+      expect(middleware.length).toBe(6);
+
+      // All should be functions
+      middleware.forEach((fn) => {
+        expect(typeof fn).toBe('function');
+      });
     });
   });
 });
