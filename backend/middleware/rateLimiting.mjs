@@ -165,38 +165,58 @@ export function createRateLimiter(options = {}) {
     throw new Error('windowMs and max must be positive numbers');
   }
 
-  return rateLimit({
-    windowMs,
-    max,
+  const isTestEnv = process.env.NODE_ENV === 'test';
+  if (isTestEnv && process.env.TEST_BYPASS_RATE_LIMIT === 'true') {
+    return (_req, _res, next) => next();
+  }
+
+  const effectiveWindowMs = isTestEnv
+    ? parseInt(process.env.TEST_RATE_LIMIT_WINDOW_MS || `${windowMs}`, 10)
+    : windowMs;
+
+  const effectiveMax = isTestEnv
+    ? parseInt(process.env.TEST_RATE_LIMIT_MAX_REQUESTS || `${max}`, 10)
+    : max;
+
+  const shouldBypassRequest = (req) => {
+    if (!isTestEnv) return false;
+    if (process.env.TEST_BYPASS_RATE_LIMIT === 'true') {
+      return true;
+    }
+    const bypassHeader = req?.headers?.['x-test-bypass-rate-limit'];
+    return bypassHeader === 'true' || bypassHeader === '1';
+  };
+
+  const limiter = rateLimit({
+    windowMs: effectiveWindowMs,
+    max: effectiveMax,
     message: { success: false, message },
     standardHeaders: true, // RFC-compliant headers (RateLimit-*)
     legacyHeaders: false, // Disable X-RateLimit-* headers
     skipSuccessfulRequests,
     skipFailedRequests,
 
-    // Redis store for distributed rate limiting
-    store: redisClient
+    // Redis store for distributed rate limiting (only if connected)
+    // Falls back to in-memory store when Redis unavailable
+    store: (redisClient && isRedisConnected())
       ? new RedisStore({
           client: redisClient,
           prefix: `${keyPrefix}:`,
-          sendCommand: async (...args) => {
-            try {
-              // Only use Redis if connected
-              if (!isRedisConnected()) {
-                logger.warn('[RateLimit] Redis unavailable, allowing request (graceful degradation)');
-                return null; // Allow request through
-              }
-              return await redisClient.sendCommand(args);
-            } catch (error) {
-              logger.error('[RateLimit] Redis command failed:', {
-                error: error.message,
-                command: args[0],
-              });
-              return null; // Allow request through on error
-            }
-          },
         })
-      : undefined, // No store = in-memory (fallback for development)
+      : undefined, // No store = in-memory (fallback for development/tests)
+
+    // Debug logging for test environment
+    onLimitReached: process.env.NODE_ENV === 'test' ? (req, res, options) => {
+      logger.info('[RateLimit DEBUG] Limit reached', {
+        path: req.path,
+        keyPrefix,
+        max,
+        windowMs,
+        user: req.user?.id,
+        ip: req.ip,
+        storeType: (redisClient && isRedisConnected()) ? 'Redis' : 'In-Memory'
+      });
+    } : undefined,
 
     // Key generation: Use authenticated user ID, fallback to IP
     keyGenerator: (req) => {
@@ -223,6 +243,7 @@ export function createRateLimiter(options = {}) {
 
       res.status(429).json({
         success: false,
+        status: 'error',
         message,
         retryAfter, // Seconds until window resets
         limit: max,
@@ -230,15 +251,11 @@ export function createRateLimiter(options = {}) {
       });
     },
 
-    // Skip rate limiting for successful requests (if configured)
-    skip: (req, res) => {
-      // If Redis is unavailable in test environment, skip rate limiting
-      if (process.env.NODE_ENV === 'test' && !isRedisConnected()) {
-        return true;
-      }
-      return false;
-    },
+    // Skip configuration is handled by skipSuccessfulRequests and skipFailedRequests
+    // No need for custom skip logic - in-memory fallback works when Redis unavailable
   });
+
+  return (req, res, next) => (shouldBypassRequest(req) ? next() : limiter(req, res, next));
 }
 
 /**
@@ -283,6 +300,19 @@ export const queryRateLimiter = createRateLimiter({
   message: 'Query limit exceeded. Please slow down.',
   skipSuccessfulRequests: false,
   keyPrefix: 'rl:query',
+});
+
+/**
+ * Profile Endpoint Rate Limiter
+ * Stricter limits for user profile access to prevent abuse
+ * 30 requests per minute per user/IP
+ */
+export const profileRateLimiter = createRateLimiter({
+  windowMs: 60 * 1000, // 1 minute
+  max: 30, // 30 requests per minute
+  message: 'Too many profile requests. Please slow down.',
+  skipSuccessfulRequests: false,
+  keyPrefix: 'rl:profile',
 });
 
 /**
@@ -362,6 +392,7 @@ export default {
   authRateLimiter,
   trainingRateLimiter,
   queryRateLimiter,
+  profileRateLimiter,
   mutationRateLimiter,
   adminRateLimiter,
   foalRateLimiter,

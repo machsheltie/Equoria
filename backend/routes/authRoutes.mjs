@@ -3,6 +3,7 @@ import { body } from 'express-validator';
 import { handleValidationErrors, sanitizeRequestData } from '../middleware/validationErrorHandler.mjs';
 import { authenticateToken } from '../middleware/auth.mjs';
 import { authRateLimiter } from '../middleware/authRateLimiter.mjs';
+import { profileRateLimiter } from '../middleware/rateLimiting.mjs';
 import * as authController from '../controllers/authController.mjs';
 import { getCsrfToken } from '../middleware/csrf.mjs';
 
@@ -349,8 +350,8 @@ router.post(
  *       500:
  *         $ref: '#/components/responses/InternalError'
  */
-router.get('/profile', authenticateToken, authController.getProfile);
-router.get('/me', authenticateToken, authController.getProfile); // Alias for /profile
+router.get('/profile', profileRateLimiter, authenticateToken, authController.getProfile);
+router.get('/me', profileRateLimiter, authenticateToken, authController.getProfile); // Alias for /profile
 
 /**
  * @swagger

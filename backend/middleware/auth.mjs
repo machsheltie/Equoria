@@ -100,7 +100,14 @@ export const authenticateToken = (req, res, next) => {
 
     let decoded;
     try {
-      decoded = jwt.verify(token, secret);
+      const allowedAlgorithms = (process.env.JWT_ALLOWED_ALGORITHMS || 'HS256')
+        .split(',')
+        .map((alg) => alg.trim())
+        .filter(Boolean);
+
+      decoded = jwt.verify(token, secret, {
+        algorithms: allowedAlgorithms.length ? allowedAlgorithms : undefined,
+      });
     } catch (err) {
       logger.warn(
         `[auth] Invalid token for ${req.method} ${req.path} from ${req.ip}: ${err.message}`,
@@ -170,7 +177,12 @@ export const optionalAuth = (req, res, next) => {
       return next(); // Continue without user if JWT not configured
     }
 
-    jwt.verify(token, secret, (err, decoded) => {
+    const allowedAlgorithms = (process.env.JWT_ALLOWED_ALGORITHMS || 'HS256')
+      .split(',')
+      .map((alg) => alg.trim())
+      .filter(Boolean);
+
+    jwt.verify(token, secret, { algorithms: allowedAlgorithms.length ? allowedAlgorithms : undefined }, (err, decoded) => {
       if (!err && decoded) {
         // Map userId to id for backward compatibility
         const user = {

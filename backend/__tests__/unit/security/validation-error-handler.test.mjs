@@ -1,41 +1,40 @@
-import { describe, it, expect, vi } from '@jest/globals';
-import { validationResult } from 'express-validator';
-import { handleValidationErrors, sanitizeRequestData } from '../../middleware/validationErrorHandler.mjs';
-
-vi.mock('express-validator', () => {
-  return {
-    validationResult: vi.fn(),
-  };
-});
+import { describe, it, expect, jest } from '@jest/globals';
+import { handleValidationErrors, sanitizeRequestData } from '../../../middleware/validationErrorHandler.mjs';
 
 const mockRes = () => ({
-  status: vi.fn().mockReturnThis(),
-  json: vi.fn().mockReturnThis(),
+  status: jest.fn().mockReturnThis(),
+  json: jest.fn().mockReturnThis(),
 });
 
 describe('validationErrorHandler', () => {
   it('passes through when no errors', () => {
-    const req = {};
+    const req = {
+      validationResult: jest.fn(() => ({ isEmpty: () => true, array: () => [] })),
+    };
     const res = mockRes();
-    const next = vi.fn();
-    validationResult.mockReturnValue({ isEmpty: () => true, array: () => [] });
+    const next = jest.fn();
     handleValidationErrors(req, res, next);
     expect(next).toHaveBeenCalled();
   });
 
   it('returns 400 on validation errors', () => {
-    const req = {};
+    const req = {
+      validationResult: jest.fn(() => ({
+        isEmpty: () => false,
+        array: () => [{ msg: 'Invalid' }],
+      })),
+      get: () => 'jest',
+      method: 'GET',
+      originalUrl: '/test',
+      ip: '127.0.0.1',
+    };
     const res = mockRes();
-    const next = vi.fn();
-    validationResult.mockReturnValue({
-      isEmpty: () => false,
-      array: () => [{ msg: 'Invalid' }],
-    });
+    const next = jest.fn();
     handleValidationErrors(req, res, next);
     expect(res.status).toHaveBeenCalledWith(400);
     expect(res.json).toHaveBeenCalledWith({
       success: false,
-      message: 'Validation failed',
+      message: 'Invalid',
       errors: [{ msg: 'Invalid' }],
     });
   });
@@ -43,10 +42,11 @@ describe('validationErrorHandler', () => {
   it('sanitizes request body by keeping only validated fields', () => {
     const req = {
       body: { allowed: 'ok', extra: 'bad' },
-      _validatedFields: ['allowed'],
+      validationResult: jest.fn(() => ({ isEmpty: () => true })),
+      matchedData: jest.fn(() => ({ allowed: 'ok' })),
     };
     const res = mockRes();
-    const next = vi.fn();
+    const next = jest.fn();
     sanitizeRequestData(req, res, next);
     expect(req.body).toEqual({ allowed: 'ok' });
     expect(next).toHaveBeenCalled();

@@ -144,6 +144,11 @@ export const login = async (req, res, next) => {
         });
       }
 
+      // Mirror production behavior: invalidate existing sessions before issuing a new pair
+      await prisma.refreshToken.deleteMany({
+        where: { userId: user.id },
+      });
+
       const tokenPair = await createTokenPair(user.id);
       res.cookie('accessToken', tokenPair.accessToken, COOKIE_OPTIONS.accessToken);
       res.cookie('refreshToken', tokenPair.refreshToken, COOKIE_OPTIONS.refreshToken);

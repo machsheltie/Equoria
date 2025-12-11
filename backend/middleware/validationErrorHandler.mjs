@@ -8,7 +8,8 @@ import logger from '../utils/logger.mjs';
  * SECURITY: CWE-20 (Improper Input Validation)
  */
 export function handleValidationErrors(req, res, next) {
-  const errors = validationResult(req);
+  const getValidationResult = req.validationResult || validationResult;
+  const errors = getValidationResult(req);
 
   if (!errors.isEmpty()) {
     const errorArray = errors.array();
@@ -44,12 +45,14 @@ export function handleValidationErrors(req, res, next) {
  * SECURITY: CWE-20, CWE-79 (XSS Prevention)
  */
 export function sanitizeRequestData(req, res, next) {
-  const errors = validationResult(req);
+  const getValidationResult = req.validationResult || validationResult;
+  const errors = getValidationResult(req);
+  const getMatchedData = req.matchedData || matchedData;
 
   // Only sanitize if validation passed
   if (errors.isEmpty()) {
     // Get only validated and sanitized data
-    const sanitized = matchedData(req, { includeOptionals: true });
+    const sanitized = getMatchedData(req, { includeOptionals: true });
 
     // Replace request data with sanitized versions
     // This prevents parameter pollution attacks

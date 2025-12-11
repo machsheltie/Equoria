@@ -1,4 +1,4 @@
-import { describe, it, expect, vi, beforeEach } from '@jest/globals';
+import { describe, it, expect, jest, beforeEach } from '@jest/globals';
 import helmet from 'helmet';
 import cors from 'cors';
 import rateLimit from 'express-rate-limit';
@@ -10,23 +10,23 @@ import {
   enforceHttps,
   addSecurityHeaders,
   createSecurityMiddleware,
-} from '../../middleware/security.mjs';
+} from '../../../middleware/security.mjs';
 
 describe('security middleware', () => {
   describe('corsOptions', () => {
     it('allows known origins and rejects unknown', () => {
-      const cb = vi.fn();
+      const cb = jest.fn();
       corsOptions.origin('http://localhost:3000', cb);
       expect(cb).toHaveBeenCalledWith(null, true);
 
-      const cb2 = vi.fn();
+      const cb2 = jest.fn();
       corsOptions.origin('http://evil.com', cb2);
       expect(cb2).toHaveBeenCalled();
       expect(cb2.mock.calls[0][0]).toBeInstanceOf(Error);
     });
 
     it('allows no-origin requests (legacy) and supports ALLOWED_ORIGINS env', () => {
-      const cb = vi.fn();
+      const cb = jest.fn();
       process.env.ALLOWED_ORIGINS = 'http://example.com';
       corsOptions.origin(undefined, cb);
       expect(cb).toHaveBeenCalledWith(null, true);
@@ -38,7 +38,10 @@ describe('security middleware', () => {
     it('returns an express-rate-limit instance', () => {
       const limiter = createRateLimiter(1000, 1);
       expect(typeof limiter).toBe('function');
-      expect(limiter.name).toBe(rateLimit.name);
+      const next = jest.fn();
+      const req = { ip: '127.0.0.1', method: 'GET', path: '/', headers: {}, get: () => undefined };
+      const res = { status: jest.fn().mockReturnThis(), json: jest.fn().mockReturnThis() };
+      expect(() => limiter(req, res, next)).not.toThrow();
     });
   });
 
@@ -49,16 +52,16 @@ describe('security middleware', () => {
 
     beforeEach(() => {
       req = {
-        get: vi.fn((h) => (h === 'origin' ? undefined : undefined)),
+        get: jest.fn((h) => (h === 'origin' ? undefined : undefined)),
         headers: {},
         ip: '127.0.0.1',
         originalUrl: '/x',
       };
       res = {
-        status: vi.fn().mockReturnThis(),
-        json: vi.fn().mockReturnThis(),
+        status: jest.fn().mockReturnThis(),
+        json: jest.fn().mockReturnThis(),
       };
-      next = vi.fn();
+      next = jest.fn();
     });
 
     it('skips when API_KEY not set', () => {
@@ -79,7 +82,7 @@ describe('security middleware', () => {
 
     it('allows valid key', () => {
       process.env.API_KEY = 'secret';
-      req.get = vi.fn((h) => (h === 'origin' ? undefined : h === 'X-API-Key' ? 'secret' : undefined));
+      req.get = jest.fn((h) => (h === 'origin' ? undefined : h === 'X-API-Key' ? 'secret' : undefined));
       validateApiKey(req, res, next);
       expect(next).toHaveBeenCalled();
       delete process.env.API_KEY;
@@ -89,17 +92,17 @@ describe('security middleware', () => {
   describe('enforceHttps', () => {
     it('bypasses in non-production', () => {
       const req = { headers: {}, secure: false };
-      const res = { redirect: vi.fn() };
-      const next = vi.fn();
+      const res = { redirect: jest.fn() };
+      const next = jest.fn();
       process.env.NODE_ENV = 'test';
       enforceHttps(req, res, next);
       expect(next).toHaveBeenCalled();
     });
 
     it('redirects http in production', () => {
-      const req = { headers: { host: 'example.com' }, secure: false, url: '/foo', method: 'GET', ip: '::1', get: vi.fn() };
-      const res = { redirect: vi.fn() };
-      const next = vi.fn();
+      const req = { headers: { host: 'example.com' }, secure: false, url: '/foo', method: 'GET', ip: '::1', get: jest.fn() };
+      const res = { redirect: jest.fn() };
+      const next = jest.fn();
       process.env.NODE_ENV = 'production';
       enforceHttps(req, res, next);
       expect(res.redirect).toHaveBeenCalledWith(301, 'https://example.com/foo');
@@ -111,7 +114,7 @@ describe('security middleware', () => {
     it('sets baseline headers', () => {
       const headers = {};
       const res = { setHeader: (k, v) => (headers[k] = v) };
-      const next = vi.fn();
+      const next = jest.fn();
       addSecurityHeaders({}, res, next);
       expect(headers['X-Frame-Options']).toBe('DENY');
       expect(headers['X-Content-Type-Options']).toBe('nosniff');

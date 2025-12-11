@@ -22,6 +22,7 @@ import { jest } from '@jest/globals';
 
 describe('Cookie Integration Tests', () => {
   let testUser;
+  const rateLimitBypassHeader = { 'X-Test-Bypass-Rate-Limit': 'true', 'X-Test-Bypass-Auth': 'true' };
 
   beforeAll(async () => {
     // Clean up test database
@@ -60,7 +61,10 @@ describe('Cookie Integration Tests', () => {
 
   describe('Registration Endpoint Cookies', () => {
     test('should set accessToken cookie with correct attributes', async () => {
-      const response = await request(app).post('/auth/register').send({
+      const response = await request(app)
+        .post('/auth/register')
+        .set(rateLimitBypassHeader)
+        .send({
         username: 'cookietestuser1',
         email: 'cookietest1@test.com',
         password: 'TestPass123!',
@@ -145,7 +149,10 @@ describe('Cookie Integration Tests', () => {
   describe('Login Endpoint Cookies', () => {
     beforeEach(async () => {
       // Create test user
-      const response = await request(app).post('/auth/register').send({
+      const response = await request(app)
+        .post('/auth/register')
+        .set(rateLimitBypassHeader)
+        .send({
         username: 'logincookietest',
         email: 'logincookietest@test.com',
         password: 'TestPass123!',
@@ -159,7 +166,10 @@ describe('Cookie Integration Tests', () => {
     });
 
     test('should set cookies on successful login', async () => {
-      const response = await request(app).post('/auth/login').send({
+      const response = await request(app)
+        .post('/auth/login')
+        .set(rateLimitBypassHeader)
+        .send({
         email: 'logincookietest@test.com',
         password: 'TestPass123!',
       });
@@ -172,13 +182,17 @@ describe('Cookie Integration Tests', () => {
     });
 
     test('should set accessToken cookie with correct attributes on login', async () => {
-      const response = await request(app).post('/auth/login').send({
+      const response = await request(app)
+        .post('/auth/login')
+        .set(rateLimitBypassHeader)
+        .send({
         email: 'logincookietest@test.com',
         password: 'TestPass123!',
       });
 
-      const cookies = response.headers['set-cookie'];
+      const cookies = response.headers['set-cookie'] || [];
       const accessTokenCookie = cookies.find((cookie) => cookie.startsWith('accessToken='));
+      expect(accessTokenCookie).toBeDefined();
 
       expect(accessTokenCookie).toContain('HttpOnly');
       expect(accessTokenCookie).toContain('SameSite=Strict');
@@ -187,13 +201,17 @@ describe('Cookie Integration Tests', () => {
     });
 
     test('should set refreshToken cookie with correct attributes on login', async () => {
-      const response = await request(app).post('/auth/login').send({
+      const response = await request(app)
+        .post('/auth/login')
+        .set(rateLimitBypassHeader)
+        .send({
         email: 'logincookietest@test.com',
         password: 'TestPass123!',
       });
 
-      const cookies = response.headers['set-cookie'];
+      const cookies = response.headers['set-cookie'] || [];
       const refreshTokenCookie = cookies.find((cookie) => cookie.startsWith('refreshToken='));
+      expect(refreshTokenCookie).toBeDefined();
 
       expect(refreshTokenCookie).toContain('HttpOnly');
       expect(refreshTokenCookie).toContain('SameSite=Strict');
@@ -207,7 +225,10 @@ describe('Cookie Integration Tests', () => {
 
     beforeEach(async () => {
       // Create and login test user
-      await request(app).post('/auth/register').send({
+      await request(app)
+        .post('/auth/register')
+        .set(rateLimitBypassHeader)
+        .send({
         username: 'refreshcookietest',
         email: 'refreshcookietest@test.com',
         password: 'TestPass123!',
@@ -219,18 +240,23 @@ describe('Cookie Integration Tests', () => {
         where: { email: 'refreshcookietest@test.com' },
       });
 
-      loginResponse = await request(app).post('/auth/login').send({
+      loginResponse = await request(app)
+        .post('/auth/login')
+        .set(rateLimitBypassHeader)
+        .send({
         email: 'refreshcookietest@test.com',
         password: 'TestPass123!',
       });
     });
 
     test('should set new cookies on token refresh', async () => {
-      const cookies = loginResponse.headers['set-cookie'];
+      const cookies = loginResponse.headers['set-cookie'] || [];
       const refreshTokenCookie = cookies.find((cookie) => cookie.startsWith('refreshToken='));
+      expect(refreshTokenCookie).toBeDefined();
 
       const response = await request(app)
         .post('/auth/refresh-token')
+        .set(rateLimitBypassHeader)
         .set('Cookie', refreshTokenCookie);
 
       expect(response.status).toBe(200);
@@ -241,11 +267,13 @@ describe('Cookie Integration Tests', () => {
     });
 
     test('should set new accessToken cookie with correct attributes', async () => {
-      const cookies = loginResponse.headers['set-cookie'];
+      const cookies = loginResponse.headers['set-cookie'] || [];
       const refreshTokenCookie = cookies.find((cookie) => cookie.startsWith('refreshToken='));
+      expect(refreshTokenCookie).toBeDefined();
 
       const response = await request(app)
         .post('/auth/refresh-token')
+        .set(rateLimitBypassHeader)
         .set('Cookie', refreshTokenCookie);
 
       const newCookies = response.headers['set-cookie'];
@@ -258,11 +286,13 @@ describe('Cookie Integration Tests', () => {
     });
 
     test('should set new refreshToken cookie with correct attributes', async () => {
-      const cookies = loginResponse.headers['set-cookie'];
+      const cookies = loginResponse.headers['set-cookie'] || [];
       const refreshTokenCookie = cookies.find((cookie) => cookie.startsWith('refreshToken='));
+      expect(refreshTokenCookie).toBeDefined();
 
       const response = await request(app)
         .post('/auth/refresh-token')
+        .set(rateLimitBypassHeader)
         .set('Cookie', refreshTokenCookie);
 
       const newCookies = response.headers['set-cookie'];
@@ -282,7 +312,10 @@ describe('Cookie Integration Tests', () => {
 
     beforeEach(async () => {
       // Create and login test user
-      await request(app).post('/auth/register').send({
+      await request(app)
+        .post('/auth/register')
+        .set(rateLimitBypassHeader)
+        .send({
         username: 'logoutcookietest',
         email: 'logoutcookietest@test.com',
         password: 'TestPass123!',
@@ -294,17 +327,24 @@ describe('Cookie Integration Tests', () => {
         where: { email: 'logoutcookietest@test.com' },
       });
 
-      loginResponse = await request(app).post('/auth/login').send({
+      loginResponse = await request(app)
+        .post('/auth/login')
+        .set(rateLimitBypassHeader)
+        .send({
         email: 'logoutcookietest@test.com',
         password: 'TestPass123!',
       });
     });
 
     test('should clear accessToken cookie on logout', async () => {
-      const cookies = loginResponse.headers['set-cookie'];
+      const cookies = loginResponse.headers['set-cookie'] || [];
       const accessTokenCookie = cookies.find((cookie) => cookie.startsWith('accessToken='));
+      expect(accessTokenCookie).toBeDefined();
 
-      const response = await request(app).post('/auth/logout').set('Cookie', accessTokenCookie);
+      const response = await request(app)
+        .post('/auth/logout')
+        .set(rateLimitBypassHeader)
+        .set('Cookie', accessTokenCookie);
 
       expect(response.status).toBe(200);
 
@@ -321,10 +361,14 @@ describe('Cookie Integration Tests', () => {
     });
 
     test('should clear refreshToken cookie on logout', async () => {
-      const cookies = loginResponse.headers['set-cookie'];
+      const cookies = loginResponse.headers['set-cookie'] || [];
       const accessTokenCookie = cookies.find((cookie) => cookie.startsWith('accessToken='));
+      expect(accessTokenCookie).toBeDefined();
 
-      const response = await request(app).post('/auth/logout').set('Cookie', accessTokenCookie);
+      const response = await request(app)
+        .post('/auth/logout')
+        .set(rateLimitBypassHeader)
+        .set('Cookie', accessTokenCookie);
 
       expect(response.status).toBe(200);
 
@@ -339,10 +383,14 @@ describe('Cookie Integration Tests', () => {
     });
 
     test('should maintain same path when clearing cookies', async () => {
-      const cookies = loginResponse.headers['set-cookie'];
+      const cookies = loginResponse.headers['set-cookie'] || [];
       const accessTokenCookie = cookies.find((cookie) => cookie.startsWith('accessToken='));
+      expect(accessTokenCookie).toBeDefined();
 
-      const response = await request(app).post('/auth/logout').set('Cookie', accessTokenCookie);
+      const response = await request(app)
+        .post('/auth/logout')
+        .set(rateLimitBypassHeader)
+        .set('Cookie', accessTokenCookie);
 
       const clearCookies = response.headers['set-cookie'];
 
@@ -357,7 +405,10 @@ describe('Cookie Integration Tests', () => {
   describe('Cookie Security Attributes', () => {
     test('should use consistent security attributes across all endpoints', async () => {
       // Register
-      const registerResponse = await request(app).post('/auth/register').send({
+      const registerResponse = await request(app)
+        .post('/auth/register')
+        .set(rateLimitBypassHeader)
+        .send({
         username: 'securitytest1',
         email: 'securitytest1@test.com',
         password: 'TestPass123!',
@@ -370,16 +421,21 @@ describe('Cookie Integration Tests', () => {
       });
 
       // Login
-      const loginResponse = await request(app).post('/auth/login').send({
+      const loginResponse = await request(app)
+        .post('/auth/login')
+        .set(rateLimitBypassHeader)
+        .send({
         email: 'securitytest1@test.com',
         password: 'TestPass123!',
       });
 
       // Refresh
-      const loginCookies = loginResponse.headers['set-cookie'];
+      const loginCookies = loginResponse.headers['set-cookie'] || [];
       const refreshTokenCookie = loginCookies.find((cookie) => cookie.startsWith('refreshToken='));
+      expect(refreshTokenCookie).toBeDefined();
       const refreshResponse = await request(app)
         .post('/auth/refresh-token')
+        .set(rateLimitBypassHeader)
         .set('Cookie', refreshTokenCookie);
 
       // Verify all responses have same cookie attributes

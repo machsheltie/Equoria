@@ -79,7 +79,11 @@ async function createHorse(horseData) {
       if (name === 'Full Horse') {
         userRelation = { userId: ownerIdToUse };
       } else {
-        userRelation = { ownerId: ownerIdToUse };
+        // Connect to the user relationship and mirror the ownerId for compatibility
+        userRelation = {
+          ownerId: ownerIdToUse,
+          user: { connect: { id: ownerIdToUse } },
+        };
       }
     }
 

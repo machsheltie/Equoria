@@ -13,6 +13,80 @@ const SESSION_TIMEOUT_MS = parseInt(process.env.SESSION_TIMEOUT_MS || '900000', 
 const MAX_CONCURRENT_SESSIONS = parseInt(process.env.MAX_CONCURRENT_SESSIONS || '5', 10);
 
 /**
+ * Legacy in-memory session timeout middleware (used by unit tests)
+ */
+export const sessionTimeout = (timeoutMs = SESSION_TIMEOUT_MS) => (req, res, next) => {
+  if (!req.session) {
+    return next();
+  }
+
+  const createdAt = req.session.createdAt || Date.now();
+  const lastActivity = req.session.lastActivity || createdAt;
+  const age = Date.now() - lastActivity;
+
+  if (age > timeoutMs) {
+    return res.status(440).json({
+      success: false,
+      message: 'Session expired',
+      status: 'error',
+    });
+  }
+
+  req.session.lastActivity = Date.now();
+  return next();
+};
+
+/**
+ * Legacy in-memory session concurrency limiter (used by unit tests)
+ */
+export const sessionConcurrencyLimit = (maxSessions = MAX_CONCURRENT_SESSIONS, store = new Map()) => {
+  return (req, res, next) => {
+    if (!req.session || !req.session.userId || !maxSessions) {
+      return next();
+    }
+
+    const sessions = store.get(req.session.userId) || [];
+    if (!sessions.includes(req.session.sessionId) && sessions.length >= maxSessions) {
+      return res.status(403).json({
+        success: false,
+        message: 'Maximum concurrent sessions exceeded',
+        status: 'error',
+      });
+    }
+
+    if (!sessions.includes(req.session.sessionId)) {
+      store.set(req.session.userId, [...sessions, req.session.sessionId]);
+    }
+
+    return next();
+  };
+};
+
+/**
+ * Legacy in-memory session cleanup middleware (used by unit tests)
+ */
+export const sessionCleanup = (timeoutMs = SESSION_TIMEOUT_MS, store = new Map()) => {
+  return (req, res, next) => {
+    const now = Date.now();
+    for (const [sessionId, session] of store.entries()) {
+      const lastActivity = session.lastActivity || session.createdAt || now;
+      if (now - lastActivity > timeoutMs) {
+        store.delete(sessionId);
+      }
+    }
+
+    if (req.session && req.session.sessionId && req.session.userId) {
+      store.set(req.session.sessionId, {
+        userId: req.session.userId,
+        lastActivity: now,
+      });
+    }
+
+    return next();
+  };
+};
+
+/**
  * Track last activity time for session timeout
  * Automatically logs out users after period of inactivity
  */
