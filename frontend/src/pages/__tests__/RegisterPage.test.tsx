@@ -59,10 +59,18 @@ describe('RegisterPage', () => {
 
   beforeEach(() => {
     vi.clearAllMocks();
+    mockNavigate.mockClear();
+    // Reset API mock implementation to prevent state leakage between tests
+    vi.mocked(apiClient.authApi.register).mockReset();
   });
 
   afterEach(() => {
-    queryClient?.clear();
+    if (queryClient) {
+      // Clear cache, mutation state, and cancel in-flight queries
+      queryClient.clear();
+      queryClient.getMutationCache().clear();
+      queryClient.cancelQueries();
+    }
   });
 
   describe('AC-1: Registration Form Display', () => {
@@ -351,6 +359,11 @@ describe('RegisterPage', () => {
       // Clear and type valid email
       await user.clear(emailInput);
       await user.type(emailInput, 'valid@example.com');
+
+      // Wait for React to process the onChange event
+      await waitFor(() => {
+        expect(emailInput).toHaveValue('valid@example.com');
+      });
 
       // Error should be cleared
       await waitFor(() => {
