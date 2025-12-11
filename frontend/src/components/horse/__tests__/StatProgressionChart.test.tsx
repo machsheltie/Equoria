@@ -28,13 +28,14 @@ describe('StatProgressionChart', () => {
   const mockHistoryData: HorseXPHistory = {
     horseId: 1,
     horseName: 'Thunder',
-    history: [
+    events: [
       {
         timestamp: '2025-12-02T10:00:00Z',
         xp: 100,
         level: 1,
         source: 'training',
         amount: 50,
+        reason: 'Training session',
       },
       {
         timestamp: '2025-12-05T10:00:00Z',
@@ -42,6 +43,7 @@ describe('StatProgressionChart', () => {
         level: 2,
         source: 'competition',
         amount: 100,
+        reason: 'Competition win',
       },
       {
         timestamp: '2025-12-09T10:00:00Z',
@@ -49,6 +51,7 @@ describe('StatProgressionChart', () => {
         level: 3,
         source: 'training',
         amount: 100,
+        reason: 'Training session',
       },
     ],
     totalGained: 250,
@@ -163,12 +166,12 @@ describe('StatProgressionChart', () => {
       const canvas = document.querySelector('canvas');
       expect(canvas).toBeInTheDocument();
       // Verify mockHistoryData has 3 entries
-      expect(mockHistoryData.history).toHaveLength(3);
+      expect(mockHistoryData.events).toHaveLength(3);
     });
 
     it('should handle empty data gracefully', () => {
       vi.mocked(useHorseXPHistoryHook.useHorseXPHistory).mockReturnValue({
-        data: { ...mockHistoryData, history: [] },
+        data: { ...mockHistoryData, events: [] },
         isLoading: false,
         error: null,
         isError: false,
@@ -288,7 +291,7 @@ describe('StatProgressionChart', () => {
       vi.mocked(useHorseXPHistoryHook.useHorseXPHistory).mockReturnValue({
         data: {
           ...mockHistoryData,
-          history: [mockHistoryData.history[0]],
+          events: [mockHistoryData.events[0]],
         },
         isLoading: false,
         error: null,
@@ -306,12 +309,13 @@ describe('StatProgressionChart', () => {
         level: Math.floor(i / 10) + 1,
         source: 'training',
         amount: 10,
+        reason: 'Training session',
       }));
 
       vi.mocked(useHorseXPHistoryHook.useHorseXPHistory).mockReturnValue({
         data: {
           ...mockHistoryData,
-          history: largeHistory,
+          events: largeHistory,
         },
         isLoading: false,
         error: null,

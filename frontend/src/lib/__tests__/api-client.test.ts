@@ -7,14 +7,26 @@
  * Phase 1, Day 1-2: HttpOnly Cookie Migration
  */
 
-import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest';
+import { describe, it, expect, vi, beforeEach, afterEach, beforeAll, afterAll } from 'vitest';
 import { apiClient, authApi } from '../api-client';
+import { server } from '@/test/msw/server';
 
 // Mock fetch globally
 const mockFetch = vi.fn();
 global.fetch = mockFetch;
 
 describe('API Client - HttpOnly Cookie Support', () => {
+  // Disable MSW for this test file since we're unit testing the API client configuration
+  // We're using a global fetch mock instead of MSW handlers
+  beforeAll(() => {
+    server.close();
+  });
+
+  afterAll(() => {
+    // Restart MSW for other tests
+    server.listen({ onUnhandledRequest: 'error' });
+  });
+
   beforeEach(() => {
     mockFetch.mockClear();
   });
