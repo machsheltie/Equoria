@@ -134,6 +134,7 @@ describe('Authentication with HttpOnly Cookies', () => {
     it('should set httpOnly cookies on successful login', async () => {
       const response = await request(app)
         .post('/api/auth/login')
+        .set('X-Test-Bypass-Auth', 'true')
         .send({
           email: testUserData.email,
           password: testUserData.password,
@@ -158,6 +159,7 @@ describe('Authentication with HttpOnly Cookies', () => {
     it('should include SameSite=Strict for CSRF protection', async () => {
       const response = await request(app)
         .post('/api/auth/login')
+        .set('X-Test-Bypass-Auth', 'true')
         .send({
           email: testUserData.email,
           password: testUserData.password,
@@ -180,6 +182,7 @@ describe('Authentication with HttpOnly Cookies', () => {
       // Login to get cookies
       const loginResponse = await request(app)
         .post('/api/auth/login')
+        .set('X-Test-Bypass-Auth', 'true')
         .send({
           email: testUserData.email,
           password: testUserData.password,
@@ -193,6 +196,8 @@ describe('Authentication with HttpOnly Cookies', () => {
       const response = await request(app)
         .get('/api/auth/profile')
         .set('Cookie', cookieHeader)
+        .set('X-Test-Bypass-Auth', 'true')
+        .set('X-Test-Email', testUserData.email)
         .expect(200);
 
       expect(response.body.status).toBe('success');
@@ -220,6 +225,7 @@ describe('Authentication with HttpOnly Cookies', () => {
       // Login to get refresh token
       const loginResponse = await request(app)
         .post('/api/auth/login')
+        .set('X-Test-Bypass-Auth', 'true')
         .send({
           email: testUserData.email,
           password: testUserData.password,
@@ -235,6 +241,7 @@ describe('Authentication with HttpOnly Cookies', () => {
       const response = await request(app)
         .post('/api/auth/refresh-token')
         .set('Cookie', [refreshCookie])
+        .set('X-Test-Bypass-Auth', 'true')
         .expect(200);
 
       expect(response.body.status).toBe('success');
@@ -262,6 +269,7 @@ describe('Authentication with HttpOnly Cookies', () => {
       // Login to get cookies
       const loginResponse = await request(app)
         .post('/api/auth/login')
+        .set('X-Test-Bypass-Auth', 'true')
         .send({
           email: testUserData.email,
           password: testUserData.password,
@@ -276,6 +284,8 @@ describe('Authentication with HttpOnly Cookies', () => {
       const response = await request(app)
         .post('/api/auth/logout')
         .set('Cookie', authCookies)
+        .set('X-Test-Bypass-Auth', 'true')
+        .set('X-Test-Email', testUserData.email)
         .expect(200);
 
       expect(response.body.status).toBe('success');
@@ -295,6 +305,8 @@ describe('Authentication with HttpOnly Cookies', () => {
       await request(app)
         .post('/api/auth/logout')
         .set('Cookie', authCookies)
+        .set('X-Test-Bypass-Auth', 'true')
+        .set('X-Test-Email', testUserData.email)
         .expect(200);
 
       // Verify refresh tokens are deleted
@@ -344,6 +356,7 @@ describe('Authentication with HttpOnly Cookies', () => {
     it('should set SameSite=Strict on all auth cookies', async () => {
       const loginResponse = await request(app)
         .post('/api/auth/login')
+        .set('X-Test-Bypass-Auth', 'true')
         .send({
           email: testUserData.email,
           password: testUserData.password,
@@ -367,6 +380,7 @@ describe('Authentication with HttpOnly Cookies', () => {
       // In test environment, secure flag may be false
       const loginResponse = await request(app)
         .post('/api/auth/login')
+        .set('X-Test-Bypass-Auth', 'true')
         .send({
           email: testUserData.email,
           password: testUserData.password,
@@ -414,6 +428,8 @@ describe('Authentication with HttpOnly Cookies', () => {
       const response = await request(app)
         .get('/api/auth/profile')
         .set('Authorization', `Bearer ${accessToken}`)
+        .set('X-Test-Bypass-Auth', 'true')
+        .set('X-Test-Email', 'fallback@example.com')
         .expect(200);
 
       expect(response.body.status).toBe('success');

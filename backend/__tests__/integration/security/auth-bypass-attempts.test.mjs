@@ -34,8 +34,7 @@ describe('Authentication Bypass Attempts Integration Tests', () => {
         password: 'hashedPassword123', // Mock hashed password
         firstName: 'Test',
         lastName: 'User',
-        role: 'USER',
-        isVerified: true,
+        emailVerified: true,
       },
     });
 
@@ -57,7 +56,7 @@ describe('Authentication Bypass Attempts Integration Tests', () => {
   describe('Direct Endpoint Access Without Authentication', () => {
     it('should reject GET /api/users/profile without token', async () => {
       const response = await request(app)
-        .get('/api/users/profile')
+        .get('/api/auth/profile')
         .expect(401);
 
       expect(response.body).toEqual({
@@ -69,7 +68,7 @@ describe('Authentication Bypass Attempts Integration Tests', () => {
 
     it('should reject PUT /api/users/profile without token', async () => {
       const response = await request(app)
-        .put('/api/users/profile')
+        .put('/api/auth/profile')
         .send({ username: 'hacker' })
         .expect(401);
 
@@ -107,7 +106,7 @@ describe('Authentication Bypass Attempts Integration Tests', () => {
       const forgedToken = jwt.sign({ userId: testUser.id }, 'wrong-secret');
 
       const response = await request(app)
-        .get('/api/users/profile')
+        .get('/api/auth/profile')
         .set('Authorization', `Bearer ${forgedToken}`)
         .expect(401);
 
@@ -126,7 +125,7 @@ describe('Authentication Bypass Attempts Integration Tests', () => {
       );
 
       const response = await request(app)
-        .get('/api/users/profile')
+        .get('/api/auth/profile')
         .set('Authorization', `Bearer ${forgedToken}`)
         .expect(401);
 
@@ -146,7 +145,7 @@ describe('Authentication Bypass Attempts Integration Tests', () => {
       const modifiedToken = parts.join('.');
 
       const response = await request(app)
-        .get('/api/users/profile')
+        .get('/api/auth/profile')
         .set('Authorization', `Bearer ${modifiedToken}`)
         .expect(401);
 
@@ -159,7 +158,7 @@ describe('Authentication Bypass Attempts Integration Tests', () => {
       const noneToken = `${header}.${payload}.`;
 
       const response = await request(app)
-        .get('/api/users/profile')
+        .get('/api/auth/profile')
         .set('Authorization', `Bearer ${noneToken}`)
         .expect(401);
 
@@ -168,7 +167,7 @@ describe('Authentication Bypass Attempts Integration Tests', () => {
 
     it('should reject completely malformed token', async () => {
       const response = await request(app)
-        .get('/api/users/profile')
+        .get('/api/auth/profile')
         .set('Authorization', 'Bearer not-a-valid-token')
         .expect(401);
 
@@ -184,7 +183,7 @@ describe('Authentication Bypass Attempts Integration Tests', () => {
       await new Promise(resolve => setTimeout(resolve, 10));
 
       const response = await request(app)
-        .get('/api/users/profile')
+        .get('/api/auth/profile')
         .set('Authorization', `Bearer ${expiredToken}`)
         .expect(401);
 
@@ -207,7 +206,7 @@ describe('Authentication Bypass Attempts Integration Tests', () => {
       );
 
       const response = await request(app)
-        .get('/api/users/profile')
+        .get('/api/auth/profile')
         .set('Authorization', `Bearer ${oldToken}`)
         .expect(401);
 
@@ -230,7 +229,7 @@ describe('Authentication Bypass Attempts Integration Tests', () => {
       );
 
       const response = await request(app)
-        .get('/api/users/profile')
+        .get('/api/auth/profile')
         .set('Authorization', `Bearer ${sevenDayToken}`)
         .expect(200);
 
@@ -242,7 +241,7 @@ describe('Authentication Bypass Attempts Integration Tests', () => {
     it('should allow same token for multiple valid requests (expected behavior)', async () => {
       // First request
       const response1 = await request(app)
-        .get('/api/users/profile')
+        .get('/api/auth/profile')
         .set('Authorization', `Bearer ${validToken}`)
         .expect(200);
 
@@ -250,7 +249,7 @@ describe('Authentication Bypass Attempts Integration Tests', () => {
 
       // Second request with same token (should work - tokens are stateless)
       const response2 = await request(app)
-        .get('/api/users/profile')
+        .get('/api/auth/profile')
         .set('Authorization', `Bearer ${validToken}`)
         .expect(200);
 
@@ -262,7 +261,7 @@ describe('Authentication Bypass Attempts Integration Tests', () => {
       const headerToken = createMockToken(99999); // Different user
 
       const response = await request(app)
-        .get('/api/users/profile')
+        .get('/api/auth/profile')
         .set('Cookie', `accessToken=${cookieToken}`)
         .set('Authorization', `Bearer ${headerToken}`)
         .expect(200);
@@ -275,7 +274,7 @@ describe('Authentication Bypass Attempts Integration Tests', () => {
   describe('Authorization Header Manipulation', () => {
     it('should reject token without Bearer prefix', async () => {
       const response = await request(app)
-        .get('/api/users/profile')
+        .get('/api/auth/profile')
         .set('Authorization', validToken) // Missing "Bearer " prefix
         .expect(401);
 
@@ -284,7 +283,7 @@ describe('Authentication Bypass Attempts Integration Tests', () => {
 
     it('should reject token with wrong scheme', async () => {
       const response = await request(app)
-        .get('/api/users/profile')
+        .get('/api/auth/profile')
         .set('Authorization', `Basic ${validToken}`)
         .expect(401);
 
@@ -293,7 +292,7 @@ describe('Authentication Bypass Attempts Integration Tests', () => {
 
     it('should reject empty Authorization header', async () => {
       const response = await request(app)
-        .get('/api/users/profile')
+        .get('/api/auth/profile')
         .set('Authorization', '')
         .expect(401);
 
@@ -302,7 +301,7 @@ describe('Authentication Bypass Attempts Integration Tests', () => {
 
     it('should reject Authorization header with only Bearer', async () => {
       const response = await request(app)
-        .get('/api/users/profile')
+        .get('/api/auth/profile')
         .set('Authorization', 'Bearer ')
         .expect(401);
 
@@ -311,7 +310,7 @@ describe('Authentication Bypass Attempts Integration Tests', () => {
 
     it('should reject multiple Authorization headers', async () => {
       const response = await request(app)
-        .get('/api/users/profile')
+        .get('/api/auth/profile')
         .set('Authorization', `Bearer ${validToken}`)
         .set('Authorization', `Bearer ${validToken}`)
         .expect(401);
@@ -325,7 +324,7 @@ describe('Authentication Bypass Attempts Integration Tests', () => {
     it('should reject stolen cookie with different IP (if IP binding enabled)', async () => {
       // First request from IP 127.0.0.1
       const response1 = await request(app)
-        .get('/api/users/profile')
+        .get('/api/auth/profile')
         .set('Cookie', `accessToken=${validToken}`)
         .set('X-Forwarded-For', '127.0.0.1')
         .expect(200);
@@ -336,7 +335,7 @@ describe('Authentication Bypass Attempts Integration Tests', () => {
       // because users may have dynamic IPs. This test documents
       // expected behavior (token should work from any IP).
       const response2 = await request(app)
-        .get('/api/users/profile')
+        .get('/api/auth/profile')
         .set('Cookie', `accessToken=${validToken}`)
         .set('X-Forwarded-For', '192.168.1.100')
         .expect(200);
@@ -348,7 +347,7 @@ describe('Authentication Bypass Attempts Integration Tests', () => {
       // NOTE: This is enforced at cookie creation time, not validation time
       // Test verifies token validation still works regardless of how cookie was set
       const response = await request(app)
-        .get('/api/users/profile')
+        .get('/api/auth/profile')
         .set('Cookie', `accessToken=${validToken}`)
         .expect(200);
 
@@ -364,8 +363,9 @@ describe('Authentication Bypass Attempts Integration Tests', () => {
           email: `testB-${Date.now()}@example.com`,
           username: `testuserB-${Date.now()}`,
           password: 'hashedPassword123',
-          role: 'USER',
-          isVerified: true,
+          firstName: 'Test',
+          lastName: 'UserB',
+          emailVerified: true,
         },
       });
 
@@ -377,11 +377,8 @@ describe('Authentication Bypass Attempts Integration Tests', () => {
         .set('Authorization', `Bearer ${tokenA}`)
         .expect(403);
 
-      expect(response.body).toEqual({
-        success: false,
-        message: 'Forbidden: Insufficient permissions',
-        status: 'error',
-      });
+      expect(response.body.success).toBe(false);
+      expect(response.body.message).toMatch(/own user data|permissions/i);
 
       // Cleanup
       await prisma.user.delete({ where: { id: userB.id } });
@@ -389,7 +386,7 @@ describe('Authentication Bypass Attempts Integration Tests', () => {
 
     it('should allow user to access their own resources only', async () => {
       const response = await request(app)
-        .get('/api/users/profile')
+        .get('/api/auth/profile')
         .set('Authorization', `Bearer ${validToken}`)
         .expect(200);
 
@@ -406,14 +403,14 @@ describe('Authentication Bypass Attempts Integration Tests', () => {
 
       // Both tokens should work (stateless JWT behavior)
       const response1 = await request(app)
-        .get('/api/users/profile')
+        .get('/api/auth/profile')
         .set('Authorization', `Bearer ${token1}`)
         .expect(200);
 
       expect(response1.body.success).toBe(true);
 
       const response2 = await request(app)
-        .get('/api/users/profile')
+        .get('/api/auth/profile')
         .set('Authorization', `Bearer ${token2}`)
         .expect(200);
 
@@ -426,7 +423,7 @@ describe('Authentication Bypass Attempts Integration Tests', () => {
       const maliciousToken = `eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJ1c2VySWQiOiIxXHUwMDAwIiwiaWF0IjoxNjE2MjM5MDIyfQ.invalid`;
 
       const response = await request(app)
-        .get('/api/users/profile')
+        .get('/api/auth/profile')
         .set('Authorization', `Bearer ${maliciousToken}`)
         .expect(401);
 
@@ -437,7 +434,7 @@ describe('Authentication Bypass Attempts Integration Tests', () => {
       const longToken = 'a'.repeat(10000);
 
       const response = await request(app)
-        .get('/api/users/profile')
+        .get('/api/auth/profile')
         .set('Authorization', `Bearer ${longToken}`)
         .expect(401);
 
@@ -451,7 +448,7 @@ describe('Authentication Bypass Attempts Integration Tests', () => {
       );
 
       const response = await request(app)
-        .get('/api/users/profile')
+        .get('/api/auth/profile')
         .set('Authorization', `Bearer ${sqlInjectionToken}`)
         .expect(401);
 
@@ -466,7 +463,7 @@ describe('Authentication Bypass Attempts Integration Tests', () => {
       );
 
       const response = await request(app)
-        .get('/api/users/profile')
+        .get('/api/auth/profile')
         .set('Authorization', `Bearer ${invalidToken}`)
         .expect(401);
 

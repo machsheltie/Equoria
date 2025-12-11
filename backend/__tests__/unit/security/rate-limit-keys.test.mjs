@@ -11,6 +11,7 @@
  * @module __tests__/unit/security/rate-limit-keys
  */
 
+import { describe, it, expect, beforeEach, jest } from '@jest/globals';
 import { authRateLimiter } from '../../../middleware/authRateLimiter.mjs';
 import { createMockUser } from '../../factories/index.mjs';
 

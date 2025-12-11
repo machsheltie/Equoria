@@ -31,8 +31,9 @@ describe('Rate Limit Enforcement Integration Tests', () => {
         email: `test-${Date.now()}@example.com`,
         username: `testuser-${Date.now()}`,
         password: 'hashedPassword123',
-        role: 'USER',
-        isVerified: true,
+        firstName: 'Test',
+        lastName: 'User',
+        emailVerified: true,
       },
     });
 
@@ -59,7 +60,7 @@ describe('Rate Limit Enforcement Integration Tests', () => {
     it('should block excessive concurrent requests from same IP', async () => {
       const requests = Array(50).fill(null).map(() =>
         request(app)
-          .get('/api/users/profile')
+          .get('/api/auth/profile')
           .set('Authorization', `Bearer ${validToken}`)
       );
 
@@ -90,8 +91,9 @@ describe('Rate Limit Enforcement Integration Tests', () => {
           email: `test2-${Date.now()}@example.com`,
           username: `testuser2-${Date.now()}`,
           password: 'hashedPassword123',
-          role: 'USER',
-          isVerified: true,
+          firstName: 'Test',
+          lastName: 'User2',
+          emailVerified: true,
         },
       });
 
@@ -100,13 +102,13 @@ describe('Rate Limit Enforcement Integration Tests', () => {
       // Both users make 20 requests
       const user1Requests = Array(20).fill(null).map(() =>
         request(app)
-          .get('/api/users/profile')
+          .get('/api/auth/profile')
           .set('Authorization', `Bearer ${validToken}`)
       );
 
       const user2Requests = Array(20).fill(null).map(() =>
         request(app)
-          .get('/api/users/profile')
+          .get('/api/auth/profile')
           .set('Authorization', `Bearer ${token2}`)
       );
 
@@ -130,7 +132,7 @@ describe('Rate Limit Enforcement Integration Tests', () => {
       // Burst: 30 requests immediately
       const burstRequests = Array(30).fill(null).map(() =>
         request(app)
-          .get('/api/users/profile')
+          .get('/api/auth/profile')
           .set('Authorization', `Bearer ${validToken}`)
       );
 
@@ -145,7 +147,7 @@ describe('Rate Limit Enforcement Integration Tests', () => {
       // Sustained: 10 more requests
       const sustainedRequests = Array(10).fill(null).map(() =>
         request(app)
-          .get('/api/users/profile')
+          .get('/api/auth/profile')
           .set('Authorization', `Bearer ${validToken}`)
       );
 
@@ -164,14 +166,14 @@ describe('Rate Limit Enforcement Integration Tests', () => {
 
       const instanceA = Array(15).fill(null).map(() =>
         request(app)
-          .get('/api/users/profile')
+          .get('/api/auth/profile')
           .set('Authorization', `Bearer ${validToken}`)
           .set('X-Server-Instance', 'A')
       );
 
       const instanceB = Array(15).fill(null).map(() =>
         request(app)
-          .get('/api/users/profile')
+          .get('/api/auth/profile')
           .set('Authorization', `Bearer ${validToken}`)
           .set('X-Server-Instance', 'B')
       );
@@ -193,7 +195,7 @@ describe('Rate Limit Enforcement Integration Tests', () => {
       const phase1 = await Promise.all(
         Array(10).fill(null).map(() =>
           request(app)
-            .get('/api/users/profile')
+            .get('/api/auth/profile')
             .set('Authorization', `Bearer ${validToken}`)
         )
       );
@@ -205,7 +207,7 @@ describe('Rate Limit Enforcement Integration Tests', () => {
       const phase2 = await Promise.all(
         Array(10).fill(null).map(() =>
           request(app)
-            .get('/api/users/profile')
+            .get('/api/auth/profile')
             .set('Authorization', `Bearer ${validToken}`)
         )
       );
@@ -217,7 +219,7 @@ describe('Rate Limit Enforcement Integration Tests', () => {
       const phase3 = await Promise.all(
         Array(10).fill(null).map(() =>
           request(app)
-            .get('/api/users/profile')
+            .get('/api/auth/profile')
             .set('Authorization', `Bearer ${validToken}`)
         )
       );
@@ -232,7 +234,7 @@ describe('Rate Limit Enforcement Integration Tests', () => {
 
       const requests = Array(20).fill(null).map(() =>
         request(app)
-          .get('/api/users/profile')
+          .get('/api/auth/profile')
           .set('Authorization', `Bearer ${validToken}`)
       );
 
@@ -274,19 +276,17 @@ describe('Rate Limit Enforcement Integration Tests', () => {
       const readResponses = await Promise.all(readRequests);
       const readBlocked = readResponses.filter(r => r.status === 429).length;
 
-      // Create test horse for write operations
-      const createResponse = await request(app)
-        .post('/api/horses')
-        .set('Authorization', `Bearer ${validToken}`)
-        .send({
-          name: 'TestHorse',
-          breed: 'Thoroughbred',
-          gender: 'MARE',
-          color: 'Bay',
-          age: 5,
-        });
+      // Create test horse for write operations directly to ensure valid schema fields
+      const horse = await prisma.horse.create({
+        data: {
+          name: `TestHorse-${Date.now()}`,
+          sex: 'mare',
+          dateOfBirth: new Date('2017-01-01'),
+          userId: testUser.id,
+        },
+      });
 
-      const horseId = createResponse.body.data?.id;
+      const horseId = horse.id;
 
       // Write operations: Lower limit (e.g., 30/min)
       const writeRequests = Array(30).fill(null).map(() =>
@@ -320,7 +320,7 @@ describe('Rate Limit Enforcement Integration Tests', () => {
       // Authenticated endpoint: More lenient
       const authRequests = Array(30).fill(null).map(() =>
         request(app)
-          .get('/api/users/profile')
+          .get('/api/auth/profile')
           .set('Authorization', `Bearer ${validToken}`)
       );
 
@@ -336,7 +336,7 @@ describe('Rate Limit Enforcement Integration Tests', () => {
     it('should reject requests with spoofed X-Forwarded-For headers', async () => {
       const requests = Array(30).fill(null).map((_, i) =>
         request(app)
-          .get('/api/users/profile')
+          .get('/api/auth/profile')
           .set('Authorization', `Bearer ${validToken}`)
           .set('X-Forwarded-For', `192.168.1.${i}`) // Different IPs
       );
@@ -351,7 +351,7 @@ describe('Rate Limit Enforcement Integration Tests', () => {
     it('should reject requests with multiple X-Forwarded-For headers', async () => {
       const requests = Array(20).fill(null).map(() =>
         request(app)
-          .get('/api/users/profile')
+          .get('/api/auth/profile')
           .set('Authorization', `Bearer ${validToken}`)
           .set('X-Forwarded-For', '1.1.1.1, 2.2.2.2, 3.3.3.3')
       );
@@ -368,14 +368,14 @@ describe('Rate Limit Enforcement Integration Tests', () => {
       await Promise.all(
         Array(30).fill(null).map(() =>
           request(app)
-            .get('/api/users/profile')
+            .get('/api/auth/profile')
             .set('Authorization', `Bearer ${validToken}`)
         )
       );
 
       // Attempt to reset counter via malicious header
       const response = await request(app)
-        .get('/api/users/profile')
+        .get('/api/auth/profile')
         .set('Authorization', `Bearer ${validToken}`)
         .set('X-Rate-Limit-Reset', 'true')
         .expect(429);
@@ -386,7 +386,7 @@ describe('Rate Limit Enforcement Integration Tests', () => {
     it('should reject requests with manipulated User-Agent strings', async () => {
       const requests = Array(30).fill(null).map((_, i) =>
         request(app)
-          .get('/api/users/profile')
+          .get('/api/auth/profile')
           .set('Authorization', `Bearer ${validToken}`)
           .set('User-Agent', `Bot-${i}`) // Different user agents
       );
@@ -402,7 +402,7 @@ describe('Rate Limit Enforcement Integration Tests', () => {
   describe('Rate Limit Headers', () => {
     it('should return X-RateLimit-* headers on successful requests', async () => {
       const response = await request(app)
-        .get('/api/users/profile')
+        .get('/api/auth/profile')
         .set('Authorization', `Bearer ${validToken}`)
         .expect(200);
 
@@ -416,13 +416,13 @@ describe('Rate Limit Enforcement Integration Tests', () => {
 
     it('should decrement X-RateLimit-Remaining with each request', async () => {
       const response1 = await request(app)
-        .get('/api/users/profile')
+        .get('/api/auth/profile')
         .set('Authorization', `Bearer ${validToken}`);
 
       const remaining1 = parseInt(response1.headers['x-ratelimit-remaining']);
 
       const response2 = await request(app)
-        .get('/api/users/profile')
+        .get('/api/auth/profile')
         .set('Authorization', `Bearer ${validToken}`);
 
       const remaining2 = parseInt(response2.headers['x-ratelimit-remaining']);
@@ -435,13 +435,13 @@ describe('Rate Limit Enforcement Integration Tests', () => {
       await Promise.all(
         Array(30).fill(null).map(() =>
           request(app)
-            .get('/api/users/profile')
+            .get('/api/auth/profile')
             .set('Authorization', `Bearer ${validToken}`)
         )
       );
 
       const response = await request(app)
-        .get('/api/users/profile')
+        .get('/api/auth/profile')
         .set('Authorization', `Bearer ${validToken}`)
         .expect(429);
 
@@ -456,7 +456,7 @@ describe('Rate Limit Enforcement Integration Tests', () => {
       await Promise.all(
         Array(30).fill(null).map(() =>
           request(app)
-            .get('/api/users/profile')
+            .get('/api/auth/profile')
             .set('Authorization', `Bearer ${validToken}`)
         )
       );
@@ -481,7 +481,7 @@ describe('Rate Limit Enforcement Integration Tests', () => {
       await Promise.all(
         Array(30).fill(null).map(() =>
           request(app)
-            .get('/api/users/profile')
+            .get('/api/auth/profile')
             .set('Authorization', `Bearer ${validToken}`)
         )
       );
@@ -500,7 +500,7 @@ describe('Rate Limit Enforcement Integration Tests', () => {
       await Promise.all(
         Array(20).fill(null).map(() =>
           request(app)
-            .get('/api/users/profile')
+            .get('/api/auth/profile')
             .set('Authorization', `Bearer ${validToken}`)
         )
       );
@@ -521,7 +521,7 @@ describe('Rate Limit Enforcement Integration Tests', () => {
       await Promise.all(
         Array(30).fill(null).map(() =>
           request(app)
-            .get('/api/users/profile')
+            .get('/api/auth/profile')
             .set('Authorization', `Bearer ${validToken}`)
         )
       );
@@ -554,8 +554,9 @@ describe('Rate Limit Enforcement Integration Tests', () => {
           email: `test2-${Date.now()}@example.com`,
           username: `testuser2-${Date.now()}`,
           password: 'hashedPassword123',
-          role: 'USER',
-          isVerified: true,
+          firstName: 'Test',
+          lastName: 'User2',
+          emailVerified: true,
         },
       });
 
@@ -565,7 +566,7 @@ describe('Rate Limit Enforcement Integration Tests', () => {
       await Promise.all(
         Array(30).fill(null).map(() =>
           request(app)
-            .get('/api/users/profile')
+            .get('/api/auth/profile')
             .set('Authorization', `Bearer ${validToken}`)
         )
       );
@@ -599,8 +600,9 @@ describe('Rate Limit Enforcement Integration Tests', () => {
           email: `unverified-${Date.now()}@example.com`,
           username: `unverified-${Date.now()}`,
           password: 'hashedPassword123',
-          role: 'USER',
-          isVerified: false,
+          firstName: 'Test',
+          lastName: 'Unverified',
+          emailVerified: false,
         },
       });
 

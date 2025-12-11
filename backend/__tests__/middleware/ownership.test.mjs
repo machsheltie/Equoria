@@ -7,53 +7,45 @@
  */
 
 import { describe, it, expect, jest, beforeEach, afterEach } from '@jest/globals';
-import {
-  requireOwnership,
-  findOwnedResource,
-  validateBatchOwnership,
-} from '../../middleware/ownership.mjs';
 import { mockRequest, mockResponse, mockNext } from '../setup.mjs';
-import prisma from '../../../packages/database/prismaClient.mjs';
 
-// Mock Prisma client module
-jest.mock('../../../packages/database/prismaClient.mjs');
-
-// Manually assign mock functions to each resource type
-// This ensures the mock functions have the proper prototype chain with .mockResolvedValue(), .mockClear(), etc.
-prisma.horse = {
-  findUnique: jest.fn(),
-  findMany: jest.fn(),
+const prismaPath = '../../../packages/database/prismaClient.mjs';
+const prisma = {
+  horse: {
+    findUnique: jest.fn(),
+    findMany: jest.fn(),
+  },
+  foal: {
+    findUnique: jest.fn(),
+    findMany: jest.fn(),
+  },
+  groom: {
+    findUnique: jest.fn(),
+    findMany: jest.fn(),
+  },
+  groomAssignment: {
+    findUnique: jest.fn(),
+    findMany: jest.fn(),
+  },
+  breeding: {
+    findUnique: jest.fn(),
+    findMany: jest.fn(),
+  },
+  competitionEntry: {
+    findUnique: jest.fn(),
+    findMany: jest.fn(),
+  },
+  trainingSession: {
+    findUnique: jest.fn(),
+    findMany: jest.fn(),
+  },
 };
 
-prisma.foal = {
-  findUnique: jest.fn(),
-  findMany: jest.fn(),
-};
+jest.unstable_mockModule(prismaPath, () => ({
+  default: prisma,
+}));
 
-prisma.groom = {
-  findUnique: jest.fn(),
-  findMany: jest.fn(),
-};
-
-prisma.groomAssignment = {
-  findUnique: jest.fn(),
-  findMany: jest.fn(),
-};
-
-prisma.breeding = {
-  findUnique: jest.fn(),
-  findMany: jest.fn(),
-};
-
-prisma.competitionEntry = {
-  findUnique: jest.fn(),
-  findMany: jest.fn(),
-};
-
-prisma.trainingSession = {
-  findUnique: jest.fn(),
-  findMany: jest.fn(),
-};
+const { requireOwnership, findOwnedResource, validateBatchOwnership } = await import('../../middleware/ownership.mjs');
 
 describe('Ownership Middleware', () => {
   describe('requireOwnership()', () => {
@@ -131,15 +123,18 @@ describe('Ownership Middleware', () => {
         expect(next).not.toHaveBeenCalled();
       });
 
-      it('should return 404 if resource ID is negative (parseInt converts but DB query fails)', async () => {
+      it('should return 400 if resource ID is negative', async () => {
         req.params.id = '-5';
-        prisma.horse.findUnique.mockResolvedValue(null);
 
         const middleware = requireOwnership('horse');
         await middleware(req, res, next);
 
-        // parseInt('-5') = -5 (valid number), but DB query for id: -5 returns null
-        expect(res.status).toHaveBeenCalledWith(404);
+        expect(res.status).toHaveBeenCalledWith(400);
+        expect(res.json).toHaveBeenCalledWith({
+          success: false,
+          message: 'Invalid horse ID',
+          status: 'fail',
+        });
         expect(next).not.toHaveBeenCalled();
       });
 
@@ -155,19 +150,19 @@ describe('Ownership Middleware', () => {
         expect(next).not.toHaveBeenCalled();
       });
 
-      it('should truncate decimal IDs (parseInt behavior)', async () => {
+      it('should return 400 for decimal IDs', async () => {
         req.params.id = '1.5';
-        const mockHorse = { id: 1, name: 'Thunder', userId: 'user-123' };
-        prisma.horse.findUnique.mockResolvedValue(mockHorse);
 
         const middleware = requireOwnership('horse');
         await middleware(req, res, next);
 
-        // parseInt('1.5') = 1 (truncates decimal), queries for id: 1
-        expect(prisma.horse.findUnique).toHaveBeenCalledWith({
-          where: { id: 1, userId: 'user-123' },
+        expect(res.status).toHaveBeenCalledWith(400);
+        expect(res.json).toHaveBeenCalledWith({
+          success: false,
+          message: 'Invalid horse ID',
+          status: 'fail',
         });
-        expect(next).toHaveBeenCalled();
+        expect(next).not.toHaveBeenCalled();
       });
     });
 

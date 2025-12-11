@@ -11,6 +11,7 @@
  * @module __tests__/unit/security/csrf-validation
  */
 
+import { describe, it, expect, beforeEach, jest } from '@jest/globals';
 import { getCsrfToken, applyCsrfProtection } from '../../../middleware/csrf.mjs';
 import { createMockCsrfToken } from '../../factories/index.mjs';
 
@@ -39,6 +40,7 @@ describe('CSRF Token Validation Unit Tests', () => {
       getCsrfToken(req, res);
 
       expect(res.json).toHaveBeenCalledWith({
+        success: true,
         csrfToken: expect.any(String),
       });
 

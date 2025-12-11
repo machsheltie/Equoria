@@ -34,8 +34,9 @@ describe('SQL Injection Attempts Integration Tests', () => {
         email: `test-${Date.now()}@example.com`,
         username: `testuser-${Date.now()}`,
         password: 'hashedPassword123',
-        role: 'USER',
-        isVerified: true,
+        firstName: 'Test',
+        lastName: 'User',
+        emailVerified: true,
       },
     });
 
@@ -45,10 +46,9 @@ describe('SQL Injection Attempts Integration Tests', () => {
     testHorse = await prisma.horse.create({
       data: {
         name: `TestHorse-${Date.now()}`,
+        sex: 'mare',
+        dateOfBirth: new Date('2016-01-01'),
         userId: testUser.id,
-        breed: 'Thoroughbred',
-        gender: 'MARE',
-        color: 'Bay',
         age: 5,
       },
     });
@@ -58,8 +58,9 @@ describe('SQL Injection Attempts Integration Tests', () => {
       data: {
         name: `TestGroom-${Date.now()}`,
         userId: testUser.id,
-        specialty: 'GENERAL',
-        experienceLevel: 50,
+        speciality: 'GENERAL',
+        personality: 'calm',
+        experience: 50,
       },
     });
   });
@@ -389,7 +390,7 @@ describe('SQL Injection Attempts Integration Tests', () => {
     it('should prevent injection via profile data used in ownership checks', async () => {
       // Attempt to update username with SQL injection
       const response = await request(app)
-        .put('/api/users/profile')
+        .put('/api/auth/profile')
         .set('Authorization', `Bearer ${validToken}`)
         .send({
           username: "admin'; UPDATE users SET role='ADMIN' WHERE 1=1; --",

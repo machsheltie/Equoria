@@ -112,6 +112,8 @@ adminRouter.use(applyCsrfProtection);
 // PUBLIC ROUTES (No authentication)
 // Auth endpoints (login, register, password reset, CSRF token)
 publicRouter.use('/auth', authRoutes);
+// Backward compatibility for tests hitting /api/auth/*
+publicRouter.use('/api/auth', authRoutes);
 // Documentation endpoints
 publicRouter.use('/docs', documentationRoutes);
 publicRouter.use('/user-docs', userDocumentationRoutes);

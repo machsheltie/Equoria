@@ -11,12 +11,11 @@
  * @module __tests__/unit/security/ownership-checks
  */
 
-import { requireOwnership, findOwnedResource, validateBatchOwnership } from '../../../middleware/ownership.mjs';
+import { describe, it, expect, beforeEach, jest } from '@jest/globals';
 import { createMockUser, createMockHorse, createMockGroom } from '../../factories/index.mjs';
-import prisma from '../../../../packages/database/prismaClient.mjs';
 
-// Mock Prisma
-jest.mock('../../../../packages/database/prismaClient.mjs', () => ({
+const prismaPath = '../../../../packages/database/prismaClient.mjs';
+const prisma = {
   horse: {
     findUnique: jest.fn(),
     findMany: jest.fn(),
@@ -34,7 +33,13 @@ jest.mock('../../../../packages/database/prismaClient.mjs', () => ({
   competitionEntry: {
     findUnique: jest.fn(),
   },
+};
+
+jest.unstable_mockModule(prismaPath, () => ({
+  default: prisma,
 }));
+
+const { requireOwnership, findOwnedResource, validateBatchOwnership } = await import('../../../middleware/ownership.mjs');
 
 describe('Ownership Validation Unit Tests', () => {
   let req, res, next;
