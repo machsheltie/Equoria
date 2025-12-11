@@ -224,7 +224,7 @@ const StatProgressionChart = ({ horseId }: StatProgressionChartProps) => {
 
       {/* Chart */}
       <div data-testid="chart-container" className="relative w-full" style={{ position: 'relative' }}>
-        <Line data={chartData} options={chartOptions} />
+        <Line key={selectedRange} data={chartData} options={chartOptions} />
       </div>
 
       {/* Summary Stats */}
