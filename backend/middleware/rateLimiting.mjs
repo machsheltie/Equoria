@@ -38,6 +38,16 @@ let isRedisAvailable = false;
  * Handles connection failures gracefully with exponential backoff
  */
 async function initializeRedis() {
+  const isTestEnv = process.env.NODE_ENV === 'test';
+  const redisDisabled = process.env.REDIS_DISABLED === 'true';
+
+  if (isTestEnv || redisDisabled) {
+    logger.info('[rateLimiting] Using in-memory rate limiting for test/disabled Redis environment');
+    isRedisAvailable = false;
+    redisClient = null;
+    return null;
+  }
+
   try {
     const redisUrl = process.env.REDIS_URL || 'redis://localhost:6379';
     const redisPassword = process.env.REDIS_PASSWORD;
@@ -205,19 +215,6 @@ export function createRateLimiter(options = {}) {
         })
       : undefined, // No store = in-memory (fallback for development/tests)
 
-    // Debug logging for test environment
-    onLimitReached: process.env.NODE_ENV === 'test' ? (req, res, options) => {
-      logger.info('[RateLimit DEBUG] Limit reached', {
-        path: req.path,
-        keyPrefix,
-        max,
-        windowMs,
-        user: req.user?.id,
-        ip: req.ip,
-        storeType: (redisClient && isRedisConnected()) ? 'Redis' : 'In-Memory'
-      });
-    } : undefined,
-
     // Key generation: Use authenticated user ID, fallback to IP
     keyGenerator: (req) => {
       if (req.user && req.user.id) {
@@ -230,14 +227,14 @@ export function createRateLimiter(options = {}) {
     // Custom handler for rate limit exceeded
     handler: (req, res) => {
       const identifier = req.user?.id ? `user:${req.user.id}` : `ip:${req.ip}`;
-      const retryAfter = Math.ceil(windowMs / 1000);
+      const retryAfter = Math.max(1, Math.ceil(effectiveWindowMs / 1000));
 
       logger.warn('[RateLimit] Limit exceeded', {
         identifier,
         path: req.path,
         method: req.method,
-        max,
-        windowMs,
+        max: effectiveMax,
+        windowMs: effectiveWindowMs,
         retryAfter,
       });
 
@@ -246,8 +243,8 @@ export function createRateLimiter(options = {}) {
         status: 'error',
         message,
         retryAfter, // Seconds until window resets
-        limit: max,
-        window: Math.ceil(windowMs / 1000),
+        limit: effectiveMax,
+        window: retryAfter,
       });
     },
 
