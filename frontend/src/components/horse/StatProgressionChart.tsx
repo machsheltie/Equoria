@@ -176,6 +176,12 @@ const StatProgressionChart = ({ horseId }: StatProgressionChartProps) => {
         <div className="text-sm text-rose-800">
           {error?.message || 'Failed to fetch XP history'}
         </div>
+        <button
+          onClick={() => refetch()}
+          className="mt-3 rounded-md bg-rose-600 px-4 py-2 text-sm text-white hover:bg-rose-700 focus:outline-none focus:ring-2 focus:ring-rose-500 focus:ring-offset-2"
+        >
+          Retry
+        </button>
       </div>
     );
   }

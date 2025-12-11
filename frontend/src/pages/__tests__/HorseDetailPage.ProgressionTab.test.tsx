@@ -636,7 +636,7 @@ describe('HorseDetailPage - Progression Tab', () => {
       });
     });
 
-    it.skip('should provide retry button for failed data fetches', async () => {
+    it('should provide retry button for failed data fetches', async () => {
       const user = userEvent.setup();
       let callCount = 0;
       vi.mocked(horsesApi.getXP).mockImplementation(() => {

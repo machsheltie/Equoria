@@ -18,7 +18,7 @@ interface XPProgressBarProps {
 }
 
 const XPProgressBar = ({ horseId }: XPProgressBarProps) => {
-  const { data: xpData, isLoading, error, isError } = useHorseXP(horseId);
+  const { data: xpData, isLoading, error, isError, refetch } = useHorseXP(horseId);
   const [showTooltip, setShowTooltip] = useState(false);
 
   // Loading state
@@ -37,6 +37,12 @@ const XPProgressBar = ({ horseId }: XPProgressBarProps) => {
         <div className="text-sm text-rose-800">
           {error?.message || 'Failed to fetch XP data'}
         </div>
+        <button
+          onClick={() => refetch()}
+          className="mt-2 rounded bg-rose-600 px-3 py-1 text-sm text-white hover:bg-rose-700 focus:outline-none focus:ring-2 focus:ring-rose-500 focus:ring-offset-2"
+        >
+          Retry
+        </button>
       </div>
     );
   }
