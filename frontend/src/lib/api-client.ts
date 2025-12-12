@@ -104,6 +104,11 @@ interface FoalDevelopment {
   bonding?: number;
   stress?: number;
   enrichmentLevel?: number;
+  currentDay: number;
+  bondingLevel: number;
+  stressLevel: number;
+  completedActivities: { [day: number]: string[] }; // Explicitly typing this as per backend
+  maxDay: number;
 }
 
 interface Foal {
@@ -147,6 +152,12 @@ interface HorseTrainingHistoryEntry {
   score?: number;
   trainedAt?: string;
   notes?: string;
+}
+
+interface HorseTrainingAnalytics {
+  trainingHistory: HorseTrainingHistoryEntry[];
+  disciplineBalance: Record<string, any>;
+  trainingFrequency: Record<string, any>;
 }
 
 interface HorseXP {
@@ -552,7 +563,7 @@ export const horsesApi = {
   list: () => apiClient.get<HorseSummary[]>('/api/horses'),
   get: (horseId: number) => apiClient.get<HorseSummary>(`/api/horses/${horseId}`),
   getTrainingHistory: (horseId: number) =>
-    apiClient.get<HorseTrainingHistoryEntry[]>(`/api/horses/${horseId}/training-history`),
+    apiClient.get<HorseTrainingAnalytics>(`/api/horses/${horseId}/training-history`),
   getBreedingData: (horseId: number) =>
     apiClient.get<any>(`/api/horses/${horseId}/breeding-data`),
   getXP: (horseId: number) =>
@@ -768,6 +779,7 @@ export type {
   HorseProgression,
   HorseStats,
   HorseSummary,
+  HorseTrainingAnalytics,
   HorseTrainingHistoryEntry,
   HorseXP,
   HorseXPEvent,

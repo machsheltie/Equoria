@@ -1,63 +1,23 @@
 
 import React, { useState } from 'react';
-import { Coins, Star, Users, Plus, Settings } from 'lucide-react';
+import { Coins, Star, Users, Plus, Settings, AlertCircle, Loader2 } from 'lucide-react';
 import HorseCard from '../components/HorseCard';
 import { FantasyTabs } from '../components/FantasyTabs';
+import { useHorses } from '../hooks/api/useHorses';
 
 const StableView = () => {
   const [activeTab, setActiveTab] = useState('all');
 
-  // Mock player data
+  // Fetch horses from API
+  const { data: horsesData, isLoading, isError, error, refetch } = useHorses();
+
+  // Mock player data - TODO: Replace with useProfile hook when available
   const playerStats = {
     coins: 2847,
     xp: 15392,
     level: 18,
-    stableSlots: { used: 12, total: 25 }
+    stableSlots: { used: horsesData?.length ?? 0, total: 25 }
   };
-
-  // Mock horse data
-  const horses = [
-    {
-      id: '1',
-      name: 'Stormwind',
-      age: 5,
-      discipline: 'Jumping',
-      category: 'stallion',
-      isLegendary: true,
-      cooldownHours: 0,
-      stats: { speed: 95, stamina: 88, agility: 92, strength: 85, intelligence: 78, health: 96 }
-    },
-    {
-      id: '2', 
-      name: 'Moonbeam',
-      age: 3,
-      discipline: 'Dressage',
-      category: 'mare',
-      isLegendary: false,
-      cooldownHours: 6,
-      stats: { speed: 78, stamina: 92, agility: 95, strength: 72, intelligence: 88, health: 85 }
-    },
-    {
-      id: '3',
-      name: 'Shadowfire',
-      age: 1,
-      discipline: 'Racing',
-      category: 'foal',
-      isLegendary: true,
-      cooldownHours: 0,
-      stats: { speed: 88, stamina: 75, agility: 82, strength: 79, intelligence: 85, health: 90 }
-    },
-    {
-      id: '4',
-      name: 'Golden Dawn',
-      age: 8,
-      discipline: 'Trail',
-      category: 'mare',
-      isLegendary: false,
-      cooldownHours: 2,
-      stats: { speed: 82, stamina: 95, agility: 78, strength: 88, intelligence: 92, health: 88 }
-    }
-  ];
 
   const tabs = [
     { value: 'foals', label: 'Foals', icon: <Star className="w-4 h-4" /> },
@@ -67,26 +27,102 @@ const StableView = () => {
     { value: 'all', label: 'All', icon: <Star className="w-4 h-4" /> }
   ];
 
-  const filteredHorses = activeTab === 'all' 
-    ? horses 
-    : horses.filter(horse => horse.category === activeTab || (activeTab === 'stallions' && horse.category === 'stallion'));
+  // Transform API data to component format
+  const transformedHorses = horsesData?.map(horse => ({
+    id: horse.id.toString(),
+    name: horse.name,
+    age: horse.ageYears ?? horse.age ?? 0,
+    discipline: 'Unknown', // TODO: Get primary discipline from backend
+    category: horse.sex?.toLowerCase() === 'stallion' ? 'stallion' :
+              horse.sex?.toLowerCase() === 'mare' ? 'mare' :
+              horse.sex?.toLowerCase() === 'gelding' ? 'gelding' :
+              (horse.ageYears ?? 0) < 3 ? 'foal' : 'unknown',
+    isLegendary: false, // TODO: Add legendary status to backend
+    cooldownHours: 0, // TODO: Calculate from training status
+    stats: {
+      speed: 0,
+      stamina: 0,
+      agility: 0,
+      strength: 0,
+      intelligence: 0,
+      health: 0
+    } // TODO: Get real stats from backend
+  })) ?? [];
 
-  const getTabContent = () => (
-    <div className="grid grid-cols-2 gap-4 p-4">
-      {filteredHorses.map((horse) => (
-        <HorseCard
-          key={horse.id}
-          horseName={horse.name}
-          age={horse.age}
-          discipline={horse.discipline}
-          isLegendary={horse.isLegendary}
-          cooldownHours={horse.cooldownHours}
-          stats={horse.stats}
-          onClick={() => console.log(`Viewing ${horse.name}`)}
-        />
-      ))}
-    </div>
-  );
+  const filteredHorses = activeTab === 'all'
+    ? transformedHorses
+    : transformedHorses.filter(horse => {
+        if (activeTab === 'foals') return horse.category === 'foal' || horse.age < 3;
+        if (activeTab === 'stallions') return horse.category === 'stallion';
+        if (activeTab === 'mares') return horse.category === 'mare';
+        if (activeTab === 'retired') return horse.age >= 20;
+        return true;
+      });
+
+  const getTabContent = () => {
+    // Loading state
+    if (isLoading) {
+      return (
+        <div className="flex items-center justify-center p-12">
+          <div className="text-center space-y-4">
+            <Loader2 className="w-8 h-8 text-burnished-gold animate-spin mx-auto" />
+            <p className="fantasy-body text-aged-bronze">Loading your stable...</p>
+          </div>
+        </div>
+      );
+    }
+
+    // Error state
+    if (isError) {
+      return (
+        <div className="flex items-center justify-center p-12">
+          <div className="text-center space-y-4 max-w-md">
+            <AlertCircle className="w-12 h-12 text-red-500 mx-auto" />
+            <h3 className="fantasy-title text-lg text-midnight-ink">Unable to Load Horses</h3>
+            <p className="fantasy-body text-sm text-aged-bronze">
+              {error?.message || 'Failed to fetch horses. Please check your connection.'}
+            </p>
+            <button
+              onClick={() => refetch()}
+              className="px-6 py-2 bg-gradient-to-br from-burnished-gold to-aged-bronze text-parchment rounded-lg shadow-md hover:scale-105 transition-transform fantasy-button"
+            >
+              Try Again
+            </button>
+          </div>
+        </div>
+      );
+    }
+
+    // Empty state
+    if (!filteredHorses.length) {
+      return (
+        <div className="flex items-center justify-center p-12">
+          <div className="text-center space-y-4">
+            <Star className="w-12 h-12 text-aged-bronze/50 mx-auto" />
+            <p className="fantasy-body text-aged-bronze">No horses in this category</p>
+          </div>
+        </div>
+      );
+    }
+
+    // Success state with horses
+    return (
+      <div className="grid grid-cols-2 gap-4 p-4">
+        {filteredHorses.map((horse) => (
+          <HorseCard
+            key={horse.id}
+            horseName={horse.name}
+            age={horse.age}
+            discipline={horse.discipline}
+            isLegendary={horse.isLegendary}
+            cooldownHours={horse.cooldownHours}
+            stats={horse.stats}
+            onClick={() => console.log(`Viewing ${horse.name}`)}
+          />
+        ))}
+      </div>
+    );
+  };
 
   const tabsWithContent = tabs.map(tab => ({
     ...tab,
