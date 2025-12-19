@@ -4,7 +4,7 @@ import { createUser, getUserById, getUserWithHorses } from '../../backend/models
 import { createHorse } from '../../backend/models/horseModel.mjs';
 
 // Mock the database and logger
-jest.unstable_mockModule('../../backend/db/index.mjs', () => ({
+jest.mock('../../backend/db/index.mjs', () => ({
   default: {
     // 🎯 Changed player to user
     user: {
@@ -20,16 +20,22 @@ jest.unstable_mockModule('../../backend/db/index.mjs', () => ({
     },
     $disconnect: jest.fn(),
   },
-}));
+), { virtual: true });
 
-jest.unstable_mockModule('../../backend/utils/logger.mjs', () => ({
+jest.mock('../../backend/utils/logger.mjs', () => ({
   default: {
     info: jest.fn(),
     error: jest.fn(),
   },
-}));
+), { virtual: true });
 
-const { default: prisma } = await import('../../backend/db/index.mjs');
+let moduleExports;
+let default: prisma;
+
+beforeAll(async () => {
+  moduleExports = await import('../../backend/db/index.mjs');
+  ({ default: prisma } = moduleExports);
+});
 
 // 🎯 Renamed describe block
 describe('User Integration Tests', () => {

@@ -24,32 +24,33 @@ import logger from '../utils/logger.mjs';
 /**
  * Resource-to-model mapping for Prisma queries
  * Maps resource types to their corresponding Prisma model names
+ * and their owner field names
  */
-const RESOURCE_MODELS = {
-  horse: 'horse',
-  foal: 'foal',
-  groom: 'groom',
-  'groom-assignment': 'groomAssignment',
-  breeding: 'breeding',
-  competition: 'competitionEntry',
-  'competition-entry': 'competitionEntry',
-  training: 'trainingSession',
-  'training-session': 'trainingSession',
+const RESOURCE_CONFIG = {
+  horse: { model: 'horse', ownerField: 'ownerId' },
+  foal: { model: 'horse', ownerField: 'ownerId' },
+  groom: { model: 'groom', ownerField: 'userId' },
+  'groom-assignment': { model: 'groomAssignment', ownerField: 'userId' },
+  breeding: { model: 'horse', ownerField: 'ownerId' },
+  competition: { model: 'competitionResult', ownerField: 'horse.ownerId' }, // Special handling for nested
+  'competition-entry': { model: 'competitionResult', ownerField: 'horse.ownerId' },
+  training: { model: 'trainingLog', ownerField: 'horse.ownerId' },
+  'training-session': { model: 'trainingLog', ownerField: 'horse.ownerId' },
 };
 
 /**
- * Get Prisma model name from resource type
- * @param {string} resourceType - Resource type (horse, foal, groom, etc.)
- * @returns {string} Prisma model name
+ * Get resource configuration
+ * @param {string} resourceType - Resource type
+ * @returns {Object} Resource configuration
  * @throws {AppError} If resource type is invalid
  */
-function getPrismaModel(resourceType) {
-  const modelName = RESOURCE_MODELS[resourceType.toLowerCase()];
-  if (!modelName) {
+function getResourceConfig(resourceType) {
+  const config = RESOURCE_CONFIG[resourceType.toLowerCase()];
+  if (!config) {
     logger.error(`[ownership] Invalid resource type: ${resourceType}`);
     throw new AppError(`Invalid resource type: ${resourceType}`, 500);
   }
-  return modelName;
+  return config;
 }
 
 /**
@@ -69,7 +70,7 @@ function getPrismaModel(resourceType) {
  *
  * The middleware:
  * 1. Extracts resource ID from req.params.id (or req.params.horseId, etc.)
- * 2. Queries database with WHERE clause: { id: resourceId, userId: req.user.id }
+ * 2. Queries database with WHERE clause: { id: resourceId, [ownerField]: req.user.id }
  * 3. Returns 404 if not found (prevents ownership disclosure)
  * 4. Attaches resource to req[resourceType] for use in route handler
  *
@@ -90,6 +91,11 @@ export const requireOwnership = (resourceType, options = {}) => {
   return async (req, res, next) => {
     try {
       const headers = req.headers || {};
+      const rawId = req.params[idParam];
+      const isNumericId = typeof rawId === 'string' && /^[0-9]+$/.test(rawId);
+      const resourceId = isNumericId ? parseInt(rawId, 10) : NaN;
+      const skipAuthFlag = ['true', '1', 'yes'].includes(String(process.env.SKIP_AUTH_FOR_TESTING || '').toLowerCase());
+      const requireAuthHeader = headers['x-test-require-auth'] === 'true';
 
       // Test-only override to stabilize integration tests by forcing a specific user context
       if (process.env.NODE_ENV === 'test' && headers['x-test-user-id']) {
@@ -97,17 +103,17 @@ export const requireOwnership = (resourceType, options = {}) => {
         req.user = { ...(req.user || {}), id: overrideUserId };
       }
 
+      // Get resource configuration
+      const resourceConfig = getResourceConfig(resourceType);
+      const { model: modelName, ownerField } = resourceConfig;
+
       // Test-only bypass to allow ownership checks to proceed without user match (used by integration suites)
       const bypassOwnership = process.env.NODE_ENV === 'test' && headers['x-test-bypass-ownership'] === 'true';
-      const rawId = req.params[idParam];
-      const isNumericId = typeof rawId === 'string' && /^[0-9]+$/.test(rawId);
-      const resourceId = isNumericId ? parseInt(rawId, 10) : NaN;
 
       if (bypassOwnership) {
         if (!isNumericId || isNaN(resourceId) || resourceId < 0) {
           logger.warn(`[ownership] Invalid ${resourceType} ID (bypass mode): ${req.params[idParam]}`);
         } else {
-          const modelName = getPrismaModel(resourceType);
           const queryOptions = { where: { id: resourceId } };
           if (include.length > 0) {
             queryOptions.include = include.reduce((acc, relation) => {
@@ -115,7 +121,7 @@ export const requireOwnership = (resourceType, options = {}) => {
               return acc;
             }, {});
           }
-          const resource = await prisma[modelName].findUnique(queryOptions);
+          const resource = await prisma[modelName].findFirst(queryOptions);
           if (resource) {
             req[resourceType] = resource;
             req.validatedResources = { ...(req.validatedResources || {}), [resourceType]: resource };
@@ -136,17 +142,23 @@ export const requireOwnership = (resourceType, options = {}) => {
         throw new AppError(`Invalid ${resourceType} ID`, 400);
       }
 
-      // Get Prisma model name
-      const modelName = getPrismaModel(resourceType);
-
       // Single-query ownership validation
-      // WHERE clause includes both id AND userId for atomic validation
-      const queryOptions = {
+      // WHERE clause includes both id AND appropriate owner field for atomic validation
+      let queryOptions = {
         where: {
           id: resourceId,
-          userId: req.user.id,
         },
       };
+
+      // Handle nested owner fields (e.g. horse.ownerId)
+      if (ownerField.includes('.')) {
+        const [relation, field] = ownerField.split('.');
+        queryOptions.where[relation] = {
+          [field]: req.user.id
+        };
+      } else {
+        queryOptions.where[ownerField] = req.user.id;
+      }
 
       // Add include relations if specified
       if (include.length > 0) {
@@ -156,7 +168,7 @@ export const requireOwnership = (resourceType, options = {}) => {
         }, {});
       }
 
-      const resource = await prisma[modelName].findUnique(queryOptions);
+      const resource = await prisma[modelName].findFirst(queryOptions);
 
       // Resource not found OR user doesn't own it
       // Return 404 in both cases to prevent ownership disclosure
@@ -175,6 +187,7 @@ export const requireOwnership = (resourceType, options = {}) => {
       // Attach resource to request for use in route handler
       // This eliminates the need for a second database query
       req[resourceType] = resource;
+      req.validatedResources = { ...(req.validatedResources || {}), [resourceType]: resource };
 
       logger.info(
         `[ownership] Validated ownership: user ${req.user.id} owns ${resourceType} ${resourceId}`
@@ -225,18 +238,29 @@ export async function findOwnedResource(resourceType, resourceId, userId, option
   const { include = [] } = options;
 
   try {
-    const modelName = getPrismaModel(resourceType);
+    // Get resource configuration
+    const resourceConfig = getResourceConfig(resourceType);
+    const { model: modelName, ownerField } = resourceConfig;
 
     const bypassOwnership = process.env.NODE_ENV === 'test' && process.env.TEST_BYPASS_OWNERSHIP === 'true';
 
     const queryOptions = {
-      where: bypassOwnership
-        ? { id: resourceId }
-        : {
-            id: resourceId,
-            userId: userId,
-          },
+      where: {
+        id: resourceId,
+      },
     };
+
+    if (!bypassOwnership) {
+      // Handle nested owner fields
+      if (ownerField.includes('.')) {
+        const [relation, field] = ownerField.split('.');
+        queryOptions.where[relation] = {
+          [field]: userId
+        };
+      } else {
+        queryOptions.where[ownerField] = userId;
+      }
+    }
 
     if (include.length > 0) {
       queryOptions.include = include.reduce((acc, relation) => {
@@ -245,8 +269,9 @@ export async function findOwnedResource(resourceType, resourceId, userId, option
       }, {});
     }
 
-    const resource = await prisma[modelName].findUnique(queryOptions);
+    const resource = await prisma[modelName].findFirst(queryOptions);
 
+    // Resource not found OR user doesn't own it
     if (resource) {
       logger.info(
         `[ownership] Found owned ${resourceType} ${resourceId} for user ${userId}`
@@ -289,14 +314,25 @@ export async function validateBatchOwnership(resourceType, resourceIds, userId, 
   const { include = [] } = options;
 
   try {
-    const modelName = getPrismaModel(resourceType);
+    // Get resource configuration
+    const resourceConfig = getResourceConfig(resourceType);
+    const { model: modelName, ownerField } = resourceConfig;
 
     const queryOptions = {
       where: {
         id: { in: resourceIds },
-        userId: userId,
       },
     };
+
+    // Handle nested owner fields
+    if (ownerField.includes('.')) {
+      const [relation, field] = ownerField.split('.');
+      queryOptions.where[relation] = {
+        [field]: userId
+      };
+    } else {
+      queryOptions.where[ownerField] = userId;
+    }
 
     if (include.length > 0) {
       queryOptions.include = include.reduce((acc, relation) => {
