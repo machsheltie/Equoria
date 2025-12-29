@@ -84,7 +84,7 @@ describe('🏋️ INTEGRATION: Complete Training Progression Workflow', () => {
       await prisma.user.deleteMany({
         where: { email: 'training-integration@example.com' },
       });
-    } catch (error) {
+    } catch {
       // Cleanup warning can be ignored
     }
   }
@@ -124,6 +124,10 @@ describe('🏋️ INTEGRATION: Complete Training Progression Workflow', () => {
           },
         }));
 
+      // Calculate a date that's exactly 2 years ago from today
+      const twoYearsAgo = new Date();
+      twoYearsAgo.setFullYear(twoYearsAgo.getFullYear() - 2);
+
       youngHorse = await prisma.horse.create({
         data: {
           name: 'Training Integration Young Horse',
@@ -132,7 +136,7 @@ describe('🏋️ INTEGRATION: Complete Training Progression Workflow', () => {
           ownerId: testUser.id,
           userId: testUser.id,
           sex: 'Colt',
-          dateOfBirth: new Date('2022-01-01'),
+          dateOfBirth: twoYearsAgo, // FIXED: Use calculated date for accurate age (was hardcoded '2022-01-01')
           healthStatus: 'Excellent',
           disciplineScores: {},
           epigeneticModifiers: {
@@ -150,6 +154,10 @@ describe('🏋️ INTEGRATION: Complete Training Progression Workflow', () => {
     it('should create mature horse (training eligible)', async () => {
       const breed = await prisma.breed.findFirst();
 
+      // Calculate a date that's exactly 4 years ago from today
+      const fourYearsAgo = new Date();
+      fourYearsAgo.setFullYear(fourYearsAgo.getFullYear() - 4);
+
       matureHorse = await prisma.horse.create({
         data: {
           name: 'Training Integration Mature Horse',
@@ -158,7 +166,7 @@ describe('🏋️ INTEGRATION: Complete Training Progression Workflow', () => {
           ownerId: testUser.id,
           userId: testUser.id,
           sex: 'Mare',
-          dateOfBirth: new Date('2020-01-01'),
+          dateOfBirth: fourYearsAgo, // FIXED: Use calculated date for accurate age (was hardcoded '2020-01-01')
           healthStatus: 'Excellent',
           disciplineScores: {},
           epigeneticModifiers: {
@@ -179,6 +187,7 @@ describe('🏋️ INTEGRATION: Complete Training Progression Workflow', () => {
       const response = await request(app)
         .post('/api/training/train')
         .set('Authorization', `Bearer ${authToken}`)
+        .set('x-test-skip-csrf', 'true')
         .send({
           horseId: youngHorse.id,
           discipline: 'Racing',
@@ -213,6 +222,7 @@ describe('🏋️ INTEGRATION: Complete Training Progression Workflow', () => {
       const response = await request(app)
         .post('/api/training/train')
         .set('Authorization', `Bearer ${authToken}`)
+        .set('x-test-skip-csrf', 'true')
         .send({
           horseId: matureHorse.id,
           discipline: 'Racing',
@@ -260,6 +270,7 @@ describe('🏋️ INTEGRATION: Complete Training Progression Workflow', () => {
       const response = await request(app)
         .post('/api/training/train')
         .set('Authorization', `Bearer ${authToken}`)
+        .set('x-test-skip-csrf', 'true')
         .send({
           horseId: matureHorse.id,
           discipline: 'Dressage', // Different discipline, but still in cooldown
@@ -302,6 +313,7 @@ describe('🏋️ INTEGRATION: Complete Training Progression Workflow', () => {
       const cooldownResponse = await request(app)
         .post('/api/training/train')
         .set('Authorization', `Bearer ${authToken}`)
+        .set('x-test-skip-csrf', 'true')
         .send({
           horseId: matureHorse.id,
           discipline: 'Dressage',
@@ -325,6 +337,7 @@ describe('🏋️ INTEGRATION: Complete Training Progression Workflow', () => {
       const successResponse = await request(app)
         .post('/api/training/train')
         .set('Authorization', `Bearer ${authToken}`)
+        .set('x-test-skip-csrf', 'true')
         .send({
           horseId: matureHorse.id,
           discipline: 'Dressage',
