@@ -120,18 +120,24 @@ async function getHorseAge(horseId) {
 
     logger.info(`[trainingModel.getHorseAge] Getting age for horse ${parsedHorseId}`);
 
-    // Query for horse age using Prisma
+    // Query for horse dateOfBirth using Prisma
     const horse = await prisma.horse.findUnique({
       where: { id: parsedHorseId },
-      select: { age: true },
+      select: { dateOfBirth: true },
     });
 
-    if (!horse) {
-      logger.info(`[trainingModel.getHorseAge] Horse ${parsedHorseId} not found`);
+    if (!horse || !horse.dateOfBirth) {
+      logger.info(
+        `[trainingModel.getHorseAge] Horse ${parsedHorseId} not found or missing dateOfBirth`,
+      );
       return null;
     }
 
-    const { age } = horse;
+    // Calculate age from dateOfBirth
+    const birthDate = new Date(horse.dateOfBirth);
+    const now = new Date();
+    const age = Math.floor((now - birthDate) / (365.25 * 24 * 60 * 60 * 1000));
+
     logger.info(`[trainingModel.getHorseAge] Horse ${parsedHorseId} is ${age} years old`);
 
     return age;
