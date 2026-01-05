@@ -1,27 +1,28 @@
 import { jest, describe, it, expect, beforeEach } from '@jest/globals';
-import { fileURLToPath } from 'url';
-import { dirname, join } from 'path';
 import request from 'supertest';
 
-const __filename = fileURLToPath(import.meta.url);
-const __dirname = dirname(__filename);
+// Create mock object BEFORE jest.unstable_mockModule
+const mockPrisma = {
+  user: {
+    findUnique: jest.fn(),
+    upsert: jest.fn(),
+  },
+  horse: {
+    findMany: jest.fn(),
+  },
+  trainingLog: {
+    groupBy: jest.fn(),
+  },
+  $disconnect: jest.fn(),
+};
 
 // Mock the database module BEFORE importing the app
-jest.unstable_mockModule(join(__dirname, '../../db/index.mjs'), () => ({
-  default: {
-    user: {
-      findUnique: jest.fn(),
-    },
-    horse: {
-      findMany: jest.fn(),
-    },
-    $disconnect: jest.fn(),
-  },
+jest.unstable_mockModule('../../db/index.mjs', () => ({
+  default: mockPrisma,
 }));
 
-// Now import the app and the mocked modules
+// Now import the app
 const app = (await import('../../app.mjs')).default;
-const mockPrisma = (await import(join(__dirname, '../../db/index.mjs'))).default;
 
 describe('Horse Routes Integration Tests', () => {
   const mockUser = {
@@ -64,6 +65,15 @@ describe('Horse Routes Integration Tests', () => {
       }
       return Promise.resolve([]);
     });
+
+    // Mock upsert for auth bypass
+    mockPrisma.user.upsert.mockResolvedValue({
+      id: 'test-user-uuid-123',
+      email: 'test@example.com',
+    });
+
+    // Mock groupBy for trainingModel
+    mockPrisma.trainingLog.groupBy.mockResolvedValue([]);
   });
   describe('GET /api/horses/trainable/:userId', () => {
     it('should return trainable horses for valid user ID', async () => {

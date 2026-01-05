@@ -22,12 +22,9 @@
  */
 
 import { jest, describe, it, expect, beforeEach, afterEach } from '@jest/globals';
-import { fileURLToPath } from 'url';
-import { dirname, join } from 'path';
+import { clearAllCache } from '../utils/cacheHelper.mjs';
 
-const __filename = fileURLToPath(import.meta.url);
-const __dirname = dirname(__filename);
-
+// Mock objects must be created BEFORE jest.unstable_mockModule calls
 // Mock Prisma client
 const mockPrismaHorse = {
   findUnique: jest.fn(),
@@ -50,21 +47,28 @@ const mockLogger = {
   info: jest.fn(),
   warn: jest.fn(),
   error: jest.fn(),
+  debug: jest.fn(),
 };
 
-jest.unstable_mockModule(join(__dirname, '../db/index.mjs'), () => ({
+// Mock external dependencies BEFORE importing the controller
+jest.unstable_mockModule('../db/index.mjs', () => ({
   default: mockPrisma,
 }));
 
-jest.unstable_mockModule(join(__dirname, '../utils/logger.mjs'), () => ({
+jest.unstable_mockModule('../utils/logger.mjs', () => ({
   default: mockLogger,
 }));
 
-// Import the controller directly for testing
-const horseXpController = await import(join(__dirname, '../controllers/horseXpController.mjs'));
+// Import the controller directly for testing after mocking
+const horseXpController = await import('../controllers/horseXpController.mjs');
 
 describe('Horse XP Controller - API Endpoints', () => {
-  beforeEach(() => {
+  beforeEach(async () => {
+    try {
+      await clearAllCache();
+    } catch {
+      // Ignore errors if Redis is not available
+    }
     jest.clearAllMocks();
     mockPrismaHorse.findUnique.mockClear();
     mockPrismaHorse.update.mockClear();
@@ -74,6 +78,7 @@ describe('Horse XP Controller - API Endpoints', () => {
     mockLogger.info.mockClear();
     mockLogger.warn.mockClear();
     mockLogger.error.mockClear();
+    mockLogger.debug.mockClear();
   });
 
   afterEach(() => {
@@ -129,8 +134,8 @@ describe('Horse XP Controller - API Endpoints', () => {
 
     it('should reject unauthorized access to other users horses', async () => {
       const mockHorse = {
-        id: 1,
-        name: 'Test Horse',
+        id: 2, // Different ID from first test
+        name: 'Other Horse',
         userId: 'other-user',
         horseXp: 150,
         availableStatPoints: 1,
@@ -139,7 +144,7 @@ describe('Horse XP Controller - API Endpoints', () => {
       mockPrismaHorse.findUnique.mockResolvedValue(mockHorse);
 
       const req = {
-        params: { horseId: '1' },
+        params: { horseId: '2' },
         user: { id: 'user-123' },
       };
       const res = {

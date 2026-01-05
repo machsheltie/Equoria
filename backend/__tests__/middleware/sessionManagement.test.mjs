@@ -13,13 +13,7 @@ import {
   getActiveSessions,
   revokeSession,
 } from '../../middleware/sessionManagement.mjs';
-import {
-  mockRequest,
-  mockResponse,
-  mockNext,
-  createTestUser,
-  createTestRefreshToken,
-} from '../setup.mjs';
+import { mockRequest, mockResponse, mockNext, createTestUser, createTestRefreshToken } from '../setup.mjs';
 import prisma from '../../db/index.mjs';
 
 describe('Session Management Middleware', () => {
@@ -273,7 +267,7 @@ describe('Session Management Middleware', () => {
         sessions.push(session);
 
         // Wait 10ms between each to ensure different createdAt
-        await new Promise((resolve) => setTimeout(resolve, 10));
+        await new Promise(resolve => setTimeout(resolve, 10));
       }
 
       const oldestSession = sessions[0];
@@ -303,7 +297,7 @@ describe('Session Management Middleware', () => {
       // Create 10 sessions
       for (let i = 0; i < 10; i++) {
         await createTestRefreshToken(user.id);
-        await new Promise((resolve) => setTimeout(resolve, 10));
+        await new Promise(resolve => setTimeout(resolve, 10));
       }
 
       req.user = { id: user.id };
@@ -325,7 +319,7 @@ describe('Session Management Middleware', () => {
       for (let i = 0; i < 7; i++) {
         const session = await createTestRefreshToken(user.id);
         sessions.push(session);
-        await new Promise((resolve) => setTimeout(resolve, 10));
+        await new Promise(resolve => setTimeout(resolve, 10));
       }
 
       const mostRecentSessions = sessions.slice(-5); // Last 5 sessions
@@ -392,7 +386,7 @@ describe('Session Management Middleware', () => {
         // Create 5 sessions
         for (let i = 0; i < 5; i++) {
           await createTestRefreshToken(user.id);
-          await new Promise((resolve) => setTimeout(resolve, 10));
+          await new Promise(resolve => setTimeout(resolve, 10));
         }
 
         req.user = { id: user.id };
@@ -418,10 +412,7 @@ describe('Session Management Middleware', () => {
     it('should add cache control headers', () => {
       addSessionSecurityHeaders(req, res, next);
 
-      expect(res.setHeader).toHaveBeenCalledWith(
-        'Cache-Control',
-        'no-store, no-cache, must-revalidate, private',
-      );
+      expect(res.setHeader).toHaveBeenCalledWith('Cache-Control', 'no-store, no-cache, must-revalidate, private');
       expect(next).toHaveBeenCalled();
     });
 
@@ -484,8 +475,8 @@ describe('Session Management Middleware', () => {
 
     it('should return all active sessions for user', async () => {
       const user = await createTestUser();
-      const token1 = await createTestRefreshToken(user.id);
-      const token2 = await createTestRefreshToken(user.id);
+      await createTestRefreshToken(user.id);
+      await createTestRefreshToken(user.id);
 
       req.user = { id: user.id };
 
@@ -597,7 +588,7 @@ describe('Session Management Middleware', () => {
       });
     });
 
-    it('should NOT allow revoking another user\'s session', async () => {
+    it("should NOT allow revoking another user's session", async () => {
       const user1 = await createTestUser({ email: 'user1@example.com' });
       const user2 = await createTestUser({ email: 'user2@example.com' });
       const user2Token = await createTestRefreshToken(user2.id);
@@ -617,12 +608,15 @@ describe('Session Management Middleware', () => {
     });
 
     it('should handle database errors', async () => {
-      req.user = { id: 'invalid-user' };
-      req.params = { sessionId: 'invalid' };
+      req.user = { id: 'user-id' };
+      req.params = { sessionId: '123' }; // Valid ID format to pass validation
+
+      const dbError = new Error('Database connection failed');
+      jest.spyOn(prisma.refreshToken, 'deleteMany').mockRejectedValueOnce(dbError);
 
       await revokeSession(req, res, next);
 
-      expect(next).toHaveBeenCalled();
+      expect(next).toHaveBeenCalledWith(dbError);
     });
   });
 });

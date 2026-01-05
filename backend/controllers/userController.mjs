@@ -32,7 +32,15 @@
  */
 
 import { getTrainableHorses } from '../controllers/trainingController.mjs';
-import { getUserProgress, getUserById, createUser, updateUser, deleteUser, addXpToUser } from '../models/userModel.mjs';
+import {
+  getUserProgress,
+  getUserById,
+  createUser,
+  updateUser,
+  deleteUser,
+  addXpToUser,
+} from '../models/userModel.mjs';
+import { getCachedQuery, invalidateCache } from '../utils/cacheHelper.mjs';
 import prisma from '../db/index.mjs';
 import logger from '../utils/logger.mjs';
 import AppError from '../errors/AppError.mjs';
@@ -56,53 +64,58 @@ export const getUserProgressAPI = async (req, res, next) => {
       return next(new AppError('User ID is required', 400));
     }
 
-    logger.info(
-      `[userController.getUserProgressAPI] Getting comprehensive progress for user ${userId}`,
+    const cacheKey = `user:progress:${userId}`;
+    const data = await getCachedQuery(
+      cacheKey,
+      async () => {
+        logger.info(
+          `[userController.getUserProgressAPI] Cache MISS - Getting comprehensive progress for user ${userId}`,
+        );
+
+        // Use userModel.getUserProgress for consistent XP calculations
+        const progressData = await getUserProgress(userId);
+
+        // Get additional user data for complete response
+        const user = await prisma.user.findUnique({
+          where: { id: userId },
+          select: { id: true, username: true, money: true },
+        });
+
+        if (!user) {
+          return null;
+        }
+
+        // Calculate progress percentage within current level
+        const xpForCurrentLevel = progressData.level === 1 ? 0 : progressData.level * 100;
+        const xpProgressInLevel = progressData.xp - xpForCurrentLevel;
+        const xpNeededForLevel = progressData.level === 1 ? 200 : 100;
+        const progressPercentage = Math.round((xpProgressInLevel / xpNeededForLevel) * 100);
+
+        // Prepare comprehensive response data
+        return {
+          userId: user.id,
+          username: user.username,
+          level: progressData.level,
+          xp: progressData.xp,
+          xpToNextLevel: progressData.xpToNextLevel,
+          xpForNextLevel: progressData.xpForNextLevel,
+          xpForCurrentLevel,
+          progressPercentage: Math.max(0, Math.min(100, progressPercentage)),
+          totalEarnings: user.money,
+        };
+      },
+      60,
     );
 
-    // Use userModel.getUserProgress for consistent XP calculations
-    const progressData = await getUserProgress(userId);
-
-    // Get additional user data for complete response
-    const user = await prisma.user.findUnique({
-      where: { id: userId },
-      select: { id: true, username: true, money: true },
-    });
-
-    if (!user) {
+    if (!data) {
       logger.warn(`[userController.getUserProgressAPI] User ${userId} not found`);
       return next(new AppError('User not found', 404));
     }
 
-    // Calculate progress percentage within current level
-    // Level thresholds: Level 1=0, Level 2=200, Level 3=300, Level 4=400, Level 5=500
-    // Level 1: 0-199 XP (200 XP range), Level 2+: 100 XP ranges each
-    const xpForCurrentLevel = progressData.level === 1 ? 0 : progressData.level * 100;
-    const xpProgressInLevel = progressData.xp - xpForCurrentLevel;
-    const xpNeededForLevel = progressData.level === 1 ? 200 : 100; // Level 1: 200 XP, others: 100 XP
-    const progressPercentage = Math.round((xpProgressInLevel / xpNeededForLevel) * 100);
-
-    // Prepare comprehensive response data
-    const completeProgressData = {
-      userId: user.id,
-      username: user.username,
-      level: progressData.level,
-      xp: progressData.xp,
-      xpToNextLevel: progressData.xpToNextLevel,
-      xpForNextLevel: progressData.xpForNextLevel,
-      xpForCurrentLevel,
-      progressPercentage: Math.max(0, Math.min(100, progressPercentage)),
-      totalEarnings: user.money,
-    };
-
-    logger.info(
-      `[userController.getUserProgressAPI] Successfully retrieved progress for user ${user.username} (Level ${progressData.level}, XP: ${progressData.xp}/${progressData.xpForNextLevel}, ${progressPercentage}% progress)`,
-    );
-
     res.json({
       success: true,
       message: 'User progress retrieved successfully',
-      data: completeProgressData,
+      data,
     });
   } catch (error) {
     logger.error(
@@ -129,155 +142,210 @@ export const getDashboardData = async (req, res, next) => {
     return next(new AppError('User ID is required', 400));
   }
 
-  try {
-    const user = await prisma.user.findUnique({
-      where: { id: userId },
-      select: { id: true, username: true, level: true, xp: true, money: true },
-    });
+  const cacheKey = `user:dashboard:${userId}`;
 
-    if (!user) {
+  try {
+    const data = await getCachedQuery(
+      cacheKey,
+      async () => {
+        logger.info(
+          `[userController.getDashboardData] Cache MISS - Getting dashboard for user ${userId}`,
+        );
+
+        const user = await prisma.user.findUnique({
+          where: { id: userId },
+          select: { id: true, username: true, level: true, xp: true, money: true },
+        });
+
+        if (!user) {
+          return null;
+        }
+
+        // Get horse counts
+        const totalHorses = await prisma.horse.count({
+          where: { userId },
+        });
+
+        // Get trainable horses count
+        let trainableHorsesCount = 0;
+        try {
+          const trainableHorsesResult = await getTrainableHorses(userId);
+          trainableHorsesCount = Array.isArray(trainableHorsesResult)
+            ? trainableHorsesResult.length
+            : 0;
+        } catch (error) {
+          logger.error(
+            `[userController.getDashboardData] Error getting trainable horses for user ${userId}: ${error.message}`,
+            { error },
+          );
+        }
+
+        // Get upcoming shows that user's horses could enter
+        const upcomingShows = await prisma.show.findMany({
+          where: {
+            runDate: {
+              gt: new Date(),
+            },
+          },
+          orderBy: {
+            runDate: 'asc',
+          },
+          take: 5,
+        });
+
+        // Count upcoming entries (shows user's horses are entered in)
+        const upcomingEntries = await prisma.competitionResult.count({
+          where: {
+            horse: {
+              userId,
+            },
+            runDate: {
+              gt: new Date(),
+            },
+          },
+        });
+
+        const nextShowRuns = upcomingShows.slice(0, 2).map(show => show.runDate);
+
+        let lastTrained = 'never';
+        try {
+          const recentTraining = await prisma.trainingLog.findFirst({
+            where: {
+              horse: {
+                userId,
+              },
+            },
+            orderBy: {
+              trainedAt: 'desc',
+            },
+          });
+          lastTrained = recentTraining?.trainedAt
+            ? recentTraining.trainedAt.toISOString()
+            : 'never';
+        } catch (error) {
+          logger.warn(
+            `[userController.getDashboardData] Error getting recent training for user ${userId}: ${error.message}`,
+          );
+        }
+
+        let lastShowPlaced = 'never';
+        try {
+          const recentPlacement = await prisma.competitionResult.findFirst({
+            where: {
+              horse: {
+                userId,
+              },
+              placement: {
+                in: ['1st', '2nd', '3rd'],
+              },
+            },
+            include: {
+              horse: {
+                select: {
+                  name: true,
+                },
+              },
+            },
+            orderBy: {
+              runDate: 'desc',
+            },
+          });
+
+          if (recentPlacement) {
+            lastShowPlaced = {
+              horseName: recentPlacement.horse.name,
+              placement: recentPlacement.placement,
+              show: recentPlacement.showName,
+            };
+          }
+        } catch (error) {
+          logger.warn(
+            `[userController.getDashboardData] Error getting recent placement for user ${userId}: ${error.message}`,
+          );
+        }
+
+        return {
+          user: {
+            id: user.id,
+            username: user.username,
+            level: user.level,
+            xp: user.xp,
+            money: user.money,
+          },
+          horses: {
+            total: totalHorses,
+            trainable: trainableHorsesCount,
+          },
+          shows: {
+            upcomingEntries,
+            nextShowRuns,
+          },
+          activity: {
+            lastTrained: lastTrained || 'never',
+            lastShowPlaced: lastShowPlaced || 'never',
+          },
+        };
+      },
+      60,
+    );
+
+    if (!data) {
       logger.warn(`[userController.getDashboardData] User ${userId} not found`);
       return next(new AppError('User not found', 404));
     }
 
-    // Get horse counts
-    const totalHorses = await prisma.horse.count({
-      where: { userId },
-    });
-
-    // Get trainable horses count
-    let trainableHorsesCount = 0;
-    try {
-      const trainableHorsesResult = await getTrainableHorses(userId);
-      trainableHorsesCount = Array.isArray(trainableHorsesResult)
-        ? trainableHorsesResult.length
-        : 0;
-    } catch (error) {
-      logger.error(
-        `[userController.getDashboardData] Error getting trainable horses for user ${userId}: ${error.message}`,
-        { error },
-      );
-      // Not critical, proceed with 0, but log error.
-    }
-
-    // Get upcoming shows that user's horses could enter
-    const upcomingShows = await prisma.show.findMany({
-      where: {
-        runDate: {
-          gt: new Date(),
-        },
-      },
-      orderBy: {
-        runDate: 'asc',
-      },
-      take: 5,
-    });
-
-    // Count upcoming entries (shows user's horses are entered in)
-    const upcomingEntries = await prisma.competitionResult.count({
-      where: {
-        horse: {
-          userId,
-        },
-        runDate: {
-          gt: new Date(),
-        },
-      },
-    });
-
-    const nextShowRuns = upcomingShows.slice(0, 2).map(show => show.runDate);
-
-    let lastTrained = 'never';
-    try {
-      const recentTraining = await prisma.trainingLog.findFirst({
-        where: {
-          horse: {
-            userId,
-          },
-        },
-        orderBy: {
-          trainedAt: 'desc',
-        },
-      });
-      lastTrained = recentTraining?.trainedAt ? recentTraining.trainedAt.toISOString() : 'never';
-    } catch (error) {
-      logger.warn(
-        `[userController.getDashboardData] Error getting recent training for user ${userId}: ${error.message}`,
-      );
-    }
-
-    let lastShowPlaced = 'never';
-    try {
-      const recentPlacement = await prisma.competitionResult.findFirst({
-        where: {
-          horse: {
-            userId,
-          },
-          placement: {
-            in: ['1st', '2nd', '3rd'],
-          },
-        },
-        include: {
-          horse: {
-            select: {
-              name: true,
-            },
-          },
-        },
-        orderBy: {
-          runDate: 'desc',
-        },
-      });
-
-      if (recentPlacement) {
-        lastShowPlaced = {
-          horseName: recentPlacement.horse.name,
-          placement: recentPlacement.placement,
-          show: recentPlacement.showName,
-        };
-      }
-    } catch (error) {
-      logger.warn(
-        `[userController.getDashboardData] Error getting recent placement for user ${userId}: ${error.message}`,
-      );
-    }
-
-    const dashboardData = {
-      user: {
-        id: user.id,
-        username: user.username,
-        level: user.level,
-        xp: user.xp,
-        money: user.money,
-      },
-      horses: {
-        total: totalHorses,
-        trainable: trainableHorsesCount,
-      },
-      shows: {
-        upcomingEntries,
-        nextShowRuns,
-      },
-      activity: {
-        lastTrained: lastTrained || 'never',
-        lastShowPlaced: lastShowPlaced || 'never',
-      },
-    };
-
-    logger.info(
-      `[userController.getDashboardData] Successfully retrieved dashboard data for user ${user.username} (${totalHorses} horses, ${trainableHorsesCount} trainable)`,
-    );
-
     res.status(200).json({
       success: true,
       message: 'Dashboard data retrieved successfully',
-      data: dashboardData,
+      data,
     });
   } catch (error) {
     logger.error(
       `[userController.getDashboardData] Error getting dashboard data for user ${userId}: ${error.message}`,
       { stack: error.stack },
     );
+    next(error);
+  }
+};
+
+/**
+ * Get unified activity feed for a user
+ * Combines XP events and other activities
+ *
+ * @route GET /api/users/:id/activity
+ */
+export const getUserActivity = async (req, res, next) => {
+  try {
+    const { id } = req.params;
+    const userId = id;
+
+    if (!userId) {
+      return next(new AppError('User ID is required', 400));
+    }
+
+    // Fetch recent XP events as activities
+    const xpEvents = await prisma.xpEvent.findMany({
+      where: { userId },
+      orderBy: { timestamp: 'desc' },
+      take: 20,
+    });
+
+    // Map to activity format expected by frontend
+    const activities = xpEvents.map(event => ({
+      id: event.id,
+      userId: event.userId,
+      type: 'XP_GAIN',
+      description: event.reason,
+      timestamp: event.timestamp,
+      metadata: { amount: event.amount },
+    }));
+
+    res.json({
+      success: true,
+      data: activities,
+    });
+  } catch (error) {
+    logger.error(`[userController.getUserActivity] Error: ${error.message}`);
     next(error);
   }
 };
@@ -301,10 +369,21 @@ export const getUser = async (req, res, next) => {
       });
     }
 
+    // Get horse count for stable limit check
+    const totalHorses = await prisma.horse.count({
+      where: { userId: id },
+    });
+
+    const userData = {
+      ...user,
+      currentHorses: totalHorses,
+      stableLimit: 10 + user.level * 2, // Example formula for stable limit
+    };
+
     res.status(200).json({
       success: true,
       message: 'User retrieved successfully',
-      data: user,
+      data: userData,
     });
   } catch (error) {
     logger.error(`[userController.getUser] Error: ${error.message}`);
@@ -361,6 +440,10 @@ export const updateUserController = async (req, res, next) => {
       });
     }
 
+    // Invalidate user caches
+    await invalidateCache(`user:progress:${id}`);
+    await invalidateCache(`user:dashboard:${id}`);
+
     res.status(200).json({
       success: true,
       message: 'User updated successfully',
@@ -391,6 +474,10 @@ export const deleteUserController = async (req, res, next) => {
       });
     }
 
+    // Invalidate user caches
+    await invalidateCache(`user:progress:${id}`);
+    await invalidateCache(`user:dashboard:${id}`);
+
     res.status(200).json({
       success: true,
       message: 'User deleted successfully',
@@ -420,6 +507,10 @@ export const addXpController = async (req, res, next) => {
         message: 'User not found',
       });
     }
+
+    // Invalidate user caches
+    await invalidateCache(`user:progress:${id}`);
+    await invalidateCache(`user:dashboard:${id}`);
 
     res.status(200).json({
       success: true,

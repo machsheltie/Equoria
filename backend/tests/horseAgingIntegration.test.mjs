@@ -28,12 +28,7 @@
  */
 
 import { jest, describe, it, expect, beforeEach, afterEach } from '@jest/globals';
-import { fileURLToPath } from 'url';
-import { dirname, join } from 'path';
 import prisma from '../db/index.mjs';
-
-const __filename = fileURLToPath(import.meta.url);
-const __dirname = dirname(__filename);
 
 // Mock logger
 const mockLogger = {
@@ -43,59 +38,96 @@ const mockLogger = {
 };
 
 // Mock the logger import
-jest.unstable_mockModule(join(__dirname, '../utils/logger.mjs'), () => ({
+jest.unstable_mockModule('../utils/logger.mjs', () => ({
   default: mockLogger,
   logger: mockLogger,
 }));
 
 // Import the services after mocking
-const cronJobService = (await import(join(__dirname, '../services/cronJobs.mjs'))).default;
+const cronJobService = (await import('../services/cronJobs.mjs')).default;
 
 describe('Horse Aging Integration', () => {
   let testUser, testBreed;
+  const createdHorseIds = new Set();
+  const createdUserIds = new Set();
+  const createdBreedIds = new Set();
+
+  // Reference date anchor for all test date calculations
+  const referenceDate = new Date('2025-06-01T12:00:00Z');
+
+  // Calculate dates for different aging scenarios based on reference date
+  const mockNow = new Date(referenceDate); // Current time for aging tests
+  const sevenDaysAgo = new Date(referenceDate);
+  sevenDaysAgo.setDate(referenceDate.getDate() - 7); // 7 days before reference (foal birthday)
+  const twentyOneDaysAgo = new Date(referenceDate);
+  twentyOneDaysAgo.setDate(referenceDate.getDate() - 21); // 21 days before reference (3 years old)
+  const thirtyOneDaysAgo = new Date(referenceDate);
+  thirtyOneDaysAgo.setDate(referenceDate.getDate() - 31); // 31 days before reference (no birthday)
+
+  const cleanupTestData = async () => {
+    try {
+      if (createdHorseIds.size > 0) {
+        await prisma.horse.deleteMany({
+          where: { id: { in: Array.from(createdHorseIds) } },
+        });
+        createdHorseIds.clear();
+      }
+      if (createdUserIds.size > 0) {
+        await prisma.user.deleteMany({
+          where: { id: { in: Array.from(createdUserIds) } },
+        });
+        createdUserIds.clear();
+      }
+      if (createdBreedIds.size > 0) {
+        await prisma.breed.deleteMany({
+          where: { id: { in: Array.from(createdBreedIds) } },
+        });
+        createdBreedIds.clear();
+      }
+    } catch (error) {
+      console.error('Cleanup error:', error.message);
+    }
+  };
 
   beforeEach(async () => {
     jest.clearAllMocks();
 
-    // Clean up test data
-    await prisma.horse.deleteMany({});
-    await prisma.user.deleteMany({});
-    await prisma.breed.deleteMany({});
+    // Clean up before starting to ensure clean state for this test
+    await cleanupTestData();
 
     // Create test user
+    const userId = `aging-int-user-${Date.now()}-${Math.random().toString(36).substr(2, 5)}`;
     testUser = await prisma.user.create({
       data: {
-        id: 'test-user-aging-integration',
-        username: 'agingintegrationuser',
-        email: 'agingintegration@example.com',
+        id: userId,
+        username: `agingintuser_${Date.now()}_${Math.random().toString(36).substr(2, 5)}`,
+        email: `agingint_${Date.now()}_${Math.random().toString(36).substr(2, 5)}@example.com`,
         password: 'testpassword',
         firstName: 'Aging',
         lastName: 'Integration',
         money: 1000,
       },
     });
+    createdUserIds.add(testUser.id);
 
     // Create test breed
     testBreed = await prisma.breed.create({
       data: {
-        name: 'Integration Test Breed',
+        name: `Int Test Breed ${Date.now()}_${Math.random().toString(36).substr(2, 5)}`,
         description: 'Test breed for aging integration',
       },
     });
+    createdBreedIds.add(testBreed.id);
   });
 
   afterEach(async () => {
     jest.restoreAllMocks();
-
-    // Clean up test data
-    await prisma.horse.deleteMany({});
-    await prisma.user.deleteMany({});
-    await prisma.breed.deleteMany({});
+    await cleanupTestData();
   });
 
   describe('Complete Aging Workflow', () => {
     it('should process foal birthday with trait milestone evaluation', async () => {
-      const mockNow = new Date('2025-06-01T12:00:00Z');
+      // Use mockNow from describe block scope (calculated from referenceDate)
 
       // Mock the Date constructor to return our mock date
       const OriginalDate = global.Date;
@@ -120,7 +152,7 @@ describe('Horse Aging Integration', () => {
         data: {
           name: 'Milestone Integration Foal',
           sex: 'Filly',
-          dateOfBirth: new Date('2025-05-25T00:00:00Z'), // 7 days ago (2025-06-01 - 7 days)
+          dateOfBirth: sevenDaysAgo, // 7 days before reference date (birthday today!)
           age: 6, // Stored age is 6, calculated age will be 7 (birthday!)
           user: { connect: { id: testUser.id } },
           breed: { connect: { id: testBreed.id } },
@@ -143,9 +175,10 @@ describe('Horse Aging Integration', () => {
           },
         },
       });
+      createdHorseIds.add(foal.id);
 
       // Trigger the complete aging workflow through cron job service
-      const result = await cronJobService.manualHorseAging();
+      const result = await cronJobService.manualHorseAging({ horseIds: Array.from(createdHorseIds) });
 
       // Verify aging process results
       expect(result.totalProcessed).toBe(1);
@@ -248,9 +281,10 @@ describe('Horse Aging Integration', () => {
           },
         }),
       ]);
+      horses.forEach(h => createdHorseIds.add(h.id));
 
       // Process all horses
-      const result = await cronJobService.manualHorseAging();
+      const result = await cronJobService.manualHorseAging({ horseIds: Array.from(createdHorseIds) });
 
       expect(result.totalProcessed).toBe(3);
       expect(result.birthdaysFound).toBe(2); // Milestone foal + training ready horse
@@ -317,8 +351,9 @@ describe('Horse Aging Integration', () => {
           epigeneticModifiers: { positive: [], negative: [], hidden: [] },
         },
       });
+      createdHorseIds.add(foal.id);
 
-      const result = await cronJobService.manualHorseAging();
+      const result = await cronJobService.manualHorseAging({ horseIds: Array.from(createdHorseIds) });
 
       expect(result.milestonesTriggered).toBe(1);
 
@@ -372,8 +407,9 @@ describe('Horse Aging Integration', () => {
           epigeneticModifiers: { positive: [], negative: [], hidden: [] },
         },
       });
+      createdHorseIds.add(foal.id);
 
-      const result = await cronJobService.manualHorseAging();
+      const result = await cronJobService.manualHorseAging({ horseIds: Array.from(createdHorseIds) });
 
       expect(result.milestonesTriggered).toBe(1);
 
@@ -397,7 +433,7 @@ describe('Horse Aging Integration', () => {
   describe('Error Handling', () => {
     it('should handle database errors gracefully', async () => {
       // Create horse with valid data
-      const _horse = await prisma.horse.create({
+      const horse = await prisma.horse.create({
         data: {
           name: 'Error Test Horse',
           sex: 'Colt',
@@ -407,12 +443,13 @@ describe('Horse Aging Integration', () => {
           breed: { connect: { id: testBreed.id } },
         },
       });
+      createdHorseIds.add(horse.id);
 
       // Mock prisma to throw error during update
       const originalUpdate = prisma.horse.update;
       jest.spyOn(prisma.horse, 'update').mockRejectedValueOnce(new Error('Database error'));
 
-      const result = await cronJobService.manualHorseAging();
+      const result = await cronJobService.manualHorseAging({ horseIds: Array.from(createdHorseIds) });
 
       expect(result.errors).toBe(1);
       expect(mockLogger.error).toHaveBeenCalledWith(expect.stringContaining('Error processing horse'));

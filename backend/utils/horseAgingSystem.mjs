@@ -353,12 +353,14 @@ export async function processHorseBirthdays(options = {}) {
   logger.info('[horseAgingSystem.processHorseBirthdays] Starting daily horse aging process');
 
   try {
-    const { dryRun = false, specificHorseId = null } = options;
+    const { dryRun = false, specificHorseId = null, horseIds = null } = options;
 
     // Build query conditions
     const whereConditions = {};
     if (specificHorseId) {
       whereConditions.id = specificHorseId;
+    } else if (horseIds && Array.isArray(horseIds) && horseIds.length > 0) {
+      whereConditions.id = { in: horseIds };
     }
 
     // Get all horses that need age checking

@@ -291,13 +291,14 @@ class CronJobService {
   /**
    * Daily horse aging process
    * Processes all horses for birthday updates and milestone evaluation
+   * @param {Object} options - Processing options (e.g. horseIds filter)
    */
-  async processHorseAging() {
+  async processHorseAging(options = {}) {
     const startTime = Date.now();
     logger.info('[CronJobService.processHorseAging] Starting daily horse aging process');
 
     try {
-      const result = await processHorseBirthdays();
+      const result = await processHorseBirthdays(options);
 
       const duration = Date.now() - startTime;
       logger.info(`[CronJobService.processHorseAging] Completed aging process in ${duration}ms`);
@@ -356,11 +357,12 @@ class CronJobService {
 
   /**
    * Manually trigger horse aging (for testing/admin purposes)
+   * @param {Object} options - Processing options
    * @returns {Object} - Aging results
    */
-  async manualHorseAging() {
+  async manualHorseAging(options = {}) {
     logger.info('[CronJobService.manualHorseAging] Manual horse aging triggered');
-    return await this.processHorseAging();
+    return await this.processHorseAging(options);
   }
 
   /**

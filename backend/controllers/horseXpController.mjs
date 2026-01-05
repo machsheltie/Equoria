@@ -20,6 +20,7 @@
 import * as horseXpModel from '../models/horseXpModel.mjs';
 import prisma from '../db/index.mjs';
 import logger from '../utils/logger.mjs';
+import { getCachedQuery, invalidateCache } from '../utils/cacheHelper.mjs';
 import { ValidationError, AuthorizationError, NotFoundError } from '../errors/index.mjs';
 
 /**
@@ -37,41 +38,57 @@ export async function getHorseXpStatus(req, res) {
       throw new ValidationError('Invalid horse ID');
     }
 
-    // Get horse and verify ownership
-    const horse = await prisma.horse.findUnique({
-      where: { id: horseIdNum },
-      select: {
-        id: true,
-        name: true,
-        userId: true,
-        horseXp: true,
-        availableStatPoints: true,
-      },
-    });
+    const cacheKey = `horse:xp:status:${horseIdNum}`;
+    const data = await getCachedQuery(
+      cacheKey,
+      async () => {
+        // Get horse and verify ownership
+        const horse = await prisma.horse.findUnique({
+          where: { id: horseIdNum },
+          select: {
+            id: true,
+            name: true,
+            userId: true,
+            horseXp: true,
+            availableStatPoints: true,
+          },
+        });
 
-    if (!horse) {
+        if (!horse) {
+          return null;
+        }
+
+        // We still need to check ownership, but we do it outside the query function
+        // to keep the cache clean or we include userId in the key.
+        // Better to check ownership after cache hit if userId is stored in cache.
+        return horse;
+      },
+      60,
+    );
+
+    if (!data) {
       throw new NotFoundError('Horse');
     }
 
-    if (horse.userId !== userId) {
+    if (data.userId !== userId) {
       throw new AuthorizationError('You are not authorized to view this horse');
     }
 
     // Calculate XP progression info
-    const currentXP = horse.horseXp || 0;
-    const availableStatPoints = horse.availableStatPoints || 0;
+    const currentXP = data.horseXp || 0;
+    const availableStatPoints = data.availableStatPoints || 0;
     const nextStatPointAt = (Math.floor(currentXP / 100) + 1) * 100;
     const xpToNextStatPoint = nextStatPointAt - currentXP;
 
     logger.info(
-      `[horseXpController.getHorseXpStatus] Retrieved XP status for horse ${horse.name} (ID: ${horseId})`,
+      `[horseXpController.getHorseXpStatus] Retrieved XP status for horse ${data.name} (ID: ${horseId})`,
     );
 
     res.json({
       success: true,
       data: {
-        horseId: horse.id,
-        horseName: horse.name,
+        horseId: data.id,
+        horseName: data.name,
         currentXP,
         availableStatPoints,
         nextStatPointAt,
@@ -81,13 +98,13 @@ export async function getHorseXpStatus(req, res) {
   } catch (error) {
     logger.error(`[horseXpController.getHorseXpStatus] Error: ${error.message}`);
 
-    if (error instanceof ValidationError) {
+    if (error instanceof ValidationError || error.name === 'ValidationError') {
       return res.status(400).json({ success: false, error: error.message });
     }
-    if (error instanceof NotFoundError) {
+    if (error instanceof NotFoundError || error.name === 'NotFoundError') {
       return res.status(404).json({ success: false, error: error.message });
     }
-    if (error instanceof AuthorizationError) {
+    if (error instanceof AuthorizationError || error.name === 'AuthorizationError') {
       return res.status(403).json({ success: false, error: error.message });
     }
 
@@ -152,6 +169,10 @@ export async function allocateStatPoint(req, res) {
       throw new ValidationError(result.error);
     }
 
+    // Invalidate caches
+    await invalidateCache(`horse:xp:status:${horseIdNum}`);
+    await invalidateCache(`horse:overview:${horseIdNum}`);
+
     logger.info(
       `[horseXpController.allocateStatPoint] Allocated stat point to ${statName} for horse ${horse.name} (ID: ${horseId})`,
     );
@@ -167,13 +188,13 @@ export async function allocateStatPoint(req, res) {
   } catch (error) {
     logger.error(`[horseXpController.allocateStatPoint] Error: ${error.message}`);
 
-    if (error instanceof ValidationError) {
+    if (error instanceof ValidationError || error.name === 'ValidationError') {
       return res.status(400).json({ success: false, error: error.message });
     }
-    if (error instanceof NotFoundError) {
+    if (error instanceof NotFoundError || error.name === 'NotFoundError') {
       return res.status(404).json({ success: false, error: error.message });
     }
-    if (error instanceof AuthorizationError) {
+    if (error instanceof AuthorizationError || error.name === 'AuthorizationError') {
       return res.status(403).json({ success: false, error: error.message });
     }
 
@@ -203,29 +224,43 @@ export async function getHorseXpHistory(req, res) {
       throw new ValidationError('Invalid horse ID');
     }
 
-    // Verify horse ownership
-    const horse = await prisma.horse.findUnique({
-      where: { id: horseIdNum },
-      select: {
-        id: true,
-        userId: true,
+    const cacheKey = `horse:xp:history:${horseIdNum}:${limit}:${offset}`;
+    const result = await getCachedQuery(
+      cacheKey,
+      async () => {
+        // Verify horse ownership
+        const horse = await prisma.horse.findUnique({
+          where: { id: horseIdNum },
+          select: {
+            id: true,
+            userId: true,
+          },
+        });
+
+        if (!horse) {
+          return { error: 'NOT_FOUND' };
+        }
+
+        if (horse.userId !== userId) {
+          return { error: 'UNAUTHORIZED' };
+        }
+
+        // Get XP history using model
+        const historyResult = await horseXpModel.getHorseXpHistory(horseIdNum, { limit, offset });
+
+        if (!historyResult.success) {
+          return { error: historyResult.error };
+        }
+
+        return historyResult;
       },
-    });
+      60,
+    );
 
-    if (!horse) {
-      throw new NotFoundError('Horse');
-    }
-
-    if (horse.userId !== userId) {
+    if (result.error === 'NOT_FOUND') throw new NotFoundError('Horse');
+    if (result.error === 'UNAUTHORIZED')
       throw new AuthorizationError('You are not authorized to view this horse');
-    }
-
-    // Get XP history using model
-    const result = await horseXpModel.getHorseXpHistory(horseIdNum, { limit, offset });
-
-    if (!result.success) {
-      throw new Error(result.error);
-    }
+    if (result.error) throw new Error(result.error);
 
     logger.info(
       `[horseXpController.getHorseXpHistory] Retrieved ${result.events.length} XP events for horse ${horseId}`,
@@ -242,13 +277,13 @@ export async function getHorseXpHistory(req, res) {
   } catch (error) {
     logger.error(`[horseXpController.getHorseXpHistory] Error: ${error.message}`);
 
-    if (error instanceof ValidationError) {
+    if (error instanceof ValidationError || error.name === 'ValidationError') {
       return res.status(400).json({ success: false, error: error.message });
     }
-    if (error instanceof NotFoundError) {
+    if (error instanceof NotFoundError || error.name === 'NotFoundError') {
       return res.status(404).json({ success: false, error: error.message });
     }
-    if (error instanceof AuthorizationError) {
+    if (error instanceof AuthorizationError || error.name === 'AuthorizationError') {
       return res.status(403).json({ success: false, error: error.message });
     }
 
@@ -308,6 +343,11 @@ export async function awardXpToHorse(req, res) {
       throw new Error(result.error);
     }
 
+    // Invalidate caches
+    await invalidateCache(`horse:xp:status:${horseIdNum}`);
+    await invalidateCache(`horse:xp:history:${horseIdNum}*`); // Pattern invalidation for history
+    await invalidateCache(`horse:overview:${horseIdNum}`);
+
     logger.info(
       `[horseXpController.awardXpToHorse] Awarded ${amount} XP to horse ${horse.name} (ID: ${horseId})`,
     );
@@ -324,13 +364,13 @@ export async function awardXpToHorse(req, res) {
   } catch (error) {
     logger.error(`[horseXpController.awardXpToHorse] Error: ${error.message}`);
 
-    if (error instanceof ValidationError) {
+    if (error instanceof ValidationError || error.name === 'ValidationError') {
       return res.status(400).json({ success: false, error: error.message });
     }
-    if (error instanceof NotFoundError) {
+    if (error instanceof NotFoundError || error.name === 'NotFoundError') {
       return res.status(404).json({ success: false, error: error.message });
     }
-    if (error instanceof AuthorizationError) {
+    if (error instanceof AuthorizationError || error.name === 'AuthorizationError') {
       return res.status(403).json({ success: false, error: error.message });
     }
 

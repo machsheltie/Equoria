@@ -30,12 +30,7 @@
  */
 
 import { jest, describe, it, expect, beforeEach, afterEach } from '@jest/globals';
-import { fileURLToPath } from 'url';
-import { dirname, join } from 'path';
 import prisma from '../db/index.mjs';
-
-const __filename = fileURLToPath(import.meta.url);
-const __dirname = dirname(__filename);
 
 // Mock logger
 const mockLogger = {
@@ -45,95 +40,160 @@ const mockLogger = {
 };
 
 // Mock the logger import
-jest.unstable_mockModule(join(__dirname, '../utils/logger.mjs'), () => ({
+jest.unstable_mockModule('../utils/logger.mjs', () => ({
   default: mockLogger,
   logger: mockLogger,
 }));
 
 // Import the functions after mocking
 const { calculateAgeFromBirth, processHorseBirthdays, updateHorseAge, checkForMilestones } = await import(
-  join(__dirname, '../utils/horseAgingSystem.mjs')
+  '../utils/horseAgingSystem.mjs'
 );
 
 describe('Horse Aging System', () => {
   let testUser, testBreed;
+  const createdUserIds = [];
+  const createdBreedIds = [];
+  const createdHorseIds = [];
 
   beforeEach(async () => {
     jest.clearAllMocks();
 
-    // Clean up test data
-    await prisma.horse.deleteMany({});
-    await prisma.user.deleteMany({});
-    await prisma.breed.deleteMany({});
-
     // Create test user
     testUser = await prisma.user.create({
       data: {
-        id: 'test-user-aging',
-        username: 'aginguser',
-        email: 'aging@example.com',
+        id: `aging-user-${Date.now()}-${Math.random()}`,
+        username: `aginguser-${Date.now()}`,
+        email: `aging-${Date.now()}@example.com`,
         password: 'testpassword',
         firstName: 'Aging',
         lastName: 'Tester',
         money: 1000,
       },
     });
+    createdUserIds.push(testUser.id);
 
     // Create test breed
     testBreed = await prisma.breed.create({
       data: {
-        name: 'Test Breed',
+        name: `Test Breed ${Date.now()}`,
         description: 'Test breed for aging',
       },
     });
+    createdBreedIds.push(testBreed.id);
   });
 
   afterEach(async () => {
     jest.restoreAllMocks();
 
-    // Clean up test data
-    await prisma.horse.deleteMany({});
-    await prisma.user.deleteMany({});
-    await prisma.breed.deleteMany({});
+    // Clean up test data (Scoped)
+    if (createdHorseIds.length > 0) {
+      await prisma.horse.deleteMany({ where: { id: { in: createdHorseIds } } });
+      createdHorseIds.length = 0;
+    }
+
+    // Clean up breed and user only after all tests or if specifically needed
+    // But since we create new ones in beforeEach, we should clean them up in afterEach
+    if (createdUserIds.length > 0) {
+      await prisma.user.deleteMany({ where: { id: { in: createdUserIds } } });
+      createdUserIds.length = 0;
+    }
+
+    if (createdBreedIds.length > 0) {
+      await prisma.breed.deleteMany({ where: { id: { in: createdBreedIds } } });
+      createdBreedIds.length = 0;
+    }
   });
+
+  // Anchor dates to keep test data deterministic
+  const referenceDate = new Date('2025-06-01T12:00:00Z');
+  const mockNow = new Date(referenceDate); // Current time for mocking
+
+  // Birth dates relative to reference date
+  const birthToday = new Date(referenceDate);
+  const birthYesterday = new Date(referenceDate);
+  birthYesterday.setDate(referenceDate.getDate() - 1);
+
+  const birth1WeekAgo = new Date(referenceDate);
+  birth1WeekAgo.setDate(referenceDate.getDate() - 7); // 1 year in game time
+
+  const birth2WeeksAgo = new Date(referenceDate);
+  birth2WeeksAgo.setDate(referenceDate.getDate() - 14); // 2 years in game time
+
+  const birth21WeeksAgo = new Date(referenceDate);
+  birth21WeeksAgo.setDate(referenceDate.getDate() - 147); // 21 years (retirement age)
+
+  const birth15DaysAgo = new Date(referenceDate);
+  birth15DaysAgo.setDate(referenceDate.getDate() - 15);
+
+  const birth31DaysAgo = new Date(referenceDate);
+  birth31DaysAgo.setDate(referenceDate.getDate() - 31);
+
+  const birth6MonthsAgo = new Date(referenceDate);
+  birth6MonthsAgo.setMonth(referenceDate.getMonth() - 6);
+
+  const birth1YearAgo = new Date(referenceDate);
+  birth1YearAgo.setFullYear(referenceDate.getFullYear() - 1);
+
+  const birth3WeeksAgo = new Date(referenceDate);
+  birth3WeeksAgo.setDate(referenceDate.getDate() - 21);
+
+  // Leap year test dates (calculated relative to reference date)
+  const mockNowLeapYear = new Date(referenceDate);
+  mockNowLeapYear.setFullYear(referenceDate.getFullYear()); // 2025
+  mockNowLeapYear.setMonth(2); // March (0-indexed)
+  mockNowLeapYear.setDate(1);
+  mockNowLeapYear.setHours(12, 0, 0, 0);
+
+  const birthLeapYear = new Date(mockNowLeapYear);
+  birthLeapYear.setFullYear(mockNowLeapYear.getFullYear() - 1); // 2024 (leap year)
+  birthLeapYear.setMonth(1); // February (0-indexed)
+  birthLeapYear.setDate(29); // Leap day
+
+  // Timezone test dates
+  const mockNowTimezone = new Date(referenceDate);
+  mockNowTimezone.setHours(23, 59, 59, 0);
+
+  const birthTimezone = new Date(referenceDate);
+  birthTimezone.setHours(0, 0, 0, 0);
 
   describe('Age Calculation', () => {
     it('should calculate age correctly from dateOfBirth', () => {
-      const mockNow = new Date('2025-06-01T12:00:00Z');
+      const now = mockNow;
 
       // Test various ages (1 year = 7 days in game time)
       const testCases = [
-        { birth: '2025-06-01', expectedDays: 0 }, // Born today
-        { birth: '2025-05-31', expectedDays: 1 }, // Born yesterday
-        { birth: '2025-05-25', expectedDays: 7 }, // Born 1 week ago (1 year in game time)
-        { birth: '2025-05-18', expectedDays: 14 }, // Born 2 weeks ago (2 years in game time)
-        { birth: '2025-01-05', expectedDays: 147 }, // Born 21 weeks ago (21 years in game time)
+        { birth: birthToday.toISOString().split('T')[0], expectedDays: 0 }, // Born today
+        { birth: birthYesterday.toISOString().split('T')[0], expectedDays: 1 }, // Born yesterday
+        { birth: birth1WeekAgo.toISOString().split('T')[0], expectedDays: 7 }, // Born 1 week ago (1 year in game time)
+        { birth: birth2WeeksAgo.toISOString().split('T')[0], expectedDays: 14 }, // Born 2 weeks ago (2 years in game time)
+        { birth: birth21WeeksAgo.toISOString().split('T')[0], expectedDays: 147 }, // Born 21 weeks ago (21 years in game time)
       ];
 
       testCases.forEach(({ birth, expectedDays }) => {
         const birthDate = new Date(birth);
         // Pass the mock date explicitly to avoid Date constructor mocking issues
-        const ageInDays = calculateAgeFromBirth(birthDate, mockNow);
+        const ageInDays = calculateAgeFromBirth(birthDate, now);
         expect(ageInDays).toBe(expectedDays);
       });
     });
 
     it('should handle leap years correctly', () => {
-      const mockNow = new Date('2025-03-01T12:00:00Z');
+      const now = mockNowLeapYear;
 
       // Born in leap year
-      const birthDate = new Date('2024-02-29');
-      const ageInDays = calculateAgeFromBirth(birthDate, mockNow);
+      const birthDate = birthLeapYear;
+      const ageInDays = calculateAgeFromBirth(birthDate, now);
 
       // From Feb 29, 2024 to Mar 1, 2025 = 366 days (52.3 years in game time)
       expect(ageInDays).toBe(366);
     });
 
     it('should handle timezone differences', () => {
-      const mockNow = new Date('2025-06-01T23:59:59Z');
+      const now = mockNowTimezone;
 
-      const birthDate = new Date('2025-06-01T00:00:00Z');
-      const ageInDays = calculateAgeFromBirth(birthDate, mockNow);
+      const birthDate = birthTimezone;
+      const ageInDays = calculateAgeFromBirth(birthDate, now);
 
       expect(ageInDays).toBe(0); // Same day regardless of time
     });
@@ -141,19 +201,19 @@ describe('Horse Aging System', () => {
 
   describe('Horse Age Updates', () => {
     it('should update horse age when birthday occurs', async () => {
-      const mockNow = new Date('2025-06-01T12:00:00Z');
+      const now = mockNow;
 
       // Mock the Date constructor to return our mock date
       const OriginalDate = global.Date;
       global.Date = class extends OriginalDate {
         constructor(...args) {
           if (args.length === 0) {
-            return mockNow;
+            return now;
           }
           return new OriginalDate(...args);
         }
         static now() {
-          return mockNow.getTime();
+          return now.getTime();
         }
       };
 
@@ -162,7 +222,7 @@ describe('Horse Aging System', () => {
         data: {
           name: 'Birthday Horse',
           sex: 'Colt',
-          dateOfBirth: new Date('2025-05-25'), // Exactly 1 week ago (1 year in game time)
+          dateOfBirth: birth1WeekAgo, // Exactly 1 week ago (1 year in game time)
           age: 6, // Currently 6 days old (will turn 7 = 1 year)
           user: { connect: { id: testUser.id } },
           breed: { connect: { id: testBreed.id } },
@@ -176,6 +236,7 @@ describe('Horse Aging System', () => {
           daysGroomedInARow: 10,
         },
       });
+      createdHorseIds.push(horse.id);
 
       const result = await updateHorseAge(horse.id);
 
@@ -194,19 +255,19 @@ describe('Horse Aging System', () => {
     });
 
     it('should not update age when no birthday occurs', async () => {
-      const mockNow = new Date('2025-06-01T12:00:00Z');
+      const now = mockNow;
 
       // Mock the Date constructor to return our mock date
       const OriginalDate = global.Date;
       global.Date = class extends OriginalDate {
         constructor(...args) {
           if (args.length === 0) {
-            return mockNow;
+            return now;
           }
           return new OriginalDate(...args);
         }
         static now() {
-          return mockNow.getTime();
+          return now.getTime();
         }
       };
 
@@ -215,12 +276,13 @@ describe('Horse Aging System', () => {
         data: {
           name: 'No Birthday Horse',
           sex: 'Filly',
-          dateOfBirth: new Date('2024-12-01'), // 6 months ago
+          dateOfBirth: birth6MonthsAgo, // 6 months ago
           age: 182, // Current age matches calculated age
           user: { connect: { id: testUser.id } },
           breed: { connect: { id: testBreed.id } },
         },
       });
+      createdHorseIds.push(horse.id);
 
       const result = await updateHorseAge(horse.id);
 
@@ -233,19 +295,19 @@ describe('Horse Aging System', () => {
     });
 
     it('should handle horses with incorrect stored age', async () => {
-      const mockNow = new Date('2025-06-01T12:00:00Z');
+      const now = mockNow;
 
       // Mock the Date constructor to return our mock date
       const OriginalDate = global.Date;
       global.Date = class extends OriginalDate {
         constructor(...args) {
           if (args.length === 0) {
-            return mockNow;
+            return now;
           }
           return new OriginalDate(...args);
         }
         static now() {
-          return mockNow.getTime();
+          return now.getTime();
         }
       };
 
@@ -254,17 +316,18 @@ describe('Horse Aging System', () => {
         data: {
           name: 'Wrong Age Horse',
           sex: 'Colt',
-          dateOfBirth: new Date('2024-01-01'), // Should be ~517 days old (accounting for leap year)
+          dateOfBirth: birth1YearAgo, // Should be ~517 days old (accounting for leap year)
           age: 100, // Incorrect stored age
           user: { connect: { id: testUser.id } },
           breed: { connect: { id: testBreed.id } },
         },
       });
+      createdHorseIds.push(horse.id);
 
       const result = await updateHorseAge(horse.id);
 
       expect(result.ageUpdated).toBe(true);
-      expect(result.newAge).toBe(517); // Correct calculated age
+      expect(result.newAge).toBe(365); // Correct calculated age (1 year)
       expect(result.hadBirthday).toBe(true); // Age increased, so considered a birthday
 
       // Restore original Date
@@ -274,8 +337,8 @@ describe('Horse Aging System', () => {
 
   describe('Milestone Detection', () => {
     it('should detect age 1 milestone and trigger trait evaluation', async () => {
-      const mockNow = new Date('2025-06-01T12:00:00Z');
-      jest.spyOn(Date, 'now').mockReturnValue(mockNow.getTime());
+      const now = mockNow;
+      jest.spyOn(Date, 'now').mockReturnValue(now.getTime());
 
       // Mock Math.random for trait evaluation
       jest.spyOn(Math, 'random').mockReturnValue(0.1); // 10% - will trigger traits
@@ -285,7 +348,7 @@ describe('Horse Aging System', () => {
         data: {
           name: 'Milestone Horse',
           sex: 'Filly',
-          dateOfBirth: new Date('2024-06-01'), // Exactly 1 year ago
+          dateOfBirth: birth1YearAgo, // Exactly 1 year ago
           age: 364, // About to turn 365 (1 year milestone)
           user: { connect: { id: testUser.id } },
           breed: { connect: { id: testBreed.id } },
@@ -305,6 +368,7 @@ describe('Horse Aging System', () => {
           },
         },
       });
+      createdHorseIds.push(horse.id);
 
       const result = await checkForMilestones(horse.id, 6, 7); // 6 days → 7 days (1 year)
 
@@ -338,19 +402,19 @@ describe('Horse Aging System', () => {
 
   describe('Batch Processing', () => {
     it('should process multiple horses with birthdays', async () => {
-      const mockNow = new Date('2025-06-01T12:00:00Z');
+      const now = mockNow;
 
       // Mock the Date constructor to return our mock date
       const OriginalDate = global.Date;
       global.Date = class extends OriginalDate {
         constructor(...args) {
           if (args.length === 0) {
-            return mockNow;
+            return now;
           }
           return new OriginalDate(...args);
         }
         static now() {
-          return mockNow.getTime();
+          return now.getTime();
         }
       };
 
@@ -361,7 +425,7 @@ describe('Horse Aging System', () => {
           data: {
             name: 'Milestone Horse 1',
             sex: 'Colt',
-            dateOfBirth: new Date('2025-05-25'), // 1 week ago (1 year in game time)
+            dateOfBirth: birth1WeekAgo, // 1 week ago (1 year in game time)
             age: 6, // Will turn 7 (1 year = 7 days), milestone triggers at 7
             user: { connect: { id: testUser.id } },
             breed: { connect: { id: testBreed.id } },
@@ -375,7 +439,7 @@ describe('Horse Aging System', () => {
           data: {
             name: 'Regular Birthday Horse',
             sex: 'Filly',
-            dateOfBirth: new Date('2025-05-17'), // 15 days ago (2.14 years in game time)
+            dateOfBirth: birth15DaysAgo, // 15 days ago (2.14 years in game time)
             age: 14, // Will turn 15 (no milestone at 15)
             user: { connect: { id: testUser.id } },
             breed: { connect: { id: testBreed.id } },
@@ -386,17 +450,18 @@ describe('Horse Aging System', () => {
           data: {
             name: 'No Birthday Horse',
             sex: 'Colt',
-            dateOfBirth: new Date('2025-05-01'), // 31 days ago (4.4 years in game time)
+            dateOfBirth: birth31DaysAgo, // 31 days ago (4.4 years in game time)
             age: 25, // Incorrect age, will be corrected to 31 (no milestone crossing)
             user: { connect: { id: testUser.id } },
             breed: { connect: { id: testBreed.id } },
           },
         }),
       ]);
+      horses.forEach(h => createdHorseIds.push(h.id));
 
       jest.spyOn(Math, 'random').mockReturnValue(0.1);
 
-      const results = await processHorseBirthdays();
+      const results = await processHorseBirthdays({ horseIds: horses.map(h => h.id) });
 
       expect(results.totalProcessed).toBe(3);
       expect(results.birthdaysFound).toBe(3); // All 3 horses need age updates
@@ -422,19 +487,19 @@ describe('Horse Aging System', () => {
 
   describe('Integration with Existing Systems', () => {
     it('should maintain compatibility with training age requirements', async () => {
-      const mockNow = new Date('2025-06-01T12:00:00Z');
+      const now = mockNow;
 
       // Mock the Date constructor to return our mock date
       const OriginalDate = global.Date;
       global.Date = class extends OriginalDate {
         constructor(...args) {
           if (args.length === 0) {
-            return mockNow;
+            return now;
           }
           return new OriginalDate(...args);
         }
         static now() {
-          return mockNow.getTime();
+          return now.getTime();
         }
       };
 
@@ -443,12 +508,13 @@ describe('Horse Aging System', () => {
         data: {
           name: 'Training Ready Horse',
           sex: 'Colt',
-          dateOfBirth: new Date('2025-05-11'), // 3 weeks ago (3 years in game time)
+          dateOfBirth: birth3WeeksAgo, // 3 weeks ago (3 years in game time)
           age: 20, // About to turn 21 (3 years = 21 days)
           user: { connect: { id: testUser.id } },
           breed: { connect: { id: testBreed.id } },
         },
       });
+      createdHorseIds.push(horse.id);
 
       const result = await updateHorseAge(horse.id);
 
@@ -468,19 +534,19 @@ describe('Horse Aging System', () => {
     });
 
     it('should handle retirement at age 21', async () => {
-      const mockNow = new Date('2025-06-01T12:00:00Z');
+      const now = mockNow;
 
       // Mock the Date constructor to return our mock date
       const OriginalDate = global.Date;
       global.Date = class extends OriginalDate {
         constructor(...args) {
           if (args.length === 0) {
-            return mockNow;
+            return now;
           }
           return new OriginalDate(...args);
         }
         static now() {
-          return mockNow.getTime();
+          return now.getTime();
         }
       };
 
@@ -489,12 +555,13 @@ describe('Horse Aging System', () => {
         data: {
           name: 'Retiring Horse',
           sex: 'Mare',
-          dateOfBirth: new Date('2025-01-05'), // 21 weeks ago (21 years in game time)
+          dateOfBirth: birth21WeeksAgo, // 21 weeks ago (21 years in game time)
           age: 146, // About to turn 147 (21 years = 147 days)
           user: { connect: { id: testUser.id } },
           breed: { connect: { id: testBreed.id } },
         },
       });
+      createdHorseIds.push(horse.id);
 
       const milestoneResult = await checkForMilestones(horse.id, 146, 147); // 146 days → 147 days (21 years)
 
