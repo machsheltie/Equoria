@@ -40,44 +40,47 @@
  */
 
 import { jest, describe, beforeEach, expect, it, beforeAll } from '@jest/globals';
-import { fileURLToPath } from 'url';
-import { dirname, join } from 'path';
 import request from 'supertest';
+import { generateTestToken } from './helpers/authHelper.mjs';
 
-const __filename = fileURLToPath(import.meta.url);
-const __dirname = dirname(__filename);
-
-// Mock the database module BEFORE importing the app
-jest.unstable_mockModule(join(__dirname, '../db/index.mjs'), () => ({
-  default: {
-    horse: {
-      create: jest.fn(),
-      findUnique: jest.fn(),
-      update: jest.fn(),
-      delete: jest.fn(),
-    },
-    breed: {
-      create: jest.fn(),
-      delete: jest.fn(),
-    },
-    foalTrainingHistory: {
-      create: jest.fn(),
-      findUnique: jest.fn(),
-      findFirst: jest.fn(),
-      count: jest.fn(),
-      deleteMany: jest.fn(),
-    },
-    $disconnect: jest.fn(),
+// Create mock objects BEFORE jest.unstable_mockModule
+const mockPrisma = {
+  horse: {
+    create: jest.fn(),
+    findUnique: jest.fn(),
+    findFirst: jest.fn(),
+    update: jest.fn(),
+    delete: jest.fn(),
   },
+  breed: {
+    create: jest.fn(),
+    delete: jest.fn(),
+  },
+  foalTrainingHistory: {
+    create: jest.fn(),
+    findUnique: jest.fn(),
+    findFirst: jest.fn(),
+    count: jest.fn(),
+    deleteMany: jest.fn(),
+  },
+  $disconnect: jest.fn(),
+};
+
+jest.unstable_mockModule('../db/index.mjs', () => ({
+  default: mockPrisma,
 }));
 
-// Now import the app and the mocked prisma
+jest.unstable_mockModule('../../packages/database/prismaClient.mjs', () => ({
+  default: mockPrisma,
+}));
+
+// Now import the app
 const app = (await import('../app.mjs')).default;
-const mockPrisma = (await import(join(__dirname, '../db/index.mjs'))).default;
 
 describe('🐴 INTEGRATION: Foal Enrichment API Integration - Complete API Workflow Validation', () => {
   let testFoal;
   let testBreed;
+  let authToken;
 
   beforeAll(async () => {
     // Mock test breed
@@ -93,6 +96,7 @@ describe('🐴 INTEGRATION: Foal Enrichment API Integration - Complete API Workf
       name: 'Test Enrichment Foal',
       age: 0,
       breedId: testBreed.id,
+      ownerId: 'test-user-id',
       bondScore: 50,
       stressLevel: 20,
     };
@@ -101,16 +105,7 @@ describe('🐴 INTEGRATION: Foal Enrichment API Integration - Complete API Workf
     mockPrisma.breed.create.mockResolvedValue(testBreed);
     mockPrisma.horse.create.mockResolvedValue(testFoal);
     mockPrisma.horse.findUnique.mockResolvedValue(testFoal);
-    mockPrisma.foalTrainingHistory.create.mockResolvedValue({
-      id: 'test-training-id',
-      horseId: testFoal.id,
-      day: 3,
-      activity: 'Trailer Exposure',
-      outcome: 'success',
-      bondChange: 5,
-      stressChange: 2,
-      timestamp: new Date(),
-    });
+    mockPrisma.horse.findFirst.mockResolvedValue(testFoal);
   });
 
   beforeEach(() => {
@@ -119,6 +114,12 @@ describe('🐴 INTEGRATION: Foal Enrichment API Integration - Complete API Workf
 
     // Reset default mock responses
     mockPrisma.horse.findUnique.mockResolvedValue(testFoal);
+    mockPrisma.horse.findFirst.mockImplementation(({ where } = {}) => {
+      if (where?.id === testFoal.id) {
+        return Promise.resolve(testFoal);
+      }
+      return Promise.resolve(null);
+    });
     mockPrisma.horse.update.mockResolvedValue({
       ...testFoal,
       bondScore: 55,
@@ -136,12 +137,16 @@ describe('🐴 INTEGRATION: Foal Enrichment API Integration - Complete API Workf
       stressChange: 2,
       timestamp: new Date(),
     });
+
+    // Generate JWT token for authentication (SAFE - uses real token generation)
+    authToken = generateTestToken({ id: testFoal.ownerId, role: 'user' });
   });
 
   describe('POST /api/foals/:foalId/enrichment', () => {
     it('should complete enrichment activity successfully', async () => {
       const response = await request(app)
         .post(`/api/foals/${testFoal.id}/enrichment`)
+        .set('Authorization', `Bearer ${authToken}`)
         .send({
           day: 3,
           activity: 'Trailer Exposure',
@@ -202,6 +207,7 @@ describe('🐴 INTEGRATION: Foal Enrichment API Integration - Complete API Workf
 
       const response = await request(app)
         .post(`/api/foals/${testFoal.id}/enrichment`)
+        .set('Authorization', `Bearer ${authToken}`)
         .send({
           day: 3,
           activity: 'Halter Introduction',
@@ -226,6 +232,7 @@ describe('🐴 INTEGRATION: Foal Enrichment API Integration - Complete API Workf
       // Missing day
       await request(app)
         .post(`/api/foals/${testFoal.id}/enrichment`)
+        .set('Authorization', `Bearer ${authToken}`)
         .send({
           activity: 'Trailer Exposure',
         })
@@ -234,6 +241,7 @@ describe('🐴 INTEGRATION: Foal Enrichment API Integration - Complete API Workf
       // Missing activity
       await request(app)
         .post(`/api/foals/${testFoal.id}/enrichment`)
+        .set('Authorization', `Bearer ${authToken}`)
         .send({
           day: 3,
         })
@@ -242,6 +250,7 @@ describe('🐴 INTEGRATION: Foal Enrichment API Integration - Complete API Workf
       // Invalid day (too high)
       await request(app)
         .post(`/api/foals/${testFoal.id}/enrichment`)
+        .set('Authorization', `Bearer ${authToken}`)
         .send({
           day: 7,
           activity: 'Trailer Exposure',
@@ -251,6 +260,7 @@ describe('🐴 INTEGRATION: Foal Enrichment API Integration - Complete API Workf
       // Invalid day (negative)
       await request(app)
         .post(`/api/foals/${testFoal.id}/enrichment`)
+        .set('Authorization', `Bearer ${authToken}`)
         .send({
           day: -1,
           activity: 'Trailer Exposure',
@@ -260,6 +270,7 @@ describe('🐴 INTEGRATION: Foal Enrichment API Integration - Complete API Workf
       // Empty activity
       await request(app)
         .post(`/api/foals/${testFoal.id}/enrichment`)
+        .set('Authorization', `Bearer ${authToken}`)
         .send({
           day: 3,
           activity: '',
@@ -268,11 +279,9 @@ describe('🐴 INTEGRATION: Foal Enrichment API Integration - Complete API Workf
     });
 
     it('should return 404 for non-existent foal', async () => {
-      // Setup mock to return null for non-existent foal
-      mockPrisma.horse.findUnique.mockResolvedValueOnce(null);
-
       const response = await request(app)
         .post('/api/foals/99999/enrichment')
+        .set('Authorization', `Bearer ${authToken}`)
         .send({
           day: 3,
           activity: 'Trailer Exposure',
@@ -286,6 +295,7 @@ describe('🐴 INTEGRATION: Foal Enrichment API Integration - Complete API Workf
     it('should return 400 for inappropriate activity for day', async () => {
       const response = await request(app)
         .post(`/api/foals/${testFoal.id}/enrichment`)
+        .set('Authorization', `Bearer ${authToken}`)
         .send({
           day: 0,
           activity: 'Trailer Exposure', // This is a day 3 activity
@@ -300,6 +310,7 @@ describe('🐴 INTEGRATION: Foal Enrichment API Integration - Complete API Workf
       // Test exact type
       await request(app)
         .post(`/api/foals/${testFoal.id}/enrichment`)
+        .set('Authorization', `Bearer ${authToken}`)
         .send({
           day: 3,
           activity: 'leading_practice',
@@ -309,6 +320,7 @@ describe('🐴 INTEGRATION: Foal Enrichment API Integration - Complete API Workf
       // Test exact name
       await request(app)
         .post(`/api/foals/${testFoal.id}/enrichment`)
+        .set('Authorization', `Bearer ${authToken}`)
         .send({
           day: 3,
           activity: 'Leading Practice',
@@ -318,6 +330,7 @@ describe('🐴 INTEGRATION: Foal Enrichment API Integration - Complete API Workf
       // Test case insensitive
       await request(app)
         .post(`/api/foals/${testFoal.id}/enrichment`)
+        .set('Authorization', `Bearer ${authToken}`)
         .send({
           day: 3,
           activity: 'HANDLING EXERCISES',
@@ -331,6 +344,7 @@ describe('🐴 INTEGRATION: Foal Enrichment API Integration - Complete API Workf
       for (const activity of day3Activities) {
         const response = await request(app)
           .post(`/api/foals/${testFoal.id}/enrichment`)
+          .set('Authorization', `Bearer ${authToken}`)
           .send({
             day: 3,
             activity,
@@ -361,6 +375,7 @@ describe('🐴 INTEGRATION: Foal Enrichment API Integration - Complete API Workf
 
       await request(app)
         .post(`/api/foals/${testFoal.id}/enrichment`)
+        .set('Authorization', `Bearer ${authToken}`)
         .send({
           day: 1,
           activity: 'Feeding Assistance',
@@ -387,9 +402,12 @@ describe('🐴 INTEGRATION: Foal Enrichment API Integration - Complete API Workf
         name: 'Extreme Test Foal',
         age: 0,
         breedId: testBreed.id,
+        ownerId: testFoal.ownerId,
         bondScore: 95,
         stressLevel: 5,
       };
+
+      mockPrisma.horse.findFirst.mockResolvedValueOnce(extremeFoal);
 
       // Setup mock to return extreme foal
       mockPrisma.horse.findUnique.mockResolvedValueOnce(extremeFoal);
@@ -403,6 +421,7 @@ describe('🐴 INTEGRATION: Foal Enrichment API Integration - Complete API Workf
 
       const response = await request(app)
         .post(`/api/foals/${extremeFoal.id}/enrichment`)
+        .set('Authorization', `Bearer ${authToken}`)
         .send({
           day: 3,
           activity: 'Trailer Exposure',
