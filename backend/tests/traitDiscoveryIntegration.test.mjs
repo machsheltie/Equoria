@@ -1,13 +1,40 @@
-/* eslint-disable no-console */
+import { describe, it, expect, beforeAll, afterAll } from '@jest/globals';
 import request from 'supertest';
+import jwt from 'jsonwebtoken';
 import app from '../app.mjs';
 import prisma from '../db/index.mjs';
+
+// SECURITY FIX (Phase 1, Task 1.1): Removed all x-test-bypass-ownership headers
+// Tests now use proper JWT authentication with real token generation
+
+const buildToken = userId =>
+  jwt.sign({ id: userId, email: `${userId}@example.com` }, process.env.JWT_SECRET, {
+    expiresIn: '1h',
+  });
 
 describe('Trait Discovery API Integration Tests', () => {
   let testBreed;
   let testFoals = [];
+  let authToken;
+  const testUserId = 'test-trait-discovery-user';
 
   beforeAll(async () => {
+    // Generate authentication token for test user
+    authToken = buildToken(testUserId);
+
+    // Create test user in database (required for ownership validation)
+    await prisma.user.create({
+      data: {
+        id: testUserId,
+        username: 'test-trait-user',
+        email: 'test-trait-discovery-user@example.com',
+        password: 'hashed_password_placeholder',
+        role: 'user',
+        firstName: 'Test',
+        lastName: 'User',
+      },
+    });
+
     // Create test breed with unique name
     const uniqueName = `Test Breed for Trait Discovery ${Date.now()}`;
     testBreed = await prisma.breed.create({
@@ -17,7 +44,7 @@ describe('Trait Discovery API Integration Tests', () => {
       },
     });
 
-    // Create test foals with different conditions
+    // Create test foals with different conditions (owned by test user)
     const foal1 = await prisma.horse.create({
       data: {
         name: 'High Bond Foal',
@@ -27,6 +54,7 @@ describe('Trait Discovery API Integration Tests', () => {
         dateOfBirth: new Date('2024-01-01'),
         bondScore: 85,
         stressLevel: 15,
+        ownerId: testUserId, // Set ownerId directly for ownership middleware
         epigeneticModifiers: {
           positive: [],
           negative: [],
@@ -44,6 +72,7 @@ describe('Trait Discovery API Integration Tests', () => {
         dateOfBirth: new Date('2024-01-01'),
         bondScore: 30,
         stressLevel: 70,
+        ownerId: testUserId, // Set ownerId directly for ownership middleware
         epigeneticModifiers: {
           positive: [],
           negative: [],
@@ -61,6 +90,7 @@ describe('Trait Discovery API Integration Tests', () => {
         dateOfBirth: new Date('2019-01-01'),
         bondScore: 90,
         stressLevel: 10,
+        ownerId: testUserId, // Set ownerId directly for ownership middleware
         epigeneticModifiers: {
           positive: ['calm'],
           negative: [],
@@ -136,23 +166,33 @@ describe('Trait Discovery API Integration Tests', () => {
           where: { foalId: foal.id },
         });
         await prisma.horse.delete({ where: { id: foal.id } });
-      } catch (error) {
+      } catch {
         // Ignore cleanup errors
       }
     }
     if (testBreed?.id) {
       try {
         await prisma.breed.delete({ where: { id: testBreed.id } });
-      } catch (error) {
+      } catch {
         // Ignore cleanup errors
       }
+    }
+    // Clean up test user
+    try {
+      await prisma.user.delete({ where: { id: testUserId } });
+    } catch {
+      // Ignore cleanup errors
     }
     await prisma.$disconnect();
   });
 
-  describe('POST /api/trait-discovery/discover/:foalId', () => {
+  describe('POST /api/traits/discover/:foalId', () => {
     it('should discover traits for foal with high bonding', async () => {
-      const response = await request(app).post(`/api/trait-discovery/discover/${testFoals[0].id}`).expect(200);
+      const response = await request(app)
+        .post(`/api/traits/discover/${testFoals[0].id}`)
+        .set('Authorization', `Bearer ${authToken}`)
+        .set('x-test-skip-csrf', 'true')
+        .expect(200);
 
       expect(response.body.success).toBe(true);
       expect(response.body.data).toHaveProperty('horseId', testFoals[0].id);
@@ -174,7 +214,11 @@ describe('Trait Discovery API Integration Tests', () => {
     });
 
     it('should handle foal with no discoverable traits', async () => {
-      const response = await request(app).post(`/api/trait-discovery/discover/${testFoals[1].id}`).expect(200);
+      const response = await request(app)
+        .post(`/api/traits/discover/${testFoals[1].id}`)
+        .set('Authorization', `Bearer ${authToken}`)
+        .set('x-test-skip-csrf', 'true')
+        .expect(200);
 
       expect(response.body.success).toBe(true);
       expect(response.body.data).toHaveProperty('horseId', testFoals[1].id);
@@ -185,7 +229,11 @@ describe('Trait Discovery API Integration Tests', () => {
     });
 
     it('should allow trait discovery for adult horses', async () => {
-      const response = await request(app).post(`/api/trait-discovery/discover/${testFoals[2].id}`).expect(200);
+      const response = await request(app)
+        .post(`/api/traits/discover/${testFoals[2].id}`)
+        .set('Authorization', `Bearer ${authToken}`)
+        .set('x-test-skip-csrf', 'true')
+        .expect(200);
 
       expect(response.body.success).toBe(true);
       expect(response.body.data).toHaveProperty('horseId', testFoals[2].id);
@@ -199,23 +247,34 @@ describe('Trait Discovery API Integration Tests', () => {
     });
 
     it('should return 404 for non-existent foal', async () => {
-      const response = await request(app).post('/api/trait-discovery/discover/99999').expect(404);
+      const response = await request(app)
+        .post('/api/traits/discover/99999')
+        .set('Authorization', `Bearer ${authToken}`)
+        .set('x-test-skip-csrf', 'true')
+        .expect(404);
 
       expect(response.body.success).toBe(false);
       expect(response.body.message).toContain('not found');
     });
 
     it('should return 400 for invalid foal ID', async () => {
-      const response = await request(app).post('/api/trait-discovery/discover/invalid').expect(400);
+      const response = await request(app)
+        .post('/api/traits/discover/invalid')
+        .set('Authorization', `Bearer ${authToken}`)
+        .set('x-test-skip-csrf', 'true')
+        .expect(400);
 
       expect(response.body.success).toBe(false);
       expect(response.body.message).toBe('Horse ID must be a positive integer');
     });
   });
 
-  describe('GET /api/trait-discovery/progress/:foalId', () => {
+  describe('GET /api/traits/progress/:foalId', () => {
     it('should return discovery progress for foal', async () => {
-      const response = await request(app).get(`/api/trait-discovery/progress/${testFoals[0].id}`).expect(200);
+      const response = await request(app)
+        .get(`/api/traits/progress/${testFoals[0].id}`)
+        .set('Authorization', `Bearer ${authToken}`)
+        .expect(200);
 
       expect(response.body.success).toBe(true);
       expect(response.body.data).toHaveProperty('horseId', testFoals[0].id);
@@ -251,19 +310,24 @@ describe('Trait Discovery API Integration Tests', () => {
     });
 
     it('should return 404 for non-existent foal', async () => {
-      const response = await request(app).get('/api/trait-discovery/progress/99999').expect(404);
+      const response = await request(app)
+        .get('/api/traits/progress/99999')
+        .set('Authorization', `Bearer ${authToken}`)
+        .expect(404);
 
       expect(response.body.success).toBe(false);
       expect(response.body.message).toContain('not found');
     });
   });
 
-  describe('POST /api/trait-discovery/discover/batch', () => {
+  describe('POST /api/traits/batch-discover', () => {
     it('should process multiple foals in batch', async () => {
       console.log('Batch test foal IDs:', [testFoals[0].id, testFoals[1].id]);
 
       const response = await request(app)
-        .post('/api/trait-discovery/discover/batch')
+        .post('/api/traits/batch-discover')
+        .set('Authorization', `Bearer ${authToken}`)
+        .set('x-test-skip-csrf', 'true')
         .send({
           horseIds: [testFoals[0].id, testFoals[1].id],
         });
@@ -280,30 +344,36 @@ describe('Trait Discovery API Integration Tests', () => {
       expect(response.body.data).toHaveProperty('summary');
 
       expect(response.body.data.results).toHaveLength(2);
-      expect(response.body.data.summary).toHaveProperty('totalHorses', 2);
-      expect(response.body.data.summary).toHaveProperty('successfulDiscoveries');
-      expect(response.body.data.summary).toHaveProperty('failedDiscoveries');
+      expect(response.body.data.summary).toHaveProperty('processed', 2);
+      expect(response.body.data.summary).toHaveProperty('failed', 0);
+      expect(response.body.data.summary).toHaveProperty('totalRevealed');
     });
 
     it('should handle mixed valid and invalid foals', async () => {
       const response = await request(app)
-        .post('/api/trait-discovery/discover/batch')
+        .post('/api/traits/batch-discover')
+        .set('Authorization', `Bearer ${authToken}`)
+        .set('x-test-skip-csrf', 'true')
         .send({
           horseIds: [testFoals[0].id, 99999, testFoals[2].id], // Valid foal, non-existent, adult horse
         })
         .expect(200);
 
       expect(response.body.success).toBe(true);
-      expect(response.body.data.results).toHaveLength(3);
+      // API only returns valid horses in results array (2 valid horses)
+      expect(response.body.data.results).toHaveLength(2);
 
-      // Should have some failures
-      const failedResults = response.body.data.results.filter(r => r.error);
-      expect(failedResults.length).toBeGreaterThan(0);
+      // Invalid horses go to errors array, not results array
+      expect(response.body.data.errors).toBeDefined();
+      expect(response.body.data.errors.length).toBeGreaterThan(0);
+      expect(response.body.data.summary.failed).toBeGreaterThan(0);
     });
 
     it('should return 400 for invalid request body', async () => {
       const response = await request(app)
-        .post('/api/trait-discovery/discover/batch')
+        .post('/api/traits/batch-discover')
+        .set('Authorization', `Bearer ${authToken}`)
+        .set('x-test-skip-csrf', 'true')
         .send({
           horseIds: [],
         })
@@ -314,9 +384,12 @@ describe('Trait Discovery API Integration Tests', () => {
     });
   });
 
-  describe('GET /api/trait-discovery/conditions', () => {
+  describe('GET /api/traits/conditions', () => {
     it('should return all discovery conditions', async () => {
-      const response = await request(app).get('/api/trait-discovery/conditions').expect(200);
+      const response = await request(app)
+        .get('/api/traits/conditions')
+        .set('Authorization', `Bearer ${authToken}`)
+        .expect(200);
 
       expect(response.body.success).toBe(true);
       expect(response.body.data).toHaveProperty('conditions');
@@ -344,9 +417,13 @@ describe('Trait Discovery API Integration Tests', () => {
     });
   });
 
-  describe('POST /api/trait-discovery/check-conditions/:foalId', () => {
+  describe('POST /api/traits/check-conditions/:foalId', () => {
     it('should check conditions without triggering discovery', async () => {
-      const response = await request(app).post(`/api/trait-discovery/check-conditions/${testFoals[0].id}`).expect(200);
+      const response = await request(app)
+        .post(`/api/traits/check-conditions/${testFoals[0].id}`)
+        .set('Authorization', `Bearer ${authToken}`)
+        .set('x-test-skip-csrf', 'true')
+        .expect(200);
 
       expect(response.body.success).toBe(true);
       expect(response.body.data).toHaveProperty('horseId', testFoals[0].id);
@@ -379,7 +456,11 @@ describe('Trait Discovery API Integration Tests', () => {
     });
 
     it('should return 404 for non-existent foal', async () => {
-      const response = await request(app).post('/api/trait-discovery/check-conditions/99999').expect(404);
+      const response = await request(app)
+        .post('/api/traits/check-conditions/99999')
+        .set('Authorization', `Bearer ${authToken}`)
+        .set('x-test-skip-csrf', 'true')
+        .expect(404);
 
       expect(response.body.success).toBe(false);
       expect(response.body.message).toContain('not found');
@@ -398,6 +479,7 @@ describe('Trait Discovery API Integration Tests', () => {
           dateOfBirth: new Date('2024-01-01'),
           bondScore: 85,
           stressLevel: 15,
+          ownerId: testUserId,
           epigeneticModifiers: {
             positive: [],
             negative: [],
@@ -434,7 +516,10 @@ describe('Trait Discovery API Integration Tests', () => {
       const foalId = freshFoal.id;
 
       // 1. Check initial progress
-      const progressResponse = await request(app).get(`/api/trait-discovery/progress/${foalId}`).expect(200);
+      const progressResponse = await request(app)
+        .get(`/api/traits/progress/${foalId}`)
+        .set('Authorization', `Bearer ${authToken}`)
+        .expect(200);
 
       const initialHiddenCount = progressResponse.body.data.hiddenTraitsCount;
       console.log('Initial hidden count:', initialHiddenCount);
@@ -442,13 +527,21 @@ describe('Trait Discovery API Integration Tests', () => {
       expect(initialHiddenCount).toBeGreaterThan(0);
 
       // 2. Check conditions without discovery
-      const conditionsResponse = await request(app).post(`/api/trait-discovery/check-conditions/${foalId}`).expect(200);
+      const conditionsResponse = await request(app)
+        .post(`/api/traits/check-conditions/${foalId}`)
+        .set('Authorization', `Bearer ${authToken}`)
+        .set('x-test-skip-csrf', 'true')
+        .expect(200);
 
       const metConditions = conditionsResponse.body.data.conditions.filter(c => c.met);
       expect(metConditions.length).toBeGreaterThan(0);
 
       // 3. Trigger discovery
-      const discoveryResponse = await request(app).post(`/api/trait-discovery/discover/${foalId}`).expect(200);
+      const discoveryResponse = await request(app)
+        .post(`/api/traits/discover/${foalId}`)
+        .set('Authorization', `Bearer ${authToken}`)
+        .set('x-test-skip-csrf', 'true')
+        .expect(200);
 
       // 4. Verify traits were revealed if conditions were met
       if (metConditions.length > 0) {
@@ -463,7 +556,10 @@ describe('Trait Discovery API Integration Tests', () => {
       }
 
       // 5. Check progress again to see changes
-      const finalProgressResponse = await request(app).get(`/api/trait-discovery/progress/${foalId}`).expect(200);
+      const finalProgressResponse = await request(app)
+        .get(`/api/traits/progress/${foalId}`)
+        .set('Authorization', `Bearer ${authToken}`)
+        .expect(200);
 
       // Hidden count should be same or less than initial
       expect(finalProgressResponse.body.data.hiddenTraitsCount).toBeLessThanOrEqual(initialHiddenCount);
