@@ -45,6 +45,11 @@ import { generateTestToken } from './helpers/authHelper.mjs';
 
 // Create mock objects BEFORE jest.unstable_mockModule
 const mockPrisma = {
+  user: {
+    findUnique: jest.fn(),
+    create: jest.fn(),
+    delete: jest.fn(),
+  },
   horse: {
     create: jest.fn(),
     findUnique: jest.fn(),
@@ -101,7 +106,18 @@ describe('🐴 INTEGRATION: Foal Enrichment API Integration - Complete API Workf
       stressLevel: 20,
     };
 
+    // Mock test user for authentication
+    const testUser = {
+      id: 'test-user-id',
+      username: 'testuser',
+      email: 'test@example.com',
+      role: 'user',
+      firstName: 'Test',
+      lastName: 'User',
+    };
+
     // Setup default mock responses
+    mockPrisma.user.findUnique.mockResolvedValue(testUser);
     mockPrisma.breed.create.mockResolvedValue(testBreed);
     mockPrisma.horse.create.mockResolvedValue(testFoal);
     mockPrisma.horse.findUnique.mockResolvedValue(testFoal);
@@ -113,6 +129,7 @@ describe('🐴 INTEGRATION: Foal Enrichment API Integration - Complete API Workf
     jest.clearAllMocks();
 
     // Reset default mock responses
+    mockPrisma.user.findUnique.mockResolvedValue(testUser);
     mockPrisma.horse.findUnique.mockResolvedValue(testFoal);
     mockPrisma.horse.findFirst.mockImplementation(({ where } = {}) => {
       if (where?.id === testFoal.id) {

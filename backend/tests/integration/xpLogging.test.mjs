@@ -39,58 +39,49 @@
  */
 
 import { jest, describe, it, expect, beforeEach } from '@jest/globals';
-import { fileURLToPath } from 'url';
-import { dirname, join } from 'path';
 
-const __filename = fileURLToPath(import.meta.url);
-const __dirname = dirname(__filename);
-
-// Mock all dependencies
+// Mock functions must be created BEFORE jest.unstable_mockModule calls
 const mockLogXpEvent = jest.fn();
 const mockAddXp = jest.fn();
 const mockGetHorseById = jest.fn();
 const mockIncrementDisciplineScore = jest.fn();
+const mockUpdateHorseStat = jest.fn();
 const mockLogTrainingSession = jest.fn();
 const mockGetHorseAge = jest.fn();
-// const mockGetLastTrainingDate = jest.fn(); // Commented out as it's unused
 const mockGetAnyRecentTraining = jest.fn();
+const mockGetLastTrainingDate = jest.fn();
+const mockGetRecentTrainingForMultipleHorses = jest.fn();
 const mockGetCombinedTraitEffects = jest.fn();
-const mockUpdateHorseStat = jest.fn();
 
+// Mock logger
 const mockLogger = {
   info: jest.fn(),
   warn: jest.fn(),
   error: jest.fn(),
+  debug: jest.fn(),
 };
 
-// Mock all the modules
-jest.unstable_mockModule(join(__dirname, '../../models/xpLogModel.mjs'), () => ({
-  logXpEvent: mockLogXpEvent,
-}));
+// ... (other mocks)
 
-jest.unstable_mockModule(join(__dirname, '../../models/userModel.mjs'), () => ({
-  addXpToUser: mockAddXp,
-  getUserWithHorses: jest.fn(),
-}));
-
-jest.unstable_mockModule(join(__dirname, '../../models/horseModel.mjs'), () => ({
-  getHorseById: mockGetHorseById,
-  incrementDisciplineScore: mockIncrementDisciplineScore,
-  updateHorseStat: mockUpdateHorseStat,
-}));
-
-jest.unstable_mockModule(join(__dirname, '../../models/trainingModel.mjs'), () => ({
+jest.unstable_mockModule('../../models/trainingModel.mjs', () => ({
   logTrainingSession: mockLogTrainingSession,
   getHorseAge: mockGetHorseAge,
   getAnyRecentTraining: mockGetAnyRecentTraining,
-  getLastTrainingDate: jest.fn(),
+  getLastTrainingDate: mockGetLastTrainingDate,
+  getRecentTrainingForMultipleHorses: mockGetRecentTrainingForMultipleHorses,
 }));
 
-jest.unstable_mockModule(join(__dirname, '../../utils/traitEffects.mjs'), () => ({
+jest.unstable_mockModule('../../models/horseModel.mjs', () => ({
+  getHorseById: mockGetHorseById,
+  updateHorseStat: mockUpdateHorseStat,
+  incrementDisciplineScore: mockIncrementDisciplineScore,
+}));
+
+jest.unstable_mockModule('../../utils/traitEffects.mjs', () => ({
   getCombinedTraitEffects: mockGetCombinedTraitEffects,
 }));
 
-jest.unstable_mockModule(join(__dirname, '../../utils/logger.mjs'), () => ({
+jest.unstable_mockModule('../../utils/logger.mjs', () => ({
   default: mockLogger,
 }));
 
