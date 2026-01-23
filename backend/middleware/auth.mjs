@@ -7,41 +7,11 @@ import logger from '../utils/logger.mjs';
  * Verifies JWT tokens and adds user information to request object
  */
 export const authenticateToken = (req, res, next) => {
+  const requestId = Math.random().toString(36).substring(7);
+  logger.info(`[auth:${requestId}] Starting auth for ${req.method} ${req.path}`);
   try {
-    if (process.env.NODE_ENV === 'test' && req.headers['x-test-bypass-auth'] === 'true') {
-      const email = req.headers['x-test-email'] || req.body?.email || 'test@example.com';
-      const username = email.split('@')[0];
-      // Lazily create or fetch the user so downstream controllers have a real id
-      return (async () => {
-        try {
-          let user = await import('../db/index.mjs').then(m => m.default.user.findUnique({ where: { email } }));
-          if (!user) {
-            const bcryptjs = (await import('bcryptjs')).default;
-            const hashedPassword = await bcryptjs.hash('TestPassword123!', 10);
-            user = await import('../db/index.mjs').then(m =>
-              m.default.user.create({
-                data: {
-                  email,
-                  username,
-                  password: hashedPassword,
-                  firstName: 'Test',
-                  lastName: 'User',
-                  emailVerified: true,
-                },
-              }),
-            );
-          }
-          req.user = { id: user.id, email: user.email };
-          return next();
-        } catch (e) {
-          // fallback to bare user so tests don't crash
-          req.user = { id: email, email };
-          return next();
-        }
-      })();
-    }
     const respondUnauthorized = (message, logFn = 'warn') => {
-      logger[logFn](`[auth] ${message} for ${req.method} ${req.path} from ${req.ip}`);
+      logger[logFn](`[auth:${requestId}] ${message} for ${req.method} ${req.path} from ${req.ip}`);
       return res.status(401).json({
         success: false,
         message,
@@ -51,6 +21,7 @@ export const authenticateToken = (req, res, next) => {
 
     // Read token from httpOnly cookie (primary method)
     let token = req.cookies?.accessToken;
+    logger.info(`[auth:${requestId}] Token from cookie: ${!!token}`);
 
     // Fallback to Authorization header for backward compatibility, but require Bearer scheme
     if (!token) {
@@ -60,6 +31,7 @@ export const authenticateToken = (req, res, next) => {
         const headerToken = authHeader.substring('Bearer '.length).trim();
         if (headerToken) {
           token = headerToken;
+          logger.info(`[auth:${requestId}] Token from header: ${!!token}`);
         }
       } else if (authHeader) {
         return respondUnauthorized('Access token is required');
@@ -72,7 +44,7 @@ export const authenticateToken = (req, res, next) => {
 
     const secret = process.env.JWT_SECRET;
     if (!secret) {
-      logger.error('[auth] JWT_SECRET not configured');
+      logger.error(`[auth:${requestId}] JWT_SECRET not configured`);
       return res.status(500).json({
         success: false,
         message: 'Authentication configuration error',
@@ -85,7 +57,7 @@ export const authenticateToken = (req, res, next) => {
     try {
       decodedPreview = jwt.decode(token);
     } catch (err) {
-      logger.warn(`[auth] Token decode failed for ${req.method} ${req.path} from ${req.ip}: ${err.message}`);
+      logger.warn(`[auth:${requestId}] Token decode failed: ${err.message}`);
       return respondUnauthorized('Invalid or expired token');
     }
 
@@ -94,24 +66,24 @@ export const authenticateToken = (req, res, next) => {
     }
 
     if (decodedPreview?.exp && decodedPreview.exp * 1000 <= Date.now()) {
-      logger.warn(`[auth] Token expired (precheck) for ${req.method} ${req.path} from ${req.ip}`);
+      logger.warn(`[auth:${requestId}] Token expired (precheck)`);
       return respondUnauthorized('Token expired');
     }
 
+    // SECURITY: Hardcoded safe JWT algorithms to prevent algorithm confusion attacks
+    // Only HMAC-based algorithms are allowed (HS256, HS384, HS512)
+    // This prevents attackers from using asymmetric algorithms (RS256) with symmetric secrets
+    const SAFE_JWT_ALGORITHMS = ['HS256', 'HS384', 'HS512'];
+
     let decoded;
     try {
-      const allowedAlgorithms = (process.env.JWT_ALLOWED_ALGORITHMS || 'HS256')
-        .split(',')
-        .map((alg) => alg.trim())
-        .filter(Boolean);
-
       decoded = jwt.verify(token, secret, {
-        algorithms: allowedAlgorithms.length ? allowedAlgorithms : undefined,
+        algorithms: SAFE_JWT_ALGORITHMS,
+        ignoreExpiration: false,
+        ignoreNotBefore: false,
       });
     } catch (err) {
-      logger.warn(
-        `[auth] Invalid token for ${req.method} ${req.path} from ${req.ip}: ${err.message}`,
-      );
+      logger.warn(`[auth:${requestId}] Verify failed: ${err.message}`);
 
       const isExpired =
         err.name === 'TokenExpiredError' || err.message?.toLowerCase().includes('expired');
@@ -120,16 +92,12 @@ export const authenticateToken = (req, res, next) => {
     }
 
     // CWE-613 MITIGATION: Enforce absolute 7-day maximum session age
-    // Even if the access token is still technically valid, reject sessions older than 7 days
-    const MAX_SESSION_AGE_MS = 7 * 24 * 60 * 60 * 1000; // 7 days in milliseconds
-    const SESSION_CLOCK_SKEW_MS = 1000; // tolerate timestamp rounding/skew so exactly 7d tokens pass
-    const tokenAge = decoded.iat ? Date.now() - decoded.iat * 1000 : 0; // iat is in seconds, convert to ms
+    const MAX_SESSION_AGE_MS = 7 * 24 * 60 * 60 * 1000; // 7 days
+    const SESSION_CLOCK_SKEW_MS = 10000; // 10 seconds tolerance for clock drift
+    const tokenAge = decoded.iat ? Date.now() - decoded.iat * 1000 : 0;
 
     if (tokenAge - SESSION_CLOCK_SKEW_MS > MAX_SESSION_AGE_MS) {
-      const daysSinceIssued = Math.floor(tokenAge / (24 * 60 * 60 * 1000));
-      logger.warn(
-        `[auth] Session expired due to age for ${req.method} ${req.path} from ${req.ip} (${daysSinceIssued} days old)`,
-      );
+      logger.warn(`[auth:${requestId}] Session too old`);
       return respondUnauthorized('Session expired. Please login again.');
     }
 
@@ -140,10 +108,10 @@ export const authenticateToken = (req, res, next) => {
     };
 
     req.user = user;
-    logger.info(`[auth] Authenticated user ${user.id} for ${req.method} ${req.path}`);
+    logger.info(`[auth:${requestId}] Authenticated user ${user.id}`);
     next();
   } catch (error) {
-    logger.error(`[auth] Unexpected error: ${error.message}`);
+    logger.error(`[auth:${requestId}] Unexpected error: ${error.message}`);
     return res.status(401).json({
       success: false,
       message: 'Invalid or expired token',
@@ -177,23 +145,30 @@ export const optionalAuth = (req, res, next) => {
       return next(); // Continue without user if JWT not configured
     }
 
-    const allowedAlgorithms = (process.env.JWT_ALLOWED_ALGORITHMS || 'HS256')
-      .split(',')
-      .map((alg) => alg.trim())
-      .filter(Boolean);
+    // SECURITY: Hardcoded safe JWT algorithms to prevent algorithm confusion attacks
+    const SAFE_JWT_ALGORITHMS = ['HS256', 'HS384', 'HS512'];
 
-    jwt.verify(token, secret, { algorithms: allowedAlgorithms.length ? allowedAlgorithms : undefined }, (err, decoded) => {
-      if (!err && decoded) {
-        // Map userId to id for backward compatibility
-        const user = {
-          ...decoded,
-          id: decoded.userId || decoded.id,
-        };
-        req.user = user;
-        logger.info(`[auth] Optional auth: authenticated user ${user.id}`);
-      }
-      next();
-    });
+    jwt.verify(
+      token,
+      secret,
+      {
+        algorithms: SAFE_JWT_ALGORITHMS,
+        ignoreExpiration: false,
+        ignoreNotBefore: false,
+      },
+      (err, decoded) => {
+        if (!err && decoded) {
+          // Map userId to id for backward compatibility
+          const user = {
+            ...decoded,
+            id: decoded.userId || decoded.id,
+          };
+          req.user = user;
+          logger.info(`[auth] Optional auth: authenticated user ${user.id}`);
+        }
+        next();
+      },
+    );
   } catch (error) {
     logger.warn(`[auth] Optional auth error: ${error.message}`);
     next(); // Continue without user on error
@@ -265,6 +240,29 @@ export const generateRefreshToken = payload => {
   };
   return generateToken(uniquePayload, '7d');
 };
+
+/**
+ * Clean up old cache entries periodically
+ */
+if (process.env.NODE_ENV !== 'test') {
+  setInterval(
+    () => {
+      const now = Date.now();
+      const maxAge = 10 * 60 * 1000; // 10 minutes
+
+      for (const [userId, activities] of suspiciousActivityCache.entries()) {
+        const recentActivities = activities.filter(activity => now - activity.timestamp < maxAge);
+
+        if (recentActivities.length === 0) {
+          suspiciousActivityCache.delete(userId);
+        } else {
+          suspiciousActivityCache.set(userId, recentActivities);
+        }
+      }
+    },
+    5 * 60 * 1000,
+  ); // Clean every 5 minutes
+}
 
 // Export authenticateToken as the default export for backward compatibility
 export default authenticateToken;
