@@ -151,6 +151,45 @@ router.post(
       .withMessage('notes must be 500 characters or less'),
     handleValidationErrors,
   ],
+  // Dual ownership validation middleware (IDOR protection)
+  async (req, res, next) => {
+    try {
+      const { foalId, groomId } = req.body;
+      const userId = req.user.id;
+
+      // Import findOwnedResource dynamically to avoid circular dependencies
+      const { findOwnedResource } = await import('../middleware/ownership.mjs');
+
+      // Validate foal ownership
+      const foal = await findOwnedResource('foal', foalId, userId);
+      if (!foal) {
+        return res.status(404).json({
+          success: false,
+          message: 'Foal not found',
+        });
+      }
+
+      // Validate groom ownership
+      const groom = await findOwnedResource('groom', groomId, userId);
+      if (!groom) {
+        return res.status(404).json({
+          success: false,
+          message: 'Groom not found',
+        });
+      }
+
+      // Attach validated resources for controller
+      req.foal = foal;
+      req.groom = groom;
+      next();
+    } catch (error) {
+      logger.error('[groomRoutes] Ownership validation error:', error);
+      return res.status(500).json({
+        success: false,
+        message: 'Internal server error',
+      });
+    }
+  },
   assignGroom,
 );
 
@@ -178,11 +217,12 @@ router.post(
  */
 router.post(
   '/ensure-default/:foalId',
+  authenticateToken, // IDOR Protection: Require authentication
   [
     param('foalId').isInt({ min: 1 }).withMessage('foalId must be a positive integer'),
     handleValidationErrors,
   ],
-  ensureDefaultAssignment,
+  requireOwnership('foal', { idParam: 'foalId' }), // IDOR Protection: Validate foal ownership
   ensureDefaultAssignment,
 );
 
@@ -210,11 +250,12 @@ router.post(
  */
 router.get(
   '/assignments/:foalId',
+  authenticateToken, // IDOR Protection: Require authentication
   [
     param('foalId').isInt({ min: 1 }).withMessage('foalId must be a positive integer'),
     handleValidationErrors,
   ],
-  getFoalAssignments,
+  requireOwnership('foal', { idParam: 'foalId' }), // IDOR Protection: Validate foal ownership
   getFoalAssignments,
 );
 
@@ -292,6 +333,45 @@ router.post(
       .withMessage('notes must be 500 characters or less'),
     handleValidationErrors,
   ],
+  // Dual ownership validation middleware (IDOR protection)
+  async (req, res, next) => {
+    try {
+      const { foalId, groomId } = req.body;
+      const userId = req.user.id;
+
+      // Import findOwnedResource dynamically to avoid circular dependencies
+      const { findOwnedResource } = await import('../middleware/ownership.mjs');
+
+      // Validate foal ownership
+      const foal = await findOwnedResource('foal', foalId, userId);
+      if (!foal) {
+        return res.status(404).json({
+          success: false,
+          message: 'Foal not found',
+        });
+      }
+
+      // Validate groom ownership
+      const groom = await findOwnedResource('groom', groomId, userId);
+      if (!groom) {
+        return res.status(404).json({
+          success: false,
+          message: 'Groom not found',
+        });
+      }
+
+      // Attach validated resources for controller
+      req.foal = foal;
+      req.groom = groom;
+      next();
+    } catch (error) {
+      logger.error('[groomRoutes] Ownership validation error:', error);
+      return res.status(500).json({
+        success: false,
+        message: 'Internal server error',
+      });
+    }
+  },
   recordInteraction,
 );
 
@@ -320,7 +400,26 @@ router.post(
  */
 router.get(
   '/user/:userId',
+  authenticateToken, // IDOR Protection: Require authentication
   [param('userId').notEmpty().withMessage('userId is required'), handleValidationErrors],
+  // IDOR Protection: Self-access validation middleware
+  (req, res, next) => {
+    const targetUserId = req.params.userId;
+    const authenticatedUserId = req.user.id;
+
+    // Validate self-access: user can only access their own grooms
+    if (authenticatedUserId !== targetUserId) {
+      logger.warn(
+        `[groomRoutes] Self-access violation: user ${authenticatedUserId} attempted to access grooms for user ${targetUserId}`,
+      );
+      return res.status(404).json({
+        success: false,
+        message: 'User not found', // Return 404 to prevent user enumeration
+      });
+    }
+
+    next();
+  },
   getUserGrooms,
 );
 

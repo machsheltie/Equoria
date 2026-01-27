@@ -1,7 +1,6 @@
 import express from 'express';
 import { body, param, validationResult } from 'express-validator';
 import prisma from '../db/index.mjs';
-import { getHorseById } from '../models/horseModel.mjs';
 import { getUserById } from '../models/userModel.mjs';
 import { enterAndRunShow } from '../controllers/competitionController.mjs';
 import { getResultsByShow, getResultsByHorse } from '../models/resultModel.mjs';
@@ -47,7 +46,7 @@ const validateEnterShow = [
  *   }
  * }
  */
-router.post('/enter-show', validateEnterShow, async (req, res) => {
+router.post('/enter-show', auth, validateEnterShow, async (req, res) => {
   try {
     // Check for validation errors
     const errors = validationResult(req);
@@ -63,6 +62,22 @@ router.post('/enter-show', validateEnterShow, async (req, res) => {
     }
 
     const { showId, horseIds } = req.body;
+    const userId = req.user.id;
+
+    // IDOR Protection: Batch ownership validation for all horses
+    const { validateBatchOwnership } = await import('../middleware/ownership.mjs');
+    const ownedHorses = await validateBatchOwnership('horse', horseIds, userId);
+
+    // Verify all horses are owned by the user
+    if (ownedHorses.length !== horseIds.length) {
+      logger.warn(
+        `[competitionRoutes.POST /enter-show] Ownership violation: user ${userId} attempted to enter ${horseIds.length} horses but only owns ${ownedHorses.length}`,
+      );
+      return res.status(404).json({
+        success: false,
+        message: 'One or more horses not found', // Prevent ownership disclosure
+      });
+    }
 
     logger.info(
       `[competitionRoutes.POST /enter-show] Entering ${horseIds.length} horses into show ${showId}`,
