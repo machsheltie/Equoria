@@ -128,8 +128,10 @@ router.get('/csrf-token', getCsrfToken);
  *               password:
  *                 type: string
  *                 minLength: 8
- *                 description: Password (minimum 8 characters)
- *                 example: "securePassword123"
+ *                 maxLength: 128
+ *                 pattern: '^(?=.*[a-z])(?=.*[A-Z])(?=.*\d)(?=.*[@$!%*?&])'
+ *                 description: Password (8-128 characters, must contain lowercase, uppercase, number, and special character)
+ *                 example: "SecurePass123!"
  *               firstName:
  *                 type: string
  *                 minLength: 1
@@ -173,11 +175,11 @@ router.post(
       .trim()
       .escape(), // XSS prevention (CWE-79)
     body('password')
-      .isLength({ min: 8 })
-      .withMessage('Password must be at least 8 characters long')
-      .matches(/^(?=.*[a-z])(?=.*[A-Z])(?=.*\d)/)
+      .isLength({ min: 8, max: 128 })
+      .withMessage('Password must be between 8 and 128 characters long')
+      .matches(/^(?=.*[a-z])(?=.*[A-Z])(?=.*\d)(?=.*[@$!%*?&])/)
       .withMessage(
-        'Password must contain at least one lowercase letter, one uppercase letter, and one number',
+        'Password must contain at least one lowercase letter, one uppercase letter, one number, and one special character (@$!%*?&)',
       ),
     body('firstName')
       .trim()
@@ -384,6 +386,11 @@ router.get('/me', profileRateLimiter, authenticateToken, authController.getProfi
  *                 pattern: '^[a-zA-Z0-9_]+$'
  *                 description: Unique username
  *                 example: "johndoe"
+ *               bio:
+ *                 type: string
+ *                 maxLength: 500
+ *                 description: User biography or profile description
+ *                 example: "Horse enthusiast and competitive rider"
  *     responses:
  *       200:
  *         description: Profile updated successfully
@@ -440,6 +447,12 @@ router.put(
       .matches(/^[a-zA-Z0-9_]+$/)
       .withMessage('Username can only contain letters, numbers, and underscores')
       .trim()
+      .escape(), // XSS prevention (CWE-79)
+    body('bio')
+      .optional()
+      .trim()
+      .isLength({ max: 500 })
+      .withMessage('Bio must be 500 characters or less')
       .escape(), // XSS prevention (CWE-79)
     handleValidationErrors,
     sanitizeRequestData, // Remove non-validated fields (CWE-20)
