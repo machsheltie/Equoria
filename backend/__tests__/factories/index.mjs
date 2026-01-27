@@ -130,11 +130,7 @@ export function createMockGroom(overrides = {}) {
  * @returns {string} JWT token string
  */
 export function createMockToken(userId, options = {}) {
-  const {
-    expired = false,
-    expiresIn = '15m',
-    payload = {},
-  } = options;
+  const { expired = false, expiresIn = '15m', payload = {} } = options;
 
   const tokenPayload = {
     userId,
@@ -142,7 +138,9 @@ export function createMockToken(userId, options = {}) {
     ...payload,
   };
 
+  // SECURITY: Explicitly specify HS256 to match auth.mjs verification requirements
   return jwt.sign(tokenPayload, TEST_CONFIG.JWT_SECRET, {
+    algorithm: 'HS256',
     expiresIn: expired ? '1ms' : expiresIn,
   });
 }
@@ -155,10 +153,8 @@ export function createMockToken(userId, options = {}) {
  * @returns {string} JWT refresh token string
  */
 export function createMockRefreshToken(userId, options = {}) {
-  const {
-    expired = false,
-    familyId = `family_${Math.random().toString(36).substr(2, 9)}`,
-  } = options;
+  const { expired = false, familyId = `family_${Math.random().toString(36).substr(2, 9)}` } =
+    options;
 
   return createMockToken(userId, {
     expired,
@@ -284,7 +280,7 @@ export function createMockCsrfToken() {
  */
 export function createMockUsers(count, baseOverrides = {}) {
   return Array.from({ length: count }, (_, i) =>
-    createMockUser({ ...baseOverrides, email: `test${i}@example.com` })
+    createMockUser({ ...baseOverrides, email: `test${i}@example.com` }),
   );
 }
 
@@ -297,7 +293,7 @@ export function createMockUsers(count, baseOverrides = {}) {
  */
 export function createMockHorses(count, baseOverrides = {}) {
   return Array.from({ length: count }, (_, i) =>
-    createMockHorse({ ...baseOverrides, name: `TestHorse${i}` })
+    createMockHorse({ ...baseOverrides, name: `TestHorse${i}` }),
   );
 }
 

@@ -22,31 +22,80 @@ import { describe, it, expect, beforeEach, afterEach } from '@jest/globals';
 import request from 'supertest';
 import app from '../app.mjs';
 import prisma from '../db/index.mjs';
+import { generateTestToken } from './helpers/authHelper.mjs';
 // TODO: Will use GROOM_CONFIG in future integration tests
 // import { GROOM_CONFIG } from '../config/groomConfig.mjs';
 
 describe('Groom Bonding System Integration', () => {
   let testUser, testGroom, testHorse, testAssignment;
+  let authToken;
+  const createdInteractionIds = new Set();
+  const createdAssignmentIds = new Set();
+  const createdGroomIds = new Set();
+  const createdHorseIds = new Set();
+  const createdUserIds = new Set();
+
+  const cleanupTestData = async () => {
+    try {
+      if (createdInteractionIds.size > 0) {
+        await prisma.groomInteraction.deleteMany({
+          where: { id: { in: Array.from(createdInteractionIds) } },
+        });
+        createdInteractionIds.clear();
+      }
+      if (createdAssignmentIds.size > 0) {
+        await prisma.groomAssignment.deleteMany({
+          where: { id: { in: Array.from(createdAssignmentIds) } },
+        });
+        createdAssignmentIds.clear();
+      }
+      if (createdGroomIds.size > 0) {
+        await prisma.groom.deleteMany({
+          where: { id: { in: Array.from(createdGroomIds) } },
+        });
+        createdGroomIds.clear();
+      }
+      if (createdHorseIds.size > 0) {
+        await prisma.horse.deleteMany({
+          where: { id: { in: Array.from(createdHorseIds) } },
+        });
+        createdHorseIds.clear();
+      }
+      if (createdUserIds.size > 0) {
+        await prisma.user.deleteMany({
+          where: { id: { in: Array.from(createdUserIds) } },
+        });
+        createdUserIds.clear();
+      }
+    } catch (error) {
+      console.error('Cleanup error:', error.message);
+    }
+  };
 
   beforeEach(async () => {
-    // Clean up test data
-    await prisma.groomInteraction.deleteMany({});
-    await prisma.groomAssignment.deleteMany({});
-    await prisma.groom.deleteMany({});
-    await prisma.horse.deleteMany({});
-    await prisma.user.deleteMany({});
+    // Clean up before each test
+    await cleanupTestData();
 
-    // Create test user
+    // Create test user with unique identifiers
+    const suffix = `${Date.now()}_${Math.random().toString(36).substr(2, 5)}`;
     testUser = await prisma.user.create({
       data: {
-        id: 'test-user-bonding',
-        username: 'testuser',
-        email: 'test@example.com',
+        id: `user-bonding-${suffix}`,
+        username: `testuser_${suffix}`,
+        email: `test_${suffix}@example.com`,
         password: 'hashedpassword',
         firstName: 'Test',
         lastName: 'User',
         money: 1000,
       },
+    });
+    createdUserIds.add(testUser.id);
+
+    // Generate auth token for this user
+    authToken = generateTestToken({
+      id: testUser.id,
+      email: testUser.email,
+      role: 'admin',
     });
 
     // Create test groom
@@ -61,6 +110,7 @@ describe('Groom Bonding System Integration', () => {
         userId: testUser.id,
       },
     });
+    createdGroomIds.add(testGroom.id);
 
     // Create test horse (3+ years old)
     const birthDate = new Date();
@@ -78,6 +128,7 @@ describe('Groom Bonding System Integration', () => {
         burnoutStatus: 'none',
       },
     });
+    createdHorseIds.add(testHorse.id);
 
     // Create groom assignment
     testAssignment = await prisma.groomAssignment.create({
@@ -88,27 +139,36 @@ describe('Groom Bonding System Integration', () => {
         userId: testUser.id,
       },
     });
+    createdAssignmentIds.add(testAssignment.id);
   });
 
   afterEach(async () => {
+    // Track any interactions created during the test
+    if (testHorse) {
+      const interactions = await prisma.groomInteraction.findMany({
+        where: { foalId: testHorse.id },
+      });
+      interactions.forEach(i => createdInteractionIds.add(i.id));
+    }
+
     // Clean up test data
-    await prisma.groomInteraction.deleteMany({});
-    await prisma.groomAssignment.deleteMany({});
-    await prisma.groom.deleteMany({});
-    await prisma.horse.deleteMany({});
-    await prisma.user.deleteMany({});
+    await cleanupTestData();
   });
 
   describe('New Grooming Tasks for Horses 3+ Years Old', () => {
     it('should successfully process brushing interaction', async () => {
-      const response = await request(app).post('/api/grooms/interact').send({
-        foalId: testHorse.id,
-        groomId: testGroom.id,
-        assignmentId: testAssignment.id,
-        interactionType: 'brushing',
-        duration: 30,
-        notes: 'Daily brushing session',
-      });
+      const response = await request(app)
+        .post('/api/grooms/interact')
+        .set('Authorization', `Bearer ${authToken}`)
+        .set('x-test-skip-csrf', 'true')
+        .send({
+          foalId: testHorse.id,
+          groomId: testGroom.id,
+          assignmentId: testAssignment.id,
+          interactionType: 'brushing',
+          duration: 30,
+          notes: 'Daily brushing session',
+        });
 
       expect(response.status).toBe(200);
       expect(response.body.success).toBe(true);
@@ -117,14 +177,18 @@ describe('Groom Bonding System Integration', () => {
     });
 
     it('should successfully process hand-walking interaction', async () => {
-      const response = await request(app).post('/api/grooms/interact').send({
-        foalId: testHorse.id,
-        groomId: testGroom.id,
-        assignmentId: testAssignment.id,
-        interactionType: 'hand-walking',
-        duration: 45,
-        notes: 'Hand-walking exercise',
-      });
+      const response = await request(app)
+        .post('/api/grooms/interact')
+        .set('Authorization', `Bearer ${authToken}`)
+        .set('x-test-skip-csrf', 'true')
+        .send({
+          foalId: testHorse.id,
+          groomId: testGroom.id,
+          assignmentId: testAssignment.id,
+          interactionType: 'hand-walking',
+          duration: 45,
+          notes: 'Hand-walking exercise',
+        });
 
       expect(response.status).toBe(200);
       expect(response.body.success).toBe(true);
@@ -133,14 +197,18 @@ describe('Groom Bonding System Integration', () => {
     });
 
     it('should successfully process stall_care interaction', async () => {
-      const response = await request(app).post('/api/grooms/interact').send({
-        foalId: testHorse.id,
-        groomId: testGroom.id,
-        assignmentId: testAssignment.id,
-        interactionType: 'stall_care',
-        duration: 20,
-        notes: 'Stall cleaning and maintenance',
-      });
+      const response = await request(app)
+        .post('/api/grooms/interact')
+        .set('Authorization', `Bearer ${authToken}`)
+        .set('x-test-skip-csrf', 'true')
+        .send({
+          foalId: testHorse.id,
+          groomId: testGroom.id,
+          assignmentId: testAssignment.id,
+          interactionType: 'stall_care',
+          duration: 20,
+          notes: 'Stall cleaning and maintenance',
+        });
 
       expect(response.status).toBe(200);
       expect(response.body.success).toBe(true);
@@ -168,14 +236,19 @@ describe('Groom Bonding System Integration', () => {
           burnoutStatus: 'none',
         },
       });
+      createdHorseIds.add(youngHorse.id);
 
-      const response = await request(app).post('/api/grooms/interact').send({
-        foalId: youngHorse.id,
-        groomId: testGroom.id,
-        assignmentId: testAssignment.id,
-        interactionType: 'brushing',
-        duration: 30,
-      });
+      const response = await request(app)
+        .post('/api/grooms/interact')
+        .set('Authorization', `Bearer ${authToken}`)
+        .set('x-test-skip-csrf', 'true')
+        .send({
+          foalId: youngHorse.id,
+          groomId: testGroom.id,
+          assignmentId: testAssignment.id,
+          interactionType: 'brushing',
+          duration: 30,
+        });
 
       expect(response.status).toBe(400);
       expect(response.body.success).toBe(false);
@@ -199,13 +272,17 @@ describe('Groom Bonding System Integration', () => {
         },
       });
 
-      await request(app).post('/api/grooms/interact').send({
-        foalId: testHorse.id,
-        groomId: testGroom.id,
-        assignmentId: testAssignment.id,
-        interactionType: 'brushing',
-        duration: 30,
-      });
+      await request(app)
+        .post('/api/grooms/interact')
+        .set('Authorization', `Bearer ${authToken}`)
+        .set('x-test-skip-csrf', 'true')
+        .send({
+          foalId: testHorse.id,
+          groomId: testGroom.id,
+          assignmentId: testAssignment.id,
+          interactionType: 'brushing',
+          duration: 30,
+        });
 
       // Check updated horse record
       const updatedHorse = await prisma.horse.findUnique({
@@ -230,13 +307,17 @@ describe('Groom Bonding System Integration', () => {
         },
       });
 
-      await request(app).post('/api/grooms/interact').send({
-        foalId: testHorse.id,
-        groomId: testGroom.id,
-        assignmentId: testAssignment.id,
-        interactionType: 'brushing',
-        duration: 30,
-      });
+      await request(app)
+        .post('/api/grooms/interact')
+        .set('Authorization', `Bearer ${authToken}`)
+        .set('x-test-skip-csrf', 'true')
+        .send({
+          foalId: testHorse.id,
+          groomId: testGroom.id,
+          assignmentId: testAssignment.id,
+          interactionType: 'brushing',
+          duration: 30,
+        });
 
       // Check immunity granted
       const updatedHorse = await prisma.horse.findUnique({
@@ -252,24 +333,32 @@ describe('Groom Bonding System Integration', () => {
   describe('Daily Interaction Limits', () => {
     it('should enforce one grooming session per horse per day', async () => {
       // First interaction should succeed
-      const firstResponse = await request(app).post('/api/grooms/interact').send({
-        foalId: testHorse.id,
-        groomId: testGroom.id,
-        assignmentId: testAssignment.id,
-        interactionType: 'brushing',
-        duration: 30,
-      });
+      const firstResponse = await request(app)
+        .post('/api/grooms/interact')
+        .set('Authorization', `Bearer ${authToken}`)
+        .set('x-test-skip-csrf', 'true')
+        .send({
+          foalId: testHorse.id,
+          groomId: testGroom.id,
+          assignmentId: testAssignment.id,
+          interactionType: 'brushing',
+          duration: 30,
+        });
 
       expect(firstResponse.status).toBe(200);
 
       // Second interaction same day should fail
-      const secondResponse = await request(app).post('/api/grooms/interact').send({
-        foalId: testHorse.id,
-        groomId: testGroom.id,
-        assignmentId: testAssignment.id,
-        interactionType: 'hand-walking',
-        duration: 30,
-      });
+      const secondResponse = await request(app)
+        .post('/api/grooms/interact')
+        .set('Authorization', `Bearer ${authToken}`)
+        .set('x-test-skip-csrf', 'true')
+        .send({
+          foalId: testHorse.id,
+          groomId: testGroom.id,
+          assignmentId: testAssignment.id,
+          interactionType: 'hand-walking',
+          duration: 30,
+        });
 
       expect(secondResponse.status).toBe(400);
       expect(secondResponse.body.message).toContain('already had a groom interaction today');

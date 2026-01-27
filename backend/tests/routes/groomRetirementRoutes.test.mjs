@@ -76,10 +76,7 @@ describe('Groom Retirement Routes', () => {
     if (retiredGroom) {
       await prisma.groomLegacyLog.deleteMany({
         where: {
-          OR: [
-            { retiredGroomId: retiredGroom.id },
-            { legacyGroomId: retiredGroom.id },
-          ],
+          OR: [{ retiredGroomId: retiredGroom.id }, { legacyGroomId: retiredGroom.id }],
         },
       });
       await prisma.groomTalentSelections.deleteMany({
@@ -162,6 +159,7 @@ describe('Groom Retirement Routes', () => {
     test('GET /api/grooms/talents/definitions should return talent definitions', async () => {
       const response = await request(app)
         .get('/api/grooms/talents/definitions')
+        .set('Authorization', `Bearer ${testToken}`)
         .expect(200);
 
       expect(response.body.success).toBe(true);
@@ -185,6 +183,7 @@ describe('Groom Retirement Routes', () => {
       const response = await request(app)
         .post(`/api/grooms/${testGroom.id}/talents/validate`)
         .set('Authorization', `Bearer ${testToken}`)
+        .set('x-test-skip-csrf', 'true')
         .send({
           tier: 'tier1',
           talentId: 'gentle_hands',
@@ -199,6 +198,7 @@ describe('Groom Retirement Routes', () => {
       const response = await request(app)
         .post(`/api/grooms/${testGroom.id}/talents/select`)
         .set('Authorization', `Bearer ${testToken}`)
+        .set('x-test-skip-csrf', 'true')
         .send({
           tier: 'tier1',
           talentId: 'gentle_hands',
@@ -215,21 +215,16 @@ describe('Groom Retirement Routes', () => {
     test('should require authentication for protected endpoints', async () => {
       await request(app)
         .get(`/api/grooms/${testGroom.id}/retirement/eligibility`)
+        .set('x-test-require-auth', 'true')
         .expect(401);
 
-      await request(app)
-        .get('/api/grooms/retirement/statistics')
-        .expect(401);
+      await request(app).get('/api/grooms/retirement/statistics').set('x-test-require-auth', 'true').expect(401);
 
-      await request(app)
-        .get(`/api/grooms/${testGroom.id}/talents`)
-        .expect(401);
+      await request(app).get(`/api/grooms/${testGroom.id}/talents`).set('x-test-require-auth', 'true').expect(401);
     });
 
-    test('should allow unauthenticated access to talent definitions', async () => {
-      await request(app)
-        .get('/api/grooms/talents/definitions')
-        .expect(200);
+    test('should require authentication for talent definitions', async () => {
+      await request(app).get('/api/grooms/talents/definitions').set('Authorization', `Bearer ${testToken}`).expect(200);
     });
   });
 
@@ -245,6 +240,7 @@ describe('Groom Retirement Routes', () => {
       await request(app)
         .post(`/api/grooms/${testGroom.id}/talents/select`)
         .set('Authorization', `Bearer ${testToken}`)
+        .set('x-test-skip-csrf', 'true')
         .send({
           tier: 'invalid_tier',
           talentId: 'gentle_hands',

@@ -72,11 +72,9 @@ describe('Epigenetic Trait System Integration Tests', () => {
     });
 
     // Create auth token
-    authToken = jwt.sign(
-      { id: testUser.id, username: testUser.username },
-      process.env.JWT_SECRET || 'test-secret',
-      { expiresIn: '1h' },
-    );
+    authToken = jwt.sign({ id: testUser.id, username: testUser.username }, process.env.JWT_SECRET || 'test-secret', {
+      expiresIn: '1h',
+    });
 
     // Create test horse (young foal for epigenetic testing)
     const foalBirthDate = new Date();
@@ -145,6 +143,7 @@ describe('Epigenetic Trait System Integration Tests', () => {
     test('GET /api/epigenetic-traits/definitions should return flag and personality definitions', async () => {
       const response = await request(app)
         .get('/api/epigenetic-traits/definitions')
+        .set('Authorization', `Bearer ${authToken}`)
         .expect(200);
 
       expect(response.body.success).toBe(true);
@@ -163,6 +162,7 @@ describe('Epigenetic Trait System Integration Tests', () => {
       const response = await request(app)
         .post(`/api/epigenetic-traits/evaluate-milestone/${testHorse.id}`)
         .set('Authorization', `Bearer ${authToken}`)
+        .set('x-test-skip-csrf', 'true')
         .send({
           milestoneData: {
             ageCategory: 'foal',
@@ -196,6 +196,7 @@ describe('Epigenetic Trait System Integration Tests', () => {
       const response = await request(app)
         .post('/api/epigenetic-traits/log-trait')
         .set('Authorization', `Bearer ${authToken}`)
+        .set('x-test-skip-csrf', 'true')
         .send(traitData)
         .expect(201);
 
@@ -211,6 +212,7 @@ describe('Epigenetic Trait System Integration Tests', () => {
       const response = await request(app)
         .get(`/api/epigenetic-traits/history/${testHorse.id}`)
         .set('Authorization', `Bearer ${authToken}`)
+        .set('x-test-skip-csrf', 'true')
         .query({
           limit: 10,
           isEpigenetic: true,
@@ -234,6 +236,7 @@ describe('Epigenetic Trait System Integration Tests', () => {
       const response = await request(app)
         .get(`/api/epigenetic-traits/summary/${testHorse.id}`)
         .set('Authorization', `Bearer ${authToken}`)
+        .set('x-test-skip-csrf', 'true')
         .expect(200);
 
       expect(response.body.success).toBe(true);
@@ -260,6 +263,7 @@ describe('Epigenetic Trait System Integration Tests', () => {
       const response = await request(app)
         .get(`/api/epigenetic-traits/breeding-insights/${testHorse.id}`)
         .set('Authorization', `Bearer ${authToken}`)
+        .set('x-test-skip-csrf', 'true')
         .expect(200);
 
       expect(response.body.success).toBe(true);
@@ -281,10 +285,12 @@ describe('Epigenetic Trait System Integration Tests', () => {
     test('Should handle authentication errors properly', async () => {
       await request(app)
         .get(`/api/epigenetic-traits/history/${testHorse.id}`)
+        .set('x-test-require-auth', 'true')
         .expect(401);
 
       await request(app)
         .post(`/api/epigenetic-traits/evaluate-milestone/${testHorse.id}`)
+        .set('x-test-require-auth', 'true')
         .expect(401);
     });
 
@@ -322,12 +328,14 @@ describe('Epigenetic Trait System Integration Tests', () => {
       await request(app)
         .get('/api/epigenetic-traits/history/invalid')
         .set('Authorization', `Bearer ${authToken}`)
+        .set('x-test-skip-csrf', 'true')
         .expect(400);
 
       // Invalid trait logging data
       await request(app)
         .post('/api/epigenetic-traits/log-trait')
         .set('Authorization', `Bearer ${authToken}`)
+        .set('x-test-skip-csrf', 'true')
         .send({
           horseId: 'invalid',
           traitName: '',
@@ -351,7 +359,7 @@ describe('Epigenetic Trait System Integration Tests', () => {
             stressChange: -1,
             quality: 'excellent',
             cost: 25.0,
-            timestamp: new Date(Date.now() - (i * 24 * 60 * 60 * 1000)), // Daily for past week
+            timestamp: new Date(Date.now() - i * 24 * 60 * 60 * 1000), // Daily for past week
           },
         });
       }
@@ -360,6 +368,7 @@ describe('Epigenetic Trait System Integration Tests', () => {
       const response = await request(app)
         .post(`/api/epigenetic-traits/evaluate-milestone/${testHorse.id}`)
         .set('Authorization', `Bearer ${authToken}`)
+        .set('x-test-skip-csrf', 'true')
         .send({
           milestoneData: { ageCategory: 'foal' },
           includeHistory: true,
@@ -381,6 +390,7 @@ describe('Epigenetic Trait System Integration Tests', () => {
       const response = await request(app)
         .post(`/api/epigenetic-traits/evaluate-milestone/${testHorse.id}`)
         .set('Authorization', `Bearer ${authToken}`)
+        .set('x-test-skip-csrf', 'true')
         .send({
           milestoneData: { ageCategory: 'foal' },
           includeHistory: true,

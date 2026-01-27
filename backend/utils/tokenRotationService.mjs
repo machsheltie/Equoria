@@ -22,10 +22,10 @@ import logger from './logger.mjs';
 
 // Token configuration
 const TOKEN_CONFIG = {
-  ACCESS_TOKEN_EXPIRY: '15m',  // 15 minutes
-  REFRESH_TOKEN_EXPIRY: '7d',  // 7 days
-  FAMILY_ID_LENGTH: 32,        // 32 character family ID
-  CLEANUP_THRESHOLD_DAYS: 30,  // Cleanup tokens older than 30 days
+  ACCESS_TOKEN_EXPIRY: '15m', // 15 minutes
+  REFRESH_TOKEN_EXPIRY: '7d', // 7 days
+  FAMILY_ID_LENGTH: 32, // 32 character family ID
+  CLEANUP_THRESHOLD_DAYS: 30, // Cleanup tokens older than 30 days
 };
 
 /**
@@ -77,18 +77,16 @@ export async function createTokenPair(userId, familyId) {
       iat: Math.floor(Date.now() / 1000),
     };
 
-    // Sign tokens
-    const accessToken = jwt.sign(
-      accessPayload,
-      process.env.JWT_SECRET,
-      { expiresIn: TOKEN_CONFIG.ACCESS_TOKEN_EXPIRY }
-    );
+    // Sign tokens with explicit HS256 algorithm (SECURITY: must match auth.mjs verification)
+    const accessToken = jwt.sign(accessPayload, process.env.JWT_SECRET, {
+      algorithm: 'HS256',
+      expiresIn: TOKEN_CONFIG.ACCESS_TOKEN_EXPIRY,
+    });
 
-    const refreshToken = jwt.sign(
-      refreshPayload,
-      process.env.JWT_REFRESH_SECRET,
-      { expiresIn: TOKEN_CONFIG.REFRESH_TOKEN_EXPIRY }
-    );
+    const refreshToken = jwt.sign(refreshPayload, process.env.JWT_REFRESH_SECRET, {
+      algorithm: 'HS256',
+      expiresIn: TOKEN_CONFIG.REFRESH_TOKEN_EXPIRY,
+    });
 
     // Calculate expiration date
     const expiresAt = new Date(Date.now() + 7 * 24 * 60 * 60 * 1000); // 7 days
@@ -127,7 +125,9 @@ export async function createTokenPair(userId, familyId) {
       });
     } catch (err) {
       if (process.env.NODE_ENV === 'test') {
-        logger.warn('[TokenRotation] Skipping refresh token persistence in test env', { error: err.message });
+        logger.warn('[TokenRotation] Skipping refresh token persistence in test env', {
+          error: err.message,
+        });
       } else {
         throw err;
       }
@@ -247,8 +247,8 @@ export async function validateRefreshToken(token) {
  */
 export async function detectTokenReuse(token) {
   try {
-    // First validate token structure
-    const validation = await validateRefreshToken(token);
+    // First validate token structure (throws error if invalid)
+    await validateRefreshToken(token);
 
     // If token is inactive, it might be reuse
     const tokenRecord = await prisma.refreshToken.findFirst({
@@ -345,7 +345,7 @@ export async function rotateRefreshToken(oldToken) {
     }
 
     // Use transaction to ensure atomicity
-    const result = await prisma.$transaction(async (tx) => {
+    const result = await prisma.$transaction(async tx => {
       // Mark old token as used (inactive but not invalidated)
       await tx.refreshToken.update({
         where: { token: oldToken },
@@ -380,18 +380,16 @@ export async function rotateRefreshToken(oldToken) {
         iat: Math.floor(Date.now() / 1000),
       };
 
-      // Sign tokens
-      const accessToken = jwt.sign(
-        accessPayload,
-        process.env.JWT_SECRET,
-        { expiresIn: TOKEN_CONFIG.ACCESS_TOKEN_EXPIRY }
-      );
+      // Sign tokens with explicit HS256 algorithm (SECURITY: must match auth.mjs verification)
+      const accessToken = jwt.sign(accessPayload, process.env.JWT_SECRET, {
+        algorithm: 'HS256',
+        expiresIn: TOKEN_CONFIG.ACCESS_TOKEN_EXPIRY,
+      });
 
-      const refreshToken = jwt.sign(
-        refreshPayload,
-        process.env.JWT_REFRESH_SECRET,
-        { expiresIn: TOKEN_CONFIG.REFRESH_TOKEN_EXPIRY }
-      );
+      const refreshToken = jwt.sign(refreshPayload, process.env.JWT_REFRESH_SECRET, {
+        algorithm: 'HS256',
+        expiresIn: TOKEN_CONFIG.REFRESH_TOKEN_EXPIRY,
+      });
 
       // Calculate expiration date
       const expiresAt = new Date(Date.now() + 7 * 24 * 60 * 60 * 1000); // 7 days
@@ -490,9 +488,7 @@ export async function cleanupExpiredTokens(options = {}) {
   try {
     const { olderThanDays = TOKEN_CONFIG.CLEANUP_THRESHOLD_DAYS } = options;
 
-    const cutoffDate = new Date(
-      Date.now() - olderThanDays * 24 * 60 * 60 * 1000
-    );
+    const cutoffDate = new Date(Date.now() - olderThanDays * 24 * 60 * 60 * 1000);
 
     // Delete expired tokens
     const expiredTokensResult = await prisma.refreshToken.deleteMany({
@@ -500,10 +496,7 @@ export async function cleanupExpiredTokens(options = {}) {
         OR: [
           { expiresAt: { lt: new Date() } },
           {
-            AND: [
-              { isInvalidated: true },
-              { createdAt: { lt: cutoffDate } },
-            ],
+            AND: [{ isInvalidated: true }, { createdAt: { lt: cutoffDate } }],
           },
         ],
       },

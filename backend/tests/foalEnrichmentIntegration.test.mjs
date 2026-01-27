@@ -86,6 +86,7 @@ describe('🐴 INTEGRATION: Foal Enrichment API Integration - Complete API Workf
   let testFoal;
   let testBreed;
   let authToken;
+  let testUser; // Declare testUser in test scope
 
   beforeAll(async () => {
     // Mock test breed
@@ -107,7 +108,8 @@ describe('🐴 INTEGRATION: Foal Enrichment API Integration - Complete API Workf
     };
 
     // Mock test user for authentication
-    const testUser = {
+    testUser = {
+      // Assign to test scope variable (not const)
       id: 'test-user-id',
       username: 'testuser',
       email: 'test@example.com',
@@ -164,6 +166,7 @@ describe('🐴 INTEGRATION: Foal Enrichment API Integration - Complete API Workf
       const response = await request(app)
         .post(`/api/foals/${testFoal.id}/enrichment`)
         .set('Authorization', `Bearer ${authToken}`)
+        .set('x-test-skip-csrf', 'true')
         .send({
           day: 3,
           activity: 'Trailer Exposure',
@@ -225,6 +228,7 @@ describe('🐴 INTEGRATION: Foal Enrichment API Integration - Complete API Workf
       const response = await request(app)
         .post(`/api/foals/${testFoal.id}/enrichment`)
         .set('Authorization', `Bearer ${authToken}`)
+        .set('x-test-skip-csrf', 'true')
         .send({
           day: 3,
           activity: 'Halter Introduction',
@@ -250,6 +254,7 @@ describe('🐴 INTEGRATION: Foal Enrichment API Integration - Complete API Workf
       await request(app)
         .post(`/api/foals/${testFoal.id}/enrichment`)
         .set('Authorization', `Bearer ${authToken}`)
+        .set('x-test-skip-csrf', 'true')
         .send({
           activity: 'Trailer Exposure',
         })
@@ -259,6 +264,7 @@ describe('🐴 INTEGRATION: Foal Enrichment API Integration - Complete API Workf
       await request(app)
         .post(`/api/foals/${testFoal.id}/enrichment`)
         .set('Authorization', `Bearer ${authToken}`)
+        .set('x-test-skip-csrf', 'true')
         .send({
           day: 3,
         })
@@ -268,6 +274,7 @@ describe('🐴 INTEGRATION: Foal Enrichment API Integration - Complete API Workf
       await request(app)
         .post(`/api/foals/${testFoal.id}/enrichment`)
         .set('Authorization', `Bearer ${authToken}`)
+        .set('x-test-skip-csrf', 'true')
         .send({
           day: 7,
           activity: 'Trailer Exposure',
@@ -278,6 +285,7 @@ describe('🐴 INTEGRATION: Foal Enrichment API Integration - Complete API Workf
       await request(app)
         .post(`/api/foals/${testFoal.id}/enrichment`)
         .set('Authorization', `Bearer ${authToken}`)
+        .set('x-test-skip-csrf', 'true')
         .send({
           day: -1,
           activity: 'Trailer Exposure',
@@ -288,6 +296,7 @@ describe('🐴 INTEGRATION: Foal Enrichment API Integration - Complete API Workf
       await request(app)
         .post(`/api/foals/${testFoal.id}/enrichment`)
         .set('Authorization', `Bearer ${authToken}`)
+        .set('x-test-skip-csrf', 'true')
         .send({
           day: 3,
           activity: '',
@@ -299,6 +308,7 @@ describe('🐴 INTEGRATION: Foal Enrichment API Integration - Complete API Workf
       const response = await request(app)
         .post('/api/foals/99999/enrichment')
         .set('Authorization', `Bearer ${authToken}`)
+        .set('x-test-skip-csrf', 'true')
         .send({
           day: 3,
           activity: 'Trailer Exposure',
@@ -313,6 +323,7 @@ describe('🐴 INTEGRATION: Foal Enrichment API Integration - Complete API Workf
       const response = await request(app)
         .post(`/api/foals/${testFoal.id}/enrichment`)
         .set('Authorization', `Bearer ${authToken}`)
+        .set('x-test-skip-csrf', 'true')
         .send({
           day: 0,
           activity: 'Trailer Exposure', // This is a day 3 activity
@@ -328,6 +339,7 @@ describe('🐴 INTEGRATION: Foal Enrichment API Integration - Complete API Workf
       await request(app)
         .post(`/api/foals/${testFoal.id}/enrichment`)
         .set('Authorization', `Bearer ${authToken}`)
+        .set('x-test-skip-csrf', 'true')
         .send({
           day: 3,
           activity: 'leading_practice',
@@ -338,6 +350,7 @@ describe('🐴 INTEGRATION: Foal Enrichment API Integration - Complete API Workf
       await request(app)
         .post(`/api/foals/${testFoal.id}/enrichment`)
         .set('Authorization', `Bearer ${authToken}`)
+        .set('x-test-skip-csrf', 'true')
         .send({
           day: 3,
           activity: 'Leading Practice',
@@ -348,6 +361,7 @@ describe('🐴 INTEGRATION: Foal Enrichment API Integration - Complete API Workf
       await request(app)
         .post(`/api/foals/${testFoal.id}/enrichment`)
         .set('Authorization', `Bearer ${authToken}`)
+        .set('x-test-skip-csrf', 'true')
         .send({
           day: 3,
           activity: 'HANDLING EXERCISES',
@@ -362,6 +376,7 @@ describe('🐴 INTEGRATION: Foal Enrichment API Integration - Complete API Workf
         const response = await request(app)
           .post(`/api/foals/${testFoal.id}/enrichment`)
           .set('Authorization', `Bearer ${authToken}`)
+          .set('x-test-skip-csrf', 'true')
           .send({
             day: 3,
             activity,
@@ -393,6 +408,7 @@ describe('🐴 INTEGRATION: Foal Enrichment API Integration - Complete API Workf
       await request(app)
         .post(`/api/foals/${testFoal.id}/enrichment`)
         .set('Authorization', `Bearer ${authToken}`)
+        .set('x-test-skip-csrf', 'true')
         .send({
           day: 1,
           activity: 'Feeding Assistance',
@@ -439,6 +455,7 @@ describe('🐴 INTEGRATION: Foal Enrichment API Integration - Complete API Workf
       const response = await request(app)
         .post(`/api/foals/${extremeFoal.id}/enrichment`)
         .set('Authorization', `Bearer ${authToken}`)
+        .set('x-test-skip-csrf', 'true')
         .send({
           day: 3,
           activity: 'Trailer Exposure',

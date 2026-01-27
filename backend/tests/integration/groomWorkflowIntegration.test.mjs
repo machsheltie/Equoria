@@ -60,44 +60,94 @@ describe('Groom Workflow Integration Tests', () => {
   let testAdultHorse = null;
   let testBreed = null;
 
+  const createdInteractionIds = new Set();
+  const createdAssignmentIds = new Set();
+  const createdGroomIds = new Set();
+  const createdHorseIds = new Set();
+  const createdUserIds = new Set();
+  const createdBreedIds = new Set();
+
+  const cleanupTestData = async () => {
+    try {
+      if (createdInteractionIds.size > 0) {
+        await prisma.groomInteraction.deleteMany({
+          where: { id: { in: Array.from(createdInteractionIds) } },
+        });
+        createdInteractionIds.clear();
+      }
+      if (createdAssignmentIds.size > 0) {
+        await prisma.groomAssignment.deleteMany({
+          where: { id: { in: Array.from(createdAssignmentIds) } },
+        });
+        createdAssignmentIds.clear();
+      }
+      if (createdGroomIds.size > 0) {
+        await prisma.groom.deleteMany({
+          where: { id: { in: Array.from(createdGroomIds) } },
+        });
+        createdGroomIds.clear();
+      }
+      if (createdHorseIds.size > 0) {
+        await prisma.horse.deleteMany({
+          where: { id: { in: Array.from(createdHorseIds) } },
+        });
+        createdHorseIds.clear();
+      }
+      if (createdUserIds.size > 0) {
+        await prisma.user.deleteMany({
+          where: { id: { in: Array.from(createdUserIds) } },
+        });
+        createdUserIds.clear();
+      }
+      if (createdBreedIds.size > 0) {
+        await prisma.breed.deleteMany({
+          where: { id: { in: Array.from(createdBreedIds) } },
+        });
+        createdBreedIds.clear();
+      }
+    } catch (error) {
+      console.error('Cleanup error:', error.message);
+    }
+  };
+
   beforeEach(async () => {
-    // Clean up test data
-    await prisma.groomAssignment.deleteMany({});
-    await prisma.groomInteraction.deleteMany({});
-    await prisma.groom.deleteMany({});
-    await prisma.horse.deleteMany({});
-    await prisma.user.deleteMany({});
-    await prisma.breed.deleteMany({});
+    // Clean up before starting
+    await cleanupTestData();
+
+    // Create unique suffix
+    const suffix = `${Date.now()}_${Math.random().toString(36).substr(2, 5)}`;
 
     // Create test breed
     testBreed = await prisma.breed.create({
       data: {
-        name: 'Test Breed',
+        name: `Test Breed ${suffix}`,
         description: 'Test breed for integration testing',
       },
     });
+    createdBreedIds.add(testBreed.id);
 
     // Create test user
     testUser = await prisma.user.create({
       data: {
-        id: 'test-user-groom-integration',
-        username: 'groomtestuser',
-        email: 'groomtest@example.com',
+        id: `user-groom-int-${suffix}`,
+        username: `groomtestuser_${suffix}`,
+        email: `groomtest_${suffix}@example.com`,
         password: 'testpassword',
         firstName: 'Groom',
         lastName: 'Tester',
         money: 5000,
       },
     });
+    createdUserIds.add(testUser.id);
 
     // Create test horses of different ages
     testFoal = await prisma.horse.create({
       data: {
-        name: 'Test Foal',
+        name: `Test Foal ${suffix}`,
         sex: 'Filly',
         dateOfBirth: new Date(Date.now() - 365 * 24 * 60 * 60 * 1000), // 1 year old
         age: 365,
-        ownerId: testUser.id, // Add ownerId field for ownership validation
+        ownerId: testUser.id,
         user: { connect: { id: testUser.id } },
         breed: { connect: { id: testBreed.id } },
         bondScore: 50,
@@ -109,14 +159,15 @@ describe('Groom Workflow Integration Tests', () => {
         epigeneticModifiers: {},
       },
     });
+    createdHorseIds.add(testFoal.id);
 
     testYoungHorse = await prisma.horse.create({
       data: {
-        name: 'Test Young Horse',
+        name: `Test Young Horse ${suffix}`,
         sex: 'Colt',
         dateOfBirth: new Date(Date.now() - 2 * 365 * 24 * 60 * 60 * 1000), // 2 years old
         age: 730,
-        ownerId: testUser.id, // Add ownerId field for ownership validation
+        ownerId: testUser.id,
         user: { connect: { id: testUser.id } },
         breed: { connect: { id: testBreed.id } },
         bondScore: 60,
@@ -128,14 +179,15 @@ describe('Groom Workflow Integration Tests', () => {
         epigeneticModifiers: {},
       },
     });
+    createdHorseIds.add(testYoungHorse.id);
 
     testAdultHorse = await prisma.horse.create({
       data: {
-        name: 'Test Adult Horse',
+        name: `Test Adult Horse ${suffix}`,
         sex: 'Mare',
         dateOfBirth: new Date(Date.now() - 4 * 365 * 24 * 60 * 60 * 1000), // 4 years old
         age: 28, // 4 years old (28 days = 4 years in game time)
-        ownerId: testUser.id, // Add ownerId field for ownership validation
+        ownerId: testUser.id,
         user: { connect: { id: testUser.id } },
         breed: { connect: { id: testBreed.id } },
         bondScore: 70,
@@ -147,16 +199,23 @@ describe('Groom Workflow Integration Tests', () => {
         epigeneticModifiers: {},
       },
     });
+    createdHorseIds.add(testAdultHorse.id);
   });
 
   afterEach(async () => {
-  // Clean up test data
-    await prisma.groomAssignment.deleteMany({});
-    await prisma.groomInteraction.deleteMany({});
-    await prisma.groom.deleteMany({});
-    await prisma.horse.deleteMany({});
-    await prisma.user.deleteMany({});
-    await prisma.breed.deleteMany({});
+    // Track any data created during tests
+    const grooms = await prisma.groom.findMany({ where: { userId: testUser.id } });
+    grooms.forEach(g => createdGroomIds.add(g.id));
+
+    const assignments = await prisma.groomAssignment.findMany({ where: { userId: testUser.id } });
+    assignments.forEach(a => createdAssignmentIds.add(a.id));
+
+    const interactions = await prisma.groomInteraction.findMany({
+      where: { foalId: { in: [testFoal.id, testYoungHorse.id, testAdultHorse.id] } },
+    });
+    interactions.forEach(i => createdInteractionIds.add(i.id));
+
+    await cleanupTestData();
   });
 
   describe('1. Complete Groom Hiring Workflow', () => {
@@ -203,7 +262,7 @@ describe('Groom Workflow Integration Tests', () => {
         where: { name: 'Sarah Johnson' },
       });
       expect(groom).toBeTruthy();
-      expect(groom.speciality).toBe('foal_care');
+      expect(groom.speciality).toBe('foal_care'); // Database field uses snake_case for speciality values
       expect(groom.skillLevel).toBe('expert');
     });
 
@@ -211,7 +270,7 @@ describe('Groom Workflow Integration Tests', () => {
       const req = {
         body: {
           name: 'Invalid Groom',
-        // Missing required fields
+          // Missing required fields
         },
         user: { id: testUser.id },
       };
@@ -281,7 +340,7 @@ describe('Groom Workflow Integration Tests', () => {
     let testGroom = null;
 
     beforeEach(async () => {
-    // Create test groom for assignment tests
+      // Create test groom for assignment tests
       testGroom = await prisma.groom.create({
         data: {
           name: 'Test Assignment Groom',
@@ -338,7 +397,7 @@ describe('Groom Workflow Integration Tests', () => {
     });
 
     it('should handle assignment conflicts and priority management', async () => {
-    // Create first assignment
+      // Create first assignment
       await prisma.groomAssignment.create({
         data: {
           foalId: testFoal.id,
@@ -400,18 +459,19 @@ describe('Groom Workflow Integration Tests', () => {
     });
 
     it('should validate ownership and authorization', async () => {
-    // Create different user
+      // Create different user
       const otherUser = await prisma.user.create({
         data: {
-          id: 'other-user-groom-test',
-          username: 'otheruser',
-          email: 'other@example.com',
+          id: `other-user-groom-${Date.now()}`,
+          username: `otheruser_${Date.now()}`,
+          email: `other_${Date.now()}@example.com`,
           password: 'password',
           firstName: 'Other',
           lastName: 'User',
           money: 1000,
         },
       });
+      createdUserIds.add(otherUser.id);
 
       const req = {
         body: {

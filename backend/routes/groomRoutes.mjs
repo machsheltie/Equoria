@@ -272,6 +272,7 @@ router.get(
  */
 router.post(
   '/interact',
+  authenticateToken,
   [
     body('foalId').isInt({ min: 1 }).withMessage('foalId must be a positive integer'),
     body('groomId').isInt({ min: 1 }).withMessage('groomId must be a positive integer'),
@@ -291,7 +292,6 @@ router.post(
       .withMessage('notes must be 500 characters or less'),
     handleValidationErrors,
   ],
-  recordInteraction,
   recordInteraction,
 );
 
@@ -454,7 +454,7 @@ router.get(
   '/:id/profile',
   param('id').isInt().withMessage('Groom ID must be an integer'),
   requireOwnership('groom'),
-  getGroomProfile
+  getGroomProfile,
 );
 
 /**
@@ -482,7 +482,7 @@ router.get(
   '/:id/bonus-traits',
   param('id').isInt().withMessage('Groom ID must be an integer'),
   requireOwnership('groom'),
-  getGroomBonusTraits
+  getGroomBonusTraits,
 );
 
 /**
@@ -523,7 +523,7 @@ router.put(
   param('id').isInt().withMessage('Groom ID must be an integer'),
   body('bonusTraits').isObject().withMessage('Bonus traits must be an object'),
   requireOwnership('groom'),
-  updateGroomBonusTraits
+  updateGroomBonusTraits,
 );
 
 // Test cleanup endpoint (for testing only)
@@ -576,7 +576,7 @@ router.get(
         error: error.message,
       });
     }
-  }
+  },
 );
 
 /**
@@ -643,7 +643,7 @@ router.post(
         message: error.message,
       });
     }
-  }
+  },
 );
 
 /**
@@ -660,27 +660,24 @@ router.post(
  *       500:
  *         description: Internal server error
  */
-router.get('/retirement/approaching',
-  authenticateToken,
-  async (req, res) => {
-    try {
-      const userId = req.user.id;
-      const grooms = await getGroomsApproachingRetirement(userId);
+router.get('/retirement/approaching', authenticateToken, async (req, res) => {
+  try {
+    const userId = req.user.id;
+    const grooms = await getGroomsApproachingRetirement(userId);
 
-      res.json({
-        success: true,
-        data: grooms,
-      });
-    } catch (error) {
-      logger.error('Error getting grooms approaching retirement:', error);
-      res.status(500).json({
-        success: false,
-        message: 'Failed to get grooms approaching retirement',
-        error: error.message,
-      });
-    }
-  },
-);
+    res.json({
+      success: true,
+      data: grooms,
+    });
+  } catch (error) {
+    logger.error('Error getting grooms approaching retirement:', error);
+    res.status(500).json({
+      success: false,
+      message: 'Failed to get grooms approaching retirement',
+      error: error.message,
+    });
+  }
+});
 
 /**
  * @swagger
@@ -696,27 +693,24 @@ router.get('/retirement/approaching',
  *       500:
  *         description: Internal server error
  */
-router.get('/retirement/statistics',
-  authenticateToken,
-  async (req, res) => {
-    try {
-      const userId = req.user.id;
-      const stats = await getRetirementStatistics(userId);
+router.get('/retirement/statistics', authenticateToken, async (req, res) => {
+  try {
+    const userId = req.user.id;
+    const stats = await getRetirementStatistics(userId);
 
-      res.json({
-        success: true,
-        data: stats,
-      });
-    } catch (error) {
-      logger.error('Error getting retirement statistics:', error);
-      res.status(500).json({
-        success: false,
-        message: 'Failed to get retirement statistics',
-        error: error.message,
-      });
-    }
-  },
-);
+    res.json({
+      success: true,
+      data: stats,
+    });
+  } catch (error) {
+    logger.error('Error getting retirement statistics:', error);
+    res.status(500).json({
+      success: false,
+      message: 'Failed to get retirement statistics',
+      error: error.message,
+    });
+  }
+});
 
 // ===== LEGACY SYSTEM ENDPOINTS =====
 
@@ -765,7 +759,7 @@ router.get(
         error: error.message,
       });
     }
-  }
+  },
 );
 
 /**
@@ -830,11 +824,18 @@ router.get(
 router.post(
   '/:id/legacy/create',
   param('id').isInt().withMessage('Groom ID must be an integer'),
-  body('name').isLength({ min: 2, max: 100 }).withMessage('Name must be between 2 and 100 characters'),
+  body('name')
+    .isLength({ min: 2, max: 100 })
+    .withMessage('Name must be between 2 and 100 characters'),
   body('personality').isIn(['calm', 'energetic', 'methodical']).withMessage('Invalid personality'),
   body('skillLevel').isIn(['novice', 'intermediate', 'expert']).withMessage('Invalid skill level'),
-  body('speciality').isIn(['foal_care', 'general_grooming', 'specialized_disciplines']).withMessage('Invalid speciality'),
-  body('sessionRate').optional().isFloat({ min: 5, max: 100 }).withMessage('Session rate must be between 5 and 100'),
+  body('speciality')
+    .isIn(['foal_care', 'general_grooming', 'specialized_disciplines'])
+    .withMessage('Invalid speciality'),
+  body('sessionRate')
+    .optional()
+    .isFloat({ min: 5, max: 100 })
+    .withMessage('Session rate must be between 5 and 100'),
   body('bio').optional().isLength({ max: 500 }).withMessage('Bio must be 500 characters or less'),
   body('availability').optional().isObject().withMessage('Availability must be an object'),
   handleValidationErrors,
@@ -859,7 +860,7 @@ router.post(
         message: error.message,
       });
     }
-  }
+  },
 );
 
 /**
@@ -876,27 +877,24 @@ router.post(
  *       500:
  *         description: Internal server error
  */
-router.get('/legacy/history',
-  authenticateToken,
-  async (req, res) => {
-    try {
-      const userId = req.user.id;
-      const history = await getUserLegacyHistory(userId);
+router.get('/legacy/history', authenticateToken, async (req, res) => {
+  try {
+    const userId = req.user.id;
+    const history = await getUserLegacyHistory(userId);
 
-      res.json({
-        success: true,
-        data: history,
-      });
-    } catch (error) {
-      logger.error('Error getting legacy history:', error);
-      res.status(500).json({
-        success: false,
-        message: 'Failed to get legacy history',
-        error: error.message,
-      });
-    }
-  },
-);
+    res.json({
+      success: true,
+      data: history,
+    });
+  } catch (error) {
+    logger.error('Error getting legacy history:', error);
+    res.status(500).json({
+      success: false,
+      message: 'Failed to get legacy history',
+      error: error.message,
+    });
+  }
+});
 
 // ===== TALENT TREE ENDPOINTS =====
 

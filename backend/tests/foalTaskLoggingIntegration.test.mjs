@@ -31,10 +31,69 @@ import { jest, describe, it, expect, beforeEach, afterEach } from '@jest/globals
 import request from 'supertest';
 import app from '../app.mjs';
 import prisma from '../db/index.mjs';
+import { generateTestToken } from './helpers/authHelper.mjs';
 
 describe('Foal Task Logging Integration', () => {
+  // Reference date anchor for all test date calculations
+  const referenceDate = new Date('2025-06-01T12:00:00Z');
+
+  // Calculate date for past lastGroomed timestamp
+  const pastGroomedDate = new Date(referenceDate);
+  pastGroomedDate.setDate(referenceDate.getDate() - 30); // 30 days ago
+
   let testUser, testGroom, testFoal, testAssignment;
   let testCounter = 0; // Counter for unique test data
+  const userIdPrefix = 'test-user-task-logging-';
+  let authToken; // JWT authentication token
+
+  const cleanupTaskLoggingData = async () => {
+    const users = await prisma.user.findMany({
+      where: { id: { startsWith: userIdPrefix } },
+      select: { id: true },
+    });
+
+    if (!users.length) {
+      return;
+    }
+
+    const userIds = users.map(user => user.id);
+    const grooms = await prisma.groom.findMany({
+      where: { userId: { in: userIds } },
+      select: { id: true },
+    });
+    const horses = await prisma.horse.findMany({
+      where: { userId: { in: userIds } },
+      select: { id: true },
+    });
+
+    const groomIds = grooms.map(groom => groom.id);
+    const horseIds = horses.map(horse => horse.id);
+
+    if (groomIds.length || horseIds.length) {
+      await prisma.groomInteraction.deleteMany({
+        where: {
+          OR: [
+            ...(groomIds.length ? [{ groomId: { in: groomIds } }] : []),
+            ...(horseIds.length ? [{ foalId: { in: horseIds } }] : []),
+          ],
+        },
+      });
+    }
+
+    await prisma.groomAssignment.deleteMany({
+      where: {
+        OR: [
+          { userId: { in: userIds } },
+          ...(groomIds.length ? [{ groomId: { in: groomIds } }] : []),
+          ...(horseIds.length ? [{ foalId: { in: horseIds } }] : []),
+        ],
+      },
+    });
+
+    await prisma.groom.deleteMany({ where: { userId: { in: userIds } } });
+    await prisma.horse.deleteMany({ where: { userId: { in: userIds } } });
+    await prisma.user.deleteMany({ where: { id: { in: userIds } } });
+  };
 
   beforeEach(async () => {
     // Ensure we start with real timers
@@ -43,12 +102,7 @@ describe('Foal Task Logging Integration', () => {
     // Increment counter for unique test data
     testCounter++;
 
-    // Clean up test data
-    await prisma.groomInteraction.deleteMany({});
-    await prisma.groomAssignment.deleteMany({});
-    await prisma.groom.deleteMany({});
-    await prisma.horse.deleteMany({});
-    await prisma.user.deleteMany({});
+    await cleanupTaskLoggingData();
 
     // Create test user with unique ID
     testUser = await prisma.user.create({
@@ -104,30 +158,36 @@ describe('Foal Task Logging Integration', () => {
         priority: 1,
       },
     });
+
+    // Generate authentication token for this test user
+    authToken = generateTestToken({
+      id: testUser.id,
+      email: testUser.email,
+      role: 'admin',
+    });
   });
 
   afterEach(async () => {
     // Ensure we clean up timers
     jest.useRealTimers();
 
-    // Clean up test data
-    await prisma.groomInteraction.deleteMany({});
-    await prisma.groomAssignment.deleteMany({});
-    await prisma.groom.deleteMany({});
-    await prisma.horse.deleteMany({});
-    await prisma.user.deleteMany({});
+    await cleanupTaskLoggingData();
   });
 
   describe('Task Log JSON Updates', () => {
     it('should initialize task log with first enrichment task', async () => {
-      const response = await request(app).post('/api/grooms/interact').send({
-        foalId: testFoal.id,
-        groomId: testGroom.id,
-        assignmentId: testAssignment.id,
-        interactionType: 'trust_building',
-        duration: 30,
-        notes: 'First trust building session',
-      });
+      const response = await request(app)
+        .post('/api/grooms/interact')
+        .set('Authorization', `Bearer ${authToken}`)
+        .set('x-test-skip-csrf', 'true')
+        .send({
+          foalId: testFoal.id,
+          groomId: testGroom.id,
+          assignmentId: testAssignment.id,
+          interactionType: 'trust_building',
+          duration: 30,
+          notes: 'First trust building session',
+        });
 
       expect(response.status).toBe(200);
       expect(response.body.success).toBe(true);
@@ -153,18 +213,22 @@ describe('Foal Task Logging Integration', () => {
             trust_building: 3,
             desensitization: 2,
           },
-          lastGroomed: new Date('2024-01-14'),
+          lastGroomed: pastGroomedDate,
         },
       });
 
-      const response = await request(app).post('/api/grooms/interact').send({
-        foalId: testFoal.id,
-        groomId: testGroom.id,
-        assignmentId: testAssignment.id,
-        interactionType: 'trust_building',
-        duration: 45,
-        notes: 'Additional trust building',
-      });
+      const response = await request(app)
+        .post('/api/grooms/interact')
+        .set('Authorization', `Bearer ${authToken}`)
+        .set('x-test-skip-csrf', 'true')
+        .send({
+          foalId: testFoal.id,
+          groomId: testGroom.id,
+          assignmentId: testAssignment.id,
+          interactionType: 'trust_building',
+          duration: 45,
+          notes: 'Additional trust building',
+        });
 
       expect(response.status).toBe(200);
 
@@ -190,14 +254,18 @@ describe('Foal Task Logging Integration', () => {
         },
       });
 
-      const response = await request(app).post('/api/grooms/interact').send({
-        foalId: testFoal.id,
-        groomId: testGroom.id,
-        assignmentId: testAssignment.id,
-        interactionType: 'hoof_handling',
-        duration: 20,
-        notes: 'First hoof handling session',
-      });
+      const response = await request(app)
+        .post('/api/grooms/interact')
+        .set('Authorization', `Bearer ${authToken}`)
+        .set('x-test-skip-csrf', 'true')
+        .send({
+          foalId: testFoal.id,
+          groomId: testGroom.id,
+          assignmentId: testAssignment.id,
+          interactionType: 'hoof_handling',
+          duration: 20,
+          notes: 'First hoof handling session',
+        });
 
       expect(response.status).toBe(200);
 
@@ -248,6 +316,8 @@ describe('Foal Task Logging Integration', () => {
         // Perform interaction
         const response = await request(app)
           .post('/api/grooms/interact')
+          .set('Authorization', `Bearer ${authToken}`)
+          .set('x-test-skip-csrf', 'true')
           .send({
             foalId: taskFoal.id,
             groomId: testGroom.id,
@@ -290,13 +360,17 @@ describe('Foal Task Logging Integration', () => {
     it('should update lastGroomed timestamp on each interaction', async () => {
       const beforeTime = new Date();
 
-      const response = await request(app).post('/api/grooms/interact').send({
-        foalId: testFoal.id,
-        groomId: testGroom.id,
-        assignmentId: testAssignment.id,
-        interactionType: 'trust_building',
-        duration: 30,
-      });
+      const response = await request(app)
+        .post('/api/grooms/interact')
+        .set('Authorization', `Bearer ${authToken}`)
+        .set('x-test-skip-csrf', 'true')
+        .send({
+          foalId: testFoal.id,
+          groomId: testGroom.id,
+          assignmentId: testAssignment.id,
+          interactionType: 'trust_building',
+          duration: 30,
+        });
 
       expect(response.status).toBe(200);
 
@@ -313,13 +387,17 @@ describe('Foal Task Logging Integration', () => {
 
     it('should enforce daily interaction limits correctly', async () => {
       // First interaction should succeed
-      const response1 = await request(app).post('/api/grooms/interact').send({
-        foalId: testFoal.id,
-        groomId: testGroom.id,
-        assignmentId: testAssignment.id,
-        interactionType: 'trust_building',
-        duration: 30,
-      });
+      const response1 = await request(app)
+        .post('/api/grooms/interact')
+        .set('Authorization', `Bearer ${authToken}`)
+        .set('x-test-skip-csrf', 'true')
+        .send({
+          foalId: testFoal.id,
+          groomId: testGroom.id,
+          assignmentId: testAssignment.id,
+          interactionType: 'trust_building',
+          duration: 30,
+        });
 
       expect(response1.status).toBe(200);
 
@@ -329,13 +407,17 @@ describe('Foal Task Logging Integration', () => {
       expect(foal.taskLog).toEqual({ trust_building: 1 });
 
       // Second interaction on same day should be blocked (testing actual business rule)
-      const response2 = await request(app).post('/api/grooms/interact').send({
-        foalId: testFoal.id,
-        groomId: testGroom.id,
-        assignmentId: testAssignment.id,
-        interactionType: 'desensitization',
-        duration: 25,
-      });
+      const response2 = await request(app)
+        .post('/api/grooms/interact')
+        .set('Authorization', `Bearer ${authToken}`)
+        .set('x-test-skip-csrf', 'true')
+        .send({
+          foalId: testFoal.id,
+          groomId: testGroom.id,
+          assignmentId: testAssignment.id,
+          interactionType: 'desensitization',
+          duration: 25,
+        });
 
       // This should fail due to daily interaction limit (correct business behavior)
       expect(response2.status).toBe(400);
@@ -356,13 +438,17 @@ describe('Foal Task Logging Integration', () => {
         data: { age: 1460 }, // 4 years old
       });
 
-      const response = await request(app).post('/api/grooms/interact').send({
-        foalId: testFoal.id,
-        groomId: testGroom.id,
-        assignmentId: testAssignment.id,
-        interactionType: 'early_touch', // Enrichment task
-        duration: 30,
-      });
+      const response = await request(app)
+        .post('/api/grooms/interact')
+        .set('Authorization', `Bearer ${authToken}`)
+        .set('x-test-skip-csrf', 'true')
+        .send({
+          foalId: testFoal.id,
+          groomId: testGroom.id,
+          assignmentId: testAssignment.id,
+          interactionType: 'early_touch', // Enrichment task
+          duration: 30,
+        });
 
       // Should still work because adult horses can do enrichment tasks
       // But let's test with a task that doesn't exist
@@ -383,13 +469,17 @@ describe('Foal Task Logging Integration', () => {
         },
       });
 
-      const response = await request(app).post('/api/grooms/interact').send({
-        foalId: testFoal.id,
-        groomId: testGroom.id,
-        assignmentId: testAssignment.id,
-        interactionType: 'hoof_handling', // Grooming task (1-3 years)
-        duration: 30,
-      });
+      const response = await request(app)
+        .post('/api/grooms/interact')
+        .set('Authorization', `Bearer ${authToken}`)
+        .set('x-test-skip-csrf', 'true')
+        .send({
+          foalId: testFoal.id,
+          groomId: testGroom.id,
+          assignmentId: testAssignment.id,
+          interactionType: 'hoof_handling', // Grooming task (1-3 years)
+          duration: 30,
+        });
 
       // Note: hoof_handling is a foal grooming task (1-3 years), so 6 months old should be rejected
       expect(response.status).toBe(400);

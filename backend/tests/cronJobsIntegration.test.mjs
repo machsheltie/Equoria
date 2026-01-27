@@ -36,61 +36,67 @@
  *    Consider adding integration tests with real database for more realistic validation.
  */
 
-import { jest, describe, beforeEach, expect, it, beforeAll } from '@jest/globals';
-import { fileURLToPath } from 'url';
-import { dirname, join } from 'path';
+import { jest, describe, beforeEach, expect, it, beforeAll, afterAll } from '@jest/globals';
 import request from 'supertest';
+import { generateAdminToken } from './helpers/authHelper.mjs';
 
-const __filename = fileURLToPath(import.meta.url);
-const __dirname = dirname(__filename);
+// Create mock objects BEFORE jest.unstable_mockModule
+const mockPrisma = {
+  user: {
+    create: jest.fn(),
+    findUnique: jest.fn(),
+    delete: jest.fn(),
+    deleteMany: jest.fn(),
+  },
+  horse: {
+    create: jest.fn(),
+    findUnique: jest.fn(),
+    findMany: jest.fn(),
+    update: jest.fn(),
+    delete: jest.fn(),
+  },
+  breed: {
+    create: jest.fn(),
+    delete: jest.fn(),
+  },
+  foalDevelopment: {
+    create: jest.fn(),
+    createMany: jest.fn(),
+    findMany: jest.fn(),
+    delete: jest.fn(),
+    deleteMany: jest.fn(),
+  },
+  foalTrainingHistory: {
+    deleteMany: jest.fn(),
+  },
+  $disconnect: jest.fn(),
+};
+
+const mockCronJobService = {
+  stop: jest.fn(),
+  start: jest.fn(),
+  evaluateDailyFoalTraits: jest.fn(),
+  manualTraitEvaluation: jest.fn(),
+  getStatus: jest.fn(),
+};
 
 // Mock the database module BEFORE importing the app
-jest.unstable_mockModule(join(__dirname, '../db/index.mjs'), () => ({
-  default: {
-    horse: {
-      create: jest.fn(),
-      findUnique: jest.fn(),
-      findMany: jest.fn(),
-      update: jest.fn(),
-      delete: jest.fn(),
-    },
-    breed: {
-      create: jest.fn(),
-      delete: jest.fn(),
-    },
-    foalDevelopment: {
-      create: jest.fn(),
-      createMany: jest.fn(),
-      findMany: jest.fn(),
-      delete: jest.fn(),
-      deleteMany: jest.fn(),
-    },
-    foalTrainingHistory: {
-      deleteMany: jest.fn(),
-    },
-    $disconnect: jest.fn(),
-  },
+jest.unstable_mockModule('../db/index.mjs', () => ({
+  default: mockPrisma,
 }));
 
 // Mock the cron job service
-jest.unstable_mockModule(join(__dirname, '../services/cronJobs.mjs'), () => ({
-  default: {
-    stop: jest.fn(),
-    start: jest.fn(),
-    evaluateDailyFoalTraits: jest.fn(),
-    manualTraitEvaluation: jest.fn(),
-    getStatus: jest.fn(),
-  },
+jest.unstable_mockModule('../services/cronJobs.mjs', () => ({
+  default: mockCronJobService,
 }));
 
-// Now import the app and the mocked modules
+// Now import the app
 const app = (await import('../app.mjs')).default;
-const mockPrisma = (await import(join(__dirname, '../db/index.mjs'))).default;
-const mockCronJobService = (await import(join(__dirname, '../services/cronJobs.mjs'))).default;
 
 describe('⏰ INTEGRATION: Cron Jobs System - Automated Trait Evaluation & Admin API', () => {
   let testBreed;
   let testFoals = [];
+  let adminToken;
 
   beforeAll(async () => {
     // Mock test breed
@@ -117,6 +123,18 @@ describe('⏰ INTEGRATION: Cron Jobs System - Automated Trait Evaluation & Admin
       ],
       totalJobs: 1,
     });
+
+    // Create admin user for API tests
+    const adminUser = {
+      id: 'admin-user-uuid-456',
+      username: `admin_cron_${Date.now()}`,
+      email: `admin_cron_${Date.now()}@example.com`,
+      password: 'hashedpassword123',
+      role: 'admin',
+    };
+    mockPrisma.user.create.mockResolvedValue(adminUser);
+    await mockPrisma.user.create();
+    adminToken = generateAdminToken();
   });
 
   beforeEach(() => {
@@ -414,7 +432,10 @@ describe('⏰ INTEGRATION: Cron Jobs System - Automated Trait Evaluation & Admin
 
   describe('Admin API Endpoints', () => {
     it('should get cron job status', async () => {
-      const response = await request(app).get('/api/admin/cron/status').expect(200);
+      const response = await request(app)
+        .get('/api/admin/cron/status')
+        .set('Authorization', `Bearer ${adminToken}`)
+        .expect(200);
 
       expect(response.body.success).toBe(true);
       expect(response.body).toHaveProperty('data');
@@ -422,7 +443,11 @@ describe('⏰ INTEGRATION: Cron Jobs System - Automated Trait Evaluation & Admin
     });
 
     it('should manually trigger trait evaluation', async () => {
-      const response = await request(app).post('/api/admin/traits/evaluate').expect(200);
+      const response = await request(app)
+        .post('/api/admin/traits/evaluate')
+        .set('Authorization', `Bearer ${adminToken}`)
+        .set('x-test-skip-csrf', 'true')
+        .expect(200);
 
       expect(response.body.success).toBe(true);
       expect(response.body.message).toContain('completed successfully');
@@ -445,7 +470,10 @@ describe('⏰ INTEGRATION: Cron Jobs System - Automated Trait Evaluation & Admin
       // Setup mock for the API endpoint
       mockPrisma.horse.findMany.mockResolvedValueOnce(mockFoals);
 
-      const response = await request(app).get('/api/admin/foals/development').expect(200);
+      const response = await request(app)
+        .get('/api/admin/foals/development')
+        .set('Authorization', `Bearer ${adminToken}`)
+        .expect(200);
 
       expect(response.body.success).toBe(true);
       expect(response.body.data).toHaveProperty('foals');
@@ -454,7 +482,10 @@ describe('⏰ INTEGRATION: Cron Jobs System - Automated Trait Evaluation & Admin
     });
 
     it('should get trait definitions', async () => {
-      const response = await request(app).get('/api/admin/traits/definitions').expect(200);
+      const response = await request(app)
+        .get('/api/admin/traits/definitions')
+        .set('Authorization', `Bearer ${adminToken}`)
+        .expect(200);
 
       expect(response.body.success).toBe(true);
       expect(response.body.data).toHaveProperty('positive');
@@ -475,13 +506,21 @@ describe('⏰ INTEGRATION: Cron Jobs System - Automated Trait Evaluation & Admin
 
     it('should start and stop cron job service', async () => {
       // Test starting service
-      const startResponse = await request(app).post('/api/admin/cron/start').expect(200);
+      const startResponse = await request(app)
+        .post('/api/admin/cron/start')
+        .set('Authorization', `Bearer ${adminToken}`)
+        .set('x-test-skip-csrf', 'true')
+        .expect(200);
 
       expect(startResponse.body.success).toBe(true);
       expect(startResponse.body.message).toContain('started successfully');
 
       // Test stopping service
-      const stopResponse = await request(app).post('/api/admin/cron/stop').expect(200);
+      const stopResponse = await request(app)
+        .post('/api/admin/cron/stop')
+        .set('Authorization', `Bearer ${adminToken}`)
+        .set('x-test-skip-csrf', 'true')
+        .expect(200);
 
       expect(stopResponse.body.success).toBe(true);
       expect(stopResponse.body.message).toContain('stopped successfully');
@@ -536,5 +575,15 @@ describe('⏰ INTEGRATION: Cron Jobs System - Automated Trait Evaluation & Admin
 
       expect(updatedFoal.epigeneticModifiers).toBeDefined();
     });
+  });
+
+  afterAll(async () => {
+    // Cleanup admin user
+    if (adminToken) {
+      mockPrisma.user.deleteMany.mockResolvedValue({ count: 1 });
+      await mockPrisma.user.deleteMany({
+        where: { email: { contains: 'admin_cron_' } },
+      });
+    }
   });
 });

@@ -70,10 +70,14 @@ export const authenticateToken = (req, res, next) => {
       return respondUnauthorized('Token expired');
     }
 
-    // SECURITY: Hardcoded safe JWT algorithms to prevent algorithm confusion attacks
-    // Only HMAC-based algorithms are allowed (HS256, HS384, HS512)
-    // This prevents attackers from using asymmetric algorithms (RS256) with symmetric secrets
-    const SAFE_JWT_ALGORITHMS = ['HS256', 'HS384', 'HS512'];
+    // SECURITY: Strict JWT algorithm enforcement to prevent algorithm confusion attacks (CWE-327)
+    // Only accept HS256 - the exact algorithm used for token generation
+    // This prevents:
+    // 1. Algorithm "none" attacks (token forgery without signature)
+    // 2. Algorithm confusion attacks (HS256 vs RS256)
+    // 3. Algorithm upgrade attacks (attacker using HS384/HS512 to bypass validation)
+    // CRITICAL: Must match the algorithm used in generateToken() and tokenRotationService.mjs
+    const SAFE_JWT_ALGORITHMS = ['HS256'];
 
     let decoded;
     try {
@@ -145,8 +149,8 @@ export const optionalAuth = (req, res, next) => {
       return next(); // Continue without user if JWT not configured
     }
 
-    // SECURITY: Hardcoded safe JWT algorithms to prevent algorithm confusion attacks
-    const SAFE_JWT_ALGORITHMS = ['HS256', 'HS384', 'HS512'];
+    // SECURITY: Strict JWT algorithm enforcement (must match authenticateToken)
+    const SAFE_JWT_ALGORITHMS = ['HS256'];
 
     jwt.verify(
       token,
@@ -218,6 +222,7 @@ export const requireRole = (...roles) => {
 
 /**
  * Generate JWT Token
+ * SECURITY: Explicitly specifies HS256 algorithm to match verification requirements
  */
 export const generateToken = (payload, expiresIn = '24h') => {
   const secret = process.env.JWT_SECRET;
@@ -225,7 +230,11 @@ export const generateToken = (payload, expiresIn = '24h') => {
     throw new AppError('JWT_SECRET not configured', 500);
   }
 
-  return jwt.sign(payload, secret, { expiresIn });
+  // SECURITY: Explicitly specify algorithm to prevent any potential mismatch
+  return jwt.sign(payload, secret, {
+    algorithm: 'HS256',
+    expiresIn,
+  });
 };
 
 /**
