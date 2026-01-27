@@ -29,8 +29,10 @@ import rateLimit from 'express-rate-limit';
 import { RedisStore } from 'rate-limit-redis';
 import { createClient } from 'redis';
 import logger from '../utils/logger.mjs';
+import { createRedisCircuitBreaker } from '../utils/redisCircuitBreaker.mjs';
 
 let redisClient = null;
+let redisCircuitBreaker = null;
 let isRedisAvailable = false;
 
 /**
@@ -38,10 +40,11 @@ let isRedisAvailable = false;
  * Handles connection failures gracefully with exponential backoff
  */
 async function initializeRedis() {
-  const isTestEnv = process.env.NODE_ENV === 'test';
+  const isTestLike = process.env.NODE_ENV === 'test' || process.env.JEST_WORKER_ID !== undefined;
   const redisDisabled = process.env.REDIS_DISABLED === 'true';
 
-  if (isTestEnv || redisDisabled) {
+  // Never attempt Redis connections in test/Jest environments or when explicitly disabled
+  if (isTestLike || redisDisabled) {
     logger.info('[rateLimiting] Using in-memory rate limiting for test/disabled Redis environment');
     isRedisAvailable = false;
     redisClient = null;
@@ -63,7 +66,7 @@ async function initializeRedis() {
       password: redisPassword || undefined,
       socket: {
         tls: redisTls,
-        reconnectStrategy: (retries) => {
+        reconnectStrategy: retries => {
           // Exponential backoff: 50ms, 100ms, 200ms, 400ms, 500ms (max)
           const delay = Math.min(retries * 50, 500);
           logger.warn(`[Redis] Reconnection attempt ${retries}, waiting ${delay}ms`);
@@ -73,57 +76,88 @@ async function initializeRedis() {
     });
 
     // Event handlers
-    redisClient.on('error', (err) => {
+    redisClient.on('error', err => {
       isRedisAvailable = false;
-      logger.error('[Redis] Connection error:', {
+      redisCircuitBreaker = null; // Clear circuit breaker on error
+      logger.error('[rateLimiting] Redis connection error:', {
         error: err.message,
         code: err.code,
       });
     });
 
     redisClient.on('connect', () => {
-      logger.info('[Redis] Connected successfully');
+      logger.info('[rateLimiting] Redis connected successfully');
       isRedisAvailable = true;
     });
 
     redisClient.on('ready', () => {
-      logger.info('[Redis] Ready to accept commands');
+      logger.info('[rateLimiting] Redis ready to accept commands');
       isRedisAvailable = true;
     });
 
     redisClient.on('reconnecting', () => {
-      logger.warn('[Redis] Reconnecting...');
+      logger.warn('[rateLimiting] Redis reconnecting...');
       isRedisAvailable = false;
+      redisCircuitBreaker = null; // Clear circuit breaker during reconnection
     });
 
     redisClient.on('end', () => {
-      logger.warn('[Redis] Connection closed');
+      logger.warn('[rateLimiting] Redis connection closed');
       isRedisAvailable = false;
+      redisCircuitBreaker = null; // Clear circuit breaker on disconnect
     });
 
     // Connect to Redis
     await redisClient.connect();
 
+    // Wrap Redis client with circuit breaker for resilience
+    redisCircuitBreaker = createRedisCircuitBreaker(redisClient, {
+      errorThresholdPercentage: 50, // Open after 50% errors
+      resetTimeout: 30000, // 30s recovery wait
+      timeout: 3000, // 3s per operation
+      volumeThreshold: 10, // Min 10 requests before opening
+      halfOpenRequests: 3, // Test recovery with 3 requests
+    });
+
+    logger.info('[rateLimiting] Redis circuit breaker initialized for rate limiting');
+
     return redisClient;
   } catch (error) {
     isRedisAvailable = false;
-    logger.error('[Redis] Failed to initialize:', {
+    redisCircuitBreaker = null; // Clear circuit breaker on initialization failure
+    logger.error('[rateLimiting] Failed to initialize Redis:', {
       error: error.message,
       stack: error.stack,
     });
 
     // Don't throw - graceful degradation
-    // Rate limiting will fall back to allowing all requests
+    // Rate limiting will fall back to in-memory store
     return null;
   }
 }
 
 /**
- * Get Redis connection status
- * @returns {boolean} True if Redis is connected and available
+ * Get Redis connection status with circuit breaker state check
+ * @returns {boolean} True if Redis is connected, available, and circuit is not open
  */
 export function isRedisConnected() {
-  return isRedisAvailable && redisClient && redisClient.isOpen;
+  // Check if Redis is available and connected
+  const basicCheck = isRedisAvailable && redisClient && redisClient.isOpen;
+
+  if (!basicCheck) {
+    return false;
+  }
+
+  // If circuit breaker exists, check if circuit is open
+  if (redisCircuitBreaker) {
+    const isCircuitOpen = redisCircuitBreaker.isCircuitOpen();
+    if (isCircuitOpen) {
+      logger.debug('[rateLimiting] Redis circuit is OPEN, falling back to in-memory rate limiting');
+      return false; // Treat open circuit as unavailable
+    }
+  }
+
+  return true;
 }
 
 /**
@@ -141,11 +175,55 @@ export async function closeRedis() {
   if (redisClient) {
     try {
       await redisClient.quit();
-      logger.info('[Redis] Connection closed gracefully');
+      logger.info('[rateLimiting] Redis connection closed gracefully');
     } catch (error) {
-      logger.error('[Redis] Error closing connection:', error);
+      logger.error('[rateLimiting] Error closing connection:', error);
     }
   }
+}
+
+/**
+ * Get rate limiting health status including circuit breaker metrics
+ * @returns {Object} Health status with circuit breaker information
+ */
+export function getRateLimitingHealth() {
+  const health = {
+    redisAvailable: isRedisAvailable,
+    redisConnected: redisClient && redisClient.isOpen,
+    usingDistributedLimiting: isRedisConnected(), // Includes circuit check
+    timestamp: new Date().toISOString(),
+  };
+
+  // Add circuit breaker status if available
+  if (redisCircuitBreaker) {
+    const circuitHealth = redisCircuitBreaker.getHealthStatus();
+    health.circuitBreaker = {
+      status: circuitHealth.status,
+      circuitState: circuitHealth.circuitState,
+      metrics: circuitHealth.metrics,
+      lastStateChange: circuitHealth.circuitHistory?.lastStateChange,
+    };
+
+    // Determine overall rate limiting status
+    if (circuitHealth.circuitState === 'OPEN') {
+      health.status = 'degraded'; // Using in-memory fallback
+      health.message = 'Rate limiting degraded - using in-memory fallback (per-process)';
+    } else if (circuitHealth.circuitState === 'HALF_OPEN') {
+      health.status = 'recovering'; // Testing Redis recovery
+      health.message = 'Rate limiting recovering - testing Redis connection';
+    } else {
+      health.status = 'healthy'; // Using distributed Redis
+      health.message = 'Rate limiting healthy - using distributed Redis store';
+    }
+  } else {
+    health.circuitBreaker = null;
+    health.status = redisClient ? 'healthy' : 'degraded';
+    health.message = redisClient
+      ? 'Rate limiting healthy - using distributed Redis store'
+      : 'Rate limiting degraded - Redis not connected, using in-memory fallback';
+  }
+
+  return health;
 }
 
 /**
@@ -168,6 +246,7 @@ export function createRateLimiter(options = {}) {
     skipSuccessfulRequests = false,
     skipFailedRequests = false,
     keyPrefix = 'rl',
+    useEnvOverride = true,
   } = options;
 
   // Validation
@@ -175,20 +254,19 @@ export function createRateLimiter(options = {}) {
     throw new Error('windowMs and max must be positive numbers');
   }
 
-  const isTestEnv = process.env.NODE_ENV === 'test';
-  if (isTestEnv && process.env.TEST_BYPASS_RATE_LIMIT === 'true') {
-    return (_req, _res, next) => next();
-  }
+  const isTestEnv = process.env.NODE_ENV === 'test' || process.env.JEST_WORKER_ID !== undefined;
 
-  const effectiveWindowMs = isTestEnv
-    ? parseInt(process.env.TEST_RATE_LIMIT_WINDOW_MS || `${windowMs}`, 10)
-    : windowMs;
+  const getEffectiveWindowMs = () =>
+    isTestEnv && useEnvOverride
+      ? parseInt(process.env.TEST_RATE_LIMIT_WINDOW_MS || `${windowMs}`, 10)
+      : windowMs;
 
-  const effectiveMax = isTestEnv
-    ? parseInt(process.env.TEST_RATE_LIMIT_MAX_REQUESTS || `${max}`, 10)
-    : max;
+  const getEffectiveMax = () =>
+    isTestEnv && useEnvOverride
+      ? parseInt(process.env.TEST_RATE_LIMIT_MAX_REQUESTS || `${max}`, 10)
+      : max;
 
-  const shouldBypassRequest = (req) => {
+  const shouldBypassRequest = req => {
     if (!isTestEnv) return false;
     if (process.env.TEST_BYPASS_RATE_LIMIT === 'true') {
       return true;
@@ -198,38 +276,68 @@ export function createRateLimiter(options = {}) {
   };
 
   const limiter = rateLimit({
-    windowMs: effectiveWindowMs,
-    max: effectiveMax,
+    windowMs: getEffectiveWindowMs(), // Fixed at creation time
+    max: () => {
+      const m = getEffectiveMax();
+      logger.debug(`[RateLimit:${keyPrefix}] Current max limit: ${m}`);
+      return m;
+    },
     message: { success: false, message },
     standardHeaders: true, // RFC-compliant headers (RateLimit-*)
     legacyHeaders: false, // Disable X-RateLimit-* headers
     skipSuccessfulRequests,
     skipFailedRequests,
 
-    // Redis store for distributed rate limiting (only if connected)
-    // Falls back to in-memory store when Redis unavailable
-    store: (redisClient && isRedisConnected())
-      ? new RedisStore({
+    // Redis store for distributed rate limiting (only if connected and circuit closed)
+    // Falls back to in-memory store when Redis unavailable or circuit open
+    store: (() => {
+      const connected = isRedisConnected(); // Checks both connection and circuit state
+
+      if (redisClient && connected) {
+        logger.debug(`[RateLimit:${keyPrefix}] Using Redis store for distributed rate limiting`);
+        return new RedisStore({
           client: redisClient,
           prefix: `${keyPrefix}:`,
-        })
-      : undefined, // No store = in-memory (fallback for development/tests)
+        });
+      }
+
+      // Log fallback reason
+      if (redisCircuitBreaker && redisCircuitBreaker.isCircuitOpen()) {
+        logger.warn(
+          `[RateLimit:${keyPrefix}] Circuit OPEN - falling back to in-memory rate limiting (per-process)`,
+        );
+      } else if (!redisClient) {
+        logger.info(
+          `[RateLimit:${keyPrefix}] Redis not connected - using in-memory rate limiting (per-process)`,
+        );
+      } else {
+        logger.debug(`[RateLimit:${keyPrefix}] Using in-memory rate limiting (per-process)`);
+      }
+
+      return undefined; // No store = in-memory (fallback)
+    })(),
 
     // Key generation: Use authenticated user ID, fallback to IP
-    keyGenerator: (req) => {
+    keyGenerator: req => {
+      let key;
       if (req.user && req.user.id) {
-        return `user:${req.user.id}`;
+        key = `user:${req.user.id}`;
+      } else {
+        // Fallback to IP for unauthenticated requests
+        key = `ip:${req.ip || req.headers['x-forwarded-for'] || 'unknown'}`;
       }
-      // Fallback to IP for unauthenticated requests
-      return `ip:${req.ip || req.headers['x-forwarded-for'] || 'unknown'}`;
+      logger.debug(`[RateLimit:${keyPrefix}] Key generated: ${key}`);
+      return key;
     },
 
     // Custom handler for rate limit exceeded
     handler: (req, res) => {
       const identifier = req.user?.id ? `user:${req.user.id}` : `ip:${req.ip}`;
+      const effectiveMax = getEffectiveMax();
+      const effectiveWindowMs = getEffectiveWindowMs();
       const retryAfter = Math.max(1, Math.ceil(effectiveWindowMs / 1000));
 
-      logger.warn('[RateLimit] Limit exceeded', {
+      logger.warn(`[RateLimit:${keyPrefix}] Limit exceeded`, {
         identifier,
         path: req.path,
         method: req.method,
@@ -247,12 +355,16 @@ export function createRateLimiter(options = {}) {
         window: retryAfter,
       });
     },
-
-    // Skip configuration is handled by skipSuccessfulRequests and skipFailedRequests
-    // No need for custom skip logic - in-memory fallback works when Redis unavailable
   });
 
-  return (req, res, next) => (shouldBypassRequest(req) ? next() : limiter(req, res, next));
+  return (req, res, next) => {
+    const bypassed = shouldBypassRequest(req);
+    if (bypassed) {
+      logger.debug(`[RateLimit:${keyPrefix}] Request bypassed`);
+      return next();
+    }
+    return limiter(req, res, next);
+  };
 }
 
 /**
@@ -379,7 +491,7 @@ export const competitionRateLimiter = createRateLimiter({
 
 // Initialize Redis connection
 // This runs when the module is imported
-initializeRedis().catch((error) => {
+initializeRedis().catch(error => {
   logger.error('[Redis] Failed to initialize on startup:', error);
 });
 
@@ -398,4 +510,5 @@ export default {
   isRedisConnected,
   getRedisClient,
   closeRedis,
+  getRateLimitingHealth,
 };
