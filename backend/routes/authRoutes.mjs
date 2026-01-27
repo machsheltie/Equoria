@@ -1,6 +1,9 @@
 import express from 'express';
 import { body } from 'express-validator';
-import { handleValidationErrors, sanitizeRequestData } from '../middleware/validationErrorHandler.mjs';
+import {
+  handleValidationErrors,
+  sanitizeRequestData,
+} from '../middleware/validationErrorHandler.mjs';
 import { authenticateToken } from '../middleware/auth.mjs';
 import { authRateLimiter } from '../middleware/authRateLimiter.mjs';
 import { profileRateLimiter } from '../middleware/rateLimiting.mjs';
@@ -161,10 +164,7 @@ router.post(
   '/register',
   authRateLimiter, // Rate limit: 5 requests per 15 minutes
   [
-    body('email')
-      .isEmail().withMessage('Valid email is required')
-      .normalizeEmail()
-      .trim(),
+    body('email').isEmail().withMessage('Valid email is required').normalizeEmail().trim(),
     body('username')
       .isLength({ min: 3, max: 30 })
       .withMessage('Username must be between 3 and 30 characters')
@@ -312,11 +312,7 @@ router.post(
 );
 
 // Alias for /refresh (for cookie-based refresh)
-router.post(
-  '/refresh-token',
-  authRateLimiter,
-  authController.refreshToken,
-);
+router.post('/refresh-token', authRateLimiter, authController.refreshToken);
 
 /**
  * @swagger
@@ -422,6 +418,7 @@ router.get('/me', profileRateLimiter, authenticateToken, authController.getProfi
  */
 router.put(
   '/profile',
+  profileRateLimiter, // Rate limit: 30 requests per minute (SECURITY: Prevent profile update abuse)
   [
     authenticateToken,
     body('firstName')

@@ -12,6 +12,7 @@ import {
 } from '../logic/enhancedCompetitionSimulation.mjs';
 import { getAllDisciplines, getDisciplineConfig } from '../utils/competitionLogic.mjs';
 import auth from '../middleware/auth.mjs';
+import { queryRateLimiter, mutationRateLimiter } from '../middleware/rateLimiting.mjs';
 import logger from '../utils/logger.mjs';
 
 const router = express.Router();
@@ -46,7 +47,7 @@ const validateEnterShow = [
  *   }
  * }
  */
-router.post('/enter-show', auth, validateEnterShow, async (req, res) => {
+router.post('/enter-show', mutationRateLimiter, auth, validateEnterShow, async (req, res) => {
   try {
     // Check for validation errors
     const errors = validationResult(req);
@@ -124,7 +125,7 @@ router.post('/enter-show', auth, validateEnterShow, async (req, res) => {
  * GET /show/:showId/results
  * Get all results for a specific show
  */
-router.get('/show/:showId/results', async (req, res) => {
+router.get('/show/:showId/results', queryRateLimiter, async (req, res) => {
   try {
     const showId = parseInt(req.params.showId, 10);
 
@@ -165,6 +166,7 @@ router.get('/show/:showId/results', async (req, res) => {
  */
 router.get(
   '/horse/:horseId/results',
+  queryRateLimiter,
   auth,
   [param('horseId').isInt({ min: 1 }).withMessage('Horse ID must be a positive integer')],
   requireOwnership('horse', { idParam: 'horseId' }),
@@ -209,6 +211,7 @@ router.get(
  */
 router.post(
   '/enter',
+  mutationRateLimiter,
   auth,
   [
     body('horseId').isInt({ min: 1 }).withMessage('Horse ID must be a positive integer'),
@@ -358,6 +361,7 @@ router.post(
  */
 router.post(
   '/execute',
+  mutationRateLimiter,
   auth,
   [body('showId').isInt({ min: 1 }).withMessage('Show ID must be a positive integer')],
   async (req, res) => {
@@ -484,6 +488,7 @@ router.post(
  */
 router.get(
   '/eligibility/:horseId/:discipline',
+  queryRateLimiter,
   auth,
   [
     param('horseId').isInt({ min: 1 }).withMessage('Horse ID must be a positive integer'),
@@ -556,7 +561,7 @@ router.get(
  * GET /api/competition/disciplines
  * Get all available competition disciplines
  */
-router.get('/disciplines', async (req, res) => {
+router.get('/disciplines', queryRateLimiter, async (req, res) => {
   try {
     const disciplines = getAllDisciplines();
     const disciplineDetails = disciplines.map(discipline => ({

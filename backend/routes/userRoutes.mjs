@@ -7,6 +7,7 @@ import express from 'express';
 import { param, body, validationResult } from 'express-validator';
 import {
   getUserProgressAPI,
+  getUserActivity,
   getDashboardData,
   getUser,
   createUserController,
@@ -15,6 +16,7 @@ import {
   addXpController,
 } from '../controllers/userController.mjs';
 import { authenticateToken } from '../middleware/auth.mjs';
+import { queryRateLimiter, mutationRateLimiter } from '../middleware/rateLimiting.mjs';
 import logger from '../utils/logger.mjs';
 
 const router = express.Router();
@@ -159,7 +161,22 @@ const requireSelfAccess = (idParam = 'id') => {
  *       500:
  *         description: Internal server error
  */
-router.get('/:id/progress', authenticateToken, requireSelfAccess(), validateUserId, getUserProgressAPI);
+router.get(
+  '/:id/progress',
+  queryRateLimiter,
+  authenticateToken,
+  validateUserId,
+  requireSelfAccess(),
+  getUserProgressAPI,
+);
+router.get(
+  '/:id/activity',
+  queryRateLimiter,
+  authenticateToken,
+  validateUserId,
+  requireSelfAccess(),
+  getUserActivity,
+);
 
 /**
  * @swagger
@@ -258,36 +275,73 @@ router.get('/:id/progress', authenticateToken, requireSelfAccess(), validateUser
  *       500:
  *         description: Internal server error
  */
-router.get('/dashboard/:userId', authenticateToken, requireSelfAccess('userId'), validateDashboardUserId, getDashboardData);
+router.get(
+  '/dashboard/:userId',
+  queryRateLimiter,
+  authenticateToken,
+  validateDashboardUserId,
+  requireSelfAccess('userId'),
+  getDashboardData,
+);
 
 // CRUD routes for user management
-router.get('/:id', authenticateToken, requireSelfAccess(), validateUserId, getUser);
-router.post('/', [
-  body('username').notEmpty().withMessage('Username is required'),
-  body('email').isEmail().withMessage('Valid email is required'),
-  body('password').isLength({ min: 6 }).withMessage('Password must be at least 6 characters'),
-  (req, res, next) => {
-    const errors = validationResult(req);
-    if (!errors.isEmpty()) {
-      return res.status(400).json({
-        success: false,
-        message: 'Validation failed',
-        errors: errors.array(),
-      });
-    }
-    next();
-  },
-], createUserController);
+router.get(
+  '/:id',
+  queryRateLimiter,
+  authenticateToken,
+  validateUserId,
+  requireSelfAccess(),
+  getUser,
+);
+router.post(
+  '/',
+  [
+    body('username').notEmpty().withMessage('Username is required'),
+    body('email').isEmail().withMessage('Valid email is required'),
+    body('password').isLength({ min: 6 }).withMessage('Password must be at least 6 characters'),
+    (req, res, next) => {
+      const errors = validationResult(req);
+      if (!errors.isEmpty()) {
+        return res.status(400).json({
+          success: false,
+          message: 'Validation failed',
+          errors: errors.array(),
+        });
+      }
+      next();
+    },
+  ],
+  createUserController,
+);
 
-router.put('/:id', authenticateToken, requireSelfAccess(), validateUserId, updateUserController);
-router.delete('/:id', authenticateToken, requireSelfAccess(), validateUserId, deleteUserController);
+router.put(
+  '/:id',
+  mutationRateLimiter,
+  authenticateToken,
+  validateUserId,
+  requireSelfAccess(),
+  updateUserController,
+);
+router.delete(
+  '/:id',
+  mutationRateLimiter,
+  authenticateToken,
+  validateUserId,
+  requireSelfAccess(),
+  deleteUserController,
+);
 
 // XP management
-router.post('/:id/add-xp', [
-  authenticateToken,
-  requireSelfAccess(),
-  ...validateUserId,
-  body('amount').isInt({ min: 1 }).withMessage('Amount must be a positive integer'),
-], addXpController);
+router.post(
+  '/:id/add-xp',
+  mutationRateLimiter,
+  [
+    authenticateToken,
+    ...validateUserId,
+    requireSelfAccess(),
+    body('amount').isInt({ min: 1 }).withMessage('Amount must be a positive integer'),
+  ],
+  addXpController,
+);
 
 export default router;
