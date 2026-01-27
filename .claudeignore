@@ -1,23 +1,62 @@
-# IGNORE MOBILE APP (created in error)
-# The project is a WEB BROWSER game, not a mobile app
-# This folder was created 2025-11-13 to 2025-11-17 by mistake
+# Dependency directories
+node_modules/
+.venv/
+.pnpm-store/
+
+# Build and Output
+dist/
+build/
+coverage/
+*.log
+.DS_Store
+
+# Environment variables
+.env
+.env.local
+.env.development
+.env.test
+.env.production
+!.env.example
+
+# Tool/Cache/Auxiliary directories
+# These contain large amounts of generated data/context that consume tokens
+.claude/
+!.claude/mcp_config.json
+!.claude/settings.json
+!.claude/commands/
+
+# Explicitly ignore rules documentation (load via skills instead)
+.claude/rules/
+.claude/docs/
+_ul/
+_ul-Hope2SB/
+.ab-method/
+.agentvibes/
+.codex/
+.serena/
+.vscode/
+.git/
+.husky/
+.github/
+
+# Legacy/Deprecated directories
 equoria-mobile/
 !equoria-mobile/README_DEPRECATED.md
-
-# Legacy/deprecated directories
 claude/
 database/
 game_plans/
 codehelpers/
-.venv/
 
-# Standard ignores
-node_modules/
-dist/
-build/
-.DS_Store
-*.log
-coverage/
-.env
-.env.*
-!.env.example
+# Large binaries/Assets
+*.jpg
+*.jpeg
+*.png
+*.gif
+*.ico
+*.svg
+*.mp4
+*.mp3
+*.wav
+*.pdf
+*.zip
+*.tar.gz
