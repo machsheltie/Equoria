@@ -23,10 +23,16 @@
 
 import Redis from 'ioredis';
 import logger from './logger.mjs';
+import { createRedisCircuitBreaker } from './redisCircuitBreaker.mjs';
 
 // Redis client singleton
 let redisClient = null;
+let redisCircuitBreaker = null; // Circuit breaker wrapper
 let isRedisAvailable = false;
+
+// In-memory fallback cache
+const localCache = new Map();
+const LOCAL_CACHE_MAX_ITEMS = 1000;
 
 // Cache statistics
 export const cacheStats = {
@@ -36,6 +42,8 @@ export const cacheStats = {
   invalidations: 0,
   totalKeys: 0,
   lastUpdate: new Date(),
+  localHits: 0,
+  localMisses: 0,
 };
 
 /**
@@ -48,7 +56,7 @@ async function initializeRedis() {
 
   // Skip Redis in test environment
   if (process.env.NODE_ENV === 'test') {
-    logger.info('[cacheHelper] Redis disabled in test environment');
+    // logger.info('[cacheHelper] Redis disabled in test environment'); // Reduce log noise
     return null;
   }
 
@@ -74,7 +82,7 @@ async function initializeRedis() {
     });
 
     // Event handlers
-    redisClient.on('error', (error) => {
+    redisClient.on('error', error => {
       logger.warn('[cacheHelper] Redis connection error (caching degraded):', error.message);
       isRedisAvailable = false;
       cacheStats.errors++;
@@ -102,11 +110,26 @@ async function initializeRedis() {
     }
 
     isRedisAvailable = true;
+
+    // Wrap Redis client with circuit breaker for resilience
+    redisCircuitBreaker = createRedisCircuitBreaker(redisClient, {
+      errorThresholdPercentage: 50,
+      resetTimeout: 30000, // 30 seconds
+      timeout: 3000, // 3 seconds per operation
+      volumeThreshold: 10,
+      halfOpenRequests: 3,
+    });
+
+    logger.info('[cacheHelper] Redis circuit breaker initialized');
     return redisClient;
   } catch (error) {
-    logger.warn('[cacheHelper] Redis initialization failed, caching disabled:', error.message);
+    logger.warn(
+      '[cacheHelper] Redis initialization failed, using in-memory fallback:',
+      error.message,
+    );
     isRedisAvailable = false;
     redisClient = null;
+    redisCircuitBreaker = null;
     return null;
   }
 }
@@ -125,125 +148,186 @@ export function generateCacheKey(...components) {
 
 /**
  * Get cached query result or execute query and cache it
+ * Supports Redis with fallback to in-memory cache
  *
  * @param {string} cacheKey - Cache key
  * @param {Function} queryFn - Async function that executes the query
  * @param {number} ttl - Time to live in seconds (default: 60)
  * @returns {Promise<any>} Query result (from cache or fresh)
- *
- * @example
- * const horses = await getCachedQuery(
- *   'horses:marketplace:page1:limit20',
- *   () => prisma.horse.findMany({ where: { forSale: true }, take: 20 }),
- *   120 // 2 minutes
- * );
  */
 export async function getCachedQuery(cacheKey, queryFn, ttl = 60) {
   const redis = await initializeRedis();
 
-  // If Redis unavailable, just execute query
-  if (!redis || !isRedisAvailable) {
-    cacheStats.misses++;
-    logger.debug(`[cacheHelper] Cache bypassed (Redis unavailable): ${cacheKey}`);
-    return await queryFn();
-  }
+  // Try Redis first if available (using circuit breaker)
+  if (redis && isRedisAvailable && redisCircuitBreaker) {
+    try {
+      // Check if circuit is open - if so, skip Redis and use local cache
+      if (redisCircuitBreaker.isCircuitOpen()) {
+        logger.debug(`[cacheHelper] Circuit OPEN, skipping Redis for: ${cacheKey}`);
+      } else {
+        const cached = await redisCircuitBreaker.operations.get.fire(cacheKey);
 
-  // Try to get from cache
-  try {
-    const cached = await redis.get(cacheKey);
+        if (cached) {
+          cacheStats.hits++;
+          cacheStats.lastUpdate = new Date();
+          logger.debug(`[cacheHelper] Redis Cache HIT: ${cacheKey}`);
 
-    if (cached) {
-      cacheStats.hits++;
-      cacheStats.lastUpdate = new Date();
-      logger.debug(`[cacheHelper] Cache HIT: ${cacheKey}`);
-
-      try {
-        return JSON.parse(cached);
-      } catch (parseError) {
-        logger.warn(`[cacheHelper] Cache parse error for key ${cacheKey}:`, parseError.message);
-        // Fall through to re-fetch
+          try {
+            return JSON.parse(cached);
+          } catch (parseError) {
+            logger.warn(`[cacheHelper] Cache parse error for key ${cacheKey}:`, parseError.message);
+            // Fall through to re-fetch
+          }
+        }
       }
+    } catch (error) {
+      logger.error(`[cacheHelper] Redis read failed for ${cacheKey}:`, error.message);
+      cacheStats.errors++;
+      // Fall through to query execution (circuit breaker will handle failure tracking)
     }
-  } catch (error) {
-    logger.error(`[cacheHelper] Cache read failed for ${cacheKey}:`, error.message);
-    cacheStats.errors++;
-    return await queryFn();
+  } else {
+    // Check in-memory cache
+    const localItem = localCache.get(cacheKey);
+    if (localItem) {
+      const now = Date.now();
+      if (localItem.expires > now) {
+        cacheStats.localHits++;
+        cacheStats.lastUpdate = new Date();
+        logger.debug(`[cacheHelper] Local Cache HIT: ${cacheKey}`);
+        return localItem.data; // Already parsed/object
+      } else {
+        localCache.delete(cacheKey); // Expired
+      }
+    } else {
+      cacheStats.localMisses++;
+    }
   }
 
   // Cache miss - execute query
-  cacheStats.misses++;
-  logger.debug(`[cacheHelper] Cache MISS: ${cacheKey}`);
+  if (isRedisAvailable) {
+    cacheStats.misses++;
+    logger.debug(`[cacheHelper] Redis Cache MISS: ${cacheKey}`);
+  }
 
   const result = await queryFn();
 
-  try {
-    await redis.setex(cacheKey, ttl, JSON.stringify(result));
-    logger.debug(`[cacheHelper] Cached result for ${cacheKey} (TTL: ${ttl}s)`);
-  } catch (cacheError) {
-    logger.warn(`[cacheHelper] Failed to cache result for ${cacheKey}:`, cacheError.message);
-    cacheStats.errors++;
+  // Cache the result
+  if (result !== undefined && result !== null) {
+    // 1. Save to Redis if available (using circuit breaker)
+    if (redis && isRedisAvailable && redisCircuitBreaker) {
+      try {
+        // Only attempt Redis write if circuit is not open
+        if (!redisCircuitBreaker.isCircuitOpen()) {
+          await redisCircuitBreaker.operations.setex.fire(cacheKey, ttl, JSON.stringify(result));
+          logger.debug(`[cacheHelper] Cached to Redis: ${cacheKey} (TTL: ${ttl}s)`);
+        } else {
+          logger.debug(`[cacheHelper] Circuit OPEN, skipping Redis write for: ${cacheKey}`);
+        }
+      } catch (cacheError) {
+        logger.warn(`[cacheHelper] Failed to cache to Redis for ${cacheKey}:`, cacheError.message);
+        cacheStats.errors++;
+      }
+    }
+
+    // 2. Save to local cache (as backup or primary if Redis down)
+    // Enforce size limit
+    if (localCache.size >= LOCAL_CACHE_MAX_ITEMS) {
+      // Simple eviction: delete first item (FIFO-ish since Maps preserve insertion order)
+      const firstKey = localCache.keys().next().value;
+      localCache.delete(firstKey);
+    }
+
+    localCache.set(cacheKey, {
+      data: result,
+      expires: Date.now() + ttl * 1000,
+    });
   }
 
   return result;
 }
 
 /**
- * Invalidate cache by exact key
+ * Invalidate cache by exact key (both Redis and Local)
  * @param {string} cacheKey - Cache key to invalidate
  * @returns {Promise<number>} Number of keys deleted
  */
 export async function invalidateCache(cacheKey) {
+  let deletedCount = 0;
+
+  // Invalidate local
+  if (localCache.delete(cacheKey)) {
+    deletedCount++;
+  }
+
+  // Invalidate Redis (using circuit breaker)
   const redis = await initializeRedis();
-
-  if (!redis || !isRedisAvailable) {
-    logger.debug(`[cacheHelper] Cache invalidation skipped (Redis unavailable): ${cacheKey}`);
-    return 0;
+  if (redis && isRedisAvailable && redisCircuitBreaker) {
+    try {
+      if (!redisCircuitBreaker.isCircuitOpen()) {
+        const deleted = await redisCircuitBreaker.operations.del.fire(cacheKey);
+        deletedCount += deleted;
+        logger.debug(`[cacheHelper] Invalidated Redis cache: ${cacheKey}`);
+      } else {
+        logger.debug(`[cacheHelper] Circuit OPEN, skipping Redis invalidation for: ${cacheKey}`);
+      }
+    } catch (error) {
+      logger.error(`[cacheHelper] Redis invalidation failed for ${cacheKey}:`, error.message);
+      cacheStats.errors++;
+    }
   }
 
-  try {
-    const deleted = await redis.del(cacheKey);
+  if (deletedCount > 0) {
     cacheStats.invalidations++;
-    logger.debug(`[cacheHelper] Invalidated cache: ${cacheKey} (${deleted} keys)`);
-    return deleted;
-  } catch (error) {
-    logger.error(`[cacheHelper] Cache invalidation failed for ${cacheKey}:`, error.message);
-    cacheStats.errors++;
-    return 0;
   }
+
+  return deletedCount;
 }
 
 /**
- * Invalidate cache by pattern (e.g., 'horses:*')
- * @param {string} pattern - Key pattern with wildcards
+ * Invalidate cache by pattern (Redis only for now, Local exact match only)
+ * Note: Pattern matching on Map is O(N), so use sparingly for local cache
+ * @param {string} pattern - Key pattern with wildcards (e.g., 'horses:*')
  * @returns {Promise<number>} Number of keys deleted
  */
 export async function invalidateCachePattern(pattern) {
-  const redis = await initializeRedis();
+  let deletedCount = 0;
 
-  if (!redis || !isRedisAvailable) {
-    logger.debug(`[cacheHelper] Pattern invalidation skipped (Redis unavailable): ${pattern}`);
-    return 0;
-  }
+  // Local cache pattern matching (regex-like)
+  // Convert Redis pattern 'horses:*' to Regex '^horses:.*'
+  const regex = new RegExp('^' + pattern.replace(/\*/g, '.*') + '$');
 
-  try {
-    // Find all keys matching pattern
-    const keys = await redis.keys(pattern);
-
-    if (keys.length === 0) {
-      logger.debug(`[cacheHelper] No keys found for pattern: ${pattern}`);
-      return 0;
+  for (const key of localCache.keys()) {
+    if (regex.test(key)) {
+      localCache.delete(key);
+      deletedCount++;
     }
-
-    // Delete all matching keys
-    const deleted = await redis.del(...keys);
-    cacheStats.invalidations += deleted;
-    logger.info(`[cacheHelper] Invalidated ${deleted} cache keys matching pattern: ${pattern}`);
-    return deleted;
-  } catch (error) {
-    logger.error(`[cacheHelper] Pattern invalidation failed for ${pattern}:`, error.message);
-    cacheStats.errors++;
-    return 0;
   }
+
+  // Redis pattern matching (using circuit breaker)
+  const redis = await initializeRedis();
+  if (redis && isRedisAvailable && redisCircuitBreaker) {
+    try {
+      if (!redisCircuitBreaker.isCircuitOpen()) {
+        const keys = await redisCircuitBreaker.operations.keys.fire(pattern);
+        if (keys.length > 0) {
+          const deleted = await redisCircuitBreaker.operations.del.fire(...keys);
+          deletedCount += deleted;
+          logger.debug(`[cacheHelper] Invalidated ${deleted} Redis keys for pattern: ${pattern}`);
+        }
+      } else {
+        logger.debug(`[cacheHelper] Circuit OPEN, skipping pattern invalidation for: ${pattern}`);
+      }
+    } catch (error) {
+      logger.error(`[cacheHelper] Pattern invalidation failed for ${pattern}:`, error.message);
+      cacheStats.errors++;
+    }
+  }
+
+  if (deletedCount > 0) {
+    cacheStats.invalidations += deletedCount;
+  }
+
+  return deletedCount;
 }
 
 /**
@@ -254,15 +338,20 @@ export async function invalidateCachePattern(pattern) {
 export async function invalidateCacheMultiple(cacheKeys) {
   const redis = await initializeRedis();
 
-  if (!redis || !isRedisAvailable || cacheKeys.length === 0) {
+  if (!redis || !isRedisAvailable || !redisCircuitBreaker || cacheKeys.length === 0) {
     return 0;
   }
 
   try {
-    const deleted = await redis.del(...cacheKeys);
-    cacheStats.invalidations += deleted;
-    logger.debug(`[cacheHelper] Invalidated ${deleted} cache keys`);
-    return deleted;
+    if (!redisCircuitBreaker.isCircuitOpen()) {
+      const deleted = await redisCircuitBreaker.operations.del.fire(...cacheKeys);
+      cacheStats.invalidations += deleted;
+      logger.debug(`[cacheHelper] Invalidated ${deleted} cache keys`);
+      return deleted;
+    } else {
+      logger.debug('[cacheHelper] Circuit OPEN, skipping multi-key invalidation');
+      return 0;
+    }
   } catch (error) {
     logger.error('[cacheHelper] Multi-key invalidation failed:', error.message);
     cacheStats.errors++;
@@ -277,16 +366,21 @@ export async function invalidateCacheMultiple(cacheKeys) {
 export async function clearAllCache() {
   const redis = await initializeRedis();
 
-  if (!redis || !isRedisAvailable) {
+  if (!redis || !isRedisAvailable || !redisCircuitBreaker) {
     logger.warn('[cacheHelper] Clear all cache skipped (Redis unavailable)');
     return false;
   }
 
   try {
-    await redis.flushdb();
-    cacheStats.invalidations++;
-    logger.warn('[cacheHelper] Cleared ALL cache keys');
-    return true;
+    if (!redisCircuitBreaker.isCircuitOpen()) {
+      await redisCircuitBreaker.operations.flushdb.fire();
+      cacheStats.invalidations++;
+      logger.warn('[cacheHelper] Cleared ALL cache keys');
+      return true;
+    } else {
+      logger.warn('[cacheHelper] Circuit OPEN, cannot clear all cache');
+      return false;
+    }
   } catch (error) {
     logger.error('[cacheHelper] Failed to clear all cache:', error.message);
     cacheStats.errors++;
@@ -308,11 +402,15 @@ export async function getCacheStatistics() {
     redisConnected: !!redis,
   };
 
+  // Add circuit breaker metrics if available
+  if (redisCircuitBreaker) {
+    stats.circuitBreaker = redisCircuitBreaker.getHealthStatus();
+  }
+
   if (redis && isRedisAvailable) {
     try {
       const info = await redis.info('stats');
       const memory = await redis.info('memory');
-      const keyspace = await redis.info('keyspace');
 
       // Parse Redis info
       const totalKeys = await redis.dbsize();
