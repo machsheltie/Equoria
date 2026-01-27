@@ -262,7 +262,7 @@ describe('Groom Workflow Integration Tests', () => {
         where: { name: 'Sarah Johnson' },
       });
       expect(groom).toBeTruthy();
-      expect(groom.speciality).toBe('foal_care'); // Database field uses snake_case for speciality values
+      expect(groom.speciality).toBe('foalCare'); // Database field uses camelCase for speciality values
       expect(groom.skillLevel).toBe('expert');
     });
 

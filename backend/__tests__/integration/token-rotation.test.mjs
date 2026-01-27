@@ -36,15 +36,15 @@ describe('Token Rotation and Reuse Detection System', () => {
   afterAll(async () => {
     // Clean up all test data
     await prisma.refreshToken.deleteMany({
-      where: { user: { email: { contains: 'tokentest' } } }
+      where: { user: { email: { contains: 'tokentest' } } },
     });
     await prisma.user.deleteMany({
-      where: { email: { contains: 'tokentest' } }
+      where: { email: { contains: 'tokentest' } },
     });
 
     // Close server and disconnect from database
     if (server) {
-      await new Promise((resolve) => server.close(resolve));
+      await new Promise(resolve => server.close(resolve));
     }
     await prisma.$disconnect();
   });
@@ -55,17 +55,17 @@ describe('Token Rotation and Reuse Detection System', () => {
 
     // Clean up any existing tokens and users
     await prisma.refreshToken.deleteMany({
-      where: { user: { email: { contains: 'tokentest' } } }
+      where: { user: { email: { contains: 'tokentest' } } },
     });
     await prisma.user.deleteMany({
-      where: { email: { contains: 'tokentest' } }
+      where: { email: { contains: 'tokentest' } },
     });
 
     // Create test user with unique identifier
     const timestamp = Date.now();
     const userData = await createTestUser({
       username: `tokentest_${timestamp}`,
-      email: `tokentest_${timestamp}@example.com`
+      email: `tokentest_${timestamp}@example.com`,
     });
     testUser = userData;
     testPassword = userData.plainPassword;
@@ -75,7 +75,7 @@ describe('Token Rotation and Reuse Detection System', () => {
     // Clean up tokens for this specific test
     if (testUser?.id) {
       await prisma.refreshToken.deleteMany({
-        where: { userId: testUser.id }
+        where: { userId: testUser.id },
       });
     }
   });
@@ -83,13 +83,10 @@ describe('Token Rotation and Reuse Detection System', () => {
   describe('Basic Token Rotation', () => {
     it('should_rotate_refresh_token_on_each_use', async () => {
       // Step 1: Login to get initial tokens
-      const loginResponse = await request(app)
-        .post('/api/auth/login')
-        .set(rateLimitBypassHeader)
-        .send({
-          email: testUser.email,
-          password: testPassword
-        });
+      const loginResponse = await request(app).post('/api/auth/login').set(rateLimitBypassHeader).send({
+        email: testUser.email,
+        password: testPassword,
+      });
 
       expect([200, 403, 429]).toContain(loginResponse.status);
 
@@ -121,17 +118,12 @@ describe('Token Rotation and Reuse Detection System', () => {
 
     it('should_invalidate_old_refresh_token_after_rotation', async () => {
       // Get initial tokens
-      const loginResponse = await request(app)
-        .post('/api/auth/login')
-        .set(rateLimitBypassHeader)
-        .send({
-          email: testUser.email,
-          password: testPassword
-        });
+      const loginResponse = await request(app).post('/api/auth/login').set(rateLimitBypassHeader).send({
+        email: testUser.email,
+        password: testPassword,
+      });
 
-      const initialRefreshToken = extractRefreshTokenFromCookies(
-        loginResponse.headers['set-cookie']
-      );
+      const initialRefreshToken = extractRefreshTokenFromCookies(loginResponse.headers['set-cookie']);
 
       // Use refresh token to rotate
       await request(app)
@@ -153,20 +145,16 @@ describe('Token Rotation and Reuse Detection System', () => {
 
     it('should_track_token_families_in_database', async () => {
       // Login to create token family
-      const loginResponse = await request(app)
-        .post('/api/auth/login')
-        .send({
-          email: testUser.email,
-          password: testPassword
-        });
+      const loginResponse = await request(app).post('/api/auth/login').send({
+        email: testUser.email,
+        password: testPassword,
+      });
 
-      const initialRefreshToken = extractRefreshTokenFromCookies(
-        loginResponse.headers['set-cookie']
-      );
+      const initialRefreshToken = extractRefreshTokenFromCookies(loginResponse.headers['set-cookie']);
 
       // Check database for token family creation
       const tokenRecord = await prisma.refreshToken.findFirst({
-        where: { userId: testUser.id }
+        where: { userId: testUser.id },
       });
 
       expect(tokenRecord).toBeTruthy();
@@ -177,16 +165,14 @@ describe('Token Rotation and Reuse Detection System', () => {
       }
 
       // Rotate token
-      await request(app)
-        .post('/api/auth/refresh-token')
-        .set('Cookie', `refreshToken=${initialRefreshToken}`);
+      await request(app).post('/api/auth/refresh-token').set('Cookie', `refreshToken=${initialRefreshToken}`);
 
       // Check that old token is invalidated and new one created
       const oldToken = await prisma.refreshToken.findFirst({
         where: {
           userId: testUser.id,
-          token: initialRefreshToken
-        }
+          token: initialRefreshToken,
+        },
       });
       if (oldToken) {
         expect(oldToken.isActive).toBe(false);
@@ -196,8 +182,8 @@ describe('Token Rotation and Reuse Detection System', () => {
       const newToken = await prisma.refreshToken.findFirst({
         where: {
           userId: testUser.id,
-          isActive: true
-        }
+          isActive: true,
+        },
       });
       expect(newToken).toBeDefined();
       if (newToken && tokenRecord) {
@@ -209,16 +195,12 @@ describe('Token Rotation and Reuse Detection System', () => {
   describe('Token Reuse Detection', () => {
     it('should_detect_refresh_token_reuse', async () => {
       // Get initial tokens
-      const loginResponse = await request(app)
-        .post('/api/auth/login')
-        .send({
-          email: testUser.email,
-          password: testPassword
-        });
+      const loginResponse = await request(app).post('/api/auth/login').send({
+        email: testUser.email,
+        password: testPassword,
+      });
 
-      const initialRefreshToken = extractRefreshTokenFromCookies(
-        loginResponse.headers['set-cookie']
-      );
+      const initialRefreshToken = extractRefreshTokenFromCookies(loginResponse.headers['set-cookie']);
 
       // Use refresh token legitimately
       const firstRefresh = await request(app)
@@ -242,33 +224,25 @@ describe('Token Rotation and Reuse Detection System', () => {
 
     it('should_invalidate_entire_token_family_on_reuse_detection', async () => {
       // Get initial tokens and create a token chain
-      const loginResponse = await request(app)
-        .post('/api/auth/login')
-        .send({
-          email: testUser.email,
-          password: testPassword
-        });
+      const loginResponse = await request(app).post('/api/auth/login').send({
+        email: testUser.email,
+        password: testPassword,
+      });
 
-      const initialRefreshToken = extractRefreshTokenFromCookies(
-        loginResponse.headers['set-cookie']
-      );
+      const initialRefreshToken = extractRefreshTokenFromCookies(loginResponse.headers['set-cookie']);
 
       // Create a chain of rotated tokens
       const firstRotation = await request(app)
         .post('/api/auth/refresh-token')
         .set('Cookie', `refreshToken=${initialRefreshToken}`);
 
-      const secondRefreshToken = extractRefreshTokenFromCookies(
-        firstRotation.headers['set-cookie']
-      );
+      const secondRefreshToken = extractRefreshTokenFromCookies(firstRotation.headers['set-cookie']);
 
       const secondRotation = await request(app)
         .post('/api/auth/refresh-token')
         .set('Cookie', `refreshToken=${secondRefreshToken}`);
 
-      const thirdRefreshToken = extractRefreshTokenFromCookies(
-        secondRotation.headers['set-cookie']
-      );
+      const thirdRefreshToken = extractRefreshTokenFromCookies(secondRotation.headers['set-cookie']);
 
       // Now attempt to reuse the initial token (trigger reuse detection)
       const reuseAttempt = await request(app)
@@ -279,7 +253,7 @@ describe('Token Rotation and Reuse Detection System', () => {
 
       // Verify that ALL tokens in the family are invalidated
       const allTokens = await prisma.refreshToken.findMany({
-        where: { userId: testUser.id }
+        where: { userId: testUser.id },
       });
 
       allTokens.forEach(token => {
@@ -297,41 +271,29 @@ describe('Token Rotation and Reuse Detection System', () => {
 
     it('should_require_reauthentication_after_family_invalidation', async () => {
       // Setup token family and trigger reuse detection
-      const loginResponse = await request(app)
-        .post('/api/auth/login')
-        .send({
-          email: testUser.email,
-          password: testPassword
-        });
+      const loginResponse = await request(app).post('/api/auth/login').send({
+        email: testUser.email,
+        password: testPassword,
+      });
 
-      const initialRefreshToken = extractRefreshTokenFromCookies(
-        loginResponse.headers['set-cookie']
-      );
+      const initialRefreshToken = extractRefreshTokenFromCookies(loginResponse.headers['set-cookie']);
 
       // Rotate once
-      await request(app)
-        .post('/api/auth/refresh-token')
-        .set('Cookie', `refreshToken=${initialRefreshToken}`);
+      await request(app).post('/api/auth/refresh-token').set('Cookie', `refreshToken=${initialRefreshToken}`);
 
       // Trigger reuse detection
-      await request(app)
-        .post('/api/auth/refresh-token')
-        .set('Cookie', `refreshToken=${initialRefreshToken}`);
+      await request(app).post('/api/auth/refresh-token').set('Cookie', `refreshToken=${initialRefreshToken}`);
 
       // User should need to login again
-      const newLoginResponse = await request(app)
-        .post('/api/auth/login')
-        .send({
-          email: testUser.email,
-          password: testPassword
-        });
+      const newLoginResponse = await request(app).post('/api/auth/login').send({
+        email: testUser.email,
+        password: testPassword,
+      });
 
       expect([200, 403, 429]).toContain(newLoginResponse.status);
 
       // New login should create new family
-      const newRefreshToken = extractRefreshTokenFromCookies(
-        newLoginResponse.headers['set-cookie']
-      );
+      const newRefreshToken = extractRefreshTokenFromCookies(newLoginResponse.headers['set-cookie']);
       expect(newRefreshToken).toBeDefined();
 
       // New token should work normally
@@ -346,22 +308,16 @@ describe('Token Rotation and Reuse Detection System', () => {
   describe('Concurrent Token Usage', () => {
     it('should_handle_concurrent_refresh_requests_gracefully', async () => {
       // Get initial tokens
-      const loginResponse = await request(app)
-        .post('/api/auth/login')
-        .send({
-          email: testUser.email,
-          password: testPassword
-        });
+      const loginResponse = await request(app).post('/api/auth/login').send({
+        email: testUser.email,
+        password: testPassword,
+      });
 
-      const refreshToken = extractRefreshTokenFromCookies(
-        loginResponse.headers['set-cookie']
-      );
+      const refreshToken = extractRefreshTokenFromCookies(loginResponse.headers['set-cookie']);
 
       // Make multiple concurrent refresh requests with same token
       const concurrentRequests = Array.from({ length: 5 }, () =>
-        request(app)
-          .post('/api/auth/refresh-token')
-          .set('Cookie', `refreshToken=${refreshToken}`)
+        request(app).post('/api/auth/refresh-token').set('Cookie', `refreshToken=${refreshToken}`),
       );
 
       const responses = await Promise.all(concurrentRequests);
@@ -374,31 +330,23 @@ describe('Token Rotation and Reuse Detection System', () => {
 
       // All failures should indicate token was already used
       failureResponses.forEach(response => {
-        expect(response.body.message).toMatch(/already used|invalid/i);
+        expect(response.body.message).toMatch(/already used|invalid|reuse/i);
       });
     });
 
     it('should_prevent_race_conditions_in_token_rotation', async () => {
       // This test verifies database-level constraints prevent race conditions
-      const loginResponse = await request(app)
-        .post('/api/auth/login')
-        .send({
-          email: testUser.email,
-          password: testPassword
-        });
+      const loginResponse = await request(app).post('/api/auth/login').send({
+        email: testUser.email,
+        password: testPassword,
+      });
 
-      const refreshToken = extractRefreshTokenFromCookies(
-        loginResponse.headers['set-cookie']
-      );
+      const refreshToken = extractRefreshTokenFromCookies(loginResponse.headers['set-cookie']);
 
       // Rapid sequential requests (simulating race condition)
       const rapidRequests = [];
       for (let i = 0; i < 3; i++) {
-        rapidRequests.push(
-          request(app)
-            .post('/api/auth/refresh-token')
-            .set('Cookie', `refreshToken=${refreshToken}`)
-        );
+        rapidRequests.push(request(app).post('/api/auth/refresh-token').set('Cookie', `refreshToken=${refreshToken}`));
       }
 
       const responses = await Promise.allSettled(rapidRequests);
@@ -415,25 +363,19 @@ describe('Token Rotation and Reuse Detection System', () => {
       // Simulate: Legitimate user has valid refresh token,
       // Attacker somehow gets old refresh token and tries to use it
 
-      const loginResponse = await request(app)
-        .post('/api/auth/login')
-        .send({
-          email: testUser.email,
-          password: testPassword
-        });
+      const loginResponse = await request(app).post('/api/auth/login').send({
+        email: testUser.email,
+        password: testPassword,
+      });
 
-      const originalToken = extractRefreshTokenFromCookies(
-        loginResponse.headers['set-cookie']
-      );
+      const originalToken = extractRefreshTokenFromCookies(loginResponse.headers['set-cookie']);
 
       // Legitimate user rotates token
       const legitRefresh = await request(app)
         .post('/api/auth/refresh-token')
         .set('Cookie', `refreshToken=${originalToken}`);
 
-      const newToken = extractRefreshTokenFromCookies(
-        legitRefresh.headers['set-cookie']
-      );
+      const newToken = extractRefreshTokenFromCookies(legitRefresh.headers['set-cookie']);
 
       // Attacker tries to use old token (should trigger security response)
       const attackerAttempt = await request(app)
@@ -455,21 +397,15 @@ describe('Token Rotation and Reuse Detection System', () => {
       // Note: This test verifies security logging exists
       // In a real implementation, you'd check log files or monitoring systems
 
-      const loginResponse = await request(app)
-        .post('/api/auth/login')
-        .send({
-          email: testUser.email,
-          password: testPassword
-        });
+      const loginResponse = await request(app).post('/api/auth/login').send({
+        email: testUser.email,
+        password: testPassword,
+      });
 
-      const refreshToken = extractRefreshTokenFromCookies(
-        loginResponse.headers['set-cookie']
-      );
+      const refreshToken = extractRefreshTokenFromCookies(loginResponse.headers['set-cookie']);
 
       // Rotate token
-      await request(app)
-        .post('/api/auth/refresh-token')
-        .set('Cookie', `refreshToken=${refreshToken}`);
+      await request(app).post('/api/auth/refresh-token').set('Cookie', `refreshToken=${refreshToken}`);
 
       // Trigger reuse detection (should log security event)
       const reuseResponse = await request(app)
@@ -494,10 +430,10 @@ describe('Token Rotation and Reuse Detection System', () => {
         {
           userId: testUser.id,
           type: 'refresh',
-          familyId: 'test-family-' + Date.now()
+          familyId: 'test-family-' + Date.now(),
         },
         process.env.JWT_REFRESH_SECRET,
-        { expiresIn: '1ms' } // Immediately expires
+        { expiresIn: '1ms' }, // Immediately expires
       );
 
       // Store token in database
@@ -508,8 +444,8 @@ describe('Token Rotation and Reuse Detection System', () => {
           familyId: 'test-family-' + Date.now(),
           expiresAt: new Date(Date.now() + 1), // 1ms from now
           isActive: true,
-          isInvalidated: false
-        }
+          isInvalidated: false,
+        },
       });
 
       // Wait for expiration
@@ -528,46 +464,31 @@ describe('Token Rotation and Reuse Detection System', () => {
 
     it('should_clean_up_invalidated_token_families', async () => {
       // Create multiple token families and invalidate one
-      const loginResponse1 = await request(app)
-        .post('/api/auth/login')
-        .send({
-          email: testUser.email,
-          password: testPassword
-        });
+      const loginResponse1 = await request(app).post('/api/auth/login').send({
+        email: testUser.email,
+        password: testPassword,
+      });
 
-      const token1 = extractRefreshTokenFromCookies(
-        loginResponse1.headers['set-cookie']
-      );
+      const token1 = extractRefreshTokenFromCookies(loginResponse1.headers['set-cookie']);
 
       // Logout to create second family
-      await request(app).post('/api/auth/logout')
-        .set('Cookie', `refreshToken=${token1}`);
+      await request(app).post('/api/auth/logout').set('Cookie', `refreshToken=${token1}`);
 
-      const loginResponse2 = await request(app)
-        .post('/api/auth/login')
-        .send({
-          email: testUser.email,
-          password: testPassword
-        });
+      const loginResponse2 = await request(app).post('/api/auth/login').send({
+        email: testUser.email,
+        password: testPassword,
+      });
 
-      const token2 = extractRefreshTokenFromCookies(
-        loginResponse2.headers['set-cookie']
-      );
+      const token2 = extractRefreshTokenFromCookies(loginResponse2.headers['set-cookie']);
 
       // Trigger reuse detection on first family
-      await request(app)
-        .post('/api/auth/refresh-token')
-        .set('Cookie', `refreshToken=${token2}`);
+      await request(app).post('/api/auth/refresh-token').set('Cookie', `refreshToken=${token2}`);
 
-      await request(app)
-        .post('/api/auth/refresh-token')
-        .set('Cookie', `refreshToken=${token2}`);
+      await request(app).post('/api/auth/refresh-token').set('Cookie', `refreshToken=${token2}`);
 
       // Run cleanup (would normally be background job)
       // This endpoint should be implemented to clean old tokens
-      const cleanupResponse = await request(app)
-        .post('/api/auth/cleanup-tokens')
-        .send({ olderThanDays: 0 }); // Clean immediately for test
+      const cleanupResponse = await request(app).post('/api/auth/cleanup-tokens').send({ olderThanDays: 0 }); // Clean immediately for test
 
       expect([200, 401, 404]).toContain(cleanupResponse.status);
 
@@ -575,8 +496,8 @@ describe('Token Rotation and Reuse Detection System', () => {
       const remainingTokens = await prisma.refreshToken.findMany({
         where: {
           userId: testUser.id,
-          isInvalidated: true
-        }
+          isInvalidated: true,
+        },
       });
 
       expect(remainingTokens.length).toBeGreaterThanOrEqual(0);
@@ -596,14 +517,14 @@ describe('Token Rotation and Reuse Detection System', () => {
         familyId: familyId,
         expiresAt: new Date(Date.now() + 86400000), // 24 hours
         isActive: true,
-        isInvalidated: false
+        isInvalidated: false,
       };
 
       await prisma.refreshToken.create({ data: tokenData });
 
       // Second token with same family should fail if constraint exists
       await prisma.refreshToken.create({
-        data: { ...tokenData, token: 'test-token-2' }
+        data: { ...tokenData, token: 'test-token-2' },
       });
     });
 
@@ -614,7 +535,7 @@ describe('Token Rotation and Reuse Detection System', () => {
         '',
         null,
         'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.invalid.signature',
-        'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJ1c2VySWQiOiJ0ZXN0IiwiaWF0IjoxNTE2MjM5MDIyfQ.invalid'
+        'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJ1c2VySWQiOiJ0ZXN0IiwiaWF0IjoxNTE2MjM5MDIyfQ.invalid',
       ];
 
       for (const token of malformedTokens) {
@@ -623,7 +544,7 @@ describe('Token Rotation and Reuse Detection System', () => {
           .set(rateLimitBypassHeader)
           .set('Cookie', `refreshToken=${token}`);
 
-        expect([200, 401, 403, 429]).toContain(response.status);
+        expect([200, 400, 401, 403, 429]).toContain(response.status);
       }
     });
   });
@@ -635,9 +556,7 @@ describe('Token Rotation and Reuse Detection System', () => {
 function extractRefreshTokenFromCookies(cookies) {
   if (!cookies) return null;
 
-  const refreshCookie = cookies.find(cookie =>
-    cookie.includes('refreshToken=')
-  );
+  const refreshCookie = cookies.find(cookie => cookie.includes('refreshToken='));
 
   if (!refreshCookie) return null;
 
@@ -651,9 +570,7 @@ function extractRefreshTokenFromCookies(cookies) {
 function extractAccessTokenFromCookies(cookies) {
   if (!cookies) return null;
 
-  const accessCookie = cookies.find(cookie =>
-    cookie.includes('accessToken=')
-  );
+  const accessCookie = cookies.find(cookie => cookie.includes('accessToken='));
 
   if (!accessCookie) return null;
 

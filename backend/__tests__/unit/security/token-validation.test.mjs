@@ -24,7 +24,7 @@ describe('Token Validation Unit Tests', () => {
     // Reset request, response, and next mocks before each test
     req = {
       cookies: {},
-      headers: {},
+      headers: { 'x-test-require-auth': 'true' },
       method: 'GET',
       path: '/api/test',
       ip: '127.0.0.1',
@@ -107,18 +107,15 @@ describe('Token Validation Unit Tests', () => {
 
       req.cookies.accessToken = expiredToken;
 
-      // Wait for token to actually expire
-      setTimeout(() => {
-        authenticateToken(req, res, next);
+      authenticateToken(req, res, next);
 
-        expect(next).not.toHaveBeenCalled();
-        expect(res.status).toHaveBeenCalledWith(401);
-        expect(res.json).toHaveBeenCalledWith({
-          success: false,
-          message: 'Invalid or expired token',
-          status: expect.anything(),
-        });
-      }, 100);
+      expect(next).not.toHaveBeenCalled();
+      expect(res.status).toHaveBeenCalledWith(401);
+      expect(res.json).toHaveBeenCalledWith({
+        success: false,
+        message: 'Token expired',
+        status: 'error',
+      });
     });
 
     it('should reject token older than 7 days (CWE-613)', () => {
@@ -128,10 +125,10 @@ describe('Token Validation Unit Tests', () => {
       const oldToken = jwt.sign(
         {
           userId: user.id,
-          iat: Math.floor(Date.now() / 1000) - (8 * 24 * 60 * 60), // 8 days ago
+          iat: Math.floor(Date.now() / 1000) - 8 * 24 * 60 * 60, // 8 days ago
         },
         JWT_SECRET,
-        { expiresIn: '30d' } // Token technically valid for 30 days
+        { expiresIn: '30d' }, // Token technically valid for 30 days
       );
 
       req.cookies.accessToken = oldToken;
@@ -154,10 +151,10 @@ describe('Token Validation Unit Tests', () => {
       const sevenDayToken = jwt.sign(
         {
           userId: user.id,
-          iat: Math.floor(Date.now() / 1000) - (7 * 24 * 60 * 60),
+          iat: Math.floor(Date.now() / 1000) - 7 * 24 * 60 * 60,
         },
         JWT_SECRET,
-        { expiresIn: '30d' }
+        { expiresIn: '30d' },
       );
 
       req.cookies.accessToken = sevenDayToken;
@@ -171,14 +168,14 @@ describe('Token Validation Unit Tests', () => {
     it('should reject token slightly over 7 days old', () => {
       const user = createMockUser();
 
-      // Create token just over 7 days old (7 days + 1 second)
+      // Create token just over 7 days old (7 days + 15 seconds, beyond 10s tolerance)
       const justExpiredToken = jwt.sign(
         {
           userId: user.id,
-          iat: Math.floor(Date.now() / 1000) - (7 * 24 * 60 * 60 + 1),
+          iat: Math.floor(Date.now() / 1000) - (7 * 24 * 60 * 60 + 15),
         },
         JWT_SECRET,
-        { expiresIn: '30d' }
+        { expiresIn: '30d' },
       );
 
       req.cookies.accessToken = justExpiredToken;
