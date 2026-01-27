@@ -1,5 +1,9 @@
 import express from 'express';
-import { handlePing, handleHealthCheck } from '../controllers/pingController.mjs';
+import {
+  handlePing,
+  handleHealthCheck,
+  handleRedisHealthCheck,
+} from '../controllers/pingController.mjs';
 import { validatePing } from '../middleware/validatePing.mjs';
 
 const router = express.Router();
@@ -113,5 +117,91 @@ router.get('/', validatePing, handlePing);
  *                   description: Health status with error details
  */
 router.get('/health', handleHealthCheck);
+
+/**
+ * @swagger
+ * /health/redis:
+ *   get:
+ *     summary: Redis health check
+ *     description: Returns detailed Redis health status including circuit breaker state, cache statistics, and connection status
+ *     tags: [Health]
+ *     responses:
+ *       200:
+ *         description: Redis is healthy or recovering
+ *         content:
+ *           application/json:
+ *             schema:
+ *               type: object
+ *               properties:
+ *                 success:
+ *                   type: boolean
+ *                   example: true
+ *                 data:
+ *                   type: object
+ *                   properties:
+ *                     status:
+ *                       type: string
+ *                       enum: [healthy, recovering, degraded, unavailable]
+ *                       example: "healthy"
+ *                     timestamp:
+ *                       type: string
+ *                       format: date-time
+ *                     redis:
+ *                       type: object
+ *                       properties:
+ *                         available:
+ *                           type: boolean
+ *                           example: true
+ *                         connected:
+ *                           type: boolean
+ *                           example: true
+ *                         circuitBreaker:
+ *                           type: object
+ *                           properties:
+ *                             status:
+ *                               type: string
+ *                               enum: [healthy, degraded]
+ *                               example: "healthy"
+ *                             circuitState:
+ *                               type: string
+ *                               enum: [CLOSED, OPEN, HALF_OPEN]
+ *                               example: "CLOSED"
+ *                             metrics:
+ *                               type: object
+ *                               properties:
+ *                                 totalRequests:
+ *                                   type: number
+ *                                 successCount:
+ *                                   type: number
+ *                                 failureCount:
+ *                                   type: number
+ *                                 errorRate:
+ *                                   type: string
+ *                                   example: "0.00%"
+ *                     cache:
+ *                       type: object
+ *                       properties:
+ *                         hits:
+ *                           type: number
+ *                         misses:
+ *                           type: number
+ *                         hitRate:
+ *                           type: string
+ *                           example: "85.50%"
+ *       503:
+ *         description: Redis is unhealthy or circuit is open
+ *         content:
+ *           application/json:
+ *             schema:
+ *               type: object
+ *               properties:
+ *                 success:
+ *                   type: boolean
+ *                   example: false
+ *                 message:
+ *                   type: string
+ *                   example: "Redis health check failed"
+ */
+router.get('/health/redis', handleRedisHealthCheck);
 
 export default router;
