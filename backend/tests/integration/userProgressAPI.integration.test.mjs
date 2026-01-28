@@ -42,10 +42,11 @@ describe('🎯 INTEGRATION: User Progress API - Complete Progress Tracking', () 
   let testUser;
   let authToken;
   let testHorse;
-  const trainingRequest = () => request(app)
-    .post('/api/training/train')
-    .set('Authorization', `Bearer ${authToken}`)
-    .set('x-test-skip-csrf', 'true');
+  const trainingRequest = () =>
+    request(app)
+      .post('/api/training/train')
+      .set('Authorization', `Bearer ${authToken}`)
+      .set('x-test-skip-csrf', 'true');
 
   beforeAll(async () => {
     // Clean up any existing test data
@@ -156,7 +157,7 @@ describe('🎯 INTEGRATION: User Progress API - Complete Progress Tracking', () 
 
       expect(response.body.success).toBe(true);
       expect(response.body.data).toEqual({
-        userId: testUser.id,
+        user: { connect: { id: testUser.id } },
         username: testUser.username,
         level: 1,
         xp: 0,
@@ -190,9 +191,8 @@ describe('🎯 INTEGRATION: User Progress API - Complete Progress Tracking', () 
       testHorse = await prisma.horse.create({
         data: {
           name: 'Progress Test Horse',
-          breedId: breed.id,
-          ownerId: testUser.id,
-          ownerId: testUser.id,
+          breed: { connect: { id: breed.id } },
+          user: { connect: { id: testUser.id } },
           sex: 'Mare',
           dateOfBirth: birthDate,
           age: calculatedAge, // CRITICAL: Training system requires age field
@@ -231,7 +231,7 @@ describe('🎯 INTEGRATION: User Progress API - Complete Progress Tracking', () 
         .expect(200);
 
       expect(progressResponse.body.data).toEqual({
-        userId: testUser.id,
+        user: { connect: { id: testUser.id } },
         username: testUser.username,
         level: 1,
         xp: 5, // +5 XP from training
@@ -326,7 +326,7 @@ describe('🎯 INTEGRATION: User Progress API - Complete Progress Tracking', () 
         .expect(200);
 
       expect(progressResponse.body.data).toEqual({
-        userId: testUser.id,
+        user: { connect: { id: testUser.id } },
         username: testUser.username,
         level: 2, // Leveled up!
         xp: 200, // Total XP
@@ -360,7 +360,7 @@ describe('🎯 INTEGRATION: User Progress API - Complete Progress Tracking', () 
         .expect(200);
 
       expect(progressResponse.body.data).toEqual({
-        userId: testUser.id,
+        user: { connect: { id: testUser.id } },
         username: testUser.username,
         level: 3,
         xp: 350,
@@ -426,13 +426,13 @@ describe('🎯 INTEGRATION: User Progress API - Complete Progress Tracking', () 
       expect(response.body.message).toContain('Validation failed');
     });
 
-  it('should require authentication for progress endpoints', async () => {
-    const response = await request(app)
-      .get(`/api/users/${testUser.id}/progress`)
-      .set('x-test-require-auth', 'true')
-      .expect(401);
+    it('should require authentication for progress endpoints', async () => {
+      const response = await request(app)
+        .get(`/api/users/${testUser.id}/progress`)
+        .set('x-test-require-auth', 'true')
+        .expect(401);
 
-    expect(response.body.success).toBe(false);
+      expect(response.body.success).toBe(false);
     });
   });
 

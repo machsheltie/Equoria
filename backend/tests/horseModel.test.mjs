@@ -58,9 +58,7 @@ jest.unstable_mockModule('../utils/logger.mjs', () => ({
 }));
 
 // Import the module under test AFTER mocking
-const { createHorse, updateDisciplineScore, getDisciplineScores } = await import(
-  '../models/horseModel.mjs'
-);
+const { createHorse, updateDisciplineScore, getDisciplineScores } = await import('../models/horseModel.mjs');
 
 describe('🐎 UNIT: Horse Model - Discipline Score Management', () => {
   beforeEach(() => {
@@ -75,7 +73,7 @@ describe('🐎 UNIT: Horse Model - Discipline Score Management', () => {
 
   describe('updateDisciplineScore', () => {
     it('should update discipline score for existing horse', async () => {
-      const mockHorse = { id: 1, name: 'Test Horse', age: 4, breedId: 1, sex: 'mare' };
+      const mockHorse = { id: 1, name: 'Test Horse', age: 4, breed: { connect: { id: 1 } }, sex: 'mare' };
       const mockFoundHorse = {
         id: 1,
         disciplineScores: null,
@@ -100,7 +98,7 @@ describe('🐎 UNIT: Horse Model - Discipline Score Management', () => {
       const horse = await createHorse({
         name: 'Test Horse',
         age: 4,
-        breedId: 1,
+        breed: { connect: { id: 1 } },
         sex: 'mare',
         dateOfBirth: new Date(),
       });
@@ -113,7 +111,7 @@ describe('🐎 UNIT: Horse Model - Discipline Score Management', () => {
     });
 
     it('should add to existing discipline score', async () => {
-      const mockHorse = { id: 1, name: 'Test Horse', age: 4, breedId: 1, sex: 'mare' };
+      const mockHorse = { id: 1, name: 'Test Horse', age: 4, breed: { connect: { id: 1 } }, sex: 'mare' };
       const mockFoundHorse1 = { id: 1, disciplineScores: null };
       const mockFoundHorse2 = { id: 1, disciplineScores: { Dressage: 5 } };
       const mockUpdatedHorse1 = { id: 1, disciplineScores: { Dressage: 5 } };
@@ -126,7 +124,7 @@ describe('🐎 UNIT: Horse Model - Discipline Score Management', () => {
       const horse = await createHorse({
         name: 'Test Horse',
         age: 4,
-        breedId: 1,
+        breed: { connect: { id: 1 } },
         sex: 'mare',
         dateOfBirth: new Date(),
       });
@@ -138,7 +136,7 @@ describe('🐎 UNIT: Horse Model - Discipline Score Management', () => {
     });
 
     it('should handle multiple disciplines independently', async () => {
-      const mockHorse = { id: 1, name: 'Test Horse', age: 4, breedId: 1, sex: 'mare' };
+      const mockHorse = { id: 1, name: 'Test Horse', age: 4, breed: { connect: { id: 1 } }, sex: 'mare' };
       const mockFoundHorse1 = { id: 1, disciplineScores: null };
       const mockFoundHorse2 = { id: 1, disciplineScores: { Dressage: 5 } };
       const mockUpdatedHorse1 = { id: 1, disciplineScores: { Dressage: 5 } };
@@ -151,7 +149,7 @@ describe('🐎 UNIT: Horse Model - Discipline Score Management', () => {
       const horse = await createHorse({
         name: 'Test Horse',
         age: 4,
-        breedId: 1,
+        breed: { connect: { id: 1 } },
         sex: 'mare',
         dateOfBirth: new Date(),
       });
@@ -182,7 +180,6 @@ describe('🐎 UNIT: Horse Model - Discipline Score Management', () => {
         id: 1,
         name: 'Test Horse',
         age: 4,
-        breedId: 1,
         breed: { id: 1, name: 'Arabian' },
         owner: null,
         stable: null,
@@ -194,7 +191,7 @@ describe('🐎 UNIT: Horse Model - Discipline Score Management', () => {
       const horse = await createHorse({
         name: 'Test Horse',
         age: 4,
-        breedId: 1,
+        breed: { connect: { id: 1 } },
         sex: 'mare',
         dateOfBirth: new Date(),
       });
@@ -209,7 +206,6 @@ describe('🐎 UNIT: Horse Model - Discipline Score Management', () => {
         id: 1,
         name: 'Test Horse',
         age: 4,
-        breedId: 1,
         breed: { id: 1, name: 'Arabian' },
         owner: null,
         stable: null,
@@ -221,7 +217,7 @@ describe('🐎 UNIT: Horse Model - Discipline Score Management', () => {
       const horse = await createHorse({
         name: 'Test Horse',
         age: 4,
-        breedId: 1,
+        breed: { connect: { id: 1 } },
         sex: 'mare',
         dateOfBirth: new Date(),
       });
@@ -242,7 +238,7 @@ describe('🐎 UNIT: Horse Model - Discipline Score Management', () => {
 
   describe('getDisciplineScores', () => {
     it('should return empty object for horse with no scores', async () => {
-      const mockHorse = { id: 1, name: 'Test Horse', age: 4, breedId: 1, sex: 'mare' };
+      const mockHorse = { id: 1, name: 'Test Horse', age: 4, breed: { connect: { id: 1 } }, sex: 'mare' };
       const mockHorseWithNoScores = {
         id: 1,
         disciplineScores: null,
@@ -254,7 +250,7 @@ describe('🐎 UNIT: Horse Model - Discipline Score Management', () => {
       const horse = await createHorse({
         name: 'Test Horse',
         age: 4,
-        breedId: 1,
+        breed: { connect: { id: 1 } },
         sex: 'mare',
         dateOfBirth: new Date(),
       });
@@ -264,7 +260,7 @@ describe('🐎 UNIT: Horse Model - Discipline Score Management', () => {
     });
 
     it('should return discipline scores for horse with scores', async () => {
-      const mockHorse = { id: 1, name: 'Test Horse', age: 4, breedId: 1, sex: 'mare' };
+      const mockHorse = { id: 1, name: 'Test Horse', age: 4, breed: { connect: { id: 1 } }, sex: 'mare' };
       const mockHorseWithScores = {
         id: 1,
         disciplineScores: { Dressage: 5, 'Show Jumping': 3 },
@@ -276,7 +272,7 @@ describe('🐎 UNIT: Horse Model - Discipline Score Management', () => {
       const horse = await createHorse({
         name: 'Test Horse',
         age: 4,
-        breedId: 1,
+        breed: { connect: { id: 1 } },
         sex: 'mare',
         dateOfBirth: new Date(),
       });

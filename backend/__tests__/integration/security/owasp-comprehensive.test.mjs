@@ -30,6 +30,17 @@ describe('🔒 OWASP Top 10 - Comprehensive Security Tests', () => {
   let testHorse;
 
   beforeAll(async () => {
+    // Create test breed
+    await prisma.breed.upsert({
+      where: { id: 1 },
+      update: {},
+      create: {
+        id: 1,
+        name: 'Test Breed',
+        description: 'Test breed for OWASP security tests',
+      },
+    });
+
     // Create test user
     const hashedPassword = await bcrypt.hash('TestPassword123!', 12);
     testUser = await prisma.user.create({
@@ -38,6 +49,8 @@ describe('🔒 OWASP Top 10 - Comprehensive Security Tests', () => {
         email: `owasp-test-${Date.now()}@test.com`,
         password: hashedPassword,
         role: 'user',
+        firstName: 'OWASP',
+        lastName: 'Test',
       },
     });
 
@@ -48,11 +61,10 @@ describe('🔒 OWASP Top 10 - Comprehensive Security Tests', () => {
     testHorse = await prisma.horse.create({
       data: {
         name: 'OWASP Test Horse',
-        breedId: 1,
+        breed: { connect: { id: 1 } },
         sex: 'Stallion',
         dateOfBirth: new Date(Date.now() - 5 * 365 * 24 * 60 * 60 * 1000), // 5 years old
-        ownerId: testUser.id,
-        userId: testUser.id,
+        userId: testUser.id, // Matches schema field (line 144)
       },
     });
   });
@@ -343,17 +355,18 @@ describe('🔒 OWASP Top 10 - Comprehensive Security Tests', () => {
             username: `other-user-${Date.now()}`,
             email: `other-${Date.now()}@test.com`,
             password: await bcrypt.hash('TestPassword123!', 12),
+            firstName: 'Other',
+            lastName: 'User',
           },
         });
 
         const otherHorse = await prisma.horse.create({
           data: {
             name: 'Other User Horse',
-            breedId: 1,
+            breed: { connect: { id: 1 } },
             sex: 'Mare',
             dateOfBirth: new Date(Date.now() - 5 * 365 * 24 * 60 * 60 * 1000),
-            ownerId: otherUser.id,
-            userId: otherUser.id,
+            userId: otherUser.id, // Matches schema field (line 144)
           },
         });
 

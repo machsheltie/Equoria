@@ -1,4 +1,3 @@
-/* eslint-disable no-console */
 /**
  * INTEGRATION TEST: Complete Horse Breeding Workflow
  *
@@ -51,7 +50,6 @@ const extractCookie = (cookies, name) => {
 
 describe('🐎 INTEGRATION: Complete Horse Breeding Workflow', () => {
   let testUser;
-  let _authToken;
   let mare;
   let stallion;
   let foal;
@@ -125,7 +123,6 @@ describe('🐎 INTEGRATION: Complete Horse Breeding Workflow', () => {
 
       // Store for subsequent tests
       testUser = response.body.data.user;
-      _authToken = accessToken;
 
       // VERIFY: User exists in database
       const dbUser = await prisma.user.findUnique({
@@ -158,11 +155,10 @@ describe('🐎 INTEGRATION: Complete Horse Breeding Workflow', () => {
         data: {
           name: 'Integration Test Mare',
           age: 5,
-          breedId: breed.id,
+          breed: { connect: { id: breed.id } },
           sex: 'Mare',
           healthStatus: 'Excellent',
-          ownerId: testUser.id,
-          ownerId: testUser.id,
+          user: { connect: { id: testUser.id } },
           dateOfBirth: fiveYearsAgoForMare, // FIXED: Use calculated date
           disciplineScores: {
             Racing: 85,
@@ -179,7 +175,7 @@ describe('🐎 INTEGRATION: Complete Horse Breeding Workflow', () => {
       expect(mare.name).toBe('Integration Test Mare');
       expect(mare.sex).toBe('Mare');
       expect(mare.epigeneticModifiers.positive).toContain('fast');
-      expect(mare.ownerId).toBe(testUser.id);
+      expect(mare.userId).toBe(testUser.id);
     });
 
     it('should create stallion with complementary traits', async () => {
@@ -194,11 +190,10 @@ describe('🐎 INTEGRATION: Complete Horse Breeding Workflow', () => {
         data: {
           name: 'Integration Test Stallion',
           age: 6,
-          breedId: breed.id,
+          breed: { connect: { id: breed.id } },
           sex: 'Stallion',
           healthStatus: 'Excellent',
-          ownerId: testUser.id,
-          ownerId: testUser.id,
+          user: { connect: { id: testUser.id } },
           dateOfBirth: sixYearsAgoForStallion, // FIXED: Use calculated date
           disciplineScores: {
             Racing: 90,
@@ -215,7 +210,7 @@ describe('🐎 INTEGRATION: Complete Horse Breeding Workflow', () => {
       expect(stallion.name).toBe('Integration Test Stallion');
       expect(stallion.sex).toBe('Stallion');
       expect(stallion.epigeneticModifiers.positive).toContain('powerful');
-      expect(stallion.ownerId).toBe(testUser.id);
+      expect(stallion.userId).toBe(testUser.id);
     });
   });
 
@@ -228,13 +223,12 @@ describe('🐎 INTEGRATION: Complete Horse Breeding Workflow', () => {
         data: {
           name: 'Integration Test Foal',
           age: 0, // Newborn
-          breedId: breed.id,
+          breed: { connect: { id: breed.id } },
           sex: 'Colt',
           sireId: stallion.id,
           damId: mare.id,
           healthStatus: 'Excellent',
-          ownerId: testUser.id,
-          ownerId: testUser.id,
+          user: { connect: { id: testUser.id } },
           dateOfBirth: new Date(), // Born today
           disciplineScores: {}, // No training yet
           epigeneticModifiers: {
@@ -389,7 +383,7 @@ describe('🐎 INTEGRATION: Complete Horse Breeding Workflow', () => {
       expect(foalWithFamily.epigeneticModifiers).toHaveProperty('negative');
 
       // User ownership
-      expect(foalWithFamily.ownerId).toBe(testUser.id);
+      expect(foalWithFamily.userId).toBe(testUser.id);
     });
 
     it('should validate business rules are enforced throughout workflow', async () => {
@@ -408,7 +402,7 @@ describe('🐎 INTEGRATION: Complete Horse Breeding Workflow', () => {
       // Data integrity
       expect(foal.sireId).toBe(stallion.id);
       expect(foal.damId).toBe(mare.id);
-      expect(foal.ownerId).toBe(testUser.id);
+      expect(foal.userId).toBe(testUser.id);
     });
   });
 });

@@ -68,7 +68,7 @@ describe('API Response Optimization System', () => {
       const horse = await prisma.horse.create({
         data: {
           name: `OptimizationHorse${i}`,
-          ownerId: testUserId,
+          user: { connect: { id: testUserId } },
           breed: { connect: { id: testBreed.id } },
           sex: i % 2 === 0 ? 'Stallion' : 'Mare',
           age: 3 + (i % 10),
@@ -106,13 +106,13 @@ describe('API Response Optimization System', () => {
     // Test routes
     testApp.get('/test/horses', async (req, res) => {
       const horses = await prisma.horse.findMany({
-        where: { ownerId: testUserId },
+        where: { userId: testUserId }, // Matches schema field
         take: req.pagination.limit,
         skip: req.pagination.offset,
       });
 
       const totalCount = await prisma.horse.count({
-        where: { ownerId: testUserId },
+        where: { userId: testUserId }, // Matches schema field
       });
 
       const paginatedResult = PaginationService.createOffsetPagination({
@@ -155,7 +155,7 @@ describe('API Response Optimization System', () => {
     // Cleanup test data
     if (testUserId) {
       await prisma.horse.deleteMany({
-        where: { ownerId: testUserId },
+        where: { userId: testUserId }, // Matches schema field
       });
       await prisma.user.deleteMany({
         where: { id: testUserId },
@@ -364,9 +364,7 @@ describe('API Response Optimization System', () => {
 
   describe('Middleware Integration', () => {
     test('handles pagination middleware correctly', async () => {
-      const response = await request(testApp)
-        .get('/test/horses?page=1&limit=10')
-        .expect(200);
+      const response = await request(testApp).get('/test/horses?page=1&limit=10').expect(200);
 
       expect(response.body.success).toBe(true);
       expect(response.body.data).toHaveLength(10);
@@ -377,9 +375,7 @@ describe('API Response Optimization System', () => {
     });
 
     test('handles field selection via query parameters', async () => {
-      const response = await request(testApp)
-        .get('/test/horses?fields=id,name&limit=5')
-        .expect(200);
+      const response = await request(testApp).get('/test/horses?fields=id,name&limit=5').expect(200);
 
       expect(response.body.success).toBe(true);
       expect(response.body.data).toHaveLength(5);
@@ -394,9 +390,7 @@ describe('API Response Optimization System', () => {
     });
 
     test('adds performance headers to responses', async () => {
-      const response = await request(testApp)
-        .get('/test/horses?limit=5')
-        .expect(200);
+      const response = await request(testApp).get('/test/horses?limit=5').expect(200);
 
       expect(response.headers['x-processing-time']).toBeDefined();
       expect(response.headers['x-response-time']).toBeDefined();
@@ -404,9 +398,7 @@ describe('API Response Optimization System', () => {
     });
 
     test('handles large response optimization', async () => {
-      const response = await request(testApp)
-        .get('/test/large-data')
-        .expect(200);
+      const response = await request(testApp).get('/test/large-data').expect(200);
 
       expect(response.body.success).toBe(true);
       expect(response.body.data).toHaveLength(1000);
@@ -417,9 +409,7 @@ describe('API Response Optimization System', () => {
     });
 
     test('supports debug mode with optimization info', async () => {
-      const response = await request(testApp)
-        .get('/test/horses?debug=true&fields=id,name&limit=3')
-        .expect(200);
+      const response = await request(testApp).get('/test/horses?debug=true&fields=id,name&limit=3').expect(200);
 
       expect(response.body.meta.optimization).toBeDefined();
       expect(response.body.meta.optimization.fieldsSelected).toBe(true);
@@ -447,7 +437,7 @@ describe('API Response Optimization System', () => {
   describe('ETag and Caching', () => {
     test('generates and validates ETags correctly', async () => {
       const testData = { id: 1, name: 'Test Data' };
-      const _etag = ResponseCacheService.generateETag(testData);
+      ResponseCacheService.generateETag(testData);
 
       // Create a test route that uses ETags
       testApp.get('/test/etag', (req, res) => {
@@ -463,9 +453,7 @@ describe('API Response Optimization System', () => {
       });
 
       // First request should return 200 with ETag
-      const response1 = await request(testApp)
-        .get('/test/etag')
-        .expect(200);
+      const response1 = await request(testApp).get('/test/etag').expect(200);
 
       expect(response1.headers.etag).toBeDefined();
 
@@ -482,9 +470,7 @@ describe('API Response Optimization System', () => {
   describe('Response Size Monitoring', () => {
     test('monitors and warns about large responses', async () => {
       // This test verifies that large responses are properly monitored
-      const response = await request(testApp)
-        .get('/test/large-data')
-        .expect(200);
+      const response = await request(testApp).get('/test/large-data').expect(200);
 
       expect(response.headers['x-response-size']).toBeDefined();
       const responseSize = parseInt(response.headers['x-response-size']);
@@ -509,9 +495,7 @@ describe('API Response Optimization System', () => {
         });
       });
 
-      const response = await request(limitedApp)
-        .get('/test/oversized')
-        .expect(413);
+      const response = await request(limitedApp).get('/test/oversized').expect(413);
 
       expect(response.body.success).toBe(false);
       expect(response.body.message).toContain('payload too large');

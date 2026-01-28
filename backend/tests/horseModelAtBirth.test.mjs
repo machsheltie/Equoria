@@ -103,7 +103,7 @@ describe('🐴 UNIT: Horse Model At-Birth Traits - Creation Integration Testing'
       const horseData = {
         name: 'Test Foal',
         age: 0,
-        breedId: 1,
+        breed: { connect: { id: 1 } },
         sireId: 10,
         damId: 20,
       };
@@ -160,7 +160,7 @@ describe('🐴 UNIT: Horse Model At-Birth Traits - Creation Integration Testing'
       const horseData = {
         name: 'Test Foal',
         age: 0,
-        breedId: 1,
+        breed: { connect: { id: 1 } },
         sireId: 10,
         damId: 20,
         mareStress: 15,
@@ -200,7 +200,7 @@ describe('🐴 UNIT: Horse Model At-Birth Traits - Creation Integration Testing'
       const horseData = {
         name: 'Test Foal',
         age: 0,
-        breedId: 1,
+        breed: { connect: { id: 1 } },
         sireId: 10,
         damId: 20,
         epigeneticModifiers: {
@@ -240,7 +240,7 @@ describe('🐴 UNIT: Horse Model At-Birth Traits - Creation Integration Testing'
       const horseData = {
         name: 'Adult Horse',
         age: 5,
-        breedId: 1,
+        breed: { connect: { id: 1 } },
         sireId: 10,
         damId: 20,
       };
@@ -267,7 +267,7 @@ describe('🐴 UNIT: Horse Model At-Birth Traits - Creation Integration Testing'
       const horseData = {
         name: 'Foundling Horse',
         age: 0,
-        breedId: 1,
+        breed: { connect: { id: 1 } },
       };
 
       mockPrisma.horse.create.mockResolvedValue({
@@ -286,7 +286,7 @@ describe('🐴 UNIT: Horse Model At-Birth Traits - Creation Integration Testing'
       const horseData = {
         name: 'Test Foal',
         age: 0,
-        breedId: 1,
+        breed: { connect: { id: 1 } },
         sireId: 10,
         damId: 20,
       };
@@ -308,7 +308,7 @@ describe('🐴 UNIT: Horse Model At-Birth Traits - Creation Integration Testing'
       const horseData = {
         name: 'Test Foal',
         age: 0,
-        breedId: 1,
+        breed: { connect: { id: 1 } },
         damId: 20,
       };
 
@@ -323,7 +323,7 @@ describe('🐴 UNIT: Horse Model At-Birth Traits - Creation Integration Testing'
       const horseData = {
         name: 'Test Foal',
         age: 0,
-        breedId: 1,
+        breed: { connect: { id: 1 } },
         sireId: 10,
       };
 
@@ -338,7 +338,7 @@ describe('🐴 UNIT: Horse Model At-Birth Traits - Creation Integration Testing'
       const horseData = {
         name: 'Test Foal',
         age: 0,
-        breedId: 1,
+        breed: { connect: { id: 1 } },
         sireId: 10,
         damId: 20,
       };

@@ -17,10 +17,7 @@ describe('Schema Validation', () => {
     });
     await prisma.user.deleteMany({
       where: {
-        OR: [
-          { email: { startsWith: 'schema-test-' } },
-          { id: { startsWith: 'schema-test-user-' } },
-        ],
+        OR: [{ email: { startsWith: 'schema-test-' } }, { id: { startsWith: 'schema-test-user-' } }],
       },
     });
     await prisma.breed.deleteMany({
@@ -35,10 +32,7 @@ describe('Schema Validation', () => {
     });
     await prisma.user.deleteMany({
       where: {
-        OR: [
-          { email: { startsWith: 'schema-test-' } },
-          { id: { startsWith: 'schema-test-user-' } },
-        ],
+        OR: [{ email: { startsWith: 'schema-test-' } }, { id: { startsWith: 'schema-test-user-' } }],
       },
     });
     await prisma.breed.deleteMany({
@@ -80,10 +74,7 @@ describe('Schema Validation', () => {
     });
     await prisma.user.deleteMany({
       where: {
-        OR: [
-          { email: { startsWith: 'schema-test-' } },
-          { id: { startsWith: 'schema-test-user-' } },
-        ],
+        OR: [{ email: { startsWith: 'schema-test-' } }, { id: { startsWith: 'schema-test-user-' } }],
       },
     });
     await prisma.breed.deleteMany({
@@ -143,7 +134,7 @@ describe('Schema Validation', () => {
         skillLevel: 'expert',
         personality: 'gentle',
         sessionRate: 25.0,
-        userId: testUser.id,
+        user: { connect: { id: testUser.id } },
       },
     });
 
@@ -175,7 +166,7 @@ describe('Schema Validation', () => {
         skillLevel: 'intermediate',
         personality: 'patient',
         sessionRate: 20.0,
-        userId: testUser.id,
+        user: { connect: { id: testUser.id } },
       },
     });
 
@@ -216,7 +207,7 @@ describe('Schema Validation', () => {
         skillLevel: 'master',
         personality: 'firm',
         sessionRate: 35.0,
-        userId: testUser.id,
+        user: { connect: { id: testUser.id } },
       },
     });
 

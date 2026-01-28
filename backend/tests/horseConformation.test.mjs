@@ -86,7 +86,6 @@ describe('🐎 UNIT: Horse Conformation Scoring System', () => {
         id: 1,
         name: 'Test Horse',
         age: 3,
-        breedId: 1,
         conformationScores: expectedConformation,
         breed: { id: 1, name: 'Arabian' },
         user: null,
@@ -98,7 +97,7 @@ describe('🐎 UNIT: Horse Conformation Scoring System', () => {
       const horse = await createHorse({
         name: 'Test Horse',
         age: 3,
-        breedId: 1,
+        breed: { connect: { id: 1 } },
       });
 
       expect(horse.conformationScores).toEqual(expectedConformation);
@@ -112,16 +111,7 @@ describe('🐎 UNIT: Horse Conformation Scoring System', () => {
     });
 
     it('should have all required conformation regions', () => {
-      const requiredRegions = [
-        'head',
-        'neck',
-        'shoulders',
-        'back',
-        'legs',
-        'hooves',
-        'topline',
-        'hindquarters',
-      ];
+      const requiredRegions = ['head', 'neck', 'shoulders', 'back', 'legs', 'hooves', 'topline', 'hindquarters'];
 
       const defaultConformation = {
         head: 20,
@@ -286,16 +276,7 @@ describe('🐎 UNIT: Horse Conformation Scoring System', () => {
         undefined,
       ];
 
-      const validRegions = [
-        'head',
-        'neck',
-        'shoulders',
-        'back',
-        'legs',
-        'hooves',
-        'topline',
-        'hindquarters',
-      ];
+      const validRegions = ['head', 'neck', 'shoulders', 'back', 'legs', 'hooves', 'topline', 'hindquarters'];
 
       invalidRegions.forEach(region => {
         expect(validRegions.includes(region)).toBe(false);

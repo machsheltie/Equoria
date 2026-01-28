@@ -5,12 +5,6 @@ import { jest, describe, beforeEach, expect, it } from '@jest/globals';
  * Tests for at-birth trait application during horse creation
  */
 
-import { fileURLToPath } from 'url';
-import { dirname, join } from 'path';
-
-const __filename = fileURLToPath(import.meta.url);
-const __dirname = dirname(__filename);
-
 // Mock dependencies
 const mockPrisma = {
   horse: {
@@ -33,19 +27,19 @@ const mockAtBirthTraits = {
   applyEpigeneticTraitsAtBirth: jest.fn(),
 };
 
-// Mock the imports
-jest.unstable_mockModule(join(__dirname, '../db/index.mjs'), () => ({
+// Use unstable_mockModule for ESM mocking
+jest.unstable_mockModule('../db/index.mjs', () => ({
   default: mockPrisma,
 }));
 
-jest.unstable_mockModule(join(__dirname, '../utils/logger.mjs'), () => ({
+jest.unstable_mockModule('../utils/logger.mjs', () => ({
   default: mockLogger,
 }));
 
-jest.unstable_mockModule(join(__dirname, '../utils/atBirthTraits.mjs'), () => mockAtBirthTraits);
+jest.unstable_mockModule('../utils/atBirthTraits.mjs', () => mockAtBirthTraits);
 
 // Import the function after mocking
-const { createHorse } = await import(join(__dirname, '../models/horseModel.mjs'));
+const { createHorse } = await import('../models/horseModel.mjs');
 
 describe('Horse Model At-Birth Traits Integration', () => {
   beforeEach(() => {
@@ -71,7 +65,7 @@ describe('Horse Model At-Birth Traits Integration', () => {
       const horseData = {
         name: 'Test Foal',
         age: 0,
-        breedId: 1,
+        breed: { connect: { id: 1 } },
         sireId: 10,
         damId: 20,
       };
@@ -128,7 +122,7 @@ describe('Horse Model At-Birth Traits Integration', () => {
       const horseData = {
         name: 'Test Foal',
         age: 0,
-        breedId: 1,
+        breed: { connect: { id: 1 } },
         sireId: 10,
         damId: 20,
         mareStress: 15,
@@ -168,7 +162,7 @@ describe('Horse Model At-Birth Traits Integration', () => {
       const horseData = {
         name: 'Test Foal',
         age: 0,
-        breedId: 1,
+        breed: { connect: { id: 1 } },
         sireId: 10,
         damId: 20,
         epigeneticModifiers: {
@@ -208,7 +202,7 @@ describe('Horse Model At-Birth Traits Integration', () => {
       const horseData = {
         name: 'Adult Horse',
         age: 5,
-        breedId: 1,
+        breed: { connect: { id: 1 } },
         sireId: 10,
         damId: 20,
       };
@@ -235,7 +229,7 @@ describe('Horse Model At-Birth Traits Integration', () => {
       const horseData = {
         name: 'Foundling Horse',
         age: 0,
-        breedId: 1,
+        breed: { connect: { id: 1 } },
       };
 
       mockPrisma.horse.create.mockResolvedValue({
@@ -254,7 +248,7 @@ describe('Horse Model At-Birth Traits Integration', () => {
       const horseData = {
         name: 'Test Foal',
         age: 0,
-        breedId: 1,
+        breed: { connect: { id: 1 } },
         sireId: 10,
         damId: 20,
       };
@@ -276,7 +270,7 @@ describe('Horse Model At-Birth Traits Integration', () => {
       const horseData = {
         name: 'Test Foal',
         age: 0,
-        breedId: 1,
+        breed: { connect: { id: 1 } },
         damId: 20,
       };
 
@@ -291,7 +285,7 @@ describe('Horse Model At-Birth Traits Integration', () => {
       const horseData = {
         name: 'Test Foal',
         age: 0,
-        breedId: 1,
+        breed: { connect: { id: 1 } },
         sireId: 10,
       };
 
@@ -306,7 +300,7 @@ describe('Horse Model At-Birth Traits Integration', () => {
       const horseData = {
         name: 'Test Foal',
         age: 0,
-        breedId: 1,
+        breed: { connect: { id: 1 } },
         sireId: 10,
         damId: 20,
       };

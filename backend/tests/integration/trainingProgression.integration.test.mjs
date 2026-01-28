@@ -132,9 +132,8 @@ describe('🏋️ INTEGRATION: Complete Training Progression Workflow', () => {
         data: {
           name: 'Training Integration Young Horse',
           age: 2, // Too young for training
-          breedId: breed.id,
-          ownerId: testUser.id,
-          ownerId: testUser.id,
+          breed: { connect: { id: breed.id } },
+          user: { connect: { id: testUser.id } },
           sex: 'Colt',
           dateOfBirth: twoYearsAgo, // FIXED: Use calculated date for accurate age (was hardcoded '2022-01-01')
           healthStatus: 'Excellent',
@@ -162,9 +161,8 @@ describe('🏋️ INTEGRATION: Complete Training Progression Workflow', () => {
         data: {
           name: 'Training Integration Mature Horse',
           age: 4, // Eligible for training
-          breedId: breed.id,
-          ownerId: testUser.id,
-          ownerId: testUser.id,
+          breed: { connect: { id: breed.id } },
+          user: { connect: { id: testUser.id } },
           sex: 'Mare',
           dateOfBirth: fourYearsAgo, // FIXED: Use calculated date for accurate age (was hardcoded '2020-01-01')
           healthStatus: 'Excellent',
@@ -478,7 +476,7 @@ describe('🏋️ INTEGRATION: Complete Training Progression Workflow', () => {
       expect(xpEvents.length).toBe(matureHorseTrainingLogs.length);
 
       // Data integrity maintained
-      expect(matureHorse.ownerId).toBe(testUser.id);
+      expect(matureHorse.userId).toBe(testUser.id);
       expect(matureHorse.userId).toBe(testUser.id);
     });
   });

@@ -83,7 +83,7 @@ describe('🏆 INTEGRATION: Complete Competition Workflow', () => {
       await prisma.user.deleteMany({
         where: { email: 'competition-integration@example.com' },
       });
-    } catch (error) {
+    } catch {
       // Cleanup errors can be ignored in tests
     }
   }
@@ -125,9 +125,8 @@ describe('🏆 INTEGRATION: Complete Competition Workflow', () => {
         data: {
           name: 'Competition Integration Champion',
           age: 35, // 5 years = 35 days (mature and experienced)
-          breedId: breed.id,
-          ownerId: testUser.id,
-          ownerId: testUser.id,
+          breed: { connect: { id: breed.id } },
+          user: { connect: { id: testUser.id } },
           sex: 'Stallion',
           dateOfBirth: new Date('2019-01-01'),
           healthStatus: 'Excellent',
@@ -316,7 +315,7 @@ describe('🏆 INTEGRATION: Complete Competition Workflow', () => {
 
       await prisma.xpEvent.create({
         data: {
-          userId: testUser.id,
+          user: { connect: { id: testUser.id } },
           amount: xpAmount,
           reason: `Competition: ${testShow.name} - Placement: ${competitionResult.placement}`,
           timestamp: new Date(),
@@ -333,7 +332,7 @@ describe('🏆 INTEGRATION: Complete Competition Workflow', () => {
       // VERIFY: XP event logged
       const xpEvent = await prisma.xpEvent.findFirst({
         where: {
-          userId: testUser.id,
+          user: { connect: { id: testUser.id } },
           reason: { contains: 'Competition' },
         },
       });
