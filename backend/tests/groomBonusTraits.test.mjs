@@ -62,11 +62,11 @@ describe('Groom Bonus Traits System', () => {
         groomPersonality: 'calm',
         sessionRate: 25.0,
         bonusTraitMap: {
-          'sensitive': 0.2,
-          'noble': 0.1,
-          'quick_learner': 0.15,
+          sensitive: 0.2,
+          noble: 0.1,
+          quick_learner: 0.15,
         },
-        userId: testUser.id,
+        user: { connect: { id: testUser.id } },
       },
     });
 
@@ -77,8 +77,8 @@ describe('Groom Bonus Traits System', () => {
         sex: 'colt',
         dateOfBirth: new Date(Date.now() - 30 * 24 * 60 * 60 * 1000), // 30 days old
         temperament: 'spirited',
-        ownerId: testUser.id,
-        breedId: testBreed.id,
+        user: { connect: { id: testUser.id } },
+        breed: { connect: { id: testBreed.id } },
         sireId: null,
         damId: null,
         epigeneticModifiers: { positive: [], negative: [], hidden: [] },
@@ -91,7 +91,9 @@ describe('Groom Bonus Traits System', () => {
       username: testUser.username,
       email: testUser.email,
     };
-    const token = jwt.sign(tokenPayload, process.env.JWT_SECRET || 'test-jwt-secret-key-for-testing-only-32chars', { expiresIn: '1h' });
+    const token = jwt.sign(tokenPayload, process.env.JWT_SECRET || 'test-jwt-secret-key-for-testing-only-32chars', {
+      expiresIn: '1h',
+    });
     authToken = `Bearer ${token}`;
   });
 
@@ -114,9 +116,9 @@ describe('Groom Bonus Traits System', () => {
   describe('Groom Bonus Trait Management', () => {
     it('should assign bonus traits to a groom', async () => {
       const bonusTraits = {
-        'confident': 0.25,
-        'athletic': 0.15,
-        'intelligent': 0.20,
+        confident: 0.25,
+        athletic: 0.15,
+        intelligent: 0.2,
       };
 
       // Test will fail initially - need to implement groomBonusTraitService
@@ -138,16 +140,17 @@ describe('Groom Bonus Traits System', () => {
 
     it('should validate bonus trait constraints', async () => {
       const invalidBonusTraits = {
-        'trait1': 0.35, // Exceeds 30% limit
-        'trait2': 0.15,
-        'trait3': 0.10,
-        'trait4': 0.05, // Exceeds 3 trait limit
+        trait1: 0.35, // Exceeds 30% limit
+        trait2: 0.15,
+        trait3: 0.1,
+        trait4: 0.05, // Exceeds 3 trait limit
       };
 
       const { assignBonusTraits } = await import('../services/groomBonusTraitService.mjs');
 
-      await expect(assignBonusTraits(testGroom.id, invalidBonusTraits))
-        .rejects.toThrow('Bonus trait constraints violated');
+      await expect(assignBonusTraits(testGroom.id, invalidBonusTraits)).rejects.toThrow(
+        'Bonus trait constraints violated',
+      );
     });
 
     it('should get groom bonus traits', async () => {
@@ -156,9 +159,9 @@ describe('Groom Bonus Traits System', () => {
       const bonusTraits = await getBonusTraits(testGroom.id);
 
       expect(bonusTraits).toEqual({
-        'sensitive': 0.2,
-        'noble': 0.1,
-        'quick_learner': 0.15,
+        sensitive: 0.2,
+        noble: 0.1,
+        quick_learner: 0.15,
       });
     });
   });
@@ -202,12 +205,7 @@ describe('Groom Bonus Traits System', () => {
       const { calculateTraitProbabilityWithBonus } = await import('../utils/traitAssignmentLogic.mjs');
 
       const baseProbability = 0.1; // 10% base chance for 'sensitive' trait
-      const result = await calculateTraitProbabilityWithBonus(
-        testHorse.id,
-        'sensitive',
-        baseProbability,
-        testGroom.id,
-      );
+      const result = await calculateTraitProbabilityWithBonus(testHorse.id, 'sensitive', baseProbability, testGroom.id);
 
       expect(result.finalProbability).toBeCloseTo(0.3, 5); // 10% + 20% bonus (handle floating point precision)
       expect(result.bonusApplied).toBe(true);
@@ -246,12 +244,7 @@ describe('Groom Bonus Traits System', () => {
       const { calculateTraitProbabilityWithBonus } = await import('../utils/traitAssignmentLogic.mjs');
 
       const baseProbability = 0.1;
-      const result = await calculateTraitProbabilityWithBonus(
-        testHorse.id,
-        'sensitive',
-        baseProbability,
-        testGroom.id,
-      );
+      const result = await calculateTraitProbabilityWithBonus(testHorse.id, 'sensitive', baseProbability, testGroom.id);
 
       expect(result.finalProbability).toBe(0.1); // No bonus applied
       expect(result.bonusApplied).toBe(false);
@@ -292,12 +285,7 @@ describe('Groom Bonus Traits System', () => {
       const { calculateTraitProbabilityWithBonus } = await import('../utils/traitAssignmentLogic.mjs');
 
       const baseProbability = 0.1;
-      const result = await calculateTraitProbabilityWithBonus(
-        testHorse.id,
-        'sensitive',
-        baseProbability,
-        testGroom.id,
-      );
+      const result = await calculateTraitProbabilityWithBonus(testHorse.id, 'sensitive', baseProbability, testGroom.id);
 
       expect(result.finalProbability).toBe(0.1); // No bonus applied
       expect(result.bonusApplied).toBe(false);
@@ -315,16 +303,16 @@ describe('Groom Bonus Traits System', () => {
       expect(response.status).toBe(200);
       expect(response.body.success).toBe(true);
       expect(response.body.data.bonusTraits).toEqual({
-        'sensitive': 0.2,
-        'noble': 0.1,
-        'quick_learner': 0.15,
+        sensitive: 0.2,
+        noble: 0.1,
+        quick_learner: 0.15,
       });
     });
 
     it('should update groom bonus traits via API', async () => {
       const newBonusTraits = {
-        'confident': 0.25,
-        'athletic': 0.15,
+        confident: 0.25,
+        athletic: 0.15,
       };
 
       const response = await request(app)
@@ -348,7 +336,7 @@ describe('Groom Bonus Traits System', () => {
 
     it('should reject invalid bonus trait updates', async () => {
       const invalidBonusTraits = {
-        'trait1': 0.35, // Exceeds 30% limit
+        trait1: 0.35, // Exceeds 30% limit
       };
 
       const response = await request(app)
@@ -365,7 +353,7 @@ describe('Groom Bonus Traits System', () => {
     it('should require authentication for bonus trait endpoints', async () => {
       const response = await request(app)
         .get(`/api/grooms/${testGroom.id}/bonus-traits`)
-        .set('x-test-require-auth', 'true')
+        .set('x-test-require-auth', 'true');
 
       expect(response.status).toBe(401);
       expect(response.body.success).toBe(false);

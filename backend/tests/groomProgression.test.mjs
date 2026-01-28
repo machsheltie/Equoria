@@ -35,7 +35,7 @@ describe('Groom Progression System', () => {
       select: { id: true },
     });
     const horses = await prisma.horse.findMany({
-      where: { ownerId: testUserId },
+      where: { userId: testUserId },
       select: { id: true },
     });
 
@@ -70,7 +70,7 @@ describe('Groom Progression System', () => {
     }
 
     await prisma.groom.deleteMany({ where: { userId: testUserId } });
-    await prisma.horse.deleteMany({ where: { ownerId: testUserId } });
+    await prisma.horse.deleteMany({ where: { userId: testUserId } });
     await prisma.user.deleteMany({ where: { id: testUserId } });
     await prisma.breed.deleteMany({ where: { name: testBreedName } });
   };
@@ -78,7 +78,7 @@ describe('Groom Progression System', () => {
   beforeEach(async () => {
     await cleanupProgressionData();
 
-    await prisma.$transaction(async (tx) => {
+    await prisma.$transaction(async tx => {
       testUser = await tx.user.create({
         data: {
           id: testUserId,
@@ -108,7 +108,7 @@ describe('Groom Progression System', () => {
           personality: 'gentle',
           groomPersonality: 'calm',
           sessionRate: 25.0,
-          userId: testUser.id,
+          user: { connect: { id: testUser.id } },
         },
       });
 
@@ -117,8 +117,8 @@ describe('Groom Progression System', () => {
           name: 'Test Foal',
           sex: 'Filly',
           dateOfBirth: new Date(Date.now() - 365 * 24 * 60 * 60 * 1000), // 1 year old
-          userId: testUser.id,
-          breedId: testBreed.id,
+          user: { connect: { id: testUser.id } },
+          breed: { connect: { id: testBreed.id } },
         },
       });
     });

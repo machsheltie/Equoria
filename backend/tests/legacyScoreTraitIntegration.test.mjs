@@ -61,7 +61,7 @@ describe('Legacy Score Trait Integration System', () => {
         personality: 'calm',
         groomPersonality: 'calm',
         sessionRate: 25.0,
-        userId: testUser.id,
+        user: { connect: { id: testUser.id } },
       },
     });
 
@@ -72,8 +72,8 @@ describe('Legacy Score Trait Integration System', () => {
         sex: 'stallion',
         dateOfBirth: new Date(Date.now() - 4 * 365 * 24 * 60 * 60 * 1000), // 4 years old
         temperament: 'spirited',
-        ownerId: testUser.id,
-        breedId: testBreed.id,
+        user: { connect: { id: testUser.id } },
+        breed: { connect: { id: testBreed.id } },
         sireId: null,
         damId: null,
         epigeneticModifiers: { positive: [], negative: [], hidden: [] },
@@ -97,7 +97,9 @@ describe('Legacy Score Trait Integration System', () => {
       username: testUser.username,
       email: testUser.email,
     };
-    const token = jwt.sign(tokenPayload, process.env.JWT_SECRET || 'test-jwt-secret-key-for-testing-only-32chars', { expiresIn: '1h' });
+    const token = jwt.sign(tokenPayload, process.env.JWT_SECRET || 'test-jwt-secret-key-for-testing-only-32chars', {
+      expiresIn: '1h',
+    });
     authToken = `Bearer ${token}`;
   });
 
@@ -353,16 +355,14 @@ describe('Legacy Score Trait Integration System', () => {
     it('should require authentication for legacy score endpoint', async () => {
       const response = await request(app)
         .get(`/api/horses/${testHorse.id}/legacy-score`)
-        .set('x-test-require-auth', 'true')
+        .set('x-test-require-auth', 'true');
 
       expect(response.status).toBe(401);
       expect(response.body.success).toBe(false);
     });
 
     it('should return 404 for non-existent horse', async () => {
-      const response = await request(app)
-        .get('/api/horses/99999/legacy-score')
-        .set('Authorization', authToken);
+      const response = await request(app).get('/api/horses/99999/legacy-score').set('Authorization', authToken);
 
       expect(response.status).toBe(404);
       expect(response.body.success).toBe(false);

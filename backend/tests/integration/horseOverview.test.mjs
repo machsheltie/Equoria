@@ -81,12 +81,14 @@ describe('🏇 INTEGRATION: Horse Overview API - Real Database Integration', () 
     authToken = generateTestToken({ id: testUser.id, email: testUser.email });
 
     // Create or find test breed
-    const testBreed = await prisma.breed.findFirst() || await prisma.breed.create({
-      data: {
-        name: 'Thoroughbred',
-        description: 'Test breed for horse overview integration',
-      },
-    });
+    const testBreed =
+      (await prisma.breed.findFirst()) ||
+      (await prisma.breed.create({
+        data: {
+          name: 'Thoroughbred',
+          description: 'Test breed for horse overview integration',
+        },
+      }));
 
     // Create test horse with real data
     testHorse = await prisma.horse.create({
@@ -94,9 +96,8 @@ describe('🏇 INTEGRATION: Horse Overview API - Real Database Integration', () 
         name: 'TestHorse Nova',
         age: 5,
         sex: 'Mare',
-        breedId: testBreed.id,
-        ownerId: testUser.id,
-        ownerId: testUser.id,
+        breed: { connect: { id: testBreed.id } },
+        user: { connect: { id: testUser.id } },
         dateOfBirth: new Date('2020-01-01'),
         healthStatus: 'Excellent',
         disciplineScores: {
@@ -279,12 +280,14 @@ describe('🏇 INTEGRATION: Horse Overview API - Real Database Integration', () 
 
     it('should handle missing optional fields gracefully', async () => {
       // Create or find test breed for minimal horse
-      const minimalBreed = await prisma.breed.findFirst() || await prisma.breed.create({
-        data: {
-          name: 'Quarter Horse',
-          description: 'Test breed for minimal horse',
-        },
-      });
+      const minimalBreed =
+        (await prisma.breed.findFirst()) ||
+        (await prisma.breed.create({
+          data: {
+            name: 'Quarter Horse',
+            description: 'Test breed for minimal horse',
+          },
+        }));
 
       // Create minimal horse with real data
       const minimalHorse = await prisma.horse.create({
@@ -292,9 +295,8 @@ describe('🏇 INTEGRATION: Horse Overview API - Real Database Integration', () 
           name: 'TestHorse Minimal',
           age: 3,
           sex: 'Gelding',
-          breedId: minimalBreed.id,
-          ownerId: testUser.id,
-          ownerId: testUser.id,
+          breed: { connect: { id: minimalBreed.id } },
+          user: { connect: { id: testUser.id } },
           dateOfBirth: new Date('2022-01-01'),
           healthStatus: 'Good',
           disciplineScores: {},

@@ -103,8 +103,8 @@ describe('🏠 INTEGRATION: Dashboard API - Real Database Integration', () => {
           name: 'TestDashboard Horse 1',
           age: 5,
           sex: 'Mare',
-          breedId: testBreed.id,
-          ownerId: testUser.id,
+          breed: { connect: { id: testBreed.id } },
+          user: { connect: { id: testUser.id } },
           dateOfBirth: new Date('2020-01-01'),
           healthStatus: 'Good',
           totalEarnings: 1500,
@@ -116,8 +116,8 @@ describe('🏠 INTEGRATION: Dashboard API - Real Database Integration', () => {
           name: 'TestDashboard Horse 2',
           age: 4,
           sex: 'Stallion',
-          breedId: testBreed.id,
-          ownerId: testUser.id,
+          breed: { connect: { id: testBreed.id } },
+          user: { connect: { id: testUser.id } },
           dateOfBirth: new Date('2021-01-01'),
           healthStatus: 'Excellent',
           totalEarnings: 2200,
@@ -129,8 +129,8 @@ describe('🏠 INTEGRATION: Dashboard API - Real Database Integration', () => {
           name: 'TestDashboard Horse 3',
           age: 8,
           sex: 'Gelding',
-          breedId: testBreed.id,
-          ownerId: testUser.id,
+          breed: { connect: { id: testBreed.id } },
+          user: { connect: { id: testUser.id } },
           dateOfBirth: new Date('2017-01-01'),
           healthStatus: 'Good',
           totalEarnings: 3100,
@@ -268,13 +268,13 @@ describe('🏠 INTEGRATION: Dashboard API - Real Database Integration', () => {
       expect(response.body.message).toBe('Validation failed');
     });
 
-  it('should return 401 for missing authentication', async () => {
-    const response = await request(app)
-      .get(`/api/users/dashboard/${testUser.id}`)
-      .set('x-test-require-auth', 'true')
-      .expect(401);
+    it('should return 401 for missing authentication', async () => {
+      const response = await request(app)
+        .get(`/api/users/dashboard/${testUser.id}`)
+        .set('x-test-require-auth', 'true')
+        .expect(401);
 
-    expect(response.body.success).toBe(false);
+      expect(response.body.success).toBe(false);
       expect(response.body.message).toBe('Access token is required');
     });
 
@@ -341,8 +341,8 @@ describe('🏠 INTEGRATION: Dashboard API - Real Database Integration', () => {
           name: 'TestDashboard Inactive Horse',
           age: 3,
           sex: 'Mare',
-          breedId: testBreed.id,
-          ownerId: inactiveUser.id,
+          breed: { connect: { id: testBreed.id } },
+          user: { connect: { id: inactiveUser.id } },
           dateOfBirth: new Date('2022-01-01'),
           healthStatus: 'Good',
           totalEarnings: 0,

@@ -48,14 +48,14 @@ describe('Trait Routes Integration Tests', () => {
       console.log('[DEBUG] Created test breed:', testBreed.id);
 
       // Create real test horse in database owned by test user
-      const twoYearsAgo = new Date(Date.now() - (2 * 365 * 24 * 60 * 60 * 1000));
+      const twoYearsAgo = new Date(Date.now() - 2 * 365 * 24 * 60 * 60 * 1000);
       testHorse = await prisma.horse.create({
         data: {
           name: `Test Discovery Horse ${Date.now()}`,
           sex: 'mare',
           dateOfBirth: twoYearsAgo,
-          breedId: testBreed.id,
-          ownerId: testUser.id, // Link horse to test user in ACTUAL database
+          breed: { connect: { id: testBreed.id } },
+          user: { connect: { id: testUser.id } }, // Link horse to test user in ACTUAL database
           bondScore: 85,
           stressLevel: 15,
           healthStatus: 'excellent',

@@ -61,15 +61,14 @@ describe('Groom Personality Trait Bonus System - REAL SYSTEM TESTS', () => {
     testHorse = await prisma.horse.create({
       data: {
         name: `TestHorse_${Date.now()}`,
-        ownerId: testUser.id,
-        ownerId: testUser.id,
+        user: { connect: { id: testUser.id } },
         dateOfBirth: new Date(Date.now() - 0 * 24 * 60 * 60 * 1000), // 0 days old (newborn for imprinting)
         temperament: FOAL_TEMPERAMENT_TYPES.SPIRITED,
         bondScore: 65,
         stressLevel: 20,
         healthStatus: 'Good',
         sex: 'filly',
-        breedId: testBreed.id,
+        breed: { connect: { id: testBreed.id } },
       },
     });
 
@@ -82,7 +81,7 @@ describe('Groom Personality Trait Bonus System - REAL SYSTEM TESTS', () => {
         skillLevel: 'intermediate',
         personality: GROOM_PERSONALITY_TYPES.CALM,
         sessionRate: 20.0,
-        userId: testUser.id,
+        user: { connect: { id: testUser.id } },
         isActive: true,
       },
     });
@@ -93,7 +92,9 @@ describe('Groom Personality Trait Bonus System - REAL SYSTEM TESTS', () => {
       username: testUser.username,
       email: testUser.email,
     };
-    const token = jwt.sign(tokenPayload, process.env.JWT_SECRET || 'test-jwt-secret-key-for-testing-only-32chars', { expiresIn: '1h' });
+    const token = jwt.sign(tokenPayload, process.env.JWT_SECRET || 'test-jwt-secret-key-for-testing-only-32chars', {
+      expiresIn: '1h',
+    });
     authToken = `Bearer ${token}`;
   });
 
@@ -217,11 +218,7 @@ describe('Groom Personality Trait Bonus System - REAL SYSTEM TESTS', () => {
       });
 
       // Evaluate milestone with personality effects
-      const result = await evaluateEnhancedMilestone(
-        testHorse.id,
-        'imprinting',
-        { forceReevaluate: true },
-      );
+      const result = await evaluateEnhancedMilestone(testHorse.id, 'imprinting', { forceReevaluate: true });
 
       expect(result.success).toBe(true);
       expect(result.milestoneLog).toBeDefined();
@@ -233,11 +230,7 @@ describe('Groom Personality Trait Bonus System - REAL SYSTEM TESTS', () => {
 
     it('should handle milestone evaluation without groom assignment', async () => {
       // Evaluate milestone without groom assignment
-      const result = await evaluateEnhancedMilestone(
-        testHorse.id,
-        'imprinting',
-        { forceReevaluate: true },
-      );
+      const result = await evaluateEnhancedMilestone(testHorse.id, 'imprinting', { forceReevaluate: true });
 
       expect(result.success).toBe(true);
       expect(result.milestoneLog).toBeDefined();
@@ -329,11 +322,10 @@ describe('Groom Personality Trait Bonus System - REAL SYSTEM TESTS', () => {
         const horseWithoutTemperament = await prisma.horse.create({
           data: {
             name: 'NoTemperamentHorse',
-            ownerId: testUser.id,
-            ownerId: testUser.id,
+            user: { connect: { id: testUser.id } },
             dateOfBirth: new Date(),
             sex: 'colt',
-            breedId: testBreed.id,
+            breed: { connect: { id: testBreed.id } },
           },
         });
 
@@ -366,9 +358,7 @@ describe('Groom Personality Trait Bonus System - REAL SYSTEM TESTS', () => {
         // Get CSRF token for POST request
         const csrfResponse = await request(app).get('/auth/csrf-token');
         const csrfToken = csrfResponse.body.csrfToken;
-        const csrfCookie = csrfResponse.headers['set-cookie']
-          .find((cookie) => cookie.startsWith('_csrf='))
-          .split(';')[0];
+        const csrfCookie = csrfResponse.headers['set-cookie'].find(cookie => cookie.startsWith('_csrf=')).split(';')[0];
 
         const response = await request(app)
           .post('/api/milestones/evaluate-milestone')

@@ -64,7 +64,7 @@ describe('Breeding Prediction System', () => {
         personality: 'calm',
         groomPersonality: 'calm',
         sessionRate: 25.0,
-        userId: testUser.id,
+        user: { connect: { id: testUser.id } },
       },
     });
 
@@ -75,8 +75,8 @@ describe('Breeding Prediction System', () => {
         sex: 'stallion',
         dateOfBirth: new Date(Date.now() - 5 * 365 * 24 * 60 * 60 * 1000), // 5 years old
         temperament: 'spirited',
-        ownerId: testUser.id,
-        breedId: testBreed.id,
+        user: { connect: { id: testUser.id } },
+        breed: { connect: { id: testBreed.id } },
         sireId: null,
         damId: null,
         epigeneticModifiers: { positive: ['sensitive', 'noble'], negative: [], hidden: ['quick_learner'] },
@@ -90,8 +90,8 @@ describe('Breeding Prediction System', () => {
         sex: 'mare',
         dateOfBirth: new Date(Date.now() - 4 * 365 * 24 * 60 * 60 * 1000), // 4 years old
         temperament: 'calm',
-        ownerId: testUser.id,
-        breedId: testBreed.id,
+        user: { connect: { id: testUser.id } },
+        breed: { connect: { id: testBreed.id } },
         sireId: null,
         damId: null,
         epigeneticModifiers: { positive: ['athletic', 'confident'], negative: ['stubborn'], hidden: [] },
@@ -104,7 +104,9 @@ describe('Breeding Prediction System', () => {
       username: testUser.username,
       email: testUser.email,
     };
-    const token = jwt.sign(tokenPayload, process.env.JWT_SECRET || 'test-jwt-secret-key-for-testing-only-32chars', { expiresIn: '1h' });
+    const token = jwt.sign(tokenPayload, process.env.JWT_SECRET || 'test-jwt-secret-key-for-testing-only-32chars', {
+      expiresIn: '1h',
+    });
     authToken = `Bearer ${token}`;
   });
 
