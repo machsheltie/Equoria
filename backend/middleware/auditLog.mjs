@@ -1,4 +1,5 @@
 import logger from '../utils/logger.mjs';
+import { trackSecurityEventWithThreshold, SecurityEventTypes } from '../config/sentry.mjs';
 // import prisma from '../db/index.mjs'; // TODO: Implement audit logging
 
 /**
@@ -67,6 +68,36 @@ async function logOperation(req, res, operationType, sensitivityLevel, duration,
     // Log to different levels based on sensitivity
     if (sensitivityLevel === 'high' || res.statusCode >= 400) {
       logger.warn('[audit] Sensitive operation:', logEntry);
+
+      // Track authentication failures in Sentry
+      if (operationType === 'authentication' && res.statusCode === 401) {
+        trackSecurityEventWithThreshold(
+          SecurityEventTypes.AUTH_FAILURE,
+          {
+            userId: logEntry.userId,
+            userEmail: logEntry.userEmail,
+            ip: logEntry.ip,
+            path: logEntry.path,
+            statusCode: logEntry.statusCode,
+          },
+          logEntry.ip, // Use IP as identifier for threshold tracking
+        );
+      }
+
+      // Track ownership violations in Sentry
+      if (operationType === 'ownership_check' && res.statusCode === 403) {
+        trackSecurityEventWithThreshold(
+          SecurityEventTypes.OWNERSHIP_VIOLATION,
+          {
+            userId: logEntry.userId,
+            userEmail: logEntry.userEmail,
+            ip: logEntry.ip,
+            path: logEntry.path,
+            statusCode: logEntry.statusCode,
+          },
+          logEntry.userId || logEntry.ip, // Use userId or IP as identifier
+        );
+      }
     } else {
       logger.info('[audit] Operation logged:', {
         userId: logEntry.userId,
@@ -163,8 +194,19 @@ async function checkSuspiciousActivity(logEntry) {
         recentActivity: userActivity.slice(-10), // Last 10 activities
       });
 
-      // TODO: Implement alerting system
-      // await sendSecurityAlert(userId, suspiciousPatterns);
+      // Track security event in Sentry with automatic threshold monitoring
+      trackSecurityEventWithThreshold(
+        SecurityEventTypes.SUSPICIOUS_ACTIVITY,
+        {
+          userId,
+          userEmail: logEntry.userEmail,
+          patterns: suspiciousPatterns,
+          recentActivityCount: userActivity.length,
+          ip: logEntry.ip,
+          userAgent: logEntry.userAgent,
+        },
+        userId, // Use userId as identifier for threshold tracking
+      );
     }
   } catch (error) {
     logger.error('[audit] Failed to check suspicious activity:', error);
@@ -295,23 +337,25 @@ export const auditAdmin = auditLog('admin_operation', 'high');
 /**
  * Clean up old cache entries periodically
  */
-setInterval(
-  () => {
-    const now = Date.now();
-    const maxAge = 10 * 60 * 1000; // 10 minutes
+if (process.env.NODE_ENV !== 'test') {
+  setInterval(
+    () => {
+      const now = Date.now();
+      const maxAge = 10 * 60 * 1000; // 10 minutes
 
-    for (const [userId, activities] of suspiciousActivityCache.entries()) {
-      const recentActivities = activities.filter(activity => now - activity.timestamp < maxAge);
+      for (const [userId, activities] of suspiciousActivityCache.entries()) {
+        const recentActivities = activities.filter(activity => now - activity.timestamp < maxAge);
 
-      if (recentActivities.length === 0) {
-        suspiciousActivityCache.delete(userId);
-      } else {
-        suspiciousActivityCache.set(userId, recentActivities);
+        if (recentActivities.length === 0) {
+          suspiciousActivityCache.delete(userId);
+        } else {
+          suspiciousActivityCache.set(userId, recentActivities);
+        }
       }
-    }
-  },
-  5 * 60 * 1000,
-); // Clean every 5 minutes
+    },
+    5 * 60 * 1000,
+  ); // Clean every 5 minutes
+}
 
 export default {
   auditLog,

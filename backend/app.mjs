@@ -36,7 +36,6 @@
 import express from 'express';
 import cors from 'cors';
 import helmet from 'helmet';
-import rateLimit from 'express-rate-limit';
 import cookieParser from 'cookie-parser';
 import config from './config/config.mjs';
 import logger from './utils/logger.mjs';
@@ -92,7 +91,7 @@ import { authenticateToken, requireRole } from './middleware/auth.mjs';
 import { applyCsrfProtection, csrfErrorHandler } from './middleware/csrf.mjs';
 
 // Import Redis rate limiting (for health check and shutdown)
-import { isRedisConnected, getRedisClient, closeRedis } from './middleware/rateLimiting.mjs';
+import { createRateLimiter, isRedisConnected, getRedisClient } from './middleware/rateLimiting.mjs';
 
 // Public router - No authentication required
 const publicRouter = express.Router();
@@ -116,7 +115,10 @@ publicRouter.use('/auth', authRoutes);
 publicRouter.use('/api/auth', authRoutes);
 // Documentation endpoints
 publicRouter.use('/docs', documentationRoutes);
+publicRouter.use('/api/docs', documentationRoutes);
 publicRouter.use('/user-docs', userDocumentationRoutes);
+// Backward compatibility for tests hitting /api/user-docs/*
+publicRouter.use('/api/user-docs', userDocumentationRoutes);
 
 // AUTHENTICATED ROUTES (Valid JWT required)
 // Core game features
@@ -158,7 +160,7 @@ authRouter.use('/compatibility', dynamicCompatibilityRoutes);
 authRouter.use('/personality-evolution', personalityEvolutionRoutes);
 
 // ADMIN ROUTES (Admin role required)
-adminRouter.use('/admin', adminRoutes);
+adminRouter.use('/', adminRoutes);
 
 // Middleware imports
 import errorHandler from './middleware/errorHandler.mjs';
@@ -178,11 +180,15 @@ import {
 } from './middleware/resourceManagement.mjs';
 
 // Service imports
-import { initializeCronJobs, stopCronJobs } from './services/cronJobService.mjs';
-import { initializeMemoryManagement, shutdownMemoryManagement } from './services/memoryResourceManagementService.mjs';
 import prisma from '../packages/database/prismaClient.mjs';
 
+// Sentry error tracking and monitoring
+import { initializeSentry, attachSentryErrorHandler } from './config/sentry.mjs';
+
 const app = express();
+
+// Initialize Sentry (must be before any other middleware)
+initializeSentry(app);
 
 // Trust proxy for accurate IP addresses behind reverse proxies
 app.set('trust proxy', 1);
@@ -231,24 +237,26 @@ const corsOptions = {
   },
   credentials: true,
   methods: ['GET', 'POST', 'PUT', 'DELETE', 'PATCH', 'OPTIONS'],
-  allowedHeaders: ['Content-Type', 'Authorization', 'X-Requested-With', 'X-CSRF-Token'],
+  allowedHeaders: [
+    'Content-Type',
+    'Authorization',
+    'X-Requested-With',
+    'X-CSRF-Token',
+    'x-test-skip-csrf',
+  ],
 };
 
 app.use(cors(corsOptions));
 
-// Rate limiting - more lenient for test environment
-const limiter = rateLimit({
-  windowMs: 15 * 60 * 1000, // 15 minutes
-  max: config.env === 'test' ? 10000 : 100, // Much higher limit for tests
-  message: {
-    success: false,
-    message: 'Too many requests from this IP, please try again later.',
-  },
-  standardHeaders: true,
-  legacyHeaders: false,
+// Rate limiting - using factory for consistency and test support
+const apiLimiter = createRateLimiter({
+  windowMs: 15 * 60 * 1000,
+  max: process.env.NODE_ENV === 'test' ? 1000 : 100, // Lenient in tests to avoid interference
+  keyPrefix: 'rl:global',
+  useEnvOverride: false, // Don't let tests override the global limit
 });
 
-app.use('/api/', limiter);
+app.use('/api/', apiLimiter);
 
 // Body parsing middleware
 app.use(express.json({ limit: '10mb' }));
@@ -270,17 +278,21 @@ app.use(paginationMiddleware());
 app.use(performanceMonitoring());
 
 // Memory and resource management middleware
-app.use(createResourceManagementMiddleware({
-  trackMemoryUsage: true,
-  trackPerformance: true,
-  enableCleanup: true,
-  memoryThreshold: 100 * 1024 * 1024, // 100MB
-  performanceThreshold: 5000, // 5 seconds
-}));
-app.use(memoryMonitoringMiddleware({
-  threshold: 500 * 1024 * 1024, // 500MB
-  enableGC: process.env.NODE_ENV === 'production',
-}));
+app.use(
+  createResourceManagementMiddleware({
+    trackMemoryUsage: true,
+    trackPerformance: true,
+    enableCleanup: true,
+    memoryThreshold: 100 * 1024 * 1024, // 100MB
+    performanceThreshold: 5000, // 5 seconds
+  }),
+);
+app.use(
+  memoryMonitoringMiddleware({
+    threshold: 500 * 1024 * 1024, // 500MB
+    enableGC: process.env.NODE_ENV === 'production',
+  }),
+);
 app.use(databaseConnectionMiddleware(prisma));
 app.use(requestTimeoutMiddleware(30000)); // 30 second timeout
 
@@ -309,13 +321,19 @@ publicRouter.get('/health', async (req, res) => {
   // Try to get Redis server info if connected
   if (redisConnected && redisClient) {
     try {
-      const info = await redisClient.info('server');
+      // Add a timeout to avoid hanging if Redis is unstable (e.g. during E2E tests)
+      const timeoutPromise = new Promise((_, reject) =>
+        setTimeout(() => reject(new Error('Redis info timeout')), 2000),
+      );
+
+      const info = await Promise.race([redisClient.info('server'), timeoutPromise]);
       const version = info.match(/redis_version:([^\r\n]+)/)?.[1];
       redisInfo.version = version || 'unknown';
       redisInfo.status = 'healthy';
     } catch (error) {
       redisInfo.status = 'error';
       redisInfo.error = error.message;
+      logger.warn(`[HealthCheck] Redis info check failed: ${error.message}`);
     }
   }
 
@@ -399,26 +417,17 @@ app.use('*', (req, res) => {
 // Error request logging
 app.use(errorRequestLogger);
 
+// Sentry error handler (must be after routes, before other error handlers)
+attachSentryErrorHandler(app);
+
 // CSRF error handler (must be before global error handler)
 app.use(csrfErrorHandler);
 
 // Global error handler
 app.use(errorHandler);
 
-// Graceful shutdown handling
-// Initialize cron jobs and memory management
-initializeCronJobs();
-initializeMemoryManagement({
-  memoryThreshold: 500 * 1024 * 1024, // 500MB
-  gcInterval: 60000, // 1 minute
-  monitoringInterval: 10000, // 10 seconds
-  alertThreshold: 0.8, // 80%
-  enableGCOptimization: process.env.NODE_ENV === 'production',
-});
-
-// Graceful shutdown handlers moved to server.mjs (single source of truth)
-// server.mjs handles: HTTP server close, cron jobs, memory mgmt, both Redis clients, Prisma
-// This ensures proper shutdown order and prevents duplicate signal handler execution
+// Graceful shutdown handling is managed by server.mjs so that background services
+// like cron jobs and memory monitoring only run in production environments.
 
 // Unhandled promise rejection handler
 process.on('unhandledRejection', (reason, promise) => {
