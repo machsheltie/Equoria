@@ -38,12 +38,6 @@
  */
 
 import { jest, describe, it, expect, beforeEach, afterEach } from '@jest/globals';
-import { fileURLToPath } from 'url';
-import { dirname, join } from 'path';
-
-const __filename = fileURLToPath(import.meta.url);
-const __dirname = dirname(__filename);
-
 // Mock logger
 const mockLogger = {
   info: jest.fn(),
@@ -52,13 +46,13 @@ const mockLogger = {
 };
 
 // Mock the logger import
-jest.unstable_mockModule(join(__dirname, '../utils/logger.mjs'), () => ({
+jest.unstable_mockModule('../utils/logger.mjs', () => ({
   default: mockLogger,
 }));
 
 // Import the functions after mocking
 const { evaluateTraitRevelation, getTraitDefinition, getAllTraitDefinitions, TRAIT_DEFINITIONS, TRAIT_CONFLICTS } =
-  await import(join(__dirname, '../utils/traitEvaluation.mjs'));
+  await import('../utils/traitEvaluation.mjs');
 
 describe('🔬 UNIT: Trait Evaluation System - Trait Revelation & Validation', () => {
   beforeEach(() => {

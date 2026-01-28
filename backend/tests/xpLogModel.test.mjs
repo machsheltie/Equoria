@@ -59,11 +59,11 @@ const mockLogger = {
   error: jest.fn(),
 };
 
-jest.unstable_mockModule(join(__dirname, '../db/index.mjs'), () => ({
+await jest.unstable_mockModule(join(__dirname, '../db/index.mjs'), () => ({
   default: mockPrisma,
 }));
 
-jest.unstable_mockModule(join(__dirname, '../utils/logger.mjs'), () => ({
+await jest.unstable_mockModule(join(__dirname, '../utils/logger.mjs'), () => ({
   default: mockLogger,
 }));
 
@@ -73,6 +73,22 @@ const { logXpEvent, getUserXpEvents, getUserXpSummary, getRecentXpEvents } = awa
 );
 
 describe('📊 UNIT: XP Log Model - Experience Point Event Tracking', () => {
+  // Anchor dates to keep test data deterministic
+  const referenceDate = new Date('2025-01-01T10:00:00Z');
+  const morningTimestamp = new Date(referenceDate); // Base timestamp for XP events
+
+  const afternoonTimestamp = new Date(referenceDate);
+  afternoonTimestamp.setHours(12, 0, 0, 0); // 2 hours later
+
+  const eveningTimestamp = new Date(referenceDate);
+  eveningTimestamp.setHours(14, 0, 0, 0); // 4 hours later
+
+  const dayStart = new Date(referenceDate);
+  dayStart.setHours(0, 0, 0, 0); // Start of day
+
+  const nextDayStart = new Date(dayStart);
+  nextDayStart.setDate(dayStart.getDate() + 1); // Next day start
+
   beforeEach(() => {
     jest.clearAllMocks();
     mockPrismaXpEvent.create.mockClear();
@@ -90,7 +106,7 @@ describe('📊 UNIT: XP Log Model - Experience Point Event Tracking', () => {
         userId: 'user-123',
         amount: 5,
         reason: 'Trained horse in Dressage',
-        timestamp: new Date('2024-01-01T10:00:00Z'),
+        timestamp: morningTimestamp,
       };
 
       mockPrismaXpEvent.create.mockResolvedValue(mockXpEvent);
@@ -114,7 +130,7 @@ describe('📊 UNIT: XP Log Model - Experience Point Event Tracking', () => {
         userId: 'user-123',
         amount: 5,
         reason: 'Trained horse in Dressage',
-        timestamp: new Date('2024-01-01T10:00:00Z'),
+        timestamp: morningTimestamp,
       });
 
       expect(mockLogger.info).toHaveBeenCalledWith(
@@ -173,7 +189,7 @@ describe('📊 UNIT: XP Log Model - Experience Point Event Tracking', () => {
         userId: 'user-123',
         amount: -10,
         reason: 'XP penalty for rule violation',
-        timestamp: new Date('2024-01-01T10:00:00Z'),
+        timestamp: morningTimestamp,
       };
 
       mockPrismaXpEvent.create.mockResolvedValue(mockXpEvent);
@@ -203,14 +219,14 @@ describe('📊 UNIT: XP Log Model - Experience Point Event Tracking', () => {
           userId: 'user-123',
           amount: 20,
           reason: '1st place with horse Nova in Racing',
-          timestamp: new Date('2024-01-01T12:00:00Z'),
+          timestamp: afternoonTimestamp,
         },
         {
           id: 2,
           userId: 'user-123',
           amount: 5,
           reason: 'Trained horse in Dressage',
-          timestamp: new Date('2024-01-01T10:00:00Z'),
+          timestamp: morningTimestamp,
         },
       ];
 
@@ -232,8 +248,8 @@ describe('📊 UNIT: XP Log Model - Experience Point Event Tracking', () => {
     });
 
     it('should handle date filters', async () => {
-      const startDate = new Date('2024-01-01T00:00:00Z');
-      const endDate = new Date('2024-01-02T00:00:00Z');
+      const startDate = dayStart;
+      const endDate = nextDayStart;
 
       mockPrismaXpEvent.findMany.mockResolvedValue([]);
 
@@ -294,8 +310,8 @@ describe('📊 UNIT: XP Log Model - Experience Point Event Tracking', () => {
     });
 
     it('should handle date filters in summary', async () => {
-      const startDate = new Date('2024-01-01T00:00:00Z');
-      const endDate = new Date('2024-01-02T00:00:00Z');
+      const startDate = dayStart;
+      const endDate = nextDayStart;
 
       mockPrismaXpEvent.findMany.mockResolvedValue([]);
 
@@ -322,14 +338,14 @@ describe('📊 UNIT: XP Log Model - Experience Point Event Tracking', () => {
           userId: 'user-456',
           amount: 15,
           reason: '2nd place with horse Star in Jumping',
-          timestamp: new Date('2024-01-01T14:00:00Z'),
+          timestamp: eveningTimestamp,
         },
         {
           id: 2,
           userId: 'user-123',
           amount: 5,
           reason: 'Trained horse in Dressage',
-          timestamp: new Date('2024-01-01T10:00:00Z'),
+          timestamp: morningTimestamp,
         },
       ];
 

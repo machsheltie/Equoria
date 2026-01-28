@@ -168,7 +168,7 @@ describe('🏥 Health Monitoring Integration Tests', () => {
     const userData = {
       email: 'healthintegration@test.com',
       username: 'healthintegrationuser',
-      password: 'testpassword123',
+      password: 'TestPassword123!',
       firstName: 'Health',
       lastName: 'Integration',
     };
@@ -409,7 +409,7 @@ describe('🏥 Health Monitoring Integration Tests', () => {
       ];
 
       for (const endpoint of protectedEndpoints) {
-        const response = await request(app).get(endpoint);
+        const response = await request(app).get(endpoint).set('x-test-require-auth', 'true');
 
         expect(response.status).toBe(401);
         expect(response.body.success).toBe(false);
@@ -451,6 +451,7 @@ describe('🏥 Health Monitoring Integration Tests', () => {
       // Test with invalid token
       const response = await request(app)
         .get('/api/memory/health')
+        .set('x-test-require-auth', 'true')
         .set('Authorization', 'Bearer invalid-token');
 
       expect(response.status).toBe(401);

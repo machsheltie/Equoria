@@ -24,6 +24,13 @@ import prisma from '../../../packages/database/prismaClient.mjs';
 import { generateTestToken } from '../helpers/authHelper.mjs';
 
 describe('Personality Evolution Controller API', () => {
+  // Reference date anchor for all test date calculations
+  const referenceDate = new Date('2025-06-01T12:00:00Z');
+
+  // Calculate birth date for 2-year-old horse
+  const birthDate2YearsOld = new Date(referenceDate);
+  birthDate2YearsOld.setFullYear(referenceDate.getFullYear() - 2); // 2023-06-01 (age 2)
+
   let testUser;
   let testGroom;
   let testHorse;
@@ -46,7 +53,7 @@ describe('Personality Evolution Controller API', () => {
     });
 
     // Generate auth token
-    authToken = generateTestToken(testUser.id);
+    authToken = generateTestToken({ id: testUser.id, email: testUser.email });
 
     // Create test breed
     testBreed = await prisma.breed.create({
@@ -79,7 +86,7 @@ describe('Personality Evolution Controller API', () => {
         breed: { connect: { id: testBreed.id } },
         name: 'API Test Horse',
         sex: 'Filly',
-        dateOfBirth: new Date('2022-01-01'),
+        dateOfBirth: birthDate2YearsOld,
         age: 2,
         temperament: 'nervous',
         stressLevel: 7,
@@ -132,6 +139,7 @@ describe('Personality Evolution Controller API', () => {
       const response = await request(app)
         .post(`/api/personality-evolution/groom/${testGroom.id}/evolve`)
         .set('Authorization', `Bearer ${authToken}`)
+        .set('x-test-skip-csrf', 'true')
         .expect(200);
 
       expect(response.body.success).toBe(true);
@@ -145,6 +153,7 @@ describe('Personality Evolution Controller API', () => {
       const response = await request(app)
         .post('/api/personality-evolution/groom/invalid/evolve')
         .set('Authorization', `Bearer ${authToken}`)
+        .set('x-test-skip-csrf', 'true')
         .expect(400);
 
       expect(response.body.success).toBe(false);
@@ -154,6 +163,7 @@ describe('Personality Evolution Controller API', () => {
     test('should return 401 without authentication', async () => {
       await request(app)
         .post(`/api/personality-evolution/groom/${testGroom.id}/evolve`)
+        .set('x-test-require-auth', 'true')
         .expect(401);
     });
   });
@@ -163,6 +173,7 @@ describe('Personality Evolution Controller API', () => {
       const response = await request(app)
         .post(`/api/personality-evolution/horse/${testHorse.id}/evolve`)
         .set('Authorization', `Bearer ${authToken}`)
+        .set('x-test-skip-csrf', 'true')
         .expect(200);
 
       expect(response.body.success).toBe(true);
@@ -176,6 +187,7 @@ describe('Personality Evolution Controller API', () => {
       const response = await request(app)
         .post('/api/personality-evolution/horse/invalid/evolve')
         .set('Authorization', `Bearer ${authToken}`)
+        .set('x-test-skip-csrf', 'true')
         .expect(400);
 
       expect(response.body.success).toBe(false);
@@ -311,6 +323,7 @@ describe('Personality Evolution Controller API', () => {
       const response = await request(app)
         .post('/api/personality-evolution/apply-effects')
         .set('Authorization', `Bearer ${authToken}`)
+        .set('x-test-skip-csrf', 'true')
         .send(evolutionData)
         .expect(200);
 
@@ -328,6 +341,7 @@ describe('Personality Evolution Controller API', () => {
       const response = await request(app)
         .post('/api/personality-evolution/apply-effects')
         .set('Authorization', `Bearer ${authToken}`)
+        .set('x-test-skip-csrf', 'true')
         .send(invalidData)
         .expect(400);
 
@@ -348,6 +362,7 @@ describe('Personality Evolution Controller API', () => {
       const response = await request(app)
         .post('/api/personality-evolution/batch-evolve')
         .set('Authorization', `Bearer ${authToken}`)
+        .set('x-test-skip-csrf', 'true')
         .send(batchData)
         .expect(200);
 
@@ -363,6 +378,7 @@ describe('Personality Evolution Controller API', () => {
       const response = await request(app)
         .post('/api/personality-evolution/batch-evolve')
         .set('Authorization', `Bearer ${authToken}`)
+        .set('x-test-skip-csrf', 'true')
         .send({ entities: [] })
         .expect(400);
 

@@ -26,83 +26,98 @@ import {
 } from '../../services/personalityEvolutionSystem.mjs';
 
 describe('Personality Evolution System', () => {
+  // Anchor dates to keep test data deterministic
+  const referenceDate = new Date('2025-06-01T00:00:00Z');
+
+  // Create relative dates for horses (3 years ago = age 2 horses)
+  const threeYearsAgo = new Date(referenceDate);
+  threeYearsAgo.setFullYear(referenceDate.getFullYear() - 3);
+
+  const twoAndHalfYearsAgo = new Date(referenceDate);
+  twoAndHalfYearsAgo.setFullYear(referenceDate.getFullYear() - 2);
+  twoAndHalfYearsAgo.setMonth(referenceDate.getMonth() - 6);
+
   let testUser;
   let testGroom;
   let testHorse;
   let testBreed;
 
   beforeAll(async () => {
-    // Create test user
-    testUser = await prisma.user.create({
-      data: {
-        username: `personality_evolution_${Date.now()}`,
-        email: `personality_evolution_${Date.now()}@test.com`,
-        password: 'test_hash',
-        firstName: 'Test',
-        lastName: 'User',
-        money: 1000,
-        xp: 0,
-        level: 1,
-      },
-    });
+    await prisma.$transaction(async (tx) => {
+      // Create test user
+      testUser = await tx.user.create({
+        data: {
+          username: `personality_evolution_${Date.now()}`,
+          email: `personality_evolution_${Date.now()}@test.com`,
+          password: 'test_hash',
+          firstName: 'Test',
+          lastName: 'User',
+          money: 1000,
+          xp: 0,
+          level: 1,
+        },
+      });
 
-    // Create test breed
-    testBreed = await prisma.breed.create({
-      data: {
-        name: 'Test Breed',
-        description: 'Test breed for personality evolution testing',
-      },
-    });
+      // Create test breed
+      testBreed = await tx.breed.create({
+        data: {
+          name: `Test Breed ${Date.now()}`,
+          description: 'Test breed for personality evolution testing',
+        },
+      });
 
-    // Create test groom
-    testGroom = await prisma.groom.create({
-      data: {
-        userId: testUser.id,
-        name: 'Evolution Test Groom',
-        speciality: 'foal_care',
-        personality: 'calm',
-        groomPersonality: 'calm',
-        skillLevel: 'intermediate',
-        experience: 100,
-        level: 5,
-        sessionRate: 25.0,
-        isActive: true,
-      },
-    });
+      // Create test groom
+      testGroom = await tx.groom.create({
+        data: {
+          userId: testUser.id,
+          name: 'Evolution Test Groom',
+          speciality: 'foal_care',
+          personality: 'calm',
+          groomPersonality: 'calm',
+          skillLevel: 'intermediate',
+          experience: 100,
+          level: 5,
+          sessionRate: 25.0,
+          isActive: true,
+        },
+      });
 
-    // Create test horse
-    testHorse = await prisma.horse.create({
-      data: {
-        ownerId: testUser.id,
-        breed: { connect: { id: testBreed.id } },
-        name: 'Evolution Test Horse',
-        sex: 'Filly',
-        dateOfBirth: new Date('2022-01-01'),
-        age: 2,
-        temperament: 'nervous',
-        stressLevel: 7,
-        bondScore: 20,
-        healthStatus: 'Good',
-        speed: 50,
-        stamina: 50,
-        agility: 50,
-        balance: 50,
-        precision: 50,
-        intelligence: 50,
-        boldness: 50,
-        flexibility: 50,
-        obedience: 50,
-        focus: 50,
-        epigeneticFlags: [],
-      },
+      // Create test horse
+      testHorse = await tx.horse.create({
+        data: {
+          ownerId: testUser.id,
+          breed: { connect: { id: testBreed.id } },
+          name: 'Evolution Test Horse',
+          sex: 'Filly',
+          dateOfBirth: threeYearsAgo,
+          age: 2,
+          temperament: 'nervous',
+          stressLevel: 7,
+          bondScore: 20,
+          healthStatus: 'Good',
+          speed: 50,
+          stamina: 50,
+          agility: 50,
+          balance: 50,
+          precision: 50,
+          intelligence: 50,
+          boldness: 50,
+          flexibility: 50,
+          obedience: 50,
+          focus: 50,
+          epigeneticFlags: [],
+        },
+      });
     });
   });
 
   afterAll(async () => {
     // Clean up test data
-    await prisma.horse.deleteMany({ where: { ownerId: testUser.id } });
-    await prisma.groom.deleteMany({ where: { userId: testUser.id } });
-    await prisma.user.delete({ where: { id: testUser.id } });
+    if (testUser) {
+      await prisma.horse.deleteMany({ where: { ownerId: testUser.id } });
+      await prisma.groom.deleteMany({ where: { userId: testUser.id } });
+      await prisma.user.deleteMany({ where: { id: testUser.id } });
+    }
   });
 
   describe('Groom Personality Evolution', () => {
@@ -139,6 +154,24 @@ describe('Personality Evolution System', () => {
     });
 
     test('should not evolve personality with insufficient interaction data', async () => {
+      if (testUser) {
+        await prisma.user.upsert({
+          where: { id: testUser.id },
+          update: {},
+          create: {
+            id: testUser.id,
+            username: testUser.username,
+            email: testUser.email,
+            password: 'test_hash',
+            firstName: testUser.firstName,
+            lastName: testUser.lastName,
+            money: 1000,
+            xp: 0,
+            level: 1,
+          },
+        });
+      }
+
       // Create new groom with minimal interactions
       const newGroom = await prisma.groom.create({
         data: {
@@ -163,7 +196,7 @@ describe('Personality Evolution System', () => {
       expect(evolution.minimumInteractionsRequired).toBeGreaterThan(0);
 
       // Cleanup
-      await prisma.groom.delete({ where: { id: newGroom.id } });
+      await prisma.groom.deleteMany({ where: { id: newGroom.id } });
     });
 
     test('should calculate personality evolution triggers accurately', async () => {
@@ -219,7 +252,7 @@ describe('Personality Evolution System', () => {
           breed: { connect: { id: testBreed.id } },
           name: 'Mixed Care Horse',
           sex: 'Colt',
-          dateOfBirth: new Date('2022-06-01'),
+          dateOfBirth: twoAndHalfYearsAgo,
           age: 2,
           temperament: 'developing',
           stressLevel: 5,
@@ -265,7 +298,7 @@ describe('Personality Evolution System', () => {
       expect(evolution.stabilityScore).toBeLessThan(0.7);
 
       // Cleanup
-      await prisma.horse.delete({ where: { id: mixedCareHorse.id } });
+      await prisma.horse.deleteMany({ where: { id: mixedCareHorse.id } });
     });
 
     test('should analyze personality stability accurately', async () => {

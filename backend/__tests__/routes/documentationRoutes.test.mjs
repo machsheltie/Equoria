@@ -62,8 +62,8 @@ describe('Documentation Routes', () => {
 
   afterAll(async () => {
     // Cleanup test data
-    await prisma.user.delete({
-      where: { id: testUser.id },
+    await prisma.user.deleteMany({
+      where: { id: testUser?.id },
     });
   });
 
@@ -93,6 +93,7 @@ describe('Documentation Routes', () => {
     test('requires authentication', async () => {
       const response = await request(testApp)
         .get('/api/docs/health')
+        .set('x-test-require-auth', 'true')
         .expect(401);
 
       expect(response.body.success).toBe(false);
@@ -420,6 +421,7 @@ describe('Documentation Routes', () => {
     test('handles missing authorization header', async () => {
       const response = await request(testApp)
         .get('/api/docs/health')
+        .set('x-test-require-auth', 'true')
         .expect(401);
 
       expect(response.body.success).toBe(false);

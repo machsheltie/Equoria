@@ -6,7 +6,7 @@
  * using TDD with NO MOCKING approach.
  */
 
-import { describe, test, expect, beforeAll, afterAll } from '@jest/globals';
+import { describe, test, expect, beforeAll, beforeEach, afterAll } from '@jest/globals';
 import prisma from '../../db/index.mjs';
 import { breedingAnalyticsService } from '../../services/breedingAnalyticsService.mjs';
 
@@ -17,130 +17,172 @@ describe('Breeding Analytics Service', () => {
   let testMare;
   let testFoals;
 
-  beforeAll(async () => {
-    // Create test user
-    const timestamp = Date.now();
-    testUser = await prisma.user.create({
-      data: {
-        username: `breeding_test_user_${timestamp}`,
-        email: `breeding_${timestamp}@test.com`,
-        password: 'test_password',
-        firstName: 'Breeding',
-        lastName: 'Test',
-      },
-    });
-
-    // Create test breed
-    testBreed = await prisma.breed.create({
-      data: {
-        name: 'Breeding Test Breed',
-        description: 'Test breed for breeding analytics',
-      },
-    });
-
-    // Create test stallion
-    testStallion = await prisma.horse.create({
-      data: {
-        name: 'Test Stallion',
-        user: { connect: { id: testUser.id } },
-        age: 8,
-        sex: 'stallion',
-        dateOfBirth: new Date('2017-01-01'),
-        breed: { connect: { id: testBreed.id } },
-        speed: 85,
-        stamina: 80,
-        agility: 75,
-        balance: 82,
-        precision: 78,
-        intelligence: 88,
-        boldness: 76,
-        flexibility: 74,
-        obedience: 80,
-        focus: 85,
-        epigeneticModifiers: {
-          positive: ['athletic', 'intelligent'],
-          negative: [],
-          hidden: ['discipline_affinity_racing'],
-        },
-      },
-    });
-
-    // Create test mare
-    testMare = await prisma.horse.create({
-      data: {
-        name: 'Test Mare',
-        user: { connect: { id: testUser.id } },
-        age: 6,
-        sex: 'mare',
-        dateOfBirth: new Date('2019-01-01'),
-        breed: { connect: { id: testBreed.id } },
-        speed: 78,
-        stamina: 85,
-        agility: 80,
-        balance: 75,
-        precision: 82,
-        intelligence: 79,
-        boldness: 73,
-        flexibility: 81,
-        obedience: 87,
-        focus: 76,
-        epigeneticModifiers: {
-          positive: ['calm', 'resilient'],
-          negative: ['nervous'],
-          hidden: ['discipline_affinity_dressage'],
-        },
-      },
-    });
-
-    // Create test foals from this breeding pair
-    testFoals = [];
-    for (let i = 0; i < 5; i++) {
-      const foal = await prisma.horse.create({
-        data: {
-          name: `Test Foal ${i + 1}`,
-          user: { connect: { id: testUser.id } },
-          age: i + 1, // Different ages
-          sex: i % 2 === 0 ? 'colt' : 'filly',
-          dateOfBirth: new Date(`202${i + 1}-01-01`),
-          breed: { connect: { id: testBreed.id } },
-          sire: { connect: { id: testStallion.id } },
-          dam: { connect: { id: testMare.id } },
-          speed: 70 + Math.floor(Math.random() * 20),
-          stamina: 70 + Math.floor(Math.random() * 20),
-          agility: 70 + Math.floor(Math.random() * 20),
-          balance: 70 + Math.floor(Math.random() * 20),
-          precision: 70 + Math.floor(Math.random() * 20),
-          intelligence: 70 + Math.floor(Math.random() * 20),
-          boldness: 70 + Math.floor(Math.random() * 20),
-          flexibility: 70 + Math.floor(Math.random() * 20),
-          obedience: 70 + Math.floor(Math.random() * 20),
-          focus: 70 + Math.floor(Math.random() * 20),
-          epigeneticModifiers: {
-            positive: i % 2 === 0 ? ['athletic'] : ['calm'],
-            negative: i % 3 === 0 ? ['nervous'] : [],
-            hidden: [],
-          },
-        },
-      });
-      testFoals.push(foal);
-    }
-  });
-
-  afterAll(async () => {
-    // Clean up test data
+  const cleanupBreedingData = async () => {
     if (testUser) {
       await prisma.horse.deleteMany({
         where: { userId: testUser.id },
       });
-      await prisma.user.delete({
+      await prisma.user.deleteMany({
         where: { id: testUser.id },
       });
-      if (testBreed) {
-        await prisma.breed.delete({
-          where: { id: testBreed.id },
-        });
-      }
     }
+    if (testBreed) {
+      await prisma.breed.deleteMany({
+        where: { id: testBreed.id },
+      });
+    }
+  };
+
+  const seedBreedingData = async () => {
+    await cleanupBreedingData();
+
+    const timestamp = Date.now();
+    await prisma.$transaction(async (tx) => {
+      // Create test user
+      testUser = await tx.user.create({
+        data: {
+          username: `breeding_test_user_${timestamp}`,
+          email: `breeding_${timestamp}@test.com`,
+          password: 'test_password',
+          firstName: 'Breeding',
+          lastName: 'Test',
+        },
+      });
+
+      // Create test breed
+      testBreed = await tx.breed.create({
+        data: {
+          name: `Breeding Test Breed ${timestamp}`,
+          description: 'Test breed for breeding analytics',
+        },
+      });
+
+      // Create test stallion
+      testStallion = await tx.horse.create({
+        data: {
+          name: `Test Stallion ${timestamp}`,
+          user: { connect: { id: testUser.id } },
+          age: 8,
+          sex: 'stallion',
+          dateOfBirth: new Date('2017-01-01'),
+          breed: { connect: { id: testBreed.id } },
+          speed: 85,
+          stamina: 80,
+          agility: 75,
+          balance: 82,
+          precision: 78,
+          intelligence: 88,
+          boldness: 76,
+          flexibility: 74,
+          obedience: 80,
+          focus: 85,
+          epigeneticModifiers: {
+            positive: ['athletic', 'intelligent'],
+            negative: [],
+            hidden: ['discipline_affinity_racing'],
+          },
+        },
+      });
+
+      // Create test mare
+      testMare = await tx.horse.create({
+        data: {
+          name: `Test Mare ${timestamp}`,
+          user: { connect: { id: testUser.id } },
+          age: 6,
+          sex: 'mare',
+          dateOfBirth: new Date('2019-01-01'),
+          breed: { connect: { id: testBreed.id } },
+          speed: 78,
+          stamina: 85,
+          agility: 80,
+          balance: 75,
+          precision: 82,
+          intelligence: 79,
+          boldness: 73,
+          flexibility: 81,
+          obedience: 87,
+          focus: 76,
+          epigeneticModifiers: {
+            positive: ['calm', 'resilient'],
+            negative: ['nervous'],
+            hidden: ['discipline_affinity_dressage'],
+          },
+        },
+      });
+
+      // Create test foals from this breeding pair
+      testFoals = [];
+      for (let i = 0; i < 5; i++) {
+        const foal = await tx.horse.create({
+          data: {
+            name: `Test Foal ${timestamp} ${i + 1}`,
+            user: { connect: { id: testUser.id } },
+            age: i + 1, // Different ages
+            sex: i % 2 === 0 ? 'colt' : 'filly',
+            dateOfBirth: new Date(`202${i + 1}-01-01`),
+            breed: { connect: { id: testBreed.id } },
+            sire: { connect: { id: testStallion.id } },
+            dam: { connect: { id: testMare.id } },
+            speed: 70 + Math.floor(Math.random() * 20),
+            stamina: 70 + Math.floor(Math.random() * 20),
+            agility: 70 + Math.floor(Math.random() * 20),
+            balance: 70 + Math.floor(Math.random() * 20),
+            precision: 70 + Math.floor(Math.random() * 20),
+            intelligence: 70 + Math.floor(Math.random() * 20),
+            boldness: 70 + Math.floor(Math.random() * 20),
+            flexibility: 70 + Math.floor(Math.random() * 20),
+            obedience: 70 + Math.floor(Math.random() * 20),
+            focus: 70 + Math.floor(Math.random() * 20),
+            epigeneticModifiers: {
+              positive: i % 2 === 0 ? ['athletic'] : ['calm'],
+              negative: i % 3 === 0 ? ['nervous'] : [],
+              hidden: [],
+            },
+          },
+        });
+        testFoals.push(foal);
+      }
+    });
+  };
+
+  const ensureBreedingData = async () => {
+    if (!testUser || !testBreed || !testStallion || !testMare || !testFoals) {
+      await seedBreedingData();
+      return;
+    }
+
+    const [userExists, breedExists, stallionExists, mareExists] = await Promise.all([
+      prisma.user.findUnique({ where: { id: testUser.id } }),
+      prisma.breed.findUnique({ where: { id: testBreed.id } }),
+      prisma.horse.findUnique({ where: { id: testStallion.id } }),
+      prisma.horse.findUnique({ where: { id: testMare.id } }),
+    ]);
+
+    if (!userExists || !breedExists || !stallionExists || !mareExists) {
+      await seedBreedingData();
+      return;
+    }
+
+    const foalCount = await prisma.horse.count({
+      where: { userId: testUser.id, sireId: testStallion.id, damId: testMare.id },
+    });
+    if (foalCount < 5) {
+      await seedBreedingData();
+    }
+  };
+
+  beforeAll(async () => {
+    await seedBreedingData();
+  });
+
+  beforeEach(async () => {
+    await ensureBreedingData();
+  });
+
+  afterAll(async () => {
+    // Clean up test data
+    await cleanupBreedingData();
     await prisma.$disconnect();
   });
 

@@ -43,7 +43,7 @@ const mockTrainingLogCreate = jest.fn();
 const mockTrainingLogFindFirst = jest.fn();
 const mockHorseFindUnique = jest.fn();
 
-jest.unstable_mockModule(join(__dirname, '../db/index.mjs'), () => ({
+await jest.unstable_mockModule(join(__dirname, '../db/index.mjs'), () => ({
   default: {
     trainingLog: {
       create: mockTrainingLogCreate,
@@ -61,6 +61,16 @@ const { logTrainingSession, getLastTrainingDate, getHorseAge } = await import(
 );
 
 describe('🏋️ UNIT: Training Model - Training Session Logging & Horse Data', () => {
+  // Anchor dates to keep age calculations deterministic
+  const referenceDate = new Date('2025-01-15T10:00:00Z');
+  const trainingTimestamp = new Date(referenceDate); // Current training session time
+
+  const fiveYearsAgo = new Date(referenceDate);
+  fiveYearsAgo.setFullYear(referenceDate.getFullYear() - 5);
+
+  const twoYearsAgo = new Date(referenceDate);
+  twoYearsAgo.setFullYear(referenceDate.getFullYear() - 2);
+
   beforeEach(() => {
     jest.clearAllMocks();
     mockTrainingLogCreate.mockClear();
@@ -74,7 +84,7 @@ describe('🏋️ UNIT: Training Model - Training Session Logging & Horse Data',
         id: 1,
         horseId: 5,
         discipline: 'Show Jumping',
-        trainedAt: new Date('2025-01-15T10:00:00Z'),
+        trainedAt: trainingTimestamp,
       };
       mockTrainingLogCreate.mockResolvedValue(mockResult);
 
@@ -129,7 +139,7 @@ describe('🏋️ UNIT: Training Model - Training Session Logging & Horse Data',
   describe('getLastTrainingDate', () => {
     it('should return the most recent training date for horse and discipline', async () => {
       const mockResult = {
-        trainedAt: new Date('2025-01-15T10:00:00Z'),
+        trainedAt: trainingTimestamp,
       };
       mockTrainingLogFindFirst.mockResolvedValue(mockResult);
 
@@ -144,7 +154,7 @@ describe('🏋️ UNIT: Training Model - Training Session Logging & Horse Data',
           trainedAt: 'desc',
         },
       });
-      expect(result).toEqual(new Date('2025-01-15T10:00:00Z'));
+      expect(result).toEqual(trainingTimestamp);
     });
 
     it('should return null if no training records found', async () => {
@@ -178,8 +188,9 @@ describe('🏋️ UNIT: Training Model - Training Session Logging & Horse Data',
 
   describe('getHorseAge', () => {
     it('should return horse age from database', async () => {
+      jest.useFakeTimers().setSystemTime(referenceDate);
       const mockResult = {
-        age: 5,
+        dateOfBirth: fiveYearsAgo,
       };
       mockHorseFindUnique.mockResolvedValue(mockResult);
 
@@ -187,9 +198,10 @@ describe('🏋️ UNIT: Training Model - Training Session Logging & Horse Data',
 
       expect(mockHorseFindUnique).toHaveBeenCalledWith({
         where: { id: 10 },
-        select: { age: true },
+        select: { dateOfBirth: true },
       });
       expect(result).toBe(5);
+      jest.useRealTimers();
     });
 
     it('should return null if horse not found', async () => {
@@ -233,10 +245,12 @@ describe('🏋️ UNIT: Training Model - Training Session Logging & Horse Data',
 
     it('should validate horse age before allowing training', async () => {
       // Mock horse age check
-      mockHorseFindUnique.mockResolvedValue({ age: 2 });
+      jest.useFakeTimers().setSystemTime(referenceDate);
+      mockHorseFindUnique.mockResolvedValue({ dateOfBirth: twoYearsAgo });
 
       const age = await getHorseAge(5);
       expect(age).toBe(2);
+      jest.useRealTimers();
 
       // In the actual training logic, this would prevent training
       // since horse is under 3 years old

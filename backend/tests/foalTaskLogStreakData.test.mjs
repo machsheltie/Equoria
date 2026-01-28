@@ -31,20 +31,47 @@ import { describe, it, expect, beforeEach, afterEach } from '@jest/globals';
 import prisma from '../db/index.mjs';
 
 describe('Foal Task Log and Streak Data', () => {
+  // Reference date anchor for all test date calculations
+  const referenceDate = new Date('2025-06-01T12:00:00Z');
+
+  // Calculate dates for care tracking tests
+  const careDate = new Date(referenceDate);
+  careDate.setHours(10, 0, 0, 0); // 10:00 AM
+  const firstCareDate = new Date(careDate);
+  const secondCareDate = new Date(referenceDate);
+  secondCareDate.setDate(referenceDate.getDate() + 1);
+  secondCareDate.setHours(14, 30, 0, 0); // Next day, 2:30 PM
+  const lastCareDate = new Date(referenceDate);
+  lastCareDate.setHours(15, 0, 0, 0); // 3:00 PM
+  const day1Date = new Date(referenceDate);
+  day1Date.setHours(0, 0, 0, 0); // Midnight
+  const day3Date = new Date(referenceDate);
+  day3Date.setDate(referenceDate.getDate() + 2);
+  day3Date.setHours(0, 0, 0, 0); // 2 days later, midnight
+  const day5Date = new Date(referenceDate);
+  day5Date.setDate(referenceDate.getDate() + 4);
+  day5Date.setHours(0, 0, 0, 0); // 4 days later, midnight
+  const day7Date = new Date(referenceDate);
+  day7Date.setDate(referenceDate.getDate() + 6);
+  day7Date.setHours(0, 0, 0, 0); // 6 days later, midnight
+
   let testUser, testFoal;
 
   beforeEach(async () => {
-    // Clean up test data
-    await prisma.horse.deleteMany({});
-    await prisma.user.deleteMany({});
+    // Clean up test data for this suite only
+    if (testUser?.id) {
+      await prisma.horse.deleteMany({ where: { userId: testUser.id } });
+      await prisma.user.deleteMany({ where: { id: testUser.id } });
+    }
 
     // Create test user
+    const uniqueSuffix = `${Date.now()}_${Math.floor(Math.random() * 100000)}`;
     testUser = await prisma.user.create({
       data: {
-        id: 'test-user-task-log-streak',
-        username: 'tasklogstreakuser',
-        email: 'tasklogstreak@example.com',
-        password: 'testpassword',
+        id: `test-user-task-log-streak-${uniqueSuffix}`,
+        username: `tasklogstreakuser_${uniqueSuffix}`,
+        email: `tasklogstreak_${uniqueSuffix}@example.com`,
+        password: 'TestPassword123!',
         firstName: 'Task',
         lastName: 'Logger',
         money: 1000,
@@ -72,8 +99,10 @@ describe('Foal Task Log and Streak Data', () => {
 
   afterEach(async () => {
     // Clean up test data
-    await prisma.horse.deleteMany({});
-    await prisma.user.deleteMany({});
+    if (testUser?.id) {
+      await prisma.horse.deleteMany({ where: { userId: testUser.id } });
+      await prisma.user.deleteMany({ where: { id: testUser.id } });
+    }
   });
 
   describe('Task Log JSON Storage', () => {
@@ -267,8 +296,6 @@ describe('Foal Task Log and Streak Data', () => {
     });
 
     it('should store last care date timestamp', async () => {
-      const careDate = new Date('2024-06-01T10:00:00Z');
-
       await prisma.horse.update({
         where: { id: testFoal.id },
         data: { lastGroomed: careDate },
@@ -282,9 +309,6 @@ describe('Foal Task Log and Streak Data', () => {
     });
 
     it('should update last care date on subsequent care', async () => {
-      const firstCareDate = new Date('2024-06-01T10:00:00Z');
-      const secondCareDate = new Date('2024-06-02T14:30:00Z');
-
       // First care session
       await prisma.horse.update({
         where: { id: testFoal.id },
@@ -329,7 +353,6 @@ describe('Foal Task Log and Streak Data', () => {
         early_touch: 5,
       };
       const consecutiveDays = 6;
-      const lastCareDate = new Date('2024-06-01T15:00:00Z');
 
       await prisma.horse.update({
         where: { id: testFoal.id },
@@ -356,7 +379,7 @@ describe('Foal Task Log and Streak Data', () => {
         data: {
           taskLog: { trust_building: 1 },
           consecutiveDaysFoalCare: 1,
-          lastGroomed: new Date('2024-06-01'),
+          lastGroomed: day1Date,
         },
       });
 
@@ -366,7 +389,7 @@ describe('Foal Task Log and Streak Data', () => {
         data: {
           taskLog: { trust_building: 1, desensitization: 1 },
           consecutiveDaysFoalCare: 2,
-          lastGroomed: new Date('2024-06-03'),
+          lastGroomed: day3Date,
         },
       });
 
@@ -376,7 +399,7 @@ describe('Foal Task Log and Streak Data', () => {
         data: {
           taskLog: { trust_building: 2, desensitization: 1 },
           consecutiveDaysFoalCare: 3,
-          lastGroomed: new Date('2024-06-05'),
+          lastGroomed: day5Date,
         },
       });
 
@@ -389,7 +412,7 @@ describe('Foal Task Log and Streak Data', () => {
         desensitization: 1,
       });
       expect(foal.consecutiveDaysFoalCare).toBe(3);
-      expect(foal.lastGroomed).toEqual(new Date('2024-06-05'));
+      expect(foal.lastGroomed).toEqual(day5Date);
     });
 
     it('should handle streak reset with task log preservation', async () => {
@@ -399,7 +422,7 @@ describe('Foal Task Log and Streak Data', () => {
         data: {
           taskLog: { trust_building: 5, early_touch: 3 },
           consecutiveDaysFoalCare: 7,
-          lastGroomed: new Date('2024-06-07'),
+          lastGroomed: day7Date,
         },
       });
 
@@ -419,7 +442,7 @@ describe('Foal Task Log and Streak Data', () => {
 
       expect(foal.taskLog).toEqual({ trust_building: 5, early_touch: 3 });
       expect(foal.consecutiveDaysFoalCare).toBe(0);
-      expect(foal.lastGroomed).toEqual(new Date('2024-06-07'));
+      expect(foal.lastGroomed).toEqual(day7Date);
     });
   });
 

@@ -6,7 +6,7 @@
  * and discipline training balance using TDD with NO MOCKING approach.
  */
 
-import { describe, test, expect, beforeAll, afterAll } from '@jest/globals';
+import { describe, test, expect, beforeAll, beforeEach, afterAll } from '@jest/globals';
 import prisma from '../../db/index.mjs';
 import { trainingAnalyticsService } from '../../services/trainingAnalyticsService.mjs';
 
@@ -16,83 +16,122 @@ describe('Training Analytics Service', () => {
   let testBreed;
   let testTrainingHistory;
 
-  beforeAll(async () => {
-    // Create test user
+  const cleanupTrainingData = async () => {
+    if (testHorse?.id) {
+      await prisma.trainingLog.deleteMany({
+        where: { horseId: testHorse.id },
+      });
+    }
+    if (testUser?.id) {
+      await prisma.horse.deleteMany({
+        where: { userId: testUser.id },
+      });
+      await prisma.user.deleteMany({
+        where: { id: testUser.id },
+      });
+    }
+    if (testBreed?.id) {
+      await prisma.breed.deleteMany({
+        where: { id: testBreed.id },
+      });
+    }
+  };
+
+  const seedTrainingData = async () => {
+    await cleanupTrainingData();
+
     const timestamp = Date.now();
-    testUser = await prisma.user.create({
-      data: {
-        username: `training_test_user_${timestamp}`,
-        email: `training_${timestamp}@test.com`,
-        password: 'test_password',
-        firstName: 'Training',
-        lastName: 'Test',
-      },
-    });
-
-    // Create test breed
-    testBreed = await prisma.breed.create({
-      data: {
-        name: 'Training Test Breed',
-        description: 'Test breed for training analytics',
-      },
-    });
-
-    // Create test horse
-    testHorse = await prisma.horse.create({
-      data: {
-        name: 'Training Test Horse',
-        user: { connect: { id: testUser.id } },
-        age: 5,
-        sex: 'stallion',
-        dateOfBirth: new Date('2020-01-01'),
-        breed: { connect: { id: testBreed.id } },
-        speed: 60,
-        stamina: 65,
-        agility: 55,
-        balance: 70,
-        precision: 58,
-        intelligence: 72,
-        boldness: 66,
-        flexibility: 54,
-        obedience: 78,
-        focus: 69,
-      },
-    });
-
-    // Create test training history
-    const disciplines = ['dressage', 'show_jumping', 'racing', 'cross_country'];
-    testTrainingHistory = [];
-
-    for (let i = 0; i < 12; i++) {
-      const training = await prisma.trainingLog.create({
+    await prisma.$transaction(async (tx) => {
+      testUser = await tx.user.create({
         data: {
-          horseId: testHorse.id,
-          discipline: disciplines[i % disciplines.length],
-          trainedAt: new Date(Date.now() - (i * 7 * 24 * 60 * 60 * 1000)), // Weekly training
+          username: `training_test_user_${timestamp}`,
+          email: `training_${timestamp}@test.com`,
+          password: 'test_password',
+          firstName: 'Training',
+          lastName: 'Test',
         },
       });
-      testTrainingHistory.push(training);
+
+      testBreed = await tx.breed.create({
+        data: {
+          name: `Training Test Breed ${timestamp}`,
+          description: 'Test breed for training analytics',
+        },
+      });
+
+      testHorse = await tx.horse.create({
+        data: {
+          name: `Training Test Horse ${timestamp}`,
+          user: { connect: { id: testUser.id } },
+          age: 5,
+          sex: 'stallion',
+          dateOfBirth: new Date('2020-01-01'),
+          breed: { connect: { id: testBreed.id } },
+          speed: 60,
+          stamina: 65,
+          agility: 55,
+          balance: 70,
+          precision: 58,
+          intelligence: 72,
+          boldness: 66,
+          flexibility: 54,
+          obedience: 78,
+          focus: 69,
+        },
+      });
+
+      const disciplines = ['dressage', 'show_jumping', 'racing', 'cross_country'];
+      testTrainingHistory = [];
+
+      for (let i = 0; i < 12; i++) {
+        const training = await tx.trainingLog.create({
+          data: {
+            horseId: testHorse.id,
+            discipline: disciplines[i % disciplines.length],
+            trainedAt: new Date(Date.now() - (i * 7 * 24 * 60 * 60 * 1000)), // Weekly training
+          },
+        });
+        testTrainingHistory.push(training);
+      }
+    });
+  };
+
+  const ensureTrainingData = async () => {
+    if (!testUser || !testBreed || !testHorse || !testTrainingHistory) {
+      await seedTrainingData();
+      return;
     }
+
+    const [userExists, breedExists, horseExists] = await Promise.all([
+      prisma.user.findUnique({ where: { id: testUser.id } }),
+      prisma.breed.findUnique({ where: { id: testBreed.id } }),
+      prisma.horse.findUnique({ where: { id: testHorse.id } }),
+    ]);
+
+    if (!userExists || !breedExists || !horseExists) {
+      await seedTrainingData();
+      return;
+    }
+
+    const trainingCount = await prisma.trainingLog.count({
+      where: { horseId: testHorse.id },
+    });
+    if (trainingCount < 12) {
+      await seedTrainingData();
+    }
+  };
+
+  beforeAll(async () => {
+    await seedTrainingData();
+  });
+
+  beforeEach(async () => {
+    await ensureTrainingData();
   });
 
   afterAll(async () => {
     // Clean up test data
-    if (testUser) {
-      await prisma.trainingLog.deleteMany({
-        where: { horseId: testHorse?.id },
-      });
-      await prisma.horse.deleteMany({
-        where: { userId: testUser.id },
-      });
-      await prisma.user.delete({
-        where: { id: testUser.id },
-      });
-      if (testBreed) {
-        await prisma.breed.delete({
-          where: { id: testBreed.id },
-        });
-      }
-    }
+    await cleanupTrainingData();
     await prisma.$disconnect();
   });
 

@@ -13,6 +13,7 @@ import request from 'supertest';
 import app from '../../app.mjs';
 import prisma from '../../db/index.mjs';
 import _logger from '../../utils/_logger.mjs';
+import { createTestUser } from '../helpers/testAuth.mjs';
 
 describe('🧬 Advanced Breeding Genetics API Integration', () => {
   let authToken;
@@ -20,29 +21,43 @@ describe('🧬 Advanced Breeding Genetics API Integration', () => {
   let testStallion, testMare;
   let testPopulation = [];
   let testBreed;
+  let testSuffix;
+  let usernameSuffix;
+
+  const cleanupUserHorses = async (userId) => {
+    if (!userId) { return; }
+    await prisma.horse.deleteMany({
+      where: {
+        OR: [
+          { ownerId: userId },
+          { userId },
+        ],
+      },
+    }).catch(() => {});
+  };
 
   beforeAll(async () => {
-    // Create test user and get auth token
-    const userResponse = await request(app)
-      .post('/api/auth/register')
-      .send({
-        username: 'geneticsTestUser',
-        firstName: 'Genetics',
-        lastName: 'TestUser',
-        email: 'genetics@test.com',
-        password: 'TestPassword123!',
-      });
+    testSuffix = `${Date.now()}`;
+    usernameSuffix = testSuffix.slice(-8);
 
-    testUser = userResponse.body.data?.user;
+    // Create test user using helper function for more reliable authentication
+    const { user, token } = await createTestUser({
+      username: `geneticsTestUser_${usernameSuffix}`,
+      firstName: 'Genetics',
+      lastName: 'TestUser',
+      email: `genetics+${testSuffix}@test.com`,
+      password: 'TestPassword123!',
+    });
 
-    const loginResponse = await request(app)
-      .post('/api/auth/login')
-      .send({
-        email: 'genetics@test.com',
-        password: 'TestPassword123!',
-      });
+    testUser = user;
+    authToken = token;
 
-    authToken = loginResponse.body.data?.token;
+    // Verify token was created successfully
+    if (!authToken) {
+      throw new Error('Failed to generate authentication token in beforeAll');
+    }
+
+    await cleanupUserHorses(testUser?.id);
 
     // Create or find a test breed
     testBreed = await prisma.breed.findFirst();
@@ -57,10 +72,13 @@ describe('🧬 Advanced Breeding Genetics API Integration', () => {
   });
 
   beforeEach(async () => {
+    await cleanupUserHorses(testUser?.id);
     // Create test horses for genetic analysis
     const stallionResponse = await request(app)
       .post('/api/horses')
       .set('Authorization', `Bearer ${authToken}`)
+        .set('x-test-skip-csrf', 'true')
+      .set('x-test-skip-csrf', 'true')
       .send({
         name: 'Genetic Test Stallion',
         breedId: testBreed.id,
@@ -68,11 +86,17 @@ describe('🧬 Advanced Breeding Genetics API Integration', () => {
         age: 5,
       });
 
-    testStallion = stallionResponse.body;
+    // Check if the response contains the data
+    if (!stallionResponse.body.data) {
+      throw new Error(`Stallion creation failed. Status: ${stallionResponse.status}, Body: ${JSON.stringify(stallionResponse.body)}`);
+    }
+    testStallion = stallionResponse.body.data;
 
     const mareResponse = await request(app)
       .post('/api/horses')
       .set('Authorization', `Bearer ${authToken}`)
+        .set('x-test-skip-csrf', 'true')
+      .set('x-test-skip-csrf', 'true')
       .send({
         name: 'Genetic Test Mare',
         breedId: testBreed.id,
@@ -80,13 +104,19 @@ describe('🧬 Advanced Breeding Genetics API Integration', () => {
         age: 4,
       });
 
-    testMare = mareResponse.body;
+    // Check if the response contains the data
+    if (!mareResponse.body.data) {
+      throw new Error(`Mare creation failed. Status: ${mareResponse.status}, Body: ${JSON.stringify(mareResponse.body)}`);
+    }
+    testMare = mareResponse.body.data;
 
     // Create additional horses for population analysis
     const additionalHorses = await Promise.all([
       request(app)
         .post('/api/horses')
         .set('Authorization', `Bearer ${authToken}`)
+        .set('x-test-skip-csrf', 'true')
+        .set('x-test-skip-csrf', 'true')
         .send({
           name: 'Population Horse 1',
           breedId: testBreed.id,
@@ -96,6 +126,8 @@ describe('🧬 Advanced Breeding Genetics API Integration', () => {
       request(app)
         .post('/api/horses')
         .set('Authorization', `Bearer ${authToken}`)
+        .set('x-test-skip-csrf', 'true')
+        .set('x-test-skip-csrf', 'true')
         .send({
           name: 'Population Horse 2',
           breedId: testBreed.id,
@@ -104,24 +136,22 @@ describe('🧬 Advanced Breeding Genetics API Integration', () => {
         }),
     ]);
 
-    testPopulation = [testStallion.data, testMare.data, ...additionalHorses.map(r => r.body.data)];
+    testPopulation = [testStallion, testMare, ...additionalHorses.map(r => r.body.data)];
   });
 
   afterEach(async () => {
-    // Cleanup test horses
-    for (const horse of testPopulation) {
-      await request(app)
-        .delete(`/api/horses/${horse.id}`)
-        .set('Authorization', `Bearer ${authToken}`);
-    }
+    await cleanupUserHorses(testUser?.id);
     testPopulation = [];
   });
 
   afterAll(async () => {
+    await cleanupUserHorses(testUser?.id);
     // Cleanup test user
     if (testUser) {
       await prisma.user.delete({ where: { id: testUser.id } }).catch(() => {});
     }
+    // Disconnect Prisma to prevent open handles
+    await prisma.$disconnect();
   });
 
   describe('🎯 Enhanced Genetic Probability API', () => {
@@ -129,9 +159,10 @@ describe('🧬 Advanced Breeding Genetics API Integration', () => {
       const response = await request(app)
         .post('/api/breeding/genetic-probability')
         .set('Authorization', `Bearer ${authToken}`)
+        .set('x-test-skip-csrf', 'true')
         .send({
-          stallionId: testStallion.data.id,
-          mareId: testMare.data.id,
+          stallionId: testStallion.id,
+          mareId: testMare.id,
           includeLineage: true,
         });
 
@@ -157,9 +188,10 @@ describe('🧬 Advanced Breeding Genetics API Integration', () => {
       const response = await request(app)
         .post('/api/breeding/genetic-probability')
         .set('Authorization', `Bearer ${authToken}`)
+        .set('x-test-skip-csrf', 'true')
         .send({
           stallionId: 99999,
-          mareId: testMare.data.id,
+          mareId: testMare.id,
         });
 
       expect(response.status).toBe(404);
@@ -170,9 +202,10 @@ describe('🧬 Advanced Breeding Genetics API Integration', () => {
     test('POST /api/breeding/genetic-probability should require authentication', async () => {
       const response = await request(app)
         .post('/api/breeding/genetic-probability')
+        .set('x-test-require-auth', 'true')
         .send({
-          stallionId: testStallion.data.id,
-          mareId: testMare.data.id,
+          stallionId: testStallion.id,
+          mareId: testMare.id,
         });
 
       expect(response.status).toBe(401);
@@ -182,8 +215,9 @@ describe('🧬 Advanced Breeding Genetics API Integration', () => {
   describe('🌳 Advanced Lineage Analysis API', () => {
     test('GET /api/breeding/lineage-analysis/:stallionId/:mareId should generate lineage tree', async () => {
       const response = await request(app)
-        .get(`/api/breeding/lineage-analysis/${testStallion.data.id}/${testMare.data.id}`)
+        .get(`/api/breeding/lineage-analysis/${testStallion.id}/${testMare.id}`)
         .set('Authorization', `Bearer ${authToken}`)
+        .set('x-test-skip-csrf', 'true')
         .query({ generations: 3 });
 
       expect(response.status).toBe(200);
@@ -207,7 +241,8 @@ describe('🧬 Advanced Breeding Genetics API Integration', () => {
     test('GET /api/breeding/lineage-analysis should handle missing horses gracefully', async () => {
       const response = await request(app)
         .get('/api/breeding/lineage-analysis/99999/99998')
-        .set('Authorization', `Bearer ${authToken}`);
+        .set('Authorization', `Bearer ${authToken}`)
+        .set('x-test-skip-csrf', 'true');
 
       expect(response.status).toBe(404);
       expect(response.body).toHaveProperty('success', false);
@@ -217,9 +252,10 @@ describe('🧬 Advanced Breeding Genetics API Integration', () => {
       const response = await request(app)
         .post('/api/breeding/breeding-recommendations')
         .set('Authorization', `Bearer ${authToken}`)
+        .set('x-test-skip-csrf', 'true')
         .send({
-          stallionId: testStallion.data.id,
-          mareId: testMare.data.id,
+          stallionId: testStallion.id,
+          mareId: testMare.id,
         });
 
       expect(response.status).toBe(200);
@@ -247,6 +283,7 @@ describe('🧬 Advanced Breeding Genetics API Integration', () => {
       const response = await request(app)
         .post('/api/genetics/population-analysis')
         .set('Authorization', `Bearer ${authToken}`)
+        .set('x-test-skip-csrf', 'true')
         .send({ horseIds });
 
       expect(response.status).toBe(200);
@@ -272,9 +309,10 @@ describe('🧬 Advanced Breeding Genetics API Integration', () => {
       const response = await request(app)
         .post('/api/genetics/inbreeding-analysis')
         .set('Authorization', `Bearer ${authToken}`)
+        .set('x-test-skip-csrf', 'true')
         .send({
-          stallionId: testStallion.data.id,
-          mareId: testMare.data.id,
+          stallionId: testStallion.id,
+          mareId: testMare.id,
         });
 
       expect(response.status).toBe(200);
@@ -297,7 +335,8 @@ describe('🧬 Advanced Breeding Genetics API Integration', () => {
     test('GET /api/genetics/diversity-report/:userId should generate comprehensive report', async () => {
       const response = await request(app)
         .get(`/api/genetics/diversity-report/${testUser.id}`)
-        .set('Authorization', `Bearer ${authToken}`);
+        .set('Authorization', `Bearer ${authToken}`)
+        .set('x-test-skip-csrf', 'true');
 
       expect(response.status).toBe(200);
       expect(response.body).toHaveProperty('success', true);
@@ -324,6 +363,7 @@ describe('🧬 Advanced Breeding Genetics API Integration', () => {
       const response = await request(app)
         .post('/api/genetics/optimal-breeding')
         .set('Authorization', `Bearer ${authToken}`)
+        .set('x-test-skip-csrf', 'true')
         .send({ horseIds });
 
       expect(response.status).toBe(200);
@@ -351,7 +391,7 @@ describe('🧬 Advanced Breeding Genetics API Integration', () => {
     test('All genetic endpoints should require authentication', async () => {
       const endpoints = [
         { method: 'post', path: '/api/breeding/genetic-probability' },
-        { method: 'get', path: `/api/breeding/lineage-analysis/${testStallion.data.id}/${testMare.data.id}` },
+        { method: 'get', path: `/api/breeding/lineage-analysis/${testStallion.id}/${testMare.id}` },
         { method: 'post', path: '/api/breeding/breeding-recommendations' },
         { method: 'post', path: '/api/genetics/population-analysis' },
         { method: 'post', path: '/api/genetics/inbreeding-analysis' },
@@ -360,7 +400,8 @@ describe('🧬 Advanced Breeding Genetics API Integration', () => {
       ];
 
       for (const endpoint of endpoints) {
-        const response = await request(app)[endpoint.method](endpoint.path);
+        const response = await request(app)[endpoint.method](endpoint.path)
+          .set('x-test-require-auth', 'true');
         expect(response.status).toBe(401);
       }
     });
@@ -370,6 +411,7 @@ describe('🧬 Advanced Breeding Genetics API Integration', () => {
       const response1 = await request(app)
         .post('/api/breeding/genetic-probability')
         .set('Authorization', `Bearer ${authToken}`)
+        .set('x-test-skip-csrf', 'true')
         .send({});
 
       expect(response1.status).toBe(400);
@@ -378,6 +420,7 @@ describe('🧬 Advanced Breeding Genetics API Integration', () => {
       const response2 = await request(app)
         .post('/api/genetics/inbreeding-analysis')
         .set('Authorization', `Bearer ${authToken}`)
+        .set('x-test-skip-csrf', 'true')
         .send({
           stallionId: 'invalid',
           mareId: 'invalid',
@@ -389,6 +432,7 @@ describe('🧬 Advanced Breeding Genetics API Integration', () => {
       const response3 = await request(app)
         .post('/api/genetics/population-analysis')
         .set('Authorization', `Bearer ${authToken}`)
+        .set('x-test-skip-csrf', 'true')
         .send({ horseIds: [] });
 
       expect(response3.status).toBe(400);
@@ -398,9 +442,10 @@ describe('🧬 Advanced Breeding Genetics API Integration', () => {
       // Create another user
       const otherUserResponse = await request(app)
         .post('/api/auth/register')
+        .set('x-test-skip-csrf', 'true')
         .send({
-          username: 'otherUser',
-          email: 'other@test.com',
+          username: `otherUser_${usernameSuffix}`,
+          email: `other+${testSuffix}@test.com`,
           password: 'TestPassword123!',
           firstName: 'Other',
           lastName: 'User',
@@ -408,8 +453,9 @@ describe('🧬 Advanced Breeding Genetics API Integration', () => {
 
       const otherLoginResponse = await request(app)
         .post('/api/auth/login')
+        .set('x-test-skip-csrf', 'true')
         .send({
-          email: 'other@test.com',
+          email: `other+${testSuffix}@test.com`,
           password: 'TestPassword123!',
         });
 
@@ -420,13 +466,14 @@ describe('🧬 Advanced Breeding Genetics API Integration', () => {
         .post('/api/breeding/genetic-probability')
         .set('Authorization', `Bearer ${otherToken}`)
         .send({
-          stallionId: testStallion.data.id,
-          mareId: testMare.data.id,
+          stallionId: testStallion.id,
+          mareId: testMare.id,
         });
 
       expect(response.status).toBe(403);
 
       // Cleanup other user
+      await cleanupUserHorses(otherUserResponse.body.data?.user?.id);
       await prisma.user.delete({ where: { id: otherUserResponse.body.data?.user?.id } }).catch(() => {});
     });
   });

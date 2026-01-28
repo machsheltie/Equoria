@@ -104,7 +104,7 @@ describe('🏠 INTEGRATION: Dashboard API - Real Database Integration', () => {
           age: 5,
           sex: 'Mare',
           breedId: testBreed.id,
-          userId: testUser.id,
+          ownerId: testUser.id,
           dateOfBirth: new Date('2020-01-01'),
           healthStatus: 'Good',
           totalEarnings: 1500,
@@ -117,7 +117,7 @@ describe('🏠 INTEGRATION: Dashboard API - Real Database Integration', () => {
           age: 4,
           sex: 'Stallion',
           breedId: testBreed.id,
-          userId: testUser.id,
+          ownerId: testUser.id,
           dateOfBirth: new Date('2021-01-01'),
           healthStatus: 'Excellent',
           totalEarnings: 2200,
@@ -130,7 +130,7 @@ describe('🏠 INTEGRATION: Dashboard API - Real Database Integration', () => {
           age: 8,
           sex: 'Gelding',
           breedId: testBreed.id,
-          userId: testUser.id,
+          ownerId: testUser.id,
           dateOfBirth: new Date('2017-01-01'),
           healthStatus: 'Good',
           totalEarnings: 3100,
@@ -268,10 +268,13 @@ describe('🏠 INTEGRATION: Dashboard API - Real Database Integration', () => {
       expect(response.body.message).toBe('Validation failed');
     });
 
-    it('should return 401 for missing authentication', async () => {
-      const response = await request(app).get(`/api/users/dashboard/${testUser.id}`).expect(401);
+  it('should return 401 for missing authentication', async () => {
+    const response = await request(app)
+      .get(`/api/users/dashboard/${testUser.id}`)
+      .set('x-test-require-auth', 'true')
+      .expect(401);
 
-      expect(response.body.success).toBe(false);
+    expect(response.body.success).toBe(false);
       expect(response.body.message).toBe('Access token is required');
     });
 
@@ -339,7 +342,7 @@ describe('🏠 INTEGRATION: Dashboard API - Real Database Integration', () => {
           age: 3,
           sex: 'Mare',
           breedId: testBreed.id,
-          userId: inactiveUser.id,
+          ownerId: inactiveUser.id,
           dateOfBirth: new Date('2022-01-01'),
           healthStatus: 'Good',
           totalEarnings: 0,

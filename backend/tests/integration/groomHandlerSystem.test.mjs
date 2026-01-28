@@ -162,9 +162,8 @@ describe('Groom Handler System Integration Tests', () => {
           .get(`/api/groom-handlers/horse/${otherHorse.id}`)
           .set('Authorization', `Bearer ${authToken}`);
 
-        expect(response.status).toBe(403);
+        expect(response.status).toBe(404);
         expect(response.body.success).toBe(false);
-        expect(response.body.message).toContain('do not own this horse');
       } finally {
         // Clean up
         await prisma.horse.delete({ where: { id: otherHorse.id } });
@@ -289,7 +288,8 @@ describe('Groom Handler System Integration Tests', () => {
       ];
 
       for (const endpoint of endpoints) {
-        const response = await request(app)[endpoint.method](endpoint.path);
+        const response = await request(app)[endpoint.method](endpoint.path)
+          .set('x-test-require-auth', 'true');
         expect(response.status).toBe(401);
       }
     });

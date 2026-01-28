@@ -213,7 +213,7 @@ describe('🔄 API Response Integration Tests', () => {
     const userData = {
       email: 'apiresponseintegration@test.com',
       username: 'apiresponseintegrationuser',
-      password: 'testpassword123',
+      password: 'TestPassword123!',
       firstName: 'API',
       lastName: 'Response',
     };
@@ -417,7 +417,7 @@ describe('🔄 API Response Integration Tests', () => {
         .post('/api/auth/login')
         .send({
           email: 'apiresponseintegration@test.com',
-          password: 'testpassword123',
+          password: 'TestPassword123!',
         });
 
       expect(loginResponse.status).toBe(200);
@@ -456,7 +456,7 @@ describe('🔄 API Response Integration Tests', () => {
       ];
 
       for (const endpoint of protectedEndpoints) {
-        const response = await request(app).get(endpoint);
+        const response = await request(app).get(endpoint).set('x-test-require-auth', 'true');
 
         expect(response.status).toBe(401);
         expect(response.body).toHaveProperty('success', false);

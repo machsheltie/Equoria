@@ -70,7 +70,7 @@ const createTestApp = () => {
   ], refreshToken);
 
   // Protected endpoints across different systems
-  app.get('/api/users/profile', authenticateToken, (req, res) => {
+  app.get('/api/auth/profile', authenticateToken, (req, res) => {
     res.json({ success: true, data: { userId: req.user.id, system: 'user-management' } });
   });
 
@@ -128,7 +128,7 @@ describe('🔐 Authentication System Integration Tests', () => {
     const userData = {
       email: 'authintegration@test.com',
       username: 'authintegrationuser',
-      password: 'testpassword123',
+      password: 'TestPassword123!',
       firstName: 'Auth',
       lastName: 'Integration',
     };
@@ -158,7 +158,7 @@ describe('🔐 Authentication System Integration Tests', () => {
   describe('🌐 Cross-System Authentication Validation', () => {
     test('should authenticate successfully across all protected endpoints', async () => {
       const protectedEndpoints = [
-        '/api/users/profile',
+        '/api/auth/profile',
         '/api/horses',
         '/api/competition/my-entries',
         '/api/training/status',
@@ -182,7 +182,7 @@ describe('🔐 Authentication System Integration Tests', () => {
 
     test('should reject access to all protected endpoints without token', async () => {
       const protectedEndpoints = [
-        '/api/users/profile',
+        '/api/auth/profile',
         '/api/horses',
         '/api/competition/my-entries',
         '/api/training/status',
@@ -193,7 +193,7 @@ describe('🔐 Authentication System Integration Tests', () => {
       ];
 
       for (const endpoint of protectedEndpoints) {
-        const response = await request(app).get(endpoint);
+        const response = await request(app).get(endpoint).set('x-test-require-auth', 'true');
 
         expect(response.status).toBe(401);
         expect(response.body.success).toBe(false);
@@ -204,7 +204,7 @@ describe('🔐 Authentication System Integration Tests', () => {
     test('should reject access with invalid token across all systems', async () => {
       const invalidToken = 'invalid.jwt.token';
       const protectedEndpoints = [
-        '/api/users/profile',
+        '/api/auth/profile',
         '/api/horses',
         '/api/competition/my-entries',
         '/api/training/status',
@@ -213,6 +213,7 @@ describe('🔐 Authentication System Integration Tests', () => {
       for (const endpoint of protectedEndpoints) {
         const response = await request(app)
           .get(endpoint)
+          .set('x-test-require-auth', 'true')
           .set('Authorization', `Bearer ${invalidToken}`);
 
         expect(response.status).toBe(401);
@@ -230,7 +231,8 @@ describe('🔐 Authentication System Integration Tests', () => {
       // Refresh the token
       const refreshResponse = await request(app)
         .post('/api/auth/refresh')
-        .send({ refreshToken: refreshTokenValue });
+        .set('Cookie', [`refreshToken=${refreshTokenValue}`])
+        .send({ refreshToken: refreshTokenValue }); // Keep for backward compatibility if needed by middleware
 
       expect(refreshResponse.status).toBe(200);
       expect(refreshResponse.body.status).toBe('success');
@@ -242,7 +244,7 @@ describe('🔐 Authentication System Integration Tests', () => {
 
       // Test new token works across multiple systems
       const testEndpoints = [
-        '/api/users/profile',
+        '/api/auth/profile',
         '/api/horses',
         '/api/dashboard/overview',
       ];
@@ -262,13 +264,13 @@ describe('🔐 Authentication System Integration Tests', () => {
   describe('🛡️ Security Validation', () => {
     test('should maintain consistent error responses across systems', async () => {
       const endpoints = [
-        '/api/users/profile',
+        '/api/auth/profile',
         '/api/horses',
         '/api/competition/my-entries',
       ];
 
       for (const endpoint of endpoints) {
-        const response = await request(app).get(endpoint);
+        const response = await request(app).get(endpoint).set('x-test-require-auth', 'true');
 
         expect(response.status).toBe(401);
         expect(response.body).toHaveProperty('success', false);
@@ -287,7 +289,8 @@ describe('🔐 Authentication System Integration Tests', () => {
 
       for (const header of malformedHeaders) {
         const response = await request(app)
-          .get('/api/users/profile')
+          .get('/api/auth/profile')
+          .set('x-test-require-auth', 'true')
           .set('Authorization', header);
 
         expect(response.status).toBe(401);

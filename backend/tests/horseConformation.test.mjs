@@ -33,34 +33,32 @@
  */
 
 import { jest, describe, beforeEach, expect, it } from '@jest/globals';
-import { fileURLToPath } from 'url';
-import { dirname, join } from 'path';
 
-const __filename = fileURLToPath(import.meta.url);
-const __dirname = dirname(__filename);
+// Mock objects must be created BEFORE jest.unstable_mockModule calls
+const mockPrisma = {
+  horse: {
+    create: jest.fn(),
+    findUnique: jest.fn(),
+    update: jest.fn(),
+  },
+};
+
+const mockLogger = {
+  error: jest.fn(),
+  info: jest.fn(),
+};
 
 // Mock external dependencies BEFORE importing the module under test
-jest.unstable_mockModule(join(__dirname, '../db/index.mjs'), () => ({
-  default: {
-    horse: {
-      create: jest.fn(),
-      findUnique: jest.fn(),
-      update: jest.fn(),
-    },
-  },
+jest.unstable_mockModule('../db/index.mjs', () => ({
+  default: mockPrisma,
 }));
 
-jest.unstable_mockModule(join(__dirname, '../utils/logger.mjs'), () => ({
-  default: {
-    error: jest.fn(),
-    info: jest.fn(),
-  },
+jest.unstable_mockModule('../utils/logger.mjs', () => ({
+  default: mockLogger,
 }));
 
-// Import the module under test and mocked dependencies
-const { createHorse } = await import(join(__dirname, '../models/horseModel.mjs'));
-const mockPrisma = (await import(join(__dirname, '../db/index.mjs'))).default;
-const mockLogger = (await import(join(__dirname, '../utils/logger.mjs'))).default;
+// Import the module under test
+const { createHorse } = await import('../models/horseModel.mjs');
 
 describe('🐎 UNIT: Horse Conformation Scoring System', () => {
   beforeEach(() => {

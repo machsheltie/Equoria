@@ -11,11 +11,22 @@ import prisma from '../../db/index.mjs';
 import { performanceAnalyticsService } from '../../services/performanceAnalyticsService.mjs';
 
 describe('Performance Analytics Service', () => {
+  // Anchor dates to keep test data deterministic
+  const referenceDate = new Date('2025-06-01T00:00:00Z');
+
+  // Create relative dates for horses
+  const fiveYearsAgo = new Date(referenceDate);
+  fiveYearsAgo.setFullYear(referenceDate.getFullYear() - 5);
+
+  const threeYearsAgo = new Date(referenceDate);
+  threeYearsAgo.setFullYear(referenceDate.getFullYear() - 3);
+
   let testUser;
   let testHorse;
   let testBreed;
   let testShow;
   let testCompetitionResults;
+  let testUserData;
 
   beforeAll(async () => {
     // Create test user
@@ -29,6 +40,14 @@ describe('Performance Analytics Service', () => {
         lastName: 'Test',
       },
     });
+    testUserData = {
+      id: testUser.id,
+      username: testUser.username,
+      email: testUser.email,
+      password: 'test_password',
+      firstName: testUser.firstName,
+      lastName: testUser.lastName,
+    };
 
     // Create test breed
     testBreed = await prisma.breed.create({
@@ -58,7 +77,7 @@ describe('Performance Analytics Service', () => {
         user: { connect: { id: testUser.id } },
         age: 5,
         sex: 'stallion',
-        dateOfBirth: new Date('2020-01-01'),
+        dateOfBirth: fiveYearsAgo,
         breed: { connect: { id: testBreed.id } },
         speed: 75,
         stamina: 80,
@@ -104,16 +123,16 @@ describe('Performance Analytics Service', () => {
       await prisma.horse.deleteMany({
         where: { userId: testUser.id },
       });
-      await prisma.user.delete({
+      await prisma.user.deleteMany({
         where: { id: testUser.id },
       });
       if (testShow) {
-        await prisma.show.delete({
+        await prisma.show.deleteMany({
           where: { id: testShow.id },
         });
       }
       if (testBreed) {
-        await prisma.breed.delete({
+        await prisma.breed.deleteMany({
           where: { id: testBreed.id },
         });
       }
@@ -246,13 +265,21 @@ describe('Performance Analytics Service', () => {
     });
 
     test('should handle horse with no competition history', async () => {
+      if (testUserData) {
+        await prisma.user.upsert({
+          where: { id: testUserData.id },
+          update: {},
+          create: testUserData,
+        });
+      }
+
       const newHorse = await prisma.horse.create({
         data: {
           name: 'No History Horse',
           user: { connect: { id: testUser.id } },
           age: 3,
           sex: 'mare',
-          dateOfBirth: new Date('2022-01-01'),
+          dateOfBirth: threeYearsAgo,
           breed: { connect: { id: testBreed.id } },
           speed: 50,
           stamina: 50,

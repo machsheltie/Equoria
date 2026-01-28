@@ -99,7 +99,7 @@ describe('Flag Effect Integration', () => {
     await prisma.horse.deleteMany({
       where: { id: { in: testHorses.map(h => h.id) } },
     });
-    await prisma.user.delete({ where: { id: testUser.id } });
+    await prisma.user.deleteMany({ where: { id: testUser?.id } });
   });
 
   describe('calculateFlagEffects', () => {

@@ -40,6 +40,18 @@ import {
 import { GROOM_CONFIG } from '../config/groomConfig.mjs';
 
 describe('Foal Task Logging & Streak Tracking System', () => {
+  // Reference date anchor for all test date calculations
+  const referenceDate = new Date('2025-06-01T12:00:00Z');
+
+  // Calculate dates for streak tracking tests
+  const today = new Date(referenceDate);
+  const oneDayAgo = new Date(referenceDate);
+  oneDayAgo.setDate(referenceDate.getDate() - 1);
+  const twoDaysAgo = new Date(referenceDate);
+  twoDaysAgo.setDate(referenceDate.getDate() - 2);
+  const threeDaysAgo = new Date(referenceDate);
+  threeDaysAgo.setDate(referenceDate.getDate() - 3);
+
   beforeEach(() => {
     jest.clearAllMocks();
   });
@@ -178,7 +190,6 @@ describe('Foal Task Logging & Streak Tracking System', () => {
 
   describe('Streak Tracking System', () => {
     it('should start new streak for first grooming', () => {
-      const today = new Date('2024-01-15');
       const result = updateStreakTracking(null, today);
 
       expect(result.consecutiveDays).toBe(1);
@@ -188,9 +199,7 @@ describe('Foal Task Logging & Streak Tracking System', () => {
     });
 
     it('should increment streak for consecutive days', () => {
-      const lastGroomed = new Date('2024-01-14');
-      const today = new Date('2024-01-15');
-      const result = updateStreakTracking(lastGroomed, today, 3);
+      const result = updateStreakTracking(oneDayAgo, today, 3);
 
       expect(result.consecutiveDays).toBe(4);
       expect(result.lastGroomed).toEqual(today);
@@ -198,9 +207,7 @@ describe('Foal Task Logging & Streak Tracking System', () => {
     });
 
     it('should maintain streak within grace period', () => {
-      const lastGroomed = new Date('2024-01-13'); // 2 days ago
-      const today = new Date('2024-01-15');
-      const result = updateStreakTracking(lastGroomed, today, 5);
+      const result = updateStreakTracking(twoDaysAgo, today, 5);
 
       expect(result.consecutiveDays).toBe(6); // Increment from 5
       expect(result.streakBroken).toBe(false);
@@ -208,9 +215,7 @@ describe('Foal Task Logging & Streak Tracking System', () => {
     });
 
     it('should reset streak after grace period expires', () => {
-      const lastGroomed = new Date('2024-01-12'); // 3 days ago (beyond grace period)
-      const today = new Date('2024-01-15');
-      const result = updateStreakTracking(lastGroomed, today, 6);
+      const result = updateStreakTracking(threeDaysAgo, today, 6);
 
       expect(result.consecutiveDays).toBe(1); // Reset to 1
       expect(result.streakBroken).toBe(true);
@@ -218,9 +223,7 @@ describe('Foal Task Logging & Streak Tracking System', () => {
     });
 
     it('should detect bonus eligibility at 7 consecutive days', () => {
-      const lastGroomed = new Date('2024-01-14');
-      const today = new Date('2024-01-15');
-      const result = updateStreakTracking(lastGroomed, today, 6);
+      const result = updateStreakTracking(oneDayAgo, today, 6);
 
       expect(result.consecutiveDays).toBe(7);
       expect(result.bonusEligible).toBe(true);

@@ -40,12 +40,6 @@
 
 import { jest, describe, beforeEach, afterEach, expect, it } from '@jest/globals';
 
-import { fileURLToPath } from 'url';
-import { dirname, join } from 'path';
-
-const __filename = fileURLToPath(import.meta.url);
-const __dirname = dirname(__filename);
-
 // Mock dependencies
 const mockPrisma = {
   horse: {
@@ -63,12 +57,12 @@ const mockLogger = {
   warn: jest.fn(),
 };
 
-// Mock the imports
-jest.unstable_mockModule(join(__dirname, '../db/index.mjs'), () => ({
+// Mock the imports using unstable_mockModule for ESM compatibility
+jest.unstable_mockModule('../db/index.mjs', () => ({
   default: mockPrisma,
 }));
 
-jest.unstable_mockModule(join(__dirname, '../utils/logger.mjs'), () => ({
+jest.unstable_mockModule('../utils/logger.mjs', () => ({
   default: mockLogger,
 }));
 
@@ -84,7 +78,7 @@ const {
   checkLineageForDisciplineAffinity,
   getMostCommonDisciplineFromHistory,
   getHighestScoringDiscipline,
-} = await import(join(__dirname, '../utils/atBirthTraits.mjs'));
+} = await import('../utils/atBirthTraits.mjs');
 
 describe('🧬 UNIT: At-Birth Traits System - Comprehensive Breeding Analysis Testing', () => {
   beforeEach(() => {

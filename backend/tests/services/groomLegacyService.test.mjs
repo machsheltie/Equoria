@@ -23,23 +23,35 @@ describe('Groom Legacy Service', () => {
   let testUser;
   let testHorse;
   let retiredGroom;
+  const testRunId = `legacy_${Date.now()}_${Math.floor(Math.random() * 100000)}`;
+  const testUserData = {
+    username: `testuser_legacy_${testRunId}`,
+    email: `test_legacy_${testRunId}@example.com`,
+    password: 'hashedpassword123',
+    firstName: 'Test',
+    lastName: 'User',
+  };
+  const testHorseName = `Test Horse ${testRunId}`;
 
-  beforeAll(async () => {
-    // Create test user
-    testUser = await prisma.user.create({
-      data: {
-        username: `testuser_legacy_${Date.now()}`,
-        email: `test_legacy_${Date.now()}@example.com`,
-        password: 'hashedpassword123',
-        firstName: 'Test',
-        lastName: 'User',
-      },
+  const ensureTestUser = async () => {
+    testUser = await prisma.user.upsert({
+      where: { email: testUserData.email },
+      update: {},
+      create: testUserData,
     });
+  };
 
-    // Create test horse for assignment logs
+  const ensureTestHorse = async () => {
+    const existingHorse = await prisma.horse.findFirst({
+      where: { name: testHorseName, ownerId: testUser.id },
+    });
+    if (existingHorse) {
+      testHorse = existingHorse;
+      return;
+    }
     testHorse = await prisma.horse.create({
       data: {
-        name: `Test Horse ${Date.now()}`,
+        name: testHorseName,
         sex: 'male',
         dateOfBirth: new Date(Date.now() - 365 * 24 * 60 * 60 * 1000), // 1 year old
         ownerId: testUser.id,
@@ -47,9 +59,17 @@ describe('Groom Legacy Service', () => {
         stressLevel: 30,
       },
     });
+  };
+
+  beforeAll(async () => {
+    await ensureTestUser();
+    await ensureTestHorse();
   });
 
   beforeEach(async () => {
+    await ensureTestUser();
+    await ensureTestHorse();
+
     // Create a retired high-level groom for each test
     retiredGroom = await prisma.groom.create({
       data: {
@@ -111,7 +131,7 @@ describe('Groom Legacy Service', () => {
       await prisma.groomTalentSelections.deleteMany({
         where: { groomId: retiredGroom.id },
       });
-      await prisma.groom.delete({
+      await prisma.groom.deleteMany({
         where: { id: retiredGroom.id },
       });
     }
@@ -120,12 +140,12 @@ describe('Groom Legacy Service', () => {
   afterAll(async () => {
     // Clean up test data
     if (testHorse) {
-      await prisma.horse.delete({
+      await prisma.horse.deleteMany({
         where: { id: testHorse.id },
       });
     }
     if (testUser) {
-      await prisma.user.delete({
+      await prisma.user.deleteMany({
         where: { id: testUser.id },
       });
     }

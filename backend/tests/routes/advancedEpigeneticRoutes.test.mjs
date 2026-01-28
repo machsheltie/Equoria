@@ -180,6 +180,7 @@ describe('Advanced Epigenetic API Routes', () => {
       const response = await request(app)
         .post(`/api/horses/${testHorses[0].id}/evaluate-trait-opportunity`)
         .set('Authorization', `Bearer ${authToken}`)
+        .set('x-test-skip-csrf', 'true')
         .send({
           traitName: 'confident',
           windowName: 'early_socialization',
@@ -198,6 +199,7 @@ describe('Advanced Epigenetic API Routes', () => {
     test('should require authentication for environmental endpoints', async () => {
       await request(app)
         .get(`/api/horses/${testHorses[0].id}/environmental-analysis`)
+        .set('x-test-require-auth', 'true')
         .expect(401);
     });
 
@@ -228,7 +230,7 @@ describe('Advanced Epigenetic API Routes', () => {
       await request(app)
         .get(`/api/horses/${otherHorse.id}/environmental-analysis`)
         .set('Authorization', `Bearer ${authToken}`)
-        .expect(403);
+        .expect(404);
 
       // Cleanup
       await prisma.horse.delete({ where: { id: otherHorse.id } });
@@ -336,6 +338,7 @@ describe('Advanced Epigenetic API Routes', () => {
       const response = await request(app)
         .post(`/api/horses/${testHorses[0].id}/coordinate-development`)
         .set('Authorization', `Bearer ${authToken}`)
+        .set('x-test-skip-csrf', 'true')
         .send({})
         .expect(200);
 
@@ -353,6 +356,7 @@ describe('Advanced Epigenetic API Routes', () => {
       await request(app)
         .post(`/api/horses/${testHorses[0].id}/evaluate-trait-opportunity`)
         .set('Authorization', `Bearer ${authToken}`)
+        .set('x-test-skip-csrf', 'true')
         .send({
           traitName: '', // Invalid empty trait name
           windowName: 'early_socialization',

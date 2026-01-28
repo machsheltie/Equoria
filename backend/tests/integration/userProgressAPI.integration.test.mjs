@@ -36,11 +36,16 @@ import { describe, it, expect, beforeAll, afterAll } from '@jest/globals';
 import request from 'supertest';
 import app from '../../app.mjs';
 import prisma from '../../db/index.mjs';
+import { invalidateCache } from '../../utils/cacheHelper.mjs';
 
 describe('🎯 INTEGRATION: User Progress API - Complete Progress Tracking', () => {
   let testUser;
   let authToken;
   let testHorse;
+  const trainingRequest = () => request(app)
+    .post('/api/training/train')
+    .set('Authorization', `Bearer ${authToken}`)
+    .set('x-test-skip-csrf', 'true');
 
   beforeAll(async () => {
     // Clean up any existing test data
@@ -119,10 +124,7 @@ describe('🎯 INTEGRATION: User Progress API - Complete Progress Tracking', () 
           firstName: 'Progress',
           lastName: 'Test',
           email: 'progress-test@example.com',
-          password: 'TestPassword123',
-          money: 5000,
-          xp: 0,
-          level: 1,
+          password: 'TestPassword123!',
         })
         .expect(201);
 
@@ -134,7 +136,7 @@ describe('🎯 INTEGRATION: User Progress API - Complete Progress Tracking', () 
         .post('/api/auth/login')
         .send({
           email: 'progress-test@example.com',
-          password: 'TestPassword123',
+          password: 'TestPassword123!',
         })
         .expect(200);
 
@@ -162,7 +164,7 @@ describe('🎯 INTEGRATION: User Progress API - Complete Progress Tracking', () 
         xpForNextLevel: 200, // Level 2 threshold
         xpForCurrentLevel: 0, // Level 1 threshold (0 XP)
         progressPercentage: 0,
-        totalEarnings: 5000,
+        totalEarnings: 1000,
       });
     });
   });
@@ -190,7 +192,7 @@ describe('🎯 INTEGRATION: User Progress API - Complete Progress Tracking', () 
           name: 'Progress Test Horse',
           breedId: breed.id,
           ownerId: testUser.id,
-          userId: testUser.id,
+          ownerId: testUser.id,
           sex: 'Mare',
           dateOfBirth: birthDate,
           age: calculatedAge, // CRITICAL: Training system requires age field
@@ -213,9 +215,7 @@ describe('🎯 INTEGRATION: User Progress API - Complete Progress Tracking', () 
   describe('🏋️ STEP 3: XP Gain Through Training & Progress Updates', () => {
     it('should gain XP from training and update progress correctly', async () => {
       // STEP 1: Train horse to gain XP (real business logic)
-      const trainingResponse = await request(app)
-        .post('/api/training/train')
-        .set('Authorization', `Bearer ${authToken}`)
+      const trainingResponse = await trainingRequest()
         .send({
           horseId: testHorse.id,
           discipline: 'Racing',
@@ -239,7 +239,7 @@ describe('🎯 INTEGRATION: User Progress API - Complete Progress Tracking', () 
         xpForNextLevel: 200,
         xpForCurrentLevel: 0,
         progressPercentage: 3, // 5/200 * 100 = 2.5% rounded to 3%
-        totalEarnings: 5000,
+        totalEarnings: 1000,
       });
     });
 
@@ -265,9 +265,7 @@ describe('🎯 INTEGRATION: User Progress API - Complete Progress Tracking', () 
 
         // Train in different discipline
         const discipline = i % 2 === 0 ? 'Dressage' : 'Show Jumping';
-        await request(app)
-          .post('/api/training/train')
-          .set('Authorization', `Bearer ${authToken}`)
+        await trainingRequest()
           .send({
             horseId: testHorse.id,
             discipline,
@@ -312,9 +310,7 @@ describe('🎯 INTEGRATION: User Progress API - Complete Progress Tracking', () 
         });
       }
 
-      const trainingResponse = await request(app)
-        .post('/api/training/train')
-        .set('Authorization', `Bearer ${authToken}`)
+      const trainingResponse = await trainingRequest()
         .send({
           horseId: testHorse.id,
           discipline: 'Cross Country',
@@ -338,7 +334,7 @@ describe('🎯 INTEGRATION: User Progress API - Complete Progress Tracking', () 
         xpForNextLevel: 300, // Level 3 requires 300 XP total
         xpForCurrentLevel: 200, // Level 2 required 200 XP total
         progressPercentage: 0, // 0/200 progress toward level 3
-        totalEarnings: 5000,
+        totalEarnings: 1000,
       });
     });
 
@@ -352,6 +348,10 @@ describe('🎯 INTEGRATION: User Progress API - Complete Progress Tracking', () 
         where: { id: testUser.id },
         data: { xp: 350, level: 3 }, // Simulate the addXpToUser logic
       });
+
+      // Invalidate caches after manual database update to ensure API returns fresh data
+      await invalidateCache(`user:progress:${testUser.id}`);
+      await invalidateCache(`user:dashboard:${testUser.id}`);
 
       // STEP 2: Verify multi-level progression
       const progressResponse = await request(app)
@@ -368,7 +368,7 @@ describe('🎯 INTEGRATION: User Progress API - Complete Progress Tracking', () 
         xpForNextLevel: 400,
         xpForCurrentLevel: 300, // Level 3 threshold
         progressPercentage: 50, // 50/100 * 100 = 50% progress toward level 4
-        totalEarnings: 5000,
+        totalEarnings: 1000,
       });
     });
   });
@@ -387,7 +387,7 @@ describe('🎯 INTEGRATION: User Progress API - Complete Progress Tracking', () 
           username: testUser.username,
           level: 3,
           xp: 350, // Updated to match our manual setting
-          money: 5000,
+          money: 1000,
         },
         horses: {
           total: 1,
@@ -426,10 +426,13 @@ describe('🎯 INTEGRATION: User Progress API - Complete Progress Tracking', () 
       expect(response.body.message).toContain('Validation failed');
     });
 
-    it('should require authentication for progress endpoints', async () => {
-      const response = await request(app).get(`/api/users/${testUser.id}/progress`).expect(401);
+  it('should require authentication for progress endpoints', async () => {
+    const response = await request(app)
+      .get(`/api/users/${testUser.id}/progress`)
+      .set('x-test-require-auth', 'true')
+      .expect(401);
 
-      expect(response.body.success).toBe(false);
+    expect(response.body.success).toBe(false);
     });
   });
 

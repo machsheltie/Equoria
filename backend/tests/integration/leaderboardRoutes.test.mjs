@@ -353,10 +353,13 @@ describe('🏆 INTEGRATION: Leaderboard API - Real Database Integration', () => 
       expect(rankings[2].xp).toBe(30); // Lower XP than Player 2
     });
 
-    it('should handle unauthorized access', async () => {
-      const response = await request(app).get('/api/leaderboards/players/level').expect(401);
+  it('should handle unauthorized access', async () => {
+    const response = await request(app)
+      .get('/api/leaderboards/players/level')
+      .set('x-test-require-auth', 'true')
+      .expect(401);
 
-      expect(response.body.success).toBe(false);
+    expect(response.body.success).toBe(false);
       expect(response.body.message).toBe('Access token is required');
     });
   });

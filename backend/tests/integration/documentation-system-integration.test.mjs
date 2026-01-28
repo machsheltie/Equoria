@@ -167,7 +167,7 @@ describe('📚 Documentation System Integration Tests', () => {
     const userData = {
       email: 'docintegration@test.com',
       username: 'docintegrationuser',
-      password: 'testpassword123',
+      password: 'TestPassword123!',
       firstName: 'Doc',
       lastName: 'Integration',
     };
@@ -411,6 +411,7 @@ describe('📚 Documentation System Integration Tests', () => {
 
       const response = await request(app)
         .post('/api/docs/endpoints')
+        .set('x-test-require-auth', 'true')
         .send(endpointData);
 
       expect(response.status).toBe(401);

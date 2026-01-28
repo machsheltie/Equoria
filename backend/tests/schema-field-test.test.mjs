@@ -35,7 +35,7 @@ describe('Schema Field Test', () => {
         id: 'schema-field-test-user',
         username: 'schemafieldtestuser',
         email: 'schema-field-test@example.com',
-        password: 'testpassword',
+        password: 'TestPassword123!',
         firstName: 'Schema',
         lastName: 'Field',
         money: 5000,

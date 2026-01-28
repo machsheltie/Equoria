@@ -26,11 +26,6 @@
  */
 
 import { jest, describe, it, expect, beforeEach, afterEach } from '@jest/globals';
-import { fileURLToPath } from 'url';
-import { dirname, join } from 'path';
-
-const __filename = fileURLToPath(import.meta.url);
-const __dirname = dirname(__filename);
 
 // Mock logger
 const mockLogger = {
@@ -40,7 +35,7 @@ const mockLogger = {
 };
 
 // Mock the logger import
-jest.unstable_mockModule(join(__dirname, '../utils/logger.mjs'), () => ({
+jest.unstable_mockModule('../utils/logger.mjs', () => ({
   default: mockLogger,
 }));
 
@@ -57,9 +52,25 @@ const {
   validateTaskLog,
   getFoalCareSummary,
   resetFoalCareStreak,
-} = await import(join(__dirname, '../utils/foalTaskLogManager.mjs'));
+} = await import('../utils/foalTaskLogManager.mjs');
 
 describe('Foal Task Log Manager', () => {
+  // Reference date anchor for all test date calculations
+  const referenceDate = new Date('2025-06-01T12:00:00Z');
+
+  // Calculate dates for care tracking tests
+  const baseDate = new Date(referenceDate); // Primary reference for streak tests
+  const sameDayDate = new Date(referenceDate);
+  sameDayDate.setHours(referenceDate.getHours() - 2); // 2 hours earlier same day
+  const twoDaysAgo = new Date(referenceDate);
+  twoDaysAgo.setDate(referenceDate.getDate() - 2);
+  const threeDaysAgo = new Date(referenceDate);
+  threeDaysAgo.setDate(referenceDate.getDate() - 3);
+  const fourDaysAgo = new Date(referenceDate);
+  fourDaysAgo.setDate(referenceDate.getDate() - 4);
+  const sevenDaysAgo = new Date(referenceDate);
+  sevenDaysAgo.setDate(referenceDate.getDate() - 7);
+
   beforeEach(() => {
     jest.clearAllMocks();
   });
@@ -149,8 +160,6 @@ describe('Foal Task Log Manager', () => {
   });
 
   describe('Streak Calculation', () => {
-    const baseDate = new Date('2024-06-01T12:00:00Z');
-
     it('should handle null last care date', () => {
       const result = calculateStreakFromLastCareDate(null, baseDate);
 
@@ -163,8 +172,7 @@ describe('Foal Task Log Manager', () => {
     });
 
     it('should calculate same day care', () => {
-      const lastCare = new Date('2024-06-01T10:00:00Z');
-      const result = calculateStreakFromLastCareDate(lastCare, baseDate);
+      const result = calculateStreakFromLastCareDate(sameDayDate, baseDate);
 
       expect(result.isStreakActive).toBe(true);
       expect(result.daysSinceLastCare).toBe(0);
@@ -173,8 +181,7 @@ describe('Foal Task Log Manager', () => {
     });
 
     it('should calculate within grace period', () => {
-      const lastCare = new Date('2024-05-30T12:00:00Z'); // 2 days ago
-      const result = calculateStreakFromLastCareDate(lastCare, baseDate);
+      const result = calculateStreakFromLastCareDate(twoDaysAgo, baseDate);
 
       expect(result.isStreakActive).toBe(true);
       expect(result.daysSinceLastCare).toBe(2);
@@ -183,8 +190,7 @@ describe('Foal Task Log Manager', () => {
     });
 
     it('should detect broken streak beyond grace period', () => {
-      const lastCare = new Date('2024-05-28T12:00:00Z'); // 4 days ago
-      const result = calculateStreakFromLastCareDate(lastCare, baseDate);
+      const result = calculateStreakFromLastCareDate(fourDaysAgo, baseDate);
 
       expect(result.isStreakActive).toBe(false);
       expect(result.daysSinceLastCare).toBe(4);
@@ -193,8 +199,7 @@ describe('Foal Task Log Manager', () => {
     });
 
     it('should use custom grace period', () => {
-      const lastCare = new Date('2024-05-29T12:00:00Z'); // 3 days ago
-      const result = calculateStreakFromLastCareDate(lastCare, baseDate, 3);
+      const result = calculateStreakFromLastCareDate(threeDaysAgo, baseDate, 3);
 
       expect(result.isStreakActive).toBe(true);
       expect(result.isWithinGracePeriod).toBe(true);
@@ -232,39 +237,34 @@ describe('Foal Task Log Manager', () => {
         daysGroomedInARow: 0,
       };
 
-      const careDate = new Date('2024-06-01T12:00:00Z');
-      const updated = updateFoalCareData(currentData, 'trust_building', careDate);
+      const updated = updateFoalCareData(currentData, 'trust_building', baseDate);
 
       expect(updated.taskLog).toEqual({ trust_building: 1 });
-      expect(updated.lastGroomed).toEqual(careDate);
+      expect(updated.lastGroomed).toEqual(baseDate);
       expect(updated.daysGroomedInARow).toBe(1);
     });
 
     it('should continue streak within grace period', () => {
-      const lastCare = new Date('2024-05-30T12:00:00Z');
       const currentData = {
         taskLog: { trust_building: 2 },
-        lastGroomed: lastCare,
+        lastGroomed: twoDaysAgo,
         daysGroomedInARow: 3,
       };
 
-      const careDate = new Date('2024-06-01T12:00:00Z'); // 2 days later
-      const updated = updateFoalCareData(currentData, 'desensitization', careDate);
+      const updated = updateFoalCareData(currentData, 'desensitization', baseDate);
 
       expect(updated.taskLog).toEqual({ trust_building: 2, desensitization: 1 });
       expect(updated.daysGroomedInARow).toBe(4); // Continued streak
     });
 
     it('should reset streak when broken', () => {
-      const lastCare = new Date('2024-05-25T12:00:00Z'); // 7 days ago
       const currentData = {
         taskLog: { trust_building: 5 },
-        lastGroomed: lastCare,
+        lastGroomed: sevenDaysAgo,
         daysGroomedInARow: 10,
       };
 
-      const careDate = new Date('2024-06-01T12:00:00Z');
-      const updated = updateFoalCareData(currentData, 'early_touch', careDate);
+      const updated = updateFoalCareData(currentData, 'early_touch', baseDate);
 
       expect(updated.taskLog).toEqual({ trust_building: 5, early_touch: 1 });
       expect(updated.daysGroomedInARow).toBe(1); // Reset to 1
@@ -312,7 +312,7 @@ describe('Foal Task Log Manager', () => {
     it('should generate comprehensive care summary', () => {
       const foalData = {
         taskLog: { trust_building: 5, desensitization: 3, early_touch: 2 },
-        lastGroomed: new Date('2024-06-01T12:00:00Z'),
+        lastGroomed: baseDate,
         daysGroomedInARow: 8,
       };
 

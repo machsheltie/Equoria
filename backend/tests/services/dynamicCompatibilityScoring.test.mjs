@@ -29,108 +29,110 @@ describe('Dynamic Compatibility Scoring', () => {
   let testHorses = [];
 
   beforeAll(async () => {
-    // Create test user
-    testUser = await prisma.user.create({
-      data: {
-        username: `compatibility_${Date.now()}`,
-        email: `compatibility_${Date.now()}@test.com`,
-        password: 'test_hash',
-        firstName: 'Test',
-        lastName: 'User',
-        money: 1000,
-        xp: 0,
-        level: 1,
-      },
-    });
-
-    // Create test grooms with different personalities and experience levels
-    testGrooms = await Promise.all([
-      // Expert calm groom
-      prisma.groom.create({
-        data: {
-          name: `Expert Calm Groom ${Date.now()}`,
-          personality: 'calm',
-          groomPersonality: 'calm',
-          skillLevel: 'expert',
-          speciality: 'foal_care',
-          userId: testUser.id,
-          sessionRate: 35.0,
-          experience: 200,
-          level: 10,
-        },
-      }),
-      // Novice energetic groom
-      prisma.groom.create({
-        data: {
-          name: `Novice Energetic Groom ${Date.now()}`,
-          personality: 'energetic',
-          groomPersonality: 'energetic',
-          skillLevel: 'novice',
-          speciality: 'general_grooming',
-          userId: testUser.id,
-          sessionRate: 15.0,
-          experience: 20,
-          level: 2,
-        },
-      }),
-      // Experienced methodical groom
-      prisma.groom.create({
-        data: {
-          name: `Experienced Methodical Groom ${Date.now()}`,
-          personality: 'methodical',
-          groomPersonality: 'methodical',
-          skillLevel: 'experienced',
-          speciality: 'foal_care',
-          userId: testUser.id,
-          sessionRate: 28.0,
-          experience: 120,
-          level: 7,
-        },
-      }),
-    ]);
-
     // Create test horses with different temperaments and stress levels
     const now = new Date();
     const oneMonthAgo = new Date(now.getTime() - 30 * 24 * 60 * 60 * 1000);
 
-    testHorses = await Promise.all([
-      // High-stress fearful horse
-      prisma.horse.create({
+    await prisma.$transaction(async (tx) => {
+      // Create test user
+      testUser = await tx.user.create({
         data: {
-          name: `Test Horse Fearful ${Date.now()}`,
-          sex: 'filly',
-          dateOfBirth: oneMonthAgo,
-          ownerId: testUser.id,
-          bondScore: 8,
-          stressLevel: 9,
-          epigeneticFlags: ['fearful', 'reactive', 'insecure'],
+          username: `compatibility_${Date.now()}`,
+          email: `compatibility_${Date.now()}@test.com`,
+          password: 'test_hash',
+          firstName: 'Test',
+          lastName: 'User',
+          money: 1000,
+          xp: 0,
+          level: 1,
         },
-      }),
-      // Confident social horse
-      prisma.horse.create({
-        data: {
-          name: `Test Horse Confident ${Date.now()}`,
-          sex: 'colt',
-          dateOfBirth: oneMonthAgo,
-          ownerId: testUser.id,
-          bondScore: 38,
-          stressLevel: 2,
-          epigeneticFlags: ['brave', 'confident', 'social'],
-        },
-      }),
-      // Moderate temperament horse
-      prisma.horse.create({
-        data: {
-          name: `Test Horse Moderate ${Date.now()}`,
-          sex: 'gelding',
-          dateOfBirth: oneMonthAgo,
-          ownerId: testUser.id,
-          bondScore: 25,
-          stressLevel: 5,
-          epigeneticFlags: ['curious', 'calm'],
-        },
-      }),
-    ]);
+      });
+
+      // Create test grooms with different personalities and experience levels
+      testGrooms = await Promise.all([
+        // Expert calm groom
+        tx.groom.create({
+          data: {
+            name: `Expert Calm Groom ${Date.now()}`,
+            personality: 'calm',
+            groomPersonality: 'calm',
+            skillLevel: 'expert',
+            speciality: 'foal_care',
+            userId: testUser.id,
+            sessionRate: 35.0,
+            experience: 200,
+            level: 10,
+          },
+        }),
+        // Novice energetic groom
+        tx.groom.create({
+          data: {
+            name: `Novice Energetic Groom ${Date.now()}`,
+            personality: 'energetic',
+            groomPersonality: 'energetic',
+            skillLevel: 'novice',
+            speciality: 'general_grooming',
+            userId: testUser.id,
+            sessionRate: 15.0,
+            experience: 20,
+            level: 2,
+          },
+        }),
+        // Experienced methodical groom
+        tx.groom.create({
+          data: {
+            name: `Experienced Methodical Groom ${Date.now()}`,
+            personality: 'methodical',
+            groomPersonality: 'methodical',
+            skillLevel: 'experienced',
+            speciality: 'foal_care',
+            userId: testUser.id,
+            sessionRate: 28.0,
+            experience: 120,
+            level: 7,
+          },
+        }),
+      ]);
+
+      testHorses = await Promise.all([
+        // High-stress fearful horse
+        tx.horse.create({
+          data: {
+            name: `Test Horse Fearful ${Date.now()}`,
+            sex: 'filly',
+            dateOfBirth: oneMonthAgo,
+            ownerId: testUser.id,
+            bondScore: 8,
+            stressLevel: 9,
+            epigeneticFlags: ['fearful', 'reactive', 'insecure'],
+          },
+        }),
+        // Confident social horse
+        tx.horse.create({
+          data: {
+            name: `Test Horse Confident ${Date.now()}`,
+            sex: 'colt',
+            dateOfBirth: oneMonthAgo,
+            ownerId: testUser.id,
+            bondScore: 38,
+            stressLevel: 2,
+            epigeneticFlags: ['brave', 'confident', 'social'],
+          },
+        }),
+        // Moderate temperament horse
+        tx.horse.create({
+          data: {
+            name: `Test Horse Moderate ${Date.now()}`,
+            sex: 'gelding',
+            dateOfBirth: oneMonthAgo,
+            ownerId: testUser.id,
+            bondScore: 25,
+            stressLevel: 5,
+            epigeneticFlags: ['curious', 'calm'],
+          },
+        }),
+      ]);
+    });
   });
 
   afterAll(async () => {
@@ -147,7 +149,9 @@ describe('Dynamic Compatibility Scoring', () => {
     await prisma.horse.deleteMany({
       where: { id: { in: testHorses.map(h => h.id) } },
     });
-    await prisma.user.delete({ where: { id: testUser.id } });
+    if (testUser) {
+      await prisma.user.deleteMany({ where: { id: testUser.id } });
+    }
   });
 
   describe('calculateDynamicCompatibility', () => {

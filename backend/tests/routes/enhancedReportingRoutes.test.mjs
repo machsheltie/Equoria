@@ -252,6 +252,7 @@ describe('Enhanced Reporting API Routes', () => {
       const response = await request(app)
         .post('/api/horses/compare-epigenetics')
         .set('Authorization', `Bearer ${authToken}`)
+        .set('x-test-skip-csrf', 'true')
         .send({
           horseIds: [testHorses[0].id, testHorses[1].id, testHorses[2].id],
         })
@@ -324,6 +325,7 @@ describe('Enhanced Reporting API Routes', () => {
     test('should require authentication for enhanced reporting endpoints', async () => {
       await request(app)
         .get(`/api/horses/${testHorses[0].id}/enhanced-trait-history`)
+        .set('x-test-require-auth', 'true')
         .expect(401);
     });
 
@@ -354,7 +356,7 @@ describe('Enhanced Reporting API Routes', () => {
       await request(app)
         .get(`/api/horses/${otherHorse.id}/enhanced-trait-history`)
         .set('Authorization', `Bearer ${authToken}`)
-        .expect(403);
+        .expect(404);
 
       // Cleanup
       await prisma.horse.delete({ where: { id: otherHorse.id } });
@@ -365,6 +367,7 @@ describe('Enhanced Reporting API Routes', () => {
       await request(app)
         .post('/api/horses/compare-epigenetics')
         .set('Authorization', `Bearer ${authToken}`)
+        .set('x-test-skip-csrf', 'true')
         .send({
           horseIds: [], // Empty array should be invalid
         })

@@ -36,26 +36,21 @@
  */
 
 import { jest, describe, it, expect, beforeEach } from '@jest/globals';
-import { fileURLToPath } from 'url';
-import { dirname, join } from 'path';
 
-const __filename = fileURLToPath(import.meta.url);
-const __dirname = dirname(__filename);
-
-// Mocks
+// Mock object must be created BEFORE jest.unstable_mockModule call
 const mockLogger = {
   info: jest.fn(),
   error: jest.fn(),
   warn: jest.fn(),
 };
 
-jest.unstable_mockModule(join(__dirname, '../utils/logger.mjs'), () => ({
+jest.unstable_mockModule('../utils/logger.mjs', () => ({
   default: mockLogger,
   logger: mockLogger,
 }));
 
 const { _addTraitSafely, _removeTraitSafely, _getAllTraits } = await import(
-  join(__dirname, '../utils/horseModelTraitHelpers.mjs')
+  '../utils/horseModelTraitHelpers.mjs'
 );
 
 describe('🐴 UNIT: Horse Model Trait Helpers - Utility Function Validation', () => {

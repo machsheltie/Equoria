@@ -7,14 +7,14 @@
 import { jest, describe, it, expect, beforeEach, afterEach } from '@jest/globals';
 
 // Mock logger before importing service
-jest.unstable_mockModule('../../utils/logger.mjs', () => ({
+jest.mock('../../utils/logger.mjs', () => ({
   default: {
     info: jest.fn(),
     warn: jest.fn(),
     error: jest.fn(),
     debug: jest.fn(),
   },
-}));
+}), { virtual: true });
 
 // Dynamically import after mocking
 const featureFlagService = await import('../../services/featureFlagService.mjs');

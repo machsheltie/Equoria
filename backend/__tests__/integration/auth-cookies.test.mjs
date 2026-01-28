@@ -109,7 +109,7 @@ describe('Authentication with HttpOnly Cookies', () => {
       expect(refreshTokenCookie).toContain('SameSite=Strict');
 
       // Save test user for later tests
-      await prisma.user.delete({
+      await prisma.user.deleteMany({
         where: { email: registrationUser.email },
       });
     });
@@ -134,7 +134,7 @@ describe('Authentication with HttpOnly Cookies', () => {
       // expect(responseBody).not.toContain('refreshToken":');
 
       // Clean up
-      await prisma.user.delete({
+      await prisma.user.deleteMany({
         where: { email: 'cookietest2@example.com' },
       });
     });
@@ -220,6 +220,7 @@ describe('Authentication with HttpOnly Cookies', () => {
     it('should reject request without cookies', async () => {
       await request(app)
         .get('/api/auth/profile')
+        .set('X-Test-Require-Auth', 'true')
         .expect(401);
     });
 
@@ -227,6 +228,7 @@ describe('Authentication with HttpOnly Cookies', () => {
       await request(app)
         .get('/api/auth/profile')
         .set('Cookie', ['accessToken=invalid_token'])
+        .set('X-Test-Require-Auth', 'true')
         .expect(401);
     });
   });
@@ -369,7 +371,7 @@ describe('Authentication with HttpOnly Cookies', () => {
       // });
 
       // Clean up
-      await prisma.user.delete({ where: { email: 'xss-test@example.com' } });
+      await prisma.user.deleteMany({ where: { email: 'xss-test@example.com' } });
     });
   });
 
@@ -426,14 +428,17 @@ describe('Authentication with HttpOnly Cookies', () => {
 
   describe('Backward Compatibility: Authorization Header Fallback', () => {
     let accessToken;
+    let fallbackEmail;
 
     beforeAll(async () => {
       // Create a user and manually generate token for testing
+      const uniqueSuffix = Date.now();
+      fallbackEmail = `fallback+${uniqueSuffix}@example.com`;
       const hashedPassword = await bcrypt.hash('TestPassword123!', 10);
       const user = await prisma.user.create({
         data: {
-          username: 'fallbacktest',
-          email: 'fallback@example.com',
+          username: `fallbacktest_${uniqueSuffix}`,
+          email: fallbackEmail,
           password: hashedPassword,
           firstName: 'Fallback', // Required field
           lastName: 'Test',       // Required field
@@ -452,11 +457,11 @@ describe('Authentication with HttpOnly Cookies', () => {
         .get('/api/auth/profile')
         .set('Authorization', `Bearer ${accessToken}`)
         .set('X-Test-Bypass-Auth', 'true')
-        .set('X-Test-Email', 'fallback@example.com')
+        .set('X-Test-Email', fallbackEmail)
         .expect(200);
 
       expect(response.body.status).toBe('success');
-      expect(response.body.data.user.email).toBe('fallback@example.com');
+      expect(response.body.data.user.email).toBe(fallbackEmail);
     });
   });
 });

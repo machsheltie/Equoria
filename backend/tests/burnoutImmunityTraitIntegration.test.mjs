@@ -28,11 +28,6 @@
  */
 
 import { jest, describe, it, expect, beforeEach, afterEach } from '@jest/globals';
-import { fileURLToPath } from 'url';
-import { dirname, join } from 'path';
-
-const __filename = fileURLToPath(import.meta.url);
-const __dirname = dirname(__filename);
 
 // Mock logger
 const mockLogger = {
@@ -42,7 +37,7 @@ const mockLogger = {
 };
 
 // Mock the logger import
-jest.unstable_mockModule(join(__dirname, '../utils/logger.mjs'), () => ({
+jest.unstable_mockModule('../utils/logger.mjs', () => ({
   default: mockLogger,
 }));
 
@@ -51,13 +46,13 @@ const {
   updateConsecutiveDays,
   checkBurnoutImmunity,
   updateStreakTracking: _updateStreakTracking,
-} = await import(join(__dirname, '../utils/groomBondingSystem.mjs'));
+} = await import('../utils/groomBondingSystem.mjs');
 
-const { evaluateEpigeneticTagsFromFoalTasks } = await import(join(__dirname, '../utils/traitEvaluation.mjs'));
+const { evaluateEpigeneticTagsFromFoalTasks } = await import('../utils/traitEvaluation.mjs');
 
-const { getTraitMetadata } = await import(join(__dirname, '../utils/epigeneticTraits.mjs'));
+const { getTraitMetadata } = await import('../utils/epigeneticTraits.mjs');
 
-const { GROOM_CONFIG } = await import(join(__dirname, '../config/groomConfig.mjs'));
+const { GROOM_CONFIG } = await import('../config/groomConfig.mjs');
 
 describe('Burnout Immunity & Trait Integration', () => {
   beforeEach(() => {

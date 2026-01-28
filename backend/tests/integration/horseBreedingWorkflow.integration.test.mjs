@@ -34,6 +34,21 @@ dotenv.config({ path: join(__dirname, '../../.env.test') });
 const app = (await import('../../app.mjs')).default;
 const { default: prisma } = await import('../../db/index.mjs');
 
+/**
+ * Extract cookie value from Set-Cookie header
+ * @param {Array} cookies - Array of cookie strings from response headers
+ * @param {string} name - Cookie name to extract
+ * @returns {string|null} - Cookie value or null if not found
+ */
+const extractCookie = (cookies, name) => {
+  if (!cookies || !Array.isArray(cookies)) return null;
+  const cookie = cookies.find(c => c.startsWith(`${name}=`));
+  if (!cookie) return null;
+  // Extract value between = and ; (or end of string)
+  const match = cookie.match(new RegExp(`${name}=([^;]+)`));
+  return match ? match[1] : null;
+};
+
 describe('🐎 INTEGRATION: Complete Horse Breeding Workflow', () => {
   let testUser;
   let _authToken;
@@ -89,19 +104,28 @@ describe('🐎 INTEGRATION: Complete Horse Breeding Workflow', () => {
         firstName: 'Integration',
         lastName: 'Tester',
         email: 'integration-test@example.com',
-        password: 'TestPassword123',
+        password: 'TestPassword123!',
         money: 5000, // Enough for breeding operations
       };
 
-      const response = await request(app).post('/api/auth/register').send(userData).expect(201);
+      const response = await request(app)
+        .post('/api/auth/register')
+        .set('x-test-skip-csrf', 'true')
+        .send(userData)
+        .expect(201);
 
       expect(response.body.status).toBe('success');
       expect(response.body.data.user.email).toBe(userData.email);
-      expect(response.body.data.token).toBeDefined();
+
+      // Extract token from httpOnly cookie
+      const cookies = response.headers['set-cookie'];
+      expect(cookies).toBeDefined();
+      const accessToken = extractCookie(cookies, 'accessToken');
+      expect(accessToken).toBeDefined();
 
       // Store for subsequent tests
       testUser = response.body.data.user;
-      _authToken = response.body.data.token;
+      _authToken = accessToken;
 
       // VERIFY: User exists in database
       const dbUser = await prisma.user.findUnique({
@@ -125,6 +149,10 @@ describe('🐎 INTEGRATION: Complete Horse Breeding Workflow', () => {
         });
       }
 
+      // Calculate dynamic date for 5-year-old mare
+      const fiveYearsAgoForMare = new Date();
+      fiveYearsAgoForMare.setFullYear(fiveYearsAgoForMare.getFullYear() - 5);
+
       // Create mare with proper schema fields (matching working tests)
       mare = await prisma.horse.create({
         data: {
@@ -134,8 +162,8 @@ describe('🐎 INTEGRATION: Complete Horse Breeding Workflow', () => {
           sex: 'Mare',
           healthStatus: 'Excellent',
           ownerId: testUser.id,
-          userId: testUser.id,
-          dateOfBirth: new Date('2019-01-01'),
+          ownerId: testUser.id,
+          dateOfBirth: fiveYearsAgoForMare, // FIXED: Use calculated date
           disciplineScores: {
             Racing: 85,
             Dressage: 78,
@@ -157,6 +185,10 @@ describe('🐎 INTEGRATION: Complete Horse Breeding Workflow', () => {
     it('should create stallion with complementary traits', async () => {
       const breed = await prisma.breed.findFirst();
 
+      // Calculate dynamic date for 6-year-old stallion
+      const sixYearsAgoForStallion = new Date();
+      sixYearsAgoForStallion.setFullYear(sixYearsAgoForStallion.getFullYear() - 6);
+
       // Create stallion with proper schema fields (matching working tests)
       stallion = await prisma.horse.create({
         data: {
@@ -166,8 +198,8 @@ describe('🐎 INTEGRATION: Complete Horse Breeding Workflow', () => {
           sex: 'Stallion',
           healthStatus: 'Excellent',
           ownerId: testUser.id,
-          userId: testUser.id,
-          dateOfBirth: new Date('2018-01-01'),
+          ownerId: testUser.id,
+          dateOfBirth: sixYearsAgoForStallion, // FIXED: Use calculated date
           disciplineScores: {
             Racing: 90,
             'Show Jumping': 82,
@@ -202,7 +234,7 @@ describe('🐎 INTEGRATION: Complete Horse Breeding Workflow', () => {
           damId: mare.id,
           healthStatus: 'Excellent',
           ownerId: testUser.id,
-          userId: testUser.id,
+          ownerId: testUser.id,
           dateOfBirth: new Date(), // Born today
           disciplineScores: {}, // No training yet
           epigeneticModifiers: {
@@ -358,7 +390,6 @@ describe('🐎 INTEGRATION: Complete Horse Breeding Workflow', () => {
 
       // User ownership
       expect(foalWithFamily.ownerId).toBe(testUser.id);
-      expect(foalWithFamily.userId).toBe(testUser.id);
     });
 
     it('should validate business rules are enforced throughout workflow', async () => {

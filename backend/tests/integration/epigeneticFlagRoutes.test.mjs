@@ -25,7 +25,7 @@ describe('Epigenetic Flag Routes Integration Tests', () => {
         id: `test-user-epigenetic-${Date.now()}`,
         username: `testuser${Date.now()}`,
         email: `test${Date.now()}@example.com`,
-        password: 'testpassword',
+        password: 'TestPassword123!',
         role: 'admin',
         firstName: 'Test',
         lastName: 'User',

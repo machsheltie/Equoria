@@ -38,11 +38,6 @@
  */
 
 import { jest, describe, beforeEach, afterEach, expect, it } from '@jest/globals';
-import { fileURLToPath } from 'url';
-import { dirname, join } from 'path';
-
-const __filename = fileURLToPath(import.meta.url);
-const __dirname = dirname(__filename);
 
 // Mock dependencies
 const mockPrisma = {
@@ -61,17 +56,17 @@ const mockLogger = {
   warn: jest.fn(),
 };
 
-// Mock the imports
-jest.unstable_mockModule(join(__dirname, '../db/index.mjs'), () => ({
+// Mock the imports using unstable_mockModule for ESM compatibility
+jest.unstable_mockModule('../db/index.mjs', () => ({
   default: mockPrisma,
 }));
 
-jest.unstable_mockModule(join(__dirname, '../utils/logger.mjs'), () => ({
+jest.unstable_mockModule('../utils/logger.mjs', () => ({
   default: mockLogger,
 }));
 
 // Import the function after mocking
-const { applyEpigeneticTraitsAtBirth } = await import(join(__dirname, '../utils/atBirthTraits.mjs'));
+const { applyEpigeneticTraitsAtBirth } = await import('../utils/atBirthTraits.mjs');
 
 describe('🧬 UNIT: Apply Epigenetic Traits At Birth Task 8 - Deterministic Breeding Analysis', () => {
   beforeEach(() => {

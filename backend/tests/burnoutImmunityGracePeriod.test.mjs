@@ -28,33 +28,42 @@
  */
 
 import { jest, describe, it, expect, beforeEach, afterEach } from '@jest/globals';
-import { fileURLToPath } from 'url';
-import { dirname, join } from 'path';
 
-const __filename = fileURLToPath(import.meta.url);
-const __dirname = dirname(__filename);
-
-// Mock logger
+// Create mock objects BEFORE jest.unstable_mockModule
 const mockLogger = {
   info: jest.fn(),
   error: jest.fn(),
   warn: jest.fn(),
 };
 
-// Mock the logger import
-jest.unstable_mockModule(join(__dirname, '../utils/logger.mjs'), () => ({
+jest.unstable_mockModule('../utils/logger.mjs', () => ({
   default: mockLogger,
   logger: mockLogger,
 }));
 
 // Import the functions after mocking
 const { updateConsecutiveDays, checkBurnoutImmunity, updateStreakTracking } = await import(
-  join(__dirname, '../utils/groomBondingSystem.mjs')
+  '../utils/groomBondingSystem.mjs'
 );
 
-const { GROOM_CONFIG } = await import(join(__dirname, '../config/groomConfig.mjs'));
+const { GROOM_CONFIG } = await import('../config/groomConfig.mjs');
 
 describe('Burnout Immunity Grace Period', () => {
+  // Reference date anchor for all test date calculations
+  const referenceDate = new Date('2025-06-01T12:00:00Z');
+
+  // Calculate relative dates for tests
+  const currentDate = new Date(referenceDate);
+
+  const yesterday = new Date(referenceDate);
+  yesterday.setDate(referenceDate.getDate() - 1); // 2025-05-31
+
+  const twoDaysAgo = new Date(referenceDate);
+  twoDaysAgo.setDate(referenceDate.getDate() - 2); // 2025-05-30
+
+  const fourDaysAgo = new Date(referenceDate);
+  fourDaysAgo.setDate(referenceDate.getDate() - 4); // 2025-05-28
+
   beforeEach(() => {
     jest.clearAllMocks();
   });
@@ -160,7 +169,7 @@ describe('Burnout Immunity Grace Period', () => {
   describe('Streak Tracking Integration', () => {
     it('should handle first-time grooming', () => {
       const lastGroomed = null;
-      const currentDate = new Date('2025-06-01');
+      // Using referenceDate-based currentDate from describe block
       const currentStreak = 0;
 
       const result = updateStreakTracking(lastGroomed, currentDate, currentStreak);
@@ -171,8 +180,8 @@ describe('Burnout Immunity Grace Period', () => {
     });
 
     it('should increment streak for consecutive days', () => {
-      const lastGroomed = new Date('2025-05-31'); // Yesterday
-      const currentDate = new Date('2025-06-01'); // Today
+      const lastGroomed = yesterday; // Yesterday (referenceDate - 1 day)
+      // Using referenceDate-based currentDate from describe block
       const currentStreak = 3;
 
       const result = updateStreakTracking(lastGroomed, currentDate, currentStreak);
@@ -183,8 +192,8 @@ describe('Burnout Immunity Grace Period', () => {
     });
 
     it('should grant bonus eligibility at 7 consecutive days', () => {
-      const lastGroomed = new Date('2025-05-31');
-      const currentDate = new Date('2025-06-01');
+      const lastGroomed = yesterday; // Yesterday (referenceDate - 1 day)
+      // Using referenceDate-based currentDate from describe block
       const currentStreak = 6; // Will become 7
 
       const result = updateStreakTracking(lastGroomed, currentDate, currentStreak);
@@ -195,8 +204,8 @@ describe('Burnout Immunity Grace Period', () => {
     });
 
     it('should preserve streak within grace period', () => {
-      const lastGroomed = new Date('2025-05-30'); // 2 days ago
-      const currentDate = new Date('2025-06-01'); // Today
+      const lastGroomed = twoDaysAgo; // 2 days ago (referenceDate - 2 days)
+      // Using referenceDate-based currentDate from describe block
       const currentStreak = 5;
 
       const result = updateStreakTracking(lastGroomed, currentDate, currentStreak);
@@ -207,8 +216,8 @@ describe('Burnout Immunity Grace Period', () => {
     });
 
     it('should reset streak beyond grace period', () => {
-      const lastGroomed = new Date('2025-05-28'); // 4 days ago
-      const currentDate = new Date('2025-06-01'); // Today
+      const lastGroomed = fourDaysAgo; // 4 days ago (referenceDate - 4 days)
+      // Using referenceDate-based currentDate from describe block
       const currentStreak = 8; // Had immunity, but lost it
 
       const result = updateStreakTracking(lastGroomed, currentDate, currentStreak);
@@ -225,25 +234,25 @@ describe('Burnout Immunity Grace Period', () => {
       // Horse A: Building streak
       const horseA = {
         currentStreak: 6,
-        lastGroomed: new Date('2025-05-31'),
+        lastGroomed: yesterday, // Yesterday (referenceDate - 1 day)
         groomedToday: true,
       };
 
       // Horse B: Within grace period
       const horseB = {
         currentStreak: 4,
-        lastGroomed: new Date('2025-05-30'), // 2 days ago
+        lastGroomed: twoDaysAgo, // 2 days ago (referenceDate - 2 days)
         groomedToday: true,
       };
 
       // Horse C: Beyond grace period
       const horseC = {
         currentStreak: 5,
-        lastGroomed: new Date('2025-05-28'), // 4 days ago
+        lastGroomed: fourDaysAgo, // 4 days ago (referenceDate - 4 days)
         groomedToday: true,
       };
 
-      const currentDate = new Date('2025-06-01');
+      // Using referenceDate-based currentDate from describe block
 
       // Process each horse independently
       const resultA = updateStreakTracking(horseA.lastGroomed, currentDate, horseA.currentStreak);

@@ -6,8 +6,31 @@ import { dirname, join } from 'path';
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = dirname(__filename);
 
+// Suppress console logs during tests to reduce noise (except errors and warnings)
+if (process.env.NODE_ENV === 'test') {
+  global.console.log = () => {};
+  global.console.debug = () => {};
+  global.console.info = () => {};
+}
+
 // Load test environment variables (override any existing env vars)
 dotenv.config({ path: join(__dirname, '..', '.env.test'), override: true });
+
+// Normalize mime API across versions for test-only dependencies.
+try {
+  const mimeModule = await import('mime');
+  const mime = mimeModule.default ?? mimeModule;
+
+  if (mime && !mime.getType && typeof mime.lookup === 'function') {
+    mime.getType = mime.lookup.bind(mime);
+  }
+
+  if (mime && !mime.lookup && typeof mime.getType === 'function') {
+    mime.lookup = mime.getType.bind(mime);
+  }
+} catch (error) {
+  console.warn('Could not normalize mime module for tests:', error.message);
+}
 
 // Set NODE_ENV to test if not already set
 if (!process.env.NODE_ENV) {

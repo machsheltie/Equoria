@@ -21,7 +21,7 @@ const mockSchedule = jest.fn((pattern, callback, options) => {
   };
 });
 
-jest.unstable_mockModule('node-cron', () => ({
+await jest.unstable_mockModule('node-cron', () => ({
   default: {
     schedule: mockSchedule,
   },
@@ -30,7 +30,6 @@ jest.unstable_mockModule('node-cron', () => ({
 // Import AFTER mocking
 const { initializeCronJobs, stopCronJobs, getCronJobStatus, triggerTokenCleanup } =
   await import('../../services/cronJobService.mjs');
-const cron = await import('node-cron');
 
 describe('Cron Job Service', () => {
   beforeEach(() => {
@@ -206,7 +205,7 @@ describe('Cron Job Service', () => {
     });
 
     it('should remove expired tokens for all users', async () => {
-      const user2 = await createTestUser({ email: 'user2@example.com' });
+      const user2 = await createTestUser({ email: `user2_${Date.now()}@example.com` });
 
       // Create expired tokens for both users
       await createTestRefreshToken(user.id, {

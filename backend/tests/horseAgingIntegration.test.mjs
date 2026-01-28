@@ -102,7 +102,7 @@ describe('Horse Aging Integration', () => {
         id: userId,
         username: `agingintuser_${Date.now()}_${Math.random().toString(36).substr(2, 5)}`,
         email: `agingint_${Date.now()}_${Math.random().toString(36).substr(2, 5)}@example.com`,
-        password: 'testpassword',
+        password: 'TestPassword123!',
         firstName: 'Aging',
         lastName: 'Integration',
         money: 1000,

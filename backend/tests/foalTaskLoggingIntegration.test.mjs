@@ -110,7 +110,7 @@ describe('Foal Task Logging Integration', () => {
         id: `test-user-task-logging-${testCounter}`,
         username: `taskloguser${testCounter}`,
         email: `tasklog${testCounter}@example.com`,
-        password: 'testpassword',
+        password: 'TestPassword123!',
         firstName: 'Task',
         lastName: 'Logger',
         money: 1000,
@@ -140,7 +140,7 @@ describe('Foal Task Logging Integration', () => {
         sex: 'Colt',
         dateOfBirth: foalBirthDate,
         age: 365, // 1 year old
-        userId: testUser.id,
+        ownerId: testUser.id,
         bondScore: 50,
         stressLevel: 20,
         taskLog: null, // Start with empty task log
@@ -294,7 +294,7 @@ describe('Foal Task Logging Integration', () => {
             sex: 'Colt',
             dateOfBirth: new Date(Date.now() - 365 * 24 * 60 * 60 * 1000), // 1 year ago
             age: 365,
-            userId: testUser.id,
+            ownerId: testUser.id,
             bondScore: 50,
             stressLevel: 20,
             taskLog: null,

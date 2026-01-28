@@ -33,8 +33,9 @@ describe('Enhanced Groom Interactions Integration Tests', () => {
     testHorse = await prisma.horse.create({
       data: {
         name: 'Enhanced Test Horse',
-        sex: 'male',
+        sex: 'Mare',
         dateOfBirth: new Date(Date.now() - 365 * 24 * 60 * 60 * 1000), // 1 year old
+        ownerId: testUser.id,
         ownerId: testUser.id,
         bondScore: 25,
         stressLevel: 40,
@@ -47,7 +48,7 @@ describe('Enhanced Groom Interactions Integration Tests', () => {
       data: {
         name: 'Enhanced Test Groom',
         userId: testUser.id,
-        speciality: 'foalCare',
+        speciality: 'foal_care',
         skillLevel: 'intermediate',
         personality: 'gentle',
         experience: 5,
@@ -155,12 +156,13 @@ describe('Enhanced Groom Interactions Integration Tests', () => {
         interactionType: 'daily_care',
         variation: 'Morning Routine',
         duration: 30,
-        notes: 'Test enhanced interaction',
+        notes: 'Basic care interaction test',
       };
 
       const response = await request(app)
         .post('/api/grooms/enhanced/interact')
         .set('Authorization', `Bearer ${authToken}`)
+        .set('x-test-skip-csrf', 'true')
         .send(interactionData);
 
       expect(response.status).toBe(201);
@@ -200,8 +202,9 @@ describe('Enhanced Groom Interactions Integration Tests', () => {
       const secondHorse = await prisma.horse.create({
         data: {
           name: 'Second Test Horse',
-          sex: 'female',
+          sex: 'Mare',
           dateOfBirth: new Date(Date.now() - 365 * 24 * 60 * 60 * 1000), // 1 year old
+          ownerId: testUser.id,
           ownerId: testUser.id,
           bondScore: 30,
           stressLevel: 35,
@@ -220,6 +223,7 @@ describe('Enhanced Groom Interactions Integration Tests', () => {
       const response = await request(app)
         .post('/api/grooms/enhanced/interact')
         .set('Authorization', `Bearer ${authToken}`)
+        .set('x-test-skip-csrf', 'true')
         .send(interactionData);
 
       expect(response.status).toBe(201);
@@ -238,8 +242,9 @@ describe('Enhanced Groom Interactions Integration Tests', () => {
       const thirdHorse = await prisma.horse.create({
         data: {
           name: 'Third Test Horse',
-          sex: 'male',
+          sex: 'Mare',
           dateOfBirth: new Date(Date.now() - 365 * 24 * 60 * 60 * 1000), // 1 year old
+          ownerId: testUser.id,
           ownerId: testUser.id,
           bondScore: 20,
           stressLevel: 50,
@@ -258,6 +263,7 @@ describe('Enhanced Groom Interactions Integration Tests', () => {
       const firstResponse = await request(app)
         .post('/api/grooms/enhanced/interact')
         .set('Authorization', `Bearer ${authToken}`)
+        .set('x-test-skip-csrf', 'true')
         .send(interactionData);
 
       expect(firstResponse.status).toBe(201);
@@ -266,6 +272,7 @@ describe('Enhanced Groom Interactions Integration Tests', () => {
       const secondResponse = await request(app)
         .post('/api/grooms/enhanced/interact')
         .set('Authorization', `Bearer ${authToken}`)
+        .set('x-test-skip-csrf', 'true')
         .send(interactionData);
 
       expect(secondResponse.status).toBe(400);
@@ -288,6 +295,7 @@ describe('Enhanced Groom Interactions Integration Tests', () => {
       const response = await request(app)
         .post('/api/grooms/enhanced/interact')
         .set('Authorization', `Bearer ${authToken}`)
+        .set('x-test-skip-csrf', 'true')
         .send(invalidData);
 
       expect(response.status).toBe(400);
@@ -307,6 +315,7 @@ describe('Enhanced Groom Interactions Integration Tests', () => {
       const response = await request(app)
         .post('/api/grooms/enhanced/interact')
         .set('Authorization', `Bearer ${authToken}`)
+        .set('x-test-skip-csrf', 'true')
         .send(invalidData);
 
       expect(response.status).toBe(400);
@@ -326,6 +335,7 @@ describe('Enhanced Groom Interactions Integration Tests', () => {
       const response = await request(app)
         .post('/api/grooms/enhanced/interact')
         .set('Authorization', `Bearer ${authToken}`)
+        .set('x-test-skip-csrf', 'true')
         .send(invalidData);
 
       expect(response.status).toBe(400);
@@ -407,7 +417,7 @@ describe('Enhanced Groom Interactions Integration Tests', () => {
       ];
 
       for (const endpoint of endpoints) {
-        const response = await request(app).get(endpoint);
+        const response = await request(app).get(endpoint).set('x-test-require-auth', 'true');
         expect(response.status).toBe(401);
       }
     });

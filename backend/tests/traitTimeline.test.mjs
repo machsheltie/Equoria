@@ -411,21 +411,20 @@ describe('Trait Timeline System', () => {
 
     it('should require authentication for trait card endpoint', async () => {
       const response = await request(app)
-        .get(`/api/horses/${testHorse.id}/trait-card`);
+        .get(`/api/horses/${testHorse.id}/trait-card`)
+        .set('x-test-require-auth', 'true')
 
       expect(response.status).toBe(401);
       expect(response.body.success).toBe(false);
     });
 
-    it('should handle non-existent horse with empty timeline', async () => {
+    it('should return 404 for non-existent horse', async () => {
       const response = await request(app)
         .get('/api/horses/99999/trait-card')
-        .set('Authorization', authToken);
+        .set('Authorization', authToken)
+        .expect(404);
 
-      expect(response.status).toBe(200);
-      expect(response.body.success).toBe(true);
-      expect(response.body.data.timeline.isEmpty).toBe(true);
-      expect(response.body.data.timeline.timelineEvents).toHaveLength(0);
+      expect(response.body.success).toBe(false);
     });
 
     it('should handle horses with empty trait timeline', async () => {

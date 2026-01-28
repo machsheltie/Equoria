@@ -68,6 +68,7 @@ describe('System-Wide Integration Tests', () => {
         name: 'Global Test Horse',
         age: 5,
         breedId: testBreed.id,
+        ownerId: testUser.id,
         userId: testUser.id,
         sex: 'mare',
         dateOfBirth: new Date('2019-01-01'),
@@ -121,6 +122,7 @@ describe('System-Wide Integration Tests', () => {
 
       const registerResponse = await request(app)
         .post('/api/auth/register')
+        .set('x-test-skip-csrf', 'true')
         .send(registrationData)
         .expect(201);
 
@@ -128,8 +130,9 @@ describe('System-Wide Integration Tests', () => {
       expect(registerResponse.body.data.user).toBeDefined();
       expect(registerResponse.body.data.token).toBeDefined();
 
-      testUser = registerResponse.body.data.user;
-      authToken = registerResponse.body.data.token;
+      // Use separate variable to avoid overwriting global testUser
+      const registeredUser = registerResponse.body.data.user;
+      const registeredAuthToken = registerResponse.body.data.token;
 
       // Step 2: Test Documentation System Integration
       const userDocsResponse = await request(app)
@@ -150,7 +153,7 @@ describe('System-Wide Integration Tests', () => {
       // Step 4: Test Memory Management System
       const memoryStatusResponse = await request(app)
         .get('/api/memory/status')
-        .set('Authorization', `Bearer ${authToken}`)
+        .set('Authorization', `Bearer ${registeredAuthToken}`)
         .expect(200);
 
       expect(memoryStatusResponse.body.success).toBe(true);
@@ -160,8 +163,8 @@ describe('System-Wide Integration Tests', () => {
 
       // Step 5: Test User Progress System
       const progressResponse = await request(app)
-        .get(`/api/users/${testUser.id}/progress`)
-        .set('Authorization', `Bearer ${authToken}`)
+        .get(`/api/users/${registeredUser.id}/progress`)
+        .set('Authorization', `Bearer ${registeredAuthToken}`)
         .expect(200);
 
       expect(progressResponse.body.success).toBe(true);
@@ -237,6 +240,7 @@ describe('System-Wide Integration Tests', () => {
       const interactionResponse = await request(app)
         .post('/api/grooms/interact')
         .set('Authorization', `Bearer ${authToken}`)
+        .set('x-test-skip-csrf', 'true')
         .send(interactionData)
         .expect(200);
 
@@ -385,6 +389,7 @@ describe('System-Wide Integration Tests', () => {
       const horseResponse = await request(app)
         .post('/api/horses')
         .set('Authorization', `Bearer ${authToken}`)
+        .set('x-test-skip-csrf', 'true')
         .send(horseData)
         .expect(201);
 
@@ -419,6 +424,7 @@ describe('System-Wide Integration Tests', () => {
           name: 'Progress Test Horse',
           age: 5,
           breedId: testBreed.id,
+          ownerId: testUser.id,
           userId: testUser.id,
           sex: 'mare',
           dateOfBirth: new Date('2019-01-01'),
@@ -446,6 +452,7 @@ describe('System-Wide Integration Tests', () => {
       const trainingResponse = await request(app)
         .post('/api/training/train')
         .set('Authorization', `Bearer ${authToken}`)
+        .set('x-test-skip-csrf', 'true')
         .send(trainingData)
         .expect(200);
 

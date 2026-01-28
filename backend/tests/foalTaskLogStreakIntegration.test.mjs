@@ -38,54 +38,76 @@ import { calculateTraitPoints } from '../config/taskInfluenceConfig.mjs';
 
 describe('Foal Task Log and Streak Data Integration', () => {
   let testUser, testFoal;
+  const testUserId = 'test-user-integration';
+
+  // Reference date anchor for all test date calculations
+  const referenceDate = new Date('2025-06-01T12:00:00Z');
+
+  // Calculate dates for integration test scenarios
+  const day1 = new Date(referenceDate);
+  day1.setHours(10, 0, 0, 0); // June 1st, 10:00 AM
+  const day3 = new Date(referenceDate);
+  day3.setDate(referenceDate.getDate() + 2);
+  day3.setHours(14, 0, 0, 0); // June 3rd, 2:00 PM
+  const day4 = new Date(referenceDate);
+  day4.setDate(referenceDate.getDate() + 3);
+  day4.setHours(11, 0, 0, 0); // June 4th, 11:00 AM
+  const day5 = new Date(referenceDate);
+  day5.setDate(referenceDate.getDate() + 4);
+  day5.setHours(12, 0, 0, 0); // June 5th, 12:00 PM
+  const day10 = new Date(referenceDate);
+  day10.setDate(referenceDate.getDate() + 9);
+  day10.setHours(12, 0, 0, 0); // June 10th, 12:00 PM
+  const day15 = new Date(referenceDate);
+  day15.setDate(referenceDate.getDate() + 14);
+  day15.setHours(12, 0, 0, 0); // June 15th, 12:00 PM
 
   beforeEach(async () => {
     // Clean up test data
-    await prisma.horse.deleteMany({});
-    await prisma.user.deleteMany({});
+    await prisma.horse.deleteMany({ where: { ownerId: testUserId } });
+    await prisma.user.deleteMany({ where: { id: testUserId } });
 
-    // Create test user
-    testUser = await prisma.user.create({
-      data: {
-        id: 'test-user-integration',
-        username: 'integrationuser',
-        email: 'integration@example.com',
-        password: 'testpassword',
-        firstName: 'Integration',
-        lastName: 'Tester',
-        money: 1000,
-      },
-    });
-
-    // Create test foal
-    testFoal = await prisma.horse.create({
-      data: {
-        name: 'Test Foal Integration',
-        sex: 'Filly',
-        dateOfBirth: new Date(Date.now() - 180 * 24 * 60 * 60 * 1000), // 6 months ago
-        age: 180,
-        user: {
-          connect: { id: testUser.id },
+    await prisma.$transaction(async (tx) => {
+      testUser = await tx.user.create({
+        data: {
+          id: testUserId,
+          username: 'integrationuser',
+          email: 'integration@example.com',
+          password: 'TestPassword123!',
+          firstName: 'Integration',
+          lastName: 'Tester',
+          money: 1000,
         },
-        bondScore: 30,
-        stressLevel: 15,
-        taskLog: null,
-        lastGroomed: null,
-        daysGroomedInARow: 0,
-      },
+      });
+
+      testFoal = await tx.horse.create({
+        data: {
+          name: 'Test Foal Integration',
+          sex: 'Filly',
+          dateOfBirth: new Date(Date.now() - 180 * 24 * 60 * 60 * 1000), // 6 months ago
+          age: 180,
+          user: {
+            connect: { id: testUser.id },
+          },
+          bondScore: 30,
+          stressLevel: 15,
+          taskLog: null,
+          lastGroomed: null,
+          daysGroomedInARow: 0,
+        },
+      });
     });
   });
 
   afterEach(async () => {
     // Clean up test data
-    await prisma.horse.deleteMany({});
-    await prisma.user.deleteMany({});
+    await prisma.horse.deleteMany({ where: { ownerId: testUserId } });
+    await prisma.user.deleteMany({ where: { id: testUserId } });
   });
 
   describe('Real-World Foal Development Scenarios', () => {
     it('should handle week 1 of foal care with enrichment tasks', async () => {
       // Day 1: First trust building session
-      const day1 = new Date('2024-06-01T10:00:00Z');
       let careData = updateFoalCareData(
         { taskLog: null, lastGroomed: null, daysGroomedInARow: 0 },
         'trust_building',
@@ -98,7 +120,6 @@ describe('Foal Task Log and Streak Data Integration', () => {
       });
 
       // Day 3: Desensitization session (2-day gap within grace period)
-      const day3 = new Date('2024-06-03T14:00:00Z');
       let foal = await prisma.horse.findUnique({ where: { id: testFoal.id } });
       careData = updateFoalCareData(foal, 'desensitization', day3);
 
@@ -108,7 +129,6 @@ describe('Foal Task Log and Streak Data Integration', () => {
       });
 
       // Day 4: Another trust building session
-      const day4 = new Date('2024-06-04T11:00:00Z');
       foal = await prisma.horse.findUnique({ where: { id: testFoal.id } });
       careData = updateFoalCareData(foal, 'trust_building', day4);
 
@@ -132,7 +152,7 @@ describe('Foal Task Log and Streak Data Integration', () => {
       // Build up a 5-day streak
       const initialData = {
         taskLog: { trust_building: 3, early_touch: 2 },
-        lastGroomed: new Date('2024-06-05T12:00:00Z'),
+        lastGroomed: day5,
         daysGroomedInARow: 5,
       };
 
@@ -142,9 +162,8 @@ describe('Foal Task Log and Streak Data Integration', () => {
       });
 
       // Miss several days (break streak)
-      const afterBreak = new Date('2024-06-10T12:00:00Z'); // 5 days later
       let foal = await prisma.horse.findUnique({ where: { id: testFoal.id } });
-      const careData = updateFoalCareData(foal, 'showground_exposure', afterBreak);
+      const careData = updateFoalCareData(foal, 'showground_exposure', day10);
 
       await prisma.horse.update({
         where: { id: testFoal.id },
@@ -160,7 +179,7 @@ describe('Foal Task Log and Streak Data Integration', () => {
         showground_exposure: 1,
       });
       expect(foal.daysGroomedInARow).toBe(1); // Reset to 1
-      expect(foal.lastGroomed).toEqual(afterBreak);
+      expect(foal.lastGroomed).toEqual(day10);
     });
 
     it('should achieve burnout immunity after 7 consecutive days', async () => {
@@ -177,7 +196,9 @@ describe('Foal Task Log and Streak Data Integration', () => {
       let currentData = { taskLog: null, lastGroomed: null, daysGroomedInARow: 0 };
 
       for (let i = 0; i < 7; i++) {
-        const careDate = new Date(`2024-06-0${i + 1}T12:00:00Z`);
+        const careDate = new Date(referenceDate);
+        careDate.setDate(referenceDate.getDate() + i);
+        careDate.setHours(12, 0, 0, 0);
         currentData = updateFoalCareData(currentData, tasks[i], careDate);
 
         await prisma.horse.update({
@@ -265,7 +286,6 @@ describe('Foal Task Log and Streak Data Integration', () => {
   describe('Grace Period and Streak Maintenance', () => {
     it('should maintain streak within 2-day grace period', async () => {
       // Day 1: Initial care
-      const day1 = new Date('2024-06-01T12:00:00Z');
       let careData = updateFoalCareData(
         { taskLog: null, lastGroomed: null, daysGroomedInARow: 0 },
         'trust_building',
@@ -278,7 +298,6 @@ describe('Foal Task Log and Streak Data Integration', () => {
       });
 
       // Day 3: Care within grace period (2-day gap)
-      const day3 = new Date('2024-06-03T12:00:00Z');
       let foal = await prisma.horse.findUnique({ where: { id: testFoal.id } });
 
       const streakInfo = calculateStreakFromLastCareDate(foal.lastGroomed, day3);
@@ -301,7 +320,7 @@ describe('Foal Task Log and Streak Data Integration', () => {
       // Initial streak
       const initialData = {
         taskLog: { trust_building: 2 },
-        lastGroomed: new Date('2024-06-01T12:00:00Z'),
+        lastGroomed: day1,
         daysGroomedInARow: 3,
       };
 
@@ -311,15 +330,14 @@ describe('Foal Task Log and Streak Data Integration', () => {
       });
 
       // Care after grace period (4 days later)
-      const afterGrace = new Date('2024-06-05T12:00:00Z');
       let foal = await prisma.horse.findUnique({ where: { id: testFoal.id } });
 
-      const streakInfo = calculateStreakFromLastCareDate(foal.lastGroomed, afterGrace);
+      const streakInfo = calculateStreakFromLastCareDate(foal.lastGroomed, day5);
       expect(streakInfo.isStreakActive).toBe(false);
       expect(streakInfo.streakBroken).toBe(true);
       expect(streakInfo.daysSinceLastCare).toBe(4);
 
-      const careData = updateFoalCareData(foal, 'early_touch', afterGrace);
+      const careData = updateFoalCareData(foal, 'early_touch', day5);
       await prisma.horse.update({
         where: { id: testFoal.id },
         data: careData,
@@ -342,7 +360,7 @@ describe('Foal Task Log and Streak Data Integration', () => {
           showground_exposure: 3,
           hoof_handling: 2,
         },
-        lastGroomed: new Date('2024-06-15T12:00:00Z'),
+        lastGroomed: day15,
         daysGroomedInARow: 12,
       };
 
@@ -371,12 +389,27 @@ describe('Foal Task Log and Streak Data Integration', () => {
   describe('Data Persistence and Integrity', () => {
     it('should maintain data integrity across multiple updates', async () => {
       // Perform multiple care sessions
+      const session1Date = new Date(referenceDate);
+      session1Date.setHours(10, 0, 0, 0);
+      const session2Date = new Date(referenceDate);
+      session2Date.setDate(referenceDate.getDate() + 1);
+      session2Date.setHours(11, 0, 0, 0);
+      const session3Date = new Date(referenceDate);
+      session3Date.setDate(referenceDate.getDate() + 2);
+      session3Date.setHours(12, 0, 0, 0);
+      const session4Date = new Date(referenceDate);
+      session4Date.setDate(referenceDate.getDate() + 3);
+      session4Date.setHours(13, 0, 0, 0);
+      const session5Date = new Date(referenceDate);
+      session5Date.setDate(referenceDate.getDate() + 4);
+      session5Date.setHours(14, 0, 0, 0);
+
       const careSessions = [
-        { task: 'trust_building', date: new Date('2024-06-01T10:00:00Z') },
-        { task: 'trust_building', date: new Date('2024-06-02T11:00:00Z') },
-        { task: 'desensitization', date: new Date('2024-06-03T12:00:00Z') },
-        { task: 'early_touch', date: new Date('2024-06-04T13:00:00Z') },
-        { task: 'trust_building', date: new Date('2024-06-05T14:00:00Z') },
+        { task: 'trust_building', date: session1Date },
+        { task: 'trust_building', date: session2Date },
+        { task: 'desensitization', date: session3Date },
+        { task: 'early_touch', date: session4Date },
+        { task: 'trust_building', date: session5Date },
       ];
 
       let currentData = { taskLog: null, lastGroomed: null, daysGroomedInARow: 0 };

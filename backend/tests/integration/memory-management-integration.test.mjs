@@ -164,7 +164,7 @@ describe('🧠 Memory Management Integration Tests', () => {
     const userData = {
       email: 'memoryintegration@test.com',
       username: 'memoryintegrationuser',
-      password: 'testpassword123',
+      password: 'TestPassword123!',
       firstName: 'Memory',
       lastName: 'Integration',
     };
@@ -377,7 +377,7 @@ describe('🧠 Memory Management Integration Tests', () => {
       ];
 
       for (const endpoint of endpoints) {
-        const response = await request(app).get(endpoint);
+        const response = await request(app).get(endpoint).set('x-test-require-auth', 'true');
 
         expect(response.status).toBe(401);
         expect(response.body.success).toBe(false);

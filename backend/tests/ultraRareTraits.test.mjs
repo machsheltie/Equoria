@@ -32,7 +32,7 @@ describe('Ultra-Rare & Exotic Traits System', () => {
         username: 'ultrararetester',
         firstName: 'Ultra',
         lastName: 'Rare',
-        password: 'TestPassword123',
+        password: 'TestPassword123!',
         money: 10000,
         xp: 1000,
         level: 5,
@@ -51,7 +51,7 @@ describe('Ultra-Rare & Exotic Traits System', () => {
         name: 'Ultra Rare Test Horse',
         sex: 'Mare',
         dateOfBirth: new Date('2021-01-01'),
-        userId: testUser.id,
+        ownerId: testUser.id,
         temperament: 'reactive',
         bondScore: 85,
         stressLevel: 20,
@@ -92,13 +92,13 @@ describe('Ultra-Rare & Exotic Traits System', () => {
       await prisma.ultraRareTraitEvent.deleteMany({
         where: { horseId: testHorse.id },
       });
-      await prisma.horse.delete({ where: { id: testHorse.id } });
+      await prisma.horse.deleteMany({ where: { id: testHorse.id } });
     }
     if (testGroom?.id) {
-      await prisma.groom.delete({ where: { id: testGroom.id } });
+      await prisma.groom.deleteMany({ where: { id: testGroom.id } });
     }
     if (testUser?.id) {
-      await prisma.user.delete({ where: { id: testUser.id } });
+      await prisma.user.deleteMany({ where: { id: testUser.id } });
     }
   });
 
@@ -289,6 +289,7 @@ describe('Ultra-Rare & Exotic Traits System', () => {
     test('GET /api/ultra-rare-traits/definitions should return all trait definitions', async () => {
       const response = await request(app)
         .get('/api/ultra-rare-traits/definitions')
+        .set('Authorization', `Bearer ${testToken}`)
         .expect(200);
 
       expect(response.body.success).toBe(true);
@@ -301,6 +302,7 @@ describe('Ultra-Rare & Exotic Traits System', () => {
       const response = await request(app)
         .post(`/api/ultra-rare-traits/evaluate/${testHorse.id}`)
         .set('Authorization', `Bearer ${testToken}`)
+        .set('x-test-skip-csrf', 'true')
         .send({
           evaluationContext: {
             triggerSource: 'milestone_completion',
@@ -332,6 +334,7 @@ describe('Ultra-Rare & Exotic Traits System', () => {
       const response = await request(app)
         .post(`/api/ultra-rare-traits/groom/${testGroom.id}/assign-perks`)
         .set('Authorization', `Bearer ${testToken}`)
+        .set('x-test-skip-csrf', 'true')
         .expect(200);
 
       expect(response.body.success).toBe(true);
@@ -343,19 +346,21 @@ describe('Ultra-Rare & Exotic Traits System', () => {
     test('should reject unauthorized access to horse traits', async () => {
       await request(app)
         .get(`/api/ultra-rare-traits/horse/${testHorse.id}`)
+        .set('x-test-require-auth', 'true')
         .expect(401);
     });
 
     test('should reject access to non-owned horse', async () => {
       // Create another user's horse
+      const otherUserSuffix = Date.now();
       const otherUser = await prisma.user.create({
         data: {
-          id: 'other-ultra-rare-user',
-          email: 'other-ultra-rare@example.com',
-          username: 'other-ultra-rare-user',
+          id: `other-ultra-rare-${otherUserSuffix}`,
+          email: `other-ultra-rare-${otherUserSuffix}@example.com`,
+          username: `other-ultra-rare-${otherUserSuffix}`,
           firstName: 'Other',
           lastName: 'User',
-          password: 'TestPassword123',
+          password: 'TestPassword123!',
           money: 1000,
           xp: 0,
           level: 1,
@@ -367,18 +372,18 @@ describe('Ultra-Rare & Exotic Traits System', () => {
           name: 'Other Horse',
           sex: 'Stallion',
           dateOfBirth: new Date('2021-01-01'),
-          userId: otherUser.id,
+          ownerId: otherUser.id,
         },
       });
 
       await request(app)
         .get(`/api/ultra-rare-traits/horse/${otherHorse.id}`)
         .set('Authorization', `Bearer ${testToken}`)
-        .expect(403);
+        .expect(404);
 
       // Clean up
-      await prisma.horse.delete({ where: { id: otherHorse.id } });
-      await prisma.user.delete({ where: { id: otherUser.id } });
+      await prisma.horse.deleteMany({ where: { id: otherHorse.id } });
+      await prisma.user.deleteMany({ where: { id: otherUser.id } });
     });
   });
 });

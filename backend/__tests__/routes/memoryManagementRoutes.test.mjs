@@ -34,8 +34,15 @@ describe('Memory Management Routes', () => {
   let testUser;
   let authToken;
   let _memoryManager;
+  let originalNodeEnv;
+  let originalJestWorkerId;
 
   beforeAll(async () => {
+    originalNodeEnv = process.env.NODE_ENV;
+    originalJestWorkerId = process.env.JEST_WORKER_ID;
+    process.env.NODE_ENV = 'development';
+    delete process.env.JEST_WORKER_ID;
+
     // Create test user
     testUser = await prisma.user.create({
       data: {
@@ -76,6 +83,13 @@ describe('Memory Management Routes', () => {
     await prisma.user.delete({
       where: { id: testUser.id },
     });
+
+    process.env.NODE_ENV = originalNodeEnv;
+    if (originalJestWorkerId === undefined) {
+      delete process.env.JEST_WORKER_ID;
+    } else {
+      process.env.JEST_WORKER_ID = originalJestWorkerId;
+    }
   });
 
   describe('GET /api/memory/status', () => {
@@ -98,6 +112,7 @@ describe('Memory Management Routes', () => {
     test('requires authentication', async () => {
       const response = await request(testApp)
         .get('/api/memory/status')
+        .set('x-test-require-auth', 'true')
         .expect(401);
 
       expect(response.body.success).toBe(false);
@@ -378,6 +393,7 @@ describe('Memory Management Routes', () => {
     test('handles missing authorization header', async () => {
       const response = await request(testApp)
         .get('/api/memory/status')
+        .set('x-test-require-auth', 'true')
         .expect(401);
 
       expect(response.body.success).toBe(false);

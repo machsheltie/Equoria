@@ -20,6 +20,13 @@ import prisma from '../../../packages/database/prismaClient.mjs';
 import { generateTestToken } from '../helpers/authHelper.mjs';
 
 describe('Dynamic Compatibility Controller API', () => {
+  // Reference date anchor for all test date calculations
+  const referenceDate = new Date('2025-06-01T12:00:00Z');
+
+  // Calculate birth date for 2-year-old horse
+  const birthDate2YearsOld = new Date(referenceDate);
+  birthDate2YearsOld.setFullYear(referenceDate.getFullYear() - 2); // 2023-06-01 (age 2)
+
   let testUser;
   let testToken;
   const testGrooms = [];
@@ -40,7 +47,7 @@ describe('Dynamic Compatibility Controller API', () => {
       },
     });
 
-    testToken = generateTestToken(testUser.id);
+    testToken = generateTestToken({ id: testUser.id, email: testUser.email });
 
     // Create test breed
     const testBreed = await prisma.breed.create({
@@ -89,7 +96,7 @@ describe('Dynamic Compatibility Controller API', () => {
           breed: { connect: { id: testBreed.id } },
           name: data.name,
           sex: 'Filly',
-          dateOfBirth: new Date('2022-01-01'),
+          dateOfBirth: birthDate2YearsOld,
           age: 2,
           temperament: data.temperament,
           stressLevel: data.stressLevel,
@@ -116,7 +123,7 @@ describe('Dynamic Compatibility Controller API', () => {
     // Clean up test data
     await prisma.horse.deleteMany({ where: { ownerId: testUser.id } });
     await prisma.groom.deleteMany({ where: { userId: testUser.id } });
-    await prisma.user.delete({ where: { id: testUser.id } });
+    await prisma.user.deleteMany({ where: { id: testUser.id } });
   });
 
   describe('POST /api/compatibility/calculate', () => {
@@ -139,6 +146,7 @@ describe('Dynamic Compatibility Controller API', () => {
       const response = await request(app)
         .post('/api/compatibility/calculate')
         .set('Authorization', `Bearer ${testToken}`)
+        .set('x-test-skip-csrf', 'true')
         .send(requestBody);
 
       expect(response.status).toBe(200);
@@ -169,6 +177,7 @@ describe('Dynamic Compatibility Controller API', () => {
       const response = await request(app)
         .post('/api/compatibility/calculate')
         .set('Authorization', `Bearer ${testToken}`)
+        .set('x-test-skip-csrf', 'true')
         .send(requestBody);
 
       expect(response.status).toBe(200);
@@ -181,6 +190,7 @@ describe('Dynamic Compatibility Controller API', () => {
       const response = await request(app)
         .post('/api/compatibility/calculate')
         .set('Authorization', `Bearer ${testToken}`)
+        .set('x-test-skip-csrf', 'true')
         .send({
           groomId: testGrooms[0].id,
           // Missing horseId and context
@@ -197,7 +207,9 @@ describe('Dynamic Compatibility Controller API', () => {
           groomId: testGrooms[0].id,
           horseId: testHorses[0].id,
           context: { taskType: 'trust_building' },
-        });
+        })
+        .set('x-test-require-auth', 'true')
+        .set('x-test-skip-csrf', 'true');
 
       expect(response.status).toBe(401);
     });
@@ -253,6 +265,7 @@ describe('Dynamic Compatibility Controller API', () => {
       const response = await request(app)
         .post('/api/compatibility/predict')
         .set('Authorization', `Bearer ${testToken}`)
+        .set('x-test-skip-csrf', 'true')
         .send(requestBody);
 
       expect(response.status).toBe(200);
@@ -282,6 +295,7 @@ describe('Dynamic Compatibility Controller API', () => {
       const response = await request(app)
         .post('/api/compatibility/predict')
         .set('Authorization', `Bearer ${testToken}`)
+        .set('x-test-skip-csrf', 'true')
         .send(requestBody);
 
       expect(response.status).toBe(200);
@@ -309,6 +323,7 @@ describe('Dynamic Compatibility Controller API', () => {
       const response = await request(app)
         .post('/api/compatibility/recommendations')
         .set('Authorization', `Bearer ${testToken}`)
+        .set('x-test-skip-csrf', 'true')
         .send(requestBody);
 
       expect(response.status).toBe(200);

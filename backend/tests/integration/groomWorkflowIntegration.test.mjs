@@ -132,7 +132,7 @@ describe('Groom Workflow Integration Tests', () => {
         id: `user-groom-int-${suffix}`,
         username: `groomtestuser_${suffix}`,
         email: `groomtest_${suffix}@example.com`,
-        password: 'testpassword',
+        password: 'TestPassword123!',
         firstName: 'Groom',
         lastName: 'Tester',
         money: 5000,

@@ -35,13 +35,8 @@
  */
 
 import { jest, describe, beforeEach, expect, it } from '@jest/globals';
-import { fileURLToPath } from 'url';
-import { dirname, join } from 'path';
 
-const __filename = fileURLToPath(import.meta.url);
-const __dirname = dirname(__filename);
-
-// Mock the dependencies
+// Mock objects must be created BEFORE jest.unstable_mockModule calls
 const mockGetResultsByHorse = jest.fn();
 const mockLogger = {
   info: jest.fn(),
@@ -49,17 +44,17 @@ const mockLogger = {
   warn: jest.fn(),
 };
 
-// Mock the modules
-jest.unstable_mockModule(join(__dirname, '../models/resultModel.mjs'), () => ({
+// Mock external dependencies BEFORE importing the module under test
+jest.unstable_mockModule('../models/resultModel.mjs', () => ({
   getResultsByHorse: mockGetResultsByHorse,
 }));
 
-jest.unstable_mockModule(join(__dirname, '../utils/logger.mjs'), () => ({
+jest.unstable_mockModule('../utils/logger.mjs', () => ({
   default: mockLogger,
 }));
 
 // Import the function to test after mocking
-const { getHorseHistory } = await import(join(__dirname, '../controllers/horseController.mjs'));
+const { getHorseHistory } = await import('../controllers/horseController.mjs');
 
 describe('📚 UNIT: Horse History Controller - Competition History Retrieval', () => {
   let req, res;

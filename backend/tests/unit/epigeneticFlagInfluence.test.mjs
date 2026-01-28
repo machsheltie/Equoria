@@ -12,14 +12,14 @@
 import { describe, test, expect, jest, beforeEach } from '@jest/globals';
 
 // Mock logger
-jest.unstable_mockModule('../../utils/logger.mjs', () => ({
+jest.mock('../../utils/logger.mjs', () => ({
   default: {
     info: jest.fn(),
     error: jest.fn(),
     warn: jest.fn(),
     debug: jest.fn(),
   },
-}));
+}), { virtual: true });
 
 // Import after mocking
 const {

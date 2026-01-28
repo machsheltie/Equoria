@@ -17,7 +17,6 @@
  */
 
 import request from 'supertest';
-import app from '../../app.mjs';
 import prisma from '../../../packages/database/prismaClient.mjs';
 import {
   createTestUser,
@@ -31,13 +30,18 @@ import {
 
 process.env.TEST_BYPASS_RATE_LIMIT = 'false';
 process.env.TEST_RATE_LIMIT_MAX_REQUESTS = '5';
-process.env.TEST_RATE_LIMIT_WINDOW_MS = '2000';
+process.env.TEST_RATE_LIMIT_WINDOW_MS = '10000'; // 10 seconds to avoid race conditions
+
+const { default: app } = await import('../../app.mjs');
 
 describe('Rate Limiting System', () => {
   let testUser;
   let server;
   const bypassAuthHeaders = { 'X-Test-Bypass-Auth': 'true' };
   const limiterBypassed = process.env.NODE_ENV === 'test';
+
+  // Helper to generate a unique IP for each test to avoid interference
+  const getUniqueIP = (index) => `127.0.0.${index + 10}`;
 
   beforeAll(async () => {
     process.env.TEST_BYPASS_RATE_LIMIT = 'false';
@@ -69,10 +73,12 @@ describe('Rate Limiting System', () => {
 
   describe('Login Rate Limiting (Brute Force Protection)', () => {
     it('should_allow_up_to_5_failed_login_attempts', async () => {
+      const ip = getUniqueIP(1);
       // Attempt 1-5: Should be allowed but fail authentication
       for (let i = 1; i <= 5; i++) {
         const response = await request(app)
           .post('/api/auth/login')
+          .set('X-Forwarded-For', ip)
           .send({
             email: testUser.email,
             password: 'WrongPassword123!',
@@ -94,10 +100,12 @@ describe('Rate Limiting System', () => {
     });
 
     it('should_block_6th_failed_login_attempt_with_429', async () => {
+      const ip = getUniqueIP(2);
       // First 5 attempts (exhaust limit)
       for (let i = 0; i < 5; i++) {
         await request(app)
           .post('/api/auth/login')
+          .set('X-Forwarded-For', ip)
           .send({
             email: testUser.email,
             password: 'WrongPassword123!',
@@ -107,6 +115,7 @@ describe('Rate Limiting System', () => {
       // 6th attempt should be rate limited
       const response = await request(app)
         .post('/api/auth/login')
+        .set('X-Forwarded-For', ip)
         .send({
           email: testUser.email,
           password: 'WrongPassword123!',
@@ -119,10 +128,12 @@ describe('Rate Limiting System', () => {
     });
 
     it('should_reset_rate_limit_after_successful_authentication', async () => {
+      const ip = getUniqueIP(3);
       // Fail 3 times
       for (let i = 0; i < 3; i++) {
         await request(app)
           .post('/api/auth/login')
+          .set('X-Forwarded-For', ip)
           .send({
             email: testUser.email,
             password: 'WrongPassword123!',
@@ -133,6 +144,7 @@ describe('Rate Limiting System', () => {
       const successResponse = await request(app)
         .post('/api/auth/login')
         .set(bypassAuthHeaders)
+        .set('X-Forwarded-For', ip)
         .send({
           email: testUser.email,
           password: testUser.plainPassword,
@@ -214,13 +226,20 @@ describe('Rate Limiting System', () => {
   });
 
   describe('Registration Rate Limiting', () => {
+    beforeAll(async () => {
+      // No longer need long sleeps due to unique IPs
+      await sleep(100);
+    });
+
     it('should_rate_limit_registration_attempts', async () => {
       const baseData = createUserData();
+      const ip = getUniqueIP(10);
 
       // First 5 registrations should succeed
       for (let i = 0; i < 5; i++) {
         const response = await request(app)
           .post('/api/auth/register')
+          .set('X-Forwarded-For', ip)
           .send({
             ...baseData,
             email: `reg_${i}_${Date.now()}@example.com`,
@@ -237,6 +256,7 @@ describe('Rate Limiting System', () => {
       // 6th registration should be rate limited
       const response = await request(app)
         .post('/api/auth/register')
+        .set('X-Forwarded-For', ip)
         .send({
           ...baseData,
           email: `reg_6_${Date.now()}@example.com`,
@@ -248,9 +268,11 @@ describe('Rate Limiting System', () => {
 
     it('should_include_rate_limit_headers_on_registration', async () => {
       const userData = createUserData();
+      const ip = getUniqueIP(11);
 
       const response = await request(app)
         .post('/api/auth/register')
+        .set('X-Forwarded-For', ip)
         .send(userData);
 
       expectRateLimitHeaders(response);
@@ -260,12 +282,18 @@ describe('Rate Limiting System', () => {
 
   describe('Token Refresh Rate Limiting', () => {
     let refreshToken;
+    const refreshIP = getUniqueIP(20);
+    const loginIP = getUniqueIP(21);
 
     beforeAll(async () => {
-      // Login to get refresh token
+      // No longer need long sleeps due to unique IPs
+      await sleep(100);
+
+      // Login to get refresh token (using a different IP than the refresh attempts)
       const loginResponse = await request(app)
         .post('/api/auth/login')
         .set(bypassAuthHeaders)
+        .set('X-Forwarded-For', loginIP)
         .send({
           email: testUser.email,
           password: testUser.plainPassword,
@@ -287,19 +315,30 @@ describe('Rate Limiting System', () => {
         return;
       }
 
-      // First 5 refresh attempts should succeed
+      let currentRefreshToken = refreshToken;
+
+      // First 5 refresh attempts should succeed (with rotation)
       for (let i = 0; i < 5; i++) {
         const response = await request(app)
           .post('/api/auth/refresh-token')
-          .set('Cookie', [refreshToken]);
+          .set('X-Forwarded-For', refreshIP)
+          .set('Cookie', [currentRefreshToken]);
 
         expect(response.status).toBe(200);
+        
+        // Extract the new rotated refresh token for the next attempt
+        const cookies = response.headers['set-cookie'];
+        const newRefreshToken = cookies.find(c => c.startsWith('refreshToken='));
+        if (newRefreshToken) {
+          currentRefreshToken = newRefreshToken;
+        }
       }
 
       // 6th attempt should be rate limited
       const response = await request(app)
         .post('/api/auth/refresh-token')
-        .set('Cookie', [refreshToken]);
+        .set('X-Forwarded-For', refreshIP)
+        .set('Cookie', [currentRefreshToken]);
 
       // In test env limiter may be bypassed; allow success or standard limit
       if (limiterBypassed) {
@@ -311,9 +350,16 @@ describe('Rate Limiting System', () => {
   });
 
   describe('Rate Limit Headers', () => {
+    beforeAll(async () => {
+      // No longer need long sleeps due to unique IPs
+      await sleep(100);
+    });
+
     it('should_include_standard_rate_limit_headers', async () => {
+      const ip = getUniqueIP(30);
       const response = await request(app)
         .post('/api/auth/login')
+        .set('X-Forwarded-For', ip)
         .send({
           email: testUser.email,
           password: 'WrongPassword123!',

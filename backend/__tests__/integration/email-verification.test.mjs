@@ -26,10 +26,29 @@ describe('Email Verification System - Integration Tests', () => {
     resetRateLimitStore();
 
     // Clean up
-    await prisma.emailVerificationToken.deleteMany({});
-    await prisma.refreshToken.deleteMany({});
+    const cleanupEmailMatchers = [
+      { email: { contains: 'emailint_' } },
+      { email: { contains: 'newuser_' } },
+      { email: { contains: 'newuser2_' } },
+      { email: { contains: 'devuser_' } },
+      { email: { contains: 'workflow_' } },
+    ];
+    const cleanupUsers = await prisma.user.findMany({
+      where: { OR: cleanupEmailMatchers },
+      select: { id: true },
+    });
+    const cleanupUserIds = cleanupUsers.map(user => user.id);
+
+    if (cleanupUserIds.length > 0) {
+      await prisma.refreshToken.deleteMany({
+        where: { userId: { in: cleanupUserIds } },
+      });
+    }
+    await prisma.emailVerificationToken.deleteMany({
+      where: { OR: cleanupEmailMatchers },
+    });
     await prisma.user.deleteMany({
-      where: { email: { contains: 'emailint' } },
+      where: { id: { in: cleanupUserIds } },
     });
 
     // Create test user
@@ -278,7 +297,9 @@ describe('Email Verification System - Integration Tests', () => {
     });
 
     it('should_require_authentication', async () => {
-      const response = await request(app).post('/auth/resend-verification');
+      const response = await request(app)
+        .post('/auth/resend-verification')
+        .set('x-test-require-auth', 'true');
 
       expect(response.status).toBe(401);
     });
@@ -312,7 +333,7 @@ describe('Email Verification System - Integration Tests', () => {
         .post('/auth/resend-verification')
         .set('Authorization', `Bearer ${authToken}`);
 
-      expect(response.status).toBe(500);
+      expect(response.status).toBe(429);
       expect(response.body.message).toContain('wait');
     });
 
@@ -376,7 +397,9 @@ describe('Email Verification System - Integration Tests', () => {
     });
 
     it('should_require_authentication', async () => {
-      const response = await request(app).get('/auth/verification-status');
+      const response = await request(app)
+        .get('/auth/verification-status')
+        .set('x-test-require-auth', 'true');
 
       expect(response.status).toBe(401);
     });

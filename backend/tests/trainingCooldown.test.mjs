@@ -34,31 +34,30 @@
  */
 
 import { jest, describe, beforeEach, expect, it, beforeAll } from '@jest/globals';
-import { fileURLToPath } from 'url';
-import { dirname, join } from 'path';
+const mockPrisma = {
+  horse: {
+    update: jest.fn(),
+    findUnique: jest.fn(),
+  },
+  breed: {
+    create: jest.fn(),
+    delete: jest.fn(),
+  },
+  $disconnect: jest.fn(),
+};
 
-const __filename = fileURLToPath(import.meta.url);
-const __dirname = dirname(__filename);
+const mockCreateHorse = jest.fn();
+const mockGetHorseById = jest.fn();
 
 // Mock the database module BEFORE importing other modules
-jest.unstable_mockModule(join(__dirname, '../db/index.mjs'), () => ({
-  default: {
-    horse: {
-      update: jest.fn(),
-      findUnique: jest.fn(),
-    },
-    breed: {
-      create: jest.fn(),
-      delete: jest.fn(),
-    },
-    $disconnect: jest.fn(),
-  },
+jest.unstable_mockModule('../db/index.mjs', () => ({
+  default: mockPrisma,
 }));
 
 // Mock the horse model
-jest.unstable_mockModule(join(__dirname, '../models/horseModel.mjs'), () => ({
-  createHorse: jest.fn(),
-  getHorseById: jest.fn(),
+jest.unstable_mockModule('../models/horseModel.mjs', () => ({
+  createHorse: mockCreateHorse,
+  getHorseById: mockGetHorseById,
 }));
 
 // Now import the modules
@@ -66,7 +65,6 @@ const { canTrain, getCooldownTimeRemaining, setCooldown, formatCooldown } = awai
   '../utils/trainingCooldown.mjs'
 );
 const { createHorse, getHorseById } = await import('../models/horseModel.mjs');
-const mockPrisma = (await import(join(__dirname, '../db/index.mjs'))).default;
 
 describe('⏰ UNIT: Training Cooldown System - Horse Training Restrictions', () => {
   let testHorse;

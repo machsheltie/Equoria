@@ -1,6 +1,9 @@
 import { jest, describe, it, expect, beforeEach } from '@jest/globals';
 import request from 'supertest';
 
+// Import authentication helpers
+import { generateTestToken, createTestUser } from '../helpers/authHelper.mjs';
+
 // Create mock object BEFORE jest.unstable_mockModule
 const mockPrisma = {
   user: {
@@ -25,6 +28,10 @@ jest.unstable_mockModule('../../db/index.mjs', () => ({
 const app = (await import('../../app.mjs')).default;
 
 describe('Horse Routes Integration Tests', () => {
+  // Authentication variables
+  let authToken;
+  let testUser;
+
   const mockUser = {
     id: 'test-user-uuid-123',
     name: 'Test User',
@@ -34,17 +41,35 @@ describe('Horse Routes Integration Tests', () => {
         name: 'Adult Horse 1',
         age: 4,
         userId: 'test-user-uuid-123',
+        breed: { id: 1, name: 'Thoroughbred' },
+        stable: { id: 1, name: 'Main Stable' },
+        epigeneticModifiers: {
+          positive: [],  // No special traits (including no "gaited" trait)
+          negative: []
+        }
       },
       {
         id: 2,
         name: 'Adult Horse 2',
         age: 5,
         userId: 'test-user-uuid-123',
+        breed: { id: 2, name: 'Arabian' },
+        stable: { id: 1, name: 'Main Stable' },
+        epigeneticModifiers: {
+          positive: [],  // No special traits
+          negative: []
+        }
       },
     ],
   };
 
   beforeEach(() => {
+    // Generate test authentication token
+    authToken = generateTestToken({
+      id: 'test-user-uuid-123',
+      email: 'test@example.com',
+      role: 'user'
+    });
     // Reset all mocks before each test
     jest.clearAllMocks();
 
@@ -79,7 +104,10 @@ describe('Horse Routes Integration Tests', () => {
     it('should return trainable horses for valid user ID', async () => {
       const userId = 'test-user-uuid-123';
 
-      const response = await request(app).get(`/api/horses/trainable/${userId}`).expect(200);
+      const response = await request(app)
+        .get(`/api/horses/trainable/${userId}`)
+        .set('Authorization', `Bearer ${authToken}`)
+        .expect(200);
 
       expect(response.body).toHaveProperty('success', true);
       expect(response.body).toHaveProperty('message');
@@ -97,23 +125,32 @@ describe('Horse Routes Integration Tests', () => {
       });
     });
 
-    it('should return empty array for non-existent user', async () => {
+    it('should return 403 when accessing another user\'s trainable horses', async () => {
       const userId = 'nonexistent-user-uuid-456';
 
-      const response = await request(app).get(`/api/horses/trainable/${userId}`).expect(200);
+      const response = await request(app)
+        .get(`/api/horses/trainable/${userId}`)
+        .set('Authorization', `Bearer ${authToken}`)
+        .expect(403);
 
-      expect(response.body).toHaveProperty('success', true);
-      expect(response.body).toHaveProperty('data', []);
+      expect(response.body).toHaveProperty('success', false);
+      expect(response.body).toHaveProperty('message', 'Forbidden: Cannot access trainable horses for another user');
     });
 
     it('should return validation error for invalid user ID', async () => {
-      await request(app).get('/api/horses/trainable/').expect(400); // Validation error for empty user ID
+      await request(app)
+        .get('/api/horses/trainable/')
+        .set('Authorization', `Bearer ${authToken}`)
+        .expect(400); // Validation error for empty user ID
     });
 
     it('should return validation error for user ID that is too long', async () => {
       const longUserId = 'a'.repeat(51); // Exceeds 50 character limit
 
-      const response = await request(app).get(`/api/horses/trainable/${longUserId}`).expect(400);
+      const response = await request(app)
+        .get(`/api/horses/trainable/${longUserId}`)
+        .set('Authorization', `Bearer ${authToken}`)
+        .expect(400);
 
       expect(response.body).toHaveProperty('success', false);
       expect(response.body).toHaveProperty('message', 'Validation failed');
@@ -125,7 +162,9 @@ describe('Horse Routes Integration Tests', () => {
       // For now, we'll just verify the endpoint exists and responds
       const userId = 'test-user-uuid-123';
 
-      const response = await request(app).get(`/api/horses/trainable/${userId}`);
+      const response = await request(app)
+        .get(`/api/horses/trainable/${userId}`)
+        .set('Authorization', `Bearer ${authToken}`);
 
       expect([200, 500]).toContain(response.status);
     });

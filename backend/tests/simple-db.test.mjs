@@ -26,7 +26,7 @@ describe('Simple Database Test', () => {
         id: 'simple-test-user',
         username: 'simpletestuser',
         email: 'simple-test@example.com',
-        password: 'testpassword',
+        password: 'TestPassword123!',
         firstName: 'Simple',
         lastName: 'Test',
         money: 1000,
@@ -37,7 +37,7 @@ describe('Simple Database Test', () => {
     expect(user.email).toBe('simple-test@example.com');
 
     // Clean up
-    await prisma.user.delete({
+    await prisma.user.deleteMany({
       where: { id: user.id },
     });
   });

@@ -96,7 +96,7 @@ describe('🏇 INTEGRATION: Horse Overview API - Real Database Integration', () 
         sex: 'Mare',
         breedId: testBreed.id,
         ownerId: testUser.id,
-        userId: testUser.id,
+        ownerId: testUser.id,
         dateOfBirth: new Date('2020-01-01'),
         healthStatus: 'Excellent',
         disciplineScores: {
@@ -294,7 +294,7 @@ describe('🏇 INTEGRATION: Horse Overview API - Real Database Integration', () 
           sex: 'Gelding',
           breedId: minimalBreed.id,
           ownerId: testUser.id,
-          userId: testUser.id,
+          ownerId: testUser.id,
           dateOfBirth: new Date('2022-01-01'),
           healthStatus: 'Good',
           disciplineScores: {},

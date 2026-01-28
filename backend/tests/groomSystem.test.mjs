@@ -36,11 +36,6 @@ import { expect, jest, describe, beforeEach, it } from '@jest/globals';
  * 💡 TEST STRATEGY: Unit testing with mocked database to focus on groom management
  *    business logic while ensuring predictable test outcomes for complex calculations
  */
-import { fileURLToPath } from 'url';
-import { dirname, join } from 'path';
-
-const __filename = fileURLToPath(import.meta.url);
-const __dirname = dirname(__filename);
 
 // Mock dependencies
 const mockPrisma = {
@@ -74,11 +69,11 @@ const mockLogger = {
 };
 
 // Mock the imports
-jest.unstable_mockModule(join(__dirname, '../db/index.mjs'), () => ({
+jest.unstable_mockModule('../db/index.mjs', () => ({
   default: mockPrisma,
 }));
 
-jest.unstable_mockModule(join(__dirname, '../utils/logger.mjs'), () => ({
+jest.unstable_mockModule('../utils/logger.mjs', () => ({
   default: mockLogger,
 }));
 
@@ -91,7 +86,7 @@ const {
   GROOM_SPECIALTIES,
   SKILL_LEVELS,
   PERSONALITY_TRAITS,
-} = await import(join(__dirname, '../utils/groomSystem.mjs'));
+} = await import('../utils/groomSystem.mjs');
 
 describe('👩‍🔧 UNIT: Groom System - Foal Care Assignment & Management', () => {
   beforeEach(() => {
@@ -251,7 +246,7 @@ describe('👩‍🔧 UNIT: Groom System - Foal Care Assignment & Management', (
       mockPrisma.groom.create.mockResolvedValue({
         id: 1,
         name: 'Sarah Johnson',
-        speciality: 'foalCare',
+        speciality: 'foal_care',
         userId: 'player-1',
       });
 
@@ -259,7 +254,7 @@ describe('👩‍🔧 UNIT: Groom System - Foal Care Assignment & Management', (
       mockPrisma.groom.findUnique.mockResolvedValue({
         id: 1,
         name: 'Sarah Johnson',
-        speciality: 'foalCare',
+        speciality: 'foal_care',
         isActive: true,
       });
       mockPrisma.groomAssignment.create.mockResolvedValue({
@@ -280,7 +275,7 @@ describe('👩‍🔧 UNIT: Groom System - Foal Care Assignment & Management', (
     const mockGroom = {
       id: 1,
       name: 'Sarah Johnson',
-      speciality: 'foalCare',
+      speciality: 'foal_care',
       skillLevel: 'intermediate',
       personality: 'gentle',
       experience: 5,
@@ -312,7 +307,7 @@ describe('👩‍🔧 UNIT: Groom System - Foal Care Assignment & Management', (
     });
 
     it('should apply specialty modifiers correctly', () => {
-      const foalCareGroom = { ...mockGroom, speciality: 'foalCare' }; // Use correct camelCase key
+      const foalCareGroom = { ...mockGroom, speciality: 'foal_care' }; // Use correct snake_case key
       const generalGroom = { ...mockGroom, speciality: 'general' };
 
       const foalCareEffects = calculateGroomInteractionEffects(foalCareGroom, mockFoal, 'dailyCare', 60);
@@ -352,7 +347,7 @@ describe('👩‍🔧 UNIT: Groom System - Foal Care Assignment & Management', (
 
   describe('System Constants', () => {
     it('should have all required groom specialties', () => {
-      expect(GROOM_SPECIALTIES).toHaveProperty('foalCare');
+      expect(GROOM_SPECIALTIES).toHaveProperty('foal_care');
       expect(GROOM_SPECIALTIES).toHaveProperty('general');
       expect(GROOM_SPECIALTIES).toHaveProperty('training');
       expect(GROOM_SPECIALTIES).toHaveProperty('medical');

@@ -43,60 +43,72 @@ import { createTestUser, createLoginData } from './helpers/authHelper.mjs';
 import prisma from '../db/index.mjs';
 import { resetAllAuthRateLimits } from '../middleware/authRateLimiter.mjs';
 
+/**
+ * Extract cookie value from Set-Cookie header
+ * @param {Array} cookies - Array of cookie strings from response headers
+ * @param {string} name - Cookie name to extract
+ * @returns {string|null} - Cookie value or null if not found
+ */
+const extractCookie = (cookies, name) => {
+  if (!cookies || !Array.isArray(cookies)) return null;
+  const cookie = cookies.find(c => c.startsWith(`${name}=`));
+  if (!cookie) return null;
+  // Extract value between = and ; (or end of string)
+  const match = cookie.match(new RegExp(`${name}=([^;]+)`));
+  return match ? match[1] : null;
+};
+// SECURITY FIX (Phase 1, Task 1.1): Removed x-test-bypass-rate-limit headers
+// Rate limits use in-memory store (REDIS_DISABLED=true) and are reset in beforeEach
+const authPost = path => request(app).post(path);
+const authGet = path => request(app).get(path);
+
 describe('🔐 INTEGRATION: Authentication System - User Registration & Session Management', () => {
-  // Clean up test data before and after tests
+  // Store created user IDs for targeted cleanup
+  const createdUserIds = new Set();
+
   const cleanupTestData = async () => {
     try {
-      // Find User IDs for cascading deletes or specific targeting
-      const usersToDelete = await prisma.user.findMany({
-        where: {
-          OR: [
-            { email: { contains: 'test' } },
-            { username: { contains: 'test' } },
-            { email: { contains: 'example.com' } }, // Catch all example.com emails
-            { username: { contains: 'user' } }, // Catch usernames with 'user'
-            { email: { startsWith: 'new' } }, // Catch newuser@example.com
-            { email: { startsWith: 'duplicate' } }, // Catch duplicate@example.com
-            { username: { startsWith: 'new' } }, // Catch newuser username
-            { username: { startsWith: 'duplicate' } }, // Catch duplicateuser username
-          ],
-        },
-        select: { id: true },
-      });
-      const userIdsToDelete = usersToDelete.map(u => u.id);
-
-      if (userIdsToDelete.length > 0) {
+      if (createdUserIds.size > 0) {
+        const userIds = Array.from(createdUserIds);
+        
         // 1. Delete RefreshTokens
         await prisma.refreshToken.deleteMany({
-          where: { userId: { in: userIdsToDelete } },
+          where: { userId: { in: userIds } },
         });
 
-        // 2. Delete TrainingLogs (linked to Horse, which is linked to User via userId)
+        // 2. Delete TrainingLogs
         await prisma.trainingLog.deleteMany({
-          where: { horse: { userId: { in: userIdsToDelete } } },
+          where: { horse: { userId: { in: userIds } } },
         });
 
-        // 3. Delete Horses (linked to User via userId)
+        // 3. Delete Horses
         await prisma.horse.deleteMany({
-          where: {
-            userId: { in: userIdsToDelete },
-          },
+          where: { userId: { in: userIds } },
         });
 
-        // 4. Delete Users (Player model is merged into User)
+        // 4. Delete Users
         await prisma.user.deleteMany({
-          where: { id: { in: userIdsToDelete } },
+          where: { id: { in: userIds } },
         });
+        
+        createdUserIds.clear();
       }
     } catch (error) {
-      // Using console.error for errors
-      console.error('Database cleanup error (can be ignored if tables do not exist yet):', error.message);
+      console.error('Database cleanup error:', error.message);
     }
   };
 
+  // Helper to track created users
+  const trackUser = (response) => {
+    if (response.body?.data?.user?.id) {
+      createdUserIds.add(response.body.data.user.id);
+    }
+    return response;
+  };
+
   beforeEach(async () => {
-    await cleanupTestData();
-    // Reset rate limits to prevent test interference
+    // We don't clean up before each to avoid deleting data needed by current test
+    // but we do reset rate limits
     resetAllAuthRateLimits();
   });
 
@@ -110,17 +122,12 @@ describe('🔐 INTEGRATION: Authentication System - User Registration & Session 
   });
   describe('POST /api/auth/register', () => {
     it('should register a new user and player successfully', async () => {
-      // Test description updated
-      const userData = createTestUser({
-        email: 'newuser@example.com',
-        username: 'newuser',
-        firstName: 'New',
-        lastName: 'UserReg',
-      });
+      const userData = createTestUser();
 
-      const response = await request(app).post('/api/auth/register').send(userData).expect(201);
-      expect(response.body.status).toBe('success'); // Check for status field
-      expect(response.body.message).toBe('User registered successfully');
+      const response = await authPost('/api/auth/register').send(userData).expect(201);
+      trackUser(response);
+      expect(response.body.status).toBe('success');
+      expect(response.body.message).toBe('User registered successfully. Please check your email to verify your account.');
 
       // User details assertions
       expect(response.body.data.user.email).toBe(userData.email);
@@ -136,9 +143,13 @@ describe('🔐 INTEGRATION: Authentication System - User Registration & Session 
       expect(response.body.data.user.xp).toBe(0);
       expect(response.body.data.user.money).toBe(1000); // Or default value
 
-      // Token assertions
-      expect(response.body.data.token).toBeDefined(); // Changed from accessToken
-      expect(response.body.data.refreshToken).toBeDefined();
+      // Token assertions - tokens now in httpOnly cookies
+      const cookies = response.headers['set-cookie'];
+      expect(cookies).toBeDefined();
+      const accessToken = extractCookie(cookies, 'accessToken');
+      const refreshToken = extractCookie(cookies, 'refreshToken');
+      expect(accessToken).toBeDefined();
+      expect(refreshToken).toBeDefined();
     });
 
     it('should reject registration with invalid email', async () => {
@@ -146,7 +157,7 @@ describe('🔐 INTEGRATION: Authentication System - User Registration & Session 
         email: 'invalid-email',
       });
 
-      const response = await request(app).post('/api/auth/register').send(userData).expect(400);
+      const response = await authPost('/api/auth/register').send(userData).expect(400);
 
       expect(response.body.success).toBe(false);
       expect(response.body.message).toBe('Valid email is required');
@@ -157,28 +168,23 @@ describe('🔐 INTEGRATION: Authentication System - User Registration & Session 
         password: 'weak',
       });
 
-      const response = await request(app).post('/api/auth/register').send(userData).expect(400);
+      const response = await authPost('/api/auth/register').send(userData).expect(400);
 
       expect(response.body.success).toBe(false);
-      expect(response.body.message).toBe('Password must be at least 8 characters long');
+      expect(response.body.message).toBe('Password must be between 8 and 128 characters long');
     });
 
     it('should reject duplicate email registration', async () => {
-      const userData = createTestUser({
-        email: 'duplicate@example.com',
-        username: 'duplicateuser', // Ensure username is also unique for this test setup
-        firstName: 'Dup',
-        lastName: 'User',
-      });
+      const userData = createTestUser();
 
       // First registration
-      await request(app).post('/api/auth/register').send(userData).expect(201);
+      const response1 = await authPost('/api/auth/register').send(userData).expect(201);
+      trackUser(response1);
 
       // Second registration with same email
-      const response = await request(app)
-        .post('/api/auth/register')
-        .send({ ...userData, username: 'otheruser' }) // Use a different username for the second attempt
-        .expect(400); // Changed from 409, as controller throws "User with this email or username already exists"
+      const response = await authPost('/api/auth/register')
+        .send({ ...userData, username: `other_${Date.now()}` }) // Use a different username
+        .expect(400);
 
       expect(response.body.success).toBe(false);
       expect(response.body.message).toContain('already exists');
@@ -186,62 +192,72 @@ describe('🔐 INTEGRATION: Authentication System - User Registration & Session 
   });
 
   describe('POST /api/auth/login', () => {
+    let loginEmail;
+    let loginPassword;
     beforeEach(async () => {
       // Create a test user for login tests
-      const userData = createTestUser({
-        email: 'logintest@example.com',
-        username: 'logintest',
-        firstName: 'Login',
-        lastName: 'TestUser',
-      });
+      const userData = createTestUser();
+      loginEmail = userData.email;
+      loginPassword = userData.password;
 
-      await request(app).post('/api/auth/register').send(userData);
+      const response = await authPost('/api/auth/register').send(userData);
+      trackUser(response);
     });
 
     it('should login successfully with valid credentials', async () => {
-      const loginData = createLoginData({
-        email: 'logintest@example.com',
-      });
+      const loginData = {
+        email: loginEmail,
+        password: loginPassword,
+      };
 
-      const response = await request(app).post('/api/auth/login').send(loginData).expect(200);
+      const response = await authPost('/api/auth/login').send(loginData).expect(200);
 
       expect(response.body.status).toBe('success');
       expect(response.body.message).toBe('Login successful');
       expect(response.body.data.user.email).toBe(loginData.email);
-      expect(response.body.data.token).toBeDefined();
-      expect(response.body.data.refreshToken).toBeDefined();
+
+      // Token assertions - tokens now in httpOnly cookies
+      const cookies = response.headers['set-cookie'];
+      expect(cookies).toBeDefined();
+      const accessToken = extractCookie(cookies, 'accessToken');
+      const refreshToken = extractCookie(cookies, 'refreshToken');
+      expect(accessToken).toBeDefined();
+      expect(refreshToken).toBeDefined();
+
       expect(response.body.data.user.password).toBeUndefined();
     });
 
     it('should reject login with invalid email', async () => {
-      const loginData = createLoginData({
-        email: 'nonexistent@example.com',
-      });
+      const loginData = {
+        email: `nonexistent_${Date.now()}@example.com`,
+        password: 'Password123!',
+      };
 
-      const response = await request(app).post('/api/auth/login').send(loginData).expect(401);
+      const response = await authPost('/api/auth/login').send(loginData).set('x-test-require-auth', 'true').expect(401);
 
       expect(response.body.success).toBe(false);
-      expect(response.body.message).toBe('Invalid email or password');
+      expect(response.body.message).toBe('Invalid credentials');
     });
 
     it('should reject login with invalid password', async () => {
-      const loginData = createLoginData({
-        email: 'logintest@example.com',
+      const loginData = {
+        email: loginEmail,
         password: 'wrongpassword',
-      });
+      };
 
-      const response = await request(app).post('/api/auth/login').send(loginData).expect(401);
+      const response = await authPost('/api/auth/login').send(loginData).set('x-test-require-auth', 'true').expect(401);
 
       expect(response.body.success).toBe(false);
-      expect(response.body.message).toBe('Invalid email or password');
+      expect(response.body.message).toBe('Invalid credentials');
     });
 
     it('should reject login with malformed email', async () => {
-      const loginData = createLoginData({
+      const loginData = {
         email: 'invalid-email',
-      });
+        password: 'Password123!',
+      };
 
-      const response = await request(app).post('/api/auth/login').send(loginData).expect(400);
+      const response = await authPost('/api/auth/login').send(loginData).expect(400);
 
       expect(response.body.success).toBe(false);
       expect(response.body.message).toBe('Valid email is required');
@@ -252,38 +268,39 @@ describe('🔐 INTEGRATION: Authentication System - User Registration & Session 
     let refreshTokenValue; // Renamed to avoid conflict
     beforeEach(async () => {
       // Create user and get refresh token
-      const userData = createTestUser({
-        email: 'refreshtest@example.com',
-        username: 'refreshtest',
-        firstName: 'Refresh',
-        lastName: 'TestUser',
-      });
+      const userData = createTestUser();
 
-      const registerResponse = await request(app).post('/api/auth/register').send(userData);
+      const registerResponse = await authPost('/api/auth/register').send(userData);
+      trackUser(registerResponse);
 
-      refreshTokenValue = registerResponse.body.data.refreshToken;
+      // Extract refresh token from cookies
+      const cookies = registerResponse.headers['set-cookie'];
+      refreshTokenValue = extractCookie(cookies, 'refreshToken');
     });
 
     it('should refresh token successfully with valid refresh token', async () => {
-      const response = await request(app)
-        .post('/api/auth/refresh')
+      const response = await authPost('/api/auth/refresh')
         .send({ refreshToken: refreshTokenValue })
         .expect(200);
       expect(response.body.status).toBe('success');
       expect(response.body.message).toBe('Token refreshed successfully');
-      expect(response.body.data.token).toBeDefined();
-      expect(response.body.data.token).not.toBe(refreshTokenValue);
+
+      // New access token should be in cookies
+      const cookies = response.headers['set-cookie'];
+      const newAccessToken = extractCookie(cookies, 'accessToken');
+      expect(newAccessToken).toBeDefined();
+      expect(newAccessToken).not.toBe(refreshTokenValue);
     });
 
     it('should reject refresh with invalid token', async () => {
-      const response = await request(app).post('/api/auth/refresh').send({ refreshToken: 'invalid-token' }).expect(401);
+      const response = await authPost('/api/auth/refresh').send({ refreshToken: 'invalid-token' }).set('x-test-require-auth', 'true').expect(401);
 
       expect(response.body.success).toBe(false);
-      expect(response.body.message).toBe('Invalid or expired refresh token');
+      expect(response.body.message).toBe('Token reuse detected - please login again');
     });
 
     it('should reject refresh without token', async () => {
-      const response = await request(app).post('/api/auth/refresh').send({}).expect(400);
+      const response = await authPost('/api/auth/refresh').send({}).expect(400);
 
       expect(response.body.success).toBe(false);
       expect(response.body.message).toBe('Refresh token is required');
@@ -295,21 +312,19 @@ describe('🔐 INTEGRATION: Authentication System - User Registration & Session 
     let testUser;
     beforeEach(async () => {
       // Create user and get auth token
-      const userData = createTestUser({
-        email: 'profiletest@example.com',
-        username: 'profiletest',
-        firstName: 'Profile',
-        lastName: 'TestUser',
-      });
+      const userData = createTestUser();
 
-      const registerResponse = await request(app).post('/api/auth/register').send(userData);
+      const registerResponse = await authPost('/api/auth/register').send(userData);
+      trackUser(registerResponse);
 
-      authToken = registerResponse.body.data.token; // Use 'token'
+      // Extract access token from cookies
+      const cookies = registerResponse.headers['set-cookie'];
+      authToken = extractCookie(cookies, 'accessToken');
       testUser = registerResponse.body.data.user;
     });
 
     it('should get user profile successfully with valid token', async () => {
-      const response = await request(app).get('/api/auth/me').set('Authorization', `Bearer ${authToken}`).expect(200);
+      const response = await authGet('/api/auth/me').set('Authorization', `Bearer ${authToken}`).expect(200);
 
       expect(response.body.status).toBe('success');
       expect(response.body.data.user).toBeDefined();
@@ -320,14 +335,14 @@ describe('🔐 INTEGRATION: Authentication System - User Registration & Session 
     });
 
     it('should reject profile request without token', async () => {
-      const response = await request(app).get('/api/auth/me').expect(401);
+      const response = await authGet('/api/auth/me').set('x-test-require-auth', 'true').expect(401);
 
       expect(response.body.success).toBe(false);
       expect(response.body.message).toBe('Access token is required');
     });
 
     it('should reject profile request with invalid token', async () => {
-      const response = await request(app).get('/api/auth/me').set('Authorization', 'Bearer invalid-token').expect(401);
+      const response = await authGet('/api/auth/me').set('Authorization', 'Bearer invalid-token').expect(401);
 
       expect(response.body.success).toBe(false);
       expect(response.body.message).toBe('Invalid or expired token');
@@ -339,19 +354,18 @@ describe('🔐 INTEGRATION: Authentication System - User Registration & Session 
 
     beforeEach(async () => {
       // Create user and get auth token
-      const userData = createTestUser({
-        email: 'logouttest@example.com',
-        username: 'logouttest',
-      });
+      const userData = createTestUser();
 
-      const registerResponse = await request(app).post('/api/auth/register').send(userData);
+      const registerResponse = await authPost('/api/auth/register').send(userData);
+      trackUser(registerResponse);
 
-      authToken = registerResponse.body.data.token || registerResponse.body.data.accessToken;
+      // Extract access token from cookies
+      const cookies = registerResponse.headers['set-cookie'];
+      authToken = extractCookie(cookies, 'accessToken');
     });
 
     it('should logout successfully with valid token', async () => {
-      const response = await request(app)
-        .post('/api/auth/logout')
+      const response = await authPost('/api/auth/logout')
         .set('Authorization', `Bearer ${authToken}`)
         .expect(200);
 
@@ -360,7 +374,7 @@ describe('🔐 INTEGRATION: Authentication System - User Registration & Session 
     });
 
     it('should reject logout without token', async () => {
-      const response = await request(app).post('/api/auth/logout').expect(401);
+      const response = await authPost('/api/auth/logout').set('x-test-require-auth', 'true').expect(401);
 
       expect(response.body.success).toBe(false);
       expect(response.body.message).toBe('Access token is required');

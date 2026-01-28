@@ -43,9 +43,9 @@ const mockLogger = {
 };
 
 // Mock the logger import
-jest.unstable_mockModule(join(__dirname, '../utils/logger.mjs'), () => ({
+jest.mock(join(__dirname, '../utils/logger.mjs'), () => ({
   default: mockLogger,
-}));
+}), { virtual: true });
 
 // Import the functions after mocking
 const { evaluateEpigeneticTagsFromFoalTasks } = await import(join(__dirname, '../utils/traitEvaluation.mjs'));
@@ -53,26 +53,48 @@ const { getFoalCareSummary } = await import(join(__dirname, '../utils/foalTaskLo
 
 describe('Trait Milestone Integration', () => {
   let testUser, testFoal;
+  const createdHorseIds = new Set();
+  const createdUserIds = new Set();
+
+  const cleanupTestData = async () => {
+    try {
+      if (createdHorseIds.size > 0) {
+        await prisma.horse.deleteMany({
+          where: { id: { in: Array.from(createdHorseIds) } },
+        });
+        createdHorseIds.clear();
+      }
+      if (createdUserIds.size > 0) {
+        await prisma.user.deleteMany({
+          where: { id: { in: Array.from(createdUserIds) } },
+        });
+        createdUserIds.clear();
+      }
+    } catch (error) {
+      console.error('Cleanup error:', error.message);
+    }
+  };
 
   beforeEach(async () => {
     jest.clearAllMocks();
 
-    // Clean up test data
-    await prisma.horse.deleteMany({});
-    await prisma.user.deleteMany({});
+    // Clean up before starting
+    await cleanupTestData();
 
-    // Create test user
+    // Create test user with unique identifiers
+    const suffix = `${Date.now()}_${Math.random().toString(36).substr(2, 5)}`;
     testUser = await prisma.user.create({
       data: {
-        id: 'test-user-milestone',
-        username: 'milestoneuser',
-        email: 'milestone@example.com',
-        password: 'testpassword',
+        id: `user-milestone-${suffix}`,
+        username: `milestoneuser_${suffix}`,
+        email: `milestone_${suffix}@example.com`,
+        password: 'TestPassword123!',
         firstName: 'Milestone',
         lastName: 'Tester',
         money: 1000,
       },
     });
+    createdUserIds.add(testUser.id);
 
     // Create test foal approaching age 1
     testFoal = await prisma.horse.create({
@@ -91,14 +113,12 @@ describe('Trait Milestone Integration', () => {
         daysGroomedInARow: 0,
       },
     });
+    createdHorseIds.add(testFoal.id);
   });
 
   afterEach(async () => {
     jest.restoreAllMocks();
-
-    // Clean up test data
-    await prisma.horse.deleteMany({});
-    await prisma.user.deleteMany({});
+    await cleanupTestData();
   });
 
   describe('Age 1 Milestone Evaluation', () => {

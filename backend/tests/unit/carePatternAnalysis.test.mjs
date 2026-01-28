@@ -18,28 +18,76 @@ const mockPrisma = {
   },
 };
 
-jest.unstable_mockModule('../../db/index.mjs', () => ({
+const mockLogger = {
+  info: jest.fn(),
+  error: jest.fn(),
+  warn: jest.fn(),
+  debug: jest.fn(),
+};
+
+await jest.unstable_mockModule('../../db/index.mjs', () => ({
   default: mockPrisma,
 }));
-
-// Mock logger
-jest.unstable_mockModule('../../utils/logger.mjs', () => ({
-  default: {
-    info: jest.fn(),
-    error: jest.fn(),
-    warn: jest.fn(),
-    debug: jest.fn(),
-  },
+await jest.unstable_mockModule('../../utils/logger.mjs', () => ({
+  default: mockLogger,
 }));
 
 // Import after mocking
 const { analyzeCarePatterns } = await import('../../utils/carePatternAnalysis.mjs');
 
 describe('Care Pattern Analysis', () => {
+  // Anchor dates to keep age calculations deterministic
+  const referenceDate = new Date('2025-06-01T00:00:00Z');
+
+  const fiveMonthsAgo = new Date(referenceDate);
+  fiveMonthsAgo.setMonth(referenceDate.getMonth() - 5);
+
+  const fourYearsAgo = new Date(referenceDate);
+  fourYearsAgo.setFullYear(referenceDate.getFullYear() - 4);
+
+  const oneMonthAgo = new Date(referenceDate);
+  oneMonthAgo.setMonth(referenceDate.getMonth() - 1);
+
+  const threeDaysAgo = new Date(referenceDate);
+  threeDaysAgo.setDate(referenceDate.getDate() - 3);
+
+  const twoDaysAgo = new Date(referenceDate);
+  twoDaysAgo.setDate(referenceDate.getDate() - 2);
+
+  const yesterday = new Date(referenceDate);
+  yesterday.setDate(referenceDate.getDate() - 1);
+
+  const today = new Date(referenceDate);
+
+  // Additional dates for test scenarios (relative to June 1, 2024)
+  const twelveDaysAgo = new Date(referenceDate);
+  twelveDaysAgo.setDate(referenceDate.getDate() - 12); // May 20
+
+  const elevenDaysAgo = new Date(referenceDate);
+  elevenDaysAgo.setDate(referenceDate.getDate() - 11); // May 21
+
+  const tenDaysAgo = new Date(referenceDate);
+  tenDaysAgo.setDate(referenceDate.getDate() - 10); // May 22
+
+  const sevenDaysAgo = new Date(referenceDate);
+  sevenDaysAgo.setDate(referenceDate.getDate() - 7); // May 25
+
+  const sixDaysAgo = new Date(referenceDate);
+  sixDaysAgo.setDate(referenceDate.getDate() - 6); // May 26
+
+  const fiveDaysAgo = new Date(referenceDate);
+  fiveDaysAgo.setDate(referenceDate.getDate() - 5); // May 27
+
+  const fourDaysAgo = new Date(referenceDate);
+  fourDaysAgo.setDate(referenceDate.getDate() - 4); // May 28
+
+  const nineDaysAgo = new Date(referenceDate);
+  nineDaysAgo.setDate(referenceDate.getDate() - 9); // May 23
+
   const mockHorse = {
     id: 1,
     name: 'Test Horse',
-    dateOfBirth: new Date('2024-01-01'),
+    dateOfBirth: fiveMonthsAgo, // FIXED: Use calculated date for 5-month-old foal
     bondScore: 50,
     stressLevel: 20,
     groomInteractions: [],
@@ -52,7 +100,7 @@ describe('Care Pattern Analysis', () => {
   describe('analyzeCarePatterns', () => {
 
     test('should analyze patterns for eligible horse', async () => {
-      const evaluationDate = new Date('2024-06-01'); // 5 months old
+      const evaluationDate = today; // FIXED: Use calculated date for evaluation
       mockPrisma.horse.findUnique.mockResolvedValue(mockHorse);
 
       const result = await analyzeCarePatterns(1, evaluationDate);
@@ -71,7 +119,7 @@ describe('Care Pattern Analysis', () => {
     test('should reject horse too old for evaluation', async () => {
       const oldHorse = {
         ...mockHorse,
-        dateOfBirth: new Date('2020-01-01'), // 4+ years old
+        dateOfBirth: fourYearsAgo, // 4+ years old
       };
       mockPrisma.horse.findUnique.mockResolvedValue(oldHorse);
 
@@ -98,7 +146,7 @@ describe('Care Pattern Analysis', () => {
             quality: 'good',
             bondingChange: 5,
             stressChange: -2,
-            createdAt: new Date('2024-05-25'),
+            createdAt: sevenDaysAgo,
           },
           {
             id: 2,
@@ -106,7 +154,7 @@ describe('Care Pattern Analysis', () => {
             quality: 'excellent',
             bondingChange: 7,
             stressChange: -3,
-            createdAt: new Date('2024-05-26'),
+            createdAt: sixDaysAgo,
           },
           {
             id: 3,
@@ -114,13 +162,13 @@ describe('Care Pattern Analysis', () => {
             quality: 'good',
             bondingChange: 4,
             stressChange: -1,
-            createdAt: new Date('2024-05-27'),
+            createdAt: fiveDaysAgo,
           },
         ],
       };
       mockPrisma.horse.findUnique.mockResolvedValue(horseWithConsistentCare);
 
-      const result = await analyzeCarePatterns(1, new Date('2024-05-28'));
+      const result = await analyzeCarePatterns(1, fourDaysAgo);
 
       expect(result.patterns.consistentCare.totalInteractions).toBe(3);
       expect(result.patterns.consistentCare.groomingInteractions).toBe(3);
@@ -139,7 +187,7 @@ describe('Care Pattern Analysis', () => {
             quality: 'good',
             bondingChange: 3,
             stressChange: 1,
-            createdAt: new Date('2024-05-25'),
+            createdAt: sevenDaysAgo,
           },
           {
             id: 2,
@@ -147,7 +195,7 @@ describe('Care Pattern Analysis', () => {
             quality: 'excellent',
             bondingChange: 5,
             stressChange: 0,
-            createdAt: new Date('2024-05-26'),
+            createdAt: sixDaysAgo,
           },
           {
             id: 3,
@@ -155,7 +203,7 @@ describe('Care Pattern Analysis', () => {
             quality: 'good',
             bondingChange: 2,
             stressChange: 2,
-            createdAt: new Date('2024-05-27'),
+            createdAt: fiveDaysAgo,
           },
           {
             id: 4,
@@ -163,13 +211,13 @@ describe('Care Pattern Analysis', () => {
             quality: 'poor',
             bondingChange: -5,
             stressChange: 8,
-            createdAt: new Date('2024-05-28'),
+            createdAt: fourDaysAgo,
           },
         ],
       };
       mockPrisma.horse.findUnique.mockResolvedValue(horseWithNoveltyExposure);
 
-      const result = await analyzeCarePatterns(1, new Date('2024-05-29'));
+      const result = await analyzeCarePatterns(1, threeDaysAgo);
 
       expect(result.patterns.noveltyExposure.noveltyEvents).toBe(3);
       expect(result.patterns.noveltyExposure.noveltyWithSupport).toBe(3);
@@ -179,6 +227,15 @@ describe('Care Pattern Analysis', () => {
     });
 
     test('should analyze stress management patterns', async () => {
+      const sevenDaysAgo10am = new Date(sevenDaysAgo);
+      sevenDaysAgo10am.setHours(10, 0, 0, 0);
+      const sevenDaysAgo2pm = new Date(sevenDaysAgo);
+      sevenDaysAgo2pm.setHours(14, 0, 0, 0);
+      const sixDaysAgo10am = new Date(sixDaysAgo);
+      sixDaysAgo10am.setHours(10, 0, 0, 0);
+      const sixDaysAgo4pm = new Date(sixDaysAgo);
+      sixDaysAgo4pm.setHours(16, 0, 0, 0);
+
       const horseWithStressEvents = {
         ...mockHorse,
         stressLevel: 30,
@@ -189,7 +246,7 @@ describe('Care Pattern Analysis', () => {
             quality: 'poor',
             bondingChange: -2,
             stressChange: 6,
-            createdAt: new Date('2024-05-25T10:00:00Z'),
+            createdAt: sevenDaysAgo10am,
           },
           {
             id: 2,
@@ -197,7 +254,7 @@ describe('Care Pattern Analysis', () => {
             quality: 'good',
             bondingChange: 3,
             stressChange: -4,
-            createdAt: new Date('2024-05-25T14:00:00Z'), // Recovery within 24h
+            createdAt: sevenDaysAgo2pm, // Recovery within 24h
           },
           {
             id: 3,
@@ -205,7 +262,7 @@ describe('Care Pattern Analysis', () => {
             quality: 'fair',
             bondingChange: 0,
             stressChange: 5,
-            createdAt: new Date('2024-05-26T10:00:00Z'),
+            createdAt: sixDaysAgo10am,
           },
           {
             id: 4,
@@ -213,13 +270,13 @@ describe('Care Pattern Analysis', () => {
             quality: 'excellent',
             bondingChange: 5,
             stressChange: -6,
-            createdAt: new Date('2024-05-26T16:00:00Z'), // Recovery within 24h
+            createdAt: sixDaysAgo4pm, // Recovery within 24h
           },
         ],
       };
       mockPrisma.horse.findUnique.mockResolvedValue(horseWithStressEvents);
 
-      const result = await analyzeCarePatterns(1, new Date('2024-05-27'));
+      const result = await analyzeCarePatterns(1, fiveDaysAgo);
 
       expect(result.patterns.stressManagement.stressEvents).toBe(2);
       expect(result.patterns.stressManagement.recoveryEvents).toBe(2);
@@ -238,7 +295,7 @@ describe('Care Pattern Analysis', () => {
             quality: 'excellent',
             bondingChange: 8,
             stressChange: -2,
-            createdAt: new Date('2024-05-20'),
+            createdAt: twelveDaysAgo,
           },
           {
             id: 2,
@@ -246,7 +303,7 @@ describe('Care Pattern Analysis', () => {
             quality: 'good',
             bondingChange: 6,
             stressChange: -1,
-            createdAt: new Date('2024-05-21'),
+            createdAt: elevenDaysAgo,
           },
           {
             id: 3,
@@ -254,13 +311,13 @@ describe('Care Pattern Analysis', () => {
             quality: 'excellent',
             bondingChange: 7,
             stressChange: 0,
-            createdAt: new Date('2024-05-22'),
+            createdAt: tenDaysAgo,
           },
         ],
       };
       mockPrisma.horse.findUnique.mockResolvedValue(horseWithBondingPatterns);
 
-      const result = await analyzeCarePatterns(1, new Date('2024-05-23'));
+      const result = await analyzeCarePatterns(1, nineDaysAgo);
 
       expect(result.patterns.bondingPatterns.positiveInteractions).toBe(3);
       expect(result.patterns.bondingPatterns.highQualityInteractions).toBe(3);
@@ -279,7 +336,7 @@ describe('Care Pattern Analysis', () => {
             quality: 'poor',
             bondingChange: -3,
             stressChange: 4,
-            createdAt: new Date('2024-05-21'),
+            createdAt: elevenDaysAgo,
           },
           {
             id: 2,
@@ -287,13 +344,13 @@ describe('Care Pattern Analysis', () => {
             quality: 'fair',
             bondingChange: -1,
             stressChange: 2,
-            createdAt: new Date('2024-05-26'), // 5-day gap
+            createdAt: sixDaysAgo, // 5-day gap
           },
         ],
       };
       mockPrisma.horse.findUnique.mockResolvedValue(horseWithNeglect);
 
-      const result = await analyzeCarePatterns(1, new Date('2024-05-26'));
+      const result = await analyzeCarePatterns(1, sixDaysAgo);
 
       expect(result.patterns.neglectPatterns.poorQualityInteractions).toBe(2);
       expect(result.patterns.neglectPatterns.negativeInteractions).toBe(2);
@@ -313,7 +370,7 @@ describe('Care Pattern Analysis', () => {
             bondingChange: 2,
             stressChange: 7, // High stress = startle event
             notes: 'Horse startled by loud noise',
-            createdAt: new Date('2024-05-25'),
+            createdAt: sevenDaysAgo,
           },
           {
             id: 2,
@@ -321,7 +378,7 @@ describe('Care Pattern Analysis', () => {
             quality: 'good',
             bondingChange: 3,
             stressChange: 0,
-            createdAt: new Date('2024-05-26'),
+            createdAt: sixDaysAgo,
           },
           {
             id: 3,
@@ -329,13 +386,13 @@ describe('Care Pattern Analysis', () => {
             quality: 'good',
             bondingChange: 2,
             stressChange: 6, // Another startle event
-            createdAt: new Date('2024-05-27'),
+            createdAt: fiveDaysAgo,
           },
         ],
       };
       mockPrisma.horse.findUnique.mockResolvedValue(horseWithEnvironmentalFactors);
 
-      const result = await analyzeCarePatterns(1, new Date('2024-05-28'));
+      const result = await analyzeCarePatterns(1, fourDaysAgo);
 
       expect(result.patterns.environmentalFactors.startleEvents).toBe(2);
       expect(result.patterns.environmentalFactors.routineInteractions).toBe(3); // 2 daily_care + 1 feeding
@@ -352,7 +409,7 @@ describe('Care Pattern Analysis', () => {
       };
       mockPrisma.horse.findUnique.mockResolvedValue(horseWithNoInteractions);
 
-      const result = await analyzeCarePatterns(1, new Date('2024-06-01'));
+      const result = await analyzeCarePatterns(1, today);
 
       expect(result.eligible).toBe(true);
       expect(result.patterns.consistentCare.totalInteractions).toBe(0);

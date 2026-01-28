@@ -117,8 +117,9 @@ describe('🧬 Genetic Diversity Tracking System', () => {
   });
 
   afterEach(async () => {
-    // Cleanup test data
-    for (const horse of testPopulation) {
+    // Cleanup test data in reverse order (children then parents) to avoid FK violations
+    const cleanupOrder = [...testPopulation].reverse();
+    for (const horse of cleanupOrder) {
       await prisma.horse.delete({ where: { id: horse.id } }).catch(() => {});
     }
   });

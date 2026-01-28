@@ -33,12 +33,6 @@
 
 import { jest, describe, beforeEach, expect, it } from '@jest/globals';
 
-import { fileURLToPath } from 'url';
-import { dirname, join } from 'path';
-
-const __filename = fileURLToPath(import.meta.url);
-const __dirname = dirname(__filename);
-
 // Mock the database
 const mockPrisma = {
   horse: {
@@ -66,17 +60,17 @@ const mockLogger = {
 };
 
 // Mock modules
-jest.unstable_mockModule(join(__dirname, '../db/index.mjs'), () => ({
+jest.unstable_mockModule('../db/index.mjs', () => ({
   default: mockPrisma,
 }));
 
-jest.unstable_mockModule(join(__dirname, '../utils/logger.mjs'), () => ({
+jest.unstable_mockModule('../utils/logger.mjs', () => ({
   default: mockLogger,
 }));
 
 // Import after mocking
 const { getFoalDevelopment, completeActivity, advanceDay, completeEnrichmentActivity, getAvailableActivities } =
-  await import(join(__dirname, '../models/foalModel.mjs'));
+  await import('../models/foalModel.mjs');
 
 describe('🍼 UNIT: Foal Model - Foal Development & Activity Management', () => {
   beforeEach(() => {

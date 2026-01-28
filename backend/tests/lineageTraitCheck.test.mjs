@@ -36,21 +36,15 @@
 
 import { jest, describe, beforeEach, expect, it } from '@jest/globals';
 
-import { fileURLToPath } from 'url';
-import { dirname, join } from 'path';
-
-const __filename = fileURLToPath(import.meta.url);
-const __dirname = dirname(__filename);
-
-// Mock logger
+// Mock logger must be created BEFORE jest.unstable_mockModule
 const mockLogger = {
   info: jest.fn(),
   error: jest.fn(),
   warn: jest.fn(),
 };
 
-// Mock the logger import
-jest.unstable_mockModule(join(__dirname, '../utils/logger.mjs'), () => ({
+// Mock the logger import BEFORE importing the module
+jest.unstable_mockModule('../utils/logger.mjs', () => ({
   default: mockLogger,
 }));
 
@@ -62,7 +56,7 @@ const {
   getAncestorPreferredDiscipline,
   getMostCommonDisciplineFromHistory,
   getHighestScoringDiscipline,
-} = await import(join(__dirname, '../utils/lineageTraitCheck.mjs'));
+} = await import('../utils/lineageTraitCheck.mjs');
 
 describe('🧬 UNIT: Lineage Trait Check - Discipline Affinity Analysis', () => {
   beforeEach(() => {

@@ -29,8 +29,15 @@ import {
 
 describe('Memory and Resource Management System', () => {
   let memoryManager;
+  let originalNodeEnv;
+  let originalJestWorkerId;
 
   beforeEach(() => {
+    originalNodeEnv = process.env.NODE_ENV;
+    originalJestWorkerId = process.env.JEST_WORKER_ID;
+    process.env.NODE_ENV = 'development';
+    delete process.env.JEST_WORKER_ID;
+
     // Clean up any existing manager
     shutdownMemoryManagement();
 
@@ -49,6 +56,18 @@ describe('Memory and Resource Management System', () => {
       memoryManager.cleanupAllResources();
     }
     shutdownMemoryManagement();
+
+    if (originalNodeEnv === undefined) {
+      delete process.env.NODE_ENV;
+    } else {
+      process.env.NODE_ENV = originalNodeEnv;
+    }
+
+    if (originalJestWorkerId === undefined) {
+      delete process.env.JEST_WORKER_ID;
+    } else {
+      process.env.JEST_WORKER_ID = originalJestWorkerId;
+    }
   });
 
   describe('Memory Manager Initialization', () => {

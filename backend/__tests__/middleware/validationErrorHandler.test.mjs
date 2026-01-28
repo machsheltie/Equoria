@@ -12,13 +12,11 @@ import { mockRequest, mockResponse, mockNext } from '../setup.mjs';
 const mockValidationResult = jest.fn();
 const mockMatchedData = jest.fn();
 
-// Mock the express-validator module
 jest.unstable_mockModule('express-validator', () => ({
   validationResult: mockValidationResult,
   matchedData: mockMatchedData,
 }));
 
-// Import after mocking
 const { handleValidationErrors, sanitizeRequestData } = await import(
   '../../middleware/validationErrorHandler.mjs'
 );

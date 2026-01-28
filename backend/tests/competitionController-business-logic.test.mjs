@@ -52,6 +52,19 @@ const { saveResult, getResultsByShow } = await import('../models/resultModel.mjs
 const { calculateCompetitionScore } = await import('../utils/competitionScore.mjs');
 
 describe('🏆 INTEGRATION: Competition Controller Business Logic - Real Competition Workflow', () => {
+  // Reference date anchor for all test date calculations
+  const referenceDate = new Date('2025-06-01T12:00:00Z');
+
+  // Calculate birth dates for horses of different ages
+  const birthDate5YearsOld = new Date(referenceDate);
+  birthDate5YearsOld.setFullYear(referenceDate.getFullYear() - 5); // 2020-06-01 (age 5)
+
+  const birthDate4YearsOld = new Date(referenceDate);
+  birthDate4YearsOld.setFullYear(referenceDate.getFullYear() - 4); // 2021-06-01 (age 4)
+
+  const birthDate3YearsOld = new Date(referenceDate);
+  birthDate3YearsOld.setFullYear(referenceDate.getFullYear() - 3); // 2022-06-01 (age 3)
+
   let testUser, testBreed, testStable; // Removed testPlayer
   let testHorse1, testHorse2, testHorse3;
   let testShow;
@@ -106,7 +119,7 @@ describe('🏆 INTEGRATION: Competition Controller Business Logic - Real Competi
         username: 'competitiontester',
         firstName: 'Competition',
         lastName: 'Tester',
-        password: 'testpassword123',
+        password: 'TestPassword123!',
         // Added fields that were previously in Player model
         money: 1000,
         level: 2,
@@ -163,7 +176,7 @@ describe('🏆 INTEGRATION: Competition Controller Business Logic - Real Competi
         user: { connect: { id: testUser.id } },
         stable: { connect: { id: testStable.id } },
         sex: 'Stallion',
-        dateOfBirth: new Date('2019-01-01'),
+        dateOfBirth: birthDate5YearsOld,
         healthStatus: 'Excellent',
         speed: 85,
         stamina: 80,
@@ -186,7 +199,7 @@ describe('🏆 INTEGRATION: Competition Controller Business Logic - Real Competi
         user: { connect: { id: testUser.id } },
         stable: { connect: { id: testStable.id } },
         sex: 'Mare',
-        dateOfBirth: new Date('2020-01-01'),
+        dateOfBirth: birthDate4YearsOld,
         healthStatus: 'Good',
         speed: 75,
         stamina: 70,
@@ -209,7 +222,7 @@ describe('🏆 INTEGRATION: Competition Controller Business Logic - Real Competi
         user: { connect: { id: testUser.id } },
         stable: { connect: { id: testStable.id } },
         sex: 'Gelding',
-        dateOfBirth: new Date('2021-01-01'),
+        dateOfBirth: birthDate3YearsOld,
         healthStatus: 'Fair',
         speed: 60,
         stamina: 55,

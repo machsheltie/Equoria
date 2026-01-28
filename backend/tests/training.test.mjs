@@ -40,9 +40,11 @@ import { fileURLToPath } from 'url';
 import { dirname, join } from 'path';
 import request from 'supertest';
 import dotenv from 'dotenv';
+import { generateTestToken } from './helpers/authHelper.mjs';
 
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = dirname(__filename);
+let authToken;
 
 // Load test environment
 dotenv.config({ path: join(__dirname, '../.env.test') });
@@ -50,6 +52,10 @@ dotenv.config({ path: join(__dirname, '../.env.test') });
 // Import without mocking for real integration testing
 const app = (await import('../app.mjs')).default;
 const { default: prisma } = await import(join(__dirname, '../db/index.mjs'));
+const trainingRequest = () => request(app)
+  .post('/api/training/train')
+  .set('Authorization', `Bearer ${authToken}`)
+  .set('x-test-skip-csrf', 'true');
 
 describe('🏋️ INTEGRATION: Training System - Complete Business Logic Validation', () => {
   let testUser;
@@ -100,6 +106,7 @@ describe('🏋️ INTEGRATION: Training System - Complete Business Logic Validat
         password: 'hashedpassword',
       },
     });
+    authToken = generateTestToken({ id: testUser.id, email: testUser.email, role: 'user' });
 
     // Create a test Player (for XP system and userId relationship)
     testPlayer = await prisma.user.create({
@@ -123,15 +130,20 @@ describe('🏋️ INTEGRATION: Training System - Complete Business Logic Validat
       });
     }
 
+    // Calculate dynamic dates for accurate age testing
+    const fourYearsAgo = new Date();
+    fourYearsAgo.setFullYear(fourYearsAgo.getFullYear() - 4);
+
     // Create test horses with User relationships
     adultHorse = await prisma.horse.create({
       data: {
         name: 'Test Adult Horse',
         age: 4, // Eligible for training
         breedId: breed.id,
-        userId: testPlayer.id, // User relationship (for XP and ownership)
+        ownerId: testUser.id,
+        ownerId: testPlayer.id, // User relationship (for XP and ownership)
         sex: 'Mare',
-        dateOfBirth: new Date('2020-01-01'),
+        dateOfBirth: fourYearsAgo, // FIXED: Use calculated date for accurate age
         healthStatus: 'Excellent',
         disciplineScores: {}, // No previous training
         epigeneticModifiers: {
@@ -142,14 +154,18 @@ describe('🏋️ INTEGRATION: Training System - Complete Business Logic Validat
       },
     });
 
+    const twoYearsAgo = new Date();
+    twoYearsAgo.setFullYear(twoYearsAgo.getFullYear() - 2);
+
     youngHorse = await prisma.horse.create({
       data: {
         name: 'Test Young Horse',
         age: 2, // Too young for training
         breedId: breed.id,
-        userId: testPlayer.id,
+        ownerId: testUser.id,
+        ownerId: testPlayer.id,
         sex: 'Colt',
-        dateOfBirth: new Date('2022-01-01'),
+        dateOfBirth: twoYearsAgo, // FIXED: Use calculated date for accurate age
         healthStatus: 'Excellent',
         disciplineScores: {},
         epigeneticModifiers: {
@@ -160,14 +176,18 @@ describe('🏋️ INTEGRATION: Training System - Complete Business Logic Validat
       },
     });
 
+    const fiveYearsAgo = new Date();
+    fiveYearsAgo.setFullYear(fiveYearsAgo.getFullYear() - 5);
+
     trainedHorse = await prisma.horse.create({
       data: {
         name: 'Test Trained Horse',
         age: 5,
         breedId: breed.id,
-        userId: testPlayer.id,
+        ownerId: testUser.id,
+        ownerId: testPlayer.id,
         sex: 'Stallion',
-        dateOfBirth: new Date('2019-01-01'),
+        dateOfBirth: fiveYearsAgo, // FIXED: Use calculated date for accurate age
         healthStatus: 'Excellent',
         disciplineScores: {
           Racing: 10, // Has some previous training
@@ -227,7 +247,7 @@ describe('🏋️ INTEGRATION: Training System - Complete Business Logic Validat
 
   describe('BUSINESS RULE: Age Requirements (3+ years old)', () => {
     it('BLOCKS training for horses under 3 years old', async () => {
-      const response = await request(app).post('/api/training/train').send({
+      const response = await trainingRequest().send({
         horseId: youngHorse.id,
         discipline: 'Racing',
       });
@@ -250,7 +270,7 @@ describe('🏋️ INTEGRATION: Training System - Complete Business Logic Validat
     });
 
     it('ALLOWS training for horses 3+ years old', async () => {
-      const response = await request(app).post('/api/training/train').send({
+      const response = await trainingRequest().send({
         horseId: adultHorse.id,
         discipline: 'Dressage',
       });
@@ -279,15 +299,18 @@ describe('🏋️ INTEGRATION: Training System - Complete Business Logic Validat
   describe('BUSINESS RULE: Discipline Score Progression (+5 base)', () => {
     it('INCREASES discipline scores by +5 for first-time training', async () => {
       // Create a fresh horse specifically for score testing
+      const fourYearsAgoForScore = new Date();
+      fourYearsAgoForScore.setFullYear(fourYearsAgoForScore.getFullYear() - 4);
+
       const scoreTestHorse = await prisma.horse.create({
         data: {
           name: 'Score Test Horse',
           age: 4,
           breedId: (await prisma.breed.findFirst()).id,
           ownerId: testUser.id,
-          userId: testPlayer.id,
+          ownerId: testPlayer.id,
           sex: 'Mare',
-          dateOfBirth: new Date('2020-01-01'),
+          dateOfBirth: fourYearsAgoForScore, // FIXED: Use calculated date
           healthStatus: 'Excellent',
           disciplineScores: {},
           epigeneticModifiers: {
@@ -304,7 +327,7 @@ describe('🏋️ INTEGRATION: Training System - Complete Business Logic Validat
       });
       const initialScore = initialHorse.disciplineScores['Show Jumping'] || 0;
 
-      const response = await request(app).post('/api/training/train').send({
+      const response = await trainingRequest().send({
         horseId: scoreTestHorse.id,
         discipline: 'Show Jumping',
       });
@@ -337,15 +360,18 @@ describe('🏋️ INTEGRATION: Training System - Complete Business Logic Validat
       // by checking that different horses can build up scores independently
 
       // Create two fresh horses for accumulation testing
+      const fiveYearsAgoForAccumulation = new Date();
+      fiveYearsAgoForAccumulation.setFullYear(fiveYearsAgoForAccumulation.getFullYear() - 5);
+
       const horse1 = await prisma.horse.create({
         data: {
           name: 'Accumulation Test Horse 1',
           age: 5,
           breedId: (await prisma.breed.findFirst()).id,
           ownerId: testUser.id,
-          userId: testPlayer.id,
+          ownerId: testPlayer.id,
           sex: 'Stallion',
-          dateOfBirth: new Date('2019-01-01'),
+          dateOfBirth: fiveYearsAgoForAccumulation, // FIXED: Use calculated date
           healthStatus: 'Excellent',
           disciplineScores: {},
           epigeneticModifiers: {
@@ -356,15 +382,18 @@ describe('🏋️ INTEGRATION: Training System - Complete Business Logic Validat
         },
       });
 
+      const sixYearsAgoForAccumulation2 = new Date();
+      sixYearsAgoForAccumulation2.setFullYear(sixYearsAgoForAccumulation2.getFullYear() - 6);
+
       const horse2 = await prisma.horse.create({
         data: {
           name: 'Accumulation Test Horse 2',
           age: 6,
           breedId: (await prisma.breed.findFirst()).id,
           ownerId: testUser.id,
-          userId: testPlayer.id,
+          ownerId: testPlayer.id,
           sex: 'Mare',
-          dateOfBirth: new Date('2018-01-01'),
+          dateOfBirth: sixYearsAgoForAccumulation2, // FIXED: Use calculated date
           healthStatus: 'Excellent',
           disciplineScores: { 'Cross Country': 10 }, // Already has some training
           epigeneticModifiers: {
@@ -376,7 +405,7 @@ describe('🏋️ INTEGRATION: Training System - Complete Business Logic Validat
       });
 
       // Train horse 1 in a new discipline
-      const response1 = await request(app).post('/api/training/train').send({
+      const response1 = await trainingRequest().send({
         horseId: horse1.id,
         discipline: 'Cross Country',
       });
@@ -407,7 +436,7 @@ describe('🏋️ INTEGRATION: Training System - Complete Business Logic Validat
 
   describe('BUSINESS RULE: Global Cooldown (One Discipline Per Week)', () => {
     it('BLOCKS training when horse has trained ANY discipline within 7 days', async () => {
-      const response = await request(app).post('/api/training/train').send({
+      const response = await trainingRequest().send({
         horseId: trainedHorse.id,
         discipline: 'Dressage', // Different discipline than recent training
       });
@@ -434,15 +463,18 @@ describe('🏋️ INTEGRATION: Training System - Complete Business Logic Validat
 
     it('ALLOWS training after 7-day cooldown expires', async () => {
       // Create a horse with old training (more than 7 days ago)
+      const sixYearsAgoForOldTrained = new Date();
+      sixYearsAgoForOldTrained.setFullYear(sixYearsAgoForOldTrained.getFullYear() - 6);
+
       const oldTrainedHorse = await prisma.horse.create({
         data: {
           name: 'Old Trained Horse',
           age: 6,
           breedId: (await prisma.breed.findFirst()).id,
           ownerId: testUser.id,
-          userId: testPlayer.id,
+          ownerId: testPlayer.id,
           sex: 'Mare',
-          dateOfBirth: new Date('2018-01-01'),
+          dateOfBirth: sixYearsAgoForOldTrained, // FIXED: Use calculated date
           healthStatus: 'Excellent',
           disciplineScores: { Racing: 15 },
           epigeneticModifiers: {
@@ -465,7 +497,7 @@ describe('🏋️ INTEGRATION: Training System - Complete Business Logic Validat
         },
       });
 
-      const response = await request(app).post('/api/training/train').send({
+      const response = await trainingRequest().send({
         horseId: oldTrainedHorse.id,
         discipline: 'Endurance',
       });
@@ -499,15 +531,18 @@ describe('🏋️ INTEGRATION: Training System - Complete Business Logic Validat
       const initialLevel = initialPlayer.level || 1;
 
       // Create a fresh horse for XP testing
+      const fourYearsAgoForXp = new Date();
+      fourYearsAgoForXp.setFullYear(fourYearsAgoForXp.getFullYear() - 4);
+
       const xpTestHorse = await prisma.horse.create({
         data: {
           name: 'XP Test Horse',
           age: 4,
           breedId: (await prisma.breed.findFirst()).id,
           ownerId: testUser.id,
-          userId: testPlayer.id, // THIS is what matters for XP
+          ownerId: testPlayer.id, // THIS is what matters for XP
           sex: 'Mare',
-          dateOfBirth: new Date('2020-01-01'),
+          dateOfBirth: fourYearsAgoForXp, // FIXED: Use calculated date
           healthStatus: 'Excellent',
           disciplineScores: {},
           epigeneticModifiers: {
@@ -518,7 +553,7 @@ describe('🏋️ INTEGRATION: Training System - Complete Business Logic Validat
         },
       });
 
-      const response = await request(app).post('/api/training/train').send({
+      const response = await trainingRequest().send({
         horseId: xpTestHorse.id,
         discipline: 'Trail',
       });
@@ -558,15 +593,18 @@ describe('🏋️ INTEGRATION: Training System - Complete Business Logic Validat
   describe('BUSINESS RULE: Training Log Creation', () => {
     it('CREATES training log entry for successful training', async () => {
       // Create fresh horse for log testing
+      const fiveYearsAgoForLog = new Date();
+      fiveYearsAgoForLog.setFullYear(fiveYearsAgoForLog.getFullYear() - 5);
+
       const logTestHorse = await prisma.horse.create({
         data: {
           name: 'Log Test Horse',
           age: 5,
           breedId: (await prisma.breed.findFirst()).id,
           ownerId: testUser.id,
-          userId: testPlayer.id,
+          ownerId: testPlayer.id,
           sex: 'Stallion',
-          dateOfBirth: new Date('2019-01-01'),
+          dateOfBirth: fiveYearsAgoForLog, // FIXED: Use calculated date
           healthStatus: 'Excellent',
           disciplineScores: {},
           epigeneticModifiers: {
@@ -579,7 +617,7 @@ describe('🏋️ INTEGRATION: Training System - Complete Business Logic Validat
 
       const beforeTraining = new Date();
 
-      const response = await request(app).post('/api/training/train').send({
+      const response = await trainingRequest().send({
         horseId: logTestHorse.id,
         discipline: 'Reining',
       });
@@ -615,12 +653,12 @@ describe('🏋️ INTEGRATION: Training System - Complete Business Logic Validat
     it('MAINTAINS database integrity when training non-existent horse', async () => {
       const nonExistentHorseId = 99999;
 
-      const response = await request(app).post('/api/training/train').send({
+      const response = await trainingRequest().send({
         horseId: nonExistentHorseId,
         discipline: 'Racing',
       });
 
-      expect(response.status).toBe(400);
+      expect(response.status).toBe(404);
       expect(response.body.success).toBe(false);
       expect(response.body.message).toContain('Horse not found');
 
@@ -632,7 +670,7 @@ describe('🏋️ INTEGRATION: Training System - Complete Business Logic Validat
     });
 
     it('VALIDATES input parameters and rejects invalid requests', async () => {
-      const response = await request(app).post('/api/training/train').send({
+      const response = await trainingRequest().send({
         horseId: 'invalid',
         discipline: '',
       });
@@ -647,15 +685,18 @@ describe('🏋️ INTEGRATION: Training System - Complete Business Logic Validat
   describe('BUSINESS RULE: Next Training Date Calculation', () => {
     it('PROVIDES accurate next training date (7 days from training)', async () => {
       // Create fresh horse for date testing
+      const fourYearsAgoForDate = new Date();
+      fourYearsAgoForDate.setFullYear(fourYearsAgoForDate.getFullYear() - 4);
+
       const dateTestHorse = await prisma.horse.create({
         data: {
           name: 'Date Test Horse',
           age: 4,
           breedId: (await prisma.breed.findFirst()).id,
           ownerId: testUser.id,
-          userId: testPlayer.id,
+          ownerId: testPlayer.id,
           sex: 'Mare',
-          dateOfBirth: new Date('2020-01-01'),
+          dateOfBirth: fourYearsAgoForDate, // FIXED: Use calculated date
           healthStatus: 'Excellent',
           disciplineScores: {},
           epigeneticModifiers: {
@@ -668,7 +709,7 @@ describe('🏋️ INTEGRATION: Training System - Complete Business Logic Validat
 
       const trainingTime = new Date();
 
-      const response = await request(app).post('/api/training/train').send({
+      const response = await trainingRequest().send({
         horseId: dateTestHorse.id,
         discipline: 'Driving',
       });

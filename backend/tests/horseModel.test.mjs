@@ -28,50 +28,54 @@
  *    validation while avoiding database complexity and ensuring fast execution
  */
 
-import { jest, describe, beforeEach, expect, it } from '@jest/globals';
-import { fileURLToPath } from 'url';
-import { dirname, join } from 'path';
+import { jest, describe, beforeEach, afterEach, expect, it } from '@jest/globals';
 
-const __filename = fileURLToPath(import.meta.url);
-const __dirname = dirname(__filename);
+// Create mock objects BEFORE mocking modules
+const mockPrismaHorse = {
+  create: jest.fn(),
+  findUnique: jest.fn(),
+  update: jest.fn(),
+};
 
-// Mock external dependencies BEFORE importing the module under test
-jest.unstable_mockModule(join(__dirname, '../db/index.mjs'), () => ({
-  default: {
-    horse: {
-      create: jest.fn(),
-      findUnique: jest.fn(),
-      update: jest.fn(),
-    },
-  },
+const mockPrisma = {
+  horse: mockPrismaHorse,
+};
+
+const mockLogger = {
+  error: jest.fn(),
+  info: jest.fn(),
+  warn: jest.fn(),
+  debug: jest.fn(),
+};
+
+// Use unstable_mockModule for ESM mocking
+jest.unstable_mockModule('../db/index.mjs', () => ({
+  default: mockPrisma,
 }));
 
-jest.unstable_mockModule(join(__dirname, '../utils/logger.mjs'), () => ({
-  default: {
-    error: jest.fn(),
-    info: jest.fn(),
-  },
+jest.unstable_mockModule('../utils/logger.mjs', () => ({
+  default: mockLogger,
 }));
 
-// Import the module under test and mocked dependencies
+// Import the module under test AFTER mocking
 const { createHorse, updateDisciplineScore, getDisciplineScores } = await import(
-  join(__dirname, '../models/horseModel.mjs')
+  '../models/horseModel.mjs'
 );
-const mockPrisma = (await import(join(__dirname, '../db/index.mjs'))).default;
-const mockLogger = (await import(join(__dirname, '../utils/logger.mjs'))).default;
 
 describe('🐎 UNIT: Horse Model - Discipline Score Management', () => {
   beforeEach(() => {
-    mockPrisma.horse.create.mockClear();
-    mockPrisma.horse.findUnique.mockClear();
-    mockPrisma.horse.update.mockClear();
-    mockLogger.error.mockClear();
-    mockLogger.info.mockClear();
+    // Jest config has clearMocks: true, but we call it explicitly for clarity
+    jest.clearAllMocks();
+  });
+
+  afterEach(() => {
+    // Restore all mocks after each test
+    jest.restoreAllMocks();
   });
 
   describe('updateDisciplineScore', () => {
     it('should update discipline score for existing horse', async () => {
-      const mockHorse = { id: 1, name: 'Test Horse', age: 4, breedId: 1 };
+      const mockHorse = { id: 1, name: 'Test Horse', age: 4, breedId: 1, sex: 'mare' };
       const mockFoundHorse = {
         id: 1,
         disciplineScores: null,
@@ -89,14 +93,16 @@ describe('🐎 UNIT: Horse Model - Discipline Score Management', () => {
         player: null,
       };
 
-      mockPrisma.horse.create.mockResolvedValue(mockHorse);
-      mockPrisma.horse.findUnique.mockResolvedValue(mockFoundHorse);
-      mockPrisma.horse.update.mockResolvedValue(mockUpdatedHorse);
+      mockPrismaHorse.create.mockResolvedValue(mockHorse);
+      mockPrismaHorse.findUnique.mockResolvedValue(mockFoundHorse);
+      mockPrismaHorse.update.mockResolvedValue(mockUpdatedHorse);
 
       const horse = await createHorse({
         name: 'Test Horse',
         age: 4,
         breedId: 1,
+        sex: 'mare',
+        dateOfBirth: new Date(),
       });
 
       const updatedHorse = await updateDisciplineScore(horse.id, 'Dressage', 5);
@@ -107,20 +113,22 @@ describe('🐎 UNIT: Horse Model - Discipline Score Management', () => {
     });
 
     it('should add to existing discipline score', async () => {
-      const mockHorse = { id: 1, name: 'Test Horse', age: 4, breedId: 1 };
+      const mockHorse = { id: 1, name: 'Test Horse', age: 4, breedId: 1, sex: 'mare' };
       const mockFoundHorse1 = { id: 1, disciplineScores: null };
       const mockFoundHorse2 = { id: 1, disciplineScores: { Dressage: 5 } };
       const mockUpdatedHorse1 = { id: 1, disciplineScores: { Dressage: 5 } };
       const mockUpdatedHorse2 = { id: 1, disciplineScores: { Dressage: 10 } };
 
-      mockPrisma.horse.create.mockResolvedValue(mockHorse);
-      mockPrisma.horse.findUnique.mockResolvedValueOnce(mockFoundHorse1).mockResolvedValueOnce(mockFoundHorse2);
-      mockPrisma.horse.update.mockResolvedValueOnce(mockUpdatedHorse1).mockResolvedValueOnce(mockUpdatedHorse2);
+      mockPrismaHorse.create.mockResolvedValue(mockHorse);
+      mockPrismaHorse.findUnique.mockResolvedValueOnce(mockFoundHorse1).mockResolvedValueOnce(mockFoundHorse2);
+      mockPrismaHorse.update.mockResolvedValueOnce(mockUpdatedHorse1).mockResolvedValueOnce(mockUpdatedHorse2);
 
       const horse = await createHorse({
         name: 'Test Horse',
         age: 4,
         breedId: 1,
+        sex: 'mare',
+        dateOfBirth: new Date(),
       });
 
       await updateDisciplineScore(horse.id, 'Dressage', 5);
@@ -130,20 +138,22 @@ describe('🐎 UNIT: Horse Model - Discipline Score Management', () => {
     });
 
     it('should handle multiple disciplines independently', async () => {
-      const mockHorse = { id: 1, name: 'Test Horse', age: 4, breedId: 1 };
+      const mockHorse = { id: 1, name: 'Test Horse', age: 4, breedId: 1, sex: 'mare' };
       const mockFoundHorse1 = { id: 1, disciplineScores: null };
       const mockFoundHorse2 = { id: 1, disciplineScores: { Dressage: 5 } };
       const mockUpdatedHorse1 = { id: 1, disciplineScores: { Dressage: 5 } };
       const mockUpdatedHorse2 = { id: 1, disciplineScores: { Dressage: 5, 'Show Jumping': 3 } };
 
-      mockPrisma.horse.create.mockResolvedValue(mockHorse);
-      mockPrisma.horse.findUnique.mockResolvedValueOnce(mockFoundHorse1).mockResolvedValueOnce(mockFoundHorse2);
-      mockPrisma.horse.update.mockResolvedValueOnce(mockUpdatedHorse1).mockResolvedValueOnce(mockUpdatedHorse2);
+      mockPrismaHorse.create.mockResolvedValue(mockHorse);
+      mockPrismaHorse.findUnique.mockResolvedValueOnce(mockFoundHorse1).mockResolvedValueOnce(mockFoundHorse2);
+      mockPrismaHorse.update.mockResolvedValueOnce(mockUpdatedHorse1).mockResolvedValueOnce(mockUpdatedHorse2);
 
       const horse = await createHorse({
         name: 'Test Horse',
         age: 4,
         breedId: 1,
+        sex: 'mare',
+        dateOfBirth: new Date(),
       });
 
       await updateDisciplineScore(horse.id, 'Dressage', 5);
@@ -162,7 +172,7 @@ describe('🐎 UNIT: Horse Model - Discipline Score Management', () => {
     });
 
     it('should throw error for non-existent horse', async () => {
-      mockPrisma.horse.findUnique.mockResolvedValue(null);
+      mockPrismaHorse.findUnique.mockResolvedValue(null);
 
       await expect(updateDisciplineScore(99999, 'Dressage', 5)).rejects.toThrow('Horse with ID 99999 not found');
     });
@@ -179,12 +189,14 @@ describe('🐎 UNIT: Horse Model - Discipline Score Management', () => {
         player: null,
       };
 
-      mockPrisma.horse.create.mockResolvedValue(mockHorse);
+      mockPrismaHorse.create.mockResolvedValue(mockHorse);
 
       const horse = await createHorse({
         name: 'Test Horse',
         age: 4,
         breedId: 1,
+        sex: 'mare',
+        dateOfBirth: new Date(),
       });
 
       await expect(updateDisciplineScore(horse.id, '', 5)).rejects.toThrow('Discipline must be a non-empty string');
@@ -204,12 +216,14 @@ describe('🐎 UNIT: Horse Model - Discipline Score Management', () => {
         player: null,
       };
 
-      mockPrisma.horse.create.mockResolvedValue(mockHorse);
+      mockPrismaHorse.create.mockResolvedValue(mockHorse);
 
       const horse = await createHorse({
         name: 'Test Horse',
         age: 4,
         breedId: 1,
+        sex: 'mare',
+        dateOfBirth: new Date(),
       });
 
       await expect(updateDisciplineScore(horse.id, 'Dressage', 0)).rejects.toThrow(
@@ -228,19 +242,21 @@ describe('🐎 UNIT: Horse Model - Discipline Score Management', () => {
 
   describe('getDisciplineScores', () => {
     it('should return empty object for horse with no scores', async () => {
-      const mockHorse = { id: 1, name: 'Test Horse', age: 4, breedId: 1 };
+      const mockHorse = { id: 1, name: 'Test Horse', age: 4, breedId: 1, sex: 'mare' };
       const mockHorseWithNoScores = {
         id: 1,
         disciplineScores: null,
       };
 
-      mockPrisma.horse.create.mockResolvedValue(mockHorse);
-      mockPrisma.horse.findUnique.mockResolvedValue(mockHorseWithNoScores);
+      mockPrismaHorse.create.mockResolvedValue(mockHorse);
+      mockPrismaHorse.findUnique.mockResolvedValue(mockHorseWithNoScores);
 
       const horse = await createHorse({
         name: 'Test Horse',
         age: 4,
         breedId: 1,
+        sex: 'mare',
+        dateOfBirth: new Date(),
       });
 
       const scores = await getDisciplineScores(horse.id);
@@ -248,19 +264,21 @@ describe('🐎 UNIT: Horse Model - Discipline Score Management', () => {
     });
 
     it('should return discipline scores for horse with scores', async () => {
-      const mockHorse = { id: 1, name: 'Test Horse', age: 4, breedId: 1 };
+      const mockHorse = { id: 1, name: 'Test Horse', age: 4, breedId: 1, sex: 'mare' };
       const mockHorseWithScores = {
         id: 1,
         disciplineScores: { Dressage: 5, 'Show Jumping': 3 },
       };
 
-      mockPrisma.horse.create.mockResolvedValue(mockHorse);
-      mockPrisma.horse.findUnique.mockResolvedValue(mockHorseWithScores);
+      mockPrismaHorse.create.mockResolvedValue(mockHorse);
+      mockPrismaHorse.findUnique.mockResolvedValue(mockHorseWithScores);
 
       const horse = await createHorse({
         name: 'Test Horse',
         age: 4,
         breedId: 1,
+        sex: 'mare',
+        dateOfBirth: new Date(),
       });
 
       const scores = await getDisciplineScores(horse.id);
@@ -277,7 +295,7 @@ describe('🐎 UNIT: Horse Model - Discipline Score Management', () => {
     });
 
     it('should throw error for non-existent horse', async () => {
-      mockPrisma.horse.findUnique.mockResolvedValue(null);
+      mockPrismaHorse.findUnique.mockResolvedValue(null);
 
       await expect(getDisciplineScores(99999)).rejects.toThrow('Horse with ID 99999 not found');
     });

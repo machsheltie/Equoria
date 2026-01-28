@@ -144,15 +144,31 @@ describe('🏋️ INTEGRATION: Training Controller Business Logic - Complete Tra
       });
     }
 
+    // Calculate dynamic dates for test horses
+    const fourYearsAgo = new Date();
+    fourYearsAgo.setFullYear(fourYearsAgo.getFullYear() - 4);
+
+    const twoYearsAgo = new Date();
+    twoYearsAgo.setFullYear(twoYearsAgo.getFullYear() - 2);
+
+    const fiveYearsAgo = new Date();
+    fiveYearsAgo.setFullYear(fiveYearsAgo.getFullYear() - 5);
+
+    const sixYearsAgo = new Date();
+    sixYearsAgo.setFullYear(sixYearsAgo.getFullYear() - 6);
+
+    const threeYearsAgo = new Date();
+    threeYearsAgo.setFullYear(threeYearsAgo.getFullYear() - 3);
+
     // Create test horses
     adultHorse = await prisma.horse.create({
       data: {
         name: 'Controller Adult Horse',
         age: 4, // Eligible for training
         breedId: breed.id,
-        userId: testUser.id,
+        ownerId: testUser.id,
         sex: 'Mare',
-        dateOfBirth: new Date('2020-01-01'),
+        dateOfBirth: fourYearsAgo, // FIXED: Use calculated date for accurate age
         healthStatus: 'Excellent',
         disciplineScores: {}, // No previous training
         epigeneticModifiers: {
@@ -168,9 +184,9 @@ describe('🏋️ INTEGRATION: Training Controller Business Logic - Complete Tra
         name: 'Controller Young Horse',
         age: 2, // Too young for training
         breedId: breed.id,
-        userId: testUser.id,
+        ownerId: testUser.id,
         sex: 'Colt',
-        dateOfBirth: new Date('2022-01-01'),
+        dateOfBirth: twoYearsAgo, // FIXED: Use calculated date for accurate age
         healthStatus: 'Excellent',
         disciplineScores: {},
         epigeneticModifiers: {
@@ -186,9 +202,9 @@ describe('🏋️ INTEGRATION: Training Controller Business Logic - Complete Tra
         name: 'Controller Trained Horse',
         age: 5,
         breedId: breed.id,
-        userId: testUser.id,
+        ownerId: testUser.id,
         sex: 'Stallion',
-        dateOfBirth: new Date('2019-01-01'),
+        dateOfBirth: fiveYearsAgo, // FIXED: Use calculated date for accurate age
         healthStatus: 'Excellent',
         disciplineScores: {
           Racing: 10, // Has some previous training
@@ -207,9 +223,9 @@ describe('🏋️ INTEGRATION: Training Controller Business Logic - Complete Tra
         name: 'Controller Horse 1',
         age: 6,
         breedId: breed.id,
-        userId: userWithHorses.id,
+        ownerId: userWithHorses.id,
         sex: 'Mare',
-        dateOfBirth: new Date('2018-01-01'),
+        dateOfBirth: sixYearsAgo, // FIXED: Use calculated date for accurate age
         healthStatus: 'Good',
         disciplineScores: {},
         epigeneticModifiers: {
@@ -225,9 +241,9 @@ describe('🏋️ INTEGRATION: Training Controller Business Logic - Complete Tra
         name: 'Controller Horse 2',
         age: 3, // Just eligible
         breedId: breed.id,
-        userId: userWithHorses.id,
+        ownerId: userWithHorses.id,
         sex: 'Stallion',
-        dateOfBirth: new Date('2021-01-01'),
+        dateOfBirth: threeYearsAgo, // FIXED: Use calculated date for accurate age
         healthStatus: 'Fair',
         disciplineScores: {},
         epigeneticModifiers: {
@@ -339,15 +355,19 @@ describe('🏋️ INTEGRATION: Training Controller Business Logic - Complete Tra
   describe('BUSINESS RULE: trainHorse() Function Complete Workflow', () => {
     it('EXECUTES successful training workflow for eligible horse', async () => {
       // Kept async() as per previous lint fix attempt
+      // Calculate dynamic date for workflow horse
+      const workflowFourYearsAgo = new Date();
+      workflowFourYearsAgo.setFullYear(workflowFourYearsAgo.getFullYear() - 4);
+
       // Create a fresh horse for training workflow testing
       const workflowHorse = await prisma.horse.create({
         data: {
           name: 'Workflow Test Horse',
           age: 4,
           breedId: breed.id,
-          userId: userWithHorses.id,
+          ownerId: userWithHorses.id,
           sex: 'Stallion',
-          dateOfBirth: new Date('2020-01-01'),
+          dateOfBirth: workflowFourYearsAgo, // FIXED: Use calculated date for accurate age
           healthStatus: 'Excellent',
           disciplineScores: {},
           epigeneticModifiers: {
@@ -538,15 +558,19 @@ describe('🏋️ INTEGRATION: Training Controller Business Logic - Complete Tra
 
   describe('API INTEGRATION: trainRouteHandler() Function Validation', () => {
     it('PROCESSES valid training request and RETURNS success response', async () => {
+      // Calculate dynamic date for fresh horse
+      const freshFourYearsAgo = new Date();
+      freshFourYearsAgo.setFullYear(freshFourYearsAgo.getFullYear() - 4);
+
       // Fixed: Create a fresh horse for this test since adultHorse may be in cooldown
       const freshHorse = await prisma.horse.create({
         data: {
           name: 'Fresh Route Test Horse',
           age: 4,
           breedId: breed.id,
-          userId: testUser.id,
+          ownerId: testUser.id,
           sex: 'Mare',
-          dateOfBirth: new Date('2020-01-01'),
+          dateOfBirth: freshFourYearsAgo, // FIXED: Use calculated date for accurate age
           healthStatus: 'Excellent',
           disciplineScores: {},
           epigeneticModifiers: {

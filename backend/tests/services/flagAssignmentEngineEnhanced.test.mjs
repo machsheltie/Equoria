@@ -27,101 +27,103 @@ describe('Enhanced Flag Assignment Engine', () => {
   let testGrooms = [];
 
   beforeAll(async () => {
-    // Create test user
-    testUser = await prisma.user.create({
-      data: {
-        username: `flagengine_${Date.now()}`,
-        email: `flagengine_${Date.now()}@test.com`,
-        password: 'test_hash',
-        firstName: 'Test',
-        lastName: 'User',
-        money: 1000,
-        xp: 0,
-        level: 1,
-      },
-    });
-
-    // Create test grooms with different personalities
-    testGrooms = await Promise.all([
-      prisma.groom.create({
-        data: {
-          name: `Test Groom Calm ${Date.now()}`,
-          personality: 'calm',
-          groomPersonality: 'calm',
-          skillLevel: 'experienced',
-          speciality: 'foal_care',
-          userId: testUser.id,
-          sessionRate: 25.0,
-        },
-      }),
-      prisma.groom.create({
-        data: {
-          name: `Test Groom Energetic ${Date.now()}`,
-          personality: 'energetic',
-          groomPersonality: 'energetic',
-          skillLevel: 'experienced',
-          speciality: 'general_grooming',
-          userId: testUser.id,
-          sessionRate: 25.0,
-        },
-      }),
-      prisma.groom.create({
-        data: {
-          name: `Test Groom Methodical ${Date.now()}`,
-          personality: 'methodical',
-          groomPersonality: 'methodical',
-          skillLevel: 'expert',
-          speciality: 'foal_care',
-          userId: testUser.id,
-          sessionRate: 30.0,
-        },
-      }),
-    ]);
-
     // Create test horses of different ages for age-based trigger testing
     const now = new Date();
     const oneWeekAgo = new Date(now.getTime() - 7 * 24 * 60 * 60 * 1000);
     const oneMonthAgo = new Date(now.getTime() - 30 * 24 * 60 * 60 * 1000);
     const sixMonthsAgo = new Date(now.getTime() - 180 * 24 * 60 * 60 * 1000);
 
-    testHorses = await Promise.all([
-      // Very young foal (1 week) - high sensitivity to triggers
-      prisma.horse.create({
+    await prisma.$transaction(async (tx) => {
+      // Create test user
+      testUser = await tx.user.create({
         data: {
-          name: `Test Foal Week ${Date.now()}`,
-          sex: 'filly',
-          dateOfBirth: oneWeekAgo,
-          ownerId: testUser.id,
-          bondScore: 10,
-          stressLevel: 8,
-          epigeneticFlags: [],
+          username: `flagengine_${Date.now()}`,
+          email: `flagengine_${Date.now()}@test.com`,
+          password: 'test_hash',
+          firstName: 'Test',
+          lastName: 'User',
+          money: 1000,
+          xp: 0,
+          level: 1,
         },
-      }),
-      // Young foal (1 month) - moderate sensitivity
-      prisma.horse.create({
-        data: {
-          name: `Test Foal Month ${Date.now()}`,
-          sex: 'colt',
-          dateOfBirth: oneMonthAgo,
-          ownerId: testUser.id,
-          bondScore: 20,
-          stressLevel: 5,
-          epigeneticFlags: [],
-        },
-      }),
-      // Older foal (6 months) - lower sensitivity
-      prisma.horse.create({
-        data: {
-          name: `Test Foal 6mo ${Date.now()}`,
-          sex: 'gelding',
-          dateOfBirth: sixMonthsAgo,
-          ownerId: testUser.id,
-          bondScore: 35,
-          stressLevel: 3,
-          epigeneticFlags: [],
-        },
-      }),
-    ]);
+      });
+
+      // Create test grooms with different personalities
+      testGrooms = await Promise.all([
+        tx.groom.create({
+          data: {
+            name: `Test Groom Calm ${Date.now()}`,
+            personality: 'calm',
+            groomPersonality: 'calm',
+            skillLevel: 'experienced',
+            speciality: 'foal_care',
+            userId: testUser.id,
+            sessionRate: 25.0,
+          },
+        }),
+        tx.groom.create({
+          data: {
+            name: `Test Groom Energetic ${Date.now()}`,
+            personality: 'energetic',
+            groomPersonality: 'energetic',
+            skillLevel: 'experienced',
+            speciality: 'general_grooming',
+            userId: testUser.id,
+            sessionRate: 25.0,
+          },
+        }),
+        tx.groom.create({
+          data: {
+            name: `Test Groom Methodical ${Date.now()}`,
+            personality: 'methodical',
+            groomPersonality: 'methodical',
+            skillLevel: 'expert',
+            speciality: 'foal_care',
+            userId: testUser.id,
+            sessionRate: 30.0,
+          },
+        }),
+      ]);
+
+      testHorses = await Promise.all([
+        // Very young foal (1 week) - high sensitivity to triggers
+        tx.horse.create({
+          data: {
+            name: `Test Foal Week ${Date.now()}`,
+            sex: 'filly',
+            dateOfBirth: oneWeekAgo,
+            ownerId: testUser.id,
+            bondScore: 10,
+            stressLevel: 8,
+            epigeneticFlags: [],
+          },
+        }),
+        // Young foal (1 month) - moderate sensitivity
+        tx.horse.create({
+          data: {
+            name: `Test Foal Month ${Date.now()}`,
+            sex: 'colt',
+            dateOfBirth: oneMonthAgo,
+            ownerId: testUser.id,
+            bondScore: 20,
+            stressLevel: 5,
+            epigeneticFlags: [],
+          },
+        }),
+        // Older foal (6 months) - lower sensitivity
+        tx.horse.create({
+          data: {
+            name: `Test Foal 6mo ${Date.now()}`,
+            sex: 'gelding',
+            dateOfBirth: sixMonthsAgo,
+            ownerId: testUser.id,
+            bondScore: 35,
+            stressLevel: 3,
+            epigeneticFlags: [],
+          },
+        }),
+      ]);
+    });
   });
 
   afterAll(async () => {
@@ -138,7 +140,9 @@ describe('Enhanced Flag Assignment Engine', () => {
     await prisma.horse.deleteMany({
       where: { id: { in: testHorses.map(h => h.id) } },
     });
-    await prisma.user.delete({ where: { id: testUser.id } });
+    if (testUser) {
+      await prisma.user.deleteMany({ where: { id: testUser.id } });
+    }
   });
 
   describe('evaluatePersonalityModifiedTriggers', () => {

@@ -30,53 +30,55 @@ describe('🏢 Facility Management System', () => {
   beforeEach(async () => {
     // Create test user with unique identifier
     const timestamp = Date.now();
-    testUser = await prisma.user.create({
-      data: {
-        username: `facilityTestUser_${timestamp}`,
-        email: `facility_${timestamp}@test.com`,
-        password: 'hashedPassword',
-        firstName: 'Test',
-        lastName: 'User',
-        money: 10000,
-      },
-    });
+    await prisma.$transaction(async (tx) => {
+      testUser = await tx.user.create({
+        data: {
+          username: `facilityTestUser_${timestamp}`,
+          email: `facility_${timestamp}@test.com`,
+          password: 'hashedPassword',
+          firstName: 'Test',
+          lastName: 'User',
+          money: 10000,
+        },
+      });
 
-    // Create test facilities
-    testFacilities = await Promise.all([
-      prisma.facility.create({
-        data: {
-          userId: testUser.id,
-          name: 'Basic Stable',
-          type: 'basic_stable',
-          level: 1,
-          upgrades: {
-            advanced_training: 1,
-            automated_care: 0,
-            medical_center: 0,
-            stable_management: 1,
+      // Create test facilities
+      testFacilities = await Promise.all([
+        tx.facility.create({
+          data: {
+            userId: testUser.id,
+            name: 'Basic Stable',
+            type: 'basic_stable',
+            level: 1,
+            upgrades: {
+              advanced_training: 1,
+              automated_care: 0,
+              medical_center: 0,
+              stable_management: 1,
+            },
+            maintenanceCost: 100,
+            effectiveness: 60,
           },
-          maintenanceCost: 100,
-          effectiveness: 60,
-        },
-      }),
-      prisma.facility.create({
-        data: {
-          userId: testUser.id,
-          name: 'Master Facility',
-          type: 'master_facility',
-          level: 3,
-          upgrades: {
-            advanced_training: 3,
-            automated_care: 2,
-            medical_center: 2,
-            stable_management: 3,
-            competition_hosting: 1,
+        }),
+        tx.facility.create({
+          data: {
+            userId: testUser.id,
+            name: 'Master Facility',
+            type: 'master_facility',
+            level: 3,
+            upgrades: {
+              advanced_training: 3,
+              automated_care: 2,
+              medical_center: 2,
+              stable_management: 3,
+              competition_hosting: 1,
+            },
+            maintenanceCost: 350,
+            effectiveness: 85,
           },
-          maintenanceCost: 350,
-          effectiveness: 85,
-        },
-      }),
-    ]);
+        }),
+      ]);
+    });
   });
 
   afterEach(async () => {
@@ -85,7 +87,7 @@ describe('🏢 Facility Management System', () => {
       try {
         await prisma.facilityUpgrade.deleteMany({ where: { facility: { userId: testUser.id } } });
         await prisma.facility.deleteMany({ where: { userId: testUser.id } });
-        await prisma.user.delete({ where: { id: testUser.id } });
+        await prisma.user.deleteMany({ where: { id: testUser.id } });
       } catch (error) {
         // Ignore cleanup errors - user might not exist
         console.warn('Cleanup warning:', error.message);

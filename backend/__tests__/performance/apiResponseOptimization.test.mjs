@@ -39,13 +39,15 @@ describe('API Response Optimization System', () => {
   let testUserId;
   const testHorseIds = [];
   let testApp;
+  const testRunId = `apiopt_${Date.now()}_${Math.floor(Math.random() * 100000)}`;
+  const testBreedName = `Optimization Test Breed ${testRunId}`;
 
   beforeAll(async () => {
     // Create test user
     const testUser = await prisma.user.create({
       data: {
-        username: 'optimizationTestUser',
-        email: 'optimization@test.com',
+        username: `optimizationTestUser_${testRunId}`,
+        email: `optimization_${testRunId}@test.com`,
         password: 'testPassword123',
         firstName: 'Test',
         lastName: 'User',
@@ -56,7 +58,7 @@ describe('API Response Optimization System', () => {
     // Create test breed
     const testBreed = await prisma.breed.create({
       data: {
-        name: 'Optimization Test Breed',
+        name: testBreedName,
         description: 'Test breed for optimization testing',
       },
     });
@@ -151,14 +153,16 @@ describe('API Response Optimization System', () => {
 
   afterAll(async () => {
     // Cleanup test data
-    await prisma.horse.deleteMany({
-      where: { ownerId: testUserId },
-    });
-    await prisma.user.delete({
-      where: { id: testUserId },
-    });
+    if (testUserId) {
+      await prisma.horse.deleteMany({
+        where: { ownerId: testUserId },
+      });
+      await prisma.user.deleteMany({
+        where: { id: testUserId },
+      });
+    }
     await prisma.breed.deleteMany({
-      where: { name: 'Optimization Test Breed' },
+      where: { name: testBreedName },
     });
   });
 
@@ -354,7 +358,7 @@ describe('API Response Optimization System', () => {
       const relatedData = await LazyLoadingService.loadRelatedData('horse', testHorseIds[0], relations, prisma);
 
       expect(relatedData.breed).toBeDefined();
-      expect(relatedData.breed.name).toBe('Optimization Test Breed');
+      expect(relatedData.breed.name).toBe(testBreedName);
     });
   });
 

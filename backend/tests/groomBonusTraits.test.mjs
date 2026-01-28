@@ -309,7 +309,8 @@ describe('Groom Bonus Traits System', () => {
     it('should get groom bonus traits via API', async () => {
       const response = await request(app)
         .get(`/api/grooms/${testGroom.id}/bonus-traits`)
-        .set('Authorization', authToken);
+        .set('Authorization', authToken)
+        .set('x-test-skip-csrf', 'true');
 
       expect(response.status).toBe(200);
       expect(response.body.success).toBe(true);
@@ -329,6 +330,7 @@ describe('Groom Bonus Traits System', () => {
       const response = await request(app)
         .put(`/api/grooms/${testGroom.id}/bonus-traits`)
         .set('Authorization', authToken)
+        .set('x-test-skip-csrf', 'true')
         .send({ bonusTraits: newBonusTraits });
 
       expect(response.status).toBe(200);
@@ -352,6 +354,7 @@ describe('Groom Bonus Traits System', () => {
       const response = await request(app)
         .put(`/api/grooms/${testGroom.id}/bonus-traits`)
         .set('Authorization', authToken)
+        .set('x-test-skip-csrf', 'true')
         .send({ bonusTraits: invalidBonusTraits });
 
       expect(response.status).toBe(400);
@@ -361,7 +364,8 @@ describe('Groom Bonus Traits System', () => {
 
     it('should require authentication for bonus trait endpoints', async () => {
       const response = await request(app)
-        .get(`/api/grooms/${testGroom.id}/bonus-traits`);
+        .get(`/api/grooms/${testGroom.id}/bonus-traits`)
+        .set('x-test-require-auth', 'true')
 
       expect(response.status).toBe(401);
       expect(response.body.success).toBe(false);

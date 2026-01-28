@@ -65,7 +65,7 @@ describe('Schema Validation', () => {
         id: uniqueId,
         username: `schematestuser${Date.now()}`,
         email: `schema-test-${Date.now()}@example.com`,
-        password: 'testpassword',
+        password: 'TestPassword123!',
         firstName: 'Schema',
         lastName: 'Tester',
         money: 5000,

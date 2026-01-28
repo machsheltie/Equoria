@@ -26,11 +26,6 @@
  */
 
 import { describe, it, expect, beforeEach, afterEach, jest } from '@jest/globals';
-import { fileURLToPath } from 'url';
-import { dirname, join } from 'path';
-
-const __filename = fileURLToPath(import.meta.url);
-const __dirname = dirname(__filename);
 
 // Define mock objects for external dependencies only
 const mockLogger = {
@@ -41,7 +36,7 @@ const mockLogger = {
 };
 
 // Mock only the logger (external dependency)
-jest.unstable_mockModule(join(__dirname, '../utils/logger.mjs'), () => ({
+jest.unstable_mockModule('../utils/logger.mjs', () => ({
   default: mockLogger,
 }));
 
@@ -55,10 +50,32 @@ describe('Groom Hiring Workflow Tests', () => {
   let wealthyUser;
   let limitedUser;
 
+  const TEST_USER_IDS = [
+    'test-user-groom-hiring',
+    'wealthy-user-groom-hiring',
+    'limited-user-groom-hiring'
+  ];
+
+  // Helper to clean up test data
+  const cleanupTestData = async () => {
+    // Delete grooms associated with test users first
+    await prisma.groom.deleteMany({
+      where: {
+        userId: { in: TEST_USER_IDS }
+      }
+    });
+    
+    // Delete test users
+    await prisma.user.deleteMany({
+      where: {
+        id: { in: TEST_USER_IDS }
+      }
+    });
+  };
+
   beforeEach(async () => {
-    // Clean up test data
-    await prisma.groom.deleteMany({});
-    await prisma.user.deleteMany({});
+    // Clean up test data scoped to this test suite
+    await cleanupTestData();
 
     // Create test users with different financial situations
     testUser = await prisma.user.create({
@@ -66,7 +83,7 @@ describe('Groom Hiring Workflow Tests', () => {
         id: 'test-user-groom-hiring',
         username: 'groomhiringuser',
         email: 'groomhiring@example.com',
-        password: 'testpassword',
+        password: 'TestPassword123!',
         firstName: 'Groom',
         lastName: 'Hirer',
         money: 5000, // Standard amount
@@ -78,7 +95,7 @@ describe('Groom Hiring Workflow Tests', () => {
         id: 'wealthy-user-groom-hiring',
         username: 'wealthyuser',
         email: 'wealthy@example.com',
-        password: 'testpassword',
+        password: 'TestPassword123!',
         firstName: 'Wealthy',
         lastName: 'Owner',
         money: 50000, // Large amount
@@ -90,7 +107,7 @@ describe('Groom Hiring Workflow Tests', () => {
         id: 'limited-user-groom-hiring',
         username: 'limiteduser',
         email: 'limited@example.com',
-        password: 'testpassword',
+        password: 'TestPassword123!',
         firstName: 'Limited',
         lastName: 'Budget',
         money: 100, // Small amount
@@ -99,9 +116,8 @@ describe('Groom Hiring Workflow Tests', () => {
   });
 
   afterEach(async () => {
-    // Clean up test data
-    await prisma.groom.deleteMany({});
-    await prisma.user.deleteMany({});
+    // Clean up test data scoped to this test suite
+    await cleanupTestData();
   });
 
   describe('1. Required Field Validation', () => {

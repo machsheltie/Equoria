@@ -96,7 +96,7 @@ describe('🏋️ INTEGRATION: Complete Training Progression Workflow', () => {
         firstName: 'Training',
         lastName: 'Progression',
         email: 'training-integration@example.com',
-        password: 'TestPassword123',
+        password: 'TestPassword123!',
         money: 10000,
         xp: 0,
         level: 1,
@@ -134,7 +134,7 @@ describe('🏋️ INTEGRATION: Complete Training Progression Workflow', () => {
           age: 2, // Too young for training
           breedId: breed.id,
           ownerId: testUser.id,
-          userId: testUser.id,
+          ownerId: testUser.id,
           sex: 'Colt',
           dateOfBirth: twoYearsAgo, // FIXED: Use calculated date for accurate age (was hardcoded '2022-01-01')
           healthStatus: 'Excellent',
@@ -164,7 +164,7 @@ describe('🏋️ INTEGRATION: Complete Training Progression Workflow', () => {
           age: 4, // Eligible for training
           breedId: breed.id,
           ownerId: testUser.id,
-          userId: testUser.id,
+          ownerId: testUser.id,
           sex: 'Mare',
           dateOfBirth: fourYearsAgo, // FIXED: Use calculated date for accurate age (was hardcoded '2020-01-01')
           healthStatus: 'Excellent',

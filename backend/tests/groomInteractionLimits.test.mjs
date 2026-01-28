@@ -18,6 +18,11 @@
  */
 
 import { jest, describe, it, expect, beforeEach } from '@jest/globals';
+import { fileURLToPath } from 'url';
+import { dirname, join } from 'path';
+
+const __filename = fileURLToPath(import.meta.url);
+const __dirname = dirname(__filename);
 
 // Mock Prisma with minimal, focused mocking
 const mockPrisma = {
@@ -37,16 +42,18 @@ const mockLogger = {
 };
 
 // Mock the imports with minimal mocking approach
-jest.unstable_mockModule('../db/index.mjs', () => ({
+await jest.unstable_mockModule(join(__dirname, '../db/index.mjs'), () => ({
   default: mockPrisma,
 }));
 
-jest.unstable_mockModule('../utils/logger.mjs', () => ({
+await jest.unstable_mockModule(join(__dirname, '../utils/logger.mjs'), () => ({
   default: mockLogger,
 }));
 
 // Import the function under test
-const { validateFoalInteractionLimits } = await import('../utils/groomSystem.mjs');
+const { validateFoalInteractionLimits } = await import(
+  join(__dirname, '../utils/groomSystem.mjs'),
+);
 
 describe('🐴 TDD: Groom Interaction Daily Limits - ALL Horses', () => {
   beforeEach(() => {

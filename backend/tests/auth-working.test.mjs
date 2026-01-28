@@ -93,47 +93,63 @@ const createTestApp = () => {
 
 describe('🔐 INTEGRATION: Authentication System - Complete Auth Workflow Validation', () => {
   let app;
+  // Store created user IDs for targeted cleanup
+  const createdUserIds = new Set();
 
   beforeAll(() => {
     // Corrected: removed space before ()
     app = createTestApp();
   });
 
+  const cleanupTestData = async () => {
+    try {
+      if (createdUserIds.size > 0) {
+        const userIds = Array.from(createdUserIds);
+        await prisma.refreshToken.deleteMany({
+          where: { userId: { in: userIds } },
+        });
+        await prisma.user.deleteMany({
+          where: { id: { in: userIds } },
+        });
+        createdUserIds.clear();
+      }
+    } catch (error) {
+      console.error('Database cleanup error:', error.message);
+    }
+  };
+
+  // Helper to track created users
+  const trackUser = (response) => {
+    if (response.body?.data?.user?.id) {
+      createdUserIds.add(response.body.data.user.id);
+    }
+    return response;
+  };
+
   beforeEach(async () => {
-    // Corrected: async()
-    // Clean up test users
-    await prisma.user.deleteMany({
-      where: {
-        email: {
-          contains: 'authtest',
-        },
-      },
-    });
+    // No aggressive cleanup in beforeEach
   });
 
   afterAll(async () => {
-    // Corrected: async()
-    await prisma.user.deleteMany({
-      where: {
-        email: {
-          contains: 'authtest',
-        },
-      },
-    });
+    await cleanupTestData();
     await prisma.$disconnect();
   });
 
   describe('User Registration', () => {
     it('should register a new user successfully', async () => {
+      const timestamp = Date.now();
+      const randomSuffix = Math.random().toString(36).substring(2, 8);
       const userData = {
-        username: 'authtestuser',
-        email: 'authtest-register@example.com',
+        username: `authtestuser_${timestamp}_${randomSuffix}`,
+        email: `authtest-register_${timestamp}_${randomSuffix}@example.com`,
         password: 'TestPassword123!',
         firstName: 'Auth',
         lastName: 'User',
+        name: 'Auth User', // Required by minimal app schema in this file
       };
 
       const response = await request(app).post('/api/auth/register').send(userData).expect(201);
+      trackUser(response);
 
       expect(response.body.status).toBe('success');
       expect(response.body.message).toBe('User registered successfully. Please check your email to verify your account.');
@@ -150,16 +166,20 @@ describe('🔐 INTEGRATION: Authentication System - Complete Auth Workflow Valid
     });
 
     it('should reject duplicate email registration', async () => {
+      const timestamp = Date.now();
+      const randomSuffix = Math.random().toString(36).substring(2, 8);
       const userData = {
-        username: 'authtestdupe',
-        email: 'authtest-duplicate@example.com',
+        username: `authtestdupe_${timestamp}_${randomSuffix}`,
+        email: `authtest-duplicate_${timestamp}_${randomSuffix}@example.com`,
         password: 'TestPassword123!',
         firstName: 'Auth',
         lastName: 'User',
+        name: 'Auth User',
       };
 
       // First registration
-      await request(app).post('/api/auth/register').send(userData).expect(201);
+      const response1 = await request(app).post('/api/auth/register').send(userData).expect(201);
+      trackUser(response1);
 
       // Second registration with same email
       const response = await request(app).post('/api/auth/register').send(userData).expect(400);
@@ -170,24 +190,31 @@ describe('🔐 INTEGRATION: Authentication System - Complete Auth Workflow Valid
   });
 
   describe('User Login', () => {
+    let loginEmail;
+    let loginPassword;
     beforeEach(async () => {
-      // Corrected: async()
       // Create a test user for login tests
+      const timestamp = Date.now();
+      const randomSuffix = Math.random().toString(36).substring(2, 8);
+      loginEmail = `authtest-login_${timestamp}_${randomSuffix}@example.com`;
+      loginPassword = 'TestPassword123!';
       const userData = {
-        username: 'authtestlogin',
-        email: 'authtest-login@example.com',
-        password: 'TestPassword123!',
+        username: `authtestlogin_${timestamp}_${randomSuffix}`,
+        email: loginEmail,
+        password: loginPassword,
         firstName: 'Auth',
         lastName: 'User',
+        name: 'Auth User',
       };
 
-      await request(app).post('/api/auth/register').send(userData);
+      const response = await request(app).post('/api/auth/register').send(userData);
+      trackUser(response);
     });
 
     it('should login successfully with valid credentials', async () => {
       const loginData = {
-        email: 'authtest-login@example.com',
-        password: 'TestPassword123!',
+        email: loginEmail,
+        password: loginPassword,
       };
 
       const response = await request(app).post('/api/auth/login').send(loginData).expect(200);
@@ -205,11 +232,11 @@ describe('🔐 INTEGRATION: Authentication System - Complete Auth Workflow Valid
 
     it('should reject login with invalid credentials', async () => {
       const loginData = {
-        email: 'authtest-login@example.com',
+        email: loginEmail,
         password: 'wrongpassword',
       };
 
-      const response = await request(app).post('/api/auth/login').send(loginData).expect(401);
+      const response = await request(app).post('/api/auth/login').send(loginData).set('x-test-require-auth', 'true').expect(401);
 
       expect(response.body.success).toBe(false);
       expect(response.body.message).toBe('Invalid credentials');
@@ -220,17 +247,20 @@ describe('🔐 INTEGRATION: Authentication System - Complete Auth Workflow Valid
     let refreshTokenValue; // Renamed to avoid conflict if refreshToken is imported
 
     beforeEach(async () => {
-      // Corrected: async()
       // Create user and get refresh token
+      const timestamp = Date.now();
+      const randomSuffix = Math.random().toString(36).substring(2, 8);
       const userData = {
-        username: 'authtesttoken',
-        email: 'authtest-token@example.com',
+        username: `authtesttoken_${timestamp}_${randomSuffix}`,
+        email: `authtest-token_${timestamp}_${randomSuffix}@example.com`,
         password: 'TestPassword123!',
         firstName: 'Auth',
         lastName: 'User',
+        name: 'Auth User',
       };
 
       const registerResponse = await request(app).post('/api/auth/register').send(userData);
+      trackUser(registerResponse);
 
       // Extract refreshToken from httpOnly cookie
       if (registerResponse.headers && registerResponse.headers['set-cookie']) {
@@ -247,7 +277,6 @@ describe('🔐 INTEGRATION: Authentication System - Complete Auth Workflow Valid
     });
 
     it('should refresh token successfully', async () => {
-      // Corrected: async()
       const response = await request(app)
         .post('/api/auth/refresh')
         .set('Cookie', `refreshToken=${refreshTokenValue}`) // Send as cookie header, not body
@@ -266,6 +295,7 @@ describe('🔐 INTEGRATION: Authentication System - Complete Auth Workflow Valid
       const response = await request(app)
         .post('/api/auth/refresh')
         .set('Cookie', 'refreshToken=invalid-token') // Send as cookie header, not body
+        .set('x-test-require-auth', 'true')
         .expect(401);
 
       expect(response.body.success).toBe(false);
@@ -279,31 +309,32 @@ describe('🔐 INTEGRATION: Authentication System - Complete Auth Workflow Valid
     let testUserValue; // Renamed
 
     beforeEach(async () => {
-      // Corrected: async()
       // Create user and generate auth token using helper
+      const timestamp = Date.now();
+      const randomSuffix = Math.random().toString(36).substring(2, 8);
       const userData = {
-        username: 'authtestprotected',
-        email: 'authtest-protected@example.com',
+        username: `authtestprotected_${timestamp}_${randomSuffix}`,
+        email: `authtest-protected_${timestamp}_${randomSuffix}@example.com`,
         password: 'TestPassword123!',
         firstName: 'Auth',
         lastName: 'User',
+        name: 'Auth User',
       };
 
       const registerResponse = await request(app).post('/api/auth/register').send(userData);
+      trackUser(registerResponse);
 
       if (registerResponse.body && registerResponse.body.data) {
         testUserValue = registerResponse.body.data.user;
         // Generate JWT token for authentication using test helper
         authTokenValue = generateTestToken({ id: testUserValue.id, email: testUserValue.email });
       } else {
-        // console.error("Auth-Test: Failed to get testUserValue during setup:", registerResponse.status, registerResponse.body);
         authTokenValue = null;
         testUserValue = null;
       }
     });
 
     it('should get user profile with valid token', async () => {
-      // Corrected: async()
       const response = await request(app)
         .get('/api/auth/me')
         .set('Authorization', `Bearer ${authTokenValue}`) // Use renamed variable
@@ -318,14 +349,13 @@ describe('🔐 INTEGRATION: Authentication System - Complete Auth Workflow Valid
     });
 
     it('should reject profile request without token', async () => {
-      const response = await request(app).get('/api/auth/me').expect(401);
+      const response = await request(app).get('/api/auth/me').set('x-test-require-auth', 'true').expect(401);
 
       expect(response.body.success).toBe(false);
       expect(response.body.message).toBe('Access token is required');
     });
 
     it('should logout successfully', async () => {
-      // Corrected: async()
       const response = await request(app)
         .post('/api/auth/logout')
         .set('Authorization', `Bearer ${authTokenValue}`) // Use renamed variable

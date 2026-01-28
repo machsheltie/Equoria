@@ -20,9 +20,10 @@ import { generateToken, generateRefreshToken } from '../../middleware/auth.mjs';
  */
 export const createUserData = (overrides = {}) => {
   const timestamp = Date.now();
+  const randomSuffix = Math.random().toString(36).substring(2, 8);
   return {
-    username: `testuser_${timestamp}`,
-    email: `test_${timestamp}@example.com`,
+    username: `testuser_${timestamp}_${randomSuffix}`,
+    email: `test_${timestamp}_${randomSuffix}@example.com`,
     password: 'TestPassword123!',
     firstName: 'Test',
     lastName: 'User',
@@ -217,12 +218,9 @@ export const cleanupDatabase = async () => {
  * Clears in-memory rate limit store
  */
 export const resetRateLimitStore = async () => {
-  try {
-    const { resetAllAuthRateLimits } = await import('../../middleware/authRateLimiter.mjs');
-    resetAllAuthRateLimits();
-  } catch (error) {
-    // Silently ignore if module doesn't exist yet
-  }
+  // In-memory rate limiting is used for tests, but the architecture doesn't support manual reset.
+  // Rate limits are bypassed by default in tests via TEST_BYPASS_RATE_LIMIT=true.
+  // Specific rate limit tests should use unique users/IPs or wait for window expiry.
   return Promise.resolve();
 };
 

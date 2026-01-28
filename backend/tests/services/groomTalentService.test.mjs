@@ -25,24 +25,22 @@ describe('Groom Talent Service', () => {
   let testUser;
   let testGroom;
 
-  beforeAll(async () => {
-    // Create test user
+  beforeEach(async () => {
+    const testSuffix = `${Date.now()}_${Math.random().toString(16).slice(2, 8)}`;
+
     testUser = await prisma.user.create({
       data: {
-        username: `testuser_talent_${Date.now()}`,
-        email: `test_talent_${Date.now()}@example.com`,
+        username: `testuser_talent_${testSuffix}`,
+        email: `test_talent_${testSuffix}@example.com`,
         password: 'hashedpassword123',
         firstName: 'Test',
         lastName: 'User',
       },
     });
-  });
 
-  beforeEach(async () => {
-    // Create fresh test groom for each test
     testGroom = await prisma.groom.create({
       data: {
-        name: `Test Groom ${Date.now()}`,
+        name: `Test Groom ${testSuffix}`,
         personality: 'calm',
         skillLevel: 'intermediate',
         speciality: 'foal_care',
@@ -59,19 +57,18 @@ describe('Groom Talent Service', () => {
       await prisma.groomTalentSelections.deleteMany({
         where: { groomId: testGroom.id },
       });
-      await prisma.groom.delete({
+      await prisma.groom.deleteMany({
         where: { id: testGroom.id },
+      });
+    }
+    if (testUser) {
+      await prisma.user.deleteMany({
+        where: { id: testUser.id },
       });
     }
   });
 
   afterAll(async () => {
-    // Clean up test data
-    if (testUser) {
-      await prisma.user.delete({
-        where: { id: testUser.id },
-      });
-    }
     await prisma.$disconnect();
   });
 

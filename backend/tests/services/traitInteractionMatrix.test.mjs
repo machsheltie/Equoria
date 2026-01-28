@@ -31,12 +31,12 @@ describe('Trait Interaction Matrix', () => {
   let testUser;
   let testHorses = [];
 
-  beforeAll(async () => {
-    // Create test user
+  const createTraitTestData = async () => {
+    const testSuffix = `${Date.now()}_${Math.random().toString(16).slice(2, 8)}`;
     testUser = await prisma.user.create({
       data: {
-        username: `trait_matrix_${Date.now()}`,
-        email: `trait_matrix_${Date.now()}@test.com`,
+        username: `trait_matrix_${testSuffix}`,
+        email: `trait_matrix_${testSuffix}@test.com`,
         password: 'test_hash',
         firstName: 'Test',
         lastName: 'User',
@@ -46,15 +46,13 @@ describe('Trait Interaction Matrix', () => {
       },
     });
 
-    // Create test horses with different trait combinations
     const now = new Date();
     const oneMonthAgo = new Date(now.getTime() - 30 * 24 * 60 * 60 * 1000);
 
     testHorses = await Promise.all([
-      // Horse with synergistic traits (brave + confident + social)
       prisma.horse.create({
         data: {
-          name: `Test Horse Synergistic ${Date.now()}`,
+          name: `Test Horse Synergistic ${testSuffix}`,
           sex: 'filly',
           dateOfBirth: oneMonthAgo,
           ownerId: testUser.id,
@@ -63,10 +61,9 @@ describe('Trait Interaction Matrix', () => {
           epigeneticFlags: ['brave', 'confident', 'social'],
         },
       }),
-      // Horse with conflicting traits (fearful + brave + reactive + calm)
       prisma.horse.create({
         data: {
-          name: `Test Horse Conflicting ${Date.now()}`,
+          name: `Test Horse Conflicting ${testSuffix}`,
           sex: 'colt',
           dateOfBirth: oneMonthAgo,
           ownerId: testUser.id,
@@ -75,10 +72,9 @@ describe('Trait Interaction Matrix', () => {
           epigeneticFlags: ['fearful', 'brave', 'reactive', 'calm'],
         },
       }),
-      // Horse with complex trait mix (curious + intelligent + fragile + social)
       prisma.horse.create({
         data: {
-          name: `Test Horse Complex ${Date.now()}`,
+          name: `Test Horse Complex ${testSuffix}`,
           sex: 'gelding',
           dateOfBirth: oneMonthAgo,
           ownerId: testUser.id,
@@ -87,10 +83,9 @@ describe('Trait Interaction Matrix', () => {
           epigeneticFlags: ['curious', 'intelligent', 'fragile', 'social'],
         },
       }),
-      // Horse with minimal traits for baseline comparison
       prisma.horse.create({
         data: {
-          name: `Test Horse Minimal ${Date.now()}`,
+          name: `Test Horse Minimal ${testSuffix}`,
           sex: 'filly',
           dateOfBirth: oneMonthAgo,
           ownerId: testUser.id,
@@ -99,10 +94,9 @@ describe('Trait Interaction Matrix', () => {
           epigeneticFlags: ['developing'],
         },
       }),
-      // Horse with dominant trait combinations
       prisma.horse.create({
         data: {
-          name: `Test Horse Dominant ${Date.now()}`,
+          name: `Test Horse Dominant ${testSuffix}`,
           sex: 'colt',
           dateOfBirth: oneMonthAgo,
           ownerId: testUser.id,
@@ -112,6 +106,54 @@ describe('Trait Interaction Matrix', () => {
         },
       }),
     ]);
+  };
+
+  const ensureTraitTestData = async () => {
+    const cleanupCurrentData = async () => {
+      if (testHorses.length) {
+        await prisma.horse.deleteMany({
+          where: { id: { in: testHorses.map(horse => horse.id) } },
+        });
+      }
+      if (testUser) {
+        await prisma.user.deleteMany({ where: { id: testUser.id } });
+      }
+      testHorses = [];
+      testUser = null;
+    };
+
+    if (!testUser || !testHorses.length) {
+      await createTraitTestData();
+      return;
+    }
+
+    const existingUser = await prisma.user.findUnique({
+      where: { id: testUser.id },
+      select: { id: true },
+    });
+
+    if (!existingUser) {
+      await cleanupCurrentData();
+      await createTraitTestData();
+      return;
+    }
+
+    const horseCount = await prisma.horse.count({
+      where: { id: { in: testHorses.map(horse => horse.id) } },
+    });
+
+    if (horseCount !== testHorses.length) {
+      await cleanupCurrentData();
+      await createTraitTestData();
+    }
+  };
+
+  beforeAll(async () => {
+    await createTraitTestData();
+  });
+
+  beforeEach(async () => {
+    await ensureTraitTestData();
   });
 
   afterAll(async () => {
@@ -119,7 +161,7 @@ describe('Trait Interaction Matrix', () => {
     await prisma.horse.deleteMany({
       where: { id: { in: testHorses.map(h => h.id) } },
     });
-    await prisma.user.delete({ where: { id: testUser.id } });
+    await prisma.user.deleteMany({ where: { id: testUser?.id } });
   });
 
   describe('analyzeTraitInteractions', () => {

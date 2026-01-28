@@ -3,13 +3,16 @@ import supertest from 'supertest';
 import app from '../../app.mjs';
 import prisma from '../../../packages/database/prismaClient.mjs';
 import jwt from 'jsonwebtoken';
+import bcrypt from 'bcryptjs';
 
 /**
  * Add authentication headers to a supertest request object
  */
 export const withAuth = (supertestRequest, userData = {}) => {
   const token = generateTestToken(userData);
-  return supertestRequest.set('Authorization', `Bearer ${token}`);
+  return supertestRequest
+    .set('Authorization', `Bearer ${token}`)
+    .set('x-test-skip-csrf', 'true');
 };
 
 /**
@@ -26,7 +29,9 @@ export const withSeededPlayerAuth = (method, endpoint, userData = {}) => {
   if (typeof supertest(app)[method] !== 'function') {
     throw new Error(`Invalid HTTP method: ${method}`);
   }
-  return supertest(app)[method](endpoint).set('Authorization', `Bearer ${token}`);
+  return supertest(app)[method](endpoint)
+    .set('Authorization', `Bearer ${token}`)
+    .set('x-test-skip-csrf', 'true');
 };
 
 // USAGE EXAMPLE (INSIDE TEST):
@@ -36,29 +41,74 @@ export const withSeededPlayerAuth = (method, endpoint, userData = {}) => {
  * Create a test user with authentication token
  */
 export async function createTestUser(userData = {}) {
-  const defaultData = {
-    username: `testuser_${Date.now()}`,
-    firstName: 'Test',
-    lastName: 'User',
-    email: `test_${Date.now()}@example.com`,
-    password: 'TestPassword123',
-    money: 5000,
-    xp: 100,
-    level: 1,
-    ...userData,
-  };
+  try {
+    console.log('[createTestUser] Starting user creation...');
 
-  const user = await prisma.user.create({
-    data: defaultData,
-  });
+    const timestamp = Date.now();
+    const randomSuffix = Math.random().toString(36).substring(2, 8);
+    const defaultData = {
+      username: `testuser_${timestamp}_${randomSuffix}`,
+      firstName: 'Test',
+      lastName: 'User',
+      email: `test_${timestamp}_${randomSuffix}@example.com`,
+      password: 'TestPassword123!',
+      money: 5000,
+      xp: 100,
+      level: 1,
+      ...userData,
+    };
+    console.log('[createTestUser] Default data prepared:', { username: defaultData.username, email: defaultData.email });
 
-  const token = jwt.sign(
-    { id: user.id, username: user.username },
-    process.env.JWT_SECRET || 'test-secret',
-    { expiresIn: '24h' },
-  );
+    // Hash the password before creating user (matching authController behavior)
+    console.log('[createTestUser] Starting password hashing...');
+    const saltRounds = parseInt(process.env.BCRYPT_SALT_ROUNDS || '12', 10);
+    let hashedPassword;
+    try {
+      hashedPassword = await bcrypt.hash(defaultData.password, saltRounds);
+      console.log('[createTestUser] Password hashing successful');
+    } catch (hashError) {
+      console.error('[createTestUser] Password hashing FAILED:', hashError);
+      throw new Error(`Password hashing failed: ${hashError.message}`);
+    }
 
-  return { user, token };
+    // Create user in database
+    console.log('[createTestUser] Creating user in database...');
+    let user;
+    try {
+      user = await prisma.user.create({
+        data: {
+          ...defaultData,
+          password: hashedPassword,
+        },
+      });
+      console.log('[createTestUser] User created successfully:', { id: user.id, username: user.username });
+    } catch (dbError) {
+      console.error('[createTestUser] Database user creation FAILED:', dbError);
+      throw new Error(`User creation failed: ${dbError.message}`);
+    }
+
+    // Generate JWT token
+    console.log('[createTestUser] Generating JWT token...');
+    let token;
+    try {
+      token = jwt.sign(
+        { id: user.id, username: user.username },
+        process.env.JWT_SECRET || 'test-secret',
+        { expiresIn: '24h' },
+      );
+      console.log('[createTestUser] JWT token generated successfully');
+    } catch (jwtError) {
+      console.error('[createTestUser] JWT token generation FAILED:', jwtError);
+      throw new Error(`JWT generation failed: ${jwtError.message}`);
+    }
+
+    console.log('[createTestUser] Returning user and token...');
+    return { user, token };
+  } catch (error) {
+    console.error('[createTestUser] FATAL ERROR in createTestUser:', error);
+    console.error('[createTestUser] Error stack:', error.stack);
+    throw error;
+  }
 }
 
 /**
@@ -79,8 +129,10 @@ export async function createTestHorse(horseData = {}) {
     });
   }
 
+  const timestamp = Date.now();
+  const randomSuffix = Math.random().toString(36).substring(2, 8);
   const defaultData = {
-    name: `TestHorse_${Date.now()}`,
+    name: `TestHorse_${timestamp}_${randomSuffix}`,
     breed: { connect: { id: breed.id } },
     age: 5,
     sex: 'Female',
@@ -111,6 +163,31 @@ export async function createTestHorse(horseData = {}) {
     defaultData.ownerId = defaultData.userId;
     defaultData.user = { connect: { id: defaultData.userId } };
     delete defaultData.userId;
+  }
+
+  if (defaultData.ownerId) {
+    const existingUser = await prisma.user.findUnique({
+      where: { id: defaultData.ownerId },
+      select: { id: true },
+    });
+
+    if (!existingUser) {
+      const userSuffix = defaultData.ownerId.replace(/[^a-zA-Z0-9]/g, '').slice(-10) || Date.now().toString();
+      // Hash the password before creating recovery user
+      const saltRounds = parseInt(process.env.BCRYPT_SALT_ROUNDS || '12', 10);
+      const hashedPassword = await bcrypt.hash('TestPassword123!', saltRounds);
+
+      await prisma.user.create({
+        data: {
+          id: defaultData.ownerId,
+          username: `recovery_${userSuffix}`,
+          email: `recovery_${userSuffix}@example.com`,
+          password: hashedPassword,
+          firstName: 'Recovery',
+          lastName: 'User',
+        },
+      });
+    }
   }
 
   return await prisma.horse.create({

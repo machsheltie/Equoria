@@ -43,9 +43,9 @@ const mockLogger = {
 };
 
 // Mock the logger import
-jest.unstable_mockModule(join(__dirname, '../utils/logger.mjs'), () => ({
+jest.mock(join(__dirname, '../utils/logger.mjs'), () => ({
   default: mockLogger,
-}));
+}), { virtual: true });
 
 // Import the functions after mocking
 const { evaluateEpigeneticTagsFromFoalTasks } = await import(join(__dirname, '../utils/traitEvaluation.mjs'));

@@ -38,13 +38,8 @@
  */
 
 import { jest, describe, beforeEach, afterEach, expect, it } from '@jest/globals';
-import { fileURLToPath } from 'url';
-import { dirname, join } from 'path';
 
-const __filename = fileURLToPath(import.meta.url);
-const __dirname = dirname(__filename);
-
-// Mock logger
+// Create mock objects BEFORE jest.unstable_mockModule
 const mockLogger = {
   info: jest.fn(),
   error: jest.fn(),
@@ -52,12 +47,12 @@ const mockLogger = {
   debug: jest.fn(),
 };
 
-jest.unstable_mockModule(join(__dirname, '../utils/logger.mjs'), () => ({
+jest.unstable_mockModule('../utils/logger.mjs', () => ({
   default: mockLogger,
 }));
 
 // Import the function after mocking
-const { applyEpigeneticTraitsAtBirth } = await import(join(__dirname, '../utils/applyEpigeneticTraitsAtBirth.mjs'));
+const { applyEpigeneticTraitsAtBirth } = await import('../utils/applyEpigeneticTraitsAtBirth.mjs');
 
 describe('🧬 UNIT: Apply Epigenetic Traits At Birth Unit - Pure Logic Validation', () => {
   let mockRandom;

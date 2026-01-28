@@ -41,12 +41,14 @@ export const authHeader = token => {
  * Create test user data for registration/login tests
  */
 export const createTestUser = (overrides = {}) => {
+  const timestamp = Date.now();
+  const randomSuffix = Math.random().toString(36).substring(2, 8);
   return {
-    username: 'testuser123',
+    username: `testuser_${timestamp}_${randomSuffix}`,
     firstName: 'Test',
     lastName: 'User',
-    email: 'test@example.com',
-    password: 'TestPassword123',
+    email: `test_${timestamp}_${randomSuffix}@example.com`,
+    password: 'TestPassword123!',
     money: 1000, // Added default money
     ...overrides,
   };
@@ -55,7 +57,7 @@ export const createTestUser = (overrides = {}) => {
 export const createLoginData = (overrides = {}) => {
   return {
     email: 'test@example.com',
-    password: 'TestPassword123',
+    password: 'TestPassword123!',
     ...overrides,
   };
 };

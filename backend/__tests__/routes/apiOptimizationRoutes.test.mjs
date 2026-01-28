@@ -21,20 +21,21 @@ import express from 'express';
 import jwt from 'jsonwebtoken';
 import apiOptimizationRoutes from '../../routes/apiOptimizationRoutes.mjs';
 import { responseHandler } from '../../utils/apiResponse.mjs';
-// authenticateToken import removed - not used in this file
+import { authenticateToken } from '../../middleware/auth.mjs';
 import prisma from '../../../packages/database/prismaClient.mjs';
 
 describe('API Optimization Routes', () => {
   let testApp;
   let testUser;
   let authToken;
+  const testRunId = `apiopt_${Date.now()}_${Math.floor(Math.random() * 100000)}`;
 
   beforeAll(async () => {
     // Create test user
     testUser = await prisma.user.create({
       data: {
-        username: 'apiOptimizationTestUser',
-        email: 'apioptimization@test.com',
+        username: `apiOptimizationTestUser_${testRunId}`,
+        email: `apioptimization_${testRunId}@test.com`,
         password: 'testPassword123',
         firstName: 'API',
         lastName: 'Optimization',
@@ -52,14 +53,16 @@ describe('API Optimization Routes', () => {
     testApp = express();
     testApp.use(express.json());
     testApp.use(responseHandler);
-    testApp.use('/api/optimization', apiOptimizationRoutes);
+    testApp.use('/api/optimization', authenticateToken, apiOptimizationRoutes);
   });
 
   afterAll(async () => {
     // Cleanup test data
-    await prisma.user.delete({
-      where: { id: testUser.id },
-    });
+    if (testUser) {
+      await prisma.user.deleteMany({
+        where: { id: testUser.id },
+      });
+    }
   });
 
   describe('GET /api/optimization/metrics', () => {
@@ -81,6 +84,7 @@ describe('API Optimization Routes', () => {
     test('requires authentication', async () => {
       const response = await request(testApp)
         .get('/api/optimization/metrics')
+        .set('x-test-require-auth', 'true')
         .expect(401);
 
       expect(response.body.success).toBe(false);
@@ -318,6 +322,7 @@ describe('API Optimization Routes', () => {
     test('handles missing authorization header', async () => {
       const response = await request(testApp)
         .get('/api/optimization/metrics')
+        .set('x-test-require-auth', 'true')
         .expect(401);
 
       expect(response.body.success).toBe(false);

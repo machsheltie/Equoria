@@ -65,7 +65,7 @@ describe('Horse Aging System', () => {
         id: `aging-user-${Date.now()}-${Math.random()}`,
         username: `aginguser-${Date.now()}`,
         email: `aging-${Date.now()}@example.com`,
-        password: 'testpassword',
+        password: 'TestPassword123!',
         firstName: 'Aging',
         lastName: 'Tester',
         money: 1000,

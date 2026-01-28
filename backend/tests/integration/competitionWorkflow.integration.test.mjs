@@ -37,6 +37,8 @@ describe('🏆 INTEGRATION: Complete Competition Workflow', () => {
   let competitionHorse;
   let testShow;
   let competitionResult;
+  let initialMoney;
+  let initialXp;
 
   beforeAll(async () => {
     // Clean up any existing test data
@@ -94,7 +96,7 @@ describe('🏆 INTEGRATION: Complete Competition Workflow', () => {
         firstName: 'Competition',
         lastName: 'User',
         email: 'competition-integration@example.com',
-        password: 'TestPassword123',
+        password: 'TestPassword123!',
         money: 15000,
         xp: 100,
         level: 2,
@@ -104,6 +106,9 @@ describe('🏆 INTEGRATION: Complete Competition Workflow', () => {
 
       testUser = response.body.data.user;
       authToken = response.body.data.token;
+      const persistedUser = await prisma.user.findUnique({ where: { id: testUser.id } });
+      initialMoney = persistedUser.money;
+      initialXp = persistedUser.xp;
 
       // Create breed if needed
       const breed =
@@ -122,7 +127,7 @@ describe('🏆 INTEGRATION: Complete Competition Workflow', () => {
           age: 35, // 5 years = 35 days (mature and experienced)
           breedId: breed.id,
           ownerId: testUser.id,
-          userId: testUser.id,
+          ownerId: testUser.id,
           sex: 'Stallion',
           dateOfBirth: new Date('2019-01-01'),
           healthStatus: 'Excellent',
@@ -213,6 +218,7 @@ describe('🏆 INTEGRATION: Complete Competition Workflow', () => {
       const response = await request(app)
         .post('/api/competition/enter')
         .set('Authorization', `Bearer ${authToken}`)
+        .set('x-test-skip-csrf', 'true')
         .send({
           horseId: competitionHorse.id,
           showId: testShow.id,
@@ -227,7 +233,7 @@ describe('🏆 INTEGRATION: Complete Competition Workflow', () => {
 
       // VERIFY: Entry fee deducted from user account
       const updatedUser = await prisma.user.findUnique({ where: { id: testUser.id } });
-      expect(updatedUser.money).toBe(15000 - testShow.entryFee);
+      expect(updatedUser.money).toBe(initialMoney - testShow.entryFee);
 
       // VERIFY: Competition entry created in database
       const entry = await prisma.competitionResult.findFirst({
@@ -454,8 +460,8 @@ describe('🏆 INTEGRATION: Complete Competition Workflow', () => {
       });
 
       // User progression
-      expect(finalUser.xp).toBeGreaterThan(100); // Started with 100, gained more
-      expect(finalUser.money).toBeGreaterThan(15000 - testShow.entryFee); // Prize money added
+      expect(finalUser.xp).toBeGreaterThan(initialXp);
+      expect(finalUser.money).toBeGreaterThan(initialMoney - testShow.entryFee);
 
       // Horse competition record
       const horse = finalUser.horses.find(h => h.id === competitionHorse.id);
@@ -483,7 +489,7 @@ describe('🏆 INTEGRATION: Complete Competition Workflow', () => {
 
       // Financial transactions accurate
       const user = await prisma.user.findUnique({ where: { id: testUser.id } });
-      const expectedMoney = 15000 - testShow.entryFee + Number(competitionResult.prizeWon);
+      const expectedMoney = initialMoney - testShow.entryFee + Number(competitionResult.prizeWon);
       expect(user.money).toBe(expectedMoney);
 
       // Competition results realistic

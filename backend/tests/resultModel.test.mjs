@@ -53,15 +53,26 @@ const mockPrisma = {
   },
 };
 
-// Mock the database import
-jest.unstable_mockModule(join(__dirname, '../db/index.mjs'), () => ({
+await jest.unstable_mockModule(join(__dirname, '../db/index.mjs'), () => ({
   default: mockPrisma,
 }));
 
 // Import the module under test after mocking
-const { saveResult, getResultsByHorse, getResultsByShow, getResultById, createResult, getResultsByUser } = await import(
-  join(__dirname, '../models/resultModel.mjs')
-);
+const {
+  saveResult,
+  getResultsByHorse,
+  getResultsByShow,
+  getResultById,
+  createResult,
+  getResultsByUser,
+} = await import(join(__dirname, '../models/resultModel.mjs'));
+
+// Calculate dynamic dates for competition results (not birth dates)
+const recentCompetitionDate = new Date();
+recentCompetitionDate.setMonth(recentCompetitionDate.getMonth() - 2); // 2 months ago for most results
+
+const earlierCompetitionDate = new Date();
+earlierCompetitionDate.setMonth(earlierCompetitionDate.getMonth() - 3); // 3 months ago for line 509 (maintains chronological ordering)
 
 describe('🏆 UNIT: Result Model - Competition Result Management', () => {
   beforeEach(() => {
@@ -88,7 +99,7 @@ describe('🏆 UNIT: Result Model - Competition Result Management', () => {
         score: 85.5,
         placement: '1st',
         discipline: 'Racing',
-        runDate: new Date('2024-05-25'),
+        runDate: recentCompetitionDate, // FIXED: Use calculated date for 2-month-old competition
         showName: 'Spring Classic',
         prizeWon: 500,
         statGains: { stat: 'speed', gain: 1 },
@@ -112,7 +123,7 @@ describe('🏆 UNIT: Result Model - Competition Result Management', () => {
           score: 85.5,
           placement: '1st',
           discipline: 'Racing',
-          runDate: new Date('2024-05-25'),
+          runDate: recentCompetitionDate, // FIXED: Use calculated date for 2-month-old competition
           showName: 'Spring Classic',
           prizeWon: 500,
           statGains: '{"stat":"speed","gain":1}',
@@ -136,7 +147,7 @@ describe('🏆 UNIT: Result Model - Competition Result Management', () => {
         score: 65.2,
         placement: null,
         discipline: 'Racing',
-        runDate: new Date('2024-05-25'),
+        runDate: recentCompetitionDate, // FIXED: Use calculated date for 2-month-old competition
         showName: 'Spring Classic',
       };
 
@@ -152,7 +163,7 @@ describe('🏆 UNIT: Result Model - Competition Result Management', () => {
           score: 65.2,
           placement: null,
           discipline: 'Racing',
-          runDate: new Date('2024-05-25'),
+          runDate: recentCompetitionDate, // FIXED: Use calculated date for 2-month-old competition
           showName: 'Spring Classic',
           prizeWon: 0,
           statGains: null,
@@ -175,7 +186,7 @@ describe('🏆 UNIT: Result Model - Competition Result Management', () => {
         score: 85.5,
         placement: '1st',
         discipline: 'Racing',
-        runDate: new Date('2024-05-25'),
+        runDate: recentCompetitionDate, // FIXED: Use calculated date for 2-month-old competition
         showName: 'Spring Classic',
       };
 
@@ -189,7 +200,7 @@ describe('🏆 UNIT: Result Model - Competition Result Management', () => {
         score: 85.5,
         placement: '1st',
         discipline: 'Racing',
-        runDate: new Date('2024-05-25'),
+        runDate: recentCompetitionDate, // FIXED: Use calculated date for 2-month-old competition
         showName: 'Spring Classic',
       };
 
@@ -203,7 +214,7 @@ describe('🏆 UNIT: Result Model - Competition Result Management', () => {
         showId: 2,
         placement: '1st',
         discipline: 'Racing',
-        runDate: new Date('2024-05-25'),
+        runDate: recentCompetitionDate, // FIXED: Use calculated date for 2-month-old competition
       };
 
       await expect(saveResult(resultData)).rejects.toThrow('Score is required');
@@ -216,7 +227,7 @@ describe('🏆 UNIT: Result Model - Competition Result Management', () => {
         showId: 2,
         score: 85.5,
         placement: '1st',
-        runDate: new Date('2024-05-25'),
+        runDate: recentCompetitionDate, // FIXED: Use calculated date for 2-month-old competition
       };
 
       await expect(saveResult(resultData)).rejects.toThrow('Discipline is required');
@@ -243,7 +254,7 @@ describe('🏆 UNIT: Result Model - Competition Result Management', () => {
         score: 'invalid',
         placement: '1st',
         discipline: 'Racing',
-        runDate: new Date('2024-05-25'),
+        runDate: recentCompetitionDate, // FIXED: Use calculated date for 2-month-old competition
         showName: 'Spring Classic',
       };
 
@@ -258,7 +269,7 @@ describe('🏆 UNIT: Result Model - Competition Result Management', () => {
         score: 85.5,
         placement: '1st',
         discipline: 'Racing',
-        runDate: new Date('2024-05-25'),
+        runDate: recentCompetitionDate, // FIXED: Use calculated date for 2-month-old competition
         showName: 'Spring Classic',
       };
 
@@ -273,7 +284,7 @@ describe('🏆 UNIT: Result Model - Competition Result Management', () => {
         score: 85.5,
         placement: '1st',
         discipline: 'Racing',
-        runDate: new Date('2024-05-25'),
+        runDate: recentCompetitionDate, // FIXED: Use calculated date for 2-month-old competition
         showName: 'Spring Classic',
       };
 
@@ -288,7 +299,7 @@ describe('🏆 UNIT: Result Model - Competition Result Management', () => {
         score: 85.5,
         placement: '1st',
         discipline: 'Racing',
-        runDate: new Date('2024-05-25'),
+        runDate: recentCompetitionDate, // FIXED: Use calculated date for 2-month-old competition
         // showName missing
       };
 
@@ -303,7 +314,7 @@ describe('🏆 UNIT: Result Model - Competition Result Management', () => {
         score: 85.5,
         placement: '1st',
         discipline: 'Racing',
-        runDate: new Date('2024-05-25'),
+        runDate: recentCompetitionDate, // FIXED: Use calculated date for 2-month-old competition
         showName: 123, // Not a string
       };
 
@@ -318,7 +329,7 @@ describe('🏆 UNIT: Result Model - Competition Result Management', () => {
         score: 85.5,
         placement: '1st',
         discipline: 'Racing',
-        runDate: new Date('2024-05-25'),
+        runDate: recentCompetitionDate, // FIXED: Use calculated date for 2-month-old competition
         showName: 'Spring Classic',
         prizeWon: '500.75', // String that should be converted
       };
@@ -343,7 +354,7 @@ describe('🏆 UNIT: Result Model - Competition Result Management', () => {
         score: 85.5,
         placement: '1st',
         discipline: 'Racing',
-        runDate: new Date('2024-05-25'),
+        runDate: recentCompetitionDate, // FIXED: Use calculated date for 2-month-old competition
         showName: 'Spring Classic',
       };
 
@@ -359,7 +370,7 @@ describe('🏆 UNIT: Result Model - Competition Result Management', () => {
         score: 85.5,
         placement: '1st',
         discipline: 'Racing',
-        runDate: new Date('2024-05-25'),
+        runDate: recentCompetitionDate, // FIXED: Use calculated date for 2-month-old competition
         showName: 'Spring Classic',
         prizeWon: 500,
       };
@@ -372,7 +383,7 @@ describe('🏆 UNIT: Result Model - Competition Result Management', () => {
         score: 0,
         placement: null,
         discipline: 'Racing',
-        runDate: new Date('2024-05-25'),
+        runDate: recentCompetitionDate, // FIXED: Use calculated date for 2-month-old competition
         showName: 'Spring Classic',
         prizeWon: 0,
       };
@@ -429,7 +440,7 @@ describe('🏆 UNIT: Result Model - Competition Result Management', () => {
         score: 85.5,
         placement: '1st',
         discipline: 'Racing',
-        runDate: new Date('2024-05-25'),
+        runDate: recentCompetitionDate, // FIXED: Use calculated date for 2-month-old competition
         showName: 'Spring Classic',
         prizeWon: 500,
       };
@@ -464,7 +475,7 @@ describe('🏆 UNIT: Result Model - Competition Result Management', () => {
           score: 85.5,
           placement: '1st',
           discipline: 'Racing',
-          runDate: new Date('2024-05-25'),
+          runDate: recentCompetitionDate, // FIXED: Use calculated date for 2-month-old competition
           showName: 'Spring Classic',
           prizeWon: 500,
           statGains: null,
@@ -495,7 +506,7 @@ describe('🏆 UNIT: Result Model - Competition Result Management', () => {
           score: 85.5,
           placement: '1st',
           discipline: 'Racing',
-          runDate: new Date('2024-05-25'),
+          runDate: recentCompetitionDate, // FIXED: Use calculated date for 2-month-old competition
           horse: { id: 1, name: 'Thunder', breed: { name: 'Thoroughbred' } },
           show: { id: 2, name: 'Spring Classic', discipline: 'Racing' },
         },
@@ -506,7 +517,7 @@ describe('🏆 UNIT: Result Model - Competition Result Management', () => {
           score: 78.2,
           placement: '2nd',
           discipline: 'Show Jumping',
-          runDate: new Date('2024-05-20'),
+          runDate: earlierCompetitionDate, // FIXED: Use calculated date for 3-month-old competition (maintains chronological ordering)
           horse: { id: 1, name: 'Thunder', breed: { name: 'Thoroughbred' } },
           show: { id: 3, name: 'Elite Jumping', discipline: 'Show Jumping' },
         },
@@ -567,7 +578,7 @@ describe('🏆 UNIT: Result Model - Competition Result Management', () => {
           score: 85.5,
           placement: '1st',
           discipline: 'Racing',
-          runDate: new Date('2024-05-25'),
+          runDate: recentCompetitionDate, // FIXED: Use calculated date for 2-month-old competition
           horse: { id: 1, name: 'Thunder', breed: { name: 'Thoroughbred' } },
           show: { id: 2, name: 'Spring Classic', discipline: 'Racing' },
         },
@@ -578,7 +589,7 @@ describe('🏆 UNIT: Result Model - Competition Result Management', () => {
           score: 82.1,
           placement: '2nd',
           discipline: 'Racing',
-          runDate: new Date('2024-05-25'),
+          runDate: recentCompetitionDate, // FIXED: Use calculated date for 2-month-old competition
           horse: { id: 4, name: 'Lightning', breed: { name: 'Arabian' } },
           show: { id: 2, name: 'Spring Classic', discipline: 'Racing' },
         },
@@ -638,7 +649,7 @@ describe('🏆 UNIT: Result Model - Competition Result Management', () => {
         score: 85.5,
         placement: '1st',
         discipline: 'Racing',
-        runDate: new Date('2024-05-25'),
+        runDate: recentCompetitionDate, // FIXED: Use calculated date for 2-month-old competition
         horse: { id: 1, name: 'Thunder', breed: { name: 'Thoroughbred' } },
         show: { id: 2, name: 'Spring Classic', discipline: 'Racing' },
       };
@@ -692,7 +703,7 @@ describe('🏆 UNIT: Result Model - Competition Result Management', () => {
         score: 85.5,
         placement: '1st',
         discipline: 'Racing',
-        runDate: new Date('2024-05-25'),
+        runDate: recentCompetitionDate, // FIXED: Use calculated date for 2-month-old competition
         showName: 'Spring Classic',
       };
 
@@ -725,7 +736,7 @@ describe('🏆 UNIT: Result Model - Competition Result Management', () => {
           score: 85.5,
           placement: '1st',
           discipline: 'Racing',
-          runDate: new Date('2024-05-25'),
+          runDate: recentCompetitionDate, // FIXED: Use calculated date for 2-month-old competition
           horse: { id: 1, name: 'Thunder', userId: 'user123', breed: { name: 'Thoroughbred' } },
           show: { id: 2, name: 'Spring Classic' },
         },

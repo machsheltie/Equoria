@@ -33,94 +33,96 @@ describe('Environmental Trigger System', () => {
   let testGrooms = [];
 
   beforeAll(async () => {
-    // Create test user
-    testUser = await prisma.user.create({
-      data: {
-        username: `env_trigger_${Date.now()}`,
-        email: `env_trigger_${Date.now()}@test.com`,
-        password: 'test_hash',
-        firstName: 'Test',
-        lastName: 'User',
-        money: 1000,
-        xp: 0,
-        level: 1,
-      },
-    });
-
-    // Create test grooms for environmental interactions
-    testGrooms = await Promise.all([
-      prisma.groom.create({
-        data: {
-          name: `Calm Groom ${Date.now()}`,
-          personality: 'calm',
-          groomPersonality: 'calm',
-          skillLevel: 'expert',
-          speciality: 'foal_care',
-          userId: testUser.id,
-          sessionRate: 30.0,
-          experience: 150,
-          level: 8,
-        },
-      }),
-      prisma.groom.create({
-        data: {
-          name: `Energetic Groom ${Date.now()}`,
-          personality: 'energetic',
-          groomPersonality: 'energetic',
-          skillLevel: 'expert',
-          speciality: 'general_grooming',
-          userId: testUser.id,
-          sessionRate: 35.0,
-          experience: 200,
-          level: 10,
-        },
-      }),
-    ]);
-
     // Create test horses with different ages and environmental exposures
     const now = new Date();
     const oneWeekAgo = new Date(now.getTime() - 7 * 24 * 60 * 60 * 1000);
     const twoWeeksAgo = new Date(now.getTime() - 14 * 24 * 60 * 60 * 1000);
     const oneMonthAgo = new Date(now.getTime() - 30 * 24 * 60 * 60 * 1000);
 
-    testHorses = await Promise.all([
-      // Young foal - high environmental sensitivity
-      prisma.horse.create({
+    await prisma.$transaction(async (tx) => {
+      // Create test user
+      testUser = await tx.user.create({
         data: {
-          name: `Test Foal Young ${Date.now()}`,
-          sex: 'filly',
-          dateOfBirth: oneWeekAgo,
-          ownerId: testUser.id,
-          bondScore: 15,
-          stressLevel: 6,
-          epigeneticFlags: ['developing'],
+          username: `env_trigger_${Date.now()}`,
+          email: `env_trigger_${Date.now()}@test.com`,
+          password: 'test_hash',
+          firstName: 'Test',
+          lastName: 'User',
+          money: 1000,
+          xp: 0,
+          level: 1,
         },
-      }),
-      // Older foal - moderate sensitivity
-      prisma.horse.create({
-        data: {
-          name: `Test Foal Older ${Date.now()}`,
-          sex: 'colt',
-          dateOfBirth: oneMonthAgo,
-          ownerId: testUser.id,
-          bondScore: 25,
-          stressLevel: 4,
-          epigeneticFlags: ['curious'],
-        },
-      }),
-      // Stressed foal - high trigger sensitivity
-      prisma.horse.create({
-        data: {
-          name: `Test Foal Stressed ${Date.now()}`,
-          sex: 'filly',
-          dateOfBirth: twoWeeksAgo,
-          ownerId: testUser.id,
-          bondScore: 10,
-          stressLevel: 8,
-          epigeneticFlags: ['reactive'],
-        },
-      }),
-    ]);
+      });
+
+      // Create test grooms for environmental interactions
+      testGrooms = await Promise.all([
+        tx.groom.create({
+          data: {
+            name: `Calm Groom ${Date.now()}`,
+            personality: 'calm',
+            groomPersonality: 'calm',
+            skillLevel: 'expert',
+            speciality: 'foal_care',
+            userId: testUser.id,
+            sessionRate: 30.0,
+            experience: 150,
+            level: 8,
+          },
+        }),
+        tx.groom.create({
+          data: {
+            name: `Energetic Groom ${Date.now()}`,
+            personality: 'energetic',
+            groomPersonality: 'energetic',
+            skillLevel: 'expert',
+            speciality: 'general_grooming',
+            userId: testUser.id,
+            sessionRate: 35.0,
+            experience: 200,
+            level: 10,
+          },
+        }),
+      ]);
+
+      testHorses = await Promise.all([
+        // Young foal - high environmental sensitivity
+        tx.horse.create({
+          data: {
+            name: `Test Foal Young ${Date.now()}`,
+            sex: 'filly',
+            dateOfBirth: oneWeekAgo,
+            ownerId: testUser.id,
+            bondScore: 15,
+            stressLevel: 6,
+            epigeneticFlags: ['developing'],
+          },
+        }),
+        // Older foal - moderate sensitivity
+        tx.horse.create({
+          data: {
+            name: `Test Foal Older ${Date.now()}`,
+            sex: 'colt',
+            dateOfBirth: oneMonthAgo,
+            ownerId: testUser.id,
+            bondScore: 25,
+            stressLevel: 4,
+            epigeneticFlags: ['curious'],
+          },
+        }),
+        // Stressed foal - high trigger sensitivity
+        tx.horse.create({
+          data: {
+            name: `Test Foal Stressed ${Date.now()}`,
+            sex: 'filly',
+            dateOfBirth: twoWeeksAgo,
+            ownerId: testUser.id,
+            bondScore: 10,
+            stressLevel: 8,
+            epigeneticFlags: ['reactive'],
+          },
+        }),
+      ]);
+    });
   });
 
   afterAll(async () => {
@@ -137,7 +139,9 @@ describe('Environmental Trigger System', () => {
     await prisma.horse.deleteMany({
       where: { id: { in: testHorses.map(h => h.id) } },
     });
-    await prisma.user.delete({ where: { id: testUser.id } });
+    if (testUser) {
+      await prisma.user.deleteMany({ where: { id: testUser.id } });
+    }
   });
 
   describe('detectEnvironmentalTriggers', () => {

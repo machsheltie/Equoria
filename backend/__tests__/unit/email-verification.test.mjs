@@ -8,6 +8,7 @@
  */
 
 import { jest } from '@jest/globals';
+import crypto from 'crypto';
 import {
   generateVerificationToken,
   createVerificationToken,
@@ -30,11 +31,11 @@ describe('Email Verification Service - Unit Tests', () => {
     // Clean up email verification tokens
     await prisma.emailVerificationToken.deleteMany({});
 
-    // Create fresh test user
-    const timestamp = Date.now() + Math.floor(Math.random() * 1000);
+    // Create fresh test user with unique ID
+    const uniqueId = crypto.randomUUID();
     const userData = await createTestUser({
-      username: `emailtest_${timestamp}`,
-      email: `emailtest_${timestamp}@example.com`,
+      username: `emailtest_${uniqueId}`,
+      email: `emailtest_${uniqueId}@example.com`,
     });
     testUser = userData;
   });

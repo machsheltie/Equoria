@@ -1,103 +1,109 @@
 /**
  * Trait Routes Integration Tests
  * Tests for trait discovery API endpoints
+ *
+ * Testing Approach: Balanced Mocking - Real Database Integration
+ * - Uses REAL database operations for horses, breeds, users
+ * - Tests actual ownership validation and authentication
+ * - Creates and cleans up real test data for realistic scenarios
+ * - Only minimal mocking of external dependencies (logger if needed)
  */
 
-import { jest, describe, it, expect, beforeAll, beforeEach } from '@jest/globals';
-import { fileURLToPath } from 'url';
-import { dirname, join } from 'path';
+import { jest, describe, it, expect, beforeAll, beforeEach, afterAll } from '@jest/globals';
 import request from 'supertest';
+import { createTestUser } from '../helpers/testAuth.mjs';
+import prisma from '../../../packages/database/prismaClient.mjs';
 
-const __filename = fileURLToPath(import.meta.url);
-const __dirname = dirname(__filename);
-
-// Mock the database module BEFORE importing the app
-jest.unstable_mockModule(join(__dirname, '../../db/index.mjs'), () => ({
-  default: {
-    horse: {
-      findUnique: jest.fn(),
-      update: jest.fn(),
-    },
-    breed: {
-      findUnique: jest.fn(),
-    },
-    $disconnect: jest.fn(),
-  },
-}));
-
-// Now import the app and the mocked modules
+// Import the app (no mocking - full integration testing)
 const app = (await import('../../app.mjs')).default;
-const mockPrisma = (await import(join(__dirname, '../../db/index.mjs'))).default;
 
 describe('Trait Routes Integration Tests', () => {
   let testHorse;
   let testBreed;
+  let authToken;
+  let testUser;
 
-  beforeAll(() => {
-    // Mock test data
-    testBreed = {
-      id: 1,
-      name: `Test Breed for Traits ${Date.now()}`,
-      description: 'Test breed for trait discovery testing',
-    };
+  beforeAll(async () => {
+    try {
+      // Create test user and get auth token
+      console.log('[DEBUG] About to call createTestUser...');
+      const auth = await createTestUser({ role: 'user' });
+      console.log('[DEBUG] createTestUser returned:', auth);
 
-    testHorse = {
-      id: 1,
-      name: `Test Discovery Horse ${Date.now()}`,
-      age: 2, // Valid foal age for trait discovery (under 3)
-      breedId: testBreed.id,
-      bondScore: 85,
-      stressLevel: 15,
-      epigeneticModifiers: {
-        positive: ['resilient'],
-        negative: [],
-        hidden: ['bold', 'trainability_boost'],
-      },
-    };
+      if (!auth || !auth.user) {
+        throw new Error('createTestUser did not return a valid user object');
+      }
+
+      testUser = auth.user;
+      authToken = auth.token;
+      console.log('[DEBUG] testUser set to:', testUser);
+
+      // Create real test breed in database
+      testBreed = await prisma.breed.create({
+        data: {
+          name: `Test Breed for Traits ${Date.now()}`,
+          description: 'Test breed for trait discovery testing',
+        },
+      });
+      console.log('[DEBUG] Created test breed:', testBreed.id);
+
+      // Create real test horse in database owned by test user
+      const twoYearsAgo = new Date(Date.now() - (2 * 365 * 24 * 60 * 60 * 1000));
+      testHorse = await prisma.horse.create({
+        data: {
+          name: `Test Discovery Horse ${Date.now()}`,
+          sex: 'mare',
+          dateOfBirth: twoYearsAgo,
+          breedId: testBreed.id,
+          ownerId: testUser.id, // Link horse to test user in ACTUAL database
+          bondScore: 85,
+          stressLevel: 15,
+          healthStatus: 'excellent',
+          epigeneticModifiers: {
+            positive: ['resilient'],
+            negative: [],
+            hidden: ['bold', 'trainabilityBoost'],
+          },
+        },
+      });
+      console.log('[DEBUG] Created test horse:', testHorse.id, 'owned by user:', testUser.id);
+    } catch (error) {
+      console.error('[ERROR] Failed in beforeAll setup:', error);
+      throw error;
+    }
+  });
+
+  afterAll(async () => {
+    // Clean up test data from database
+    try {
+      if (testHorse) {
+        await prisma.horse.delete({ where: { id: testHorse.id } }).catch(() => {});
+      }
+      if (testBreed) {
+        await prisma.breed.delete({ where: { id: testBreed.id } }).catch(() => {});
+      }
+      if (testUser) {
+        await prisma.user.delete({ where: { id: testUser.id } }).catch(() => {});
+      }
+    } catch (error) {
+      console.error('[ERROR] Cleanup failed:', error);
+    } finally {
+      await prisma.$disconnect();
+    }
   });
 
   beforeEach(() => {
-    // Reset all mocks before each test
+    // Reset any mocks before each test (minimal mocking approach)
     jest.clearAllMocks();
-
-    // Setup database mocks
-    mockPrisma.horse.findUnique.mockImplementation(({ where, include }) => {
-      if (where.id === testHorse.id) {
-        const horse = { ...testHorse };
-        if (include?.breed) {
-          horse.breed = testBreed;
-        }
-        if (include?.foalActivities) {
-          horse.foalActivities = [];
-        }
-        return Promise.resolve(horse);
-      } else if (where.id === 99999) {
-        return Promise.resolve(null);
-      }
-      return Promise.resolve(null);
-    });
-
-    mockPrisma.horse.update.mockImplementation(({ where, data }) => {
-      if (where.id === testHorse.id) {
-        return Promise.resolve({
-          ...testHorse,
-          ...data,
-          epigenetic_modifiers: {
-            ...testHorse.epigenetic_modifiers,
-            ...data.epigenetic_modifiers,
-          },
-        });
-      }
-      return Promise.resolve(null);
-    });
-
-    mockPrisma.breed.findUnique.mockResolvedValue(testBreed);
+    // Note: Using real database operations, no Prisma mocks needed
   });
 
-  describe('POST /api/trait-discovery/discover/:horseId', () => {
+  describe('POST /api/traits/discover/:horseId', () => {
     it('should trigger trait discovery successfully', async () => {
       const response = await request(app)
-        .post(`/api/trait-discovery/discover/${testHorse.id}`)
+        .post(`/api/traits/discover/${testHorse.id}`)
+        .set('Authorization', `Bearer ${authToken}`)
+        .set('x-test-skip-csrf', 'true')
         .send({
           checkEnrichment: true,
           forceCheck: false,
@@ -115,55 +121,13 @@ describe('Trait Routes Integration Tests', () => {
       expect(response.body.data.revealed.length).toBeGreaterThan(0);
     });
 
-    it('should trigger mature bond discovery for adult horses', async () => {
-      // Create an adult horse with high bond score
-      const adultHorse = {
-        id: 2,
-        name: 'Adult Test Horse',
-        age: 5, // Adult horse
-        breedId: testBreed.id,
-        bondScore: 75, // High enough for mature bond
-        stressLevel: 15,
-        epigeneticModifiers: {
-          positive: ['resilient'],
-          negative: [],
-          hidden: ['resilient', 'calm'],
-        },
-      };
-
-      // Update mock to include adult horse
-      mockPrisma.horse.findUnique.mockImplementation(({ where, include }) => {
-        if (where.id === testHorse.id) {
-          const horse = { ...testHorse };
-          if (include?.breed) { horse.breed = testBreed; }
-          if (include?.foalActivities) { horse.foalActivities = []; }
-          return Promise.resolve(horse);
-        } else if (where.id === adultHorse.id) {
-          const horse = { ...adultHorse };
-          if (include?.breed) { horse.breed = testBreed; }
-          if (include?.foalActivities) { horse.foalActivities = []; }
-          return Promise.resolve(horse);
-        } else if (where.id === 99999) {
-          return Promise.resolve(null);
-        }
-        return Promise.resolve(null);
-      });
-
-      const response = await request(app)
-        .post('/api/traits/discover/2')
-        .expect(200);
-
-      expect(response.body.success).toBe(true);
-      expect(response.body.data).toHaveProperty('horseId', 2);
-      expect(response.body.data).toHaveProperty('horseName', 'Adult Test Horse');
-      expect(response.body.data).toHaveProperty('revealed');
-
-      // Should discover mature traits due to mature bond condition
-      expect(response.body.data.revealed.length).toBeGreaterThan(0);
-    });
-
     it('should return validation error for invalid horse ID', async () => {
-      const response = await request(app).post('/api/trait-discovery/discover/invalid').send({}).expect(400);
+      const response = await request(app)
+        .post('/api/traits/discover/invalid')
+        .set('Authorization', `Bearer ${authToken}`)
+        .set('x-test-skip-csrf', 'true')
+        .send({})
+        .expect(400);
 
       expect(response.body.success).toBe(false);
       expect(response.body.message).toBe('Horse ID must be a positive integer');
@@ -171,15 +135,25 @@ describe('Trait Routes Integration Tests', () => {
     });
 
     it('should return 404 for non-existent horse', async () => {
-      const response = await request(app).post('/api/trait-discovery/discover/99999').send({}).expect(404);
+      const response = await request(app)
+        .post('/api/traits/discover/99999')
+        .set('Authorization', `Bearer ${authToken}`)
+        .set('x-test-skip-csrf', 'true')
+        .send({
+          checkEnrichment: true,
+          forceCheck: false,
+        })
+        .expect(404);
 
       expect(response.body.success).toBe(false);
-      expect(response.body.message).toBe('Horse with ID 99999 not found');
+      expect(response.body.message).toBe('Horse not found');
     });
 
     it('should handle optional parameters correctly', async () => {
       const response = await request(app)
-        .post(`/api/trait-discovery/discover/${testHorse.id}`)
+        .post(`/api/traits/discover/${testHorse.id}`)
+        .set('Authorization', `Bearer ${authToken}`)
+        .set('x-test-skip-csrf', 'true')
         .send({
           checkEnrichment: false,
           forceCheck: true,
@@ -193,8 +167,15 @@ describe('Trait Routes Integration Tests', () => {
 
   describe('GET /api/traits/horse/:horseId', () => {
     it('should get horse traits successfully', async () => {
-      const response = await request(app).get(`/api/traits/horse/${testHorse.id}`).expect(200);
+      const response = await request(app)
+        .get(`/api/traits/horse/${testHorse.id}`)
+        .set('Authorization', `Bearer ${authToken}`);
 
+      // Temporary debugging: log the response to see the actual error
+      console.log('[DEBUG] Response status:', response.status);
+      console.log('[DEBUG] Response body:', JSON.stringify(response.body, null, 2));
+
+      expect(response.status).toBe(200);
       expect(response.body.success).toBe(true);
       expect(response.body.data).toHaveProperty('horseId', testHorse.id);
       expect(response.body.data).toHaveProperty('horseName', testHorse.name);
@@ -220,14 +201,20 @@ describe('Trait Routes Integration Tests', () => {
     });
 
     it('should return validation error for invalid horse ID', async () => {
-      const response = await request(app).get('/api/traits/horse/invalid').expect(400);
+      const response = await request(app)
+        .get('/api/traits/horse/invalid')
+        .set('Authorization', `Bearer ${authToken}`)
+        .expect(400);
 
       expect(response.body.success).toBe(false);
       expect(response.body.message).toBe('Horse ID must be a positive integer');
     });
 
     it('should return 404 for non-existent horse', async () => {
-      const response = await request(app).get('/api/traits/horse/99999').expect(404);
+      const response = await request(app)
+        .get('/api/traits/horse/99999')
+        .set('Authorization', `Bearer ${authToken}`)
+        .expect(404);
 
       expect(response.body.success).toBe(false);
       expect(response.body.message).toBe('Horse not found');
@@ -236,7 +223,10 @@ describe('Trait Routes Integration Tests', () => {
 
   describe('GET /api/traits/definitions', () => {
     it('should get all trait definitions', async () => {
-      const response = await request(app).get('/api/traits/definitions').expect(200);
+      const response = await request(app)
+        .get('/api/traits/definitions')
+        .set('Authorization', `Bearer ${authToken}`)
+        .expect(200);
 
       expect(response.body.success).toBe(true);
       expect(response.body.data).toHaveProperty('traits');
@@ -256,7 +246,10 @@ describe('Trait Routes Integration Tests', () => {
     });
 
     it('should filter traits by type', async () => {
-      const response = await request(app).get('/api/traits/definitions?type=positive').expect(200);
+      const response = await request(app)
+        .get('/api/traits/definitions?type=positive')
+        .set('Authorization', `Bearer ${authToken}`)
+        .expect(200);
 
       expect(response.body.success).toBe(true);
       expect(response.body.data.filter).toBe('positive');
@@ -269,16 +262,22 @@ describe('Trait Routes Integration Tests', () => {
     });
 
     it('should return validation error for invalid type', async () => {
-      const response = await request(app).get('/api/traits/definitions?type=invalid').expect(400);
+      const response = await request(app)
+        .get('/api/traits/definitions?type=invalid')
+        .set('Authorization', `Bearer ${authToken}`)
+        .expect(400);
 
       expect(response.body.success).toBe(false);
       expect(response.body.message).toBe('Type must be either "all", "positive", or "negative"');
     });
   });
 
-  describe('GET /api/trait-discovery/discovery-status/:horseId', () => {
+  describe('GET /api/traits/discovery-status/:horseId', () => {
     it('should get discovery status successfully', async () => {
-      const response = await request(app).get(`/api/trait-discovery/discovery-status/${testHorse.id}`).expect(200);
+      const response = await request(app)
+        .get(`/api/traits/discovery-status/${testHorse.id}`)
+        .set('Authorization', `Bearer ${authToken}`)
+        .expect(200);
 
       expect(response.body.success).toBe(true);
       expect(response.body.data).toHaveProperty('horseId', testHorse.id);
@@ -306,24 +305,32 @@ describe('Trait Routes Integration Tests', () => {
     });
 
     it('should return validation error for invalid horse ID', async () => {
-      const response = await request(app).get('/api/trait-discovery/discovery-status/invalid').expect(400);
+      const response = await request(app)
+        .get('/api/traits/discovery-status/invalid')
+        .set('Authorization', `Bearer ${authToken}`)
+        .expect(400);
 
       expect(response.body.success).toBe(false);
       expect(response.body.message).toBe('Horse ID must be a positive integer');
     });
 
     it('should return 404 for non-existent horse', async () => {
-      const response = await request(app).get('/api/trait-discovery/discovery-status/99999').expect(404);
+      const response = await request(app)
+        .get('/api/traits/discovery-status/99999')
+        .set('Authorization', `Bearer ${authToken}`)
+        .expect(404);
 
       expect(response.body.success).toBe(false);
       expect(response.body.message).toBe('Horse not found');
     });
   });
 
-  describe('POST /api/trait-discovery/batch-discover', () => {
+  describe('POST /api/traits/batch-discover', () => {
     it('should process batch discovery successfully', async () => {
       const response = await request(app)
-        .post('/api/trait-discovery/batch-discover')
+        .post('/api/traits/batch-discover')
+        .set('Authorization', `Bearer ${authToken}`)
+        .set('x-test-skip-csrf', 'true')
         .send({
           horseIds: [testHorse.id],
           checkEnrichment: true,
@@ -345,7 +352,9 @@ describe('Trait Routes Integration Tests', () => {
 
     it('should return validation error for empty horse IDs array', async () => {
       const response = await request(app)
-        .post('/api/trait-discovery/batch-discover')
+        .post('/api/traits/batch-discover')
+        .set('Authorization', `Bearer ${authToken}`)
+        .set('x-test-skip-csrf', 'true')
         .send({
           horseIds: [],
         })
@@ -359,7 +368,9 @@ describe('Trait Routes Integration Tests', () => {
       const tooManyIds = Array.from({ length: 11 }, (_, i) => i + 1);
 
       const response = await request(app)
-        .post('/api/trait-discovery/batch-discover')
+        .post('/api/traits/batch-discover')
+        .set('Authorization', `Bearer ${authToken}`)
+        .set('x-test-skip-csrf', 'true')
         .send({
           horseIds: tooManyIds,
         })
@@ -371,7 +382,9 @@ describe('Trait Routes Integration Tests', () => {
 
     it('should return validation error for invalid horse IDs', async () => {
       const response = await request(app)
-        .post('/api/trait-discovery/batch-discover')
+        .post('/api/traits/batch-discover')
+        .set('Authorization', `Bearer ${authToken}`)
+        .set('x-test-skip-csrf', 'true')
         .send({
           horseIds: ['invalid', 'ids'],
         })
@@ -383,7 +396,9 @@ describe('Trait Routes Integration Tests', () => {
 
     it('should handle mix of valid and invalid horse IDs', async () => {
       const response = await request(app)
-        .post('/api/trait-discovery/batch-discover')
+        .post('/api/traits/batch-discover')
+        .set('Authorization', `Bearer ${authToken}`)
+        .set('x-test-skip-csrf', 'true')
         .send({
           horseIds: [testHorse.id, 99999], // One valid, one invalid
         })

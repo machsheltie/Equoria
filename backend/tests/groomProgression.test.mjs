@@ -26,72 +26,106 @@ describe('Groom Progression System', () => {
   let testUser;
   let testGroom;
   let testHorse;
+  const testUserId = 'test-user-progression';
+  const testBreedName = 'Test Breed';
+
+  const cleanupProgressionData = async () => {
+    const grooms = await prisma.groom.findMany({
+      where: { userId: testUserId },
+      select: { id: true },
+    });
+    const horses = await prisma.horse.findMany({
+      where: { ownerId: testUserId },
+      select: { id: true },
+    });
+
+    const groomIds = grooms.map(groom => groom.id);
+    const horseIds = horses.map(horse => horse.id);
+
+    if (groomIds.length || horseIds.length) {
+      await prisma.groomAssignmentLog.deleteMany({
+        where: {
+          OR: [
+            ...(groomIds.length ? [{ groomId: { in: groomIds } }] : []),
+            ...(horseIds.length ? [{ horseId: { in: horseIds } }] : []),
+          ],
+        },
+      });
+      await prisma.groomHorseSynergy.deleteMany({
+        where: {
+          OR: [
+            ...(groomIds.length ? [{ groomId: { in: groomIds } }] : []),
+            ...(horseIds.length ? [{ horseId: { in: horseIds } }] : []),
+          ],
+        },
+      });
+      await prisma.groomAssignment.deleteMany({
+        where: {
+          OR: [
+            ...(groomIds.length ? [{ groomId: { in: groomIds } }] : []),
+            ...(horseIds.length ? [{ foalId: { in: horseIds } }] : []),
+          ],
+        },
+      });
+    }
+
+    await prisma.groom.deleteMany({ where: { userId: testUserId } });
+    await prisma.horse.deleteMany({ where: { ownerId: testUserId } });
+    await prisma.user.deleteMany({ where: { id: testUserId } });
+    await prisma.breed.deleteMany({ where: { name: testBreedName } });
+  };
 
   beforeEach(async () => {
-    // Clean up test data
-    await prisma.groomAssignmentLog.deleteMany({});
-    await prisma.groomHorseSynergy.deleteMany({});
-    await prisma.groomAssignment.deleteMany({});
-    await prisma.groom.deleteMany({});
-    await prisma.horse.deleteMany({});
-    await prisma.user.deleteMany({});
+    await cleanupProgressionData();
 
-    // Create test user
-    testUser = await prisma.user.create({
-      data: {
-        id: 'test-user-progression',
-        username: 'progressiontest',
-        email: 'progression@test.com',
-        firstName: 'Test',
-        lastName: 'User',
-        password: 'TestPassword123',
-        money: 5000,
-      },
-    });
+    await prisma.$transaction(async (tx) => {
+      testUser = await tx.user.create({
+        data: {
+          id: testUserId,
+          username: 'progressiontest',
+          email: 'progression@test.com',
+          firstName: 'Test',
+          lastName: 'User',
+          password: 'TestPassword123!',
+          money: 5000,
+        },
+      });
 
-    // Create test breed
-    const testBreed = await prisma.breed.create({
-      data: {
-        name: 'Test Breed',
-        description: 'A test breed for progression tests',
-      },
-    });
+      const testBreed = await tx.breed.create({
+        data: {
+          name: testBreedName,
+          description: 'A test breed for progression tests',
+        },
+      });
 
-    // Create test groom with initial progression values
-    testGroom = await prisma.groom.create({
-      data: {
-        name: 'Test Groom',
-        speciality: 'foal_care',
-        experience: 0,
-        level: 1,
-        skillLevel: 'novice',
-        personality: 'gentle',
-        groomPersonality: 'calm',
-        sessionRate: 25.0,
-        userId: testUser.id,
-      },
-    });
+      testGroom = await tx.groom.create({
+        data: {
+          name: 'Test Groom',
+          speciality: 'foal_care',
+          experience: 0,
+          level: 1,
+          skillLevel: 'novice',
+          personality: 'gentle',
+          groomPersonality: 'calm',
+          sessionRate: 25.0,
+          userId: testUser.id,
+        },
+      });
 
-    // Create test horse
-    testHorse = await prisma.horse.create({
-      data: {
-        name: 'Test Foal',
-        sex: 'Filly',
-        dateOfBirth: new Date(Date.now() - 365 * 24 * 60 * 60 * 1000), // 1 year old
-        userId: testUser.id,
-        breedId: testBreed.id,
-      },
+      testHorse = await tx.horse.create({
+        data: {
+          name: 'Test Foal',
+          sex: 'Filly',
+          dateOfBirth: new Date(Date.now() - 365 * 24 * 60 * 60 * 1000), // 1 year old
+          userId: testUser.id,
+          breedId: testBreed.id,
+        },
+      });
     });
   });
 
   afterEach(async () => {
-    // Clean up test data
-    await prisma.groomAssignmentLog.deleteMany({});
-    await prisma.groomHorseSynergy.deleteMany({});
-    await prisma.groomAssignment.deleteMany({});
-    await prisma.groom.deleteMany({});
-    await prisma.horse.deleteMany({});
-    await prisma.user.deleteMany({});
+    await cleanupProgressionData();
   });
 
   describe('XP and Leveling System', () => {

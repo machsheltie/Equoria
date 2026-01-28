@@ -38,17 +38,12 @@ const prisma = {
   },
 };
 
-jest.mock(prismaPath, () => ({
+await jest.unstable_mockModule(prismaPath, () => ({
   default: prisma,
-}), { virtual: true });
+}));
 
-let moduleExports;
-let requireOwnership, findOwnedResource, validateBatchOwnership;
-
-beforeAll(async () => {
-  moduleExports = await import('../../middleware/ownership.mjs');
-  ({ requireOwnership, findOwnedResource, validateBatchOwnership } = moduleExports);
-});
+const moduleExports = await import('../../middleware/ownership.mjs');
+const { requireOwnership, findOwnedResource, validateBatchOwnership } = moduleExports;
 
 describe('Ownership Middleware', () => {
   describe('requireOwnership()', () => {

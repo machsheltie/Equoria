@@ -62,7 +62,7 @@ describe('Groom Personality Trait Bonus System - REAL SYSTEM TESTS', () => {
       data: {
         name: `TestHorse_${Date.now()}`,
         ownerId: testUser.id,
-        userId: testUser.id,
+        ownerId: testUser.id,
         dateOfBirth: new Date(Date.now() - 0 * 24 * 60 * 60 * 1000), // 0 days old (newborn for imprinting)
         temperament: FOAL_TEMPERAMENT_TYPES.SPIRITED,
         bondScore: 65,
@@ -330,7 +330,7 @@ describe('Groom Personality Trait Bonus System - REAL SYSTEM TESTS', () => {
           data: {
             name: 'NoTemperamentHorse',
             ownerId: testUser.id,
-            userId: testUser.id,
+            ownerId: testUser.id,
             dateOfBirth: new Date(),
             sex: 'colt',
             breedId: testBreed.id,

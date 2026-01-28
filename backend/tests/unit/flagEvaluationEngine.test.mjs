@@ -20,23 +20,22 @@ const mockPrisma = {
   },
 };
 
-jest.unstable_mockModule('../../db/index.mjs', () => ({
-  default: mockPrisma,
-}));
-
-// Mock logger
-jest.unstable_mockModule('../../utils/logger.mjs', () => ({
-  default: {
-    info: jest.fn(),
-    error: jest.fn(),
-    warn: jest.fn(),
-    debug: jest.fn(),
-  },
-}));
+const mockLogger = {
+  info: jest.fn(),
+  error: jest.fn(),
+  warn: jest.fn(),
+  debug: jest.fn(),
+};
 
 // Mock care pattern analysis
 const mockAnalyzeCarePatterns = jest.fn();
-jest.unstable_mockModule('../../utils/carePatternAnalysis.mjs', () => ({
+await jest.unstable_mockModule('../../db/index.mjs', () => ({
+  default: mockPrisma,
+}));
+await jest.unstable_mockModule('../../utils/logger.mjs', () => ({
+  default: mockLogger,
+}));
+await jest.unstable_mockModule('../../utils/carePatternAnalysis.mjs', () => ({
   analyzeCarePatterns: mockAnalyzeCarePatterns,
 }));
 
@@ -53,10 +52,14 @@ describe('Flag Evaluation Engine', () => {
   });
 
   describe('evaluateHorseFlags', () => {
+    // Calculate dynamic date for foal (5 months old at evaluation)
+    const fiveMonthsAgo = new Date();
+    fiveMonthsAgo.setMonth(fiveMonthsAgo.getMonth() - 5);
+
     const mockHorse = {
       id: 1,
       name: 'Test Horse',
-      dateOfBirth: new Date('2024-01-01'),
+      dateOfBirth: fiveMonthsAgo, // FIXED: Use calculated date for 5-month-old foal
       epigeneticFlags: [],
       bondScore: 50,
       stressLevel: 20,
@@ -116,7 +119,7 @@ describe('Flag Evaluation Engine', () => {
     };
 
     test('should evaluate and assign flags for eligible horse', async () => {
-      const evaluationDate = new Date('2024-06-01'); // 5 months old
+      const evaluationDate = new Date(); // FIXED: Use current date for evaluation (5 months after birth)
       mockPrisma.horse.findUnique.mockResolvedValue(mockHorse);
       mockAnalyzeCarePatterns.mockResolvedValue(mockCareAnalysis);
       mockPrisma.horse.update.mockResolvedValue({ ...mockHorse, epigeneticFlags: ['brave', 'confident'] });
@@ -138,9 +141,13 @@ describe('Flag Evaluation Engine', () => {
     });
 
     test('should reject horse outside age range', async () => {
+      // Calculate dynamic date for horse outside evaluation range (4+ years old)
+      const fourYearsAgo = new Date();
+      fourYearsAgo.setFullYear(fourYearsAgo.getFullYear() - 4);
+
       const oldHorse = {
         ...mockHorse,
-        dateOfBirth: new Date('2020-01-01'), // 4+ years old
+        dateOfBirth: fourYearsAgo, // FIXED: Use calculated date for 4-year-old horse
       };
       mockPrisma.horse.findUnique.mockResolvedValue(oldHorse);
 
@@ -244,10 +251,14 @@ describe('Flag Evaluation Engine', () => {
 
   describe('Flag Trigger Evaluation', () => {
     test('should trigger brave flag with correct conditions', async () => {
+      // Calculate dynamic date for young foal (eligible for flag evaluation)
+      const oneYearAgo = new Date();
+      oneYearAgo.setFullYear(oneYearAgo.getFullYear() - 1);
+
       const mockHorse = {
         id: 1,
         name: 'Brave Horse',
-        dateOfBirth: new Date('2024-01-01'),
+        dateOfBirth: oneYearAgo, // FIXED: Use calculated date for 1-year-old foal
         epigeneticFlags: [],
         bondScore: 35,
         stressLevel: 15,
@@ -282,10 +293,14 @@ describe('Flag Evaluation Engine', () => {
     });
 
     test('should trigger fearful flag with correct conditions', async () => {
+      // Calculate dynamic date for young foal (eligible for flag evaluation)
+      const oneYearAgoForFearful = new Date();
+      oneYearAgoForFearful.setFullYear(oneYearAgoForFearful.getFullYear() - 1);
+
       const mockHorse = {
         id: 1,
         name: 'Fearful Horse',
-        dateOfBirth: new Date('2024-01-01'),
+        dateOfBirth: oneYearAgoForFearful, // FIXED: Use calculated date for 1-year-old foal
         epigeneticFlags: [],
         bondScore: 15,
         stressLevel: 60,
@@ -326,11 +341,15 @@ describe('Flag Evaluation Engine', () => {
     test('should evaluate multiple horses', async () => {
       const horseIds = [1, 2, 3];
 
+      // Calculate dynamic date for young foals (eligible for flag evaluation)
+      const oneYearAgoForBatch = new Date();
+      oneYearAgoForBatch.setFullYear(oneYearAgoForBatch.getFullYear() - 1);
+
       // Mock successful evaluations
       mockPrisma.horse.findUnique
-        .mockResolvedValueOnce({ id: 1, name: 'Horse 1', dateOfBirth: new Date('2024-01-01'), epigeneticFlags: [] })
-        .mockResolvedValueOnce({ id: 2, name: 'Horse 2', dateOfBirth: new Date('2024-01-01'), epigeneticFlags: [] })
-        .mockResolvedValueOnce({ id: 3, name: 'Horse 3', dateOfBirth: new Date('2024-01-01'), epigeneticFlags: [] });
+        .mockResolvedValueOnce({ id: 1, name: 'Horse 1', dateOfBirth: oneYearAgoForBatch, epigeneticFlags: [] }) // FIXED: Use calculated date
+        .mockResolvedValueOnce({ id: 2, name: 'Horse 2', dateOfBirth: oneYearAgoForBatch, epigeneticFlags: [] }) // FIXED: Use calculated date
+        .mockResolvedValueOnce({ id: 3, name: 'Horse 3', dateOfBirth: oneYearAgoForBatch, epigeneticFlags: [] }); // FIXED: Use calculated date
 
       mockAnalyzeCarePatterns.mockResolvedValue({
         eligible: true,
@@ -353,8 +372,12 @@ describe('Flag Evaluation Engine', () => {
     test('should handle mixed success/failure in batch', async () => {
       const horseIds = [1, 2];
 
+      // Calculate dynamic date for young foal (eligible for flag evaluation)
+      const oneYearAgoForMixed = new Date();
+      oneYearAgoForMixed.setFullYear(oneYearAgoForMixed.getFullYear() - 1);
+
       mockPrisma.horse.findUnique
-        .mockResolvedValueOnce({ id: 1, name: 'Horse 1', dateOfBirth: new Date('2024-01-01'), epigeneticFlags: [] })
+        .mockResolvedValueOnce({ id: 1, name: 'Horse 1', dateOfBirth: oneYearAgoForMixed, epigeneticFlags: [] }) // FIXED: Use calculated date
         .mockResolvedValueOnce(null); // Horse 2 not found
 
       mockAnalyzeCarePatterns.mockResolvedValue({
@@ -380,9 +403,16 @@ describe('Flag Evaluation Engine', () => {
 
   describe('getEligibleHorses', () => {
     test('should return eligible horses within age range', async () => {
+      // Calculate dynamic dates for young horses (eligible for flag evaluation)
+      const oneYearAgoForEligible = new Date();
+      oneYearAgoForEligible.setFullYear(oneYearAgoForEligible.getFullYear() - 1);
+
+      const eighteenMonthsAgoForEligible = new Date();
+      eighteenMonthsAgoForEligible.setMonth(eighteenMonthsAgoForEligible.getMonth() - 18);
+
       const eligibleHorses = [
-        { id: 1, name: 'Young Horse 1', dateOfBirth: new Date('2024-01-01'), epigeneticFlags: [] },
-        { id: 2, name: 'Young Horse 2', dateOfBirth: new Date('2023-06-01'), epigeneticFlags: ['brave'] },
+        { id: 1, name: 'Young Horse 1', dateOfBirth: oneYearAgoForEligible, epigeneticFlags: [] }, // FIXED: Use calculated date for 1-year-old horse
+        { id: 2, name: 'Young Horse 2', dateOfBirth: eighteenMonthsAgoForEligible, epigeneticFlags: ['brave'] }, // FIXED: Use calculated date for 18-month-old horse
       ];
 
       mockPrisma.horse.findMany.mockResolvedValue(eligibleHorses);

@@ -352,7 +352,8 @@ describe('Legacy Score Trait Integration System', () => {
 
     it('should require authentication for legacy score endpoint', async () => {
       const response = await request(app)
-        .get(`/api/horses/${testHorse.id}/legacy-score`);
+        .get(`/api/horses/${testHorse.id}/legacy-score`)
+        .set('x-test-require-auth', 'true')
 
       expect(response.status).toBe(401);
       expect(response.body.success).toBe(false);

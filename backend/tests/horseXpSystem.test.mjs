@@ -23,12 +23,8 @@
  */
 
 import { jest, describe, it, expect, beforeEach, afterEach } from '@jest/globals';
-import { fileURLToPath } from 'url';
-import { dirname, join } from 'path';
 
-const __filename = fileURLToPath(import.meta.url);
-const __dirname = dirname(__filename);
-
+// Mock objects must be created BEFORE jest.unstable_mockModule calls
 // Mock Prisma client
 const mockPrismaHorse = {
   findUnique: jest.fn(),
@@ -53,16 +49,17 @@ const mockLogger = {
   error: jest.fn(),
 };
 
-jest.unstable_mockModule(join(__dirname, '../db/index.mjs'), () => ({
+// Mock external dependencies BEFORE importing the module
+jest.unstable_mockModule('../db/index.mjs', () => ({
   default: mockPrisma,
 }));
 
-jest.unstable_mockModule(join(__dirname, '../utils/logger.mjs'), () => ({
+jest.unstable_mockModule('../utils/logger.mjs', () => ({
   default: mockLogger,
 }));
 
 // Import the module after mocking
-const horseXpModel = await import(join(__dirname, '../models/horseXpModel.mjs'));
+const horseXpModel = await import('../models/horseXpModel.mjs');
 
 describe('Horse XP System - Core Business Logic', () => {
   beforeEach(() => {

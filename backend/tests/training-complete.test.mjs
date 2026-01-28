@@ -317,7 +317,7 @@ describe('🏋️ INTEGRATION: Training System Complete - End-to-End Workflow', 
 
   describe('Authentication Protection', () => {
     it('should reject unauthenticated requests', async () => {
-      const response = await request(app).get(`/api/horses/trainable/${testUser.id}`);
+      const response = await request(app).get(`/api/horses/trainable/${testUser.id}`).set('x-test-require-auth', 'true');
 
       expect(response.status).toBe(401);
       expect(response.body.success).toBe(false);

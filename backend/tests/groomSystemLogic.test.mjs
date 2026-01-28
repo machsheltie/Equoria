@@ -49,7 +49,7 @@ describe('🧮 UNIT: Groom System Logic - Pure Business Logic Validation', () =>
     const mockGroom = {
       id: 1,
       name: 'Sarah Johnson',
-      speciality: 'foalCare',
+      speciality: 'foal_care',
       skillLevel: 'intermediate',
       personality: 'gentle',
       experience: 5,
@@ -88,7 +88,7 @@ describe('🧮 UNIT: Groom System Logic - Pure Business Logic Validation', () =>
     });
 
     it('should apply foal care specialty bonuses correctly', () => {
-      const foalCareGroom = { ...mockGroom, speciality: 'foalCare' };
+      const foalCareGroom = { ...mockGroom, speciality: 'foal_care' };
       const generalGroom = { ...mockGroom, speciality: 'general' };
 
       const foalCareEffects = calculateGroomInteractionEffects(foalCareGroom, mockFoal, 'dailyCare', 60);
@@ -191,19 +191,19 @@ describe('🧮 UNIT: Groom System Logic - Pure Business Logic Validation', () =>
 
   describe('System Constants', () => {
     it('should have all required groom specialties', () => {
-      expect(GROOM_SPECIALTIES).toHaveProperty('foalCare');
+      expect(GROOM_SPECIALTIES).toHaveProperty('foal_care');
       expect(GROOM_SPECIALTIES).toHaveProperty('general');
       expect(GROOM_SPECIALTIES).toHaveProperty('training');
       expect(GROOM_SPECIALTIES).toHaveProperty('medical');
 
       // Check foalCare specialty details
-      const { foalCare } = GROOM_SPECIALTIES;
-      expect(foalCare.name).toBe('Foal Care Specialist');
-      expect(foalCare.bondingModifier).toBe(1.5);
-      expect(foalCare.stressReduction).toBe(1.3);
-      expect(foalCare.preferredActivities).toContain('dailyCare');
-      expect(foalCare.preferredActivities).toContain('feeding');
-      expect(foalCare.preferredActivities).toContain('grooming');
+      const { foal_care } = GROOM_SPECIALTIES;
+      expect(foal_care.name).toBe('Foal Care Specialist');
+      expect(foal_care.bondingModifier).toBe(1.5);
+      expect(foal_care.stressReduction).toBe(1.3);
+      expect(foal_care.preferredActivities).toContain('dailyCare');
+      expect(foal_care.preferredActivities).toContain('feeding');
+      expect(foal_care.preferredActivities).toContain('grooming');
 
       // Check all specialties have required properties
       Object.values(GROOM_SPECIALTIES).forEach(specialty => {
@@ -279,7 +279,7 @@ describe('🧮 UNIT: Groom System Logic - Pure Business Logic Validation', () =>
       // Check Sarah Johnson (foal care specialist)
       const [sarah] = DEFAULT_GROOMS;
       expect(sarah.name).toBe('Sarah Johnson');
-      expect(sarah.speciality).toBe('foalCare');
+      expect(sarah.speciality).toBe('foal_care');
       expect(sarah.skillLevel).toBe('intermediate');
       expect(sarah.personality).toBe('gentle');
       expect(sarah.sessionRate).toBe(18.0);
@@ -315,7 +315,7 @@ describe('🧮 UNIT: Groom System Logic - Pure Business Logic Validation', () =>
   describe('Modifier Calculations', () => {
     it('should combine modifiers correctly', () => {
       const testGroom = {
-        speciality: 'foalCare', // 1.5x bonding
+        speciality: 'foal_care', // 1.5x bonding
         skillLevel: 'expert', // 1.3x bonding
         personality: 'gentle', // 1.2x bonding
         experience: 10, // +2 bonding (10/5)

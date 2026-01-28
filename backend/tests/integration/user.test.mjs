@@ -1,15 +1,15 @@
 import { jest, describe, expect, beforeEach } from '@jest/globals';
-import { fileURLToPath } from 'url';
-import { dirname, join } from 'path';
 
-const __filename = fileURLToPath(import.meta.url);
-const __dirname = dirname(__filename);
+// Mock functions must be created BEFORE jest.unstable_mockModule calls
+const mockGetUserById = jest.fn();
+const mockGetUserWithHorses = jest.fn();
+const mockGetUserByEmail = jest.fn();
 
-// Mock the user model
-jest.unstable_mockModule(join(__dirname, '../../models/userModel.mjs'), () => ({
-  getUserById: jest.fn(),
-  getUserWithHorses: jest.fn(),
-  getUserByEmail: jest.fn(),
+// Mock the user model BEFORE importing the module
+jest.unstable_mockModule('../../models/userModel.mjs', () => ({
+  getUserById: mockGetUserById,
+  getUserWithHorses: mockGetUserWithHorses,
+  getUserByEmail: mockGetUserByEmail,
 }));
 
 // Import the mocked functions
@@ -109,7 +109,7 @@ describe('User Integration Tests - Mocked Database', () => {
 
       // Check that horses are linked to the user
       userWithHorses.horses.forEach(horse => {
-        expect(horse.userId).toBe(testUserId);
+        expect(horse.ownerId).toBe(testUserId);
       });
     });
 

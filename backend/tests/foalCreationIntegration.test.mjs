@@ -37,34 +37,30 @@
  */
 
 import { jest, describe, beforeEach, expect, it } from '@jest/globals';
-import { fileURLToPath } from 'url';
-import { dirname, join } from 'path';
 import request from 'supertest';
 
-const __filename = fileURLToPath(import.meta.url);
-const __dirname = dirname(__filename);
-
-// Mock the database module BEFORE importing the app
-jest.unstable_mockModule(join(__dirname, '../db/index.mjs'), () => ({
-  default: {
-    horse: {
-      findUnique: jest.fn(),
-      create: jest.fn(),
-      findMany: jest.fn(),
-    },
-    breed: {
-      findUnique: jest.fn(),
-    },
-    user: {
-      findUnique: jest.fn(),
-    },
-    $disconnect: jest.fn(),
+// Create mock objects BEFORE jest.unstable_mockModule
+const mockPrisma = {
+  horse: {
+    findUnique: jest.fn(),
+    create: jest.fn(),
+    findMany: jest.fn(),
   },
+  breed: {
+    findUnique: jest.fn(),
+  },
+  user: {
+    findUnique: jest.fn(),
+  },
+  $disconnect: jest.fn(),
+};
+
+jest.unstable_mockModule('../db/index.mjs', () => ({
+  default: mockPrisma,
 }));
 
-// Now import the app and the mocked modules
+// Now import the app
 const app = (await import('../app.mjs')).default;
-const mockPrisma = (await import(join(__dirname, '../db/index.mjs'))).default;
 
 describe('🐴 INTEGRATION: Foal Creation Integration - API Endpoint Validation', () => {
   const mockBreed = {

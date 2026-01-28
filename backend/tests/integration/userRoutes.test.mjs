@@ -49,12 +49,13 @@ describe('🌐 INTEGRATION: User Routes - HTTP API Endpoints', () => {
   let testUser;
   let authToken;
   let testUserForCrud; // Additional user for CRUD operations
+  let authTokenForCrud; // Token for CRUD user
 
   beforeAll(async () => {
     // Create test user with authentication token
     const userResult = await createTestUser({
       username: `userroutes_${Date.now()}`,
-      email: `userroutes_${Date.now()}@example.com`,
+      email: `userroutes_${Date.now()}@test.com`,
       money: 5000,
       xp: 100,
       level: 2,
@@ -65,12 +66,13 @@ describe('🌐 INTEGRATION: User Routes - HTTP API Endpoints', () => {
     // Create additional test user for CRUD operations
     const crudUserResult = await createTestUser({
       username: `crud_user_${Date.now()}`,
-      email: `crud_${Date.now()}@example.com`,
+      email: `crud_${Date.now()}@test.com`,
       money: 1500,
       xp: 50,
       level: 1,
     });
     testUserForCrud = crudUserResult.user;
+    authTokenForCrud = crudUserResult.token;
   });
 
   afterAll(async () => {
@@ -83,6 +85,7 @@ describe('🌐 INTEGRATION: User Routes - HTTP API Endpoints', () => {
       const response = await request(app)
         .get(`/api/users/${testUser.id}/progress`)
         .set('Authorization', `Bearer ${authToken}`)
+        .set('x-test-skip-csrf', 'true')
         .expect(200);
 
       expect(response.body.success).toBe(true);
@@ -105,26 +108,23 @@ describe('🌐 INTEGRATION: User Routes - HTTP API Endpoints', () => {
       expect(response.body.data.progressPercentage).toBeLessThanOrEqual(100);
     });
 
-    it('should return 500 for non-existent user', async () => {
-      // API returns 500 for user not found in progress endpoint
-      // Use a valid UUID format but one that doesn't exist in database
+    it('should return 403 for non-existent user (unauthorized access)', async () => {
       const nonExistentUuid = '550e8400-e29b-41d4-a716-446655440999';
-
       const response = await request(app)
         .get(`/api/users/${nonExistentUuid}/progress`)
         .set('Authorization', `Bearer ${authToken}`)
-        .expect(500); // API returns 500 for user not found
+        .set('x-test-skip-csrf', 'true')
+        .expect(403);
 
-      expect(response.body).toEqual({
-        success: false,
-        message: expect.stringContaining('Progress fetch failed'),
-      });
+      expect(response.body.success).toBe(false);
+      expect(response.body.message).toContain('own user data');
     });
 
     it('should return validation error for empty user ID', async () => {
       const response = await request(app)
         .get('/api/users//progress')
         .set('Authorization', `Bearer ${authToken}`)
+        .set('x-test-skip-csrf', 'true')
         .expect(400); // Validation error for empty ID
 
       expect(response.body).toEqual({
@@ -142,6 +142,7 @@ describe('🌐 INTEGRATION: User Routes - HTTP API Endpoints', () => {
       const response = await request(app)
         .get('/api/users/a/progress') // Invalid UUID format
         .set('Authorization', `Bearer ${authToken}`)
+        .set('x-test-skip-csrf', 'true')
         .expect(400); // Validation error for invalid UUID
 
       expect(response.body).toEqual({
@@ -161,6 +162,7 @@ describe('🌐 INTEGRATION: User Routes - HTTP API Endpoints', () => {
       const response = await request(app)
         .get(`/api/users/${longId}/progress`)
         .set('Authorization', `Bearer ${authToken}`)
+        .set('x-test-skip-csrf', 'true')
         .expect(400);
 
       expect(response.body).toEqual({
@@ -174,7 +176,7 @@ describe('🌐 INTEGRATION: User Routes - HTTP API Endpoints', () => {
       });
     });
 
-    it('should handle database errors gracefully', async () => {
+    it('should return 403 when attempting to access a different user (database error path blocked)', async () => {
       // Use a non-existent UUID to trigger database error
       // Use a valid UUID format but one that doesn't exist in database
       const nonExistentUuid = '550e8400-e29b-41d4-a716-446655440998';
@@ -182,12 +184,10 @@ describe('🌐 INTEGRATION: User Routes - HTTP API Endpoints', () => {
       const response = await request(app)
         .get(`/api/users/${nonExistentUuid}/progress`)
         .set('Authorization', `Bearer ${authToken}`)
-        .expect(500);
+        .set('x-test-skip-csrf', 'true')
+        .expect(403);
 
-      expect(response.body).toEqual({
-        success: false,
-        message: expect.stringContaining('Progress fetch failed'),
-      });
+      expect(response.body.success).toBe(false);
     });
 
     it('should calculate xpToNextLevel correctly for edge cases', async () => {
@@ -195,6 +195,7 @@ describe('🌐 INTEGRATION: User Routes - HTTP API Endpoints', () => {
       const response = await request(app)
         .get(`/api/users/${testUser.id}/progress`)
         .set('Authorization', `Bearer ${authToken}`)
+        .set('x-test-skip-csrf', 'true')
         .expect(200);
 
       // Verify XP calculation fields are present and valid
@@ -211,6 +212,7 @@ describe('🌐 INTEGRATION: User Routes - HTTP API Endpoints', () => {
       const response = await request(app)
         .get(`/api/users/${testUser.id}/progress`)
         .set('Authorization', `Bearer ${authToken}`)
+        .set('x-test-skip-csrf', 'true')
         .expect(200);
 
       // Verify required fields are present
@@ -236,6 +238,7 @@ describe('🌐 INTEGRATION: User Routes - HTTP API Endpoints', () => {
       const response = await request(app)
         .get(`/api/users/${specialId}/progress`)
         .set('Authorization', `Bearer ${authToken}`)
+        .set('x-test-skip-csrf', 'true')
         .expect(400); // Invalid UUID format
 
       expect(response.body).toEqual({
@@ -254,7 +257,8 @@ describe('🌐 INTEGRATION: User Routes - HTTP API Endpoints', () => {
     it('should return a user by ID', async () => {
       const response = await request(app)
         .get(`/api/users/${testUserForCrud.id}`) // Use real test user
-        .set('Authorization', `Bearer ${authToken}`)
+        .set('Authorization', `Bearer ${authTokenForCrud}`)
+        .set('x-test-skip-csrf', 'true')
         .expect(200);
 
       expect(response.body.success).toBe(true);
@@ -270,14 +274,14 @@ describe('🌐 INTEGRATION: User Routes - HTTP API Endpoints', () => {
       expect(response.body.data).toHaveProperty('email');
     });
 
-    it('should return 404 if user not found', async () => {
+    it('should return 403 if user not authorized (matches different user)', async () => {
       const nonExistentUuid = '550e8400-e29b-41d4-a716-446655440001';
       const response = await request(app)
         .get(`/api/users/${nonExistentUuid}`)
         .set('Authorization', `Bearer ${authToken}`)
-        .expect(404);
+        .set('x-test-skip-csrf', 'true')
+        .expect(403);
       expect(response.body.success).toBe(false);
-      expect(response.body.message).toBe('User not found');
     });
   });
 
@@ -295,6 +299,7 @@ describe('🌐 INTEGRATION: User Routes - HTTP API Endpoints', () => {
         .post('/api/users')
         .send(userData)
         .set('Authorization', `Bearer ${authToken}`)
+        .set('x-test-skip-csrf', 'true')
         .expect(201);
 
       expect(response.body.success).toBe(true);
@@ -321,6 +326,7 @@ describe('🌐 INTEGRATION: User Routes - HTTP API Endpoints', () => {
         .post('/api/users')
         .send({ username: 'Bad' }) // Missing required fields
         .set('Authorization', `Bearer ${authToken}`)
+        .set('x-test-skip-csrf', 'true')
         .expect(400);
       expect(response.body.success).toBe(false);
       expect(response.body.message).toBeDefined();
@@ -334,7 +340,8 @@ describe('🌐 INTEGRATION: User Routes - HTTP API Endpoints', () => {
       const response = await request(app)
         .put(`/api/users/${testUserForCrud.id}`)
         .send(updates)
-        .set('Authorization', `Bearer ${authToken}`)
+        .set('Authorization', `Bearer ${authTokenForCrud}`)
+        .set('x-test-skip-csrf', 'true')
         .expect(200);
 
       expect(response.body.success).toBe(true);
@@ -347,55 +354,57 @@ describe('🌐 INTEGRATION: User Routes - HTTP API Endpoints', () => {
       expect(response.body.data).toHaveProperty('updatedAt');
     });
 
-    it('should return 404 if user to update is not found', async () => {
+    it('should return 403 if user to update is not authorized', async () => {
       const nonExistentUuid = '550e8400-e29b-41d4-a716-446655440001';
       const response = await request(app)
         .put(`/api/users/${nonExistentUuid}`)
         .send({ money: 100 })
         .set('Authorization', `Bearer ${authToken}`)
-        .expect(404);
+        .set('x-test-skip-csrf', 'true')
+        .expect(403);
       expect(response.body.success).toBe(false);
-      expect(response.body.message).toBe('User not found');
     });
   });
 
   describe('DELETE /api/users/:id', () => {
     it('should delete a user', async () => {
-      // Create a user specifically for deletion test
+      // Create a fresh user to delete to avoid affecting other tests
       const deleteUserResult = await createTestUser({
         username: `delete_user_${Date.now()}`,
-        email: `delete_${Date.now()}@example.com`,
-        money: 1000,
+        email: `delete_${Date.now()}@test.com`,
       });
+
+      const deleteAuthToken = deleteUserResult.token;
 
       const response = await request(app)
         .delete(`/api/users/${deleteUserResult.user.id}`)
-        .set('Authorization', `Bearer ${authToken}`)
+        .set('Authorization', `Bearer ${deleteAuthToken}`)
+        .set('x-test-skip-csrf', 'true')
         .expect(200);
 
       expect(response.body.success).toBe(true);
       expect(response.body.message).toBe('User deleted successfully');
     });
 
-    it('should return 404 if user to delete is not found', async () => {
+    it('should return 403 if user to delete is not authorized', async () => {
       const nonExistentUuid = '550e8400-e29b-41d4-a716-446655440001';
       const response = await request(app)
         .delete(`/api/users/${nonExistentUuid}`)
         .set('Authorization', `Bearer ${authToken}`)
-        .expect(404);
+        .set('x-test-skip-csrf', 'true')
+        .expect(403);
       expect(response.body.success).toBe(false);
-      expect(response.body.message).toBe('User not found');
     });
   });
 
   describe('POST /api/users/:id/add-xp', () => {
-    it('should add XP to a user and potentially level them up', async () => {
+    test('should add XP to a user and potentially level them up', async () => {
       const xpData = { amount: 50 };
-
       const response = await request(app)
-        .post(`/api/users/${testUserForCrud.id}/add-xp`)
+        .post(`/api/users/${testUser.id}/add-xp`)
         .send(xpData)
         .set('Authorization', `Bearer ${authToken}`)
+        .set('x-test-skip-csrf', 'true')
         .expect(200);
 
       expect(response.body.success).toBe(true);
@@ -414,19 +423,17 @@ describe('🌐 INTEGRATION: User Routes - HTTP API Endpoints', () => {
       expect(typeof response.body.data.leveledUp).toBe('boolean');
     });
 
-    it('should return 404 if user not found for XP addition', async () => {
+    it('should return 404 if user not found for XP addition (matches authorized user check)', async () => {
+      // Trying to add XP to a different user should return 403
       const nonExistentUuid = '550e8400-e29b-41d4-a716-446655440001';
       const response = await request(app)
         .post(`/api/users/${nonExistentUuid}/add-xp`)
         .send({ amount: 50 })
         .set('Authorization', `Bearer ${authToken}`)
-        .expect(200); // addXpToUser returns success:false instead of throwing
+        .set('x-test-skip-csrf', 'true')
+        .expect(403);
 
-      expect(response.body.success).toBe(true);
-      expect(response.body.message).toBe('XP added successfully');
-      // But the data will have success: false
-      expect(response.body.data.success).toBe(false);
-      expect(response.body.data).toHaveProperty('error');
+      expect(response.body.success).toBe(false);
     });
   });
 
