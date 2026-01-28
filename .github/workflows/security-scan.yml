@@ -14,8 +14,129 @@ permissions:
   contents: read
   security-events: write
   issues: write
+  pull-requests: write
 
 jobs:
+  dependency-scan:
+    name: Dependency Vulnerability Scan
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: '18'
+
+      - name: Install dependencies (backend)
+        working-directory: ./backend
+        run: npm ci
+
+      - name: Run npm audit (backend)
+        id: npm-audit-backend
+        working-directory: ./backend
+        continue-on-error: true
+        run: |
+          echo "## Backend Dependency Scan" >> $GITHUB_STEP_SUMMARY
+          npm audit --json > audit-backend.json || true
+
+          # Parse audit results
+          CRITICAL=$(jq '.metadata.vulnerabilities.critical // 0' audit-backend.json)
+          HIGH=$(jq '.metadata.vulnerabilities.high // 0' audit-backend.json)
+          MODERATE=$(jq '.metadata.vulnerabilities.moderate // 0' audit-backend.json)
+          LOW=$(jq '.metadata.vulnerabilities.low // 0' audit-backend.json)
+
+          echo "critical=$CRITICAL" >> $GITHUB_OUTPUT
+          echo "high=$HIGH" >> $GITHUB_OUTPUT
+          echo "moderate=$MODERATE" >> $GITHUB_OUTPUT
+          echo "low=$LOW" >> $GITHUB_OUTPUT
+
+          echo "| Severity | Count |" >> $GITHUB_STEP_SUMMARY
+          echo "|----------|-------|" >> $GITHUB_STEP_SUMMARY
+          echo "| 🔴 Critical | $CRITICAL |" >> $GITHUB_STEP_SUMMARY
+          echo "| 🟠 High | $HIGH |" >> $GITHUB_STEP_SUMMARY
+          echo "| 🟡 Moderate | $MODERATE |" >> $GITHUB_STEP_SUMMARY
+          echo "| 🟢 Low | $LOW |" >> $GITHUB_STEP_SUMMARY
+
+          # Fail if critical or high vulnerabilities found
+          if [ "$CRITICAL" -gt 0 ] || [ "$HIGH" -gt 0 ]; then
+            echo "⚠️ Critical or High severity vulnerabilities detected!" >> $GITHUB_STEP_SUMMARY
+            exit 1
+          fi
+
+      - name: Install dependencies (frontend)
+        working-directory: ./frontend
+        run: npm ci
+
+      - name: Run npm audit (frontend)
+        id: npm-audit-frontend
+        working-directory: ./frontend
+        continue-on-error: true
+        run: |
+          echo "## Frontend Dependency Scan" >> $GITHUB_STEP_SUMMARY
+          npm audit --json > audit-frontend.json || true
+
+          # Parse audit results
+          CRITICAL=$(jq '.metadata.vulnerabilities.critical // 0' audit-frontend.json)
+          HIGH=$(jq '.metadata.vulnerabilities.high // 0' audit-frontend.json)
+          MODERATE=$(jq '.metadata.vulnerabilities.moderate // 0' audit-frontend.json)
+          LOW=$(jq '.metadata.vulnerabilities.low // 0' audit-frontend.json)
+
+          echo "critical=$CRITICAL" >> $GITHUB_OUTPUT
+          echo "high=$HIGH" >> $GITHUB_OUTPUT
+          echo "moderate=$MODERATE" >> $GITHUB_OUTPUT
+          echo "low=$LOW" >> $GITHUB_OUTPUT
+
+          echo "| Severity | Count |" >> $GITHUB_STEP_SUMMARY
+          echo "|----------|-------|" >> $GITHUB_STEP_SUMMARY
+          echo "| 🔴 Critical | $CRITICAL |" >> $GITHUB_STEP_SUMMARY
+          echo "| 🟠 High | $HIGH |" >> $GITHUB_STEP_SUMMARY
+          echo "| 🟡 Moderate | $MODERATE |" >> $GITHUB_STEP_SUMMARY
+          echo "| 🟢 Low | $LOW |" >> $GITHUB_STEP_SUMMARY
+
+          # Fail if critical or high vulnerabilities found
+          if [ "$CRITICAL" -gt 0 ] || [ "$HIGH" -gt 0 ]; then
+            echo "⚠️ Critical or High severity vulnerabilities detected!" >> $GITHUB_STEP_SUMMARY
+            exit 1
+          fi
+
+      - name: Upload audit reports
+        uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: security-audit-reports
+          path: |
+            backend/audit-backend.json
+            frontend/audit-frontend.json
+          retention-days: 90
+
+      - name: Comment on PR (if vulnerabilities found)
+        if: failure() && github.event_name == 'pull_request'
+        uses: actions/github-script@v7
+        with:
+          script: |
+            const backendCritical = '${{ steps.npm-audit-backend.outputs.critical }}';
+            const backendHigh = '${{ steps.npm-audit-backend.outputs.high }}';
+            const frontendCritical = '${{ steps.npm-audit-frontend.outputs.critical }}';
+            const frontendHigh = '${{ steps.npm-audit-frontend.outputs.high }}';
+
+            let message = '## ⚠️ Security Vulnerabilities Detected\n\n';
+            message += '| Package | Critical | High |\n';
+            message += '|---------|----------|------|\n';
+            message += `| Backend | ${backendCritical} | ${backendHigh} |\n`;
+            message += `| Frontend | ${frontendCritical} | ${frontendHigh} |\n\n`;
+            message += 'Please run `npm audit fix` to resolve these issues before merging.\n\n';
+            message += '_Automated security scan by GitHub Actions_';
+
+            github.rest.issues.createComment({
+              issue_number: context.issue.number,
+              owner: context.repo.owner,
+              repo: context.repo.repo,
+              body: message
+            });
+
   zap-scan:
     name: OWASP ZAP API Security Scan
     runs-on: ubuntu-latest

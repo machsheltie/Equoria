@@ -1,0 +1,101 @@
+# Dependabot Configuration
+# Automates dependency updates for security patches and version upgrades
+# Runs daily for npm dependencies in backend, frontend, and root
+
+version: 2
+updates:
+  # Backend dependencies
+  - package-ecosystem: 'npm'
+    directory: '/backend'
+    schedule:
+      interval: 'daily'
+      time: '09:00'
+      timezone: 'UTC'
+    open-pull-requests-limit: 10
+    # Automatically merge security updates
+    insecure-external-code-execution: deny
+    labels:
+      - 'dependencies'
+      - 'backend'
+      - 'security'
+    reviewers:
+      - 'Hopeful4ky' # Replace with actual GitHub username
+    commit-message:
+      prefix: 'deps(backend)'
+      include: 'scope'
+    # Group minor and patch updates
+    groups:
+      development-dependencies:
+        dependency-type: 'development'
+        update-types:
+          - 'minor'
+          - 'patch'
+      production-dependencies:
+        dependency-type: 'production'
+        update-types:
+          - 'patch'
+
+  # Frontend dependencies
+  - package-ecosystem: 'npm'
+    directory: '/frontend'
+    schedule:
+      interval: 'daily'
+      time: '09:00'
+      timezone: 'UTC'
+    open-pull-requests-limit: 10
+    insecure-external-code-execution: deny
+    labels:
+      - 'dependencies'
+      - 'frontend'
+      - 'security'
+    reviewers:
+      - 'Hopeful4ky' # Replace with actual GitHub username
+    commit-message:
+      prefix: 'deps(frontend)'
+      include: 'scope'
+    groups:
+      development-dependencies:
+        dependency-type: 'development'
+        update-types:
+          - 'minor'
+          - 'patch'
+      production-dependencies:
+        dependency-type: 'production'
+        update-types:
+          - 'patch'
+
+  # Root dependencies
+  - package-ecosystem: 'npm'
+    directory: '/'
+    schedule:
+      interval: 'daily'
+      time: '09:00'
+      timezone: 'UTC'
+    open-pull-requests-limit: 5
+    insecure-external-code-execution: deny
+    labels:
+      - 'dependencies'
+      - 'root'
+      - 'security'
+    reviewers:
+      - 'Hopeful4ky' # Replace with actual GitHub username
+    commit-message:
+      prefix: 'deps(root)'
+      include: 'scope'
+
+  # GitHub Actions
+  - package-ecosystem: 'github-actions'
+    directory: '/'
+    schedule:
+      interval: 'weekly'
+      day: 'monday'
+      time: '09:00'
+      timezone: 'UTC'
+    open-pull-requests-limit: 5
+    labels:
+      - 'dependencies'
+      - 'github-actions'
+      - 'ci/cd'
+    commit-message:
+      prefix: 'ci'
+      include: 'scope'
