@@ -2,7 +2,7 @@ import { jest, describe, it, expect, beforeEach } from '@jest/globals';
 import request from 'supertest';
 
 // Import authentication helpers
-import { generateTestToken, createTestUser } from '../helpers/authHelper.mjs';
+import { generateTestToken } from '../helpers/authHelper.mjs';
 
 // Create mock object BEFORE jest.unstable_mockModule
 const mockPrisma = {
@@ -30,7 +30,6 @@ const app = (await import('../../app.mjs')).default;
 describe('Horse Routes Integration Tests', () => {
   // Authentication variables
   let authToken;
-  let testUser;
 
   const mockUser = {
     id: 'test-user-uuid-123',
@@ -40,25 +39,27 @@ describe('Horse Routes Integration Tests', () => {
         id: 1,
         name: 'Adult Horse 1',
         age: 4,
+        dateOfBirth: new Date(Date.now() - 4 * 365.25 * 24 * 60 * 60 * 1000), // 4 years ago
         userId: 'test-user-uuid-123',
         breed: { id: 1, name: 'Thoroughbred' },
         stable: { id: 1, name: 'Main Stable' },
         epigeneticModifiers: {
-          positive: [],  // No special traits (including no "gaited" trait)
-          negative: []
-        }
+          positive: [], // No special traits (including no "gaited" trait)
+          negative: [],
+        },
       },
       {
         id: 2,
         name: 'Adult Horse 2',
         age: 5,
+        dateOfBirth: new Date(Date.now() - 5 * 365.25 * 24 * 60 * 60 * 1000), // 5 years ago
         userId: 'test-user-uuid-123',
         breed: { id: 2, name: 'Arabian' },
         stable: { id: 1, name: 'Main Stable' },
         epigeneticModifiers: {
-          positive: [],  // No special traits
-          negative: []
-        }
+          positive: [], // No special traits
+          negative: [],
+        },
       },
     ],
   };
@@ -68,7 +69,7 @@ describe('Horse Routes Integration Tests', () => {
     authToken = generateTestToken({
       id: 'test-user-uuid-123',
       email: 'test@example.com',
-      role: 'user'
+      role: 'user',
     });
     // Reset all mocks before each test
     jest.clearAllMocks();
@@ -125,7 +126,7 @@ describe('Horse Routes Integration Tests', () => {
       });
     });
 
-    it('should return 403 when accessing another user\'s trainable horses', async () => {
+    it("should return 403 when accessing another user's trainable horses", async () => {
       const userId = 'nonexistent-user-uuid-456';
 
       const response = await request(app)
@@ -138,10 +139,7 @@ describe('Horse Routes Integration Tests', () => {
     });
 
     it('should return validation error for invalid user ID', async () => {
-      await request(app)
-        .get('/api/horses/trainable/')
-        .set('Authorization', `Bearer ${authToken}`)
-        .expect(400); // Validation error for empty user ID
+      await request(app).get('/api/horses/trainable/').set('Authorization', `Bearer ${authToken}`).expect(400); // Validation error for empty user ID
     });
 
     it('should return validation error for user ID that is too long', async () => {

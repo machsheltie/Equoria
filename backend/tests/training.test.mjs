@@ -56,7 +56,6 @@ const trainingRequest = () =>
   request(app).post('/api/training/train').set('Authorization', `Bearer ${authToken}`).set('x-test-skip-csrf', 'true');
 
 describe('🏋️ INTEGRATION: Training System - Complete Business Logic Validation', () => {
-  let testUser;
   let testPlayer;
   let adultHorse; // 3+ years old, eligible for training
   let youngHorse; // Under 3 years old, not eligible
@@ -104,7 +103,6 @@ describe('🏋️ INTEGRATION: Training System - Complete Business Logic Validat
         password: 'hashedpassword',
       },
     });
-    authToken = generateTestToken({ id: testUser.id, email: testUser.email, role: 'user' });
 
     // Create a test Player (for XP system and userId relationship)
     testPlayer = await prisma.user.create({
@@ -116,6 +114,9 @@ describe('🏋️ INTEGRATION: Training System - Complete Business Logic Validat
         password: 'hashedpassword',
       },
     });
+
+    // Use testPlayer for auth token since all horses are owned by testPlayer
+    authToken = generateTestToken({ id: testPlayer.id, email: testPlayer.email, role: 'user' });
 
     // Ensure we have a breed
     let breed = await prisma.breed.findFirst();
