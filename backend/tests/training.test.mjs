@@ -93,17 +93,6 @@ describe('🏋️ INTEGRATION: Training System - Complete Business Logic Validat
       },
     });
 
-    // Create a test User (for legacy ownerId relationship)
-    testUser = await prisma.user.create({
-      data: {
-        email: 'training-test@example.com',
-        username: 'trainingtest',
-        firstName: 'Training',
-        lastName: 'Tester',
-        password: 'hashedpassword',
-      },
-    });
-
     // Create a test Player (for XP system and userId relationship)
     testPlayer = await prisma.user.create({
       data: {
