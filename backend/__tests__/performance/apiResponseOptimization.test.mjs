@@ -209,10 +209,10 @@ describe('API Response Optimization System', () => {
         limit: 20,
         orderBy: 'createdAt',
         orderDirection: 'desc',
-        where: { ownerId: testUserId },
+        where: { userId: testUserId },
       });
 
-      expect(query.where.ownerId).toBe(testUserId);
+      expect(query.where.userId).toBe(testUserId);
       expect(query.orderBy.createdAt).toBe('desc');
       expect(query.take).toBe(20);
       expect(query.cursor.createdAt).toBe(10);
