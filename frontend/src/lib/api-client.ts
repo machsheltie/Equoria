@@ -135,15 +135,36 @@ interface FoalActivity {
   createdAt?: string;
 }
 
+// Simple stats object for components
+interface SimpleHorseStats {
+  speed: number;
+  stamina: number;
+  agility: number;
+  strength: number;
+  intelligence: number;
+  health: number;
+}
+
 interface HorseSummary {
   id: number;
   name: string;
-  breed?: string;
-  age?: number;
+  breed: string;
+  age: number;
   ageYears?: number;
-  gender?: string;
+  gender: string;
   sex?: string;
   level?: number;
+  dateOfBirth: string;
+  healthStatus: string;
+  imageUrl?: string;
+  stats: SimpleHorseStats;
+  disciplineScores: Record<string, number>;
+  traits?: string[];
+  description?: string;
+  parentIds?: {
+    sireId?: number;
+    damId?: number;
+  };
 }
 
 interface HorseTrainingHistoryEntry {
@@ -156,8 +177,8 @@ interface HorseTrainingHistoryEntry {
 
 interface HorseTrainingAnalytics {
   trainingHistory: HorseTrainingHistoryEntry[];
-  disciplineBalance: Record<string, any>;
-  trainingFrequency: Record<string, any>;
+  disciplineBalance: Record<string, unknown>;
+  trainingFrequency: Record<string, unknown>;
 }
 
 interface HorseXP {
@@ -285,6 +306,158 @@ interface RecentGains {
 }
 
 /**
+ * Groom interfaces
+ */
+interface Groom {
+  id: number;
+  name: string;
+  skillLevel: string;
+  specialty: string;
+  personality: string;
+  experience: number;
+  sessionRate: number;
+  isActive: boolean;
+  availableSlots: number;
+  currentAssignments: number;
+  maxAssignments: number;
+}
+
+interface GroomAssignment {
+  id: number;
+  groomId: number;
+  horseId: number;
+  priority: number;
+  notes?: string;
+  isActive: boolean;
+  startDate: string;
+}
+
+interface MarketplaceGroom {
+  marketplaceId: string;
+  firstName: string;
+  lastName: string;
+  specialty: string;
+  skillLevel: string;
+  personality: string;
+  experience: number;
+  sessionRate: number;
+  bio: string;
+  availability: boolean;
+}
+
+interface MarketplaceData {
+  grooms: MarketplaceGroom[];
+  lastRefresh: string;
+  nextFreeRefresh: string;
+  refreshCost: number;
+  canRefreshFree: boolean;
+  refreshCount: number;
+}
+
+interface MarketplaceStats {
+  totalGrooms: number;
+  lastRefresh: string | 'never';
+  refreshCount: number;
+  qualityDistribution: Record<string, number>;
+  specialtyDistribution: Record<string, number>;
+  config: {
+    refreshIntervalHours: number;
+    premiumRefreshCost: number;
+    defaultSize: number;
+  };
+}
+
+interface SalarySummary {
+  totalMonthlyCost: number;
+  totalWeeklyCost: number;
+  groomCount: number;
+  breakdown: Array<{
+    groomId: number;
+    groomName: string;
+    weeklyCost: number;
+    assignmentCount: number;
+  }>;
+}
+
+/**
+ * User Progress interfaces
+ */
+interface UserProgress {
+  userId: string;
+  username: string;
+  level: number;
+  xp: number;
+  xpToNextLevel: number;
+  xpForNextLevel: number;
+  xpForCurrentLevel: number;
+  progressPercentage: number;
+  totalEarnings: number;
+}
+
+interface DashboardData {
+  user: {
+    id: number;
+    username: string;
+    level: number;
+    money: number;
+  };
+  horses: {
+    total: number;
+    trainable: number;
+  };
+  shows: {
+    upcomingEntries: number;
+    nextShowRuns: string[];
+  };
+  activity: {
+    lastTrained: string;
+    lastShowPlaced: string | null;
+  };
+}
+
+interface ActivityFeedItem {
+  id: number;
+  userId: number;
+  type: string;
+  description: string;
+  timestamp: string;
+  metadata?: Record<string, unknown>;
+}
+
+/**
+ * Competition interfaces
+ */
+interface Competition {
+  id: number;
+  name: string;
+  description?: string;
+  discipline: string;
+  date: string;
+  location?: string;
+  prizePool?: number;
+  maxEntries?: number;
+  currentEntries?: number;
+}
+
+interface Discipline {
+  id: string;
+  name: string;
+  description?: string;
+  requiredStats?: string[];
+  requiredTraits?: string[];
+}
+
+interface EligibilityResult {
+  eligible: boolean;
+  reasons?: string[];
+  requirements?: {
+    minAge?: number;
+    minLevel?: number;
+    requiredTraits?: string[];
+  };
+}
+
+/**
  * Attempt to refresh the access token using the refresh token cookie
  */
 async function refreshAccessToken(): Promise<boolean> {
@@ -335,10 +508,13 @@ async function fetchWithAuth<T>(
 ): Promise<T> {
   const url = `${API_BASE_URL}${endpoint}`;
 
+  const isTestEnv = import.meta.env.MODE === 'test' || import.meta.env.VITE_E2E_TEST === 'true';
+
   const config: RequestInit = {
     ...options,
     headers: {
       'Content-Type': 'application/json',
+      ...(isTestEnv ? { 'x-test-skip-csrf': 'true' } : {}),
       ...options.headers,
     },
     credentials: 'include', // CRITICAL: Send httpOnly cookies with request
@@ -522,7 +698,9 @@ export const trainingApi = {
     );
   },
   getHorseStatus: (horseId: number) => {
-    return apiClient.get<DisciplineStatus[] | Record<string, Omit<DisciplineStatus, 'discipline'>>>(`/api/training/status/${horseId}`);
+    return apiClient.get<DisciplineStatus[] | Record<string, Omit<DisciplineStatus, 'discipline'>>>(
+      `/api/training/status/${horseId}`
+    );
   },
 };
 
@@ -531,7 +709,7 @@ export const trainingApi = {
  */
 export const breedingApi = {
   breedFoal: (payload: BreedRequest) => {
-    return apiClient.post<BreedResponse>('/api/foals/breeding/breed', payload);
+    return apiClient.post<BreedResponse>('/api/horses/foals', payload);
   },
   getFoal: (foalId: number) => {
     return apiClient.get<Foal>(`/api/foals/${foalId}`);
@@ -560,14 +738,13 @@ export const breedingApi = {
  * Horses API surface
  */
 export const horsesApi = {
-  list: () => apiClient.get<HorseSummary[]>('/api/horses'),
-  get: (horseId: number) => apiClient.get<HorseSummary>(`/api/horses/${horseId}`),
+  list: () => apiClient.get<HorseSummary[]>(`/api/horses?t=${Date.now()}`),
+  get: (horseId: number) => apiClient.get<HorseSummary>(`/api/horses/${horseId}?t=${Date.now()}`),
   getTrainingHistory: (horseId: number) =>
     apiClient.get<HorseTrainingAnalytics>(`/api/horses/${horseId}/training-history`),
   getBreedingData: (horseId: number) =>
-    apiClient.get<any>(`/api/horses/${horseId}/breeding-data`),
-  getXP: (horseId: number) =>
-    apiClient.get<HorseXP>(`/api/horses/${horseId}/xp`),
+    apiClient.get<unknown>(`/api/horses/${horseId}/breeding-data`),
+  getXP: (horseId: number) => apiClient.get<HorseXP>(`/api/horses/${horseId}/xp`),
   getXPHistory: (horseId: number, options?: { limit?: number; offset?: number }) => {
     const params = new URLSearchParams();
     if (options?.limit) params.append('limit', options.limit.toString());
@@ -575,16 +752,82 @@ export const horsesApi = {
     const queryString = params.toString() ? `?${params.toString()}` : '';
     return apiClient.get<HorseXPHistory>(`/api/horses/${horseId}/xp-history${queryString}`);
   },
-  getAge: (horseId: number) =>
-    apiClient.get<HorseAge>(`/api/horses/${horseId}/age`),
-  getStats: (horseId: number) =>
-    apiClient.get<HorseStats>(`/api/horses/${horseId}/stats`),
+  getAge: (horseId: number) => apiClient.get<HorseAge>(`/api/horses/${horseId}/age`),
+  getStats: (horseId: number) => apiClient.get<HorseStats>(`/api/horses/${horseId}/stats`),
   getProgression: (horseId: number) =>
     apiClient.get<HorseProgression>(`/api/horses/${horseId}/progression`),
   getStatHistory: (horseId: number, timeRange = '30d') =>
     apiClient.get<StatHistory>(`/api/horses/${horseId}/stats/history?range=${timeRange}`),
   getRecentGains: (horseId: number, days = 30) =>
     apiClient.get<RecentGains>(`/api/horses/${horseId}/gains/recent?days=${days}`),
+};
+
+/**
+ * Groom API surface
+ */
+export const groomsApi = {
+  getUserGrooms: (userId: string | number) => apiClient.get<Groom[]>(`/api/grooms/user/${userId}`),
+  getAssignments: () => apiClient.get<GroomAssignment[]>('/api/groom-assignments'),
+  getSalarySummary: () => apiClient.get<SalarySummary>('/api/groom-salaries/summary'),
+  getMarketplace: () => apiClient.get<MarketplaceData>('/api/groom-marketplace'),
+  getMarketplaceStats: () => apiClient.get<MarketplaceStats>('/api/groom-marketplace/stats'),
+  hireGroom: (marketplaceId: string) =>
+    apiClient.post<{
+      success: boolean;
+      data: { groom: Groom; cost: number; remainingMoney: number };
+    }>('/api/groom-marketplace/hire', { marketplaceId }),
+  refreshMarketplace: (force: boolean = false) =>
+    apiClient.post<MarketplaceData>('/api/groom-marketplace/refresh', { force }),
+  assignGroom: (data: {
+    groomId: number;
+    horseId: number;
+    priority: number;
+    notes?: string;
+    replacePrimary?: boolean;
+  }) => apiClient.post<{ success: boolean }>('/api/groom-assignments', data),
+  deleteAssignment: (assignmentId: number) =>
+    apiClient.delete<{ success: boolean }>(`/api/groom-assignments/${assignmentId}`),
+};
+
+/**
+ * User Progress API surface
+ */
+export const userProgressApi = {
+  getProgress: (userId: string | number) =>
+    apiClient.get<UserProgress>(`/api/users/${userId}/progress`),
+  getDashboard: (userId: string | number) =>
+    apiClient.get<DashboardData>(`/api/users/dashboard/${userId}`),
+  getActivity: (userId: string | number) =>
+    apiClient.get<ActivityFeedItem[]>(`/api/users/${userId}/activity`),
+  getUser: (userId: string | number) =>
+    apiClient.get<{
+      id: string;
+      username: string;
+      money: number;
+      level: number;
+      currentHorses: number;
+      stableLimit: number;
+    }>(`/api/users/${userId}`),
+};
+
+/**
+ * Competitions API surface
+ */
+export const competitionsApi = {
+  list: () => apiClient.get<Competition[]>('/api/competition'),
+  getDisciplines: () =>
+    apiClient.get<{ disciplines: string[]; disciplineDetails: unknown[] }>(
+      '/api/competition/disciplines'
+    ),
+  checkEligibility: (horseId: number, discipline: string) =>
+    apiClient.get<{ success: boolean; data: { eligibility: EligibilityResult } }>(
+      `/api/competition/eligibility/${horseId}/${encodeURIComponent(discipline)}`
+    ),
+  enter: (data: { horseId: number; competitionId: number }) =>
+    apiClient.post<{ success: boolean; data: { entryId: number } }>('/api/competition/enter', {
+      horseId: data.horseId,
+      showId: data.competitionId,
+    }),
 };
 
 /**
@@ -595,25 +838,25 @@ export const breedingPredictionApi = {
    * Calculate inbreeding coefficient for a breeding pair
    */
   getInbreedingAnalysis: (payload: { stallionId: number; mareId: number }) =>
-    apiClient.post<any>('/api/genetics/inbreeding-analysis', payload),
+    apiClient.post<unknown>('/api/genetics/inbreeding-analysis', payload),
 
   /**
    * Get lineage analysis for a breeding pair
    */
   getLineageAnalysis: (stallionId: number, mareId: number) =>
-    apiClient.get<any>(`/api/breeding/lineage-analysis/${stallionId}/${mareId}`),
+    apiClient.get<unknown>(`/api/breeding/lineage-analysis/${stallionId}/${mareId}`),
 
   /**
    * Calculate genetic probability for offspring
    */
   getGeneticProbability: (payload: { stallionId: number; mareId: number }) =>
-    apiClient.post<any>('/api/breeding/genetic-probability', payload),
+    apiClient.post<unknown>('/api/breeding/genetic-probability', payload),
 
   /**
    * Get breeding compatibility score
    */
   getBreedingCompatibility: (payload: { stallionId: number; mareId: number }) =>
-    apiClient.post<any>('/api/genetics/breeding-compatibility', payload),
+    apiClient.post<unknown>('/api/genetics/breeding-compatibility', payload),
 };
 
 /**
@@ -676,7 +919,12 @@ export const authApi = {
    * Update user profile
    * Supports updating username (display name), bio, and avatar
    */
-  updateProfile: (updates: { username?: string; email?: string; bio?: string; avatarUrl?: string }) => {
+  updateProfile: (updates: {
+    username?: string;
+    email?: string;
+    bio?: string;
+    avatarUrl?: string;
+  }) => {
     return apiClient.put<{
       user: {
         id: number;
@@ -767,14 +1015,21 @@ export const authApi = {
  */
 export default apiClient;
 export type {
+  ActivityFeedItem,
   ApiError,
   ApiResponse,
   BreedRequest,
   BreedResponse,
+  Competition,
+  Discipline,
   DisciplineStatus,
+  DashboardData,
+  EligibilityResult,
   Foal,
   FoalActivity,
   FoalDevelopment,
+  Groom,
+  GroomAssignment,
   HorseAge,
   HorseProgression,
   HorseStats,
@@ -784,7 +1039,11 @@ export type {
   HorseXP,
   HorseXPEvent,
   HorseXPHistory,
+  MarketplaceGroom,
+  MarketplaceData,
+  MarketplaceStats,
   RecentGains,
+  SalarySummary,
   StatGain,
   StatHistory,
   TrainableHorse,
@@ -792,4 +1051,5 @@ export type {
   TrainingRequest,
   TrainingResult,
   TraitEffects,
+  UserProgress,
 };
