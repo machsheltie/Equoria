@@ -64,7 +64,7 @@ describe('🔒 OWASP Top 10 - Comprehensive Security Tests', () => {
         breed: { connect: { id: 1 } },
         sex: 'Stallion',
         dateOfBirth: new Date(Date.now() - 5 * 365 * 24 * 60 * 60 * 1000), // 5 years old
-        userId: testUser.id, // Matches schema field (line 144)
+        user: { connect: { id: testUser.id } },
       },
     });
   });
@@ -366,7 +366,7 @@ describe('🔒 OWASP Top 10 - Comprehensive Security Tests', () => {
             breed: { connect: { id: 1 } },
             sex: 'Mare',
             dateOfBirth: new Date(Date.now() - 5 * 365 * 24 * 60 * 60 * 1000),
-            userId: otherUser.id, // Matches schema field (line 144)
+            user: { connect: { id: otherUser.id } },
           },
         });
 

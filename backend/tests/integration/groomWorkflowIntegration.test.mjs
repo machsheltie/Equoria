@@ -147,7 +147,6 @@ describe('Groom Workflow Integration Tests', () => {
         sex: 'Filly',
         dateOfBirth: new Date(Date.now() - 365 * 24 * 60 * 60 * 1000), // 1 year old
         age: 365,
-        ownerId: testUser.id,
         user: { connect: { id: testUser.id } },
         breed: { connect: { id: testBreed.id } },
         bondScore: 50,
@@ -167,7 +166,6 @@ describe('Groom Workflow Integration Tests', () => {
         sex: 'Colt',
         dateOfBirth: new Date(Date.now() - 2 * 365 * 24 * 60 * 60 * 1000), // 2 years old
         age: 730,
-        ownerId: testUser.id,
         user: { connect: { id: testUser.id } },
         breed: { connect: { id: testBreed.id } },
         bondScore: 60,
@@ -187,7 +185,6 @@ describe('Groom Workflow Integration Tests', () => {
         sex: 'Mare',
         dateOfBirth: new Date(Date.now() - 4 * 365 * 24 * 60 * 60 * 1000), // 4 years old
         age: 28, // 4 years old (28 days = 4 years in game time)
-        ownerId: testUser.id,
         user: { connect: { id: testUser.id } },
         breed: { connect: { id: testBreed.id } },
         bondScore: 70,
@@ -241,28 +238,27 @@ describe('Groom Workflow Integration Tests', () => {
       await hireGroom(req, res);
 
       expect(res.status).toHaveBeenCalledWith(201);
-      expect(res.json).toHaveBeenCalledWith(
-        expect.objectContaining({
-          success: true,
-          message: 'Successfully hired Sarah Johnson',
-          data: expect.objectContaining({
-            name: 'Sarah Johnson',
-            speciality: 'foal_care',
-            skillLevel: 'expert',
-            personality: 'gentle',
-            experience: 8,
-            sessionRate: expect.any(Object), // Decimal type
-            userId: testUser.id,
-          }),
-        }),
-      );
+
+      // Extract the actual response for detailed comparison
+      const responseCall = res.json.mock.calls[0][0];
+      expect(responseCall.success).toBe(true);
+      expect(responseCall.message).toBe('Successfully hired Sarah Johnson');
+      expect(responseCall.data).toMatchObject({
+        name: 'Sarah Johnson',
+        speciality: 'foal_care',
+        skillLevel: 'expert',
+        personality: 'gentle',
+        experience: 8,
+        userId: testUser.id,
+      });
+      expect(responseCall.data.sessionRate).toBeDefined();
 
       // Verify groom was created in database
       const groom = await prisma.groom.findFirst({
         where: { name: 'Sarah Johnson' },
       });
       expect(groom).toBeTruthy();
-      expect(groom.speciality).toBe('foal_care'); // Database uses snake_case for speciality values
+      expect(groom.speciality).toBe('foal_care'); // Database stores the value as sent in request
       expect(groom.skillLevel).toBe('expert');
     });
 
@@ -348,7 +344,7 @@ describe('Groom Workflow Integration Tests', () => {
           skillLevel: 'intermediate',
           personality: 'gentle',
           sessionRate: 20.0,
-          userId: testUser.id,
+          user: { connect: { id: testUser.id } },
         },
       });
     });
@@ -402,6 +398,7 @@ describe('Groom Workflow Integration Tests', () => {
         data: {
           foalId: testFoal.id,
           groomId: testGroom.id,
+          userId: testUser.id,
           priority: 1,
           isActive: true,
           notes: 'First assignment',
@@ -416,7 +413,7 @@ describe('Groom Workflow Integration Tests', () => {
           skillLevel: 'expert',
           personality: 'patient',
           sessionRate: 25.0,
-          userId: testUser.id,
+          user: { connect: { id: testUser.id } },
         },
       });
 
@@ -505,7 +502,7 @@ describe('Groom Workflow Integration Tests', () => {
           skillLevel: 'expert',
           personality: 'gentle',
           sessionRate: 25.0,
-          userId: testUser.id,
+          user: { connect: { id: testUser.id } },
         },
       });
 
@@ -515,6 +512,7 @@ describe('Groom Workflow Integration Tests', () => {
           data: {
             foalId: testFoal.id,
             groomId: testGroom.id,
+            userId: testUser.id,
             priority: 1,
             isActive: true,
           },
@@ -523,6 +521,7 @@ describe('Groom Workflow Integration Tests', () => {
           data: {
             foalId: testYoungHorse.id,
             groomId: testGroom.id,
+            userId: testUser.id,
             priority: 1,
             isActive: true,
           },
@@ -531,6 +530,7 @@ describe('Groom Workflow Integration Tests', () => {
           data: {
             foalId: testAdultHorse.id,
             groomId: testGroom.id,
+            userId: testUser.id,
             priority: 1,
             isActive: true,
           },

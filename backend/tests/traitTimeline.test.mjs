@@ -63,7 +63,7 @@ describe('Trait Timeline System', () => {
         personality: 'calm',
         groomPersonality: 'calm',
         sessionRate: 25.0,
-        userId: testUser.id,
+        user: { connect: { id: testUser.id } },
       },
     });
 
@@ -74,10 +74,8 @@ describe('Trait Timeline System', () => {
         sex: 'stallion',
         dateOfBirth: new Date(Date.now() - 3 * 365 * 24 * 60 * 60 * 1000), // 3 years old
         temperament: 'spirited',
-        ownerId: testUser.id,
-        breedId: testBreed.id,
-        sireId: null,
-        damId: null,
+        user: { connect: { id: testUser.id } },
+        breed: { connect: { id: testBreed.id } },
         epigeneticModifiers: { positive: [], negative: [], hidden: [] },
       },
     });
@@ -88,7 +86,9 @@ describe('Trait Timeline System', () => {
       username: testUser.username,
       email: testUser.email,
     };
-    const token = jwt.sign(tokenPayload, process.env.JWT_SECRET || 'test-jwt-secret-key-for-testing-only-32chars', { expiresIn: '1h' });
+    const token = jwt.sign(tokenPayload, process.env.JWT_SECRET || 'test-jwt-secret-key-for-testing-only-32chars', {
+      expiresIn: '1h',
+    });
     authToken = `Bearer ${token}`;
   });
 
@@ -207,7 +207,6 @@ describe('Trait Timeline System', () => {
 
       const timeline = await generateTraitTimeline(testHorse.id);
 
-      // eslint-disable-next-line prefer-destructuring
       const traitEvent = timeline.timelineEvents[0];
       expect(traitEvent.traitName).toBe('empathic');
       expect(traitEvent.groomContext).toBeDefined();
@@ -398,9 +397,7 @@ describe('Trait Timeline System', () => {
         },
       });
 
-      const response = await request(app)
-        .get(`/api/horses/${testHorse.id}/trait-card`)
-        .set('Authorization', authToken);
+      const response = await request(app).get(`/api/horses/${testHorse.id}/trait-card`).set('Authorization', authToken);
 
       expect(response.status).toBe(200);
       expect(response.body.success).toBe(true);
@@ -412,7 +409,7 @@ describe('Trait Timeline System', () => {
     it('should require authentication for trait card endpoint', async () => {
       const response = await request(app)
         .get(`/api/horses/${testHorse.id}/trait-card`)
-        .set('x-test-require-auth', 'true')
+        .set('x-test-require-auth', 'true');
 
       expect(response.status).toBe(401);
       expect(response.body.success).toBe(false);
@@ -428,9 +425,7 @@ describe('Trait Timeline System', () => {
     });
 
     it('should handle horses with empty trait timeline', async () => {
-      const response = await request(app)
-        .get(`/api/horses/${testHorse.id}/trait-card`)
-        .set('Authorization', authToken);
+      const response = await request(app).get(`/api/horses/${testHorse.id}/trait-card`).set('Authorization', authToken);
 
       expect(response.status).toBe(200);
       expect(response.body.success).toBe(true);

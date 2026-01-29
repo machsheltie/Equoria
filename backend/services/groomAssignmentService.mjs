@@ -26,11 +26,11 @@ export const ASSIGNMENT_CONFIG = {
 
   // Salary multipliers based on assignment count
   SALARY_MULTIPLIERS: {
-    1: 1.0,    // Base rate for 1 assignment
-    2: 1.8,    // 80% of base rate per assignment for 2 assignments
-    3: 2.4,    // 80% of base rate per assignment for 3 assignments
-    4: 2.8,    // 70% of base rate per assignment for 4 assignments
-    5: 3.0,     // 60% of base rate per assignment for 5 assignments
+    1: 1.0, // Base rate for 1 assignment
+    2: 1.8, // 80% of base rate per assignment for 2 assignments
+    3: 2.4, // 80% of base rate per assignment for 3 assignments
+    4: 2.8, // 70% of base rate per assignment for 4 assignments
+    5: 3.0, // 60% of base rate per assignment for 5 assignments
   },
 };
 
@@ -57,7 +57,6 @@ export async function getGroomAssignmentLimits(groom) {
       availableSlots: maxAssignments - currentAssignments,
       canTakeMore: currentAssignments < maxAssignments,
     };
-
   } catch (error) {
     logger.error(`[groomAssignmentService] Error getting assignment limits: ${error.message}`);
     throw error;
@@ -90,7 +89,7 @@ export async function validateAssignmentEligibility(groomId, horseId, userId) {
         select: {
           id: true,
           name: true,
-          ownerId: true,
+          userId: true,
         },
       }),
     ]);
@@ -111,7 +110,7 @@ export async function validateAssignmentEligibility(groomId, horseId, userId) {
 
     if (!horse) {
       errors.push('Horse not found');
-    } else if (horse.ownerId !== userId) {
+    } else if (horse.userId !== userId) {
       errors.push('You do not own this horse');
     }
 
@@ -119,7 +118,9 @@ export async function validateAssignmentEligibility(groomId, horseId, userId) {
     if (groom && errors.length === 0) {
       const limits = await getGroomAssignmentLimits(groom);
       if (!limits.canTakeMore) {
-        errors.push(`Groom ${groom.name} has reached maximum assignments (${limits.maxAssignments})`);
+        errors.push(
+          `Groom ${groom.name} has reached maximum assignments (${limits.maxAssignments})`,
+        );
       }
     }
 
@@ -144,7 +145,6 @@ export async function validateAssignmentEligibility(groomId, horseId, userId) {
       groom,
       horse,
     };
-
   } catch (error) {
     logger.error(`[groomAssignmentService] Error validating assignment: ${error.message}`);
     throw error;
@@ -216,14 +216,15 @@ export async function createAssignment(groomId, horseId, userId, options = {}) {
       },
     });
 
-    logger.info(`[groomAssignmentService] Created assignment: ${validation.groom.name} -> ${validation.horse.name}`);
+    logger.info(
+      `[groomAssignmentService] Created assignment: ${validation.groom.name} -> ${validation.horse.name}`,
+    );
 
     return {
       success: true,
       assignment,
       message: `${validation.groom.name} has been assigned to ${validation.horse.name}`,
     };
-
   } catch (error) {
     logger.error(`[groomAssignmentService] Error creating assignment: ${error.message}`);
     throw error;
@@ -247,7 +248,7 @@ export async function removeAssignment(assignmentId, userId, reason = 'Manual re
           select: { id: true, name: true, userId: true },
         },
         foal: {
-          select: { id: true, name: true, ownerId: true },
+          select: { id: true, name: true, userId: true },
         },
       },
     });
@@ -257,7 +258,7 @@ export async function removeAssignment(assignmentId, userId, reason = 'Manual re
     }
 
     // Validate ownership
-    if (assignment.groom.userId !== userId && assignment.foal.ownerId !== userId) {
+    if (assignment.groom.userId !== userId && assignment.foal.userId !== userId) {
       throw new Error('You do not have permission to remove this assignment');
     }
 
@@ -283,14 +284,15 @@ export async function removeAssignment(assignmentId, userId, reason = 'Manual re
       },
     });
 
-    logger.info(`[groomAssignmentService] Removed assignment: ${assignment.groom.name} -> ${assignment.foal.name}`);
+    logger.info(
+      `[groomAssignmentService] Removed assignment: ${assignment.groom.name} -> ${assignment.foal.name}`,
+    );
 
     return {
       success: true,
       assignment: updatedAssignment,
       message: `${assignment.groom.name} has been unassigned from ${assignment.foal.name}`,
     };
-
   } catch (error) {
     logger.error(`[groomAssignmentService] Error removing assignment: ${error.message}`);
     throw error;
@@ -337,11 +339,7 @@ export async function getUserAssignments(userId, filters = {}) {
           },
         },
       },
-      orderBy: [
-        { isActive: 'desc' },
-        { priority: 'asc' },
-        { createdAt: 'desc' },
-      ],
+      orderBy: [{ isActive: 'desc' }, { priority: 'asc' }, { createdAt: 'desc' }],
     });
 
     // Group assignments by groom
@@ -362,9 +360,10 @@ export async function getUserAssignments(userId, filters = {}) {
       totalAssignments: assignments.length,
       activeAssignments: assignments.filter(a => a.isActive).length,
       groomsWithAssignments: Object.keys(assignmentsByGroom).length,
-      averageAssignmentsPerGroom: Object.keys(assignmentsByGroom).length > 0
-        ? assignments.filter(a => a.isActive).length / Object.keys(assignmentsByGroom).length
-        : 0,
+      averageAssignmentsPerGroom:
+        Object.keys(assignmentsByGroom).length > 0
+          ? assignments.filter(a => a.isActive).length / Object.keys(assignmentsByGroom).length
+          : 0,
     };
 
     return {
@@ -372,7 +371,6 @@ export async function getUserAssignments(userId, filters = {}) {
       assignmentsByGroom,
       stats,
     };
-
   } catch (error) {
     logger.error(`[groomAssignmentService] Error getting user assignments: ${error.message}`);
     throw error;
@@ -433,7 +431,6 @@ export async function calculateWeeklySalaryCosts(userId) {
       assignmentCount: assignments.length,
       groomCount: Object.keys(groomCosts).length,
     };
-
   } catch (error) {
     logger.error(`[groomAssignmentService] Error calculating salary costs: ${error.message}`);
     throw error;

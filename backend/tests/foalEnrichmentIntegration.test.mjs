@@ -89,24 +89,6 @@ describe('🐴 INTEGRATION: Foal Enrichment API Integration - Complete API Workf
   let testUser; // Declare testUser in test scope
 
   beforeAll(async () => {
-    // Mock test breed
-    testBreed = {
-      id: 1,
-      name: 'Test Breed for Enrichment',
-      description: 'Test breed for foal enrichment testing',
-    };
-
-    // Mock test foal
-    testFoal = {
-      id: 1,
-      name: 'Test Enrichment Foal',
-      age: 0,
-      breedId: testBreed.id,
-      ownerId: 'test-user-id',
-      bondScore: 50,
-      stressLevel: 20,
-    };
-
     // Mock test user for authentication
     testUser = {
       // Assign to test scope variable (not const)
@@ -116,6 +98,24 @@ describe('🐴 INTEGRATION: Foal Enrichment API Integration - Complete API Workf
       role: 'user',
       firstName: 'Test',
       lastName: 'User',
+    };
+
+    // Mock test breed
+    testBreed = {
+      id: 1,
+      name: 'Test Breed for Enrichment',
+      description: 'Test breed for foal enrichment testing',
+    };
+
+    // Mock test foal - MUST have userId property for ownership checks
+    testFoal = {
+      id: 1,
+      name: 'Test Enrichment Foal',
+      age: 0,
+      breedId: testBreed.id,
+      userId: testUser.id, // CRITICAL: Must match authenticated user ID
+      bondScore: 50,
+      stressLevel: 20,
     };
 
     // Setup default mock responses
@@ -134,7 +134,7 @@ describe('🐴 INTEGRATION: Foal Enrichment API Integration - Complete API Workf
     mockPrisma.user.findUnique.mockResolvedValue(testUser);
     mockPrisma.horse.findUnique.mockResolvedValue(testFoal);
     mockPrisma.horse.findFirst.mockImplementation(({ where } = {}) => {
-      if (where?.id === testFoal.id) {
+      if (where?.id === testFoal.id && where?.userId === testUser.id) {
         return Promise.resolve(testFoal);
       }
       return Promise.resolve(null);
@@ -157,8 +157,8 @@ describe('🐴 INTEGRATION: Foal Enrichment API Integration - Complete API Workf
       timestamp: new Date(),
     });
 
-    // Generate JWT token for authentication (SAFE - uses real token generation)
-    authToken = generateTestToken({ id: testFoal.ownerId, role: 'user' });
+    // Generate JWT token for authentication with the correct user ID
+    authToken = generateTestToken({ id: testUser.id, role: 'user' });
   });
 
   describe('POST /api/foals/:foalId/enrichment', () => {
@@ -429,13 +429,13 @@ describe('🐴 INTEGRATION: Foal Enrichment API Integration - Complete API Workf
     });
 
     it('should handle edge cases with bond and stress levels', async () => {
-      // Mock a foal with extreme values
+      // Mock a foal with extreme values - MUST have same userId as authenticated user
       const extremeFoal = {
         id: 999,
         name: 'Extreme Test Foal',
         age: 0,
         breedId: testBreed.id,
-        ownerId: testFoal.ownerId,
+        userId: testUser.id, // CRITICAL: Must match authenticated user ID
         bondScore: 95,
         stressLevel: 5,
       };
