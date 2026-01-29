@@ -45,7 +45,7 @@ async function initializeRedis() {
         lazyConnect: true, // Don't connect immediately
       });
 
-      redisClient.on('error', (error) => {
+      redisClient.on('error', error => {
         logger.warn('Redis connection error (caching disabled):', error.message);
         redisClient = null; // Disable Redis on error
       });
@@ -73,7 +73,6 @@ export async function analyzeQueryPerformance(options) {
     logger.info(`[databaseOptimization] Analyzing query performance for ${options.queryType}`);
 
     let queryResult;
-    let _queryPlan;
 
     switch (options.queryType) {
       case 'epigenetic_trait_search':
@@ -125,7 +124,7 @@ async function analyzeEpigeneticTraitQuery(options) {
   // Use Prisma query instead of raw SQL to avoid syntax issues
   const horses = await prisma.horse.findMany({
     where: {
-      ownerId: userId,
+      userId,
       age: { gte: filters?.minAge || 3 },
       epigeneticFlags: { hasSome: filters?.traits || ['BRAVE'] },
     },
@@ -171,7 +170,10 @@ async function analyzeJsonbQuery(options) {
   return {
     resultCount: horses.length,
     jsonbOptimizations: ['GIN index on disciplineScores JSONB field'],
-    indexRecommendations: ['GIN index on disciplineScores', 'Composite index on (userId, disciplineScores)'],
+    indexRecommendations: [
+      'GIN index on disciplineScores',
+      'Composite index on (userId, disciplineScores)',
+    ],
     complexity: 500, // Medium complexity
   };
 }
@@ -186,14 +188,18 @@ async function analyzeComplexJoinQuery(options) {
     where: { userId },
     include: {
       breed: includeRelations.includes('breed'),
-      competitionResults: includeRelations.includes('competitionResults') ? {
-        take: 10,
-        orderBy: { runDate: 'desc' },
-      } : false,
-      trainingLogs: includeRelations.includes('trainingLogs') ? {
-        take: 5,
-        orderBy: { trainedAt: 'desc' },
-      } : false,
+      competitionResults: includeRelations.includes('competitionResults')
+        ? {
+            take: 10,
+            orderBy: { runDate: 'desc' },
+          }
+        : false,
+      trainingLogs: includeRelations.includes('trainingLogs')
+        ? {
+            take: 5,
+            orderBy: { trainedAt: 'desc' },
+          }
+        : false,
     },
   });
 
@@ -230,30 +236,32 @@ export async function createOptimizedIndexes(options) {
     if (options.jsonbFields) {
       // Create JSONB indexes with correct column names
       const fieldMapping = {
-        'epigenetic_flags': '"epigeneticFlags"',
-        'discipline_scores': '"disciplineScores"',
-        'epigeneticModifiers': '"epigeneticModifiers"',
-        'ultraRareTraits': '"ultraRareTraits"',
-        'conformationScores': '"conformationScores"',
+        epigenetic_flags: '"epigeneticFlags"',
+        discipline_scores: '"disciplineScores"',
+        epigeneticModifiers: '"epigeneticModifiers"',
+        ultraRareTraits: '"ultraRareTraits"',
+        conformationScores: '"conformationScores"',
       };
 
       for (const field of options.jsonbFields) {
         const columnName = fieldMapping[field] || `"${field}"`;
-        indexQueries.push(`CREATE INDEX IF NOT EXISTS idx_horses_${field}_gin ON horses USING GIN (${columnName})`);
+        indexQueries.push(
+          `CREATE INDEX IF NOT EXISTS idx_horses_${field}_gin ON horses USING GIN (${columnName})`,
+        );
       }
     }
 
     if (options.compositePatterns) {
       // Create composite indexes with correct column names
       const columnMapping = {
-        'userId': '"ownerId"',
-        'user_id': '"ownerId"',
-        'ownerId': '"ownerId"',
-        'breedId': '"breedId"',
-        'age': 'age',
-        'trainingCooldown': '"trainingCooldown"',
-        'createdAt': '"createdAt"',
-        'stableId': '"stableId"',
+        userId: '"ownerId"',
+        user_id: '"ownerId"',
+        ownerId: '"ownerId"',
+        breedId: '"breedId"',
+        age: 'age',
+        trainingCooldown: '"trainingCooldown"',
+        createdAt: '"createdAt"',
+        stableId: '"stableId"',
       };
 
       for (const pattern of options.compositePatterns) {
@@ -368,14 +376,19 @@ export async function setupQueryCaching(config) {
         await redis.config('SET', 'maxmemory', config.maxMemory || '100mb');
         await redis.config('SET', 'maxmemory-policy', config.evictionPolicy || 'allkeys-lru');
       } catch (configError) {
-        logger.warn('[databaseOptimization] Redis config failed, using defaults:', configError.message);
+        logger.warn(
+          '[databaseOptimization] Redis config failed, using defaults:',
+          configError.message,
+        );
       }
     }
 
     return {
       status: redis ? 'active' : 'disabled',
       redisAvailable: !!redis,
-      hitRate: performanceMetrics.cacheHits / (performanceMetrics.cacheHits + performanceMetrics.cacheMisses) || 0,
+      hitRate:
+        performanceMetrics.cacheHits /
+          (performanceMetrics.cacheHits + performanceMetrics.cacheMisses) || 0,
       memoryUsage: redis ? 50 * 1024 * 1024 : 0, // 50MB simulated if Redis available
       ttl: config.ttl || 300,
     };
@@ -494,13 +507,10 @@ export async function benchmarkDatabaseOperations(options = {}) {
 // Helper functions
 function calculateAverageTime(queryType, newTime) {
   const existing = performanceMetrics.queryTimes.get(queryType);
-  if (!existing) { return newTime; }
+  if (!existing) {
+    return newTime;
+  }
   return (existing.averageTime + newTime) / 2;
-}
-
-
-function _calculateQueryComplexity(_result) {
-  return 300; // Complexity score
 }
 
 function calculateIndexImpact(indexes) {
@@ -511,7 +521,7 @@ function calculateIndexImpact(indexes) {
   };
 }
 
-function estimatePerformanceGains(_indexes) {
+function estimatePerformanceGains() {
   return {
     querySpeedup: '60%',
     throughputIncrease: '40%',
@@ -528,7 +538,7 @@ async function benchmarkConcurrentLoad(options) {
   };
 }
 
-async function benchmarkProductionScenario(_options) {
+async function benchmarkProductionScenario() {
   return {
     scenario: 'production_simulation',
     uptime: 0.9995,
@@ -553,16 +563,11 @@ function generateCacheKey(options) {
   return `epigenetic_query_${JSON.stringify(options)}`.replace(/[^a-zA-Z0-9_]/g, '_');
 }
 
-function _extractIndexUsage(_result) {
-  return ['Primary index used', 'JSONB index recommended'];
-}
-
-
 function generateIndexQuery(pattern) {
   return `CREATE INDEX IF NOT EXISTS idx_${pattern} ON horses ("${pattern}")`;
 }
 
-function generateOptimizationRecommendations(_queryResult) {
+function generateOptimizationRecommendations() {
   return [
     'Add appropriate indexes for frequent queries',
     'Consider query result caching',
@@ -572,7 +577,7 @@ function generateOptimizationRecommendations(_queryResult) {
 
 async function executeUserEpigeneticAnalysis(options) {
   const horses = await prisma.horse.findMany({
-    where: { ownerId: options.userId },
+    where: { userId: options.userId },
     select: { id: true, name: true, epigeneticFlags: true },
     take: 50,
   });
@@ -603,7 +608,6 @@ async function benchmarkSingleOperation(operation, iterations) {
     errorRate: 0,
   };
 }
-
 
 export default {
   analyzeQueryPerformance,

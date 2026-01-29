@@ -67,7 +67,7 @@ describe('API Response Optimization System', () => {
     for (let i = 0; i < 25; i++) {
       const horse = await prisma.horse.create({
         data: {
-          name: `OptimizationHorse${i}`,
+          name: `OptimizationHorse${i}_${testRunId}`,
           user: { connect: { id: testUserId } },
           breed: { connect: { id: testBreed.id } },
           sex: i % 2 === 0 ? 'Stallion' : 'Mare',
@@ -106,13 +106,13 @@ describe('API Response Optimization System', () => {
     // Test routes
     testApp.get('/test/horses', async (req, res) => {
       const horses = await prisma.horse.findMany({
-        where: { userId: testUserId }, // Matches schema field
+        where: { userId: testUserId }, // Correct schema field - userId not ownerId
         take: req.pagination.limit,
         skip: req.pagination.offset,
       });
 
       const totalCount = await prisma.horse.count({
-        where: { userId: testUserId }, // Matches schema field
+        where: { userId: testUserId }, // Correct schema field - userId not ownerId
       });
 
       const paginatedResult = PaginationService.createOffsetPagination({
@@ -155,7 +155,7 @@ describe('API Response Optimization System', () => {
     // Cleanup test data
     if (testUserId) {
       await prisma.horse.deleteMany({
-        where: { userId: testUserId }, // Matches schema field
+        where: { userId: testUserId }, // Correct schema field - userId not ownerId
       });
       await prisma.user.deleteMany({
         where: { id: testUserId },
