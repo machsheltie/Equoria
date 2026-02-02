@@ -157,7 +157,7 @@ describe('🎯 INTEGRATION: User Progress API - Complete Progress Tracking', () 
 
       expect(response.body.success).toBe(true);
       expect(response.body.data).toEqual({
-        user: { connect: { id: testUser.id } },
+        userId: testUser.id,
         username: testUser.username,
         level: 1,
         xp: 0,
@@ -191,8 +191,8 @@ describe('🎯 INTEGRATION: User Progress API - Complete Progress Tracking', () 
       testHorse = await prisma.horse.create({
         data: {
           name: 'Progress Test Horse',
-          breed: { connect: { id: breed.id } },
-          user: { connect: { id: testUser.id } },
+          breedId: breed.id,
+          userId: testUser.id,
           sex: 'Mare',
           dateOfBirth: birthDate,
           age: calculatedAge, // CRITICAL: Training system requires age field
@@ -231,7 +231,7 @@ describe('🎯 INTEGRATION: User Progress API - Complete Progress Tracking', () 
         .expect(200);
 
       expect(progressResponse.body.data).toEqual({
-        user: { connect: { id: testUser.id } },
+        userId: testUser.id,
         username: testUser.username,
         level: 1,
         xp: 5, // +5 XP from training
@@ -326,7 +326,7 @@ describe('🎯 INTEGRATION: User Progress API - Complete Progress Tracking', () 
         .expect(200);
 
       expect(progressResponse.body.data).toEqual({
-        user: { connect: { id: testUser.id } },
+        userId: testUser.id,
         username: testUser.username,
         level: 2, // Leveled up!
         xp: 200, // Total XP
@@ -360,7 +360,7 @@ describe('🎯 INTEGRATION: User Progress API - Complete Progress Tracking', () 
         .expect(200);
 
       expect(progressResponse.body.data).toEqual({
-        user: { connect: { id: testUser.id } },
+        userId: testUser.id,
         username: testUser.username,
         level: 3,
         xp: 350,
