@@ -35,3 +35,43 @@ export type {
   Competition as EntryCompetition,
   SelectedHorse,
 } from './EntryConfirmationModal';
+
+export { default as CompetitionResultsList } from './CompetitionResultsList';
+export type {
+  CompetitionResultsListProps,
+  CompetitionResultSummary,
+  CompetitionResultsFilters,
+  UserResult,
+  SortOption,
+} from './CompetitionResultsList';
+
+export { default as CompetitionResultsModal } from './CompetitionResultsModal';
+export type {
+  CompetitionResultsModalProps,
+  CompetitionResults,
+  ParticipantResult,
+} from './CompetitionResultsModal';
+
+export { default as ScoreBreakdownChart } from './ScoreBreakdownChart';
+export type {
+  ScoreBreakdownChartProps,
+  ScoreBreakdown,
+  TraitBonus,
+} from './ScoreBreakdownChart';
+
+export { default as PerformanceBreakdown } from './PerformanceBreakdown';
+export type {
+  PerformanceBreakdownProps,
+  ScoreBreakdown as PerformanceScoreBreakdown,
+  ComparisonData,
+} from './PerformanceBreakdown';
+
+export { default as CompetitionHistory } from './CompetitionHistory';
+export type {
+  CompetitionHistoryProps,
+  CompetitionHistoryData,
+  CompetitionEntry,
+  CompetitionStatistics,
+  DateRangeFilter,
+  PlacementFilter,
+} from './CompetitionHistory';
