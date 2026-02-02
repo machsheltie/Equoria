@@ -16,10 +16,7 @@ import { render, screen, within, waitFor } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import { http, HttpResponse } from 'msw';
 import { server } from '../../../test/msw/server';
-import HorseSelector, {
-  type HorseSelectorProps,
-  type Horse,
-} from '../HorseSelector';
+import HorseSelector, { type HorseSelectorProps, type Horse } from '../HorseSelector';
 
 describe('HorseSelector', () => {
   const mockOnSelectionChange = vi.fn();
@@ -175,7 +172,9 @@ describe('HorseSelector', () => {
         expect(screen.queryByTestId('horse-selector-loading')).not.toBeInTheDocument();
       });
 
-      const thunderStrikeCard = screen.getByText('Thunder Strike').closest('[data-testid="horse-selection-card"]');
+      const thunderStrikeCard = screen
+        .getByText('Thunder Strike')
+        .closest('[data-testid="horse-selection-card"]');
       const checkbox = within(thunderStrikeCard!).getByRole('checkbox');
       await user.click(checkbox);
 
@@ -190,7 +189,9 @@ describe('HorseSelector', () => {
         expect(screen.queryByTestId('horse-selector-loading')).not.toBeInTheDocument();
       });
 
-      const silverMoonCard = screen.getByText('Silver Moon').closest('[data-testid="horse-selection-card"]');
+      const silverMoonCard = screen
+        .getByText('Silver Moon')
+        .closest('[data-testid="horse-selection-card"]');
       const checkbox = within(silverMoonCard!).getByRole('checkbox');
       await user.click(checkbox);
 
@@ -205,7 +206,9 @@ describe('HorseSelector', () => {
         expect(screen.queryByTestId('horse-selector-loading')).not.toBeInTheDocument();
       });
 
-      const thunderStrikeCard = screen.getByText('Thunder Strike').closest('[data-testid="horse-selection-card"]');
+      const thunderStrikeCard = screen
+        .getByText('Thunder Strike')
+        .closest('[data-testid="horse-selection-card"]');
       const checkbox = within(thunderStrikeCard!).getByRole('checkbox');
       await user.click(checkbox);
 
@@ -256,7 +259,8 @@ describe('HorseSelector', () => {
       await user.click(selectAllButton);
 
       // Should only include up to maxSelections
-      const lastCall = mockOnSelectionChange.mock.calls[mockOnSelectionChange.mock.calls.length - 1];
+      const lastCall =
+        mockOnSelectionChange.mock.calls[mockOnSelectionChange.mock.calls.length - 1];
       expect(lastCall[0].length).toBeLessThanOrEqual(2);
     });
 
@@ -269,7 +273,9 @@ describe('HorseSelector', () => {
       });
 
       // Golden Dawn (too young) should be disabled
-      const goldenDawnCard = screen.getByText('Golden Dawn').closest('[data-testid="horse-selection-card"]');
+      const goldenDawnCard = screen
+        .getByText('Golden Dawn')
+        .closest('[data-testid="horse-selection-card"]');
       const checkbox = within(goldenDawnCard!).getByRole('checkbox');
 
       expect(checkbox).toBeDisabled();
@@ -290,8 +296,12 @@ describe('HorseSelector', () => {
       });
 
       // Golden Dawn (age 2) should show "Too Young" badge
-      const goldenDawnCard = screen.getByText('Golden Dawn').closest('[data-testid="horse-selection-card"]');
-      expect(within(goldenDawnCard!).getByTestId('eligibility-badge')).toHaveTextContent(/too young/i);
+      const goldenDawnCard = screen
+        .getByText('Golden Dawn')
+        .closest('[data-testid="horse-selection-card"]');
+      expect(within(goldenDawnCard!).getByTestId('eligibility-badge')).toHaveTextContent(
+        /too young/i
+      );
     });
 
     it('filters by age - too old (over 20 years)', async () => {
@@ -302,8 +312,12 @@ describe('HorseSelector', () => {
       });
 
       // Storm Cloud (age 22) should show "Too Old" badge
-      const stormCloudCard = screen.getByText('Storm Cloud').closest('[data-testid="horse-selection-card"]');
-      expect(within(stormCloudCard!).getByTestId('eligibility-badge')).toHaveTextContent(/too old/i);
+      const stormCloudCard = screen
+        .getByText('Storm Cloud')
+        .closest('[data-testid="horse-selection-card"]');
+      expect(within(stormCloudCard!).getByTestId('eligibility-badge')).toHaveTextContent(
+        /too old/i
+      );
     });
 
     it('filters by health status', async () => {
@@ -314,8 +328,12 @@ describe('HorseSelector', () => {
       });
 
       // Midnight Star (injured) should show "Injured" badge
-      const midnightStarCard = screen.getByText('Midnight Star').closest('[data-testid="horse-selection-card"]');
-      expect(within(midnightStarCard!).getByTestId('eligibility-badge')).toHaveTextContent(/injured/i);
+      const midnightStarCard = screen
+        .getByText('Midnight Star')
+        .closest('[data-testid="horse-selection-card"]');
+      expect(within(midnightStarCard!).getByTestId('eligibility-badge')).toHaveTextContent(
+        /injured/i
+      );
     });
 
     it('filters by already entered status', async () => {
@@ -336,8 +354,12 @@ describe('HorseSelector', () => {
       });
 
       // Thunder Strike should show "Already Entered" badge
-      const thunderStrikeCard = screen.getByText('Thunder Strike').closest('[data-testid="horse-selection-card"]');
-      expect(within(thunderStrikeCard!).getByTestId('eligibility-badge')).toHaveTextContent(/already entered/i);
+      const thunderStrikeCard = screen
+        .getByText('Thunder Strike')
+        .closest('[data-testid="horse-selection-card"]');
+      expect(within(thunderStrikeCard!).getByTestId('eligibility-badge')).toHaveTextContent(
+        /already entered/i
+      );
     });
 
     it('shows eligible count', async () => {
@@ -433,7 +455,9 @@ describe('HorseSelector', () => {
         expect(screen.queryByTestId('horse-selector-loading')).not.toBeInTheDocument();
       });
 
-      const thunderStrikeCard = screen.getByText('Thunder Strike').closest('[data-testid="horse-selection-card"]');
+      const thunderStrikeCard = screen
+        .getByText('Thunder Strike')
+        .closest('[data-testid="horse-selection-card"]');
       const checkbox = within(thunderStrikeCard!).getByRole('checkbox');
       await user.click(checkbox);
 
@@ -464,14 +488,20 @@ describe('HorseSelector', () => {
       });
 
       // Thunder Strike and Silver Moon should be checked
-      const thunderStrikeCard = screen.getByText('Thunder Strike').closest('[data-testid="horse-selection-card"]');
-      const silverMoonCard = screen.getByText('Silver Moon').closest('[data-testid="horse-selection-card"]');
+      const thunderStrikeCard = screen
+        .getByText('Thunder Strike')
+        .closest('[data-testid="horse-selection-card"]');
+      const silverMoonCard = screen
+        .getByText('Silver Moon')
+        .closest('[data-testid="horse-selection-card"]');
 
       expect(within(thunderStrikeCard!).getByRole('checkbox')).toBeChecked();
       expect(within(silverMoonCard!).getByRole('checkbox')).toBeChecked();
 
       // Golden Dawn should not be checked
-      const goldenDawnCard = screen.getByText('Golden Dawn').closest('[data-testid="horse-selection-card"]');
+      const goldenDawnCard = screen
+        .getByText('Golden Dawn')
+        .closest('[data-testid="horse-selection-card"]');
       expect(within(goldenDawnCard!).getByRole('checkbox')).not.toBeChecked();
     });
   });

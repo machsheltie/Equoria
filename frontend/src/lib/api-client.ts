@@ -434,7 +434,8 @@ interface Competition {
   discipline: string;
   date: string;
   location?: string;
-  prizePool?: number;
+  prizePool: number;
+  entryFee: number;
   maxEntries?: number;
   currentEntries?: number;
 }

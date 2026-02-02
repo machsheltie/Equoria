@@ -14,21 +14,9 @@
 
 import React, { useCallback, memo } from 'react';
 import { cn } from '@/lib/utils';
-import {
-  Tooltip,
-  TooltipContent,
-  TooltipProvider,
-  TooltipTrigger,
-} from '@/components/ui/tooltip';
+import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from '@/components/ui/tooltip';
 import { Checkbox } from '@/components/ui/checkbox';
-import {
-  CheckCircle,
-  Clock,
-  AlertTriangle,
-  XCircle,
-  AlertOctagon,
-  Bandage,
-} from 'lucide-react';
+import { CheckCircle, Clock, AlertTriangle, XCircle, AlertOctagon, Bandage } from 'lucide-react';
 
 /**
  * Horse data structure for selection
@@ -142,13 +130,7 @@ const statusConfigs: Record<EligibilityStatus, StatusConfig> = {
  * Displays the eligibility status with optional tooltip
  */
 const EligibilityBadge = memo(
-  ({
-    status,
-    reason,
-  }: {
-    status: EligibilityStatus;
-    reason?: string;
-  }) => {
+  ({ status, reason }: { status: EligibilityStatus; reason?: string }) => {
     const config = statusConfigs[status];
 
     const badgeContent = (
@@ -274,9 +256,7 @@ const HorseSelectionCard = memo(
           {/* Horse Name and Badge */}
           <div className="flex-1 min-w-0">
             <div className="flex items-center justify-between gap-2 mb-1">
-              <h3 className="text-base font-semibold text-slate-900 truncate">
-                {horse.name}
-              </h3>
+              <h3 className="text-base font-semibold text-slate-900 truncate">{horse.name}</h3>
               <EligibilityBadge status={eligibilityStatus} reason={ineligibilityReason} />
             </div>
 
@@ -296,9 +276,9 @@ const HorseSelectionCard = memo(
         {/* Stats Section */}
         <div data-testid="horse-stats" className="mb-3 space-y-1">
           {relevantStats.length > 0 ? (
-            relevantStats.slice(0, 3).map((stat) => (
-              <StatItem key={stat.name} name={stat.name} value={stat.value} />
-            ))
+            relevantStats
+              .slice(0, 3)
+              .map((stat) => <StatItem key={stat.name} name={stat.name} value={stat.value} />)
           ) : (
             <p className="text-sm text-slate-400 italic">No stats available</p>
           )}

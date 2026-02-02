@@ -97,8 +97,7 @@ const CompetitionCard = ({
   const { id, name, discipline, date, prizePool, entryFee, maxParticipants, currentParticipants } =
     competition;
 
-  const hasParticipantInfo =
-    maxParticipants !== undefined && currentParticipants !== undefined;
+  const hasParticipantInfo = maxParticipants !== undefined && currentParticipants !== undefined;
 
   const handleClick = () => {
     onClick(id);

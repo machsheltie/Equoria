@@ -56,9 +56,7 @@ const EmptyState = () => (
   <div className="py-12 text-center" data-testid="empty-state">
     <Trophy className="mx-auto h-12 w-12 text-slate-400 mb-4" aria-hidden="true" />
     <h3 className="text-lg font-medium text-slate-900 mb-2">No competitions found</h3>
-    <p className="text-sm text-slate-600">
-      Check back later for upcoming competitions to enter.
-    </p>
+    <p className="text-sm text-slate-600">Check back later for upcoming competitions to enter.</p>
   </div>
 );
 
@@ -93,9 +91,7 @@ const CompetitionList = ({
               {competitionCount} {competitionCount === 1 ? 'competition' : 'competitions'} available
             </p>
           )}
-          {isLoading && (
-            <p className="text-sm text-slate-600">Loading competitions...</p>
-          )}
+          {isLoading && <p className="text-sm text-slate-600">Loading competitions...</p>}
         </div>
 
         {/* Loading State */}

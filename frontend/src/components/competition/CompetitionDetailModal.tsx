@@ -176,8 +176,7 @@ const CompetitionDetailModal = memo(function CompetitionDetailModal({
   }
 
   const prizeDistribution = calculatePrizeDistribution(competition.prizePool);
-  const hasRequirements =
-    competition.entryRequirements && competition.entryRequirements.length > 0;
+  const hasRequirements = competition.entryRequirements && competition.entryRequirements.length > 0;
 
   const modalContent = (
     <div
@@ -344,7 +343,9 @@ const CompetitionDetailModal = memo(function CompetitionDetailModal({
                 ))}
               </ul>
             ) : (
-              <p className="text-sm text-gray-500">No specific requirements for this competition.</p>
+              <p className="text-sm text-gray-500">
+                No specific requirements for this competition.
+              </p>
             )}
           </div>
 

@@ -130,9 +130,7 @@ function buildFilterQuery(filters?: CompetitionFilters): string {
  *   dateRange: 'week'
  * });
  */
-export async function fetchCompetitions(
-  filters?: CompetitionFilters
-): Promise<CompetitionData[]> {
+export async function fetchCompetitions(filters?: CompetitionFilters): Promise<CompetitionData[]> {
   const queryString = buildFilterQuery(filters);
   return apiClient.get<CompetitionData[]>(`/api/competitions${queryString}`);
 }
@@ -146,9 +144,7 @@ export async function fetchCompetitions(
  * @example
  * const competition = await fetchCompetitionDetails(123);
  */
-export async function fetchCompetitionDetails(
-  id: number
-): Promise<CompetitionData> {
+export async function fetchCompetitionDetails(id: number): Promise<CompetitionData> {
   return apiClient.get<CompetitionData>(`/api/competitions/${id}`);
 }
 
@@ -173,9 +169,7 @@ export async function fetchHorseEligibility(
   competitionId: number,
   userId: string
 ): Promise<EligibleHorse[]> {
-  return apiClient.get<EligibleHorse[]>(
-    `/api/competitions/${competitionId}/eligibility/${userId}`
-  );
+  return apiClient.get<EligibleHorse[]>(`/api/competitions/${competitionId}/eligibility/${userId}`);
 }
 
 /**
@@ -204,19 +198,11 @@ export async function fetchHorseEligibility(
  *   console.log(`Entered ${result.entryIds.length} horses`);
  * }
  */
-export async function submitCompetitionEntry(
-  entry: EntryData
-): Promise<EntryResult> {
+export async function submitCompetitionEntry(entry: EntryData): Promise<EntryResult> {
   return apiClient.post<EntryResult>('/api/competitions/enter', entry);
 }
 
 /**
  * Export all types for external use
+ * Note: Types are already exported with their interface declarations above
  */
-export type {
-  CompetitionFilters as Filters,
-  CompetitionData as Competition,
-  EligibleHorse,
-  EntryData,
-  EntryResult,
-};

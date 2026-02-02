@@ -234,10 +234,7 @@ const EntryConfirmationModal = memo(function EntryConfirmationModal({
         {/* Header */}
         <div className="flex items-start justify-between p-6 border-b border-gray-200">
           <div className="flex-1 pr-4">
-            <h2
-              id="entry-confirmation-title"
-              className="text-xl font-bold text-gray-900"
-            >
+            <h2 id="entry-confirmation-title" className="text-xl font-bold text-gray-900">
               Confirm Entry
             </h2>
             <p id="entry-confirmation-description" className="text-sm text-gray-500 mt-1">
@@ -264,7 +261,10 @@ const EntryConfirmationModal = memo(function EntryConfirmationModal({
               className="flex items-start space-x-3 p-4 bg-green-50 border border-green-200 rounded-lg"
               data-testid="success-message"
             >
-              <CheckCircle className="h-6 w-6 text-green-500 flex-shrink-0 mt-0.5" aria-hidden="true" />
+              <CheckCircle
+                className="h-6 w-6 text-green-500 flex-shrink-0 mt-0.5"
+                aria-hidden="true"
+              />
               <div>
                 <p className="font-medium text-green-800">Entry Confirmed!</p>
                 <p className="text-sm text-green-700 mt-1">
@@ -298,10 +298,7 @@ const EntryConfirmationModal = memo(function EntryConfirmationModal({
             <div className="space-y-2">
               <div className="flex justify-between items-center">
                 <span className="text-sm text-gray-600">Name</span>
-                <span
-                  className="text-sm font-medium text-gray-900"
-                  data-testid="competition-name"
-                >
+                <span className="text-sm font-medium text-gray-900" data-testid="competition-name">
                   {competition.name}
                 </span>
               </div>
@@ -331,10 +328,7 @@ const EntryConfirmationModal = memo(function EntryConfirmationModal({
             <h3 className="text-sm font-semibold text-gray-900 mb-3">
               Selected Horses ({selectedHorses.length})
             </h3>
-            <div
-              className="space-y-2"
-              data-testid="selected-horses-list"
-            >
+            <div className="space-y-2" data-testid="selected-horses-list">
               {selectedHorses.length > 0 ? (
                 selectedHorses.map((horse) => (
                   <div
@@ -363,18 +357,12 @@ const EntryConfirmationModal = memo(function EntryConfirmationModal({
             data-testid="balance-section"
           >
             {/* Entry Fee */}
-            <div
-              className="flex justify-between items-center mb-3"
-              data-testid="entry-fee-section"
-            >
+            <div className="flex justify-between items-center mb-3" data-testid="entry-fee-section">
               <span className="text-sm font-medium text-gray-700 flex items-center">
                 <DollarSign className="h-4 w-4 mr-1" aria-hidden="true" />
                 Entry Fee
               </span>
-              <span
-                className="text-lg font-bold text-gray-900"
-                data-testid="entry-fee"
-              >
+              <span className="text-lg font-bold text-gray-900" data-testid="entry-fee">
                 {formatEntryFee(entryFee)}
               </span>
             </div>
@@ -383,10 +371,7 @@ const EntryConfirmationModal = memo(function EntryConfirmationModal({
               {/* Current Balance */}
               <div className="flex justify-between items-center">
                 <span className="text-sm text-gray-600">Current Balance</span>
-                <span
-                  className="text-sm font-medium text-gray-900"
-                  data-testid="current-balance"
-                >
+                <span className="text-sm font-medium text-gray-900" data-testid="current-balance">
                   {formatCurrency(userBalance)}
                 </span>
               </div>
@@ -420,7 +405,10 @@ const EntryConfirmationModal = memo(function EntryConfirmationModal({
                   className="flex items-start mt-2 p-2 bg-red-100 rounded"
                   data-testid="insufficient-balance-warning"
                 >
-                  <AlertTriangle className="h-4 w-4 text-red-600 mr-2 mt-0.5 flex-shrink-0" aria-hidden="true" />
+                  <AlertTriangle
+                    className="h-4 w-4 text-red-600 mr-2 mt-0.5 flex-shrink-0"
+                    aria-hidden="true"
+                  />
                   <span className="text-sm text-red-700">
                     Insufficient balance. You need {formatCurrency(entryFee - userBalance)} more to
                     enter this competition.

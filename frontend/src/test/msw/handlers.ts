@@ -379,7 +379,136 @@ export const handlers = [
     })
   ),
 
-  // Competition System
+  // Competition System - Filtered List
+  http.get(`${base}/api/competitions`, ({ request }) => {
+    const url = new URL(request.url);
+    const discipline = url.searchParams.get('discipline');
+
+    const competitions = [
+      {
+        id: 1,
+        name: 'Spring Dressage Championship',
+        discipline: 'dressage',
+        date: '2026-03-15T10:00:00Z',
+        entryFee: 50,
+        maxEntries: 20,
+        currentEntries: 12,
+        status: 'open',
+        prizePool: 5000,
+        location: 'Central Arena',
+      },
+      {
+        id: 2,
+        name: 'Weekly Jumping Series',
+        discipline: 'jumping',
+        date: '2026-02-10T14:00:00Z',
+        entryFee: 25,
+        maxEntries: 30,
+        currentEntries: 28,
+        status: 'open',
+        prizePool: 2500,
+      },
+      {
+        id: 3,
+        name: 'Free Training Show',
+        discipline: 'eventing',
+        date: '2026-02-05T09:00:00Z',
+        entryFee: 0,
+        maxEntries: 50,
+        currentEntries: 15,
+        status: 'open',
+      },
+    ];
+
+    const filtered = discipline
+      ? competitions.filter((c) => c.discipline === discipline)
+      : competitions;
+
+    return HttpResponse.json({
+      success: true,
+      data: filtered,
+    });
+  }),
+
+  // Competition System - Single Competition Details
+  http.get(`${base}/api/competitions/:id`, ({ params }) => {
+    const id = Number(params.id);
+    if (id === 999) {
+      return HttpResponse.json(
+        { status: 'error', message: 'Competition not found' },
+        { status: 404 }
+      );
+    }
+    return HttpResponse.json({
+      success: true,
+      data: {
+        id,
+        name: 'Spring Dressage Championship',
+        description: 'Annual spring dressage competition',
+        discipline: 'dressage',
+        date: '2026-03-15T10:00:00Z',
+        location: 'Central Arena',
+        prizePool: 5000,
+        entryFee: 50,
+        maxEntries: 20,
+        currentEntries: 12,
+        status: 'open',
+        requirements: {
+          minAge: 3,
+          maxAge: 15,
+          minLevel: 5,
+          requiredTraits: ['balanced', 'focused'],
+        },
+      },
+    });
+  }),
+
+  // Competition System - Horse Eligibility
+  http.get(`${base}/api/competitions/:compId/eligibility/:userId`, ({ params }) => {
+    return HttpResponse.json({
+      success: true,
+      data: [
+        {
+          id: 1,
+          name: 'Thunder',
+          breed: 'Thoroughbred',
+          age: 5,
+          level: 8,
+          healthStatus: 'healthy',
+          isEligible: true,
+          eligibilityReasons: [],
+          alreadyEntered: false,
+        },
+        {
+          id: 2,
+          name: 'Storm',
+          breed: 'Arabian',
+          age: 2,
+          level: 3,
+          healthStatus: 'healthy',
+          isEligible: false,
+          eligibilityReasons: ['Horse does not meet minimum age requirement (3 years)'],
+          alreadyEntered: false,
+        },
+      ],
+    });
+  }),
+
+  // Competition System - Enter Competition
+  http.post(`${base}/api/competitions/enter`, async ({ request }) => {
+    const body = (await request.json()) as { competitionId: number; horseIds: number[] };
+    return HttpResponse.json({
+      success: true,
+      data: {
+        success: true,
+        entryIds: body.horseIds.map((_, i) => 100 + i),
+        totalCost: body.horseIds.length * 50,
+        message: `Successfully entered ${body.horseIds.length} horses into the competition`,
+      },
+    });
+  }),
+
+  // Competition System - Entries (legacy)
   http.get(`${base}/api/competitions/:id/entries`, () =>
     HttpResponse.json({
       success: true,

@@ -242,14 +242,13 @@ describe('CompetitionDetailModal', () => {
       };
 
       render(
-        <CompetitionDetailModal
-          {...defaultProps}
-          competition={competitionWithMissingFields}
-        />
+        <CompetitionDetailModal {...defaultProps} competition={competitionWithMissingFields} />
       );
 
       // Should handle missing requirements gracefully
-      expect(screen.getByTestId('entry-requirements')).toHaveTextContent(/no specific requirements/i);
+      expect(screen.getByTestId('entry-requirements')).toHaveTextContent(
+        /no specific requirements/i
+      );
     });
   });
 

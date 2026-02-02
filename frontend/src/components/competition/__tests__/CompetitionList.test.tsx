@@ -140,30 +140,22 @@ describe('CompetitionList', () => {
 
   describe('Loading State', () => {
     it('shows loading skeletons when isLoading is true', () => {
-      render(
-        <CompetitionList {...defaultProps} isLoading={true} />
-      );
+      render(<CompetitionList {...defaultProps} isLoading={true} />);
       expect(screen.getAllByTestId('competition-card-skeleton')).toHaveLength(6);
     });
 
     it('does not show competition cards when loading', () => {
-      render(
-        <CompetitionList {...defaultProps} isLoading={true} />
-      );
+      render(<CompetitionList {...defaultProps} isLoading={true} />);
       expect(screen.queryByTestId('competition-card')).not.toBeInTheDocument();
     });
 
     it('shows loading message', () => {
-      render(
-        <CompetitionList {...defaultProps} isLoading={true} />
-      );
+      render(<CompetitionList {...defaultProps} isLoading={true} />);
       expect(screen.getByText(/loading competitions/i)).toBeInTheDocument();
     });
 
     it('skeleton cards have animation', () => {
-      render(
-        <CompetitionList {...defaultProps} isLoading={true} />
-      );
+      render(<CompetitionList {...defaultProps} isLoading={true} />);
       const skeletons = screen.getAllByTestId('competition-card-skeleton');
       skeletons.forEach((skeleton) => {
         expect(skeleton).toHaveClass('animate-pulse');

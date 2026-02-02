@@ -6,3 +6,7 @@ export * from './useHorseXP';
 export * from './useHorseAge';
 export * from './useHorseStats';
 export * from './useBreedingPrediction';
+export * from './useCompetitionsFiltered';
+export * from './useCompetitionDetails';
+export * from './useHorseEligibility';
+export * from './useEnterCompetition';

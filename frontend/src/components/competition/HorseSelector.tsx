@@ -74,7 +74,10 @@ function calculateEligibility(
 ): { status: EligibilityStatus; reason?: string } {
   // Check if already entered
   if (alreadyEnteredIds.has(horse.id)) {
-    return { status: 'already-entered', reason: 'This horse is already entered in this competition' };
+    return {
+      status: 'already-entered',
+      reason: 'This horse is already entered in this competition',
+    };
   }
 
   // Check health status
@@ -226,9 +229,7 @@ const HorseSelector = memo(
 
         try {
           // Fetch user's horses
-          const horsesResponse = await fetch(
-            'http://localhost:3001/api/horses/user/eligible'
-          );
+          const horsesResponse = await fetch('http://localhost:3001/api/horses/user/eligible');
 
           if (!horsesResponse.ok) {
             throw new Error('Failed to fetch horses');
@@ -300,7 +301,8 @@ const HorseSelector = memo(
     }, [sortedHorses]);
 
     // Check if max selections reached
-    const isMaxSelectionsReached = maxSelections !== undefined && selectedHorses.length >= maxSelections;
+    const isMaxSelectionsReached =
+      maxSelections !== undefined && selectedHorses.length >= maxSelections;
 
     // Handle horse toggle
     const handleToggle = useCallback(

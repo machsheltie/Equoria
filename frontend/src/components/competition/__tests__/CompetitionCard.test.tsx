@@ -14,10 +14,7 @@
 import { describe, it, expect, vi, beforeEach } from 'vitest';
 import { render, screen } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
-import CompetitionCard, {
-  type Competition,
-  type CompetitionCardProps,
-} from '../CompetitionCard';
+import CompetitionCard, { type Competition, type CompetitionCardProps } from '../CompetitionCard';
 
 describe('CompetitionCard', () => {
   const mockOnClick = vi.fn();
