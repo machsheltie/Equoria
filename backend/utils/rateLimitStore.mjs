@@ -71,7 +71,7 @@ export class RateLimitStore {
    */
   get(key) {
     const entry = this.data.get(key);
-    if (!entry) return null;
+    if (!entry) { return null; }
 
     const now = Date.now();
 

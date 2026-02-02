@@ -49,7 +49,7 @@ beforeAll(async () => {
 });
 
 const ${destructure} = () => moduleExports;`;
-    }
+    },
   );
 
   if (newContent !== content) {

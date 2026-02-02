@@ -149,7 +149,7 @@ const jestPath = path.join(
   'node_modules',
   'jest',
   'bin',
-  'jest.js'
+  'jest.js',
 );
 
 const jestCommand = 'node';

@@ -31,7 +31,7 @@ const runTest = (pattern, description) => {
         cwd: join(__dirname, '..'),
         encoding: 'utf8',
         stdio: 'pipe',
-      }
+      },
     );
 
     // Parse results
@@ -50,7 +50,7 @@ const runTest = (pattern, description) => {
       console.log(`❌ Results: ${match[1]}`);
       return match[1];
     }
-    console.log(`❌ Test execution error`);
+    console.log('❌ Test execution error');
     return 'Error';
   }
 };
@@ -61,7 +61,7 @@ const results = {
   cookies: runTest('auth-cookies', 'Auth Cookie Tests (auth-cookies.test.mjs)'),
 };
 
-console.log('\n' + '='.repeat(60));
+console.log(`\n${'='.repeat(60)}`);
 console.log('📊 VERIFICATION SUMMARY\n');
 
 console.log('Test Suite Results:');
@@ -69,7 +69,7 @@ console.log(`  Integration Tests: ${results.integration}`);
 console.log(`  Unit Tests:        ${results.unit}`);
 console.log(`  Auth Cookie Tests: ${results.cookies}`);
 
-console.log('\n' + '='.repeat(60));
+console.log(`\n${'='.repeat(60)}`);
 console.log('✅ TDD RED PHASE STATUS\n');
 
 console.log('Expected State:');
@@ -89,7 +89,7 @@ console.log('  3. Update routes/authRoutes.mjs (10 min)');
 console.log('  4. Update controllers/authController.mjs (15 min)');
 console.log('  5. Verify all tests pass (GREEN phase)');
 
-console.log('\n' + '='.repeat(60));
+console.log(`\n${'='.repeat(60)}`);
 console.log('🎯 To start implementation:\n');
 console.log('  cd backend');
 console.log('  # Create utils/rateLimitStore.mjs');

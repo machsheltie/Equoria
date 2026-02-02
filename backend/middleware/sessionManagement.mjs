@@ -108,7 +108,7 @@ export const trackSessionActivity = async (req, res, next) => {
       const storedToken = await prisma.refreshToken.findFirst({
         where: {
           token: refreshToken,
-          userId: userId,
+          userId,
         },
       });
 
@@ -123,8 +123,8 @@ export const trackSessionActivity = async (req, res, next) => {
         if (inactiveDuration > SESSION_TIMEOUT_MS) {
           logger.warn('[Session] Session expired due to inactivity', {
             userId,
-            inactiveDuration: Math.floor(inactiveDuration / 1000) + 's',
-            threshold: Math.floor(SESSION_TIMEOUT_MS / 1000) + 's',
+            inactiveDuration: `${Math.floor(inactiveDuration / 1000)}s`,
+            threshold: `${Math.floor(SESSION_TIMEOUT_MS / 1000)}s`,
           });
 
           // Delete expired session

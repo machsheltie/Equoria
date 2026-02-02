@@ -43,7 +43,7 @@ function getExportsFromFile(filePath) {
     while ((match = EXPORT_NAMED_PATTERN.exec(content)) !== null) {
       const names = match[1].split(',').map(n => n.trim().split(' as ')[0]);
       names.forEach(n => {
-        if (n) exports.add(n);
+        if (n) { exports.add(n); }
       });
     }
 
@@ -92,7 +92,7 @@ function resolveImportPath(fromPath, relativeTo) {
 
   // Try with .mjs extension
   if (!fs.existsSync(resolvedPath) && !resolvedPath.endsWith('.mjs')) {
-    const withMjs = resolvedPath + '.mjs';
+    const withMjs = `${resolvedPath}.mjs`;
     if (fs.existsSync(withMjs)) {
       resolvedPath = withMjs;
     }
@@ -100,7 +100,7 @@ function resolveImportPath(fromPath, relativeTo) {
 
   // Try with .js extension
   if (!fs.existsSync(resolvedPath) && !resolvedPath.endsWith('.js')) {
-    const withJs = resolvedPath + '.js';
+    const withJs = `${resolvedPath}.js`;
     if (fs.existsSync(withJs)) {
       resolvedPath = withJs;
     }
@@ -123,7 +123,7 @@ function main() {
     try {
       const entries = fs.readdirSync(dir, { withFileTypes: true });
       entries.forEach(entry => {
-        if (excludeDirs.includes(entry.name)) return;
+        if (excludeDirs.includes(entry.name)) { return; }
 
         const fullPath = path.join(dir, entry.name);
         if (entry.isDirectory()) {
@@ -165,7 +165,7 @@ function main() {
       }
 
       const exportedNames = exportMap[resolvedPath];
-      if (!exportedNames) return;
+      if (!exportedNames) { return; }
 
       // Check each imported name
       names.forEach(name => {

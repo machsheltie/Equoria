@@ -56,7 +56,7 @@ export { getRedisClient };
  */
 export function createAuthRateLimiter(options = {}) {
   logger.warn(
-    '[AuthRateLimiter] createAuthRateLimiter() is deprecated, using Redis-backed limiter'
+    '[AuthRateLimiter] createAuthRateLimiter() is deprecated, using Redis-backed limiter',
   );
   return authRateLimiter;
 }
@@ -71,7 +71,7 @@ export function createAuthRateLimiter(options = {}) {
 export function resetAuthRateLimit(ip) {
   logger.warn(
     '[AuthRateLimiter] resetAuthRateLimit() is deprecated with Redis',
-    { ip }
+    { ip },
   );
   // Redis keys auto-expire, no manual reset needed
 }

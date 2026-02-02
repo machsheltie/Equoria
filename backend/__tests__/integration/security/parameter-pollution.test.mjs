@@ -84,7 +84,7 @@ describe('Parameter Pollution Attack Integration Tests', () => {
 
     it('should reject duplicate id parameters in different positions', async () => {
       const response = await request(app)
-        .get(`/api/horses?id=1&id=2&id=3`)
+        .get('/api/horses?id=1&id=2&id=3')
         .set('Authorization', `Bearer ${validToken}`)
         .expect(400);
 
@@ -301,7 +301,7 @@ describe('Parameter Pollution Attack Integration Tests', () => {
   describe('Query String Pollution', () => {
     it('should reject SQL injection in query parameters', async () => {
       const response = await request(app)
-        .get(`/api/horses?breed=Thoroughbred' OR '1'='1`)
+        .get('/api/horses?breed=Thoroughbred\' OR \'1\'=\'1')
         .set('Authorization', `Bearer ${validToken}`)
         .expect(400);
 

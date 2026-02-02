@@ -358,7 +358,7 @@ describe('Token Validation Unit Tests', () => {
   describe('Security Edge Cases', () => {
     it('should reject token with modified payload', () => {
       const user = createMockUser({ id: 1 });
-      let token = createMockToken(user.id);
+      const token = createMockToken(user.id);
 
       // Attempt to modify payload by changing userId in token string
       // This will invalidate the signature

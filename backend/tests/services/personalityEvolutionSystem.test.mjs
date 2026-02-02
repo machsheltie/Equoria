@@ -69,7 +69,7 @@ describe('Personality Evolution System', () => {
       // Create test groom
       testGroom = await tx.groom.create({
         data: {
-          userId: testUser.id ,
+          userId: testUser.id,
           name: 'Evolution Test Groom',
           speciality: 'foal_care',
           personality: 'calm',
@@ -85,8 +85,8 @@ describe('Personality Evolution System', () => {
       // Create test horse
       testHorse = await tx.horse.create({
         data: {
-          userId: testUser.id ,
-          breedId: testBreed.id ,
+          userId: testUser.id,
+          breedId: testBreed.id,
           name: 'Evolution Test Horse',
           sex: 'Filly',
           dateOfBirth: threeYearsAgo,
@@ -175,7 +175,7 @@ describe('Personality Evolution System', () => {
       // Create new groom with minimal interactions
       const newGroom = await prisma.groom.create({
         data: {
-          userId: testUser.id ,
+          userId: testUser.id,
           name: 'Minimal Interaction Groom',
           speciality: 'general_grooming',
           personality: 'energetic',
@@ -248,8 +248,8 @@ describe('Personality Evolution System', () => {
       // Create new horse for mixed care testing
       const mixedCareHorse = await prisma.horse.create({
         data: {
-          userId: testUser.id ,
-          breedId: testBreed.id ,
+          userId: testUser.id,
+          breedId: testBreed.id,
           name: 'Mixed Care Horse',
           sex: 'Colt',
           dateOfBirth: twoAndHalfYearsAgo,

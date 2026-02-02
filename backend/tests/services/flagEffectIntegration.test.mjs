@@ -49,7 +49,7 @@ describe('Flag Effect Integration', () => {
           name: `Test Horse Positive ${Date.now()}`,
           sex: 'filly',
           dateOfBirth: new Date(Date.now() - 180 * 24 * 60 * 60 * 1000), // 6 months old
-          userId: testUser.id ,
+          userId: testUser.id,
           bondScore: 30,
           stressLevel: 2,
           epigeneticFlags: ['brave', 'confident', 'affectionate'],
@@ -61,7 +61,7 @@ describe('Flag Effect Integration', () => {
           name: `Test Horse Negative ${Date.now()}`,
           sex: 'colt',
           dateOfBirth: new Date(Date.now() - 180 * 24 * 60 * 60 * 1000), // 6 months old
-          userId: testUser.id ,
+          userId: testUser.id,
           bondScore: 15,
           stressLevel: 8,
           epigeneticFlags: ['fearful', 'insecure', 'reactive'],
@@ -73,7 +73,7 @@ describe('Flag Effect Integration', () => {
           name: `Test Horse Mixed ${Date.now()}`,
           sex: 'gelding',
           dateOfBirth: new Date(Date.now() - 180 * 24 * 60 * 60 * 1000), // 6 months old
-          userId: testUser.id ,
+          userId: testUser.id,
           bondScore: 22,
           stressLevel: 5,
           epigeneticFlags: ['brave', 'social', 'reactive'],
@@ -85,7 +85,7 @@ describe('Flag Effect Integration', () => {
           name: `Test Horse Control ${Date.now()}`,
           sex: 'mare',
           dateOfBirth: new Date(Date.now() - 180 * 24 * 60 * 60 * 1000), // 6 months old
-          userId: testUser.id ,
+          userId: testUser.id,
           bondScore: 25,
           stressLevel: 4,
           epigeneticFlags: [],

@@ -139,7 +139,7 @@ export function mockRequest(overrides = {}) {
     ip: '127.0.0.1',
     originalUrl: '/test',
     method: 'GET',
-    get: function (header) {
+    get(header) {
       return this.headers[header.toLowerCase()];
     },
     ...overrides,

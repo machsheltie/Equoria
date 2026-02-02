@@ -204,14 +204,14 @@ export async function sendVerificationEmail(email, token, user = {}) {
       heading,
       bodyHtml,
       'Verify Email Address',
-      verificationUrl
+      verificationUrl,
     );
 
     const plainTextEmail = generatePlainTextEmail(
       heading,
       bodyText,
       'Verify your email',
-      verificationUrl
+      verificationUrl,
     );
 
     // In development/testing, log email instead of sending
@@ -232,7 +232,7 @@ export async function sendVerificationEmail(email, token, user = {}) {
 
       return {
         success: true,
-        messageId: 'dev-mode-' + Date.now(),
+        messageId: `dev-mode-${Date.now()}`,
         preview: verificationUrl,
       };
     }
@@ -331,14 +331,14 @@ export async function sendWelcomeEmail(email, user = {}) {
       heading,
       bodyHtml,
       'Go to Dashboard',
-      dashboardUrl
+      dashboardUrl,
     );
 
     const plainTextEmail = generatePlainTextEmail(
       heading,
       bodyText,
       'Go to your dashboard',
-      dashboardUrl
+      dashboardUrl,
     );
 
     // In development/testing, log email instead of sending
@@ -350,7 +350,7 @@ export async function sendWelcomeEmail(email, user = {}) {
 
       return {
         success: true,
-        messageId: 'dev-mode-welcome-' + Date.now(),
+        messageId: `dev-mode-welcome-${Date.now()}`,
       };
     }
 

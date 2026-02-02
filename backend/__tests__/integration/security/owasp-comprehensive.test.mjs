@@ -301,20 +301,20 @@ describe('🔒 OWASP Top 10 - Comprehensive Security Tests', () => {
       it('should reject unsigned JWT tokens', async () => {
         // Create unsigned token (algorithm: none)
         const unsignedToken =
-          Buffer.from(
+          `${Buffer.from(
             JSON.stringify({
               alg: 'none',
               typ: 'JWT',
             }),
-          ).toString('base64') +
-          '.' +
-          Buffer.from(
-            JSON.stringify({
-              userId: testUser.id,
-              role: 'admin',
-            }),
-          ).toString('base64') +
-          '.';
+          ).toString('base64')
+          }.${
+            Buffer.from(
+              JSON.stringify({
+                userId: testUser.id,
+                role: 'admin',
+              }),
+            ).toString('base64')
+          }.`;
 
         const response = await request(app).get('/api/users/me').set('Authorization', `Bearer ${unsignedToken}`);
 

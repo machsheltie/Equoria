@@ -108,7 +108,7 @@ describe('Groom Progression System', () => {
           personality: 'gentle',
           groomPersonality: 'calm',
           sessionRate: 25.0,
-          userId: testUser.id ,
+          userId: testUser.id,
         },
       });
 
@@ -117,8 +117,8 @@ describe('Groom Progression System', () => {
           name: 'Test Foal',
           sex: 'Filly',
           dateOfBirth: new Date(Date.now() - 365 * 24 * 60 * 60 * 1000), // 1 year old
-          userId: testUser.id ,
-          breedId: testBreed.id ,
+          userId: testUser.id,
+          breedId: testBreed.id,
         },
       });
     });

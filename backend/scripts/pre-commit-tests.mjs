@@ -153,14 +153,14 @@ async function runTests(testSuites) {
     });
 
     // Print output
-    if (stdout) console.log(stdout);
-    if (stderr) console.error(stderr);
+    if (stdout) { console.log(stdout); }
+    if (stderr) { console.error(stderr); }
 
     return true;
   } catch (error) {
     // Jest exits with non-zero code on test failure
-    if (error.stdout) console.log(error.stdout);
-    if (error.stderr) console.error(error.stderr);
+    if (error.stdout) { console.log(error.stdout); }
+    if (error.stderr) { console.error(error.stderr); }
     return false;
   }
 }

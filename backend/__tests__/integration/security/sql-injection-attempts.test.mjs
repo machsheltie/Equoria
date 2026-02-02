@@ -108,7 +108,7 @@ describe('SQL Injection Attempts Integration Tests', () => {
   describe('Classic SQL Injection in ID Parameters', () => {
     it('should reject SQL injection in horse ID', async () => {
       const response = await request(app)
-        .get(`/api/horses/1' OR '1'='1`)
+        .get('/api/horses/1\' OR \'1\'=\'1')
         .set('Authorization', `Bearer ${validToken}`)
         .expect(res => expect([400, 403, 404]).toContain(res.status));
 
@@ -117,7 +117,7 @@ describe('SQL Injection Attempts Integration Tests', () => {
 
     it('should reject SQL injection with comment syntax', async () => {
       const response = await request(app)
-        .get(`/api/horses/1; DROP TABLE horses; --`)
+        .get('/api/horses/1; DROP TABLE horses; --')
         .set('Authorization', `Bearer ${validToken}`)
         .expect(res => expect([400, 403, 404]).toContain(res.status));
 
@@ -130,7 +130,7 @@ describe('SQL Injection Attempts Integration Tests', () => {
 
     it('should reject SQL injection with union select', async () => {
       const response = await request(app)
-        .get(`/api/horses/1 UNION SELECT * FROM users`)
+        .get('/api/horses/1 UNION SELECT * FROM users')
         .set('Authorization', `Bearer ${validToken}`)
         .expect(res => expect([400, 403, 404]).toContain(res.status));
 
@@ -139,7 +139,7 @@ describe('SQL Injection Attempts Integration Tests', () => {
 
     it('should reject SQL injection with nested queries', async () => {
       const response = await request(app)
-        .get(`/api/horses/1 AND (SELECT COUNT(*) FROM users) > 0`)
+        .get('/api/horses/1 AND (SELECT COUNT(*) FROM users) > 0')
         .set('Authorization', `Bearer ${validToken}`)
         .expect(res => expect([400, 403, 404]).toContain(res.status));
 
@@ -148,7 +148,7 @@ describe('SQL Injection Attempts Integration Tests', () => {
 
     it('should reject SQL injection with hex encoding', async () => {
       const response = await request(app)
-        .get(`/api/horses/0x31`)
+        .get('/api/horses/0x31')
         .set('Authorization', `Bearer ${validToken}`)
         .expect(res => expect([400, 403, 404]).toContain(res.status));
 
@@ -170,7 +170,7 @@ describe('SQL Injection Attempts Integration Tests', () => {
       const startTime = Date.now();
 
       const response = await request(app)
-        .get(`/api/horses/1; WAITFOR DELAY '00:00:05'; --`)
+        .get('/api/horses/1; WAITFOR DELAY \'00:00:05\'; --')
         .set('Authorization', `Bearer ${validToken}`)
         .expect(res => expect([400, 403, 404]).toContain(res.status));
 
@@ -185,7 +185,7 @@ describe('SQL Injection Attempts Integration Tests', () => {
       const startTime = Date.now();
 
       const response = await request(app)
-        .get(`/api/horses/1; SELECT pg_sleep(5); --`)
+        .get('/api/horses/1; SELECT pg_sleep(5); --')
         .set('Authorization', `Bearer ${validToken}`)
         .expect(res => expect([400, 403, 404]).toContain(res.status));
 
@@ -197,7 +197,7 @@ describe('SQL Injection Attempts Integration Tests', () => {
 
     it('should reject error-based blind injection', async () => {
       const response = await request(app)
-        .get(`/api/horses/1' AND (SELECT 1/0)`)
+        .get('/api/horses/1\' AND (SELECT 1/0)')
         .set('Authorization', `Bearer ${validToken}`)
         .expect(res => expect([400, 403, 404]).toContain(res.status));
 
@@ -212,7 +212,7 @@ describe('SQL Injection Attempts Integration Tests', () => {
   describe('Union-Based SQL Injection', () => {
     it('should reject UNION SELECT attacks', async () => {
       const response = await request(app)
-        .get(`/api/horses/1 UNION SELECT id,email,password,NULL,NULL,NULL FROM users`)
+        .get('/api/horses/1 UNION SELECT id,email,password,NULL,NULL,NULL FROM users')
         .set('Authorization', `Bearer ${validToken}`)
         .expect(res => expect([400, 403, 404]).toContain(res.status));
 
@@ -221,7 +221,7 @@ describe('SQL Injection Attempts Integration Tests', () => {
 
     it('should reject UNION ALL attacks', async () => {
       const response = await request(app)
-        .get(`/api/horses/1 UNION ALL SELECT * FROM users WHERE 1=1`)
+        .get('/api/horses/1 UNION ALL SELECT * FROM users WHERE 1=1')
         .set('Authorization', `Bearer ${validToken}`)
         .expect(res => expect([400, 403, 404]).toContain(res.status));
 
@@ -230,7 +230,7 @@ describe('SQL Injection Attempts Integration Tests', () => {
 
     it('should reject UNION with ORDER BY column enumeration', async () => {
       const response = await request(app)
-        .get(`/api/horses/1 ORDER BY 100`)
+        .get('/api/horses/1 ORDER BY 100')
         .set('Authorization', `Bearer ${validToken}`)
         .expect(res => expect([400, 403, 404]).toContain(res.status));
 
@@ -239,7 +239,7 @@ describe('SQL Injection Attempts Integration Tests', () => {
 
     it('should reject UNION with NULL padding', async () => {
       const response = await request(app)
-        .get(`/api/horses/1 UNION SELECT NULL,NULL,NULL,NULL,NULL`)
+        .get('/api/horses/1 UNION SELECT NULL,NULL,NULL,NULL,NULL')
         .set('Authorization', `Bearer ${validToken}`)
         .expect(res => expect([400, 403, 404]).toContain(res.status));
 
@@ -250,7 +250,7 @@ describe('SQL Injection Attempts Integration Tests', () => {
   describe('Stacked Queries', () => {
     it('should reject semicolon-separated queries', async () => {
       const response = await request(app)
-        .get(`/api/horses/1; DELETE FROM horses WHERE id > 0`)
+        .get('/api/horses/1; DELETE FROM horses WHERE id > 0')
         .set('Authorization', `Bearer ${validToken}`)
         .expect(res => expect([400, 403, 404]).toContain(res.status));
 
@@ -276,7 +276,7 @@ describe('SQL Injection Attempts Integration Tests', () => {
 
     it('should reject batch operations via stacking', async () => {
       const response = await request(app)
-        .get(`/api/horses/1; INSERT INTO horses (name, userId) VALUES ('Hacked', 1)`)
+        .get('/api/horses/1; INSERT INTO horses (name, userId) VALUES (\'Hacked\', 1)')
         .set('Authorization', `Bearer ${validToken}`)
         .expect(res => expect([400, 403, 404]).toContain(res.status));
 
@@ -287,7 +287,7 @@ describe('SQL Injection Attempts Integration Tests', () => {
   describe('SQL Injection in Search/Filter Parameters', () => {
     it('should reject SQL injection in breed filter', async () => {
       const response = await request(app)
-        .get(`/api/horses?breed=Thoroughbred' OR '1'='1`)
+        .get('/api/horses?breed=Thoroughbred\' OR \'1\'=\'1')
         .set('Authorization', `Bearer ${validToken}`)
         .expect(res => expect([400, 403, 404]).toContain(res.status));
 
@@ -296,7 +296,7 @@ describe('SQL Injection Attempts Integration Tests', () => {
 
     it('should reject SQL injection in name search', async () => {
       const response = await request(app)
-        .get(`/api/horses?name=Test'; DROP TABLE horses; --`)
+        .get('/api/horses?name=Test\'; DROP TABLE horses; --')
         .set('Authorization', `Bearer ${validToken}`);
 
       expectBlocked(response);
@@ -308,7 +308,7 @@ describe('SQL Injection Attempts Integration Tests', () => {
 
     it('should reject SQL injection in sort parameter', async () => {
       const response = await request(app)
-        .get(`/api/horses?sort=name; UPDATE horses SET name='Hacked'`)
+        .get('/api/horses?sort=name; UPDATE horses SET name=\'Hacked\'')
         .set('Authorization', `Bearer ${validToken}`);
 
       expectBlocked(response);
@@ -316,7 +316,7 @@ describe('SQL Injection Attempts Integration Tests', () => {
 
     it('should reject SQL injection in LIKE wildcards', async () => {
       const response = await request(app)
-        .get(`/api/horses?name=%' OR '1'='1`)
+        .get('/api/horses?name=%\' OR \'1\'=\'1')
         .set('Authorization', `Bearer ${validToken}`);
 
       expectBlocked(response);
@@ -324,7 +324,7 @@ describe('SQL Injection Attempts Integration Tests', () => {
 
     it('should reject SQL injection in IN clause', async () => {
       const response = await request(app)
-        .get(`/api/horses?ids=1,2,3) OR 1=1 --`)
+        .get('/api/horses?ids=1,2,3) OR 1=1 --')
         .set('Authorization', `Bearer ${validToken}`);
 
       expectBlocked(response);
@@ -334,7 +334,7 @@ describe('SQL Injection Attempts Integration Tests', () => {
   describe('SQL Injection in JSON/JSONB Queries', () => {
     it('should reject SQL injection in JSONB path', async () => {
       const response = await request(app)
-        .get(`/api/horses?traits.strength=50'; DROP TABLE horses; --`)
+        .get('/api/horses?traits.strength=50\'; DROP TABLE horses; --')
         .set('Authorization', `Bearer ${validToken}`);
 
       expectBlocked(response);
@@ -342,7 +342,7 @@ describe('SQL Injection Attempts Integration Tests', () => {
 
     it('should reject SQL injection in JSON operators', async () => {
       const response = await request(app)
-        .get(`/api/horses?traits->>'color'='Bay' OR '1'='1`)
+        .get('/api/horses?traits->>\'color\'=\'Bay\' OR \'1\'=\'1')
         .set('Authorization', `Bearer ${validToken}`)
         .expect(res => expect([400, 403, 404]).toContain(res.status));
 
@@ -351,7 +351,7 @@ describe('SQL Injection Attempts Integration Tests', () => {
 
     it('should reject SQL injection in JSON array queries', async () => {
       const response = await request(app)
-        .get(`/api/horses?achievements[0]=Win'; DELETE FROM horses; --`)
+        .get('/api/horses?achievements[0]=Win\'; DELETE FROM horses; --')
         .set('Authorization', `Bearer ${validToken}`);
 
       expectBlocked(response);
@@ -416,7 +416,7 @@ describe('SQL Injection Attempts Integration Tests', () => {
 
     it('should reject Prisma findRaw injection attempts', async () => {
       const response = await request(app)
-        .get(`/api/horses?raw={"sql":"SELECT * FROM users"}`)
+        .get('/api/horses?raw={"sql":"SELECT * FROM users"}')
         .set('Authorization', `Bearer ${validToken}`);
 
       expectBlocked(response);
@@ -434,7 +434,7 @@ describe('SQL Injection Attempts Integration Tests', () => {
   describe('PostgreSQL-Specific Injection Attacks', () => {
     it('should reject PostgreSQL function calls', async () => {
       const response = await request(app)
-        .get(`/api/horses/1; SELECT version()`)
+        .get('/api/horses/1; SELECT version()')
         .set('Authorization', `Bearer ${validToken}`)
         .expect(res => expect([400, 403, 404]).toContain(res.status));
 
@@ -445,7 +445,7 @@ describe('SQL Injection Attempts Integration Tests', () => {
 
     it('should reject PostgreSQL COPY command', async () => {
       const response = await request(app)
-        .get(`/api/horses/1; COPY users TO '/tmp/users.csv'`)
+        .get('/api/horses/1; COPY users TO \'/tmp/users.csv\'')
         .set('Authorization', `Bearer ${validToken}`)
         .expect(res => expect([400, 403, 404]).toContain(res.status));
 
@@ -454,7 +454,7 @@ describe('SQL Injection Attempts Integration Tests', () => {
 
     it('should reject pg_read_file attempts', async () => {
       const response = await request(app)
-        .get(`/api/horses/1; SELECT pg_read_file('/etc/passwd')`)
+        .get('/api/horses/1; SELECT pg_read_file(\'/etc/passwd\')')
         .set('Authorization', `Bearer ${validToken}`)
         .expect(res => expect([400, 403, 404]).toContain(res.status));
 
@@ -463,7 +463,7 @@ describe('SQL Injection Attempts Integration Tests', () => {
 
     it('should reject large object manipulation', async () => {
       const response = await request(app)
-        .get(`/api/horses/1; SELECT lo_create(1234)`)
+        .get('/api/horses/1; SELECT lo_create(1234)')
         .set('Authorization', `Bearer ${validToken}`)
         .expect(res => expect([400, 403, 404]).toContain(res.status));
 
@@ -472,7 +472,7 @@ describe('SQL Injection Attempts Integration Tests', () => {
 
     it('should reject PostgreSQL stored procedure execution', async () => {
       const response = await request(app)
-        .get(`/api/horses/1; CALL malicious_procedure()`)
+        .get('/api/horses/1; CALL malicious_procedure()')
         .set('Authorization', `Bearer ${validToken}`)
         .expect(res => expect([400, 403, 404]).toContain(res.status));
 
@@ -502,7 +502,7 @@ describe('SQL Injection Attempts Integration Tests', () => {
         .post('/api/grooms/batch-delete')
         .set('Authorization', `Bearer ${validToken}`)
         .send({
-          groomIds: [`1; DELETE FROM grooms WHERE 1=1; --`],
+          groomIds: ['1; DELETE FROM grooms WHERE 1=1; --'],
         });
 
       expectBlocked(response);
@@ -516,7 +516,7 @@ describe('SQL Injection Attempts Integration Tests', () => {
   describe('SQL Injection Error Handling', () => {
     it('should not leak database structure in error messages', async () => {
       const response = await request(app)
-        .get(`/api/horses/invalid-sql-injection`)
+        .get('/api/horses/invalid-sql-injection')
         .set('Authorization', `Bearer ${validToken}`)
         .expect(res => expect([400, 403, 404]).toContain(res.status));
 
@@ -531,10 +531,10 @@ describe('SQL Injection Attempts Integration Tests', () => {
 
     it('should return consistent error format for all injection attempts', async () => {
       const injections = [
-        `1' OR '1'='1`,
-        `1; DROP TABLE horses`,
-        `1 UNION SELECT * FROM users`,
-        `1 AND (SELECT 1 FROM users)`,
+        '1\' OR \'1\'=\'1',
+        '1; DROP TABLE horses',
+        '1 UNION SELECT * FROM users',
+        '1 AND (SELECT 1 FROM users)',
       ];
 
       const responses = await Promise.all(

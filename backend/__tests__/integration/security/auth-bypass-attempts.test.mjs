@@ -429,7 +429,7 @@ describe('Authentication Bypass Attempts Integration Tests', () => {
 
   describe('Edge Cases and Attack Vectors', () => {
     it('should reject token with null bytes in payload', async () => {
-      const maliciousToken = `eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJ1c2VySWQiOiIxXHUwMDAwIiwiaWF0IjoxNjE2MjM5MDIyfQ.invalid`;
+      const maliciousToken = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJ1c2VySWQiOiIxXHUwMDAwIiwiaWF0IjoxNjE2MjM5MDIyfQ.invalid';
 
       const response = await request(app)
         .get('/api/auth/profile')

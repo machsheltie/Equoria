@@ -96,7 +96,7 @@ beforeEach(() => {
 
   mockPrisma.horse.findFirst.mockResolvedValue({
     id: 1,
-    userId: 'test-user-id' ,
+    userId: 'test-user-id',
   });
 
   mockFoalModel.getFoalDevelopment.mockResolvedValue({
@@ -160,7 +160,7 @@ describe('Foal routes auth enforcement', () => {
     const userId = 'rate-limit-activity-user';
     mockPrisma.horse.findFirst.mockResolvedValue({
       id: 1,
-      userId: userId ,
+      userId,
     });
     const token = buildToken(userId);
 
@@ -190,7 +190,7 @@ describe('Foal routes auth enforcement', () => {
     const userId = 'rate-limit-enrichment-user';
     mockPrisma.horse.findFirst.mockResolvedValue({
       id: 1,
-      userId: userId ,
+      userId,
     });
     const token = buildToken(userId);
 

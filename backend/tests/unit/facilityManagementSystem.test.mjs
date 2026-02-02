@@ -46,7 +46,7 @@ describe('🏢 Facility Management System', () => {
       testFacilities = await Promise.all([
         tx.facility.create({
           data: {
-            userId: testUser.id ,
+            userId: testUser.id,
             name: 'Basic Stable',
             type: 'basic_stable',
             level: 1,
@@ -62,7 +62,7 @@ describe('🏢 Facility Management System', () => {
         }),
         tx.facility.create({
           data: {
-            userId: testUser.id ,
+            userId: testUser.id,
             name: 'Master Facility',
             type: 'master_facility',
             level: 3,

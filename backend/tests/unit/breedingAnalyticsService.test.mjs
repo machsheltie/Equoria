@@ -61,11 +61,11 @@ describe('Breeding Analytics Service', () => {
       testStallion = await tx.horse.create({
         data: {
           name: `Test Stallion ${timestamp}`,
-          userId: testUser.id ,
+          userId: testUser.id,
           age: 8,
           sex: 'stallion',
           dateOfBirth: new Date('2017-01-01'),
-          breedId: testBreed.id ,
+          breedId: testBreed.id,
           speed: 85,
           stamina: 80,
           agility: 75,
@@ -88,11 +88,11 @@ describe('Breeding Analytics Service', () => {
       testMare = await tx.horse.create({
         data: {
           name: `Test Mare ${timestamp}`,
-          userId: testUser.id ,
+          userId: testUser.id,
           age: 6,
           sex: 'mare',
           dateOfBirth: new Date('2019-01-01'),
-          breedId: testBreed.id ,
+          breedId: testBreed.id,
           speed: 78,
           stamina: 85,
           agility: 80,
@@ -117,11 +117,11 @@ describe('Breeding Analytics Service', () => {
         const foal = await tx.horse.create({
           data: {
             name: `Test Foal ${timestamp} ${i + 1}`,
-            userId: testUser.id ,
+            userId: testUser.id,
             age: i + 1, // Different ages
             sex: i % 2 === 0 ? 'colt' : 'filly',
             dateOfBirth: new Date(`202${i + 1}-01-01`),
-            breedId: testBreed.id ,
+            breedId: testBreed.id,
             sire: { connect: { id: testStallion.id } },
             dam: { connect: { id: testMare.id } },
             speed: 70 + Math.floor(Math.random() * 20),

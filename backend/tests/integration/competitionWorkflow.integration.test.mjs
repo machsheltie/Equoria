@@ -125,8 +125,8 @@ describe('🏆 INTEGRATION: Complete Competition Workflow', () => {
         data: {
           name: 'Competition Integration Champion',
           age: 35, // 5 years = 35 days (mature and experienced)
-          breedId: breed.id ,
-          userId: testUser.id ,
+          breedId: breed.id,
+          userId: testUser.id,
           sex: 'Stallion',
           dateOfBirth: new Date('2019-01-01'),
           healthStatus: 'Excellent',
@@ -315,7 +315,7 @@ describe('🏆 INTEGRATION: Complete Competition Workflow', () => {
 
       await prisma.xpEvent.create({
         data: {
-          userId: testUser.id ,
+          userId: testUser.id,
           amount: xpAmount,
           reason: `Competition: ${testShow.name} - Placement: ${competitionResult.placement}`,
           timestamp: new Date(),
@@ -332,7 +332,7 @@ describe('🏆 INTEGRATION: Complete Competition Workflow', () => {
       // VERIFY: XP event logged
       const xpEvent = await prisma.xpEvent.findFirst({
         where: {
-          userId: testUser.id ,
+          userId: testUser.id,
           reason: { contains: 'Competition' },
         },
       });

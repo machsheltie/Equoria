@@ -66,7 +66,7 @@ describe('Groom Bonus Traits System', () => {
           noble: 0.1,
           quick_learner: 0.15,
         },
-        userId: testUser.id ,
+        userId: testUser.id,
       },
     });
 
@@ -77,8 +77,8 @@ describe('Groom Bonus Traits System', () => {
         sex: 'colt',
         dateOfBirth: new Date(Date.now() - 30 * 24 * 60 * 60 * 1000), // 30 days old
         temperament: 'spirited',
-        userId: testUser.id ,
-        breedId: testBreed.id ,
+        userId: testUser.id,
+        breedId: testBreed.id,
         epigeneticModifiers: { positive: [], negative: [], hidden: [] },
       },
     });

@@ -189,7 +189,7 @@ export function validatePaginationParams(page, limit, options = {}) {
  * @returns {number} Total number of pages
  */
 export function calculateTotalPages(total, limit) {
-  if (total === 0) return 0;
+  if (total === 0) { return 0; }
   return Math.ceil(total / limit);
 }
 

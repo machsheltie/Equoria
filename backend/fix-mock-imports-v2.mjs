@@ -62,7 +62,7 @@ beforeAll(async () => {
   moduleExports = await import(${importPath});
   (${destructure} = moduleExports);
 });`;
-    }
+    },
   );
 
   if (newContent !== content) {

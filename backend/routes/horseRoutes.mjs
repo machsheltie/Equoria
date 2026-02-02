@@ -67,7 +67,7 @@ const rejectPollutedRequest = (req, res, next) => {
 const validateHorseUpdatePayload = (req, res, next) => {
   const getDepth = (value, seen = new Set()) => {
     if (value && typeof value === 'object') {
-      if (seen.has(value)) return 0;
+      if (seen.has(value)) { return 0; }
       seen.add(value);
       let maxDepth = 1;
       for (const key of Object.keys(value)) {

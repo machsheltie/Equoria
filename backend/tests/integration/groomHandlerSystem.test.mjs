@@ -35,7 +35,7 @@ describe('Groom Handler System Integration Tests', () => {
         name: 'Handler Test Horse',
         sex: 'male',
         dateOfBirth: new Date(Date.now() - 365 * 24 * 60 * 60 * 1000), // 1 year old
-        userId: testUser.id ,
+        userId: testUser.id,
         bondScore: 50,
         stressLevel: 30,
       },
@@ -45,7 +45,7 @@ describe('Groom Handler System Integration Tests', () => {
     testGroom = await prisma.groom.create({
       data: {
         name: 'Handler Test Groom',
-        userId: testUser.id ,
+        userId: testUser.id,
         speciality: 'showHandling',
         skillLevel: 'expert',
         personality: 'confident',
@@ -112,7 +112,7 @@ describe('Groom Handler System Integration Tests', () => {
           name: 'No Handler Horse',
           sex: 'female',
           dateOfBirth: new Date(Date.now() - 730 * 24 * 60 * 60 * 1000), // 2 years old
-          userId: testUser.id ,
+          userId: testUser.id,
           bondScore: 30,
           stressLevel: 40,
         },
@@ -152,7 +152,7 @@ describe('Groom Handler System Integration Tests', () => {
           name: 'Other User Horse',
           sex: 'male',
           dateOfBirth: new Date(Date.now() - 365 * 24 * 60 * 60 * 1000),
-          userId: otherUser.id ,
+          userId: otherUser.id,
         },
       });
 
@@ -235,7 +235,7 @@ describe('Groom Handler System Integration Tests', () => {
         const groom = await prisma.groom.create({
           data: {
             ...data,
-            userId: testUser.id ,
+            userId: testUser.id,
             experience: 3,
             sessionRate: 20.0,
             bio: 'Test groom for recommendations',

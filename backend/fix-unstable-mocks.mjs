@@ -32,7 +32,7 @@ function fixFile(filePath) {
     /jest\.unstable_mockModule\(([\s\S]*?)\}\)\);/g,
     (match, capturedContent) => {
       return `jest.mock(${capturedContent}), { virtual: true });`;
-    }
+    },
   );
 
   writeFileSync(filePath, newContent, 'utf8');

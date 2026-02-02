@@ -50,10 +50,10 @@ function getRawFlagValue(flagName) {
   const envValue = process.env[flagName];
   if (envValue !== undefined) {
     // Parse boolean strings
-    if (envValue.toLowerCase() === 'true') return true;
-    if (envValue.toLowerCase() === 'false') return false;
+    if (envValue.toLowerCase() === 'true') { return true; }
+    if (envValue.toLowerCase() === 'false') { return false; }
     // Parse numeric strings
-    if (!isNaN(Number(envValue))) return Number(envValue);
+    if (!isNaN(Number(envValue))) { return Number(envValue); }
     return envValue;
   }
 

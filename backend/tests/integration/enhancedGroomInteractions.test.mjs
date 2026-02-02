@@ -46,7 +46,7 @@ describe('Enhanced Groom Interactions Integration Tests', () => {
     testGroom = await prisma.groom.create({
       data: {
         name: 'Enhanced Test Groom',
-        userId: testUser.id ,
+        userId: testUser.id,
         speciality: 'foal_care',
         skillLevel: 'intermediate',
         personality: 'gentle',

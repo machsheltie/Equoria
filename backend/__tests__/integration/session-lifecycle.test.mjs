@@ -278,7 +278,7 @@ describe('Session Lifecycle Management', () => {
       const newPassword = 'NewPassword456!';
       const response = await request(app).post('/api/auth/change-password').set('Cookie', cookies).send({
         oldPassword: testUserData.password,
-        newPassword: newPassword,
+        newPassword,
       });
 
       expect([200, 500]).toContain(response.status);
@@ -481,9 +481,9 @@ describe('Session Lifecycle Management', () => {
       // Create an expired token directly in DB
       const expiredToken = await prisma.refreshToken.create({
         data: {
-          token: 'expired-test-token-' + Date.now(),
+          token: `expired-test-token-${Date.now()}`,
           userId: testUser.id,
-          familyId: 'expired-family-' + Date.now(),
+          familyId: `expired-family-${Date.now()}`,
           expiresAt: new Date(Date.now() - 24 * 60 * 60 * 1000), // 1 day ago
           isActive: true,
           isInvalidated: false,
@@ -515,9 +515,9 @@ describe('Session Lifecycle Management', () => {
       // Create an old invalidated token
       const oldInvalidatedToken = await prisma.refreshToken.create({
         data: {
-          token: 'old-invalidated-' + Date.now(),
+          token: `old-invalidated-${Date.now()}`,
           userId: testUser.id,
-          familyId: 'old-family-' + Date.now(),
+          familyId: `old-family-${Date.now()}`,
           expiresAt: new Date(Date.now() + 7 * 24 * 60 * 60 * 1000), // Expires in 7 days
           isActive: false,
           isInvalidated: true,
@@ -573,7 +573,7 @@ describe('Session Lifecycle Management', () => {
     it('should handle complete user journey: register -> login -> use session -> change password -> re-login', async () => {
       // Step 1: Register new user
       const newUserData = {
-        username: 'lifecycle-' + Date.now(),
+        username: `lifecycle-${Date.now()}`,
         email: `lifecycle-${Date.now()}@example.com`,
         password: 'TestPassword123!',
         firstName: 'Lifecycle',
@@ -601,7 +601,7 @@ describe('Session Lifecycle Management', () => {
         .set('Cookie', cookies)
         .send({
           oldPassword: newUserData.password,
-          newPassword: newPassword,
+          newPassword,
         })
         .expect(200);
 

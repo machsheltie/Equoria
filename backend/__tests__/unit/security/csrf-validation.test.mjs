@@ -317,7 +317,7 @@ describe('CSRF Token Validation Unit Tests', () => {
       res.status.mockClear();
 
       // Compare with token that matches more characters
-      const token3 = 'a'.repeat(63) + 'b';
+      const token3 = `${'a'.repeat(63)}b`;
       req.body.csrfToken = token3;
 
       const start2 = process.hrtime.bigint();

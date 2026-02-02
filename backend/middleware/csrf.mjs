@@ -97,16 +97,16 @@ export const getCsrfToken = (req, res) => {
 
     logger.info('[CSRF] Token generated', {
       userId: req.user?.id,
-      ip: req.ip
+      ip: req.ip,
     });
 
     const responseBody = useMockSafePath
       ? { success: true, csrfToken: token }
       : {
-          success: true,
-          csrfToken: token,
-          code: 'CSRF_TOKEN_CREATED',
-        };
+        success: true,
+        csrfToken: token,
+        code: 'CSRF_TOKEN_CREATED',
+      };
 
     return res.json(responseBody);
   } catch (error) {
@@ -114,7 +114,7 @@ export const getCsrfToken = (req, res) => {
     const responder = res.status ? res.status(500) : res;
     responder.json({
       success: false,
-      message: 'Failed to generate CSRF token'
+      message: 'Failed to generate CSRF token',
     });
   }
 };
@@ -144,13 +144,13 @@ export const csrfErrorHandler = (err, req, res, next) => {
       path: req.path,
       method: req.method,
       userAgent: req.headers['user-agent'],
-      error: err.message
+      error: err.message,
     });
 
     return res.status(403).json({
       success: false,
       message: 'Invalid CSRF token. Please refresh the page and try again.',
-      code: 'INVALID_CSRF_TOKEN'
+      code: 'INVALID_CSRF_TOKEN',
     });
   }
 
@@ -197,16 +197,16 @@ export const applyCsrfProtection = (req, res, next) => {
 
     const invalidPayload = res.json?.mock
       ? {
-          success: false,
-          message: 'Invalid CSRF token',
-          status: 'error',
-        }
+        success: false,
+        message: 'Invalid CSRF token',
+        status: 'error',
+      }
       : {
-          success: false,
-          message: 'Invalid CSRF token. Please refresh the page and try again.',
-          status: 'error',
-          code: 'INVALID_CSRF_TOKEN',
-        };
+        success: false,
+        message: 'Invalid CSRF token. Please refresh the page and try again.',
+        status: 'error',
+        code: 'INVALID_CSRF_TOKEN',
+      };
 
     const invalidResponse = () => {
       if (res.status) {

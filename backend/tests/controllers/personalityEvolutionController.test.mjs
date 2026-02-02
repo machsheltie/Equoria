@@ -66,7 +66,7 @@ describe('Personality Evolution Controller API', () => {
     // Create test groom
     testGroom = await prisma.groom.create({
       data: {
-        userId: testUser.id ,
+        userId: testUser.id,
         name: 'API Test Groom',
         speciality: 'foal_care',
         personality: 'calm',
@@ -82,8 +82,8 @@ describe('Personality Evolution Controller API', () => {
     // Create test horse
     testHorse = await prisma.horse.create({
       data: {
-        userId: testUser.id ,
-        breedId: testBreed.id ,
+        userId: testUser.id,
+        breedId: testBreed.id,
         name: 'API Test Horse',
         sex: 'Filly',
         dateOfBirth: birthDate2YearsOld,

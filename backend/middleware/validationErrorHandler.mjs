@@ -63,15 +63,15 @@ export function sanitizeRequestData(req, res, next) {
       const paramData = {};
 
       for (const [key, value] of Object.entries(sanitized)) {
-        if (req.body && key in req.body) bodyData[key] = value;
-        if (req.query && key in req.query) queryData[key] = value;
-        if (req.params && key in req.params) paramData[key] = value;
+        if (req.body && key in req.body) { bodyData[key] = value; }
+        if (req.query && key in req.query) { queryData[key] = value; }
+        if (req.params && key in req.params) { paramData[key] = value; }
       }
 
       // Replace with sanitized data only
-      if (Object.keys(bodyData).length > 0) req.body = bodyData;
-      if (Object.keys(queryData).length > 0) req.query = queryData;
-      if (Object.keys(paramData).length > 0) req.params = paramData;
+      if (Object.keys(bodyData).length > 0) { req.body = bodyData; }
+      if (Object.keys(queryData).length > 0) { req.query = queryData; }
+      if (Object.keys(paramData).length > 0) { req.params = paramData; }
 
       logger.debug('[Sanitization] Request data sanitized', {
         url: req.originalUrl,

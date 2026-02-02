@@ -267,7 +267,7 @@ export function createRateLimiter(options = {}) {
       : max;
 
   const shouldBypassRequest = req => {
-    if (!isTestEnv) return false;
+    if (!isTestEnv) { return false; }
     if (process.env.TEST_BYPASS_RATE_LIMIT === 'true') {
       return true;
     }

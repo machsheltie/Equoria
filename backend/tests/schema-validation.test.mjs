@@ -89,8 +89,8 @@ describe('Schema Validation', () => {
         sex: 'Mare',
         dateOfBirth: new Date('2023-01-01'),
         age: 365,
-        userId: testUser.id ,
-        breedId: testBreed.id ,
+        userId: testUser.id,
+        breedId: testBreed.id,
       },
     });
 
@@ -107,8 +107,8 @@ describe('Schema Validation', () => {
         sex: 'Stallion',
         dateOfBirth: new Date('2022-01-01'),
         age: 730,
-        userId: testUser.id ,
-        breedId: testBreed.id ,
+        userId: testUser.id,
+        breedId: testBreed.id,
         bondScore: 50,
         stressLevel: 20,
         taskLog: { trust_building: 3, desensitization: 2 },
@@ -134,7 +134,7 @@ describe('Schema Validation', () => {
         skillLevel: 'expert',
         personality: 'gentle',
         sessionRate: 25.0,
-        userId: testUser.id ,
+        userId: testUser.id,
       },
     });
 
@@ -154,8 +154,8 @@ describe('Schema Validation', () => {
         sex: 'Filly',
         dateOfBirth: new Date('2023-06-01'),
         age: 180,
-        userId: testUser.id ,
-        breedId: testBreed.id ,
+        userId: testUser.id,
+        breedId: testBreed.id,
       },
     });
 
@@ -166,7 +166,7 @@ describe('Schema Validation', () => {
         skillLevel: 'intermediate',
         personality: 'patient',
         sessionRate: 20.0,
-        userId: testUser.id ,
+        userId: testUser.id,
       },
     });
 
@@ -195,8 +195,8 @@ describe('Schema Validation', () => {
         sex: 'Colt',
         dateOfBirth: new Date('2023-03-01'),
         age: 270,
-        userId: testUser.id ,
-        breedId: testBreed.id ,
+        userId: testUser.id,
+        breedId: testBreed.id,
       },
     });
 
@@ -207,7 +207,7 @@ describe('Schema Validation', () => {
         skillLevel: 'master',
         personality: 'firm',
         sessionRate: 35.0,
-        userId: testUser.id ,
+        userId: testUser.id,
       },
     });
 

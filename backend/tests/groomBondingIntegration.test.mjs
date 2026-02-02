@@ -107,7 +107,7 @@ describe('Groom Bonding System Integration', () => {
         skillLevel: 'intermediate',
         personality: 'gentle',
         sessionRate: 25.0,
-        userId: testUser.id ,
+        userId: testUser.id,
       },
     });
     createdGroomIds.add(testGroom.id);
@@ -122,7 +122,7 @@ describe('Groom Bonding System Integration', () => {
         sex: 'Mare',
         dateOfBirth: birthDate,
         age: 1460, // 4 years in days
-        userId: testUser.id ,
+        userId: testUser.id,
         bondScore: 20,
         daysGroomedInARow: 3,
         burnoutStatus: 'none',
@@ -230,7 +230,7 @@ describe('Groom Bonding System Integration', () => {
           sex: 'Colt',
           dateOfBirth: youngBirthDate,
           age: 14, // 14 days old (2 years in game time)
-          userId: testUser.id ,
+          userId: testUser.id,
           bondScore: 0,
           daysGroomedInARow: 0,
           burnoutStatus: 'none',

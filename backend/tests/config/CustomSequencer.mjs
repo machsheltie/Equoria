@@ -68,9 +68,9 @@ export default class CustomSequencer extends Sequencer {
    * 2 = E2E (slowest)
    */
   categorizeTest(testPath) {
-    if (testPath.includes('/unit/')) return 0;
-    if (testPath.includes('/integration/')) return 1;
-    if (testPath.includes('/e2e/')) return 2;
+    if (testPath.includes('/unit/')) { return 0; }
+    if (testPath.includes('/integration/')) { return 1; }
+    if (testPath.includes('/e2e/')) { return 2; }
     return 1; // Default to integration
   }
 
@@ -93,16 +93,16 @@ export default class CustomSequencer extends Sequencer {
     const fileName = path.basename(testPath);
 
     // Auth tests highest priority
-    if (fileName.includes('auth')) return 10;
+    if (fileName.includes('auth')) { return 10; }
 
     // Cookie tests high priority
-    if (fileName.includes('cookie')) return 9;
+    if (fileName.includes('cookie')) { return 9; }
 
     // Security tests high priority
-    if (fileName.includes('security')) return 8;
+    if (fileName.includes('security')) { return 8; }
 
     // API tests medium priority
-    if (fileName.includes('api')) return 5;
+    if (fileName.includes('api')) { return 5; }
 
     // Default priority
     return 1;

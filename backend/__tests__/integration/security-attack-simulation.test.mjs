@@ -448,7 +448,7 @@ describe('Security Attack Simulation Tests', () => {
 
     describe('Buffer Overflow Attempts', () => {
       it('should reject extremely long email addresses', async () => {
-        const longEmail = 'a'.repeat(1000) + '@example.com';
+        const longEmail = `${'a'.repeat(1000)}@example.com`;
 
         const response = await request(app).post('/api/auth/register').send({
           email: longEmail,
@@ -479,7 +479,7 @@ describe('Security Attack Simulation Tests', () => {
       });
 
       it('should reject extremely long passwords', async () => {
-        const longPassword = 'A1!' + 'a'.repeat(500);
+        const longPassword = `A1!${'a'.repeat(500)}`;
 
         const response = await request(app).post('/api/auth/register').send({
           email: 'test@example.com',
@@ -596,7 +596,7 @@ describe('Security Attack Simulation Tests', () => {
     describe('Token Manipulation Attempts', () => {
       it('should reject token with modified payload', async () => {
         // Attempt to modify token by changing a character
-        const manipulatedToken = attackerToken.slice(0, -5) + 'XXXXX';
+        const manipulatedToken = `${attackerToken.slice(0, -5)}XXXXX`;
 
         const response = await request(app)
           .get(`/api/user/${attackerUserId}`)

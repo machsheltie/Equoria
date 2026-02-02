@@ -64,7 +64,7 @@ describe('Breeding Prediction System', () => {
         personality: 'calm',
         groomPersonality: 'calm',
         sessionRate: 25.0,
-        userId: testUser.id ,
+        userId: testUser.id,
       },
     });
 
@@ -75,8 +75,8 @@ describe('Breeding Prediction System', () => {
         sex: 'stallion',
         dateOfBirth: new Date(Date.now() - 5 * 365 * 24 * 60 * 60 * 1000), // 5 years old
         temperament: 'spirited',
-        userId: testUser.id ,
-        breedId: testBreed.id ,
+        userId: testUser.id,
+        breedId: testBreed.id,
         epigeneticModifiers: { positive: ['sensitive', 'noble'], negative: [], hidden: ['quick_learner'] },
       },
     });
@@ -88,8 +88,8 @@ describe('Breeding Prediction System', () => {
         sex: 'mare',
         dateOfBirth: new Date(Date.now() - 4 * 365 * 24 * 60 * 60 * 1000), // 4 years old
         temperament: 'calm',
-        userId: testUser.id ,
-        breedId: testBreed.id ,
+        userId: testUser.id,
+        breedId: testBreed.id,
         epigeneticModifiers: { positive: ['athletic', 'confident'], negative: ['stubborn'], hidden: [] },
       },
     });

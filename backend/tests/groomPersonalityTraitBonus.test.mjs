@@ -61,14 +61,14 @@ describe('Groom Personality Trait Bonus System - REAL SYSTEM TESTS', () => {
     testHorse = await prisma.horse.create({
       data: {
         name: `TestHorse_${Date.now()}`,
-        userId: testUser.id ,
+        userId: testUser.id,
         dateOfBirth: new Date(Date.now() - 0 * 24 * 60 * 60 * 1000), // 0 days old (newborn for imprinting)
         temperament: FOAL_TEMPERAMENT_TYPES.SPIRITED,
         bondScore: 65,
         stressLevel: 20,
         healthStatus: 'Good',
         sex: 'filly',
-        breedId: testBreed.id ,
+        breedId: testBreed.id,
       },
     });
 
@@ -81,7 +81,7 @@ describe('Groom Personality Trait Bonus System - REAL SYSTEM TESTS', () => {
         skillLevel: 'intermediate',
         personality: GROOM_PERSONALITY_TYPES.CALM,
         sessionRate: 20.0,
-        userId: testUser.id ,
+        userId: testUser.id,
         isActive: true,
       },
     });
@@ -323,10 +323,10 @@ describe('Groom Personality Trait Bonus System - REAL SYSTEM TESTS', () => {
         const horseWithoutTemperament = await prisma.horse.create({
           data: {
             name: 'NoTemperamentHorse',
-            userId: testUser.id ,
+            userId: testUser.id,
             dateOfBirth: new Date(),
             sex: 'colt',
-            breedId: testBreed.id ,
+            breedId: testBreed.id,
           },
         });
 

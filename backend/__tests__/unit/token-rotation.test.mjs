@@ -119,7 +119,7 @@ describe('Token Rotation Service - Unit Tests', () => {
       const dbToken = await prisma.refreshToken.findFirst({
         where: {
           userId: testUser.id,
-          familyId: familyId,
+          familyId,
         },
       });
 
@@ -353,7 +353,7 @@ describe('Token Rotation Service - Unit Tests', () => {
 
       // Verify all tokens are invalidated
       const allTokens = await prisma.refreshToken.findMany({
-        where: { familyId: familyId },
+        where: { familyId },
       });
 
       allTokens.forEach(token => {

@@ -430,7 +430,7 @@ describe('Token Rotation and Reuse Detection System', () => {
         {
           userId: testUser.id,
           type: 'refresh',
-          familyId: 'test-family-' + Date.now(),
+          familyId: `test-family-${Date.now()}`,
         },
         process.env.JWT_REFRESH_SECRET,
         { expiresIn: '1ms' }, // Immediately expires
@@ -441,7 +441,7 @@ describe('Token Rotation and Reuse Detection System', () => {
         data: {
           token: shortLivedToken,
           userId: testUser.id,
-          familyId: 'test-family-' + Date.now(),
+          familyId: `test-family-${Date.now()}`,
           expiresAt: new Date(Date.now() + 1), // 1ms from now
           isActive: true,
           isInvalidated: false,
@@ -507,14 +507,14 @@ describe('Token Rotation and Reuse Detection System', () => {
   describe('Database Constraints and Security', () => {
     it('should_enforce_unique_constraints_on_token_families', async () => {
       // This test verifies database schema constraints
-      const familyId = 'test-family-' + Date.now();
+      const familyId = `test-family-${Date.now()}`;
 
       // Attempt to create two active tokens with same family ID
       // This should be prevented by database constraints
       const tokenData = {
         token: 'test-token-1',
         userId: testUser.id,
-        familyId: familyId,
+        familyId,
         expiresAt: new Date(Date.now() + 86400000), // 24 hours
         isActive: true,
         isInvalidated: false,
@@ -554,11 +554,11 @@ describe('Token Rotation and Reuse Detection System', () => {
  * Helper function to extract refresh token from Set-Cookie headers
  */
 function extractRefreshTokenFromCookies(cookies) {
-  if (!cookies) return null;
+  if (!cookies) { return null; }
 
   const refreshCookie = cookies.find(cookie => cookie.includes('refreshToken='));
 
-  if (!refreshCookie) return null;
+  if (!refreshCookie) { return null; }
 
   const match = refreshCookie.match(/refreshToken=([^;]+)/);
   return match ? match[1] : null;
@@ -568,11 +568,11 @@ function extractRefreshTokenFromCookies(cookies) {
  * Helper function to extract access token from Set-Cookie headers
  */
 function extractAccessTokenFromCookies(cookies) {
-  if (!cookies) return null;
+  if (!cookies) { return null; }
 
   const accessCookie = cookies.find(cookie => cookie.includes('accessToken='));
 
-  if (!accessCookie) return null;
+  if (!accessCookie) { return null; }
 
   const match = accessCookie.match(/accessToken=([^;]+)/);
   return match ? match[1] : null;

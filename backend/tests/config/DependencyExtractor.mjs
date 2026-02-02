@@ -88,7 +88,7 @@ function resolveDependency(importPath, fromDir) {
 
   try {
     // Handle relative paths
-    let resolvedPath = path.resolve(fromDir, importPath);
+    const resolvedPath = path.resolve(fromDir, importPath);
 
     // Try with extensions if file doesn't exist
     const extensions = ['.mjs', '.js', '.json'];

@@ -133,7 +133,7 @@ export const handleRedisHealthCheck = async (req, res) => {
         cache: {
           hits: cacheStats.hits,
           misses: cacheStats.misses,
-          hitRate: (cacheStats.hitRate * 100).toFixed(2) + '%',
+          hitRate: `${(cacheStats.hitRate * 100).toFixed(2)}%`,
           errors: cacheStats.errors,
           invalidations: cacheStats.invalidations,
           localHits: cacheStats.localHits,

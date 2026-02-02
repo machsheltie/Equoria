@@ -74,11 +74,11 @@ describe('Performance Analytics Service', () => {
     testHorse = await prisma.horse.create({
       data: {
         name: 'Analytics Test Horse',
-        userId: testUser.id ,
+        userId: testUser.id,
         age: 5,
         sex: 'stallion',
         dateOfBirth: fiveYearsAgo,
-        breedId: testBreed.id ,
+        breedId: testBreed.id,
         speed: 75,
         stamina: 80,
         agility: 70,
@@ -275,11 +275,11 @@ describe('Performance Analytics Service', () => {
       const newHorse = await prisma.horse.create({
         data: {
           name: 'No History Horse',
-          userId: testUser.id ,
+          userId: testUser.id,
           age: 3,
           sex: 'mare',
           dateOfBirth: threeYearsAgo,
-          breedId: testBreed.id ,
+          breedId: testBreed.id,
           speed: 50,
           stamina: 50,
           agility: 50,

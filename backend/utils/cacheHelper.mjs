@@ -294,7 +294,7 @@ export async function invalidateCachePattern(pattern) {
 
   // Local cache pattern matching (regex-like)
   // Convert Redis pattern 'horses:*' to Regex '^horses:.*'
-  const regex = new RegExp('^' + pattern.replace(/\*/g, '.*') + '$');
+  const regex = new RegExp(`^${pattern.replace(/\*/g, '.*')}$`);
 
   for (const key of localCache.keys()) {
     if (regex.test(key)) {

@@ -257,10 +257,9 @@ export async function getHorseXpHistory(req, res) {
       60,
     );
 
-    if (result.error === 'NOT_FOUND') throw new NotFoundError('Horse');
-    if (result.error === 'UNAUTHORIZED')
-      throw new AuthorizationError('You are not authorized to view this horse');
-    if (result.error) throw new Error(result.error);
+    if (result.error === 'NOT_FOUND') { throw new NotFoundError('Horse'); }
+    if (result.error === 'UNAUTHORIZED') { throw new AuthorizationError('You are not authorized to view this horse'); }
+    if (result.error) { throw new Error(result.error); }
 
     logger.info(
       `[horseXpController.getHorseXpHistory] Retrieved ${result.events.length} XP events for horse ${horseId}`,

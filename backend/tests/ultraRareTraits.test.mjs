@@ -55,7 +55,7 @@ describe('Ultra-Rare & Exotic Traits System', () => {
         name: 'Ultra Rare Test Horse',
         sex: 'Mare',
         dateOfBirth: new Date('2021-01-01'),
-        userId: testUser.id ,
+        userId: testUser.id,
         temperament: 'reactive',
         bondScore: 85,
         stressLevel: 20,
@@ -85,7 +85,7 @@ describe('Ultra-Rare & Exotic Traits System', () => {
           resilient: 0.1,
         },
         rareTraitPerks: {},
-        userId: testUser.id ,
+        userId: testUser.id,
       },
     });
   });
@@ -376,7 +376,7 @@ describe('Ultra-Rare & Exotic Traits System', () => {
           name: 'Other Horse',
           sex: 'Stallion',
           dateOfBirth: new Date('2021-01-01'),
-          userId: otherUser.id ,
+          userId: otherUser.id,
         },
       });
 

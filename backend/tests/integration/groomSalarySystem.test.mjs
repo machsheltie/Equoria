@@ -40,7 +40,7 @@ describe('Groom Salary System', () => {
     testHorse = await prisma.horse.create({
       data: {
         name: 'Salary Test Horse',
-        userId: testUser.id ,
+        userId: testUser.id,
         dateOfBirth: new Date(Date.now() - 5 * 365 * 24 * 60 * 60 * 1000), // 5 years old
         age: 5,
         sex: 'male',
@@ -60,7 +60,7 @@ describe('Groom Salary System', () => {
         speciality: 'showHandling',
         personality: 'gentle',
         experience: 50,
-        userId: testUser.id ,
+        userId: testUser.id,
       },
     });
 
@@ -201,7 +201,7 @@ describe('Groom Salary System', () => {
           skillLevel: 'novice',
           speciality: 'general',
           personality: 'gentle',
-          userId: otherUser.id ,
+          userId: otherUser.id,
         },
       });
 

@@ -186,7 +186,7 @@ export const FLAG_DEFINITIONS = {
  * @type {Object.<string, any>}
  */
 export const FLAG_DEFAULTS = Object.fromEntries(
-  Object.entries(FLAG_DEFINITIONS).map(([key, def]) => [key, def.defaultValue])
+  Object.entries(FLAG_DEFINITIONS).map(([key, def]) => [key, def.defaultValue]),
 );
 
 /**
@@ -226,7 +226,7 @@ export function getFlagsByType(type) {
 export function getFlagsByCategory(category) {
   const prefix = `FF_${category}_`;
   return Object.keys(FLAG_DEFINITIONS).filter((name) =>
-    name.startsWith(prefix)
+    name.startsWith(prefix),
   );
 }
 

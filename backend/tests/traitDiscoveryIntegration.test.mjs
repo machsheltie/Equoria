@@ -50,11 +50,11 @@ describe('Trait Discovery API Integration Tests', () => {
         name: 'High Bond Foal',
         age: 0,
         sex: 'Filly',
-        breedId: testBreed.id ,
+        breedId: testBreed.id,
         dateOfBirth: new Date('2024-01-01'),
         bondScore: 85,
         stressLevel: 15,
-        userId: testUserId , // Use relation instead of userId field
+        userId: testUserId, // Use relation instead of userId field
         epigeneticModifiers: {
           positive: [],
           negative: [],
@@ -68,11 +68,11 @@ describe('Trait Discovery API Integration Tests', () => {
         name: 'Low Stats Foal',
         age: 0,
         sex: 'Colt',
-        breedId: testBreed.id ,
+        breedId: testBreed.id,
         dateOfBirth: new Date('2024-01-01'),
         bondScore: 30,
         stressLevel: 70,
-        userId: testUserId , // Use relation instead of userId field
+        userId: testUserId, // Use relation instead of userId field
         epigeneticModifiers: {
           positive: [],
           negative: [],
@@ -86,11 +86,11 @@ describe('Trait Discovery API Integration Tests', () => {
         name: 'Adult Horse',
         age: 5,
         sex: 'Stallion',
-        breedId: testBreed.id ,
+        breedId: testBreed.id,
         dateOfBirth: new Date('2019-01-01'),
         bondScore: 90,
         stressLevel: 10,
-        userId: testUserId , // Use relation instead of userId field
+        userId: testUserId, // Use relation instead of userId field
         epigeneticModifiers: {
           positive: ['calm'],
           negative: [],
@@ -475,11 +475,11 @@ describe('Trait Discovery API Integration Tests', () => {
           name: 'Fresh Workflow Foal',
           age: 0,
           sex: 'Filly',
-          breedId: testBreed.id ,
+          breedId: testBreed.id,
           dateOfBirth: new Date('2024-01-01'),
           bondScore: 85,
           stressLevel: 15,
-          userId: testUserId ,
+          userId: testUserId,
           epigeneticModifiers: {
             positive: [],
             negative: [],

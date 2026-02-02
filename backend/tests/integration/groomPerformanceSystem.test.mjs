@@ -79,7 +79,7 @@ describe('Groom Performance System', () => {
     testHorse = await prisma.horse.create({
       data: {
         name: 'Performance Test Horse',
-        userId: testUser.id ,
+        userId: testUser.id,
         dateOfBirth: new Date('2019-01-01'),
         age: 5,
         sex: 'male',
@@ -94,7 +94,7 @@ describe('Groom Performance System', () => {
         speciality: 'general',
         personality: 'gentle',
         experience: 50,
-        userId: testUser.id ,
+        userId: testUser.id,
       },
     });
   });
@@ -285,7 +285,7 @@ describe('Groom Performance System', () => {
           skillLevel: 'novice',
           speciality: 'general',
           personality: 'gentle',
-          userId: otherUser.id ,
+          userId: otherUser.id,
         },
       });
 

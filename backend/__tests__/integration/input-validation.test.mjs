@@ -133,7 +133,7 @@ describe('Input Validation Integration Tests', () => {
       });
 
       it('should reject password longer than 128 characters', async () => {
-        const longPassword = 'A'.repeat(100) + 'a1@' + 'b'.repeat(30);
+        const longPassword = `${'A'.repeat(100)}a1@${'b'.repeat(30)}`;
         const response = await request(app).post('/api/auth/register').send({
           email: 'test@example.com',
           username: 'testuser123',

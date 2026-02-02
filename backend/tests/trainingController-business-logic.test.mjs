@@ -165,8 +165,8 @@ describe('🏋️ INTEGRATION: Training Controller Business Logic - Complete Tra
       data: {
         name: 'Controller Adult Horse',
         age: 4, // Eligible for training
-        breedId: breed.id ,
-        userId: testUser.id ,
+        breedId: breed.id,
+        userId: testUser.id,
         sex: 'Mare',
         dateOfBirth: fourYearsAgo, // FIXED: Use calculated date for accurate age
         healthStatus: 'Excellent',
@@ -183,8 +183,8 @@ describe('🏋️ INTEGRATION: Training Controller Business Logic - Complete Tra
       data: {
         name: 'Controller Young Horse',
         age: 2, // Too young for training
-        breedId: breed.id ,
-        userId: testUser.id ,
+        breedId: breed.id,
+        userId: testUser.id,
         sex: 'Colt',
         dateOfBirth: twoYearsAgo, // FIXED: Use calculated date for accurate age
         healthStatus: 'Excellent',
@@ -201,8 +201,8 @@ describe('🏋️ INTEGRATION: Training Controller Business Logic - Complete Tra
       data: {
         name: 'Controller Trained Horse',
         age: 5,
-        breedId: breed.id ,
-        userId: testUser.id ,
+        breedId: breed.id,
+        userId: testUser.id,
         sex: 'Stallion',
         dateOfBirth: fiveYearsAgo, // FIXED: Use calculated date for accurate age
         healthStatus: 'Excellent',
@@ -222,8 +222,8 @@ describe('🏋️ INTEGRATION: Training Controller Business Logic - Complete Tra
       data: {
         name: 'Controller Horse 1',
         age: 6,
-        breedId: breed.id ,
-        userId: userWithHorses.id ,
+        breedId: breed.id,
+        userId: userWithHorses.id,
         sex: 'Mare',
         dateOfBirth: sixYearsAgo, // FIXED: Use calculated date for accurate age
         healthStatus: 'Good',
@@ -240,8 +240,8 @@ describe('🏋️ INTEGRATION: Training Controller Business Logic - Complete Tra
       data: {
         name: 'Controller Horse 2',
         age: 3, // Just eligible
-        breedId: breed.id ,
-        userId: userWithHorses.id ,
+        breedId: breed.id,
+        userId: userWithHorses.id,
         sex: 'Stallion',
         dateOfBirth: threeYearsAgo, // FIXED: Use calculated date for accurate age
         healthStatus: 'Fair',
@@ -364,8 +364,8 @@ describe('🏋️ INTEGRATION: Training Controller Business Logic - Complete Tra
         data: {
           name: 'Workflow Test Horse',
           age: 4,
-          breedId: breed.id ,
-          userId: userWithHorses.id ,
+          breedId: breed.id,
+          userId: userWithHorses.id,
           sex: 'Stallion',
           dateOfBirth: workflowFourYearsAgo, // FIXED: Use calculated date for accurate age
           healthStatus: 'Excellent',
@@ -569,8 +569,8 @@ describe('🏋️ INTEGRATION: Training Controller Business Logic - Complete Tra
         data: {
           name: 'Fresh Route Test Horse',
           age: 4,
-          breedId: breed.id ,
-          userId: testUser.id ,
+          breedId: breed.id,
+          userId: testUser.id,
           sex: 'Mare',
           dateOfBirth: freshFourYearsAgo, // FIXED: Use calculated date for accurate age
           healthStatus: 'Excellent',

@@ -49,9 +49,9 @@ import { resetAllAuthRateLimits } from '../middleware/authRateLimiter.mjs';
  * @returns {string|null} - Cookie value or null if not found
  */
 const extractCookie = (cookies, name) => {
-  if (!cookies || !Array.isArray(cookies)) return null;
+  if (!cookies || !Array.isArray(cookies)) { return null; }
   const cookie = cookies.find(c => c.startsWith(`${name}=`));
-  if (!cookie) return null;
+  if (!cookie) { return null; }
   // Extract value between = and ; (or end of string)
   const match = cookie.match(new RegExp(`${name}=([^;]+)`));
   return match ? match[1] : null;

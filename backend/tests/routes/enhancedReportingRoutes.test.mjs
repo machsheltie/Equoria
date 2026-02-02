@@ -52,7 +52,7 @@ describe('Enhanced Reporting API Routes', () => {
           groomPersonality: 'calm',
           skillLevel: 'expert',
           speciality: 'foal_care',
-          userId: testUser.id ,
+          userId: testUser.id,
           sessionRate: 40.0,
           experience: 200,
           level: 10,
@@ -73,7 +73,7 @@ describe('Enhanced Reporting API Routes', () => {
           name: `Test Foal Report ${Date.now()}`,
           sex: 'filly',
           dateOfBirth: oneWeekAgo,
-          userId: testUser.id ,
+          userId: testUser.id,
           bondScore: 20,
           stressLevel: 4,
           epigeneticFlags: ['curious', 'developing'],
@@ -85,7 +85,7 @@ describe('Enhanced Reporting API Routes', () => {
           name: `Test Horse Report ${Date.now()}`,
           sex: 'colt',
           dateOfBirth: oneMonthAgo,
-          userId: testUser.id ,
+          userId: testUser.id,
           bondScore: 35,
           stressLevel: 3,
           epigeneticFlags: ['confident', 'brave', 'social'],
@@ -97,7 +97,7 @@ describe('Enhanced Reporting API Routes', () => {
           name: `Test Mature Report ${Date.now()}`,
           sex: 'gelding',
           dateOfBirth: twoMonthsAgo,
-          userId: testUser.id ,
+          userId: testUser.id,
           bondScore: 40,
           stressLevel: 2,
           epigeneticFlags: ['intelligent', 'calm', 'adaptable', 'social'],
@@ -267,7 +267,7 @@ describe('Enhanced Reporting API Routes', () => {
     test('GET /api/horses/trait-trends should return trait development trends', async () => {
       const response = await request(app)
         .get('/api/horses/trait-trends')
-        .query({ userId: testUser.id , timeframe: 30 })
+        .query({ userId: testUser.id, timeframe: 30 })
         .set('Authorization', `Bearer ${authToken}`)
         .expect(200);
 
@@ -343,7 +343,7 @@ describe('Enhanced Reporting API Routes', () => {
           name: `Other Horse Report ${Date.now()}`,
           sex: 'gelding',
           dateOfBirth: new Date(),
-          userId: otherUser.id ,
+          userId: otherUser.id,
           bondScore: 15,
           stressLevel: 5,
         },

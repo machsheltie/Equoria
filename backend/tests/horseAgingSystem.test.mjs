@@ -224,8 +224,8 @@ describe('Horse Aging System', () => {
           sex: 'Colt',
           dateOfBirth: birth1WeekAgo, // Exactly 1 week ago (1 year in game time)
           age: 6, // Currently 6 days old (will turn 7 = 1 year)
-          userId: testUser.id ,
-          breedId: testBreed.id ,
+          userId: testUser.id,
+          breedId: testBreed.id,
           bondScore: 75,
           stressLevel: 15,
           taskLog: {
@@ -278,8 +278,8 @@ describe('Horse Aging System', () => {
           sex: 'Filly',
           dateOfBirth: birth6MonthsAgo, // 6 months ago
           age: 182, // Current age matches calculated age
-          userId: testUser.id ,
-          breedId: testBreed.id ,
+          userId: testUser.id,
+          breedId: testBreed.id,
         },
       });
       createdHorseIds.push(horse.id);
@@ -318,8 +318,8 @@ describe('Horse Aging System', () => {
           sex: 'Colt',
           dateOfBirth: birth1YearAgo, // Should be ~517 days old (accounting for leap year)
           age: 100, // Incorrect stored age
-          userId: testUser.id ,
-          breedId: testBreed.id ,
+          userId: testUser.id,
+          breedId: testBreed.id,
         },
       });
       createdHorseIds.push(horse.id);
@@ -350,8 +350,8 @@ describe('Horse Aging System', () => {
           sex: 'Filly',
           dateOfBirth: birth1YearAgo, // Exactly 1 year ago
           age: 364, // About to turn 365 (1 year milestone)
-          userId: testUser.id ,
-          breedId: testBreed.id ,
+          userId: testUser.id,
+          breedId: testBreed.id,
           bondScore: 80,
           stressLevel: 10,
           taskLog: {
@@ -427,8 +427,8 @@ describe('Horse Aging System', () => {
             sex: 'Colt',
             dateOfBirth: birth1WeekAgo, // 1 week ago (1 year in game time)
             age: 6, // Will turn 7 (1 year = 7 days), milestone triggers at 7
-            userId: testUser.id ,
-            breedId: testBreed.id ,
+            userId: testUser.id,
+            breedId: testBreed.id,
             taskLog: { trust_building: 5 },
             daysGroomedInARow: 8,
             epigeneticModifiers: { positive: [], negative: [], hidden: [] },
@@ -441,8 +441,8 @@ describe('Horse Aging System', () => {
             sex: 'Filly',
             dateOfBirth: birth15DaysAgo, // 15 days ago (2.14 years in game time)
             age: 14, // Will turn 15 (no milestone at 15)
-            userId: testUser.id ,
-            breedId: testBreed.id ,
+            userId: testUser.id,
+            breedId: testBreed.id,
           },
         }),
         // Horse with no birthday today (but incorrect age)
@@ -452,8 +452,8 @@ describe('Horse Aging System', () => {
             sex: 'Colt',
             dateOfBirth: birth31DaysAgo, // 31 days ago (4.4 years in game time)
             age: 25, // Incorrect age, will be corrected to 31 (no milestone crossing)
-            userId: testUser.id ,
-            breedId: testBreed.id ,
+            userId: testUser.id,
+            breedId: testBreed.id,
           },
         }),
       ]);
@@ -510,8 +510,8 @@ describe('Horse Aging System', () => {
           sex: 'Colt',
           dateOfBirth: birth3WeeksAgo, // 3 weeks ago (3 years in game time)
           age: 20, // About to turn 21 (3 years = 21 days)
-          userId: testUser.id ,
-          breedId: testBreed.id ,
+          userId: testUser.id,
+          breedId: testBreed.id,
         },
       });
       createdHorseIds.push(horse.id);
@@ -557,8 +557,8 @@ describe('Horse Aging System', () => {
           sex: 'Mare',
           dateOfBirth: birth21WeeksAgo, // 21 weeks ago (21 years in game time)
           age: 146, // About to turn 147 (21 years = 147 days)
-          userId: testUser.id ,
-          breedId: testBreed.id ,
+          userId: testUser.id,
+          breedId: testBreed.id,
         },
       });
       createdHorseIds.push(horse.id);

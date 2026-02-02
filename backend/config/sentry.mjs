@@ -206,7 +206,7 @@ const eventCounters = new Map();
  */
 export function checkAlertThreshold(eventType, identifier) {
   const threshold = SecurityAlertThresholds[eventType];
-  if (!threshold) return false;
+  if (!threshold) { return false; }
 
   const key = `${eventType}:${identifier}`;
   const now = Date.now();

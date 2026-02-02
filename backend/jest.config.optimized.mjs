@@ -196,19 +196,19 @@ export default {
    */
   coverageThreshold: process.env.CI
     ? {
-        global: {
-          statements: 80,
-          branches: 75,
-          functions: 80,
-          lines: 80,
-        },
-        './controllers/authController.mjs': {
-          statements: 90,
-          branches: 85,
-          functions: 90,
-          lines: 90,
-        },
-      }
+      global: {
+        statements: 80,
+        branches: 75,
+        functions: 80,
+        lines: 80,
+      },
+      './controllers/authController.mjs': {
+        statements: 90,
+        branches: 85,
+        functions: 90,
+        lines: 90,
+      },
+    }
     : undefined,
 
   coverageDirectory: '<rootDir>/coverage',
@@ -238,11 +238,11 @@ export default {
    */
   reporters: process.env.CI
     ? [
-        'default',
-        ['jest-junit', { outputDirectory: 'test-results', outputName: 'junit.xml' }],
-        ['jest-html-reporter', { pageTitle: 'Auth Test Results', outputPath: 'test-results/index.html' }],
-        ['<rootDir>/tests/config/PerformanceReporter.mjs', { outputPath: 'test-results/performance.json' }],
-      ]
+      'default',
+      ['jest-junit', { outputDirectory: 'test-results', outputName: 'junit.xml' }],
+      ['jest-html-reporter', { pageTitle: 'Auth Test Results', outputPath: 'test-results/index.html' }],
+      ['<rootDir>/tests/config/PerformanceReporter.mjs', { outputPath: 'test-results/performance.json' }],
+    ]
     : ['default'],
 
   /**

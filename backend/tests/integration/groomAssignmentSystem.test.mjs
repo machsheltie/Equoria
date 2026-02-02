@@ -37,7 +37,7 @@ describe('Enhanced Groom Assignment System Integration Tests', () => {
         name: 'Assignment Test Horse 1',
         sex: 'male',
         dateOfBirth: new Date(Date.now() - 365 * 24 * 60 * 60 * 1000), // 1 year old
-        userId: testUser.id ,
+        userId: testUser.id,
         bondScore: 30,
         stressLevel: 40,
       },
@@ -48,7 +48,7 @@ describe('Enhanced Groom Assignment System Integration Tests', () => {
         name: 'Assignment Test Horse 2',
         sex: 'female',
         dateOfBirth: new Date(Date.now() - 730 * 24 * 60 * 60 * 1000), // 2 years old
-        userId: testUser.id ,
+        userId: testUser.id,
         bondScore: 45,
         stressLevel: 25,
       },
@@ -58,7 +58,7 @@ describe('Enhanced Groom Assignment System Integration Tests', () => {
     testGroom1 = await prisma.groom.create({
       data: {
         name: 'Assignment Test Groom 1',
-        userId: testUser.id ,
+        userId: testUser.id,
         speciality: 'foalCare',
         skillLevel: 'intermediate',
         personality: 'gentle',
@@ -71,7 +71,7 @@ describe('Enhanced Groom Assignment System Integration Tests', () => {
     testGroom2 = await prisma.groom.create({
       data: {
         name: 'Assignment Test Groom 2',
-        userId: testUser.id ,
+        userId: testUser.id,
         speciality: 'training',
         skillLevel: 'expert',
         personality: 'energetic',
@@ -197,7 +197,7 @@ describe('Enhanced Groom Assignment System Integration Tests', () => {
           name: 'Other User Horse',
           sex: 'male',
           dateOfBirth: new Date(Date.now() - 365 * 24 * 60 * 60 * 1000),
-          userId: otherUser.id ,
+          userId: otherUser.id,
         },
       });
 
@@ -306,7 +306,7 @@ describe('Enhanced Groom Assignment System Integration Tests', () => {
             name: `Limit Test Horse ${i + 1}`,
             sex: 'male',
             dateOfBirth: new Date(Date.now() - 365 * 24 * 60 * 60 * 1000),
-            userId: testUser.id ,
+            userId: testUser.id,
           },
         });
         horses.push(horse);

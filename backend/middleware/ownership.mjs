@@ -144,7 +144,7 @@ export const requireOwnership = (resourceType, options = {}) => {
 
       // Single-query ownership validation
       // WHERE clause includes both id AND appropriate owner field for atomic validation
-      let queryOptions = {
+      const queryOptions = {
         where: {
           id: resourceId,
         },
@@ -154,7 +154,7 @@ export const requireOwnership = (resourceType, options = {}) => {
       if (ownerField.includes('.')) {
         const [relation, field] = ownerField.split('.');
         queryOptions.where[relation] = {
-          [field]: req.user.id
+          [field]: req.user.id,
         };
       } else {
         queryOptions.where[ownerField] = req.user.id;
@@ -179,7 +179,7 @@ export const requireOwnership = (resourceType, options = {}) => {
         }
 
         logger.warn(
-          `[ownership] ${resourceType} ${resourceId} not found or not owned by user ${req.user.id}`
+          `[ownership] ${resourceType} ${resourceId} not found or not owned by user ${req.user.id}`,
         );
         throw new AppError(`${resourceType.charAt(0).toUpperCase() + resourceType.slice(1)} not found`, 404);
       }
@@ -190,7 +190,7 @@ export const requireOwnership = (resourceType, options = {}) => {
       req.validatedResources = { ...(req.validatedResources || {}), [resourceType]: resource };
 
       logger.info(
-        `[ownership] Validated ownership: user ${req.user.id} owns ${resourceType} ${resourceId}`
+        `[ownership] Validated ownership: user ${req.user.id} owns ${resourceType} ${resourceId}`,
       );
 
       next();
@@ -255,7 +255,7 @@ export async function findOwnedResource(resourceType, resourceId, userId, option
       if (ownerField.includes('.')) {
         const [relation, field] = ownerField.split('.');
         queryOptions.where[relation] = {
-          [field]: userId
+          [field]: userId,
         };
       } else {
         queryOptions.where[ownerField] = userId;
@@ -274,11 +274,11 @@ export async function findOwnedResource(resourceType, resourceId, userId, option
     // Resource not found OR user doesn't own it
     if (resource) {
       logger.info(
-        `[ownership] Found owned ${resourceType} ${resourceId} for user ${userId}`
+        `[ownership] Found owned ${resourceType} ${resourceId} for user ${userId}`,
       );
     } else {
       logger.warn(
-        `[ownership] ${resourceType} ${resourceId} not found or not owned by user ${userId}`
+        `[ownership] ${resourceType} ${resourceId} not found or not owned by user ${userId}`,
       );
     }
 
@@ -328,7 +328,7 @@ export async function validateBatchOwnership(resourceType, resourceIds, userId, 
     if (ownerField.includes('.')) {
       const [relation, field] = ownerField.split('.');
       queryOptions.where[relation] = {
-        [field]: userId
+        [field]: userId,
       };
     } else {
       queryOptions.where[ownerField] = userId;
@@ -344,7 +344,7 @@ export async function validateBatchOwnership(resourceType, resourceIds, userId, 
     const resources = await prisma[modelName].findMany(queryOptions);
 
     logger.info(
-      `[ownership] Batch validation: user ${userId} owns ${resources.length}/${resourceIds.length} ${resourceType}s`
+      `[ownership] Batch validation: user ${userId} owns ${resources.length}/${resourceIds.length} ${resourceType}s`,
     );
 
     return resources;

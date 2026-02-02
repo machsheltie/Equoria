@@ -126,7 +126,7 @@ describe('Foal Task Logging Integration', () => {
         skillLevel: 'intermediate',
         personality: 'patient',
         sessionRate: 30.0,
-        userId: testUser.id ,
+        userId: testUser.id,
       },
     });
 
@@ -140,7 +140,7 @@ describe('Foal Task Logging Integration', () => {
         sex: 'Colt',
         dateOfBirth: foalBirthDate,
         age: 365, // 1 year old
-        userId: testUser.id ,
+        userId: testUser.id,
         bondScore: 50,
         stressLevel: 20,
         taskLog: null, // Start with empty task log
@@ -294,7 +294,7 @@ describe('Foal Task Logging Integration', () => {
             sex: 'Colt',
             dateOfBirth: new Date(Date.now() - 365 * 24 * 60 * 60 * 1000), // 1 year ago
             age: 365,
-            userId: testUser.id ,
+            userId: testUser.id,
             bondScore: 50,
             stressLevel: 20,
             taskLog: null,

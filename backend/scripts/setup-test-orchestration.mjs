@@ -42,7 +42,7 @@ async function main() {
     ];
 
     const missingDeps = requiredDeps.filter(
-      dep => !packageJson.devDependencies?.[dep]
+      dep => !packageJson.devDependencies?.[dep],
     );
 
     if (missingDeps.length > 0) {

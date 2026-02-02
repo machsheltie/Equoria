@@ -68,8 +68,8 @@ describe('API Response Optimization System', () => {
       const horse = await prisma.horse.create({
         data: {
           name: `OptimizationHorse${i}_${testRunId}`,
-          userId: testUserId ,
-          breedId: testBreed.id ,
+          userId: testUserId,
+          breedId: testBreed.id,
           sex: i % 2 === 0 ? 'Stallion' : 'Mare',
           age: 3 + (i % 10),
           dateOfBirth: new Date(Date.now() - (3 + (i % 10)) * 365 * 24 * 60 * 60 * 1000),

@@ -190,15 +190,15 @@ async function analyzeComplexJoinQuery(options) {
       breed: includeRelations.includes('breed'),
       competitionResults: includeRelations.includes('competitionResults')
         ? {
-            take: 10,
-            orderBy: { runDate: 'desc' },
-          }
+          take: 10,
+          orderBy: { runDate: 'desc' },
+        }
         : false,
       trainingLogs: includeRelations.includes('trainingLogs')
         ? {
-            take: 5,
-            orderBy: { trainedAt: 'desc' },
-          }
+          take: 5,
+          orderBy: { trainedAt: 'desc' },
+        }
         : false,
     },
   });
