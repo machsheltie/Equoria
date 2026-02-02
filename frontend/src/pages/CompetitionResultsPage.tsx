@@ -2,6 +2,7 @@
  * Competition Results Page
  *
  * Story 5-2: Competition Results Display - Main Results Page
+ * Story 5-3: Competition History - Task 7 (Integration with Results Display)
  *
  * Features:
  * - Page header with title, description, and breadcrumb navigation
@@ -14,6 +15,9 @@
  * - Loading and error states
  * - WCAG 2.1 AA accessibility compliant
  * - Responsive design (mobile/tablet/desktop)
+ * - BalanceUpdateIndicator for prize money display (Story 5-3)
+ * - Prize history page link (Story 5-3)
+ * - Viewed competitions tracking for prize notifications (Story 5-3)
  *
  * Test Coverage: 20 tests passing
  * - Component rendering, user stats display
@@ -22,7 +26,7 @@
  * - Accessibility, responsive design
  */
 
-import React, { memo, useCallback, useState, useEffect } from 'react';
+import React, { memo, useCallback, useState, useEffect, useMemo } from 'react';
 import { Link, useParams } from 'react-router-dom';
 import {
   Trophy,
@@ -33,11 +37,13 @@ import {
   Home,
   RefreshCw,
   BarChart3,
+  History,
 } from 'lucide-react';
 import { useAuth } from '@/contexts/AuthContext';
 import { useUserCompetitionStats } from '@/hooks/api/useUserCompetitionStats';
 import CompetitionResultsList from '@/components/competition/CompetitionResultsList';
 import CompetitionResultsModal from '@/components/competition/CompetitionResultsModal';
+import BalanceUpdateIndicator from '@/components/feedback/BalanceUpdateIndicator';
 
 /**
  * Performance view state for tracking selected horse performance breakdown
@@ -63,10 +69,7 @@ const formatCurrency = (amount: number): string => {
  * Stat card skeleton component for loading state
  */
 const StatCardSkeleton = memo(() => (
-  <div
-    className="bg-white rounded-lg shadow p-6 animate-pulse"
-    data-testid="stat-card-skeleton"
-  >
+  <div className="bg-white rounded-lg shadow p-6 animate-pulse" data-testid="stat-card-skeleton">
     <div className="flex items-center justify-between">
       <div className="space-y-3 flex-1">
         <div className="h-4 bg-slate-200 rounded w-24" />
@@ -82,36 +85,35 @@ StatCardSkeleton.displayName = 'StatCardSkeleton';
 /**
  * Individual stat card component
  */
-const StatCard = memo(({
-  title,
-  value,
-  icon: Icon,
-  iconBgColor,
-  iconColor,
-  testId,
-}: {
-  title: string;
-  value: string | number;
-  icon: React.ElementType;
-  iconBgColor: string;
-  iconColor: string;
-  testId: string;
-}) => (
-  <div
-    className="bg-white rounded-lg shadow p-6"
-    data-testid={testId}
-  >
-    <div className="flex items-center justify-between">
-      <div>
-        <p className="text-sm font-medium text-slate-600">{title}</p>
-        <p className="text-2xl font-bold text-slate-900 mt-1">{value}</p>
-      </div>
-      <div className={`p-3 rounded-full ${iconBgColor}`}>
-        <Icon className={`h-6 w-6 ${iconColor}`} aria-hidden="true" />
+const StatCard = memo(
+  ({
+    title,
+    value,
+    icon: Icon,
+    iconBgColor,
+    iconColor,
+    testId,
+  }: {
+    title: string;
+    value: string | number;
+    icon: React.ElementType;
+    iconBgColor: string;
+    iconColor: string;
+    testId: string;
+  }) => (
+    <div className="bg-white rounded-lg shadow p-6" data-testid={testId}>
+      <div className="flex items-center justify-between">
+        <div>
+          <p className="text-sm font-medium text-slate-600">{title}</p>
+          <p className="text-2xl font-bold text-slate-900 mt-1">{value}</p>
+        </div>
+        <div className={`p-3 rounded-full ${iconBgColor}`}>
+          <Icon className={`h-6 w-6 ${iconColor}`} aria-hidden="true" />
+        </div>
       </div>
     </div>
-  </div>
-));
+  )
+);
 
 StatCard.displayName = 'StatCard';
 
@@ -146,10 +148,7 @@ EmptyStateBanner.displayName = 'EmptyStateBanner';
  * Stats error component
  */
 const StatsError = memo(({ message, onRetry }: { message: string; onRetry: () => void }) => (
-  <div
-    className="bg-red-50 border border-red-200 rounded-lg p-4 mb-8"
-    data-testid="stats-error"
-  >
+  <div className="bg-red-50 border border-red-200 rounded-lg p-4 mb-8" data-testid="stats-error">
     <div className="flex items-center justify-between">
       <div className="flex items-center">
         <Trophy className="h-5 w-5 text-red-400 mr-2" aria-hidden="true" />
@@ -173,22 +172,13 @@ StatsError.displayName = 'StatsError';
  * Breadcrumb navigation component
  */
 const Breadcrumbs = memo(() => (
-  <nav
-    className="flex items-center text-sm text-slate-500 mb-4"
-    aria-label="Breadcrumb"
-  >
-    <Link
-      to="/"
-      className="flex items-center hover:text-slate-700 transition-colors"
-    >
+  <nav className="flex items-center text-sm text-slate-500 mb-4" aria-label="Breadcrumb">
+    <Link to="/" className="flex items-center hover:text-slate-700 transition-colors">
       <Home className="h-4 w-4 mr-1" aria-hidden="true" />
       Home
     </Link>
     <ChevronRight className="h-4 w-4 mx-2" aria-hidden="true" />
-    <Link
-      to="/competitions"
-      className="hover:text-slate-700 transition-colors"
-    >
+    <Link to="/competitions" className="hover:text-slate-700 transition-colors">
       Competitions
     </Link>
     <ChevronRight className="h-4 w-4 mx-2" aria-hidden="true" />
@@ -223,8 +213,27 @@ const CompetitionResultsPage = (): JSX.Element => {
 
   // Modal state
   const [selectedCompetitionId, setSelectedCompetitionId] = useState<number | null>(null);
+  // Performance view state is set but render usage pending for performance breakdown modal
+  // eslint-disable-next-line @typescript-eslint/no-unused-vars
   const [performanceView, setPerformanceView] = useState<PerformanceViewState | null>(null);
   const [activeTab, setActiveTab] = useState<'my-results' | 'browse'>('my-results');
+
+  // Prize integration state (Story 5-3)
+  const [viewedCompetitions, setViewedCompetitions] = useState<Set<number>>(new Set());
+  const [showPrizeNotification, setShowPrizeNotification] = useState(false);
+  const [previousBalance, setPreviousBalance] = useState<number>(0);
+
+  // Track balance for updates (Story 5-3)
+  const currentBalance = useMemo(() => {
+    return userStats?.totalPrizeMoney ?? 0;
+  }, [userStats]);
+
+  // Update previous balance when balance changes (Story 5-3)
+  useEffect(() => {
+    if (currentBalance !== previousBalance && previousBalance === 0) {
+      setPreviousBalance(currentBalance);
+    }
+  }, [currentBalance, previousBalance]);
 
   // Handle deep link - open modal if URL contains competition ID
   useEffect(() => {
@@ -237,23 +246,41 @@ const CompetitionResultsPage = (): JSX.Element => {
   }, [urlCompetitionId]);
 
   // Modal handlers
-  const handleResultClick = useCallback((competitionId: number) => {
-    setSelectedCompetitionId(competitionId);
-  }, []);
+  const handleResultClick = useCallback(
+    (competitionId: number) => {
+      setSelectedCompetitionId(competitionId);
+
+      // Check if this is a first view to trigger prize notification (Story 5-3)
+      if (!viewedCompetitions.has(competitionId)) {
+        setShowPrizeNotification(true);
+        setViewedCompetitions((prev) => new Set(prev).add(competitionId));
+      }
+    },
+    [viewedCompetitions]
+  );
 
   const handleCloseModal = useCallback(() => {
     setSelectedCompetitionId(null);
     setPerformanceView(null);
+    setShowPrizeNotification(false);
   }, []);
 
-  const handleViewPerformance = useCallback((horseId: number) => {
-    if (selectedCompetitionId) {
-      setPerformanceView({
-        competitionId: selectedCompetitionId,
-        horseId,
-      });
-    }
-  }, [selectedCompetitionId]);
+  // Handle prize notification close (Story 5-3)
+  const handlePrizeNotificationClose = useCallback(() => {
+    setShowPrizeNotification(false);
+  }, []);
+
+  const handleViewPerformance = useCallback(
+    (horseId: number) => {
+      if (selectedCompetitionId) {
+        setPerformanceView({
+          competitionId: selectedCompetitionId,
+          horseId,
+        });
+      }
+    },
+    [selectedCompetitionId]
+  );
 
   const handleRetryStats = useCallback(() => {
     refetchStats();
@@ -270,10 +297,31 @@ const CompetitionResultsPage = (): JSX.Element => {
 
         {/* Page Header */}
         <header className="mb-8" data-testid="page-header">
-          <h1 className="text-3xl font-bold text-slate-900 mb-2">Competition Results</h1>
-          <p className="text-slate-600">
-            View your competition history and performance
-          </p>
+          <div className="flex items-center justify-between flex-wrap gap-4">
+            <div>
+              <h1 className="text-3xl font-bold text-slate-900 mb-2">Competition Results</h1>
+              <p className="text-slate-600">View your competition history and performance</p>
+            </div>
+
+            {/* Balance and Prize History Link (Story 5-3) */}
+            <div className="flex items-center gap-4">
+              <div data-testid="balance-update-indicator">
+                <BalanceUpdateIndicator
+                  oldValue={previousBalance}
+                  newValue={currentBalance}
+                  prefix="$"
+                  decimals={0}
+                />
+              </div>
+              <Link
+                to="/prizes"
+                className="inline-flex items-center gap-2 text-blue-600 hover:text-blue-800 text-sm font-medium transition-colors"
+              >
+                <History className="h-4 w-4" aria-hidden="true" />
+                View Prize History
+              </Link>
+            </div>
+          </div>
         </header>
 
         {/* User Statistics Summary */}
@@ -364,11 +412,7 @@ const CompetitionResultsPage = (): JSX.Element => {
         </div>
 
         {/* Main Content - Results List */}
-        <div
-          id="my-results-panel"
-          role="tabpanel"
-          aria-labelledby="my-results-tab"
-        >
+        <div id="my-results-panel" role="tabpanel" aria-labelledby="my-results-tab">
           <CompetitionResultsList
             userId={userId || ''}
             onResultClick={handleResultClick}
@@ -377,12 +421,14 @@ const CompetitionResultsPage = (): JSX.Element => {
           />
         </div>
 
-        {/* Competition Results Modal */}
+        {/* Competition Results Modal (with Prize Integration - Story 5-3) */}
         <CompetitionResultsModal
           isOpen={selectedCompetitionId !== null}
           onClose={handleCloseModal}
           competitionId={selectedCompetitionId}
           onViewPerformance={handleViewPerformance}
+          showPrizeNotification={showPrizeNotification}
+          onPrizeNotificationClose={handlePrizeNotificationClose}
         />
       </main>
     </div>

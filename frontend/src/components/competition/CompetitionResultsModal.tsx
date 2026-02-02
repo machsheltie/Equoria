@@ -9,6 +9,9 @@
  * - Top 3 rows with gold/silver/bronze placement badges
  * - Sortable columns (rank, score, horse name, owner name)
  * - Click on user's horse to view performance breakdown
+ * - PrizeSummaryCard showing user's prizes when applicable (Story 5-3)
+ * - PrizeNotificationModal for first-time prize notifications (Story 5-3)
+ * - Link to prize history page in footer (Story 5-3)
  *
  * Features:
  * - Portal rendering for proper stacking context
@@ -21,10 +24,12 @@
  * - Virtual scrolling ready for large datasets
  *
  * Story 5-2: Competition Results Display
+ * Story 5-3: Competition History - Task 7 (Integration with Results Display)
  */
 
 import React, { memo, useCallback, useEffect, useRef, useState, useMemo } from 'react';
 import { createPortal } from 'react-dom';
+import { Link } from 'react-router-dom';
 import {
   Trophy,
   Medal,
@@ -36,7 +41,10 @@ import {
   ArrowUpDown,
   ArrowUp,
   ArrowDown,
+  History,
 } from 'lucide-react';
+import PrizeSummaryCard, { type HorsePrize } from './PrizeSummaryCard';
+import PrizeNotificationModal, { type PrizeData } from './PrizeNotificationModal';
 
 /**
  * Participant result data structure
@@ -84,6 +92,12 @@ export interface CompetitionResultsModalProps {
   onViewPerformance?: (horseId: number) => void;
   /** Callback for retrying data fetch on error */
   onRetry?: () => void;
+  /** Callback when modal first opened with prizes (Story 5-3) */
+  onFirstView?: () => void;
+  /** Control prize notification display (Story 5-3) */
+  showPrizeNotification?: boolean;
+  /** Callback when prize notification is closed (Story 5-3) */
+  onPrizeNotificationClose?: () => void;
   /** Test prop for injecting results data */
   _testResults?: CompetitionResults | null;
   /** Test prop for loading state */
@@ -153,7 +167,8 @@ const PlacementBadge = memo(({ rank }: { rank: number }) => {
       data-testid={`placement-badge-${rank}`}
     >
       <Icon className="h-3 w-3" aria-hidden="true" />
-      {rank}{suffix}
+      {rank}
+      {suffix}
     </span>
   );
 });
@@ -196,9 +211,7 @@ const EmptyState = memo(() => (
   <div className="py-12 text-center" data-testid="empty-state">
     <Trophy className="mx-auto h-12 w-12 text-slate-400 mb-4" aria-hidden="true" />
     <h3 className="text-lg font-medium text-slate-900 mb-2">No results available</h3>
-    <p className="text-sm text-slate-600">
-      Results for this competition are not yet available.
-    </p>
+    <p className="text-sm text-slate-600">Results for this competition are not yet available.</p>
   </div>
 ));
 
@@ -230,40 +243,38 @@ ErrorState.displayName = 'ErrorState';
 /**
  * Sort header button component
  */
-const SortHeader = memo(({
-  label,
-  field,
-  currentField,
-  direction,
-  onSort,
-}: {
-  label: string;
-  field: SortField;
-  currentField: SortField;
-  direction: SortDirection;
-  onSort: (field: SortField) => void;
-}) => {
-  const isActive = currentField === field;
-  const Icon = isActive
-    ? direction === 'asc'
-      ? ArrowUp
-      : ArrowDown
-    : ArrowUpDown;
+const SortHeader = memo(
+  ({
+    label,
+    field,
+    currentField,
+    direction,
+    onSort,
+  }: {
+    label: string;
+    field: SortField;
+    currentField: SortField;
+    direction: SortDirection;
+    onSort: (field: SortField) => void;
+  }) => {
+    const isActive = currentField === field;
+    const Icon = isActive ? (direction === 'asc' ? ArrowUp : ArrowDown) : ArrowUpDown;
 
-  return (
-    <button
-      onClick={() => onSort(field)}
-      className={`inline-flex items-center gap-1 font-semibold text-left hover:text-blue-600 transition-colors ${
-        isActive ? 'text-blue-600' : 'text-slate-700'
-      }`}
-      data-testid={`sort-by-${field}`}
-      aria-label={`Sort by ${label}`}
-    >
-      {label}
-      <Icon className="h-4 w-4" aria-hidden="true" />
-    </button>
-  );
-});
+    return (
+      <button
+        onClick={() => onSort(field)}
+        className={`inline-flex items-center gap-1 font-semibold text-left hover:text-blue-600 transition-colors ${
+          isActive ? 'text-blue-600' : 'text-slate-700'
+        }`}
+        data-testid={`sort-by-${field}`}
+        aria-label={`Sort by ${label}`}
+      >
+        {label}
+        <Icon className="h-4 w-4" aria-hidden="true" />
+      </button>
+    );
+  }
+);
 
 SortHeader.displayName = 'SortHeader';
 
@@ -278,6 +289,9 @@ const CompetitionResultsModal = memo(function CompetitionResultsModal({
   competitionId,
   onViewPerformance,
   onRetry,
+  onFirstView,
+  showPrizeNotification = false,
+  onPrizeNotificationClose,
   _testResults,
   _testLoading = false,
   _testError = null,
@@ -289,10 +303,66 @@ const CompetitionResultsModal = memo(function CompetitionResultsModal({
   const [sortField, setSortField] = useState<SortField>('rank');
   const [sortDirection, setSortDirection] = useState<SortDirection>('asc');
 
+  // Prize summary expansion state
+  const [isPrizeExpanded, setIsPrizeExpanded] = useState(false);
+
   // Use test props or real data fetching (in production, you'd fetch here based on competitionId)
   const results = _testResults;
   const isLoading = _testLoading;
   const error = _testError;
+
+  // Calculate user prizes for PrizeSummaryCard (Story 5-3)
+  const userPrizes: HorsePrize[] = useMemo(() => {
+    if (!results?.results) return [];
+
+    return results.results
+      .filter((r) => r.isCurrentUser && r.rank <= 3)
+      .map((r) => ({
+        horseId: r.horseId,
+        horseName: r.horseName,
+        placement: r.rank,
+        prizeMoney: r.prizeWon,
+        xpGained: Math.round(r.prizeWon * 0.1), // Calculate XP from prize money
+      }));
+  }, [results]);
+
+  // Check if user has any prizes
+  const hasUserPrizes = userPrizes.length > 0;
+
+  // Get the best prize for notification modal (highest placement)
+  const bestPrize = useMemo(() => {
+    if (!hasUserPrizes || !results) return null;
+
+    const sortedByPlacement = [...userPrizes].sort((a, b) => a.placement - b.placement);
+    const best = sortedByPlacement[0];
+
+    return {
+      horseName: best.horseName,
+      competitionName: results.competitionName,
+      discipline: results.discipline,
+      date: results.date,
+      placement: best.placement as 1 | 2 | 3,
+      prizeMoney: best.prizeMoney,
+      xpGained: best.xpGained,
+    } as PrizeData;
+  }, [hasUserPrizes, userPrizes, results]);
+
+  // Call onFirstView when modal opens with prizes (Story 5-3)
+  useEffect(() => {
+    if (isOpen && hasUserPrizes && onFirstView) {
+      onFirstView();
+    }
+  }, [isOpen, hasUserPrizes, onFirstView]);
+
+  // Handle prize notification close
+  const handlePrizeNotificationClose = useCallback(() => {
+    onPrizeNotificationClose?.();
+  }, [onPrizeNotificationClose]);
+
+  // Handle prize summary toggle
+  const handlePrizeSummaryToggle = useCallback(() => {
+    setIsPrizeExpanded((prev) => !prev);
+  }, []);
 
   // Handle sort toggle
   const handleSort = useCallback((field: SortField) => {
@@ -414,19 +484,34 @@ const CompetitionResultsModal = memo(function CompetitionResultsModal({
           <table className="min-w-full" role="table">
             <thead className="sticky top-0 bg-gray-100 z-10">
               <tr>
-                <th scope="col" className="px-4 py-3 text-left text-xs font-semibold text-gray-700 uppercase tracking-wider">
+                <th
+                  scope="col"
+                  className="px-4 py-3 text-left text-xs font-semibold text-gray-700 uppercase tracking-wider"
+                >
                   Rank
                 </th>
-                <th scope="col" className="px-4 py-3 text-left text-xs font-semibold text-gray-700 uppercase tracking-wider">
+                <th
+                  scope="col"
+                  className="px-4 py-3 text-left text-xs font-semibold text-gray-700 uppercase tracking-wider"
+                >
                   Horse
                 </th>
-                <th scope="col" className="px-4 py-3 text-left text-xs font-semibold text-gray-700 uppercase tracking-wider">
+                <th
+                  scope="col"
+                  className="px-4 py-3 text-left text-xs font-semibold text-gray-700 uppercase tracking-wider"
+                >
                   Owner
                 </th>
-                <th scope="col" className="px-4 py-3 text-left text-xs font-semibold text-gray-700 uppercase tracking-wider">
+                <th
+                  scope="col"
+                  className="px-4 py-3 text-left text-xs font-semibold text-gray-700 uppercase tracking-wider"
+                >
                   Score
                 </th>
-                <th scope="col" className="px-4 py-3 text-left text-xs font-semibold text-gray-700 uppercase tracking-wider">
+                <th
+                  scope="col"
+                  className="px-4 py-3 text-left text-xs font-semibold text-gray-700 uppercase tracking-wider"
+                >
                   Prize
                 </th>
               </tr>
@@ -496,7 +581,10 @@ const CompetitionResultsModal = memo(function CompetitionResultsModal({
                   onSort={handleSort}
                 />
               </th>
-              <th scope="col" className="px-4 py-3 text-left text-xs font-semibold text-gray-700 uppercase tracking-wider">
+              <th
+                scope="col"
+                className="px-4 py-3 text-left text-xs font-semibold text-gray-700 uppercase tracking-wider"
+              >
                 Prize
               </th>
             </tr>
@@ -555,7 +643,9 @@ const CompetitionResultsModal = memo(function CompetitionResultsModal({
                   <td className="px-4 py-3 whitespace-nowrap">
                     <span
                       data-testid="prize-value"
-                      className={result.prizeWon > 0 ? 'font-semibold text-green-600' : 'text-gray-500'}
+                      className={
+                        result.prizeWon > 0 ? 'font-semibold text-green-600' : 'text-gray-500'
+                      }
                     >
                       {formatCurrency(result.prizeWon)}
                     </span>
@@ -602,7 +692,10 @@ const CompetitionResultsModal = memo(function CompetitionResultsModal({
               >
                 {results?.discipline || 'N/A'}
               </span>
-              <div className="flex items-center text-sm text-gray-600" data-testid="competition-date">
+              <div
+                className="flex items-center text-sm text-gray-600"
+                data-testid="competition-date"
+              >
                 <Calendar className="h-4 w-4 mr-1" aria-hidden="true" />
                 {results?.date ? formatDate(results.date) : 'N/A'}
               </div>
@@ -665,10 +758,33 @@ const CompetitionResultsModal = memo(function CompetitionResultsModal({
         {/* Content Area */}
         <div className="flex-1 overflow-y-auto p-6">
           {renderContent()}
+
+          {/* Prize Summary Card - Story 5-3: Show when user has prizes */}
+          {hasUserPrizes && results && (
+            <div className="mt-6">
+              <PrizeSummaryCard
+                competitionId={results.competitionId}
+                competitionName={results.competitionName}
+                date={results.date}
+                prizes={userPrizes}
+                isExpanded={isPrizeExpanded}
+                onToggleExpand={handlePrizeSummaryToggle}
+                onViewPerformance={onViewPerformance}
+              />
+            </div>
+          )}
         </div>
 
         {/* Footer */}
-        <div className="flex justify-end p-4 border-t border-gray-200 bg-gray-50 flex-shrink-0">
+        <div className="flex justify-between items-center p-4 border-t border-gray-200 bg-gray-50 flex-shrink-0">
+          {/* Prize History Link - Story 5-3 */}
+          <Link
+            to="/prizes"
+            className="inline-flex items-center gap-2 text-blue-600 hover:text-blue-800 text-sm font-medium transition-colors"
+          >
+            <History className="h-4 w-4" aria-hidden="true" />
+            Prize History
+          </Link>
           <button
             type="button"
             onClick={onClose}
@@ -678,6 +794,16 @@ const CompetitionResultsModal = memo(function CompetitionResultsModal({
           </button>
         </div>
       </div>
+
+      {/* Prize Notification Modal - Story 5-3 */}
+      {showPrizeNotification && bestPrize && (
+        <PrizeNotificationModal
+          isOpen={showPrizeNotification}
+          onClose={handlePrizeNotificationClose}
+          prizeData={bestPrize}
+          autoDismiss={false}
+        />
+      )}
     </div>
   );
 

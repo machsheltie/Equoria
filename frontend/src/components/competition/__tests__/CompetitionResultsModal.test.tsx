@@ -19,11 +19,16 @@
 import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest';
 import { render, screen, fireEvent, within } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
+import { BrowserRouter } from 'react-router-dom';
 import CompetitionResultsModal, {
   type CompetitionResultsModalProps,
   type CompetitionResults,
-  type ParticipantResult,
 } from '../CompetitionResultsModal';
+
+// Wrapper component that provides router context for Link components
+const renderWithRouter = (ui: React.ReactElement) => {
+  return render(<BrowserRouter>{ui}</BrowserRouter>);
+};
 
 describe('CompetitionResultsModal', () => {
   const mockOnClose = vi.fn();
@@ -128,7 +133,8 @@ describe('CompetitionResultsModal', () => {
     results: CompetitionResults | null = sampleResults
   ) => {
     // We need to mock the data fetching - the component will use props or internal state
-    return render(
+    // Using renderWithRouter wrapper to provide router context for Link components
+    return renderWithRouter(
       <CompetitionResultsModal
         {...defaultProps}
         {...props}
@@ -160,7 +166,9 @@ describe('CompetitionResultsModal', () => {
     it('should display competition header info', () => {
       renderWithData();
 
-      expect(screen.getByTestId('competition-name')).toHaveTextContent('Spring Grand Prix Championship');
+      expect(screen.getByTestId('competition-name')).toHaveTextContent(
+        'Spring Grand Prix Championship'
+      );
       expect(screen.getByTestId('competition-discipline')).toHaveTextContent('Show Jumping');
       expect(screen.getByTestId('competition-date')).toBeInTheDocument();
       expect(screen.getByTestId('total-participants')).toHaveTextContent('25');
@@ -186,7 +194,7 @@ describe('CompetitionResultsModal', () => {
   // ==================== 2. MODAL BEHAVIOR (5 tests) ====================
   describe('Modal Behavior', () => {
     it('should open when isOpen changes to true', () => {
-      const { rerender } = render(
+      const { rerender } = renderWithRouter(
         <CompetitionResultsModal
           {...defaultProps}
           isOpen={false}
@@ -199,13 +207,15 @@ describe('CompetitionResultsModal', () => {
       expect(screen.queryByTestId('competition-results-modal')).not.toBeInTheDocument();
 
       rerender(
-        <CompetitionResultsModal
-          {...defaultProps}
-          isOpen={true}
-          _testResults={sampleResults}
-          _testLoading={false}
-          _testError={null}
-        />
+        <BrowserRouter>
+          <CompetitionResultsModal
+            {...defaultProps}
+            isOpen={true}
+            _testResults={sampleResults}
+            _testLoading={false}
+            _testError={null}
+          />
+        </BrowserRouter>
       );
 
       expect(screen.getByTestId('competition-results-modal')).toBeInTheDocument();
@@ -258,7 +268,7 @@ describe('CompetitionResultsModal', () => {
       expect(rows).toHaveLength(6);
     });
 
-    it('should highlight user\'s horses with different background', () => {
+    it("should highlight user's horses with different background", () => {
       renderWithData();
 
       const userRow1 = screen.getByTestId('result-row-102');
@@ -292,11 +302,13 @@ describe('CompetitionResultsModal', () => {
     it('should display all table columns correctly', () => {
       renderWithData();
 
-      expect(screen.getByText('Rank')).toBeInTheDocument();
-      expect(screen.getByText('Horse')).toBeInTheDocument();
-      expect(screen.getByText('Owner')).toBeInTheDocument();
-      expect(screen.getByText('Score')).toBeInTheDocument();
-      expect(screen.getByText('Prize')).toBeInTheDocument();
+      // Check table headers within the results table
+      const resultsTable = screen.getByTestId('results-table');
+      expect(within(resultsTable).getByText('Rank')).toBeInTheDocument();
+      expect(within(resultsTable).getByText('Horse')).toBeInTheDocument();
+      expect(within(resultsTable).getByText('Owner')).toBeInTheDocument();
+      expect(within(resultsTable).getByText('Score')).toBeInTheDocument();
+      expect(within(resultsTable).getByText('Prize')).toBeInTheDocument();
     });
 
     it('should sort by rank by default (1st to last)', () => {
@@ -339,7 +351,7 @@ describe('CompetitionResultsModal', () => {
         totalParticipants: 0,
       };
 
-      render(
+      renderWithRouter(
         <CompetitionResultsModal
           {...defaultProps}
           _testResults={emptyResults}
@@ -419,7 +431,7 @@ describe('CompetitionResultsModal', () => {
 
   // ==================== 5. USER INTERACTION (4 tests) ====================
   describe('User Interaction', () => {
-    it('should call onViewPerformance when clicking user\'s horse', async () => {
+    it("should call onViewPerformance when clicking user's horse", async () => {
       const user = userEvent.setup();
       renderWithData();
 
@@ -439,7 +451,7 @@ describe('CompetitionResultsModal', () => {
       expect(mockOnViewPerformance).not.toHaveBeenCalled();
     });
 
-    it('should show hover effect on user\'s horses', () => {
+    it("should show hover effect on user's horses", () => {
       renderWithData();
 
       const userRow = screen.getByTestId('result-row-102');
@@ -517,7 +529,7 @@ describe('CompetitionResultsModal', () => {
   // ==================== STATES (loading, error) ====================
   describe('States', () => {
     it('should show loading skeleton when loading', () => {
-      render(
+      renderWithRouter(
         <CompetitionResultsModal
           {...defaultProps}
           _testResults={null}
@@ -532,7 +544,7 @@ describe('CompetitionResultsModal', () => {
 
     it('should show error message with retry button when error occurs', () => {
       const mockRetry = vi.fn();
-      render(
+      renderWithRouter(
         <CompetitionResultsModal
           {...defaultProps}
           onRetry={mockRetry}
@@ -586,7 +598,7 @@ describe('CompetitionResultsModal', () => {
   // ==================== EDGE CASES ====================
   describe('Edge Cases', () => {
     it('should handle null competitionId gracefully', () => {
-      render(
+      renderWithRouter(
         <CompetitionResultsModal
           {...defaultProps}
           competitionId={null}
@@ -602,7 +614,7 @@ describe('CompetitionResultsModal', () => {
 
     it('should handle missing onViewPerformance gracefully', async () => {
       const user = userEvent.setup();
-      render(
+      renderWithRouter(
         <CompetitionResultsModal
           isOpen={true}
           onClose={mockOnClose}
