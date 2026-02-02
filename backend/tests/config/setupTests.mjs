@@ -5,7 +5,7 @@
  * Sets up mocks, utilities, and test environment.
  */
 
-import { jest } from '@jest/globals';
+import { jest, expect } from '@jest/globals';
 
 // Configure test environment
 process.env.NODE_ENV = 'test';
@@ -127,12 +127,12 @@ expect.extend({
 
     if (hasSensitiveData) {
       return {
-        message: () => `expected response not to contain sensitive data (tokens, passwords)`,
+        message: () => 'expected response not to contain sensitive data (tokens, passwords)',
         pass: false,
       };
     } else {
       return {
-        message: () => `expected response to contain sensitive data`,
+        message: () => 'expected response to contain sensitive data',
         pass: true,
       };
     }

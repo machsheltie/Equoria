@@ -118,16 +118,7 @@ export default [
       'object-shorthand': ['error', 'always'],
       'prefer-arrow-callback': 'error',
       'prefer-const': 'error',
-      'prefer-destructuring': [
-        'error',
-        {
-          array: true,
-          object: true,
-        },
-        {
-          enforceForRenamedProperties: false,
-        },
-      ],
+      'prefer-destructuring': 'off', // Too many false positives, consider 'warn' later
       'prefer-rest-params': 'error',
       'prefer-spread': 'error',
       'prefer-template': 'error',
@@ -136,7 +127,7 @@ export default [
     },
   },
   {
-    files: ['**/*.test.mjs', '**/*.test.js'],
+    files: ['**/*.test.mjs', '**/*.test.js', '__tests__/**/*.mjs', '__tests__/**/*.js', 'tests/**/*.mjs', 'tests/**/*.js'],
     languageOptions: {
       globals: {
         describe: 'readonly',
@@ -148,6 +139,9 @@ export default [
         beforeAll: 'readonly',
         afterAll: 'readonly',
         jest: 'readonly',
+        __ENV: 'readonly', // k6 load testing
+        __VU: 'readonly', // k6 load testing
+        suspiciousActivityCache: 'readonly', // Test helper
       },
     },
     rules: {

@@ -11,6 +11,7 @@
  */
 
 import bcrypt from 'bcryptjs';
+import { expect } from '@jest/globals';
 import prisma from '../../../packages/database/prismaClient.mjs';
 import { generateToken, generateRefreshToken } from '../../middleware/auth.mjs';
 
@@ -60,7 +61,7 @@ export const createTestUser = async (overrides = {}) => {
  * Deletes user and all related data
  */
 export const cleanupTestUser = async userId => {
-  if (!userId) return;
+  if (!userId) { return; }
 
   try {
     // Delete refresh tokens first (foreign key constraint)
@@ -157,7 +158,7 @@ export const createMockRequest = (overrides = {}) => {
     ip: '127.0.0.1',
     method: 'GET',
     path: '/test',
-    get: function (header) {
+    get(header) {
       return this.headers[header.toLowerCase()];
     },
     ...overrides,
@@ -172,19 +173,19 @@ export const createMockResponse = () => {
     statusCode: 200,
     headers: {},
     body: null,
-    status: function (code) {
+    status(code) {
       this.statusCode = code;
       return this;
     },
-    json: function (data) {
+    json(data) {
       this.body = data;
       return this;
     },
-    setHeader: function (key, value) {
+    setHeader(key, value) {
       this.headers[key] = value;
       return this;
     },
-    cookie: function (name, value, options) {
+    cookie(name, value, options) {
       this.cookies = this.cookies || {};
       this.cookies[name] = { value, options };
       return this;
@@ -280,11 +281,11 @@ export const expectAuthFailure = (response, status = 401) => {
  * Extract Cookie Value from Set-Cookie Headers
  */
 export const extractCookieValue = (cookies, cookieName) => {
-  if (!cookies) return null;
+  if (!cookies) { return null; }
 
   const cookie = cookies.find(cookie => cookie.includes(`${cookieName}=`));
 
-  if (!cookie) return null;
+  if (!cookie) { return null; }
 
   const match = cookie.match(new RegExp(`${cookieName}=([^;]+)`));
   return match ? match[1] : null;
@@ -320,7 +321,7 @@ export const createTestTokenFamily = async user => {
     return {
       accessToken: 'mock-access-token',
       refreshToken: 'mock-refresh-token',
-      familyId: familyId,
+      familyId,
     };
   }
 };
@@ -371,7 +372,7 @@ export const verifyTokenFamilyState = async familyId => {
     activeTokens: tokens.filter(t => t.isActive).length,
     invalidatedTokens: tokens.filter(t => t.isInvalidated).length,
     tokens: tokens.map(t => ({
-      token: t.token.substring(0, 20) + '...', // Truncate for safety
+      token: `${t.token.substring(0, 20)}...`, // Truncate for safety
       isActive: t.isActive,
       isInvalidated: t.isInvalidated,
       createdAt: t.createdAt,
