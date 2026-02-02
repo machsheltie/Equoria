@@ -75,3 +75,9 @@ export type {
   DateRangeFilter,
   PlacementFilter,
 } from './CompetitionHistory';
+
+export { default as PrizeNotificationModal } from './PrizeNotificationModal';
+export type {
+  PrizeNotificationModalProps,
+  PrizeData,
+} from './PrizeNotificationModal';

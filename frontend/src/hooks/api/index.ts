@@ -10,3 +10,6 @@ export * from './useCompetitionsFiltered';
 export * from './useCompetitionDetails';
 export * from './useHorseEligibility';
 export * from './useEnterCompetition';
+export * from './usePrizeHistory';
+export * from './useHorsePrizeSummary';
+export * from './useClaimPrizes';
