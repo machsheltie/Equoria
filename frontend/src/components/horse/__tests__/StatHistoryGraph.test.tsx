@@ -52,31 +52,35 @@ const getChartData = () => lastChartData;
 describe('StatHistoryGraph', () => {
   let queryClient: QueryClient;
 
+  const now = new Date();
+  const daysAgo = (days: number) =>
+    new Date(now.getTime() - days * 24 * 60 * 60 * 1000).toISOString();
+
   const mockHistoryData: HorseXPHistory = {
     events: [
       {
-        id: 1,
-        amount: 100,
-        reason: 'Training session completed',
-        timestamp: '2025-12-01T10:00:00Z',
-      },
-      {
-        id: 2,
-        amount: 50,
-        reason: 'Competition win',
-        timestamp: '2025-12-03T14:30:00Z',
+        id: 4,
+        amount: 100, // Changed to match old logic order if needed, but I'll keep the amounts from original test
+        reason: 'Level up bonus',
+        timestamp: daysAgo(6),
       },
       {
         id: 3,
-        amount: 75,
+        amount: 50,
         reason: 'Training session completed',
-        timestamp: '2025-12-05T09:15:00Z',
+        timestamp: daysAgo(5),
       },
       {
-        id: 4,
+        id: 2,
+        amount: 75,
+        reason: 'Competition win',
+        timestamp: daysAgo(2),
+      },
+      {
+        id: 1,
         amount: 120,
-        reason: 'Level up bonus',
-        timestamp: '2025-12-07T16:45:00Z',
+        reason: 'Training session completed',
+        timestamp: daysAgo(1),
       },
     ],
     count: 4,
@@ -139,7 +143,8 @@ describe('StatHistoryGraph', () => {
 
       expect(chartData.labels).toBeDefined();
       expect(chartData.labels.length).toBe(4);
-      expect(chartData.labels[0]).toMatch(/Dec \d+/); // Format like "Dec 1"
+      // Check for date format "MMM DD" (e.g., "Jan 23", "Dec 1") - date-agnostic
+      expect(chartData.labels[0]).toMatch(/^[A-Z][a-z]{2} \d{1,2}$/); // Format like "Jan 23" or "Dec 1"
     });
 
     it('should set Y-axis range from 0 to max XP', () => {
@@ -241,9 +246,9 @@ describe('StatHistoryGraph', () => {
     it('should sort events by timestamp chronologically', () => {
       const unsortedData: HorseXPHistory = {
         events: [
-          { id: 1, amount: 50, reason: 'Event 1', timestamp: '2025-12-05T10:00:00Z' },
-          { id: 2, amount: 100, reason: 'Event 2', timestamp: '2025-12-01T10:00:00Z' },
-          { id: 3, amount: 75, reason: 'Event 3', timestamp: '2025-12-03T10:00:00Z' },
+          { id: 1, amount: 50, reason: 'Event 1', timestamp: daysAgo(1) },
+          { id: 2, amount: 100, reason: 'Event 2', timestamp: daysAgo(10) },
+          { id: 3, amount: 75, reason: 'Event 3', timestamp: daysAgo(5) },
         ],
         count: 3,
         pagination: { limit: 50, offset: 0, hasMore: false },
@@ -261,9 +266,13 @@ describe('StatHistoryGraph', () => {
       const chartElement = screen.getByTestId('chart-canvas');
       const chartData = JSON.parse(chartElement.getAttribute('data-chart-data') || '{}');
 
-      // After sorting, first label should be Dec 1
-      expect(chartData.labels[0]).toMatch(/Dec 1/);
-      expect(chartData.labels[2]).toMatch(/Dec 5/);
+      // After sorting, first label should be the oldest one (10 days ago)
+      const oldestDate = new Date(now.getTime() - 10 * 24 * 60 * 60 * 1000);
+      const month = oldestDate.toLocaleDateString('en-US', { month: 'short' });
+      const day = oldestDate.getDate();
+
+      expect(chartData.labels[0]).toContain(`${month} ${day}`);
+      expect(chartData.datasets[0].data[0]).toBe(100); // Oldest event's amount (cumulative)
     });
   });
 
@@ -413,7 +422,7 @@ describe('StatHistoryGraph', () => {
     it('should handle single data point', () => {
       vi.mocked(useHorseXPHook.useHorseXPHistory).mockReturnValue({
         data: {
-          events: [{ id: 1, amount: 100, reason: 'First event', timestamp: '2025-12-01T10:00:00Z' }],
+          events: [{ id: 1, amount: 100, reason: 'First event', timestamp: daysAgo(1) }],
           count: 1,
           pagination: { limit: 50, offset: 0, hasMore: false },
         },
@@ -433,9 +442,7 @@ describe('StatHistoryGraph', () => {
     it('should handle very large XP numbers', () => {
       vi.mocked(useHorseXPHook.useHorseXPHistory).mockReturnValue({
         data: {
-          events: [
-            { id: 1, amount: 999999, reason: 'Huge bonus', timestamp: '2025-12-01T10:00:00Z' },
-          ],
+          events: [{ id: 1, amount: 999999, reason: 'Huge bonus', timestamp: daysAgo(1) }],
           count: 1,
           pagination: { limit: 50, offset: 0, hasMore: false },
         },
@@ -455,9 +462,7 @@ describe('StatHistoryGraph', () => {
     it('should handle missing timestamp gracefully', () => {
       vi.mocked(useHorseXPHook.useHorseXPHistory).mockReturnValue({
         data: {
-          events: [
-            { id: 1, amount: 100, reason: 'Event', timestamp: '' },
-          ],
+          events: [{ id: 1, amount: 100, reason: 'Event', timestamp: '' }],
           count: 1,
           pagination: { limit: 50, offset: 0, hasMore: false },
         },
@@ -482,7 +487,7 @@ describe('StatHistoryGraph', () => {
       renderWithProvider(<StatHistoryGraph horseId={1} />);
 
       const buttons = screen.getAllByRole('button');
-      buttons.forEach(button => {
+      buttons.forEach((button) => {
         expect(button).toHaveAccessibleName();
       });
     });

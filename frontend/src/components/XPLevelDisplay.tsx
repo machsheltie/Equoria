@@ -104,10 +104,7 @@ const XPLevelDisplay: React.FC<XPLevelDisplayProps> = ({
   }
 
   return (
-    <div
-      data-testid="xp-level-display"
-      className={`flex items-center ${sizeClasses[size]}`}
-    >
+    <div data-testid="xp-level-display" className={`flex items-center ${sizeClasses[size]}`}>
       {/* Level Badge */}
       {showLevelBadge && (
         <div
@@ -136,9 +133,7 @@ const XPLevelDisplay: React.FC<XPLevelDisplayProps> = ({
             Level
           </span>
           {showProgressText && (
-            <span className="fantasy-body text-xs text-midnight-ink">
-              {xpText}
-            </span>
+            <span className="fantasy-body text-xs text-midnight-ink">{xpText}</span>
           )}
         </div>
 

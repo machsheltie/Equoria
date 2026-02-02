@@ -50,9 +50,7 @@ function ProtectedPage() {
   if (shouldRedirect) {
     return (
       <div data-testid="redirect-needed">
-        {sessionMessage && (
-          <div data-testid="session-message">{sessionMessage}</div>
-        )}
+        {sessionMessage && <div data-testid="session-message">{sessionMessage}</div>}
       </div>
     );
   }
@@ -80,9 +78,7 @@ function VerificationRequiredPage() {
   if (shouldRedirect) {
     return (
       <div data-testid="redirect-needed">
-        {sessionMessage && (
-          <div data-testid="session-message">{sessionMessage}</div>
-        )}
+        {sessionMessage && <div data-testid="session-message">{sessionMessage}</div>}
       </div>
     );
   }
@@ -104,9 +100,7 @@ function LoginPage() {
   return (
     <div data-testid="login-page">
       Login Page
-      {state?.message && (
-        <div data-testid="redirect-message">{state.message}</div>
-      )}
+      {state?.message && <div data-testid="redirect-message">{state.message}</div>}
       {state?.from && <div data-testid="redirect-from">{state.from}</div>}
     </div>
   );
@@ -150,12 +144,8 @@ describe('useSessionGuard Hook - Session Management (Story 1-3)', () => {
   describe('Session Validation', () => {
     it('should show loading while checking session', async () => {
       // Never resolve to keep loading state
-      vi.mocked(apiClient.authApi.getProfile).mockReturnValue(
-        new Promise(() => {})
-      );
-      vi.mocked(apiClient.authApi.getVerificationStatus).mockReturnValue(
-        new Promise(() => {})
-      );
+      vi.mocked(apiClient.authApi.getProfile).mockReturnValue(new Promise(() => {}));
+      vi.mocked(apiClient.authApi.getVerificationStatus).mockReturnValue(new Promise(() => {}));
 
       const Wrapper = createWrapper();
       render(<ProtectedPage />, { wrapper: Wrapper });
@@ -183,9 +173,7 @@ describe('useSessionGuard Hook - Session Management (Story 1-3)', () => {
       render(<ProtectedPage />, { wrapper: Wrapper });
 
       await waitFor(() => {
-        expect(screen.getByTestId('protected-content')).toHaveTextContent(
-          'Protected Content'
-        );
+        expect(screen.getByTestId('protected-content')).toHaveTextContent('Protected Content');
       });
     });
 
@@ -251,9 +239,7 @@ describe('useSessionGuard Hook - Session Management (Story 1-3)', () => {
       render(<VerificationRequiredPage />, { wrapper: Wrapper });
 
       await waitFor(() => {
-        expect(screen.getByTestId('verified-content')).toHaveTextContent(
-          'Verified Content'
-        );
+        expect(screen.getByTestId('verified-content')).toHaveTextContent('Verified Content');
       });
     });
 
@@ -336,11 +322,7 @@ describe('useSessionGuard Hook - Session Management (Story 1-3)', () => {
         }
 
         if (shouldRedirect) {
-          return (
-            <div data-testid="redirect-needed">
-              Redirect to: {redirectPath}
-            </div>
-          );
+          return <div data-testid="redirect-needed">Redirect to: {redirectPath}</div>;
         }
 
         return <div data-testid="guest-content">Guest Content</div>;
@@ -350,9 +332,7 @@ describe('useSessionGuard Hook - Session Management (Story 1-3)', () => {
       render(<GuestOnlyPage />, { wrapper: Wrapper });
 
       await waitFor(() => {
-        expect(screen.getByTestId('redirect-needed')).toHaveTextContent(
-          'Redirect to: /'
-        );
+        expect(screen.getByTestId('redirect-needed')).toHaveTextContent('Redirect to: /');
       });
     });
 
@@ -387,9 +367,7 @@ describe('useSessionGuard Hook - Session Management (Story 1-3)', () => {
       render(<GuestOnlyPage />, { wrapper: Wrapper });
 
       await waitFor(() => {
-        expect(screen.getByTestId('guest-content')).toHaveTextContent(
-          'Guest Content'
-        );
+        expect(screen.getByTestId('guest-content')).toHaveTextContent('Guest Content');
       });
     });
   });
@@ -409,9 +387,7 @@ describe('useSessionGuard Hook - Session Management (Story 1-3)', () => {
         const { shouldRedirect, redirectPath } = useSessionGuard();
 
         if (shouldRedirect) {
-          return (
-            <div data-testid="redirect-path">Redirect to: {redirectPath}</div>
-          );
+          return <div data-testid="redirect-path">Redirect to: {redirectPath}</div>;
         }
 
         return <div>Content</div>;
@@ -421,9 +397,7 @@ describe('useSessionGuard Hook - Session Management (Story 1-3)', () => {
       render(<TestComponent />, { wrapper: Wrapper });
 
       await waitFor(() => {
-        expect(screen.getByTestId('redirect-path')).toHaveTextContent(
-          'Redirect to: /login'
-        );
+        expect(screen.getByTestId('redirect-path')).toHaveTextContent('Redirect to: /login');
       });
     });
 
@@ -441,11 +415,7 @@ describe('useSessionGuard Hook - Session Management (Story 1-3)', () => {
         const { shouldRedirect, redirectState } = useSessionGuard();
 
         if (shouldRedirect) {
-          return (
-            <div data-testid="redirect-state">
-              From: {redirectState?.from || 'none'}
-            </div>
-          );
+          return <div data-testid="redirect-state">From: {redirectState?.from || 'none'}</div>;
         }
 
         return <div>Content</div>;
@@ -455,9 +425,7 @@ describe('useSessionGuard Hook - Session Management (Story 1-3)', () => {
       render(<TestComponent />, { wrapper: Wrapper });
 
       await waitFor(() => {
-        expect(screen.getByTestId('redirect-state')).toHaveTextContent(
-          'From: /dashboard/horses'
-        );
+        expect(screen.getByTestId('redirect-state')).toHaveTextContent('From: /dashboard/horses');
       });
     });
 
@@ -477,9 +445,7 @@ describe('useSessionGuard Hook - Session Management (Story 1-3)', () => {
         });
 
         if (shouldRedirect) {
-          return (
-            <div data-testid="redirect-path">Redirect to: {redirectPath}</div>
-          );
+          return <div data-testid="redirect-path">Redirect to: {redirectPath}</div>;
         }
 
         return <div>Content</div>;
@@ -489,9 +455,7 @@ describe('useSessionGuard Hook - Session Management (Story 1-3)', () => {
       render(<TestComponent />, { wrapper: Wrapper });
 
       await waitFor(() => {
-        expect(screen.getByTestId('redirect-path')).toHaveTextContent(
-          'Redirect to: /auth/login'
-        );
+        expect(screen.getByTestId('redirect-path')).toHaveTextContent('Redirect to: /auth/login');
       });
     });
   });
@@ -519,12 +483,8 @@ describe('useSessionGuard Hook - Session Management (Story 1-3)', () => {
 
         return (
           <div>
-            <div data-testid="guard1-loading">
-              {guard1.isLoading ? 'loading' : 'ready'}
-            </div>
-            <div data-testid="guard2-loading">
-              {guard2.isLoading ? 'loading' : 'ready'}
-            </div>
+            <div data-testid="guard1-loading">{guard1.isLoading ? 'loading' : 'ready'}</div>
+            <div data-testid="guard2-loading">{guard2.isLoading ? 'loading' : 'ready'}</div>
           </div>
         );
       }
@@ -563,9 +523,7 @@ describe('useSessionGuard Hook - Session Management (Story 1-3)', () => {
 
         return (
           <div>
-            <div data-testid="should-redirect">
-              {shouldRedirect ? 'yes' : 'no'}
-            </div>
+            <div data-testid="should-redirect">{shouldRedirect ? 'yes' : 'no'}</div>
             <div data-testid="message">{sessionMessage || 'no-message'}</div>
           </div>
         );
@@ -599,9 +557,7 @@ describe('useSessionGuard Hook - Session Management (Story 1-3)', () => {
 
         return (
           <div>
-            <div data-testid="should-redirect">
-              {shouldRedirect ? 'yes' : 'no'}
-            </div>
+            <div data-testid="should-redirect">{shouldRedirect ? 'yes' : 'no'}</div>
             <div data-testid="message">{sessionMessage || 'no-message'}</div>
           </div>
         );

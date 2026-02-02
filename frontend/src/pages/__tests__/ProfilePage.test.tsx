@@ -19,6 +19,7 @@ import { ReactNode } from 'react';
 import ProfilePage from '../ProfilePage';
 import * as apiClient from '../../lib/api-client';
 import * as useAuthModule from '../../hooks/useAuth';
+import * as useUserProgressModule from '../../hooks/api/useUserProgress';
 
 // Mock the API client
 vi.mock('../../lib/api-client', () => ({
@@ -35,6 +36,15 @@ vi.mock('../../hooks/useAuth', async () => {
     ...actual,
     useProfile: vi.fn(),
     useUpdateProfile: vi.fn(),
+  };
+});
+
+vi.mock('../../hooks/api/useUserProgress', async () => {
+  const actual = await vi.importActual('../../hooks/api/useUserProgress');
+  return {
+    ...actual,
+    useActivityFeed: vi.fn(),
+    useUserProgress: vi.fn(),
   };
 });
 
@@ -99,7 +109,31 @@ describe('ProfilePage', () => {
       refetch: vi.fn(),
     } as unknown as ReturnType<typeof useAuthModule.useProfile>);
 
-    vi.mocked(useAuthModule.useUpdateProfile).mockReturnValue(mockUpdateProfileMutation as unknown as ReturnType<typeof useAuthModule.useUpdateProfile>);
+    vi.mocked(useAuthModule.useUpdateProfile).mockReturnValue(
+      mockUpdateProfileMutation as unknown as ReturnType<typeof useAuthModule.useUpdateProfile>
+    );
+
+    vi.mocked(useUserProgressModule.useActivityFeed).mockReturnValue({
+      data: [],
+      isLoading: false,
+      isError: false,
+      error: null,
+    } as unknown as ReturnType<typeof useUserProgressModule.useActivityFeed>);
+
+    vi.mocked(useUserProgressModule.useUserProgress).mockReturnValue({
+      data: {
+        level: 3,
+        currentXP: 100,
+        xpToNextLevel: 200,
+        progressPercentage: 50,
+        totalHorses: 4,
+        totalCompetitions: 2,
+        totalEarnings: 1200,
+      },
+      isLoading: false,
+      isError: false,
+      error: null,
+    } as unknown as ReturnType<typeof useUserProgressModule.useUserProgress>);
   });
 
   afterEach(() => {
@@ -642,10 +676,7 @@ describe('ProfilePage', () => {
         </TestWrapper>
       );
 
-      const inputs = [
-        screen.getByLabelText(/display name/i),
-        screen.getByLabelText(/bio/i),
-      ];
+      const inputs = [screen.getByLabelText(/display name/i), screen.getByLabelText(/bio/i)];
 
       inputs.forEach((input) => {
         input.focus();
@@ -727,6 +758,104 @@ describe('ProfilePage', () => {
 
       const bioInput = screen.getByLabelText(/bio/i);
       expect(bioInput).toHaveValue('');
+    });
+  });
+
+  describe('Statistics Integration', () => {
+    it('renders statistics from user progress data', () => {
+      vi.mocked(useUserProgressModule.useUserProgress).mockReturnValue({
+        data: {
+          level: 9,
+          currentXP: 450,
+          xpToNextLevel: 550,
+          progressPercentage: 45,
+          totalHorses: 8,
+          totalCompetitions: 5,
+          totalEarnings: 3000,
+          breedingCount: 3,
+          winRate: 62,
+        } as unknown as ReturnType<typeof useUserProgressModule.useUserProgress>['data'],
+        isLoading: false,
+        isError: false,
+        error: null,
+      } as unknown as ReturnType<typeof useUserProgressModule.useUserProgress>);
+
+      const TestWrapper = createTestWrapper();
+      render(
+        <TestWrapper>
+          <ProfilePage />
+        </TestWrapper>
+      );
+
+      expect(screen.getByText('8')).toBeInTheDocument();
+      expect(screen.getByText('5')).toBeInTheDocument();
+      expect(screen.getByText('3')).toBeInTheDocument();
+      expect(screen.getByText('62%')).toBeInTheDocument();
+    });
+  });
+
+  describe('Activity Feed Integration', () => {
+    it('renders activity feed using API data', () => {
+      vi.mocked(useUserProgressModule.useActivityFeed).mockReturnValue({
+        data: [
+          {
+            id: 1,
+            userId: 1,
+            type: 'training',
+            description: 'Trained Thunder in Speed to level 5',
+            timestamp: new Date().toISOString(),
+            metadata: { horseName: 'Thunder', skill: 'Speed', level: 5 },
+          },
+        ],
+        isLoading: false,
+        isError: false,
+        error: null,
+      } as unknown as ReturnType<typeof useUserProgressModule.useActivityFeed>);
+
+      const TestWrapper = createTestWrapper();
+      render(
+        <TestWrapper>
+          <ProfilePage />
+        </TestWrapper>
+      );
+
+      expect(screen.getByText(/trained thunder in speed to level 5/i)).toBeInTheDocument();
+    });
+
+    it('shows loading state for activity feed', () => {
+      vi.mocked(useUserProgressModule.useActivityFeed).mockReturnValue({
+        data: [],
+        isLoading: true,
+        isError: false,
+        error: null,
+      } as unknown as ReturnType<typeof useUserProgressModule.useActivityFeed>);
+
+      const TestWrapper = createTestWrapper();
+      render(
+        <TestWrapper>
+          <ProfilePage />
+        </TestWrapper>
+      );
+
+      expect(screen.getAllByTestId('activity-item-skeleton').length).toBeGreaterThan(0);
+    });
+
+    it('shows error message when activity feed fails', () => {
+      vi.mocked(useUserProgressModule.useActivityFeed).mockReturnValue({
+        data: [],
+        isLoading: false,
+        isError: true,
+        error: { message: 'Failed to load activity feed' },
+      } as unknown as ReturnType<typeof useUserProgressModule.useActivityFeed>);
+
+      const TestWrapper = createTestWrapper();
+      render(
+        <TestWrapper>
+          <ProfilePage />
+        </TestWrapper>
+      );
+
+      expect(screen.getByText(/failed to load activity feed/i)).toBeInTheDocument();
     });
   });
 });

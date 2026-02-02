@@ -20,13 +20,13 @@ const { PrismaClient } = await import('@prisma/client');
 
 let prisma = null;
 
-// Connection pool configuration for tests
+const { buildDatabaseUrl } = await import('./dbPoolConfig.mjs');
+
+// Connection pool configuration for Prisma
 const connectionConfig = {
   datasources: {
     db: {
-      url: process.env.NODE_ENV === 'test'
-        ? `${process.env.DATABASE_URL}?connection_limit=1&pool_timeout=5&connect_timeout=5`
-        : process.env.DATABASE_URL,
+      url: buildDatabaseUrl(process.env.DATABASE_URL, process.env),
     },
   },
   // Additional test-specific configuration

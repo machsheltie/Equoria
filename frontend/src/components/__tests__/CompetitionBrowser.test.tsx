@@ -1,6 +1,6 @@
 /**
  * CompetitionBrowser Component Tests
- * 
+ *
  * Tests for the competition browsing interface including:
  * - Competition listing with filtering and search
  * - Discipline-based filtering and sorting
@@ -9,16 +9,30 @@
  * - Responsive design and mobile optimization
  * - Error handling and loading states
  * - Accessibility compliance
- * 
+ *
  * Uses TDD with NO MOCKING approach for authentic API validation
  */
 
 import React from 'react';
+import { vi } from 'vitest';
 import { render, screen, waitFor, fireEvent } from '@testing-library/react';
 import '@testing-library/jest-dom';
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
 import { BrowserRouter, MemoryRouter } from 'react-router-dom';
 import CompetitionBrowser from '../CompetitionBrowser';
+import * as competitionHooks from '../../hooks/api/useCompetitions';
+import * as horsesHooks from '../../hooks/api/useHorses';
+
+vi.mock('../../hooks/api/useCompetitions', () => ({
+  useCompetitions: vi.fn(),
+  useDisciplines: vi.fn(),
+  useEnterCompetition: vi.fn(),
+  useEligibilityForHorses: vi.fn(),
+}));
+
+vi.mock('../../hooks/api/useHorses', () => ({
+  useHorses: vi.fn(),
+}));
 
 // Test wrapper with required providers
 const createTestWrapper = (initialRoute = '/') => {
@@ -33,9 +47,7 @@ const createTestWrapper = (initialRoute = '/') => {
 
   return ({ children }: { children: React.ReactNode }) => (
     <QueryClientProvider client={queryClient}>
-      <MemoryRouter initialEntries={[initialRoute]}>
-        {children}
-      </MemoryRouter>
+      <MemoryRouter initialEntries={[initialRoute]}>{children}</MemoryRouter>
     </QueryClientProvider>
   );
 };
@@ -43,6 +55,37 @@ const createTestWrapper = (initialRoute = '/') => {
 const TestWrapper = createTestWrapper();
 
 describe('CompetitionBrowser Component', () => {
+  beforeEach(() => {
+    vi.mocked(competitionHooks.useCompetitions).mockReturnValue({
+      data: [],
+      isLoading: false,
+      error: null,
+    } as unknown as ReturnType<typeof competitionHooks.useCompetitions>);
+
+    vi.mocked(competitionHooks.useDisciplines).mockReturnValue({
+      data: [],
+      isLoading: false,
+      error: null,
+    } as unknown as ReturnType<typeof competitionHooks.useDisciplines>);
+
+    vi.mocked(competitionHooks.useEnterCompetition).mockReturnValue({
+      mutate: vi.fn(),
+      isPending: false,
+      isSuccess: false,
+    } as unknown as ReturnType<typeof competitionHooks.useEnterCompetition>);
+
+    vi.mocked(competitionHooks.useEligibilityForHorses).mockReturnValue(
+      [] as unknown as ReturnType<typeof competitionHooks.useEligibilityForHorses>
+    );
+
+    vi.mocked(horsesHooks.useHorses).mockReturnValue({
+      data: [],
+      isLoading: false,
+      isError: false,
+      error: null,
+      refetch: vi.fn(),
+    } as unknown as ReturnType<typeof horsesHooks.useHorses>);
+  });
   describe('Component Rendering', () => {
     test('renders competition browser with loading state', () => {
       render(
@@ -164,6 +207,57 @@ describe('CompetitionBrowser Component', () => {
   });
 
   describe('Entry Eligibility', () => {
+    test('loads eligibility for horses when a competition is selected', async () => {
+      vi.mocked(competitionHooks.useCompetitions).mockReturnValue({
+        data: [
+          {
+            id: 1,
+            name: 'Spring Derby',
+            description: 'Open derby for skilled horses',
+            discipline: 'Racing',
+            date: '2025-03-01',
+            prizePool: 2500,
+            maxEntries: 20,
+            currentEntries: 5,
+            entryDeadline: '2025-02-20',
+            status: 'open',
+          },
+        ],
+        isLoading: false,
+        error: null,
+      } as unknown as ReturnType<typeof competitionHooks.useCompetitions>);
+
+      vi.mocked(horsesHooks.useHorses).mockReturnValue({
+        data: [
+          { id: 11, name: 'Aurora', ageYears: 5, level: 3, traits: [] },
+          { id: 12, name: 'Comet', ageYears: 2, level: 1, traits: [] },
+        ],
+        isLoading: false,
+        isError: false,
+        error: null,
+        refetch: vi.fn(),
+      } as unknown as ReturnType<typeof horsesHooks.useHorses>);
+
+      vi.mocked(competitionHooks.useEligibilityForHorses).mockReturnValue([
+        { data: { eligible: true, reasons: [] }, isLoading: false, isError: false },
+        { data: { eligible: false, reasons: ['Too young'] }, isLoading: false, isError: false },
+      ] as unknown as ReturnType<typeof competitionHooks.useEligibilityForHorses>);
+
+      render(
+        <TestWrapper>
+          <CompetitionBrowser />
+        </TestWrapper>
+      );
+
+      const enterButton = await screen.findByRole('button', { name: /enter competition/i });
+      fireEvent.click(enterButton);
+
+      await waitFor(() => {
+        expect(screen.getByText(/horses eligible/i)).toBeInTheDocument();
+        expect(screen.getByText('Aurora')).toBeInTheDocument();
+      });
+    });
+
     test('displays entry eligibility status', async () => {
       // Create a test component that simulates successful data loading
       const TestCompetitionBrowser = () => {
@@ -249,9 +343,7 @@ describe('CompetitionBrowser Component', () => {
               Enter Competition
             </button>
             {showConfirmation && (
-              <div data-testid="entry-confirmation">
-                Horse entered successfully!
-              </div>
+              <div data-testid="entry-confirmation">Horse entered successfully!</div>
             )}
           </div>
         );

@@ -1,6 +1,12 @@
 import React from 'react';
 import { X } from 'lucide-react';
-import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription } from '@/components/ui/dialog';
+import {
+  Dialog,
+  DialogContent,
+  DialogHeader,
+  DialogTitle,
+  DialogDescription,
+} from '@/components/ui/dialog';
 
 interface FantasyModalProps {
   isOpen: boolean;
@@ -11,58 +17,69 @@ interface FantasyModalProps {
   isRare?: boolean;
 }
 
-const FantasyModal = ({ 
-  isOpen, 
-  onClose, 
-  title, 
-  children, 
+const FantasyModal = ({
+  isOpen,
+  onClose,
+  title,
+  children,
   type = 'event',
-  isRare = false 
+  isRare = false,
 }: FantasyModalProps) => {
   const getModalAccent = () => {
     switch (type) {
-      case 'training': return 'text-forest-green';
-      case 'vet': return 'text-emerald-600';
-      case 'breeding': return 'text-rose-400';
-      case 'event': return 'text-burnished-gold';
-      default: return 'text-burnished-gold';
+      case 'training':
+        return 'text-forest-green';
+      case 'vet':
+        return 'text-emerald-600';
+      case 'breeding':
+        return 'text-rose-400';
+      case 'event':
+        return 'text-burnished-gold';
+      default:
+        return 'text-burnished-gold';
     }
   };
 
   const getOverlayMotif = () => {
     switch (type) {
-      case 'training': return (
-        <div className="absolute top-4 right-4 opacity-10">
-          <div className="w-16 h-16 border-2 border-forest-green rounded-full" />
-          <div className="absolute inset-2 border border-forest-green transform rotate-45" />
-        </div>
-      );
-      case 'vet': return (
-        <div className="absolute top-4 right-4 opacity-10">
-          <div className="w-12 h-16 border-2 border-emerald-600 rounded-t-full" />
-          <div className="absolute bottom-0 left-1/2 transform -translate-x-1/2 w-4 h-8 border-2 border-emerald-600" />
-        </div>
-      );
-      case 'breeding': return (
-        <div className="absolute top-4 right-4 opacity-10">
-          <div className="w-8 h-8 bg-rose-400 transform rotate-45 rounded-tl-lg rounded-br-lg" />
-        </div>
-      );
-      default: return (
-        <div className="absolute top-4 right-4 opacity-10">
-          <div className="w-12 h-12 border-2 border-burnished-gold rounded-full" />
-          <div className="absolute inset-2 border border-burnished-gold" />
-        </div>
-      );
+      case 'training':
+        return (
+          <div className="absolute top-4 right-4 opacity-10">
+            <div className="w-16 h-16 border-2 border-forest-green rounded-full" />
+            <div className="absolute inset-2 border border-forest-green transform rotate-45" />
+          </div>
+        );
+      case 'vet':
+        return (
+          <div className="absolute top-4 right-4 opacity-10">
+            <div className="w-12 h-16 border-2 border-emerald-600 rounded-t-full" />
+            <div className="absolute bottom-0 left-1/2 transform -translate-x-1/2 w-4 h-8 border-2 border-emerald-600" />
+          </div>
+        );
+      case 'breeding':
+        return (
+          <div className="absolute top-4 right-4 opacity-10">
+            <div className="w-8 h-8 bg-rose-400 transform rotate-45 rounded-tl-lg rounded-br-lg" />
+          </div>
+        );
+      default:
+        return (
+          <div className="absolute top-4 right-4 opacity-10">
+            <div className="w-12 h-12 border-2 border-burnished-gold rounded-full" />
+            <div className="absolute inset-2 border border-burnished-gold" />
+          </div>
+        );
     }
   };
 
   return (
     <Dialog open={isOpen} onOpenChange={onClose}>
-      <DialogContent className={`
+      <DialogContent
+        className={`
         max-w-[90vw] max-h-[80vh] p-0 border-0 bg-transparent overflow-hidden
         ${isRare ? 'animate-pulse' : ''}
-      `}>
+      `}
+      >
         {/* Magical sparkle effects for rare modals */}
         {isRare && (
           <>
@@ -93,10 +110,12 @@ const FantasyModal = ({
           <div className="relative mb-6">
             <div className="absolute -inset-x-6 -inset-y-2 bg-gradient-to-r from-burnished-gold/20 via-aged-bronze/10 to-burnished-gold/20 border-y border-aged-bronze/30" />
             <DialogHeader className="relative z-10">
-              <DialogTitle className={`
+              <DialogTitle
+                className={`
                 fantasy-title text-2xl text-center ${getModalAccent()}
                 drop-shadow-sm
-              `}>
+              `}
+              >
                 {title}
               </DialogTitle>
             </DialogHeader>
@@ -112,9 +131,7 @@ const FantasyModal = ({
           </button>
 
           {/* Content area */}
-          <div className="relative z-10 max-h-[60vh] overflow-y-auto">
-            {children}
-          </div>
+          <div className="relative z-10 max-h-[60vh] overflow-y-auto">{children}</div>
 
           {/* Decorative corner flourishes */}
           <div className="absolute top-2 left-2 w-6 h-6 border-l-2 border-t-2 border-burnished-gold/40 rounded-tl-lg" />

@@ -19,9 +19,9 @@ interface HorseCardProps {
   onClick?: () => void;
 }
 
-const HorseCard = ({ 
-  horseName, 
-  horseImage = "/placeholder.svg",
+const HorseCard = ({
+  horseName,
+  horseImage = '/placeholder.svg',
   age,
   discipline,
   isLegendary = false,
@@ -32,22 +32,29 @@ const HorseCard = ({
     agility: 78,
     strength: 88,
     intelligence: 76,
-    health: 95
+    health: 95,
   },
-  onClick 
+  onClick,
 }: HorseCardProps) => {
   const [isHovered, setIsHovered] = useState(false);
   const [hoveredStat, setHoveredStat] = useState<string | null>(null);
 
   const getStatIcon = (statName: string) => {
     switch (statName) {
-      case 'speed': return <Zap className="w-4 h-4" />;
-      case 'stamina': return <Heart className="w-4 h-4" />;
-      case 'agility': return <Star className="w-4 h-4" />;
-      case 'strength': return <Shield className="w-4 h-4" />;
-      case 'intelligence': return <Trophy className="w-4 h-4" />;
-      case 'health': return <Heart className="w-4 h-4" />;
-      default: return <Star className="w-4 h-4" />;
+      case 'speed':
+        return <Zap className="w-4 h-4" />;
+      case 'stamina':
+        return <Heart className="w-4 h-4" />;
+      case 'agility':
+        return <Star className="w-4 h-4" />;
+      case 'strength':
+        return <Shield className="w-4 h-4" />;
+      case 'intelligence':
+        return <Trophy className="w-4 h-4" />;
+      case 'health':
+        return <Heart className="w-4 h-4" />;
+      default:
+        return <Star className="w-4 h-4" />;
     }
   };
 
@@ -59,7 +66,7 @@ const HorseCard = ({
   };
 
   return (
-    <div 
+    <div
       className={`relative w-full max-w-sm mx-auto transition-all duration-300 cursor-pointer ${
         isHovered ? 'transform -translate-y-1' : ''
       }`}
@@ -78,9 +85,11 @@ const HorseCard = ({
       )}
 
       {/* Outer gold border */}
-      <div className={`absolute -inset-1 bg-gradient-to-br from-burnished-gold via-aged-bronze to-burnished-gold rounded-lg p-1 ${
-        isHovered ? 'magical-glow' : ''
-      }`}>
+      <div
+        className={`absolute -inset-1 bg-gradient-to-br from-burnished-gold via-aged-bronze to-burnished-gold rounded-lg p-1 ${
+          isHovered ? 'magical-glow' : ''
+        }`}
+      >
         <div className="absolute inset-0 parchment-texture rounded-lg" />
       </div>
 
@@ -94,13 +103,9 @@ const HorseCard = ({
         {/* Horse image */}
         <div className="relative mb-3">
           <div className="w-20 h-16 mx-auto rounded border border-aged-bronze overflow-hidden bg-mystic-silver/20">
-            <img 
-              src={horseImage} 
-              alt={horseName}
-              className="w-full h-full object-cover"
-            />
+            <img src={horseImage} alt={horseName} className="w-full h-full object-cover" />
           </div>
-          
+
           {/* Cooldown timer */}
           {cooldownHours > 0 && (
             <div className="absolute -bottom-1 left-1/2 transform -translate-x-1/2">
@@ -114,10 +119,13 @@ const HorseCard = ({
 
         {/* Horse info */}
         <div className="text-center mb-3">
-          <h3 className="fantasy-title text-lg text-midnight-ink mb-1 leading-tight" style={{
-            textShadow: '1px 1px 2px rgba(214, 166, 74, 0.3)',
-            color: '#1F1B16'
-          }}>
+          <h3
+            className="fantasy-title text-lg text-midnight-ink mb-1 leading-tight"
+            style={{
+              textShadow: '1px 1px 2px rgba(214, 166, 74, 0.3)',
+              color: '#1F1B16',
+            }}
+          >
             {horseName}
           </h3>
           <div className="flex justify-center items-center space-x-2 text-xs">
@@ -130,21 +138,21 @@ const HorseCard = ({
         {/* Stats grid */}
         <div className="grid grid-cols-6 gap-2 mt-auto">
           {Object.entries(stats).map(([statName, value]) => (
-            <div 
+            <div
               key={statName}
               className="relative flex flex-col items-center group"
               onMouseEnter={() => setHoveredStat(statName)}
               onMouseLeave={() => setHoveredStat(null)}
             >
-              <div className={`transition-all duration-200 ${getStatColor(value)} ${
-                hoveredStat === statName ? 'scale-110 magical-glow' : ''
-              }`}>
+              <div
+                className={`transition-all duration-200 ${getStatColor(value)} ${
+                  hoveredStat === statName ? 'scale-110 magical-glow' : ''
+                }`}
+              >
                 {getStatIcon(statName)}
               </div>
-              <span className="text-xs fantasy-caption text-midnight-ink mt-1">
-                {value}
-              </span>
-              
+              <span className="text-xs fantasy-caption text-midnight-ink mt-1">{value}</span>
+
               {/* Tooltip */}
               {hoveredStat === statName && (
                 <div className="absolute bottom-full left-1/2 transform -translate-x-1/2 mb-2 z-30">

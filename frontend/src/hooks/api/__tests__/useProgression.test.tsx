@@ -13,11 +13,7 @@ import { renderHook, waitFor } from '@testing-library/react';
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
 import { describe, it, expect, vi, beforeEach } from 'vitest';
 import * as apiClient from '@/lib/api-client';
-import {
-  useHorseProgression,
-  useStatHistory,
-  useRecentGains,
-} from '../useProgression';
+import { useHorseProgression, useStatHistory, useRecentGains } from '../useProgression';
 
 // Mock API client
 vi.mock('@/lib/api-client', async () => {
@@ -114,9 +110,7 @@ describe('useHorseProgression', () => {
       xpToNextLevel: 5000,
       totalXP: 12450,
       progressPercentage: 49,
-      recentLevelUps: [
-        { level: 5, timestamp: '2025-12-01T10:00:00Z', xpGained: 1500 },
-      ],
+      recentLevelUps: [{ level: 5, timestamp: '2025-12-01T10:00:00Z', xpGained: 1500 }],
     };
 
     vi.mocked(apiClient.horsesApi.getProgression).mockResolvedValue(mockProgression);

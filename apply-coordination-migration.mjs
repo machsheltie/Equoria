@@ -42,7 +42,6 @@ async function applyCoordinationMigration() {
     } else {
       console.log('❌ Failed to verify coordination column');
     }
-
   } catch (error) {
     console.error('❌ Error applying migration:', error);
   } finally {

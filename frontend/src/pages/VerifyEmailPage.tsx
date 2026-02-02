@@ -184,7 +184,11 @@ const VerifyEmailPage: React.FC = () => {
               <p className="fantasy-body text-sm text-aged-bronze">
                 Please log in to request a new verification email.
               </p>
-              <FantasyButton variant="primary" className="w-full" onClick={() => navigate('/login')}>
+              <FantasyButton
+                variant="primary"
+                className="w-full"
+                onClick={() => navigate('/login')}
+              >
                 Go to Login
               </FantasyButton>
             </div>
@@ -241,11 +245,7 @@ const VerifyEmailPage: React.FC = () => {
                 </p>
               )}
 
-              <FantasyButton
-                variant="secondary"
-                className="w-full"
-                onClick={() => navigate('/')}
-              >
+              <FantasyButton variant="secondary" className="w-full" onClick={() => navigate('/')}>
                 Continue to Home
               </FantasyButton>
             </div>
@@ -256,7 +256,11 @@ const VerifyEmailPage: React.FC = () => {
               Please log in to verify your email or access your account.
             </p>
             <div className="pt-4 space-y-3">
-              <FantasyButton variant="primary" className="w-full" onClick={() => navigate('/login')}>
+              <FantasyButton
+                variant="primary"
+                className="w-full"
+                onClick={() => navigate('/login')}
+              >
                 Go to Login
               </FantasyButton>
               <FantasyButton
@@ -278,7 +282,10 @@ const VerifyEmailPage: React.FC = () => {
       {/* Header */}
       <header className="bg-parchment parchment-texture border-b-2 border-aged-bronze shadow-lg relative">
         <div className="flex items-center justify-center p-4">
-          <Link to="/" className="fantasy-title text-3xl text-midnight-ink hover:text-burnished-gold transition-colors">
+          <Link
+            to="/"
+            className="fantasy-title text-3xl text-midnight-ink hover:text-burnished-gold transition-colors"
+          >
             Equoria
           </Link>
         </div>

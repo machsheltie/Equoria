@@ -106,9 +106,7 @@ describe('Horse Genetics Hooks', () => {
     });
 
     it('should handle network errors', async () => {
-      vi.mocked(apiClient.apiClient.get).mockRejectedValueOnce(
-        new Error('Network request failed')
-      );
+      vi.mocked(apiClient.apiClient.get).mockRejectedValueOnce(new Error('Network request failed'));
 
       const { result } = renderHook(() => useHorseTraitInteractions(123), { wrapper });
 
@@ -504,9 +502,7 @@ describe('Horse Genetics Hooks', () => {
     });
 
     it('should handle network errors', async () => {
-      vi.mocked(apiClient.apiClient.get).mockRejectedValueOnce(
-        new Error('Network request failed')
-      );
+      vi.mocked(apiClient.apiClient.get).mockRejectedValueOnce(new Error('Network request failed'));
 
       const { result } = renderHook(() => useHorseTraitTimeline(123), { wrapper });
 

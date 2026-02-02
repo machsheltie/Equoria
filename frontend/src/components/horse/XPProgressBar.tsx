@@ -34,9 +34,7 @@ const XPProgressBar = ({ horseId }: XPProgressBarProps) => {
   if (isError || !xpData) {
     return (
       <div className="rounded-lg border border-rose-200 bg-rose-50 p-4 shadow-sm">
-        <div className="text-sm text-rose-800">
-          {error?.message || 'Failed to fetch XP data'}
-        </div>
+        <div className="text-sm text-rose-800">{error?.message || 'Failed to fetch XP data'}</div>
         <button
           onClick={() => refetch()}
           className="mt-2 rounded bg-rose-600 px-3 py-1 text-sm text-white hover:bg-rose-700 focus:outline-none focus:ring-2 focus:ring-rose-500 focus:ring-offset-2"
@@ -49,7 +47,7 @@ const XPProgressBar = ({ horseId }: XPProgressBarProps) => {
 
   // Calculate level and progress
   const level = xpData.availableStatPoints + 1;
-  const xpInCurrentLevel = xpData.currentXP - (xpData.availableStatPoints * 100);
+  const xpInCurrentLevel = xpData.currentXP - xpData.availableStatPoints * 100;
   const progressPercentage = Math.round((xpInCurrentLevel / 100) * 100);
 
   // Milestone levels

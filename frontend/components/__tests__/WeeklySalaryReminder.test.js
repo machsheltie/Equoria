@@ -48,7 +48,12 @@ describe('WeeklySalaryReminder Component', () => {
 
   describe('Rendering and Display', () => {
     test('renders salary summary correctly with all data', async () => {
-      render(<WeeklySalaryReminder salarySummaryData={mockSalarySummaryData} onNavigateToGrooms={mockOnNavigateToGrooms} />);
+      render(
+        <WeeklySalaryReminder
+          salarySummaryData={mockSalarySummaryData}
+          onNavigateToGrooms={mockOnNavigateToGrooms}
+        />
+      );
 
       await waitFor(() => {
         expect(screen.getByText(/weekly groom salaries/i)).toBeTruthy();
@@ -59,7 +64,12 @@ describe('WeeklySalaryReminder Component', () => {
     });
 
     test('displays weekly cost with proper formatting', async () => {
-      render(<WeeklySalaryReminder salarySummaryData={mockSalarySummaryData} onNavigateToGrooms={mockOnNavigateToGrooms} />);
+      render(
+        <WeeklySalaryReminder
+          salarySummaryData={mockSalarySummaryData}
+          onNavigateToGrooms={mockOnNavigateToGrooms}
+        />
+      );
 
       // Check for formatted weekly cost
       await waitFor(() => {
@@ -70,7 +80,12 @@ describe('WeeklySalaryReminder Component', () => {
     });
 
     test('displays total paid with proper formatting', async () => {
-      render(<WeeklySalaryReminder salarySummaryData={mockSalarySummaryData} onNavigateToGrooms={mockOnNavigateToGrooms} />);
+      render(
+        <WeeklySalaryReminder
+          salarySummaryData={mockSalarySummaryData}
+          onNavigateToGrooms={mockOnNavigateToGrooms}
+        />
+      );
 
       // Check for formatted total paid
       await waitFor(() => {
@@ -80,7 +95,12 @@ describe('WeeklySalaryReminder Component', () => {
     });
 
     test('shows unassigned grooms warning when applicable', async () => {
-      render(<WeeklySalaryReminder salarySummaryData={mockSalarySummaryData} onNavigateToGrooms={mockOnNavigateToGrooms} />);
+      render(
+        <WeeklySalaryReminder
+          salarySummaryData={mockSalarySummaryData}
+          onNavigateToGrooms={mockOnNavigateToGrooms}
+        />
+      );
 
       await waitFor(() => {
         expect(screen.getByText(/1 groom with no assignments/i)).toBeTruthy();
@@ -94,7 +114,12 @@ describe('WeeklySalaryReminder Component', () => {
         unassignedGroomsCount: 0,
       };
 
-      render(<WeeklySalaryReminder salarySummaryData={allAssignedData} onNavigateToGrooms={mockOnNavigateToGrooms} />);
+      render(
+        <WeeklySalaryReminder
+          salarySummaryData={allAssignedData}
+          onNavigateToGrooms={mockOnNavigateToGrooms}
+        />
+      );
 
       // Wait for component to load
       await waitFor(() => {
@@ -113,7 +138,12 @@ describe('WeeklySalaryReminder Component', () => {
         breakdown: [],
       };
 
-      render(<WeeklySalaryReminder salarySummaryData={noGroomsData} onNavigateToGrooms={mockOnNavigateToGrooms} />);
+      render(
+        <WeeklySalaryReminder
+          salarySummaryData={noGroomsData}
+          onNavigateToGrooms={mockOnNavigateToGrooms}
+        />
+      );
 
       // Wait for loading to complete, then check component doesn't render
       await waitFor(() => {
@@ -122,7 +152,12 @@ describe('WeeklySalaryReminder Component', () => {
     });
 
     test('does not render when salarySummaryData is null', async () => {
-      render(<WeeklySalaryReminder salarySummaryData={null} onNavigateToGrooms={mockOnNavigateToGrooms} />);
+      render(
+        <WeeklySalaryReminder
+          salarySummaryData={null}
+          onNavigateToGrooms={mockOnNavigateToGrooms}
+        />
+      );
 
       // Wait for loading to complete, then check component doesn't render
       await waitFor(() => {
@@ -133,7 +168,12 @@ describe('WeeklySalaryReminder Component', () => {
 
   describe('Dismissible Notification', () => {
     test('dismisses notification when close button is pressed', async () => {
-      render(<WeeklySalaryReminder salarySummaryData={mockSalarySummaryData} onNavigateToGrooms={mockOnNavigateToGrooms} />);
+      render(
+        <WeeklySalaryReminder
+          salarySummaryData={mockSalarySummaryData}
+          onNavigateToGrooms={mockOnNavigateToGrooms}
+        />
+      );
 
       // Wait for component to load, then find and press the dismiss button
       await waitFor(() => {
@@ -150,7 +190,12 @@ describe('WeeklySalaryReminder Component', () => {
     });
 
     test('persists dismissed state to AsyncStorage', async () => {
-      render(<WeeklySalaryReminder salarySummaryData={mockSalarySummaryData} onNavigateToGrooms={mockOnNavigateToGrooms} />);
+      render(
+        <WeeklySalaryReminder
+          salarySummaryData={mockSalarySummaryData}
+          onNavigateToGrooms={mockOnNavigateToGrooms}
+        />
+      );
 
       // Wait for component to load
       await waitFor(() => {
@@ -161,17 +206,19 @@ describe('WeeklySalaryReminder Component', () => {
       fireEvent.press(dismissButton);
 
       await waitFor(() => {
-        expect(AsyncStorage.setItem).toHaveBeenCalledWith(
-          'salary_reminder_dismissed',
-          'true'
-        );
+        expect(AsyncStorage.setItem).toHaveBeenCalledWith('salary_reminder_dismissed', 'true');
       });
     });
 
     test('does not render when previously dismissed (from AsyncStorage)', async () => {
       AsyncStorage.getItem.mockResolvedValue('true');
 
-      render(<WeeklySalaryReminder salarySummaryData={mockSalarySummaryData} onNavigateToGrooms={mockOnNavigateToGrooms} />);
+      render(
+        <WeeklySalaryReminder
+          salarySummaryData={mockSalarySummaryData}
+          onNavigateToGrooms={mockOnNavigateToGrooms}
+        />
+      );
 
       await waitFor(() => {
         expect(screen.queryByText(/weekly groom salaries/i)).toBeNull();
@@ -181,7 +228,12 @@ describe('WeeklySalaryReminder Component', () => {
 
   describe('Navigation', () => {
     test('calls onNavigateToGrooms when link is pressed', async () => {
-      render(<WeeklySalaryReminder salarySummaryData={mockSalarySummaryData} onNavigateToGrooms={mockOnNavigateToGrooms} />);
+      render(
+        <WeeklySalaryReminder
+          salarySummaryData={mockSalarySummaryData}
+          onNavigateToGrooms={mockOnNavigateToGrooms}
+        />
+      );
 
       await waitFor(() => {
         expect(screen.getByText(/manage grooms/i)).toBeTruthy();
@@ -194,7 +246,12 @@ describe('WeeklySalaryReminder Component', () => {
     });
 
     test('manage grooms link is accessible', async () => {
-      render(<WeeklySalaryReminder salarySummaryData={mockSalarySummaryData} onNavigateToGrooms={mockOnNavigateToGrooms} />);
+      render(
+        <WeeklySalaryReminder
+          salarySummaryData={mockSalarySummaryData}
+          onNavigateToGrooms={mockOnNavigateToGrooms}
+        />
+      );
 
       await waitFor(() => {
         expect(screen.getByText(/manage grooms/i)).toBeTruthy();
@@ -210,7 +267,12 @@ describe('WeeklySalaryReminder Component', () => {
 
   describe('Accessibility', () => {
     test('has proper accessibility labels for dismiss button', async () => {
-      render(<WeeklySalaryReminder salarySummaryData={mockSalarySummaryData} onNavigateToGrooms={mockOnNavigateToGrooms} />);
+      render(
+        <WeeklySalaryReminder
+          salarySummaryData={mockSalarySummaryData}
+          onNavigateToGrooms={mockOnNavigateToGrooms}
+        />
+      );
 
       await waitFor(() => {
         expect(screen.getByLabelText(/dismiss salary reminder/i)).toBeTruthy();
@@ -222,7 +284,12 @@ describe('WeeklySalaryReminder Component', () => {
     });
 
     test('has proper accessibility role for interactive elements', async () => {
-      render(<WeeklySalaryReminder salarySummaryData={mockSalarySummaryData} onNavigateToGrooms={mockOnNavigateToGrooms} />);
+      render(
+        <WeeklySalaryReminder
+          salarySummaryData={mockSalarySummaryData}
+          onNavigateToGrooms={mockOnNavigateToGrooms}
+        />
+      );
 
       await waitFor(() => {
         expect(screen.getByLabelText(/dismiss salary reminder/i)).toBeTruthy();
@@ -243,7 +310,12 @@ describe('WeeklySalaryReminder Component', () => {
         breakdown: [],
       };
 
-      render(<WeeklySalaryReminder salarySummaryData={largeNumbersData} onNavigateToGrooms={mockOnNavigateToGrooms} />);
+      render(
+        <WeeklySalaryReminder
+          salarySummaryData={largeNumbersData}
+          onNavigateToGrooms={mockOnNavigateToGrooms}
+        />
+      );
 
       await waitFor(() => {
         expect(screen.getByText(/\$12,500/)).toBeTruthy();
@@ -257,7 +329,12 @@ describe('WeeklySalaryReminder Component', () => {
         unassignedGroomsCount: 3,
       };
 
-      render(<WeeklySalaryReminder salarySummaryData={multipleUnassignedData} onNavigateToGrooms={mockOnNavigateToGrooms} />);
+      render(
+        <WeeklySalaryReminder
+          salarySummaryData={multipleUnassignedData}
+          onNavigateToGrooms={mockOnNavigateToGrooms}
+        />
+      );
 
       await waitFor(() => {
         expect(screen.getByText(/3 grooms with no assignments/i)).toBeTruthy();
@@ -273,7 +350,12 @@ describe('WeeklySalaryReminder Component', () => {
         breakdown: [],
       };
 
-      render(<WeeklySalaryReminder salarySummaryData={zeroWeeklyCostData} onNavigateToGrooms={mockOnNavigateToGrooms} />);
+      render(
+        <WeeklySalaryReminder
+          salarySummaryData={zeroWeeklyCostData}
+          onNavigateToGrooms={mockOnNavigateToGrooms}
+        />
+      );
 
       await waitFor(() => {
         expect(screen.getByText(/\$0/)).toBeTruthy();
@@ -281,4 +363,3 @@ describe('WeeklySalaryReminder Component', () => {
     });
   });
 });
-

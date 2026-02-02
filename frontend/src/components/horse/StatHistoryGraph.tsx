@@ -32,7 +32,16 @@ import { useHorseXPHistory } from '@/hooks/api/useHorseXP';
 import type { HorseXPEvent } from '@/lib/api-client';
 
 // Register Chart.js components
-ChartJS.register(CategoryScale, LinearScale, PointElement, LineElement, Title, Tooltip, Legend, Filler);
+ChartJS.register(
+  CategoryScale,
+  LinearScale,
+  PointElement,
+  LineElement,
+  Title,
+  Tooltip,
+  Legend,
+  Filler
+);
 
 interface StatHistoryGraphProps {
   horseId: number;

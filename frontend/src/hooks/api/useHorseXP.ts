@@ -16,10 +16,7 @@ export const useHorseXP = (horseId: number) =>
     staleTime: 60 * 1000, // 1 minute
   });
 
-export const useHorseXPHistory = (
-  horseId: number,
-  options?: { limit?: number; offset?: number }
-) =>
+export const useHorseXPHistory = (horseId: number, options?: { limit?: number; offset?: number }) =>
   useQuery<HorseXPHistory, ApiError>({
     queryKey: xpKeys.history(horseId, options),
     queryFn: () => horsesApi.getXPHistory(horseId, options),

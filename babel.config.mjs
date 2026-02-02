@@ -11,30 +11,57 @@
 
 export default {
   presets: [
-    ['@babel/preset-env', {
-      targets: {
-        node: 'current'
+    [
+      '@babel/preset-env',
+      {
+        targets: {
+          node: 'current',
+        },
+        modules: false, // Changed from 'auto' to false to preserve ES Modules
       },
-      modules: false  // Changed from 'auto' to false to preserve ES Modules
-    }],
+    ],
     '@babel/preset-flow',
-    ['@babel/preset-react', {
-      runtime: 'automatic'
-    }],
-    ['@babel/preset-typescript', {
-      allExtensions: true,
-      isTSX: true,
-    }]
+    [
+      '@babel/preset-react',
+      {
+        runtime: 'automatic',
+      },
+    ],
+    [
+      '@babel/preset-typescript',
+      {
+        allExtensions: true,
+        isTSX: true,
+      },
+    ],
   ],
   env: {
     test: {
       presets: [
-        '@react-native/babel-preset',
-        ['@babel/preset-typescript', {
-          allExtensions: true,
-          isTSX: true,
-        }]
-      ]
-    }
-  }
+        [
+          '@babel/preset-env',
+          {
+            targets: {
+              node: 'current',
+            },
+            modules: false,
+          },
+        ],
+        '@babel/preset-flow',
+        [
+          '@babel/preset-react',
+          {
+            runtime: 'automatic',
+          },
+        ],
+        [
+          '@babel/preset-typescript',
+          {
+            allExtensions: true,
+            isTSX: true,
+          },
+        ],
+      ],
+    },
+  },
 };

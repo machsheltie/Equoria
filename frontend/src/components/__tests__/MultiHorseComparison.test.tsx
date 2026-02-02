@@ -1,12 +1,12 @@
 /**
  * Multi-Horse Comparison Interface Component Tests (JSX)
- * 
+ *
  * Tests for the comprehensive multi-horse comparison interface including:
  * - Horse Selection Interface with search and filtering
  * - Comparison Matrix with side-by-side analysis
  * - Similarity/Difference Visualization
  * - Ranking Dashboard with sortable metrics
- * 
+ *
  * Following TDD with NO MOCKING approach for authentic component validation
  */
 
@@ -45,14 +45,15 @@ const MultiHorseComparison = ({ userId, selectedHorses, onHorseSelectionChange, 
     );
   }
 
-  const filteredHorses = horses.filter(horse => 
-    horse.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
-    horse.breed.toLowerCase().includes(searchTerm.toLowerCase())
+  const filteredHorses = horses.filter(
+    (horse) =>
+      horse.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
+      horse.breed.toLowerCase().includes(searchTerm.toLowerCase())
   );
 
   const handleHorseSelect = (horse) => {
-    const newSelection = selectedHorses.includes(horse.id) 
-      ? selectedHorses.filter(id => id !== horse.id)
+    const newSelection = selectedHorses.includes(horse.id)
+      ? selectedHorses.filter((id) => id !== horse.id)
       : [...selectedHorses, horse.id];
     onHorseSelectionChange(newSelection);
   };
@@ -74,7 +75,7 @@ const MultiHorseComparison = ({ userId, selectedHorses, onHorseSelectionChange, 
       {/* Horse Selection Interface */}
       <div className="bg-white rounded-lg shadow p-6">
         <h3 className="text-lg font-semibold mb-4">Horse Selection</h3>
-        
+
         {/* Search and Filter Controls */}
         <div className="flex space-x-4 mb-4">
           <input
@@ -99,11 +100,13 @@ const MultiHorseComparison = ({ userId, selectedHorses, onHorseSelectionChange, 
 
         {/* Horse List */}
         <div className="space-y-2" data-testid="horse-list">
-          {filteredHorses.map(horse => (
+          {filteredHorses.map((horse) => (
             <div
               key={horse.id}
               className={`p-3 border rounded cursor-pointer ${
-                selectedHorses.includes(horse.id) ? 'bg-blue-50 border-blue-300' : 'hover:bg-gray-50'
+                selectedHorses.includes(horse.id)
+                  ? 'bg-blue-50 border-blue-300'
+                  : 'hover:bg-gray-50'
               }`}
               onClick={() => handleHorseSelect(horse)}
               data-testid={`horse-item-${horse.id}`}
@@ -111,10 +114,12 @@ const MultiHorseComparison = ({ userId, selectedHorses, onHorseSelectionChange, 
               <div className="flex items-center justify-between">
                 <div>
                   <span className="font-medium">{horse.name}</span>
-                  <span className="text-gray-500 ml-2">({horse.breed}, {horse.age} years)</span>
+                  <span className="text-gray-500 ml-2">
+                    ({horse.breed}, {horse.age} years)
+                  </span>
                 </div>
                 <div className="flex space-x-1">
-                  {horse.traits.map(trait => (
+                  {horse.traits.map((trait) => (
                     <span key={trait} className="px-2 py-1 bg-gray-200 text-xs rounded">
                       {trait}
                     </span>
@@ -140,12 +145,12 @@ const MultiHorseComparison = ({ userId, selectedHorses, onHorseSelectionChange, 
       {showComparison && selectedHorses.length >= 2 && (
         <div className="bg-white rounded-lg shadow p-6">
           <h3 className="text-lg font-semibold mb-4">Comparison Matrix</h3>
-          
+
           {/* Matrix Headers */}
           <div className="grid grid-cols-4 gap-4 mb-4">
             <div className="font-medium">Attribute</div>
-            {selectedHorses.slice(0, 3).map(horseId => {
-              const horse = horses.find(h => h.id === horseId);
+            {selectedHorses.slice(0, 3).map((horseId) => {
+              const horse = horses.find((h) => h.id === horseId);
               return (
                 <div key={horseId} className="font-medium text-center">
                   {horse?.name}
@@ -158,22 +163,30 @@ const MultiHorseComparison = ({ userId, selectedHorses, onHorseSelectionChange, 
           <div className="space-y-2" data-testid="comparison-matrix">
             <div className="grid grid-cols-4 gap-4 py-2 border-b">
               <div>Breed</div>
-              {selectedHorses.slice(0, 3).map(horseId => {
-                const horse = horses.find(h => h.id === horseId);
-                return <div key={horseId} className="text-center">{horse?.breed}</div>;
+              {selectedHorses.slice(0, 3).map((horseId) => {
+                const horse = horses.find((h) => h.id === horseId);
+                return (
+                  <div key={horseId} className="text-center">
+                    {horse?.breed}
+                  </div>
+                );
               })}
             </div>
             <div className="grid grid-cols-4 gap-4 py-2 border-b">
               <div>Age</div>
-              {selectedHorses.slice(0, 3).map(horseId => {
-                const horse = horses.find(h => h.id === horseId);
-                return <div key={horseId} className="text-center">{horse?.age} years</div>;
+              {selectedHorses.slice(0, 3).map((horseId) => {
+                const horse = horses.find((h) => h.id === horseId);
+                return (
+                  <div key={horseId} className="text-center">
+                    {horse?.age} years
+                  </div>
+                );
               })}
             </div>
             <div className="grid grid-cols-4 gap-4 py-2 border-b">
               <div>Traits</div>
-              {selectedHorses.slice(0, 3).map(horseId => {
-                const horse = horses.find(h => h.id === horseId);
+              {selectedHorses.slice(0, 3).map((horseId) => {
+                const horse = horses.find((h) => h.id === horseId);
                 return (
                   <div key={horseId} className="text-center">
                     {horse?.traits.join(', ')}
@@ -189,12 +202,15 @@ const MultiHorseComparison = ({ userId, selectedHorses, onHorseSelectionChange, 
       {selectedHorses.length >= 2 && (
         <div className="bg-white rounded-lg shadow p-6">
           <h3 className="text-lg font-semibold mb-4">Ranking Dashboard</h3>
-          
+
           <div className="space-y-3" data-testid="ranking-dashboard">
             {selectedHorses.map((horseId, index) => {
-              const horse = horses.find(h => h.id === horseId);
+              const horse = horses.find((h) => h.id === horseId);
               return (
-                <div key={horseId} className="flex items-center justify-between p-3 bg-gray-50 rounded">
+                <div
+                  key={horseId}
+                  className="flex items-center justify-between p-3 bg-gray-50 rounded"
+                >
                   <div className="flex items-center space-x-3">
                     <span className="font-bold text-lg">#{index + 1}</span>
                     <span className="font-medium">{horse?.name}</span>
@@ -213,15 +229,9 @@ const MultiHorseComparison = ({ userId, selectedHorses, onHorseSelectionChange, 
       {/* Export Options */}
       {selectedHorses.length >= 2 && (
         <div className="flex space-x-4">
-          <button className="px-4 py-2 bg-green-500 text-white rounded">
-            Export to PDF
-          </button>
-          <button className="px-4 py-2 bg-blue-500 text-white rounded">
-            Export to CSV
-          </button>
-          <button className="px-4 py-2 bg-purple-500 text-white rounded">
-            Save Comparison
-          </button>
+          <button className="px-4 py-2 bg-green-500 text-white rounded">Export to PDF</button>
+          <button className="px-4 py-2 bg-blue-500 text-white rounded">Export to CSV</button>
+          <button className="px-4 py-2 bg-purple-500 text-white rounded">Save Comparison</button>
         </div>
       )}
     </div>
@@ -230,11 +240,7 @@ const MultiHorseComparison = ({ userId, selectedHorses, onHorseSelectionChange, 
 
 // Test utilities
 const renderWithQueryClient = (component) => {
-  return render(
-    <QueryClientProvider client={mockQueryClient}>
-      {component}
-    </QueryClientProvider>
-  );
+  return render(<QueryClientProvider client={mockQueryClient}>{component}</QueryClientProvider>);
 };
 
 describe('MultiHorseComparison', () => {
@@ -247,9 +253,9 @@ describe('MultiHorseComparison', () => {
   describe('Component Rendering', () => {
     test('renders comparison interface with all main sections', () => {
       renderWithQueryClient(
-        <MultiHorseComparison 
-          userId={1} 
-          selectedHorses={[]} 
+        <MultiHorseComparison
+          userId={1}
+          selectedHorses={[]}
           onHorseSelectionChange={mockOnHorseSelectionChange}
         />
       );
@@ -262,9 +268,9 @@ describe('MultiHorseComparison', () => {
 
     test('handles missing userId prop gracefully', () => {
       renderWithQueryClient(
-        <MultiHorseComparison 
-          userId={null} 
-          selectedHorses={[]} 
+        <MultiHorseComparison
+          userId={null}
+          selectedHorses={[]}
           onHorseSelectionChange={mockOnHorseSelectionChange}
         />
       );
@@ -274,9 +280,9 @@ describe('MultiHorseComparison', () => {
 
     test('renders with custom className', () => {
       renderWithQueryClient(
-        <MultiHorseComparison 
-          userId={1} 
-          selectedHorses={[]} 
+        <MultiHorseComparison
+          userId={1}
+          selectedHorses={[]}
           onHorseSelectionChange={mockOnHorseSelectionChange}
           className="custom-class"
         />
@@ -290,9 +296,9 @@ describe('MultiHorseComparison', () => {
   describe('Horse Selection Interface', () => {
     test('displays horse list with search functionality', () => {
       renderWithQueryClient(
-        <MultiHorseComparison 
-          userId={1} 
-          selectedHorses={[]} 
+        <MultiHorseComparison
+          userId={1}
+          selectedHorses={[]}
           onHorseSelectionChange={mockOnHorseSelectionChange}
         />
       );
@@ -304,9 +310,9 @@ describe('MultiHorseComparison', () => {
 
     test('filters horses based on search term', () => {
       renderWithQueryClient(
-        <MultiHorseComparison 
-          userId={1} 
-          selectedHorses={[]} 
+        <MultiHorseComparison
+          userId={1}
+          selectedHorses={[]}
           onHorseSelectionChange={mockOnHorseSelectionChange}
         />
       );
@@ -320,9 +326,9 @@ describe('MultiHorseComparison', () => {
 
     test('shows selection summary', () => {
       renderWithQueryClient(
-        <MultiHorseComparison 
-          userId={1} 
-          selectedHorses={[1, 2]} 
+        <MultiHorseComparison
+          userId={1}
+          selectedHorses={[1, 2]}
           onHorseSelectionChange={mockOnHorseSelectionChange}
         />
       );
@@ -335,9 +341,9 @@ describe('MultiHorseComparison', () => {
   describe('Comparison Matrix', () => {
     test('shows comparison matrix when horses are selected', () => {
       renderWithQueryClient(
-        <MultiHorseComparison 
-          userId={1} 
-          selectedHorses={[1, 2]} 
+        <MultiHorseComparison
+          userId={1}
+          selectedHorses={[1, 2]}
           onHorseSelectionChange={mockOnHorseSelectionChange}
         />
       );
@@ -351,9 +357,9 @@ describe('MultiHorseComparison', () => {
 
     test('disables comparison button when less than 2 horses selected', () => {
       renderWithQueryClient(
-        <MultiHorseComparison 
-          userId={1} 
-          selectedHorses={[1]} 
+        <MultiHorseComparison
+          userId={1}
+          selectedHorses={[1]}
           onHorseSelectionChange={mockOnHorseSelectionChange}
         />
       );
@@ -366,9 +372,9 @@ describe('MultiHorseComparison', () => {
   describe('Ranking Dashboard', () => {
     test('displays ranking when multiple horses selected', () => {
       renderWithQueryClient(
-        <MultiHorseComparison 
-          userId={1} 
-          selectedHorses={[1, 2, 3]} 
+        <MultiHorseComparison
+          userId={1}
+          selectedHorses={[1, 2, 3]}
           onHorseSelectionChange={mockOnHorseSelectionChange}
         />
       );
@@ -383,9 +389,9 @@ describe('MultiHorseComparison', () => {
   describe('Export Functionality', () => {
     test('shows export options when horses are selected', () => {
       renderWithQueryClient(
-        <MultiHorseComparison 
-          userId={1} 
-          selectedHorses={[1, 2]} 
+        <MultiHorseComparison
+          userId={1}
+          selectedHorses={[1, 2]}
           onHorseSelectionChange={mockOnHorseSelectionChange}
         />
       );

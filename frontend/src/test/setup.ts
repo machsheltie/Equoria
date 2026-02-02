@@ -5,6 +5,7 @@
  */
 
 import '@testing-library/jest-dom';
+import 'jest-canvas-mock';
 import { cleanup } from '@testing-library/react';
 import { afterEach, beforeAll, afterAll } from 'vitest';
 import { server } from './msw/server';
@@ -13,6 +14,11 @@ import { server } from './msw/server';
 afterEach(() => {
   cleanup();
 });
+
+// Suppress console logs during tests
+global.console.log = () => {};
+global.console.debug = () => {};
+global.console.info = () => {};
 
 // MSW setup for API mocking in tests
 beforeAll(() => server.listen({ onUnhandledRequest: 'error' }));

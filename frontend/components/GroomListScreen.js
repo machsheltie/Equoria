@@ -41,12 +41,7 @@ const STORAGE_KEY_FILTER_SKILL = 'groom_marketplace_filter_skill';
 const STORAGE_KEY_FILTER_SPECIALTY = 'groom_marketplace_filter_specialty';
 const STORAGE_KEY_SORT = 'groom_marketplace_sort';
 
-const GroomListScreen = ({
-  marketplaceData,
-  userData,
-  onGroomHired,
-  onRefreshMarketplace,
-}) => {
+const GroomListScreen = ({ marketplaceData, userData, onGroomHired, onRefreshMarketplace }) => {
   const [isLoading, setIsLoading] = useState(true);
   const [filterSkillLevel, setFilterSkillLevel] = useState('all');
   const [filterSpecialty, setFilterSpecialty] = useState('all');
@@ -130,10 +125,10 @@ const GroomListScreen = ({
 
     // Apply filters
     if (filterSkillLevel !== 'all') {
-      filtered = filtered.filter(g => g.skillLevel === filterSkillLevel);
+      filtered = filtered.filter((g) => g.skillLevel === filterSkillLevel);
     }
     if (filterSpecialty !== 'all') {
-      filtered = filtered.filter(g => g.specialty === filterSpecialty);
+      filtered = filtered.filter((g) => g.specialty === filterSpecialty);
     }
 
     // Apply sorting
@@ -650,22 +645,22 @@ const GroomListScreen = ({
       ) : (
         <View style={styles.groomList} testID="groom-list-scroll">
           {filteredAndSortedGrooms.map((groom) => (
-            <View key={groom.marketplaceId} style={styles.groomCard} testID={`groom-card-${groom.marketplaceId}`}>
+            <View
+              key={groom.marketplaceId}
+              style={styles.groomCard}
+              testID={`groom-card-${groom.marketplaceId}`}
+            >
               <Text style={styles.groomName} testID={`groom-name-${groom.marketplaceId}`}>
                 {groom.firstName} {groom.lastName}
               </Text>
-              <Text style={styles.groomDetail}>
-                Specialty: {formatSpecialty(groom.specialty)}
-              </Text>
+              <Text style={styles.groomDetail}>Specialty: {formatSpecialty(groom.specialty)}</Text>
               <Text style={styles.groomDetail}>
                 Skill Level: {groom.skillLevel.charAt(0).toUpperCase() + groom.skillLevel.slice(1)}
               </Text>
               <Text style={styles.groomDetail}>
                 Experience: {groom.experience} {groom.experience === 1 ? 'year' : 'years'}
               </Text>
-              <Text style={styles.groomPrice}>
-                {formatCurrency(groom.sessionRate)}/session
-              </Text>
+              <Text style={styles.groomPrice}>{formatCurrency(groom.sessionRate)}/session</Text>
               <TouchableOpacity
                 style={[
                   styles.hireButton,
@@ -912,10 +907,7 @@ const GroomListScreen = ({
 
               {/* Name (A-Z) */}
               <TouchableOpacity
-                style={[
-                  styles.filterOption,
-                  tempSort === 'name' && styles.filterOptionSelected,
-                ]}
+                style={[styles.filterOption, tempSort === 'name' && styles.filterOptionSelected]}
                 onPress={() => setTempSort('name')}
                 testID="sort-option-name"
               >
@@ -1048,10 +1040,13 @@ const GroomListScreen = ({
                     Specialty: {formatSpecialty(selectedGroom.specialty)}
                   </Text>
                   <Text style={styles.hireModalDetail}>
-                    Skill Level: {selectedGroom.skillLevel.charAt(0).toUpperCase() + selectedGroom.skillLevel.slice(1)}
+                    Skill Level:{' '}
+                    {selectedGroom.skillLevel.charAt(0).toUpperCase() +
+                      selectedGroom.skillLevel.slice(1)}
                   </Text>
                   <Text style={styles.hireModalDetail}>
-                    Experience: {selectedGroom.experience} {selectedGroom.experience === 1 ? 'year' : 'years'}
+                    Experience: {selectedGroom.experience}{' '}
+                    {selectedGroom.experience === 1 ? 'year' : 'years'}
                   </Text>
                 </View>
 
@@ -1062,7 +1057,8 @@ const GroomListScreen = ({
                     Session Rate: {formatCurrency(selectedGroom.sessionRate)}
                   </Text>
                   <Text style={styles.hireModalDetail}>
-                    Weekly Cost (7 sessions): {formatCurrency(calculateHiringCost(selectedGroom.sessionRate))}
+                    Weekly Cost (7 sessions):{' '}
+                    {formatCurrency(calculateHiringCost(selectedGroom.sessionRate))}
                   </Text>
                   <Text style={styles.hireModalDetail}>
                     Your Funds: {formatCurrency(userData?.money || 0)}
@@ -1072,9 +1068,7 @@ const GroomListScreen = ({
                 {/* Insufficient Funds Warning */}
                 {!canAffordGroom(selectedGroom.sessionRate) && (
                   <View style={styles.warningBox}>
-                    <Text style={styles.warningText}>
-                      Insufficient funds to hire this groom
-                    </Text>
+                    <Text style={styles.warningText}>Insufficient funds to hire this groom</Text>
                   </View>
                 )}
               </>
@@ -1092,10 +1086,14 @@ const GroomListScreen = ({
                 style={[
                   styles.modalButton,
                   styles.modalButtonPrimary,
-                  selectedGroom && !canAffordGroom(selectedGroom.sessionRate) && styles.modalButtonDisabled,
+                  selectedGroom &&
+                    !canAffordGroom(selectedGroom.sessionRate) &&
+                    styles.modalButtonDisabled,
                 ]}
                 onPress={handleHireConfirm}
-                accessibilityState={{ disabled: selectedGroom && !canAffordGroom(selectedGroom.sessionRate) }}
+                accessibilityState={{
+                  disabled: selectedGroom && !canAffordGroom(selectedGroom.sessionRate),
+                }}
                 testID="hire-confirm-button"
               >
                 <Text style={styles.modalButtonText}>Confirm Hire</Text>
@@ -1109,4 +1107,3 @@ const GroomListScreen = ({
 };
 
 export default GroomListScreen;
-

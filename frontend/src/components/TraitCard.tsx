@@ -28,7 +28,10 @@ export interface TraitCardProps {
  */
 const getTraitColors = (type: 'genetic' | 'epigenetic', rarity: string) => {
   // Base colors by type
-  const typeColors: Record<string, { border: string; bg: string; text: string; accent?: string; animation?: string }> = {
+  const typeColors: Record<
+    string,
+    { border: string; bg: string; text: string; accent?: string; animation?: string }
+  > = {
     genetic: {
       border: 'border-blue-500',
       bg: 'bg-blue-50',
@@ -165,8 +168,8 @@ export const TraitCard: React.FC<TraitCardProps> = ({
                 trait.rarity === 'legendary'
                   ? 'bg-gradient-to-r from-burnished-gold to-purple-500 text-white'
                   : trait.rarity === 'rare'
-                  ? 'bg-burnished-gold text-white'
-                  : 'bg-gray-200 text-gray-700'
+                    ? 'bg-burnished-gold text-white'
+                    : 'bg-gray-200 text-gray-700'
               }`}
             >
               {trait.rarity.charAt(0).toUpperCase() + trait.rarity.slice(1)}
@@ -176,9 +179,7 @@ export const TraitCard: React.FC<TraitCardProps> = ({
             {trait.type === 'epigenetic' && trait.isActive !== undefined && (
               <span
                 className={`text-xs px-2 py-1 rounded-full ${
-                  trait.isActive
-                    ? 'bg-forest-green text-white'
-                    : 'bg-gray-300 text-gray-600'
+                  trait.isActive ? 'bg-forest-green text-white' : 'bg-gray-300 text-gray-600'
                 }`}
               >
                 {trait.isActive ? 'Active' : 'Dormant'}
@@ -188,9 +189,7 @@ export const TraitCard: React.FC<TraitCardProps> = ({
         </div>
 
         {/* Info Icon */}
-        {showTooltip && (
-          <Info className={`w-5 h-5 ${colors.text} cursor-help`} />
-        )}
+        {showTooltip && <Info className={`w-5 h-5 ${colors.text} cursor-help`} />}
       </div>
 
       {/* Strength Meter */}

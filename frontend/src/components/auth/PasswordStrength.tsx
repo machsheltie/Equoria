@@ -44,7 +44,10 @@ interface RequirementCheckProps {
  * Individual requirement check item
  */
 const RequirementCheck: React.FC<RequirementCheckProps> = ({ met, label }) => (
-  <div className="flex items-center gap-2 text-xs" data-testid={`requirement-${label.toLowerCase().replace(/\s+/g, '-').replace(/\+/g, '')}`}>
+  <div
+    className="flex items-center gap-2 text-xs"
+    data-testid={`requirement-${label.toLowerCase().replace(/\s+/g, '-').replace(/\+/g, '')}`}
+  >
     {met ? (
       <Check className="w-3 h-3 text-forest-green" aria-hidden="true" />
     ) : (
@@ -80,12 +83,15 @@ export const PasswordStrength: React.FC<PasswordStrengthProps> = ({
   const strength = useMemo(() => calculatePasswordStrength(password), [password]);
 
   // Calculate requirements status
-  const requirements = useMemo<PasswordRequirements>(() => ({
-    minLength: password.length >= 8,
-    hasLowercase: /[a-z]/.test(password),
-    hasUppercase: /[A-Z]/.test(password),
-    hasNumber: /[0-9]/.test(password),
-  }), [password]);
+  const requirements = useMemo<PasswordRequirements>(
+    () => ({
+      minLength: password.length >= 8,
+      hasLowercase: /[a-z]/.test(password),
+      hasUppercase: /[A-Z]/.test(password),
+      hasNumber: /[0-9]/.test(password),
+    }),
+    [password]
+  );
 
   // Don't render if no password
   if (!password) {
@@ -95,7 +101,11 @@ export const PasswordStrength: React.FC<PasswordStrengthProps> = ({
   return (
     <div className={`space-y-2 pt-2 ${className}`} data-testid="password-strength">
       {/* Strength Bar */}
-      <div className="flex items-center gap-2" role="group" aria-label="Password strength indicator">
+      <div
+        className="flex items-center gap-2"
+        role="group"
+        aria-label="Password strength indicator"
+      >
         <div className="flex-1 h-1.5 bg-gray-200 rounded-full overflow-hidden">
           <div
             className="h-full transition-all duration-300 rounded-full"

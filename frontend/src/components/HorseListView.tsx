@@ -1,9 +1,9 @@
 /**
  * Horse List View Component
- * 
+ *
  * Comprehensive horse list interface with sorting, filtering, and pagination.
  * Features responsive design for mobile and desktop with real-time data updates.
- * 
+ *
  * Features:
  * - Sortable table view for desktop
  * - Card view for mobile devices
@@ -16,11 +16,8 @@
  */
 
 import React, { useState, useMemo, useEffect } from 'react';
-import { useQuery } from '@tanstack/react-query';
 import { useNavigate } from 'react-router-dom';
 import {
-  Search,
-  Filter,
   ChevronUp,
   ChevronDown,
   Eye,
@@ -29,8 +26,20 @@ import {
   ChevronLeft,
   ChevronRight,
   LayoutGrid,
-  List
+  List,
 } from 'lucide-react';
+import { useHorses } from '../hooks/api/useHorses';
+import { useHorseFilters } from '../hooks/useHorseFilters';
+import {
+  applyFilters,
+  hasActiveFilters,
+  getActiveFilterCount,
+} from '../lib/utils/horse-filter-utils';
+import HorseSearchBar from './horse/HorseSearchBar';
+import HorseFilters from './horse/HorseFilters';
+import EligibilityIndicator from './training/EligibilityIndicator';
+import EligibilityFilter, { EligibilityFilterType } from './training/EligibilityFilter';
+import { canTrain } from '../lib/utils/training-utils';
 
 // Types
 interface Horse {
@@ -87,9 +96,7 @@ const calculatePrimaryDiscipline = (disciplineScores: Record<string, number>): s
   }
 
   const entries = Object.entries(disciplineScores);
-  const highest = entries.reduce((max, current) =>
-    current[1] > max[1] ? current : max
-  );
+  const highest = entries.reduce((max, current) => (current[1] > max[1] ? current : max));
 
   return highest[0];
 };
@@ -104,58 +111,54 @@ const formatDisciplinesTooltip = (disciplineScores: Record<string, number>): str
     .join(', ');
 };
 
-// API function to fetch horses
-const fetchHorses = async (userId: number): Promise<Horse[]> => {
-  const response = await fetch('/api/v1/horses', {
-    headers: {
-      'Authorization': `Bearer ${localStorage.getItem('authToken')}`,
-      'Content-Type': 'application/json',
-    },
-  });
-
-  if (!response.ok) {
-    const errorData = await response.json().catch(() => ({ message: 'Failed to fetch horses' }));
-    throw new Error(errorData.message || `HTTP ${response.status}: Failed to fetch horses`);
+// Utility function to check full training eligibility (including age limits)
+// This matches the logic in EligibilityIndicator for consistency
+const isEligibleForTraining = (horse: Horse): boolean => {
+  // Age requirements: must be 3-20 years old
+  if (horse.age < 3 || horse.age > 20) {
+    return false;
   }
-
-  const data = await response.json();
-  return data.data || [];
+  // Use canTrain for cooldown check
+  return canTrain(horse).eligible;
 };
 
 const HorseListView: React.FC<HorseListViewProps> = ({ userId, horses: propHorses }) => {
   const navigate = useNavigate();
   const [currentPage, setCurrentPage] = useState(1);
   const [sortConfig, setSortConfig] = useState<SortConfig>({ key: null, direction: 'asc' });
-  const [filters, setFilters] = useState<FilterConfig>({
-    breed: '',
-    ageMin: 0,
-    ageMax: 30,
-    levelMin: 1,
-    levelMax: 100,
-    search: '',
-  });
   const [isMobile, setIsMobile] = useState(window.innerWidth < 768);
   const [viewMode, setViewMode] = useState<ViewMode>(() => {
     // Load from localStorage, default to 'list'
     const saved = localStorage.getItem('horseListViewMode');
     return (saved as ViewMode) || 'list';
   });
+  const [eligibilityFilter, setEligibilityFilter] = useState<EligibilityFilterType>('all');
+
+  // Integrated filter system with URL persistence
+  const {
+    filters,
+    setSearch,
+    setAgeRange,
+    toggleBreed,
+    toggleDiscipline,
+    setTrainingStatus,
+    clearFilters,
+  } = useHorseFilters();
 
   const itemsPerPage = 10;
 
+  // Mock breeds data (will be replaced with API call in future)
+  const availableBreeds = [
+    { id: '1', name: 'Arabian' },
+    { id: '2', name: 'Thoroughbred' },
+    { id: '3', name: 'Quarter Horse' },
+    { id: '4', name: 'Friesian' },
+  ];
+
   // React Query for data fetching (only if horses not provided as props)
-  const {
-    data: horses = propHorses || [],
-    isLoading,
-    error,
-    refetch,
-  } = useQuery({
-    queryKey: ['horses', userId],
-    queryFn: () => fetchHorses(userId),
-    staleTime: 5 * 60 * 1000, // 5 minutes
-    refetchOnWindowFocus: false,
-    enabled: !propHorses && typeof fetch !== 'undefined', // Only fetch if horses not provided and fetch is available
-  });
+  const { data: fetchedHorses, isLoading, error, refetch } = useHorses();
+
+  const horses = propHorses || fetchedHorses || [];
 
   // Handle window resize for responsive design
   React.useEffect(() => {
@@ -177,22 +180,52 @@ const HorseListView: React.FC<HorseListViewProps> = ({ userId, horses: propHorse
     setViewMode((prev) => (prev === 'grid' ? 'list' : 'grid'));
   };
 
-  // Filter and sort horses
+  // Transform horses data to match filter utility interface
+  const transformedHorses = useMemo(() => {
+    return horses.map((horse) => ({
+      ...horse,
+      breedId: availableBreeds.find((b) => b.name === horse.breed)?.id,
+      breedName: horse.breed,
+      disciplines: Object.keys(horse.disciplineScores || {}),
+      traits: [], // Traits not available in current Horse type
+      lastTrainedAt: horse.trainingCooldown ? new Date().toISOString() : null,
+      trainingCooldown: horse.trainingCooldown || null,
+    }));
+  }, [horses, availableBreeds]);
+
+  // Apply filters using utility function
+  const filteredHorses = useMemo(() => {
+    let result = applyFilters(transformedHorses, filters);
+
+    // Apply eligibility filter
+    if (eligibilityFilter !== 'all') {
+      result = result.filter((horse) => {
+        const eligibility = canTrain(horse);
+
+        if (eligibilityFilter === 'ready') {
+          // Horse is eligible to train (canTrain returns true)
+          return eligibility.eligible;
+        } else if (eligibilityFilter === 'cooldown') {
+          // Horse is on cooldown
+          return !eligibility.eligible && eligibility.reason?.toLowerCase().includes('cooldown');
+        } else if (eligibilityFilter === 'ineligible') {
+          // Horse is ineligible (too young, too old, or other reasons excluding cooldown)
+          return !eligibility.eligible && !eligibility.reason?.toLowerCase().includes('cooldown');
+        }
+
+        return true;
+      });
+    }
+
+    return result;
+  }, [transformedHorses, filters, eligibilityFilter]);
+
+  // Apply sorting to filtered horses
   const filteredAndSortedHorses = useMemo(() => {
-    let filtered = horses.filter((horse) => {
-      const matchesBreed = !filters.breed || horse.breed.toLowerCase().includes(filters.breed.toLowerCase());
-      const matchesAge = horse.age >= filters.ageMin && horse.age <= filters.ageMax;
-      const matchesLevel = horse.level >= filters.levelMin && horse.level <= filters.levelMax;
-      const matchesSearch = !filters.search ||
-        horse.name.toLowerCase().includes(filters.search.toLowerCase()) ||
-        horse.breed.toLowerCase().includes(filters.search.toLowerCase());
+    const sorted = [...filteredHorses];
 
-      return matchesBreed && matchesAge && matchesLevel && matchesSearch;
-    });
-
-    // Apply sorting
     if (sortConfig.key) {
-      filtered.sort((a, b) => {
+      sorted.sort((a, b) => {
         const aValue = a[sortConfig.key!];
         const bValue = b[sortConfig.key!];
 
@@ -206,8 +239,8 @@ const HorseListView: React.FC<HorseListViewProps> = ({ userId, horses: propHorse
       });
     }
 
-    return filtered;
-  }, [horses, filters, sortConfig]);
+    return sorted;
+  }, [filteredHorses, sortConfig]);
 
   // Pagination
   const totalPages = Math.ceil(filteredAndSortedHorses.length / itemsPerPage);
@@ -271,7 +304,15 @@ const HorseListView: React.FC<HorseListViewProps> = ({ userId, horses: propHorse
       <div className="mb-6 flex justify-between items-center">
         <div>
           <h1 className="text-3xl font-bold text-gray-900 mb-2">My Horses</h1>
-          <p className="text-gray-600">Manage your stable of {horses.length} horses</p>
+          <p className="text-gray-600">
+            Showing {filteredAndSortedHorses.length} of {horses.length} horses
+            {hasActiveFilters(filters) && (
+              <span className="ml-2 text-blue-600">
+                ({getActiveFilterCount(filters)} filter
+                {getActiveFilterCount(filters) > 1 ? 's' : ''} active)
+              </span>
+            )}
+          </p>
         </div>
 
         {/* View Toggle Button (Desktop only) */}
@@ -297,84 +338,38 @@ const HorseListView: React.FC<HorseListViewProps> = ({ userId, horses: propHorse
         )}
       </div>
 
-      {/* Filters and Search */}
-      <div className="mb-6 space-y-4">
-        <div className="flex flex-col md:flex-row gap-4">
-          {/* Search */}
-          <div className="relative flex-1">
-            <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400 w-5 h-5" />
-            <input
-              type="text"
-              placeholder="Search horses..."
-              value={filters.search}
-              onChange={(e) => setFilters(prev => ({ ...prev, search: e.target.value }))}
-              className="w-full pl-10 pr-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
-            />
-          </div>
+      {/* Search Bar */}
+      <div className="mb-4">
+        <HorseSearchBar
+          value={filters.search}
+          onChange={setSearch}
+          placeholder="Search horses by name, breed, or traits..."
+          isLoading={isLoading}
+        />
+      </div>
 
-          {/* Breed Filter */}
-          <select
-            aria-label="Filter by breed"
-            value={filters.breed}
-            onChange={(e) => setFilters(prev => ({ ...prev, breed: e.target.value }))}
-            className="px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500"
-          >
-            <option value="">All Breeds</option>
-            <option value="Arabian">Arabian</option>
-            <option value="Thoroughbred">Thoroughbred</option>
-            <option value="Quarter Horse">Quarter Horse</option>
-            <option value="Friesian">Friesian</option>
-          </select>
+      {/* Filters */}
+      <div className="mb-6">
+        <HorseFilters
+          filters={filters}
+          onAgeRangeChange={setAgeRange}
+          onBreedToggle={toggleBreed}
+          onDisciplineToggle={toggleDiscipline}
+          onTrainingStatusChange={setTrainingStatus}
+          onClearFilters={clearFilters}
+          breeds={availableBreeds}
+          isLoading={isLoading}
+          activeFilterCount={getActiveFilterCount(filters)}
+        />
 
-          {/* Age Filter */}
-          <div className="flex items-center gap-2">
-            <label htmlFor="age-min" className="text-sm text-gray-600">Age:</label>
-            <input
-              id="age-min"
-              type="number"
-              min="0"
-              max="30"
-              value={filters.ageMin}
-              onChange={(e) => setFilters(prev => ({ ...prev, ageMin: parseInt(e.target.value) || 0 }))}
-              className="w-16 px-2 py-1 border border-gray-300 rounded text-sm"
-              aria-label="Filter by age minimum"
-            />
-            <span className="text-gray-400">-</span>
-            <input
-              type="number"
-              min="0"
-              max="30"
-              value={filters.ageMax}
-              onChange={(e) => setFilters(prev => ({ ...prev, ageMax: parseInt(e.target.value) || 30 }))}
-              className="w-16 px-2 py-1 border border-gray-300 rounded text-sm"
-              aria-label="Filter by age maximum"
-            />
-          </div>
-
-          {/* Level Filter */}
-          <div className="flex items-center gap-2">
-            <label htmlFor="level-min" className="text-sm text-gray-600">Level:</label>
-            <input
-              id="level-min"
-              type="number"
-              min="1"
-              max="100"
-              value={filters.levelMin}
-              onChange={(e) => setFilters(prev => ({ ...prev, levelMin: parseInt(e.target.value) || 1 }))}
-              className="w-16 px-2 py-1 border border-gray-300 rounded text-sm"
-              aria-label="Filter by level minimum"
-            />
-            <span className="text-gray-400">-</span>
-            <input
-              type="number"
-              min="1"
-              max="100"
-              value={filters.levelMax}
-              onChange={(e) => setFilters(prev => ({ ...prev, levelMax: parseInt(e.target.value) || 100 }))}
-              className="w-16 px-2 py-1 border border-gray-300 rounded text-sm"
-              aria-label="Filter by level maximum"
-            />
-          </div>
+        {/* Eligibility Filter */}
+        <div className="mt-4">
+          <EligibilityFilter
+            horses={transformedHorses}
+            selectedFilter={eligibilityFilter}
+            onFilterChange={setEligibilityFilter}
+            showCounts={true}
+          />
         </div>
       </div>
 
@@ -384,7 +379,11 @@ const HorseListView: React.FC<HorseListViewProps> = ({ userId, horses: propHorse
         <div data-testid="mobile-layout" className="space-y-4">
           <div data-testid="horse-cards-container">
             {paginatedHorses.map((horse) => (
-              <div key={horse.id} className="bg-white rounded-lg shadow-md border overflow-hidden">
+              <div
+                key={horse.id}
+                className="bg-white rounded-lg shadow-md border overflow-hidden"
+                data-testid={`horse-card-${horse.id}`}
+              >
                 {/* Horse Thumbnail */}
                 <img
                   src={horse.imageUrl || '/images/horse-placeholder.png'}
@@ -404,6 +403,11 @@ const HorseListView: React.FC<HorseListViewProps> = ({ userId, horses: propHorse
                     </div>
                   </div>
 
+                  {/* Eligibility Indicator */}
+                  <div className="mb-3">
+                    <EligibilityIndicator horse={horse} variant="compact" />
+                  </div>
+
                   <div className="flex justify-between items-center">
                     <div className="flex space-x-2">
                       <button
@@ -413,13 +417,25 @@ const HorseListView: React.FC<HorseListViewProps> = ({ userId, horses: propHorse
                       >
                         <Eye className="w-4 h-4" />
                       </button>
-                      <button
-                        onClick={() => handleTrain(horse.id)}
-                        className="p-2 text-green-600 hover:bg-green-50 rounded-lg transition-colors"
-                        aria-label="Train"
-                      >
-                        <Dumbbell className="w-4 h-4" />
-                      </button>
+                      {isEligibleForTraining(horse) ? (
+                        <button
+                          onClick={() => handleTrain(horse.id)}
+                          className="p-2 text-green-600 hover:bg-green-50 rounded-lg transition-colors"
+                          aria-label="Train horse"
+                          data-testid={`train-button-${horse.id}`}
+                        >
+                          <Dumbbell className="w-4 h-4" />
+                        </button>
+                      ) : (
+                        <button
+                          disabled
+                          className="p-2 text-gray-400 cursor-not-allowed rounded-lg"
+                          aria-label="Training unavailable"
+                          data-testid={`train-button-disabled-${horse.id}`}
+                        >
+                          <Dumbbell className="w-4 h-4" />
+                        </button>
+                      )}
                       <button
                         onClick={() => handleCompete(horse.id)}
                         className="p-2 text-purple-600 hover:bg-purple-50 rounded-lg transition-colors"
@@ -442,9 +458,16 @@ const HorseListView: React.FC<HorseListViewProps> = ({ userId, horses: propHorse
         </div>
       ) : viewMode === 'grid' ? (
         // Desktop Grid View
-        <div data-testid="desktop-grid-layout" className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-4">
+        <div
+          data-testid="desktop-grid-layout"
+          className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-4"
+        >
           {paginatedHorses.map((horse) => (
-            <div key={horse.id} className="bg-white rounded-lg shadow-md border hover:shadow-lg transition-shadow overflow-hidden">
+            <div
+              key={horse.id}
+              className="bg-white rounded-lg shadow-md border hover:shadow-lg transition-shadow overflow-hidden"
+              data-testid={`horse-card-${horse.id}`}
+            >
               {/* Horse Thumbnail */}
               <img
                 src={horse.imageUrl || '/images/horse-placeholder.png'}
@@ -472,8 +495,15 @@ const HorseListView: React.FC<HorseListViewProps> = ({ userId, horses: propHorse
                     title={`Disciplines: ${formatDisciplinesTooltip(horse.disciplineScores)}`}
                   >
                     <span className="text-gray-500">Primary:</span>
-                    <span className="font-medium">{calculatePrimaryDiscipline(horse.disciplineScores)}</span>
+                    <span className="font-medium">
+                      {calculatePrimaryDiscipline(horse.disciplineScores)}
+                    </span>
                   </div>
+                </div>
+
+                {/* Eligibility Indicator */}
+                <div className="mb-3">
+                  <EligibilityIndicator horse={horse} variant="compact" />
                 </div>
 
                 <div className="flex justify-between border-t pt-3">
@@ -485,14 +515,27 @@ const HorseListView: React.FC<HorseListViewProps> = ({ userId, horses: propHorse
                   >
                     <Eye className="w-4 h-4" />
                   </button>
-                  <button
-                    onClick={() => handleTrain(horse.id)}
-                    className="p-2 text-green-600 hover:bg-green-50 rounded-lg transition-colors"
-                    aria-label="Train"
-                    title="Train"
-                  >
-                    <Dumbbell className="w-4 h-4" />
-                  </button>
+                  {isEligibleForTraining(horse) ? (
+                    <button
+                      onClick={() => handleTrain(horse.id)}
+                      className="p-2 text-green-600 hover:bg-green-50 rounded-lg transition-colors"
+                      aria-label="Train horse"
+                      title="Train"
+                      data-testid={`train-button-${horse.id}`}
+                    >
+                      <Dumbbell className="w-4 h-4" />
+                    </button>
+                  ) : (
+                    <button
+                      disabled
+                      className="p-2 text-gray-400 cursor-not-allowed rounded-lg"
+                      aria-label="Training unavailable"
+                      title="Training unavailable"
+                      data-testid={`train-button-disabled-${horse.id}`}
+                    >
+                      <Dumbbell className="w-4 h-4" />
+                    </button>
+                  )}
                   <button
                     onClick={() => handleCompete(horse.id)}
                     className="p-2 text-purple-600 hover:bg-purple-50 rounded-lg transition-colors"
@@ -518,53 +561,92 @@ const HorseListView: React.FC<HorseListViewProps> = ({ userId, horses: propHorse
                 <th
                   className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider cursor-pointer hover:bg-gray-100"
                   onClick={() => handleSort('name')}
-                  aria-sort={sortConfig.key === 'name' ? (sortConfig.direction === 'asc' ? 'ascending' : 'descending') : undefined}
+                  aria-sort={
+                    sortConfig.key === 'name'
+                      ? sortConfig.direction === 'asc'
+                        ? 'ascending'
+                        : 'descending'
+                      : undefined
+                  }
                 >
                   <div className="flex items-center">
                     Name
-                    {sortConfig.key === 'name' && (
-                      sortConfig.direction === 'asc' ? <ChevronUp className="w-4 h-4 ml-1" /> : <ChevronDown className="w-4 h-4 ml-1" />
-                    )}
+                    {sortConfig.key === 'name' &&
+                      (sortConfig.direction === 'asc' ? (
+                        <ChevronUp className="w-4 h-4 ml-1" />
+                      ) : (
+                        <ChevronDown className="w-4 h-4 ml-1" />
+                      ))}
                   </div>
                 </th>
                 <th
                   className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider cursor-pointer hover:bg-gray-100"
                   onClick={() => handleSort('breed')}
-                  aria-sort={sortConfig.key === 'breed' ? (sortConfig.direction === 'asc' ? 'ascending' : 'descending') : undefined}
+                  aria-sort={
+                    sortConfig.key === 'breed'
+                      ? sortConfig.direction === 'asc'
+                        ? 'ascending'
+                        : 'descending'
+                      : undefined
+                  }
                 >
                   <div className="flex items-center">
                     Breed
-                    {sortConfig.key === 'breed' && (
-                      sortConfig.direction === 'asc' ? <ChevronUp className="w-4 h-4 ml-1" /> : <ChevronDown className="w-4 h-4 ml-1" />
-                    )}
+                    {sortConfig.key === 'breed' &&
+                      (sortConfig.direction === 'asc' ? (
+                        <ChevronUp className="w-4 h-4 ml-1" />
+                      ) : (
+                        <ChevronDown className="w-4 h-4 ml-1" />
+                      ))}
                   </div>
                 </th>
                 <th
                   className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider cursor-pointer hover:bg-gray-100"
                   onClick={() => handleSort('age')}
-                  aria-sort={sortConfig.key === 'age' ? (sortConfig.direction === 'asc' ? 'ascending' : 'descending') : undefined}
+                  aria-sort={
+                    sortConfig.key === 'age'
+                      ? sortConfig.direction === 'asc'
+                        ? 'ascending'
+                        : 'descending'
+                      : undefined
+                  }
                 >
                   <div className="flex items-center">
                     Age
-                    {sortConfig.key === 'age' && (
-                      sortConfig.direction === 'asc' ? <ChevronUp className="w-4 h-4 ml-1" /> : <ChevronDown className="w-4 h-4 ml-1" />
-                    )}
+                    {sortConfig.key === 'age' &&
+                      (sortConfig.direction === 'asc' ? (
+                        <ChevronUp className="w-4 h-4 ml-1" />
+                      ) : (
+                        <ChevronDown className="w-4 h-4 ml-1" />
+                      ))}
                   </div>
                 </th>
                 <th
                   className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider cursor-pointer hover:bg-gray-100"
                   onClick={() => handleSort('level')}
-                  aria-sort={sortConfig.key === 'level' ? (sortConfig.direction === 'asc' ? 'ascending' : 'descending') : undefined}
+                  aria-sort={
+                    sortConfig.key === 'level'
+                      ? sortConfig.direction === 'asc'
+                        ? 'ascending'
+                        : 'descending'
+                      : undefined
+                  }
                 >
                   <div className="flex items-center">
                     Level
-                    {sortConfig.key === 'level' && (
-                      sortConfig.direction === 'asc' ? <ChevronUp className="w-4 h-4 ml-1" /> : <ChevronDown className="w-4 h-4 ml-1" />
-                    )}
+                    {sortConfig.key === 'level' &&
+                      (sortConfig.direction === 'asc' ? (
+                        <ChevronUp className="w-4 h-4 ml-1" />
+                      ) : (
+                        <ChevronDown className="w-4 h-4 ml-1" />
+                      ))}
                   </div>
                 </th>
                 <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
                   Primary Discipline
+                </th>
+                <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                  Training Status
                 </th>
                 <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
                   Actions
@@ -573,7 +655,11 @@ const HorseListView: React.FC<HorseListViewProps> = ({ userId, horses: propHorse
             </thead>
             <tbody className="bg-white divide-y divide-gray-200">
               {paginatedHorses.map((horse) => (
-                <tr key={horse.id} className="hover:bg-gray-50">
+                <tr
+                  key={horse.id}
+                  className="hover:bg-gray-50"
+                  data-testid={`horse-row-${horse.id}`}
+                >
                   <td className="px-6 py-4 whitespace-nowrap">
                     <img
                       src={horse.imageUrl || '/images/horse-placeholder.png'}
@@ -597,7 +683,12 @@ const HorseListView: React.FC<HorseListViewProps> = ({ userId, horses: propHorse
                     className="px-6 py-4 whitespace-nowrap"
                     title={`Disciplines: ${formatDisciplinesTooltip(horse.disciplineScores)}`}
                   >
-                    <div className="text-sm text-gray-900">{calculatePrimaryDiscipline(horse.disciplineScores)}</div>
+                    <div className="text-sm text-gray-900">
+                      {calculatePrimaryDiscipline(horse.disciplineScores)}
+                    </div>
+                  </td>
+                  <td className="px-6 py-4 whitespace-nowrap">
+                    <EligibilityIndicator horse={horse} variant="compact" />
                   </td>
                   <td className="px-6 py-4 whitespace-nowrap text-sm font-medium">
                     <div className="flex space-x-2">
@@ -608,13 +699,25 @@ const HorseListView: React.FC<HorseListViewProps> = ({ userId, horses: propHorse
                       >
                         <Eye className="w-4 h-4" />
                       </button>
-                      <button
-                        onClick={() => handleTrain(horse.id)}
-                        className="text-green-600 hover:text-green-900 p-1 rounded"
-                        aria-label="Train"
-                      >
-                        <Dumbbell className="w-4 h-4" />
-                      </button>
+                      {isEligibleForTraining(horse) ? (
+                        <button
+                          onClick={() => handleTrain(horse.id)}
+                          className="text-green-600 hover:text-green-900 p-1 rounded"
+                          aria-label="Train horse"
+                          data-testid={`train-button-${horse.id}`}
+                        >
+                          <Dumbbell className="w-4 h-4" />
+                        </button>
+                      ) : (
+                        <button
+                          disabled
+                          className="text-gray-400 cursor-not-allowed p-1 rounded"
+                          aria-label="Training unavailable"
+                          data-testid={`train-button-disabled-${horse.id}`}
+                        >
+                          <Dumbbell className="w-4 h-4" />
+                        </button>
+                      )}
                       <button
                         onClick={() => handleCompete(horse.id)}
                         className="text-purple-600 hover:text-purple-900 p-1 rounded"
@@ -636,14 +739,14 @@ const HorseListView: React.FC<HorseListViewProps> = ({ userId, horses: propHorse
         <nav className="mt-6 flex items-center justify-between" aria-label="Pagination">
           <div className="flex-1 flex justify-between sm:hidden">
             <button
-              onClick={() => setCurrentPage(prev => Math.max(prev - 1, 1))}
+              onClick={() => setCurrentPage((prev) => Math.max(prev - 1, 1))}
               disabled={currentPage === 1}
               className="relative inline-flex items-center px-4 py-2 border border-gray-300 text-sm font-medium rounded-md text-gray-700 bg-white hover:bg-gray-50 disabled:opacity-50 disabled:cursor-not-allowed"
             >
               Previous
             </button>
             <button
-              onClick={() => setCurrentPage(prev => Math.min(prev + 1, totalPages))}
+              onClick={() => setCurrentPage((prev) => Math.min(prev + 1, totalPages))}
               disabled={currentPage === totalPages}
               className="ml-3 relative inline-flex items-center px-4 py-2 border border-gray-300 text-sm font-medium rounded-md text-gray-700 bg-white hover:bg-gray-50 disabled:opacity-50 disabled:cursor-not-allowed"
             >
@@ -653,7 +756,8 @@ const HorseListView: React.FC<HorseListViewProps> = ({ userId, horses: propHorse
           <div className="hidden sm:flex-1 sm:flex sm:items-center sm:justify-between">
             <div>
               <p className="text-sm text-gray-700">
-                Showing <span className="font-medium">{(currentPage - 1) * itemsPerPage + 1}</span> to{' '}
+                Showing <span className="font-medium">{(currentPage - 1) * itemsPerPage + 1}</span>{' '}
+                to{' '}
                 <span className="font-medium">
                   {Math.min(currentPage * itemsPerPage, filteredAndSortedHorses.length)}
                 </span>{' '}
@@ -661,9 +765,12 @@ const HorseListView: React.FC<HorseListViewProps> = ({ userId, horses: propHorse
               </p>
             </div>
             <div>
-              <nav className="relative z-0 inline-flex rounded-md shadow-sm -space-x-px" aria-label="Pagination">
+              <nav
+                className="relative z-0 inline-flex rounded-md shadow-sm -space-x-px"
+                aria-label="Pagination"
+              >
                 <button
-                  onClick={() => setCurrentPage(prev => Math.max(prev - 1, 1))}
+                  onClick={() => setCurrentPage((prev) => Math.max(prev - 1, 1))}
                   disabled={currentPage === 1}
                   className="relative inline-flex items-center px-2 py-2 rounded-l-md border border-gray-300 bg-white text-sm font-medium text-gray-500 hover:bg-gray-50 disabled:opacity-50 disabled:cursor-not-allowed"
                   aria-label="Previous page"
@@ -676,17 +783,18 @@ const HorseListView: React.FC<HorseListViewProps> = ({ userId, horses: propHorse
                   <button
                     key={page}
                     onClick={() => setCurrentPage(page)}
-                    className={`relative inline-flex items-center px-4 py-2 border text-sm font-medium ${page === currentPage
+                    className={`relative inline-flex items-center px-4 py-2 border text-sm font-medium ${
+                      page === currentPage
                         ? 'z-10 bg-blue-50 border-blue-500 text-blue-600'
                         : 'bg-white border-gray-300 text-gray-500 hover:bg-gray-50'
-                      }`}
+                    }`}
                   >
                     {page}
                   </button>
                 ))}
 
                 <button
-                  onClick={() => setCurrentPage(prev => Math.min(prev + 1, totalPages))}
+                  onClick={() => setCurrentPage((prev) => Math.min(prev + 1, totalPages))}
                   disabled={currentPage === totalPages}
                   className="relative inline-flex items-center px-2 py-2 rounded-r-md border border-gray-300 bg-white text-sm font-medium text-gray-500 hover:bg-gray-50 disabled:opacity-50 disabled:cursor-not-allowed"
                   aria-label="Next page"
@@ -702,8 +810,24 @@ const HorseListView: React.FC<HorseListViewProps> = ({ userId, horses: propHorse
       {/* Empty state */}
       {filteredAndSortedHorses.length === 0 && !isLoading && (
         <div className="text-center py-12">
-          <p className="text-gray-500 text-lg">No horses found matching your criteria.</p>
-          <p className="text-gray-400 text-sm mt-2">Try adjusting your filters or search terms.</p>
+          <p className="text-gray-500 text-lg">
+            {horses.length === 0
+              ? 'No horses in your stable yet.'
+              : 'No horses found matching your criteria.'}
+          </p>
+          {horses.length > 0 && hasActiveFilters(filters) && (
+            <>
+              <p className="text-gray-400 text-sm mt-2">
+                Try adjusting your filters or search terms.
+              </p>
+              <button
+                onClick={clearFilters}
+                className="mt-4 px-4 py-2 text-blue-600 hover:text-blue-700 hover:bg-blue-50 rounded-lg transition-colors"
+              >
+                Clear all filters
+              </button>
+            </>
+          )}
         </div>
       )}
     </main>

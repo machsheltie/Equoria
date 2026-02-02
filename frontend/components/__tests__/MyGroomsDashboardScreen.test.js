@@ -31,7 +31,7 @@ jest.mock('react-native/Libraries/Modal/Modal', () => {
 
   return ({ visible, children, testID }) => {
     if (!visible) return null;
-    return <View testID={testID || "modal-container"}>{children}</View>;
+    return <View testID={testID || 'modal-container'}>{children}</View>;
   };
 });
 
@@ -41,7 +41,11 @@ jest.mock('react-native/Libraries/Components/ScrollView/ScrollView', () => {
   const { View } = require('react-native');
 
   return ({ children, testID, style }) => {
-    return <View testID={testID} style={style}>{children}</View>;
+    return (
+      <View testID={testID} style={style}>
+        {children}
+      </View>
+    );
   };
 });
 
@@ -658,17 +662,20 @@ describe('MyGroomsDashboardScreen', () => {
       // Create data where all grooms have assignments
       const allAssignedGroomsData = mockGroomsData.map((groom) => ({
         ...groom,
-        groomAssignments: groom.groomAssignments.length > 0 ? groom.groomAssignments : [
-          {
-            id: 999,
-            groomId: groom.id,
-            foalId: 999,
-            bondScore: 50,
-            priority: 1,
-            isActive: true,
-            foal: { id: 999, name: 'Test Horse' },
-          },
-        ],
+        groomAssignments:
+          groom.groomAssignments.length > 0
+            ? groom.groomAssignments
+            : [
+                {
+                  id: 999,
+                  groomId: groom.id,
+                  foalId: 999,
+                  bondScore: 50,
+                  priority: 1,
+                  isActive: true,
+                  foal: { id: 999, name: 'Test Horse' },
+                },
+              ],
       }));
 
       const allAssignedAssignmentsData = [
@@ -701,4 +708,3 @@ describe('MyGroomsDashboardScreen', () => {
     });
   });
 });
-

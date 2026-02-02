@@ -141,7 +141,9 @@ const TrainingRecommendations = ({ horseId }: TrainingRecommendationsProps) => {
   if (isLoading) {
     return (
       <div className="rounded-lg border border-slate-200 bg-white p-6 shadow-sm">
-        <div className="text-center text-sm text-slate-600">Loading training recommendations...</div>
+        <div className="text-center text-sm text-slate-600">
+          Loading training recommendations...
+        </div>
       </div>
     );
   }
@@ -236,7 +238,9 @@ const TrainingRecommendations = ({ horseId }: TrainingRecommendationsProps) => {
         <div className="mt-2 flex items-center gap-4 text-sm text-slate-600">
           <span className="font-semibold">{statsData.horseName}</span>
           <span>•</span>
-          <span>{statsData.age.years} years, {statsData.age.months} months</span>
+          <span>
+            {statsData.age.years} years, {statsData.age.months} months
+          </span>
         </div>
       </div>
 
@@ -340,7 +344,9 @@ const TrainingRecommendations = ({ horseId }: TrainingRecommendationsProps) => {
           </p>
           <ul className="space-y-1 text-xs text-indigo-700">
             <li>• Week 1-2: Focus on {recommendations[0]?.stat} (high priority)</li>
-            <li>• Week 3-4: Continue {recommendations[0]?.stat}, add {recommendations[1]?.stat} work</li>
+            <li>
+              • Week 3-4: Continue {recommendations[0]?.stat}, add {recommendations[1]?.stat} work
+            </li>
             <li>• Week 5+: Balanced training across all weak stats</li>
             <li>• Training schedule: 4-5 sessions per week, with rest days</li>
           </ul>
@@ -356,9 +362,7 @@ const TrainingRecommendations = ({ horseId }: TrainingRecommendationsProps) => {
             <li>• Training effectiveness varies by age and training window</li>
             <li>• Consistent training yields better results than sporadic sessions</li>
             {statsData.discipline && (
-              <li>
-                • Training for {statsData.discipline} - prioritize discipline-specific stats
-              </li>
+              <li>• Training for {statsData.discipline} - prioritize discipline-specific stats</li>
             )}
           </ul>
         </div>

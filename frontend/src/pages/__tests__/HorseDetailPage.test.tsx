@@ -42,9 +42,9 @@ const mockHorse = {
   },
   disciplineScores: {
     'Western Pleasure': 85,
-    'Dressage': 70,
+    Dressage: 70,
     'Show Jumping': 78,
-    'Endurance': 72,
+    Endurance: 72,
   },
   traits: ['Fast Learner', 'Even Tempered', 'Strong Build'],
   parentIds: {
@@ -325,14 +325,17 @@ describe('HorseDetailPage Component', () => {
       fireEvent.click(geneticsTab);
 
       // Verify Genetics tab is active with Timeline section
-      await waitFor(() => {
-        const tabButton = geneticsTab.closest('button');
-        expect(tabButton).toHaveClass('border-b-2', 'border-burnished-gold');
+      await waitFor(
+        () => {
+          const tabButton = geneticsTab.closest('button');
+          expect(tabButton).toHaveClass('border-b-2', 'border-burnished-gold');
 
-        // Verify genetics content is rendered (page has substantial content)
-        const bodyText = document.body.textContent || '';
-        expect(bodyText.length).toBeGreaterThan(100);
-      }, { timeout: 3000 });
+          // Verify genetics content is rendered (page has substantial content)
+          const bodyText = document.body.textContent || '';
+          expect(bodyText.length).toBeGreaterThan(100);
+        },
+        { timeout: 3000 }
+      );
     });
   });
 
@@ -409,7 +412,7 @@ describe('HorseDetailPage Component', () => {
         ok: false,
         status: 500,
         success: false,
-        message: 'Internal server error'
+        message: 'Internal server error',
       });
 
       const TestWrapper = createTestWrapper('1');
@@ -712,25 +715,18 @@ describe('HorseDetailPage Component', () => {
 
       await waitFor(() => {
         expect(fetchSpy).toHaveBeenCalledWith(
-          '/api/v1/horses/1',
+          expect.stringMatching(/http:\/\/localhost:3001\/api\/horses\/1(\?t=\d+)?/),
           expect.objectContaining({
             headers: expect.objectContaining({
-              'Authorization': expect.stringContaining('Bearer'),
               'Content-Type': 'application/json',
+              'x-test-skip-csrf': 'true',
             }),
           })
         );
       });
     });
 
-    test('includes auth token in request headers', async () => {
-      // Mock localStorage
-      const mockToken = 'test-auth-token-123';
-      Storage.prototype.getItem = vi.fn((key) => {
-        if (key === 'authToken') return mockToken;
-        return null;
-      });
-
+    test('includes credentials in request', async () => {
       const fetchSpy = vi.fn(() =>
         Promise.resolve({
           ok: true,
@@ -752,11 +748,9 @@ describe('HorseDetailPage Component', () => {
 
       await waitFor(() => {
         expect(fetchSpy).toHaveBeenCalledWith(
-          '/api/v1/horses/1',
+          expect.stringMatching(/http:\/\/localhost:3001\/api\/horses\/1(\?t=\d+)?/),
           expect.objectContaining({
-            headers: expect.objectContaining({
-              'Authorization': `Bearer ${mockToken}`,
-            }),
+            credentials: 'include',
           })
         );
       });

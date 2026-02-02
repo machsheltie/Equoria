@@ -1,7 +1,17 @@
 import { useState } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
 import { useHorse, useHorseTrainingHistory } from '@/hooks/api/useHorses';
-import { Zap, Heart, Star, Shield, Trophy, ArrowLeft, Dumbbell, Award, Sparkles } from 'lucide-react';
+import {
+  Zap,
+  Heart,
+  Star,
+  Shield,
+  Trophy,
+  ArrowLeft,
+  Dumbbell,
+  Award,
+  Sparkles,
+} from 'lucide-react';
 
 type TabType = 'overview' | 'disciplines' | 'genetics' | 'training' | 'competition';
 
@@ -134,15 +144,15 @@ const HorseDetailView = ({ horseId: propHorseId }: HorseDetailViewProps) => {
 
               {/* Quick Stats Summary */}
               <div className="grid grid-cols-3 md:grid-cols-6 gap-4">
-                {['speed', 'stamina', 'agility', 'strength', 'intelligence', 'health'].map((stat) => (
-                  <div key={stat} className="flex flex-col items-center">
-                    <div className={getStatColor(75)}>
-                      {getStatIcon(stat)}
+                {['speed', 'stamina', 'agility', 'strength', 'intelligence', 'health'].map(
+                  (stat) => (
+                    <div key={stat} className="flex flex-col items-center">
+                      <div className={getStatColor(75)}>{getStatIcon(stat)}</div>
+                      <span className="text-xs text-midnight-ink mt-1 capitalize">{stat}</span>
+                      <span className="text-sm font-semibold text-midnight-ink">--</span>
                     </div>
-                    <span className="text-xs text-midnight-ink mt-1 capitalize">{stat}</span>
-                    <span className="text-sm font-semibold text-midnight-ink">--</span>
-                  </div>
-                ))}
+                  )
+                )}
               </div>
             </div>
           </div>
@@ -228,7 +238,9 @@ const HorseDetailView = ({ horseId: propHorseId }: HorseDetailViewProps) => {
                 <h2 className="text-xl font-bold text-midnight-ink mb-4">Current Status</h2>
                 <div className="text-sm text-aged-bronze">
                   <p>Displaying basic horse information.</p>
-                  <p className="mt-2">Full stats and attributes will be displayed when available from backend.</p>
+                  <p className="mt-2">
+                    Full stats and attributes will be displayed when available from backend.
+                  </p>
                 </div>
               </div>
             </div>
@@ -240,7 +252,9 @@ const HorseDetailView = ({ horseId: propHorseId }: HorseDetailViewProps) => {
               <h2 className="text-xl font-bold text-midnight-ink mb-4">Discipline Scores</h2>
               <div className="text-sm text-aged-bronze">
                 <p>Discipline scores will be displayed when available from backend.</p>
-                <p className="mt-2">This section will show performance across all 23 disciplines.</p>
+                <p className="mt-2">
+                  This section will show performance across all 23 disciplines.
+                </p>
               </div>
             </div>
           )}
@@ -251,7 +265,9 @@ const HorseDetailView = ({ horseId: propHorseId }: HorseDetailViewProps) => {
               <h2 className="text-xl font-bold text-midnight-ink mb-4">Genetic Traits</h2>
               <div className="text-sm text-aged-bronze">
                 <p>Genetic traits and markers will be displayed when available.</p>
-                <p className="mt-2">This section will show inherited traits and genetic potential.</p>
+                <p className="mt-2">
+                  This section will show inherited traits and genetic potential.
+                </p>
               </div>
             </div>
           )}

@@ -31,18 +31,18 @@ const FantasyButton = ({
     if (onClick) onClick();
   };
 
-  const baseClasses = "relative rounded-lg font-fantasy-body font-bold uppercase tracking-wider transition-all duration-200 overflow-hidden";
-  const disabledClasses = disabled ? "opacity-50 cursor-not-allowed" : "";
-  
-  const sizeClasses = size === 'large' 
-    ? "px-8 py-4 text-lg" 
-    : "px-6 py-3 text-base";
-  
-  const variantClasses = variant === 'primary'
-    ? "bg-forest-green text-parchment gold-border magical-glow hover:shadow-lg"
-    : "bg-aged-bronze text-parchment border-2 border-burnished-gold hover:bg-saddle-leather";
+  const baseClasses =
+    'relative rounded-lg font-fantasy-body font-bold uppercase tracking-wider transition-all duration-200 overflow-hidden';
+  const disabledClasses = disabled ? 'opacity-50 cursor-not-allowed' : '';
 
-  const pressedClasses = isPressed ? "transform scale-95" : "";
+  const sizeClasses = size === 'large' ? 'px-8 py-4 text-lg' : 'px-6 py-3 text-base';
+
+  const variantClasses =
+    variant === 'primary'
+      ? 'bg-forest-green text-parchment gold-border magical-glow hover:shadow-lg'
+      : 'bg-aged-bronze text-parchment border-2 border-burnished-gold hover:bg-saddle-leather';
+
+  const pressedClasses = isPressed ? 'transform scale-95' : '';
 
   return (
     <button
@@ -53,15 +53,11 @@ const FantasyButton = ({
       onMouseEnter={() => !disabled && setShowShimmer(true)}
       onMouseLeave={() => setShowShimmer(false)}
     >
-      <span className="relative z-10 parchment-texture">
-        {children}
-      </span>
-      
+      <span className="relative z-10 parchment-texture">{children}</span>
+
       {/* Shimmer effect */}
-      {showShimmer && (
-        <div className="absolute inset-0 shimmer-effect opacity-60" />
-      )}
-      
+      {showShimmer && <div className="absolute inset-0 shimmer-effect opacity-60" />}
+
       {/* Corner embellishments */}
       <div className="absolute top-1 left-1 w-2 h-2 border-l-2 border-t-2 border-burnished-gold opacity-60" />
       <div className="absolute top-1 right-1 w-2 h-2 border-r-2 border-t-2 border-burnished-gold opacity-60" />

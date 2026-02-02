@@ -31,15 +31,8 @@ vi.mock('../../lib/api-client', () => ({
  * Test component that uses the auth context
  */
 function TestConsumer() {
-  const {
-    user,
-    isLoading,
-    isAuthenticated,
-    isEmailVerified,
-    error,
-    logout,
-    isLoggingOut,
-  } = useAuth();
+  const { user, isLoading, isAuthenticated, isEmailVerified, error, logout, isLoggingOut } =
+    useAuth();
 
   return (
     <div>
@@ -47,9 +40,7 @@ function TestConsumer() {
       <div data-testid="authenticated">
         {isAuthenticated ? 'authenticated' : 'not-authenticated'}
       </div>
-      <div data-testid="email-verified">
-        {isEmailVerified ? 'verified' : 'not-verified'}
-      </div>
+      <div data-testid="email-verified">{isEmailVerified ? 'verified' : 'not-verified'}</div>
       <div data-testid="user">{user ? user.username : 'no-user'}</div>
       <div data-testid="error">{error ? error.message : 'no-error'}</div>
       <div data-testid="logging-out">{isLoggingOut ? 'yes' : 'no'}</div>
@@ -130,9 +121,7 @@ describe('AuthContext - Session Management (Story 1-3)', () => {
         expect(screen.getByTestId('loading')).toHaveTextContent('not-loading');
       });
 
-      expect(screen.getByTestId('authenticated')).toHaveTextContent(
-        'authenticated'
-      );
+      expect(screen.getByTestId('authenticated')).toHaveTextContent('authenticated');
       expect(screen.getByTestId('user')).toHaveTextContent('testuser');
       expect(apiClient.authApi.getProfile).toHaveBeenCalledTimes(1);
     });
@@ -157,18 +146,14 @@ describe('AuthContext - Session Management (Story 1-3)', () => {
       const { rerender } = render(<TestConsumer />, { wrapper: Wrapper });
 
       await waitFor(() => {
-        expect(screen.getByTestId('authenticated')).toHaveTextContent(
-          'authenticated'
-        );
+        expect(screen.getByTestId('authenticated')).toHaveTextContent('authenticated');
       });
 
       // Rerender simulates component re-mount (like browser refresh)
       rerender(<TestConsumer />);
 
       // Should still be authenticated (using cached data)
-      expect(screen.getByTestId('authenticated')).toHaveTextContent(
-        'authenticated'
-      );
+      expect(screen.getByTestId('authenticated')).toHaveTextContent('authenticated');
     });
 
     it('should show loading state while checking session', async () => {
@@ -178,9 +163,7 @@ describe('AuthContext - Session Management (Story 1-3)', () => {
         resolveProfile = resolve;
       });
 
-      vi.mocked(apiClient.authApi.getProfile).mockReturnValue(
-        profilePromise as any
-      );
+      vi.mocked(apiClient.authApi.getProfile).mockReturnValue(profilePromise as any);
       vi.mocked(apiClient.authApi.getVerificationStatus).mockResolvedValue({
         verified: false,
         email: '',
@@ -192,9 +175,7 @@ describe('AuthContext - Session Management (Story 1-3)', () => {
 
       // Should be loading initially
       expect(screen.getByTestId('loading')).toHaveTextContent('loading');
-      expect(screen.getByTestId('authenticated')).toHaveTextContent(
-        'not-authenticated'
-      );
+      expect(screen.getByTestId('authenticated')).toHaveTextContent('not-authenticated');
 
       // Resolve the profile promise
       resolveProfile!({
@@ -226,9 +207,7 @@ describe('AuthContext - Session Management (Story 1-3)', () => {
         expect(screen.getByTestId('loading')).toHaveTextContent('not-loading');
       });
 
-      expect(screen.getByTestId('authenticated')).toHaveTextContent(
-        'not-authenticated'
-      );
+      expect(screen.getByTestId('authenticated')).toHaveTextContent('not-authenticated');
       expect(screen.getByTestId('user')).toHaveTextContent('no-user');
     });
 
@@ -272,9 +251,7 @@ describe('AuthContext - Session Management (Story 1-3)', () => {
         expect(screen.getByTestId('loading')).toHaveTextContent('not-loading');
       });
 
-      expect(screen.getByTestId('authenticated')).toHaveTextContent(
-        'not-authenticated'
-      );
+      expect(screen.getByTestId('authenticated')).toHaveTextContent('not-authenticated');
       expect(screen.getByTestId('error')).toHaveTextContent('Network error');
     });
   });
@@ -305,9 +282,7 @@ describe('AuthContext - Session Management (Story 1-3)', () => {
 
       // Wait for authenticated state
       await waitFor(() => {
-        expect(screen.getByTestId('authenticated')).toHaveTextContent(
-          'authenticated'
-        );
+        expect(screen.getByTestId('authenticated')).toHaveTextContent('authenticated');
       });
 
       // Click logout
@@ -346,9 +321,7 @@ describe('AuthContext - Session Management (Story 1-3)', () => {
       render(<TestConsumer />, { wrapper: Wrapper });
 
       await waitFor(() => {
-        expect(screen.getByTestId('authenticated')).toHaveTextContent(
-          'authenticated'
-        );
+        expect(screen.getByTestId('authenticated')).toHaveTextContent('authenticated');
       });
 
       // Click logout
@@ -405,9 +378,7 @@ describe('AuthContext - Session Management (Story 1-3)', () => {
       );
 
       await waitFor(() => {
-        expect(screen.getByTestId('authenticated')).toHaveTextContent(
-          'authenticated'
-        );
+        expect(screen.getByTestId('authenticated')).toHaveTextContent('authenticated');
       });
 
       // Click nested logout button
@@ -440,9 +411,7 @@ describe('AuthContext - Session Management (Story 1-3)', () => {
       render(<TestConsumer />, { wrapper: Wrapper });
 
       await waitFor(() => {
-        expect(screen.getByTestId('email-verified')).toHaveTextContent(
-          'verified'
-        );
+        expect(screen.getByTestId('email-verified')).toHaveTextContent('verified');
       });
     });
 
@@ -466,14 +435,10 @@ describe('AuthContext - Session Management (Story 1-3)', () => {
       render(<TestConsumer />, { wrapper: Wrapper });
 
       await waitFor(() => {
-        expect(screen.getByTestId('authenticated')).toHaveTextContent(
-          'authenticated'
-        );
+        expect(screen.getByTestId('authenticated')).toHaveTextContent('authenticated');
       });
 
-      expect(screen.getByTestId('email-verified')).toHaveTextContent(
-        'not-verified'
-      );
+      expect(screen.getByTestId('email-verified')).toHaveTextContent('not-verified');
     });
   });
 
@@ -539,13 +504,9 @@ describe('AuthContext - Session Management (Story 1-3)', () => {
         expect(screen.getByTestId('loading')).toHaveTextContent('not-loading');
       });
 
-      expect(screen.getByTestId('authenticated')).toHaveTextContent(
-        'not-authenticated'
-      );
+      expect(screen.getByTestId('authenticated')).toHaveTextContent('not-authenticated');
       expect(screen.getByTestId('user')).toHaveTextContent('no-user');
-      expect(screen.getByTestId('email-verified')).toHaveTextContent(
-        'not-verified'
-      );
+      expect(screen.getByTestId('email-verified')).toHaveTextContent('not-verified');
     });
 
     it('should call logout and clear queries when logging out', async () => {
@@ -575,9 +536,7 @@ describe('AuthContext - Session Management (Story 1-3)', () => {
 
       // Wait for authenticated state
       await waitFor(() => {
-        expect(screen.getByTestId('authenticated')).toHaveTextContent(
-          'authenticated'
-        );
+        expect(screen.getByTestId('authenticated')).toHaveTextContent('authenticated');
       });
 
       // Logout

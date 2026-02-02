@@ -58,9 +58,7 @@ const CurrencyDisplay: React.FC<CurrencyDisplayProps> = ({
   size = 'md',
 }) => {
   // Format the amount
-  const displayAmount = compact
-    ? formatCompactCurrency(amount ?? 0)
-    : formatCurrency(amount ?? 0);
+  const displayAmount = compact ? formatCompactCurrency(amount ?? 0) : formatCurrency(amount ?? 0);
 
   // Size-based styling
   const sizeClasses = {
@@ -94,21 +92,18 @@ const CurrencyDisplay: React.FC<CurrencyDisplayProps> = ({
     >
       {/* Label (optional) */}
       {label && (
-        <span className={`fantasy-body ${labelSizes[size]} text-aged-bronze uppercase tracking-wide mr-2`}>
+        <span
+          className={`fantasy-body ${labelSizes[size]} text-aged-bronze uppercase tracking-wide mr-2`}
+        >
           {label}
         </span>
       )}
 
       {/* Coin Icon */}
-      <Coins
-        data-testid="currency-icon"
-        className={`${iconSizes[size]} text-burnished-gold`}
-      />
+      <Coins data-testid="currency-icon" className={`${iconSizes[size]} text-burnished-gold`} />
 
       {/* Amount */}
-      <span className="font-bold text-midnight-ink">
-        {displayAmount}
-      </span>
+      <span className="font-bold text-midnight-ink">{displayAmount}</span>
     </div>
   );
 };

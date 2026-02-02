@@ -9,61 +9,61 @@ const BreedingCenter = () => {
   const [activeTab, setActiveTab] = useState<TabType>('my-mares');
   const [sireId, setSireId] = useState<number | ''>('');
   const [damId, setDamId] = useState<number | ''>('');
+  const [foalName, setFoalName] = useState<string>('');
   const [breedFilter, setBreedFilter] = useState<string>('all');
 
   const { mutateAsync: breedFoal, isPending, data, error } = useBreedFoal();
   const { data: horses, isLoading: horsesLoading, error: horsesError } = useHorses();
 
-  const mares = horses?.filter((horse) => {
-    const sexOrGender = (horse.sex || horse.gender)?.toLowerCase();
-    return sexOrGender === 'mare' || sexOrGender === 'female';
-  });
-  const stallions = horses?.filter((horse) => {
-    const sexOrGender = (horse.sex || horse.gender)?.toLowerCase();
-    return sexOrGender === 'stallion' || sexOrGender === 'male';
-  });
-
-  // Get unique breeds for filter
-  const breeds = Array.from(new Set(stallions?.map((h) => h.breed).filter(Boolean))) as string[];
-
-  // Filter stallions by breed
-  const filteredStallions =
-    breedFilter === 'all'
-      ? stallions
-      : stallions?.filter((s) => s.breed === breedFilter);
-
-  const renderOptions = (list?: typeof horses) =>
-    list?.map((horse) => (
-      <option key={horse.id} value={horse.id}>
-        {horse.name} {horse.breed ? `(${horse.breed})` : ''}
-      </option>
-    ));
-
-  const handleBreed = async () => {
-    if (sireId === '' || damId === '') return;
-    await breedFoal({ sireId: Number(sireId), damId: Number(damId) });
-  };
-
-  // Loading state
   if (horsesLoading) {
     return (
-      <div className="flex items-center justify-center rounded-lg border border-slate-200 bg-white p-12 shadow-sm">
-        <div className="text-center">
-          <div className="mb-2 text-lg font-semibold text-slate-900">Loading...</div>
-          <div className="text-sm text-slate-600">Fetching horses data</div>
-        </div>
+      <div className="flex items-center justify-center p-12 text-slate-600">
+        <p>Loading horses...</p>
       </div>
     );
   }
 
-  // Error state
   if (horsesError) {
     return (
-      <div className="rounded-lg border border-rose-200 bg-rose-50 p-6 shadow-sm">
-        <div className="text-sm text-rose-800">{horsesError.message}</div>
+      <div className="flex items-center justify-center p-12 text-rose-600">
+        <p>Failed to fetch horses: {horsesError.message}</p>
       </div>
     );
   }
+
+  const mares = horses?.filter(
+    (h) => h.sex?.toLowerCase() === 'mare' || h.gender?.toLowerCase() === 'mare'
+  );
+  const stallions = horses?.filter(
+    (h) => h.sex?.toLowerCase() === 'stallion' || h.gender?.toLowerCase() === 'stallion'
+  );
+
+  const breeds = Array.from(new Set(horses?.map((h) => h.breed).filter(Boolean))) as string[];
+
+  const filteredStallions = stallions?.filter(
+    (s) => breedFilter === 'all' || s.breed === breedFilter
+  );
+
+  const renderOptions = (horseList: HorseSummary[] | undefined) => {
+    return horseList?.map((horse) => (
+      <option key={horse.id} value={horse.id}>
+        {horse.name}
+      </option>
+    ));
+  };
+
+  const handleBreed = async () => {
+    if (sireId === '' || damId === '' || !foalName.trim()) return;
+    await breedFoal({
+      sireId: Number(sireId),
+      damId: Number(damId),
+      name: foalName.trim(),
+      breedId: 946, // Default to Thoroughbred for now or get from parents
+    });
+    setFoalName('');
+  };
+
+  // ... (loading and error states) ...
 
   return (
     <div className="space-y-4 rounded-lg border border-slate-200 bg-white p-6 shadow-sm">
@@ -163,6 +163,20 @@ const BreedingCenter = () => {
               </div>
             </div>
 
+            <div>
+              <label className="text-sm font-medium text-slate-700" htmlFor="foalName">
+                Foal Name
+              </label>
+              <input
+                id="foalName"
+                type="text"
+                value={foalName}
+                onChange={(e) => setFoalName(e.target.value)}
+                placeholder="Enter foal name"
+                className="mt-2 w-full rounded-md border border-slate-200 px-3 py-2 text-sm text-slate-900 shadow-sm focus:border-emerald-500 focus:outline-none focus:ring-2 focus:ring-emerald-500"
+              />
+            </div>
+
             {error && (
               <div className="rounded-md border border-rose-200 bg-rose-50 px-3 py-2 text-sm text-rose-800">
                 {error.message}
@@ -179,7 +193,7 @@ const BreedingCenter = () => {
               <button
                 type="button"
                 onClick={handleBreed}
-                disabled={isPending || sireId === '' || damId === ''}
+                disabled={isPending || sireId === '' || damId === '' || !foalName.trim()}
                 className="rounded-md bg-emerald-600 px-4 py-2 text-sm font-semibold text-white shadow hover:bg-emerald-500 focus:outline-none focus:ring-2 focus:ring-emerald-500 focus:ring-offset-2 disabled:cursor-not-allowed disabled:opacity-70"
               >
                 {isPending ? 'Breeding…' : 'Breed Now'}
@@ -225,16 +239,16 @@ const BreedingCenter = () => {
                     <div className="mt-2 space-y-1 text-sm text-slate-600">
                       {stallion.breed && <p className="capitalize">{stallion.breed}</p>}
                       {stallion.level !== undefined && <p>Level {stallion.level}</p>}
-                      {stallion.ageYears !== undefined && (
-                        <p>{stallion.ageYears} years old</p>
-                      )}
+                      {stallion.ageYears !== undefined && <p>{stallion.ageYears} years old</p>}
                     </div>
                   </div>
                 ))}
               </div>
             ) : (
               <div className="rounded-md border border-slate-200 bg-slate-50 px-6 py-12 text-center">
-                <p className="text-sm text-slate-600">No stallions found matching the selected breed.</p>
+                <p className="text-sm text-slate-600">
+                  No stallions found matching the selected breed.
+                </p>
               </div>
             )}
           </div>
@@ -247,7 +261,9 @@ const BreedingCenter = () => {
 
             {/* Empty state - will be replaced with actual history data later */}
             <div className="rounded-md border border-slate-200 bg-slate-50 px-6 py-12 text-center">
-              <p className="text-sm text-slate-600">No breeding history yet. Start breeding to see your history here!</p>
+              <p className="text-sm text-slate-600">
+                No breeding history yet. Start breeding to see your history here!
+              </p>
             </div>
 
             {/* Placeholder table structure for when history exists */}

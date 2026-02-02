@@ -82,9 +82,10 @@ const WeeklySalaryReminder = ({ salarySummaryData, onNavigateToGrooms }) => {
   };
 
   // Determine plural vs singular for unassigned grooms
-  const unassignedText = salarySummaryData.unassignedGroomsCount === 1
-    ? '1 groom with no assignments'
-    : `${salarySummaryData.unassignedGroomsCount} grooms with no assignments`;
+  const unassignedText =
+    salarySummaryData.unassignedGroomsCount === 1
+      ? '1 groom with no assignments'
+      : `${salarySummaryData.unassignedGroomsCount} grooms with no assignments`;
 
   const styles = {
     container: {
@@ -167,11 +168,14 @@ const WeeklySalaryReminder = ({ salarySummaryData, onNavigateToGrooms }) => {
 
         <View style={styles.body}>
           <Text style={styles.text}>
-            You paid <Text style={styles.boldText}>${formatCurrency(salarySummaryData.weeklyCost)}</Text> in groom salaries this week.
+            You paid{' '}
+            <Text style={styles.boldText}>${formatCurrency(salarySummaryData.weeklyCost)}</Text> in
+            groom salaries this week.
           </Text>
 
           <Text style={styles.text}>
-            Total paid this month: <Text style={styles.boldText}>${formatCurrency(salarySummaryData.totalPaid)}</Text>
+            Total paid this month:{' '}
+            <Text style={styles.boldText}>${formatCurrency(salarySummaryData.totalPaid)}</Text>
           </Text>
 
           {salarySummaryData.unassignedGroomsCount > 0 && (
@@ -195,4 +199,3 @@ const WeeklySalaryReminder = ({ salarySummaryData, onNavigateToGrooms }) => {
 };
 
 export default WeeklySalaryReminder;
-

@@ -29,15 +29,7 @@
  */
 
 import React, { useState } from 'react';
-import {
-  View,
-  Text,
-  ScrollView,
-  TouchableOpacity,
-  StyleSheet,
-  Alert,
-  Modal,
-} from 'react-native';
+import { View, Text, ScrollView, TouchableOpacity, StyleSheet, Alert, Modal } from 'react-native';
 
 const MyGroomsDashboardScreen = ({
   groomsData,
@@ -77,9 +69,7 @@ const MyGroomsDashboardScreen = ({
         </View>
         <View style={styles.emptyContainer}>
           <Text style={styles.emptyText}>No grooms hired yet</Text>
-          <Text style={styles.emptySubtext}>
-            Visit the marketplace to hire your first groom
-          </Text>
+          <Text style={styles.emptySubtext}>Visit the marketplace to hire your first groom</Text>
         </View>
       </View>
     );
@@ -229,15 +219,11 @@ const MyGroomsDashboardScreen = ({
         </View>
         <View style={styles.salarySummaryRow}>
           <Text style={styles.salarySummaryLabel}>Total Paid:</Text>
-          <Text style={styles.salarySummaryValue}>
-            {formatCurrency(salaryCostsData.totalPaid)}
-          </Text>
+          <Text style={styles.salarySummaryValue}>{formatCurrency(salaryCostsData.totalPaid)}</Text>
         </View>
         <View style={styles.salarySummaryRow}>
           <Text style={styles.salarySummaryLabel}>Groom Count:</Text>
-          <Text style={styles.salarySummaryValue}>
-            {salaryCostsData.groomCount}
-          </Text>
+          <Text style={styles.salarySummaryValue}>{salaryCostsData.groomCount}</Text>
         </View>
       </View>
 
@@ -245,11 +231,10 @@ const MyGroomsDashboardScreen = ({
       {unassignedGroomsCount > 0 && (
         <View style={styles.warningBox} testID="unassigned-warning">
           <Text style={styles.warningText}>
-            ⚠️ {unassignedGroomsCount} groom{unassignedGroomsCount > 1 ? 's' : ''} with no assignments
+            ⚠️ {unassignedGroomsCount} groom{unassignedGroomsCount > 1 ? 's' : ''} with no
+            assignments
           </Text>
-          <Text style={styles.warningSubtext}>
-            Assign grooms to horses to maximize their value
-          </Text>
+          <Text style={styles.warningSubtext}>Assign grooms to horses to maximize their value</Text>
         </View>
       )}
 
@@ -270,12 +255,8 @@ const MyGroomsDashboardScreen = ({
 
               {/* Groom Details */}
               <View style={styles.groomDetails}>
-                <Text style={styles.groomDetailText}>
-                  Specialty: {groom.speciality}
-                </Text>
-                <Text style={styles.groomDetailText}>
-                  Experience: {groom.experience} years
-                </Text>
+                <Text style={styles.groomDetailText}>Specialty: {groom.speciality}</Text>
+                <Text style={styles.groomDetailText}>Experience: {groom.experience} years</Text>
                 <Text style={styles.groomDetailText}>
                   Session Rate: {formatCurrency(groom.sessionRate)}
                 </Text>
@@ -287,9 +268,7 @@ const MyGroomsDashboardScreen = ({
               {/* Assignments */}
               {groomAssignments.length > 0 && (
                 <View style={styles.assignmentsSection}>
-                  <Text style={styles.assignmentsSectionTitle}>
-                    Current Assignments:
-                  </Text>
+                  <Text style={styles.assignmentsSectionTitle}>Current Assignments:</Text>
                   {groomAssignments.map((assignment) => (
                     <View
                       key={assignment.id}
@@ -297,12 +276,8 @@ const MyGroomsDashboardScreen = ({
                       testID={`assignment-${assignment.id}`}
                     >
                       <View style={styles.assignmentInfo}>
-                        <Text style={styles.assignmentHorseName}>
-                          {assignment.horse.name}
-                        </Text>
-                        <Text style={styles.assignmentBondScore}>
-                          Bond: {assignment.bondScore}
-                        </Text>
+                        <Text style={styles.assignmentHorseName}>{assignment.horse.name}</Text>
+                        <Text style={styles.assignmentBondScore}>Bond: {assignment.bondScore}</Text>
                       </View>
                       <TouchableOpacity
                         style={styles.unassignButton}
@@ -358,39 +333,35 @@ const MyGroomsDashboardScreen = ({
             {/* Specialty Filter */}
             <Text style={styles.filterLabel}>Specialty:</Text>
             <View style={styles.filterOptions}>
-              {['all', 'foal care', 'training', 'general care', 'show handling'].map((specialty) => (
-                <TouchableOpacity
-                  key={specialty}
-                  style={[
-                    styles.filterOption,
-                    tempSpecialtyFilter === specialty && styles.filterOptionSelected,
-                  ]}
-                  onPress={() => setTempSpecialtyFilter(specialty)}
-                >
-                  <Text
+              {['all', 'foal care', 'training', 'general care', 'show handling'].map(
+                (specialty) => (
+                  <TouchableOpacity
+                    key={specialty}
                     style={[
-                      styles.filterOptionText,
-                      tempSpecialtyFilter === specialty && styles.filterOptionTextSelected,
+                      styles.filterOption,
+                      tempSpecialtyFilter === specialty && styles.filterOptionSelected,
                     ]}
+                    onPress={() => setTempSpecialtyFilter(specialty)}
                   >
-                    {specialty.charAt(0).toUpperCase() + specialty.slice(1)}
-                  </Text>
-                </TouchableOpacity>
-              ))}
+                    <Text
+                      style={[
+                        styles.filterOptionText,
+                        tempSpecialtyFilter === specialty && styles.filterOptionTextSelected,
+                      ]}
+                    >
+                      {specialty.charAt(0).toUpperCase() + specialty.slice(1)}
+                    </Text>
+                  </TouchableOpacity>
+                )
+              )}
             </View>
 
             {/* Modal Actions */}
             <View style={styles.modalActions}>
-              <TouchableOpacity
-                style={styles.modalButtonSecondary}
-                onPress={handleResetFilters}
-              >
+              <TouchableOpacity style={styles.modalButtonSecondary} onPress={handleResetFilters}>
                 <Text style={styles.modalButtonSecondaryText}>Reset</Text>
               </TouchableOpacity>
-              <TouchableOpacity
-                style={styles.modalButtonPrimary}
-                onPress={handleApplyFilters}
-              >
+              <TouchableOpacity style={styles.modalButtonPrimary} onPress={handleApplyFilters}>
                 <Text style={styles.modalButtonPrimaryText}>Apply Filters</Text>
               </TouchableOpacity>
             </View>
@@ -399,20 +370,12 @@ const MyGroomsDashboardScreen = ({
       </Modal>
 
       {/* Sort Modal */}
-      <Modal
-        visible={isSortModalOpen}
-        transparent={true}
-        animationType="slide"
-        testID="sort-modal"
-      >
+      <Modal visible={isSortModalOpen} transparent={true} animationType="slide" testID="sort-modal">
         <View style={styles.modalOverlay}>
           <View style={styles.modalContent}>
             <Text style={styles.modalTitle}>Sort Grooms</Text>
 
-            <TouchableOpacity
-              style={styles.sortOption}
-              onPress={() => handleSortSelection('name')}
-            >
+            <TouchableOpacity style={styles.sortOption} onPress={() => handleSortSelection('name')}>
               <Text style={styles.sortOptionText}>Name (A-Z)</Text>
             </TouchableOpacity>
 
@@ -730,4 +693,3 @@ const styles = StyleSheet.create({
 });
 
 export default MyGroomsDashboardScreen;
-

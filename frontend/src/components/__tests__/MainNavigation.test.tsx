@@ -1,6 +1,6 @@
 /**
  * Main Navigation Component Tests
- * 
+ *
  * Tests for the primary navigation interface including:
  * - Navigation menu with role-based access control
  * - Responsive design with mobile hamburger menu
@@ -8,7 +8,7 @@
  * - User profile dropdown with logout functionality
  * - Accessibility support with keyboard navigation
  * - Real-time user data integration
- * 
+ *
  * Following TDD with NO MOCKING approach for authentic component validation
  * Testing real navigation behavior and user authentication state
  */
@@ -31,9 +31,7 @@ const createTestWrapper = (initialRoute = '/') => {
 
   return ({ children }: { children: React.ReactNode }) => (
     <QueryClientProvider client={queryClient}>
-      <MemoryRouter initialEntries={[initialRoute]}>
-        {children}
-      </MemoryRouter>
+      <MemoryRouter initialEntries={[initialRoute]}>{children}</MemoryRouter>
     </QueryClientProvider>
   );
 };
@@ -117,7 +115,7 @@ describe('MainNavigation Component', () => {
   describe('Active Route Highlighting', () => {
     test('highlights active navigation item', async () => {
       const TestWrapperWithRoute = createTestWrapper('/dashboard');
-      
+
       render(
         <TestWrapperWithRoute>
           <MainNavigation />
@@ -296,7 +294,7 @@ describe('MainNavigation Component', () => {
   describe('Breadcrumb Navigation', () => {
     test('displays breadcrumb trail', async () => {
       const TestWrapperWithRoute = createTestWrapper('/stable/horses/123');
-      
+
       render(
         <TestWrapperWithRoute>
           <MainNavigation />
@@ -310,7 +308,7 @@ describe('MainNavigation Component', () => {
 
     test('shows correct breadcrumb hierarchy', async () => {
       const TestWrapperWithRoute = createTestWrapper('/stable/horses/123');
-      
+
       render(
         <TestWrapperWithRoute>
           <MainNavigation />
@@ -416,7 +414,10 @@ describe('MainNavigation Component', () => {
       );
 
       await waitFor(() => {
-        expect(screen.getByTestId('main-navigation')).toHaveAttribute('aria-label', 'Main navigation');
+        expect(screen.getByTestId('main-navigation')).toHaveAttribute(
+          'aria-label',
+          'Main navigation'
+        );
       });
     });
 

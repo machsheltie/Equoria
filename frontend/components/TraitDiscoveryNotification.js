@@ -4,14 +4,7 @@
  */
 
 import React, { useState, useEffect } from 'react';
-import {
-  View,
-  Text,
-  TouchableOpacity,
-  Modal,
-  ScrollView,
-  Animated,
-} from 'react-native';
+import { View, Text, TouchableOpacity, Modal, ScrollView, Animated } from 'react-native';
 
 /**
  * TraitDiscoveryNotification Component
@@ -159,24 +152,17 @@ const TraitDiscoveryNotification = ({
                 >
                   <View className="flex-row items-center justify-between">
                     <View className="flex-row items-center flex-1">
-                      <Text className="text-xl mr-2">
-                        {getTraitIcon(trait)}
-                      </Text>
+                      <Text className="text-xl mr-2">{getTraitIcon(trait)}</Text>
                       <View className="flex-1">
-                        <Text
-                          className={`font-semibold ${getTraitColor(trait)}`}
-                        >
-                          {trait.definition?.name ||
-                            trait.trait.replace(/_/g, ' ')}
+                        <Text className={`font-semibold ${getTraitColor(trait)}`}>
+                          {trait.definition?.name || trait.trait.replace(/_/g, ' ')}
                         </Text>
                         {trait.definition?.rarity && (
                           <View className="flex-row items-center mt-1">
                             <View
                               className={`px-2 py-1 rounded-full ${getRarityColor(trait.definition.rarity)}`}
                             >
-                              <Text className="text-xs font-medium">
-                                {trait.definition.rarity}
-                              </Text>
+                              <Text className="text-xs font-medium">{trait.definition.rarity}</Text>
                             </View>
                           </View>
                         )}
@@ -218,9 +204,7 @@ const TraitDiscoveryNotification = ({
               }}
               className="flex-1 bg-blue-500 rounded-lg py-3 px-4"
             >
-              <Text className="text-white text-center font-semibold">
-                View Details
-              </Text>
+              <Text className="text-white text-center font-semibold">View Details</Text>
             </TouchableOpacity>
           )}
 
@@ -248,9 +232,7 @@ const TraitDiscoveryNotification = ({
         {/* Header */}
         <View className="bg-gradient-to-r from-purple-500 to-pink-500 px-4 py-6 pt-12">
           <View className="flex-row items-center justify-between">
-            <Text className="text-white font-bold text-xl">
-              Discovery Details
-            </Text>
+            <Text className="text-white font-bold text-xl">Discovery Details</Text>
             <TouchableOpacity
               onPress={() => setShowDetails(false)}
               className="bg-white bg-opacity-20 rounded-full w-10 h-10 items-center justify-center"
@@ -265,9 +247,7 @@ const TraitDiscoveryNotification = ({
           {/* Discovered Traits Details */}
           {hasTraits && (
             <View className="mb-6">
-              <Text className="text-lg font-bold text-gray-800 mb-4">
-                Discovered Traits
-              </Text>
+              <Text className="text-lg font-bold text-gray-800 mb-4">Discovered Traits</Text>
 
               {revealed.map((trait, index) => (
                 <View
@@ -277,38 +257,27 @@ const TraitDiscoveryNotification = ({
                   <View className="flex-row items-center mb-3">
                     <Text className="text-2xl mr-3">{getTraitIcon(trait)}</Text>
                     <View className="flex-1">
-                      <Text
-                        className={`font-bold text-lg ${getTraitColor(trait)}`}
-                      >
-                        {trait.definition?.name ||
-                          trait.trait.replace(/_/g, ' ')}
+                      <Text className={`font-bold text-lg ${getTraitColor(trait)}`}>
+                        {trait.definition?.name || trait.trait.replace(/_/g, ' ')}
                       </Text>
                       {trait.definition?.rarity && (
                         <View
                           className={`self-start px-2 py-1 rounded-full mt-1 ${getRarityColor(trait.definition.rarity)}`}
                         >
-                          <Text className="text-xs font-medium">
-                            {trait.definition.rarity}
-                          </Text>
+                          <Text className="text-xs font-medium">{trait.definition.rarity}</Text>
                         </View>
                       )}
                     </View>
                   </View>
 
                   {trait.definition?.description && (
-                    <Text className="text-gray-700 mb-2">
-                      {trait.definition.description}
-                    </Text>
+                    <Text className="text-gray-700 mb-2">{trait.definition.description}</Text>
                   )}
 
                   {trait.discoveryReason && (
                     <View className="bg-blue-50 rounded p-2 mt-2">
-                      <Text className="text-blue-800 text-sm font-medium">
-                        Discovery Reason:
-                      </Text>
-                      <Text className="text-blue-700 text-sm">
-                        {trait.discoveryReason}
-                      </Text>
+                      <Text className="text-blue-800 text-sm font-medium">Discovery Reason:</Text>
+                      <Text className="text-blue-700 text-sm">{trait.discoveryReason}</Text>
                     </View>
                   )}
                 </View>
@@ -319,18 +288,14 @@ const TraitDiscoveryNotification = ({
           {/* Discovery Conditions */}
           {conditions.length > 0 && (
             <View className="mb-6">
-              <Text className="text-lg font-bold text-gray-800 mb-4">
-                Discovery Conditions Met
-              </Text>
+              <Text className="text-lg font-bold text-gray-800 mb-4">Discovery Conditions Met</Text>
 
               {conditions.map((condition, index) => (
                 <View
                   key={`condition-${index}`}
                   className="bg-green-50 rounded-lg p-3 mb-2 border border-green-200"
                 >
-                  <Text className="text-green-800 font-medium">
-                    {condition.description}
-                  </Text>
+                  <Text className="text-green-800 font-medium">{condition.description}</Text>
                   <Text className="text-green-600 text-sm mt-1">
                     Priority: {condition.priority} • Type: {condition.type}
                   </Text>
@@ -342,9 +307,7 @@ const TraitDiscoveryNotification = ({
           {/* Discovery Message */}
           {message && (
             <View className="bg-purple-50 rounded-lg p-4 border border-purple-200">
-              <Text className="text-purple-800 font-medium mb-1">
-                Discovery Summary
-              </Text>
+              <Text className="text-purple-800 font-medium mb-1">Discovery Summary</Text>
               <Text className="text-purple-700">{message}</Text>
             </View>
           )}

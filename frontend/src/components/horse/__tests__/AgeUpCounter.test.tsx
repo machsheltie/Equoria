@@ -265,7 +265,9 @@ describe('AgeUpCounter', () => {
       renderWithProvider(<AgeUpCounter horseId={1} />);
 
       // Expand stat details first
-      const expandButton = screen.getByRole('button', { name: /show stat details|hide stat details/i });
+      const expandButton = screen.getByRole('button', {
+        name: /show stat details|hide stat details/i,
+      });
       await user.click(expandButton);
 
       await waitFor(() => {
@@ -286,7 +288,9 @@ describe('AgeUpCounter', () => {
       renderWithProvider(<AgeUpCounter horseId={2} />);
 
       // Expand stat details first
-      const expandButton = screen.getByRole('button', { name: /show stat details|hide stat details/i });
+      const expandButton = screen.getByRole('button', {
+        name: /show stat details|hide stat details/i,
+      });
       await user.click(expandButton);
 
       await waitFor(() => {
@@ -307,7 +311,9 @@ describe('AgeUpCounter', () => {
       renderWithProvider(<AgeUpCounter horseId={2} />);
 
       // Expand stat details first
-      const expandButton = screen.getByRole('button', { name: /show stat details|hide stat details/i });
+      const expandButton = screen.getByRole('button', {
+        name: /show stat details|hide stat details/i,
+      });
       await user.click(expandButton);
 
       await waitFor(() => {
@@ -333,7 +339,9 @@ describe('AgeUpCounter', () => {
       renderWithProvider(<AgeUpCounter horseId={2} />);
 
       // Expand stat details first
-      const expandButton = screen.getByRole('button', { name: /show stat details|hide stat details/i });
+      const expandButton = screen.getByRole('button', {
+        name: /show stat details|hide stat details/i,
+      });
       await user.click(expandButton);
 
       await waitFor(() => {
@@ -345,7 +353,9 @@ describe('AgeUpCounter', () => {
       const user = userEvent.setup();
       renderWithProvider(<AgeUpCounter horseId={1} />);
 
-      const expandButton = screen.getByRole('button', { name: /show stat details|hide stat details/i });
+      const expandButton = screen.getByRole('button', {
+        name: /show stat details|hide stat details/i,
+      });
       await user.click(expandButton);
 
       await waitFor(() => {
@@ -535,7 +545,9 @@ describe('AgeUpCounter', () => {
       renderWithProvider(<AgeUpCounter horseId={3} />);
 
       // Expand stat details first
-      const expandButton = screen.getByRole('button', { name: /show stat details|hide stat details/i });
+      const expandButton = screen.getByRole('button', {
+        name: /show stat details|hide stat details/i,
+      });
       await user.click(expandButton);
 
       await waitFor(() => {
@@ -554,7 +566,9 @@ describe('AgeUpCounter', () => {
       const user = userEvent.setup();
       renderWithProvider(<AgeUpCounter horseId={1} />);
 
-      const expandButton = screen.getByRole('button', { name: /show stat details|hide stat details/i });
+      const expandButton = screen.getByRole('button', {
+        name: /show stat details|hide stat details/i,
+      });
       expandButton.focus();
 
       await user.keyboard('{Enter}');
@@ -566,7 +580,9 @@ describe('AgeUpCounter', () => {
 
     it('should have ARIA labels for stat changes', () => {
       renderWithProvider(<AgeUpCounter horseId={1} />);
-      const statGainButton = screen.getByRole('button', { name: /show stat details|hide stat details/i });
+      const statGainButton = screen.getByRole('button', {
+        name: /show stat details|hide stat details/i,
+      });
       expect(statGainButton).toHaveAttribute('aria-label');
     });
   });

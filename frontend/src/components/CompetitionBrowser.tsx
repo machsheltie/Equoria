@@ -1,6 +1,6 @@
 /**
  * CompetitionBrowser Component
- * 
+ *
  * Competition browsing interface providing:
  * - Competition listing with filtering and search capabilities
  * - Discipline-based filtering and sorting options
@@ -9,7 +9,7 @@
  * - Responsive design with mobile and desktop layouts
  * - Error handling and loading states
  * - Accessibility support with ARIA labels and keyboard navigation
- * 
+ *
  * Integrates with backend APIs:
  * - GET /api/competitions - List available competitions
  * - GET /api/competitions/:id/eligibility - Check entry eligibility
@@ -18,7 +18,7 @@
  */
 
 import React, { useState, useMemo } from 'react';
-import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
+import { useQueryClient } from '@tanstack/react-query';
 import {
   Search,
   Filter,
@@ -29,28 +29,17 @@ import {
   Clock,
   CheckCircle,
   XCircle,
-  AlertCircle
+  AlertCircle,
 } from 'lucide-react';
-
-interface Competition {
-  id: number;
-  name: string;
-  description: string;
-  discipline: string;
-  date: string;
-  entryDeadline: string;
-  prizePool: number;
-  entryFee: number;
-  maxEntries: number;
-  currentEntries: number;
-  status: 'upcoming' | 'open' | 'closed' | 'completed';
-  requirements: {
-    minAge: number;
-    maxAge: number;
-    minLevel: number;
-    requiredTraits?: string[];
-  };
-}
+import {
+  useCompetitions,
+  useDisciplines,
+  useEnterCompetition,
+  type Competition,
+  type Discipline,
+} from '../hooks/api/useCompetitions';
+import { useEligibilityForHorses } from '../hooks/api/useCompetitions';
+import { useHorses } from '../hooks/api/useHorses';
 
 interface Horse {
   id: number;
@@ -75,81 +64,72 @@ const CompetitionBrowser: React.FC = () => {
   const [sortBy, setSortBy] = useState('date');
   const [selectedCompetition, setSelectedCompetition] = useState<number | null>(null);
 
-  // Fetch competitions
+  // Fetch competitions using centralized hook
   const {
     data: competitions = [],
     isLoading: competitionsLoading,
-    error: competitionsError
-  } = useQuery<Competition[]>({
-    queryKey: ['competitions'],
-    queryFn: async () => {
-      const response = await fetch('/api/competitions');
-      if (!response.ok) {
-        throw new Error('Failed to fetch competitions');
-      }
-      return response.json();
-    },
-  });
+    error: competitionsError,
+  } = useCompetitions();
 
-  // Fetch disciplines
-  const {
-    data: disciplines = [],
-    isLoading: disciplinesLoading
-  } = useQuery<string[]>({
-    queryKey: ['disciplines'],
-    queryFn: async () => {
-      const response = await fetch('/api/disciplines');
-      if (!response.ok) {
-        throw new Error('Failed to fetch disciplines');
-      }
-      return response.json();
-    },
-  });
+  const { data: horses = [] } = useHorses();
 
-  // Fetch eligibility for selected competition
-  const {
-    data: eligibility,
-    isLoading: eligibilityLoading
-  } = useQuery<EligibilityResponse>({
-    queryKey: ['eligibility', selectedCompetition],
-    queryFn: async () => {
-      if (!selectedCompetition) return null;
-      const response = await fetch(`/api/competitions/${selectedCompetition}/eligibility`);
-      if (!response.ok) {
-        throw new Error('Failed to fetch eligibility');
-      }
-      return response.json();
-    },
-    enabled: !!selectedCompetition,
-  });
+  // Fetch disciplines using centralized hook
+  const { data: disciplines = [], isLoading: disciplinesLoading } = useDisciplines();
+
+  const eligibilityQueries = useEligibilityForHorses(
+    selectedCompetition ?? 0,
+    horses.map((horse) => horse.id)
+  );
+
+  const eligibilityLoading =
+    selectedCompetition !== null && eligibilityQueries.some((query) => query.isLoading);
+
+  const eligibility = useMemo<EligibilityResponse | null>(() => {
+    if (selectedCompetition === null) {
+      return null;
+    }
+
+    if (!horses.length) {
+      return { eligible: false, horses: [], reasons: ['No horses available'] };
+    }
+
+    const eligibleHorses = horses
+      .map((horse, index) => {
+        const result = eligibilityQueries[index]?.data;
+        return {
+          id: horse.id,
+          name: horse.name,
+          age: horse.ageYears ?? horse.age ?? 0,
+          level: horse.level ?? 0,
+          traits: horse.traits ?? [],
+          eligible: result?.eligible ?? false,
+          reason: result?.reasons?.[0],
+        };
+      })
+      .filter((horse) => horse.eligible);
+
+    const reasons = eligibilityQueries
+      .flatMap((query) => query.data?.reasons ?? [])
+      .filter(Boolean);
+
+    return {
+      eligible: eligibleHorses.length > 0,
+      horses: eligibleHorses,
+      reasons,
+    };
+  }, [selectedCompetition, horses, eligibilityQueries]);
 
   // Entry mutation
-  const entryMutation = useMutation({
-    mutationFn: async ({ competitionId, horseId }: { competitionId: number; horseId: number }) => {
-      const response = await fetch(`/api/competitions/${competitionId}/enter`, {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-        },
-        body: JSON.stringify({ horseId }),
-      });
-      if (!response.ok) {
-        throw new Error('Failed to enter competition');
-      }
-      return response.json();
-    },
-    onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ['competitions'] });
-      queryClient.invalidateQueries({ queryKey: ['eligibility'] });
-    },
-  });
+  const entryMutation = useEnterCompetition();
 
   // Filter and sort competitions
   const filteredCompetitions = useMemo(() => {
-    let filtered = competitions.filter(competition => {
-      const matchesSearch = competition.name.toLowerCase().includes(searchQuery.toLowerCase()) ||
+    const filtered = competitions.filter((competition) => {
+      const matchesSearch =
+        competition.name.toLowerCase().includes(searchQuery.toLowerCase()) ||
         competition.description.toLowerCase().includes(searchQuery.toLowerCase());
-      const matchesDiscipline = selectedDiscipline === 'all' || competition.discipline === selectedDiscipline;
+      const matchesDiscipline =
+        selectedDiscipline === 'all' || competition.discipline === selectedDiscipline;
 
       return matchesSearch && matchesDiscipline;
     });
@@ -222,10 +202,7 @@ const CompetitionBrowser: React.FC = () => {
       </div>
 
       {/* Filters and Search */}
-      <div
-        className="bg-white rounded-lg shadow-md p-6 mb-6"
-        data-testid="competition-filters"
-      >
+      <div className="bg-white rounded-lg shadow-md p-6 mb-6" data-testid="competition-filters">
         <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
           {/* Search */}
           <div className="relative">
@@ -250,11 +227,16 @@ const CompetitionBrowser: React.FC = () => {
               className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
             >
               <option value="all">All Disciplines</option>
-              {disciplines.map((discipline) => (
-                <option key={discipline} value={discipline}>
-                  {discipline}
-                </option>
-              ))}
+              {disciplines
+                .map((discipline) =>
+                  typeof discipline === 'string' ? discipline : discipline.name
+                )
+                .filter(Boolean)
+                .map((discipline) => (
+                  <option key={discipline} value={discipline}>
+                    {discipline}
+                  </option>
+                ))}
             </select>
           </div>
 
@@ -312,9 +294,7 @@ const CompetitionBrowser: React.FC = () => {
               >
                 <div className="flex justify-between items-start mb-4">
                   <div>
-                    <h3 className="text-xl font-semibold text-gray-900 mb-1">
-                      {competition.name}
-                    </h3>
+                    <h3 className="text-xl font-semibold text-gray-900 mb-1">{competition.name}</h3>
                     <p className="text-gray-600 text-sm">{competition.discipline}</p>
                   </div>
                   <div className="flex items-center space-x-2" data-testid="competition-status">
@@ -336,7 +316,9 @@ const CompetitionBrowser: React.FC = () => {
                   </div>
                   <div className="flex items-center" data-testid="entry-count">
                     <Users className="w-4 h-4 text-gray-400 mr-2" />
-                    <span>{competition.currentEntries}/{competition.maxEntries} entries</span>
+                    <span>
+                      {competition.currentEntries}/{competition.maxEntries} entries
+                    </span>
                   </div>
                   <div className="flex items-center">
                     <Clock className="w-4 h-4 text-gray-400 mr-2" />
@@ -346,11 +328,20 @@ const CompetitionBrowser: React.FC = () => {
 
                 <div className="flex justify-between items-center">
                   <div data-testid="eligibility-status">
-                    {selectedCompetition === competition.id && eligibility ? (
-                      <span className={`text-sm font-medium ${eligibility.eligible ? 'text-green-600' : 'text-red-600'
-                        }`}>
-                        {eligibility.eligible ? 'Horses eligible' : 'No eligible horses'}
-                      </span>
+                    {selectedCompetition === competition.id ? (
+                      eligibilityLoading ? (
+                        <span className="text-sm text-gray-500">Checking eligibility...</span>
+                      ) : eligibility ? (
+                        <span
+                          className={`text-sm font-medium ${
+                            eligibility.eligible ? 'text-green-600' : 'text-red-600'
+                          }`}
+                        >
+                          {eligibility.eligible ? 'Horses eligible' : 'No eligible horses'}
+                        </span>
+                      ) : (
+                        <span className="text-sm text-gray-500">No eligibility data</span>
+                      )
                     ) : (
                       <span className="text-sm text-gray-500">Click to check eligibility</span>
                     )}

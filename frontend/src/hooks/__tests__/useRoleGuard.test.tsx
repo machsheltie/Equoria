@@ -26,11 +26,7 @@ const mockUseAuth = vi.mocked(AuthContext.useAuth);
  */
 function createWrapper(initialEntries: string[] = ['/admin']) {
   return function Wrapper({ children }: { children: ReactNode }) {
-    return (
-      <MemoryRouter initialEntries={initialEntries}>
-        {children}
-      </MemoryRouter>
-    );
+    return <MemoryRouter initialEntries={initialEntries}>{children}</MemoryRouter>;
   };
 }
 
@@ -77,10 +73,9 @@ describe('useRoleGuard', () => {
         refetchProfile: vi.fn(),
       });
 
-      const { result } = renderHook(
-        () => useRoleGuard({ allowedRoles: ['admin'] }),
-        { wrapper: createWrapper() }
-      );
+      const { result } = renderHook(() => useRoleGuard({ allowedRoles: ['admin'] }), {
+        wrapper: createWrapper(),
+      });
 
       expect(result.current.isLoading).toBe(true);
       expect(result.current.shouldRedirect).toBe(false);
@@ -98,10 +93,9 @@ describe('useRoleGuard', () => {
         refetchProfile: vi.fn(),
       });
 
-      const { result } = renderHook(
-        () => useRoleGuard({ allowedRoles: ['admin'] }),
-        { wrapper: createWrapper() }
-      );
+      const { result } = renderHook(() => useRoleGuard({ allowedRoles: ['admin'] }), {
+        wrapper: createWrapper(),
+      });
 
       expect(result.current.isLoading).toBe(true);
       expect(result.current.hasRequiredRole).toBe(false);
@@ -123,29 +117,26 @@ describe('useRoleGuard', () => {
     });
 
     test('redirects unauthenticated users to login', () => {
-      const { result } = renderHook(
-        () => useRoleGuard({ allowedRoles: ['admin'] }),
-        { wrapper: createWrapper() }
-      );
+      const { result } = renderHook(() => useRoleGuard({ allowedRoles: ['admin'] }), {
+        wrapper: createWrapper(),
+      });
 
       expect(result.current.shouldRedirect).toBe(true);
       expect(result.current.redirectPath).toBe('/login');
     });
 
     test('does not have required role when unauthenticated', () => {
-      const { result } = renderHook(
-        () => useRoleGuard({ allowedRoles: ['user'] }),
-        { wrapper: createWrapper() }
-      );
+      const { result } = renderHook(() => useRoleGuard({ allowedRoles: ['user'] }), {
+        wrapper: createWrapper(),
+      });
 
       expect(result.current.hasRequiredRole).toBe(false);
     });
 
     test('preserves intended destination in redirect state', () => {
-      const { result } = renderHook(
-        () => useRoleGuard({ allowedRoles: ['admin'] }),
-        { wrapper: createWrapper(['/admin/dashboard']) }
-      );
+      const { result } = renderHook(() => useRoleGuard({ allowedRoles: ['admin'] }), {
+        wrapper: createWrapper(['/admin/dashboard']),
+      });
 
       expect(result.current.redirectState?.from).toBe('/admin/dashboard');
     });
@@ -164,10 +155,9 @@ describe('useRoleGuard', () => {
         refetchProfile: vi.fn(),
       });
 
-      const { result } = renderHook(
-        () => useRoleGuard({ allowedRoles: ['admin'] }),
-        { wrapper: createWrapper() }
-      );
+      const { result } = renderHook(() => useRoleGuard({ allowedRoles: ['admin'] }), {
+        wrapper: createWrapper(),
+      });
 
       expect(result.current.shouldRedirect).toBe(false);
       expect(result.current.hasRequiredRole).toBe(true);
@@ -185,10 +175,9 @@ describe('useRoleGuard', () => {
         refetchProfile: vi.fn(),
       });
 
-      const { result } = renderHook(
-        () => useRoleGuard({ allowedRoles: ['moderator'] }),
-        { wrapper: createWrapper() }
-      );
+      const { result } = renderHook(() => useRoleGuard({ allowedRoles: ['moderator'] }), {
+        wrapper: createWrapper(),
+      });
 
       expect(result.current.shouldRedirect).toBe(false);
       expect(result.current.hasRequiredRole).toBe(true);
@@ -206,10 +195,9 @@ describe('useRoleGuard', () => {
         refetchProfile: vi.fn(),
       });
 
-      const { result } = renderHook(
-        () => useRoleGuard({ allowedRoles: ['user'] }),
-        { wrapper: createWrapper() }
-      );
+      const { result } = renderHook(() => useRoleGuard({ allowedRoles: ['user'] }), {
+        wrapper: createWrapper(),
+      });
 
       expect(result.current.shouldRedirect).toBe(false);
       expect(result.current.hasRequiredRole).toBe(true);
@@ -227,10 +215,9 @@ describe('useRoleGuard', () => {
         refetchProfile: vi.fn(),
       });
 
-      const { result } = renderHook(
-        () => useRoleGuard({ allowedRoles: ['admin'] }),
-        { wrapper: createWrapper() }
-      );
+      const { result } = renderHook(() => useRoleGuard({ allowedRoles: ['admin'] }), {
+        wrapper: createWrapper(),
+      });
 
       expect(result.current.shouldRedirect).toBe(true);
       expect(result.current.hasRequiredRole).toBe(false);
@@ -250,10 +237,9 @@ describe('useRoleGuard', () => {
         refetchProfile: vi.fn(),
       });
 
-      const { result } = renderHook(
-        () => useRoleGuard({ allowedRoles: ['admin', 'moderator'] }),
-        { wrapper: createWrapper() }
-      );
+      const { result } = renderHook(() => useRoleGuard({ allowedRoles: ['admin', 'moderator'] }), {
+        wrapper: createWrapper(),
+      });
 
       expect(result.current.shouldRedirect).toBe(false);
       expect(result.current.hasRequiredRole).toBe(true);
@@ -271,10 +257,9 @@ describe('useRoleGuard', () => {
         refetchProfile: vi.fn(),
       });
 
-      const { result } = renderHook(
-        () => useRoleGuard({ allowedRoles: ['admin', 'moderator'] }),
-        { wrapper: createWrapper() }
-      );
+      const { result } = renderHook(() => useRoleGuard({ allowedRoles: ['admin', 'moderator'] }), {
+        wrapper: createWrapper(),
+      });
 
       expect(result.current.shouldRedirect).toBe(true);
       expect(result.current.hasRequiredRole).toBe(false);
@@ -316,10 +301,11 @@ describe('useRoleGuard', () => {
       });
 
       const { result } = renderHook(
-        () => useRoleGuard({
-          allowedRoles: ['admin'],
-          unauthorizedRedirectPath: '/forbidden',
-        }),
+        () =>
+          useRoleGuard({
+            allowedRoles: ['admin'],
+            unauthorizedRedirectPath: '/forbidden',
+          }),
         { wrapper: createWrapper() }
       );
 
@@ -338,10 +324,9 @@ describe('useRoleGuard', () => {
         refetchProfile: vi.fn(),
       });
 
-      const { result } = renderHook(
-        () => useRoleGuard({ allowedRoles: ['admin'] }),
-        { wrapper: createWrapper() }
-      );
+      const { result } = renderHook(() => useRoleGuard({ allowedRoles: ['admin'] }), {
+        wrapper: createWrapper(),
+      });
 
       expect(result.current.redirectPath).toBe('/unauthorized');
     });
@@ -359,10 +344,11 @@ describe('useRoleGuard', () => {
       });
 
       const { result } = renderHook(
-        () => useRoleGuard({
-          allowedRoles: ['admin'],
-          loginPath: '/signin',
-        }),
+        () =>
+          useRoleGuard({
+            allowedRoles: ['admin'],
+            loginPath: '/signin',
+          }),
         { wrapper: createWrapper() }
       );
 
@@ -383,10 +369,9 @@ describe('useRoleGuard', () => {
         refetchProfile: vi.fn(),
       });
 
-      const { result } = renderHook(
-        () => useRoleGuard({ allowedRoles: ['admin'] }),
-        { wrapper: createWrapper() }
-      );
+      const { result } = renderHook(() => useRoleGuard({ allowedRoles: ['admin'] }), {
+        wrapper: createWrapper(),
+      });
 
       expect(result.current.accessDeniedMessage).toBe(
         'You do not have permission to access this page.'
@@ -405,10 +390,9 @@ describe('useRoleGuard', () => {
         refetchProfile: vi.fn(),
       });
 
-      const { result } = renderHook(
-        () => useRoleGuard({ allowedRoles: ['admin'] }),
-        { wrapper: createWrapper() }
-      );
+      const { result } = renderHook(() => useRoleGuard({ allowedRoles: ['admin'] }), {
+        wrapper: createWrapper(),
+      });
 
       expect(result.current.accessDeniedMessage).toBeNull();
     });
@@ -426,10 +410,11 @@ describe('useRoleGuard', () => {
       });
 
       const { result } = renderHook(
-        () => useRoleGuard({
-          allowedRoles: ['admin'],
-          accessDeniedMessage: 'Admins only!',
-        }),
+        () =>
+          useRoleGuard({
+            allowedRoles: ['admin'],
+            accessDeniedMessage: 'Admins only!',
+          }),
         { wrapper: createWrapper() }
       );
 
@@ -450,10 +435,9 @@ describe('useRoleGuard', () => {
         refetchProfile: vi.fn(),
       });
 
-      const { result } = renderHook(
-        () => useRoleGuard({ allowedRoles: ['admin'] }),
-        { wrapper: createWrapper() }
-      );
+      const { result } = renderHook(() => useRoleGuard({ allowedRoles: ['admin'] }), {
+        wrapper: createWrapper(),
+      });
 
       expect(result.current.userRole).toBe('moderator');
     });
@@ -470,10 +454,9 @@ describe('useRoleGuard', () => {
         refetchProfile: vi.fn(),
       });
 
-      const { result } = renderHook(
-        () => useRoleGuard({ allowedRoles: ['admin'] }),
-        { wrapper: createWrapper() }
-      );
+      const { result } = renderHook(() => useRoleGuard({ allowedRoles: ['admin'] }), {
+        wrapper: createWrapper(),
+      });
 
       expect(result.current.userRole).toBeNull();
     });
@@ -493,10 +476,11 @@ describe('useRoleGuard', () => {
       });
 
       const { result } = renderHook(
-        () => useRoleGuard({
-          allowedRoles: ['moderator'],
-          enableRoleHierarchy: true,
-        }),
+        () =>
+          useRoleGuard({
+            allowedRoles: ['moderator'],
+            enableRoleHierarchy: true,
+          }),
         { wrapper: createWrapper() }
       );
 
@@ -517,10 +501,11 @@ describe('useRoleGuard', () => {
       });
 
       const { result } = renderHook(
-        () => useRoleGuard({
-          allowedRoles: ['user'],
-          enableRoleHierarchy: true,
-        }),
+        () =>
+          useRoleGuard({
+            allowedRoles: ['user'],
+            enableRoleHierarchy: true,
+          }),
         { wrapper: createWrapper() }
       );
 
@@ -541,10 +526,11 @@ describe('useRoleGuard', () => {
       });
 
       const { result } = renderHook(
-        () => useRoleGuard({
-          allowedRoles: ['user'],
-          enableRoleHierarchy: true,
-        }),
+        () =>
+          useRoleGuard({
+            allowedRoles: ['user'],
+            enableRoleHierarchy: true,
+          }),
         { wrapper: createWrapper() }
       );
 
@@ -565,10 +551,11 @@ describe('useRoleGuard', () => {
       });
 
       const { result } = renderHook(
-        () => useRoleGuard({
-          allowedRoles: ['admin'],
-          enableRoleHierarchy: true,
-        }),
+        () =>
+          useRoleGuard({
+            allowedRoles: ['admin'],
+            enableRoleHierarchy: true,
+          }),
         { wrapper: createWrapper() }
       );
 
@@ -588,10 +575,9 @@ describe('useRoleGuard', () => {
         refetchProfile: vi.fn(),
       });
 
-      const { result } = renderHook(
-        () => useRoleGuard({ allowedRoles: ['moderator'] }),
-        { wrapper: createWrapper() }
-      );
+      const { result } = renderHook(() => useRoleGuard({ allowedRoles: ['moderator'] }), {
+        wrapper: createWrapper(),
+      });
 
       // Without hierarchy, admin cannot access moderator-only
       expect(result.current.shouldRedirect).toBe(true);
@@ -612,10 +598,9 @@ describe('useRoleGuard', () => {
         refetchProfile: vi.fn(),
       });
 
-      const { result } = renderHook(
-        () => useRoleGuard({ allowedRoles: ['user'] }),
-        { wrapper: createWrapper() }
-      );
+      const { result } = renderHook(() => useRoleGuard({ allowedRoles: ['user'] }), {
+        wrapper: createWrapper(),
+      });
 
       expect(result.current.shouldRedirect).toBe(false);
       expect(result.current.hasRequiredRole).toBe(true);
@@ -636,10 +621,9 @@ describe('useRoleGuard', () => {
         refetchProfile: vi.fn(),
       });
 
-      const { result } = renderHook(
-        () => useRoleGuard({ allowedRoles: ['admin'] }),
-        { wrapper: createWrapper() }
-      );
+      const { result } = renderHook(() => useRoleGuard({ allowedRoles: ['admin'] }), {
+        wrapper: createWrapper(),
+      });
 
       // Should redirect to login, not unauthorized
       expect(result.current.redirectPath).toBe('/login');

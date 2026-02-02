@@ -91,14 +91,15 @@ export const AuthCardHeader: React.FC<AuthCardHeaderProps> = ({ title, subtitle,
 /**
  * API error display box
  */
-export const AuthError: React.FC<AuthErrorProps> = ({ error, fallbackMessage = 'An error occurred. Please try again.' }) => {
+export const AuthError: React.FC<AuthErrorProps> = ({
+  error,
+  fallbackMessage = 'An error occurred. Please try again.',
+}) => {
   if (!error) return null;
 
   return (
     <div className="bg-red-50 border border-red-200 rounded-lg p-3" role="alert">
-      <p className="text-red-700 text-sm text-center">
-        {error.message || fallbackMessage}
-      </p>
+      <p className="text-red-700 text-sm text-center">{error.message || fallbackMessage}</p>
     </div>
   );
 };

@@ -60,10 +60,7 @@ interface FeatureFlagProviderProps {
  *   );
  * }
  */
-export function FeatureFlagProvider({
-  children,
-  overrides,
-}: FeatureFlagProviderProps) {
+export function FeatureFlagProvider({ children, overrides }: FeatureFlagProviderProps) {
   const { data: flags = LOCAL_FLAGS, isLoading, isError, refetch } = useFeatureFlags();
 
   // Merge flags with overrides
@@ -101,11 +98,7 @@ export function FeatureFlagProvider({
     [mergedFlags, isEnabled, getVariant, isLoading, isError, refetch]
   );
 
-  return (
-    <FeatureFlagContext.Provider value={contextValue}>
-      {children}
-    </FeatureFlagContext.Provider>
-  );
+  return <FeatureFlagContext.Provider value={contextValue}>{children}</FeatureFlagContext.Provider>;
 }
 
 /**
@@ -128,9 +121,7 @@ export function useFeatureFlagContext(): FeatureFlagContextValue {
   const context = useContext(FeatureFlagContext);
 
   if (!context) {
-    throw new Error(
-      'useFeatureFlagContext must be used within a FeatureFlagProvider'
-    );
+    throw new Error('useFeatureFlagContext must be used within a FeatureFlagProvider');
   }
 
   return context;
@@ -160,12 +151,7 @@ interface FeatureGateProps {
   invert?: boolean;
 }
 
-export function FeatureGate({
-  flag,
-  children,
-  fallback = null,
-  invert = false,
-}: FeatureGateProps) {
+export function FeatureGate({ flag, children, fallback = null, invert = false }: FeatureGateProps) {
   const { isEnabled } = useFeatureFlagContext();
 
   const enabled = isEnabled(flag);
@@ -269,9 +255,7 @@ export function FeatureFlagDebug() {
           }}
         >
           <span>{name}:</span>
-          <span style={{ color: value ? '#4ade80' : '#f87171' }}>
-            {String(value)}
-          </span>
+          <span style={{ color: value ? '#4ade80' : '#f87171' }}>{String(value)}</span>
         </div>
       ))}
     </div>

@@ -1,13 +1,13 @@
 /**
  * Multi-Horse Comparison Interface Component
- * 
+ *
  * Comprehensive interface for strategic comparison across multiple horses including:
  * - Horse Selection Interface with search, filtering, and multi-select
  * - Comparison Matrix with side-by-side trait and performance analysis
  * - Similarity/Difference Visualization with interactive charts
  * - Ranking Dashboard with sortable metrics and scoring
  * - Export functionality for comparison reports
- * 
+ *
  * Features:
  * - Advanced filtering and search capabilities
  * - Drag-and-drop horse selection interface
@@ -28,7 +28,7 @@ import {
   Eye,
   EyeOff,
   BarChart3,
-  TrendingUp
+  TrendingUp,
 } from 'lucide-react';
 
 // Types
@@ -177,10 +177,11 @@ const MultiHorseComparison: React.FC<MultiHorseComparisonProps> = ({
 
   // Filter and sort horses
   const filteredAndSortedHorses = useMemo(() => {
-    let filtered = horses.filter(horse =>
-      horse.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
-      horse.breed.toLowerCase().includes(searchTerm.toLowerCase()) ||
-      horse.traits.some(trait => trait.toLowerCase().includes(searchTerm.toLowerCase()))
+    let filtered = horses.filter(
+      (horse) =>
+        horse.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
+        horse.breed.toLowerCase().includes(searchTerm.toLowerCase()) ||
+        horse.traits.some((trait) => trait.toLowerCase().includes(searchTerm.toLowerCase()))
     );
 
     // Apply additional filters
@@ -214,7 +215,7 @@ const MultiHorseComparison: React.FC<MultiHorseComparisonProps> = ({
   // Handle horse selection
   const handleHorseSelect = (horse: Horse) => {
     const newSelection = selectedHorses.includes(horse.id)
-      ? selectedHorses.filter(id => id !== horse.id)
+      ? selectedHorses.filter((id) => id !== horse.id)
       : [...selectedHorses, horse.id];
     onHorseSelectionChange(newSelection);
   };
@@ -224,7 +225,7 @@ const MultiHorseComparison: React.FC<MultiHorseComparisonProps> = ({
     if (selectedHorses.length === filteredAndSortedHorses.length) {
       onHorseSelectionChange([]);
     } else {
-      onHorseSelectionChange(filteredAndSortedHorses.map(h => h.id));
+      onHorseSelectionChange(filteredAndSortedHorses.map((h) => h.id));
     }
   };
 
@@ -245,10 +246,7 @@ const MultiHorseComparison: React.FC<MultiHorseComparisonProps> = ({
   };
 
   return (
-    <div
-      data-testid="multi-horse-comparison"
-      className={`space-y-6 ${className}`}
-    >
+    <div data-testid="multi-horse-comparison" className={`space-y-6 ${className}`}>
       {/* Header */}
       <div className="flex items-center justify-between">
         <h2 className="text-2xl font-bold text-gray-900">Multi-Horse Comparison</h2>
@@ -275,11 +273,10 @@ const MultiHorseComparison: React.FC<MultiHorseComparisonProps> = ({
         <div className="p-6">
           <div className="flex items-center justify-between mb-4">
             <h3 className="text-lg font-semibold">Horse Selection</h3>
-            <button
-              onClick={handleSelectAll}
-              className="text-sm text-blue-600 hover:text-blue-800"
-            >
-              {selectedHorses.length === filteredAndSortedHorses.length ? 'Deselect All' : 'Select All'}
+            <button onClick={handleSelectAll} className="text-sm text-blue-600 hover:text-blue-800">
+              {selectedHorses.length === filteredAndSortedHorses.length
+                ? 'Deselect All'
+                : 'Select All'}
             </button>
           </div>
 
@@ -324,7 +321,7 @@ const MultiHorseComparison: React.FC<MultiHorseComparisonProps> = ({
 
           {/* Horse List */}
           <div className="space-y-2 max-h-96 overflow-y-auto" data-testid="horse-list">
-            {filteredAndSortedHorses.map(horse => (
+            {filteredAndSortedHorses.map((horse) => (
               <HorseSelectionItem
                 key={horse.id}
                 horse={horse}
@@ -366,7 +363,7 @@ const MultiHorseComparison: React.FC<MultiHorseComparisonProps> = ({
       {/* Comparison Matrix */}
       {showComparison && selectedHorses.length >= 2 && (
         <ComparisonMatrix
-          horses={horses.filter(h => selectedHorses.includes(h.id))}
+          horses={horses.filter((h) => selectedHorses.includes(h.id))}
           comparisonData={comparisonQuery.data}
           isLoading={comparisonQuery.isLoading}
         />
@@ -375,7 +372,7 @@ const MultiHorseComparison: React.FC<MultiHorseComparisonProps> = ({
       {/* Ranking Dashboard */}
       {selectedHorses.length >= 2 && (
         <RankingDashboard
-          horses={horses.filter(h => selectedHorses.includes(h.id))}
+          horses={horses.filter((h) => selectedHorses.includes(h.id))}
           comparisonData={comparisonQuery.data}
         />
       )}
@@ -426,18 +423,22 @@ const HorseSelectionItem: React.FC<HorseSelectionItemProps> = ({
 }) => {
   return (
     <div
-      className={`p-3 border rounded-lg cursor-pointer transition-colors ${isSelected
+      className={`p-3 border rounded-lg cursor-pointer transition-colors ${
+        isSelected
           ? 'bg-blue-50 border-blue-300 ring-2 ring-blue-200'
           : 'hover:bg-gray-50 border-gray-200'
-        }`}
+      }`}
       onClick={onSelect}
       data-testid={`horse-item-${horse.id}`}
     >
       <div className="flex items-center justify-between">
         <div className="flex-1">
           <div className="flex items-center space-x-3">
-            <div className={`w-4 h-4 rounded border-2 flex items-center justify-center ${isSelected ? 'bg-blue-500 border-blue-500' : 'border-gray-300'
-              }`}>
+            <div
+              className={`w-4 h-4 rounded border-2 flex items-center justify-center ${
+                isSelected ? 'bg-blue-500 border-blue-500' : 'border-gray-300'
+              }`}
+            >
               {isSelected && <div className="w-2 h-2 bg-white rounded-full"></div>}
             </div>
             <div>
@@ -462,7 +463,7 @@ const HorseSelectionItem: React.FC<HorseSelectionItemProps> = ({
 
           {/* Traits */}
           <div className="flex flex-wrap gap-1 max-w-48">
-            {horse.traits.slice(0, 3).map(trait => (
+            {horse.traits.slice(0, 3).map((trait) => (
               <span key={trait} className="px-2 py-1 bg-gray-100 text-gray-700 text-xs rounded">
                 {trait}
               </span>
@@ -539,7 +540,7 @@ const ComparisonMatrix: React.FC<ComparisonMatrixProps> = ({
     if (!attribute.isNumeric) return '';
 
     const numValue = typeof value === 'number' ? value : 0;
-    const numValues = allValues.filter(v => typeof v === 'number');
+    const numValues = allValues.filter((v) => typeof v === 'number');
     const max = Math.max(...numValues);
     const min = Math.min(...numValues);
 
@@ -557,16 +558,21 @@ const ComparisonMatrix: React.FC<ComparisonMatrixProps> = ({
           <thead>
             <tr className="border-b border-gray-200">
               <th className="text-left py-3 px-4 font-medium text-gray-700">Attribute</th>
-              {horses.slice(0, 4).map(horse => (
-                <th key={horse.id} className="text-center py-3 px-4 font-medium text-gray-700 min-w-32">
+              {horses.slice(0, 4).map((horse) => (
+                <th
+                  key={horse.id}
+                  className="text-center py-3 px-4 font-medium text-gray-700 min-w-32"
+                >
                   {horse.name}
                 </th>
               ))}
             </tr>
           </thead>
           <tbody>
-            {attributes.map(attribute => {
-              const values = horses.slice(0, 4).map(horse => getAttributeValue(horse, attribute.key));
+            {attributes.map((attribute) => {
+              const values = horses
+                .slice(0, 4)
+                .map((horse) => getAttributeValue(horse, attribute.key));
 
               return (
                 <tr key={attribute.key} className="border-b border-gray-100">
@@ -592,11 +598,11 @@ const ComparisonMatrix: React.FC<ComparisonMatrixProps> = ({
       <div className="mt-6">
         <h4 className="font-medium text-gray-700 mb-3">Traits Comparison</h4>
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-4">
-          {horses.slice(0, 4).map(horse => (
+          {horses.slice(0, 4).map((horse) => (
             <div key={horse.id} className="p-3 bg-gray-50 rounded">
               <h5 className="font-medium text-sm mb-2">{horse.name}</h5>
               <div className="flex flex-wrap gap-1">
-                {horse.traits.map(trait => (
+                {horse.traits.map((trait) => (
                   <span key={trait} className="px-2 py-1 bg-blue-100 text-blue-800 text-xs rounded">
                     {trait}
                   </span>
@@ -617,16 +623,12 @@ const ComparisonMatrix: React.FC<ComparisonMatrixProps> = ({
               {comparisonData.similarities.map((similarity, index) => (
                 <div key={index} className="p-3 bg-green-50 rounded border border-green-200">
                   <div className="flex items-center justify-between mb-1">
-                    <span className="text-sm font-medium text-green-800">
-                      Common Traits
-                    </span>
+                    <span className="text-sm font-medium text-green-800">Common Traits</span>
                     <span className="text-sm text-green-600">
                       {Math.round(similarity.score * 100)}% match
                     </span>
                   </div>
-                  <div className="text-xs text-green-700">
-                    {similarity.traits.join(', ')}
-                  </div>
+                  <div className="text-xs text-green-700">{similarity.traits.join(', ')}</div>
                 </div>
               ))}
             </div>
@@ -662,38 +664,41 @@ interface RankingDashboardProps {
   comparisonData: ComparisonData | null | undefined;
 }
 
-const RankingDashboard: React.FC<RankingDashboardProps> = ({
-  horses,
-  comparisonData,
-}) => {
+const RankingDashboard: React.FC<RankingDashboardProps> = ({ horses, comparisonData }) => {
   // Calculate overall scores if not provided
   const rankedHorses = useMemo(() => {
-    return horses.map(horse => {
-      // Calculate overall score based on stats, traits, and other factors
-      const statsAverage = horse.stats ?
-        Object.values(horse.stats).reduce((sum, val) => sum + val, 0) / Object.values(horse.stats).length : 0;
+    return horses
+      .map((horse) => {
+        // Calculate overall score based on stats, traits, and other factors
+        const statsAverage = horse.stats
+          ? Object.values(horse.stats).reduce((sum, val) => sum + val, 0) /
+            Object.values(horse.stats).length
+          : 0;
 
-      const traitBonus = horse.traits.length * 5; // 5 points per trait
-      const bondBonus = (horse.bondScore || 0) * 0.5;
-      const stressPenalty = (horse.stressLevel || 0) * 0.3;
+        const traitBonus = horse.traits.length * 5; // 5 points per trait
+        const bondBonus = (horse.bondScore || 0) * 0.5;
+        const stressPenalty = (horse.stressLevel || 0) * 0.3;
 
-      const overallScore = statsAverage + traitBonus + bondBonus - stressPenalty;
+        const overallScore = statsAverage + traitBonus + bondBonus - stressPenalty;
 
-      return {
-        ...horse,
-        overallScore: Math.round(overallScore),
-      };
-    }).sort((a, b) => (b.overallScore || 0) - (a.overallScore || 0));
+        return {
+          ...horse,
+          overallScore: Math.round(overallScore),
+        };
+      })
+      .sort((a, b) => (b.overallScore || 0) - (a.overallScore || 0));
   }, [horses]);
 
   // Get ranking data from comparison if available
-  const rankings = comparisonData?.rankings || rankedHorses.map((horse, index) => ({
-    horseId: horse.id,
-    rank: index + 1,
-    score: horse.overallScore || 0,
-    strengths: horse.traits.slice(0, 3),
-    weaknesses: [], // Would be calculated based on low stats
-  }));
+  const rankings =
+    comparisonData?.rankings ||
+    rankedHorses.map((horse, index) => ({
+      horseId: horse.id,
+      rank: index + 1,
+      score: horse.overallScore || 0,
+      strengths: horse.traits.slice(0, 3),
+      weaknesses: [], // Would be calculated based on low stats
+    }));
 
   return (
     <div className="bg-white rounded-lg shadow p-6">
@@ -707,7 +712,7 @@ const RankingDashboard: React.FC<RankingDashboardProps> = ({
 
       <div className="space-y-3" data-testid="ranking-dashboard">
         {rankedHorses.map((horse, index) => {
-          const ranking = rankings.find(r => r.horseId === horse.id);
+          const ranking = rankings.find((r) => r.horseId === horse.id);
           const rank = ranking?.rank || index + 1;
 
           // Determine rank styling
@@ -725,10 +730,7 @@ const RankingDashboard: React.FC<RankingDashboardProps> = ({
           };
 
           return (
-            <div
-              key={horse.id}
-              className={`p-4 rounded-lg border-2 ${getRankStyling(rank)}`}
-            >
+            <div key={horse.id} className={`p-4 rounded-lg border-2 ${getRankStyling(rank)}`}>
               <div className="flex items-center justify-between">
                 <div className="flex items-center space-x-4">
                   {/* Rank Badge */}
@@ -781,8 +783,11 @@ const RankingDashboard: React.FC<RankingDashboardProps> = ({
                     <div>
                       <h5 className="text-sm font-medium mb-2">Strengths</h5>
                       <div className="flex flex-wrap gap-1">
-                        {ranking.strengths.map(strength => (
-                          <span key={strength} className="px-2 py-1 bg-green-100 text-green-800 text-xs rounded">
+                        {ranking.strengths.map((strength) => (
+                          <span
+                            key={strength}
+                            className="px-2 py-1 bg-green-100 text-green-800 text-xs rounded"
+                          >
                             {strength}
                           </span>
                         ))}
@@ -794,8 +799,11 @@ const RankingDashboard: React.FC<RankingDashboardProps> = ({
                     <div>
                       <h5 className="text-sm font-medium mb-2">Areas for Improvement</h5>
                       <div className="flex flex-wrap gap-1">
-                        {ranking.weaknesses.map(weakness => (
-                          <span key={weakness} className="px-2 py-1 bg-red-100 text-red-800 text-xs rounded">
+                        {ranking.weaknesses.map((weakness) => (
+                          <span
+                            key={weakness}
+                            className="px-2 py-1 bg-red-100 text-red-800 text-xs rounded"
+                          >
                             {weakness}
                           </span>
                         ))}
@@ -815,13 +823,16 @@ const RankingDashboard: React.FC<RankingDashboardProps> = ({
         <div className="grid grid-cols-2 md:grid-cols-4 gap-4 text-center">
           <div>
             <div className="text-lg font-semibold text-gray-900">
-              {Math.round(rankedHorses.reduce((sum, h) => sum + (h.overallScore || 0), 0) / rankedHorses.length)}
+              {Math.round(
+                rankedHorses.reduce((sum, h) => sum + (h.overallScore || 0), 0) /
+                  rankedHorses.length
+              )}
             </div>
             <div className="text-sm text-gray-600">Average Score</div>
           </div>
           <div>
             <div className="text-lg font-semibold text-gray-900">
-              {Math.max(...rankedHorses.map(h => h.overallScore || 0))}
+              {Math.max(...rankedHorses.map((h) => h.overallScore || 0))}
             </div>
             <div className="text-sm text-gray-600">Highest Score</div>
           </div>
@@ -833,7 +844,9 @@ const RankingDashboard: React.FC<RankingDashboardProps> = ({
           </div>
           <div>
             <div className="text-lg font-semibold text-gray-900">
-              {Math.round(rankedHorses.reduce((sum, h) => sum + (h.bondScore || 0), 0) / rankedHorses.length)}
+              {Math.round(
+                rankedHorses.reduce((sum, h) => sum + (h.bondScore || 0), 0) / rankedHorses.length
+              )}
             </div>
             <div className="text-sm text-gray-600">Average Bond</div>
           </div>

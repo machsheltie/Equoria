@@ -205,7 +205,9 @@ describe('ForgotPasswordPage', () => {
       // API should be called with email (ignore React Query options)
       await waitFor(() => {
         expect(vi.mocked(apiClient.authApi.forgotPassword)).toHaveBeenCalled();
-        expect(vi.mocked(apiClient.authApi.forgotPassword).mock.calls[0][0]).toBe('valid@example.com');
+        expect(vi.mocked(apiClient.authApi.forgotPassword).mock.calls[0][0]).toBe(
+          'valid@example.com'
+        );
       });
     });
   });
@@ -225,7 +227,9 @@ describe('ForgotPasswordPage', () => {
 
       await waitFor(() => {
         expect(vi.mocked(apiClient.authApi.forgotPassword)).toHaveBeenCalled();
-        expect(vi.mocked(apiClient.authApi.forgotPassword).mock.calls[0][0]).toBe('test@example.com');
+        expect(vi.mocked(apiClient.authApi.forgotPassword).mock.calls[0][0]).toBe(
+          'test@example.com'
+        );
       });
     });
 
@@ -243,7 +247,9 @@ describe('ForgotPasswordPage', () => {
 
       await waitFor(() => {
         expect(vi.mocked(apiClient.authApi.forgotPassword)).toHaveBeenCalled();
-        expect(vi.mocked(apiClient.authApi.forgotPassword).mock.calls[0][0]).toBe('test@example.com');
+        expect(vi.mocked(apiClient.authApi.forgotPassword).mock.calls[0][0]).toBe(
+          'test@example.com'
+        );
       });
     });
 
@@ -261,7 +267,9 @@ describe('ForgotPasswordPage', () => {
 
       await waitFor(() => {
         expect(vi.mocked(apiClient.authApi.forgotPassword)).toHaveBeenCalled();
-        expect(vi.mocked(apiClient.authApi.forgotPassword).mock.calls[0][0]).toBe('test@example.com');
+        expect(vi.mocked(apiClient.authApi.forgotPassword).mock.calls[0][0]).toBe(
+          'test@example.com'
+        );
       });
     });
   });
@@ -370,9 +378,7 @@ describe('ForgotPasswordPage', () => {
       await user.click(submitButton);
 
       await waitFor(() => {
-        expect(
-          screen.getByText(/the link will expire in 1 hour/i)
-        ).toBeInTheDocument();
+        expect(screen.getByText(/the link will expire in 1 hour/i)).toBeInTheDocument();
       });
     });
 
@@ -458,7 +464,9 @@ describe('ForgotPasswordPage', () => {
       await user.click(submitButton);
 
       await waitFor(() => {
-        expect(screen.getByText('Rate limit exceeded. Please try again later.')).toBeInTheDocument();
+        expect(
+          screen.getByText('Rate limit exceeded. Please try again later.')
+        ).toBeInTheDocument();
       });
     });
 
@@ -557,9 +565,7 @@ describe('ForgotPasswordPage', () => {
       // Should still show success (no way to tell if account exists)
       await waitFor(() => {
         expect(screen.getByText('Check Your Inbox')).toBeInTheDocument();
-        expect(
-          screen.getByText(/if an account exists/i)
-        ).toBeInTheDocument();
+        expect(screen.getByText(/if an account exists/i)).toBeInTheDocument();
       });
     });
   });
@@ -603,7 +609,9 @@ describe('ForgotPasswordPage', () => {
 
       await waitFor(() => {
         expect(vi.mocked(apiClient.authApi.forgotPassword)).toHaveBeenCalled();
-        expect(vi.mocked(apiClient.authApi.forgotPassword).mock.calls[0][0]).toBe('test@example.com');
+        expect(vi.mocked(apiClient.authApi.forgotPassword).mock.calls[0][0]).toBe(
+          'test@example.com'
+        );
       });
     });
   });

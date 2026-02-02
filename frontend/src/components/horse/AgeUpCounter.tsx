@@ -49,9 +49,7 @@ const AgeUpCounter = ({ horseId }: AgeUpCounterProps) => {
   if (isError || !ageData) {
     return (
       <div className="rounded-lg border border-rose-200 bg-rose-50 p-6 shadow-sm">
-        <div className="text-sm text-rose-800">
-          {error?.message || 'Failed to fetch age data'}
-        </div>
+        <div className="text-sm text-rose-800">{error?.message || 'Failed to fetch age data'}</div>
         <button
           onClick={() => refetch()}
           className="mt-3 rounded-md bg-rose-600 px-4 py-2 text-sm text-white hover:bg-rose-700"
@@ -202,11 +200,10 @@ const AgeUpCounter = ({ horseId }: AgeUpCounterProps) => {
 
               return (
                 <div key={stat} className="flex items-center justify-between text-sm">
-                  <span className="capitalize text-slate-700">
-                    {stat}
-                  </span>
+                  <span className="capitalize text-slate-700">{stat}</span>
                   <span className={`font-semibold ${colorClass}`}>
-                    {value > 0 ? '+' : ''}{value}
+                    {value > 0 ? '+' : ''}
+                    {value}
                   </span>
                 </div>
               );
@@ -272,10 +269,7 @@ const AgeUpCounter = ({ horseId }: AgeUpCounterProps) => {
       {/* Educational Tooltip */}
       <div className="mt-6 rounded-md bg-slate-50 p-4 border border-slate-200">
         <div className="flex items-start gap-2">
-          <Info
-            className="h-4 w-4 text-slate-600 mt-0.5"
-            aria-label="Age mechanics information"
-          />
+          <Info className="h-4 w-4 text-slate-600 mt-0.5" aria-label="Age mechanics information" />
           <div className="flex-1">
             <p className="text-xs font-semibold text-slate-700">Age Mechanics:</p>
             <ul className="mt-2 space-y-1 text-xs text-slate-600">

@@ -51,7 +51,13 @@ const TIME_RANGE_LIMITS: Record<TimeRange, number> = {
 const StatProgressionChart = ({ horseId }: StatProgressionChartProps) => {
   const [selectedRange, setSelectedRange] = useState<TimeRange>('30d');
 
-  const { data: historyData, isLoading, error, isError, refetch } = useHorseXPHistory(horseId, {
+  const {
+    data: historyData,
+    isLoading,
+    error,
+    isError,
+    refetch,
+  } = useHorseXPHistory(horseId, {
     limit: TIME_RANGE_LIMITS[selectedRange],
   });
 
@@ -223,7 +229,11 @@ const StatProgressionChart = ({ horseId }: StatProgressionChartProps) => {
       </div>
 
       {/* Chart */}
-      <div data-testid="chart-container" className="relative w-full" style={{ position: 'relative' }}>
+      <div
+        data-testid="chart-container"
+        className="relative w-full"
+        style={{ position: 'relative' }}
+      >
         <Line key={selectedRange} data={chartData} options={chartOptions} />
       </div>
 

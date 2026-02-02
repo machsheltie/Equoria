@@ -43,15 +43,18 @@ interface ActivityFeedItemProps {
 /**
  * Icon mapping for activity types
  */
-const IconComponents: Record<string, React.FC<{ className?: string; 'data-testid'?: string; 'data-icon'?: string }>> = {
-  'heart': Heart,
-  'dumbbell': Dumbbell,
-  'trophy': Trophy,
+const IconComponents: Record<
+  string,
+  React.FC<{ className?: string; 'data-testid'?: string; 'data-icon'?: string }>
+> = {
+  heart: Heart,
+  dumbbell: Dumbbell,
+  trophy: Trophy,
   'shopping-cart': ShoppingCart,
-  'star': Star,
+  star: Star,
   'arrow-up': ArrowUp,
-  'coins': Coins,
-  'activity': Activity,
+  coins: Coins,
+  activity: Activity,
 };
 
 /**
@@ -61,11 +64,7 @@ const getIconComponent = (type: ActivityType, iconClassName: string): React.Reac
   const iconName = getActivityIcon(type);
   const IconComponent = IconComponents[iconName] || Activity;
   return (
-    <IconComponent
-      data-testid="activity-icon"
-      data-icon={iconName}
-      className={iconClassName}
-    />
+    <IconComponent data-testid="activity-icon" data-icon={iconName} className={iconClassName} />
   );
 };
 

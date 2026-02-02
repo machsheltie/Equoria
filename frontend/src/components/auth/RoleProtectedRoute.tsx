@@ -137,20 +137,14 @@ export const RoleProtectedRoute: React.FC<RoleProtectedRouteProps> = ({
   const location = useLocation();
 
   // Use the role guard hook to determine access
-  const {
-    isLoading,
-    shouldRedirect,
-    hasRequiredRole,
-    redirectPath,
-    redirectState,
-    userRole,
-  } = useRoleGuard({
-    allowedRoles,
-    enableRoleHierarchy,
-    loginPath,
-    unauthorizedRedirectPath,
-    accessDeniedMessage,
-  });
+  const { isLoading, shouldRedirect, hasRequiredRole, redirectPath, redirectState, userRole } =
+    useRoleGuard({
+      allowedRoles,
+      enableRoleHierarchy,
+      loginPath,
+      unauthorizedRedirectPath,
+      accessDeniedMessage,
+    });
 
   // Show loading state while checking auth
   if (isLoading) {
@@ -159,13 +153,7 @@ export const RoleProtectedRoute: React.FC<RoleProtectedRouteProps> = ({
 
   // Redirect if not authorized
   if (shouldRedirect) {
-    return (
-      <Navigate
-        to={redirectPath}
-        replace
-        state={redirectState as RoleRedirectState}
-      />
-    );
+    return <Navigate to={redirectPath} replace state={redirectState as RoleRedirectState} />;
   }
 
   // Access granted - render children

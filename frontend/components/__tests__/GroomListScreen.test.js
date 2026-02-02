@@ -32,7 +32,7 @@ jest.mock('react-native/Libraries/Modal/Modal', () => {
 
   return ({ visible, children, testID }) => {
     if (!visible) return null;
-    return <View testID={testID || "modal-container"}>{children}</View>;
+    return <View testID={testID || 'modal-container'}>{children}</View>;
   };
 });
 
@@ -117,12 +117,7 @@ describe('GroomListScreen Component', () => {
 
   describe('Rendering', () => {
     test('renders marketplace title correctly', async () => {
-      render(
-        <GroomListScreen
-          marketplaceData={mockMarketplaceData}
-          userData={mockUserData}
-        />
-      );
+      render(<GroomListScreen marketplaceData={mockMarketplaceData} userData={mockUserData} />);
 
       await waitFor(() => {
         expect(screen.getByText(/groom marketplace/i)).toBeTruthy();
@@ -131,10 +126,7 @@ describe('GroomListScreen Component', () => {
 
     test('renders groom list with all grooms', async () => {
       const { getByTestId } = render(
-        <GroomListScreen
-          marketplaceData={mockMarketplaceData}
-          userData={mockUserData}
-        />
+        <GroomListScreen marketplaceData={mockMarketplaceData} userData={mockUserData} />
       );
 
       // Wait for AsyncStorage to resolve
@@ -155,10 +147,7 @@ describe('GroomListScreen Component', () => {
 
     test('renders groom details (specialty, skill level, experience, price)', async () => {
       const { getByTestId } = render(
-        <GroomListScreen
-          marketplaceData={mockMarketplaceData}
-          userData={mockUserData}
-        />
+        <GroomListScreen marketplaceData={mockMarketplaceData} userData={mockUserData} />
       );
 
       // Wait for component to load
@@ -183,12 +172,7 @@ describe('GroomListScreen Component', () => {
         grooms: [],
       };
 
-      render(
-        <GroomListScreen
-          marketplaceData={emptyMarketplaceData}
-          userData={mockUserData}
-        />
-      );
+      render(<GroomListScreen marketplaceData={emptyMarketplaceData} userData={mockUserData} />);
 
       await waitFor(() => {
         expect(screen.getByText(/no grooms available/i)).toBeTruthy();
@@ -196,12 +180,7 @@ describe('GroomListScreen Component', () => {
     });
 
     test('renders loading state initially', async () => {
-      render(
-        <GroomListScreen
-          marketplaceData={mockMarketplaceData}
-          userData={mockUserData}
-        />
-      );
+      render(<GroomListScreen marketplaceData={mockMarketplaceData} userData={mockUserData} />);
 
       // Component should start with loading state
       // After AsyncStorage resolves, content should appear
@@ -211,12 +190,7 @@ describe('GroomListScreen Component', () => {
     });
 
     test('shows refresh information (last refresh, next free refresh)', async () => {
-      render(
-        <GroomListScreen
-          marketplaceData={mockMarketplaceData}
-          userData={mockUserData}
-        />
-      );
+      render(<GroomListScreen marketplaceData={mockMarketplaceData} userData={mockUserData} />);
 
       await waitFor(() => {
         expect(screen.getByText(/last refresh/i)).toBeTruthy();
@@ -225,12 +199,7 @@ describe('GroomListScreen Component', () => {
     });
 
     test('shows filter and sort controls', async () => {
-      render(
-        <GroomListScreen
-          marketplaceData={mockMarketplaceData}
-          userData={mockUserData}
-        />
-      );
+      render(<GroomListScreen marketplaceData={mockMarketplaceData} userData={mockUserData} />);
 
       await waitFor(() => {
         expect(screen.getByText(/filter/i)).toBeTruthy();
@@ -242,10 +211,7 @@ describe('GroomListScreen Component', () => {
   describe('Filtering', () => {
     test('filters grooms by skill level', async () => {
       const { getByTestId } = render(
-        <GroomListScreen
-          marketplaceData={mockMarketplaceData}
-          userData={mockUserData}
-        />
+        <GroomListScreen marketplaceData={mockMarketplaceData} userData={mockUserData} />
       );
 
       // Wait for component to load
@@ -286,10 +252,7 @@ describe('GroomListScreen Component', () => {
 
     test('filters grooms by specialty', async () => {
       const { getByTestId } = render(
-        <GroomListScreen
-          marketplaceData={mockMarketplaceData}
-          userData={mockUserData}
-        />
+        <GroomListScreen marketplaceData={mockMarketplaceData} userData={mockUserData} />
       );
 
       // Wait for component to load
@@ -324,10 +287,7 @@ describe('GroomListScreen Component', () => {
 
     test('combines skill level and specialty filters', async () => {
       const { getByTestId } = render(
-        <GroomListScreen
-          marketplaceData={mockMarketplaceData}
-          userData={mockUserData}
-        />
+        <GroomListScreen marketplaceData={mockMarketplaceData} userData={mockUserData} />
       );
 
       // Wait for component to load
@@ -363,10 +323,7 @@ describe('GroomListScreen Component', () => {
 
     test('resets filters to show all grooms', async () => {
       const { getByTestId } = render(
-        <GroomListScreen
-          marketplaceData={mockMarketplaceData}
-          userData={mockUserData}
-        />
+        <GroomListScreen marketplaceData={mockMarketplaceData} userData={mockUserData} />
       );
 
       // Wait for component to load
@@ -405,10 +362,7 @@ describe('GroomListScreen Component', () => {
 
     test('persists filter preferences to AsyncStorage', async () => {
       const { getByTestId } = render(
-        <GroomListScreen
-          marketplaceData={mockMarketplaceData}
-          userData={mockUserData}
-        />
+        <GroomListScreen marketplaceData={mockMarketplaceData} userData={mockUserData} />
       );
 
       // Wait for component to load
@@ -443,10 +397,7 @@ describe('GroomListScreen Component', () => {
   describe('Sorting', () => {
     test('sorts grooms by name (alphabetical)', async () => {
       const { getByTestId } = render(
-        <GroomListScreen
-          marketplaceData={mockMarketplaceData}
-          userData={mockUserData}
-        />
+        <GroomListScreen marketplaceData={mockMarketplaceData} userData={mockUserData} />
       );
 
       // Wait for component to load
@@ -483,10 +434,7 @@ describe('GroomListScreen Component', () => {
 
     test('sorts grooms by price (ascending and descending)', async () => {
       const { getByTestId } = render(
-        <GroomListScreen
-          marketplaceData={mockMarketplaceData}
-          userData={mockUserData}
-        />
+        <GroomListScreen marketplaceData={mockMarketplaceData} userData={mockUserData} />
       );
 
       // Wait for component to load
@@ -539,10 +487,7 @@ describe('GroomListScreen Component', () => {
 
     test('sorts grooms by experience (ascending and descending)', async () => {
       const { getByTestId } = render(
-        <GroomListScreen
-          marketplaceData={mockMarketplaceData}
-          userData={mockUserData}
-        />
+        <GroomListScreen marketplaceData={mockMarketplaceData} userData={mockUserData} />
       );
 
       // Wait for component to load
@@ -615,10 +560,7 @@ describe('GroomListScreen Component', () => {
 
     test('opens hire modal when hire button is pressed', async () => {
       const { getByTestId } = render(
-        <GroomListScreen
-          marketplaceData={mockMarketplaceData}
-          userData={mockUserData}
-        />
+        <GroomListScreen marketplaceData={mockMarketplaceData} userData={mockUserData} />
       );
 
       // Wait for component to load
@@ -694,10 +636,7 @@ describe('GroomListScreen Component', () => {
       };
 
       const { getByTestId } = render(
-        <GroomListScreen
-          marketplaceData={mockMarketplaceData}
-          userData={poorUserData}
-        />
+        <GroomListScreen marketplaceData={mockMarketplaceData} userData={poorUserData} />
       );
 
       // Wait for component to load
@@ -730,10 +669,7 @@ describe('GroomListScreen Component', () => {
       };
 
       const { getByTestId } = render(
-        <GroomListScreen
-          marketplaceData={mockMarketplaceData}
-          userData={poorUserData}
-        />
+        <GroomListScreen marketplaceData={mockMarketplaceData} userData={poorUserData} />
       );
 
       // Wait for component to load
@@ -826,10 +762,7 @@ describe('GroomListScreen Component', () => {
       };
 
       const { getByTestId } = render(
-        <GroomListScreen
-          marketplaceData={freeRefreshData}
-          userData={mockUserData}
-        />
+        <GroomListScreen marketplaceData={freeRefreshData} userData={mockUserData} />
       );
 
       // Wait for component to load
@@ -849,10 +782,7 @@ describe('GroomListScreen Component', () => {
       };
 
       const { getByTestId } = render(
-        <GroomListScreen
-          marketplaceData={premiumRefreshData}
-          userData={mockUserData}
-        />
+        <GroomListScreen marketplaceData={premiumRefreshData} userData={mockUserData} />
       );
 
       // Wait for component to load
@@ -877,10 +807,7 @@ describe('GroomListScreen Component', () => {
       };
 
       const { getByTestId } = render(
-        <GroomListScreen
-          marketplaceData={timerData}
-          userData={mockUserData}
-        />
+        <GroomListScreen marketplaceData={timerData} userData={mockUserData} />
       );
 
       // Wait for component to load
@@ -895,4 +822,3 @@ describe('GroomListScreen Component', () => {
     });
   });
 });
-

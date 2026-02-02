@@ -49,7 +49,13 @@ const RecentGains = ({ horseId }: RecentGainsProps) => {
   const [sortBy, setSortBy] = useState<SortOption>('date');
   const [expandedIds, setExpandedIds] = useState<Set<number>>(new Set());
 
-  const { data: historyData, isLoading, error, isError, refetch } = useHorseXPHistory(horseId, {
+  const {
+    data: historyData,
+    isLoading,
+    error,
+    isError,
+    refetch,
+  } = useHorseXPHistory(horseId, {
     limit: TIME_RANGE_LIMITS[selectedRange],
   });
 
@@ -140,9 +146,7 @@ const RecentGains = ({ horseId }: RecentGainsProps) => {
   if (isError || !historyData) {
     return (
       <div className="rounded-lg border border-rose-200 bg-rose-50 p-6 shadow-sm">
-        <div className="text-sm text-rose-800">
-          {error?.message || 'Failed to fetch gains'}
-        </div>
+        <div className="text-sm text-rose-800">{error?.message || 'Failed to fetch gains'}</div>
         <button
           onClick={() => refetch()}
           className="mt-3 rounded-md bg-rose-600 px-4 py-2 text-sm text-white hover:bg-rose-700 focus:outline-none focus:ring-2 focus:ring-rose-500 focus:ring-offset-2"

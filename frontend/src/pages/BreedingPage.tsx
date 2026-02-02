@@ -5,8 +5,10 @@ import FoalDevelopmentTracker from '@/components/breeding/FoalDevelopmentTracker
 import { useAuth } from '@/contexts/AuthContext';
 
 const BreedingPage = () => {
-  const { isAuthenticated, isLoading } = useAuth();
+  const { isAuthenticated, isLoading, user } = useAuth();
   const [foalId, setFoalId] = useState<number | ''>('');
+
+  console.log('[BreedingPage] Auth State:', { isLoading, isAuthenticated, userId: user?.id });
 
   if (isLoading) {
     return (
@@ -41,7 +43,9 @@ const BreedingPage = () => {
             <input
               type="number"
               value={foalId}
-              onChange={(event) => setFoalId(event.target.value === '' ? '' : Number(event.target.value))}
+              onChange={(event) =>
+                setFoalId(event.target.value === '' ? '' : Number(event.target.value))
+              }
               placeholder="Foal ID"
               className="w-32 rounded-md border border-slate-200 px-3 py-2 text-sm text-slate-900 shadow-sm focus:border-emerald-500 focus:outline-none focus:ring-2 focus:ring-emerald-500"
             />

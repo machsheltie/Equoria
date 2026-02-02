@@ -29,9 +29,7 @@ const HorseStatsCard: React.FC<HorseStatsCardProps> = ({ horse }) => {
       {/* Horse Name and Level */}
       <div className="mb-3">
         <p className="text-lg font-bold text-slate-900">{horse.name}</p>
-        {horse.level !== undefined && (
-          <p className="text-sm text-slate-600">Level {horse.level}</p>
-        )}
+        {horse.level !== undefined && <p className="text-sm text-slate-600">Level {horse.level}</p>}
       </div>
 
       {/* Stats Grid */}
@@ -62,9 +60,7 @@ const HorseStatsCard: React.FC<HorseStatsCardProps> = ({ horse }) => {
             <p className="text-xs font-semibold uppercase tracking-wide text-slate-600 mb-1">
               Best Disciplines:
             </p>
-            <p className="text-sm text-slate-900">
-              {horse.bestDisciplines.join(', ')}
-            </p>
+            <p className="text-sm text-slate-900">{horse.bestDisciplines.join(', ')}</p>
           </div>
         )}
       </div>

@@ -304,7 +304,10 @@ const RegisterPage: React.FC = () => {
 
                     {/* Requirements Checklist */}
                     <div className="grid grid-cols-2 gap-1">
-                      <RequirementCheck met={passwordRequirements.minLength} label="8+ characters" />
+                      <RequirementCheck
+                        met={passwordRequirements.minLength}
+                        label="8+ characters"
+                      />
                       <RequirementCheck met={passwordRequirements.hasLowercase} label="Lowercase" />
                       <RequirementCheck met={passwordRequirements.hasUppercase} label="Uppercase" />
                       <RequirementCheck met={passwordRequirements.hasNumber} label="Number" />

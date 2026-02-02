@@ -11,10 +11,7 @@ interface BreedingPairSelectorProps {
   mareId: number;
 }
 
-const BreedingPairSelector: React.FC<BreedingPairSelectorProps> = ({
-  stallionId,
-  mareId,
-}) => {
+const BreedingPairSelector: React.FC<BreedingPairSelectorProps> = ({ stallionId, mareId }) => {
   // Fetch breeding data for both horses
   const {
     data: stallionData,
@@ -22,22 +19,18 @@ const BreedingPairSelector: React.FC<BreedingPairSelectorProps> = ({
     error: stallionError,
   } = useHorseBreedingData(stallionId);
 
-  const {
-    data: mareData,
-    isLoading: mareLoading,
-    error: mareError,
-  } = useHorseBreedingData(mareId);
+  const { data: mareData, isLoading: mareLoading, error: mareError } = useHorseBreedingData(mareId);
 
   // Fetch predictions and analysis
-  const {
-    data: predictions,
-    isLoading: predictionsLoading,
-  } = useGeneticProbability(stallionId, mareId);
+  const { data: predictions, isLoading: predictionsLoading } = useGeneticProbability(
+    stallionId,
+    mareId
+  );
 
-  const {
-    data: inbreedingAnalysis,
-    isLoading: inbreedingLoading,
-  } = useInbreedingAnalysis(stallionId, mareId);
+  const { data: inbreedingAnalysis, isLoading: inbreedingLoading } = useInbreedingAnalysis(
+    stallionId,
+    mareId
+  );
 
   // Loading state
   if (stallionLoading || mareLoading || predictionsLoading || inbreedingLoading) {
@@ -53,7 +46,9 @@ const BreedingPairSelector: React.FC<BreedingPairSelectorProps> = ({
     return (
       <div className="rounded-lg border border-red-200 bg-red-50 p-6 shadow-sm">
         <p className="text-red-600">
-          {(stallionError as any)?.message || (mareError as any)?.message || 'Failed to fetch breeding data'}
+          {(stallionError as any)?.message ||
+            (mareError as any)?.message ||
+            'Failed to fetch breeding data'}
         </p>
       </div>
     );
@@ -66,13 +61,11 @@ const BreedingPairSelector: React.FC<BreedingPairSelectorProps> = ({
 
   // Check if inbreeding risk is high enough to show warning
   const showInbreedingWarning =
-    inbreedingAnalysis &&
-    ['moderate', 'high', 'extreme'].includes(inbreedingAnalysis.riskLevel);
+    inbreedingAnalysis && ['moderate', 'high', 'extreme'].includes(inbreedingAnalysis.riskLevel);
 
   // Check temperament compatibility
   const isTemperamentCompatible =
-    stallionData.temperamentInfluence?.temperament &&
-    mareData.temperamentInfluence?.temperament;
+    stallionData.temperamentInfluence?.temperament && mareData.temperamentInfluence?.temperament;
 
   return (
     <div className="space-y-6 rounded-lg border border-slate-200 bg-white p-6 shadow-sm">
@@ -80,7 +73,8 @@ const BreedingPairSelector: React.FC<BreedingPairSelectorProps> = ({
       <div>
         <h2 className="text-2xl font-bold text-slate-900">Breeding Pair Analysis</h2>
         <p className="mt-1 text-sm text-slate-600">
-          Compare stallion and mare compatibility, view offspring predictions, and assess genetic risks.
+          Compare stallion and mare compatibility, view offspring predictions, and assess genetic
+          risks.
         </p>
       </div>
 
@@ -170,9 +164,7 @@ const BreedingPairSelector: React.FC<BreedingPairSelectorProps> = ({
       {/* Temperament Compatibility */}
       {isTemperamentCompatible && (
         <div className="rounded-lg border border-green-200 bg-green-50 p-3">
-          <p className="text-sm font-medium text-green-800">
-            ✓ Compatible temperaments
-          </p>
+          <p className="text-sm font-medium text-green-800">✓ Compatible temperaments</p>
         </div>
       )}
 
@@ -205,12 +197,14 @@ const BreedingPairSelector: React.FC<BreedingPairSelectorProps> = ({
             <div>
               <p className="text-sm font-medium text-slate-700 mb-2">Category Probabilities</p>
               <div className="grid grid-cols-2 gap-2">
-                {Object.entries(predictions.categoryProbabilities).map(([category, probability]) => (
-                  <div key={category} className="flex justify-between text-sm">
-                    <span className="capitalize text-slate-600">{category}</span>
-                    <span className="font-medium text-slate-900">{probability as number}%</span>
-                  </div>
-                ))}
+                {Object.entries(predictions.categoryProbabilities).map(
+                  ([category, probability]) => (
+                    <div key={category} className="flex justify-between text-sm">
+                      <span className="capitalize text-slate-600">{category}</span>
+                      <span className="font-medium text-slate-900">{probability as number}%</span>
+                    </div>
+                  )
+                )}
               </div>
             </div>
           </div>

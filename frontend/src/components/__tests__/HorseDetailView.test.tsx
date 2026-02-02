@@ -13,7 +13,9 @@ vi.mock('@/hooks/api/useHorses', () => ({
 }));
 
 const mockUseHorse = useHorsesHooks.useHorse as ReturnType<typeof vi.fn>;
-const mockUseHorseTrainingHistory = useHorsesHooks.useHorseTrainingHistory as ReturnType<typeof vi.fn>;
+const mockUseHorseTrainingHistory = useHorsesHooks.useHorseTrainingHistory as ReturnType<
+  typeof vi.fn
+>;
 
 // Mock navigation
 const mockNavigate = vi.fn();
@@ -433,7 +435,9 @@ describe('HorseDetailView', () => {
       await user.click(screen.getByRole('tab', { name: 'Genetics' }));
 
       await waitFor(() => {
-        expect(screen.getByText(/Genetic traits and markers will be displayed/i)).toBeInTheDocument();
+        expect(
+          screen.getByText(/Genetic traits and markers will be displayed/i)
+        ).toBeInTheDocument();
         expect(screen.getByText(/inherited traits and genetic potential/i)).toBeInTheDocument();
       });
     });

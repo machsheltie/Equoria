@@ -11,55 +11,45 @@ export default {
     // Backend tests configuration
     {
       displayName: 'backend',
-      testMatch: ['<rootDir>/backend/**/*.test.{js,mjs}', '<rootDir>/tests/**/*.test.{js,mjs}'],
+      rootDir: '<rootDir>/backend',
+      testMatch: ['**/*.test.{js,mjs}', '<rootDir>/../tests/**/*.test.{js,mjs}'],
       testEnvironment: 'node',
-      setupFilesAfterEnv: ['<rootDir>/jest.setup.mjs'],
+      setupFilesAfterEnv: ['<rootDir>/tests/setup.mjs'],
+      globalTeardown: '<rootDir>/tests/teardown.mjs',
       preset: null,
       // Do not transform backend ESM files; run them natively via Node ESM
       transform: {},
       moduleNameMapper: {
         '^(\\.{1,2}/.*)\\.js$': '$1',
       },
+      moduleDirectories: ['node_modules', '<rootDir>/node_modules', '<rootDir>/../node_modules'],
       globals: {
         'ts-jest': {
           useESM: true,
         },
+        jest: {
+          useESM: true,
+        },
       },
+      maxWorkers: 1,
       clearMocks: true,
       restoreMocks: true,
       errorOnDeprecated: true,
-      testPathIgnorePatterns: ['/node_modules/', '/coverage/', '/dist/', '/build/'],
-      watchPathIgnorePatterns: ['/node_modules/', '/coverage/', '/dist/', '/build/'],
+      testPathIgnorePatterns: [
+        '/node_modules/',
+        '/coverage/',
+        '/dist/',
+        '/build/',
+        '<rootDir>/tests/load/',
+      ],
+      watchPathIgnorePatterns: [
+        '/node_modules/',
+        '/coverage/',
+        '/dist/',
+        '/build/',
+        '<rootDir>/tests/load/',
+      ],
       detectOpenHandles: true,
-    },
-    // Frontend React Web tests configuration
-    {
-      displayName: 'frontend-web',
-      testMatch: ['<rootDir>/frontend/src/**/*.test.{js,jsx,ts,tsx}'],
-      testEnvironment: 'jsdom',
-      preset: null,
-      transform: {
-        '^.+\\.(js|jsx|mjs|ts|tsx)$': 'babel-jest',
-      },
-      moduleNameMapper: {
-        '\\.(css|less|scss|sass)$': 'identity-obj-proxy',
-        'expo-linear-gradient': '<rootDir>/frontend/__mocks__/expo-linear-gradient.js',
-      },
-      setupFilesAfterEnv: ['<rootDir>/frontend/jest.setup.js'],
-      clearMocks: true,
-      restoreMocks: true,
-    },
-    // Frontend React Native tests configuration
-    {
-      displayName: 'frontend-native',
-      preset: 'react-native',
-      testMatch: ['<rootDir>/frontend/components/**/*.test.{js,jsx}'],
-      moduleNameMapper: {
-        'expo-linear-gradient': '<rootDir>/frontend/__mocks__/expo-linear-gradient.js',
-      },
-      setupFilesAfterEnv: ['<rootDir>/frontend/jest.setup.js'],
-      clearMocks: true,
-      restoreMocks: true,
     },
     // Unit tests configuration
     {
@@ -79,7 +69,7 @@ export default {
       },
       clearMocks: true,
       restoreMocks: true,
-    }
+    },
   ],
 
   // Global configuration
@@ -113,25 +103,25 @@ export default {
       branches: 80,
       functions: 80,
       lines: 85,
-      statements: 85
+      statements: 85,
     },
     './backend/controllers/': {
       branches: 85,
       functions: 90,
       lines: 90,
-      statements: 90
+      statements: 90,
     },
     './backend/services/': {
       branches: 85,
       functions: 90,
       lines: 90,
-      statements: 90
+      statements: 90,
     },
     './backend/utils/': {
       branches: 80,
       functions: 85,
       lines: 85,
-      statements: 85
-    }
+      statements: 85,
+    },
   },
 };

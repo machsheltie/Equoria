@@ -117,9 +117,7 @@ const ActivityFeed: React.FC<ActivityFeedProps> = ({
   const sortedActivities = sortActivitiesByDate(filteredActivities, 'desc');
 
   // Limit to maxItems if specified
-  const displayActivities = maxItems
-    ? sortedActivities.slice(0, maxItems)
-    : sortedActivities;
+  const displayActivities = maxItems ? sortedActivities.slice(0, maxItems) : sortedActivities;
 
   // Check if there are more items than displayed
   const hasMore = maxItems && sortedActivities.length > maxItems;

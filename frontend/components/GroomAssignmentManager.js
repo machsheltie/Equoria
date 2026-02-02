@@ -131,21 +131,13 @@ const GroomAssignmentManager = ({ foalId, foalName, playerId, onAssignmentChange
   };
 
   /**
-   * Renders the assignment card showing the current groom assignment.
+   * Header component for the assignment card showing the groom title and assign button.
    *
-   * @returns {JSX.Element} The AssignmentCard component.
+   * @param {object} activeGroom - The currently assigned groom (if any).
+   * @param {Function} onAssign - Callback function when assign button is pressed.
+   * @returns {JSX.Element} The AssignedGroomHeader component.
    */
-  const AssignmentCard = () => (
-    <View className="bg-white rounded-lg shadow-md border border-gray-200 p-4 mb-4">
-      <View className="flex-row items-center justify-between mb-3">
-        <Text className="text-lg font-bold text-gray-800">Assigned Groom</Text>
-        <TouchableOpacity
-          onPress={() => setShowAssignModal(true)}
-          className="bg-blue-500 rounded-lg px-3 py-1"
-        >
-          <Text className="text-white text-sm font-medium">
-            {activeGroom ? 'Change' : 'Assign'}
-const AssignedGroomHeader = ({ activeGroom, onAssign }) => (
+  const AssignedGroomHeader = ({ activeGroom, onAssign }) => (
     <View className="flex-row items-center justify-between mb-3">
       <Text className="text-lg font-bold text-gray-800">Assigned Groom</Text>
       <TouchableOpacity onPress={onAssign} className="bg-blue-500 rounded-lg px-3 py-1">
@@ -165,7 +157,6 @@ const AssignedGroomHeader = ({ activeGroom, onAssign }) => (
           <Text className="text-gray-600 text-sm">
             {definitions.specialties[activeGroom.speciality]?.name || activeGroom.speciality}
           </Text>
-        </TouchableOpacity>
           <View className="flex-row items-center mt-1">
             <View className={`px-2 py-1 rounded-full mr-2 ${getPersonalityColor(activeGroom.personality)}`}>
               <Text className="text-xs font-medium">{activeGroom.personality}</Text>

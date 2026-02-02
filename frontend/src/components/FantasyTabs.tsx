@@ -14,15 +14,21 @@ interface FantasyTabsProps {
   orientation?: 'horizontal' | 'vertical';
 }
 
-export const FantasyTabs = ({ tabs, defaultValue, orientation = 'horizontal' }: FantasyTabsProps) => {
+export const FantasyTabs = ({
+  tabs,
+  defaultValue,
+  orientation = 'horizontal',
+}: FantasyTabsProps) => {
   const [activeTab, setActiveTab] = useState(defaultValue || tabs[0]?.value);
 
   return (
     <Tabs value={activeTab} onValueChange={setActiveTab} orientation={orientation}>
-      <TabsList className={`
+      <TabsList
+        className={`
         bg-transparent p-0 h-auto space-x-0
         ${orientation === 'vertical' ? 'flex-col space-y-2 space-x-0' : 'flex-row space-x-2'}
-      `}>
+      `}
+      >
         {tabs.map((tab, index) => (
           <TabsTrigger
             key={tab.value}
@@ -40,11 +46,13 @@ export const FantasyTabs = ({ tabs, defaultValue, orientation = 'horizontal' }: 
             {/* Curled page edge effect */}
             <div className="absolute top-0 right-0 w-3 h-3 bg-aged-bronze/20 rounded-bl-full" />
             <div className="absolute top-0 left-0 w-3 h-3 bg-aged-bronze/20 rounded-br-full" />
-            
+
             {/* Tab content */}
             <div className="flex items-center space-x-2 relative z-10">
               {tab.icon && (
-                <span className={`transition-transform duration-200 ${activeTab === tab.value ? 'scale-110' : ''}`}>
+                <span
+                  className={`transition-transform duration-200 ${activeTab === tab.value ? 'scale-110' : ''}`}
+                >
                   {tab.icon}
                 </span>
               )}
@@ -78,11 +86,9 @@ export const FantasyTabs = ({ tabs, defaultValue, orientation = 'horizontal' }: 
         >
           {/* Inner gold border */}
           <div className="absolute inset-2 border border-burnished-gold/30 rounded-md pointer-events-none" />
-          
+
           {/* Content */}
-          <div className="relative z-10">
-            {tab.content}
-          </div>
+          <div className="relative z-10">{tab.content}</div>
 
           {/* Decorative corner elements */}
           <div className="absolute top-3 right-3 w-4 h-4 border-r-2 border-t-2 border-burnished-gold/40 rounded-tr-md" />
@@ -113,7 +119,7 @@ export const FantasyAccordion = ({ items, type = 'single' }: FantasyAccordionPro
     } else {
       setOpenItems(
         openItems.includes(index)
-          ? openItems.filter(item => item !== index)
+          ? openItems.filter((item) => item !== index)
           : [...openItems, index]
       );
     }
@@ -128,15 +134,17 @@ export const FantasyAccordion = ({ items, type = 'single' }: FantasyAccordionPro
         return (
           <Collapsible key={itemKey} open={isOpen} onOpenChange={() => toggleItem(itemKey)}>
             <CollapsibleTrigger className="w-full">
-              <div className={`
+              <div
+                className={`
                 bg-parchment border-2 border-aged-bronze rounded-lg p-4 
                 hover:border-burnished-gold transition-all duration-200
                 ${isOpen ? 'rounded-b-none border-b-0 magical-glow' : ''}
                 group
-              `}>
+              `}
+              >
                 {/* Scroll band background */}
                 <div className="absolute inset-0 bg-gradient-to-r from-burnished-gold/10 via-aged-bronze/5 to-burnished-gold/10 rounded-lg opacity-0 group-hover:opacity-100 transition-opacity duration-200" />
-                
+
                 <div className="flex items-center justify-between relative z-10">
                   <div className="flex items-center space-x-3">
                     {item.icon && (
@@ -148,11 +156,13 @@ export const FantasyAccordion = ({ items, type = 'single' }: FantasyAccordionPro
                       {item.title}
                     </h3>
                   </div>
-                  
-                  <ChevronDown className={`
+
+                  <ChevronDown
+                    className={`
                     w-5 h-5 text-aged-bronze transition-all duration-300
                     ${isOpen ? 'rotate-180 text-burnished-gold' : 'group-hover:text-burnished-gold'}
-                  `} />
+                  `}
+                  />
                 </div>
 
                 {/* Pull-tab motif */}
@@ -164,10 +174,8 @@ export const FantasyAccordion = ({ items, type = 'single' }: FantasyAccordionPro
               <div className="bg-parchment border-2 border-aged-bronze border-t-0 rounded-b-lg p-6 parchment-texture scroll-entrance">
                 {/* Inner scroll texture */}
                 <div className="absolute inset-2 border border-burnished-gold/20 rounded-md pointer-events-none" />
-                
-                <div className="relative z-10 fantasy-body text-midnight-ink">
-                  {item.content}
-                </div>
+
+                <div className="relative z-10 fantasy-body text-midnight-ink">{item.content}</div>
 
                 {/* Decorative bottom flourish */}
                 <div className="absolute bottom-2 left-1/2 transform -translate-x-1/2 w-12 h-1 bg-gradient-to-r from-transparent via-aged-bronze/40 to-transparent rounded-full" />

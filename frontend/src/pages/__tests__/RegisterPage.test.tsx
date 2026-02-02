@@ -99,9 +99,7 @@ describe('RegisterPage', () => {
         </TestWrapper>
       );
 
-      expect(
-        screen.getByRole('button', { name: /begin your journey/i })
-      ).toBeInTheDocument();
+      expect(screen.getByRole('button', { name: /begin your journey/i })).toBeInTheDocument();
     });
 
     it('displays page title and description', () => {
@@ -200,7 +198,9 @@ describe('RegisterPage', () => {
       await waitFor(() => {
         // "short" password fails: min(8), uppercase, and number requirements
         // Any of these error messages is acceptable
-        const errorText = screen.getByText(/password must be at least 8 characters|password must contain at least one uppercase|password must contain at least one number/i);
+        const errorText = screen.getByText(
+          /password must be at least 8 characters|password must contain at least one uppercase|password must contain at least one number/i
+        );
         expect(errorText).toBeInTheDocument();
       });
     });
@@ -226,7 +226,9 @@ describe('RegisterPage', () => {
       await user.click(submitButton);
 
       await waitFor(() => {
-        expect(screen.getByText(/password must contain at least one uppercase letter/i)).toBeInTheDocument();
+        expect(
+          screen.getByText(/password must contain at least one uppercase letter/i)
+        ).toBeInTheDocument();
       });
     });
 
@@ -326,7 +328,9 @@ describe('RegisterPage', () => {
       await user.click(submitButton);
 
       await waitFor(() => {
-        expect(screen.getByText(/username can only contain letters, numbers, and underscores/i)).toBeInTheDocument();
+        expect(
+          screen.getByText(/username can only contain letters, numbers, and underscores/i)
+        ).toBeInTheDocument();
       });
     });
 

@@ -86,9 +86,7 @@ describe('LoginPage', () => {
         </TestWrapper>
       );
 
-      expect(
-        screen.getByRole('button', { name: /enter the realm/i })
-      ).toBeInTheDocument();
+      expect(screen.getByRole('button', { name: /enter the realm/i })).toBeInTheDocument();
     });
 
     it('displays page title and description', () => {
@@ -204,8 +202,9 @@ describe('LoginPage', () => {
       // Note: The exact message depends on whether min(1) or email() validation fires first
       await waitFor(() => {
         // Check for email-related validation error (could be "Email is required" or "Please enter a valid email")
-        const emailError = screen.queryByText(/email is required/i) ||
-                          screen.queryByText(/please enter a valid email/i);
+        const emailError =
+          screen.queryByText(/email is required/i) ||
+          screen.queryByText(/please enter a valid email/i);
         expect(emailError).toBeInTheDocument();
       });
     });
@@ -527,7 +526,10 @@ describe('LoginPage', () => {
       );
 
       expect(screen.getByLabelText(/email address/i)).toHaveAttribute('autocomplete', 'email');
-      expect(screen.getByLabelText(/^password$/i)).toHaveAttribute('autocomplete', 'current-password');
+      expect(screen.getByLabelText(/^password$/i)).toHaveAttribute(
+        'autocomplete',
+        'current-password'
+      );
     });
 
     it('form does not use GET method (no credentials in URL)', () => {

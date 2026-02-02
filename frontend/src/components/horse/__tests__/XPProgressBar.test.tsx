@@ -66,7 +66,13 @@ describe('XPProgressBar', () => {
 
     it('should display "Level 1" for 50 XP (0 stat points earned)', () => {
       vi.mocked(useHorseXPHook.useHorseXP).mockReturnValue({
-        data: { ...mockXPData, currentXP: 50, availableStatPoints: 0, nextStatPointAt: 100, xpToNextStatPoint: 50 },
+        data: {
+          ...mockXPData,
+          currentXP: 50,
+          availableStatPoints: 0,
+          nextStatPointAt: 100,
+          xpToNextStatPoint: 50,
+        },
         isLoading: false,
         error: null,
       } as any);
@@ -77,7 +83,13 @@ describe('XPProgressBar', () => {
 
     it('should display "Level 10" for 950 XP (9 stat points earned)', () => {
       vi.mocked(useHorseXPHook.useHorseXP).mockReturnValue({
-        data: { ...mockXPData, currentXP: 950, availableStatPoints: 9, nextStatPointAt: 1000, xpToNextStatPoint: 50 },
+        data: {
+          ...mockXPData,
+          currentXP: 950,
+          availableStatPoints: 9,
+          nextStatPointAt: 1000,
+          xpToNextStatPoint: 50,
+        },
         isLoading: false,
         error: null,
       } as any);
@@ -137,7 +149,13 @@ describe('XPProgressBar', () => {
 
     it('should show 0% progress for 0 XP', () => {
       vi.mocked(useHorseXPHook.useHorseXP).mockReturnValue({
-        data: { ...mockXPData, currentXP: 0, availableStatPoints: 0, nextStatPointAt: 100, xpToNextStatPoint: 100 },
+        data: {
+          ...mockXPData,
+          currentXP: 0,
+          availableStatPoints: 0,
+          nextStatPointAt: 100,
+          xpToNextStatPoint: 100,
+        },
         isLoading: false,
         error: null,
       } as any);
@@ -149,7 +167,13 @@ describe('XPProgressBar', () => {
 
     it('should show 0% progress when just reached stat point (200 XP = 2 stat points)', () => {
       vi.mocked(useHorseXPHook.useHorseXP).mockReturnValue({
-        data: { ...mockXPData, currentXP: 200, availableStatPoints: 2, nextStatPointAt: 300, xpToNextStatPoint: 100 },
+        data: {
+          ...mockXPData,
+          currentXP: 200,
+          availableStatPoints: 2,
+          nextStatPointAt: 300,
+          xpToNextStatPoint: 100,
+        },
         isLoading: false,
         error: null,
       } as any);
@@ -161,7 +185,13 @@ describe('XPProgressBar', () => {
 
     it('should show 99% progress for 299 XP (one away from stat point)', () => {
       vi.mocked(useHorseXPHook.useHorseXP).mockReturnValue({
-        data: { ...mockXPData, currentXP: 299, availableStatPoints: 2, nextStatPointAt: 300, xpToNextStatPoint: 1 },
+        data: {
+          ...mockXPData,
+          currentXP: 299,
+          availableStatPoints: 2,
+          nextStatPointAt: 300,
+          xpToNextStatPoint: 1,
+        },
         isLoading: false,
         error: null,
       } as any);
@@ -231,9 +261,9 @@ describe('XPProgressBar', () => {
       await waitFor(() => {
         expect(screen.getByText(/next stat point/i)).toBeInTheDocument();
         // Check for "50 XP" specifically in the tooltip (with emerald color class)
-        const tooltipXP = screen.getAllByText(/50\s*xp/i).find(el =>
-          el.className.includes('text-emerald-600')
-        );
+        const tooltipXP = screen
+          .getAllByText(/50\s*xp/i)
+          .find((el) => el.className.includes('text-emerald-600'));
         expect(tooltipXP).toBeInTheDocument();
       });
     });
@@ -332,7 +362,13 @@ describe('XPProgressBar', () => {
   describe('Edge Cases', () => {
     it('should handle 0 XP correctly', () => {
       vi.mocked(useHorseXPHook.useHorseXP).mockReturnValue({
-        data: { ...mockXPData, currentXP: 0, availableStatPoints: 0, nextStatPointAt: 100, xpToNextStatPoint: 100 },
+        data: {
+          ...mockXPData,
+          currentXP: 0,
+          availableStatPoints: 0,
+          nextStatPointAt: 100,
+          xpToNextStatPoint: 100,
+        },
         isLoading: false,
         error: null,
       } as any);
@@ -344,7 +380,13 @@ describe('XPProgressBar', () => {
 
     it('should handle very high XP (10,000 XP = level 100)', () => {
       vi.mocked(useHorseXPHook.useHorseXP).mockReturnValue({
-        data: { ...mockXPData, currentXP: 10000, availableStatPoints: 100, nextStatPointAt: 10100, xpToNextStatPoint: 100 },
+        data: {
+          ...mockXPData,
+          currentXP: 10000,
+          availableStatPoints: 100,
+          nextStatPointAt: 10100,
+          xpToNextStatPoint: 100,
+        },
         isLoading: false,
         error: null,
       } as any);
@@ -376,10 +418,7 @@ describe('XPProgressBar', () => {
     it('should have descriptive aria-label with XP info', () => {
       renderWithProvider(<XPProgressBar horseId={1} />);
       const progressBar = screen.getByRole('progressbar');
-      expect(progressBar).toHaveAttribute(
-        'aria-label',
-        expect.stringContaining('250 of 300 XP')
-      );
+      expect(progressBar).toHaveAttribute('aria-label', expect.stringContaining('250 of 300 XP'));
     });
 
     it('should be keyboard accessible for tooltip', async () => {

@@ -1,12 +1,12 @@
 /**
  * Enhanced Reporting Interface Component Tests
- * 
+ *
  * Tests for the comprehensive reporting interface including:
  * - Custom Report Builder with drag-and-drop functionality
  * - Export Manager with multiple format support (PDF, CSV, JSON, Excel)
  * - Trend Analysis with data visualization and insights
  * - AI-driven Insights with automated recommendations
- * 
+ *
  * Following TDD with NO MOCKING approach for authentic component validation
  */
 
@@ -81,7 +81,7 @@ const EnhancedReportingInterface = ({ userId, selectedHorses, reportType, classN
 
   const handleSectionToggle = (sectionId) => {
     const newSections = reportConfig.sections.includes(sectionId)
-      ? reportConfig.sections.filter(s => s !== sectionId)
+      ? reportConfig.sections.filter((s) => s !== sectionId)
       : [...reportConfig.sections, sectionId];
     setReportConfig({ ...reportConfig, sections: newSections });
   };
@@ -115,7 +115,7 @@ const EnhancedReportingInterface = ({ userId, selectedHorses, reportType, classN
       {/* Report Builder */}
       <div className="bg-white rounded-lg shadow p-6">
         <h3 className="text-lg font-semibold mb-4">Custom Report Builder</h3>
-        
+
         {/* Report Configuration */}
         <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mb-6">
           <div>
@@ -148,12 +148,12 @@ const EnhancedReportingInterface = ({ userId, selectedHorses, reportType, classN
         <div className="mb-6">
           <h4 className="font-medium text-gray-700 mb-3">Available Metrics</h4>
           <div className="grid grid-cols-2 md:grid-cols-4 gap-3" data-testid="metrics-grid">
-            {availableMetrics.map(metric => (
+            {availableMetrics.map((metric) => (
               <div
                 key={metric.id}
                 className={`p-3 border rounded cursor-pointer ${
-                  reportConfig.sections.includes(metric.id) 
-                    ? 'bg-blue-50 border-blue-300' 
+                  reportConfig.sections.includes(metric.id)
+                    ? 'bg-blue-50 border-blue-300'
                     : 'hover:bg-gray-50'
                 }`}
                 onClick={() => handleSectionToggle(metric.id)}
@@ -170,10 +170,13 @@ const EnhancedReportingInterface = ({ userId, selectedHorses, reportType, classN
         <div className="mb-4">
           <h4 className="font-medium text-gray-700 mb-2">Selected Sections</h4>
           <div className="flex flex-wrap gap-2" data-testid="selected-sections">
-            {reportConfig.sections.map(sectionId => {
-              const metric = availableMetrics.find(m => m.id === sectionId);
+            {reportConfig.sections.map((sectionId) => {
+              const metric = availableMetrics.find((m) => m.id === sectionId);
               return (
-                <span key={sectionId} className="px-3 py-1 bg-blue-100 text-blue-800 rounded-full text-sm">
+                <span
+                  key={sectionId}
+                  className="px-3 py-1 bg-blue-100 text-blue-800 rounded-full text-sm"
+                >
                   {metric?.label}
                 </span>
               );
@@ -188,7 +191,7 @@ const EnhancedReportingInterface = ({ userId, selectedHorses, reportType, classN
       {/* Export Manager */}
       <div className="bg-white rounded-lg shadow p-6">
         <h3 className="text-lg font-semibold mb-4">Export Manager</h3>
-        
+
         <div className="grid grid-cols-2 md:grid-cols-4 gap-4" data-testid="export-options">
           <button
             onClick={() => handleExport('pdf')}
@@ -224,18 +227,23 @@ const EnhancedReportingInterface = ({ userId, selectedHorses, reportType, classN
       {/* Trend Analysis */}
       <div className="bg-white rounded-lg shadow p-6">
         <h3 className="text-lg font-semibold mb-4">Trend Analysis</h3>
-        
+
         <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
           {/* Trait Development Trends */}
           <div>
             <h4 className="font-medium text-gray-700 mb-3">Trait Development</h4>
             <div className="space-y-2" data-testid="trait-trends">
               {trendData.traitDevelopment.map((point, index) => (
-                <div key={index} className="flex items-center justify-between p-2 bg-gray-50 rounded">
+                <div
+                  key={index}
+                  className="flex items-center justify-between p-2 bg-gray-50 rounded"
+                >
                   <span className="text-sm">{point.date}</span>
                   <div className="flex items-center space-x-2">
                     <span className="text-sm font-medium">{point.value}%</span>
-                    <span className={`text-xs ${point.trend === 'up' ? 'text-green-600' : 'text-red-600'}`}>
+                    <span
+                      className={`text-xs ${point.trend === 'up' ? 'text-green-600' : 'text-red-600'}`}
+                    >
                       {point.trend === 'up' ? '↗' : '↘'}
                     </span>
                   </div>
@@ -249,12 +257,18 @@ const EnhancedReportingInterface = ({ userId, selectedHorses, reportType, classN
             <h4 className="font-medium text-gray-700 mb-3">Performance Changes</h4>
             <div className="space-y-2" data-testid="performance-trends">
               {trendData.performanceScores.map((metric, index) => (
-                <div key={index} className="flex items-center justify-between p-2 bg-gray-50 rounded">
+                <div
+                  key={index}
+                  className="flex items-center justify-between p-2 bg-gray-50 rounded"
+                >
                   <span className="text-sm">{metric.metric}</span>
                   <div className="flex items-center space-x-2">
                     <span className="text-sm">{metric.current}</span>
-                    <span className={`text-xs ${metric.change > 0 ? 'text-green-600' : 'text-red-600'}`}>
-                      {metric.change > 0 ? '+' : ''}{metric.change}
+                    <span
+                      className={`text-xs ${metric.change > 0 ? 'text-green-600' : 'text-red-600'}`}
+                    >
+                      {metric.change > 0 ? '+' : ''}
+                      {metric.change}
                     </span>
                   </div>
                 </div>
@@ -267,14 +281,14 @@ const EnhancedReportingInterface = ({ userId, selectedHorses, reportType, classN
       {/* AI-Driven Insights */}
       <div className="bg-white rounded-lg shadow p-6">
         <h3 className="text-lg font-semibold mb-4">AI-Driven Insights</h3>
-        
+
         <div className="space-y-4" data-testid="ai-insights">
           {insights.map((insight, index) => (
             <div
               key={index}
               className={`p-4 rounded border-l-4 ${
-                insight.type === 'positive' 
-                  ? 'bg-green-50 border-green-400' 
+                insight.type === 'positive'
+                  ? 'bg-green-50 border-green-400'
                   : 'bg-yellow-50 border-yellow-400'
               }`}
             >
@@ -296,11 +310,7 @@ const EnhancedReportingInterface = ({ userId, selectedHorses, reportType, classN
 
 // Test utilities
 const renderWithQueryClient = (component) => {
-  return render(
-    <QueryClientProvider client={mockQueryClient}>
-      {component}
-    </QueryClientProvider>
-  );
+  return render(<QueryClientProvider client={mockQueryClient}>{component}</QueryClientProvider>);
 };
 
 describe('EnhancedReportingInterface', () => {
@@ -312,9 +322,7 @@ describe('EnhancedReportingInterface', () => {
 
   describe('Component Rendering', () => {
     test('renders reporting interface with all main sections', () => {
-      renderWithQueryClient(
-        <EnhancedReportingInterface userId={1} selectedHorses={[1, 2]} />
-      );
+      renderWithQueryClient(<EnhancedReportingInterface userId={1} selectedHorses={[1, 2]} />);
 
       expect(screen.getByText('Enhanced Reporting')).toBeInTheDocument();
       expect(screen.getByText('Custom Report Builder')).toBeInTheDocument();
@@ -324,9 +332,7 @@ describe('EnhancedReportingInterface', () => {
     });
 
     test('handles missing userId prop gracefully', () => {
-      renderWithQueryClient(
-        <EnhancedReportingInterface userId={null} selectedHorses={[]} />
-      );
+      renderWithQueryClient(<EnhancedReportingInterface userId={null} selectedHorses={[]} />);
 
       expect(screen.getByText('Please log in to access reporting features')).toBeInTheDocument();
     });
@@ -334,33 +340,27 @@ describe('EnhancedReportingInterface', () => {
 
   describe('Report Builder', () => {
     test('allows report title customization', () => {
-      renderWithQueryClient(
-        <EnhancedReportingInterface userId={1} selectedHorses={[1, 2]} />
-      );
+      renderWithQueryClient(<EnhancedReportingInterface userId={1} selectedHorses={[1, 2]} />);
 
       const titleInput = screen.getByTestId('report-title-input');
       expect(titleInput).toHaveValue('Epigenetic Analysis Report');
-      
+
       fireEvent.change(titleInput, { target: { value: 'Custom Report Title' } });
       expect(titleInput).toHaveValue('Custom Report Title');
     });
 
     test('provides date range selection', () => {
-      renderWithQueryClient(
-        <EnhancedReportingInterface userId={1} selectedHorses={[1, 2]} />
-      );
+      renderWithQueryClient(<EnhancedReportingInterface userId={1} selectedHorses={[1, 2]} />);
 
       const dateSelect = screen.getByTestId('date-range-select');
       expect(dateSelect).toHaveValue('last_30_days');
-      
+
       fireEvent.change(dateSelect, { target: { value: 'last_7_days' } });
       expect(dateSelect).toHaveValue('last_7_days');
     });
 
     test('displays available metrics for selection', () => {
-      renderWithQueryClient(
-        <EnhancedReportingInterface userId={1} selectedHorses={[1, 2]} />
-      );
+      renderWithQueryClient(<EnhancedReportingInterface userId={1} selectedHorses={[1, 2]} />);
 
       expect(screen.getByTestId('metric-traits')).toBeInTheDocument();
       expect(screen.getByTestId('metric-performance')).toBeInTheDocument();
@@ -369,9 +369,7 @@ describe('EnhancedReportingInterface', () => {
     });
 
     test('allows metric selection and deselection', () => {
-      renderWithQueryClient(
-        <EnhancedReportingInterface userId={1} selectedHorses={[1, 2]} />
-      );
+      renderWithQueryClient(<EnhancedReportingInterface userId={1} selectedHorses={[1, 2]} />);
 
       const traitsMetric = screen.getByTestId('metric-traits');
       fireEvent.click(traitsMetric);
@@ -383,13 +381,11 @@ describe('EnhancedReportingInterface', () => {
 
   describe('Export Manager', () => {
     test('provides multiple export format options', () => {
-      renderWithQueryClient(
-        <EnhancedReportingInterface userId={1} selectedHorses={[1, 2]} />
-      );
+      renderWithQueryClient(<EnhancedReportingInterface userId={1} selectedHorses={[1, 2]} />);
 
       const exportOptions = screen.getByTestId('export-options');
       expect(exportOptions).toBeInTheDocument();
-      
+
       expect(screen.getByText('PDF')).toBeInTheDocument();
       expect(screen.getByText('CSV')).toBeInTheDocument();
       expect(screen.getByText('Excel')).toBeInTheDocument();
@@ -399,9 +395,7 @@ describe('EnhancedReportingInterface', () => {
 
   describe('Trend Analysis', () => {
     test('displays trait development trends', () => {
-      renderWithQueryClient(
-        <EnhancedReportingInterface userId={1} selectedHorses={[1, 2]} />
-      );
+      renderWithQueryClient(<EnhancedReportingInterface userId={1} selectedHorses={[1, 2]} />);
 
       const traitTrends = screen.getByTestId('trait-trends');
       expect(traitTrends).toBeInTheDocument();
@@ -410,9 +404,7 @@ describe('EnhancedReportingInterface', () => {
     });
 
     test('shows performance metric changes', () => {
-      renderWithQueryClient(
-        <EnhancedReportingInterface userId={1} selectedHorses={[1, 2]} />
-      );
+      renderWithQueryClient(<EnhancedReportingInterface userId={1} selectedHorses={[1, 2]} />);
 
       const performanceTrends = screen.getByTestId('performance-trends');
       expect(performanceTrends).toBeInTheDocument();
@@ -423,25 +415,27 @@ describe('EnhancedReportingInterface', () => {
 
   describe('AI-Driven Insights', () => {
     test('displays automated insights with confidence levels', () => {
-      renderWithQueryClient(
-        <EnhancedReportingInterface userId={1} selectedHorses={[1, 2]} />
-      );
+      renderWithQueryClient(<EnhancedReportingInterface userId={1} selectedHorses={[1, 2]} />);
 
       const insights = screen.getByTestId('ai-insights');
       expect(insights).toBeInTheDocument();
-      
+
       expect(screen.getByText('Strong Trait Development')).toBeInTheDocument();
       expect(screen.getByText('89% confidence')).toBeInTheDocument();
       expect(screen.getByText('Environmental Stress Detected')).toBeInTheDocument();
     });
 
     test('provides actionable recommendations', () => {
-      renderWithQueryClient(
-        <EnhancedReportingInterface userId={1} selectedHorses={[1, 2]} />
-      );
+      renderWithQueryClient(<EnhancedReportingInterface userId={1} selectedHorses={[1, 2]} />);
 
-      expect(screen.getByText('Continue current training regimen with focus on problem-solving exercises.')).toBeInTheDocument();
-      expect(screen.getByText('Consider implementing weather adaptation protocols.')).toBeInTheDocument();
+      expect(
+        screen.getByText(
+          'Continue current training regimen with focus on problem-solving exercises.'
+        )
+      ).toBeInTheDocument();
+      expect(
+        screen.getByText('Consider implementing weather adaptation protocols.')
+      ).toBeInTheDocument();
     });
   });
 
@@ -477,9 +471,7 @@ describe('EnhancedReportingInterface', () => {
     });
 
     test('shows generating state during report creation', async () => {
-      renderWithQueryClient(
-        <EnhancedReportingInterface userId={1} selectedHorses={[1, 2]} />
-      );
+      renderWithQueryClient(<EnhancedReportingInterface userId={1} selectedHorses={[1, 2]} />);
 
       // Select a metric first
       const traitsMetric = screen.getByTestId('metric-traits');
@@ -487,7 +479,7 @@ describe('EnhancedReportingInterface', () => {
 
       const generateButton = screen.getByText('Generate Report');
       expect(generateButton).not.toBeDisabled();
-      
+
       fireEvent.click(generateButton);
       expect(screen.getByText('Generating...')).toBeInTheDocument();
     });

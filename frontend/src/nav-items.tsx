@@ -1,15 +1,9 @@
-import { 
-  Home, 
-  Dumbbell, 
-  HeartHandshake, 
-  Warehouse,
-  User
-} from "lucide-react";
-import Index from "./pages/Index";
-import TrainingPage from "./pages/TrainingPage";
-import BreedingPage from "./pages/BreedingPage";
-import StableView from "./pages/StableView";
-import ProfilePage from "./pages/ProfilePage";
+import { Home, Dumbbell, HeartHandshake, Warehouse, User } from 'lucide-react';
+import Index from './pages/Index';
+import TrainingPage from './pages/TrainingPage';
+import BreedingPage from './pages/BreedingPage';
+import StableView from './pages/StableView';
+import ProfilePage from './pages/ProfilePage';
 
 /**
  * Navigation items for the Equoria application
@@ -17,32 +11,32 @@ import ProfilePage from "./pages/ProfilePage";
  */
 export const navItems = [
   {
-    title: "Home",
-    to: "/",
+    title: 'Home',
+    to: '/',
     icon: <Home className="h-4 w-4" />,
     page: <Index />,
   },
   {
-    title: "My Stable",
-    to: "/stable",
+    title: 'My Stable',
+    to: '/stable',
     icon: <Warehouse className="h-4 w-4" />,
     page: <StableView />,
   },
   {
-    title: "Training",
-    to: "/training",
+    title: 'Training',
+    to: '/training',
     icon: <Dumbbell className="h-4 w-4" />,
     page: <TrainingPage />,
   },
   {
-    title: "Breeding",
-    to: "/breeding",
+    title: 'Breeding',
+    to: '/breeding',
     icon: <HeartHandshake className="h-4 w-4" />,
     page: <BreedingPage />,
   },
   {
-    title: "Profile",
-    to: "/profile",
+    title: 'Profile',
+    to: '/profile',
     icon: <User className="h-4 w-4" />,
     page: <ProfilePage />,
   },

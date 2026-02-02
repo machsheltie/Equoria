@@ -96,7 +96,7 @@ const LoginPage: React.FC = () => {
             {error && (
               <div className="bg-red-50 border border-red-200 rounded-lg p-3">
                 <p className="text-red-700 text-sm text-center">
-                  {error.message || 'Login failed. Please try again.'}
+                  Login failed: {error.message || 'Please try again.'}
                 </p>
               </div>
             )}
@@ -105,7 +105,10 @@ const LoginPage: React.FC = () => {
             <form onSubmit={handleSubmit} className="space-y-4">
               {/* Email Field */}
               <div className="space-y-1">
-                <label htmlFor="email" className="fantasy-body text-sm text-midnight-ink font-medium">
+                <label
+                  htmlFor="email"
+                  className="fantasy-body text-sm text-midnight-ink font-medium"
+                >
                   Email Address
                 </label>
                 <div className="relative">
@@ -128,7 +131,10 @@ const LoginPage: React.FC = () => {
 
               {/* Password Field */}
               <div className="space-y-1">
-                <label htmlFor="password" className="fantasy-body text-sm text-midnight-ink font-medium">
+                <label
+                  htmlFor="password"
+                  className="fantasy-body text-sm text-midnight-ink font-medium"
+                >
                   Password
                 </label>
                 <div className="relative">

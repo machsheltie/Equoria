@@ -20,44 +20,25 @@ import { ActivityType, type Activity } from '../lib/activity-utils';
 import { profileSchema, type ProfileFormData } from '../lib/validation-schemas';
 import { VALIDATION_RULES, UI_TEXT, SUCCESS_MESSAGES } from '../lib/constants';
 import { useProfile, useUpdateProfile } from '../hooks/useAuth';
-
-// Mock activities for demonstration (will be replaced with API data)
-const mockActivities: Activity[] = [
-  {
-    id: '1',
-    type: ActivityType.TRAINING,
-    timestamp: new Date(Date.now() - 1000 * 60 * 30), // 30 minutes ago
-    data: { horseName: 'Thunder', skill: 'Speed', level: 5 },
-  },
-  {
-    id: '2',
-    type: ActivityType.COMPETITION,
-    timestamp: new Date(Date.now() - 1000 * 60 * 60 * 2), // 2 hours ago
-    data: { horseName: 'Storm', competitionName: 'Spring Derby', placement: 1 },
-  },
-  {
-    id: '3',
-    type: ActivityType.BREEDING,
-    timestamp: new Date(Date.now() - 1000 * 60 * 60 * 24), // 1 day ago
-    data: { horseName: 'Lightning', foalName: 'Spark' },
-  },
-  {
-    id: '4',
-    type: ActivityType.ACHIEVEMENT,
-    timestamp: new Date(Date.now() - 1000 * 60 * 60 * 48), // 2 days ago
-    data: { achievementName: 'First Victory' },
-  },
-  {
-    id: '5',
-    type: ActivityType.LEVEL_UP,
-    timestamp: new Date(Date.now() - 1000 * 60 * 60 * 72), // 3 days ago
-    data: { newLevel: 10 },
-  },
-];
+import { useActivityFeed, useUserProgress } from '../hooks/api/useUserProgress';
 
 const ProfilePage: React.FC = () => {
   const { data: profileData, isLoading, isError, error: profileError } = useProfile();
-  const { mutate: updateProfile, isPending, isSuccess, isError: isUpdateError, error: updateError } = useUpdateProfile();
+  const {
+    mutate: updateProfile,
+    isPending,
+    isSuccess,
+    isError: isUpdateError,
+    error: updateError,
+  } = useUpdateProfile();
+  const userId = profileData?.user?.id ?? 0;
+  const {
+    data: activityItems = [],
+    isLoading: isActivityLoading,
+    isError: isActivityError,
+    error: activityError,
+  } = useActivityFeed(userId);
+  const { data: progressData, isLoading: isProgressLoading } = useUserProgress(userId);
 
   // Form state
   const [formData, setFormData] = useState<ProfileFormData>({
@@ -124,6 +105,27 @@ const ProfilePage: React.FC = () => {
 
   // Calculate remaining characters for bio
   const bioCharactersRemaining = VALIDATION_RULES.bio.maxLength - (formData.bio?.length || 0);
+  const activities: Activity[] = activityItems.map((activity) => {
+    const type = Object.values(ActivityType).includes(activity.type as ActivityType)
+      ? (activity.type as ActivityType)
+      : ActivityType.ACHIEVEMENT;
+
+    return {
+      id: String(activity.id),
+      type,
+      timestamp: activity.timestamp,
+      data: activity.metadata ?? {},
+    };
+  });
+
+  const breedingCount =
+    typeof (progressData as { breedingCount?: number } | undefined)?.breedingCount === 'number'
+      ? (progressData as { breedingCount?: number }).breedingCount
+      : 0;
+  const winRate =
+    typeof (progressData as { winRate?: number } | undefined)?.winRate === 'number'
+      ? (progressData as { winRate?: number }).winRate
+      : 0;
 
   // Loading state
   if (isLoading) {
@@ -172,9 +174,7 @@ const ProfilePage: React.FC = () => {
                   <User className="w-8 h-8 text-parchment" />
                 </div>
               </div>
-              <p className="fantasy-body text-aged-bronze text-sm">
-                {UI_TEXT.profile.subtitle}
-              </p>
+              <p className="fantasy-body text-aged-bronze text-sm">{UI_TEXT.profile.subtitle}</p>
             </div>
 
             {/* Success Message */}
@@ -221,53 +221,56 @@ const ProfilePage: React.FC = () => {
             </div>
 
             {/* Statistics Dashboard (Story 2.4) */}
-            {/* Mock data for now - will use API stats when backend endpoint is ready */}
             <div className="space-y-2">
               <p className="fantasy-body text-xs text-aged-bronze uppercase tracking-wide">
                 Game Statistics
               </p>
               <div className="grid grid-cols-2 gap-3">
                 <StatisticsCard
-                  value={3}
+                  value={progressData?.totalHorses ?? 0}
                   label="Horses Owned"
                   type={StatisticType.HORSES_OWNED}
                   size="sm"
-                  isLoading={isLoading}
+                  isLoading={isProgressLoading}
                 />
                 <StatisticsCard
-                  value={7}
+                  value={progressData?.totalCompetitions ?? 0}
                   label="Competitions Won"
                   type={StatisticType.COMPETITIONS_WON}
                   size="sm"
-                  isLoading={isLoading}
+                  isLoading={isProgressLoading}
                 />
                 <StatisticsCard
-                  value={2}
+                  value={breedingCount}
                   label="Breeding Count"
                   type={StatisticType.BREEDING_COUNT}
                   size="sm"
-                  isLoading={isLoading}
+                  isLoading={isProgressLoading}
                 />
                 <StatisticsCard
-                  value={58}
+                  value={winRate}
                   label="Win Rate"
                   type={StatisticType.WIN_RATE}
                   size="sm"
-                  isLoading={isLoading}
+                  isLoading={isProgressLoading}
                 />
               </div>
             </div>
 
             {/* Activity Feed (Story 2.5) */}
-            {/* Mock data for now - will use API activities when backend endpoint is ready */}
             <div className="bg-aged-bronze/10 rounded-lg p-3">
               <ActivityFeed
-                activities={mockActivities}
+                activities={activities}
                 title="Recent Activity"
                 maxItems={3}
                 showViewAll
                 size="sm"
-                isLoading={isLoading}
+                isLoading={isActivityLoading}
+                emptyMessage={
+                  isActivityError
+                    ? activityError?.message || 'Failed to load activity feed'
+                    : undefined
+                }
               />
             </div>
 
@@ -275,7 +278,10 @@ const ProfilePage: React.FC = () => {
             <form onSubmit={handleSubmit} className="space-y-4">
               {/* Display Name Field */}
               <div className="space-y-1">
-                <label htmlFor="username" className="fantasy-body text-sm text-midnight-ink font-medium">
+                <label
+                  htmlFor="username"
+                  className="fantasy-body text-sm text-midnight-ink font-medium"
+                >
                   {UI_TEXT.profile.displayNameLabel}
                 </label>
                 <div className="relative">

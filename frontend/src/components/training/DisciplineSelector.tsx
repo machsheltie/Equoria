@@ -50,9 +50,7 @@ const DisciplineSelector: React.FC<DisciplineSelectorProps> = ({
       <label htmlFor="discipline-selector" className="text-sm font-medium text-slate-700">
         Discipline
       </label>
-      {description && (
-        <p className="mt-1 text-xs text-slate-500">{description}</p>
-      )}
+      {description && <p className="mt-1 text-xs text-slate-500">{description}</p>}
       <select
         id="discipline-selector"
         value={selectedDiscipline}

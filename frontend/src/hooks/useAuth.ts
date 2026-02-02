@@ -197,11 +197,7 @@ export function useForgotPassword() {
  * Note: Requires backend endpoint (not yet implemented)
  */
 export function useResetPassword() {
-  return useMutation<
-    { message: string },
-    ApiError,
-    { token: string; newPassword: string }
-  >({
+  return useMutation<{ message: string }, ApiError, { token: string; newPassword: string }>({
     mutationFn: ({ token, newPassword }) => authApi.resetPassword(token, newPassword),
   });
 }

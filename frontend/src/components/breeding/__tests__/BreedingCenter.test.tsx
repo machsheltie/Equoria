@@ -1,9 +1,10 @@
 import React from 'react';
-import { render, screen, waitFor } from '@testing-library/react';
+import { render, screen, waitFor, fireEvent } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import '@testing-library/jest-dom';
 import { vi, describe, it, expect, beforeEach } from 'vitest';
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
+import { AuthProvider } from '@/contexts/AuthContext';
 import BreedingCenter from '../BreedingCenter';
 import * as useBreedingHooks from '@/hooks/api/useBreeding';
 import * as useHorsesHooks from '@/hooks/api/useHorses';
@@ -21,8 +22,8 @@ describe('BreedingCenter', () => {
       id: 1,
       name: 'Thunder Mare',
       breed: 'Thoroughbred',
-      gender: 'Mare',
-      sex: 'Female',
+      gender: 'mare',
+      sex: 'mare',
       ageYears: 5,
       level: 10,
     },
@@ -30,8 +31,8 @@ describe('BreedingCenter', () => {
       id: 2,
       name: 'Lightning Mare',
       breed: 'Arabian',
-      gender: 'Female',
-      sex: 'Female',
+      gender: 'mare',
+      sex: 'mare',
       ageYears: 4,
       level: 8,
     },
@@ -42,8 +43,8 @@ describe('BreedingCenter', () => {
       id: 3,
       name: 'Storm Stallion',
       breed: 'Thoroughbred',
-      gender: 'Stallion',
-      sex: 'Male',
+      gender: 'stallion',
+      sex: 'stallion',
       ageYears: 6,
       level: 12,
     },
@@ -51,8 +52,8 @@ describe('BreedingCenter', () => {
       id: 4,
       name: 'Wind Stallion',
       breed: 'Arabian',
-      gender: 'Male',
-      sex: 'Male',
+      gender: 'stallion',
+      sex: 'stallion',
       ageYears: 5,
       level: 10,
     },
@@ -91,7 +92,11 @@ describe('BreedingCenter', () => {
   });
 
   const renderWithProvider = (component: React.ReactElement) => {
-    return render(<QueryClientProvider client={queryClient}>{component}</QueryClientProvider>);
+    return render(
+      <QueryClientProvider client={queryClient}>
+        <AuthProvider>{component}</AuthProvider>
+      </QueryClientProvider>
+    );
   };
 
   describe('Tab Navigation', () => {
@@ -136,7 +141,9 @@ describe('BreedingCenter', () => {
 
       // Go to Stud Marketplace
       await user.click(screen.getByRole('tab', { name: /stud marketplace/i }));
-      expect(screen.getByRole('heading', { name: /browse available stallions/i })).toBeInTheDocument();
+      expect(
+        screen.getByRole('heading', { name: /browse available stallions/i })
+      ).toBeInTheDocument();
 
       // Go to History
       await user.click(screen.getByRole('tab', { name: /history/i }));
@@ -205,6 +212,9 @@ describe('BreedingCenter', () => {
       await user.selectOptions(mareSelect, '1');
       await user.selectOptions(stallionSelect, '3');
 
+      const nameInput = screen.getByLabelText(/foal name/i);
+      await user.type(nameInput, 'Test Foal');
+
       const breedButton = screen.getByRole('button', { name: /breed now/i });
       expect(breedButton).toBeEnabled();
     });
@@ -217,13 +227,18 @@ describe('BreedingCenter', () => {
 
       await user.selectOptions(screen.getByRole('combobox', { name: /mare/i }), '1');
       await user.selectOptions(screen.getByRole('combobox', { name: /stallion/i }), '3');
+      const nameInput = screen.getByLabelText(/foal name/i);
+      await user.type(nameInput, 'New Foal');
       await user.click(screen.getByRole('button', { name: /breed now/i }));
 
       await waitFor(() => {
-        expect(mockBreedFoal).toHaveBeenCalledWith({
-          damId: 1,
-          sireId: 3,
-        });
+        expect(mockBreedFoal).toHaveBeenCalledWith(
+          expect.objectContaining({
+            damId: 1,
+            sireId: 3,
+            name: 'New Foal',
+          })
+        );
       });
     });
 
@@ -240,6 +255,8 @@ describe('BreedingCenter', () => {
 
       await user.selectOptions(screen.getByRole('combobox', { name: /mare/i }), '1');
       await user.selectOptions(screen.getByRole('combobox', { name: /stallion/i }), '3');
+      const nameInput = screen.getByLabelText(/foal name/i);
+      await user.type(nameInput, 'Success Foal');
 
       expect(screen.getByText(/breeding successful/i)).toBeInTheDocument();
     });
@@ -319,8 +336,8 @@ describe('BreedingCenter', () => {
           id: 1,
           name: 'Thunder Mare',
           breed: 'Thoroughbred',
-          gender: 'Mare',
-          sex: 'Female',
+          gender: 'mare',
+          sex: 'mare',
           ageYears: 5,
           level: 10,
         },
@@ -328,8 +345,8 @@ describe('BreedingCenter', () => {
           id: 2,
           name: 'Lightning Mare',
           breed: 'Arabian',
-          gender: 'Mare',
-          sex: 'Female',
+          gender: 'mare',
+          sex: 'mare',
           ageYears: 4,
           level: 8,
         },
@@ -384,19 +401,20 @@ describe('BreedingCenter', () => {
 
       renderWithProvider(<BreedingCenter />);
 
-      expect(screen.getByText(/loading/i)).toBeInTheDocument();
+      expect(screen.getByText(/loading horses/i)).toBeInTheDocument();
     });
 
     it('displays error state when fetching horses fails', () => {
       mockUseHorses.mockReturnValue({
         data: undefined,
         isLoading: false,
-        error: { message: 'Failed to fetch horses' },
+        error: { message: 'Network error' },
       });
 
       renderWithProvider(<BreedingCenter />);
 
       expect(screen.getByText(/failed to fetch horses/i)).toBeInTheDocument();
+      expect(screen.getByText(/network error/i)).toBeInTheDocument();
     });
   });
 

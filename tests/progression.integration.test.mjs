@@ -119,7 +119,7 @@ describe('📈 INTEGRATION: Progression Controller - Real Database Operations', 
 
       // Verify in database
       const updatedUser = await prisma.user.findUnique({
-        where: { id: 'test-user-1' }
+        where: { id: 'test-user-1' },
       });
       expect(updatedUser.xp).toBe(20);
       expect(updatedUser.level).toBe(1);
@@ -136,7 +136,7 @@ describe('📈 INTEGRATION: Progression Controller - Real Database Operations', 
 
       // Verify in database
       const updatedUser = await prisma.user.findUnique({
-        where: { id: 'test-user-2' }
+        where: { id: 'test-user-2' },
       });
       expect(updatedUser.xp).toBe(0);
       expect(updatedUser.level).toBe(2);
@@ -153,7 +153,7 @@ describe('📈 INTEGRATION: Progression Controller - Real Database Operations', 
 
       // Verify in database
       const updatedUser = await prisma.user.findUnique({
-        where: { id: 'test-user-2' }
+        where: { id: 'test-user-2' },
       });
       expect(updatedUser.xp).toBe(15);
       expect(updatedUser.level).toBe(2);
@@ -170,7 +170,7 @@ describe('📈 INTEGRATION: Progression Controller - Real Database Operations', 
 
       // Verify in database
       const updatedUser = await prisma.user.findUnique({
-        where: { id: 'test-user-1' }
+        where: { id: 'test-user-1' },
       });
       expect(updatedUser.xp).toBe(30);
       expect(updatedUser.level).toBe(3);
@@ -180,7 +180,7 @@ describe('📈 INTEGRATION: Progression Controller - Real Database Operations', 
   describe('User Progress Reporting', () => {
     it('should return correct progress for level 1 user using real database', async () => {
       const result = await getUserProgress('test-user-1');
-      
+
       expect(result.valid).toBe(true);
       expect(result.level).toBe(1);
       expect(result.xp).toBe(0);
@@ -188,7 +188,7 @@ describe('📈 INTEGRATION: Progression Controller - Real Database Operations', 
 
     it('should return correct progress for level 2 user using real database', async () => {
       const result = await getUserProgress('test-user-3');
-      
+
       expect(result.valid).toBe(true);
       expect(result.level).toBe(2);
       expect(result.xp).toBe(75);
@@ -201,11 +201,15 @@ describe('📈 INTEGRATION: Progression Controller - Real Database Operations', 
 
   describe('Edge Cases and Error Handling', () => {
     it('should handle negative XP amounts in addXpToUser', async () => {
-      await expect(addXpToUser('test-user-1', -5)).rejects.toThrow('XP amount must be a positive number.');
+      await expect(addXpToUser('test-user-1', -5)).rejects.toThrow(
+        'XP amount must be a positive number.'
+      );
     });
 
     it('should handle zero XP amounts in addXpToUser', async () => {
-      await expect(addXpToUser('test-user-1', 0)).rejects.toThrow('XP amount must be a positive number.');
+      await expect(addXpToUser('test-user-1', 0)).rejects.toThrow(
+        'XP amount must be a positive number.'
+      );
     });
 
     it('should handle invalid (empty string) user ID in addXpToUser', async () => {

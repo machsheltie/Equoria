@@ -1,6 +1,6 @@
 /**
  * GroomList Component Tests
- * 
+ *
  * Tests for the groom marketplace interface including:
  * - Marketplace groom listing with filtering and search
  * - Groom hiring functionality with validation
@@ -9,7 +9,7 @@
  * - Responsive design and mobile optimization
  * - Error handling and loading states
  * - Accessibility compliance
- * 
+ *
  * Following TDD with NO MOCKING approach for authentic component validation
  * Testing real API integration patterns with backend groom marketplace endpoints
  */
@@ -19,7 +19,17 @@ import { render, screen, waitFor, fireEvent, within } from '@testing-library/rea
 import '@testing-library/jest-dom';
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
 import { BrowserRouter } from 'react-router-dom';
+import { AuthProvider, useAuth } from '../../contexts/AuthContext';
 import GroomList from '../GroomList';
+
+// Mock the useAuth hook
+vi.mock('../../contexts/AuthContext', async () => {
+  const actual = await vi.importActual('../../contexts/AuthContext');
+  return {
+    ...(actual as any),
+    useAuth: vi.fn(),
+  };
+});
 
 // Mock data for testing (NO MOCKING - real data passed as props)
 const mockMarketplaceData = {
@@ -86,9 +96,9 @@ const createTestWrapper = () => {
 
   return ({ children }: { children: React.ReactNode }) => (
     <QueryClientProvider client={queryClient}>
-      <BrowserRouter>
-        {children}
-      </BrowserRouter>
+      <AuthProvider>
+        <BrowserRouter>{children}</BrowserRouter>
+      </AuthProvider>
     </QueryClientProvider>
   );
 };
@@ -96,11 +106,20 @@ const createTestWrapper = () => {
 const TestWrapper = createTestWrapper();
 
 describe('GroomList Component', () => {
+  beforeEach(() => {
+    vi.clearAllMocks();
+    (useAuth as any).mockReturnValue({
+      user: { ...mockUserData, id: 1 },
+      isAuthenticated: true,
+      isLoading: false,
+    });
+  });
+
   describe('Component Rendering', () => {
     test('renders groom list with loading state', () => {
       render(
         <TestWrapper>
-          <GroomList userId={1} />
+          <GroomList userId={1} marketplaceData={undefined} />
         </TestWrapper>
       );
 
@@ -276,11 +295,7 @@ describe('GroomList Component', () => {
     test('opens hire confirmation modal when hire button clicked', async () => {
       render(
         <TestWrapper>
-          <GroomList
-            userId={1}
-            marketplaceData={mockMarketplaceData}
-            userData={mockUserData}
-          />
+          <GroomList userId={1} marketplaceData={mockMarketplaceData} userData={mockUserData} />
         </TestWrapper>
       );
 
@@ -300,11 +315,7 @@ describe('GroomList Component', () => {
     test('displays hiring cost in confirmation modal', async () => {
       render(
         <TestWrapper>
-          <GroomList
-            userId={1}
-            marketplaceData={mockMarketplaceData}
-            userData={mockUserData}
-          />
+          <GroomList userId={1} marketplaceData={mockMarketplaceData} userData={mockUserData} />
         </TestWrapper>
       );
 
@@ -323,14 +334,15 @@ describe('GroomList Component', () => {
 
     test('disables hire button when insufficient funds', async () => {
       const poorUserData = { ...mockUserData, money: 50 };
+      (useAuth as any).mockReturnValue({
+        user: { ...poorUserData, id: 1 },
+        isAuthenticated: true,
+        isLoading: false,
+      });
 
       render(
         <TestWrapper>
-          <GroomList 
-            userId={1} 
-            marketplaceData={mockMarketplaceData}
-            userData={poorUserData}
-          />
+          <GroomList userId={1} marketplaceData={mockMarketplaceData} userData={poorUserData} />
         </TestWrapper>
       );
 
@@ -343,20 +355,21 @@ describe('GroomList Component', () => {
 
     test('shows insufficient funds message', async () => {
       const poorUserData = { ...mockUserData, money: 50 };
+      (useAuth as any).mockReturnValue({
+        user: { ...poorUserData, id: 1 },
+        isAuthenticated: true,
+        isLoading: false,
+      });
 
       render(
         <TestWrapper>
-          <GroomList
-            userId={1}
-            marketplaceData={mockMarketplaceData}
-            userData={poorUserData}
-          />
+          <GroomList userId={1} marketplaceData={mockMarketplaceData} userData={poorUserData} />
         </TestWrapper>
       );
 
       await waitFor(() => {
         // Check for the warning banner (more specific than button text)
-        expect(screen.getByText(/you may not have enough money/i)).toBeInTheDocument();
+        expect(screen.getByText(/you might not have enough/i)).toBeInTheDocument();
       });
     });
   });
@@ -457,11 +470,7 @@ describe('GroomList Component', () => {
     test('supports keyboard navigation', async () => {
       render(
         <TestWrapper>
-          <GroomList
-            userId={1}
-            marketplaceData={mockMarketplaceData}
-            userData={mockUserData}
-          />
+          <GroomList userId={1} marketplaceData={mockMarketplaceData} userData={mockUserData} />
         </TestWrapper>
       );
 
@@ -509,4 +518,3 @@ describe('GroomList Component', () => {
     });
   });
 });
-

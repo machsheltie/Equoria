@@ -31,10 +31,7 @@ async function checkColumnExists(tableName, columnName) {
     `;
     return result[0]?.exists || false;
   } catch (error) {
-    console.error(
-      `❌ Error checking column ${tableName}.${columnName}:`,
-      error.message
-    );
+    console.error(`❌ Error checking column ${tableName}.${columnName}:`, error.message);
     return false;
   }
 }
@@ -179,9 +176,7 @@ async function testBasicOperations() {
 
     // Test reading foal training history
     const historyCount = await prisma.foalTrainingHistory.count();
-    console.log(
-      `   ✅ Can read foal training history (found ${historyCount} records)`
-    );
+    console.log(`   ✅ Can read foal training history (found ${historyCount} records)`);
 
     // Test if we can query horses with new fields
     const horsesWithBonding = await prisma.horse.findMany({
@@ -230,9 +225,7 @@ async function checkMigrationStatus() {
       console.log(`   ✅ Applied at: ${migration.finished_at}`);
       return true;
     } else {
-      console.log(
-        `   ❌ No horse bonding migration found in _prisma_migrations table`
-      );
+      console.log(`   ❌ No horse bonding migration found in _prisma_migrations table`);
       return false;
     }
   } catch (error) {
@@ -288,14 +281,10 @@ async function main() {
   }
 
   console.log('\n💡 Troubleshooting tips:');
-  console.log(
-    '   - If connection fails: Check DATABASE_URL environment variable'
-  );
+  console.log('   - If connection fails: Check DATABASE_URL environment variable');
   console.log('   - If migration not found: Run "npx prisma migrate dev"');
   console.log('   - If columns missing: Run the manual migration script');
-  console.log(
-    '   - If operations fail: Check Prisma client generation with "npx prisma generate"'
-  );
+  console.log('   - If operations fail: Check Prisma client generation with "npx prisma generate"');
 
   await prisma.$disconnect();
   process.exit(allChecksPass ? 0 : 1);

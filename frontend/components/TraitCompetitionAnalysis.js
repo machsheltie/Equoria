@@ -4,13 +4,7 @@
  */
 
 import React, { useState, useEffect } from 'react';
-import {
-  View,
-  Text,
-  TouchableOpacity,
-  ScrollView,
-  ActivityIndicator,
-} from 'react-native';
+import { View, Text, TouchableOpacity, ScrollView, ActivityIndicator } from 'react-native';
 
 /**
  * TraitCompetitionAnalysis Component
@@ -77,9 +71,7 @@ const TraitCompetitionAnalysis = ({
       setLoading(true);
       setError(null);
 
-      const response = await fetch(
-        `/api/traits/competition-comparison/${horseId}`
-      );
+      const response = await fetch(`/api/traits/competition-comparison/${horseId}`);
 
       if (!response.ok) {
         throw new Error('Failed to fetch trait comparison');
@@ -141,9 +133,7 @@ const TraitCompetitionAnalysis = ({
     <View className="flex-1">
       {/* Discipline Selector */}
       <View className="mb-4">
-        <Text className="text-lg font-semibold text-gray-800 mb-2">
-          Select Discipline
-        </Text>
+        <Text className="text-lg font-semibold text-gray-800 mb-2">Select Discipline</Text>
         <ScrollView horizontal showsHorizontalScrollIndicator={false}>
           <View className="flex-row space-x-2">
             {disciplines.map((discipline) => (
@@ -158,9 +148,7 @@ const TraitCompetitionAnalysis = ({
               >
                 <Text
                   className={`text-sm font-medium ${
-                    selectedDiscipline === discipline
-                      ? 'text-white'
-                      : 'text-gray-700'
+                    selectedDiscipline === discipline ? 'text-white' : 'text-gray-700'
                   }`}
                 >
                   {discipline}
@@ -176,9 +164,7 @@ const TraitCompetitionAnalysis = ({
         <View className="space-y-4">
           {/* Summary Card */}
           <View className="bg-white rounded-lg shadow-md border border-gray-200 p-4">
-            <Text className="text-lg font-bold text-gray-800 mb-3">
-              Competition Impact Summary
-            </Text>
+            <Text className="text-lg font-bold text-gray-800 mb-3">Competition Impact Summary</Text>
 
             <View className="flex-row justify-between items-center mb-2">
               <Text className="text-gray-600">Overall Effect:</Text>
@@ -202,9 +188,7 @@ const TraitCompetitionAnalysis = ({
             <View className="flex-row justify-between items-center">
               <Text className="text-gray-600">Net Effect:</Text>
               <View className="flex-row items-center">
-                <Text className="mr-1">
-                  {getEffectIcon(null, analysis.analysis.traitModifier)}
-                </Text>
+                <Text className="mr-1">{getEffectIcon(null, analysis.analysis.traitModifier)}</Text>
                 <Text
                   className={`font-semibold ${getEffectColor(null, analysis.analysis.traitModifier)}`}
                 >
@@ -226,29 +210,19 @@ const TraitCompetitionAnalysis = ({
                 <View key={index} className="mb-3 last:mb-0">
                   <View className="flex-row items-center justify-between mb-1">
                     <View className="flex-row items-center flex-1">
-                      <Text className="mr-2">
-                        {getEffectIcon(trait.type, trait.modifier)}
-                      </Text>
-                      <Text className="font-semibold text-gray-800 flex-1">
-                        {trait.name}
-                      </Text>
+                      <Text className="mr-2">{getEffectIcon(trait.type, trait.modifier)}</Text>
+                      <Text className="font-semibold text-gray-800 flex-1">{trait.name}</Text>
                       {trait.isSpecialized && (
                         <View className="bg-blue-100 px-2 py-1 rounded-full mr-2">
-                          <Text className="text-blue-800 text-xs font-medium">
-                            Specialized
-                          </Text>
+                          <Text className="text-blue-800 text-xs font-medium">Specialized</Text>
                         </View>
                       )}
                     </View>
-                    <Text
-                      className={`font-bold ${getEffectColor(trait.type, trait.modifier)}`}
-                    >
+                    <Text className={`font-bold ${getEffectColor(trait.type, trait.modifier)}`}>
                       {trait.percentageEffect}
                     </Text>
                   </View>
-                  <Text className="text-gray-600 text-sm ml-6">
-                    {trait.description}
-                  </Text>
+                  <Text className="text-gray-600 text-sm ml-6">{trait.description}</Text>
                 </View>
               ))}
             </View>
@@ -257,13 +231,10 @@ const TraitCompetitionAnalysis = ({
           {/* No Traits Message */}
           {analysis.traits.total === 0 && (
             <View className="bg-gray-50 rounded-lg p-6 text-center">
-              <Text className="text-gray-600 text-lg mb-2">
-                No Visible Traits
-              </Text>
+              <Text className="text-gray-600 text-lg mb-2">No Visible Traits</Text>
               <Text className="text-gray-500">
-                This horse has no visible traits that affect competition
-                performance. Hidden traits may be discovered through bonding and
-                training.
+                This horse has no visible traits that affect competition performance. Hidden traits
+                may be discovered through bonding and training.
               </Text>
             </View>
           )}
@@ -278,9 +249,7 @@ const TraitCompetitionAnalysis = ({
         <View className="space-y-4">
           {/* Best/Worst Summary */}
           <View className="bg-white rounded-lg shadow-md border border-gray-200 p-4">
-            <Text className="text-lg font-bold text-gray-800 mb-3">
-              Discipline Recommendations
-            </Text>
+            <Text className="text-lg font-bold text-gray-800 mb-3">Discipline Recommendations</Text>
 
             <View className="mb-3">
               <Text className="text-green-600 font-semibold mb-1">
@@ -295,8 +264,7 @@ const TraitCompetitionAnalysis = ({
 
             <View>
               <Text className="text-red-600 font-semibold mb-1">
-                ⚠️ Challenging Discipline:{' '}
-                {comparison.summary.worstDiscipline.name}
+                ⚠️ Challenging Discipline: {comparison.summary.worstDiscipline.name}
               </Text>
               <Text className="text-gray-600 text-sm">
                 {comparison.summary.worstDiscipline.effect} impact
@@ -308,9 +276,7 @@ const TraitCompetitionAnalysis = ({
 
           {/* Discipline Comparison List */}
           <View className="bg-white rounded-lg shadow-md border border-gray-200 p-4">
-            <Text className="text-lg font-bold text-gray-800 mb-3">
-              All Disciplines
-            </Text>
+            <Text className="text-lg font-bold text-gray-800 mb-3">All Disciplines</Text>
 
             {comparison.comparison.map((disc, index) => (
               <TouchableOpacity
@@ -322,24 +288,17 @@ const TraitCompetitionAnalysis = ({
                 className="flex-row items-center justify-between py-3 border-b border-gray-100 last:border-b-0"
               >
                 <View className="flex-1">
-                  <Text className="font-semibold text-gray-800">
-                    {disc.discipline}
-                  </Text>
+                  <Text className="font-semibold text-gray-800">{disc.discipline}</Text>
                   <Text className="text-gray-600 text-sm">
-                    {disc.specializedTraits > 0 &&
-                      `${disc.specializedTraits} specialized traits`}
+                    {disc.specializedTraits > 0 && `${disc.specializedTraits} specialized traits`}
                   </Text>
                 </View>
 
                 <View className="items-end">
-                  <Text
-                    className={`font-bold ${getEffectColor(null, disc.modifier)}`}
-                  >
+                  <Text className={`font-bold ${getEffectColor(null, disc.modifier)}`}>
                     {disc.percentageEffect}
                   </Text>
-                  <Text className="text-gray-500 text-xs">
-                    {disc.netEffect}
-                  </Text>
+                  <Text className="text-gray-500 text-xs">{disc.netEffect}</Text>
                 </View>
               </TouchableOpacity>
             ))}
@@ -347,15 +306,11 @@ const TraitCompetitionAnalysis = ({
 
           {/* Statistics */}
           <View className="bg-white rounded-lg shadow-md border border-gray-200 p-4">
-            <Text className="text-lg font-bold text-gray-800 mb-3">
-              Statistics
-            </Text>
+            <Text className="text-lg font-bold text-gray-800 mb-3">Statistics</Text>
 
             <View className="flex-row justify-between mb-2">
               <Text className="text-gray-600">Average Effect:</Text>
-              <Text className="font-semibold">
-                {comparison.summary.averageEffect}
-              </Text>
+              <Text className="font-semibold">{comparison.summary.averageEffect}</Text>
             </View>
 
             <View className="flex-row justify-between mb-2">
@@ -393,9 +348,7 @@ const TraitCompetitionAnalysis = ({
         <Text className="text-red-700 mb-3">{error}</Text>
         <TouchableOpacity
           onPress={() =>
-            activeTab === 'analysis'
-              ? fetchAnalysis(selectedDiscipline)
-              : fetchComparison()
+            activeTab === 'analysis' ? fetchAnalysis(selectedDiscipline) : fetchComparison()
           }
           className="bg-red-500 rounded-lg py-2 px-4 self-start"
         >
@@ -409,9 +362,7 @@ const TraitCompetitionAnalysis = ({
     <View className="flex-1">
       {/* Header */}
       <View className="mb-4">
-        <Text className="text-xl font-bold text-gray-800">
-          Trait Competition Analysis
-        </Text>
+        <Text className="text-xl font-bold text-gray-800">Trait Competition Analysis</Text>
         <Text className="text-gray-600">{horseName}</Text>
       </View>
 

@@ -1,0 +1,27 @@
+# Equoria API Contracts - Backend
+
+## Table of Contents
+
+- [Equoria API Contracts - Backend](#table-of-contents)
+  - [Overview](#overview)
+  - [Authentication Endpoints](#authentication-endpoints)
+  - [User Endpoints](#user-endpoints)
+  - [Horse Endpoints](#horse-endpoints)
+  - [Training Endpoints](#training-endpoints)
+  - [Competition Endpoints](#competition-endpoints)
+  - [Groom Endpoints](#groom-endpoints)
+  - [Foal & Breeding Endpoints](#foal-breeding-endpoints)
+  - [Trait Endpoints](#trait-endpoints)
+  - [Milestone Endpoints](#milestone-endpoints)
+  - [Leaderboard Endpoints](#leaderboard-endpoints)
+  - [Admin Endpoints](#admin-endpoints)
+  - [XP Endpoints](#xp-endpoints)
+  - [Health Check Endpoints](#health-check-endpoints)
+  - [Breed Endpoints](#breed-endpoints)
+  - [Input Validation Rules](#input-validation-rules)
+  - [Error Responses](#error-responses)
+  - [Rate Limiting](#rate-limiting)
+  - [Security Features](#security-features)
+  - [Performance Headers](#performance-headers)
+  - [Cross-References](#cross-references)
+  - [Document History](#document-history)

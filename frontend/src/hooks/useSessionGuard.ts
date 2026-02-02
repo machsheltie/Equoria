@@ -97,9 +97,7 @@ export interface SessionGuardResult {
  * @param options - Configuration options
  * @returns Session guard result with redirect information
  */
-export function useSessionGuard(
-  options: SessionGuardOptions = {}
-): SessionGuardResult {
+export function useSessionGuard(options: SessionGuardOptions = {}): SessionGuardResult {
   const {
     requireAuth = true,
     requireEmailVerification = false,

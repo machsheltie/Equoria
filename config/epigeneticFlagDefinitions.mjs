@@ -1,9 +1,9 @@
 /**
  * Epigenetic Flag Definitions
- * 
+ *
  * Defines all epigenetic flags that can be assigned to horses based on care patterns.
  * These flags influence trait development, competition performance, and breeding outcomes.
- * 
+ *
  * Business Rules:
  * - Maximum 5 flags per horse
  * - Flags are permanent once assigned
@@ -247,8 +247,7 @@ export function getFlagDefinition(flagName) {
  * @returns {Array} Array of flag definitions
  */
 export function getFlagsByType(type) {
-  return Object.values(EPIGENETIC_FLAG_DEFINITIONS)
-    .filter(flag => flag.type === type);
+  return Object.values(EPIGENETIC_FLAG_DEFINITIONS).filter((flag) => flag.type === type);
 }
 
 /**
@@ -260,11 +259,13 @@ export function getFlagsByType(type) {
 export function flagsConflict(flag1, flag2) {
   const def1 = getFlagDefinition(flag1);
   const def2 = getFlagDefinition(flag2);
-  
+
   if (!def1 || !def2) return false;
-  
-  return (def1.conflictsWith && def1.conflictsWith.includes(flag2.toLowerCase())) ||
-         (def2.conflictsWith && def2.conflictsWith.includes(flag1.toLowerCase()));
+
+  return (
+    (def1.conflictsWith && def1.conflictsWith.includes(flag2.toLowerCase())) ||
+    (def2.conflictsWith && def2.conflictsWith.includes(flag1.toLowerCase()))
+  );
 }
 
 /**
@@ -274,22 +275,20 @@ export function flagsConflict(flag1, flag2) {
  */
 export function getValidFlags(currentFlags = []) {
   const availableFlags = [];
-  
+
   for (const [flagKey, flagDef] of Object.entries(EPIGENETIC_FLAG_DEFINITIONS)) {
     const flagName = flagDef.name;
-    
+
     // Skip if horse already has this flag
     if (currentFlags.includes(flagName)) continue;
-    
+
     // Check for conflicts with existing flags
-    const hasConflict = currentFlags.some(existingFlag => 
-      flagsConflict(flagName, existingFlag)
-    );
-    
+    const hasConflict = currentFlags.some((existingFlag) => flagsConflict(flagName, existingFlag));
+
     if (!hasConflict) {
       availableFlags.push(flagName);
     }
   }
-  
+
   return availableFlags;
 }

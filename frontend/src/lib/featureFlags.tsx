@@ -106,10 +106,7 @@ export function useFeatureFlags() {
  *   return <LegacyDashboard />;
  * }
  */
-export function useFeatureFlag(
-  flagName: string,
-  defaultValue: boolean = false
-): boolean {
+export function useFeatureFlag(flagName: string, defaultValue: boolean = false): boolean {
   const { data: flags } = useFeatureFlags();
 
   return useMemo(() => {
@@ -139,10 +136,7 @@ export function useFeatureFlag(
  *   }
  * }
  */
-export function useFeatureVariant(
-  flagName: string,
-  defaultValue: string = ''
-): string {
+export function useFeatureVariant(flagName: string, defaultValue: string = ''): string {
   const { data: flags } = useFeatureFlags();
 
   return useMemo(() => {

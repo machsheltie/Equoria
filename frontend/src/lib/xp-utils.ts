@@ -64,7 +64,7 @@ export function getXPProgressPercent(totalXP: number): number {
   if (totalXP === undefined || totalXP === null || totalXP < 0) {
     return 0;
   }
-  return (totalXP % XP_PER_LEVEL);
+  return totalXP % XP_PER_LEVEL;
 }
 
 /**

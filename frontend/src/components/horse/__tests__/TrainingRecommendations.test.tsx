@@ -381,7 +381,9 @@ describe('TrainingRecommendations', () => {
 
       renderWithProvider(<TrainingRecommendations horseId={2} />);
 
-      const maintenanceTexts = screen.getAllByText(/maintenance training|maintain current level|preserve stats/i);
+      const maintenanceTexts = screen.getAllByText(
+        /maintenance training|maintain current level|preserve stats/i
+      );
       expect(maintenanceTexts.length).toBeGreaterThanOrEqual(1);
     });
 

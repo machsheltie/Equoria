@@ -373,9 +373,7 @@ describe('ResetPasswordPage', () => {
       fireEvent.submit(form);
 
       await waitFor(() => {
-        expect(
-          screen.getByText('Password must contain at least one number')
-        ).toBeInTheDocument();
+        expect(screen.getByText('Password must contain at least one number')).toBeInTheDocument();
       });
     });
 
@@ -418,7 +416,9 @@ describe('ResetPasswordPage', () => {
     test('submits form with valid passwords', async () => {
       const user = userEvent.setup();
       renderResetPasswordPage('test-token-123');
-      vi.mocked(apiClient.authApi.resetPassword).mockResolvedValueOnce({ message: 'Password reset' });
+      vi.mocked(apiClient.authApi.resetPassword).mockResolvedValueOnce({
+        message: 'Password reset',
+      });
 
       const passwordInput = screen.getByPlaceholderText('Create a new password');
       const confirmInput = screen.getByPlaceholderText('Confirm your new password');
@@ -441,7 +441,9 @@ describe('ResetPasswordPage', () => {
     test('sends token from URL to API', async () => {
       const user = userEvent.setup();
       renderResetPasswordPage('my-unique-token');
-      vi.mocked(apiClient.authApi.resetPassword).mockResolvedValueOnce({ message: 'Password reset' });
+      vi.mocked(apiClient.authApi.resetPassword).mockResolvedValueOnce({
+        message: 'Password reset',
+      });
 
       const passwordInput = screen.getByPlaceholderText('Create a new password');
       const confirmInput = screen.getByPlaceholderText('Confirm your new password');
@@ -491,7 +493,9 @@ describe('ResetPasswordPage', () => {
   describe('Success State', () => {
     test('shows success message after successful reset', async () => {
       const user = userEvent.setup();
-      vi.mocked(apiClient.authApi.resetPassword).mockResolvedValueOnce({ message: 'Password reset' });
+      vi.mocked(apiClient.authApi.resetPassword).mockResolvedValueOnce({
+        message: 'Password reset',
+      });
 
       renderResetPasswordPage('valid-token');
 
@@ -511,7 +515,9 @@ describe('ResetPasswordPage', () => {
 
     test('shows confirmation text in success state', async () => {
       const user = userEvent.setup();
-      vi.mocked(apiClient.authApi.resetPassword).mockResolvedValueOnce({ message: 'Password reset' });
+      vi.mocked(apiClient.authApi.resetPassword).mockResolvedValueOnce({
+        message: 'Password reset',
+      });
 
       renderResetPasswordPage('valid-token');
 
@@ -533,7 +539,9 @@ describe('ResetPasswordPage', () => {
 
     test('shows "Go to Login" button in success state', async () => {
       const user = userEvent.setup();
-      vi.mocked(apiClient.authApi.resetPassword).mockResolvedValueOnce({ message: 'Password reset' });
+      vi.mocked(apiClient.authApi.resetPassword).mockResolvedValueOnce({
+        message: 'Password reset',
+      });
 
       renderResetPasswordPage('valid-token');
 
@@ -553,7 +561,9 @@ describe('ResetPasswordPage', () => {
 
     test('navigates to login when clicking "Go to Login"', async () => {
       const user = userEvent.setup();
-      vi.mocked(apiClient.authApi.resetPassword).mockResolvedValueOnce({ message: 'Password reset' });
+      vi.mocked(apiClient.authApi.resetPassword).mockResolvedValueOnce({
+        message: 'Password reset',
+      });
 
       renderResetPasswordPage('valid-token');
 

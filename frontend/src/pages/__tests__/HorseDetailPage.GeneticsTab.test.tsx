@@ -70,7 +70,7 @@ const mockHorse = {
   },
   disciplineScores: {
     'Western Pleasure': 85,
-    'Dressage': 70,
+    Dressage: 70,
   },
   traits: ['Fast Learner', 'Even Tempered'],
   parentIds: {
@@ -366,7 +366,9 @@ describe('Enhanced Genetics Tab Integration Tests', () => {
         // Genetic section should show 2 genetic traits
         const headings = screen.getAllByRole('heading', { level: 3 });
         const geneticHeading = headings.find((h) => h.textContent?.includes('Genetic Traits'));
-        const epigeneticHeading = headings.find((h) => h.textContent?.includes('Epigenetic Traits'));
+        const epigeneticHeading = headings.find((h) =>
+          h.textContent?.includes('Epigenetic Traits')
+        );
 
         expect(geneticHeading).toBeInTheDocument();
         expect(geneticHeading?.textContent).toContain('(2)');
@@ -400,7 +402,9 @@ describe('Enhanced Genetics Tab Integration Tests', () => {
 
       await waitFor(() => {
         const headings = screen.getAllByRole('heading', { level: 3 });
-        const interactionsHeading = headings.find((h) => h.textContent?.includes('Trait Interactions'));
+        const interactionsHeading = headings.find((h) =>
+          h.textContent?.includes('Trait Interactions')
+        );
         expect(interactionsHeading).toBeInTheDocument();
         expect(interactionsHeading?.textContent).toContain('(2)');
       });
@@ -508,7 +512,9 @@ describe('Enhanced Genetics Tab Integration Tests', () => {
       await waitFor(() => {
         const headings = screen.getAllByRole('heading', { level: 3 });
         const geneticHeading = headings.find((h) => h.textContent?.includes('Genetic Traits'));
-        const epigeneticHeading = headings.find((h) => h.textContent?.includes('Epigenetic Traits'));
+        const epigeneticHeading = headings.find((h) =>
+          h.textContent?.includes('Epigenetic Traits')
+        );
 
         // Should NOT have Genetic Traits heading (undefined when not found)
         expect(geneticHeading).toBeUndefined();

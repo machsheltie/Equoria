@@ -1,6 +1,6 @@
 /**
  * AssignGroomModal Component Tests
- * 
+ *
  * Tests for the groom assignment modal including:
  * - Modal open/close functionality
  * - Available groom listing with slot validation
@@ -10,7 +10,7 @@
  * - Validation error handling
  * - Success confirmation
  * - Accessibility compliance
- * 
+ *
  * Following TDD with NO MOCKING approach for authentic component validation
  * Testing real assignment workflow with backend groom assignment endpoints
  */
@@ -77,9 +77,7 @@ const createTestWrapper = () => {
 
   return ({ children }: { children: React.ReactNode }) => (
     <QueryClientProvider client={queryClient}>
-      <BrowserRouter>
-        {children}
-      </BrowserRouter>
+      <BrowserRouter>{children}</BrowserRouter>
     </QueryClientProvider>
   );
 };
@@ -472,4 +470,3 @@ describe('AssignGroomModal Component', () => {
     });
   });
 });
-

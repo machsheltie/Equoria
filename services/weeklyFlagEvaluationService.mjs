@@ -1,9 +1,9 @@
 /**
  * Weekly Flag Evaluation Service
- * 
+ *
  * Automated weekly flag evaluation system for horses 0-3 years old.
  * Analyzes care patterns, bond trends, and stress patterns to assign epigenetic flags.
- * 
+ *
  * Business Rules:
  * - Only evaluates horses under 3 years old (1095 days)
  * - Maximum 5 flags per horse
@@ -12,8 +12,8 @@
  * - Weekly automation through horse aging system integration
  */
 
-import prisma from '../../packages/database/prismaClient.mjs';
-import logger from '../utils/logger.mjs';
+import prisma from '../packages/database/prismaClient.mjs';
+import logger from '../backend/utils/logger.mjs';
 import { EPIGENETIC_FLAG_DEFINITIONS } from '../config/epigeneticFlagDefinitions.mjs';
 import { analyzeCarePatterns } from './carePatternAnalyzer.mjs';
 import { evaluateFlagTriggers } from './flagAssignmentEngine.mjs';
@@ -146,7 +146,9 @@ export async function processHorseForFlagEvaluation(horseId) {
         },
       });
 
-      logger.info(`Assigned ${newFlags.length} new flags to horse ${horse.name}: ${newFlags.join(', ')}`);
+      logger.info(
+        `Assigned ${newFlags.length} new flags to horse ${horse.name}: ${newFlags.join(', ')}`
+      );
     }
 
     return {
@@ -161,7 +163,6 @@ export async function processHorseForFlagEvaluation(horseId) {
       bondLevel: horse.bondLevel,
       stressLevel: horse.stressLevel,
     };
-
   } catch (error) {
     logger.error(`Error processing horse ${horseId} for flag evaluation:`, error);
     return {
@@ -195,7 +196,7 @@ export async function evaluateWeeklyFlags() {
       try {
         const evaluation = await processHorseForFlagEvaluation(horse.id);
         results.horsesProcessed.push(evaluation);
-        
+
         if (evaluation.flagsAssigned) {
           results.flagsAssigned += evaluation.flagsAssigned.length;
         }
@@ -209,9 +210,10 @@ export async function evaluateWeeklyFlags() {
       }
     }
 
-    logger.info(`Weekly flag evaluation completed: ${results.flagsAssigned} flags assigned to ${results.totalHorsesEvaluated} horses`);
+    logger.info(
+      `Weekly flag evaluation completed: ${results.flagsAssigned} flags assigned to ${results.totalHorsesEvaluated} horses`
+    );
     return results;
-
   } catch (error) {
     logger.error('Error in weekly flag evaluation:', error);
     throw error;
@@ -228,7 +230,7 @@ export async function triggerWeeklyFlagEvaluation() {
     // Check if it's time for weekly evaluation (could be based on day of week or interval)
     const now = new Date();
     const dayOfWeek = now.getDay(); // 0 = Sunday, 1 = Monday, etc.
-    
+
     // Run weekly evaluation on Mondays (day 1)
     if (dayOfWeek === 1) {
       return await evaluateWeeklyFlags();

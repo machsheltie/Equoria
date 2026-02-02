@@ -5,8 +5,7 @@
 
 import { useState, useEffect, useCallback } from 'react';
 
-const API_BASE_URL =
-  process.env.REACT_APP_API_URL || 'http://localhost:3000/api';
+const API_BASE_URL = process.env.REACT_APP_API_URL || 'http://localhost:3000/api';
 
 /**
  * Custom hook for trait discovery functionality
@@ -47,9 +46,7 @@ export function useTraitDiscovery(horseId, options = {}) {
     try {
       setDiscoveryState((prev) => ({ ...prev, isLoading: true, error: null }));
 
-      const response = await fetch(
-        `${API_BASE_URL}/traits/discovery-status/${horseId}`
-      );
+      const response = await fetch(`${API_BASE_URL}/traits/discovery-status/${horseId}`);
       const data = await response.json();
 
       if (data.success) {
@@ -88,19 +85,16 @@ export function useTraitDiscovery(horseId, options = {}) {
           error: null,
         }));
 
-        const response = await fetch(
-          `${API_BASE_URL}/traits/discover/${horseId}`,
-          {
-            method: 'POST',
-            headers: {
-              'Content-Type': 'application/json',
-            },
-            body: JSON.stringify({
-              checkEnrichment: options.checkEnrichment !== false,
-              forceCheck: options.forceCheck || false,
-            }),
-          }
-        );
+        const response = await fetch(`${API_BASE_URL}/traits/discover/${horseId}`, {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json',
+          },
+          body: JSON.stringify({
+            checkEnrichment: options.checkEnrichment !== false,
+            forceCheck: options.forceCheck || false,
+          }),
+        });
 
         const data = await response.json();
 
@@ -115,14 +109,8 @@ export function useTraitDiscovery(horseId, options = {}) {
           setDiscoveryState((prev) => ({
             ...prev,
             lastDiscovery: discoveryResult,
-            discoveredTraits: [
-              ...prev.discoveredTraits,
-              ...discoveryResult.revealed,
-            ],
-            discoveryHistory: [
-              discoveryResult,
-              ...prev.discoveryHistory.slice(0, 9),
-            ], // Keep last 10
+            discoveredTraits: [...prev.discoveredTraits, ...discoveryResult.revealed],
+            discoveryHistory: [discoveryResult, ...prev.discoveryHistory.slice(0, 9)], // Keep last 10
           }));
 
           // Refresh discovery status
@@ -233,14 +221,8 @@ export function useTraitDiscovery(horseId, options = {}) {
           setDiscoveryState((prev) => ({
             ...prev,
             lastDiscovery: discoveryResult,
-            discoveredTraits: [
-              ...prev.discoveredTraits,
-              ...discoveryResult.revealed,
-            ],
-            discoveryHistory: [
-              discoveryResult,
-              ...prev.discoveryHistory.slice(0, 9),
-            ],
+            discoveredTraits: [...prev.discoveredTraits, ...discoveryResult.revealed],
+            discoveryHistory: [discoveryResult, ...prev.discoveryHistory.slice(0, 9)],
           }));
 
           // Refresh discovery status
@@ -273,9 +255,7 @@ export function useTraitDiscovery(horseId, options = {}) {
     hasNewDiscoveries: discoveryState.discoveredTraits.length > 0,
     canDiscover: discoveryStatus.canDiscover && !discoveryState.isDiscovering,
     discoveryProgress: {
-      total:
-        discoveryStatus.hiddenTraitCount +
-        discoveryState.discoveredTraits.length,
+      total: discoveryStatus.hiddenTraitCount + discoveryState.discoveredTraits.length,
       discovered: discoveryState.discoveredTraits.length,
       remaining: discoveryStatus.hiddenTraitCount,
     },

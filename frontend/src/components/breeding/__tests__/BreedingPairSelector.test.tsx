@@ -110,13 +110,13 @@ describe('BreedingPairSelector', () => {
     });
 
     vi.mocked(useBreedingPredictionHooks.useHorseBreedingData).mockImplementation(
-      mockUseHorseBreedingData,
+      mockUseHorseBreedingData
     );
     vi.mocked(useBreedingPredictionHooks.useInbreedingAnalysis).mockImplementation(
-      mockUseInbreedingAnalysis,
+      mockUseInbreedingAnalysis
     );
     vi.mocked(useBreedingPredictionHooks.useGeneticProbability).mockImplementation(
-      mockUseGeneticProbability,
+      mockUseGeneticProbability
     );
   });
 
@@ -328,9 +328,7 @@ describe('BreedingPairSelector', () => {
     });
 
     it('displays horses side-by-side', () => {
-      const { container } = renderWithProvider(
-        <BreedingPairSelector stallionId={3} mareId={1} />,
-      );
+      const { container } = renderWithProvider(<BreedingPairSelector stallionId={3} mareId={1} />);
 
       // Should have a grid or flex layout with two columns
       const layout = container.querySelector('[class*="grid"]');
@@ -368,9 +366,7 @@ describe('BreedingPairSelector', () => {
         error: null,
       });
 
-      const { container } = renderWithProvider(
-        <BreedingPairSelector stallionId={3} mareId={1} />,
-      );
+      const { container } = renderWithProvider(<BreedingPairSelector stallionId={3} mareId={1} />);
 
       // Warning should have role="alert" or aria-live
       const warning = container.querySelector('[role="alert"]');

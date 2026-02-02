@@ -257,7 +257,7 @@ export async function assignGroomToFoal(foalId, groomId, userId, options = {}) {
     });
 
     logger.info(
-      `[groomSystem.assignGroomToFoal] Successfully assigned ${groom.name} to foal ${foal.name}`,
+      `[groomSystem.assignGroomToFoal] Successfully assigned ${groom.name} to foal ${foal.name}`
     );
 
     return {
@@ -280,7 +280,7 @@ export async function assignGroomToFoal(foalId, groomId, userId, options = {}) {
 export async function ensureDefaultGroomAssignment(foalId) {
   try {
     logger.warn(
-      `[groomSystem.ensureDefaultGroomAssignment] DEPRECATED: Auto-assignment disabled for foal ${foalId}. Players must manually assign grooms.`,
+      `[groomSystem.ensureDefaultGroomAssignment] DEPRECATED: Auto-assignment disabled for foal ${foalId}. Players must manually assign grooms.`
     );
 
     // Check if foal already has an active assignment
@@ -296,7 +296,7 @@ export async function ensureDefaultGroomAssignment(foalId) {
 
     if (existingAssignment) {
       logger.info(
-        `[groomSystem.ensureDefaultGroomAssignment] Foal ${foalId} already has active assignment`,
+        `[groomSystem.ensureDefaultGroomAssignment] Foal ${foalId} already has active assignment`
       );
       return {
         success: true,
@@ -329,7 +329,7 @@ export async function ensureDefaultGroomAssignment(foalId) {
 export async function getOrCreateDefaultGroom(userId) {
   try {
     logger.warn(
-      `[groomSystem.getOrCreateDefaultGroom] DEPRECATED: Auto-creation disabled for user ${userId}. Players must manually hire grooms.`,
+      `[groomSystem.getOrCreateDefaultGroom] DEPRECATED: Auto-creation disabled for user ${userId}. Players must manually hire grooms.`
     );
 
     // Check if user already has grooms
@@ -347,7 +347,7 @@ export async function getOrCreateDefaultGroom(userId) {
 
     // No auto-creation - throw error to force manual hiring
     throw new Error(
-      'No foal care groom found for user. Please hire a groom manually through the hiring system to increase player engagement.',
+      'No foal care groom found for user. Please hire a groom manually through the hiring system to increase player engagement.'
     );
   } catch (error) {
     logger.error(`[groomSystem.getOrCreateDefaultGroom] Error: ${error.message}`);
@@ -425,11 +425,11 @@ export async function recordGroomInteraction(
   interactionType,
   duration,
   userId,
-  notes = null,
+  notes = null
 ) {
   try {
     logger.info(
-      `[groomSystem.recordGroomInteraction] Recording interaction: Groom ${groomId} with Foal ${foalId}`,
+      `[groomSystem.recordGroomInteraction] Recording interaction: Groom ${groomId} with Foal ${foalId}`
     );
 
     // Validate daily interaction limits for all horses
@@ -457,7 +457,7 @@ export async function recordGroomInteraction(
     });
 
     logger.info(
-      `[groomSystem.recordGroomInteraction] Successfully recorded interaction ID ${interaction.id}`,
+      `[groomSystem.recordGroomInteraction] Successfully recorded interaction ID ${interaction.id}`
     );
 
     return {

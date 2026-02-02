@@ -103,10 +103,7 @@ export function parseCurrency(value: string): number {
   }
 
   // Remove currency symbol and commas
-  const cleaned = value
-    .replace(CURRENCY_SYMBOL, '')
-    .replace(/,/g, '')
-    .trim();
+  const cleaned = value.replace(CURRENCY_SYMBOL, '').replace(/,/g, '').trim();
 
   // Parse as number
   const parsed = parseInt(cleaned, 10);

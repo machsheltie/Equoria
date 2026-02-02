@@ -1,6 +1,6 @@
 /**
  * AssignGroomModal Component
- * 
+ *
  * Modal for assigning a groom to a horse with the following features:
  * - Display horse information
  * - List available grooms with slot availability
@@ -11,13 +11,13 @@
  * - Validate assignment before submission
  * - Handle success/error states
  * - Accessibility support with ARIA labels and keyboard navigation
- * 
+ *
  * Uses React Query for API integration with groom assignment endpoints
  */
 
 import React, { useState, useEffect } from 'react';
-import { useMutation, useQueryClient } from '@tanstack/react-query';
 import { X, User, Star, AlertCircle, CheckCircle } from 'lucide-react';
+import { useAssignGroom } from '../hooks/api/useGrooms';
 
 // Type definitions
 interface Groom {
@@ -61,8 +61,6 @@ const AssignGroomModal: React.FC<AssignGroomModalProps> = ({
   const [error, setError] = useState<string | null>(null);
   const [success, setSuccess] = useState<boolean>(false);
 
-  const queryClient = useQueryClient();
-
   // Reset state when modal opens/closes
   useEffect(() => {
     if (!isOpen) {
@@ -75,51 +73,29 @@ const AssignGroomModal: React.FC<AssignGroomModalProps> = ({
     }
   }, [isOpen]);
 
-  // Assignment mutation
-  const assignMutation = useMutation({
-    mutationFn: async (assignmentData: {
-      groomId: number;
-      horseId: number;
-      priority: number;
-      notes?: string;
-      replacePrimary?: boolean;
-    }) => {
-      const response = await fetch('/api/groom-assignments', {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-          Authorization: `Bearer ${localStorage.getItem('token')}`,
-        },
-        body: JSON.stringify(assignmentData),
-      });
+  // Assignment mutation using centralized hook
+  const assignMutation = useAssignGroom();
 
-      if (!response.ok) {
-        const errorData = await response.json();
-        throw new Error(errorData.message || 'Failed to assign groom');
-      }
+  // Custom success handler
+  const handleMutationSuccess = () => {
+    setSuccess(true);
+    setError(null);
 
-      return response.json();
-    },
-    onSuccess: (data) => {
-      setSuccess(true);
-      setError(null);
-      queryClient.invalidateQueries({ queryKey: ['groom-assignments'] });
-      queryClient.invalidateQueries({ queryKey: ['available-grooms'] });
-      
-      if (onAssignmentComplete) {
-        onAssignmentComplete(data.data);
-      }
+    if (onAssignmentComplete) {
+      onAssignmentComplete({}); // Note: centralized hook doesn't return data
+    }
 
-      // Close modal after short delay to show success message
-      setTimeout(() => {
-        onClose();
-      }, 1500);
-    },
-    onError: (err: Error) => {
-      setError(err.message);
-      setSuccess(false);
-    },
-  });
+    // Close modal after short delay to show success message
+    setTimeout(() => {
+      onClose();
+    }, 1500);
+  };
+
+  // Custom error handler
+  const handleMutationError = (err: Error) => {
+    setError(err.message);
+    setSuccess(false);
+  };
 
   // Handle assignment submission
   const handleAssign = () => {
@@ -129,13 +105,19 @@ const AssignGroomModal: React.FC<AssignGroomModalProps> = ({
     }
 
     setError(null);
-    assignMutation.mutate({
-      groomId: selectedGroomId,
-      horseId,
-      priority,
-      notes: notes.trim() || undefined,
-      replacePrimary: priority === 1 ? replacePrimary : undefined,
-    });
+    assignMutation.mutate(
+      {
+        groomId: selectedGroomId,
+        horseId,
+        priority,
+        notes: notes.trim() || undefined,
+        replacePrimary: priority === 1 ? replacePrimary : undefined,
+      },
+      {
+        onSuccess: handleMutationSuccess,
+        onError: handleMutationError,
+      }
+    );
   };
 
   // Get selected groom details
@@ -200,12 +182,14 @@ const AssignGroomModal: React.FC<AssignGroomModalProps> = ({
           {/* Available Grooms */}
           <div className="mb-6">
             <h3 className="text-lg font-semibold text-gray-900 mb-4">Select Groom</h3>
-            
+
             {availableGrooms.length === 0 ? (
               <div className="text-center py-8 text-gray-500">
                 <User size={48} className="mx-auto mb-4 text-gray-400" />
                 <p className="text-lg">No grooms available</p>
-                <p className="text-sm mt-2">Hire grooms from the marketplace to assign them to your horses.</p>
+                <p className="text-sm mt-2">
+                  Hire grooms from the marketplace to assign them to your horses.
+                </p>
               </div>
             ) : (
               <div className="space-y-3">
@@ -216,8 +200,8 @@ const AssignGroomModal: React.FC<AssignGroomModalProps> = ({
                       selectedGroomId === groom.id
                         ? 'border-blue-500 bg-blue-50'
                         : groom.availableSlots === 0
-                        ? 'border-gray-200 bg-gray-50 cursor-not-allowed opacity-60'
-                        : 'border-gray-300 hover:border-blue-300 hover:bg-gray-50'
+                          ? 'border-gray-200 bg-gray-50 cursor-not-allowed opacity-60'
+                          : 'border-gray-300 hover:border-blue-300 hover:bg-gray-50'
                     }`}
                   >
                     <div className="flex items-start">
@@ -234,7 +218,9 @@ const AssignGroomModal: React.FC<AssignGroomModalProps> = ({
                       <div className="flex-1">
                         <div className="flex items-center justify-between mb-2">
                           <h4 className="font-semibold text-gray-900">{groom.name}</h4>
-                          <span className="text-sm text-gray-600 capitalize">{groom.skillLevel}</span>
+                          <span className="text-sm text-gray-600 capitalize">
+                            {groom.skillLevel}
+                          </span>
                         </div>
                         <div className="text-sm text-gray-600 space-y-1">
                           <p>
@@ -242,14 +228,22 @@ const AssignGroomModal: React.FC<AssignGroomModalProps> = ({
                             <span className="capitalize">{formatSpecialty(groom.specialty)}</span>
                           </p>
                           <p>
-                            <span className="font-medium">Experience:</span> {groom.experience} years
+                            <span className="font-medium">Experience:</span> {groom.experience}{' '}
+                            years
                           </p>
                           <p>
                             <span className="font-medium">Slots:</span>{' '}
-                            <span className={groom.availableSlots === 0 ? 'text-red-600 font-semibold' : 'text-green-600 font-semibold'}>
-                              {groom.availableSlots} {groom.availableSlots === 1 ? 'slot' : 'slots'} available
-                            </span>
-                            {' '}({groom.currentAssignments}/{groom.maxAssignments} assigned)
+                            <span
+                              className={
+                                groom.availableSlots === 0
+                                  ? 'text-red-600 font-semibold'
+                                  : 'text-green-600 font-semibold'
+                              }
+                            >
+                              {groom.availableSlots} {groom.availableSlots === 1 ? 'slot' : 'slots'}{' '}
+                              available
+                            </span>{' '}
+                            ({groom.currentAssignments}/{groom.maxAssignments} assigned)
                           </p>
                         </div>
                       </div>
@@ -264,7 +258,7 @@ const AssignGroomModal: React.FC<AssignGroomModalProps> = ({
           {selectedGroom && (
             <div className="space-y-4 mb-6">
               <h3 className="text-lg font-semibold text-gray-900">Assignment Options</h3>
-              
+
               {/* Priority Selection */}
               <div>
                 <label htmlFor="priority" className="block text-sm font-medium text-gray-700 mb-2">
@@ -322,9 +316,7 @@ const AssignGroomModal: React.FC<AssignGroomModalProps> = ({
                   placeholder="Add any special instructions or notes for this assignment..."
                   aria-label="Assignment notes"
                 />
-                <p className="text-xs text-gray-500 mt-1">
-                  {notes.length}/500 characters
-                </p>
+                <p className="text-xs text-gray-500 mt-1">{notes.length}/500 characters</p>
               </div>
             </div>
           )}
@@ -354,4 +346,3 @@ const AssignGroomModal: React.FC<AssignGroomModalProps> = ({
 };
 
 export default AssignGroomModal;
-

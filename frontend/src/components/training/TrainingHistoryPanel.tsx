@@ -83,7 +83,9 @@ const TrainingHistoryPanel = ({ horseId }: TrainingHistoryPanelProps) => {
               <div className="flex items-center justify-between">
                 <span className="font-semibold">{entry.discipline ?? 'Discipline'}</span>
                 <span className="text-xs text-slate-500">
-                  {entry.trainedAt ? new Date(entry.trainedAt).toLocaleString() : 'Timestamp pending'}
+                  {entry.trainedAt
+                    ? new Date(entry.trainedAt).toLocaleString()
+                    : 'Timestamp pending'}
                 </span>
               </div>
               <div className="text-xs text-slate-600">

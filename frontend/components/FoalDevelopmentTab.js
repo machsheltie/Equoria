@@ -34,10 +34,7 @@ const FoalDevelopmentTab = ({ foalId }) => {
       if (data.success) {
         setDevelopmentData(data.data);
       } else {
-        Alert.alert(
-          'Error',
-          data.message || 'Failed to load foal development data'
-        );
+        Alert.alert('Error', data.message || 'Failed to load foal development data');
       }
     } catch (error) {
       console.error('Error fetching foal development data:', error);
@@ -121,9 +118,7 @@ const FoalDevelopmentTab = ({ foalId }) => {
 
     return (
       <View className="flex-1 mx-2">
-        <Text className="text-center text-sm font-medium text-gray-700 mb-2">
-          {label}
-        </Text>
+        <Text className="text-center text-sm font-medium text-gray-700 mb-2">{label}</Text>
         <View className="h-32 w-8 bg-gray-200 rounded-full mx-auto relative overflow-hidden">
           <View
             className="absolute bottom-0 w-full rounded-full"
@@ -144,9 +139,7 @@ const FoalDevelopmentTab = ({ foalId }) => {
   const ActivityCard = ({ activity, onPress, disabled }) => (
     <TouchableOpacity
       className={`p-4 rounded-lg border-2 mb-3 ${
-        disabled
-          ? 'bg-gray-100 border-gray-300'
-          : 'bg-white border-blue-300 shadow-sm'
+        disabled ? 'bg-gray-100 border-gray-300' : 'bg-white border-blue-300 shadow-sm'
       }`}
       onPress={onPress}
       disabled={disabled}
@@ -156,17 +149,11 @@ const FoalDevelopmentTab = ({ foalId }) => {
       <View className="flex-row justify-between items-start">
         <View className="flex-1">
           <Text
-            className={`font-semibold text-base ${
-              disabled ? 'text-gray-500' : 'text-gray-800'
-            }`}
+            className={`font-semibold text-base ${disabled ? 'text-gray-500' : 'text-gray-800'}`}
           >
             {activity.name}
           </Text>
-          <Text
-            className={`text-sm mt-1 ${
-              disabled ? 'text-gray-400' : 'text-gray-600'
-            }`}
-          >
+          <Text className={`text-sm mt-1 ${disabled ? 'text-gray-400' : 'text-gray-600'}`}>
             {activity.description}
           </Text>
           <View className="flex-row mt-2">
@@ -175,15 +162,12 @@ const FoalDevelopmentTab = ({ foalId }) => {
             </Text>
             <Text className="text-xs text-orange-600">
               Stress: {activity.stressRange[0] >= 0 ? '+' : ''}
-              {activity.stressRange[0]} to{' '}
-              {activity.stressRange[1] >= 0 ? '+' : ''}
+              {activity.stressRange[0]} to {activity.stressRange[1] >= 0 ? '+' : ''}
               {activity.stressRange[1]}
             </Text>
           </View>
         </View>
-        {completingActivity === activity.type && (
-          <ActivityIndicator size="small" color="#3B82F6" />
-        )}
+        {completingActivity === activity.type && <ActivityIndicator size="small" color="#3B82F6" />}
       </View>
     </TouchableOpacity>
   );
@@ -220,20 +204,13 @@ const FoalDevelopmentTab = ({ foalId }) => {
         <View className="flex-row justify-between items-start mb-1">
           <Text className="font-medium text-gray-800">
             Day {activity.day}:{' '}
-            {activity.activityType
-              .replace(/_/g, ' ')
-              .replace(/\b\w/g, (l) => l.toUpperCase())}
+            {activity.activityType.replace(/_/g, ' ').replace(/\b\w/g, (l) => l.toUpperCase())}
           </Text>
-          <Text
-            className={`text-sm font-medium ${getOutcomeColor(activity.outcome)}`}
-          >
-            {activity.outcome.charAt(0).toUpperCase() +
-              activity.outcome.slice(1)}
+          <Text className={`text-sm font-medium ${getOutcomeColor(activity.outcome)}`}>
+            {activity.outcome.charAt(0).toUpperCase() + activity.outcome.slice(1)}
           </Text>
         </View>
-        <Text className="text-sm text-gray-600 mb-2">
-          {activity.description}
-        </Text>
+        <Text className="text-sm text-gray-600 mb-2">{activity.description}</Text>
         <View className="flex-row justify-between">
           <View className="flex-row">
             <Text className="text-xs text-green-600 mr-3">
@@ -245,9 +222,7 @@ const FoalDevelopmentTab = ({ foalId }) => {
               {activity.stressChange}
             </Text>
           </View>
-          <Text className="text-xs text-gray-400">
-            {formatDate(activity.timestamp)}
-          </Text>
+          <Text className="text-xs text-gray-400">{formatDate(activity.timestamp)}</Text>
         </View>
       </View>
     );
@@ -278,24 +253,16 @@ const FoalDevelopmentTab = ({ foalId }) => {
     );
   }
 
-  const { foal, development, activityHistory, availableActivities } =
-    developmentData;
+  const { foal, development, activityHistory, availableActivities } = developmentData;
 
   return (
     <ScrollView
       className="flex-1 bg-gray-50"
-      refreshControl={
-        <RefreshControl refreshing={refreshing} onRefresh={onRefresh} />
-      }
+      refreshControl={<RefreshControl refreshing={refreshing} onRefresh={onRefresh} />}
     >
       {/* Header */}
-      <LinearGradient
-        colors={['#3B82F6', '#1E40AF']}
-        className="p-6 rounded-b-3xl"
-      >
-        <Text className="text-2xl font-bold text-white text-center">
-          {foal.name}'s Development
-        </Text>
+      <LinearGradient colors={['#3B82F6', '#1E40AF']} className="p-6 rounded-b-3xl">
+        <Text className="text-2xl font-bold text-white text-center">{foal.name}'s Development</Text>
         <Text className="text-blue-100 text-center mt-1">
           {foal.breed} • {foal.age} year{foal.age !== 1 ? 's' : ''} old
         </Text>
@@ -304,9 +271,7 @@ const FoalDevelopmentTab = ({ foalId }) => {
       <View className="p-6">
         {/* Progress Section */}
         <View className="bg-white rounded-xl p-6 mb-6 shadow-sm">
-          <Text className="text-lg font-bold text-gray-800 mb-4">
-            Development Progress
-          </Text>
+          <Text className="text-lg font-bold text-gray-800 mb-4">Development Progress</Text>
           <ProgressBar
             current={development.currentDay}
             max={development.maxDay}
@@ -321,20 +286,10 @@ const FoalDevelopmentTab = ({ foalId }) => {
 
         {/* Status Meters */}
         <View className="bg-white rounded-xl p-6 mb-6 shadow-sm">
-          <Text className="text-lg font-bold text-gray-800 mb-4 text-center">
-            Current Status
-          </Text>
+          <Text className="text-lg font-bold text-gray-800 mb-4 text-center">Current Status</Text>
           <View className="flex-row justify-center">
-            <Meter
-              value={development.bondingLevel}
-              label="Bonding"
-              color="#10B981"
-            />
-            <Meter
-              value={development.stressLevel}
-              label="Stress"
-              color="#EF4444"
-            />
+            <Meter value={development.bondingLevel} label="Bonding" color="#10B981" />
+            <Meter value={development.stressLevel} label="Stress" color="#EF4444" />
           </View>
         </View>
 
@@ -358,9 +313,7 @@ const FoalDevelopmentTab = ({ foalId }) => {
         {/* No Activities Available */}
         {availableActivities.length === 0 && (
           <View className="bg-white rounded-xl p-6 mb-6 shadow-sm">
-            <Text className="text-lg font-bold text-gray-800 mb-2">
-              Today's Activities
-            </Text>
+            <Text className="text-lg font-bold text-gray-800 mb-2">Today's Activities</Text>
             <Text className="text-gray-600 text-center py-4">
               All activities for today have been completed!
             </Text>
@@ -369,17 +322,13 @@ const FoalDevelopmentTab = ({ foalId }) => {
 
         {/* Activity History */}
         <View className="bg-white rounded-xl p-6 shadow-sm">
-          <Text className="text-lg font-bold text-gray-800 mb-4">
-            Activity History
-          </Text>
+          <Text className="text-lg font-bold text-gray-800 mb-4">Activity History</Text>
           {activityHistory.length > 0 ? (
             activityHistory.map((activity) => (
               <ActivityLogItem key={activity.id} activity={activity} />
             ))
           ) : (
-            <Text className="text-gray-600 text-center py-4">
-              No activities completed yet
-            </Text>
+            <Text className="text-gray-600 text-center py-4">No activities completed yet</Text>
           )}
         </View>
       </View>

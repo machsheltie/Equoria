@@ -1,6 +1,6 @@
 /**
  * Expo Linear Gradient Mock for Jest Testing
- * 
+ *
  * Provides mock implementation of expo-linear-gradient for testing.
  */
 
@@ -8,7 +8,7 @@ import React from 'react';
 
 export const LinearGradient = React.forwardRef((props, ref) => {
   const { children, colors, start, end, locations, ...otherProps } = props;
-  
+
   return React.createElement(
     'div',
     {

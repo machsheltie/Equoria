@@ -28,8 +28,12 @@ const RedirectCapture: React.FC<{ testId: string }> = ({ testId }) => {
   const location = useLocation();
   return (
     <div data-testid={testId}>
-      <span data-testid="redirect-from">{(location.state as { from?: string })?.from || 'none'}</span>
-      <span data-testid="redirect-message">{(location.state as { message?: string })?.message || 'none'}</span>
+      <span data-testid="redirect-from">
+        {(location.state as { from?: string })?.from || 'none'}
+      </span>
+      <span data-testid="redirect-message">
+        {(location.state as { message?: string })?.message || 'none'}
+      </span>
     </div>
   );
 };
@@ -51,7 +55,10 @@ const TestWrapper: React.FC<TestWrapperProps> = ({ children, initialRoute = '/pr
       <Route path="/protected" element={children} />
       <Route path="/login" element={<RedirectCapture testId="login-page" />} />
       <Route path="/unauthorized" element={<RedirectCapture testId="unauthorized-page" />} />
-      <Route path="/custom-unauthorized" element={<RedirectCapture testId="custom-unauthorized" />} />
+      <Route
+        path="/custom-unauthorized"
+        element={<RedirectCapture testId="custom-unauthorized" />}
+      />
     </Routes>
   </MemoryRouter>
 );
@@ -345,10 +352,7 @@ describe('RoleProtectedRoute', () => {
 
       render(
         <TestWrapper>
-          <RoleProtectedRoute
-            allowedRoles={['admin']}
-            accessDeniedMessage="Admin access required"
-          >
+          <RoleProtectedRoute allowedRoles={['admin']} accessDeniedMessage="Admin access required">
             <ProtectedContent />
           </RoleProtectedRoute>
         </TestWrapper>
@@ -427,9 +431,7 @@ describe('RoleProtectedRoute', () => {
       render(
         <TestWrapper>
           <RoleProtectedRoute allowedRoles={['admin']}>
-            {(userRole) => (
-              <div data-testid="role-display">Current role: {userRole}</div>
-            )}
+            {(userRole) => <div data-testid="role-display">Current role: {userRole}</div>}
           </RoleProtectedRoute>
         </TestWrapper>
       );

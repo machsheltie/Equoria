@@ -40,7 +40,7 @@ const MainNavigation: React.FC = () => {
   const [user, setUser] = useState<User>({ id: '1', name: 'Test User', email: 'test@example.com' });
   const [notifications, setNotifications] = useState<Notification[]>([
     { id: '1', message: 'New competition available', read: false },
-    { id: '2', message: 'Training session completed', read: true }
+    { id: '2', message: 'Training session completed', read: true },
   ]);
   const location = useLocation();
 
@@ -51,16 +51,16 @@ const MainNavigation: React.FC = () => {
     { name: 'Competition', href: '/competition', icon: '🏆' },
     { name: 'Breeding', href: '/breeding', icon: '🧬' },
     { name: 'Genetics', href: '/genetics', icon: '🔬' },
-    { name: 'Analytics', href: '/analytics', icon: '📊' }
+    { name: 'Analytics', href: '/analytics', icon: '📊' },
   ];
 
   const breadcrumbs = [
     { name: 'Home', href: '/' },
     { name: 'Stable', href: '/stable' },
-    { name: 'Horses', href: '/stable/horses' }
+    { name: 'Horses', href: '/stable/horses' },
   ];
 
-  const unreadNotifications = notifications.filter(n => !n.read).length;
+  const unreadNotifications = notifications.filter((n) => !n.read).length;
 
   const isActiveRoute = (href: string) => {
     return location.pathname === href;
@@ -162,10 +162,16 @@ const MainNavigation: React.FC = () => {
                   className="flex items-center space-x-2 p-2 rounded-md hover:bg-gray-100"
                   aria-label="User profile"
                 >
-                  <div className="w-8 h-8 bg-blue-500 rounded-full flex items-center justify-center" data-testid="user-avatar">
+                  <div
+                    className="w-8 h-8 bg-blue-500 rounded-full flex items-center justify-center"
+                    data-testid="user-avatar"
+                  >
                     <User className="w-4 h-4 text-white" />
                   </div>
-                  <span className="hidden md:block text-sm font-medium text-gray-700" data-testid="user-name">
+                  <span
+                    className="hidden md:block text-sm font-medium text-gray-700"
+                    data-testid="user-name"
+                  >
                     {user.name}
                   </span>
                   <ChevronDown className="w-4 h-4 text-gray-500" />
@@ -248,7 +254,11 @@ const MainNavigation: React.FC = () => {
       </nav>
 
       {/* Breadcrumb Navigation */}
-      <nav role="navigation" aria-label="Breadcrumb" className="bg-gray-50 border-b border-gray-200">
+      <nav
+        role="navigation"
+        aria-label="Breadcrumb"
+        className="bg-gray-50 border-b border-gray-200"
+      >
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
           <ol className="flex items-center space-x-2 py-3 text-sm">
             {breadcrumbs.map((crumb, index) => (

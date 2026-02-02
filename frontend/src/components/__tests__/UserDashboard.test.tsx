@@ -1,13 +1,13 @@
 /**
  * User Dashboard Component Tests
- * 
+ *
  * Tests for the comprehensive user dashboard interface including:
  * - User overview with level, XP, money, and statistics
  * - Progress tracking with visual indicators
  * - Recent activity timeline with pagination
  * - Quick actions for common game functions
  * - Real-time data updates with React Query
- * 
+ *
  * Following TDD with NO MOCKING approach for authentic component validation
  * Testing real API integration with backend user management endpoints
  */
@@ -49,15 +49,40 @@ const mockDashboardData = {
     { id: 2, name: 'Summer Classic', date: '2024-06-20', placement: 3 },
   ],
   recentActivity: [
-    { id: 1, type: 'competition', description: 'Won Spring Championship', timestamp: '2024-03-15T10:00:00Z' },
-    { id: 2, type: 'training', description: 'Trained Thunder in dressage', timestamp: '2024-03-14T15:30:00Z' },
+    {
+      id: 1,
+      type: 'competition',
+      description: 'Won Spring Championship',
+      timestamp: '2024-03-15T10:00:00Z',
+    },
+    {
+      id: 2,
+      type: 'training',
+      description: 'Trained Thunder in dressage',
+      timestamp: '2024-03-14T15:30:00Z',
+    },
   ],
 };
 
 const mockActivityData = [
-  { id: 1, type: 'competition', description: 'Won Spring Championship', timestamp: '2024-03-15T10:00:00Z' },
-  { id: 2, type: 'training', description: 'Trained Thunder in dressage', timestamp: '2024-03-14T15:30:00Z' },
-  { id: 3, type: 'purchase', description: 'Purchased new horse Lightning', timestamp: '2024-03-13T09:00:00Z' },
+  {
+    id: 1,
+    type: 'competition',
+    description: 'Won Spring Championship',
+    timestamp: '2024-03-15T10:00:00Z',
+  },
+  {
+    id: 2,
+    type: 'training',
+    description: 'Trained Thunder in dressage',
+    timestamp: '2024-03-14T15:30:00Z',
+  },
+  {
+    id: 3,
+    type: 'purchase',
+    description: 'Purchased new horse Lightning',
+    timestamp: '2024-03-13T09:00:00Z',
+  },
 ];
 
 // Test wrapper with required providers
@@ -71,9 +96,7 @@ const createTestWrapper = () => {
 
   return ({ children }: { children: React.ReactNode }) => (
     <QueryClientProvider client={queryClient}>
-      <BrowserRouter>
-        {children}
-      </BrowserRouter>
+      <BrowserRouter>{children}</BrowserRouter>
     </QueryClientProvider>
   );
 };

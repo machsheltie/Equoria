@@ -6,15 +6,15 @@
  * - Detailed statistics
  * - Discipline scores
  * - Genetic traits
- * - Training history (placeholder)
+ * - Training system with discipline selection and session management
  * - Competition results (placeholder)
  *
  * Story 3.2: Horse Detail View - AC-1 through AC-5
+ * Story 4-1: Training Session Interface - Task 6
  */
 
 import React, { useState } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
-import { useQuery } from '@tanstack/react-query';
 import {
   Zap,
   Heart,
@@ -32,7 +32,11 @@ import {
   ChevronDown,
   Sparkles,
   TrendingUp,
+  Ruler,
+  Clock,
+  CheckCircle,
 } from 'lucide-react';
+import { useHorse } from '../hooks/api/useHorses';
 import FantasyButton from '../components/FantasyButton';
 import HorseCard from '../components/HorseCard';
 import TraitCard from '../components/TraitCard';
@@ -46,6 +50,14 @@ import StatProgressionChart from '../components/horse/StatProgressionChart';
 import RecentGains from '../components/horse/RecentGains';
 import AgeUpCounter from '../components/horse/AgeUpCounter';
 import TrainingRecommendations from '../components/horse/TrainingRecommendations';
+import ConformationTab from '../components/horse/ConformationTab';
+// Training components (Story 4-1)
+import DisciplinePicker from '../components/training/DisciplinePicker';
+import TrainingConfirmModal, { TraitModifier } from '../components/training/TrainingConfirmModal';
+import TrainingResultModal from '../components/training/TrainingResultModal';
+import ScoreProgressionPanel from '../components/training/ScoreProgressionPanel';
+import { useTrainHorse, useTrainingOverview } from '../hooks/api/useTraining';
+import { formatDisciplineName, canTrain, getDisciplineScore } from '../lib/utils/training-utils';
 
 // Types
 interface HorseStats {
@@ -61,6 +73,7 @@ interface Horse {
   id: number;
   name: string;
   breed: string;
+  breedId?: number;
   age: number;
   gender: string;
   dateOfBirth: string;
@@ -80,6 +93,7 @@ type TabType =
   | 'overview'
   | 'disciplines'
   | 'genetics'
+  | 'conformation'
   | 'progression'
   | 'training'
   | 'competition';
@@ -112,26 +126,6 @@ const getStatColor = (value: number) => {
   return 'text-mystic-silver';
 };
 
-// API function
-const fetchHorseDetail = async (horseId: string): Promise<Horse> => {
-  const response = await fetch(`/api/v1/horses/${horseId}`, {
-    headers: {
-      Authorization: `Bearer ${localStorage.getItem('authToken')}`,
-      'Content-Type': 'application/json',
-    },
-  });
-
-  if (!response.ok) {
-    if (response.status === 404) {
-      throw new Error('Horse not found');
-    }
-    throw new Error('Failed to fetch horse details');
-  }
-
-  const data = await response.json();
-  return data.data;
-};
-
 const HorseDetailPage: React.FC = () => {
   const { id } = useParams<{ id: string }>();
   const navigate = useNavigate();
@@ -139,18 +133,7 @@ const HorseDetailPage: React.FC = () => {
   const [isEditing, setIsEditing] = useState(false);
 
   // Fetch horse data
-  const {
-    data: horse,
-    isLoading,
-    isError,
-    error,
-    refetch,
-  } = useQuery<Horse, Error>({
-    queryKey: ['horse', id],
-    queryFn: () => fetchHorseDetail(id!),
-    enabled: !!id,
-    retry: false,
-  });
+  const { data: horse, isLoading, isError, error, refetch } = useHorse(Number(id));
 
   // Loading state
   if (isLoading) {
@@ -196,6 +179,7 @@ const HorseDetailPage: React.FC = () => {
     { id: 'overview', label: 'Overview', icon: <Star className="w-4 h-4" /> },
     { id: 'disciplines', label: 'Disciplines', icon: <Trophy className="w-4 h-4" /> },
     { id: 'genetics', label: 'Genetics', icon: <Users className="w-4 h-4" /> },
+    { id: 'conformation', label: 'Conformation', icon: <Ruler className="w-4 h-4" /> },
     { id: 'progression', label: 'Progression', icon: <TrendingUp className="w-4 h-4" /> },
     { id: 'training', label: 'Training', icon: <Dumbbell className="w-4 h-4" /> },
     { id: 'competition', label: 'Competitions', icon: <Award className="w-4 h-4" /> },
@@ -230,9 +214,7 @@ const HorseDetailPage: React.FC = () => {
               <div className="flex-1">
                 <div className="flex items-start justify-between mb-4">
                   <div>
-                    <h1 className="fantasy-title text-3xl text-midnight-ink mb-2">
-                      {horse.name}
-                    </h1>
+                    <h1 className="fantasy-title text-3xl text-midnight-ink mb-2">{horse.name}</h1>
                     <div className="flex flex-wrap gap-3 text-sm fantasy-body text-aged-bronze">
                       <span>Breed: {horse.breed}</span>
                       <span>•</span>
@@ -264,9 +246,7 @@ const HorseDetailPage: React.FC = () => {
                       key={statName}
                       className="flex flex-col items-center p-3 bg-parchment/50 rounded border border-aged-bronze"
                     >
-                      <div className={`mb-1 ${getStatColor(value)}`}>
-                        {getStatIcon(statName)}
-                      </div>
+                      <div className={`mb-1 ${getStatColor(value)}`}>{getStatIcon(statName)}</div>
                       <span className="text-xs fantasy-caption text-aged-bronze capitalize">
                         {statName}
                       </span>
@@ -311,10 +291,18 @@ const HorseDetailPage: React.FC = () => {
 
         {/* Tab Navigation */}
         <div className="bg-white/80 rounded-lg border-2 border-aged-bronze mb-6">
-          <div className="flex border-b border-aged-bronze overflow-x-auto">
+          <div
+            className="flex border-b border-aged-bronze overflow-x-auto"
+            role="tablist"
+            aria-label="Horse details tabs"
+          >
             {tabs.map((tab) => (
               <button
                 key={tab.id}
+                role="tab"
+                aria-selected={activeTab === tab.id}
+                aria-controls={`${tab.id}-panel`}
+                id={`${tab.id}-tab`}
                 onClick={() => setActiveTab(tab.id)}
                 className={`flex items-center gap-2 px-6 py-3 fantasy-body transition-colors whitespace-nowrap ${
                   activeTab === tab.id
@@ -329,12 +317,20 @@ const HorseDetailPage: React.FC = () => {
           </div>
 
           {/* Tab Content */}
-          <div className="p-6">
+          <div
+            className="p-6"
+            role="tabpanel"
+            id={`${activeTab}-panel`}
+            aria-labelledby={`${activeTab}-tab`}
+          >
             {activeTab === 'overview' && <OverviewTab horse={horse} />}
             {activeTab === 'disciplines' && <DisciplinesTab horse={horse} />}
             {activeTab === 'genetics' && <GeneticsTab horse={horse} />}
+            {activeTab === 'conformation' && (
+              <ConformationTab horseId={horse.id} breedId={horse.breedId} />
+            )}
             {activeTab === 'progression' && <ProgressionTab horse={horse} />}
-            {activeTab === 'training' && <PlaceholderTab title="Training History" />}
+            {activeTab === 'training' && <TrainingTab horse={horse} />}
             {activeTab === 'competition' && <PlaceholderTab title="Competition Results" />}
           </div>
         </div>
@@ -454,15 +450,9 @@ const GeneticsTab: React.FC<{ horse: Horse }> = ({ horse }) => {
 
   // Filter and sort state
   const [filterType, setFilterType] = useState<'all' | 'genetic' | 'epigenetic'>('all');
-  const [filterRarity, setFilterRarity] = useState<
-    'all' | 'common' | 'rare' | 'legendary'
-  >('all');
-  const [filterSource, setFilterSource] = useState<
-    'all' | 'sire' | 'dam' | 'mutation'
-  >('all');
-  const [sortBy, setSortBy] = useState<
-    'name' | 'rarity' | 'strength' | 'discoveryDate'
-  >('name');
+  const [filterRarity, setFilterRarity] = useState<'all' | 'common' | 'rare' | 'legendary'>('all');
+  const [filterSource, setFilterSource] = useState<'all' | 'sire' | 'dam' | 'mutation'>('all');
+  const [sortBy, setSortBy] = useState<'name' | 'rarity' | 'strength' | 'discoveryDate'>('name');
 
   // Filter and sort functions
   const getFilteredAndSortedTraits = () => {
@@ -494,9 +484,7 @@ const GeneticsTab: React.FC<{ horse: Horse }> = ({ horse }) => {
           return b.strength - a.strength;
         case 'discoveryDate':
           if (!a.discoveryDate || !b.discoveryDate) return 0;
-          return (
-            new Date(b.discoveryDate).getTime() - new Date(a.discoveryDate).getTime()
-          );
+          return new Date(b.discoveryDate).getTime() - new Date(a.discoveryDate).getTime();
         default:
           return 0;
       }
@@ -531,9 +519,7 @@ const GeneticsTab: React.FC<{ horse: Horse }> = ({ horse }) => {
           <h4 className="font-semibold">Error Loading Genetics Data</h4>
         </div>
         <p className="text-red-600 text-sm">
-          {epigeneticError?.message ||
-            interactionsError?.message ||
-            timelineError?.message}
+          {epigeneticError?.message || interactionsError?.message || timelineError?.message}
         </p>
       </div>
     );
@@ -554,9 +540,7 @@ const GeneticsTab: React.FC<{ horse: Horse }> = ({ horse }) => {
             <label className="block text-sm text-aged-bronze mb-2">Type</label>
             <select
               value={filterType}
-              onChange={(e) =>
-                setFilterType(e.target.value as 'all' | 'genetic' | 'epigenetic')
-              }
+              onChange={(e) => setFilterType(e.target.value as 'all' | 'genetic' | 'epigenetic')}
               className="w-full p-2 bg-parchment border border-aged-bronze rounded text-midnight-ink"
             >
               <option value="all">All Types</option>
@@ -571,9 +555,7 @@ const GeneticsTab: React.FC<{ horse: Horse }> = ({ horse }) => {
             <select
               value={filterRarity}
               onChange={(e) =>
-                setFilterRarity(
-                  e.target.value as 'all' | 'common' | 'rare' | 'legendary'
-                )
+                setFilterRarity(e.target.value as 'all' | 'common' | 'rare' | 'legendary')
               }
               className="w-full p-2 bg-parchment border border-aged-bronze rounded text-midnight-ink"
             >
@@ -607,9 +589,7 @@ const GeneticsTab: React.FC<{ horse: Horse }> = ({ horse }) => {
             <select
               value={sortBy}
               onChange={(e) =>
-                setSortBy(
-                  e.target.value as 'name' | 'rarity' | 'strength' | 'discoveryDate'
-                )
+                setSortBy(e.target.value as 'name' | 'rarity' | 'strength' | 'discoveryDate')
               }
               className="w-full p-2 bg-parchment border border-aged-bronze rounded text-midnight-ink"
             >
@@ -638,9 +618,8 @@ const GeneticsTab: React.FC<{ horse: Horse }> = ({ horse }) => {
               </div>
               <div className="text-3xl font-bold text-midnight-ink mb-2">
                 {(() => {
-                  const rarityScores = allTraits.map(t =>
-                    t.rarity === 'legendary' ? 100 :
-                    t.rarity === 'rare' ? 70 : 40
+                  const rarityScores = allTraits.map((t) =>
+                    t.rarity === 'legendary' ? 100 : t.rarity === 'rare' ? 70 : 40
                   );
                   const avgScore = Math.round(
                     rarityScores.reduce((a, b) => a + b, 0) / rarityScores.length
@@ -651,29 +630,25 @@ const GeneticsTab: React.FC<{ horse: Horse }> = ({ horse }) => {
               </div>
               <div className="h-3 bg-gray-200 rounded-full overflow-hidden">
                 <div
-                  className={`h-full ${
-                    (() => {
-                      const rarityScores = allTraits.map(t =>
-                        t.rarity === 'legendary' ? 100 :
-                        t.rarity === 'rare' ? 70 : 40
-                      );
-                      const avgScore = Math.round(
-                        rarityScores.reduce((a, b) => a + b, 0) / rarityScores.length
-                      );
-                      return avgScore >= 80
-                        ? 'bg-gradient-to-r from-green-500 to-emerald-600'
-                        : avgScore >= 60
+                  className={`h-full ${(() => {
+                    const rarityScores = allTraits.map((t) =>
+                      t.rarity === 'legendary' ? 100 : t.rarity === 'rare' ? 70 : 40
+                    );
+                    const avgScore = Math.round(
+                      rarityScores.reduce((a, b) => a + b, 0) / rarityScores.length
+                    );
+                    return avgScore >= 80
+                      ? 'bg-gradient-to-r from-green-500 to-emerald-600'
+                      : avgScore >= 60
                         ? 'bg-gradient-to-r from-blue-500 to-blue-600'
                         : avgScore >= 40
-                        ? 'bg-gradient-to-r from-yellow-500 to-yellow-600'
-                        : 'bg-gradient-to-r from-gray-400 to-gray-500';
-                    })()
-                  }`}
+                          ? 'bg-gradient-to-r from-yellow-500 to-yellow-600'
+                          : 'bg-gradient-to-r from-gray-400 to-gray-500';
+                  })()}`}
                   style={{
                     width: `${(() => {
-                      const rarityScores = allTraits.map(t =>
-                        t.rarity === 'legendary' ? 100 :
-                        t.rarity === 'rare' ? 70 : 40
+                      const rarityScores = allTraits.map((t) =>
+                        t.rarity === 'legendary' ? 100 : t.rarity === 'rare' ? 70 : 40
                       );
                       return Math.round(
                         rarityScores.reduce((a, b) => a + b, 0) / rarityScores.length
@@ -697,35 +672,30 @@ const GeneticsTab: React.FC<{ horse: Horse }> = ({ horse }) => {
                 {(() => {
                   const geneticCount = geneticTraits.length;
                   const totalCount = allTraits.length;
-                  const stability = totalCount > 0
-                    ? Math.round((geneticCount / totalCount) * 100)
-                    : 0;
+                  const stability =
+                    totalCount > 0 ? Math.round((geneticCount / totalCount) * 100) : 0;
                   return stability;
-                })()}%
+                })()}
+                %
               </div>
               <div className="h-3 bg-gray-200 rounded-full overflow-hidden">
                 <div
-                  className={`h-full ${
-                    (() => {
-                      const geneticCount = geneticTraits.length;
-                      const totalCount = allTraits.length;
-                      const stability = totalCount > 0
-                        ? Math.round((geneticCount / totalCount) * 100)
-                        : 0;
-                      return stability >= 75
-                        ? 'bg-gradient-to-r from-green-500 to-emerald-600'
-                        : stability >= 50
+                  className={`h-full ${(() => {
+                    const geneticCount = geneticTraits.length;
+                    const totalCount = allTraits.length;
+                    const stability =
+                      totalCount > 0 ? Math.round((geneticCount / totalCount) * 100) : 0;
+                    return stability >= 75
+                      ? 'bg-gradient-to-r from-green-500 to-emerald-600'
+                      : stability >= 50
                         ? 'bg-gradient-to-r from-blue-500 to-blue-600'
                         : 'bg-gradient-to-r from-yellow-500 to-yellow-600';
-                    })()
-                  }`}
+                  })()}`}
                   style={{
                     width: `${(() => {
                       const geneticCount = geneticTraits.length;
                       const totalCount = allTraits.length;
-                      return totalCount > 0
-                        ? Math.round((geneticCount / totalCount) * 100)
-                        : 0;
+                      return totalCount > 0 ? Math.round((geneticCount / totalCount) * 100) : 0;
                     })()}%`,
                   }}
                 />
@@ -743,38 +713,47 @@ const GeneticsTab: React.FC<{ horse: Horse }> = ({ horse }) => {
               </div>
               <div className="text-3xl font-bold text-midnight-ink mb-2">
                 {(() => {
-                  const legendaryCount = allTraits.filter(t => t.rarity === 'legendary').length;
-                  const rareCount = allTraits.filter(t => t.rarity === 'rare').length;
-                  const value = Math.min(100, legendaryCount * 30 + rareCount * 10 + geneticTraits.length * 2);
+                  const legendaryCount = allTraits.filter((t) => t.rarity === 'legendary').length;
+                  const rareCount = allTraits.filter((t) => t.rarity === 'rare').length;
+                  const value = Math.min(
+                    100,
+                    legendaryCount * 30 + rareCount * 10 + geneticTraits.length * 2
+                  );
                   return value;
                 })()}
                 /100
               </div>
               <div className="h-3 bg-gray-200 rounded-full overflow-hidden">
                 <div
-                  className={`h-full ${
-                    (() => {
-                      const legendaryCount = allTraits.filter(t => t.rarity === 'legendary').length;
-                      const rareCount = allTraits.filter(t => t.rarity === 'rare').length;
-                      const value = Math.min(100, legendaryCount * 30 + rareCount * 10 + geneticTraits.length * 2);
-                      return value >= 70
-                        ? 'bg-gradient-to-r from-amber-500 to-amber-600'
-                        : value >= 40
+                  className={`h-full ${(() => {
+                    const legendaryCount = allTraits.filter((t) => t.rarity === 'legendary').length;
+                    const rareCount = allTraits.filter((t) => t.rarity === 'rare').length;
+                    const value = Math.min(
+                      100,
+                      legendaryCount * 30 + rareCount * 10 + geneticTraits.length * 2
+                    );
+                    return value >= 70
+                      ? 'bg-gradient-to-r from-amber-500 to-amber-600'
+                      : value >= 40
                         ? 'bg-gradient-to-r from-blue-500 to-blue-600'
                         : 'bg-gradient-to-r from-gray-400 to-gray-500';
-                    })()
-                  }`}
+                  })()}`}
                   style={{
                     width: `${(() => {
-                      const legendaryCount = allTraits.filter(t => t.rarity === 'legendary').length;
-                      const rareCount = allTraits.filter(t => t.rarity === 'rare').length;
-                      return Math.min(100, legendaryCount * 30 + rareCount * 10 + geneticTraits.length * 2);
+                      const legendaryCount = allTraits.filter(
+                        (t) => t.rarity === 'legendary'
+                      ).length;
+                      const rareCount = allTraits.filter((t) => t.rarity === 'rare').length;
+                      return Math.min(
+                        100,
+                        legendaryCount * 30 + rareCount * 10 + geneticTraits.length * 2
+                      );
                     })()}%`,
                   }}
                 />
               </div>
               <p className="text-xs text-aged-bronze mt-2">
-                {allTraits.filter(t => t.rarity !== 'common').length} rare+ traits
+                {allTraits.filter((t) => t.rarity !== 'common').length} rare+ traits
               </p>
             </div>
 
@@ -788,26 +767,30 @@ const GeneticsTab: React.FC<{ horse: Horse }> = ({ horse }) => {
                 {interactionsData?.interactions?.filter((i) => i.strength >= 75).length || 0}
               </div>
               <div className="text-sm text-aged-bronze mb-2">
-                {interactionsData?.interactions?.filter((i) => i.strength >= 50 && i.strength < 75).length || 0} good
+                {interactionsData?.interactions?.filter((i) => i.strength >= 50 && i.strength < 75)
+                  .length || 0}{' '}
+                good
               </div>
-              <p className="text-xs text-aged-bronze mt-2">
-                High-value trait synergies
-              </p>
+              <p className="text-xs text-aged-bronze mt-2">High-value trait synergies</p>
             </div>
           </div>
 
           {/* Breeding Recommendations */}
-          {interactionsData?.interactions && interactionsData.interactions.some((i) => i.strength >= 75) && (
-            <div className="mt-4 p-4 bg-green-50 rounded-lg border border-green-300">
-              <p className="text-sm text-green-800 flex items-center">
-                <Award className="w-4 h-4 mr-2" />
-                <strong>Prime Breeding Candidate:</strong>{' '}
-                This horse has {interactionsData.interactions.filter((i) => i.strength >= 75).length} optimal trait
-                combination{interactionsData.interactions.filter((i) => i.strength >= 75).length !== 1 ? 's' : ''}{' '}
-                making them highly valuable for breeding programs.
-              </p>
-            </div>
-          )}
+          {interactionsData?.interactions &&
+            interactionsData.interactions.some((i) => i.strength >= 75) && (
+              <div className="mt-4 p-4 bg-green-50 rounded-lg border border-green-300">
+                <p className="text-sm text-green-800 flex items-center">
+                  <Award className="w-4 h-4 mr-2" />
+                  <strong>Prime Breeding Candidate:</strong> This horse has{' '}
+                  {interactionsData.interactions.filter((i) => i.strength >= 75).length} optimal
+                  trait combination
+                  {interactionsData.interactions.filter((i) => i.strength >= 75).length !== 1
+                    ? 's'
+                    : ''}{' '}
+                  making them highly valuable for breeding programs.
+                </p>
+              </div>
+            )}
         </div>
       )}
 
@@ -860,8 +843,8 @@ const GeneticsTab: React.FC<{ horse: Horse }> = ({ horse }) => {
                       interaction.strength >= 75
                         ? 'bg-green-100 text-green-700'
                         : interaction.strength >= 50
-                        ? 'bg-yellow-100 text-yellow-700'
-                        : 'bg-gray-100 text-gray-700'
+                          ? 'bg-yellow-100 text-yellow-700'
+                          : 'bg-gray-100 text-gray-700'
                     }`}
                   >
                     Strength: {interaction.strength}
@@ -893,16 +876,15 @@ const GeneticsTab: React.FC<{ horse: Horse }> = ({ horse }) => {
                         entry.eventType === 'discovered'
                           ? 'bg-purple-100 text-purple-700'
                           : entry.eventType === 'activated'
-                          ? 'bg-green-100 text-green-700'
-                          : entry.eventType === 'deactivated'
-                          ? 'bg-gray-100 text-gray-700'
-                          : entry.eventType === 'mutated'
-                          ? 'bg-amber-100 text-amber-700'
-                          : 'bg-blue-100 text-blue-700'
+                            ? 'bg-green-100 text-green-700'
+                            : entry.eventType === 'deactivated'
+                              ? 'bg-gray-100 text-gray-700'
+                              : entry.eventType === 'mutated'
+                                ? 'bg-amber-100 text-amber-700'
+                                : 'bg-blue-100 text-blue-700'
                       }`}
                     >
-                      {entry.eventType.charAt(0).toUpperCase() +
-                        entry.eventType.slice(1)}
+                      {entry.eventType.charAt(0).toUpperCase() + entry.eventType.slice(1)}
                     </span>
                     <span className="text-sm font-semibold text-midnight-ink">
                       {entry.traitName}
@@ -918,8 +900,7 @@ const GeneticsTab: React.FC<{ horse: Horse }> = ({ horse }) => {
                 {entry.source && (
                   <div className="flex items-center gap-2">
                     <span className="text-xs text-aged-bronze">
-                      Source:{' '}
-                      <span className="capitalize font-semibold">{entry.source}</span>
+                      Source: <span className="capitalize font-semibold">{entry.source}</span>
                     </span>
                   </div>
                 )}
@@ -939,7 +920,9 @@ const GeneticsTab: React.FC<{ horse: Horse }> = ({ horse }) => {
       {/* Lineage Section with Genetic Contribution */}
       {horse.parentIds && (
         <div>
-          <h3 className="fantasy-title text-xl text-midnight-ink mb-4">Lineage & Genetic Contribution</h3>
+          <h3 className="fantasy-title text-xl text-midnight-ink mb-4">
+            Lineage & Genetic Contribution
+          </h3>
 
           {/* Genetic Contribution Visualization */}
           {allTraits.length > 0 && (
@@ -947,13 +930,15 @@ const GeneticsTab: React.FC<{ horse: Horse }> = ({ horse }) => {
               <h4 className="text-sm font-semibold text-midnight-ink mb-3">Genetic Contribution</h4>
 
               {(() => {
-                const sireTraits = allTraits.filter(t => t.source === 'sire').length;
-                const damTraits = allTraits.filter(t => t.source === 'dam').length;
-                const mutationTraits = allTraits.filter(t => t.source === 'mutation').length;
+                const sireTraits = allTraits.filter((t) => t.source === 'sire').length;
+                const damTraits = allTraits.filter((t) => t.source === 'dam').length;
+                const mutationTraits = allTraits.filter((t) => t.source === 'mutation').length;
                 const inheritedTotal = sireTraits + damTraits;
 
-                const sirePercentage = inheritedTotal > 0 ? Math.round((sireTraits / inheritedTotal) * 100) : 0;
-                const damPercentage = inheritedTotal > 0 ? Math.round((damTraits / inheritedTotal) * 100) : 0;
+                const sirePercentage =
+                  inheritedTotal > 0 ? Math.round((sireTraits / inheritedTotal) * 100) : 0;
+                const damPercentage =
+                  inheritedTotal > 0 ? Math.round((damTraits / inheritedTotal) * 100) : 0;
 
                 return (
                   <>
@@ -1007,15 +992,18 @@ const GeneticsTab: React.FC<{ horse: Horse }> = ({ horse }) => {
                         <p className="text-xs text-aged-bronze">
                           {sirePercentage > damPercentage + 10 ? (
                             <>
-                              <strong>Sire-Dominant:</strong> This horse inherited significantly more traits from the sire lineage.
+                              <strong>Sire-Dominant:</strong> This horse inherited significantly
+                              more traits from the sire lineage.
                             </>
                           ) : damPercentage > sirePercentage + 10 ? (
                             <>
-                              <strong>Dam-Dominant:</strong> This horse inherited significantly more traits from the dam lineage.
+                              <strong>Dam-Dominant:</strong> This horse inherited significantly more
+                              traits from the dam lineage.
                             </>
                           ) : (
                             <>
-                              <strong>Balanced Inheritance:</strong> This horse has a well-balanced genetic contribution from both parents.
+                              <strong>Balanced Inheritance:</strong> This horse has a well-balanced
+                              genetic contribution from both parents.
                             </>
                           )}
                         </p>
@@ -1054,9 +1042,343 @@ const GeneticsTab: React.FC<{ horse: Horse }> = ({ horse }) => {
   );
 };
 
+/**
+ * Training Tab Component
+ *
+ * Integrates the full training flow with:
+ * - DisciplinePicker for discipline selection
+ * - TrainingConfirmModal for confirmation
+ * - TrainingResultModal for results display
+ * - Training status and cooldown display
+ *
+ * Story 4-1: Training Session Interface - Task 6
+ */
+const TrainingTab: React.FC<{ horse: Horse }> = ({ horse }) => {
+  // Training flow state
+  const [selectedDiscipline, setSelectedDiscipline] = useState<string | null>(null);
+  const [isConfirmModalOpen, setIsConfirmModalOpen] = useState(false);
+  const [isResultModalOpen, setIsResultModalOpen] = useState(false);
+  const [trainingResult, setTrainingResult] = useState<{
+    scoreGain: number;
+    baseScoreGain: number;
+    traitBonus: number;
+    newScore: number;
+    statGains?: { [stat: string]: number };
+    xpGain?: number;
+    nextTrainingDate: Date;
+  } | null>(null);
+  const [trainingError, setTrainingError] = useState<string | null>(null);
+
+  // Training hooks
+  const { data: trainingOverview, isLoading: isStatusLoading } = useTrainingOverview(horse.id);
+  const trainHorse = useTrainHorse();
+
+  // Check training eligibility
+  const eligibility = canTrain({
+    id: horse.id,
+    name: horse.name,
+    age: horse.age,
+    trainingCooldown: getGlobalCooldown(trainingOverview),
+  });
+
+  // Get global cooldown date (most recent cooldown across all disciplines)
+  function getGlobalCooldown(
+    overview: Array<{ discipline: string; nextEligibleDate?: string | null }> | undefined
+  ): string | null {
+    if (!overview || overview.length === 0) return null;
+
+    const cooldowns = overview
+      .filter((d) => d.nextEligibleDate)
+      .map((d) => new Date(d.nextEligibleDate!))
+      .filter((d) => d > new Date());
+
+    if (cooldowns.length === 0) return null;
+
+    // Return the earliest cooldown
+    const earliest = cooldowns.sort((a, b) => a.getTime() - b.getTime())[0];
+    return earliest.toISOString();
+  }
+
+  // Get list of disabled disciplines (on cooldown)
+  function getDisabledDisciplines(): string[] {
+    if (!trainingOverview) return [];
+    if (!eligibility.eligible) {
+      // If horse is not eligible at all, return empty (DisciplinePicker won't be active anyway)
+      return [];
+    }
+
+    return trainingOverview
+      .filter((d) => d.nextEligibleDate && new Date(d.nextEligibleDate) > new Date())
+      .map((d) => d.discipline);
+  }
+
+  // Calculate trait modifiers for the selected discipline (mock for frontend-first)
+  function getTraitModifiers(_disciplineId: string): TraitModifier[] {
+    // In Phase 1 (frontend-first), return mock trait modifiers
+    // In Phase 2, this will be fetched from the backend
+    if (!horse.traits || horse.traits.length === 0) return [];
+
+    // Simulate trait modifiers based on horse traits
+    const modifiers: TraitModifier[] = [];
+
+    if (horse.traits.includes('Fast Learner')) {
+      modifiers.push({ name: 'Fast Learner', modifier: 1 });
+    }
+    if (horse.traits.includes('Strong Build')) {
+      modifiers.push({ name: 'Strong Build', modifier: 1 });
+    }
+    if (horse.traits.includes('Nervous')) {
+      modifiers.push({ name: 'Nervous', modifier: -1 });
+    }
+
+    return modifiers;
+  }
+
+  // Handle discipline selection
+  const handleDisciplineSelect = (disciplineId: string) => {
+    setSelectedDiscipline(disciplineId);
+    setTrainingError(null);
+    setIsConfirmModalOpen(true);
+  };
+
+  // Handle training confirmation
+  const handleConfirm = async () => {
+    if (!selectedDiscipline) return;
+
+    setTrainingError(null);
+
+    try {
+      const result = await trainHorse.mutateAsync({
+        horseId: horse.id,
+        discipline: selectedDiscipline,
+      });
+
+      // Close confirm modal
+      setIsConfirmModalOpen(false);
+
+      // Calculate training result for display
+      const traitModifiers = getTraitModifiers(selectedDiscipline);
+      const traitBonus = traitModifiers.reduce((sum, t) => sum + t.modifier, 0);
+      const baseGain = 5; // Base score gain
+      const scoreGain = Math.max(0, baseGain + traitBonus);
+      const currentScore = getDisciplineScore(
+        {
+          id: horse.id,
+          name: horse.name,
+          age: horse.age,
+          disciplineScores: horse.disciplineScores,
+        },
+        selectedDiscipline
+      );
+
+      // Map stat gain from result
+      const statGains: { [stat: string]: number } = {};
+      if (result.statGain) {
+        statGains[result.statGain.stat] = result.statGain.amount;
+      }
+
+      // Set result for modal display
+      setTrainingResult({
+        scoreGain,
+        baseScoreGain: baseGain,
+        traitBonus,
+        newScore: result.updatedScore ?? currentScore + scoreGain,
+        statGains: Object.keys(statGains).length > 0 ? statGains : undefined,
+        xpGain: result.traitEffects?.xpModifier,
+        nextTrainingDate: result.nextEligible
+          ? new Date(result.nextEligible)
+          : new Date(Date.now() + 7 * 24 * 60 * 60 * 1000),
+      });
+
+      // Open result modal
+      setIsResultModalOpen(true);
+    } catch (error) {
+      // Keep modal open on error so user can retry
+      const errorMessage =
+        error instanceof Error ? error.message : 'Training failed. Please try again.';
+      setTrainingError(errorMessage);
+    }
+  };
+
+  // Handle closing the result modal
+  const handleCloseResult = () => {
+    setIsResultModalOpen(false);
+    setTrainingResult(null);
+    setSelectedDiscipline(null);
+    // Horse data will auto-refresh via React Query cache invalidation
+  };
+
+  // Handle closing confirm modal (cancel)
+  const handleCloseConfirm = () => {
+    setIsConfirmModalOpen(false);
+    setSelectedDiscipline(null);
+    setTrainingError(null);
+  };
+
+  // Format cooldown date for display
+  function formatCooldownDisplay(dateStr: string | null): string {
+    if (!dateStr) return 'Available now';
+
+    const date = new Date(dateStr);
+    const now = new Date();
+
+    if (date <= now) return 'Available now';
+
+    const diffMs = date.getTime() - now.getTime();
+    const diffDays = Math.ceil(diffMs / (1000 * 60 * 60 * 24));
+
+    if (diffDays === 1) return '1 day';
+    if (diffDays < 7) return `${diffDays} days`;
+
+    return date.toLocaleDateString('en-US', {
+      weekday: 'long',
+      month: 'long',
+      day: 'numeric',
+    });
+  }
+
+  const globalCooldown = getGlobalCooldown(trainingOverview);
+  const disabledDisciplines = getDisabledDisciplines();
+  const isOnCooldown = globalCooldown !== null;
+
+  // Determine if ineligibility is due to cooldown vs age
+  const isIneligibleDueToCooldown =
+    !eligibility.eligible && eligibility.reason?.includes('cooldown');
+  const isIneligibleDueToAge = !eligibility.eligible && eligibility.reason?.includes('3 years old');
+
+  return (
+    <div className="space-y-6" data-testid="training-tab">
+      {/* Training Status Section */}
+      <div className="bg-parchment/50 rounded-lg border border-aged-bronze p-6">
+        <h3 className="fantasy-title text-xl text-midnight-ink mb-3 flex items-center">
+          <Clock className="w-5 h-5 mr-2 text-aged-bronze" />
+          Training Status
+        </h3>
+
+        {isStatusLoading ? (
+          <div className="flex items-center text-aged-bronze" data-testid="training-status-loading">
+            <Loader2 className="w-4 h-4 animate-spin mr-2" />
+            Loading training status...
+          </div>
+        ) : isIneligibleDueToAge ? (
+          <div className="flex items-center text-red-600" data-testid="training-status-ineligible">
+            <AlertCircle className="w-5 h-5 mr-2" />
+            <span>{eligibility.reason}</span>
+          </div>
+        ) : isOnCooldown || isIneligibleDueToCooldown ? (
+          <div className="flex items-center text-amber-600" data-testid="training-status-cooldown">
+            <Clock className="w-5 h-5 mr-2" />
+            <span>
+              Next training available in:{' '}
+              {formatCooldownDisplay(
+                globalCooldown || (eligibility.reason?.match(/until (.+)$/)?.[1] ?? null)
+              )}
+            </span>
+          </div>
+        ) : (
+          <div className="flex items-center text-forest-green" data-testid="training-status-ready">
+            <CheckCircle className="w-5 h-5 mr-2" />
+            <span>Ready to train!</span>
+          </div>
+        )}
+      </div>
+
+      {/* Age/Eligibility Warning - only show for age-based ineligibility */}
+      {isIneligibleDueToAge && (
+        <div
+          className="bg-red-50 border border-red-200 rounded-lg p-4"
+          data-testid="training-eligibility-warning"
+        >
+          <div className="flex items-start">
+            <AlertCircle className="w-5 h-5 text-red-500 mr-2 mt-0.5 flex-shrink-0" />
+            <div>
+              <h4 className="font-semibold text-red-800">Training Not Available</h4>
+              <p className="text-sm text-red-600 mt-1">{eligibility.reason}</p>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* Discipline Picker Section */}
+      {(eligibility.eligible || isIneligibleDueToCooldown) && (
+        <div className="bg-white/80 rounded-lg border-2 border-aged-bronze p-6">
+          <h3 className="fantasy-title text-xl text-midnight-ink mb-4 flex items-center">
+            <Dumbbell className="w-5 h-5 mr-2 text-aged-bronze" />
+            Select Discipline
+          </h3>
+
+          <DisciplinePicker
+            selectedDiscipline={selectedDiscipline}
+            onSelectDiscipline={handleDisciplineSelect}
+            disciplineScores={horse.disciplineScores || {}}
+            disabledDisciplines={disabledDisciplines}
+            isLoading={isStatusLoading || trainHorse.isPending}
+          />
+        </div>
+      )}
+
+      {/* Training Error Display */}
+      {trainingError && (
+        <div
+          className="bg-red-50 border border-red-200 rounded-lg p-4"
+          data-testid="training-error"
+        >
+          <div className="flex items-start">
+            <AlertCircle className="w-5 h-5 text-red-500 mr-2 mt-0.5 flex-shrink-0" />
+            <div>
+              <h4 className="font-semibold text-red-800">Training Error</h4>
+              <p className="text-sm text-red-600 mt-1">{trainingError}</p>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* Training Confirm Modal */}
+      {selectedDiscipline && (
+        <TrainingConfirmModal
+          isOpen={isConfirmModalOpen}
+          onClose={handleCloseConfirm}
+          onConfirm={handleConfirm}
+          horseName={horse.name}
+          disciplineName={formatDisciplineName(selectedDiscipline)}
+          baseScoreGain={5}
+          currentScore={getDisciplineScore(
+            {
+              id: horse.id,
+              name: horse.name,
+              age: horse.age,
+              disciplineScores: horse.disciplineScores,
+            },
+            selectedDiscipline
+          )}
+          traitModifiers={getTraitModifiers(selectedDiscipline)}
+          cooldownDays={7}
+          isLoading={trainHorse.isPending}
+        />
+      )}
+
+      {/* Training Result Modal */}
+      {trainingResult && (
+        <TrainingResultModal
+          isOpen={isResultModalOpen}
+          onClose={handleCloseResult}
+          disciplineName={formatDisciplineName(selectedDiscipline || '')}
+          scoreGain={trainingResult.scoreGain}
+          baseScoreGain={trainingResult.baseScoreGain}
+          traitBonus={trainingResult.traitBonus}
+          newScore={trainingResult.newScore}
+          statGains={trainingResult.statGains}
+          xpGain={trainingResult.xpGain}
+          nextTrainingDate={trainingResult.nextTrainingDate}
+        />
+      )}
+    </div>
+  );
+};
+
 // Progression Tab Component
 const ProgressionTab: React.FC<{ horse: Horse }> = ({ horse }) => (
-  <div className="space-y-6">
+  <div className="space-y-6" data-testid="progression-tab">
     {/* XP Progress Bar - Full Width */}
     <div className="col-span-full">
       <XPProgressBar horseId={horse.id} />
@@ -1080,6 +1402,11 @@ const ProgressionTab: React.FC<{ horse: Horse }> = ({ horse }) => (
     {/* Training Recommendations - Full Width */}
     <div className="col-span-full">
       <TrainingRecommendations horseId={horse.id} />
+    </div>
+
+    {/* Score Progression Panel - Discipline scores and training history */}
+    <div className="col-span-full" data-testid="score-progression-section">
+      <ScoreProgressionPanel horseId={horse.id} className="mt-4" />
     </div>
   </div>
 );

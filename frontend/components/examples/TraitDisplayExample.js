@@ -12,8 +12,7 @@ const TraitDisplayExample = () => {
   const examples = {
     complete: {
       title: 'Complete Horse Profile',
-      description:
-        'A mature horse with discovered positive and negative traits, plus hidden ones',
+      description: 'A mature horse with discovered positive and negative traits, plus hidden ones',
       traits: {
         positive: ['resilient', 'bold', 'intelligent'],
         negative: ['nervous', 'stubborn'],
@@ -50,13 +49,7 @@ const TraitDisplayExample = () => {
       traits: {
         positive: ['bold'],
         negative: [],
-        hidden: [
-          'intelligent',
-          'athletic',
-          'nervous',
-          'trainability_boost',
-          'calm',
-        ],
+        hidden: ['intelligent', 'athletic', 'nervous', 'trainability_boost', 'calm'],
       },
       horseName: 'Starlight',
     },
@@ -100,24 +93,19 @@ const TraitDisplayExample = () => {
           TraitDisplay Component Examples
         </Text>
         <Text className="text-gray-600">
-          Explore different configurations and use cases for the TraitDisplay
-          component
+          Explore different configurations and use cases for the TraitDisplay component
         </Text>
       </View>
 
       {/* Example Selector */}
       <View className="mb-6">
-        <Text className="text-lg font-semibold text-gray-800 mb-3">
-          Select Example:
-        </Text>
+        <Text className="text-lg font-semibold text-gray-800 mb-3">Select Example:</Text>
         <ScrollView horizontal showsHorizontalScrollIndicator={false}>
           {Object.entries(examples).map(([key, example]) => (
             <TouchableOpacity
               key={key}
               className={`mr-3 px-4 py-2 rounded-lg ${
-                selectedExample === key
-                  ? 'bg-blue-500'
-                  : 'bg-white border border-gray-300'
+                selectedExample === key ? 'bg-blue-500' : 'bg-white border border-gray-300'
               }`}
               onPress={() => setSelectedExample(key)}
             >
@@ -135,9 +123,7 @@ const TraitDisplayExample = () => {
 
       {/* Current Example Info */}
       <View className="bg-blue-50 rounded-lg p-4 mb-6">
-        <Text className="text-lg font-semibold text-blue-800 mb-2">
-          {currentExample.title}
-        </Text>
+        <Text className="text-lg font-semibold text-blue-800 mb-2">{currentExample.title}</Text>
         <Text className="text-blue-700">{currentExample.description}</Text>
 
         {/* Trait Summary */}
@@ -189,56 +175,47 @@ const TraitDisplayExample = () => {
 
       {/* Implementation Notes */}
       <View className="mt-6 bg-yellow-50 rounded-lg p-4">
-        <Text className="text-lg font-semibold text-yellow-800 mb-3">
-          Implementation Notes:
-        </Text>
+        <Text className="text-lg font-semibold text-yellow-800 mb-3">Implementation Notes:</Text>
 
         <View className="space-y-2">
           <Text className="text-yellow-700">
-            • <Text className="font-medium">Positive traits</Text> are displayed
-            with green badges
+            • <Text className="font-medium">Positive traits</Text> are displayed with green badges
           </Text>
           <Text className="text-yellow-700">
-            • <Text className="font-medium">Negative traits</Text> are displayed
-            with red badges
+            • <Text className="font-medium">Negative traits</Text> are displayed with red badges
           </Text>
           <Text className="text-yellow-700">
-            • <Text className="font-medium">Hidden traits</Text> show as "???"
-            placeholders
+            • <Text className="font-medium">Hidden traits</Text> show as "???" placeholders
           </Text>
           <Text className="text-yellow-700">
-            • <Text className="font-medium">Tap any trait</Text> to view
-            detailed description in modal
+            • <Text className="font-medium">Tap any trait</Text> to view detailed description in
+            modal
           </Text>
           <Text className="text-yellow-700">
-            • <Text className="font-medium">Accessibility</Text> features
-            include proper labels and hints
+            • <Text className="font-medium">Accessibility</Text> features include proper labels and
+            hints
           </Text>
           <Text className="text-yellow-700">
-            • <Text className="font-medium">Unknown traits</Text> are handled
-            gracefully with auto-generated names
+            • <Text className="font-medium">Unknown traits</Text> are handled gracefully with
+            auto-generated names
           </Text>
         </View>
       </View>
 
       {/* Integration Tips */}
       <View className="mt-6 bg-green-50 rounded-lg p-4 mb-8">
-        <Text className="text-lg font-semibold text-green-800 mb-3">
-          Integration Tips:
-        </Text>
+        <Text className="text-lg font-semibold text-green-800 mb-3">Integration Tips:</Text>
 
         <View className="space-y-2">
           <Text className="text-green-700">
-            • Use the{' '}
-            <Text className="font-mono bg-green-100 px-1">onTraitPress</Text>{' '}
-            callback for analytics or additional UI
+            • Use the <Text className="font-mono bg-green-100 px-1">onTraitPress</Text> callback for
+            analytics or additional UI
           </Text>
           <Text className="text-green-700">
             • The component handles empty/missing trait arrays gracefully
           </Text>
           <Text className="text-green-700">
-            • Trait definitions can be extended by modifying the internal
-            dictionary
+            • Trait definitions can be extended by modifying the internal dictionary
           </Text>
           <Text className="text-green-700">
             • The component is fully responsive and works on all screen sizes

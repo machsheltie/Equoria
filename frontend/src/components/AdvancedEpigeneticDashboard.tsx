@@ -48,7 +48,9 @@ const AdvancedEpigeneticDashboard: React.FC<AdvancedEpigeneticDashboardProps> = 
   const [traitData, setTraitData] = useState<any>(propTraitData || null);
   const [developmentalData, setDevelopmentalData] = useState<any>(propDevelopmentalData || null);
   const [forecastData, setForecastData] = useState<any>(propForecastData || null);
-  const [isLoading, setIsLoading] = useState(!propEnvironmentalData && !propTraitData && !propDevelopmentalData && !propForecastData);
+  const [isLoading, setIsLoading] = useState(
+    !propEnvironmentalData && !propTraitData && !propDevelopmentalData && !propForecastData
+  );
 
   // Responsive design detection
   useEffect(() => {
@@ -64,7 +66,12 @@ const AdvancedEpigeneticDashboard: React.FC<AdvancedEpigeneticDashboardProps> = 
   // Data fetching (only if data not provided as props)
   useEffect(() => {
     // If data was provided as props, don't fetch
-    if (propEnvironmentalData !== undefined || propTraitData !== undefined || propDevelopmentalData !== undefined || propForecastData !== undefined) {
+    if (
+      propEnvironmentalData !== undefined ||
+      propTraitData !== undefined ||
+      propDevelopmentalData !== undefined ||
+      propForecastData !== undefined
+    ) {
       setIsLoading(false);
       // Check if trait data is explicitly null (partial data scenario)
       if (propTraitData === null) {
@@ -210,8 +217,6 @@ const AdvancedEpigeneticDashboard: React.FC<AdvancedEpigeneticDashboardProps> = 
     refreshData();
   };
 
-
-
   // Handle missing horseId
   if (!horseId) {
     return (
@@ -248,10 +253,7 @@ const AdvancedEpigeneticDashboard: React.FC<AdvancedEpigeneticDashboardProps> = 
           {enableRealTime && (
             <span className="text-sm text-green-600">Real-time updates enabled</span>
           )}
-          <button
-            onClick={refreshData}
-            aria-label="Refresh Data"
-          >
+          <button onClick={refreshData} aria-label="Refresh Data">
             {isRefreshing ? 'Refreshing...' : 'Refresh'}
           </button>
         </div>
@@ -265,12 +267,13 @@ const AdvancedEpigeneticDashboard: React.FC<AdvancedEpigeneticDashboardProps> = 
           <div>Environmental Triggers</div>
           <div>Current Conditions</div>
           <div>Risk Factors</div>
-          <button aria-label="Expand Environmental Analysis" onClick={() => togglePanel('environmental')}>
+          <button
+            aria-label="Expand Environmental Analysis"
+            onClick={() => togglePanel('environmental')}
+          >
             Expand
           </button>
-          {expandedPanels.has('environmental') && (
-            <div>Detailed Environmental Data</div>
-          )}
+          {expandedPanels.has('environmental') && <div>Detailed Environmental Data</div>}
         </div>
 
         {/* Trait Interaction Matrix */}
@@ -295,93 +298,105 @@ const AdvancedEpigeneticDashboard: React.FC<AdvancedEpigeneticDashboardProps> = 
             <>
               <div>{developmentalData.currentWindow.name || 'Trust & Handling'}</div>
               <div>{developmentalData.currentWindow.ageRange || '2-3 years'}</div>
-              <div>{developmentalData.currentWindow.progress ? `${Math.round(developmentalData.currentWindow.progress * 100)}%` : '65%'}</div>
+              <div>
+                {developmentalData.currentWindow.progress
+                  ? `${Math.round(developmentalData.currentWindow.progress * 100)}%`
+                  : '65%'}
+              </div>
             </>
-          ) : !isLoading && (
-            <>
-              <div>Trust & Handling</div>
-              <div>2-3 years</div>
-              <div>65%</div>
-            </>
+          ) : (
+            !isLoading && (
+              <>
+                <div>Trust & Handling</div>
+                <div>2-3 years</div>
+                <div>65%</div>
+              </>
+            )
           )}
           <div>Milestones</div>
-          {developmentalData?.milestones ? (
-            developmentalData.milestones.map((milestone: any, index: number) => (
-              <div key={index}>
-                <div>{milestone.name}</div>
-                <div>{milestone.score}</div>
-              </div>
-            ))
-          ) : !isLoading && (
-            <>
-              <div>Imprinting</div>
-              <div>8.5</div>
-              <div>Socialization</div>
-              <div>7.2</div>
-            </>
-          )}
+          {developmentalData?.milestones
+            ? developmentalData.milestones.map((milestone: any, index: number) => (
+                <div key={index}>
+                  <div>{milestone.name}</div>
+                  <div>{milestone.score}</div>
+                </div>
+              ))
+            : !isLoading && (
+                <>
+                  <div>Imprinting</div>
+                  <div>8.5</div>
+                  <div>Socialization</div>
+                  <div>7.2</div>
+                </>
+              )}
           <div>Upcoming Windows</div>
-          {developmentalData?.upcomingWindows ? (
-            developmentalData.upcomingWindows.map((window: any, index: number) => (
-              <div key={index}>
-                <div>{window.name}</div>
-                <div>{window.startsIn ? `Starts in ${window.startsIn}` : window.timeframe}</div>
-              </div>
-            ))
-          ) : !isLoading && (
-            <>
-              <div>Advanced Training</div>
-              <div>Starts in 6 months</div>
-            </>
-          )}
+          {developmentalData?.upcomingWindows
+            ? developmentalData.upcomingWindows.map((window: any, index: number) => (
+                <div key={index}>
+                  <div>{window.name}</div>
+                  <div>{window.startsIn ? `Starts in ${window.startsIn}` : window.timeframe}</div>
+                </div>
+              ))
+            : !isLoading && (
+                <>
+                  <div>Advanced Training</div>
+                  <div>Starts in 6 months</div>
+                </>
+              )}
         </div>
 
         {/* Forecasting Widget */}
         <div>
           <h3>Forecasting</h3>
           <div>Trait Predictions</div>
-          {forecastData?.predictions ? (
-            forecastData.predictions.map((prediction: any, index: number) => (
-              <div key={index}>
-                <div>{prediction.trait}</div>
-                <div>{Math.round(prediction.probability * 100)}%</div>
-                <div>{Math.round(prediction.confidence * 100)}%</div>
-              </div>
-            ))
-          ) : !isLoading && (
-            <>
-              <div>competitive</div>
-              <div>78%</div>
-              <div>85%</div>
-            </>
-          )}
+          {forecastData?.predictions
+            ? forecastData.predictions.map((prediction: any, index: number) => (
+                <div key={index}>
+                  <div>{prediction.trait}</div>
+                  <div>{Math.round(prediction.probability * 100)}%</div>
+                  <div>{Math.round(prediction.confidence * 100)}%</div>
+                </div>
+              ))
+            : !isLoading && (
+                <>
+                  <div>competitive</div>
+                  <div>78%</div>
+                  <div>85%</div>
+                </>
+              )}
           <div>Recommendations</div>
-          {forecastData?.recommendations ? (
-            forecastData.recommendations.map((rec: any, index: number) => (
-              <div key={index}>
-                <div>{rec.action}</div>
-                <div>{rec.priority.charAt(0).toUpperCase() + rec.priority.slice(1)} Priority</div>
-                <div>{rec.expectedBenefit}</div>
-              </div>
-            ))
-          ) : !isLoading && (
-            <>
-              <div>Increase novelty exposure</div>
-              <div>High Priority</div>
-              <div>Enhanced adaptability</div>
-            </>
-          )}
+          {forecastData?.recommendations
+            ? forecastData.recommendations.map((rec: any, index: number) => (
+                <div key={index}>
+                  <div>{rec.action}</div>
+                  <div>{rec.priority.charAt(0).toUpperCase() + rec.priority.slice(1)} Priority</div>
+                  <div>{rec.expectedBenefit}</div>
+                </div>
+              ))
+            : !isLoading && (
+                <>
+                  <div>Increase novelty exposure</div>
+                  <div>High Priority</div>
+                  <div>Enhanced adaptability</div>
+                </>
+              )}
           <div>Risk Assessment</div>
           {forecastData?.riskAssessment ? (
             <>
-              <div>Overall Risk: {forecastData.riskAssessment.overall.charAt(0).toUpperCase() + forecastData.riskAssessment.overall.slice(1)}</div>
+              <div>
+                Overall Risk:{' '}
+                {forecastData.riskAssessment.overall.charAt(0).toUpperCase() +
+                  forecastData.riskAssessment.overall.slice(1)}
+              </div>
               <div>{forecastData.riskAssessment.factors?.[0]}</div>
             </>
-          ) : !isLoading && (
-            <>
-              <div>Overall Risk: Low</div>
-              <div>age_appropriate_development</div>
-            </>
+          ) : (
+            !isLoading && (
+              <>
+                <div>Overall Risk: Low</div>
+                <div>age_appropriate_development</div>
+              </>
+            )
           )}
         </div>
       </div>

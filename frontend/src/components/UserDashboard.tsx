@@ -1,6 +1,6 @@
 /**
  * User Dashboard Component
- * 
+ *
  * Comprehensive dashboard interface providing:
  * - User overview with level, XP, money, and statistics
  * - Progress tracking with visual indicators and achievement display
@@ -9,7 +9,7 @@
  * - Real-time data updates using React Query
  * - Responsive design with mobile-first approach
  * - Accessibility support with ARIA labels and keyboard navigation
- * 
+ *
  * Integrates with backend APIs:
  * - GET /api/users/:id/progress - User progress data
  * - GET /api/dashboard/:userId - Dashboard overview
@@ -17,20 +17,21 @@
  */
 
 import React, { useState, useMemo } from 'react';
-import { useQuery } from '@tanstack/react-query';
 import { useNavigate } from 'react-router-dom';
-import { 
-  User, 
-  TrendingUp, 
-  Award, 
-  Clock, 
+import {
+  User,
+  TrendingUp,
+  Award,
+  Clock,
   RefreshCw,
   Home,
   Dumbbell,
   Trophy,
   ChevronRight,
-  Star
+  Star,
 } from 'lucide-react';
+import { useUserProgress, useDashboard, useActivityFeed } from '../hooks/api/useUserProgress';
+import { useGroomSalaries } from '../hooks/api/useGrooms';
 
 interface SalarySummary {
   weeklyCost: number;
@@ -106,85 +107,38 @@ const UserDashboard: React.FC<UserDashboardProps> = ({
   progressData: propProgressData,
   dashboardData: propDashboardData,
   activityData: propActivityData,
-  salarySummaryData: propSalarySummaryData
+  salarySummaryData: propSalarySummaryData,
 }) => {
   const navigate = useNavigate();
   const [activityPage, setActivityPage] = useState(1);
   const [isSalaryReminderDismissed, setIsSalaryReminderDismissed] = useState(false);
 
-  // Fetch user progress data (only if not provided as props)
+  // Fetch user progress data using centralized hook
   const {
     data: progressData = propProgressData,
     isLoading: progressLoading,
     error: progressError,
-    refetch: refetchProgress
-  } = useQuery<UserProgress>({
-    queryKey: ['userProgress', userId],
-    queryFn: async () => {
-      const response = await fetch(`/api/users/${userId}/progress`);
-      if (!response.ok) {
-        throw new Error('Failed to fetch user progress');
-      }
-      return response.json();
-    },
-    enabled: !propProgressData && typeof fetch !== 'undefined',
-  });
+    refetch: refetchProgress,
+  } = useUserProgress(userId);
 
-  // Fetch dashboard data (only if not provided as props)
+  // Fetch dashboard data using centralized hook
   const {
     data: dashboardData = propDashboardData,
     isLoading: dashboardLoading,
     error: dashboardError,
-    refetch: refetchDashboard
-  } = useQuery<DashboardData>({
-    queryKey: ['dashboard', userId],
-    queryFn: async () => {
-      const response = await fetch(`/api/dashboard/${userId}`);
-      if (!response.ok) {
-        throw new Error('Failed to fetch dashboard data');
-      }
-      return response.json();
-    },
-    enabled: !propDashboardData && typeof fetch !== 'undefined',
-  });
+    refetch: refetchDashboard,
+  } = useDashboard(userId);
 
-  // Fetch activity feed (only if not provided as props)
+  // Fetch activity feed using centralized hook
   const {
     data: activityData = propActivityData,
     isLoading: activityLoading,
-    error: activityError
-  } = useQuery<ActivityItem[]>({
-    queryKey: ['userActivity', userId, activityPage],
-    queryFn: async () => {
-      const response = await fetch(`/api/users/${userId}/activity?page=${activityPage}&limit=10`);
-      if (!response.ok) {
-        throw new Error('Failed to fetch activity data');
-      }
-      return response.json();
-    },
-    enabled: !propActivityData && typeof fetch !== 'undefined',
-  });
+    error: activityError,
+  } = useActivityFeed(userId, activityPage);
 
-  // Fetch salary summary data (only if not provided as props)
-  const {
-    data: salarySummaryData = propSalarySummaryData,
-    isLoading: salarySummaryLoading
-  } = useQuery<SalarySummary>({
-    queryKey: ['groomSalarySummary', userId],
-    queryFn: async () => {
-      const response = await fetch('/api/groom-salaries/summary', {
-        headers: {
-          Authorization: `Bearer ${localStorage.getItem('token')}`,
-        },
-      });
-      if (!response.ok) {
-        throw new Error('Failed to fetch salary summary');
-      }
-      const result = await response.json();
-      return result.data;
-    },
-    enabled: !propSalarySummaryData && typeof fetch !== 'undefined',
-  });
+  // Fetch salary summary data using centralized hook
+  const { data: salarySummaryData = propSalarySummaryData, isLoading: salarySummaryLoading } =
+    useGroomSalaries(userId);
 
   // Calculate progress percentage
   const progressPercentage = useMemo(() => {
@@ -194,8 +148,13 @@ const UserDashboard: React.FC<UserDashboardProps> = ({
   }, [progressData]);
 
   // Handle loading states (only show loading if not using prop data)
-  const isLoading = (progressLoading || dashboardLoading) && !propProgressData && !propDashboardData;
-  const hasError = (progressError || dashboardError || activityError) && !propProgressData && !propDashboardData && !propActivityData;
+  const isLoading =
+    (progressLoading || dashboardLoading) && !propProgressData && !propDashboardData;
+  const hasError =
+    (progressError || dashboardError || activityError) &&
+    !propProgressData &&
+    !propDashboardData &&
+    !propActivityData;
 
   // Handle refresh
   const handleRefresh = () => {
@@ -226,7 +185,7 @@ const UserDashboard: React.FC<UserDashboardProps> = ({
     const now = new Date();
     const diffMs = now.getTime() - date.getTime();
     const diffHours = Math.floor(diffMs / (1000 * 60 * 60));
-    
+
     if (diffHours < 1) return 'Recently';
     if (diffHours < 24) return `${diffHours} hours ago`;
     return `${Math.floor(diffHours / 24)} days ago`;
@@ -250,7 +209,9 @@ const UserDashboard: React.FC<UserDashboardProps> = ({
       <div className="text-center py-12">
         <div className="text-red-600 mb-4">
           <p className="text-lg font-semibold">Error loading dashboard</p>
-          <p className="text-sm">{progressError?.message || dashboardError?.message || activityError?.message}</p>
+          <p className="text-sm">
+            {progressError?.message || dashboardError?.message || activityError?.message}
+          </p>
         </div>
         <button
           onClick={handleRefresh}
@@ -263,8 +224,8 @@ const UserDashboard: React.FC<UserDashboardProps> = ({
   }
 
   return (
-    <main 
-      role="main" 
+    <main
+      role="main"
       aria-label="User dashboard"
       className="user-dashboard-container min-h-screen bg-gray-50 p-4 lg:p-8"
       data-testid={window.innerWidth < 768 ? 'mobile-dashboard' : 'desktop-dashboard'}
@@ -284,7 +245,7 @@ const UserDashboard: React.FC<UserDashboardProps> = ({
               <span>{progressData?.totalHorses || 0} Horses</span>
             </div>
           </div>
-          
+
           <button
             onClick={handleRefresh}
             className="mt-4 lg:mt-0 flex items-center space-x-2 px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors"
@@ -301,22 +262,24 @@ const UserDashboard: React.FC<UserDashboardProps> = ({
             <TrendingUp className="w-5 h-5 mr-2 text-blue-600" />
             Your Progress
           </h2>
-          
+
           <div className="space-y-4">
             <div>
               <div className="flex justify-between text-sm text-gray-600 mb-2">
                 <span>Level {progressData?.level || 1} Progress</span>
-                <span>{progressData?.xp || 0} / {progressData?.xpToNextLevel || 100} XP</span>
+                <span>
+                  {progressData?.xp || 0} / {progressData?.xpToNextLevel || 100} XP
+                </span>
               </div>
-              <div 
-                role="progressbar" 
+              <div
+                role="progressbar"
                 aria-label="Level progress"
                 aria-valuenow={progressPercentage}
                 aria-valuemin={0}
                 aria-valuemax={100}
                 className="w-full bg-gray-200 rounded-full h-3"
               >
-                <div 
+                <div
                   className="bg-blue-600 h-3 rounded-full transition-all duration-300"
                   style={{ width: `${progressPercentage}%` }}
                 />
@@ -325,19 +288,27 @@ const UserDashboard: React.FC<UserDashboardProps> = ({
 
             <div className="grid grid-cols-2 lg:grid-cols-4 gap-4 mt-6">
               <div className="text-center">
-                <div className="text-2xl font-bold text-blue-600">{progressData?.totalCompetitions || 0}</div>
+                <div className="text-2xl font-bold text-blue-600">
+                  {progressData?.totalCompetitions || 0}
+                </div>
                 <div className="text-sm text-gray-600">Competitions</div>
               </div>
               <div className="text-center">
-                <div className="text-2xl font-bold text-green-600">{progressData?.totalWins || 0}</div>
+                <div className="text-2xl font-bold text-green-600">
+                  {progressData?.totalWins || 0}
+                </div>
                 <div className="text-sm text-gray-600">Wins</div>
               </div>
               <div className="text-center">
-                <div className="text-2xl font-bold text-purple-600">{progressData?.winRate || 0}%</div>
+                <div className="text-2xl font-bold text-purple-600">
+                  {progressData?.winRate || 0}%
+                </div>
                 <div className="text-sm text-gray-600">Win Rate</div>
               </div>
               <div className="text-center">
-                <div className="text-2xl font-bold text-orange-600">{progressData?.totalHorses || 0}</div>
+                <div className="text-2xl font-bold text-orange-600">
+                  {progressData?.totalHorses || 0}
+                </div>
                 <div className="text-sm text-gray-600">Horses</div>
               </div>
             </div>
@@ -346,20 +317,32 @@ const UserDashboard: React.FC<UserDashboardProps> = ({
 
         {/* Weekly Salary Reminder */}
         {salarySummaryData && salarySummaryData.groomCount > 0 && !isSalaryReminderDismissed && (
-          <div className="bg-blue-50 border-l-4 border-blue-400 p-6 rounded-lg shadow-md" data-testid="salary-reminder">
+          <div
+            className="bg-blue-50 border-l-4 border-blue-400 p-6 rounded-lg shadow-md"
+            data-testid="salary-reminder"
+          >
             <div className="flex items-start justify-between">
               <div className="flex-1">
                 <h3 className="text-lg font-semibold text-blue-900 mb-2">Weekly Groom Salaries</h3>
                 <div className="space-y-2">
                   <p className="text-sm text-blue-800">
-                    You paid <span className="font-bold">${salarySummaryData.weeklyCost.toLocaleString()}</span> in groom salaries this week.
+                    You paid{' '}
+                    <span className="font-bold">
+                      ${salarySummaryData.weeklyCost.toLocaleString()}
+                    </span>{' '}
+                    in groom salaries this week.
                   </p>
                   <p className="text-sm text-blue-800">
-                    Total paid this month: <span className="font-bold">${salarySummaryData.totalPaid.toLocaleString()}</span>
+                    Total paid this month:{' '}
+                    <span className="font-bold">
+                      ${salarySummaryData.totalPaid.toLocaleString()}
+                    </span>
                   </p>
                   {salarySummaryData.unassignedGroomsCount > 0 && (
                     <p className="text-sm text-yellow-700 font-medium mt-2">
-                      ⚠️ {salarySummaryData.unassignedGroomsCount} groom{salarySummaryData.unassignedGroomsCount > 1 ? 's' : ''} with no assignments - consider assigning them to save money!
+                      ⚠️ {salarySummaryData.unassignedGroomsCount} groom
+                      {salarySummaryData.unassignedGroomsCount > 1 ? 's' : ''} with no assignments -
+                      consider assigning them to save money!
                     </p>
                   )}
                 </div>
@@ -379,7 +362,12 @@ const UserDashboard: React.FC<UserDashboardProps> = ({
                 aria-label="Dismiss salary reminder"
               >
                 <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
+                  <path
+                    strokeLinecap="round"
+                    strokeLinejoin="round"
+                    strokeWidth={2}
+                    d="M6 18L18 6M6 6l12 12"
+                  />
                 </svg>
               </button>
             </div>
@@ -436,15 +424,22 @@ const UserDashboard: React.FC<UserDashboardProps> = ({
           </h2>
           <div className="space-y-3">
             {dashboardData?.recentShows?.slice(0, 3).map((show) => (
-              <div key={show.id} className="flex items-center justify-between p-3 bg-gray-50 rounded-lg">
+              <div
+                key={show.id}
+                className="flex items-center justify-between p-3 bg-gray-50 rounded-lg"
+              >
                 <div className="flex items-center">
                   <Star className="w-5 h-5 text-yellow-500 mr-3" />
                   <div>
                     <div className="font-medium">{show.name}</div>
                     <div className="text-sm text-gray-600">
-                      {show.placement === 1 ? '1st Place' : 
-                       show.placement === 2 ? '2nd Place' : 
-                       show.placement === 3 ? '3rd Place' : `${show.placement}th Place`}
+                      {show.placement === 1
+                        ? '1st Place'
+                        : show.placement === 2
+                          ? '2nd Place'
+                          : show.placement === 3
+                            ? '3rd Place'
+                            : `${show.placement}th Place`}
                     </div>
                   </div>
                 </div>
@@ -462,10 +457,14 @@ const UserDashboard: React.FC<UserDashboardProps> = ({
             <Clock className="w-5 h-5 mr-2 text-gray-600" />
             Recent Activity
           </h2>
-          
+
           <div className="space-y-3">
             {activityData?.map((activity) => (
-              <div key={activity.id} className="flex items-start space-x-3 p-3 border-l-4 border-blue-200 bg-blue-50 rounded-r-lg" data-testid="activity-item">
+              <div
+                key={activity.id}
+                className="flex items-start space-x-3 p-3 border-l-4 border-blue-200 bg-blue-50 rounded-r-lg"
+                data-testid="activity-item"
+              >
                 <div className="flex-1">
                   <div className="font-medium text-gray-900">{activity.description}</div>
                   <div className="text-sm text-gray-600 mt-1">
@@ -478,7 +477,7 @@ const UserDashboard: React.FC<UserDashboardProps> = ({
 
           {activityData && activityData.length >= 10 && (
             <button
-              onClick={() => setActivityPage(prev => prev + 1)}
+              onClick={() => setActivityPage((prev) => prev + 1)}
               className="w-full mt-4 py-2 text-blue-600 hover:text-blue-700 font-medium"
               aria-label="Load more activity"
             >

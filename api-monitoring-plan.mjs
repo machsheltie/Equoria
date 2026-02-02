@@ -2,7 +2,7 @@
 
 /**
  * API Monitoring Plan for Route Naming Changes
- * 
+ *
  * This script sets up monitoring to detect any missed references to old API endpoints
  * and provides alerts for deprecated endpoint usage.
  */
@@ -22,7 +22,7 @@ const colors = {
   yellow: '\x1b[33m',
   blue: '\x1b[34m',
   reset: '\x1b[0m',
-  bold: '\x1b[1m'
+  bold: '\x1b[1m',
 };
 
 /**
@@ -35,36 +35,30 @@ const MONITORING_CONFIG = {
     '/api/leaderboard',
     '/api/traits/evaluate-milestone',
     '/api/traits/milestone-status',
-    '/api/traits/milestone-definitions'
+    '/api/traits/milestone-definitions',
   ],
-  
+
   // New endpoints that should be working
   newEndpoints: [
     '/api/users',
-    '/api/leaderboards', 
+    '/api/leaderboards',
     '/api/milestones/evaluate-milestone',
     '/api/milestones/milestone-status',
-    '/api/milestones/milestone-definitions'
+    '/api/milestones/milestone-definitions',
   ],
-  
+
   // Files to scan for endpoint references
-  scanPaths: [
-    'frontend/',
-    'backend/',
-    'docs/',
-    'README.md',
-    '*.md'
-  ],
-  
+  scanPaths: ['frontend/', 'backend/', 'docs/', 'README.md', '*.md'],
+
   // Log file for monitoring results
   logFile: 'api-monitoring.log',
-  
+
   // Alert thresholds
   alertThresholds: {
     deprecatedUsage: 1, // Alert if any deprecated endpoint usage found
-    errorRate: 0.05,    // Alert if error rate > 5%
-    responseTime: 2000  // Alert if response time > 2 seconds
-  }
+    errorRate: 0.05, // Alert if error rate > 5%
+    responseTime: 2000, // Alert if response time > 2 seconds
+  },
 };
 
 /**
@@ -72,18 +66,20 @@ const MONITORING_CONFIG = {
  */
 async function scanForDeprecatedEndpoints() {
   console.log(`${colors.yellow}🔍 Scanning for deprecated endpoint references...${colors.reset}`);
-  
+
   const results = {
     deprecatedReferences: [],
     filesScanned: 0,
-    issuesFound: 0
+    issuesFound: 0,
   };
-  
+
   // This would be implemented with a proper file scanner
   // For now, we'll create a monitoring framework
-  
-  console.log(`${colors.green}✅ Scan completed: ${results.filesScanned} files scanned, ${results.issuesFound} issues found${colors.reset}`);
-  
+
+  console.log(
+    `${colors.green}✅ Scan completed: ${results.filesScanned} files scanned, ${results.issuesFound} issues found${colors.reset}`
+  );
+
   return results;
 }
 
@@ -92,43 +88,42 @@ async function scanForDeprecatedEndpoints() {
  */
 async function monitorEndpointHealth(baseUrl = 'http://localhost:3000') {
   console.log(`${colors.yellow}🏥 Monitoring endpoint health...${colors.reset}`);
-  
+
   const healthResults = {
     newEndpoints: {},
     deprecatedEndpoints: {},
-    timestamp: new Date().toISOString()
+    timestamp: new Date().toISOString(),
   };
-  
+
   // Test new endpoints
   for (const endpoint of MONITORING_CONFIG.newEndpoints) {
     try {
       const startTime = Date.now();
-      
+
       // In a real implementation, this would make actual HTTP requests
       // For now, we'll simulate the monitoring structure
       const responseTime = Math.random() * 1000; // Simulated response time
       const statusCode = 200; // Simulated success
-      
+
       healthResults.newEndpoints[endpoint] = {
         status: 'healthy',
         responseTime,
         statusCode,
-        timestamp: new Date().toISOString()
+        timestamp: new Date().toISOString(),
       };
-      
+
       console.log(`${colors.green}✅ ${endpoint}: ${responseTime.toFixed(0)}ms${colors.reset}`);
-      
     } catch (error) {
       healthResults.newEndpoints[endpoint] = {
         status: 'error',
         error: error.message,
-        timestamp: new Date().toISOString()
+        timestamp: new Date().toISOString(),
       };
-      
+
       console.log(`${colors.red}❌ ${endpoint}: ${error.message}${colors.reset}`);
     }
   }
-  
+
   // Test deprecated endpoints (should return 404)
   for (const endpoint of MONITORING_CONFIG.deprecatedEndpoints) {
     try {
@@ -136,20 +131,19 @@ async function monitorEndpointHealth(baseUrl = 'http://localhost:3000') {
       healthResults.deprecatedEndpoints[endpoint] = {
         status: 'deprecated',
         expectedStatus: 404,
-        timestamp: new Date().toISOString()
+        timestamp: new Date().toISOString(),
       };
-      
+
       console.log(`${colors.yellow}⚠️  ${endpoint}: Properly deprecated${colors.reset}`);
-      
     } catch (error) {
       healthResults.deprecatedEndpoints[endpoint] = {
         status: 'error',
         error: error.message,
-        timestamp: new Date().toISOString()
+        timestamp: new Date().toISOString(),
       };
     }
   }
-  
+
   return healthResults;
 }
 
@@ -158,17 +152,17 @@ async function monitorEndpointHealth(baseUrl = 'http://localhost:3000') {
  */
 function generateAlerts(healthResults, scanResults) {
   const alerts = [];
-  
+
   // Check for deprecated endpoint usage in code
   if (scanResults.issuesFound > MONITORING_CONFIG.alertThresholds.deprecatedUsage) {
     alerts.push({
       type: 'DEPRECATED_USAGE',
       severity: 'HIGH',
       message: `Found ${scanResults.issuesFound} references to deprecated endpoints`,
-      details: scanResults.deprecatedReferences
+      details: scanResults.deprecatedReferences,
     });
   }
-  
+
   // Check endpoint response times
   for (const [endpoint, result] of Object.entries(healthResults.newEndpoints)) {
     if (result.responseTime > MONITORING_CONFIG.alertThresholds.responseTime) {
@@ -177,21 +171,21 @@ function generateAlerts(healthResults, scanResults) {
         severity: 'MEDIUM',
         message: `Slow response time for ${endpoint}: ${result.responseTime}ms`,
         endpoint,
-        responseTime: result.responseTime
+        responseTime: result.responseTime,
       });
     }
-    
+
     if (result.status === 'error') {
       alerts.push({
         type: 'ENDPOINT_ERROR',
         severity: 'HIGH',
         message: `Error accessing ${endpoint}: ${result.error}`,
         endpoint,
-        error: result.error
+        error: result.error,
       });
     }
   }
-  
+
   return alerts;
 }
 
@@ -205,13 +199,15 @@ async function logResults(healthResults, scanResults, alerts) {
     scan: scanResults,
     alerts,
     summary: {
-      endpointsHealthy: Object.values(healthResults.newEndpoints).filter(r => r.status === 'healthy').length,
+      endpointsHealthy: Object.values(healthResults.newEndpoints).filter(
+        (r) => r.status === 'healthy'
+      ).length,
       endpointsTotal: Object.keys(healthResults.newEndpoints).length,
       deprecatedReferences: scanResults.issuesFound,
-      alertsGenerated: alerts.length
-    }
+      alertsGenerated: alerts.length,
+    },
   };
-  
+
   try {
     const logPath = join(__dirname, MONITORING_CONFIG.logFile);
     await writeFile(logPath, JSON.stringify(logEntry, null, 2) + '\n', { flag: 'a' });
@@ -229,14 +225,16 @@ function sendAlerts(alerts) {
     console.log(`${colors.green}✅ No alerts generated${colors.reset}`);
     return;
   }
-  
+
   console.log(`${colors.yellow}🚨 ${alerts.length} alerts generated:${colors.reset}`);
-  
+
   alerts.forEach((alert, index) => {
     const severityColor = alert.severity === 'HIGH' ? colors.red : colors.yellow;
-    console.log(`${severityColor}${index + 1}. [${alert.severity}] ${alert.type}: ${alert.message}${colors.reset}`);
+    console.log(
+      `${severityColor}${index + 1}. [${alert.severity}] ${alert.type}: ${alert.message}${colors.reset}`
+    );
   });
-  
+
   // In a real implementation, this would send to Slack, email, etc.
   console.log(`${colors.blue}📧 Alerts would be sent to configured channels${colors.reset}`);
 }
@@ -246,39 +244,40 @@ function sendAlerts(alerts) {
  */
 async function runMonitoring(options = {}) {
   console.log(`${colors.bold}${colors.blue}🔍 API Endpoint Monitoring Started${colors.reset}\n`);
-  
+
   try {
     // Scan for deprecated endpoint references
     const scanResults = await scanForDeprecatedEndpoints();
-    
+
     // Monitor endpoint health
     const healthResults = await monitorEndpointHealth(options.baseUrl);
-    
+
     // Generate alerts
     const alerts = generateAlerts(healthResults, scanResults);
-    
+
     // Log results
     await logResults(healthResults, scanResults, alerts);
-    
+
     // Send alerts
     sendAlerts(alerts);
-    
-    console.log(`\n${colors.bold}${colors.green}✅ Monitoring completed successfully${colors.reset}`);
-    
+
+    console.log(
+      `\n${colors.bold}${colors.green}✅ Monitoring completed successfully${colors.reset}`
+    );
+
     return {
       success: true,
       summary: {
         endpointsMonitored: Object.keys(healthResults.newEndpoints).length,
         deprecatedReferences: scanResults.issuesFound,
-        alertsGenerated: alerts.length
-      }
+        alertsGenerated: alerts.length,
+      },
     };
-    
   } catch (error) {
     console.error(`${colors.red}❌ Monitoring failed: ${error.message}${colors.reset}`);
     return {
       success: false,
-      error: error.message
+      error: error.message,
     };
   }
 }
@@ -293,24 +292,24 @@ function createMonitoringDashboard() {
       {
         name: 'New Endpoints Status',
         endpoints: MONITORING_CONFIG.newEndpoints,
-        type: 'health'
+        type: 'health',
       },
       {
         name: 'Deprecated Endpoints',
         endpoints: MONITORING_CONFIG.deprecatedEndpoints,
-        type: 'deprecated'
+        type: 'deprecated',
       },
       {
         name: 'Code Scan Results',
-        type: 'scan'
+        type: 'scan',
       },
       {
         name: 'Active Alerts',
-        type: 'alerts'
-      }
+        type: 'alerts',
+      },
     ],
     refreshInterval: 60000, // 1 minute
-    alertThresholds: MONITORING_CONFIG.alertThresholds
+    alertThresholds: MONITORING_CONFIG.alertThresholds,
   };
 }
 
@@ -321,20 +320,20 @@ export {
   monitorEndpointHealth,
   generateAlerts,
   createMonitoringDashboard,
-  MONITORING_CONFIG
+  MONITORING_CONFIG,
 };
 
 // Run monitoring if called directly
 if (import.meta.url === `file://${process.argv[1]}`) {
   const options = {
-    baseUrl: process.argv[2] || 'http://localhost:3000'
+    baseUrl: process.argv[2] || 'http://localhost:3000',
   };
-  
+
   runMonitoring(options)
-    .then(result => {
+    .then((result) => {
       process.exit(result.success ? 0 : 1);
     })
-    .catch(error => {
+    .catch((error) => {
       console.error(`${colors.red}Monitoring execution failed: ${error.message}${colors.reset}`);
       process.exit(1);
     });

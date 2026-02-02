@@ -15,11 +15,7 @@ interface FoalDevelopmentTrackerProps {
 
 const FoalDevelopmentTracker = ({ foalId }: FoalDevelopmentTrackerProps) => {
   const { data: foal, isLoading: loadingFoal } = useFoal(foalId);
-  const {
-    data: development,
-    isLoading: loadingDev,
-    error: devError,
-  } = useFoalDevelopment(foalId);
+  const { data: development, isLoading: loadingDev, error: devError } = useFoalDevelopment(foalId);
   const { data: activities } = useFoalActivities(foalId);
 
   const logActivity = useLogFoalActivity(foalId);
@@ -66,9 +62,7 @@ const FoalDevelopmentTracker = ({ foalId }: FoalDevelopmentTrackerProps) => {
         <div className="grid gap-3 md:grid-cols-2">
           <div className="rounded-md border border-slate-100 bg-slate-50 p-4">
             <div className="text-sm font-semibold text-slate-900">Stage</div>
-            <div className="text-xl font-bold text-slate-900">
-              {development.stage ?? 'Unknown'}
-            </div>
+            <div className="text-xl font-bold text-slate-900">{development.stage ?? 'Unknown'}</div>
             <div className="text-xs text-slate-600">Progress: {development.progress ?? 0}%</div>
           </div>
           <div className="rounded-md border border-slate-100 bg-slate-50 p-4">
@@ -96,14 +90,18 @@ const FoalDevelopmentTracker = ({ foalId }: FoalDevelopmentTrackerProps) => {
           <input
             type="number"
             value={duration}
-            onChange={(event) => setDuration(event.target.value === '' ? '' : Number(event.target.value))}
+            onChange={(event) =>
+              setDuration(event.target.value === '' ? '' : Number(event.target.value))
+            }
             className="w-full rounded-md border border-slate-200 px-3 py-2 text-sm text-slate-900 shadow-sm focus:border-indigo-500 focus:outline-none focus:ring-2 focus:ring-indigo-500"
             placeholder="Duration (minutes)"
           />
           <div className="flex gap-2">
             <button
               type="button"
-              onClick={() => logActivity.mutate({ activity: activityName, duration: Number(duration) })}
+              onClick={() =>
+                logActivity.mutate({ activity: activityName, duration: Number(duration) })
+              }
               disabled={logActivity.isPending || activityName.length === 0 || duration === ''}
               className="w-full rounded-md bg-indigo-600 px-4 py-2 text-sm font-semibold text-white shadow hover:bg-indigo-500 focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:ring-offset-2 disabled:cursor-not-allowed disabled:opacity-70"
             >
@@ -111,7 +109,9 @@ const FoalDevelopmentTracker = ({ foalId }: FoalDevelopmentTrackerProps) => {
             </button>
             <button
               type="button"
-              onClick={() => enrichFoal.mutate({ activity: 'enrichment', duration: Number(duration) })}
+              onClick={() =>
+                enrichFoal.mutate({ activity: 'enrichment', duration: Number(duration) })
+              }
               disabled={enrichFoal.isPending || duration === ''}
               className="w-full rounded-md border border-emerald-200 bg-emerald-50 px-4 py-2 text-sm font-semibold text-emerald-900 shadow-sm hover:bg-emerald-100 focus:outline-none focus:ring-2 focus:ring-emerald-500 focus:ring-offset-2 disabled:cursor-not-allowed disabled:opacity-70"
             >

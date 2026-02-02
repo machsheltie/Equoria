@@ -5,8 +5,7 @@
 
 import { useState, useEffect, useCallback } from 'react';
 
-const API_BASE_URL =
-  process.env.REACT_APP_API_URL || 'http://localhost:3000/api';
+const API_BASE_URL = process.env.REACT_APP_API_URL || 'http://localhost:3000/api';
 
 /**
  * Custom hook for groom management functionality
@@ -68,9 +67,7 @@ export function useGroomManagement(playerId) {
     if (!foalId) return;
 
     try {
-      const response = await fetch(
-        `${API_BASE_URL}/grooms/assignments/${foalId}`
-      );
+      const response = await fetch(`${API_BASE_URL}/grooms/assignments/${foalId}`);
       const data = await response.json();
 
       if (data.success) {
@@ -145,15 +142,12 @@ export function useGroomManagement(playerId) {
       try {
         setGroomState((prev) => ({ ...prev, error: null }));
 
-        const response = await fetch(
-          `${API_BASE_URL}/grooms/ensure-default/${foalId}`,
-          {
-            method: 'POST',
-            headers: {
-              'Content-Type': 'application/json',
-            },
-          }
-        );
+        const response = await fetch(`${API_BASE_URL}/grooms/ensure-default/${foalId}`, {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json',
+          },
+        });
 
         const data = await response.json();
 
@@ -162,9 +156,7 @@ export function useGroomManagement(playerId) {
           await fetchFoalAssignments(foalId);
           return data.data;
         } else {
-          throw new Error(
-            data.message || 'Failed to ensure default assignment'
-          );
+          throw new Error(data.message || 'Failed to ensure default assignment');
         }
       } catch (error) {
         console.error('Error ensuring default assignment:', error);
@@ -202,10 +194,7 @@ export function useGroomManagement(playerId) {
           ...prev,
           interactions: {
             ...prev.interactions,
-            [foalId]: [
-              ...(prev.interactions[foalId] || []),
-              data.data.interaction,
-            ],
+            [foalId]: [...(prev.interactions[foalId] || []), data.data.interaction],
           },
         }));
         return data.data;
@@ -290,9 +279,7 @@ export function useGroomManagement(playerId) {
   const getActiveAssignment = useCallback(
     (foalId) => {
       const assignments = groomState.assignments[foalId] || [];
-      return assignments.find(
-        (assignment) => assignment.isActive && assignment.priority === 1
-      );
+      return assignments.find((assignment) => assignment.isActive && assignment.priority === 1);
     },
     [groomState.assignments]
   );

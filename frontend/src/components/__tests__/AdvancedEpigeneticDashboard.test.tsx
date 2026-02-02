@@ -31,15 +31,9 @@ const useQuery = (options) => ({
   refetch: () => {},
 });
 
-
-
 // Test utilities
 const renderWithQueryClient = (component) => {
-  return render(
-    <QueryClientProvider client={mockQueryClient}>
-      {component}
-    </QueryClientProvider>
-  );
+  return render(<QueryClientProvider client={mockQueryClient}>{component}</QueryClientProvider>);
 };
 
 // Mock data for testing
@@ -95,9 +89,7 @@ const mockDevelopmentalData = {
     { name: 'Socialization', completed: true, score: 7.2, date: '2023-02-20' },
     { name: 'Trust & Handling', completed: false, score: 6.5, date: null },
   ],
-  upcomingWindows: [
-    { name: 'Advanced Training', ageRange: '3-4 years', startsIn: '6 months' },
-  ],
+  upcomingWindows: [{ name: 'Advanced Training', ageRange: '3-4 years', startsIn: '6 months' }],
 };
 
 const mockForecastData = {
@@ -106,8 +98,16 @@ const mockForecastData = {
     { trait: 'focused', probability: 0.65, confidence: 0.72, timeframe: '6 months' },
   ],
   recommendations: [
-    { action: 'Increase novelty exposure', priority: 'high', expectedBenefit: 'Enhanced adaptability' },
-    { action: 'Maintain consistent handling', priority: 'medium', expectedBenefit: 'Stable bonding' },
+    {
+      action: 'Increase novelty exposure',
+      priority: 'high',
+      expectedBenefit: 'Enhanced adaptability',
+    },
+    {
+      action: 'Maintain consistent handling',
+      priority: 'medium',
+      expectedBenefit: 'Stable bonding',
+    },
   ],
   riskAssessment: {
     overall: 'low',
@@ -125,9 +125,7 @@ describe('AdvancedEpigeneticDashboard', () => {
 
   describe('Component Rendering', () => {
     test('renders dashboard with all main panels', () => {
-      renderWithQueryClient(
-        <AdvancedEpigeneticDashboard horseId={1} />
-      );
+      renderWithQueryClient(<AdvancedEpigeneticDashboard horseId={1} />);
 
       expect(screen.getByText('Advanced Epigenetic Dashboard')).toBeInTheDocument();
       expect(screen.getByText('Environmental Analysis')).toBeInTheDocument();
@@ -137,17 +135,13 @@ describe('AdvancedEpigeneticDashboard', () => {
     });
 
     test('handles missing horseId prop gracefully', () => {
-      renderWithQueryClient(
-        <AdvancedEpigeneticDashboard horseId={null} />
-      );
+      renderWithQueryClient(<AdvancedEpigeneticDashboard horseId={null} />);
 
       expect(screen.getByText('Please select a horse to view epigenetic data')).toBeInTheDocument();
     });
 
     test('renders with custom className', () => {
-      renderWithQueryClient(
-        <AdvancedEpigeneticDashboard horseId={1} className="custom-class" />
-      );
+      renderWithQueryClient(<AdvancedEpigeneticDashboard horseId={1} className="custom-class" />);
 
       const dashboard = screen.getByTestId('epigenetic-dashboard');
       expect(dashboard).toHaveClass('custom-class');
@@ -156,9 +150,7 @@ describe('AdvancedEpigeneticDashboard', () => {
 
   describe('Panel Structure', () => {
     test('displays all required panel sections', () => {
-      renderWithQueryClient(
-        <AdvancedEpigeneticDashboard horseId={1} />
-      );
+      renderWithQueryClient(<AdvancedEpigeneticDashboard horseId={1} />);
 
       // Environmental Analysis sections
       expect(screen.getByText('Environmental Triggers')).toBeInTheDocument();
@@ -182,18 +174,14 @@ describe('AdvancedEpigeneticDashboard', () => {
     });
 
     test('includes refresh functionality', () => {
-      renderWithQueryClient(
-        <AdvancedEpigeneticDashboard horseId={1} />
-      );
+      renderWithQueryClient(<AdvancedEpigeneticDashboard horseId={1} />);
 
       const refreshButton = screen.getByLabelText('Refresh Data');
       expect(refreshButton).toBeInTheDocument();
     });
 
     test('supports real-time updates indicator', () => {
-      renderWithQueryClient(
-        <AdvancedEpigeneticDashboard horseId={1} enableRealTime={true} />
-      );
+      renderWithQueryClient(<AdvancedEpigeneticDashboard horseId={1} enableRealTime={true} />);
 
       expect(screen.getByText('Real-time updates enabled')).toBeInTheDocument();
     });
@@ -334,9 +322,7 @@ describe('AdvancedEpigeneticDashboard', () => {
 
   describe('Interactive Features', () => {
     test('allows panel expansion and collapse', async () => {
-      renderWithQueryClient(
-        <AdvancedEpigeneticDashboard horseId={1} />
-      );
+      renderWithQueryClient(<AdvancedEpigeneticDashboard horseId={1} />);
 
       const expandButton = screen.getByLabelText('Expand Environmental Analysis');
       fireEvent.click(expandButton);
@@ -345,9 +331,7 @@ describe('AdvancedEpigeneticDashboard', () => {
     });
 
     test('supports real-time data refresh', async () => {
-      renderWithQueryClient(
-        <AdvancedEpigeneticDashboard horseId={1} enableRealTime={true} />
-      );
+      renderWithQueryClient(<AdvancedEpigeneticDashboard horseId={1} enableRealTime={true} />);
 
       const refreshButton = screen.getByLabelText('Refresh Data');
       fireEvent.click(refreshButton);
@@ -363,9 +347,7 @@ describe('AdvancedEpigeneticDashboard', () => {
         value: 375,
       });
 
-      renderWithQueryClient(
-        <AdvancedEpigeneticDashboard horseId={1} />
-      );
+      renderWithQueryClient(<AdvancedEpigeneticDashboard horseId={1} />);
 
       const dashboard = screen.getByTestId('epigenetic-dashboard');
       expect(dashboard).toHaveClass('mobile-layout');
@@ -376,9 +358,7 @@ describe('AdvancedEpigeneticDashboard', () => {
     test('displays error message when API calls fail', async () => {
       // NO MOCKING - Test error state by not providing horseId (component shows error when no data)
       // Since we're not providing data props and horseId is null, component will show error state
-      renderWithQueryClient(
-        <AdvancedEpigeneticDashboard horseId={null} />
-      );
+      renderWithQueryClient(<AdvancedEpigeneticDashboard horseId={null} />);
 
       // Component should render without crashing even with null horseId
       await waitFor(() => {
@@ -392,7 +372,7 @@ describe('AdvancedEpigeneticDashboard', () => {
         <AdvancedEpigeneticDashboard
           horseId={1}
           environmentalData={mockEnvironmentalData}
-          traitData={null}  // Simulate missing trait data
+          traitData={null} // Simulate missing trait data
           developmentalData={mockDevelopmentalData}
           forecastData={mockForecastData}
         />

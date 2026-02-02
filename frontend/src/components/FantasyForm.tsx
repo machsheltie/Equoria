@@ -22,13 +22,13 @@ export const FantasyInput = ({ label, error, tooltip, className, ...props }: Fan
           {label}
         </Label>
       )}
-      
+
       <div className="relative">
         {/* Focus sparkle effect */}
         {isFocused && (
           <div className="absolute -top-1 left-0 right-0 h-1 bg-gradient-to-r from-transparent via-burnished-gold to-transparent opacity-60 shimmer-effect" />
         )}
-        
+
         <Input
           {...props}
           onFocus={(e) => {
@@ -66,11 +66,7 @@ export const FantasyInput = ({ label, error, tooltip, className, ...props }: Fan
         )}
       </div>
 
-      {error && (
-        <p className="text-red-500 text-sm fantasy-body animate-pulse">
-          {error}
-        </p>
-      )}
+      {error && <p className="text-red-500 text-sm fantasy-body animate-pulse">{error}</p>}
     </div>
   );
 };
@@ -90,12 +86,12 @@ export const FantasyTextarea = ({ label, error, className, ...props }: FantasyTe
           {label}
         </Label>
       )}
-      
+
       <div className="relative">
         {isFocused && (
           <div className="absolute -top-1 left-0 right-0 h-1 bg-gradient-to-r from-transparent via-burnished-gold to-transparent opacity-60 shimmer-effect" />
         )}
-        
+
         <Textarea
           {...props}
           onFocus={(e) => {
@@ -121,11 +117,7 @@ export const FantasyTextarea = ({ label, error, className, ...props }: FantasyTe
         <div className="absolute inset-2 border border-burnished-gold/30 rounded-lg pointer-events-none" />
       </div>
 
-      {error && (
-        <p className="text-red-500 text-sm fantasy-body animate-pulse">
-          {error}
-        </p>
-      )}
+      {error && <p className="text-red-500 text-sm fantasy-body animate-pulse">{error}</p>}
     </div>
   );
 };
@@ -138,7 +130,13 @@ interface FantasySelectProps {
   placeholder?: string;
 }
 
-export const FantasySelect = ({ label, value, onValueChange, options, placeholder }: FantasySelectProps) => {
+export const FantasySelect = ({
+  label,
+  value,
+  onValueChange,
+  options,
+  placeholder,
+}: FantasySelectProps) => {
   const [isOpen, setIsOpen] = useState(false);
 
   return (
@@ -148,14 +146,16 @@ export const FantasySelect = ({ label, value, onValueChange, options, placeholde
           {label}
         </Label>
       )}
-      
+
       <div className="relative">
         <button
           onClick={() => setIsOpen(!isOpen)}
           className="w-full bg-parchment border-2 border-aged-bronze rounded-lg px-3 py-2 text-left fantasy-body text-midnight-ink hover:border-burnished-gold transition-colors duration-200 flex items-center justify-between"
         >
-          <span>{value ? options.find(opt => opt.value === value)?.label : placeholder}</span>
-          <ChevronDown className={`w-5 h-5 text-aged-bronze transition-transform duration-200 ${isOpen ? 'rotate-180' : ''}`} />
+          <span>{value ? options.find((opt) => opt.value === value)?.label : placeholder}</span>
+          <ChevronDown
+            className={`w-5 h-5 text-aged-bronze transition-transform duration-200 ${isOpen ? 'rotate-180' : ''}`}
+          />
         </button>
 
         <div className="absolute inset-1 border border-burnished-gold/30 rounded-md pointer-events-none" />
@@ -205,9 +205,7 @@ export const FantasyCheckbox = ({ label, checked, onCheckedChange }: FantasyChec
           <div className="absolute -inset-1 bg-burnished-gold/20 rounded-lg animate-pulse" />
         )}
       </div>
-      <Label className="fantasy-body text-midnight-ink cursor-pointer">
-        {label}
-      </Label>
+      <Label className="fantasy-body text-midnight-ink cursor-pointer">{label}</Label>
     </div>
   );
 };
@@ -221,10 +219,8 @@ interface FantasyToggleProps {
 export const FantasyToggle = ({ label, checked, onCheckedChange }: FantasyToggleProps) => {
   return (
     <div className="flex items-center justify-between">
-      <Label className="fantasy-body text-midnight-ink">
-        {label}
-      </Label>
-      
+      <Label className="fantasy-body text-midnight-ink">{label}</Label>
+
       <button
         onClick={() => onCheckedChange(!checked)}
         className={`
@@ -232,11 +228,13 @@ export const FantasyToggle = ({ label, checked, onCheckedChange }: FantasyToggle
           ${checked ? 'bg-forest-green shadow-lg magical-glow' : 'bg-aged-bronze'}
         `}
       >
-        <div className={`
+        <div
+          className={`
           absolute top-1 w-4 h-4 bg-parchment rounded-full shadow-md transition-transform duration-300 border border-burnished-gold/50
           ${checked ? 'translate-x-7' : 'translate-x-1'}
-        `} />
-        
+        `}
+        />
+
         {checked && (
           <div className="absolute inset-0 rounded-full bg-forest-green/20 animate-pulse" />
         )}

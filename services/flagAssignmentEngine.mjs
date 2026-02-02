@@ -1,10 +1,10 @@
 /**
  * Flag Assignment Engine
- * 
+ *
  * Core flag assignment logic with trigger condition validation.
  * Evaluates care patterns against epigenetic flag definitions to determine
  * which flags should be assigned to horses based on their care history.
- * 
+ *
  * Business Rules:
  * - Maximum 5 flags per horse
  * - Flags are permanent once assigned
@@ -13,7 +13,7 @@
  * - Pattern-based evaluation using real care data
  */
 
-import logger from '../utils/logger.mjs';
+import logger from '../backend/utils/logger.mjs';
 import { EPIGENETIC_FLAG_DEFINITIONS, FLAG_TYPES } from '../config/epigeneticFlagDefinitions.mjs';
 
 /**
@@ -49,11 +49,11 @@ export async function evaluateFlagTriggers(horse, carePatterns) {
 
       // Evaluate trigger conditions
       const triggerResult = evaluateTriggerConditions(flagDef, carePatterns, horse);
-      
+
       if (triggerResult.triggered) {
         eligibleFlags.push(flagName);
         triggerConditions[flagName] = triggerResult.conditions;
-        
+
         logger.info(`Flag ${flagName} triggered for horse ${horse.name}: ${triggerResult.reason}`);
       }
     }
@@ -64,7 +64,6 @@ export async function evaluateFlagTriggers(horse, carePatterns) {
       evaluatedFlags: Object.keys(EPIGENETIC_FLAG_DEFINITIONS).length,
       currentFlagCount: currentFlags.length,
     };
-
   } catch (error) {
     logger.error('Error evaluating flag triggers:', error);
     throw error;
@@ -117,36 +116,35 @@ function evaluateTriggerConditions(flagDef, carePatterns, horse) {
     switch (flagDef.name) {
       case 'brave':
         return evaluateBraveTriggers(conditions, carePatterns, horse);
-      
+
       case 'affectionate':
         return evaluateAffectionateTriggers(conditions, carePatterns, horse);
-      
+
       case 'confident':
         return evaluateConfidentTriggers(conditions, carePatterns, horse);
-      
+
       case 'social':
         return evaluateSocialTriggers(conditions, carePatterns, horse);
-      
+
       case 'calm':
         return evaluateCalmTriggers(conditions, carePatterns, horse);
-      
+
       case 'fearful':
         return evaluateFearfulTriggers(conditions, carePatterns, horse);
-      
+
       case 'insecure':
         return evaluateInsecureTriggers(conditions, carePatterns, horse);
-      
+
       case 'antisocial':
         return evaluateAntisocialTriggers(conditions, carePatterns, horse);
-      
+
       case 'fragile':
         return evaluateFragileTriggers(conditions, carePatterns, horse);
-      
+
       default:
         // Generic evaluation for undefined flags
         return evaluateGenericTriggers(flagDef, carePatterns, horse);
     }
-
   } catch (error) {
     logger.error(`Error evaluating triggers for flag ${flagDef.name}:`, error);
     return { triggered: false, reason: 'Evaluation error', conditions: {} };
@@ -158,7 +156,7 @@ function evaluateTriggerConditions(flagDef, carePatterns, horse) {
  */
 function evaluateBraveTriggers(conditions, carePatterns, horse) {
   const { consistency, stressPatterns, taskDiversity } = carePatterns;
-  
+
   // Brave flag: consistent care with stress management and task variety
   const consistentCare = consistency.consistencyScore > 0.7;
   const goodStressManagement = stressPatterns.averageReduction < -1; // Effective stress reduction
@@ -169,7 +167,9 @@ function evaluateBraveTriggers(conditions, carePatterns, horse) {
 
   return {
     triggered,
-    reason: triggered ? 'Consistent care with good stress management and task diversity' : 'Conditions not met',
+    reason: triggered
+      ? 'Consistent care with good stress management and task diversity'
+      : 'Conditions not met',
     conditions: {
       consistentCare,
       goodStressManagement,
@@ -184,7 +184,7 @@ function evaluateBraveTriggers(conditions, carePatterns, horse) {
  */
 function evaluateAffectionateTriggers(conditions, carePatterns, horse) {
   const { consistency, bondTrends, groomConsistency } = carePatterns;
-  
+
   // Affectionate flag: frequent positive interactions with consistent groom
   const frequentCare = consistency.averageInteractionsPerDay > 0.8;
   const positiveBondTrend = bondTrends.trend === 'improving' || bondTrends.averageChange > 0;
@@ -195,7 +195,9 @@ function evaluateAffectionateTriggers(conditions, carePatterns, horse) {
 
   return {
     triggered,
-    reason: triggered ? 'Frequent positive interactions with consistent groom care' : 'Conditions not met',
+    reason: triggered
+      ? 'Frequent positive interactions with consistent groom care'
+      : 'Conditions not met',
     conditions: {
       frequentCare,
       positiveBondTrend,
@@ -210,7 +212,7 @@ function evaluateAffectionateTriggers(conditions, carePatterns, horse) {
  */
 function evaluateConfidentTriggers(conditions, carePatterns, horse) {
   const { bondTrends, stressPatterns, taskDiversity } = carePatterns;
-  
+
   // Confident flag: positive bond development with diverse experiences
   const strongBondGrowth = bondTrends.averageChange > 1.5;
   const lowStress = horse.stressLevel < 5;
@@ -221,7 +223,9 @@ function evaluateConfidentTriggers(conditions, carePatterns, horse) {
 
   return {
     triggered,
-    reason: triggered ? 'Strong bond growth with diverse, high-quality experiences' : 'Conditions not met',
+    reason: triggered
+      ? 'Strong bond growth with diverse, high-quality experiences'
+      : 'Conditions not met',
     conditions: {
       strongBondGrowth,
       lowStress,
@@ -236,7 +240,7 @@ function evaluateConfidentTriggers(conditions, carePatterns, horse) {
  */
 function evaluateFearfulTriggers(conditions, carePatterns, horse) {
   const { stressPatterns, neglectPatterns, consistency } = carePatterns;
-  
+
   // Fearful flag: high stress with poor care consistency
   const highStressSpikes = stressPatterns.stressSpikes.length > 3;
   const poorStressManagement = stressPatterns.averageReduction > -0.5;
@@ -262,7 +266,7 @@ function evaluateFearfulTriggers(conditions, carePatterns, horse) {
  */
 function evaluateInsecureTriggers(conditions, carePatterns, horse) {
   const { groomConsistency, bondTrends, neglectPatterns } = carePatterns;
-  
+
   // Insecure flag: frequent groom changes with declining bond
   const frequentGroomChanges = groomConsistency.groomChanges > 2;
   const decliningBond = bondTrends.trend === 'declining';
@@ -273,7 +277,9 @@ function evaluateInsecureTriggers(conditions, carePatterns, horse) {
 
   return {
     triggered,
-    reason: triggered ? 'Frequent groom changes with declining bond or neglect' : 'Conditions not met',
+    reason: triggered
+      ? 'Frequent groom changes with declining bond or neglect'
+      : 'Conditions not met',
     conditions: {
       frequentGroomChanges,
       decliningBond,
@@ -291,7 +297,7 @@ function evaluateGenericTriggers(flagDef, carePatterns, horse) {
   if (flagDef.type === FLAG_TYPES.POSITIVE) {
     const goodCare = carePatterns.consistency.consistencyScore > 0.6;
     const positiveBond = carePatterns.bondTrends.averageChange > 0;
-    
+
     return {
       triggered: goodCare && positiveBond,
       reason: 'Generic positive flag evaluation',
@@ -300,7 +306,7 @@ function evaluateGenericTriggers(flagDef, carePatterns, horse) {
   } else if (flagDef.type === FLAG_TYPES.NEGATIVE) {
     const poorCare = carePatterns.consistency.consistencyScore < 0.4;
     const negativeBond = carePatterns.bondTrends.averageChange < 0;
-    
+
     return {
       triggered: poorCare || negativeBond,
       reason: 'Generic negative flag evaluation',

@@ -36,11 +36,9 @@ jest.mock('../backend/utils/logger.mjs', () => ({
 import prisma from '../backend/db/index.mjs';
 
 // Import the module under test
-const {
-  getTopPlayersByLevel,
-  getTopPlayersByXP,
-  getTopHorsesByEarnings,
-} = await import(join(__dirname, '../backend/controllers/leaderboardController.mjs'));
+const { getTopPlayersByLevel, getTopPlayersByXP, getTopHorsesByEarnings } = await import(
+  join(__dirname, '../backend/controllers/leaderboardController.mjs')
+);
 
 describe('🏆 INTEGRATION: Leaderboard Controller - Real Database Operations', () => {
   let testUsers = [];

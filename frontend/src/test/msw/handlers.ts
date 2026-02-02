@@ -378,4 +378,18 @@ export const handlers = [
       data: [],
     })
   ),
+
+  // Competition System
+  http.get(`${base}/api/competitions/:id/entries`, () =>
+    HttpResponse.json({
+      success: true,
+      data: [],
+    })
+  ),
+  http.get(`${base}/api/horses/user/eligible`, () =>
+    HttpResponse.json({
+      success: true,
+      data: [],
+    })
+  ),
 ];
