@@ -19,7 +19,7 @@ import {
   detectTokenReuse,
   invalidateTokenFamily,
   cleanupExpiredTokens,
-  createTokenPair
+  createTokenPair,
 } from '../../utils/tokenRotationService.mjs';
 
 describe('Token Rotation Service - Unit Tests', () => {
@@ -28,19 +28,19 @@ describe('Token Rotation Service - Unit Tests', () => {
   beforeEach(async () => {
     // Clear all tokens
     await prisma.refreshToken.deleteMany({
-      where: { user: { email: { contains: 'tokenunit' } } }
+      where: { user: { email: { contains: 'tokenunit' } } },
     });
 
     // Clear test users
     await prisma.user.deleteMany({
-      where: { email: { contains: 'tokenunit' } }
+      where: { email: { contains: 'tokenunit' } },
     });
 
     // Create test user with unique timestamp
     const timestamp = Date.now() + Math.floor(Math.random() * 1000);
     const userData = await createTestUser({
       username: `tokenunit_${timestamp}`,
-      email: `tokenunit_${timestamp}@example.com`
+      email: `tokenunit_${timestamp}@example.com`,
     });
     testUser = userData;
   });
@@ -48,10 +48,10 @@ describe('Token Rotation Service - Unit Tests', () => {
   afterAll(async () => {
     // Clean up all test data
     await prisma.refreshToken.deleteMany({
-      where: { user: { email: { contains: 'tokenunit' } } }
+      where: { user: { email: { contains: 'tokenunit' } } },
     });
     await prisma.user.deleteMany({
-      where: { email: { contains: 'tokenunit' } }
+      where: { email: { contains: 'tokenunit' } },
     });
     await prisma.$disconnect();
   });
@@ -60,7 +60,7 @@ describe('Token Rotation Service - Unit Tests', () => {
     // Clean up tokens for current test
     if (testUser?.id) {
       await prisma.refreshToken.deleteMany({
-        where: { userId: testUser.id }
+        where: { userId: testUser.id },
       });
     }
   });
@@ -119,8 +119,8 @@ describe('Token Rotation Service - Unit Tests', () => {
       const dbToken = await prisma.refreshToken.findFirst({
         where: {
           userId: testUser.id,
-          familyId: familyId
-        }
+          familyId: familyId,
+        },
       });
 
       expect(dbToken).toBeDefined();
@@ -166,10 +166,10 @@ describe('Token Rotation Service - Unit Tests', () => {
         {
           userId: testUser.id,
           type: 'refresh',
-          familyId: 'test-family'
+          familyId: 'test-family',
         },
         process.env.JWT_REFRESH_SECRET,
-        { expiresIn: '1ms' }
+        { expiresIn: '1ms' },
       );
 
       // Wait for expiration
@@ -182,10 +182,7 @@ describe('Token Rotation Service - Unit Tests', () => {
     });
 
     it('should_reject_token_with_invalid_signature', async () => {
-      const invalidToken = jwt.sign(
-        { userId: testUser.id, type: 'refresh' },
-        'wrong-secret'
-      );
+      const invalidToken = jwt.sign({ userId: testUser.id, type: 'refresh' }, 'wrong-secret');
 
       const validation = await validateRefreshToken(invalidToken);
 
@@ -200,7 +197,7 @@ describe('Token Rotation Service - Unit Tests', () => {
       // Mark token as inactive in database
       await prisma.refreshToken.update({
         where: { token: tokenPair.refreshToken },
-        data: { isActive: false }
+        data: { isActive: false },
       });
 
       const validation = await validateRefreshToken(tokenPair.refreshToken);
@@ -210,13 +207,7 @@ describe('Token Rotation Service - Unit Tests', () => {
     });
 
     it('should_reject_malformed_token', async () => {
-      const malformedTokens = [
-        'invalid.jwt.token',
-        '',
-        null,
-        undefined,
-        'not-a-jwt-at-all'
-      ];
+      const malformedTokens = ['invalid.jwt.token', '', null, undefined, 'not-a-jwt-at-all'];
 
       for (const token of malformedTokens) {
         const validation = await validateRefreshToken(token);
@@ -234,7 +225,7 @@ describe('Token Rotation Service - Unit Tests', () => {
       // Mark token as used/invalidated
       await prisma.refreshToken.update({
         where: { token: tokenPair.refreshToken },
-        data: { isActive: false }
+        data: { isActive: false },
       });
 
       const reuseDetection = await detectTokenReuse(tokenPair.refreshToken);
@@ -265,7 +256,7 @@ describe('Token Rotation Service - Unit Tests', () => {
       // Mark first token as used
       await prisma.refreshToken.update({
         where: { token: tokenPair.refreshToken },
-        data: { isActive: false }
+        data: { isActive: false },
       });
 
       // Attempt to reuse first token
@@ -294,13 +285,13 @@ describe('Token Rotation Service - Unit Tests', () => {
 
       // Old token should be invalidated
       const oldTokenRecord = await prisma.refreshToken.findFirst({
-        where: { token: oldTokenPair.refreshToken }
+        where: { token: oldTokenPair.refreshToken },
       });
       expect(oldTokenRecord.isActive).toBe(false);
 
       // New token should be active
       const newTokenRecord = await prisma.refreshToken.findFirst({
-        where: { token: rotationResult.newTokenPair.refreshToken }
+        where: { token: rotationResult.newTokenPair.refreshToken },
       });
       expect(newTokenRecord.isActive).toBe(true);
       expect(newTokenRecord.familyId).toBe(familyId);
@@ -321,7 +312,7 @@ describe('Token Rotation Service - Unit Tests', () => {
       // Mark token as already used
       await prisma.refreshToken.update({
         where: { token: tokenPair.refreshToken },
-        data: { isActive: false }
+        data: { isActive: false },
       });
 
       const rotationResult = await rotateRefreshToken(tokenPair.refreshToken);
@@ -336,9 +327,7 @@ describe('Token Rotation Service - Unit Tests', () => {
       const tokenPair = await createTokenPair(testUser.id, familyId);
 
       // Simulate concurrent attempts
-      const rotationPromises = Array.from({ length: 3 }, () =>
-        rotateRefreshToken(tokenPair.refreshToken)
-      );
+      const rotationPromises = Array.from({ length: 3 }, () => rotateRefreshToken(tokenPair.refreshToken));
 
       const results = await Promise.allSettled(rotationPromises);
       const successfulResults = results.filter(r => r.value?.success === true);
@@ -364,7 +353,7 @@ describe('Token Rotation Service - Unit Tests', () => {
 
       // Verify all tokens are invalidated
       const allTokens = await prisma.refreshToken.findMany({
-        where: { familyId: familyId }
+        where: { familyId: familyId },
       });
 
       allTokens.forEach(token => {
@@ -402,7 +391,7 @@ describe('Token Rotation Service - Unit Tests', () => {
       const expiredToken = jwt.sign(
         { userId: testUser.id, type: 'refresh', familyId: 'test' },
         process.env.JWT_REFRESH_SECRET,
-        { expiresIn: '1ms' }
+        { expiresIn: '1ms' },
       );
 
       await prisma.refreshToken.create({
@@ -412,8 +401,8 @@ describe('Token Rotation Service - Unit Tests', () => {
           familyId: 'expired-family',
           expiresAt: new Date(Date.now() - 1000), // Already expired
           isActive: false,
-          isInvalidated: false
-        }
+          isInvalidated: false,
+        },
       });
 
       // Create valid token
@@ -426,13 +415,13 @@ describe('Token Rotation Service - Unit Tests', () => {
 
       // Verify expired token is removed
       const expiredTokenRecord = await prisma.refreshToken.findFirst({
-        where: { familyId: 'expired-family' }
+        where: { familyId: 'expired-family' },
       });
       expect(expiredTokenRecord).toBeNull();
 
       // Verify valid token remains
       const validTokenRecord = await prisma.refreshToken.findFirst({
-        where: { familyId: validFamily }
+        where: { familyId: validFamily },
       });
       expect(validTokenRecord).toBeDefined();
     });
@@ -449,8 +438,8 @@ describe('Token Rotation Service - Unit Tests', () => {
           expiresAt: new Date(Date.now() + 86400000), // Valid expiry
           isActive: false,
           isInvalidated: true,
-          createdAt: oldDate
-        }
+          createdAt: oldDate,
+        },
       });
 
       const cleanupResult = await cleanupExpiredTokens({ olderThanDays: 7 });
@@ -471,8 +460,8 @@ describe('Token Rotation Service - Unit Tests', () => {
           familyId: 'test-1',
           expiresAt: expiredToken,
           isActive: false,
-          isInvalidated: false
-        }
+          isInvalidated: false,
+        },
       });
 
       // Old and invalidated
@@ -484,8 +473,8 @@ describe('Token Rotation Service - Unit Tests', () => {
           expiresAt: new Date(Date.now() + 86400000),
           isActive: false,
           isInvalidated: true,
-          createdAt: oldToken
-        }
+          createdAt: oldToken,
+        },
       });
 
       const cleanupResult = await cleanupExpiredTokens({ olderThanDays: 7 });
@@ -500,24 +489,20 @@ describe('Token Rotation Service - Unit Tests', () => {
   describe('Error Handling and Edge Cases', () => {
     it('should_handle_database_connection_errors', async () => {
       // Mock Prisma to throw database error
-      const mockCreate = jest.spyOn(prisma.refreshToken, 'create')
+      const mockCreate = jest
+        .spyOn(prisma.refreshToken, 'create')
         .mockRejectedValue(new Error('Database connection failed'));
 
       const familyId = generateTokenFamily();
 
-      await expect(createTokenPair(testUser.id, familyId))
-        .resolves.toBeDefined();
+      await expect(createTokenPair(testUser.id, familyId)).resolves.toBeDefined();
 
       mockCreate.mockRestore();
     });
 
     it('should_handle_jwt_verification_errors_gracefully', async () => {
       // Test various JWT errors
-      const invalidTokens = [
-        'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.invalid.signature',
-        'malformed.token',
-        ''
-      ];
+      const invalidTokens = ['eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.invalid.signature', 'malformed.token', ''];
 
       for (const token of invalidTokens) {
         const validation = await validateRefreshToken(token);

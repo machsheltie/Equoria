@@ -74,11 +74,11 @@ describe('Performance Analytics Service', () => {
     testHorse = await prisma.horse.create({
       data: {
         name: 'Analytics Test Horse',
-        user: { connect: { id: testUser.id } },
+        userId: testUser.id ,
         age: 5,
         sex: 'stallion',
         dateOfBirth: fiveYearsAgo,
-        breed: { connect: { id: testBreed.id } },
+        breedId: testBreed.id ,
         speed: 75,
         stamina: 80,
         agility: 70,
@@ -105,9 +105,9 @@ describe('Performance Analytics Service', () => {
           discipline: disciplines[i % disciplines.length],
           placement: placements[i % placements.length].toString(),
           score: Math.random() * 100,
-          runDate: new Date(Date.now() - (i * 7 * 24 * 60 * 60 * 1000)),
+          runDate: new Date(Date.now() - i * 7 * 24 * 60 * 60 * 1000),
           showName: `Test Show ${i + 1}`,
-          prizeWon: placements[i % placements.length] <= 3 ? 1000 - (placements[i % placements.length] * 200) : 0,
+          prizeWon: placements[i % placements.length] <= 3 ? 1000 - placements[i % placements.length] * 200 : 0,
         },
       });
       testCompetitionResults.push(result);
@@ -170,7 +170,7 @@ describe('Performance Analytics Service', () => {
       expect(analytics.placementTrends.length).toBeGreaterThan(0);
 
       // Check trend data structure
-      // eslint-disable-next-line prefer-destructuring
+
       const trend = analytics.placementTrends[0];
       expect(trend.date).toBeDefined();
       expect(trend.placement).toBeDefined();
@@ -196,7 +196,7 @@ describe('Performance Analytics Service', () => {
       expect(analytics.competitionHistory.length).toBe(20);
 
       // Check history data structure
-      // eslint-disable-next-line prefer-destructuring
+
       const competition = analytics.competitionHistory[0];
       expect(competition.discipline).toBeDefined();
       expect(competition.placement).toBeDefined();
@@ -235,7 +235,7 @@ describe('Performance Analytics Service', () => {
       expect(analytics.strongestDisciplines.length).toBeGreaterThan(0);
 
       // Check discipline strength data
-      // eslint-disable-next-line prefer-destructuring
+
       const discipline = analytics.strongestDisciplines[0];
       expect(discipline.name).toBeDefined();
       expect(discipline.winRate).toBeDefined();
@@ -250,7 +250,7 @@ describe('Performance Analytics Service', () => {
       expect(analytics.weakestDisciplines.length).toBeGreaterThan(0);
 
       // Check discipline weakness data
-      // eslint-disable-next-line prefer-destructuring
+
       const discipline = analytics.weakestDisciplines[0];
       expect(discipline.name).toBeDefined();
       expect(discipline.winRate).toBeDefined();
@@ -260,8 +260,7 @@ describe('Performance Analytics Service', () => {
 
   describe('Error Handling', () => {
     test('should handle non-existent horse gracefully', async () => {
-      await expect(performanceAnalyticsService.getPerformanceAnalytics(99999))
-        .rejects.toThrow('Horse not found');
+      await expect(performanceAnalyticsService.getPerformanceAnalytics(99999)).rejects.toThrow('Horse not found');
     });
 
     test('should handle horse with no competition history', async () => {
@@ -276,11 +275,11 @@ describe('Performance Analytics Service', () => {
       const newHorse = await prisma.horse.create({
         data: {
           name: 'No History Horse',
-          user: { connect: { id: testUser.id } },
+          userId: testUser.id ,
           age: 3,
           sex: 'mare',
           dateOfBirth: threeYearsAgo,
-          breed: { connect: { id: testBreed.id } },
+          breedId: testBreed.id ,
           speed: 50,
           stamina: 50,
           agility: 50,

@@ -98,7 +98,9 @@ describe('🏆 UNIT: Competition Score Calculation - Scoring Algorithm Validatio
     });
 
     it('should apply +5 trait bonus for matching discipline affinity', () => {
-      const horseWithTrait = createTestHorse({ speed: 70, stamina: 60, intelligence: 50 }, ['discipline_affinity_racing']);
+      const horseWithTrait = createTestHorse({ speed: 70, stamina: 60, intelligence: 50 }, [
+        'discipline_affinity_racing',
+      ]);
       const horseWithoutTrait = createTestHorse({ speed: 70, stamina: 60, intelligence: 50 });
 
       // Mock Math.random to eliminate luck variance for this test

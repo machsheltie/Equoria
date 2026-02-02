@@ -264,7 +264,7 @@ describe('Memory and Resource Management System', () => {
     test('detects memory leaks with consistent growth', () => {
       let alertEmitted = false;
 
-      memoryManager.on('alert', (alert) => {
+      memoryManager.on('alert', alert => {
         if (alert.type === 'memory_leak_detected') {
           alertEmitted = true;
         }
@@ -292,7 +292,7 @@ describe('Memory and Resource Management System', () => {
     test('triggers alert when memory threshold exceeded', () => {
       let alertEmitted = false;
 
-      memoryManager.on('alert', (alert) => {
+      memoryManager.on('alert', alert => {
         if (alert.type === 'memory_threshold') {
           alertEmitted = true;
         }
@@ -345,7 +345,7 @@ describe('Memory and Resource Management System', () => {
 
       let gcEventEmitted = false;
 
-      memoryManager.on('gc:completed', (gcEvent) => {
+      memoryManager.on('gc:completed', gcEvent => {
         gcEventEmitted = true;
         expect(gcEvent.duration).toBeDefined();
         expect(gcEvent.memoryBefore).toBeDefined();
@@ -469,7 +469,7 @@ describe('Memory and Resource Management System', () => {
     test('emits metrics collection events', () => {
       let metricsEventEmitted = false;
 
-      memoryManager.on('metrics:collected', (metrics) => {
+      memoryManager.on('metrics:collected', metrics => {
         metricsEventEmitted = true;
         expect(metrics).toBeDefined();
         expect(metrics.timestamp).toBeDefined();

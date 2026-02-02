@@ -11,11 +11,7 @@ import { jest } from '@jest/globals';
 import request from 'supertest';
 import app from '../../app.mjs';
 import prisma from '../../db/index.mjs';
-import {
-  createTestUser,
-  extractCookieValue,
-  resetRateLimitStore,
-} from '../config/test-helpers.mjs';
+import { createTestUser, extractCookieValue, resetRateLimitStore } from '../config/test-helpers.mjs';
 import { generateVerificationToken } from '../../utils/emailVerificationService.mjs';
 import { generateTestToken } from '../../tests/helpers/authHelper.mjs';
 
@@ -215,9 +211,7 @@ describe('Email Verification System - Integration Tests', () => {
     });
 
     it('should_reject_invalid_token', async () => {
-      const response = await request(app).get(
-        '/auth/verify-email?token=invalid_token_here'
-      );
+      const response = await request(app).get('/auth/verify-email?token=invalid_token_here');
 
       expect(response.status).toBe(400);
       expect(response.body.message).toBeDefined();
@@ -279,9 +273,7 @@ describe('Email Verification System - Integration Tests', () => {
 
   describe('POST /auth/resend-verification', () => {
     it('should_create_new_verification_token', async () => {
-      const response = await request(app)
-        .post('/auth/resend-verification')
-        .set('Authorization', `Bearer ${authToken}`);
+      const response = await request(app).post('/auth/resend-verification').set('Authorization', `Bearer ${authToken}`);
 
       expect(response.status).toBe(200);
       expect(response.body.status).toBe('success');
@@ -297,9 +289,7 @@ describe('Email Verification System - Integration Tests', () => {
     });
 
     it('should_require_authentication', async () => {
-      const response = await request(app)
-        .post('/auth/resend-verification')
-        .set('x-test-require-auth', 'true');
+      const response = await request(app).post('/auth/resend-verification').set('x-test-require-auth', 'true');
 
       expect(response.status).toBe(401);
     });
@@ -314,9 +304,7 @@ describe('Email Verification System - Integration Tests', () => {
         },
       });
 
-      const response = await request(app)
-        .post('/auth/resend-verification')
-        .set('Authorization', `Bearer ${authToken}`);
+      const response = await request(app).post('/auth/resend-verification').set('Authorization', `Bearer ${authToken}`);
 
       expect(response.status).toBe(500);
       expect(response.body.message).toContain('already verified');
@@ -324,14 +312,10 @@ describe('Email Verification System - Integration Tests', () => {
 
     it('should_enforce_rate_limiting', async () => {
       // First resend
-      await request(app)
-        .post('/auth/resend-verification')
-        .set('Authorization', `Bearer ${authToken}`);
+      await request(app).post('/auth/resend-verification').set('Authorization', `Bearer ${authToken}`);
 
       // Immediate second resend should fail
-      const response = await request(app)
-        .post('/auth/resend-verification')
-        .set('Authorization', `Bearer ${authToken}`);
+      const response = await request(app).post('/auth/resend-verification').set('Authorization', `Bearer ${authToken}`);
 
       expect(response.status).toBe(429);
       expect(response.body.message).toContain('wait');
@@ -348,9 +332,7 @@ describe('Email Verification System - Integration Tests', () => {
         },
       });
 
-      await request(app)
-        .post('/auth/resend-verification')
-        .set('Authorization', `Bearer ${authToken}`);
+      await request(app).post('/auth/resend-verification').set('Authorization', `Bearer ${authToken}`);
 
       // Expired token should be deleted
       const expiredTokens = await prisma.emailVerificationToken.findMany({
@@ -366,9 +348,7 @@ describe('Email Verification System - Integration Tests', () => {
 
   describe('GET /auth/verification-status', () => {
     it('should_return_unverified_status_for_new_user', async () => {
-      const response = await request(app)
-        .get('/auth/verification-status')
-        .set('Authorization', `Bearer ${authToken}`);
+      const response = await request(app).get('/auth/verification-status').set('Authorization', `Bearer ${authToken}`);
 
       expect(response.status).toBe(200);
       expect(response.body.status).toBe('success');
@@ -387,9 +367,7 @@ describe('Email Verification System - Integration Tests', () => {
         },
       });
 
-      const response = await request(app)
-        .get('/auth/verification-status')
-        .set('Authorization', `Bearer ${authToken}`);
+      const response = await request(app).get('/auth/verification-status').set('Authorization', `Bearer ${authToken}`);
 
       expect(response.status).toBe(200);
       expect(response.body.data.verified).toBe(true);
@@ -397,17 +375,13 @@ describe('Email Verification System - Integration Tests', () => {
     });
 
     it('should_require_authentication', async () => {
-      const response = await request(app)
-        .get('/auth/verification-status')
-        .set('x-test-require-auth', 'true');
+      const response = await request(app).get('/auth/verification-status').set('x-test-require-auth', 'true');
 
       expect(response.status).toBe(401);
     });
 
     it('should_return_user_email_address', async () => {
-      const response = await request(app)
-        .get('/auth/verification-status')
-        .set('Authorization', `Bearer ${authToken}`);
+      const response = await request(app).get('/auth/verification-status').set('Authorization', `Bearer ${authToken}`);
 
       expect(response.status).toBe(200);
       expect(response.body.data.email).toBe(testUser.email);
@@ -440,9 +414,7 @@ describe('Email Verification System - Integration Tests', () => {
       expect(tokenRecord).toBeDefined();
 
       // Step 3: Verify email
-      const verifyResponse = await request(app).get(
-        `/auth/verify-email?token=${tokenRecord.token}`
-      );
+      const verifyResponse = await request(app).get(`/auth/verify-email?token=${tokenRecord.token}`);
 
       expect(verifyResponse.status).toBe(200);
       expect(verifyResponse.body.data.user.emailVerified).toBe(true);
@@ -478,9 +450,7 @@ describe('Email Verification System - Integration Tests', () => {
       });
 
       // Step 5: Verify email
-      const verifyResponse = await request(app).get(
-        `/auth/verify-email?token=${tokenRecord.token}`
-      );
+      const verifyResponse = await request(app).get(`/auth/verify-email?token=${tokenRecord.token}`);
 
       expect(verifyResponse.status).toBe(200);
 
@@ -503,22 +473,16 @@ describe('Email Verification System - Integration Tests', () => {
       });
 
       // First verification
-      const response1 = await request(app).get(
-        `/auth/verify-email?token=${tokenRecord.token}`
-      );
+      const response1 = await request(app).get(`/auth/verify-email?token=${tokenRecord.token}`);
       expect(response1.status).toBe(200);
 
       // Second verification attempt
-      const response2 = await request(app).get(
-        `/auth/verify-email?token=${tokenRecord.token}`
-      );
+      const response2 = await request(app).get(`/auth/verify-email?token=${tokenRecord.token}`);
       expect(response2.status).toBe(400);
       expect(response2.body.message).toContain('already been used');
 
       // Third verification attempt
-      const response3 = await request(app).get(
-        `/auth/verify-email?token=${tokenRecord.token}`
-      );
+      const response3 = await request(app).get(`/auth/verify-email?token=${tokenRecord.token}`);
       expect(response3.status).toBe(400);
     });
   });
@@ -542,17 +506,15 @@ describe('Email Verification System - Integration Tests', () => {
 
       // One should succeed, one should fail
       const responses = [response1, response2];
-      const successCount = responses.filter((r) => r.status === 200).length;
-      const failureCount = responses.filter((r) => r.status === 400).length;
+      const successCount = responses.filter(r => r.status === 200).length;
+      const failureCount = responses.filter(r => r.status === 400).length;
 
       expect(successCount).toBe(1);
       expect(failureCount).toBe(1);
     });
 
     it('should_sanitize_error_messages_to_prevent_enumeration', async () => {
-      const response = await request(app).get(
-        '/auth/verify-email?token=definitely_invalid_token_123'
-      );
+      const response = await request(app).get('/auth/verify-email?token=definitely_invalid_token_123');
 
       expect(response.status).toBe(400);
       // Should not reveal whether user exists or not
@@ -572,9 +534,7 @@ describe('Email Verification System - Integration Tests', () => {
       ];
 
       for (const malformed of malformedTokens) {
-        const response = await request(app).get(
-          `/auth/verify-email?token=${malformed || ''}`
-        );
+        const response = await request(app).get(`/auth/verify-email?token=${malformed || ''}`);
 
         expect([400, 500]).toContain(response.status);
       }

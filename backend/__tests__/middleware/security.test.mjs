@@ -136,9 +136,7 @@ describe('Security Middleware', () => {
 
       addSecurityHeaders(req, res, next);
 
-      const hstsCall = res.setHeader.mock.calls.find(
-        (call) => call[0] === 'Strict-Transport-Security',
-      );
+      const hstsCall = res.setHeader.mock.calls.find(call => call[0] === 'Strict-Transport-Security');
       expect(hstsCall).toBeUndefined();
       expect(next).toHaveBeenCalled();
     });
@@ -164,19 +162,13 @@ describe('Security Middleware', () => {
     it('should add Referrer-Policy header', () => {
       addSecurityHeaders(req, res, next);
 
-      expect(res.setHeader).toHaveBeenCalledWith(
-        'Referrer-Policy',
-        'strict-origin-when-cross-origin',
-      );
+      expect(res.setHeader).toHaveBeenCalledWith('Referrer-Policy', 'strict-origin-when-cross-origin');
     });
 
     it('should add Permissions-Policy header', () => {
       addSecurityHeaders(req, res, next);
 
-      expect(res.setHeader).toHaveBeenCalledWith(
-        'Permissions-Policy',
-        'camera=(), microphone=(), geolocation=()',
-      );
+      expect(res.setHeader).toHaveBeenCalledWith('Permissions-Policy', 'camera=(), microphone=(), geolocation=()');
     });
 
     it('should add all 6 security headers in production', () => {
@@ -191,8 +183,8 @@ describe('Security Middleware', () => {
         'Permissions-Policy',
       ];
 
-      expectedHeaders.forEach((header) => {
-        const headerCall = res.setHeader.mock.calls.find((call) => call[0] === header);
+      expectedHeaders.forEach(header => {
+        const headerCall = res.setHeader.mock.calls.find(call => call[0] === header);
         expect(headerCall).toBeDefined();
       });
     });
@@ -322,7 +314,7 @@ describe('Security Middleware', () => {
 
   describe('CORS Configuration', () => {
     describe('corsOptions.origin()', () => {
-      it('should allow localhost:3000', (done) => {
+      it('should allow localhost:3000', done => {
         corsOptions.origin('http://localhost:3000', (err, allowed) => {
           expect(err).toBeNull();
           expect(allowed).toBe(true);
@@ -330,7 +322,7 @@ describe('Security Middleware', () => {
         });
       });
 
-      it('should allow localhost:3001', (done) => {
+      it('should allow localhost:3001', done => {
         corsOptions.origin('http://localhost:3001', (err, allowed) => {
           expect(err).toBeNull();
           expect(allowed).toBe(true);
@@ -338,7 +330,7 @@ describe('Security Middleware', () => {
         });
       });
 
-      it('should allow 127.0.0.1:3000', (done) => {
+      it('should allow 127.0.0.1:3000', done => {
         corsOptions.origin('http://127.0.0.1:3000', (err, allowed) => {
           expect(err).toBeNull();
           expect(allowed).toBe(true);
@@ -346,7 +338,7 @@ describe('Security Middleware', () => {
         });
       });
 
-      it('should allow additional origins from environment', (done) => {
+      it('should allow additional origins from environment', done => {
         process.env.ALLOWED_ORIGINS = 'https://app.equoria.com,https://staging.equoria.com';
 
         corsOptions.origin('https://app.equoria.com', (err, allowed) => {
@@ -356,7 +348,7 @@ describe('Security Middleware', () => {
         });
       });
 
-      it('should block unknown origins', (done) => {
+      it('should block unknown origins', done => {
         corsOptions.origin('https://evil.com', (err, allowed) => {
           expect(err).toBeInstanceOf(Error);
           expect(err.message).toBe('Not allowed by CORS');
@@ -365,7 +357,7 @@ describe('Security Middleware', () => {
         });
       });
 
-      it('should allow requests with no origin (mobile apps)', (done) => {
+      it('should allow requests with no origin (mobile apps)', done => {
         corsOptions.origin(undefined, (err, allowed) => {
           expect(err).toBeNull();
           expect(allowed).toBe(true);
@@ -373,7 +365,7 @@ describe('Security Middleware', () => {
         });
       });
 
-      it('should allow requests with null origin', (done) => {
+      it('should allow requests with null origin', done => {
         corsOptions.origin(null, (err, allowed) => {
           expect(err).toBeNull();
           expect(allowed).toBe(true);
@@ -465,7 +457,7 @@ describe('Security Middleware', () => {
           success: false,
           error: expect.stringContaining('Too many requests'),
           retryAfter: expect.any(Number),
-        })
+        }),
       );
     });
   });
@@ -485,7 +477,7 @@ describe('Security Middleware', () => {
       expect(middleware.length).toBe(6);
 
       // All should be functions
-      middleware.forEach((fn) => {
+      middleware.forEach(fn => {
         expect(typeof fn).toBe('function');
       });
     });

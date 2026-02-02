@@ -151,9 +151,9 @@ describe('Email Verification Service - Unit Tests', () => {
       }
 
       // 6th token should fail
-      await expect(
-        createVerificationToken(testUser.id, testUser.email)
-      ).rejects.toThrow('Maximum pending verification tokens');
+      await expect(createVerificationToken(testUser.id, testUser.email)).rejects.toThrow(
+        'Maximum pending verification tokens',
+      );
     });
 
     it('should_enforce_rate_limiting_cooldown', async () => {
@@ -161,9 +161,7 @@ describe('Email Verification Service - Unit Tests', () => {
       await createVerificationToken(testUser.id, testUser.email);
 
       // Immediate second token should fail
-      await expect(
-        createVerificationToken(testUser.id, testUser.email)
-      ).rejects.toThrow('Please wait');
+      await expect(createVerificationToken(testUser.id, testUser.email)).rejects.toThrow('Please wait');
     });
 
     it('should_allow_token_creation_after_cooldown', async () => {
@@ -249,10 +247,9 @@ describe('Email Verification Service - Unit Tests', () => {
       expect(result.success).toBe(false);
       // Implementation returns a generic invalid/expired response once the token is consumed;
       // accept either specific already-used message or the generic invalid token response.
-      expect([
-        'Verification token has already been used',
-        'Invalid or expired verification token',
-      ]).toContain(result.error);
+      expect(['Verification token has already been used', 'Invalid or expired verification token']).toContain(
+        result.error,
+      );
       expect(['TOKEN_ALREADY_USED', 'INVALID_TOKEN']).toContain(result.code);
     });
 
@@ -350,9 +347,7 @@ describe('Email Verification Service - Unit Tests', () => {
       expect(verifiedUser).toBeDefined();
       expect(verifiedUser.emailVerified).toBe(true);
 
-      await expect(resendVerificationEmail(testUser.id)).rejects.toThrow(
-        'Email is already verified'
-      );
+      await expect(resendVerificationEmail(testUser.id)).rejects.toThrow('Email is already verified');
     });
 
     it('should_cleanup_expired_tokens_before_creating_new', async () => {

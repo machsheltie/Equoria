@@ -43,11 +43,9 @@ describe('API Optimization Routes', () => {
     });
 
     // Generate auth token
-    authToken = jwt.sign(
-      { id: testUser.id, username: testUser.username },
-      process.env.JWT_SECRET || 'test-secret',
-      { expiresIn: '1h' },
-    );
+    authToken = jwt.sign({ id: testUser.id, username: testUser.username }, process.env.JWT_SECRET || 'test-secret', {
+      expiresIn: '1h',
+    });
 
     // Create test Express app
     testApp = express();

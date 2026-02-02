@@ -56,11 +56,7 @@ describe('System-Wide Integration Tests', () => {
     });
 
     // Create auth token for global tests
-    authToken = jwt.sign(
-      { id: testUser.id, username: testUser.username },
-      process.env.JWT_SECRET,
-      { expiresIn: '1h' },
-    );
+    authToken = jwt.sign({ id: testUser.id, username: testUser.username }, process.env.JWT_SECRET, { expiresIn: '1h' });
 
     // Create test horse for global tests
     testHorse = await prisma.horse.create({
@@ -68,8 +64,7 @@ describe('System-Wide Integration Tests', () => {
         name: 'Global Test Horse',
         age: 5,
         breedId: testBreed.id,
-        ownerId: testUser.id,
-        userId: testUser.id,
+        userId: testUser.id, // Matches schema field (line 144)
         sex: 'mare',
         dateOfBirth: new Date('2019-01-01'),
         healthStatus: 'Excellent',
@@ -135,17 +130,13 @@ describe('System-Wide Integration Tests', () => {
       const registeredAuthToken = registerResponse.body.data.token;
 
       // Step 2: Test Documentation System Integration
-      const userDocsResponse = await request(app)
-        .get('/api/user-docs')
-        .expect(200);
+      const userDocsResponse = await request(app).get('/api/user-docs').expect(200);
 
       expect(userDocsResponse.body.success).toBe(true);
       expect(userDocsResponse.body.data.documents).toBeDefined();
 
       // Step 3: Test API Documentation
-      const apiDocsResponse = await request(app)
-        .get('/api-docs/swagger.json')
-        .expect(200);
+      const apiDocsResponse = await request(app).get('/api-docs/swagger.json').expect(200);
 
       expect(apiDocsResponse.body.openapi).toBeDefined();
       expect(apiDocsResponse.body.paths).toBeDefined();
@@ -173,9 +164,7 @@ describe('System-Wide Integration Tests', () => {
       expect(progressResponse.body.data.progressPercentage).toBeDefined();
 
       // Step 6: Test Documentation Search
-      const searchResponse = await request(app)
-        .get('/api/user-docs/search?q=horse')
-        .expect(200);
+      const searchResponse = await request(app).get('/api/user-docs/search?q=horse').expect(200);
 
       expect(searchResponse.body.success).toBe(true);
       expect(searchResponse.body.data.results).toBeDefined();
@@ -185,25 +174,19 @@ describe('System-Wide Integration Tests', () => {
   describe('System Integration Validation', () => {
     test('Documentation system integration', async () => {
       // Test API documentation health
-      const apiDocHealthResponse = await request(app)
-        .get('/health')
-        .expect(200);
+      const apiDocHealthResponse = await request(app).get('/health').expect(200);
 
       expect(apiDocHealthResponse.body.success).toBe(true);
       expect(apiDocHealthResponse.body.message).toBe('Server is healthy');
 
       // Test user documentation health
-      const userDocHealthResponse = await request(app)
-        .get('/api/user-docs/health')
-        .expect(200);
+      const userDocHealthResponse = await request(app).get('/api/user-docs/health').expect(200);
 
       expect(userDocHealthResponse.body.success).toBe(true);
       expect(userDocHealthResponse.body.data.status).toBe('healthy');
 
       // Test documentation analytics
-      const analyticsResponse = await request(app)
-        .get('/api/user-docs/analytics')
-        .expect(200);
+      const analyticsResponse = await request(app).get('/api/user-docs/analytics').expect(200);
 
       expect(analyticsResponse.body.success).toBe(true);
       expect(analyticsResponse.body.data.totalDocuments).toBeGreaterThan(0);
@@ -275,33 +258,25 @@ describe('System-Wide Integration Tests', () => {
 
     test('Documentation system integration with API endpoints', async () => {
       // Test API documentation access
-      const apiDocsResponse = await request(app)
-        .get('/api-docs/swagger.json')
-        .expect(200);
+      const apiDocsResponse = await request(app).get('/api-docs/swagger.json').expect(200);
 
       expect(apiDocsResponse.body.openapi).toBeDefined();
       expect(apiDocsResponse.body.paths).toBeDefined();
 
       // Test user documentation access
-      const userDocsResponse = await request(app)
-        .get('/api/user-docs')
-        .expect(200);
+      const userDocsResponse = await request(app).get('/api/user-docs').expect(200);
 
       expect(userDocsResponse.body.success).toBe(true);
       expect(userDocsResponse.body.data.documents).toBeDefined();
 
       // Test documentation search
-      const searchResponse = await request(app)
-        .get('/api/user-docs/search?q=horse')
-        .expect(200);
+      const searchResponse = await request(app).get('/api/user-docs/search?q=horse').expect(200);
 
       expect(searchResponse.body.success).toBe(true);
       expect(searchResponse.body.data.results).toBeDefined();
 
       // Test documentation analytics
-      const analyticsResponse = await request(app)
-        .get('/api/user-docs/analytics')
-        .expect(200);
+      const analyticsResponse = await request(app).get('/api/user-docs/analytics').expect(200);
 
       expect(analyticsResponse.body.success).toBe(true);
       expect(analyticsResponse.body.data.totalDocuments).toBeGreaterThan(0);
@@ -315,11 +290,7 @@ describe('System-Wide Integration Tests', () => {
       // Simulate concurrent requests
       const promises = [];
       for (let i = 0; i < 10; i++) {
-        promises.push(
-          request(app)
-            .get('/api/horses')
-            .set('Authorization', `Bearer ${authToken}`),
-        );
+        promises.push(request(app).get('/api/horses').set('Authorization', `Bearer ${authToken}`));
       }
 
       const responses = await Promise.all(promises);
@@ -346,10 +317,7 @@ describe('System-Wide Integration Tests', () => {
       // Perform memory-intensive operations
       const operations = [];
       for (let i = 0; i < 20; i++) {
-        operations.push(
-          request(app)
-            .get('/api/user-docs/search?q=horse&includeContent=true'),
-        );
+        operations.push(request(app).get('/api/user-docs/search?q=horse&includeContent=true'));
       }
 
       await Promise.all(operations);
@@ -369,7 +337,7 @@ describe('System-Wide Integration Tests', () => {
     test('Database transaction integrity across systems', async () => {
       // Test that related data remains consistent across operations
       const initialHorseCount = await prisma.horse.count({
-        where: { ownerId: testUser.id },
+        where: { userId: testUser.id }, // Matches schema field
       });
 
       const initialGroomCount = await prisma.groom.count({
@@ -382,7 +350,7 @@ describe('System-Wide Integration Tests', () => {
         age: 3,
         breedId: testBreed.id,
         sex: 'mare',
-        dateOfBirth: new Date(Date.now() - (3 * 365 * 24 * 60 * 60 * 1000)),
+        dateOfBirth: new Date(Date.now() - 3 * 365 * 24 * 60 * 60 * 1000),
         temperament: 'energetic',
       };
 
@@ -397,7 +365,7 @@ describe('System-Wide Integration Tests', () => {
 
       // Verify data consistency
       const finalHorseCount = await prisma.horse.count({
-        where: { ownerId: testUser.id },
+        where: { userId: testUser.id }, // Matches schema field
       });
 
       expect(finalHorseCount).toBe(initialHorseCount + 1);
@@ -407,7 +375,7 @@ describe('System-Wide Integration Tests', () => {
         where: { id: newHorse.id },
       });
 
-      expect(createdHorse.ownerId).toBe(testUser.id);
+      expect(createdHorse.userId).toBe(testUser.id); // Matches schema field
 
       // Verify groom count remains unchanged
       const finalGroomCount = await prisma.groom.count({

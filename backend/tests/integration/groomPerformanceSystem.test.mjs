@@ -79,7 +79,7 @@ describe('Groom Performance System', () => {
     testHorse = await prisma.horse.create({
       data: {
         name: 'Performance Test Horse',
-        ownerId: testUser.id,
+        userId: testUser.id ,
         dateOfBirth: new Date('2019-01-01'),
         age: 5,
         sex: 'male',
@@ -94,7 +94,7 @@ describe('Groom Performance System', () => {
         speciality: 'general',
         personality: 'gentle',
         experience: 50,
-        userId: testUser.id,
+        userId: testUser.id ,
       },
     });
   });
@@ -111,7 +111,7 @@ describe('Groom Performance System', () => {
       where: { userId: testUser.id },
     });
     await prisma.horse.deleteMany({
-      where: { ownerId: testUser.id },
+      where: { userId: testUser.id },
     });
     await prisma.user.delete({
       where: { id: testUser.id },
@@ -129,12 +129,7 @@ describe('Groom Performance System', () => {
         playerRating: 4,
       };
 
-      const record = await recordGroomPerformance(
-        testGroom.id,
-        testUser.id,
-        'grooming',
-        performanceData,
-      );
+      const record = await recordGroomPerformance(testGroom.id, testUser.id, 'grooming', performanceData);
 
       expect(record).toBeDefined();
       expect(record.groomId).toBe(testGroom.id);
@@ -290,7 +285,7 @@ describe('Groom Performance System', () => {
           skillLevel: 'novice',
           speciality: 'general',
           personality: 'gentle',
-          userId: otherUser.id,
+          userId: otherUser.id ,
         },
       });
 
@@ -407,16 +402,16 @@ describe('Groom Performance System', () => {
     });
 
     it('should require authentication for GET /api/groom-performance/config', async () => {
-      const response = await request(app)
-        .get('/api/groom-performance/config')
-        .set('x-test-require-auth', 'true');
+      const response = await request(app).get('/api/groom-performance/config').set('x-test-require-auth', 'true');
 
       expect(response.status).toBe(401);
       expect(response.body.success).toBe(false);
     });
 
     it('should require authentication for GET /api/groom-performance/analytics/:groomId', async () => {
-      const response = await request(app).get(`/api/groom-performance/analytics/${testGroom.id}`).set('x-test-require-auth', 'true');
+      const response = await request(app)
+        .get(`/api/groom-performance/analytics/${testGroom.id}`)
+        .set('x-test-require-auth', 'true');
 
       expect(response.status).toBe(401);
       expect(response.body.success).toBe(false);

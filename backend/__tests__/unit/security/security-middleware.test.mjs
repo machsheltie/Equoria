@@ -52,7 +52,7 @@ describe('security middleware', () => {
 
     beforeEach(() => {
       req = {
-        get: jest.fn((h) => (h === 'origin' ? undefined : undefined)),
+        get: jest.fn(h => (h === 'origin' ? undefined : undefined)),
         headers: {},
         ip: '127.0.0.1',
         originalUrl: '/x',
@@ -82,7 +82,7 @@ describe('security middleware', () => {
 
     it('allows valid key', () => {
       process.env.API_KEY = 'secret';
-      req.get = jest.fn((h) => (h === 'origin' ? undefined : h === 'X-API-Key' ? 'secret' : undefined));
+      req.get = jest.fn(h => (h === 'origin' ? undefined : h === 'X-API-Key' ? 'secret' : undefined));
       validateApiKey(req, res, next);
       expect(next).toHaveBeenCalled();
       delete process.env.API_KEY;
@@ -100,7 +100,14 @@ describe('security middleware', () => {
     });
 
     it('redirects http in production', () => {
-      const req = { headers: { host: 'example.com' }, secure: false, url: '/foo', method: 'GET', ip: '::1', get: jest.fn() };
+      const req = {
+        headers: { host: 'example.com' },
+        secure: false,
+        url: '/foo',
+        method: 'GET',
+        ip: '::1',
+        get: jest.fn(),
+      };
       const res = { redirect: jest.fn() };
       const next = jest.fn();
       process.env.NODE_ENV = 'production';

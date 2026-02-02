@@ -36,15 +36,17 @@ afterAll(async () => {
   await prisma.$disconnect();
 
   // Wait for all async operations to complete
-  await new Promise((resolve) => setTimeout(resolve, 100));
+  await new Promise(resolve => setTimeout(resolve, 100));
 });
 
 /**
  * Before each test - clean slate
  */
 beforeEach(async () => {
-  // Each test starts with clean database
-  await cleanupDatabase();
+  if (process.env.TEST_DB_RESET_PER_TEST === 'true') {
+    // Optional per-test cleanup for suites that require a fresh DB.
+    await cleanupDatabase();
+  }
 });
 
 /**
@@ -56,7 +58,7 @@ afterEach(async () => {
   jest.restoreAllMocks();
 
   // Ensure all async operations complete before next test
-  await new Promise((resolve) => setImmediate(resolve));
+  await new Promise(resolve => setImmediate(resolve));
 });
 
 /**
@@ -64,6 +66,10 @@ afterEach(async () => {
  * Order matters due to foreign key constraints - delete child records first!
  */
 async function cleanupDatabase() {
+  if (process.env.TEST_DB_RESET_PER_TEST !== 'true') {
+    return;
+  }
+
   try {
     // Delete in correct order: children before parents
     // RefreshToken has FK to User, so delete it first
@@ -167,5 +173,5 @@ export function mockNext() {
  * Wait for async operations to complete
  */
 export function waitForAsync() {
-  return new Promise((resolve) => setImmediate(resolve));
+  return new Promise(resolve => setImmediate(resolve));
 }

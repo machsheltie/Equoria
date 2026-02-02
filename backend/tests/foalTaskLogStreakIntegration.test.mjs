@@ -64,10 +64,10 @@ describe('Foal Task Log and Streak Data Integration', () => {
 
   beforeEach(async () => {
     // Clean up test data
-    await prisma.horse.deleteMany({ where: { ownerId: testUserId } });
+    await prisma.horse.deleteMany({ where: { userId: testUserId } });
     await prisma.user.deleteMany({ where: { id: testUserId } });
 
-    await prisma.$transaction(async (tx) => {
+    await prisma.$transaction(async tx => {
       testUser = await tx.user.create({
         data: {
           id: testUserId,
@@ -101,7 +101,7 @@ describe('Foal Task Log and Streak Data Integration', () => {
 
   afterEach(async () => {
     // Clean up test data
-    await prisma.horse.deleteMany({ where: { ownerId: testUserId } });
+    await prisma.horse.deleteMany({ where: { userId: testUserId } });
     await prisma.user.deleteMany({ where: { id: testUserId } });
   });
 

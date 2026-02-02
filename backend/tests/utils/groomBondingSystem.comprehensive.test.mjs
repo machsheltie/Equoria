@@ -61,8 +61,8 @@ describe('🤝 COMPREHENSIVE: Groom Bonding System & Task Eligibility', () => {
       expect(eligibleTasks.length).toBeGreaterThan(0);
 
       // Should include enrichment tasks for very young foals
-      const hasEnrichmentTasks = eligibleTasks.some(task =>
-        task.includes('desensitization') || task.includes('trust_building') || task.includes('early_touch'),
+      const hasEnrichmentTasks = eligibleTasks.some(
+        task => task.includes('desensitization') || task.includes('trust_building') || task.includes('early_touch'),
       );
       expect(hasEnrichmentTasks).toBe(true);
     });
@@ -110,9 +110,9 @@ describe('🤝 COMPREHENSIVE: Groom Bonding System & Task Eligibility', () => {
 
     it('should handle age boundary conditions correctly', () => {
       const boundaryAges = [
-        7,   // Exactly 1 year in game time
-        14,  // Exactly 2 years in game time
-        21,  // Exactly 3 years in game time
+        7, // Exactly 1 year in game time
+        14, // Exactly 2 years in game time
+        21, // Exactly 3 years in game time
       ];
 
       boundaryAges.forEach(age => {
@@ -191,11 +191,11 @@ describe('🤝 COMPREHENSIVE: Groom Bonding System & Task Eligibility', () => {
 
     it('should handle edge cases in age validation', async () => {
       const edgeCases = [
-        { age: 0, task: 'early_touch' },      // Newborn - valid enrichment task
-        { age: 364, task: 'hoof_handling' },   // Almost 1 year - valid foal grooming task
-        { age: 366, task: 'hoof_handling' },   // Just over 1 year - valid foal grooming task
-        { age: 1094, task: 'brushing' },  // Almost 3 years - valid general grooming task
-        { age: 1096, task: 'brushing' },  // Just over 3 years - valid general grooming task
+        { age: 0, task: 'early_touch' }, // Newborn - valid enrichment task
+        { age: 364, task: 'hoof_handling' }, // Almost 1 year - valid foal grooming task
+        { age: 366, task: 'hoof_handling' }, // Just over 1 year - valid foal grooming task
+        { age: 1094, task: 'brushing' }, // Almost 3 years - valid general grooming task
+        { age: 1096, task: 'brushing' }, // Just over 3 years - valid general grooming task
       ];
 
       for (const testCase of edgeCases) {
@@ -265,12 +265,7 @@ describe('🤝 COMPREHENSIVE: Groom Bonding System & Task Eligibility', () => {
 
   describe('Task Categorization', () => {
     it('should categorize enrichment tasks correctly', () => {
-      const enrichmentTasks = [
-        'desensitization',
-        'trust_building',
-        'showground_exposure',
-        'early_touch',
-      ];
+      const enrichmentTasks = ['desensitization', 'trust_building', 'showground_exposure', 'early_touch'];
 
       enrichmentTasks.forEach(task => {
         const category = categorizeTask(task);
@@ -279,12 +274,7 @@ describe('🤝 COMPREHENSIVE: Groom Bonding System & Task Eligibility', () => {
     });
 
     it('should categorize grooming tasks correctly', () => {
-      const groomingTasks = [
-        'brushing',
-        'hoof_handling',
-        'mane_tail_grooming',
-        'stall_care',
-      ];
+      const groomingTasks = ['brushing', 'hoof_handling', 'mane_tail_grooming', 'stall_care'];
 
       groomingTasks.forEach(task => {
         const category = categorizeTask(task);
@@ -307,12 +297,7 @@ describe('🤝 COMPREHENSIVE: Groom Bonding System & Task Eligibility', () => {
     });
 
     it('should handle unknown task types', () => {
-      const unknownTasks = [
-        'unknown_task',
-        'invalid_task',
-        '',
-        'random_string',
-      ];
+      const unknownTasks = ['unknown_task', 'invalid_task', '', 'random_string'];
 
       unknownTasks.forEach(task => {
         const category = categorizeTask(task);

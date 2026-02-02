@@ -28,8 +28,9 @@ await jest.unstable_mockModule('node-cron', () => ({
 }));
 
 // Import AFTER mocking
-const { initializeCronJobs, stopCronJobs, getCronJobStatus, triggerTokenCleanup } =
-  await import('../../services/cronJobService.mjs');
+const { initializeCronJobs, stopCronJobs, getCronJobStatus, triggerTokenCleanup } = await import(
+  '../../services/cronJobService.mjs'
+);
 
 describe('Cron Job Service', () => {
   beforeEach(() => {
@@ -73,7 +74,7 @@ describe('Cron Job Service', () => {
       initializeCronJobs();
 
       const mockCalls = mockSchedule.mock.results;
-      mockCalls.forEach((call) => {
+      mockCalls.forEach(call => {
         expect(call.value.start).toHaveBeenCalled();
       });
     });
@@ -87,7 +88,7 @@ describe('Cron Job Service', () => {
     it('should use UTC timezone for all jobs', () => {
       initializeCronJobs();
 
-      mockSchedule.mock.calls.forEach((call) => {
+      mockSchedule.mock.calls.forEach(call => {
         const options = call[2];
         expect(options.timezone).toBe('UTC');
       });
@@ -98,11 +99,11 @@ describe('Cron Job Service', () => {
     it('should stop all running jobs', () => {
       initializeCronJobs();
 
-      const jobs = mockSchedule.mock.results.map((r) => r.value);
+      const jobs = mockSchedule.mock.results.map(r => r.value);
 
       stopCronJobs();
 
-      jobs.forEach((job) => {
+      jobs.forEach(job => {
         expect(job.stop).toHaveBeenCalled();
       });
     });
@@ -294,7 +295,7 @@ describe('Cron Job Service', () => {
     it('should schedule daily cleanup at 3 AM UTC', () => {
       initializeCronJobs();
 
-      const tokenCleanupCall = mockSchedule.mock.calls.find((call) => call[0] === '0 3 * * *');
+      const tokenCleanupCall = mockSchedule.mock.calls.find(call => call[0] === '0 3 * * *');
 
       expect(tokenCleanupCall).toBeDefined();
       expect(tokenCleanupCall[2].timezone).toBe('UTC');
@@ -309,7 +310,7 @@ describe('Cron Job Service', () => {
       });
 
       // Get the cleanup job callback
-      const tokenCleanupCall = mockSchedule.mock.calls.find((call) => call[0] === '0 3 * * *');
+      const tokenCleanupCall = mockSchedule.mock.calls.find(call => call[0] === '0 3 * * *');
       const cleanupCallback = tokenCleanupCall[1];
 
       // Execute the callback

@@ -51,9 +51,7 @@ export default class PerformanceReporter {
 
       // Warn about slow tests
       if (duration > 5000) {
-        console.warn(
-          `⚠️  Slow test detected: ${result.fullName} (${duration}ms)`
-        );
+        console.warn(`⚠️  Slow test detected: ${result.fullName} (${duration}ms)`);
       }
     });
 
@@ -87,12 +85,9 @@ export default class PerformanceReporter {
     const { numTotalTests, numPassedTests, numFailedTests } = results;
 
     const testDurations = this._testResults.map(t => t.duration);
-    const avgDuration =
-      testDurations.reduce((sum, d) => sum + d, 0) / testDurations.length || 0;
+    const avgDuration = testDurations.reduce((sum, d) => sum + d, 0) / testDurations.length || 0;
 
-    const slowTests = this._testResults
-      .filter(t => t.slow)
-      .sort((a, b) => b.duration - a.duration);
+    const slowTests = this._testResults.filter(t => t.slow).sort((a, b) => b.duration - a.duration);
 
     const fastestTests = this._testResults
       .filter(t => t.status === 'passed')
@@ -173,7 +168,9 @@ export default class PerformanceReporter {
     console.log(`Total Tests:        ${stats.totalTests}`);
     console.log(`Passed:             ${stats.passedTests} ✓`);
     console.log(`Failed:             ${stats.failedTests} ${stats.failedTests > 0 ? '✗' : ''}`);
-    console.log(`Total Duration:     ${stats.totalDuration}ms (${(stats.totalDuration / 1000).toFixed(2)}s)`);
+    console.log(
+      `Total Duration:     ${stats.totalDuration}ms (${(stats.totalDuration / 1000).toFixed(2)}s)`,
+    );
     console.log(`Average Duration:   ${stats.avgDuration}ms per test`);
     console.log(`Throughput:         ${stats.testsPerSecond} tests/second`);
 

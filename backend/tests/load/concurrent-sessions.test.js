@@ -34,16 +34,16 @@ const tokenRefreshDuration = new Trend('token_refresh_duration');
 // Test configuration
 export const options = {
   stages: [
-    { duration: '30s', target: 10 },  // Ramp up
-    { duration: '1m', target: 20 },   // Sustained load
-    { duration: '1m', target: 30 },   // Increased load
-    { duration: '30s', target: 0 },   // Ramp down
+    { duration: '30s', target: 10 }, // Ramp up
+    { duration: '1m', target: 20 }, // Sustained load
+    { duration: '1m', target: 30 }, // Increased load
+    { duration: '30s', target: 0 }, // Ramp down
   ],
   thresholds: {
-    http_req_duration: ['p(95)<1000'],      // 95% under 1s
-    http_req_failed: ['rate<0.05'],          // Error rate under 5%
-    session_conflicts: ['rate<0.1'],         // Conflict rate under 10%
-    token_refresh_duration: ['p(95)<500'],   // Token refresh under 500ms
+    http_req_duration: ['p(95)<1000'], // 95% under 1s
+    http_req_failed: ['rate<0.05'], // Error rate under 5%
+    session_conflicts: ['rate<0.1'], // Conflict rate under 10%
+    token_refresh_duration: ['p(95)<500'], // Token refresh under 500ms
   },
 };
 
@@ -61,27 +61,35 @@ export function setup() {
     const password = 'ConcurrentTest123!';
 
     // Register user
-    const registerRes = http.post(`${API_URL}/api/auth/register`, JSON.stringify({
-      email,
-      username: `concurrent_${Date.now()}_${i}`,
-      password,
-      firstName: 'Concurrent',
-      lastName: `Test${i}`,
-    }), {
-      headers: { 'Content-Type': 'application/json' },
-    });
+    const registerRes = http.post(
+      `${API_URL}/api/auth/register`,
+      JSON.stringify({
+        email,
+        username: `concurrent_${Date.now()}_${i}`,
+        password,
+        firstName: 'Concurrent',
+        lastName: `Test${i}`,
+      }),
+      {
+        headers: { 'Content-Type': 'application/json' },
+      },
+    );
 
     check(registerRes, {
-      'user registered': (r) => r.status === 201 || r.status === 200,
+      'user registered': r => r.status === 201 || r.status === 200,
     });
 
     // Login to get initial token
-    const loginRes = http.post(`${API_URL}/api/auth/login`, JSON.stringify({
-      email,
-      password,
-    }), {
-      headers: { 'Content-Type': 'application/json' },
-    });
+    const loginRes = http.post(
+      `${API_URL}/api/auth/login`,
+      JSON.stringify({
+        email,
+        password,
+      }),
+      {
+        headers: { 'Content-Type': 'application/json' },
+      },
+    );
 
     const accessToken = loginRes.json('data.accessToken') || loginRes.json('token');
     const refreshToken = loginRes.json('data.refreshToken');
@@ -110,17 +118,21 @@ export default function (data) {
   group('Concurrent Session Operations', () => {
     // Test 1: Create new session (login from "new device")
     group('New Session Creation', () => {
-      const loginRes = http.post(`${API_URL}/api/auth/login`, JSON.stringify({
-        email: user.email,
-        password: user.password,
-      }), {
-        headers: { 'Content-Type': 'application/json' },
-      });
+      const loginRes = http.post(
+        `${API_URL}/api/auth/login`,
+        JSON.stringify({
+          email: user.email,
+          password: user.password,
+        }),
+        {
+          headers: { 'Content-Type': 'application/json' },
+        },
+      );
 
       const success = check(loginRes, {
-        'new session created': (r) => r.status === 200,
-        'returns access token': (r) => r.json('data.accessToken') !== undefined,
-        'returns refresh token': (r) => r.json('data.refreshToken') !== undefined,
+        'new session created': r => r.status === 200,
+        'returns access token': r => r.json('data.accessToken') !== undefined,
+        'returns refresh token': r => r.json('data.refreshToken') !== undefined,
       });
 
       if (success) {
@@ -129,11 +141,11 @@ export default function (data) {
 
         // Verify new session works
         const profileRes = http.get(`${API_URL}/api/users/profile`, {
-          headers: { 'Authorization': `Bearer ${newToken}` },
+          headers: { Authorization: `Bearer ${newToken}` },
         });
 
         check(profileRes, {
-          'new session authenticated': (r) => r.status === 200,
+          'new session authenticated': r => r.status === 200,
         });
       }
     });
@@ -141,12 +153,12 @@ export default function (data) {
     // Test 2: Use existing session
     group('Existing Session Usage', () => {
       const profileRes = http.get(`${API_URL}/api/users/profile`, {
-        headers: { 'Authorization': `Bearer ${user.accessToken}` },
+        headers: { Authorization: `Bearer ${user.accessToken}` },
       });
 
       check(profileRes, {
-        'existing session works': (r) => r.status === 200,
-        'returns user data': (r) => r.json('data.id') === user.userId,
+        'existing session works': r => r.status === 200,
+        'returns user data': r => r.json('data.id') === user.userId,
       });
     });
 
@@ -154,19 +166,23 @@ export default function (data) {
     group('Token Refresh', () => {
       const startTime = new Date();
 
-      const refreshRes = http.post(`${API_URL}/api/auth/refresh`, JSON.stringify({
-        refreshToken: user.refreshToken,
-      }), {
-        headers: { 'Content-Type': 'application/json' },
-      });
+      const refreshRes = http.post(
+        `${API_URL}/api/auth/refresh`,
+        JSON.stringify({
+          refreshToken: user.refreshToken,
+        }),
+        {
+          headers: { 'Content-Type': 'application/json' },
+        },
+      );
 
       const duration = new Date() - startTime;
       tokenRefreshDuration.add(duration);
 
       const success = check(refreshRes, {
-        'token refresh successful': (r) => r.status === 200,
-        'new access token returned': (r) => r.json('data.accessToken') !== undefined,
-        'refresh token rotated': (r) => {
+        'token refresh successful': r => r.status === 200,
+        'new access token returned': r => r.json('data.accessToken') !== undefined,
+        'refresh token rotated': r => {
           const newRefreshToken = r.json('data.refreshToken');
           return newRefreshToken && newRefreshToken !== user.refreshToken;
         },
@@ -186,20 +202,24 @@ export default function (data) {
       // Create 6 sessions rapidly
       let exceededLimit = false;
       for (let i = 0; i < 6; i++) {
-        const loginRes = http.post(`${API_URL}/api/auth/login`, JSON.stringify({
-          email: user.email,
-          password: user.password,
-        }), {
-          headers: { 'Content-Type': 'application/json' },
-        });
+        const loginRes = http.post(
+          `${API_URL}/api/auth/login`,
+          JSON.stringify({
+            email: user.email,
+            password: user.password,
+          }),
+          {
+            headers: { 'Content-Type': 'application/json' },
+          },
+        );
 
         if (loginRes.status === 429 || loginRes.status === 403) {
           exceededLimit = true;
           sessionConflicts.add(1);
 
           check(loginRes, {
-            'session limit enforced': (r) => r.status === 429 || r.status === 403,
-            'error message returned': (r) => {
+            'session limit enforced': r => r.status === 429 || r.status === 403,
+            'error message returned': r => {
               const body = r.json();
               return body.message && body.message.includes('session');
             },
@@ -217,11 +237,11 @@ export default function (data) {
     // Test 5: Logout and cleanup
     group('Session Cleanup', () => {
       const logoutRes = http.post(`${API_URL}/api/auth/logout`, null, {
-        headers: { 'Authorization': `Bearer ${user.accessToken}` },
+        headers: { Authorization: `Bearer ${user.accessToken}` },
       });
 
       const success = check(logoutRes, {
-        'logout successful': (r) => r.status === 200,
+        'logout successful': r => r.status === 200,
       });
 
       if (success) {
@@ -229,11 +249,11 @@ export default function (data) {
 
         // Verify token invalidated
         const verifyRes = http.get(`${API_URL}/api/users/profile`, {
-          headers: { 'Authorization': `Bearer ${user.accessToken}` },
+          headers: { Authorization: `Bearer ${user.accessToken}` },
         });
 
         check(verifyRes, {
-          'token invalidated after logout': (r) => r.status === 401,
+          'token invalidated after logout': r => r.status === 401,
         });
       }
     });
@@ -251,19 +271,23 @@ export function teardown(data) {
   // Delete all test users
   users.forEach(user => {
     // Login fresh to get valid token
-    const loginRes = http.post(`${API_URL}/api/auth/login`, JSON.stringify({
-      email: user.email,
-      password: user.password,
-    }), {
-      headers: { 'Content-Type': 'application/json' },
-    });
+    const loginRes = http.post(
+      `${API_URL}/api/auth/login`,
+      JSON.stringify({
+        email: user.email,
+        password: user.password,
+      }),
+      {
+        headers: { 'Content-Type': 'application/json' },
+      },
+    );
 
     const token = loginRes.json('data.accessToken') || loginRes.json('token');
 
     if (token) {
       // Delete user account
       http.del(`${API_URL}/api/users/account`, null, {
-        headers: { 'Authorization': `Bearer ${token}` },
+        headers: { Authorization: `Bearer ${token}` },
       });
     }
   });
@@ -281,7 +305,7 @@ export function handleSummary(data) {
   const maxActiveSessions = data.metrics.active_sessions?.values.max || 0;
 
   return {
-    'stdout': `
+    stdout: `
 ╔════════════════════════════════════════════════════════════════╗
 ║        CONCURRENT SESSION MANAGEMENT TEST SUMMARY              ║
 ╠════════════════════════════════════════════════════════════════╣

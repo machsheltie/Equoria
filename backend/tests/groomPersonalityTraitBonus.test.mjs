@@ -61,14 +61,14 @@ describe('Groom Personality Trait Bonus System - REAL SYSTEM TESTS', () => {
     testHorse = await prisma.horse.create({
       data: {
         name: `TestHorse_${Date.now()}`,
-        user: { connect: { id: testUser.id } },
+        userId: testUser.id ,
         dateOfBirth: new Date(Date.now() - 0 * 24 * 60 * 60 * 1000), // 0 days old (newborn for imprinting)
         temperament: FOAL_TEMPERAMENT_TYPES.SPIRITED,
         bondScore: 65,
         stressLevel: 20,
         healthStatus: 'Good',
         sex: 'filly',
-        breed: { connect: { id: testBreed.id } },
+        breedId: testBreed.id ,
       },
     });
 
@@ -81,7 +81,7 @@ describe('Groom Personality Trait Bonus System - REAL SYSTEM TESTS', () => {
         skillLevel: 'intermediate',
         personality: GROOM_PERSONALITY_TYPES.CALM,
         sessionRate: 20.0,
-        user: { connect: { id: testUser.id } },
+        userId: testUser.id ,
         isActive: true,
       },
     });
@@ -211,6 +211,7 @@ describe('Groom Personality Trait Bonus System - REAL SYSTEM TESTS', () => {
         data: {
           groomId: testGroom.id,
           foalId: testHorse.id,
+          userId: testUser.id,
           isActive: true,
           priority: 5, // High priority (1-5 scale)
           notes: 'Test assignment',
@@ -322,10 +323,10 @@ describe('Groom Personality Trait Bonus System - REAL SYSTEM TESTS', () => {
         const horseWithoutTemperament = await prisma.horse.create({
           data: {
             name: 'NoTemperamentHorse',
-            user: { connect: { id: testUser.id } },
+            userId: testUser.id ,
             dateOfBirth: new Date(),
             sex: 'colt',
-            breed: { connect: { id: testBreed.id } },
+            breedId: testBreed.id ,
           },
         });
 
@@ -349,6 +350,7 @@ describe('Groom Personality Trait Bonus System - REAL SYSTEM TESTS', () => {
           data: {
             groomId: testGroom.id,
             foalId: testHorse.id,
+            userId: testUser.id,
             isActive: true,
             priority: 5, // High priority (1-5 scale)
             notes: 'Test assignment for milestone',

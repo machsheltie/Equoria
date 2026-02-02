@@ -24,16 +24,17 @@ describe('🧬 Advanced Breeding Genetics API Integration', () => {
   let testSuffix;
   let usernameSuffix;
 
-  const cleanupUserHorses = async (userId) => {
-    if (!userId) { return; }
-    await prisma.horse.deleteMany({
-      where: {
-        OR: [
-          { ownerId: userId },
-          { userId },
-        ],
-      },
-    }).catch(() => {});
+  const cleanupUserHorses = async userId => {
+    if (!userId) {
+      return;
+    }
+    await prisma.horse
+      .deleteMany({
+        where: {
+          userId,
+        },
+      })
+      .catch(() => {});
   };
 
   beforeAll(async () => {
@@ -77,7 +78,7 @@ describe('🧬 Advanced Breeding Genetics API Integration', () => {
     const stallionResponse = await request(app)
       .post('/api/horses')
       .set('Authorization', `Bearer ${authToken}`)
-        .set('x-test-skip-csrf', 'true')
+      .set('x-test-skip-csrf', 'true')
       .set('x-test-skip-csrf', 'true')
       .send({
         name: 'Genetic Test Stallion',
@@ -88,14 +89,16 @@ describe('🧬 Advanced Breeding Genetics API Integration', () => {
 
     // Check if the response contains the data
     if (!stallionResponse.body.data) {
-      throw new Error(`Stallion creation failed. Status: ${stallionResponse.status}, Body: ${JSON.stringify(stallionResponse.body)}`);
+      throw new Error(
+        `Stallion creation failed. Status: ${stallionResponse.status}, Body: ${JSON.stringify(stallionResponse.body)}`,
+      );
     }
     testStallion = stallionResponse.body.data;
 
     const mareResponse = await request(app)
       .post('/api/horses')
       .set('Authorization', `Bearer ${authToken}`)
-        .set('x-test-skip-csrf', 'true')
+      .set('x-test-skip-csrf', 'true')
       .set('x-test-skip-csrf', 'true')
       .send({
         name: 'Genetic Test Mare',
@@ -106,7 +109,9 @@ describe('🧬 Advanced Breeding Genetics API Integration', () => {
 
     // Check if the response contains the data
     if (!mareResponse.body.data) {
-      throw new Error(`Mare creation failed. Status: ${mareResponse.status}, Body: ${JSON.stringify(mareResponse.body)}`);
+      throw new Error(
+        `Mare creation failed. Status: ${mareResponse.status}, Body: ${JSON.stringify(mareResponse.body)}`,
+      );
     }
     testMare = mareResponse.body.data;
 
@@ -376,7 +381,6 @@ describe('🧬 Advanced Breeding Genetics API Integration', () => {
       // Verify optimal pairs structure
       expect(Array.isArray(response.body.data.optimalPairs)).toBe(true);
       if (response.body.data.optimalPairs.length > 0) {
-        // eslint-disable-next-line prefer-destructuring
         const pair = response.body.data.optimalPairs[0];
         expect(pair).toHaveProperty('stallionId');
         expect(pair).toHaveProperty('mareId');
@@ -400,8 +404,7 @@ describe('🧬 Advanced Breeding Genetics API Integration', () => {
       ];
 
       for (const endpoint of endpoints) {
-        const response = await request(app)[endpoint.method](endpoint.path)
-          .set('x-test-require-auth', 'true');
+        const response = await request(app)[endpoint.method](endpoint.path).set('x-test-require-auth', 'true');
         expect(response.status).toBe(401);
       }
     });

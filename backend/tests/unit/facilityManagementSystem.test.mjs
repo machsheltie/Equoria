@@ -30,7 +30,7 @@ describe('🏢 Facility Management System', () => {
   beforeEach(async () => {
     // Create test user with unique identifier
     const timestamp = Date.now();
-    await prisma.$transaction(async (tx) => {
+    await prisma.$transaction(async tx => {
       testUser = await tx.user.create({
         data: {
           username: `facilityTestUser_${timestamp}`,
@@ -46,7 +46,7 @@ describe('🏢 Facility Management System', () => {
       testFacilities = await Promise.all([
         tx.facility.create({
           data: {
-            userId: testUser.id,
+            userId: testUser.id ,
             name: 'Basic Stable',
             type: 'basic_stable',
             level: 1,
@@ -62,7 +62,7 @@ describe('🏢 Facility Management System', () => {
         }),
         tx.facility.create({
           data: {
-            userId: testUser.id,
+            userId: testUser.id ,
             name: 'Master Facility',
             type: 'master_facility',
             level: 3,
@@ -300,12 +300,11 @@ describe('🏢 Facility Management System', () => {
 
   describe('🌿 Environmental Mitigation', () => {
     test('should calculate environmental mitigation effects', () => {
-      // eslint-disable-next-line prefer-destructuring
       const facility = testFacilities[1]; // Premium facility
       const environmentalConditions = {
         temperature: 35, // Hot
-        humidity: 85,    // High humidity
-        windSpeed: 25,   // Strong wind
+        humidity: 85, // High humidity
+        windSpeed: 25, // Strong wind
         conditions: 'stormy',
       };
 
@@ -325,7 +324,7 @@ describe('🏢 Facility Management System', () => {
 
     test('should provide better mitigation for higher-level facilities', () => {
       const [basicFacility] = testFacilities;
-      // eslint-disable-next-line prefer-destructuring
+
       const masterFacility = testFacilities[1];
       const harshConditions = {
         temperature: 40,

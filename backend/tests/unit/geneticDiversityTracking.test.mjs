@@ -35,7 +35,10 @@ describe('🧬 Genetic Diversity Tracking System', () => {
           name: 'Founder Alpha',
           sex: 'Stallion',
           dateOfBirth: new Date('2015-01-01'),
-          speed: 90, stamina: 85, agility: 80, intelligence: 75,
+          speed: 90,
+          stamina: 85,
+          agility: 80,
+          intelligence: 75,
           epigeneticModifiers: { positive: ['athletic', 'fast'], negative: [], hidden: ['legendary_speed'] },
         },
       }),
@@ -44,7 +47,10 @@ describe('🧬 Genetic Diversity Tracking System', () => {
           name: 'Founder Beta',
           sex: 'Mare',
           dateOfBirth: new Date('2015-02-01'),
-          speed: 75, stamina: 95, agility: 85, intelligence: 90,
+          speed: 75,
+          stamina: 95,
+          agility: 85,
+          intelligence: 90,
           epigeneticModifiers: { positive: ['calm', 'intelligent'], negative: [], hidden: ['perfect_balance'] },
         },
       }),
@@ -53,7 +59,10 @@ describe('🧬 Genetic Diversity Tracking System', () => {
           name: 'Founder Gamma',
           sex: 'Stallion',
           dateOfBirth: new Date('2015-03-01'),
-          speed: 85, stamina: 80, agility: 95, intelligence: 85,
+          speed: 85,
+          stamina: 80,
+          agility: 95,
+          intelligence: 85,
           epigeneticModifiers: { positive: ['agile', 'bold'], negative: [], hidden: ['natural_jumper'] },
         },
       }),
@@ -62,7 +71,10 @@ describe('🧬 Genetic Diversity Tracking System', () => {
           name: 'Founder Delta',
           sex: 'Mare',
           dateOfBirth: new Date('2015-04-01'),
-          speed: 80, stamina: 90, agility: 75, intelligence: 95,
+          speed: 80,
+          stamina: 90,
+          agility: 75,
+          intelligence: 95,
           epigeneticModifiers: { positive: ['wise', 'steady'], negative: [], hidden: ['dressage_master'] },
         },
       }),
@@ -75,9 +87,12 @@ describe('🧬 Genetic Diversity Tracking System', () => {
           name: 'Second Gen A',
           sex: 'Stallion',
           dateOfBirth: new Date('2018-01-01'),
-          sireId: testFounders[0].id,
-          damId: testFounders[1].id,
-          speed: 82, stamina: 90, agility: 82, intelligence: 82,
+          sire: { connect: { id: testFounders[0].id } },
+          dam: { connect: { id: testFounders[1].id } },
+          speed: 82,
+          stamina: 90,
+          agility: 82,
+          intelligence: 82,
           epigeneticModifiers: { positive: ['athletic', 'calm'], negative: [], hidden: [] },
         },
       }),
@@ -86,9 +101,12 @@ describe('🧬 Genetic Diversity Tracking System', () => {
           name: 'Second Gen B',
           sex: 'Mare',
           dateOfBirth: new Date('2018-02-01'),
-          sireId: testFounders[2].id,
-          damId: testFounders[3].id,
-          speed: 82, stamina: 85, agility: 85, intelligence: 90,
+          sire: { connect: { id: testFounders[2].id } },
+          dam: { connect: { id: testFounders[3].id } },
+          speed: 82,
+          stamina: 85,
+          agility: 85,
+          intelligence: 90,
           epigeneticModifiers: { positive: ['agile', 'wise'], negative: [], hidden: [] },
         },
       }),
@@ -100,9 +118,12 @@ describe('🧬 Genetic Diversity Tracking System', () => {
         name: 'Third Gen Inbred',
         sex: 'Mare',
         dateOfBirth: new Date('2021-01-01'),
-        sireId: secondGen[0].id,
-        damId: testFounders[1].id, // Same dam as sire's dam - inbreeding
-        speed: 80, stamina: 88, agility: 80, intelligence: 85,
+        sire: { connect: { id: secondGen[0].id } },
+        dam: { connect: { id: testFounders[1].id } }, // Same dam as sire's dam - inbreeding
+        speed: 80,
+        stamina: 88,
+        agility: 80,
+        intelligence: 85,
         epigeneticModifiers: { positive: ['athletic'], negative: ['nervous'], hidden: [] },
       },
     });
@@ -267,7 +288,6 @@ describe('🧬 Genetic Diversity Tracking System', () => {
       // Verify generational analysis
       expect(Array.isArray(trends.generationalAnalysis)).toBe(true);
       if (trends.generationalAnalysis.length > 0) {
-        // eslint-disable-next-line prefer-destructuring
         const generation = trends.generationalAnalysis[0];
         expect(generation).toHaveProperty('generation');
         expect(generation).toHaveProperty('diversity');
@@ -283,9 +303,7 @@ describe('🧬 Genetic Diversity Tracking System', () => {
 
   describe('🎯 Optimal Breeding Recommendations', () => {
     test('should generate optimal breeding recommendations', async () => {
-      const recommendations = await generateOptimalBreedingRecommendations(
-        testPopulation.map(h => h.id),
-      );
+      const recommendations = await generateOptimalBreedingRecommendations(testPopulation.map(h => h.id));
 
       expect(recommendations).toHaveProperty('optimalPairs');
       expect(recommendations).toHaveProperty('avoidPairs');
@@ -296,7 +314,6 @@ describe('🧬 Genetic Diversity Tracking System', () => {
       // Verify optimal pairs structure
       expect(Array.isArray(recommendations.optimalPairs)).toBe(true);
       if (recommendations.optimalPairs.length > 0) {
-        // eslint-disable-next-line prefer-destructuring
         const pair = recommendations.optimalPairs[0];
         expect(pair).toHaveProperty('stallionId');
         expect(pair).toHaveProperty('mareId');
@@ -311,7 +328,6 @@ describe('🧬 Genetic Diversity Tracking System', () => {
       // Verify avoid pairs structure
       expect(Array.isArray(recommendations.avoidPairs)).toBe(true);
       if (recommendations.avoidPairs.length > 0) {
-        // eslint-disable-next-line prefer-destructuring
         const avoidPair = recommendations.avoidPairs[0];
         expect(avoidPair).toHaveProperty('stallionId');
         expect(avoidPair).toHaveProperty('mareId');
@@ -351,7 +367,6 @@ describe('🧬 Genetic Diversity Tracking System', () => {
       // Verify timeline structure
       expect(Array.isArray(tracking.timeline)).toBe(true);
       if (tracking.timeline.length > 0) {
-        // eslint-disable-next-line prefer-destructuring
         const timepoint = tracking.timeline[0];
         expect(timepoint).toHaveProperty('date');
         expect(timepoint).toHaveProperty('diversity');

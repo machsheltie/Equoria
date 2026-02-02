@@ -91,7 +91,7 @@ describe('🌐 INTEGRATION: User Routes - HTTP API Endpoints', () => {
       expect(response.body.success).toBe(true);
       expect(response.body.message).toBe('User progress retrieved successfully');
       expect(response.body.data).toMatchObject({
-        userId: testUser.id,
+        userId: testUser.id ,
         username: testUser.username,
         level: expect.any(Number),
         xp: expect.any(Number),

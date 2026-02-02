@@ -154,8 +154,8 @@ describe('Horse Aging Integration', () => {
           sex: 'Filly',
           dateOfBirth: sevenDaysAgo, // 7 days before reference date (birthday today!)
           age: 6, // Stored age is 6, calculated age will be 7 (birthday!)
-          user: { connect: { id: testUser.id } },
-          breed: { connect: { id: testBreed.id } },
+          userId: testUser.id ,
+          breedId: testBreed.id ,
           bondScore: 85,
           stressLevel: 5,
           taskLog: {
@@ -251,8 +251,8 @@ describe('Horse Aging Integration', () => {
             sex: 'Colt',
             dateOfBirth: new Date('2025-05-25T00:00:00Z'), // 7 days ago
             age: 6, // Stored age is 6, calculated age will be 7 (birthday!)
-            user: { connect: { id: testUser.id } },
-            breed: { connect: { id: testBreed.id } },
+            userId: testUser.id ,
+            breedId: testBreed.id ,
             taskLog: { trust_building: 6, desensitization: 4 },
             daysGroomedInARow: 8,
             epigeneticModifiers: { positive: [], negative: [], hidden: [] },
@@ -265,8 +265,8 @@ describe('Horse Aging Integration', () => {
             sex: 'Mare',
             dateOfBirth: new Date('2025-05-11T00:00:00Z'), // 21 days ago (3 years = 21 days)
             age: 20, // Stored age is 20, calculated age will be 21 (birthday!)
-            user: { connect: { id: testUser.id } },
-            breed: { connect: { id: testBreed.id } },
+            userId: testUser.id ,
+            breedId: testBreed.id ,
           },
         }),
         // Horse with no birthday (correct age)
@@ -276,8 +276,8 @@ describe('Horse Aging Integration', () => {
             sex: 'Gelding',
             dateOfBirth: new Date('2025-05-01T00:00:00Z'), // 31 days ago
             age: 31, // Correct age (no birthday today)
-            user: { connect: { id: testUser.id } },
-            breed: { connect: { id: testBreed.id } },
+            userId: testUser.id ,
+            breedId: testBreed.id ,
           },
         }),
       ]);
@@ -341,8 +341,8 @@ describe('Horse Aging Integration', () => {
           sex: 'Colt',
           dateOfBirth: new Date('2025-05-25T00:00:00Z'), // 7 days ago
           age: 6, // Stored age is 6, calculated age will be 7 (birthday!)
-          user: { connect: { id: testUser.id } },
-          breed: { connect: { id: testBreed.id } },
+          userId: testUser.id ,
+          breedId: testBreed.id ,
           taskLog: {
             trust_building: 1, // 5 points to bonded, resilient
             early_touch: 1, // 5 points to calm
@@ -400,8 +400,8 @@ describe('Horse Aging Integration', () => {
           sex: 'Filly',
           dateOfBirth: new Date('2025-05-25T00:00:00Z'), // 7 days ago
           age: 6, // Stored age is 6, calculated age will be 7 (birthday!)
-          user: { connect: { id: testUser.id } },
-          breed: { connect: { id: testBreed.id } },
+          userId: testUser.id ,
+          breedId: testBreed.id ,
           taskLog: {}, // Empty task log
           daysGroomedInARow: 0,
           epigeneticModifiers: { positive: [], negative: [], hidden: [] },
@@ -439,8 +439,8 @@ describe('Horse Aging Integration', () => {
           sex: 'Colt',
           dateOfBirth: new Date('2024-06-01'),
           age: 364,
-          user: { connect: { id: testUser.id } },
-          breed: { connect: { id: testBreed.id } },
+          userId: testUser.id ,
+          breedId: testBreed.id ,
         },
       });
       createdHorseIds.add(horse.id);

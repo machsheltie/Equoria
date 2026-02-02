@@ -51,7 +51,7 @@ describe('Enhanced Care Pattern Analyzer', () => {
           groomPersonality: 'calm',
           skillLevel: 'expert',
           speciality: 'foal_care',
-          userId: testUser.id,
+          userId: testUser.id ,
           sessionRate: 35.0,
         },
       }),
@@ -62,7 +62,7 @@ describe('Enhanced Care Pattern Analyzer', () => {
           groomPersonality: 'energetic',
           skillLevel: 'novice',
           speciality: 'general_grooming',
-          userId: testUser.id,
+          userId: testUser.id ,
           sessionRate: 15.0,
         },
       }),
@@ -73,7 +73,7 @@ describe('Enhanced Care Pattern Analyzer', () => {
           groomPersonality: 'methodical',
           skillLevel: 'experienced',
           speciality: 'foal_care',
-          userId: testUser.id,
+          userId: testUser.id ,
           sessionRate: 28.0,
         },
       }),
@@ -91,7 +91,7 @@ describe('Enhanced Care Pattern Analyzer', () => {
           name: `Test Horse Consistent ${Date.now()}`,
           sex: 'filly',
           dateOfBirth: oneMonthAgo,
-          ownerId: testUser.id,
+          userId: testUser.id ,
           bondScore: 25,
           stressLevel: 3,
           epigeneticFlags: [],
@@ -103,7 +103,7 @@ describe('Enhanced Care Pattern Analyzer', () => {
           name: `Test Horse Declining ${Date.now()}`,
           sex: 'colt',
           dateOfBirth: twoWeeksAgo,
-          ownerId: testUser.id,
+          userId: testUser.id ,
           bondScore: 15,
           stressLevel: 7,
           epigeneticFlags: [],
@@ -115,7 +115,7 @@ describe('Enhanced Care Pattern Analyzer', () => {
           name: `Test Horse Improving ${Date.now()}`,
           sex: 'gelding',
           dateOfBirth: oneMonthAgo,
-          ownerId: testUser.id,
+          userId: testUser.id ,
           bondScore: 30,
           stressLevel: 2,
           epigeneticFlags: [],
@@ -179,7 +179,6 @@ describe('Enhanced Care Pattern Analyzer', () => {
     });
 
     test('should detect inconsistent care patterns', async () => {
-      // eslint-disable-next-line prefer-destructuring
       const horse = testHorses[1]; // Declining care horse
 
       // Create inconsistent interactions with varying quality
@@ -214,7 +213,6 @@ describe('Enhanced Care Pattern Analyzer', () => {
 
   describe('detectCareQualityTrends', () => {
     test('should detect improving care quality trends', async () => {
-      // eslint-disable-next-line prefer-destructuring
       const horse = testHorses[2]; // Improving care horse
 
       // Create improving trend: poor -> fair -> good -> excellent
@@ -253,7 +251,6 @@ describe('Enhanced Care Pattern Analyzer', () => {
     });
 
     test('should detect declining care quality trends', async () => {
-      // eslint-disable-next-line prefer-destructuring
       const horse = testHorses[1]; // Use declining care horse
 
       // Add more declining interactions
@@ -302,7 +299,6 @@ describe('Enhanced Care Pattern Analyzer', () => {
       expect(effectiveness.recommendations).toBeDefined();
 
       if (effectiveness.groomStats.length > 0) {
-        // eslint-disable-next-line prefer-destructuring
         const groomStat = effectiveness.groomStats[0];
         expect(groomStat).toHaveProperty('groomId');
         expect(groomStat).toHaveProperty('groomName');
@@ -314,7 +310,6 @@ describe('Enhanced Care Pattern Analyzer', () => {
     });
 
     test('should identify most and least effective grooms', async () => {
-      // eslint-disable-next-line prefer-destructuring
       const horse = testHorses[1]; // Horse with multiple grooms
 
       const effectiveness = await analyzeGroomEffectiveness(horse.id);
@@ -323,15 +318,15 @@ describe('Enhanced Care Pattern Analyzer', () => {
       expect(effectiveness.leastEffective).toBeDefined();
 
       if (effectiveness.mostEffective && effectiveness.leastEffective) {
-        expect(effectiveness.mostEffective.effectivenessScore)
-          .toBeGreaterThanOrEqual(effectiveness.leastEffective.effectivenessScore);
+        expect(effectiveness.mostEffective.effectivenessScore).toBeGreaterThanOrEqual(
+          effectiveness.leastEffective.effectivenessScore,
+        );
       }
     });
   });
 
   describe('calculateCareRiskScore', () => {
     test('should calculate comprehensive care risk assessment', async () => {
-      // eslint-disable-next-line prefer-destructuring
       const horse = testHorses[1]; // Declining care horse
 
       const riskScore = await calculateCareRiskScore(horse.id);
@@ -348,7 +343,6 @@ describe('Enhanced Care Pattern Analyzer', () => {
     });
 
     test('should identify specific risk factors', async () => {
-      // eslint-disable-next-line prefer-destructuring
       const horse = testHorses[1];
 
       const riskScore = await calculateCareRiskScore(horse.id);

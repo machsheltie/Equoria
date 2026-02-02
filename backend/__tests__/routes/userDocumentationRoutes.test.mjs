@@ -144,9 +144,7 @@ A: Horses must be 3+ years old and respect training cooldowns.`,
 
   describe('GET /api/user-docs', () => {
     test('retrieves all documentation successfully', async () => {
-      const response = await request(testApp)
-        .get('/api/user-docs')
-        .expect(200);
+      const response = await request(testApp).get('/api/user-docs').expect(200);
 
       expect(response.body.success).toBe(true);
       expect(response.body.data.documents).toBeDefined();
@@ -162,9 +160,7 @@ A: Horses must be 3+ years old and respect training cooldowns.`,
     });
 
     test('includes table of contents in response', async () => {
-      const response = await request(testApp)
-        .get('/api/user-docs')
-        .expect(200);
+      const response = await request(testApp).get('/api/user-docs').expect(200);
 
       const toc = response.body.data.tableOfContents;
       expect(Array.isArray(toc)).toBe(true);
@@ -179,9 +175,7 @@ A: Horses must be 3+ years old and respect training cooldowns.`,
 
   describe('GET /api/user-docs/search', () => {
     test('searches documentation successfully', async () => {
-      const response = await request(testApp)
-        .get('/api/user-docs/search?q=horse training')
-        .expect(200);
+      const response = await request(testApp).get('/api/user-docs/search?q=horse training').expect(200);
 
       expect(response.body.success).toBe(true);
       expect(response.body.data.query).toBe('horse training');
@@ -197,9 +191,7 @@ A: Horses must be 3+ years old and respect training cooldowns.`,
     });
 
     test('validates search query parameter', async () => {
-      const response = await request(testApp)
-        .get('/api/user-docs/search')
-        .expect(400);
+      const response = await request(testApp).get('/api/user-docs/search').expect(400);
 
       expect(response.body.success).toBe(false);
       expect(response.body.message).toContain('Validation failed');
@@ -220,9 +212,7 @@ A: Horses must be 3+ years old and respect training cooldowns.`,
     });
 
     test('handles empty search results', async () => {
-      const response = await request(testApp)
-        .get('/api/user-docs/search?q=nonexistentterm12345')
-        .expect(200);
+      const response = await request(testApp).get('/api/user-docs/search?q=nonexistentterm12345').expect(200);
 
       expect(response.body.success).toBe(true);
       expect(response.body.data.results).toHaveLength(0);
@@ -237,9 +227,7 @@ A: Horses must be 3+ years old and respect training cooldowns.`,
       await request(testApp).get('/api/user-docs/strategy-guide');
       await request(testApp).get('/api/user-docs/search?q=horse');
 
-      const response = await request(testApp)
-        .get('/api/user-docs/analytics')
-        .expect(200);
+      const response = await request(testApp).get('/api/user-docs/analytics').expect(200);
 
       expect(response.body.success).toBe(true);
       expect(response.body.data).toBeDefined();
@@ -256,9 +244,7 @@ A: Horses must be 3+ years old and respect training cooldowns.`,
 
   describe('GET /api/user-docs/toc', () => {
     test('retrieves table of contents successfully', async () => {
-      const response = await request(testApp)
-        .get('/api/user-docs/toc')
-        .expect(200);
+      const response = await request(testApp).get('/api/user-docs/toc').expect(200);
 
       expect(response.body.success).toBe(true);
       expect(response.body.data.tableOfContents).toBeDefined();
@@ -272,9 +258,7 @@ A: Horses must be 3+ years old and respect training cooldowns.`,
 
   describe('GET /api/user-docs/:docName', () => {
     test('retrieves specific document successfully', async () => {
-      const response = await request(testApp)
-        .get('/api/user-docs/feature-guide')
-        .expect(200);
+      const response = await request(testApp).get('/api/user-docs/feature-guide').expect(200);
 
       expect(response.body.success).toBe(true);
       expect(response.body.data.name).toBe('feature-guide');
@@ -284,9 +268,7 @@ A: Horses must be 3+ years old and respect training cooldowns.`,
     });
 
     test('returns 404 for non-existent document', async () => {
-      const response = await request(testApp)
-        .get('/api/user-docs/non-existent')
-        .expect(404);
+      const response = await request(testApp).get('/api/user-docs/non-existent').expect(404);
 
       expect(response.body.success).toBe(false);
       expect(response.body.message).toContain('not found');
@@ -294,9 +276,7 @@ A: Horses must be 3+ years old and respect training cooldowns.`,
     });
 
     test('serves markdown format correctly', async () => {
-      const response = await request(testApp)
-        .get('/api/user-docs/feature-guide?format=markdown')
-        .expect(200);
+      const response = await request(testApp).get('/api/user-docs/feature-guide?format=markdown').expect(200);
 
       expect(response.headers['content-type']).toContain('text/markdown');
       expect(response.text).toContain('# 🐎 Feature Guide');
@@ -304,9 +284,7 @@ A: Horses must be 3+ years old and respect training cooldowns.`,
     });
 
     test('serves text format correctly', async () => {
-      const response = await request(testApp)
-        .get('/api/user-docs/feature-guide?format=text')
-        .expect(200);
+      const response = await request(testApp).get('/api/user-docs/feature-guide?format=text').expect(200);
 
       expect(response.headers['content-type']).toContain('text/plain');
       expect(response.text).toContain('Feature Guide');
@@ -319,9 +297,7 @@ A: Horses must be 3+ years old and respect training cooldowns.`,
       await request(testApp).get('/api/user-docs/feature-guide');
       await request(testApp).get('/api/user-docs/feature-guide');
 
-      const response = await request(testApp)
-        .get('/api/user-docs/feature-guide')
-        .expect(200);
+      const response = await request(testApp).get('/api/user-docs/feature-guide').expect(200);
 
       expect(response.body.data.viewCount).toBe(3);
     });
@@ -329,9 +305,7 @@ A: Horses must be 3+ years old and respect training cooldowns.`,
 
   describe('GET /api/user-docs/:docName/sections', () => {
     test('retrieves document sections successfully', async () => {
-      const response = await request(testApp)
-        .get('/api/user-docs/feature-guide/sections')
-        .expect(200);
+      const response = await request(testApp).get('/api/user-docs/feature-guide/sections').expect(200);
 
       expect(response.body.success).toBe(true);
       expect(response.body.data.documentName).toBe('feature-guide');
@@ -346,9 +320,7 @@ A: Horses must be 3+ years old and respect training cooldowns.`,
     });
 
     test('returns 404 for non-existent document sections', async () => {
-      const response = await request(testApp)
-        .get('/api/user-docs/non-existent/sections')
-        .expect(404);
+      const response = await request(testApp).get('/api/user-docs/non-existent/sections').expect(404);
 
       expect(response.body.success).toBe(false);
       expect(response.body.message).toContain('not found');
@@ -357,9 +329,7 @@ A: Horses must be 3+ years old and respect training cooldowns.`,
 
   describe('GET /api/user-docs/:docName/search', () => {
     test('searches within specific document successfully', async () => {
-      const response = await request(testApp)
-        .get('/api/user-docs/feature-guide/search?q=training')
-        .expect(200);
+      const response = await request(testApp).get('/api/user-docs/feature-guide/search?q=training').expect(200);
 
       expect(response.body.success).toBe(true);
       expect(response.body.data.documentName).toBe('feature-guide');
@@ -374,9 +344,7 @@ A: Horses must be 3+ years old and respect training cooldowns.`,
     });
 
     test('validates search query for document search', async () => {
-      const response = await request(testApp)
-        .get('/api/user-docs/feature-guide/search')
-        .expect(400);
+      const response = await request(testApp).get('/api/user-docs/feature-guide/search').expect(400);
 
       expect(response.body.success).toBe(false);
       expect(response.body.message).toContain('Validation failed');
@@ -394,9 +362,7 @@ A: Horses must be 3+ years old and respect training cooldowns.`,
     });
 
     test('returns 404 for document search on non-existent document', async () => {
-      const response = await request(testApp)
-        .get('/api/user-docs/non-existent/search?q=test')
-        .expect(404);
+      const response = await request(testApp).get('/api/user-docs/non-existent/search?q=test').expect(404);
 
       expect(response.body.success).toBe(false);
       expect(response.body.message).toContain('not found');
@@ -405,9 +371,7 @@ A: Horses must be 3+ years old and respect training cooldowns.`,
 
   describe('POST /api/user-docs/refresh', () => {
     test('refreshes documentation cache successfully', async () => {
-      const response = await request(testApp)
-        .post('/api/user-docs/refresh')
-        .expect(200);
+      const response = await request(testApp).post('/api/user-docs/refresh').expect(200);
 
       expect(response.body.success).toBe(true);
       expect(response.body.message).toContain('refreshed successfully');
@@ -418,9 +382,7 @@ A: Horses must be 3+ years old and respect training cooldowns.`,
 
   describe('GET /api/user-docs/health', () => {
     test('returns system health status', async () => {
-      const response = await request(testApp)
-        .get('/api/user-docs/health')
-        .expect(200);
+      const response = await request(testApp).get('/api/user-docs/health').expect(200);
 
       expect(response.body.success).toBe(true);
       expect(response.body.data.status).toBe('healthy');
@@ -432,17 +394,13 @@ A: Horses must be 3+ years old and respect training cooldowns.`,
 
   describe('Error Handling', () => {
     test('handles invalid route gracefully', async () => {
-      const _response = await request(testApp)
-        .get('/api/user-docs/invalid/invalid/invalid')
-        .expect(404);
+      const _response = await request(testApp).get('/api/user-docs/invalid/invalid/invalid').expect(404);
 
       // Express default 404 handling
     });
 
     test('handles malformed search parameters', async () => {
-      const response = await request(testApp)
-        .get('/api/user-docs/search?q=&limit=invalid')
-        .expect(400);
+      const response = await request(testApp).get('/api/user-docs/search?q=&limit=invalid').expect(400);
 
       expect(response.body.success).toBe(false);
       expect(response.body.message).toContain('Validation failed');
@@ -456,9 +414,7 @@ A: Horses must be 3+ years old and respect training cooldowns.`,
       await request(testApp).get('/api/user-docs/search?q=training');
       await request(testApp).get('/api/user-docs/search?q=competition');
 
-      const response = await request(testApp)
-        .get('/api/user-docs/analytics')
-        .expect(200);
+      const response = await request(testApp).get('/api/user-docs/analytics').expect(200);
 
       const analytics = response.body.data;
       expect(analytics.totalSearches).toBe(3);
@@ -471,9 +427,7 @@ A: Horses must be 3+ years old and respect training cooldowns.`,
       await request(testApp).get('/api/user-docs/feature-guide');
       await request(testApp).get('/api/user-docs/strategy-guide');
 
-      const response = await request(testApp)
-        .get('/api/user-docs/analytics')
-        .expect(200);
+      const response = await request(testApp).get('/api/user-docs/analytics').expect(200);
 
       const analytics = response.body.data;
       expect(analytics.totalViews).toBe(3);
@@ -484,14 +438,10 @@ A: Horses must be 3+ years old and respect training cooldowns.`,
 
     test('document content is consistent across different endpoints', async () => {
       // Get document through main endpoint
-      const docResponse = await request(testApp)
-        .get('/api/user-docs/feature-guide')
-        .expect(200);
+      const docResponse = await request(testApp).get('/api/user-docs/feature-guide').expect(200);
 
       // Get same document in markdown format
-      const markdownResponse = await request(testApp)
-        .get('/api/user-docs/feature-guide?format=markdown')
-        .expect(200);
+      const markdownResponse = await request(testApp).get('/api/user-docs/feature-guide?format=markdown').expect(200);
 
       expect(docResponse.body.data.content).toBe(markdownResponse.text);
     });

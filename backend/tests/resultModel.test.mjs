@@ -58,14 +58,9 @@ await jest.unstable_mockModule(join(__dirname, '../db/index.mjs'), () => ({
 }));
 
 // Import the module under test after mocking
-const {
-  saveResult,
-  getResultsByHorse,
-  getResultsByShow,
-  getResultById,
-  createResult,
-  getResultsByUser,
-} = await import(join(__dirname, '../models/resultModel.mjs'));
+const { saveResult, getResultsByHorse, getResultsByShow, getResultById, createResult, getResultsByUser } = await import(
+  join(__dirname, '../models/resultModel.mjs')
+);
 
 // Calculate dynamic dates for competition results (not birth dates)
 const recentCompetitionDate = new Date();

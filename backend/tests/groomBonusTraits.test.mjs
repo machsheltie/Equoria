@@ -66,7 +66,7 @@ describe('Groom Bonus Traits System', () => {
           noble: 0.1,
           quick_learner: 0.15,
         },
-        user: { connect: { id: testUser.id } },
+        userId: testUser.id ,
       },
     });
 
@@ -77,10 +77,8 @@ describe('Groom Bonus Traits System', () => {
         sex: 'colt',
         dateOfBirth: new Date(Date.now() - 30 * 24 * 60 * 60 * 1000), // 30 days old
         temperament: 'spirited',
-        user: { connect: { id: testUser.id } },
-        breed: { connect: { id: testBreed.id } },
-        sireId: null,
-        damId: null,
+        userId: testUser.id ,
+        breedId: testBreed.id ,
         epigeneticModifiers: { positive: [], negative: [], hidden: [] },
       },
     });
@@ -174,6 +172,7 @@ describe('Groom Bonus Traits System', () => {
         data: {
           groomId: testGroom.id,
           foalId: testHorse.id,
+          userId: testUser.id,
           startDate: new Date(Date.now() - 28 * 24 * 60 * 60 * 1000), // 28 days ago
           endDate: new Date(Date.now() - 2 * 24 * 60 * 60 * 1000), // 2 days ago (26 days coverage > 22.5 needed)
           priority: 5,
@@ -218,6 +217,7 @@ describe('Groom Bonus Traits System', () => {
         data: {
           groomId: testGroom.id,
           foalId: testHorse.id,
+          userId: testUser.id,
           startDate: new Date(Date.now() - 25 * 24 * 60 * 60 * 1000),
           endDate: new Date(Date.now() - 5 * 24 * 60 * 60 * 1000),
           priority: 5,
@@ -257,6 +257,7 @@ describe('Groom Bonus Traits System', () => {
         data: {
           groomId: testGroom.id,
           foalId: testHorse.id,
+          userId: testUser.id,
           startDate: new Date(Date.now() - 10 * 24 * 60 * 60 * 1000), // Only 10 days
           endDate: new Date(Date.now() - 5 * 24 * 60 * 60 * 1000),
           priority: 5,

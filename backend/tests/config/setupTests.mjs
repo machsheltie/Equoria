@@ -98,15 +98,11 @@ expect.extend({
     const cookies = received.headers?.['set-cookie'] || [];
     const cookie = cookies.find(c => c.startsWith(`${cookieName}=`));
 
-    const pass =
-      cookie &&
-      cookie.includes('HttpOnly') &&
-      cookie.includes('SameSite=Strict');
+    const pass = cookie && cookie.includes('HttpOnly') && cookie.includes('SameSite=Strict');
 
     if (pass) {
       return {
-        message: () =>
-          `expected response not to have httpOnly cookie "${cookieName}"`,
+        message: () => `expected response not to have httpOnly cookie "${cookieName}"`,
         pass: true,
       };
     } else {
@@ -131,8 +127,7 @@ expect.extend({
 
     if (hasSensitiveData) {
       return {
-        message: () =>
-          `expected response not to contain sensitive data (tokens, passwords)`,
+        message: () => `expected response not to contain sensitive data (tokens, passwords)`,
         pass: false,
       };
     } else {

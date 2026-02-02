@@ -61,7 +61,7 @@ describe('Authentication with HttpOnly Cookies', () => {
 
     // Close server
     if (server) {
-      await new Promise((resolve) => server.close(resolve));
+      await new Promise(resolve => server.close(resolve));
     }
     await prisma.$disconnect();
   });
@@ -218,10 +218,7 @@ describe('Authentication with HttpOnly Cookies', () => {
     });
 
     it('should reject request without cookies', async () => {
-      await request(app)
-        .get('/api/auth/profile')
-        .set('X-Test-Require-Auth', 'true')
-        .expect(401);
+      await request(app).get('/api/auth/profile').set('X-Test-Require-Auth', 'true').expect(401);
     });
 
     it('should reject request with invalid cookies', async () => {
@@ -248,9 +245,7 @@ describe('Authentication with HttpOnly Cookies', () => {
         })
         .expect(200);
 
-      refreshCookie = loginResponse.headers['set-cookie'].find(c =>
-        c.startsWith('refreshToken=')
-      );
+      refreshCookie = loginResponse.headers['set-cookie'].find(c => c.startsWith('refreshToken='));
     });
 
     it('should refresh accessToken using httpOnly refreshToken cookie', async () => {
@@ -272,10 +267,7 @@ describe('Authentication with HttpOnly Cookies', () => {
     });
 
     it('should reject refresh without refreshToken cookie', async () => {
-      await request(app)
-        .post('/api/auth/refresh-token')
-        .set(rateLimitBypassHeader)
-        .expect(400);
+      await request(app).post('/api/auth/refresh-token').set(rateLimitBypassHeader).expect(400);
     });
   });
 
@@ -388,9 +380,7 @@ describe('Authentication with HttpOnly Cookies', () => {
         .expect(200);
 
       const cookies = loginResponse.headers['set-cookie'];
-      const authCookies = cookies.filter(c =>
-        c.startsWith('accessToken=') || c.startsWith('refreshToken=')
-      );
+      const authCookies = cookies.filter(c => c.startsWith('accessToken=') || c.startsWith('refreshToken='));
 
       authCookies.forEach(cookie => {
         expect(cookie).toContain('SameSite=Strict');
@@ -441,7 +431,7 @@ describe('Authentication with HttpOnly Cookies', () => {
           email: fallbackEmail,
           password: hashedPassword,
           firstName: 'Fallback', // Required field
-          lastName: 'Test',       // Required field
+          lastName: 'Test', // Required field
         },
       });
 

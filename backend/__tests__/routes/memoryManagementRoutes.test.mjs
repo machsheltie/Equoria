@@ -55,11 +55,9 @@ describe('Memory Management Routes', () => {
     });
 
     // Generate auth token
-    authToken = jwt.sign(
-      { id: testUser.id, username: testUser.username },
-      process.env.JWT_SECRET || 'test-secret',
-      { expiresIn: '1h' },
-    );
+    authToken = jwt.sign({ id: testUser.id, username: testUser.username }, process.env.JWT_SECRET || 'test-secret', {
+      expiresIn: '1h',
+    });
 
     // Create test Express app
     testApp = express();
@@ -110,10 +108,7 @@ describe('Memory Management Routes', () => {
     });
 
     test('requires authentication', async () => {
-      const response = await request(testApp)
-        .get('/api/memory/status')
-        .set('x-test-require-auth', 'true')
-        .expect(401);
+      const response = await request(testApp).get('/api/memory/status').set('x-test-require-auth', 'true').expect(401);
 
       expect(response.body.success).toBe(false);
       expect(response.body.message).toContain('token');
@@ -391,10 +386,7 @@ describe('Memory Management Routes', () => {
     });
 
     test('handles missing authorization header', async () => {
-      const response = await request(testApp)
-        .get('/api/memory/status')
-        .set('x-test-require-auth', 'true')
-        .expect(401);
+      const response = await request(testApp).get('/api/memory/status').set('x-test-require-auth', 'true').expect(401);
 
       expect(response.body.success).toBe(false);
     });

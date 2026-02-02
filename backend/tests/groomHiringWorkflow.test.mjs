@@ -50,26 +50,22 @@ describe('Groom Hiring Workflow Tests', () => {
   let wealthyUser;
   let limitedUser;
 
-  const TEST_USER_IDS = [
-    'test-user-groom-hiring',
-    'wealthy-user-groom-hiring',
-    'limited-user-groom-hiring'
-  ];
+  const TEST_USER_IDS = ['test-user-groom-hiring', 'wealthy-user-groom-hiring', 'limited-user-groom-hiring'];
 
   // Helper to clean up test data
   const cleanupTestData = async () => {
     // Delete grooms associated with test users first
     await prisma.groom.deleteMany({
       where: {
-        userId: { in: TEST_USER_IDS }
-      }
+        userId: { in: TEST_USER_IDS },
+      },
     });
-    
+
     // Delete test users
     await prisma.user.deleteMany({
       where: {
-        id: { in: TEST_USER_IDS }
-      }
+        id: { in: TEST_USER_IDS },
+      },
     });
   };
 

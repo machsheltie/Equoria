@@ -15,7 +15,11 @@ import { generateTestToken } from './helpers/authHelper.mjs';
 import { getAllUltraRareTraits, getAllExoticTraits, getUltraRareTraitDefinition } from '../utils/ultraRareTraits.mjs';
 import { evaluateUltraRareTriggers, evaluateExoticUnlocks } from '../utils/ultraRareTriggerEngine.mjs';
 import { assignRareTraitBoosterPerks, applyRareTraitBoosterEffects } from '../utils/groomRareTraitPerks.mjs';
-import { applyUltraRareStressEffects, applyUltraRareCompetitionEffects, hasUltraRareAbility } from '../utils/ultraRareMechanicalEffects.mjs';
+import {
+  applyUltraRareStressEffects,
+  applyUltraRareCompetitionEffects,
+  hasUltraRareAbility,
+} from '../utils/ultraRareMechanicalEffects.mjs';
 
 describe('Ultra-Rare & Exotic Traits System', () => {
   let testUser;
@@ -51,7 +55,7 @@ describe('Ultra-Rare & Exotic Traits System', () => {
         name: 'Ultra Rare Test Horse',
         sex: 'Mare',
         dateOfBirth: new Date('2021-01-01'),
-        ownerId: testUser.id,
+        userId: testUser.id ,
         temperament: 'reactive',
         bondScore: 85,
         stressLevel: 20,
@@ -78,10 +82,10 @@ describe('Ultra-Rare & Exotic Traits System', () => {
         groomPersonality: 'guardian',
         bonusTraitMap: {
           'phoenix-born': 0.15,
-          'resilient': 0.1,
+          resilient: 0.1,
         },
         rareTraitPerks: {},
-        userId: testUser.id,
+        userId: testUser.id ,
       },
     });
   });
@@ -372,7 +376,7 @@ describe('Ultra-Rare & Exotic Traits System', () => {
           name: 'Other Horse',
           sex: 'Stallion',
           dateOfBirth: new Date('2021-01-01'),
-          ownerId: otherUser.id,
+          userId: otherUser.id ,
         },
       });
 

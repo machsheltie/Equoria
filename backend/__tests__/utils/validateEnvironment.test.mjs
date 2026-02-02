@@ -59,7 +59,7 @@ describe('validateEnvironment()', () => {
       validateEnvironment();
 
       // Check if any logger.error call contains the expected message
-      const errorCalls = loggerErrorSpy.mock.calls.map((call) => call[0]);
+      const errorCalls = loggerErrorSpy.mock.calls.map(call => call[0]);
       const allErrors = errorCalls.join(' ');
       expect(allErrors).toContain('Missing required environment variable: DATABASE_URL');
       expect(processExitSpy).toHaveBeenCalledWith(1);
@@ -73,7 +73,7 @@ describe('validateEnvironment()', () => {
 
       validateEnvironment();
 
-      const errorCalls = loggerErrorSpy.mock.calls.map((call) => call[0]);
+      const errorCalls = loggerErrorSpy.mock.calls.map(call => call[0]);
       const allErrors = errorCalls.join(' ');
       expect(allErrors).toContain('Missing required environment variable: JWT_SECRET');
       expect(processExitSpy).toHaveBeenCalledWith(1);
@@ -87,7 +87,7 @@ describe('validateEnvironment()', () => {
 
       validateEnvironment();
 
-      const errorCalls = loggerErrorSpy.mock.calls.map((call) => call[0]);
+      const errorCalls = loggerErrorSpy.mock.calls.map(call => call[0]);
       const allErrors = errorCalls.join(' ');
       expect(allErrors).toContain('Missing required environment variable: NODE_ENV');
       expect(processExitSpy).toHaveBeenCalledWith(1);
@@ -101,7 +101,7 @@ describe('validateEnvironment()', () => {
 
       validateEnvironment();
 
-      const errorCalls = loggerErrorSpy.mock.calls.map((call) => call[0]);
+      const errorCalls = loggerErrorSpy.mock.calls.map(call => call[0]);
       const allErrors = errorCalls.join(' ');
       expect(allErrors).toContain('Missing required environment variable: PORT');
       expect(processExitSpy).toHaveBeenCalledWith(1);
@@ -117,7 +117,7 @@ describe('validateEnvironment()', () => {
 
       validateEnvironment();
 
-      const errorCalls = loggerErrorSpy.mock.calls.map((call) => call[0]);
+      const errorCalls = loggerErrorSpy.mock.calls.map(call => call[0]);
       const allErrors = errorCalls.join(' ');
       expect(allErrors).toContain('DATABASE_URL must be at least 20 characters');
       expect(processExitSpy).toHaveBeenCalledWith(1);
@@ -131,7 +131,7 @@ describe('validateEnvironment()', () => {
 
       validateEnvironment();
 
-      const errorCalls = loggerErrorSpy.mock.calls.map((call) => call[0]);
+      const errorCalls = loggerErrorSpy.mock.calls.map(call => call[0]);
       const allErrors = errorCalls.join(' ');
       expect(allErrors).toContain('JWT_SECRET must be at least 32 characters');
       expect(processExitSpy).toHaveBeenCalledWith(1);
@@ -191,7 +191,7 @@ describe('validateEnvironment()', () => {
 
       validateEnvironment();
 
-      const errorCalls = loggerErrorSpy.mock.calls.map((call) => call[0]);
+      const errorCalls = loggerErrorSpy.mock.calls.map(call => call[0]);
       const allErrors = errorCalls.join(' ');
       expect(allErrors).toContain('NODE_ENV must be one of: development, production, test');
       expect(processExitSpy).toHaveBeenCalledWith(1);
@@ -218,7 +218,7 @@ describe('validateEnvironment()', () => {
 
       validateEnvironment();
 
-      const errorCalls = loggerErrorSpy.mock.calls.map((call) => call[0]);
+      const errorCalls = loggerErrorSpy.mock.calls.map(call => call[0]);
       const allErrors = errorCalls.join(' ');
       expect(allErrors).toContain('PORT must be a number');
       expect(processExitSpy).toHaveBeenCalledWith(1);
@@ -234,7 +234,7 @@ describe('validateEnvironment()', () => {
 
       validateEnvironment();
 
-      const errorCalls = loggerErrorSpy.mock.calls.map((call) => call[0]);
+      const errorCalls = loggerErrorSpy.mock.calls.map(call => call[0]);
       const allErrors = errorCalls.join(' ');
       expect(allErrors).toContain('JWT_SECRET appears to be a placeholder value');
       expect(processExitSpy).toHaveBeenCalledWith(1);
@@ -248,7 +248,7 @@ describe('validateEnvironment()', () => {
 
       validateEnvironment();
 
-      const errorCalls = loggerErrorSpy.mock.calls.map((call) => call[0]);
+      const errorCalls = loggerErrorSpy.mock.calls.map(call => call[0]);
       const allErrors = errorCalls.join(' ');
       expect(allErrors).toContain('JWT_SECRET appears to be a placeholder value');
       expect(processExitSpy).toHaveBeenCalledWith(1);
@@ -262,7 +262,7 @@ describe('validateEnvironment()', () => {
 
       validateEnvironment();
 
-      const errorCalls = loggerErrorSpy.mock.calls.map((call) => call[0]);
+      const errorCalls = loggerErrorSpy.mock.calls.map(call => call[0]);
       const allErrors = errorCalls.join(' ');
       expect(allErrors).toContain('JWT_SECRET appears to be a placeholder value');
       expect(processExitSpy).toHaveBeenCalledWith(1);
@@ -276,7 +276,7 @@ describe('validateEnvironment()', () => {
 
       validateEnvironment();
 
-      const errorCalls = loggerErrorSpy.mock.calls.map((call) => call[0]);
+      const errorCalls = loggerErrorSpy.mock.calls.map(call => call[0]);
       const allErrors = errorCalls.join(' ');
       expect(allErrors).toContain('JWT_SECRET appears to be a placeholder value');
       expect(processExitSpy).toHaveBeenCalledWith(1);
@@ -291,7 +291,7 @@ describe('validateEnvironment()', () => {
 
       validateEnvironment();
 
-      const warnCalls = loggerWarnSpy.mock.calls.map((call) => call[0]);
+      const warnCalls = loggerWarnSpy.mock.calls.map(call => call[0]);
       const allWarnings = warnCalls.join(' ');
       expect(allWarnings).toContain('JWT_SECRET should contain a mix of characters');
       expect(processExitSpy).not.toHaveBeenCalled(); // Warning, not error
@@ -329,7 +329,7 @@ describe('validateEnvironment()', () => {
 
       validateEnvironment();
 
-      const errorCalls = loggerErrorSpy.mock.calls.map((call) => call[0]);
+      const errorCalls = loggerErrorSpy.mock.calls.map(call => call[0]);
       const allErrors = errorCalls.join(' ');
       expect(allErrors).toContain('DATABASE_URL must start with postgresql:// or postgres://');
       expect(processExitSpy).toHaveBeenCalledWith(1);
@@ -343,7 +343,7 @@ describe('validateEnvironment()', () => {
 
       validateEnvironment();
 
-      const errorCalls = loggerErrorSpy.mock.calls.map((call) => call[0]);
+      const errorCalls = loggerErrorSpy.mock.calls.map(call => call[0]);
       const allErrors = errorCalls.join(' ');
       expect(allErrors).toContain('DATABASE_URL contains a weak password');
       expect(processExitSpy).toHaveBeenCalledWith(1);
@@ -357,7 +357,7 @@ describe('validateEnvironment()', () => {
 
       validateEnvironment();
 
-      const errorCalls = loggerErrorSpy.mock.calls.map((call) => call[0]);
+      const errorCalls = loggerErrorSpy.mock.calls.map(call => call[0]);
       const allErrors = errorCalls.join(' ');
       expect(allErrors).toContain('DATABASE_URL contains a weak password');
       expect(processExitSpy).toHaveBeenCalledWith(1);
@@ -371,7 +371,7 @@ describe('validateEnvironment()', () => {
 
       validateEnvironment();
 
-      const errorCalls = loggerErrorSpy.mock.calls.map((call) => call[0]);
+      const errorCalls = loggerErrorSpy.mock.calls.map(call => call[0]);
       const allErrors = errorCalls.join(' ');
       expect(allErrors).toContain('DATABASE_URL contains a weak password');
       expect(processExitSpy).toHaveBeenCalledWith(1);
@@ -385,7 +385,7 @@ describe('validateEnvironment()', () => {
 
       validateEnvironment();
 
-      const errorCalls = loggerErrorSpy.mock.calls.map((call) => call[0]);
+      const errorCalls = loggerErrorSpy.mock.calls.map(call => call[0]);
       const allErrors = errorCalls.join(' ');
       expect(allErrors).toContain('DATABASE_URL contains a weak password');
       expect(processExitSpy).toHaveBeenCalledWith(1);
@@ -405,7 +405,7 @@ describe('validateEnvironment()', () => {
 
       validateEnvironment();
 
-      const warnCalls = loggerWarnSpy.mock.calls.map((call) => call[0]);
+      const warnCalls = loggerWarnSpy.mock.calls.map(call => call[0]);
       const allWarnings = warnCalls.join(' ');
       expect(allWarnings).toContain('ALLOWED_ORIGINS contains HTTP URLs in production');
       expect(processExitSpy).not.toHaveBeenCalled(); // Warning, not error
@@ -416,10 +416,8 @@ describe('validateEnvironment()', () => {
 
       validateEnvironment();
 
-      const warnCalls = loggerWarnSpy.mock.calls.map((call) => call[0]);
-      const httpsWarningCall = warnCalls.find((msg) =>
-        msg.includes('ALLOWED_ORIGINS contains HTTP URLs'),
-      );
+      const warnCalls = loggerWarnSpy.mock.calls.map(call => call[0]);
+      const httpsWarningCall = warnCalls.find(msg => msg.includes('ALLOWED_ORIGINS contains HTTP URLs'));
       expect(httpsWarningCall).toBeUndefined();
     });
 
@@ -428,7 +426,7 @@ describe('validateEnvironment()', () => {
 
       validateEnvironment();
 
-      const warnCalls = loggerWarnSpy.mock.calls.map((call) => call[0]);
+      const warnCalls = loggerWarnSpy.mock.calls.map(call => call[0]);
       const allWarnings = warnCalls.join(' ');
       expect(allWarnings).toContain('PORT is set to 80 (HTTP) in production');
       expect(processExitSpy).not.toHaveBeenCalled(); // Warning, not error
@@ -439,10 +437,8 @@ describe('validateEnvironment()', () => {
 
       validateEnvironment();
 
-      const warnCalls = loggerWarnSpy.mock.calls.map((call) => call[0]);
-      const portWarningCall = warnCalls.find((msg) =>
-        msg.includes('PORT is set to 80'),
-      );
+      const warnCalls = loggerWarnSpy.mock.calls.map(call => call[0]);
+      const portWarningCall = warnCalls.find(msg => msg.includes('PORT is set to 80'));
       expect(portWarningCall).toBeUndefined();
     });
   });
@@ -457,7 +453,7 @@ describe('validateEnvironment()', () => {
       validateEnvironment();
 
       // Check that all errors were logged
-      const errorCalls = loggerErrorSpy.mock.calls.map((call) => call[0]);
+      const errorCalls = loggerErrorSpy.mock.calls.map(call => call[0]);
       const allErrors = errorCalls.join(' ');
 
       expect(allErrors).toContain('Environment validation failed');

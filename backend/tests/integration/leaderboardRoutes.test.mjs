@@ -82,20 +82,14 @@ describe('🏆 INTEGRATION: Leaderboard API - Real Database Integration', () => 
     // Clean up horses
     await prisma.horse.deleteMany({
       where: {
-        OR: [
-          { name: { startsWith: 'TestLeaderboard' } },
-          { name: { contains: 'API Test' } },
-        ],
+        OR: [{ name: { startsWith: 'TestLeaderboard' } }, { name: { contains: 'API Test' } }],
       },
     });
 
     // Clean up only specific test users for this test suite
     await prisma.user.deleteMany({
       where: {
-        OR: [
-          { email: { startsWith: 'test-leaderboard' } },
-          { username: { startsWith: 'topplayer' } },
-        ],
+        OR: [{ email: { startsWith: 'test-leaderboard' } }, { username: { startsWith: 'topplayer' } }],
       },
     });
 
@@ -164,8 +158,8 @@ describe('🏆 INTEGRATION: Leaderboard API - Real Database Integration', () => 
           name: 'TestLeaderboard Champion',
           age: 6,
           sex: 'Stallion',
-          breed: { connect: { id: testBreed.id } },
-          user: { connect: { id: testUsers[0].id } },
+          breedId: testBreed.id ,
+          userId: testUsers[0].id ,
           dateOfBirth: new Date('2019-01-01'),
           healthStatus: 'Excellent',
           totalEarnings: 45000,
@@ -176,8 +170,8 @@ describe('🏆 INTEGRATION: Leaderboard API - Real Database Integration', () => 
           name: 'TestLeaderboard Silver Star',
           age: 5,
           sex: 'Mare',
-          breed: { connect: { id: testBreed.id } },
-          user: { connect: { id: testUsers[1].id } },
+          breedId: testBreed.id ,
+          userId: testUsers[1].id ,
           dateOfBirth: new Date('2020-01-01'),
           healthStatus: 'Excellent',
           totalEarnings: 37500,
@@ -188,8 +182,8 @@ describe('🏆 INTEGRATION: Leaderboard API - Real Database Integration', () => 
           name: 'TestLeaderboard Gold Rush',
           age: 4,
           sex: 'Gelding',
-          breed: { connect: { id: testBreed.id } },
-          user: { connect: { id: testUsers[2].id } },
+          breedId: testBreed.id ,
+          userId: testUsers[2].id ,
           dateOfBirth: new Date('2021-01-01'),
           healthStatus: 'Good',
           totalEarnings: 32000,
@@ -307,20 +301,14 @@ describe('🏆 INTEGRATION: Leaderboard API - Real Database Integration', () => 
     // Clean up horses
     await prisma.horse.deleteMany({
       where: {
-        OR: [
-          { name: { startsWith: 'TestLeaderboard' } },
-          { name: { contains: 'API Test' } },
-        ],
+        OR: [{ name: { startsWith: 'TestLeaderboard' } }, { name: { contains: 'API Test' } }],
       },
     });
 
     // Clean up only specific test users for this test suite
     await prisma.user.deleteMany({
       where: {
-        OR: [
-          { email: { startsWith: 'test-leaderboard' } },
-          { username: { startsWith: 'topplayer' } },
-        ],
+        OR: [{ email: { startsWith: 'test-leaderboard' } }, { username: { startsWith: 'topplayer' } }],
       },
     });
 
@@ -353,13 +341,13 @@ describe('🏆 INTEGRATION: Leaderboard API - Real Database Integration', () => 
       expect(rankings[2].xp).toBe(30); // Lower XP than Player 2
     });
 
-  it('should handle unauthorized access', async () => {
-    const response = await request(app)
-      .get('/api/leaderboards/players/level')
-      .set('x-test-require-auth', 'true')
-      .expect(401);
+    it('should handle unauthorized access', async () => {
+      const response = await request(app)
+        .get('/api/leaderboards/players/level')
+        .set('x-test-require-auth', 'true')
+        .expect(401);
 
-    expect(response.body.success).toBe(false);
+      expect(response.body.success).toBe(false);
       expect(response.body.message).toBe('Access token is required');
     });
   });

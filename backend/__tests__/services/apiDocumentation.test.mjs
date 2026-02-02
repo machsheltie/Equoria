@@ -122,8 +122,8 @@ components:
         tags: ['Users'],
         parameters: [],
         responses: {
-          '201': { description: 'User created' },
-          '400': { description: 'Validation error' },
+          201: { description: 'User created' },
+          400: { description: 'Validation error' },
         },
       });
 
@@ -211,14 +211,14 @@ components:
         summary: 'List users',
         description: 'Retrieve a list of users',
         tags: ['Users'],
-        responses: { '200': { description: 'Success' } },
+        responses: { 200: { description: 'Success' } },
       });
 
       docService.registerEndpoint('POST', '/api/horses', {
         summary: 'Create horse',
         description: 'Create a new horse',
         tags: ['Horses'],
-        responses: { '201': { description: 'Created' } },
+        responses: { 201: { description: 'Created' } },
       });
 
       const spec = docService.generateDocumentation();
@@ -361,14 +361,14 @@ paths:
         summary: 'List users',
         description: 'Get all users',
         tags: ['Users'],
-        responses: { '200': { description: 'Success' } },
+        responses: { 200: { description: 'Success' } },
       });
 
       docService.registerEndpoint('POST', '/api/users', {
         summary: 'Create user',
         // Missing description
         tags: ['Users'],
-        responses: { '201': { description: 'Created' } },
+        responses: { 201: { description: 'Created' } },
       });
 
       docService.registerSchema('User', { type: 'object' });
@@ -388,7 +388,7 @@ paths:
         summary: 'Test',
         description: 'Test endpoint',
         tags: ['Test'],
-        responses: { '200': { description: 'Success' } },
+        responses: { 200: { description: 'Success' } },
       });
       docService.generateDocumentation();
 

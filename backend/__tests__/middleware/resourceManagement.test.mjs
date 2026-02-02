@@ -50,16 +50,16 @@ describe('Resource Management Middleware', () => {
         res.json({ success: true });
       });
 
-      await request(testApp)
-        .get('/test')
-        .expect(200);
+      await request(testApp).get('/test').expect(200);
     });
 
     test('tracks and cleans up timers automatically', async () => {
-      testApp.use(createResourceManagementMiddleware({
-        enableCleanup: true,
-        logResourceUsage: true,
-      }));
+      testApp.use(
+        createResourceManagementMiddleware({
+          enableCleanup: true,
+          logResourceUsage: true,
+        }),
+      );
 
       testApp.get('/test-timer', (req, res) => {
         // Create a timer using the request's setTimeout method
@@ -73,19 +73,19 @@ describe('Resource Management Middleware', () => {
         res.json({ success: true, timerTracked: req.resources.timers.size > 0 });
       });
 
-      const response = await request(testApp)
-        .get('/test-timer')
-        .expect(200);
+      const response = await request(testApp).get('/test-timer').expect(200);
 
       expect(response.body.success).toBe(true);
       expect(response.body.timerTracked).toBe(true);
     });
 
     test('adds performance headers to response', async () => {
-      testApp.use(createResourceManagementMiddleware({
-        trackPerformance: true,
-        trackMemoryUsage: true,
-      }));
+      testApp.use(
+        createResourceManagementMiddleware({
+          trackPerformance: true,
+          trackMemoryUsage: true,
+        }),
+      );
 
       testApp.get('/test-performance', (req, res) => {
         // Simulate some work
@@ -96,9 +96,7 @@ describe('Resource Management Middleware', () => {
         res.json({ success: true });
       });
 
-      const response = await request(testApp)
-        .get('/test-performance')
-        .expect(200);
+      const response = await request(testApp).get('/test-performance').expect(200);
 
       expect(response.headers['x-response-time']).toBeDefined();
       expect(response.headers['x-memory-delta']).toBeDefined();
@@ -108,9 +106,11 @@ describe('Resource Management Middleware', () => {
     test('handles request errors gracefully', async () => {
       let cleanupCalled = false;
 
-      testApp.use(createResourceManagementMiddleware({
-        enableCleanup: true,
-      }));
+      testApp.use(
+        createResourceManagementMiddleware({
+          enableCleanup: true,
+        }),
+      );
 
       testApp.get('/test-error', (req, _res) => {
         // Override cleanup to detect if it's called
@@ -124,9 +124,7 @@ describe('Resource Management Middleware', () => {
         throw new Error('Test error');
       });
 
-      await request(testApp)
-        .get('/test-error')
-        .expect(500);
+      await request(testApp).get('/test-error').expect(500);
 
       // Wait for error handling
       await new Promise(resolve => setTimeout(resolve, 100));
@@ -134,10 +132,12 @@ describe('Resource Management Middleware', () => {
     });
 
     test('tracks memory usage per request', async () => {
-      testApp.use(createResourceManagementMiddleware({
-        trackMemoryUsage: true,
-        trackPerformance: true,
-      }));
+      testApp.use(
+        createResourceManagementMiddleware({
+          trackMemoryUsage: true,
+          trackPerformance: true,
+        }),
+      );
 
       testApp.get('/test-memory', (req, res) => {
         expect(req.resources.startMemory).toBeDefined();
@@ -147,9 +147,7 @@ describe('Resource Management Middleware', () => {
         res.json({ success: true });
       });
 
-      const response = await request(testApp)
-        .get('/test-memory')
-        .expect(200);
+      const response = await request(testApp).get('/test-memory').expect(200);
 
       expect(response.headers['x-memory-delta']).toBeDefined();
     });
@@ -157,10 +155,12 @@ describe('Resource Management Middleware', () => {
     test('warns about slow requests', async () => {
       const logSpy = jest.spyOn(console, 'warn').mockImplementation(() => {});
 
-      testApp.use(createResourceManagementMiddleware({
-        trackPerformance: true,
-        performanceThreshold: 5, // 5ms threshold for testing
-      }));
+      testApp.use(
+        createResourceManagementMiddleware({
+          trackPerformance: true,
+          performanceThreshold: 5, // 5ms threshold for testing
+        }),
+      );
 
       testApp.get('/test-slow', (req, res) => {
         // Simulate slow operation
@@ -171,9 +171,7 @@ describe('Resource Management Middleware', () => {
         res.json({ success: true });
       });
 
-      await request(testApp)
-        .get('/test-slow')
-        .expect(200);
+      await request(testApp).get('/test-slow').expect(200);
 
       // Note: In test environment, logger warnings might not trigger console.warn
       // This test validates the middleware structure rather than exact logging
@@ -189,9 +187,7 @@ describe('Resource Management Middleware', () => {
         res.json({ success: true });
       });
 
-      const response = await request(testApp)
-        .get('/test-memory-headers')
-        .expect(200);
+      const response = await request(testApp).get('/test-memory-headers').expect(200);
 
       expect(response.headers['x-memory-rss']).toBeDefined();
       expect(response.headers['x-memory-heap-used']).toBeDefined();
@@ -204,18 +200,18 @@ describe('Resource Management Middleware', () => {
     });
 
     test('handles memory threshold checking', async () => {
-      testApp.use(memoryMonitoringMiddleware({
-        threshold: 1, // 1 byte threshold (will always exceed)
-        enableGC: false, // Disable GC for testing
-      }));
+      testApp.use(
+        memoryMonitoringMiddleware({
+          threshold: 1, // 1 byte threshold (will always exceed)
+          enableGC: false, // Disable GC for testing
+        }),
+      );
 
       testApp.get('/test-threshold', (req, res) => {
         res.json({ success: true });
       });
 
-      const response = await request(testApp)
-        .get('/test-threshold')
-        .expect(200);
+      const response = await request(testApp).get('/test-threshold').expect(200);
 
       // Should still work even with threshold exceeded
       expect(response.body.success).toBe(true);
@@ -234,18 +230,18 @@ describe('Resource Management Middleware', () => {
         originalGC();
       };
 
-      testApp.use(memoryMonitoringMiddleware({
-        threshold: 1, // 1 byte threshold (will always exceed)
-        enableGC: true,
-      }));
+      testApp.use(
+        memoryMonitoringMiddleware({
+          threshold: 1, // 1 byte threshold (will always exceed)
+          enableGC: true,
+        }),
+      );
 
       testApp.get('/test-gc', (req, res) => {
         res.json({ success: true });
       });
 
-      await request(testApp)
-        .get('/test-gc')
-        .expect(200);
+      await request(testApp).get('/test-gc').expect(200);
 
       expect(gcCalled).toBe(true);
       global.gc = originalGC;
@@ -267,9 +263,7 @@ describe('Resource Management Middleware', () => {
         res.json({ success: true });
       });
 
-      const response = await request(testApp)
-        .get('/test-db')
-        .expect(200);
+      const response = await request(testApp).get('/test-db').expect(200);
 
       expect(response.headers['x-db-queries']).toBe('2');
       expect(response.headers['x-db-time']).toBeDefined();
@@ -293,9 +287,7 @@ describe('Resource Management Middleware', () => {
         res.json({ success: true });
       });
 
-      const response = await request(testApp)
-        .get('/test-many-queries')
-        .expect(200);
+      const response = await request(testApp).get('/test-many-queries').expect(200);
 
       expect(response.headers['x-db-queries']).toBe('15');
       expect(mockPrisma.$queryRaw).toHaveBeenCalledTimes(15);
@@ -317,9 +309,7 @@ describe('Resource Management Middleware', () => {
         res.json({ success: true });
       });
 
-      await request(testApp)
-        .get('/test-restore')
-        .expect(200);
+      await request(testApp).get('/test-restore').expect(200);
 
       // Wait for the finish event to complete
       await new Promise(resolve => setTimeout(resolve, 100));
@@ -338,9 +328,7 @@ describe('Resource Management Middleware', () => {
         res.json({ success: true });
       });
 
-      const response = await request(testApp)
-        .get('/test-normal')
-        .expect(200);
+      const response = await request(testApp).get('/test-normal').expect(200);
 
       expect(response.body.success).toBe(true);
     });
@@ -357,9 +345,7 @@ describe('Resource Management Middleware', () => {
         }, 200);
       });
 
-      const response = await request(testApp)
-        .get('/test-timeout')
-        .expect(408);
+      const response = await request(testApp).get('/test-timeout').expect(408);
 
       expect(response.body.success).toBe(false);
       expect(response.body.message).toContain('timeout');
@@ -374,16 +360,14 @@ describe('Resource Management Middleware', () => {
         res.json({ success: true });
       });
 
-      await request(testApp)
-        .get('/test-timer-tracking')
-        .expect(200);
+      await request(testApp).get('/test-timer-tracking').expect(200);
     });
 
     test('cleans up timeout timer on completion', async () => {
       let timerCleared = false;
       const originalClearTimeout = global.clearTimeout;
 
-      global.clearTimeout = (timer) => {
+      global.clearTimeout = timer => {
         timerCleared = true;
         return originalClearTimeout(timer);
       };
@@ -394,9 +378,7 @@ describe('Resource Management Middleware', () => {
         res.json({ success: true });
       });
 
-      await request(testApp)
-        .get('/test-cleanup')
-        .expect(200);
+      await request(testApp).get('/test-cleanup').expect(200);
 
       expect(timerCleared).toBe(true);
       global.clearTimeout = originalClearTimeout;
@@ -405,10 +387,12 @@ describe('Resource Management Middleware', () => {
 
   describe('Middleware Integration', () => {
     test('multiple middleware work together correctly', async () => {
-      testApp.use(createResourceManagementMiddleware({
-        trackPerformance: true,
-        trackMemoryUsage: true,
-      }));
+      testApp.use(
+        createResourceManagementMiddleware({
+          trackPerformance: true,
+          trackMemoryUsage: true,
+        }),
+      );
       testApp.use(memoryMonitoringMiddleware());
       testApp.use(requestTimeoutMiddleware(5000));
 
@@ -418,9 +402,7 @@ describe('Resource Management Middleware', () => {
         res.json({ success: true });
       });
 
-      const response = await request(testApp)
-        .get('/test-integration')
-        .expect(200);
+      const response = await request(testApp).get('/test-integration').expect(200);
 
       expect(response.body.success).toBe(true);
       expect(response.headers['x-response-time']).toBeDefined();
@@ -435,39 +417,39 @@ describe('Resource Management Middleware', () => {
         throw new Error('Test error');
       });
 
-      await request(testApp)
-        .get('/test-error-stack')
-        .expect(500);
+      await request(testApp).get('/test-error-stack').expect(500);
     });
   });
 
   describe('Configuration Options', () => {
     test('respects disabled tracking options', async () => {
-      testApp.use(createResourceManagementMiddleware({
-        trackMemoryUsage: false,
-        trackPerformance: false,
-        enableCleanup: false,
-      }));
+      testApp.use(
+        createResourceManagementMiddleware({
+          trackMemoryUsage: false,
+          trackPerformance: false,
+          enableCleanup: false,
+        }),
+      );
 
       testApp.get('/test-disabled', (req, res) => {
         expect(req.resources.startMemory).toBeNull();
         res.json({ success: true });
       });
 
-      const response = await request(testApp)
-        .get('/test-disabled')
-        .expect(200);
+      const response = await request(testApp).get('/test-disabled').expect(200);
 
       expect(response.headers['x-response-time']).toBeUndefined();
       expect(response.headers['x-memory-delta']).toBeUndefined();
     });
 
     test('uses custom thresholds correctly', async () => {
-      testApp.use(createResourceManagementMiddleware({
-        memoryThreshold: 1, // 1 byte threshold
-        performanceThreshold: 1, // 1ms threshold
-        trackPerformance: true,
-      }));
+      testApp.use(
+        createResourceManagementMiddleware({
+          memoryThreshold: 1, // 1 byte threshold
+          performanceThreshold: 1, // 1ms threshold
+          trackPerformance: true,
+        }),
+      );
 
       testApp.get('/test-thresholds', (req, res) => {
         // Any operation will exceed these thresholds
@@ -478,9 +460,7 @@ describe('Resource Management Middleware', () => {
         res.json({ success: true });
       });
 
-      await request(testApp)
-        .get('/test-thresholds')
-        .expect(200);
+      await request(testApp).get('/test-thresholds').expect(200);
     });
   });
 });

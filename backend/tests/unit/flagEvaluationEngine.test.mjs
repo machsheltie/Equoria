@@ -40,11 +40,9 @@ await jest.unstable_mockModule('../../utils/carePatternAnalysis.mjs', () => ({
 }));
 
 // Import after mocking
-const {
-  evaluateHorseFlags,
-  batchEvaluateFlags,
-  getEligibleHorses,
-} = await import('../../utils/flagEvaluationEngine.mjs');
+const { evaluateHorseFlags, batchEvaluateFlags, getEligibleHorses } = await import(
+  '../../utils/flagEvaluationEngine.mjs'
+);
 
 describe('Flag Evaluation Engine', () => {
   beforeEach(() => {

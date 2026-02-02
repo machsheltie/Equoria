@@ -61,7 +61,7 @@ describe('Legacy Score Trait Integration System', () => {
         personality: 'calm',
         groomPersonality: 'calm',
         sessionRate: 25.0,
-        user: { connect: { id: testUser.id } },
+        userId: testUser.id ,
       },
     });
 
@@ -72,10 +72,8 @@ describe('Legacy Score Trait Integration System', () => {
         sex: 'stallion',
         dateOfBirth: new Date(Date.now() - 4 * 365 * 24 * 60 * 60 * 1000), // 4 years old
         temperament: 'spirited',
-        user: { connect: { id: testUser.id } },
-        breed: { connect: { id: testBreed.id } },
-        sireId: null,
-        damId: null,
+        userId: testUser.id ,
+        breedId: testBreed.id ,
         epigeneticModifiers: { positive: [], negative: [], hidden: [] },
         // Add some base stats for legacy score calculation
         speed: 75,

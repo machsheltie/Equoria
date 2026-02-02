@@ -348,7 +348,7 @@ describe('Rate Limit Key Generation Unit Tests', () => {
     });
 
     it('should handle SQL injection attempts in user ID', () => {
-      req.user = { id: "1; DROP TABLE users;" };
+      req.user = { id: '1; DROP TABLE users;' };
 
       // Should treat as string, not execute
       expect(typeof req.user.id).toBe('string');

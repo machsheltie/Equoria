@@ -186,8 +186,8 @@ describe('🏋️ INTEGRATION: Training System Complete - End-to-End Workflow', 
         data: {
           name: 'Training Horse 1',
           age: 4,
-          breed: { connect: { id: breed.id } },
-          user: { connect: { id: testUser.id } }, // Link to user
+          breedId: breed.id ,
+          userId: testUser.id , // Link to user
           sex: 'mare',
           healthStatus: 'Good',
           dateOfBirth: new Date('2020-01-01'), // 4 years old
@@ -197,8 +197,8 @@ describe('🏋️ INTEGRATION: Training System Complete - End-to-End Workflow', 
         data: {
           name: 'Training Horse 2',
           age: 5,
-          breed: { connect: { id: breed.id } },
-          user: { connect: { id: testUser.id } }, // Link to user
+          breedId: breed.id ,
+          userId: testUser.id , // Link to user
           sex: 'stallion',
           healthStatus: 'Good',
           dateOfBirth: new Date('2019-01-01'), // 5 years old
@@ -208,8 +208,8 @@ describe('🏋️ INTEGRATION: Training System Complete - End-to-End Workflow', 
         data: {
           name: 'Young Horse',
           age: 2,
-          breed: { connect: { id: breed.id } },
-          user: { connect: { id: testUser.id } }, // Link to user
+          breedId: breed.id ,
+          userId: testUser.id , // Link to user
           sex: 'colt',
           healthStatus: 'Good',
           dateOfBirth: new Date('2022-01-01'), // 2 years old
@@ -317,7 +317,9 @@ describe('🏋️ INTEGRATION: Training System Complete - End-to-End Workflow', 
 
   describe('Authentication Protection', () => {
     it('should reject unauthenticated requests', async () => {
-      const response = await request(app).get(`/api/horses/trainable/${testUser.id}`).set('x-test-require-auth', 'true');
+      const response = await request(app)
+        .get(`/api/horses/trainable/${testUser.id}`)
+        .set('x-test-require-auth', 'true');
 
       expect(response.status).toBe(401);
       expect(response.body.success).toBe(false);

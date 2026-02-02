@@ -66,7 +66,7 @@ describe('Personality Evolution Controller API', () => {
     // Create test groom
     testGroom = await prisma.groom.create({
       data: {
-        userId: testUser.id,
+        userId: testUser.id ,
         name: 'API Test Groom',
         speciality: 'foal_care',
         personality: 'calm',
@@ -82,8 +82,8 @@ describe('Personality Evolution Controller API', () => {
     // Create test horse
     testHorse = await prisma.horse.create({
       data: {
-        ownerId: testUser.id,
-        breed: { connect: { id: testBreed.id } },
+        userId: testUser.id ,
+        breedId: testBreed.id ,
         name: 'API Test Horse',
         sex: 'Filly',
         dateOfBirth: birthDate2YearsOld,
@@ -128,7 +128,7 @@ describe('Personality Evolution Controller API', () => {
   afterAll(async () => {
     // Clean up test data
     await prisma.groomInteraction.deleteMany({ where: { groomId: testGroom.id } });
-    await prisma.horse.deleteMany({ where: { ownerId: testUser.id } });
+    await prisma.horse.deleteMany({ where: { userId: testUser.id } });
     await prisma.groom.deleteMany({ where: { userId: testUser.id } });
     await prisma.breed.delete({ where: { id: testBreed.id } });
     await prisma.user.delete({ where: { id: testUser.id } });

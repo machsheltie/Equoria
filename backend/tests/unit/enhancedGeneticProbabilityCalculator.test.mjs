@@ -103,16 +103,22 @@ describe('🧬 Enhanced Genetic Probability Calculator', () => {
     // Test lineage for multi-generational analysis
     testLineage = [
       { generation: 1, horses: [testStallion, testMare] },
-      { generation: 2, horses: [
-        { id: 10, traits: { positive: ['bold', 'athletic'], negative: [], hidden: [] } },
-        { id: 11, traits: { positive: ['calm', 'intelligent'], negative: ['lazy'], hidden: [] } },
-        { id: 12, traits: { positive: ['resilient', 'fast'], negative: [], hidden: [] } },
-        { id: 13, traits: { positive: ['focused', 'agile'], negative: ['nervous'], hidden: [] } },
-      ] },
-      { generation: 3, horses: [
-        { id: 20, traits: { positive: ['legendary_speed'], negative: [], hidden: [] } },
-        { id: 21, traits: { positive: ['perfect_balance'], negative: [], hidden: [] } },
-      ] },
+      {
+        generation: 2,
+        horses: [
+          { id: 10, traits: { positive: ['bold', 'athletic'], negative: [], hidden: [] } },
+          { id: 11, traits: { positive: ['calm', 'intelligent'], negative: ['lazy'], hidden: [] } },
+          { id: 12, traits: { positive: ['resilient', 'fast'], negative: [], hidden: [] } },
+          { id: 13, traits: { positive: ['focused', 'agile'], negative: ['nervous'], hidden: [] } },
+        ],
+      },
+      {
+        generation: 3,
+        horses: [
+          { id: 20, traits: { positive: ['legendary_speed'], negative: [], hidden: [] } },
+          { id: 21, traits: { positive: ['perfect_balance'], negative: [], hidden: [] } },
+        ],
+      },
     ];
   });
 
@@ -331,10 +337,13 @@ describe('🧬 Enhanced Genetic Probability Calculator', () => {
       // Create inbred lineage
       const inbredLineage = [
         { generation: 1, horses: [testStallion, testMare] },
-        { generation: 2, horses: [
-          { id: 10, traits: { positive: ['athletic'], negative: [], hidden: [] } },
-          { id: 10, traits: { positive: ['athletic'], negative: [], hidden: [] } }, // Same horse as both grandparents
-        ] },
+        {
+          generation: 2,
+          horses: [
+            { id: 10, traits: { positive: ['athletic'], negative: [], hidden: [] } },
+            { id: 10, traits: { positive: ['athletic'], negative: [], hidden: [] } }, // Same horse as both grandparents
+          ],
+        },
       ];
 
       const diversityImpact = calculateGeneticDiversityImpact(testStallion, testMare, inbredLineage);
@@ -368,8 +377,9 @@ describe('🧬 Enhanced Genetic Probability Calculator', () => {
 
       // Both parents have athletic, stallion has intelligent
       const athleticIntelligentSynergy = interactions.synergisticPairs.find(
-        pair => (pair.trait1 === 'athletic' && pair.trait2 === 'intelligent') ||
-                (pair.trait1 === 'intelligent' && pair.trait2 === 'athletic'),
+        pair =>
+          (pair.trait1 === 'athletic' && pair.trait2 === 'intelligent') ||
+          (pair.trait1 === 'intelligent' && pair.trait2 === 'athletic'),
       );
 
       expect(athleticIntelligentSynergy).toBeDefined();
@@ -393,8 +403,9 @@ describe('🧬 Enhanced Genetic Probability Calculator', () => {
       expect(Array.isArray(recommendations.optimizationSuggestions)).toBe(true);
 
       // Overall recommendation should be valid
-      expect(['Highly Recommended', 'Recommended', 'Acceptable', 'Not Recommended'])
-        .toContain(recommendations.overallRecommendation);
+      expect(['Highly Recommended', 'Recommended', 'Acceptable', 'Not Recommended']).toContain(
+        recommendations.overallRecommendation,
+      );
     });
 
     test('should provide specific optimization suggestions', () => {

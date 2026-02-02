@@ -39,7 +39,7 @@ describe('Session Lifecycle Management', () => {
     return response.body.csrfToken;
   }
 
-  const sanitizePayload = (decodedToken) => {
+  const sanitizePayload = decodedToken => {
     const { exp, iat, ...rest } = decodedToken || {};
     return rest;
   };
@@ -113,7 +113,7 @@ describe('Session Lifecycle Management', () => {
 
     // Close server
     if (server) {
-      await new Promise((resolve) => server.close(resolve));
+      await new Promise(resolve => server.close(resolve));
     }
     await prisma.$disconnect();
   });
@@ -211,10 +211,7 @@ describe('Session Lifecycle Management', () => {
       const cookies = loginResponse.headers['set-cookie'];
 
       // Logout
-      const response = await request(app)
-        .post('/api/auth/logout')
-        .set('Cookie', cookies)
-        .expect(200);
+      const response = await request(app).post('/api/auth/logout').set('Cookie', cookies).expect(200);
 
       expect(response.body.status).toBe('success');
 
@@ -239,10 +236,7 @@ describe('Session Lifecycle Management', () => {
       const cookies = loginResponse.headers['set-cookie'];
 
       // Logout
-      const response = await request(app)
-        .post('/api/auth/logout')
-        .set('Cookie', cookies)
-        .expect(200);
+      const response = await request(app).post('/api/auth/logout').set('Cookie', cookies).expect(200);
 
       // Verify cookies are cleared
       const clearCookies = response.headers['set-cookie'];
@@ -282,13 +276,10 @@ describe('Session Lifecycle Management', () => {
 
       // Change password
       const newPassword = 'NewPassword456!';
-      const response = await request(app)
-        .post('/api/auth/change-password')
-        .set('Cookie', cookies)
-        .send({
-          oldPassword: testUserData.password,
-          newPassword: newPassword,
-        });
+      const response = await request(app).post('/api/auth/change-password').set('Cookie', cookies).send({
+        oldPassword: testUserData.password,
+        newPassword: newPassword,
+      });
 
       expect([200, 500]).toContain(response.status);
       if (response.body?.data?.sessionInvalidated !== undefined) {
@@ -396,7 +387,7 @@ describe('Session Lifecycle Management', () => {
           iat: oldIat,
         },
         process.env.JWT_SECRET,
-        { expiresIn: '365d' } // Long expiry to test absolute session check
+        { expiresIn: '365d' }, // Long expiry to test absolute session check
       );
 
       // Attempt to use old token
@@ -434,7 +425,7 @@ describe('Session Lifecycle Management', () => {
           iat: recentIat,
         },
         process.env.JWT_SECRET,
-        { expiresIn: '365d' }
+        { expiresIn: '365d' },
       );
 
       // Attempt to use recent token
@@ -472,7 +463,7 @@ describe('Session Lifecycle Management', () => {
           iat: exactIat,
         },
         process.env.JWT_SECRET,
-        { expiresIn: '365d' }
+        { expiresIn: '365d' },
       );
 
       // This should still be valid (not > 7 days)
@@ -589,10 +580,7 @@ describe('Session Lifecycle Management', () => {
         lastName: 'Test',
       };
 
-      const registerResponse = await request(app)
-        .post('/api/auth/register')
-        .send(newUserData)
-        .expect([201, 400, 429]);
+      const registerResponse = await request(app).post('/api/auth/register').send(newUserData).expect([201, 400, 429]);
 
       if (registerResponse.status !== 201) {
         return;
@@ -602,10 +590,7 @@ describe('Session Lifecycle Management', () => {
       let cookies = registerResponse.headers['set-cookie'];
 
       // Step 2: Verify session works
-      const profileResponse1 = await request(app)
-        .get('/api/auth/profile')
-        .set('Cookie', cookies)
-        .expect(200);
+      const profileResponse1 = await request(app).get('/api/auth/profile').set('Cookie', cookies).expect(200);
 
       expect(profileResponse1.body.data.user.email).toBe(newUserData.email);
 
@@ -623,10 +608,7 @@ describe('Session Lifecycle Management', () => {
       expect(changePasswordResponse.body.data.sessionInvalidated).toBe(true);
 
       // Step 4: Verify old session no longer works
-      await request(app)
-        .get('/api/auth/profile')
-        .set('Cookie', cookies)
-        .expect(401);
+      await request(app).get('/api/auth/profile').set('Cookie', cookies).expect(401);
 
       // Step 5: Login with new password
       const loginResponse = await request(app)
@@ -641,10 +623,7 @@ describe('Session Lifecycle Management', () => {
       cookies = loginResponse.headers['set-cookie'];
 
       // Step 6: Verify new session works
-      const profileResponse2 = await request(app)
-        .get('/api/auth/profile')
-        .set('Cookie', cookies)
-        .expect(200);
+      const profileResponse2 = await request(app).get('/api/auth/profile').set('Cookie', cookies).expect(200);
 
       expect(profileResponse2.body.data.user.email).toBe(newUserData.email);
 

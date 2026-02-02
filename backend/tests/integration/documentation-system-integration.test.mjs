@@ -60,20 +60,24 @@ const createTestApp = () => {
   app.use(express.json());
 
   // Auth routes for testing
-  app.post('/api/auth/register', [
-    body('email').isEmail().normalizeEmail(),
-    body('username').isLength({ min: 3, max: 30 }),
-    body('password').isLength({ min: 8 }),
-    body('firstName').notEmpty(),
-    body('lastName').notEmpty(),
-    handleValidationErrors,
-  ], register);
+  app.post(
+    '/api/auth/register',
+    [
+      body('email').isEmail().normalizeEmail(),
+      body('username').isLength({ min: 3, max: 30 }),
+      body('password').isLength({ min: 8 }),
+      body('firstName').notEmpty(),
+      body('lastName').notEmpty(),
+      handleValidationErrors,
+    ],
+    register,
+  );
 
-  app.post('/api/auth/login', [
-    body('email').isEmail().normalizeEmail(),
-    body('password').notEmpty(),
-    handleValidationErrors,
-  ], login);
+  app.post(
+    '/api/auth/login',
+    [body('email').isEmail().normalizeEmail(), body('password').notEmpty(), handleValidationErrors],
+    login,
+  );
 
   // Documentation routes
   app.use('/api/docs', documentationRoutes);
@@ -149,7 +153,7 @@ describe('📚 Documentation System Integration Tests', () => {
 
     // Close server and disconnect
     if (server) {
-      await new Promise((resolve) => server.close(resolve));
+      await new Promise(resolve => server.close(resolve));
     }
     await prisma.$disconnect();
   });
@@ -172,9 +176,7 @@ describe('📚 Documentation System Integration Tests', () => {
       lastName: 'Integration',
     };
 
-    const registerResponse = await request(app)
-      .post('/api/auth/register')
-      .send(userData);
+    const registerResponse = await request(app).post('/api/auth/register').send(userData);
 
     expect(registerResponse.status).toBe(201);
     testUser = registerResponse.body.data.user;
@@ -194,8 +196,7 @@ describe('📚 Documentation System Integration Tests', () => {
 
   describe('📋 Swagger/OpenAPI Specification Validation', () => {
     test('should load and validate OpenAPI specification', async () => {
-      const response = await request(app)
-        .get('/api-docs/swagger.json');
+      const response = await request(app).get('/api-docs/swagger.json');
 
       expect(response.status).toBe(200);
       expect(response.headers['content-type']).toContain('application/json');
@@ -210,8 +211,7 @@ describe('📚 Documentation System Integration Tests', () => {
     });
 
     test('should serve YAML specification format', async () => {
-      const response = await request(app)
-        .get('/api-docs/swagger.yaml');
+      const response = await request(app).get('/api-docs/swagger.yaml');
 
       expect(response.status).toBe(200);
       expect(response.headers['content-type']).toContain('text/yaml');
@@ -221,8 +221,7 @@ describe('📚 Documentation System Integration Tests', () => {
     });
 
     test('should provide interactive Swagger UI', async () => {
-      const response = await request(app)
-        .get('/api-docs');
+      const response = await request(app).get('/api-docs');
 
       // Handle redirect to Swagger UI
       expect([200, 301, 302]).toContain(response.status);
@@ -242,8 +241,8 @@ describe('📚 Documentation System Integration Tests', () => {
         description: 'Test endpoint for documentation integration',
         tags: ['Testing'],
         responses: {
-          '200': { description: 'Success response' },
-          '401': { description: 'Unauthorized' },
+          200: { description: 'Success response' },
+          401: { description: 'Unauthorized' },
         },
       };
 
@@ -295,7 +294,7 @@ describe('📚 Documentation System Integration Tests', () => {
           path: '/api/test/create',
           summary: 'Create test resource',
           tags: ['Testing'],
-          responses: { '201': { description: 'Created' } },
+          responses: { 201: { description: 'Created' } },
         });
 
       await request(app)
@@ -306,9 +305,7 @@ describe('📚 Documentation System Integration Tests', () => {
           schema: { type: 'object', properties: { name: { type: 'string' } } },
         });
 
-      const response = await request(app)
-        .post('/api/docs/generate')
-        .set('Authorization', `Bearer ${authToken}`);
+      const response = await request(app).post('/api/docs/generate').set('Authorization', `Bearer ${authToken}`);
 
       expect(response.status).toBe(200);
       expect(response.body.success).toBe(true);
@@ -321,9 +318,7 @@ describe('📚 Documentation System Integration Tests', () => {
 
   describe('📊 Documentation Coverage and Health', () => {
     test('should provide documentation metrics and coverage', async () => {
-      const response = await request(app)
-        .get('/api/docs/metrics')
-        .set('Authorization', `Bearer ${authToken}`);
+      const response = await request(app).get('/api/docs/metrics').set('Authorization', `Bearer ${authToken}`);
 
       expect(response.status).toBe(200);
       expect(response.body.success).toBe(true);
@@ -336,9 +331,7 @@ describe('📚 Documentation System Integration Tests', () => {
     });
 
     test('should provide documentation health status', async () => {
-      const response = await request(app)
-        .get('/api/docs/health')
-        .set('Authorization', `Bearer ${authToken}`);
+      const response = await request(app).get('/api/docs/health').set('Authorization', `Bearer ${authToken}`);
 
       expect(response.status).toBe(200);
       expect(response.body.success).toBe(true);
@@ -349,9 +342,7 @@ describe('📚 Documentation System Integration Tests', () => {
     });
 
     test('should analyze documentation coverage by system', async () => {
-      const response = await request(app)
-        .get('/api/docs/coverage')
-        .set('Authorization', `Bearer ${authToken}`);
+      const response = await request(app).get('/api/docs/coverage').set('Authorization', `Bearer ${authToken}`);
 
       expect(response.status).toBe(200);
       expect(response.body.success).toBe(true);
@@ -365,8 +356,7 @@ describe('📚 Documentation System Integration Tests', () => {
 
   describe('🔗 Live API Integration Validation', () => {
     test('should validate API root endpoint documentation', async () => {
-      const response = await request(app)
-        .get('/api');
+      const response = await request(app).get('/api');
 
       expect(response.status).toBe(200);
       expect(response.body.success).toBe(true);
@@ -382,9 +372,7 @@ describe('📚 Documentation System Integration Tests', () => {
     });
 
     test('should validate documented endpoint response format', async () => {
-      const response = await request(app)
-        .get('/api/test/documented')
-        .set('Authorization', `Bearer ${authToken}`);
+      const response = await request(app).get('/api/test/documented').set('Authorization', `Bearer ${authToken}`);
 
       expect(response.status).toBe(200);
       expect(response.body.success).toBe(true);
@@ -406,7 +394,7 @@ describe('📚 Documentation System Integration Tests', () => {
         method: 'GET',
         path: '/api/test/unauthorized',
         summary: 'Test endpoint',
-        responses: { '200': { description: 'Success' } },
+        responses: { 200: { description: 'Success' } },
       };
 
       const response = await request(app)

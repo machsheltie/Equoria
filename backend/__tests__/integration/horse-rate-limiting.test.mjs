@@ -12,9 +12,7 @@ describe('Horse routes rate limiting', () => {
     // Tests now use real JWT tokens via backend/tests/helpers/authHelper.mjs
     const token = generateTestToken({ id: 'test-user-uuid-123', role: 'user' });
 
-    const response = await request(app)
-      .get('/api/horses')
-      .set('Authorization', `Bearer ${token}`);
+    const response = await request(app).get('/api/horses').set('Authorization', `Bearer ${token}`);
 
     expect(response.status).toBe(200);
 

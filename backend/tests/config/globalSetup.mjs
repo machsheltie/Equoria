@@ -68,8 +68,7 @@ async function loadTestEnvironment() {
 
   // Set test database URL if not already set
   if (!process.env.DATABASE_URL) {
-    process.env.DATABASE_URL =
-      'postgresql://postgres:postgres@localhost:5432/equoria_test';
+    process.env.DATABASE_URL = 'postgresql://postgres:postgres@localhost:5432/equoria_test';
   }
 
   // Set JWT secret for tests
@@ -88,10 +87,7 @@ async function initializeDatabase() {
 
   try {
     // Check if Prisma is available
-    const prismaPath = path.join(
-      process.cwd(),
-      '../packages/database/prismaClient.mjs'
-    );
+    const prismaPath = path.join(process.cwd(), '../packages/database/prismaClient.mjs');
 
     if (!fs.existsSync(prismaPath)) {
       console.log('  ⚠️  Prisma client not found, skipping database init');
@@ -120,10 +116,7 @@ async function runMigrations() {
   console.log('📦 Running database migrations...');
 
   try {
-    const migrationsPath = path.join(
-      process.cwd(),
-      '../packages/database/prisma/migrations'
-    );
+    const migrationsPath = path.join(process.cwd(), '../packages/database/prisma/migrations');
 
     if (!fs.existsSync(migrationsPath)) {
       console.log('  ⚠️  No migrations found, skipping');
@@ -200,9 +193,7 @@ async function verifyEnvironment() {
 
   // Check database connection
   try {
-    const prisma = (
-      await import('../../../packages/database/prismaClient.mjs')
-    ).default;
+    const prisma = (await import('../../../packages/database/prismaClient.mjs')).default;
     await prisma.$connect();
     checks.push('✓ Database connection');
     await prisma.$disconnect();

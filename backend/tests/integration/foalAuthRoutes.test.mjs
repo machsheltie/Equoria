@@ -52,7 +52,7 @@ let app;
 let authToken;
 const originalBypassRateLimit = process.env.TEST_BYPASS_RATE_LIMIT;
 
-const buildToken = (userId) =>
+const buildToken = userId =>
   jwt.sign({ id: userId, email: `${userId}@example.com` }, process.env.JWT_SECRET, {
     expiresIn: '1h',
   });
@@ -96,7 +96,7 @@ beforeEach(() => {
 
   mockPrisma.horse.findFirst.mockResolvedValue({
     id: 1,
-    ownerId: 'test-user-id',
+    userId: 'test-user-id' ,
   });
 
   mockFoalModel.getFoalDevelopment.mockResolvedValue({
@@ -126,9 +126,7 @@ describe('Foal routes auth enforcement', () => {
   // SECURITY FIX (Phase 1, Task 1.1): Removed x-test-require-auth and x-test-bypass-rate-limit headers
   // Tests now rely on authenticateToken middleware functioning properly with no bypass mechanisms
   it('rejects unauthenticated access to foal development', async () => {
-    const response = await request(app)
-      .get('/api/foals/1/development')
-      .expect(401);
+    const response = await request(app).get('/api/foals/1/development').expect(401);
 
     expect(response.body.success).toBe(false);
     expect(response.body.message).toBe('Access token is required');
@@ -145,19 +143,14 @@ describe('Foal routes auth enforcement', () => {
   });
 
   it('rejects unauthenticated access to foal activity', async () => {
-    const response = await request(app)
-      .post('/api/foals/1/activity')
-      .send({ activityType: 'feeding' })
-      .expect(401);
+    const response = await request(app).post('/api/foals/1/activity').send({ activityType: 'feeding' }).expect(401);
 
     expect(response.body.success).toBe(false);
     expect(response.body.message).toBe('Access token is required');
   });
 
   it('rejects unauthenticated access to advance-day', async () => {
-    const response = await request(app)
-      .post('/api/foals/1/advance-day')
-      .expect(401);
+    const response = await request(app).post('/api/foals/1/advance-day').expect(401);
 
     expect(response.body.success).toBe(false);
     expect(response.body.message).toBe('Access token is required');
@@ -167,7 +160,7 @@ describe('Foal routes auth enforcement', () => {
     const userId = 'rate-limit-activity-user';
     mockPrisma.horse.findFirst.mockResolvedValue({
       id: 1,
-      ownerId: userId,
+      userId: userId ,
     });
     const token = buildToken(userId);
 
@@ -197,7 +190,7 @@ describe('Foal routes auth enforcement', () => {
     const userId = 'rate-limit-enrichment-user';
     mockPrisma.horse.findFirst.mockResolvedValue({
       id: 1,
-      ownerId: userId,
+      userId: userId ,
     });
     const token = buildToken(userId);
 

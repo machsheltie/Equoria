@@ -203,7 +203,9 @@ describe('🔬 UNIT: Trait Evaluation System - Trait Revelation & Validation', (
       const _result = evaluateTraitRevelation(newbornFoal, mockCurrentTraits, 5);
 
       // Should use development day (5) instead of age (0) for trait evaluation
-      expect(mockLogger.info).toHaveBeenCalledWith('[traitEvaluation.evaluateTraitRevelation] Evaluating traits for foal 1 on day 5');
+      expect(mockLogger.info).toHaveBeenCalledWith(
+        '[traitEvaluation.evaluateTraitRevelation] Evaluating traits for foal 1 on day 5',
+      );
     });
 
     it('should not reveal traits when random chance is too high', async () => {

@@ -17,9 +17,7 @@ jest.unstable_mockModule('express-validator', () => ({
   matchedData: mockMatchedData,
 }));
 
-const { handleValidationErrors, sanitizeRequestData } = await import(
-  '../../middleware/validationErrorHandler.mjs'
-);
+const { handleValidationErrors, sanitizeRequestData } = await import('../../middleware/validationErrorHandler.mjs');
 
 describe('Validation Error Handler', () => {
   describe('handleValidationErrors()', () => {

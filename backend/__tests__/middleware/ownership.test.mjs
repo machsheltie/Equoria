@@ -114,18 +114,20 @@ describe('Ownership Middleware', () => {
 
     describe('Ownership validation - Horse', () => {
       it('should allow access to owned horse', async () => {
-        const mockHorse = { id: 1, name: 'Thunder', ownerId: 'user-123' };
+        const mockHorse = { id: 1, name: 'Thunder', userId: 'user-123' };
         prisma.horse.findFirst.mockResolvedValue(mockHorse);
 
         const middleware = requireOwnership('horse');
         await middleware(req, res, next);
 
-        expect(prisma.horse.findFirst).toHaveBeenCalledWith(expect.objectContaining({
-          where: {
-            id: 1,
-            ownerId: 'user-123',
-          },
-        }));
+        expect(prisma.horse.findFirst).toHaveBeenCalledWith(
+          expect.objectContaining({
+            where: {
+              id: 1,
+              userId: 'user-123', // Matches schema field
+            },
+          }),
+        );
         expect(req.horse).toBe(mockHorse);
         expect(next).toHaveBeenCalled();
       });
@@ -147,18 +149,20 @@ describe('Ownership Middleware', () => {
 
     describe('Ownership validation - Other resource types', () => {
       it('should validate foal ownership', async () => {
-        const mockFoal = { id: 1, name: 'Young Thunder', ownerId: 'user-123' };
+        const mockFoal = { id: 1, name: 'Young Thunder', userId: 'user-123' };
         prisma.horse.findFirst.mockResolvedValue(mockFoal);
 
         const middleware = requireOwnership('foal');
         await middleware(req, res, next);
 
-        expect(prisma.horse.findFirst).toHaveBeenCalledWith(expect.objectContaining({
-          where: {
-            id: 1,
-            ownerId: 'user-123',
-          },
-        }));
+        expect(prisma.horse.findFirst).toHaveBeenCalledWith(
+          expect.objectContaining({
+            where: {
+              id: 1,
+              userId: 'user-123', // Matches schema field
+            },
+          }),
+        );
         expect(req.foal).toBe(mockFoal);
         expect(next).toHaveBeenCalled();
       });
@@ -170,12 +174,14 @@ describe('Ownership Middleware', () => {
         const middleware = requireOwnership('groom');
         await middleware(req, res, next);
 
-        expect(prisma.groom.findFirst).toHaveBeenCalledWith(expect.objectContaining({
-          where: {
-            id: 1,
-            userId: 'user-123',
-          },
-        }));
+        expect(prisma.groom.findFirst).toHaveBeenCalledWith(
+          expect.objectContaining({
+            where: {
+              id: 1,
+              userId: 'user-123',
+            },
+          }),
+        );
         expect(req.groom).toBe(mockGroom);
         expect(next).toHaveBeenCalled();
       });
@@ -187,63 +193,71 @@ describe('Ownership Middleware', () => {
         const middleware = requireOwnership('groom-assignment');
         await middleware(req, res, next);
 
-        expect(prisma.groomAssignment.findFirst).toHaveBeenCalledWith(expect.objectContaining({
-          where: {
-            id: 1,
-            userId: 'user-123',
-          },
-        }));
+        expect(prisma.groomAssignment.findFirst).toHaveBeenCalledWith(
+          expect.objectContaining({
+            where: {
+              id: 1,
+              userId: 'user-123',
+            },
+          }),
+        );
         expect(req['groom-assignment']).toBe(mockAssignment);
         expect(next).toHaveBeenCalled();
       });
 
       it('should validate breeding ownership (maps to horse)', async () => {
-        const mockBreeding = { id: 1, ownerId: 'user-123' };
+        const mockBreeding = { id: 1, userId: 'user-123' };
         prisma.horse.findFirst.mockResolvedValue(mockBreeding);
 
         const middleware = requireOwnership('breeding');
         await middleware(req, res, next);
 
-        expect(prisma.horse.findFirst).toHaveBeenCalledWith(expect.objectContaining({
-          where: {
-            id: 1,
-            ownerId: 'user-123',
-          },
-        }));
+        expect(prisma.horse.findFirst).toHaveBeenCalledWith(
+          expect.objectContaining({
+            where: {
+              id: 1,
+              userId: 'user-123', // Matches schema field
+            },
+          }),
+        );
         expect(req.breeding).toBe(mockBreeding);
         expect(next).toHaveBeenCalled();
       });
 
       it('should validate competition-entry ownership (maps to competitionResult)', async () => {
-        const mockEntry = { id: 1, horse: { ownerId: 'user-123' } };
+        const mockEntry = { id: 1, horse: { userId: 'user-123' } };
         prisma.competitionResult.findFirst.mockResolvedValue(mockEntry);
 
         const middleware = requireOwnership('competition-entry');
         await middleware(req, res, next);
 
-        expect(prisma.competitionResult.findFirst).toHaveBeenCalledWith(expect.objectContaining({
-          where: {
-            id: 1,
-            horse: { ownerId: 'user-123' }
-          },
-        }));
+        expect(prisma.competitionResult.findFirst).toHaveBeenCalledWith(
+          expect.objectContaining({
+            where: {
+              id: 1,
+              horse: { userId: 'user-123' }, // Matches schema field
+            },
+          }),
+        );
         expect(req['competition-entry']).toBe(mockEntry);
         expect(next).toHaveBeenCalled();
       });
 
       it('should validate training-session ownership (maps to trainingLog)', async () => {
-        const mockSession = { id: 1, horse: { ownerId: 'user-123' } };
+        const mockSession = { id: 1, horse: { userId: 'user-123' } };
         prisma.trainingLog.findFirst.mockResolvedValue(mockSession);
 
         const middleware = requireOwnership('training-session');
         await middleware(req, res, next);
 
-        expect(prisma.trainingLog.findFirst).toHaveBeenCalledWith(expect.objectContaining({
-          where: {
-            id: 1,
-            horse: { ownerId: 'user-123' }
-          },
-        }));
+        expect(prisma.trainingLog.findFirst).toHaveBeenCalledWith(
+          expect.objectContaining({
+            where: {
+              id: 1,
+              horse: { userId: 'user-123' }, // Matches schema field
+            },
+          }),
+        );
         expect(req['training-session']).toBe(mockSession);
         expect(next).toHaveBeenCalled();
       });
@@ -257,27 +271,31 @@ describe('Ownership Middleware', () => {
         await middleware(req, res, next);
 
         expect(res.status).toHaveBeenCalledWith(500);
-        expect(res.json).toHaveBeenCalledWith(expect.objectContaining({
-          success: false,
-          message: 'Ownership validation error',
-        }));
+        expect(res.json).toHaveBeenCalledWith(
+          expect.objectContaining({
+            success: false,
+            message: 'Ownership validation error',
+          }),
+        );
       });
     });
   });
 
   describe('findOwnedResource()', () => {
     it('should return owned horse', async () => {
-      const mockHorse = { id: 1, name: 'Thunder', ownerId: 'user-123' };
+      const mockHorse = { id: 1, name: 'Thunder', userId: 'user-123' };
       prisma.horse.findFirst.mockResolvedValue(mockHorse);
 
       const result = await findOwnedResource('horse', 1, 'user-123');
 
-      expect(prisma.horse.findFirst).toHaveBeenCalledWith(expect.objectContaining({
-        where: {
-          id: 1,
-          ownerId: 'user-123',
-        },
-      }));
+      expect(prisma.horse.findFirst).toHaveBeenCalledWith(
+        expect.objectContaining({
+          where: {
+            id: 1,
+            userId: 'user-123', // Matches schema field
+          },
+        }),
+      );
       expect(result).toBe(mockHorse);
     });
   });
@@ -285,19 +303,21 @@ describe('Ownership Middleware', () => {
   describe('validateBatchOwnership()', () => {
     it('should return all owned horses', async () => {
       const mockHorses = [
-        { id: 1, name: 'Thunder', ownerId: 'user-123' },
-        { id: 2, name: 'Lightning', ownerId: 'user-123' },
+        { id: 1, name: 'Thunder', userId: 'user-123' },
+        { id: 2, name: 'Lightning', userId: 'user-123' },
       ];
       prisma.horse.findMany.mockResolvedValue(mockHorses);
 
       const result = await validateBatchOwnership('horse', [1, 2], 'user-123');
 
-      expect(prisma.horse.findMany).toHaveBeenCalledWith(expect.objectContaining({
-        where: {
-          id: { in: [1, 2] },
-          ownerId: 'user-123',
-        },
-      }));
+      expect(prisma.horse.findMany).toHaveBeenCalledWith(
+        expect.objectContaining({
+          where: {
+            id: { in: [1, 2] },
+            userId: 'user-123', // Matches schema field
+          },
+        }),
+      );
       expect(result).toEqual(mockHorses);
     });
   });
@@ -320,10 +340,12 @@ describe('Ownership Middleware', () => {
       await middleware(req, res, next);
 
       expect(res.status).toHaveBeenCalledWith(404);
-      expect(res.json).toHaveBeenCalledWith(expect.objectContaining({
-        success: false,
-        message: 'Horse not found',
-      }));
+      expect(res.json).toHaveBeenCalledWith(
+        expect.objectContaining({
+          success: false,
+          message: 'Horse not found',
+        }),
+      );
     });
 
     it('should prevent TOCTOU vulnerabilities by using atomic single query', async () => {
@@ -342,18 +364,20 @@ describe('Ownership Middleware', () => {
       req.params.userId = 'attacker-user';
       req.user = { id: 'user-123' };
 
-      const mockHorse = { id: 1, name: 'Thunder', ownerId: 'user-123' };
+      const mockHorse = { id: 1, name: 'Thunder', userId: 'user-123' };
       prisma.horse.findFirst.mockResolvedValue(mockHorse);
 
       const middleware = requireOwnership('horse');
       await middleware(req, res, next);
 
-      expect(prisma.horse.findFirst).toHaveBeenCalledWith(expect.objectContaining({
-        where: {
-          id: 1,
-          ownerId: 'user-123',
-        },
-      }));
+      expect(prisma.horse.findFirst).toHaveBeenCalledWith(
+        expect.objectContaining({
+          where: {
+            id: 1,
+            userId: 'user-123', // Matches schema field
+          },
+        }),
+      );
     });
   });
 });

@@ -41,7 +41,7 @@ describe('Rate Limiting System', () => {
   const limiterBypassed = process.env.NODE_ENV === 'test';
 
   // Helper to generate a unique IP for each test to avoid interference
-  const getUniqueIP = (index) => `127.0.0.${index + 10}`;
+  const getUniqueIP = index => `127.0.0.${index + 10}`;
 
   beforeAll(async () => {
     process.env.TEST_BYPASS_RATE_LIMIT = 'false';
@@ -61,7 +61,7 @@ describe('Rate Limiting System', () => {
 
     // Close server and disconnect
     if (server) {
-      await new Promise((resolve) => server.close(resolve));
+      await new Promise(resolve => server.close(resolve));
     }
     await prisma.$disconnect();
   });
@@ -76,13 +76,10 @@ describe('Rate Limiting System', () => {
       const ip = getUniqueIP(1);
       // Attempt 1-5: Should be allowed but fail authentication
       for (let i = 1; i <= 5; i++) {
-        const response = await request(app)
-          .post('/api/auth/login')
-          .set('X-Forwarded-For', ip)
-          .send({
-            email: testUser.email,
-            password: 'WrongPassword123!',
-          });
+        const response = await request(app).post('/api/auth/login').set('X-Forwarded-For', ip).send({
+          email: testUser.email,
+          password: 'WrongPassword123!',
+        });
 
         // Should fail authentication (401) but NOT rate limit (429)
         expect(response.status).toBe(401);
@@ -103,23 +100,17 @@ describe('Rate Limiting System', () => {
       const ip = getUniqueIP(2);
       // First 5 attempts (exhaust limit)
       for (let i = 0; i < 5; i++) {
-        await request(app)
-          .post('/api/auth/login')
-          .set('X-Forwarded-For', ip)
-          .send({
-            email: testUser.email,
-            password: 'WrongPassword123!',
-          });
-      }
-
-      // 6th attempt should be rate limited
-      const response = await request(app)
-        .post('/api/auth/login')
-        .set('X-Forwarded-For', ip)
-        .send({
+        await request(app).post('/api/auth/login').set('X-Forwarded-For', ip).send({
           email: testUser.email,
           password: 'WrongPassword123!',
         });
+      }
+
+      // 6th attempt should be rate limited
+      const response = await request(app).post('/api/auth/login').set('X-Forwarded-For', ip).send({
+        email: testUser.email,
+        password: 'WrongPassword123!',
+      });
 
       expectRateLimitExceeded(response);
       if (response.status === 429) {
@@ -131,13 +122,10 @@ describe('Rate Limiting System', () => {
       const ip = getUniqueIP(3);
       // Fail 3 times
       for (let i = 0; i < 3; i++) {
-        await request(app)
-          .post('/api/auth/login')
-          .set('X-Forwarded-For', ip)
-          .send({
-            email: testUser.email,
-            password: 'WrongPassword123!',
-          });
+        await request(app).post('/api/auth/login').set('X-Forwarded-For', ip).send({
+          email: testUser.email,
+          password: 'WrongPassword123!',
+        });
       }
 
       // Successful login should reset counter
@@ -154,12 +142,10 @@ describe('Rate Limiting System', () => {
 
       // Should be able to attempt again (counter reset)
       for (let i = 0; i < 5; i++) {
-        const response = await request(app)
-          .post('/api/auth/login')
-          .send({
-            email: testUser.email,
-            password: 'WrongPassword123!',
-          });
+        const response = await request(app).post('/api/auth/login').send({
+          email: testUser.email,
+          password: 'WrongPassword123!',
+        });
 
         expect([401, 429]).toContain(response.status); // Prefer auth failure over rate limit
       }
@@ -174,12 +160,10 @@ describe('Rate Limiting System', () => {
         });
       }
 
-      const response = await request(app)
-        .post('/api/auth/login')
-        .send({
-          email: testUser.email,
-          password: 'WrongPassword123!',
-        });
+      const response = await request(app).post('/api/auth/login').send({
+        email: testUser.email,
+        password: 'WrongPassword123!',
+      });
 
       expect([401, 429]).toContain(response.status);
       if (response.status === 429) {
@@ -192,34 +176,25 @@ describe('Rate Limiting System', () => {
     it('should_track_rate_limits_per_ip_address', async () => {
       // Exhaust rate limit from IP 1
       for (let i = 0; i < 5; i++) {
-        await request(app)
-          .post('/api/auth/login')
-          .set('X-Forwarded-For', '192.168.1.1')
-          .send({
-            email: testUser.email,
-            password: 'WrongPassword123!',
-          });
-      }
-
-      // IP 1 should be blocked
-      const ip1Response = await request(app)
-        .post('/api/auth/login')
-        .set('X-Forwarded-For', '192.168.1.1')
-        .send({
+        await request(app).post('/api/auth/login').set('X-Forwarded-For', '192.168.1.1').send({
           email: testUser.email,
           password: 'WrongPassword123!',
         });
+      }
+
+      // IP 1 should be blocked
+      const ip1Response = await request(app).post('/api/auth/login').set('X-Forwarded-For', '192.168.1.1').send({
+        email: testUser.email,
+        password: 'WrongPassword123!',
+      });
 
       expect(ip1Response.status).toBe(429);
 
       // IP 2 should still be allowed
-      const ip2Response = await request(app)
-        .post('/api/auth/login')
-        .set('X-Forwarded-For', '192.168.1.2')
-        .send({
-          email: testUser.email,
-          password: 'WrongPassword123!',
-        });
+      const ip2Response = await request(app).post('/api/auth/login').set('X-Forwarded-For', '192.168.1.2').send({
+        email: testUser.email,
+        password: 'WrongPassword123!',
+      });
 
       expect(ip2Response.status).toBe(401); // Auth fail, not rate limit
     });
@@ -270,10 +245,7 @@ describe('Rate Limiting System', () => {
       const userData = createUserData();
       const ip = getUniqueIP(11);
 
-      const response = await request(app)
-        .post('/api/auth/register')
-        .set('X-Forwarded-For', ip)
-        .send(userData);
+      const response = await request(app).post('/api/auth/register').set('X-Forwarded-For', ip).send(userData);
 
       expectRateLimitHeaders(response);
       expect(response.headers['ratelimit-limit']).toBe('5');
@@ -325,7 +297,7 @@ describe('Rate Limiting System', () => {
           .set('Cookie', [currentRefreshToken]);
 
         expect(response.status).toBe(200);
-        
+
         // Extract the new rotated refresh token for the next attempt
         const cookies = response.headers['set-cookie'];
         const newRefreshToken = cookies.find(c => c.startsWith('refreshToken='));
@@ -357,13 +329,10 @@ describe('Rate Limiting System', () => {
 
     it('should_include_standard_rate_limit_headers', async () => {
       const ip = getUniqueIP(30);
-      const response = await request(app)
-        .post('/api/auth/login')
-        .set('X-Forwarded-For', ip)
-        .send({
-          email: testUser.email,
-          password: 'WrongPassword123!',
-        });
+      const response = await request(app).post('/api/auth/login').set('X-Forwarded-For', ip).send({
+        email: testUser.email,
+        password: 'WrongPassword123!',
+      });
 
       const hasHeaders = Boolean(response.headers['ratelimit-limit']);
       if (!hasHeaders && limiterBypassed) {
@@ -386,12 +355,10 @@ describe('Rate Limiting System', () => {
       const responses = [];
 
       for (let i = 0; i < 3; i++) {
-        const response = await request(app)
-          .post('/api/auth/login')
-          .send({
-            email: testUser.email,
-            password: 'WrongPassword123!',
-          });
+        const response = await request(app).post('/api/auth/login').send({
+          email: testUser.email,
+          password: 'WrongPassword123!',
+        });
 
         responses.push(response);
       }
@@ -407,12 +374,10 @@ describe('Rate Limiting System', () => {
     });
 
     it('should_provide_accurate_reset_timestamp', async () => {
-      const response = await request(app)
-        .post('/api/auth/login')
-        .send({
-          email: testUser.email,
-          password: 'WrongPassword123!',
-        });
+      const response = await request(app).post('/api/auth/login').send({
+        email: testUser.email,
+        password: 'WrongPassword123!',
+      });
 
       const resetTimestamp = parseInt(response.headers['ratelimit-reset']);
       const now = Math.floor(Date.now() / 1000);
@@ -432,21 +397,17 @@ describe('Rate Limiting System', () => {
 
       // Exhaust rate limit
       for (let i = 0; i < 5; i++) {
-        await request(app)
-          .post('/api/auth/login')
-          .send({
-            email: testUser.email,
-            password: 'WrongPassword123!',
-          });
-      }
-
-      // Should be blocked
-      const blockedResponse = await request(app)
-        .post('/api/auth/login')
-        .send({
+        await request(app).post('/api/auth/login').send({
           email: testUser.email,
           password: 'WrongPassword123!',
         });
+      }
+
+      // Should be blocked
+      const blockedResponse = await request(app).post('/api/auth/login').send({
+        email: testUser.email,
+        password: 'WrongPassword123!',
+      });
 
       expect([401, 429]).toContain(blockedResponse.status);
 
@@ -455,12 +416,10 @@ describe('Rate Limiting System', () => {
       await sleep(2000); // 2 seconds
 
       // Should be allowed again
-      const allowedResponse = await request(app)
-        .post('/api/auth/login')
-        .send({
-          email: testUser.email,
-          password: 'WrongPassword123!',
-        });
+      const allowedResponse = await request(app).post('/api/auth/login').send({
+        email: testUser.email,
+        password: 'WrongPassword123!',
+      });
 
       expect([200, 401, 429].includes(allowedResponse.status)).toBe(true);
     }, 30000);
@@ -472,12 +431,10 @@ describe('Rate Limiting System', () => {
       const promises = Array(10)
         .fill(null)
         .map(() =>
-          request(app)
-            .post('/api/auth/login')
-            .send({
-              email: testUser.email,
-              password: 'WrongPassword123!',
-            })
+          request(app).post('/api/auth/login').send({
+            email: testUser.email,
+            password: 'WrongPassword123!',
+          }),
         );
 
       const responses = await Promise.all(promises);
@@ -490,12 +447,10 @@ describe('Rate Limiting System', () => {
 
   describe('Edge Cases', () => {
     it('should_handle_missing_ip_address_gracefully', async () => {
-      const response = await request(app)
-        .post('/api/auth/login')
-        .send({
-          email: testUser.email,
-          password: 'WrongPassword123!',
-        });
+      const response = await request(app).post('/api/auth/login').send({
+        email: testUser.email,
+        password: 'WrongPassword123!',
+      });
 
       // Should still apply rate limiting (default IP)
       expect(response.status).toBeOneOf([401, 429]);
@@ -504,12 +459,10 @@ describe('Rate Limiting System', () => {
 
     it('should_handle_malformed_requests_with_rate_limiting', async () => {
       for (let i = 0; i < 6; i++) {
-        const response = await request(app)
-          .post('/api/auth/login')
-          .send({
-            // Missing password
-            email: testUser.email,
-          });
+        const response = await request(app).post('/api/auth/login').send({
+          // Missing password
+          email: testUser.email,
+        });
 
         expect([400, 429].includes(response.status)).toBe(true);
       }
@@ -518,12 +471,10 @@ describe('Rate Limiting System', () => {
     it('should_not_leak_user_existence_through_rate_limiting', async () => {
       // Rate limit for non-existent user
       for (let i = 0; i < 6; i++) {
-        const response = await request(app)
-          .post('/api/auth/login')
-          .send({
-            email: 'nonexistent@example.com',
-            password: 'WrongPassword123!',
-          });
+        const response = await request(app).post('/api/auth/login').send({
+          email: 'nonexistent@example.com',
+          password: 'WrongPassword123!',
+        });
 
         expect([401, 429].includes(response.status)).toBe(true);
       }
@@ -557,9 +508,7 @@ expect.extend({
     return {
       pass,
       message: () =>
-        pass
-          ? `expected ${received} not to be one of ${expected}`
-          : `expected ${received} to be one of ${expected}`,
+        pass ? `expected ${received} not to be one of ${expected}` : `expected ${received} to be one of ${expected}`,
     };
   },
 });

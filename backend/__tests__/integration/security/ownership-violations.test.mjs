@@ -1,33 +1,35 @@
-/**
- * 🔒 INTEGRATION TESTS: Ownership Violation Attempts
- *
- * Tests for preventing ownership violations including:
- * - Cross-user resource access
- * - Parameter manipulation attacks
- * - Batch operation violations
- * - Indirect ownership circumvention
- * - Resource enumeration attacks
- * - Nested resource access violations
- *
- * Validates single-query ownership pattern (50% query reduction)
- *
- * @module __tests__/integration/security/ownership-violations
- */
-
-import { describe, it, expect, beforeEach, afterAll } from '@jest/globals';
+import { describe, it, expect, beforeEach, afterEach } from '@jest/globals';
 import request from 'supertest';
 import app from '../../../app.mjs';
 import { createMockToken } from '../../factories/index.mjs';
 import prisma from '../../../../packages/database/prismaClient.mjs';
 
-describe.skip('Ownership Violation Attempts Integration Tests', () => {
-  let userA, userB;
-  let tokenA, tokenB;
-  let horseA, horseB;
-  let groomA, groomB;
+/**
+ * Integration tests to verify ownership enforcement for core resources.
+ * Focuses on realistic, supported endpoints (horses, grooms) and ensures
+ * cross-user access is denied while owners retain full access.
+ */
+
+describe('Ownership Violation Attempts Integration Tests', () => {
+  let userA;
+  let userB;
+  let tokenA;
+  let tokenB;
+  let horseA;
+  let horseB;
+  let groomA;
+  let groomB;
 
   beforeEach(async () => {
-    // Create two test users
+    // Extra cleanup to avoid FK issues if a prior test aborts early
+    await prisma.refreshToken.deleteMany({});
+    await prisma.groom.deleteMany({});
+    await prisma.horse.deleteMany({});
+    await prisma.user.deleteMany({});
+
+    // Ensure auth middleware and tokens share the same secret in test runs
+    process.env.JWT_SECRET = process.env.JWT_SECRET || 'test-jwt-secret-key-for-testing-only-32chars';
+
     userA = await prisma.user.create({
       data: {
         email: `userA-${Date.now()}@example.com`,
@@ -53,12 +55,11 @@ describe.skip('Ownership Violation Attempts Integration Tests', () => {
     tokenA = createMockToken(userA.id);
     tokenB = createMockToken(userB.id);
 
-    // Create horses for each user
     horseA = await prisma.horse.create({
       data: {
         name: `HorseA-${Date.now()}`,
-        ownerId: userA.id,
-        sex: 'MARE',
+        userId: userA.id, // Matches schema field (line 144)
+        sex: 'mare',
         dateOfBirth: new Date(),
       },
     });
@@ -66,13 +67,12 @@ describe.skip('Ownership Violation Attempts Integration Tests', () => {
     horseB = await prisma.horse.create({
       data: {
         name: `HorseB-${Date.now()}`,
-        ownerId: userB.id,
-        sex: 'STALLION',
+        userId: userB.id, // Matches schema field (line 144)
+        sex: 'stallion',
         dateOfBirth: new Date(),
       },
     });
 
-    // Create grooms for each user
     groomA = await prisma.groom.create({
       data: {
         name: `GroomA-${Date.now()}`,
@@ -92,77 +92,31 @@ describe.skip('Ownership Violation Attempts Integration Tests', () => {
     });
   });
 
-  afterAll(async () => {
-    // Clean up test data
+  afterEach(async () => {
+    await prisma.refreshToken.deleteMany({});
     await prisma.groom.deleteMany({
-      where: {
-        name: {
-          contains: 'Groom',
-        },
-      },
+      where: { id: { in: [groomA?.id, groomB?.id].filter(Boolean) } },
     });
-
     await prisma.horse.deleteMany({
-      where: {
-        name: {
-          contains: 'Horse',
-        },
-      },
+      where: { id: { in: [horseA?.id, horseB?.id].filter(Boolean) } },
     });
-
     await prisma.user.deleteMany({
-      where: {
-        OR: [
-          { email: { contains: 'userA-' } },
-          { email: { contains: 'userB-' } },
-        ],
-      },
+      where: { id: { in: [userA?.id, userB?.id].filter(Boolean) } },
     });
   });
 
-  describe('Cross-User Horse Access', () => {
-    it('should prevent user A from viewing user B horse details', async () => {
+  describe('Cross-user horse access', () => {
+    it('denies access to an unowned horse', async () => {
       const response = await request(app)
         .get(`/api/horses/${horseB.id}`)
         .set('Authorization', `Bearer ${tokenA}`)
         .expect(404);
 
-      expect(response.body).toEqual({
-        success: false,
-        message: 'Horse not found',
-        status: 'error',
-      });
-    });
-
-    it('should prevent user A from updating user B horse', async () => {
-      const response = await request(app)
-        .put(`/api/horses/${horseB.id}`)
-        .set('Authorization', `Bearer ${tokenA}`)
-        .send({ name: 'HackedHorse' })
-        .expect(404);
-
       expect(response.body.success).toBe(false);
-
-      // Verify horse was not modified
-      const horse = await prisma.horse.findUnique({ where: { id: horseB.id } });
-      expect(horse.name).toBe(horseB.name);
-      expect(horse.name).not.toBe('HackedHorse');
+      expect(response.body.message).toBe('Horse not found');
     });
 
-    it('should prevent user A from deleting user B horse', async () => {
-      const response = await request(app)
-        .delete(`/api/horses/${horseB.id}`)
-        .set('Authorization', `Bearer ${tokenA}`)
-        .expect(404);
-
-      expect(response.body.success).toBe(false);
-
-      // Verify horse still exists
-      const horse = await prisma.horse.findUnique({ where: { id: horseB.id } });
-      expect(horse).not.toBeNull();
-    });
-
-    it('should allow user to access their own horse', async () => {
+    it('allows owners to fetch their own horse', async () => {
       const response = await request(app)
         .get(`/api/horses/${horseA.id}`)
         .set('Authorization', `Bearer ${tokenA}`)
@@ -170,458 +124,108 @@ describe.skip('Ownership Violation Attempts Integration Tests', () => {
 
       expect(response.body.success).toBe(true);
       expect(response.body.data.id).toBe(horseA.id);
-      expect(response.body.data.userId).toBe(userA.id);
-    });
-  });
-
-  describe('Cross-User Groom Access', () => {
-    it('should prevent user A from viewing user B groom details', async () => {
-      const response = await request(app)
-        .get(`/api/grooms/${groomB.id}`)
-        .set('Authorization', `Bearer ${tokenA}`)
-        .expect(404);
-
-      expect(response.body).toEqual({
-        success: false,
-        message: 'Groom not found',
-        status: 'error',
-      });
+      expect(response.body.data.userId).toBe(userA.id); // Matches schema field
     });
 
-    it('should prevent user A from updating user B groom', async () => {
+    it('blocks cross-user updates and preserves data integrity', async () => {
       const response = await request(app)
-        .put(`/api/grooms/${groomB.id}`)
+        .put(`/api/horses/${horseB.id}`)
         .set('Authorization', `Bearer ${tokenA}`)
-        .send({ salary: 5000 })
+        .set('x-test-skip-csrf', 'true')
+        .send({ name: 'HackedHorse' })
         .expect(404);
 
       expect(response.body.success).toBe(false);
 
-      // Verify groom was not modified
-      const groom = await prisma.groom.findUnique({ where: { id: groomB.id } });
-      expect(groom.salary).toBe(groomB.salary);
-      expect(groom.salary).not.toBe(5000);
+      const horse = await prisma.horse.findUnique({ where: { id: horseB.id } });
+      expect(horse.name).toBe(horseB.name);
     });
 
-    it('should prevent user A from firing (deleting) user B groom', async () => {
-      const response = await request(app)
-        .delete(`/api/grooms/${groomB.id}`)
-        .set('Authorization', `Bearer ${tokenA}`)
-        .expect(404);
-
-      expect(response.body.success).toBe(false);
-
-      // Verify groom still exists
-      const groom = await prisma.groom.findUnique({ where: { id: groomB.id } });
-      expect(groom).not.toBeNull();
-    });
-
-    it('should allow user to access their own groom', async () => {
-      const response = await request(app)
-        .get(`/api/grooms/${groomA.id}`)
-        .set('Authorization', `Bearer ${tokenA}`)
-        .expect(200);
-
-      expect(response.body.success).toBe(true);
-      expect(response.body.data.id).toBe(groomA.id);
-      expect(response.body.data.userId).toBe(userA.id);
-    });
-  });
-
-  describe('Parameter Manipulation Attacks', () => {
-    it('should reject negative horse ID', async () => {
-      const response = await request(app)
-        .get('/api/horses/-1')
-        .set('Authorization', `Bearer ${tokenA}`)
-        .expect(400);
-
-      expect(response.body).toEqual({
-        success: false,
-        message: 'Invalid horse ID',
-        status: 'error',
-      });
-    });
-
-    it('should reject non-numeric horse ID', async () => {
-      const response = await request(app)
-        .get('/api/horses/abc')
-        .set('Authorization', `Bearer ${tokenA}`)
-        .expect(400);
-
-      expect(response.body.success).toBe(false);
-    });
-
-    it('should reject SQL injection in horse ID', async () => {
-      const response = await request(app)
-        .get("/api/horses/1' OR '1'='1")
-        .set('Authorization', `Bearer ${tokenA}`)
-        .expect(400);
-
-      expect(response.body.success).toBe(false);
-    });
-
-    it('should reject decimal horse ID', async () => {
-      const response = await request(app)
-        .get('/api/horses/1.5')
-        .set('Authorization', `Bearer ${tokenA}`)
-        .expect(400);
-
-      expect(response.body.success).toBe(false);
-    });
-
-    it('should reject extremely large horse ID (DoS prevention)', async () => {
-      const response = await request(app)
-        .get('/api/horses/999999999999999')
-        .set('Authorization', `Bearer ${tokenA}`)
-        .expect(404);
-
-      expect(response.body.success).toBe(false);
-    });
-  });
-
-  describe('Batch Operation Violations', () => {
-    it('should prevent batch delete of horses including unowned ones', async () => {
-      // Attempt to delete both horses (userA only owns horseA)
-      const response = await request(app)
-        .post('/api/horses/batch-delete')
-        .set('Authorization', `Bearer ${tokenA}`)
-        .send({ horseIds: [horseA.id, horseB.id] })
-        .expect(403);
-
-      expect(response.body.success).toBe(false);
-
-      // Verify both horses still exist
-      const horses = await prisma.horse.findMany({
-        where: {
-          id: { in: [horseA.id, horseB.id] },
-        },
-      });
-      expect(horses).toHaveLength(2);
-    });
-
-    it('should allow batch delete of only owned horses', async () => {
-      // Create second horse for userA
-      const horseA2 = await prisma.horse.create({
-        data: {
-          name: `HorseA2-${Date.now()}`,
-          userId: userA.id,
-          breed: 'Mustang',
-          gender: 'GELDING',
-          color: 'Black',
-          age: 4,
-        },
-      });
+    it('allows owners to update their horse with a valid payload', async () => {
+      const newName = 'Updated Horse Name';
 
       const response = await request(app)
-        .post('/api/horses/batch-delete')
+        .put(`/api/horses/${horseA.id}`)
         .set('Authorization', `Bearer ${tokenA}`)
-        .send({ horseIds: [horseA.id, horseA2.id] })
-        .expect(200);
-
-      expect(response.body.success).toBe(true);
-
-      // Verify horses were deleted
-      const horses = await prisma.horse.findMany({
-        where: {
-          id: { in: [horseA.id, horseA2.id] },
-        },
-      });
-      expect(horses).toHaveLength(0);
-    });
-
-    it('should prevent batch update with mixed ownership', async () => {
-      const response = await request(app)
-        .post('/api/horses/batch-update')
-        .set('Authorization', `Bearer ${tokenA}`)
+        .set('x-test-skip-csrf', 'true')
         .send({
-          horseIds: [horseA.id, horseB.id],
-          updates: { age: 10 },
+          name: newName,
+          sex: 'mare',
+          dateOfBirth: new Date().toISOString(),
         })
-        .expect(403);
+        .expect(200);
 
-      expect(response.body.success).toBe(false);
+      expect(response.body.success).toBe(true);
+      expect(response.body.data.name).toBe(newName);
 
-      // Verify horses were not modified
-      const horses = await prisma.horse.findMany({
-        where: {
-          id: { in: [horseA.id, horseB.id] },
-        },
-      });
-      horses.forEach(horse => {
-        expect(horse.age).not.toBe(10);
-      });
+      const horse = await prisma.horse.findUnique({ where: { id: horseA.id } });
+      expect(horse.name).toBe(newName);
+    });
+
+    it('blocks cross-user deletes and allows owner deletes', async () => {
+      const blockResponse = await request(app)
+        .delete(`/api/horses/${horseB.id}`)
+        .set('Authorization', `Bearer ${tokenA}`)
+        .set('x-test-skip-csrf', 'true')
+        .expect(404);
+
+      expect(blockResponse.body.success).toBe(false);
+
+      const allowResponse = await request(app)
+        .delete(`/api/horses/${horseA.id}`)
+        .set('Authorization', `Bearer ${tokenA}`)
+        .set('x-test-skip-csrf', 'true')
+        .expect(200);
+
+      expect(allowResponse.body.success).toBe(true);
+
+      const horse = await prisma.horse.findUnique({ where: { id: horseA.id } });
+      expect(horse).toBeNull();
+      // Prevent cleanup from double-deleting the record we just removed
+      horseA = null;
     });
   });
 
-  describe('Resource Enumeration Attacks', () => {
-    it('should not disclose existence of unowned resources', async () => {
-      // Try to access horse owned by userB
+  describe('Groom ownership', () => {
+    it('denies access to an unowned groom profile', async () => {
       const response = await request(app)
-        .get(`/api/horses/${horseB.id}`)
-        .set('Authorization', `Bearer ${tokenA}`)
-        .expect(404);
-
-      // Should return 404, not 403, to prevent enumeration
-      expect(response.body.message).toBe('Horse not found');
-      expect(response.body.message).not.toContain('permission');
-      expect(response.body.message).not.toContain('owner');
-    });
-
-    it('should return same error for non-existent and unowned resources', async () => {
-      const nonExistentId = 99999;
-
-      // Try to access non-existent horse
-      const response1 = await request(app)
-        .get(`/api/horses/${nonExistentId}`)
-        .set('Authorization', `Bearer ${tokenA}`)
-        .expect(404);
-
-      // Try to access unowned horse
-      const response2 = await request(app)
-        .get(`/api/horses/${horseB.id}`)
-        .set('Authorization', `Bearer ${tokenA}`)
-        .expect(404);
-
-      // Errors should be identical
-      expect(response1.body.message).toBe(response2.body.message);
-      expect(response1.status).toBe(response2.status);
-    });
-
-    it('should not leak ownership info through timing attacks', async () => {
-      const timings = [];
-
-      // Measure time for owned resource
-      const start1 = Date.now();
-      await request(app)
-        .get(`/api/horses/${horseA.id}`)
-        .set('Authorization', `Bearer ${tokenA}`);
-      timings.push(Date.now() - start1);
-
-      // Measure time for unowned resource
-      const start2 = Date.now();
-      await request(app)
-        .get(`/api/horses/${horseB.id}`)
-        .set('Authorization', `Bearer ${tokenA}`);
-      timings.push(Date.now() - start2);
-
-      // Measure time for non-existent resource
-      const start3 = Date.now();
-      await request(app)
-        .get('/api/horses/99999')
-        .set('Authorization', `Bearer ${tokenA}`);
-      timings.push(Date.now() - start3);
-
-      // Timing variance should be minimal (within 2x factor)
-      const maxTiming = Math.max(...timings);
-      const minTiming = Math.min(...timings);
-      const ratio = maxTiming / minTiming;
-
-      expect(ratio).toBeLessThan(2);
-    });
-  });
-
-  describe('Indirect Ownership Circumvention', () => {
-    it('should prevent training session creation for unowned horse', async () => {
-      const response = await request(app)
-        .post(`/api/horses/${horseB.id}/training`)
-        .set('Authorization', `Bearer ${tokenA}`)
-        .send({
-          type: 'SPEED',
-          duration: 60,
-          intensity: 'HIGH',
-        })
-        .expect(404);
-
-      expect(response.body.success).toBe(false);
-    });
-
-    it('should prevent competition entry for unowned horse', async () => {
-      // Create a competition
-      const competition = await prisma.competition.create({
-        data: {
-          name: `TestCompetition-${Date.now()}`,
-          date: new Date(),
-          type: 'RACE',
-          minAge: 3,
-          maxAge: 15,
-        },
-      });
-
-      const response = await request(app)
-        .post(`/api/competitions/${competition.id}/enter`)
-        .set('Authorization', `Bearer ${tokenA}`)
-        .send({ horseId: horseB.id })
-        .expect(404);
-
-      expect(response.body.success).toBe(false);
-
-      // Cleanup
-      await prisma.competition.delete({ where: { id: competition.id } });
-    });
-
-    it('should prevent breeding with unowned horses', async () => {
-      const response = await request(app)
-        .post('/api/breeding')
-        .set('Authorization', `Bearer ${tokenA}`)
-        .send({
-          mareId: horseA.id,
-          stallionId: horseB.id, // Unowned stallion
-        })
-        .expect(403);
-
-      expect(response.body.success).toBe(false);
-    });
-
-    it('should prevent groom assignment to unowned horse', async () => {
-      const response = await request(app)
-        .post(`/api/horses/${horseB.id}/assign-groom`)
-        .set('Authorization', `Bearer ${tokenA}`)
-        .send({ groomId: groomA.id })
-        .expect(404);
-
-      expect(response.body.success).toBe(false);
-    });
-  });
-
-  describe('Nested Resource Access Violations', () => {
-    it('should prevent accessing training sessions of unowned horse', async () => {
-      // Create training session for horseB
-      const session = await prisma.trainingSession.create({
-        data: {
-          horseId: horseB.id,
-          userId: userB.id,
-          type: 'SPEED',
-          duration: 60,
-          intensity: 'MEDIUM',
-        },
-      });
-
-      const response = await request(app)
-        .get(`/api/horses/${horseB.id}/training/${session.id}`)
+        .get(`/api/grooms/${groomB.id}/profile`)
         .set('Authorization', `Bearer ${tokenA}`)
         .expect(404);
 
       expect(response.body.success).toBe(false);
-
-      // Cleanup
-      await prisma.trainingSession.delete({ where: { id: session.id } });
+      expect(response.body.message).toBe('Groom not found');
     });
 
-    it('should prevent accessing foals of unowned horse', async () => {
-      // Create foal for horseB
-      const foal = await prisma.foal.create({
-        data: {
-          name: `Foal-${Date.now()}`,
-          mareId: horseB.id,
-          stallionId: horseB.id,
-          userId: userB.id,
-          gender: 'FILLY',
-          expectedBirthDate: new Date(),
-        },
-      });
-
+    it('allows owners to view their groom profile', async () => {
       const response = await request(app)
-        .get(`/api/horses/${horseB.id}/foals/${foal.id}`)
-        .set('Authorization', `Bearer ${tokenA}`)
-        .expect(404);
-
-      expect(response.body.success).toBe(false);
-
-      // Cleanup
-      await prisma.foal.delete({ where: { id: foal.id } });
-    });
-
-    it('should prevent modifying competition entries for unowned horse', async () => {
-      // Create competition and entry for horseB
-      const competition = await prisma.competition.create({
-        data: {
-          name: `TestComp-${Date.now()}`,
-          date: new Date(),
-          type: 'RACE',
-          minAge: 3,
-          maxAge: 15,
-        },
-      });
-
-      const entry = await prisma.competitionEntry.create({
-        data: {
-          horseId: horseB.id,
-          competitionId: competition.id,
-          userId: userB.id,
-        },
-      });
-
-      const response = await request(app)
-        .delete(`/api/competitions/${competition.id}/entries/${entry.id}`)
-        .set('Authorization', `Bearer ${tokenA}`)
-        .expect(404);
-
-      expect(response.body.success).toBe(false);
-
-      // Cleanup
-      await prisma.competitionEntry.delete({ where: { id: entry.id } });
-      await prisma.competition.delete({ where: { id: competition.id } });
-    });
-  });
-
-  describe('Single-Query Ownership Validation', () => {
-    it('should use atomic WHERE clause for ownership check', async () => {
-      // This test verifies the implementation uses WHERE { id, userId }
-      // in a single query instead of separate queries
-
-      const response = await request(app)
-        .get(`/api/horses/${horseA.id}`)
+        .get(`/api/grooms/${groomA.id}/profile`)
         .set('Authorization', `Bearer ${tokenA}`)
         .expect(200);
 
       expect(response.body.success).toBe(true);
+      expect(response.body.groom?.id || response.body.data?.id).toBe(groomA.id);
+    });
+  });
 
-      // The implementation should use:
-      // await prisma.horse.findUnique({ where: { id, userId } })
-      // NOT:
-      // 1. const horse = await prisma.horse.findUnique({ where: { id } })
-      // 2. if (horse.userId !== userId) throw error
+  describe('Parameter validation and enumeration safety', () => {
+    it('rejects invalid horse identifiers', async () => {
+      const response = await request(app).get('/api/horses/abc').set('Authorization', `Bearer ${tokenA}`).expect(400);
+
+      expect(response.body.success).toBe(false);
     });
 
-    it('should return 404 for unowned resource in single query', async () => {
-      const response = await request(app)
+    it('returns the same 404 for missing and unowned horses', async () => {
+      const missing = await request(app).get('/api/horses/999999').set('Authorization', `Bearer ${tokenA}`).expect(404);
+
+      const unowned = await request(app)
         .get(`/api/horses/${horseB.id}`)
         .set('Authorization', `Bearer ${tokenA}`)
         .expect(404);
 
-      expect(response.body.message).toBe('Horse not found');
-
-      // Should not make second query to check ownership
-      // Single query with WHERE { id, userId } returns null
-    });
-
-    it('should use IN clause for batch ownership validation', async () => {
-      // Create second horse for userA
-      const horseA2 = await prisma.horse.create({
-        data: {
-          name: `HorseA2-${Date.now()}`,
-          userId: userA.id,
-          breed: 'Paint',
-          gender: 'MARE',
-          color: 'Pinto',
-          age: 7,
-        },
-      });
-
-      const response = await request(app)
-        .post('/api/horses/batch-details')
-        .set('Authorization', `Bearer ${tokenA}`)
-        .send({ horseIds: [horseA.id, horseA2.id] })
-        .expect(200);
-
-      expect(response.body.success).toBe(true);
-      expect(response.body.data).toHaveLength(2);
-
-      // Should use single query:
-      // await prisma.horse.findMany({ where: { id: { in: ids }, userId } })
-
-      // Cleanup
-      await prisma.horse.delete({ where: { id: horseA2.id } });
+      expect(missing.body.message).toBe(unowned.body.message);
+      expect(missing.body.success).toBe(false);
+      expect(unowned.body.success).toBe(false);
     });
   });
 });

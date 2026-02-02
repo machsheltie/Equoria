@@ -35,8 +35,7 @@ describe('Enhanced Groom Interactions Integration Tests', () => {
         name: 'Enhanced Test Horse',
         sex: 'Mare',
         dateOfBirth: new Date(Date.now() - 365 * 24 * 60 * 60 * 1000), // 1 year old
-        ownerId: testUser.id,
-        ownerId: testUser.id,
+        userId: testUser.id,
         bondScore: 25,
         stressLevel: 40,
         // breedId is optional, so we'll omit it for the test
@@ -47,12 +46,12 @@ describe('Enhanced Groom Interactions Integration Tests', () => {
     testGroom = await prisma.groom.create({
       data: {
         name: 'Enhanced Test Groom',
-        userId: testUser.id,
+        userId: testUser.id ,
         speciality: 'foal_care',
         skillLevel: 'intermediate',
         personality: 'gentle',
         experience: 5,
-        sessionRate: 25.00,
+        sessionRate: 25.0,
         bio: 'Test groom for enhanced interactions',
       },
     });
@@ -72,7 +71,7 @@ describe('Enhanced Groom Interactions Integration Tests', () => {
         where: { userId: testUser.id },
       });
       await prisma.horse.deleteMany({
-        where: { ownerId: testUser.id },
+        where: { userId: testUser.id },
       });
       await prisma.user.delete({
         where: { id: testUser.id },
@@ -204,8 +203,7 @@ describe('Enhanced Groom Interactions Integration Tests', () => {
           name: 'Second Test Horse',
           sex: 'Mare',
           dateOfBirth: new Date(Date.now() - 365 * 24 * 60 * 60 * 1000), // 1 year old
-          ownerId: testUser.id,
-          ownerId: testUser.id,
+          userId: testUser.id,
           bondScore: 30,
           stressLevel: 35,
         },
@@ -244,8 +242,7 @@ describe('Enhanced Groom Interactions Integration Tests', () => {
           name: 'Third Test Horse',
           sex: 'Mare',
           dateOfBirth: new Date(Date.now() - 365 * 24 * 60 * 60 * 1000), // 1 year old
-          ownerId: testUser.id,
-          ownerId: testUser.id,
+          userId: testUser.id,
           bondScore: 20,
           stressLevel: 50,
         },
@@ -422,7 +419,7 @@ describe('Enhanced Groom Interactions Integration Tests', () => {
       }
     });
 
-    it('should prevent access to other users\' grooms and horses', async () => {
+    it("should prevent access to other users' grooms and horses", async () => {
       // Create another user
       const otherUser = await prisma.user.create({
         data: {

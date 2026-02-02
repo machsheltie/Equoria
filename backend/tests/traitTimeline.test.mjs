@@ -63,7 +63,7 @@ describe('Trait Timeline System', () => {
         personality: 'calm',
         groomPersonality: 'calm',
         sessionRate: 25.0,
-        user: { connect: { id: testUser.id } },
+        userId: testUser.id ,
       },
     });
 
@@ -74,8 +74,8 @@ describe('Trait Timeline System', () => {
         sex: 'stallion',
         dateOfBirth: new Date(Date.now() - 3 * 365 * 24 * 60 * 60 * 1000), // 3 years old
         temperament: 'spirited',
-        user: { connect: { id: testUser.id } },
-        breed: { connect: { id: testBreed.id } },
+        userId: testUser.id ,
+        breedId: testBreed.id ,
         epigeneticModifiers: { positive: [], negative: [], hidden: [] },
       },
     });

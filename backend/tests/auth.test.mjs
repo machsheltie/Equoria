@@ -34,7 +34,6 @@
  *    complete authentication workflows and ensure security requirements work correctly
  */
 
-/* eslint-disable no-console */
 import { describe, it, expect, beforeEach, afterAll } from '@jest/globals';
 // Jest globals are available in test environment
 import request from 'supertest';
@@ -70,7 +69,7 @@ describe('🔐 INTEGRATION: Authentication System - User Registration & Session 
     try {
       if (createdUserIds.size > 0) {
         const userIds = Array.from(createdUserIds);
-        
+
         // 1. Delete RefreshTokens
         await prisma.refreshToken.deleteMany({
           where: { userId: { in: userIds } },
@@ -90,7 +89,7 @@ describe('🔐 INTEGRATION: Authentication System - User Registration & Session 
         await prisma.user.deleteMany({
           where: { id: { in: userIds } },
         });
-        
+
         createdUserIds.clear();
       }
     } catch (error) {
@@ -99,7 +98,7 @@ describe('🔐 INTEGRATION: Authentication System - User Registration & Session 
   };
 
   // Helper to track created users
-  const trackUser = (response) => {
+  const trackUser = response => {
     if (response.body?.data?.user?.id) {
       createdUserIds.add(response.body.data.user.id);
     }
@@ -127,7 +126,9 @@ describe('🔐 INTEGRATION: Authentication System - User Registration & Session 
       const response = await authPost('/api/auth/register').send(userData).expect(201);
       trackUser(response);
       expect(response.body.status).toBe('success');
-      expect(response.body.message).toBe('User registered successfully. Please check your email to verify your account.');
+      expect(response.body.message).toBe(
+        'User registered successfully. Please check your email to verify your account.',
+      );
 
       // User details assertions
       expect(response.body.data.user.email).toBe(userData.email);
@@ -279,9 +280,7 @@ describe('🔐 INTEGRATION: Authentication System - User Registration & Session 
     });
 
     it('should refresh token successfully with valid refresh token', async () => {
-      const response = await authPost('/api/auth/refresh')
-        .send({ refreshToken: refreshTokenValue })
-        .expect(200);
+      const response = await authPost('/api/auth/refresh').send({ refreshToken: refreshTokenValue }).expect(200);
       expect(response.body.status).toBe('success');
       expect(response.body.message).toBe('Token refreshed successfully');
 
@@ -293,7 +292,10 @@ describe('🔐 INTEGRATION: Authentication System - User Registration & Session 
     });
 
     it('should reject refresh with invalid token', async () => {
-      const response = await authPost('/api/auth/refresh').send({ refreshToken: 'invalid-token' }).set('x-test-require-auth', 'true').expect(401);
+      const response = await authPost('/api/auth/refresh')
+        .send({ refreshToken: 'invalid-token' })
+        .set('x-test-require-auth', 'true')
+        .expect(401);
 
       expect(response.body.success).toBe(false);
       expect(response.body.message).toBe('Token reuse detected - please login again');
@@ -365,9 +367,7 @@ describe('🔐 INTEGRATION: Authentication System - User Registration & Session 
     });
 
     it('should logout successfully with valid token', async () => {
-      const response = await authPost('/api/auth/logout')
-        .set('Authorization', `Bearer ${authToken}`)
-        .expect(200);
+      const response = await authPost('/api/auth/logout').set('Authorization', `Bearer ${authToken}`).expect(200);
 
       expect(response.body.status).toBe('success');
       expect(response.body.message).toBe('Logout successful');

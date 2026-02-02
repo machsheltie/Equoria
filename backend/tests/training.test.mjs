@@ -127,8 +127,8 @@ describe('🏋️ INTEGRATION: Training System - Complete Business Logic Validat
       data: {
         name: 'Test Adult Horse',
         age: 4, // Eligible for training
-        breed: { connect: { id: breed.id } },
-        user: { connect: { id: testPlayer.id } }, // User relationship (for XP and ownership)
+        breedId: breed.id ,
+        userId: testPlayer.id , // User relationship (for XP and ownership)
         sex: 'Mare',
         dateOfBirth: fourYearsAgo, // FIXED: Use calculated date for accurate age
         healthStatus: 'Excellent',
@@ -148,8 +148,8 @@ describe('🏋️ INTEGRATION: Training System - Complete Business Logic Validat
       data: {
         name: 'Test Young Horse',
         age: 2, // Too young for training
-        breed: { connect: { id: breed.id } },
-        user: { connect: { id: testPlayer.id } },
+        breedId: breed.id ,
+        userId: testPlayer.id ,
         sex: 'Colt',
         dateOfBirth: twoYearsAgo, // FIXED: Use calculated date for accurate age
         healthStatus: 'Excellent',
@@ -169,8 +169,8 @@ describe('🏋️ INTEGRATION: Training System - Complete Business Logic Validat
       data: {
         name: 'Test Trained Horse',
         age: 5,
-        breed: { connect: { id: breed.id } },
-        user: { connect: { id: testPlayer.id } },
+        breedId: breed.id ,
+        userId: testPlayer.id ,
         sex: 'Stallion',
         dateOfBirth: fiveYearsAgo, // FIXED: Use calculated date for accurate age
         healthStatus: 'Excellent',
@@ -291,8 +291,8 @@ describe('🏋️ INTEGRATION: Training System - Complete Business Logic Validat
         data: {
           name: 'Score Test Horse',
           age: 4,
-          breed: { connect: { id: (await prisma.breed.findFirst()).id } },
-          user: { connect: { id: testPlayer.id } },
+          breedId: (await prisma.breed.findFirst()).id ,
+          userId: testPlayer.id ,
           sex: 'Mare',
           dateOfBirth: fourYearsAgoForScore, // FIXED: Use calculated date
           healthStatus: 'Excellent',
@@ -351,8 +351,8 @@ describe('🏋️ INTEGRATION: Training System - Complete Business Logic Validat
         data: {
           name: 'Accumulation Test Horse 1',
           age: 5,
-          breed: { connect: { id: (await prisma.breed.findFirst()).id } },
-          user: { connect: { id: testPlayer.id } },
+          breedId: (await prisma.breed.findFirst()).id ,
+          userId: testPlayer.id ,
           sex: 'Stallion',
           dateOfBirth: fiveYearsAgoForAccumulation, // FIXED: Use calculated date
           healthStatus: 'Excellent',
@@ -372,8 +372,8 @@ describe('🏋️ INTEGRATION: Training System - Complete Business Logic Validat
         data: {
           name: 'Accumulation Test Horse 2',
           age: 6,
-          breed: { connect: { id: (await prisma.breed.findFirst()).id } },
-          user: { connect: { id: testPlayer.id } },
+          breedId: (await prisma.breed.findFirst()).id ,
+          userId: testPlayer.id ,
           sex: 'Mare',
           dateOfBirth: sixYearsAgoForAccumulation2, // FIXED: Use calculated date
           healthStatus: 'Excellent',
@@ -452,8 +452,8 @@ describe('🏋️ INTEGRATION: Training System - Complete Business Logic Validat
         data: {
           name: 'Old Trained Horse',
           age: 6,
-          breed: { connect: { id: (await prisma.breed.findFirst()).id } },
-          user: { connect: { id: testPlayer.id } },
+          breedId: (await prisma.breed.findFirst()).id ,
+          userId: testPlayer.id ,
           sex: 'Mare',
           dateOfBirth: sixYearsAgoForOldTrained, // FIXED: Use calculated date
           healthStatus: 'Excellent',
@@ -519,8 +519,8 @@ describe('🏋️ INTEGRATION: Training System - Complete Business Logic Validat
         data: {
           name: 'XP Test Horse',
           age: 4,
-          breed: { connect: { id: (await prisma.breed.findFirst()).id } },
-          user: { connect: { id: testPlayer.id } }, // THIS is what matters for XP
+          breedId: (await prisma.breed.findFirst()).id ,
+          userId: testPlayer.id , // THIS is what matters for XP
           sex: 'Mare',
           dateOfBirth: fourYearsAgoForXp, // FIXED: Use calculated date
           healthStatus: 'Excellent',
@@ -580,8 +580,8 @@ describe('🏋️ INTEGRATION: Training System - Complete Business Logic Validat
         data: {
           name: 'Log Test Horse',
           age: 5,
-          breed: { connect: { id: (await prisma.breed.findFirst()).id } },
-          user: { connect: { id: testPlayer.id } },
+          breedId: (await prisma.breed.findFirst()).id ,
+          userId: testPlayer.id ,
           sex: 'Stallion',
           dateOfBirth: fiveYearsAgoForLog, // FIXED: Use calculated date
           healthStatus: 'Excellent',
@@ -671,8 +671,8 @@ describe('🏋️ INTEGRATION: Training System - Complete Business Logic Validat
         data: {
           name: 'Date Test Horse',
           age: 4,
-          breed: { connect: { id: (await prisma.breed.findFirst()).id } },
-          user: { connect: { id: testPlayer.id } },
+          breedId: (await prisma.breed.findFirst()).id ,
+          userId: testPlayer.id ,
           sex: 'Mare',
           dateOfBirth: fourYearsAgoForDate, // FIXED: Use calculated date
           healthStatus: 'Excellent',

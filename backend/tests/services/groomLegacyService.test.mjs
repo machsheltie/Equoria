@@ -43,7 +43,7 @@ describe('Groom Legacy Service', () => {
 
   const ensureTestHorse = async () => {
     const existingHorse = await prisma.horse.findFirst({
-      where: { name: testHorseName, ownerId: testUser.id },
+      where: { name: testHorseName, userId: testUser.id },
     });
     if (existingHorse) {
       testHorse = existingHorse;
@@ -54,7 +54,7 @@ describe('Groom Legacy Service', () => {
         name: testHorseName,
         sex: 'male',
         dateOfBirth: new Date(Date.now() - 365 * 24 * 60 * 60 * 1000), // 1 year old
-        ownerId: testUser.id,
+        userId: testUser.id ,
         bondScore: 50,
         stressLevel: 30,
       },
@@ -77,7 +77,7 @@ describe('Groom Legacy Service', () => {
         personality: 'calm',
         skillLevel: 'expert',
         speciality: 'foal_care',
-        userId: testUser.id,
+        userId: testUser.id ,
         careerWeeks: 104,
         level: 8,
         experience: 500,
@@ -119,10 +119,7 @@ describe('Groom Legacy Service', () => {
     if (retiredGroom) {
       await prisma.groomLegacyLog.deleteMany({
         where: {
-          OR: [
-            { retiredGroomId: retiredGroom.id },
-            { legacyGroomId: retiredGroom.id },
-          ],
+          OR: [{ retiredGroomId: retiredGroom.id }, { legacyGroomId: retiredGroom.id }],
         },
       });
       await prisma.groomAssignmentLog.deleteMany({
@@ -172,7 +169,7 @@ describe('Groom Legacy Service', () => {
           personality: 'energetic',
           skillLevel: 'expert',
           speciality: 'general_grooming',
-          userId: testUser.id,
+          userId: testUser.id ,
           level: 9,
           retired: false,
         },
@@ -195,7 +192,7 @@ describe('Groom Legacy Service', () => {
           personality: 'methodical',
           skillLevel: 'intermediate',
           speciality: 'specialized_disciplines',
-          userId: testUser.id,
+          userId: testUser.id ,
           level: 5,
           retired: true,
           retirementReason: 'voluntary',
@@ -219,7 +216,7 @@ describe('Groom Legacy Service', () => {
           personality: 'calm',
           skillLevel: 'novice',
           speciality: 'foal_care',
-          userId: testUser.id,
+          userId: testUser.id ,
           level: 1,
         },
       });
@@ -287,7 +284,7 @@ describe('Groom Legacy Service', () => {
           personality: 'calm',
           skillLevel: 'novice',
           speciality: 'foal_care',
-          userId: testUser.id,
+          userId: testUser.id ,
           level: 3,
           retired: true,
         },
@@ -300,8 +297,9 @@ describe('Groom Legacy Service', () => {
         speciality: 'foal_care',
       };
 
-      await expect(generateLegacyProtege(ineligibleGroom.id, protegeData, testUser.id))
-        .rejects.toThrow('not eligible for legacy creation');
+      await expect(generateLegacyProtege(ineligibleGroom.id, protegeData, testUser.id)).rejects.toThrow(
+        'not eligible for legacy creation',
+      );
 
       // Cleanup
       await prisma.groom.delete({ where: { id: ineligibleGroom.id } });

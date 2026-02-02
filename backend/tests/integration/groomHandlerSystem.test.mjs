@@ -14,7 +14,6 @@ describe('Groom Handler System Integration Tests', () => {
   let testGroom;
   let testHorse;
 
-
   beforeAll(async () => {
     // Create test user
     testUser = await prisma.user.create({
@@ -36,7 +35,7 @@ describe('Groom Handler System Integration Tests', () => {
         name: 'Handler Test Horse',
         sex: 'male',
         dateOfBirth: new Date(Date.now() - 365 * 24 * 60 * 60 * 1000), // 1 year old
-        ownerId: testUser.id,
+        userId: testUser.id ,
         bondScore: 50,
         stressLevel: 30,
       },
@@ -46,12 +45,12 @@ describe('Groom Handler System Integration Tests', () => {
     testGroom = await prisma.groom.create({
       data: {
         name: 'Handler Test Groom',
-        userId: testUser.id,
+        userId: testUser.id ,
         speciality: 'showHandling',
         skillLevel: 'expert',
         personality: 'confident',
         experience: 10,
-        sessionRate: 35.00,
+        sessionRate: 35.0,
         bio: 'Test groom for handler system',
       },
     });
@@ -79,7 +78,7 @@ describe('Groom Handler System Integration Tests', () => {
         where: { userId: testUser.id },
       });
       await prisma.horse.deleteMany({
-        where: { ownerId: testUser.id },
+        where: { userId: testUser.id },
       });
       await prisma.user.delete({
         where: { id: testUser.id },
@@ -113,7 +112,7 @@ describe('Groom Handler System Integration Tests', () => {
           name: 'No Handler Horse',
           sex: 'female',
           dateOfBirth: new Date(Date.now() - 730 * 24 * 60 * 60 * 1000), // 2 years old
-          ownerId: testUser.id,
+          userId: testUser.id ,
           bondScore: 30,
           stressLevel: 40,
         },
@@ -153,7 +152,7 @@ describe('Groom Handler System Integration Tests', () => {
           name: 'Other User Horse',
           sex: 'male',
           dateOfBirth: new Date(Date.now() - 365 * 24 * 60 * 60 * 1000),
-          ownerId: otherUser.id,
+          userId: otherUser.id ,
         },
       });
 
@@ -206,9 +205,7 @@ describe('Groom Handler System Integration Tests', () => {
 
   describe('3. Handler Configuration', () => {
     it('should get handler configuration', async () => {
-      const response = await request(app)
-        .get('/api/groom-handlers/config')
-        .set('Authorization', `Bearer ${authToken}`);
+      const response = await request(app).get('/api/groom-handlers/config').set('Authorization', `Bearer ${authToken}`);
 
       expect(response.status).toBe(200);
       expect(response.body.success).toBe(true);
@@ -238,9 +235,9 @@ describe('Groom Handler System Integration Tests', () => {
         const groom = await prisma.groom.create({
           data: {
             ...data,
-            userId: testUser.id,
+            userId: testUser.id ,
             experience: 3,
-            sessionRate: 20.00,
+            sessionRate: 20.0,
             bio: 'Test groom for recommendations',
           },
         });
@@ -288,8 +285,7 @@ describe('Groom Handler System Integration Tests', () => {
       ];
 
       for (const endpoint of endpoints) {
-        const response = await request(app)[endpoint.method](endpoint.path)
-          .set('x-test-require-auth', 'true');
+        const response = await request(app)[endpoint.method](endpoint.path).set('x-test-require-auth', 'true');
         expect(response.status).toBe(401);
       }
     });

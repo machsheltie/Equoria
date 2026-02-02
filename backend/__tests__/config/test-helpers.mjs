@@ -59,7 +59,7 @@ export const createTestUser = async (overrides = {}) => {
  * Clean Up Test User
  * Deletes user and all related data
  */
-export const cleanupTestUser = async (userId) => {
+export const cleanupTestUser = async userId => {
   if (!userId) return;
 
   try {
@@ -81,7 +81,7 @@ export const cleanupTestUser = async (userId) => {
  * Clean Up Test Users by Email Pattern
  * Useful for cleaning up after failed tests
  */
-export const cleanupTestUsersByEmail = async (emailPattern) => {
+export const cleanupTestUsersByEmail = async emailPattern => {
   try {
     const users = await prisma.user.findMany({
       where: {
@@ -103,7 +103,7 @@ export const cleanupTestUsersByEmail = async (emailPattern) => {
  * Generate Test JWT Tokens
  * Creates valid access and refresh tokens for testing
  */
-export const generateTestTokens = (user) => {
+export const generateTestTokens = user => {
   const tokenPayload = {
     id: user.id,
     email: user.email,
@@ -133,7 +133,7 @@ export const getRateLimitBypassConfig = () => {
  * Sleep Utility
  * Wait for specified milliseconds
  */
-export const sleep = (ms) => new Promise(resolve => setTimeout(resolve, ms));
+export const sleep = ms => new Promise(resolve => setTimeout(resolve, ms));
 
 /**
  * Wait for Rate Limit Window to Reset
@@ -157,7 +157,7 @@ export const createMockRequest = (overrides = {}) => {
     ip: '127.0.0.1',
     method: 'GET',
     path: '/test',
-    get: function(header) {
+    get: function (header) {
       return this.headers[header.toLowerCase()];
     },
     ...overrides,
@@ -172,19 +172,19 @@ export const createMockResponse = () => {
     statusCode: 200,
     headers: {},
     body: null,
-    status: function(code) {
+    status: function (code) {
       this.statusCode = code;
       return this;
     },
-    json: function(data) {
+    json: function (data) {
       this.body = data;
       return this;
     },
-    setHeader: function(key, value) {
+    setHeader: function (key, value) {
       this.headers[key] = value;
       return this;
     },
-    cookie: function(name, value, options) {
+    cookie: function (name, value, options) {
       this.cookies = this.cookies || {};
       this.cookies[name] = { value, options };
       return this;
@@ -227,7 +227,7 @@ export const resetRateLimitStore = async () => {
 /**
  * Assertion Helpers
  */
-export const expectRateLimitHeaders = (response) => {
+export const expectRateLimitHeaders = response => {
   const headers = response.headers || {};
   const hasHeaders = Boolean(headers['ratelimit-limit']);
   if (!hasHeaders && process.env.NODE_ENV === 'test') {
@@ -240,7 +240,7 @@ export const expectRateLimitHeaders = (response) => {
   expect(headers).toHaveProperty('ratelimit-reset');
 };
 
-export const expectRateLimitExceeded = (response) => {
+export const expectRateLimitExceeded = response => {
   const allowed = [429];
   if (process.env.NODE_ENV === 'test') {
     allowed.push(401); // when limiter bypassed but auth fails
@@ -260,7 +260,7 @@ export const expectRateLimitExceeded = (response) => {
   }
 };
 
-export const expectAuthSuccess = (response) => {
+export const expectAuthSuccess = response => {
   expect(response.status).toBeOneOf([200, 201]);
   expect(response.body).toHaveProperty('status', 'success');
   expect(response.body).toHaveProperty('data');
@@ -282,9 +282,7 @@ export const expectAuthFailure = (response, status = 401) => {
 export const extractCookieValue = (cookies, cookieName) => {
   if (!cookies) return null;
 
-  const cookie = cookies.find(cookie =>
-    cookie.includes(`${cookieName}=`)
-  );
+  const cookie = cookies.find(cookie => cookie.includes(`${cookieName}=`));
 
   if (!cookie) return null;
 
@@ -295,14 +293,14 @@ export const extractCookieValue = (cookies, cookieName) => {
 /**
  * Extract Refresh Token from Set-Cookie Headers
  */
-export const extractRefreshTokenFromCookies = (cookies) => {
+export const extractRefreshTokenFromCookies = cookies => {
   return extractCookieValue(cookies, 'refreshToken');
 };
 
 /**
  * Extract Access Token from Set-Cookie Headers
  */
-export const extractAccessTokenFromCookies = (cookies) => {
+export const extractAccessTokenFromCookies = cookies => {
   return extractCookieValue(cookies, 'accessToken');
 };
 
@@ -310,7 +308,7 @@ export const extractAccessTokenFromCookies = (cookies) => {
  * Create Test Token Family
  * Creates a full token family for testing rotation scenarios
  */
-export const createTestTokenFamily = async (user) => {
+export const createTestTokenFamily = async user => {
   const familyId = `test-family-${Date.now()}-${Math.random().toString(36).substr(2, 9)}`;
 
   // This will be implemented in tokenRotationService.mjs
@@ -322,7 +320,7 @@ export const createTestTokenFamily = async (user) => {
     return {
       accessToken: 'mock-access-token',
       refreshToken: 'mock-refresh-token',
-      familyId: familyId
+      familyId: familyId,
     };
   }
 };
@@ -343,7 +341,7 @@ export const cleanupAllRefreshTokens = async () => {
  * Create Test Refresh Token in Database
  * Directly creates token record for testing
  */
-export const createTestRefreshTokenRecord = async (tokenData) => {
+export const createTestRefreshTokenRecord = async tokenData => {
   const defaultData = {
     token: `test-token-${Date.now()}`,
     userId: 'test-user-id',
@@ -362,7 +360,7 @@ export const createTestRefreshTokenRecord = async (tokenData) => {
  * Verify Token Family State
  * Checks the state of all tokens in a family
  */
-export const verifyTokenFamilyState = async (familyId) => {
+export const verifyTokenFamilyState = async familyId => {
   const tokens = await prisma.refreshToken.findMany({
     where: { familyId },
   });
@@ -396,7 +394,7 @@ export const assertTokenRotationOccurred = (oldTokens, newTokens) => {
  * Assert Token Reuse Detection
  * Verifies that token reuse was properly detected
  */
-export const assertTokenReuseDetected = (response) => {
+export const assertTokenReuseDetected = response => {
   expect(response.status).toBe(401);
   expect(response.body.message).toMatch(/reuse.*detected|invalid.*token/i);
 };
@@ -405,7 +403,7 @@ export const assertTokenReuseDetected = (response) => {
  * Assert Family Invalidation
  * Verifies that an entire token family was invalidated
  */
-export const assertFamilyInvalidation = async (familyId) => {
+export const assertFamilyInvalidation = async familyId => {
   const familyState = await verifyTokenFamilyState(familyId);
   expect(familyState.activeTokens).toBe(0);
   expect(familyState.invalidatedTokens).toBe(familyState.totalTokens);
@@ -454,7 +452,7 @@ export const mockTokenRotationService = () => {
 /**
  * Token Security Test Helpers
  */
-export const expectTokenSecurityHeaders = (response) => {
+export const expectTokenSecurityHeaders = response => {
   const cookies = response.headers['set-cookie'] || [];
   const refreshCookie = cookies.find(c => c.includes('refreshToken='));
 

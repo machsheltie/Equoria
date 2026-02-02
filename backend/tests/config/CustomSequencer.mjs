@@ -112,11 +112,7 @@ export default class CustomSequencer extends Sequencer {
    * Load previously failed tests from cache
    */
   loadFailedTests() {
-    const failedTestsPath = path.join(
-      process.cwd(),
-      '.jest-cache',
-      'failed-tests.json'
-    );
+    const failedTestsPath = path.join(process.cwd(), '.jest-cache', 'failed-tests.json');
 
     try {
       if (fs.existsSync(failedTestsPath)) {
@@ -147,11 +143,7 @@ export default class CustomSequencer extends Sequencer {
         fs.mkdirSync(cacheDir, { recursive: true });
       }
 
-      fs.writeFileSync(
-        failedTestsPath,
-        JSON.stringify(failedTests, null, 2),
-        'utf8'
-      );
+      fs.writeFileSync(failedTestsPath, JSON.stringify(failedTests, null, 2), 'utf8');
     } catch (error) {
       console.warn('Could not save failed tests cache:', error.message);
     }

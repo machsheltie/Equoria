@@ -42,11 +42,9 @@ import { describe, it, expect } from '@jest/globals';
  */
 function calculateActivityOutcome(activity) {
   const bondingChange =
-    Math.floor(Math.random() * (activity.bondingRange[1] - activity.bondingRange[0] + 1)) +
-    activity.bondingRange[0];
+    Math.floor(Math.random() * (activity.bondingRange[1] - activity.bondingRange[0] + 1)) + activity.bondingRange[0];
   const stressChange =
-    Math.floor(Math.random() * (activity.stressRange[1] - activity.stressRange[0] + 1)) +
-    activity.stressRange[0];
+    Math.floor(Math.random() * (activity.stressRange[1] - activity.stressRange[0] + 1)) + activity.stressRange[0];
 
   let result = 'success';
   let description = `${activity.description} completed successfully.`;
@@ -114,9 +112,7 @@ const testActivities = {
 };
 
 describe('🐴 PURE ALGORITHMIC: Foal Enrichment Helper Functions', () => {
-
   describe('calculateActivityOutcome', () => {
-
     it('should calculate activity outcome within specified ranges', () => {
       const activity = testActivities.trailerExposure;
 

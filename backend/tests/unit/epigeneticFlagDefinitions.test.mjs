@@ -61,8 +61,15 @@ describe('Epigenetic Flag Definitions', () => {
 
     test('should have all required starter flags', () => {
       const expectedFlags = [
-        'BRAVE', 'CONFIDENT', 'AFFECTIONATE', 'RESILIENT',
-        'FEARFUL', 'INSECURE', 'ALOOF', 'SKITTISH', 'FRAGILE',
+        'BRAVE',
+        'CONFIDENT',
+        'AFFECTIONATE',
+        'RESILIENT',
+        'FEARFUL',
+        'INSECURE',
+        'ALOOF',
+        'SKITTISH',
+        'FRAGILE',
       ];
 
       expectedFlags.forEach(flagName => {

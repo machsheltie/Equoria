@@ -142,7 +142,7 @@ describe('📊 INTEGRATION: XP Logging Integration - Experience Point Workflow',
       mockIncrementDisciplineScore.mockResolvedValue({
         id: 1,
         name: 'Thunder',
-        userId: 'user-123', // Corrected: ownerId/playerId to userId
+        userId: 'user-123', // Use userId to match schema relation
         disciplineScores: { Dressage: 15 },
       });
       mockAddXpToUserToUser.mockResolvedValue({ leveledUp: false, currentLevel: 2, xpGained: 5 });
@@ -182,7 +182,7 @@ describe('📊 INTEGRATION: XP Logging Integration - Experience Point Workflow',
       mockIncrementDisciplineScore.mockResolvedValue({
         id: 2,
         name: 'Lightning',
-        userId: 'user-456', // Corrected: ownerId/playerId to userId
+        userId: 'user-456', // Use userId to match schema relation
         disciplineScores: { Racing: 20 },
       });
       mockAddXpToUserToUser.mockResolvedValue({ leveledUp: false, currentLevel: 3, xpGained: 6 });
@@ -220,7 +220,7 @@ describe('📊 INTEGRATION: XP Logging Integration - Experience Point Workflow',
       mockIncrementDisciplineScore.mockResolvedValue({
         id: 3,
         name: 'Storm',
-        userId: 'user-789', // Corrected: ownerId/playerId to userId
+        userId: 'user-789', // Use userId to match schema relation
         disciplineScores: { 'Show Jumping': 10 },
       });
       mockAddXpToUserToUser.mockResolvedValue({ leveledUp: false, currentLevel: 1, xpGained: 5 });
@@ -260,7 +260,7 @@ describe('📊 INTEGRATION: XP Logging Integration - Experience Point Workflow',
       const mockHorse = {
         id: 1,
         name: 'Champion',
-        userId: 'user-123', // Changed from ownerId/playerId
+        userId: 'user-123', // Use userId to match schema relation
         rider: { name: 'Test Rider', skill: 5 },
       };
 
@@ -293,10 +293,10 @@ describe('📊 INTEGRATION: XP Logging Integration - Experience Point Workflow',
       const xpAmount = 20;
 
       if (mockHorse && mockHorse.userId) {
-        // Changed from ownerId
-        await mockAddXpToUserToUser(mockHorse.userId, xpAmount); // Changed from ownerId
+        // Fixed: Use ownerId to match schema
+        await mockAddXpToUserToUser(mockHorse.userId, xpAmount);
         await mockLogXpEvent({
-          userId: mockHorse.userId, // Changed from playerId & ownerId
+          userId: mockHorse.userId,
           amount: xpAmount,
           reason: `${placement} place with horse ${mockHorse.name} in ${mockShow.discipline}`,
         });
@@ -323,7 +323,7 @@ describe('📊 INTEGRATION: XP Logging Integration - Experience Point Workflow',
         const mockHorse = {
           id: 1,
           name: 'TestHorse',
-          userId: 'user-123', // Changed from ownerId/playerId
+          userId: 'user-123', // Use userId to match schema relation
         };
 
         mockAddXpToUserToUser.mockResolvedValue({ leveledUp: false, currentLevel: 3 });
@@ -336,9 +336,9 @@ describe('📊 INTEGRATION: XP Logging Integration - Experience Point Workflow',
         });
 
         // Simulate XP award for placement
-        await mockAddXpToUserToUser(mockHorse.userId, testCase.expectedXp); // Changed from ownerId
+        await mockAddXpToUserToUser(mockHorse.userId, testCase.expectedXp);
         await mockLogXpEvent({
-          userId: mockHorse.userId, // Changed from playerId & ownerId
+          userId: mockHorse.userId,
           amount: testCase.expectedXp,
           reason: `${testCase.placement} place with horse ${mockHorse.name} in Dressage`,
         });

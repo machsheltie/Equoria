@@ -33,7 +33,7 @@ describe('🚀 INTEGRATION: Competition API Endpoints', () => {
 
     // Create test horse with good stats for competition
     testHorse = await createTestHorse({
-      userId: testUser.id,
+      userId: testUser.id ,
       name: 'API Test Horse',
       age: 35, // 5 years * 7 days/year = 35 days
       speed: 80,

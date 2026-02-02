@@ -51,9 +51,7 @@ await jest.unstable_mockModule(join(__dirname, '../utils/logger.mjs'), () => ({
 }));
 
 // Import the function under test
-const { validateFoalInteractionLimits } = await import(
-  join(__dirname, '../utils/groomSystem.mjs'),
-);
+const { validateFoalInteractionLimits } = await import(join(__dirname, '../utils/groomSystem.mjs'));
 
 describe('🐴 TDD: Groom Interaction Daily Limits - ALL Horses', () => {
   beforeEach(() => {

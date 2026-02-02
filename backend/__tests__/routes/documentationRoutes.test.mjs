@@ -44,11 +44,9 @@ describe('Documentation Routes', () => {
     });
 
     // Generate auth token
-    authToken = jwt.sign(
-      { id: testUser.id, username: testUser.username },
-      process.env.JWT_SECRET || 'test-secret',
-      { expiresIn: '1h' },
-    );
+    authToken = jwt.sign({ id: testUser.id, username: testUser.username }, process.env.JWT_SECRET || 'test-secret', {
+      expiresIn: '1h',
+    });
 
     // Create test Express app
     testApp = express();
@@ -91,10 +89,7 @@ describe('Documentation Routes', () => {
     });
 
     test('requires authentication', async () => {
-      const response = await request(testApp)
-        .get('/api/docs/health')
-        .set('x-test-require-auth', 'true')
-        .expect(401);
+      const response = await request(testApp).get('/api/docs/health').set('x-test-require-auth', 'true').expect(401);
 
       expect(response.body.success).toBe(false);
       expect(response.body.message).toContain('token');
@@ -131,7 +126,7 @@ describe('Documentation Routes', () => {
         summary: 'Test endpoint',
         description: 'A test endpoint',
         tags: ['Test'],
-        responses: { '200': { description: 'Success' } },
+        responses: { 200: { description: 'Success' } },
       });
 
       const response = await request(testApp)
@@ -179,7 +174,7 @@ describe('Documentation Routes', () => {
         summary: 'List users',
         description: 'Get all users',
         tags: ['Users'],
-        responses: { '200': { description: 'Success' } },
+        responses: { 200: { description: 'Success' } },
       });
 
       docService.registerSchema('User', {
@@ -211,8 +206,8 @@ describe('Documentation Routes', () => {
         tags: ['Horses'],
         parameters: [],
         responses: {
-          '201': { description: 'Horse created' },
-          '400': { description: 'Validation error' },
+          201: { description: 'Horse created' },
+          400: { description: 'Validation error' },
         },
       };
 
@@ -321,14 +316,14 @@ describe('Documentation Routes', () => {
         summary: 'List users',
         description: 'Get all users',
         tags: ['Users'],
-        responses: { '200': { description: 'Success' } },
+        responses: { 200: { description: 'Success' } },
       });
 
       docService.registerEndpoint('POST', '/api/users', {
         summary: 'Create user',
         // Missing description for partial coverage
         tags: ['Users'],
-        responses: { '201': { description: 'Created' } },
+        responses: { 201: { description: 'Created' } },
       });
 
       const response = await request(testApp)
@@ -419,10 +414,7 @@ describe('Documentation Routes', () => {
     });
 
     test('handles missing authorization header', async () => {
-      const response = await request(testApp)
-        .get('/api/docs/health')
-        .set('x-test-require-auth', 'true')
-        .expect(401);
+      const response = await request(testApp).get('/api/docs/health').set('x-test-require-auth', 'true').expect(401);
 
       expect(response.body.success).toBe(false);
     });
@@ -443,7 +435,7 @@ describe('Documentation Routes', () => {
           .set('Authorization', `Bearer ${authToken}`)
           .send({
             ...endpoint,
-            responses: { '200': { description: 'Success' } },
+            responses: { 200: { description: 'Success' } },
           })
           .expect(201);
       }

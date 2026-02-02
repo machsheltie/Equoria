@@ -46,7 +46,7 @@ describe('Parameter Pollution Attack Integration Tests', () => {
         name: `TestHorse-${Date.now()}`,
         sex: 'mare',
         dateOfBirth: new Date('2015-01-01'),
-        userId: testUser.id,
+        userId: testUser.id, // Matches schema field (line 144)
         age: 5,
       },
     });
@@ -176,7 +176,7 @@ describe('Parameter Pollution Attack Integration Tests', () => {
         .set('X-Test-Skip-Csrf', 'true')
         .send({
           name: 'ValidName',
-          '__proto__': {
+          __proto__: {
             isAdmin: true,
           },
         })
@@ -195,9 +195,9 @@ describe('Parameter Pollution Attack Integration Tests', () => {
         .set('X-Test-Skip-Csrf', 'true')
         .send({
           name: 'ValidName',
-          'constructor': {
-            'prototype': {
-              'isAdmin': true,
+          constructor: {
+            prototype: {
+              isAdmin: true,
             },
           },
         })
@@ -223,7 +223,9 @@ describe('Parameter Pollution Attack Integration Tests', () => {
 
   describe('Array Parameter Manipulation', () => {
     it('should reject oversized arrays in batch operations', async () => {
-      const largeArray = Array(1001).fill(1).map((_, i) => i);
+      const largeArray = Array(1001)
+        .fill(1)
+        .map((_, i) => i);
 
       const response = await request(app)
         .post('/api/horses/batch-update')
@@ -431,9 +433,9 @@ describe('Parameter Pollution Attack Integration Tests', () => {
         .set('X-Test-Skip-Csrf', 'true')
         .send({
           traits: {
-            '__proto__': { isAdmin: true },
-            'constructor': { prototype: { isAdmin: true } },
-            'strength': 50,
+            __proto__: { isAdmin: true },
+            constructor: { prototype: { isAdmin: true } },
+            strength: 50,
           },
         })
         .expect(400);
@@ -448,8 +450,8 @@ describe('Parameter Pollution Attack Integration Tests', () => {
         .set('X-Test-Skip-Csrf', 'true')
         .send({
           traits: {
-            '0': 'value1',
-            '1': 'value2',
+            0: 'value1',
+            1: 'value2',
           },
         })
         .expect(400);

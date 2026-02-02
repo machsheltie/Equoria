@@ -32,7 +32,7 @@ describe('Groom Personality Trait System', () => {
     const now = new Date();
     const oneMonthAgo = new Date(now.getTime() - 30 * 24 * 60 * 60 * 1000);
 
-    await prisma.$transaction(async (tx) => {
+    await prisma.$transaction(async tx => {
       // Create test user
       testUser = await tx.user.create({
         data: {
@@ -57,7 +57,7 @@ describe('Groom Personality Trait System', () => {
             groomPersonality: 'calm',
             skillLevel: 'expert',
             speciality: 'foal_care',
-            userId: testUser.id,
+            userId: testUser.id ,
             sessionRate: 35.0,
             experience: 150, // High experience
             level: 8,
@@ -71,7 +71,7 @@ describe('Groom Personality Trait System', () => {
             groomPersonality: 'energetic',
             skillLevel: 'novice',
             speciality: 'general_grooming',
-            userId: testUser.id,
+            userId: testUser.id ,
             sessionRate: 15.0,
             experience: 25, // Low experience
             level: 2,
@@ -85,7 +85,7 @@ describe('Groom Personality Trait System', () => {
             groomPersonality: 'methodical',
             skillLevel: 'experienced',
             speciality: 'foal_care',
-            userId: testUser.id,
+            userId: testUser.id ,
             sessionRate: 28.0,
             experience: 80, // Medium experience
             level: 5,
@@ -100,7 +100,7 @@ describe('Groom Personality Trait System', () => {
             name: `Test Horse Nervous ${Date.now()}`,
             sex: 'filly',
             dateOfBirth: oneMonthAgo,
-            ownerId: testUser.id,
+            userId: testUser.id ,
             bondScore: 10,
             stressLevel: 8,
             epigeneticFlags: ['fearful', 'insecure'],
@@ -112,7 +112,7 @@ describe('Groom Personality Trait System', () => {
             name: `Test Horse Confident ${Date.now()}`,
             sex: 'colt',
             dateOfBirth: oneMonthAgo,
-            ownerId: testUser.id,
+            userId: testUser.id ,
             bondScore: 35,
             stressLevel: 2,
             epigeneticFlags: ['brave', 'confident'],
@@ -124,7 +124,7 @@ describe('Groom Personality Trait System', () => {
             name: `Test Horse Neutral ${Date.now()}`,
             sex: 'gelding',
             dateOfBirth: oneMonthAgo,
-            ownerId: testUser.id,
+            userId: testUser.id ,
             bondScore: 20,
             stressLevel: 5,
             epigeneticFlags: [],
@@ -177,7 +177,6 @@ describe('Groom Personality Trait System', () => {
     });
 
     test('should return detailed personality traits for energetic groom', async () => {
-      // eslint-disable-next-line prefer-destructuring
       const energeticGroom = testGrooms[1]; // Novice energetic groom
 
       const traits = await getGroomPersonalityTraits(energeticGroom.id);
@@ -197,7 +196,6 @@ describe('Groom Personality Trait System', () => {
     });
 
     test('should return detailed personality traits for methodical groom', async () => {
-      // eslint-disable-next-line prefer-destructuring
       const methodicalGroom = testGrooms[2]; // Experienced methodical groom
 
       const traits = await getGroomPersonalityTraits(methodicalGroom.id);
@@ -234,9 +232,8 @@ describe('Groom Personality Trait System', () => {
     });
 
     test('should calculate modifiers for energetic groom with confident horse', async () => {
-      // eslint-disable-next-line prefer-destructuring
       const energeticGroom = testGrooms[1];
-      // eslint-disable-next-line prefer-destructuring
+
       const confidentHorse = testHorses[1];
 
       const modifiers = await calculatePersonalityModifiers(energeticGroom.id, confidentHorse.id, 'desensitization');
@@ -248,7 +245,6 @@ describe('Groom Personality Trait System', () => {
     });
 
     test('should calculate modifiers for energetic groom with nervous horse', async () => {
-      // eslint-disable-next-line prefer-destructuring
       const energeticGroom = testGrooms[1];
       const [nervousHorse] = testHorses;
 
@@ -261,9 +257,8 @@ describe('Groom Personality Trait System', () => {
     });
 
     test('should calculate modifiers for methodical groom with any horse', async () => {
-      // eslint-disable-next-line prefer-destructuring
       const methodicalGroom = testGrooms[2];
-      // eslint-disable-next-line prefer-destructuring
+
       const neutralHorse = testHorses[2];
 
       const modifiers = await calculatePersonalityModifiers(methodicalGroom.id, neutralHorse.id, 'hoof_handling');
@@ -297,7 +292,6 @@ describe('Groom Personality Trait System', () => {
     });
 
     test('should identify poor compatibility combinations', async () => {
-      // eslint-disable-next-line prefer-destructuring
       const energeticGroom = testGrooms[1];
       const [nervousHorse] = testHorses;
 
@@ -309,15 +303,14 @@ describe('Groom Personality Trait System', () => {
       expect(compatibility.recommendations.length).toBeGreaterThan(0);
 
       // Should suggest alternatives or modifications
-      expect(compatibility.recommendations.some(r =>
-        r.includes('calm') || r.includes('gentle') || r.includes('avoid'),
-      )).toBe(true);
+      expect(
+        compatibility.recommendations.some(r => r.includes('calm') || r.includes('gentle') || r.includes('avoid')),
+      ).toBe(true);
     });
   });
 
   describe('updatePersonalityTraits', () => {
     test('should update personality traits based on interaction outcomes', async () => {
-      // eslint-disable-next-line prefer-destructuring
       const groom = testGrooms[1]; // Energetic novice groom
 
       // Create some interactions to base trait updates on

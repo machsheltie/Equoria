@@ -46,7 +46,10 @@ import memoryManagementRoutes from '../../routes/memoryManagementRoutes.mjs';
 import documentationRoutes from '../../routes/documentationRoutes.mjs';
 import userDocumentationRoutes from '../../routes/userDocumentationRoutes.mjs';
 import epigeneticFlagRoutes from '../../routes/epigeneticFlagRoutes.mjs';
-import { initializeMemoryManagement, shutdownMemoryManagement } from '../../services/memoryResourceManagementService.mjs';
+import {
+  initializeMemoryManagement,
+  shutdownMemoryManagement,
+} from '../../services/memoryResourceManagementService.mjs';
 import prisma from '../../db/index.mjs';
 import { generateTestToken } from '../helpers/authHelper.mjs';
 
@@ -56,20 +59,24 @@ const createTestApp = () => {
   app.use(express.json());
 
   // Auth routes for testing
-  app.post('/api/auth/register', [
-    body('email').isEmail().normalizeEmail(),
-    body('username').isLength({ min: 3, max: 30 }),
-    body('password').isLength({ min: 8 }),
-    body('firstName').notEmpty(),
-    body('lastName').notEmpty(),
-    handleValidationErrors,
-  ], register);
+  app.post(
+    '/api/auth/register',
+    [
+      body('email').isEmail().normalizeEmail(),
+      body('username').isLength({ min: 3, max: 30 }),
+      body('password').isLength({ min: 8 }),
+      body('firstName').notEmpty(),
+      body('lastName').notEmpty(),
+      handleValidationErrors,
+    ],
+    register,
+  );
 
-  app.post('/api/auth/login', [
-    body('email').isEmail().normalizeEmail(),
-    body('password').notEmpty(),
-    handleValidationErrors,
-  ], login);
+  app.post(
+    '/api/auth/login',
+    [body('email').isEmail().normalizeEmail(), body('password').notEmpty(), handleValidationErrors],
+    login,
+  );
 
   // Main health endpoints
   app.get('/ping', handlePing);
@@ -150,7 +157,7 @@ describe('🏥 Health Monitoring Integration Tests', () => {
 
     // Close server and disconnect
     if (server) {
-      await new Promise((resolve) => server.close(resolve));
+      await new Promise(resolve => server.close(resolve));
     }
     await prisma.$disconnect();
   });
@@ -173,9 +180,7 @@ describe('🏥 Health Monitoring Integration Tests', () => {
       lastName: 'Integration',
     };
 
-    const registerResponse = await request(app)
-      .post('/api/auth/register')
-      .send(userData);
+    const registerResponse = await request(app).post('/api/auth/register').send(userData);
 
     expect(registerResponse.status).toBe(201);
     _testUser = registerResponse.body.data.user;
@@ -195,8 +200,7 @@ describe('🏥 Health Monitoring Integration Tests', () => {
 
   describe('🔍 Main Health Endpoints', () => {
     test('should provide basic ping health check', async () => {
-      const response = await request(app)
-        .get('/ping');
+      const response = await request(app).get('/ping');
 
       expect(response.status).toBe(200);
       expect(response.body.success).toBe(true);
@@ -205,8 +209,7 @@ describe('🏥 Health Monitoring Integration Tests', () => {
     });
 
     test('should provide ping with custom name', async () => {
-      const response = await request(app)
-        .get('/ping?name=HealthTest');
+      const response = await request(app).get('/ping?name=HealthTest');
 
       expect(response.status).toBe(200);
       expect(response.body.success).toBe(true);
@@ -215,8 +218,7 @@ describe('🏥 Health Monitoring Integration Tests', () => {
     });
 
     test('should provide comprehensive health check', async () => {
-      const response = await request(app)
-        .get('/health');
+      const response = await request(app).get('/health');
 
       expect(response.status).toBe(200);
       expect(response.body.success).toBe(true);
@@ -231,8 +233,7 @@ describe('🏥 Health Monitoring Integration Tests', () => {
     });
 
     test('should provide readiness check', async () => {
-      const response = await request(app)
-        .get('/ready');
+      const response = await request(app).get('/ready');
 
       expect(response.status).toBe(200);
       expect(response.body.success).toBe(true);
@@ -244,9 +245,7 @@ describe('🏥 Health Monitoring Integration Tests', () => {
 
   describe('🧠 Memory Management Health', () => {
     test('should provide memory system health assessment', async () => {
-      const response = await request(app)
-        .get('/api/memory/health')
-        .set('Authorization', `Bearer ${authToken}`);
+      const response = await request(app).get('/api/memory/health').set('Authorization', `Bearer ${authToken}`);
 
       expect(response.status).toBe(200);
       expect(response.body.success).toBe(true);
@@ -262,9 +261,7 @@ describe('🏥 Health Monitoring Integration Tests', () => {
     });
 
     test('should validate memory health score ranges', async () => {
-      const response = await request(app)
-        .get('/api/memory/health')
-        .set('Authorization', `Bearer ${authToken}`);
+      const response = await request(app).get('/api/memory/health').set('Authorization', `Bearer ${authToken}`);
 
       expect(response.status).toBe(200);
       const healthData = response.body.data;
@@ -278,9 +275,7 @@ describe('🏥 Health Monitoring Integration Tests', () => {
 
   describe('📚 Documentation System Health', () => {
     test('should provide API documentation health status', async () => {
-      const response = await request(app)
-        .get('/api/docs/health')
-        .set('Authorization', `Bearer ${authToken}`);
+      const response = await request(app).get('/api/docs/health').set('Authorization', `Bearer ${authToken}`);
 
       expect(response.status).toBe(200);
       expect(response.body.success).toBe(true);
@@ -291,8 +286,7 @@ describe('🏥 Health Monitoring Integration Tests', () => {
     });
 
     test('should provide user documentation health status', async () => {
-      const response = await request(app)
-        .get('/api/user-docs/health');
+      const response = await request(app).get('/api/user-docs/health');
 
       expect(response.status).toBe(200);
       expect(response.body.success).toBe(true);
@@ -306,8 +300,7 @@ describe('🏥 Health Monitoring Integration Tests', () => {
 
   describe('🧬 Epigenetic Flag System Health', () => {
     test('should provide flag system operational status', async () => {
-      const response = await request(app)
-        .get('/api/flags/health');
+      const response = await request(app).get('/api/flags/health');
 
       expect(response.status).toBe(200);
       expect(response.body.success).toBe(true);
@@ -365,7 +358,7 @@ describe('🏥 Health Monitoring Integration Tests', () => {
         // Each should have either message or data
         expect(
           Object.prototype.hasOwnProperty.call(response.body, 'message') ||
-          Object.prototype.hasOwnProperty.call(response.body, 'data'),
+            Object.prototype.hasOwnProperty.call(response.body, 'data'),
         ).toBe(true);
       });
     });
@@ -375,8 +368,7 @@ describe('🏥 Health Monitoring Integration Tests', () => {
     test('should monitor health endpoint response times', async () => {
       const startTime = Date.now();
 
-      const response = await request(app)
-        .get('/health');
+      const response = await request(app).get('/health');
 
       const responseTime = Date.now() - startTime;
 
@@ -386,8 +378,7 @@ describe('🏥 Health Monitoring Integration Tests', () => {
     });
 
     test('should validate database performance in health checks', async () => {
-      const response = await request(app)
-        .get('/health');
+      const response = await request(app).get('/health');
 
       expect(response.status).toBe(200);
       expect(response.body.data.services.database.status).toBe('healthy');
@@ -402,11 +393,7 @@ describe('🏥 Health Monitoring Integration Tests', () => {
 
   describe('🛡️ Health Monitoring Security', () => {
     test('should require authentication for protected health endpoints', async () => {
-      const protectedEndpoints = [
-        '/api/memory/health',
-        '/api/docs/health',
-        '/api/test/health-status',
-      ];
+      const protectedEndpoints = ['/api/memory/health', '/api/docs/health', '/api/test/health-status'];
 
       for (const endpoint of protectedEndpoints) {
         const response = await request(app).get(endpoint).set('x-test-require-auth', 'true');
@@ -418,13 +405,7 @@ describe('🏥 Health Monitoring Integration Tests', () => {
     });
 
     test('should allow public access to basic health endpoints', async () => {
-      const publicEndpoints = [
-        '/ping',
-        '/health',
-        '/ready',
-        '/api/user-docs/health',
-        '/api/flags/health',
-      ];
+      const publicEndpoints = ['/ping', '/health', '/ready', '/api/user-docs/health', '/api/flags/health'];
 
       for (const endpoint of publicEndpoints) {
         const response = await request(app).get(endpoint);
@@ -438,9 +419,7 @@ describe('🏥 Health Monitoring Integration Tests', () => {
   describe('🚨 Error Handling and Reporting', () => {
     test('should handle health check errors gracefully', async () => {
       // Test authenticated health endpoint with valid token
-      const response = await request(app)
-        .get('/api/test/health-status')
-        .set('Authorization', `Bearer ${authToken}`);
+      const response = await request(app).get('/api/test/health-status').set('Authorization', `Bearer ${authToken}`);
 
       expect(response.status).toBe(200);
       expect(response.body.success).toBe(true);

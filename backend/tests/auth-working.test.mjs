@@ -119,7 +119,7 @@ describe('🔐 INTEGRATION: Authentication System - Complete Auth Workflow Valid
   };
 
   // Helper to track created users
-  const trackUser = (response) => {
+  const trackUser = response => {
     if (response.body?.data?.user?.id) {
       createdUserIds.add(response.body.data.user.id);
     }
@@ -152,7 +152,9 @@ describe('🔐 INTEGRATION: Authentication System - Complete Auth Workflow Valid
       trackUser(response);
 
       expect(response.body.status).toBe('success');
-      expect(response.body.message).toBe('User registered successfully. Please check your email to verify your account.');
+      expect(response.body.message).toBe(
+        'User registered successfully. Please check your email to verify your account.',
+      );
       expect(response.body.data.user.email).toBe(userData.email);
       expect(response.body.data.user.username).toBe(userData.username);
       expect(response.body.data.user.firstName).toBe(userData.firstName);
@@ -236,7 +238,11 @@ describe('🔐 INTEGRATION: Authentication System - Complete Auth Workflow Valid
         password: 'wrongpassword',
       };
 
-      const response = await request(app).post('/api/auth/login').send(loginData).set('x-test-require-auth', 'true').expect(401);
+      const response = await request(app)
+        .post('/api/auth/login')
+        .send(loginData)
+        .set('x-test-require-auth', 'true')
+        .expect(401);
 
       expect(response.body.success).toBe(false);
       expect(response.body.message).toBe('Invalid credentials');

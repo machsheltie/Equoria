@@ -29,7 +29,7 @@ describe('Epigenetic Trait System Integration Tests', () => {
       where: {
         OR: [
           { horse: { name: { startsWith: 'EpigeneticTest' } } },
-          { horse: { ownerId: { startsWith: 'epigenetic_test' } } },
+          { horse: { userId: { startsWith: 'epigenetic_test' } } },
         ],
       },
     });
@@ -83,7 +83,7 @@ describe('Epigenetic Trait System Integration Tests', () => {
     testHorse = await prisma.horse.create({
       data: {
         name: 'EpigeneticTest Foal',
-        ownerId: testUser.id,
+        userId: testUser.id ,
         dateOfBirth: foalBirthDate,
         age: 0,
         sex: 'female',
@@ -102,7 +102,7 @@ describe('Epigenetic Trait System Integration Tests', () => {
         personality: 'calm',
         groomPersonality: 'gentle',
         sessionRate: 25.0,
-        userId: testUser.id,
+        userId: testUser.id ,
       },
     });
 
@@ -425,7 +425,7 @@ describe('Trait History Service', () => {
     testHorse = await prisma.horse.create({
       data: {
         name: 'ServiceTest Horse',
-        ownerId: testUser.id,
+        userId: testUser.id ,
         dateOfBirth: new Date(Date.now() - 30 * 24 * 60 * 60 * 1000), // 30 days old
         age: 0,
         sex: 'male',
@@ -441,7 +441,7 @@ describe('Trait History Service', () => {
         personality: 'patient',
         groomPersonality: 'patient',
         sessionRate: 20.0,
-        userId: testUser.id,
+        userId: testUser.id ,
       },
     });
   });

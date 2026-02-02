@@ -40,8 +40,8 @@ describe('Groom Salary System', () => {
     testHorse = await prisma.horse.create({
       data: {
         name: 'Salary Test Horse',
-        ownerId: testUser.id,
-        dateOfBirth: new Date(Date.now() - (5 * 365 * 24 * 60 * 60 * 1000)), // 5 years old
+        userId: testUser.id ,
+        dateOfBirth: new Date(Date.now() - 5 * 365 * 24 * 60 * 60 * 1000), // 5 years old
         age: 5,
         sex: 'male',
         healthStatus: 'Excellent',
@@ -60,7 +60,7 @@ describe('Groom Salary System', () => {
         speciality: 'showHandling',
         personality: 'gentle',
         experience: 50,
-        userId: testUser.id,
+        userId: testUser.id ,
       },
     });
 
@@ -86,7 +86,7 @@ describe('Groom Salary System', () => {
       where: { userId: testUser?.id },
     });
     await prisma.horse.deleteMany({
-      where: { ownerId: testUser?.id },
+      where: { userId: testUser?.id },
     });
     await prisma.user.deleteMany({
       where: { id: testUser?.id },
@@ -126,9 +126,7 @@ describe('Groom Salary System', () => {
 
   describe('API Endpoints', () => {
     it('should get user salary cost', async () => {
-      const response = await request(app)
-        .get('/api/groom-salaries/cost')
-        .set('Authorization', `Bearer ${authToken}`);
+      const response = await request(app).get('/api/groom-salaries/cost').set('Authorization', `Bearer ${authToken}`);
 
       expect(response.status).toBe(200);
       expect(response.body.success).toBe(true);
@@ -176,9 +174,7 @@ describe('Groom Salary System', () => {
     });
 
     it('should get cron job status', async () => {
-      const response = await request(app)
-        .get('/api/groom-salaries/status')
-        .set('Authorization', `Bearer ${authToken}`);
+      const response = await request(app).get('/api/groom-salaries/status').set('Authorization', `Bearer ${authToken}`);
 
       expect(response.status).toBe(200);
       expect(response.body.success).toBe(true);
@@ -205,7 +201,7 @@ describe('Groom Salary System', () => {
           skillLevel: 'novice',
           speciality: 'general',
           personality: 'gentle',
-          userId: otherUser.id,
+          userId: otherUser.id ,
         },
       });
 
@@ -290,9 +286,7 @@ describe('Groom Salary System', () => {
     });
 
     it('should require authentication for GET /api/groom-salaries/summary', async () => {
-      const response = await request(app)
-        .get('/api/groom-salaries/summary')
-        .set('x-test-require-auth', 'true');
+      const response = await request(app).get('/api/groom-salaries/summary').set('x-test-require-auth', 'true');
 
       expect(response.status).toBe(401);
       expect(response.body.success).toBe(false);
@@ -322,9 +316,7 @@ describe('Groom Salary System', () => {
     });
 
     it('should require authentication for POST /api/groom-salaries/process', async () => {
-      const response = await request(app)
-        .post('/api/groom-salaries/process')
-        .set('x-test-require-auth', 'true');
+      const response = await request(app).post('/api/groom-salaries/process').set('x-test-require-auth', 'true');
 
       expect(response.status).toBe(401);
       expect(response.body.success).toBe(false);

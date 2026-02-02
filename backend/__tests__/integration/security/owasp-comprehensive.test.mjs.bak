@@ -61,10 +61,10 @@ describe('🔒 OWASP Top 10 - Comprehensive Security Tests', () => {
     testHorse = await prisma.horse.create({
       data: {
         name: 'OWASP Test Horse',
-        breedId: 1,
+        breed: { connect: { id: 1 } },
         sex: 'Stallion',
         dateOfBirth: new Date(Date.now() - 5 * 365 * 24 * 60 * 60 * 1000), // 5 years old
-        userId: testUser.id,
+        user: { connect: { id: testUser.id } },
       },
     });
   });
@@ -392,10 +392,10 @@ describe('🔒 OWASP Top 10 - Comprehensive Security Tests', () => {
         const otherHorse = await prisma.horse.create({
           data: {
             name: 'Other User Horse',
-            breedId: 1,
+            breed: { connect: { id: 1 } },
             sex: 'Mare',
             dateOfBirth: new Date(Date.now() - 5 * 365 * 24 * 60 * 60 * 1000),
-            userId: otherUser.id,
+            user: { connect: { id: otherUser.id } },
           },
         });
 

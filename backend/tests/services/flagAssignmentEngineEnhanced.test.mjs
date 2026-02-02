@@ -33,7 +33,7 @@ describe('Enhanced Flag Assignment Engine', () => {
     const oneMonthAgo = new Date(now.getTime() - 30 * 24 * 60 * 60 * 1000);
     const sixMonthsAgo = new Date(now.getTime() - 180 * 24 * 60 * 60 * 1000);
 
-    await prisma.$transaction(async (tx) => {
+    await prisma.$transaction(async tx => {
       // Create test user
       testUser = await tx.user.create({
         data: {
@@ -57,7 +57,7 @@ describe('Enhanced Flag Assignment Engine', () => {
             groomPersonality: 'calm',
             skillLevel: 'experienced',
             speciality: 'foal_care',
-            userId: testUser.id,
+            userId: testUser.id ,
             sessionRate: 25.0,
           },
         }),
@@ -68,7 +68,7 @@ describe('Enhanced Flag Assignment Engine', () => {
             groomPersonality: 'energetic',
             skillLevel: 'experienced',
             speciality: 'general_grooming',
-            userId: testUser.id,
+            userId: testUser.id ,
             sessionRate: 25.0,
           },
         }),
@@ -79,7 +79,7 @@ describe('Enhanced Flag Assignment Engine', () => {
             groomPersonality: 'methodical',
             skillLevel: 'expert',
             speciality: 'foal_care',
-            userId: testUser.id,
+            userId: testUser.id ,
             sessionRate: 30.0,
           },
         }),
@@ -92,7 +92,7 @@ describe('Enhanced Flag Assignment Engine', () => {
             name: `Test Foal Week ${Date.now()}`,
             sex: 'filly',
             dateOfBirth: oneWeekAgo,
-            ownerId: testUser.id,
+            userId: testUser.id ,
             bondScore: 10,
             stressLevel: 8,
             epigeneticFlags: [],
@@ -104,7 +104,7 @@ describe('Enhanced Flag Assignment Engine', () => {
             name: `Test Foal Month ${Date.now()}`,
             sex: 'colt',
             dateOfBirth: oneMonthAgo,
-            ownerId: testUser.id,
+            userId: testUser.id ,
             bondScore: 20,
             stressLevel: 5,
             epigeneticFlags: [],
@@ -116,7 +116,7 @@ describe('Enhanced Flag Assignment Engine', () => {
             name: `Test Foal 6mo ${Date.now()}`,
             sex: 'gelding',
             dateOfBirth: sixMonthsAgo,
-            ownerId: testUser.id,
+            userId: testUser.id ,
             bondScore: 35,
             stressLevel: 3,
             epigeneticFlags: [],
@@ -190,7 +190,6 @@ describe('Enhanced Flag Assignment Engine', () => {
     });
 
     test('should apply energetic groom personality modifiers correctly', async () => {
-      // eslint-disable-next-line prefer-destructuring
       const horse = testHorses[1]; // 1 month old foal
 
       // Create interactions with energetic groom
@@ -266,7 +265,7 @@ describe('Enhanced Flag Assignment Engine', () => {
 
     test('should apply age-based sensitivity modifiers', async () => {
       const [youngHorse] = testHorses; // 1 week old
-      // eslint-disable-next-line prefer-destructuring
+
       const olderHorse = testHorses[2]; // 6 months old
 
       const carePatterns = {
@@ -286,7 +285,6 @@ describe('Enhanced Flag Assignment Engine', () => {
 
   describe('analyzeTemporalPatterns', () => {
     test('should analyze temporal patterns in care quality', async () => {
-      // eslint-disable-next-line prefer-destructuring
       const horse = testHorses[1];
 
       // Create a series of interactions over time with varying quality
@@ -352,7 +350,6 @@ describe('Enhanced Flag Assignment Engine', () => {
 
   describe('Advanced Flag Assignment Integration', () => {
     test('should integrate all enhancement features for comprehensive evaluation', async () => {
-      // eslint-disable-next-line prefer-destructuring
       const horse = testHorses[2]; // 6 months old
 
       // Create a complex care pattern with multiple grooms and varying quality

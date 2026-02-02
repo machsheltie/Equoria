@@ -54,8 +54,8 @@ describe('Trait Routes Integration Tests', () => {
           name: `Test Discovery Horse ${Date.now()}`,
           sex: 'mare',
           dateOfBirth: twoYearsAgo,
-          breed: { connect: { id: testBreed.id } },
-          user: { connect: { id: testUser.id } }, // Link horse to test user in ACTUAL database
+          breedId: testBreed.id ,
+          userId: testUser.id , // Link horse to test user in ACTUAL database
           bondScore: 85,
           stressLevel: 15,
           healthStatus: 'excellent',

@@ -46,8 +46,7 @@ describe('🏪 INTEGRATION: Groom Marketplace API', () => {
       ];
 
       for (const endpoint of endpoints) {
-        const response = await request(app)[endpoint.method](endpoint.path)
-          .set('x-test-require-auth', 'true');
+        const response = await request(app)[endpoint.method](endpoint.path).set('x-test-require-auth', 'true');
         expect(response.status).toBe(401);
         expect(response.body.success).toBe(false);
       }
@@ -56,9 +55,7 @@ describe('🏪 INTEGRATION: Groom Marketplace API', () => {
 
   describe('GET /api/groom-marketplace', () => {
     it('should get marketplace with available grooms', async () => {
-      const response = await request(app)
-        .get('/api/groom-marketplace')
-        .set('Authorization', `Bearer ${authToken}`);
+      const response = await request(app).get('/api/groom-marketplace').set('Authorization', `Bearer ${authToken}`);
 
       expect(response.status).toBe(200);
       expect(response.body.success).toBe(true);
@@ -96,13 +93,9 @@ describe('🏪 INTEGRATION: Groom Marketplace API', () => {
 
     it('should return same marketplace on subsequent calls', async () => {
       // Get marketplace twice
-      const response1 = await request(app)
-        .get('/api/groom-marketplace')
-        .set('Authorization', `Bearer ${authToken}`);
+      const response1 = await request(app).get('/api/groom-marketplace').set('Authorization', `Bearer ${authToken}`);
 
-      const response2 = await request(app)
-        .get('/api/groom-marketplace')
-        .set('Authorization', `Bearer ${authToken}`);
+      const response2 = await request(app).get('/api/groom-marketplace').set('Authorization', `Bearer ${authToken}`);
 
       expect(response1.status).toBe(200);
       expect(response2.status).toBe(200);
@@ -149,9 +142,7 @@ describe('🏪 INTEGRATION: Groom Marketplace API', () => {
 
     it('should require payment for premium refresh when not enough time passed', async () => {
       // Refresh marketplace first
-      await request(app)
-        .post('/api/groom-marketplace/refresh')
-        .set('Authorization', `Bearer ${authToken}`);
+      await request(app).post('/api/groom-marketplace/refresh').set('Authorization', `Bearer ${authToken}`);
 
       // Try to refresh again immediately (should require payment)
       const response = await request(app)
@@ -192,9 +183,7 @@ describe('🏪 INTEGRATION: Groom Marketplace API', () => {
 
     beforeEach(async () => {
       // Get fresh marketplace
-      const response = await request(app)
-        .get('/api/groom-marketplace')
-        .set('Authorization', `Bearer ${authToken}`);
+      const response = await request(app).get('/api/groom-marketplace').set('Authorization', `Bearer ${authToken}`);
 
       [marketplaceGroom] = response.body.data.grooms;
     });
@@ -271,8 +260,7 @@ describe('🏪 INTEGRATION: Groom Marketplace API', () => {
         .get('/api/groom-marketplace')
         .set('Authorization', `Bearer ${poorUserData.token}`);
 
-      const expensiveGroom = marketplaceResponse.body.data.grooms
-        .find(g => g.sessionRate * 7 > 10); // Find groom that costs more than user has
+      const expensiveGroom = marketplaceResponse.body.data.grooms.find(g => g.sessionRate * 7 > 10); // Find groom that costs more than user has
 
       if (expensiveGroom) {
         const response = await request(app)
@@ -315,9 +303,7 @@ describe('🏪 INTEGRATION: Groom Marketplace API', () => {
   describe('GET /api/groom-marketplace/stats', () => {
     it('should return marketplace statistics', async () => {
       // Ensure marketplace exists
-      await request(app)
-        .get('/api/groom-marketplace')
-        .set('Authorization', `Bearer ${authToken}`);
+      await request(app).get('/api/groom-marketplace').set('Authorization', `Bearer ${authToken}`);
 
       const response = await request(app)
         .get('/api/groom-marketplace/stats')

@@ -147,8 +147,8 @@ describe('Groom Workflow Integration Tests', () => {
         sex: 'Filly',
         dateOfBirth: new Date(Date.now() - 365 * 24 * 60 * 60 * 1000), // 1 year old
         age: 365,
-        user: { connect: { id: testUser.id } },
-        breed: { connect: { id: testBreed.id } },
+        userId: testUser.id ,
+        breedId: testBreed.id ,
         bondScore: 50,
         stressLevel: 20,
         taskLog: null,
@@ -166,8 +166,8 @@ describe('Groom Workflow Integration Tests', () => {
         sex: 'Colt',
         dateOfBirth: new Date(Date.now() - 2 * 365 * 24 * 60 * 60 * 1000), // 2 years old
         age: 730,
-        user: { connect: { id: testUser.id } },
-        breed: { connect: { id: testBreed.id } },
+        userId: testUser.id ,
+        breedId: testBreed.id ,
         bondScore: 60,
         stressLevel: 15,
         taskLog: null,
@@ -185,8 +185,8 @@ describe('Groom Workflow Integration Tests', () => {
         sex: 'Mare',
         dateOfBirth: new Date(Date.now() - 4 * 365 * 24 * 60 * 60 * 1000), // 4 years old
         age: 28, // 4 years old (28 days = 4 years in game time)
-        user: { connect: { id: testUser.id } },
-        breed: { connect: { id: testBreed.id } },
+        userId: testUser.id ,
+        breedId: testBreed.id ,
         bondScore: 70,
         stressLevel: 10,
         taskLog: null,
@@ -344,7 +344,7 @@ describe('Groom Workflow Integration Tests', () => {
           skillLevel: 'intermediate',
           personality: 'gentle',
           sessionRate: 20.0,
-          user: { connect: { id: testUser.id } },
+          userId: testUser.id ,
         },
       });
     });
@@ -413,7 +413,7 @@ describe('Groom Workflow Integration Tests', () => {
           skillLevel: 'expert',
           personality: 'patient',
           sessionRate: 25.0,
-          user: { connect: { id: testUser.id } },
+          userId: testUser.id ,
         },
       });
 
@@ -502,7 +502,7 @@ describe('Groom Workflow Integration Tests', () => {
           skillLevel: 'expert',
           personality: 'gentle',
           sessionRate: 25.0,
-          user: { connect: { id: testUser.id } },
+          userId: testUser.id ,
         },
       });
 

@@ -56,7 +56,7 @@ describe('Developmental Window System', () => {
           groomPersonality: 'calm',
           skillLevel: 'expert',
           speciality: 'foal_care',
-          userId: testUser.id,
+          userId: testUser.id ,
           sessionRate: 40.0,
           experience: 200,
           level: 10,
@@ -79,7 +79,7 @@ describe('Developmental Window System', () => {
           name: `Test Foal Newborn ${Date.now()}`,
           sex: 'filly',
           dateOfBirth: oneDayAgo,
-          ownerId: testUser.id,
+          userId: testUser.id ,
           bondScore: 5,
           stressLevel: 3,
           epigeneticFlags: ['developing'],
@@ -91,7 +91,7 @@ describe('Developmental Window System', () => {
           name: `Test Foal Week ${Date.now()}`,
           sex: 'colt',
           dateOfBirth: oneWeekAgo,
-          ownerId: testUser.id,
+          userId: testUser.id ,
           bondScore: 12,
           stressLevel: 4,
           epigeneticFlags: ['curious'],
@@ -103,7 +103,7 @@ describe('Developmental Window System', () => {
           name: `Test Foal TwoWeek ${Date.now()}`,
           sex: 'filly',
           dateOfBirth: twoWeeksAgo,
-          ownerId: testUser.id,
+          userId: testUser.id ,
           bondScore: 18,
           stressLevel: 6,
           epigeneticFlags: ['sensitive'],
@@ -115,7 +115,7 @@ describe('Developmental Window System', () => {
           name: `Test Foal Month ${Date.now()}`,
           sex: 'gelding',
           dateOfBirth: oneMonthAgo,
-          ownerId: testUser.id,
+          userId: testUser.id ,
           bondScore: 25,
           stressLevel: 5,
           epigeneticFlags: ['curious', 'social'],
@@ -127,7 +127,7 @@ describe('Developmental Window System', () => {
           name: `Test Foal ThreeMonth ${Date.now()}`,
           sex: 'colt',
           dateOfBirth: threeMonthsAgo,
-          ownerId: testUser.id,
+          userId: testUser.id ,
           bondScore: 35,
           stressLevel: 3,
           epigeneticFlags: ['confident', 'independent'],
@@ -177,7 +177,6 @@ describe('Developmental Window System', () => {
     });
 
     test('should identify multiple active windows for appropriate ages', async () => {
-      // eslint-disable-next-line prefer-destructuring
       const weekOldFoal = testHorses[1]; // 7 days old
 
       const windows = await identifyDevelopmentalWindows(weekOldFoal.id);
@@ -191,7 +190,6 @@ describe('Developmental Window System', () => {
     });
 
     test('should show closed windows for older foals', async () => {
-      // eslint-disable-next-line prefer-destructuring
       const olderFoal = testHorses[4]; // 3 months old
 
       const windows = await identifyDevelopmentalWindows(olderFoal.id);
@@ -221,7 +219,6 @@ describe('Developmental Window System', () => {
     });
 
     test('should calculate reduced sensitivity outside critical periods', async () => {
-      // eslint-disable-next-line prefer-destructuring
       const olderFoal = testHorses[4];
 
       const sensitivity = await calculateWindowSensitivity(olderFoal.id, 'imprinting');
@@ -232,9 +229,8 @@ describe('Developmental Window System', () => {
     });
 
     test('should apply environmental modifiers correctly', async () => {
-      // eslint-disable-next-line prefer-destructuring
       const stressedFoal = testHorses[2]; // Higher stress level
-      // eslint-disable-next-line prefer-destructuring
+
       const calmFoal = testHorses[4]; // Lower stress level
 
       const stressedSensitivity = await calculateWindowSensitivity(stressedFoal.id, 'fear_period_1');
@@ -247,7 +243,6 @@ describe('Developmental Window System', () => {
 
   describe('evaluateTraitDevelopmentOpportunity', () => {
     test('should evaluate trait development opportunities during active windows', async () => {
-      // eslint-disable-next-line prefer-destructuring
       const youngFoal = testHorses[1];
 
       const opportunity = await evaluateTraitDevelopmentOpportunity(youngFoal.id, 'confident', 'early_socialization');
@@ -267,10 +262,13 @@ describe('Developmental Window System', () => {
     });
 
     test('should show higher opportunities for window-aligned traits', async () => {
-      // eslint-disable-next-line prefer-destructuring
       const fearPeriodFoal = testHorses[2]; // In fear period
 
-      const fearfulOpportunity = await evaluateTraitDevelopmentOpportunity(fearPeriodFoal.id, 'fearful', 'fear_period_1');
+      const fearfulOpportunity = await evaluateTraitDevelopmentOpportunity(
+        fearPeriodFoal.id,
+        'fearful',
+        'fear_period_1',
+      );
       const braveOpportunity = await evaluateTraitDevelopmentOpportunity(fearPeriodFoal.id, 'brave', 'fear_period_1');
 
       // Fear-related traits should have higher development potential during fear periods
@@ -278,10 +276,13 @@ describe('Developmental Window System', () => {
     });
 
     test('should provide appropriate recommendations', async () => {
-      // eslint-disable-next-line prefer-destructuring
       const curiosityFoal = testHorses[3]; // Month old, curiosity development
 
-      const opportunity = await evaluateTraitDevelopmentOpportunity(curiosityFoal.id, 'curious', 'curiosity_development');
+      const opportunity = await evaluateTraitDevelopmentOpportunity(
+        curiosityFoal.id,
+        'curious',
+        'curiosity_development',
+      );
 
       expect(opportunity.recommendedActions.length).toBeGreaterThan(0);
       expect(opportunity.recommendedActions.some(action => action.includes('exploration'))).toBe(true);
@@ -290,7 +291,6 @@ describe('Developmental Window System', () => {
 
   describe('trackDevelopmentalMilestones', () => {
     test('should track developmental milestones with interactions', async () => {
-      // eslint-disable-next-line prefer-destructuring
       const foal = testHorses[1];
 
       // Create some developmental interactions
@@ -324,7 +324,6 @@ describe('Developmental Window System', () => {
     });
 
     test('should show progression over time', async () => {
-      // eslint-disable-next-line prefer-destructuring
       const olderFoal = testHorses[4]; // 3 months old
 
       const milestones = await trackDevelopmentalMilestones(olderFoal.id);
@@ -337,7 +336,6 @@ describe('Developmental Window System', () => {
 
   describe('assessWindowClosure', () => {
     test('should assess window closure effects', async () => {
-      // eslint-disable-next-line prefer-destructuring
       const olderFoal = testHorses[4]; // Past early critical periods
 
       const closure = await assessWindowClosure(olderFoal.id, 'imprinting');
@@ -356,7 +354,6 @@ describe('Developmental Window System', () => {
     });
 
     test('should show open status for active windows', async () => {
-      // eslint-disable-next-line prefer-destructuring
       const youngFoal = testHorses[1];
 
       const closure = await assessWindowClosure(youngFoal.id, 'early_socialization');
@@ -366,7 +363,6 @@ describe('Developmental Window System', () => {
     });
 
     test('should identify compensatory mechanisms for closed windows', async () => {
-      // eslint-disable-next-line prefer-destructuring
       const olderFoal = testHorses[4];
 
       const closure = await assessWindowClosure(olderFoal.id, 'fear_period_1');
@@ -379,7 +375,6 @@ describe('Developmental Window System', () => {
 
   describe('coordinateMultiWindowDevelopment', () => {
     test('should coordinate development across multiple windows', async () => {
-      // eslint-disable-next-line prefer-destructuring
       const foal = testHorses[2]; // Two weeks old, multiple active windows
 
       const coordination = await coordinateMultiWindowDevelopment(foal.id);
@@ -398,7 +393,6 @@ describe('Developmental Window System', () => {
     });
 
     test('should identify window conflicts and resolutions', async () => {
-      // eslint-disable-next-line prefer-destructuring
       const conflictFoal = testHorses[2]; // In fear period
 
       const coordination = await coordinateMultiWindowDevelopment(conflictFoal.id);
@@ -432,7 +426,6 @@ describe('Developmental Window System', () => {
     });
 
     test('should identify age-appropriate risk factors', async () => {
-      // eslint-disable-next-line prefer-destructuring
       const stressedFoal = testHorses[2]; // Higher stress in fear period
 
       const analysis = await analyzeCriticalPeriodSensitivity(stressedFoal.id);
@@ -444,7 +437,6 @@ describe('Developmental Window System', () => {
 
   describe('generateDevelopmentalForecast', () => {
     test('should generate comprehensive developmental forecast', async () => {
-      // eslint-disable-next-line prefer-destructuring
       const foal = testHorses[3]; // Month old with good development
 
       const forecast = await generateDevelopmentalForecast(foal.id, 60); // 60-day forecast
@@ -465,7 +457,6 @@ describe('Developmental Window System', () => {
     });
 
     test('should project trait development accurately', async () => {
-      // eslint-disable-next-line prefer-destructuring
       const developingFoal = testHorses[1];
 
       const forecast = await generateDevelopmentalForecast(developingFoal.id, 30);
@@ -482,7 +473,6 @@ describe('Developmental Window System', () => {
     });
 
     test('should provide actionable recommendations', async () => {
-      // eslint-disable-next-line prefer-destructuring
       const foal = testHorses[2];
 
       const forecast = await generateDevelopmentalForecast(foal.id, 45);

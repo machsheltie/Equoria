@@ -41,11 +41,7 @@ describe('Enhanced Reporting API Routes', () => {
     });
 
     // Generate auth token
-    authToken = jwt.sign(
-      { id: testUser.id, username: testUser.username },
-      process.env.JWT_SECRET,
-      { expiresIn: '1h' },
-    );
+    authToken = jwt.sign({ id: testUser.id, username: testUser.username }, process.env.JWT_SECRET, { expiresIn: '1h' });
 
     // Create test grooms
     testGrooms = await Promise.all([
@@ -56,7 +52,7 @@ describe('Enhanced Reporting API Routes', () => {
           groomPersonality: 'calm',
           skillLevel: 'expert',
           speciality: 'foal_care',
-          userId: testUser.id,
+          userId: testUser.id ,
           sessionRate: 40.0,
           experience: 200,
           level: 10,
@@ -77,7 +73,7 @@ describe('Enhanced Reporting API Routes', () => {
           name: `Test Foal Report ${Date.now()}`,
           sex: 'filly',
           dateOfBirth: oneWeekAgo,
-          ownerId: testUser.id,
+          userId: testUser.id ,
           bondScore: 20,
           stressLevel: 4,
           epigeneticFlags: ['curious', 'developing'],
@@ -89,7 +85,7 @@ describe('Enhanced Reporting API Routes', () => {
           name: `Test Horse Report ${Date.now()}`,
           sex: 'colt',
           dateOfBirth: oneMonthAgo,
-          ownerId: testUser.id,
+          userId: testUser.id ,
           bondScore: 35,
           stressLevel: 3,
           epigeneticFlags: ['confident', 'brave', 'social'],
@@ -101,7 +97,7 @@ describe('Enhanced Reporting API Routes', () => {
           name: `Test Mature Report ${Date.now()}`,
           sex: 'gelding',
           dateOfBirth: twoMonthsAgo,
-          ownerId: testUser.id,
+          userId: testUser.id ,
           bondScore: 40,
           stressLevel: 2,
           epigeneticFlags: ['intelligent', 'calm', 'adaptable', 'social'],
@@ -119,7 +115,7 @@ describe('Enhanced Reporting API Routes', () => {
               groomId: testGrooms[0].id,
               foalId: horse.id,
               interactionType: i % 2 === 0 ? 'enrichment' : 'grooming',
-              duration: 30 + (i * 10),
+              duration: 30 + i * 10,
               taskType: ['trust_building', 'showground_exposure', 'desensitization'][i],
               bondingChange: [2, 3, 1][i],
               stressChange: [1, -1, 2][i],
@@ -271,7 +267,7 @@ describe('Enhanced Reporting API Routes', () => {
     test('GET /api/horses/trait-trends should return trait development trends', async () => {
       const response = await request(app)
         .get('/api/horses/trait-trends')
-        .query({ userId: testUser.id, timeframe: 30 })
+        .query({ userId: testUser.id , timeframe: 30 })
         .set('Authorization', `Bearer ${authToken}`)
         .expect(200);
 
@@ -347,7 +343,7 @@ describe('Enhanced Reporting API Routes', () => {
           name: `Other Horse Report ${Date.now()}`,
           sex: 'gelding',
           dateOfBirth: new Date(),
-          ownerId: otherUser.id,
+          userId: otherUser.id ,
           bondScore: 15,
           stressLevel: 5,
         },

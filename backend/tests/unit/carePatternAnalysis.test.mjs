@@ -98,7 +98,6 @@ describe('Care Pattern Analysis', () => {
   });
 
   describe('analyzeCarePatterns', () => {
-
     test('should analyze patterns for eligible horse', async () => {
       const evaluationDate = today; // FIXED: Use calculated date for evaluation
       mockPrisma.horse.findUnique.mockResolvedValue(mockHorse);

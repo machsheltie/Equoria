@@ -88,7 +88,7 @@ describe('Dynamic Compatibility Controller API', () => {
     for (const data of groomData) {
       const groom = await prisma.groom.create({
         data: {
-          user: { connect: { id: testUser.id } },
+          userId: testUser.id ,
           name: data.name,
           speciality: data.speciality,
           personality: data.personality,
@@ -113,8 +113,8 @@ describe('Dynamic Compatibility Controller API', () => {
     for (const data of horseData) {
       const horse = await prisma.horse.create({
         data: {
-          user: { connect: { id: testUser.id } },
-          breed: { connect: { id: testBreed.id } },
+          userId: testUser.id ,
+          breedId: testBreed.id ,
           name: data.name,
           sex: 'Filly',
           dateOfBirth: birthDate2YearsOld,

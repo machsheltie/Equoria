@@ -33,15 +33,15 @@ const authRequestDuration = new Trend('auth_request_duration');
 export const options = {
   stages: [
     { duration: '30s', target: 10 }, // Ramp up to 10 VUs
-    { duration: '1m', target: 20 },  // Ramp up to 20 VUs
-    { duration: '2m', target: 50 },  // Spike to 50 VUs
-    { duration: '1m', target: 20 },  // Scale down to 20 VUs
-    { duration: '30s', target: 0 },  // Ramp down
+    { duration: '1m', target: 20 }, // Ramp up to 20 VUs
+    { duration: '2m', target: 50 }, // Spike to 50 VUs
+    { duration: '1m', target: 20 }, // Scale down to 20 VUs
+    { duration: '30s', target: 0 }, // Ramp down
   ],
   thresholds: {
     http_req_duration: ['p(95)<500'], // 95% of requests under 500ms
-    http_req_failed: ['rate<0.05'],    // Error rate under 5%
-    rate_limit_errors: ['rate>0.3'],   // At least 30% should hit rate limits
+    http_req_failed: ['rate<0.05'], // Error rate under 5%
+    rate_limit_errors: ['rate>0.3'], // At least 30% should hit rate limits
   },
 };
 
@@ -55,27 +55,35 @@ export function setup() {
   const password = 'LoadTest123!';
 
   // Register test user
-  const registerRes = http.post(`${API_URL}/api/auth/register`, JSON.stringify({
-    email,
-    username: `loadtest_${Date.now()}`,
-    password,
-    firstName: 'Load',
-    lastName: 'Test',
-  }), {
-    headers: { 'Content-Type': 'application/json' },
-  });
+  const registerRes = http.post(
+    `${API_URL}/api/auth/register`,
+    JSON.stringify({
+      email,
+      username: `loadtest_${Date.now()}`,
+      password,
+      firstName: 'Load',
+      lastName: 'Test',
+    }),
+    {
+      headers: { 'Content-Type': 'application/json' },
+    },
+  );
 
   check(registerRes, {
-    'user registered': (r) => r.status === 201 || r.status === 200,
+    'user registered': r => r.status === 201 || r.status === 200,
   });
 
   // Login to get token
-  const loginRes = http.post(`${API_URL}/api/auth/login`, JSON.stringify({
-    email,
-    password,
-  }), {
-    headers: { 'Content-Type': 'application/json' },
-  });
+  const loginRes = http.post(
+    `${API_URL}/api/auth/login`,
+    JSON.stringify({
+      email,
+      password,
+    }),
+    {
+      headers: { 'Content-Type': 'application/json' },
+    },
+  );
 
   const token = loginRes.json('data.accessToken') || loginRes.json('token');
 
@@ -95,7 +103,7 @@ export default function (data) {
 
   const params = {
     headers: {
-      'Authorization': `Bearer ${token}`,
+      Authorization: `Bearer ${token}`,
       'Content-Type': 'application/json',
     },
   };
@@ -109,8 +117,8 @@ export default function (data) {
     requestDuration.add(duration);
 
     const checks = check(res, {
-      'status is 200 or 429': (r) => r.status === 200 || r.status === 429,
-      'response time < 1000ms': (r) => r.timings.duration < 1000,
+      'status is 200 or 429': r => r.status === 200 || r.status === 429,
+      'response time < 1000ms': r => r.timings.duration < 1000,
     });
 
     if (res.status === 429) {
@@ -119,8 +127,8 @@ export default function (data) {
 
       // Check for Retry-After header
       check(res, {
-        'has Retry-After header': (r) => r.headers['Retry-After'] !== undefined,
-        'rate limit body has error message': (r) => {
+        'has Retry-After header': r => r.headers['Retry-After'] !== undefined,
+        'rate limit body has error message': r => {
           const body = r.json();
           return body.success === false && body.message.includes('rate limit');
         },
@@ -137,16 +145,20 @@ export default function (data) {
 
   // Test 2: Authentication endpoints (stricter rate limits)
   const authStartTime = new Date();
-  const authRes = http.post(`${API_URL}/api/auth/login`, JSON.stringify({
-    email: data.email,
-    password: data.password,
-  }), {
-    headers: { 'Content-Type': 'application/json' },
-  });
+  const authRes = http.post(
+    `${API_URL}/api/auth/login`,
+    JSON.stringify({
+      email: data.email,
+      password: data.password,
+    }),
+    {
+      headers: { 'Content-Type': 'application/json' },
+    },
+  );
   authRequestDuration.add(new Date() - authStartTime);
 
   check(authRes, {
-    'auth endpoint responds': (r) => r.status === 200 || r.status === 429,
+    'auth endpoint responds': r => r.status === 200 || r.status === 429,
   });
 
   if (authRes.status === 429) {
@@ -165,7 +177,7 @@ export function teardown(data) {
   // Delete test user
   http.del(`${API_URL}/api/users/account`, null, {
     headers: {
-      'Authorization': `Bearer ${token}`,
+      Authorization: `Bearer ${token}`,
     },
   });
 }
@@ -179,7 +191,7 @@ export function handleSummary(data) {
   const rateLimitPercentage = ((rateLimitCount / totalRequests) * 100).toFixed(2);
 
   return {
-    'stdout': `
+    stdout: `
 ╔════════════════════════════════════════════════════════════════╗
 ║           RATE LIMITING LOAD TEST SUMMARY                      ║
 ╠════════════════════════════════════════════════════════════════╣

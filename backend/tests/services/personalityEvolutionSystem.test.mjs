@@ -43,7 +43,7 @@ describe('Personality Evolution System', () => {
   let testBreed;
 
   beforeAll(async () => {
-    await prisma.$transaction(async (tx) => {
+    await prisma.$transaction(async tx => {
       // Create test user
       testUser = await tx.user.create({
         data: {
@@ -69,7 +69,7 @@ describe('Personality Evolution System', () => {
       // Create test groom
       testGroom = await tx.groom.create({
         data: {
-          userId: testUser.id,
+          userId: testUser.id ,
           name: 'Evolution Test Groom',
           speciality: 'foal_care',
           personality: 'calm',
@@ -85,8 +85,8 @@ describe('Personality Evolution System', () => {
       // Create test horse
       testHorse = await tx.horse.create({
         data: {
-          ownerId: testUser.id,
-          breed: { connect: { id: testBreed.id } },
+          userId: testUser.id ,
+          breedId: testBreed.id ,
           name: 'Evolution Test Horse',
           sex: 'Filly',
           dateOfBirth: threeYearsAgo,
@@ -114,7 +114,7 @@ describe('Personality Evolution System', () => {
   afterAll(async () => {
     // Clean up test data
     if (testUser) {
-      await prisma.horse.deleteMany({ where: { ownerId: testUser.id } });
+      await prisma.horse.deleteMany({ where: { userId: testUser.id } });
       await prisma.groom.deleteMany({ where: { userId: testUser.id } });
       await prisma.user.deleteMany({ where: { id: testUser.id } });
     }
@@ -175,7 +175,7 @@ describe('Personality Evolution System', () => {
       // Create new groom with minimal interactions
       const newGroom = await prisma.groom.create({
         data: {
-          userId: testUser.id,
+          userId: testUser.id ,
           name: 'Minimal Interaction Groom',
           speciality: 'general_grooming',
           personality: 'energetic',
@@ -248,8 +248,8 @@ describe('Personality Evolution System', () => {
       // Create new horse for mixed care testing
       const mixedCareHorse = await prisma.horse.create({
         data: {
-          ownerId: testUser.id,
-          breed: { connect: { id: testBreed.id } },
+          userId: testUser.id ,
+          breedId: testBreed.id ,
           name: 'Mixed Care Horse',
           sex: 'Colt',
           dateOfBirth: twoAndHalfYearsAgo,
@@ -282,7 +282,7 @@ describe('Personality Evolution System', () => {
             interactionType: 'enrichment',
             bondingChange: i % 4 === 0 ? -1 : 1, // More inconsistent bonding
             stressChange: i % 3 === 0 ? 2 : -1, // More inconsistent stress changes
-            quality: i % 3 === 0 ? 'poor' : (i % 2 === 0 ? 'fair' : 'good'), // More varied quality
+            quality: i % 3 === 0 ? 'poor' : i % 2 === 0 ? 'fair' : 'good', // More varied quality
             cost: 25.0,
             duration: 30,
             notes: 'Mixed quality care patterns',

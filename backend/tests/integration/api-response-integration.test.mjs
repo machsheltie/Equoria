@@ -52,39 +52,47 @@ const createTestApp = () => {
   app.use(express.json());
 
   // Add response optimization middleware
-  app.use(responseOptimization({
-    enableFieldSelection: true,
-    enableETag: true,
-    enableSizeMonitoring: true,
-    maxResponseSize: 10 * 1024 * 1024, // 10MB
-    warningSizeThreshold: 1024 * 1024, // 1MB
-  }));
+  app.use(
+    responseOptimization({
+      enableFieldSelection: true,
+      enableETag: true,
+      enableSizeMonitoring: true,
+      maxResponseSize: 10 * 1024 * 1024, // 10MB
+      warningSizeThreshold: 1024 * 1024, // 1MB
+    }),
+  );
 
   // Add performance monitoring
-  app.use(performanceMonitoring({
-    enableMetrics: true,
-    logSlowRequests: true,
-    slowRequestThreshold: 1000, // 1 second
-  }));
+  app.use(
+    performanceMonitoring({
+      enableMetrics: true,
+      logSlowRequests: true,
+      slowRequestThreshold: 1000, // 1 second
+    }),
+  );
 
   // Add response handler middleware
   app.use(responseHandler);
 
   // Auth routes for testing
-  app.post('/api/auth/register', [
-    body('email').isEmail().normalizeEmail(),
-    body('username').isLength({ min: 3, max: 30 }),
-    body('password').isLength({ min: 8 }),
-    body('firstName').notEmpty(),
-    body('lastName').notEmpty(),
-    handleValidationErrors,
-  ], register);
+  app.post(
+    '/api/auth/register',
+    [
+      body('email').isEmail().normalizeEmail(),
+      body('username').isLength({ min: 3, max: 30 }),
+      body('password').isLength({ min: 8 }),
+      body('firstName').notEmpty(),
+      body('lastName').notEmpty(),
+      handleValidationErrors,
+    ],
+    register,
+  );
 
-  app.post('/api/auth/login', [
-    body('email').isEmail().normalizeEmail(),
-    body('password').notEmpty(),
-    handleValidationErrors,
-  ], login);
+  app.post(
+    '/api/auth/login',
+    [body('email').isEmail().normalizeEmail(), body('password').notEmpty(), handleValidationErrors],
+    login,
+  );
 
   // Health endpoints
   app.get('/ping', handlePing);
@@ -108,9 +116,7 @@ const createTestApp = () => {
   });
 
   app.get('/api/test/validation-error', authenticateToken, (req, res) => {
-    res.apiValidationError('Test validation failed', [
-      { field: 'testField', message: 'Test field is required' },
-    ]);
+    res.apiValidationError('Test validation failed', [{ field: 'testField', message: 'Test field is required' }]);
   });
 
   app.get('/api/test/large-data', authenticateToken, (req, res) => {
@@ -195,7 +201,7 @@ describe('🔄 API Response Integration Tests', () => {
 
     // Close server and disconnect
     if (server) {
-      await new Promise((resolve) => server.close(resolve));
+      await new Promise(resolve => server.close(resolve));
     }
     await prisma.$disconnect();
   });
@@ -218,9 +224,7 @@ describe('🔄 API Response Integration Tests', () => {
       lastName: 'Response',
     };
 
-    const registerResponse = await request(app)
-      .post('/api/auth/register')
-      .send(userData);
+    const registerResponse = await request(app).post('/api/auth/register').send(userData);
 
     expect(registerResponse.status).toBe(201);
     testUser = registerResponse.body.data.user;
@@ -242,9 +246,7 @@ describe('🔄 API Response Integration Tests', () => {
 
   describe('📋 Response Format Standardization', () => {
     test('should provide consistent success response format', async () => {
-      const response = await request(app)
-        .get('/api/test/success')
-        .set('Authorization', `Bearer ${authToken}`);
+      const response = await request(app).get('/api/test/success').set('Authorization', `Bearer ${authToken}`);
 
       expect(response.status).toBe(200);
       expect(response.body).toHaveProperty('success', true);
@@ -255,9 +257,7 @@ describe('🔄 API Response Integration Tests', () => {
     });
 
     test('should provide consistent error response format', async () => {
-      const response = await request(app)
-        .get('/api/test/error')
-        .set('Authorization', `Bearer ${authToken}`);
+      const response = await request(app).get('/api/test/error').set('Authorization', `Bearer ${authToken}`);
 
       expect(response.status).toBe(400);
       expect(response.body).toHaveProperty('success', false);
@@ -268,9 +268,7 @@ describe('🔄 API Response Integration Tests', () => {
     });
 
     test('should provide consistent not found response format', async () => {
-      const response = await request(app)
-        .get('/api/test/not-found')
-        .set('Authorization', `Bearer ${authToken}`);
+      const response = await request(app).get('/api/test/not-found').set('Authorization', `Bearer ${authToken}`);
 
       expect(response.status).toBe(404);
       expect(response.body).toHaveProperty('success', false);
@@ -279,9 +277,7 @@ describe('🔄 API Response Integration Tests', () => {
     });
 
     test('should provide consistent validation error response format', async () => {
-      const response = await request(app)
-        .get('/api/test/validation-error')
-        .set('Authorization', `Bearer ${authToken}`);
+      const response = await request(app).get('/api/test/validation-error').set('Authorization', `Bearer ${authToken}`);
 
       expect(response.status).toBe(400);
       expect(response.body).toHaveProperty('success', false);
@@ -329,9 +325,7 @@ describe('🔄 API Response Integration Tests', () => {
 
   describe('⚡ Performance Monitoring Integration', () => {
     test('should include performance headers in responses', async () => {
-      const response = await request(app)
-        .get('/api/test/success')
-        .set('Authorization', `Bearer ${authToken}`);
+      const response = await request(app).get('/api/test/success').set('Authorization', `Bearer ${authToken}`);
 
       expect(response.status).toBe(200);
       expect(response.headers['x-processing-time']).toBeDefined();
@@ -340,9 +334,7 @@ describe('🔄 API Response Integration Tests', () => {
     });
 
     test('should monitor large response performance', async () => {
-      const response = await request(app)
-        .get('/api/test/large-data')
-        .set('Authorization', `Bearer ${authToken}`);
+      const response = await request(app).get('/api/test/large-data').set('Authorization', `Bearer ${authToken}`);
 
       expect(response.status).toBe(200);
       expect(response.body.data).toHaveLength(1000);
@@ -382,9 +374,7 @@ describe('🔄 API Response Integration Tests', () => {
 
     test('should generate and validate ETags correctly', async () => {
       // First request should return ETag
-      const response1 = await request(app)
-        .get('/api/test/etag')
-        .set('Authorization', `Bearer ${authToken}`);
+      const response1 = await request(app).get('/api/test/etag').set('Authorization', `Bearer ${authToken}`);
 
       expect(response1.status).toBe(200);
       expect(response1.body.success).toBe(true);
@@ -413,12 +403,10 @@ describe('🔄 API Response Integration Tests', () => {
 
   describe('🔗 Cross-System Response Consistency', () => {
     test('should maintain consistent response format across auth endpoints', async () => {
-      const loginResponse = await request(app)
-        .post('/api/auth/login')
-        .send({
-          email: 'apiresponseintegration@test.com',
-          password: 'TestPassword123!',
-        });
+      const loginResponse = await request(app).post('/api/auth/login').send({
+        email: 'apiresponseintegration@test.com',
+        password: 'TestPassword123!',
+      });
 
       expect(loginResponse.status).toBe(200);
       expect(loginResponse.body).toHaveProperty('status', 'success');
@@ -443,17 +431,13 @@ describe('🔄 API Response Integration Tests', () => {
         // Health endpoints may have timestamp in different locations
         expect(
           Object.prototype.hasOwnProperty.call(response.body, 'timestamp') ||
-          (response.body.data && Object.prototype.hasOwnProperty.call(response.body.data, 'timestamp')),
+            (response.body.data && Object.prototype.hasOwnProperty.call(response.body.data, 'timestamp')),
         ).toBe(true);
       }
     });
 
     test('should handle authentication errors consistently', async () => {
-      const protectedEndpoints = [
-        '/api/test/success',
-        '/api/test/error',
-        '/api/test/large-data',
-      ];
+      const protectedEndpoints = ['/api/test/success', '/api/test/error', '/api/test/large-data'];
 
       for (const endpoint of protectedEndpoints) {
         const response = await request(app).get(endpoint).set('x-test-require-auth', 'true');
@@ -483,13 +467,11 @@ describe('🔄 API Response Integration Tests', () => {
     });
 
     test('should handle validation errors consistently', async () => {
-      const response = await request(app)
-        .post('/api/auth/register')
-        .send({
-          email: 'invalid-email',
-          username: 'ab', // Too short
-          password: '123', // Too short
-        });
+      const response = await request(app).post('/api/auth/register').send({
+        email: 'invalid-email',
+        username: 'ab', // Too short
+        password: '123', // Too short
+      });
 
       expect(response.status).toBe(400);
       expect(response.body).toHaveProperty('success', false);
@@ -504,9 +486,7 @@ describe('🔄 API Response Integration Tests', () => {
     test('should meet performance benchmarks for simple responses', async () => {
       const startTime = Date.now();
 
-      const response = await request(app)
-        .get('/api/test/success')
-        .set('Authorization', `Bearer ${authToken}`);
+      const response = await request(app).get('/api/test/success').set('Authorization', `Bearer ${authToken}`);
 
       const responseTime = Date.now() - startTime;
 
@@ -517,9 +497,7 @@ describe('🔄 API Response Integration Tests', () => {
     test('should meet performance benchmarks for large responses', async () => {
       const startTime = Date.now();
 
-      const response = await request(app)
-        .get('/api/test/large-data')
-        .set('Authorization', `Bearer ${authToken}`);
+      const response = await request(app).get('/api/test/large-data').set('Authorization', `Bearer ${authToken}`);
 
       const responseTime = Date.now() - startTime;
 

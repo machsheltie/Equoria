@@ -320,9 +320,7 @@ describe('🏇 COMPREHENSIVE: Milestone Trait Evaluator System', () => {
         name: 'Already Evaluated Horse',
         age: 365, // 1 year milestone
         healthStatus: 'Good',
-        task_log: [
-          { task: 'feeding', completedAt: new Date() },
-        ],
+        task_log: [{ task: 'feeding', completedAt: new Date() }],
         trait_milestones: { age_1: true }, // Already evaluated
         epigeneticModifiers: { positive: [], negative: [], hidden: [], epigenetic: [] },
       };
@@ -420,9 +418,7 @@ describe('🏇 COMPREHENSIVE: Milestone Trait Evaluator System', () => {
         name: 'Malformed Modifiers Horse',
         age: 1095, // 3 year milestone
         healthStatus: 'Good',
-        task_log: [
-          { task: 'feeding', completedAt: new Date() },
-        ],
+        task_log: [{ task: 'feeding', completedAt: new Date() }],
         trait_milestones: { age_1: true, age_2: true },
         epigeneticModifiers: null, // Malformed
       };
@@ -465,9 +461,7 @@ describe('🏇 COMPREHENSIVE: Milestone Trait Evaluator System', () => {
           id: 21,
           age: 1095,
           healthStatus: 'Fair',
-          task_log: [
-            { task: 'feeding', completedAt: new Date() },
-          ],
+          task_log: [{ task: 'feeding', completedAt: new Date() }],
           trait_milestones: { age_1: true, age_2: true },
           epigeneticModifiers: { positive: [], negative: [], hidden: [], epigenetic: [] },
         },

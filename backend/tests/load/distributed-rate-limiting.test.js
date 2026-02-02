@@ -35,18 +35,18 @@ const crossServerRequests = new Counter('cross_server_requests');
 // Test configuration
 export const options = {
   stages: [
-    { duration: '20s', target: 5 },   // Warm up
-    { duration: '40s', target: 15 },  // Ramp up
-    { duration: '1m', target: 25 },   // Peak load
-    { duration: '30s', target: 10 },  // Scale down
-    { duration: '10s', target: 0 },   // Ramp down
+    { duration: '20s', target: 5 }, // Warm up
+    { duration: '40s', target: 15 }, // Ramp up
+    { duration: '1m', target: 25 }, // Peak load
+    { duration: '30s', target: 10 }, // Scale down
+    { duration: '10s', target: 0 }, // Ramp down
   ],
   thresholds: {
-    http_req_duration: ['p(95)<800'],           // 95% under 800ms (Redis adds latency)
-    http_req_failed: ['rate<0.05'],             // Error rate under 5%
-    distributed_consistency: ['rate>0.9'],      // 90%+ consistency across servers
-    redis_latency: ['p(95)<100'],               // Redis operations under 100ms
-    total_rate_limit_hits: ['count>50'],        // At least 50 rate limit hits total
+    http_req_duration: ['p(95)<800'], // 95% under 800ms (Redis adds latency)
+    http_req_failed: ['rate<0.05'], // Error rate under 5%
+    distributed_consistency: ['rate>0.9'], // 90%+ consistency across servers
+    redis_latency: ['p(95)<100'], // Redis operations under 100ms
+    total_rate_limit_hits: ['count>50'], // At least 50 rate limit hits total
   },
 };
 
@@ -61,38 +61,46 @@ export function setup() {
   const password = 'DistributedTest123!';
 
   // Register test user on server 1
-  const registerRes = http.post(`${API_URL_1}/api/auth/register`, JSON.stringify({
-    email,
-    username: `distributed_${Date.now()}`,
-    password,
-    firstName: 'Distributed',
-    lastName: 'Test',
-  }), {
-    headers: { 'Content-Type': 'application/json' },
-  });
+  const registerRes = http.post(
+    `${API_URL_1}/api/auth/register`,
+    JSON.stringify({
+      email,
+      username: `distributed_${Date.now()}`,
+      password,
+      firstName: 'Distributed',
+      lastName: 'Test',
+    }),
+    {
+      headers: { 'Content-Type': 'application/json' },
+    },
+  );
 
   check(registerRes, {
-    'user registered on server 1': (r) => r.status === 201 || r.status === 200,
+    'user registered on server 1': r => r.status === 201 || r.status === 200,
   });
 
   // Login on server 1
-  const loginRes = http.post(`${API_URL_1}/api/auth/login`, JSON.stringify({
-    email,
-    password,
-  }), {
-    headers: { 'Content-Type': 'application/json' },
-  });
+  const loginRes = http.post(
+    `${API_URL_1}/api/auth/login`,
+    JSON.stringify({
+      email,
+      password,
+    }),
+    {
+      headers: { 'Content-Type': 'application/json' },
+    },
+  );
 
   const token = loginRes.json('data.accessToken') || loginRes.json('token');
 
   // Verify server 2 can authenticate with same token (shared Redis session)
   const verifyRes = http.get(`${API_URL_2}/api/users/profile`, {
-    headers: { 'Authorization': `Bearer ${token}` },
+    headers: { Authorization: `Bearer ${token}` },
   });
 
   check(verifyRes, {
-    'token works on server 2': (r) => r.status === 200,
-    'same user data on server 2': (r) => r.json('data.email') === email,
+    'token works on server 2': r => r.status === 200,
+    'same user data on server 2': r => r.json('data.email') === email,
   });
 
   return {
@@ -111,7 +119,7 @@ export default function (data) {
 
   const params = {
     headers: {
-      'Authorization': `Bearer ${token}`,
+      Authorization: `Bearer ${token}`,
       'Content-Type': 'application/json',
     },
   };
@@ -134,8 +142,8 @@ export default function (data) {
           totalRateLimitHits.add(1);
 
           check(res, {
-            'rate limit response from server 1': (r) => r.status === 429,
-            'has Retry-After header': (r) => r.headers['Retry-After'] !== undefined,
+            'rate limit response from server 1': r => r.status === 429,
+            'has Retry-After header': r => r.headers['Retry-After'] !== undefined,
           });
 
           const retryAfter = parseInt(res.headers['Retry-After']) || 1;
@@ -145,7 +153,7 @@ export default function (data) {
       }
 
       check(hitRateLimit, {
-        'server 1 enforces rate limit': (hit) => hit === true,
+        'server 1 enforces rate limit': hit => hit === true,
       });
     });
 
@@ -167,8 +175,8 @@ export default function (data) {
           totalRateLimitHits.add(1);
 
           check(res, {
-            'rate limit response from server 2': (r) => r.status === 429,
-            'consistent rate limit message': (r) => {
+            'rate limit response from server 2': r => r.status === 429,
+            'consistent rate limit message': r => {
               const body = r.json();
               return body.message && body.message.includes('rate limit');
             },
@@ -220,7 +228,7 @@ export default function (data) {
       }
 
       check(rateLimitHits > 0, {
-        'cross-server rate limiting enforced': (hit) => hit === true,
+        'cross-server rate limiting enforced': hit => hit === true,
       });
     });
 
@@ -243,7 +251,7 @@ export default function (data) {
         // Verify rate limit is still enforced (window hasn't expired yet)
         const verifyRes = http.get(`${API_URL_1}/api/users/profile`, params);
         check(verifyRes, {
-          'rate limit persists within window': (r) => r.status === 429,
+          'rate limit persists within window': r => r.status === 429,
         });
       }
     });
@@ -260,8 +268,8 @@ export default function (data) {
       redisLatency.add(duration);
 
       check(res, {
-        'health check responds': (r) => r.status === 200,
-        'Redis status available': (r) => {
+        'health check responds': r => r.status === 200,
+        'Redis status available': r => {
           const body = r.json();
           return body.redis && (body.redis.status === 'healthy' || body.redis.status === 'connected');
         },
@@ -280,7 +288,7 @@ export function teardown(data) {
 
   // Delete test user (try both servers)
   http.del(`${API_URL_1}/api/users/account`, null, {
-    headers: { 'Authorization': `Bearer ${token}` },
+    headers: { Authorization: `Bearer ${token}` },
   });
 }
 
@@ -297,7 +305,7 @@ export function handleSummary(data) {
   const crossServerReqs = data.metrics.cross_server_requests?.values.count || 0;
 
   return {
-    'stdout': `
+    stdout: `
 ╔════════════════════════════════════════════════════════════════╗
 ║      DISTRIBUTED RATE LIMITING TEST SUMMARY (Redis)            ║
 ╠════════════════════════════════════════════════════════════════╣

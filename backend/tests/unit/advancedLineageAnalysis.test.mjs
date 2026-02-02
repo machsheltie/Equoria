@@ -64,19 +64,67 @@ describe('🌳 Advanced Lineage Analysis System', () => {
       {
         generation: 1,
         horses: [
-          { id: 3, name: 'Storm King', sireId: 7, damId: 8, stats: { speed: 90, stamina: 85 }, traits: { positive: ['athletic'], negative: [], hidden: [] } },
-          { id: 4, name: 'Swift Mare', sireId: 9, damId: 10, stats: { speed: 88, stamina: 80 }, traits: { positive: ['fast'], negative: [], hidden: [] } },
-          { id: 5, name: 'Noble Sire', sireId: 11, damId: 12, stats: { intelligence: 88, agility: 82 }, traits: { positive: ['intelligent'], negative: [], hidden: [] } },
-          { id: 6, name: 'Gentle Dam', sireId: 13, damId: 14, stats: { stamina: 90, intelligence: 85 }, traits: { positive: ['calm'], negative: [], hidden: [] } },
+          {
+            id: 3,
+            name: 'Storm King',
+            sireId: 7,
+            damId: 8,
+            stats: { speed: 90, stamina: 85 },
+            traits: { positive: ['athletic'], negative: [], hidden: [] },
+          },
+          {
+            id: 4,
+            name: 'Swift Mare',
+            sireId: 9,
+            damId: 10,
+            stats: { speed: 88, stamina: 80 },
+            traits: { positive: ['fast'], negative: [], hidden: [] },
+          },
+          {
+            id: 5,
+            name: 'Noble Sire',
+            sireId: 11,
+            damId: 12,
+            stats: { intelligence: 88, agility: 82 },
+            traits: { positive: ['intelligent'], negative: [], hidden: [] },
+          },
+          {
+            id: 6,
+            name: 'Gentle Dam',
+            sireId: 13,
+            damId: 14,
+            stats: { stamina: 90, intelligence: 85 },
+            traits: { positive: ['calm'], negative: [], hidden: [] },
+          },
         ],
       },
       {
         generation: 2,
         horses: [
-          { id: 7, name: 'Ancient King', stats: { speed: 85, stamina: 88 }, traits: { positive: ['legendary'], negative: [], hidden: [] } },
-          { id: 8, name: 'Royal Mare', stats: { speed: 82, agility: 90 }, traits: { positive: ['noble'], negative: [], hidden: [] } },
-          { id: 9, name: 'Speed Demon', stats: { speed: 92, stamina: 75 }, traits: { positive: ['fast', 'athletic'], negative: ['nervous'], hidden: [] } },
-          { id: 10, name: 'Fleet Foot', stats: { speed: 85, agility: 88 }, traits: { positive: ['agile'], negative: [], hidden: [] } },
+          {
+            id: 7,
+            name: 'Ancient King',
+            stats: { speed: 85, stamina: 88 },
+            traits: { positive: ['legendary'], negative: [], hidden: [] },
+          },
+          {
+            id: 8,
+            name: 'Royal Mare',
+            stats: { speed: 82, agility: 90 },
+            traits: { positive: ['noble'], negative: [], hidden: [] },
+          },
+          {
+            id: 9,
+            name: 'Speed Demon',
+            stats: { speed: 92, stamina: 75 },
+            traits: { positive: ['fast', 'athletic'], negative: ['nervous'], hidden: [] },
+          },
+          {
+            id: 10,
+            name: 'Fleet Foot',
+            stats: { speed: 85, agility: 88 },
+            traits: { positive: ['agile'], negative: [], hidden: [] },
+          },
         ],
       },
     ];
@@ -266,7 +314,6 @@ describe('🌳 Advanced Lineage Analysis System', () => {
       expect(Array.isArray(analysis.generationalTrends)).toBe(true);
 
       if (analysis.generationalTrends.length > 0) {
-        // eslint-disable-next-line prefer-destructuring
         const trend = analysis.generationalTrends[0];
         expect(trend).toHaveProperty('generation');
         expect(trend).toHaveProperty('averageStats');
@@ -286,7 +333,6 @@ describe('🌳 Advanced Lineage Analysis System', () => {
       expect(Array.isArray(analysis.performanceMetrics.topPerformers)).toBe(true);
 
       if (analysis.performanceMetrics.topPerformers.length > 0) {
-        // eslint-disable-next-line prefer-destructuring
         const performer = analysis.performanceMetrics.topPerformers[0];
         expect(performer).toHaveProperty('id');
         expect(performer).toHaveProperty('name');
@@ -336,7 +382,6 @@ describe('🌳 Advanced Lineage Analysis System', () => {
       // Verify nodes structure
       expect(Array.isArray(vizData.nodes)).toBe(true);
       if (vizData.nodes.length > 0) {
-        // eslint-disable-next-line prefer-destructuring
         const node = vizData.nodes[0];
         expect(node).toHaveProperty('id');
         expect(node).toHaveProperty('name');
@@ -349,7 +394,6 @@ describe('🌳 Advanced Lineage Analysis System', () => {
       // Verify edges structure
       expect(Array.isArray(vizData.edges)).toBe(true);
       if (vizData.edges.length > 0) {
-        // eslint-disable-next-line prefer-destructuring
         const edge = vizData.edges[0];
         expect(edge).toHaveProperty('from');
         expect(edge).toHaveProperty('to');
@@ -412,7 +456,6 @@ describe('🌳 Advanced Lineage Analysis System', () => {
       // Verify suggestions are actionable
       expect(Array.isArray(recommendations.suggestions)).toBe(true);
       if (recommendations.suggestions.length > 0) {
-        // eslint-disable-next-line prefer-destructuring
         const suggestion = recommendations.suggestions[0];
         expect(suggestion).toHaveProperty('type');
         expect(suggestion).toHaveProperty('description');
@@ -457,7 +500,6 @@ describe('🌳 Advanced Lineage Analysis System', () => {
       expect(Array.isArray(recommendations.risks)).toBe(true);
 
       if (recommendations.risks.length > 0) {
-        // eslint-disable-next-line prefer-destructuring
         const risk = recommendations.risks[0];
         expect(risk).toHaveProperty('type');
         expect(risk).toHaveProperty('severity');

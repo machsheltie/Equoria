@@ -273,7 +273,7 @@ describe('CSRF Protection Middleware', () => {
     const safeMethods = ['GET', 'HEAD', 'OPTIONS'];
     const unsafeMethods = ['POST', 'PUT', 'DELETE', 'PATCH'];
 
-    safeMethods.forEach((method) => {
+    safeMethods.forEach(method => {
       test(`should NOT require CSRF token for ${method} requests`, () => {
         req.method = method;
 
@@ -283,7 +283,7 @@ describe('CSRF Protection Middleware', () => {
       });
     });
 
-    unsafeMethods.forEach((method) => {
+    unsafeMethods.forEach(method => {
       test(`should require CSRF token for ${method} requests`, () => {
         req.method = method;
 

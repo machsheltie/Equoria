@@ -33,14 +33,10 @@
 
 import { jest, describe, beforeAll, beforeEach, afterAll, expect, it } from '@jest/globals';
 import prisma from '../../packages/database/prismaClient.mjs';
+import { invalidateCache } from '../utils/cacheHelper.mjs';
 
 // Import the actual controller - no complex mocking
-import {
-  canTrain,
-  trainHorse,
-  getTrainingStatus,
-  getTrainableHorses
-} from '../controllers/trainingController.mjs';
+import { canTrain, trainHorse, getTrainingStatus, getTrainableHorses } from '../controllers/trainingController.mjs';
 
 // Test data setup
 let testUser;
@@ -63,17 +59,19 @@ describe('🏋️ UNIT: Training Controller - Horse Training Business Logic', ()
         lastName: 'User',
         xp: 100,
         level: 2,
-        money: 5000
-      }
+        money: 5000,
+      },
     });
 
     // Create test breed (required for foreign key constraint)
-    const testBreed = await prisma.breed.create({
-      data: {
+    const testBreed = await prisma.breed.upsert({
+      where: { id: 1 },
+      update: {},
+      create: {
         id: 1,
         name: 'Test Breed',
-        description: 'Test breed for training tests'
-      }
+        description: 'Test breed for training tests',
+      },
     });
 
     // Create eligible horse (4 years old)
@@ -86,13 +84,13 @@ describe('🏋️ UNIT: Training Controller - Horse Training Business Logic', ()
         dateOfBirth: fourYearsAgo,
         age: 4,
         sex: 'M',
-        ownerId: testUser.id,
-        breedId: 1,
+        userId: testUser.id ,
+        breedId: 1 ,
         speed: 50,
         stamina: 50,
         agility: 50,
-        healthStatus: 'Excellent'
-      }
+        healthStatus: 'Excellent',
+      },
     });
     testHorse4Years = testHorseEligible;
 
@@ -106,13 +104,13 @@ describe('🏋️ UNIT: Training Controller - Horse Training Business Logic', ()
         dateOfBirth: threeYearsAgo,
         age: 3,
         sex: 'F',
-        ownerId: testUser.id,
-        breedId: 1,
+        userId: testUser.id ,
+        breedId: 1 ,
         speed: 45,
         stamina: 45,
         agility: 45,
-        healthStatus: 'Excellent'
-      }
+        healthStatus: 'Excellent',
+      },
     });
 
     // Create young horse (2 years old)
@@ -125,13 +123,13 @@ describe('🏋️ UNIT: Training Controller - Horse Training Business Logic', ()
         dateOfBirth: twoYearsAgo,
         age: 2,
         sex: 'F',
-        ownerId: testUser.id,
-        breedId: 1,
+        userId: testUser.id ,
+        breedId: 1 ,
         speed: 40,
         stamina: 40,
         agility: 40,
-        healthStatus: 'Excellent'
-      }
+        healthStatus: 'Excellent',
+      },
     });
 
     // Create horse with recent training
@@ -141,13 +139,13 @@ describe('🏋️ UNIT: Training Controller - Horse Training Business Logic', ()
         dateOfBirth: fourYearsAgo,
         age: 4,
         sex: 'M',
-        ownerId: testUser.id,
-        breedId: 1,
+        userId: testUser.id ,
+        breedId: 1 ,
         speed: 60,
         stamina: 60,
         agility: 60,
-        healthStatus: 'Excellent'
-      }
+        healthStatus: 'Excellent',
+      },
     });
 
     // Add recent training log (3 days ago)
@@ -158,8 +156,8 @@ describe('🏋️ UNIT: Training Controller - Horse Training Business Logic', ()
       data: {
         horseId: testHorseRecentTraining.id,
         discipline: 'Racing',
-        trainedAt: threeDaysAgo
-      }
+        trainedAt: threeDaysAgo,
+      },
     });
   });
 
@@ -168,26 +166,23 @@ describe('🏋️ UNIT: Training Controller - Horse Training Business Logic', ()
     await prisma.trainingLog.deleteMany({
       where: {
         horseId: {
-          in: [testHorseEligible.id, testHorseAdult.id, testHorseYoung.id, testHorseRecentTraining.id]
-        }
-      }
+          in: [testHorseEligible.id, testHorseAdult.id, testHorseYoung.id, testHorseRecentTraining.id],
+        },
+      },
     });
 
     await prisma.horse.deleteMany({
       where: {
-        OR: [
-          { ownerId: testUser.id },
-          { userId: testUser.id }
-        ]
-      }
+        OR: [{ userId: testUser.id }, { userId: testUser.id }],
+      },
     });
 
     await prisma.breed.delete({
-      where: { id: 1 }
+      where: { id: 1 },
     });
 
     await prisma.user.delete({
-      where: { id: testUser.id }
+      where: { id: testUser.id },
     });
 
     await prisma.$disconnect();
@@ -199,10 +194,15 @@ describe('🏋️ UNIT: Training Controller - Horse Training Business Logic', ()
     await prisma.trainingLog.deleteMany({
       where: {
         horseId: {
-          in: [testHorseEligible.id, testHorseAdult.id]
-        }
-      }
+          in: [testHorseEligible.id, testHorseAdult.id],
+        },
+      },
     });
+
+    // ✅ FIX: Invalidate cache to prevent stale data from previous tests
+    // The cache has 5-minute TTL, so without this, tests running within 5 minutes
+    // would get cached results from previous tests causing intermittent failures
+    await invalidateCache(`user:trainable:${testUser.id}`);
   });
 
   describe('canTrain', () => {
@@ -243,21 +243,21 @@ describe('🏋️ UNIT: Training Controller - Horse Training Business Logic', ()
           name: 'Old Training Horse',
           dateOfBirth: new Date(new Date().setFullYear(new Date().getFullYear() - 4)),
           sex: 'M',
-          ownerId: testUser.id,
-          breedId: 1,
+          userId: testUser.id ,
+          breedId: 1 ,
           speed: 50,
           stamina: 50,
           agility: 50,
-          healthStatus: 'Excellent'
-        }
+          healthStatus: 'Excellent',
+        },
       });
 
       await prisma.trainingLog.create({
         data: {
           horseId: oldTrainingHorse.id,
           discipline: 'Racing',
-          trainedAt: eightDaysAgo
-        }
+          trainedAt: eightDaysAgo,
+        },
       });
 
       const result = await canTrain(oldTrainingHorse.id, 'Dressage');
@@ -269,10 +269,10 @@ describe('🏋️ UNIT: Training Controller - Horse Training Business Logic', ()
 
       // Cleanup
       await prisma.trainingLog.deleteMany({
-        where: { horseId: oldTrainingHorse.id }
+        where: { horseId: oldTrainingHorse.id },
       });
       await prisma.horse.delete({
-        where: { id: oldTrainingHorse.id }
+        where: { id: oldTrainingHorse.id },
       });
     });
 
@@ -316,21 +316,21 @@ describe('🏋️ UNIT: Training Controller - Horse Training Business Logic', ()
           name: 'Edge Case Horse',
           dateOfBirth: new Date(new Date().setFullYear(new Date().getFullYear() - 4)),
           sex: 'F',
-          ownerId: testUser.id,
-          breedId: 1,
+          userId: testUser.id ,
+          breedId: 1 ,
           speed: 50,
           stamina: 50,
           agility: 50,
-          healthStatus: 'Excellent'
-        }
+          healthStatus: 'Excellent',
+        },
       });
 
       await prisma.trainingLog.create({
         data: {
           horseId: edgeCaseHorse.id,
           discipline: 'Racing',
-          trainedAt: exactlySevenDaysAgo
-        }
+          trainedAt: exactlySevenDaysAgo,
+        },
       });
 
       const result = await canTrain(edgeCaseHorse.id, 'Dressage');
@@ -342,10 +342,10 @@ describe('🏋️ UNIT: Training Controller - Horse Training Business Logic', ()
 
       // Cleanup
       await prisma.trainingLog.deleteMany({
-        where: { horseId: edgeCaseHorse.id }
+        where: { horseId: edgeCaseHorse.id },
       });
       await prisma.horse.delete({
-        where: { id: edgeCaseHorse.id }
+        where: { id: edgeCaseHorse.id },
       });
     });
   });
@@ -365,8 +365,8 @@ describe('🏋️ UNIT: Training Controller - Horse Training Business Logic', ()
       const trainingLog = await prisma.trainingLog.findFirst({
         where: {
           horseId: testHorseEligible.id,
-          discipline: 'Racing'
-        }
+          discipline: 'Racing',
+        },
       });
       expect(trainingLog).toBeTruthy();
       expect(trainingLog.discipline).toBe('Racing');
@@ -408,7 +408,7 @@ describe('🏋️ UNIT: Training Controller - Horse Training Business Logic', ()
     it('should award +5 XP after successful training', async () => {
       // Get initial XP for comparison
       const userBefore = await prisma.user.findUnique({
-        where: { id: testUser.id }
+        where: { id: testUser.id },
       });
 
       // Use the eligible test horse for training
@@ -421,7 +421,7 @@ describe('🏋️ UNIT: Training Controller - Horse Training Business Logic', ()
 
       // Verify XP was awarded (+5 for training)
       const userAfter = await prisma.user.findUnique({
-        where: { id: testUser.id }
+        where: { id: testUser.id },
       });
       expect(userAfter.xp).toBe(userBefore.xp + 5);
     });
@@ -472,21 +472,21 @@ describe('🏋️ UNIT: Training Controller - Horse Training Business Logic', ()
           name: 'Expired Cooldown Horse',
           dateOfBirth: new Date(new Date().setFullYear(new Date().getFullYear() - 4)),
           sex: 'M',
-          ownerId: testUser.id,
-          breedId: 1,
+          userId: testUser.id ,
+          breedId: 1 ,
           speed: 50,
           stamina: 50,
           agility: 50,
-          healthStatus: 'Excellent'
-        }
+          healthStatus: 'Excellent',
+        },
       });
 
       await prisma.trainingLog.create({
         data: {
           horseId: expiredCooldownHorse.id,
           discipline: 'Racing',
-          trainedAt: eightDaysAgo
-        }
+          trainedAt: eightDaysAgo,
+        },
       });
 
       const result = await getTrainingStatus(expiredCooldownHorse.id, 'Racing');
@@ -500,10 +500,10 @@ describe('🏋️ UNIT: Training Controller - Horse Training Business Logic', ()
 
       // Cleanup
       await prisma.trainingLog.deleteMany({
-        where: { horseId: expiredCooldownHorse.id }
+        where: { horseId: expiredCooldownHorse.id },
       });
       await prisma.horse.delete({
-        where: { id: expiredCooldownHorse.id }
+        where: { id: expiredCooldownHorse.id },
       });
     });
 
@@ -553,21 +553,21 @@ describe('🏋️ UNIT: Training Controller - Horse Training Business Logic', ()
           name: 'Edge Case Horse',
           dateOfBirth: new Date(new Date().setFullYear(new Date().getFullYear() - 4)),
           sex: 'M',
-          ownerId: testUser.id,
-          breedId: 1,
+          userId: testUser.id ,
+          breedId: 1 ,
           speed: 50,
           stamina: 50,
           agility: 50,
-          healthStatus: 'Excellent'
-        }
+          healthStatus: 'Excellent',
+        },
       });
 
       await prisma.trainingLog.create({
         data: {
           horseId: expiredCooldownHorse.id,
           discipline: 'Racing',
-          trainedAt: justOverSevenDaysAgo
-        }
+          trainedAt: justOverSevenDaysAgo,
+        },
       });
 
       const result = await canTrain(expiredCooldownHorse.id, 'Racing');
@@ -577,10 +577,10 @@ describe('🏋️ UNIT: Training Controller - Horse Training Business Logic', ()
 
       // Cleanup
       await prisma.trainingLog.deleteMany({
-        where: { horseId: expiredCooldownHorse.id }
+        where: { horseId: expiredCooldownHorse.id },
       });
       await prisma.horse.delete({
-        where: { id: expiredCooldownHorse.id }
+        where: { id: expiredCooldownHorse.id },
       });
     });
 
@@ -609,9 +609,7 @@ describe('🏋️ UNIT: Training Controller - Horse Training Business Logic', ()
 
       // Verify all horses have the expected disciplines (no Gaited trait requirement)
       result.forEach(horse => {
-        expect(horse.trainableDisciplines).toEqual([
-          'Racing', 'Show Jumping', 'Dressage', 'Cross Country', 'Western'
-        ]);
+        expect(horse.trainableDisciplines).toEqual(['Racing', 'Show Jumping', 'Dressage', 'Cross Country', 'Western']);
       });
     });
 
@@ -626,8 +624,8 @@ describe('🏋️ UNIT: Training Controller - Horse Training Business Logic', ()
           lastName: 'Horses',
           money: 1000,
           xp: 0,
-          level: 1
-        }
+          level: 1,
+        },
       });
 
       const result = await getTrainableHorses(userWithNoHorses.id);
@@ -636,7 +634,7 @@ describe('🏋️ UNIT: Training Controller - Horse Training Business Logic', ()
 
       // Cleanup
       await prisma.user.delete({
-        where: { id: userWithNoHorses.id }
+        where: { id: userWithNoHorses.id },
       });
     });
 

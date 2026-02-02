@@ -155,10 +155,10 @@ describe('🐎 INTEGRATION: Complete Horse Breeding Workflow', () => {
         data: {
           name: 'Integration Test Mare',
           age: 5,
-          breed: { connect: { id: breed.id } },
+          breedId: breed.id ,
           sex: 'Mare',
           healthStatus: 'Excellent',
-          user: { connect: { id: testUser.id } },
+          userId: testUser.id ,
           dateOfBirth: fiveYearsAgoForMare, // FIXED: Use calculated date
           disciplineScores: {
             Racing: 85,
@@ -190,10 +190,10 @@ describe('🐎 INTEGRATION: Complete Horse Breeding Workflow', () => {
         data: {
           name: 'Integration Test Stallion',
           age: 6,
-          breed: { connect: { id: breed.id } },
+          breedId: breed.id ,
           sex: 'Stallion',
           healthStatus: 'Excellent',
-          user: { connect: { id: testUser.id } },
+          userId: testUser.id ,
           dateOfBirth: sixYearsAgoForStallion, // FIXED: Use calculated date
           disciplineScores: {
             Racing: 90,
@@ -223,12 +223,12 @@ describe('🐎 INTEGRATION: Complete Horse Breeding Workflow', () => {
         data: {
           name: 'Integration Test Foal',
           age: 0, // Newborn
-          breed: { connect: { id: breed.id } },
+          breedId: breed.id ,
           sex: 'Colt',
-          sireId: stallion.id,
-          damId: mare.id,
+          sire: { connect: { id: stallion.id } },
+          dam: { connect: { id: mare.id } },
           healthStatus: 'Excellent',
-          user: { connect: { id: testUser.id } },
+          userId: testUser.id ,
           dateOfBirth: new Date(), // Born today
           disciplineScores: {}, // No training yet
           epigeneticModifiers: {

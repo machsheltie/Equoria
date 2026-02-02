@@ -59,14 +59,13 @@ describe('Cross-System Validation Tests', () => {
     });
 
     // Create test horse
-    const fourYearsAgo = new Date(Date.now() - (4 * 365 * 24 * 60 * 60 * 1000));
+    const fourYearsAgo = new Date(Date.now() - 4 * 365 * 24 * 60 * 60 * 1000);
     const ageInGameDays = 4 * 7; // 4 years in game time (1 year = 7 days)
 
     testHorse = await prisma.horse.create({
       data: {
         name: 'Cross System Test Horse',
-        ownerId: testUser.id,
-        userId: testUser.id, // Add userId for user relationship
+        userId: testUser.id, // Matches schema field (line 144)
         breedId: testBreed.id,
         sex: 'Mare',
         dateOfBirth: fourYearsAgo,
@@ -96,7 +95,6 @@ describe('Cross-System Validation Tests', () => {
         personality: 'methodical',
         speciality: 'general_grooming',
         level: 4,
-      // eslint-disable-next-line prefer-destructuring
       },
     });
   });
@@ -119,7 +117,7 @@ describe('Cross-System Validation Tests', () => {
         breedId: testBreed.id,
         sex: 'Stallion',
         dateOfBirth: new Date(), // Newborn
-        // eslint-disable-next-line prefer-destructuring
+
         sireId: testHorse.id,
         damId: testHorse.id,
       };
@@ -269,7 +267,7 @@ describe('Cross-System Validation Tests', () => {
       const testShow = await prisma.show.create({
         data: {
           name: `Cross System Test Show ${Date.now()}`,
-          runDate: new Date(Date.now() + (7 * 24 * 60 * 60 * 1000)),
+          runDate: new Date(Date.now() + 7 * 24 * 60 * 60 * 1000),
           discipline: 'Racing',
           levelMin: 1,
           levelMax: 10,
@@ -304,9 +302,9 @@ describe('Cross-System Validation Tests', () => {
         .post('/api/competition/execute')
         .set('Authorization', `Bearer ${authToken}`)
         .set('x-test-skip-csrf', 'true')
-        .send({ 
+        .send({
           entryId: entryResponse.body.data.id,
-          showId: testShow.id 
+          showId: testShow.id,
         })
         .expect(200);
 
@@ -429,7 +427,6 @@ describe('Cross-System Validation Tests', () => {
       expect(assignmentsResponse.body.success).toBe(true);
       expect(assignmentsResponse.body.data.assignments.length).toBeGreaterThan(0);
 
-      // eslint-disable-next-line prefer-destructuring
       const assignment = assignmentsResponse.body.data.assignments[0];
       expect(assignment.groomId).toBe(testGroom.id);
       expect(assignment.foalId).toBe(testHorse.id);
@@ -450,11 +447,7 @@ describe('Cross-System Validation Tests', () => {
       // Perform memory-intensive operations
       const operations = [];
       for (let i = 0; i < 10; i++) {
-        operations.push(
-          request(app)
-            .get('/api/horses')
-            .set('Authorization', `Bearer ${authToken}`),
-        );
+        operations.push(request(app).get('/api/horses').set('Authorization', `Bearer ${authToken}`));
       }
 
       await Promise.all(operations);
@@ -512,9 +505,7 @@ describe('Cross-System Validation Tests', () => {
   describe('Documentation System Integration', () => {
     test('API documentation integration with live endpoints', async () => {
       // Test that API documentation reflects actual endpoints
-      const swaggerResponse = await request(app)
-        .get('/api-docs/swagger.json')
-        .expect(200);
+      const swaggerResponse = await request(app).get('/api-docs/swagger.json').expect(200);
 
       const apiSpec = swaggerResponse.body;
       expect(apiSpec.paths).toBeDefined();
@@ -537,25 +528,19 @@ describe('Cross-System Validation Tests', () => {
 
     test('User documentation integration with search functionality', async () => {
       // Test user documentation search
-      const searchResponse = await request(app)
-        .get('/api/user-docs/search?q=competition')
-        .expect(200);
+      const searchResponse = await request(app).get('/api/user-docs/search?q=competition').expect(200);
 
       expect(searchResponse.body.success).toBe(true);
       expect(searchResponse.body.data.results.length).toBeGreaterThan(0);
 
       // Test specific document retrieval
-      const featureGuideResponse = await request(app)
-        .get('/api/user-docs/feature-guide')
-        .expect(200);
+      const featureGuideResponse = await request(app).get('/api/user-docs/feature-guide').expect(200);
 
       expect(featureGuideResponse.body.success).toBe(true);
       expect(featureGuideResponse.body.data.content).toContain('Equoria');
 
       // Test documentation analytics
-      const analyticsResponse = await request(app)
-        .get('/api/user-docs/analytics')
-        .expect(200);
+      const analyticsResponse = await request(app).get('/api/user-docs/analytics').expect(200);
 
       expect(analyticsResponse.body.success).toBe(true);
       expect(analyticsResponse.body.data.totalViews).toBeGreaterThan(0);
@@ -565,17 +550,13 @@ describe('Cross-System Validation Tests', () => {
   describe('System Health and Monitoring', () => {
     test('Overall system health validation', async () => {
       // Test main health endpoint
-      const healthResponse = await request(app)
-        .get('/health')
-        .expect(200);
+      const healthResponse = await request(app).get('/health').expect(200);
 
       expect(healthResponse.body.success).toBe(true);
       expect(healthResponse.body.message).toBe('Server is healthy');
 
       // Test ping endpoint
-      const pingResponse = await request(app)
-        .get('/ping')
-        .expect(200);
+      const pingResponse = await request(app).get('/ping').expect(200);
 
       expect(pingResponse.body.message).toBe('pong');
 
@@ -588,9 +569,7 @@ describe('Cross-System Validation Tests', () => {
       expect(memoryHealthResponse.body.success).toBe(true);
 
       // Test documentation system health
-      const docHealthResponse = await request(app)
-        .get('/api/user-docs/health')
-        .expect(200);
+      const docHealthResponse = await request(app).get('/api/user-docs/health').expect(200);
 
       expect(docHealthResponse.body.success).toBe(true);
       expect(docHealthResponse.body.data.status).toBe('healthy');

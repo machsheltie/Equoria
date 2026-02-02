@@ -37,7 +37,7 @@ describe('Breeding Analytics Service', () => {
     await cleanupBreedingData();
 
     const timestamp = Date.now();
-    await prisma.$transaction(async (tx) => {
+    await prisma.$transaction(async tx => {
       // Create test user
       testUser = await tx.user.create({
         data: {
@@ -61,11 +61,11 @@ describe('Breeding Analytics Service', () => {
       testStallion = await tx.horse.create({
         data: {
           name: `Test Stallion ${timestamp}`,
-          user: { connect: { id: testUser.id } },
+          userId: testUser.id ,
           age: 8,
           sex: 'stallion',
           dateOfBirth: new Date('2017-01-01'),
-          breed: { connect: { id: testBreed.id } },
+          breedId: testBreed.id ,
           speed: 85,
           stamina: 80,
           agility: 75,
@@ -88,11 +88,11 @@ describe('Breeding Analytics Service', () => {
       testMare = await tx.horse.create({
         data: {
           name: `Test Mare ${timestamp}`,
-          user: { connect: { id: testUser.id } },
+          userId: testUser.id ,
           age: 6,
           sex: 'mare',
           dateOfBirth: new Date('2019-01-01'),
-          breed: { connect: { id: testBreed.id } },
+          breedId: testBreed.id ,
           speed: 78,
           stamina: 85,
           agility: 80,
@@ -117,11 +117,11 @@ describe('Breeding Analytics Service', () => {
         const foal = await tx.horse.create({
           data: {
             name: `Test Foal ${timestamp} ${i + 1}`,
-            user: { connect: { id: testUser.id } },
+            userId: testUser.id ,
             age: i + 1, // Different ages
             sex: i % 2 === 0 ? 'colt' : 'filly',
             dateOfBirth: new Date(`202${i + 1}-01-01`),
-            breed: { connect: { id: testBreed.id } },
+            breedId: testBreed.id ,
             sire: { connect: { id: testStallion.id } },
             dam: { connect: { id: testMare.id } },
             speed: 70 + Math.floor(Math.random() * 20),
@@ -196,7 +196,7 @@ describe('Breeding Analytics Service', () => {
       expect(analytics.breedingPairs.length).toBeGreaterThan(0);
 
       // Check breeding pair data structure
-      // eslint-disable-next-line prefer-destructuring
+
       const pair = analytics.breedingPairs[0];
       expect(pair.stallion).toBeDefined();
       expect(pair.mare).toBeDefined();
@@ -207,9 +207,7 @@ describe('Breeding Analytics Service', () => {
     test('should identify parent-offspring relationships', async () => {
       const analytics = await breedingAnalyticsService.getBreedingAnalytics(testUser.id);
 
-      const pair = analytics.breedingPairs.find(p =>
-        p.stallion.id === testStallion.id && p.mare.id === testMare.id,
-      );
+      const pair = analytics.breedingPairs.find(p => p.stallion.id === testStallion.id && p.mare.id === testMare.id);
 
       expect(pair).toBeDefined();
       expect(pair.foalCount).toBe(5);
@@ -332,8 +330,9 @@ describe('Breeding Analytics Service', () => {
     });
 
     test('should handle non-existent user gracefully', async () => {
-      await expect(breedingAnalyticsService.getBreedingAnalytics('non-existent-user-id'))
-        .rejects.toThrow('User not found');
+      await expect(breedingAnalyticsService.getBreedingAnalytics('non-existent-user-id')).rejects.toThrow(
+        'User not found',
+      );
     });
   });
 });

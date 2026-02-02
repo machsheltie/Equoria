@@ -40,13 +40,13 @@ describe('User Integration Tests - Mocked Database', () => {
     {
       id: 1,
       name: 'Comet',
-      userId: testUserId,
+      userId: testUserId, // Use userId to match schema relation
       breed: { name: 'Thoroughbred' },
     },
     {
       id: 2,
       name: 'Starlight',
-      userId: testUserId,
+      userId: testUserId, // Use userId to match schema relation
       breed: { name: 'Thoroughbred' },
     },
   ];
@@ -109,7 +109,7 @@ describe('User Integration Tests - Mocked Database', () => {
 
       // Check that horses are linked to the user
       userWithHorses.horses.forEach(horse => {
-        expect(horse.ownerId).toBe(testUserId);
+        expect(horse.userId).toBe(testUserId);
       });
     });
 

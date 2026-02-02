@@ -132,8 +132,8 @@ describe('🏋️ INTEGRATION: Complete Training Progression Workflow', () => {
         data: {
           name: 'Training Integration Young Horse',
           age: 2, // Too young for training
-          breed: { connect: { id: breed.id } },
-          user: { connect: { id: testUser.id } },
+          breedId: breed.id ,
+          userId: testUser.id ,
           sex: 'Colt',
           dateOfBirth: twoYearsAgo, // FIXED: Use calculated date for accurate age (was hardcoded '2022-01-01')
           healthStatus: 'Excellent',
@@ -161,8 +161,8 @@ describe('🏋️ INTEGRATION: Complete Training Progression Workflow', () => {
         data: {
           name: 'Training Integration Mature Horse',
           age: 4, // Eligible for training
-          breed: { connect: { id: breed.id } },
-          user: { connect: { id: testUser.id } },
+          breedId: breed.id ,
+          userId: testUser.id ,
           sex: 'Mare',
           dateOfBirth: fourYearsAgo, // FIXED: Use calculated date for accurate age (was hardcoded '2020-01-01')
           healthStatus: 'Excellent',

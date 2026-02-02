@@ -49,25 +49,26 @@ const createTestApp = () => {
   app.use(express.json());
 
   // Auth routes
-  app.post('/api/auth/register', [
-    body('email').isEmail().normalizeEmail(),
-    body('username').isLength({ min: 3, max: 30 }),
-    body('password').isLength({ min: 8 }),
-    body('firstName').notEmpty(),
-    body('lastName').notEmpty(),
-    handleValidationErrors,
-  ], register);
+  app.post(
+    '/api/auth/register',
+    [
+      body('email').isEmail().normalizeEmail(),
+      body('username').isLength({ min: 3, max: 30 }),
+      body('password').isLength({ min: 8 }),
+      body('firstName').notEmpty(),
+      body('lastName').notEmpty(),
+      handleValidationErrors,
+    ],
+    register,
+  );
 
-  app.post('/api/auth/login', [
-    body('email').isEmail().normalizeEmail(),
-    body('password').notEmpty(),
-    handleValidationErrors,
-  ], login);
+  app.post(
+    '/api/auth/login',
+    [body('email').isEmail().normalizeEmail(), body('password').notEmpty(), handleValidationErrors],
+    login,
+  );
 
-  app.post('/api/auth/refresh', [
-    body('refreshToken').notEmpty(),
-    handleValidationErrors,
-  ], refreshToken);
+  app.post('/api/auth/refresh', [body('refreshToken').notEmpty(), handleValidationErrors], refreshToken);
 
   // Protected endpoints across different systems
   app.get('/api/auth/profile', authenticateToken, (req, res) => {
@@ -133,9 +134,7 @@ describe('🔐 Authentication System Integration Tests', () => {
       lastName: 'Integration',
     };
 
-    const registerResponse = await request(app)
-      .post('/api/auth/register')
-      .send(userData);
+    const registerResponse = await request(app).post('/api/auth/register').send(userData);
 
     expect(registerResponse.status).toBe(201);
     expect(registerResponse.body.status).toBe('success');
@@ -169,9 +168,7 @@ describe('🔐 Authentication System Integration Tests', () => {
       ];
 
       for (const endpoint of protectedEndpoints) {
-        const response = await request(app)
-          .get(endpoint)
-          .set('Authorization', `Bearer ${authToken}`);
+        const response = await request(app).get(endpoint).set('Authorization', `Bearer ${authToken}`);
 
         expect(response.status).toBe(200);
         expect(response.body.success).toBe(true);
@@ -243,16 +240,10 @@ describe('🔐 Authentication System Integration Tests', () => {
       expect(newToken.length).toBeGreaterThan(0);
 
       // Test new token works across multiple systems
-      const testEndpoints = [
-        '/api/auth/profile',
-        '/api/horses',
-        '/api/dashboard/overview',
-      ];
+      const testEndpoints = ['/api/auth/profile', '/api/horses', '/api/dashboard/overview'];
 
       for (const endpoint of testEndpoints) {
-        const response = await request(app)
-          .get(endpoint)
-          .set('Authorization', `Bearer ${newToken}`);
+        const response = await request(app).get(endpoint).set('Authorization', `Bearer ${newToken}`);
 
         expect(response.status).toBe(200);
         expect(response.body.success).toBe(true);
@@ -263,11 +254,7 @@ describe('🔐 Authentication System Integration Tests', () => {
 
   describe('🛡️ Security Validation', () => {
     test('should maintain consistent error responses across systems', async () => {
-      const endpoints = [
-        '/api/auth/profile',
-        '/api/horses',
-        '/api/competition/my-entries',
-      ];
+      const endpoints = ['/api/auth/profile', '/api/horses', '/api/competition/my-entries'];
 
       for (const endpoint of endpoints) {
         const response = await request(app).get(endpoint).set('x-test-require-auth', 'true');
@@ -280,12 +267,7 @@ describe('🔐 Authentication System Integration Tests', () => {
     });
 
     test('should handle malformed authorization headers consistently', async () => {
-      const malformedHeaders = [
-        'InvalidFormat',
-        'Bearer',
-        'Bearer ',
-        'NotBearer token123',
-      ];
+      const malformedHeaders = ['InvalidFormat', 'Bearer', 'Bearer ', 'NotBearer token123'];
 
       for (const header of malformedHeaders) {
         const response = await request(app)

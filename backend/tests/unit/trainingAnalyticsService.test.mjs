@@ -41,7 +41,7 @@ describe('Training Analytics Service', () => {
     await cleanupTrainingData();
 
     const timestamp = Date.now();
-    await prisma.$transaction(async (tx) => {
+    await prisma.$transaction(async tx => {
       testUser = await tx.user.create({
         data: {
           username: `training_test_user_${timestamp}`,
@@ -62,11 +62,11 @@ describe('Training Analytics Service', () => {
       testHorse = await tx.horse.create({
         data: {
           name: `Training Test Horse ${timestamp}`,
-          user: { connect: { id: testUser.id } },
+          userId: testUser.id ,
           age: 5,
           sex: 'stallion',
           dateOfBirth: new Date('2020-01-01'),
-          breed: { connect: { id: testBreed.id } },
+          breedId: testBreed.id ,
           speed: 60,
           stamina: 65,
           agility: 55,
@@ -88,7 +88,7 @@ describe('Training Analytics Service', () => {
           data: {
             horseId: testHorse.id,
             discipline: disciplines[i % disciplines.length],
-            trainedAt: new Date(Date.now() - (i * 7 * 24 * 60 * 60 * 1000)), // Weekly training
+            trainedAt: new Date(Date.now() - i * 7 * 24 * 60 * 60 * 1000), // Weekly training
           },
         });
         testTrainingHistory.push(training);
@@ -145,7 +145,7 @@ describe('Training Analytics Service', () => {
       expect(analytics.trainingHistory.length).toBe(12);
 
       // Check training session data structure
-      // eslint-disable-next-line prefer-destructuring
+
       const session = analytics.trainingHistory[0];
       expect(session.discipline).toBeDefined();
       expect(session.trainedAt).toBeDefined();
@@ -210,22 +210,20 @@ describe('Training Analytics Service', () => {
     });
   });
 
-
   describe('Error Handling', () => {
     test('should handle non-existent horse gracefully', async () => {
-      await expect(trainingAnalyticsService.getTrainingHistory(99999))
-        .rejects.toThrow('Horse not found');
+      await expect(trainingAnalyticsService.getTrainingHistory(99999)).rejects.toThrow('Horse not found');
     });
 
     test('should handle horse with no training history', async () => {
       const newHorse = await prisma.horse.create({
         data: {
           name: 'No Training Horse',
-          user: { connect: { id: testUser.id } },
+          userId: testUser.id ,
           age: 3,
           sex: 'mare',
           dateOfBirth: new Date('2022-01-01'),
-          breed: { connect: { id: testBreed.id } },
+          breedId: testBreed.id ,
           speed: 50,
           stamina: 50,
           agility: 50,

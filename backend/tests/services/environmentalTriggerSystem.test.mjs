@@ -39,7 +39,7 @@ describe('Environmental Trigger System', () => {
     const twoWeeksAgo = new Date(now.getTime() - 14 * 24 * 60 * 60 * 1000);
     const oneMonthAgo = new Date(now.getTime() - 30 * 24 * 60 * 60 * 1000);
 
-    await prisma.$transaction(async (tx) => {
+    await prisma.$transaction(async tx => {
       // Create test user
       testUser = await tx.user.create({
         data: {
@@ -63,7 +63,7 @@ describe('Environmental Trigger System', () => {
             groomPersonality: 'calm',
             skillLevel: 'expert',
             speciality: 'foal_care',
-            userId: testUser.id,
+            userId: testUser.id ,
             sessionRate: 30.0,
             experience: 150,
             level: 8,
@@ -76,7 +76,7 @@ describe('Environmental Trigger System', () => {
             groomPersonality: 'energetic',
             skillLevel: 'expert',
             speciality: 'general_grooming',
-            userId: testUser.id,
+            userId: testUser.id ,
             sessionRate: 35.0,
             experience: 200,
             level: 10,
@@ -91,7 +91,7 @@ describe('Environmental Trigger System', () => {
             name: `Test Foal Young ${Date.now()}`,
             sex: 'filly',
             dateOfBirth: oneWeekAgo,
-            ownerId: testUser.id,
+            userId: testUser.id ,
             bondScore: 15,
             stressLevel: 6,
             epigeneticFlags: ['developing'],
@@ -103,7 +103,7 @@ describe('Environmental Trigger System', () => {
             name: `Test Foal Older ${Date.now()}`,
             sex: 'colt',
             dateOfBirth: oneMonthAgo,
-            ownerId: testUser.id,
+            userId: testUser.id ,
             bondScore: 25,
             stressLevel: 4,
             epigeneticFlags: ['curious'],
@@ -115,7 +115,7 @@ describe('Environmental Trigger System', () => {
             name: `Test Foal Stressed ${Date.now()}`,
             sex: 'filly',
             dateOfBirth: twoWeeksAgo,
-            ownerId: testUser.id,
+            userId: testUser.id ,
             bondScore: 10,
             stressLevel: 8,
             epigeneticFlags: ['reactive'],
@@ -196,7 +196,6 @@ describe('Environmental Trigger System', () => {
     });
 
     test('should handle horses with no environmental exposure', async () => {
-      // eslint-disable-next-line prefer-destructuring
       const horse = testHorses[1]; // Older foal with no interactions
 
       const triggers = await detectEnvironmentalTriggers(horse.id);
@@ -207,7 +206,6 @@ describe('Environmental Trigger System', () => {
     });
 
     test('should detect multiple environmental trigger types', async () => {
-      // eslint-disable-next-line prefer-destructuring
       const horse = testHorses[2]; // Stressed foal
 
       // Create diverse environmental interactions
@@ -250,7 +248,7 @@ describe('Environmental Trigger System', () => {
   describe('calculateTriggerThresholds', () => {
     test('should calculate age-appropriate trigger thresholds', async () => {
       const [youngHorse] = testHorses;
-      // eslint-disable-next-line prefer-destructuring
+
       const olderHorse = testHorses[1];
 
       const youngThresholds = await calculateTriggerThresholds(youngHorse.id);
@@ -269,9 +267,8 @@ describe('Environmental Trigger System', () => {
     });
 
     test('should apply stress-based threshold modifications', async () => {
-      // eslint-disable-next-line prefer-destructuring
       const stressedHorse = testHorses[2]; // High stress
-      // eslint-disable-next-line prefer-destructuring
+
       const calmHorse = testHorses[1]; // Lower stress
 
       const stressedThresholds = await calculateTriggerThresholds(stressedHorse.id);
@@ -318,7 +315,6 @@ describe('Environmental Trigger System', () => {
     });
 
     test('should handle trait expression for different trait types', async () => {
-      // eslint-disable-next-line prefer-destructuring
       const horse = testHorses[2]; // Stressed horse
 
       const fearfulProb = await evaluateTraitExpressionProbability(horse.id, 'fearful');
@@ -334,7 +330,6 @@ describe('Environmental Trigger System', () => {
 
   describe('processSeasonalTriggers', () => {
     test('should process seasonal environmental triggers', async () => {
-      // eslint-disable-next-line prefer-destructuring
       const horse = testHorses[1];
 
       const seasonalTriggers = await processSeasonalTriggers(horse.id, 'winter');
@@ -361,7 +356,6 @@ describe('Environmental Trigger System', () => {
 
   describe('analyzeStressEnvironmentTriggers', () => {
     test('should analyze stress-based environmental triggers', async () => {
-      // eslint-disable-next-line prefer-destructuring
       const stressedHorse = testHorses[2];
 
       // Create stress-inducing interactions
@@ -395,7 +389,6 @@ describe('Environmental Trigger System', () => {
 
   describe('trackCumulativeExposure', () => {
     test('should track cumulative environmental exposure over time', async () => {
-      // eslint-disable-next-line prefer-destructuring
       const horse = testHorses[1];
 
       // Create multiple interactions over time
@@ -450,7 +443,6 @@ describe('Environmental Trigger System', () => {
     });
 
     test('should show reduced sensitivity for older horses', async () => {
-      // eslint-disable-next-line prefer-destructuring
       const olderHorse = testHorses[1];
 
       const sensitivity = await assessCriticalPeriodSensitivity(olderHorse.id);

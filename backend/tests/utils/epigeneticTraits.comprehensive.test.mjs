@@ -344,7 +344,7 @@ describe('🧬 COMPREHENSIVE: Epigenetic Traits Calculation System', () => {
       const result = calculateEpigeneticTraits(params);
 
       // Check if arrays are sorted
-      const checkSorted = (arr) => {
+      const checkSorted = arr => {
         for (let i = 1; i < arr.length; i++) {
           expect(arr[i] >= arr[i - 1]).toBe(true);
         }

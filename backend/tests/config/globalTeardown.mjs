@@ -52,9 +52,7 @@ async function cleanupDatabase() {
   try {
     // Only clean up if explicitly requested
     if (process.env.CLEANUP_TEST_DB === 'true') {
-      const prisma = (
-        await import('../../../packages/database/prismaClient.mjs')
-      ).default;
+      const prisma = (await import('../../../packages/database/prismaClient.mjs')).default;
 
       // Delete test data
       await prisma.refreshToken.deleteMany({
@@ -106,10 +104,7 @@ async function generatePerformanceReport() {
     const stats = calculatePerformanceStats(perfData);
 
     // Generate human-readable report
-    const reportPath = path.join(
-      process.cwd(),
-      'test-results/performance-report.txt'
-    );
+    const reportPath = path.join(process.cwd(), 'test-results/performance-report.txt');
 
     const report = generatePerformanceReportText(stats);
     fs.writeFileSync(reportPath, report, 'utf8');
@@ -177,9 +172,7 @@ ${
   stats.slowTests && stats.slowTests.length > 0
     ? `
 Slow Tests (>5s):
-${stats.slowTests
-  .map(test => `  - ${test.name}: ${test.duration}ms`)
-  .join('\n')}
+${stats.slowTests.map(test => `  - ${test.name}: ${test.duration}ms`).join('\n')}
 `
     : 'No slow tests detected ✓'
 }
@@ -197,10 +190,7 @@ async function cleanupTemporaryFiles() {
   console.log('🗑️  Cleaning up temporary files...');
 
   try {
-    const tempDirs = [
-      path.join(process.cwd(), '.jest-cache'),
-      path.join(process.cwd(), 'tmp'),
-    ];
+    const tempDirs = [path.join(process.cwd(), '.jest-cache'), path.join(process.cwd(), 'tmp')];
 
     for (const dir of tempDirs) {
       if (fs.existsSync(dir) && process.env.CLEANUP_CACHE === 'true') {
@@ -225,9 +215,7 @@ async function verifyResourceCleanup() {
 
   // Check for open database connections
   try {
-    const prisma = (
-      await import('../../../packages/database/prismaClient.mjs')
-    ).default;
+    const prisma = (await import('../../../packages/database/prismaClient.mjs')).default;
 
     // Ensure Prisma is disconnected
     await prisma.$disconnect();

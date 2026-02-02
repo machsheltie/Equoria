@@ -52,7 +52,7 @@ describe('Horse Temperament Analysis', () => {
           groomPersonality: 'calm',
           skillLevel: 'expert',
           speciality: 'foal_care',
-          userId: testUser.id,
+          userId: testUser.id ,
           sessionRate: 30.0,
         },
       }),
@@ -63,7 +63,7 @@ describe('Horse Temperament Analysis', () => {
           groomPersonality: 'energetic',
           skillLevel: 'expert',
           speciality: 'general_grooming',
-          userId: testUser.id,
+          userId: testUser.id ,
           sessionRate: 25.0,
         },
       }),
@@ -80,7 +80,7 @@ describe('Horse Temperament Analysis', () => {
           name: `Test Horse Nervous ${Date.now()}`,
           sex: 'filly',
           dateOfBirth: oneMonthAgo,
-          ownerId: testUser.id,
+          userId: testUser.id ,
           bondScore: 12,
           stressLevel: 8,
           epigeneticFlags: ['fearful', 'reactive', 'insecure'],
@@ -92,7 +92,7 @@ describe('Horse Temperament Analysis', () => {
           name: `Test Horse Confident ${Date.now()}`,
           sex: 'colt',
           dateOfBirth: oneMonthAgo,
-          ownerId: testUser.id,
+          userId: testUser.id ,
           bondScore: 35,
           stressLevel: 2,
           epigeneticFlags: ['brave', 'confident', 'social'],
@@ -104,7 +104,7 @@ describe('Horse Temperament Analysis', () => {
           name: `Test Horse Mixed ${Date.now()}`,
           sex: 'gelding',
           dateOfBirth: oneMonthAgo,
-          ownerId: testUser.id,
+          userId: testUser.id ,
           bondScore: 22,
           stressLevel: 5,
           epigeneticFlags: ['curious', 'social', 'reactive'],
@@ -116,7 +116,7 @@ describe('Horse Temperament Analysis', () => {
           name: `Test Horse Developing ${Date.now()}`,
           sex: 'mare',
           dateOfBirth: oneMonthAgo,
-          ownerId: testUser.id,
+          userId: testUser.id ,
           bondScore: 18,
           stressLevel: 6,
           epigeneticFlags: [],
@@ -197,7 +197,6 @@ describe('Horse Temperament Analysis', () => {
     });
 
     test('should analyze temperament for confident horse', async () => {
-      // eslint-disable-next-line prefer-destructuring
       const confidentHorse = testHorses[1];
 
       // Create interaction history showing confident behavior
@@ -240,7 +239,6 @@ describe('Horse Temperament Analysis', () => {
     });
 
     test('should analyze temperament for horse with no interaction history', async () => {
-      // eslint-disable-next-line prefer-destructuring
       const developingHorse = testHorses[3];
 
       const temperament = await analyzeHorseTemperament(developingHorse.id);
@@ -300,7 +298,6 @@ describe('Horse Temperament Analysis', () => {
 
   describe('analyzeBehavioralTrends', () => {
     test('should analyze behavioral trends over time', async () => {
-      // eslint-disable-next-line prefer-destructuring
       const horse = testHorses[2]; // Mixed temperament horse
 
       // Create a series of interactions showing behavioral trends
@@ -362,7 +359,6 @@ describe('Horse Temperament Analysis', () => {
 
   describe('analyzeBondingPreferences', () => {
     test('should analyze bonding preferences', async () => {
-      // eslint-disable-next-line prefer-destructuring
       const horse = testHorses[1]; // Confident horse
 
       const preferences = await analyzeBondingPreferences(horse.id);
@@ -383,7 +379,6 @@ describe('Horse Temperament Analysis', () => {
 
   describe('detectTemperamentChanges', () => {
     test('should detect temperament changes over time', async () => {
-      // eslint-disable-next-line prefer-destructuring
       const horse = testHorses[3]; // Developing horse
 
       // Create interactions showing temperament development

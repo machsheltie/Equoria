@@ -37,7 +37,7 @@ describe('Enhanced Groom Assignment System Integration Tests', () => {
         name: 'Assignment Test Horse 1',
         sex: 'male',
         dateOfBirth: new Date(Date.now() - 365 * 24 * 60 * 60 * 1000), // 1 year old
-        ownerId: testUser.id,
+        userId: testUser.id ,
         bondScore: 30,
         stressLevel: 40,
       },
@@ -48,7 +48,7 @@ describe('Enhanced Groom Assignment System Integration Tests', () => {
         name: 'Assignment Test Horse 2',
         sex: 'female',
         dateOfBirth: new Date(Date.now() - 730 * 24 * 60 * 60 * 1000), // 2 years old
-        ownerId: testUser.id,
+        userId: testUser.id ,
         bondScore: 45,
         stressLevel: 25,
       },
@@ -58,12 +58,12 @@ describe('Enhanced Groom Assignment System Integration Tests', () => {
     testGroom1 = await prisma.groom.create({
       data: {
         name: 'Assignment Test Groom 1',
-        userId: testUser.id,
+        userId: testUser.id ,
         speciality: 'foalCare',
         skillLevel: 'intermediate',
         personality: 'gentle',
         experience: 5,
-        sessionRate: 25.00,
+        sessionRate: 25.0,
         bio: 'Test groom for assignment system',
       },
     });
@@ -71,12 +71,12 @@ describe('Enhanced Groom Assignment System Integration Tests', () => {
     testGroom2 = await prisma.groom.create({
       data: {
         name: 'Assignment Test Groom 2',
-        userId: testUser.id,
+        userId: testUser.id ,
         speciality: 'training',
         skillLevel: 'expert',
         personality: 'energetic',
         experience: 8,
-        sessionRate: 35.00,
+        sessionRate: 35.0,
         bio: 'Expert test groom for assignment system',
       },
     });
@@ -92,7 +92,7 @@ describe('Enhanced Groom Assignment System Integration Tests', () => {
         where: { userId: testUser.id },
       });
       await prisma.horse.deleteMany({
-        where: { ownerId: testUser.id },
+        where: { userId: testUser.id },
       });
       await prisma.user.delete({
         where: { id: testUser.id },
@@ -197,7 +197,7 @@ describe('Enhanced Groom Assignment System Integration Tests', () => {
           name: 'Other User Horse',
           sex: 'male',
           dateOfBirth: new Date(Date.now() - 365 * 24 * 60 * 60 * 1000),
-          ownerId: otherUser.id,
+          userId: otherUser.id ,
         },
       });
 
@@ -210,7 +210,7 @@ describe('Enhanced Groom Assignment System Integration Tests', () => {
         const response = await request(app)
           .post('/api/groom-assignments')
           .set('Authorization', `Bearer ${authToken}`)
-        .set('x-test-skip-csrf', 'true')
+          .set('x-test-skip-csrf', 'true')
           .send(assignmentData);
 
         expect(response.status).toBe(400);
@@ -306,7 +306,7 @@ describe('Enhanced Groom Assignment System Integration Tests', () => {
             name: `Limit Test Horse ${i + 1}`,
             sex: 'male',
             dateOfBirth: new Date(Date.now() - 365 * 24 * 60 * 60 * 1000),
-            ownerId: testUser.id,
+            userId: testUser.id ,
           },
         });
         horses.push(horse);
@@ -321,7 +321,7 @@ describe('Enhanced Groom Assignment System Integration Tests', () => {
           const response = await request(app)
             .post('/api/groom-assignments')
             .set('Authorization', `Bearer ${authToken}`)
-        .set('x-test-skip-csrf', 'true')
+            .set('x-test-skip-csrf', 'true')
             .send({
               groomId: testGroom1.id,
               horseId: horse.id,
@@ -489,8 +489,7 @@ describe('Enhanced Groom Assignment System Integration Tests', () => {
       ];
 
       for (const endpoint of endpoints) {
-        const response = await request(app)[endpoint.method](endpoint.path)
-          .set('x-test-require-auth', 'true');
+        const response = await request(app)[endpoint.method](endpoint.path).set('x-test-require-auth', 'true');
         expect(response.status).toBe(401);
       }
     });

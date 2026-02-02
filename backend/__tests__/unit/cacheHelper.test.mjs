@@ -4,12 +4,12 @@
  */
 
 import { describe, it, expect, jest, beforeEach, afterEach } from '@jest/globals';
-import { 
-  getCachedQuery, 
-  invalidateCache, 
+import {
+  getCachedQuery,
+  invalidateCache,
   generateCacheKey,
   cacheStats,
-  resetCacheStatistics
+  resetCacheStatistics,
 } from '../../utils/cacheHelper.mjs';
 
 describe('Cache Helper', () => {
@@ -56,10 +56,10 @@ describe('Cache Helper', () => {
 
       // Cache with 0s TTL (expires immediately)
       await getCachedQuery(cacheKey, queryFn, 0);
-      
+
       // Try again
       await getCachedQuery(cacheKey, queryFn, 10);
-      
+
       expect(queryFn).toHaveBeenCalledTimes(2);
     });
 
@@ -80,13 +80,13 @@ describe('Cache Helper', () => {
 
       // Cache it
       await getCachedQuery(cacheKey, queryFn);
-      
+
       // Invalidate
       await invalidateCache(cacheKey);
-      
+
       // Get again
       await getCachedQuery(cacheKey, queryFn);
-      
+
       expect(queryFn).toHaveBeenCalledTimes(2);
     });
   });

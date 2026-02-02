@@ -12,14 +12,18 @@
 import { describe, test, expect, jest, beforeEach } from '@jest/globals';
 
 // Mock logger
-jest.mock('../../utils/logger.mjs', () => ({
-  default: {
-    info: jest.fn(),
-    error: jest.fn(),
-    warn: jest.fn(),
-    debug: jest.fn(),
-  },
-}), { virtual: true });
+jest.mock(
+  '../../utils/logger.mjs',
+  () => ({
+    default: {
+      info: jest.fn(),
+      error: jest.fn(),
+      warn: jest.fn(),
+      debug: jest.fn(),
+    },
+  }),
+  { virtual: true },
+);
 
 // Import after mocking
 const {
@@ -229,8 +233,8 @@ describe('Epigenetic Flag Influence System', () => {
       const result = applyFlagInfluencesToBonding(5, ['aloof']);
 
       // Aloof has bondingResistance 0.15 and groomEffectiveness -0.15
-      const expectedPenalty = 5 * (-0.15); // -0.75
-      const expectedGroom = 5 * (-0.15); // -0.75
+      const expectedPenalty = 5 * -0.15; // -0.75
+      const expectedGroom = 5 * -0.15; // -0.75
       const expectedTotal = 5 + expectedPenalty + expectedGroom; // 3.5
 
       expect(result.modifiedBondingChange).toBe(expectedTotal);

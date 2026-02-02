@@ -10,9 +10,7 @@ import bcrypt from 'bcryptjs';
  */
 export const withAuth = (supertestRequest, userData = {}) => {
   const token = generateTestToken(userData);
-  return supertestRequest
-    .set('Authorization', `Bearer ${token}`)
-    .set('x-test-skip-csrf', 'true');
+  return supertestRequest.set('Authorization', `Bearer ${token}`).set('x-test-skip-csrf', 'true');
 };
 
 /**
@@ -29,7 +27,8 @@ export const withSeededPlayerAuth = (method, endpoint, userData = {}) => {
   if (typeof supertest(app)[method] !== 'function') {
     throw new Error(`Invalid HTTP method: ${method}`);
   }
-  return supertest(app)[method](endpoint)
+  return supertest(app)
+    [method](endpoint)
     .set('Authorization', `Bearer ${token}`)
     .set('x-test-skip-csrf', 'true');
 };
@@ -57,7 +56,10 @@ export async function createTestUser(userData = {}) {
       level: 1,
       ...userData,
     };
-    console.log('[createTestUser] Default data prepared:', { username: defaultData.username, email: defaultData.email });
+    console.log('[createTestUser] Default data prepared:', {
+      username: defaultData.username,
+      email: defaultData.email,
+    });
 
     // Hash the password before creating user (matching authController behavior)
     console.log('[createTestUser] Starting password hashing...');
@@ -81,7 +83,10 @@ export async function createTestUser(userData = {}) {
           password: hashedPassword,
         },
       });
-      console.log('[createTestUser] User created successfully:', { id: user.id, username: user.username });
+      console.log('[createTestUser] User created successfully:', {
+        id: user.id,
+        username: user.username,
+      });
     } catch (dbError) {
       console.error('[createTestUser] Database user creation FAILED:', dbError);
       throw new Error(`User creation failed: ${dbError.message}`);
@@ -158,28 +163,23 @@ export async function createTestHorse(horseData = {}) {
     ...horseData,
   };
 
-  // Handle userId conversion to ownerId and user relation
+  // Handle userId and user relation
   if (defaultData.userId) {
-    defaultData.ownerId = defaultData.userId;
-    defaultData.user = { connect: { id: defaultData.userId } };
-    delete defaultData.userId;
-  }
-
-  if (defaultData.ownerId) {
     const existingUser = await prisma.user.findUnique({
-      where: { id: defaultData.ownerId },
+      where: { id: defaultData.userId },
       select: { id: true },
     });
 
     if (!existingUser) {
-      const userSuffix = defaultData.ownerId.replace(/[^a-zA-Z0-9]/g, '').slice(-10) || Date.now().toString();
+      const userSuffix =
+        defaultData.userId.replace(/[^a-zA-Z0-9]/g, '').slice(-10) || Date.now().toString();
       // Hash the password before creating recovery user
       const saltRounds = parseInt(process.env.BCRYPT_SALT_ROUNDS || '12', 10);
       const hashedPassword = await bcrypt.hash('TestPassword123!', saltRounds);
 
       await prisma.user.create({
         data: {
-          id: defaultData.ownerId,
+          id: defaultData.userId,
           username: `recovery_${userSuffix}`,
           email: `recovery_${userSuffix}@example.com`,
           password: hashedPassword,
@@ -188,6 +188,9 @@ export async function createTestHorse(horseData = {}) {
         },
       });
     }
+
+    defaultData.user = { connect: { id: defaultData.userId } };
+    delete defaultData.userId;
   }
 
   return await prisma.horse.create({

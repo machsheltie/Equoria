@@ -41,11 +41,7 @@ describe('Advanced Epigenetic API Routes', () => {
     });
 
     // Generate auth token
-    authToken = jwt.sign(
-      { id: testUser.id, username: testUser.username },
-      process.env.JWT_SECRET,
-      { expiresIn: '1h' },
-    );
+    authToken = jwt.sign({ id: testUser.id, username: testUser.username }, process.env.JWT_SECRET, { expiresIn: '1h' });
 
     // Create test grooms
     testGrooms = await Promise.all([
@@ -56,7 +52,7 @@ describe('Advanced Epigenetic API Routes', () => {
           groomPersonality: 'calm',
           skillLevel: 'expert',
           speciality: 'foal_care',
-          userId: testUser.id,
+          userId: testUser.id ,
           sessionRate: 40.0,
           experience: 200,
           level: 10,
@@ -76,7 +72,7 @@ describe('Advanced Epigenetic API Routes', () => {
           name: `Test Foal API ${Date.now()}`,
           sex: 'filly',
           dateOfBirth: oneWeekAgo,
-          ownerId: testUser.id,
+          userId: testUser.id ,
           bondScore: 20,
           stressLevel: 4,
           epigeneticFlags: ['curious', 'developing'],
@@ -88,7 +84,7 @@ describe('Advanced Epigenetic API Routes', () => {
           name: `Test Horse API ${Date.now()}`,
           sex: 'colt',
           dateOfBirth: oneMonthAgo,
-          ownerId: testUser.id,
+          userId: testUser.id ,
           bondScore: 35,
           stressLevel: 3,
           epigeneticFlags: ['confident', 'brave', 'social'],
@@ -221,7 +217,7 @@ describe('Advanced Epigenetic API Routes', () => {
           name: `Other Horse ${Date.now()}`,
           sex: 'gelding',
           dateOfBirth: new Date(),
-          ownerId: otherUser.id,
+          userId: otherUser.id ,
           bondScore: 15,
           stressLevel: 5,
         },

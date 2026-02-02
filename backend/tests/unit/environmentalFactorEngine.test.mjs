@@ -40,7 +40,7 @@ describe('🌤️ Environmental Factor Engine', () => {
     testDate = new Date('2024-06-15'); // Mid-summer date for testing
     testLocation = {
       latitude: 40.7128,
-      longitude: -74.0060,
+      longitude: -74.006,
       region: 'temperate',
       elevation: 10,
     };
@@ -209,15 +209,15 @@ describe('🌤️ Environmental Factor Engine', () => {
     test('should identify stress triggers based on weather conditions', () => {
       const extremeWeather = {
         temperature: 38, // Very hot
-        humidity: 95,    // Very humid
-        windSpeed: 25,   // Strong wind
+        humidity: 95, // Very humid
+        windSpeed: 25, // Strong wind
         conditions: 'stormy',
       };
 
       const mildWeather = {
         temperature: 22, // Comfortable
-        humidity: 60,    // Moderate
-        windSpeed: 5,    // Light breeze
+        humidity: 60, // Moderate
+        windSpeed: 5, // Light breeze
         conditions: 'sunny',
       };
 
@@ -247,7 +247,12 @@ describe('🌤️ Environmental Factor Engine', () => {
         conditions: 'sunny',
       };
 
-      const sensitiveTriggersHot = calculateEnvironmentalTriggers(testDate, testLocation, heatSensitiveHorse, hotWeather);
+      const sensitiveTriggersHot = calculateEnvironmentalTriggers(
+        testDate,
+        testLocation,
+        heatSensitiveHorse,
+        hotWeather,
+      );
       const tolerantTriggersHot = calculateEnvironmentalTriggers(testDate, testLocation, heatTolerantHorse, hotWeather);
 
       expect(sensitiveTriggersHot.intensity).toBeGreaterThan(tolerantTriggersHot.intensity);
@@ -342,8 +347,10 @@ describe('🌤️ Environmental Factor Engine', () => {
       const springForecast = generateWeatherForecast(new Date('2024-04-15'), testLocation, 14);
       const winterForecast = generateWeatherForecast(new Date('2024-01-15'), testLocation, 14);
 
-      const avgSpringTemp = springForecast.reduce((sum, day) => sum + day.weather.temperature, 0) / springForecast.length;
-      const avgWinterTemp = winterForecast.reduce((sum, day) => sum + day.weather.temperature, 0) / winterForecast.length;
+      const avgSpringTemp =
+        springForecast.reduce((sum, day) => sum + day.weather.temperature, 0) / springForecast.length;
+      const avgWinterTemp =
+        winterForecast.reduce((sum, day) => sum + day.weather.temperature, 0) / winterForecast.length;
 
       expect(avgSpringTemp).toBeGreaterThan(avgWinterTemp);
     });

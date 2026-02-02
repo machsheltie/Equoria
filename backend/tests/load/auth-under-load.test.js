@@ -40,21 +40,21 @@ const authErrors = new Rate('auth_errors');
 // Test configuration
 export const options = {
   stages: [
-    { duration: '30s', target: 10 },  // Warm up
-    { duration: '1m', target: 25 },   // Ramp to normal load
-    { duration: '1m', target: 50 },   // Peak load
-    { duration: '30s', target: 75 },  // Spike test
-    { duration: '1m', target: 25 },   // Recovery
-    { duration: '30s', target: 0 },   // Ramp down
+    { duration: '30s', target: 10 }, // Warm up
+    { duration: '1m', target: 25 }, // Ramp to normal load
+    { duration: '1m', target: 50 }, // Peak load
+    { duration: '30s', target: 75 }, // Spike test
+    { duration: '1m', target: 25 }, // Recovery
+    { duration: '30s', target: 0 }, // Ramp down
   ],
   thresholds: {
-    http_req_duration: ['p(95)<2000'],        // 95% under 2s (bcrypt is expensive)
-    http_req_failed: ['rate<0.05'],           // Error rate under 5%
-    login_duration: ['p(95)<1500'],           // Login under 1.5s
-    registration_duration: ['p(95)<3000'],    // Registration under 3s (bcrypt)
-    token_generation_time: ['p(95)<100'],     // Token gen under 100ms
-    password_hashing_time: ['p(95)<500'],     // Bcrypt under 500ms
-    auth_errors: ['rate<0.05'],               // Auth errors under 5%
+    http_req_duration: ['p(95)<2000'], // 95% under 2s (bcrypt is expensive)
+    http_req_failed: ['rate<0.05'], // Error rate under 5%
+    login_duration: ['p(95)<1500'], // Login under 1.5s
+    registration_duration: ['p(95)<3000'], // Registration under 3s (bcrypt)
+    token_generation_time: ['p(95)<100'], // Token gen under 100ms
+    password_hashing_time: ['p(95)<500'], // Bcrypt under 500ms
+    auth_errors: ['rate<0.05'], // Auth errors under 5%
   },
 };
 
@@ -71,15 +71,19 @@ export function setup() {
     const email = `loadtest-existing-${Date.now()}-${i}@example.com`;
     const password = 'ExistingUser123!';
 
-    const registerRes = http.post(`${API_URL}/api/auth/register`, JSON.stringify({
-      email,
-      username: `existing_${Date.now()}_${i}`,
-      password,
-      firstName: 'Existing',
-      lastName: `User${i}`,
-    }), {
-      headers: { 'Content-Type': 'application/json' },
-    });
+    const registerRes = http.post(
+      `${API_URL}/api/auth/register`,
+      JSON.stringify({
+        email,
+        username: `existing_${Date.now()}_${i}`,
+        password,
+        firstName: 'Existing',
+        lastName: `User${i}`,
+      }),
+      {
+        headers: { 'Content-Type': 'application/json' },
+      },
+    );
 
     if (registerRes.status === 201 || registerRes.status === 200) {
       users.push({ email, password });
@@ -107,22 +111,26 @@ export default function (data) {
         const startTime = new Date();
         loginAttempts.add(1);
 
-        const loginRes = http.post(`${API_URL}/api/auth/login`, JSON.stringify({
-          email: user.email,
-          password: user.password,
-        }), {
-          headers: { 'Content-Type': 'application/json' },
-        });
+        const loginRes = http.post(
+          `${API_URL}/api/auth/login`,
+          JSON.stringify({
+            email: user.email,
+            password: user.password,
+          }),
+          {
+            headers: { 'Content-Type': 'application/json' },
+          },
+        );
 
         const duration = new Date() - startTime;
         loginDuration.add(duration);
 
         const success = check(loginRes, {
-          'login successful': (r) => r.status === 200,
-          'returns access token': (r) => r.json('data.accessToken') !== undefined,
-          'returns refresh token': (r) => r.json('data.refreshToken') !== undefined,
-          'returns user data': (r) => r.json('data.id') !== undefined,
-          'response time acceptable': (r) => r.timings.duration < 2000,
+          'login successful': r => r.status === 200,
+          'returns access token': r => r.json('data.accessToken') !== undefined,
+          'returns refresh token': r => r.json('data.refreshToken') !== undefined,
+          'returns user data': r => r.json('data.id') !== undefined,
+          'response time acceptable': r => r.timings.duration < 2000,
         });
 
         if (success) {
@@ -140,11 +148,11 @@ export default function (data) {
 
           // Verify token works
           const verifyRes = http.get(`${API_URL}/api/users/profile`, {
-            headers: { 'Authorization': `Bearer ${token}` },
+            headers: { Authorization: `Bearer ${token}` },
           });
 
           check(verifyRes, {
-            'token authenticated': (r) => r.status === 200,
+            'token authenticated': r => r.status === 200,
           });
         } else {
           failedLogins.add(1);
@@ -164,35 +172,39 @@ export default function (data) {
         const startTime = new Date();
         registrationAttempts.add(1);
 
-        const registerRes = http.post(`${API_URL}/api/auth/register`, JSON.stringify({
-          email,
-          username: `newuser_${timestamp}_${randomId}`,
-          password,
-          firstName: 'New',
-          lastName: 'User',
-        }), {
-          headers: { 'Content-Type': 'application/json' },
-        });
+        const registerRes = http.post(
+          `${API_URL}/api/auth/register`,
+          JSON.stringify({
+            email,
+            username: `newuser_${timestamp}_${randomId}`,
+            password,
+            firstName: 'New',
+            lastName: 'User',
+          }),
+          {
+            headers: { 'Content-Type': 'application/json' },
+          },
+        );
 
         const duration = new Date() - startTime;
         registrationDuration.add(duration);
 
         const success = check(registerRes, {
-          'registration successful': (r) => r.status === 201 || r.status === 200,
-          'no duplicate email error': (r) => {
+          'registration successful': r => r.status === 201 || r.status === 200,
+          'no duplicate email error': r => {
             if (r.status >= 400) {
               const body = r.json();
               return !body.message || !body.message.includes('already exists');
             }
             return true;
           },
-          'returns user data': (r) => {
+          'returns user data': r => {
             if (r.status === 201 || r.status === 200) {
               return r.json('data.id') !== undefined || r.json('userId') !== undefined;
             }
             return true;
           },
-          'response time acceptable': (r) => r.timings.duration < 3000,
+          'response time acceptable': r => r.timings.duration < 3000,
         });
 
         if (success) {
@@ -216,30 +228,38 @@ export default function (data) {
         // First login to get tokens
         const user = users[Math.floor(Math.random() * users.length)];
 
-        const loginRes = http.post(`${API_URL}/api/auth/login`, JSON.stringify({
-          email: user.email,
-          password: user.password,
-        }), {
-          headers: { 'Content-Type': 'application/json' },
-        });
+        const loginRes = http.post(
+          `${API_URL}/api/auth/login`,
+          JSON.stringify({
+            email: user.email,
+            password: user.password,
+          }),
+          {
+            headers: { 'Content-Type': 'application/json' },
+          },
+        );
 
         if (loginRes.status === 200) {
           const refreshToken = loginRes.json('data.refreshToken');
 
           const startTime = new Date();
-          const refreshRes = http.post(`${API_URL}/api/auth/refresh`, JSON.stringify({
-            refreshToken,
-          }), {
-            headers: { 'Content-Type': 'application/json' },
-          });
+          const refreshRes = http.post(
+            `${API_URL}/api/auth/refresh`,
+            JSON.stringify({
+              refreshToken,
+            }),
+            {
+              headers: { 'Content-Type': 'application/json' },
+            },
+          );
 
           const duration = new Date() - startTime;
           tokenGenerationTime.add(duration);
 
           check(refreshRes, {
-            'token refresh successful': (r) => r.status === 200,
-            'new access token returned': (r) => r.json('data.accessToken') !== undefined,
-            'refresh token rotated': (r) => {
+            'token refresh successful': r => r.status === 200,
+            'new access token returned': r => r.json('data.accessToken') !== undefined,
+            'refresh token rotated': r => {
               const newRefreshToken = r.json('data.refreshToken');
               return newRefreshToken && newRefreshToken !== refreshToken;
             },
@@ -255,20 +275,24 @@ export default function (data) {
 
         loginAttempts.add(1);
 
-        const badLoginRes = http.post(`${API_URL}/api/auth/login`, JSON.stringify({
-          email: user.email,
-          password: 'WrongPassword123!',
-        }), {
-          headers: { 'Content-Type': 'application/json' },
-        });
+        const badLoginRes = http.post(
+          `${API_URL}/api/auth/login`,
+          JSON.stringify({
+            email: user.email,
+            password: 'WrongPassword123!',
+          }),
+          {
+            headers: { 'Content-Type': 'application/json' },
+          },
+        );
 
         check(badLoginRes, {
-          'failed login returns 401': (r) => r.status === 401,
-          'error message returned': (r) => {
+          'failed login returns 401': r => r.status === 401,
+          'error message returned': r => {
             const body = r.json();
             return body.message !== undefined;
           },
-          'no sensitive data leaked': (r) => {
+          'no sensitive data leaked': r => {
             const body = r.json();
             return !body.user && !body.data;
           },
@@ -290,18 +314,22 @@ export function teardown(data) {
 
   // Delete first 10 pre-existing test users only (others are one-time registrations)
   users.slice(0, 10).forEach(user => {
-    const loginRes = http.post(`${API_URL}/api/auth/login`, JSON.stringify({
-      email: user.email,
-      password: user.password,
-    }), {
-      headers: { 'Content-Type': 'application/json' },
-    });
+    const loginRes = http.post(
+      `${API_URL}/api/auth/login`,
+      JSON.stringify({
+        email: user.email,
+        password: user.password,
+      }),
+      {
+        headers: { 'Content-Type': 'application/json' },
+      },
+    );
 
     const token = loginRes.json('data.accessToken') || loginRes.json('token');
 
     if (token) {
       http.del(`${API_URL}/api/users/account`, null, {
-        headers: { 'Authorization': `Bearer ${token}` },
+        headers: { Authorization: `Bearer ${token}` },
       });
     }
   });
@@ -326,10 +354,11 @@ export function handleSummary(data) {
   const authErrorRate = ((data.metrics.auth_errors?.values.rate || 0) * 100).toFixed(2);
 
   const loginSuccessRate = totalLogins > 0 ? ((successLogins / totalLogins) * 100).toFixed(2) : 0;
-  const registrationSuccessRate = totalRegistrations > 0 ? ((successRegistrations / totalRegistrations) * 100).toFixed(2) : 0;
+  const registrationSuccessRate =
+    totalRegistrations > 0 ? ((successRegistrations / totalRegistrations) * 100).toFixed(2) : 0;
 
   return {
-    'stdout': `
+    stdout: `
 ╔════════════════════════════════════════════════════════════════╗
 ║       AUTHENTICATION UNDER LOAD TEST SUMMARY                   ║
 ╠════════════════════════════════════════════════════════════════╣

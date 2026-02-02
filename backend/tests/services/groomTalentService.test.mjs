@@ -44,7 +44,7 @@ describe('Groom Talent Service', () => {
         personality: 'calm',
         skillLevel: 'intermediate',
         speciality: 'foal_care',
-        userId: testUser.id,
+        userId: testUser.id ,
         level: 5,
         experience: 200,
       },
@@ -125,7 +125,7 @@ describe('Groom Talent Service', () => {
           personality: 'calm',
           skillLevel: 'novice',
           speciality: 'foal_care',
-          userId: testUser.id,
+          userId: testUser.id ,
           level: 2,
           experience: 50,
         },
@@ -207,8 +207,7 @@ describe('Groom Talent Service', () => {
     });
 
     test('should reject invalid talent selection', async () => {
-      await expect(selectTalent(testGroom.id, 'tier1', 'invalid_talent'))
-        .rejects.toThrow('Invalid talent selection');
+      await expect(selectTalent(testGroom.id, 'tier1', 'invalid_talent')).rejects.toThrow('Invalid talent selection');
     });
 
     test('should reject selection for insufficient level', async () => {
@@ -219,14 +218,13 @@ describe('Groom Talent Service', () => {
           personality: 'calm',
           skillLevel: 'novice',
           speciality: 'foal_care',
-          userId: testUser.id,
+          userId: testUser.id ,
           level: 1,
           experience: 10,
         },
       });
 
-      await expect(selectTalent(lowLevelGroom.id, 'tier1', 'gentle_hands'))
-        .rejects.toThrow('insufficient_level');
+      await expect(selectTalent(lowLevelGroom.id, 'tier1', 'gentle_hands')).rejects.toThrow('insufficient_level');
 
       // Cleanup
       await prisma.groom.delete({ where: { id: lowLevelGroom.id } });

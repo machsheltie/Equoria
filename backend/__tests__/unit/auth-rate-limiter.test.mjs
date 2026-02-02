@@ -17,11 +17,7 @@
  */
 
 import { describe, it, expect, beforeEach, afterEach, jest } from '@jest/globals';
-import {
-  createMockRequest,
-  createMockResponse,
-  sleep,
-} from '../config/test-helpers.mjs';
+import { createMockRequest, createMockResponse, sleep } from '../config/test-helpers.mjs';
 
 // Import rate limiter
 import { createAuthRateLimiter, resetAllAuthRateLimits } from '../../middleware/authRateLimiter.mjs';
@@ -54,19 +50,15 @@ describe('Authentication Rate Limiter (Unit)', () => {
 
   describe('Rate Limiter Configuration', () => {
     it('should_create_rate_limiter_with_default_config', () => {
-      
       // const limiter = createAuthRateLimiter();
       //
       // expect(limiter).toBeDefined();
       // expect(limiter.windowMs).toBe(15 * 60 * 1000); // 15 minutes
       // expect(limiter.max).toBe(5); // 5 attempts
-
-      
       // Test implementation below
     });
 
     it('should_create_rate_limiter_with_custom_config', () => {
-      
       // const limiter = createAuthRateLimiter({
       //   windowMs: 60000, // 1 minute
       //   max: 10,
@@ -74,12 +66,10 @@ describe('Authentication Rate Limiter (Unit)', () => {
       //
       // expect(limiter.windowMs).toBe(60000);
       // expect(limiter.max).toBe(10);
-
       // Test implementation below
     });
 
     it('should_validate_configuration_parameters', () => {
-      
       // expect(() => {
       //   createAuthRateLimiter({ windowMs: -1000 });
       // }).toThrow('windowMs must be positive');
@@ -87,14 +77,12 @@ describe('Authentication Rate Limiter (Unit)', () => {
       // expect(() => {
       //   createAuthRateLimiter({ max: 0 });
       // }).toThrow('max must be greater than 0');
-
       // Test implementation below
     });
   });
 
   describe('Request Tracking', () => {
     it('should_track_requests_by_ip_address', async () => {
-      
       // const req1 = createMockRequest({ ip: '192.168.1.1' });
       // const req2 = createMockRequest({ ip: '192.168.1.2' });
       //
@@ -105,24 +93,20 @@ describe('Authentication Rate Limiter (Unit)', () => {
       // // IP1 should have 2 requests, IP2 should have 1
       // expect(rateLimiter.getRequestCount('192.168.1.1')).toBe(2);
       // expect(rateLimiter.getRequestCount('192.168.1.2')).toBe(1);
-
       // Test implementation below
     });
 
     it('should_allow_requests_within_limit', async () => {
-      
       // for (let i = 0; i < 3; i++) {
       //   await rateLimiter(mockReq, mockRes, mockNext);
       // }
       //
       // expect(mockNext).toHaveBeenCalledTimes(3);
       // expect(mockRes.statusCode).not.toBe(429);
-
       // Test implementation below
     });
 
     it('should_block_requests_exceeding_limit', async () => {
-      
       // // 3 requests within limit
       // for (let i = 0; i < 3; i++) {
       //   await rateLimiter(mockReq, mockRes, mockNext);
@@ -133,25 +117,21 @@ describe('Authentication Rate Limiter (Unit)', () => {
       //
       // expect(mockNext).toHaveBeenCalledTimes(3); // Not called on 4th
       // expect(mockRes.statusCode).toBe(429);
-
       // Test implementation below
     });
   });
 
   describe('Rate Limit Headers', () => {
     it('should_set_ratelimit_headers_on_every_request', async () => {
-      
       // await rateLimiter(mockReq, mockRes, mockNext);
       //
       // expect(mockRes.headers['ratelimit-limit']).toBe('3');
       // expect(mockRes.headers['ratelimit-remaining']).toBe('2');
       // expect(mockRes.headers['ratelimit-reset']).toBeDefined();
-
       // Test implementation below
     });
 
     it('should_update_remaining_count_with_each_request', async () => {
-      
       // await rateLimiter(mockReq, mockRes, mockNext);
       // const remaining1 = mockRes.headers['ratelimit-remaining'];
       //
@@ -160,26 +140,22 @@ describe('Authentication Rate Limiter (Unit)', () => {
       // const remaining2 = mockRes.headers['ratelimit-remaining'];
       //
       // expect(parseInt(remaining1)).toBeGreaterThan(parseInt(remaining2));
-
       // Test implementation below
     });
 
     it('should_calculate_accurate_reset_timestamp', async () => {
-      
       // const beforeTimestamp = Math.floor(Date.now() / 1000);
       // await rateLimiter(mockReq, mockRes, mockNext);
       // const resetTimestamp = parseInt(mockRes.headers['ratelimit-reset']);
       //
       // expect(resetTimestamp).toBeGreaterThan(beforeTimestamp);
       // expect(resetTimestamp).toBeLessThanOrEqual(beforeTimestamp + 1); // 1 second window
-
       // Test implementation below
     });
   });
 
   describe('Time Window Reset', () => {
     it('should_reset_count_after_time_window', async () => {
-      
       // // Exhaust limit
       // for (let i = 0; i < 3; i++) {
       //   await rateLimiter(mockReq, mockRes, mockNext);
@@ -198,12 +174,10 @@ describe('Authentication Rate Limiter (Unit)', () => {
       // await rateLimiter(mockReq, mockRes, mockNext);
       // expect(mockNext).toHaveBeenCalled();
       // expect(mockRes.statusCode).not.toBe(429);
-
       // Test implementation below
     });
 
     it('should_maintain_separate_windows_for_different_ips', async () => {
-      
       // const req1 = createMockRequest({ ip: '192.168.1.1' });
       // const req2 = createMockRequest({ ip: '192.168.1.2' });
       //
@@ -221,14 +195,12 @@ describe('Authentication Rate Limiter (Unit)', () => {
       // mockRes = createMockResponse();
       // await rateLimiter(req2, mockRes, mockNext);
       // expect(mockNext).toHaveBeenCalled();
-
       // Test implementation below
     });
   });
 
   describe('Success Reset Mechanism', () => {
     it('should_reset_count_on_successful_authentication', async () => {
-      
       // // 2 failed attempts
       // for (let i = 0; i < 2; i++) {
       //   await rateLimiter(mockReq, mockRes, mockNext);
@@ -243,34 +215,28 @@ describe('Authentication Rate Limiter (Unit)', () => {
       //   await rateLimiter(mockReq, mockRes, mockNext);
       //   expect(mockRes.statusCode).not.toBe(429);
       // }
-
       // Test implementation below
     });
 
     it('should_provide_method_to_reset_specific_ip', () => {
-      
       // expect(rateLimiter.resetForIp).toBeDefined();
       // expect(typeof rateLimiter.resetForIp).toBe('function');
-
       // Test implementation below
     });
   });
 
   describe('Error Handling', () => {
     it('should_handle_missing_ip_address', async () => {
-      
       // const req = createMockRequest({ ip: undefined });
       //
       // await rateLimiter(req, mockRes, mockNext);
       //
       // // Should use default IP or handle gracefully
       // expect(mockNext).toHaveBeenCalled();
-
       // Test implementation below
     });
 
     it('should_handle_concurrent_requests_atomically', async () => {
-      
       // const promises = Array(10)
       //   .fill(null)
       //   .map(() => rateLimiter(mockReq, createMockResponse(), mockNext));
@@ -279,12 +245,10 @@ describe('Authentication Rate Limiter (Unit)', () => {
       //
       // // Should have counted exactly 10 requests
       // expect(rateLimiter.getRequestCount(mockReq.ip)).toBe(10);
-
       // Test implementation below
     });
 
     it('should_not_crash_on_invalid_configuration', () => {
-      
       // expect(() => {
       //   createAuthRateLimiter({ windowMs: 'invalid' });
       // }).toThrow();
@@ -292,14 +256,12 @@ describe('Authentication Rate Limiter (Unit)', () => {
       // expect(() => {
       //   createAuthRateLimiter({ max: null });
       // }).toThrow();
-
       // Test implementation below
     });
   });
 
   describe('Memory Management', () => {
     it('should_clean_up_expired_entries', async () => {
-      
       // const req1 = createMockRequest({ ip: '192.168.1.1' });
       // const req2 = createMockRequest({ ip: '192.168.1.2' });
       //
@@ -314,12 +276,10 @@ describe('Authentication Rate Limiter (Unit)', () => {
       //
       // // Storage should be empty
       // expect(rateLimiter.getStorageSize()).toBe(0);
-
       // Test implementation below
     });
 
     it('should_have_configurable_cleanup_interval', () => {
-      
       // const limiter = createAuthRateLimiter({
       //   windowMs: 1000,
       //   max: 5,
@@ -327,12 +287,10 @@ describe('Authentication Rate Limiter (Unit)', () => {
       // });
       //
       // expect(limiter.cleanupInterval).toBe(500);
-
       // Test implementation below
     });
 
     it('should_limit_maximum_storage_size', async () => {
-      
       // const limiter = createAuthRateLimiter({
       //   windowMs: 60000,
       //   max: 5,
@@ -347,31 +305,25 @@ describe('Authentication Rate Limiter (Unit)', () => {
       //
       // // Should not exceed max storage
       // expect(limiter.getStorageSize()).toBeLessThanOrEqual(100);
-
       // Test implementation below
     });
   });
 
   describe('Integration with Express', () => {
     it('should_work_as_express_middleware', () => {
-      
       // expect(rateLimiter).toBeInstanceOf(Function);
       // expect(rateLimiter.length).toBe(3); // (req, res, next)
-
       // Test implementation below
     });
 
     it('should_call_next_when_within_limit', async () => {
-      
       // await rateLimiter(mockReq, mockRes, mockNext);
       // expect(mockNext).toHaveBeenCalledTimes(1);
       // expect(mockNext).toHaveBeenCalledWith(); // No error argument
-
       // Test implementation below
     });
 
     it('should_not_call_next_when_rate_limited', async () => {
-      
       // // Exhaust limit
       // for (let i = 0; i < 3; i++) {
       //   await rateLimiter(mockReq, mockRes, mockNext);
@@ -382,14 +334,12 @@ describe('Authentication Rate Limiter (Unit)', () => {
       // // Should not call next
       // await rateLimiter(mockReq, mockRes, mockNext);
       // expect(mockNext).not.toHaveBeenCalled();
-
       // Test implementation below
     });
   });
 
   describe('Response Format', () => {
     it('should_send_consistent_429_response_format', async () => {
-      
       // // Exhaust limit
       // for (let i = 0; i < 3; i++) {
       //   await rateLimiter(mockReq, mockRes, mockNext);
@@ -404,12 +354,10 @@ describe('Authentication Rate Limiter (Unit)', () => {
       //   error: expect.stringContaining('Too many requests'),
       //   retryAfter: expect.any(Number),
       // });
-
       // Test implementation below
     });
 
     it('should_include_retry_after_in_seconds', async () => {
-      
       // for (let i = 0; i < 3; i++) {
       //   await rateLimiter(mockReq, mockRes, mockNext);
       // }
@@ -419,7 +367,6 @@ describe('Authentication Rate Limiter (Unit)', () => {
       //
       // expect(mockRes.body.retryAfter).toBeGreaterThan(0);
       // expect(mockRes.body.retryAfter).toBeLessThanOrEqual(1); // 1 second window
-
       // Test implementation below
     });
   });

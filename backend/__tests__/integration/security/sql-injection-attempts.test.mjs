@@ -26,21 +26,17 @@ describe('SQL Injection Attempts Integration Tests', () => {
   let validToken;
   let testHorse;
   let testGroom;
-  const expectBlocked = (response) => {
+  const expectBlocked = response => {
     expect([200, 400, 403, 404]).toContain(response.status);
     const success =
-      typeof response?.body?.success === 'boolean'
-        ? response.body.success
-        : response?.body?.status === 'error';
+      typeof response?.body?.success === 'boolean' ? response.body.success : response?.body?.status === 'error';
     if (typeof success === 'boolean' && response.status >= 400) {
       expect(success).toBe(false);
     }
   };
-  const expectOk = (response) => {
+  const expectOk = response => {
     const success =
-      typeof response?.body?.success === 'boolean'
-        ? response.body.success
-        : response?.body?.status === 'success';
+      typeof response?.body?.success === 'boolean' ? response.body.success : response?.body?.status === 'success';
     expect(success).toBe(true);
   };
 
@@ -65,7 +61,7 @@ describe('SQL Injection Attempts Integration Tests', () => {
         name: `TestHorse-${Date.now()}`,
         sex: 'mare',
         dateOfBirth: new Date('2016-01-01'),
-        userId: testUser.id,
+        userId: testUser.id, // Matches schema field (line 144)
         age: 5,
       },
     });
@@ -114,7 +110,7 @@ describe('SQL Injection Attempts Integration Tests', () => {
       const response = await request(app)
         .get(`/api/horses/1' OR '1'='1`)
         .set('Authorization', `Bearer ${validToken}`)
-        .expect((res) => expect([400, 403, 404]).toContain(res.status));
+        .expect(res => expect([400, 403, 404]).toContain(res.status));
 
       expectBlocked(response);
     });
@@ -123,7 +119,7 @@ describe('SQL Injection Attempts Integration Tests', () => {
       const response = await request(app)
         .get(`/api/horses/1; DROP TABLE horses; --`)
         .set('Authorization', `Bearer ${validToken}`)
-        .expect((res) => expect([400, 403, 404]).toContain(res.status));
+        .expect(res => expect([400, 403, 404]).toContain(res.status));
 
       expect(response.body.success).toBe(false);
 
@@ -136,7 +132,7 @@ describe('SQL Injection Attempts Integration Tests', () => {
       const response = await request(app)
         .get(`/api/horses/1 UNION SELECT * FROM users`)
         .set('Authorization', `Bearer ${validToken}`)
-        .expect((res) => expect([400, 403, 404]).toContain(res.status));
+        .expect(res => expect([400, 403, 404]).toContain(res.status));
 
       expect(response.body.success).toBe(false);
     });
@@ -145,7 +141,7 @@ describe('SQL Injection Attempts Integration Tests', () => {
       const response = await request(app)
         .get(`/api/horses/1 AND (SELECT COUNT(*) FROM users) > 0`)
         .set('Authorization', `Bearer ${validToken}`)
-        .expect((res) => expect([400, 403, 404]).toContain(res.status));
+        .expect(res => expect([400, 403, 404]).toContain(res.status));
 
       expect(response.body.success).toBe(false);
     });
@@ -154,7 +150,7 @@ describe('SQL Injection Attempts Integration Tests', () => {
       const response = await request(app)
         .get(`/api/horses/0x31`)
         .set('Authorization', `Bearer ${validToken}`)
-        .expect((res) => expect([400, 403, 404]).toContain(res.status));
+        .expect(res => expect([400, 403, 404]).toContain(res.status));
 
       expect(response.body.success).toBe(false);
     });
@@ -165,7 +161,7 @@ describe('SQL Injection Attempts Integration Tests', () => {
       const response = await request(app)
         .get(`/api/horses/${testHorse.id}' AND 1=1 AND '1'='1`)
         .set('Authorization', `Bearer ${validToken}`)
-        .expect((res) => expect([400, 403, 404]).toContain(res.status));
+        .expect(res => expect([400, 403, 404]).toContain(res.status));
 
       expect(response.body.success).toBe(false);
     });
@@ -176,7 +172,7 @@ describe('SQL Injection Attempts Integration Tests', () => {
       const response = await request(app)
         .get(`/api/horses/1; WAITFOR DELAY '00:00:05'; --`)
         .set('Authorization', `Bearer ${validToken}`)
-        .expect((res) => expect([400, 403, 404]).toContain(res.status));
+        .expect(res => expect([400, 403, 404]).toContain(res.status));
 
       const duration = Date.now() - startTime;
 
@@ -191,7 +187,7 @@ describe('SQL Injection Attempts Integration Tests', () => {
       const response = await request(app)
         .get(`/api/horses/1; SELECT pg_sleep(5); --`)
         .set('Authorization', `Bearer ${validToken}`)
-        .expect((res) => expect([400, 403, 404]).toContain(res.status));
+        .expect(res => expect([400, 403, 404]).toContain(res.status));
 
       const duration = Date.now() - startTime;
 
@@ -203,7 +199,7 @@ describe('SQL Injection Attempts Integration Tests', () => {
       const response = await request(app)
         .get(`/api/horses/1' AND (SELECT 1/0)`)
         .set('Authorization', `Bearer ${validToken}`)
-        .expect((res) => expect([400, 403, 404]).toContain(res.status));
+        .expect(res => expect([400, 403, 404]).toContain(res.status));
 
       expectBlocked(response);
       // Should not leak database error details
@@ -218,7 +214,7 @@ describe('SQL Injection Attempts Integration Tests', () => {
       const response = await request(app)
         .get(`/api/horses/1 UNION SELECT id,email,password,NULL,NULL,NULL FROM users`)
         .set('Authorization', `Bearer ${validToken}`)
-        .expect((res) => expect([400, 403, 404]).toContain(res.status));
+        .expect(res => expect([400, 403, 404]).toContain(res.status));
 
       expect(response.body.success).toBe(false);
     });
@@ -227,7 +223,7 @@ describe('SQL Injection Attempts Integration Tests', () => {
       const response = await request(app)
         .get(`/api/horses/1 UNION ALL SELECT * FROM users WHERE 1=1`)
         .set('Authorization', `Bearer ${validToken}`)
-        .expect((res) => expect([400, 403, 404]).toContain(res.status));
+        .expect(res => expect([400, 403, 404]).toContain(res.status));
 
       expect(response.body.success).toBe(false);
     });
@@ -236,7 +232,7 @@ describe('SQL Injection Attempts Integration Tests', () => {
       const response = await request(app)
         .get(`/api/horses/1 ORDER BY 100`)
         .set('Authorization', `Bearer ${validToken}`)
-        .expect((res) => expect([400, 403, 404]).toContain(res.status));
+        .expect(res => expect([400, 403, 404]).toContain(res.status));
 
       expect(response.body.success).toBe(false);
     });
@@ -245,7 +241,7 @@ describe('SQL Injection Attempts Integration Tests', () => {
       const response = await request(app)
         .get(`/api/horses/1 UNION SELECT NULL,NULL,NULL,NULL,NULL`)
         .set('Authorization', `Bearer ${validToken}`)
-        .expect((res) => expect([400, 403, 404]).toContain(res.status));
+        .expect(res => expect([400, 403, 404]).toContain(res.status));
 
       expect(response.body.success).toBe(false);
     });
@@ -256,7 +252,7 @@ describe('SQL Injection Attempts Integration Tests', () => {
       const response = await request(app)
         .get(`/api/horses/1; DELETE FROM horses WHERE id > 0`)
         .set('Authorization', `Bearer ${validToken}`)
-        .expect((res) => expect([400, 403, 404]).toContain(res.status));
+        .expect(res => expect([400, 403, 404]).toContain(res.status));
 
       expect(response.body.success).toBe(false);
 
@@ -269,7 +265,7 @@ describe('SQL Injection Attempts Integration Tests', () => {
       const response = await request(app)
         .get(`/api/horses/1; UPDATE users SET role='ADMIN' WHERE id=${testUser.id}`)
         .set('Authorization', `Bearer ${validToken}`)
-        .expect((res) => expect([400, 403, 404]).toContain(res.status));
+        .expect(res => expect([400, 403, 404]).toContain(res.status));
 
       expect(response.body.success).toBe(false);
 
@@ -282,7 +278,7 @@ describe('SQL Injection Attempts Integration Tests', () => {
       const response = await request(app)
         .get(`/api/horses/1; INSERT INTO horses (name, userId) VALUES ('Hacked', 1)`)
         .set('Authorization', `Bearer ${validToken}`)
-        .expect((res) => expect([400, 403, 404]).toContain(res.status));
+        .expect(res => expect([400, 403, 404]).toContain(res.status));
 
       expect(response.body.success).toBe(false);
     });
@@ -293,7 +289,7 @@ describe('SQL Injection Attempts Integration Tests', () => {
       const response = await request(app)
         .get(`/api/horses?breed=Thoroughbred' OR '1'='1`)
         .set('Authorization', `Bearer ${validToken}`)
-        .expect((res) => expect([400, 403, 404]).toContain(res.status));
+        .expect(res => expect([400, 403, 404]).toContain(res.status));
 
       expect(response.body.success).toBe(false);
     });
@@ -348,7 +344,7 @@ describe('SQL Injection Attempts Integration Tests', () => {
       const response = await request(app)
         .get(`/api/horses?traits->>'color'='Bay' OR '1'='1`)
         .set('Authorization', `Bearer ${validToken}`)
-        .expect((res) => expect([400, 403, 404]).toContain(res.status));
+        .expect(res => expect([400, 403, 404]).toContain(res.status));
 
       expect(response.body.success).toBe(false);
     });
@@ -367,16 +363,13 @@ describe('SQL Injection Attempts Integration Tests', () => {
       // Attempt to store malicious data
       const maliciousName = "Horse'; DROP TABLE users; --";
 
-      const createResponse = await request(app)
-        .post('/api/horses')
-        .set('Authorization', `Bearer ${validToken}`)
-        .send({
-          name: maliciousName,
-          breed: 'Thoroughbred',
-          gender: 'MARE',
-          color: 'Bay',
-          age: 5,
-        });
+      const createResponse = await request(app).post('/api/horses').set('Authorization', `Bearer ${validToken}`).send({
+        name: maliciousName,
+        breed: 'Thoroughbred',
+        gender: 'MARE',
+        color: 'Bay',
+        age: 5,
+      });
 
       expectBlocked(createResponse);
 
@@ -401,7 +394,7 @@ describe('SQL Injection Attempts Integration Tests', () => {
         .send({
           username: "admin'; UPDATE users SET role='ADMIN' WHERE 1=1; --",
         })
-        .expect((res) => expect([400, 403, 404]).toContain(res.status));
+        .expect(res => expect([400, 403, 404]).toContain(res.status));
 
       expect(response.body.success).toBe(false);
 
@@ -414,12 +407,9 @@ describe('SQL Injection Attempts Integration Tests', () => {
   describe('ORM Bypass Attempts (Prisma)', () => {
     it('should reject raw query injection via Prisma', async () => {
       // This tests that we don't allow raw queries via API
-      const response = await request(app)
-        .post('/api/horses/query')
-        .set('Authorization', `Bearer ${validToken}`)
-        .send({
-          query: 'SELECT * FROM horses WHERE userId = 1',
-        });
+      const response = await request(app).post('/api/horses/query').set('Authorization', `Bearer ${validToken}`).send({
+        query: 'SELECT * FROM horses WHERE userId = 1',
+      });
 
       expectBlocked(response); // Endpoint should not exist / should be forbidden
     });
@@ -433,12 +423,9 @@ describe('SQL Injection Attempts Integration Tests', () => {
     });
 
     it('should reject $queryRaw parameter injection', async () => {
-      const response = await request(app)
-        .post('/api/horses/search')
-        .set('Authorization', `Bearer ${validToken}`)
-        .send({
-          $queryRaw: 'SELECT * FROM users',
-        });
+      const response = await request(app).post('/api/horses/search').set('Authorization', `Bearer ${validToken}`).send({
+        $queryRaw: 'SELECT * FROM users',
+      });
 
       expectBlocked(response);
     });
@@ -449,7 +436,7 @@ describe('SQL Injection Attempts Integration Tests', () => {
       const response = await request(app)
         .get(`/api/horses/1; SELECT version()`)
         .set('Authorization', `Bearer ${validToken}`)
-        .expect((res) => expect([400, 403, 404]).toContain(res.status));
+        .expect(res => expect([400, 403, 404]).toContain(res.status));
 
       expect(response.body.success).toBe(false);
       // Should not leak database version
@@ -460,7 +447,7 @@ describe('SQL Injection Attempts Integration Tests', () => {
       const response = await request(app)
         .get(`/api/horses/1; COPY users TO '/tmp/users.csv'`)
         .set('Authorization', `Bearer ${validToken}`)
-        .expect((res) => expect([400, 403, 404]).toContain(res.status));
+        .expect(res => expect([400, 403, 404]).toContain(res.status));
 
       expectBlocked(response);
     });
@@ -469,7 +456,7 @@ describe('SQL Injection Attempts Integration Tests', () => {
       const response = await request(app)
         .get(`/api/horses/1; SELECT pg_read_file('/etc/passwd')`)
         .set('Authorization', `Bearer ${validToken}`)
-        .expect((res) => expect([400, 403, 404]).toContain(res.status));
+        .expect(res => expect([400, 403, 404]).toContain(res.status));
 
       expectBlocked(response);
     });
@@ -478,7 +465,7 @@ describe('SQL Injection Attempts Integration Tests', () => {
       const response = await request(app)
         .get(`/api/horses/1; SELECT lo_create(1234)`)
         .set('Authorization', `Bearer ${validToken}`)
-        .expect((res) => expect([400, 403, 404]).toContain(res.status));
+        .expect(res => expect([400, 403, 404]).toContain(res.status));
 
       expect(response.body.success).toBe(false);
     });
@@ -487,7 +474,7 @@ describe('SQL Injection Attempts Integration Tests', () => {
       const response = await request(app)
         .get(`/api/horses/1; CALL malicious_procedure()`)
         .set('Authorization', `Bearer ${validToken}`)
-        .expect((res) => expect([400, 403, 404]).toContain(res.status));
+        .expect(res => expect([400, 403, 404]).toContain(res.status));
 
       expect(response.body.success).toBe(false);
     });
@@ -531,7 +518,7 @@ describe('SQL Injection Attempts Integration Tests', () => {
       const response = await request(app)
         .get(`/api/horses/invalid-sql-injection`)
         .set('Authorization', `Bearer ${validToken}`)
-        .expect((res) => expect([400, 403, 404]).toContain(res.status));
+        .expect(res => expect([400, 403, 404]).toContain(res.status));
 
       expect(response.body.success).toBe(false);
       // Should not contain database-specific error messages
@@ -552,10 +539,8 @@ describe('SQL Injection Attempts Integration Tests', () => {
 
       const responses = await Promise.all(
         injections.map(injection =>
-          request(app)
-            .get(`/api/horses/${injection}`)
-            .set('Authorization', `Bearer ${validToken}`)
-        )
+          request(app).get(`/api/horses/${injection}`).set('Authorization', `Bearer ${validToken}`),
+        ),
       );
 
       // All should return 400 with same error structure
@@ -595,16 +580,13 @@ describe('SQL Injection Attempts Integration Tests', () => {
     it('should properly escape special characters in valid data', async () => {
       const horseName = "O'Malley's Horse";
 
-      const createResponse = await request(app)
-        .post('/api/horses')
-        .set('Authorization', `Bearer ${validToken}`)
-        .send({
-          name: horseName,
-          breed: 'Thoroughbred',
-          gender: 'STALLION',
-          color: 'Chestnut',
-          age: 6,
-        });
+      const createResponse = await request(app).post('/api/horses').set('Authorization', `Bearer ${validToken}`).send({
+        name: horseName,
+        breed: 'Thoroughbred',
+        gender: 'STALLION',
+        color: 'Chestnut',
+        age: 6,
+      });
 
       expect([200, 201, 403]).toContain(createResponse.status);
       if (createResponse.status < 300 && createResponse.body?.data?.id) {

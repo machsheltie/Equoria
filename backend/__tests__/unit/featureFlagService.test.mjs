@@ -7,14 +7,18 @@
 import { jest, describe, it, expect, beforeEach, afterEach } from '@jest/globals';
 
 // Mock logger before importing service
-jest.mock('../../utils/logger.mjs', () => ({
-  default: {
-    info: jest.fn(),
-    warn: jest.fn(),
-    error: jest.fn(),
-    debug: jest.fn(),
-  },
-}), { virtual: true });
+jest.mock(
+  '../../utils/logger.mjs',
+  () => ({
+    default: {
+      info: jest.fn(),
+      warn: jest.fn(),
+      error: jest.fn(),
+      debug: jest.fn(),
+    },
+  }),
+  { virtual: true },
+);
 
 // Dynamically import after mocking
 const featureFlagService = await import('../../services/featureFlagService.mjs');
@@ -53,9 +57,7 @@ describe('Feature Flag Service', () => {
       process.env.FF_TEST_FLAG = 'true';
 
       // Re-import to pick up env change
-      const { isFeatureEnabled: checkFlag } = await import(
-        '../../services/featureFlagService.mjs'
-      );
+      const { isFeatureEnabled: checkFlag } = await import('../../services/featureFlagService.mjs');
       const result = await checkFlag('FF_TEST_FLAG');
       expect(result).toBe(true);
     });
@@ -104,7 +106,7 @@ describe('Feature Flag Service', () => {
       }
 
       // All results should be the same
-      const allSame = results.every((r) => r === results[0]);
+      const allSame = results.every(r => r === results[0]);
       expect(allSame).toBe(true);
     });
 

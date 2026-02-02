@@ -46,7 +46,7 @@ describe('Groom Retirement Service', () => {
         name: `Test Horse ${Date.now()}`,
         sex: 'male',
         dateOfBirth: new Date(Date.now() - 365 * 24 * 60 * 60 * 1000), // 1 year old
-        ownerId: testUser.id,
+        userId: testUser.id ,
         bondScore: 50,
         stressLevel: 30,
       },
@@ -61,7 +61,7 @@ describe('Groom Retirement Service', () => {
         personality: 'calm',
         skillLevel: 'intermediate',
         speciality: 'foal_care',
-        userId: testUser.id,
+        userId: testUser.id ,
         careerWeeks: 0,
         level: 1,
         experience: 0,
@@ -77,10 +77,7 @@ describe('Groom Retirement Service', () => {
       });
       await prisma.groomLegacyLog.deleteMany({
         where: {
-          OR: [
-            { retiredGroomId: testGroom.id },
-            { legacyGroomId: testGroom.id },
-          ],
+          OR: [{ retiredGroomId: testGroom.id }, { legacyGroomId: testGroom.id }],
         },
       });
       await prisma.groomTalentSelections.deleteMany({
@@ -294,7 +291,7 @@ describe('Groom Retirement Service', () => {
             personality: 'calm',
             skillLevel: 'novice',
             speciality: 'foal_care',
-            userId: testUser.id,
+            userId: testUser.id ,
             careerWeeks: 10,
             level: 2,
             retired: false,
@@ -306,7 +303,7 @@ describe('Groom Retirement Service', () => {
             personality: 'energetic',
             skillLevel: 'intermediate',
             speciality: 'general_grooming',
-            userId: testUser.id,
+            userId: testUser.id ,
             careerWeeks: 50,
             level: 5,
             retired: false,
@@ -318,7 +315,7 @@ describe('Groom Retirement Service', () => {
             personality: 'methodical',
             skillLevel: 'expert',
             speciality: 'specialized_disciplines',
-            userId: testUser.id,
+            userId: testUser.id ,
             careerWeeks: 103,
             level: 8,
             retired: false,
@@ -330,7 +327,7 @@ describe('Groom Retirement Service', () => {
             personality: 'calm',
             skillLevel: 'expert',
             speciality: 'foal_care',
-            userId: testUser.id,
+            userId: testUser.id ,
             careerWeeks: 80,
             level: 10,
             retired: false,
@@ -345,10 +342,7 @@ describe('Groom Retirement Service', () => {
         for (const groom of testGrooms) {
           await prisma.groomLegacyLog.deleteMany({
             where: {
-              OR: [
-                { retiredGroomId: groom.id },
-                { legacyGroomId: groom.id },
-              ],
+              OR: [{ retiredGroomId: groom.id }, { legacyGroomId: groom.id }],
             },
           });
           await prisma.groomTalentSelections.deleteMany({
@@ -385,7 +379,9 @@ describe('Groom Retirement Service', () => {
 
       // Check specific retirement reasons
       const levelCapRetired = retiredGrooms.find(g => g.retirementReason === RETIREMENT_REASONS.EARLY_LEVEL_CAP);
-      const mandatoryRetired = retiredGrooms.find(g => g.retirementReason === RETIREMENT_REASONS.MANDATORY_CAREER_LIMIT);
+      const mandatoryRetired = retiredGrooms.find(
+        g => g.retirementReason === RETIREMENT_REASONS.MANDATORY_CAREER_LIMIT,
+      );
 
       expect(levelCapRetired).toBeTruthy();
       expect(mandatoryRetired).toBeTruthy();
@@ -399,7 +395,7 @@ describe('Groom Retirement Service', () => {
           personality: 'calm',
           skillLevel: 'novice',
           speciality: 'foal_care',
-          userId: testUser.id,
+          userId: testUser.id ,
           careerWeeks: 0,
           level: 1,
           retired: false,

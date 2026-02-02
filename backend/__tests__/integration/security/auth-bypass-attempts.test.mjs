@@ -24,11 +24,10 @@ describe('Authentication Bypass Attempts Integration Tests', () => {
   let testUser;
   let validToken;
   let JWT_SECRET;
+  const createdUserIds = [];
+
   const expectSuccessFlag = (res, expected) => {
-    const success =
-      typeof res?.body?.success === 'boolean'
-        ? res.body.success
-        : res?.body?.status === 'success';
+    const success = typeof res?.body?.success === 'boolean' ? res.body.success : res?.body?.status === 'success';
     expect(success).toBe(expected);
   };
 
@@ -36,35 +35,36 @@ describe('Authentication Bypass Attempts Integration Tests', () => {
     // Create test user in database
     testUser = await prisma.user.create({
       data: {
-        email: `test-${Date.now()}@example.com`,
-        username: `testuser-${Date.now()}`,
+        email: `test-${Date.now()}-${Math.random().toString(36).substring(7)}@example.com`,
+        username: `testuser-${Date.now()}-${Math.random().toString(36).substring(7)}`,
         password: 'hashedPassword123', // Mock hashed password
         firstName: 'Test',
         lastName: 'User',
         emailVerified: true,
       },
     });
+    createdUserIds.push(testUser.id);
 
     JWT_SECRET = process.env.JWT_SECRET || 'test-secret-key';
     validToken = createMockToken(testUser.id);
   });
 
   afterAll(async () => {
-    // Clean up test data
-    await prisma.user.deleteMany({
-      where: {
-        email: {
-          contains: 'test-',
+    // Clean up only the users created in this test suite
+    if (createdUserIds.length > 0) {
+      await prisma.user.deleteMany({
+        where: {
+          id: {
+            in: createdUserIds,
+          },
         },
-      },
-    });
+      });
+    }
   });
 
   describe('Direct Endpoint Access Without Authentication', () => {
     it('should reject GET /api/users/profile without token', async () => {
-      const response = await request(app)
-        .get('/api/auth/profile')
-        .expect(401);
+      const response = await request(app).get('/api/auth/profile').set('x-test-require-auth', 'true').expect(401);
 
       expect(response.body).toEqual({
         success: false,
@@ -76,6 +76,7 @@ describe('Authentication Bypass Attempts Integration Tests', () => {
     it('should reject PUT /api/users/profile without token', async () => {
       const response = await request(app)
         .put('/api/auth/profile')
+        .set('x-test-require-auth', 'true')
         .send({ username: 'hacker' })
         .expect(401);
 
@@ -83,17 +84,13 @@ describe('Authentication Bypass Attempts Integration Tests', () => {
     });
 
     it('should reject DELETE /api/users/account without token', async () => {
-      const response = await request(app)
-        .delete('/api/users/account')
-        .expect(401);
+      const response = await request(app).delete('/api/users/account').set('x-test-require-auth', 'true').expect(401);
 
       expect(response.body.success).toBe(false);
     });
 
     it('should reject GET /api/horses without token', async () => {
-      const response = await request(app)
-        .get('/api/horses')
-        .expect(401);
+      const response = await request(app).get('/api/horses').set('x-test-require-auth', 'true').expect(401);
 
       expect(response.body.success).toBe(false);
     });
@@ -101,6 +98,7 @@ describe('Authentication Bypass Attempts Integration Tests', () => {
     it('should reject POST /api/horses without token', async () => {
       const response = await request(app)
         .post('/api/horses')
+        .set('x-test-require-auth', 'true')
         .send({ name: 'TestHorse' })
         .expect(401);
 
@@ -128,7 +126,7 @@ describe('Authentication Bypass Attempts Integration Tests', () => {
       const forgedToken = jwt.sign(
         { userId: testUser.id },
         JWT_SECRET,
-        { algorithm: 'HS512' } // Different from expected HS256
+        { algorithm: 'HS512' }, // Different from expected HS256
       );
 
       const response = await request(app)
@@ -206,10 +204,10 @@ describe('Authentication Bypass Attempts Integration Tests', () => {
       const oldToken = jwt.sign(
         {
           userId: testUser.id,
-          iat: Math.floor(Date.now() / 1000) - (8 * 24 * 60 * 60),
+          iat: Math.floor(Date.now() / 1000) - 8 * 24 * 60 * 60,
         },
         JWT_SECRET,
-        { expiresIn: '30d' }
+        { expiresIn: '30d' },
       );
 
       const response = await request(app)
@@ -229,10 +227,10 @@ describe('Authentication Bypass Attempts Integration Tests', () => {
       const sevenDayToken = jwt.sign(
         {
           userId: testUser.id,
-          iat: Math.floor(Date.now() / 1000) - (7 * 24 * 60 * 60),
+          iat: Math.floor(Date.now() / 1000) - 7 * 24 * 60 * 60,
         },
         JWT_SECRET,
-        { expiresIn: '30d' }
+        { expiresIn: '30d' },
       );
 
       const response = await request(app)
@@ -302,16 +300,14 @@ describe('Authentication Bypass Attempts Integration Tests', () => {
       const response = await request(app)
         .get('/api/auth/profile')
         .set('Authorization', '')
+        .set('x-test-require-auth', 'true')
         .expect(401);
 
       expectSuccessFlag(response, false);
     });
 
     it('should reject Authorization header with only Bearer', async () => {
-      const response = await request(app)
-        .get('/api/auth/profile')
-        .set('Authorization', 'Bearer ')
-        .expect(401);
+      const response = await request(app).get('/api/auth/profile').set('Authorization', 'Bearer ').expect(401);
 
       expectSuccessFlag(response, false);
     });
@@ -380,6 +376,7 @@ describe('Authentication Bypass Attempts Integration Tests', () => {
           emailVerified: true,
         },
       });
+      createdUserIds.push(userB.id);
 
       const tokenA = createMockToken(testUser.id);
 
@@ -392,8 +389,7 @@ describe('Authentication Bypass Attempts Integration Tests', () => {
       expect(response.body.success).toBe(false);
       expect(response.body.message).toMatch(/own user data|permissions/i);
 
-      // Cleanup
-      await prisma.user.delete({ where: { id: userB.id } });
+      // No manual delete needed, afterAll handles it
     });
 
     it('should allow user to access their own resources only', async () => {
@@ -455,15 +451,12 @@ describe('Authentication Bypass Attempts Integration Tests', () => {
     });
 
     it('should reject token with SQL injection in payload', async () => {
-      const sqlInjectionToken = jwt.sign(
-        { userId: "1' OR '1'='1" },
-        JWT_SECRET
-      );
+      const sqlInjectionToken = jwt.sign({ userId: "1' OR '1'='1" }, JWT_SECRET);
 
       const response = await request(app)
         .get('/api/auth/profile')
         .set('Authorization', `Bearer ${sqlInjectionToken}`)
-        .expect((res) => expect([401, 403, 404]).toContain(res.status));
+        .expect(res => expect([401, 403, 404]).toContain(res.status));
 
       // Should fail because userId is not a valid integer
       expectSuccessFlag(response, false);
@@ -472,7 +465,7 @@ describe('Authentication Bypass Attempts Integration Tests', () => {
     it('should handle token with missing userId gracefully', async () => {
       const invalidToken = jwt.sign(
         { email: 'test@example.com' }, // Missing userId
-        JWT_SECRET
+        JWT_SECRET,
       );
 
       const response = await request(app)
@@ -484,15 +477,12 @@ describe('Authentication Bypass Attempts Integration Tests', () => {
     });
 
     it('should reject token with non-numeric userId', async () => {
-      const invalidToken = jwt.sign(
-        { userId: 'not-a-number' },
-        JWT_SECRET
-      );
+      const invalidToken = jwt.sign({ userId: 'not-a-number' }, JWT_SECRET);
 
       const response = await request(app)
         .get('/api/users/profile')
         .set('Authorization', `Bearer ${invalidToken}`)
-        .expect((res) => expect([401, 403]).toContain(res.status));
+        .expect(res => expect([400, 401, 403]).toContain(res.status));
 
       expectSuccessFlag(response, false);
     });

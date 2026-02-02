@@ -157,7 +157,7 @@ describe('🏇 UNIT: Schema Constants Validation', () => {
   describe('Age Validation', () => {
     it('should validate training age correctly', () => {
       expect(isTrainingAge(2)).toBe(false); // Too young
-      expect(isTrainingAge(3)).toBe(true);  // Minimum age
+      expect(isTrainingAge(3)).toBe(true); // Minimum age
       expect(isTrainingAge(10)).toBe(true); // Valid age
       expect(isTrainingAge(20)).toBe(true); // Maximum age
       expect(isTrainingAge(21)).toBe(false); // Too old

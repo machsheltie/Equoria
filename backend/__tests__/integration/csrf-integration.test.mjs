@@ -55,7 +55,7 @@ describe('CSRF Protection Integration Tests', () => {
 
     // Extract accessToken from cookie
     const cookies = response.headers['set-cookie'] || [];
-    const accessTokenCookie = cookies.find?.((cookie) => cookie.startsWith('accessToken='));
+    const accessTokenCookie = cookies.find?.(cookie => cookie.startsWith('accessToken='));
     expect(accessTokenCookie).toBeDefined();
     accessToken = accessTokenCookie?.split(';')[0];
 
@@ -90,9 +90,7 @@ describe('CSRF Protection Integration Tests', () => {
 
   describe('CSRF Token Acquisition', () => {
     test('should get CSRF token from /auth/csrf-token endpoint', async () => {
-      const response = await request(app)
-        .get('/auth/csrf-token')
-        .set(rateLimitBypassHeader);
+      const response = await request(app).get('/auth/csrf-token').set(rateLimitBypassHeader);
 
       expect(response.status).toBe(200);
       expect(response.body).toHaveProperty('success', true);
@@ -104,24 +102,18 @@ describe('CSRF Protection Integration Tests', () => {
     });
 
     test('should set CSRF token in cookie', async () => {
-      const response = await request(app)
-        .get('/auth/csrf-token')
-        .set(rateLimitBypassHeader);
+      const response = await request(app).get('/auth/csrf-token').set(rateLimitBypassHeader);
 
       const cookies = response.headers['set-cookie'] || [];
       expect(cookies.length).toBeGreaterThan(0);
 
-      const csrfCookie = cookies.find((cookie) => cookie.startsWith('_csrf='));
+      const csrfCookie = cookies.find(cookie => cookie.startsWith('_csrf='));
       expect(csrfCookie).toBeDefined();
     });
 
     test('should generate unique tokens for different requests', async () => {
-      const response1 = await request(app)
-        .get('/auth/csrf-token')
-        .set(rateLimitBypassHeader);
-      const response2 = await request(app)
-        .get('/auth/csrf-token')
-        .set(rateLimitBypassHeader);
+      const response1 = await request(app).get('/auth/csrf-token').set(rateLimitBypassHeader);
+      const response2 = await request(app).get('/auth/csrf-token').set(rateLimitBypassHeader);
 
       expect(response1.body.csrfToken).not.toBe(response2.body.csrfToken);
     });
@@ -130,13 +122,11 @@ describe('CSRF Protection Integration Tests', () => {
   describe('CSRF Protection for State-Changing Operations', () => {
     beforeEach(async () => {
       // Get CSRF token before each test
-      const tokenResponse = await request(app)
-        .get('/auth/csrf-token')
-        .set(rateLimitBypassHeader);
+      const tokenResponse = await request(app).get('/auth/csrf-token').set(rateLimitBypassHeader);
       csrfToken = tokenResponse.body.csrfToken;
 
       const cookies = tokenResponse.headers['set-cookie'] || [];
-      const csrfCookie = cookies.find((cookie) => cookie.startsWith('_csrf='));
+      const csrfCookie = cookies.find(cookie => cookie.startsWith('_csrf='));
 
       // Store both access token and CSRF cookie for authenticated requests
       // Note: In real scenarios, the CSRF cookie would be sent automatically by browser
@@ -144,13 +134,10 @@ describe('CSRF Protection Integration Tests', () => {
 
     test('should reject POST request without CSRF token', async () => {
       // Try to update user profile without CSRF token
-      const response = await request(app)
-        .put(`/api/users/${testUser.id}`)
-        .set('Cookie', accessToken)
-        .send({
-          firstName: 'Updated',
-          lastName: 'Name',
-        });
+      const response = await request(app).put(`/api/users/${testUser.id}`).set('Cookie', accessToken).send({
+        firstName: 'Updated',
+        lastName: 'Name',
+      });
 
       expect(response.status).toBe(403);
       expect(response.body).toHaveProperty('success', false);
@@ -170,9 +157,7 @@ describe('CSRF Protection Integration Tests', () => {
 
     test('should reject DELETE request without CSRF token', async () => {
       // Try to delete something without CSRF token
-      const response = await request(app)
-        .delete(`/api/users/${testUser.id}`)
-        .set('Cookie', accessToken);
+      const response = await request(app).delete(`/api/users/${testUser.id}`).set('Cookie', accessToken);
 
       expect(response.status).toBe(403);
       expect(response.body.code).toBe('INVALID_CSRF_TOKEN');
@@ -191,26 +176,20 @@ describe('CSRF Protection Integration Tests', () => {
 
   describe('Safe HTTP Methods (No CSRF Required)', () => {
     test('should allow GET requests without CSRF token', async () => {
-      const response = await request(app)
-        .get(`/api/users/${testUser.id}`)
-        .set('Cookie', accessToken);
+      const response = await request(app).get(`/api/users/${testUser.id}`).set('Cookie', accessToken);
 
       // Should succeed (200 or other non-403 status)
       expect(response.status).not.toBe(403);
     });
 
     test('should allow HEAD requests without CSRF token', async () => {
-      const response = await request(app)
-        .head('/health')
-        .set('Cookie', accessToken);
+      const response = await request(app).head('/health').set('Cookie', accessToken);
 
       expect(response.status).not.toBe(403);
     });
 
     test('should allow OPTIONS requests without CSRF token', async () => {
-      const response = await request(app)
-        .options('/api/users')
-        .set('Cookie', accessToken);
+      const response = await request(app).options('/api/users').set('Cookie', accessToken);
 
       expect(response.status).not.toBe(403);
     });
@@ -218,10 +197,7 @@ describe('CSRF Protection Integration Tests', () => {
 
   describe('CSRF Error Messages', () => {
     test('should provide clear error message for missing token', async () => {
-      const response = await request(app)
-        .post('/api/users/me')
-        .set('Cookie', accessToken)
-        .send({ firstName: 'Test' });
+      const response = await request(app).post('/api/users/me').set('Cookie', accessToken).send({ firstName: 'Test' });
 
       expect(response.body.message).toContain('Invalid CSRF token');
       expect(response.body.message).toContain('refresh the page');
@@ -237,9 +213,7 @@ describe('CSRF Protection Integration Tests', () => {
     });
 
     test('should return 403 status for CSRF failures', async () => {
-      const response = await request(app)
-        .delete(`/api/users/${testUser.id}`)
-        .set('Cookie', accessToken);
+      const response = await request(app).delete(`/api/users/${testUser.id}`).set('Cookie', accessToken);
 
       expect(response.status).toBe(403);
     });
@@ -255,9 +229,7 @@ describe('CSRF Protection Integration Tests', () => {
       const freshToken = tokenResponse.body.csrfToken;
       const cookies = tokenResponse.headers['set-cookie'] || [];
       // Extract just the cookie name=value part (not the entire Set-Cookie header)
-      const csrfCookie = cookies
-        .find((cookie) => cookie.startsWith('_csrf='))
-        ?.split(';')[0];
+      const csrfCookie = cookies.find(cookie => cookie.startsWith('_csrf='))?.split(';')[0];
       expect(csrfCookie).toBeDefined();
 
       // Use token immediately
@@ -311,13 +283,10 @@ describe('CSRF Protection Integration Tests', () => {
 
   describe('Public Endpoints (No CSRF)', () => {
     test('should not require CSRF token for login', async () => {
-      const response = await request(app)
-        .post('/auth/login')
-        .set(rateLimitBypassHeader)
-        .send({
-          email: testUser.email,
-          password: 'TestPass123!',
-        });
+      const response = await request(app).post('/auth/login').set(rateLimitBypassHeader).send({
+        email: testUser.email,
+        password: 'TestPass123!',
+      });
 
       // Login should work without CSRF token (it's a public endpoint)
       expect(response.status).not.toBe(403);
@@ -352,12 +321,9 @@ describe('CSRF Protection Integration Tests', () => {
     });
 
     test('should not require CSRF token for password reset request', async () => {
-      const response = await request(app)
-        .post('/auth/forgot-password')
-        .set(rateLimitBypassHeader)
-        .send({
-          email: testUser.email,
-        });
+      const response = await request(app).post('/auth/forgot-password').set(rateLimitBypassHeader).send({
+        email: testUser.email,
+      });
 
       expect(response.status).not.toBe(403);
       expect(response.body.code).not.toBe('INVALID_CSRF_TOKEN');
