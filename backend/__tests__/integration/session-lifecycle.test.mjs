@@ -22,7 +22,7 @@ import { createTokenPair } from '../../utils/tokenRotationService.mjs';
 describe('Session Lifecycle Management', () => {
   let testUser;
   let server;
-  let csrfToken;
+  let _csrfToken;
   const testBypassHeaders = { 'X-Test-Bypass-Auth': 'true' };
   let hashedTestPassword;
   const testUserData = {
@@ -34,13 +34,13 @@ describe('Session Lifecycle Management', () => {
   };
 
   // Helper function to get CSRF token
-  async function getCsrfToken() {
+  async function _getCsrfToken() {
     const response = await request(app).get('/api/auth/csrf-token');
     return response.body.csrfToken;
   }
 
   const sanitizePayload = decodedToken => {
-    const { exp, iat, ...rest } = decodedToken || {};
+    const { exp: _exp, iat: _iat, ...rest } = decodedToken || {};
     return rest;
   };
 
@@ -513,7 +513,7 @@ describe('Session Lifecycle Management', () => {
 
     it('should remove old invalidated tokens (30+ days)', async () => {
       // Create an old invalidated token
-      const oldInvalidatedToken = await prisma.refreshToken.create({
+      const _oldInvalidatedToken = await prisma.refreshToken.create({
         data: {
           token: `old-invalidated-${Date.now()}`,
           userId: testUser.id,
@@ -541,8 +541,8 @@ describe('Session Lifecycle Management', () => {
       });
 
       // Create valid tokens
-      const token1 = await createTokenPair(testUser.id);
-      const token2 = await createTokenPair(testUser.id);
+      const _token1 = await createTokenPair(testUser.id);
+      const _token2 = await createTokenPair(testUser.id);
 
       // Count before cleanup
       const countBefore = await prisma.refreshToken.count({

@@ -14,7 +14,7 @@ describe('Ownership Violation Attempts Integration Tests', () => {
   let userA;
   let userB;
   let tokenA;
-  let tokenB;
+  let _tokenB;
   let horseA;
   let horseB;
   let groomA;
@@ -53,7 +53,7 @@ describe('Ownership Violation Attempts Integration Tests', () => {
     });
 
     tokenA = createMockToken(userA.id);
-    tokenB = createMockToken(userB.id);
+    _tokenB = createMockToken(userB.id);
 
     horseA = await prisma.horse.create({
       data: {
