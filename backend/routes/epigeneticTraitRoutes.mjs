@@ -74,7 +74,7 @@ router.post('/evaluate-milestone/:horseId',
 
       const { horseId } = req.params;
       const { milestoneData = {}, includeHistory = true } = req.body;
-      const userId = req.user.id;
+      const _userId = req.user.id;
 
       // Ownership already validated by middleware, fetch full horse with includes
       const horse = await prisma.horse.findUnique({
