@@ -79,7 +79,7 @@ const calculateTotalStatGain = (statChanges: StatChange[]): number => {
 const LevelUpCelebrationModal = memo(function LevelUpCelebrationModal({
   isOpen,
   onClose,
-  horseId,
+  _horseId,
   horseName,
   oldLevel,
   newLevel,

@@ -356,7 +356,7 @@ const CompetitionResultsModal = memo(function CompetitionResultsModal({
     return results.results
       .filter((r) => r.isCurrentUser && r.rank <= 3)
       .map((r) => ({
-        horseId: r.horseId,
+        horseId: r._horseId,
         horseName: r.horseName,
         placement: r.rank,
         prizeMoney: r.prizeWon,

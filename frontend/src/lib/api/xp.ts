@@ -82,7 +82,7 @@ export class XpApiError extends Error {
   constructor(
     message: string,
     public status?: number,
-    public code?: string
+    public _code?: string
   ) {
     super(message);
     this.name = 'XpApiError';

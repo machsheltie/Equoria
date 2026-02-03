@@ -224,7 +224,7 @@ export const handlers = [
       ],
     })
   ),
-  http.post(`${base}/api/foals/:id/activity`, async ({ request, params }) => {
+  http.post(`${base}/api/foals/:id/activity`, async ({ request, _params }) => {
     const body = (await request.json()) as { activityType?: string; activity?: string };
     return HttpResponse.json({
       success: true,
@@ -235,7 +235,7 @@ export const handlers = [
       },
     });
   }),
-  http.post(`${base}/api/foals/:id/enrich`, async ({ request, params }) => {
+  http.post(`${base}/api/foals/:id/enrich`, async ({ request, _params }) => {
     const body = (await request.json()) as { activity?: string };
     return HttpResponse.json({
       success: true,
@@ -245,7 +245,7 @@ export const handlers = [
   http.post(`${base}/api/foals/:id/reveal-traits`, () =>
     HttpResponse.json({ success: true, data: { traits: ['brave', 'athletic'] } })
   ),
-  http.put(`${base}/api/foals/:id/develop`, async ({ request, params }) => {
+  http.put(`${base}/api/foals/:id/develop`, async ({ request, _params }) => {
     const updates = (await request.json()) as Record<string, unknown>;
     return HttpResponse.json({
       success: true,
@@ -820,7 +820,7 @@ export const handlers = [
   http.get(`${base}/api/users/:userId/prize-history`, ({ params, request }) => {
     const userId = params.userId as string;
     const url = new URL(request.url);
-    const dateRange = url.searchParams.get('dateRange');
+    const _dateRange = url.searchParams.get('dateRange');
     const horseId = url.searchParams.get('horseId');
     const discipline = url.searchParams.get('discipline');
 
@@ -1027,7 +1027,7 @@ export const handlers = [
   http.get(`${base}/api/horses/:horseId/xp-history`, ({ params, request }) => {
     const horseId = Number(params.horseId);
     const url = new URL(request.url);
-    const dateRange = url.searchParams.get('dateRange');
+    const _dateRange = url.searchParams.get('dateRange');
     const source = url.searchParams.get('source');
 
     // Return 404 for horse ID 999 (error test case)

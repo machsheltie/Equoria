@@ -42,9 +42,7 @@ const mockPartialSuccessResult: competitionsApi.EntryResult = {
   entryIds: [101, 102],
   totalCost: 100,
   message: 'Entered 2 of 3 horses',
-  failedEntries: [
-    { horseId: 3, reason: 'Horse does not meet minimum level requirement' },
-  ],
+  failedEntries: [{ horseId: 3, reason: 'Horse does not meet minimum level requirement' }],
 };
 
 const mockErrorResult = {
@@ -369,9 +367,7 @@ describe('useEnterCompetition with partial success', () => {
   });
 
   it('should handle partial success with failed entries', async () => {
-    vi.mocked(competitionsApi.submitCompetitionEntry).mockResolvedValue(
-      mockPartialSuccessResult
-    );
+    vi.mocked(competitionsApi.submitCompetitionEntry).mockResolvedValue(mockPartialSuccessResult);
 
     const { result } = renderHook(() => useEnterCompetition(), {
       wrapper: createWrapper(),

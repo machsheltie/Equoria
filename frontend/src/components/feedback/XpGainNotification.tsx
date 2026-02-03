@@ -21,7 +21,7 @@
  * Story 5-4: XP Gain Notification - Task 1
  */
 
-import React, { memo, useState, useEffect, useRef, useCallback } from 'react';
+import React, { memo, useEffect, useRef, useCallback } from 'react';
 import { X } from 'lucide-react';
 
 /**
@@ -94,7 +94,7 @@ const getPositionClasses = (position: 'top-right' | 'bottom-right'): string => {
 const XpGainNotification = memo(function XpGainNotification({
   xpGained,
   currentLevel,
-  currentXp,
+  _currentXp,
   xpForCurrentLevel,
   xpToNextLevel,
   show = true,

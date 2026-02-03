@@ -127,7 +127,6 @@ describe('XpIntegration', () => {
   };
 
   // Sample competition results without user prizes (no XP notification needed)
-  const resultsWithoutPrizes: CompetitionResults = {
     competitionId: 2,
     competitionName: 'Autumn Challenge',
     discipline: 'Dressage',
@@ -474,7 +473,7 @@ describe('XpIntegration', () => {
   describe('XP Data Flow', () => {
     it('useHorseLevelInfo provides data for XP progress display', () => {
       // Verify the hook returns the expected data structure
-      const hookResult = (useHorseLevelInfo as Mock).mock.results;
+      // const hookResult = (useHorseLevelInfo as Mock).mock.results;
 
       // The mock was called correctly in setup
       expect((useHorseLevelInfo as Mock)).toBeDefined();

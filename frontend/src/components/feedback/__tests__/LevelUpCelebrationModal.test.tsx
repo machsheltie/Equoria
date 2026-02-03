@@ -166,7 +166,6 @@ describe('LevelUpCelebrationModal', () => {
     it('should display before (old) values for each stat', () => {
       renderModal();
 
-      const rows = screen.getAllByTestId(/^stat-row-/);
       // Speed old value = 45
       const speedRow = screen.getByTestId('stat-row-Speed');
       expect(within(speedRow).getByTestId('stat-old-value')).toHaveTextContent('45');
@@ -418,7 +417,6 @@ describe('LevelUpCelebrationModal', () => {
 
       renderModal({ statChanges: largeStatChanges });
 
-      const rows = screen.getAllByTestId(/^stat-row-/);
       expect(rows).toHaveLength(10);
     });
 
