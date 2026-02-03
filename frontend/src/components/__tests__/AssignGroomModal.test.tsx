@@ -20,7 +20,7 @@ import { render, screen, waitFor, fireEvent, within } from '@testing-library/rea
 import '@testing-library/jest-dom';
 import { vi } from 'vitest';
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
-import { BrowserRouter } from 'react-router-dom';
+import { BrowserRouter } from '../../test/utils';
 import AssignGroomModal from '../AssignGroomModal';
 
 // Mock data for testing (NO MOCKING - real data passed as props)

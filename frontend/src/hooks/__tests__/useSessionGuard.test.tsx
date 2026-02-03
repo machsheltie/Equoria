@@ -13,7 +13,7 @@
 import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest';
 import { render, screen, waitFor } from '@testing-library/react';
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
-import { MemoryRouter, Routes, Route, useLocation } from 'react-router-dom';
+import { MemoryRouter, Routes, Route, useLocation } from '../../test/utils';
 import { ReactNode } from 'react';
 import { AuthProvider, useAuth } from '../../contexts/AuthContext';
 import { useSessionGuard } from '../useSessionGuard';

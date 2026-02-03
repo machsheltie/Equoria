@@ -19,7 +19,7 @@ import { render, screen, waitFor, fireEvent, within } from '@testing-library/rea
 import userEvent from '@testing-library/user-event';
 import '@testing-library/jest-dom';
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
-import { BrowserRouter, Routes, Route, MemoryRouter } from 'react-router-dom';
+import { BrowserRouter, Routes, Route, MemoryRouter } from '../../test/utils';
 import { vi, describe, test, expect, beforeEach, afterEach } from 'vitest';
 import HorseDetailPage from '../HorseDetailPage';
 

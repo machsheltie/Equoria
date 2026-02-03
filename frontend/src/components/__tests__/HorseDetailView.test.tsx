@@ -1,7 +1,7 @@
 import { render, screen, waitFor } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
-import { BrowserRouter, Routes, Route, MemoryRouter } from 'react-router-dom';
+import { BrowserRouter, Routes, Route, MemoryRouter } from '../../test/utils';
 import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest';
 import HorseDetailView from '../HorseDetailView';
 import * as useHorsesHooks from '@/hooks/api/useHorses';

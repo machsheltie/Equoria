@@ -16,7 +16,7 @@ import React from 'react';
 import { render, screen, waitFor, fireEvent } from '@testing-library/react';
 import '@testing-library/jest-dom';
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
-import { BrowserRouter } from 'react-router-dom';
+import { BrowserRouter } from '../../test/utils';
 import HorseListView from '../HorseListView';
 
 // Mock horse data for testing (NO MOCKING - real data structures)

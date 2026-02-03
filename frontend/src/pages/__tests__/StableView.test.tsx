@@ -1,7 +1,7 @@
 import { describe, it, expect, vi, beforeEach } from 'vitest';
 import { render, screen } from '@testing-library/react';
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
-import { BrowserRouter } from 'react-router-dom';
+import { BrowserRouter } from '../../test/utils';
 import StableView from '../StableView';
 import * as useHorsesModule from '../../hooks/api/useHorses';
 import * as useAuthModule from '../../hooks/useAuth';

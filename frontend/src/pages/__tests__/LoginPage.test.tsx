@@ -16,9 +16,9 @@ import { render, screen, fireEvent, waitFor } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
 import { ReactNode } from 'react';
-import { TestRouter } from '../../test/utils';
+import { TestRouter } from '@/test/utils';
 import LoginPage from '../LoginPage';
-import * as apiClient from '../../lib/api-client';
+import * as apiClient from '@/lib/api-client';
 
 // Mock the API client
 vi.mock('../../lib/api-client', () => ({

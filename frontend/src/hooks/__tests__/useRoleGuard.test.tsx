@@ -9,7 +9,7 @@
 
 import { describe, test, expect, vi, beforeEach } from 'vitest';
 import { renderHook } from '@testing-library/react';
-import { MemoryRouter } from 'react-router-dom';
+import { MemoryRouter } from '../../test/utils';
 import { ReactNode } from 'react';
 import { useRoleGuard, UserRole } from '../useRoleGuard';
 import * as AuthContext from '../../contexts/AuthContext';
