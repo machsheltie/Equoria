@@ -1,0 +1,47 @@
+chore: configure git line endings and improve test infrastructure
+
+## Overview
+- Add comprehensive .gitattributes for consistent line endings (LF)
+- Improve test infrastructure with bypass mechanisms for auth and CSRF
+- Add backward compatibility for auth routes
+- Enhance security test coverage with new test files
+
+## Changes
+
+### Configuration
+- .gitattributes: Configure LF line endings for text files, CRLF for Windows-specific files
+
+### Backend Middleware
+- auth.mjs: Add test bypass authentication (x-test-bypass-auth header) for integration tests
+- csrf.mjs: 
+  - Make CSRF token response format consistent
+  - Add test bypass (x-test-skip-csrf header) for orthogonal testing
+- app.mjs: Add /api/auth/* backward compatibility route
+
+### Backend Controllers
+- authController.mjs: Update for improved auth handling
+
+### Testing Infrastructure
+- Add new security test files:
+  - csrf.test.mjs
+  - security-middleware.test.mjs
+  - session-management.test.mjs
+  - validate-environment.test.mjs
+  - validation-error-handler.test.mjs
+- Update existing security tests for consistency:
+  - auth-bypass-attempts.test.mjs
+  - ownership-violations.test.mjs
+  - parameter-pollution.test.mjs
+  - rate-limit-enforcement.test.mjs
+  - sql-injection-attempts.test.mjs
+  - csrf-validation.test.mjs
+  - ownership-checks.test.mjs
+  - rate-limit-keys.test.mjs
+
+## Test Results
+- Security tests infrastructure enhanced
+- Line ending warnings will be resolved after this commit
+
+🤖 Generated with [Claude Code](https://claude.com/claude-code)
+
+Co-Authored-By: Claude Sonnet 4.5 <noreply@anthropic.com>

@@ -1,0 +1,123 @@
+
+> equoria-backend@1.0.0 test:performance
+> node --experimental-vm-modules node_modules/jest/bin/jest.js --config=jest.config.performance.mjs --runInBand
+
+[2026-01-29 13:25:22] info: [envValidator] Validating test environment configuration...
+[2026-01-29 13:25:22] info: [envValidator] ✅ All 5 required environment variables are present
+[2026-01-29 13:25:22] info: [envValidator] ℹ️  Optional variables not set: AUTH_RATE_LIMIT_MAX, ENABLE_DEBUG_ROUTES
+[2026-01-29 13:25:22] info: [envValidator] Test environment validation complete. Success: true
+(node:68632) ExperimentalWarning: VM Modules is an experimental feature and might change at any time
+(Use `node --trace-warnings ...` to show where the warning was created)
+[2026-01-29 13:25:23] info: [databaseOptimization] Running database benchmarks
+[2026-01-29 13:25:23] info: [databaseOptimization] Analyzing query performance for epigenetic_trait_search
+[2026-01-29 13:25:23] info: [databaseOptimization] Analyzing query performance for jsonb_discipline_scores
+[2026-01-29 13:25:23] info: [databaseOptimization] Analyzing query performance for user_horses_with_results
+[2026-01-29 13:25:23] info: [databaseOptimization] Creating optimized indexes
+[2026-01-29 13:25:23] warn: [databaseOptimization] Index creation failed: CREATE INDEX IF NOT EXISTS idx_epigenetic_flags_search ON horses ("epigenetic_flags_search") 
+Invalid `prisma.$executeRawUnsafe()` invocation:
+
+
+Raw query failed. Code: `42703`. Message: `column "epigenetic_flags_search" does not exist`
+[2026-01-29 13:25:23] warn: [databaseOptimization] Index creation failed: CREATE INDEX IF NOT EXISTS idx_discipline_scores_filter ON horses ("discipline_scores_filter") 
+Invalid `prisma.$executeRawUnsafe()` invocation:
+
+
+Raw query failed. Code: `42703`. Message: `column "discipline_scores_filter" does not exist`
+[2026-01-29 13:25:23] warn: [databaseOptimization] Index creation failed: CREATE INDEX IF NOT EXISTS idx_age_and_training_status ON horses ("age_and_training_status") 
+Invalid `prisma.$executeRawUnsafe()` invocation:
+
+
+Raw query failed. Code: `42703`. Message: `column "age_and_training_status" does not exist`
+[2026-01-29 13:25:23] warn: [databaseOptimization] Index creation failed: CREATE INDEX IF NOT EXISTS idx_user_horse_lookup ON horses ("user_horse_lookup") 
+Invalid `prisma.$executeRawUnsafe()` invocation:
+
+
+Raw query failed. Code: `42703`. Message: `column "user_horse_lookup" does not exist`
+[2026-01-29 13:25:23] info: [databaseOptimization] Creating optimized indexes
+[2026-01-29 13:25:23] warn: [databaseOptimization] Index creation failed: CREATE INDEX IF NOT EXISTS idx_horses_stats_gin ON horses USING GIN ("stats") 
+Invalid `prisma.$executeRawUnsafe()` invocation:
+
+
+Raw query failed. Code: `42703`. Message: `column "stats" does not exist`
+[2026-01-29 13:25:23] info: [databaseOptimization] Creating optimized indexes
+[2026-01-29 13:25:23] info: [databaseOptimization] Configuring connection pooling
+[2026-01-29 13:25:23] info: [databaseOptimization] Connection pool configured:
+[2026-01-29 13:25:24] info: [databaseOptimization] Configuring connection pooling
+[2026-01-29 13:25:24] info: [databaseOptimization] Configuring connection pooling
+[2026-01-29 13:25:24] info: [databaseOptimization] Setting up query caching
+[2026-01-29 13:25:24] info: [databaseOptimization] Running database benchmarks
+[2026-01-29 13:25:25] info: [databaseOptimization] Running database benchmarks
+[2026-01-29 13:25:25] info: [databaseOptimization] Running database benchmarks
+[2026-01-29 13:25:25] info: [databaseOptimization] Running database benchmarks
+[2026-01-29 13:25:25] info: [databaseOptimization] Running database benchmarks
+[2026-01-29 13:25:25] info: [databaseOptimization] Running database benchmarks
+[2026-01-29 13:25:25] info: [databaseOptimization] Running database benchmarks
+PASS __tests__/performance/databaseOptimization.test.mjs
+  Database Query Optimization
+    Query Performance Analysis
+      √ analyzes complex epigenetic queries for performance bottlenecks (21 ms)
+      √ identifies slow JSONB queries and optimization opportunities (18 ms)
+      √ benchmarks multi-table join performance (33 ms)
+    Index Optimization
+      √ creates optimized indexes for epigenetic queries (56 ms)
+      √ optimizes JSONB indexes for trait and score queries (29 ms)
+      √ creates composite indexes for common query patterns (13 ms)
+    Connection Pooling Optimization
+      √ implements efficient connection pooling strategy (9 ms)
+      √ handles concurrent connection requests efficiently (597 ms)
+      √ manages connection lifecycle properly (5 ms)
+    Query Caching Strategy
+      √ implements Redis-based query caching (4 ms)
+      √ caches expensive epigenetic analysis queries (13 ms)
+      √ invalidates cache on data updates (22 ms)
+    Performance Benchmarking
+      √ meets response time targets for common operations (1015 ms)
+      √ handles high concurrent load efficiently (5 ms)
+      √ maintains performance under memory pressure (3 ms)
+    Query Optimization Results
+      √ improves epigenetic query performance significantly (22 ms)
+      √ reduces database load and resource usage (6 ms)
+      √ validates production readiness metrics (4 ms)
+
+[2026-01-29 13:25:25] info: [envValidator] Validating test environment configuration...
+[2026-01-29 13:25:25] info: [envValidator] ✅ All 5 required environment variables are present
+[2026-01-29 13:25:25] info: [envValidator] ℹ️  Optional variables not set: AUTH_RATE_LIMIT_MAX, ENABLE_DEBUG_ROUTES
+[2026-01-29 13:25:25] info: [envValidator] Test environment validation complete. Success: true
+[2026-01-29 13:25:27] error: [ResponseOptimization] Response size exceeds limit: 12715 bytes for GET /test/oversized
+PASS __tests__/performance/apiResponseOptimization.test.mjs
+  API Response Optimization System
+    Pagination Service
+      √ creates offset-based pagination correctly (6 ms)
+      √ creates cursor-based pagination correctly (2 ms)
+      √ generates optimized Prisma query for cursor pagination (2 ms)
+    Serialization Service
+      √ optimizes response data correctly (3 ms)
+      √ selects specific fields correctly (5 ms)
+      √ excludes specific fields correctly (2 ms)
+      √ handles nested field selection (2 ms)
+    Response Cache Service
+      √ generates consistent ETags for same data (2 ms)
+      √ generates different ETags for different data (4 ms)
+      √ determines cacheable requests correctly (3 ms)
+    Lazy Loading Service
+      √ creates lazy loading configuration (3 ms)
+      √ loads related data on demand (12 ms)
+    Middleware Integration
+      √ handles pagination middleware correctly (136 ms)
+      √ handles field selection via query parameters (36 ms)
+      √ adds performance headers to responses (36 ms)
+      √ handles large response optimization (69 ms)
+      √ supports debug mode with optimization info (32 ms)
+    Performance Metrics
+      √ tracks performance metrics correctly (6 ms)
+    ETag and Caching
+      √ generates and validates ETags correctly (49 ms)
+    Response Size Monitoring
+      √ monitors and warns about large responses (56 ms)
+      √ handles response size limits (31 ms)
+
+Test Suites: 2 passed, 2 total
+Tests:       39 passed, 39 total
+Snapshots:   0 total
+Time:        6.508 s, estimated 7 s
+Ran all test suites.

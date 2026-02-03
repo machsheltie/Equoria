@@ -1,0 +1,200 @@
+
+> equoria-backend@1.0.0 test:security
+> node --experimental-vm-modules node_modules/jest/bin/jest.js --config=jest.config.security.mjs
+
+  console.info
+    [PrismaClient] Jest cleanup registered successfully.
+
+      at ../packages/database/prismaClient.mjs:55:13
+
+  console.info
+    [PrismaClient] Jest cleanup registered successfully.
+
+      at ../packages/database/prismaClient.mjs:55:13
+
+  console.info
+    [PrismaClient] Jest cleanup registered successfully.
+
+      at ../packages/database/prismaClient.mjs:55:13
+
+  console.info
+    [PrismaClient] Jest cleanup registered successfully.
+
+      at ../packages/database/prismaClient.mjs:55:13
+
+  console.info
+    [PrismaClient] Jest cleanup registered successfully.
+
+      at ../packages/database/prismaClient.mjs:55:13
+
+  console.info
+    [PrismaClient] Jest cleanup registered successfully.
+
+      at ../packages/database/prismaClient.mjs:55:13
+
+  console.info
+    [PrismaClient] Jest cleanup registered successfully.
+
+      at ../packages/database/prismaClient.mjs:55:13
+
+  console.info
+    [PrismaClient] Jest cleanup registered successfully.
+
+      at ../packages/database/prismaClient.mjs:55:13
+
+  console.info
+    [PrismaClient] Jest cleanup registered successfully.
+
+      at ../packages/database/prismaClient.mjs:55:13
+
+  console.info
+    [PrismaClient] Jest cleanup registered successfully.
+
+      at ../packages/database/prismaClient.mjs:55:13
+
+(node:16688) ExperimentalWarning: VM Modules is an experimental feature and might change at any time
+(Use `node --trace-warnings ...` to show where the warning was created)
+  console.info
+    [PrismaClient] Jest cleanup registered successfully.
+
+      at ../packages/database/prismaClient.mjs:55:13
+
+(node:31012) ExperimentalWarning: VM Modules is an experimental feature and might change at any time
+(Use `node --trace-warnings ...` to show where the warning was created)
+(node:7404) ExperimentalWarning: VM Modules is an experimental feature and might change at any time
+(Use `node --trace-warnings ...` to show where the warning was created)
+[2025-12-12 06:11:56] info: [cronJobService] Initializing cron jobs...
+[2025-12-12 06:11:56] info: [cronJobService] All cron jobs initialized and started
+[2025-12-12 06:11:56] info: [cronJobService] Stopping all cron jobs...
+[2025-12-12 06:11:56] info: [cronJobService] Stopped job: weeklySalaries
+[2025-12-12 06:11:56] info: [cronJobService] Stopped job: tokenCleanup
+[2025-12-12 06:11:56] info: [cronJobService] All cron jobs stopped
+[2025-12-12 06:11:56] info: [cronJobService] Initializing cron jobs...
+[2025-12-12 06:11:56] info: [cronJobService] All cron jobs initialized and started
+[2025-12-12 06:11:56] info: [cronJobService] Stopping all cron jobs...
+[2025-12-12 06:11:56] info: [cronJobService] Stopped job: weeklySalaries
+(node:15612) ExperimentalWarning: VM Modules is an experimental feature and might change at any time
+(Use `node --trace-warnings ...` to show where the warning was created)
+[2025-12-12 06:11:56] info: [cronJobService] Stopped job: tokenCleanup
+[2025-12-12 06:11:56] info: [cronJobService] All cron jobs stopped
+[2025-12-12 06:11:56] info: [cronJobService] Initializing cron jobs...
+[2025-12-12 06:11:56] info: [cronJobService] All cron jobs initialized and started
+[2025-12-12 06:11:56] info: [cronJobService] Stopping all cron jobs...
+[2025-12-12 06:11:56] info: [cronJobService] Stopped job: weeklySalaries
+[2025-12-12 06:11:56] info: [cronJobService] Stopped job: tokenCleanup
+[2025-12-12 06:11:56] info: [cronJobService] All cron jobs stopped
+[2025-12-12 06:11:56] info: [cronJobService] Initializing cron jobs...
+[2025-12-12 06:11:56] info: [cronJobService] All cron jobs initialized and started
+[2025-12-12 06:11:56] info: [cronJobService] Stopping all cron jobs...
+[2025-12-12 06:11:56] info: [cronJobService] Stopped job: weeklySalaries
+[2025-12-12 06:11:56] info: [cronJobService] Stopped job: tokenCleanup
+[2025-12-12 06:11:56] info: [cronJobService] All cron jobs stopped
+[2025-12-12 06:11:56] info: [cronJobService] Initializing cron jobs...
+[2025-12-12 06:11:56] info: [cronJobService] All cron jobs initialized and started
+[2025-12-12 06:11:56] info: [cronJobService] Stopping all cron jobs...
+[2025-12-12 06:11:56] info: [cronJobService] Stopped job: weeklySalaries
+[2025-12-12 06:11:56] info: [cronJobService] Stopped job: tokenCleanup
+[2025-12-12 06:11:56] info: [cronJobService] All cron jobs stopped
+[2025-12-12 06:11:56] info: [cronJobService] Initializing cron jobs...
+[2025-12-12 06:11:56] info: [cronJobService] All cron jobs initialized and started
+[2025-12-12 06:11:56] info: [cronJobService] Stopping all cron jobs...
+[2025-12-12 06:11:56] info: [cronJobService] Stopped job: weeklySalaries
+[2025-12-12 06:11:56] info: [cronJobService] Stopped job: tokenCleanup
+[2025-12-12 06:11:56] info: [cronJobService] All cron jobs stopped
+[2025-12-12 06:11:56] info: [cronJobService] Stopping all cron jobs...
+[2025-12-12 06:11:56] info: [cronJobService] All cron jobs stopped
+[2025-12-12 06:11:56] info: [cronJobService] Stopping all cron jobs...
+[2025-12-12 06:11:56] info: [cronJobService] All cron jobs stopped
+[2025-12-12 06:11:56] info: [cronJobService] Stopping all cron jobs...
+[2025-12-12 06:11:56] info: [cronJobService] All cron jobs stopped
+[2025-12-12 06:11:56] info: [auth] Authenticated user 5426 for GET /api/test
+[2025-12-12 06:11:56] info: [cronJobService] Initializing cron jobs...
+[2025-12-12 06:11:56] info: [cronJobService] All cron jobs initialized and started
+[2025-12-12 06:11:56] info: [cronJobService] Stopping all cron jobs...
+[2025-12-12 06:11:56] info: [cronJobService] Stopped job: weeklySalaries
+[2025-12-12 06:11:56] info: [cronJobService] Stopped job: tokenCleanup
+[2025-12-12 06:11:56] info: [cronJobService] All cron jobs stopped
+[2025-12-12 06:11:56] info: [cronJobService] Stopping all cron jobs...
+[2025-12-12 06:11:56] info: [cronJobService] All cron jobs stopped
+[2025-12-12 06:11:56] info: [cronJobService] Initializing cron jobs...
+[2025-12-12 06:11:56] info: [cronJobService] All cron jobs initialized and started
+[2025-12-12 06:11:56] info: [cronJobService] Stopping all cron jobs...
+[2025-12-12 06:11:56] info: [cronJobService] Stopped job: weeklySalaries
+[2025-12-12 06:11:56] info: [cronJobService] Stopped job: tokenCleanup
+[2025-12-12 06:11:56] info: [cronJobService] All cron jobs stopped
+[2025-12-12 06:11:56] info: [auth] Authenticated user 5795 for GET /api/test
+[2025-12-12 06:11:56] info: [cronJobService] Stopping all cron jobs...
+[2025-12-12 06:11:56] info: [cronJobService] All cron jobs stopped
+[2025-12-12 06:11:56] info: [cronJobService] Initializing cron jobs...
+[2025-12-12 06:11:56] info: [cronJobService] All cron jobs initialized and started
+[2025-12-12 06:11:56] info: [cronJobService] Stopping all cron jobs...
+[2025-12-12 06:11:56] info: [cronJobService] Stopped job: weeklySalaries
+[2025-12-12 06:11:56] info: [cronJobService] Stopped job: tokenCleanup
+[2025-12-12 06:11:56] info: [cronJobService] All cron jobs stopped
+[2025-12-12 06:11:56] info: [auth] Authenticated user 1 for GET /api/test
+[2025-12-12 06:11:56] info: [auth] Authenticated user 7557 for GET /api/test
+[2025-12-12 06:11:56] info: [cronJobService] Stopping all cron jobs...
+[2025-12-12 06:11:56] info: [cronJobService] All cron jobs stopped
+[2025-12-12 06:11:56] warn: [auth] Session expired due to age for GET /api/test from 127.0.0.1 (8 days old)
+[2025-12-12 06:11:56] warn: [auth] Session expired. Please login again. for GET /api/test from 127.0.0.1
+[2025-12-12 06:11:56] info: [cronJobService] Stopping all cron jobs...
+[2025-12-12 06:11:56] info: [cronJobService] All cron jobs stopped
+[2025-12-12 06:11:56] info: [auth] Authenticated user 357 for GET /api/test
+[2025-12-12 06:11:56] warn: [auth] Session expired due to age for GET /api/test from 127.0.0.1 (7 days old)
+[2025-12-12 06:11:56] warn: [auth] Session expired. Please login again. for GET /api/test from 127.0.0.1
+[2025-12-12 06:11:56] warn: [auth] Token decode failed for GET /api/test from 127.0.0.1: Unexpected token '�', "�{ږ'" is not valid JSON
+[2025-12-12 06:11:56] warn: [auth] Invalid or expired token for GET /api/test from 127.0.0.1
+[2025-12-12 06:11:56] info: [cronJobService] Stopping all cron jobs...
+[2025-12-12 06:11:56] info: [cronJobService] All cron jobs stopped
+[2025-12-12 06:11:56] warn: [auth] Invalid token for GET /api/test from 127.0.0.1: invalid signature
+[2025-12-12 06:11:56] warn: [auth] Invalid or expired token for GET /api/test from 127.0.0.1
+[2025-12-12 06:11:56] warn: [auth] Invalid or expired token for GET /api/test from 127.0.0.1
+[2025-12-12 06:11:56] info: [cronJobService] Stopping all cron jobs...
+[2025-12-12 06:11:56] info: [cronJobService] All cron jobs stopped
+[2025-12-12 06:11:56] warn: [auth] Access token is required for GET /api/test from 127.0.0.1
+[2025-12-12 06:11:56] warn: [auth] Access token is required for GET /api/test from 127.0.0.1
+[2025-12-12 06:11:56] warn: [auth] Access token is required for GET /api/test from 127.0.0.1
+[2025-12-12 06:11:56] info: [cronJobService] Stopping all cron jobs...
+[2025-12-12 06:11:56] info: [cronJobService] All cron jobs stopped
+[2025-12-12 06:11:56] warn: [auth] Access token is required for GET /api/test from 127.0.0.1
+[2025-12-12 06:11:56] info: [cronJobService] Manually triggering token cleanup...
+[2025-12-12 06:11:56] info: [cronJobService] Starting expired token cleanup...
+[2025-12-12 06:11:56] warn: [auth] Access token is required for GET /api/test from 127.0.0.1
+[2025-12-12 06:11:56] info: [TokenRotation] Token cleanup completed
+[2025-12-12 06:11:56] info: [cronJobService] Token cleanup completed. Removed 0 expired/invalidated tokens
+[2025-12-12 06:11:56] info: [cronJobService] Manual token cleanup completed: {"removed":0,"expired":0,"invalidated":0,"timestamp":"2025-12-12T11:11:56.582Z"}
+[2025-12-12 06:11:56] info: [cronJobService] Stopping all cron jobs...
+[2025-12-12 06:11:56] warn: [auth] Access token is required for GET /api/test from 127.0.0.1
+[2025-12-12 06:11:56] info: [cronJobService] All cron jobs stopped
+[2025-12-12 06:11:56] warn: [auth] Access token is required for GET /api/test from 127.0.0.1
+[2025-12-12 06:11:56] info: [cronJobService] Manually triggering token cleanup...
+[2025-12-12 06:11:56] info: [cronJobService] Starting expired token cleanup...
+[2025-12-12 06:11:56] info: [TokenRotation] Token cleanup completed
+[2025-12-12 06:11:56] info: [cronJobService] Token cleanup completed. Removed 0 expired/invalidated tokens
+[2025-12-12 06:11:56] info: [cronJobService] Manual token cleanup completed: {"removed":0,"expired":0,"invalidated":0,"timestamp":"2025-12-12T11:11:56.593Z"}
+[2025-12-12 06:11:56] info: [cronJobService] Stopping all cron jobs...
+[2025-12-12 06:11:56] info: [cronJobService] All cron jobs stopped
+[2025-12-12 06:11:56] info: [auth] Authenticated user 12345 for GET /api/test
+[2025-12-12 06:11:56] info: [auth] Authenticated user 99999 for GET /api/test
+[2025-12-12 06:11:56] info: [cronJobService] Stopping all cron jobs...
+[2025-12-12 06:11:56] info: [cronJobService] All cron jobs stopped
+[2025-12-12 06:11:56] info: [auth] Authenticated user 6565 for GET /api/test
+[2025-12-12 06:11:56] info: [cronJobService] Manually triggering token cleanup...
+[2025-12-12 06:11:56] info: [cronJobService] Starting expired token cleanup...
+[2025-12-12 06:11:56] error: [TokenRotation] Error cleaning up tokens: Database connection failed
+[2025-12-12 06:11:56] error: [cronJobService] Token cleanup error: Database connection failed
+[2025-12-12 06:11:56] info: [cronJobService] Manual token cleanup completed: {"removed":0,"timestamp":"2025-12-12T11:11:56.621Z","error":"Database connection failed"}
+[2025-12-12 06:11:56] info: [cronJobService] Stopping all cron jobs...
+[2025-12-12 06:11:56] info: [cronJobService] All cron jobs stopped
+[2025-12-12 06:11:56] info: [cronJobService] Initializing cron jobs...
+[2025-12-12 06:11:56] info: [cronJobService] All cron jobs initialized and started
+[2025-12-12 06:11:56] info: [cronJobService] Stopping all cron jobs...
+[2025-12-12 06:11:56] info: [cronJobService] Stopped job: weeklySalaries
+[2025-12-12 06:11:56] info: [cronJobService] Stopped job: tokenCleanup
+[2025-12-12 06:11:56] info: [cronJobService] All cron jobs stopped
+[2025-12-12 06:11:56] info: [cronJobService] Initializing cron jobs...
+[2025-12-12 06:11:56] info: [cronJobService] All cron jobs initialized and started
+[2025-12-12 06:11:56] info: [auth] Authenticated user 781 for GET /api/test
+[2025-12-12 06:11:56] info: [cronJobService] Starting expired token cleanup...
+[2025-12-12 06:11:56] info: [TokenRotation] Token cleanup completed
+[2025-12-12 06:11:56] info: [cronJobService] Token cleanup completed. Removed 0 expired/invalidated tokens

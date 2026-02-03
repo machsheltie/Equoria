@@ -1,0 +1,347 @@
+
+> equoria-backend@1.0.0 test
+> node --experimental-vm-modules node_modules/jest/bin/jest.js tests/trainingController.test.mjs --verbose
+
+[2025-12-29 08:09:53] info: [envValidator] Validating test environment configuration...
+[2025-12-29 08:09:53] info: [envValidator] ✅ All 5 required environment variables are present
+[2025-12-29 08:09:53] info: [envValidator] Test environment validation complete. Success: true
+  console.log
+    🧪 Test environment loaded
+
+      at tests/setup.mjs:53:9
+
+  console.log
+    📊 Database: postgresql://postgres:***@localhost:5432/equoria_test
+
+      at tests/setup.mjs:54:9
+
+  console.info
+    [PrismaClient] Jest cleanup registered successfully.
+
+      at ../packages/database/prismaClient.mjs:55:13
+
+(node:28816) ExperimentalWarning: VM Modules is an experimental feature and might change at any time
+(Use `node --trace-warnings ...` to show where the warning was created)
+[2025-12-29 08:09:55] info: [trainingController.canTrain] Checking training eligibility for horse 96062 in Dressage
+[2025-12-29 08:09:55] info: [trainingModel.getHorseAge] Getting age for horse 96062
+[2025-12-29 08:09:55] info: [trainingModel.getHorseAge] Horse 96062 is 4 years old
+[2025-12-29 08:09:55] info: [trainingModel.getAnyRecentTraining] Checking most recent training date for horse 96062 across all disciplines
+[2025-12-29 08:09:55] info: [trainingModel.getAnyRecentTraining] No training records found for horse 96062
+[2025-12-29 08:09:55] info: [trainingController.canTrain] Horse 96062 is eligible to train in Dressage
+[2025-12-29 08:09:55] info: [trainingController.canTrain] Checking training eligibility for horse 96063 in Dressage
+[2025-12-29 08:09:55] info: [trainingModel.getHorseAge] Getting age for horse 96063
+[2025-12-29 08:09:55] info: [trainingModel.getHorseAge] Horse 96063 is 2 years old
+[2025-12-29 08:09:55] info: [trainingController.canTrain] Horse 96063 is too young (2 years old)
+[2025-12-29 08:09:55] info: [trainingController.canTrain] Checking training eligibility for horse 96064 in Dressage
+[2025-12-29 08:09:55] info: [trainingModel.getHorseAge] Getting age for horse 96064
+[2025-12-29 08:09:55] info: [trainingModel.getHorseAge] Horse 96064 is 4 years old
+[2025-12-29 08:09:55] info: [trainingModel.getAnyRecentTraining] Checking most recent training date for horse 96064 across all disciplines
+[2025-12-29 08:09:55] info: [trainingModel.getAnyRecentTraining] Most recent training date for horse 96064: Fri Dec 26 2025 08:09:55 GMT-0500 (Eastern Standard Time) (discipline: Racing)
+[2025-12-29 08:09:55] info: [trainingController.canTrain] Horse 96064 still in cooldown for any training (4 days remaining)
+[2025-12-29 08:09:55] info: [trainingController.canTrain] Checking training eligibility for horse 96065 in Dressage
+[2025-12-29 08:09:55] info: [trainingModel.getHorseAge] Getting age for horse 96065
+[2025-12-29 08:09:55] info: [trainingModel.getHorseAge] Horse 96065 is 4 years old
+[2025-12-29 08:09:55] info: [trainingModel.getAnyRecentTraining] Checking most recent training date for horse 96065 across all disciplines
+[2025-12-29 08:09:55] info: [trainingModel.getAnyRecentTraining] Most recent training date for horse 96065: Sun Dec 21 2025 08:09:55 GMT-0500 (Eastern Standard Time) (discipline: Racing)
+[2025-12-29 08:09:55] info: [trainingController.canTrain] Horse 96065 is eligible to train in Dressage
+[2025-12-29 08:09:55] info: [trainingController.canTrain] Checking training eligibility for horse 99999 in Dressage
+[2025-12-29 08:09:55] info: [trainingModel.getHorseAge] Getting age for horse 99999
+[2025-12-29 08:09:55] info: [trainingModel.getHorseAge] Horse 99999 not found or missing dateOfBirth
+[2025-12-29 08:09:55] warn: [trainingController.canTrain] Horse 99999 not found
+[2025-12-29 08:09:55] error: [trainingController.canTrain] Error checking training eligibility: Horse ID must be a positive integer
+[2025-12-29 08:09:55] error: [trainingController.canTrain] Error checking training eligibility: Discipline is required
+[2025-12-29 08:09:55] error: [trainingController.canTrain] Error checking training eligibility: Horse ID is required
+[2025-12-29 08:09:55] info: [trainingController.canTrain] Checking training eligibility for horse 96066 in Dressage
+[2025-12-29 08:09:55] info: [trainingModel.getHorseAge] Getting age for horse 96066
+[2025-12-29 08:09:55] info: [trainingModel.getHorseAge] Horse 96066 is 4 years old
+[2025-12-29 08:09:55] info: [trainingModel.getAnyRecentTraining] Checking most recent training date for horse 96066 across all disciplines
+[2025-12-29 08:09:55] info: [trainingModel.getAnyRecentTraining] Most recent training date for horse 96066: Mon Dec 22 2025 08:09:54 GMT-0500 (Eastern Standard Time) (discipline: Racing)
+[2025-12-29 08:09:55] info: [trainingController.canTrain] Horse 96066 is eligible to train in Dressage
+[2025-12-29 08:09:55] info: [trainingController.trainHorse] Attempting to train horse 96062 in Racing
+[2025-12-29 08:09:55] info: [trainingController.canTrain] Checking training eligibility for horse 96062 in Racing
+[2025-12-29 08:09:55] info: [trainingModel.getHorseAge] Getting age for horse 96062
+[2025-12-29 08:09:55] info: [trainingModel.getHorseAge] Horse 96062 is 4 years old
+[2025-12-29 08:09:55] info: [trainingModel.getAnyRecentTraining] Checking most recent training date for horse 96062 across all disciplines
+[2025-12-29 08:09:55] info: [trainingModel.getAnyRecentTraining] No training records found for horse 96062
+[2025-12-29 08:09:55] info: [trainingController.canTrain] Horse 96062 is eligible to train in Racing
+[2025-12-29 08:09:55] info: [horseModel.getHorseById] Successfully found horse: Eligible Horse (ID: 96062)
+[2025-12-29 08:09:55] info: [trainingController.trainHorse] Horse 96062 has traits: 
+[2025-12-29 08:09:55] info: [trainingModel.logTrainingSession] Logging training session for horse 96062 in Racing
+[2025-12-29 08:09:55] info: [trainingModel.logTrainingSession] Successfully logged training session: ID 4969
+[2025-12-29 08:09:55] info: [horseModel.updateHorseStat] Updating stamina by 2 for horse 96062
+[2025-12-29 08:09:55] error: [horseModel.updateHorseStat] Error updating stat: Invalid stat name: stamina. Valid stats: speed, agility, endurance, strength, precision, balance, coordination, intelligence, focus, obedience, boldness, flexibility
+[2025-12-29 08:09:55] error: [trainingController.trainHorse] Failed to update stat: Invalid stat name: stamina. Valid stats: speed, agility, endurance, strength, precision, balance, coordination, intelligence, focus, obedience, boldness, flexibility
+[2025-12-29 08:09:55] info: [horseModel.incrementDisciplineScore] Incrementing Racing score for horse 96062 by +5
+[2025-12-29 08:09:55] info: [horseModel.updateDisciplineScore] Updating Racing score for horse 96062 by +5
+[2025-12-29 08:09:55] info: [horseModel.updateDisciplineScore] Successfully updated Racing score for horse 96062: 0 -> 5
+[2025-12-29 08:09:55] info: [horseModel.incrementDisciplineScore] Successfully incremented Racing score for horse 96062
+[2025-12-29 08:09:55] info: [xpLogModel.logXpEvent] Logging XP event: User 90c3d2a9-14eb-4853-9018-a6a36cdc442c, Amount: 5, Reason: Trained horse Eligible Horse in Racing
+[2025-12-29 08:09:55] info: [xpLogModel.logXpEvent] Successfully logged XP event: ID 2418, User 90c3d2a9-14eb-4853-9018-a6a36cdc442c, Amount: 5
+[2025-12-29 08:09:55] info: [trainingController.trainHorse] Awarded 5 XP to user 90c3d2a9-14eb-4853-9018-a6a36cdc442c for training
+[2025-12-29 08:09:55] info: [trainingController.trainHorse] Successfully trained horse 96062 in Racing (Log ID: 4969, Score +5)
+[2025-12-29 08:09:55] info: [trainingController.trainHorse] Attempting to train horse 96063 in Racing
+[2025-12-29 08:09:55] info: [trainingController.canTrain] Checking training eligibility for horse 96063 in Racing
+[2025-12-29 08:09:55] info: [trainingModel.getHorseAge] Getting age for horse 96063
+[2025-12-29 08:09:55] info: [trainingModel.getHorseAge] Horse 96063 is 2 years old
+[2025-12-29 08:09:55] info: [trainingController.canTrain] Horse 96063 is too young (2 years old)
+[2025-12-29 08:09:55] warn: [trainingController.trainHorse] Training rejected: Horse is under age
+[2025-12-29 08:09:55] info: [trainingController.trainHorse] Attempting to train horse 96064 in Racing
+[2025-12-29 08:09:55] info: [trainingController.canTrain] Checking training eligibility for horse 96064 in Racing
+[2025-12-29 08:09:55] info: [trainingModel.getHorseAge] Getting age for horse 96064
+[2025-12-29 08:09:55] info: [trainingModel.getHorseAge] Horse 96064 is 4 years old
+[2025-12-29 08:09:55] info: [trainingModel.getAnyRecentTraining] Checking most recent training date for horse 96064 across all disciplines
+[2025-12-29 08:09:55] info: [trainingModel.getAnyRecentTraining] Most recent training date for horse 96064: Fri Dec 26 2025 08:09:55 GMT-0500 (Eastern Standard Time) (discipline: Racing)
+[2025-12-29 08:09:55] info: [trainingController.canTrain] Horse 96064 still in cooldown for any training (4 days remaining)
+[2025-12-29 08:09:56] warn: [trainingController.trainHorse] Training rejected: Training cooldown active for this horse
+[2025-12-29 08:09:56] info: [trainingController.trainHorse] Attempting to train horse 96062 in Dressage
+[2025-12-29 08:09:56] info: [trainingController.canTrain] Checking training eligibility for horse 96062 in Dressage
+[2025-12-29 08:09:56] info: [trainingModel.getHorseAge] Getting age for horse 96062
+[2025-12-29 08:09:56] info: [trainingModel.getHorseAge] Horse 96062 is 4 years old
+[2025-12-29 08:09:56] info: [trainingModel.getAnyRecentTraining] Checking most recent training date for horse 96062 across all disciplines
+[2025-12-29 08:09:56] info: [trainingModel.getAnyRecentTraining] Most recent training date for horse 96062: Mon Dec 29 2025 08:09:55 GMT-0500 (Eastern Standard Time) (discipline: Racing)
+[2025-12-29 08:09:56] info: [trainingController.canTrain] Horse 96062 still in cooldown for any training (7 days remaining)
+[2025-12-29 08:09:56] warn: [trainingController.trainHorse] Training rejected: Training cooldown active for this horse
+[2025-12-29 08:09:56] info: [trainingController.getTrainingStatus] Getting training status for horse 96062 in Racing
+[2025-12-29 08:09:56] info: [trainingController.canTrain] Checking training eligibility for horse 96062 in Racing
+[2025-12-29 08:09:56] info: [trainingModel.getHorseAge] Getting age for horse 96062
+[2025-12-29 08:09:56] info: [trainingModel.getHorseAge] Horse 96062 is 4 years old
+[2025-12-29 08:09:56] info: [trainingModel.getAnyRecentTraining] Checking most recent training date for horse 96062 across all disciplines
+[2025-12-29 08:09:56] info: [trainingModel.getAnyRecentTraining] Most recent training date for horse 96062: Mon Dec 29 2025 08:09:55 GMT-0500 (Eastern Standard Time) (discipline: Racing)
+[2025-12-29 08:09:56] info: [trainingController.canTrain] Horse 96062 still in cooldown for any training (7 days remaining)
+[2025-12-29 08:09:56] info: [trainingModel.getHorseAge] Getting age for horse 96062
+[2025-12-29 08:09:56] info: [trainingModel.getHorseAge] Horse 96062 is 4 years old
+[2025-12-29 08:09:56] info: [trainingModel.getLastTrainingDate] Checking last training date for horse 96062 in Racing
+[2025-12-29 08:09:56] info: [trainingModel.getLastTrainingDate] Last training date for horse 96062 in Racing: Mon Dec 29 2025 08:09:55 GMT-0500 (Eastern Standard Time)
+[2025-12-29 08:09:56] info: [trainingModel.getAnyRecentTraining] Checking most recent training date for horse 96062 across all disciplines
+[2025-12-29 08:09:56] info: [trainingModel.getAnyRecentTraining] Most recent training date for horse 96062: Mon Dec 29 2025 08:09:55 GMT-0500 (Eastern Standard Time) (discipline: Racing)
+[2025-12-29 08:09:56] info: [trainingController.getTrainingStatus] Training status retrieved for horse 96062: eligible=false
+[2025-12-29 08:09:56] info: [trainingController.getTrainingStatus] Getting training status for horse 96064 in Dressage
+[2025-12-29 08:09:56] info: [trainingController.canTrain] Checking training eligibility for horse 96064 in Dressage
+[2025-12-29 08:09:56] info: [trainingModel.getHorseAge] Getting age for horse 96064
+[2025-12-29 08:09:56] info: [trainingModel.getHorseAge] Horse 96064 is 4 years old
+[2025-12-29 08:09:56] info: [trainingModel.getAnyRecentTraining] Checking most recent training date for horse 96064 across all disciplines
+[2025-12-29 08:09:56] info: [trainingModel.getAnyRecentTraining] Most recent training date for horse 96064: Fri Dec 26 2025 08:09:55 GMT-0500 (Eastern Standard Time) (discipline: Racing)
+[2025-12-29 08:09:56] info: [trainingController.canTrain] Horse 96064 still in cooldown for any training (4 days remaining)
+[2025-12-29 08:09:56] info: [trainingModel.getHorseAge] Getting age for horse 96064
+[2025-12-29 08:09:56] info: [trainingModel.getHorseAge] Horse 96064 is 4 years old
+[2025-12-29 08:09:56] info: [trainingModel.getLastTrainingDate] Checking last training date for horse 96064 in Dressage
+[2025-12-29 08:09:56] info: [trainingModel.getLastTrainingDate] No training records found for horse 96064 in Dressage
+[2025-12-29 08:09:56] info: [trainingModel.getAnyRecentTraining] Checking most recent training date for horse 96064 across all disciplines
+[2025-12-29 08:09:56] info: [trainingModel.getAnyRecentTraining] Most recent training date for horse 96064: Fri Dec 26 2025 08:09:55 GMT-0500 (Eastern Standard Time) (discipline: Racing)
+[2025-12-29 08:09:56] info: [trainingController.getTrainingStatus] Training status retrieved for horse 96064: eligible=false
+[2025-12-29 08:09:56] info: [trainingController.getTrainingStatus] Getting training status for horse 96067 in Racing
+[2025-12-29 08:09:56] info: [trainingController.canTrain] Checking training eligibility for horse 96067 in Racing
+[2025-12-29 08:09:56] info: [trainingModel.getHorseAge] Getting age for horse 96067
+[2025-12-29 08:09:56] info: [trainingModel.getHorseAge] Horse 96067 is 4 years old
+[2025-12-29 08:09:56] info: [trainingModel.getAnyRecentTraining] Checking most recent training date for horse 96067 across all disciplines
+[2025-12-29 08:09:56] info: [trainingModel.getAnyRecentTraining] Most recent training date for horse 96067: Sun Dec 21 2025 08:09:56 GMT-0500 (Eastern Standard Time) (discipline: Racing)
+[2025-12-29 08:09:56] info: [trainingController.canTrain] Horse 96067 is eligible to train in Racing
+[2025-12-29 08:09:56] info: [trainingModel.getHorseAge] Getting age for horse 96067
+[2025-12-29 08:09:56] info: [trainingModel.getHorseAge] Horse 96067 is 4 years old
+[2025-12-29 08:09:56] info: [trainingModel.getLastTrainingDate] Checking last training date for horse 96067 in Racing
+[2025-12-29 08:09:56] info: [trainingModel.getLastTrainingDate] Last training date for horse 96067 in Racing: Sun Dec 21 2025 08:09:56 GMT-0500 (Eastern Standard Time)
+[2025-12-29 08:09:56] info: [trainingModel.getAnyRecentTraining] Checking most recent training date for horse 96067 across all disciplines
+[2025-12-29 08:09:56] info: [trainingModel.getAnyRecentTraining] Most recent training date for horse 96067: Sun Dec 21 2025 08:09:56 GMT-0500 (Eastern Standard Time) (discipline: Racing)
+[2025-12-29 08:09:56] info: [trainingController.getTrainingStatus] Training status retrieved for horse 96067: eligible=true
+[2025-12-29 08:09:56] info: [trainingController.getTrainingStatus] Getting training status for horse 96063 in Racing
+[2025-12-29 08:09:56] info: [trainingController.canTrain] Checking training eligibility for horse 96063 in Racing
+[2025-12-29 08:09:56] info: [trainingModel.getHorseAge] Getting age for horse 96063
+[2025-12-29 08:09:56] info: [trainingModel.getHorseAge] Horse 96063 is 2 years old
+[2025-12-29 08:09:56] info: [trainingController.canTrain] Horse 96063 is too young (2 years old)
+[2025-12-29 08:09:56] info: [trainingModel.getHorseAge] Getting age for horse 96063
+[2025-12-29 08:09:56] info: [trainingModel.getHorseAge] Horse 96063 is 2 years old
+[2025-12-29 08:09:56] info: [trainingModel.getLastTrainingDate] Checking last training date for horse 96063 in Racing
+[2025-12-29 08:09:56] info: [trainingModel.getLastTrainingDate] No training records found for horse 96063 in Racing
+[2025-12-29 08:09:56] info: [trainingModel.getAnyRecentTraining] Checking most recent training date for horse 96063 across all disciplines
+[2025-12-29 08:09:56] info: [trainingModel.getAnyRecentTraining] No training records found for horse 96063
+[2025-12-29 08:09:56] info: [trainingController.getTrainingStatus] Training status retrieved for horse 96063: eligible=false
+[2025-12-29 08:09:56] info: [trainingController.canTrain] Checking training eligibility for horse 96064 in Racing
+[2025-12-29 08:09:56] info: [trainingModel.getHorseAge] Getting age for horse 96064
+[2025-12-29 08:09:56] info: [trainingModel.getHorseAge] Horse 96064 is 4 years old
+[2025-12-29 08:09:56] info: [trainingModel.getAnyRecentTraining] Checking most recent training date for horse 96064 across all disciplines
+[2025-12-29 08:09:56] info: [trainingModel.getAnyRecentTraining] Most recent training date for horse 96064: Fri Dec 26 2025 08:09:55 GMT-0500 (Eastern Standard Time) (discipline: Racing)
+[2025-12-29 08:09:56] info: [trainingController.canTrain] Horse 96064 still in cooldown for any training (4 days remaining)
+[2025-12-29 08:09:56] info: [trainingController.canTrain] Checking training eligibility for horse 96064 in Show Jumping
+[2025-12-29 08:09:56] info: [trainingModel.getHorseAge] Getting age for horse 96064
+[2025-12-29 08:09:56] info: [trainingModel.getHorseAge] Horse 96064 is 4 years old
+[2025-12-29 08:09:56] info: [trainingModel.getAnyRecentTraining] Checking most recent training date for horse 96064 across all disciplines
+[2025-12-29 08:09:56] info: [trainingModel.getAnyRecentTraining] Most recent training date for horse 96064: Fri Dec 26 2025 08:09:55 GMT-0500 (Eastern Standard Time) (discipline: Racing)
+[2025-12-29 08:09:56] info: [trainingController.canTrain] Horse 96064 still in cooldown for any training (4 days remaining)
+[2025-12-29 08:09:56] info: [trainingController.canTrain] Checking training eligibility for horse 96068 in Racing
+[2025-12-29 08:09:56] info: [trainingModel.getHorseAge] Getting age for horse 96068
+[2025-12-29 08:09:56] info: [trainingModel.getHorseAge] Horse 96068 is 4 years old
+[2025-12-29 08:09:56] info: [trainingModel.getAnyRecentTraining] Checking most recent training date for horse 96068 across all disciplines
+[2025-12-29 08:09:56] info: [trainingModel.getAnyRecentTraining] Most recent training date for horse 96068: Mon Dec 22 2025 08:09:55 GMT-0500 (Eastern Standard Time) (discipline: Racing)
+[2025-12-29 08:09:56] info: [trainingController.canTrain] Horse 96068 is eligible to train in Racing
+[2025-12-29 08:09:56] info: [trainingController.getTrainableHorses] Getting trainable horses for user 90c3d2a9-14eb-4853-9018-a6a36cdc442c
+[2025-12-29 08:09:56] info: [trainingController.getTrainableHorses] Found 0 trainable horses for user 90c3d2a9-14eb-4853-9018-a6a36cdc442c
+[2025-12-29 08:09:56] info: [trainingController.getTrainableHorses] Getting trainable horses for user abc31f90-b719-444f-bb1e-19e1b094cca4
+[2025-12-29 08:09:56] info: [trainingController.getTrainableHorses] User abc31f90-b719-444f-bb1e-19e1b094cca4 has no horses
+[2025-12-29 08:09:56] info: [trainingController.getTrainableHorses] Getting trainable horses for user aaaaaaaa-bbbb-cccc-dddd-eeeeeeeeeeee
+[2025-12-29 08:09:56] warn: [trainingController.getTrainableHorses] User aaaaaaaa-bbbb-cccc-dddd-eeeeeeeeeeee not found
+[2025-12-29 08:09:56] info: [trainingController.getTrainableHorses] Getting trainable horses for user 90c3d2a9-14eb-4853-9018-a6a36cdc442c
+[2025-12-29 08:09:56] info: [trainingController.getTrainableHorses] Found 0 trainable horses for user 90c3d2a9-14eb-4853-9018-a6a36cdc442c
+[2025-12-29 08:09:56] info: [trainingController.getTrainableHorses] Getting trainable horses for user 90c3d2a9-14eb-4853-9018-a6a36cdc442c
+[2025-12-29 08:09:56] info: [trainingController.getTrainableHorses] Found 0 trainable horses for user 90c3d2a9-14eb-4853-9018-a6a36cdc442c
+[2025-12-29 08:09:56] error: [trainingController.getTrainableHorses] Error getting trainable horses: User ID is required
+[2025-12-29 08:09:56] error: [trainingController.getTrainableHorses] Error getting trainable horses: User ID is required
+FAIL tests/trainingController.test.mjs (7.099 s)
+  🏋️ UNIT: Training Controller - Horse Training Business Logic
+    canTrain
+      √ should return eligible true for horse that meets all requirements (106 ms)
+      √ should return eligible false for horse under 3 years old (8 ms)
+      √ should return eligible false for horse with recent training in any discipline (15 ms)
+      √ should return eligible true for horse with old training (8+ days ago) (241 ms)
+      √ should return eligible false for non-existent horse (8 ms)
+      √ should throw error for invalid horse ID (4 ms)
+      √ should throw error for missing discipline (2 ms)
+      √ should throw error for missing horse ID (2 ms)
+      √ should handle database errors gracefully (1 ms)
+      √ should calculate cooldown correctly for edge case (exactly 7 days) (74 ms)
+    trainHorse
+      √ should successfully train eligible horse (272 ms)
+      √ should reject training for ineligible horse (under age) (7 ms)
+      √ should reject training for horse in cooldown (10 ms)
+      √ should handle training log errors gracefully
+      × should award +5 XP after successful training (15 ms)
+      √ should handle XP system errors gracefully without breaking training (1 ms)
+    getTrainingStatus
+      × should return complete status for eligible horse with no training history (22 ms)
+      √ should return complete status for horse in active cooldown (20 ms)
+      √ should return complete status for horse with expired cooldown (25 ms)
+      √ should return status for ineligible horse (under age) (14 ms)
+      √ should handle database errors gracefully (1 ms)
+    Integration scenarios
+      √ should handle different disciplines with global cooldown (14 ms)
+      √ should handle edge case of exactly 7 days cooldown (15 ms)
+      √ should handle complete training workflow
+    getTrainableHorses
+      × should return trainable horses for user with eligible horses (6 ms)
+      √ should return empty array for player with no horses (100 ms)
+      √ should return empty array for non-existent player (6 ms)
+      × should filter out horses under 3 years old (5 ms)
+      × should exclude horses with recent training (global cooldown) (6 ms)
+      √ should handle database errors gracefully for individual horses (1 ms)
+      √ should throw error for missing player ID (2 ms)
+      √ should handle player model errors (1 ms)
+    trainRouteHandler
+      √ should handle successful training workflow - placeholder for integration testing (1 ms)
+      √ should handle validation errors - placeholder for integration testing
+      √ should handle missing data gracefully - placeholder for integration testing (1 ms)
+      √ should handle server errors gracefully - placeholder for integration testing (1 ms)
+      √ should handle trait effects in training - placeholder for integration testing
+
+  ● 🏋️ UNIT: Training Controller - Horse Training Business Logic › trainHorse › should award +5 XP after successful training
+
+    expect(received).toBe(expected) // Object.is equality
+
+    Expected: true
+    Received: false
+
+    [0m [90m 379 |[39m
+     [90m 380 |[39m       [90m// Verify training success[39m
+    [31m[1m>[22m[39m[90m 381 |[39m       expect(result[33m.[39msuccess)[33m.[39mtoBe([36mtrue[39m)[33m;[39m
+     [90m     |[39m                              [31m[1m^[22m[39m
+     [90m 382 |[39m       expect(result[33m.[39mmessage)[33m.[39mtoContain([32m'Horse trained successfully in Dressage'[39m)[33m;[39m
+     [90m 383 |[39m       expect(result[33m.[39mupdatedHorse[33m.[39mname)[33m.[39mtoBe([32m'Eligible Horse'[39m)[33m;[39m
+     [90m 384 |[39m[0m
+
+      at Object.<anonymous> (tests/trainingController.test.mjs:381:30)
+
+  ● 🏋️ UNIT: Training Controller - Horse Training Business Logic › getTrainingStatus › should return complete status for eligible horse with no training history
+
+    expect(received).toEqual(expected) // deep equality
+
+    - Expected  - 4
+    + Received  + 9
+
+      Object {
+    -   "cooldown": null,
+    -   "eligible": true,
+    +   "cooldown": Object {
+    +     "active": true,
+    +     "lastTrainingDate": 2025-12-29T13:09:55.728Z,
+    +     "remainingDays": 7,
+    +     "remainingHours": 168,
+    +   },
+    +   "eligible": false,
+        "horseAge": 4,
+    -   "lastTrainingDate": null,
+    -   "reason": null,
+    +   "lastTrainingDate": 2025-12-29T13:09:55.728Z,
+    +   "reason": "Training cooldown active for this horse",
+      }
+
+    [0m [90m 405 |[39m       [36mconst[39m result [33m=[39m [36mawait[39m getTrainingStatus(testHorseEligible[33m.[39mid[33m,[39m [32m'Racing'[39m)[33m;[39m
+     [90m 406 |[39m
+    [31m[1m>[22m[39m[90m 407 |[39m       expect(result)[33m.[39mtoEqual({
+     [90m     |[39m                      [31m[1m^[22m[39m
+     [90m 408 |[39m         eligible[33m:[39m [36mtrue[39m[33m,[39m
+     [90m 409 |[39m         reason[33m:[39m [36mnull[39m[33m,[39m
+     [90m 410 |[39m         horseAge[33m:[39m [35m4[39m[33m,[39m [90m// testHorseEligible is 4 years old[39m[0m
+
+      at Object.<anonymous> (tests/trainingController.test.mjs:407:22)
+
+  ● 🏋️ UNIT: Training Controller - Horse Training Business Logic › getTrainableHorses › should return trainable horses for user with eligible horses
+
+    expect(received).toHaveLength(expected)
+
+    Expected length: 2
+    Received length: 0
+    Received array:  []
+
+    [0m [90m 565 |[39m
+     [90m 566 |[39m       [90m// Should return both adult horses since they meet all criteria[39m
+    [31m[1m>[22m[39m[90m 567 |[39m       expect(result)[33m.[39mtoHaveLength([35m2[39m)[33m;[39m
+     [90m     |[39m                      [31m[1m^[22m[39m
+     [90m 568 |[39m
+     [90m 569 |[39m       [90m// Verify the horses are the ones we expect (adult horses with no recent training)[39m
+     [90m 570 |[39m       [36mconst[39m horseIds [33m=[39m result[33m.[39mmap(horse [33m=>[39m horse[33m.[39mhorseId)[33m.[39msort()[33m;[39m[0m
+
+      at Object.<anonymous> (tests/trainingController.test.mjs:567:22)
+
+  ● 🏋️ UNIT: Training Controller - Horse Training Business Logic › getTrainableHorses › should filter out horses under 3 years old
+
+    expect(received).toHaveLength(expected)
+
+    Expected length: 2
+    Received length: 0
+    Received array:  []
+
+    [0m [90m 619 |[39m
+     [90m 620 |[39m       [90m// Only adult horses should be returned (testHorseYoung filtered out due to age)[39m
+    [31m[1m>[22m[39m[90m 621 |[39m       expect(result)[33m.[39mtoHaveLength([35m2[39m)[33m;[39m [90m// testHorseAdult and testHorse4Years[39m
+     [90m     |[39m                      [31m[1m^[22m[39m
+     [90m 622 |[39m
+     [90m 623 |[39m       [90m// Verify no young horses in results[39m
+     [90m 624 |[39m       result[33m.[39mforEach(horse [33m=>[39m {[0m
+
+      at Object.<anonymous> (tests/trainingController.test.mjs:621:22)
+
+  ● 🏋️ UNIT: Training Controller - Horse Training Business Logic › getTrainableHorses › should exclude horses with recent training (global cooldown)
+
+    expect(received).toHaveLength(expected)
+
+    Expected length: 2
+    Received length: 0
+    Received array:  []
+
+    [0m [90m 640 |[39m       [90m// Should only include horses without recent training[39m
+     [90m 641 |[39m       [90m// testHorseRecentTraining should be excluded due to 3-day-old training[39m
+    [31m[1m>[22m[39m[90m 642 |[39m       expect(result)[33m.[39mtoHaveLength([35m2[39m)[33m;[39m [90m// testHorseAdult and testHorse4Years (no recent training)[39m
+     [90m     |[39m                      [31m[1m^[22m[39m
+     [90m 643 |[39m
+     [90m 644 |[39m       [36mconst[39m horseIds [33m=[39m result[33m.[39mmap(horse [33m=>[39m horse[33m.[39mhorseId)[33m;[39m
+     [90m 645 |[39m       expect(horseIds)[33m.[39mtoContain(testHorseAdult[33m.[39mid)[33m;[39m[0m
+
+      at Object.<anonymous> (tests/trainingController.test.mjs:642:22)
+
+Test Suites: 1 failed, 1 total
+Tests:       5 failed, 32 passed, 37 total
+Snapshots:   0 total
+Time:        7.713 s
+Ran all test suites matching /tests\\trainingController.test.mjs/i.
+🧹 Running global teardown...
+[Teardown] Disconnecting Prisma instances...
+[Teardown] ✅ Prisma instances disconnected
+✅ Global teardown completed successfully

@@ -99,7 +99,7 @@ const createFetchMock = (horseResponse?: any) => {
 };
 
 // Test wrapper with required providers and routing
-const createTestWrapper = (horseId: string = '1') => {
+const createTestWrapper = (_horseId: string = '1') => {
   const queryClient = new QueryClient({
     defaultOptions: {
       queries: { retry: false },

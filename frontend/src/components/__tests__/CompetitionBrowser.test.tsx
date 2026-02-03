@@ -18,7 +18,7 @@ import { vi } from 'vitest';
 import { render, screen, waitFor, fireEvent } from '@testing-library/react';
 import '@testing-library/jest-dom';
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
-import { BrowserRouter, MemoryRouter } from '../../test/utils';
+import { MemoryRouter } from '../../test/utils';
 import CompetitionBrowser from '../CompetitionBrowser';
 import * as competitionHooks from '../../hooks/api/useCompetitions';
 import * as horsesHooks from '../../hooks/api/useHorses';

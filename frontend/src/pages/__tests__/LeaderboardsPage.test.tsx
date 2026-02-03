@@ -18,7 +18,6 @@ import { render, screen, waitFor, within } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
 import { MemoryRouter, Routes, Route } from '../../test/utils';
-import { ReactNode } from 'react';
 import LeaderboardsPage from '../LeaderboardsPage';
 
 // ---------------------------------------------------------------------------
@@ -196,7 +195,10 @@ function renderPage(initialRoute = '/leaderboards') {
       <MemoryRouter initialEntries={[initialRoute]}>
         <Routes>
           <Route path="/leaderboards" element={<LeaderboardsPage />} />
-          <Route path="/horses/:id" element={<div data-testid="horse-detail-page">Horse Detail</div>} />
+          <Route
+            path="/horses/:id"
+            element={<div data-testid="horse-detail-page">Horse Detail</div>}
+          />
         </Routes>
       </MemoryRouter>
     </QueryClientProvider>
@@ -302,17 +304,13 @@ describe('URL state management', () => {
   it('reads initial period from URL params', () => {
     renderPage('/leaderboards?period=monthly');
 
-    expect(mockUseLeaderboard).toHaveBeenCalledWith(
-      expect.objectContaining({ period: 'monthly' })
-    );
+    expect(mockUseLeaderboard).toHaveBeenCalledWith(expect.objectContaining({ period: 'monthly' }));
   });
 
   it('reads initial page from URL params', () => {
     renderPage('/leaderboards?page=3');
 
-    expect(mockUseLeaderboard).toHaveBeenCalledWith(
-      expect.objectContaining({ page: 3 })
-    );
+    expect(mockUseLeaderboard).toHaveBeenCalledWith(expect.objectContaining({ page: 3 }));
   });
 
   it('reads initial discipline from URL params for discipline category', () => {
@@ -517,9 +515,7 @@ describe('Pagination', () => {
     await user.click(nextButton);
 
     await waitFor(() => {
-      expect(mockUseLeaderboard).toHaveBeenCalledWith(
-        expect.objectContaining({ page: 2 })
-      );
+      expect(mockUseLeaderboard).toHaveBeenCalledWith(expect.objectContaining({ page: 2 }));
     });
   });
 
@@ -539,9 +535,7 @@ describe('Pagination', () => {
     await user.click(prevButton);
 
     await waitFor(() => {
-      expect(mockUseLeaderboard).toHaveBeenCalledWith(
-        expect.objectContaining({ page: 2 })
-      );
+      expect(mockUseLeaderboard).toHaveBeenCalledWith(expect.objectContaining({ page: 2 }));
     });
   });
 });

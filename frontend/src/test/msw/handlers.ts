@@ -638,10 +638,7 @@ export const handlers = [
 
     // Return 404 for horse ID 999 (error test case)
     if (id === 999) {
-      return HttpResponse.json(
-        { status: 'error', message: 'Horse not found' },
-        { status: 404 }
-      );
+      return HttpResponse.json({ status: 'error', message: 'Horse not found' }, { status: 404 });
     }
 
     // Return empty history for horse ID 888 (new horse with no history)
@@ -724,10 +721,7 @@ export const handlers = [
 
     // Return 404 for user ID 'error-user' (error test case)
     if (id === 'error-user') {
-      return HttpResponse.json(
-        { status: 'error', message: 'User not found' },
-        { status: 404 }
-      );
+      return HttpResponse.json({ status: 'error', message: 'User not found' }, { status: 404 });
     }
 
     // Return zero stats for user ID 'new-user' (new user with no stats)
@@ -832,10 +826,7 @@ export const handlers = [
 
     // Return 404 for error-user (error test case)
     if (userId === 'error-user') {
-      return HttpResponse.json(
-        { status: 'error', message: 'User not found' },
-        { status: 404 }
-      );
+      return HttpResponse.json({ status: 'error', message: 'User not found' }, { status: 404 });
     }
 
     // Return empty for new-user (empty history test case)
@@ -931,10 +922,7 @@ export const handlers = [
 
     // Return 404 for horse ID 999 (error test case)
     if (horseId === 999) {
-      return HttpResponse.json(
-        { status: 'error', message: 'Horse not found' },
-        { status: 404 }
-      );
+      return HttpResponse.json({ status: 'error', message: 'Horse not found' }, { status: 404 });
     }
 
     // Return empty summary for horse ID 888 (new horse)
@@ -1007,10 +995,7 @@ export const handlers = [
 
     // Return 404 for horse ID 999 (error test case)
     if (horseId === 999) {
-      return HttpResponse.json(
-        { status: 'error', message: 'Horse not found' },
-        { status: 404 }
-      );
+      return HttpResponse.json({ status: 'error', message: 'Horse not found' }, { status: 404 });
     }
 
     return HttpResponse.json({
@@ -1038,10 +1023,7 @@ export const handlers = [
 
     // Return 404 for horse ID 999 (error test case)
     if (horseId === 999) {
-      return HttpResponse.json(
-        { status: 'error', message: 'Horse not found' },
-        { status: 404 }
-      );
+      return HttpResponse.json({ status: 'error', message: 'Horse not found' }, { status: 404 });
     }
 
     let history = [
@@ -1100,10 +1082,7 @@ export const handlers = [
 
     // Return 400 for invalid horse ID
     if (!body.horseId || body.horseId <= 0) {
-      return HttpResponse.json(
-        { status: 'error', message: 'Invalid horse ID' },
-        { status: 400 }
-      );
+      return HttpResponse.json({ status: 'error', message: 'Invalid horse ID' }, { status: 400 });
     }
 
     return HttpResponse.json({
@@ -1189,15 +1168,12 @@ export const handlers = [
   // Leaderboard System - User Rank Summary
   // NOTE: This handler MUST appear before the :category handler so that
   // "user-summary" is not captured as a category parameter.
-  http.get(`${base}/api/leaderboards/user-summary/:userId`, ({ params: _params }) => {
+  http.get(`${base}/api/leaderboards/user-summary/:userId`, ({ params }) => {
     const userId = params.userId as string;
     const summary = getUserRankSummary(userId);
 
     if (!summary) {
-      return HttpResponse.json(
-        { status: 'error', message: 'User not found' },
-        { status: 404 }
-      );
+      return HttpResponse.json({ status: 'error', message: 'User not found' }, { status: 404 });
     }
 
     return HttpResponse.json({

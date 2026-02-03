@@ -1,0 +1,892 @@
+
+> equoria-frontend@0.0.0 test
+> vitest --run
+
+
+[1m[46m RUN [49m[22m [36mv4.0.15 [39m[90mC:/Users/heirr/OneDrive/Desktop/Equoria/frontend[39m
+
+[baseline-browser-mapping] The data in this module is over two months old.  To ensure accurate Baseline data, please update: `npm i baseline-browser-mapping@latest -D`
+[90mstderr[2m | src/components/__tests__/HorseListView.test.tsx[2m > [22m[2mHorseListView Component[2m > [22m[2mComponent Rendering[2m > [22m[2mrenders horse list view with loading state
+[22m[39m⚠️ React Router Future Flag Warning: React Router will begin wrapping state updates in `React.startTransition` in v7. You can use the `v7_startTransition` future flag to opt-in early. For more information, see https://reactrouter.com/v6/upgrading/future#v7_starttransition.
+⚠️ React Router Future Flag Warning: Relative route resolution within Splat routes is changing in v7. You can use the `v7_relativeSplatPath` future flag to opt-in early. For more information, see https://reactrouter.com/v6/upgrading/future#v7_relativesplatpath.
+
+[90mstderr[2m | src/components/__tests__/HorseSearchFilter.integration.test.tsx[2m > [22m[2mHorse Search & Filter Integration[2m > [22m[2mUser Flow: Search Horses[2m > [22m[2msearching updates results in real-time
+[22m[39m⚠️ React Router Future Flag Warning: React Router will begin wrapping state updates in `React.startTransition` in v7. You can use the `v7_startTransition` future flag to opt-in early. For more information, see https://reactrouter.com/v6/upgrading/future#v7_starttransition.
+⚠️ React Router Future Flag Warning: Relative route resolution within Splat routes is changing in v7. You can use the `v7_relativeSplatPath` future flag to opt-in early. For more information, see https://reactrouter.com/v6/upgrading/future#v7_relativesplatpath.
+
+[90mstderr[2m | src/pages/__tests__/ResetPasswordPage.test.tsx[2m > [22m[2mResetPasswordPage[2m > [22m[2mNo Token State[2m > [22m[2mshows invalid link message when no token
+[22m[39m⚠️ React Router Future Flag Warning: React Router will begin wrapping state updates in `React.startTransition` in v7. You can use the `v7_startTransition` future flag to opt-in early. For more information, see https://reactrouter.com/v6/upgrading/future#v7_starttransition.
+⚠️ React Router Future Flag Warning: Relative route resolution within Splat routes is changing in v7. You can use the `v7_relativeSplatPath` future flag to opt-in early. For more information, see https://reactrouter.com/v6/upgrading/future#v7_relativesplatpath.
+
+[90mstderr[2m | src/pages/__tests__/ForgotPasswordPage.test.tsx[2m > [22m[2mForgotPasswordPage[2m > [22m[2mComponent Rendering[2m > [22m[2mrenders the forgot password form
+[22m[39m⚠️ React Router Future Flag Warning: React Router will begin wrapping state updates in `React.startTransition` in v7. You can use the `v7_startTransition` future flag to opt-in early. For more information, see https://reactrouter.com/v6/upgrading/future#v7_starttransition.
+⚠️ React Router Future Flag Warning: Relative route resolution within Splat routes is changing in v7. You can use the `v7_relativeSplatPath` future flag to opt-in early. For more information, see https://reactrouter.com/v6/upgrading/future#v7_relativesplatpath.
+
+[90mstderr[2m | src/pages/__tests__/LoginPage.test.tsx[2m > [22m[2mLoginPage[2m > [22m[2mAC-1: Login Form Display[2m > [22m[2mrenders all required form fields
+[22m[39m⚠️ React Router Future Flag Warning: React Router will begin wrapping state updates in `React.startTransition` in v7. You can use the `v7_startTransition` future flag to opt-in early. For more information, see https://reactrouter.com/v6/upgrading/future#v7_starttransition.
+⚠️ React Router Future Flag Warning: Relative route resolution within Splat routes is changing in v7. You can use the `v7_relativeSplatPath` future flag to opt-in early. For more information, see https://reactrouter.com/v6/upgrading/future#v7_relativesplatpath.
+
+[90mstderr[2m | src/pages/__tests__/RegisterPage.test.tsx[2m > [22m[2mRegisterPage[2m > [22m[2mAC-1: Registration Form Display[2m > [22m[2mrenders all required form fields
+[22m[39m⚠️ React Router Future Flag Warning: React Router will begin wrapping state updates in `React.startTransition` in v7. You can use the `v7_startTransition` future flag to opt-in early. For more information, see https://reactrouter.com/v6/upgrading/future#v7_starttransition.
+⚠️ React Router Future Flag Warning: Relative route resolution within Splat routes is changing in v7. You can use the `v7_relativeSplatPath` future flag to opt-in early. For more information, see https://reactrouter.com/v6/upgrading/future#v7_relativesplatpath.
+
+[90mstderr[2m | src/pages/__tests__/ProfilePage.test.tsx[2m > [22m[2mProfilePage[2m > [22m[2mAC-1: Profile Page Display[2m > [22m[2mrenders profile page with user information
+[22m[39m⚠️ React Router Future Flag Warning: React Router will begin wrapping state updates in `React.startTransition` in v7. You can use the `v7_startTransition` future flag to opt-in early. For more information, see https://reactrouter.com/v6/upgrading/future#v7_starttransition.
+⚠️ React Router Future Flag Warning: Relative route resolution within Splat routes is changing in v7. You can use the `v7_relativeSplatPath` future flag to opt-in early. For more information, see https://reactrouter.com/v6/upgrading/future#v7_relativesplatpath.
+
+[90mstderr[2m | src/pages/__tests__/HorseDetailPage.ProgressionTab.test.tsx[2m > [22m[2mHorseDetailPage - Progression Tab[2m > [22m[2mTab Navigation[2m > [22m[2mshould render Progression tab button
+[22m[39m⚠️ React Router Future Flag Warning: React Router will begin wrapping state updates in `React.startTransition` in v7. You can use the `v7_startTransition` future flag to opt-in early. For more information, see https://reactrouter.com/v6/upgrading/future#v7_starttransition.
+⚠️ React Router Future Flag Warning: Relative route resolution within Splat routes is changing in v7. You can use the `v7_relativeSplatPath` future flag to opt-in early. For more information, see https://reactrouter.com/v6/upgrading/future#v7_relativesplatpath.
+
+[90mstderr[2m | src/pages/__tests__/HorseDetailPage.Training.test.tsx[2m > [22m[2mHorseDetailPage Training Tab Integration[2m > [22m[2mTab Integration[2m > [22m[2mTraining tab appears in tab navigation
+[22m[39m⚠️ React Router Future Flag Warning: React Router will begin wrapping state updates in `React.startTransition` in v7. You can use the `v7_startTransition` future flag to opt-in early. For more information, see https://reactrouter.com/v6/upgrading/future#v7_starttransition.
+⚠️ React Router Future Flag Warning: Relative route resolution within Splat routes is changing in v7. You can use the `v7_relativeSplatPath` future flag to opt-in early. For more information, see https://reactrouter.com/v6/upgrading/future#v7_relativesplatpath.
+
+[90mstderr[2m | src/pages/__tests__/HorseDetailPage.GeneticsTab.test.tsx[2m > [22m[2mEnhanced Genetics Tab Integration Tests[2m > [22m[2mLoading State[2m > [22m[2mdisplays loading spinner when genetics data is loading
+[22m[39m⚠️ React Router Future Flag Warning: React Router will begin wrapping state updates in `React.startTransition` in v7. You can use the `v7_startTransition` future flag to opt-in early. For more information, see https://reactrouter.com/v6/upgrading/future#v7_starttransition.
+⚠️ React Router Future Flag Warning: Relative route resolution within Splat routes is changing in v7. You can use the `v7_relativeSplatPath` future flag to opt-in early. For more information, see https://reactrouter.com/v6/upgrading/future#v7_relativesplatpath.
+
+ [32m✓[39m src/components/__tests__/HorseSearchFilter.integration.test.tsx [2m([22m[2m15 tests[22m[2m)[22m[33m 6898[2mms[22m[39m
+       [33m[2m✓[22m[39m searching updates results in real-time [33m 801[2mms[22m[39m
+       [33m[2m✓[22m[39m search updates URL with search parameter [33m 523[2mms[22m[39m
+       [33m[2m✓[22m[39m clear search button resets results and URL [33m 1416[2mms[22m[39m
+       [33m[2m✓[22m[39m age range filter updates results [33m 419[2mms[22m[39m
+       [33m[2m✓[22m[39m discipline filter updates results [33m 463[2mms[22m[39m
+       [33m[2m✓[22m[39m search and filters work together [33m 563[2mms[22m[39m
+       [33m[2m✓[22m[39m clear all filters resets everything [33m 685[2mms[22m[39m
+       [33m[2m✓[22m[39m shows empty state when no results match filters [33m 554[2mms[22m[39m
+       [33m[2m✓[22m[39m handles rapid filter changes gracefully [33m 488[2mms[22m[39m
+ [32m✓[39m src/pages/__tests__/HorseDetailPage.GeneticsTab.test.tsx [2m([22m[2m17 tests[22m[2m)[22m[33m 6325[2mms[22m[39m
+       [33m[2m✓[22m[39m displays loading spinner when genetics data is loading [33m 408[2mms[22m[39m
+       [33m[2m✓[22m[39m displays all traits in separate genetic and epigenetic sections [33m 764[2mms[22m[39m
+       [33m[2m✓[22m[39m displays trait interactions section [33m 432[2mms[22m[39m
+       [33m[2m✓[22m[39m filters traits by type: genetic only [33m 550[2mms[22m[39m
+       [33m[2m✓[22m[39m filters traits by type: epigenetic only [33m 463[2mms[22m[39m
+       [33m[2m✓[22m[39m filters traits by rarity: common only [33m 358[2mms[22m[39m
+       [33m[2m✓[22m[39m filters traits by rarity: legendary only [33m 357[2mms[22m[39m
+       [33m[2m✓[22m[39m filters traits by source: sire only [33m 366[2mms[22m[39m
+       [33m[2m✓[22m[39m filters traits by source: mutation only [33m 326[2mms[22m[39m
+       [33m[2m✓[22m[39m applies multiple filters: genetic + common [33m 340[2mms[22m[39m
+       [33m[2m✓[22m[39m sorts traits by name (A-Z) [33m 316[2mms[22m[39m
+       [33m[2m✓[22m[39m displays "no traits match" when filters return no results [33m 347[2mms[22m[39m
+       [33m[2m✓[22m[39m renders all filter and sort controls [33m 351[2mms[22m[39m
+[90mstderr[2m | src/pages/__tests__/ProfilePage.test.tsx[2m > [22m[2mProfilePage[2m > [22m[2mAccessibility[2m > [22m[2mall form inputs are focusable
+[22m[39mAn update to FantasyInput inside a test was not wrapped in act(...).
+
+When testing, code that causes React state updates should be wrapped into act(...):
+
+act(() => {
+  /* fire events that update state */
+});
+/* assert on the output */
+
+This ensures that you're testing the behavior the user would see in the browser. Learn more at https://react.dev/link/wrap-tests-with-act
+An update to FantasyInput inside a test was not wrapped in act(...).
+
+When testing, code that causes React state updates should be wrapped into act(...):
+
+act(() => {
+  /* fire events that update state */
+});
+/* assert on the output */
+
+This ensures that you're testing the behavior the user would see in the browser. Learn more at https://react.dev/link/wrap-tests-with-act
+An update to FantasyTextarea inside a test was not wrapped in act(...).
+
+When testing, code that causes React state updates should be wrapped into act(...):
+
+act(() => {
+  /* fire events that update state */
+});
+/* assert on the output */
+
+This ensures that you're testing the behavior the user would see in the browser. Learn more at https://react.dev/link/wrap-tests-with-act
+
+ [32m✓[39m src/components/__tests__/HorseListView.test.tsx [2m([22m[2m54 tests[22m[2m)[22m[33m 10151[2mms[22m[39m
+       [33m[2m✓[22m[39m renders horse list view with proper structure [33m 603[2mms[22m[39m
+       [33m[2m✓[22m[39m displays horses in a sortable table format [32m 300[2mms[22m[39m
+       [33m[2m✓[22m[39m allows navigation between pages [33m 893[2mms[22m[39m
+       [33m[2m✓[22m[39m provides quick action buttons for each horse [33m 565[2mms[22m[39m
+       [33m[2m✓[22m[39m toggles between grid and list view when clicked [33m 455[2mms[22m[39m
+       [33m[2m✓[22m[39m persists view preference to localStorage [33m 407[2mms[22m[39m
+       [33m[2m✓[22m[39m grid cards have action buttons [33m 406[2mms[22m[39m
+       [33m[2m✓[22m[39m eligibility filter works with breed filter [33m 453[2mms[22m[39m
+       [33m[2m✓[22m[39m eligibility filter works with search [33m 489[2mms[22m[39m
+       [33m[2m✓[22m[39m multiple filters combined correctly [33m 408[2mms[22m[39m
+ [32m✓[39m src/pages/__tests__/ProfilePage.test.tsx [2m([22m[2m36 tests[22m[2m)[22m[33m 10483[2mms[22m[39m
+       [33m[2m✓[22m[39m renders profile page with user information [33m 312[2mms[22m[39m
+       [33m[2m✓[22m[39m allows editing the display name [33m 957[2mms[22m[39m
+       [33m[2m✓[22m[39m shows error for display name too short [33m 446[2mms[22m[39m
+       [33m[2m✓[22m[39m shows error for display name too long [33m 1518[2mms[22m[39m
+       [33m[2m✓[22m[39m clears validation error when correcting display name [33m 855[2mms[22m[39m
+       [33m[2m✓[22m[39m allows editing the bio [33m 574[2mms[22m[39m
+       [33m[2m✓[22m[39m updates character counter as user types [33m 399[2mms[22m[39m
+       [33m[2m✓[22m[39m disables submit button while form is invalid [33m 495[2mms[22m[39m
+       [33m[2m✓[22m[39m calls updateProfile with correct data on submit [33m 332[2mms[22m[39m
+       [33m[2m✓[22m[39m resets form to saved values on cancel [33m 844[2mms[22m[39m
+       [33m[2m✓[22m[39m handles form changes without losing data [33m 1055[2mms[22m[39m
+       [33m[2m✓[22m[39m buttons are keyboard accessible [33m 368[2mms[22m[39m
+       [33m[2m✓[22m[39m error messages are visible and accessible [33m 304[2mms[22m[39m
+ [32m✓[39m src/components/training/__tests__/DisciplinePicker.test.tsx [2m([22m[2m42 tests[22m[2m)[22m[33m 11615[2mms[22m[39m
+       [33m[2m✓[22m[39m should render all 23 disciplines [33m 958[2mms[22m[39m
+       [33m[2m✓[22m[39m should render 7 Western disciplines [33m 856[2mms[22m[39m
+       [33m[2m✓[22m[39m should render 6 English disciplines [33m 640[2mms[22m[39m
+       [33m[2m✓[22m[39m should render 7 Specialized disciplines [33m 773[2mms[22m[39m
+       [33m[2m✓[22m[39m should render 3 Racing disciplines [33m 343[2mms[22m[39m
+       [33m[2m✓[22m[39m should handle multiple clicks on same discipline [33m 327[2mms[22m[39m
+       [33m[2m✓[22m[39m should handle clicking different disciplines sequentially [33m 541[2mms[22m[39m
+       [33m[2m✓[22m[39m should support keyboard navigation with Tab [33m 341[2mms[22m[39m
+       [33m[2m✓[22m[39m should handle complete selection workflow [33m 428[2mms[22m[39m
+       [33m[2m✓[22m[39m should render all categories with correct discipline counts [33m 386[2mms[22m[39m
+       [33m[2m✓[22m[39m should maintain state consistency across multiple interactions [33m 728[2mms[22m[39m
+[90mstderr[2m | src/components/__tests__/HorseDetailView.test.tsx[2m > [22m[2mHorseDetailView[2m > [22m[2mComponent Rendering[2m > [22m[2mshould show loading state while fetching horse data
+[22m[39m⚠️ React Router Future Flag Warning: React Router will begin wrapping state updates in `React.startTransition` in v7. You can use the `v7_startTransition` future flag to opt-in early. For more information, see https://reactrouter.com/v6/upgrading/future#v7_starttransition.
+⚠️ React Router Future Flag Warning: Relative route resolution within Splat routes is changing in v7. You can use the `v7_relativeSplatPath` future flag to opt-in early. For more information, see https://reactrouter.com/v6/upgrading/future#v7_relativesplatpath.
+
+[90mstderr[2m | src/components/__tests__/UserDashboard.test.tsx[2m > [22m[2mUserDashboard Component[2m > [22m[2mComponent Rendering[2m > [22m[2mrenders user dashboard with loading state
+[22m[39m⚠️ React Router Future Flag Warning: React Router will begin wrapping state updates in `React.startTransition` in v7. You can use the `v7_startTransition` future flag to opt-in early. For more information, see https://reactrouter.com/v6/upgrading/future#v7_starttransition.
+⚠️ React Router Future Flag Warning: Relative route resolution within Splat routes is changing in v7. You can use the `v7_relativeSplatPath` future flag to opt-in early. For more information, see https://reactrouter.com/v6/upgrading/future#v7_relativesplatpath.
+
+ [32m✓[39m src/pages/__tests__/ForgotPasswordPage.test.tsx [2m([22m[2m32 tests[22m[2m)[22m[33m 14965[2mms[22m[39m
+       [33m[2m✓[22m[39m renders submit button [33m 499[2mms[22m[39m
+       [33m[2m✓[22m[39m shows error for invalid email format [33m 598[2mms[22m[39m
+       [33m[2m✓[22m[39m accepts valid email format [33m 609[2mms[22m[39m
+       [33m[2m✓[22m[39m submits form with valid email [33m 673[2mms[22m[39m
+       [33m[2m✓[22m[39m converts email to lowercase before submission [33m 651[2mms[22m[39m
+       [33m[2m✓[22m[39m trims whitespace from email [33m 668[2mms[22m[39m
+       [33m[2m✓[22m[39m shows loading state while submitting [33m 805[2mms[22m[39m
+       [33m[2m✓[22m[39m disables submit button while loading [33m 607[2mms[22m[39m
+       [33m[2m✓[22m[39m shows success message after successful submission [33m 549[2mms[22m[39m
+       [33m[2m✓[22m[39m displays email in success message [33m 732[2mms[22m[39m
+       [33m[2m✓[22m[39m shows expiration info in success state [33m 602[2mms[22m[39m
+       [33m[2m✓[22m[39m shows "Try Another Email" button in success state [33m 639[2mms[22m[39m
+       [33m[2m✓[22m[39m shows "Return to Login" button in success state [33m 660[2mms[22m[39m
+       [33m[2m✓[22m[39m resets form when clicking "Try Another Email" [33m 896[2mms[22m[39m
+       [33m[2m✓[22m[39m displays API error message [33m 622[2mms[22m[39m
+       [33m[2m✓[22m[39m displays generic error message when error has no message [33m 655[2mms[22m[39m
+       [33m[2m✓[22m[39m clears error when user starts typing [33m 956[2mms[22m[39m
+       [33m[2m✓[22m[39m allows retry after error [33m 1166[2mms[22m[39m
+       [33m[2m✓[22m[39m always shows success for privacy (no email enumeration) [33m 662[2mms[22m[39m
+       [33m[2m✓[22m[39m submits form when pressing Enter in email field [33m 698[2mms[22m[39m
+[90mstderr[2m | src/pages/__tests__/LoginPage.test.tsx[2m > [22m[2mLoginPage[2m > [22m[2mAccessibility[2m > [22m[2mall form inputs are focusable
+[22m[39mAn update to FantasyInput inside a test was not wrapped in act(...).
+
+When testing, code that causes React state updates should be wrapped into act(...):
+
+act(() => {
+  /* fire events that update state */
+});
+/* assert on the output */
+
+This ensures that you're testing the behavior the user would see in the browser. Learn more at https://react.dev/link/wrap-tests-with-act
+An update to FantasyInput inside a test was not wrapped in act(...).
+
+When testing, code that causes React state updates should be wrapped into act(...):
+
+act(() => {
+  /* fire events that update state */
+});
+/* assert on the output */
+
+This ensures that you're testing the behavior the user would see in the browser. Learn more at https://react.dev/link/wrap-tests-with-act
+An update to FantasyInput inside a test was not wrapped in act(...).
+
+When testing, code that causes React state updates should be wrapped into act(...):
+
+act(() => {
+  /* fire events that update state */
+});
+/* assert on the output */
+
+This ensures that you're testing the behavior the user would see in the browser. Learn more at https://react.dev/link/wrap-tests-with-act
+
+ [32m✓[39m src/components/breeding/__tests__/BreedingCenter.test.tsx [2m([22m[2m24 tests[22m[2m)[22m[33m 5412[2mms[22m[39m
+       [33m[2m✓[22m[39m renders all three tabs [33m 542[2mms[22m[39m
+       [33m[2m✓[22m[39m maintains tab state when switching between tabs [33m 530[2mms[22m[39m
+       [33m[2m✓[22m[39m enables breed button when both mare and stallion selected [33m 577[2mms[22m[39m
+       [33m[2m✓[22m[39m calls breedFoal mutation with correct parameters [33m 639[2mms[22m[39m
+       [33m[2m✓[22m[39m displays success message after successful breeding [33m 633[2mms[22m[39m
+       [33m[2m✓[22m[39m displays breeding history table [33m 336[2mms[22m[39m
+ [32m✓[39m src/components/__tests__/HorseDetailView.test.tsx [2m([22m[2m27 tests[22m[2m)[22m[33m 4591[2mms[22m[39m
+       [33m[2m✓[22m[39m should show error state when horse fetch fails [33m 302[2mms[22m[39m
+       [33m[2m✓[22m[39m should render back button with correct navigation [33m 339[2mms[22m[39m
+       [33m[2m✓[22m[39m should render all quick action buttons [33m 435[2mms[22m[39m
+ [32m✓[39m src/pages/__tests__/LoginPage.test.tsx [2m([22m[2m31 tests[22m[2m)[22m[33m 16976[2mms[22m[39m
+       [33m[2m✓[22m[39m displays submit button with correct text [33m 557[2mms[22m[39m
+       [33m[2m✓[22m[39m shows error for invalid email format [33m 1062[2mms[22m[39m
+       [33m[2m✓[22m[39m shows error for empty email [33m 514[2mms[22m[39m
+       [33m[2m✓[22m[39m shows error for empty password [33m 803[2mms[22m[39m
+       [33m[2m✓[22m[39m clears validation errors when user types [33m 1428[2mms[22m[39m
+       [33m[2m✓[22m[39m disables submit button while submission is in progress [33m 1134[2mms[22m[39m
+       [33m[2m✓[22m[39m shows loading text during submission [33m 967[2mms[22m[39m
+       [33m[2m✓[22m[39m navigates to home on successful login [33m 1172[2mms[22m[39m
+       [33m[2m✓[22m[39m calls API with correct data [33m 1048[2mms[22m[39m
+       [33m[2m✓[22m[39m displays invalid credentials error [33m 1046[2mms[22m[39m
+       [33m[2m✓[22m[39m displays server error message [33m 967[2mms[22m[39m
+       [33m[2m✓[22m[39m displays generic error for network failures [33m 954[2mms[22m[39m
+       [33m[2m✓[22m[39m displays default error message when error has no message [33m 902[2mms[22m[39m
+       [33m[2m✓[22m[39m allows toggling password visibility [33m 333[2mms[22m[39m
+       [33m[2m✓[22m[39m handles rapid form submissions [33m 1083[2mms[22m[39m
+       [33m[2m✓[22m[39m does not submit when clicking show/hide password button [33m 1172[2mms[22m[39m
+       [33m[2m✓[22m[39m error messages are visible and accessible [33m 770[2mms[22m[39m
+ [32m✓[39m src/components/__tests__/UserDashboard.test.tsx [2m([22m[2m29 tests[22m[2m)[22m[33m 3388[2mms[22m[39m
+       [33m[2m✓[22m[39m renders user dashboard with proper structure [33m 425[2mms[22m[39m
+ [32m✓[39m src/components/horse/__tests__/RecentGains.test.tsx [2m([22m[2m35 tests[22m[2m)[22m[33m 4416[2mms[22m[39m
+       [33m[2m✓[22m[39m should render time range buttons [33m 920[2mms[22m[39m
+       [33m[2m✓[22m[39m should change time range when button clicked [33m 510[2mms[22m[39m
+       [33m[2m✓[22m[39m should fetch new data when time range changes [33m 398[2mms[22m[39m
+       [33m[2m✓[22m[39m should have accessible labels for buttons [33m 501[2mms[22m[39m
+ [32m✓[39m src/components/horse/__tests__/HorseFilters.test.tsx [2m([22m[2m50 tests[22m[2m)[22m[33m 3719[2mms[22m[39m
+       [33m[2m✓[22m[39m should call onAgeRangeChange when min age changes [33m 405[2mms[22m[39m
+       [33m[2m✓[22m[39m should handle multiple discipline selections [33m 339[2mms[22m[39m
+       [33m[2m✓[22m[39m should handle complete filter workflow [33m 391[2mms[22m[39m
+ [32m✓[39m src/pages/__tests__/ResetPasswordPage.test.tsx [2m([22m[2m41 tests[22m[2m)[22m[33m 20159[2mms[22m[39m
+       [33m[2m✓[22m[39m shows "Request New Reset Link" button when no token [33m 645[2mms[22m[39m
+       [33m[2m✓[22m[39m toggles password visibility [33m 413[2mms[22m[39m
+       [33m[2m✓[22m[39m shows strength indicator when password entered [33m 330[2mms[22m[39m
+       [33m[2m✓[22m[39m shows strong strength for complex password [33m 628[2mms[22m[39m
+       [33m[2m✓[22m[39m marks requirements as met when satisfied [33m 566[2mms[22m[39m
+       [33m[2m✓[22m[39m shows error for short password [33m 424[2mms[22m[39m
+       [33m[2m✓[22m[39m shows error for password without lowercase [33m 592[2mms[22m[39m
+       [33m[2m✓[22m[39m shows error for password without uppercase [33m 638[2mms[22m[39m
+       [33m[2m✓[22m[39m shows error for password without number [33m 609[2mms[22m[39m
+       [33m[2m✓[22m[39m shows error when passwords do not match [33m 1328[2mms[22m[39m
+       [33m[2m✓[22m[39m submits form with valid passwords [33m 1100[2mms[22m[39m
+       [33m[2m✓[22m[39m sends token from URL to API [33m 999[2mms[22m[39m
+       [33m[2m✓[22m[39m shows loading state while submitting [33m 1450[2mms[22m[39m
+       [33m[2m✓[22m[39m shows success message after successful reset [33m 1081[2mms[22m[39m
+       [33m[2m✓[22m[39m shows confirmation text in success state [33m 1026[2mms[22m[39m
+       [33m[2m✓[22m[39m shows "Go to Login" button in success state [33m 1203[2mms[22m[39m
+       [33m[2m✓[22m[39m navigates to login when clicking "Go to Login" [33m 1437[2mms[22m[39m
+       [33m[2m✓[22m[39m displays API error message [33m 1189[2mms[22m[39m
+       [33m[2m✓[22m[39m displays generic error message when error has no message [33m 1287[2mms[22m[39m
+       [33m[2m✓[22m[39m allows retry after error [33m 1214[2mms[22m[39m
+ [32m✓[39m src/pages/__tests__/HorseDetailPage.ProgressionTab.test.tsx [2m([22m[2m30 tests[22m[2m)[22m[33m 19036[2mms[22m[39m
+       [33m[2m✓[22m[39m should render Progression tab button [33m 1055[2mms[22m[39m
+       [33m[2m✓[22m[39m should switch to Progression tab when clicked [33m 738[2mms[22m[39m
+       [33m[2m✓[22m[39m should display Progression tab with correct icon [33m 397[2mms[22m[39m
+       [33m[2m✓[22m[39m should render all progression components when tab is active [33m 672[2mms[22m[39m
+       [33m[2m✓[22m[39m should fetch all required data when tab becomes active [33m 491[2mms[22m[39m
+       [33m[2m✓[22m[39m should render XPProgressBar with correct data [33m 498[2mms[22m[39m
+       [33m[2m✓[22m[39m should render StatProgressionChart with time range selector [33m 636[2mms[22m[39m
+       [33m[2m✓[22m[39m should render RecentGains with stat changes [33m 493[2mms[22m[39m
+       [33m[2m✓[22m[39m should render AgeUpCounter with countdown [33m 428[2mms[22m[39m
+       [33m[2m✓[22m[39m should render TrainingRecommendations based on stats [33m 536[2mms[22m[39m
+       [33m[2m✓[22m[39m should show loading skeleton while fetching progression data [33m 473[2mms[22m[39m
+       [33m[2m✓[22m[39m should show loading state for each component independently [33m 466[2mms[22m[39m
+       [33m[2m✓[22m[39m should display error message when progression data fails to load [33m 493[2mms[22m[39m
+       [33m[2m✓[22m[39m should display error for stat history failure [33m 503[2mms[22m[39m
+       [33m[2m✓[22m[39m should handle partial data failures gracefully [33m 448[2mms[22m[39m
+       [33m[2m✓[22m[39m should provide retry button for failed data fetches [33m 896[2mms[22m[39m
+       [33m[2m✓[22m[39m should render components in correct grid layout [33m 494[2mms[22m[39m
+       [33m[2m✓[22m[39m should refresh progression data when tab is switched away and back [33m 1083[2mms[22m[39m
+       [33m[2m✓[22m[39m should show "no data" message when no progression data exists [33m 414[2mms[22m[39m
+       [33m[2m✓[22m[39m should render ScoreProgressionPanel in the Progression tab [33m 404[2mms[22m[39m
+       [33m[2m✓[22m[39m should pass correct horse ID to ScoreProgressionPanel [33m 434[2mms[22m[39m
+       [33m[2m✓[22m[39m should display discipline distribution section [33m 453[2mms[22m[39m
+       [33m[2m✓[22m[39m should display score caps and bonuses information [33m 469[2mms[22m[39m
+       [33m[2m✓[22m[39m should maintain active tab state after content loads [33m 736[2mms[22m[39m
+       [33m[2m✓[22m[39m should deselect Progression tab when switching to another tab [33m 1040[2mms[22m[39m
+       [33m[2m✓[22m[39m should initialize with Overview tab active by default [33m 477[2mms[22m[39m
+       [33m[2m✓[22m[39m should update tab state correctly when switching tabs [33m 2063[2mms[22m[39m
+       [33m[2m✓[22m[39m should preserve tab state during re-renders [33m 741[2mms[22m[39m
+       [33m[2m✓[22m[39m should have proper ARIA roles for tab navigation [33m 404[2mms[22m[39m
+       [33m[2m✓[22m[39m should have proper ARIA attributes for tab panel content [33m 591[2mms[22m[39m
+[90mstderr[2m | src/components/__tests__/MyGroomsDashboard.test.tsx[2m > [22m[2mMyGroomsDashboard Component[2m > [22m[2mComponent Rendering[2m > [22m[2mrenders dashboard with title
+[22m[39m⚠️ React Router Future Flag Warning: React Router will begin wrapping state updates in `React.startTransition` in v7. You can use the `v7_startTransition` future flag to opt-in early. For more information, see https://reactrouter.com/v6/upgrading/future#v7_starttransition.
+⚠️ React Router Future Flag Warning: Relative route resolution within Splat routes is changing in v7. You can use the `v7_relativeSplatPath` future flag to opt-in early. For more information, see https://reactrouter.com/v6/upgrading/future#v7_relativesplatpath.
+
+[90mstderr[2m | src/components/training/__tests__/TrainingDashboard.test.tsx[2m > [22m[2mTrainingDashboard[2m > [22m[2mRendering[2m > [22m[2mshould render dashboard title
+[22m[39m⚠️ React Router Future Flag Warning: React Router will begin wrapping state updates in `React.startTransition` in v7. You can use the `v7_startTransition` future flag to opt-in early. For more information, see https://reactrouter.com/v6/upgrading/future#v7_starttransition.
+⚠️ React Router Future Flag Warning: Relative route resolution within Splat routes is changing in v7. You can use the `v7_relativeSplatPath` future flag to opt-in early. For more information, see https://reactrouter.com/v6/upgrading/future#v7_relativesplatpath.
+
+[90mstderr[2m | src/components/__tests__/MainNavigation.test.tsx[2m > [22m[2mMainNavigation Component[2m > [22m[2mComponent Rendering[2m > [22m[2mrenders main navigation with loading state
+[22m[39m⚠️ React Router Future Flag Warning: React Router will begin wrapping state updates in `React.startTransition` in v7. You can use the `v7_startTransition` future flag to opt-in early. For more information, see https://reactrouter.com/v6/upgrading/future#v7_starttransition.
+⚠️ React Router Future Flag Warning: Relative route resolution within Splat routes is changing in v7. You can use the `v7_relativeSplatPath` future flag to opt-in early. For more information, see https://reactrouter.com/v6/upgrading/future#v7_relativesplatpath.
+
+ [32m✓[39m src/components/breeding/__tests__/FoalDevelopmentTracker.test.tsx [2m([22m[2m35 tests[22m[2m)[22m[33m 3732[2mms[22m[39m
+       [33m[2m✓[22m[39m should render activity logging inputs with default values [33m 386[2mms[22m[39m
+       [33m[2m✓[22m[39m should allow changing activity name input [33m 309[2mms[22m[39m
+       [33m[2m✓[22m[39m should call logActivity mutation when Log Activity button clicked [33m 821[2mms[22m[39m
+       [33m[2m✓[22m[39m should call enrichFoal mutation when Enrich button clicked [33m 336[2mms[22m[39m
+[90mstderr[2m | src/components/__tests__/GroomList.test.tsx[2m > [22m[2mGroomList Component[2m > [22m[2mComponent Rendering[2m > [22m[2mrenders groom list with loading state
+[22m[39m⚠️ React Router Future Flag Warning: React Router will begin wrapping state updates in `React.startTransition` in v7. You can use the `v7_startTransition` future flag to opt-in early. For more information, see https://reactrouter.com/v6/upgrading/future#v7_starttransition.
+⚠️ React Router Future Flag Warning: Relative route resolution within Splat routes is changing in v7. You can use the `v7_relativeSplatPath` future flag to opt-in early. For more information, see https://reactrouter.com/v6/upgrading/future#v7_relativesplatpath.
+
+ [32m✓[39m src/components/training/__tests__/TrainingDashboard.test.tsx [2m([22m[2m45 tests[22m[2m)[22m[33m 2653[2mms[22m[39m
+       [33m[2m✓[22m[39m should render Refresh button [33m 437[2mms[22m[39m
+ [32m✓[39m src/components/training/__tests__/DisciplineSelector.test.tsx [2m([22m[2m19 tests[22m[2m)[22m[33m 3715[2mms[22m[39m
+       [33m[2m✓[22m[39m renders select element [33m 306[2mms[22m[39m
+       [33m[2m✓[22m[39m includes all 23 disciplines as options [33m 2038[2mms[22m[39m
+ [32m✓[39m src/components/__tests__/MyGroomsDashboard.test.tsx [2m([22m[2m23 tests[22m[2m)[22m[33m 3667[2mms[22m[39m
+       [33m[2m✓[22m[39m renders dashboard with title [33m 782[2mms[22m[39m
+       [33m[2m✓[22m[39m displays assign button for grooms with available slots [33m 416[2mms[22m[39m
+       [33m[2m✓[22m[39m disables assign button when groom has max assignments [33m 414[2mms[22m[39m
+       [33m[2m✓[22m[39m supports keyboard navigation for assign buttons [33m 421[2mms[22m[39m
+ [32m✓[39m src/components/horse/__tests__/HorseSearchBar.test.tsx [2m([22m[2m41 tests[22m[2m)[22m[33m 2516[2mms[22m[39m
+       [33m[2m✓[22m[39m should render search input with default placeholder [33m 348[2mms[22m[39m
+ [32m✓[39m src/components/__tests__/GroomList.test.tsx [2m([22m[2m24 tests[22m[2m)[22m[33m 2680[2mms[22m[39m
+       [33m[2m✓[22m[39m displays hire button for each groom [33m 525[2mms[22m[39m
+       [33m[2m✓[22m[39m opens hire confirmation modal when hire button clicked [33m 316[2mms[22m[39m
+ [32m✓[39m src/components/__tests__/MainNavigation.test.tsx [2m([22m[2m28 tests[22m[2m)[22m[33m 3806[2mms[22m[39m
+       [33m[2m✓[22m[39m displays core navigation links [33m 894[2mms[22m[39m
+       [33m[2m✓[22m[39m shows breeding and genetics links [33m 362[2mms[22m[39m
+ [32m✓[39m src/components/training/__tests__/TrainingHistoryTable.test.tsx [2m([22m[2m43 tests[22m[2m)[22m[33m 2233[2mms[22m[39m
+       [33m[2m✓[22m[39m should render table with training history data [33m 380[2mms[22m[39m
+ [32m✓[39m src/components/horse/__tests__/StatProgressionChart.test.tsx [2m([22m[2m24 tests[22m[2m)[22m[33m 2937[2mms[22m[39m
+       [33m[2m✓[22m[39m should render chart canvas [33m 561[2mms[22m[39m
+       [33m[2m✓[22m[39m should render time range buttons [33m 351[2mms[22m[39m
+       [33m[2m✓[22m[39m should change time range when button clicked [33m 391[2mms[22m[39m
+ [32m✓[39m src/components/training/__tests__/TrainingConfirmModal.test.tsx [2m([22m[2m45 tests[22m[2m)[22m[33m 2078[2mms[22m[39m
+       [33m[2m✓[22m[39m should render modal when isOpen is true [33m 327[2mms[22m[39m
+[90mstderr[2m | src/pages/__tests__/TrainingDashboardPage.test.tsx[2m > [22m[2mTrainingDashboardPage[2m > [22m[2mRendering Tests[2m > [22m[2mrenders page without crashing
+[22m[39m⚠️ React Router Future Flag Warning: React Router will begin wrapping state updates in `React.startTransition` in v7. You can use the `v7_startTransition` future flag to opt-in early. For more information, see https://reactrouter.com/v6/upgrading/future#v7_starttransition.
+⚠️ React Router Future Flag Warning: Relative route resolution within Splat routes is changing in v7. You can use the `v7_relativeSplatPath` future flag to opt-in early. For more information, see https://reactrouter.com/v6/upgrading/future#v7_relativesplatpath.
+
+ [32m✓[39m src/components/horse/__tests__/TrainingRecommendations.test.tsx [2m([22m[2m30 tests[22m[2m)[22m[33m 2210[2mms[22m[39m
+       [33m[2m✓[22m[39m should expand to show detailed training plan on click [33m 472[2mms[22m[39m
+       [33m[2m✓[22m[39m should collapse details when clicking hide [33m 352[2mms[22m[39m
+ [32m✓[39m src/components/horse/__tests__/AgeUpCounter.test.tsx [2m([22m[2m34 tests[22m[2m)[22m[33m 2136[2mms[22m[39m
+       [33m[2m✓[22m[39m should display expected stat gains [33m 561[2mms[22m[39m
+ [32m✓[39m src/components/horse/__tests__/XPProgressBar.test.tsx [2m([22m[2m32 tests[22m[2m)[22m[33m 2141[2mms[22m[39m
+       [33m[2m✓[22m[39m should render a progress bar [33m 389[2mms[22m[39m
+ [32m✓[39m src/components/horse/__tests__/ConformationTab.test.tsx [2m([22m[2m19 tests[22m[2m)[22m[33m 1683[2mms[22m[39m
+       [33m[2m✓[22m[39m should call refetch when retry button is clicked [33m 459[2mms[22m[39m
+ [32m✓[39m src/pages/__tests__/TrainingDashboardPage.test.tsx [2m([22m[2m33 tests[22m[2m)[22m[33m 1713[2mms[22m[39m
+       [33m[2m✓[22m[39m breadcrumb Home link has correct href [33m 368[2mms[22m[39m
+[90mstderr[2m | src/pages/__tests__/HorseDetailPage.test.tsx[2m > [22m[2mHorseDetailPage Component[2m > [22m[2mComponent Rendering[2m > [22m[2mrenders horse detail page with loading state
+[22m[39m⚠️ React Router Future Flag Warning: React Router will begin wrapping state updates in `React.startTransition` in v7. You can use the `v7_startTransition` future flag to opt-in early. For more information, see https://reactrouter.com/v6/upgrading/future#v7_starttransition.
+⚠️ React Router Future Flag Warning: Relative route resolution within Splat routes is changing in v7. You can use the `v7_relativeSplatPath` future flag to opt-in early. For more information, see https://reactrouter.com/v6/upgrading/future#v7_relativesplatpath.
+
+ [32m✓[39m src/components/horse/__tests__/StatHistoryGraph.test.tsx [2m([22m[2m35 tests[22m[2m)[22m[33m 1559[2mms[22m[39m
+       [33m[2m✓[22m[39m should render time range buttons [33m 545[2mms[22m[39m
+[90mstderr[2m | src/pages/__tests__/HorseDetailPage.test.tsx[2m > [22m[2mHorseDetailPage Component[2m > [22m[2mQuick Actions[2m > [22m[2mtrain button navigates correctly
+[22m[39mNo routes matched location "/training?horseId=1" 
+
+ [32m✓[39m src/pages/__tests__/HorseDetailPage.test.tsx [2m([22m[2m19 tests[22m[2m)[22m[33m 1785[2mms[22m[39m
+[90mstderr[2m | src/components/__tests__/CompetitionBrowser.test.tsx[2m > [22m[2mCompetitionBrowser Component[2m > [22m[2mComponent Rendering[2m > [22m[2mrenders competition browser with loading state
+[22m[39m⚠️ React Router Future Flag Warning: React Router will begin wrapping state updates in `React.startTransition` in v7. You can use the `v7_startTransition` future flag to opt-in early. For more information, see https://reactrouter.com/v6/upgrading/future#v7_starttransition.
+⚠️ React Router Future Flag Warning: Relative route resolution within Splat routes is changing in v7. You can use the `v7_relativeSplatPath` future flag to opt-in early. For more information, see https://reactrouter.com/v6/upgrading/future#v7_relativesplatpath.
+
+ [32m✓[39m src/components/training/__tests__/TrainingResultModal.test.tsx [2m([22m[2m43 tests[22m[2m)[22m[33m 1589[2mms[22m[39m
+       [33m[2m✓[22m[39m should render modal when isOpen is true [33m 322[2mms[22m[39m
+[90mstderr[2m | src/components/__tests__/AssignGroomModal.test.tsx[2m > [22m[2mAssignGroomModal Component[2m > [22m[2mModal Rendering[2m > [22m[2mrenders modal when isOpen is true
+[22m[39m⚠️ React Router Future Flag Warning: React Router will begin wrapping state updates in `React.startTransition` in v7. You can use the `v7_startTransition` future flag to opt-in early. For more information, see https://reactrouter.com/v6/upgrading/future#v7_starttransition.
+⚠️ React Router Future Flag Warning: Relative route resolution within Splat routes is changing in v7. You can use the `v7_relativeSplatPath` future flag to opt-in early. For more information, see https://reactrouter.com/v6/upgrading/future#v7_relativesplatpath.
+
+ [32m✓[39m src/components/horse/__tests__/ConformationScoreCard.test.tsx [2m([22m[2m44 tests[22m[2m)[22m[33m 1367[2mms[22m[39m
+       [33m[2m✓[22m[39m should render progress bar with correct width [33m 319[2mms[22m[39m
+ [32m✓[39m src/components/__tests__/AssignGroomModal.test.tsx [2m([22m[2m18 tests[22m[2m)[22m[33m 1542[2mms[22m[39m
+       [33m[2m✓[22m[39m renders modal when isOpen is true [33m 460[2mms[22m[39m
+ [32m✓[39m src/hooks/api/__tests__/useConformation.test.tsx [2m([22m[2m24 tests[22m[2m)[22m[33m 4202[2mms[22m[39m
+       [33m[2m✓[22m[39m should fetch conformation data successfully [33m 379[2mms[22m[39m
+       [33m[2m✓[22m[39m should return scores in valid range (0-100) [33m 389[2mms[22m[39m
+       [33m[2m✓[22m[39m should calculate overall score as average of 7 regions [33m 387[2mms[22m[39m
+       [33m[2m✓[22m[39m should generate different scores for different horse IDs [33m 396[2mms[22m[39m
+       [33m[2m✓[22m[39m should transition to success state [33m 388[2mms[22m[39m
+       [33m[2m✓[22m[39m should fetch when horseId is 0 (valid edge case) [33m 350[2mms[22m[39m
+       [33m[2m✓[22m[39m should use cached data for same horseId [33m 395[2mms[22m[39m
+       [33m[2m✓[22m[39m should use cached data for same breedId [33m 312[2mms[22m[39m
+ [32m✓[39m src/components/__tests__/CompetitionBrowser.test.tsx [2m([22m[2m26 tests[22m[2m)[22m[33m 1430[2mms[22m[39m
+       [33m[2m✓[22m[39m provides search functionality [33m 327[2mms[22m[39m
+ [32m✓[39m src/components/__tests__/XPLevelDisplay.test.tsx [2m([22m[2m29 tests[22m[2m)[22m[33m 961[2mms[22m[39m
+ [32m✓[39m src/components/breeding/__tests__/BreedingPairSelector.test.tsx [2m([22m[2m20 tests[22m[2m)[22m[33m 1096[2mms[22m[39m
+       [33m[2m✓[22m[39m has accessible headings structure [33m 512[2mms[22m[39m
+ [32m✓[39m src/pages/__tests__/HorseDetailPage.Training.test.tsx [2m([22m[2m35 tests[22m[2m)[22m[33m 35717[2mms[22m[39m
+       [33m[2m✓[22m[39m Training tab appears in tab navigation [33m 1026[2mms[22m[39m
+       [33m[2m✓[22m[39m Clicking Training tab shows training content [33m 667[2mms[22m[39m
+       [33m[2m✓[22m[39m Training tab is keyboard accessible [33m 567[2mms[22m[39m
+       [33m[2m✓[22m[39m Training tab maintains ARIA attributes correctly [33m 652[2mms[22m[39m
+       [33m[2m✓[22m[39m DisciplinePicker renders with horse discipline scores [33m 472[2mms[22m[39m
+       [33m[2m✓[22m[39m Clicking discipline opens confirm modal [33m 1071[2mms[22m[39m
+       [33m[2m✓[22m[39m Selected discipline state updates correctly [33m 923[2mms[22m[39m
+       [33m[2m✓[22m[39m Can select different disciplines [33m 1632[2mms[22m[39m
+       [33m[2m✓[22m[39m Shows current scores for each discipline [33m 831[2mms[22m[39m
+       [33m[2m✓[22m[39m Confirm modal opens with correct horse and discipline data [33m 901[2mms[22m[39m
+       [33m[2m✓[22m[39m Shows correct expected score gain [33m 966[2mms[22m[39m
+       [33m[2m✓[22m[39m Shows trait modifiers if any [33m 912[2mms[22m[39m
+       [33m[2m✓[22m[39m Cancel button closes modal without training [33m 948[2mms[22m[39m
+       [33m[2m✓[22m[39m Confirm button executes training mutation [33m 1117[2mms[22m[39m
+       [33m[2m✓[22m[39m Loading state shown during mutation [33m 1129[2mms[22m[39m
+       [33m[2m✓[22m[39m Modal closes after successful training [33m 1077[2mms[22m[39m
+       [33m[2m✓[22m[39m Error handling for failed training [33m 1101[2mms[22m[39m
+       [33m[2m✓[22m[39m Result modal opens after successful training [33m 1088[2mms[22m[39m
+       [33m[2m✓[22m[39m Shows correct score gain breakdown [33m 1060[2mms[22m[39m
+       [33m[2m✓[22m[39m Displays new score value [33m 1244[2mms[22m[39m
+       [33m[2m✓[22m[39m Shows stat gains if any [33m 1209[2mms[22m[39m
+       [33m[2m✓[22m[39m Shows XP gain if any [33m 1254[2mms[22m[39m
+       [33m[2m✓[22m[39m Closing result modal resets training state [33m 1336[2mms[22m[39m
+       [33m[2m✓[22m[39m Shows "Ready to train" when no cooldown [33m 581[2mms[22m[39m
+       [33m[2m✓[22m[39m Shows cooldown date when on cooldown [33m 530[2mms[22m[39m
+       [33m[2m✓[22m[39m Shows ineligible status for young horses [33m 470[2mms[22m[39m
+       [33m[2m✓[22m[39m Displays training eligibility warning for young horses [33m 432[2mms[22m[39m
+       [33m[2m✓[22m[39m Full flow: select -> confirm -> train -> view results -> close [33m 1229[2mms[22m[39m
+       [33m[2m✓[22m[39m Can start new training after completing one [33m 2052[2mms[22m[39m
+       [33m[2m✓[22m[39m State resets correctly after flow completes [33m 1291[2mms[22m[39m
+       [33m[2m✓[22m[39m Escape key closes confirm modal [33m 1095[2mms[22m[39m
+       [33m[2m✓[22m[39m Escape key closes result modal [33m 1130[2mms[22m[39m
+       [33m[2m✓[22m[39m Shows error message if training fails [33m 1175[2mms[22m[39m
+       [33m[2m✓[22m[39m Keeps modal open on error for retry [33m 1119[2mms[22m[39m
+       [33m[2m✓[22m[39m Error state clears when modal closes [33m 1421[2mms[22m[39m
+ [32m✓[39m src/contexts/__tests__/AuthContext.test.tsx [2m([22m[2m16 tests[22m[2m)[22m[33m 1165[2mms[22m[39m
+       [33m[2m✓[22m[39m should clear all session data on logout [33m 343[2mms[22m[39m
+ [32m✓[39m src/components/training/__tests__/TrainingResultsDisplay.test.tsx [2m([22m[2m20 tests[22m[2m)[22m[33m 853[2mms[22m[39m
+       [33m[2m✓[22m[39m renders Train Again button [33m 364[2mms[22m[39m
+ [32m✓[39m src/hooks/__tests__/useHorseGenetics.test.tsx [2m([22m[2m25 tests[22m[2m)[22m[33m 2118[2mms[22m[39m
+[90mstderr[2m | src/components/__tests__/AdvancedEpigeneticDashboard.test.tsx[2m > [22m[2mAdvancedEpigeneticDashboard[2m > [22m[2mPanel Structure[2m > [22m[2mdisplays all required panel sections
+[22m[39m[MSW] Error: intercepted a request without a matching request handler:
+
+  • GET /api/horses/1/environmental-analysis
+
+If you still wish to intercept this unhandled request, please create a request handler for it.
+Read more: https://mswjs.io/docs/http/intercepting-requests
+
+[90mstderr[2m | src/components/__tests__/AdvancedEpigeneticDashboard.test.tsx[2m > [22m[2mAdvancedEpigeneticDashboard[2m > [22m[2mPanel Structure[2m > [22m[2msupports real-time updates indicator
+[22m[39m[MSW] Error: intercepted a request without a matching request handler:
+
+  • GET /api/horses/1/environmental-analysis
+
+If you still wish to intercept this unhandled request, please create a request handler for it.
+Read more: https://mswjs.io/docs/http/intercepting-requests
+
+[90mstderr[2m | src/components/__tests__/AdvancedEpigeneticDashboard.test.tsx[2m > [22m[2mAdvancedEpigeneticDashboard[2m > [22m[2mDevelopmental Timeline[2m > [22m[2mshows current developmental window with progress
+[22m[39m[MSW] Error: intercepted a request without a matching request handler:
+
+  • GET /api/horses/1/environmental-analysis
+
+If you still wish to intercept this unhandled request, please create a request handler for it.
+Read more: https://mswjs.io/docs/http/intercepting-requests
+
+[90mstderr[2m | src/components/__tests__/AdvancedEpigeneticDashboard.test.tsx[2m > [22m[2mAdvancedEpigeneticDashboard[2m > [22m[2mDevelopmental Timeline[2m > [22m[2mshows current developmental window with progress
+[22m[39m[MSW] Error: intercepted a request without a matching request handler:
+
+  • GET /api/horses/1/trait-interactions
+
+If you still wish to intercept this unhandled request, please create a request handler for it.
+Read more: https://mswjs.io/docs/http/intercepting-requests
+
+[90mstderr[2m | src/components/__tests__/AdvancedEpigeneticDashboard.test.tsx[2m > [22m[2mAdvancedEpigeneticDashboard[2m > [22m[2mDevelopmental Timeline[2m > [22m[2mshows current developmental window with progress
+[22m[39m[MSW] Error: intercepted a request without a matching request handler:
+
+  • GET /api/horses/1/environmental-analysis
+
+If you still wish to intercept this unhandled request, please create a request handler for it.
+Read more: https://mswjs.io/docs/http/intercepting-requests
+
+[90mstderr[2m | src/components/__tests__/AdvancedEpigeneticDashboard.test.tsx[2m > [22m[2mAdvancedEpigeneticDashboard[2m > [22m[2mDevelopmental Timeline[2m > [22m[2mshows current developmental window with progress
+[22m[39m[MSW] Error: intercepted a request without a matching request handler:
+
+  • GET /api/horses/1/environmental-analysis
+
+If you still wish to intercept this unhandled request, please create a request handler for it.
+Read more: https://mswjs.io/docs/http/intercepting-requests
+
+[90mstderr[2m | src/components/__tests__/AdvancedEpigeneticDashboard.test.tsx[2m > [22m[2mAdvancedEpigeneticDashboard[2m > [22m[2mDevelopmental Timeline[2m > [22m[2mshows current developmental window with progress
+[22m[39m[MSW] Error: intercepted a request without a matching request handler:
+
+  • GET /api/horses/1/trait-interactions
+
+If you still wish to intercept this unhandled request, please create a request handler for it.
+Read more: https://mswjs.io/docs/http/intercepting-requests
+
+[90mstderr[2m | src/components/__tests__/AdvancedEpigeneticDashboard.test.tsx[2m > [22m[2mAdvancedEpigeneticDashboard[2m > [22m[2mDevelopmental Timeline[2m > [22m[2mshows current developmental window with progress
+[22m[39m[MSW] Error: intercepted a request without a matching request handler:
+
+  • GET /api/horses/1/trait-interactions
+
+If you still wish to intercept this unhandled request, please create a request handler for it.
+Read more: https://mswjs.io/docs/http/intercepting-requests
+
+[90mstderr[2m | src/components/__tests__/AdvancedEpigeneticDashboard.test.tsx[2m > [22m[2mAdvancedEpigeneticDashboard[2m > [22m[2mDevelopmental Timeline[2m > [22m[2mshows current developmental window with progress
+[22m[39m[MSW] Error: intercepted a request without a matching request handler:
+
+  • GET /api/horses/1/developmental-timeline
+
+If you still wish to intercept this unhandled request, please create a request handler for it.
+Read more: https://mswjs.io/docs/http/intercepting-requests
+
+[90mstderr[2m | src/components/__tests__/AdvancedEpigeneticDashboard.test.tsx[2m > [22m[2mAdvancedEpigeneticDashboard[2m > [22m[2mDevelopmental Timeline[2m > [22m[2mshows current developmental window with progress
+[22m[39m[MSW] Error: intercepted a request without a matching request handler:
+
+  • GET /api/horses/1/trait-interactions
+
+If you still wish to intercept this unhandled request, please create a request handler for it.
+Read more: https://mswjs.io/docs/http/intercepting-requests
+
+[90mstderr[2m | src/components/__tests__/AdvancedEpigeneticDashboard.test.tsx[2m > [22m[2mAdvancedEpigeneticDashboard[2m > [22m[2mDevelopmental Timeline[2m > [22m[2mshows current developmental window with progress
+[22m[39m[MSW] Error: intercepted a request without a matching request handler:
+
+  • GET /api/horses/1/trait-interactions
+
+If you still wish to intercept this unhandled request, please create a request handler for it.
+Read more: https://mswjs.io/docs/http/intercepting-requests
+
+[90mstderr[2m | src/components/__tests__/AdvancedEpigeneticDashboard.test.tsx[2m > [22m[2mAdvancedEpigeneticDashboard[2m > [22m[2mDevelopmental Timeline[2m > [22m[2mshows current developmental window with progress
+[22m[39m[MSW] Error: intercepted a request without a matching request handler:
+
+  • GET /api/horses/1/developmental-timeline
+
+If you still wish to intercept this unhandled request, please create a request handler for it.
+Read more: https://mswjs.io/docs/http/intercepting-requests
+
+[90mstderr[2m | src/components/__tests__/AdvancedEpigeneticDashboard.test.tsx[2m > [22m[2mAdvancedEpigeneticDashboard[2m > [22m[2mDevelopmental Timeline[2m > [22m[2mshows current developmental window with progress
+[22m[39m[MSW] Error: intercepted a request without a matching request handler:
+
+  • GET /api/horses/1/developmental-timeline
+
+If you still wish to intercept this unhandled request, please create a request handler for it.
+Read more: https://mswjs.io/docs/http/intercepting-requests
+
+[90mstderr[2m | src/components/__tests__/AdvancedEpigeneticDashboard.test.tsx[2m > [22m[2mAdvancedEpigeneticDashboard[2m > [22m[2mDevelopmental Timeline[2m > [22m[2mshows current developmental window with progress
+[22m[39m[MSW] Error: intercepted a request without a matching request handler:
+
+  • GET /api/horses/1/forecast
+
+If you still wish to intercept this unhandled request, please create a request handler for it.
+Read more: https://mswjs.io/docs/http/intercepting-requests
+
+[90mstderr[2m | src/components/__tests__/AdvancedEpigeneticDashboard.test.tsx[2m > [22m[2mAdvancedEpigeneticDashboard[2m > [22m[2mDevelopmental Timeline[2m > [22m[2mshows current developmental window with progress
+[22m[39m[MSW] Error: intercepted a request without a matching request handler:
+
+  • GET /api/horses/1/developmental-timeline
+
+If you still wish to intercept this unhandled request, please create a request handler for it.
+Read more: https://mswjs.io/docs/http/intercepting-requests
+
+[90mstderr[2m | src/components/__tests__/AdvancedEpigeneticDashboard.test.tsx[2m > [22m[2mAdvancedEpigeneticDashboard[2m > [22m[2mDevelopmental Timeline[2m > [22m[2mshows current developmental window with progress
+[22m[39m[MSW] Error: intercepted a request without a matching request handler:
+
+  • GET /api/horses/1/developmental-timeline
+
+If you still wish to intercept this unhandled request, please create a request handler for it.
+Read more: https://mswjs.io/docs/http/intercepting-requests
+
+[90mstderr[2m | src/components/__tests__/AdvancedEpigeneticDashboard.test.tsx[2m > [22m[2mAdvancedEpigeneticDashboard[2m > [22m[2mDevelopmental Timeline[2m > [22m[2mshows current developmental window with progress
+[22m[39m[MSW] Error: intercepted a request without a matching request handler:
+
+  • GET /api/horses/1/forecast
+
+If you still wish to intercept this unhandled request, please create a request handler for it.
+Read more: https://mswjs.io/docs/http/intercepting-requests
+
+[90mstderr[2m | src/components/__tests__/AdvancedEpigeneticDashboard.test.tsx[2m > [22m[2mAdvancedEpigeneticDashboard[2m > [22m[2mDevelopmental Timeline[2m > [22m[2mshows current developmental window with progress
+[22m[39m[MSW] Error: intercepted a request without a matching request handler:
+
+  • GET /api/horses/1/forecast
+
+If you still wish to intercept this unhandled request, please create a request handler for it.
+Read more: https://mswjs.io/docs/http/intercepting-requests
+
+[90mstderr[2m | src/components/__tests__/AdvancedEpigeneticDashboard.test.tsx[2m > [22m[2mAdvancedEpigeneticDashboard[2m > [22m[2mDevelopmental Timeline[2m > [22m[2mshows current developmental window with progress
+[22m[39m[MSW] Error: intercepted a request without a matching request handler:
+
+  • GET /api/horses/1/forecast
+
+If you still wish to intercept this unhandled request, please create a request handler for it.
+Read more: https://mswjs.io/docs/http/intercepting-requests
+
+[90mstderr[2m | src/components/__tests__/AdvancedEpigeneticDashboard.test.tsx[2m > [22m[2mAdvancedEpigeneticDashboard[2m > [22m[2mDevelopmental Timeline[2m > [22m[2mshows current developmental window with progress
+[22m[39m[MSW] Error: intercepted a request without a matching request handler:
+
+  • GET /api/horses/1/forecast
+
+If you still wish to intercept this unhandled request, please create a request handler for it.
+Read more: https://mswjs.io/docs/http/intercepting-requests
+
+[90mstderr[2m | src/components/__tests__/AdvancedEpigeneticDashboard.test.tsx[2m > [22m[2mAdvancedEpigeneticDashboard[2m > [22m[2mError Handling[2m > [22m[2mdisplays error message when API calls fail
+[22m[39m[MSW] Error: intercepted a request without a matching request handler:
+
+  • GET /api/horses/1/environmental-analysis
+
+If you still wish to intercept this unhandled request, please create a request handler for it.
+Read more: https://mswjs.io/docs/http/intercepting-requests
+
+[90mstderr[2m | src/components/__tests__/AdvancedEpigeneticDashboard.test.tsx[2m > [22m[2mAdvancedEpigeneticDashboard[2m > [22m[2mError Handling[2m > [22m[2mdisplays error message when API calls fail
+[22m[39m[MSW] Error: intercepted a request without a matching request handler:
+
+  • GET /api/horses/1/environmental-analysis
+
+If you still wish to intercept this unhandled request, please create a request handler for it.
+Read more: https://mswjs.io/docs/http/intercepting-requests
+
+[90mstderr[2m | src/components/__tests__/AdvancedEpigeneticDashboard.test.tsx[2m > [22m[2mAdvancedEpigeneticDashboard[2m > [22m[2mError Handling[2m > [22m[2mdisplays error message when API calls fail
+[22m[39m[MSW] Error: intercepted a request without a matching request handler:
+
+  • GET /api/horses/1/environmental-analysis
+
+If you still wish to intercept this unhandled request, please create a request handler for it.
+Read more: https://mswjs.io/docs/http/intercepting-requests
+
+[90mstderr[2m | src/components/__tests__/AdvancedEpigeneticDashboard.test.tsx[2m > [22m[2mAdvancedEpigeneticDashboard[2m > [22m[2mError Handling[2m > [22m[2mdisplays error message when API calls fail
+[22m[39m[MSW] Error: intercepted a request without a matching request handler:
+
+  • GET /api/horses/1/trait-interactions
+
+If you still wish to intercept this unhandled request, please create a request handler for it.
+Read more: https://mswjs.io/docs/http/intercepting-requests
+
+[90mstderr[2m | src/components/__tests__/AdvancedEpigeneticDashboard.test.tsx[2m > [22m[2mAdvancedEpigeneticDashboard[2m > [22m[2mError Handling[2m > [22m[2mdisplays error message when API calls fail
+[22m[39m[MSW] Error: intercepted a request without a matching request handler:
+
+  • GET /api/horses/1/trait-interactions
+
+If you still wish to intercept this unhandled request, please create a request handler for it.
+Read more: https://mswjs.io/docs/http/intercepting-requests
+
+[90mstderr[2m | src/components/__tests__/AdvancedEpigeneticDashboard.test.tsx[2m > [22m[2mAdvancedEpigeneticDashboard[2m > [22m[2mError Handling[2m > [22m[2mdisplays error message when API calls fail
+[22m[39m[MSW] Error: intercepted a request without a matching request handler:
+
+  • GET /api/horses/1/trait-interactions
+
+If you still wish to intercept this unhandled request, please create a request handler for it.
+Read more: https://mswjs.io/docs/http/intercepting-requests
+
+[90mstderr[2m | src/components/__tests__/AdvancedEpigeneticDashboard.test.tsx[2m > [22m[2mAdvancedEpigeneticDashboard[2m > [22m[2mError Handling[2m > [22m[2mdisplays error message when API calls fail
+[22m[39m[MSW] Error: intercepted a request without a matching request handler:
+
+  • GET /api/horses/1/developmental-timeline
+
+If you still wish to intercept this unhandled request, please create a request handler for it.
+Read more: https://mswjs.io/docs/http/intercepting-requests
+
+[90mstderr[2m | src/components/__tests__/AdvancedEpigeneticDashboard.test.tsx[2m > [22m[2mAdvancedEpigeneticDashboard[2m > [22m[2mError Handling[2m > [22m[2mdisplays error message when API calls fail
+[22m[39m[MSW] Error: intercepted a request without a matching request handler:
+
+  • GET /api/horses/1/developmental-timeline
+
+If you still wish to intercept this unhandled request, please create a request handler for it.
+Read more: https://mswjs.io/docs/http/intercepting-requests
+
+[90mstderr[2m | src/components/__tests__/AdvancedEpigeneticDashboard.test.tsx[2m > [22m[2mAdvancedEpigeneticDashboard[2m > [22m[2mError Handling[2m > [22m[2mdisplays error message when API calls fail
+[22m[39m[MSW] Error: intercepted a request without a matching request handler:
+
+  • GET /api/horses/1/developmental-timeline
+
+If you still wish to intercept this unhandled request, please create a request handler for it.
+Read more: https://mswjs.io/docs/http/intercepting-requests
+
+[90mstderr[2m | src/components/__tests__/AdvancedEpigeneticDashboard.test.tsx[2m > [22m[2mAdvancedEpigeneticDashboard[2m > [22m[2mError Handling[2m > [22m[2mdisplays error message when API calls fail
+[22m[39m[MSW] Error: intercepted a request without a matching request handler:
+
+  • GET /api/horses/1/forecast
+
+If you still wish to intercept this unhandled request, please create a request handler for it.
+Read more: https://mswjs.io/docs/http/intercepting-requests
+
+[90mstderr[2m | src/components/__tests__/AdvancedEpigeneticDashboard.test.tsx[2m > [22m[2mAdvancedEpigeneticDashboard[2m > [22m[2mError Handling[2m > [22m[2mdisplays error message when API calls fail
+[22m[39m[MSW] Error: intercepted a request without a matching request handler:
+
+  • GET /api/horses/1/forecast
+
+If you still wish to intercept this unhandled request, please create a request handler for it.
+Read more: https://mswjs.io/docs/http/intercepting-requests
+
+[90mstderr[2m | src/components/__tests__/AdvancedEpigeneticDashboard.test.tsx[2m > [22m[2mAdvancedEpigeneticDashboard[2m > [22m[2mError Handling[2m > [22m[2mdisplays error message when API calls fail
+[22m[39m[MSW] Error: intercepted a request without a matching request handler:
+
+  • GET /api/horses/1/forecast
+
+If you still wish to intercept this unhandled request, please create a request handler for it.
+Read more: https://mswjs.io/docs/http/intercepting-requests
+
+ [32m✓[39m src/components/__tests__/AdvancedEpigeneticDashboard.test.tsx [2m([22m[2m17 tests[22m[2m)[22m[33m 813[2mms[22m[39m
+ [32m✓[39m src/components/__tests__/ActivityFeed.test.tsx [2m([22m[2m31 tests[22m[2m)[22m[33m 885[2mms[22m[39m
+ [32m✓[39m src/components/__tests__/TraitCard.test.tsx [2m([22m[2m43 tests[22m[2m)[22m[33m 864[2mms[22m[39m
+ [32m✓[39m src/components/training/__tests__/ScoreProgressionPanel.test.tsx [2m([22m[2m30 tests[22m[2m)[22m[33m 856[2mms[22m[39m
+       [33m[2m✓[22m[39m shows Try Again button on error [33m 323[2mms[22m[39m
+ [32m✓[39m src/components/__tests__/EnhancedReportingInterface.test.tsx [2m([22m[2m13 tests[22m[2m)[22m[33m 641[2mms[22m[39m
+ [32m✓[39m src/hooks/api/__tests__/useTraining.test.tsx [2m([22m[2m30 tests[22m[2m)[22m[33m 2153[2mms[22m[39m
+ [32m✓[39m src/hooks/api/__tests__/useProgression.test.tsx [2m([22m[2m19 tests[22m[2m)[22m[33m 1408[2mms[22m[39m
+[90mstderr[2m | src/components/training/__tests__/ScoreRadarChart.test.tsx[2m > [22m[2mScoreRadarChart[2m > [22m[2mLegend Tests[2m > [22m[2mdisplays legend when showLegend is true
+[22m[39mInvalid value for prop `formatter` on <g> tag. Either remove it from the element, or pass a string or number value to keep it in the DOM. For details, see https://react.dev/link/attribute-behavior 
+
+ [32m✓[39m src/components/training/__tests__/ScoreRadarChart.test.tsx [2m([22m[2m34 tests[22m[2m)[22m[33m 625[2mms[22m[39m
+ [32m✓[39m src/hooks/__tests__/useAuth.test.tsx [2m([22m[2m16 tests[22m[2m)[22m[33m 1251[2mms[22m[39m
+ [32m✓[39m src/components/training/__tests__/EligibilityFilter.test.tsx [2m([22m[2m39 tests[22m[2m)[22m[33m 544[2mms[22m[39m
+ [32m✓[39m src/components/training/__tests__/EligibilityIndicator.test.tsx [2m([22m[2m58 tests[22m[2m)[22m[33m 556[2mms[22m[39m
+ [32m✓[39m src/components/__tests__/MultiHorseComparison.test.tsx [2m([22m[2m10 tests[22m[2m)[22m[33m 378[2mms[22m[39m
+ [32m✓[39m src/components/__tests__/ActivityFeedItem.test.tsx [2m([22m[2m36 tests[22m[2m)[22m[33m 451[2mms[22m[39m
+ [32m✓[39m src/components/__tests__/StatisticsCard.test.tsx [2m([22m[2m52 tests[22m[2m)[22m[33m 452[2mms[22m[39m
+[90mstderr[2m | src/hooks/__tests__/useSessionGuard.test.tsx[2m > [22m[2museSessionGuard Hook - Session Management (Story 1-3)[2m > [22m[2mSession Validation[2m > [22m[2mshould show loading while checking session
+[22m[39m⚠️ React Router Future Flag Warning: React Router will begin wrapping state updates in `React.startTransition` in v7. You can use the `v7_startTransition` future flag to opt-in early. For more information, see https://reactrouter.com/v6/upgrading/future#v7_starttransition.
+⚠️ React Router Future Flag Warning: Relative route resolution within Splat routes is changing in v7. You can use the `v7_relativeSplatPath` future flag to opt-in early. For more information, see https://reactrouter.com/v6/upgrading/future#v7_relativesplatpath.
+
+ [32m✓[39m src/hooks/__tests__/useSessionGuard.test.tsx [2m([22m[2m15 tests[22m[2m)[22m[33m 656[2mms[22m[39m
+ [32m✓[39m src/components/training/__tests__/TrainingSessionModal.test.tsx [2m([22m[2m57 tests[22m[2m)[22m[33m 5922[2mms[22m[39m
+       [33m[2m✓[22m[39m renders Close button [33m 383[2mms[22m[39m
+       [33m[2m✓[22m[39m includes all 23 disciplines [33m 1985[2mms[22m[39m
+ [32m✓[39m src/components/__tests__/CurrencyDisplay.test.tsx [2m([22m[2m26 tests[22m[2m)[22m[32m 280[2mms[22m[39m
+ [32m✓[39m src/components/training/__tests__/HorseStatsCard.test.tsx [2m([22m[2m21 tests[22m[2m)[22m[32m 271[2mms[22m[39m
+[90mstderr[2m | src/hooks/__tests__/useHorseFilters.test.tsx[2m > [22m[2museHorseFilters[2m > [22m[2mReading filters from URL[2m > [22m[2mshould return default filters when URL has no params
+[22m[39m⚠️ React Router Future Flag Warning: React Router will begin wrapping state updates in `React.startTransition` in v7. You can use the `v7_startTransition` future flag to opt-in early. For more information, see https://reactrouter.com/v6/upgrading/future#v7_starttransition.
+⚠️ React Router Future Flag Warning: Relative route resolution within Splat routes is changing in v7. You can use the `v7_relativeSplatPath` future flag to opt-in early. For more information, see https://reactrouter.com/v6/upgrading/future#v7_relativesplatpath.
+
+[90mstderr[2m | src/components/auth/__tests__/RoleProtectedRoute.test.tsx[2m > [22m[2mRoleProtectedRoute[2m > [22m[2mLoading State[2m > [22m[2mrenders loading indicator while auth state is loading
+[22m[39m⚠️ React Router Future Flag Warning: React Router will begin wrapping state updates in `React.startTransition` in v7. You can use the `v7_startTransition` future flag to opt-in early. For more information, see https://reactrouter.com/v6/upgrading/future#v7_starttransition.
+⚠️ React Router Future Flag Warning: Relative route resolution within Splat routes is changing in v7. You can use the `v7_relativeSplatPath` future flag to opt-in early. For more information, see https://reactrouter.com/v6/upgrading/future#v7_relativesplatpath.
+
+ [32m✓[39m src/hooks/__tests__/useHorseFilters.test.tsx [2m([22m[2m29 tests[22m[2m)[22m[32m 217[2mms[22m[39m
+ [32m✓[39m src/components/auth/__tests__/RoleProtectedRoute.test.tsx [2m([22m[2m15 tests[22m[2m)[22m[32m 215[2mms[22m[39m
+[90mstderr[2m | src/hooks/__tests__/useRoleGuard.test.tsx[2m > [22m[2museRoleGuard[2m > [22m[2mLoading State[2m > [22m[2mreturns isLoading true while auth is loading
+[22m[39m⚠️ React Router Future Flag Warning: React Router will begin wrapping state updates in `React.startTransition` in v7. You can use the `v7_startTransition` future flag to opt-in early. For more information, see https://reactrouter.com/v6/upgrading/future#v7_starttransition.
+⚠️ React Router Future Flag Warning: Relative route resolution within Splat routes is changing in v7. You can use the `v7_relativeSplatPath` future flag to opt-in early. For more information, see https://reactrouter.com/v6/upgrading/future#v7_relativesplatpath.
+
+ [32m✓[39m src/hooks/__tests__/useRoleGuard.test.tsx [2m([22m[2m28 tests[22m[2m)[22m[32m 152[2mms[22m[39m
+[90mstderr[2m | src/pages/__tests__/StableView.test.tsx[2m > [22m[2mStableView[2m > [22m[2muses horse stats and primary discipline from API data
+[22m[39m⚠️ React Router Future Flag Warning: React Router will begin wrapping state updates in `React.startTransition` in v7. You can use the `v7_startTransition` future flag to opt-in early. For more information, see https://reactrouter.com/v6/upgrading/future#v7_starttransition.
+⚠️ React Router Future Flag Warning: Relative route resolution within Splat routes is changing in v7. You can use the `v7_relativeSplatPath` future flag to opt-in early. For more information, see https://reactrouter.com/v6/upgrading/future#v7_relativesplatpath.
+
+ [32m✓[39m src/components/training/__tests__/TrainingHistoryPanel.test.tsx [2m([22m[2m2 tests[22m[2m)[22m[32m 154[2mms[22m[39m
+ [32m✓[39m src/pages/__tests__/StableView.test.tsx [2m([22m[2m2 tests[22m[2m)[22m[32m 207[2mms[22m[39m
+ [32m✓[39m src/components/training/__tests__/TraitModifierTooltip.test.tsx [2m([22m[2m30 tests[22m[2m)[22m[33m 1488[2mms[22m[39m
+       [33m[2m✓[22m[39m should show tooltip on mouse enter after delay [33m 315[2mms[22m[39m
+[90mstderr[2m | src/pages/__tests__/RegisterPage.test.tsx[2m > [22m[2mRegisterPage[2m > [22m[2mAccessibility[2m > [22m[2mall form inputs are focusable
+[22m[39mAn update to FantasyInput inside a test was not wrapped in act(...).
+
+When testing, code that causes React state updates should be wrapped into act(...):
+
+act(() => {
+  /* fire events that update state */
+});
+/* assert on the output */
+
+This ensures that you're testing the behavior the user would see in the browser. Learn more at https://react.dev/link/wrap-tests-with-act
+An update to FantasyInput inside a test was not wrapped in act(...).
+
+When testing, code that causes React state updates should be wrapped into act(...):
+
+act(() => {
+  /* fire events that update state */
+});
+/* assert on the output */
+
+This ensures that you're testing the behavior the user would see in the browser. Learn more at https://react.dev/link/wrap-tests-with-act
+An update to FantasyInput inside a test was not wrapped in act(...).
+
+When testing, code that causes React state updates should be wrapped into act(...):
+
+act(() => {
+  /* fire events that update state */
+});
+/* assert on the output */
+
+This ensures that you're testing the behavior the user would see in the browser. Learn more at https://react.dev/link/wrap-tests-with-act
+An update to FantasyInput inside a test was not wrapped in act(...).
+
+When testing, code that causes React state updates should be wrapped into act(...):
+
+act(() => {
+  /* fire events that update state */
+});
+/* assert on the output */
+
+This ensures that you're testing the behavior the user would see in the browser. Learn more at https://react.dev/link/wrap-tests-with-act
+An update to FantasyInput inside a test was not wrapped in act(...).
+
+When testing, code that causes React state updates should be wrapped into act(...):
+
+act(() => {
+  /* fire events that update state */
+});
+/* assert on the output */
+
+This ensures that you're testing the behavior the user would see in the browser. Learn more at https://react.dev/link/wrap-tests-with-act
+An update to FantasyInput inside a test was not wrapped in act(...).
+
+When testing, code that causes React state updates should be wrapped into act(...):
+
+act(() => {
+  /* fire events that update state */
+});
+/* assert on the output */
+
+This ensures that you're testing the behavior the user would see in the browser. Learn more at https://react.dev/link/wrap-tests-with-act
+An update to FantasyInput inside a test was not wrapped in act(...).
+
+When testing, code that causes React state updates should be wrapped into act(...):
+
+act(() => {
+  /* fire events that update state */
+});
+/* assert on the output */
+
+This ensures that you're testing the behavior the user would see in the browser. Learn more at https://react.dev/link/wrap-tests-with-act
+An update to FantasyInput inside a test was not wrapped in act(...).
+
+When testing, code that causes React state updates should be wrapped into act(...):
+
+act(() => {
+  /* fire events that update state */
+});
+/* assert on the output */
+
+This ensures that you're testing the behavior the user would see in the browser. Learn more at https://react.dev/link/wrap-tests-with-act
+An update to FantasyInput inside a test was not wrapped in act(...).
+
+When testing, code that causes React state updates should be wrapped into act(...):
+
+act(() => {
+  /* fire events that update state */
+});
+/* assert on the output */
+
+This ensures that you're testing the behavior the user would see in the browser. Learn more at https://react.dev/link/wrap-tests-with-act
+An update to FantasyInput inside a test was not wrapped in act(...).
+
+When testing, code that causes React state updates should be wrapped into act(...):
+
+act(() => {
+  /* fire events that update state */
+});
+/* assert on the output */
+
+This ensures that you're testing the behavior the user would see in the browser. Learn more at https://react.dev/link/wrap-tests-with-act
+An update to FantasyInput inside a test was not wrapped in act(...).
+
+When testing, code that causes React state updates should be wrapped into act(...):
+
+act(() => {
+  /* fire events that update state */
+});
+/* assert on the output */
+
+This ensures that you're testing the behavior the user would see in the browser. Learn more at https://react.dev/link/wrap-tests-with-act
+
+ [32m✓[39m src/lib/__tests__/activity-utils.test.ts [2m([22m[2m60 tests[22m[2m)[22m[32m 92[2mms[22m[39m
+ [32m✓[39m src/components/training/__tests__/TraitModifierList.test.tsx [2m([22m[2m34 tests[22m[2m)[22m[33m 443[2mms[22m[39m
+ [32m✓[39m src/lib/__tests__/statistics-utils.test.ts [2m([22m[2m52 tests[22m[2m)[22m[32m 64[2mms[22m[39m
+ [32m✓[39m src/components/training/__tests__/TraitModifierBadge.test.tsx [2m([22m[2m41 tests[22m[2m)[22m[32m 279[2mms[22m[39m
+ [32m✓[39m src/lib/__tests__/currency-utils.test.ts [2m([22m[2m34 tests[22m[2m)[22m[32m 59[2mms[22m[39m
+ [32m✓[39m src/lib/utils/__tests__/horse-filter-utils.test.ts [2m([22m[2m46 tests[22m[2m)[22m[32m 35[2mms[22m[39m
+ [32m✓[39m src/pages/__tests__/RegisterPage.test.tsx [2m([22m[2m33 tests[22m[2m)[22m[33m 52748[2mms[22m[39m
+       [33m[2m✓[22m[39m displays submit button with correct text [33m 610[2mms[22m[39m
+       [33m[2m✓[22m[39m shows error for invalid email format [33m 2880[2mms[22m[39m
+       [33m[2m✓[22m[39m shows error for short password [33m 2194[2mms[22m[39m
+       [33m[2m✓[22m[39m shows error when password missing uppercase [33m 2690[2mms[22m[39m
+       [33m[2m✓[22m[39m shows error when password missing number [33m 2479[2mms[22m[39m
+       [33m[2m✓[22m[39m shows error when passwords do not match [33m 2576[2mms[22m[39m
+       [33m[2m✓[22m[39m shows error for short username [33m 2780[2mms[22m[39m
+       [33m[2m✓[22m[39m shows error for invalid username characters [33m 2923[2mms[22m[39m
+       [33m[2m✓[22m[39m clears validation errors when user types [33m 4350[2mms[22m[39m
+       [33m[2m✓[22m[39m shows password strength indicator when typing [33m 355[2mms[22m[39m
+       [33m[2m✓[22m[39m updates strength as password gets stronger [33m 1003[2mms[22m[39m
+       [33m[2m✓[22m[39m disables submit button while submission is in progress [33m 3554[2mms[22m[39m
+       [33m[2m✓[22m[39m shows loading text during submission [33m 3179[2mms[22m[39m
+       [33m[2m✓[22m[39m navigates to home on successful registration [33m 2616[2mms[22m[39m
+       [33m[2m✓[22m[39m calls API with correct data [33m 2881[2mms[22m[39m
+       [33m[2m✓[22m[39m displays duplicate email error [33m 3087[2mms[22m[39m
+       [33m[2m✓[22m[39m displays server error message [33m 2663[2mms[22m[39m
+       [33m[2m✓[22m[39m displays generic error for network failures [33m 2883[2mms[22m[39m
+       [33m[2m✓[22m[39m allows toggling password visibility [33m 397[2mms[22m[39m
+       [33m[2m✓[22m[39m handles rapid form submissions [33m 3130[2mms[22m[39m
+       [33m[2m✓[22m[39m error messages are associated with inputs [33m 2395[2mms[22m[39m
+ [32m✓[39m src/lib/__tests__/api-client.test.ts [2m([22m[2m19 tests[22m[2m)[22m[32m 31[2mms[22m[39m
+ [32m✓[39m src/lib/utils/__tests__/conformation-utils.test.ts [2m([22m[2m56 tests[22m[2m)[22m[32m 17[2mms[22m[39m
+ [32m✓[39m src/lib/utils/__tests__/training-utils.test.ts [2m([22m[2m91 tests[22m[2m)[22m[32m 62[2mms[22m[39m
+ [32m✓[39m src/lib/__tests__/xp-utils.test.ts [2m([22m[2m43 tests[22m[2m)[22m[32m 12[2mms[22m[39m
+
+[2m Test Files [22m [1m[32m77 passed[39m[22m[90m (77)[39m
+[2m      Tests [22m [1m[32m2454 passed[39m[22m[90m (2454)[39m
+[2m   Start at [22m 12:43:02
+[2m   Duration [22m 58.39s[2m (transform 14.29s, setup 63.19s, import 40.47s, tests 308.70s, environment 177.25s)[22m
+

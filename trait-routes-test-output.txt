@@ -1,0 +1,1009 @@
+
+> equoria-backend@1.0.0 test
+> node --experimental-vm-modules node_modules/jest/bin/jest.js tests/integration/traitRoutes.test.mjs
+
+(node:52404) ExperimentalWarning: VM Modules is an experimental feature and might change at any time
+(Use `node --trace-warnings ...` to show where the warning was created)
+FAIL tests/integration/traitRoutes.test.mjs
+  ● Console
+
+    console.log
+      [2026-01-26 06:42:37] info: [envValidator] Validating test environment configuration...
+
+      at Console.log (node_modules/winston/lib/winston/transports/console.js:87:23)
+
+    console.log
+      [2026-01-26 06:42:37] info: [envValidator] ✅ All 5 required environment variables are present
+
+      at Console.log (node_modules/winston/lib/winston/transports/console.js:87:23)
+
+    console.log
+      [2026-01-26 06:42:37] info: [envValidator] ℹ️  Optional variables not set: AUTH_RATE_LIMIT_MAX, ENABLE_DEBUG_ROUTES
+
+      at Console.log (node_modules/winston/lib/winston/transports/console.js:87:23)
+
+    console.log
+      [2026-01-26 06:42:37] info: [envValidator] Test environment validation complete. Success: true
+
+      at Console.log (node_modules/winston/lib/winston/transports/console.js:87:23)
+
+    console.log
+      [2026-01-26 06:42:38] info: [rateLimiting] Using in-memory rate limiting for test/disabled Redis environment
+
+      at Console.log (node_modules/winston/lib/winston/transports/console.js:87:23)
+
+    console.log
+      [2026-01-26 06:42:38] info: [SwaggerSetup] OpenAPI specification loaded successfully
+
+      at Console.log (node_modules/winston/lib/winston/transports/console.js:87:23)
+
+    console.log
+      [2026-01-26 06:42:38] info: [SwaggerSetup] API documentation setup completed
+
+      at Console.log (node_modules/winston/lib/winston/transports/console.js:87:23)
+
+    console.log
+      [2026-01-26 06:42:38] info: [SwaggerSetup] Interactive docs available at: /api-docs
+
+      at Console.log (node_modules/winston/lib/winston/transports/console.js:87:23)
+
+    console.log
+      [2026-01-26 06:42:38] info: [SwaggerSetup] OpenAPI JSON available at: /api-docs/swagger.json
+
+      at Console.log (node_modules/winston/lib/winston/transports/console.js:87:23)
+
+    console.log
+      [2026-01-26 06:42:38] info: [SwaggerSetup] OpenAPI YAML available at: /api-docs/swagger.yaml
+
+      at Console.log (node_modules/winston/lib/winston/transports/console.js:87:23)
+
+    console.log
+      [2026-01-26 06:42:39] info: [POST] /api/traits/discover/124018
+
+      at Console.log (node_modules/winston/lib/winston/transports/console.js:87:23)
+
+    console.log
+      [2026-01-26 06:42:39] info: [auth:pwdo8w] Starting auth for POST /traits/discover/124018
+
+      at Console.log (node_modules/winston/lib/winston/transports/console.js:87:23)
+
+    console.log
+      [2026-01-26 06:42:39] info: [auth:pwdo8w] Token from cookie: false
+
+      at Console.log (node_modules/winston/lib/winston/transports/console.js:87:23)
+
+    console.log
+      [2026-01-26 06:42:39] info: [auth:pwdo8w] Token from header: true
+
+      at Console.log (node_modules/winston/lib/winston/transports/console.js:87:23)
+
+    console.log
+      [2026-01-26 06:42:39] info: [auth:pwdo8w] Authenticated user 8452bef1-34f6-4e82-869a-a32c8e522101
+
+      at Console.log (node_modules/winston/lib/winston/transports/console.js:87:23)
+
+    console.log
+      [2026-01-26 06:42:39] info: [POST] /api/traits/discover/124018 - 403
+
+      at Console.log (node_modules/winston/lib/winston/transports/console.js:87:23)
+
+    console.log
+      [2026-01-26 06:42:39] info: [POST] /api/traits/discover/invalid
+
+      at Console.log (node_modules/winston/lib/winston/transports/console.js:87:23)
+
+    console.log
+      [2026-01-26 06:42:39] info: [auth:39ja6c] Starting auth for POST /traits/discover/invalid
+
+      at Console.log (node_modules/winston/lib/winston/transports/console.js:87:23)
+
+    console.log
+      [2026-01-26 06:42:39] info: [auth:39ja6c] Token from cookie: false
+
+      at Console.log (node_modules/winston/lib/winston/transports/console.js:87:23)
+
+    console.log
+      [2026-01-26 06:42:39] info: [auth:39ja6c] Token from header: true
+
+      at Console.log (node_modules/winston/lib/winston/transports/console.js:87:23)
+
+    console.log
+      [2026-01-26 06:42:39] info: [auth:39ja6c] Authenticated user 8452bef1-34f6-4e82-869a-a32c8e522101
+
+      at Console.log (node_modules/winston/lib/winston/transports/console.js:87:23)
+
+    console.log
+      [2026-01-26 06:42:39] info: [POST] /api/traits/discover/invalid - 403
+
+      at Console.log (node_modules/winston/lib/winston/transports/console.js:87:23)
+
+    console.log
+      [2026-01-26 06:42:39] info: [POST] /api/traits/discover/99999
+
+      at Console.log (node_modules/winston/lib/winston/transports/console.js:87:23)
+
+    console.log
+      [2026-01-26 06:42:39] info: [auth:0t4h18] Starting auth for POST /traits/discover/99999
+
+      at Console.log (node_modules/winston/lib/winston/transports/console.js:87:23)
+
+    console.log
+      [2026-01-26 06:42:39] info: [auth:0t4h18] Token from cookie: false
+
+      at Console.log (node_modules/winston/lib/winston/transports/console.js:87:23)
+
+    console.log
+      [2026-01-26 06:42:39] info: [auth:0t4h18] Token from header: true
+
+      at Console.log (node_modules/winston/lib/winston/transports/console.js:87:23)
+
+    console.log
+      [2026-01-26 06:42:39] info: [auth:0t4h18] Authenticated user 8452bef1-34f6-4e82-869a-a32c8e522101
+
+      at Console.log (node_modules/winston/lib/winston/transports/console.js:87:23)
+
+    console.log
+      [2026-01-26 06:42:39] info: [POST] /api/traits/discover/99999 - 403
+
+      at Console.log (node_modules/winston/lib/winston/transports/console.js:87:23)
+
+    console.log
+      [2026-01-26 06:42:39] info: [POST] /api/traits/discover/124018
+
+      at Console.log (node_modules/winston/lib/winston/transports/console.js:87:23)
+
+    console.log
+      [2026-01-26 06:42:39] info: [auth:0ya7p4] Starting auth for POST /traits/discover/124018
+
+      at Console.log (node_modules/winston/lib/winston/transports/console.js:87:23)
+
+    console.log
+      [2026-01-26 06:42:39] info: [auth:0ya7p4] Token from cookie: false
+
+      at Console.log (node_modules/winston/lib/winston/transports/console.js:87:23)
+
+    console.log
+      [2026-01-26 06:42:39] info: [auth:0ya7p4] Token from header: true
+
+      at Console.log (node_modules/winston/lib/winston/transports/console.js:87:23)
+
+    console.log
+      [2026-01-26 06:42:39] info: [auth:0ya7p4] Authenticated user 8452bef1-34f6-4e82-869a-a32c8e522101
+
+      at Console.log (node_modules/winston/lib/winston/transports/console.js:87:23)
+
+    console.log
+      [2026-01-26 06:42:39] info: [POST] /api/traits/discover/124018 - 403
+
+      at Console.log (node_modules/winston/lib/winston/transports/console.js:87:23)
+
+    console.log
+      [2026-01-26 06:42:39] info: [GET] /api/traits/horse/124018
+
+      at Console.log (node_modules/winston/lib/winston/transports/console.js:87:23)
+
+    console.log
+      [2026-01-26 06:42:39] info: [auth:onu4mk] Starting auth for GET /traits/horse/124018
+
+      at Console.log (node_modules/winston/lib/winston/transports/console.js:87:23)
+
+    console.log
+      [2026-01-26 06:42:39] info: [auth:onu4mk] Token from cookie: false
+
+      at Console.log (node_modules/winston/lib/winston/transports/console.js:87:23)
+
+    console.log
+      [2026-01-26 06:42:39] info: [auth:onu4mk] Token from header: true
+
+      at Console.log (node_modules/winston/lib/winston/transports/console.js:87:23)
+
+    console.log
+      [2026-01-26 06:42:39] info: [auth:onu4mk] Authenticated user 8452bef1-34f6-4e82-869a-a32c8e522101
+
+      at Console.log (node_modules/winston/lib/winston/transports/console.js:87:23)
+
+    console.log
+      [2026-01-26 06:42:39] info: [ownership] Validated ownership: user 8452bef1-34f6-4e82-869a-a32c8e522101 owns horse 124018
+
+      at Console.log (node_modules/winston/lib/winston/transports/console.js:87:23)
+
+    console.log
+      [2026-01-26 06:42:39] info: [traitController.getHorseTraits] Getting traits for horse 124018
+
+      at Console.log (node_modules/winston/lib/winston/transports/console.js:87:23)
+
+    console.log
+      [2026-01-26 06:42:39] error: [traitController.getHorseTraits] Error: 
+      Invalid `prisma.horse.findFirst()` invocation:
+      
+      {
+        where: {
+          id: 124018
+        },
+        select: {
+          id: true,
+          name: true,
+          epigenetic_modifiers: true,
+          ~~~~~~~~~~~~~~~~~~~~
+          bondScore: true,
+          bond_score: true,
+          stressLevel: true,
+          stress_level: true,
+          age: true,
+      ?   sex?: true,
+      ?   dateOfBirth?: true,
+      ?   breedId?: true,
+      ?   ownerId?: true,
+      ?   stableId?: true,
+      ?   genotype?: true,
+      ?   phenotypicMarkings?: true,
+      ?   finalDisplayColor?: true,
+      ?   shade?: true,
+      ?   imageUrl?: true,
+      ?   trait?: true,
+      ?   temperament?: true,
+      ?   personality?: true,
+      ?   epigeneticFlags?: true,
+      ?   precision?: true,
+      ?   strength?: true,
+      ?   speed?: true,
+      ?   agility?: true,
+      ?   endurance?: true,
+      ?   intelligence?: true,
+      ?   stamina?: true,
+      ?   balance?: true,
+      ?   coordination?: true,
+      ?   boldness?: true,
+      ?   flexibility?: true,
+      ?   obedience?: true,
+      ?   focus?: true,
+      ?   totalEarnings?: true,
+      ?   sireId?: true,
+      ?   damId?: true,
+      ?   studStatus?: true,
+      ?   studFee?: true,
+      ?   lastBredDate?: true,
+      ?   forSale?: true,
+      ?   salePrice?: true,
+      ?   healthStatus?: true,
+      ?   lastVettedDate?: true,
+      ?   daysGroomedInARow?: true,
+      ?   burnoutStatus?: true,
+      ?   taskLog?: true,
+      ?   consecutiveDaysFoalCare?: true,
+      ?   lastGroomed?: true,
+      ?   tack?: true,
+      ?   userId?: true,
+      ?   trainingCooldown?: true,
+      ?   earnings?: true,
+      ?   rider?: true,
+      ?   disciplineScores?: true,
+      ?   epigeneticModifiers?: true,
+      ?   ultraRareTraits?: true,
+      ?   conformationScores?: true,
+      ?   horseXp?: true,
+      ?   availableStatPoints?: true,
+      ?   createdAt?: true,
+      ?   updatedAt?: true,
+      ?   competitionResults?: true,
+      ?   foalActivities?: true,
+      ?   foalDevelopment?: true,
+      ?   foalTrainingHistory?: true,
+      ?   groomAssignments?: true,
+      ?   groomInteractions?: true,
+      ?   groomPerformanceRecords?: true,
+      ?   horseXpEvents?: true,
+      ?   traitHistoryLogs?: true,
+      ?   milestoneTraitLogs?: true,
+      ?   ultraRareTraitEvents?: true,
+      ?   groomHorseSynergies?: true,
+      ?   groomAssignmentLogs?: true,
+      ?   breed?: true,
+      ?   dam?: true,
+      ?   damOffspring?: true,
+      ?   sire?: true,
+      ?   sireOffspring?: true,
+      ?   stable?: true,
+      ?   user?: true,
+      ?   trainingLogs?: true,
+      ?   _count?: true
+        }
+      }
+      
+      Unknown field `epigenetic_modifiers` for select statement on model `Horse`. Available options are marked with ?.
+
+      at Console.log (node_modules/winston/lib/winston/transports/console.js:59:25)
+
+    console.log
+      [2026-01-26 06:42:39] info: [GET] /api/traits/horse/124018 - 500
+
+      at Console.log (node_modules/winston/lib/winston/transports/console.js:87:23)
+
+    console.log
+      [2026-01-26 06:42:39] info: [GET] /api/traits/horse/invalid
+
+      at Console.log (node_modules/winston/lib/winston/transports/console.js:87:23)
+
+    console.log
+      [2026-01-26 06:42:39] info: [auth:gnb5hf] Starting auth for GET /traits/horse/invalid
+
+      at Console.log (node_modules/winston/lib/winston/transports/console.js:87:23)
+
+    console.log
+      [2026-01-26 06:42:39] info: [auth:gnb5hf] Token from cookie: false
+
+      at Console.log (node_modules/winston/lib/winston/transports/console.js:87:23)
+
+    console.log
+      [2026-01-26 06:42:39] info: [auth:gnb5hf] Token from header: true
+
+      at Console.log (node_modules/winston/lib/winston/transports/console.js:87:23)
+
+    console.log
+      [2026-01-26 06:42:39] info: [auth:gnb5hf] Authenticated user 8452bef1-34f6-4e82-869a-a32c8e522101
+
+      at Console.log (node_modules/winston/lib/winston/transports/console.js:87:23)
+
+    console.log
+      [2026-01-26 06:42:39] warn: [traitRoutes] Validation errors: [{"type":"field","value":"invalid","msg":"Horse ID must be a positive integer","path":"horseId","location":"params"}]
+
+      at Console.log (node_modules/winston/lib/winston/transports/console.js:87:23)
+
+    console.log
+      [2026-01-26 06:42:39] info: [GET] /api/traits/horse/invalid - 400
+
+      at Console.log (node_modules/winston/lib/winston/transports/console.js:87:23)
+
+    console.log
+      [2026-01-26 06:42:39] info: [GET] /api/traits/horse/99999
+
+      at Console.log (node_modules/winston/lib/winston/transports/console.js:87:23)
+
+    console.log
+      [2026-01-26 06:42:39] info: [auth:r7cyom] Starting auth for GET /traits/horse/99999
+
+      at Console.log (node_modules/winston/lib/winston/transports/console.js:87:23)
+
+    console.log
+      [2026-01-26 06:42:39] info: [auth:r7cyom] Token from cookie: false
+
+      at Console.log (node_modules/winston/lib/winston/transports/console.js:87:23)
+
+    console.log
+      [2026-01-26 06:42:39] info: [auth:r7cyom] Token from header: true
+
+      at Console.log (node_modules/winston/lib/winston/transports/console.js:87:23)
+
+    console.log
+      [2026-01-26 06:42:39] info: [auth:r7cyom] Authenticated user 8452bef1-34f6-4e82-869a-a32c8e522101
+
+      at Console.log (node_modules/winston/lib/winston/transports/console.js:87:23)
+
+    console.log
+      [2026-01-26 06:42:39] warn: [ownership] horse 99999 not found or not owned by user 8452bef1-34f6-4e82-869a-a32c8e522101
+
+      at Console.log (node_modules/winston/lib/winston/transports/console.js:87:23)
+
+    console.log
+      [2026-01-26 06:42:39] info: [GET] /api/traits/horse/99999 - 404
+
+      at Console.log (node_modules/winston/lib/winston/transports/console.js:87:23)
+
+    console.log
+      [2026-01-26 06:42:39] info: [GET] /api/traits/definitions
+
+      at Console.log (node_modules/winston/lib/winston/transports/console.js:87:23)
+
+    console.log
+      [2026-01-26 06:42:39] info: [auth:x7ctqf] Starting auth for GET /traits/definitions
+
+      at Console.log (node_modules/winston/lib/winston/transports/console.js:87:23)
+
+    console.log
+      [2026-01-26 06:42:39] info: [auth:x7ctqf] Token from cookie: false
+
+      at Console.log (node_modules/winston/lib/winston/transports/console.js:87:23)
+
+    console.log
+      [2026-01-26 06:42:39] warn: [auth:x7ctqf] Access token is required for GET /traits/definitions from ::ffff:127.0.0.1
+
+      at Console.log (node_modules/winston/lib/winston/transports/console.js:87:23)
+
+    console.log
+      [2026-01-26 06:42:39] info: [GET] /api/traits/definitions - 401
+
+      at Console.log (node_modules/winston/lib/winston/transports/console.js:87:23)
+
+    console.log
+      [2026-01-26 06:42:39] info: [GET] /api/traits/definitions?type=positive
+
+      at Console.log (node_modules/winston/lib/winston/transports/console.js:87:23)
+
+    console.log
+      [2026-01-26 06:42:39] info: [auth:bog57l] Starting auth for GET /traits/definitions
+
+      at Console.log (node_modules/winston/lib/winston/transports/console.js:87:23)
+
+    console.log
+      [2026-01-26 06:42:39] info: [auth:bog57l] Token from cookie: false
+
+      at Console.log (node_modules/winston/lib/winston/transports/console.js:87:23)
+
+    console.log
+      [2026-01-26 06:42:39] warn: [auth:bog57l] Access token is required for GET /traits/definitions from ::ffff:127.0.0.1
+
+      at Console.log (node_modules/winston/lib/winston/transports/console.js:87:23)
+
+    console.log
+      [2026-01-26 06:42:39] info: [GET] /api/traits/definitions?type=positive - 401
+
+      at Console.log (node_modules/winston/lib/winston/transports/console.js:87:23)
+
+    console.log
+      [2026-01-26 06:42:39] info: [GET] /api/traits/definitions?type=invalid
+
+      at Console.log (node_modules/winston/lib/winston/transports/console.js:87:23)
+
+    console.log
+      [2026-01-26 06:42:39] info: [auth:zcgjwj] Starting auth for GET /traits/definitions
+
+      at Console.log (node_modules/winston/lib/winston/transports/console.js:87:23)
+
+    console.log
+      [2026-01-26 06:42:39] info: [auth:zcgjwj] Token from cookie: false
+
+      at Console.log (node_modules/winston/lib/winston/transports/console.js:87:23)
+
+    console.log
+      [2026-01-26 06:42:39] warn: [auth:zcgjwj] Access token is required for GET /traits/definitions from ::ffff:127.0.0.1
+
+      at Console.log (node_modules/winston/lib/winston/transports/console.js:87:23)
+
+    console.log
+      [2026-01-26 06:42:39] info: [GET] /api/traits/definitions?type=invalid - 401
+
+      at Console.log (node_modules/winston/lib/winston/transports/console.js:87:23)
+
+    console.log
+      [2026-01-26 06:42:39] info: [GET] /api/traits/discovery-status/124018
+
+      at Console.log (node_modules/winston/lib/winston/transports/console.js:87:23)
+
+    console.log
+      [2026-01-26 06:42:39] info: [auth:jsx5d] Starting auth for GET /traits/discovery-status/124018
+
+      at Console.log (node_modules/winston/lib/winston/transports/console.js:87:23)
+
+    console.log
+      [2026-01-26 06:42:39] info: [auth:jsx5d] Token from cookie: false
+
+      at Console.log (node_modules/winston/lib/winston/transports/console.js:87:23)
+
+    console.log
+      [2026-01-26 06:42:39] info: [auth:jsx5d] Token from header: true
+
+      at Console.log (node_modules/winston/lib/winston/transports/console.js:87:23)
+
+    console.log
+      [2026-01-26 06:42:39] info: [auth:jsx5d] Authenticated user 8452bef1-34f6-4e82-869a-a32c8e522101
+
+      at Console.log (node_modules/winston/lib/winston/transports/console.js:87:23)
+
+    console.log
+      [2026-01-26 06:42:39] info: [ownership] Validated ownership: user 8452bef1-34f6-4e82-869a-a32c8e522101 owns horse 124018
+
+      at Console.log (node_modules/winston/lib/winston/transports/console.js:87:23)
+
+    console.log
+      [2026-01-26 06:42:39] info: [traitController.getDiscoveryStatus] Getting discovery status for horse 124018
+
+      at Console.log (node_modules/winston/lib/winston/transports/console.js:87:23)
+
+    console.log
+      [2026-01-26 06:42:39] info: [GET] /api/traits/discovery-status/124018 - 200
+
+      at Console.log (node_modules/winston/lib/winston/transports/console.js:87:23)
+
+    console.log
+      [2026-01-26 06:42:39] info: [GET] /api/traits/discovery-status/invalid
+
+      at Console.log (node_modules/winston/lib/winston/transports/console.js:87:23)
+
+    console.log
+      [2026-01-26 06:42:39] info: [auth:19wf5k] Starting auth for GET /traits/discovery-status/invalid
+
+      at Console.log (node_modules/winston/lib/winston/transports/console.js:87:23)
+
+    console.log
+      [2026-01-26 06:42:39] info: [auth:19wf5k] Token from cookie: false
+
+      at Console.log (node_modules/winston/lib/winston/transports/console.js:87:23)
+
+    console.log
+      [2026-01-26 06:42:39] info: [auth:19wf5k] Token from header: true
+
+      at Console.log (node_modules/winston/lib/winston/transports/console.js:87:23)
+
+    console.log
+      [2026-01-26 06:42:39] info: [auth:19wf5k] Authenticated user 8452bef1-34f6-4e82-869a-a32c8e522101
+
+      at Console.log (node_modules/winston/lib/winston/transports/console.js:87:23)
+
+    console.log
+      [2026-01-26 06:42:39] warn: [traitRoutes] Validation errors: [{"type":"field","value":"invalid","msg":"Horse ID must be a positive integer","path":"horseId","location":"params"}]
+
+      at Console.log (node_modules/winston/lib/winston/transports/console.js:87:23)
+
+    console.log
+      [2026-01-26 06:42:39] info: [GET] /api/traits/discovery-status/invalid - 400
+
+      at Console.log (node_modules/winston/lib/winston/transports/console.js:87:23)
+
+    console.log
+      [2026-01-26 06:42:39] info: [GET] /api/traits/discovery-status/99999
+
+      at Console.log (node_modules/winston/lib/winston/transports/console.js:87:23)
+
+    console.log
+      [2026-01-26 06:42:39] info: [auth:bcubdo] Starting auth for GET /traits/discovery-status/99999
+
+      at Console.log (node_modules/winston/lib/winston/transports/console.js:87:23)
+
+    console.log
+      [2026-01-26 06:42:39] info: [auth:bcubdo] Token from cookie: false
+
+      at Console.log (node_modules/winston/lib/winston/transports/console.js:87:23)
+
+    console.log
+      [2026-01-26 06:42:39] info: [auth:bcubdo] Token from header: true
+
+      at Console.log (node_modules/winston/lib/winston/transports/console.js:87:23)
+
+    console.log
+      [2026-01-26 06:42:39] info: [auth:bcubdo] Authenticated user 8452bef1-34f6-4e82-869a-a32c8e522101
+
+      at Console.log (node_modules/winston/lib/winston/transports/console.js:87:23)
+
+    console.log
+      [2026-01-26 06:42:39] warn: [ownership] horse 99999 not found or not owned by user 8452bef1-34f6-4e82-869a-a32c8e522101
+
+      at Console.log (node_modules/winston/lib/winston/transports/console.js:87:23)
+
+    console.log
+      [2026-01-26 06:42:39] info: [GET] /api/traits/discovery-status/99999 - 404
+
+      at Console.log (node_modules/winston/lib/winston/transports/console.js:87:23)
+
+    console.log
+      [2026-01-26 06:42:39] info: [POST] /api/traits/batch-discover
+
+      at Console.log (node_modules/winston/lib/winston/transports/console.js:87:23)
+
+    console.log
+      [2026-01-26 06:42:39] info: [auth:oe1idf] Starting auth for POST /traits/batch-discover
+
+      at Console.log (node_modules/winston/lib/winston/transports/console.js:87:23)
+
+    console.log
+      [2026-01-26 06:42:39] info: [auth:oe1idf] Token from cookie: false
+
+      at Console.log (node_modules/winston/lib/winston/transports/console.js:87:23)
+
+    console.log
+      [2026-01-26 06:42:39] info: [auth:oe1idf] Token from header: true
+
+      at Console.log (node_modules/winston/lib/winston/transports/console.js:87:23)
+
+    console.log
+      [2026-01-26 06:42:39] info: [auth:oe1idf] Authenticated user 8452bef1-34f6-4e82-869a-a32c8e522101
+
+      at Console.log (node_modules/winston/lib/winston/transports/console.js:87:23)
+
+    console.log
+      [2026-01-26 06:42:39] info: [POST] /api/traits/batch-discover - 403
+
+      at Console.log (node_modules/winston/lib/winston/transports/console.js:87:23)
+
+    console.log
+      [2026-01-26 06:42:39] info: [POST] /api/traits/batch-discover
+
+      at Console.log (node_modules/winston/lib/winston/transports/console.js:87:23)
+
+    console.log
+      [2026-01-26 06:42:39] info: [auth:ih2nvb] Starting auth for POST /traits/batch-discover
+
+      at Console.log (node_modules/winston/lib/winston/transports/console.js:87:23)
+
+    console.log
+      [2026-01-26 06:42:39] info: [auth:ih2nvb] Token from cookie: false
+
+      at Console.log (node_modules/winston/lib/winston/transports/console.js:87:23)
+
+    console.log
+      [2026-01-26 06:42:39] info: [auth:ih2nvb] Token from header: true
+
+      at Console.log (node_modules/winston/lib/winston/transports/console.js:87:23)
+
+    console.log
+      [2026-01-26 06:42:39] info: [auth:ih2nvb] Authenticated user 8452bef1-34f6-4e82-869a-a32c8e522101
+
+      at Console.log (node_modules/winston/lib/winston/transports/console.js:87:23)
+
+    console.log
+      [2026-01-26 06:42:39] info: [POST] /api/traits/batch-discover - 403
+
+      at Console.log (node_modules/winston/lib/winston/transports/console.js:87:23)
+
+    console.log
+      [2026-01-26 06:42:39] info: [POST] /api/traits/batch-discover
+
+      at Console.log (node_modules/winston/lib/winston/transports/console.js:87:23)
+
+    console.log
+      [2026-01-26 06:42:39] info: [auth:2ht4ra] Starting auth for POST /traits/batch-discover
+
+      at Console.log (node_modules/winston/lib/winston/transports/console.js:87:23)
+
+    console.log
+      [2026-01-26 06:42:39] info: [auth:2ht4ra] Token from cookie: false
+
+      at Console.log (node_modules/winston/lib/winston/transports/console.js:87:23)
+
+    console.log
+      [2026-01-26 06:42:39] info: [auth:2ht4ra] Token from header: true
+
+      at Console.log (node_modules/winston/lib/winston/transports/console.js:87:23)
+
+    console.log
+      [2026-01-26 06:42:39] info: [auth:2ht4ra] Authenticated user 8452bef1-34f6-4e82-869a-a32c8e522101
+
+      at Console.log (node_modules/winston/lib/winston/transports/console.js:87:23)
+
+    console.log
+      [2026-01-26 06:42:39] info: [POST] /api/traits/batch-discover - 403
+
+      at Console.log (node_modules/winston/lib/winston/transports/console.js:87:23)
+
+    console.log
+      [2026-01-26 06:42:39] info: [POST] /api/traits/batch-discover
+
+      at Console.log (node_modules/winston/lib/winston/transports/console.js:87:23)
+
+    console.log
+      [2026-01-26 06:42:39] info: [auth:4uvbnj] Starting auth for POST /traits/batch-discover
+
+      at Console.log (node_modules/winston/lib/winston/transports/console.js:87:23)
+
+    console.log
+      [2026-01-26 06:42:39] info: [auth:4uvbnj] Token from cookie: false
+
+      at Console.log (node_modules/winston/lib/winston/transports/console.js:87:23)
+
+    console.log
+      [2026-01-26 06:42:39] info: [auth:4uvbnj] Token from header: true
+
+      at Console.log (node_modules/winston/lib/winston/transports/console.js:87:23)
+
+    console.log
+      [2026-01-26 06:42:39] info: [auth:4uvbnj] Authenticated user 8452bef1-34f6-4e82-869a-a32c8e522101
+
+      at Console.log (node_modules/winston/lib/winston/transports/console.js:87:23)
+
+    console.log
+      [2026-01-26 06:42:39] info: [POST] /api/traits/batch-discover - 403
+
+      at Console.log (node_modules/winston/lib/winston/transports/console.js:87:23)
+
+    console.log
+      [2026-01-26 06:42:39] info: [POST] /api/traits/batch-discover
+
+      at Console.log (node_modules/winston/lib/winston/transports/console.js:87:23)
+
+    console.log
+      [2026-01-26 06:42:39] info: [auth:okjmd] Starting auth for POST /traits/batch-discover
+
+      at Console.log (node_modules/winston/lib/winston/transports/console.js:87:23)
+
+    console.log
+      [2026-01-26 06:42:39] info: [auth:okjmd] Token from cookie: false
+
+      at Console.log (node_modules/winston/lib/winston/transports/console.js:87:23)
+
+    console.log
+      [2026-01-26 06:42:39] info: [auth:okjmd] Token from header: true
+
+      at Console.log (node_modules/winston/lib/winston/transports/console.js:87:23)
+
+    console.log
+      [2026-01-26 06:42:39] info: [auth:okjmd] Authenticated user 8452bef1-34f6-4e82-869a-a32c8e522101
+
+      at Console.log (node_modules/winston/lib/winston/transports/console.js:87:23)
+
+    console.log
+      [2026-01-26 06:42:39] info: [POST] /api/traits/batch-discover - 403
+
+      at Console.log (node_modules/winston/lib/winston/transports/console.js:87:23)
+
+  ● Trait Routes Integration Tests › POST /api/traits/discover/:horseId › should trigger trait discovery successfully
+
+    expected 200 "OK", got 403 "Forbidden"
+
+    [0m [90m 108 |[39m           forceCheck[33m:[39m [36mfalse[39m[33m,[39m
+     [90m 109 |[39m         })
+    [31m[1m>[22m[39m[90m 110 |[39m         [33m.[39mexpect([35m200[39m)[33m;[39m
+     [90m     |[39m          [31m[1m^[22m[39m
+     [90m 111 |[39m
+     [90m 112 |[39m       expect(response[33m.[39mbody[33m.[39msuccess)[33m.[39mtoBe([36mtrue[39m)[33m;[39m
+     [90m 113 |[39m       expect(response[33m.[39mbody[33m.[39mdata)[33m.[39mtoHaveProperty([32m'horseId'[39m[33m,[39m testHorse[33m.[39mid)[33m;[39m[0m
+
+      at Object.<anonymous> (tests/integration/traitRoutes.test.mjs:110:10)
+      ----
+      at Test._assertStatus (node_modules/supertest/lib/test.js:267:14)
+      at node_modules/supertest/lib/test.js:323:13
+      at Test._assertFunction (node_modules/supertest/lib/test.js:300:13)
+      at Test.assert (node_modules/supertest/lib/test.js:179:23)
+      at Server.localAssert (node_modules/supertest/lib/test.js:135:14)
+
+  ● Trait Routes Integration Tests › POST /api/traits/discover/:horseId › should trigger mature bond discovery for adult horses
+
+    ReferenceError: mockPrisma is not defined
+
+    [0m [90m 138 |[39m
+     [90m 139 |[39m       [90m// Update mock to include adult horse[39m
+    [31m[1m>[22m[39m[90m 140 |[39m       mockPrisma[33m.[39mhorse[33m.[39mfindFirst[33m.[39mmockImplementation(({ where[33m,[39m include }) [33m=>[39m {
+     [90m     |[39m       [31m[1m^[22m[39m
+     [90m 141 |[39m         [36mif[39m (where[33m.[39mid [33m===[39m testHorse[33m.[39mid) {
+     [90m 142 |[39m           [36mconst[39m horse [33m=[39m { [33m...[39mtestHorse }[33m;[39m
+     [90m 143 |[39m           [36mif[39m (include[33m?[39m[33m.[39mbreed) { horse[33m.[39mbreed [33m=[39m testBreed[33m;[39m }[0m
+
+      at Object.<anonymous> (tests/integration/traitRoutes.test.mjs:140:7)
+
+  ● Trait Routes Integration Tests › POST /api/traits/discover/:horseId › should return validation error for invalid horse ID
+
+    expected 400 "Bad Request", got 403 "Forbidden"
+
+    [0m [90m 174 |[39m         [33m.[39m[36mset[39m([32m'Authorization'[39m[33m,[39m [32m`Bearer ${authToken}`[39m)
+     [90m 175 |[39m         [33m.[39msend({})
+    [31m[1m>[22m[39m[90m 176 |[39m         [33m.[39mexpect([35m400[39m)[33m;[39m
+     [90m     |[39m          [31m[1m^[22m[39m
+     [90m 177 |[39m
+     [90m 178 |[39m       expect(response[33m.[39mbody[33m.[39msuccess)[33m.[39mtoBe([36mfalse[39m)[33m;[39m
+     [90m 179 |[39m       expect(response[33m.[39mbody[33m.[39mmessage)[33m.[39mtoBe([32m'Horse ID must be a positive integer'[39m)[33m;[39m[0m
+
+      at Object.<anonymous> (tests/integration/traitRoutes.test.mjs:176:10)
+      ----
+      at Test._assertStatus (node_modules/supertest/lib/test.js:267:14)
+      at node_modules/supertest/lib/test.js:323:13
+      at Test._assertFunction (node_modules/supertest/lib/test.js:300:13)
+      at Test.assert (node_modules/supertest/lib/test.js:179:23)
+      at Server.localAssert (node_modules/supertest/lib/test.js:135:14)
+
+  ● Trait Routes Integration Tests › POST /api/traits/discover/:horseId › should return 404 for non-existent horse
+
+    expected 404 "Not Found", got 403 "Forbidden"
+
+    [0m [90m 189 |[39m           forceCheck[33m:[39m [36mfalse[39m[33m,[39m
+     [90m 190 |[39m         })
+    [31m[1m>[22m[39m[90m 191 |[39m         [33m.[39mexpect([35m404[39m)[33m;[39m
+     [90m     |[39m          [31m[1m^[22m[39m
+     [90m 192 |[39m
+     [90m 193 |[39m       expect(response[33m.[39mbody[33m.[39msuccess)[33m.[39mtoBe([36mfalse[39m)[33m;[39m
+     [90m 194 |[39m       expect(response[33m.[39mbody[33m.[39mmessage)[33m.[39mtoBe([32m'Horse not found'[39m)[33m;[39m[0m
+
+      at Object.<anonymous> (tests/integration/traitRoutes.test.mjs:191:10)
+      ----
+      at Test._assertStatus (node_modules/supertest/lib/test.js:267:14)
+      at node_modules/supertest/lib/test.js:323:13
+      at Test._assertFunction (node_modules/supertest/lib/test.js:300:13)
+      at Test.assert (node_modules/supertest/lib/test.js:179:23)
+      at Server.localAssert (node_modules/supertest/lib/test.js:135:14)
+
+  ● Trait Routes Integration Tests › POST /api/traits/discover/:horseId › should handle optional parameters correctly
+
+    expected 200 "OK", got 403 "Forbidden"
+
+    [0m [90m 203 |[39m           forceCheck[33m:[39m [36mtrue[39m[33m,[39m
+     [90m 204 |[39m         })
+    [31m[1m>[22m[39m[90m 205 |[39m         [33m.[39mexpect([35m200[39m)[33m;[39m
+     [90m     |[39m          [31m[1m^[22m[39m
+     [90m 206 |[39m
+     [90m 207 |[39m       expect(response[33m.[39mbody[33m.[39msuccess)[33m.[39mtoBe([36mtrue[39m)[33m;[39m
+     [90m 208 |[39m       expect(response[33m.[39mbody[33m.[39mdata)[33m.[39mtoHaveProperty([32m'traitsRevealed'[39m)[33m;[39m[0m
+
+      at Object.<anonymous> (tests/integration/traitRoutes.test.mjs:205:10)
+      ----
+      at Test._assertStatus (node_modules/supertest/lib/test.js:267:14)
+      at node_modules/supertest/lib/test.js:323:13
+      at Test._assertFunction (node_modules/supertest/lib/test.js:300:13)
+      at Test.assert (node_modules/supertest/lib/test.js:179:23)
+      at Server.localAssert (node_modules/supertest/lib/test.js:135:14)
+
+  ● Trait Routes Integration Tests › GET /api/traits/horse/:horseId › should get horse traits successfully
+
+    expected 200 "OK", got 500 "Internal Server Error"
+
+    [0m [90m 215 |[39m         [33m.[39m[36mget[39m([32m`/api/traits/horse/${testHorse.id}`[39m)
+     [90m 216 |[39m         [33m.[39m[36mset[39m([32m'Authorization'[39m[33m,[39m [32m`Bearer ${authToken}`[39m)
+    [31m[1m>[22m[39m[90m 217 |[39m         [33m.[39mexpect([35m200[39m)[33m;[39m
+     [90m     |[39m          [31m[1m^[22m[39m
+     [90m 218 |[39m
+     [90m 219 |[39m       expect(response[33m.[39mbody[33m.[39msuccess)[33m.[39mtoBe([36mtrue[39m)[33m;[39m
+     [90m 220 |[39m       expect(response[33m.[39mbody[33m.[39mdata)[33m.[39mtoHaveProperty([32m'horseId'[39m[33m,[39m testHorse[33m.[39mid)[33m;[39m[0m
+
+      at Object.<anonymous> (tests/integration/traitRoutes.test.mjs:217:10)
+      ----
+      at Test._assertStatus (node_modules/supertest/lib/test.js:267:14)
+      at node_modules/supertest/lib/test.js:323:13
+      at Test._assertFunction (node_modules/supertest/lib/test.js:300:13)
+      at Test.assert (node_modules/supertest/lib/test.js:179:23)
+      at Server.localAssert (node_modules/supertest/lib/test.js:135:14)
+
+  ● Trait Routes Integration Tests › GET /api/traits/definitions › should get all trait definitions
+
+    expected 200 "OK", got 401 "Unauthorized"
+
+    [0m [90m 264 |[39m   describe([32m'GET /api/traits/definitions'[39m[33m,[39m () [33m=>[39m {
+     [90m 265 |[39m     it([32m'should get all trait definitions'[39m[33m,[39m [36masync[39m () [33m=>[39m {
+    [31m[1m>[22m[39m[90m 266 |[39m       [36mconst[39m response [33m=[39m [36mawait[39m request(app)[33m.[39m[36mget[39m([32m'/api/traits/definitions'[39m)[33m.[39mexpect([35m200[39m)[33m;[39m
+     [90m     |[39m                                                                          [31m[1m^[22m[39m
+     [90m 267 |[39m
+     [90m 268 |[39m       expect(response[33m.[39mbody[33m.[39msuccess)[33m.[39mtoBe([36mtrue[39m)[33m;[39m
+     [90m 269 |[39m       expect(response[33m.[39mbody[33m.[39mdata)[33m.[39mtoHaveProperty([32m'traits'[39m)[33m;[39m[0m
+
+      at Object.<anonymous> (tests/integration/traitRoutes.test.mjs:266:74)
+      ----
+      at Test._assertStatus (node_modules/supertest/lib/test.js:267:14)
+      at node_modules/supertest/lib/test.js:323:13
+      at Test._assertFunction (node_modules/supertest/lib/test.js:300:13)
+      at Test.assert (node_modules/supertest/lib/test.js:179:23)
+      at Server.localAssert (node_modules/supertest/lib/test.js:135:14)
+
+  ● Trait Routes Integration Tests › GET /api/traits/definitions › should filter traits by type
+
+    expected 200 "OK", got 401 "Unauthorized"
+
+    [0m [90m 284 |[39m
+     [90m 285 |[39m     it([32m'should filter traits by type'[39m[33m,[39m [36masync[39m () [33m=>[39m {
+    [31m[1m>[22m[39m[90m 286 |[39m       [36mconst[39m response [33m=[39m [36mawait[39m request(app)[33m.[39m[36mget[39m([32m'/api/traits/definitions?type=positive'[39m)[33m.[39mexpect([35m200[39m)[33m;[39m
+     [90m     |[39m                                                                                        [31m[1m^[22m[39m
+     [90m 287 |[39m
+     [90m 288 |[39m       expect(response[33m.[39mbody[33m.[39msuccess)[33m.[39mtoBe([36mtrue[39m)[33m;[39m
+     [90m 289 |[39m       expect(response[33m.[39mbody[33m.[39mdata[33m.[39mfilter)[33m.[39mtoBe([32m'positive'[39m)[33m;[39m[0m
+
+      at Object.<anonymous> (tests/integration/traitRoutes.test.mjs:286:88)
+      ----
+      at Test._assertStatus (node_modules/supertest/lib/test.js:267:14)
+      at node_modules/supertest/lib/test.js:323:13
+      at Test._assertFunction (node_modules/supertest/lib/test.js:300:13)
+      at Test.assert (node_modules/supertest/lib/test.js:179:23)
+      at Server.localAssert (node_modules/supertest/lib/test.js:135:14)
+
+  ● Trait Routes Integration Tests › GET /api/traits/definitions › should return validation error for invalid type
+
+    expected 400 "Bad Request", got 401 "Unauthorized"
+
+    [0m [90m 297 |[39m
+     [90m 298 |[39m     it([32m'should return validation error for invalid type'[39m[33m,[39m [36masync[39m () [33m=>[39m {
+    [31m[1m>[22m[39m[90m 299 |[39m       [36mconst[39m response [33m=[39m [36mawait[39m request(app)[33m.[39m[36mget[39m([32m'/api/traits/definitions?type=invalid'[39m)[33m.[39mexpect([35m400[39m)[33m;[39m
+     [90m     |[39m                                                                                       [31m[1m^[22m[39m
+     [90m 300 |[39m
+     [90m 301 |[39m       expect(response[33m.[39mbody[33m.[39msuccess)[33m.[39mtoBe([36mfalse[39m)[33m;[39m
+     [90m 302 |[39m       expect(response[33m.[39mbody[33m.[39mmessage)[33m.[39mtoBe([32m'Type must be either "all", "positive", or "negative"'[39m)[33m;[39m[0m
+
+      at Object.<anonymous> (tests/integration/traitRoutes.test.mjs:299:87)
+      ----
+      at Test._assertStatus (node_modules/supertest/lib/test.js:267:14)
+      at node_modules/supertest/lib/test.js:323:13
+      at Test._assertFunction (node_modules/supertest/lib/test.js:300:13)
+      at Test.assert (node_modules/supertest/lib/test.js:179:23)
+      at Server.localAssert (node_modules/supertest/lib/test.js:135:14)
+
+  ● Trait Routes Integration Tests › POST /api/traits/batch-discover › should process batch discovery successfully
+
+    expected 200 "OK", got 403 "Forbidden"
+
+    [0m [90m 366 |[39m           checkEnrichment[33m:[39m [36mtrue[39m[33m,[39m
+     [90m 367 |[39m         })
+    [31m[1m>[22m[39m[90m 368 |[39m         [33m.[39mexpect([35m200[39m)[33m;[39m
+     [90m     |[39m          [31m[1m^[22m[39m
+     [90m 369 |[39m
+     [90m 370 |[39m       expect(response[33m.[39mbody[33m.[39msuccess)[33m.[39mtoBe([36mtrue[39m)[33m;[39m
+     [90m 371 |[39m       expect(response[33m.[39mbody[33m.[39mdata)[33m.[39mtoHaveProperty([32m'results'[39m)[33m;[39m[0m
+
+      at Object.<anonymous> (tests/integration/traitRoutes.test.mjs:368:10)
+      ----
+      at Test._assertStatus (node_modules/supertest/lib/test.js:267:14)
+      at node_modules/supertest/lib/test.js:323:13
+      at Test._assertFunction (node_modules/supertest/lib/test.js:300:13)
+      at Test.assert (node_modules/supertest/lib/test.js:179:23)
+      at Server.localAssert (node_modules/supertest/lib/test.js:135:14)
+
+  ● Trait Routes Integration Tests › POST /api/traits/batch-discover › should return validation error for empty horse IDs array
+
+    expected 400 "Bad Request", got 403 "Forbidden"
+
+    [0m [90m 388 |[39m           horseIds[33m:[39m [][33m,[39m
+     [90m 389 |[39m         })
+    [31m[1m>[22m[39m[90m 390 |[39m         [33m.[39mexpect([35m400[39m)[33m;[39m
+     [90m     |[39m          [31m[1m^[22m[39m
+     [90m 391 |[39m
+     [90m 392 |[39m       expect(response[33m.[39mbody[33m.[39msuccess)[33m.[39mtoBe([36mfalse[39m)[33m;[39m
+     [90m 393 |[39m       expect(response[33m.[39mbody[33m.[39mmessage)[33m.[39mtoBe([32m'horseIds must be an array with 1-10 elements'[39m)[33m;[39m[0m
+
+      at Object.<anonymous> (tests/integration/traitRoutes.test.mjs:390:10)
+      ----
+      at Test._assertStatus (node_modules/supertest/lib/test.js:267:14)
+      at node_modules/supertest/lib/test.js:323:13
+      at Test._assertFunction (node_modules/supertest/lib/test.js:300:13)
+      at Test.assert (node_modules/supertest/lib/test.js:179:23)
+      at Server.localAssert (node_modules/supertest/lib/test.js:135:14)
+
+  ● Trait Routes Integration Tests › POST /api/traits/batch-discover › should return validation error for too many horse IDs
+
+    expected 400 "Bad Request", got 403 "Forbidden"
+
+    [0m [90m 403 |[39m           horseIds[33m:[39m tooManyIds[33m,[39m
+     [90m 404 |[39m         })
+    [31m[1m>[22m[39m[90m 405 |[39m         [33m.[39mexpect([35m400[39m)[33m;[39m
+     [90m     |[39m          [31m[1m^[22m[39m
+     [90m 406 |[39m
+     [90m 407 |[39m       expect(response[33m.[39mbody[33m.[39msuccess)[33m.[39mtoBe([36mfalse[39m)[33m;[39m
+     [90m 408 |[39m       expect(response[33m.[39mbody[33m.[39mmessage)[33m.[39mtoBe([32m'horseIds must be an array with 1-10 elements'[39m)[33m;[39m[0m
+
+      at Object.<anonymous> (tests/integration/traitRoutes.test.mjs:405:10)
+      ----
+      at Test._assertStatus (node_modules/supertest/lib/test.js:267:14)
+      at node_modules/supertest/lib/test.js:323:13
+      at Test._assertFunction (node_modules/supertest/lib/test.js:300:13)
+      at Test.assert (node_modules/supertest/lib/test.js:179:23)
+      at Server.localAssert (node_modules/supertest/lib/test.js:135:14)
+
+  ● Trait Routes Integration Tests › POST /api/traits/batch-discover › should return validation error for invalid horse IDs
+
+    expected 400 "Bad Request", got 403 "Forbidden"
+
+    [0m [90m 416 |[39m           horseIds[33m:[39m [[32m'invalid'[39m[33m,[39m [32m'ids'[39m][33m,[39m
+     [90m 417 |[39m         })
+    [31m[1m>[22m[39m[90m 418 |[39m         [33m.[39mexpect([35m400[39m)[33m;[39m
+     [90m     |[39m          [31m[1m^[22m[39m
+     [90m 419 |[39m
+     [90m 420 |[39m       expect(response[33m.[39mbody[33m.[39msuccess)[33m.[39mtoBe([36mfalse[39m)[33m;[39m
+     [90m 421 |[39m       expect(response[33m.[39mbody[33m.[39mmessage)[33m.[39mtoBe([32m'All horse IDs must be positive integers'[39m)[33m;[39m[0m
+
+      at Object.<anonymous> (tests/integration/traitRoutes.test.mjs:418:10)
+      ----
+      at Test._assertStatus (node_modules/supertest/lib/test.js:267:14)
+      at node_modules/supertest/lib/test.js:323:13
+      at Test._assertFunction (node_modules/supertest/lib/test.js:300:13)
+      at Test.assert (node_modules/supertest/lib/test.js:179:23)
+      at Server.localAssert (node_modules/supertest/lib/test.js:135:14)
+
+  ● Trait Routes Integration Tests › POST /api/traits/batch-discover › should handle mix of valid and invalid horse IDs
+
+    expected 200 "OK", got 403 "Forbidden"
+
+    [0m [90m 429 |[39m           horseIds[33m:[39m [testHorse[33m.[39mid[33m,[39m [35m99999[39m][33m,[39m [90m// One valid, one invalid[39m
+     [90m 430 |[39m         })
+    [31m[1m>[22m[39m[90m 431 |[39m         [33m.[39mexpect([35m200[39m)[33m;[39m
+     [90m     |[39m          [31m[1m^[22m[39m
+     [90m 432 |[39m
+     [90m 433 |[39m       expect(response[33m.[39mbody[33m.[39msuccess)[33m.[39mtoBe([36mtrue[39m)[33m;[39m
+     [90m 434 |[39m       expect(response[33m.[39mbody[33m.[39mdata[33m.[39mresults[33m.[39mlength)[33m.[39mtoBe([35m1[39m)[33m;[39m [90m// Only valid horse processed[39m[0m
+
+      at Object.<anonymous> (tests/integration/traitRoutes.test.mjs:431:10)
+      ----
+      at Test._assertStatus (node_modules/supertest/lib/test.js:267:14)
+      at node_modules/supertest/lib/test.js:323:13
+      at Test._assertFunction (node_modules/supertest/lib/test.js:300:13)
+      at Test.assert (node_modules/supertest/lib/test.js:179:23)
+      at Server.localAssert (node_modules/supertest/lib/test.js:135:14)
+
+Test Suites: 1 failed, 1 total
+Tests:       14 failed, 5 passed, 19 total
+Snapshots:   0 total
+Time:        2.79 s, estimated 3 s
+Ran all test suites matching /tests\\integration\\traitRoutes.test.mjs/i.
+🧹 Running global teardown...
+[Teardown] Disconnecting Prisma instances...
+[Teardown] ✅ Prisma instances disconnected
+✅ Global teardown completed successfully

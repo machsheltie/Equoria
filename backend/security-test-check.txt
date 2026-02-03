@@ -1,0 +1,11 @@
+
+> equoria-monorepo@1.0.0 test
+> node --experimental-vm-modules node_modules/jest/bin/jest.js --testPathPattern=security --maxWorkers=2 --silent
+
+● Validation Error:
+
+  Preset react-native not found.
+
+  Configuration Documentation:
+  https://jestjs.io/docs/configuration
+

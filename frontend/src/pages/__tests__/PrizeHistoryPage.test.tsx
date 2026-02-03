@@ -20,7 +20,7 @@
 import { describe, it, expect, vi, beforeEach, Mock } from 'vitest';
 import { render, screen, waitFor, within } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
-import { BrowserRouter, MemoryRouter, Routes, Route, TestRouter } from '@/test/utils';
+import { MemoryRouter, Routes, Route, TestRouter } from '@/test/utils';
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
 import PrizeHistoryPage from '../PrizeHistoryPage';
 
@@ -44,7 +44,9 @@ vi.mock('@/components/competition/PrizeTransactionHistory', () => ({
       <span data-testid="filter-discipline">{filters?.discipline ?? 'all'}</span>
       <button
         data-testid="mock-change-filter"
-        onClick={() => onFilterChange?.({ dateRange: '30days', horseId: 1, discipline: 'dressage' })}
+        onClick={() =>
+          onFilterChange?.({ dateRange: '30days', horseId: 1, discipline: 'dressage' })
+        }
       >
         Change Filters
       </button>

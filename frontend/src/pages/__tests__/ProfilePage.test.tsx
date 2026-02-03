@@ -17,7 +17,6 @@ import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
 import { BrowserRouter } from '../../test/utils';
 import { ReactNode } from 'react';
 import ProfilePage from '../ProfilePage';
-import * as apiClient from '../../lib/api-client';
 import * as useAuthModule from '../../hooks/useAuth';
 import * as useUserProgressModule from '../../hooks/api/useUserProgress';
 

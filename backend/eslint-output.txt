@@ -1,0 +1,65 @@
+
+C:\Users\heirr\OneDrive\Desktop\Equoria\backend\__tests__\integration\auth-cookies.test.mjs
+   42:5  error  'testUser' is not defined  no-undef
+  442:7  error  'testUser' is not defined  no-undef
+
+C:\Users\heirr\OneDrive\Desktop\Equoria\backend\__tests__\integration\csrf-integration.test.mjs
+  101:7  error  'csrfToken' is not defined  no-undef
+  126:7  error  'csrfToken' is not defined  no-undef
+
+C:\Users\heirr\OneDrive\Desktop\Equoria\backend\__tests__\integration\email-verification.test.mjs
+  57:5  error  'testPassword' is not defined  no-undef
+
+C:\Users\heirr\OneDrive\Desktop\Equoria\backend\__tests__\integration\security\ownership-violations.test.mjs
+  56:5  error  'tokenB' is not defined  no-undef
+
+C:\Users\heirr\OneDrive\Desktop\Equoria\backend\__tests__\integration\security\sql-injection-attempts.test.mjs
+  70:5  error  'testGroom' is not defined  no-undef
+
+C:\Users\heirr\OneDrive\Desktop\Equoria\backend\__tests__\services\apiDocumentation.test.mjs
+  26:3  error  'generateDocumentation' is defined but never used. Allowed unused vars must match /^_/u  no-unused-vars
+
+C:\Users\heirr\OneDrive\Desktop\Equoria\backend\__tests__\unit\auth-rate-limiter.test.mjs
+  33:5  error  'mockReq' is not defined      no-undef
+  38:5  error  'mockRes' is not defined      no-undef
+  39:5  error  'mockNext' is not defined     no-undef
+  41:5  error  'rateLimiter' is not defined  no-undef
+
+C:\Users\heirr\OneDrive\Desktop\Equoria\backend\__tests__\unit\security\rate-limit-keys.test.mjs
+  19:18  error  'next' is assigned a value but never used. Allowed unused vars must match /^_/u  no-unused-vars
+  30:5   error  'res' is not defined                                                             no-undef
+
+C:\Users\heirr\OneDrive\Desktop\Equoria\backend\controllers\authController.mjs
+  11:3  error  'invalidateTokenFamily' is defined but never used. Allowed unused vars must match /^_/u  no-unused-vars
+
+C:\Users\heirr\OneDrive\Desktop\Equoria\backend\middleware\authRateLimiter.mjs
+  57:39  error  'options' is assigned a value but never used. Allowed unused vars must match /^_/u  no-unused-vars
+
+C:\Users\heirr\OneDrive\Desktop\Equoria\backend\routes\apiOptimizationRoutes.mjs
+  27:3  error  'ResponseCacheService' is defined but never used. Allowed unused vars must match /^_/u  no-unused-vars
+
+C:\Users\heirr\OneDrive\Desktop\Equoria\backend\routes\enhancedReportingRoutes.mjs
+  45:3  error  'analyzeTraitTrends' is defined but never used. Allowed unused vars must match /^_/u        no-unused-vars
+  46:3  error  'identifyTraitPatterns' is defined but never used. Allowed unused vars must match /^_/u     no-unused-vars
+  47:3  error  'generateTrendPredictions' is defined but never used. Allowed unused vars must match /^_/u  no-unused-vars
+
+C:\Users\heirr\OneDrive\Desktop\Equoria\backend\routes\memoryManagementRoutes.mjs
+  24:3  error  'getMemoryReport' is defined but never used. Allowed unused vars must match /^_/u  no-unused-vars
+  25:3  error  'trackResource' is defined but never used. Allowed unused vars must match /^_/u    no-unused-vars
+  26:3  error  'untrackResource' is defined but never used. Allowed unused vars must match /^_/u  no-unused-vars
+
+C:\Users\heirr\OneDrive\Desktop\Equoria\backend\tests\config\DependencyExtractor.mjs
+  28:27  error  'options' is defined but never used. Allowed unused args must match /^_/u  no-unused-vars
+
+C:\Users\heirr\OneDrive\Desktop\Equoria\backend\tests\load\distributed-rate-limiting.test.js
+  162:11  error  'hitRateLimit' is assigned a value but never used. Allowed unused vars must match /^_/u   no-unused-vars
+  162:11  error  'hitRateLimit' is never reassigned. Use 'const' instead                                   prefer-const
+  173:11  error  '_hitRateLimit' is not defined                                                            no-undef
+  208:9   error  'totalRequests' is assigned a value but never used. Allowed unused vars must match /^_/u  no-unused-vars
+
+C:\Users\heirr\OneDrive\Desktop\Equoria\backend\tests\unit\environmentalFactorEngine.test.mjs
+  19:3  error  'getEnvironmentalHistory' is defined but never used. Allowed unused vars must match /^_/u  no-unused-vars
+
+✖ 29 problems (29 errors, 0 warnings)
+  1 error and 0 warnings potentially fixable with the `--fix` option.
+

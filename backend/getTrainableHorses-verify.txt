@@ -1,0 +1,4049 @@
+
+> equoria-backend@1.0.0 test
+> node --experimental-vm-modules node_modules/jest/bin/jest.js tests/trainingController.test.mjs
+
+(node:35456) ExperimentalWarning: VM Modules is an experimental feature and might change at any time
+(Use `node --trace-warnings ...` to show where the warning was created)
+FAIL tests/trainingController.test.mjs
+  ● Console
+
+    console.log
+      [2026-01-28 13:38:05] info: [envValidator] Validating test environment configuration...
+
+      at Console.log (node_modules/winston/lib/winston/transports/console.js:87:23)
+
+    console.log
+      [2026-01-28 13:38:05] info: [envValidator] ✅ All 5 required environment variables are present
+
+      at Console.log (node_modules/winston/lib/winston/transports/console.js:87:23)
+
+    console.log
+      [2026-01-28 13:38:05] info: [envValidator] ℹ️  Optional variables not set: AUTH_RATE_LIMIT_MAX, ENABLE_DEBUG_ROUTES
+
+      at Console.log (node_modules/winston/lib/winston/transports/console.js:87:23)
+
+    console.log
+      [2026-01-28 13:38:05] info: [envValidator] Test environment validation complete. Success: true
+
+      at Console.log (node_modules/winston/lib/winston/transports/console.js:87:23)
+
+  ● 🏋️ UNIT: Training Controller - Horse Training Business Logic › canTrain › should return eligible true for horse that meets all requirements
+
+    PrismaClientValidationError: 
+    Invalid `prisma.horse.create()` invocation:
+
+    {
+      data: {
+        name: "Eligible Horse",
+        dateOfBirth: new Date("2022-01-28T18:38:05.870Z"),
+        age: 4,
+        sex: "M",
+        user: {
+          connect: {
+            id: "e9a60265-ea17-4d42-9623-b3eb36029a01"
+          }
+        },
+        breedId: 1,
+        ~~~~~~~
+        speed: 50,
+        stamina: 50,
+        agility: 50,
+        healthStatus: "Excellent",
+    ?   ownerId?: String | Null,
+    ?   genotype?: NullableJsonNullValueInput | Json,
+    ?   phenotypicMarkings?: NullableJsonNullValueInput | Json,
+    ?   finalDisplayColor?: String | Null,
+    ?   shade?: String | Null,
+    ?   imageUrl?: String | Null,
+    ?   trait?: String | Null,
+    ?   temperament?: String | Null,
+    ?   personality?: String | Null,
+    ?   epigeneticFlags?: HorseCreateepigeneticFlagsInput | String[],
+    ?   precision?: Int | Null,
+    ?   strength?: Int | Null,
+    ?   endurance?: Int | Null,
+    ?   intelligence?: Int | Null,
+    ?   balance?: Int | Null,
+    ?   coordination?: Int | Null,
+    ?   boldness?: Int | Null,
+    ?   flexibility?: Int | Null,
+    ?   obedience?: Int | Null,
+    ?   focus?: Int | Null,
+    ?   totalEarnings?: Int | Null,
+    ?   studStatus?: String | Null,
+    ?   studFee?: Int | Null,
+    ?   lastBredDate?: DateTime | Null,
+    ?   forSale?: Boolean | Null,
+    ?   salePrice?: Int | Null,
+    ?   lastVettedDate?: DateTime | Null,
+    ?   bondScore?: Int | Null,
+    ?   stressLevel?: Int | Null,
+    ?   daysGroomedInARow?: Int | Null,
+    ?   burnoutStatus?: String | Null,
+    ?   taskLog?: NullableJsonNullValueInput | Json,
+    ?   consecutiveDaysFoalCare?: Int | Null,
+    ?   lastGroomed?: DateTime | Null,
+    ?   tack?: NullableJsonNullValueInput | Json,
+    ?   trainingCooldown?: DateTime | Null,
+    ?   earnings?: Decimal | Null,
+    ?   rider?: NullableJsonNullValueInput | Json,
+    ?   disciplineScores?: NullableJsonNullValueInput | Json,
+    ?   epigeneticModifiers?: NullableJsonNullValueInput | Json,
+    ?   ultraRareTraits?: NullableJsonNullValueInput | Json,
+    ?   conformationScores?: NullableJsonNullValueInput | Json,
+    ?   horseXp?: Int | Null,
+    ?   availableStatPoints?: Int | Null,
+    ?   createdAt?: DateTime | Null,
+    ?   updatedAt?: DateTime | Null,
+    ?   competitionResults?: CompetitionResultCreateNestedManyWithoutHorseInput,
+    ?   foalActivities?: FoalActivityCreateNestedManyWithoutFoalInput,
+    ?   foalDevelopment?: FoalDevelopmentCreateNestedOneWithoutFoalInput,
+    ?   foalTrainingHistory?: FoalTrainingHistoryCreateNestedManyWithoutHorseInput,
+    ?   groomAssignments?: GroomAssignmentCreateNestedManyWithoutFoalInput,
+    ?   groomInteractions?: GroomInteractionCreateNestedManyWithoutFoalInput,
+    ?   groomPerformanceRecords?: GroomPerformanceRecordCreateNestedManyWithoutHorseInput,
+    ?   horseXpEvents?: HorseXpEventCreateNestedManyWithoutHorseInput,
+    ?   traitHistoryLogs?: TraitHistoryLogCreateNestedManyWithoutHorseInput,
+    ?   milestoneTraitLogs?: MilestoneTraitLogCreateNestedManyWithoutHorseInput,
+    ?   ultraRareTraitEvents?: UltraRareTraitEventCreateNestedManyWithoutHorseInput,
+    ?   groomHorseSynergies?: GroomHorseSynergyCreateNestedManyWithoutHorseInput,
+    ?   groomAssignmentLogs?: GroomAssignmentLogCreateNestedManyWithoutHorseInput,
+    ?   breed?: BreedCreateNestedOneWithoutHorsesInput,
+    ?   dam?: HorseCreateNestedOneWithoutDamOffspringInput,
+    ?   damOffspring?: HorseCreateNestedManyWithoutDamInput,
+    ?   sire?: HorseCreateNestedOneWithoutSireOffspringInput,
+    ?   sireOffspring?: HorseCreateNestedManyWithoutSireInput,
+    ?   stable?: StableCreateNestedOneWithoutHorsesInput,
+    ?   trainingLogs?: TrainingLogCreateNestedManyWithoutHorseInput
+      }
+    }
+
+    Unknown argument `breedId`. Did you mean `breed`? Available options are marked with ?.
+
+    [0m [90m 84 |[39m     fourYearsAgo[33m.[39msetFullYear(fourYearsAgo[33m.[39mgetFullYear() [33m-[39m [35m4[39m)[33m;[39m
+     [90m 85 |[39m
+    [31m[1m>[22m[39m[90m 86 |[39m     testHorseEligible [33m=[39m [36mawait[39m prisma[33m.[39mhorse[33m.[39mcreate({
+     [90m    |[39m                         [31m[1m^[22m[39m
+     [90m 87 |[39m       data[33m:[39m {
+     [90m 88 |[39m         name[33m:[39m [32m'Eligible Horse'[39m[33m,[39m
+     [90m 89 |[39m         dateOfBirth[33m:[39m fourYearsAgo[33m,[39m[0m
+
+      at kn (../packages/database/node_modules/@prisma/client/runtime/library.js:29:1363)
+      at Zn.handleRequestError (../packages/database/node_modules/@prisma/client/runtime/library.js:121:7102)
+      at Zn.handleAndLogRequestError (../packages/database/node_modules/@prisma/client/runtime/library.js:121:6784)
+      at Zn.request (../packages/database/node_modules/@prisma/client/runtime/library.js:121:6491)
+      at l (../packages/database/node_modules/@prisma/client/runtime/library.js:130:9778)
+      at Object.<anonymous> (tests/trainingController.test.mjs:86:25)
+
+  ● 🏋️ UNIT: Training Controller - Horse Training Business Logic › canTrain › should return eligible false for horse under 3 years old
+
+    PrismaClientValidationError: 
+    Invalid `prisma.horse.create()` invocation:
+
+    {
+      data: {
+        name: "Eligible Horse",
+        dateOfBirth: new Date("2022-01-28T18:38:05.870Z"),
+        age: 4,
+        sex: "M",
+        user: {
+          connect: {
+            id: "e9a60265-ea17-4d42-9623-b3eb36029a01"
+          }
+        },
+        breedId: 1,
+        ~~~~~~~
+        speed: 50,
+        stamina: 50,
+        agility: 50,
+        healthStatus: "Excellent",
+    ?   ownerId?: String | Null,
+    ?   genotype?: NullableJsonNullValueInput | Json,
+    ?   phenotypicMarkings?: NullableJsonNullValueInput | Json,
+    ?   finalDisplayColor?: String | Null,
+    ?   shade?: String | Null,
+    ?   imageUrl?: String | Null,
+    ?   trait?: String | Null,
+    ?   temperament?: String | Null,
+    ?   personality?: String | Null,
+    ?   epigeneticFlags?: HorseCreateepigeneticFlagsInput | String[],
+    ?   precision?: Int | Null,
+    ?   strength?: Int | Null,
+    ?   endurance?: Int | Null,
+    ?   intelligence?: Int | Null,
+    ?   balance?: Int | Null,
+    ?   coordination?: Int | Null,
+    ?   boldness?: Int | Null,
+    ?   flexibility?: Int | Null,
+    ?   obedience?: Int | Null,
+    ?   focus?: Int | Null,
+    ?   totalEarnings?: Int | Null,
+    ?   studStatus?: String | Null,
+    ?   studFee?: Int | Null,
+    ?   lastBredDate?: DateTime | Null,
+    ?   forSale?: Boolean | Null,
+    ?   salePrice?: Int | Null,
+    ?   lastVettedDate?: DateTime | Null,
+    ?   bondScore?: Int | Null,
+    ?   stressLevel?: Int | Null,
+    ?   daysGroomedInARow?: Int | Null,
+    ?   burnoutStatus?: String | Null,
+    ?   taskLog?: NullableJsonNullValueInput | Json,
+    ?   consecutiveDaysFoalCare?: Int | Null,
+    ?   lastGroomed?: DateTime | Null,
+    ?   tack?: NullableJsonNullValueInput | Json,
+    ?   trainingCooldown?: DateTime | Null,
+    ?   earnings?: Decimal | Null,
+    ?   rider?: NullableJsonNullValueInput | Json,
+    ?   disciplineScores?: NullableJsonNullValueInput | Json,
+    ?   epigeneticModifiers?: NullableJsonNullValueInput | Json,
+    ?   ultraRareTraits?: NullableJsonNullValueInput | Json,
+    ?   conformationScores?: NullableJsonNullValueInput | Json,
+    ?   horseXp?: Int | Null,
+    ?   availableStatPoints?: Int | Null,
+    ?   createdAt?: DateTime | Null,
+    ?   updatedAt?: DateTime | Null,
+    ?   competitionResults?: CompetitionResultCreateNestedManyWithoutHorseInput,
+    ?   foalActivities?: FoalActivityCreateNestedManyWithoutFoalInput,
+    ?   foalDevelopment?: FoalDevelopmentCreateNestedOneWithoutFoalInput,
+    ?   foalTrainingHistory?: FoalTrainingHistoryCreateNestedManyWithoutHorseInput,
+    ?   groomAssignments?: GroomAssignmentCreateNestedManyWithoutFoalInput,
+    ?   groomInteractions?: GroomInteractionCreateNestedManyWithoutFoalInput,
+    ?   groomPerformanceRecords?: GroomPerformanceRecordCreateNestedManyWithoutHorseInput,
+    ?   horseXpEvents?: HorseXpEventCreateNestedManyWithoutHorseInput,
+    ?   traitHistoryLogs?: TraitHistoryLogCreateNestedManyWithoutHorseInput,
+    ?   milestoneTraitLogs?: MilestoneTraitLogCreateNestedManyWithoutHorseInput,
+    ?   ultraRareTraitEvents?: UltraRareTraitEventCreateNestedManyWithoutHorseInput,
+    ?   groomHorseSynergies?: GroomHorseSynergyCreateNestedManyWithoutHorseInput,
+    ?   groomAssignmentLogs?: GroomAssignmentLogCreateNestedManyWithoutHorseInput,
+    ?   breed?: BreedCreateNestedOneWithoutHorsesInput,
+    ?   dam?: HorseCreateNestedOneWithoutDamOffspringInput,
+    ?   damOffspring?: HorseCreateNestedManyWithoutDamInput,
+    ?   sire?: HorseCreateNestedOneWithoutSireOffspringInput,
+    ?   sireOffspring?: HorseCreateNestedManyWithoutSireInput,
+    ?   stable?: StableCreateNestedOneWithoutHorsesInput,
+    ?   trainingLogs?: TrainingLogCreateNestedManyWithoutHorseInput
+      }
+    }
+
+    Unknown argument `breedId`. Did you mean `breed`? Available options are marked with ?.
+
+    [0m [90m 84 |[39m     fourYearsAgo[33m.[39msetFullYear(fourYearsAgo[33m.[39mgetFullYear() [33m-[39m [35m4[39m)[33m;[39m
+     [90m 85 |[39m
+    [31m[1m>[22m[39m[90m 86 |[39m     testHorseEligible [33m=[39m [36mawait[39m prisma[33m.[39mhorse[33m.[39mcreate({
+     [90m    |[39m                         [31m[1m^[22m[39m
+     [90m 87 |[39m       data[33m:[39m {
+     [90m 88 |[39m         name[33m:[39m [32m'Eligible Horse'[39m[33m,[39m
+     [90m 89 |[39m         dateOfBirth[33m:[39m fourYearsAgo[33m,[39m[0m
+
+      at kn (../packages/database/node_modules/@prisma/client/runtime/library.js:29:1363)
+      at Zn.handleRequestError (../packages/database/node_modules/@prisma/client/runtime/library.js:121:7102)
+      at Zn.handleAndLogRequestError (../packages/database/node_modules/@prisma/client/runtime/library.js:121:6784)
+      at Zn.request (../packages/database/node_modules/@prisma/client/runtime/library.js:121:6491)
+      at l (../packages/database/node_modules/@prisma/client/runtime/library.js:130:9778)
+      at Object.<anonymous> (tests/trainingController.test.mjs:86:25)
+
+  ● 🏋️ UNIT: Training Controller - Horse Training Business Logic › canTrain › should return eligible false for horse with recent training in any discipline
+
+    PrismaClientValidationError: 
+    Invalid `prisma.horse.create()` invocation:
+
+    {
+      data: {
+        name: "Eligible Horse",
+        dateOfBirth: new Date("2022-01-28T18:38:05.870Z"),
+        age: 4,
+        sex: "M",
+        user: {
+          connect: {
+            id: "e9a60265-ea17-4d42-9623-b3eb36029a01"
+          }
+        },
+        breedId: 1,
+        ~~~~~~~
+        speed: 50,
+        stamina: 50,
+        agility: 50,
+        healthStatus: "Excellent",
+    ?   ownerId?: String | Null,
+    ?   genotype?: NullableJsonNullValueInput | Json,
+    ?   phenotypicMarkings?: NullableJsonNullValueInput | Json,
+    ?   finalDisplayColor?: String | Null,
+    ?   shade?: String | Null,
+    ?   imageUrl?: String | Null,
+    ?   trait?: String | Null,
+    ?   temperament?: String | Null,
+    ?   personality?: String | Null,
+    ?   epigeneticFlags?: HorseCreateepigeneticFlagsInput | String[],
+    ?   precision?: Int | Null,
+    ?   strength?: Int | Null,
+    ?   endurance?: Int | Null,
+    ?   intelligence?: Int | Null,
+    ?   balance?: Int | Null,
+    ?   coordination?: Int | Null,
+    ?   boldness?: Int | Null,
+    ?   flexibility?: Int | Null,
+    ?   obedience?: Int | Null,
+    ?   focus?: Int | Null,
+    ?   totalEarnings?: Int | Null,
+    ?   studStatus?: String | Null,
+    ?   studFee?: Int | Null,
+    ?   lastBredDate?: DateTime | Null,
+    ?   forSale?: Boolean | Null,
+    ?   salePrice?: Int | Null,
+    ?   lastVettedDate?: DateTime | Null,
+    ?   bondScore?: Int | Null,
+    ?   stressLevel?: Int | Null,
+    ?   daysGroomedInARow?: Int | Null,
+    ?   burnoutStatus?: String | Null,
+    ?   taskLog?: NullableJsonNullValueInput | Json,
+    ?   consecutiveDaysFoalCare?: Int | Null,
+    ?   lastGroomed?: DateTime | Null,
+    ?   tack?: NullableJsonNullValueInput | Json,
+    ?   trainingCooldown?: DateTime | Null,
+    ?   earnings?: Decimal | Null,
+    ?   rider?: NullableJsonNullValueInput | Json,
+    ?   disciplineScores?: NullableJsonNullValueInput | Json,
+    ?   epigeneticModifiers?: NullableJsonNullValueInput | Json,
+    ?   ultraRareTraits?: NullableJsonNullValueInput | Json,
+    ?   conformationScores?: NullableJsonNullValueInput | Json,
+    ?   horseXp?: Int | Null,
+    ?   availableStatPoints?: Int | Null,
+    ?   createdAt?: DateTime | Null,
+    ?   updatedAt?: DateTime | Null,
+    ?   competitionResults?: CompetitionResultCreateNestedManyWithoutHorseInput,
+    ?   foalActivities?: FoalActivityCreateNestedManyWithoutFoalInput,
+    ?   foalDevelopment?: FoalDevelopmentCreateNestedOneWithoutFoalInput,
+    ?   foalTrainingHistory?: FoalTrainingHistoryCreateNestedManyWithoutHorseInput,
+    ?   groomAssignments?: GroomAssignmentCreateNestedManyWithoutFoalInput,
+    ?   groomInteractions?: GroomInteractionCreateNestedManyWithoutFoalInput,
+    ?   groomPerformanceRecords?: GroomPerformanceRecordCreateNestedManyWithoutHorseInput,
+    ?   horseXpEvents?: HorseXpEventCreateNestedManyWithoutHorseInput,
+    ?   traitHistoryLogs?: TraitHistoryLogCreateNestedManyWithoutHorseInput,
+    ?   milestoneTraitLogs?: MilestoneTraitLogCreateNestedManyWithoutHorseInput,
+    ?   ultraRareTraitEvents?: UltraRareTraitEventCreateNestedManyWithoutHorseInput,
+    ?   groomHorseSynergies?: GroomHorseSynergyCreateNestedManyWithoutHorseInput,
+    ?   groomAssignmentLogs?: GroomAssignmentLogCreateNestedManyWithoutHorseInput,
+    ?   breed?: BreedCreateNestedOneWithoutHorsesInput,
+    ?   dam?: HorseCreateNestedOneWithoutDamOffspringInput,
+    ?   damOffspring?: HorseCreateNestedManyWithoutDamInput,
+    ?   sire?: HorseCreateNestedOneWithoutSireOffspringInput,
+    ?   sireOffspring?: HorseCreateNestedManyWithoutSireInput,
+    ?   stable?: StableCreateNestedOneWithoutHorsesInput,
+    ?   trainingLogs?: TrainingLogCreateNestedManyWithoutHorseInput
+      }
+    }
+
+    Unknown argument `breedId`. Did you mean `breed`? Available options are marked with ?.
+
+    [0m [90m 84 |[39m     fourYearsAgo[33m.[39msetFullYear(fourYearsAgo[33m.[39mgetFullYear() [33m-[39m [35m4[39m)[33m;[39m
+     [90m 85 |[39m
+    [31m[1m>[22m[39m[90m 86 |[39m     testHorseEligible [33m=[39m [36mawait[39m prisma[33m.[39mhorse[33m.[39mcreate({
+     [90m    |[39m                         [31m[1m^[22m[39m
+     [90m 87 |[39m       data[33m:[39m {
+     [90m 88 |[39m         name[33m:[39m [32m'Eligible Horse'[39m[33m,[39m
+     [90m 89 |[39m         dateOfBirth[33m:[39m fourYearsAgo[33m,[39m[0m
+
+      at kn (../packages/database/node_modules/@prisma/client/runtime/library.js:29:1363)
+      at Zn.handleRequestError (../packages/database/node_modules/@prisma/client/runtime/library.js:121:7102)
+      at Zn.handleAndLogRequestError (../packages/database/node_modules/@prisma/client/runtime/library.js:121:6784)
+      at Zn.request (../packages/database/node_modules/@prisma/client/runtime/library.js:121:6491)
+      at l (../packages/database/node_modules/@prisma/client/runtime/library.js:130:9778)
+      at Object.<anonymous> (tests/trainingController.test.mjs:86:25)
+
+  ● 🏋️ UNIT: Training Controller - Horse Training Business Logic › canTrain › should return eligible true for horse with old training (8+ days ago)
+
+    PrismaClientValidationError: 
+    Invalid `prisma.horse.create()` invocation:
+
+    {
+      data: {
+        name: "Eligible Horse",
+        dateOfBirth: new Date("2022-01-28T18:38:05.870Z"),
+        age: 4,
+        sex: "M",
+        user: {
+          connect: {
+            id: "e9a60265-ea17-4d42-9623-b3eb36029a01"
+          }
+        },
+        breedId: 1,
+        ~~~~~~~
+        speed: 50,
+        stamina: 50,
+        agility: 50,
+        healthStatus: "Excellent",
+    ?   ownerId?: String | Null,
+    ?   genotype?: NullableJsonNullValueInput | Json,
+    ?   phenotypicMarkings?: NullableJsonNullValueInput | Json,
+    ?   finalDisplayColor?: String | Null,
+    ?   shade?: String | Null,
+    ?   imageUrl?: String | Null,
+    ?   trait?: String | Null,
+    ?   temperament?: String | Null,
+    ?   personality?: String | Null,
+    ?   epigeneticFlags?: HorseCreateepigeneticFlagsInput | String[],
+    ?   precision?: Int | Null,
+    ?   strength?: Int | Null,
+    ?   endurance?: Int | Null,
+    ?   intelligence?: Int | Null,
+    ?   balance?: Int | Null,
+    ?   coordination?: Int | Null,
+    ?   boldness?: Int | Null,
+    ?   flexibility?: Int | Null,
+    ?   obedience?: Int | Null,
+    ?   focus?: Int | Null,
+    ?   totalEarnings?: Int | Null,
+    ?   studStatus?: String | Null,
+    ?   studFee?: Int | Null,
+    ?   lastBredDate?: DateTime | Null,
+    ?   forSale?: Boolean | Null,
+    ?   salePrice?: Int | Null,
+    ?   lastVettedDate?: DateTime | Null,
+    ?   bondScore?: Int | Null,
+    ?   stressLevel?: Int | Null,
+    ?   daysGroomedInARow?: Int | Null,
+    ?   burnoutStatus?: String | Null,
+    ?   taskLog?: NullableJsonNullValueInput | Json,
+    ?   consecutiveDaysFoalCare?: Int | Null,
+    ?   lastGroomed?: DateTime | Null,
+    ?   tack?: NullableJsonNullValueInput | Json,
+    ?   trainingCooldown?: DateTime | Null,
+    ?   earnings?: Decimal | Null,
+    ?   rider?: NullableJsonNullValueInput | Json,
+    ?   disciplineScores?: NullableJsonNullValueInput | Json,
+    ?   epigeneticModifiers?: NullableJsonNullValueInput | Json,
+    ?   ultraRareTraits?: NullableJsonNullValueInput | Json,
+    ?   conformationScores?: NullableJsonNullValueInput | Json,
+    ?   horseXp?: Int | Null,
+    ?   availableStatPoints?: Int | Null,
+    ?   createdAt?: DateTime | Null,
+    ?   updatedAt?: DateTime | Null,
+    ?   competitionResults?: CompetitionResultCreateNestedManyWithoutHorseInput,
+    ?   foalActivities?: FoalActivityCreateNestedManyWithoutFoalInput,
+    ?   foalDevelopment?: FoalDevelopmentCreateNestedOneWithoutFoalInput,
+    ?   foalTrainingHistory?: FoalTrainingHistoryCreateNestedManyWithoutHorseInput,
+    ?   groomAssignments?: GroomAssignmentCreateNestedManyWithoutFoalInput,
+    ?   groomInteractions?: GroomInteractionCreateNestedManyWithoutFoalInput,
+    ?   groomPerformanceRecords?: GroomPerformanceRecordCreateNestedManyWithoutHorseInput,
+    ?   horseXpEvents?: HorseXpEventCreateNestedManyWithoutHorseInput,
+    ?   traitHistoryLogs?: TraitHistoryLogCreateNestedManyWithoutHorseInput,
+    ?   milestoneTraitLogs?: MilestoneTraitLogCreateNestedManyWithoutHorseInput,
+    ?   ultraRareTraitEvents?: UltraRareTraitEventCreateNestedManyWithoutHorseInput,
+    ?   groomHorseSynergies?: GroomHorseSynergyCreateNestedManyWithoutHorseInput,
+    ?   groomAssignmentLogs?: GroomAssignmentLogCreateNestedManyWithoutHorseInput,
+    ?   breed?: BreedCreateNestedOneWithoutHorsesInput,
+    ?   dam?: HorseCreateNestedOneWithoutDamOffspringInput,
+    ?   damOffspring?: HorseCreateNestedManyWithoutDamInput,
+    ?   sire?: HorseCreateNestedOneWithoutSireOffspringInput,
+    ?   sireOffspring?: HorseCreateNestedManyWithoutSireInput,
+    ?   stable?: StableCreateNestedOneWithoutHorsesInput,
+    ?   trainingLogs?: TrainingLogCreateNestedManyWithoutHorseInput
+      }
+    }
+
+    Unknown argument `breedId`. Did you mean `breed`? Available options are marked with ?.
+
+    [0m [90m 84 |[39m     fourYearsAgo[33m.[39msetFullYear(fourYearsAgo[33m.[39mgetFullYear() [33m-[39m [35m4[39m)[33m;[39m
+     [90m 85 |[39m
+    [31m[1m>[22m[39m[90m 86 |[39m     testHorseEligible [33m=[39m [36mawait[39m prisma[33m.[39mhorse[33m.[39mcreate({
+     [90m    |[39m                         [31m[1m^[22m[39m
+     [90m 87 |[39m       data[33m:[39m {
+     [90m 88 |[39m         name[33m:[39m [32m'Eligible Horse'[39m[33m,[39m
+     [90m 89 |[39m         dateOfBirth[33m:[39m fourYearsAgo[33m,[39m[0m
+
+      at kn (../packages/database/node_modules/@prisma/client/runtime/library.js:29:1363)
+      at Zn.handleRequestError (../packages/database/node_modules/@prisma/client/runtime/library.js:121:7102)
+      at Zn.handleAndLogRequestError (../packages/database/node_modules/@prisma/client/runtime/library.js:121:6784)
+      at Zn.request (../packages/database/node_modules/@prisma/client/runtime/library.js:121:6491)
+      at l (../packages/database/node_modules/@prisma/client/runtime/library.js:130:9778)
+      at Object.<anonymous> (tests/trainingController.test.mjs:86:25)
+
+  ● 🏋️ UNIT: Training Controller - Horse Training Business Logic › canTrain › should return eligible false for non-existent horse
+
+    PrismaClientValidationError: 
+    Invalid `prisma.horse.create()` invocation:
+
+    {
+      data: {
+        name: "Eligible Horse",
+        dateOfBirth: new Date("2022-01-28T18:38:05.870Z"),
+        age: 4,
+        sex: "M",
+        user: {
+          connect: {
+            id: "e9a60265-ea17-4d42-9623-b3eb36029a01"
+          }
+        },
+        breedId: 1,
+        ~~~~~~~
+        speed: 50,
+        stamina: 50,
+        agility: 50,
+        healthStatus: "Excellent",
+    ?   ownerId?: String | Null,
+    ?   genotype?: NullableJsonNullValueInput | Json,
+    ?   phenotypicMarkings?: NullableJsonNullValueInput | Json,
+    ?   finalDisplayColor?: String | Null,
+    ?   shade?: String | Null,
+    ?   imageUrl?: String | Null,
+    ?   trait?: String | Null,
+    ?   temperament?: String | Null,
+    ?   personality?: String | Null,
+    ?   epigeneticFlags?: HorseCreateepigeneticFlagsInput | String[],
+    ?   precision?: Int | Null,
+    ?   strength?: Int | Null,
+    ?   endurance?: Int | Null,
+    ?   intelligence?: Int | Null,
+    ?   balance?: Int | Null,
+    ?   coordination?: Int | Null,
+    ?   boldness?: Int | Null,
+    ?   flexibility?: Int | Null,
+    ?   obedience?: Int | Null,
+    ?   focus?: Int | Null,
+    ?   totalEarnings?: Int | Null,
+    ?   studStatus?: String | Null,
+    ?   studFee?: Int | Null,
+    ?   lastBredDate?: DateTime | Null,
+    ?   forSale?: Boolean | Null,
+    ?   salePrice?: Int | Null,
+    ?   lastVettedDate?: DateTime | Null,
+    ?   bondScore?: Int | Null,
+    ?   stressLevel?: Int | Null,
+    ?   daysGroomedInARow?: Int | Null,
+    ?   burnoutStatus?: String | Null,
+    ?   taskLog?: NullableJsonNullValueInput | Json,
+    ?   consecutiveDaysFoalCare?: Int | Null,
+    ?   lastGroomed?: DateTime | Null,
+    ?   tack?: NullableJsonNullValueInput | Json,
+    ?   trainingCooldown?: DateTime | Null,
+    ?   earnings?: Decimal | Null,
+    ?   rider?: NullableJsonNullValueInput | Json,
+    ?   disciplineScores?: NullableJsonNullValueInput | Json,
+    ?   epigeneticModifiers?: NullableJsonNullValueInput | Json,
+    ?   ultraRareTraits?: NullableJsonNullValueInput | Json,
+    ?   conformationScores?: NullableJsonNullValueInput | Json,
+    ?   horseXp?: Int | Null,
+    ?   availableStatPoints?: Int | Null,
+    ?   createdAt?: DateTime | Null,
+    ?   updatedAt?: DateTime | Null,
+    ?   competitionResults?: CompetitionResultCreateNestedManyWithoutHorseInput,
+    ?   foalActivities?: FoalActivityCreateNestedManyWithoutFoalInput,
+    ?   foalDevelopment?: FoalDevelopmentCreateNestedOneWithoutFoalInput,
+    ?   foalTrainingHistory?: FoalTrainingHistoryCreateNestedManyWithoutHorseInput,
+    ?   groomAssignments?: GroomAssignmentCreateNestedManyWithoutFoalInput,
+    ?   groomInteractions?: GroomInteractionCreateNestedManyWithoutFoalInput,
+    ?   groomPerformanceRecords?: GroomPerformanceRecordCreateNestedManyWithoutHorseInput,
+    ?   horseXpEvents?: HorseXpEventCreateNestedManyWithoutHorseInput,
+    ?   traitHistoryLogs?: TraitHistoryLogCreateNestedManyWithoutHorseInput,
+    ?   milestoneTraitLogs?: MilestoneTraitLogCreateNestedManyWithoutHorseInput,
+    ?   ultraRareTraitEvents?: UltraRareTraitEventCreateNestedManyWithoutHorseInput,
+    ?   groomHorseSynergies?: GroomHorseSynergyCreateNestedManyWithoutHorseInput,
+    ?   groomAssignmentLogs?: GroomAssignmentLogCreateNestedManyWithoutHorseInput,
+    ?   breed?: BreedCreateNestedOneWithoutHorsesInput,
+    ?   dam?: HorseCreateNestedOneWithoutDamOffspringInput,
+    ?   damOffspring?: HorseCreateNestedManyWithoutDamInput,
+    ?   sire?: HorseCreateNestedOneWithoutSireOffspringInput,
+    ?   sireOffspring?: HorseCreateNestedManyWithoutSireInput,
+    ?   stable?: StableCreateNestedOneWithoutHorsesInput,
+    ?   trainingLogs?: TrainingLogCreateNestedManyWithoutHorseInput
+      }
+    }
+
+    Unknown argument `breedId`. Did you mean `breed`? Available options are marked with ?.
+
+    [0m [90m 84 |[39m     fourYearsAgo[33m.[39msetFullYear(fourYearsAgo[33m.[39mgetFullYear() [33m-[39m [35m4[39m)[33m;[39m
+     [90m 85 |[39m
+    [31m[1m>[22m[39m[90m 86 |[39m     testHorseEligible [33m=[39m [36mawait[39m prisma[33m.[39mhorse[33m.[39mcreate({
+     [90m    |[39m                         [31m[1m^[22m[39m
+     [90m 87 |[39m       data[33m:[39m {
+     [90m 88 |[39m         name[33m:[39m [32m'Eligible Horse'[39m[33m,[39m
+     [90m 89 |[39m         dateOfBirth[33m:[39m fourYearsAgo[33m,[39m[0m
+
+      at kn (../packages/database/node_modules/@prisma/client/runtime/library.js:29:1363)
+      at Zn.handleRequestError (../packages/database/node_modules/@prisma/client/runtime/library.js:121:7102)
+      at Zn.handleAndLogRequestError (../packages/database/node_modules/@prisma/client/runtime/library.js:121:6784)
+      at Zn.request (../packages/database/node_modules/@prisma/client/runtime/library.js:121:6491)
+      at l (../packages/database/node_modules/@prisma/client/runtime/library.js:130:9778)
+      at Object.<anonymous> (tests/trainingController.test.mjs:86:25)
+
+  ● 🏋️ UNIT: Training Controller - Horse Training Business Logic › canTrain › should throw error for invalid horse ID
+
+    PrismaClientValidationError: 
+    Invalid `prisma.horse.create()` invocation:
+
+    {
+      data: {
+        name: "Eligible Horse",
+        dateOfBirth: new Date("2022-01-28T18:38:05.870Z"),
+        age: 4,
+        sex: "M",
+        user: {
+          connect: {
+            id: "e9a60265-ea17-4d42-9623-b3eb36029a01"
+          }
+        },
+        breedId: 1,
+        ~~~~~~~
+        speed: 50,
+        stamina: 50,
+        agility: 50,
+        healthStatus: "Excellent",
+    ?   ownerId?: String | Null,
+    ?   genotype?: NullableJsonNullValueInput | Json,
+    ?   phenotypicMarkings?: NullableJsonNullValueInput | Json,
+    ?   finalDisplayColor?: String | Null,
+    ?   shade?: String | Null,
+    ?   imageUrl?: String | Null,
+    ?   trait?: String | Null,
+    ?   temperament?: String | Null,
+    ?   personality?: String | Null,
+    ?   epigeneticFlags?: HorseCreateepigeneticFlagsInput | String[],
+    ?   precision?: Int | Null,
+    ?   strength?: Int | Null,
+    ?   endurance?: Int | Null,
+    ?   intelligence?: Int | Null,
+    ?   balance?: Int | Null,
+    ?   coordination?: Int | Null,
+    ?   boldness?: Int | Null,
+    ?   flexibility?: Int | Null,
+    ?   obedience?: Int | Null,
+    ?   focus?: Int | Null,
+    ?   totalEarnings?: Int | Null,
+    ?   studStatus?: String | Null,
+    ?   studFee?: Int | Null,
+    ?   lastBredDate?: DateTime | Null,
+    ?   forSale?: Boolean | Null,
+    ?   salePrice?: Int | Null,
+    ?   lastVettedDate?: DateTime | Null,
+    ?   bondScore?: Int | Null,
+    ?   stressLevel?: Int | Null,
+    ?   daysGroomedInARow?: Int | Null,
+    ?   burnoutStatus?: String | Null,
+    ?   taskLog?: NullableJsonNullValueInput | Json,
+    ?   consecutiveDaysFoalCare?: Int | Null,
+    ?   lastGroomed?: DateTime | Null,
+    ?   tack?: NullableJsonNullValueInput | Json,
+    ?   trainingCooldown?: DateTime | Null,
+    ?   earnings?: Decimal | Null,
+    ?   rider?: NullableJsonNullValueInput | Json,
+    ?   disciplineScores?: NullableJsonNullValueInput | Json,
+    ?   epigeneticModifiers?: NullableJsonNullValueInput | Json,
+    ?   ultraRareTraits?: NullableJsonNullValueInput | Json,
+    ?   conformationScores?: NullableJsonNullValueInput | Json,
+    ?   horseXp?: Int | Null,
+    ?   availableStatPoints?: Int | Null,
+    ?   createdAt?: DateTime | Null,
+    ?   updatedAt?: DateTime | Null,
+    ?   competitionResults?: CompetitionResultCreateNestedManyWithoutHorseInput,
+    ?   foalActivities?: FoalActivityCreateNestedManyWithoutFoalInput,
+    ?   foalDevelopment?: FoalDevelopmentCreateNestedOneWithoutFoalInput,
+    ?   foalTrainingHistory?: FoalTrainingHistoryCreateNestedManyWithoutHorseInput,
+    ?   groomAssignments?: GroomAssignmentCreateNestedManyWithoutFoalInput,
+    ?   groomInteractions?: GroomInteractionCreateNestedManyWithoutFoalInput,
+    ?   groomPerformanceRecords?: GroomPerformanceRecordCreateNestedManyWithoutHorseInput,
+    ?   horseXpEvents?: HorseXpEventCreateNestedManyWithoutHorseInput,
+    ?   traitHistoryLogs?: TraitHistoryLogCreateNestedManyWithoutHorseInput,
+    ?   milestoneTraitLogs?: MilestoneTraitLogCreateNestedManyWithoutHorseInput,
+    ?   ultraRareTraitEvents?: UltraRareTraitEventCreateNestedManyWithoutHorseInput,
+    ?   groomHorseSynergies?: GroomHorseSynergyCreateNestedManyWithoutHorseInput,
+    ?   groomAssignmentLogs?: GroomAssignmentLogCreateNestedManyWithoutHorseInput,
+    ?   breed?: BreedCreateNestedOneWithoutHorsesInput,
+    ?   dam?: HorseCreateNestedOneWithoutDamOffspringInput,
+    ?   damOffspring?: HorseCreateNestedManyWithoutDamInput,
+    ?   sire?: HorseCreateNestedOneWithoutSireOffspringInput,
+    ?   sireOffspring?: HorseCreateNestedManyWithoutSireInput,
+    ?   stable?: StableCreateNestedOneWithoutHorsesInput,
+    ?   trainingLogs?: TrainingLogCreateNestedManyWithoutHorseInput
+      }
+    }
+
+    Unknown argument `breedId`. Did you mean `breed`? Available options are marked with ?.
+
+    [0m [90m 84 |[39m     fourYearsAgo[33m.[39msetFullYear(fourYearsAgo[33m.[39mgetFullYear() [33m-[39m [35m4[39m)[33m;[39m
+     [90m 85 |[39m
+    [31m[1m>[22m[39m[90m 86 |[39m     testHorseEligible [33m=[39m [36mawait[39m prisma[33m.[39mhorse[33m.[39mcreate({
+     [90m    |[39m                         [31m[1m^[22m[39m
+     [90m 87 |[39m       data[33m:[39m {
+     [90m 88 |[39m         name[33m:[39m [32m'Eligible Horse'[39m[33m,[39m
+     [90m 89 |[39m         dateOfBirth[33m:[39m fourYearsAgo[33m,[39m[0m
+
+      at kn (../packages/database/node_modules/@prisma/client/runtime/library.js:29:1363)
+      at Zn.handleRequestError (../packages/database/node_modules/@prisma/client/runtime/library.js:121:7102)
+      at Zn.handleAndLogRequestError (../packages/database/node_modules/@prisma/client/runtime/library.js:121:6784)
+      at Zn.request (../packages/database/node_modules/@prisma/client/runtime/library.js:121:6491)
+      at l (../packages/database/node_modules/@prisma/client/runtime/library.js:130:9778)
+      at Object.<anonymous> (tests/trainingController.test.mjs:86:25)
+
+  ● 🏋️ UNIT: Training Controller - Horse Training Business Logic › canTrain › should throw error for missing discipline
+
+    PrismaClientValidationError: 
+    Invalid `prisma.horse.create()` invocation:
+
+    {
+      data: {
+        name: "Eligible Horse",
+        dateOfBirth: new Date("2022-01-28T18:38:05.870Z"),
+        age: 4,
+        sex: "M",
+        user: {
+          connect: {
+            id: "e9a60265-ea17-4d42-9623-b3eb36029a01"
+          }
+        },
+        breedId: 1,
+        ~~~~~~~
+        speed: 50,
+        stamina: 50,
+        agility: 50,
+        healthStatus: "Excellent",
+    ?   ownerId?: String | Null,
+    ?   genotype?: NullableJsonNullValueInput | Json,
+    ?   phenotypicMarkings?: NullableJsonNullValueInput | Json,
+    ?   finalDisplayColor?: String | Null,
+    ?   shade?: String | Null,
+    ?   imageUrl?: String | Null,
+    ?   trait?: String | Null,
+    ?   temperament?: String | Null,
+    ?   personality?: String | Null,
+    ?   epigeneticFlags?: HorseCreateepigeneticFlagsInput | String[],
+    ?   precision?: Int | Null,
+    ?   strength?: Int | Null,
+    ?   endurance?: Int | Null,
+    ?   intelligence?: Int | Null,
+    ?   balance?: Int | Null,
+    ?   coordination?: Int | Null,
+    ?   boldness?: Int | Null,
+    ?   flexibility?: Int | Null,
+    ?   obedience?: Int | Null,
+    ?   focus?: Int | Null,
+    ?   totalEarnings?: Int | Null,
+    ?   studStatus?: String | Null,
+    ?   studFee?: Int | Null,
+    ?   lastBredDate?: DateTime | Null,
+    ?   forSale?: Boolean | Null,
+    ?   salePrice?: Int | Null,
+    ?   lastVettedDate?: DateTime | Null,
+    ?   bondScore?: Int | Null,
+    ?   stressLevel?: Int | Null,
+    ?   daysGroomedInARow?: Int | Null,
+    ?   burnoutStatus?: String | Null,
+    ?   taskLog?: NullableJsonNullValueInput | Json,
+    ?   consecutiveDaysFoalCare?: Int | Null,
+    ?   lastGroomed?: DateTime | Null,
+    ?   tack?: NullableJsonNullValueInput | Json,
+    ?   trainingCooldown?: DateTime | Null,
+    ?   earnings?: Decimal | Null,
+    ?   rider?: NullableJsonNullValueInput | Json,
+    ?   disciplineScores?: NullableJsonNullValueInput | Json,
+    ?   epigeneticModifiers?: NullableJsonNullValueInput | Json,
+    ?   ultraRareTraits?: NullableJsonNullValueInput | Json,
+    ?   conformationScores?: NullableJsonNullValueInput | Json,
+    ?   horseXp?: Int | Null,
+    ?   availableStatPoints?: Int | Null,
+    ?   createdAt?: DateTime | Null,
+    ?   updatedAt?: DateTime | Null,
+    ?   competitionResults?: CompetitionResultCreateNestedManyWithoutHorseInput,
+    ?   foalActivities?: FoalActivityCreateNestedManyWithoutFoalInput,
+    ?   foalDevelopment?: FoalDevelopmentCreateNestedOneWithoutFoalInput,
+    ?   foalTrainingHistory?: FoalTrainingHistoryCreateNestedManyWithoutHorseInput,
+    ?   groomAssignments?: GroomAssignmentCreateNestedManyWithoutFoalInput,
+    ?   groomInteractions?: GroomInteractionCreateNestedManyWithoutFoalInput,
+    ?   groomPerformanceRecords?: GroomPerformanceRecordCreateNestedManyWithoutHorseInput,
+    ?   horseXpEvents?: HorseXpEventCreateNestedManyWithoutHorseInput,
+    ?   traitHistoryLogs?: TraitHistoryLogCreateNestedManyWithoutHorseInput,
+    ?   milestoneTraitLogs?: MilestoneTraitLogCreateNestedManyWithoutHorseInput,
+    ?   ultraRareTraitEvents?: UltraRareTraitEventCreateNestedManyWithoutHorseInput,
+    ?   groomHorseSynergies?: GroomHorseSynergyCreateNestedManyWithoutHorseInput,
+    ?   groomAssignmentLogs?: GroomAssignmentLogCreateNestedManyWithoutHorseInput,
+    ?   breed?: BreedCreateNestedOneWithoutHorsesInput,
+    ?   dam?: HorseCreateNestedOneWithoutDamOffspringInput,
+    ?   damOffspring?: HorseCreateNestedManyWithoutDamInput,
+    ?   sire?: HorseCreateNestedOneWithoutSireOffspringInput,
+    ?   sireOffspring?: HorseCreateNestedManyWithoutSireInput,
+    ?   stable?: StableCreateNestedOneWithoutHorsesInput,
+    ?   trainingLogs?: TrainingLogCreateNestedManyWithoutHorseInput
+      }
+    }
+
+    Unknown argument `breedId`. Did you mean `breed`? Available options are marked with ?.
+
+    [0m [90m 84 |[39m     fourYearsAgo[33m.[39msetFullYear(fourYearsAgo[33m.[39mgetFullYear() [33m-[39m [35m4[39m)[33m;[39m
+     [90m 85 |[39m
+    [31m[1m>[22m[39m[90m 86 |[39m     testHorseEligible [33m=[39m [36mawait[39m prisma[33m.[39mhorse[33m.[39mcreate({
+     [90m    |[39m                         [31m[1m^[22m[39m
+     [90m 87 |[39m       data[33m:[39m {
+     [90m 88 |[39m         name[33m:[39m [32m'Eligible Horse'[39m[33m,[39m
+     [90m 89 |[39m         dateOfBirth[33m:[39m fourYearsAgo[33m,[39m[0m
+
+      at kn (../packages/database/node_modules/@prisma/client/runtime/library.js:29:1363)
+      at Zn.handleRequestError (../packages/database/node_modules/@prisma/client/runtime/library.js:121:7102)
+      at Zn.handleAndLogRequestError (../packages/database/node_modules/@prisma/client/runtime/library.js:121:6784)
+      at Zn.request (../packages/database/node_modules/@prisma/client/runtime/library.js:121:6491)
+      at l (../packages/database/node_modules/@prisma/client/runtime/library.js:130:9778)
+      at Object.<anonymous> (tests/trainingController.test.mjs:86:25)
+
+  ● 🏋️ UNIT: Training Controller - Horse Training Business Logic › canTrain › should throw error for missing horse ID
+
+    PrismaClientValidationError: 
+    Invalid `prisma.horse.create()` invocation:
+
+    {
+      data: {
+        name: "Eligible Horse",
+        dateOfBirth: new Date("2022-01-28T18:38:05.870Z"),
+        age: 4,
+        sex: "M",
+        user: {
+          connect: {
+            id: "e9a60265-ea17-4d42-9623-b3eb36029a01"
+          }
+        },
+        breedId: 1,
+        ~~~~~~~
+        speed: 50,
+        stamina: 50,
+        agility: 50,
+        healthStatus: "Excellent",
+    ?   ownerId?: String | Null,
+    ?   genotype?: NullableJsonNullValueInput | Json,
+    ?   phenotypicMarkings?: NullableJsonNullValueInput | Json,
+    ?   finalDisplayColor?: String | Null,
+    ?   shade?: String | Null,
+    ?   imageUrl?: String | Null,
+    ?   trait?: String | Null,
+    ?   temperament?: String | Null,
+    ?   personality?: String | Null,
+    ?   epigeneticFlags?: HorseCreateepigeneticFlagsInput | String[],
+    ?   precision?: Int | Null,
+    ?   strength?: Int | Null,
+    ?   endurance?: Int | Null,
+    ?   intelligence?: Int | Null,
+    ?   balance?: Int | Null,
+    ?   coordination?: Int | Null,
+    ?   boldness?: Int | Null,
+    ?   flexibility?: Int | Null,
+    ?   obedience?: Int | Null,
+    ?   focus?: Int | Null,
+    ?   totalEarnings?: Int | Null,
+    ?   studStatus?: String | Null,
+    ?   studFee?: Int | Null,
+    ?   lastBredDate?: DateTime | Null,
+    ?   forSale?: Boolean | Null,
+    ?   salePrice?: Int | Null,
+    ?   lastVettedDate?: DateTime | Null,
+    ?   bondScore?: Int | Null,
+    ?   stressLevel?: Int | Null,
+    ?   daysGroomedInARow?: Int | Null,
+    ?   burnoutStatus?: String | Null,
+    ?   taskLog?: NullableJsonNullValueInput | Json,
+    ?   consecutiveDaysFoalCare?: Int | Null,
+    ?   lastGroomed?: DateTime | Null,
+    ?   tack?: NullableJsonNullValueInput | Json,
+    ?   trainingCooldown?: DateTime | Null,
+    ?   earnings?: Decimal | Null,
+    ?   rider?: NullableJsonNullValueInput | Json,
+    ?   disciplineScores?: NullableJsonNullValueInput | Json,
+    ?   epigeneticModifiers?: NullableJsonNullValueInput | Json,
+    ?   ultraRareTraits?: NullableJsonNullValueInput | Json,
+    ?   conformationScores?: NullableJsonNullValueInput | Json,
+    ?   horseXp?: Int | Null,
+    ?   availableStatPoints?: Int | Null,
+    ?   createdAt?: DateTime | Null,
+    ?   updatedAt?: DateTime | Null,
+    ?   competitionResults?: CompetitionResultCreateNestedManyWithoutHorseInput,
+    ?   foalActivities?: FoalActivityCreateNestedManyWithoutFoalInput,
+    ?   foalDevelopment?: FoalDevelopmentCreateNestedOneWithoutFoalInput,
+    ?   foalTrainingHistory?: FoalTrainingHistoryCreateNestedManyWithoutHorseInput,
+    ?   groomAssignments?: GroomAssignmentCreateNestedManyWithoutFoalInput,
+    ?   groomInteractions?: GroomInteractionCreateNestedManyWithoutFoalInput,
+    ?   groomPerformanceRecords?: GroomPerformanceRecordCreateNestedManyWithoutHorseInput,
+    ?   horseXpEvents?: HorseXpEventCreateNestedManyWithoutHorseInput,
+    ?   traitHistoryLogs?: TraitHistoryLogCreateNestedManyWithoutHorseInput,
+    ?   milestoneTraitLogs?: MilestoneTraitLogCreateNestedManyWithoutHorseInput,
+    ?   ultraRareTraitEvents?: UltraRareTraitEventCreateNestedManyWithoutHorseInput,
+    ?   groomHorseSynergies?: GroomHorseSynergyCreateNestedManyWithoutHorseInput,
+    ?   groomAssignmentLogs?: GroomAssignmentLogCreateNestedManyWithoutHorseInput,
+    ?   breed?: BreedCreateNestedOneWithoutHorsesInput,
+    ?   dam?: HorseCreateNestedOneWithoutDamOffspringInput,
+    ?   damOffspring?: HorseCreateNestedManyWithoutDamInput,
+    ?   sire?: HorseCreateNestedOneWithoutSireOffspringInput,
+    ?   sireOffspring?: HorseCreateNestedManyWithoutSireInput,
+    ?   stable?: StableCreateNestedOneWithoutHorsesInput,
+    ?   trainingLogs?: TrainingLogCreateNestedManyWithoutHorseInput
+      }
+    }
+
+    Unknown argument `breedId`. Did you mean `breed`? Available options are marked with ?.
+
+    [0m [90m 84 |[39m     fourYearsAgo[33m.[39msetFullYear(fourYearsAgo[33m.[39mgetFullYear() [33m-[39m [35m4[39m)[33m;[39m
+     [90m 85 |[39m
+    [31m[1m>[22m[39m[90m 86 |[39m     testHorseEligible [33m=[39m [36mawait[39m prisma[33m.[39mhorse[33m.[39mcreate({
+     [90m    |[39m                         [31m[1m^[22m[39m
+     [90m 87 |[39m       data[33m:[39m {
+     [90m 88 |[39m         name[33m:[39m [32m'Eligible Horse'[39m[33m,[39m
+     [90m 89 |[39m         dateOfBirth[33m:[39m fourYearsAgo[33m,[39m[0m
+
+      at kn (../packages/database/node_modules/@prisma/client/runtime/library.js:29:1363)
+      at Zn.handleRequestError (../packages/database/node_modules/@prisma/client/runtime/library.js:121:7102)
+      at Zn.handleAndLogRequestError (../packages/database/node_modules/@prisma/client/runtime/library.js:121:6784)
+      at Zn.request (../packages/database/node_modules/@prisma/client/runtime/library.js:121:6491)
+      at l (../packages/database/node_modules/@prisma/client/runtime/library.js:130:9778)
+      at Object.<anonymous> (tests/trainingController.test.mjs:86:25)
+
+  ● 🏋️ UNIT: Training Controller - Horse Training Business Logic › canTrain › should handle database errors gracefully
+
+    PrismaClientValidationError: 
+    Invalid `prisma.horse.create()` invocation:
+
+    {
+      data: {
+        name: "Eligible Horse",
+        dateOfBirth: new Date("2022-01-28T18:38:05.870Z"),
+        age: 4,
+        sex: "M",
+        user: {
+          connect: {
+            id: "e9a60265-ea17-4d42-9623-b3eb36029a01"
+          }
+        },
+        breedId: 1,
+        ~~~~~~~
+        speed: 50,
+        stamina: 50,
+        agility: 50,
+        healthStatus: "Excellent",
+    ?   ownerId?: String | Null,
+    ?   genotype?: NullableJsonNullValueInput | Json,
+    ?   phenotypicMarkings?: NullableJsonNullValueInput | Json,
+    ?   finalDisplayColor?: String | Null,
+    ?   shade?: String | Null,
+    ?   imageUrl?: String | Null,
+    ?   trait?: String | Null,
+    ?   temperament?: String | Null,
+    ?   personality?: String | Null,
+    ?   epigeneticFlags?: HorseCreateepigeneticFlagsInput | String[],
+    ?   precision?: Int | Null,
+    ?   strength?: Int | Null,
+    ?   endurance?: Int | Null,
+    ?   intelligence?: Int | Null,
+    ?   balance?: Int | Null,
+    ?   coordination?: Int | Null,
+    ?   boldness?: Int | Null,
+    ?   flexibility?: Int | Null,
+    ?   obedience?: Int | Null,
+    ?   focus?: Int | Null,
+    ?   totalEarnings?: Int | Null,
+    ?   studStatus?: String | Null,
+    ?   studFee?: Int | Null,
+    ?   lastBredDate?: DateTime | Null,
+    ?   forSale?: Boolean | Null,
+    ?   salePrice?: Int | Null,
+    ?   lastVettedDate?: DateTime | Null,
+    ?   bondScore?: Int | Null,
+    ?   stressLevel?: Int | Null,
+    ?   daysGroomedInARow?: Int | Null,
+    ?   burnoutStatus?: String | Null,
+    ?   taskLog?: NullableJsonNullValueInput | Json,
+    ?   consecutiveDaysFoalCare?: Int | Null,
+    ?   lastGroomed?: DateTime | Null,
+    ?   tack?: NullableJsonNullValueInput | Json,
+    ?   trainingCooldown?: DateTime | Null,
+    ?   earnings?: Decimal | Null,
+    ?   rider?: NullableJsonNullValueInput | Json,
+    ?   disciplineScores?: NullableJsonNullValueInput | Json,
+    ?   epigeneticModifiers?: NullableJsonNullValueInput | Json,
+    ?   ultraRareTraits?: NullableJsonNullValueInput | Json,
+    ?   conformationScores?: NullableJsonNullValueInput | Json,
+    ?   horseXp?: Int | Null,
+    ?   availableStatPoints?: Int | Null,
+    ?   createdAt?: DateTime | Null,
+    ?   updatedAt?: DateTime | Null,
+    ?   competitionResults?: CompetitionResultCreateNestedManyWithoutHorseInput,
+    ?   foalActivities?: FoalActivityCreateNestedManyWithoutFoalInput,
+    ?   foalDevelopment?: FoalDevelopmentCreateNestedOneWithoutFoalInput,
+    ?   foalTrainingHistory?: FoalTrainingHistoryCreateNestedManyWithoutHorseInput,
+    ?   groomAssignments?: GroomAssignmentCreateNestedManyWithoutFoalInput,
+    ?   groomInteractions?: GroomInteractionCreateNestedManyWithoutFoalInput,
+    ?   groomPerformanceRecords?: GroomPerformanceRecordCreateNestedManyWithoutHorseInput,
+    ?   horseXpEvents?: HorseXpEventCreateNestedManyWithoutHorseInput,
+    ?   traitHistoryLogs?: TraitHistoryLogCreateNestedManyWithoutHorseInput,
+    ?   milestoneTraitLogs?: MilestoneTraitLogCreateNestedManyWithoutHorseInput,
+    ?   ultraRareTraitEvents?: UltraRareTraitEventCreateNestedManyWithoutHorseInput,
+    ?   groomHorseSynergies?: GroomHorseSynergyCreateNestedManyWithoutHorseInput,
+    ?   groomAssignmentLogs?: GroomAssignmentLogCreateNestedManyWithoutHorseInput,
+    ?   breed?: BreedCreateNestedOneWithoutHorsesInput,
+    ?   dam?: HorseCreateNestedOneWithoutDamOffspringInput,
+    ?   damOffspring?: HorseCreateNestedManyWithoutDamInput,
+    ?   sire?: HorseCreateNestedOneWithoutSireOffspringInput,
+    ?   sireOffspring?: HorseCreateNestedManyWithoutSireInput,
+    ?   stable?: StableCreateNestedOneWithoutHorsesInput,
+    ?   trainingLogs?: TrainingLogCreateNestedManyWithoutHorseInput
+      }
+    }
+
+    Unknown argument `breedId`. Did you mean `breed`? Available options are marked with ?.
+
+    [0m [90m 84 |[39m     fourYearsAgo[33m.[39msetFullYear(fourYearsAgo[33m.[39mgetFullYear() [33m-[39m [35m4[39m)[33m;[39m
+     [90m 85 |[39m
+    [31m[1m>[22m[39m[90m 86 |[39m     testHorseEligible [33m=[39m [36mawait[39m prisma[33m.[39mhorse[33m.[39mcreate({
+     [90m    |[39m                         [31m[1m^[22m[39m
+     [90m 87 |[39m       data[33m:[39m {
+     [90m 88 |[39m         name[33m:[39m [32m'Eligible Horse'[39m[33m,[39m
+     [90m 89 |[39m         dateOfBirth[33m:[39m fourYearsAgo[33m,[39m[0m
+
+      at kn (../packages/database/node_modules/@prisma/client/runtime/library.js:29:1363)
+      at Zn.handleRequestError (../packages/database/node_modules/@prisma/client/runtime/library.js:121:7102)
+      at Zn.handleAndLogRequestError (../packages/database/node_modules/@prisma/client/runtime/library.js:121:6784)
+      at Zn.request (../packages/database/node_modules/@prisma/client/runtime/library.js:121:6491)
+      at l (../packages/database/node_modules/@prisma/client/runtime/library.js:130:9778)
+      at Object.<anonymous> (tests/trainingController.test.mjs:86:25)
+
+  ● 🏋️ UNIT: Training Controller - Horse Training Business Logic › canTrain › should calculate cooldown correctly for edge case (exactly 7 days)
+
+    PrismaClientValidationError: 
+    Invalid `prisma.horse.create()` invocation:
+
+    {
+      data: {
+        name: "Eligible Horse",
+        dateOfBirth: new Date("2022-01-28T18:38:05.870Z"),
+        age: 4,
+        sex: "M",
+        user: {
+          connect: {
+            id: "e9a60265-ea17-4d42-9623-b3eb36029a01"
+          }
+        },
+        breedId: 1,
+        ~~~~~~~
+        speed: 50,
+        stamina: 50,
+        agility: 50,
+        healthStatus: "Excellent",
+    ?   ownerId?: String | Null,
+    ?   genotype?: NullableJsonNullValueInput | Json,
+    ?   phenotypicMarkings?: NullableJsonNullValueInput | Json,
+    ?   finalDisplayColor?: String | Null,
+    ?   shade?: String | Null,
+    ?   imageUrl?: String | Null,
+    ?   trait?: String | Null,
+    ?   temperament?: String | Null,
+    ?   personality?: String | Null,
+    ?   epigeneticFlags?: HorseCreateepigeneticFlagsInput | String[],
+    ?   precision?: Int | Null,
+    ?   strength?: Int | Null,
+    ?   endurance?: Int | Null,
+    ?   intelligence?: Int | Null,
+    ?   balance?: Int | Null,
+    ?   coordination?: Int | Null,
+    ?   boldness?: Int | Null,
+    ?   flexibility?: Int | Null,
+    ?   obedience?: Int | Null,
+    ?   focus?: Int | Null,
+    ?   totalEarnings?: Int | Null,
+    ?   studStatus?: String | Null,
+    ?   studFee?: Int | Null,
+    ?   lastBredDate?: DateTime | Null,
+    ?   forSale?: Boolean | Null,
+    ?   salePrice?: Int | Null,
+    ?   lastVettedDate?: DateTime | Null,
+    ?   bondScore?: Int | Null,
+    ?   stressLevel?: Int | Null,
+    ?   daysGroomedInARow?: Int | Null,
+    ?   burnoutStatus?: String | Null,
+    ?   taskLog?: NullableJsonNullValueInput | Json,
+    ?   consecutiveDaysFoalCare?: Int | Null,
+    ?   lastGroomed?: DateTime | Null,
+    ?   tack?: NullableJsonNullValueInput | Json,
+    ?   trainingCooldown?: DateTime | Null,
+    ?   earnings?: Decimal | Null,
+    ?   rider?: NullableJsonNullValueInput | Json,
+    ?   disciplineScores?: NullableJsonNullValueInput | Json,
+    ?   epigeneticModifiers?: NullableJsonNullValueInput | Json,
+    ?   ultraRareTraits?: NullableJsonNullValueInput | Json,
+    ?   conformationScores?: NullableJsonNullValueInput | Json,
+    ?   horseXp?: Int | Null,
+    ?   availableStatPoints?: Int | Null,
+    ?   createdAt?: DateTime | Null,
+    ?   updatedAt?: DateTime | Null,
+    ?   competitionResults?: CompetitionResultCreateNestedManyWithoutHorseInput,
+    ?   foalActivities?: FoalActivityCreateNestedManyWithoutFoalInput,
+    ?   foalDevelopment?: FoalDevelopmentCreateNestedOneWithoutFoalInput,
+    ?   foalTrainingHistory?: FoalTrainingHistoryCreateNestedManyWithoutHorseInput,
+    ?   groomAssignments?: GroomAssignmentCreateNestedManyWithoutFoalInput,
+    ?   groomInteractions?: GroomInteractionCreateNestedManyWithoutFoalInput,
+    ?   groomPerformanceRecords?: GroomPerformanceRecordCreateNestedManyWithoutHorseInput,
+    ?   horseXpEvents?: HorseXpEventCreateNestedManyWithoutHorseInput,
+    ?   traitHistoryLogs?: TraitHistoryLogCreateNestedManyWithoutHorseInput,
+    ?   milestoneTraitLogs?: MilestoneTraitLogCreateNestedManyWithoutHorseInput,
+    ?   ultraRareTraitEvents?: UltraRareTraitEventCreateNestedManyWithoutHorseInput,
+    ?   groomHorseSynergies?: GroomHorseSynergyCreateNestedManyWithoutHorseInput,
+    ?   groomAssignmentLogs?: GroomAssignmentLogCreateNestedManyWithoutHorseInput,
+    ?   breed?: BreedCreateNestedOneWithoutHorsesInput,
+    ?   dam?: HorseCreateNestedOneWithoutDamOffspringInput,
+    ?   damOffspring?: HorseCreateNestedManyWithoutDamInput,
+    ?   sire?: HorseCreateNestedOneWithoutSireOffspringInput,
+    ?   sireOffspring?: HorseCreateNestedManyWithoutSireInput,
+    ?   stable?: StableCreateNestedOneWithoutHorsesInput,
+    ?   trainingLogs?: TrainingLogCreateNestedManyWithoutHorseInput
+      }
+    }
+
+    Unknown argument `breedId`. Did you mean `breed`? Available options are marked with ?.
+
+    [0m [90m 84 |[39m     fourYearsAgo[33m.[39msetFullYear(fourYearsAgo[33m.[39mgetFullYear() [33m-[39m [35m4[39m)[33m;[39m
+     [90m 85 |[39m
+    [31m[1m>[22m[39m[90m 86 |[39m     testHorseEligible [33m=[39m [36mawait[39m prisma[33m.[39mhorse[33m.[39mcreate({
+     [90m    |[39m                         [31m[1m^[22m[39m
+     [90m 87 |[39m       data[33m:[39m {
+     [90m 88 |[39m         name[33m:[39m [32m'Eligible Horse'[39m[33m,[39m
+     [90m 89 |[39m         dateOfBirth[33m:[39m fourYearsAgo[33m,[39m[0m
+
+      at kn (../packages/database/node_modules/@prisma/client/runtime/library.js:29:1363)
+      at Zn.handleRequestError (../packages/database/node_modules/@prisma/client/runtime/library.js:121:7102)
+      at Zn.handleAndLogRequestError (../packages/database/node_modules/@prisma/client/runtime/library.js:121:6784)
+      at Zn.request (../packages/database/node_modules/@prisma/client/runtime/library.js:121:6491)
+      at l (../packages/database/node_modules/@prisma/client/runtime/library.js:130:9778)
+      at Object.<anonymous> (tests/trainingController.test.mjs:86:25)
+
+  ● 🏋️ UNIT: Training Controller - Horse Training Business Logic › trainHorse › should successfully train eligible horse
+
+    PrismaClientValidationError: 
+    Invalid `prisma.horse.create()` invocation:
+
+    {
+      data: {
+        name: "Eligible Horse",
+        dateOfBirth: new Date("2022-01-28T18:38:05.870Z"),
+        age: 4,
+        sex: "M",
+        user: {
+          connect: {
+            id: "e9a60265-ea17-4d42-9623-b3eb36029a01"
+          }
+        },
+        breedId: 1,
+        ~~~~~~~
+        speed: 50,
+        stamina: 50,
+        agility: 50,
+        healthStatus: "Excellent",
+    ?   ownerId?: String | Null,
+    ?   genotype?: NullableJsonNullValueInput | Json,
+    ?   phenotypicMarkings?: NullableJsonNullValueInput | Json,
+    ?   finalDisplayColor?: String | Null,
+    ?   shade?: String | Null,
+    ?   imageUrl?: String | Null,
+    ?   trait?: String | Null,
+    ?   temperament?: String | Null,
+    ?   personality?: String | Null,
+    ?   epigeneticFlags?: HorseCreateepigeneticFlagsInput | String[],
+    ?   precision?: Int | Null,
+    ?   strength?: Int | Null,
+    ?   endurance?: Int | Null,
+    ?   intelligence?: Int | Null,
+    ?   balance?: Int | Null,
+    ?   coordination?: Int | Null,
+    ?   boldness?: Int | Null,
+    ?   flexibility?: Int | Null,
+    ?   obedience?: Int | Null,
+    ?   focus?: Int | Null,
+    ?   totalEarnings?: Int | Null,
+    ?   studStatus?: String | Null,
+    ?   studFee?: Int | Null,
+    ?   lastBredDate?: DateTime | Null,
+    ?   forSale?: Boolean | Null,
+    ?   salePrice?: Int | Null,
+    ?   lastVettedDate?: DateTime | Null,
+    ?   bondScore?: Int | Null,
+    ?   stressLevel?: Int | Null,
+    ?   daysGroomedInARow?: Int | Null,
+    ?   burnoutStatus?: String | Null,
+    ?   taskLog?: NullableJsonNullValueInput | Json,
+    ?   consecutiveDaysFoalCare?: Int | Null,
+    ?   lastGroomed?: DateTime | Null,
+    ?   tack?: NullableJsonNullValueInput | Json,
+    ?   trainingCooldown?: DateTime | Null,
+    ?   earnings?: Decimal | Null,
+    ?   rider?: NullableJsonNullValueInput | Json,
+    ?   disciplineScores?: NullableJsonNullValueInput | Json,
+    ?   epigeneticModifiers?: NullableJsonNullValueInput | Json,
+    ?   ultraRareTraits?: NullableJsonNullValueInput | Json,
+    ?   conformationScores?: NullableJsonNullValueInput | Json,
+    ?   horseXp?: Int | Null,
+    ?   availableStatPoints?: Int | Null,
+    ?   createdAt?: DateTime | Null,
+    ?   updatedAt?: DateTime | Null,
+    ?   competitionResults?: CompetitionResultCreateNestedManyWithoutHorseInput,
+    ?   foalActivities?: FoalActivityCreateNestedManyWithoutFoalInput,
+    ?   foalDevelopment?: FoalDevelopmentCreateNestedOneWithoutFoalInput,
+    ?   foalTrainingHistory?: FoalTrainingHistoryCreateNestedManyWithoutHorseInput,
+    ?   groomAssignments?: GroomAssignmentCreateNestedManyWithoutFoalInput,
+    ?   groomInteractions?: GroomInteractionCreateNestedManyWithoutFoalInput,
+    ?   groomPerformanceRecords?: GroomPerformanceRecordCreateNestedManyWithoutHorseInput,
+    ?   horseXpEvents?: HorseXpEventCreateNestedManyWithoutHorseInput,
+    ?   traitHistoryLogs?: TraitHistoryLogCreateNestedManyWithoutHorseInput,
+    ?   milestoneTraitLogs?: MilestoneTraitLogCreateNestedManyWithoutHorseInput,
+    ?   ultraRareTraitEvents?: UltraRareTraitEventCreateNestedManyWithoutHorseInput,
+    ?   groomHorseSynergies?: GroomHorseSynergyCreateNestedManyWithoutHorseInput,
+    ?   groomAssignmentLogs?: GroomAssignmentLogCreateNestedManyWithoutHorseInput,
+    ?   breed?: BreedCreateNestedOneWithoutHorsesInput,
+    ?   dam?: HorseCreateNestedOneWithoutDamOffspringInput,
+    ?   damOffspring?: HorseCreateNestedManyWithoutDamInput,
+    ?   sire?: HorseCreateNestedOneWithoutSireOffspringInput,
+    ?   sireOffspring?: HorseCreateNestedManyWithoutSireInput,
+    ?   stable?: StableCreateNestedOneWithoutHorsesInput,
+    ?   trainingLogs?: TrainingLogCreateNestedManyWithoutHorseInput
+      }
+    }
+
+    Unknown argument `breedId`. Did you mean `breed`? Available options are marked with ?.
+
+    [0m [90m 84 |[39m     fourYearsAgo[33m.[39msetFullYear(fourYearsAgo[33m.[39mgetFullYear() [33m-[39m [35m4[39m)[33m;[39m
+     [90m 85 |[39m
+    [31m[1m>[22m[39m[90m 86 |[39m     testHorseEligible [33m=[39m [36mawait[39m prisma[33m.[39mhorse[33m.[39mcreate({
+     [90m    |[39m                         [31m[1m^[22m[39m
+     [90m 87 |[39m       data[33m:[39m {
+     [90m 88 |[39m         name[33m:[39m [32m'Eligible Horse'[39m[33m,[39m
+     [90m 89 |[39m         dateOfBirth[33m:[39m fourYearsAgo[33m,[39m[0m
+
+      at kn (../packages/database/node_modules/@prisma/client/runtime/library.js:29:1363)
+      at Zn.handleRequestError (../packages/database/node_modules/@prisma/client/runtime/library.js:121:7102)
+      at Zn.handleAndLogRequestError (../packages/database/node_modules/@prisma/client/runtime/library.js:121:6784)
+      at Zn.request (../packages/database/node_modules/@prisma/client/runtime/library.js:121:6491)
+      at l (../packages/database/node_modules/@prisma/client/runtime/library.js:130:9778)
+      at Object.<anonymous> (tests/trainingController.test.mjs:86:25)
+
+  ● 🏋️ UNIT: Training Controller - Horse Training Business Logic › trainHorse › should reject training for ineligible horse (under age)
+
+    PrismaClientValidationError: 
+    Invalid `prisma.horse.create()` invocation:
+
+    {
+      data: {
+        name: "Eligible Horse",
+        dateOfBirth: new Date("2022-01-28T18:38:05.870Z"),
+        age: 4,
+        sex: "M",
+        user: {
+          connect: {
+            id: "e9a60265-ea17-4d42-9623-b3eb36029a01"
+          }
+        },
+        breedId: 1,
+        ~~~~~~~
+        speed: 50,
+        stamina: 50,
+        agility: 50,
+        healthStatus: "Excellent",
+    ?   ownerId?: String | Null,
+    ?   genotype?: NullableJsonNullValueInput | Json,
+    ?   phenotypicMarkings?: NullableJsonNullValueInput | Json,
+    ?   finalDisplayColor?: String | Null,
+    ?   shade?: String | Null,
+    ?   imageUrl?: String | Null,
+    ?   trait?: String | Null,
+    ?   temperament?: String | Null,
+    ?   personality?: String | Null,
+    ?   epigeneticFlags?: HorseCreateepigeneticFlagsInput | String[],
+    ?   precision?: Int | Null,
+    ?   strength?: Int | Null,
+    ?   endurance?: Int | Null,
+    ?   intelligence?: Int | Null,
+    ?   balance?: Int | Null,
+    ?   coordination?: Int | Null,
+    ?   boldness?: Int | Null,
+    ?   flexibility?: Int | Null,
+    ?   obedience?: Int | Null,
+    ?   focus?: Int | Null,
+    ?   totalEarnings?: Int | Null,
+    ?   studStatus?: String | Null,
+    ?   studFee?: Int | Null,
+    ?   lastBredDate?: DateTime | Null,
+    ?   forSale?: Boolean | Null,
+    ?   salePrice?: Int | Null,
+    ?   lastVettedDate?: DateTime | Null,
+    ?   bondScore?: Int | Null,
+    ?   stressLevel?: Int | Null,
+    ?   daysGroomedInARow?: Int | Null,
+    ?   burnoutStatus?: String | Null,
+    ?   taskLog?: NullableJsonNullValueInput | Json,
+    ?   consecutiveDaysFoalCare?: Int | Null,
+    ?   lastGroomed?: DateTime | Null,
+    ?   tack?: NullableJsonNullValueInput | Json,
+    ?   trainingCooldown?: DateTime | Null,
+    ?   earnings?: Decimal | Null,
+    ?   rider?: NullableJsonNullValueInput | Json,
+    ?   disciplineScores?: NullableJsonNullValueInput | Json,
+    ?   epigeneticModifiers?: NullableJsonNullValueInput | Json,
+    ?   ultraRareTraits?: NullableJsonNullValueInput | Json,
+    ?   conformationScores?: NullableJsonNullValueInput | Json,
+    ?   horseXp?: Int | Null,
+    ?   availableStatPoints?: Int | Null,
+    ?   createdAt?: DateTime | Null,
+    ?   updatedAt?: DateTime | Null,
+    ?   competitionResults?: CompetitionResultCreateNestedManyWithoutHorseInput,
+    ?   foalActivities?: FoalActivityCreateNestedManyWithoutFoalInput,
+    ?   foalDevelopment?: FoalDevelopmentCreateNestedOneWithoutFoalInput,
+    ?   foalTrainingHistory?: FoalTrainingHistoryCreateNestedManyWithoutHorseInput,
+    ?   groomAssignments?: GroomAssignmentCreateNestedManyWithoutFoalInput,
+    ?   groomInteractions?: GroomInteractionCreateNestedManyWithoutFoalInput,
+    ?   groomPerformanceRecords?: GroomPerformanceRecordCreateNestedManyWithoutHorseInput,
+    ?   horseXpEvents?: HorseXpEventCreateNestedManyWithoutHorseInput,
+    ?   traitHistoryLogs?: TraitHistoryLogCreateNestedManyWithoutHorseInput,
+    ?   milestoneTraitLogs?: MilestoneTraitLogCreateNestedManyWithoutHorseInput,
+    ?   ultraRareTraitEvents?: UltraRareTraitEventCreateNestedManyWithoutHorseInput,
+    ?   groomHorseSynergies?: GroomHorseSynergyCreateNestedManyWithoutHorseInput,
+    ?   groomAssignmentLogs?: GroomAssignmentLogCreateNestedManyWithoutHorseInput,
+    ?   breed?: BreedCreateNestedOneWithoutHorsesInput,
+    ?   dam?: HorseCreateNestedOneWithoutDamOffspringInput,
+    ?   damOffspring?: HorseCreateNestedManyWithoutDamInput,
+    ?   sire?: HorseCreateNestedOneWithoutSireOffspringInput,
+    ?   sireOffspring?: HorseCreateNestedManyWithoutSireInput,
+    ?   stable?: StableCreateNestedOneWithoutHorsesInput,
+    ?   trainingLogs?: TrainingLogCreateNestedManyWithoutHorseInput
+      }
+    }
+
+    Unknown argument `breedId`. Did you mean `breed`? Available options are marked with ?.
+
+    [0m [90m 84 |[39m     fourYearsAgo[33m.[39msetFullYear(fourYearsAgo[33m.[39mgetFullYear() [33m-[39m [35m4[39m)[33m;[39m
+     [90m 85 |[39m
+    [31m[1m>[22m[39m[90m 86 |[39m     testHorseEligible [33m=[39m [36mawait[39m prisma[33m.[39mhorse[33m.[39mcreate({
+     [90m    |[39m                         [31m[1m^[22m[39m
+     [90m 87 |[39m       data[33m:[39m {
+     [90m 88 |[39m         name[33m:[39m [32m'Eligible Horse'[39m[33m,[39m
+     [90m 89 |[39m         dateOfBirth[33m:[39m fourYearsAgo[33m,[39m[0m
+
+      at kn (../packages/database/node_modules/@prisma/client/runtime/library.js:29:1363)
+      at Zn.handleRequestError (../packages/database/node_modules/@prisma/client/runtime/library.js:121:7102)
+      at Zn.handleAndLogRequestError (../packages/database/node_modules/@prisma/client/runtime/library.js:121:6784)
+      at Zn.request (../packages/database/node_modules/@prisma/client/runtime/library.js:121:6491)
+      at l (../packages/database/node_modules/@prisma/client/runtime/library.js:130:9778)
+      at Object.<anonymous> (tests/trainingController.test.mjs:86:25)
+
+  ● 🏋️ UNIT: Training Controller - Horse Training Business Logic › trainHorse › should reject training for horse in cooldown
+
+    PrismaClientValidationError: 
+    Invalid `prisma.horse.create()` invocation:
+
+    {
+      data: {
+        name: "Eligible Horse",
+        dateOfBirth: new Date("2022-01-28T18:38:05.870Z"),
+        age: 4,
+        sex: "M",
+        user: {
+          connect: {
+            id: "e9a60265-ea17-4d42-9623-b3eb36029a01"
+          }
+        },
+        breedId: 1,
+        ~~~~~~~
+        speed: 50,
+        stamina: 50,
+        agility: 50,
+        healthStatus: "Excellent",
+    ?   ownerId?: String | Null,
+    ?   genotype?: NullableJsonNullValueInput | Json,
+    ?   phenotypicMarkings?: NullableJsonNullValueInput | Json,
+    ?   finalDisplayColor?: String | Null,
+    ?   shade?: String | Null,
+    ?   imageUrl?: String | Null,
+    ?   trait?: String | Null,
+    ?   temperament?: String | Null,
+    ?   personality?: String | Null,
+    ?   epigeneticFlags?: HorseCreateepigeneticFlagsInput | String[],
+    ?   precision?: Int | Null,
+    ?   strength?: Int | Null,
+    ?   endurance?: Int | Null,
+    ?   intelligence?: Int | Null,
+    ?   balance?: Int | Null,
+    ?   coordination?: Int | Null,
+    ?   boldness?: Int | Null,
+    ?   flexibility?: Int | Null,
+    ?   obedience?: Int | Null,
+    ?   focus?: Int | Null,
+    ?   totalEarnings?: Int | Null,
+    ?   studStatus?: String | Null,
+    ?   studFee?: Int | Null,
+    ?   lastBredDate?: DateTime | Null,
+    ?   forSale?: Boolean | Null,
+    ?   salePrice?: Int | Null,
+    ?   lastVettedDate?: DateTime | Null,
+    ?   bondScore?: Int | Null,
+    ?   stressLevel?: Int | Null,
+    ?   daysGroomedInARow?: Int | Null,
+    ?   burnoutStatus?: String | Null,
+    ?   taskLog?: NullableJsonNullValueInput | Json,
+    ?   consecutiveDaysFoalCare?: Int | Null,
+    ?   lastGroomed?: DateTime | Null,
+    ?   tack?: NullableJsonNullValueInput | Json,
+    ?   trainingCooldown?: DateTime | Null,
+    ?   earnings?: Decimal | Null,
+    ?   rider?: NullableJsonNullValueInput | Json,
+    ?   disciplineScores?: NullableJsonNullValueInput | Json,
+    ?   epigeneticModifiers?: NullableJsonNullValueInput | Json,
+    ?   ultraRareTraits?: NullableJsonNullValueInput | Json,
+    ?   conformationScores?: NullableJsonNullValueInput | Json,
+    ?   horseXp?: Int | Null,
+    ?   availableStatPoints?: Int | Null,
+    ?   createdAt?: DateTime | Null,
+    ?   updatedAt?: DateTime | Null,
+    ?   competitionResults?: CompetitionResultCreateNestedManyWithoutHorseInput,
+    ?   foalActivities?: FoalActivityCreateNestedManyWithoutFoalInput,
+    ?   foalDevelopment?: FoalDevelopmentCreateNestedOneWithoutFoalInput,
+    ?   foalTrainingHistory?: FoalTrainingHistoryCreateNestedManyWithoutHorseInput,
+    ?   groomAssignments?: GroomAssignmentCreateNestedManyWithoutFoalInput,
+    ?   groomInteractions?: GroomInteractionCreateNestedManyWithoutFoalInput,
+    ?   groomPerformanceRecords?: GroomPerformanceRecordCreateNestedManyWithoutHorseInput,
+    ?   horseXpEvents?: HorseXpEventCreateNestedManyWithoutHorseInput,
+    ?   traitHistoryLogs?: TraitHistoryLogCreateNestedManyWithoutHorseInput,
+    ?   milestoneTraitLogs?: MilestoneTraitLogCreateNestedManyWithoutHorseInput,
+    ?   ultraRareTraitEvents?: UltraRareTraitEventCreateNestedManyWithoutHorseInput,
+    ?   groomHorseSynergies?: GroomHorseSynergyCreateNestedManyWithoutHorseInput,
+    ?   groomAssignmentLogs?: GroomAssignmentLogCreateNestedManyWithoutHorseInput,
+    ?   breed?: BreedCreateNestedOneWithoutHorsesInput,
+    ?   dam?: HorseCreateNestedOneWithoutDamOffspringInput,
+    ?   damOffspring?: HorseCreateNestedManyWithoutDamInput,
+    ?   sire?: HorseCreateNestedOneWithoutSireOffspringInput,
+    ?   sireOffspring?: HorseCreateNestedManyWithoutSireInput,
+    ?   stable?: StableCreateNestedOneWithoutHorsesInput,
+    ?   trainingLogs?: TrainingLogCreateNestedManyWithoutHorseInput
+      }
+    }
+
+    Unknown argument `breedId`. Did you mean `breed`? Available options are marked with ?.
+
+    [0m [90m 84 |[39m     fourYearsAgo[33m.[39msetFullYear(fourYearsAgo[33m.[39mgetFullYear() [33m-[39m [35m4[39m)[33m;[39m
+     [90m 85 |[39m
+    [31m[1m>[22m[39m[90m 86 |[39m     testHorseEligible [33m=[39m [36mawait[39m prisma[33m.[39mhorse[33m.[39mcreate({
+     [90m    |[39m                         [31m[1m^[22m[39m
+     [90m 87 |[39m       data[33m:[39m {
+     [90m 88 |[39m         name[33m:[39m [32m'Eligible Horse'[39m[33m,[39m
+     [90m 89 |[39m         dateOfBirth[33m:[39m fourYearsAgo[33m,[39m[0m
+
+      at kn (../packages/database/node_modules/@prisma/client/runtime/library.js:29:1363)
+      at Zn.handleRequestError (../packages/database/node_modules/@prisma/client/runtime/library.js:121:7102)
+      at Zn.handleAndLogRequestError (../packages/database/node_modules/@prisma/client/runtime/library.js:121:6784)
+      at Zn.request (../packages/database/node_modules/@prisma/client/runtime/library.js:121:6491)
+      at l (../packages/database/node_modules/@prisma/client/runtime/library.js:130:9778)
+      at Object.<anonymous> (tests/trainingController.test.mjs:86:25)
+
+  ● 🏋️ UNIT: Training Controller - Horse Training Business Logic › trainHorse › should handle training log errors gracefully
+
+    PrismaClientValidationError: 
+    Invalid `prisma.horse.create()` invocation:
+
+    {
+      data: {
+        name: "Eligible Horse",
+        dateOfBirth: new Date("2022-01-28T18:38:05.870Z"),
+        age: 4,
+        sex: "M",
+        user: {
+          connect: {
+            id: "e9a60265-ea17-4d42-9623-b3eb36029a01"
+          }
+        },
+        breedId: 1,
+        ~~~~~~~
+        speed: 50,
+        stamina: 50,
+        agility: 50,
+        healthStatus: "Excellent",
+    ?   ownerId?: String | Null,
+    ?   genotype?: NullableJsonNullValueInput | Json,
+    ?   phenotypicMarkings?: NullableJsonNullValueInput | Json,
+    ?   finalDisplayColor?: String | Null,
+    ?   shade?: String | Null,
+    ?   imageUrl?: String | Null,
+    ?   trait?: String | Null,
+    ?   temperament?: String | Null,
+    ?   personality?: String | Null,
+    ?   epigeneticFlags?: HorseCreateepigeneticFlagsInput | String[],
+    ?   precision?: Int | Null,
+    ?   strength?: Int | Null,
+    ?   endurance?: Int | Null,
+    ?   intelligence?: Int | Null,
+    ?   balance?: Int | Null,
+    ?   coordination?: Int | Null,
+    ?   boldness?: Int | Null,
+    ?   flexibility?: Int | Null,
+    ?   obedience?: Int | Null,
+    ?   focus?: Int | Null,
+    ?   totalEarnings?: Int | Null,
+    ?   studStatus?: String | Null,
+    ?   studFee?: Int | Null,
+    ?   lastBredDate?: DateTime | Null,
+    ?   forSale?: Boolean | Null,
+    ?   salePrice?: Int | Null,
+    ?   lastVettedDate?: DateTime | Null,
+    ?   bondScore?: Int | Null,
+    ?   stressLevel?: Int | Null,
+    ?   daysGroomedInARow?: Int | Null,
+    ?   burnoutStatus?: String | Null,
+    ?   taskLog?: NullableJsonNullValueInput | Json,
+    ?   consecutiveDaysFoalCare?: Int | Null,
+    ?   lastGroomed?: DateTime | Null,
+    ?   tack?: NullableJsonNullValueInput | Json,
+    ?   trainingCooldown?: DateTime | Null,
+    ?   earnings?: Decimal | Null,
+    ?   rider?: NullableJsonNullValueInput | Json,
+    ?   disciplineScores?: NullableJsonNullValueInput | Json,
+    ?   epigeneticModifiers?: NullableJsonNullValueInput | Json,
+    ?   ultraRareTraits?: NullableJsonNullValueInput | Json,
+    ?   conformationScores?: NullableJsonNullValueInput | Json,
+    ?   horseXp?: Int | Null,
+    ?   availableStatPoints?: Int | Null,
+    ?   createdAt?: DateTime | Null,
+    ?   updatedAt?: DateTime | Null,
+    ?   competitionResults?: CompetitionResultCreateNestedManyWithoutHorseInput,
+    ?   foalActivities?: FoalActivityCreateNestedManyWithoutFoalInput,
+    ?   foalDevelopment?: FoalDevelopmentCreateNestedOneWithoutFoalInput,
+    ?   foalTrainingHistory?: FoalTrainingHistoryCreateNestedManyWithoutHorseInput,
+    ?   groomAssignments?: GroomAssignmentCreateNestedManyWithoutFoalInput,
+    ?   groomInteractions?: GroomInteractionCreateNestedManyWithoutFoalInput,
+    ?   groomPerformanceRecords?: GroomPerformanceRecordCreateNestedManyWithoutHorseInput,
+    ?   horseXpEvents?: HorseXpEventCreateNestedManyWithoutHorseInput,
+    ?   traitHistoryLogs?: TraitHistoryLogCreateNestedManyWithoutHorseInput,
+    ?   milestoneTraitLogs?: MilestoneTraitLogCreateNestedManyWithoutHorseInput,
+    ?   ultraRareTraitEvents?: UltraRareTraitEventCreateNestedManyWithoutHorseInput,
+    ?   groomHorseSynergies?: GroomHorseSynergyCreateNestedManyWithoutHorseInput,
+    ?   groomAssignmentLogs?: GroomAssignmentLogCreateNestedManyWithoutHorseInput,
+    ?   breed?: BreedCreateNestedOneWithoutHorsesInput,
+    ?   dam?: HorseCreateNestedOneWithoutDamOffspringInput,
+    ?   damOffspring?: HorseCreateNestedManyWithoutDamInput,
+    ?   sire?: HorseCreateNestedOneWithoutSireOffspringInput,
+    ?   sireOffspring?: HorseCreateNestedManyWithoutSireInput,
+    ?   stable?: StableCreateNestedOneWithoutHorsesInput,
+    ?   trainingLogs?: TrainingLogCreateNestedManyWithoutHorseInput
+      }
+    }
+
+    Unknown argument `breedId`. Did you mean `breed`? Available options are marked with ?.
+
+    [0m [90m 84 |[39m     fourYearsAgo[33m.[39msetFullYear(fourYearsAgo[33m.[39mgetFullYear() [33m-[39m [35m4[39m)[33m;[39m
+     [90m 85 |[39m
+    [31m[1m>[22m[39m[90m 86 |[39m     testHorseEligible [33m=[39m [36mawait[39m prisma[33m.[39mhorse[33m.[39mcreate({
+     [90m    |[39m                         [31m[1m^[22m[39m
+     [90m 87 |[39m       data[33m:[39m {
+     [90m 88 |[39m         name[33m:[39m [32m'Eligible Horse'[39m[33m,[39m
+     [90m 89 |[39m         dateOfBirth[33m:[39m fourYearsAgo[33m,[39m[0m
+
+      at kn (../packages/database/node_modules/@prisma/client/runtime/library.js:29:1363)
+      at Zn.handleRequestError (../packages/database/node_modules/@prisma/client/runtime/library.js:121:7102)
+      at Zn.handleAndLogRequestError (../packages/database/node_modules/@prisma/client/runtime/library.js:121:6784)
+      at Zn.request (../packages/database/node_modules/@prisma/client/runtime/library.js:121:6491)
+      at l (../packages/database/node_modules/@prisma/client/runtime/library.js:130:9778)
+      at Object.<anonymous> (tests/trainingController.test.mjs:86:25)
+
+  ● 🏋️ UNIT: Training Controller - Horse Training Business Logic › trainHorse › should award +5 XP after successful training
+
+    PrismaClientValidationError: 
+    Invalid `prisma.horse.create()` invocation:
+
+    {
+      data: {
+        name: "Eligible Horse",
+        dateOfBirth: new Date("2022-01-28T18:38:05.870Z"),
+        age: 4,
+        sex: "M",
+        user: {
+          connect: {
+            id: "e9a60265-ea17-4d42-9623-b3eb36029a01"
+          }
+        },
+        breedId: 1,
+        ~~~~~~~
+        speed: 50,
+        stamina: 50,
+        agility: 50,
+        healthStatus: "Excellent",
+    ?   ownerId?: String | Null,
+    ?   genotype?: NullableJsonNullValueInput | Json,
+    ?   phenotypicMarkings?: NullableJsonNullValueInput | Json,
+    ?   finalDisplayColor?: String | Null,
+    ?   shade?: String | Null,
+    ?   imageUrl?: String | Null,
+    ?   trait?: String | Null,
+    ?   temperament?: String | Null,
+    ?   personality?: String | Null,
+    ?   epigeneticFlags?: HorseCreateepigeneticFlagsInput | String[],
+    ?   precision?: Int | Null,
+    ?   strength?: Int | Null,
+    ?   endurance?: Int | Null,
+    ?   intelligence?: Int | Null,
+    ?   balance?: Int | Null,
+    ?   coordination?: Int | Null,
+    ?   boldness?: Int | Null,
+    ?   flexibility?: Int | Null,
+    ?   obedience?: Int | Null,
+    ?   focus?: Int | Null,
+    ?   totalEarnings?: Int | Null,
+    ?   studStatus?: String | Null,
+    ?   studFee?: Int | Null,
+    ?   lastBredDate?: DateTime | Null,
+    ?   forSale?: Boolean | Null,
+    ?   salePrice?: Int | Null,
+    ?   lastVettedDate?: DateTime | Null,
+    ?   bondScore?: Int | Null,
+    ?   stressLevel?: Int | Null,
+    ?   daysGroomedInARow?: Int | Null,
+    ?   burnoutStatus?: String | Null,
+    ?   taskLog?: NullableJsonNullValueInput | Json,
+    ?   consecutiveDaysFoalCare?: Int | Null,
+    ?   lastGroomed?: DateTime | Null,
+    ?   tack?: NullableJsonNullValueInput | Json,
+    ?   trainingCooldown?: DateTime | Null,
+    ?   earnings?: Decimal | Null,
+    ?   rider?: NullableJsonNullValueInput | Json,
+    ?   disciplineScores?: NullableJsonNullValueInput | Json,
+    ?   epigeneticModifiers?: NullableJsonNullValueInput | Json,
+    ?   ultraRareTraits?: NullableJsonNullValueInput | Json,
+    ?   conformationScores?: NullableJsonNullValueInput | Json,
+    ?   horseXp?: Int | Null,
+    ?   availableStatPoints?: Int | Null,
+    ?   createdAt?: DateTime | Null,
+    ?   updatedAt?: DateTime | Null,
+    ?   competitionResults?: CompetitionResultCreateNestedManyWithoutHorseInput,
+    ?   foalActivities?: FoalActivityCreateNestedManyWithoutFoalInput,
+    ?   foalDevelopment?: FoalDevelopmentCreateNestedOneWithoutFoalInput,
+    ?   foalTrainingHistory?: FoalTrainingHistoryCreateNestedManyWithoutHorseInput,
+    ?   groomAssignments?: GroomAssignmentCreateNestedManyWithoutFoalInput,
+    ?   groomInteractions?: GroomInteractionCreateNestedManyWithoutFoalInput,
+    ?   groomPerformanceRecords?: GroomPerformanceRecordCreateNestedManyWithoutHorseInput,
+    ?   horseXpEvents?: HorseXpEventCreateNestedManyWithoutHorseInput,
+    ?   traitHistoryLogs?: TraitHistoryLogCreateNestedManyWithoutHorseInput,
+    ?   milestoneTraitLogs?: MilestoneTraitLogCreateNestedManyWithoutHorseInput,
+    ?   ultraRareTraitEvents?: UltraRareTraitEventCreateNestedManyWithoutHorseInput,
+    ?   groomHorseSynergies?: GroomHorseSynergyCreateNestedManyWithoutHorseInput,
+    ?   groomAssignmentLogs?: GroomAssignmentLogCreateNestedManyWithoutHorseInput,
+    ?   breed?: BreedCreateNestedOneWithoutHorsesInput,
+    ?   dam?: HorseCreateNestedOneWithoutDamOffspringInput,
+    ?   damOffspring?: HorseCreateNestedManyWithoutDamInput,
+    ?   sire?: HorseCreateNestedOneWithoutSireOffspringInput,
+    ?   sireOffspring?: HorseCreateNestedManyWithoutSireInput,
+    ?   stable?: StableCreateNestedOneWithoutHorsesInput,
+    ?   trainingLogs?: TrainingLogCreateNestedManyWithoutHorseInput
+      }
+    }
+
+    Unknown argument `breedId`. Did you mean `breed`? Available options are marked with ?.
+
+    [0m [90m 84 |[39m     fourYearsAgo[33m.[39msetFullYear(fourYearsAgo[33m.[39mgetFullYear() [33m-[39m [35m4[39m)[33m;[39m
+     [90m 85 |[39m
+    [31m[1m>[22m[39m[90m 86 |[39m     testHorseEligible [33m=[39m [36mawait[39m prisma[33m.[39mhorse[33m.[39mcreate({
+     [90m    |[39m                         [31m[1m^[22m[39m
+     [90m 87 |[39m       data[33m:[39m {
+     [90m 88 |[39m         name[33m:[39m [32m'Eligible Horse'[39m[33m,[39m
+     [90m 89 |[39m         dateOfBirth[33m:[39m fourYearsAgo[33m,[39m[0m
+
+      at kn (../packages/database/node_modules/@prisma/client/runtime/library.js:29:1363)
+      at Zn.handleRequestError (../packages/database/node_modules/@prisma/client/runtime/library.js:121:7102)
+      at Zn.handleAndLogRequestError (../packages/database/node_modules/@prisma/client/runtime/library.js:121:6784)
+      at Zn.request (../packages/database/node_modules/@prisma/client/runtime/library.js:121:6491)
+      at l (../packages/database/node_modules/@prisma/client/runtime/library.js:130:9778)
+      at Object.<anonymous> (tests/trainingController.test.mjs:86:25)
+
+  ● 🏋️ UNIT: Training Controller - Horse Training Business Logic › trainHorse › should handle XP system errors gracefully without breaking training
+
+    PrismaClientValidationError: 
+    Invalid `prisma.horse.create()` invocation:
+
+    {
+      data: {
+        name: "Eligible Horse",
+        dateOfBirth: new Date("2022-01-28T18:38:05.870Z"),
+        age: 4,
+        sex: "M",
+        user: {
+          connect: {
+            id: "e9a60265-ea17-4d42-9623-b3eb36029a01"
+          }
+        },
+        breedId: 1,
+        ~~~~~~~
+        speed: 50,
+        stamina: 50,
+        agility: 50,
+        healthStatus: "Excellent",
+    ?   ownerId?: String | Null,
+    ?   genotype?: NullableJsonNullValueInput | Json,
+    ?   phenotypicMarkings?: NullableJsonNullValueInput | Json,
+    ?   finalDisplayColor?: String | Null,
+    ?   shade?: String | Null,
+    ?   imageUrl?: String | Null,
+    ?   trait?: String | Null,
+    ?   temperament?: String | Null,
+    ?   personality?: String | Null,
+    ?   epigeneticFlags?: HorseCreateepigeneticFlagsInput | String[],
+    ?   precision?: Int | Null,
+    ?   strength?: Int | Null,
+    ?   endurance?: Int | Null,
+    ?   intelligence?: Int | Null,
+    ?   balance?: Int | Null,
+    ?   coordination?: Int | Null,
+    ?   boldness?: Int | Null,
+    ?   flexibility?: Int | Null,
+    ?   obedience?: Int | Null,
+    ?   focus?: Int | Null,
+    ?   totalEarnings?: Int | Null,
+    ?   studStatus?: String | Null,
+    ?   studFee?: Int | Null,
+    ?   lastBredDate?: DateTime | Null,
+    ?   forSale?: Boolean | Null,
+    ?   salePrice?: Int | Null,
+    ?   lastVettedDate?: DateTime | Null,
+    ?   bondScore?: Int | Null,
+    ?   stressLevel?: Int | Null,
+    ?   daysGroomedInARow?: Int | Null,
+    ?   burnoutStatus?: String | Null,
+    ?   taskLog?: NullableJsonNullValueInput | Json,
+    ?   consecutiveDaysFoalCare?: Int | Null,
+    ?   lastGroomed?: DateTime | Null,
+    ?   tack?: NullableJsonNullValueInput | Json,
+    ?   trainingCooldown?: DateTime | Null,
+    ?   earnings?: Decimal | Null,
+    ?   rider?: NullableJsonNullValueInput | Json,
+    ?   disciplineScores?: NullableJsonNullValueInput | Json,
+    ?   epigeneticModifiers?: NullableJsonNullValueInput | Json,
+    ?   ultraRareTraits?: NullableJsonNullValueInput | Json,
+    ?   conformationScores?: NullableJsonNullValueInput | Json,
+    ?   horseXp?: Int | Null,
+    ?   availableStatPoints?: Int | Null,
+    ?   createdAt?: DateTime | Null,
+    ?   updatedAt?: DateTime | Null,
+    ?   competitionResults?: CompetitionResultCreateNestedManyWithoutHorseInput,
+    ?   foalActivities?: FoalActivityCreateNestedManyWithoutFoalInput,
+    ?   foalDevelopment?: FoalDevelopmentCreateNestedOneWithoutFoalInput,
+    ?   foalTrainingHistory?: FoalTrainingHistoryCreateNestedManyWithoutHorseInput,
+    ?   groomAssignments?: GroomAssignmentCreateNestedManyWithoutFoalInput,
+    ?   groomInteractions?: GroomInteractionCreateNestedManyWithoutFoalInput,
+    ?   groomPerformanceRecords?: GroomPerformanceRecordCreateNestedManyWithoutHorseInput,
+    ?   horseXpEvents?: HorseXpEventCreateNestedManyWithoutHorseInput,
+    ?   traitHistoryLogs?: TraitHistoryLogCreateNestedManyWithoutHorseInput,
+    ?   milestoneTraitLogs?: MilestoneTraitLogCreateNestedManyWithoutHorseInput,
+    ?   ultraRareTraitEvents?: UltraRareTraitEventCreateNestedManyWithoutHorseInput,
+    ?   groomHorseSynergies?: GroomHorseSynergyCreateNestedManyWithoutHorseInput,
+    ?   groomAssignmentLogs?: GroomAssignmentLogCreateNestedManyWithoutHorseInput,
+    ?   breed?: BreedCreateNestedOneWithoutHorsesInput,
+    ?   dam?: HorseCreateNestedOneWithoutDamOffspringInput,
+    ?   damOffspring?: HorseCreateNestedManyWithoutDamInput,
+    ?   sire?: HorseCreateNestedOneWithoutSireOffspringInput,
+    ?   sireOffspring?: HorseCreateNestedManyWithoutSireInput,
+    ?   stable?: StableCreateNestedOneWithoutHorsesInput,
+    ?   trainingLogs?: TrainingLogCreateNestedManyWithoutHorseInput
+      }
+    }
+
+    Unknown argument `breedId`. Did you mean `breed`? Available options are marked with ?.
+
+    [0m [90m 84 |[39m     fourYearsAgo[33m.[39msetFullYear(fourYearsAgo[33m.[39mgetFullYear() [33m-[39m [35m4[39m)[33m;[39m
+     [90m 85 |[39m
+    [31m[1m>[22m[39m[90m 86 |[39m     testHorseEligible [33m=[39m [36mawait[39m prisma[33m.[39mhorse[33m.[39mcreate({
+     [90m    |[39m                         [31m[1m^[22m[39m
+     [90m 87 |[39m       data[33m:[39m {
+     [90m 88 |[39m         name[33m:[39m [32m'Eligible Horse'[39m[33m,[39m
+     [90m 89 |[39m         dateOfBirth[33m:[39m fourYearsAgo[33m,[39m[0m
+
+      at kn (../packages/database/node_modules/@prisma/client/runtime/library.js:29:1363)
+      at Zn.handleRequestError (../packages/database/node_modules/@prisma/client/runtime/library.js:121:7102)
+      at Zn.handleAndLogRequestError (../packages/database/node_modules/@prisma/client/runtime/library.js:121:6784)
+      at Zn.request (../packages/database/node_modules/@prisma/client/runtime/library.js:121:6491)
+      at l (../packages/database/node_modules/@prisma/client/runtime/library.js:130:9778)
+      at Object.<anonymous> (tests/trainingController.test.mjs:86:25)
+
+  ● 🏋️ UNIT: Training Controller - Horse Training Business Logic › getTrainingStatus › should return complete status for eligible horse with no training history
+
+    PrismaClientValidationError: 
+    Invalid `prisma.horse.create()` invocation:
+
+    {
+      data: {
+        name: "Eligible Horse",
+        dateOfBirth: new Date("2022-01-28T18:38:05.870Z"),
+        age: 4,
+        sex: "M",
+        user: {
+          connect: {
+            id: "e9a60265-ea17-4d42-9623-b3eb36029a01"
+          }
+        },
+        breedId: 1,
+        ~~~~~~~
+        speed: 50,
+        stamina: 50,
+        agility: 50,
+        healthStatus: "Excellent",
+    ?   ownerId?: String | Null,
+    ?   genotype?: NullableJsonNullValueInput | Json,
+    ?   phenotypicMarkings?: NullableJsonNullValueInput | Json,
+    ?   finalDisplayColor?: String | Null,
+    ?   shade?: String | Null,
+    ?   imageUrl?: String | Null,
+    ?   trait?: String | Null,
+    ?   temperament?: String | Null,
+    ?   personality?: String | Null,
+    ?   epigeneticFlags?: HorseCreateepigeneticFlagsInput | String[],
+    ?   precision?: Int | Null,
+    ?   strength?: Int | Null,
+    ?   endurance?: Int | Null,
+    ?   intelligence?: Int | Null,
+    ?   balance?: Int | Null,
+    ?   coordination?: Int | Null,
+    ?   boldness?: Int | Null,
+    ?   flexibility?: Int | Null,
+    ?   obedience?: Int | Null,
+    ?   focus?: Int | Null,
+    ?   totalEarnings?: Int | Null,
+    ?   studStatus?: String | Null,
+    ?   studFee?: Int | Null,
+    ?   lastBredDate?: DateTime | Null,
+    ?   forSale?: Boolean | Null,
+    ?   salePrice?: Int | Null,
+    ?   lastVettedDate?: DateTime | Null,
+    ?   bondScore?: Int | Null,
+    ?   stressLevel?: Int | Null,
+    ?   daysGroomedInARow?: Int | Null,
+    ?   burnoutStatus?: String | Null,
+    ?   taskLog?: NullableJsonNullValueInput | Json,
+    ?   consecutiveDaysFoalCare?: Int | Null,
+    ?   lastGroomed?: DateTime | Null,
+    ?   tack?: NullableJsonNullValueInput | Json,
+    ?   trainingCooldown?: DateTime | Null,
+    ?   earnings?: Decimal | Null,
+    ?   rider?: NullableJsonNullValueInput | Json,
+    ?   disciplineScores?: NullableJsonNullValueInput | Json,
+    ?   epigeneticModifiers?: NullableJsonNullValueInput | Json,
+    ?   ultraRareTraits?: NullableJsonNullValueInput | Json,
+    ?   conformationScores?: NullableJsonNullValueInput | Json,
+    ?   horseXp?: Int | Null,
+    ?   availableStatPoints?: Int | Null,
+    ?   createdAt?: DateTime | Null,
+    ?   updatedAt?: DateTime | Null,
+    ?   competitionResults?: CompetitionResultCreateNestedManyWithoutHorseInput,
+    ?   foalActivities?: FoalActivityCreateNestedManyWithoutFoalInput,
+    ?   foalDevelopment?: FoalDevelopmentCreateNestedOneWithoutFoalInput,
+    ?   foalTrainingHistory?: FoalTrainingHistoryCreateNestedManyWithoutHorseInput,
+    ?   groomAssignments?: GroomAssignmentCreateNestedManyWithoutFoalInput,
+    ?   groomInteractions?: GroomInteractionCreateNestedManyWithoutFoalInput,
+    ?   groomPerformanceRecords?: GroomPerformanceRecordCreateNestedManyWithoutHorseInput,
+    ?   horseXpEvents?: HorseXpEventCreateNestedManyWithoutHorseInput,
+    ?   traitHistoryLogs?: TraitHistoryLogCreateNestedManyWithoutHorseInput,
+    ?   milestoneTraitLogs?: MilestoneTraitLogCreateNestedManyWithoutHorseInput,
+    ?   ultraRareTraitEvents?: UltraRareTraitEventCreateNestedManyWithoutHorseInput,
+    ?   groomHorseSynergies?: GroomHorseSynergyCreateNestedManyWithoutHorseInput,
+    ?   groomAssignmentLogs?: GroomAssignmentLogCreateNestedManyWithoutHorseInput,
+    ?   breed?: BreedCreateNestedOneWithoutHorsesInput,
+    ?   dam?: HorseCreateNestedOneWithoutDamOffspringInput,
+    ?   damOffspring?: HorseCreateNestedManyWithoutDamInput,
+    ?   sire?: HorseCreateNestedOneWithoutSireOffspringInput,
+    ?   sireOffspring?: HorseCreateNestedManyWithoutSireInput,
+    ?   stable?: StableCreateNestedOneWithoutHorsesInput,
+    ?   trainingLogs?: TrainingLogCreateNestedManyWithoutHorseInput
+      }
+    }
+
+    Unknown argument `breedId`. Did you mean `breed`? Available options are marked with ?.
+
+    [0m [90m 84 |[39m     fourYearsAgo[33m.[39msetFullYear(fourYearsAgo[33m.[39mgetFullYear() [33m-[39m [35m4[39m)[33m;[39m
+     [90m 85 |[39m
+    [31m[1m>[22m[39m[90m 86 |[39m     testHorseEligible [33m=[39m [36mawait[39m prisma[33m.[39mhorse[33m.[39mcreate({
+     [90m    |[39m                         [31m[1m^[22m[39m
+     [90m 87 |[39m       data[33m:[39m {
+     [90m 88 |[39m         name[33m:[39m [32m'Eligible Horse'[39m[33m,[39m
+     [90m 89 |[39m         dateOfBirth[33m:[39m fourYearsAgo[33m,[39m[0m
+
+      at kn (../packages/database/node_modules/@prisma/client/runtime/library.js:29:1363)
+      at Zn.handleRequestError (../packages/database/node_modules/@prisma/client/runtime/library.js:121:7102)
+      at Zn.handleAndLogRequestError (../packages/database/node_modules/@prisma/client/runtime/library.js:121:6784)
+      at Zn.request (../packages/database/node_modules/@prisma/client/runtime/library.js:121:6491)
+      at l (../packages/database/node_modules/@prisma/client/runtime/library.js:130:9778)
+      at Object.<anonymous> (tests/trainingController.test.mjs:86:25)
+
+  ● 🏋️ UNIT: Training Controller - Horse Training Business Logic › getTrainingStatus › should return complete status for horse in active cooldown
+
+    PrismaClientValidationError: 
+    Invalid `prisma.horse.create()` invocation:
+
+    {
+      data: {
+        name: "Eligible Horse",
+        dateOfBirth: new Date("2022-01-28T18:38:05.870Z"),
+        age: 4,
+        sex: "M",
+        user: {
+          connect: {
+            id: "e9a60265-ea17-4d42-9623-b3eb36029a01"
+          }
+        },
+        breedId: 1,
+        ~~~~~~~
+        speed: 50,
+        stamina: 50,
+        agility: 50,
+        healthStatus: "Excellent",
+    ?   ownerId?: String | Null,
+    ?   genotype?: NullableJsonNullValueInput | Json,
+    ?   phenotypicMarkings?: NullableJsonNullValueInput | Json,
+    ?   finalDisplayColor?: String | Null,
+    ?   shade?: String | Null,
+    ?   imageUrl?: String | Null,
+    ?   trait?: String | Null,
+    ?   temperament?: String | Null,
+    ?   personality?: String | Null,
+    ?   epigeneticFlags?: HorseCreateepigeneticFlagsInput | String[],
+    ?   precision?: Int | Null,
+    ?   strength?: Int | Null,
+    ?   endurance?: Int | Null,
+    ?   intelligence?: Int | Null,
+    ?   balance?: Int | Null,
+    ?   coordination?: Int | Null,
+    ?   boldness?: Int | Null,
+    ?   flexibility?: Int | Null,
+    ?   obedience?: Int | Null,
+    ?   focus?: Int | Null,
+    ?   totalEarnings?: Int | Null,
+    ?   studStatus?: String | Null,
+    ?   studFee?: Int | Null,
+    ?   lastBredDate?: DateTime | Null,
+    ?   forSale?: Boolean | Null,
+    ?   salePrice?: Int | Null,
+    ?   lastVettedDate?: DateTime | Null,
+    ?   bondScore?: Int | Null,
+    ?   stressLevel?: Int | Null,
+    ?   daysGroomedInARow?: Int | Null,
+    ?   burnoutStatus?: String | Null,
+    ?   taskLog?: NullableJsonNullValueInput | Json,
+    ?   consecutiveDaysFoalCare?: Int | Null,
+    ?   lastGroomed?: DateTime | Null,
+    ?   tack?: NullableJsonNullValueInput | Json,
+    ?   trainingCooldown?: DateTime | Null,
+    ?   earnings?: Decimal | Null,
+    ?   rider?: NullableJsonNullValueInput | Json,
+    ?   disciplineScores?: NullableJsonNullValueInput | Json,
+    ?   epigeneticModifiers?: NullableJsonNullValueInput | Json,
+    ?   ultraRareTraits?: NullableJsonNullValueInput | Json,
+    ?   conformationScores?: NullableJsonNullValueInput | Json,
+    ?   horseXp?: Int | Null,
+    ?   availableStatPoints?: Int | Null,
+    ?   createdAt?: DateTime | Null,
+    ?   updatedAt?: DateTime | Null,
+    ?   competitionResults?: CompetitionResultCreateNestedManyWithoutHorseInput,
+    ?   foalActivities?: FoalActivityCreateNestedManyWithoutFoalInput,
+    ?   foalDevelopment?: FoalDevelopmentCreateNestedOneWithoutFoalInput,
+    ?   foalTrainingHistory?: FoalTrainingHistoryCreateNestedManyWithoutHorseInput,
+    ?   groomAssignments?: GroomAssignmentCreateNestedManyWithoutFoalInput,
+    ?   groomInteractions?: GroomInteractionCreateNestedManyWithoutFoalInput,
+    ?   groomPerformanceRecords?: GroomPerformanceRecordCreateNestedManyWithoutHorseInput,
+    ?   horseXpEvents?: HorseXpEventCreateNestedManyWithoutHorseInput,
+    ?   traitHistoryLogs?: TraitHistoryLogCreateNestedManyWithoutHorseInput,
+    ?   milestoneTraitLogs?: MilestoneTraitLogCreateNestedManyWithoutHorseInput,
+    ?   ultraRareTraitEvents?: UltraRareTraitEventCreateNestedManyWithoutHorseInput,
+    ?   groomHorseSynergies?: GroomHorseSynergyCreateNestedManyWithoutHorseInput,
+    ?   groomAssignmentLogs?: GroomAssignmentLogCreateNestedManyWithoutHorseInput,
+    ?   breed?: BreedCreateNestedOneWithoutHorsesInput,
+    ?   dam?: HorseCreateNestedOneWithoutDamOffspringInput,
+    ?   damOffspring?: HorseCreateNestedManyWithoutDamInput,
+    ?   sire?: HorseCreateNestedOneWithoutSireOffspringInput,
+    ?   sireOffspring?: HorseCreateNestedManyWithoutSireInput,
+    ?   stable?: StableCreateNestedOneWithoutHorsesInput,
+    ?   trainingLogs?: TrainingLogCreateNestedManyWithoutHorseInput
+      }
+    }
+
+    Unknown argument `breedId`. Did you mean `breed`? Available options are marked with ?.
+
+    [0m [90m 84 |[39m     fourYearsAgo[33m.[39msetFullYear(fourYearsAgo[33m.[39mgetFullYear() [33m-[39m [35m4[39m)[33m;[39m
+     [90m 85 |[39m
+    [31m[1m>[22m[39m[90m 86 |[39m     testHorseEligible [33m=[39m [36mawait[39m prisma[33m.[39mhorse[33m.[39mcreate({
+     [90m    |[39m                         [31m[1m^[22m[39m
+     [90m 87 |[39m       data[33m:[39m {
+     [90m 88 |[39m         name[33m:[39m [32m'Eligible Horse'[39m[33m,[39m
+     [90m 89 |[39m         dateOfBirth[33m:[39m fourYearsAgo[33m,[39m[0m
+
+      at kn (../packages/database/node_modules/@prisma/client/runtime/library.js:29:1363)
+      at Zn.handleRequestError (../packages/database/node_modules/@prisma/client/runtime/library.js:121:7102)
+      at Zn.handleAndLogRequestError (../packages/database/node_modules/@prisma/client/runtime/library.js:121:6784)
+      at Zn.request (../packages/database/node_modules/@prisma/client/runtime/library.js:121:6491)
+      at l (../packages/database/node_modules/@prisma/client/runtime/library.js:130:9778)
+      at Object.<anonymous> (tests/trainingController.test.mjs:86:25)
+
+  ● 🏋️ UNIT: Training Controller - Horse Training Business Logic › getTrainingStatus › should return complete status for horse with expired cooldown
+
+    PrismaClientValidationError: 
+    Invalid `prisma.horse.create()` invocation:
+
+    {
+      data: {
+        name: "Eligible Horse",
+        dateOfBirth: new Date("2022-01-28T18:38:05.870Z"),
+        age: 4,
+        sex: "M",
+        user: {
+          connect: {
+            id: "e9a60265-ea17-4d42-9623-b3eb36029a01"
+          }
+        },
+        breedId: 1,
+        ~~~~~~~
+        speed: 50,
+        stamina: 50,
+        agility: 50,
+        healthStatus: "Excellent",
+    ?   ownerId?: String | Null,
+    ?   genotype?: NullableJsonNullValueInput | Json,
+    ?   phenotypicMarkings?: NullableJsonNullValueInput | Json,
+    ?   finalDisplayColor?: String | Null,
+    ?   shade?: String | Null,
+    ?   imageUrl?: String | Null,
+    ?   trait?: String | Null,
+    ?   temperament?: String | Null,
+    ?   personality?: String | Null,
+    ?   epigeneticFlags?: HorseCreateepigeneticFlagsInput | String[],
+    ?   precision?: Int | Null,
+    ?   strength?: Int | Null,
+    ?   endurance?: Int | Null,
+    ?   intelligence?: Int | Null,
+    ?   balance?: Int | Null,
+    ?   coordination?: Int | Null,
+    ?   boldness?: Int | Null,
+    ?   flexibility?: Int | Null,
+    ?   obedience?: Int | Null,
+    ?   focus?: Int | Null,
+    ?   totalEarnings?: Int | Null,
+    ?   studStatus?: String | Null,
+    ?   studFee?: Int | Null,
+    ?   lastBredDate?: DateTime | Null,
+    ?   forSale?: Boolean | Null,
+    ?   salePrice?: Int | Null,
+    ?   lastVettedDate?: DateTime | Null,
+    ?   bondScore?: Int | Null,
+    ?   stressLevel?: Int | Null,
+    ?   daysGroomedInARow?: Int | Null,
+    ?   burnoutStatus?: String | Null,
+    ?   taskLog?: NullableJsonNullValueInput | Json,
+    ?   consecutiveDaysFoalCare?: Int | Null,
+    ?   lastGroomed?: DateTime | Null,
+    ?   tack?: NullableJsonNullValueInput | Json,
+    ?   trainingCooldown?: DateTime | Null,
+    ?   earnings?: Decimal | Null,
+    ?   rider?: NullableJsonNullValueInput | Json,
+    ?   disciplineScores?: NullableJsonNullValueInput | Json,
+    ?   epigeneticModifiers?: NullableJsonNullValueInput | Json,
+    ?   ultraRareTraits?: NullableJsonNullValueInput | Json,
+    ?   conformationScores?: NullableJsonNullValueInput | Json,
+    ?   horseXp?: Int | Null,
+    ?   availableStatPoints?: Int | Null,
+    ?   createdAt?: DateTime | Null,
+    ?   updatedAt?: DateTime | Null,
+    ?   competitionResults?: CompetitionResultCreateNestedManyWithoutHorseInput,
+    ?   foalActivities?: FoalActivityCreateNestedManyWithoutFoalInput,
+    ?   foalDevelopment?: FoalDevelopmentCreateNestedOneWithoutFoalInput,
+    ?   foalTrainingHistory?: FoalTrainingHistoryCreateNestedManyWithoutHorseInput,
+    ?   groomAssignments?: GroomAssignmentCreateNestedManyWithoutFoalInput,
+    ?   groomInteractions?: GroomInteractionCreateNestedManyWithoutFoalInput,
+    ?   groomPerformanceRecords?: GroomPerformanceRecordCreateNestedManyWithoutHorseInput,
+    ?   horseXpEvents?: HorseXpEventCreateNestedManyWithoutHorseInput,
+    ?   traitHistoryLogs?: TraitHistoryLogCreateNestedManyWithoutHorseInput,
+    ?   milestoneTraitLogs?: MilestoneTraitLogCreateNestedManyWithoutHorseInput,
+    ?   ultraRareTraitEvents?: UltraRareTraitEventCreateNestedManyWithoutHorseInput,
+    ?   groomHorseSynergies?: GroomHorseSynergyCreateNestedManyWithoutHorseInput,
+    ?   groomAssignmentLogs?: GroomAssignmentLogCreateNestedManyWithoutHorseInput,
+    ?   breed?: BreedCreateNestedOneWithoutHorsesInput,
+    ?   dam?: HorseCreateNestedOneWithoutDamOffspringInput,
+    ?   damOffspring?: HorseCreateNestedManyWithoutDamInput,
+    ?   sire?: HorseCreateNestedOneWithoutSireOffspringInput,
+    ?   sireOffspring?: HorseCreateNestedManyWithoutSireInput,
+    ?   stable?: StableCreateNestedOneWithoutHorsesInput,
+    ?   trainingLogs?: TrainingLogCreateNestedManyWithoutHorseInput
+      }
+    }
+
+    Unknown argument `breedId`. Did you mean `breed`? Available options are marked with ?.
+
+    [0m [90m 84 |[39m     fourYearsAgo[33m.[39msetFullYear(fourYearsAgo[33m.[39mgetFullYear() [33m-[39m [35m4[39m)[33m;[39m
+     [90m 85 |[39m
+    [31m[1m>[22m[39m[90m 86 |[39m     testHorseEligible [33m=[39m [36mawait[39m prisma[33m.[39mhorse[33m.[39mcreate({
+     [90m    |[39m                         [31m[1m^[22m[39m
+     [90m 87 |[39m       data[33m:[39m {
+     [90m 88 |[39m         name[33m:[39m [32m'Eligible Horse'[39m[33m,[39m
+     [90m 89 |[39m         dateOfBirth[33m:[39m fourYearsAgo[33m,[39m[0m
+
+      at kn (../packages/database/node_modules/@prisma/client/runtime/library.js:29:1363)
+      at Zn.handleRequestError (../packages/database/node_modules/@prisma/client/runtime/library.js:121:7102)
+      at Zn.handleAndLogRequestError (../packages/database/node_modules/@prisma/client/runtime/library.js:121:6784)
+      at Zn.request (../packages/database/node_modules/@prisma/client/runtime/library.js:121:6491)
+      at l (../packages/database/node_modules/@prisma/client/runtime/library.js:130:9778)
+      at Object.<anonymous> (tests/trainingController.test.mjs:86:25)
+
+  ● 🏋️ UNIT: Training Controller - Horse Training Business Logic › getTrainingStatus › should return status for ineligible horse (under age)
+
+    PrismaClientValidationError: 
+    Invalid `prisma.horse.create()` invocation:
+
+    {
+      data: {
+        name: "Eligible Horse",
+        dateOfBirth: new Date("2022-01-28T18:38:05.870Z"),
+        age: 4,
+        sex: "M",
+        user: {
+          connect: {
+            id: "e9a60265-ea17-4d42-9623-b3eb36029a01"
+          }
+        },
+        breedId: 1,
+        ~~~~~~~
+        speed: 50,
+        stamina: 50,
+        agility: 50,
+        healthStatus: "Excellent",
+    ?   ownerId?: String | Null,
+    ?   genotype?: NullableJsonNullValueInput | Json,
+    ?   phenotypicMarkings?: NullableJsonNullValueInput | Json,
+    ?   finalDisplayColor?: String | Null,
+    ?   shade?: String | Null,
+    ?   imageUrl?: String | Null,
+    ?   trait?: String | Null,
+    ?   temperament?: String | Null,
+    ?   personality?: String | Null,
+    ?   epigeneticFlags?: HorseCreateepigeneticFlagsInput | String[],
+    ?   precision?: Int | Null,
+    ?   strength?: Int | Null,
+    ?   endurance?: Int | Null,
+    ?   intelligence?: Int | Null,
+    ?   balance?: Int | Null,
+    ?   coordination?: Int | Null,
+    ?   boldness?: Int | Null,
+    ?   flexibility?: Int | Null,
+    ?   obedience?: Int | Null,
+    ?   focus?: Int | Null,
+    ?   totalEarnings?: Int | Null,
+    ?   studStatus?: String | Null,
+    ?   studFee?: Int | Null,
+    ?   lastBredDate?: DateTime | Null,
+    ?   forSale?: Boolean | Null,
+    ?   salePrice?: Int | Null,
+    ?   lastVettedDate?: DateTime | Null,
+    ?   bondScore?: Int | Null,
+    ?   stressLevel?: Int | Null,
+    ?   daysGroomedInARow?: Int | Null,
+    ?   burnoutStatus?: String | Null,
+    ?   taskLog?: NullableJsonNullValueInput | Json,
+    ?   consecutiveDaysFoalCare?: Int | Null,
+    ?   lastGroomed?: DateTime | Null,
+    ?   tack?: NullableJsonNullValueInput | Json,
+    ?   trainingCooldown?: DateTime | Null,
+    ?   earnings?: Decimal | Null,
+    ?   rider?: NullableJsonNullValueInput | Json,
+    ?   disciplineScores?: NullableJsonNullValueInput | Json,
+    ?   epigeneticModifiers?: NullableJsonNullValueInput | Json,
+    ?   ultraRareTraits?: NullableJsonNullValueInput | Json,
+    ?   conformationScores?: NullableJsonNullValueInput | Json,
+    ?   horseXp?: Int | Null,
+    ?   availableStatPoints?: Int | Null,
+    ?   createdAt?: DateTime | Null,
+    ?   updatedAt?: DateTime | Null,
+    ?   competitionResults?: CompetitionResultCreateNestedManyWithoutHorseInput,
+    ?   foalActivities?: FoalActivityCreateNestedManyWithoutFoalInput,
+    ?   foalDevelopment?: FoalDevelopmentCreateNestedOneWithoutFoalInput,
+    ?   foalTrainingHistory?: FoalTrainingHistoryCreateNestedManyWithoutHorseInput,
+    ?   groomAssignments?: GroomAssignmentCreateNestedManyWithoutFoalInput,
+    ?   groomInteractions?: GroomInteractionCreateNestedManyWithoutFoalInput,
+    ?   groomPerformanceRecords?: GroomPerformanceRecordCreateNestedManyWithoutHorseInput,
+    ?   horseXpEvents?: HorseXpEventCreateNestedManyWithoutHorseInput,
+    ?   traitHistoryLogs?: TraitHistoryLogCreateNestedManyWithoutHorseInput,
+    ?   milestoneTraitLogs?: MilestoneTraitLogCreateNestedManyWithoutHorseInput,
+    ?   ultraRareTraitEvents?: UltraRareTraitEventCreateNestedManyWithoutHorseInput,
+    ?   groomHorseSynergies?: GroomHorseSynergyCreateNestedManyWithoutHorseInput,
+    ?   groomAssignmentLogs?: GroomAssignmentLogCreateNestedManyWithoutHorseInput,
+    ?   breed?: BreedCreateNestedOneWithoutHorsesInput,
+    ?   dam?: HorseCreateNestedOneWithoutDamOffspringInput,
+    ?   damOffspring?: HorseCreateNestedManyWithoutDamInput,
+    ?   sire?: HorseCreateNestedOneWithoutSireOffspringInput,
+    ?   sireOffspring?: HorseCreateNestedManyWithoutSireInput,
+    ?   stable?: StableCreateNestedOneWithoutHorsesInput,
+    ?   trainingLogs?: TrainingLogCreateNestedManyWithoutHorseInput
+      }
+    }
+
+    Unknown argument `breedId`. Did you mean `breed`? Available options are marked with ?.
+
+    [0m [90m 84 |[39m     fourYearsAgo[33m.[39msetFullYear(fourYearsAgo[33m.[39mgetFullYear() [33m-[39m [35m4[39m)[33m;[39m
+     [90m 85 |[39m
+    [31m[1m>[22m[39m[90m 86 |[39m     testHorseEligible [33m=[39m [36mawait[39m prisma[33m.[39mhorse[33m.[39mcreate({
+     [90m    |[39m                         [31m[1m^[22m[39m
+     [90m 87 |[39m       data[33m:[39m {
+     [90m 88 |[39m         name[33m:[39m [32m'Eligible Horse'[39m[33m,[39m
+     [90m 89 |[39m         dateOfBirth[33m:[39m fourYearsAgo[33m,[39m[0m
+
+      at kn (../packages/database/node_modules/@prisma/client/runtime/library.js:29:1363)
+      at Zn.handleRequestError (../packages/database/node_modules/@prisma/client/runtime/library.js:121:7102)
+      at Zn.handleAndLogRequestError (../packages/database/node_modules/@prisma/client/runtime/library.js:121:6784)
+      at Zn.request (../packages/database/node_modules/@prisma/client/runtime/library.js:121:6491)
+      at l (../packages/database/node_modules/@prisma/client/runtime/library.js:130:9778)
+      at Object.<anonymous> (tests/trainingController.test.mjs:86:25)
+
+  ● 🏋️ UNIT: Training Controller - Horse Training Business Logic › getTrainingStatus › should handle database errors gracefully
+
+    PrismaClientValidationError: 
+    Invalid `prisma.horse.create()` invocation:
+
+    {
+      data: {
+        name: "Eligible Horse",
+        dateOfBirth: new Date("2022-01-28T18:38:05.870Z"),
+        age: 4,
+        sex: "M",
+        user: {
+          connect: {
+            id: "e9a60265-ea17-4d42-9623-b3eb36029a01"
+          }
+        },
+        breedId: 1,
+        ~~~~~~~
+        speed: 50,
+        stamina: 50,
+        agility: 50,
+        healthStatus: "Excellent",
+    ?   ownerId?: String | Null,
+    ?   genotype?: NullableJsonNullValueInput | Json,
+    ?   phenotypicMarkings?: NullableJsonNullValueInput | Json,
+    ?   finalDisplayColor?: String | Null,
+    ?   shade?: String | Null,
+    ?   imageUrl?: String | Null,
+    ?   trait?: String | Null,
+    ?   temperament?: String | Null,
+    ?   personality?: String | Null,
+    ?   epigeneticFlags?: HorseCreateepigeneticFlagsInput | String[],
+    ?   precision?: Int | Null,
+    ?   strength?: Int | Null,
+    ?   endurance?: Int | Null,
+    ?   intelligence?: Int | Null,
+    ?   balance?: Int | Null,
+    ?   coordination?: Int | Null,
+    ?   boldness?: Int | Null,
+    ?   flexibility?: Int | Null,
+    ?   obedience?: Int | Null,
+    ?   focus?: Int | Null,
+    ?   totalEarnings?: Int | Null,
+    ?   studStatus?: String | Null,
+    ?   studFee?: Int | Null,
+    ?   lastBredDate?: DateTime | Null,
+    ?   forSale?: Boolean | Null,
+    ?   salePrice?: Int | Null,
+    ?   lastVettedDate?: DateTime | Null,
+    ?   bondScore?: Int | Null,
+    ?   stressLevel?: Int | Null,
+    ?   daysGroomedInARow?: Int | Null,
+    ?   burnoutStatus?: String | Null,
+    ?   taskLog?: NullableJsonNullValueInput | Json,
+    ?   consecutiveDaysFoalCare?: Int | Null,
+    ?   lastGroomed?: DateTime | Null,
+    ?   tack?: NullableJsonNullValueInput | Json,
+    ?   trainingCooldown?: DateTime | Null,
+    ?   earnings?: Decimal | Null,
+    ?   rider?: NullableJsonNullValueInput | Json,
+    ?   disciplineScores?: NullableJsonNullValueInput | Json,
+    ?   epigeneticModifiers?: NullableJsonNullValueInput | Json,
+    ?   ultraRareTraits?: NullableJsonNullValueInput | Json,
+    ?   conformationScores?: NullableJsonNullValueInput | Json,
+    ?   horseXp?: Int | Null,
+    ?   availableStatPoints?: Int | Null,
+    ?   createdAt?: DateTime | Null,
+    ?   updatedAt?: DateTime | Null,
+    ?   competitionResults?: CompetitionResultCreateNestedManyWithoutHorseInput,
+    ?   foalActivities?: FoalActivityCreateNestedManyWithoutFoalInput,
+    ?   foalDevelopment?: FoalDevelopmentCreateNestedOneWithoutFoalInput,
+    ?   foalTrainingHistory?: FoalTrainingHistoryCreateNestedManyWithoutHorseInput,
+    ?   groomAssignments?: GroomAssignmentCreateNestedManyWithoutFoalInput,
+    ?   groomInteractions?: GroomInteractionCreateNestedManyWithoutFoalInput,
+    ?   groomPerformanceRecords?: GroomPerformanceRecordCreateNestedManyWithoutHorseInput,
+    ?   horseXpEvents?: HorseXpEventCreateNestedManyWithoutHorseInput,
+    ?   traitHistoryLogs?: TraitHistoryLogCreateNestedManyWithoutHorseInput,
+    ?   milestoneTraitLogs?: MilestoneTraitLogCreateNestedManyWithoutHorseInput,
+    ?   ultraRareTraitEvents?: UltraRareTraitEventCreateNestedManyWithoutHorseInput,
+    ?   groomHorseSynergies?: GroomHorseSynergyCreateNestedManyWithoutHorseInput,
+    ?   groomAssignmentLogs?: GroomAssignmentLogCreateNestedManyWithoutHorseInput,
+    ?   breed?: BreedCreateNestedOneWithoutHorsesInput,
+    ?   dam?: HorseCreateNestedOneWithoutDamOffspringInput,
+    ?   damOffspring?: HorseCreateNestedManyWithoutDamInput,
+    ?   sire?: HorseCreateNestedOneWithoutSireOffspringInput,
+    ?   sireOffspring?: HorseCreateNestedManyWithoutSireInput,
+    ?   stable?: StableCreateNestedOneWithoutHorsesInput,
+    ?   trainingLogs?: TrainingLogCreateNestedManyWithoutHorseInput
+      }
+    }
+
+    Unknown argument `breedId`. Did you mean `breed`? Available options are marked with ?.
+
+    [0m [90m 84 |[39m     fourYearsAgo[33m.[39msetFullYear(fourYearsAgo[33m.[39mgetFullYear() [33m-[39m [35m4[39m)[33m;[39m
+     [90m 85 |[39m
+    [31m[1m>[22m[39m[90m 86 |[39m     testHorseEligible [33m=[39m [36mawait[39m prisma[33m.[39mhorse[33m.[39mcreate({
+     [90m    |[39m                         [31m[1m^[22m[39m
+     [90m 87 |[39m       data[33m:[39m {
+     [90m 88 |[39m         name[33m:[39m [32m'Eligible Horse'[39m[33m,[39m
+     [90m 89 |[39m         dateOfBirth[33m:[39m fourYearsAgo[33m,[39m[0m
+
+      at kn (../packages/database/node_modules/@prisma/client/runtime/library.js:29:1363)
+      at Zn.handleRequestError (../packages/database/node_modules/@prisma/client/runtime/library.js:121:7102)
+      at Zn.handleAndLogRequestError (../packages/database/node_modules/@prisma/client/runtime/library.js:121:6784)
+      at Zn.request (../packages/database/node_modules/@prisma/client/runtime/library.js:121:6491)
+      at l (../packages/database/node_modules/@prisma/client/runtime/library.js:130:9778)
+      at Object.<anonymous> (tests/trainingController.test.mjs:86:25)
+
+  ● 🏋️ UNIT: Training Controller - Horse Training Business Logic › Integration scenarios › should handle different disciplines with global cooldown
+
+    PrismaClientValidationError: 
+    Invalid `prisma.horse.create()` invocation:
+
+    {
+      data: {
+        name: "Eligible Horse",
+        dateOfBirth: new Date("2022-01-28T18:38:05.870Z"),
+        age: 4,
+        sex: "M",
+        user: {
+          connect: {
+            id: "e9a60265-ea17-4d42-9623-b3eb36029a01"
+          }
+        },
+        breedId: 1,
+        ~~~~~~~
+        speed: 50,
+        stamina: 50,
+        agility: 50,
+        healthStatus: "Excellent",
+    ?   ownerId?: String | Null,
+    ?   genotype?: NullableJsonNullValueInput | Json,
+    ?   phenotypicMarkings?: NullableJsonNullValueInput | Json,
+    ?   finalDisplayColor?: String | Null,
+    ?   shade?: String | Null,
+    ?   imageUrl?: String | Null,
+    ?   trait?: String | Null,
+    ?   temperament?: String | Null,
+    ?   personality?: String | Null,
+    ?   epigeneticFlags?: HorseCreateepigeneticFlagsInput | String[],
+    ?   precision?: Int | Null,
+    ?   strength?: Int | Null,
+    ?   endurance?: Int | Null,
+    ?   intelligence?: Int | Null,
+    ?   balance?: Int | Null,
+    ?   coordination?: Int | Null,
+    ?   boldness?: Int | Null,
+    ?   flexibility?: Int | Null,
+    ?   obedience?: Int | Null,
+    ?   focus?: Int | Null,
+    ?   totalEarnings?: Int | Null,
+    ?   studStatus?: String | Null,
+    ?   studFee?: Int | Null,
+    ?   lastBredDate?: DateTime | Null,
+    ?   forSale?: Boolean | Null,
+    ?   salePrice?: Int | Null,
+    ?   lastVettedDate?: DateTime | Null,
+    ?   bondScore?: Int | Null,
+    ?   stressLevel?: Int | Null,
+    ?   daysGroomedInARow?: Int | Null,
+    ?   burnoutStatus?: String | Null,
+    ?   taskLog?: NullableJsonNullValueInput | Json,
+    ?   consecutiveDaysFoalCare?: Int | Null,
+    ?   lastGroomed?: DateTime | Null,
+    ?   tack?: NullableJsonNullValueInput | Json,
+    ?   trainingCooldown?: DateTime | Null,
+    ?   earnings?: Decimal | Null,
+    ?   rider?: NullableJsonNullValueInput | Json,
+    ?   disciplineScores?: NullableJsonNullValueInput | Json,
+    ?   epigeneticModifiers?: NullableJsonNullValueInput | Json,
+    ?   ultraRareTraits?: NullableJsonNullValueInput | Json,
+    ?   conformationScores?: NullableJsonNullValueInput | Json,
+    ?   horseXp?: Int | Null,
+    ?   availableStatPoints?: Int | Null,
+    ?   createdAt?: DateTime | Null,
+    ?   updatedAt?: DateTime | Null,
+    ?   competitionResults?: CompetitionResultCreateNestedManyWithoutHorseInput,
+    ?   foalActivities?: FoalActivityCreateNestedManyWithoutFoalInput,
+    ?   foalDevelopment?: FoalDevelopmentCreateNestedOneWithoutFoalInput,
+    ?   foalTrainingHistory?: FoalTrainingHistoryCreateNestedManyWithoutHorseInput,
+    ?   groomAssignments?: GroomAssignmentCreateNestedManyWithoutFoalInput,
+    ?   groomInteractions?: GroomInteractionCreateNestedManyWithoutFoalInput,
+    ?   groomPerformanceRecords?: GroomPerformanceRecordCreateNestedManyWithoutHorseInput,
+    ?   horseXpEvents?: HorseXpEventCreateNestedManyWithoutHorseInput,
+    ?   traitHistoryLogs?: TraitHistoryLogCreateNestedManyWithoutHorseInput,
+    ?   milestoneTraitLogs?: MilestoneTraitLogCreateNestedManyWithoutHorseInput,
+    ?   ultraRareTraitEvents?: UltraRareTraitEventCreateNestedManyWithoutHorseInput,
+    ?   groomHorseSynergies?: GroomHorseSynergyCreateNestedManyWithoutHorseInput,
+    ?   groomAssignmentLogs?: GroomAssignmentLogCreateNestedManyWithoutHorseInput,
+    ?   breed?: BreedCreateNestedOneWithoutHorsesInput,
+    ?   dam?: HorseCreateNestedOneWithoutDamOffspringInput,
+    ?   damOffspring?: HorseCreateNestedManyWithoutDamInput,
+    ?   sire?: HorseCreateNestedOneWithoutSireOffspringInput,
+    ?   sireOffspring?: HorseCreateNestedManyWithoutSireInput,
+    ?   stable?: StableCreateNestedOneWithoutHorsesInput,
+    ?   trainingLogs?: TrainingLogCreateNestedManyWithoutHorseInput
+      }
+    }
+
+    Unknown argument `breedId`. Did you mean `breed`? Available options are marked with ?.
+
+    [0m [90m 84 |[39m     fourYearsAgo[33m.[39msetFullYear(fourYearsAgo[33m.[39mgetFullYear() [33m-[39m [35m4[39m)[33m;[39m
+     [90m 85 |[39m
+    [31m[1m>[22m[39m[90m 86 |[39m     testHorseEligible [33m=[39m [36mawait[39m prisma[33m.[39mhorse[33m.[39mcreate({
+     [90m    |[39m                         [31m[1m^[22m[39m
+     [90m 87 |[39m       data[33m:[39m {
+     [90m 88 |[39m         name[33m:[39m [32m'Eligible Horse'[39m[33m,[39m
+     [90m 89 |[39m         dateOfBirth[33m:[39m fourYearsAgo[33m,[39m[0m
+
+      at kn (../packages/database/node_modules/@prisma/client/runtime/library.js:29:1363)
+      at Zn.handleRequestError (../packages/database/node_modules/@prisma/client/runtime/library.js:121:7102)
+      at Zn.handleAndLogRequestError (../packages/database/node_modules/@prisma/client/runtime/library.js:121:6784)
+      at Zn.request (../packages/database/node_modules/@prisma/client/runtime/library.js:121:6491)
+      at l (../packages/database/node_modules/@prisma/client/runtime/library.js:130:9778)
+      at Object.<anonymous> (tests/trainingController.test.mjs:86:25)
+
+  ● 🏋️ UNIT: Training Controller - Horse Training Business Logic › Integration scenarios › should handle edge case of exactly 7 days cooldown
+
+    PrismaClientValidationError: 
+    Invalid `prisma.horse.create()` invocation:
+
+    {
+      data: {
+        name: "Eligible Horse",
+        dateOfBirth: new Date("2022-01-28T18:38:05.870Z"),
+        age: 4,
+        sex: "M",
+        user: {
+          connect: {
+            id: "e9a60265-ea17-4d42-9623-b3eb36029a01"
+          }
+        },
+        breedId: 1,
+        ~~~~~~~
+        speed: 50,
+        stamina: 50,
+        agility: 50,
+        healthStatus: "Excellent",
+    ?   ownerId?: String | Null,
+    ?   genotype?: NullableJsonNullValueInput | Json,
+    ?   phenotypicMarkings?: NullableJsonNullValueInput | Json,
+    ?   finalDisplayColor?: String | Null,
+    ?   shade?: String | Null,
+    ?   imageUrl?: String | Null,
+    ?   trait?: String | Null,
+    ?   temperament?: String | Null,
+    ?   personality?: String | Null,
+    ?   epigeneticFlags?: HorseCreateepigeneticFlagsInput | String[],
+    ?   precision?: Int | Null,
+    ?   strength?: Int | Null,
+    ?   endurance?: Int | Null,
+    ?   intelligence?: Int | Null,
+    ?   balance?: Int | Null,
+    ?   coordination?: Int | Null,
+    ?   boldness?: Int | Null,
+    ?   flexibility?: Int | Null,
+    ?   obedience?: Int | Null,
+    ?   focus?: Int | Null,
+    ?   totalEarnings?: Int | Null,
+    ?   studStatus?: String | Null,
+    ?   studFee?: Int | Null,
+    ?   lastBredDate?: DateTime | Null,
+    ?   forSale?: Boolean | Null,
+    ?   salePrice?: Int | Null,
+    ?   lastVettedDate?: DateTime | Null,
+    ?   bondScore?: Int | Null,
+    ?   stressLevel?: Int | Null,
+    ?   daysGroomedInARow?: Int | Null,
+    ?   burnoutStatus?: String | Null,
+    ?   taskLog?: NullableJsonNullValueInput | Json,
+    ?   consecutiveDaysFoalCare?: Int | Null,
+    ?   lastGroomed?: DateTime | Null,
+    ?   tack?: NullableJsonNullValueInput | Json,
+    ?   trainingCooldown?: DateTime | Null,
+    ?   earnings?: Decimal | Null,
+    ?   rider?: NullableJsonNullValueInput | Json,
+    ?   disciplineScores?: NullableJsonNullValueInput | Json,
+    ?   epigeneticModifiers?: NullableJsonNullValueInput | Json,
+    ?   ultraRareTraits?: NullableJsonNullValueInput | Json,
+    ?   conformationScores?: NullableJsonNullValueInput | Json,
+    ?   horseXp?: Int | Null,
+    ?   availableStatPoints?: Int | Null,
+    ?   createdAt?: DateTime | Null,
+    ?   updatedAt?: DateTime | Null,
+    ?   competitionResults?: CompetitionResultCreateNestedManyWithoutHorseInput,
+    ?   foalActivities?: FoalActivityCreateNestedManyWithoutFoalInput,
+    ?   foalDevelopment?: FoalDevelopmentCreateNestedOneWithoutFoalInput,
+    ?   foalTrainingHistory?: FoalTrainingHistoryCreateNestedManyWithoutHorseInput,
+    ?   groomAssignments?: GroomAssignmentCreateNestedManyWithoutFoalInput,
+    ?   groomInteractions?: GroomInteractionCreateNestedManyWithoutFoalInput,
+    ?   groomPerformanceRecords?: GroomPerformanceRecordCreateNestedManyWithoutHorseInput,
+    ?   horseXpEvents?: HorseXpEventCreateNestedManyWithoutHorseInput,
+    ?   traitHistoryLogs?: TraitHistoryLogCreateNestedManyWithoutHorseInput,
+    ?   milestoneTraitLogs?: MilestoneTraitLogCreateNestedManyWithoutHorseInput,
+    ?   ultraRareTraitEvents?: UltraRareTraitEventCreateNestedManyWithoutHorseInput,
+    ?   groomHorseSynergies?: GroomHorseSynergyCreateNestedManyWithoutHorseInput,
+    ?   groomAssignmentLogs?: GroomAssignmentLogCreateNestedManyWithoutHorseInput,
+    ?   breed?: BreedCreateNestedOneWithoutHorsesInput,
+    ?   dam?: HorseCreateNestedOneWithoutDamOffspringInput,
+    ?   damOffspring?: HorseCreateNestedManyWithoutDamInput,
+    ?   sire?: HorseCreateNestedOneWithoutSireOffspringInput,
+    ?   sireOffspring?: HorseCreateNestedManyWithoutSireInput,
+    ?   stable?: StableCreateNestedOneWithoutHorsesInput,
+    ?   trainingLogs?: TrainingLogCreateNestedManyWithoutHorseInput
+      }
+    }
+
+    Unknown argument `breedId`. Did you mean `breed`? Available options are marked with ?.
+
+    [0m [90m 84 |[39m     fourYearsAgo[33m.[39msetFullYear(fourYearsAgo[33m.[39mgetFullYear() [33m-[39m [35m4[39m)[33m;[39m
+     [90m 85 |[39m
+    [31m[1m>[22m[39m[90m 86 |[39m     testHorseEligible [33m=[39m [36mawait[39m prisma[33m.[39mhorse[33m.[39mcreate({
+     [90m    |[39m                         [31m[1m^[22m[39m
+     [90m 87 |[39m       data[33m:[39m {
+     [90m 88 |[39m         name[33m:[39m [32m'Eligible Horse'[39m[33m,[39m
+     [90m 89 |[39m         dateOfBirth[33m:[39m fourYearsAgo[33m,[39m[0m
+
+      at kn (../packages/database/node_modules/@prisma/client/runtime/library.js:29:1363)
+      at Zn.handleRequestError (../packages/database/node_modules/@prisma/client/runtime/library.js:121:7102)
+      at Zn.handleAndLogRequestError (../packages/database/node_modules/@prisma/client/runtime/library.js:121:6784)
+      at Zn.request (../packages/database/node_modules/@prisma/client/runtime/library.js:121:6491)
+      at l (../packages/database/node_modules/@prisma/client/runtime/library.js:130:9778)
+      at Object.<anonymous> (tests/trainingController.test.mjs:86:25)
+
+  ● 🏋️ UNIT: Training Controller - Horse Training Business Logic › Integration scenarios › should handle complete training workflow
+
+    PrismaClientValidationError: 
+    Invalid `prisma.horse.create()` invocation:
+
+    {
+      data: {
+        name: "Eligible Horse",
+        dateOfBirth: new Date("2022-01-28T18:38:05.870Z"),
+        age: 4,
+        sex: "M",
+        user: {
+          connect: {
+            id: "e9a60265-ea17-4d42-9623-b3eb36029a01"
+          }
+        },
+        breedId: 1,
+        ~~~~~~~
+        speed: 50,
+        stamina: 50,
+        agility: 50,
+        healthStatus: "Excellent",
+    ?   ownerId?: String | Null,
+    ?   genotype?: NullableJsonNullValueInput | Json,
+    ?   phenotypicMarkings?: NullableJsonNullValueInput | Json,
+    ?   finalDisplayColor?: String | Null,
+    ?   shade?: String | Null,
+    ?   imageUrl?: String | Null,
+    ?   trait?: String | Null,
+    ?   temperament?: String | Null,
+    ?   personality?: String | Null,
+    ?   epigeneticFlags?: HorseCreateepigeneticFlagsInput | String[],
+    ?   precision?: Int | Null,
+    ?   strength?: Int | Null,
+    ?   endurance?: Int | Null,
+    ?   intelligence?: Int | Null,
+    ?   balance?: Int | Null,
+    ?   coordination?: Int | Null,
+    ?   boldness?: Int | Null,
+    ?   flexibility?: Int | Null,
+    ?   obedience?: Int | Null,
+    ?   focus?: Int | Null,
+    ?   totalEarnings?: Int | Null,
+    ?   studStatus?: String | Null,
+    ?   studFee?: Int | Null,
+    ?   lastBredDate?: DateTime | Null,
+    ?   forSale?: Boolean | Null,
+    ?   salePrice?: Int | Null,
+    ?   lastVettedDate?: DateTime | Null,
+    ?   bondScore?: Int | Null,
+    ?   stressLevel?: Int | Null,
+    ?   daysGroomedInARow?: Int | Null,
+    ?   burnoutStatus?: String | Null,
+    ?   taskLog?: NullableJsonNullValueInput | Json,
+    ?   consecutiveDaysFoalCare?: Int | Null,
+    ?   lastGroomed?: DateTime | Null,
+    ?   tack?: NullableJsonNullValueInput | Json,
+    ?   trainingCooldown?: DateTime | Null,
+    ?   earnings?: Decimal | Null,
+    ?   rider?: NullableJsonNullValueInput | Json,
+    ?   disciplineScores?: NullableJsonNullValueInput | Json,
+    ?   epigeneticModifiers?: NullableJsonNullValueInput | Json,
+    ?   ultraRareTraits?: NullableJsonNullValueInput | Json,
+    ?   conformationScores?: NullableJsonNullValueInput | Json,
+    ?   horseXp?: Int | Null,
+    ?   availableStatPoints?: Int | Null,
+    ?   createdAt?: DateTime | Null,
+    ?   updatedAt?: DateTime | Null,
+    ?   competitionResults?: CompetitionResultCreateNestedManyWithoutHorseInput,
+    ?   foalActivities?: FoalActivityCreateNestedManyWithoutFoalInput,
+    ?   foalDevelopment?: FoalDevelopmentCreateNestedOneWithoutFoalInput,
+    ?   foalTrainingHistory?: FoalTrainingHistoryCreateNestedManyWithoutHorseInput,
+    ?   groomAssignments?: GroomAssignmentCreateNestedManyWithoutFoalInput,
+    ?   groomInteractions?: GroomInteractionCreateNestedManyWithoutFoalInput,
+    ?   groomPerformanceRecords?: GroomPerformanceRecordCreateNestedManyWithoutHorseInput,
+    ?   horseXpEvents?: HorseXpEventCreateNestedManyWithoutHorseInput,
+    ?   traitHistoryLogs?: TraitHistoryLogCreateNestedManyWithoutHorseInput,
+    ?   milestoneTraitLogs?: MilestoneTraitLogCreateNestedManyWithoutHorseInput,
+    ?   ultraRareTraitEvents?: UltraRareTraitEventCreateNestedManyWithoutHorseInput,
+    ?   groomHorseSynergies?: GroomHorseSynergyCreateNestedManyWithoutHorseInput,
+    ?   groomAssignmentLogs?: GroomAssignmentLogCreateNestedManyWithoutHorseInput,
+    ?   breed?: BreedCreateNestedOneWithoutHorsesInput,
+    ?   dam?: HorseCreateNestedOneWithoutDamOffspringInput,
+    ?   damOffspring?: HorseCreateNestedManyWithoutDamInput,
+    ?   sire?: HorseCreateNestedOneWithoutSireOffspringInput,
+    ?   sireOffspring?: HorseCreateNestedManyWithoutSireInput,
+    ?   stable?: StableCreateNestedOneWithoutHorsesInput,
+    ?   trainingLogs?: TrainingLogCreateNestedManyWithoutHorseInput
+      }
+    }
+
+    Unknown argument `breedId`. Did you mean `breed`? Available options are marked with ?.
+
+    [0m [90m 84 |[39m     fourYearsAgo[33m.[39msetFullYear(fourYearsAgo[33m.[39mgetFullYear() [33m-[39m [35m4[39m)[33m;[39m
+     [90m 85 |[39m
+    [31m[1m>[22m[39m[90m 86 |[39m     testHorseEligible [33m=[39m [36mawait[39m prisma[33m.[39mhorse[33m.[39mcreate({
+     [90m    |[39m                         [31m[1m^[22m[39m
+     [90m 87 |[39m       data[33m:[39m {
+     [90m 88 |[39m         name[33m:[39m [32m'Eligible Horse'[39m[33m,[39m
+     [90m 89 |[39m         dateOfBirth[33m:[39m fourYearsAgo[33m,[39m[0m
+
+      at kn (../packages/database/node_modules/@prisma/client/runtime/library.js:29:1363)
+      at Zn.handleRequestError (../packages/database/node_modules/@prisma/client/runtime/library.js:121:7102)
+      at Zn.handleAndLogRequestError (../packages/database/node_modules/@prisma/client/runtime/library.js:121:6784)
+      at Zn.request (../packages/database/node_modules/@prisma/client/runtime/library.js:121:6491)
+      at l (../packages/database/node_modules/@prisma/client/runtime/library.js:130:9778)
+      at Object.<anonymous> (tests/trainingController.test.mjs:86:25)
+
+  ● 🏋️ UNIT: Training Controller - Horse Training Business Logic › getTrainableHorses › should return trainable horses for user with eligible horses
+
+    PrismaClientValidationError: 
+    Invalid `prisma.horse.create()` invocation:
+
+    {
+      data: {
+        name: "Eligible Horse",
+        dateOfBirth: new Date("2022-01-28T18:38:05.870Z"),
+        age: 4,
+        sex: "M",
+        user: {
+          connect: {
+            id: "e9a60265-ea17-4d42-9623-b3eb36029a01"
+          }
+        },
+        breedId: 1,
+        ~~~~~~~
+        speed: 50,
+        stamina: 50,
+        agility: 50,
+        healthStatus: "Excellent",
+    ?   ownerId?: String | Null,
+    ?   genotype?: NullableJsonNullValueInput | Json,
+    ?   phenotypicMarkings?: NullableJsonNullValueInput | Json,
+    ?   finalDisplayColor?: String | Null,
+    ?   shade?: String | Null,
+    ?   imageUrl?: String | Null,
+    ?   trait?: String | Null,
+    ?   temperament?: String | Null,
+    ?   personality?: String | Null,
+    ?   epigeneticFlags?: HorseCreateepigeneticFlagsInput | String[],
+    ?   precision?: Int | Null,
+    ?   strength?: Int | Null,
+    ?   endurance?: Int | Null,
+    ?   intelligence?: Int | Null,
+    ?   balance?: Int | Null,
+    ?   coordination?: Int | Null,
+    ?   boldness?: Int | Null,
+    ?   flexibility?: Int | Null,
+    ?   obedience?: Int | Null,
+    ?   focus?: Int | Null,
+    ?   totalEarnings?: Int | Null,
+    ?   studStatus?: String | Null,
+    ?   studFee?: Int | Null,
+    ?   lastBredDate?: DateTime | Null,
+    ?   forSale?: Boolean | Null,
+    ?   salePrice?: Int | Null,
+    ?   lastVettedDate?: DateTime | Null,
+    ?   bondScore?: Int | Null,
+    ?   stressLevel?: Int | Null,
+    ?   daysGroomedInARow?: Int | Null,
+    ?   burnoutStatus?: String | Null,
+    ?   taskLog?: NullableJsonNullValueInput | Json,
+    ?   consecutiveDaysFoalCare?: Int | Null,
+    ?   lastGroomed?: DateTime | Null,
+    ?   tack?: NullableJsonNullValueInput | Json,
+    ?   trainingCooldown?: DateTime | Null,
+    ?   earnings?: Decimal | Null,
+    ?   rider?: NullableJsonNullValueInput | Json,
+    ?   disciplineScores?: NullableJsonNullValueInput | Json,
+    ?   epigeneticModifiers?: NullableJsonNullValueInput | Json,
+    ?   ultraRareTraits?: NullableJsonNullValueInput | Json,
+    ?   conformationScores?: NullableJsonNullValueInput | Json,
+    ?   horseXp?: Int | Null,
+    ?   availableStatPoints?: Int | Null,
+    ?   createdAt?: DateTime | Null,
+    ?   updatedAt?: DateTime | Null,
+    ?   competitionResults?: CompetitionResultCreateNestedManyWithoutHorseInput,
+    ?   foalActivities?: FoalActivityCreateNestedManyWithoutFoalInput,
+    ?   foalDevelopment?: FoalDevelopmentCreateNestedOneWithoutFoalInput,
+    ?   foalTrainingHistory?: FoalTrainingHistoryCreateNestedManyWithoutHorseInput,
+    ?   groomAssignments?: GroomAssignmentCreateNestedManyWithoutFoalInput,
+    ?   groomInteractions?: GroomInteractionCreateNestedManyWithoutFoalInput,
+    ?   groomPerformanceRecords?: GroomPerformanceRecordCreateNestedManyWithoutHorseInput,
+    ?   horseXpEvents?: HorseXpEventCreateNestedManyWithoutHorseInput,
+    ?   traitHistoryLogs?: TraitHistoryLogCreateNestedManyWithoutHorseInput,
+    ?   milestoneTraitLogs?: MilestoneTraitLogCreateNestedManyWithoutHorseInput,
+    ?   ultraRareTraitEvents?: UltraRareTraitEventCreateNestedManyWithoutHorseInput,
+    ?   groomHorseSynergies?: GroomHorseSynergyCreateNestedManyWithoutHorseInput,
+    ?   groomAssignmentLogs?: GroomAssignmentLogCreateNestedManyWithoutHorseInput,
+    ?   breed?: BreedCreateNestedOneWithoutHorsesInput,
+    ?   dam?: HorseCreateNestedOneWithoutDamOffspringInput,
+    ?   damOffspring?: HorseCreateNestedManyWithoutDamInput,
+    ?   sire?: HorseCreateNestedOneWithoutSireOffspringInput,
+    ?   sireOffspring?: HorseCreateNestedManyWithoutSireInput,
+    ?   stable?: StableCreateNestedOneWithoutHorsesInput,
+    ?   trainingLogs?: TrainingLogCreateNestedManyWithoutHorseInput
+      }
+    }
+
+    Unknown argument `breedId`. Did you mean `breed`? Available options are marked with ?.
+
+    [0m [90m 84 |[39m     fourYearsAgo[33m.[39msetFullYear(fourYearsAgo[33m.[39mgetFullYear() [33m-[39m [35m4[39m)[33m;[39m
+     [90m 85 |[39m
+    [31m[1m>[22m[39m[90m 86 |[39m     testHorseEligible [33m=[39m [36mawait[39m prisma[33m.[39mhorse[33m.[39mcreate({
+     [90m    |[39m                         [31m[1m^[22m[39m
+     [90m 87 |[39m       data[33m:[39m {
+     [90m 88 |[39m         name[33m:[39m [32m'Eligible Horse'[39m[33m,[39m
+     [90m 89 |[39m         dateOfBirth[33m:[39m fourYearsAgo[33m,[39m[0m
+
+      at kn (../packages/database/node_modules/@prisma/client/runtime/library.js:29:1363)
+      at Zn.handleRequestError (../packages/database/node_modules/@prisma/client/runtime/library.js:121:7102)
+      at Zn.handleAndLogRequestError (../packages/database/node_modules/@prisma/client/runtime/library.js:121:6784)
+      at Zn.request (../packages/database/node_modules/@prisma/client/runtime/library.js:121:6491)
+      at l (../packages/database/node_modules/@prisma/client/runtime/library.js:130:9778)
+      at Object.<anonymous> (tests/trainingController.test.mjs:86:25)
+
+  ● 🏋️ UNIT: Training Controller - Horse Training Business Logic › getTrainableHorses › should return empty array for player with no horses
+
+    PrismaClientValidationError: 
+    Invalid `prisma.horse.create()` invocation:
+
+    {
+      data: {
+        name: "Eligible Horse",
+        dateOfBirth: new Date("2022-01-28T18:38:05.870Z"),
+        age: 4,
+        sex: "M",
+        user: {
+          connect: {
+            id: "e9a60265-ea17-4d42-9623-b3eb36029a01"
+          }
+        },
+        breedId: 1,
+        ~~~~~~~
+        speed: 50,
+        stamina: 50,
+        agility: 50,
+        healthStatus: "Excellent",
+    ?   ownerId?: String | Null,
+    ?   genotype?: NullableJsonNullValueInput | Json,
+    ?   phenotypicMarkings?: NullableJsonNullValueInput | Json,
+    ?   finalDisplayColor?: String | Null,
+    ?   shade?: String | Null,
+    ?   imageUrl?: String | Null,
+    ?   trait?: String | Null,
+    ?   temperament?: String | Null,
+    ?   personality?: String | Null,
+    ?   epigeneticFlags?: HorseCreateepigeneticFlagsInput | String[],
+    ?   precision?: Int | Null,
+    ?   strength?: Int | Null,
+    ?   endurance?: Int | Null,
+    ?   intelligence?: Int | Null,
+    ?   balance?: Int | Null,
+    ?   coordination?: Int | Null,
+    ?   boldness?: Int | Null,
+    ?   flexibility?: Int | Null,
+    ?   obedience?: Int | Null,
+    ?   focus?: Int | Null,
+    ?   totalEarnings?: Int | Null,
+    ?   studStatus?: String | Null,
+    ?   studFee?: Int | Null,
+    ?   lastBredDate?: DateTime | Null,
+    ?   forSale?: Boolean | Null,
+    ?   salePrice?: Int | Null,
+    ?   lastVettedDate?: DateTime | Null,
+    ?   bondScore?: Int | Null,
+    ?   stressLevel?: Int | Null,
+    ?   daysGroomedInARow?: Int | Null,
+    ?   burnoutStatus?: String | Null,
+    ?   taskLog?: NullableJsonNullValueInput | Json,
+    ?   consecutiveDaysFoalCare?: Int | Null,
+    ?   lastGroomed?: DateTime | Null,
+    ?   tack?: NullableJsonNullValueInput | Json,
+    ?   trainingCooldown?: DateTime | Null,
+    ?   earnings?: Decimal | Null,
+    ?   rider?: NullableJsonNullValueInput | Json,
+    ?   disciplineScores?: NullableJsonNullValueInput | Json,
+    ?   epigeneticModifiers?: NullableJsonNullValueInput | Json,
+    ?   ultraRareTraits?: NullableJsonNullValueInput | Json,
+    ?   conformationScores?: NullableJsonNullValueInput | Json,
+    ?   horseXp?: Int | Null,
+    ?   availableStatPoints?: Int | Null,
+    ?   createdAt?: DateTime | Null,
+    ?   updatedAt?: DateTime | Null,
+    ?   competitionResults?: CompetitionResultCreateNestedManyWithoutHorseInput,
+    ?   foalActivities?: FoalActivityCreateNestedManyWithoutFoalInput,
+    ?   foalDevelopment?: FoalDevelopmentCreateNestedOneWithoutFoalInput,
+    ?   foalTrainingHistory?: FoalTrainingHistoryCreateNestedManyWithoutHorseInput,
+    ?   groomAssignments?: GroomAssignmentCreateNestedManyWithoutFoalInput,
+    ?   groomInteractions?: GroomInteractionCreateNestedManyWithoutFoalInput,
+    ?   groomPerformanceRecords?: GroomPerformanceRecordCreateNestedManyWithoutHorseInput,
+    ?   horseXpEvents?: HorseXpEventCreateNestedManyWithoutHorseInput,
+    ?   traitHistoryLogs?: TraitHistoryLogCreateNestedManyWithoutHorseInput,
+    ?   milestoneTraitLogs?: MilestoneTraitLogCreateNestedManyWithoutHorseInput,
+    ?   ultraRareTraitEvents?: UltraRareTraitEventCreateNestedManyWithoutHorseInput,
+    ?   groomHorseSynergies?: GroomHorseSynergyCreateNestedManyWithoutHorseInput,
+    ?   groomAssignmentLogs?: GroomAssignmentLogCreateNestedManyWithoutHorseInput,
+    ?   breed?: BreedCreateNestedOneWithoutHorsesInput,
+    ?   dam?: HorseCreateNestedOneWithoutDamOffspringInput,
+    ?   damOffspring?: HorseCreateNestedManyWithoutDamInput,
+    ?   sire?: HorseCreateNestedOneWithoutSireOffspringInput,
+    ?   sireOffspring?: HorseCreateNestedManyWithoutSireInput,
+    ?   stable?: StableCreateNestedOneWithoutHorsesInput,
+    ?   trainingLogs?: TrainingLogCreateNestedManyWithoutHorseInput
+      }
+    }
+
+    Unknown argument `breedId`. Did you mean `breed`? Available options are marked with ?.
+
+    [0m [90m 84 |[39m     fourYearsAgo[33m.[39msetFullYear(fourYearsAgo[33m.[39mgetFullYear() [33m-[39m [35m4[39m)[33m;[39m
+     [90m 85 |[39m
+    [31m[1m>[22m[39m[90m 86 |[39m     testHorseEligible [33m=[39m [36mawait[39m prisma[33m.[39mhorse[33m.[39mcreate({
+     [90m    |[39m                         [31m[1m^[22m[39m
+     [90m 87 |[39m       data[33m:[39m {
+     [90m 88 |[39m         name[33m:[39m [32m'Eligible Horse'[39m[33m,[39m
+     [90m 89 |[39m         dateOfBirth[33m:[39m fourYearsAgo[33m,[39m[0m
+
+      at kn (../packages/database/node_modules/@prisma/client/runtime/library.js:29:1363)
+      at Zn.handleRequestError (../packages/database/node_modules/@prisma/client/runtime/library.js:121:7102)
+      at Zn.handleAndLogRequestError (../packages/database/node_modules/@prisma/client/runtime/library.js:121:6784)
+      at Zn.request (../packages/database/node_modules/@prisma/client/runtime/library.js:121:6491)
+      at l (../packages/database/node_modules/@prisma/client/runtime/library.js:130:9778)
+      at Object.<anonymous> (tests/trainingController.test.mjs:86:25)
+
+  ● 🏋️ UNIT: Training Controller - Horse Training Business Logic › getTrainableHorses › should return empty array for non-existent player
+
+    PrismaClientValidationError: 
+    Invalid `prisma.horse.create()` invocation:
+
+    {
+      data: {
+        name: "Eligible Horse",
+        dateOfBirth: new Date("2022-01-28T18:38:05.870Z"),
+        age: 4,
+        sex: "M",
+        user: {
+          connect: {
+            id: "e9a60265-ea17-4d42-9623-b3eb36029a01"
+          }
+        },
+        breedId: 1,
+        ~~~~~~~
+        speed: 50,
+        stamina: 50,
+        agility: 50,
+        healthStatus: "Excellent",
+    ?   ownerId?: String | Null,
+    ?   genotype?: NullableJsonNullValueInput | Json,
+    ?   phenotypicMarkings?: NullableJsonNullValueInput | Json,
+    ?   finalDisplayColor?: String | Null,
+    ?   shade?: String | Null,
+    ?   imageUrl?: String | Null,
+    ?   trait?: String | Null,
+    ?   temperament?: String | Null,
+    ?   personality?: String | Null,
+    ?   epigeneticFlags?: HorseCreateepigeneticFlagsInput | String[],
+    ?   precision?: Int | Null,
+    ?   strength?: Int | Null,
+    ?   endurance?: Int | Null,
+    ?   intelligence?: Int | Null,
+    ?   balance?: Int | Null,
+    ?   coordination?: Int | Null,
+    ?   boldness?: Int | Null,
+    ?   flexibility?: Int | Null,
+    ?   obedience?: Int | Null,
+    ?   focus?: Int | Null,
+    ?   totalEarnings?: Int | Null,
+    ?   studStatus?: String | Null,
+    ?   studFee?: Int | Null,
+    ?   lastBredDate?: DateTime | Null,
+    ?   forSale?: Boolean | Null,
+    ?   salePrice?: Int | Null,
+    ?   lastVettedDate?: DateTime | Null,
+    ?   bondScore?: Int | Null,
+    ?   stressLevel?: Int | Null,
+    ?   daysGroomedInARow?: Int | Null,
+    ?   burnoutStatus?: String | Null,
+    ?   taskLog?: NullableJsonNullValueInput | Json,
+    ?   consecutiveDaysFoalCare?: Int | Null,
+    ?   lastGroomed?: DateTime | Null,
+    ?   tack?: NullableJsonNullValueInput | Json,
+    ?   trainingCooldown?: DateTime | Null,
+    ?   earnings?: Decimal | Null,
+    ?   rider?: NullableJsonNullValueInput | Json,
+    ?   disciplineScores?: NullableJsonNullValueInput | Json,
+    ?   epigeneticModifiers?: NullableJsonNullValueInput | Json,
+    ?   ultraRareTraits?: NullableJsonNullValueInput | Json,
+    ?   conformationScores?: NullableJsonNullValueInput | Json,
+    ?   horseXp?: Int | Null,
+    ?   availableStatPoints?: Int | Null,
+    ?   createdAt?: DateTime | Null,
+    ?   updatedAt?: DateTime | Null,
+    ?   competitionResults?: CompetitionResultCreateNestedManyWithoutHorseInput,
+    ?   foalActivities?: FoalActivityCreateNestedManyWithoutFoalInput,
+    ?   foalDevelopment?: FoalDevelopmentCreateNestedOneWithoutFoalInput,
+    ?   foalTrainingHistory?: FoalTrainingHistoryCreateNestedManyWithoutHorseInput,
+    ?   groomAssignments?: GroomAssignmentCreateNestedManyWithoutFoalInput,
+    ?   groomInteractions?: GroomInteractionCreateNestedManyWithoutFoalInput,
+    ?   groomPerformanceRecords?: GroomPerformanceRecordCreateNestedManyWithoutHorseInput,
+    ?   horseXpEvents?: HorseXpEventCreateNestedManyWithoutHorseInput,
+    ?   traitHistoryLogs?: TraitHistoryLogCreateNestedManyWithoutHorseInput,
+    ?   milestoneTraitLogs?: MilestoneTraitLogCreateNestedManyWithoutHorseInput,
+    ?   ultraRareTraitEvents?: UltraRareTraitEventCreateNestedManyWithoutHorseInput,
+    ?   groomHorseSynergies?: GroomHorseSynergyCreateNestedManyWithoutHorseInput,
+    ?   groomAssignmentLogs?: GroomAssignmentLogCreateNestedManyWithoutHorseInput,
+    ?   breed?: BreedCreateNestedOneWithoutHorsesInput,
+    ?   dam?: HorseCreateNestedOneWithoutDamOffspringInput,
+    ?   damOffspring?: HorseCreateNestedManyWithoutDamInput,
+    ?   sire?: HorseCreateNestedOneWithoutSireOffspringInput,
+    ?   sireOffspring?: HorseCreateNestedManyWithoutSireInput,
+    ?   stable?: StableCreateNestedOneWithoutHorsesInput,
+    ?   trainingLogs?: TrainingLogCreateNestedManyWithoutHorseInput
+      }
+    }
+
+    Unknown argument `breedId`. Did you mean `breed`? Available options are marked with ?.
+
+    [0m [90m 84 |[39m     fourYearsAgo[33m.[39msetFullYear(fourYearsAgo[33m.[39mgetFullYear() [33m-[39m [35m4[39m)[33m;[39m
+     [90m 85 |[39m
+    [31m[1m>[22m[39m[90m 86 |[39m     testHorseEligible [33m=[39m [36mawait[39m prisma[33m.[39mhorse[33m.[39mcreate({
+     [90m    |[39m                         [31m[1m^[22m[39m
+     [90m 87 |[39m       data[33m:[39m {
+     [90m 88 |[39m         name[33m:[39m [32m'Eligible Horse'[39m[33m,[39m
+     [90m 89 |[39m         dateOfBirth[33m:[39m fourYearsAgo[33m,[39m[0m
+
+      at kn (../packages/database/node_modules/@prisma/client/runtime/library.js:29:1363)
+      at Zn.handleRequestError (../packages/database/node_modules/@prisma/client/runtime/library.js:121:7102)
+      at Zn.handleAndLogRequestError (../packages/database/node_modules/@prisma/client/runtime/library.js:121:6784)
+      at Zn.request (../packages/database/node_modules/@prisma/client/runtime/library.js:121:6491)
+      at l (../packages/database/node_modules/@prisma/client/runtime/library.js:130:9778)
+      at Object.<anonymous> (tests/trainingController.test.mjs:86:25)
+
+  ● 🏋️ UNIT: Training Controller - Horse Training Business Logic › getTrainableHorses › should filter out horses under 3 years old
+
+    PrismaClientValidationError: 
+    Invalid `prisma.horse.create()` invocation:
+
+    {
+      data: {
+        name: "Eligible Horse",
+        dateOfBirth: new Date("2022-01-28T18:38:05.870Z"),
+        age: 4,
+        sex: "M",
+        user: {
+          connect: {
+            id: "e9a60265-ea17-4d42-9623-b3eb36029a01"
+          }
+        },
+        breedId: 1,
+        ~~~~~~~
+        speed: 50,
+        stamina: 50,
+        agility: 50,
+        healthStatus: "Excellent",
+    ?   ownerId?: String | Null,
+    ?   genotype?: NullableJsonNullValueInput | Json,
+    ?   phenotypicMarkings?: NullableJsonNullValueInput | Json,
+    ?   finalDisplayColor?: String | Null,
+    ?   shade?: String | Null,
+    ?   imageUrl?: String | Null,
+    ?   trait?: String | Null,
+    ?   temperament?: String | Null,
+    ?   personality?: String | Null,
+    ?   epigeneticFlags?: HorseCreateepigeneticFlagsInput | String[],
+    ?   precision?: Int | Null,
+    ?   strength?: Int | Null,
+    ?   endurance?: Int | Null,
+    ?   intelligence?: Int | Null,
+    ?   balance?: Int | Null,
+    ?   coordination?: Int | Null,
+    ?   boldness?: Int | Null,
+    ?   flexibility?: Int | Null,
+    ?   obedience?: Int | Null,
+    ?   focus?: Int | Null,
+    ?   totalEarnings?: Int | Null,
+    ?   studStatus?: String | Null,
+    ?   studFee?: Int | Null,
+    ?   lastBredDate?: DateTime | Null,
+    ?   forSale?: Boolean | Null,
+    ?   salePrice?: Int | Null,
+    ?   lastVettedDate?: DateTime | Null,
+    ?   bondScore?: Int | Null,
+    ?   stressLevel?: Int | Null,
+    ?   daysGroomedInARow?: Int | Null,
+    ?   burnoutStatus?: String | Null,
+    ?   taskLog?: NullableJsonNullValueInput | Json,
+    ?   consecutiveDaysFoalCare?: Int | Null,
+    ?   lastGroomed?: DateTime | Null,
+    ?   tack?: NullableJsonNullValueInput | Json,
+    ?   trainingCooldown?: DateTime | Null,
+    ?   earnings?: Decimal | Null,
+    ?   rider?: NullableJsonNullValueInput | Json,
+    ?   disciplineScores?: NullableJsonNullValueInput | Json,
+    ?   epigeneticModifiers?: NullableJsonNullValueInput | Json,
+    ?   ultraRareTraits?: NullableJsonNullValueInput | Json,
+    ?   conformationScores?: NullableJsonNullValueInput | Json,
+    ?   horseXp?: Int | Null,
+    ?   availableStatPoints?: Int | Null,
+    ?   createdAt?: DateTime | Null,
+    ?   updatedAt?: DateTime | Null,
+    ?   competitionResults?: CompetitionResultCreateNestedManyWithoutHorseInput,
+    ?   foalActivities?: FoalActivityCreateNestedManyWithoutFoalInput,
+    ?   foalDevelopment?: FoalDevelopmentCreateNestedOneWithoutFoalInput,
+    ?   foalTrainingHistory?: FoalTrainingHistoryCreateNestedManyWithoutHorseInput,
+    ?   groomAssignments?: GroomAssignmentCreateNestedManyWithoutFoalInput,
+    ?   groomInteractions?: GroomInteractionCreateNestedManyWithoutFoalInput,
+    ?   groomPerformanceRecords?: GroomPerformanceRecordCreateNestedManyWithoutHorseInput,
+    ?   horseXpEvents?: HorseXpEventCreateNestedManyWithoutHorseInput,
+    ?   traitHistoryLogs?: TraitHistoryLogCreateNestedManyWithoutHorseInput,
+    ?   milestoneTraitLogs?: MilestoneTraitLogCreateNestedManyWithoutHorseInput,
+    ?   ultraRareTraitEvents?: UltraRareTraitEventCreateNestedManyWithoutHorseInput,
+    ?   groomHorseSynergies?: GroomHorseSynergyCreateNestedManyWithoutHorseInput,
+    ?   groomAssignmentLogs?: GroomAssignmentLogCreateNestedManyWithoutHorseInput,
+    ?   breed?: BreedCreateNestedOneWithoutHorsesInput,
+    ?   dam?: HorseCreateNestedOneWithoutDamOffspringInput,
+    ?   damOffspring?: HorseCreateNestedManyWithoutDamInput,
+    ?   sire?: HorseCreateNestedOneWithoutSireOffspringInput,
+    ?   sireOffspring?: HorseCreateNestedManyWithoutSireInput,
+    ?   stable?: StableCreateNestedOneWithoutHorsesInput,
+    ?   trainingLogs?: TrainingLogCreateNestedManyWithoutHorseInput
+      }
+    }
+
+    Unknown argument `breedId`. Did you mean `breed`? Available options are marked with ?.
+
+    [0m [90m 84 |[39m     fourYearsAgo[33m.[39msetFullYear(fourYearsAgo[33m.[39mgetFullYear() [33m-[39m [35m4[39m)[33m;[39m
+     [90m 85 |[39m
+    [31m[1m>[22m[39m[90m 86 |[39m     testHorseEligible [33m=[39m [36mawait[39m prisma[33m.[39mhorse[33m.[39mcreate({
+     [90m    |[39m                         [31m[1m^[22m[39m
+     [90m 87 |[39m       data[33m:[39m {
+     [90m 88 |[39m         name[33m:[39m [32m'Eligible Horse'[39m[33m,[39m
+     [90m 89 |[39m         dateOfBirth[33m:[39m fourYearsAgo[33m,[39m[0m
+
+      at kn (../packages/database/node_modules/@prisma/client/runtime/library.js:29:1363)
+      at Zn.handleRequestError (../packages/database/node_modules/@prisma/client/runtime/library.js:121:7102)
+      at Zn.handleAndLogRequestError (../packages/database/node_modules/@prisma/client/runtime/library.js:121:6784)
+      at Zn.request (../packages/database/node_modules/@prisma/client/runtime/library.js:121:6491)
+      at l (../packages/database/node_modules/@prisma/client/runtime/library.js:130:9778)
+      at Object.<anonymous> (tests/trainingController.test.mjs:86:25)
+
+  ● 🏋️ UNIT: Training Controller - Horse Training Business Logic › getTrainableHorses › should exclude horses with recent training (global cooldown)
+
+    PrismaClientValidationError: 
+    Invalid `prisma.horse.create()` invocation:
+
+    {
+      data: {
+        name: "Eligible Horse",
+        dateOfBirth: new Date("2022-01-28T18:38:05.870Z"),
+        age: 4,
+        sex: "M",
+        user: {
+          connect: {
+            id: "e9a60265-ea17-4d42-9623-b3eb36029a01"
+          }
+        },
+        breedId: 1,
+        ~~~~~~~
+        speed: 50,
+        stamina: 50,
+        agility: 50,
+        healthStatus: "Excellent",
+    ?   ownerId?: String | Null,
+    ?   genotype?: NullableJsonNullValueInput | Json,
+    ?   phenotypicMarkings?: NullableJsonNullValueInput | Json,
+    ?   finalDisplayColor?: String | Null,
+    ?   shade?: String | Null,
+    ?   imageUrl?: String | Null,
+    ?   trait?: String | Null,
+    ?   temperament?: String | Null,
+    ?   personality?: String | Null,
+    ?   epigeneticFlags?: HorseCreateepigeneticFlagsInput | String[],
+    ?   precision?: Int | Null,
+    ?   strength?: Int | Null,
+    ?   endurance?: Int | Null,
+    ?   intelligence?: Int | Null,
+    ?   balance?: Int | Null,
+    ?   coordination?: Int | Null,
+    ?   boldness?: Int | Null,
+    ?   flexibility?: Int | Null,
+    ?   obedience?: Int | Null,
+    ?   focus?: Int | Null,
+    ?   totalEarnings?: Int | Null,
+    ?   studStatus?: String | Null,
+    ?   studFee?: Int | Null,
+    ?   lastBredDate?: DateTime | Null,
+    ?   forSale?: Boolean | Null,
+    ?   salePrice?: Int | Null,
+    ?   lastVettedDate?: DateTime | Null,
+    ?   bondScore?: Int | Null,
+    ?   stressLevel?: Int | Null,
+    ?   daysGroomedInARow?: Int | Null,
+    ?   burnoutStatus?: String | Null,
+    ?   taskLog?: NullableJsonNullValueInput | Json,
+    ?   consecutiveDaysFoalCare?: Int | Null,
+    ?   lastGroomed?: DateTime | Null,
+    ?   tack?: NullableJsonNullValueInput | Json,
+    ?   trainingCooldown?: DateTime | Null,
+    ?   earnings?: Decimal | Null,
+    ?   rider?: NullableJsonNullValueInput | Json,
+    ?   disciplineScores?: NullableJsonNullValueInput | Json,
+    ?   epigeneticModifiers?: NullableJsonNullValueInput | Json,
+    ?   ultraRareTraits?: NullableJsonNullValueInput | Json,
+    ?   conformationScores?: NullableJsonNullValueInput | Json,
+    ?   horseXp?: Int | Null,
+    ?   availableStatPoints?: Int | Null,
+    ?   createdAt?: DateTime | Null,
+    ?   updatedAt?: DateTime | Null,
+    ?   competitionResults?: CompetitionResultCreateNestedManyWithoutHorseInput,
+    ?   foalActivities?: FoalActivityCreateNestedManyWithoutFoalInput,
+    ?   foalDevelopment?: FoalDevelopmentCreateNestedOneWithoutFoalInput,
+    ?   foalTrainingHistory?: FoalTrainingHistoryCreateNestedManyWithoutHorseInput,
+    ?   groomAssignments?: GroomAssignmentCreateNestedManyWithoutFoalInput,
+    ?   groomInteractions?: GroomInteractionCreateNestedManyWithoutFoalInput,
+    ?   groomPerformanceRecords?: GroomPerformanceRecordCreateNestedManyWithoutHorseInput,
+    ?   horseXpEvents?: HorseXpEventCreateNestedManyWithoutHorseInput,
+    ?   traitHistoryLogs?: TraitHistoryLogCreateNestedManyWithoutHorseInput,
+    ?   milestoneTraitLogs?: MilestoneTraitLogCreateNestedManyWithoutHorseInput,
+    ?   ultraRareTraitEvents?: UltraRareTraitEventCreateNestedManyWithoutHorseInput,
+    ?   groomHorseSynergies?: GroomHorseSynergyCreateNestedManyWithoutHorseInput,
+    ?   groomAssignmentLogs?: GroomAssignmentLogCreateNestedManyWithoutHorseInput,
+    ?   breed?: BreedCreateNestedOneWithoutHorsesInput,
+    ?   dam?: HorseCreateNestedOneWithoutDamOffspringInput,
+    ?   damOffspring?: HorseCreateNestedManyWithoutDamInput,
+    ?   sire?: HorseCreateNestedOneWithoutSireOffspringInput,
+    ?   sireOffspring?: HorseCreateNestedManyWithoutSireInput,
+    ?   stable?: StableCreateNestedOneWithoutHorsesInput,
+    ?   trainingLogs?: TrainingLogCreateNestedManyWithoutHorseInput
+      }
+    }
+
+    Unknown argument `breedId`. Did you mean `breed`? Available options are marked with ?.
+
+    [0m [90m 84 |[39m     fourYearsAgo[33m.[39msetFullYear(fourYearsAgo[33m.[39mgetFullYear() [33m-[39m [35m4[39m)[33m;[39m
+     [90m 85 |[39m
+    [31m[1m>[22m[39m[90m 86 |[39m     testHorseEligible [33m=[39m [36mawait[39m prisma[33m.[39mhorse[33m.[39mcreate({
+     [90m    |[39m                         [31m[1m^[22m[39m
+     [90m 87 |[39m       data[33m:[39m {
+     [90m 88 |[39m         name[33m:[39m [32m'Eligible Horse'[39m[33m,[39m
+     [90m 89 |[39m         dateOfBirth[33m:[39m fourYearsAgo[33m,[39m[0m
+
+      at kn (../packages/database/node_modules/@prisma/client/runtime/library.js:29:1363)
+      at Zn.handleRequestError (../packages/database/node_modules/@prisma/client/runtime/library.js:121:7102)
+      at Zn.handleAndLogRequestError (../packages/database/node_modules/@prisma/client/runtime/library.js:121:6784)
+      at Zn.request (../packages/database/node_modules/@prisma/client/runtime/library.js:121:6491)
+      at l (../packages/database/node_modules/@prisma/client/runtime/library.js:130:9778)
+      at Object.<anonymous> (tests/trainingController.test.mjs:86:25)
+
+  ● 🏋️ UNIT: Training Controller - Horse Training Business Logic › getTrainableHorses › should handle database errors gracefully for individual horses
+
+    PrismaClientValidationError: 
+    Invalid `prisma.horse.create()` invocation:
+
+    {
+      data: {
+        name: "Eligible Horse",
+        dateOfBirth: new Date("2022-01-28T18:38:05.870Z"),
+        age: 4,
+        sex: "M",
+        user: {
+          connect: {
+            id: "e9a60265-ea17-4d42-9623-b3eb36029a01"
+          }
+        },
+        breedId: 1,
+        ~~~~~~~
+        speed: 50,
+        stamina: 50,
+        agility: 50,
+        healthStatus: "Excellent",
+    ?   ownerId?: String | Null,
+    ?   genotype?: NullableJsonNullValueInput | Json,
+    ?   phenotypicMarkings?: NullableJsonNullValueInput | Json,
+    ?   finalDisplayColor?: String | Null,
+    ?   shade?: String | Null,
+    ?   imageUrl?: String | Null,
+    ?   trait?: String | Null,
+    ?   temperament?: String | Null,
+    ?   personality?: String | Null,
+    ?   epigeneticFlags?: HorseCreateepigeneticFlagsInput | String[],
+    ?   precision?: Int | Null,
+    ?   strength?: Int | Null,
+    ?   endurance?: Int | Null,
+    ?   intelligence?: Int | Null,
+    ?   balance?: Int | Null,
+    ?   coordination?: Int | Null,
+    ?   boldness?: Int | Null,
+    ?   flexibility?: Int | Null,
+    ?   obedience?: Int | Null,
+    ?   focus?: Int | Null,
+    ?   totalEarnings?: Int | Null,
+    ?   studStatus?: String | Null,
+    ?   studFee?: Int | Null,
+    ?   lastBredDate?: DateTime | Null,
+    ?   forSale?: Boolean | Null,
+    ?   salePrice?: Int | Null,
+    ?   lastVettedDate?: DateTime | Null,
+    ?   bondScore?: Int | Null,
+    ?   stressLevel?: Int | Null,
+    ?   daysGroomedInARow?: Int | Null,
+    ?   burnoutStatus?: String | Null,
+    ?   taskLog?: NullableJsonNullValueInput | Json,
+    ?   consecutiveDaysFoalCare?: Int | Null,
+    ?   lastGroomed?: DateTime | Null,
+    ?   tack?: NullableJsonNullValueInput | Json,
+    ?   trainingCooldown?: DateTime | Null,
+    ?   earnings?: Decimal | Null,
+    ?   rider?: NullableJsonNullValueInput | Json,
+    ?   disciplineScores?: NullableJsonNullValueInput | Json,
+    ?   epigeneticModifiers?: NullableJsonNullValueInput | Json,
+    ?   ultraRareTraits?: NullableJsonNullValueInput | Json,
+    ?   conformationScores?: NullableJsonNullValueInput | Json,
+    ?   horseXp?: Int | Null,
+    ?   availableStatPoints?: Int | Null,
+    ?   createdAt?: DateTime | Null,
+    ?   updatedAt?: DateTime | Null,
+    ?   competitionResults?: CompetitionResultCreateNestedManyWithoutHorseInput,
+    ?   foalActivities?: FoalActivityCreateNestedManyWithoutFoalInput,
+    ?   foalDevelopment?: FoalDevelopmentCreateNestedOneWithoutFoalInput,
+    ?   foalTrainingHistory?: FoalTrainingHistoryCreateNestedManyWithoutHorseInput,
+    ?   groomAssignments?: GroomAssignmentCreateNestedManyWithoutFoalInput,
+    ?   groomInteractions?: GroomInteractionCreateNestedManyWithoutFoalInput,
+    ?   groomPerformanceRecords?: GroomPerformanceRecordCreateNestedManyWithoutHorseInput,
+    ?   horseXpEvents?: HorseXpEventCreateNestedManyWithoutHorseInput,
+    ?   traitHistoryLogs?: TraitHistoryLogCreateNestedManyWithoutHorseInput,
+    ?   milestoneTraitLogs?: MilestoneTraitLogCreateNestedManyWithoutHorseInput,
+    ?   ultraRareTraitEvents?: UltraRareTraitEventCreateNestedManyWithoutHorseInput,
+    ?   groomHorseSynergies?: GroomHorseSynergyCreateNestedManyWithoutHorseInput,
+    ?   groomAssignmentLogs?: GroomAssignmentLogCreateNestedManyWithoutHorseInput,
+    ?   breed?: BreedCreateNestedOneWithoutHorsesInput,
+    ?   dam?: HorseCreateNestedOneWithoutDamOffspringInput,
+    ?   damOffspring?: HorseCreateNestedManyWithoutDamInput,
+    ?   sire?: HorseCreateNestedOneWithoutSireOffspringInput,
+    ?   sireOffspring?: HorseCreateNestedManyWithoutSireInput,
+    ?   stable?: StableCreateNestedOneWithoutHorsesInput,
+    ?   trainingLogs?: TrainingLogCreateNestedManyWithoutHorseInput
+      }
+    }
+
+    Unknown argument `breedId`. Did you mean `breed`? Available options are marked with ?.
+
+    [0m [90m 84 |[39m     fourYearsAgo[33m.[39msetFullYear(fourYearsAgo[33m.[39mgetFullYear() [33m-[39m [35m4[39m)[33m;[39m
+     [90m 85 |[39m
+    [31m[1m>[22m[39m[90m 86 |[39m     testHorseEligible [33m=[39m [36mawait[39m prisma[33m.[39mhorse[33m.[39mcreate({
+     [90m    |[39m                         [31m[1m^[22m[39m
+     [90m 87 |[39m       data[33m:[39m {
+     [90m 88 |[39m         name[33m:[39m [32m'Eligible Horse'[39m[33m,[39m
+     [90m 89 |[39m         dateOfBirth[33m:[39m fourYearsAgo[33m,[39m[0m
+
+      at kn (../packages/database/node_modules/@prisma/client/runtime/library.js:29:1363)
+      at Zn.handleRequestError (../packages/database/node_modules/@prisma/client/runtime/library.js:121:7102)
+      at Zn.handleAndLogRequestError (../packages/database/node_modules/@prisma/client/runtime/library.js:121:6784)
+      at Zn.request (../packages/database/node_modules/@prisma/client/runtime/library.js:121:6491)
+      at l (../packages/database/node_modules/@prisma/client/runtime/library.js:130:9778)
+      at Object.<anonymous> (tests/trainingController.test.mjs:86:25)
+
+  ● 🏋️ UNIT: Training Controller - Horse Training Business Logic › getTrainableHorses › should throw error for missing player ID
+
+    PrismaClientValidationError: 
+    Invalid `prisma.horse.create()` invocation:
+
+    {
+      data: {
+        name: "Eligible Horse",
+        dateOfBirth: new Date("2022-01-28T18:38:05.870Z"),
+        age: 4,
+        sex: "M",
+        user: {
+          connect: {
+            id: "e9a60265-ea17-4d42-9623-b3eb36029a01"
+          }
+        },
+        breedId: 1,
+        ~~~~~~~
+        speed: 50,
+        stamina: 50,
+        agility: 50,
+        healthStatus: "Excellent",
+    ?   ownerId?: String | Null,
+    ?   genotype?: NullableJsonNullValueInput | Json,
+    ?   phenotypicMarkings?: NullableJsonNullValueInput | Json,
+    ?   finalDisplayColor?: String | Null,
+    ?   shade?: String | Null,
+    ?   imageUrl?: String | Null,
+    ?   trait?: String | Null,
+    ?   temperament?: String | Null,
+    ?   personality?: String | Null,
+    ?   epigeneticFlags?: HorseCreateepigeneticFlagsInput | String[],
+    ?   precision?: Int | Null,
+    ?   strength?: Int | Null,
+    ?   endurance?: Int | Null,
+    ?   intelligence?: Int | Null,
+    ?   balance?: Int | Null,
+    ?   coordination?: Int | Null,
+    ?   boldness?: Int | Null,
+    ?   flexibility?: Int | Null,
+    ?   obedience?: Int | Null,
+    ?   focus?: Int | Null,
+    ?   totalEarnings?: Int | Null,
+    ?   studStatus?: String | Null,
+    ?   studFee?: Int | Null,
+    ?   lastBredDate?: DateTime | Null,
+    ?   forSale?: Boolean | Null,
+    ?   salePrice?: Int | Null,
+    ?   lastVettedDate?: DateTime | Null,
+    ?   bondScore?: Int | Null,
+    ?   stressLevel?: Int | Null,
+    ?   daysGroomedInARow?: Int | Null,
+    ?   burnoutStatus?: String | Null,
+    ?   taskLog?: NullableJsonNullValueInput | Json,
+    ?   consecutiveDaysFoalCare?: Int | Null,
+    ?   lastGroomed?: DateTime | Null,
+    ?   tack?: NullableJsonNullValueInput | Json,
+    ?   trainingCooldown?: DateTime | Null,
+    ?   earnings?: Decimal | Null,
+    ?   rider?: NullableJsonNullValueInput | Json,
+    ?   disciplineScores?: NullableJsonNullValueInput | Json,
+    ?   epigeneticModifiers?: NullableJsonNullValueInput | Json,
+    ?   ultraRareTraits?: NullableJsonNullValueInput | Json,
+    ?   conformationScores?: NullableJsonNullValueInput | Json,
+    ?   horseXp?: Int | Null,
+    ?   availableStatPoints?: Int | Null,
+    ?   createdAt?: DateTime | Null,
+    ?   updatedAt?: DateTime | Null,
+    ?   competitionResults?: CompetitionResultCreateNestedManyWithoutHorseInput,
+    ?   foalActivities?: FoalActivityCreateNestedManyWithoutFoalInput,
+    ?   foalDevelopment?: FoalDevelopmentCreateNestedOneWithoutFoalInput,
+    ?   foalTrainingHistory?: FoalTrainingHistoryCreateNestedManyWithoutHorseInput,
+    ?   groomAssignments?: GroomAssignmentCreateNestedManyWithoutFoalInput,
+    ?   groomInteractions?: GroomInteractionCreateNestedManyWithoutFoalInput,
+    ?   groomPerformanceRecords?: GroomPerformanceRecordCreateNestedManyWithoutHorseInput,
+    ?   horseXpEvents?: HorseXpEventCreateNestedManyWithoutHorseInput,
+    ?   traitHistoryLogs?: TraitHistoryLogCreateNestedManyWithoutHorseInput,
+    ?   milestoneTraitLogs?: MilestoneTraitLogCreateNestedManyWithoutHorseInput,
+    ?   ultraRareTraitEvents?: UltraRareTraitEventCreateNestedManyWithoutHorseInput,
+    ?   groomHorseSynergies?: GroomHorseSynergyCreateNestedManyWithoutHorseInput,
+    ?   groomAssignmentLogs?: GroomAssignmentLogCreateNestedManyWithoutHorseInput,
+    ?   breed?: BreedCreateNestedOneWithoutHorsesInput,
+    ?   dam?: HorseCreateNestedOneWithoutDamOffspringInput,
+    ?   damOffspring?: HorseCreateNestedManyWithoutDamInput,
+    ?   sire?: HorseCreateNestedOneWithoutSireOffspringInput,
+    ?   sireOffspring?: HorseCreateNestedManyWithoutSireInput,
+    ?   stable?: StableCreateNestedOneWithoutHorsesInput,
+    ?   trainingLogs?: TrainingLogCreateNestedManyWithoutHorseInput
+      }
+    }
+
+    Unknown argument `breedId`. Did you mean `breed`? Available options are marked with ?.
+
+    [0m [90m 84 |[39m     fourYearsAgo[33m.[39msetFullYear(fourYearsAgo[33m.[39mgetFullYear() [33m-[39m [35m4[39m)[33m;[39m
+     [90m 85 |[39m
+    [31m[1m>[22m[39m[90m 86 |[39m     testHorseEligible [33m=[39m [36mawait[39m prisma[33m.[39mhorse[33m.[39mcreate({
+     [90m    |[39m                         [31m[1m^[22m[39m
+     [90m 87 |[39m       data[33m:[39m {
+     [90m 88 |[39m         name[33m:[39m [32m'Eligible Horse'[39m[33m,[39m
+     [90m 89 |[39m         dateOfBirth[33m:[39m fourYearsAgo[33m,[39m[0m
+
+      at kn (../packages/database/node_modules/@prisma/client/runtime/library.js:29:1363)
+      at Zn.handleRequestError (../packages/database/node_modules/@prisma/client/runtime/library.js:121:7102)
+      at Zn.handleAndLogRequestError (../packages/database/node_modules/@prisma/client/runtime/library.js:121:6784)
+      at Zn.request (../packages/database/node_modules/@prisma/client/runtime/library.js:121:6491)
+      at l (../packages/database/node_modules/@prisma/client/runtime/library.js:130:9778)
+      at Object.<anonymous> (tests/trainingController.test.mjs:86:25)
+
+  ● 🏋️ UNIT: Training Controller - Horse Training Business Logic › getTrainableHorses › should handle player model errors
+
+    PrismaClientValidationError: 
+    Invalid `prisma.horse.create()` invocation:
+
+    {
+      data: {
+        name: "Eligible Horse",
+        dateOfBirth: new Date("2022-01-28T18:38:05.870Z"),
+        age: 4,
+        sex: "M",
+        user: {
+          connect: {
+            id: "e9a60265-ea17-4d42-9623-b3eb36029a01"
+          }
+        },
+        breedId: 1,
+        ~~~~~~~
+        speed: 50,
+        stamina: 50,
+        agility: 50,
+        healthStatus: "Excellent",
+    ?   ownerId?: String | Null,
+    ?   genotype?: NullableJsonNullValueInput | Json,
+    ?   phenotypicMarkings?: NullableJsonNullValueInput | Json,
+    ?   finalDisplayColor?: String | Null,
+    ?   shade?: String | Null,
+    ?   imageUrl?: String | Null,
+    ?   trait?: String | Null,
+    ?   temperament?: String | Null,
+    ?   personality?: String | Null,
+    ?   epigeneticFlags?: HorseCreateepigeneticFlagsInput | String[],
+    ?   precision?: Int | Null,
+    ?   strength?: Int | Null,
+    ?   endurance?: Int | Null,
+    ?   intelligence?: Int | Null,
+    ?   balance?: Int | Null,
+    ?   coordination?: Int | Null,
+    ?   boldness?: Int | Null,
+    ?   flexibility?: Int | Null,
+    ?   obedience?: Int | Null,
+    ?   focus?: Int | Null,
+    ?   totalEarnings?: Int | Null,
+    ?   studStatus?: String | Null,
+    ?   studFee?: Int | Null,
+    ?   lastBredDate?: DateTime | Null,
+    ?   forSale?: Boolean | Null,
+    ?   salePrice?: Int | Null,
+    ?   lastVettedDate?: DateTime | Null,
+    ?   bondScore?: Int | Null,
+    ?   stressLevel?: Int | Null,
+    ?   daysGroomedInARow?: Int | Null,
+    ?   burnoutStatus?: String | Null,
+    ?   taskLog?: NullableJsonNullValueInput | Json,
+    ?   consecutiveDaysFoalCare?: Int | Null,
+    ?   lastGroomed?: DateTime | Null,
+    ?   tack?: NullableJsonNullValueInput | Json,
+    ?   trainingCooldown?: DateTime | Null,
+    ?   earnings?: Decimal | Null,
+    ?   rider?: NullableJsonNullValueInput | Json,
+    ?   disciplineScores?: NullableJsonNullValueInput | Json,
+    ?   epigeneticModifiers?: NullableJsonNullValueInput | Json,
+    ?   ultraRareTraits?: NullableJsonNullValueInput | Json,
+    ?   conformationScores?: NullableJsonNullValueInput | Json,
+    ?   horseXp?: Int | Null,
+    ?   availableStatPoints?: Int | Null,
+    ?   createdAt?: DateTime | Null,
+    ?   updatedAt?: DateTime | Null,
+    ?   competitionResults?: CompetitionResultCreateNestedManyWithoutHorseInput,
+    ?   foalActivities?: FoalActivityCreateNestedManyWithoutFoalInput,
+    ?   foalDevelopment?: FoalDevelopmentCreateNestedOneWithoutFoalInput,
+    ?   foalTrainingHistory?: FoalTrainingHistoryCreateNestedManyWithoutHorseInput,
+    ?   groomAssignments?: GroomAssignmentCreateNestedManyWithoutFoalInput,
+    ?   groomInteractions?: GroomInteractionCreateNestedManyWithoutFoalInput,
+    ?   groomPerformanceRecords?: GroomPerformanceRecordCreateNestedManyWithoutHorseInput,
+    ?   horseXpEvents?: HorseXpEventCreateNestedManyWithoutHorseInput,
+    ?   traitHistoryLogs?: TraitHistoryLogCreateNestedManyWithoutHorseInput,
+    ?   milestoneTraitLogs?: MilestoneTraitLogCreateNestedManyWithoutHorseInput,
+    ?   ultraRareTraitEvents?: UltraRareTraitEventCreateNestedManyWithoutHorseInput,
+    ?   groomHorseSynergies?: GroomHorseSynergyCreateNestedManyWithoutHorseInput,
+    ?   groomAssignmentLogs?: GroomAssignmentLogCreateNestedManyWithoutHorseInput,
+    ?   breed?: BreedCreateNestedOneWithoutHorsesInput,
+    ?   dam?: HorseCreateNestedOneWithoutDamOffspringInput,
+    ?   damOffspring?: HorseCreateNestedManyWithoutDamInput,
+    ?   sire?: HorseCreateNestedOneWithoutSireOffspringInput,
+    ?   sireOffspring?: HorseCreateNestedManyWithoutSireInput,
+    ?   stable?: StableCreateNestedOneWithoutHorsesInput,
+    ?   trainingLogs?: TrainingLogCreateNestedManyWithoutHorseInput
+      }
+    }
+
+    Unknown argument `breedId`. Did you mean `breed`? Available options are marked with ?.
+
+    [0m [90m 84 |[39m     fourYearsAgo[33m.[39msetFullYear(fourYearsAgo[33m.[39mgetFullYear() [33m-[39m [35m4[39m)[33m;[39m
+     [90m 85 |[39m
+    [31m[1m>[22m[39m[90m 86 |[39m     testHorseEligible [33m=[39m [36mawait[39m prisma[33m.[39mhorse[33m.[39mcreate({
+     [90m    |[39m                         [31m[1m^[22m[39m
+     [90m 87 |[39m       data[33m:[39m {
+     [90m 88 |[39m         name[33m:[39m [32m'Eligible Horse'[39m[33m,[39m
+     [90m 89 |[39m         dateOfBirth[33m:[39m fourYearsAgo[33m,[39m[0m
+
+      at kn (../packages/database/node_modules/@prisma/client/runtime/library.js:29:1363)
+      at Zn.handleRequestError (../packages/database/node_modules/@prisma/client/runtime/library.js:121:7102)
+      at Zn.handleAndLogRequestError (../packages/database/node_modules/@prisma/client/runtime/library.js:121:6784)
+      at Zn.request (../packages/database/node_modules/@prisma/client/runtime/library.js:121:6491)
+      at l (../packages/database/node_modules/@prisma/client/runtime/library.js:130:9778)
+      at Object.<anonymous> (tests/trainingController.test.mjs:86:25)
+
+  ● 🏋️ UNIT: Training Controller - Horse Training Business Logic › trainRouteHandler › should handle successful training workflow - placeholder for integration testing
+
+    PrismaClientValidationError: 
+    Invalid `prisma.horse.create()` invocation:
+
+    {
+      data: {
+        name: "Eligible Horse",
+        dateOfBirth: new Date("2022-01-28T18:38:05.870Z"),
+        age: 4,
+        sex: "M",
+        user: {
+          connect: {
+            id: "e9a60265-ea17-4d42-9623-b3eb36029a01"
+          }
+        },
+        breedId: 1,
+        ~~~~~~~
+        speed: 50,
+        stamina: 50,
+        agility: 50,
+        healthStatus: "Excellent",
+    ?   ownerId?: String | Null,
+    ?   genotype?: NullableJsonNullValueInput | Json,
+    ?   phenotypicMarkings?: NullableJsonNullValueInput | Json,
+    ?   finalDisplayColor?: String | Null,
+    ?   shade?: String | Null,
+    ?   imageUrl?: String | Null,
+    ?   trait?: String | Null,
+    ?   temperament?: String | Null,
+    ?   personality?: String | Null,
+    ?   epigeneticFlags?: HorseCreateepigeneticFlagsInput | String[],
+    ?   precision?: Int | Null,
+    ?   strength?: Int | Null,
+    ?   endurance?: Int | Null,
+    ?   intelligence?: Int | Null,
+    ?   balance?: Int | Null,
+    ?   coordination?: Int | Null,
+    ?   boldness?: Int | Null,
+    ?   flexibility?: Int | Null,
+    ?   obedience?: Int | Null,
+    ?   focus?: Int | Null,
+    ?   totalEarnings?: Int | Null,
+    ?   studStatus?: String | Null,
+    ?   studFee?: Int | Null,
+    ?   lastBredDate?: DateTime | Null,
+    ?   forSale?: Boolean | Null,
+    ?   salePrice?: Int | Null,
+    ?   lastVettedDate?: DateTime | Null,
+    ?   bondScore?: Int | Null,
+    ?   stressLevel?: Int | Null,
+    ?   daysGroomedInARow?: Int | Null,
+    ?   burnoutStatus?: String | Null,
+    ?   taskLog?: NullableJsonNullValueInput | Json,
+    ?   consecutiveDaysFoalCare?: Int | Null,
+    ?   lastGroomed?: DateTime | Null,
+    ?   tack?: NullableJsonNullValueInput | Json,
+    ?   trainingCooldown?: DateTime | Null,
+    ?   earnings?: Decimal | Null,
+    ?   rider?: NullableJsonNullValueInput | Json,
+    ?   disciplineScores?: NullableJsonNullValueInput | Json,
+    ?   epigeneticModifiers?: NullableJsonNullValueInput | Json,
+    ?   ultraRareTraits?: NullableJsonNullValueInput | Json,
+    ?   conformationScores?: NullableJsonNullValueInput | Json,
+    ?   horseXp?: Int | Null,
+    ?   availableStatPoints?: Int | Null,
+    ?   createdAt?: DateTime | Null,
+    ?   updatedAt?: DateTime | Null,
+    ?   competitionResults?: CompetitionResultCreateNestedManyWithoutHorseInput,
+    ?   foalActivities?: FoalActivityCreateNestedManyWithoutFoalInput,
+    ?   foalDevelopment?: FoalDevelopmentCreateNestedOneWithoutFoalInput,
+    ?   foalTrainingHistory?: FoalTrainingHistoryCreateNestedManyWithoutHorseInput,
+    ?   groomAssignments?: GroomAssignmentCreateNestedManyWithoutFoalInput,
+    ?   groomInteractions?: GroomInteractionCreateNestedManyWithoutFoalInput,
+    ?   groomPerformanceRecords?: GroomPerformanceRecordCreateNestedManyWithoutHorseInput,
+    ?   horseXpEvents?: HorseXpEventCreateNestedManyWithoutHorseInput,
+    ?   traitHistoryLogs?: TraitHistoryLogCreateNestedManyWithoutHorseInput,
+    ?   milestoneTraitLogs?: MilestoneTraitLogCreateNestedManyWithoutHorseInput,
+    ?   ultraRareTraitEvents?: UltraRareTraitEventCreateNestedManyWithoutHorseInput,
+    ?   groomHorseSynergies?: GroomHorseSynergyCreateNestedManyWithoutHorseInput,
+    ?   groomAssignmentLogs?: GroomAssignmentLogCreateNestedManyWithoutHorseInput,
+    ?   breed?: BreedCreateNestedOneWithoutHorsesInput,
+    ?   dam?: HorseCreateNestedOneWithoutDamOffspringInput,
+    ?   damOffspring?: HorseCreateNestedManyWithoutDamInput,
+    ?   sire?: HorseCreateNestedOneWithoutSireOffspringInput,
+    ?   sireOffspring?: HorseCreateNestedManyWithoutSireInput,
+    ?   stable?: StableCreateNestedOneWithoutHorsesInput,
+    ?   trainingLogs?: TrainingLogCreateNestedManyWithoutHorseInput
+      }
+    }
+
+    Unknown argument `breedId`. Did you mean `breed`? Available options are marked with ?.
+
+    [0m [90m 84 |[39m     fourYearsAgo[33m.[39msetFullYear(fourYearsAgo[33m.[39mgetFullYear() [33m-[39m [35m4[39m)[33m;[39m
+     [90m 85 |[39m
+    [31m[1m>[22m[39m[90m 86 |[39m     testHorseEligible [33m=[39m [36mawait[39m prisma[33m.[39mhorse[33m.[39mcreate({
+     [90m    |[39m                         [31m[1m^[22m[39m
+     [90m 87 |[39m       data[33m:[39m {
+     [90m 88 |[39m         name[33m:[39m [32m'Eligible Horse'[39m[33m,[39m
+     [90m 89 |[39m         dateOfBirth[33m:[39m fourYearsAgo[33m,[39m[0m
+
+      at kn (../packages/database/node_modules/@prisma/client/runtime/library.js:29:1363)
+      at Zn.handleRequestError (../packages/database/node_modules/@prisma/client/runtime/library.js:121:7102)
+      at Zn.handleAndLogRequestError (../packages/database/node_modules/@prisma/client/runtime/library.js:121:6784)
+      at Zn.request (../packages/database/node_modules/@prisma/client/runtime/library.js:121:6491)
+      at l (../packages/database/node_modules/@prisma/client/runtime/library.js:130:9778)
+      at Object.<anonymous> (tests/trainingController.test.mjs:86:25)
+
+  ● 🏋️ UNIT: Training Controller - Horse Training Business Logic › trainRouteHandler › should handle validation errors - placeholder for integration testing
+
+    PrismaClientValidationError: 
+    Invalid `prisma.horse.create()` invocation:
+
+    {
+      data: {
+        name: "Eligible Horse",
+        dateOfBirth: new Date("2022-01-28T18:38:05.870Z"),
+        age: 4,
+        sex: "M",
+        user: {
+          connect: {
+            id: "e9a60265-ea17-4d42-9623-b3eb36029a01"
+          }
+        },
+        breedId: 1,
+        ~~~~~~~
+        speed: 50,
+        stamina: 50,
+        agility: 50,
+        healthStatus: "Excellent",
+    ?   ownerId?: String | Null,
+    ?   genotype?: NullableJsonNullValueInput | Json,
+    ?   phenotypicMarkings?: NullableJsonNullValueInput | Json,
+    ?   finalDisplayColor?: String | Null,
+    ?   shade?: String | Null,
+    ?   imageUrl?: String | Null,
+    ?   trait?: String | Null,
+    ?   temperament?: String | Null,
+    ?   personality?: String | Null,
+    ?   epigeneticFlags?: HorseCreateepigeneticFlagsInput | String[],
+    ?   precision?: Int | Null,
+    ?   strength?: Int | Null,
+    ?   endurance?: Int | Null,
+    ?   intelligence?: Int | Null,
+    ?   balance?: Int | Null,
+    ?   coordination?: Int | Null,
+    ?   boldness?: Int | Null,
+    ?   flexibility?: Int | Null,
+    ?   obedience?: Int | Null,
+    ?   focus?: Int | Null,
+    ?   totalEarnings?: Int | Null,
+    ?   studStatus?: String | Null,
+    ?   studFee?: Int | Null,
+    ?   lastBredDate?: DateTime | Null,
+    ?   forSale?: Boolean | Null,
+    ?   salePrice?: Int | Null,
+    ?   lastVettedDate?: DateTime | Null,
+    ?   bondScore?: Int | Null,
+    ?   stressLevel?: Int | Null,
+    ?   daysGroomedInARow?: Int | Null,
+    ?   burnoutStatus?: String | Null,
+    ?   taskLog?: NullableJsonNullValueInput | Json,
+    ?   consecutiveDaysFoalCare?: Int | Null,
+    ?   lastGroomed?: DateTime | Null,
+    ?   tack?: NullableJsonNullValueInput | Json,
+    ?   trainingCooldown?: DateTime | Null,
+    ?   earnings?: Decimal | Null,
+    ?   rider?: NullableJsonNullValueInput | Json,
+    ?   disciplineScores?: NullableJsonNullValueInput | Json,
+    ?   epigeneticModifiers?: NullableJsonNullValueInput | Json,
+    ?   ultraRareTraits?: NullableJsonNullValueInput | Json,
+    ?   conformationScores?: NullableJsonNullValueInput | Json,
+    ?   horseXp?: Int | Null,
+    ?   availableStatPoints?: Int | Null,
+    ?   createdAt?: DateTime | Null,
+    ?   updatedAt?: DateTime | Null,
+    ?   competitionResults?: CompetitionResultCreateNestedManyWithoutHorseInput,
+    ?   foalActivities?: FoalActivityCreateNestedManyWithoutFoalInput,
+    ?   foalDevelopment?: FoalDevelopmentCreateNestedOneWithoutFoalInput,
+    ?   foalTrainingHistory?: FoalTrainingHistoryCreateNestedManyWithoutHorseInput,
+    ?   groomAssignments?: GroomAssignmentCreateNestedManyWithoutFoalInput,
+    ?   groomInteractions?: GroomInteractionCreateNestedManyWithoutFoalInput,
+    ?   groomPerformanceRecords?: GroomPerformanceRecordCreateNestedManyWithoutHorseInput,
+    ?   horseXpEvents?: HorseXpEventCreateNestedManyWithoutHorseInput,
+    ?   traitHistoryLogs?: TraitHistoryLogCreateNestedManyWithoutHorseInput,
+    ?   milestoneTraitLogs?: MilestoneTraitLogCreateNestedManyWithoutHorseInput,
+    ?   ultraRareTraitEvents?: UltraRareTraitEventCreateNestedManyWithoutHorseInput,
+    ?   groomHorseSynergies?: GroomHorseSynergyCreateNestedManyWithoutHorseInput,
+    ?   groomAssignmentLogs?: GroomAssignmentLogCreateNestedManyWithoutHorseInput,
+    ?   breed?: BreedCreateNestedOneWithoutHorsesInput,
+    ?   dam?: HorseCreateNestedOneWithoutDamOffspringInput,
+    ?   damOffspring?: HorseCreateNestedManyWithoutDamInput,
+    ?   sire?: HorseCreateNestedOneWithoutSireOffspringInput,
+    ?   sireOffspring?: HorseCreateNestedManyWithoutSireInput,
+    ?   stable?: StableCreateNestedOneWithoutHorsesInput,
+    ?   trainingLogs?: TrainingLogCreateNestedManyWithoutHorseInput
+      }
+    }
+
+    Unknown argument `breedId`. Did you mean `breed`? Available options are marked with ?.
+
+    [0m [90m 84 |[39m     fourYearsAgo[33m.[39msetFullYear(fourYearsAgo[33m.[39mgetFullYear() [33m-[39m [35m4[39m)[33m;[39m
+     [90m 85 |[39m
+    [31m[1m>[22m[39m[90m 86 |[39m     testHorseEligible [33m=[39m [36mawait[39m prisma[33m.[39mhorse[33m.[39mcreate({
+     [90m    |[39m                         [31m[1m^[22m[39m
+     [90m 87 |[39m       data[33m:[39m {
+     [90m 88 |[39m         name[33m:[39m [32m'Eligible Horse'[39m[33m,[39m
+     [90m 89 |[39m         dateOfBirth[33m:[39m fourYearsAgo[33m,[39m[0m
+
+      at kn (../packages/database/node_modules/@prisma/client/runtime/library.js:29:1363)
+      at Zn.handleRequestError (../packages/database/node_modules/@prisma/client/runtime/library.js:121:7102)
+      at Zn.handleAndLogRequestError (../packages/database/node_modules/@prisma/client/runtime/library.js:121:6784)
+      at Zn.request (../packages/database/node_modules/@prisma/client/runtime/library.js:121:6491)
+      at l (../packages/database/node_modules/@prisma/client/runtime/library.js:130:9778)
+      at Object.<anonymous> (tests/trainingController.test.mjs:86:25)
+
+  ● 🏋️ UNIT: Training Controller - Horse Training Business Logic › trainRouteHandler › should handle missing data gracefully - placeholder for integration testing
+
+    PrismaClientValidationError: 
+    Invalid `prisma.horse.create()` invocation:
+
+    {
+      data: {
+        name: "Eligible Horse",
+        dateOfBirth: new Date("2022-01-28T18:38:05.870Z"),
+        age: 4,
+        sex: "M",
+        user: {
+          connect: {
+            id: "e9a60265-ea17-4d42-9623-b3eb36029a01"
+          }
+        },
+        breedId: 1,
+        ~~~~~~~
+        speed: 50,
+        stamina: 50,
+        agility: 50,
+        healthStatus: "Excellent",
+    ?   ownerId?: String | Null,
+    ?   genotype?: NullableJsonNullValueInput | Json,
+    ?   phenotypicMarkings?: NullableJsonNullValueInput | Json,
+    ?   finalDisplayColor?: String | Null,
+    ?   shade?: String | Null,
+    ?   imageUrl?: String | Null,
+    ?   trait?: String | Null,
+    ?   temperament?: String | Null,
+    ?   personality?: String | Null,
+    ?   epigeneticFlags?: HorseCreateepigeneticFlagsInput | String[],
+    ?   precision?: Int | Null,
+    ?   strength?: Int | Null,
+    ?   endurance?: Int | Null,
+    ?   intelligence?: Int | Null,
+    ?   balance?: Int | Null,
+    ?   coordination?: Int | Null,
+    ?   boldness?: Int | Null,
+    ?   flexibility?: Int | Null,
+    ?   obedience?: Int | Null,
+    ?   focus?: Int | Null,
+    ?   totalEarnings?: Int | Null,
+    ?   studStatus?: String | Null,
+    ?   studFee?: Int | Null,
+    ?   lastBredDate?: DateTime | Null,
+    ?   forSale?: Boolean | Null,
+    ?   salePrice?: Int | Null,
+    ?   lastVettedDate?: DateTime | Null,
+    ?   bondScore?: Int | Null,
+    ?   stressLevel?: Int | Null,
+    ?   daysGroomedInARow?: Int | Null,
+    ?   burnoutStatus?: String | Null,
+    ?   taskLog?: NullableJsonNullValueInput | Json,
+    ?   consecutiveDaysFoalCare?: Int | Null,
+    ?   lastGroomed?: DateTime | Null,
+    ?   tack?: NullableJsonNullValueInput | Json,
+    ?   trainingCooldown?: DateTime | Null,
+    ?   earnings?: Decimal | Null,
+    ?   rider?: NullableJsonNullValueInput | Json,
+    ?   disciplineScores?: NullableJsonNullValueInput | Json,
+    ?   epigeneticModifiers?: NullableJsonNullValueInput | Json,
+    ?   ultraRareTraits?: NullableJsonNullValueInput | Json,
+    ?   conformationScores?: NullableJsonNullValueInput | Json,
+    ?   horseXp?: Int | Null,
+    ?   availableStatPoints?: Int | Null,
+    ?   createdAt?: DateTime | Null,
+    ?   updatedAt?: DateTime | Null,
+    ?   competitionResults?: CompetitionResultCreateNestedManyWithoutHorseInput,
+    ?   foalActivities?: FoalActivityCreateNestedManyWithoutFoalInput,
+    ?   foalDevelopment?: FoalDevelopmentCreateNestedOneWithoutFoalInput,
+    ?   foalTrainingHistory?: FoalTrainingHistoryCreateNestedManyWithoutHorseInput,
+    ?   groomAssignments?: GroomAssignmentCreateNestedManyWithoutFoalInput,
+    ?   groomInteractions?: GroomInteractionCreateNestedManyWithoutFoalInput,
+    ?   groomPerformanceRecords?: GroomPerformanceRecordCreateNestedManyWithoutHorseInput,
+    ?   horseXpEvents?: HorseXpEventCreateNestedManyWithoutHorseInput,
+    ?   traitHistoryLogs?: TraitHistoryLogCreateNestedManyWithoutHorseInput,
+    ?   milestoneTraitLogs?: MilestoneTraitLogCreateNestedManyWithoutHorseInput,
+    ?   ultraRareTraitEvents?: UltraRareTraitEventCreateNestedManyWithoutHorseInput,
+    ?   groomHorseSynergies?: GroomHorseSynergyCreateNestedManyWithoutHorseInput,
+    ?   groomAssignmentLogs?: GroomAssignmentLogCreateNestedManyWithoutHorseInput,
+    ?   breed?: BreedCreateNestedOneWithoutHorsesInput,
+    ?   dam?: HorseCreateNestedOneWithoutDamOffspringInput,
+    ?   damOffspring?: HorseCreateNestedManyWithoutDamInput,
+    ?   sire?: HorseCreateNestedOneWithoutSireOffspringInput,
+    ?   sireOffspring?: HorseCreateNestedManyWithoutSireInput,
+    ?   stable?: StableCreateNestedOneWithoutHorsesInput,
+    ?   trainingLogs?: TrainingLogCreateNestedManyWithoutHorseInput
+      }
+    }
+
+    Unknown argument `breedId`. Did you mean `breed`? Available options are marked with ?.
+
+    [0m [90m 84 |[39m     fourYearsAgo[33m.[39msetFullYear(fourYearsAgo[33m.[39mgetFullYear() [33m-[39m [35m4[39m)[33m;[39m
+     [90m 85 |[39m
+    [31m[1m>[22m[39m[90m 86 |[39m     testHorseEligible [33m=[39m [36mawait[39m prisma[33m.[39mhorse[33m.[39mcreate({
+     [90m    |[39m                         [31m[1m^[22m[39m
+     [90m 87 |[39m       data[33m:[39m {
+     [90m 88 |[39m         name[33m:[39m [32m'Eligible Horse'[39m[33m,[39m
+     [90m 89 |[39m         dateOfBirth[33m:[39m fourYearsAgo[33m,[39m[0m
+
+      at kn (../packages/database/node_modules/@prisma/client/runtime/library.js:29:1363)
+      at Zn.handleRequestError (../packages/database/node_modules/@prisma/client/runtime/library.js:121:7102)
+      at Zn.handleAndLogRequestError (../packages/database/node_modules/@prisma/client/runtime/library.js:121:6784)
+      at Zn.request (../packages/database/node_modules/@prisma/client/runtime/library.js:121:6491)
+      at l (../packages/database/node_modules/@prisma/client/runtime/library.js:130:9778)
+      at Object.<anonymous> (tests/trainingController.test.mjs:86:25)
+
+  ● 🏋️ UNIT: Training Controller - Horse Training Business Logic › trainRouteHandler › should handle server errors gracefully - placeholder for integration testing
+
+    PrismaClientValidationError: 
+    Invalid `prisma.horse.create()` invocation:
+
+    {
+      data: {
+        name: "Eligible Horse",
+        dateOfBirth: new Date("2022-01-28T18:38:05.870Z"),
+        age: 4,
+        sex: "M",
+        user: {
+          connect: {
+            id: "e9a60265-ea17-4d42-9623-b3eb36029a01"
+          }
+        },
+        breedId: 1,
+        ~~~~~~~
+        speed: 50,
+        stamina: 50,
+        agility: 50,
+        healthStatus: "Excellent",
+    ?   ownerId?: String | Null,
+    ?   genotype?: NullableJsonNullValueInput | Json,
+    ?   phenotypicMarkings?: NullableJsonNullValueInput | Json,
+    ?   finalDisplayColor?: String | Null,
+    ?   shade?: String | Null,
+    ?   imageUrl?: String | Null,
+    ?   trait?: String | Null,
+    ?   temperament?: String | Null,
+    ?   personality?: String | Null,
+    ?   epigeneticFlags?: HorseCreateepigeneticFlagsInput | String[],
+    ?   precision?: Int | Null,
+    ?   strength?: Int | Null,
+    ?   endurance?: Int | Null,
+    ?   intelligence?: Int | Null,
+    ?   balance?: Int | Null,
+    ?   coordination?: Int | Null,
+    ?   boldness?: Int | Null,
+    ?   flexibility?: Int | Null,
+    ?   obedience?: Int | Null,
+    ?   focus?: Int | Null,
+    ?   totalEarnings?: Int | Null,
+    ?   studStatus?: String | Null,
+    ?   studFee?: Int | Null,
+    ?   lastBredDate?: DateTime | Null,
+    ?   forSale?: Boolean | Null,
+    ?   salePrice?: Int | Null,
+    ?   lastVettedDate?: DateTime | Null,
+    ?   bondScore?: Int | Null,
+    ?   stressLevel?: Int | Null,
+    ?   daysGroomedInARow?: Int | Null,
+    ?   burnoutStatus?: String | Null,
+    ?   taskLog?: NullableJsonNullValueInput | Json,
+    ?   consecutiveDaysFoalCare?: Int | Null,
+    ?   lastGroomed?: DateTime | Null,
+    ?   tack?: NullableJsonNullValueInput | Json,
+    ?   trainingCooldown?: DateTime | Null,
+    ?   earnings?: Decimal | Null,
+    ?   rider?: NullableJsonNullValueInput | Json,
+    ?   disciplineScores?: NullableJsonNullValueInput | Json,
+    ?   epigeneticModifiers?: NullableJsonNullValueInput | Json,
+    ?   ultraRareTraits?: NullableJsonNullValueInput | Json,
+    ?   conformationScores?: NullableJsonNullValueInput | Json,
+    ?   horseXp?: Int | Null,
+    ?   availableStatPoints?: Int | Null,
+    ?   createdAt?: DateTime | Null,
+    ?   updatedAt?: DateTime | Null,
+    ?   competitionResults?: CompetitionResultCreateNestedManyWithoutHorseInput,
+    ?   foalActivities?: FoalActivityCreateNestedManyWithoutFoalInput,
+    ?   foalDevelopment?: FoalDevelopmentCreateNestedOneWithoutFoalInput,
+    ?   foalTrainingHistory?: FoalTrainingHistoryCreateNestedManyWithoutHorseInput,
+    ?   groomAssignments?: GroomAssignmentCreateNestedManyWithoutFoalInput,
+    ?   groomInteractions?: GroomInteractionCreateNestedManyWithoutFoalInput,
+    ?   groomPerformanceRecords?: GroomPerformanceRecordCreateNestedManyWithoutHorseInput,
+    ?   horseXpEvents?: HorseXpEventCreateNestedManyWithoutHorseInput,
+    ?   traitHistoryLogs?: TraitHistoryLogCreateNestedManyWithoutHorseInput,
+    ?   milestoneTraitLogs?: MilestoneTraitLogCreateNestedManyWithoutHorseInput,
+    ?   ultraRareTraitEvents?: UltraRareTraitEventCreateNestedManyWithoutHorseInput,
+    ?   groomHorseSynergies?: GroomHorseSynergyCreateNestedManyWithoutHorseInput,
+    ?   groomAssignmentLogs?: GroomAssignmentLogCreateNestedManyWithoutHorseInput,
+    ?   breed?: BreedCreateNestedOneWithoutHorsesInput,
+    ?   dam?: HorseCreateNestedOneWithoutDamOffspringInput,
+    ?   damOffspring?: HorseCreateNestedManyWithoutDamInput,
+    ?   sire?: HorseCreateNestedOneWithoutSireOffspringInput,
+    ?   sireOffspring?: HorseCreateNestedManyWithoutSireInput,
+    ?   stable?: StableCreateNestedOneWithoutHorsesInput,
+    ?   trainingLogs?: TrainingLogCreateNestedManyWithoutHorseInput
+      }
+    }
+
+    Unknown argument `breedId`. Did you mean `breed`? Available options are marked with ?.
+
+    [0m [90m 84 |[39m     fourYearsAgo[33m.[39msetFullYear(fourYearsAgo[33m.[39mgetFullYear() [33m-[39m [35m4[39m)[33m;[39m
+     [90m 85 |[39m
+    [31m[1m>[22m[39m[90m 86 |[39m     testHorseEligible [33m=[39m [36mawait[39m prisma[33m.[39mhorse[33m.[39mcreate({
+     [90m    |[39m                         [31m[1m^[22m[39m
+     [90m 87 |[39m       data[33m:[39m {
+     [90m 88 |[39m         name[33m:[39m [32m'Eligible Horse'[39m[33m,[39m
+     [90m 89 |[39m         dateOfBirth[33m:[39m fourYearsAgo[33m,[39m[0m
+
+      at kn (../packages/database/node_modules/@prisma/client/runtime/library.js:29:1363)
+      at Zn.handleRequestError (../packages/database/node_modules/@prisma/client/runtime/library.js:121:7102)
+      at Zn.handleAndLogRequestError (../packages/database/node_modules/@prisma/client/runtime/library.js:121:6784)
+      at Zn.request (../packages/database/node_modules/@prisma/client/runtime/library.js:121:6491)
+      at l (../packages/database/node_modules/@prisma/client/runtime/library.js:130:9778)
+      at Object.<anonymous> (tests/trainingController.test.mjs:86:25)
+
+  ● 🏋️ UNIT: Training Controller - Horse Training Business Logic › trainRouteHandler › should handle trait effects in training - placeholder for integration testing
+
+    PrismaClientValidationError: 
+    Invalid `prisma.horse.create()` invocation:
+
+    {
+      data: {
+        name: "Eligible Horse",
+        dateOfBirth: new Date("2022-01-28T18:38:05.870Z"),
+        age: 4,
+        sex: "M",
+        user: {
+          connect: {
+            id: "e9a60265-ea17-4d42-9623-b3eb36029a01"
+          }
+        },
+        breedId: 1,
+        ~~~~~~~
+        speed: 50,
+        stamina: 50,
+        agility: 50,
+        healthStatus: "Excellent",
+    ?   ownerId?: String | Null,
+    ?   genotype?: NullableJsonNullValueInput | Json,
+    ?   phenotypicMarkings?: NullableJsonNullValueInput | Json,
+    ?   finalDisplayColor?: String | Null,
+    ?   shade?: String | Null,
+    ?   imageUrl?: String | Null,
+    ?   trait?: String | Null,
+    ?   temperament?: String | Null,
+    ?   personality?: String | Null,
+    ?   epigeneticFlags?: HorseCreateepigeneticFlagsInput | String[],
+    ?   precision?: Int | Null,
+    ?   strength?: Int | Null,
+    ?   endurance?: Int | Null,
+    ?   intelligence?: Int | Null,
+    ?   balance?: Int | Null,
+    ?   coordination?: Int | Null,
+    ?   boldness?: Int | Null,
+    ?   flexibility?: Int | Null,
+    ?   obedience?: Int | Null,
+    ?   focus?: Int | Null,
+    ?   totalEarnings?: Int | Null,
+    ?   studStatus?: String | Null,
+    ?   studFee?: Int | Null,
+    ?   lastBredDate?: DateTime | Null,
+    ?   forSale?: Boolean | Null,
+    ?   salePrice?: Int | Null,
+    ?   lastVettedDate?: DateTime | Null,
+    ?   bondScore?: Int | Null,
+    ?   stressLevel?: Int | Null,
+    ?   daysGroomedInARow?: Int | Null,
+    ?   burnoutStatus?: String | Null,
+    ?   taskLog?: NullableJsonNullValueInput | Json,
+    ?   consecutiveDaysFoalCare?: Int | Null,
+    ?   lastGroomed?: DateTime | Null,
+    ?   tack?: NullableJsonNullValueInput | Json,
+    ?   trainingCooldown?: DateTime | Null,
+    ?   earnings?: Decimal | Null,
+    ?   rider?: NullableJsonNullValueInput | Json,
+    ?   disciplineScores?: NullableJsonNullValueInput | Json,
+    ?   epigeneticModifiers?: NullableJsonNullValueInput | Json,
+    ?   ultraRareTraits?: NullableJsonNullValueInput | Json,
+    ?   conformationScores?: NullableJsonNullValueInput | Json,
+    ?   horseXp?: Int | Null,
+    ?   availableStatPoints?: Int | Null,
+    ?   createdAt?: DateTime | Null,
+    ?   updatedAt?: DateTime | Null,
+    ?   competitionResults?: CompetitionResultCreateNestedManyWithoutHorseInput,
+    ?   foalActivities?: FoalActivityCreateNestedManyWithoutFoalInput,
+    ?   foalDevelopment?: FoalDevelopmentCreateNestedOneWithoutFoalInput,
+    ?   foalTrainingHistory?: FoalTrainingHistoryCreateNestedManyWithoutHorseInput,
+    ?   groomAssignments?: GroomAssignmentCreateNestedManyWithoutFoalInput,
+    ?   groomInteractions?: GroomInteractionCreateNestedManyWithoutFoalInput,
+    ?   groomPerformanceRecords?: GroomPerformanceRecordCreateNestedManyWithoutHorseInput,
+    ?   horseXpEvents?: HorseXpEventCreateNestedManyWithoutHorseInput,
+    ?   traitHistoryLogs?: TraitHistoryLogCreateNestedManyWithoutHorseInput,
+    ?   milestoneTraitLogs?: MilestoneTraitLogCreateNestedManyWithoutHorseInput,
+    ?   ultraRareTraitEvents?: UltraRareTraitEventCreateNestedManyWithoutHorseInput,
+    ?   groomHorseSynergies?: GroomHorseSynergyCreateNestedManyWithoutHorseInput,
+    ?   groomAssignmentLogs?: GroomAssignmentLogCreateNestedManyWithoutHorseInput,
+    ?   breed?: BreedCreateNestedOneWithoutHorsesInput,
+    ?   dam?: HorseCreateNestedOneWithoutDamOffspringInput,
+    ?   damOffspring?: HorseCreateNestedManyWithoutDamInput,
+    ?   sire?: HorseCreateNestedOneWithoutSireOffspringInput,
+    ?   sireOffspring?: HorseCreateNestedManyWithoutSireInput,
+    ?   stable?: StableCreateNestedOneWithoutHorsesInput,
+    ?   trainingLogs?: TrainingLogCreateNestedManyWithoutHorseInput
+      }
+    }
+
+    Unknown argument `breedId`. Did you mean `breed`? Available options are marked with ?.
+
+    [0m [90m 84 |[39m     fourYearsAgo[33m.[39msetFullYear(fourYearsAgo[33m.[39mgetFullYear() [33m-[39m [35m4[39m)[33m;[39m
+     [90m 85 |[39m
+    [31m[1m>[22m[39m[90m 86 |[39m     testHorseEligible [33m=[39m [36mawait[39m prisma[33m.[39mhorse[33m.[39mcreate({
+     [90m    |[39m                         [31m[1m^[22m[39m
+     [90m 87 |[39m       data[33m:[39m {
+     [90m 88 |[39m         name[33m:[39m [32m'Eligible Horse'[39m[33m,[39m
+     [90m 89 |[39m         dateOfBirth[33m:[39m fourYearsAgo[33m,[39m[0m
+
+      at kn (../packages/database/node_modules/@prisma/client/runtime/library.js:29:1363)
+      at Zn.handleRequestError (../packages/database/node_modules/@prisma/client/runtime/library.js:121:7102)
+      at Zn.handleAndLogRequestError (../packages/database/node_modules/@prisma/client/runtime/library.js:121:6784)
+      at Zn.request (../packages/database/node_modules/@prisma/client/runtime/library.js:121:6491)
+      at l (../packages/database/node_modules/@prisma/client/runtime/library.js:130:9778)
+      at Object.<anonymous> (tests/trainingController.test.mjs:86:25)
+
+
+  ● Test suite failed to run
+
+    TypeError: Cannot read properties of undefined (reading 'id')
+
+    [0m [90m 172 |[39m       where[33m:[39m {
+     [90m 173 |[39m         horseId[33m:[39m {
+    [31m[1m>[22m[39m[90m 174 |[39m           [36min[39m[33m:[39m [testHorseEligible[33m.[39mid[33m,[39m testHorseAdult[33m.[39mid[33m,[39m testHorseYoung[33m.[39mid[33m,[39m testHorseRecentTraining[33m.[39mid]
+     [90m     |[39m                                  [31m[1m^[22m[39m
+     [90m 175 |[39m         }
+     [90m 176 |[39m       }
+     [90m 177 |[39m     })[33m;[39m[0m
+
+      at Object.<anonymous> (tests/trainingController.test.mjs:174:34)
+
+Test Suites: 1 failed, 1 total
+Tests:       37 failed, 37 total
+Snapshots:   0 total
+Time:        0.951 s, estimated 1 s
+Ran all test suites matching /tests\\trainingController.test.mjs/i.
+🧹 Running global teardown...
+[Teardown] Disconnecting Prisma instances...
+[Teardown] ✅ Prisma instances disconnected
+✅ Global teardown completed successfully

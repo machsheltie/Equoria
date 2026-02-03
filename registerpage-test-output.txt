@@ -1,0 +1,149 @@
+
+> equoria-frontend@0.0.0 test:run
+> vitest run RegisterPage.test.tsx
+
+
+[1m[46m RUN [49m[22m [36mv4.0.15 [39m[90mC:/Users/heirr/OneDrive/Desktop/Equoria/frontend[39m
+
+[90mstderr[2m | src/pages/__tests__/RegisterPage.test.tsx[2m > [22m[2mRegisterPage[2m > [22m[2mAC-1: Registration Form Display[2m > [22m[2mrenders all required form fields
+[22m[39m⚠️ React Router Future Flag Warning: React Router will begin wrapping state updates in `React.startTransition` in v7. You can use the `v7_startTransition` future flag to opt-in early. For more information, see https://reactrouter.com/v6/upgrading/future#v7_starttransition.
+⚠️ React Router Future Flag Warning: Relative route resolution within Splat routes is changing in v7. You can use the `v7_relativeSplatPath` future flag to opt-in early. For more information, see https://reactrouter.com/v6/upgrading/future#v7_relativesplatpath.
+
+[90mstderr[2m | src/pages/__tests__/RegisterPage.test.tsx[2m > [22m[2mRegisterPage[2m > [22m[2mAccessibility[2m > [22m[2mall form inputs are focusable
+[22m[39mAn update to FantasyInput inside a test was not wrapped in act(...).
+
+When testing, code that causes React state updates should be wrapped into act(...):
+
+act(() => {
+  /* fire events that update state */
+});
+/* assert on the output */
+
+This ensures that you're testing the behavior the user would see in the browser. Learn more at https://react.dev/link/wrap-tests-with-act
+An update to FantasyInput inside a test was not wrapped in act(...).
+
+When testing, code that causes React state updates should be wrapped into act(...):
+
+act(() => {
+  /* fire events that update state */
+});
+/* assert on the output */
+
+This ensures that you're testing the behavior the user would see in the browser. Learn more at https://react.dev/link/wrap-tests-with-act
+An update to FantasyInput inside a test was not wrapped in act(...).
+
+When testing, code that causes React state updates should be wrapped into act(...):
+
+act(() => {
+  /* fire events that update state */
+});
+/* assert on the output */
+
+This ensures that you're testing the behavior the user would see in the browser. Learn more at https://react.dev/link/wrap-tests-with-act
+An update to FantasyInput inside a test was not wrapped in act(...).
+
+When testing, code that causes React state updates should be wrapped into act(...):
+
+act(() => {
+  /* fire events that update state */
+});
+/* assert on the output */
+
+This ensures that you're testing the behavior the user would see in the browser. Learn more at https://react.dev/link/wrap-tests-with-act
+An update to FantasyInput inside a test was not wrapped in act(...).
+
+When testing, code that causes React state updates should be wrapped into act(...):
+
+act(() => {
+  /* fire events that update state */
+});
+/* assert on the output */
+
+This ensures that you're testing the behavior the user would see in the browser. Learn more at https://react.dev/link/wrap-tests-with-act
+An update to FantasyInput inside a test was not wrapped in act(...).
+
+When testing, code that causes React state updates should be wrapped into act(...):
+
+act(() => {
+  /* fire events that update state */
+});
+/* assert on the output */
+
+This ensures that you're testing the behavior the user would see in the browser. Learn more at https://react.dev/link/wrap-tests-with-act
+An update to FantasyInput inside a test was not wrapped in act(...).
+
+When testing, code that causes React state updates should be wrapped into act(...):
+
+act(() => {
+  /* fire events that update state */
+});
+/* assert on the output */
+
+This ensures that you're testing the behavior the user would see in the browser. Learn more at https://react.dev/link/wrap-tests-with-act
+An update to FantasyInput inside a test was not wrapped in act(...).
+
+When testing, code that causes React state updates should be wrapped into act(...):
+
+act(() => {
+  /* fire events that update state */
+});
+/* assert on the output */
+
+This ensures that you're testing the behavior the user would see in the browser. Learn more at https://react.dev/link/wrap-tests-with-act
+An update to FantasyInput inside a test was not wrapped in act(...).
+
+When testing, code that causes React state updates should be wrapped into act(...):
+
+act(() => {
+  /* fire events that update state */
+});
+/* assert on the output */
+
+This ensures that you're testing the behavior the user would see in the browser. Learn more at https://react.dev/link/wrap-tests-with-act
+An update to FantasyInput inside a test was not wrapped in act(...).
+
+When testing, code that causes React state updates should be wrapped into act(...):
+
+act(() => {
+  /* fire events that update state */
+});
+/* assert on the output */
+
+This ensures that you're testing the behavior the user would see in the browser. Learn more at https://react.dev/link/wrap-tests-with-act
+An update to FantasyInput inside a test was not wrapped in act(...).
+
+When testing, code that causes React state updates should be wrapped into act(...):
+
+act(() => {
+  /* fire events that update state */
+});
+/* assert on the output */
+
+This ensures that you're testing the behavior the user would see in the browser. Learn more at https://react.dev/link/wrap-tests-with-act
+
+ [32m✓[39m src/pages/__tests__/RegisterPage.test.tsx [2m([22m[2m33 tests[22m[2m)[22m[33m 38531[2mms[22m[39m
+       [33m[2m✓[22m[39m displays submit button with correct text [33m 457[2mms[22m[39m
+       [33m[2m✓[22m[39m shows error for invalid email format [33m 2141[2mms[22m[39m
+       [33m[2m✓[22m[39m shows error for short password [33m 1881[2mms[22m[39m
+       [33m[2m✓[22m[39m shows error when password missing uppercase [33m 1722[2mms[22m[39m
+       [33m[2m✓[22m[39m shows error when password missing number [33m 1983[2mms[22m[39m
+       [33m[2m✓[22m[39m shows error when passwords do not match [33m 2091[2mms[22m[39m
+       [33m[2m✓[22m[39m shows error for short username [33m 1971[2mms[22m[39m
+       [33m[2m✓[22m[39m shows error for invalid username characters [33m 2377[2mms[22m[39m
+       [33m[2m✓[22m[39m clears validation errors when user types [33m 2136[2mms[22m[39m
+       [33m[2m✓[22m[39m updates strength as password gets stronger [33m 644[2mms[22m[39m
+       [33m[2m✓[22m[39m disables submit button while submission is in progress [33m 1744[2mms[22m[39m
+       [33m[2m✓[22m[39m shows loading text during submission [33m 2086[2mms[22m[39m
+       [33m[2m✓[22m[39m navigates to home on successful registration [33m 2668[2mms[22m[39m
+       [33m[2m✓[22m[39m calls API with correct data [33m 2307[2mms[22m[39m
+       [33m[2m✓[22m[39m displays duplicate email error [33m 2578[2mms[22m[39m
+       [33m[2m✓[22m[39m displays server error message [33m 2361[2mms[22m[39m
+       [33m[2m✓[22m[39m displays generic error for network failures [33m 2044[2mms[22m[39m
+       [33m[2m✓[22m[39m handles rapid form submissions [33m 1980[2mms[22m[39m
+       [33m[2m✓[22m[39m error messages are associated with inputs [33m 1891[2mms[22m[39m
+
+[2m Test Files [22m [1m[32m1 passed[39m[22m[90m (1)[39m
+[2m      Tests [22m [1m[32m33 passed[39m[22m[90m (33)[39m
+[2m   Start at [22m 12:53:36
+[2m   Duration [22m 43.68s[2m (transform 604ms, setup 936ms, import 1.14s, tests 38.53s, environment 2.59s)[22m
+

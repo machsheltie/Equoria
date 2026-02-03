@@ -212,7 +212,8 @@
       "Bash(npx prettier:*)",
       "Bash(timeout /t 15 /nobreak)",
       "Bash(if not exist \"C:\\\\Users\\\\heirr\\\\OneDrive\\\\Desktop\\\\Equoria\\\\frontend\\\\src\\\\lib\\\\api\\\\__tests__\" mkdir \"C:\\\\Users\\\\heirr\\\\OneDrive\\\\Desktop\\\\Equoria\\\\frontend\\\\src\\\\lib\\\\api\\\\__tests__\")",
-      "Bash(if not exist \"C:\\\\Users\\\\heirr\\\\OneDrive\\\\Desktop\\\\Equoria\\\\frontend\\\\src\\\\test\\\\fixtures\\\\__tests__\" mkdir \"C:\\\\Users\\\\heirr\\\\OneDrive\\\\Desktop\\\\Equoria\\\\frontend\\\\src\\\\test\\\\fixtures\\\\__tests__\")"
+      "Bash(if not exist \"C:\\\\Users\\\\heirr\\\\OneDrive\\\\Desktop\\\\Equoria\\\\frontend\\\\src\\\\test\\\\fixtures\\\\__tests__\" mkdir \"C:\\\\Users\\\\heirr\\\\OneDrive\\\\Desktop\\\\Equoria\\\\frontend\\\\src\\\\test\\\\fixtures\\\\__tests__\")",
+      "Bash(python3:*)"
     ],
     "deny": [],
     "ask": []

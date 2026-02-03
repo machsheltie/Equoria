@@ -342,7 +342,7 @@ describe('HorseDetailPage - Progression Tab', () => {
     });
 
     it('should display Progression tab with correct icon', async () => {
-      const { container } = render(<HorseDetailPage />, { wrapper: createWrapper() });
+      const { container: _container } = render(<HorseDetailPage />, { wrapper: createWrapper() });
 
       await waitFor(() => {
         expect(screen.getByText('Thunder')).toBeInTheDocument();

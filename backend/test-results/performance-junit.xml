@@ -1,0 +1,85 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<testsuites name="jest tests" tests="39" failures="0" errors="0" time="3.727">
+  <testsuite name="Database Query Optimization" errors="0" failures="0" skipped="0" timestamp="2026-01-29T18:36:52" time="2.197" tests="18">
+    <testcase classname="Database Query Optimization › Query Performance Analysis" name="analyzes complex epigenetic queries for performance bottlenecks" time="0.011">
+    </testcase>
+    <testcase classname="Database Query Optimization › Query Performance Analysis" name="identifies slow JSONB queries and optimization opportunities" time="0.011">
+    </testcase>
+    <testcase classname="Database Query Optimization › Query Performance Analysis" name="benchmarks multi-table join performance" time="0.016">
+    </testcase>
+    <testcase classname="Database Query Optimization › Index Optimization" name="creates optimized indexes for epigenetic queries" time="0.022">
+    </testcase>
+    <testcase classname="Database Query Optimization › Index Optimization" name="optimizes JSONB indexes for trait and score queries" time="0.012">
+    </testcase>
+    <testcase classname="Database Query Optimization › Index Optimization" name="creates composite indexes for common query patterns" time="0.008">
+    </testcase>
+    <testcase classname="Database Query Optimization › Connection Pooling Optimization" name="implements efficient connection pooling strategy" time="0.005">
+    </testcase>
+    <testcase classname="Database Query Optimization › Connection Pooling Optimization" name="handles concurrent connection requests efficiently" time="0.335">
+    </testcase>
+    <testcase classname="Database Query Optimization › Connection Pooling Optimization" name="manages connection lifecycle properly" time="0.003">
+    </testcase>
+    <testcase classname="Database Query Optimization › Query Caching Strategy" name="implements Redis-based query caching" time="0.002">
+    </testcase>
+    <testcase classname="Database Query Optimization › Query Caching Strategy" name="caches expensive epigenetic analysis queries" time="0.009">
+    </testcase>
+    <testcase classname="Database Query Optimization › Query Caching Strategy" name="invalidates cache on data updates" time="0.014">
+    </testcase>
+    <testcase classname="Database Query Optimization › Performance Benchmarking" name="meets response time targets for common operations" time="0.57">
+    </testcase>
+    <testcase classname="Database Query Optimization › Performance Benchmarking" name="handles high concurrent load efficiently" time="0.003">
+    </testcase>
+    <testcase classname="Database Query Optimization › Performance Benchmarking" name="maintains performance under memory pressure" time="0.004">
+    </testcase>
+    <testcase classname="Database Query Optimization › Query Optimization Results" name="improves epigenetic query performance significantly" time="0.016">
+    </testcase>
+    <testcase classname="Database Query Optimization › Query Optimization Results" name="reduces database load and resource usage" time="0.004">
+    </testcase>
+    <testcase classname="Database Query Optimization › Query Optimization Results" name="validates production readiness metrics" time="0.003">
+    </testcase>
+  </testsuite>
+  <testsuite name="API Response Optimization System" errors="0" failures="0" skipped="0" timestamp="2026-01-29T18:36:54" time="1.406" tests="21">
+    <testcase classname="API Response Optimization System › Pagination Service" name="creates offset-based pagination correctly" time="0.004">
+    </testcase>
+    <testcase classname="API Response Optimization System › Pagination Service" name="creates cursor-based pagination correctly" time="0.002">
+    </testcase>
+    <testcase classname="API Response Optimization System › Pagination Service" name="generates optimized Prisma query for cursor pagination" time="0.001">
+    </testcase>
+    <testcase classname="API Response Optimization System › Serialization Service" name="optimizes response data correctly" time="0.002">
+    </testcase>
+    <testcase classname="API Response Optimization System › Serialization Service" name="selects specific fields correctly" time="0.003">
+    </testcase>
+    <testcase classname="API Response Optimization System › Serialization Service" name="excludes specific fields correctly" time="0.001">
+    </testcase>
+    <testcase classname="API Response Optimization System › Serialization Service" name="handles nested field selection" time="0.005">
+    </testcase>
+    <testcase classname="API Response Optimization System › Response Cache Service" name="generates consistent ETags for same data" time="0.001">
+    </testcase>
+    <testcase classname="API Response Optimization System › Response Cache Service" name="generates different ETags for different data" time="0.001">
+    </testcase>
+    <testcase classname="API Response Optimization System › Response Cache Service" name="determines cacheable requests correctly" time="0.001">
+    </testcase>
+    <testcase classname="API Response Optimization System › Lazy Loading Service" name="creates lazy loading configuration" time="0.001">
+    </testcase>
+    <testcase classname="API Response Optimization System › Lazy Loading Service" name="loads related data on demand" time="0.005">
+    </testcase>
+    <testcase classname="API Response Optimization System › Middleware Integration" name="handles pagination middleware correctly" time="0.078">
+    </testcase>
+    <testcase classname="API Response Optimization System › Middleware Integration" name="handles field selection via query parameters" time="0.026">
+    </testcase>
+    <testcase classname="API Response Optimization System › Middleware Integration" name="adds performance headers to responses" time="0.017">
+    </testcase>
+    <testcase classname="API Response Optimization System › Middleware Integration" name="handles large response optimization" time="0.044">
+    </testcase>
+    <testcase classname="API Response Optimization System › Middleware Integration" name="supports debug mode with optimization info" time="0.02">
+    </testcase>
+    <testcase classname="API Response Optimization System › Performance Metrics" name="tracks performance metrics correctly" time="0.002">
+    </testcase>
+    <testcase classname="API Response Optimization System › ETag and Caching" name="generates and validates ETags correctly" time="0.027">
+    </testcase>
+    <testcase classname="API Response Optimization System › Response Size Monitoring" name="monitors and warns about large responses" time="0.032">
+    </testcase>
+    <testcase classname="API Response Optimization System › Response Size Monitoring" name="handles response size limits" time="0.019">
+    </testcase>
+  </testsuite>
+</testsuites>

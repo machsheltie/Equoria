@@ -1,0 +1,1469 @@
+
+> equoria-backend@1.0.0 test
+> node --experimental-vm-modules node_modules/jest/bin/jest.js groomAssignmentSystem.test.mjs
+
+(node:51696) ExperimentalWarning: VM Modules is an experimental feature and might change at any time
+(Use `node --trace-warnings ...` to show where the warning was created)
+PASS tests/integration/groomAssignmentSystem.test.mjs
+  ● Console
+
+    console.log
+      [2026-01-29 05:20:13] info: [envValidator] Validating test environment configuration...
+
+      at Console.log (node_modules/winston/lib/winston/transports/console.js:87:23)
+
+    console.log
+      [2026-01-29 05:20:13] info: [envValidator] ✅ All 5 required environment variables are present
+
+      at Console.log (node_modules/winston/lib/winston/transports/console.js:87:23)
+
+    console.log
+      [2026-01-29 05:20:13] info: [envValidator] ℹ️  Optional variables not set: AUTH_RATE_LIMIT_MAX, ENABLE_DEBUG_ROUTES
+
+      at Console.log (node_modules/winston/lib/winston/transports/console.js:87:23)
+
+    console.log
+      [2026-01-29 05:20:13] info: [envValidator] Test environment validation complete. Success: true
+
+      at Console.log (node_modules/winston/lib/winston/transports/console.js:87:23)
+
+    console.log
+      [2026-01-29 05:20:15] info: [RateLimit:rl:auth] Redis not connected - using in-memory rate limiting (per-process)
+
+      at Console.log (node_modules/winston/lib/winston/transports/console.js:87:23)
+
+    console.log
+      [2026-01-29 05:20:15] info: [RateLimit:rl:training] Redis not connected - using in-memory rate limiting (per-process)
+
+      at Console.log (node_modules/winston/lib/winston/transports/console.js:87:23)
+
+    console.log
+      [2026-01-29 05:20:15] info: [RateLimit:rl:query] Redis not connected - using in-memory rate limiting (per-process)
+
+      at Console.log (node_modules/winston/lib/winston/transports/console.js:87:23)
+
+    console.log
+      [2026-01-29 05:20:15] info: [RateLimit:rl:profile] Redis not connected - using in-memory rate limiting (per-process)
+
+      at Console.log (node_modules/winston/lib/winston/transports/console.js:87:23)
+
+    console.log
+      [2026-01-29 05:20:15] info: [RateLimit:rl:mutation] Redis not connected - using in-memory rate limiting (per-process)
+
+      at Console.log (node_modules/winston/lib/winston/transports/console.js:87:23)
+
+    console.log
+      [2026-01-29 05:20:15] info: [RateLimit:rl:admin] Redis not connected - using in-memory rate limiting (per-process)
+
+      at Console.log (node_modules/winston/lib/winston/transports/console.js:87:23)
+
+    console.log
+      [2026-01-29 05:20:15] info: [RateLimit:rl:foal] Redis not connected - using in-memory rate limiting (per-process)
+
+      at Console.log (node_modules/winston/lib/winston/transports/console.js:87:23)
+
+    console.log
+      [2026-01-29 05:20:15] info: [RateLimit:rl:breeding] Redis not connected - using in-memory rate limiting (per-process)
+
+      at Console.log (node_modules/winston/lib/winston/transports/console.js:87:23)
+
+    console.log
+      [2026-01-29 05:20:15] info: [RateLimit:rl:competition] Redis not connected - using in-memory rate limiting (per-process)
+
+      at Console.log (node_modules/winston/lib/winston/transports/console.js:87:23)
+
+    console.log
+      [2026-01-29 05:20:15] info: [rateLimiting] Using in-memory rate limiting for test/disabled Redis environment
+
+      at Console.log (node_modules/winston/lib/winston/transports/console.js:87:23)
+
+    console.log
+      [2026-01-29 05:20:15] info: [Sentry] Sentry DSN not configured. Skipping initialization.
+
+      at Console.log (node_modules/winston/lib/winston/transports/console.js:87:23)
+
+    console.log
+      [2026-01-29 05:20:15] info: [RateLimit:rl:global] Redis not connected - using in-memory rate limiting (per-process)
+
+      at Console.log (node_modules/winston/lib/winston/transports/console.js:87:23)
+
+    console.log
+      [2026-01-29 05:20:15] info: [SwaggerSetup] OpenAPI specification loaded successfully
+
+      at Console.log (node_modules/winston/lib/winston/transports/console.js:87:23)
+
+    console.log
+      [2026-01-29 05:20:15] info: [SwaggerSetup] API documentation setup completed
+
+      at Console.log (node_modules/winston/lib/winston/transports/console.js:87:23)
+
+    console.log
+      [2026-01-29 05:20:15] info: [SwaggerSetup] Interactive docs available at: /api-docs
+
+      at Console.log (node_modules/winston/lib/winston/transports/console.js:87:23)
+
+    console.log
+      [2026-01-29 05:20:15] info: [SwaggerSetup] OpenAPI JSON available at: /api-docs/swagger.json
+
+      at Console.log (node_modules/winston/lib/winston/transports/console.js:87:23)
+
+    console.log
+      [2026-01-29 05:20:15] info: [SwaggerSetup] OpenAPI YAML available at: /api-docs/swagger.yaml
+
+      at Console.log (node_modules/winston/lib/winston/transports/console.js:87:23)
+
+    console.log
+      [2026-01-29 05:20:15] info: [Sentry] Sentry error handler not attached (DSN not configured).
+
+      at Console.log (node_modules/winston/lib/winston/transports/console.js:87:23)
+
+    console.log
+      [2026-01-29 05:20:15] info: [POST] /api/groom-assignments
+
+      at Console.log (node_modules/winston/lib/winston/transports/console.js:87:23)
+
+    console.log
+      [2026-01-29 05:20:15] info: [auth:qqviqk] Starting auth for POST /groom-assignments
+
+      at Console.log (node_modules/winston/lib/winston/transports/console.js:87:23)
+
+    console.log
+      [2026-01-29 05:20:15] info: [auth:qqviqk] Token from cookie: false
+
+      at Console.log (node_modules/winston/lib/winston/transports/console.js:87:23)
+
+    console.log
+      [2026-01-29 05:20:15] info: [auth:qqviqk] Token from header: true
+
+      at Console.log (node_modules/winston/lib/winston/transports/console.js:87:23)
+
+    console.log
+      [2026-01-29 05:20:15] info: [auth:qqviqk] Authenticated user 426123e8-002e-4693-8e05-97861194aa62
+
+      at Console.log (node_modules/winston/lib/winston/transports/console.js:87:23)
+
+    console.log
+      [2026-01-29 05:20:15] info: [auth:v9y68h] Starting auth for POST /
+
+      at Console.log (node_modules/winston/lib/winston/transports/console.js:87:23)
+
+    console.log
+      [2026-01-29 05:20:15] info: [auth:v9y68h] Token from cookie: false
+
+      at Console.log (node_modules/winston/lib/winston/transports/console.js:87:23)
+
+    console.log
+      [2026-01-29 05:20:15] info: [auth:v9y68h] Token from header: true
+
+      at Console.log (node_modules/winston/lib/winston/transports/console.js:87:23)
+
+    console.log
+      [2026-01-29 05:20:15] info: [auth:v9y68h] Authenticated user 426123e8-002e-4693-8e05-97861194aa62
+
+      at Console.log (node_modules/winston/lib/winston/transports/console.js:87:23)
+
+    console.log
+      [2026-01-29 05:20:15] info: [groomAssignmentController] Creating assignment: groom 76593 -> horse 152572
+
+      at Console.log (node_modules/winston/lib/winston/transports/console.js:87:23)
+
+    console.log
+      [2026-01-29 05:20:15] info: [groomAssignmentService] Created assignment: Assignment Test Groom 1 -> Assignment Test Horse 1
+
+      at Console.log (node_modules/winston/lib/winston/transports/console.js:87:23)
+
+    console.log
+      [2026-01-29 05:20:15] info: [POST] /api/groom-assignments - 201
+
+      at Console.log (node_modules/winston/lib/winston/transports/console.js:87:23)
+
+    console.log
+      [2026-01-29 05:20:15] info: [POST] /api/groom-assignments
+
+      at Console.log (node_modules/winston/lib/winston/transports/console.js:87:23)
+
+    console.log
+      [2026-01-29 05:20:15] info: [auth:61rlo] Starting auth for POST /groom-assignments
+
+      at Console.log (node_modules/winston/lib/winston/transports/console.js:87:23)
+
+    console.log
+      [2026-01-29 05:20:15] info: [auth:61rlo] Token from cookie: false
+
+      at Console.log (node_modules/winston/lib/winston/transports/console.js:87:23)
+
+    console.log
+      [2026-01-29 05:20:15] info: [auth:61rlo] Token from header: true
+
+      at Console.log (node_modules/winston/lib/winston/transports/console.js:87:23)
+
+    console.log
+      [2026-01-29 05:20:15] info: [auth:61rlo] Authenticated user 426123e8-002e-4693-8e05-97861194aa62
+
+      at Console.log (node_modules/winston/lib/winston/transports/console.js:87:23)
+
+    console.log
+      [2026-01-29 05:20:15] info: [auth:ywhlxl] Starting auth for POST /
+
+      at Console.log (node_modules/winston/lib/winston/transports/console.js:87:23)
+
+    console.log
+      [2026-01-29 05:20:15] info: [auth:ywhlxl] Token from cookie: false
+
+      at Console.log (node_modules/winston/lib/winston/transports/console.js:87:23)
+
+    console.log
+      [2026-01-29 05:20:15] info: [auth:ywhlxl] Token from header: true
+
+      at Console.log (node_modules/winston/lib/winston/transports/console.js:87:23)
+
+    console.log
+      [2026-01-29 05:20:15] info: [auth:ywhlxl] Authenticated user 426123e8-002e-4693-8e05-97861194aa62
+
+      at Console.log (node_modules/winston/lib/winston/transports/console.js:87:23)
+
+    console.log
+      [2026-01-29 05:20:15] info: [groomAssignmentController] Creating assignment: groom 76593 -> horse 152573
+
+      at Console.log (node_modules/winston/lib/winston/transports/console.js:87:23)
+
+    console.log
+      [2026-01-29 05:20:15] info: [groomAssignmentService] Created assignment: Assignment Test Groom 1 -> Assignment Test Horse 2
+
+      at Console.log (node_modules/winston/lib/winston/transports/console.js:87:23)
+
+    console.log
+      [2026-01-29 05:20:15] info: [POST] /api/groom-assignments - 201
+
+      at Console.log (node_modules/winston/lib/winston/transports/console.js:87:23)
+
+    console.log
+      [2026-01-29 05:20:15] info: [POST] /api/groom-assignments
+
+      at Console.log (node_modules/winston/lib/winston/transports/console.js:87:23)
+
+    console.log
+      [2026-01-29 05:20:15] info: [auth:k94h4d] Starting auth for POST /groom-assignments
+
+      at Console.log (node_modules/winston/lib/winston/transports/console.js:87:23)
+
+    console.log
+      [2026-01-29 05:20:15] info: [auth:k94h4d] Token from cookie: false
+
+      at Console.log (node_modules/winston/lib/winston/transports/console.js:87:23)
+
+    console.log
+      [2026-01-29 05:20:15] info: [auth:k94h4d] Token from header: true
+
+      at Console.log (node_modules/winston/lib/winston/transports/console.js:87:23)
+
+    console.log
+      [2026-01-29 05:20:15] info: [auth:k94h4d] Authenticated user 426123e8-002e-4693-8e05-97861194aa62
+
+      at Console.log (node_modules/winston/lib/winston/transports/console.js:87:23)
+
+    console.log
+      [2026-01-29 05:20:15] info: [auth:sy3pv] Starting auth for POST /
+
+      at Console.log (node_modules/winston/lib/winston/transports/console.js:87:23)
+
+    console.log
+      [2026-01-29 05:20:15] info: [auth:sy3pv] Token from cookie: false
+
+      at Console.log (node_modules/winston/lib/winston/transports/console.js:87:23)
+
+    console.log
+      [2026-01-29 05:20:15] info: [auth:sy3pv] Token from header: true
+
+      at Console.log (node_modules/winston/lib/winston/transports/console.js:87:23)
+
+    console.log
+      [2026-01-29 05:20:15] info: [auth:sy3pv] Authenticated user 426123e8-002e-4693-8e05-97861194aa62
+
+      at Console.log (node_modules/winston/lib/winston/transports/console.js:87:23)
+
+    console.log
+      [2026-01-29 05:20:15] info: [groomAssignmentController] Creating assignment: groom 76593 -> horse 152572
+
+      at Console.log (node_modules/winston/lib/winston/transports/console.js:87:23)
+
+    console.log
+      [2026-01-29 05:20:15] error: [groomAssignmentService] Error creating assignment: Groom is already assigned to this horse
+
+      at Console.log (node_modules/winston/lib/winston/transports/console.js:59:25)
+
+    console.log
+      [2026-01-29 05:20:15] error: [groomAssignmentController] Error creating assignment: Groom is already assigned to this horse
+
+      at Console.log (node_modules/winston/lib/winston/transports/console.js:59:25)
+
+    console.log
+      [2026-01-29 05:20:15] info: [POST] /api/groom-assignments - 400
+
+      at Console.log (node_modules/winston/lib/winston/transports/console.js:87:23)
+
+    console.log
+      [2026-01-29 05:20:15] info: [POST] /api/groom-assignments
+
+      at Console.log (node_modules/winston/lib/winston/transports/console.js:87:23)
+
+    console.log
+      [2026-01-29 05:20:15] info: [auth:9wt7ii] Starting auth for POST /groom-assignments
+
+      at Console.log (node_modules/winston/lib/winston/transports/console.js:87:23)
+
+    console.log
+      [2026-01-29 05:20:15] info: [auth:9wt7ii] Token from cookie: false
+
+      at Console.log (node_modules/winston/lib/winston/transports/console.js:87:23)
+
+    console.log
+      [2026-01-29 05:20:15] info: [auth:9wt7ii] Token from header: true
+
+      at Console.log (node_modules/winston/lib/winston/transports/console.js:87:23)
+
+    console.log
+      [2026-01-29 05:20:15] info: [auth:9wt7ii] Authenticated user 426123e8-002e-4693-8e05-97861194aa62
+
+      at Console.log (node_modules/winston/lib/winston/transports/console.js:87:23)
+
+    console.log
+      [2026-01-29 05:20:15] info: [auth:qavlul] Starting auth for POST /
+
+      at Console.log (node_modules/winston/lib/winston/transports/console.js:87:23)
+
+    console.log
+      [2026-01-29 05:20:15] info: [auth:qavlul] Token from cookie: false
+
+      at Console.log (node_modules/winston/lib/winston/transports/console.js:87:23)
+
+    console.log
+      [2026-01-29 05:20:15] info: [auth:qavlul] Token from header: true
+
+      at Console.log (node_modules/winston/lib/winston/transports/console.js:87:23)
+
+    console.log
+      [2026-01-29 05:20:15] info: [auth:qavlul] Authenticated user 426123e8-002e-4693-8e05-97861194aa62
+
+      at Console.log (node_modules/winston/lib/winston/transports/console.js:87:23)
+
+    console.log
+      [2026-01-29 05:20:15] warn: [groomAssignmentRoutes] Validation errors: [{"type":"field","msg":"Horse ID must be a positive integer","path":"horseId","location":"body"}]
+
+      at Console.log (node_modules/winston/lib/winston/transports/console.js:87:23)
+
+    console.log
+      [2026-01-29 05:20:15] info: [POST] /api/groom-assignments - 400
+
+      at Console.log (node_modules/winston/lib/winston/transports/console.js:87:23)
+
+    console.log
+      [2026-01-29 05:20:15] info: [POST] /api/groom-assignments
+
+      at Console.log (node_modules/winston/lib/winston/transports/console.js:87:23)
+
+    console.log
+      [2026-01-29 05:20:15] info: [auth:tw5r89] Starting auth for POST /groom-assignments
+
+      at Console.log (node_modules/winston/lib/winston/transports/console.js:87:23)
+
+    console.log
+      [2026-01-29 05:20:15] info: [auth:tw5r89] Token from cookie: false
+
+      at Console.log (node_modules/winston/lib/winston/transports/console.js:87:23)
+
+    console.log
+      [2026-01-29 05:20:15] info: [auth:tw5r89] Token from header: true
+
+      at Console.log (node_modules/winston/lib/winston/transports/console.js:87:23)
+
+    console.log
+      [2026-01-29 05:20:15] info: [auth:tw5r89] Authenticated user 426123e8-002e-4693-8e05-97861194aa62
+
+      at Console.log (node_modules/winston/lib/winston/transports/console.js:87:23)
+
+    console.log
+      [2026-01-29 05:20:15] info: [auth:iab6to] Starting auth for POST /
+
+      at Console.log (node_modules/winston/lib/winston/transports/console.js:87:23)
+
+    console.log
+      [2026-01-29 05:20:15] info: [auth:iab6to] Token from cookie: false
+
+      at Console.log (node_modules/winston/lib/winston/transports/console.js:87:23)
+
+    console.log
+      [2026-01-29 05:20:15] info: [auth:iab6to] Token from header: true
+
+      at Console.log (node_modules/winston/lib/winston/transports/console.js:87:23)
+
+    console.log
+      [2026-01-29 05:20:15] info: [auth:iab6to] Authenticated user 426123e8-002e-4693-8e05-97861194aa62
+
+      at Console.log (node_modules/winston/lib/winston/transports/console.js:87:23)
+
+    console.log
+      [2026-01-29 05:20:15] info: [groomAssignmentController] Creating assignment: groom 76593 -> horse 152574
+
+      at Console.log (node_modules/winston/lib/winston/transports/console.js:87:23)
+
+    console.log
+      [2026-01-29 05:20:15] error: [groomAssignmentService] Error creating assignment: You do not own this horse
+
+      at Console.log (node_modules/winston/lib/winston/transports/console.js:59:25)
+
+    console.log
+      [2026-01-29 05:20:15] error: [groomAssignmentController] Error creating assignment: You do not own this horse
+
+      at Console.log (node_modules/winston/lib/winston/transports/console.js:59:25)
+
+    console.log
+      [2026-01-29 05:20:15] info: [POST] /api/groom-assignments - 400
+
+      at Console.log (node_modules/winston/lib/winston/transports/console.js:87:23)
+
+    console.log
+      [2026-01-29 05:20:15] info: [GET] /api/groom-assignments
+
+      at Console.log (node_modules/winston/lib/winston/transports/console.js:87:23)
+
+    console.log
+      [2026-01-29 05:20:15] info: [auth:shk0rm] Starting auth for GET /groom-assignments
+
+      at Console.log (node_modules/winston/lib/winston/transports/console.js:87:23)
+
+    console.log
+      [2026-01-29 05:20:15] info: [auth:shk0rm] Token from cookie: false
+
+      at Console.log (node_modules/winston/lib/winston/transports/console.js:87:23)
+
+    console.log
+      [2026-01-29 05:20:15] info: [auth:shk0rm] Token from header: true
+
+      at Console.log (node_modules/winston/lib/winston/transports/console.js:87:23)
+
+    console.log
+      [2026-01-29 05:20:15] info: [auth:shk0rm] Authenticated user 426123e8-002e-4693-8e05-97861194aa62
+
+      at Console.log (node_modules/winston/lib/winston/transports/console.js:87:23)
+
+    console.log
+      [2026-01-29 05:20:15] info: [auth:1ppcjp] Starting auth for GET /
+
+      at Console.log (node_modules/winston/lib/winston/transports/console.js:87:23)
+
+    console.log
+      [2026-01-29 05:20:15] info: [auth:1ppcjp] Token from cookie: false
+
+      at Console.log (node_modules/winston/lib/winston/transports/console.js:87:23)
+
+    console.log
+      [2026-01-29 05:20:15] info: [auth:1ppcjp] Token from header: true
+
+      at Console.log (node_modules/winston/lib/winston/transports/console.js:87:23)
+
+    console.log
+      [2026-01-29 05:20:15] info: [auth:1ppcjp] Authenticated user 426123e8-002e-4693-8e05-97861194aa62
+
+      at Console.log (node_modules/winston/lib/winston/transports/console.js:87:23)
+
+    console.log
+      [2026-01-29 05:20:15] info: [groomAssignmentController] Getting assignments for user 426123e8-002e-4693-8e05-97861194aa62
+
+      at Console.log (node_modules/winston/lib/winston/transports/console.js:87:23)
+
+    console.log
+      [2026-01-29 05:20:15] info: [GET] /api/groom-assignments - 200
+
+      at Console.log (node_modules/winston/lib/winston/transports/console.js:87:23)
+
+    console.log
+      [2026-01-29 05:20:15] info: [GET] /api/groom-assignments?groomId=76593
+
+      at Console.log (node_modules/winston/lib/winston/transports/console.js:87:23)
+
+    console.log
+      [2026-01-29 05:20:15] info: [auth:d80u6k] Starting auth for GET /groom-assignments
+
+      at Console.log (node_modules/winston/lib/winston/transports/console.js:87:23)
+
+    console.log
+      [2026-01-29 05:20:15] info: [auth:d80u6k] Token from cookie: false
+
+      at Console.log (node_modules/winston/lib/winston/transports/console.js:87:23)
+
+    console.log
+      [2026-01-29 05:20:16] info: [auth:d80u6k] Token from header: true
+
+      at Console.log (node_modules/winston/lib/winston/transports/console.js:87:23)
+
+    console.log
+      [2026-01-29 05:20:16] info: [auth:d80u6k] Authenticated user 426123e8-002e-4693-8e05-97861194aa62
+
+      at Console.log (node_modules/winston/lib/winston/transports/console.js:87:23)
+
+    console.log
+      [2026-01-29 05:20:16] info: [auth:ylzpc9] Starting auth for GET /
+
+      at Console.log (node_modules/winston/lib/winston/transports/console.js:87:23)
+
+    console.log
+      [2026-01-29 05:20:16] info: [auth:ylzpc9] Token from cookie: false
+
+      at Console.log (node_modules/winston/lib/winston/transports/console.js:87:23)
+
+    console.log
+      [2026-01-29 05:20:16] info: [auth:ylzpc9] Token from header: true
+
+      at Console.log (node_modules/winston/lib/winston/transports/console.js:87:23)
+
+    console.log
+      [2026-01-29 05:20:16] info: [auth:ylzpc9] Authenticated user 426123e8-002e-4693-8e05-97861194aa62
+
+      at Console.log (node_modules/winston/lib/winston/transports/console.js:87:23)
+
+    console.log
+      [2026-01-29 05:20:16] info: [groomAssignmentController] Getting assignments for user 426123e8-002e-4693-8e05-97861194aa62
+
+      at Console.log (node_modules/winston/lib/winston/transports/console.js:87:23)
+
+    console.log
+      [2026-01-29 05:20:16] info: [GET] /api/groom-assignments?groomId=76593 - 200
+
+      at Console.log (node_modules/winston/lib/winston/transports/console.js:87:23)
+
+    console.log
+      [2026-01-29 05:20:16] info: [GET] /api/groom-assignments/dashboard
+
+      at Console.log (node_modules/winston/lib/winston/transports/console.js:87:23)
+
+    console.log
+      [2026-01-29 05:20:16] info: [auth:ry2k0d] Starting auth for GET /groom-assignments/dashboard
+
+      at Console.log (node_modules/winston/lib/winston/transports/console.js:87:23)
+
+    console.log
+      [2026-01-29 05:20:16] info: [auth:ry2k0d] Token from cookie: false
+
+      at Console.log (node_modules/winston/lib/winston/transports/console.js:87:23)
+
+    console.log
+      [2026-01-29 05:20:16] info: [auth:ry2k0d] Token from header: true
+
+      at Console.log (node_modules/winston/lib/winston/transports/console.js:87:23)
+
+    console.log
+      [2026-01-29 05:20:16] info: [auth:ry2k0d] Authenticated user 426123e8-002e-4693-8e05-97861194aa62
+
+      at Console.log (node_modules/winston/lib/winston/transports/console.js:87:23)
+
+    console.log
+      [2026-01-29 05:20:16] info: [auth:7srgbf] Starting auth for GET /dashboard
+
+      at Console.log (node_modules/winston/lib/winston/transports/console.js:87:23)
+
+    console.log
+      [2026-01-29 05:20:16] info: [auth:7srgbf] Token from cookie: false
+
+      at Console.log (node_modules/winston/lib/winston/transports/console.js:87:23)
+
+    console.log
+      [2026-01-29 05:20:16] info: [auth:7srgbf] Token from header: true
+
+      at Console.log (node_modules/winston/lib/winston/transports/console.js:87:23)
+
+    console.log
+      [2026-01-29 05:20:16] info: [auth:7srgbf] Authenticated user 426123e8-002e-4693-8e05-97861194aa62
+
+      at Console.log (node_modules/winston/lib/winston/transports/console.js:87:23)
+
+    console.log
+      [2026-01-29 05:20:16] info: [groomAssignmentController] Getting assignment dashboard for user 426123e8-002e-4693-8e05-97861194aa62
+
+      at Console.log (node_modules/winston/lib/winston/transports/console.js:87:23)
+
+    console.log
+      [2026-01-29 05:20:16] info: [GET] /api/groom-assignments/dashboard - 200
+
+      at Console.log (node_modules/winston/lib/winston/transports/console.js:87:23)
+
+    console.log
+      [2026-01-29 05:20:16] info: [GET] /api/groom-assignments/groom/76593/limits
+
+      at Console.log (node_modules/winston/lib/winston/transports/console.js:87:23)
+
+    console.log
+      [2026-01-29 05:20:16] info: [auth:i33drk] Starting auth for GET /groom-assignments/groom/76593/limits
+
+      at Console.log (node_modules/winston/lib/winston/transports/console.js:87:23)
+
+    console.log
+      [2026-01-29 05:20:16] info: [auth:i33drk] Token from cookie: false
+
+      at Console.log (node_modules/winston/lib/winston/transports/console.js:87:23)
+
+    console.log
+      [2026-01-29 05:20:16] info: [auth:i33drk] Token from header: true
+
+      at Console.log (node_modules/winston/lib/winston/transports/console.js:87:23)
+
+    console.log
+      [2026-01-29 05:20:16] info: [auth:i33drk] Authenticated user 426123e8-002e-4693-8e05-97861194aa62
+
+      at Console.log (node_modules/winston/lib/winston/transports/console.js:87:23)
+
+    console.log
+      [2026-01-29 05:20:16] info: [auth:uzvhio] Starting auth for GET /groom/76593/limits
+
+      at Console.log (node_modules/winston/lib/winston/transports/console.js:87:23)
+
+    console.log
+      [2026-01-29 05:20:16] info: [auth:uzvhio] Token from cookie: false
+
+      at Console.log (node_modules/winston/lib/winston/transports/console.js:87:23)
+
+    console.log
+      [2026-01-29 05:20:16] info: [auth:uzvhio] Token from header: true
+
+      at Console.log (node_modules/winston/lib/winston/transports/console.js:87:23)
+
+    console.log
+      [2026-01-29 05:20:16] info: [auth:uzvhio] Authenticated user 426123e8-002e-4693-8e05-97861194aa62
+
+      at Console.log (node_modules/winston/lib/winston/transports/console.js:87:23)
+
+    console.log
+      [2026-01-29 05:20:16] info: [ownership] Validated ownership: user 426123e8-002e-4693-8e05-97861194aa62 owns groom 76593
+
+      at Console.log (node_modules/winston/lib/winston/transports/console.js:87:23)
+
+    console.log
+      [2026-01-29 05:20:16] info: [groomAssignmentController] Getting limits for groom 76593
+
+      at Console.log (node_modules/winston/lib/winston/transports/console.js:87:23)
+
+    console.log
+      [2026-01-29 05:20:16] info: [GET] /api/groom-assignments/groom/76593/limits - 200
+
+      at Console.log (node_modules/winston/lib/winston/transports/console.js:87:23)
+
+    console.log
+      [2026-01-29 05:20:16] info: [POST] /api/groom-assignments
+
+      at Console.log (node_modules/winston/lib/winston/transports/console.js:87:23)
+
+    console.log
+      [2026-01-29 05:20:16] info: [auth:562lkh] Starting auth for POST /groom-assignments
+
+      at Console.log (node_modules/winston/lib/winston/transports/console.js:87:23)
+
+    console.log
+      [2026-01-29 05:20:16] info: [auth:562lkh] Token from cookie: false
+
+      at Console.log (node_modules/winston/lib/winston/transports/console.js:87:23)
+
+    console.log
+      [2026-01-29 05:20:16] info: [auth:562lkh] Token from header: true
+
+      at Console.log (node_modules/winston/lib/winston/transports/console.js:87:23)
+
+    console.log
+      [2026-01-29 05:20:16] info: [auth:562lkh] Authenticated user 426123e8-002e-4693-8e05-97861194aa62
+
+      at Console.log (node_modules/winston/lib/winston/transports/console.js:87:23)
+
+    console.log
+      [2026-01-29 05:20:16] info: [auth:udwdou] Starting auth for POST /
+
+      at Console.log (node_modules/winston/lib/winston/transports/console.js:87:23)
+
+    console.log
+      [2026-01-29 05:20:16] info: [auth:udwdou] Token from cookie: false
+
+      at Console.log (node_modules/winston/lib/winston/transports/console.js:87:23)
+
+    console.log
+      [2026-01-29 05:20:16] info: [auth:udwdou] Token from header: true
+
+      at Console.log (node_modules/winston/lib/winston/transports/console.js:87:23)
+
+    console.log
+      [2026-01-29 05:20:16] info: [auth:udwdou] Authenticated user 426123e8-002e-4693-8e05-97861194aa62
+
+      at Console.log (node_modules/winston/lib/winston/transports/console.js:87:23)
+
+    console.log
+      [2026-01-29 05:20:16] info: [groomAssignmentController] Creating assignment: groom 76593 -> horse 152575
+
+      at Console.log (node_modules/winston/lib/winston/transports/console.js:87:23)
+
+    console.log
+      [2026-01-29 05:20:16] info: [groomAssignmentService] Created assignment: Assignment Test Groom 1 -> Limit Test Horse 1
+
+      at Console.log (node_modules/winston/lib/winston/transports/console.js:87:23)
+
+    console.log
+      [2026-01-29 05:20:16] info: [POST] /api/groom-assignments - 201
+
+      at Console.log (node_modules/winston/lib/winston/transports/console.js:87:23)
+
+    console.log
+      [2026-01-29 05:20:16] info: [POST] /api/groom-assignments
+
+      at Console.log (node_modules/winston/lib/winston/transports/console.js:87:23)
+
+    console.log
+      [2026-01-29 05:20:16] info: [auth:bqlar9] Starting auth for POST /groom-assignments
+
+      at Console.log (node_modules/winston/lib/winston/transports/console.js:87:23)
+
+    console.log
+      [2026-01-29 05:20:16] info: [auth:bqlar9] Token from cookie: false
+
+      at Console.log (node_modules/winston/lib/winston/transports/console.js:87:23)
+
+    console.log
+      [2026-01-29 05:20:16] info: [auth:bqlar9] Token from header: true
+
+      at Console.log (node_modules/winston/lib/winston/transports/console.js:87:23)
+
+    console.log
+      [2026-01-29 05:20:16] info: [auth:bqlar9] Authenticated user 426123e8-002e-4693-8e05-97861194aa62
+
+      at Console.log (node_modules/winston/lib/winston/transports/console.js:87:23)
+
+    console.log
+      [2026-01-29 05:20:16] info: [auth:b87wy] Starting auth for POST /
+
+      at Console.log (node_modules/winston/lib/winston/transports/console.js:87:23)
+
+    console.log
+      [2026-01-29 05:20:16] info: [auth:b87wy] Token from cookie: false
+
+      at Console.log (node_modules/winston/lib/winston/transports/console.js:87:23)
+
+    console.log
+      [2026-01-29 05:20:16] info: [auth:b87wy] Token from header: true
+
+      at Console.log (node_modules/winston/lib/winston/transports/console.js:87:23)
+
+    console.log
+      [2026-01-29 05:20:16] info: [auth:b87wy] Authenticated user 426123e8-002e-4693-8e05-97861194aa62
+
+      at Console.log (node_modules/winston/lib/winston/transports/console.js:87:23)
+
+    console.log
+      [2026-01-29 05:20:16] info: [groomAssignmentController] Creating assignment: groom 76593 -> horse 152576
+
+      at Console.log (node_modules/winston/lib/winston/transports/console.js:87:23)
+
+    console.log
+      [2026-01-29 05:20:16] error: [groomAssignmentService] Error creating assignment: Groom Assignment Test Groom 1 has reached maximum assignments (3)
+
+      at Console.log (node_modules/winston/lib/winston/transports/console.js:59:25)
+
+    console.log
+      [2026-01-29 05:20:16] error: [groomAssignmentController] Error creating assignment: Groom Assignment Test Groom 1 has reached maximum assignments (3)
+
+      at Console.log (node_modules/winston/lib/winston/transports/console.js:59:25)
+
+    console.log
+      [2026-01-29 05:20:16] info: [POST] /api/groom-assignments - 400
+
+      at Console.log (node_modules/winston/lib/winston/transports/console.js:87:23)
+
+    console.log
+      [2026-01-29 05:20:16] info: [POST] /api/groom-assignments
+
+      at Console.log (node_modules/winston/lib/winston/transports/console.js:87:23)
+
+    console.log
+      [2026-01-29 05:20:16] info: [auth:8ea43p] Starting auth for POST /groom-assignments
+
+      at Console.log (node_modules/winston/lib/winston/transports/console.js:87:23)
+
+    console.log
+      [2026-01-29 05:20:16] info: [auth:8ea43p] Token from cookie: false
+
+      at Console.log (node_modules/winston/lib/winston/transports/console.js:87:23)
+
+    console.log
+      [2026-01-29 05:20:16] info: [auth:8ea43p] Token from header: true
+
+      at Console.log (node_modules/winston/lib/winston/transports/console.js:87:23)
+
+    console.log
+      [2026-01-29 05:20:16] info: [auth:8ea43p] Authenticated user 426123e8-002e-4693-8e05-97861194aa62
+
+      at Console.log (node_modules/winston/lib/winston/transports/console.js:87:23)
+
+    console.log
+      [2026-01-29 05:20:16] info: [auth:lttf0k] Starting auth for POST /
+
+      at Console.log (node_modules/winston/lib/winston/transports/console.js:87:23)
+
+    console.log
+      [2026-01-29 05:20:16] info: [auth:lttf0k] Token from cookie: false
+
+      at Console.log (node_modules/winston/lib/winston/transports/console.js:87:23)
+
+    console.log
+      [2026-01-29 05:20:16] info: [auth:lttf0k] Token from header: true
+
+      at Console.log (node_modules/winston/lib/winston/transports/console.js:87:23)
+
+    console.log
+      [2026-01-29 05:20:16] info: [auth:lttf0k] Authenticated user 426123e8-002e-4693-8e05-97861194aa62
+
+      at Console.log (node_modules/winston/lib/winston/transports/console.js:87:23)
+
+    console.log
+      [2026-01-29 05:20:16] info: [groomAssignmentController] Creating assignment: groom 76593 -> horse 152577
+
+      at Console.log (node_modules/winston/lib/winston/transports/console.js:87:23)
+
+    console.log
+      [2026-01-29 05:20:16] error: [groomAssignmentService] Error creating assignment: Groom Assignment Test Groom 1 has reached maximum assignments (3)
+
+      at Console.log (node_modules/winston/lib/winston/transports/console.js:59:25)
+
+    console.log
+      [2026-01-29 05:20:16] error: [groomAssignmentController] Error creating assignment: Groom Assignment Test Groom 1 has reached maximum assignments (3)
+
+      at Console.log (node_modules/winston/lib/winston/transports/console.js:59:25)
+
+    console.log
+      [2026-01-29 05:20:16] info: [POST] /api/groom-assignments - 400
+
+      at Console.log (node_modules/winston/lib/winston/transports/console.js:87:23)
+
+    console.log
+      [2026-01-29 05:20:16] info: [POST] /api/groom-assignments
+
+      at Console.log (node_modules/winston/lib/winston/transports/console.js:87:23)
+
+    console.log
+      [2026-01-29 05:20:16] info: [auth:i88k6] Starting auth for POST /groom-assignments
+
+      at Console.log (node_modules/winston/lib/winston/transports/console.js:87:23)
+
+    console.log
+      [2026-01-29 05:20:16] info: [auth:i88k6] Token from cookie: false
+
+      at Console.log (node_modules/winston/lib/winston/transports/console.js:87:23)
+
+    console.log
+      [2026-01-29 05:20:16] info: [auth:i88k6] Token from header: true
+
+      at Console.log (node_modules/winston/lib/winston/transports/console.js:87:23)
+
+    console.log
+      [2026-01-29 05:20:16] info: [auth:i88k6] Authenticated user 426123e8-002e-4693-8e05-97861194aa62
+
+      at Console.log (node_modules/winston/lib/winston/transports/console.js:87:23)
+
+    console.log
+      [2026-01-29 05:20:16] info: [auth:38nuv] Starting auth for POST /
+
+      at Console.log (node_modules/winston/lib/winston/transports/console.js:87:23)
+
+    console.log
+      [2026-01-29 05:20:16] info: [auth:38nuv] Token from cookie: false
+
+      at Console.log (node_modules/winston/lib/winston/transports/console.js:87:23)
+
+    console.log
+      [2026-01-29 05:20:16] info: [auth:38nuv] Token from header: true
+
+      at Console.log (node_modules/winston/lib/winston/transports/console.js:87:23)
+
+    console.log
+      [2026-01-29 05:20:16] info: [auth:38nuv] Authenticated user 426123e8-002e-4693-8e05-97861194aa62
+
+      at Console.log (node_modules/winston/lib/winston/transports/console.js:87:23)
+
+    console.log
+      [2026-01-29 05:20:16] info: [groomAssignmentController] Creating assignment: groom 76593 -> horse 152578
+
+      at Console.log (node_modules/winston/lib/winston/transports/console.js:87:23)
+
+    console.log
+      [2026-01-29 05:20:16] error: [groomAssignmentService] Error creating assignment: Groom Assignment Test Groom 1 has reached maximum assignments (3)
+
+      at Console.log (node_modules/winston/lib/winston/transports/console.js:59:25)
+
+    console.log
+      [2026-01-29 05:20:16] error: [groomAssignmentController] Error creating assignment: Groom Assignment Test Groom 1 has reached maximum assignments (3)
+
+      at Console.log (node_modules/winston/lib/winston/transports/console.js:59:25)
+
+    console.log
+      [2026-01-29 05:20:16] info: [POST] /api/groom-assignments - 400
+
+      at Console.log (node_modules/winston/lib/winston/transports/console.js:87:23)
+
+    console.log
+      [2026-01-29 05:20:16] info: [POST] /api/groom-assignments
+
+      at Console.log (node_modules/winston/lib/winston/transports/console.js:87:23)
+
+    console.log
+      [2026-01-29 05:20:16] info: [auth:tnx29z] Starting auth for POST /groom-assignments
+
+      at Console.log (node_modules/winston/lib/winston/transports/console.js:87:23)
+
+    console.log
+      [2026-01-29 05:20:16] info: [auth:tnx29z] Token from cookie: false
+
+      at Console.log (node_modules/winston/lib/winston/transports/console.js:87:23)
+
+    console.log
+      [2026-01-29 05:20:16] info: [auth:tnx29z] Token from header: true
+
+      at Console.log (node_modules/winston/lib/winston/transports/console.js:87:23)
+
+    console.log
+      [2026-01-29 05:20:16] info: [auth:tnx29z] Authenticated user 426123e8-002e-4693-8e05-97861194aa62
+
+      at Console.log (node_modules/winston/lib/winston/transports/console.js:87:23)
+
+    console.log
+      [2026-01-29 05:20:16] info: [auth:4e0qeq] Starting auth for POST /
+
+      at Console.log (node_modules/winston/lib/winston/transports/console.js:87:23)
+
+    console.log
+      [2026-01-29 05:20:16] info: [auth:4e0qeq] Token from cookie: false
+
+      at Console.log (node_modules/winston/lib/winston/transports/console.js:87:23)
+
+    console.log
+      [2026-01-29 05:20:16] info: [auth:4e0qeq] Token from header: true
+
+      at Console.log (node_modules/winston/lib/winston/transports/console.js:87:23)
+
+    console.log
+      [2026-01-29 05:20:16] info: [auth:4e0qeq] Authenticated user 426123e8-002e-4693-8e05-97861194aa62
+
+      at Console.log (node_modules/winston/lib/winston/transports/console.js:87:23)
+
+    console.log
+      [2026-01-29 05:20:16] info: [groomAssignmentController] Creating assignment: groom 76593 -> horse 152579
+
+      at Console.log (node_modules/winston/lib/winston/transports/console.js:87:23)
+
+    console.log
+      [2026-01-29 05:20:16] error: [groomAssignmentService] Error creating assignment: Groom Assignment Test Groom 1 has reached maximum assignments (3)
+
+      at Console.log (node_modules/winston/lib/winston/transports/console.js:59:25)
+
+    console.log
+      [2026-01-29 05:20:16] error: [groomAssignmentController] Error creating assignment: Groom Assignment Test Groom 1 has reached maximum assignments (3)
+
+      at Console.log (node_modules/winston/lib/winston/transports/console.js:59:25)
+
+    console.log
+      [2026-01-29 05:20:16] info: [POST] /api/groom-assignments - 400
+
+      at Console.log (node_modules/winston/lib/winston/transports/console.js:87:23)
+
+    console.log
+      [2026-01-29 05:20:16] info: [GET] /api/groom-assignments/salary-costs
+
+      at Console.log (node_modules/winston/lib/winston/transports/console.js:87:23)
+
+    console.log
+      [2026-01-29 05:20:16] info: [auth:fds3d] Starting auth for GET /groom-assignments/salary-costs
+
+      at Console.log (node_modules/winston/lib/winston/transports/console.js:87:23)
+
+    console.log
+      [2026-01-29 05:20:16] info: [auth:fds3d] Token from cookie: false
+
+      at Console.log (node_modules/winston/lib/winston/transports/console.js:87:23)
+
+    console.log
+      [2026-01-29 05:20:16] info: [auth:fds3d] Token from header: true
+
+      at Console.log (node_modules/winston/lib/winston/transports/console.js:87:23)
+
+    console.log
+      [2026-01-29 05:20:16] info: [auth:fds3d] Authenticated user 426123e8-002e-4693-8e05-97861194aa62
+
+      at Console.log (node_modules/winston/lib/winston/transports/console.js:87:23)
+
+    console.log
+      [2026-01-29 05:20:16] info: [auth:z4xds] Starting auth for GET /salary-costs
+
+      at Console.log (node_modules/winston/lib/winston/transports/console.js:87:23)
+
+    console.log
+      [2026-01-29 05:20:16] info: [auth:z4xds] Token from cookie: false
+
+      at Console.log (node_modules/winston/lib/winston/transports/console.js:87:23)
+
+    console.log
+      [2026-01-29 05:20:16] info: [auth:z4xds] Token from header: true
+
+      at Console.log (node_modules/winston/lib/winston/transports/console.js:87:23)
+
+    console.log
+      [2026-01-29 05:20:16] info: [auth:z4xds] Authenticated user 426123e8-002e-4693-8e05-97861194aa62
+
+      at Console.log (node_modules/winston/lib/winston/transports/console.js:87:23)
+
+    console.log
+      [2026-01-29 05:20:16] info: [groomAssignmentController] Calculating salary costs for user 426123e8-002e-4693-8e05-97861194aa62
+
+      at Console.log (node_modules/winston/lib/winston/transports/console.js:87:23)
+
+    console.log
+      [2026-01-29 05:20:16] info: [GET] /api/groom-assignments/salary-costs - 200
+
+      at Console.log (node_modules/winston/lib/winston/transports/console.js:87:23)
+
+    console.log
+      [2026-01-29 05:20:16] info: [POST] /api/groom-assignments/validate
+
+      at Console.log (node_modules/winston/lib/winston/transports/console.js:87:23)
+
+    console.log
+      [2026-01-29 05:20:16] info: [auth:qj86ra] Starting auth for POST /groom-assignments/validate
+
+      at Console.log (node_modules/winston/lib/winston/transports/console.js:87:23)
+
+    console.log
+      [2026-01-29 05:20:16] info: [auth:qj86ra] Token from cookie: false
+
+      at Console.log (node_modules/winston/lib/winston/transports/console.js:87:23)
+
+    console.log
+      [2026-01-29 05:20:16] info: [auth:qj86ra] Token from header: true
+
+      at Console.log (node_modules/winston/lib/winston/transports/console.js:87:23)
+
+    console.log
+      [2026-01-29 05:20:16] info: [auth:qj86ra] Authenticated user 426123e8-002e-4693-8e05-97861194aa62
+
+      at Console.log (node_modules/winston/lib/winston/transports/console.js:87:23)
+
+    console.log
+      [2026-01-29 05:20:16] info: [auth:26ok0h] Starting auth for POST /validate
+
+      at Console.log (node_modules/winston/lib/winston/transports/console.js:87:23)
+
+    console.log
+      [2026-01-29 05:20:16] info: [auth:26ok0h] Token from cookie: false
+
+      at Console.log (node_modules/winston/lib/winston/transports/console.js:87:23)
+
+    console.log
+      [2026-01-29 05:20:16] info: [auth:26ok0h] Token from header: true
+
+      at Console.log (node_modules/winston/lib/winston/transports/console.js:87:23)
+
+    console.log
+      [2026-01-29 05:20:16] info: [auth:26ok0h] Authenticated user 426123e8-002e-4693-8e05-97861194aa62
+
+      at Console.log (node_modules/winston/lib/winston/transports/console.js:87:23)
+
+    console.log
+      [2026-01-29 05:20:16] info: [groomAssignmentController] Validating assignment: groom 76594 -> horse 152572
+
+      at Console.log (node_modules/winston/lib/winston/transports/console.js:87:23)
+
+    console.log
+      [2026-01-29 05:20:16] info: [POST] /api/groom-assignments/validate - 200
+
+      at Console.log (node_modules/winston/lib/winston/transports/console.js:87:23)
+
+    console.log
+      [2026-01-29 05:20:16] info: [GET] /api/groom-assignments
+
+      at Console.log (node_modules/winston/lib/winston/transports/console.js:87:23)
+
+    console.log
+      [2026-01-29 05:20:16] info: [auth:bdcruj] Starting auth for GET /groom-assignments
+
+      at Console.log (node_modules/winston/lib/winston/transports/console.js:87:23)
+
+    console.log
+      [2026-01-29 05:20:16] info: [auth:bdcruj] Token from cookie: false
+
+      at Console.log (node_modules/winston/lib/winston/transports/console.js:87:23)
+
+    console.log
+      [2026-01-29 05:20:16] info: [auth:bdcruj] Token from header: true
+
+      at Console.log (node_modules/winston/lib/winston/transports/console.js:87:23)
+
+    console.log
+      [2026-01-29 05:20:16] info: [auth:bdcruj] Authenticated user 426123e8-002e-4693-8e05-97861194aa62
+
+      at Console.log (node_modules/winston/lib/winston/transports/console.js:87:23)
+
+    console.log
+      [2026-01-29 05:20:16] info: [auth:2oql2h] Starting auth for GET /
+
+      at Console.log (node_modules/winston/lib/winston/transports/console.js:87:23)
+
+    console.log
+      [2026-01-29 05:20:16] info: [auth:2oql2h] Token from cookie: false
+
+      at Console.log (node_modules/winston/lib/winston/transports/console.js:87:23)
+
+    console.log
+      [2026-01-29 05:20:16] info: [auth:2oql2h] Token from header: true
+
+      at Console.log (node_modules/winston/lib/winston/transports/console.js:87:23)
+
+    console.log
+      [2026-01-29 05:20:16] info: [auth:2oql2h] Authenticated user 426123e8-002e-4693-8e05-97861194aa62
+
+      at Console.log (node_modules/winston/lib/winston/transports/console.js:87:23)
+
+    console.log
+      [2026-01-29 05:20:16] info: [groomAssignmentController] Getting assignments for user 426123e8-002e-4693-8e05-97861194aa62
+
+      at Console.log (node_modules/winston/lib/winston/transports/console.js:87:23)
+
+    console.log
+      [2026-01-29 05:20:16] info: [GET] /api/groom-assignments - 200
+
+      at Console.log (node_modules/winston/lib/winston/transports/console.js:87:23)
+
+    console.log
+      [2026-01-29 05:20:16] info: [DELETE] /api/groom-assignments/11499
+
+      at Console.log (node_modules/winston/lib/winston/transports/console.js:87:23)
+
+    console.log
+      [2026-01-29 05:20:16] info: [auth:3au45k] Starting auth for DELETE /groom-assignments/11499
+
+      at Console.log (node_modules/winston/lib/winston/transports/console.js:87:23)
+
+    console.log
+      [2026-01-29 05:20:16] info: [auth:3au45k] Token from cookie: false
+
+      at Console.log (node_modules/winston/lib/winston/transports/console.js:87:23)
+
+    console.log
+      [2026-01-29 05:20:16] info: [auth:3au45k] Token from header: true
+
+      at Console.log (node_modules/winston/lib/winston/transports/console.js:87:23)
+
+    console.log
+      [2026-01-29 05:20:16] info: [auth:3au45k] Authenticated user 426123e8-002e-4693-8e05-97861194aa62
+
+      at Console.log (node_modules/winston/lib/winston/transports/console.js:87:23)
+
+    console.log
+      [2026-01-29 05:20:16] info: [auth:yzq0w] Starting auth for DELETE /11499
+
+      at Console.log (node_modules/winston/lib/winston/transports/console.js:87:23)
+
+    console.log
+      [2026-01-29 05:20:16] info: [auth:yzq0w] Token from cookie: false
+
+      at Console.log (node_modules/winston/lib/winston/transports/console.js:87:23)
+
+    console.log
+      [2026-01-29 05:20:16] info: [auth:yzq0w] Token from header: true
+
+      at Console.log (node_modules/winston/lib/winston/transports/console.js:87:23)
+
+    console.log
+      [2026-01-29 05:20:16] info: [auth:yzq0w] Authenticated user 426123e8-002e-4693-8e05-97861194aa62
+
+      at Console.log (node_modules/winston/lib/winston/transports/console.js:87:23)
+
+    console.log
+      [2026-01-29 05:20:16] info: [ownership] Validated ownership: user 426123e8-002e-4693-8e05-97861194aa62 owns groom-assignment 11499
+
+      at Console.log (node_modules/winston/lib/winston/transports/console.js:87:23)
+
+    console.log
+      [2026-01-29 05:20:16] info: [groomAssignmentController] Removing assignment 11499
+
+      at Console.log (node_modules/winston/lib/winston/transports/console.js:87:23)
+
+    console.log
+      [2026-01-29 05:20:16] info: [groomAssignmentService] Removed assignment: Assignment Test Groom 1 -> Assignment Test Horse 1
+
+      at Console.log (node_modules/winston/lib/winston/transports/console.js:87:23)
+
+    console.log
+      [2026-01-29 05:20:16] info: [DELETE] /api/groom-assignments/11499 - 200
+
+      at Console.log (node_modules/winston/lib/winston/transports/console.js:87:23)
+
+    console.log
+      [2026-01-29 05:20:16] info: [DELETE] /api/groom-assignments/99999
+
+      at Console.log (node_modules/winston/lib/winston/transports/console.js:87:23)
+
+    console.log
+      [2026-01-29 05:20:16] info: [auth:asv29r] Starting auth for DELETE /groom-assignments/99999
+
+      at Console.log (node_modules/winston/lib/winston/transports/console.js:87:23)
+
+    console.log
+      [2026-01-29 05:20:16] info: [auth:asv29r] Token from cookie: false
+
+      at Console.log (node_modules/winston/lib/winston/transports/console.js:87:23)
+
+    console.log
+      [2026-01-29 05:20:16] info: [auth:asv29r] Token from header: true
+
+      at Console.log (node_modules/winston/lib/winston/transports/console.js:87:23)
+
+    console.log
+      [2026-01-29 05:20:16] info: [auth:asv29r] Authenticated user 426123e8-002e-4693-8e05-97861194aa62
+
+      at Console.log (node_modules/winston/lib/winston/transports/console.js:87:23)
+
+    console.log
+      [2026-01-29 05:20:16] info: [auth:laneec] Starting auth for DELETE /99999
+
+      at Console.log (node_modules/winston/lib/winston/transports/console.js:87:23)
+
+    console.log
+      [2026-01-29 05:20:16] info: [auth:laneec] Token from cookie: false
+
+      at Console.log (node_modules/winston/lib/winston/transports/console.js:87:23)
+
+    console.log
+      [2026-01-29 05:20:16] info: [auth:laneec] Token from header: true
+
+      at Console.log (node_modules/winston/lib/winston/transports/console.js:87:23)
+
+    console.log
+      [2026-01-29 05:20:16] info: [auth:laneec] Authenticated user 426123e8-002e-4693-8e05-97861194aa62
+
+      at Console.log (node_modules/winston/lib/winston/transports/console.js:87:23)
+
+    console.log
+      [2026-01-29 05:20:16] warn: [ownership] groom-assignment 99999 not found or not owned by user 426123e8-002e-4693-8e05-97861194aa62
+
+      at Console.log (node_modules/winston/lib/winston/transports/console.js:87:23)
+
+    console.log
+      [2026-01-29 05:20:16] info: [DELETE] /api/groom-assignments/99999 - 404
+
+      at Console.log (node_modules/winston/lib/winston/transports/console.js:87:23)
+
+    console.log
+      [2026-01-29 05:20:16] info: [GET] /api/groom-assignments/config
+
+      at Console.log (node_modules/winston/lib/winston/transports/console.js:87:23)
+
+    console.log
+      [2026-01-29 05:20:16] info: [auth:v857f8] Starting auth for GET /groom-assignments/config
+
+      at Console.log (node_modules/winston/lib/winston/transports/console.js:87:23)
+
+    console.log
+      [2026-01-29 05:20:16] info: [auth:v857f8] Token from cookie: false
+
+      at Console.log (node_modules/winston/lib/winston/transports/console.js:87:23)
+
+    console.log
+      [2026-01-29 05:20:16] info: [auth:v857f8] Token from header: true
+
+      at Console.log (node_modules/winston/lib/winston/transports/console.js:87:23)
+
+    console.log
+      [2026-01-29 05:20:16] info: [auth:v857f8] Authenticated user 426123e8-002e-4693-8e05-97861194aa62
+
+      at Console.log (node_modules/winston/lib/winston/transports/console.js:87:23)
+
+    console.log
+      [2026-01-29 05:20:16] info: [auth:jn4d1g] Starting auth for GET /config
+
+      at Console.log (node_modules/winston/lib/winston/transports/console.js:87:23)
+
+    console.log
+      [2026-01-29 05:20:16] info: [auth:jn4d1g] Token from cookie: false
+
+      at Console.log (node_modules/winston/lib/winston/transports/console.js:87:23)
+
+    console.log
+      [2026-01-29 05:20:16] info: [auth:jn4d1g] Token from header: true
+
+      at Console.log (node_modules/winston/lib/winston/transports/console.js:87:23)
+
+    console.log
+      [2026-01-29 05:20:16] info: [auth:jn4d1g] Authenticated user 426123e8-002e-4693-8e05-97861194aa62
+
+      at Console.log (node_modules/winston/lib/winston/transports/console.js:87:23)
+
+    console.log
+      [2026-01-29 05:20:16] info: [GET] /api/groom-assignments/config - 200
+
+      at Console.log (node_modules/winston/lib/winston/transports/console.js:87:23)
+
+    console.log
+      [2026-01-29 05:20:16] info: [GET] /api/groom-assignments/statistics
+
+      at Console.log (node_modules/winston/lib/winston/transports/console.js:87:23)
+
+    console.log
+      [2026-01-29 05:20:16] info: [auth:9d84p] Starting auth for GET /groom-assignments/statistics
+
+      at Console.log (node_modules/winston/lib/winston/transports/console.js:87:23)
+
+    console.log
+      [2026-01-29 05:20:16] info: [auth:9d84p] Token from cookie: false
+
+      at Console.log (node_modules/winston/lib/winston/transports/console.js:87:23)
+
+    console.log
+      [2026-01-29 05:20:16] info: [auth:9d84p] Token from header: true
+
+      at Console.log (node_modules/winston/lib/winston/transports/console.js:87:23)
+
+    console.log
+      [2026-01-29 05:20:16] info: [auth:9d84p] Authenticated user 426123e8-002e-4693-8e05-97861194aa62
+
+      at Console.log (node_modules/winston/lib/winston/transports/console.js:87:23)
+
+    console.log
+      [2026-01-29 05:20:16] info: [auth:iw8amw] Starting auth for GET /statistics
+
+      at Console.log (node_modules/winston/lib/winston/transports/console.js:87:23)
+
+    console.log
+      [2026-01-29 05:20:16] info: [auth:iw8amw] Token from cookie: false
+
+      at Console.log (node_modules/winston/lib/winston/transports/console.js:87:23)
+
+    console.log
+      [2026-01-29 05:20:16] info: [auth:iw8amw] Token from header: true
+
+      at Console.log (node_modules/winston/lib/winston/transports/console.js:87:23)
+
+    console.log
+      [2026-01-29 05:20:16] info: [auth:iw8amw] Authenticated user 426123e8-002e-4693-8e05-97861194aa62
+
+      at Console.log (node_modules/winston/lib/winston/transports/console.js:87:23)
+
+    console.log
+      [2026-01-29 05:20:16] info: [groomAssignmentRoutes] Getting assignment statistics for user 426123e8-002e-4693-8e05-97861194aa62
+
+      at Console.log (node_modules/winston/lib/winston/transports/console.js:87:23)
+
+    console.log
+      [2026-01-29 05:20:16] info: [GET] /api/groom-assignments/statistics - 200
+
+      at Console.log (node_modules/winston/lib/winston/transports/console.js:87:23)
+
+    console.log
+      [2026-01-29 05:20:16] info: [GET] /api/groom-assignments
+
+      at Console.log (node_modules/winston/lib/winston/transports/console.js:87:23)
+
+    console.log
+      [2026-01-29 05:20:16] info: [auth:8zz612h] Starting auth for GET /groom-assignments
+
+      at Console.log (node_modules/winston/lib/winston/transports/console.js:87:23)
+
+    console.log
+      [2026-01-29 05:20:16] info: [auth:8zz612h] Token from cookie: false
+
+      at Console.log (node_modules/winston/lib/winston/transports/console.js:87:23)
+
+    console.log
+      [2026-01-29 05:20:16] warn: [auth:8zz612h] Access token is required for GET /groom-assignments from ::ffff:127.0.0.1
+
+      at Console.log (node_modules/winston/lib/winston/transports/console.js:87:23)
+
+    console.log
+      [2026-01-29 05:20:16] info: [GET] /api/groom-assignments - 401
+
+      at Console.log (node_modules/winston/lib/winston/transports/console.js:87:23)
+
+    console.log
+      [2026-01-29 05:20:16] info: [POST] /api/groom-assignments
+
+      at Console.log (node_modules/winston/lib/winston/transports/console.js:87:23)
+
+    console.log
+      [2026-01-29 05:20:16] info: [auth:f17vo] Starting auth for POST /groom-assignments
+
+      at Console.log (node_modules/winston/lib/winston/transports/console.js:87:23)
+
+    console.log
+      [2026-01-29 05:20:16] info: [auth:f17vo] Token from cookie: false
+
+      at Console.log (node_modules/winston/lib/winston/transports/console.js:87:23)
+
+    console.log
+      [2026-01-29 05:20:16] warn: [auth:f17vo] Access token is required for POST /groom-assignments from ::ffff:127.0.0.1
+
+      at Console.log (node_modules/winston/lib/winston/transports/console.js:87:23)
+
+    console.log
+      [2026-01-29 05:20:16] info: [POST] /api/groom-assignments - 401
+
+      at Console.log (node_modules/winston/lib/winston/transports/console.js:87:23)
+
+    console.log
+      [2026-01-29 05:20:16] info: [GET] /api/groom-assignments/dashboard
+
+      at Console.log (node_modules/winston/lib/winston/transports/console.js:87:23)
+
+    console.log
+      [2026-01-29 05:20:16] info: [auth:otkbp4] Starting auth for GET /groom-assignments/dashboard
+
+      at Console.log (node_modules/winston/lib/winston/transports/console.js:87:23)
+
+    console.log
+      [2026-01-29 05:20:16] info: [auth:otkbp4] Token from cookie: false
+
+      at Console.log (node_modules/winston/lib/winston/transports/console.js:87:23)
+
+    console.log
+      [2026-01-29 05:20:16] warn: [auth:otkbp4] Access token is required for GET /groom-assignments/dashboard from ::ffff:127.0.0.1
+
+      at Console.log (node_modules/winston/lib/winston/transports/console.js:87:23)
+
+    console.log
+      [2026-01-29 05:20:16] info: [GET] /api/groom-assignments/dashboard - 401
+
+      at Console.log (node_modules/winston/lib/winston/transports/console.js:87:23)
+
+    console.log
+      [2026-01-29 05:20:16] info: [GET] /api/groom-assignments/salary-costs
+
+      at Console.log (node_modules/winston/lib/winston/transports/console.js:87:23)
+
+    console.log
+      [2026-01-29 05:20:16] info: [auth:m82nk] Starting auth for GET /groom-assignments/salary-costs
+
+      at Console.log (node_modules/winston/lib/winston/transports/console.js:87:23)
+
+    console.log
+      [2026-01-29 05:20:16] info: [auth:m82nk] Token from cookie: false
+
+      at Console.log (node_modules/winston/lib/winston/transports/console.js:87:23)
+
+    console.log
+      [2026-01-29 05:20:16] warn: [auth:m82nk] Access token is required for GET /groom-assignments/salary-costs from ::ffff:127.0.0.1
+
+      at Console.log (node_modules/winston/lib/winston/transports/console.js:87:23)
+
+    console.log
+      [2026-01-29 05:20:16] info: [GET] /api/groom-assignments/salary-costs - 401
+
+      at Console.log (node_modules/winston/lib/winston/transports/console.js:87:23)
+
+
+Test Suites: 1 passed, 1 total
+Tests:       17 passed, 17 total
+Snapshots:   0 total
+Time:        4.236 s
+Ran all test suites matching /groomAssignmentSystem.test.mjs/i.
+🧹 Running global teardown...
+[Teardown] Disconnecting Prisma instances...
+[Teardown] ✅ Prisma instances disconnected
+✅ Global teardown completed successfully
