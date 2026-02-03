@@ -78,9 +78,9 @@ describe('Token Rotation Service - Unit Tests', () => {
     });
 
     it('should_include_timestamp_in_family_id', () => {
-      const before = Date.now();
+      const _before = Date.now();
       const family = generateTokenFamily();
-      const after = Date.now();
+      const _after = Date.now();
 
       // Family ID should contain timestamp component
       expect(family).toMatch(/\d+/); // Should contain numbers (timestamp)
@@ -342,9 +342,9 @@ describe('Token Rotation Service - Unit Tests', () => {
       const familyId = generateTokenFamily();
 
       // Create multiple tokens in same family
-      const token1 = await createTokenPair(testUser.id, familyId);
-      const token2 = await createTokenPair(testUser.id, familyId);
-      const token3 = await createTokenPair(testUser.id, familyId);
+      const _token1 = await createTokenPair(testUser.id, familyId);
+      const _token2 = await createTokenPair(testUser.id, familyId);
+      const _token3 = await createTokenPair(testUser.id, familyId);
 
       const invalidationResult = await invalidateTokenFamily(familyId);
 

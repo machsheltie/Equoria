@@ -112,7 +112,7 @@ import {
 import { createCompressionMiddleware } from './services/apiResponseOptimizationService.mjs';
 import { _createResourceManagementMiddleware, _memoryMonitoringMiddleware, _databaseConnectionMiddleware, _requestTimeoutMiddleware } from './middleware/resourceManagement.mjs';
 
-import prisma from '../packages/database/prismaClient.mjs';
+import _prisma from '../packages/database/prismaClient.mjs';
 
 const app = express();
 

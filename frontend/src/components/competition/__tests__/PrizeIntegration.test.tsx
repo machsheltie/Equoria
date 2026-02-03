@@ -29,6 +29,31 @@ vi.mock('@/hooks/api/useUserCompetitionStats', () => ({
   useUserCompetitionStats: vi.fn(),
 }));
 
+// Mock useHorseLevelInfo hook to avoid QueryClient dependency (Story 5-4 integration)
+vi.mock('@/hooks/api/useHorseLevelInfo', () => ({
+  useHorseLevelInfo: vi.fn().mockReturnValue({
+    data: {
+      horseId: 1,
+      horseName: 'Test Horse',
+      currentLevel: 5,
+      currentXp: 450,
+      xpForCurrentLevel: 45,
+      xpToNextLevel: 100,
+      totalXp: 450,
+      progressPercent: 45,
+      levelThresholds: { 1: 0, 2: 100, 3: 300, 4: 600, 5: 1000 },
+    },
+    isLoading: false,
+    isError: false,
+    error: null,
+    refetch: vi.fn(),
+  }),
+  horseLevelInfoQueryKeys: {
+    all: ['horseLevelInfo'] as const,
+    horse: (horseId: number) => ['horseLevelInfo', horseId] as const,
+  },
+}));
+
 // Mock the results list component to isolate page testing
 vi.mock('@/components/competition/CompetitionResultsList', () => ({
   default: vi.fn(({ onResultClick }) => {

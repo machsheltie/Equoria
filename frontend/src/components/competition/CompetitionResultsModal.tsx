@@ -12,6 +12,10 @@
  * - PrizeSummaryCard showing user's prizes when applicable (Story 5-3)
  * - PrizeNotificationModal for first-time prize notifications (Story 5-3)
  * - Link to prize history page in footer (Story 5-3)
+ * - XpGainNotification after viewing results (Story 5-4)
+ * - LevelUpCelebrationModal for level-up events (Story 5-4)
+ * - XpProgressTracker for each horse in results (Story 5-4)
+ * - HorseLevelBadge next to horse names (Story 5-4)
  *
  * Features:
  * - Portal rendering for proper stacking context
@@ -22,9 +26,11 @@
  * - Responsive design (table collapses to cards on mobile)
  * - WCAG 2.1 AA compliance
  * - Virtual scrolling ready for large datasets
+ * - Notification sequencing: Prize -> XP -> Level-Up (Story 5-4)
  *
  * Story 5-2: Competition Results Display
  * Story 5-3: Competition History - Task 7 (Integration with Results Display)
+ * Story 5-4: XP System Integration - Task 7 (Integration with Competition Results)
  */
 
 import React, { memo, useCallback, useEffect, useRef, useState, useMemo } from 'react';
@@ -45,6 +51,11 @@ import {
 } from 'lucide-react';
 import PrizeSummaryCard, { type HorsePrize } from './PrizeSummaryCard';
 import PrizeNotificationModal, { type PrizeData } from './PrizeNotificationModal';
+import XpGainNotification from '../feedback/XpGainNotification';
+import LevelUpCelebrationModal, { type StatChange } from '../feedback/LevelUpCelebrationModal';
+import XpProgressTracker from '../XpProgressTracker';
+import HorseLevelBadge from '../horse/HorseLevelBadge';
+import { useHorseLevelInfo } from '@/hooks/api/useHorseLevelInfo';
 
 /**
  * Participant result data structure
@@ -79,6 +90,18 @@ export interface CompetitionResults {
 }
 
 /**
+ * Level-up data structure for celebration modal (Story 5-4)
+ */
+export interface LevelUpData {
+  horseId: number;
+  horseName: string;
+  oldLevel: number;
+  newLevel: number;
+  statChanges: StatChange[];
+  totalXpGained: number;
+}
+
+/**
  * CompetitionResultsModal component props
  */
 export interface CompetitionResultsModalProps {
@@ -98,6 +121,16 @@ export interface CompetitionResultsModalProps {
   showPrizeNotification?: boolean;
   /** Callback when prize notification is closed (Story 5-3) */
   onPrizeNotificationClose?: () => void;
+  /** Control XP gain notification display (Story 5-4) */
+  showXpNotification?: boolean;
+  /** Callback when XP notification is closed (Story 5-4) */
+  onXpNotificationClose?: () => void;
+  /** Control level-up celebration modal display (Story 5-4) */
+  showLevelUpCelebration?: boolean;
+  /** Callback when level-up celebration is closed (Story 5-4) */
+  onLevelUpClose?: () => void;
+  /** Level-up data for celebration modal (Story 5-4) */
+  levelUpData?: LevelUpData;
   /** Test prop for injecting results data */
   _testResults?: CompetitionResults | null;
   /** Test prop for loading state */
@@ -292,6 +325,11 @@ const CompetitionResultsModal = memo(function CompetitionResultsModal({
   onFirstView,
   showPrizeNotification = false,
   onPrizeNotificationClose,
+  showXpNotification = false,
+  onXpNotificationClose,
+  showLevelUpCelebration = false,
+  onLevelUpClose,
+  levelUpData,
   _testResults,
   _testLoading = false,
   _testError = null,
@@ -358,6 +396,45 @@ const CompetitionResultsModal = memo(function CompetitionResultsModal({
   const handlePrizeNotificationClose = useCallback(() => {
     onPrizeNotificationClose?.();
   }, [onPrizeNotificationClose]);
+
+  // Handle XP notification close (Story 5-4)
+  const handleXpNotificationClose = useCallback(() => {
+    onXpNotificationClose?.();
+  }, [onXpNotificationClose]);
+
+  // Handle level-up celebration close (Story 5-4)
+  const handleLevelUpClose = useCallback(() => {
+    onLevelUpClose?.();
+  }, [onLevelUpClose]);
+
+  // Fetch horse level info for the first user horse result (Story 5-4)
+  const firstUserHorseId = useMemo(() => {
+    if (!results?.results) return 0;
+    const firstUserResult = results.results.find((r) => r.isCurrentUser);
+    return firstUserResult?.horseId ?? 0;
+  }, [results]);
+
+  const { data: horseLevelData } = useHorseLevelInfo(firstUserHorseId);
+
+  // Calculate XP notification data from horse level info (Story 5-4)
+  const xpNotificationData = useMemo(() => {
+    if (!horseLevelData) {
+      return {
+        xpGained: 50,
+        currentLevel: 1,
+        currentXp: 0,
+        xpForCurrentLevel: 0,
+        xpToNextLevel: 100,
+      };
+    }
+    return {
+      xpGained: userPrizes.length > 0 ? Math.round(userPrizes[0].xpGained ?? 50) : 50,
+      currentLevel: horseLevelData.currentLevel,
+      currentXp: horseLevelData.currentXp,
+      xpForCurrentLevel: horseLevelData.xpForCurrentLevel,
+      xpToNextLevel: horseLevelData.xpToNextLevel,
+    };
+  }, [horseLevelData, userPrizes]);
 
   // Handle prize summary toggle
   const handlePrizeSummaryToggle = useCallback(() => {
@@ -587,6 +664,12 @@ const CompetitionResultsModal = memo(function CompetitionResultsModal({
               >
                 Prize
               </th>
+              <th
+                scope="col"
+                className="px-4 py-3 text-left text-xs font-semibold text-gray-700 uppercase tracking-wider"
+              >
+                XP Progress
+              </th>
             </tr>
           </thead>
           <tbody className="divide-y divide-gray-200">
@@ -626,9 +709,15 @@ const CompetitionResultsModal = memo(function CompetitionResultsModal({
                     </div>
                   </td>
                   <td className="px-4 py-3 whitespace-nowrap">
-                    <span data-testid="horse-name" className="font-medium text-gray-900">
-                      {result.horseName}
-                    </span>
+                    <div className="flex items-center gap-2">
+                      <span data-testid="horse-name" className="font-medium text-gray-900">
+                        {result.horseName}
+                      </span>
+                      <HorseLevelBadge
+                        level={horseLevelData?.currentLevel ?? 1}
+                        size="small"
+                      />
+                    </div>
                   </td>
                   <td className="px-4 py-3 whitespace-nowrap">
                     <span data-testid="owner-name" className="text-gray-600">
@@ -649,6 +738,15 @@ const CompetitionResultsModal = memo(function CompetitionResultsModal({
                     >
                       {formatCurrency(result.prizeWon)}
                     </span>
+                  </td>
+                  <td className="px-4 py-3">
+                    <XpProgressTracker
+                      currentLevel={horseLevelData?.currentLevel ?? 1}
+                      currentXp={horseLevelData?.currentXp ?? 0}
+                      xpForCurrentLevel={horseLevelData?.xpForCurrentLevel ?? 0}
+                      xpToNextLevel={horseLevelData?.xpToNextLevel ?? 100}
+                      size="small"
+                    />
                   </td>
                 </tr>
               );
@@ -802,6 +900,34 @@ const CompetitionResultsModal = memo(function CompetitionResultsModal({
           onClose={handlePrizeNotificationClose}
           prizeData={bestPrize}
           autoDismiss={false}
+        />
+      )}
+
+      {/* XP Gain Notification - Story 5-4 */}
+      {showXpNotification && (
+        <XpGainNotification
+          xpGained={xpNotificationData.xpGained}
+          currentLevel={xpNotificationData.currentLevel}
+          currentXp={xpNotificationData.currentXp}
+          xpForCurrentLevel={xpNotificationData.xpForCurrentLevel}
+          xpToNextLevel={xpNotificationData.xpToNextLevel}
+          show={showXpNotification}
+          autoDismiss={false}
+          onClose={handleXpNotificationClose}
+        />
+      )}
+
+      {/* Level-Up Celebration Modal - Story 5-4 */}
+      {showLevelUpCelebration && levelUpData && (
+        <LevelUpCelebrationModal
+          isOpen={showLevelUpCelebration}
+          onClose={handleLevelUpClose}
+          horseId={levelUpData.horseId}
+          horseName={levelUpData.horseName}
+          oldLevel={levelUpData.oldLevel}
+          newLevel={levelUpData.newLevel}
+          statChanges={levelUpData.statChanges}
+          totalXpGained={levelUpData.totalXpGained}
         />
       )}
     </div>

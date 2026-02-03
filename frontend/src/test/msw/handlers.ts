@@ -579,6 +579,10 @@ export const handlers = [
             finalScore: 95.5,
             prizeWon: 2500,
             isCurrentUser: true,
+            xpGained: 150,
+            leveledUp: true,
+            oldLevel: 4,
+            newLevel: 5,
             scoreBreakdown: {
               baseStatScore: 70,
               traitBonus: 5,
@@ -598,6 +602,10 @@ export const handlers = [
             finalScore: 88.2,
             prizeWon: 1500,
             isCurrentUser: false,
+            xpGained: 100,
+            leveledUp: false,
+            oldLevel: 3,
+            newLevel: 3,
           },
           {
             rank: 3,
@@ -608,6 +616,10 @@ export const handlers = [
             finalScore: 82.0,
             prizeWon: 1000,
             isCurrentUser: false,
+            xpGained: 75,
+            leveledUp: false,
+            oldLevel: 6,
+            newLevel: 6,
           },
         ],
       },
@@ -979,6 +991,137 @@ export const handlers = [
             claimed: false,
           },
         ],
+      },
+    });
+  }),
+
+  // XP System - Horse Level Info
+  http.get(`${base}/api/horses/:horseId/level-info`, ({ params }) => {
+    const horseId = Number(params.horseId);
+
+    // Return 404 for horse ID 999 (error test case)
+    if (horseId === 999) {
+      return HttpResponse.json(
+        { status: 'error', message: 'Horse not found' },
+        { status: 404 }
+      );
+    }
+
+    return HttpResponse.json({
+      success: true,
+      data: {
+        horseId,
+        horseName: 'Test Horse',
+        currentLevel: 5,
+        currentXp: 450,
+        xpForCurrentLevel: 45,
+        xpToNextLevel: 100,
+        totalXp: 450,
+        progressPercent: 45,
+        levelThresholds: { 1: 0, 2: 100, 3: 300, 4: 600, 5: 1000 },
+      },
+    });
+  }),
+
+  // XP System - Horse XP History
+  http.get(`${base}/api/horses/:horseId/xp-history`, ({ params, request }) => {
+    const horseId = Number(params.horseId);
+    const url = new URL(request.url);
+    const dateRange = url.searchParams.get('dateRange');
+    const source = url.searchParams.get('source');
+
+    // Return 404 for horse ID 999 (error test case)
+    if (horseId === 999) {
+      return HttpResponse.json(
+        { status: 'error', message: 'Horse not found' },
+        { status: 404 }
+      );
+    }
+
+    let history = [
+      {
+        xpGainId: 'xp-1',
+        horseId,
+        horseName: 'Test Horse',
+        source: 'competition',
+        sourceId: 123,
+        sourceName: 'Show Jumping Classic',
+        xpAmount: 50,
+        timestamp: '2026-03-15T10:00:00Z',
+        oldLevel: 4,
+        newLevel: 5,
+        oldXp: 400,
+        newXp: 450,
+        leveledUp: true,
+      },
+      {
+        xpGainId: 'xp-2',
+        horseId,
+        horseName: 'Test Horse',
+        source: 'training',
+        sourceId: 456,
+        sourceName: 'Dressage Training',
+        xpAmount: 25,
+        timestamp: '2026-03-10T14:00:00Z',
+        oldLevel: 4,
+        newLevel: 4,
+        oldXp: 375,
+        newXp: 400,
+        leveledUp: false,
+      },
+    ];
+
+    // Apply source filter
+    if (source) {
+      history = history.filter((h) => h.source === source);
+    }
+
+    return HttpResponse.json({
+      success: true,
+      data: history,
+    });
+  }),
+
+  // XP System - Add XP
+  http.post(`${base}/api/horses/add-xp`, async ({ request }) => {
+    const body = (await request.json()) as {
+      horseId: number;
+      xpAmount: number;
+      source: string;
+      sourceId: number;
+      sourceName: string;
+    };
+
+    // Return 400 for invalid horse ID
+    if (!body.horseId || body.horseId <= 0) {
+      return HttpResponse.json(
+        { status: 'error', message: 'Invalid horse ID' },
+        { status: 400 }
+      );
+    }
+
+    return HttpResponse.json({
+      success: true,
+      data: {
+        success: true,
+        xpGain: {
+          xpGainId: 'xp-new',
+          horseId: body.horseId,
+          horseName: 'Test Horse',
+          source: body.source,
+          sourceId: body.sourceId,
+          sourceName: body.sourceName,
+          xpAmount: body.xpAmount,
+          timestamp: new Date().toISOString(),
+          oldLevel: 5,
+          newLevel: 6,
+          oldXp: 450,
+          newXp: 500,
+          leveledUp: true,
+        },
+        leveledUp: true,
+        newLevel: 6,
+        message: 'XP added successfully',
       },
     });
   }),

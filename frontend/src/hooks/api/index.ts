@@ -13,3 +13,6 @@ export * from './useEnterCompetition';
 export * from './usePrizeHistory';
 export * from './useHorsePrizeSummary';
 export * from './useClaimPrizes';
+export * from './useHorseLevelInfo';
+export * from './useXpHistory';
+export * from './useAddXp';

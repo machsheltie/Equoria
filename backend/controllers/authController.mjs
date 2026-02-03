@@ -1,6 +1,6 @@
 import bcrypt from 'bcryptjs';
-import jwt from 'jsonwebtoken';
-import { generateToken, generateRefreshToken } from '../middleware/auth.mjs';
+import _jwt from 'jsonwebtoken';
+import { generateToken as _generateToken, generateRefreshToken as _generateRefreshToken } from '../middleware/auth.mjs';
 import { AppError, ValidationError } from '../errors/index.mjs';
 import logger from '../utils/logger.mjs';
 import prisma from '../db/index.mjs';
@@ -8,7 +8,7 @@ import { resetAuthRateLimit } from '../middleware/authRateLimiter.mjs';
 import {
   createTokenPair,
   rotateRefreshToken,
-  invalidateTokenFamily,
+  invalidateTokenFamily as _invalidateTokenFamily,
 } from '../utils/tokenRotationService.mjs';
 import {
   createVerificationToken,
