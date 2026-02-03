@@ -439,7 +439,7 @@ describe('Authentication with HttpOnly Cookies', () => {
       const { generateToken } = await import('../../middleware/auth.mjs');
       accessToken = generateToken(user);
 
-      testUser = user; // For cleanup
+      _testUser = user; // For cleanup
     });
 
     it('should still accept Authorization header for backward compatibility', async () => {

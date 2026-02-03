@@ -88,7 +88,7 @@ describe('CSRF Protection Middleware', () => {
       req.method = 'POST';
 
       // Mock csrfProtection middleware
-      const mockCsrfProtection = jest.fn((req, res, next) => next());
+      const _mockCsrfProtection = jest.fn((req, res, next) => next());
 
       // We can't easily test the actual csrfProtection call without importing it
       // So we'll test the conditional logic only
