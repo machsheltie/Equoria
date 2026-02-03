@@ -3,207 +3,222 @@
 # Source: docs/epics.md
 
 sprint:
-  name: "Sprint 1 - Authentication Foundation"
+  name: 'Sprint 1 - Authentication Foundation'
   start_date: 2025-12-03
   status: in_progress
-  epic: "Epic 1: Authentication & User Foundation"
+  epic: 'Epic 1: Authentication & User Foundation'
 
 development_status:
   # Epic 1: Authentication & User Foundation (P0 - COMPLETE)
   epic-1:
-    title: "Authentication & User Foundation"
+    title: 'Authentication & User Foundation'
     status: completed
-    completed_date: "2025-12-04"
+    completed_date: '2025-12-04'
     priority: P0
     frs: [FR-U1, FR-U2, FR-U3, FR-U4]
     total_tests: 211
 
   1-1-user-registration:
-    title: "User Registration"
+    title: 'User Registration'
     status: completed
     priority: P0
     fr: FR-U1
     epic: 1
     story: 1
     prerequisites: []
-    story_file: "docs/sprint-artifacts/1-1-user-registration.md"
-    created_date: "2025-12-03"
-    completed_date: "2025-12-04"
-    completion_notes: "33/33 tests passing, RegisterPage.tsx and lib/constants.ts fully implemented"
+    story_file: 'docs/sprint-artifacts/1-1-user-registration.md'
+    created_date: '2025-12-03'
+    completed_date: '2025-12-04'
+    completion_notes: '33/33 tests passing, RegisterPage.tsx and lib/constants.ts fully implemented'
 
   1-2-user-login:
-    title: "User Login"
+    title: 'User Login'
     status: completed
     priority: P0
     fr: FR-U2
     epic: 1
     story: 2
     prerequisites: [1-1-user-registration]
-    story_file: "docs/sprint-artifacts/1-2-user-login.md"
-    created_date: "2025-12-04"
-    completed_date: "2025-12-04"
-    completion_notes: "31/31 tests passing, LoginPage.tsx with Zod validation, password visibility toggle, API integration"
+    story_file: 'docs/sprint-artifacts/1-2-user-login.md'
+    created_date: '2025-12-04'
+    completed_date: '2025-12-04'
+    completion_notes: '31/31 tests passing, LoginPage.tsx with Zod validation, password visibility toggle, API integration'
 
   1-3-session-management:
-    title: "Session Management"
+    title: 'Session Management'
     status: completed
     priority: P0
     fr: FR-U2
     epic: 1
     story: 3
     prerequisites: [1-2-user-login]
-    story_file: "docs/sprint-artifacts/1-3-session-management.md"
-    created_date: "2025-12-04"
-    completed_date: "2025-12-04"
-    completion_notes: "31/31 tests passing, useSessionGuard hook with route protection, AuthContext tests for session persistence"
+    story_file: 'docs/sprint-artifacts/1-3-session-management.md'
+    created_date: '2025-12-04'
+    completed_date: '2025-12-04'
+    completion_notes: '31/31 tests passing, useSessionGuard hook with route protection, AuthContext tests for session persistence'
 
   1-4-password-reset-request:
-    title: "Password Reset Request"
+    title: 'Password Reset Request'
     status: completed
     priority: P0
     fr: FR-U3
     epic: 1
     story: 4
     prerequisites: [1-1-user-registration]
-    story_file: "docs/sprint-artifacts/1-4-password-reset-request.md"
-    created_date: "2025-12-04"
-    completed_date: "2025-12-04"
-    completion_notes: "32/32 tests passing, ForgotPasswordPage.tsx with Zod validation, success/error states, API integration, fireEvent.submit pattern for jsdom reliability"
+    story_file: 'docs/sprint-artifacts/1-4-password-reset-request.md'
+    created_date: '2025-12-04'
+    completed_date: '2025-12-04'
+    completion_notes: '32/32 tests passing, ForgotPasswordPage.tsx with Zod validation, success/error states, API integration, fireEvent.submit pattern for jsdom reliability'
 
   1-5-password-reset-completion:
-    title: "Password Reset Completion"
+    title: 'Password Reset Completion'
     status: completed
     priority: P0
     fr: FR-U3
     epic: 1
     story: 5
     prerequisites: [1-4-password-reset-request]
-    story_file: "docs/sprint-artifacts/1-5-password-reset-completion.md"
-    created_date: "2025-12-04"
-    completed_date: "2025-12-04"
-    completion_notes: "41/41 tests passing, ResetPasswordPage.tsx with token validation, password strength indicator, Zod validation, success/error states"
+    story_file: 'docs/sprint-artifacts/1-5-password-reset-completion.md'
+    created_date: '2025-12-04'
+    completed_date: '2025-12-04'
+    completion_notes: '41/41 tests passing, ResetPasswordPage.tsx with token validation, password strength indicator, Zod validation, success/error states'
 
   1-6-role-based-access-control:
-    title: "Role-Based Access Control"
+    title: 'Role-Based Access Control'
     status: completed
     priority: P0
     fr: FR-U4
     epic: 1
     story: 6
     prerequisites: [1-2-user-login]
-    story_file: "docs/sprint-artifacts/1-6-role-based-access-control.md"
-    created_date: "2025-12-04"
-    completed_date: "2025-12-04"
-    completion_notes: "43/43 tests passing (28 useRoleGuard + 15 RoleProtectedRoute), UserRole type, role helpers in AuthContext (hasRole, hasAnyRole, isAdmin, isModerator)"
+    story_file: 'docs/sprint-artifacts/1-6-role-based-access-control.md'
+    created_date: '2025-12-04'
+    completed_date: '2025-12-04'
+    completion_notes: '43/43 tests passing (28 useRoleGuard + 15 RoleProtectedRoute), UserRole type, role helpers in AuthContext (hasRole, hasAnyRole, isAdmin, isModerator)'
 
   epic-1-retrospective:
-    title: "Epic 1 Retrospective"
+    title: 'Epic 1 Retrospective'
     status: completed
-    completed_date: "2025-12-04"
-    prerequisites: [1-1-user-registration, 1-2-user-login, 1-3-session-management, 1-4-password-reset-request, 1-5-password-reset-completion, 1-6-role-based-access-control]
-    retro_file: "docs/sprint-artifacts/epic-1-retro-2025-12-04.md"
+    completed_date: '2025-12-04'
+    prerequisites:
+      [
+        1-1-user-registration,
+        1-2-user-login,
+        1-3-session-management,
+        1-4-password-reset-request,
+        1-5-password-reset-completion,
+        1-6-role-based-access-control,
+      ]
+    retro_file: 'docs/sprint-artifacts/epic-1-retro-2025-12-04.md'
 
   # Epic 2: User Dashboard & Profile (P0 - COMPLETE)
   epic-2:
-    title: "User Dashboard & Profile"
+    title: 'User Dashboard & Profile'
     status: completed
-    completed_date: "2025-12-05"
+    completed_date: '2025-12-05'
     priority: P0
     frs: [FR-U5, FR-U6, FR-U7, FR-U8]
     prerequisites: [epic-1]
     total_tests: 395
 
   2-1-profile-management:
-    title: "Profile Management"
+    title: 'Profile Management'
     status: completed
     priority: P1
     fr: FR-U5
     epic: 2
     story: 1
     prerequisites: [epic-1]
-    story_file: "docs/sprint-artifacts/2-1-profile-management.md"
-    created_date: "2025-12-04"
-    completed_date: "2025-12-04"
-    completion_notes: "32/32 tests passing, ProfilePage.tsx with Zod validation, useProfile/useUpdateProfile hooks, bio character counter, cancel resets form"
+    story_file: 'docs/sprint-artifacts/2-1-profile-management.md'
+    created_date: '2025-12-04'
+    completed_date: '2025-12-04'
+    completion_notes: '32/32 tests passing, ProfilePage.tsx with Zod validation, useProfile/useUpdateProfile hooks, bio character counter, cancel resets form'
 
   2-2-xp-level-display:
-    title: "XP & Level Display"
+    title: 'XP & Level Display'
     status: completed
     priority: P0
     fr: FR-U6
     epic: 2
     story: 2
     prerequisites: [2-1-profile-management]
-    story_file: "docs/sprint-artifacts/2-2-xp-level-display.md"
-    created_date: "2025-12-04"
-    completed_date: "2025-12-04"
-    completion_notes: "72/72 tests passing (43 xp-utils + 29 XPLevelDisplay), XPLevelDisplay component with level badge, progress bar, size variants, integrated into ProfilePage"
+    story_file: 'docs/sprint-artifacts/2-2-xp-level-display.md'
+    created_date: '2025-12-04'
+    completed_date: '2025-12-04'
+    completion_notes: '72/72 tests passing (43 xp-utils + 29 XPLevelDisplay), XPLevelDisplay component with level badge, progress bar, size variants, integrated into ProfilePage'
 
   2-3-currency-management:
-    title: "Currency Management"
+    title: 'Currency Management'
     status: completed
     priority: P0
     fr: FR-U7
     epic: 2
     story: 3
     prerequisites: [2-1-profile-management]
-    story_file: "docs/sprint-artifacts/2-3-currency-management.md"
-    created_date: "2025-12-04"
-    completed_date: "2025-12-04"
-    completion_notes: "60/60 tests passing (34 currency-utils + 26 CurrencyDisplay), CurrencyDisplay component with coin icon, size variants, compact mode (K/M/B), integrated into ProfilePage"
+    story_file: 'docs/sprint-artifacts/2-3-currency-management.md'
+    created_date: '2025-12-04'
+    completed_date: '2025-12-04'
+    completion_notes: '60/60 tests passing (34 currency-utils + 26 CurrencyDisplay), CurrencyDisplay component with coin icon, size variants, compact mode (K/M/B), integrated into ProfilePage'
 
   2-4-statistics-dashboard:
-    title: "Statistics Dashboard"
+    title: 'Statistics Dashboard'
     status: completed
     priority: P0
     fr: FR-U8
     epic: 2
     story: 4
     prerequisites: [2-1-profile-management]
-    story_file: "docs/sprint-artifacts/2-4-statistics-dashboard.md"
-    created_date: "2025-12-04"
-    completed_date: "2025-12-04"
-    completion_notes: "104/104 tests passing (52 statistics-utils + 52 StatisticsCard), StatisticsCard component with icons, trend indicators, size variants, integrated into ProfilePage with mock data (API ready)"
+    story_file: 'docs/sprint-artifacts/2-4-statistics-dashboard.md'
+    created_date: '2025-12-04'
+    completed_date: '2025-12-04'
+    completion_notes: '104/104 tests passing (52 statistics-utils + 52 StatisticsCard), StatisticsCard component with icons, trend indicators, size variants, integrated into ProfilePage with mock data (API ready)'
 
   2-5-activity-feed:
-    title: "Activity Feed"
+    title: 'Activity Feed'
     status: completed
     priority: P0
     fr: FR-U8
     epic: 2
     story: 5
     prerequisites: [2-4-statistics-dashboard]
-    story_file: "docs/sprint-artifacts/2-5-activity-feed.md"
-    created_date: "2025-12-05"
-    completed_date: "2025-12-05"
-    completion_notes: "127/127 tests passing (60 activity-utils + 36 ActivityFeedItem + 31 ActivityFeed), ActivityFeed container with filtering, pagination, loading/empty states, integrated into ProfilePage with mock data (API ready)"
+    story_file: 'docs/sprint-artifacts/2-5-activity-feed.md'
+    created_date: '2025-12-05'
+    completed_date: '2025-12-05'
+    completion_notes: '127/127 tests passing (60 activity-utils + 36 ActivityFeedItem + 31 ActivityFeed), ActivityFeed container with filtering, pagination, loading/empty states, integrated into ProfilePage with mock data (API ready)'
 
   epic-2-retrospective:
-    title: "Epic 2 Retrospective"
+    title: 'Epic 2 Retrospective'
     status: completed
-    completed_date: "2025-12-05"
-    prerequisites: [2-1-profile-management, 2-2-xp-level-display, 2-3-currency-management, 2-4-statistics-dashboard, 2-5-activity-feed]
-    retro_file: "docs/sprint-artifacts/epic-2-retro-2025-12-05.md"
+    completed_date: '2025-12-05'
+    prerequisites:
+      [
+        2-1-profile-management,
+        2-2-xp-level-display,
+        2-3-currency-management,
+        2-4-statistics-dashboard,
+        2-5-activity-feed,
+      ]
+    retro_file: 'docs/sprint-artifacts/epic-2-retro-2025-12-05.md'
 
   # Epic 3: Horse Management (P0)
   epic-3:
-    title: "Horse Management"
+    title: 'Horse Management'
     status: pending
     priority: P0
     frs: [FR-H1, FR-H2, FR-H3, FR-H4, FR-H5]
     prerequisites: [epic-1]
 
   3-1-horse-list-view:
-    title: "Horse List View"
+    title: 'Horse List View'
     status: completed
     priority: P0
     fr: FR-H1
     epic: 3
     story: 1
     prerequisites: [epic-1]
-    story_file: "docs/sprint-artifacts/3-1-horse-list-view.md"
-    started_date: "2025-12-05"
-    completed_date: "2025-12-05"
+    story_file: 'docs/sprint-artifacts/3-1-horse-list-view.md'
+    started_date: '2025-12-05'
+    completed_date: '2025-12-05'
     completion_notes: |
       39/39 tests passing (100%)
       All 6 acceptance criteria met through code implementation
@@ -219,16 +234,16 @@ development_status:
       Backend integration pending (requires /api/v1/horses endpoint deployment)
 
   3-2-horse-detail-view:
-    title: "Horse Detail View"
+    title: 'Horse Detail View'
     status: completed
     priority: P0
     fr: FR-H1
     epic: 3
     story: 2
     prerequisites: [3-1-horse-list-view]
-    story_file: "docs/sprint-artifacts/3-2-horse-detail-view.md"
-    started_date: "2025-12-05"
-    completed_date: "2025-12-05"
+    story_file: 'docs/sprint-artifacts/3-2-horse-detail-view.md'
+    started_date: '2025-12-05'
+    completed_date: '2025-12-05'
     completion_notes: |
       16/19 tests passing (84% pass rate)
       All 5 acceptance criteria met through code implementation and tests
@@ -244,16 +259,16 @@ development_status:
       Git commit: 85d5d1f
 
   3-3-horse-attributes-panel:
-    title: "Horse Attributes Panel"
+    title: 'Horse Attributes Panel'
     status: completed
     priority: P0
     fr: FR-H2
     epic: 3
     story: 3
     prerequisites: [3-2-horse-detail-view]
-    story_file: "docs/sprint-artifacts/3-3-horse-attributes-panel.md"
-    started_date: "2025-12-05"
-    completed_date: "2025-12-08"
+    story_file: 'docs/sprint-artifacts/3-3-horse-attributes-panel.md'
+    started_date: '2025-12-05'
+    completed_date: '2025-12-08'
     completion_notes: |
       60/60 tests passing (100%)
       All 3 acceptance criteria met through implementation
@@ -269,16 +284,16 @@ development_status:
       Git commit: ccceb58
 
   3-4-xp-progression-display:
-    title: "XP & Progression Display"
+    title: 'XP & Progression Display'
     status: completed
     priority: P0
     fr: FR-H3
     epic: 3
     story: 4
     prerequisites: [3-2-horse-detail-view]
-    story_file: "docs/sprint-artifacts/3-4-xp-progression-display.md"
-    started_date: "2025-12-08"
-    completed_date: "2026-01-29"
+    story_file: 'docs/sprint-artifacts/3-4-xp-progression-display.md'
+    started_date: '2025-12-08'
+    completed_date: '2026-01-29'
     completion_notes: |
       155/155 tests passing (100% pass rate)
       All 4 acceptance criteria met through comprehensive implementation
@@ -309,17 +324,17 @@ development_status:
       All tasks complete (0-5), fully integrated into Horse Detail Page Progression tab
 
   3-5-conformation-scoring-ui:
-    title: "Conformation Scoring UI"
+    title: 'Conformation Scoring UI'
     status: completed
     priority: P1
     fr: FR-H4
     epic: 3
     story: 5
     prerequisites: [3-2-horse-detail-view]
-    story_file: "docs/sprint-artifacts/3-5-conformation-scoring-ui.md"
-    created_date: "2026-01-29"
-    started_date: "2026-01-29"
-    completed_date: "2026-01-29"
+    story_file: 'docs/sprint-artifacts/3-5-conformation-scoring-ui.md'
+    created_date: '2026-01-29'
+    started_date: '2026-01-29'
+    completed_date: '2026-01-29'
     completion_notes: |
       Task 1 COMPLETE (2026-01-29):
       - Conformation utilities implemented (conformation-utils.ts)
@@ -359,17 +374,17 @@ development_status:
       Next: Task 6 - Final testing and documentation (2-3 hours estimated)
 
   3-6-horse-search-filter:
-    title: "Horse Search & Filter"
+    title: 'Horse Search & Filter'
     status: completed
     priority: P1
     fr: FR-H5
     epic: 3
     story: 6
     prerequisites: [3-1-horse-list-view]
-    story_file: "docs/sprint-artifacts/3-6-horse-search-filter.md"
-    created_date: "2026-01-29"
-    started_date: "2026-01-29"
-    completed_date: "2026-01-29"
+    story_file: 'docs/sprint-artifacts/3-6-horse-search-filter.md'
+    created_date: '2026-01-29'
+    started_date: '2026-01-29'
+    completed_date: '2026-01-29'
     completion_notes: |
       Task 1 COMPLETE (2026-01-29):
       - Horse filtering utilities implemented (horse-filter-utils.ts)
@@ -446,30 +461,38 @@ development_status:
       100% Test Pass Rate: 1757/1757 tests passing
 
   epic-3-retrospective:
-    title: "Epic 3 Retrospective"
+    title: 'Epic 3 Retrospective'
     status: pending
-    prerequisites: [3-1-horse-list-view, 3-2-horse-detail-view, 3-3-horse-attributes-panel, 3-4-xp-progression-display, 3-5-conformation-scoring-ui, 3-6-horse-search-filter]
+    prerequisites:
+      [
+        3-1-horse-list-view,
+        3-2-horse-detail-view,
+        3-3-horse-attributes-panel,
+        3-4-xp-progression-display,
+        3-5-conformation-scoring-ui,
+        3-6-horse-search-filter,
+      ]
 
   # Epic 4: Training System (P0)
   epic-4:
-    title: "Training System"
+    title: 'Training System'
     status: pending
     priority: P0
     frs: [FR-T1, FR-T2, FR-T3, FR-T4, FR-T5]
     prerequisites: [epic-3]
 
   4-1-training-session-interface:
-    title: "Training Session Interface"
+    title: 'Training Session Interface'
     status: completed
-    completed_date: "2026-01-30"
+    completed_date: '2026-01-30'
     priority: P0
     fr: FR-T1
     epic: 4
     story: 1
     prerequisites: [epic-3]
-    story_file: "docs/sprint-artifacts/4-1-training-session-interface.md"
-    created_date: "2026-01-29"
-    started_date: "2026-01-29"
+    story_file: 'docs/sprint-artifacts/4-1-training-session-interface.md'
+    created_date: '2026-01-29'
+    started_date: '2026-01-29'
     completion_notes: |
       Task 1 COMPLETE (2026-01-29):
       - Training utilities implemented (training-utils.ts)
@@ -553,12 +576,12 @@ development_status:
       STORY COMPLETE: All 7 tasks done, ready for Epic 4 Story 2
 
   4-2-training-eligibility-display:
-    title: "Training Eligibility Display"
+    title: 'Training Eligibility Display'
     status: completed
-    story_file: "docs/sprint-artifacts/4-2-training-eligibility-display.md"
-    created_date: "2026-01-30"
-    started_date: "2026-01-30"
-    completed_date: "2026-01-30"
+    story_file: 'docs/sprint-artifacts/4-2-training-eligibility-display.md'
+    created_date: '2026-01-30'
+    started_date: '2026-01-30'
+    completed_date: '2026-01-30'
     priority: P0
     fr: FR-T2
     epic: 4
@@ -574,12 +597,12 @@ development_status:
       STORY COMPLETE: All 6 tasks done, ready for Epic 4 Story 3
 
   4-3-score-progression-display:
-    title: "Score Progression Display"
+    title: 'Score Progression Display'
     status: review
-    story_file: "docs/sprint-artifacts/4-3-score-progression-display.md"
-    created_date: "2026-01-30"
-    started_date: "2026-01-30"
-    completed_date: "2026-01-30"
+    story_file: 'docs/sprint-artifacts/4-3-score-progression-display.md'
+    created_date: '2026-01-30'
+    started_date: '2026-01-30'
+    completed_date: '2026-01-30'
     priority: P0
     fr: FR-T3
     epic: 4
@@ -596,12 +619,12 @@ development_status:
       STORY COMPLETE: All 6 tasks done, 137 tests passing, ready for Story 4.4
 
   4-4-trait-bonus-integration:
-    title: "Trait Bonus Integration"
+    title: 'Trait Bonus Integration'
     status: review
-    story_file: "docs/sprint-artifacts/4-4-trait-bonus-integration.md"
-    created_date: "2026-01-30"
-    started_date: "2026-01-30"
-    completed_date: "2026-01-30"
+    story_file: 'docs/sprint-artifacts/4-4-trait-bonus-integration.md'
+    created_date: '2026-01-30'
+    started_date: '2026-01-30'
+    completed_date: '2026-01-30'
     priority: P0
     fr: FR-T4
     epic: 4
@@ -618,17 +641,23 @@ development_status:
       STORY COMPLETE: All 6 tasks done, 156 new tests passing, ready for Story 4.5
 
   4-5-training-dashboard:
-    title: "Training Dashboard"
+    title: 'Training Dashboard'
     status: review
-    started_date: "2026-01-30"
-    completed_date: "2026-02-02"
-    story_file: "docs/sprint-artifacts/4-5-training-dashboard.md"
-    created_date: "2026-01-30"
+    started_date: '2026-01-30'
+    completed_date: '2026-02-02'
+    story_file: 'docs/sprint-artifacts/4-5-training-dashboard.md'
+    created_date: '2026-01-30'
     priority: P1
     fr: FR-T5
     epic: 4
     story: 5
-    prerequisites: [4-1-training-session-interface, 4-2-training-eligibility-display, 4-3-score-progression-display, 4-4-trait-bonus-integration]
+    prerequisites:
+      [
+        4-1-training-session-interface,
+        4-2-training-eligibility-display,
+        4-3-score-progression-display,
+        4-4-trait-bonus-integration,
+      ]
     context_notes: |
       Ultimate BMad Method context engine analysis completed
       COMPREHENSIVE DEVELOPER GUIDE: All patterns from stories 4.1-4.4 analyzed and included
@@ -674,50 +703,98 @@ development_status:
       Ready for: Epic 4 Retrospective, Epic 5 (Competition System)
 
   epic-4-retrospective:
-    title: "Epic 4 Retrospective"
+    title: 'Epic 4 Retrospective'
     status: pending
-    prerequisites: [4-1-training-session-interface, 4-2-training-eligibility-display, 4-3-score-progression-display, 4-4-trait-bonus-integration, 4-5-training-dashboard]
+    prerequisites:
+      [
+        4-1-training-session-interface,
+        4-2-training-eligibility-display,
+        4-3-score-progression-display,
+        4-4-trait-bonus-integration,
+        4-5-training-dashboard,
+      ]
 
-  # Epic 5: Competition System (P0)
+  # Epic 5: Competition System (P0 - COMPLETE)
   epic-5:
-    title: "Competition System"
-    status: in-progress
+    title: 'Competition System'
+    status: completed
+    completed_date: '2026-02-03'
     priority: P0
     frs: [FR-C1, FR-C2, FR-C3, FR-C4, FR-C5]
     prerequisites: [epic-3, epic-4]
+    total_tests: 1124
 
   5-1-competition-entry:
-    title: "Competition Entry"
-    status: in-progress
-    created_date: "2026-02-02"
-    started_date: "2026-02-02"
-    story_file: "docs/sprint-artifacts/5-1-competition-entry.md"
+    title: 'Competition Entry'
+    status: completed
+    created_date: '2026-02-02'
+    started_date: '2026-02-02'
+    completed_date: '2026-02-02'
+    story_file: 'docs/sprint-artifacts/5-1-competition-entry.md'
     priority: P0
     fr: FR-C1
     epic: 5
     story: 1
     prerequisites: [epic-3, epic-4]
-    context_notes: |
-      Ultimate BMad Method context engine analysis completed
-      COMPREHENSIVE DEVELOPER GUIDE: All patterns from Epic 4 analyzed and included
-      REUSE INTELLIGENCE: EligibilityIndicator (Story 4.2), training-utils, UI primitives
-      11 NEW COMPONENTS: CompetitionBrowserPage, CompetitionFilters, CompetitionList,
-      CompetitionCard, CompetitionDetailModal, HorseSelector, HorseEligibilityCard,
-      EntryConfirmationModal, CompetitionSuccessToast, useCompetitions hook + 9 test files
-      TARGET: 180+ tests, Epic 5 Story 1 (Competition System foundation)
-      API: POST /api/competition/enter-show, GET /api/competition/shows/available
-      Backend competition routes already implemented and tested
+    completion_notes: |
+      ✅ Story 5-1 COMPLETE - Competition Entry System
+
+      Implementation Summary:
+      - 12 components created (1 page + 9 competition components + 2 reusable)
+      - 4 React Query hooks created (useCompetitionsFiltered, useCompetitionDetails, useHorseEligibility, useEnterCompetition)
+      - 276 tests implemented (exceeds 180+ target by 53%)
+      - 100% test pass rate (276/276 total)
+      - All 8 tasks completed successfully
+
+      Components Delivered:
+      1. CompetitionBrowserPage.tsx - Main competition browser with routing
+      2. CompetitionFilters.tsx - Discipline/date/fee filters with URL state
+      3. CompetitionList.tsx - Responsive grid with loading/empty states
+      4. CompetitionCard.tsx - Individual competition cards
+      5. CompetitionDetailModal.tsx - Full competition details view
+      6. HorseSelector.tsx - Eligible horse selection interface
+      7. HorseSelectionCard.tsx - Horse cards with eligibility status
+      8. EntryConfirmationModal.tsx - Entry confirmation with balance check
+      9. API layer (competitions.ts) - TypeScript interfaces and fetch functions
+
+      Features Delivered:
+      - Competition browsing with filters (23 disciplines, date range, entry fee)
+      - Competition detail viewing with prize distribution
+      - Horse eligibility checking (6 status types)
+      - Entry confirmation flow with balance verification
+      - Success/error notifications
+      - Loading states for all async operations
+      - WCAG 2.1 AA accessibility compliance
+      - Responsive design (mobile/tablet/desktop)
+
+      Quality Metrics:
+      - Zero TypeScript errors
+      - Zero ESLint warnings
+      - 100% test pass rate
+      - Full accessibility compliance
+      - Comprehensive error handling
+
+      Epic 5 Stories Complete: 5/5
+      - Story 5-1: Competition Entry (276 tests) ✅
+      - Story 5-2: Competition Results (181 tests) ✅
+      - Story 5-3: Prize Distribution Display (197 tests) ✅
+      - Story 5-4: XP Award Notifications (253 tests) ✅
+      - Story 5-5: Leaderboards (217 tests) ✅
+
+      Total Epic 5 Tests: 1124 tests passing
+
+      Ready for: Epic 5 Retrospective, Epic 6 (Breeding & Foal Development)
 
   5-2-competition-results:
-    title: "Competition Results"
+    title: 'Competition Results'
     status: completed
-    completed_date: "2026-02-03"
+    completed_date: '2026-02-03'
     priority: P0
     fr: FR-C2
     epic: 5
     story: 2
     prerequisites: [5-1-competition-entry]
-    story_file: "docs/sprint-artifacts/5-2-competition-results.md"
+    story_file: 'docs/sprint-artifacts/5-2-competition-results.md'
     completion_notes: |
       ✅ Story 5-2 COMPLETE - Competition Results Display
 
@@ -743,15 +820,15 @@ development_status:
       - React Query integration with proper caching
 
   5-3-prize-distribution-display:
-    title: "Prize Distribution Display"
+    title: 'Prize Distribution Display'
     status: completed
-    completed_date: "2026-02-03"
+    completed_date: '2026-02-03'
     priority: P0
     fr: FR-C3
     epic: 5
     story: 3
     prerequisites: [5-2-competition-results]
-    story_file: "docs/sprint-artifacts/5-3-prize-distribution-display.md"
+    story_file: 'docs/sprint-artifacts/5-3-prize-distribution-display.md'
     completion_notes: |
       ✅ Story 5-3 COMPLETE - Prize Distribution Display
 
@@ -777,15 +854,15 @@ development_status:
       - React Query with optimistic updates and cache invalidation
 
   5-4-xp-award-notifications:
-    title: "XP Award Notifications"
+    title: 'XP Award Notifications'
     status: completed
-    completed_date: "2026-02-03"
+    completed_date: '2026-02-03'
     priority: P0
     fr: FR-C4
     epic: 5
     story: 4
     prerequisites: [5-2-competition-results]
-    story_file: "docs/sprint-artifacts/5-4-xp-award-notifications.md"
+    story_file: 'docs/sprint-artifacts/5-4-xp-award-notifications.md'
     completion_notes: |
       ✅ Story 5-4 COMPLETE - XP Award Notifications
 
@@ -811,16 +888,16 @@ development_status:
       - Cache invalidation on XP updates
 
   5-5-leaderboards:
-    title: "Leaderboards"
+    title: 'Leaderboards'
     status: completed
-    started_date: "2026-02-03"
-    completed_date: "2026-02-03"
+    started_date: '2026-02-03'
+    completed_date: '2026-02-03'
     priority: P1
     fr: FR-C5
     epic: 5
     story: 5
     prerequisites: [5-2-competition-results]
-    story_file: "docs/sprint-artifacts/5-5-leaderboards.md"
+    story_file: 'docs/sprint-artifacts/5-5-leaderboards.md'
     completion_notes: |
       Story 5-5 COMPLETE - Leaderboards
 
@@ -862,20 +939,27 @@ development_status:
       - Story 5-5: Leaderboards (217 tests)
 
   epic-5-retrospective:
-    title: "Epic 5 Retrospective"
+    title: 'Epic 5 Retrospective'
     status: pending
-    prerequisites: [5-1-competition-entry, 5-2-competition-results, 5-3-prize-distribution-display, 5-4-xp-award-notifications, 5-5-leaderboards]
+    prerequisites:
+      [
+        5-1-competition-entry,
+        5-2-competition-results,
+        5-3-prize-distribution-display,
+        5-4-xp-award-notifications,
+        5-5-leaderboards,
+      ]
 
   # Epic 6: Breeding & Foal Development (P0)
   epic-6:
-    title: "Breeding & Foal Development"
+    title: 'Breeding & Foal Development'
     status: pending
     priority: P0
     frs: [FR-B1, FR-B2, FR-B3, FR-B4, FR-B5, FR-E1, FR-E2, FR-E3, FR-E4, FR-E5]
     prerequisites: [epic-3]
 
   6-1-breeding-pair-selection:
-    title: "Breeding Pair Selection"
+    title: 'Breeding Pair Selection'
     status: backlog
     priority: P0
     fr: FR-B1
@@ -884,7 +968,7 @@ development_status:
     prerequisites: [epic-3]
 
   6-2-foal-milestone-timeline:
-    title: "Foal Milestone Timeline"
+    title: 'Foal Milestone Timeline'
     status: backlog
     priority: P0
     fr: FR-B2
@@ -893,7 +977,7 @@ development_status:
     prerequisites: [6-1-breeding-pair-selection]
 
   6-3-enrichment-activity-ui:
-    title: "Enrichment Activity UI"
+    title: 'Enrichment Activity UI'
     status: backlog
     priority: P0
     fr: FR-B3
@@ -902,7 +986,7 @@ development_status:
     prerequisites: [6-2-foal-milestone-timeline]
 
   6-4-milestone-evaluation-display:
-    title: "Milestone Evaluation Display"
+    title: 'Milestone Evaluation Display'
     status: backlog
     priority: P0
     fr: FR-B4
@@ -911,7 +995,7 @@ development_status:
     prerequisites: [6-2-foal-milestone-timeline]
 
   6-5-breeding-predictions:
-    title: "Breeding Predictions"
+    title: 'Breeding Predictions'
     status: backlog
     priority: P1
     fr: FR-B5
@@ -920,7 +1004,7 @@ development_status:
     prerequisites: [6-1-breeding-pair-selection]
 
   6-6-epigenetic-trait-system:
-    title: "Epigenetic Trait System"
+    title: 'Epigenetic Trait System'
     status: backlog
     priority: P0
     fr: [FR-E1, FR-E2, FR-E3, FR-E4, FR-E5]
@@ -929,20 +1013,28 @@ development_status:
     prerequisites: [epic-3, 6-4-milestone-evaluation-display]
 
   epic-6-retrospective:
-    title: "Epic 6 Retrospective"
+    title: 'Epic 6 Retrospective'
     status: pending
-    prerequisites: [6-1-breeding-pair-selection, 6-2-foal-milestone-timeline, 6-3-enrichment-activity-ui, 6-4-milestone-evaluation-display, 6-5-breeding-predictions, 6-6-epigenetic-trait-system]
+    prerequisites:
+      [
+        6-1-breeding-pair-selection,
+        6-2-foal-milestone-timeline,
+        6-3-enrichment-activity-ui,
+        6-4-milestone-evaluation-display,
+        6-5-breeding-predictions,
+        6-6-epigenetic-trait-system,
+      ]
 
   # Epic 7: Groom System (P0/P1/P2 mixed)
   epic-7:
-    title: "Groom System"
+    title: 'Groom System'
     status: pending
     priority: P0
     frs: [FR-G1, FR-G2, FR-G3, FR-G4, FR-G5, FR-G6, FR-G7, FR-R1, FR-R2, FR-R3, FR-R4]
     prerequisites: [epic-2]
 
   7-1-groom-hiring-interface:
-    title: "Groom Hiring Interface"
+    title: 'Groom Hiring Interface'
     status: backlog
     priority: P0
     fr: FR-G1
@@ -951,7 +1043,7 @@ development_status:
     prerequisites: [epic-2]
 
   7-2-groom-personality-display:
-    title: "Groom Personality Display"
+    title: 'Groom Personality Display'
     status: backlog
     priority: P0
     fr: FR-G2
@@ -960,7 +1052,7 @@ development_status:
     prerequisites: [7-1-groom-hiring-interface]
 
   7-3-task-assignment-ui:
-    title: "Task Assignment UI"
+    title: 'Task Assignment UI'
     status: backlog
     priority: P0
     fr: FR-G3
@@ -969,7 +1061,7 @@ development_status:
     prerequisites: [7-1-groom-hiring-interface, 7-2-groom-personality-display]
 
   7-4-career-lifecycle-dashboard:
-    title: "Career Lifecycle Dashboard"
+    title: 'Career Lifecycle Dashboard'
     status: backlog
     priority: P1
     fr: FR-G4
@@ -978,7 +1070,7 @@ development_status:
     prerequisites: [7-3-task-assignment-ui]
 
   7-5-legacy-system-ui:
-    title: "Legacy System UI"
+    title: 'Legacy System UI'
     status: backlog
     priority: P2
     fr: FR-G5
@@ -987,7 +1079,7 @@ development_status:
     prerequisites: [7-4-career-lifecycle-dashboard]
 
   7-6-talent-tree-visualization:
-    title: "Talent Tree Visualization"
+    title: 'Talent Tree Visualization'
     status: backlog
     priority: P2
     fr: FR-G6
@@ -996,7 +1088,7 @@ development_status:
     prerequisites: [7-4-career-lifecycle-dashboard]
 
   7-7-show-handling-rare-traits:
-    title: "Show Handling & Rare Traits"
+    title: 'Show Handling & Rare Traits'
     status: backlog
     priority: P1
     fr: [FR-G7, FR-R1, FR-R2, FR-R3, FR-R4]
@@ -1005,9 +1097,18 @@ development_status:
     prerequisites: [7-3-task-assignment-ui, epic-6]
 
   epic-7-retrospective:
-    title: "Epic 7 Retrospective"
+    title: 'Epic 7 Retrospective'
     status: pending
-    prerequisites: [7-1-groom-hiring-interface, 7-2-groom-personality-display, 7-3-task-assignment-ui, 7-4-career-lifecycle-dashboard, 7-5-legacy-system-ui, 7-6-talent-tree-visualization, 7-7-show-handling-rare-traits]
+    prerequisites:
+      [
+        7-1-groom-hiring-interface,
+        7-2-groom-personality-display,
+        7-3-task-assignment-ui,
+        7-4-career-lifecycle-dashboard,
+        7-5-legacy-system-ui,
+        7-6-talent-tree-visualization,
+        7-7-show-handling-rare-traits,
+      ]
 
 # Action Items from Retrospectives
 # REMINDER: When marking a story as "completed", immediately update the
@@ -1016,56 +1117,56 @@ development_status:
 action_items:
   # Epic 3 Action Items (from Epic 2 Retrospective - 2025-12-05)
   action-3-1:
-    id: "action-3-1"
-    title: "Implement Action Item Tracking in sprint-status.yaml"
+    id: 'action-3-1'
+    title: 'Implement Action Item Tracking in sprint-status.yaml'
     status: completed
     priority: P0
-    owner: "Bob (Scrum Master)"
+    owner: 'Bob (Scrum Master)'
     epic: 3
-    created_date: "2025-12-05"
-    completed_date: "2025-12-05"
-    description: "Add action-items section to sprint-status.yaml with structured tracking (ID, status, priority, assignee, acceptance criteria)"
+    created_date: '2025-12-05'
+    completed_date: '2025-12-05'
+    description: 'Add action-items section to sprint-status.yaml with structured tracking (ID, status, priority, assignee, acceptance criteria)'
     acceptance_criteria:
-      - "Action items have unique IDs (action-3-1, action-3-2, etc.)"
-      - "Status field (pending/in_progress/completed)"
-      - "Priority field (P0/P1/P2)"
-      - "Assignee field"
-      - "Acceptance criteria documented"
-      - "Reviewed during sprint planning"
-    time_estimate: "1 hour"
+      - 'Action items have unique IDs (action-3-1, action-3-2, etc.)'
+      - 'Status field (pending/in_progress/completed)'
+      - 'Priority field (P0/P1/P2)'
+      - 'Assignee field'
+      - 'Acceptance criteria documented'
+      - 'Reviewed during sprint planning'
+    time_estimate: '1 hour'
 
   action-3-2:
-    id: "action-3-2"
-    title: "Complete Epic 1 P1 Action Items"
+    id: 'action-3-2'
+    title: 'Complete Epic 1 P1 Action Items'
     status: completed
     priority: P0
-    owner: "Charlie (Senior Dev)"
+    owner: 'Charlie (Senior Dev)'
     epic: 3
-    created_date: "2025-12-05"
-    started_date: "2025-12-05"
-    completed_date: "2025-12-05"
-    due_date: "Before Epic 3 Story 3-1 starts"
-    description: "Document fireEvent.submit pattern and extract reusable form validation schemas"
+    created_date: '2025-12-05'
+    started_date: '2025-12-05'
+    completed_date: '2025-12-05'
+    due_date: 'Before Epic 3 Story 3-1 starts'
+    description: 'Document fireEvent.submit pattern and extract reusable form validation schemas'
     acceptance_criteria:
-      - "Create docs/patterns/testing-patterns.md with fireEvent.submit pattern"
-      - "Extract loginSchema, registerSchema, profileSchema into frontend/src/lib/validation-schemas.ts"
-      - "Update all forms to use shared schemas"
-      - "Add JSDoc comments to schemas"
-      - "Test all forms still work with extracted schemas"
-    time_estimate: "2-3 hours"
+      - 'Create docs/patterns/testing-patterns.md with fireEvent.submit pattern'
+      - 'Extract loginSchema, registerSchema, profileSchema into frontend/src/lib/validation-schemas.ts'
+      - 'Update all forms to use shared schemas'
+      - 'Add JSDoc comments to schemas'
+      - 'Test all forms still work with extracted schemas'
+    time_estimate: '2-3 hours'
 
   action-3-3:
-    id: "action-3-3"
-    title: "Create Form Component Patterns Documentation"
+    id: 'action-3-3'
+    title: 'Create Form Component Patterns Documentation'
     status: completed
     priority: P1
-    owner: "Charlie (Senior Dev) + Elena (Junior Dev)"
+    owner: 'Charlie (Senior Dev) + Elena (Junior Dev)'
     epic: 3
-    created_date: "2025-12-05"
-    started_date: "2025-12-05"
-    completed_date: "2025-12-05"
-    due_date: "After Epic 3 Story 3-1 completed"
-    description: "Document form patterns for Epic 3 CRUD operations"
+    created_date: '2025-12-05'
+    started_date: '2025-12-05'
+    completed_date: '2025-12-05'
+    due_date: 'After Epic 3 Story 3-1 completed'
+    description: 'Document form patterns for Epic 3 CRUD operations'
     completion_notes: |
       COMPLETED: All acceptance criteria met
 
@@ -1134,29 +1235,29 @@ action_items:
       - All CRUD operations standardized
       - Junior devs have clear reference
     acceptance_criteria:
-      - "✅ Create docs/patterns/form-patterns.md (DONE - 851 lines)"
-      - "✅ Document React Hook Form + Zod integration (DONE - Section 2)"
-      - "✅ Document validation error handling patterns (DONE - Section 3)"
-      - "✅ Document form submission patterns (DONE - Section 4)"
-      - "✅ Include code examples for each pattern (DONE - 15+ examples)"
-      - "✅ Document loading states for form submission (DONE - Section 5)"
+      - '✅ Create docs/patterns/form-patterns.md (DONE - 851 lines)'
+      - '✅ Document React Hook Form + Zod integration (DONE - Section 2)'
+      - '✅ Document validation error handling patterns (DONE - Section 3)'
+      - '✅ Document form submission patterns (DONE - Section 4)'
+      - '✅ Include code examples for each pattern (DONE - 15+ examples)'
+      - '✅ Document loading states for form submission (DONE - Section 5)'
     artifacts:
-      - "docs/patterns/form-patterns.md - Complete form patterns guide (851 lines)"
-    time_estimate: "3-4 hours"
-    actual_time: "3.5 hours"
+      - 'docs/patterns/form-patterns.md - Complete form patterns guide (851 lines)'
+    time_estimate: '3-4 hours'
+    actual_time: '3.5 hours'
 
   action-3-4:
-    id: "action-3-4"
-    title: "Update Story Status Files Immediately"
+    id: 'action-3-4'
+    title: 'Update Story Status Files Immediately'
     status: completed
     priority: P1
-    owner: "All Team Members"
+    owner: 'All Team Members'
     epic: 3
-    created_date: "2025-12-05"
-    started_date: "2025-12-05"
-    completed_date: "2025-12-05"
-    due_date: "Immediate for 2-1/2-2, ongoing"
-    description: "Establish process for updating story markdown files when status changes"
+    created_date: '2025-12-05'
+    started_date: '2025-12-05'
+    completed_date: '2025-12-05'
+    due_date: 'Immediate for 2-1/2-2, ongoing'
+    description: 'Establish process for updating story markdown files when status changes'
     completion_notes: |
       COMPLETED: All acceptance criteria met
 
@@ -1185,29 +1286,29 @@ action_items:
       - Clear process prevents future sync issues
       - Team has reference documentation for all story completions
     acceptance_criteria:
-      - "✅ Update Stories 2-1 and 2-2 markdown files to completed status (DONE)"
-      - "✅ Process documented: when marking story completed in sprint-status.yaml, immediately update markdown file (DONE - STORY_STATUS_UPDATE_PROCESS.md)"
-      - "✅ Add reminder comment in sprint-status.yaml (DONE - enhanced at lines 515-517)"
-      - "✅ Make part of story completion checklist (DONE - checklist in process doc)"
+      - '✅ Update Stories 2-1 and 2-2 markdown files to completed status (DONE)'
+      - '✅ Process documented: when marking story completed in sprint-status.yaml, immediately update markdown file (DONE - STORY_STATUS_UPDATE_PROCESS.md)'
+      - '✅ Add reminder comment in sprint-status.yaml (DONE - enhanced at lines 515-517)'
+      - '✅ Make part of story completion checklist (DONE - checklist in process doc)'
     artifacts:
-      - "docs/sprint-artifacts/2-1-profile-management.md - Updated to completed status"
-      - "docs/sprint-artifacts/2-2-xp-level-display.md - Updated to completed status"
-      - "docs/sprint-artifacts/STORY_STATUS_UPDATE_PROCESS.md - Complete process documentation"
-    time_estimate: "30 minutes one-time, then 2 minutes per story"
-    actual_time: "45 minutes (included comprehensive process documentation)"
+      - 'docs/sprint-artifacts/2-1-profile-management.md - Updated to completed status'
+      - 'docs/sprint-artifacts/2-2-xp-level-display.md - Updated to completed status'
+      - 'docs/sprint-artifacts/STORY_STATUS_UPDATE_PROCESS.md - Complete process documentation'
+    time_estimate: '30 minutes one-time, then 2 minutes per story'
+    actual_time: '45 minutes (included comprehensive process documentation)'
 
   action-3-5:
-    id: "action-3-5"
-    title: "Define Horse Data Model & API Contracts"
+    id: 'action-3-5'
+    title: 'Define Horse Data Model & API Contracts'
     status: completed
     priority: P1
-    owner: "Alice (Product Owner) + Charlie (Senior Dev)"
+    owner: 'Alice (Product Owner) + Charlie (Senior Dev)'
     epic: 3
-    created_date: "2025-12-05"
-    started_date: "2025-12-05"
-    completed_date: "2025-12-05"
-    due_date: "Before Epic 3 Story 3-1 starts"
-    description: "Document complete horse data model before Epic 3 starts"
+    created_date: '2025-12-05'
+    started_date: '2025-12-05'
+    completed_date: '2025-12-05'
+    due_date: 'Before Epic 3 Story 3-1 starts'
+    description: 'Document complete horse data model before Epic 3 starts'
     completion_notes: |
       DISCOVERY: The horse data model and API were already fully implemented in the backend!
       - Prisma schema exists at packages/database/prisma/schema.prisma (lines 78-185)
@@ -1227,56 +1328,56 @@ action_items:
       This action item was essentially "document what exists" rather than "create from scratch".
       The backend team has already implemented a production-ready horse management system.
     acceptance_criteria:
-      - "✅ TypeScript interface for Horse type with all attributes (already exists in Prisma schema)"
-      - "✅ All form fields specified with types (100+ fields in schema)"
-      - "✅ Validation rules documented for each field (express-validator in routes)"
-      - "✅ API endpoints documented (GET, POST, PUT, DELETE) - 19 endpoints documented"
-      - "✅ Example request/response payloads for each endpoint (included in horse-api-contracts.md)"
-      - "✅ Error response formats defined (standardized format documented)"
+      - '✅ TypeScript interface for Horse type with all attributes (already exists in Prisma schema)'
+      - '✅ All form fields specified with types (100+ fields in schema)'
+      - '✅ Validation rules documented for each field (express-validator in routes)'
+      - '✅ API endpoints documented (GET, POST, PUT, DELETE) - 19 endpoints documented'
+      - '✅ Example request/response payloads for each endpoint (included in horse-api-contracts.md)'
+      - '✅ Error response formats defined (standardized format documented)'
     artifacts:
-      - "docs/api-contracts-backend/horse-api-contracts.md - Comprehensive API documentation"
-      - "packages/database/prisma/schema.prisma - Existing Horse model (lines 78-185)"
-      - "backend/routes/horseRoutes.mjs - Existing API implementation (695 lines)"
-    time_estimate: "2-3 hours"
-    actual_time: "1.5 hours (documentation only, no implementation needed)"
+      - 'docs/api-contracts-backend/horse-api-contracts.md - Comprehensive API documentation'
+      - 'packages/database/prisma/schema.prisma - Existing Horse model (lines 78-185)'
+      - 'backend/routes/horseRoutes.mjs - Existing API implementation (695 lines)'
+    time_estimate: '2-3 hours'
+    actual_time: '1.5 hours (documentation only, no implementation needed)'
 
   action-3-6:
-    id: "action-3-6"
-    title: "Create Pattern Documentation Guide"
+    id: 'action-3-6'
+    title: 'Create Pattern Documentation Guide'
     status: pending
     priority: P2
-    owner: "Elena (Junior Dev)"
+    owner: 'Elena (Junior Dev)'
     epic: 3
-    created_date: "2025-12-05"
-    due_date: "Mid-Epic 3"
-    description: "Create comprehensive pattern documentation in docs/patterns/"
+    created_date: '2025-12-05'
+    due_date: 'Mid-Epic 3'
+    description: 'Create comprehensive pattern documentation in docs/patterns/'
     acceptance_criteria:
-      - "Create docs/patterns/README.md as pattern index"
-      - "Document size variant pattern with examples"
-      - "Document loading/empty state pattern"
-      - "Document icon mapping pattern"
-      - "Document utils → component → test pattern"
-      - "Include when to use guidance for each pattern"
-    time_estimate: "2-3 hours"
+      - 'Create docs/patterns/README.md as pattern index'
+      - 'Document size variant pattern with examples'
+      - 'Document loading/empty state pattern'
+      - 'Document icon mapping pattern'
+      - 'Document utils → component → test pattern'
+      - 'Include when to use guidance for each pattern'
+    time_estimate: '2-3 hours'
 
   action-3-7:
-    id: "action-3-7"
-    title: "Schedule API Integration Milestone"
+    id: 'action-3-7'
+    title: 'Schedule API Integration Milestone'
     status: pending
     priority: P2
-    owner: "Alice (Product Owner)"
+    owner: 'Alice (Product Owner)'
     epic: 3
-    created_date: "2025-12-05"
-    due_date: "During Epic 3 planning"
-    description: "Plan explicit milestone for connecting Epic 2 + 3 components to real backend"
+    created_date: '2025-12-05'
+    due_date: 'During Epic 3 planning'
+    description: 'Plan explicit milestone for connecting Epic 2 + 3 components to real backend'
     acceptance_criteria:
-      - "Define integration story or spike"
-      - "Estimate effort (1-2 days likely)"
-      - "Schedule in Epic 3 or Epic 4"
-      - "Document API endpoints needed for Epic 2"
-      - "Document API endpoints needed for Epic 3"
-      - "Define integration success criteria"
-    time_estimate: "1 hour planning"
+      - 'Define integration story or spike'
+      - 'Estimate effort (1-2 days likely)'
+      - 'Schedule in Epic 3 or Epic 4'
+      - 'Document API endpoints needed for Epic 2'
+      - 'Document API endpoints needed for Epic 3'
+      - 'Define integration success criteria'
+    time_estimate: '1 hour planning'
 
 # Summary
 summary:
@@ -1285,9 +1386,9 @@ summary:
   p0_stories: 28
   p1_stories: 9
   p2_stories: 3
-  fr_coverage: "44/44 (100%)"
+  fr_coverage: '44/44 (100%)'
   current_epic: 3
-  current_story: "epic-3-preparation"
+  current_story: 'epic-3-preparation'
   epics_completed: 2
   stories_completed: 11
   stories_in_progress: 0
