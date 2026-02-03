@@ -13,7 +13,7 @@ import prisma from '../../db/index.mjs';
 import bcrypt from 'bcryptjs';
 
 describe('Authentication with HttpOnly Cookies', () => {
-  let testUser;
+  let _testUser;
   let server;
   const testUserData = {
     username: 'cookietest',
@@ -39,7 +39,7 @@ describe('Authentication with HttpOnly Cookies', () => {
     // Create test user for tests that need it
     const bcrypt = (await import('bcryptjs')).default;
     const hashedPassword = await bcrypt.hash(testUserData.password, 10);
-    testUser = await prisma.user.create({
+    _testUser = await prisma.user.create({
       data: {
         username: testUserData.username,
         email: testUserData.email,
@@ -115,7 +115,7 @@ describe('Authentication with HttpOnly Cookies', () => {
     });
 
     it('should NOT expose tokens in response body (XSS protection)', async () => {
-      const response = await request(app)
+      const _response = await request(app)
         .post('/api/auth/register')
         .set(rateLimitBypassHeader)
         .send({
@@ -334,7 +334,7 @@ describe('Authentication with HttpOnly Cookies', () => {
   describe('Security: XSS Protection Verification', () => {
     it('should never include JWT tokens in any response body', async () => {
       // Test all auth endpoints
-      const registerResponse = await request(app)
+      const _registerResponse = await request(app)
         .post('/api/auth/register')
         .set(rateLimitBypassHeader)
         .send({
@@ -344,7 +344,7 @@ describe('Authentication with HttpOnly Cookies', () => {
         })
         .expect(201);
 
-      const loginResponse = await request(app)
+      const _loginResponse = await request(app)
         .post('/api/auth/login')
         .set(rateLimitBypassHeader)
         .send({
