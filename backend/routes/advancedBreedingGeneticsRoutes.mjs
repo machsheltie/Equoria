@@ -8,7 +8,7 @@
 import express from 'express';
 import { body, param, query, validationResult } from 'express-validator';
 import { authenticateToken } from '../middleware/auth.mjs';
-import { findOwnedResource } from '../middleware/ownership.mjs';
+import { findOwnedResource as _findOwnedResource } from '../middleware/ownership.mjs';
 import prisma from '../db/index.mjs';
 import logger from '../utils/logger.mjs';
 

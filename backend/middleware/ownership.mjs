@@ -94,8 +94,8 @@ export const requireOwnership = (resourceType, options = {}) => {
       const rawId = req.params[idParam];
       const isNumericId = typeof rawId === 'string' && /^[0-9]+$/.test(rawId);
       const resourceId = isNumericId ? parseInt(rawId, 10) : NaN;
-      const skipAuthFlag = ['true', '1', 'yes'].includes(String(process.env.SKIP_AUTH_FOR_TESTING || '').toLowerCase());
-      const requireAuthHeader = headers['x-test-require-auth'] === 'true';
+      const _skipAuthFlag = ['true', '1', 'yes'].includes(String(process.env.SKIP_AUTH_FOR_TESTING || '').toLowerCase());
+      const _requireAuthHeader = headers['x-test-require-auth'] === 'true';
 
       // Test-only override to stabilize integration tests by forcing a specific user context
       if (process.env.NODE_ENV === 'test' && headers['x-test-user-id']) {
