@@ -22,7 +22,7 @@
 
 import http from 'k6/http';
 import { check, sleep, group } from 'k6';
-import { Counter, Trend, Rate, Gauge } from 'k6/metrics';
+import { Counter, Trend, Rate, Gauge as _Gauge } from 'k6/metrics';
 
 // Custom metrics
 const rateLimitHitsServer1 = new Counter('rate_limit_hits_server1');
@@ -127,7 +127,7 @@ export default function (data) {
   group('Distributed Rate Limiting', () => {
     // Test 1: Rapid requests to Server 1
     group('Server 1 Rate Limiting', () => {
-      let hitRateLimit = false;
+      let _hitRateLimit = false;
 
       for (let i = 0; i < 10; i++) {
         const startTime = new Date();
@@ -137,7 +137,7 @@ export default function (data) {
         redisLatency.add(duration);
 
         if (res.status === 429) {
-          hitRateLimit = true;
+          _hitRateLimit = true;
           rateLimitHitsServer1.add(1);
           totalRateLimitHits.add(1);
 
@@ -152,14 +152,14 @@ export default function (data) {
         }
       }
 
-      check(hitRateLimit, {
+      check(_hitRateLimit, {
         'server 1 enforces rate limit': hit => hit === true,
       });
     });
 
     // Test 2: Rapid requests to Server 2 (should share same rate limit counter)
     group('Server 2 Rate Limiting (Shared Counter)', () => {
-      let hitRateLimit = false;
+      let _hitRateLimit = false;
 
       for (let i = 0; i < 5; i++) {
         const startTime = new Date();
@@ -170,7 +170,7 @@ export default function (data) {
         crossServerRequests.add(1);
 
         if (res.status === 429) {
-          hitRateLimit = true;
+          _hitRateLimit = true;
           rateLimitHitsServer2.add(1);
           totalRateLimitHits.add(1);
 
@@ -198,14 +198,14 @@ export default function (data) {
     // Test 3: Alternating requests between servers
     group('Cross-Server Rate Limit Consistency', () => {
       const servers = [API_URL_1, API_URL_2];
-      let totalRequests = 0;
+      let _totalRequests = 0;
       let rateLimitHits = 0;
 
       for (let i = 0; i < 8; i++) {
         const serverUrl = servers[i % 2]; // Alternate between servers
 
         const res = http.get(`${serverUrl}/api/users/profile`, params);
-        totalRequests++;
+        _totalRequests++;
 
         if (res.status === 429) {
           rateLimitHits++;

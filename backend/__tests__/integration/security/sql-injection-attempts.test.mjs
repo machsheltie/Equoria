@@ -25,7 +25,7 @@ describe('SQL Injection Attempts Integration Tests', () => {
   let testUser;
   let validToken;
   let testHorse;
-  let testGroom;
+  let _testGroom;
   const expectBlocked = response => {
     expect([200, 400, 403, 404]).toContain(response.status);
     const success =
@@ -67,7 +67,7 @@ describe('SQL Injection Attempts Integration Tests', () => {
     });
 
     // Create test groom owned by user
-    testGroom = await prisma.groom.create({
+    _testGroom = await prisma.groom.create({
       data: {
         name: `TestGroom-${Date.now()}`,
         userId: testUser.id,

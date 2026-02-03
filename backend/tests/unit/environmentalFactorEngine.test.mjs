@@ -8,15 +8,15 @@
  * Business Rules: Environmental impact on horse development, seasonal variations, weather effects
  */
 
-import { describe, test, expect, beforeEach, afterEach } from '@jest/globals';
-import logger from '../../utils/logger.mjs';
+import { describe, test, expect, beforeEach, afterEach as _afterEach } from '@jest/globals';
+import _logger from '../../utils/logger.mjs';
 import {
   calculateCurrentWeather,
   getSeasonalFactors,
   calculateEnvironmentalTriggers,
   calculateEnvironmentalImpact,
   generateWeatherForecast,
-  getEnvironmentalHistory,
+  getEnvironmentalHistory as _getEnvironmentalHistory,
   calculateComfortZone,
   assessEnvironmentalStress,
 } from '../../services/environmentalFactorEngineService.mjs';

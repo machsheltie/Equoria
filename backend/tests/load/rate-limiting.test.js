@@ -116,7 +116,7 @@ export default function (data) {
 
     requestDuration.add(duration);
 
-    const checks = check(res, {
+    const _checks = check(res, {
       'status is 200 or 429': r => r.status === 200 || r.status === 429,
       'response time < 1000ms': r => r.timings.duration < 1000,
     });

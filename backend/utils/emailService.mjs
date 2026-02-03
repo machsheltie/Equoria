@@ -326,7 +326,7 @@ export async function sendWelcomeEmail(email, user = {}) {
     `;
     const bodyText = `Hi ${userName},\n\nCongratulations! Your email has been successfully verified. You now have full access to Equoria.\n\nHere's what you can do next:\n- Browse and purchase your first horses\n- Start breeding champions\n- Compete in shows and events\n- Build your stable empire\n\nWe're excited to have you as part of the Equoria community!`;
 
-    const htmlEmail = generateEmailTemplate(
+    const _htmlEmail = generateEmailTemplate(
       subject,
       heading,
       bodyHtml,
@@ -334,7 +334,7 @@ export async function sendWelcomeEmail(email, user = {}) {
       dashboardUrl,
     );
 
-    const plainTextEmail = generatePlainTextEmail(
+    const _plainTextEmail = generatePlainTextEmail(
       heading,
       bodyText,
       'Go to your dashboard',
