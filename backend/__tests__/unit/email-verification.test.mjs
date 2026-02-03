@@ -273,7 +273,7 @@ describe('Email Verification Service - Unit Tests', () => {
       const tokenData = await createVerificationToken(testUser.id, testUser.email);
 
       // Verify that both token update and user update happen atomically
-      const result = await verifyEmailToken(tokenData.token);
+      const _result = await verifyEmailToken(tokenData.token);
 
       const [tokenRecord, userRecord] = await Promise.all([
         prisma.emailVerificationToken.findUnique({ where: { token: tokenData.token } }),

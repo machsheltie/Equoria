@@ -3,7 +3,7 @@
  * Verifies the caching logic and in-memory fallback
  */
 
-import { describe, it, expect, jest, beforeEach, afterEach } from '@jest/globals';
+import { describe, it, expect, jest, beforeEach, afterEach as _afterEach } from '@jest/globals';
 import {
   getCachedQuery,
   invalidateCache,

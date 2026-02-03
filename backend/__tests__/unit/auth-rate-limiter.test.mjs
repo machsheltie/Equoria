@@ -16,29 +16,29 @@
  * Phase 1, Day 3: Rate Limiting Implementation
  */
 
-import { describe, it, expect, beforeEach, afterEach, jest } from '@jest/globals';
-import { createMockRequest, createMockResponse, sleep } from '../config/test-helpers.mjs';
+import { describe, it, expect as _expect, beforeEach, afterEach, jest } from '@jest/globals';
+import { createMockRequest, createMockResponse, sleep as _sleep } from '../config/test-helpers.mjs';
 
 // Import rate limiter
 import { createAuthRateLimiter, resetAllAuthRateLimits } from '../../middleware/authRateLimiter.mjs';
 
 describe('Authentication Rate Limiter (Unit)', () => {
-  let rateLimiter;
-  let mockReq;
-  let mockRes;
-  let mockNext;
+  let _rateLimiter;
+  let _mockReq;
+  let _mockRes;
+  let _mockNext;
 
   beforeEach(() => {
     // Create fresh instances
-    mockReq = createMockRequest({
+    _mockReq = createMockRequest({
       ip: '127.0.0.1',
       method: 'POST',
       path: '/api/auth/login',
     });
-    mockRes = createMockResponse();
-    mockNext = jest.fn();
+    _mockRes = createMockResponse();
+    _mockNext = jest.fn();
 
-    rateLimiter = createAuthRateLimiter({
+    _rateLimiter = createAuthRateLimiter({
       windowMs: 1000, // 1 second for fast tests
       max: 3,
     });
