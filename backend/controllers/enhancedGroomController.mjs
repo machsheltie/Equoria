@@ -20,7 +20,7 @@ import {
 export async function getEnhancedInteractions(req, res) {
   try {
     const { groomId, horseId } = req.params;
-    const userId = req.user?.id;
+    const _userId = req.user?.id;
 
     logger.info(`[enhancedGroomController] Getting enhanced interactions for groom ${groomId} and horse ${horseId}`);
 

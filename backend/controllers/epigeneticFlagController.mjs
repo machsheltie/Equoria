@@ -15,7 +15,7 @@
  */
 
 import { validationResult } from 'express-validator';
-import prisma from '../db/index.mjs';
+import _prisma from '../db/index.mjs';
 import logger from '../utils/logger.mjs';
 import { findOwnedResource } from '../middleware/ownership.mjs';
 import {
@@ -98,7 +98,7 @@ export async function getHorseFlags(req, res) {
       });
     }
 
-    const horseId = horse.id;
+    const _horseId = horse.id;
 
     // Get flag definitions for assigned flags
     const flagDetails = (horse.epigeneticFlags || []).map(flagName => {

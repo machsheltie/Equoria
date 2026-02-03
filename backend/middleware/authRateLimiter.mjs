@@ -54,7 +54,7 @@ export { getRedisClient };
  * @param {Object} options - Configuration options (ignored, uses Redis config)
  * @returns {Function} Redis-backed rate limiter middleware
  */
-export function createAuthRateLimiter(options = {}) {
+export function createAuthRateLimiter(_options = {}) {
   logger.warn(
     '[AuthRateLimiter] createAuthRateLimiter() is deprecated, using Redis-backed limiter',
   );
