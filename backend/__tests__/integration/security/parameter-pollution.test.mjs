@@ -14,10 +14,10 @@
  * @module __tests__/integration/security/parameter-pollution
  */
 
-import { describe, it, expect, beforeEach, afterAll, jest } from '@jest/globals';
+import { describe, it, expect, beforeEach, afterAll, jest as _jest } from '@jest/globals';
 import request from 'supertest';
 import app from '../../../app.mjs';
-import { createMockUser, createMockToken, createMockHorse } from '../../factories/index.mjs';
+import { createMockUser as _createMockUser, createMockToken, createMockHorse as _createMockHorse } from '../../factories/index.mjs';
 import prisma from '../../../../packages/database/prismaClient.mjs';
 
 describe('Parameter Pollution Attack Integration Tests', () => {

@@ -15,10 +15,10 @@
  * @module __tests__/integration/security/sql-injection-attempts
  */
 
-import { describe, it, expect, beforeEach, afterAll, jest } from '@jest/globals';
+import { describe, it, expect, beforeEach, afterAll, jest as _jest } from '@jest/globals';
 import request from 'supertest';
 import app from '../../../app.mjs';
-import { createMockUser, createMockToken, createMockHorse, createMockGroom } from '../../factories/index.mjs';
+import { createMockUser as _createMockUser, createMockToken, createMockHorse as _createMockHorse, createMockGroom as _createMockGroom } from '../../factories/index.mjs';
 import prisma from '../../../../packages/database/prismaClient.mjs';
 
 describe('SQL Injection Attempts Integration Tests', () => {

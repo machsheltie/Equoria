@@ -13,10 +13,10 @@
  * @module __tests__/integration/security/auth-bypass-attempts
  */
 
-import { describe, it, expect, beforeEach, afterAll, jest } from '@jest/globals';
+import { describe, it, expect, beforeEach, afterAll, jest as _jest } from '@jest/globals';
 import request from 'supertest';
 import app from '../../../app.mjs';
-import { createMockUser, createMockToken, createMalformedToken } from '../../factories/index.mjs';
+import { createMockUser as _createMockUser, createMockToken, createMalformedToken as _createMalformedToken } from '../../factories/index.mjs';
 import prisma from '../../../../packages/database/prismaClient.mjs';
 import jwt from 'jsonwebtoken';
 

@@ -18,7 +18,7 @@
 import request from 'supertest';
 import app from '../../app.mjs';
 import prisma from '../../db/index.mjs';
-import { jest } from '@jest/globals';
+import { jest as _jest } from '@jest/globals';
 
 describe('Cookie Integration Tests', () => {
   let testUser;

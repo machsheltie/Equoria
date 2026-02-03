@@ -19,7 +19,7 @@
 import request from 'supertest';
 import app from '../../app.mjs';
 import prisma from '../../../packages/database/prismaClient.mjs';
-import { jest } from '@jest/globals';
+import { jest as _jest } from '@jest/globals';
 
 describe('CSRF Protection Integration Tests', () => {
   const rateLimitBypassHeader = { 'X-Test-Bypass-Rate-Limit': 'true' };
