@@ -25,7 +25,7 @@ export default {
    * @param {object} options - Jest options
    * @returns {Set<string>} Set of absolute dependency paths
    */
-  extract(code, filePath, options) {
+  extract(code, filePath, _options) {
     const dependencies = new Set();
     const fileDir = path.dirname(filePath);
 

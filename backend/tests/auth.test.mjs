@@ -38,7 +38,7 @@ import { describe, it, expect, beforeEach, afterAll } from '@jest/globals';
 // Jest globals are available in test environment
 import request from 'supertest';
 import app from '../app.mjs';
-import { createTestUser, createLoginData } from './helpers/authHelper.mjs';
+import { createTestUser, createLoginData as _createLoginData } from './helpers/authHelper.mjs';
 import prisma from '../db/index.mjs';
 import { resetAllAuthRateLimits } from '../middleware/authRateLimiter.mjs';
 

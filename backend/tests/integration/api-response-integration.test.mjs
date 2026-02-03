@@ -41,7 +41,7 @@ import { body } from 'express-validator';
 import { register, login } from '../../controllers/authController.mjs';
 import { authenticateToken } from '../../middleware/auth.mjs';
 import { handleValidationErrors } from '../../middleware/validationErrorHandler.mjs';
-import { responseHandler, ApiResponse } from '../../utils/apiResponse.mjs';
+import { responseHandler, ApiResponse as _ApiResponse } from '../../utils/apiResponse.mjs';
 import { responseOptimization, performanceMonitoring } from '../../middleware/responseOptimization.mjs';
 import { handlePing, handleHealthCheck } from '../../controllers/pingController.mjs';
 import prisma from '../../db/index.mjs';
