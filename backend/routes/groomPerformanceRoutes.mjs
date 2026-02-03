@@ -7,7 +7,7 @@
 import express from 'express';
 import { body, param, query } from 'express-validator';
 import { authenticateToken } from '../middleware/auth.mjs';
-import { requireOwnership, findOwnedResource } from '../middleware/ownership.mjs';
+import { requireOwnership, findOwnedResource as _findOwnedResource } from '../middleware/ownership.mjs';
 import { handleValidationErrors } from '../middleware/validationErrorHandler.mjs';
 import {
   recordPerformance,

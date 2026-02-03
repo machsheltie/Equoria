@@ -9,9 +9,9 @@ import { body, param, validationResult } from 'express-validator';
 import { authenticateToken } from '../middleware/auth.mjs';
 import { requireOwnership } from '../middleware/ownership.mjs';
 import { evaluateUltraRareTriggers, evaluateExoticUnlocks } from '../utils/ultraRareTriggerEngine.mjs';
-import { assignRareTraitBoosterPerks, getRevealedPerks, applyRareTraitBoosterEffects } from '../utils/groomRareTraitPerks.mjs';
+import { assignRareTraitBoosterPerks, getRevealedPerks, applyRareTraitBoosterEffects as _applyRareTraitBoosterEffects } from '../utils/groomRareTraitPerks.mjs';
 import { getAllUltraRareTraits, getAllExoticTraits, getUltraRareTraitDefinition } from '../utils/ultraRareTraits.mjs';
-import { applyUltraRareStressEffects, applyUltraRareCompetitionEffects, hasUltraRareAbility } from '../utils/ultraRareMechanicalEffects.mjs';
+import { applyUltraRareStressEffects, applyUltraRareCompetitionEffects, hasUltraRareAbility as _hasUltraRareAbility } from '../utils/ultraRareMechanicalEffects.mjs';
 import prisma from '../db/index.mjs';
 import logger from '../utils/logger.mjs';
 

@@ -21,9 +21,9 @@ import { body, query, validationResult } from 'express-validator';
 import { authenticateToken } from '../middleware/auth.mjs';
 import {
   getMemoryManager,
-  getMemoryReport,
-  trackResource,
-  untrackResource,
+  getMemoryReport as _getMemoryReport,
+  trackResource as _trackResource,
+  untrackResource as _untrackResource,
 } from '../services/memoryResourceManagementService.mjs';
 import logger from '../utils/logger.mjs';
 
