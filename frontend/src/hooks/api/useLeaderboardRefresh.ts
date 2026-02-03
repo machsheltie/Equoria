@@ -29,7 +29,10 @@ import { useState, useCallback } from 'react';
 import { useQueryClient } from '@tanstack/react-query';
 import { leaderboardQueryKeys } from './useLeaderboard';
 import { userRankSummaryQueryKeys } from './useUserRankSummary';
-import type { LeaderboardCategory, TimePeriod } from '@/components/leaderboard/LeaderboardCategorySelector';
+import type {
+  LeaderboardCategory,
+  TimePeriod,
+} from '@/components/leaderboard/LeaderboardCategorySelector';
 
 /**
  * Return type for the useLeaderboardRefresh hook.
@@ -37,8 +40,8 @@ import type { LeaderboardCategory, TimePeriod } from '@/components/leaderboard/L
 export interface UseLeaderboardRefreshResult {
   refreshAll: () => Promise<void>;
   refreshCategory: (
-    category: LeaderboardCategory,
-    period: TimePeriod,
+    _category: LeaderboardCategory,
+    _period: TimePeriod,
     _discipline?: string
   ) => Promise<void>;
   isRefreshing: boolean;
@@ -80,15 +83,11 @@ export function useLeaderboardRefresh(): UseLeaderboardRefreshResult {
   }, [queryClient]);
 
   const refreshCategory = useCallback(
-    async (
-      category: LeaderboardCategory,
-      period: TimePeriod,
-      _discipline?: string
-    ) => {
+    async (_category: LeaderboardCategory, _period: TimePeriod, _discipline?: string) => {
       setIsRefreshing(true);
       try {
         await queryClient.invalidateQueries({
-          queryKey: ['leaderboards', category, period, discipline],
+          queryKey: ['leaderboards', _category, _period, _discipline],
         });
       } finally {
         setIsRefreshing(false);

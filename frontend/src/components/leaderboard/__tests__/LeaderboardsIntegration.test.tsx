@@ -23,7 +23,7 @@ import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest';
 import { render, screen, waitFor, within } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
-import { MemoryRouter, Routes, Route } from 'react-router-dom';
+import { MemoryRouter, Routes, Route } from '../../../test/utils';
 import { http, HttpResponse } from 'msw';
 import { server } from '@/test/msw/server';
 import LeaderboardsPage from '@/pages/LeaderboardsPage';
@@ -129,6 +129,71 @@ async function waitForLeaderboardToLoad() {
 
 beforeEach(() => {
   vi.clearAllMocks();
+
+  // Add MSW handler for user rank summary endpoint
+  server.use(
+    http.get('http://localhost:3001/api/leaderboards/user-summary/:userId', () => {
+      return HttpResponse.json({
+        success: true,
+        data: {
+          userId: 'user-123',
+          userName: 'John Doe',
+          rankings: [
+            {
+              category: 'level',
+              categoryLabel: 'Level',
+              rank: 15,
+              totalEntries: 1000,
+              rankChange: 2,
+              primaryStat: 42,
+              statLabel: 'Level',
+            },
+            {
+              category: 'prize-money',
+              categoryLabel: 'Prize Money',
+              rank: 23,
+              totalEntries: 1000,
+              rankChange: -1,
+              primaryStat: 125000,
+              statLabel: 'Prize Money',
+            },
+            {
+              category: 'win-rate',
+              categoryLabel: 'Win Rate',
+              rank: 8,
+              totalEntries: 1000,
+              rankChange: 0,
+              primaryStat: 85,
+              statLabel: 'Win Rate',
+            },
+            {
+              category: 'total-competitions',
+              categoryLabel: 'Total Competitions',
+              rank: 45,
+              totalEntries: 1000,
+              rankChange: 5,
+              primaryStat: 234,
+              statLabel: 'Competitions',
+            },
+          ],
+          bestRankings: [
+            {
+              category: 'win-rate',
+              categoryLabel: 'Win Rate',
+              rank: 8,
+              achievement: 'Top 10',
+            },
+            {
+              category: 'level',
+              categoryLabel: 'Level',
+              rank: 15,
+              achievement: 'Top 20',
+            },
+          ],
+        },
+      });
+    })
+  );
 });
 
 afterEach(() => {
@@ -463,9 +528,7 @@ describe('User Rankings Dashboard', () => {
     // The fixture has a prize-money ranking card with label "Prize Money"
     const rankCards = screen.getAllByTestId('rank-summary-card');
     // Find the card that contains "Prize Money" text
-    const prizeMoneyCard = rankCards.find((card) =>
-      within(card).queryByText('Prize Money')
-    );
+    const prizeMoneyCard = rankCards.find((card) => within(card).queryByText('Prize Money'));
 
     if (prizeMoneyCard) {
       await user.click(prizeMoneyCard);
@@ -483,9 +546,7 @@ describe('User Rankings Dashboard', () => {
       // Some category tab should have changed
       await waitFor(() => {
         const tabs = screen.getAllByRole('tab');
-        const activeTab = tabs.find(
-          (tab) => tab.getAttribute('aria-pressed') === 'true'
-        );
+        const activeTab = tabs.find((tab) => tab.getAttribute('aria-pressed') === 'true');
         expect(activeTab).toBeTruthy();
       });
     }
@@ -566,9 +627,7 @@ describe('Error Handling', () => {
     );
 
     // Retry button should be present
-    expect(
-      screen.getByRole('button', { name: /retry/i })
-    ).toBeInTheDocument();
+    expect(screen.getByRole('button', { name: /retry/i })).toBeInTheDocument();
   });
 
   it('should refetch data when retry button is clicked after error', async () => {

@@ -61,18 +61,18 @@ describe('useLeaderboardRefresh', () => {
     const wrapper = createWrapper();
 
     // Pre-populate cache with leaderboard data
-    queryClient.setQueryData(
-      leaderboardQueryKeys.list('level', 'monthly', undefined, 1, 50),
-      { category: 'level', entries: [] }
-    );
+    queryClient.setQueryData(leaderboardQueryKeys.list('level', 'monthly', undefined, 1, 50), {
+      category: 'level',
+      entries: [],
+    });
     queryClient.setQueryData(
       leaderboardQueryKeys.list('prize-money', 'all-time', undefined, 1, 50),
       { category: 'prize-money', entries: [] }
     );
-    queryClient.setQueryData(
-      userRankSummaryQueryKeys.user('user-123'),
-      { userId: 'user-123', rankings: [] }
-    );
+    queryClient.setQueryData(userRankSummaryQueryKeys.user('user-123'), {
+      userId: 'user-123',
+      rankings: [],
+    });
 
     const invalidateSpy = vi.spyOn(queryClient, 'invalidateQueries');
 
@@ -100,10 +100,10 @@ describe('useLeaderboardRefresh', () => {
     const wrapper = createWrapper();
 
     // Pre-populate cache
-    queryClient.setQueryData(
-      leaderboardQueryKeys.list('level', 'monthly', undefined, 1, 50),
-      { category: 'level', entries: [] }
-    );
+    queryClient.setQueryData(leaderboardQueryKeys.list('level', 'monthly', undefined, 1, 50), {
+      category: 'level',
+      entries: [],
+    });
 
     const invalidateSpy = vi.spyOn(queryClient, 'invalidateQueries');
 
@@ -160,7 +160,8 @@ describe('useLeaderboardRefresh', () => {
       (call) => JSON.stringify(call[0]) === JSON.stringify({ queryKey: leaderboardQueryKeys.all })
     );
     const userSummaryCalls = invalidateSpy.mock.calls.filter(
-      (call) => JSON.stringify(call[0]) === JSON.stringify({ queryKey: userRankSummaryQueryKeys.all })
+      (call) =>
+        JSON.stringify(call[0]) === JSON.stringify({ queryKey: userRankSummaryQueryKeys.all })
     );
 
     expect(leaderboardCalls.length).toBe(2);
@@ -172,10 +173,10 @@ describe('useLeaderboardRefresh', () => {
     const wrapper = createWrapper();
 
     // Pre-populate cache with discipline data
-    queryClient.setQueryData(
-      leaderboardQueryKeys.list('discipline', 'weekly', 'dressage', 1, 50),
-      { category: 'discipline', entries: [] }
-    );
+    queryClient.setQueryData(leaderboardQueryKeys.list('discipline', 'weekly', 'dressage', 1, 50), {
+      category: 'discipline',
+      entries: [],
+    });
 
     const invalidateSpy = vi.spyOn(queryClient, 'invalidateQueries');
 
