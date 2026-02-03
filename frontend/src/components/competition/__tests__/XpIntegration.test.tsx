@@ -16,7 +16,7 @@
 import { describe, it, expect, vi, beforeEach, afterEach, Mock } from 'vitest';
 import { render, screen, waitFor, within } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
-import { BrowserRouter, MemoryRouter, Routes, Route } from 'react-router-dom';
+import { BrowserRouter, MemoryRouter, Routes, Route } from '../../test/utils';
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
 import CompetitionResultsModal, { type CompetitionResults } from '../CompetitionResultsModal';
 import CompetitionResultsPage from '../../../pages/CompetitionResultsPage';
@@ -264,7 +264,7 @@ describe('XpIntegration', () => {
       } = overrides;
 
       return render(
-        <BrowserRouter>
+        <TestRouter>
           <CompetitionResultsModal
             isOpen={true}
             onClose={mockOnClose}
@@ -282,7 +282,7 @@ describe('XpIntegration', () => {
             _testLoading={false}
             _testError={null}
           />
-        </BrowserRouter>
+        </TestRouter>
       );
     };
 
@@ -379,7 +379,7 @@ describe('XpIntegration', () => {
       } = overrides;
 
       return render(
-        <BrowserRouter>
+        <TestRouter>
           <CompetitionResultsModal
             isOpen={true}
             onClose={mockOnClose}
@@ -396,7 +396,7 @@ describe('XpIntegration', () => {
             _testLoading={false}
             _testError={null}
           />
-        </BrowserRouter>
+        </TestRouter>
       );
     };
 
@@ -480,7 +480,7 @@ describe('XpIntegration', () => {
 
       // Render modal with XP data
       render(
-        <BrowserRouter>
+        <TestRouter>
           <CompetitionResultsModal
             isOpen={true}
             onClose={mockOnClose}
@@ -489,7 +489,7 @@ describe('XpIntegration', () => {
             _testLoading={false}
             _testError={null}
           />
-        </BrowserRouter>
+        </TestRouter>
       );
 
       // XP trackers should be rendered using hook data
@@ -512,7 +512,7 @@ describe('XpIntegration', () => {
       });
 
       render(
-        <BrowserRouter>
+        <TestRouter>
           <CompetitionResultsModal
             isOpen={true}
             onClose={mockOnClose}
@@ -521,7 +521,7 @@ describe('XpIntegration', () => {
             _testLoading={false}
             _testError={null}
           />
-        </BrowserRouter>
+        </TestRouter>
       );
 
       // XP tracker should display updated values
@@ -543,7 +543,7 @@ describe('XpIntegration', () => {
       });
 
       render(
-        <BrowserRouter>
+        <TestRouter>
           <CompetitionResultsModal
             isOpen={true}
             onClose={mockOnClose}
@@ -552,7 +552,7 @@ describe('XpIntegration', () => {
             _testLoading={false}
             _testError={null}
           />
-        </BrowserRouter>
+        </TestRouter>
       );
 
       // Level badges should show updated level
@@ -562,7 +562,7 @@ describe('XpIntegration', () => {
 
     it('progress tracker reflects correct XP values from hook data', () => {
       render(
-        <BrowserRouter>
+        <TestRouter>
           <CompetitionResultsModal
             isOpen={true}
             onClose={mockOnClose}
@@ -571,7 +571,7 @@ describe('XpIntegration', () => {
             _testLoading={false}
             _testError={null}
           />
-        </BrowserRouter>
+        </TestRouter>
       );
 
       // Verify tracker text content shows XP values
@@ -584,7 +584,7 @@ describe('XpIntegration', () => {
   describe('PrizeNotificationModal XP Display', () => {
     const renderModalWithPrizeNotification = () => {
       return render(
-        <BrowserRouter>
+        <TestRouter>
           <CompetitionResultsModal
             isOpen={true}
             onClose={mockOnClose}
@@ -596,7 +596,7 @@ describe('XpIntegration', () => {
             _testLoading={false}
             _testError={null}
           />
-        </BrowserRouter>
+        </TestRouter>
       );
     };
 
@@ -627,7 +627,7 @@ describe('XpIntegration', () => {
     it('prize notification renders correctly without XP data', () => {
       // Render with results that have no XP data
       render(
-        <BrowserRouter>
+        <TestRouter>
           <CompetitionResultsModal
             isOpen={true}
             onClose={mockOnClose}
@@ -638,7 +638,7 @@ describe('XpIntegration', () => {
             _testLoading={false}
             _testError={null}
           />
-        </BrowserRouter>
+        </TestRouter>
       );
 
       // Modal should still render without errors

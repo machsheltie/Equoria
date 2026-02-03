@@ -208,7 +208,11 @@
       "Bash(powershell \"Get-Content ''C:\\\\Users\\\\heirr\\\\AppData\\\\Local\\\\Temp\\\\claude\\\\C--Users-heirr-OneDrive-Desktop-Equoria\\\\tasks\\\\bbf37ef.output'' | Select-Object -Last 5\")",
       "Bash(powershell \"Get-Content ''C:\\\\Users\\\\heirr\\\\AppData\\\\Local\\\\Temp\\\\claude\\\\C--Users-heirr-OneDrive-Desktop-Equoria\\\\tasks\\\\b877e19.output'' | Select-Object -Last 30\")",
       "Bash(powershell \"Get-Content ''C:\\\\Users\\\\heirr\\\\AppData\\\\Local\\\\Temp\\\\claude\\\\C--Users-heirr-OneDrive-Desktop-Equoria\\\\tasks\\\\b877e19.output'' | Select-String -Pattern ''FAIL|Tests:'' -Context 0,1 | Select-Object -Last 40\")",
-      "mcp__filesystem__create_directory"
+      "mcp__filesystem__create_directory",
+      "Bash(npx prettier:*)",
+      "Bash(timeout /t 15 /nobreak)",
+      "Bash(if not exist \"C:\\\\Users\\\\heirr\\\\OneDrive\\\\Desktop\\\\Equoria\\\\frontend\\\\src\\\\lib\\\\api\\\\__tests__\" mkdir \"C:\\\\Users\\\\heirr\\\\OneDrive\\\\Desktop\\\\Equoria\\\\frontend\\\\src\\\\lib\\\\api\\\\__tests__\")",
+      "Bash(if not exist \"C:\\\\Users\\\\heirr\\\\OneDrive\\\\Desktop\\\\Equoria\\\\frontend\\\\src\\\\test\\\\fixtures\\\\__tests__\" mkdir \"C:\\\\Users\\\\heirr\\\\OneDrive\\\\Desktop\\\\Equoria\\\\frontend\\\\src\\\\test\\\\fixtures\\\\__tests__\")"
     ],
     "deny": [],
     "ask": []

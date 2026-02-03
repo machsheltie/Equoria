@@ -16,3 +16,6 @@ export * from './useClaimPrizes';
 export * from './useHorseLevelInfo';
 export * from './useXpHistory';
 export * from './useAddXp';
+export * from './useLeaderboard';
+export * from './useUserRankSummary';
+export * from './useLeaderboardRefresh';

@@ -19,7 +19,7 @@
 import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest';
 import { render, screen, fireEvent, within } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
-import { BrowserRouter } from 'react-router-dom';
+import { TestRouter } from '../../test/utils';
 import CompetitionResultsModal, {
   type CompetitionResultsModalProps,
   type CompetitionResults,
@@ -52,7 +52,7 @@ vi.mock('@/hooks/api/useHorseLevelInfo', () => ({
 
 // Wrapper component that provides router context for Link components
 const renderWithRouter = (ui: React.ReactElement) => {
-  return render(<BrowserRouter>{ui}</BrowserRouter>);
+  return render(<TestRouter>{ui}</TestRouter>);
 };
 
 describe('CompetitionResultsModal', () => {
@@ -232,7 +232,7 @@ describe('CompetitionResultsModal', () => {
       expect(screen.queryByTestId('competition-results-modal')).not.toBeInTheDocument();
 
       rerender(
-        <BrowserRouter>
+        <TestRouter>
           <CompetitionResultsModal
             {...defaultProps}
             isOpen={true}
@@ -240,7 +240,7 @@ describe('CompetitionResultsModal', () => {
             _testLoading={false}
             _testError={null}
           />
-        </BrowserRouter>
+        </TestRouter>
       );
 
       expect(screen.getByTestId('competition-results-modal')).toBeInTheDocument();

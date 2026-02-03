@@ -1,4 +1,10 @@
 import { http, HttpResponse } from 'msw';
+import {
+  getLeaderboardEntries,
+  getUserRankSummary,
+  VALID_CATEGORIES,
+} from '../fixtures/leaderboards';
+import type { LeaderboardCategory } from '@/components/leaderboard/LeaderboardCategorySelector';
 
 const base = 'http://localhost:3001';
 
@@ -126,7 +132,7 @@ export const handlers = [
       },
     });
   }),
-  http.get(`${base}/api/training/status/:horseId/:discipline`, ({ params }) =>
+  http.get(`${base}/api/training/status/:horseId/:discipline`, ({ params: _params }) =>
     HttpResponse.json({
       success: true,
       data: {
@@ -146,7 +152,7 @@ export const handlers = [
       ],
     })
   ),
-  http.get(`${base}/api/training/trainable/:userId`, ({ params }) =>
+  http.get(`${base}/api/training/trainable/:userId`, ({ params: _params }) =>
     HttpResponse.json({
       success: true,
       data: [
@@ -190,7 +196,7 @@ export const handlers = [
       data: { foalId: 10, message: 'Foal created' },
     })
   ),
-  http.get(`${base}/api/foals/:id`, ({ params }) =>
+  http.get(`${base}/api/foals/:id`, ({ params: _params }) =>
     HttpResponse.json({
       success: true,
       data: {
@@ -203,7 +209,7 @@ export const handlers = [
       },
     })
   ),
-  http.get(`${base}/api/foals/:id/development`, ({ params }) =>
+  http.get(`${base}/api/foals/:id/development`, ({ params: _params }) =>
     HttpResponse.json({
       success: true,
       data: {
@@ -290,7 +296,7 @@ export const handlers = [
   ),
 
   // User Dashboard & Progress
-  http.get(`${base}/api/users/:id/progress`, ({ params }) => {
+  http.get(`${base}/api/users/:id/progress`, ({ params: _params }) => {
     if (params.id === '999999') {
       return new HttpResponse(null, { status: 404 });
     }
@@ -309,7 +315,7 @@ export const handlers = [
       },
     });
   }),
-  http.get(`${base}/api/users/dashboard/:id`, ({ params }) => {
+  http.get(`${base}/api/users/dashboard/:id`, ({ params: _params }) => {
     if (params.id === '999999') {
       return new HttpResponse(null, { status: 404 });
     }
@@ -431,7 +437,7 @@ export const handlers = [
   }),
 
   // Competition System - Single Competition Details
-  http.get(`${base}/api/competitions/:id`, ({ params }) => {
+  http.get(`${base}/api/competitions/:id`, ({ params: _params }) => {
     const id = Number(params.id);
     if (id === 999) {
       return HttpResponse.json(
@@ -464,7 +470,7 @@ export const handlers = [
   }),
 
   // Competition System - Horse Eligibility
-  http.get(`${base}/api/competitions/:compId/eligibility/:userId`, ({ params }) => {
+  http.get(`${base}/api/competitions/:compId/eligibility/:userId`, ({ params: _params }) => {
     return HttpResponse.json({
       success: true,
       data: [
@@ -523,7 +529,7 @@ export const handlers = [
   ),
 
   // Competition Results System - Competition Results
-  http.get(`${base}/api/competitions/:id/results`, ({ params }) => {
+  http.get(`${base}/api/competitions/:id/results`, ({ params: _params }) => {
     const id = Number(params.id);
 
     // Return 404 for competition ID 999 (error test case)
@@ -627,7 +633,7 @@ export const handlers = [
   }),
 
   // Competition Results System - Horse Competition History
-  http.get(`${base}/api/horses/:id/competition-history`, ({ params }) => {
+  http.get(`${base}/api/horses/:id/competition-history`, ({ params: _params }) => {
     const id = Number(params.id);
 
     // Return 404 for horse ID 999 (error test case)
@@ -713,7 +719,7 @@ export const handlers = [
   }),
 
   // Competition Results System - User Competition Stats
-  http.get(`${base}/api/users/:id/competition-stats`, ({ params }) => {
+  http.get(`${base}/api/users/:id/competition-stats`, ({ params: _params }) => {
     const id = params.id as string;
 
     // Return 404 for user ID 'error-user' (error test case)
@@ -820,7 +826,7 @@ export const handlers = [
   http.get(`${base}/api/users/:userId/prize-history`, ({ params, request }) => {
     const userId = params.userId as string;
     const url = new URL(request.url);
-    const _dateRange = url.searchParams.get('dateRange');
+    const __dateRange = url.searchParams.get('dateRange');
     const horseId = url.searchParams.get('horseId');
     const discipline = url.searchParams.get('discipline');
 
@@ -920,7 +926,7 @@ export const handlers = [
   }),
 
   // Prize System - Horse Prize Summary
-  http.get(`${base}/api/horses/:horseId/prize-summary`, ({ params }) => {
+  http.get(`${base}/api/horses/:horseId/prize-summary`, ({ params: _params }) => {
     const horseId = Number(params.horseId);
 
     // Return 404 for horse ID 999 (error test case)
@@ -996,7 +1002,7 @@ export const handlers = [
   }),
 
   // XP System - Horse Level Info
-  http.get(`${base}/api/horses/:horseId/level-info`, ({ params }) => {
+  http.get(`${base}/api/horses/:horseId/level-info`, ({ params: _params }) => {
     const horseId = Number(params.horseId);
 
     // Return 404 for horse ID 999 (error test case)
@@ -1027,7 +1033,7 @@ export const handlers = [
   http.get(`${base}/api/horses/:horseId/xp-history`, ({ params, request }) => {
     const horseId = Number(params.horseId);
     const url = new URL(request.url);
-    const _dateRange = url.searchParams.get('dateRange');
+    const __dateRange = url.searchParams.get('dateRange');
     const source = url.searchParams.get('source');
 
     // Return 404 for horse ID 999 (error test case)
@@ -1127,7 +1133,7 @@ export const handlers = [
   }),
 
   // Prize System - Claim Competition Prizes
-  http.post(`${base}/api/competitions/:competitionId/claim-prizes`, ({ params }) => {
+  http.post(`${base}/api/competitions/:competitionId/claim-prizes`, ({ params: _params }) => {
     const competitionId = Number(params.competitionId);
 
     // Return 404 for competition ID 999 (not found)
@@ -1176,6 +1182,83 @@ export const handlers = [
         ],
         newBalance: 10500,
         message: 'Successfully claimed 1 prize totaling $2500',
+      },
+    });
+  }),
+
+  // Leaderboard System - User Rank Summary
+  // NOTE: This handler MUST appear before the :category handler so that
+  // "user-summary" is not captured as a category parameter.
+  http.get(`${base}/api/leaderboards/user-summary/:userId`, ({ params: _params }) => {
+    const userId = params.userId as string;
+    const summary = getUserRankSummary(userId);
+
+    if (!summary) {
+      return HttpResponse.json(
+        { status: 'error', message: 'User not found' },
+        { status: 404 }
+      );
+    }
+
+    return HttpResponse.json({
+      success: true,
+      data: summary,
+    });
+  }),
+
+  // Leaderboard System - Leaderboard by Category
+  http.get(`${base}/api/leaderboards/:category`, ({ params, request }) => {
+    const category = params.category as string;
+    const url = new URL(request.url);
+    const period = url.searchParams.get('period') || 'all-time';
+    const discipline = url.searchParams.get('discipline');
+    const page = parseInt(url.searchParams.get('page') || '1', 10);
+    const limit = parseInt(url.searchParams.get('limit') || '50', 10);
+
+    // Validate category
+    if (!VALID_CATEGORIES.includes(category as LeaderboardCategory)) {
+      return HttpResponse.json(
+        { status: 'error', message: 'Invalid leaderboard category' },
+        { status: 404 }
+      );
+    }
+
+    // Discipline category requires discipline param
+    if (category === 'discipline' && !discipline) {
+      return HttpResponse.json(
+        { status: 'error', message: 'Discipline parameter required for discipline category' },
+        { status: 400 }
+      );
+    }
+
+    // Generate entries from fixtures
+    const allEntries = getLeaderboardEntries(
+      category as LeaderboardCategory,
+      discipline || undefined
+    );
+
+    // Pagination
+    const totalEntries = allEntries.length;
+    const totalPages = Math.ceil(totalEntries / limit);
+    const startIdx = (page - 1) * limit;
+    const endIdx = startIdx + limit;
+    const entries = allEntries.slice(startIdx, endIdx);
+
+    // Find user's rank
+    const userEntry = allEntries.find((e) => e.isCurrentUser);
+    const userRank = userEntry ? { rank: userEntry.rank, entry: userEntry } : undefined;
+
+    return HttpResponse.json({
+      success: true,
+      data: {
+        category,
+        period,
+        totalEntries,
+        currentPage: page,
+        totalPages,
+        entries,
+        userRank,
+        lastUpdated: new Date().toISOString(),
       },
     });
   }),

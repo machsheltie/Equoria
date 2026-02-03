@@ -14,7 +14,7 @@
 import { describe, it, expect, vi, beforeEach, afterEach, Mock } from 'vitest';
 import { render, screen, waitFor, within } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
-import { BrowserRouter, MemoryRouter, Routes, Route } from 'react-router-dom';
+import { BrowserRouter, MemoryRouter, Routes, Route } from '../../test/utils';
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
 import CompetitionResultsModal, { type CompetitionResults } from '../CompetitionResultsModal';
 import CompetitionResultsPage from '../../../pages/CompetitionResultsPage';
@@ -228,7 +228,7 @@ describe('PrizeIntegration', () => {
       showPrizeNotification = false
     ) => {
       return render(
-        <BrowserRouter>
+        <TestRouter>
           <CompetitionResultsModal
             isOpen={true}
             onClose={mockOnClose}
@@ -241,7 +241,7 @@ describe('PrizeIntegration', () => {
             _testLoading={false}
             _testError={null}
           />
-        </BrowserRouter>
+        </TestRouter>
       );
     };
 
@@ -463,7 +463,7 @@ describe('PrizeIntegration', () => {
   describe('Data Flow Tests', () => {
     const renderModal = (results: CompetitionResults) => {
       return render(
-        <BrowserRouter>
+        <TestRouter>
           <CompetitionResultsModal
             isOpen={true}
             onClose={mockOnClose}
@@ -473,7 +473,7 @@ describe('PrizeIntegration', () => {
             _testLoading={false}
             _testError={null}
           />
-        </BrowserRouter>
+        </TestRouter>
       );
     };
 
@@ -499,7 +499,7 @@ describe('PrizeIntegration', () => {
 
     it('competition data flows to prize notification', () => {
       render(
-        <BrowserRouter>
+        <TestRouter>
           <CompetitionResultsModal
             isOpen={true}
             onClose={mockOnClose}
@@ -511,7 +511,7 @@ describe('PrizeIntegration', () => {
             _testLoading={false}
             _testError={null}
           />
-        </BrowserRouter>
+        </TestRouter>
       );
 
       const notification = screen.getByTestId('prize-notification-modal');
@@ -533,9 +533,9 @@ describe('PrizeIntegration', () => {
       const renderPage = () => {
         return render(
           <QueryClientProvider client={queryClient}>
-            <BrowserRouter>
+            <TestRouter>
               <CompetitionResultsPage />
-            </BrowserRouter>
+            </TestRouter>
           </QueryClientProvider>
         );
       };

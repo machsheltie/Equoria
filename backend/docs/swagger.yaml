@@ -6,7 +6,7 @@ info:
     contact:
         name: 'Equoria Team'
     x-generated:
-        timestamp: '2025-12-08T12:45:50.968Z'
+        timestamp: '2026-02-03T14:27:59.566Z'
         endpointCount: 0
         schemaCount: 2
         generator: ApiDocumentationService
@@ -71,6 +71,26 @@ paths:
             responses: {'200': {description: Success}}
             security: []
             deprecated: false
+    /api/test/integration:
+        get:
+            tags: [Testing]
+            summary: 'Integration test endpoint'
+            description: 'Test endpoint for documentation integration'
+            parameters: []
+            requestBody: null
+            responses: {'200': {description: 'Success response'}, '401': {description: Unauthorized}}
+            security: []
+            deprecated: false
+    /api/test/create:
+        post:
+            tags: [Testing]
+            summary: 'Create test resource'
+            description: ""
+            parameters: []
+            requestBody: null
+            responses: {'201': {description: Created}}
+            security: []
+            deprecated: false
 components:
     securitySchemes:
         bearerAuth:
@@ -92,8 +112,17 @@ components:
         User:
             type: object
             properties: {id: {type: string}}
-            registeredAt: '2025-12-08T12:45:50.940Z'
+            registeredAt: '2026-02-03T14:27:59.500Z'
         Horse:
             type: object
             properties: {id: {type: string}}
-            registeredAt: '2025-12-08T12:45:50.952Z'
+            registeredAt: '2026-02-03T14:27:59.524Z'
+        TestSchema:
+            type: object
+            properties: {id: {type: string, description: 'Unique identifier'}, name: {type: string, description: 'Test name'}, timestamp: {type: string, format: date-time}}
+            required: [id, name]
+            registeredAt: '2026-02-03T14:24:18.830Z'
+        CreateTestSchema:
+            type: object
+            properties: {name: {type: string}}
+            registeredAt: '2026-02-03T14:24:19.487Z'
