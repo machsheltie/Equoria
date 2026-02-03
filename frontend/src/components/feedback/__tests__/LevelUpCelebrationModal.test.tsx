@@ -417,6 +417,7 @@ describe('LevelUpCelebrationModal', () => {
 
       renderModal({ statChanges: largeStatChanges });
 
+      const rows = screen.queryAllByTestId(/^stat-row-/);
       expect(rows).toHaveLength(10);
     });
 

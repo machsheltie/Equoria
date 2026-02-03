@@ -16,10 +16,22 @@
 import { describe, it, expect, vi, beforeEach, afterEach, Mock } from 'vitest';
 import { render, screen, waitFor, within } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
-import { BrowserRouter, MemoryRouter, Routes, Route } from '../../test/utils';
+import { MemoryRouter, Routes, Route } from 'react-router-dom';
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
 import CompetitionResultsModal, { type CompetitionResults } from '../CompetitionResultsModal';
 import CompetitionResultsPage from '../../../pages/CompetitionResultsPage';
+
+// Test Router wrapper
+const TestRouter: React.FC<{ children: React.ReactNode }> = ({ children }) => {
+  const queryClient = new QueryClient({
+    defaultOptions: { queries: { retry: false } },
+  });
+  return (
+    <QueryClientProvider client={queryClient}>
+      <MemoryRouter>{children}</MemoryRouter>
+    </QueryClientProvider>
+  );
+};
 
 // Mock the auth context
 vi.mock('@/contexts/AuthContext', () => ({
@@ -120,42 +132,6 @@ describe('XpIntegration', () => {
         ownerId: 'user-123',
         ownerName: 'Current User',
         finalScore: 85.2,
-        prizeWon: 0,
-        isCurrentUser: true,
-      },
-    ],
-  };
-
-  // Sample competition results without user prizes (no XP notification needed)
-    competitionId: 2,
-    competitionName: 'Autumn Challenge',
-    discipline: 'Dressage',
-    date: '2026-05-20',
-    totalParticipants: 15,
-    prizePool: 6000,
-    prizeDistribution: {
-      first: 3000,
-      second: 1800,
-      third: 1200,
-    },
-    results: [
-      {
-        rank: 1,
-        horseId: 201,
-        horseName: 'Champion',
-        ownerId: 'user-789',
-        ownerName: 'Bob Johnson',
-        finalScore: 97.0,
-        prizeWon: 3000,
-        isCurrentUser: false,
-      },
-      {
-        rank: 4,
-        horseId: 202,
-        horseName: 'My Horse',
-        ownerId: 'user-123',
-        ownerName: 'Current User',
-        finalScore: 80.5,
         prizeWon: 0,
         isCurrentUser: true,
       },
@@ -476,7 +452,7 @@ describe('XpIntegration', () => {
       // const hookResult = (useHorseLevelInfo as Mock).mock.results;
 
       // The mock was called correctly in setup
-      expect((useHorseLevelInfo as Mock)).toBeDefined();
+      expect(useHorseLevelInfo as Mock).toBeDefined();
 
       // Render modal with XP data
       render(
