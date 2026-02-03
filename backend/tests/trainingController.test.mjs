@@ -64,7 +64,7 @@ describe('🏋️ UNIT: Training Controller - Horse Training Business Logic', ()
     });
 
     // Create test breed (required for foreign key constraint)
-    const testBreed = await prisma.breed.upsert({
+    const _testBreed = await prisma.breed.upsert({
       where: { id: 1 },
       update: {},
       create: {

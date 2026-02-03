@@ -222,7 +222,7 @@ describe('🏪 INTEGRATION: Groom Marketplace API', () => {
         .get('/api/groom-marketplace')
         .set('Authorization', `Bearer ${authToken}`);
 
-      const initialGroomCount = initialResponse.body.data.grooms.length;
+      const _initialGroomCount = initialResponse.body.data.grooms.length;
       const [groomToHire] = initialResponse.body.data.grooms;
 
       // Hire the groom
