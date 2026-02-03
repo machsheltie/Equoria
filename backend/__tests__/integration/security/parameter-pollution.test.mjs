@@ -160,8 +160,7 @@ describe('Parameter Pollution Attack Integration Tests', () => {
         .send({
           name: 'ValidName',
           traits: {
-            strength: 50,
-            strength: 100, // Duplicate nested key
+            strength: 100, // Test nested parameter validation
           },
         })
         .expect(400);
@@ -267,7 +266,8 @@ describe('Parameter Pollution Attack Integration Tests', () => {
     });
 
     it('should reject sparse arrays with undefined holes', async () => {
-      const sparseArray = [1, , , 4]; // Has undefined holes
+      // eslint-disable-next-line no-sparse-arrays
+      const sparseArray = [1, , , 4]; // Has undefined holes (intentional for security test)
 
       const response = await request(app)
         .post('/api/horses/batch-update')

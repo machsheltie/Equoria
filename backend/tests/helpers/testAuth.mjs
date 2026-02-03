@@ -27,8 +27,7 @@ export const withSeededPlayerAuth = (method, endpoint, userData = {}) => {
   if (typeof supertest(app)[method] !== 'function') {
     throw new Error(`Invalid HTTP method: ${method}`);
   }
-  return supertest(app)
-    [method](endpoint)
+  return supertest(app)[method](endpoint)
     .set('Authorization', `Bearer ${token}`)
     .set('x-test-skip-csrf', 'true');
 };

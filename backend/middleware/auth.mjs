@@ -3,6 +3,12 @@ import { AppError } from '../errors/index.mjs';
 import logger from '../utils/logger.mjs';
 
 /**
+ * Suspicious Activity Cache
+ * Tracks suspicious authentication patterns for rate limiting
+ */
+const suspiciousActivityCache = new Map();
+
+/**
  * JWT Authentication Middleware
  * Verifies JWT tokens and adds user information to request object
  */

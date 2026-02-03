@@ -48,7 +48,7 @@ import adminRoutes from './routes/adminRoutes.mjs';
 
 import { authenticateToken, requireRole } from './middleware/auth.mjs';
 import { applyCsrfProtection, csrfErrorHandler } from './middleware/csrf.mjs';
-import {isRedisConnected, getRedisClient,_closeRedis} from './middleware/rateLimiting.mjs';
+import { isRedisConnected, getRedisClient, _closeRedis } from './middleware/rateLimiting.mjs';
 
 const publicRouter = express.Router();
 const authRouter = express.Router();
@@ -110,7 +110,7 @@ import {
   performanceMonitoring,
 } from './middleware/responseOptimization.mjs';
 import { createCompressionMiddleware } from './services/apiResponseOptimizationService.mjs';
-import {_createResourceManagementMiddleware,_memoryMonitoringMiddleware,_databaseConnectionMiddleware,_requestTimeoutMiddleware,} from './middleware/resourceManagement.mjs';
+import { _createResourceManagementMiddleware, _memoryMonitoringMiddleware, _databaseConnectionMiddleware, _requestTimeoutMiddleware } from './middleware/resourceManagement.mjs';
 
 import prisma from '../packages/database/prismaClient.mjs';
 
@@ -148,7 +148,8 @@ const corsOptions = {
     }
     if (allowedOrigins.indexOf(origin) !== -1) {
       callback(null, true);
-    } else {_logger.warn(`CORS blocked_requestfrom origin: ${origin}`);
+    } else {
+      logger.warn(`CORS blocked request from origin: ${origin}`);
       callback(new Error('Not allowed by CORS'));
     }
   },
@@ -277,19 +278,28 @@ app.use('/api/admin', adminRouter);
 app.use('/api/v1', authRouter);
 app.use('/api', authRouter);
 
-app.use('*', (req, res) =>{_logger.warn(`404 - Route not found: ${req.method}} ${req.originalUrl} from ${req.ip}`);
-  res.status(404).json({success: false,
-    message: 'Route not found',_path: req.originalUrl,
-    method: req.method,});
+app.use('*', (req, res) => {
+  logger.warn(`404 - Route not found: ${req.method} ${req.originalUrl} from ${req.ip}`);
+  res.status(404).json({
+    success: false,
+    message: 'Route not found',
+    path: req.originalUrl,
+    method: req.method,
+  });
 });
 
 app.use(errorRequestLogger);
 app.use(csrfErrorHandler);
 app.use(errorHandler);
 
-process.on('unhandledRejection', (reason, promise) => {{_logger.error('Unhandled Rejection at:', promise, 'reason:', reason);
-  process.exit(1);};
+process.on('unhandledRejection', (reason, promise) => {
+  logger.error('Unhandled Rejection at:', promise, 'reason:', reason);
+  process.exit(1);
+});
 
 process.on('uncaughtException', error => {
-  {_logger.error('Uncaught Exception:', error);
-  process.exit(1);}export default app;
+  logger.error('Uncaught Exception:', error);
+  process.exit(1);
+});
+
+export default app;

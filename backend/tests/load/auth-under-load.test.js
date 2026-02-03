@@ -159,10 +159,8 @@ export default function (data) {
           authErrors.add(1);
         }
       });
-    }
-
-    // Test 2: New user registration (30% of traffic)
-    else if (Math.random() < 0.75) {
+    } else if (Math.random() < 0.75) {
+      // Test 2: New user registration (30% of traffic)
       group('User Registration', () => {
         const timestamp = Date.now();
         const randomId = Math.floor(Math.random() * 1000000);
@@ -220,10 +218,8 @@ export default function (data) {
           authErrors.add(1);
         }
       });
-    }
-
-    // Test 3: Token refresh (10% of traffic)
-    else {
+    } else {
+      // Test 3: Token refresh (10% of traffic)
       group('Token Refresh', () => {
         // First login to get tokens
         const user = users[Math.floor(Math.random() * users.length)];

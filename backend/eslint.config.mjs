@@ -82,7 +82,7 @@ export default [
       indent: ['error', 2, { SwitchCase: 1 }],
       'key-spacing': ['error', { beforeColon: false, afterColon: true }],
       'keyword-spacing': ['error', { before: true, after: true }],
-      'linebreak-style': ['error', 'unix'],
+      'linebreak-style': 'off', // Disabled for Windows compatibility (git handles line endings)
       'no-multiple-empty-lines': ['error', { max: 2, maxEOF: 1 }],
       'no-trailing-spaces': 'error',
       'object-curly-spacing': ['error', 'always'],
