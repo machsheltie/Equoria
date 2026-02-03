@@ -391,7 +391,7 @@ describe('CSRF Token Validation Unit Tests', () => {
 
       // Generate new token
       getCsrfToken(req, res);
-      const newToken = req.session.csrfToken;
+      const _newToken = req.session.csrfToken;
 
       // Try to use old token
       req.body.csrfToken = oldToken;

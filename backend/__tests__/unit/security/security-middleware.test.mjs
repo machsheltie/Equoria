@@ -1,7 +1,7 @@
 import { describe, it, expect, jest, beforeEach } from '@jest/globals';
 import helmet from 'helmet';
 import cors from 'cors';
-import rateLimit from 'express-rate-limit';
+import _rateLimit from 'express-rate-limit';
 import {
   corsOptions,
   createRateLimiter,

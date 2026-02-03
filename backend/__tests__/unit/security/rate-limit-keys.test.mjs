@@ -12,11 +12,11 @@
  */
 
 import { describe, it, expect, beforeEach, jest } from '@jest/globals';
-import { authRateLimiter } from '../../../middleware/authRateLimiter.mjs';
+import { authRateLimiter as _authRateLimiter } from '../../../middleware/authRateLimiter.mjs';
 import { createMockUser } from '../../factories/index.mjs';
 
 describe('Rate Limit Key Generation Unit Tests', () => {
-  let req, res, next;
+  let req, _res, _next;
 
   beforeEach(() => {
     req = {
@@ -27,13 +27,13 @@ describe('Rate Limit Key Generation Unit Tests', () => {
       user: null,
     };
 
-    res = {
+    _res = {
       status: jest.fn().mockReturnThis(),
       json: jest.fn().mockReturnThis(),
       setHeader: jest.fn(),
     };
 
-    next = jest.fn();
+    _next = jest.fn();
   });
 
   describe('IP-Based Key Generation', () => {
@@ -41,7 +41,7 @@ describe('Rate Limit Key Generation Unit Tests', () => {
       req.ip = '192.168.1.100';
 
       // Key should include IP
-      const expectedKeyPattern = /192\.168\.1\.100/;
+      const _expectedKeyPattern = /192\.168\.1\.100/;
 
       // This test verifies the key generation logic
       // We can't directly access the key, but we can verify behavior
