@@ -11,12 +11,12 @@ import { jest } from '@jest/globals';
 import request from 'supertest';
 import app from '../../app.mjs';
 import prisma from '../../db/index.mjs';
-import { createTestUser, extractCookieValue, resetRateLimitStore } from '../config/test-helpers.mjs';
+import { createTestUser, extractCookieValue as _extractCookieValue, resetRateLimitStore } from '../config/test-helpers.mjs';
 import { generateVerificationToken } from '../../utils/emailVerificationService.mjs';
 import { generateTestToken } from '../../tests/helpers/authHelper.mjs';
 
 describe('Email Verification System - Integration Tests', () => {
-  let testUser, testPassword, authToken;
+  let testUser, _testPassword, authToken;
 
   beforeEach(async () => {
     resetRateLimitStore();
@@ -54,7 +54,7 @@ describe('Email Verification System - Integration Tests', () => {
       email: `emailint_${timestamp}@example.com`,
     });
     testUser = userData;
-    testPassword = userData.plainPassword;
+    _testPassword = userData.plainPassword;
 
     // Generate JWT token for authentication using test helper
     authToken = generateTestToken({ id: testUser.id, email: testUser.email });

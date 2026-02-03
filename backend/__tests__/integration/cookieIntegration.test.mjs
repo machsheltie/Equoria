@@ -146,7 +146,7 @@ describe('Cookie Integration Tests', () => {
   describe('Login Endpoint Cookies', () => {
     beforeEach(async () => {
       // Create test user
-      const response = await request(app).post('/auth/register').set(rateLimitBypassHeader).send({
+      const _response = await request(app).post('/auth/register').set(rateLimitBypassHeader).send({
         username: 'logincookietest',
         email: 'logincookietest@test.com',
         password: 'TestPass123!',

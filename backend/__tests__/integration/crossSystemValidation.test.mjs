@@ -293,7 +293,7 @@ describe('Cross-System Validation Tests', () => {
       expect(entryResponse.body.success).toBe(true);
 
       // Execute competition
-      const executeData = {
+      const _executeData = {
         showId: testShow.id,
         discipline: 'Racing',
       };
