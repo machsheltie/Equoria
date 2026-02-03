@@ -11,7 +11,7 @@
  */
 
 import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest';
-import { render, screen, fireEvent, waitFor } from '@testing-library/react';
+import { render, screen, fireEvent, waitFor, act } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
 import { BrowserRouter } from '../../test/utils';
@@ -678,7 +678,9 @@ describe('ProfilePage', () => {
       const inputs = [screen.getByLabelText(/display name/i), screen.getByLabelText(/bio/i)];
 
       inputs.forEach((input) => {
-        input.focus();
+        act(() => {
+          input.focus();
+        });
         expect(document.activeElement).toBe(input);
       });
     });
@@ -694,10 +696,14 @@ describe('ProfilePage', () => {
       const submitButton = screen.getByRole('button', { name: /save changes/i });
       const cancelButton = screen.getByRole('button', { name: /cancel/i });
 
-      submitButton.focus();
+      act(() => {
+        submitButton.focus();
+      });
       expect(document.activeElement).toBe(submitButton);
 
-      cancelButton.focus();
+      act(() => {
+        cancelButton.focus();
+      });
       expect(document.activeElement).toBe(cancelButton);
     });
 
