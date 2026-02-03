@@ -25,7 +25,7 @@ describe('CSRF Protection Integration Tests', () => {
   const rateLimitBypassHeader = { 'X-Test-Bypass-Rate-Limit': 'true' };
   let testUser;
   let accessToken;
-  let csrfToken;
+  let _csrfToken;
 
   beforeAll(async () => {
     // Clean up test database
@@ -98,7 +98,7 @@ describe('CSRF Protection Integration Tests', () => {
       expect(typeof response.body.csrfToken).toBe('string');
       expect(response.body.csrfToken.length).toBeGreaterThan(0);
 
-      csrfToken = response.body.csrfToken;
+      _csrfToken = response.body.csrfToken;
     });
 
     test('should set CSRF token in cookie', async () => {
@@ -123,10 +123,10 @@ describe('CSRF Protection Integration Tests', () => {
     beforeEach(async () => {
       // Get CSRF token before each test
       const tokenResponse = await request(app).get('/auth/csrf-token').set(rateLimitBypassHeader);
-      csrfToken = tokenResponse.body.csrfToken;
+      _csrfToken = tokenResponse.body.csrfToken;
 
       const cookies = tokenResponse.headers['set-cookie'] || [];
-      const csrfCookie = cookies.find(cookie => cookie.startsWith('_csrf='));
+      const _csrfCookie = cookies.find(cookie => cookie.startsWith('_csrf='));
 
       // Store both access token and CSRF cookie for authenticated requests
       // Note: In real scenarios, the CSRF cookie would be sent automatically by browser

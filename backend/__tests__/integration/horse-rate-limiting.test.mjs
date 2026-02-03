@@ -1,5 +1,5 @@
 import request from 'supertest';
-import { generateTestToken, authHeader } from '../../tests/helpers/authHelper.mjs';
+import { generateTestToken, authHeader as _authHeader } from '../../tests/helpers/authHelper.mjs';
 
 process.env.TEST_BYPASS_RATE_LIMIT = 'false';
 process.env.TEST_RATE_LIMIT_MAX_REQUESTS = '100';

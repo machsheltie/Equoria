@@ -380,7 +380,7 @@ describe('Rate Limiting System', () => {
       });
 
       const resetTimestamp = parseInt(response.headers['ratelimit-reset']);
-      const now = Math.floor(Date.now() / 1000);
+      const _now = Math.floor(Date.now() / 1000);
 
       if (!Number.isNaN(resetTimestamp)) {
         // Express-rate-limit sends seconds until reset; allow any positive number within 15 minutes
