@@ -8,7 +8,7 @@ import cron from 'node-cron';
 import logger from '../utils/logger.mjs';
 import { processWeeklySalaries } from './groomSalaryService.mjs';
 import { cleanupExpiredTokens } from '../utils/tokenRotationService.mjs';
-import prisma from '../db/index.mjs';
+import _prisma from '../db/index.mjs';
 
 // Track running jobs
 const runningJobs = new Map();
