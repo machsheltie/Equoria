@@ -66,6 +66,26 @@ next-env.d.ts
 # .vscode
 /.vscode
 
+# AI Assistant Directories
+/.ab-method
+/.agentvibes
+/.backups
+/.beads
+/.bmad
+/.claude
+/.codex
+/.husky
+/.serena
+/.venv
+/.zencoder
+/.zenflow
+
+# MCP Configuration
+/.mcp.json
+
+# Configuration backups
+.gitignore.backup
+
 # Equoria-Mobile
 /equoria-mobile
 
@@ -74,3 +94,4 @@ next-env.d.ts
 **/test-output*.txt
 coverage/nul
 backend/nul
+frontend-test-results.txt
