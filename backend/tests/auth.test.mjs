@@ -38,7 +38,7 @@ import { describe, it, expect, beforeEach, afterAll } from '@jest/globals';
 // Jest globals are available in test environment
 import request from 'supertest';
 import app from '../app.mjs';
-import { createTestUser, createLoginData as _createLoginData } from './helpers/authHelper.mjs';
+import { createTestUser } from './helpers/authHelper.mjs';
 import prisma from '../db/index.mjs';
 import { resetAllAuthRateLimits } from '../middleware/authRateLimiter.mjs';
 
@@ -49,9 +49,13 @@ import { resetAllAuthRateLimits } from '../middleware/authRateLimiter.mjs';
  * @returns {string|null} - Cookie value or null if not found
  */
 const extractCookie = (cookies, name) => {
-  if (!cookies || !Array.isArray(cookies)) { return null; }
+  if (!cookies || !Array.isArray(cookies)) {
+    return null;
+  }
   const cookie = cookies.find(c => c.startsWith(`${name}=`));
-  if (!cookie) { return null; }
+  if (!cookie) {
+    return null;
+  }
   // Extract value between = and ; (or end of string)
   const match = cookie.match(new RegExp(`${name}=([^;]+)`));
   return match ? match[1] : null;
@@ -201,7 +205,7 @@ describe('🔐 INTEGRATION: Authentication System - User Registration & Session 
       loginEmail = userData.email;
       loginPassword = userData.password;
 
-      const response = await authPost('/api/auth/register').send(userData);
+      const response = await authPost('/api/auth/register').set('x-test-bypass-rate-limit', 'true').send(userData);
       trackUser(response);
     });
 
@@ -211,7 +215,10 @@ describe('🔐 INTEGRATION: Authentication System - User Registration & Session 
         password: loginPassword,
       };
 
-      const response = await authPost('/api/auth/login').send(loginData).expect(200);
+      const response = await authPost('/api/auth/login')
+        .set('x-test-bypass-rate-limit', 'true')
+        .send(loginData)
+        .expect(200);
 
       expect(response.body.status).toBe('success');
       expect(response.body.message).toBe('Login successful');
@@ -316,7 +323,10 @@ describe('🔐 INTEGRATION: Authentication System - User Registration & Session 
       // Create user and get auth token
       const userData = createTestUser();
 
-      const registerResponse = await authPost('/api/auth/register').send(userData);
+      const registerResponse = await authPost('/api/auth/register')
+        .set('x-test-bypass-rate-limit', 'true')
+        .send(userData)
+        .expect(201);
       trackUser(registerResponse);
 
       // Extract access token from cookies
@@ -358,7 +368,10 @@ describe('🔐 INTEGRATION: Authentication System - User Registration & Session 
       // Create user and get auth token
       const userData = createTestUser();
 
-      const registerResponse = await authPost('/api/auth/register').send(userData);
+      const registerResponse = await authPost('/api/auth/register')
+        .set('x-test-bypass-rate-limit', 'true')
+        .send(userData)
+        .expect(201);
       trackUser(registerResponse);
 
       // Extract access token from cookies
