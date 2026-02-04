@@ -63,8 +63,8 @@ describe('System-Wide Integration Tests', () => {
       data: {
         name: 'Global Test Horse',
         age: 5,
-        breedId: testBreed.id,
-        userId: testUser.id, // Matches schema field (line 144)
+        breed: { connect: { id: testBreed.id } },
+        user: { connect: { id: testUser.id } },
         sex: 'mare',
         dateOfBirth: new Date('2019-01-01'),
         healthStatus: 'Excellent',
@@ -391,9 +391,8 @@ describe('System-Wide Integration Tests', () => {
         data: {
           name: 'Progress Test Horse',
           age: 5,
-          breedId: testBreed.id,
-          ownerId: testUser.id,
-          userId: testUser.id,
+          breed: { connect: { id: testBreed.id } },
+          user: { connect: { id: testUser.id } },
           sex: 'mare',
           dateOfBirth: new Date('2019-01-01'),
           healthStatus: 'Excellent',
