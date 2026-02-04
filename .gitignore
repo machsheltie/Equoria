@@ -95,3 +95,46 @@ next-env.d.ts
 coverage/nul
 backend/nul
 frontend-test-results.txt
+
+# === Test Outputs ===
+*.log
+test-results/
+backend/test-*.txt
+backend/*-test-output.txt
+backend/temp*.log
+frontend/test-*.txt
+*-test-run*.log
+
+# === Build Artifacts ===
+backend/.jest-cache-performance/
+frontend/dist/
+frontend/.vite/
+
+# === Session Documentation ===
+*_SUMMARY.md
+*_INDEX.md
+*_ANALYSIS.md
+*_MANIFEST.md
+*_FIX.md
+DEBUGGING_*.md
+README_*.md
+REDIS_*.md
+TEST_*.md
+IMPLEMENTATION_*.md
+
+# === Keep These ===
+!QUICK_FIX_GUIDE.md
+!SMART_DEBUG_REPORT.md
+!ISSUE_ANALYSIS_REPORT.md
+!DEBUG_SESSION_SUMMARY.md
+!COMPLETE_CLEANUP_PLAN.md
+
+# === Temporary Files ===
+*.tmp
+*.swp
+*~
+
+# === Database ===
+*.db
+*.sqlite
+*.sqlite3
