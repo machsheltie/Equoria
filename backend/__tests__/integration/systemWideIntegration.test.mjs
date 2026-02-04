@@ -123,11 +123,15 @@ describe('System-Wide Integration Tests', () => {
 
       expect(registerResponse.body.status).toBe('success');
       expect(registerResponse.body.data.user).toBeDefined();
-      expect(registerResponse.body.data.token).toBeDefined();
+      // Tokens are now in httpOnly cookies, not response body
+      expect(registerResponse.headers['set-cookie']).toBeDefined();
 
       // Use separate variable to avoid overwriting global testUser
       const registeredUser = registerResponse.body.data.user;
-      const registeredAuthToken = registerResponse.body.data.token;
+      // Extract token from cookies
+      const cookies = registerResponse.headers['set-cookie'];
+      const accessTokenCookie = cookies.find((cookie) => cookie.startsWith('accessToken='));
+      const registeredAuthToken = accessTokenCookie.split(';')[0].split('=')[1];
 
       // Step 2: Test Documentation System Integration
       const userDocsResponse = await request(app).get('/api/user-docs').expect(200);

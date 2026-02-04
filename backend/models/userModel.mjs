@@ -1,6 +1,7 @@
 import prisma from '../db/index.mjs';
 import logger from '../utils/logger.mjs';
 import { DatabaseError } from '../errors/index.mjs';
+import { invalidateCache } from '../utils/cacheHelper.mjs';
 
 const DEFAULT_XP_PER_LEVEL = 100;
 
@@ -173,6 +174,9 @@ async function addXpToUser(userId, amount) {
       where: { id: userId },
       data: { xp, level },
     });
+
+    // Invalidate user progress cache to ensure fresh data on next read
+    await invalidateCache(`user:progress:${userId}`);
 
     return {
       success: true,

@@ -75,9 +75,8 @@ async function createHorse(horseData) {
     let userRelation = {};
     const ownerIdToUse = ownerId || userId; // Accept either parameter name for backward compatibility
     if (ownerIdToUse) {
-      // Always use userId field (schema standard)
+      // Use relation format (cannot set both scalar and relation)
       userRelation = {
-        userId: ownerIdToUse,
         user: { connect: { id: ownerIdToUse } },
       };
     }
