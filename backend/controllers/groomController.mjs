@@ -13,6 +13,7 @@ import {
   assignGroomToFoal,
   calculateGroomInteractionEffects,
   validateFoalInteractionLimits,
+  ensureDefaultGroomAssignment,
   GROOM_SPECIALTIES,
   SKILL_LEVELS,
   PERSONALITY_TRAITS,
@@ -158,8 +159,19 @@ export async function assignGroom(req, res) {
 export async function ensureDefaultAssignment(req, res) {
   try {
     const { foalId } = req.params;
-    // TODO: Get userId from auth when implementing service
+    const userId = req.user?.id;
 
+    // Validate user authentication
+    if (!userId) {
+      logger.error('[groomController.ensureDefaultAssignment] No authenticated user ID found');
+      return res.status(401).json({
+        success: false,
+        message: 'Authentication required',
+        data: null,
+      });
+    }
+
+    // Validate foalId parameter
     const parsedFoalId = parseInt(foalId, 10);
     if (isNaN(parsedFoalId) || parsedFoalId <= 0) {
       return res.status(400).json({
@@ -173,13 +185,40 @@ export async function ensureDefaultAssignment(req, res) {
       `[groomController.ensureDefaultAssignment] Ensuring default assignment for foal ${parsedFoalId}`,
     );
 
-    // TODO: Implement ensureDefaultGroomAssignment service
-    const result = { success: false, message: 'Service not implemented yet' };
+    // Validate foal ownership
+    const foal = await prisma.horse.findUnique({
+      where: { id: parsedFoalId },
+      select: { id: true, name: true, ownerId: true },
+    });
+
+    if (!foal) {
+      return res.status(404).json({
+        success: false,
+        message: 'Foal not found',
+        data: null,
+      });
+    }
+
+    if (foal.ownerId !== userId) {
+      return res.status(403).json({
+        success: false,
+        message: 'Forbidden: You do not own this foal',
+        data: null,
+      });
+    }
+
+    // Call the ensureDefaultGroomAssignment service
+    const result = await ensureDefaultGroomAssignment(parsedFoalId, userId);
+
+    // Handle the result based on success status
     if (!result.success) {
       return res.status(400).json({
         success: false,
         message: result.message,
-        data: null,
+        data: {
+          requiresManualAssignment: result.requiresManualAssignment || false,
+          foalId: parsedFoalId,
+        },
       });
     }
 
