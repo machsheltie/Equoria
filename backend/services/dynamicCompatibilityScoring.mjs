@@ -306,7 +306,7 @@ export async function getOptimalGroomRecommendations(horseId, context) {
     // Get all available grooms for the horse's owner
     const horse = await prisma.horse.findUnique({
       where: { id: horseId },
-      select: { ownerId: true },
+      select: { userId: true },
     });
 
     const availableGrooms = await prisma.groom.findMany({

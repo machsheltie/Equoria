@@ -73,18 +73,13 @@ async function createHorse(horseData) {
       );
     } // Prepare user relationship if provided
     let userRelation = {};
-    const ownerIdToUse = ownerId || userId; // Prefer ownerId, fallback to userId for backward compatibility
+    const ownerIdToUse = ownerId || userId; // Accept either parameter name for backward compatibility
     if (ownerIdToUse) {
-      // Special case for 'Full Horse' to match test expectations
-      if (name === 'Full Horse') {
-        userRelation = { userId: ownerIdToUse };
-      } else {
-        // Connect to the user relationship and mirror the ownerId for compatibility
-        userRelation = {
-          ownerId: ownerIdToUse,
-          user: { connect: { id: ownerIdToUse } },
-        };
-      }
+      // Always use userId field (schema standard)
+      userRelation = {
+        userId: ownerIdToUse,
+        user: { connect: { id: ownerIdToUse } },
+      };
     }
 
     // Prepare stable relationship if provided

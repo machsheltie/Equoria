@@ -131,7 +131,7 @@ router.get('/statistics', async (req, res) => {
     const results = await prisma.competitionResult.findMany({
       where: {
         horse: {
-          ownerId: userId,
+          userId,
         },
         runDate: {
           gte: startDate,
@@ -142,7 +142,7 @@ router.get('/statistics', async (req, res) => {
           select: {
             id: true,
             name: true,
-            ownerId: true,
+            userId: true,
           },
         },
         show: {

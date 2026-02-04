@@ -295,7 +295,7 @@ export async function validateConformationEntry(horse, groom, className, userId)
     }
 
     // Check horse ownership
-    if (horse.ownerId !== userId) {
+    if (horse.userId !== userId) {
       errors.push('You do not own this horse');
     }
 

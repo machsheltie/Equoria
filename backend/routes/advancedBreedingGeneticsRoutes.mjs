@@ -59,7 +59,7 @@ const validateBatchOwnership = async (horseIds, userId) => {
       id: { in: horseIdsInt },
       OR: [
         { userId },
-        { ownerId: userId },
+        { userId },
       ],
     },
   });
@@ -402,11 +402,11 @@ router.get('/genetics/diversity-report/:userId',
 
       logger.info(`[advancedBreedingGeneticsRoutes.diversity-report] Generating report for user ${userId}`);
 
-      // Get all horses owned by the user (check both userId and ownerId for compatibility)
+      // Get all horses owned by the user (check both userId and userId for compatibility)
       const userHorses = await prisma.horse.findMany({
         where: {
           OR: [
-            { ownerId: userId },
+            { userId },
             { userId },
           ],
         },
@@ -565,7 +565,7 @@ router.get('/genetics/population-health/:userId',
 
       // Get all horses owned by the user
       const userHorses = await prisma.horse.findMany({
-        where: { ownerId: parseInt(userId) },
+        where: { userId: parseInt(userId) },
         select: { id: true },
       });
 

@@ -27,15 +27,15 @@ import logger from '../utils/logger.mjs';
  * and their owner field names
  */
 const RESOURCE_CONFIG = {
-  horse: { model: 'horse', ownerField: 'ownerId' },
-  foal: { model: 'horse', ownerField: 'ownerId' },
+  horse: { model: 'horse', ownerField: 'userId' },
+  foal: { model: 'horse', ownerField: 'userId' },
   groom: { model: 'groom', ownerField: 'userId' },
   'groom-assignment': { model: 'groomAssignment', ownerField: 'userId' },
-  breeding: { model: 'horse', ownerField: 'ownerId' },
-  competition: { model: 'competitionResult', ownerField: 'horse.ownerId' }, // Special handling for nested
-  'competition-entry': { model: 'competitionResult', ownerField: 'horse.ownerId' },
-  training: { model: 'trainingLog', ownerField: 'horse.ownerId' },
-  'training-session': { model: 'trainingLog', ownerField: 'horse.ownerId' },
+  breeding: { model: 'horse', ownerField: 'userId' },
+  competition: { model: 'competitionResult', ownerField: 'horse.userId' }, // Special handling for nested
+  'competition-entry': { model: 'competitionResult', ownerField: 'horse.userId' },
+  training: { model: 'trainingLog', ownerField: 'horse.userId' },
+  'training-session': { model: 'trainingLog', ownerField: 'horse.userId' },
 };
 
 /**
@@ -94,8 +94,6 @@ export const requireOwnership = (resourceType, options = {}) => {
       const rawId = req.params[idParam];
       const isNumericId = typeof rawId === 'string' && /^[0-9]+$/.test(rawId);
       const resourceId = isNumericId ? parseInt(rawId, 10) : NaN;
-      const _skipAuthFlag = ['true', '1', 'yes'].includes(String(process.env.SKIP_AUTH_FOR_TESTING || '').toLowerCase());
-      const _requireAuthHeader = headers['x-test-require-auth'] === 'true';
 
       // Test-only override to stabilize integration tests by forcing a specific user context
       if (process.env.NODE_ENV === 'test' && headers['x-test-user-id']) {
@@ -150,7 +148,7 @@ export const requireOwnership = (resourceType, options = {}) => {
         },
       };
 
-      // Handle nested owner fields (e.g. horse.ownerId)
+      // Handle nested owner fields (e.g. horse.userId)
       if (ownerField.includes('.')) {
         const [relation, field] = ownerField.split('.');
         queryOptions.where[relation] = {

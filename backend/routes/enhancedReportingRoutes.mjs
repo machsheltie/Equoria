@@ -288,7 +288,7 @@ router.get('/users/:id/stable-epigenetic-report',
 
       // Get all user's horses
       const horses = await prisma.horse.findMany({
-        where: { ownerId: userId },
+        where: { userId },
         include: {
           traitHistoryLogs: true,
         },
@@ -356,7 +356,7 @@ router.post('/horses/compare-epigenetics',
       const horses = await prisma.horse.findMany({
         where: {
           id: { in: horseIds },
-          ownerId: userId,
+          userId,
         },
         include: {
           traitHistoryLogs: true,

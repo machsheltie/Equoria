@@ -255,8 +255,8 @@ router.get('/', queryRateLimiter, rejectPollutedRequest, async (req, res) => {
     // Use userId from query if provided, otherwise default to the authenticated user's ID
     const effectiveUserId = queryUserId || req.user?.id;
     if (effectiveUserId) {
-      // Use OR to match both userId and ownerId for maximum compatibility
-      where.OR = [{ userId: effectiveUserId }, { ownerId: effectiveUserId }];
+      // Match by userId (schema standard)
+      where.userId = effectiveUserId;
     }
 
     if (breedId) {
@@ -714,7 +714,7 @@ router.post(
   async (req, res) => {
     try {
       // Set the owner from the authenticated user
-      req.body.ownerId = req.user.id;
+      req.body.userId = req.user.id;
 
       // Dynamic import for ES module
       const { createFoal } = await import('../controllers/horseController.mjs');

@@ -164,7 +164,7 @@ router.post('/calculate-impact',
       const horses = await prisma.horse.findMany({
         where: {
           id: { in: horseIds.map(id => parseInt(id)) },
-          ownerId: userId,
+          userId,
         },
         select: {
           id: true,

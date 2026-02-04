@@ -502,7 +502,7 @@ export async function getHorsePersonalityImpact(req, res) {
         name: true,
         temperament: true,
         bondScore: true,
-        ownerId: true,
+        userId: true,
       },
     });
 
@@ -522,7 +522,7 @@ export async function getHorsePersonalityImpact(req, res) {
 
     // Get all grooms for the user
     const grooms = await prisma.groom.findMany({
-      where: { userId: horse.ownerId },
+      where: { userId: horse.userId },
       select: {
         id: true,
         name: true,
