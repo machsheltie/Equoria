@@ -1,0 +1,363 @@
+<html><head>
+<meta charset="utf-8"/>
+<link crossorigin="" href="https://fonts.gstatic.com/" rel="preconnect"/>
+<link as="style" href="https://fonts.googleapis.com/css2?display=swap&amp;family=Yeseva+One%3Awght%40400&amp;family=Cormorant+Garamond%3Awght%40400%3B500%3B700&amp;family=Noto+Serif%3Awght%40400%3B500%3B700%3B900" onload="this.rel='stylesheet'" rel="stylesheet"/>
+<title>Equoria World Menu</title>
+<link href="data:image/x-icon;base64," rel="icon" type="image/x-icon"/>
+<script src="https://cdn.tailwindcss.com?plugins=forms,container-queries"></script>
+<style>
+    @keyframes pulse {
+      0%,
+      100% {
+        opacity: 1;
+        transform: scale(1);
+      }
+      50% {
+        opacity: 0.8;
+        transform: scale(1.1);
+      }
+    }
+    @keyframes scrollRipple {
+      0% {
+        background-position: 0% 0%;
+      }
+      100% {
+        background-position: 0% -200%;}
+    }
+    .map-marker {
+      transition: transform 0.3s ease-in-out, box-shadow 0.3s ease-in-out;
+    }
+    .map-marker:hover {
+      transform: scale(1.15);}
+    .glow-green {
+      box-shadow: 0 0 15px 5px rgba(74, 222, 128, 0.7);}
+    .map-marker:hover .glow-green {
+      box-shadow: 0 0 25px 10px rgba(74, 222, 128, 1);}
+    .glow-gold {
+      box-shadow: 0 0 15px 5px rgba(251, 191, 36, 0.7);}
+    .map-marker:hover .glow-gold {
+      box-shadow: 0 0 25px 10px rgba(251, 191, 36, 1);
+    }
+    .glow-bronze {
+      box-shadow: 0 0 15px 5px rgba(205, 127, 50, 0.7);}
+    .map-marker:hover .glow-bronze {
+      box-shadow: 0 0 25px 10px rgba(205, 127, 50, 1);
+    }
+    .glow-blue {
+      box-shadow: 0 0 15px 5px rgba(59, 130, 246, 0.7);}
+    .map-marker:hover .glow-blue {
+      box-shadow: 0 0 25px 10px rgba(59, 130, 246, 1);
+    }
+    .glow-rose-gold {
+      box-shadow: 0 0 15px 5px rgba(244, 114, 182, 0.7);}
+    .map-marker:hover .glow-rose-gold {
+      box-shadow: 0 0 25px 10px rgba(244, 114, 182, 1);
+    }
+    .glow-amethyst {
+      box-shadow: 0 0 15px 5px rgba(168, 85, 247, 0.7);}
+    .map-marker:hover .glow-amethyst {
+      box-shadow: 0 0 25px 10px rgba(168, 85, 247, 1);
+    }
+    .glow-silver {
+      box-shadow: 0 0 15px 5px rgba(192, 192, 192, 0.7);}
+    .map-marker:hover .glow-silver {
+      box-shadow: 0 0 25px 10px rgba(192, 192, 192, 1);
+    }
+    .parchment-card {
+      background-image: url("https://www.transparenttextures.com/patterns/old-paper.png"),
+        linear-gradient(to bottom, #FDF8E3, #f8f0d8);
+      background-blend-mode: overlay;
+      border: 2px solid #c8b08a;
+      box-shadow: 0px 5px 15px rgba(0, 0, 0, 0.3),
+        inset 0 0 10px #c8b08a;}
+    .scroll-seal-button {
+      background: linear-gradient(145deg, #e6c988, #b8860b);border: 2px solid #8B4513;box-shadow: 0 2px 5px rgba(0, 0, 0, 0.2), inset 0 0 5px rgba(255, 255, 255, 0.3);
+      color: #4a2c0f;
+      font-family: 'Yeseva One', cursive;
+      transition: transform 0.2s ease, box-shadow 0.2s ease;
+    }
+    .scroll-seal-button:hover {
+      transform: translateY(-2px);
+      box-shadow: 0 4px 8px rgba(0, 0, 0, 0.3), inset 0 0 8px rgba(255, 255, 255, 0.4);
+    }
+    .scroll-seal-button:active {
+      transform: translateY(0px);
+      box-shadow: 0 2px 5px rgba(0, 0, 0, 0.2), inset 0 0 5px rgba(255, 255, 255, 0.3);
+    }
+    .map-background {
+      background-image: url("https://www.transparenttextures.com/patterns/old-paper.png"), url("https://images.unsplash.com/photo-1569398032034-be726c869337?q=80&w=1080&auto=format&fit=crop&ixlib=rb-4.0.3&ixid=M3wxMjA3fDB8MHxwaG90by1wYWdlfHx8fGVufDB8fHx8fA%3D%3D");background-blend-mode: multiply;
+      background-color: #FDF8E3;
+      background-size: auto, cover;
+      background-repeat: repeat, no-repeat;position: relative;
+    }
+    .map-background::before {
+      content: "";
+      position: absolute;
+      top: 0;
+      left: 0;
+      right: 0;
+      bottom: 0;
+      box-shadow: inset 0 0 80px 30px rgba(253, 248, 227, 0.9);pointer-events: none;}.rune-detail-top-left {
+      position: absolute;
+      top: 20px;
+      left: 20px;
+      width: 50px;
+      height: 50px;
+      background-image: url("https://www.svgrepo.com/show/221541/rune.svg");background-size: contain;
+      background-repeat: no-repeat;
+      opacity: 0.5;
+      filter: invert(70%) sepia(30%) saturate(500%) hue-rotate(10deg) brightness(100%) contrast(90%);}
+    .rune-detail-bottom-right {
+      position: absolute;
+      bottom: 20px;
+      right: 20px;
+      width: 50px;
+      height: 50px;
+      background-image: url("https://www.svgrepo.com/show/221541/rune.svg");background-size: contain;
+      background-repeat: no-repeat;
+      opacity: 0.5;
+      transform: rotate(180deg);
+      filter: invert(70%) sepia(30%) saturate(500%) hue-rotate(10deg) brightness(100%) contrast(90%);}.scrollable-map::-webkit-scrollbar {
+      width: 10px;
+    }
+    .scrollable-map::-webkit-scrollbar-track {
+      background: #FDF8E3;
+      border-left: 1px solid #c8b08a;
+    }
+    .scrollable-map::-webkit-scrollbar-thumb {
+      background: #b8860b;
+      border-radius: 5px;
+    }.scrollable-map:hover {}
+    .floating-particles {
+      position: absolute;
+      width: 100%;
+      height: 100%;
+      pointer-events: none;
+      overflow: hidden;}
+    .particle {
+      position: absolute;
+      background-color: rgba(255, 215, 0, 0.5);border-radius: 50%;
+      animation: float 10s infinite ease-in-out;
+      opacity: 0;
+    }
+    @keyframes float {
+      0% {
+        transform: translateY(0) translateX(0) scale(1);
+        opacity: 0;
+      }
+      25% {
+        opacity: 1;
+      }
+      50% {
+        transform: translateY(-50px) translateX(20px) scale(1.2);
+      }
+      75% {
+        opacity: 1;
+      }
+      100% {
+        transform: translateY(-100px) translateX(-20px) scale(1);
+        opacity: 0;
+      }
+    }.particle:nth-child(1) {
+      width: 5px;
+      height: 5px;
+      left: 10%;
+      animation-delay: 0s;
+    }
+    .particle:nth-child(2) {
+      width: 3px;
+      height: 3px;
+      left: 30%;
+      animation-delay: 1.5s;
+      background-color: rgba(173, 216, 230, 0.5);}
+    .particle:nth-child(3) {
+      width: 6px;
+      height: 6px;
+      left: 50%;
+      animation-delay: 3s;
+    }
+    .particle:nth-child(4) {
+      width: 4px;
+      height: 4px;
+      left: 70%;
+      animation-delay: 4.5s;
+      background-color: rgba(221, 160, 221, 0.5);}
+    .particle:nth-child(5) {
+      width: 5px;
+      height: 5px;
+      left: 90%;
+      animation-delay: 6s;
+    }
+    .map-label {
+      font-family: 'Cormorant Garamond', serif;
+      font-size: 16px;
+      color: #5D4037;text-shadow: 1px 1px 0px #FDF8E3;position: absolute;
+      background-color: rgba(253, 248, 227, 0.5);padding: 2px 5px;
+      border-radius: 3px;
+    }
+    .animated-light-beam {
+      position: absolute;
+      width: 10px;
+      height: 150px;
+      background: linear-gradient(to bottom,
+          rgba(255, 255, 224, 0),
+          rgba(255, 255, 224, 0.8),
+          rgba(255, 255, 224, 0));
+      transform-origin: top center;
+      animation: lightBeamSweep 5s infinite linear;
+      opacity: 0.7;
+    }
+    @keyframes lightBeamSweep {
+      0% {
+        transform: rotate(-45deg) translateY(-50px);
+      }
+      50% {
+        transform: rotate(45deg) translateY(-50px);
+      }
+      100% {
+        transform: rotate(-45deg) translateY(-50px);
+      }
+    }
+  </style>
+<style>
+    body {
+      min-height: max(884px, 100dvh);
+    }
+  </style>
+  </head>
+<body class="bg-[#FDF8E3]">
+<div class="relative flex flex-col w-full h-screen max-w-[1080px] mx-auto overflow-hidden map-background">
+<div class="rune-detail-top-left"></div>
+<div class="rune-detail-bottom-right"></div>
+<div class="floating-particles">
+<div class="particle"></div>
+<div class="particle"></div>
+<div class="particle"></div>
+<div class="particle"></div>
+<div class="particle"></div>
+</div>
+<div class="absolute top-0 left-0 right-0 p-4 z-10 flex justify-between items-center">
+<h1 class="text-4xl text-[#8B4513] drop-shadow-[2px_2px_0px_#FDF8E3]" style="font-family: 'Yeseva One', cursive;">Equoria</h1>
+<button class="p-2 bg-[#FDF8E3] rounded-full shadow-md border border-[#c8b08a]">
+<svg fill="#8B4513" height="24px" viewBox="0 0 256 256" width="24px" xmlns="http://www.w3.org/2000/svg">
+<path d="M128,24a104,104,0,1,0,104,104A104.11,104.11,0,0,0,128,24Zm0,192a88,88,0,1,1,88-88A88.1,88.1,0,0,1,128,216Zm16-40a8,8,0,0,1-8,8,16,16,0,0,1-16-16V128a8,8,0,0,1,0-16,16,16,0,0,1,16,16v40A8,8,0,0,1,144,176ZM112,88a12,12,0,1,1,12,12A12,12,0,0,1,112,88Z"></path>
+</svg>
+</button>
+</div>
+<div class="flex-grow overflow-y-auto scrollable-map p-4 pt-20 relative">
+<div class="relative w-full h-[1920px]">
+<div class="map-label" style="top: 5%; left: 10%;">Bluegrass Hills</div>
+<div class="map-label" style="top: 60%; left: 65%;">Whispering Woods</div>
+<div class="map-label" style="top: 30%; left: 70%;">Shimmering Lake</div>
+<div class="map-marker absolute top-[10%] left-[20%] w-24 h-24 cursor-pointer group" onclick="openModal('vet')">
+<img alt="Vet Crest" class="w-full h-full object-contain drop-shadow-lg" src="https://lh3.googleusercontent.com/aida-public/AB6AXuClJ6JjRJQAX3SCJjyrYr7xjUVBbF_xa3Iq_qbAtLl3AZPHBBuSOZlQ_sfRn8v75j5MhXqgpWsOzqqJ1XjKN5JgizxK8GfX0gcZxIe6eCqwV0jl3pXJpkZ3YUX1Oqw6RCb2vK2118nNyUVwnJlEChVOKNMe6Z_CF8hA_bwJE7iRG68UGZaiwpc0JEmFkFlFoQQKykA7zGyfmhFSy5vcyEW7gh1nDlVmrJEAasgK8SGyRXV8v7dTRDvd88MImpPfW0WMCtA52-9QA4M"/>
+<div class="absolute inset-0 rounded-full glow-green opacity-75 group-hover:opacity-100 transition-opacity duration-300"></div>
+</div>
+<div class="map-marker absolute top-[25%] left-[55%] w-24 h-24 cursor-pointer group" onclick="openModal('store')">
+<img alt="Store Seal" class="w-full h-full object-contain drop-shadow-lg" src="https://lh3.googleusercontent.com/aida-public/AB6AXuCqc37VIGiKclLtKIQya-4x-SqZ3OrJRr6c-jWQCPl-AR2FSVp7JWS8Te3kZvpY7Hua6J12OpKAX6pcEoB5AGSSytvqPrquC0bfjQ5fNDSMHtqP6gbMyS5Nv0Ko3_gE-mXCytogbTYDdmxHgY1X5V0WPxYO3LhAbBWV1IJu7QceCvYT6IB2HjFrMNPfj9I_7ECSix39E4AGprPcA6q7gxrljXruF1A2Y3nlLBUQb1l8z1bRt019jxHnPxynYCzAO4ltswM5Nf8C678"/>
+<div class="absolute inset-0 rounded-full glow-gold opacity-75 group-hover:opacity-100 transition-opacity duration-300"></div>
+</div>
+<div class="map-marker absolute top-[40%] left-[15%] w-24 h-24 cursor-pointer group" onclick="openModal('market')">
+<img alt="Market Emblem" class="w-full h-full object-contain drop-shadow-lg" src="https://lh3.googleusercontent.com/aida-public/AB6AXuAzbgw_tVMWIBasUcRSgA3IhWXAVUmZOWk8EWN3RY5RG1dRQEUd-y0ppNQeuXfv3I56Se-eAyB0_LpZUSvJ0aYg8apkbQeaobmIElx6XyYwft9pKacG6oWm_ZdFPRxx57tEbohQRrrGSAeQ9TcgmWNFF376XIkX9H54EKXrBXppZVr59b_TR0vtD3OC6DrWKF6Aue8LCdfpAvUHCKRnpAwXqdx1XTJI1GXZxRZqX_9lJUK7Q2FgZ63nEXIGdJpji_NE6kVKQrsuJYk"/>
+<div class="absolute inset-0 rounded-full glow-bronze opacity-75 group-hover:opacity-100 transition-opacity duration-300"></div>
+</div>
+<div class="map-marker absolute top-[50%] left-[70%] w-24 h-24 cursor-pointer group" onclick="openModal('training')">
+<img alt="Training Icon" class="w-full h-full object-contain drop-shadow-lg" src="https://lh3.googleusercontent.com/aida-public/AB6AXuBGtPNX_j6wXK_aIVyF8juyq1wZuPhW5tdPjRskMbESehmejefUYwE1bajT1Vexqzd4uszSkHxh0teVeTg_UhUoGF3Ul0pxIYLU8bQV2aDPn9pyYGrR4u6yb5i0f9m6hdTTtdPAu-WgEgJhuoeouF325Y7k7MSCtJOa3oNX2l2MNzqMvQK_ONO8wuHfb8IbhJR_cQ_LbMpoynCIA04upBlcaCBWcX20nGICx6eb7RMTXfJh9rhSkTTWUyjDRnYWPbT-ir3fa1uu7kE"/>
+<div class="absolute inset-0 rounded-full glow-blue opacity-75 group-hover:opacity-100 transition-opacity duration-300"></div>
+<div class="animated-light-beam" style="left: 50%; top: -20%;"></div>
+</div>
+<div class="map-marker absolute top-[70%] left-[30%] w-24 h-24 cursor-pointer group" onclick="openModal('breeding')">
+<img alt="Breeding Icon" class="w-full h-full object-contain drop-shadow-lg" src="https://lh3.googleusercontent.com/aida-public/AB6AXuAWPiy5YM1IF_uJbgWO_eMVEscjspPFttIkm5IiXDHVr8QAPqT6e7XXXiHGq0FgMtsDEjQlg0zHYClf8h5TW0yxgClM0qD02PguBP7aa5CMVRZrqroKlW27I6SBq3rRm4QVRLUGM3mTBYxsmVeRrozzlp7XA_BCUXXnecEQ4fg27y2Gnyqc0IfC6AWgM2R9KTFy8u43dW9pAO0Qy9bFwTx3SsPn-rPXQcT-KYo6abKFTtdLeLHglobQaCZqU-HXdsOLkhX1EzAYkSI"/>
+<div class="absolute inset-0 rounded-full glow-rose-gold opacity-75 group-hover:opacity-100 transition-opacity duration-300"></div>
+</div>
+<div class="map-marker absolute top-[80%] left-[60%] w-24 h-24 cursor-pointer group" onclick="openModal('alchemist')">
+<img alt="Alchemist Icon" class="w-full h-full object-contain drop-shadow-lg" src="https://lh3.googleusercontent.com/aida-public/AB6AXuAKhqfS3OPEx6cr_7LBYJTkaKN4QVstIvUFveP57TVHjN2LB172EI9nAMX3XRvFOU1qGWSsj_q5_n33mhiB2h90p66VZDiSFKhKmDzwFTTJS3hRbfAgHVng5S3__1r3SJgh2WvYOeLQiP8Rl8sIHCB1zJNhJ54srTEBull4XC4SXC9c5ab6jyLm1NOytc6QVhbQ5ifBpxh9ro4JW8NtOS_yyXkTuIFCpFaFlQjB3Ki7dB3YEOuEMANYnm2KKCeUZHweyAbd3KcW7cI"/>
+<div class="absolute inset-0 rounded-full glow-amethyst opacity-75 group-hover:opacity-100 transition-opacity duration-300 animate-pulse"></div>
+</div>
+<div class="map-marker absolute top-[30%] left-[35%] w-24 h-24 cursor-pointer group" onclick="openModal('farrier')">
+<img alt="Farrier Icon" class="w-full h-full object-contain drop-shadow-lg" src="https://lh3.googleusercontent.com/aida-public/AB6AXuD-1E2flc9eVe4LmxMhfwSWo_6OsK19Vhlut3S3ivB2yCkImTz-s57k7zGifSTJN7eOk55eRx_T4PFUJKxTv8JA5RKv-sLFjp3-LUf19N5ymuA4-PfY52Pu_auLRXcri4xc1-AgYIEfrAAESHLzEe45tlGZnoU7J_zF5yNHOL78yU0QQpOIhG6HFfN3WyUArLQRwCO9OBRLnLSbh8dCuBgHOgUt6cIKx0yOR0RiX5e308nOHMm0eR-HuHz2BHgd32cpEv-D5Q-toFg"/>
+<div class="absolute inset-0 rounded-full glow-silver opacity-75 group-hover:opacity-100 transition-opacity duration-300"></div>
+</div>
+</div>
+</div>
+<div class="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4 hidden transition-opacity duration-300 opacity-0" id="locationModal">
+<div class="parchment-card w-[90%] max-w-md p-6 rounded-lg relative">
+<button class="absolute top-2 right-2 text-[#8B4513] hover:text-[#5D4037]" onclick="closeModal()">
+<svg fill="currentColor" height="24" viewBox="0 0 256 256" width="24" xmlns="http://www.w3.org/2000/svg">
+<path d="M208.49,191.51a12,12,0,0,1-17,17L128,145,64.49,208.49a12,12,0,0,1-17-17L111,128,47.51,64.49a12,12,0,0,1,17-17L128,111l63.51-63.52a12,12,0,0,1,17,17L145,128Z"></path>
+</svg>
+</button>
+<h2 class="text-2xl text-[#b8860b] mb-3 text-center" id="modalTitle" style="font-family: 'Yeseva One', cursive;">Location Name</h2>
+<p class="text-sm text-[#5D4037] mb-6 text-center" id="modalDescription" style="font-family: 'Cormorant Garamond', serif;">Location description goes here. It will be filled with fascinating details about this particular place in the world of Equoria.</p>
+<button class="scroll-seal-button w-full py-3 rounded-md text-lg font-semibold transition duration-150 ease-in-out" id="modalEnterButton">
+          Enter
+        </button>
+</div>
+</div>
+</div>
+<script>
+    // Basic Modal Functionality (No complex animations here for pure HTML/CSS focus)
+    const modal = document.getElementById('locationModal');
+    const modalTitle = document.getElementById('modalTitle');
+    const modalDescription = document.getElementById('modalDescription');
+    const modalEnterButton = document.getElementById('modalEnterButton');
+    const locationData = {
+      vet: {
+        name: "Whisperwood Apothecary",
+        description: "Herbal remedies and potent potions are brewed here by the wise old centaur, Chiron. Only the purest ingredients from the magical forest are used."
+      },
+      store: {
+        name: "Glimmering Hoard",
+        description: "A treasure trove run by a mischievous goblin. You can find rare artifacts, enchanted tack, and perhaps a map to hidden riches... for the right price."
+      },
+      market: {
+        name: "Crossroads Market",
+        description: "A bustling hub of trade where equestrians from all corners of Equoria gather. Barter for goods, find unique items, or sell your own wares."
+      },
+      training: {
+        name: "Pegasus Peaks Arena",
+        description: "High in the mountains, this legendary arena is where horses hone their skills. Train your steeds in agility, endurance, and even magical abilities."
+      },
+      breeding: {
+        name: "Moonpetal Sanctuary",
+        description: "A serene haven where the finest bloodlines converge. Seek out the perfect match to breed champions with exceptional traits and lineage."
+      },
+      alchemist: {
+        name: "Crystal Spire Lab",
+        description: "Within a tower of shimmering crystals, the alchemist transmutes elements, crafts powerful enchantments, and unlocks the hidden potential of gems."
+      },
+      farrier: {
+        name: "Ironflame Forge",
+        description: "The clang of hammer on anvil rings out from this master farrier's workshop. Get custom horseshoes, imbued with elemental magic or protective runes."
+      }
+    };
+    function openModal(locationKey) {
+      const data = locationData[locationKey];
+      if (data) {
+        modalTitle.textContent = data.name;
+        modalDescription.textContent = data.description;
+        // Could add specific actions for the "Enter" button based on locationKey
+        modalEnterButton.onclick = () => {
+          console.log("Entering " + data.name);
+          // Add shimmer trail effect on tap (conceptually)
+          modalEnterButton.classList.add('animate-pulse'); // Simple pulse, real shimmer is complex
+          setTimeout(() => modalEnterButton.classList.remove('animate-pulse'), 500);
+          // setTimeout(closeModal, 300); // Close after a delay for effect
+        };
+        modal.classList.remove('hidden');
+        setTimeout(() => modal.classList.add('opacity-100'), 10); // Fade in
+      }
+    }
+    function closeModal() {
+      modal.classList.remove('opacity-100');
+      setTimeout(() => modal.classList.add('hidden'), 300); // Fade out
+    }
+    // Close modal if clicked outside the content
+    modal.addEventListener('click', (event) => {
+      if (event.target === modal) {
+        closeModal();
+      }
+    });
+  </script>
+
+</body></html>

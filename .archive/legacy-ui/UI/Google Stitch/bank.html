@@ -1,0 +1,222 @@
+<html><head>
+<meta charset="utf-8"/>
+<link crossorigin="" href="https://fonts.gstatic.com/" rel="preconnect"/>
+<link as="style" href="https://fonts.googleapis.com/css2?display=swap&amp;family=Yeseva+One%3Awght%40400&amp;family=Jost%3Awght%40400%3B500%3B700&amp;family=Cormorant+Garamond%3Awght%40400%3B500%3B700" onload="this.rel='stylesheet'" rel="stylesheet"/>
+<title>Equoria Bank</title>
+<link href="data:image/x-icon;base64," rel="icon" type="image/x-icon"/>
+<script src="https://cdn.tailwindcss.com?plugins=forms,container-queries"></script>
+<style>
+      .font-yeseva {
+        font-family: "Yeseva One", serif;
+      }
+      .font-jost {
+        font-family: "Jost", sans-serif;
+      }
+      .font-cormorant {
+        font-family: "Cormorant Garamond", serif;
+      }
+      .storybook-bg {
+        background-color: #F2E8C4;
+        background-image:
+          repeating-linear-gradient(to bottom, transparent, transparent 49px, #D3C5A6 49px, #D3C5A6 50px),
+          url("data:image/svg+xml,%3Csvg width='600' height='600' viewBox='0 0 600 600' xmlns='http://www.w3.org/2000/svg'%3E%3Cdefs%3E%3Cpattern id='parchment' patternUnits='userSpaceOnUse' width='300' height='300'%3E%3Cimage href='https://www.transparenttextures.com/patterns/old-parchment.png' x='0' y='0' width='300' height='300'/%3E%3C/pattern%3E%3C/defs%3E%3Crect width='100%25' height='100%25' fill='url(%23parchment)' opacity='0.6'/%3E%3C/svg%3E");
+      }
+      .brass-plate {
+        background-image: url("data:image/svg+xml,%3Csvg width='200' height='50' viewBox='0 0 200 50' xmlns='http://www.w3.org/2000/svg'%3E%3Cdefs%3E%3ClinearGradient id='brassGradient' x1='0%25' y1='0%25' x2='0%25' y2='100%25'%3E%3Cstop offset='0%25' style='stop-color:%23b08d57;stop-opacity:1' /%3E%3Cstop offset='50%25' style='stop-color:%23c7a46f;stop-opacity:1' /%3E%3Cstop offset='100%25' style='stop-color:%23b08d57;stop-opacity:1' /%3E%3C/linearGradient%3E%3Cfilter id='insetShadow'%3E%3CfeOffset dx='0' dy='1'/%3E%3CfeGaussianBlur stdDeviation='1' result='offset-blur'/%3E%3CfeComposite operator='out' in='SourceGraphic' in2='offset-blur' result='inverse'/%3E%3CfeFlood flood-color='black' flood-opacity='.5' result='color'/%3E%3CfeComposite operator='in' in='color' in2='inverse' result='shadow'/%3E%3CfeComposite operator='over' in='shadow' in2='SourceGraphic'/%3E%3C/filter%3E%3C/defs%3E%3Crect width='100%25' height='100%25' fill='url(%23brassGradient)' filter='url(%23insetShadow)' rx='5' ry='5'/%3E%3C/svg%3E");
+        background-size: cover;
+        background-repeat: no-repeat;
+        border: 2px solid #8c6a3e;
+        box-shadow: 0 2px 5px rgba(0,0,0,0.3), inset 0 1px 2px rgba(255,255,255,0.3);
+        color: #4a3b20;
+        text-shadow: 1px 1px 0px rgba(255,255,255,0.2);
+      }
+      .gold-embossed-text {
+        color: #b08d57;
+        text-shadow: 1px 1px 0 #fff9e6, -1px -1px 0 #7a5f36, 1px -1px 0 #fff9e6, -1px 1px 0 #7a5f36, 0px 1px 0 #fff9e6, 0px -1px 0 #7a5f36, 1px 0px 0 #fff9e6, -1px 0px 0 #7a5f36, 2px 2px 2px rgba(0,0,0,0.3);
+      }
+      .leather-texture {
+        background-image: url("https://www.transparenttextures.com/patterns/leather.png");
+        background-color: #8B4513;}
+      .bronze-texture {
+        background-image: url("https://www.transparenttextures.com/patterns/brushed-metal.png");
+        background-color: #cd7f32;}
+      .sparkle-trail::after {
+        content: '✨';
+        position: absolute;
+        opacity: 0;
+        animation: sparkle 0.5s ease-out;
+      }
+      @keyframes sparkle {
+        0% { transform: scale(0.5) translate(0,0); opacity: 1; }
+        100% { transform: scale(1.5) translate(10px, -10px); opacity: 0; }
+      }
+      .gold-pouch-glow {
+        box-shadow: 0 0 15px 5px #ffd700, 0 0 25px 10px #ffd70030;transition: box-shadow 0.3s ease-in-out;
+      }
+      .scrollable-ledger {
+        max-height: 300px;overflow-y: auto;
+        border: 2px solid #8c6a3e;border-radius: 8px;
+        background-color: rgba(242, 232, 196, 0.8);scrollbar-width: thin;
+        scrollbar-color: #b08d57 #F2E8C4;}
+      .scrollable-ledger::-webkit-scrollbar {
+        width: 8px;
+      }
+      .scrollable-ledger::-webkit-scrollbar-track {
+        background: #F2E8C4;border-radius: 4px;
+      }
+      .scrollable-ledger::-webkit-scrollbar-thumb {
+        background-color: #b08d57;
+        border-radius: 4px;
+        border: 1px solid #8c6a3e;
+      }
+      .ledger-entry:hover {
+        background-color: rgba(211, 197, 166, 0.9);transform: scale(1.02);
+        transition: transform 0.2s ease-out, background-color 0.2s ease-out;
+      }
+    </style>
+<style>
+    body {
+      min-height: max(884px, 100dvh);
+    }
+  </style>
+<style>
+    body {
+      min-height: max(884px, 100dvh);
+    }
+  </style>
+  </head>
+<body class="storybook-bg text-[#4a3b20]">
+<div class="relative flex size-full min-h-screen flex-col justify-between group/design-root overflow-x-hidden">
+<div>
+<header class="flex items-center p-4 pb-2 justify-between sticky top-0 z-10 storybook-bg shadow-md">
+<button class="text-[#6b4f2c] hover:text-[#8c6a3e] transition-colors flex size-12 shrink-0 items-center justify-center rounded-full focus:outline-none focus:ring-2 focus:ring-[#b08d57] focus:ring-offset-2 focus:ring-offset-[#F2E8C4]">
+<svg fill="currentColor" height="32px" viewBox="0 0 256 256" width="32px" xmlns="http://www.w3.org/2000/svg">
+<path d="M224,128a8,8,0,0,1-8,8H59.31l58.35,58.34a8,8,0,0,1-11.32,11.32l-72-72a8,8,0,0,1,0-11.32l72-72a8,8,0,0,1,11.32,11.32L59.31,120H216A8,8,0,0,1,224,128Z"></path>
+</svg>
+</button>
+<h1 class="font-yeseva text-3xl gold-embossed-text flex-1 text-center pr-12">The Royal Bank</h1>
+</header>
+<div class="p-4 @container">
+<div class="brass-plate rounded-xl p-6 text-center mb-6 min-h-[120px] flex flex-col items-center justify-center">
+<p class="font-cormorant text-lg text-[#6b4f2c] -mt-2 mb-1">Current Royal Treasury</p>
+<p class="font-yeseva text-4xl tracking-wide gold-embossed-text">12,345 Gold</p>
+<img alt="Gold Coin Icon" class="inline-block h-8 w-8 ml-2 -mt-2 opacity-80" src="https://lh3.googleusercontent.com/aida-public/AB6AXuAg7t_HolB0eOHO3q1Xxzly6dfUzDUMPEvKAgN6SVj2eqyLjXBKXt0DDDki3UvySU9kTCAtNzfyTsFTjKfDAf_cSKx8nzKWpbbhZWv9Z1QR_CK478hXVu3gv3FT05Z8Td6kHIzcR37zo8lnZjw-xIirPtX8OlRWvCRDwYbSDISvqOymXV8hrcH1TSkTpme1hNEKr1Muu0RzJqNn0ilIVtIMvwWbrUb0BeZXLAHcuvm4inkGLkiBc-uLtAk6FiUtafdirxKkilxkGFw"/>
+</div>
+</div>
+<section class="px-4 pb-6">
+<h2 class="font-yeseva text-2xl gold-embossed-text mb-4 text-center">Earnings Summary</h2>
+<div class="flex flex-col md:flex-row gap-6 items-start">
+<div class="flex-1 p-4 rounded-lg leather-texture border-2 border-[#6a3e29] shadow-lg text-amber-50">
+<p class="font-jost text-lg font-medium">Earnings Breakdown</p>
+<p class="font-yeseva text-4xl font-bold tracking-tight text-yellow-300">+2,500 Gold</p>
+<div class="flex gap-2 items-center mt-1">
+<p class="font-cormorant text-base text-amber-100">Last 7 Days</p>
+<p class="text-green-400 text-base font-medium font-jost">+15%</p>
+</div>
+</div>
+<div class="flex-1 p-4 rounded-lg bronze-texture border-2 border-[#8c6a3e] shadow-lg min-h-[220px] flex flex-col justify-end">
+<p class="font-jost text-lg font-medium text-[#5a3d1a] mb-2 text-center">Spending Distribution</p>
+<div class="grid grid-cols-4 gap-2 items-end justify-items-center px-2 h-[150px]">
+<div class="bg-[#b08d57] w-full rounded-t-sm hover:bg-[#c7a46f] transition-colors" style="height: 50%;"></div>
+<div class="bg-[#b08d57] w-full rounded-t-sm hover:bg-[#c7a46f] transition-colors" style="height: 20%;"></div>
+<div class="bg-[#e74c3c] w-full rounded-t-sm hover:bg-[#c0392b] transition-colors" style="height: 90%;"></div>
+<div class="bg-[#b08d57] w-full rounded-t-sm hover:bg-[#c7a46f] transition-colors" style="height: 30%;"></div>
+<p class="font-jost text-xs text-[#5a3d1a] font-bold text-center">Training</p>
+<p class="font-jost text-xs text-[#5a3d1a] font-bold text-center">Shows</p>
+<p class="font-jost text-xs text-[#a13c2f] font-bold text-center">Vet</p>
+<p class="font-jost text-xs text-[#5a3d1a] font-bold text-center">Other</p>
+</div>
+</div>
+</div>
+</section>
+<section class="px-4 pb-6">
+<h2 class="font-yeseva text-2xl gold-embossed-text mb-4 text-center">Transaction Ledger</h2>
+<div class="scrollable-ledger p-2 shadow-inner">
+<div class="ledger-entry flex items-center gap-4 p-3 rounded-md cursor-pointer transition-all duration-200 ease-out hover:shadow-md border-b border-[#b08d57]/30 last:border-b-0">
+<div class="flex-shrink-0 w-10 h-10 rounded-full bg-[#c7a46f] flex items-center justify-center text-[#6b4f2c]">
+<svg fill="none" height="24" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round" stroke-width="2" viewBox="0 0 24 24" width="24" xmlns="http://www.w3.org/2000/svg"><path d="M12 12m-10 0a10 10 0 1 0 20 0a10 10 0 1 0-20 0"></path><path d="M12 8v4l2 1"></path><path d="M16.25 7.75L16.25 7.75"></path><path d="M7.75 7.75L7.75 7.75"></path><path d="M12 16.25L12 16.25"></path></svg>
+</div>
+<div class="flex-1">
+<p class="font-jost text-base font-medium text-[#5a3d1a]">Training Session</p>
+<p class="font-cormorant text-sm text-[#7a5f36]">Training Fee</p>
+</div>
+<div class="shrink-0"><p class="font-jost text-base font-medium text-red-700">-500 G</p></div>
+</div>
+<div class="ledger-entry flex items-center gap-4 p-3 rounded-md cursor-pointer transition-all duration-200 ease-out hover:shadow-md border-b border-[#b08d57]/30 last:border-b-0">
+<div class="flex-shrink-0 w-10 h-10 rounded-full bg-[#c7a46f] flex items-center justify-center text-[#6b4f2c]">
+<svg fill="none" height="24" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round" stroke-width="2" viewBox="0 0 24 24" width="24" xmlns="http://www.w3.org/2000/svg"><path d="M6 9H4.5a2.5 2.5 0 0 1 0-5H6"></path><path d="M18 9h1.5a2.5 2.5 0 0 0 0-5H18"></path><path d="M4 22h16"></path><path d="M10 14.66V17.5a2.5 2.5 0 0 0 5 0V14.66"></path><path d="M8 19h8"></path><path d="M10 9h4"></path><path d="M12 17.5V22"></path><path d="M12 9V6.5a2.5 2.5 0 0 1 5 0V9"></path></svg>
+</div>
+<div class="flex-1">
+<p class="font-jost text-base font-medium text-[#5a3d1a]">Equestrian Show</p>
+<p class="font-cormorant text-sm text-[#7a5f36]">Show Win</p>
+</div>
+<div class="shrink-0"><p class="font-jost text-base font-medium text-green-600">+1,500 G</p></div>
+</div>
+<div class="ledger-entry flex items-center gap-4 p-3 rounded-md cursor-pointer transition-all duration-200 ease-out hover:shadow-md border-b border-[#b08d57]/30 last:border-b-0">
+<div class="flex-shrink-0 w-10 h-10 rounded-full bg-[#c7a46f] flex items-center justify-center text-[#6b4f2c]">
+<svg fill="none" height="24" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round" stroke-width="2" viewBox="0 0 24 24" width="24" xmlns="http://www.w3.org/2000/svg"><path d="M14.5 2.5a2.5 2.5 0 0 0-5 0V7.5h5V2.5Z"></path><path d="M5 11.5v5a2 2 0 0 0 2 2h10a2 2 0 0 0 2-2v-5a8.55 8.55 0 0 0-3.51-6.87A2.5 2.5 0 0 0 14.5 2.5h-5A2.5 2.5 0 0 0 6.01 4.63 8.55 8.55 0 0 0 2.5 11.5Z"></path><path d="M12 11.5V16"></path><path d="M9.5 13.75h5"></path></svg>
+</div>
+<div class="flex-1">
+<p class="font-jost text-base font-medium text-[#5a3d1a]">Veterinary Visit</p>
+<p class="font-cormorant text-sm text-[#7a5f36]">Vet Cost</p>
+</div>
+<div class="shrink-0"><p class="font-jost text-base font-medium text-red-700">-200 G</p></div>
+</div>
+<div class="ledger-entry flex items-center gap-4 p-3 rounded-md cursor-pointer transition-all duration-200 ease-out hover:shadow-md">
+<div class="flex-shrink-0 w-10 h-10 rounded-full bg-[#c7a46f] flex items-center justify-center text-[#6b4f2c]">
+<svg fill="none" height="24" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round" stroke-width="2" viewBox="0 0 24 24" width="24" xmlns="http://www.w3.org/2000/svg"><path d="M20 11.08V8l-6-6H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h6"></path><path d="M14 2v4a2 2 0 0 0 2 2h4"></path><path d="m19.5 15.5.14.14a2.5 2.5 0 0 1 0 3.54l-1.64 1.64a2.5 2.5 0 0 1-3.54 0l-.14-.14"></path><path d="m15.5 19.5-.14-.14a2.5 2.5 0 0 1 0-3.54l1.64-1.64a2.5 2.5 0 0 1 3.54 0l.14.14"></path></svg>
+</div>
+<div class="flex-1">
+<p class="font-jost text-base font-medium text-[#5a3d1a]">Mysterious Artifact Sale</p>
+<p class="font-cormorant text-sm text-[#7a5f36]">Marketplace Transaction</p>
+</div>
+<div class="shrink-0"><p class="font-jost text-base font-medium text-green-600">+1,700 G</p></div>
+</div>
+</div>
+</section>
+<section class="px-4 pb-8 pt-2">
+<h2 class="font-yeseva text-2xl gold-embossed-text mb-4 text-center">Rewards Await!</h2>
+<div class="p-4 rounded-xl leather-texture border-2 border-[#6a3e29] shadow-lg">
+<div class="flex items-center justify-between gap-4">
+<div class="flex-1">
+<p class="font-cormorant text-sm text-amber-100">Claimable Reward</p>
+<p class="font-yeseva text-xl text-yellow-300">Daily Login Chest</p>
+<p class="font-jost text-sm text-amber-100 mt-1">Log in daily to claim your riches!</p>
+</div>
+<div class="flex-shrink-0 w-24 h-24 relative">
+<img alt="Gold Treasure Chest" class="w-full h-full object-contain gold-pouch-glow" src="https://lh3.googleusercontent.com/aida-public/AB6AXuBBs2F-NjdipDYogfkrNOD6QX5M6EvZgSG_BEAqdRfL_xlFzgmWhCCbS5eFLxbb7TcJogD7pBZx-LrJAgZF3EDRTEYGmDnJSJwCIUVJq0YB_GT4T7DT8wnIRwtkmqhahrRqWZp5ptProJNHsD-hqaoHbK2KvyD6k4c5hQUImEHrJr--RZ97HRKe4C8ERdFg6ZGl-l7K081BaB0A9WW9VfcF3Sf-LSwQJ2PoGLI1X6lX3JU1jm6PCsXS0NxpmNdEPq2cNXjfrpJ1HT0"/>
+<span class="absolute -top-2 -right-2 bg-red-600 text-white text-xs font-bold px-2 py-1 rounded-full animate-pulse">New!</span>
+</div>
+</div>
+<button class="mt-4 w-full flex items-center justify-center gap-2 rounded-lg h-12 px-6 bronze-texture border-2 border-[#8c6a3e] text-[#5a3d1a] hover:brightness-110 active:brightness-95 transition-all focus:outline-none focus:ring-2 focus:ring-[#b08d57] focus:ring-offset-2 focus:ring-offset-[#8B4513]">
+<span class="font-yeseva text-lg tracking-wider">Claim Reward</span>
+<svg fill="currentColor" height="20px" viewBox="0 0 256 256" width="20px" xmlns="http://www.w3.org/2000/svg">
+<path d="M221.66,133.66l-72,72a8,8,0,0,1-11.32-11.32L196.69,136H40a8,8,0,0,1,0-16H196.69L138.34,61.66a8,8,0,0,1,11.32-11.32l72,72A8,8,0,0,1,221.66,133.66Z"></path>
+</svg>
+</button>
+</div>
+</section>
+</div>
+<footer class="p-4 storybook-bg border-t-2 border-[#b08d57]/50">
+<p class="font-cormorant text-xs text-center text-[#7a5f36]">Equoria - The Royal Bank © Year of the Unicorn</p>
+</footer>
+</div>
+<script>
+        // Simple microinteraction for ledger entries
+        const ledgerEntries = document.querySelectorAll('.ledger-entry');
+        ledgerEntries.forEach(entry => {
+            entry.addEventListener('click', (e) => {
+                // Create sparkle effect
+                const sparkle = document.createElement('span');
+                sparkle.classList.add('sparkle-trail');
+                sparkle.style.left = `${e.clientX - entry.getBoundingClientRect().left}px`;
+                sparkle.style.top = `${e.clientY - entry.getBoundingClientRect().top}px`;
+                entry.appendChild(sparkle);
+                setTimeout(() => sparkle.remove(), 500);
+                // Optional: Coin drop sound (requires an audio file)
+                // const coinSound = new Audio('path/to/coin-drop.mp3');
+                // coinSound.play();
+            });
+        });
+    </script>
+</body></html>

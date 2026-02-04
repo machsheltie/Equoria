@@ -1,0 +1,192 @@
+<html><head>
+<meta charset="utf-8"/>
+<link crossorigin="" href="https://fonts.gstatic.com/" rel="preconnect"/>
+<link as="style" href="https://fonts.googleapis.com/css2?family=Yeseva+One:wght@400&amp;family=Jost:wght@400;500;700&amp;family=Cormorant:ital,wght@0,400;0,700;1,400&amp;display=swap" onload="this.rel='stylesheet'" rel="stylesheet"/>
+<title>Equoria Notification Center</title>
+<link href="data:image/x-icon;base64," rel="icon" type="image/x-icon"/>
+<script src="https://cdn.tailwindcss.com?plugins=forms,container-queries"></script>
+<style>
+      @keyframes sparkle {
+        0%,
+        100% {
+          opacity: 0;
+          transform: scale(0.5) rotate(0deg);
+        }
+        50% {
+          opacity: 1;
+          transform: scale(1.2) rotate(15deg);
+        }
+      }
+      .sparkle {
+        animation: sparkle 1.5s ease-in-out infinite;
+      }
+      .gold-glow {
+        box-shadow: 0 0 15px 5px #f2b90c, 0 0 5px 2px #f2b90c inset;
+      }
+      .parchment-bg {
+        background-color: #fdf8e3;
+        background-image: url("data:image/svg+xml,%3Csvg width='60' height='60' viewBox='0 0 60 60' xmlns='http://www.w3.org/2000/svg'%3E%3Cg fill='%23f5efdb' fill-opacity='0.4'%3E%3Cpath fill-rule='evenodd' d='M0 60V0h60L0 60zm1.5 0L60 1.5V0H0v.5L1.5 0zM60 0h-1L0 59v1h.5L60 .5V0zM0 0v1L59 60h1v-.5L0 .5V0z'/%3E%3C/g%3E%3C/svg%3E");
+      }
+      .vignette {
+        box-shadow: inset 0 0 100px 30px rgba(0, 0, 0, 0.1);
+      }
+      .gold-border {
+        border: 8px solid transparent;
+        border-image: url("data:image/svg+xml,%3Csvg width='100' height='100' viewBox='0 0 100 100' xmlns='http://www.w3.org/2000/svg'%3E%3Cstyle%3E.st0%7Bfill:%23DAA520;stroke:%23B8860B;stroke-width:2;%7D%3C/style%3E%3Cdefs%3E%3Cpattern id='gold-frame' patternUnits='userSpaceOnUse' width='20' height='20'%3E%3Cpath class='st0' d='M0,0 H20 V20 H0 Z M2,2 H18 V18 H2 Z M5,5 C7.76,5 10,7.24 10,10 S7.76,15 5,15 0,12.76 0,10 2.24,5 5,5 Z M15,5 C17.76,5 20,7.24 20,10 S17.76,15 15,15 10,12.76 10,10 12.24,5 15,5 Z'/%3E%3C/pattern%3E%3C/defs%3E%3Crect width='100' height='100' fill='url(%23gold-frame)'/%3E%3C/svg%3E")
+          20 stretch;
+      }
+      .scroll-style-tabs::-webkit-scrollbar {
+        display: none;}
+      .scroll-style-tabs {
+        -ms-overflow-style: none;scrollbar-width: none;}
+    </style>
+<style>
+    body {
+      min-height: max(884px, 100dvh);
+    }
+  </style>
+  </head>
+<body class="parchment-bg gold-border">
+<div class="relative flex size-full min-h-screen flex-col justify-between group/design-root overflow-x-hidden vignette" style="font-family: 'Jost', sans-serif;">
+<div class="absolute inset-0 overflow-hidden pointer-events-none">
+<div class="absolute sparkle text-yellow-400 text-3xl" style="top: 10%; left: 5%; animation-delay: 0s;">✨</div>
+<div class="absolute sparkle text-yellow-300 text-2xl" style="top: 25%; left: 80%; animation-delay: 0.5s;">✧</div>
+<div class="absolute sparkle text-amber-400 text-4xl" style="top: 50%; left: 15%; animation-delay: 1s;">✦</div>
+<div class="absolute sparkle text-yellow-200 text-xl" style="top: 70%; left: 90%; animation-delay: 1.5s;">⊹</div>
+<div class="absolute sparkle text-amber-500 text-3xl" style="top: 85%; left: 50%; animation-delay: 2s;">✷</div>
+</div>
+<div class="sticky top-0 z-10 parchment-bg" style="border-bottom: 2px solid #c8a86b;">
+<div class="flex items-center p-4 pb-2 justify-between">
+<h1 class="text-[#b08d57] text-2xl text-center flex-1 pl-12" style="font-family: 'Yeseva One', cursive;">Notifications</h1>
+<div class="flex w-12 items-center justify-end">
+<button class="flex max-w-[480px] cursor-pointer items-center justify-center overflow-hidden rounded-full h-10 w-10 hover:bg-[#f5efdb] text-[#b08d57] gap-2 text-base min-w-0 p-0 transition-colors">
+<svg fill="currentColor" height="24px" viewBox="0 0 256 256" width="24px" xmlns="http://www.w3.org/2000/svg">
+<path d="M229.3,106.92,206.4,84a113.29,113.29,0,0,0-22.48-22.48l-22.92-22.9L150,41.06A109.54,109.54,0,0,0,128,36a109.54,109.54,0,0,0-22,5.06l-11.1-2.54L93.08,15.64a24.43,24.43,0,0,0-34.11,0L40.46,34.15a24.43,24.43,0,0,0,0,34.11L58.94,90.07l-2.54,11.1A109.54,109.54,0,0,0,36,128a109.54,109.54,0,0,0,5.06,22l2.54,11.1-22.92,22.92a24.43,24.43,0,0,0,0,34.11l18.51,18.51a24.43,24.43,0,0,0,34.11,0l22.9-22.9,11.1,2.54a109.54,109.54,0,0,0,22,5.06,109.54,109.54,0,0,0,22-5.06l11.1-2.54,22.9,22.9a24.43,24.43,0,0,0,34.11,0l18.51-18.51a24.43,24.43,0,0,0,0-34.11l-22.9-22.9,2.54-11.1A109.54,109.54,0,0,0,220,128,109.09,109.09,0,0,0,229.3,106.92ZM210.79,210.79a8.46,8.46,0,0,1-11.92,0l-22.9-22.9L165,185.37a12,12,0,0,0-10-1.18,93.68,93.68,0,0,1-54.1,0,12,12,0,0,0-10,1.18l-11,2.52-22.9,22.9a8.46,8.46,0,0,1-11.92,0L26.62,192.28a8.46,8.46,0,0,1,0-11.92l22.9-22.9-2.52-11a12,12,0,0,0-1.18-10,93.68,93.68,0,0,1,0-54.1,12,12,0,0,0,1.18-10l2.52-11L26.62,49.35a8.46,8.46,0,0,1,0-11.92L45.13,18.92a8.46,8.46,0,0,1,11.92,0l22.9,22.9,11-2.52a12,12,0,0,0,10-1.18,93.68,93.68,0,0,1,54.1,0,12,12,0,0,0,10,1.18l11,2.52,22.9-22.9a8.46,8.46,0,0,1,11.92,0l18.51,18.51a8.46,8.46,0,0,1,0,11.92l-22.9,22.9,2.52,11a12,12,0,0,0,1.18,10,93.68,93.68,0,0,1,0,54.1,12,12,0,0,0-1.18,10l-2.52,11,22.9,22.9A8.46,8.46,0,0,1,210.79,210.79ZM128,92a36,36,0,1,0,36,36A36,36,0,0,0,128,92Zm0,56a20,20,0,1,1,20-20A20,20,0,0,1,128,148Z"></path>
+</svg>
+</button>
+</div>
+</div>
+<div class="pb-1 overflow-x-auto scroll-style-tabs">
+<div class="flex px-2 gap-1 whitespace-nowrap">
+<a class="flex flex-col items-center justify-center border-b-[3px] gold-glow border-b-[#f2b90c] text-[#DAA520] py-3 px-4 rounded-t-lg" href="#" style="font-family: 'Yeseva One', cursive; font-size: 18px; background-image: url('scroll_tab_active.png'); background-size: 100% 100%; background-repeat: no-repeat;">All</a>
+<a class="flex flex-col items-center justify-center border-b-[3px] border-b-transparent text-[#916f40] hover:text-[#DAA520] py-3 px-4 rounded-t-md hover:bg-[#f5efdb]/50 transition-colors" href="#" style="font-family: 'Yeseva One', cursive; font-size: 18px;">System</a>
+<a class="flex flex-col items-center justify-center border-b-[3px] border-b-transparent text-[#916f40] hover:text-[#DAA520] py-3 px-4 rounded-t-md hover:bg-[#f5efdb]/50 transition-colors" href="#" style="font-family: 'Yeseva One', cursive; font-size: 18px;">Events</a>
+<a class="flex flex-col items-center justify-center border-b-[3px] border-b-transparent text-[#916f40] hover:text-[#DAA520] py-3 px-4 rounded-t-md hover:bg-[#f5efdb]/50 transition-colors" href="#" style="font-family: 'Yeseva One', cursive; font-size: 18px;">Horses</a>
+<a class="flex flex-col items-center justify-center border-b-[3px] border-b-transparent text-[#916f40] hover:text-[#DAA520] py-3 px-4 rounded-t-md hover:bg-[#f5efdb]/50 transition-colors" href="#" style="font-family: 'Yeseva One', cursive; font-size: 18px;">Messages</a>
+</div>
+</div>
+</div>
+<div class="flex-grow overflow-y-auto p-3 space-y-3">
+<div class="relative flex items-center gap-3 bg-white/30 backdrop-blur-sm p-3 rounded-lg shadow-lg border-l-4 border-[#f2b90c] cursor-pointer hover:shadow-xl transition-shadow duration-300" style="background-image: url('https://lh3.googleusercontent.com/aida-public/AB6AXuAZADNLF1EIAjap7tbtOKNfxhbG9eylfRyhUMceHfAjqBbSO8T07VHrp4TGX_B1Pi4xtswR8nCQzUFBSVu29f8bNX-B3fNQysOcaiBbCFo4CQ6iiAUHwbnyC1O3DnzoAqpU2LFJor_h7IGSIRg6WZ8xVC6XCN4D0n4U1yZpVO22l31wODDAdapwAtIyGv4AqCHhsMC_Yey4NcKPE14PA7hPRiR9iJRtpK7rYrdN-EpNu1KDTDh2w2WO0Alx_AfyG9AkKHHL0SyUA6c'); background-size: cover; border-left: 4px solid #f2b90c; box-shadow: 0 2px 8px rgba(184, 134, 11, 0.3), 0 0 0 1px #e0c99b;">
+<div class="absolute -top-1 -left-1 text-yellow-400 text-lg sparkle">✨</div>
+<div class="text-[#8c6d3c] flex items-center justify-center rounded-full bg-[#f4f0e7] border-2 border-[#d4b88c] shrink-0 size-12 shadow-inner">
+<svg fill="currentColor" height="28px" viewBox="0 0 256 256" width="28px" xmlns="http://www.w3.org/2000/svg"><path d="M226.34,82.12,195.65,60.56a8,8,0,0,0-8.47-.42L135,95.58V40a8,8,0,0,0-16,0v64a8,8,0,0,0,13.66,5.66l18.16-21.79,16.71,10V76a8,8,0,0,0-16,0v39.56l-30.69-18.41a8,8,0,0,0-8.47-.43L56.86,121.69c-15,9-19.19,28.18-10.3,43.12s28.3,19.06,43.15,10.29l31.67-19,13.81,23H116a8,8,0,0,0,0,16h24a8,8,0,0,0,6.79-3.8l16.39-27.31,32.43,19.46A32,32,0,0,1,160,216a32.2,32.2,0,0,1-32-32,8,8,0,0,0-16,0,48.29,48.29,0,0,0,48,48,47.74,47.74,0,0,0,45.57-33.13L226.75,93.2A8,8,0,0,0,226.34,82.12ZM184,214.16A31.66,31.66,0,0,1,160,200a32.2,32.2,0,0,1,20.83-30.24l12.87-7.72L180,186.59A8,8,0,0,0,184,200v14.16ZM89.68,159.1a15.86,15.86,0,0,1-21.58-5.14,16,16,0,0,1,5.15-21.58L104,114.05l20.68,12.41Z"></path></svg>
+</div>
+<div class="flex-grow min-w-0">
+<p class="text-[#DAA520] text-lg truncate" style="font-family: 'Yeseva One', cursive; text-shadow: 1px 1px 1px #00000020;">Foal Delivery</p>
+<p class="text-[#8c6d3c] text-sm leading-tight line-clamp-2" style="font-family: 'Jost', sans-serif;">Your new foal, Starburst, has arrived! She's a beautiful filly with a unique celestial marking.</p>
+</div>
+<div class="shrink-0 text-right">
+<p class="text-[#a88654] text-xs italic" style="font-family: 'Cormorant', serif;">2h ago</p>
+</div>
+</div>
+<div class="relative flex items-center gap-3 bg-white/20 backdrop-blur-sm p-3 rounded-lg shadow-md border-l-4 border-transparent cursor-pointer hover:shadow-lg transition-shadow duration-300" style="background-image: url('https://lh3.googleusercontent.com/aida-public/AB6AXuAZADNLF1EIAjap7tbtOKNfxhbG9eylfRyhUMceHfAjqBbSO8T07VHrp4TGX_B1Pi4xtswR8nCQzUFBSVu29f8bNX-B3fNQysOcaiBbCFo4CQ6iiAUHwbnyC1O3DnzoAqpU2LFJor_h7IGSIRg6WZ8xVC6XCN4D0n4U1yZpVO22l31wODDAdapwAtIyGv4AqCHhsMC_Yey4NcKPE14PA7hPRiR9iJRtpK7rYrdN-EpNu1KDTDh2w2WO0Alx_AfyG9AkKHHL0SyUA6c'); background-size: cover; border-left: 4px solid transparent; box-shadow: 0 1px 4px rgba(100, 70, 30, 0.2), 0 0 0 1px #e0c99b;">
+<div class="text-[#8c6d3c] flex items-center justify-center rounded-full bg-[#f4f0e7] border-2 border-[#d4b88c] shrink-0 size-12 shadow-inner">
+<svg fill="currentColor" height="28px" viewBox="0 0 256 256" width="28px" xmlns="http://www.w3.org/2000/svg"><path d="M236.62,108.28A16,16,0,0,0,224.14,104H208V72a16,16,0,0,0-16-16H144a16,16,0,0,0-16,16v8a8,8,0,0,0-16,0v-8a32,32,0,0,1,32-32h48a32,32,0,0,1,32,32v32h12.14a16,16,0,0,0,12.59-24.56l-32.61-48.92a16,16,0,0,0-25.18-1.16l-46.24,42a8,8,0,1,0,10.58,12.08L192,72.86V104h-8a8,8,0,0,0,0,16h8v16a8,8,0,0,0,16,0V120h8v16a8,8,0,0,0,16,0V120h3.86a16,16,0,0,0,12.47-6.16ZM140,145.54a8,8,0,0,0-8.87,1.16L45.06,213.17A32,32,0,0,0,72,232a30.44,30.44,0,0,0,11.06-2.17A8,8,0,0,0,88,224V189.21l18.48-12.32a8,8,0,1,0-8.94-13.42L72,182.79V160a8,8,0,0,0-16,0v28.21A47.92,47.92,0,0,1,24,168a48,48,0,0,1,36.18-46.66l86.07-57.38a8,8,0,1,0-8.88-13.32L24.58,107.4A32.07,32.07,0,0,0,0,136a32.1,32.1,0,0,0,32,32,8,8,0,0,0,0-16,16,16,0,0,1,0-32,15.91,15.91,0,0,1,13.15-15.58L60.28,144H72v8a8,8,0,0,0,16,0v-3.54l43.13-28.76A8,8,0,0,0,140,145.54Z"></path></svg>
+</div>
+<div class="flex-grow min-w-0">
+<p class="text-[#b08d57] text-lg truncate" style="font-family: 'Yeseva One', cursive;">Event Reminder</p>
+<p class="text-[#8c6d3c] text-sm leading-tight line-clamp-2" style="font-family: 'Jost', sans-serif;">The Grand Equine Gala is starting soon! Don't forget to prepare your best horses.</p>
+</div>
+<div class="shrink-0 text-right">
+<p class="text-[#a88654] text-xs italic" style="font-family: 'Cormorant', serif;">4h ago</p>
+</div>
+</div>
+<div class="relative flex items-center gap-3 bg-white/20 backdrop-blur-sm p-3 rounded-lg shadow-md border-l-4 border-transparent cursor-pointer hover:shadow-lg transition-shadow duration-300" style="background-image: url('https://lh3.googleusercontent.com/aida-public/AB6AXuAZADNLF1EIAjap7tbtOKNfxhbG9eylfRyhUMceHfAjqBbSO8T07VHrp4TGX_B1Pi4xtswR8nCQzUFBSVu29f8bNX-B3fNQysOcaiBbCFo4CQ6iiAUHwbnyC1O3DnzoAqpU2LFJor_h7IGSIRg6WZ8xVC6XCN4D0n4U1yZpVO22l31wODDAdapwAtIyGv4AqCHhsMC_Yey4NcKPE14PA7hPRiR9iJRtpK7rYrdN-EpNu1KDTDh2w2WO0Alx_AfyG9AkKHHL0SyUA6c'); background-size: cover; border-left: 4px solid transparent; box-shadow: 0 1px 4px rgba(100, 70, 30, 0.2), 0 0 0 1px #e0c99b;">
+<div class="text-[#8c6d3c] flex items-center justify-center rounded-full bg-[#f4f0e7] border-2 border-[#d4b88c] shrink-0 size-12 shadow-inner">
+<svg fill="currentColor" height="28px" viewBox="0 0 256 256" width="28px" xmlns="http://www.w3.org/2000/svg"><path d="M229.3,106.92,206.4,84a113.29,113.29,0,0,0-22.48-22.48l-22.92-22.9L150,41.06A109.54,109.54,0,0,0,128,36a109.54,109.54,0,0,0-22,5.06l-11.1-2.54L93.08,15.64a24.43,24.43,0,0,0-34.11,0L40.46,34.15a24.43,24.43,0,0,0,0,34.11L58.94,90.07l-2.54,11.1A109.54,109.54,0,0,0,36,128a109.54,109.54,0,0,0,5.06,22l2.54,11.1-22.92,22.92a24.43,24.43,0,0,0,0,34.11l18.51,18.51a24.43,24.43,0,0,0,34.11,0l22.9-22.9,11.1,2.54a109.54,109.54,0,0,0,22,5.06,109.54,109.54,0,0,0,22-5.06l11.1-2.54,22.9,22.9a24.43,24.43,0,0,0,34.11,0l18.51-18.51a24.43,24.43,0,0,0,0-34.11l-22.9-22.9,2.54-11.1A109.54,109.54,0,0,0,220,128,109.09,109.09,0,0,0,229.3,106.92ZM210.79,210.79a8.46,8.46,0,0,1-11.92,0l-22.9-22.9L165,185.37a12,12,0,0,0-10-1.18,93.68,93.68,0,0,1-54.1,0,12,12,0,0,0-10,1.18l-11,2.52-22.9,22.9a8.46,8.46,0,0,1-11.92,0L26.62,192.28a8.46,8.46,0,0,1,0-11.92l22.9-22.9-2.52-11a12,12,0,0,0-1.18-10,93.68,93.68,0,0,1,0-54.1,12,12,0,0,0,1.18-10l2.52-11L26.62,49.35a8.46,8.46,0,0,1,0-11.92L45.13,18.92a8.46,8.46,0,0,1,11.92,0l22.9,22.9,11-2.52a12,12,0,0,0,10-1.18,93.68,93.68,0,0,1,54.1,0,12,12,0,0,0,10,1.18l11,2.52,22.9-22.9a8.46,8.46,0,0,1,11.92,0l18.51,18.51a8.46,8.46,0,0,1,0,11.92l-22.9,22.9,2.52,11a12,12,0,0,0,1.18,10,93.68,93.68,0,0,1,0,54.1,12,12,0,0,0-1.18,10l-2.52,11,22.9,22.9A8.46,8.46,0,0,1,210.79,210.79ZM128,92a36,36,0,1,0,36,36A36,36,0,0,0,128,92Zm0,56a20,20,0,1,1,20-20A20,20,0,0,1,128,148Z"></path></svg>
+</div>
+<div class="flex-grow min-w-0">
+<p class="text-[#b08d57] text-lg truncate" style="font-family: 'Yeseva One', cursive;">System Update</p>
+<p class="text-[#8c6d3c] text-sm leading-tight line-clamp-2" style="font-family: 'Jost', sans-serif;">A new update is available for Equoria, featuring bug fixes and new seasonal items.</p>
+</div>
+<div class="shrink-0 text-right">
+<p class="text-[#a88654] text-xs italic" style="font-family: 'Cormorant', serif;">1d ago</p>
+</div>
+</div>
+<div class="relative flex items-center gap-3 bg-white/20 backdrop-blur-sm p-3 rounded-lg shadow-md border-l-4 border-transparent cursor-pointer hover:shadow-lg transition-shadow duration-300" style="background-image: url('https://lh3.googleusercontent.com/aida-public/AB6AXuAZADNLF1EIAjap7tbtOKNfxhbG9eylfRyhUMceHfAjqBbSO8T07VHrp4TGX_B1Pi4xtswR8nCQzUFBSVu29f8bNX-B3fNQysOcaiBbCFo4CQ6iiAUHwbnyC1O3DnzoAqpU2LFJor_h7IGSIRg6WZ8xVC6XCN4D0n4U1yZpVO22l31wODDAdapwAtIyGv4AqCHhsMC_Yey4NcKPE14PA7hPRiR9iJRtpK7rYrdN-EpNu1KDTDh2w2WO0Alx_AfyG9AkKHHL0SyUA6c'); background-size: cover; border-left: 4px solid transparent; box-shadow: 0 1px 4px rgba(100, 70, 30, 0.2), 0 0 0 1px #e0c99b;">
+<div class="text-[#8c6d3c] flex items-center justify-center rounded-full bg-[#f4f0e7] border-2 border-[#d4b88c] shrink-0 size-12 shadow-inner">
+<svg fill="currentColor" height="28px" viewBox="0 0 256 256" width="28px" xmlns="http://www.w3.org/2000/svg"><path d="M216,40H40A16,16,0,0,0,24,56V88a8,8,0,0,0,16,0V56H216V88a8,8,0,0,0,16,0V56A16,16,0,0,0,216,40Zm0,160H168V152a8,8,0,0,0-16,0v48H104V152a8,8,0,0,0-16,0v48H40V112H216Zm23.16-48.89a8,8,0,0,1-1.16,11.28l-40,32A8,8,0,0,1,192,192a8,8,0,0,1-4.32-1.21L160,170.59l-27.68,20.77a8,8,0,0,1-8.64,0L96,170.59,68.32,190.79A8,8,0,0,1,64,192a8,8,0,0,1-5.16-14.89l40-32a8,8,0,0,1,9.15-.16L128,158.74l20.17-15.13a8,8,0,0,1,9.15.16l40,32A8,8,0,0,1,239.16,151.11Z"></path></svg>
+</div>
+<div class="flex-grow min-w-0">
+<p class="text-[#b08d57] text-lg truncate" style="font-family: 'Yeseva One', cursive;">New Message</p>
+<p class="text-[#8c6d3c] text-sm leading-tight line-clamp-2" style="font-family: 'Jost', sans-serif;">A new message from player, Elara. They are asking about trading for your Sunstone Pegasus.</p>
+</div>
+<div class="shrink-0 text-right">
+<p class="text-[#a88654] text-xs italic" style="font-family: 'Cormorant', serif;">3d ago</p>
+</div>
+</div>
+</div>
+</div>
+<div class="fixed inset-0 bg-black/50 backdrop-blur-sm z-50 flex items-center justify-center p-4 hidden opacity-0 transition-opacity duration-300" id="expanded-notification">
+<div class="parchment-bg gold-border p-6 rounded-xl shadow-2xl w-full max-w-md relative overflow-hidden" style="background-image: url('https://lh3.googleusercontent.com/aida-public/AB6AXuAZADNLF1EIAjap7tbtOKNfxhbG9eylfRyhUMceHfAjqBbSO8T07VHrp4TGX_B1Pi4xtswR8nCQzUFBSVu29f8bNX-B3fNQysOcaiBbCFo4CQ6iiAUHwbnyC1O3DnzoAqpU2LFJor_h7IGSIRg6WZ8xVC6XCN4D0n4U1yZpVO22l31wODDAdapwAtIyGv4AqCHhsMC_Yey4NcKPE14PA7hPRiR9iJRtpK7rYrdN-EpNu1KDTDh2w2WO0Alx_AfyG9AkKHHL0SyUA6c'); background-size: cover; background-position: center;">
+<div class="absolute -top-2 -right-2 text-amber-400 text-3xl sparkle">✧</div>
+<div class="flex items-start mb-4">
+<div class="text-[#8c6d3c] flex items-center justify-center rounded-full bg-[#f4f0e7] border-2 border-[#d4b88c] shrink-0 size-10 shadow-inner mr-3">
+<svg fill="currentColor" height="24px" viewBox="0 0 256 256" width="24px" xmlns="http://www.w3.org/2000/svg"><path d="M226.34,82.12,195.65,60.56a8,8,0,0,0-8.47-.42L135,95.58V40a8,8,0,0,0-16,0v64a8,8,0,0,0,13.66,5.66l18.16-21.79,16.71,10V76a8,8,0,0,0-16,0v39.56l-30.69-18.41a8,8,0,0,0-8.47-.43L56.86,121.69c-15,9-19.19,28.18-10.3,43.12s28.3,19.06,43.15,10.29l31.67-19,13.81,23H116a8,8,0,0,0,0,16h24a8,8,0,0,0,6.79-3.8l16.39-27.31,32.43,19.46A32,32,0,0,1,160,216a32.2,32.2,0,0,1-32-32,8,8,0,0,0-16,0,48.29,48.29,0,0,0,48,48,47.74,47.74,0,0,0,45.57-33.13L226.75,93.2A8,8,0,0,0,226.34,82.12ZM184,214.16A31.66,31.66,0,0,1,160,200a32.2,32.2,0,0,1,20.83-30.24l12.87-7.72L180,186.59A8,8,0,0,0,184,200v14.16ZM89.68,159.1a15.86,15.86,0,0,1-21.58-5.14,16,16,0,0,1,5.15-21.58L104,114.05l20.68,12.41Z"></path></svg>
+</div>
+<div>
+<h2 class="text-[#DAA520] text-xl" style="font-family: 'Yeseva One', cursive; text-shadow: 1px 1px 1px #00000020;">Foal Delivery</h2>
+<p class="text-[#a88654] text-xs italic" style="font-family: 'Cormorant', serif;">2 hours ago</p>
+</div>
+<button class="ml-auto text-[#8c6d3c] hover:text-[#DAA520] transition-colors" onclick="toggleNotificationPanel(false)">
+<svg fill="currentColor" height="24" viewBox="0 0 256 256" width="24" xmlns="http://www.w3.org/2000/svg"><path d="M208.49,191.51a12,12,0,0,1-17,17L128,145,64.49,208.49a12,12,0,0,1-17-17L111,128,47.51,64.49a12,12,0,0,1,17-17L128,111l63.51-63.52a12,12,0,0,1,17,17L145,128Z"></path></svg>
+</button>
+</div>
+<div class="max-h-60 overflow-y-auto text-[#755731] pr-2 mb-6" style="font-family: 'Jost', sans-serif; font-size: 15px; line-height: 1.6;">
+<p>Congratulations! Your mare, Starlight Dreamer, has given birth to a beautiful new foal named Starburst.</p>
+<p class="mt-2">Starburst is a healthy filly with a rare celestial marking on her flank. Her stats are promising, and she shows great potential for future competitions. Make sure to visit her in the stables to start her training!</p>
+<p class="mt-2">You can find Starburst in the "My Horses" section.</p>
+</div>
+<div class="flex justify-around items-center space-x-2">
+<button class="flex-1 flex items-center justify-center text-sm text-[#754c24] bg-[#e6d5b9] hover:bg-[#dcc8a8] border border-[#c8a86b] rounded-md py-2 px-3 transition-colors shadow-sm hover:shadow-md" style="font-family: 'Yeseva One', cursive;">
+<svg class="mr-2" fill="currentColor" height="18" viewBox="0 0 256 256" width="18" xmlns="http://www.w3.org/2000/svg"><path d="M237.66,77.66l-48,48A8,8,0,0,1,176,128H130.54L224,34.54ZM232,88a8,8,0,0,0-8,8v88a8,8,0,0,0,8,8h8a8,8,0,0,0,0-16h-8V96A8,8,0,0,0,232,88ZM192,128H160v32a8,8,0,0,0,16,0V128Zm44.89-67.71L109.17,188H40a8,8,0,0,0,0,16H112a8,8,0,0,0,5.66-2.34l112-112A8,8,0,0,0,236.89,77.66L229.66,70.4A8,8,0,0,0,236.89,60.29Z"></path></svg>
+                    Mark Read
+                </button>
+<button class="flex-1 flex items-center justify-center text-sm text-[#754c24] bg-[#e6d5b9] hover:bg-[#dcc8a8] border border-[#c8a86b] rounded-md py-2 px-3 transition-colors shadow-sm hover:shadow-md" style="font-family: 'Yeseva One', cursive;">
+<svg class="mr-2" fill="currentColor" height="18" viewBox="0 0 256 256" width="18" xmlns="http://www.w3.org/2000/svg"><path d="M216,48H176V40a24,24,0,0,0-24-24H104A24,24,0,0,0,80,40v8H40a8,8,0,0,0,0,16h8V208a16,16,0,0,0,16,16H192a16,16,0,0,0,16-16V64h8a8,8,0,0,0,0-16ZM96,40a8,8,0,0,1,8-8h48a8,8,0,0,1,8,8v8H96ZM192,208H64V64H192Zm-80-88a8,8,0,0,1-8,8,8,8,0,0,1-8-8V104a8,8,0,0,1,16,0Zm48,0a8,8,0,0,1-8,8,8,8,0,0,1-8-8V104a8,8,0,0,1,16,0Z"></path></svg>
+                    Delete
+                </button>
+<button class="flex-1 flex items-center justify-center text-sm text-[#754c24] bg-[#e6d5b9] hover:bg-[#dcc8a8] border border-[#c8a86b] rounded-md py-2 px-3 transition-colors shadow-sm hover:shadow-md" style="font-family: 'Yeseva One', cursive;">
+<svg class="mr-2" fill="currentColor" height="18" viewBox="0 0 256 256" width="18" xmlns="http://www.w3.org/2000/svg"><path d="M224,48H184V32a8,8,0,0,0-8-8H80a8,8,0,0,0-8,8V48H32a8,8,0,0,0-8,8V88a8,8,0,0,0,16,0V64H208V88a8,8,0,0,0,16,0V56A8,8,0,0,0,224,48ZM88,40h80V48H88ZM216,104H40a16,16,0,0,0-16,16V208a16,16,0,0,0,16,16H216a16,16,0,0,0,16-16V120A16,16,0,0,0,216,104Zm0,104H40V120H216Z"></path></svg>
+                    Archive
+                </button>
+</div>
+</div>
+</div>
+<script>
+      // Basic JS to toggle the expanded panel - in a real app, this would be handled by a framework.
+      const notificationCards = document.querySelectorAll('.flex.items-center.gap-3.bg-white\\/30');
+      const expandedPanel = document.getElementById('expanded-notification');
+      function toggleNotificationPanel(show) {
+          if (show) {
+              expandedPanel.classList.remove('hidden');
+              setTimeout(() => expandedPanel.classList.remove('opacity-0'), 10); // For transition
+          } else {
+              expandedPanel.classList.add('opacity-0');
+              setTimeout(() => expandedPanel.classList.add('hidden'), 300); // Match transition duration
+          }
+      }
+      notificationCards.forEach(card => {
+          card.addEventListener('click', (event) => {
+              // Prevent click if a button inside the card was clicked
+              if (event.target.closest('button')) {
+                  return;
+              }
+              toggleNotificationPanel(true);
+              // In a real app, you'd populate the panel with this card's data
+          });
+      });
+    </script>
+
+</body></html>

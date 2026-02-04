@@ -1,0 +1,27 @@
+---
+description: Defines core technologies, tooling, and development standards for Equoria.
+globs: ["**/*"]
+alwaysApply: true
+---
+## 🧰 Tech Stack Overview
+- HTML, CSS, JavaScript, React Native
+- Node.js + Express.js
+- PostgreSQL with JSONB (managed with pgAdmin 4)
+- Tailwind CSS for frontend styling
+
+## ✅ Testing & CI/CD
+- TDD enforced
+- Jest for phenotype engine, UI, synergy heatmap
+- GitHub Actions pipeline
+- .env.test for test environment isolation
+
+## ⚙️ Version Control & Tooling
+- GitHub branches: `feature/`, `bugfix/`, `test/`
+- All PRs must pass test suite
+- ESLint + Prettier required
+- VS Code with Tailwind/React extensions recommended
+- Docs updated in `/docs` with every new module
+
+## 🧪 Optional Additions
+- Sentry/LogRocket for frontend error reporting
+- pg_stat_statements for DB performance insight

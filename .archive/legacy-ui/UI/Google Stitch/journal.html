@@ -1,0 +1,276 @@
+<!DOCTYPE html>
+<html lang="en"><head>
+<meta charset="utf-8"/>
+<meta content="width=device-width, initial-scale=1.0" name="viewport"/>
+<title>Equoria - Stable Journal</title>
+<link crossorigin="" href="https://fonts.gstatic.com/" rel="preconnect"/>
+<link as="style" href="https://fonts.googleapis.com/css2?family=Yeseva+One:wght@400&amp;family=Cormorant+Garamond:wght@400;500;600;700&amp;family=Jost:wght@400;500;600;700&amp;display=swap" onload="this.rel='stylesheet'" rel="stylesheet"/>
+<script src="https://cdn.tailwindcss.com?plugins=forms,container-queries"></script>
+<style>
+    body {
+      font-family: 'Jost', sans-serif;
+      background-color: #f0e5c8;
+    }
+    .font-yeseva {
+      font-family: 'Yeseva One', cursive;
+    }
+    .font-cormorant {
+      font-family: 'Cormorant Garamond', serif;
+    }
+    .journal-header {
+      background-image: url('https://www.transparenttextures.com/patterns/leather.png'), linear-gradient(to bottom, #228B22, #006400);background-blend-mode: overlay;
+      background-size: auto, cover;
+      border-bottom: 5px solid #004d00;box-shadow: 0 4px 8px rgba(0, 0, 0, 0.3);
+      padding: 20px 15px;
+      text-align: center;
+      color: #FFD700;
+      text-shadow: 1px 1px 2px #003300;position: relative;
+      z-index: 10;
+      border-bottom-left-radius: 10px;
+      border-bottom-right-radius: 10px;
+    }
+    .journal-header h1 {
+      font-size: 2.5rem;
+      line-height: 1.2;
+    }
+    .scroll-entry {
+      background-image: url('https://www.transparenttextures.com/patterns/old-paper.png');
+      background-color: #fdf5e6;
+      border: 2px solid #8B4513;
+      border-radius: 15px;
+      padding: 15px 20px;
+      margin: 15px 10px;
+      box-shadow: 0 3px 6px rgba(0, 0, 0, 0.2);
+      position: relative;
+      overflow: hidden;
+    }
+    .scroll-entry::before,
+    .scroll-entry::after {
+      content: '';
+      position: absolute;
+      width: 20px;
+      height: 100%;
+      background-color: #8B4513;
+      border: 1px solid #654321;
+      top: 0;
+      z-index: -1;
+    }
+    .scroll-entry::before {
+      left: -10px;
+      border-radius: 10px 0 0 10px;
+      box-shadow: inset 2px 0 3px rgba(0, 0, 0, 0.2);
+    }
+    .scroll-entry::after {
+      right: -10px;
+      border-radius: 0 10px 10px 0;
+      box-shadow: inset -2px 0 3px rgba(0, 0, 0, 0.2);
+    }
+    .goal-text {
+      color: #5D4037;
+      font-size: 1.3rem;
+    }
+    .progress-ribbon-bg {
+      background-color: #785b53;
+      border-radius: 8px;
+      height: 16px;
+      padding: 2px;
+      box-shadow: inset 0 1px 3px rgba(0, 0, 0, 0.3);
+      margin-top: 10px;
+    }
+    .progress-ribbon {
+      background-color: #C70039;
+      border-radius: 6px;
+      height: 12px;
+      transition: width 0.5s ease-in-out;
+      box-shadow: 0 1px 2px rgba(0, 0, 0, 0.2);
+    }
+    .wax-seal {
+      position: absolute;
+      right: 5px;
+      bottom: 5px;
+      width: 40px;
+      height: 40px;
+      background-color: #DAA520;
+      border-radius: 50%;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      box-shadow: 0 2px 4px rgba(0, 0, 0, 0.4), inset 0 0 5px rgba(139, 0, 0, 0.5);
+      font-size: 1.2rem;
+      color: #8B0000;
+      opacity: 0;
+      transform: scale(0.5);
+      transition: opacity 0.3s ease-in-out, transform 0.3s ease-in-out;
+    }
+    .wax-seal.completed {
+      opacity: 1;
+      transform: scale(1);
+    }
+    .reward-chest-container {
+      padding: 20px;
+      text-align: center;
+      background-color: rgba(0, 0, 0, 0.1);
+    }
+    .reward-chest {
+      width: 150px;
+      height: 120px;
+      background-image: url('https://img.freepik.com/free-vector/cartoon-treasure-chest-pirate-gold_107791-15658.jpg?w=740');
+      background-size: contain;
+      background-repeat: no-repeat;
+      background-position: center;
+      margin: 0 auto;
+      position: relative;
+      cursor: pointer;
+      transition: transform 0.3s ease-in-out;
+    }
+    .reward-chest.locked {
+      filter: grayscale(80%) brightness(0.7);
+    }
+    .reward-chest.unlocked {
+      animation: sparkle 1.5s infinite, glowOpen 1s forwards;
+    }
+    .reward-chest-text {
+      color: #654321;
+      margin-top: 10px;
+      font-size: 1.1rem;
+    }
+    @keyframes sparkle {
+      0%,
+      100% {
+        box-shadow: 0 0 5px #FFD700, 0 0 10px #FFD700, 0 0 15px #FFD700;
+      }
+      50% {
+        box-shadow: 0 0 10px #FFD700, 0 0 20px #FFD700, 0 0 30px #FFD700, 0 0 5px #fff;
+      }
+    }
+    @keyframes glowOpen {
+      0% {
+        transform: scale(1);
+      }
+      50% {
+        transform: scale(1.1);
+        filter: brightness(1.5);
+      }
+      100% {
+        transform: scale(1.05);
+        filter: brightness(1.2);
+      }
+    }
+    .screen-container {
+      max-width: 1080px;
+      min-height: 1920px;
+      margin: 0 auto;
+      background-color: #f0e5c8;
+      display: flex;
+      flex-direction: column;
+      justify-content: space-between;
+      overflow-y: auto;
+    }
+    .goals-container {
+      flex-grow: 1;
+      padding: 10px 0;
+    }
+  </style>
+<style>
+    body {
+      min-height: max(884px, 100dvh);
+    }
+  </style>
+<style>
+    body {
+      min-height: max(884px, 100dvh);
+    }
+  </style>
+  </head>
+<body>
+<div class="screen-container">
+<div>
+<header class="journal-header">
+<h1 class="font-yeseva">Stable Journal: Week 12</h1>
+</header>
+<div class="goals-container">
+<div class="scroll-entry">
+<p class="font-cormorant goal-text">Enter 2 Dressage Shows</p>
+<div class="progress-ribbon-bg">
+<div class="progress-ribbon" style="width: 50%;"></div>
+</div>
+<div class="wax-seal">★</div>
+</div>
+<div class="scroll-entry">
+<p class="font-cormorant goal-text">Train a Foal</p>
+<div class="progress-ribbon-bg">
+<div class="progress-ribbon" style="width: 75%;"></div>
+</div>
+<div class="wax-seal">★</div>
+</div>
+<div class="scroll-entry">
+<p class="font-cormorant goal-text">Complete 3 Daily Quests</p>
+<div class="progress-ribbon-bg">
+<div class="progress-ribbon" style="width: 100%;"></div>
+</div>
+<div class="wax-seal completed">★</div>
+</div>
+<div class="scroll-entry">
+<p class="font-cormorant goal-text">Breed a New Horse</p>
+<div class="progress-ribbon-bg">
+<div class="progress-ribbon" style="width: 25%;"></div>
+</div>
+<div class="wax-seal">★</div>
+</div>
+<div class="scroll-entry">
+<p class="font-cormorant goal-text">Gather 50 Rare Herbs</p>
+<div class="progress-ribbon-bg">
+<div class="progress-ribbon" style="width: 10%;"></div>
+</div>
+<div class="wax-seal">★</div>
+</div>
+</div>
+</div>
+<div class="reward-chest-container">
+<div class="reward-chest locked" id="rewardChest">
+</div>
+<p class="font-cormorant reward-chest-text" id="rewardText">Complete all goals to unlock the Reward Chest!</p>
+</div>
+</div>
+<script>
+    // Basic interaction simulation (no external libraries)
+    document.addEventListener('DOMContentLoaded', () => {
+      const goals = document.querySelectorAll('.scroll-entry');
+      const rewardChest = document.getElementById('rewardChest');
+      const rewardText = document.getElementById('rewardText');
+      let completedGoals = 0;
+      goals.forEach(goal => {
+        const progressBar = goal.querySelector('.progress-ribbon');
+        const waxSeal = goal.querySelector('.wax-seal');
+        const progress = parseInt(progressBar.style.width, 10);
+        if (progress === 100) {
+          waxSeal.classList.add('completed');
+          completedGoals++;
+        }
+        // Simulate clicking to complete a goal (for demo purposes)
+        goal.addEventListener('click', () => {
+          if (!progressBar.style.width || parseInt(progressBar.style.width, 10) < 100) {
+            let currentWidth = parseInt(progressBar.style.width, 10) || 0;
+            currentWidth = Math.min(currentWidth + 25, 100); // Increment by 25%
+            progressBar.style.width = currentWidth + '%';
+            if (currentWidth === 100 && !waxSeal.classList.contains('completed')) {
+              waxSeal.classList.add('completed');
+              completedGoals++;
+              checkAllGoalsCompleted();
+            }
+          }
+        });
+      });
+      function checkAllGoalsCompleted() {
+        if (completedGoals === goals.length) {
+          rewardChest.classList.remove('locked');
+          rewardChest.classList.add('unlocked');
+          rewardText.textContent = "Congratulations! Chest Unlocked!";
+          // Add more complex open animation logic here if needed
+        }
+      }
+      checkAllGoalsCompleted(); // Initial check
+    });
+  </script>
+
+</body></html>

@@ -1,0 +1,10 @@
+---
+description: Covers exploration triggers, seasonal events, and leaderboard integration.
+globs: ["backend/events/**/*"]
+---
+## 🧭 Event Management System
+- Scheduled and randomized events
+- Global + user-triggered encounters
+- Tracked in event_history
+- Rare events weighted with tier system
+- Premium users may see extra clues or alternate maps

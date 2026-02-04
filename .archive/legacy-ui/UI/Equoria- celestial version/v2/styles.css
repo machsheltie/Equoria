@@ -1,0 +1,154 @@
+*/* equoria.css */
+.equoria-bg {
+    @apply relative w-full h-screen overflow-hidden bg-gradient-to-br from-blue-950 via-blue-900 to-indigo-950;
+  }
+  
+  .starfield,
+  .constellations,
+  .horse-silhouettes {
+    @apply absolute w-full h-full top-0 left-0 pointer-events-none;
+  }
+  
+  .starfield::before {
+    content: '';
+    @apply absolute w-full h-full;
+    background: radial-gradient(white 1px, transparent 1px);
+    background-size: 3px 3px;
+    animation: twinkle 2s infinite alternate ease-in-out;
+  }
+  
+  @keyframes twinkle {
+    0%,
+    100% {
+      opacity: 0.8;
+    }
+    50% {
+      opacity: 0.4;
+    }
+  }
+  
+  .constellations {
+    background: url('/constellations.svg') center/cover no-repeat;
+    opacity: 0.3;
+    animation: fadeConstellations 6s ease-in-out infinite alternate;
+  }
+  
+  @keyframes fadeConstellations {
+    0% {
+      opacity: 0.1;
+    }
+    100% {
+      opacity: 0.4;
+    }
+  }
+  
+  .horse-silhouettes {
+    background: url('/horses.png') bottom/contain no-repeat;
+    transform: translateZ(0);
+    will-change: transform;
+  }
+  
+  .login-container {
+    @apply relative mx-auto mt-32 w-[95%] max-w-md text-center transition-transform duration-300;
+    z-index: 10;
+  }
+  
+  .equoria-title {
+    @apply text-5xl font-serif text-yellow-300 drop-shadow-md;
+    animation: titlePulse 3s infinite ease-in-out;
+    position: relative;
+  }
+  
+  @keyframes titlePulse {
+    0%,
+    100% {
+      text-shadow: 0 0 10px #ffe066, 0 0 20px #ffcc00;
+    }
+    50% {
+      text-shadow: 0 0 30px #ffff66, 0 0 40px #ffcc00;
+    }
+  }
+  
+  .glass-card {
+    @apply bg-white bg-opacity-10 backdrop-blur-md border border-white border-opacity-20 rounded-2xl p-6 shadow-2xl;
+    box-shadow: 0 0 30px rgba(255, 255, 255, 0.2);
+    animation: shimmer 5s infinite linear;
+  }
+  
+  @keyframes shimmer {
+    0% {
+      background-position: -100% 0;
+    }
+    100% {
+      background-position: 200% 0;
+    }
+  }
+  
+  .form-content {
+    @apply flex flex-col gap-4;
+  }
+  
+  .magic-input {
+    @apply bg-transparent border border-white border-opacity-30 px-4 py-2 rounded-md text-white placeholder-white focus:outline-none;
+    transition: box-shadow 0.3s, border-color 0.3s;
+  }
+  
+  .magic-input:focus {
+    box-shadow: 0 0 12px 2px gold;
+    border-color: gold;
+    animation: sparkle 1s linear infinite;
+  }
+  
+  @keyframes sparkle {
+    0%,
+    100% {
+      box-shadow: 0 0 8px 2px gold;
+    }
+    50% {
+      box-shadow: 0 0 16px 4px gold;
+    }
+  }
+  
+  .magic-button {
+    @apply py-2 px-6 rounded-lg font-semibold text-white bg-gradient-to-r from-blue-700 to-blue-500 transition-transform duration-300;
+    position: relative;
+    overflow: hidden;
+  }
+  
+  .magic-button::after {
+    content: '';
+    @apply absolute w-full h-full top-0 left-0 rounded-lg;
+    background: radial-gradient(
+        circle,
+        rgba(255, 255, 255, 0.4) 10%,
+        transparent 10.01%
+      )
+      center/15000%;
+    transition: background 0.8s;
+  }
+  
+  .magic-button:active::after {
+    background-size: 100%;
+    transition: background 0s;
+  }
+  
+  .forgot-password {
+    @apply text-sm text-right text-white underline cursor-pointer;
+  }
+  
+  .social-icons {
+    @apply mt-6 flex justify-center gap-4;
+  }
+  
+  .social-icon {
+    @apply text-white text-xl transition-transform duration-300;
+  }
+  
+  .social-icon:hover {
+    transform: scale(1.2) rotate(10deg);
+    filter: drop-shadow(0 0 10px gold);
+  }
+  
+  .version {
+    @apply mt-4 text-white opacity-70;
+  }

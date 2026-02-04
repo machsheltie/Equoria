@@ -1,0 +1,204 @@
+<html><head>
+<meta charset="utf-8"/>
+<link href="https://fonts.googleapis.com" rel="preconnect"/>
+<link crossorigin="" href="https://fonts.gstatic.com" rel="preconnect"/>
+<link href="https://fonts.googleapis.com/css2?family=Cormorant+Garamond:wght@400;700&amp;family=Jost:wght@400;500&amp;family=Yeseva+One&amp;display=swap" rel="stylesheet"/>
+<title>Equoria Dashboard</title>
+<link href="data:image/x-icon;base64," rel="icon" type="image/x-icon"/>
+<script src="https://cdn.tailwindcss.com?plugins=forms,container-queries"></script>
+<style>
+      .font-cormorant {
+        font-family: 'Cormorant Garamond', serif;
+      }
+      .font-jost {
+        font-family: 'Jost', sans-serif;
+      }
+      .font-yeseva {
+        font-family: 'Yeseva One', cursive;
+      }
+      .parchment-header {
+        background-image: url("https://storage.googleapis.com/aida-html-outputs/1708706418899-parchment-texture.jpg");background-size: cover;
+        border: 4px solid #DAA520;box-shadow: 0 0 10px rgba(0,0,0,0.5);
+      }
+      .stat-card {
+        background-color: #006400;border: 2px solid #DAA520;color: #FFD700;border-radius: 8px;
+        padding: 16px;
+        text-align: center;
+        box-shadow: 0 2px 4px rgba(0,0,0,0.3);
+      }
+      .stat-card p:first-child {
+        font-family: 'Jost', sans-serif;
+        font-size: 16px;
+        color: #FFF;}
+      .stat-card p:last-child {
+        font-family: 'Cormorant Garamond', serif;
+        font-size: 24px;
+        font-weight: bold;
+      }
+      .featured-horse-card {
+        background-color: #F5EBDD;border: 6px solid #8B4513;border-radius: 12px;
+        position: relative;
+        overflow: hidden;
+        box-shadow: 0 4px 15px rgba(0,0,0,0.3);
+      }
+      .featured-horse-card::before,
+      .featured-horse-card::after {
+        content: '';
+        position: absolute;
+        width: 20px;
+        height: 20px;
+        background-color: #DAA520;z-index: 1;
+      }
+      .featured-horse-card::before { top: -4px; left: -4px; border-bottom-right-radius: 10px; }
+      .featured-horse-card::after { top: -4px; right: -4px; border-bottom-left-radius: 10px; }
+      .bottom-left-corner::before, .bottom-right-corner::after {
+        content: '';
+        position: absolute;
+        width: 20px;
+        height: 20px;
+        background-color: #DAA520;z-index: 1;
+      }
+      .bottom-left-corner::before { bottom: -4px; left: -4px; border-top-right-radius: 10px; }
+      .bottom-right-corner::after { bottom: -4px; right: -4px; border-top-left-radius: 10px; }
+      .horse-nameplate {
+        background-color: rgba(139, 69, 19, 0.8);color: #FFD700;padding: 8px 16px;
+        text-align: center;
+        position: absolute;
+        bottom: 10px;
+        left: 50%;
+        transform: translateX(-50%);
+        border-radius: 6px;
+        border: 2px solid #DAA520;
+        box-shadow: 0 0 5px #DAA520;text-shadow: 1px 1px 2px rgba(0,0,0,0.7);
+      }
+      .news-card {
+        background-image: url("https://storage.googleapis.com/aida-html-outputs/1708706418899-parchment-texture.jpg");border: 4px solid #8B4513;border-radius: 10px;
+        padding: 20px;
+        max-height: 200px;overflow-y: auto;
+        box-shadow: 0 2px 8px rgba(0,0,0,0.3);
+      }
+      .news-card h3 {
+        font-family: 'Cormorant Garamond', serif;
+        font-size: 24px;
+        color: #5D4037;}
+      .news-card p {
+        font-family: 'Jost', sans-serif;
+        font-size: 16px;
+        color: #795548;}
+      .featured-horse-card:hover {
+        box-shadow: 0 0 25px #DAA520;transform: scale(1.02);
+        transition: all 0.3s ease-in-out;
+      }
+      .stat-card {
+        position: relative;
+      }
+      .tooltip {
+        visibility: hidden;
+        width: 120px;
+        background-color: #555;
+        color: #fff;
+        text-align: center;
+        border-radius: 6px;
+        padding: 5px 0;
+        position: absolute;
+        z-index: 1;
+        bottom: 125%;left: 50%;
+        margin-left: -60px;opacity: 0;
+        transition: opacity 0.3s;
+        font-family: 'Jost', sans-serif;
+        font-size: 14px;
+      }
+      .stat-card:hover .tooltip {
+        visibility: visible;
+        opacity: 1;
+      }
+      .shimmer-effect {
+        position: relative;
+        overflow: hidden;
+      }
+      .shimmer-effect::after {
+        content: "";
+        position: absolute;
+        top: -50%;
+        left: -50%;
+        width: 200%;
+        height: 200%;
+        background-image: linear-gradient(
+          100deg,
+          rgba(255, 255, 255, 0) 20%,
+          rgba(255, 255, 255, 0.3) 50%,
+          rgba(255, 255, 255, 0) 80%
+        );
+        transform: rotate(20deg);
+        animation: shimmer 2.5s infinite;
+        pointer-events: none;}
+      @keyframes shimmer {
+        0% {
+          transform: translateX(-100%) rotate(20deg);
+        }
+        100% {
+          transform: translateX(100%) rotate(20deg);
+        }
+      }
+    </style>
+<style>
+    body {
+      min-height: max(884px, 100dvh);
+    }
+  </style>
+  </head>
+<body class="bg-[#EFEBE2] min-h-screen flex flex-col font-jost">
+<header class="parchment-header p-4 text-center sticky top-0 z-50">
+<h1 class="font-cormorant text-3xl text-[#5D4037] shimmer-effect">Equoria Dashboard</h1>
+</header>
+<main class="flex-grow p-4 space-y-6">
+<section class="flex justify-center">
+<div class="featured-horse-card w-[320px] h-[240px] relative group">
+<div class="bottom-left-corner"></div>
+<div class="bottom-right-corner"></div>
+<img alt="Featured Horse Starfall" class="w-full h-full object-cover rounded-md" src="https://lh3.googleusercontent.com/aida-public/AB6AXuBeBXjyEqu3sltQ7d_5ZfEQjuTLP5Zai2oGUlq7xeLyYSXE3DQ9uJHMzYdcrB8UJBF_1g-yR5z0-2f4Zpc5jlMvPQNalr-NH9_dajl5X-RLLjf7COcGIP-gy23dgQmokNhjOZENmgjo6fqTo0iqPdjWzONcw7svIKKIn4jdSisACpYr5owCL07ElCws5BwagK6I0D0RsL8sNACjsFVVDZI88cMeg5l5Hx711ogYvJKqgyKHEvbdepSq6R5aWWOp9rKjgFS8EpunTj8"/>
+<div class="horse-nameplate">
+<p class="font-yeseva text-2xl">Starfall</p>
+</div>
+</div>
+</section>
+<section class="grid grid-cols-3 gap-4">
+<div class="stat-card group relative">
+<p>Coins</p>
+<p>12,500</p>
+<span class="tooltip">Your current gold coins.</span>
+</div>
+<div class="stat-card group relative">
+<p>XP</p>
+<p>8,750</p>
+<span class="tooltip">Experience points earned.</span>
+</div>
+<div class="stat-card group relative">
+<p>Level</p>
+<p>7</p>
+<span class="tooltip">Your current player level.</span>
+</div>
+</section>
+<section class="news-card">
+<h3 class="mb-2">Latest News &amp; Updates</h3>
+<div class="space-y-3">
+<div>
+<h4 class="font-cormorant text-lg font-semibold text-[#6D4C41]">New Adventures Await!</h4>
+<p>Explore the mystical forests of Eldoria, where ancient secrets and hidden treasures await. Embark on quests, uncover rare breeds, and forge your legacy in the world of Equoria.</p>
+</div>
+<div>
+<h4 class="font-cormorant text-lg font-semibold text-[#6D4C41]">Seasonal Event: The Sunstone Festival</h4>
+<p>Participate in the annual Sunstone Festival! Complete special tasks to earn exclusive rewards, including a unique Sunstone Pegasus.</p>
+</div>
+<div>
+<h4 class="font-cormorant text-lg font-semibold text-[#6D4C41]">Community Spotlight</h4>
+<p>Congratulations to player "MysticRider" for discovering the legendary MoonDancer mare! Share your achievements on our forums.</p>
+</div>
+</div>
+</section>
+</main>
+<footer class="p-4 text-center">
+<p class="font-jost text-sm text-[#795548]">© Equoria Game - All Rights Reserved</p>
+</footer>
+
+</body></html>

@@ -1,0 +1,136 @@
+<!DOCTYPE html>
+<html lang="en"><head>
+<meta charset="utf-8"/>
+<meta content="width=device-width, initial-scale=1.0" name="viewport"/>
+<title>Equoria - Login</title>
+<link crossorigin="" href="https://fonts.gstatic.com/" rel="preconnect"/>
+<link as="style" href="https://fonts.googleapis.com/css2?display=swap&amp;family=Noto+Serif:wght@400;700&amp;family=Noto+Sans:wght@400;500;700" onload="this.rel='stylesheet'" rel="stylesheet"/>
+<script src="https://cdn.tailwindcss.com?plugins=forms,container-queries"></script>
+<style>
+    @keyframes glint {
+      0%,
+      100% {
+        opacity: 0.7;
+      }
+      50% {
+        opacity: 1;
+      }
+    }
+    .sunrise-glint {
+      animation: glint 3s infinite ease-in-out;
+    }
+    @keyframes floatParticles {
+      0% {
+        transform: translateY(0px);
+        opacity: 0;
+      }
+      25% {
+        opacity: 0.7;
+      }
+      50% {
+        transform: translateY(-20px);
+        opacity: 1;
+      }
+      75% {
+        opacity: 0.7;
+      }
+      100% {
+        transform: translateY(0px);
+        opacity: 0;
+      }
+    }
+    .gold-particle {
+      position: absolute;
+      background-color: rgba(255, 215, 0, 0.5);
+      border-radius: 50%;
+      animation: floatParticles 5s infinite ease-in-out;
+      box-shadow: 0 0 5px rgba(255, 215, 0, 0.7);
+    }
+    @keyframes horseBob {
+      0%,
+      100% {
+        transform: translateY(0);
+      }
+      50% {
+        transform: translateY(-3px);
+      }
+    }
+    .horse-bob {
+      animation: horseBob 4s infinite ease-in-out;
+    }
+    @keyframes tailSwish {
+      0%,
+      100% {
+        transform: rotate(0deg);
+      }
+      50% {
+        transform: rotate(5deg);
+      }
+    }
+  </style>
+<style>
+    body {
+      min-height: max(884px, 100dvh);
+    }
+  </style>
+<style>
+    body {
+      min-height: max(884px, 100dvh);
+    }
+  </style>
+  </head>
+<body class="bg-[#fcfaf8]" style='font-family: "Noto Serif", "Noto Sans", sans-serif;'>
+<div class="relative flex flex-col min-h-screen w-full max-w-[1080px] mx-auto overflow-hidden">
+<div class="absolute inset-0 w-full h-full bg-center bg-no-repeat bg-cover" style='background-image: url("https://lh3.googleusercontent.com/aida-public/AB6AXuAsvw16q8OI1pQpGwpN_KyHNRj7B4Myote4qmqDkYxhOyNPAr0vEX9qIDs2yehH8LSYo9fGGhly2oO4nWgTRowb9v43-GM32hFYgV6lDH3fLGa-e1Kb_f7h4keMD8Qh_7pi7jM-bmIpw-V1mqyfn8ioMKLVDEapP7DMom8YOw0Wm8sGt85-ZCw9UCPoqGBVdLIuxQE5AFIPyh9mIJlCHfZXZsjIgX6VjgR5C6HJEXOKkBbDaonJDJh0ysrose1JEfczF3htoa8Vj2g");'>
+<div class="absolute top-[15%] left-[40%] w-24 h-24 bg-yellow-300/50 rounded-full blur-xl sunrise-glint"></div>
+<img alt="Grazing Iberian Horse 1" class="absolute bottom-[38%] left-[15%] w-[180px] h-auto horse-bob opacity-90" src="https://lh3.googleusercontent.com/aida-public/AB6AXuBmLUGMCf_53DR2a5EdZDlNHNlH3whctGQpVrbpKAN-WyfvpklxF96jEDuDY_zwkCXeZxD6QW-95zJ1zlYzFgqQYow-KuoEqfD8JUeLNYWS7hOp7BIflSfEsYomolj4MFgEwSfYUQV7F__WfLf1gE5kBrUlQXVAp5o0hg0LrC6V6G06NZUEdrU7wCWqbqODn-YSR0AxoCKxGJd-_CbZxh8ccJdEMAQRmG21ctoPUTk-3pJi9AS84ECwLpkRh4ikqDIf0qkI0DD-QkM" style="transform: scaleX(-1) rotate(-5deg); animation-delay: 0.5s; filter: drop-shadow(3px 3px 4px rgba(0,0,0,0.4));"/>
+<img alt="Grazing Iberian Horse 2" class="absolute bottom-[35%] right-[10%] w-[200px] h-auto horse-bob opacity-85" src="https://lh3.googleusercontent.com/aida-public/AB6AXuC9eMabu2MMmA-b-XXBVu0d01GaOpHl7PpxSkRLLL6V0UgZpDq2o1_oFf0nUdNDgXAGGYA4UWVq08_3BDllcyzQnyuoZmoBGv-RfR4wSQO7pH2aBi90_v_TCUuitAWI9HZbQl7JWDbJzyp5VksP_l0rx5-FyMOUGrXmxWfWYY4T3Wst-tESq9l6Xo_Wn6TJbP3fd_KsukyG3uA0TC6RcgecBb6ji7v318ZaobPedIAM66EhdE9x2wLnKv00hb5mU7i4mlfiDEap-JA" style="filter: drop-shadow(3px 3px 4px rgba(0,0,0,0.4));"/>
+<div class="absolute inset-0 pointer-events-none">
+<div class="gold-particle w-1 h-1 top-[10%] left-[20%]" style="animation-delay: 0s;"></div>
+<div class="gold-particle w-2 h-2 top-[30%] left-[80%]" style="animation-delay: 1s;"></div>
+<div class="gold-particle w-1 h-1 top-[50%] left-[10%]" style="animation-delay: 2s;"></div>
+<div class="gold-particle w-1.5 h-1.5 top-[70%] left-[70%]" style="animation-delay: 0.5s;"></div>
+<div class="gold-particle w-2 h-2 top-[20%] left-[50%]" style="animation-delay: 1.5s;"></div>
+<div class="gold-particle w-1 h-1 top-[60%] left-[30%]" style="animation-delay: 2.5s;"></div>
+</div>
+<div class="absolute inset-0 box-border border-[20px] border-transparent" style="border-image: url('data:image/svg+xml,%3Csvg width Larkin=%22100%22 height=%22100%22 xmlns=%22http://www.w3.org/2000/svg%22%3E%3Cfilter id=%22parchment%22 x=%22-50%25%22 y=%22-50%25%22 width=%22200%25%22 height=%22200%25%22%3E%3CfeTurbulence type=%22fractalNoise%22 baseFrequency=%220.02%22 numOctaves=%225%22 seed=%2210%22 result=%22turbulence%22/%3E%3CfeDiffuseLighting in=%22turbulence%22 lighting-color=%22%23F5E8C5%22 surfaceScale=%225%22 result=%22diffuse%22%3E%3CfeDistantLight azimuth=%2245%22 elevation=%2260%22/%3E%3C/feDiffuseLighting%3E%3CfeComposite operator=%22in%22 in2=%22SourceGraphic%22 result=%22parchmentTexture%22/%3E%3CfeGaussianBlur stdDeviation=%223%22 in=%22parchmentTexture%22 result=%22blurredParchment%22/%3E%3CfeBlend mode=%22multiply%22 in=%22blurredParchment%22 in2=%22SourceGraphic%22/%3E%3C/filter%3E%3Crect width=%22100%25%22 height=%22100%25%22 filter=%22url(%23parchment)%22/%3E%3C/svg%3E') 30 round; opacity: 0.4;"></div>
+<div class="absolute top-0 left-0 w-full h-1/3" style="background:
+                radial-gradient(circle at 10% 10%, rgba(255,215,0,0.1) 0%, transparent 20%),
+                radial-gradient(circle at 90% 20%, rgba(255,215,0,0.08) 0%, transparent 15%),
+                radial-gradient(circle at 50% 5%, rgba(255,215,0,0.12) 0%, transparent 25%);
+                pointer-events: none;">
+</div>
+<img alt="Left Foliage Border" class="absolute bottom-1/3 left-0 h-1/3 opacity-70 transform -translate-x-1/4 pointer-events-none" src="https://lh3.googleusercontent.com/aida-public/AB6AXuA6q5wSFd3ThI2vM9uWVtx7UsuA8US2Zf83kQZng3xTcJgit6kuB-psuv0T_Zt9VxaPVnjD-a8waa7CPaL8WPw0KuCumS3z0fFQF7n-Uc6BMddddVlhxeKJY5FWmVCO6Z_qCzEhivtnf_xfKwPD5IOsrwEnaxJwoSuvnAwnkfNrV4OvQltpprPimBOI137HBYzYmmtPOcbcun2qywMA26MA7s98u7o-iSSQG4Rgtl8yJA52h6LYInadZ-uPwEXpceQGsnciNrChgqw" style="filter: drop-shadow(2px 2px 3px rgba(0,0,0,0.3));"/>
+<img alt="Right Foliage Border" class="absolute bottom-1/3 right-0 h-1/3 opacity-70 transform translate-x-1/4 pointer-events-none" src="https://lh3.googleusercontent.com/aida-public/AB6AXuCFZJHeEhzjjlcYn2IAz_kNT1WoAtAvV-z4Q4tWaVdE7nBuwjd-kWeWiUebtZSKZpgSvgr7uVc5IIkf2u6SjX58brhr6T73x3GMdMexvM6KKUvBNTvO4EaX61KZQZYxpWCbwpCT1FDaii-zJnfuepTC9XXdnUCPnSRW-uPA3EzI9XmmQrKxzfXN1EHmRRLtR07UNiYBlOoI7_EKgnJeraXKMvJN0AOLD3jlZrq0ImBYW_aA0gmEwaBoyfvcSDe2GkCSbfjtYCzN0uE" style="filter: drop-shadow(-2px 2px 3px rgba(0,0,0,0.3));"/>
+</div>
+<div class="relative z-10 mt-auto flex flex-col items-center justify-end h-1/3 pb-8 px-6 pt-12 bg-gradient-to-t from-[#00000099] to-transparent">
+<div class="w-full max-w-sm p-8 rounded-lg shadow-2xl" style="background-color: rgba(245, 232, 197, 0.8);backdrop-filter: blur(5px);">
+<h1 class="text-4xl font-bold text-center text-[#5D4037] mb-6" style="font-family: 'Noto Serif', serif;">Equoria</h1>
+<form class="space-y-6">
+<div>
+<label class="block text-sm font-medium text-[#6D4C41]" for="email" style="font-family: 'Noto Sans', sans-serif;">Email Address</label>
+<input class="mt-1 block w-full rounded-md border-[#A1887F] shadow-sm focus:border-[#f26c0c] focus:ring-[#f26c0c] sm:text-sm bg-[#FAF3E0]/70 placeholder-[#A1887F]" id="email" name="email" placeholder="you@example.com" style="font-family: 'Noto Sans', sans-serif;" type="email"/>
+</div>
+<div>
+<label class="block text-sm font-medium text-[#6D4C41]" for="password" style="font-family: 'Noto Sans', sans-serif;">Password</label>
+<input class="mt-1 block w-full rounded-md border-[#A1887F] shadow-sm focus:border-[#f26c0c] focus:ring-[#f26c0c] sm:text-sm bg-[#FAF3E0]/70 placeholder-[#A1887F]" id="password" name="password" placeholder="••••••••" style="font-family: 'Noto Sans', sans-serif;" type="password"/>
+</div>
+<div>
+<button class="w-full flex justify-center py-3 px-4 border border-transparent rounded-md shadow-sm text-base font-medium text-white bg-[#f26c0c] hover:bg-[#e05c00] focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-[#f26c0c] transition duration-150 ease-in-out" style="font-family: 'Noto Sans', sans-serif; text-shadow: 1px 1px 2px rgba(0,0,0,0.3);" type="submit">
+                            Login
+                        </button>
+</div>
+<div class="text-center">
+<a class="text-sm font-medium text-[#795548] hover:text-[#f26c0c] transition duration-150 ease-in-out" href="#" style="font-family: 'Noto Sans', sans-serif;">
+                            Forgot your password?
+                        </a>
+</div>
+</form>
+</div>
+<p class="mt-8 text-center text-xs text-[#E0E0E0]/80" style="font-family: 'Noto Sans', sans-serif; text-shadow: 1px 1px 1px rgba(0,0,0,0.5);">
+        New to Equoria? <a class="font-medium text-[#FFD180] hover:text-[#f26c0c]" href="#">Sign Up</a>
+</p>
+</div>
+</div>
+
+</body></html>

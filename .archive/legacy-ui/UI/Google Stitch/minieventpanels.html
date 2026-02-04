@@ -1,0 +1,210 @@
+<html><head>
+<meta charset="utf-8"/>
+<link crossorigin="" href="https://fonts.gstatic.com/" rel="preconnect"/>
+<link as="style" href="https://fonts.googleapis.com/css2?display=swap&amp;family=Yeseva+One:wght@400&amp;family=Cormorant+Garamond:ital,wght@0,400;0,700;1,400;1,700&amp;family=Jost:wght@400;700&amp;display=swap" onload="this.rel='stylesheet'" rel="stylesheet"/>
+<title>Equoria Mini Events</title>
+<link href="data:image/x-icon;base64," rel="icon" type="image/x-icon"/>
+<script src="https://cdn.tailwindcss.com?plugins=forms,container-queries"></script>
+<style>
+    body {
+      font-family: 'Jost', sans-serif;
+      background-color: #FDF8E3;}
+    .font-yeseva {
+      font-family: 'Yeseva One', cursive;
+    }
+    .font-cormorant {
+      font-family: 'Cormorant Garamond', serif;
+    }
+    .parchment-bg {
+      background-color: #FDF8E3;}
+    .bronze-border {
+      border-color: #6A4E2D;}
+    .gold-border {
+      border-color: #D6A64A;}
+    .bronze-text {
+      color: #6A4E2D;}
+    .gold-text {
+      color: #D6A64A;}
+    .parchment-button {
+      background-color: #FDF8E3;
+      color: #6A4E2D;
+      border: 2px solid #6A4E2D;
+    }
+    .parchment-button:hover {
+      background-color: #efe8d0;
+    }
+    .event-crest {
+      width: 60px;
+      height: 60px;
+      border-radius: 50%;
+      object-fit: cover;
+      border: 3px solid #D6A64A;}
+    .progress-bar-bg {
+      background-color: #D6A64A;opacity: 0.3;
+    }
+    .progress-bar-fill {
+      background-color: #D6A64A;}
+    .countdown-seal {
+      background-color: #6A4E2D;color: #FDF8E3;border-radius: 50%;
+      width: 60px;
+      height: 60px;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      border: 3px solid #D6A64A;box-shadow: 0 0 10px rgba(214, 166, 74, 0.5);}
+    .scroll-tab-button {
+      background: url('data:image/svg+xml;utf8,<svg width="80" height="40" viewBox="0 0 80 40" fill="none" xmlns="http://www.w3.org/2000/svg"><path d="M0 5C0 2.23858 2.23858 0 5 0H70C75.5228 0 80 4.47715 80 10V30C80 35.5228 75.5228 40 70 40H5C2.23858 40 0 37.7614 0 35V5Z" fill="%23FDF8E3"/><path d="M70 0.5H5C2.51472 0.5 0.5 2.51472 0.5 5V35C0.5 37.4853 2.51472 39.5 5 39.5H70C75.2467 39.5 79.5 35.2467 79.5 30V10C79.5 4.75329 75.2467 0.5 70 0.5Z" stroke="%236A4E2D"/></svg>') no-repeat center center;
+      background-size: contain;
+      color: #6A4E2D;
+      font-family: 'Jost', sans-serif;
+      font-weight: bold;
+      font-size: 14px;
+      height: 40px;
+      width: 90px;display: flex;
+      align-items: center;
+      justify-content: center;
+      text-transform: uppercase;
+      transition: transform 0.2s ease-in-out;
+    }
+    .scroll-tab-button:hover {
+      transform: translateX(2px);}
+    .glow-frame {
+      box-shadow: 0 0 15px 5px #D6A64A;}
+    .shimmer {
+      animation: shimmer-animation 1.5s infinite linear;
+    }
+    @keyframes shimmer-animation {
+      0% { opacity: 1; }
+      50% { opacity: 0.6; }
+      100% { opacity: 1; }
+    }
+    .parchment-roll-fade {
+      animation: parchment-roll-fade-animation 1s forwards;
+    }
+    @keyframes parchment-roll-fade-animation {
+      0% { opacity: 1; transform: translateY(0) rotate(0); }
+      100% { opacity: 0; transform: translateY(-20px) rotate(-5deg); }
+    }
+  </style>
+<style>
+    body {
+      min-height: max(884px, 100dvh);
+    }
+  </style>
+  </head>
+<body class="parchment-bg text-bronze-text">
+<div class="relative flex size-full min-h-screen flex-col group/design-root overflow-x-hidden">
+<div>
+<div class="flex items-center p-4 pb-2 justify-between border-b-2 bronze-border">
+<div class="w-12"></div> 
+<h1 class="font-yeseva text-xl uppercase bronze-text text-center flex-1">Equoria</h1>
+<div class="flex w-12 items-center justify-end">
+<button class="flex max-w-[480px] cursor-pointer items-center justify-center overflow-hidden rounded-xl h-12 bg-transparent text-bronze-text gap-2 text-base font-bold leading-normal tracking-[0.015em] min-w-0 p-0">
+<svg class="gold-text" fill="currentColor" height="28px" viewBox="0 0 256 256" width="28px" xmlns="http://www.w3.org/2000/svg">
+<path d="M128,80a48,48,0,1,0,48,48A48.05,48.05,0,0,0,128,80Zm0,80a32,32,0,1,1,32-32A32,32,0,0,1,128,160Zm88-29.84q.06-2.16,0-4.32l14.92-18.64a8,8,0,0,0,1.48-7.06,107.21,107.21,0,0,0-10.88-26.25,8,8,0,0,0-6-3.93l-23.72-2.64q-1.48-1.56-3-3L186,40.54a8,8,0,0,0-3.94-6,107.71,107.71,0,0,0-26.25-10.87,8,8,0,0,0-7.06,1.49L130.16,40Q128,40,125.84,40L107.2,25.11a8,8,0,0,0-7.06-1.48A107.6,107.6,0,0,0,73.89,34.51a8,8,0,0,0-3.93,6L67.32,64.27q-1.56,1.49-3,3L40.54,70a8,8,0,0,0-6,3.94,107.71,107.71,0,0,0-10.87,26.25,8,8,0,0,0,1.49,7.06L40,125.84Q40,128,40,130.16L25.11,148.8a8,8,0,0,0-1.48,7.06,107.21,107.21,0,0,0,10.88,26.25,8,8,0,0,0,6,3.93l23.72,2.64q1.49,1.56,3,3L70,215.46a8,8,0,0,0,3.94,6,107.71,107.71,0,0,0,26.25,10.87,8,8,0,0,0,7.06-1.49L125.84,216q2.16.06,4.32,0l18.64,14.92a8,8,0,0,0,7.06,1.48,107.21,107.21,0,0,0,26.25-10.88,8,8,0,0,0,3.93-6l2.64-23.72q1.56-1.48,3-3L215.46,186a8,8,0,0,0,6-3.94,107.71,107.71,0,0,0,10.87-26.25,8,8,0,0,0-1.49-7.06Zm-16.1-6.5a73.93,73.93,0,0,1,0,8.68,8,8,0,0,0,1.74,5.48l14.19,17.73a91.57,91.57,0,0,1-6.23,15L187,173.11a8,8,0,0,0-5.1,2.64,74.11,74.11,0,0,1-6.14,6.14,8,8,0,0,0-2.64,5.1l-2.51,22.58a91.32,91.32,0,0,1-15,6.23l-17.74-14.19a8,8,0,0,0-5-1.75h-.48a73.93,73.93,0,0,1-8.68,0,8,8,0,0,0-5.48,1.74L100.45,215.8a91.57,91.57,0,0,1-15-6.23L82.89,187a8,8,0,0,0-2.64-5.1,74.11,74.11,0,0,1-6.14-6.14,8,8,0,0,0-5.1-2.64L46.43,170.6a91.32,91.32,0,0,1-6.23-15l14.19-17.74a8,8,0,0,0,1.74-5.48,73.93,73.93,0,0,1,0-8.68,8,8,0,0,0-1.74-5.48L40.2,100.45a91.57,91.57,0,0,1,6.23-15L69,82.89a8,8,0,0,0,5.1-2.64,74.11,74.11,0,0,1,6.14-6.14A8,8,0,0,0,82.89,69L85.4,46.43a91.32,91.32,0,0,1,15-6.23l17.74,14.19a8,8,0,0,0,5.48,1.74,73.93,73.93,0,0,1,8.68,0,8,8,0,0,0,5.48-1.74L155.55,40.2a91.57,91.57,0,0,1,15,6.23L173.11,69a8,8,0,0,0,2.64,5.1,74.11,74.11,0,0,1,6.14,6.14,8,8,0,0,0,5.1,2.64l22.58,2.51a91.32,91.32,0,0,1,6.23,15l-14.19,17.74A8,8,0,0,0,199.87,123.66Z"></path>
+</svg>
+</button>
+</div>
+</div>
+<h2 class="font-yeseva text-lg uppercase bronze-text px-4 pb-3 pt-5">Mini Event Panels</h2>
+<div class="m-4 p-3 parchment-bg border-2 bronze-border rounded-lg shadow-md">
+<div class="flex items-center justify-between">
+<img alt="Event Crest" class="event-crest mr-3 shimmer" src="https://lh3.googleusercontent.com/aida-public/AB6AXuAhKxH35ofHd7Qm3gQnXrADQvRFZxLfibzls-aUQ__O8V7CROq8dHsEb6ukZw62fWow5XkBJUlyT3c2eg19HREPwIPPLfmnoj-oaXfmn0L2OIbY0384YRZNw1xMwd6LF3wso9JxWk51qFDJ2nFxKuZCY0nbLo4z8-AKOPqcQqC3sXSC7SouKsHyDOdQc5EpgSooQA1_c81WmtMV7aS8RC-u_f9baLh-4fHCZcOnBeEnqczb_qUgYsSikUwdd-DqFkTV4ph407W-kHw"/>
+<div class="flex-grow">
+<p class="font-yeseva text-base uppercase gold-text">Seasonal Celebration</p>
+<p class="font-jost text-sm font-bold bronze-text">3/5 Hearts Earned</p>
+</div>
+<div class="countdown-seal text-center mx-3">
+<span class="font-cormorant italic text-sm">5D</span>
+<span class="font-cormorant italic text-xs">12H</span>
+</div>
+<button class="scroll-tab-button">
+            Enter
+          </button>
+</div>
+</div>
+<div class="fixed bottom-20 right-0 m-4 p-3 parchment-bg border-2 gold-border rounded-l-xl shadow-lg cursor-pointer hover:shadow-xl transition-shadow w-48 group">
+<div class="flex flex-col items-start">
+<p class="font-yeseva text-sm uppercase gold-text mb-1">Lunar Festival</p>
+<div class="w-full h-2 progress-bar-bg rounded-full mb-1 overflow-hidden">
+<div class="h-full progress-bar-fill shimmer" style="width: 60%;"></div>
+</div>
+<p class="font-cormorant italic text-xs bronze-text group-hover:hidden">Tap to Expand</p>
+<div class="hidden group-hover:block mt-1">
+<p class="font-jost text-xs bronze-text">Collect Moon Tokens!</p>
+<p class="font-cormorant italic text-xs gold-text">Ends in 2 Days</p>
+</div>
+</div>
+</div>
+<div class="m-4 p-2 inline-block parchment-bg border-2 bronze-border rounded-xl shadow-md hover:shadow-xl transition-shadow cursor-pointer glow-frame">
+<div class="w-[200px] h-[200px] flex flex-col items-center justify-center relative bg-cover bg-center rounded-lg" style="background-image: url('https://lh3.googleusercontent.com/aida-public/AB6AXuA7PoiDdLSc-vYHY_2tnzn6B5hHx6E5Jiqj4ZzLP1QMebD9db7K9DfpJ8HH7d2syNtQkvnT3xHfM3veb_QMfAcrgcH4Q-0iZdiH3TKKPA7sFEVR2-lslsBEqua7I-vYqvE8bVbGDLL1hY6VdFs7tsxYAJfj8zsyX5PpjbLT7UGwbk77nB4XuJ1YengXE4ButYNVwWlDeK6rP56TG7iUyVEMSpiCDWgJFf4zCdzKAKT30pIJ7QSG-RcmQZcHw3n_BNsMu9RJu-oBf_I');">
+<img alt="Event Crest Large" class="w-24 h-24 object-contain mb-2 border-4 gold-border rounded-full shimmer" src="https://lh3.googleusercontent.com/aida-public/AB6AXuC2dWoIiNPIcMpWd5nvI0NPqeGX13-LFzxwz8_RJr15gz4X28a2YUj0GxO37rH8pz9boEr9YFti8ZjhBfXLNv8zzOxtubkEfaIYpGO5bmPy7QaH-v-5MuzQsafXt9K5r1AnUYH_xLBEsRjJdBNi_Z2W-SmX8x6CebUGtFYklLYr2RBBxy9Q7tZs6Ot-Z4OXRCz3tyXHvLD9KDtXriWjkmnpy7r8Owc2SFV_iRSPVnHuVaukDh5MbvwitBCCu74YJWy4oMIXnoDX0Rg"/>
+<div class="absolute bottom-0 left-0 right-0 p-2 bg-gradient-to-t from-[#6A4E2D] to-transparent rounded-b-lg">
+<p class="font-yeseva text-base uppercase text-center text-[#FDF8E3]">Crystal Hunt</p>
+</div>
+</div>
+<div class="mt-2 text-center p-1 bg-[#6A4E2D] rounded-b-md">
+<p class="font-cormorant italic text-sm text-[#FDF8E3]">3 Days Left</p>
+</div>
+</div>
+<div class="m-4 p-2 inline-block parchment-bg border-2 bronze-border rounded-xl shadow-md hover:shadow-xl transition-shadow cursor-pointer glow-frame parchment-roll-fade" style="animation-delay: 2s;">
+<div class="w-[200px] h-[200px] flex flex-col items-center justify-center relative bg-cover bg-center rounded-lg" style="background-image: url('https://lh3.googleusercontent.com/aida-public/AB6AXuA7PoiDdLSc-vYHY_2tnzn6B5hHx6E5Jiqj4ZzLP1QMebD9db7K9DfpJ8HH7d2syNtQkvnT3xHfM3veb_QMfAcrgcH4Q-0iZdiH3TKKPA7sFEVR2-lslsBEqua7I-vYqvE8bVbGDLL1hY6VdFs7tsxYAJfj8zsyX5PpjbLT7UGwbk77nB4XuJ1YengXE4ButYNVwWlDeK6rP56TG7iUyVEMSpiCDWgJFf4zCdzKAKT30pIJ7QSG-RcmQZcHw3n_BNsMu9RJu-oBf_I');">
+<img alt="Event Crest Large" class="w-24 h-24 object-contain mb-2 border-4 gold-border rounded-full" src="https://lh3.googleusercontent.com/aida-public/AB6AXuDOA__42XktGSuiigw_LmeaV_hqDdJnkg7qzA0MyqrSa9yYSCZPttXakMal2Dw6D7gGaI6eAY9vLOzPOcOIyhuXPKh4tcgcLnF2ghtIMPWGqnbGEZyOnvQqWJWwtobZY7L21jDMkVUDV72_ipnSyB5XV92fI3N58Tb3JW7kKl2TyQTvww_xiGm0sZCySzC3lxw5fIG8apQi7yRJqDQFRT5gjQMx1a5xXHOBCO-sSu4Ih6UFlNW9VwR_O42LF6WCaLroyytQBbv2JcY"/>
+<div class="absolute bottom-0 left-0 right-0 p-2 bg-gradient-to-t from-[#6A4E2D] to-transparent rounded-b-lg">
+<p class="font-yeseva text-base uppercase text-center text-[#FDF8E3]">Dragon's Hoard</p>
+</div>
+</div>
+<div class="mt-2 text-center p-1 bg-[#6A4E2D] rounded-b-md">
+<p class="font-cormorant italic text-sm text-[#FDF8E3]">Expired</p>
+</div>
+</div>
+</div>
+<div class="sticky bottom-0 left-0 right-0">
+<div class="flex gap-0 border-t-2 bronze-border parchment-bg px-2 pb-2 pt-1">
+<a class="flex flex-1 flex-col items-center justify-end gap-1 rounded-none gold-text py-1" href="#">
+<div class="flex h-7 items-center justify-center">
+<svg fill="currentColor" height="24px" viewBox="0 0 256 256" width="24px" xmlns="http://www.w3.org/2000/svg">
+<path d="M224,115.55V208a16,16,0,0,1-16,16H168a16,16,0,0,1-16-16V168a8,8,0,0,0-8-8H112a8,8,0,0,0-8,8v40a16,16,0,0,1-16,16H48a16,16,0,0,1-16-16V115.55a16,16,0,0,1,5.17-11.78l80-75.48.11-.11a16,16,0,0,1,21.53,0,1.14,1.14,0,0,0,.11.11l80,75.48A16,16,0,0,1,224,115.55Z"></path>
+</svg>
+</div>
+<span class="font-jost text-xs font-bold">Home</span>
+</a>
+<a class="flex flex-1 flex-col items-center justify-end gap-1 text-bronze-text opacity-70 py-1" href="#">
+<div class="flex h-7 items-center justify-center">
+<svg fill="currentColor" height="24px" viewBox="0 0 256 256" width="24px" xmlns="http://www.w3.org/2000/svg">
+<path d="M136,100a12,12,0,1,1-12-12A12,12,0,0,1,136,100Zm96,29.48A104.29,104.29,0,0,1,130.1,232l-2.17,0a103.32,103.32,0,0,1-69.26-26A8,8,0,1,1,69.34,194a84.71,84.71,0,0,0,20.1,13.37L116,170.84c-22.78-9.83-47.47-5.65-61.4-3.29A31.84,31.84,0,0,1,23.3,154.72l-.3-.43-13.78-22a8,8,0,0,1,2.59-11.05L112,59.53V32a8,8,0,0,1,8-8h8A104,104,0,0,1,232,129.48Zm-16-.22A88,88,0,0,0,128,40V64a8,8,0,0,1-3.81,6.81L27.06,130.59l9.36,15A15.92,15.92,0,0,0,52,151.77c16-2.7,48.77-8.24,78.07,8.18A40.06,40.06,0,0,0,168,120a8,8,0,0,1,16,0,56.07,56.07,0,0,1-51.8,55.83l-27.11,37.28A90.89,90.89,0,0,0,129.78,216,88.29,88.29,0,0,0,216,129.26Z"></path>
+</svg>
+</div>
+<span class="font-jost text-xs">Stable</span>
+</a>
+<a class="flex flex-1 flex-col items-center justify-end gap-1 text-bronze-text opacity-70 py-1" href="#">
+<div class="flex h-7 items-center justify-center">
+<svg fill="currentColor" height="24px" viewBox="0 0 256 256" width="24px" xmlns="http://www.w3.org/2000/svg">
+<path d="M117.25,157.92a60,60,0,1,0-66.5,0A95.83,95.83,0,0,0,3.53,195.63a8,8,0,1,0,13.4,8.74,80,80,0,0,1,134.14,0,8,8,0,0,0,13.4-8.74A95.83,95.83,0,0,0,117.25,157.92ZM40,108a44,44,0,1,1,44,44A44.05,44.05,0,0,1,40,108Zm210.14,98.7a8,8,0,0,1-11.07-2.33A79.83,79.83,0,0,0,172,168a8,8,0,0,1,0-16,44,44,0,1,0-16.34-84.87,8,8,0,1,1-5.94-14.85,60,60,0,0,1,55.53,105.64,95.83,95.83,0,0,1,47.22,37.71A8,8,0,0,1,250.14,206.7Z"></path>
+</svg>
+</div>
+<span class="font-jost text-xs">Community</span>
+</a>
+<a class="flex flex-1 flex-col items-center justify-end gap-1 text-bronze-text opacity-70 py-1" href="#">
+<div class="flex h-7 items-center justify-center">
+<svg fill="currentColor" height="24px" viewBox="0 0 256 256" width="24px" xmlns="http://www.w3.org/2000/svg">
+<path d="M228.92,49.69a8,8,0,0,0-6.86-1.45L160.93,63.52,99.58,32.84a8,8,0,0,0-5.52-.6l-64,16A8,8,0,0,0,24,56V200a8,8,0,0,0,9.94,7.76l61.13-15.28,61.35,30.68A8.15,8.15,0,0,0,160,224a8,8,0,0,0,1.94-.24l64-16A8,8,0,0,0,232,200V56A8,8,0,0,0,228.92,49.69ZM104,52.94l48,24V203.06l-48-24ZM40,62.25l48-12v127.5l-48,12Zm176,131.5-48,12V78.25l48-12Z"></path>
+</svg>
+</div>
+<span class="font-jost text-xs">Explore</span>
+</a>
+<a class="flex flex-1 flex-col items-center justify-end gap-1 text-bronze-text opacity-70 py-1" href="#">
+<div class="flex h-7 items-center justify-center">
+<svg fill="currentColor" height="24px" viewBox="0 0 256 256" width="24px" xmlns="http://www.w3.org/2000/svg">
+<path d="M224,128a8,8,0,0,1-8,8H40a8,8,0,0,1,0-16H216A8,8,0,0,1,224,128ZM40,72H216a8,8,0,0,0,0-16H40a8,8,0,0,0,0,16ZM216,184H40a8,8,0,0,0,0,16H216a8,8,0,0,0,0-16Z"></path>
+</svg>
+</div>
+<span class="font-jost text-xs">Quests</span>
+</a>
+</div>
+<div class="h-3 parchment-bg"></div> 
+</div>
+</div>
+
+</body></html>

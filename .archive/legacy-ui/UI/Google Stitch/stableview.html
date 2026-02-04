@@ -1,0 +1,270 @@
+<html><head>
+<meta charset="utf-8"/>
+<link crossorigin="" href="https://fonts.gstatic.com/" rel="preconnect"/>
+<link as="style" href="https://fonts.googleapis.com/css2?display=swap&amp;family=Yeseva+One%3Awght%40400&amp;family=Noto+Serif%3Awght%40400%3B500%3B700%3B900&amp;family=Noto+Sans%3Awght%40400%3B500%3B700%3B900" onload="this.rel='stylesheet'" rel="stylesheet"/>
+<title>Equoria - Stable</title>
+<link href="data:image/x-icon;base64," rel="icon" type="image/x-icon"/>
+<script src="https://cdn.tailwindcss.com?plugins=forms,container-queries"></script>
+<style>
+      .font-yeseva-one {
+        font-family: "Yeseva One", serif;
+      }
+      .parchment-bg {
+        background-color: #fdf8e3;
+        border: 2px solid #d6a64a;box-shadow: 0 0 10px #d6a64a, inset 0 0 5px #6a4e2d;}
+      .parchment-frame {
+        background-color: #fdf8e3;
+        border: 3px solid #6a4e2d;box-shadow: 0 0 15px rgba(214, 166, 74, 0.7), inset 0 0 8px rgba(253, 248, 227, 0.5);border-radius: 10px;
+        padding: 8px;
+        margin-bottom: 12px;
+      }
+      .tab-active {
+        background-color: rgba(44, 74, 42, 0.3);border-color: #d6a64a !important;
+        box-shadow: 0 0 12px #d6a64a, 0 0 5px #d6a64a inset;color: #2c4a2a;
+      }
+      .tab-inactive {
+        background-color: #fdf8e3;
+        border: 2px solid #6a4e2d;
+        color: #6a4e2d;
+      }
+      .horse-card {
+        background-color: #fdf8e3;border-width: 3px;
+        border-style: solid;
+        border-image: linear-gradient(to bottom, #6a4e2d, #d6a64a) 1;border-radius: 8px;
+        width: 160px;
+        height: 200px;
+        box-shadow: 0 2px 5px rgba(0,0,0,0.2);
+        transition: box-shadow 0.3s ease, transform 0.3s ease;
+      }
+      .horse-card:hover {
+        box-shadow: 0 0 15px #d6a64a, 0 0 8px #fdf8e3;transform: translateY(-3px);
+      }
+      .embossed-gold-text {
+        color: #d6a64a;
+        text-shadow: 1px 1px 0px #6a4e2d, -1px -1px 0px #fff2d4;
+      }
+      .wax-seal-button {
+        background-color: #c0392b;border: 3px solid #d6a64a;
+        border-radius: 50%;
+        width: 60px;
+        height: 60px;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        box-shadow: 2px 2px 5px rgba(0,0,0,0.3), inset 0 0 5px rgba(0,0,0,0.2);
+        position: relative;
+      }
+       .wax-seal-button::before {content: "";
+        position: absolute;
+        width: 80px;
+        height: 40px;
+        background-color: #fdf8e3;
+        border: 2px solid #6a4e2d;
+        border-radius: 5px;
+        transform: rotate(-10deg) translateX(-15px) translateY(5px);
+        z-index: -1;
+        box-shadow: 1px 1px 3px rgba(0,0,0,0.2);
+      }
+      .bronze-tag-button {
+        background-color: #6a4e2d;
+        border: 2px solid #d6a64a;
+        color: #fdf8e3;
+        padding: 8px 16px;
+        border-radius: 20px 5px 20px 5px;box-shadow: 1px 1px 3px rgba(0,0,0,0.3);
+        font-family: "Yeseva One", serif;
+      }
+      .vignette-edges {
+        position: relative;
+      }
+      .vignette-edges::before {
+        content: "";
+        position: absolute;
+        top: 0;
+        left: 0;
+        right: 0;
+        bottom: 0;
+        box-shadow: inset 0 0 50px rgba(44, 74, 42, 0.3), inset 0 0 80px rgba(253, 248, 227, 0.2);
+        pointer-events: none;border-radius: inherit;}
+      .gold-progress-bar::-webkit-progress-value {
+        background-color: #d6a64a;
+        border-radius: 4px;
+         box-shadow: 0 0 5px #d6a64a;
+      }
+      .gold-progress-bar::-webkit-progress-bar {
+        background-color: #6a4e2d;
+        border-radius: 4px;
+        border: 1px solid #d6a64a;
+      }
+      .gold-progress-bar::-moz-progress-bar {
+        background-color: #d6a64a;
+        border-radius: 4px;
+         box-shadow: 0 0 5px #d6a64a;
+      }
+      .glowing-gem {
+        position: absolute;
+        top: 5px;
+        right: 5px;
+        width: 15px;
+        height: 15px;
+        background-color: #34d399;border-radius: 50%;
+        box-shadow: 0 0 10px #34d399, 0 0 5px #fff, inset 0 0 3px rgba(255,255,255,0.7);
+      }@keyframes rise {
+        0% {
+          transform: translateY(0);
+          opacity: 1;
+        }
+        100% {
+          transform: translateY(-100px);
+          opacity: 0;
+        }
+      }
+      .sparkle {
+        position: absolute;
+        bottom: 0;
+        left: var(--x-pos);width: 5px;
+        height: 5px;
+        background-color: #fdf8e3;border-radius: 50%;
+        opacity: 0;
+        animation: rise 3s infinite ease-out;
+        animation-delay: var(--delay);box-shadow: 0 0 5px #fdf8e3, 0 0 2px #fff;
+      }
+    </style>
+<style>
+    body {
+      min-height: max(884px, 100dvh);
+    }
+  </style>
+  </head>
+<body style='font-family: "Noto Serif", "Noto Sans", sans-serif;'>
+<div class="relative flex size-full min-h-screen flex-col bg-[#2C4A2A] dark justify-between group/design-root overflow-x-hidden vignette-edges" style='background-image: url("https://lh3.googleusercontent.com/aida-public/AB6AXuC_WKC1FX5ZtBg3dD_VDMzMvfOefTWnsjgpWQwJO1300x4vLbi9Djkwv898khJloCxkAdE6fhiSnhpe5mz8qtgbCZPseICccVOxvRXiOYuVmwzvCkGlGszU7BssE2jOJY3BiTsl2lLNmKAP3ea7AsllCM8urljA1PZx4nQPdkv6lkLCHL28vYCWVWc3dOaM20l5S60BX_v6HySn3ilMrOMERV5Yy9PocVlcJ8DBbh4BfUz1dnf7LHbrcyEL9UeG2Qk9cXFpyQ1SiWw"); background-blend-mode: overlay; background-size: cover; background-position: center;'>
+<div class="flex-grow">
+<div class="parchment-frame m-3 p-2">
+<div class="flex items-center justify-between text-[#6A4E2D] text-sm">
+<div class="flex items-center space-x-1">
+<img alt="Gold Coins" class="h-6 w-6" src="https://lh3.googleusercontent.com/aida-public/AB6AXuACHIvZb9bCR75z7LQARESR3-r9lU-QhXOm6UQ2bMAmWG8WBa1MG7tzJ6dTdh9rFxiaASivaLRc5ax_g8ibyDJR664aBhZTiAmwAig6ZfeiD5ZdPKDs9HX8QZP9mvoS3s5LrSIPgEcZJj1j9Zxyzu0XAB8VLDP3w94DPB8qkiQcro1jWJwQZNPuaaKOuHXENbjvae7OmJLhGvSisO7k4g7Dlh9lpqe_ftIy8X96tjKybSlqU7YeTGAKXp73G8HgG-RdX493TfuZyXM"/> 
+<span class="font-semibold">12,345</span>
+</div>
+<div class="flex items-center space-x-1">
+<span class="font-semibold">Lvl: 5</span>
+</div>
+<div class="flex items-center space-x-1">
+<span class="font-semibold">12/25 Horses</span>
+</div>
+</div>
+<div class="mt-1">
+<div class="flex justify-between text-xs text-[#6A4E2D] mb-0.5">
+<span>XP</span>
+<span>1234/2000</span>
+</div>
+<progress class="w-full h-2 gold-progress-bar" max="100" value="60"></progress>
+</div>
+</div>
+<div class="flex justify-around px-2 mb-4">
+<button class="font-yeseva-one text-base py-2 px-3 rounded-md tab-inactive transition-all duration-300 ease-in-out">Foals</button>
+<button class="font-yeseva-one text-base py-2 px-3 rounded-md tab-active transition-all duration-300 ease-in-out">Mares</button>
+<button class="font-yeseva-one text-base py-2 px-3 rounded-md tab-inactive transition-all duration-300 ease-in-out">Stallions</button>
+<button class="font-yeseva-one text-base py-2 px-3 rounded-md tab-inactive transition-all duration-300 ease-in-out">Retired</button>
+<button class="font-yeseva-one text-base py-2 px-3 rounded-md tab-inactive transition-all duration-300 ease-in-out">All</button>
+</div>
+<div class="grid grid-cols-2 gap-4 px-4 pb-20 overflow-y-auto h-[calc(100vh-280px)] relative">
+<div class="absolute inset-0 pointer-events-none overflow-hidden" id="sparkle-container"></div>
+<div class="horse-card flex flex-col items-center p-2 relative">
+<img alt="Horse Image" class="w-full h-24 object-cover rounded-sm border border-[#6A4E2D] mb-1" src="https://lh3.googleusercontent.com/aida-public/AB6AXuBDhxdN6vDze0mqfN7pR9Sej_psC2FuB-nkjGA6sgjdLNBGFFaJ_i6P-PFX6A_hM99jEcoMjgXy-0IYbWDohRVQs7Wgj_myT300rnhOwMPoun-ZGTwZs1NLXbyW8JCRL4bJ9aIMFLN40Qh9ohR4AHLHy2I2RWPxkIiE6C8v5DjalurLQ1QbkxDzCRoxt7mjMc9DpGG3CxsquV-8RWMH3GaXi81VaUvD3xcBSSz7bQSs8ilg96o0D5jQMIAa-AswTJPMQV6pUAZuu7o"/>
+<h3 class="font-yeseva-one text-lg embossed-gold-text text-center">Shadowfax</h3>
+<div class="flex justify-around w-full mt-1 text-xs text-[#6A4E2D]">
+<span>Icon1</span> <span>Icon2</span> <span>Icon3</span> 
+</div>
+<p class="text-xs text-[#6A4E2D] mt-1">Age: 5 yrs</p>
+<div class="glowing-gem"></div> 
+</div>
+<div class="horse-card flex flex-col items-center p-2">
+<img alt="Horse Image" class="w-full h-24 object-cover rounded-sm border border-[#6A4E2D] mb-1" src="https://lh3.googleusercontent.com/aida-public/AB6AXuB_FBsP4e9UCeL7a1GierQhbQbNh9EvDVir6QVTd_7xe5IVKIOCCVOD7e_wQkSfW96X4QQBYcCOMSNwFxPJroEY86C3LyXfO7schmbcUZ_0ReZrgsLcMveRAC4ZGRqg58wmLttQznCy5fjnRjZdv0P40J_5Tr3saXSoeVXJiIbgTZZGoClxGjRaE6n-IxlXf3c2wykTZG4wQhwKx087AgqTR2QnI4S5mm5zeWPhKTDYhG0Bch8SdKGH071hcwl1dqWdsponPsCEE0w"/>
+<h3 class="font-yeseva-one text-lg embossed-gold-text text-center">Spirit</h3>
+<div class="flex justify-around w-full mt-1 text-xs text-[#6A4E2D]">
+<span>IconA</span> <span>IconB</span> <span>IconC</span>
+</div>
+<p class="text-xs text-[#6A4E2D] mt-1">Age: 3 yrs</p>
+</div>
+<div class="horse-card flex flex-col items-center p-2">
+<img alt="Horse Image" class="w-full h-24 object-cover rounded-sm border border-[#6A4E2D] mb-1" src="https://lh3.googleusercontent.com/aida-public/AB6AXuDXfxo49mH8A8zFBEYLEAUnX1T5RCNT6TX1LnCfQFB2NP_PuqGy5kTvbYI-FLy0G13zk9bY8MG9NZf8AtS8XmRvRQcEEXrmNuBJZv7RdNhnF7e6bsLI30wqDSZMl16lkYD3PTJQaKRZIrag-_SLsOneavrc3TuePBphfzxpvkwk2plOoCBnBpskqBscBs5hf5VXvdb_cGM-E-KVxX8TlScDImxhF-EksArVXbNZrpwt3MgcDeIxs97eozYAIy-R2rMtw9i5KnG8Sw4"/>
+<h3 class="font-yeseva-one text-lg embossed-gold-text text-center">Rocinante</h3>
+<div class="flex justify-around w-full mt-1 text-xs text-[#6A4E2D]">
+<span>IconX</span> <span>IconY</span> <span>IconZ</span>
+</div>
+<p class="text-xs text-[#6A4E2D] mt-1">Age: 8 yrs</p>
+</div>
+<div class="horse-card flex flex-col items-center p-2 relative">
+<img alt="Horse Image" class="w-full h-24 object-cover rounded-sm border border-[#6A4E2D] mb-1" src="https://lh3.googleusercontent.com/aida-public/AB6AXuAVYYTrYwrTZeofny2YCRaf4fBjQJr0A-kTkiMjFd4CncLVXauYN5CCWstdjo-XIg6ryg290wFQQhnx0x-CAUtviyuonbELCvQipASzEo48uMhskFbl6mOlAJ-jPBKeWlrfE2StLJYpktXDzGuWmRyfmm6lhjPZfKBFl1dK4myF3Yg--Z8ELNjR7njPzCRM-wCw0QtQX6i5kBHCwo_oiU1jPiDhi_BP-vLUB5WKGSmRU_p26B5yXX-Ptf8BoBb5Rw9tp4mbE7LHL-U"/>
+<h3 class="font-yeseva-one text-lg embossed-gold-text text-center">Bucephalus</h3>
+<div class="flex justify-around w-full mt-1 text-xs text-[#6A4E2D]">
+<span>IconS</span> <span>IconT</span> <span>IconU</span>
+</div>
+<p class="text-xs text-[#6A4E2D] mt-1">Age: 10 yrs</p>
+<div class="glowing-gem" style="background-color: #ef4444; box-shadow: 0 0 10px #ef4444, 0 0 5px #fff, inset 0 0 3px rgba(255,255,255,0.7);"></div> 
+</div>
+<div class="horse-card flex flex-col items-center p-2">
+<img alt="Horse Image" class="w-full h-24 object-cover rounded-sm border border-[#6A4E2D] mb-1" src="https://lh3.googleusercontent.com/aida-public/AB6AXuCCh91mfXKT7EMB4n9ob0mpBczT2yMZruMPCRj6iwfYuUd-XfeW1vRYZlZFKFVsoLwWbVFTkhlJ0VJ-Nc6a2WbvECLrxLaevBnB6mL5BBD9Q-omyKS8kArmXHvzzRoG47CP98pXvm9JnkLW-6ytbA4kx4JGZD8_rbvj3YxTLbQ2em269IMwrrG6P0mwrs0mQeqPJKSZXT8byd9Z0ayPLCsmIJBoNibEIg8zE8GixxTq8Ao5WIoM7e6n28ZYC8DmEjwPYg-OW4JSNWE"/>
+<h3 class="font-yeseva-one text-lg embossed-gold-text text-center">Khan</h3>
+<div class="flex justify-around w-full mt-1 text-xs text-[#6A4E2D]">
+<span>IconM</span> <span>IconN</span> <span>IconO</span>
+</div>
+<p class="text-xs text-[#6A4E2D] mt-1">Age: 7 yrs</p>
+</div>
+<div class="horse-card flex flex-col items-center p-2">
+<img alt="Horse Image" class="w-full h-24 object-cover rounded-sm border border-[#6A4E2D] mb-1" src="https://lh3.googleusercontent.com/aida-public/AB6AXuDcYTC4RZ5i9IXR4FYmUtX3vS05LxLdvfQa5ZlDiBjUbFB8ufIp4OeWotqVnCPLRe5jZmXGMma1QaVFuZiidMBPw5pTrbZKxCSip30_OXpq0-703FvZfYCsiaWjFAPnGtoZ1LGk1lbEzXyGL2yrvDZ0fGrrSrw5wWcp2jEKIz4khqmOy1JvM69uK5LXaxfdydo4shVezo693xaQuzbM-GPf7amK4ono2uAr5rshSlZvmWZoC3B_rCuFgU-xEMRnhFfR_UpvNWZKyiQ"/>
+<h3 class="font-yeseva-one text-lg embossed-gold-text text-center">Flicka</h3>
+<div class="flex justify-around w-full mt-1 text-xs text-[#6A4E2D]">
+<span>IconP</span> <span>IconQ</span> <span>IconR</span>
+</div>
+<p class="text-xs text-[#6A4E2D] mt-1">Age: 2 yrs</p>
+</div>
+</div>
+</div>
+<div class="fixed bottom-5 right-5 flex flex-col items-end space-y-3 z-10">
+<button class="wax-seal-button text-[#FDF8E3]">
+<svg fill="currentColor" height="28" viewBox="0 0 256 256" width="28" xmlns="http://www.w3.org/2000/svg"><path d="M224,128a8,8,0,0,1-8,8H136v80a8,8,0,0,1-16,0V136H40a8,8,0,0,1,0-16h80V40a8,8,0,0,1,16,0v80h80A8,8,0,0,1,224,128Z"></path></svg>
+</button>
+<button class="bronze-tag-button text-sm">Organize</button>
+</div>
+</div>
+<script>
+      // Tab switching logic (basic example)
+      const tabs = document.querySelectorAll('.font-yeseva-one.text-base.py-2.px-3');
+      tabs.forEach(tab => {
+        tab.addEventListener('click', () => {
+          tabs.forEach(t => t.classList.remove('tab-active', 'animate-pulse'));
+          tabs.forEach(t => t.classList.add('tab-inactive'));
+          tab.classList.remove('tab-inactive');
+          tab.classList.add('tab-active');
+          // Add shimmer effect
+          tab.classList.add('animate-pulse'); // Simple pulse, can be replaced with custom shimmer
+          setTimeout(() => tab.classList.remove('animate-pulse'), 500);
+        });
+      });
+      // Particle generation for scroll
+      const sparkleContainer = document.getElementById('sparkle-container');
+      const horseGrid = document.querySelector('.overflow-y-auto');
+      function createSparkle() {
+        if(Math.random() > 0.7) { // Create sparkles intermittently
+            const sparkle = document.createElement('div');
+            sparkle.classList.add('sparkle');
+            const xPos = Math.random() * sparkleContainer.offsetWidth;
+            const delay = Math.random() * 2; // Random delay up to 2 seconds
+            sparkle.style.setProperty('--x-pos', `${xPos}px`);
+            sparkle.style.setProperty('--delay', `${delay}s`);
+            sparkleContainer.appendChild(sparkle);
+            // Remove sparkle after animation
+            sparkle.addEventListener('animationend', () => {
+            sparkle.remove();
+            });
+        }
+      }
+      let scrollTimeout;
+      horseGrid.addEventListener('scroll', () => {
+        clearTimeout(scrollTimeout);
+        scrollTimeout = setTimeout(createSparkle, 50); // Create particle after scrolling stops for a bit, or adjust timing
+        createSparkle(); // Create one immediately on scroll for responsiveness
+      });
+    </script>
+
+</body></html>

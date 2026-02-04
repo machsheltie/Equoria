@@ -1,0 +1,156 @@
+<html><head>
+<meta charset="utf-8"/>
+<link crossorigin="" href="https://fonts.gstatic.com/" rel="preconnect"/>
+<link as="style" href="https://fonts.googleapis.com/css2?display=swap&amp;family=Noto+Serif%3Awght%40400%3B500%3B700%3B900&amp;family=Noto+Sans%3Awght%40400%3B500%3B700%3B900" onload="this.rel='stylesheet'" rel="stylesheet"/>
+<title>Stitch Design</title>
+<link href="data:image/x-icon;base64," rel="icon" type="image/x-icon"/>
+<script src="https://cdn.tailwindcss.com?plugins=forms,container-queries"></script>
+<style>
+      .parchment-bg {
+        background-image: url("https://www.transparenttextures.com/patterns/old-parchment.png");
+        background-color: #fcfbf8;}
+      .message-bubble-received {
+        background-color: #f4f0e7;border: 1px solid #d3c7ab;border-radius: 1rem 1rem 1rem 0.25rem;box-shadow: 2px 2px 5px rgba(0, 0, 0, 0.1);
+      }
+      .message-bubble-sent {
+        background-color: #f3c334;border: 1px solid #e0ac02;
+        border-radius: 1rem 1rem 0.25rem 1rem;
+        box-shadow: -2px 2px 5px rgba(0, 0, 0, 0.1);
+      }
+      .fantasy-input {
+        background-color: #f4f0e7;
+        border: 1px solid #d3c7ab;
+        border-radius: 0.75rem;
+        box-shadow: inset 1px 1px 3px rgba(0,0,0,0.1);
+      }
+      .fantasy-input::placeholder {
+        color: #9c8749;
+        font-style: italic;
+      }
+      .fantasy-button {
+         background-color: #9c8749;color: #fcfbf8;
+         border-radius: 9999px;padding: 0.5rem;
+         transition: background-color 0.3s ease;
+      }
+      .fantasy-button:hover {
+        background-color: #7a6b3a;
+      }
+       .header-scroll {
+        background-color: #fcfbf8;border-bottom: 2px solid #d3c7ab;box-shadow: 0 2px 5px rgba(0,0,0,0.1);
+      }
+      .scroll-icon {
+        color: #9c8749;
+      }
+      .scroll-icon:hover {
+        color: #7a6b3a;
+      }::-webkit-scrollbar {
+        width: 8px;
+      }
+      ::-webkit-scrollbar-track {
+        background: #f4f0e7;
+        border-radius: 10px;
+      }
+      ::-webkit-scrollbar-thumb {
+        background: #d3c7ab;
+        border-radius: 10px;
+      }
+      ::-webkit-scrollbar-thumb:hover {
+        background: #9c8749;
+      }
+    </style>
+<style>
+    body {
+      min-height: max(884px, 100dvh);
+    }
+  </style>
+  </head>
+<body class="parchment-bg">
+<div class="relative flex size-full min-h-screen flex-col justify-between group/design-root overflow-x-hidden" style='font-family: "Noto Serif", "Noto Sans", sans-serif;'>
+<div class="overflow-y-auto flex-grow pb-4">
+<div class="sticky top-0 z-10 flex items-center header-scroll p-4 pb-3 justify-between">
+<div class="text-[#9c8749] flex size-10 shrink-0 items-center justify-center rounded-full hover:bg-[#f4f0e7] transition-colors" data-icon="ArrowLeft" data-size="24px" data-weight="regular">
+<svg fill="currentColor" height="24px" viewBox="0 0 256 256" width="24px" xmlns="http://www.w3.org/2000/svg">
+<path d="M224,128a8,8,0,0,1-8,8H59.31l58.35,58.34a8,8,0,0,1-11.32,11.32l-72-72a8,8,0,0,1,0-11.32l72-72a8,8,0,0,1,11.32,11.32L59.31,120H216A8,8,0,0,1,224,128Z"></path>
+</svg>
+</div>
+<h2 class="text-[#4a3b14] text-xl font-bold leading-tight tracking-[-0.015em] flex-1 text-center pr-10" style="font-family: 'Noto Serif', serif;">Elowyn Meadowbrook</h2>
+</div>
+<div class="flex items-end gap-3 p-4">
+<div class="bg-center bg-no-repeat aspect-square bg-cover rounded-full w-10 h-10 shrink-0 border-2 border-[#d3c7ab]" style='background-image: url("https://lh3.googleusercontent.com/aida-public/AB6AXuCE1eXiyiki7c4GR_S5-Q16eS-VZu5fN6CI_wMThb4rPuMkF9QPU-QsxeuELpnMvvGXs-MtMXk2y-v-DX9bzrnWG6eiYS2VfYrFl0DZxVwsHyZjHz6lXSYutqLzGeS_37M9LYFdvhHcbjNWrsNoGvin_R9FTYJQIU9ycBRUEV8jMdf0LL1BBxi5_FfkFxypL1s-E8Q3cw2NGfxE6RM0K26wG-e-METzgHd16PBaa9x0FyO82oVr4VKFtiszLkK-O-f5tNtUrVkduq0");'></div>
+<div class="flex flex-1 flex-col gap-1 items-start">
+<p class="text-[#9c8749] text-xs font-medium leading-normal max-w-[360px] ml-3" style="font-family: 'Noto Sans', sans-serif;">Elowyn Meadowbrook</p>
+<p class="text-sm font-normal leading-relaxed flex max-w-[360px] px-4 py-3 message-bubble-received text-[#1c180d]">
+              Greetings, esteemed rider! I hope this message finds you well. I've heard tales of your exceptional horsemanship and the bond you share with your magnificent steed.
+              It would be an honor to exchange stories and perhaps even ride together someday. May your journey be filled with adventure and your spirit remain as free as the wind.
+            </p>
+</div>
+</div>
+<div class="flex items-end gap-3 p-4 justify-end">
+<div class="flex flex-1 flex-col gap-1 items-end">
+<p class="text-[#4a3b14] text-xs font-medium leading-normal max-w-[360px] text-right mr-3" style="font-family: 'Noto Sans', sans-serif;">Alistair Thorne</p>
+<p class="text-sm font-normal leading-relaxed flex max-w-[360px] px-4 py-3 message-bubble-sent text-[#1c180d]">
+              Greetings, Elowyn! Your words are like a refreshing breeze on a summer's day. I've also heard whispers of your skill and the grace with which you command your equine
+              companion. It would be a privilege to share stories and perhaps even embark on a ride together. May your path be illuminated by the stars and your heart remain as
+              wild as the untamed lands.
+            </p>
+</div>
+<div class="bg-center bg-no-repeat aspect-square bg-cover rounded-full w-10 h-10 shrink-0 border-2 border-[#e0ac02]" style='background-image: url("https://lh3.googleusercontent.com/aida-public/AB6AXuAobLY2CFrRcodG8jZFbUCEWPX1Q7CCsr0x-RokhVsJ7DNw0TB7agy5Zud1I0dKoYmys2p4TtS4WYEGwo7PIA0WLCfchlF5VzF1-QsHyjrd1v29VF4684DM9vo5RaUnuAUEA8Jwg8KA9Bf6cGA_q2GzveC55Sq1Q3-rn4lPE55JfhEnmujmb7wiv7gVur3VaUZV7bMcSZio-Pa0EZV7Yp0DwRXC2GqYcsN8w5sHxnNdjVAJczt8WoTDKNEn_Cw1uFL_AlX0xE3cFlo");'></div>
+</div>
+<div class="flex items-end gap-3 p-4">
+<div class="bg-center bg-no-repeat aspect-square bg-cover rounded-full w-10 h-10 shrink-0 border-2 border-[#d3c7ab]" style='background-image: url("https://lh3.googleusercontent.com/aida-public/AB6AXuBb0lXbmjsRw6mfR_rIKVS5kTlppCyp9MYMe26M1sHWlsR_CxTlRlKKiyR0tXHepMo-0xzuOTPpf-enie5IyVZYAbYecRCfte-Au74YRypy_lX5erdpnCoyihacIKj7KBlXofRY8AjgC_JizbkIhiE6M_9Z1lN7ztZtoPbG4fKzcG73plK_iz00jEKhlgAZ5VsuBGV5_JeFN59jnc8y9Dhx_R49Z1Qp7E4l9C-sE00Jo60EIIsaZasfL3lsSyAk0i9aNzIZCyiSwy8");'></div>
+<div class="flex flex-1 flex-col gap-1 items-start">
+<p class="text-[#9c8749] text-xs font-medium leading-normal max-w-[360px] ml-3" style="font-family: 'Noto Sans', sans-serif;">Elowyn Meadowbrook</p>
+<p class="text-sm font-normal leading-relaxed flex max-w-[360px] px-4 py-3 message-bubble-received text-[#1c180d]">
+              Indeed, Alistair! The bond between rider and steed is a sacred one, forged through trust, respect, and shared adventures. I've often found solace in the rhythmic
+              gallop of my horse, feeling a connection to the very earth beneath us. Perhaps we could explore the Whispering Woods or the Crystal Caves together?
+            </p>
+</div>
+</div>
+<div class="flex items-end gap-3 p-4 justify-end">
+<div class="flex flex-1 flex-col gap-1 items-end">
+<p class="text-[#4a3b14] text-xs font-medium leading-normal max-w-[360px] text-right mr-3" style="font-family: 'Noto Sans', sans-serif;">Alistair Thorne</p>
+<p class="text-sm font-normal leading-relaxed flex max-w-[360px] px-4 py-3 message-bubble-sent text-[#1c180d]">
+              The Whispering Woods and Crystal Caves sound like enchanting destinations, Elowyn! I've heard they hold secrets and wonders waiting to be discovered. It would be an
+              honor to explore them with you and our steeds. Imagine the tales we could weave together, riding through ancient forests and shimmering caverns.
+            </p>
+</div>
+<div class="bg-center bg-no-repeat aspect-square bg-cover rounded-full w-10 h-10 shrink-0 border-2 border-[#e0ac02]" style='background-image: url("https://lh3.googleusercontent.com/aida-public/AB6AXuBHmJOlLYhSAWiA-D5WdlpA3JOryqlVNQJMADWfXmWA_-0c7Nd2uPXTYAINIJQuRLMgzk-O-Ga19YjtRX1J1zLm4KSoD4HuFtLvJTKS4xXIzNmshow_gBP8OPps10X4FckOeRovyM3VUARn0EKwYoeCwTrz4KZyxINBx5ivmMPzzDNzGNBSaALO10MtyVLwwqes5ON--X4qoREj25_BXn-_nwd8f905thgVzIU5grpl2uAbD9IjWLVjukAviEIDnsYC7oYpu3Ddq5Q");'></div>
+</div>
+<div class="flex items-end gap-3 p-4">
+<div class="bg-center bg-no-repeat aspect-square bg-cover rounded-full w-10 h-10 shrink-0 border-2 border-[#d3c7ab]" style='background-image: url("https://lh3.googleusercontent.com/aida-public/AB6AXuDgj9AT110jrvuxb3aiUYcH-OuBVGp5hkWp-_N6cb6YgyflXFPPvL7c6hcrp3jRpAddOye5GBnreKK8pcyzkw964rCcMOA7Wmdgko_s7Fa1HrvTcxaBp-JMTfhOVglXEROfODYGx2izvgSr4ZeQg_wXrWDNM5AV4rADUq6L1nQ5gbAvgueYp7MFKfqKcHtxJMQG9OQEU8Y3pdbopvjDe-CaWMebcysRuTw6L-Ew94hRntKgZ5U4_i2q01EdwaEdKK625vqC7Q5EMs8");'></div>
+<div class="flex flex-1 flex-col gap-1 items-start">
+<p class="text-[#9c8749] text-xs font-medium leading-normal max-w-[360px] ml-3" style="font-family: 'Noto Sans', sans-serif;">Elowyn Meadowbrook</p>
+<p class="text-sm font-normal leading-relaxed flex max-w-[360px] px-4 py-3 message-bubble-received text-[#1c180d]">
+              It seems our paths are destined to intertwine, Alistair. Let us plan our adventure soon, and may the spirits of the wild guide our way.
+            </p>
+</div>
+</div>
+</div>
+<div class="sticky bottom-0 parchment-bg border-t border-[#d3c7ab] shadow-top-sm">
+<div class="flex items-center px-4 py-3 gap-3 @container">
+<div class="bg-center bg-no-repeat aspect-square bg-cover rounded-full size-10 shrink-0 border-2 border-[#d3c7ab]" style='background-image: url("https://lh3.googleusercontent.com/aida-public/AB6AXuB6CmHXpDVYWEg5krf22dK9ers-dwQ5kKyYhpIK3L-o9YAeYsWnI_3leHeKrR9hc5ce10Z3o6p2tc-Tune1mHjh7U0mUIlQIpy2KaJpMkkW5MvDv-fsWaLJiDTi5GfTc1fzKx-STHu58LZ-e3qdU8Y2nv-IaUlcxI0HsajyckiMG4F_pyD-sC-n1FRA7zeQs8FmrsugvrOn_dnteHwjhwWUBaONYsgrkHWfk9O_KFOgi6UmJtONMvavNjvhvgJluYvPG9ahD6qUa9A");'></div>
+<label class="flex flex-col min-w-40 h-12 flex-1">
+<div class="flex w-full flex-1 items-stretch h-full fantasy-input">
+<input class="form-input flex w-full min-w-0 flex-1 resize-none overflow-hidden text-[#1c180d] focus:outline-0 focus:ring-0 border-none bg-transparent focus:border-none h-full placeholder:text-[#9c8749] px-4 pr-2 text-base font-normal leading-normal" placeholder="Write a message..." style="font-family: 'Noto Sans', sans-serif;" value=""/>
+<div class="flex items-center justify-center pr-3">
+<button class="flex items-center justify-center p-1.5 scroll-icon">
+<div data-icon="Image" data-size="20px" data-weight="regular">
+<svg fill="currentColor" height="20px" viewBox="0 0 256 256" width="20px" xmlns="http://www.w3.org/2000/svg">
+<path d="M216,40H40A16,16,0,0,0,24,56V200a16,16,0,0,0,16,16H216a16,16,0,0,0,16-16V56A16,16,0,0,0,216,40Zm0,16V158.75l-26.07-26.06a16,16,0,0,0-22.63,0l-20,20-44-44a16,16,0,0,0-22.62,0L40,149.37V56ZM40,172l52-52,80,80H40Zm176,28H194.63l-36-36,20-20L216,181.38V200ZM144,100a12,12,0,1,1,12,12A12,12,0,0,1,144,100Z"></path>
+</svg>
+</div>
+</button>
+</div>
+</div>
+</label>
+<button class="fantasy-button flex items-center justify-center size-10 shrink-0">
+<div class="text-white" data-icon="PaperPlaneTilt" data-size="20px" data-weight="fill">
+<svg fill="currentColor" height="20px" viewBox="0 0 256 256" width="20px" xmlns="http://www.w3.org/2000/svg"><path d="M231.83,114.88l-160-80a16,16,0,0,0-21.33,2L26.67,98.42a16,16,0,0,0,0,28.91l23.83,14.3V184a16,16,0,0,0,16,16H112a16,16,0,0,0,16-16V160h16a16,16,0,0,0,16-16V128.33l42.33,29.63A15.95,15.95,0,0,0,224,152a16,16,0,0,0,7.83-37.12ZM48,112,192,32l-48,128H144a16,16,0,0,0-16,16v16H96V155.77l-48-28.8Z"></path></svg>
+</div>
+</button>
+</div>
+<div class="h-3 parchment-bg"></div> 
+</div>
+</div>
+
+</body></html>

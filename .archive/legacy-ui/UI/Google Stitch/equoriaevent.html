@@ -1,0 +1,329 @@
+<html><head>
+<meta charset="utf-8"/>
+<link crossorigin="" href="https://fonts.gstatic.com/" rel="preconnect"/>
+<link as="style" href="https://fonts.googleapis.com/css2?display=swap&amp;family=Yeseva+One%3Awght%40400&amp;family=Noto+Serif%3Awght%40400%3B500%3B700%3B900&amp;family=Noto+Sans%3Awght%40400%3B500%3B700%3B900" onload="this.rel='stylesheet'" rel="stylesheet"/>
+<title>Stitch Design</title>
+<link href="data:image/x-icon;base64," rel="icon" type="image/x-icon"/>
+<script src="https://cdn.tailwindcss.com?plugins=forms,container-queries"></script>
+<style>
+      .font-yeseva {
+        font-family: "Yeseva One", cursive;
+      }
+      .wax-seal-ribbon {
+        position: relative;
+        background-color: #c0392b;color: #f4c63d;padding: 8px 16px 8px 24px;
+        clip-path: polygon(0% 0%, 90% 0%, 100% 50%, 90% 100%, 0% 100%);
+        box-shadow: 2px 2px 5px rgba(0,0,0,0.3);
+        display: inline-block;
+      }
+      .wax-seal-ribbon::before {
+        content: "";
+        position: absolute;
+        left: -10px;
+        top: 50%;
+        transform: translateY(-50%);
+        width: 20px;
+        height: 20px;
+        background-color: #78281f;border-radius: 50%;
+        box-shadow: 1px 1px 3px rgba(0,0,0,0.5) inset;
+      }
+      .scroll-overlay {
+        background-image: url('data:image/svg+xml;utf8,<svg xmlns="http://www.w3.org/2000/svg" width="100" height="100" viewBox="0 0 100 100"><defs><filter id="wavy" filterUnits="userSpaceOnUse" x="0" y="0" width="100" height="100"><feTurbulence type="fractalNoise" baseFrequency="0.02" numOctaves="3" seed="10" stitchTiles="stitch"/><feDisplacementMap in="SourceGraphic" scale="5"/></filter></defs><rect width="100" height="100" fill="%23FDF8E3" filter="url(%23wavy)" /></svg>');
+        background-size: cover;
+        border: 4px solid #DAA520;padding: 10px;
+        box-shadow: 0 0 10px rgba(218, 165, 32, 0.5);}
+       .sparkle:hover {
+        animation: sparkle-animation 0.5s infinite;
+      }
+      @keyframes sparkle-animation {
+        0%, 100% { box-shadow: 0 0 5px #f4c63d, 0 0 10px #f4c63d, 0 0 15px #fff; }
+        50% { box-shadow: 0 0 10px #f4c63d, 0 0 15px #f4c63d, 0 0 20px #fff; }
+      }
+       .flag-flutter {
+        animation: flutter 2s ease-in-out infinite;
+       }
+      @keyframes flutter {
+        0%, 100% { transform: skewX(0deg); }
+        50% { transform: skewX(2deg); }
+      }
+      .treasure-frame {
+        border: 3px solid #DAA520;
+        border-radius: 8px;
+        padding: 5px;
+        background: linear-gradient(145deg, #F0E68C, #BDB76B);box-shadow: inset 0 0 5px rgba(0,0,0,0.3), 0 0 8px #DAA520;
+      }
+      .potion-vial {
+        border: 3px solid #8B4513;border-radius: 50% 50% 10px 10px / 50% 50% 10px 10px;padding: 5px;
+        background: radial-gradient(ellipse at top, rgba(255,255,255,0.5) , transparent),
+                    radial-gradient(ellipse at bottom, #8B4513, transparent);
+        box-shadow: inset 0 0 5px rgba(0,0,0,0.4), 0 0 8px #8B4513;
+        overflow: hidden;
+      }
+      .potion-vial img {
+        border-radius: 40% 40% 5px 5px / 40% 40% 5px 5px;}
+      .progress-bar-stitched {
+        background-color: #E6D8B8;border-radius: 5px;
+        padding: 2px;
+        border: 1px dashed #A0522D;overflow: hidden;
+      }
+      .progress-bar-stitched-fill {
+        background-color: #f4c63d;height: 100%;
+        border-radius: 3px;
+        box-shadow: inset 0 0 2px rgba(0,0,0,0.2);
+      }
+       .wax-seal-checkbox {
+        appearance: none;
+        width: 24px;
+        height: 24px;
+        border: 2px solid #c0392b;border-radius: 50%;
+        position: relative;
+        cursor: pointer;
+        background-color: #fdf8e3;
+      }
+      .wax-seal-checkbox:checked {
+        background-color: #c0392b;border-color: #78281f;}
+      .wax-seal-checkbox:checked::before {
+        content: "✔";color: #f4c63d;font-size: 16px;
+        font-weight: bold;
+        position: absolute;
+        top: 50%;
+        left: 50%;
+        transform: translate(-50%, -50%);
+      }
+      .scroll-tab-button {
+        background-image: url("data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAGQAAAAoCAYAAAAIeF9AAAAABHNCSVQICAgIfAhkiAAAAAlwSFlzAAAOxAAADsQBlSsOGwAAABl0RVh0U29mdHdhcmUAd3d3Lmlua3NjYXBlLm9yZ5vuPBoAAAPmSURBVHic7ZtPaBxlGMafs5PNbrdJZjYb7YQPEhQhNArrxYMIblmKFhUEu0mKYLGLlC2KBPGglNJDxYNXEoqoUMSpRIsUqYcWBQ8KxFJCFfEgRhLJ2GSzG4udlZ3ZncncmUD2k7Sbk7x9/3zf92Z35vu+X+fH8jAIQhD+V0RqAui1tYp7DPTFRYxxdgGgDHDdDaC/jE/Fz5+e+kZ9uDkXAGoAXjZfYfNfA/AGgKcD3G0YRhB2W0xS5+Xl8G/zP9c39xuvjIz87HIfBaBUB99e252/nAGgoKCggus9wL4Dx6uKWyxQn4H2x8fGfnbLDwKwCwB6LDfF9k/5XAAoFou/tQoAtAAcLOsE53IwxhiA6xZ3AbgugP4Lz4UAdgtc3oMhBDBdz+PnuuGg42PjYVgsFgMAHAE4EWAyWQAAcD6ft/+Lz85+xgYAdgDcBiA+gNfj8QDAhZ+f/g/jFf/v65v7300uAMBAgD8AtKj6BcC1AL7lwfU+AMuL23J9EdA8M0sDkArARgA/k9nzPwaAfL6H8VsAtgE87/f7/QAQAPhNaLlcDjTnLwDkUqk0hN8ALBHQPLMEJRSKRgA+VwFwdzgcNgL0/G8FMPuLhIwHDBcAlUCoFArFAhgzEwG0E2BOZxgB+y5fALifgOaZpSAEAoGAgG9/ZQAwGg0LADLw7f8RABshgE+A2AVgDkDRaDQMgHdhGDsZABNlAD748F3F/yUAzGfYjA5AI5K8wB/h3/QLgHMNsE9iTIZDAEsmAL8f7R0GgLz5j8PnsyI8z6ZlAQCvAMymuNTzSWA4YwzN+M3rBQC5XI7XAbQDmUuBjBd2bCSYw2H5pHA4/NtaBcBaAJ7X7/c/wA7AeZ4dD0xM1EHMpSB8PB6/zTcASwPMAHweQLp/Mfx3gKMWuLwZkVLUMZlJkX4DMO8LADkMhj8GOPsUQC6APQBXBfC5zU2yYVp0Mv40oJtMJgPAxQHANADfB7CbmZmZOjL5KUxQpUn4tK3X6/V/AegEHLxExW/8g8x6H1pARq/XXxQ2+kCqJjRNYXw+XwFgZ2Zm5sAAbYxNTYNKTZJjRkM8f0YpgEtkH4m2FwB0x8fH/b3/4/f7H+CXvJ//D2A1Gg3LdQNQkL6YTsNAGgNlJaR1gAkB0gBv9vt9Z8LhnE/nZ+PjP8A/MebkRz5fLApYdBRFhL9YxS5SWe4qA2ApAN4APg2g8zV3AEQQAQzI1F6u9jLFA8xPAAA3/Qk8jGZk9QAAAABJRU5ErkJggg==");
+        background-repeat: no-repeat;
+        background-size: 100% 100%;
+        color: #6A3E1F;border: none;
+        padding: 12px 20px;
+        font-family: "Yeseva One", cursive;
+        font-size: 18px;
+        text-shadow: 1px 1px 1px #FDF8E3;}
+      .crest-tab-button {
+        background-image: url("data:image/svg+xml;charset=UTF-8,%3Csvg width='120' height='50' viewBox='0 0 120 50' xmlns='http://www.w3.org/2000/svg'%3E%3Cdefs%3E%3Cfilter id='inset-shadow' x='-50%25' y='-50%25' width='200%25' height='200%25'%3E%3CfeComponentTransfer in='SourceAlpha'%3E%3CfeFuncA type='table' tableValues='1 0' /%3E%3C/feComponentTransfer%3E%3CfeGaussianBlur stdDeviation='2'/%3E%3CfeOffset dx='1' dy='1' result='offsetblur'/%3E%3CfeFlood flood-color='rgba(0,0,0,0.5)' result='color'/%3E%3CfeComposite in2='offsetblur' operator='in'/%3E%3CfeComposite in2='SourceAlpha' operator='in'/%3E%3CfeMerge%3E%3CfeMergeNode in='SourceGraphic'/%3E%3CfeMergeNode/%3E%3C/feMerge%3E%3C/filter%3E%3C/defs%3E%3Cpath d='M10 0 H110 C115.523 0 120 4.47715 120 10 V40 C120 45.5228 115.523 50 110 50 H10 C4.47715 50 0 45.5228 0 40 V10 C0 4.47715 4.47715 0 10 0 Z' fill='%23D4AC0D'/%3E%3Cpath d='M15 5 H105 C108.314 5 111 7.68629 111 11 V39 C111 42.3137 108.314 45 105 45 H15 C11.6863 45 9 42.3137 9 39 V11 C9 7.68629 11.6863 5 15 5 Z' fill='%23F4C63D' filter='url(%23inset-shadow)'/%3E%3C!-- Optional: Add a small crest icon or design --%3E%3C/svg%3E");
+        background-repeat: no-repeat;
+        background-size: 100% 100%;
+        color: #4A2511;border: none;
+        padding: 12px 20px;
+        font-family: "Yeseva One", cursive;
+        font-size: 18px;
+        text-shadow: 1px 1px 0px #F0E68C;}
+      .bg-parchment { background-color: #FDF8E3; }
+      .gold-trim { border: 5px solid #DAA520; box-shadow: 0 0 15px #DAA520; }.seasonal-overlay-frost {
+        position: absolute;
+        top: 0;
+        left: 0;
+        width: 100%;
+        height: 100%;
+        background-image: url("data:image/svg+xml,%3Csvg width='100' height='100' viewBox='0 0 100 100' xmlns='http://www.w3.org/2000/svg'%3E%3Cdefs%3E%3Cfilter id='frost'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.03 0.06' numOctaves='3' result='noise'/%3E%3CfeDiffuseLighting in='noise' lighting-color='%23add8e6' surfaceScale='2'%3E%3CfeDistantLight azimuth='45' elevation='60'/%3E%3C/feDiffuseLighting%3E%3CfeComposite operator='in' in2='SourceAlpha' result='frostTexture'/%3E%3CfeBlend in='SourceGraphic' in2='frostTexture' mode='multiply'/%3E%3C/filter%3E%3C/defs%3E%3Crect width='100' height='100' filter='url(%23frost)' opacity='0.2'/%3E%3C/svg%3E");
+        pointer-events: none;
+        z-index: 1;
+      }
+      .floating-particles {
+        position: absolute;
+        top: 0;
+        left: 0;
+        width: 100%;
+        height: 100%;
+        pointer-events: none;
+        overflow: hidden;
+        z-index: 2;
+      }
+      .particle {
+        position: absolute;
+        background-color: rgba(244, 198, 61, 0.7);border-radius: 50%;
+        animation: float 10s infinite ease-in-out;
+      }
+      @keyframes float {
+        0% { transform: translateY(0) translateX(0); opacity: 0.7; }
+        50% { transform: translateY(-100px) translateX(20px); opacity: 0.3; }
+        100% { transform: translateY(0) translateX(0); opacity: 0.7; }
+      }
+      .light-shimmer {
+        position: absolute;
+        top: 0;
+        left: -100%;
+        width: 50%;
+        height: 100%;
+        background: linear-gradient(to right, rgba(255,255,255,0) 0%, rgba(255,255,255,0.3) 50%, rgba(255,255,255,0) 100%);
+        animation: shimmer 5s infinite linear;
+        pointer-events: none;
+        z-index: 3;
+      }
+      @keyframes shimmer {
+        0% { left: -100%; }
+        100% { left: 150%; }
+      }
+    </style>
+<style>
+    body {
+      min-height: max(884px, 100dvh);
+    }
+  </style>
+  </head>
+<body class="bg-parchment">
+<div class="relative flex size-full min-h-screen flex-col justify-between group/design-root overflow-x-hidden gold-trim" style="--checkbox-tick-svg: url('data:image/svg+xml,%3csvg viewBox=%270 0 16 16%27 fill=%27rgb(28,24,13)%27 xmlns=%27http://www.w3.org/2000/svg%27%3e%3cpath d=%27M12.207 4.793a1 1 0 010 1.414l-5 5a1 1 0 01-1.414 0l-2-2a1 1 0 011.414-1.414L6.5 9.086l4.293-4.293a1 1 0 011.414 0z%27/%3e%3c/svg%3e'); font-family: &quot;Noto Serif&quot;, &quot;Noto Sans&quot;, sans-serif;">
+<div class="seasonal-overlay-frost"></div>
+<div class="floating-particles" id="particle-container"></div>
+<div class="light-shimmer"></div>
+<script>
+        const particleContainer = document.getElementById('particle-container');
+        if (particleContainer) {
+          for (let i = 0; i < 20; i++) {
+            const particle = document.createElement('div');
+            particle.classList.add('particle');
+            particle.style.width = `${Math.random() * 5 + 2}px`;
+            particle.style.height = particle.style.width;
+            particle.style.left = `${Math.random() * 100}%`;
+            particle.style.top = `${Math.random() * 100}%`;
+            particle.style.animationDelay = `${Math.random() * 10}s`;
+            particle.style.animationDuration = `${Math.random() * 10 + 5}s`;
+            particleContainer.appendChild(particle);
+          }
+        }
+      </script>
+<div class="relative z-10">
+<div class="p-4 @container cursor-pointer sparkle">
+<div class="flex flex-col items-stretch justify-start rounded-lg @xl:flex-row @xl:items-start bg-[#FDF8E3] border-2 border-[#DAA520] shadow-lg overflow-hidden flag-flutter">
+<div class="w-full bg-center bg-no-repeat aspect-[16/7] @xl:aspect-[3/2] bg-cover rounded-l-lg" style='background-image: url("https://lh3.googleusercontent.com/aida-public/AB6AXuA8tWKtL4CpL-MUnUZc9mea7g2Gxvx62RBwPa6gPvG5iLzwUpkE-mQQRwaD_qabfuJ2OHruB4qv61vilJ9A6As_O20UqbU6r_u-qKpkiQG6oryp9zENocQNvpqcZJGaruGo9BhgqC7-dn1tQzMMEdMVM5F6Eic-YHPfYKsvth7hF6I8Y3Z8aI10TtD7jcSzE-b6jDwQ4a-Q0zjgP_5WFvShGBlBq6flpXGJH0Z_AWoLgAFUQNqoYzRgM7Nbr4xgKJYv-fn2Y63cEtg"); position: relative;'>
+<div class="absolute inset-0 flex items-center justify-center p-2" style="background: rgba(0,0,0,0.2);">
+<img alt="Event Crest" class="h-16 w-16 md:h-20 md:w-20 opacity-90" src="https://lh3.googleusercontent.com/aida-public/AB6AXuACzMZTbS8-Y-qCryzL7Jef_ZqjIv9qoao6BYDScSK3fGo1d-dWbNViFpGSr5pEdX5x_jUxFR6hcIcQSrB1xmMxeVEK9yj_mchCHoduJoryaNGGPL_lrDeQzPPvzcgSbFmFumd0O_A-m7ETJ4CXQqVoaTJl6nk6GdRiuL2TwhBE9LABOH4U8D98eJWNIOkvCLM6NC1lBYv4eGNJWQU7vo1Ly10tKxosQNj1VB5PydI5EA_J0eOIWh07nLCKToipfmJ4zV8MRM4OC6o"/>
+</div>
+</div>
+<div class="flex w-full min-w-72 grow flex-col items-center justify-center gap-2 py-4 @xl:px-4 text-center">
+<p class="font-yeseva text-[#DAA520] text-2xl @xl:text-[26px] leading-tight tracking-[-0.015em] scroll-overlay py-1 px-3" style="background-image: none; background-color: rgba(253, 248, 227, 0.8); border-width: 2px;">Winter Tundra Trials</p>
+<div class="wax-seal-ribbon font-yeseva text-lg">
+                3 Days Left
+              </div>
+</div>
+</div>
+</div>
+<div class="flex items-center bg-parchment p-4 pb-2 justify-between border-b-2 border-[#DAA520]">
+<div class="text-[#DAA520] flex size-12 shrink-0 items-center hover:text-[#B8860B] transition-colors" data-icon="ArrowLeft" data-size="30px" data-weight="bold">
+<svg fill="currentColor" height="30px" viewBox="0 0 256 256" width="30px" xmlns="http://www.w3.org/2000/svg">
+<path d="M224,128a8,8,0,0,1-8,8H59.31l58.35,58.34a8,8,0,0,1-11.32,11.32l-72-72a8,8,0,0,1,0-11.32l72-72a8,8,0,0,1,11.32,11.32L59.31,120H216A8,8,0,0,1,224,128Z"></path>
+</svg>
+</div>
+<h1 class="font-yeseva text-[#DAA520] text-2xl font-bold leading-tight tracking-[-0.015em] flex-1 text-center pr-12">Winter Tundra Trials</h1>
+</div>
+<div class="@container">
+<div class="@[480px]:px-4 @[480px]:py-3">
+<div class="w-full bg-center bg-no-repeat bg-cover flex flex-col justify-end overflow-hidden @[480px]:rounded-lg min-h-[240px] gold-trim relative" style='background-image: url("https://lh3.googleusercontent.com/aida-public/AB6AXuA9p4NxjQmkCU53jsiKwWDRHooCwZ1c0UXYK-G4y4jaZANX9CKEtZ_tPC9KRawRR_VgBbhzSKR1UPM1HA1WcdPsIySE4nm92lQZYn4koP78gsgleuZR7sQTX68feLVCM_3ulTOswU9hpGNTyQ8miS4EachZVcsvv4yncPptXZ842LkN7sYMGr6ycFlToUtdELTwOmmi7r76HfC3gB9inczz3s3KRfFP4m-XGc6-VQq2wkhrwaDKIt2xZapVsy2_m4NNVo1K3-NrCkI");'>
+<div class="absolute top-4 left-4">
+<img alt="Event Crest" class="h-20 w-20 opacity-90 shadow-lg rounded-full border-2 border-[#DAA520] bg-black/20 p-1" src="https://lh3.googleusercontent.com/aida-public/AB6AXuDAboWeLgiQpwE0hr5OcdQe1yoHEQxJ40LUUk_Bp5t4IgOniSMqVybyGyT6QepLx6sdxMAYFUK2c7RLAbAwjXhySCnfA_ckqaJZ1vrPGWkHL9YpxU83TTy3KmEYV7DEWBG7t2dYmxckei1JNKPpT6XV_RlHDBtIXy2Cuz4NVM48ybttZwVG-4YLmSqdKfjDHbh8OSWqLLBnCB4CLoU2ANYGvwm4BwlQ1nsgbzwKvlpour7O4BBXbF2Uj7vEUFXl-sMRHZVQ7OiBuMM"/>
+</div>
+<div class="bg-black/30 p-2 backdrop-blur-sm @[480px]:rounded-b-md">
+<h2 class="font-yeseva text-3xl text-[#F4C63D] text-center">Winter Tundra Trials</h2>
+</div>
+</div>
+</div>
+</div>
+<div class="scroll-overlay m-4 p-4 border-4 border-[#B8860B] shadow-xl">
+<h3 class="font-yeseva text-xl text-[#6A3E1F] mb-2">Event Lore</h3>
+<p class="text-[#4A2511] text-base font-normal leading-relaxed">
+            The Winter Tundra Trials are a series of challenges designed to test the mettle of even the most seasoned equestrians. Brave the icy winds and prove your skills to earn
+            exclusive rewards in the land of Equoria, where magic and might intertwine.
+            </p>
+</div>
+<h2 class="font-yeseva text-[#DAA520] text-[24px] font-bold leading-tight tracking-[-0.015em] px-4 pb-3 pt-5 text-center">Treasured Rewards</h2>
+<div class="grid grid-cols-[repeat(auto-fit,minmax(150px,1fr))] gap-4 p-4">
+<div class="flex flex-col gap-3 pb-3 items-center treasure-frame">
+<div class="w-full bg-center bg-no-repeat aspect-square bg-cover rounded-md" style='background-image: url("https://lh3.googleusercontent.com/aida-public/AB6AXuCcRBqB9_dofkTblGdAixehrzvZ1Ei1GiQrJDokWaUrVAT8SDfq99IuHRg7f8-qPjVDee0dnstwCDKN8o_FtbWZvuYfywZ-4uLuN4GUrkmxA6YHRdrFaOXcCGdyZMEXEN2w4P4URWQ_5zkFOyBhIYRbcbuzkB7TjG02yr4ajDhfAFMSz9SY_2AkdvSyszsAte3XeBFPZFNYkvv2jON7mPNXZq6RKszwl63l5OyOyBAjxq-QpQUEI_Mdk8mekzXoPyb0o4P1i-Tqd7s");'></div>
+<p class="font-yeseva text-[#6A3E1F] text-lg font-medium leading-normal">Rare Tack</p>
+</div>
+<div class="flex flex-col gap-3 pb-3 items-center potion-vial">
+<div class="w-full bg-center bg-no-repeat aspect-square bg-cover" style='background-image: url("https://lh3.googleusercontent.com/aida-public/AB6AXuBi45h9RCIrc1ezO0tzD7LyTTp0A1uZK5HgdM8aLfvGZ4Y3xUbdhzc9YLFHpnECpSI1tfzl_Ravl7lost2gr1uHb911aKeYKbuvPniKrPqpWHtFHQeewThcWaCw_c0163g7skIdSY8WtnFOohD84DD8s9Bbv9CZkJwxjprCAVj5h27hjkVHKMK2p9gSlfEQBXmmdJajPFXIrofDYFPVEM0ysNE-HvbDF2CYyMcFXj_Z_CaIw2h_8UeovUHk-IG3LYkHdz42RUBeZwE");'></div>
+<p class="font-yeseva text-[#FDF8E3] text-lg font-medium leading-normal text-center bg-[#8B4513]/70 w-full py-1 mt-auto">Consumables</p>
+</div>
+<div class="flex flex-col gap-3 pb-3 items-center treasure-frame">
+<div class="w-full bg-center bg-no-repeat aspect-square bg-cover rounded-md" style='background-image: url("https://lh3.googleusercontent.com/aida-public/AB6AXuD-Mv3BJ4_TrMjYT2H-6ae7EPwCBTeNZ0LaQ3AWBDNti82oTmReVNyy84zsI5gozKO70qWOL-Ud1AHFBVICKlutuShyu828WOuiJpnR277cHLjN8iybhcR6nKVCjFYHPV_0YuipFNfu_UwQ6SY1BiLTw880bn1KWm2uFAU7qVSc23JI5cTXxfp2-qfu9myrnNM9es4_D6qxjjU4vE9sEP_Etl14SJjmEDkw2gU-pg3yeLgF8O8qOMyv__2m1iWloeJiWev0uVyS6dM");'></div>
+<p class="font-yeseva text-[#6A3E1F] text-lg font-medium leading-normal">Cosmetics</p>
+</div>
+</div>
+<div class="m-4 p-4 scroll-overlay border-4 border-[#B8860B] shadow-xl">
+<h2 class="font-yeseva text-[#6A3E1F] text-[24px] font-bold leading-tight tracking-[-0.015em] pb-3 pt-1 text-center">Event Goals</h2>
+<div class="space-y-4">
+<label class="flex items-center gap-x-3 py-2 justify-between cursor-pointer">
+<p class="text-[#4A2511] text-base font-normal leading-normal flex-1">Complete 5 Training Sessions</p>
+<div class="progress-bar-stitched w-24 h-5">
+<div class="progress-bar-stitched-fill" style="width: 60%;"></div>
+</div>
+<input class="wax-seal-checkbox" type="checkbox"/>
+</label>
+<hr class="border-dashed border-[#A0522D]/50"/>
+<label class="flex items-center gap-x-3 py-2 justify-between cursor-pointer">
+<p class="text-[#4A2511] text-base font-normal leading-normal flex-1">Win 3 Competitions</p>
+<div class="progress-bar-stitched w-24 h-5">
+<div class="progress-bar-stitched-fill" style="width: 33%;"></div>
+</div>
+<input class="wax-seal-checkbox" type="checkbox"/>
+</label>
+<hr class="border-dashed border-[#A0522D]/50"/>
+<label class="flex items-center gap-x-3 py-2 justify-between cursor-pointer">
+<p class="text-[#4A2511] text-base font-normal leading-normal flex-1">Breed a New Foal</p>
+<div class="progress-bar-stitched w-24 h-5">
+<div class="progress-bar-stitched-fill" style="width: 0%;"></div>
+</div>
+<input class="wax-seal-checkbox" type="checkbox"/>
+</label>
+</div>
+</div>
+<div class="flex justify-center">
+<div class="flex flex-1 gap-4 max-w-[480px] flex-col items-stretch px-4 py-6">
+<button class="flex min-w-[84px] max-w-[480px] cursor-pointer items-center justify-center overflow-hidden h-14 px-5 w-full scroll-tab-button hover:brightness-110 transition-all">
+<span class="truncate">Enter Event</span>
+</button>
+<button class="flex min-w-[84px] max-w-[480px] cursor-pointer items-center justify-center overflow-hidden h-14 px-5 w-full crest-tab-button hover:brightness-110 transition-all">
+<span class="truncate">View Rankings</span>
+</button>
+</div>
+</div>
+</div>
+<div class="relative z-10 mt-auto">
+<div class="flex gap-2 border-t-2 border-[#DAA520] bg-parchment px-4 pb-3 pt-2 shadow-[0_-5px_15px_-5px_rgba(218,165,32,0.5)]">
+<a class="just flex flex-1 flex-col items-center justify-end gap-1 rounded-full text-[#DAA520] hover:text-[#F4C63D]" href="#">
+<div class="text-current flex h-8 items-center justify-center" data-icon="House" data-size="28px" data-weight="fill">
+<svg fill="currentColor" height="28px" viewBox="0 0 256 256" width="28px" xmlns="http://www.w3.org/2000/svg">
+<path d="M224,115.55V208a16,16,0,0,1-16,16H168a16,16,0,0,1-16-16V168a8,8,0,0,0-8-8H112a8,8,0,0,0-8,8v40a16,16,0,0,1-16,16H48a16,16,0,0,1-16-16V115.55a16,16,0,0,1,5.17-11.78l80-75.48.11-.11a16,16,0,0,1,21.53,0,1.14,1.14,0,0,0,.11.11l80,75.48A16,16,0,0,1,224,115.55Z"></path>
+</svg>
+</div>
+<p class="text-current text-xs font-medium leading-normal tracking-[0.015em]">Home</p>
+</a>
+<a class="just flex flex-1 flex-col items-center justify-end gap-1 text-[#A0522D] hover:text-[#DAA520]" href="#">
+<div class="text-current flex h-8 items-center justify-center" data-icon="Horse" data-size="28px" data-weight="fill">
+<svg fill="currentColor" height="28px" viewBox="0 0 256 256" width="28px" xmlns="http://www.w3.org/2000/svg">
+<path d="M136,100a12,12,0,1,1-12-12A12,12,0,0,1,136,100Zm96,29.48A104.29,104.29,0,0,1,130.1,232l-2.17,0a103.32,103.32,0,0,1-69.26-26A8,8,0,1,1,69.34,194a84.71,84.71,0,0,0,20.1,13.37L116,170.84c-22.78-9.83-47.47-5.65-61.4-3.29A31.84,31.84,0,0,1,23.3,154.72l-.3-.43-13.78-22a8,8,0,0,1,2.59-11.05L112,59.53V32a8,8,0,0,1,8-8h8A104,104,0,0,1,232,129.48Zm-16-.22A88,88,0,0,0,128,40V64a8,8,0,0,1-3.81,6.81L27.06,130.59l9.36,15A15.92,15.92,0,0,0,52,151.77c16-2.7,48.77-8.24,78.07,8.18A40.06,40.06,0,0,0,168,120a8,8,0,0,1,16,0,56.07,56.07,0,0,1-51.8,55.83l-27.11,37.28A90.89,90.89,0,0,0,129.78,216,88.29,88.29,0,0,0,216,129.26Z"></path>
+</svg>
+</div>
+<p class="text-current text-xs font-medium leading-normal tracking-[0.015em]">Stable</p>
+</a>
+<a class="just flex flex-1 flex-col items-center justify-end gap-1 text-[#A0522D] hover:text-[#DAA520]" href="#">
+<div class="text-current flex h-8 items-center justify-center" data-icon="Heart" data-size="28px" data-weight="fill">
+<svg fill="currentColor" height="28px" viewBox="0 0 256 256" width="28px" xmlns="http://www.w3.org/2000/svg">
+<path d="M178,32c-20.65,0-38.73,8.88-50,23.89C116.73,40.88,98.65,32,78,32A62.07,62.07,0,0,0,16,94c0,70,103.79,126.66,108.21,129a8,8,0,0,0,7.58,0C136.21,220.66,240,164,240,94A62.07,62.07,0,0,0,178,32ZM128,206.8C109.74,196.16,32,147.69,32,94A46.06,46.06,0,0,1,78,48c19.45,0,35.78,10.36,42.6,27a8,8,0,0,0,14.8,0c6.82-16.67,23.15-27,42.6-27a46.06,46.06,0,0,1,46,46C224,147.61,146.24,196.15,128,206.8Z"></path>
+</svg>
+</div>
+<p class="text-current text-xs font-medium leading-normal tracking-[0.015em]">Breed</p>
+</a>
+<a class="just flex flex-1 flex-col items-center justify-end gap-1 text-[#A0522D] hover:text-[#DAA520]" href="#">
+<div class="text-current flex h-8 items-center justify-center" data-icon="ShoppingBag" data-size="28px" data-weight="fill">
+<svg fill="currentColor" height="28px" viewBox="0 0 256 256" width="28px" xmlns="http://www.w3.org/2000/svg">
+<path d="M216,40H40A16,16,0,0,0,24,56V200a16,16,0,0,0,16,16H216a16,16,0,0,0,16-16V56A16,16,0,0,0,216,40Zm0,160H40V56H216V200ZM176,88a48,48,0,0,1-96,0,8,8,0,0,1,16,0,32,32,0,0,0,64,0,8,8,0,0,1,16,0Z"></path>
+</svg>
+</div>
+<p class="text-current text-xs font-medium leading-normal tracking-[0.015em]">Shop</p>
+</a>
+<a class="just flex flex-1 flex-col items-center justify-end gap-1 text-[#A0522D] hover:text-[#DAA520]" href="#">
+<div class="text-current flex h-8 items-center justify-center" data-icon="User" data-size="28px" data-weight="fill">
+<svg fill="currentColor" height="28px" viewBox="0 0 256 256" width="28px" xmlns="http://www.w3.org/2000/svg">
+<path d="M230.92,212c-15.23-26.33-38.7-45.21-66.09-54.16a72,72,0,1,0-73.66,0C63.78,166.78,40.31,185.66,25.08,212a8,8,0,1,0,13.85,8c18.84-32.56,52.14-52,89.07-52s70.23,19.44,89.07,52a8,8,0,1,0,13.85-8ZM72,96a56,56,0,1,1,56,56A56.06,56.06,0,0,1,72,96Z"></path>
+</svg>
+</div>
+<p class="text-current text-xs font-medium leading-normal tracking-[0.015em]">Profile</p>
+</a>
+</div>
+<div class="h-5 bg-parchment"></div>
+</div>
+</div>
+
+</body></html>

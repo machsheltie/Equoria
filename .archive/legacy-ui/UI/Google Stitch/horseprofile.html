@@ -1,0 +1,243 @@
+<html><head>
+<meta charset="utf-8"/>
+<link crossorigin="" href="https://fonts.gstatic.com/" rel="preconnect"/>
+<link as="style" href="https://fonts.googleapis.com/css2?display=swap&amp;family=Yeseva+One%3Awght%40400&amp;family=Jost%3Awght%40400%3B500%3B700&amp;family=Cormorant+Garamond%3Awght%40400%3B700%3Bital@1" onload="this.rel='stylesheet'" rel="stylesheet"/>
+<link href="https://fonts.googleapis.com/icon?family=Material+Icons" rel="stylesheet"/>
+<title>Equoria - Horse Profile</title>
+<link href="data:image/x-icon;base64," rel="icon" type="image/x-icon"/>
+<script src="https://cdn.tailwindcss.com?plugins=forms,container-queries"></script>
+<style>
+    .yeseva-one {
+      font-family: "Yeseva One", serif;
+    }
+    .jost {
+      font-family: "Jost", sans-serif;
+    }
+    .cormorant-garamond {
+      font-family: "Cormorant Garamond", serif;
+    }
+    .bg-parchment {
+      background-color: #FDF8E3;
+    }
+    .text-bronze {
+      color: #6A4E2D;
+    }
+    .border-bronze {
+      border-color: #6A4E2D;
+    }
+    .bg-bronze {
+      background-color: #6A4E2D;
+    }
+    .active-tab {
+      color: #2C4A2A;
+      border-bottom-color: #DAA520;position: relative;
+    }
+    .active-tab::after {
+      content: '';
+      position: absolute;
+      left: 0;
+      right: 0;
+      bottom: -2px;height: 2px;
+      background-color: #DAA520;
+      box-shadow: 0 0 5px #DAA520;}
+    .scroll-button {
+      background-image: url('https://storage.googleapis.com/aida-images/scroll-button-bg.png');background-size: cover;
+      background-position: center;
+      border: 2px solid #6A4E2D;
+      color: #3A2E1D;
+      text-shadow: 1px 1px 1px #FDF8E3;
+    }
+    .scroll-button:active {
+      transform: translateY(1px);
+      box-shadow: 0 2px 5px rgba(0, 0, 0, 0.2) inset;
+    }
+    .sparkle-effect {
+      position: relative;
+      overflow: hidden;
+    }
+    .sparkle-effect::before {
+      content: "";
+      position: absolute;
+      top: 50%;
+      left: 50%;
+      width: 0;
+      height: 0;
+      background: radial-gradient(circle, rgba(255, 255, 224, 0.8) 0%, rgba(255, 215, 0, 0) 70%);
+      border-radius: 50%;
+      transform: translate(-50%, -50%);
+      opacity: 0;
+      animation: sparkle 0.5s ease-out;
+    }
+    @keyframes sparkle {
+      0% {
+        width: 0;
+        height: 0;
+        opacity: 0.5;
+      }
+      100% {
+        width: 200%;
+        height: 200%;
+        opacity: 0;
+      }
+    }
+    .stat-bar-parchment {
+      background-color: #FDF8E3;
+      border: 1px solid #D4C0A1;box-shadow: inset 0 1px 3px rgba(0, 0, 0, 0.1);
+    }
+    .stat-bar-fill {
+      background: linear-gradient(to right, #8B6913, #6A4E2D);box-shadow: 0 0 5px rgba(218, 165, 32, 0.5);}
+    .nameplate {
+      background-image: url('https://storage.googleapis.com/aida-images/bronze-nameplate.png');background-size: 100% 100%;
+      background-repeat: no-repeat;
+      padding: 8px 20px;
+      filter: drop-shadow(2px 2px 3px rgba(0, 0, 0, 0.3));
+    }
+    .ornate-frame {
+      border: 10px solid transparent;
+      border-image-source: url("https://storage.googleapis.com/aida-images/ornate-gold-frame.png");border-image-slice: 30;
+      border-image-repeat: round;
+      padding: 15px;
+      box-shadow: 0 0 20px rgba(218, 165, 32, 0.5);}
+    .legendary-sparkle-trail::before {
+      content: "";
+      position: absolute;
+      top: -10px;
+      left: -10px;
+      right: -10px;
+      bottom: -10px;
+      border-radius: inherit;background:
+        radial-gradient(ellipse at top left, rgba(255, 215, 0, 0.3) 0%, transparent 50%),
+        radial-gradient(ellipse at top right, rgba(255, 215, 0, 0.3) 0%, transparent 50%),
+        radial-gradient(ellipse at bottom left, rgba(255, 215, 0, 0.3) 0%, transparent 50%),
+        radial-gradient(ellipse at bottom right, rgba(255, 215, 0, 0.3) 0%, transparent 50%);
+      pointer-events: none;
+      animation: legendaryTrail 5s linear infinite;
+      z-index: -1;
+    }
+    @keyframes legendaryTrail {
+      0% {
+        transform: rotate(0deg);
+      }
+      100% {
+        transform: rotate(360deg);
+      }
+    }
+  </style>
+<style>
+    body {
+      min-height: max(884px, 100dvh);
+    }
+  </style>
+  </head>
+<body class="bg-parchment">
+<div class="relative flex flex-col min-h-screen" style="background-image: url('https://lh3.googleusercontent.com/aida-public/AB6AXuBe-8QSIuO3PD7nzNgD145KTl8qkB4iYqKTed6mhmqjOztAhTNrWox2czsRTEr7cJ3kN5fc7HLZOiY_qNiFi23EO31FL4PWfsZjd1R83EAGS85ljgG5klvqbIxAufWfoOVAj9vm-ivsQyH8tiJZjGfm_Y_nBaPYqezRrxqmPiU00mRSVS89h73YPfdmDwil1K73dcJuUAS3yl6eL_Lz1x84bLdaJHDYf47z2q2JMkfTG1QQZeGJGYEjwpkk-2gu9uYEb0qbw6HX9Pk'); background-size: cover; background-position: center;">
+<img alt="Top Left Vine" class="absolute top-2 left-2 w-20 h-20 opacity-70 pointer-events-none" src="https://lh3.googleusercontent.com/aida-public/AB6AXuBBGIfwZNL1KC6oz_mEncaRD9oxPFFAlVsuy9q13F5wWSc3lbT4cnvA_VfTXzL0GpUq1r-60UlXNLaW7AKOmbrI-LoAB7xoJEGTQ5G7Yg5mWrw-fxRXO-23c3lL7VogJG6VOD-YGadSZZQcxi3O0UHZqNpCVJee9RkoKvRzLuxhZIWWtOR8s0gnqq4wBYFtLCmPaKMBgi2LugloxYD95EeHHY98oyrg3uhztoL36fy3yPnFW49c6T22IBi209S5JbtLTjuS6VuFrEQ"/>
+<img alt="Top Right Rune" class="absolute top-2 right-2 w-20 h-20 opacity-70 pointer-events-none" src="https://lh3.googleusercontent.com/aida-public/AB6AXuDLAVZ_h4mn1mlliig2Io7JGMdzIrJiPmRjz6c8Sc5gTJ0ocSHmVrK9tE-g5FWVKAghWLepaprKfcUkSKHybaXYzJLR9XxCBiZD1GF3NJsrwYKH164Ms--Euf7JOBIEtYwEsuElASEC3i0QhlB3tnkEgMkVXFgAMkY5rmJkOM_-hjLYTjxs3ME5fIgwNH8k5M7lNu3y45cmuk9V6G1B7KXPMpmuXA0n4ginq6zhPoPcJwO3i2qDfO6UJOqhYmfPVSwJ6YQf7huF2_E"/>
+<img alt="Bottom Left Vine" class="absolute bottom-16 left-2 w-20 h-20 opacity-70 pointer-events-none" src="https://lh3.googleusercontent.com/aida-public/AB6AXuAMazzsM4kISOkVc0tWGCIewXlLaZqxgGHIkQ6Ws5xDVM40RgopYPY26G2agdrVPKEauPLkhJgPszV1285NVhWfROrzU5yoEpXblCDC_kAAvbnAeLoR8B7jSd198dvvIpdAHYzSVjuobd7ZRBgrRYVTUzk01ZGKZWQTXj8dVBezsuke7eJqWFtE9cdhLP-kH57N-D5CjFzhCSeaaDKS2LqwkJBuhnhXo7M5LIwW1QFoaojY8wPBO8NUura3MMEDDWdIoXKj1jNP3zc"/>
+<img alt="Bottom Right Rune" class="absolute bottom-16 right-2 w-20 h-20 opacity-70 pointer-events-none" src="https://lh3.googleusercontent.com/aida-public/AB6AXuAYo0NO_95sb3DqkMSceEhD4PvDS2qOZ_htvdSWhbtrV6hIKmAa5kMBzFJ4ZnKg-_MUH9HrwjPKLZzQnDr3N-_jLyIdXPzbQlHhg68XNy67m0dSN6qFTb-db_mgFWVsqhlX1uvtEmnwHLGbGH-N3OLqi_JZnAX17XFOX-u2dudLLa-39Gcggkovag20vV1ibP1F6Uqz0g9Aj53VkhO5jj96bc8HzFYCQXO5dHd_4m6GNOAA7FWnAVJMgfoAri7fYqy9WKzMJsmvPzk"/>
+<div class="flex-grow bg-parchment/90 p-4 pb-0">
+<div class="flex justify-center mb-2 relative">
+<div class="ornate-frame legendary-sparkle-trail">
+<img alt="Horse Portrait" class="w-64 h-64 object-cover rounded-md" src="https://lh3.googleusercontent.com/aida-public/AB6AXuARo4VygHjsEgr6SAz34pV_uNbyVWs-9C4aVeIUYFHcaPlJk38vVNKvYiop8o7L0cpNgnqwmKxf-Sn3vqYzds0mrNHz9wXVCOBr6hGREL46g2WMmcqTN1CRIZjgz9w7ast4Tkqa1hrJewpAyik5CSt0y6atZl6GA3Yw0_Lpu6v3ynQsPqkcDcnhTx4IcZ0DvJyiow5jY3ipuzzlmCSTzyAjhOIMF1mzfeUIlnUM375lyM-Xl-6CKHtLMFwPYwDBOcHbmeN3OFZcT5M"/>
+</div>
+</div>
+<div class="flex justify-center mb-4">
+<div class="nameplate">
+<h1 class="yeseva-one text-2xl uppercase text-center text-yellow-900" style="color: #4A3B2A;">STARLIGHT</h1>
+</div>
+</div>
+<div class="text-center mb-4 space-y-1 px-2">
+<p><span class="jost font-bold text-base text-bronze">Age:</span> <span class="jost text-base text-bronze">5 Years</span></p>
+<p><span class="jost font-bold text-base text-bronze">Breed:</span> <span class="cormorant-garamond italic text-base text-bronze">Celestial Steed</span></p>
+<div class="flex items-center justify-center space-x-2 text-bronze">
+<span class="material-icons text-xl">emoji_events</span>
+<p class="jost text-base">Show Jumping</p>
+</div>
+<div class="flex items-center justify-center space-x-2 text-bronze group relative">
+<img alt="Temperament Crest" class="w-5 h-5" src="https://lh3.googleusercontent.com/aida-public/AB6AXuBe-8QSIuO3PD7nzNgD145KTl8qkB4iYqKTed6mhmqjOztAhTNrWox2czsRTEr7cJ3kN5fc7HLZOiY_qNiFi23EO31FL4PWfsZjd1R83EAGS85ljgG5klvqbIxAufWfoOVAj9vm-ivsQyH8tiJZjGfm_Y_nBaPYqezRrxqmPiU00mRSVS89h73YPfdmDwil1K73dcJuUAS3yl6eL_Lz1x84bLdaJHDYf47z2q2JMkfTG1QQZeGJGYEjwpkk-2gu9uYEb0qbw6HX9Pk"/>
+<p class="jost text-base">Spirited</p>
+<div class="absolute bottom-full left-1/2 transform -translate-x-1/2 mb-2 w-max p-2 bg-parchment border border-bronze rounded-md shadow-lg opacity-0 group-hover:opacity-100 transition-opacity duration-300 text-sm text-bronze z-10" style="background-image: url('https://lh3.googleusercontent.com/aida-public/AB6AXuBe-8QSIuO3PD7nzNgD145KTl8qkB4iYqKTed6mhmqjOztAhTNrWox2czsRTEr7cJ3kN5fc7HLZOiY_qNiFi23EO31FL4PWfsZjd1R83EAGS85ljgG5klvqbIxAufWfoOVAj9vm-ivsQyH8tiJZjGfm_Y_nBaPYqezRrxqmPiU00mRSVS89h73YPfdmDwil1K73dcJuUAS3yl6eL_Lz1x84bLdaJHDYf47z2q2JMkfTG1QQZeGJGYEjwpkk-2gu9uYEb0qbw6HX9Pk'); background-size: 100% 100%;">
+            A lively and energetic horse, quick to learn but may require an experienced hand.
+          </div>
+</div>
+<div class="flex items-center justify-center space-x-2 bg-bronze text-white rounded-full px-3 py-1.5 w-fit mx-auto shadow-md">
+<span class="material-icons text-lg relative">
+            alarm
+            <span class="absolute inset-0 bg-white opacity-20 animate-ping rounded-full" style="animation-duration: 1.5s;"></span>
+</span>
+<p class="jost text-sm">Cooldown: 2h 30m</p>
+</div>
+</div>
+<div class="mb-1 sticky top-0 z-10 bg-parchment/90 py-1">
+<div class="flex justify-around border-b-2 border-bronze/50">
+<button class="jost text-sm font-semibold py-3 px-2 active-tab hover:text-green-700 transition-colors duration-200">Stats</button>
+<button class="jost text-sm font-semibold py-3 px-2 text-bronze hover:text-green-700 transition-colors duration-200">Conformation</button>
+<button class="jost text-sm font-semibold py-3 px-2 text-bronze hover:text-green-700 transition-colors duration-200">Gaits</button>
+<button class="jost text-sm font-semibold py-3 px-2 text-bronze hover:text-green-700 transition-colors duration-200">Lineage</button>
+<button class="jost text-sm font-semibold py-3 px-2 text-bronze hover:text-green-700 transition-colors duration-200">History</button>
+</div>
+</div>
+<div class="pt-3 pb-20">
+<div class="space-y-3">
+<div class="flex items-center space-x-2">
+<img alt="Strength" class="w-6 h-6" src="https://lh3.googleusercontent.com/aida-public/AB6AXuBzeDYy1pTiiPZh01Vkh85Cys6XWAjny4AduhvDMkh6Jwhv5OGR2qLrDtSwG5EQvV2f8NH-pugfL1IUJx5F-VGI3HAU1nP5DmhG2nK_7tiARc6JsiVaK7DNRw9zyeM-GKKqcztZ4xMMaY1BUlSKfURcEq-25Z5iLomr0krakAzvIvlsKDa10DMsPtWU13ISWIPhZg6uTbLamQ1MFaqiz6RZJ3tZxOHMbS9TQHti2bbwYyYbM0v3FI6IN-t2XbyURdFLYORJLk14nXU"/>
+<p class="jost text-base font-medium text-bronze flex-1">Strength</p>
+<p class="jost text-sm text-bronze">8/10</p>
+</div>
+<div class="w-full h-4 rounded-full stat-bar-parchment">
+<div class="h-full rounded-full stat-bar-fill" style="width: 80%;"></div>
+</div>
+<div class="flex items-center space-x-2">
+<img alt="Speed" class="w-6 h-6" src="https://lh3.googleusercontent.com/aida-public/AB6AXuDGbbWPgfTxQVpUC4kdedYQipUf22prhhn06x0jqzpV9eTytwtav0i1V8zn-Dv6mCPcnDtTI_fybA3Dxaz90IpQDmv2gAitU1OiVfe2bT_tmF-anq2Z1qjJWNd5rXMkCo_X2CtjQ4_SPGtAcprFla0zbml5JFE8XpUUSsZdnQit2mBJV3Y6LMzzBdjxJjkCKrp4xUTlK00qitxNVXlKfXDUoGF4jK6fRcxbhvUhavJZBkzHow1SGRqVydJi3ezy8dDyjc5bGUm5gGQ"/>
+<p class="jost text-base font-medium text-bronze flex-1">Speed</p>
+<p class="jost text-sm text-bronze">6/10</p>
+</div>
+<div class="w-full h-4 rounded-full stat-bar-parchment">
+<div class="h-full rounded-full stat-bar-fill" style="width: 60%;"></div>
+</div>
+<div class="flex items-center space-x-2">
+<img alt="Agility" class="w-6 h-6" src="https://lh3.googleusercontent.com/aida-public/AB6AXuAjqq4obt0X4YVOn6srpu0AFMA58kEUq9JI_tIQYiQuSqzX5FUH8pD1QEafza71RhuMTs5nLI8nD0q0epOvgtgWigiI-k8g21n1tWNcEs-ib0MkIKQxGstFeaUDEN8X52ITv6G-0xHBqZR27FIz8FZE7TiFqkv-FzstrrUf2Cpc8faAmWGf-3LzYjtpacpoRXuypJQ9F8JgvQft4XEqnuVJ5VA1IZsDJJ1uweFUv4K5aOBbpvinJQVapE-BA1FPaKqaungYHx8MNag"/>
+<p class="jost text-base font-medium text-bronze flex-1">Agility</p>
+<p class="jost text-sm text-bronze">7/10</p>
+</div>
+<div class="w-full h-4 rounded-full stat-bar-parchment">
+<div class="h-full rounded-full stat-bar-fill" style="width: 70%;"></div>
+</div>
+<div class="flex items-center space-x-2">
+<img alt="Endurance" class="w-6 h-6" src="https://lh3.googleusercontent.com/aida-public/AB6AXuCmf_IPAtW5tXdV_I55CqoHh9FsR1Z7dfGaDQ1d2vi9ZFcWoIm81XccIiNJG8g27gw2_iBIrbxCfixI22rcHxwjv-9KRPM3aL1p6P1Wz5SaOpg8sGyCbSuO5nbvIh9tOpoHsKzbJKDRKNWy7LaL1xQsM4hdIm1QEI-Y8jWKoMCzaUMl2ot0xhdh_QOyfCoJMuwgn6m8-K5NGmcBXMspKZSbPysxZPtgI9AQOgeDHOyTbsUY2wOH7MLHPln43azEaa69puAy8iTwxAw"/>
+<p class="jost text-base font-medium text-bronze flex-1">Endurance</p>
+<p class="jost text-sm text-bronze">9/10</p>
+</div>
+<div class="w-full h-4 rounded-full stat-bar-parchment">
+<div class="h-full rounded-full stat-bar-fill" style="width: 90%;"></div>
+</div>
+<div class="flex items-center space-x-2">
+<img alt="Intelligence" class="w-6 h-6" src="https://lh3.googleusercontent.com/aida-public/AB6AXuCr4fDiyPKBLngPCUKAwyA4KingEjY1QhS1dvywoJltTWhCBIhrusRQCxbaEXYT8YwZcWYq2URHTmQJoaLMhe18M1J0dmD0Jn8-5RbEsEx5X6pXZVOpy6clPKFWJ3GbmRedZpq-ym_NGY-cUD7r5TbLbYPjwHPLyI3v_hVkXiUxXTunrY2b1dP-hzoPG7jB5mplpY4QD4cSzNEkiqPkxbOp5P7fLfIKizNKl6ba5MG5laguB9TdSN4P96OAOiD4gpr2Vu-SDaXYH_g"/>
+<p class="jost text-base font-medium text-bronze flex-1">Intelligence</p>
+<p class="jost text-sm text-bronze">5/10</p>
+</div>
+<div class="w-full h-4 rounded-full stat-bar-parchment">
+<div class="h-full rounded-full stat-bar-fill" style="width: 50%;"></div>
+</div>
+<div class="flex items-center space-x-2">
+<img alt="Charisma" class="w-6 h-6" src="https://lh3.googleusercontent.com/aida-public/AB6AXuAzvfJk1PKYzrahKOqjYmvvt6vjM4wjn3x4wg8Zuq0BVElBKzwWK_GqH2oJdeoM3rrKOjmUHk8oLKsPlNzt3W0UxXuYyIqJqylMq_5WjXdwOlFkrnnT6Ria8xZrzaJMyq9-OJnXeyS77VKZ4jQLvXEgDh2OBpf5WFJk4w6ZqjS14ELSiyxRujjZNgga-4amgMLygyQ8TnmtH-d1sgzxxo22GcwXBiEaM1ybaOBXvfPANYYRTKorK7LPvbBHm4cfTCHHWsVghnnMjmE"/>
+<p class="jost text-base font-medium text-bronze flex-1">Charisma</p>
+<p class="jost text-sm text-bronze">7.5/10</p>
+</div>
+<div class="w-full h-4 rounded-full stat-bar-parchment">
+<div class="h-full rounded-full stat-bar-fill" style="width: 75%;"></div>
+</div>
+</div>
+</div>
+</div>
+<div class="fixed bottom-0 left-0 right-0 bg-parchment/90 p-3 border-t-2 border-bronze/50 shadow-top z-20">
+<div class="flex justify-around items-center space-x-2">
+<button class="jost font-bold text-sm py-3 px-4 rounded-lg scroll-button flex-1 sparkle-effect">Train</button>
+<button class="jost font-bold text-sm py-3 px-4 rounded-lg scroll-button flex-1 sparkle-effect">Groom</button>
+<button class="jost font-bold text-sm py-3 px-4 rounded-lg scroll-button flex-1 sparkle-effect">Breed</button>
+<button class="jost font-bold text-sm py-3 px-4 rounded-lg scroll-button flex-1 sparkle-effect">Retire</button>
+</div>
+</div>
+</div>
+
+</body></html>

@@ -1,0 +1,601 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Equoria - My Stable</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: 'SF Pro Display', -apple-system, BlinkMacSystemFont, sans-serif;
+            background: #000;
+            color: #ffffff;
+            overflow-x: hidden;
+        }
+
+        .mobile-container {
+            width: 375px;
+            height: 812px;
+            margin: 20px auto;
+            background: linear-gradient(135deg, #1a2332 0%, #2d4a3e 50%, #3e2723 100%);
+            border-radius: 24px;
+            box-shadow: 0 20px 60px rgba(0,0,0,0.4);
+            overflow: hidden;
+            position: relative;
+        }
+
+        /* Ambient background effects */
+        .bg-particles {
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: url('data:image/svg+xml,<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 100 100"><circle cx="20" cy="20" r="1" fill="rgba(255,215,0,0.1)"/><circle cx="80" cy="30" r="0.5" fill="rgba(255,255,255,0.05)"/><circle cx="60" cy="70" r="1.5" fill="rgba(210,180,140,0.08)"/><circle cx="30" cy="80" r="0.8" fill="rgba(255,215,0,0.06)"/></svg>');
+            animation: float 20s infinite ease-in-out;
+        }
+
+        @keyframes float {
+            0%, 100% { transform: translateY(0px); }
+            50% { transform: translateY(-10px); }
+        }
+
+        /* Status bar */
+        .status-bar {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            padding: 14px 20px 8px;
+            font-size: 16px;
+            font-weight: 600;
+            color: #ffffff;
+        }
+
+        .status-left {
+            font-size: 16px;
+        }
+
+        .status-right {
+            display: flex;
+            gap: 6px;
+            align-items: center;
+        }
+
+        /* Header with navigation */
+        .header {
+            padding: 16px 24px;
+            background: linear-gradient(135deg, rgba(0,0,0,0.3) 0%, rgba(0,0,0,0.1) 100%);
+            backdrop-filter: blur(20px);
+            border-bottom: 1px solid rgba(255,215,0,0.2);
+            display: flex;
+            align-items: center;
+            gap: 16px;
+        }
+
+        .back-btn {
+            width: 40px;
+            height: 40px;
+            border-radius: 12px;
+            background: rgba(255,255,255,0.1);
+            backdrop-filter: blur(10px);
+            border: 1px solid rgba(255,255,255,0.2);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 18px;
+            color: #FFD700;
+            cursor: pointer;
+            transition: all 0.3s ease;
+        }
+
+        .back-btn:hover {
+            background: rgba(255,215,0,0.2);
+            transform: translateX(-2px);
+        }
+
+        .header-title {
+            font-size: 24px;
+            font-weight: 800;
+            background: linear-gradient(45deg, #FFD700, #FFA500);
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+            background-clip: text;
+        }
+
+        .stable-count {
+            background: rgba(255,215,0,0.2);
+            padding: 6px 12px;
+            border-radius: 20px;
+            font-size: 14px;
+            font-weight: 600;
+            color: #FFD700;
+            margin-left: auto;
+        }
+
+        /* Filter tabs */
+        .filter-tabs {
+            display: flex;
+            gap: 8px;
+            padding: 20px 24px;
+            overflow-x: auto;
+            scrollbar-width: none;
+            -ms-overflow-style: none;
+        }
+
+        .filter-tabs::-webkit-scrollbar {
+            display: none;
+        }
+
+        .filter-tab {
+            padding: 10px 16px;
+            border-radius: 20px;
+            font-size: 14px;
+            font-weight: 600;
+            white-space: nowrap;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            backdrop-filter: blur(10px);
+        }
+
+        .filter-tab.active {
+            background: linear-gradient(45deg, #FFD700, #FFA500);
+            color: #000;
+            box-shadow: 0 4px 15px rgba(255,215,0,0.4);
+        }
+
+        .filter-tab:not(.active) {
+            background: rgba(255,255,255,0.1);
+            color: #D2B48C;
+            border: 1px solid rgba(255,255,255,0.2);
+        }
+
+        .filter-tab:not(.active):hover {
+            background: rgba(255,255,255,0.15);
+            transform: translateY(-1px);
+        }
+
+        /* Horses grid */
+        .horses-container {
+            padding: 0 24px;
+            height: 480px;
+            overflow-y: auto;
+            scrollbar-width: thin;
+            scrollbar-color: rgba(255,215,0,0.3) transparent;
+        }
+
+        .horses-container::-webkit-scrollbar {
+            width: 4px;
+        }
+
+        .horses-container::-webkit-scrollbar-track {
+            background: transparent;
+        }
+
+        .horses-container::-webkit-scrollbar-thumb {
+            background: rgba(255,215,0,0.3);
+            border-radius: 2px;
+        }
+
+        .horses-grid {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 16px;
+            margin-bottom: 20px;
+        }
+
+        .horse-card {
+            background: linear-gradient(135deg, rgba(255,255,255,0.15) 0%, rgba(255,255,255,0.08) 100%);
+            border-radius: 20px;
+            padding: 20px;
+            border: 1px solid rgba(255,255,255,0.2);
+            backdrop-filter: blur(15px);
+            position: relative;
+            overflow: hidden;
+            cursor: pointer;
+            transition: all 0.4s cubic-bezier(0.4, 0, 0.2, 1);
+            box-shadow: 0 0 0 1px rgba(0,0,0,0.6);
+            background-image: 
+                url('data:image/svg+xml,<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 100 100"><defs><pattern id="leather-subtle" x="0" y="0" width="3" height="3" patternUnits="userSpaceOnUse"><circle cx="1" cy="1" r="0.2" fill="rgba(139,69,19,0.03)"/><circle cx="2.5" cy="2.5" r="0.15" fill="rgba(160,82,45,0.02)"/></pattern></defs><rect width="100" height="100" fill="url(%23leather-subtle)"/></svg>');
+        }
+
+        .horse-card::before {
+            content: '';
+            position: absolute;
+            top: 0;
+            left: 0;
+            right: 0;
+            height: 3px;
+            background: linear-gradient(90deg, #FFD700, #FFA500);
+            transform: scaleX(0);
+            transition: transform 0.3s ease;
+        }
+
+        .horse-card:hover::before {
+            transform: scaleX(1);
+        }
+
+        .horse-card:hover {
+            transform: translateY(-4px) scale(1.02);
+            box-shadow: 0 12px 30px rgba(255,215,0,0.25);
+            border-color: rgba(255,215,0,0.4);
+        }
+
+        .horse-avatar {
+            width: 50px;
+            height: 50px;
+            border-radius: 50%;
+            background: linear-gradient(135deg, #8B4513, #A0522D);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 24px;
+            border: 2px solid #FFD700;
+            margin: 0 auto 12px;
+            box-shadow: 0 6px 15px rgba(255,215,0,0.3);
+        }
+
+        .horse-name {
+            font-size: 15px;
+            font-weight: 700;
+            color: #FFD700;
+            text-align: center;
+            margin-bottom: 6px;
+        }
+
+        .horse-breed {
+            font-size: 12px;
+            color: #D2B48C;
+            text-align: center;
+            margin-bottom: 12px;
+            opacity: 0.9;
+        }
+
+        .energy-bar {
+            background: rgba(0,0,0,0.3);
+            border-radius: 10px;
+            height: 8px;
+            margin-bottom: 8px;
+            overflow: hidden;
+        }
+
+        .energy-fill {
+            height: 100%;
+            border-radius: 10px;
+            transition: width 0.8s ease;
+        }
+
+        .energy-high { background: linear-gradient(90deg, #32CD32, #228B22); }
+        .energy-medium { background: linear-gradient(90deg, #FFD700, #FFA500); }
+        .energy-low { background: linear-gradient(90deg, #FF6B6B, #FF4444); }
+
+        .horse-status {
+            display: flex;
+            justify-content: center;
+            gap: 8px;
+        }
+
+        .status-btn {
+            padding: 6px 12px;
+            border-radius: 12px;
+            font-size: 11px;
+            font-weight: 600;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            backdrop-filter: blur(10px);
+        }
+
+        .btn-train {
+            background: linear-gradient(45deg, #32CD32, #228B22);
+            color: white;
+        }
+
+        .btn-compete {
+            background: linear-gradient(45deg, #FFD700, #FFA500);
+            color: #000;
+        }
+
+        .btn-rest {
+            background: rgba(255,255,255,0.2);
+            color: #D2B48C;
+            border: 1px solid rgba(255,255,255,0.3);
+        }
+
+        .status-btn:hover {
+            transform: translateY(-1px);
+            box-shadow: 0 4px 12px rgba(0,0,0,0.3);
+        }
+
+        /* Add new horse card */
+        .add-horse-card {
+            background: linear-gradient(135deg, rgba(255,215,0,0.1) 0%, rgba(255,215,0,0.05) 100%);
+            border: 2px dashed rgba(255,215,0,0.4);
+            border-radius: 20px;
+            padding: 20px;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            gap: 12px;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            min-height: 180px;
+            box-shadow: 0 0 0 1px rgba(0,0,0,0.4);
+        }
+
+        .add-horse-card:hover {
+            background: linear-gradient(135deg, rgba(255,215,0,0.2) 0%, rgba(255,215,0,0.1) 100%);
+            border-color: rgba(255,215,0,0.6);
+            transform: translateY(-2px);
+        }
+
+        .add-icon {
+            width: 50px;
+            height: 50px;
+            border-radius: 50%;
+            background: rgba(255,215,0,0.2);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 24px;
+            color: #FFD700;
+        }
+
+        .add-text {
+            font-size: 14px;
+            font-weight: 600;
+            color: #FFD700;
+            text-align: center;
+        }
+
+        /* Bottom navigation */
+        .bottom-nav {
+            position: absolute;
+            bottom: 0;
+            left: 0;
+            right: 0;
+            background: linear-gradient(180deg, rgba(0,0,0,0.9) 0%, rgba(0,0,0,0.95) 100%);
+            backdrop-filter: blur(20px);
+            border-top: 1px solid rgba(255,255,255,0.1);
+            padding: 12px 0 32px;
+        }
+
+        .nav-items {
+            display: flex;
+            justify-content: space-around;
+            align-items: center;
+        }
+
+        .nav-item {
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            gap: 4px;
+            padding: 8px 12px;
+            border-radius: 12px;
+            transition: all 0.3s ease;
+        }
+
+        .nav-item.active {
+            background: rgba(255,215,0,0.2);
+            color: #FFD700;
+        }
+
+        .nav-item:not(.active) {
+            color: #888;
+        }
+
+        .nav-icon {
+            font-size: 20px;
+        }
+
+        .nav-label {
+            font-size: 11px;
+            font-weight: 600;
+        }
+
+        /* Animations */
+        .animate-fade-in {
+            animation: fadeIn 0.8s ease-out;
+        }
+
+        .animate-slide-up {
+            animation: slideUp 0.6s ease-out;
+        }
+
+        @keyframes fadeIn {
+            from { opacity: 0; transform: translateY(20px); }
+            to { opacity: 1; transform: translateY(0); }
+        }
+
+        @keyframes slideUp {
+            from { transform: translateY(30px); opacity: 0; }
+            to { transform: translateY(0); opacity: 1; }
+        }
+
+        /* Staggered animation for horse cards */
+        .horse-card:nth-child(1) { animation-delay: 0.1s; }
+        .horse-card:nth-child(2) { animation-delay: 0.2s; }
+        .horse-card:nth-child(3) { animation-delay: 0.3s; }
+        .horse-card:nth-child(4) { animation-delay: 0.4s; }
+        .horse-card:nth-child(5) { animation-delay: 0.5s; }
+        .horse-card:nth-child(6) { animation-delay: 0.6s; }
+        .horse-card:nth-child(7) { animation-delay: 0.7s; }
+        .horse-card:nth-child(8) { animation-delay: 0.8s; }
+        .add-horse-card { animation-delay: 0.9s; }
+    </style>
+</head>
+<body>
+    <div class="mobile-container">
+        <div class="bg-particles"></div>
+        
+        <!-- Status Bar -->
+        <div class="status-bar">
+            <div class="status-left">9:41</div>
+            <div class="status-right">
+                <div class="battery">⚡ 100%</div>
+            </div>
+        </div>
+
+        <!-- Header -->
+        <div class="header animate-fade-in">
+            <div class="back-btn">←</div>
+            <div class="header-title">My Stable</div>
+            <div class="stable-count">8 Horses</div>
+        </div>
+
+        <!-- Filter Tabs -->
+        <div class="filter-tabs animate-fade-in">
+            <div class="filter-tab active">All</div>
+            <div class="filter-tab">Arabian</div>
+            <div class="filter-tab">Thoroughbred</div>
+            <div class="filter-tab">Ready</div>
+        </div>
+
+        <!-- Horses Grid -->
+        <div class="horses-container">
+            <div class="horses-grid">
+                <!-- Horse 1 -->
+                <div class="horse-card animate-slide-up">
+                    <div class="horse-avatar">🐎</div>
+                    <div class="horse-name">Thunder's Dawn</div>
+                    <div class="horse-breed">Arabian • Lvl 12</div>
+                    <div class="energy-bar">
+                        <div class="energy-fill energy-high" style="width: 80%"></div>
+                    </div>
+                    <div class="horse-status">
+                        <div class="status-btn btn-train">Train</div>
+                    </div>
+                </div>
+
+                <!-- Horse 2 -->
+                <div class="horse-card animate-slide-up">
+                    <div class="horse-avatar">🐴</div>
+                    <div class="horse-name">Midnight Storm</div>
+                    <div class="horse-breed">Thoroughbred • Lvl 15</div>
+                    <div class="energy-bar">
+                        <div class="energy-fill energy-medium" style="width: 60%"></div>
+                    </div>
+                    <div class="horse-status">
+                        <div class="status-btn btn-compete">Compete</div>
+                    </div>
+                </div>
+
+                <!-- Horse 3 -->
+                <div class="horse-card animate-slide-up">
+                    <div class="horse-avatar">🐎</div>
+                    <div class="horse-name">Golden Whisper</div>
+                    <div class="horse-breed">Quarter Horse • Lvl 8</div>
+                    <div class="energy-bar">
+                        <div class="energy-fill energy-low" style="width: 40%"></div>
+                    </div>
+                    <div class="horse-status">
+                        <div class="status-btn btn-rest">Resting (2h)</div>
+                    </div>
+                </div>
+
+                <!-- Horse 4 -->
+                <div class="horse-card animate-slide-up">
+                    <div class="horse-avatar">🐴</div>
+                    <div class="horse-name">Silver Moon</div>
+                    <div class="horse-breed">Andalusian • Lvl 10</div>
+                    <div class="energy-bar">
+                        <div class="energy-fill energy-high" style="width: 90%"></div>
+                    </div>
+                    <div class="horse-status">
+                        <div class="status-btn btn-train">Train</div>
+                    </div>
+                </div>
+
+                <!-- Horse 5 -->
+                <div class="horse-card animate-slide-up">
+                    <div class="horse-avatar">🐎</div>
+                    <div class="horse-name">Crimson Fire</div>
+                    <div class="horse-breed">Arabian • Lvl 14</div>
+                    <div class="energy-bar">
+                        <div class="energy-fill energy-high" style="width: 75%"></div>
+                    </div>
+                    <div class="horse-status">
+                        <div class="status-btn btn-compete">Compete</div>
+                    </div>
+                </div>
+
+                <!-- Horse 6 -->
+                <div class="horse-card animate-slide-up">
+                    <div class="horse-avatar">🐴</div>
+                    <div class="horse-name">Star Dancer</div>
+                    <div class="horse-breed">Friesian • Lvl 11</div>
+                    <div class="energy-bar">
+                        <div class="energy-fill energy-medium" style="width: 65%"></div>
+                    </div>
+                    <div class="horse-status">
+                        <div class="status-btn btn-train">Train</div>
+                    </div>
+                </div>
+
+                <!-- Horse 7 -->
+                <div class="horse-card animate-slide-up">
+                    <div class="horse-avatar">🐎</div>
+                    <div class="horse-name">Desert Wind</div>
+                    <div class="horse-breed">Mustang • Lvl 9</div>
+                    <div class="energy-bar">
+                        <div class="energy-fill energy-low" style="width: 30%"></div>
+                    </div>
+                    <div class="horse-status">
+                        <div class="status-btn btn-rest">Resting (1h)</div>
+                    </div>
+                </div>
+
+                <!-- Horse 8 -->
+                <div class="horse-card animate-slide-up">
+                    <div class="horse-avatar">🐴</div>
+                    <div class="horse-name">Royal Grace</div>
+                    <div class="horse-breed">Clydesdale • Lvl 13</div>
+                    <div class="energy-bar">
+                        <div class="energy-fill energy-high" style="width: 85%"></div>
+                    </div>
+                    <div class="horse-status">
+                        <div class="status-btn btn-compete">Compete</div>
+                    </div>
+                </div>
+
+                <!-- Add New Horse -->
+                <div class="add-horse-card animate-slide-up">
+                    <div class="add-icon">+</div>
+                    <div class="add-text">Add New Horse</div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Bottom Navigation -->
+        <div class="bottom-nav">
+            <div class="nav-items">
+                <div class="nav-item">
+                    <div class="nav-icon">🏠</div>
+                    <div class="nav-label">Dashboard</div>
+                </div>
+                <div class="nav-item active">
+                    <div class="nav-icon">🐴</div>
+                    <div class="nav-label">Stable</div>
+                </div>
+                <div class="nav-item">
+                    <div class="nav-icon">🏆</div>
+                    <div class="nav-label">Compete</div>
+                </div>
+                <div class="nav-item">
+                    <div class="nav-icon">🌍</div>
+                    <div class="nav-label">World</div>
+                </div>
+                <div class="nav-item">
+                    <div class="nav-icon">⚙️</div>
+                    <div class="nav-label">More</div>
+                </div>
+            </div>
+        </div>
+    </div>
+</body>
+</html>

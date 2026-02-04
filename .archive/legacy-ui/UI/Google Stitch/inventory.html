@@ -1,0 +1,358 @@
+<html><head>
+<meta charset="utf-8"/>
+<link crossorigin="" href="https://fonts.gstatic.com/" rel="preconnect"/>
+<link as="style" href="https://fonts.googleapis.com/css2?display=swap&amp;family=Yeseva+One%3Awght%40400&amp;family=Cormorant+Garamond%3Awght%40400%3B700%3Bital" onload="this.rel='stylesheet'" rel="stylesheet"/>
+<title>Equoria Inventory</title>
+<link href="data:image/x-icon;base64," rel="icon" type="image/x-icon"/>
+<script src="https://cdn.tailwindcss.com?plugins=forms,container-queries"></script>
+<style>
+    @keyframes goldParticleDrift {
+      0% {
+        transform: translateY(0) translateX(0) scale(0.8);
+        opacity: 0;
+      }
+      50% {
+        opacity: 0.7;
+      }
+      100% {
+        transform: translateY(-100vh) translateX(var(--particle-x-end)) scale(1.2);
+        opacity: 0;
+      }
+    }
+    .gold-particle {
+      position: absolute;
+      width: 3px;
+      height: 3px;
+      background-color: #FFD700;
+      border-radius: 50%;
+      animation: goldParticleDrift 10s linear infinite;
+      pointer-events: none;
+    }
+    .parchment-frame {
+      border: 10px solid transparent;
+      border-image: url("data:image/svg+xml,%3Csvg width='100' height='100' viewBox='0 0 100 100' xmlns='http://www.w3.org/2000/svg'%3E%3Cstyle%3E.st0{fill:%23e6ccA5;stroke:%23DAA520;stroke-width:2;}%3C/style%3E%3Crect class='st0' x='5' y='5' width='90' height='90' rx='10'/%3E%3C/svg%3E") 15 stretch;
+      box-shadow: 0 0 20px rgba(218, 165, 32, 0.5);}
+    .parchment-scroll-tab {
+        background-image: url("data:image/svg+xml,%3Csvg width='150' height='60' viewBox='0 0 150 60' xmlns='http://www.w3.org/2000/svg'%3E%3Cdefs%3E%3Cfilter id='paper' x='-20%25' y='-20%25' width='140%25' height='140%25'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.02 0.05' numOctaves='3' result='noise'%3E%3C/feTurbulence%3E%3CfeDiffuseLighting in='noise' lighting-color='%23F5E8C7' surfaceScale='2' result='diffLight'%3E%3CfeDistantLight azimuth='45' elevation='60'%3E%3C/feDistantLight%3E%3C/feDiffuseLighting%3E%3CfeComposite operator='in' in2='SourceAlpha' result='textured'%3E%3C/feComposite%3E%3CfeMorphology operator='dilate' radius='1' in='textured' result='dilated'%3E%3C/feMorphology%3E%3CfeDropShadow dx='2' dy='2' stdDeviation='1' flood-color='%23000000' flood-opacity='0.3' result='shadow'%3E%3C/feDropShadow%3E%3CfeBlend in='shadow' in2='dilated' mode='normal'%3E%3C/feBlend%3E%3C/filter%3E%3C/defs%3E%3Cpath d='M5 10 C 10 0, 140 0, 145 10 L 140 50 C 135 60, 15 60, 10 50 Z' fill='%23F5E8C7' filter='url(%23paper)'/%3E%3C/svg%3E");
+        background-size: 100% 100%;
+        background-repeat: no-repeat;
+        font-family: 'Yeseva One', cursive;
+        color: #DAA520;text-shadow: 1px 1px 1px #4a3b2a;
+        transition: transform 0.2s ease-in-out, filter 0.2s ease-in-out;
+    }
+    .parchment-scroll-tab:hover {
+        transform: translateY(-2px);
+        filter: brightness(1.1);
+    }
+    .parchment-scroll-tab.active {
+        filter: brightness(0.9) drop-shadow(0 0 5px #DAA520);
+        border-bottom: 3px solid #DAA520;}
+    .inventory-item-card {
+        background-image: url("data:image/svg+xml,%3Csvg width='120' height='150' viewBox='0 0 120 150' xmlns='http://www.w3.org/2000/svg'%3E%3Cdefs%3E%3Cfilter id='itemPaper' x='-20%25' y='-20%25' width='140%25' height='140%25'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.03 0.06' numOctaves='2' result='noise'%3E%3C/feTurbulence%3E%3CfeDiffuseLighting in='noise' lighting-color='%23FDF5E6' surfaceScale='1.5' result='diffLight'%3E%3CfeDistantLight azimuth='45' elevation='60'%3E%3C/feDistantLight%3E%3C/feDiffuseLighting%3E%3CfeComposite operator='in' in2='SourceAlpha' result='textured'%3E%3C/feComposite%3E%3CfeDropShadow dx='1' dy='1' stdDeviation='0.5' flood-color='%23000000' flood-opacity='0.2' result='shadow'%3E%3C/feDropShadow%3E%3CfeBlend in='shadow' in2='textured' mode='normal'%3E%3C/feBlend%3E%3C/filter%3E%3C/defs%3E%3Cpath d='M5 5 Q 60 -5, 115 5 L 110 130 Q 60 155, 10 130 Z' fill='%23FDF5E6' filter='url(%23itemPaper)'/%3E%3C/svg%3E");
+        background-size: 100% 100%;
+        background-repeat: no-repeat;
+        transition: transform 0.3s cubic-bezier(0.25, 0.8, 0.25, 1), box-shadow 0.3s cubic-bezier(0.25, 0.8, 0.25, 1);
+        overflow: hidden;}
+    .inventory-item-card:hover {
+        transform: scale(1.05) rotateZ(2deg);
+        box-shadow: 0 10px 20px rgba(0,0,0,0.2), 0 0 15px rgba(255, 215, 0, 0.5);}
+    .wax-stamp-badge {
+        background-image: url("data:image/svg+xml,%3Csvg width='30' height='30' viewBox='0 0 30 30' xmlns='http://www.w3.org/2000/svg'%3E%3Cdefs%3E%3Cfilter id='waxSealEffect'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.1' numOctaves='3' result='noise'%3E%3C/feTurbulence%3E%3CfeDisplacementMap in='SourceGraphic' in2='noise' scale='3' xChannelSelector='R' yChannelSelector='G' result='displaced'%3E%3C/feDisplacementMap%3E%3CfeGaussianBlur in='displaced' stdDeviation='0.5' result='blurred'%3E%3C/feGaussianBlur%3E%3CfeSpecularLighting surfaceScale='5' specularConstant='.75' specularExponent='20' lighting-color='%23ff0000' in='blurred' result='specular'%3E%3CfePointLight x='-5000' y='-10000' z='20000'%3E%3C/fePointLight%3E%3C/feSpecularLighting%3E%3CfeComposite in='specular' in2='displaced' operator='in'%3E%3C/feComposite%3E%3CfeComposite in2='SourceGraphic' operator='arithmetic' k1='0' k2='1' k3='1' k4='0'%3E%3C/feComposite%3E%3C/filter%3E%3C/defs%3E%3Ccircle cx='15' cy='15' r='13' fill='%23B22222' filter='url(%23waxSealEffect)'/%3E%3C/svg%3E");
+        background-size: cover;
+        font-family: 'Yeseva One', cursive;
+        color: #FFD700;
+        text-shadow: 1px 1px 0px #4a2511;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        width: 30px;
+        height: 30px;
+        font-size: 12px;
+        line-height: 1;
+    }
+    .equipped-indicator {
+        position: absolute;
+        top: -5px;
+        left: -5px;
+        width: 30px;
+        height: 40px;
+        background-image: url("data:image/svg+xml,%3Csvg width='30' height='40' viewBox='0 0 30 40' xmlns='http://www.w3.org/2000/svg'%3E%3Cpath d='M0 0 L15 10 L30 0 L30 40 L15 30 L0 40 Z' fill='%23DAA520'/%3E%3C/svg%3E");
+        filter: drop-shadow(0 0 3px #FFD700);
+    }
+    .rare-aura {
+        position: absolute;
+        top: 0; left: 0; right: 0; bottom: 0;
+        border-radius: inherit;box-shadow: 0 0 15px 5px #8A2BE2, 0 0 25px 10px #FFD700;animation: pulseAura 2s infinite ease-in-out;
+        pointer-events: none;}
+    .sparkle-corner {
+        position: absolute;
+        width: 10px;
+        height: 10px;
+        background-image: url("data:image/svg+xml,%3Csvg width='20' height='20' viewBox='0 0 20 20' xmlns='http://www.w3.org/2000/svg'%3E%3Cpath d='M10 0 L13 7 L20 10 L13 13 L10 20 L7 13 L0 10 L7 7 Z' fill='%23FFD700'/%3E%3C/svg%3E");
+        background-size: contain;
+        opacity: 0;
+        animation: sparkle 1.5s infinite ease-in-out;
+    }
+    .sparkle-corner.top-left { top: 2px; left: 2px; animation-delay: 0s; }
+    .sparkle-corner.top-right { top: 2px; right: 2px; animation-delay: 0.3s; }
+    .sparkle-corner.bottom-left { bottom: 2px; left: 2px; animation-delay: 0.6s; }
+    .sparkle-corner.bottom-right { bottom: 2px; right: 2px; animation-delay: 0.9s; }
+    @keyframes pulseAura {
+        0%, 100% { box-shadow: 0 0 10px 3px #8A2BE2, 0 0 20px 7px #FFD700; opacity: 0.7; }
+        50% { box-shadow: 0 0 20px 8px #8A2BE2, 0 0 35px 15px #FFD700; opacity: 1; }
+    }
+    @keyframes sparkle {
+        0%, 100% { opacity: 0; transform: scale(0.5); }
+        50% { opacity: 1; transform: scale(1.2); }
+    }
+    .info-panel {
+        background-image: url("data:image/svg+xml,%3Csvg width='300' height='400' viewBox='0 0 300 400' xmlns='http://www.w3.org/2000/svg'%3E%3Cdefs%3E%3Cfilter id='infoScrollPaper' x='-20%25' y='-20%25' width='140%25' height='140%25'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.015 0.04' numOctaves='3' result='noise'%3E%3C/feTurbulence%3E%3CfeDiffuseLighting in='noise' lighting-color='%23FBF3D9' surfaceScale='2.5' result='diffLight'%3E%3CfeDistantLight azimuth='45' elevation='60'%3E%3C/feDistantLight%3E%3C/feDiffuseLighting%3E%3CfeComposite operator='in' in2='SourceAlpha' result='textured'%3E%3C/feComposite%3E%3CfeDropShadow dx='3' dy='3' stdDeviation='2' flood-color='%23000000' flood-opacity='0.4' result='shadow'%3E%3C/feDropShadow%3E%3CfeBlend in='shadow' in2='textured' mode='normal'%3E%3C/feBlend%3E%3C/filter%3E%3C/defs%3E%3Cpath d='M10 10 C 10 0, 290 0, 290 10 L 290 370 Q 150 410, 10 370 Z' fill='%23FBF3D9' filter='url(%23infoScrollPaper)'/%3E%3Cpath d='M10 10 C 10 0, 20 0, 20 10 V 370 Q 15 380, 10 370 Z' fill='%23EBDCB2'/%3E%3Cpath d='M290 10 C 290 0, 280 0, 280 10 V 370 Q 285 380, 290 370 Z' fill='%23EBDCB2'/%3E%3C/svg%3E");
+        background-size: 100% 100%;
+        color: #4a3b2a;
+        box-shadow: 0 10px 30px rgba(0,0,0,0.5);
+        animation: parchmentFlipOpen 0.5s forwards;
+        transform-style: preserve-3d;
+        perspective: 1000px;
+    }
+    @keyframes parchmentFlipOpen {
+      from { transform: rotateY(90deg) scale(0.8); opacity: 0; }
+      to { transform: rotateY(0deg) scale(1); opacity: 1; }
+    }
+    .action-button {
+        background-image: url("data:image/svg+xml,%3Csvg width='100' height='40' viewBox='0 0 100 40' xmlns='http://www.w3.org/2000/svg'%3E%3Cdefs%3E%3Cfilter id='buttonScroll' x='-20%25' y='-20%25' width='140%25' height='140%25'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.04 0.1' numOctaves='2' result='noise'%3E%3C/feTurbulence%3E%3CfeDiffuseLighting in='noise' lighting-color='%23F0E0C0' surfaceScale='1.5' result='diffLight'%3E%3CfeDistantLight azimuth='45' elevation='60'%3E%3C/feDistantLight%3E%3C/feDiffuseLighting%3E%3CfeComposite operator='in' in2='SourceAlpha' result='textured'%3E%3C/feComposite%3E%3CfeDropShadow dx='1' dy='1' stdDeviation='0.5' flood-color='%23000000' flood-opacity='0.2' result='shadow'%3E%3C/feDropShadow%3E%3CfeBlend in='shadow' in2='textured' mode='normal'%3E%3C/feBlend%3E%3C/filter%3E%3C/defs%3E%3Cpath d='M5 5 C 10 -5, 90 -5, 95 5 L 90 35 C 85 45, 15 45, 10 35 Z' fill='%23F0E0C0' filter='url(%23buttonScroll)'/%3E%3C/svg%3E");
+        background-size: 100% 100%;
+        color: #8B4513;font-family: 'Yeseva One', cursive;
+        font-size: 14px;
+        padding: 8px 16px;
+        text-align: center;
+        transition: transform 0.2s, filter 0.2s;
+        text-shadow: 1px 1px 0px #fff5e1;
+    }
+    .action-button:hover {
+        transform: translateY(-1px) scale(1.02);
+        filter: brightness(1.05) drop-shadow(0 2px 4px rgba(0,0,0,0.3));
+    }
+    .action-button-wax {
+        background-image: url("data:image/svg+xml,%3Csvg width='50' height='50' viewBox='0 0 50 50' xmlns='http://www.w3.org/2000/svg'%3E%3Cdefs%3E%3Cfilter id='waxButtonEffect'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.08' numOctaves='3' result='noise'%3E%3C/feTurbulence%3E%3CfeDisplacementMap in='SourceGraphic' in2='noise' scale='4' xChannelSelector='R' yChannelSelector='G' result='displaced'%3E%3C/feDisplacementMap%3E%3CfeGaussianBlur in='displaced' stdDeviation='0.7' result='blurred'%3E%3C/feGaussianBlur%3E%3CfeSpecularLighting surfaceScale='6' specularConstant='.8' specularExponent='22' lighting-color='%23DAA520' in='blurred' result='specular'%3E%3CfePointLight x='-5000' y='-10000' z='20000'%3E%3C/fePointLight%3E%3C/feSpecularLighting%3E%3CfeComposite in='specular' in2='displaced' operator='in'%3E%3C/feComposite%3E%3CfeComposite in2='SourceGraphic' operator='arithmetic' k1='0' k2='1' k3='1' k4='0'%3E%3C/feComposite%3E%3C/filter%3E%3C/defs%3E%3Ccircle cx='25' cy='25' r='22' fill='%238B4513' filter='url(%23waxButtonEffect)'/%3E%3C/svg%3E");
+        background-size: contain;
+        background-repeat: no-repeat;
+        background-position: center;
+        font-family: 'Yeseva One', cursive;
+        color: #FFD700;
+        text-shadow: 1px 1px 0px #4a2511;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        width: 50px;
+        height: 50px;
+        font-size: 12px;
+        line-height: 1;
+        padding: 0;
+        border: none;
+         transition: transform 0.2s, filter 0.2s;
+    }
+    .action-button-wax:hover {
+        transform: scale(1.1);
+        filter: brightness(1.1) drop-shadow(0 0 5px #FFD700);
+    }@keyframes parchmentRollIn {
+        from {
+            opacity: 0;
+            transform: translateY(-100%) rotateX(-90deg);
+        }
+        to {
+            opacity: 1;
+            transform: translateY(0) rotateX(0deg);
+        }
+    }
+    .page-entry-animation {
+        animation: parchmentRollIn 0.8s cubic-bezier(0.68, -0.55, 0.27, 1.55) forwards;
+        transform-origin: top center;
+    }
+  </style>
+<style>
+    body {
+      min-height: max(884px, 100dvh);
+    }
+  </style>
+  </head>
+<body class="bg-[#5D4037] min-h-screen" style='font-family: "Cormorant Garamond", serif;'>
+<div class="relative flex size-full min-h-screen flex-col justify-between group/design-root overflow-hidden parchment-frame page-entry-animation" style="background-image: url('https://lh3.googleusercontent.com/aida-public/AB6AXuDf0e5MghZz7bWqRA2Sya-naH9wXvDclZh_YN5tel06XkgR0gdV6jSm2UR_RYmQubB8hENKvH8xaaLrTwhGuNUJSDPVT0bl4fCX2Q37IyE9M_FhNE9XhEowGE7N-KI13mKQEIcuWRFRMhHa0WxGA7d1RDokKJjPgG-D67cVji7yW4JDCGxiqsl8zHnQ2jqaI4Ylb7hMrtoTGo1KfcyC-BEV-Z3xmv6xdxMXtauGreQVpeaKMpuXqCJGCPwS-JTCT1BDW10Bc5lk7S4'); background-size: cover; background-position: center;">
+<div class="absolute inset-0 overflow-hidden pointer-events-none" id="gold-particle-container"></div>
+<div class="flex-grow page-entry-animation" style="animation-delay: 0.2s;">
+<div class="sticky top-0 z-10 pt-4 px-2 pb-1" style="background: linear-gradient(to bottom, rgba(93, 64, 55, 0.9) 0%, rgba(93, 64, 55, 0.7) 70%, rgba(93, 64, 55, 0) 100%);">
+<div class="flex items-center pb-2 justify-between px-2">
+<button class="text-[#DAA520] flex size-10 items-center justify-center rounded-full hover:bg-white/10 transition-colors" data-icon="ArrowLeft" data-size="28px" data-weight="bold">
+<svg fill="currentColor" height="28px" viewBox="0 0 256 256" width="28px" xmlns="http://www.w3.org/2000/svg">
+<path d="M224,128a8,8,0,0,1-8,8H59.31l58.35,58.34a8,8,0,0,1-11.32,11.32l-72-72a8,8,0,0,1,0-11.32l72-72a8,8,0,0,1,11.32,11.32L59.31,120H216A8,8,0,0,1,224,128Z"></path>
+</svg>
+</button>
+<h2 class="text-3xl font-bold leading-tight tracking-tight flex-1 text-center pr-10" style="font-family: 'Yeseva One', cursive; color: #FFD700; text-shadow: 2px 2px 3px #4a3b2a;">Inventory</h2>
+</div>
+<div class="overflow-x-auto whitespace-nowrap pb-2 px-2 hide-scrollbar">
+<div class="flex gap-2">
+<a class="parchment-scroll-tab active px-5 py-3 text-sm font-bold" href="#">All</a>
+<a class="parchment-scroll-tab px-5 py-3 text-sm font-bold" href="#">Tack</a>
+<a class="parchment-scroll-tab px-5 py-3 text-sm font-bold" href="#">Consumables</a>
+<a class="parchment-scroll-tab px-5 py-3 text-sm font-bold" href="#">Cosmetics</a>
+<a class="parchment-scroll-tab px-5 py-3 text-sm font-bold" href="#">Breeding</a>
+<a class="parchment-scroll-tab px-5 py-3 text-sm font-bold" href="#">Seasonal</a>
+</div>
+</div>
+</div>
+<div class="grid grid-cols-3 gap-3 p-4">
+<div class="inventory-item-card aspect-[3/4] flex flex-col items-center justify-center p-2 relative cursor-pointer group">
+<img alt="Potion Sketch" class="w-16 h-16 object-contain mb-1 opacity-80 group-hover:opacity-100 transition-opacity" src="https://lh3.googleusercontent.com/aida-public/AB6AXuDKpJIfapWLjb0MDogjW6it2zRf2AbvRr71eI9wRMI1Q7-YN8Zxc2cSkqtdka5V9xRD2AzcF32wSvaNPVUaYs2uWzchUfP4-Alr8jtZg-qurpnzLGUflVs36pkn99VIvgo53EZa5bEQPMkoQfce1HsxPhC6DrykUyaLF0UOyTvFRnZHlQnDDg0U4xXc9alceTWPa7vLkw7rT80Sg0gdFEQ43s7kDG97dVjOrIiH8EOYB1kSrdC-MGecLJk85CvpuG3mZkAxPbZSYnE"/>
+<div class="wax-stamp-badge absolute bottom-1 right-1">12</div>
+</div>
+<div class="inventory-item-card aspect-[3/4] flex flex-col items-center justify-center p-2 relative cursor-pointer group">
+<div class="equipped-indicator"></div>
+<img alt="Saddle Sketch" class="w-16 h-16 object-contain mb-1 opacity-80 group-hover:opacity-100 transition-opacity" src="https://lh3.googleusercontent.com/aida-public/AB6AXuChrDgBFRngiuep60OTyNIOPOCpP7BEJCE85IA_X9QG-PSxASOh-6QYGi_ZBg_u-IzNVoha5T_NZVVMAS8viwC7CGXGaSaMxjkeKQsJggszve9pWOK5VPQbv4d9ODzoKHBJqqmlbn33-Rv9392mQmn9oHpY3AEqGHIPcsRBftMW7K33UwA00YrBoJ6GlxJ0uxfxuh1_x8yXSKN7Vo4sU4lbarHGd46KGf6BN3eed27EkLKEVj5lScKz4TRns9FAKwjWHppNokUcGG0"/>
+<div class="wax-stamp-badge absolute bottom-1 right-1">1</div>
+</div>
+<div class="inventory-item-card aspect-[3/4] flex flex-col items-center justify-center p-2 relative cursor-pointer group">
+<div class="rare-aura"></div>
+<div class="sparkle-corner top-left"></div>
+<div class="sparkle-corner top-right"></div>
+<div class="sparkle-corner bottom-left"></div>
+<div class="sparkle-corner bottom-right"></div>
+<img alt="Amulet Sketch" class="w-16 h-16 object-contain mb-1 opacity-80 group-hover:opacity-100 transition-opacity" src="https://lh3.googleusercontent.com/aida-public/AB6AXuBfywsam3ZX0Cx5YHQ-J-p4vIaXbRl9sTQzc68JgaDlxDATxjX2F6kFlZ_GXaHGTfnla7htU9LMGfKhvDJrdY56ljcbwcaBiWry0HBJtQc9E77sco5xdeITTCQs7I9Yv2fcLoPugrklfCqr_hBySHhkVj06J9YOiabdeVPIrksHpskRUtcvlNrstL_q2OOmCZ9k-jMVsF3GGDStAdR8n7K9kdutOf6dTCFcaOMswOF9IBJ_OVb-su0Ni7BYfNRL15Od4BS96IxF_9s"/>
+<div class="wax-stamp-badge absolute bottom-1 right-1">1</div>
+</div>
+<div class="inventory-item-card aspect-[3/4] relative group cursor-pointer">
+<div class="absolute inset-0 bg-center bg-no-repeat bg-contain opacity-80 group-hover:opacity-100 transition-opacity p-3" style='background-image: url("https://lh3.googleusercontent.com/aida-public/AB6AXuD4DQAm1ughWRsUs6qF5mWW7fGzpsia2r-DL9ZQx4dCX1sCdqSkkp62CkGnOSC185g0aeLV22jXGLxoj2JRPD4U60xlzazvcQNAoyiGSkDNWREmv7GsVZjXWfmIybFN2acRxlwwNvBZsX5ldXDxNZh4pcSrQon4ussgVUi5atFElzdnjgmRqLNb4euPDb6JCD2V6KdFtJ8RaQgmJNarSSDQnJD2ftV4rBD66FPDOG8y-bhgcqcuahciEJqgd1e-G5Xpo_5LrAcRJHo");'></div>
+<div class="wax-stamp-badge absolute bottom-1 right-1">5</div>
+</div>
+<div class="inventory-item-card aspect-[3/4] relative group cursor-pointer">
+<div class="absolute inset-0 bg-center bg-no-repeat bg-contain opacity-80 group-hover:opacity-100 transition-opacity p-3" style='background-image: url("https://lh3.googleusercontent.com/aida-public/AB6AXuAfgB6wl8Nbxkzqqg4VJm86YuL3olBiFY5hh8d3c7GR5hfJIdm1Lr5KxvrwW4ci7yrKqkFGbhSd-eHZr-jRoh6D1go1dGbLmNmMe3VeQWp6lVA5nIDUA96zyhKFZFeT26oJgetJo352VBpl00B8ow7CRAF5KF_Xx2vrqpAwBDGX-Amk3jAfFO5R5D1HpOhbxwUy7PJQpqQA78FVCCwWMHcL5DaSiTn75ZIKuCRg05wAj8FeAdcj0SHS7e3QLLj6uzeZLOUnEOTCBtw");'></div>
+<div class="wax-stamp-badge absolute bottom-1 right-1">3</div>
+</div>
+<div class="inventory-item-card aspect-[3/4] relative group cursor-pointer">
+<div class="equipped-indicator"></div>
+<div class="absolute inset-0 bg-center bg-no-repeat bg-contain opacity-80 group-hover:opacity-100 transition-opacity p-3" style='background-image: url("https://lh3.googleusercontent.com/aida-public/AB6AXuCSifb6_37JzLegUTXDG8aWysZzzMvLss0QtfQ0Xc9u0BST_xnzB28xyMcP0qfpzrkUOPB7OQbFjB1rdDc47Q-UKlUTDR6l_n6duwiL61Xpi4CAApdjnqD5jsIVwrIPPPxon0PtM3dZFTZ2Gu5QQRSDGLl-cSrIesAprvgYq3DUz8mSdHQJ4j3qhQ_NZ1kMWZJ1kWCSy0yH9T80JmXs5eCaZ2VRf-f8EPARJTAMMnS0QbhFmXU_PZWVe3NxW4IpAu61hei3prr6TS4");'></div>
+<div class="wax-stamp-badge absolute bottom-1 right-1">1</div>
+</div>
+<div class="inventory-item-card aspect-[3/4] relative group cursor-pointer">
+<div class="rare-aura"></div><div class="sparkle-corner top-left"></div><div class="sparkle-corner top-right"></div><div class="sparkle-corner bottom-left"></div><div class="sparkle-corner bottom-right"></div>
+<div class="absolute inset-0 bg-center bg-no-repeat bg-contain opacity-80 group-hover:opacity-100 transition-opacity p-3" style='background-image: url("https://lh3.googleusercontent.com/aida-public/AB6AXuD7Y8KWlHSof-CIJP35loNfDY2HfWtMQ507PQaWkQMW5VgMV5xxXtTJq_NU6P_DDaLe4hljlaA0k-Tg7q4bKw_yMeF6yPFVnJ9sv0HYjVlfEAbZpFJHe29HvJGZmlsd9Cvj_GfR8m1FrYzbdIEb0t4Jae8PHGj_j2jYQ6Oyf6DqgCjsn17jHO-UrXqU2bVcQbNJ_ERxVjJG-ycVsxugxVU8krN7b7L0SPAecEiVvXNUG-NRrFZKekCh10Lh40VJ8Cmq-5nEYcXwk64");'></div>
+<div class="wax-stamp-badge absolute bottom-1 right-1">1</div>
+</div>
+<div class="inventory-item-card aspect-[3/4] relative group cursor-pointer">
+<div class="absolute inset-0 bg-center bg-no-repeat bg-contain opacity-80 group-hover:opacity-100 transition-opacity p-3" style='background-image: url("https://lh3.googleusercontent.com/aida-public/AB6AXuAZ9thzg2r0gnPhA6Z6tewBQtKYqo90c9tErChq9sdcir3bsgekFXu44sSjBcY-JwblNABYUVpIN5tpX7oSg0fg-6gVfkO359mJcrBSDGq2YIXooA0pQ_PuBtmGh4DGv53wCyTjTHwHmoxVq6v7rJF9vJ3XlYnKoiLT64Vqfh5OpI9nuKZtnjzubB7VpIxEZfvniKHPDvgL7eRt4X2nn6RDAWFSrtDGsmwdk1N-yjeDrosLTlyipzMBzmLXjybYZ5G7bQDAq1Q__dI");'></div>
+<div class="wax-stamp-badge absolute bottom-1 right-1">20</div>
+</div>
+</div>
+</div>
+<div class="fixed inset-0 bg-black/70 flex items-center justify-center z-50 hidden opacity-0 transition-opacity duration-300" id="itemInfoPanel" onclick="this.classList.add('hidden'); this.classList.add('opacity-0')">
+<div class="info-panel w-[90vw] max-w-sm h-auto max-h-[80vh] p-6 pt-8 relative rounded-lg shadow-2xl flex flex-col" onclick="event.stopPropagation()">
+<button class="absolute top-3 right-3 text-[#8B4513] hover:text-[#DAA520] transition-colors" onclick="document.getElementById('itemInfoPanel').classList.add('hidden'); document.getElementById('itemInfoPanel').classList.add('opacity-0')">
+<svg fill="currentColor" height="28" viewBox="0 0 256 256" width="28" xmlns="http://www.w3.org/2000/svg"><path d="M208.49,191.51a12,12,0,0,1-17,17L128,145,64.49,208.49a12,12,0,0,1-17-17L111,128,47.51,64.49a12,12,0,0,1,17-17L128,111l63.51-63.52a12,12,0,0,1,17,17L145,128Z"></path></svg>
+</button>
+<h3 class="text-2xl text-center mb-3" id="itemName" style="font-family: 'Yeseva One', cursive; color: #DAA520; text-shadow: 1px 1px 2px #4a3b2a;">Item Name</h3>
+<div class="flex justify-center mb-4">
+<img alt="Item Icon" class="w-24 h-24 object-contain bg-white/10 p-2 rounded-md border-2 border-[#DAA520]/50" id="itemIcon" src="https://lh3.googleusercontent.com/aida-public/AB6AXuDaAPJfxNXT7KkuNoTUYPsTz508Rd4GcpoA5Mxgdd8kFvpwMJXdzIw3pz-4uFDgBBT65w-utI__VFK_76BdllFkW7mvEJn1LHGJ8sIfs79wsXyIMeA3IvivCgtiZ8aWHCgjWhQ4ZPizmkV738oV9GX2iyoURCrkalroJotFkrmjTgLhC01-TzSTrU6PqUrcHTqdmwUudfVjmcTu2MkQTZUM57l1cXrrLSikAYRNAU_IBksd0uwSgF4c3_r5vaTpQyYHmjqujA3xUMs"/>
+</div>
+<p class="text-sm italic text-center mb-4 flex-grow overflow-y-auto p-2 rounded" id="itemDescription" style="font-family: 'Cormorant Garamond', serif; background: rgba(230,204,165,0.1); border: 1px solid rgba(218,165,32,0.3);">Item description goes here. Lorem ipsum dolor sit amet, consectetur adipiscing elit.</p>
+<p class="text-xs text-center mb-5" id="itemUsage" style="font-family: 'Cormorant Garamond', serif; color: #6d4c41;">Usage Effect: +10 Magic</p>
+<div class="grid grid-cols-2 gap-3">
+<button class="action-button">Equip</button>
+<button class="action-button">Use</button>
+<button class="action-button-wax">Sell</button>
+<button class="action-button-wax">Gift</button>
+</div>
+</div>
+</div>
+<div class="sticky bottom-0 z-10 page-entry-animation" style="animation-delay: 0.4s; background: linear-gradient(to top, rgba(93, 64, 55, 0.9) 0%, rgba(93, 64, 55, 0.7) 70%, rgba(93, 64, 55, 0) 100%);">
+<div class="flex gap-2 px-4 pb-3 pt-4 border-t-2 border-[#DAA520]/50" style="background-image: url('data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAAgAAAAICAYAAADED76LAAAAAXNSR0IArs4c6QAAAARnQU1BAACxjwv8YQUAAAAJcEhZcwAADsMAAA7DAcdvqGQAAAAaSURBVBhXY2RgYPgPxAFJsAhG4gwQdAYADwYCflOl1DoAAAAASUVORK5CYII='); background-repeat: repeat-x; background-position: top; padding-top: 10px;">
+<a class="flex flex-1 flex-col items-center justify-end gap-1 text-[#E6CCA5] hover:text-[#FFD700] transition-colors" href="#">
+<div class="flex h-8 items-center justify-center" data-icon="House" data-size="28px" data-weight="bold">
+<svg fill="currentColor" height="28px" viewBox="0 0 256 256" width="28px" xmlns="http://www.w3.org/2000/svg">
+<path d="M240,117.69,139.3,28.32a16.15,16.15,0,0,0-22.6,0L16,117.69A16,16,0,0,0,16,144H40v64a16,16,0,0,0,16,16H104a16,16,0,0,0,16-16V168h16v40a16,16,0,0,0,16,16h48a16,16,0,0,0,16-16V144h24a16,16,0,0,0,11.31-26.31ZM208,208H160V168a16,16,0,0,0-16-16H112a16,16,0,0,0-16,16v40H48V128h34.34A16,16,0,0,0,93.66,117L128,87.43l34.34,29.53A16,16,0,0,0,173.66,128H208Z"></path>
+</svg>
+</div>
+<span class="text-xs" style="font-family: 'Yeseva One', cursive;">Home</span>
+</a>
+<a class="flex flex-1 flex-col items-center justify-end gap-1 text-[#E6CCA5] hover:text-[#FFD700] transition-colors" href="#">
+<div class="flex h-8 items-center justify-center" data-icon="Users" data-size="28px" data-weight="bold">
+<svg fill="currentColor" height="28px" viewBox="0 0 256 256" width="28px" xmlns="http://www.w3.org/2000/svg">
+<path d="M156,144a60,60,0,1,0-60,60A60.07,60.07,0,0,0,156,144Zm0-104a44,44,0,1,1-44,44A44.05,44.05,0,0,1,156,40Zm72,88a59.78,59.78,0,0,0-46.48-58.17A76.31,76.31,0,0,1,176,144a76,76,0,0,1-152,0,76.31,76.31,0,0,1-5.52-74.17A59.78,59.78,0,0,0,76,204a60,60,0,0,0,80,0A59.72,59.72,0,0,0,228,128ZM51.52,73.83A59.78,59.78,0,0,0,4,128a59.72,59.72,0,0,0,116,0A59.78,59.78,0,0,0,51.52,73.83Z"></path>
+</svg>
+</div>
+<span class="text-xs" style="font-family: 'Yeseva One', cursive;">Social</span>
+</a>
+<a class="flex flex-1 flex-col items-center justify-end gap-1 text-[#E6CCA5] hover:text-[#FFD700] transition-colors" href="#">
+<div class="text-[#E6CCA5] flex h-8 items-center justify-center" data-icon="Horse" data-size="28px" data-weight="bold">
+<svg fill="currentColor" height="28px" viewBox="0 0 256 256" width="28px" xmlns="http://www.w3.org/2000/svg">
+<path d="M136,96a16,16,0,1,1-16-16A16,16,0,0,1,136,96Zm100.42,29.57A104.29,104.29,0,0,1,132.8,232a103.37,103.37,0,0,1-69.5-25.74,8,8,0,0,1,10.67-11.88,87.3,87.3,0,0,0,58.83,21.62L158.67,176H116.5A60.12,60.12,0,0,1,61.2,157.3a32,32,0,0,1-30.55-13.89L16.87,117.55a8,8,0,0,1,2.6-11.06L120,48.3V24a8,8,0,0,1,16,0v24.3l99.53,58.19A8,8,0,0,1,240,112a8.12,8.12,0,0,1-.7,3.44A103.48,103.48,0,0,1,236.42,125.57Zm-16.56-1.4A88,88,0,0,0,128,40V56a8,8,0,0,1-4.78,7.22L28,123.7l9.47,16.4A16,16,0,0,0,52.24,146.6C72,149.47,97,148,118.66,161.17A44.18,44.18,0,0,0,160,120a8,8,0,0,1,16,0,60.13,60.13,0,0,1-52.52,59.86L98.09,224.4a89.68,89.68,0,0,0,34.71,7.6,88.28,88.28,0,0,0,87.06-88.26Z"></path>
+</svg>
+</div>
+<span class="text-xs" style="font-family: 'Yeseva One', cursive;">Stables</span>
+</a>
+<a class="flex flex-1 flex-col items-center justify-end gap-1 text-[#FFD700] rounded-lg py-1" href="#" style="background-color: rgba(255,215,0,0.1); border: 1px solid #FFD700;">
+<div class="flex h-8 items-center justify-center" data-icon="ShoppingBag" data-size="28px" data-weight="fill">
+<svg fill="currentColor" height="28px" viewBox="0 0 256 256" width="28px" xmlns="http://www.w3.org/2000/svg">
+<path d="M216,40H40A16,16,0,0,0,24,56V200a16,16,0,0,0,16,16H216a16,16,0,0,0,16-16V56A16,16,0,0,0,216,40Zm0,16V74.56A167.34,167.34,0,0,0,128,96a167.34,167.34,0,0,0-88-21.44V56ZM40,200V97.78C67,107.24,97.1,112,128,112s61-4.76,88-14.22V200Z"></path>
+</svg>
+</div>
+<span class="text-xs" style="font-family: 'Yeseva One', cursive;">Inventory</span>
+</a>
+<a class="flex flex-1 flex-col items-center justify-end gap-1 text-[#E6CCA5] hover:text-[#FFD700] transition-colors" href="#">
+<div class="flex h-8 items-center justify-center" data-icon="Gear" data-size="28px" data-weight="bold">
+<svg fill="currentColor" height="28px" viewBox="0 0 256 256" width="28px" xmlns="http://www.w3.org/2000/svg">
+<path d="M222.64,116.11l-18-14.66a8,8,0,0,0-9.28-.29,68,68,0,0,1-19.81,11,8,8,0,0,0-6.07,7.33,48,48,0,1,1-22.9-94.23,8,8,0,0,0,1.34-10l-10.06-20.12a8,8,0,0,0-9.64-4.47A104,104,0,1,0,227.46,133.2a8,8,0,0,0-4.82-17.09ZM128,176a32,32,0,1,1,32-32A32,32,0,0,1,128,176Z"></path>
+</svg>
+</div>
+<span class="text-xs" style="font-family: 'Yeseva One', cursive;">Settings</span>
+</a>
+</div>
+<div class="h-3" style="background: #5D4037;"></div>
+</div>
+</div>
+<script>
+    // Gold Particle Generation
+    const particleContainer = document.getElementById('gold-particle-container');
+    const numParticles = 30; // Adjust for density
+    for (let i = 0; i < numParticles; i++) {
+      const particle = document.createElement('div');
+      particle.classList.add('gold-particle');
+      particle.style.left = `${Math.random() * 100}%`;
+      particle.style.top = `${Math.random() * 100}%`; // Start at random positions
+      particle.style.animationDelay = `${Math.random() * 10}s`; // Randomize animation start
+      particle.style.setProperty('--particle-x-end', `${(Math.random() -0.5) * 50}px`); // Slight horizontal drift
+      particleContainer.appendChild(particle);
+    }
+    // Tab switching visual
+    const tabs = document.querySelectorAll('.parchment-scroll-tab');
+    tabs.forEach(tab => {
+      tab.addEventListener('click', function(e) {
+        e.preventDefault();
+        tabs.forEach(t => t.classList.remove('active'));
+        this.classList.add('active');
+        // Add scroll ribbon curl animation/effect here if desired
+      });
+    });
+    // Item tap to open info panel
+    const itemCards = document.querySelectorAll('.inventory-item-card');
+    const infoPanel = document.getElementById('itemInfoPanel');
+    const itemNameEl = document.getElementById('itemName');
+    const itemDescriptionEl = document.getElementById('itemDescription');
+    const itemUsageEl = document.getElementById('itemUsage');
+    const itemIconEl = document.getElementById('itemIcon');
+    itemCards.forEach(card => {
+        card.addEventListener('click', function() {
+            // Dummy data population - replace with actual item data
+            const isRare = this.querySelector('.rare-aura');
+            const isEquipped = this.querySelector('.equipped-indicator');
+            const iconSrc = this.querySelector('img') ? this.querySelector('img').src : (this.querySelector('[style*="background-image"]').style.backgroundImage.slice(5, -2)); // hacky way to get placeholder img
+            const count = this.querySelector('.wax-stamp-badge').textContent;
+            itemNameEl.textContent = isRare ? "Rare Mystical Orb" : (isEquipped ? "Equipped Leather Saddle" : "Common Healing Potion");
+            itemIconEl.src = iconSrc;
+            itemDescriptionEl.textContent = "A finely crafted item with magical properties. This " + (isRare ? "pulsating orb" : (isEquipped ? "sturdy saddle" : "refreshing potion")) + " seems to emanate a faint energy. It is said to be useful in many situations. Stack: "+ count;
+            itemUsageEl.textContent = isRare ? "Usage Effect: Grants temporary invincibility." : (isEquipped ? "Usage Effect: Increases horse speed by 15%." : "Usage Effect: Restores 50 HP.");
+            infoPanel.classList.remove('hidden','opacity-0');
+            // Trigger reflow for animation
+            void infoPanel.offsetWidth; 
+        });
+    });
+  </script>
+
+</body></html>

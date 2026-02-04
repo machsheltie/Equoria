@@ -1,0 +1,15 @@
+Command,Description
+npm install,Install all project dependencies listed in package.json
+npm run start,Start the application (depends on project configuration)
+npm run dev,Start the app in development mode (often with hot reloading)
+npm run build,Compile the project for production
+npm run test,Run all tests using Jest or the configured test runner
+npm run test:watch,Run tests in watch mode (reruns on file change)
+npm run test:coverage,Generate code coverage report using Jest
+npm run lint,Run ESLint to check code for style/formatting errors
+npm run lint:fix,Automatically fix fixable linting issues
+npm run migrate,Run your custom database migration script
+npx prisma migrate dev --name <name> --schema=path,Run a development migration with Prisma and generate client
+npx prisma generate,Regenerate Prisma client from schema
+npx prisma studio,Launch a GUI to inspect and edit your database
+node scripts/testXpSystem.js,Run manual XP and level system test script

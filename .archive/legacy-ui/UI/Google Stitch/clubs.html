@@ -1,0 +1,217 @@
+<html><head>
+<meta charset="utf-8"/>
+<link crossorigin="" href="https://fonts.gstatic.com/" rel="preconnect"/>
+<link as="style" href="https://fonts.googleapis.com/css2?display=swap&amp;family=Yeseva+One:wght@400&amp;family=Jost:wght@400;500;700&amp;family=Cormorant+Garamond:wght@400;500;700" onload="this.rel='stylesheet'" rel="stylesheet"/>
+<title>Stitch Design</title>
+<link href="data:image/x-icon;base64," rel="icon" type="image/x-icon"/>
+<script src="https://cdn.tailwindcss.com?plugins=forms,container-queries"></script>
+<style>
+    .font-yeseva {
+      font-family: 'Yeseva One', cursive;
+    }
+    .font-jost {
+      font-family: 'Jost', sans-serif;
+    }
+    .font-cormorant {
+      font-family: 'Cormorant Garamond', serif;
+    }
+    .scroll-container {
+      background-image: url("data:image/svg+xml,%3Csvg width='100' height='100' xmlns='http://www.w3.org/2000/svg'%3E%3Cdefs%3E%3Cpattern id='scroll' patternUnits='userSpaceOnUse' width='100' height='100'%3E%3Cimage href='https://www.transparenttextures.com/patterns/old-paper.png' x='0' y='0' width='100' height='100'/%3E%3C/pattern%3E%3C/defs%3E%3Crect width='100' height='100' fill='url(%23scroll)'/%3E%3C/svg%3E");
+      background-size: cover;
+      border-image-source: url("data:image/svg+xml,%3Csvg width='60' height='60' viewBox='0 0 60 60' fill='none' xmlns='http://www.w3.org/2000/svg'%3E%3Cpath d='M0 5C0 2.23858 2.23858 0 5 0H55C57.7614 0 60 2.23858 60 5V55C60 57.7614 57.7614 60 55 60H5C2.23858 60 0 57.7614 0 55V5Z' fill='%23A0522D'/%3E%3Cpath d='M5 2H55C56.6569 2 58 3.34315 58 5V55C58 56.6569 56.6569 58 55 58H5C3.34315 58 2 56.6569 2 55V5C2 3.34315 3.34315 2 5 2Z' stroke='%23DAA520' stroke-width='2'/%3E%3C/svg%3E");
+      border-image-slice: 10;
+      border-image-width: 10px;
+      border-image-outset: 0;
+      border-image-repeat: round;
+      border-style: solid;
+      padding: 20px;
+      box-shadow: 0px 10px 20px rgba(0, 0, 0, 0.5);
+    }
+    .guild-crest-container {
+      position: relative;
+      width: 120px;
+      height: 120px;
+      margin: -60px auto 0 auto;
+      border-radius: 50%;
+      background: linear-gradient(145deg, #ffd700, #f0c000);
+      padding: 8px;
+      box-shadow: 0 0 15px rgba(255, 215, 0, 0.7), inset 0 0 10px rgba(0, 0, 0, 0.3);
+      z-index: 10;
+    }
+    .guild-crest-image {
+      width: 100%;
+      height: 100%;
+      object-fit: cover;
+      border-radius: 50%;
+      border: 4px solid #8B4513;}
+    .member-portrait {
+      border: 4px solid;
+      box-shadow: 0 0 10px rgba(0,0,0,0.5);
+    }
+    .rank-grand-marshal { border-color: #FFD700;}
+    .rank-knight-commander { border-color: #C0C0C0;}
+    .rank-master-of-hunt { border-color: #CD7F32;}
+    .rank-champion { border-color: #A9A9A9;}
+    .arch-banner {
+      background: linear-gradient(to bottom, #4a2c0f, #38220b);
+      border-bottom: 8px solid #DAA520;border-image-source: url("data:image/svg+xml,%3Csvg width='100' height='20' viewBox='0 0 100 20' fill='none' xmlns='http://www.w3.org/2000/svg'%3E%3Cpath d='M0 10 Q 25 -5, 50 10 T 100 10' stroke='%23DAA520' stroke-width='5' fill='none'/%3E%3Cpath d='M0 12 Q 25 -3, 50 12 T 100 12' stroke='%23B8860B' stroke-width='3' fill='none'/%3E%3C/svg%3E");
+      border-image-slice: 0 0 100% 0;
+      border-image-width: 0 0 8px 0;
+      border-image-repeat: stretch;
+    }
+  </style>
+<style>
+    body {
+      min-height: max(884px, 100dvh);
+    }
+  </style>
+  </head>
+<body class="bg-[#1a160d] text-[#e0dacd]">
+<div class="relative flex size-full min-h-screen flex-col justify-between group/design-root overflow-x-hidden" style="max-width: 1080px; margin: auto;">
+<div class="flex-grow">
+<div class="arch-banner relative @container pt-6 pb-12">
+<div class="absolute inset-0 bg-center bg-no-repeat bg-cover opacity-20" style='background-image: url("https://lh3.googleusercontent.com/aida-public/AB6AXuABi_ygsA7AwCIkumkyft0QIkxGAZYhdfsd5CimY-VIwmtOKpKwoGfU2m9vONOMQOPWea4S32yENnVrWKEB9_n5NkjtkQLf4VQ7CSlquqZ0X3_LQaUjXSZo-uC9UDPUmpTU4DiY0duAexX1Mj1nRqW1F-93qutDhAQZ9kFfyZEWP3NrwCGgN1Pc9l23l9eZYARuCqL3cH04D3WTAz6mm5qAa-bRY4nN-kcGrdKg4AZc_6wXcgZ7-_4VG0CukZ2cVOqBUU02ZduwWXI");'></div>
+<div class="relative w-full flex flex-col items-center justify-end overflow-hidden min-h-[150px] @[480px]:rounded-xl">
+<h1 class="text-white text-4xl font-yeseva text-center px-4 pt-8 drop-shadow-[0_2px_2px_rgba(0,0,0,0.7)]">The Order of the Silver Reins</h1>
+</div>
+</div>
+<div class="guild-crest-container">
+<img alt="Guild Crest" class="guild-crest-image" src="https://lh3.googleusercontent.com/aida-public/AB6AXuDdIjoJER3sUr9-GN4roejf6RICp9qfmoE74WR4WmagrkVPK1BdZNCN0TbN33TMek-bhkAlUXZprT75nzcyeKchbngFw__7bQPYXqIZYwan442ldn0GFGBkey8jTFlcxJdXHyedfD5LRZOI-cAnCVn1PROgliu_IKRKAHb9ULLyfRnwC3ED2locccbrDCeXIWIS9kV3uVsXvSqBH0ma4WEZ5QkLoUEgYZElPE84OrUvTKAJ86VkGE-QQiTAZjpF51_LU5kkObECHbM"/>
+</div>
+<div class="p-6">
+<div class="scroll-container bg-[#f3eadb] text-[#4a2c0f] p-6 rounded-lg shadow-lg mb-8 mt-4">
+<p class="font-cormorant text-lg leading-relaxed text-center">
+            In the realm of Eldoria, where the whispers of ancient magic still linger, the Order of the Silver Reins stands as a beacon of chivalry and equestrian prowess. Founded by
+            the legendary Lady Isolde, a knight of unparalleled skill and grace, the Order has long been a sanctuary for those who seek to master the art of horsemanship and uphold
+            the virtues of honor, courage, and compassion. Our banners fly high, a testament to the enduring spirit of camaraderie and the noble bond between rider and steed.
+          </p>
+</div>
+<h2 class="font-yeseva text-3xl text-[#f2b80c] text-center mb-6 drop-shadow-[0_1px_1px_rgba(0,0,0,0.5)]">Member Roster</h2>
+<div class="flex overflow-x-auto [-ms-scrollbar-style:none] [scrollbar-width:none] [&amp;::-webkit-scrollbar]:hidden pb-4">
+<div class="flex items-stretch p-4 gap-5">
+<div class="flex h-full flex-1 flex-col items-center gap-3 rounded-lg min-w-48 bg-[#2c2519] p-4 shadow-md border border-[#4a3b2a]">
+<div class="w-32 h-40 bg-center bg-no-repeat bg-cover rounded-lg member-portrait rank-grand-marshal" style='background-image: url("https://lh3.googleusercontent.com/aida-public/AB6AXuBNkpYvhAu-wHoVrm9dzoP6fVb7yNhjU-7NL4gZi9efJnfWhwkTZ5oHfWWP_TUYKpMF5k5js4MElWfWHpc8BjtujCoK_6ziEl1TSw5YoTVOjLO-Fi4XFKPDyZHUCBcidBlD91PWKYhbWOUMmcgq_Q-kyZtY-3K-b5YdxC8AHFxz3RLzYgWPq2g6i9BzuHe7e6hNlcsvRemvgneHsmKLsVxFxMEl4PRKkr8ZhjPwe-20QRklzehO5JKBPs1D_X9Le00f6pTmiF1vUvA");'></div>
+<div class="text-center">
+<p class="text-white text-lg font-jost font-semibold">Lady Anya</p>
+<p class="text-[#FFD700] text-sm font-jost">Grand Marshal</p>
+<p class="text-[#cbbc90] text-xs font-jost">Level 50</p>
+</div>
+</div>
+<div class="flex h-full flex-1 flex-col items-center gap-3 rounded-lg min-w-48 bg-[#2c2519] p-4 shadow-md border border-[#4a3b2a]">
+<div class="w-32 h-40 bg-center bg-no-repeat bg-cover rounded-lg member-portrait rank-knight-commander" style='background-image: url("https://lh3.googleusercontent.com/aida-public/AB6AXuApXxsLkIIM4PoIetHcTHKqYwoN7JH3McgghwJRrjMeMAy6ccGOAY0D7-c6EWv8TpsZNqYs0HPurtBNd_BWF05kbKMKgOB6hvw-jTCQoHI74TQPiqpWOrPg970zxGS5NhOtgZwVp7ncGgnZdfTcge_R-Wcp58SO1o-LiuNQUVlckrkvGfAKZZW6UQOUOtkuslcNSgOhusIlN4tvrVcs2-yYWqJ4-R_DpOf0MZ-8nNdMrMyscMkptj0KDo-0xFwhB9CAzpzR6bNDiHw");'></div>
+<div class="text-center">
+<p class="text-white text-lg font-jost font-semibold">Sir Gareth</p>
+<p class="text-[#C0C0C0] text-sm font-jost">Knight Commander</p>
+<p class="text-[#cbbc90] text-xs font-jost">Level 48</p>
+</div>
+</div>
+<div class="flex h-full flex-1 flex-col items-center gap-3 rounded-lg min-w-48 bg-[#2c2519] p-4 shadow-md border border-[#4a3b2a]">
+<div class="w-32 h-40 bg-center bg-no-repeat bg-cover rounded-lg member-portrait rank-master-of-hunt" style='background-image: url("https://lh3.googleusercontent.com/aida-public/AB6AXuCwLA9kmKT8Vun2wcW_bMfVYbk1ihsQ0wi_TIUHYlZPq9SgRCCeIdBdQtnTyQojgFYHqngs3gjCOLIZcAveh1QGd_LeS_6xF4-rN0E4fS9kwTHzgWTdp5JYp9wfGG6O3-lamrLrX47jaFGMvGP9PQVIv39c8e3_f-K6tHD71wwlLi8tnEFGI_TgRcMPd5mXaxBpaZJGImJ6d8pBow-iSzafcuJJTAZUQ3vt6fkjOGQzZ7jb8Wfgdohj6Yb8hjCiF2bjOoeYeyR2hsk");'></div>
+<div class="text-center">
+<p class="text-white text-lg font-jost font-semibold">Dame Elara</p>
+<p class="text-[#CD7F32] text-sm font-jost">Master of the Hunt</p>
+<p class="text-[#cbbc90] text-xs font-jost">Level 45</p>
+</div>
+</div>
+<div class="flex h-full flex-1 flex-col items-center gap-3 rounded-lg min-w-48 bg-[#2c2519] p-4 shadow-md border border-[#4a3b2a]">
+<div class="w-32 h-40 bg-center bg-no-repeat bg-cover rounded-lg member-portrait rank-champion" style='background-image: url("https://lh3.googleusercontent.com/aida-public/AB6AXuASzP4Ivkt1EPAIW6FIWybIWcgY7bugwrOkyjj60CliSwy3txh2GKdEVkJpnsjN1dqZFaSsWpbEcFC6TVa9835fmuobbTYNZlMwd6iKYqjurppkSH-IVSx1Wb3L_PRSECPII2LaIXpEvRsgnb3z_jaNoRStNj898CvqxMRLkwG0lmjs1_KCij49K0tgzKnf5icGWy_Hzae_yl_vikH7B9v0XXw02gg2bmvDmERzLKB-y4SndK8wRpU6bet0S6z9r-pgNLXrBSNC0fs");'></div>
+<div class="text-center">
+<p class="text-white text-lg font-jost font-semibold">Lord Theron</p>
+<p class="text-[#A9A9A9] text-sm font-jost">Champion</p>
+<p class="text-[#cbbc90] text-xs font-jost">Level 42</p>
+</div>
+</div>
+</div>
+</div>
+<h2 class="font-yeseva text-3xl text-[#f2b80c] text-center my-6 drop-shadow-[0_1px_1px_rgba(0,0,0,0.5)]">Guild Stats</h2>
+<div class="grid grid-cols-1 sm:grid-cols-3 gap-4 p-4">
+<div class="flex flex-col items-center gap-2 rounded-xl p-6 border-2 border-[#DAA520] bg-[#2c2519] shadow-lg">
+<p class="text-white text-lg font-jost font-medium">Guild Level</p>
+<p class="text-[#f2b80c] tracking-light text-4xl font-yeseva">12</p>
+</div>
+<div class="flex flex-col items-center gap-2 rounded-xl p-6 border-2 border-[#DAA520] bg-[#2c2519] shadow-lg">
+<p class="text-white text-lg font-jost font-medium">Prestige</p>
+<p class="text-[#f2b80c] tracking-light text-4xl font-yeseva">15,000</p>
+</div>
+<div class="flex flex-col items-center gap-2 rounded-xl p-6 border-2 border-[#DAA520] bg-[#2c2519] shadow-lg">
+<p class="text-white text-lg font-jost font-medium">Active Buffs</p>
+<p class="text-[#f2b80c] tracking-light text-4xl font-yeseva">3</p>
+</div>
+</div>
+<h2 class="font-yeseva text-3xl text-[#f2b80c] text-center my-6 drop-shadow-[0_1px_1px_rgba(0,0,0,0.5)]">Event Board</h2>
+<div class="space-y-6 p-4">
+<div class="flex flex-col sm:flex-row items-center justify-between gap-6 rounded-xl p-6 bg-[#2c2519] border-2 border-[#DAA520] shadow-lg">
+<div class="flex flex-col gap-2 flex-[2_2_0px]">
+<p class="text-[#cbbc90] text-sm font-jost uppercase tracking-wider">Current Quest</p>
+<p class="text-white text-xl font-yeseva">The Great Equinox Race</p>
+<p class="text-[#e0dacd] text-base font-cormorant leading-relaxed">Compete for glory and rewards in the annual race across the plains of Eldoria.</p>
+</div>
+<div class="w-full sm:w-48 h-32 bg-center bg-no-repeat bg-cover rounded-lg border-2 border-[#8B4513] shadow-md flex-shrink-0" style='background-image: url("https://lh3.googleusercontent.com/aida-public/AB6AXuDXd4PE4HbV17JbF3KYnupEhYXFK1UAr96yNnaH4iy_cR6r7ZvN-vJXte651rsymAuRhr_jZ624AS-HTEtkihvis32yPEbJnn-lXaDZMwTso2PEv0DBBQ00_0LwqG9Ssd_atA0hegz76eHFc19OTD5L9iMa46KxyrUDUTryb78MjEka6IF3FN23t9sZt9_aZmYCI8N0_M4YgT0aycxpHrryji56gKhiT2KH3DVze2guiIDWbjtn1Wjd6fnaJv9BMNlnZfG9xm8GUlA");'></div>
+</div>
+<div class="flex flex-col sm:flex-row items-center justify-between gap-6 rounded-xl p-6 bg-[#2c2519] border-2 border-[#DAA520] shadow-lg">
+<div class="flex flex-col gap-2 flex-[2_2_0px]">
+<p class="text-[#cbbc90] text-sm font-jost uppercase tracking-wider">Poll</p>
+<p class="text-white text-xl font-yeseva">Next Guild Event</p>
+<p class="text-[#e0dacd] text-base font-cormorant leading-relaxed">Vote on the next guild activity: a grand tournament or a scenic trail ride.</p>
+</div>
+<div class="w-full sm:w-48 h-32 bg-center bg-no-repeat bg-cover rounded-lg border-2 border-[#8B4513] shadow-md flex-shrink-0" style='background-image: url("https://lh3.googleusercontent.com/aida-public/AB6AXuASBRyHfDyU7Sl5JPvA605EDAZGdWbx0PDOP_vaUde7DkhYSf9lMLwyOAZxqUk705k5kmEWEyUEkQcyP-Xeu_6n5afr2B5wVO-VSl2TDLUB-fb5xhtcqfeTQmQBJcfw4LBaF9TzdVjsj-33VB2TQvsMuyCB73cJcXn_7o0Om6F0-2PaVBl657cAQgZXV2VRz-UbY7IzYgXv9Gn8cRLVtVJL-VYi6nc1v_8o9R4qknAYKPqSBfoCSf36a8oRehuf9EeQq-8iZOUpX58");'></div>
+</div>
+</div>
+<div class="mt-8 p-4 bg-[#221c12] rounded-lg border-2 border-[#DAA520] shadow-xl">
+<h3 class="font-yeseva text-2xl text-[#f2b80c] text-center mb-4">Officer Controls</h3>
+<div class="flex flex-col space-y-3">
+<button class="font-jost bg-[#DAA520] hover:bg-[#f2b80c] text-[#38220b] font-semibold py-2 px-4 rounded-md shadow-sm transition-colors duration-150">Edit Guild Crest</button>
+<button class="font-jost bg-[#DAA520] hover:bg-[#f2b80c] text-[#38220b] font-semibold py-2 px-4 rounded-md shadow-sm transition-colors duration-150">Manage Permissions</button>
+<button class="font-jost bg-[#DAA520] hover:bg-[#f2b80c] text-[#38220b] font-semibold py-2 px-4 rounded-md shadow-sm transition-colors duration-150">Setup New Event</button>
+</div>
+</div>
+</div>
+</div>
+<div class="sticky bottom-0 left-0 right-0 z-50">
+<div class="flex gap-0 border-t-2 border-[#DAA520] bg-[#342d18] px-2 pt-2 pb-1 font-jost">
+<a class="flex flex-1 flex-col items-center justify-end gap-1 text-[#cbbc90] hover:text-white transition-colors" href="#">
+<div class="text-2xl" data-icon="House">
+<svg fill="currentColor" height="1em" viewBox="0 0 256 256" width="1em" xmlns="http://www.w3.org/2000/svg">
+<path d="M218.83,103.77l-80-75.48a1.14,1.14,0,0,1-.11-.11,16,16,0,0,0-21.53,0l-.11.11L37.17,103.77A16,16,0,0,0,32,115.55V208a16,16,0,0,0,16,16H96a16,16,0,0,0,16-16V160h32v48a16,16,0,0,0,16,16h48a16,16,0,0,0,16-16V115.55A16,16,0,0,0,218.83,103.77ZM208,208H160V160a16,16,0,0,0-16-16H112a16,16,0,0,0-16,16v48H48V115.55l.11-.1L128,40l79.9,75.43.11.1Z"></path>
+</svg>
+</div>
+<p class="text-xs font-medium tracking-[0.015em]">Home</p>
+</a>
+<a class="flex flex-1 flex-col items-center justify-end gap-1 text-[#cbbc90] hover:text-white transition-colors" href="#">
+<div class="text-2xl" data-icon="Horse">
+<svg fill="currentColor" height="1em" viewBox="0 0 256 256" width="1em" xmlns="http://www.w3.org/2000/svg">
+<path d="M136,100a12,12,0,1,1-12-12A12,12,0,0,1,136,100Zm96,29.48A104.29,104.29,0,0,1,130.1,232l-2.17,0a103.32,103.32,0,0,1-69.26-26A8,8,0,1,1,69.34,194a84.71,84.71,0,0,0,20.1,13.37L116,170.84c-22.78-9.83-47.47-5.65-61.4-3.29A31.84,31.84,0,0,1,23.3,154.72l-.3-.43-13.78-22a8,8,0,0,1,2.59-11.05L112,59.53V32a8,8,0,0,1,8-8h8A104,104,0,0,1,232,129.48Zm-16-.22A88,88,0,0,0,128,40V64a8,8,0,0,1-3.81,6.81L27.06,130.59l9.36,15A15.92,15.92,0,0,0,52,151.77c16-2.7,48.77-8.24,78.07,8.18A40.06,40.06,0,0,0,168,120a8,8,0,0,1,16,0,56.07,56.07,0,0,1-51.8,55.83l-27.11,37.28A90.89,90.89,0,0,0,129.78,216,88.29,88.29,0,0,0,216,129.26Z"></path>
+</svg>
+</div>
+<p class="text-xs font-medium tracking-[0.015em]">Stable</p>
+</a>
+<a class="flex flex-1 flex-col items-center justify-end gap-1 rounded-t-lg text-white bg-[#f2b80c] py-1 -translate-y-1 shadow-lg ring-2 ring-[#f2b80c] ring-offset-2 ring-offset-[#342d18]" href="#">
+<div class="text-2xl text-[#38220b]" data-icon="Users">
+<svg fill="currentColor" height="1em" viewBox="0 0 256 256" width="1em" xmlns="http://www.w3.org/2000/svg">
+<path d="M164.47,195.63a8,8,0,0,1-6.7,12.37H10.23a8,8,0,0,1-6.7-12.37,95.83,95.83,0,0,1,47.22-37.71,60,60,0,1,1,66.5,0A95.83,95.83,0,0,1,164.47,195.63Zm87.91-.15a95.87,95.87,0,0,0-47.13-37.56A60,60,0,0,0,144.7,54.59a4,4,0,0,0-1.33,6A75.83,75.83,0,0,1,147,150.53a4,4,0,0,0,1.07,5.53,112.32,112.32,0,0,1,29.85,30.83,23.92,23.92,0,0,1,3.65,16.47,4,4,0,0,0,3.95,4.64h60.3a8,8,0,0,0,7.73-5.93A8.22,8.22,0,0,0,252.38,195.48Z"></path>
+</svg>
+</div>
+<p class="text-xs font-semibold tracking-[0.015em] text-[#38220b]">Guild</p>
+</a>
+<a class="flex flex-1 flex-col items-center justify-end gap-1 text-[#cbbc90] hover:text-white transition-colors" href="#">
+<div class="text-2xl" data-icon="Coins">
+<svg fill="currentColor" height="1em" viewBox="0 0 256 256" width="1em" xmlns="http://www.w3.org/2000/svg">
+<path d="M184,89.57V84c0-25.08-37.83-44-88-44S8,58.92,8,84v40c0,20.89,26.25,37.49,64,42.46V172c0,25.08,37.83,44,88,44s88-18.92,88-44V132C248,111.3,222.58,94.68,184,89.57ZM232,132c0,13.22-30.79,28-72,28-3.73,0-7.43-.13-11.08-.37C170.49,151.77,184,139,184,124V105.74C213.87,110.19,232,122.27,232,132ZM72,150.25V126.46A183.74,183.74,0,0,0,96,128a183.74,183.74,0,0,0,24-1.54v23.79A163,163,0,0,1,96,152,163,163,0,0,1,72,150.25Zm96-40.32V124c0,8.39-12.41,17.4-32,22.87V123.5C148.91,120.37,159.84,115.71,168,109.93ZM96,56c41.21,0,72,14.78,72,28s-30.79,28-72,28S24,97.22,24,84,54.79,56,96,56ZM24,124V109.93c8.16,5.78,19.09,10.44,32,13.57v23.37C36.41,141.4,24,132.39,24,124Zm64,48v-4.17c2.63.1,5.29.17,8,.17,3.88,0,7.67-.13,11.39-.35A121.92,121.92,0,0,0,120,171.41v23.46C100.41,189.4,88,180.39,88,172Zm48,26.25V174.4a179.48,179.48,0,0,0,24,1.6,183.74,183.74,0,0,0,24-1.54v23.79a165.45,165.45,0,0,1-48,0Zm64-3.38V171.5c12.91-3.13,23.84-7.79,32-13.57V172C232,180.39,219.59,189.4,200,194.87Z"></path>
+</svg>
+</div>
+<p class="text-xs font-medium tracking-[0.015em]">Market</p>
+</a>
+<a class="flex flex-1 flex-col items-center justify-end gap-1 text-[#cbbc90] hover:text-white transition-colors" href="#">
+<div class="text-2xl" data-icon="User">
+<svg fill="currentColor" height="1em" viewBox="0 0 256 256" width="1em" xmlns="http://www.w3.org/2000/svg">
+<path d="M230.92,212c-15.23-26.33-38.7-45.21-66.09-54.16a72,72,0,1,0-73.66,0C63.78,166.78,40.31,185.66,25.08,212a8,8,0,1,0,13.85,8c18.84-32.56,52.14-52,89.07-52s70.23,19.44,89.07,52a8,8,0,1,0,13.85-8ZM72,96a56,56,0,1,1,56,56A56.06,56.06,0,0,1,72,96Z"></path>
+</svg>
+</div>
+<p class="text-xs font-medium tracking-[0.015em]">Profile</p>
+</a>
+</div>
+<div class="h-safe-area-bottom bg-[#342d18]"></div>
+</div>
+</div>
+
+</body></html>

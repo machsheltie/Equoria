@@ -1,0 +1,406 @@
+<html><head>
+<meta charset="utf-8"/>
+<link crossorigin="" href="https://fonts.gstatic.com/" rel="preconnect"/>
+<link as="style" href="https://fonts.googleapis.com/css2?display=swap&amp;family=Noto+Serif%3Awght%40400%3B500%3B700%3B900&amp;family=Noto+Sans%3Awght%40400%3B500%3B700%3B900&amp;family=Cormorant+Garamond%3Aital%401&amp;display=swap" onload="this.rel='stylesheet'" rel="stylesheet"/>
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:opsz,wght,FILL,GRAD@20..48,100..700,0..1,-50..200" rel="stylesheet"/>
+<title>Equoria Breeding Modal</title>
+<link href="data:image/x-icon;base64," rel="icon" type="image/x-icon"/>
+<script src="https://cdn.tailwindcss.com?plugins=forms,container-queries"></script>
+<style>
+    .parchment-bg {
+      background-color: #FDF8E3;
+    }
+    .dual-border {
+      border: 5px solid #D6A64A;
+      box-shadow: 0 0 0 3px #6A4E2D;
+    }
+    .gold-glow {
+      box-shadow: 0 0 15px 5px #D6A64A;
+    }
+    .cormorant-garamond-italic {
+      font-family: 'Cormorant Garamond', serif;
+      font-style: italic;
+    }
+    .feather-filigree-tl {
+      position: absolute;
+      top: -10px;
+      left: -10px;
+      width: 80px;
+      height: 80px;
+      background-image: url("data:image/svg+xml,%3Csvg width='80' height='80' viewBox='0 0 100 100' xmlns='http://www.w3.org/2000/svg'%3E%3Cpath d='M50 0 C20 20 20 80 0 100 L0 80 C15 70 15 30 40 10 Z' fill='%23D6A64A'/%3E%3Cpath d='M55 5 C25 25 25 75 5 95 L5 75 C20 65 20 35 45 15 Z' fill='%236A4E2D' transform='rotate(0 50 50)'/%3E%3C/svg%3E");
+      transform: rotate(0deg);
+      opacity: 0.6;
+    }
+    .feather-filigree-tr {
+      position: absolute;
+      top: -10px;
+      right: -10px;
+      width: 80px;
+      height: 80px;
+      background-image: url("data:image/svg+xml,%3Csvg width='80' height='80' viewBox='0 0 100 100' xmlns='http://www.w3.org/2000/svg'%3E%3Cpath d='M50 0 C80 20 80 80 100 100 L100 80 C85 70 85 30 60 10 Z' fill='%23D6A64A'/%3E%3Cpath d='M45 5 C75 25 75 75 95 95 L95 75 C80 65 80 35 55 15 Z' fill='%236A4E2D' transform='rotate(0 50 50)'/%3E%3C/svg%3E");
+      transform: rotate(0deg);
+      opacity: 0.6;
+    }
+    .feather-filigree-bl {
+      position: absolute;
+      bottom: -10px;
+      left: -10px;
+      width: 80px;
+      height: 80px;
+      background-image: url("data:image/svg+xml,%3Csvg width='80' height='80' viewBox='0 0 100 100' xmlns='http://www.w3.org/2000/svg'%3E%3Cpath d='M0 0 C20 20 80 20 100 0 L80 0 C70 15 30 15 20 0 Z' fill='%23D6A64A' transform='rotate(270 50 50)'/%3E%3Cpath d='M5 5 C25 25 75 25 95 5 L75 5 C65 20 35 20 25 5 Z' fill='%236A4E2D' transform='rotate(270 50 50)'/%3E%3C/svg%3E");
+      transform: rotate(180deg);opacity: 0.6;
+    }
+    .feather-filigree-br {
+      position: absolute;
+      bottom: -10px;
+      right: -10px;
+      width: 80px;
+      height: 80px;
+      background-image: url("data:image/svg+xml,%3Csvg width='80' height='80' viewBox='0 0 100 100' xmlns='http://www.w3.org/2000/svg'%3E%3Cpath d='M100 100 C80 80 20 80 0 100 L20 100 C30 85 70 85 80 100 Z' fill='%23D6A64A' transform='rotate(90 50 50)'/%3E%3Cpath d='M95 95 C75 75 25 75 5 95 L25 95 C35 80 65 80 75 95 Z' fill='%236A4E2D' transform='rotate(90 50 50)'/%3E%3C/svg%3E");
+      transform: rotate(180deg);opacity: 0.6;
+    }
+    .scroll-tooltip {
+        display: none;
+        position: absolute;
+        background-color: #FDF8E3;
+        border: 1px solid #6A4E2D;
+        padding: 8px;
+        border-radius: 4px;
+        box-shadow: 0 2px 5px rgba(0,0,0,0.2);
+        z-index: 10;
+        font-size: 0.875rem;
+        color: #6A4E2D;
+    }
+    .temperament-icon:hover + .scroll-tooltip {
+        display: block;
+    }
+    .particle-line {
+        position: absolute;
+        width: 2px;
+        background: linear-gradient(to bottom, rgba(214, 166, 74, 0), #D6A64A, rgba(214, 166, 74, 0));
+        opacity: 0;
+        animation: particleFlow 2s ease-in-out infinite;
+    }
+    @keyframes particleFlow {
+        0% { transform: translateY(-20px); opacity: 0; }
+        50% { opacity: 0.8; }
+        100% { transform: translateY(20px); opacity: 0; }
+    }
+    .prophecy-window {
+        border: 8px solid transparent;
+        border-image: url("data:image/svg+xml,%3Csvg width='100' height='100' viewBox='0 0 100 100' xmlns='http://www.w3.org/2000/svg'%3E%3Cdefs%3E%3ClinearGradient id='goldFlourish' x1='0%25' y1='0%25' x2='100%25' y2='100%25'%3E%3Cstop offset='0%25' style='stop-color:%23D6A64A;stop-opacity:1' /%3E%3Cstop offset='100%25' style='stop-color:%23B8860B;stop-opacity:1' /%3E%3C/linearGradient%3E%3C/defs%3E%3Crect width='100' height='100' style='fill:transparent;stroke:url(%23goldFlourish);stroke-width:10;stroke-dasharray:15 5;stroke-linecap:round;'/%3E%3C/svg%3E") 30 stretch;
+        box-shadow: 0 0 20px #D6A64A;
+    }
+    .aura-pulse {
+        animation: auraPulseAnimation 1.5s infinite;
+    }
+    @keyframes auraPulseAnimation {
+        0% { box-shadow: 0 0 5px #D6A64A; }
+        50% { box-shadow: 0 0 20px #FFD700, 0 0 30px #D6A64A; }
+        100% { box-shadow: 0 0 5px #D6A64A; }
+    }
+    .feather-stamp-button {
+        background-image: url("data:image/svg+xml,%3Csvg width='30' height='30' viewBox='0 0 24 24' xmlns='http://www.w3.org/2000/svg'%3E%3Cpath fill='%236A4E2D' d='M19.585 5.415a2 2 0 0 0-2.828 0L12 10.172L7.243 5.415a2 2 0 1 0-2.829 2.828L9.172 13l-4.758 4.757a2 2 0 1 0 2.829 2.829L12 15.828l4.757 4.758a2 2 0 1 0 2.829-2.829L14.828 13l4.757-4.757a2 2 0 0 0 0-2.828zM10 20.5c-.276 0-.5-.224-.5-.5v-5c0-.276.224-.5.5-.5s.5.224.5.5v5c0 .276-.224.5-.5.5zm4 0c-.276 0-.5-.224-.5-.5v-5c0-.276.224-.5.5-.5s.5.224.5.5v5c0 .276-.224.5-.5.5zM6.929 6.929a1 1 0 0 1 1.414 0L12 10.586l3.657-3.657a1 1 0 0 1 1.414 1.414L13.414 12l3.657 3.657a1 1 0 0 1-1.414 1.414L12 13.414l-3.657 3.657a1 1 0 0 1-1.414-1.414L10.586 12 6.929 8.343a1 1 0 0 1 0-1.414z'/%3E%3C/svg%3E");
+        background-repeat: no-repeat;
+        background-position: 15px center;
+        padding-left: 50px !important;
+    }
+  </style>
+<style>
+    body {
+      min-height: max(884px, 100dvh);
+    }
+  </style>
+  </head>
+<body class="bg-gradient-to-br from-emerald-700 to-slate-900 flex items-center justify-center min-h-screen">
+<div class="relative w-[90vw] max-w-md h-[85vh] parchment-bg dual-border rounded-lg shadow-2xl overflow-hidden flex flex-col group/design-root" style='font-family: "Noto Serif", "Noto Sans", sans-serif;'>
+<div class="feather-filigree-tl"></div>
+<div class="feather-filigree-tr"></div>
+<div class="feather-filigree-bl"></div>
+<div class="feather-filigree-br"></div>
+<div class="flex-1 overflow-y-auto p-1 scrollbar-thin scrollbar-thumb-[#6A4E2D] scrollbar-track-[#FDF8E3]">
+<div class="flex flex-col" id="step1">
+<div class="flex items-center justify-between p-4 sticky top-0 parchment-bg z-10 border-b border-[#D6A64A]/50">
+<h2 class="text-[#6A4E2D] text-xl font-bold leading-tight tracking-tight flex-1 text-center pl-10">Breeding</h2>
+<button class="text-[#6A4E2D] hover:text-[#D6A64A]">
+<span class="material-symbols-outlined">close</span>
+</button>
+</div>
+<div class="flex w-full flex-row items-center justify-center gap-3 py-5">
+<div class="h-2.5 w-2.5 rounded-full bg-[#D6A64A] shadow-md"></div>
+<div class="h-2.5 w-2.5 rounded-full bg-[#D6A64A]/40"></div>
+<div class="h-2.5 w-2.5 rounded-full bg-[#D6A64A]/40"></div>
+<div class="h-2.5 w-2.5 rounded-full bg-[#D6A64A]/40"></div>
+</div>
+<h3 class="text-[#6A4E2D] text-lg font-semibold leading-tight tracking-tight px-6 pb-2 pt-2">Select Pair</h3>
+<div class="grid grid-cols-2 gap-4 p-4">
+<div class="parchment-bg border border-[#D6A64A]/70 rounded-lg shadow-md p-2 cursor-pointer hover:shadow-lg hover:border-[#D6A64A] transition-all duration-200 active:gold-glow">
+<div class="w-full bg-center bg-no-repeat aspect-[3/4] bg-cover rounded-md mb-2" style='background-image: url("https://lh3.googleusercontent.com/aida-public/AB6AXuDDRMWVTplobi8q07Qb4YGxAMaLuWi9_YccDRIZq3IFqlp9luQHZpuToxM4G1tqy6ANwk0CNe9-B1AoNTEjH8sX5TUDx8PnR4YlQ2dGFCv8sYlnWWHx0TTvJE2H8QaVuK4bod-Mzrgw2VVY2ppju_EIl5fGOIEMvrky2ehWaXCLlU3_BBvPtnaCCK0COheCWM9pP3Ovs9YhU9-tAQtoMeKv1F8BRSg3M1gCPAZdVeWX3VCnbNix6rauAtLdJ8KVnFqZ6ZNLLeHmmLg");'></div>
+<p class="text-[#6A4E2D] text-sm font-medium text-center">Luna (Mare)</p>
+<div class="flex justify-between items-center mt-1 text-xs text-[#8c6d46]">
+<span>Str: 8</span>
+<span>Agi: 7</span>
+<div class="relative">
+<span class="material-symbols-outlined text-base temperament-icon">shield</span>
+<span class="scroll-tooltip -left-12 -top-8 w-24 text-center">Calm</span>
+</div>
+</div>
+</div>
+<div class="parchment-bg border border-[#D6A64A]/70 rounded-lg shadow-md p-2 cursor-pointer hover:shadow-lg hover:border-[#D6A64A] transition-all duration-200">
+<div class="w-full bg-center bg-no-repeat aspect-[3/4] bg-cover rounded-md mb-2" style='background-image: url("https://lh3.googleusercontent.com/aida-public/AB6AXuBzfJNGSO1g8fHbfG2_eoLWSp5F0qX-TCi5g1ZjbMenV_7YYbvk3EX8XlGGpzd2WZ9VjbKrdwH_2EXRQ1jFSjiqPpYCVSP7taVZctxhVDz30xZaFMV9YbynLlV0HFUB8BkxE42lvvy31EBh3Na2Z6gr_6dvVlZXOxG0tj4kFsO5lRyb74x6yXx1Uj9abPN0Zx5UJEKntWJ5puUJ6WLVmBigT9NDvAq-sUwGvzId4QptSdUliqcc_DLqwtoJJIZDXMxPjwOmC6waE9g");'></div>
+<p class="text-[#6A4E2D] text-sm font-medium text-center">Aurora (Mare)</p>
+<div class="flex justify-between items-center mt-1 text-xs text-[#8c6d46]">
+<span>Str: 6</span>
+<span>Agi: 9</span>
+<div class="relative">
+<span class="material-symbols-outlined text-base temperament-icon">swords</span>
+<span class="scroll-tooltip -left-12 -top-8 w-24 text-center">Spirited</span>
+</div>
+</div>
+</div>
+<div class="parchment-bg border border-[#D6A64A]/70 rounded-lg shadow-md p-2 cursor-pointer hover:shadow-lg hover:border-[#D6A64A] transition-all duration-200">
+<div class="w-full bg-center bg-no-repeat aspect-[3/4] bg-cover rounded-md mb-2" style='background-image: url("https://lh3.googleusercontent.com/aida-public/AB6AXuBB-sF-g6L9LfpTkZOO5knuzhG7RXF7a6q3gxMCg1ombCErLc9CN2lK6KpWDRowz6G-CMF5dEnUPLVQtLT73vFNJwivS46nB6GXEKA2_doKkjscN3smahEqo4ZBf8zSdyo1sfceP2uv_a8ATf1f6o8wb4lmRUTwQg8pp_QWg8SHNS2qIEj6-kJSsYichYl6oto7mNXMPuuuD5eWkDoBxDcpVAGnTKMSd0pRSxGgRDM-anzK8K1YQ1T6KANVPWXyXtVbMfoXYlP5gU8");'></div>
+<p class="text-[#6A4E2D] text-sm font-medium text-center">Orion (Stallion)</p>
+<div class="flex justify-between items-center mt-1 text-xs text-[#8c6d46]">
+<span>Str: 9</span>
+<span>Agi: 6</span>
+<div class="relative">
+<span class="material-symbols-outlined text-base temperament-icon">shield</span>
+<span class="scroll-tooltip -left-12 -top-8 w-24 text-center">Bold</span>
+</div>
+</div>
+</div>
+<div class="parchment-bg border border-[#D6A64A]/70 rounded-lg shadow-md p-2 cursor-pointer hover:shadow-lg hover:border-[#D6A64A] transition-all duration-200">
+<div class="w-full bg-center bg-no-repeat aspect-[3/4] bg-cover rounded-md mb-2" style='background-image: url("https://lh3.googleusercontent.com/aida-public/AB6AXuCI8XN4wmFpSY76fwfkS3ViY_woPjAXKNZMeGpcPEio3rCt7kLezWVKqf3Tu6_hFlD-nhdnNQBv_4o-ow3XF1JZsQqs4iFOscY7W6WvxtYXJb0XnxnLI3T-HbQ7_chpPoacGdrswzH6hfBNtdEExRHe_l8q6gYe7qpfpzMFs7zQF7UUTZBpfWVH2cG-T8Njw8NXdalrk1eEnD37NhZ7apIp8Va0JRPn06pfGNOJfcO-W_c2fJiEF7Z08YuJXQPikqcLxICHeF6zzH8");'></div>
+<p class="text-[#6A4E2D] text-sm font-medium text-center">Zephyr (Stallion)</p>
+<div class="flex justify-between items-center mt-1 text-xs text-[#8c6d46]">
+<span>Str: 7</span>
+<span>Agi: 8</span>
+<div class="relative">
+<span class="material-symbols-outlined text-base temperament-icon">bolt</span>
+<span class="scroll-tooltip -left-12 -top-8 w-24 text-center">Energetic</span>
+</div>
+</div>
+</div>
+</div>
+<div class="px-6 py-4 mt-auto border-t border-[#D6A64A]/50">
+<button class="w-full bg-[#D6A64A] hover:bg-[#c09542] text-[#FDF8E3] font-bold py-3 px-4 rounded-lg shadow-md hover:shadow-lg transition-all duration-200 text-base tracking-wider">
+            Next
+          </button>
+</div>
+</div>
+<div class="hidden flex-col" id="step2">
+<div class="flex items-center justify-between p-4 sticky top-0 parchment-bg z-10 border-b border-[#D6A64A]/50">
+<button class="text-[#6A4E2D] hover:text-[#D6A64A]">
+<span class="material-symbols-outlined">arrow_back_ios</span>
+</button>
+<h2 class="text-[#6A4E2D] text-xl font-bold leading-tight tracking-tight flex-1 text-center">Breeding</h2>
+<button class="text-[#6A4E2D] hover:text-[#D6A64A]">
+<span class="material-symbols-outlined">close</span>
+</button>
+</div>
+<div class="flex w-full flex-row items-center justify-center gap-3 py-5">
+<div class="h-2.5 w-2.5 rounded-full bg-[#D6A64A]/40"></div>
+<div class="h-2.5 w-2.5 rounded-full bg-[#D6A64A] shadow-md"></div>
+<div class="h-2.5 w-2.5 rounded-full bg-[#D6A64A]/40"></div>
+<div class="h-2.5 w-2.5 rounded-full bg-[#D6A64A]/40"></div>
+</div>
+<h3 class="text-[#6A4E2D] text-lg font-semibold leading-tight tracking-tight px-6 pb-2 pt-2">Trait Compatibility</h3>
+<div class="p-6 space-y-4 relative">
+<div class="absolute inset-0 pointer-events-none">
+<div class="particle-line h-1/3 left-1/4 top-1/4" style="animation-delay: 0s;"></div>
+<div class="particle-line h-1/2 left-1/2 top-1/3" style="animation-delay: 0.5s;"></div>
+<div class="particle-line h-1/3 left-3/4 top-1/4" style="animation-delay: 0.2s;"></div>
+</div>
+<div class="flex justify-between items-center">
+<p class="text-[#8c6d46] text-sm">Strength Match:</p>
+<div class="w-2/3 bg-[#D6A64A]/30 rounded-full h-2.5">
+<div class="bg-[#D6A64A] h-2.5 rounded-full" style="width: 80%"></div>
+</div>
+<p class="text-[#6A4E2D] text-sm font-medium">80%</p>
+</div>
+<div class="flex justify-between items-center">
+<p class="text-[#8c6d46] text-sm">Agility Match:</p>
+<div class="w-2/3 bg-[#D6A64A]/30 rounded-full h-2.5">
+<div class="bg-[#D6A64A] h-2.5 rounded-full" style="width: 65%"></div>
+</div>
+<p class="text-[#6A4E2D] text-sm font-medium">65%</p>
+</div>
+<div class="flex justify-between items-center">
+<p class="text-[#8c6d46] text-sm">Stamina Match:</p>
+<div class="w-2/3 bg-[#D6A64A]/30 rounded-full h-2.5">
+<div class="bg-[#D6A64A] h-2.5 rounded-full" style="width: 90%"></div>
+</div>
+<p class="text-[#6A4E2D] text-sm font-medium">90%</p>
+</div>
+<div class="pt-4 flex justify-around items-center">
+<div class="flex flex-col items-center">
+<span class="material-symbols-outlined text-4xl text-[#D6A64A]">shield</span>
+<p class="text-xs text-[#6A4E2D] mt-1">Calm (Mare)</p>
+</div>
+<span class="material-symbols-outlined text-3xl text-[#D6A64A]">join_inner</span>
+<div class="flex flex-col items-center">
+<span class="material-symbols-outlined text-4xl text-[#D6A64A]">shield</span>
+<p class="text-xs text-[#6A4E2D] mt-1">Bold (Stallion)</p>
+</div>
+</div>
+<div class="pt-4">
+<p class="text-[#8c6d46] text-sm mb-2">Color Genetics (Inheritance %):</p>
+<div class="flex space-x-2">
+<div class="p-2 rounded bg-[#A0522D] text-white text-xs flex-grow text-center">Bay (45%)</div>
+<div class="p-2 rounded bg-[#5C4033] text-white text-xs flex-grow text-center">Seal Brown (30%)</div>
+<div class="p-2 rounded bg-[#E6D8AD] text-[#6A4E2D] text-xs flex-grow text-center">Palomino (15%)</div>
+<div class="p-2 rounded bg-[#C0C0C0] text-[#6A4E2D] text-xs flex-grow text-center">Grey (10%)</div>
+</div>
+</div>
+</div>
+<div class="px-6 py-4 mt-auto border-t border-[#D6A64A]/50">
+<button class="w-full bg-[#D6A64A] hover:bg-[#c09542] text-[#FDF8E3] font-bold py-3 px-4 rounded-lg shadow-md hover:shadow-lg transition-all duration-200 text-base tracking-wider">
+            Next
+          </button>
+</div>
+</div>
+<div class="hidden flex-col" id="step3">
+<div class="flex items-center justify-between p-4 sticky top-0 parchment-bg z-10 border-b border-[#D6A64A]/50">
+<button class="text-[#6A4E2D] hover:text-[#D6A64A]">
+<span class="material-symbols-outlined">arrow_back_ios</span>
+</button>
+<h2 class="text-[#6A4E2D] text-xl font-bold leading-tight tracking-tight flex-1 text-center">Breeding</h2>
+<button class="text-[#6A4E2D] hover:text-[#D6A64A]">
+<span class="material-symbols-outlined">close</span>
+</button>
+</div>
+<div class="flex w-full flex-row items-center justify-center gap-3 py-5">
+<div class="h-2.5 w-2.5 rounded-full bg-[#D6A64A]/40"></div>
+<div class="h-2.5 w-2.5 rounded-full bg-[#D6A64A]/40"></div>
+<div class="h-2.5 w-2.5 rounded-full bg-[#D6A64A] shadow-md"></div>
+<div class="h-2.5 w-2.5 rounded-full bg-[#D6A64A]/40"></div>
+</div>
+<h3 class="text-[#6A4E2D] text-lg font-semibold leading-tight tracking-tight px-6 pb-2 pt-2">Lineage &amp; Foal Preview</h3>
+<div class="p-6 flex flex-col items-center">
+<div class="w-48 h-64 prophecy-window bg-black/30 flex items-center justify-center mb-4">
+<span class="material-symbols-outlined text-8xl text-[#D6A64A]/70">pets</span>
+</div>
+<div class="w-full p-3 parchment-bg border border-[#D6A64A]/50 rounded-md shadow-inner">
+<p class="cormorant-garamond-italic text-sm text-center text-[#6A4E2D] mb-1">Granddam: Elara | Grandsire: Boreas</p>
+<p class="text-center text-xs text-[#8c6d46]">|</p>
+<p class="cormorant-garamond-italic text-base text-center text-[#6A4E2D] mb-1">Dam: Luna | Sire: Orion</p>
+<p class="text-center text-xs text-[#8c6d46]">|</p>
+<p class="cormorant-garamond-italic text-sm text-center text-[#6A4E2D]">Granddam: Lyra | Grandsire: Sol</p>
+</div>
+<div class="mt-4 w-full space-y-2">
+<div class="flex justify-between items-center p-2 parchment-bg border border-[#D6A64A]/30 rounded">
+<p class="text-[#8c6d46] text-sm">Projected Strength:</p>
+<p class="text-[#6A4E2D] text-sm font-medium">High</p>
+</div>
+<div class="flex justify-between items-center p-2 parchment-bg border border-[#D6A64A]/30 rounded">
+<p class="text-[#8c6d46] text-sm">Projected Stamina:</p>
+<p class="text-[#6A4E2D] text-sm font-medium">Very High</p>
+</div>
+<div class="flex justify-between items-center p-2 parchment-bg border border-red-400 rounded aura-pulse">
+<p class="text-red-700 text-sm">Rare Feature Warning:</p>
+<p class="text-red-500 text-sm font-medium">Aura Pulse</p>
+</div>
+</div>
+</div>
+<div class="px-6 py-4 mt-auto border-t border-[#D6A64A]/50">
+<button class="w-full bg-[#D6A64A] hover:bg-[#c09542] text-[#FDF8E3] font-bold py-3 px-4 rounded-lg shadow-md hover:shadow-lg transition-all duration-200 text-base tracking-wider">
+            Next
+          </button>
+</div>
+</div>
+<div class="hidden flex-col" id="step4">
+<div class="flex items-center justify-between p-4 sticky top-0 parchment-bg z-10 border-b border-[#D6A64A]/50">
+<button class="text-[#6A4E2D] hover:text-[#D6A64A]">
+<span class="material-symbols-outlined">arrow_back_ios</span>
+</button>
+<h2 class="text-[#6A4E2D] text-xl font-bold leading-tight tracking-tight flex-1 text-center">Breeding</h2>
+<button class="text-[#6A4E2D] hover:text-[#D6A64A]">
+<span class="material-symbols-outlined">close</span>
+</button>
+</div>
+<div class="flex w-full flex-row items-center justify-center gap-3 py-5">
+<div class="h-2.5 w-2.5 rounded-full bg-[#D6A64A]/40"></div>
+<div class="h-2.5 w-2.5 rounded-full bg-[#D6A64A]/40"></div>
+<div class="h-2.5 w-2.5 rounded-full bg-[#D6A64A]/40"></div>
+<div class="h-2.5 w-2.5 rounded-full bg-[#D6A64A] shadow-md"></div>
+</div>
+<h3 class="text-[#6A4E2D] text-lg font-semibold leading-tight tracking-tight px-6 pb-2 pt-2">Finalize Pairing</h3>
+<div class="flex-1 flex flex-col items-center justify-center p-6 text-center">
+<div class="p-6 parchment-bg border-2 border-[#D6A64A] rounded-lg shadow-xl" style="border-image: url('data:image/svg+xml;charset=UTF-8,%3csvg width=%27100%27 height=%27100%27 xmlns=%27http://www.w3.org/2000/svg%27%3e%3crect x=%270%27 y=%270%27 width=%27100%27 height=%27100%27 style=%27fill:none;stroke:%23D6A64A;stroke-width:4px;stroke-dasharray:10,5;%27/%3e%3c/svg%3e') 5 stretch;">
+<p class="text-[#6A4E2D] text-lg font-medium leading-relaxed mb-6">
+                    Are you sure you wish to breed <strong class="text-[#D6A64A]">Luna</strong> and <strong class="text-[#D6A64A]">Orion</strong>?
+                </p>
+<button class="w-full bg-[#D6A64A] hover:bg-[#c09542] text-[#FDF8E3] font-bold py-3 px-4 rounded-lg shadow-md hover:shadow-lg transition-all duration-200 text-base tracking-wider feather-stamp-button">
+                    Confirm Pairing
+                </button>
+</div>
+<div class="hidden mt-8 p-6 parchment-bg border-2 border-[#6A4E2D] rounded-lg shadow-xl relative" id="confirmationMessage">
+<span class="material-symbols-outlined absolute top-2 right-2 text-3xl text-[#D6A64A] animate-ping opacity-75">spark</span>
+<span class="material-symbols-outlined absolute top-2 right-2 text-3xl text-[#D6A64A]">spark</span>
+<p class="text-[#6A4E2D] text-xl font-semibold leading-relaxed">
+                    Foal arriving soon!
+                </p>
+<p class="text-[#8c6d46] text-sm mt-2">You will be notified when your new foal is ready.</p>
+</div>
+</div>
+</div>
+</div>
+</div>
+<script>
+    const steps = ['step1', 'step2', 'step3', 'step4'];
+    let currentStep = 0;
+    function showStep(stepIndex) {
+      steps.forEach((stepId, index) => {
+        const stepElement = document.getElementById(stepId);
+        if (index === stepIndex) {
+          stepElement.classList.remove('hidden');
+          stepElement.classList.add('flex');
+        } else {
+          stepElement.classList.add('hidden');
+          stepElement.classList.remove('flex');
+        }
+      });
+    }
+    document.querySelectorAll('button').forEach(button => {
+      if (button.textContent.trim().toLowerCase() === 'next') {
+        button.addEventListener('click', () => {
+          if (currentStep < steps.length - 1) {
+            currentStep++;
+            showStep(currentStep);
+          }
+        });
+      } else if (button.querySelector('.material-symbols-outlined')?.textContent.trim() === 'arrow_back_ios') {
+         button.addEventListener('click', () => {
+          if (currentStep > 0) {
+            currentStep--;
+            showStep(currentStep);
+          }
+        });
+      } else if (button.textContent.trim().toLowerCase() === 'confirm pairing') {
+          button.addEventListener('click', () => {
+              // Simulate scroll roll + spark animation, crest merge effect (visual only for now)
+              const confirmationMessage = document.getElementById('confirmationMessage');
+              const finalizeButtonContainer = button.parentElement;
+              finalizeButtonContainer.classList.add('animate-[scrollOut_0.5s_ease-out_forwards]'); // Placeholder animation
+              setTimeout(() => {
+                finalizeButtonContainer.classList.add('hidden');
+                confirmationMessage.classList.remove('hidden');
+                confirmationMessage.classList.add('animate-[scrollIn_0.5s_ease-in_backwards]'); // Placeholder animation
+              }, 500);
+          });
+      }
+    });
+    // Initialize first step
+    showStep(currentStep);
+    // Add placeholder keyframe animations if not using a library like animate.css
+    const styleSheet = document.createElement("style");
+    styleSheet.type = "text/css";
+    styleSheet.innerText = `
+        @keyframes scrollOut { 0% { transform: translateY(0) rotateX(0); opacity: 1; } 100% { transform: translateY(-100%) rotateX(90deg); opacity: 0; } }
+        @keyframes scrollIn { 0% { transform: translateY(100%) rotateX(-90deg); opacity: 0; } 100% { transform: translateY(0) rotateX(0); opacity: 1; } }
+    `;
+    document.head.appendChild(styleSheet);
+  </script>
+
+</body></html>

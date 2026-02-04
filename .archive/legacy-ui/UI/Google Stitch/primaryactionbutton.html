@@ -1,0 +1,107 @@
+<!DOCTYPE html>
+<html lang="en"><head>
+<meta charset="utf-8"/>
+<meta content="width=device-width, initial-scale=1.0" name="viewport"/>
+<title>Equoria Action Button</title>
+<link crossorigin="" href="https://fonts.gstatic.com/" rel="preconnect"/>
+<link href="https://fonts.googleapis.com/css2?family=Jost:wght@700&amp;display=swap" rel="stylesheet"/>
+<script src="https://cdn.tailwindcss.com?plugins=forms,container-queries"></script>
+<style>
+    body {
+      font-family: 'Jost', sans-serif;
+      background-color: #1A1A1A;display: flex;
+      justify-content: center;
+      align-items: center;
+      min-height: 100vh;
+      margin: 0;
+    }
+    .equoria-button {
+      background-color: #2C4A2A;border-radius: 8px;
+      color: #FDF8E3;font-size: 16px;
+      font-weight: bold;
+      text-transform: uppercase;
+      padding: 16px 32px;position: relative;
+      overflow: hidden;cursor: pointer;
+      outline: none;
+      box-shadow:
+        0 0 0 2px #D6A64A,0 0 0 3px #6A4E2D;transition: box-shadow 0.2s ease-in-out, transform 0.1s ease-in-out;
+      -webkit-tap-highlight-color: transparent;}
+    .equoria-button::before {content: "";
+      position: absolute;
+      top: 0;
+      left: 0;
+      right: 0;
+      bottom: 0;
+      background-image: url("data:image/svg+xml,%3Csvg width='60' height='60' viewBox='0 0 60 60' xmlns='http://www.w3.org/2000/svg'%3E%3Cg fill='none' fill-rule='evenodd'%3E%3Cg fill='%23FDF8E3' fill-opacity='0.05'%3E%3Cpath d='M36 34v-4h-2v4h-4v2h4v4h2v-4h4v-2h-4zm0-30V0h-2v4h-4v2h4v4h2V6h4V4h-4zM6 34v-4H4v4H0v2h4v4h2v-4h4v-2H6zM6 4V0H4v4H0v2h4v4h2V6h4V4H6z'/%3E%3C/g%3E%3C/g%3E%3C/svg%3E");opacity: 0.3;
+      z-index: 0;
+    }
+    .equoria-button-text {
+      position: relative;z-index: 1;
+    }
+    .equoria-button:active {
+      transform: scale(0.98);box-shadow:
+        0 0 0 2px #D6A64A,
+        0 0 0 3px #6A4E2D,
+        0 0 20px 5px rgba(214, 166, 74, 0.7);}
+    .equoria-button:active::after {content: "";
+      position: absolute;
+      top: -50%;
+      left: -50%;
+      width: 200%;
+      height: 200%;
+      background-image: radial-gradient(circle, rgba(214, 166, 74, 0.5) 0%, rgba(214, 166, 74, 0) 70%);
+      animation: shimmer 0.5s forwards;
+      z-index: 2;
+      opacity: 0;
+    }
+    @keyframes shimmer {
+      from {
+        opacity: 0;
+        transform: scale(0.5);
+      }
+      to {
+        opacity: 1;
+        transform: scale(1);
+      }
+    }
+    .corner-embellishment {
+      position: absolute;
+      width: 12px;height: 12px;background-color: #D6A64A;z-index: 1;
+      clip-path: polygon(50% 0%, 100% 50%, 50% 100%, 0% 50%);}
+    .corner-embellishment.top-left {
+      top: -3px;
+      left: -3px;
+      transform: rotate(-45deg);
+    }
+    .corner-embellishment.top-right {
+      top: -3px;
+      right: -3px;
+      transform: rotate(45deg);
+    }
+    .corner-embellishment.bottom-left {
+      bottom: -3px;
+      left: -3px;
+      transform: rotate(45deg);
+    }
+    .corner-embellishment.bottom-right {
+      bottom: -3px;
+      right: -3px;
+      transform: rotate(-45deg);
+    }
+  </style>
+<style>
+    body {
+      min-height: max(884px, 100dvh);
+    }
+  </style>
+  </head>
+<body>
+<button class="equoria-button">
+<div class="corner-embellishment top-left"></div>
+<div class="corner-embellishment top-right"></div>
+<div class="corner-embellishment bottom-left"></div>
+<div class="corner-embellishment bottom-right"></div>
+<span class="equoria-button-text">Claim Reward</span>
+</button>
+
+</body></html>

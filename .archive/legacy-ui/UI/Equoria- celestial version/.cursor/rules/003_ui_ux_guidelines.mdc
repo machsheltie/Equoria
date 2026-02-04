@@ -1,0 +1,10 @@
+---
+description: Covers UI layout strategy, responsive goals, animations, and design requirements.
+globs: ["frontend/**/*", "docs/ux-wireframes/**/*"]
+---
+## 📦 UI/UX Requirements
+- Mobile-first design (6"–7" screens)
+- Global bottom nav (Dashboard, Stable, Competitions, World, Search, Chat)
+- Animated trait reveal via card flip
+- Stable list: filter tray, pagination, batch actions
+- Artisan dashboard + rider heatmap must load <500ms

@@ -1,0 +1,253 @@
+<html><head>
+<meta charset="utf-8"/>
+<link crossorigin="" href="https://fonts.gstatic.com/" rel="preconnect"/>
+<link as="style" href="https://fonts.googleapis.com/css2?display=swap&amp;family=Yeseva+One%3Awght%40400&amp;family=Jost%3Awght%40400%3B500%3B700&amp;family=Cormorant+Garamond%3Awght%40400%3B500%3B700" onload="this.rel='stylesheet'" rel="stylesheet"/>
+<title>Stitch Design</title>
+<link href="data:image/x-icon;base64," rel="icon" type="image/x-icon"/>
+<script src="https://cdn.tailwindcss.com?plugins=forms,container-queries"></script>
+<style>
+    .font-yeseva-one {
+      font-family: "Yeseva One", serif;
+    }
+    .font-jost {
+      font-family: "Jost", sans-serif;
+    }
+    .font-cormorant-garamond {
+      font-family: "Cormorant Garamond", serif;
+    }
+    .parchment-bg {
+      background-image: url("data:image/svg+xml,%3Csvg width='500' height='350' viewBox='0 0 500 350' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='noiseFilter'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.65' numOctaves='3' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23noiseFilter)'/%3E%3C/svg%3E"),
+        linear-gradient(to bottom, #fdf6e3, #f8f0d7);
+      background-blend-mode: overlay, normal;
+    }
+    .marble-bg {
+      background-image: url("data:image/svg+xml,%3Csvg width='100' height='100' viewBox='0 0 100 100' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='marbleNoise'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.02' numOctaves='5' stitchTiles='stitch'/%3E%3CfeDiffuseLighting in='SourceGraphic' surfaceScale='5' lighting-color='%23ffffff' result='diffuse'%3E%3CfeDistantLight azimuth='45' elevation='60'/%3E%3C/feDiffuseLighting%3E%3CfeComposite operator='in' in2='SourceGraphic' result='comp'%3E%3C/feComposite%3E%3C/filter%3E%3Crect width='100%25' height='100%25' fill='%23e0e0e0'/%3E%3Crect width='100%25' height='100%25' filter='url(%23marbleNoise)' opacity='0.3'/%3E%3C/svg%3E"),
+        linear-gradient(135deg, #f5f5f5 25%, transparent 25%),
+        linear-gradient(225deg, #f5f5f5 25%, transparent 25%),
+        linear-gradient(45deg, #f5f5f5 25%, transparent 25%),
+        linear-gradient(315deg, #f5f5f5 25%, #e0e0e0 25%);
+      background-position: 0 0, 10px 0, 10px -10px, 0px 10px, -10px 0px;
+      background-size: 20px 20px;
+    }
+    .velvet-bg {
+      background: linear-gradient(145deg, #4a0e0e, #8a2b2b);
+      box-shadow: inset 0 0 10px rgba(0, 0, 0, 0.5);
+    }
+    .shimmer-gold {
+      position: relative;
+      overflow: hidden;
+      border: 3px solid #ffd700;
+    }
+    .shimmer-silver {
+      position: relative;
+      overflow: hidden;
+      border: 3px solid #c0c0c0;
+    }
+    .shimmer-bronze {
+      position: relative;
+      overflow: hidden;
+      border: 3px solid #cd7f32;
+    }
+    .shimmer-gold::before,
+    .shimmer-silver::before,
+    .shimmer-bronze::before {
+      content: "";
+      position: absolute;
+      top: -50%;
+      left: -50%;
+      width: 200%;
+      height: 200%;
+      background: linear-gradient(to right,
+          transparent 0%,
+          rgba(255, 255, 255, 0.3) 50%,
+          transparent 100%);
+      transform: rotate(30deg);
+      animation: shimmer 3s infinite linear;
+    }
+    @keyframes shimmer {
+      0% {
+        transform: translateX(-75%) translateY(-75%) rotate(30deg);
+      }
+      100% {
+        transform: translateX(75%) translateY(75%) rotate(30deg);
+      }
+    }
+    .gilded-plaque {
+      background: linear-gradient(145deg, #daa520, #f0c040);
+      border: 4px solid #b8860b;
+      box-shadow: 0 4px 8px rgba(0, 0, 0, 0.3), inset 0 2px 4px rgba(255, 255, 255, 0.2);
+      color: #4a2c0f;
+      text-shadow: 1px 1px 1px #fff5e1;
+    }
+  </style>
+<style>
+    body {
+      min-height: max(884px, 100dvh);
+    }
+  </style>
+  </head>
+<body class="bg-[#2C1B1A] min-h-screen">
+<div class="relative flex size-full min-h-screen flex-col parchment-bg justify-between group/design-root overflow-x-hidden">
+<div>
+<div class="flex items-center p-4 pb-2 justify-between gilded-plaque mb-4 rounded-b-xl shadow-lg">
+<div class="text-[#4a2c0f] flex size-10 shrink-0 items-center justify-center rounded-full bg-[#f0c040]/50 hover:bg-[#f0c040]/80 transition-colors" data-icon="ArrowLeft" data-size="24px" data-weight="regular">
+<svg fill="currentColor" height="24px" viewBox="0 0 256 256" width="24px" xmlns="http://www.w3.org/2000/svg">
+<path d="M224,128a8,8,0,0,1-8,8H59.31l58.35,58.34a8,8,0,0,1-11.32,11.32l-72-72a8,8,0,0,1,0-11.32l72-72a8,8,0,0,1,11.32,11.32L59.31,120H216A8,8,0,0,1,224,128Z"></path>
+</svg>
+</div>
+<h1 class="font-yeseva-one text-3xl font-bold leading-tight tracking-tight text-center flex-1 pr-10">Hall of Champions</h1>
+</div>
+<div class="pb-3 px-2">
+<div class="flex border-b-2 border-[#8c6c48] gap-1 bg-[#f0e6d2] rounded-t-lg shadow-md">
+<a class="flex flex-1 flex-col items-center justify-center border-b-[4px] border-b-[#DAA520] text-[#4a2c0f] pb-3 pt-4 rounded-tl-md" href="#">
+<p class="font-jost text-sm font-bold tracking-[0.015em]">Overall</p>
+</a>
+<a class="flex flex-1 flex-col items-center justify-center border-b-[4px] border-b-transparent text-[#6b4f33] hover:text-[#4a2c0f] hover:border-b-[#DAA520]/50 pb-3 pt-4 transition-colors duration-200" href="#">
+<p class="font-jost text-sm font-bold tracking-[0.015em]">Weekly</p>
+</a>
+<a class="flex flex-1 flex-col items-center justify-center border-b-[4px] border-b-transparent text-[#6b4f33] hover:text-[#4a2c0f] hover:border-b-[#DAA520]/50 pb-3 pt-4 transition-colors duration-200" href="#">
+<p class="font-jost text-sm font-bold tracking-[0.015em]">Guild</p>
+</a>
+<a class="flex flex-1 flex-col items-center justify-center border-b-[4px] border-b-transparent text-[#6b4f33] hover:text-[#4a2c0f] hover:border-b-[#DAA520]/50 pb-3 pt-4 rounded-tr-md transition-colors duration-200" href="#">
+<p class="font-jost text-sm font-bold tracking-[0.015em]">Discipline</p>
+</a>
+</div>
+</div>
+<div class="px-4 py-2 grid grid-cols-1 sm:grid-cols-3 gap-4 items-start mb-4">
+<div class="flex flex-col items-center p-3 rounded-xl shimmer-gold bg-gradient-to-br from-[#fff0c7] to-[#ffe6a7] shadow-xl order-1 sm:order-1 col-span-1 sm:col-span-1">
+<div class="w-full bg-center bg-no-repeat aspect-[3/4] bg-cover rounded-lg border-2 border-[#DAA520]" style='background-image: url("https://lh3.googleusercontent.com/aida-public/AB6AXuDWBn2TNeFT6t7Y0yyg9EWJsJ-h64q28olKQEWaqWlX7GOpPQbAFjJiB06vDS3Ihb5PDdiWBIecuJX8XU4keBIhGhScSPWlRnhzm42dNIV09tP9MfDUMiZBMa8dvPJBjdgpYijfcTAeA3PvZOfDNKLDbUJrJfJoadZfxxRVPsJIhmOrYLU6Fz0XtMEMwLAZWBu7S0AdbUjwVOwJevqZlteznVxk5_1v2w8GdAqq0REpT_p4OH_3RY3iCU0_VdSXJt_0MmFkMDPskiM");'></div>
+<div class="text-center mt-2">
+<p class="font-jost text-sm text-[#855d28] font-semibold">1st Place</p>
+<p class="font-cormorant-garamond text-lg text-[#4a2c0f] font-bold">Seraphina</p>
+<p class="font-jost text-xs text-[#6b4f33]">Legacy: 1,250,000</p>
+</div>
+</div>
+<div class="flex flex-col items-center p-3 rounded-xl shimmer-silver bg-gradient-to-br from-[#f0f0f0] to-[#e0e0e0] shadow-xl order-2 sm:order-2 col-span-1 sm:col-span-1">
+<div class="w-full bg-center bg-no-repeat aspect-[3/4] bg-cover rounded-lg border-2 border-[#c0c0c0]" style='background-image: url("https://lh3.googleusercontent.com/aida-public/AB6AXuCMmPfe_nup-2WqiEbunXxLFOcP34rW5mtKjrXecb8RCykY02dUNfr0-zfAd2r6nSx8UdU3AbbyX7xWAGkTNjUCSJ1aaPk0BETorrp5zhu2SDeYwdUtFPCE0ELkoTbVDz1NrMaExMVk6DosUjkLacvCxwlLQRYZuRMp11sg9rh9FpU_6oMulB8oveumwjtPtxiGZiM0cijtnVmfsRu3yCceZkVqN29f4p3uv8ZYQhDDPJ0KSe4FKiwFAhuR51qOjthdo058gY__6OM");'></div>
+<div class="text-center mt-2">
+<p class="font-jost text-sm text-[#606060] font-semibold">2nd Place</p>
+<p class="font-cormorant-garamond text-lg text-[#333333] font-bold">Zephyr</p>
+<p class="font-jost text-xs text-[#555555]">Legacy: 1,100,000</p>
+</div>
+</div>
+<div class="flex flex-col items-center p-3 rounded-xl shimmer-bronze bg-gradient-to-br from-[#f0e0d0] to-[#e0c0b0] shadow-xl order-3 sm:order-3 col-span-1 sm:col-span-1">
+<div class="w-full bg-center bg-no-repeat aspect-[3/4] bg-cover rounded-lg border-2 border-[#cd7f32]" style='background-image: url("https://lh3.googleusercontent.com/aida-public/AB6AXuAr7W6lE_byre9HbSkBPfOGaghSeDrrYXVQpcjanz-rnOEsN63bU03E6YHDQmRwBrhNfh_NDv0Nqq9d1hfueHp2rXXZDCUGiKTTC0PGkMuXYorP1HK06QUn4RTlYOQSLYHJwh2_HE8OeJKpfE622AaoXlgB14zsYq7-OB2gIh9QEOQJeIqSfHCdF5mbiWXrVFN7khwD6jEkuzalZH8H3inKkLhWiZW23VRH9KvZ5G6yLIfemNRSTvRY9n6IHVvZSoUBCN9HZDfe4gc");'></div>
+<div class="text-center mt-2">
+<p class="font-jost text-sm text-[#8c582c] font-semibold">3rd Place</p>
+<p class="font-cormorant-garamond text-lg text-[#5a381a] font-bold">Orion</p>
+<p class="font-jost text-xs text-[#7b4d22]">Legacy: 950,000</p>
+</div>
+</div>
+</div>
+<div class="px-4 py-2">
+<h3 class="font-yeseva-one text-2xl text-[#4a2c0f] px-2 pb-3 pt-2 border-t-2 border-b-2 border-[#8c6c48] bg-[#f0e6d2] rounded-t-lg shadow-inner text-center">Leaderboard</h3>
+<div class="marble-bg p-3 rounded-b-lg shadow-lg max-h-[calc(100vh-500px)] overflow-y-auto">
+<div class="space-y-2">
+<div class="flex items-center gap-4 p-3 bg-white/30 backdrop-blur-sm rounded-lg shadow hover:shadow-md transition-shadow">
+<p class="font-jost text-lg text-[#4a2c0f] font-bold w-8 text-center">4</p>
+<div class="bg-center bg-no-repeat aspect-square bg-cover rounded-full h-12 w-12 border-2 border-[#DAA520]" style='background-image: url("https://lh3.googleusercontent.com/aida-public/AB6AXuCnuNOto7Hji_MbX0Q9bZRcojN1T1ichGkxSXHJ7IY1UUEtuoUQ5AXbRLqmg13ACoydi98tmeW1UWEaBg-NZctPoswjB7De7gxEWLSVtBcpXf0R100Ma1YhyDR39hD3JvAnvTWlGN2A6lszhtq8WmCF3vlD6nWxbGZOrYX2yHk_Qsebwb30ORiBwPDXZbuxJakhofCnfKOtCTdeiqESUM0P90JjL9YLi7ND8s8WC3nXaoXeTP5MepibhORi9dO2YwZAe180WWd3FAs");'></div>
+<div class="flex-1">
+<p class="font-jost text-base text-[#4a2c0f] font-semibold line-clamp-1">Luna</p>
+<p class="font-jost text-sm text-[#6b4f33] line-clamp-1">Legacy: 800,000</p>
+</div>
+</div>
+<div class="flex items-center gap-4 p-3 bg-white/30 backdrop-blur-sm rounded-lg shadow hover:shadow-md transition-shadow">
+<p class="font-jost text-lg text-[#4a2c0f] font-bold w-8 text-center">5</p>
+<div class="bg-center bg-no-repeat aspect-square bg-cover rounded-full h-12 w-12 border-2 border-[#DAA520]" style='background-image: url("https://lh3.googleusercontent.com/aida-public/AB6AXuAJP6PlO3sXmEytce0TiPUiZcuQrJPqiRDqGwuaIjui_Nh5BjWq6dGvzWw9E5SNLeDCdeO_jnUuLy74SNhePZgNz_fkXQFAHJ9soBTFgcaGdOqP4OwK2ftyAQRfQjX6S4OWZeicD_q8YNexB_ScuChXIRozE5ztgDdHMp-1svzLKRUPFupKkCXUy65kEgsyGEgOuQ7F-2y_D-7O3U-ykAbAx-Fs2Cx3sedKEyg3LZ5WqIs1Q9DnXu5-MK68lDzk6vYNW5WseVxXcLM");'></div>
+<div class="flex-1">
+<p class="font-jost text-base text-[#4a2c0f] font-semibold line-clamp-1">Phoenix</p>
+<p class="font-jost text-sm text-[#6b4f33] line-clamp-1">Legacy: 750,000</p>
+</div>
+</div>
+<div class="flex items-center gap-4 p-3 bg-white/30 backdrop-blur-sm rounded-lg shadow hover:shadow-md transition-shadow">
+<p class="font-jost text-lg text-[#4a2c0f] font-bold w-8 text-center">6</p>
+<div class="bg-center bg-no-repeat aspect-square bg-cover rounded-full h-12 w-12 border-2 border-[#DAA520]" style='background-image: url("https://lh3.googleusercontent.com/aida-public/AB6AXuCF62T_o-xgeHhv6NR5II-cvALBxgeV24wYjjRcbsMgXUUuv8zlOe0YalmWUo3byTIrcWqN9QozU80SLo-PmTdnc_mslSMUO8M3nqm52LK7Gq680b9OBMbF97jaCSuo_Q7WrdXzB6BBWi4eufMlq_LhUI_XKqFhtIUUjdlV27SSdnaCq2V-PYb-oRi2-tiRIfw4C6sxAT_7MT9szducnJjorRiSqanwsbEerCw2Did6Bf6D8upJoawe8dtIwd4CqDTdAqIg-_0u5GA");'></div>
+<div class="flex-1">
+<p class="font-jost text-base text-[#4a2c0f] font-semibold line-clamp-1">Aurora</p>
+<p class="font-jost text-sm text-[#6b4f33] line-clamp-1">Legacy: 700,000</p>
+</div>
+</div>
+<div class="flex items-center gap-4 p-3 bg-white/30 backdrop-blur-sm rounded-lg shadow hover:shadow-md transition-shadow">
+<p class="font-jost text-lg text-[#4a2c0f] font-bold w-8 text-center">7</p>
+<div class="bg-center bg-no-repeat aspect-square bg-cover rounded-full h-12 w-12 border-2 border-[#DAA520]" style='background-image: url("https://lh3.googleusercontent.com/aida-public/AB6AXuAM9ykowD-gUYNbp72L4c8sGblcwO75wSE6v35zVZsFTFw2rHPG1bHwXn9HWP8e2yr7ejDj7NQUIrt2M4od_191ro1duG9Rr9qTmp3n8a17lpU3Jo7SoF6h2v5CWts7dlGfacVT1NcGR5FVo0QYpxl3-05xDJL2WbbX8rqUq3Ipt9BTA3vFR_lB4Y4he7G26uQVbPCszZBkF1BquIY1bZwYoheC36e32vrTBKJovt9bSrfROwmsbdfDeqPp6kK-JwMaJ5WLFkZ0lmk");'></div>
+<div class="flex-1">
+<p class="font-jost text-base text-[#4a2c0f] font-semibold line-clamp-1">Caspian</p>
+<p class="font-jost text-sm text-[#6b4f33] line-clamp-1">Legacy: 650,000</p>
+</div>
+</div>
+<div class="flex items-center gap-4 p-3 bg-white/30 backdrop-blur-sm rounded-lg shadow hover:shadow-md transition-shadow">
+<p class="font-jost text-lg text-[#4a2c0f] font-bold w-8 text-center">8</p>
+<div class="bg-center bg-no-repeat aspect-square bg-cover rounded-full h-12 w-12 border-2 border-[#DAA520]" style='background-image: url("https://lh3.googleusercontent.com/aida-public/AB6AXuDVQ2zRCc5X4GYgG1h7wuQzOqHEyXjn4gtKHWHaFlCkWw0xP_M7vX9rG3vpT6zEPvwZpRNwxOwsM7M1v04IF1mcSNK049KSZyqjV5vV9C1PqLnNUTX2unL042zal5hlidaaVJkiTpwg_-QZmD2FIq_Sp8BZ-nCB96Fgfp6SLv5sPFilgNvRBumZUcd0Ix-DTzLEUJo03wxKwo_eUV79TYc1Eiubud61c-oRwm-2nKrEdORmY6Hv7E_5_wgxkymLV49ZA6GfGt9-A1U");'></div>
+<div class="flex-1">
+<p class="font-jost text-base text-[#4a2c0f] font-semibold line-clamp-1">Lyra</p>
+<p class="font-jost text-sm text-[#6b4f33] line-clamp-1">Legacy: 600,000</p>
+</div>
+</div>
+<div class="flex items-center gap-4 p-3 bg-white/30 backdrop-blur-sm rounded-lg shadow hover:shadow-md transition-shadow">
+<p class="font-jost text-lg text-[#4a2c0f] font-bold w-8 text-center">9</p>
+<div class="bg-center bg-no-repeat aspect-square bg-cover rounded-full h-12 w-12 border-2 border-[#DAA520]" style='background-image: url("https://lh3.googleusercontent.com/aida-public/AB6AXuC2vM-AlgK7dl_YHJG9G3KCOuBijEBRd7o_48DMWSgMrSWcYBIeiT7nJrL1sUouUX7crBfqmpiXSHZUfzWHEfIllIIxe3vAhwSACRAo_W6UQBalXvtSZRq541z3HV1J3oTONXsEvu7KQBnkaqlInvLbCate2O74J7_tYlM3wr5liPwrj9Nj46X3Q8UWZoR8CCHhgQmhrFBhF3ymAeHO4pdcBnSYnn6g5SvLxGNyh0sBFO-FPIst0wPk-AyP7XIS0CDwury5ALnKh_o");'></div>
+<div class="flex-1">
+<p class="font-jost text-base text-[#4a2c0f] font-semibold line-clamp-1">Oberon</p>
+<p class="font-jost text-sm text-[#6b4f33] line-clamp-1">Legacy: 550,000</p>
+</div>
+</div>
+<div class="flex items-center gap-4 p-3 bg-white/30 backdrop-blur-sm rounded-lg shadow hover:shadow-md transition-shadow">
+<p class="font-jost text-lg text-[#4a2c0f] font-bold w-8 text-center">10</p>
+<div class="bg-center bg-no-repeat aspect-square bg-cover rounded-full h-12 w-12 border-2 border-[#DAA520]" style='background-image: url("https://lh3.googleusercontent.com/aida-public/AB6AXuBsf28rkYS49QrVDmzhlrPAFwxda8aklkfUHqTw4iuvjrplfOdaY2Jbs8FNp87tufyB0ww1xZvjIbpDShVAR9k736RQOlta0uxC2zkYrSpGc4cCMs2Ix5_FmMC3YtD5gGs7yDwHmd-qMLRpWUo14_5j4xdQrsl7aKlpgoiPLI_MM79CpX_bdFEnz9TZQYpFbpY2G2AxKq4-dQVOnFYgfjoPE5UJMt2Tt57sFKZpHBW4UI2bSxKhgTfXN-s4vKkMwQodT2n_-YhDA8c");'></div>
+<div class="flex-1">
+<p class="font-jost text-base text-[#4a2c0f] font-semibold line-clamp-1">Thalia</p>
+<p class="font-jost text-sm text-[#6b4f33] line-clamp-1">Legacy: 500,000</p>
+</div>
+</div>
+</div>
+</div>
+</div>
+</div>
+<div class="sticky bottom-0 z-10">
+<div class="flex gap-1 border-t-2 border-[#8c6c48] velvet-bg px-2 pb-2 pt-2 shadow-top">
+<a class="flex flex-1 flex-col items-center justify-end gap-0.5 text-[#f0e6d2] hover:text-white transition-colors" href="#">
+<div class="flex h-7 items-center justify-center" data-icon="House" data-size="24px" data-weight="regular">
+<svg fill="currentColor" height="28px" viewBox="0 0 256 256" width="28px" xmlns="http://www.w3.org/2000/svg">
+<path d="M218.83,103.77l-80-75.48a1.14,1.14,0,0,1-.11-.11,16,16,0,0,0-21.53,0l-.11.11L37.17,103.77A16,16,0,0,0,32,115.55V208a16,16,0,0,0,16,16H96a16,16,0,0,0,16-16V160h32v48a16,16,0,0,0,16,16h48a16,16,0,0,0,16-16V115.55A16,16,0,0,0,218.83,103.77ZM208,208H160V160a16,16,0,0,0-16-16H112a16,16,0,0,0-16,16v48H48V115.55l.11-.1L128,40l79.9,75.43.11.1Z"></path>
+</svg>
+</div>
+<span class="font-jost text-xs">Home</span>
+</a>
+<a class="flex flex-1 flex-col items-center justify-end gap-0.5 text-[#f0e6d2] hover:text-white transition-colors" href="#">
+<div class="flex h-7 items-center justify-center" data-icon="Users" data-size="24px" data-weight="regular">
+<svg fill="currentColor" height="28px" viewBox="0 0 256 256" width="28px" xmlns="http://www.w3.org/2000/svg">
+<path d="M117.25,157.92a60,60,0,1,0-66.5,0A95.83,95.83,0,0,0,3.53,195.63a8,8,0,1,0,13.4,8.74,80,80,0,0,1,134.14,0,8,8,0,0,0,13.4-8.74A95.83,95.83,0,0,0,117.25,157.92ZM40,108a44,44,0,1,1,44,44A44.05,44.05,0,0,1,40,108Zm210.14,98.7a8,8,0,0,1-11.07-2.33A79.83,79.83,0,0,0,172,168a8,8,0,0,1,0-16,44,44,0,1,0-16.34-84.87,8,8,0,1,1-5.94-14.85,60,60,0,0,1,55.53,105.64,95.83,95.83,0,0,1,47.22,37.71A8,8,0,0,1,250.14,206.7Z"></path>
+</svg>
+</div>
+<span class="font-jost text-xs">Guild</span>
+</a>
+<a class="flex flex-1 flex-col items-center justify-end gap-0.5 text-[#f0e6d2] hover:text-white transition-colors" href="#">
+<div class="flex h-7 items-center justify-center" data-icon="Plus" data-size="24px" data-weight="regular">
+<svg fill="currentColor" height="28px" viewBox="0 0 256 256" width="28px" xmlns="http://www.w3.org/2000/svg">
+<path d="M224,128a8,8,0,0,1-8,8H136v80a8,8,0,0,1-16,0V136H40a8,8,0,0,1,0-16h80V40a8,8,0,0,1,16,0v80h80A8,8,0,0,1,224,128Z"></path>
+</svg>
+</div>
+<span class="font-jost text-xs">Create</span>
+</a>
+<a class="flex flex-1 flex-col items-center justify-end gap-0.5 rounded-md text-[#ffd700] bg-black/20" href="#">
+<div class="flex h-7 items-center justify-center" data-icon="Trophy" data-size="24px" data-weight="fill">
+<svg fill="currentColor" height="28px" viewBox="0 0 256 256" width="28px" xmlns="http://www.w3.org/2000/svg">
+<path d="M232,64H208V56a16,16,0,0,0-16-16H64A16,16,0,0,0,48,56v8H24A16,16,0,0,0,8,80V96a40,40,0,0,0,40,40h3.65A80.13,80.13,0,0,0,120,191.61V216H96a8,8,0,0,0,0,16h64a8,8,0,0,0,0-16H136V191.58c31.94-3.23,58.44-25.64,68.08-55.58H208a40,40,0,0,0,40-40V80A16,16,0,0,0,232,64ZM48,120A24,24,0,0,1,24,96V80H48v32q0,4,.39,8ZM232,96a24,24,0,0,1-24,24h-.5a81.81,81.81,0,0,0,.5-8.9V80h24Z"></path>
+</svg>
+</div>
+<span class="font-jost text-xs">Ranks</span>
+</a>
+<a class="flex flex-1 flex-col items-center justify-end gap-0.5 text-[#f0e6d2] hover:text-white transition-colors" href="#">
+<div class="flex h-7 items-center justify-center" data-icon="Gear" data-size="24px" data-weight="regular">
+<svg fill="currentColor" height="28px" viewBox="0 0 256 256" width="28px" xmlns="http://www.w3.org/2000/svg">
+<path d="M128,80a48,48,0,1,0,48,48A48.05,48.05,0,0,0,128,80Zm0,80a32,32,0,1,1,32-32A32,32,0,0,1,128,160Zm88-29.84q.06-2.16,0-4.32l14.92-18.64a8,8,0,0,0,1.48-7.06,107.21,107.21,0,0,0-10.88-26.25,8,8,0,0,0-6-3.93l-23.72-2.64q-1.48-1.56-3-3L186,40.54a8,8,0,0,0-3.94-6,107.71,107.71,0,0,0-26.25-10.87,8,8,0,0,0-7.06,1.49L130.16,40Q128,40,125.84,40L107.2,25.11a8,8,0,0,0-7.06-1.48A107.6,107.6,0,0,0,73.89,34.51a8,8,0,0,0-3.93,6L67.32,64.27q-1.56,1.49-3,3L40.54,70a8,8,0,0,0-6,3.94,107.71,107.71,0,0,0-10.87,26.25,8,8,0,0,0,1.49,7.06L40,125.84Q40,128,40,130.16L25.11,148.8a8,8,0,0,0-1.48,7.06,107.21,107.21,0,0,0,10.88,26.25,8,8,0,0,0,6,3.93l23.72,2.64q1.49,1.56,3,3L70,215.46a8,8,0,0,0,3.94,6,107.71,107.71,0,0,0,26.25,10.87,8,8,0,0,0,7.06-1.49L125.84,216q2.16.06,4.32,0l18.64,14.92a8,8,0,0,0,7.06,1.48,107.21,107.21,0,0,0,26.25-10.88,8,8,0,0,0,3.93-6l2.64-23.72q1.56-1.48,3-3L215.46,186a8,8,0,0,0,6-3.94,107.71,107.71,0,0,0,10.87-26.25,8,8,0,0,0-1.49-7.06Zm-16.1-6.5a73.93,73.93,0,0,1,0,8.68,8,8,0,0,0,1.74,5.48l14.19,17.73a91.57,91.57,0,0,1-6.23,15L187,173.11a8,8,0,0,0-5.1,2.64,74.11,74.11,0,0,1-6.14,6.14,8,8,0,0,0-2.64,5.1l-2.51,22.58a91.32,91.32,0,0,1-15,6.23l-17.74-14.19a8,8,0,0,0-5-1.75h-.48a73.93,73.93,0,0,1-8.68,0,8,8,0,0,0-5.48,1.74L100.45,215.8a91.57,91.57,0,0,1-15-6.23L82.89,187a8,8,0,0,0-2.64-5.1,74.11,74.11,0,0,1-6.14-6.14,8,8,0,0,0-5.1-2.64L46.43,170.6a91.32,91.32,0,0,1-6.23-15l14.19-17.74a8,8,0,0,0,1.74-5.48,73.93,73.93,0,0,1,0-8.68,8,8,0,0,0-1.74-5.48L40.2,100.45a91.57,91.57,0,0,1,6.23-15L69,82.89a8,8,0,0,0,5.1-2.64,74.11,74.11,0,0,1,6.14-6.14A8,8,0,0,0,82.89,69L85.4,46.43a91.32,91.32,0,0,1,15-6.23l17.74,14.19a8,8,0,0,0,5.48,1.74,73.93,73.93,0,0,1,8.68,0,8,8,0,0,0,5.48-1.74L155.55,40.2a91.57,91.57,0,0,1,15,6.23L173.11,69a8,8,0,0,0,2.64,5.1,74.11,74.11,0,0,1,6.14,6.14,8,8,0,0,0,5.1,2.64l22.58,2.51a91.32,91.32,0,0,1,6.23,15l-14.19,17.74A8,8,0,0,0,199.87,123.66Z"></path>
+</svg>
+</div>
+<span class="font-jost text-xs">Settings</span>
+</a>
+</div>
+<div class="h-3 velvet-bg"></div>
+</div>
+</div>
+
+</body></html>

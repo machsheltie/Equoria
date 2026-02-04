@@ -1,0 +1,396 @@
+{
+  "allowed_alleles": {
+    "E_Extension": [
+      "e/e",
+      "E/e",
+      "E/E"
+    ],
+    "A_Agouti": [
+      "a/a",
+      "A/a",
+      "A/A"
+    ],
+    "Cr_Cream": [
+      "n/n",
+      "n/Cr",
+      "Cr/Cr"
+    ],
+    "D_Dun": [
+      "nd1/nd1",
+      "nd1/nd2",
+      "nd2/nd2"
+    ],
+    "Z_Silver": [
+      "n/n",
+      "Z/n",
+      "Z/Z"
+    ],
+    "Ch_Champagne": [
+      "n/n",
+      "Ch/n",
+      "Ch/Ch"
+    ],
+    "G_Gray": [
+      "g/g",
+      "G/g",
+      "G/G"
+    ],
+    "Rn_Roan": [
+      "rn/rn",
+      "Rn/rn",
+      "Rn/Rn"
+    ],
+    "W_DominantWhite": [
+      "w/w",
+      "W3/w",
+      "W15/w",
+      "W19/w",
+      "W20/w"
+    ],
+    "TO_Tobiano": [
+      "to/to"
+    ],
+    "O_FrameOvero": [
+      "n/n",
+      "O/n"
+    ],
+    "SB1_Sabino1": [
+      "n/n",
+      "SB1/n"
+    ],
+    "SW_SplashWhite": [
+      "n/n",
+      "SW1/n",
+      "SW2/n",
+      "SW3/n",
+      "SW4/n",
+      "SW5/n"
+    ],
+    "LP_LeopardComplex": [
+      "lp/lp",
+      "LP/lp",
+      "LP/LP"
+    ],
+    "PATN1_Pattern1": [
+      "patn1/patn1",
+      "PATN1/patn1",
+      "PATN1/PATN1"
+    ]
+  },
+  "allele_weights": {
+    "E_Extension": {
+      "e/e": 0.25,
+      "E/e": 0.5,
+      "E/E": 0.25
+    },
+    "A_Agouti": {
+      "a/a": 0.25,
+      "A/a": 0.5,
+      "A/A": 0.25
+    },
+    "Cr_Cream": {
+      "n/n": 0.96,
+      "n/Cr": 0.03,
+      "Cr/Cr": 0.01
+    },
+    "D_Dun": {
+      "nd1/nd1": 0.1,
+      "nd1/nd2": 0.2,
+      "nd2/nd2": 0.7
+    },
+    "Z_Silver": {
+      "n/n": 0.98,
+      "Z/n": 0.015,
+      "Z/Z": 0.005
+    },
+    "Ch_Champagne": {
+      "n/n": 0.98,
+      "Ch/n": 0.015,
+      "Ch/Ch": 0.005
+    },
+    "G_Gray": {
+      "g/g": 0.9,
+      "G/g": 0.08,
+      "G/G": 0.02
+    },
+    "Rn_Roan": {
+      "rn/rn": 0.95,
+      "Rn/rn": 0.04,
+      "Rn/Rn": 0.01
+    },
+    "W_DominantWhite": {
+      "w/w": 0.97,
+      "W3/w": 0.005,
+      "W15/w": 0.005,
+      "W19/w": 0.005,
+      "W20/w": 0.015
+    },
+    "TO_Tobiano": {
+      "to/to": 1.0
+    },
+    "O_FrameOvero": {
+      "n/n": 0.99,
+      "O/n": 0.01
+    },
+    "SB1_Sabino1": {
+      "n/n": 0.95,
+      "SB1/n": 0.05
+    },
+    "SW_SplashWhite": {
+      "n/n": 0.97,
+      "SW1/n": 0.01,
+      "SW2/n": 0.005,
+      "SW3/n": 0.003,
+      "SW4/n": 0.0015,
+      "SW5/n": 0.0005
+    },
+    "LP_LeopardComplex": {
+      "lp/lp": 0.8,
+      "LP/lp": 0.15,
+      "LP/LP": 0.05
+    },
+    "PATN1_Pattern1": {
+      "patn1/patn1": 0.8,
+      "PATN1/patn1": 0.15,
+      "PATN1/PATN1": 0.05
+    }
+  },
+  "shade_bias": {
+    "Chestnut": {
+      "light": 0.3,
+      "medium": 0.4,
+      "dark": 0.3,
+      "pale": 0.3,
+      "golden": 0.4,
+      "burnished": 0.3
+    },
+    "Bay": {
+      "light": 0.3,
+      "medium": 0.4,
+      "dark": 0.3,
+      "pale": 0.3,
+      "golden": 0.4,
+      "burnished": 0.3
+    },
+    "Black": {
+      "standard": 0.5,
+      "faded": 0.5
+    },
+    "Palomino": {
+      "light": 0.3,
+      "medium": 0.4,
+      "dark": 0.3,
+      "pale": 0.3,
+      "golden": 0.4,
+      "burnished": 0.3
+    },
+    "Buckskin": {
+      "light": 0.3,
+      "medium": 0.4,
+      "dark": 0.3,
+      "pale": 0.3,
+      "golden": 0.4,
+      "burnished": 0.3
+    },
+    "Smoky Black": {
+      "faded": 0.5,
+      "rich chocolate": 0.5
+    },
+    "Grulla": {
+      "light": 0.3,
+      "medium": 0.4,
+      "dark": 0.3,
+      "pale": 0.3,
+      "golden": 0.4,
+      "burnished": 0.3
+    },
+    "Red Dun": {
+      "light": 0.3,
+      "medium": 0.4,
+      "dark": 0.3,
+      "pale": 0.3,
+      "golden": 0.4,
+      "burnished": 0.3
+    },
+    "Bay Dun": {
+      "light": 0.3,
+      "medium": 0.4,
+      "dark": 0.3,
+      "pale": 0.3,
+      "golden": 0.4,
+      "burnished": 0.3
+    },
+    "Cremello": {
+      "ice": 0.5,
+      "peachy": 0.5
+    },
+    "Perlino": {
+      "cream": 0.5,
+      "peachy": 0.5
+    },
+    "Smoky Cream": {
+      "light cream": 0.5,
+      "dark cream": 0.5
+    },
+    "Gold Champagne": {
+      "light": 0.3,
+      "medium": 0.4,
+      "dark": 0.3,
+      "pale": 0.3,
+      "golden": 0.4,
+      "burnished": 0.3
+    },
+    "Amber Champagne": {
+      "light": 0.3,
+      "medium": 0.4,
+      "dark": 0.3,
+      "pale": 0.3,
+      "golden": 0.4,
+      "burnished": 0.3
+    },
+    "Classic Champagne": {
+      "light": 0.3,
+      "medium": 0.4,
+      "dark": 0.3,
+      "pale": 0.3,
+      "golden": 0.4,
+      "burnished": 0.3
+    },
+    "Gold Cream Champagne": {
+      "light": 0.3,
+      "medium": 0.4,
+      "dark": 0.3,
+      "pale": 0.3,
+      "golden": 0.4,
+      "burnished": 0.3
+    },
+    "Amber Cream Champagne": {
+      "light": 0.3,
+      "medium": 0.4,
+      "dark": 0.3,
+      "pale": 0.3,
+      "golden": 0.4,
+      "burnished": 0.3
+    },
+    "Classic Cream Champagne": {
+      "light": 0.3,
+      "medium": 0.4,
+      "dark": 0.3,
+      "pale": 0.3,
+      "golden": 0.4,
+      "burnished": 0.3
+    },
+    "Gold Dun Champagne": {
+      "light": 0.3,
+      "medium": 0.4,
+      "dark": 0.3,
+      "pale": 0.3,
+      "golden": 0.4,
+      "burnished": 0.3
+    },
+    "Amber Dun Champagne": {
+      "light": 0.3,
+      "medium": 0.4,
+      "dark": 0.3,
+      "pale": 0.3,
+      "golden": 0.4,
+      "burnished": 0.3
+    },
+    "Classic Dun Champagne": {
+      "light": 0.3,
+      "medium": 0.4,
+      "dark": 0.3,
+      "pale": 0.3,
+      "golden": 0.4,
+      "burnished": 0.3
+    },
+    "Gold Cream Dun Champagne": {
+      "light": 0.3,
+      "medium": 0.4,
+      "dark": 0.3,
+      "pale": 0.3,
+      "golden": 0.4,
+      "burnished": 0.3
+    },
+    "Amber Cream Dun Champagne": {
+      "light": 0.3,
+      "medium": 0.4,
+      "dark": 0.3,
+      "pale": 0.3,
+      "golden": 0.4,
+      "burnished": 0.3
+    },
+    "Classic Cream Dun Champagne": {
+      "light": 0.3,
+      "medium": 0.4,
+      "dark": 0.3,
+      "pale": 0.3,
+      "golden": 0.4,
+      "burnished": 0.3
+    },
+    "Silver Classic Champagne": {
+      "light": 0.3,
+      "medium": 0.4,
+      "dark": 0.3,
+      "pale": 0.3,
+      "golden": 0.4,
+      "burnished": 0.3
+    },
+    "Silver Amber Dun Champagne": {
+      "light": 0.3,
+      "medium": 0.4,
+      "dark": 0.3,
+      "pale": 0.3,
+      "golden": 0.4,
+      "burnished": 0.3
+    },
+    "Silver Grulla": {
+      "light": 0.3,
+      "medium": 0.4,
+      "dark": 0.3,
+      "pale": 0.3,
+      "golden": 0.4,
+      "burnished": 0.3
+    },
+    "Silver Buckskin": {
+      "light": 0.3,
+      "medium": 0.4,
+      "dark": 0.3,
+      "pale": 0.3,
+      "golden": 0.4,
+      "burnished": 0.3
+    },
+    "Silver Bay": {
+      "light": 0.3,
+      "medium": 0.4,
+      "dark": 0.3,
+      "pale": 0.3,
+      "golden": 0.4,
+      "burnished": 0.3
+    },
+    "Silver Black": {
+      "light": 0.3,
+      "medium": 0.4,
+      "dark": 0.3,
+      "pale": 0.3,
+      "golden": 0.4,
+      "burnished": 0.3
+    },
+    "Silver Amber Cream Dun Champagne": {
+      "light": 0.3,
+      "medium": 0.4,
+      "dark": 0.3,
+      "pale": 0.3,
+      "golden": 0.4,
+      "burnished": 0.3
+    },
+    "Gray": {
+      "light gray": 0.3,
+      "dappled gray": 0.4,
+      "steel gray": 0.3
+    },
+    "Dominant White": {
+      "white": 1.0
+    }
+  }
+}

@@ -1,0 +1,481 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Equoria - Dashboard</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: 'SF Pro Display', -apple-system, BlinkMacSystemFont, sans-serif;
+            background: #000;
+            color: #ffffff;
+            overflow-x: hidden;
+        }
+
+        .mobile-container {
+            width: 375px;
+            height: 812px;
+            margin: 20px auto;
+            background: linear-gradient(135deg, #1a2332 0%, #2d4a3e 50%, #3e2723 100%);
+            border-radius: 24px;
+            box-shadow: 0 20px 60px rgba(0,0,0,0.4);
+            overflow: hidden;
+            position: relative;
+        }
+
+        /* Ambient background effects */
+        .bg-particles {
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: url('data:image/svg+xml,<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 100 100"><circle cx="20" cy="20" r="1" fill="rgba(255,215,0,0.1)"/><circle cx="80" cy="30" r="0.5" fill="rgba(255,255,255,0.05)"/><circle cx="60" cy="70" r="1.5" fill="rgba(210,180,140,0.08)"/><circle cx="30" cy="80" r="0.8" fill="rgba(255,215,0,0.06)"/></svg>');
+            animation: float 20s infinite ease-in-out;
+        }
+
+        @keyframes float {
+            0%, 100% { transform: translateY(0px); }
+            50% { transform: translateY(-10px); }
+        }
+
+        /* Status bar */
+        .status-bar {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            padding: 14px 20px 8px;
+            font-size: 16px;
+            font-weight: 600;
+            color: #ffffff;
+        }
+
+        .status-left {
+            font-size: 16px;
+        }
+
+        .status-right {
+            display: flex;
+            gap: 6px;
+            align-items: center;
+        }
+
+        .battery {
+            display: flex;
+            align-items: center;
+            gap: 4px;
+        }
+
+        /* Header */
+        .header {
+            padding: 20px 24px;
+            background: linear-gradient(135deg, rgba(0,0,0,0.3) 0%, rgba(0,0,0,0.1) 100%);
+            backdrop-filter: blur(20px);
+            border-bottom: 1px solid rgba(255,215,0,0.2);
+        }
+
+        .logo {
+            font-size: 32px;
+            font-weight: 800;
+            background: linear-gradient(145deg, #B8860B 0%, #DAA520 25%, #F4E7D1 45%, #DAA520 65%, #8B7D3A 85%, #556B2F 100%);
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+            background-clip: text;
+            text-align: center;
+            margin-bottom: 8px;
+            letter-spacing: 1px;
+            text-shadow: 2px 2px 4px rgba(0,0,0,0.3);
+            filter: drop-shadow(0 0 3px rgba(218,165,32,0.4));
+            position: relative;
+        }
+
+        .logo::before {
+            content: '';
+            position: absolute;
+            top: 0;
+            left: 0;
+            right: 0;
+            bottom: 0;
+            background: linear-gradient(145deg, transparent 0%, rgba(255,255,255,0.1) 30%, transparent 70%);
+            pointer-events: none;
+            animation: shine 3s ease-in-out infinite;
+        }
+
+        @keyframes shine {
+            0%, 100% { opacity: 0; }
+            50% { opacity: 1; }
+        }
+
+        /* Featured horse card */
+        .featured-horse {
+            background: linear-gradient(135deg, rgba(0,0,0,0.3) 0%, rgba(0,0,0,0.1) 100%);
+            backdrop-filter: blur(20px);
+            border-radius: 20px;
+            margin: 24px;
+            padding: 24px;
+            border: 2px solid rgba(255,215,0,0.2);
+            position: relative;
+            overflow: hidden;
+            box-shadow: 0 0 0 1px rgba(0,0,0,0.8);
+            background-image: 
+                radial-gradient(circle at 20% 20%, rgba(139,69,19,0.1) 0%, transparent 40%),
+                url('data:image/svg+xml,<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 100 100"><defs><pattern id="leather" x="0" y="0" width="4" height="4" patternUnits="userSpaceOnUse"><circle cx="1" cy="1" r="0.3" fill="rgba(139,69,19,0.05)"/><circle cx="3" cy="3" r="0.2" fill="rgba(160,82,45,0.03)"/></pattern></defs><rect width="100" height="100" fill="url(%23leather)"/></svg>');
+        }
+
+        .featured-horse::before {
+            content: '';
+            position: absolute;
+            top: -50%;
+            left: -50%;
+            width: 200%;
+            height: 200%;
+            background: radial-gradient(circle, rgba(255,215,0,0.05) 0%, transparent 70%);
+            animation: pulse 4s ease-in-out infinite;
+        }
+
+        @keyframes pulse {
+            0%, 100% { transform: scale(1); opacity: 0.5; }
+            50% { transform: scale(1.1); opacity: 0.8; }
+        }
+
+        .horse-header {
+            display: flex;
+            align-items: center;
+            gap: 16px;
+            margin-bottom: 16px;
+            position: relative;
+            z-index: 2;
+        }
+
+        .horse-avatar {
+            width: 64px;
+            height: 64px;
+            border-radius: 50%;
+            background: linear-gradient(135deg, #8B4513, #A0522D);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 32px;
+            border: 3px solid #FFD700;
+            box-shadow: 0 8px 20px rgba(255,215,0,0.3);
+        }
+
+        .horse-info h3 {
+            font-size: 20px;
+            font-weight: 700;
+            color: #FFD700;
+            margin-bottom: 4px;
+        }
+
+        .horse-meta {
+            font-size: 14px;
+            color: #D2B48C;
+            opacity: 0.9;
+        }
+
+        .status-tag {
+            background: linear-gradient(45deg, #228B22, #32CD32);
+            color: white;
+            padding: 6px 12px;
+            border-radius: 20px;
+            font-size: 12px;
+            font-weight: 600;
+            margin-top: 8px;
+            display: inline-block;
+            position: relative;
+            z-index: 2;
+        }
+
+        /* Stats grid */
+        .stats-grid {
+            display: grid;
+            grid-template-columns: repeat(2, 1fr);
+            gap: 16px;
+            margin: 24px;
+        }
+
+        .stat-card {
+            background: linear-gradient(135deg, rgba(255,255,255,0.1) 0%, rgba(255,255,255,0.05) 100%);
+            border-radius: 16px;
+            padding: 20px;
+            text-align: center;
+            border: 1px solid rgba(255,255,255,0.1);
+            backdrop-filter: blur(10px);
+            position: relative;
+            overflow: hidden;
+            box-shadow: 0 0 0 1px rgba(0,0,0,0.6);
+        }
+
+        .stat-card::before {
+            content: '';
+            position: absolute;
+            top: 0;
+            left: 0;
+            right: 0;
+            height: 2px;
+            background: linear-gradient(90deg, #FFD700, #FFA500);
+        }
+
+        .stat-number {
+            font-size: 24px;
+            font-weight: 800;
+            color: #FFD700;
+            margin-bottom: 4px;
+        }
+
+        .stat-label {
+            font-size: 14px;
+            color: #D2B48C;
+            font-weight: 500;
+        }
+
+        /* Recent activity */
+        .recent-activity {
+            margin: 24px;
+        }
+
+        .section-title {
+            font-size: 18px;
+            font-weight: 700;
+            color: #FFD700;
+            margin-bottom: 16px;
+            display: flex;
+            align-items: center;
+            gap: 8px;
+        }
+
+        .activity-item {
+            background: linear-gradient(135deg, rgba(255,255,255,0.08) 0%, rgba(255,255,255,0.04) 100%);
+            border-radius: 12px;
+            padding: 16px;
+            margin-bottom: 12px;
+            border-left: 4px solid #FFD700;
+            backdrop-filter: blur(10px);
+            box-shadow: 0 0 0 1px rgba(0,0,0,0.5);
+        }
+
+        .activity-header {
+            display: flex;
+            align-items: center;
+            gap: 12px;
+            margin-bottom: 8px;
+        }
+
+        .activity-icon {
+            width: 32px;
+            height: 32px;
+            border-radius: 50%;
+            background: linear-gradient(45deg, #FFD700, #FFA500);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 16px;
+        }
+
+        .activity-text {
+            font-size: 14px;
+            color: #ffffff;
+            font-weight: 500;
+            flex: 1;
+        }
+
+        .activity-meta {
+            font-size: 12px;
+            color: #D2B48C;
+            opacity: 0.8;
+        }
+
+        .activity-reward {
+            color: #32CD32;
+            font-weight: 600;
+        }
+
+        /* Bottom navigation */
+        .bottom-nav {
+            position: absolute;
+            bottom: 0;
+            left: 0;
+            right: 0;
+            background: linear-gradient(180deg, rgba(0,0,0,0.9) 0%, rgba(0,0,0,0.95) 100%);
+            backdrop-filter: blur(20px);
+            border-top: 1px solid rgba(255,255,255,0.1);
+            padding: 12px 0 32px;
+        }
+
+        .nav-items {
+            display: flex;
+            justify-content: space-around;
+            align-items: center;
+        }
+
+        .nav-item {
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            gap: 4px;
+            padding: 8px 12px;
+            border-radius: 12px;
+            transition: all 0.3s ease;
+        }
+
+        .nav-item.active {
+            background: rgba(255,215,0,0.2);
+            color: #FFD700;
+        }
+
+        .nav-item:not(.active) {
+            color: #888;
+        }
+
+        .nav-icon {
+            font-size: 20px;
+        }
+
+        .nav-label {
+            font-size: 11px;
+            font-weight: 600;
+        }
+
+        /* Animations */
+        .animate-fade-in {
+            animation: fadeIn 0.8s ease-out;
+        }
+
+        .animate-slide-up {
+            animation: slideUp 0.6s ease-out;
+        }
+
+        @keyframes fadeIn {
+            from { opacity: 0; transform: translateY(20px); }
+            to { opacity: 1; transform: translateY(0); }
+        }
+
+        @keyframes slideUp {
+            from { transform: translateY(30px); opacity: 0; }
+            to { transform: translateY(0); opacity: 1; }
+        }
+
+        /* Hover effects for desktop viewing */
+        .stat-card:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 8px 25px rgba(255,215,0,0.2);
+            transition: all 0.3s ease;
+        }
+
+        .activity-item:hover {
+            transform: translateX(4px);
+            border-left-width: 6px;
+            transition: all 0.3s ease;
+        }
+    </style>
+</head>
+<body>
+    <div class="mobile-container">
+        <div class="bg-particles"></div>
+        
+        <!-- Status Bar -->
+        <div class="status-bar">
+            <div class="status-left">9:41</div>
+            <div class="status-right">
+                <div class="battery">⚡ 100%</div>
+            </div>
+        </div>
+
+        <!-- Header -->
+        <div class="header animate-fade-in">
+            <div class="logo">Equoria</div>
+        </div>
+
+        <!-- Featured Horse -->
+        <div class="featured-horse animate-slide-up">
+            <div class="horse-header">
+                <div class="horse-avatar">🐎</div>
+                <div class="horse-info">
+                    <h3>Thunder's Dawn</h3>
+                    <div class="horse-meta">Arabian Mare • Level 12</div>
+                    <div class="status-tag">Ready for Training</div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Stats Grid -->
+        <div class="stats-grid animate-slide-up">
+            <div class="stat-card">
+                <div class="stat-number">8</div>
+                <div class="stat-label">Horses</div>
+            </div>
+            <div class="stat-card">
+                <div class="stat-number">3</div>
+                <div class="stat-label">Competitions</div>
+            </div>
+            <div class="stat-card">
+                <div class="stat-number">$2,450</div>
+                <div class="stat-label">Earnings</div>
+            </div>
+            <div class="stat-card">
+                <div class="stat-number">5</div>
+                <div class="stat-label">Training Slots</div>
+            </div>
+        </div>
+
+        <!-- Recent Activity -->
+        <div class="recent-activity animate-slide-up">
+            <div class="section-title">
+                ✨ Recent Activity
+            </div>
+            
+            <div class="activity-item">
+                <div class="activity-header">
+                    <div class="activity-icon">🏆</div>
+                    <div class="activity-text">
+                        Midnight Storm placed 2nd in Spring Derby
+                        <div class="activity-meta">2 hours ago • <span class="activity-reward">+$500</span></div>
+                    </div>
+                </div>
+            </div>
+
+            <div class="activity-item">
+                <div class="activity-header">
+                    <div class="activity-icon">⚡</div>
+                    <div class="activity-text">
+                        Thunder's Dawn completed Endurance Training
+                        <div class="activity-meta">4 hours ago • <span class="activity-reward">+25 XP</span></div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Bottom Navigation -->
+        <div class="bottom-nav">
+            <div class="nav-items">
+                <div class="nav-item active">
+                    <div class="nav-icon">🏠</div>
+                    <div class="nav-label">Dashboard</div>
+                </div>
+                <div class="nav-item">
+                    <div class="nav-icon">🐴</div>
+                    <div class="nav-label">Stable</div>
+                </div>
+                <div class="nav-item">
+                    <div class="nav-icon">🏆</div>
+                    <div class="nav-label">Compete</div>
+                </div>
+                <div class="nav-item">
+                    <div class="nav-icon">🌍</div>
+                    <div class="nav-label">World</div>
+                </div>
+                <div class="nav-item">
+                    <div class="nav-icon">⚙️</div>
+                    <div class="nav-label">More</div>
+                </div>
+            </div>
+        </div>
+    </div>
+</body>
+</html>

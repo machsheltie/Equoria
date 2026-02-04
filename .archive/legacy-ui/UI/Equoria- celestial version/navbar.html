@@ -1,0 +1,692 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Equoria - Navigation</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: 'Cinzel', serif;
+            background: radial-gradient(ellipse at center, #1a237e 0%, #0d1421 50%, #000510 100%);
+            height: 100vh;
+            overflow: hidden;
+            position: relative;
+        }
+
+        /* Animated starfield background */
+        .starfield {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            pointer-events: none;
+            z-index: 1;
+        }
+
+        .star {
+            position: absolute;
+            background: #ffffff;
+            border-radius: 50%;
+            animation: twinkle 3s infinite alternate;
+        }
+
+        @keyframes twinkle {
+            0% { opacity: 0.3; transform: scale(1); }
+            100% { opacity: 1; transform: scale(1.2); }
+        }
+
+        /* Sidebar Container */
+        .sidebar {
+            position: fixed;
+            left: 0;
+            top: 0;
+            height: 100vh;
+            width: 80px;
+            background: linear-gradient(180deg, 
+                rgba(26, 35, 126, 0.95) 0%, 
+                rgba(13, 20, 33, 0.98) 50%, 
+                rgba(0, 5, 16, 0.99) 100%);
+            backdrop-filter: blur(20px);
+            border-right: 3px solid rgba(255, 215, 0, 0.3);
+            transition: all 0.4s cubic-bezier(0.4, 0, 0.2, 1);
+            z-index: 1000;
+            overflow: hidden;
+            box-shadow: 
+                4px 0 20px rgba(0, 0, 0, 0.5),
+                inset -1px 0 0 rgba(255, 215, 0, 0.2);
+        }
+
+        .sidebar.expanded {
+            width: 320px;
+            box-shadow: 
+                8px 0 40px rgba(0, 0, 0, 0.7),
+                0 0 30px rgba(255, 215, 0, 0.3),
+                inset -1px 0 0 rgba(255, 215, 0, 0.4);
+        }
+
+        /* Mystical overlay effect */
+        .sidebar::before {
+            content: '';
+            position: absolute;
+            top: 0;
+            left: 0;
+            right: 0;
+            bottom: 0;
+            background: linear-gradient(45deg, 
+                transparent 0%, 
+                rgba(255, 215, 0, 0.05) 25%, 
+                transparent 50%, 
+                rgba(255, 215, 0, 0.05) 75%, 
+                transparent 100%);
+            animation: mysticFlow 8s infinite linear;
+            pointer-events: none;
+        }
+
+        @keyframes mysticFlow {
+            0% { transform: translateX(-100%) translateY(-100%); }
+            100% { transform: translateX(100%) translateY(100%); }
+        }
+
+        /* Header with logo */
+        .sidebar-header {
+            padding: 20px;
+            text-align: center;
+            border-bottom: 2px solid rgba(255, 215, 0, 0.2);
+            margin-bottom: 20px;
+            position: relative;
+        }
+
+        .logo-container {
+            position: relative;
+            display: inline-block;
+        }
+
+        .crescent-moon {
+            font-size: 2rem;
+            color: #ffd700;
+            margin-bottom: 10px;
+            animation: moonGlow 4s infinite ease-in-out;
+            display: block;
+        }
+
+        @keyframes moonGlow {
+            0%, 100% { 
+                filter: drop-shadow(0 0 10px rgba(255, 215, 0, 0.5));
+                transform: rotate(0deg);
+            }
+            50% { 
+                filter: drop-shadow(0 0 20px rgba(255, 215, 0, 0.8));
+                transform: rotate(5deg);
+            }
+        }
+
+        .app-title {
+            font-size: 1.8rem;
+            font-weight: 700;
+            background: linear-gradient(135deg, #ffd700 0%, #ffed4e 50%, #b8860b 100%);
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+            background-clip: text;
+            letter-spacing: 2px;
+            opacity: 0;
+            transform: translateX(-20px);
+            transition: all 0.4s ease 0.1s;
+        }
+
+        .sidebar.expanded .app-title {
+            opacity: 1;
+            transform: translateX(0);
+        }
+
+        /* Navigation Menu */
+        .nav-menu {
+            list-style: none;
+            padding: 0 10px;
+        }
+
+        .nav-item {
+            margin-bottom: 8px;
+            position: relative;
+        }
+
+        .nav-link {
+            display: flex;
+            align-items: center;
+            padding: 16px 15px;
+            color: rgba(255, 255, 255, 0.8);
+            text-decoration: none;
+            border-radius: 15px;
+            transition: all 0.3s ease;
+            position: relative;
+            overflow: hidden;
+            font-size: 1.1rem;
+            font-weight: 500;
+        }
+
+        .nav-link::before {
+            content: '';
+            position: absolute;
+            top: 0;
+            left: -100%;
+            width: 100%;
+            height: 100%;
+            background: linear-gradient(90deg, 
+                transparent, 
+                rgba(255, 215, 0, 0.1), 
+                transparent);
+            transition: left 0.5s ease;
+        }
+
+        .nav-link:hover::before {
+            left: 100%;
+        }
+
+        .nav-link:hover,
+        .nav-link.active {
+            background: linear-gradient(135deg, 
+                rgba(255, 215, 0, 0.15) 0%, 
+                rgba(255, 215, 0, 0.05) 100%);
+            border: 1px solid rgba(255, 215, 0, 0.3);
+            color: #ffd700;
+            transform: translateX(5px);
+            box-shadow: 
+                0 4px 15px rgba(255, 215, 0, 0.2),
+                inset 0 1px 0 rgba(255, 215, 0, 0.3);
+        }
+
+        .nav-icon {
+            font-size: 1.5rem;
+            margin-right: 15px;
+            min-width: 30px;
+            text-align: center;
+            transition: all 0.3s ease;
+            position: relative;
+            z-index: 2;
+        }
+
+        .nav-link:hover .nav-icon {
+            transform: scale(1.2) rotate(5deg);
+            filter: drop-shadow(0 0 8px rgba(255, 215, 0, 0.6));
+        }
+
+        .nav-text {
+            opacity: 0;
+            transform: translateX(-20px);
+            transition: all 0.4s ease;
+            white-space: nowrap;
+            letter-spacing: 1px;
+        }
+
+        .sidebar.expanded .nav-text {
+            opacity: 1;
+            transform: translateX(0);
+        }
+
+        /* Staggered animation delay for nav items */
+        .nav-item:nth-child(1) .nav-text { transition-delay: 0.1s; }
+        .nav-item:nth-child(2) .nav-text { transition-delay: 0.15s; }
+        .nav-item:nth-child(3) .nav-text { transition-delay: 0.2s; }
+        .nav-item:nth-child(4) .nav-text { transition-delay: 0.25s; }
+        .nav-item:nth-child(5) .nav-text { transition-delay: 0.3s; }
+        .nav-item:nth-child(6) .nav-text { transition-delay: 0.35s; }
+
+        /* Settings button at bottom */
+        .settings-container {
+            position: absolute;
+            bottom: 20px;
+            left: 50%;
+            transform: translateX(-50%);
+            transition: all 0.3s ease;
+        }
+
+        .settings-btn {
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            width: 50px;
+            height: 50px;
+            background: rgba(0, 5, 16, 0.8);
+            border: 2px solid rgba(255, 215, 0, 0.3);
+            border-radius: 50%;
+            color: #ffd700;
+            font-size: 1.3rem;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            position: relative;
+            overflow: hidden;
+        }
+
+        .settings-btn:hover {
+            background: rgba(255, 215, 0, 0.1);
+            border-color: #ffd700;
+            transform: rotate(90deg) scale(1.1);
+            box-shadow: 0 0 20px rgba(255, 215, 0, 0.4);
+        }
+
+        .sidebar.expanded .settings-container {
+            left: 20px;
+            transform: translateX(0);
+        }
+
+        /* Particle effects */
+        .particle {
+            position: absolute;
+            width: 4px;
+            height: 4px;
+            background: #ffd700;
+            border-radius: 50%;
+            pointer-events: none;
+            animation: particleFloat 3s infinite ease-in-out;
+        }
+
+        @keyframes particleFloat {
+            0%, 100% {
+                opacity: 0;
+                transform: translateY(0) scale(1);
+            }
+            50% {
+                opacity: 1;
+                transform: translateY(-20px) scale(1.2);
+            }
+        }
+
+        /* Toggle button */
+        .toggle-btn {
+            position: fixed;
+            top: 30px;
+            left: 30px;
+            width: 50px;
+            height: 50px;
+            background: linear-gradient(135deg, rgba(26, 35, 126, 0.9), rgba(0, 5, 16, 0.9));
+            border: 2px solid rgba(255, 215, 0, 0.4);
+            border-radius: 15px;
+            cursor: pointer;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            color: #ffd700;
+            font-size: 1.2rem;
+            transition: all 0.3s ease;
+            z-index: 1001;
+            backdrop-filter: blur(10px);
+        }
+
+        .toggle-btn:hover {
+            background: linear-gradient(135deg, rgba(26, 35, 126, 1), rgba(0, 5, 16, 1));
+            border-color: #ffd700;
+            transform: scale(1.1);
+            box-shadow: 0 0 20px rgba(255, 215, 0, 0.4);
+        }
+
+        .sidebar.expanded + .toggle-btn {
+            left: 290px;
+        }
+
+        /* Main content area */
+        .main-content {
+            margin-left: 80px;
+            padding: 40px;
+            color: white;
+            transition: margin-left 0.4s ease;
+            position: relative;
+            z-index: 5;
+        }
+
+        .sidebar.expanded ~ .main-content {
+            margin-left: 320px;
+        }
+
+        /* Tooltip for collapsed state */
+        .tooltip {
+            position: absolute;
+            left: calc(100% + 15px);
+            top: 50%;
+            transform: translateY(-50%);
+            background: rgba(0, 5, 16, 0.95);
+            color: #ffd700;
+            padding: 8px 12px;
+            border-radius: 8px;
+            font-size: 0.9rem;
+            white-space: nowrap;
+            opacity: 0;
+            visibility: hidden;
+            transition: all 0.3s ease;
+            border: 1px solid rgba(255, 215, 0, 0.3);
+            backdrop-filter: blur(10px);
+            z-index: 1002;
+        }
+
+        .tooltip::before {
+            content: '';
+            position: absolute;
+            left: -6px;
+            top: 50%;
+            transform: translateY(-50%);
+            width: 0;
+            height: 0;
+            border-top: 6px solid transparent;
+            border-bottom: 6px solid transparent;
+            border-right: 6px solid rgba(0, 5, 16, 0.95);
+        }
+
+        .nav-link:hover .tooltip {
+            opacity: 1;
+            visibility: visible;
+            transform: translateY(-50%) translateX(5px);
+        }
+
+        .sidebar.expanded .tooltip {
+            display: none;
+        }
+
+        /* Responsive design */
+        @media (max-width: 768px) {
+            .sidebar {
+                width: 60px;
+            }
+            
+            .sidebar.expanded {
+                width: 280px;
+            }
+            
+            .main-content {
+                margin-left: 60px;
+            }
+            
+            .sidebar.expanded ~ .main-content {
+                margin-left: 280px;
+            }
+        }
+    </style>
+</head>
+<body>
+    <!-- Animated starfield background -->
+    <div class="starfield" id="starfield"></div>
+
+    <!-- Sidebar Navigation -->
+    <nav class="sidebar" id="sidebar">
+        <div class="sidebar-header">
+            <div class="logo-container">
+                <span class="crescent-moon">🌙⭐</span>
+                <h1 class="app-title">EQUORIA</h1>
+            </div>
+        </div>
+
+        <ul class="nav-menu">
+            <li class="nav-item">
+                <a href="#" class="nav-link active" data-page="dashboard">
+                    <span class="nav-icon">🏠</span>
+                    <span class="nav-text">DASHBOARD</span>
+                    <div class="tooltip">Dashboard</div>
+                </a>
+            </li>
+            <li class="nav-item">
+                <a href="#" class="nav-link" data-page="stable">
+                    <span class="nav-icon">🐎</span>
+                    <span class="nav-text">STABLE</span>
+                    <div class="tooltip">Stable</div>
+                </a>
+            </li>
+            <li class="nav-item">
+                <a href="#" class="nav-link" data-page="horses">
+                    <span class="nav-icon">🐴</span>
+                    <span class="nav-text">HORSES</span>
+                    <div class="tooltip">Horses</div>
+                </a>
+            </li>
+            <li class="nav-item">
+                <a href="#" class="nav-link" data-page="market">
+                    <span class="nav-icon">💎</span>
+                    <span class="nav-text">MARKET</span>
+                    <div class="tooltip">Market</div>
+                </a>
+            </li>
+            <li class="nav-item">
+                <a href="#" class="nav-link" data-page="inventory">
+                    <span class="nav-icon">🎒</span>
+                    <span class="nav-text">INVENTORY</span>
+                    <div class="tooltip">Inventory</div>
+                </a>
+            </li>
+            <li class="nav-item">
+                <a href="#" class="nav-link" data-page="quests">
+                    <span class="nav-icon">⭐</span>
+                    <span class="nav-text">QUESTS</span>
+                    <div class="tooltip">Quests</div>
+                </a>
+            </li>
+        </ul>
+
+        <div class="settings-container">
+            <button class="settings-btn" id="settingsBtn">
+                ⚙️
+            </button>
+        </div>
+    </nav>
+
+    <!-- Toggle Button -->
+    <button class="toggle-btn" id="toggleBtn">☰</button>
+
+    <!-- Main Content Area -->
+    <main class="main-content">
+        <h2>Welcome to Equoria</h2>
+        <p>Your mystical horse management adventure awaits. Navigate through the celestial realm using the sidebar menu.</p>
+        <br>
+        <p>Click the menu button or hover over the sidebar to expand the navigation.</p>
+    </main>
+
+    <script>
+        // Create animated starfield
+        function createStarfield() {
+            const starfield = document.getElementById('starfield');
+            const starCount = 100;
+            
+            for (let i = 0; i < starCount; i++) {
+                const star = document.createElement('div');
+                star.className = 'star';
+                star.style.left = Math.random() * 100 + '%';
+                star.style.top = Math.random() * 100 + '%';
+                star.style.width = star.style.height = (Math.random() * 3 + 1) + 'px';
+                star.style.animationDelay = Math.random() * 3 + 's';
+                starfield.appendChild(star);
+            }
+        }
+
+        // Sidebar functionality
+        const sidebar = document.getElementById('sidebar');
+        const toggleBtn = document.getElementById('toggleBtn');
+        let isExpanded = false;
+        let hoverTimeout;
+
+        // Toggle sidebar on button click
+        toggleBtn.addEventListener('click', () => {
+            toggleSidebar();
+        });
+
+        // Auto-expand on hover (with delay)
+        sidebar.addEventListener('mouseenter', () => {
+            clearTimeout(hoverTimeout);
+            hoverTimeout = setTimeout(() => {
+                if (!isExpanded) {
+                    expandSidebar();
+                }
+            }, 300);
+        });
+
+        // Auto-collapse on mouse leave (with delay)
+        sidebar.addEventListener('mouseleave', () => {
+            clearTimeout(hoverTimeout);
+            hoverTimeout = setTimeout(() => {
+                if (!isExpanded) {
+                    collapseSidebar();
+                }
+            }, 500);
+        });
+
+        function toggleSidebar() {
+            if (isExpanded) {
+                collapseSidebar();
+            } else {
+                expandSidebar();
+            }
+            isExpanded = !isExpanded;
+        }
+
+        function expandSidebar() {
+            sidebar.classList.add('expanded');
+            createParticleEffect();
+        }
+
+        function collapseSidebar() {
+            if (!isExpanded) {
+                sidebar.classList.remove('expanded');
+            }
+        }
+
+        // Navigation link interactions
+        const navLinks = document.querySelectorAll('.nav-link');
+        
+        navLinks.forEach(link => {
+            link.addEventListener('click', (e) => {
+                e.preventDefault();
+                
+                // Remove active class from all links
+                navLinks.forEach(l => l.classList.remove('active'));
+                
+                // Add active class to clicked link
+                link.classList.add('active');
+                
+                // Create magical click effect
+                createMagicalClick(e.target.closest('.nav-link'));
+                
+                // Simulate page change
+                const page = link.dataset.page;
+                console.log(`Navigating to: ${page}`);
+            });
+
+            // Hover effect for particles
+            link.addEventListener('mouseenter', () => {
+                createHoverParticles(link);
+            });
+        });
+
+        // Create particle effect on sidebar expand
+        function createParticleEffect() {
+            const particleCount = 15;
+            
+            for (let i = 0; i < particleCount; i++) {
+                const particle = document.createElement('div');
+                particle.className = 'particle';
+                particle.style.left = Math.random() * 300 + 'px';
+                particle.style.top = Math.random() * window.innerHeight + 'px';
+                particle.style.animationDelay = Math.random() * 2 + 's';
+                
+                sidebar.appendChild(particle);
+                
+                setTimeout(() => {
+                    particle.remove();
+                }, 3000);
+            }
+        }
+
+        // Create hover particles for nav items
+        function createHoverParticles(element) {
+            const rect = element.getBoundingClientRect();
+            const particleCount = 8;
+            
+            for (let i = 0; i < particleCount; i++) {
+                const particle = document.createElement('div');
+                particle.style.position = 'fixed';
+                particle.style.left = (rect.left + Math.random() * rect.width) + 'px';
+                particle.style.top = (rect.top + Math.random() * rect.height) + 'px';
+                particle.style.width = particle.style.height = '3px';
+                particle.style.background = '#ffd700';
+                particle.style.borderRadius = '50%';
+                particle.style.pointerEvents = 'none';
+                particle.style.zIndex = '9999';
+                particle.style.animation = 'particleFloat 1.5s ease-out forwards';
+                
+                document.body.appendChild(particle);
+                
+                setTimeout(() => {
+                    particle.remove();
+                }, 1500);
+            }
+        }
+
+        // Magical click effect
+        function createMagicalClick(element) {
+            const rect = element.getBoundingClientRect();
+            
+            // Create ripple effect
+            const ripple = document.createElement('div');
+            ripple.style.position = 'fixed';
+            ripple.style.left = rect.left + rect.width / 2 + 'px';
+            ripple.style.top = rect.top + rect.height / 2 + 'px';
+            ripple.style.width = ripple.style.height = '0px';
+            ripple.style.background = 'radial-gradient(circle, rgba(255, 215, 0, 0.4) 0%, transparent 70%)';
+            ripple.style.borderRadius = '50%';
+            ripple.style.transform = 'translate(-50%, -50%)';
+            ripple.style.pointerEvents = 'none';
+            ripple.style.zIndex = '9999';
+            ripple.style.transition = 'all 0.6s ease-out';
+            
+            document.body.appendChild(ripple);
+            
+            setTimeout(() => {
+                ripple.style.width = ripple.style.height = '200px';
+                ripple.style.opacity = '0';
+            }, 10);
+            
+            setTimeout(() => {
+                ripple.remove();
+            }, 600);
+        }
+
+        // Settings button functionality
+        document.getElementById('settingsBtn').addEventListener('click', () => {
+            alert('⚙️ Settings panel would open here!');
+        });
+
+        // Keyboard navigation
+        document.addEventListener('keydown', (e) => {
+            if (e.key === 'Escape') {
+                collapseSidebar();
+                isExpanded = false;
+            }
+            
+            if (e.ctrlKey && e.key === 'm') {
+                e.preventDefault();
+                toggleSidebar();
+            }
+        });
+
+        // Initialize
+        createStarfield();
+        
+        // Responsive handling
+        window.addEventListener('resize', () => {
+            const starfield = document.getElementById('starfield');
+            starfield.innerHTML = '';
+            createStarfield();
+        });
+
+        // Add subtle animation to toggle button
+        setInterval(() => {
+            if (!isExpanded && !sidebar.matches(':hover')) {
+                toggleBtn.style.transform = 'scale(1.05)';
+                setTimeout(() => {
+                    toggleBtn.style.transform = 'scale(1)';
+                }, 200);
+            }
+        }, 5000);
+    </script>
+</body>
+</html>

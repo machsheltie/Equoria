@@ -1,0 +1,75 @@
+{
+  "Dun": {
+    "D/D": "Dun",
+    "D/nd1": "Dun",
+    "D/nd2": "Dun",
+    "nd1/nd1": "Non-Dun (Primitive Markings)",
+    "nd1/nd2": "Non-Dun (Faint Markings)",
+    "nd2/nd2": "Non-Dun"
+  },
+  "Roan": {
+    "base_black + Rn": "Blue Roan",
+    "base_bay + Rn": "Red Roan",
+    "base_chestnut + Rn": "Strawberry Roan"
+  },
+  "LP_PATN1": {
+    "LP/LP + PATN1": "Fewspot Leopard",
+    "LP/lp + PATN1": "Leopard",
+    "LP/lp + patn1/patn1": "Varnish Roan or Blanket",
+    "LP/lp + no PATN1": "Mottled or Varnish Roan",
+    "lp/lp": "Solid (No Appaloosa Pattern)"
+  },
+  "Mushroom": {
+    "Mu/Mu + ee": "Mushroom Chestnut",
+    "Mu/N or N/N": "No Mushroom"
+  },
+  "SplashWhite": {
+    "SW1/n": "Splash White 1",
+    "SW2/n": "Splash White 2",
+    "SW3/n": "Splash White 3",
+    "SW4/n": "Splash White 4",
+    "SW5/n": "Splash White 5",
+    "SW6/n": "Splash White 6",
+    "SW7/n": "Splash White 7",
+    "SW8/n": "Splash White 8",
+    "SW9/n": "Splash White 9",
+    "SW10/n": "Splash White 10"
+  },
+  "DominantWhite": {
+    "W1\u2013W35/w": "Dominant White Pattern",
+    "W13/w": "All White",
+    "W20/w": "Minimal White (Enhancer)"
+  },
+  "FrameOvero": {
+    "O/n": "Frame Overo",
+    "O/O": "Lethal White (Disallowed)"
+  },
+  "Sabino": {
+    "SB1/n": "Sabino"
+  },
+  "Tobiano": {
+    "TO/to": "Tobiano",
+    "TO/TO": "Homozygous Tobiano"
+  },
+  "EdenWhite": {
+    "EDXW1/n": "Eden White 1",
+    "EDXW2/n": "Eden White 2",
+    "EDXW3/n": "Eden White 3"
+  },
+  "Rabicano": {
+    "rabicano": "Rabicano"
+  },
+  "Gray": {
+    "G/g or G/G": "Gray (Progressive Whitening)",
+    "g/g": "Non-Gray"
+  },
+  "Flaxen": {
+    "flaxen + ee": "Flaxen Chestnut"
+  },
+  "Sooty": {
+    "sooty + any coat": "Sooty Overlay"
+  },
+  "Pangare": {
+    "pangare": "Pangare (Light Muzzle/Underside)"
+  }
+}

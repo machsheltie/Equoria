@@ -1,0 +1,190 @@
+<html><head>
+<meta charset="utf-8"/>
+<link crossorigin="" href="https://fonts.gstatic.com/" rel="preconnect"/>
+<link as="style" href="https://fonts.googleapis.com/css2?display=swap&amp;family=Yeseva+One%3Awght%40400&amp;family=Cormorant+Garamond%3Awght%40400%3B500%3B600%3B700&amp;family=Jost%3Awght%40400%3B500%3B600%3B700" onload="this.rel='stylesheet'" rel="stylesheet"/>
+<title>Equoria Stable Journal</title>
+<link href="data:image/x-icon;base64," rel="icon" type="image/x-icon"/>
+<script src="https://cdn.tailwindcss.com?plugins=forms,container-queries"></script>
+<style>
+    .font-yeseva {
+      font-family: 'Yeseva One', serif;
+    }
+    .font-cormorant {
+      font-family: 'Cormorant Garamond', serif;
+    }
+    .font-jost {
+      font-family: 'Jost', sans-serif;
+    }
+    .parchment-bg {
+      background-color: #fdf5e6;}
+    .wood-bg {
+      background-color: #6B4226;}
+    .leather-bg {
+      background-color: #8B5A2B;}
+    .velvet-ribbon-bg {
+      background-color: #4a0404;box-shadow: inset 0 2px 4px rgba(0, 0, 0, 0.3), 0 1px 2px rgba(255, 255, 255, 0.2);
+      border: 1px solid #3b0303;}
+    .gold-text {
+      color: #DAA520;text-shadow: 1px 1px 3px rgba(0, 0, 0, 0.5);}
+    .bronze-accent {
+      background-color: #CD7F32;
+    }
+    .wax-seal {
+      width: 36px;height: 36px;
+      background-color: #a00000;border-radius: 50%;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      box-shadow: 3px 3px 6px rgba(0, 0, 0, 0.4), inset 0 0 4px rgba(255, 255, 255, 0.2);
+      position: absolute;
+      right: -15px;top: 50%;
+      transform: translateY(-50%);
+      z-index: 10;
+      border: 2px solid #800000;}
+    .wax-seal-icon {
+      font-size: 20px;color: #FFBF00;}
+    .scroll-entry {
+      background-image: url("https://www.transparenttextures.com/patterns/old-paper.png");
+      background-color: #f8f0e3;border: 3px solid #c8a064;border-radius: 10px;
+      box-shadow: 0 6px 12px rgba(0, 0, 0, 0.25);
+      margin-bottom: 20px;padding: 20px;
+      position: relative;
+    }
+    .scroll-entry::before,
+    .scroll-entry::after {
+      content: '';
+      position: absolute;
+      width: 12px;
+      height: calc(100% + 12px);
+      background-color: #b8860b;border-radius: 6px;
+      top: -6px;
+      box-shadow: 0 3px 5px rgba(0, 0, 0, 0.15);
+      z-index: -1;}
+    .scroll-entry::before {
+      left: -16px;transform: rotate(-3deg);}
+    .scroll-entry::after {
+      right: -16px;transform: rotate(3deg);}
+    .chest-sparkle {
+      animation: sparkle 1.2s infinite ease-in-out;}
+    @keyframes sparkle {
+      0%,
+      100% {
+        opacity: 1;
+        transform: scale(1);
+        filter: brightness(100%) drop-shadow(0 0 3px #FFD700);
+      }
+      50% {
+        opacity: 0.8;
+        transform: scale(1.08);
+        filter: brightness(120%) drop-shadow(0 0 8px #FFD700);
+      }
+    }
+    .chest-glow {
+      box-shadow: 0 0 20px 8px #FFD700, 0 0 35px 15px rgba(255, 215, 0, 0.6);border: 2px solid #DAA520;}
+    .reward-chest-container {
+      background-image: url("https://www.transparenttextures.com/patterns/dark-wood.png");background-color: #5c3317;padding: 24px;
+      border-radius: 20px;
+      box-shadow: 0 15px 30px rgba(0, 0, 0, 0.4), inset 0 0 15px rgba(0, 0, 0, 0.6);
+      border: 3px solid #4a250e;}
+    .ornamental-divider {
+      height: 2px;
+      background: linear-gradient(to right, transparent, #DAA520, transparent);
+      margin: 10px 0;
+      border: none;
+      opacity: 0.7;
+    }
+    .title-container {
+      background: linear-gradient(to bottom, rgba(0, 0, 0, 0.6), rgba(0, 0, 0, 0.2)), url('https://lh3.googleusercontent.com/aida-public/AB6AXuDFIyp8X30K0rz3nAaJ87Ef43jTn7zwk9Nv8y7_ppG12CZtF_KOVaXcMVPTcIvSCABtYihAGYCasYHrrEWUMUAbGCxN55vEaJcl1wxYOkyNq_BsloLFFUIcs3evfKcgNJqkYm0tlSX8wrlubSLHOoqYzpbNq3Kgb3RfjNbtpK8HFwDzfE-q64g4bQqaoNejBgqnO82A8g1HAM-n7qFPYXc9lhP1lGTN2F-Iy4mlvOwB2ulaEYnBEDW4BBxFjvItyxD9_U9XRfZnJPQ');
+      background-size: cover;
+      background-position: center;
+      border-bottom: 8px solid #4a250e;padding: 20px;text-align: center;}
+    .progress-bar-bg {
+        background-color: #e0c69f;border: 2px solid #b8860b;box-shadow: inset 0 1px 3px rgba(0,0,0,0.2);
+    }
+    .gold-border-bottom {
+        border-bottom: 4px solid #DAA520;
+        box-shadow: 0 2px 5px rgba(218, 165, 32, 0.5);
+    }
+  </style>
+<style>
+    body {
+      min-height: max(884px, 100dvh);
+    }
+  </style>
+<style>
+    body {
+      min-height: max(884px, 100dvh);
+    }
+  </style>
+  </head>
+<body class="parchment-bg">
+<div class="relative flex size-full min-h-screen flex-col justify-between group/design-root overflow-x-hidden" style="max-width: 1080px; margin: auto;">
+<div class="w-full">
+<div class="title-container rounded-b-3xl mb-8 shadow-2xl" style="height: 180px;">
+<div class="absolute inset-0 bg-gradient-to-t from-black/70 via-black/40 to-transparent p-6 flex flex-col justify-center items-center">
+<h1 class="font-yeseva text-5xl gold-text tracking-wider text-center" style="text-shadow: 3px 3px 5px rgba(0,0,0,0.8);">Stable Journal</h1>
+<p class="font-cormorant text-xl text-yellow-100 opacity-90">Week 12</p>
+</div>
+</div>
+<div class="px-5 space-y-8 pb-8">
+<div class="scroll-entry">
+<div class="flex flex-col gap-3">
+<p class="font-cormorant text-2xl font-bold text-[#5D4037]">Enter 2 Dressage Shows</p>
+<hr class="ornamental-divider"/>
+<div class="relative w-full h-7 rounded-full progress-bar-bg overflow-hidden">
+<div class="velvet-ribbon-bg h-full rounded-full flex items-center justify-end pr-2 transition-all duration-700 ease-out" style="width: 50%;">
+<span class="font-jost text-sm text-yellow-100 font-semibold tracking-wider">50%</span>
+</div>
+</div>
+</div>
+</div>
+<div class="scroll-entry">
+<div class="flex flex-col gap-3">
+<p class="font-cormorant text-2xl font-bold text-[#5D4037]">Train a Foal</p>
+<hr class="ornamental-divider"/>
+<div class="relative w-full h-7 rounded-full progress-bar-bg overflow-hidden">
+<div class="velvet-ribbon-bg h-full rounded-full flex items-center justify-end pr-2 transition-all duration-700 ease-out" style="width: 75%;">
+<span class="font-jost text-sm text-yellow-100 font-semibold tracking-wider">75%</span>
+</div>
+</div>
+</div>
+</div>
+<div class="scroll-entry">
+<div class="flex flex-col gap-3">
+<p class="font-cormorant text-2xl font-bold text-[#5D4037]">Complete 3 Riding Lessons</p>
+<hr class="ornamental-divider"/>
+<div class="relative w-full h-7 rounded-full progress-bar-bg overflow-hidden">
+<div class="velvet-ribbon-bg h-full rounded-full flex items-center justify-end pr-2 transition-all duration-700 ease-out" style="width: 25%;">
+<span class="font-jost text-sm text-yellow-100 font-semibold tracking-wider">25%</span>
+</div>
+</div>
+</div>
+</div>
+<div class="scroll-entry">
+<div class="flex flex-col gap-3">
+<p class="font-cormorant text-2xl font-bold text-[#5D4037]">Win a Jumping Competition</p>
+<hr class="ornamental-divider"/>
+<div class="relative w-full h-7 rounded-full progress-bar-bg overflow-hidden">
+<div class="velvet-ribbon-bg h-full rounded-full flex items-center justify-end pr-3 transition-all duration-700 ease-out" style="width: 100%;">
+<span class="font-jost text-sm text-yellow-100 font-semibold tracking-wider mr-6">COMPLETED!</span>
+</div>
+<div class="wax-seal">
+<svg class="wax-seal-icon" fill="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
+<path d="M9.5 15.5l-3.5-3.5L7.41 10.59 9.5 12.67l7.09-7.09L18 7l-8.5 8.5zM12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2zm0 18c-4.41 0-8-3.59-8-8s3.59-8 8-8 8 3.59 8 8-3.59 8-8 8z"></path>
+</svg>
+</div>
+</div>
+</div>
+</div>
+</div>
+</div>
+<div class="p-5 sticky bottom-0 parchment-bg gold-border-bottom shadow-2xl">
+<div class="reward-chest-container flex flex-col items-center justify-center p-6 rounded-2xl chest-glow">
+<img alt="Reward Chest" class="w-36 h-36 mb-3 chest-sparkle object-contain" src="https://lh3.googleusercontent.com/aida-public/AB6AXuDcuvSsYmAk890kiU5SGOxNM-zELckNykwoSs4tPQ6lWVImCMwVWOMb258_ELvTIScF8p6QPXGLdTFypwvrxxrmJLfLyb9QfvA8zSK-IFRNO3_4nLjcMEssRHmu7NPR5rnRRkeqoPyegFZFCxL1WLE9EEme6A49pcmdGB9jxRPNeSDbCe8O2UkM0o4xVv95nUSVLcdCzvoZvG77i9akZH365SpmiXzwweh7BuLuL9YbkpoZPxL_siD1TwahCqfvcBe4KnbNjhLy9Io"/>
+<p class="font-yeseva text-3xl gold-text mb-1 text-center" style="text-shadow: 2px 2px 4px rgba(0,0,0,0.6);">Weekly Reward</p>
+<p class="font-jost text-md text-yellow-200 text-center opacity-90 tracking-wide">Complete all goals to unlock!</p>
+</div>
+</div>
+</div>
+
+</body></html>

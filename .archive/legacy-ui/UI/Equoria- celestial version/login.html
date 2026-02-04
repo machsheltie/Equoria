@@ -1,0 +1,646 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Equoria </title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: 'Cinzel', serif;
+            overflow: hidden;
+            background: radial-gradient(ellipse at center, #1a237e 0%, #0d1421 50%, #000510 100%);
+            height: 100vh;
+            position: relative;
+        }
+
+        /* Animated starfield background */
+        .starfield {
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: transparent;
+            overflow: hidden;
+        }
+
+        .star {
+            position: absolute;
+            background: #ffffff;
+            border-radius: 50%;
+            animation: twinkle 3s infinite alternate;
+        }
+
+        .star:nth-child(odd) {
+            animation-delay: 1s;
+        }
+
+        .star:nth-child(3n) {
+            animation-delay: 2s;
+        }
+
+        @keyframes twinkle {
+            0% { opacity: 0.3; transform: scale(1); }
+            100% { opacity: 1; transform: scale(1.2); }
+        }
+
+        /* Floating constellation lines */
+        .constellation {
+            position: absolute;
+            width: 100%;
+            height: 100%;
+            pointer-events: none;
+        }
+
+        .constellation-line {
+            position: absolute;
+            height: 1px;
+            background: linear-gradient(90deg, transparent, rgba(255, 215, 0, 0.3), transparent);
+            animation: fadeInOut 8s infinite;
+        }
+
+        @keyframes fadeInOut {
+            0%, 100% { opacity: 0; }
+            50% { opacity: 1; }
+        }
+
+        /* Horse silhouettes with parallax movement */
+        .horse-silhouette {
+            position: absolute;
+            opacity: 0.15;
+            transition: all 3s ease;
+            filter: blur(1px);
+        }
+
+        .horse-left {
+            left: -10%;
+            bottom: 10%;
+            width: 200px;
+            height: 150px;
+            background: linear-gradient(45deg, #1a237e, #000510);
+            clip-path: polygon(10% 85%, 25% 60%, 35% 65%, 45% 50%, 60% 55%, 75% 40%, 85% 45%, 90% 30%, 95% 35%, 90% 50%, 85% 60%, 75% 70%, 60% 80%, 45% 85%, 30% 90%, 15% 95%);
+            animation: horseBreathe 4s infinite ease-in-out;
+        }
+
+        .horse-right {
+            right: -5%;
+            bottom: 15%;
+            width: 180px;
+            height: 140px;
+            background: linear-gradient(135deg, #1a237e, #000510);
+            clip-path: polygon(5% 75%, 20% 50%, 30% 55%, 40% 40%, 55% 45%, 70% 30%, 80% 35%, 85% 20%, 90% 25%, 85% 40%, 80% 50%, 70% 60%, 55% 70%, 40% 75%, 25% 80%, 10% 85%);
+            animation: horseBreathe 4s infinite ease-in-out 2s;
+        }
+
+        @keyframes horseBreathe {
+            0%, 100% { transform: scale(1) translateY(0); }
+            50% { transform: scale(1.02) translateY(-2px); }
+        }
+
+        /* Main container with glassmorphism */
+        .container {
+            position: relative;
+            z-index: 10;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            height: 100vh;
+            padding: 20px;
+        }
+
+        /* Animated title */
+        .title {
+            font-size: 4rem;
+            font-weight: 700;
+            background: linear-gradient(135deg, #ffd700 0%, #ffed4e 25%, #ffd700 50%, #b8860b 75%, #ffd700 100%);
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+            background-clip: text;
+            text-align: center;
+            margin-bottom: 2rem;
+            letter-spacing: 3px;
+            animation: titleGlow 3s infinite alternate;
+            position: relative;
+        }
+
+        .title::before {
+            content: '';
+            position: absolute;
+            top: -20px;
+            left: 50%;
+            transform: translateX(-50%);
+            width: 60px;
+            height: 60px;
+            background: radial-gradient(circle, rgba(255, 215, 0, 0.3) 0%, transparent 70%);
+            border-radius: 50%;
+            animation: crownGlow 4s infinite ease-in-out;
+        }
+
+        @keyframes titleGlow {
+            0% { filter: drop-shadow(0 0 10px rgba(255, 215, 0, 0.5)); }
+            100% { filter: drop-shadow(0 0 30px rgba(255, 215, 0, 0.8)); }
+        }
+
+        @keyframes crownGlow {
+            0%, 100% { opacity: 0.3; transform: translateX(-50%) scale(1); }
+            50% { opacity: 0.8; transform: translateX(-50%) scale(1.2); }
+        }
+
+        /* Login form with enhanced glassmorphism */
+        .login-form {
+            background: linear-gradient(135deg, 
+                rgba(26, 35, 126, 0.2) 0%, 
+                rgba(13, 20, 33, 0.3) 50%, 
+                rgba(0, 5, 16, 0.4) 100%);
+            backdrop-filter: blur(20px);
+            border: 2px solid rgba(255, 215, 0, 0.3);
+            border-radius: 25px;
+            padding: 3rem;
+            width: 400px;
+            max-width: 90vw;
+            box-shadow: 
+                0 8px 32px rgba(0, 0, 0, 0.3),
+                inset 0 1px 0 rgba(255, 215, 0, 0.2);
+            position: relative;
+            overflow: hidden;
+            transition: all 0.3s ease;
+        }
+
+        .login-form::before {
+            content: '';
+            position: absolute;
+            top: -50%;
+            left: -50%;
+            width: 200%;
+            height: 200%;
+            background: linear-gradient(45deg, transparent, rgba(255, 215, 0, 0.05), transparent);
+            animation: shimmer 6s infinite linear;
+        }
+
+        @keyframes shimmer {
+            0% { transform: translateX(-100%) translateY(-100%) rotate(45deg); }
+            100% { transform: translateX(100%) translateY(100%) rotate(45deg); }
+        }
+
+        .login-form:hover {
+            transform: translateY(-5px);
+            box-shadow: 
+                0 12px 40px rgba(0, 0, 0, 0.4),
+                0 0 20px rgba(255, 215, 0, 0.3),
+                inset 0 1px 0 rgba(255, 215, 0, 0.3);
+        }
+
+        /* Input field styling */
+        .input-group {
+            position: relative;
+            margin-bottom: 2rem;
+            z-index: 2;
+        }
+
+        .input-field {
+            width: 100%;
+            padding: 1rem 1rem 1rem 3rem;
+            background: rgba(0, 5, 16, 0.6);
+            border: 2px solid rgba(255, 215, 0, 0.3);
+            border-radius: 15px;
+            color: #ffffff;
+            font-size: 1rem;
+            transition: all 0.3s ease;
+            outline: none;
+            backdrop-filter: blur(10px);
+        }
+
+        .input-field:focus {
+            border-color: #ffd700;
+            box-shadow: 
+                0 0 20px rgba(255, 215, 0, 0.4),
+                inset 0 0 10px rgba(255, 215, 0, 0.1);
+            transform: scale(1.02);
+        }
+
+        .input-field::placeholder {
+            color: rgba(255, 255, 255, 0.6);
+        }
+
+        .input-icon {
+            position: absolute;
+            left: 1rem;
+            top: 50%;
+            transform: translateY(-50%);
+            color: #ffd700;
+            font-size: 1.2rem;
+            transition: all 0.3s ease;
+            z-index: 3;
+        }
+
+        .input-field:focus + .input-icon {
+            color: #ffed4e;
+            transform: translateY(-50%) scale(1.1);
+        }
+
+        /* Buttons with magical effects */
+        .button {
+            width: 100%;
+            padding: 1rem;
+            margin: 0.5rem 0;
+            border: none;
+            border-radius: 15px;
+            font-size: 1.1rem;
+            font-weight: 600;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            position: relative;
+            overflow: hidden;
+            text-transform: uppercase;
+            letter-spacing: 1px;
+            z-index: 2;
+        }
+
+        .login-btn {
+            background: linear-gradient(135deg, #ffd700 0%, #b8860b 100%);
+            color: #000510;
+            box-shadow: 0 4px 15px rgba(255, 215, 0, 0.4);
+        }
+
+        .login-btn:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 8px 25px rgba(255, 215, 0, 0.6);
+            background: linear-gradient(135deg, #ffed4e 0%, #ffd700 100%);
+        }
+
+        .register-btn {
+            background: linear-gradient(135deg, rgba(26, 35, 126, 0.8) 0%, rgba(13, 20, 33, 0.8) 100%);
+            color: #ffd700;
+            border: 2px solid rgba(255, 215, 0, 0.5);
+        }
+
+        .register-btn:hover {
+            background: linear-gradient(135deg, rgba(26, 35, 126, 1) 0%, rgba(13, 20, 33, 1) 100%);
+            border-color: #ffd700;
+            transform: translateY(-2px);
+            box-shadow: 0 8px 25px rgba(26, 35, 126, 0.6);
+        }
+
+        /* Magical button ripple effect */
+        .button::before {
+            content: '';
+            position: absolute;
+            top: 50%;
+            left: 50%;
+            width: 0;
+            height: 0;
+            background: radial-gradient(circle, rgba(255, 255, 255, 0.3) 0%, transparent 70%);
+            border-radius: 50%;
+            transform: translate(-50%, -50%);
+            transition: width 0.6s, height 0.6s;
+        }
+
+        .button:active::before {
+            width: 200px;
+            height: 200px;
+        }
+
+        /* Forgot password link */
+        .forgot-password {
+            text-align: center;
+            margin: 1rem 0;
+            z-index: 2;
+            position: relative;
+        }
+
+        .forgot-password a {
+            color: rgba(255, 215, 0, 0.8);
+            text-decoration: none;
+            font-size: 0.9rem;
+            transition: all 0.3s ease;
+        }
+
+        .forgot-password a:hover {
+            color: #ffd700;
+            text-shadow: 0 0 10px rgba(255, 215, 0, 0.5);
+        }
+
+        /* Social login buttons */
+        .social-login {
+            display: flex;
+            justify-content: center;
+            gap: 1rem;
+            margin-top: 2rem;
+            z-index: 2;
+            position: relative;
+        }
+
+        .social-btn {
+            width: 50px;
+            height: 50px;
+            border-radius: 50%;
+            border: 2px solid rgba(255, 215, 0, 0.3);
+            background: rgba(0, 5, 16, 0.6);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            color: #ffd700;
+            font-size: 1.5rem;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            backdrop-filter: blur(10px);
+        }
+
+        .social-btn:hover {
+            border-color: #ffd700;
+            background: rgba(255, 215, 0, 0.1);
+            transform: scale(1.1) rotate(5deg);
+            box-shadow: 0 0 20px rgba(255, 215, 0, 0.4);
+        }
+
+        /* Version info */
+        .version {
+            position: absolute;
+            bottom: 1rem;
+            left: 50%;
+            transform: translateX(-50%);
+            color: rgba(255, 255, 255, 0.5);
+            font-size: 0.8rem;
+            z-index: 10;
+        }
+
+        /* Responsive design */
+        @media (max-width: 768px) {
+            .title {
+                font-size: 2.5rem;
+            }
+            
+            .login-form {
+                padding: 2rem;
+                width: 350px;
+            }
+        }
+
+        /* Custom scrollbar */
+        ::-webkit-scrollbar {
+            width: 8px;
+        }
+
+        ::-webkit-scrollbar-track {
+            background: rgba(0, 5, 16, 0.3);
+        }
+
+        ::-webkit-scrollbar-thumb {
+            background: linear-gradient(180deg, #ffd700, #b8860b);
+            border-radius: 4px;
+        }
+    </style>
+</head>
+<body>
+    <!-- Animated starfield background -->
+    <div class="starfield" id="starfield"></div>
+    
+    <!-- Constellation lines -->
+    <div class="constellation" id="constellation"></div>
+    
+    <!-- Horse silhouettes -->
+    <div class="horse-silhouette horse-left" id="horseLeft"></div>
+    <div class="horse-silhouette horse-right" id="horseRight"></div>
+    
+    <div class="container">
+        <h1 class="title">EQUORIA</h1>
+        
+        <form class="login-form" id="loginForm">
+            <div class="input-group">
+                <input type="text" class="input-field" placeholder="Username or Email" id="username">
+                <div class="input-icon">👤</div>
+            </div>
+            
+            <div class="input-group">
+                <input type="password" class="input-field" placeholder="Password" id="password">
+                <div class="input-icon">🔒</div>
+            </div>
+            
+            <div class="forgot-password">
+                <a href="#" id="forgotPassword">Forgot Password?</a>
+            </div>
+            
+            <button type="submit" class="button login-btn" id="loginBtn">Login</button>
+            <button type="button" class="button register-btn" id="registerBtn">Register</button>
+            
+            <div class="social-login">
+                <div class="social-btn" id="fbLogin">f</div>
+                <div class="social-btn" id="googleLogin">G</div>
+                <div class="social-btn" id="twitterLogin">t</div>
+            </div>
+        </form>
+    </div>
+    
+    <div class="version">Version 1.0</div>
+
+    <script>
+        // Create animated starfield
+        function createStarfield() {
+            const starfield = document.getElementById('starfield');
+            const starCount = 150;
+            
+            for (let i = 0; i < starCount; i++) {
+                const star = document.createElement('div');
+                star.className = 'star';
+                star.style.left = Math.random() * 100 + '%';
+                star.style.top = Math.random() * 100 + '%';
+                star.style.width = star.style.height = (Math.random() * 3 + 1) + 'px';
+                star.style.animationDelay = Math.random() * 3 + 's';
+                starfield.appendChild(star);
+            }
+        }
+
+        // Create constellation lines
+        function createConstellation() {
+            const constellation = document.getElementById('constellation');
+            const lineCount = 20;
+            
+            for (let i = 0; i < lineCount; i++) {
+                const line = document.createElement('div');
+                line.className = 'constellation-line';
+                line.style.left = Math.random() * 80 + '%';
+                line.style.top = Math.random() * 80 + '%';
+                line.style.width = (Math.random() * 100 + 50) + 'px';
+                line.style.transform = `rotate(${Math.random() * 360}deg)`;
+                line.style.animationDelay = Math.random() * 8 + 's';
+                constellation.appendChild(line);
+            }
+        }
+
+        // Parallax mouse movement effect
+        function addParallaxEffect() {
+            document.addEventListener('mousemove', (e) => {
+                const mouseX = e.clientX / window.innerWidth;
+                const mouseY = e.clientY / window.innerHeight;
+                
+                // Move horses slightly based on mouse position
+                const horseLeft = document.getElementById('horseLeft');
+                const horseRight = document.getElementById('horseRight');
+                
+                horseLeft.style.transform = `translate(${mouseX * 20}px, ${mouseY * 10}px) scale(${1 + mouseX * 0.1})`;
+                horseRight.style.transform = `translate(${-mouseX * 15}px, ${-mouseY * 8}px) scale(${1 + mouseY * 0.1})`;
+                
+                // Subtle form movement
+                const form = document.querySelector('.login-form');
+                form.style.transform = `translate(${(mouseX - 0.5) * 10}px, ${(mouseY - 0.5) * 5}px)`;
+            });
+        }
+
+        // Add magical input focus effects
+        function addInputEffects() {
+            const inputs = document.querySelectorAll('.input-field');
+            
+            inputs.forEach(input => {
+                input.addEventListener('focus', function() {
+                    this.style.background = 'rgba(255, 215, 0, 0.1)';
+                    
+                    // Create sparkle effect
+                    createSparkles(this);
+                });
+                
+                input.addEventListener('blur', function() {
+                    this.style.background = 'rgba(0, 5, 16, 0.6)';
+                });
+                
+                // Typing effect
+                input.addEventListener('input', function() {
+                    if (this.value.length > 0) {
+                        this.style.color = '#ffd700';
+                    } else {
+                        this.style.color = '#ffffff';
+                    }
+                });
+            });
+        }
+
+        // Create sparkle effect for inputs
+        function createSparkles(element) {
+            const rect = element.getBoundingClientRect();
+            const sparkleCount = 5;
+            
+            for (let i = 0; i < sparkleCount; i++) {
+                const sparkle = document.createElement('div');
+                sparkle.style.position = 'absolute';
+                sparkle.style.left = (rect.left + Math.random() * rect.width) + 'px';
+                sparkle.style.top = (rect.top + Math.random() * rect.height) + 'px';
+                sparkle.style.width = sparkle.style.height = '4px';
+                sparkle.style.background = '#ffd700';
+                sparkle.style.borderRadius = '50%';
+                sparkle.style.pointerEvents = 'none';
+                sparkle.style.zIndex = '9999';
+                sparkle.style.animation = 'sparkleFloat 1s ease-out forwards';
+                
+                document.body.appendChild(sparkle);
+                
+                setTimeout(() => {
+                    sparkle.remove();
+                }, 1000);
+            }
+        }
+
+        // Add sparkle animation
+        const sparkleKeyframes = `
+            @keyframes sparkleFloat {
+                0% {
+                    opacity: 1;
+                    transform: translateY(0) scale(1);
+                }
+                100% {
+                    opacity: 0;
+                    transform: translateY(-20px) scale(0.5);
+                }
+            }
+        `;
+        
+        const styleSheet = document.createElement('style');
+        styleSheet.textContent = sparkleKeyframes;
+        document.head.appendChild(styleSheet);
+
+        // Add button click effects
+        function addButtonEffects() {
+            const buttons = document.querySelectorAll('.button, .social-btn');
+            
+            buttons.forEach(button => {
+                button.addEventListener('click', function(e) {
+                    // Ripple effect is handled by CSS
+                    
+                    // Screen flash effect for login
+                    if (this.id === 'loginBtn') {
+                        e.preventDefault();
+                        flashScreen();
+                        setTimeout(() => {
+                            alert('🐎 Welcome to Equoria! The mystical realm awaits...');
+                        }, 500);
+                    }
+                });
+            });
+        }
+
+        // Screen flash effect
+        function flashScreen() {
+            const flash = document.createElement('div');
+            flash.style.position = 'fixed';
+            flash.style.top = '0';
+            flash.style.left = '0';
+            flash.style.width = '100%';
+            flash.style.height = '100%';
+            flash.style.background = 'radial-gradient(circle, rgba(255, 215, 0, 0.3) 0%, transparent 70%)';
+            flash.style.pointerEvents = 'none';
+            flash.style.zIndex = '10000';
+            flash.style.opacity = '0';
+            flash.style.transition = 'opacity 0.3s ease';
+            
+            document.body.appendChild(flash);
+            
+            setTimeout(() => {
+                flash.style.opacity = '1';
+            }, 10);
+            
+            setTimeout(() => {
+                flash.style.opacity = '0';
+                setTimeout(() => {
+                    flash.remove();
+                }, 300);
+            }, 200);
+        }
+
+        // Initialize all effects
+        function init() {
+            createStarfield();
+            createConstellation();
+            addParallaxEffect();
+            addInputEffects();
+            addButtonEffects();
+            
+            // Delayed horse animation
+            setTimeout(() => {
+                document.getElementById('horseLeft').style.opacity = '0.25';
+                document.getElementById('horseRight').style.opacity = '0.25';
+            }, 1000);
+        }
+
+        // Start the magic when page loads
+        window.addEventListener('load', init);
+        
+        // Responsive star updates
+        window.addEventListener('resize', () => {
+            const starfield = document.getElementById('starfield');
+            const constellation = document.getElementById('constellation');
+            starfield.innerHTML = '';
+            constellation.innerHTML = '';
+            createStarfield();
+            createConstellation();
+        });
+    </script>
+</body>
+</html>
+
+
+I

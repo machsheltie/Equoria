@@ -1,0 +1,37 @@
+---
+description: Rules to enforce incremental development and task focus in Equoria
+globs: ["**/*.js", "**/*.ts", "**/*.tsx", "**/*.sql"]
+alwaysApply: true
+---
+# Incremental Development Rules
+
+## Task Focus
+- Implement only the specific feature, endpoint, or component requested in the prompt.
+- Do not modify unrelated files or add unrequested functionality.
+- Clarify ambiguous prompts with the developer before proceeding.
+
+## Step-by-Step Workflow
+1. **Understand Task**: Review prompt and documentation (@docs/001_project_overview.mdc, @docs/007_frameworks.mdc).
+2. **Break Down Task**: Divide into small steps (e.g., create model, service, controller, or component).
+3. **Write Tests**: Create Jest/RNTL (frontend), Mocha/Supertest (backend), or `pgtest` (database) tests first.
+4. **Implement Code**: Write minimal code to pass tests.
+5. **Run Tests**: Execute `npm run test` to validate.
+6. **Review Changes**: Ensure compliance with prompt, `@docs/008_frontendcoding.mdc`, and `@docs/009_testing_and_tdd.mdc`.
+7. **Log Changes**: Add comments or TODOs for incomplete sections.
+
+## Validation
+- Run `npm run lint` (ESLint, Prettier) and `npm run test` before committing.
+- Ensure 100% test coverage for genetics, utilities, and critical screens.
+- Use pre-PR checklist: test coverage, security (JWT, input validation), performance (<500ms for dashboard/heatmap).
+- Log errors with `winston` for diagnostics.
+
+## References
+- @docs/001_project_overview.mdc
+- @docs/002_tech_stack.mdc
+- @docs/003_ui_ux_guidelines.mdc
+- @docs/004_breeding_mechanics.mdc
+- @docs/005_event_systems.mdc
+- @docs/006_permissions_and_moderation.mdc
+- @docs/007_frameworks.mdc
+- @docs/008_frontendcoding.mdc
+- @docs/009_testing_and_tdd.mdc

@@ -1,0 +1,175 @@
+<html><head>
+<meta charset="utf-8"/>
+<link crossorigin="" href="https://fonts.gstatic.com/" rel="preconnect"/>
+<link as="style" href="https://fonts.googleapis.com/css2?display=swap&amp;family=Jost%3Awght%40400%3B700&amp;family=Noto+Serif%3Awght%40400%3B500%3B700%3B900&amp;family=Noto+Sans%3Awght%40400%3B500%3B700%3B900" onload="this.rel='stylesheet'" rel="stylesheet"/>
+<title>Stitch Design</title>
+<link href="data:image/x-icon;base64," rel="icon" type="image/x-icon"/>
+<script src="https://cdn.tailwindcss.com?plugins=forms,container-queries"></script>
+<style>
+    @keyframes sparkle-flow {
+      0% {
+        background-position: -100% 0;
+      }
+      100% {
+        background-position: 100% 0;
+      }
+    }
+    .sparkle-focus:focus {
+      animation: sparkle-flow 1s linear;
+      background-image: linear-gradient(to right, transparent 20%, #D6A64A 50%, transparent 80%);
+      background-size: 200% 2px;background-repeat: no-repeat;
+      background-position: -100% 100%;}
+    .scroll-textarea {
+        background-image: url("data:image/svg+xml,%3Csvg width='300' height='200' viewBox='0 0 300 200' fill='none' xmlns='http://www.w3.org/2000/svg'%3E%3Cpath d='M10 0C4.47715 0 0 4.47715 0 10V190C0 195.523 4.47715 200 10 200H20C20 177.909 37.9086 160 60 160H240C262.091 160 280 177.909 280 200H290C295.523 200 300 195.523 300 190V10C300 4.47715 295.523 0 290 0H280C280 22.0914 262.091 40 240 40H60C37.9086 40 20 22.0914 20 0H10Z' fill='%23FDF8E3'/%3E%3Cpath d='M10 1C4.47715 1 0 5.47715 0 11V189C0 194.523 4.47715 199 10 199H19.5C19.5 177.358 37.3579 159.5 59.5 159.5H240.5C262.642 159.5 280.5 177.358 280.5 199H290C295.523 199 300 194.523 300 189V11C300 5.47715 295.523 1 290 1H280.5C280.5 22.6421 262.642 40.5 240.5 40.5H59.5C37.3579 40.5 19.5 22.6421 19.5 1H10Z' stroke='%236A4E2D' stroke-width='2'/%3E%3Cpath d='M10 2C5.02944 2 1 6.02944 1 11V189C1 193.971 5.02944 198 10 198H19C19 176.797 36.7975 159 59 159H241C263.203 159 281 176.797 281 198H290C294.971 198 299 193.971 299 189V11C299 6.02944 294.971 2 290 2H281C281 23.2025 263.203 41 241 41H59C36.7975 41 19 23.2025 19 2H10Z' stroke='%23D6A64A'/%3E%3C/svg%3E%0A");
+        background-repeat: no-repeat;
+        background-size: 100% 100%;
+        border: none;
+        padding: 30px 40px;}
+    .tooltip-container {
+      position: relative;
+      display: inline-block;
+    }
+    .tooltip-text {
+      visibility: hidden;
+      width: 160px;
+      background-image: url("data:image/svg+xml,%3Csvg width='180' height='80' viewBox='0 0 180 80' fill='none' xmlns='http://www.w3.org/2000/svg'%3E%3Cpath d='M5 0C2.23858 0 0 2.23858 0 5V75C0 77.7614 2.23858 80 5 80H10C10 70.0541 18.0541 62 28 62H152C161.946 62 170 70.0541 170 80H175C177.761 80 180 77.7614 180 75V5C180 2.23858 177.761 0 175 0H170C170 9.94593 161.946 18 152 18H28C18.0541 18 10 9.94593 10 0H5Z' fill='%23FDF8E3'/%3E%3Cpath d='M5 0.5C2.51472 0.5 0.5 2.51472 0.5 5V75C0.5 77.4853 2.51472 79.5 5 79.5H9.5C9.5 69.7766 17.7766 61.5 27.5 61.5H152.5C162.223 61.5 170.5 69.7766 170.5 79.5H175C177.485 79.5 179.5 77.4853 179.5 75V5C179.5 2.51472 177.485 0.5 175 0.5H170.5C170.5 10.2234 162.223 18.5 152.5 18.5H27.5C17.7766 18.5 9.5 10.2234 9.5 0.5H5Z' stroke='%236A4E2D' stroke-opacity='0.5'/%3E%3C/svg%3E%0A");
+      background-size: 100% 100%;
+      color: #1F1B16;
+      text-align: center;
+      border-radius: 6px;
+      padding: 15px 10px;
+      position: absolute;
+      z-index: 1;
+      bottom: 125%;
+      left: 50%;
+      margin-left: -80px;
+      opacity: 0;
+      transition: opacity 0.3s, transform 0.3s;
+      transform: translateY(10px) rotate(-2deg);font-family: 'Jost', sans-serif;
+      font-size: 14px;
+    }
+    .tooltip-container:hover .tooltip-text {
+      visibility: visible;
+      opacity: 1;
+      transform: translateY(0) rotate(0deg);
+    }.custom-checkbox {
+      appearance: none;
+      -webkit-appearance: none;
+      width: 20px;
+      height: 20px;
+      background-color: #FDF8E3;
+      border: 2px solid #6A4E2D;
+      position: relative;
+      cursor: pointer;
+      border-radius: 3px;
+    }
+    .custom-checkbox:before {content: '';
+      position: absolute;
+      top: 1px;
+      left: 1px;
+      right: 1px;
+      bottom: 1px;
+      border: 1px solid #D6A64A;
+      border-radius: 1px;}
+    .custom-checkbox:checked {
+      background-color: #D6A64A;box-shadow: 0 0 8px rgba(214, 166, 74, 0.7);}
+    .custom-checkbox:checked:after {content: '';
+      position: absolute;
+      left: 6px;
+      top: 2px;
+      width: 5px;
+      height: 10px;
+      border: solid #1F1B16;border-width: 0 2px 2px 0;
+      transform: rotate(45deg);
+    }.custom-toggle-bg {
+      background-color: #6A4E2D;border: 1px solid #D6A64A;box-shadow: inset 0 1px 3px rgba(0,0,0,0.3);
+    }
+    .custom-toggle-bg.active {
+      background-color: #2C4A2A;box-shadow: 0 0 10px #2C4A2A, inset 0 1px 3px rgba(0,0,0,0.3);}
+    .custom-toggle-handle {
+      background-color: #C0C0C0;border: 1px solid #A9A9A9;
+      box-shadow: 0 1px 2px rgba(0,0,0,0.2);
+    }
+  </style>
+<style>
+    body {
+      min-height: max(884px, 100dvh);
+    }
+  </style>
+  </head>
+<body class="bg-gray-900" style="font-family: 'Jost', sans-serif;">
+<div class="relative flex size-full min-h-screen flex-col bg-[#211E1A] justify-between group/design-root overflow-x-hidden" style="--checkbox-tick-svg: url('data:image/svg+xml,%3csvg viewBox=%270 0 16 16%27 fill=%27rgb(31,27,22)%27 xmlns=%27http://www.w3.org/2000/svg%27%3e%3cpath d=%27M12.207 4.793a1 1 0 010 1.414l-5 5a1 1 0 01-1.414 0l-2-2a1 1 0 011.414-1.414L6.5 9.086l4.293-4.293a1 1 0 011.414 0z%27/%3e%3c/svg%3e'); --select-button-svg: url('data:image/svg+xml,%3csvg xmlns=%27http://www.w3.org/2000/svg%27 width=%2724px%27 height=%2724px%27 fill='%236A4E2D' viewBox=%270 0 256 256%27%3e%3cpath d=%27M208.49,120.49l-80,80a8,8,0,0,1-11.32,0l-80-80a8,8,0,0,1,11.32-11.32L128,188.69l75.18-75.18a8,8,0,0,1,11.32,11.32Z%27/%3e%3c/svg%3e');">
+<div class="p-6 space-y-6">
+<div class="flex max-w-[480px] flex-col items-start gap-2">
+<label class="text-[#6A4E2D] text-sm font-bold uppercase" for="name">Name</label>
+<div class="relative w-full">
+<input class="sparkle-focus form-input flex w-full resize-none overflow-hidden text-[#1F1B16] focus:outline-none focus:ring-0 bg-[#FDF8E3] h-12 placeholder:text-[#6A4E2D]/60 placeholder:italic p-3 text-base font-normal leading-normal" id="name" placeholder="Enter horse name" style="border: 2px solid #6A4E2D; border-radius: 8px; box-shadow: 0 0 0 1px #D6A64A inset;" value=""/>
+<div class="tooltip-container absolute right-3 top-1/2 -translate-y-1/2">
+<svg class="cursor-help" fill="none" height="20" stroke="#6A4E2D" stroke-linecap="round" stroke-linejoin="round" stroke-width="2" viewBox="0 0 24 24" width="20" xmlns="http://www.w3.org/2000/svg">
+<circle cx="12" cy="12" r="10"></circle>
+<line x1="12" x2="12" y1="16" y2="12"></line>
+<line x1="12" x2="12.01" y1="8" y2="8"></line>
+</svg>
+<span class="tooltip-text">Your horse's registered name.</span>
+</div>
+</div>
+</div>
+<div class="flex max-w-[480px] flex-col items-start gap-2">
+<label class="text-[#6A4E2D] text-sm font-bold uppercase" for="breed">Breed</label>
+<div class="relative w-full">
+<select class="sparkle-focus form-select flex w-full resize-none overflow-hidden text-[#1F1B16] focus:outline-none focus:ring-0 bg-[#FDF8E3] h-12 bg-[image:--select-button-svg] bg-right_1rem_center bg-no-repeat appearance-none p-3 text-base font-normal leading-normal" id="breed" style="border: 2px solid #6A4E2D; border-radius: 8px; box-shadow: 0 0 0 1px #D6A64A inset;">
+<option class="text-[#6A4E2D]/60 italic" value="">Select horse breed</option>
+<option class="text-[#1F1B16]" value="equorian_charger">Equorian Charger</option>
+<option class="text-[#1F1B16]" value="sylvan_courser">Sylvan Courser</option>
+<option class="text-[#1F1B16]" value="celestial_steed">Celestial Steed</option>
+</select>
+<div class="tooltip-container absolute -right-8 top-1/2 -translate-y-1/2 hidden sm:block">
+<svg class="cursor-help" fill="none" height="20" stroke="#6A4E2D" stroke-linecap="round" stroke-linejoin="round" stroke-width="2" viewBox="0 0 24 24" width="20" xmlns="http://www.w3.org/2000/svg">
+<circle cx="12" cy="12" r="10"></circle>
+<line x1="12" x2="12" y1="16" y2="12"></line>
+<line x1="12" x2="12.01" y1="8" y2="8"></line>
+</svg>
+<span class="tooltip-text">Choose the breed of your noble steed.</span>
+</div>
+</div>
+</div>
+<div class="flex max-w-[480px] flex-col items-start gap-2">
+<label class="text-[#6A4E2D] text-sm font-bold uppercase" for="description">Description</label>
+<textarea class="sparkle-focus scroll-textarea form-textarea flex w-full min-w-0 flex-1 resize-none overflow-hidden text-[#1F1B16] focus:outline-none focus:ring-0 bg-transparent min-h-[150px] placeholder:text-[#6A4E2D]/60 placeholder:italic text-base font-normal leading-normal" id="description" placeholder="Describe your magnificent companion..."></textarea>
+</div>
+<div class="space-y-3">
+<label class="flex items-center gap-x-3">
+<input class="custom-checkbox" type="checkbox"/>
+<p class="text-[#FDF8E3] text-base font-normal leading-normal">Available for stud</p>
+</label>
+<label class="flex items-center gap-x-3">
+<input checked="" class="custom-checkbox" type="checkbox"/>
+<p class="text-[#FDF8E3] text-base font-normal leading-normal">Available for lease</p>
+</label>
+</div>
+<div class="flex items-center gap-4 justify-between max-w-[480px]">
+<p class="text-[#6A4E2D] text-sm font-bold uppercase flex-1 truncate">Active Status</p>
+<div class="shrink-0">
+<label class="relative flex h-8 w-14 cursor-pointer items-center rounded-full p-1 custom-toggle-bg">
+<input class="invisible absolute peer" onchange="this.parentElement.classList.toggle('active', this.checked)" type="checkbox"/>
+<span class="h-6 w-6 rounded-full custom-toggle-handle transform transition-transform duration-200 ease-in-out peer-checked:translate-x-6"></span>
+</label>
+</div>
+<div class="tooltip-container">
+<svg class="cursor-help" fill="none" height="20" stroke="#6A4E2D" stroke-linecap="round" stroke-linejoin="round" stroke-width="2" viewBox="0 0 24 24" width="20" xmlns="http://www.w3.org/2000/svg">
+<circle cx="12" cy="12" r="10"></circle>
+<line x1="12" x2="12" y1="16" y2="12"></line>
+<line x1="12" x2="12.01" y1="8" y2="8"></line>
+</svg>
+<span class="tooltip-text">Is this horse currently active in your stables?</span>
+</div>
+</div>
+</div>
+<div class="p-6">
+<button class="flex w-full max-w-[480px] mx-auto cursor-pointer items-center justify-center overflow-hidden rounded-full h-12 px-6 bg-[#6A4E2D] text-[#FDF8E3] text-base font-bold leading-normal tracking-[0.015em] border-2 border-[#D6A64A] hover:bg-[#7A5E3D] transition-colors duration-200" style="box-shadow: 0 2px 4px rgba(0,0,0,0.2);">
+<span class="truncate">Save Changes</span>
+</button>
+</div>
+</div>
+
+</body></html>

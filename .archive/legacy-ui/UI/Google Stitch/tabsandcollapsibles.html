@@ -1,0 +1,253 @@
+<html><head>
+<meta charset="utf-8"/>
+<link href="https://fonts.googleapis.com" rel="preconnect"/>
+<link crossorigin="" href="https://fonts.gstatic.com/" rel="preconnect"/>
+<link href="https://fonts.googleapis.com/css2?family=Yeseva+One&amp;family=Cormorant+Garamond:ital@1&amp;display=swap" rel="stylesheet"/>
+<title>Equoria Fantasy Tabs</title>
+<link href="data:image/x-icon;base64," rel="icon" type="image/x-icon"/>
+<script src="https://cdn.tailwindcss.com?plugins=forms,container-queries"></script>
+<style>
+    body {
+      font-family: 'Cormorant Garamond', serif;
+      background-color: #FDF8E3;}
+    .font-yeseva-one {
+      font-family: 'Yeseva One', cursive;
+    }
+    .font-cormorant-garamond-italic {
+      font-family: 'Cormorant Garamond', italic;
+    }
+    .tab {
+      background-color: #FDF8E3;color: #6A4E2D;border: 2px solid #6A4E2D;
+      border-bottom: none;
+      border-radius: 10px 10px 0 0;padding: 10px 20px;
+      cursor: pointer;
+      transition: all 0.3s ease-in-out;
+      position: relative;
+      margin-right: -5px;box-shadow: 0px -5px 10px -5px rgba(0,0,0,0.2) inset;}
+    .tab.active {
+      background-color: #2F4F2F;color: #FFD700;border-color: #FFD700;
+      z-index: 10;
+      transform: translateY(-2px);}
+    .tab.active::after {
+      content: '';
+      position: absolute;
+      bottom: -2px;
+      left: 10%;
+      width: 80%;
+      height: 3px;
+      background-color: #FFD700;animation: underline-anim 0.5s ease-in-out;
+    }
+    @keyframes underline-anim {
+      0% {
+        width: 0%;
+        left: 50%;
+      }
+      100% {
+        width: 80%;
+        left: 10%;
+      }
+    }
+    @keyframes sparkle-pulse {
+      0% { box-shadow: 0 0 5px #FFD700, 0 0 10px #FFD700; }
+      50% { box-shadow: 0 0 15px #FFD700, 0 0 25px #FFD700; }
+      100% { box-shadow: 0 0 5px #FFD700, 0 0 10px #FFD700; }
+    }
+    .tab.active.sparkle {
+        animation: sparkle-pulse 0.7s ease-in-out;
+    }
+    .tab-content {
+      background-color: #FDF8E3;
+      border: 2px solid #6A4E2D;
+      padding: 20px;
+      border-top: none;
+       min-height: 300px;}
+    .accordion-item {
+      background-image: url("data:image/svg+xml,%3Csvg width='100' height='100' viewBox='0 0 100 100' xmlns='http://www.w3.org/2000/svg'%3E%3Cdefs%3E%3Cpattern id='parchment' patternUnits='userSpaceOnUse' width='100' height='100'%3E%3Cimage href='https://www.transparenttextures.com/patterns/old-parchment.png' x='0' y='0' width='100' height='100'/%3E%3C/pattern%3E%3C/defs%3E%3Crect width='100' height='100' fill='url(%23parchment)' opacity='0.2'/%3E%3C/svg%3E"), linear-gradient(to bottom, #FDF8E3, #F5EFD8);
+      border: 1px solid #D2B48C;margin-bottom: 10px;
+      border-radius: 8px;
+      overflow: hidden;box-shadow: 2px 2px 5px rgba(0,0,0,0.1);
+    }
+    .accordion-header {
+      padding: 12px 15px;
+      cursor: pointer;
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      background-color: rgba(245, 239, 216, 0.5);border-bottom: 1px solid #D2B48C;
+      position: relative;
+    }
+    .accordion-header::before {content: "";
+        position: absolute;
+        top: -10px;
+        left: 0;
+        width: 100%;
+        height: 10px;
+        background: linear-gradient(to bottom, rgba(0,0,0,0.1) 0%, rgba(0,0,0,0) 100%);
+        border-radius: 50% 50% 0 0 / 100% 100% 0 0;
+        transform: rotateX(45deg) translateY(-5px);
+        opacity: 0.5;
+    }
+    .accordion-content {
+      padding: 0;
+      max-height: 0;
+      overflow: hidden;
+      transition: max-height 0.5s ease-in-out, padding 0.5s ease-in-out;}
+    .accordion-content > div {
+        padding: 15px;
+    }
+    .accordion-item.open .accordion-content {
+      max-height: 500px;padding: 0;
+    }
+    .accordion-item.open .accordion-header::after {content: "";
+        position: absolute;
+        bottom: -10px;
+        left: 0;
+        width: 100%;
+        height: 10px;
+        background: linear-gradient(to top, rgba(0,0,0,0.1) 0%, rgba(0,0,0,0) 100%);
+        border-radius: 0 0 50% 50% / 0 0 100% 100%;
+        transform: rotateX(-45deg) translateY(5px);
+        opacity: 0.5;
+        transition: opacity 0.3s ease-in-out;
+    }
+    .sketch-icon {
+      filter: url(#pencilTexture);width: 24px;
+      height: 24px;
+    }
+    .arrow-icon {
+        transition: transform 0.3s ease-in-out;
+    }
+    .accordion-item.open .arrow-icon {
+        transform: rotate(180deg);
+    }
+  </style>
+<style>
+    body {
+      min-height: max(884px, 100dvh);
+    }
+  </style>
+  </head>
+<body class="bg-[#FDF8E3] p-4">
+<svg style="display:none;">
+<filter id="pencilTexture">
+<feTurbulence baseFrequency="0.7" numOctaves="3" result="noise" type="fractalNoise"></feTurbulence>
+<feDisplacementMap in="SourceGraphic" in2="noise" result="pencil" scale="2" xChannelSelector="R" yChannelSelector="G"></feDisplacementMap>
+<feMorphology in="SourceGraphic" operator="thin" radius="0.5" result="thin"></feMorphology>
+<feGaussianBlur in="thin" result="blur" stdDeviation="0.5"></feGaussianBlur>
+<feComposite in="pencil" in2="blur" operator="out" result="finalSketch"></feComposite>
+<feColorMatrix in="finalSketch" type="matrix" values="0 0 0 0 0.21  0 0 0 0 0.18  0 0 0 0 0.11  0 0 0 1 0"></feColorMatrix>
+</filter>
+</svg>
+<div class="max-w-md mx-auto">
+<div class="flex items-center justify-between mb-6">
+<svg class="sketch-icon cursor-pointer" fill="#6A4E2D" height="32" viewBox="0 0 256 256" width="32" xmlns="http://www.w3.org/2000/svg"><path d="M224,128a8,8,0,0,1-8,8H59.31l58.35,58.34a8,8,0,0,1-11.32,11.32l-72-72a8,8,0,0,1,0-11.32l72-72a8,8,0,0,1,11.32,11.32L59.31,120H216A8,8,0,0,1,224,128Z"></path></svg>
+<h1 class="font-yeseva-one text-3xl text-[#6A4E2D] text-center">Equoria</h1>
+<div class="w-8"></div> 
+</div>
+<div class="flex mb-[-2px] relative">
+<button class="tab font-yeseva-one uppercase text-lg active sparkle flex items-center gap-2" id="tab1-button">
+<svg class="sketch-icon" fill="currentColor" height="24" viewBox="0 0 256 256" width="24" xmlns="http://www.w3.org/2000/svg"><path d="M128,24a104,104,0,0,0-96,118.47V208a8,8,0,0,0,16,0v-61.81C63.4,134.6,72.36,128,80,128a8,8,0,0,0,0-16c-13.23,0-24,8.47-24,20v-8a16,16,0,0,1,4.36-11.35C73.63,101.06,99,88,128,88s54.37,13.06,67.64,24.65A16,16,0,0,1,200,122.65v8c0-11.53-10.77-20-24-20a8,8,0,0,0,0,16c7.64,0,16.6-6.6,31.94-18.19V64a8,8,0,0,0-16,0v47.42A88.11,88.11,0,0,1,128,40a87.21,87.21,0,0,1,60.5,23.08c7,6,11.5,13,11.5,20.92,0,12.24-10.39,24.29-24.09,35.72C161,131.2,144.37,136,128,136a8,8,0,0,0,0,16c19.31,0,38.33-5.63,53.42-18.88,16.1-14.06,30.58-28.61,30.58-46.12A104.13,104.13,0,0,0,128,24Zm0,168a8,8,0,0,0-8,8v24a8,8,0,0,0,16,0v-24A8,8,0,0,0,128,192Z"></path></svg>
+        Stable
+      </button>
+<button class="tab font-yeseva-one uppercase text-lg flex items-center gap-2" id="tab2-button">
+<svg class="sketch-icon" fill="currentColor" height="24" viewBox="0 0 256 256" width="24" xmlns="http://www.w3.org/2000/svg"><path d="M228.92,49.69a8,8,0,0,0-6.86-1.45L160.93,63.52,99.58,32.84a8,8,0,0,0-5.52-.6l-64,16A8,8,0,0,0,24,56V200a8,8,0,0,0,9.94,7.76l61.13-15.28,61.35,30.68A8.15,8.15,0,0,0,160,224a8,8,0,0,0,1.94-.24l64-16A8,8,0,0,0,232,200V56A8,8,0,0,0,228.92,49.69ZM104,52.94l48,24V203.06l-48-24ZM40,62.25l48-12v127.5l-48,12Zm176,131.5-48,12V78.25l48-12Z"></path></svg>
+        World
+      </button>
+<button class="tab font-yeseva-one uppercase text-lg flex items-center gap-2" id="tab3-button">
+<svg class="sketch-icon" fill="currentColor" height="24" viewBox="0 0 256 256" width="24" xmlns="http://www.w3.org/2000/svg"><path d="M178,32c-20.06,0-37.44,11.62-45.88,28.69C128.37,60,128.18,59,128,59s-.37,1-.72,1.69C118.44,43.62,101.06,32,81,32A51.06,51.06,0,0,0,30,83c0,43.46,36.33,74.08,70.17,94.57a253.5,253.5,0,0,0,24.54,15.8,8,8,0,0,0,6.58,0,253.5,253.5,0,0,0,24.54-15.8C189.67,157.08,226,126.46,226,83A51.06,51.06,0,0,0,178,32Zm-2.18,152.29C175.7,184.34,151,200,128,200s-47.7-15.66-47.82-15.71a8,8,0,0,1-3.36-9.45C82,150.13,97,113.12,127.4,112a8,8,0,0,1,.6,16c-23.64.77-34.15,28.8-37,41.39l.48.2c6.83,4,21.18,12.41,36.52,12.41s29.69-8.46,36.52-12.41l.48-.2c-2.81-12.59-13.32-40.62-37-41.39a8,8,0,0,1,.6-16c30.44,1.14,45.44,38.13,50.56,62.84A8,8,0,0,1,175.82,184.29Z"></path></svg>
+        Social
+      </button>
+</div>
+<div class="tab-content" id="tab1-content">
+<div class="accordion-item">
+<div class="accordion-header font-cormorant-garamond-italic text-lg text-[#4A3B24]">
+          My Horses (3)
+          <svg class="arrow-icon sketch-icon" fill="currentColor" height="20" viewBox="0 0 256 256" width="20" xmlns="http://www.w3.org/2000/svg"><path d="M213.66,101.66l-80,80a8,8,0,0,1-11.32,0l-80-80A8,8,0,0,1,53.66,90.34L128,164.69l74.34-74.35a8,8,0,0,1,11.32,11.32Z"></path></svg>
+</div>
+<div class="accordion-content">
+<div>
+<p class="text-[#5C4033] text-base leading-relaxed">List of your beloved steeds will appear here. Each with their own unique traits and stories.</p>
+<p class="text-[#5C4033] text-base mt-2">Shadowfax - Level 12</p>
+<p class="text-[#5C4033] text-base mt-1">Silvermane - Level 8</p>
+<p class="text-[#5C4033] text-base mt-1">Starfire - Level 5</p>
+</div>
+</div>
+</div>
+<div class="accordion-item">
+<div class="accordion-header font-cormorant-garamond-italic text-lg text-[#4A3B24]">
+          Inventory
+          <svg class="arrow-icon sketch-icon" fill="currentColor" height="20" viewBox="0 0 256 256" width="20" xmlns="http://www.w3.org/2000/svg"><path d="M213.66,101.66l-80,80a8,8,0,0,1-11.32,0l-80-80A8,8,0,0,1,53.66,90.34L128,164.69l74.34-74.35a8,8,0,0,1,11.32,11.32Z"></path></svg>
+</div>
+<div class="accordion-content">
+<div><p class="text-[#5C4033] text-base leading-relaxed">All your collected items, from rare herbs to enchanted saddles. Manage your treasures wisely!</p></div>
+</div>
+</div>
+<div class="accordion-item">
+<div class="accordion-header font-cormorant-garamond-italic text-lg text-[#4A3B24]">
+          Quests &amp; Achievements
+          <svg class="arrow-icon sketch-icon" fill="currentColor" height="20" viewBox="0 0 256 256" width="20" xmlns="http://www.w3.org/2000/svg"><path d="M213.66,101.66l-80,80a8,8,0,0,1-11.32,0l-80-80A8,8,0,0,1,53.66,90.34L128,164.69l74.34-74.35a8,8,0,0,1,11.32,11.32Z"></path></svg>
+</div>
+<div class="accordion-content">
+<div><p class="text-[#5C4033] text-base leading-relaxed">Track your ongoing adventures and celebrate your accomplishments. New challenges await!</p></div>
+</div>
+</div>
+</div>
+<div class="tab-content hidden" id="tab2-content">
+<p class="text-[#6A4E2D] font-cormorant-garamond-italic text-lg">Explore the vast world of Equoria. Discover new lands, mythical creatures, and hidden treasures.</p>
+<img alt="Fantasy World Map Sketch" class="my-4 rounded-lg border-2 border-[#D2B48C] shadow-md sketch-icon" src="https://lh3.googleusercontent.com/aida-public/AB6AXuCCcTazw4BezXfC8hCdQn5eVnkhp39bt-fjU27O-c6ZT6-wsdhPFNuWFsEvQiIOl43lZBFznHUMoZgQYLJT-YH7BAJU6YaS8o3RHiGb3pMtmz5AJxZTdeS6Yc_5KP76bEELm2GIsKzIvfcNHuC_4-NHri2M3SJzcLvjdggMR_wBY33kKaZMivyKz1NB3JI0nkU1a3EWXlv5_1FXx1t8MXGMVhAUQL3YMytOAD4aVqVOfAKFtMZt-MLZ9uTy3PHiUY211fqnr0yzVa0" style="width: 100%; height: auto; filter: sepia(0.3) saturate(0.8) hue-rotate(-10deg) brightness(0.95) contrast(1.1) url(#pencilTexture);"/>
+</div>
+<div class="tab-content hidden" id="tab3-content">
+<p class="text-[#6A4E2D] font-cormorant-garamond-italic text-lg">Connect with other riders, form alliances, and participate in community events.</p>
+<div class="mt-4 space-y-3">
+<div class="bg-[#F5EFD8] p-3 rounded-md border border-[#D2B48C]">
+<p class="font-yeseva-one text-base text-[#6A4E2D]">Equestrian Guild</p>
+<p class="text-[#5C4033] text-sm">Join discussions and share tips.</p>
+</div>
+<div class="bg-[#F5EFD8] p-3 rounded-md border border-[#D2B48C]">
+<p class="font-yeseva-one text-base text-[#6A4E2D]">Friends List</p>
+<p class="text-[#5C4033] text-sm">See who's online and team up for adventures.</p>
+</div>
+</div>
+</div>
+</div>
+<script>
+    const tabs = document.querySelectorAll('.tab');
+    const tabContents = document.querySelectorAll('.tab-content');
+    const tabButtons = [document.getElementById('tab1-button'), document.getElementById('tab2-button'), document.getElementById('tab3-button')];
+    tabs.forEach(tab => {
+      tab.addEventListener('click', () => {
+        // Remove active class from all tabs and buttons
+        tabs.forEach(t => t.classList.remove('active', 'sparkle'));
+        tabButtons.forEach(btn => btn.classList.remove('active', 'sparkle'));
+        // Add active class to clicked tab and its button
+        tab.classList.add('active');
+        const buttonId = tab.id.replace('-button','');
+        const currentButton = document.getElementById(tab.id);
+        if(currentButton) currentButton.classList.add('active', 'sparkle');
+        // Hide all tab contents
+        tabContents.forEach(content => content.classList.add('hidden'));
+        // Show content for active tab
+        const activeContentId = tab.id.replace('-button', '-content');
+        const activeContent = document.getElementById(activeContentId);
+        if (activeContent) {
+          activeContent.classList.remove('hidden');
+        }
+      });
+    });
+    const accordionItems = document.querySelectorAll('.accordion-item');
+    accordionItems.forEach(item => {
+      const header = item.querySelector('.accordion-header');
+      header.addEventListener('click', () => {
+        // Close other open items
+        accordionItems.forEach(otherItem => {
+            if (otherItem !== item && otherItem.classList.contains('open')) {
+                otherItem.classList.remove('open');
+            }
+        });
+        // Toggle current item
+        item.classList.toggle('open');
+      });
+    });
+  </script>
+
+</body></html>

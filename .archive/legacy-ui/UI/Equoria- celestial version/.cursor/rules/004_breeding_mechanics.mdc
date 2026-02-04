@@ -1,0 +1,18 @@
+---
+description: Defines phenotype, genotype, breeding rules, and breed profile storage.
+globs: ["backend/genetics/**/*", "genetics/**/*"]
+---
+## ⚙️ Genetics Engine
+- determinePhenotype() outputs valid phenotypeKeyForShade
+- Validate against breed profile JSON
+- Disallowed combos enforced (e.g., W20/W20)
+- Genotype stored in horses table → mapped to phenotype
+
+## 📋 Breed Profile Requirements
+- allowed_alleles
+- disallowed_combinations
+- allele_weights
+- marking_bias
+- shade_bias
+- boolean_modifiers_prevalence
+- Stored in `breeds` table using JSONB

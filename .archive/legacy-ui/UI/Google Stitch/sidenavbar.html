@@ -1,0 +1,142 @@
+<html><head>
+<meta charset="utf-8"/>
+<link crossorigin="" href="https://fonts.gstatic.com/" rel="preconnect"/>
+<link as="style" href="https://fonts.googleapis.com/css2?display=swap&amp;family=Jost%3Awght%40400%3B500%3B700&amp;family=Noto+Sans%3Awght%40400%3B500%3B700%3B900" onload="this.rel='stylesheet'" rel="stylesheet"/>
+<link href="https://fonts.googleapis.com/icon?family=Material+Icons+Outlined" rel="stylesheet"/>
+<title>Stitch Design</title>
+<link href="data:image/x-icon;base64," rel="icon" type="image/x-icon"/>
+<script src="https://cdn.tailwindcss.com?plugins=forms,container-queries"></script>
+<style>
+      .gold-leaf-texture {
+        background-image: url("data:image/svg+xml,%3Csvg width='52' height='52' viewBox='0 0 52 52' xmlns='http://www.w3.org/2000/svg'%3E%3Cg fill='none' fill-rule='evenodd'%3E%3Cg fill='%23D4AF37' fill-opacity='0.1'%3E%3Cpath d='M10 10c0-2.21-1.79-4-4-4S2 7.79 2 10s1.79 4 4 4 4-1.79 4-4zM50 10c0-2.21-1.79-4-4-4s-4 1.79-4 4 1.79 4 4 4 4-1.79 4-4zM10 50c0-2.21-1.79-4-4-4s-4 1.79-4 4 1.79 4 4 4 4-1.79 4-4zM50 50c0-2.21-1.79-4-4-4s-4 1.79-4 4 1.79 4 4 4 4-1.79 4-4zM26 26c0-2.21-1.79-4-4-4s-4 1.79-4 4 1.79 4 4 4 4-1.79 4-4z'/%3E%3C/g%3E%3C/g%3E%3C/svg%3E");
+      }
+      .scrollwork-border {
+        border: 10px solid transparent;
+        border-image: url("data:image/svg+xml,%3Csvg width='100' height='100' viewBox='0 0 100 100' xmlns='http://www.w3.org/2000/svg'%3E%3Cstyle%3E .st0%7Bfill:none;stroke:%23B8860B;stroke-width:2;stroke-miterlimit:10;%7D .st1%7Bfill:%23DAA520;%7D %3C/style%3E%3Crect x='5' y='5' width='90' height='90' class='st0'/%3E%3Ccircle class='st1' cx='10' cy='10' r='3'/%3E%3Ccircle class='st1' cx='90' cy='10' r='3'/%3E%3Ccircle class='st1' cx='10' cy='90' r='3'/%3E%3Ccircle class='st1' cx='90' cy='90' r='3'/%3E%3Cpath class='st0' d='M10,50 C10,27.9 27.9,10 50,10 S90,27.9 90,50 S72.1,90 50,90 S10,72.1 10,50z'/%3E%3Cpath class='st0' d='M50,10 C72.1,10 90,27.9 90,50 S72.1,90 50,90 S10,72.1 10,50 S27.9,10 50,10 L50,10z M50,20 C38.9,20 30,28.9 30,40 S38.9,60 50,60 S70,51.1 70,40 S61.1,20 50,20z'/%3E%3C/svg%3E")
+          30 round;}
+      .ripple {
+        animation: ripple-animation 0.6s linear;
+      }
+      @keyframes ripple-animation {
+        0% {
+          transform: translateY(-10px);
+          opacity: 0.3;
+        }
+        50% {
+          transform: translateY(-5px);
+          opacity: 0.7;
+        }
+        100% {
+          transform: translateY(0);
+          opacity: 1;
+        }
+      }
+      .sparkle-trail::after {
+        content: "✨";
+        position: absolute;
+        left: -10px;opacity: 0;
+        animation: sparkle-animation 0.6s ease-out forwards;
+      }
+      @keyframes sparkle-animation {
+        0% {
+          transform: translateY(-20px) scale(0.5);
+          opacity: 0;
+        }
+        50% {
+          transform: translateY(-10px) scale(1);
+          opacity: 1;
+        }
+        100% {
+          transform: translateY(0) scale(0.5);
+          opacity: 0;
+        }
+      }.font-jost {
+        font-family: "Jost", "Noto Sans", sans-serif;
+      }
+    </style>
+<style>
+    body {
+      min-height: max(884px, 100dvh);
+    }
+  </style>
+  </head>
+<body class="bg-gray-100">
+<div class="relative flex size-full min-h-screen flex-col justify-between group/design-root overflow-x-hidden font-jost" style="background-color: #fdf8e3">
+<div class="fixed left-0 top-0 z-50 h-full w-4/5 max-w-md transform transition-transform duration-300 ease-in-out -translate-x-full scrollwork-border bg-[#FDF8E3] gold-leaf-texture shadow-2xl ripple sparkle-trail md:translate-x-0">
+<div class="flex h-full flex-col p-6 pt-10">
+<div class="mb-8 flex items-center gap-3 px-2">
+<img alt="Equoria Logo" class="h-10 w-10 rounded-full border-2 border-[#DAA520]" src="https://lh3.googleusercontent.com/aida-public/AB6AXuBYxtXU8h5scO_U_GAcnegVr6c8Xb-Vkkhx5t2ijML-0f48b-4Im_b8gs9WRnAxfP1WNDxMfOFKpsXyrb1hWz1WihmsXxeP3fNxyMGmhaMX1ZrI0Ki0fA2rLZat_b5AMBDTkf3lZ5sGu8hzXpXGKMBvQVIHfSWKVfJuzGZrlS5Yd7IWo1-KpIVIexnQi6D0qE_6Q6AQ91qAS71doGWZCqEii2dmK6F7ntOREDng3LM6XWxY2ihu1WKI5EsYICldotF0XNSgeH1H3Fk"/>
+<p class="text-[#1F1B16] text-2xl font-medium">Equoria</p>
+</div>
+<ul class="flex flex-col space-y-3">
+<li class="relative flex h-14 items-center gap-4 rounded-lg px-4 py-2 cursor-pointer group hover:bg-[#F0EAD6] transition-colors duration-200 border-b-2 border-transparent">
+<span class="material-icons-outlined text-[#B0B3B8] group-hover:text-[#DAA520] transition-colors duration-200">pets</span>
+<p class="text-[#1F1B16] text-lg font-medium">Stable</p>
+<div class="absolute bottom-0 left-0 w-full h-1 bg-[#DAA520] scale-x-0 group-hover:scale-x-100 transition-transform duration-300 ease-out origin-left shadow-[0_0_15px_3px_rgba(218,165,32,0.5)]"></div>
+</li>
+<li class="relative flex h-14 items-center gap-4 rounded-lg px-4 py-2 cursor-pointer group hover:bg-[#F0EAD6] transition-colors duration-200 border-b-2 border-transparent">
+<span class="material-icons-outlined text-[#B0B3B8] group-hover:text-[#DAA520] transition-colors duration-200">public</span>
+<p class="text-[#1F1B16] text-lg font-medium">World</p>
+</li>
+<li class="relative flex h-14 items-center gap-4 rounded-lg px-4 py-2 cursor-pointer group hover:bg-[#F0EAD6] transition-colors duration-200 border-b-2 border-transparent">
+<span class="material-icons-outlined text-[#B0B3B8] group-hover:text-[#DAA520] transition-colors duration-200">emoji_events</span>
+<p class="text-[#1F1B16] text-lg font-medium">Compete</p>
+</li>
+<li class="relative flex h-14 items-center gap-4 rounded-lg px-4 py-2 cursor-pointer group hover:bg-[#F0EAD6] transition-colors duration-200 border-b-2 border-transparent">
+<span class="material-icons-outlined text-[#B0B3B8] group-hover:text-[#DAA520] transition-colors duration-200">search</span>
+<p class="text-[#1F1B16] text-lg font-medium">Search</p>
+</li>
+<li class="relative flex h-14 items-center gap-4 rounded-lg px-4 py-2 cursor-pointer group hover:bg-[#F0EAD6] transition-colors duration-200 border-b-2 border-transparent">
+<span class="material-icons-outlined text-[#B0B3B8] group-hover:text-[#DAA520] transition-colors duration-200">forum</span>
+<p class="text-[#1F1B16] text-lg font-medium">Forums</p>
+</li>
+</ul>
+<ul class="mt-auto flex flex-col space-y-3 pt-8">
+<li class="relative flex h-14 items-center gap-4 rounded-lg px-4 py-2 cursor-pointer group hover:bg-[#F0EAD6] transition-colors duration-200 border-b-2 border-transparent">
+<span class="material-icons-outlined text-[#B0B3B8] group-hover:text-[#DAA520] transition-colors duration-200">settings</span>
+<p class="text-[#1F1B16] text-lg font-medium">Settings</p>
+</li>
+<li class="relative flex h-14 items-center gap-4 rounded-lg px-4 py-2 cursor-pointer group hover:bg-[#F0EAD6] transition-colors duration-200 border-b-2 border-transparent">
+<span class="material-icons-outlined text-[#B0B3B8] group-hover:text-[#DAA520] transition-colors duration-200">help_outline</span>
+<p class="text-[#1F1B16] text-lg font-medium">Support</p>
+</li>
+<li class="relative flex h-14 items-center gap-4 rounded-lg px-4 py-2 cursor-pointer group hover:bg-[#F0EAD6] transition-colors duration-200 border-b-2 border-transparent">
+<span class="material-icons-outlined text-[#B0B3B8] group-hover:text-[#DAA520] transition-colors duration-200">logout</span>
+<p class="text-[#1F1B16] text-lg font-medium">Logout</p>
+</li>
+</ul>
+</div>
+</div>
+<div class="flex-1 md:ml-[calc(80%)] md:ml-max-w-md p-6">
+<button class="md:hidden mb-4 p-2 bg-[#DAA520] text-white rounded-md" id="open-sidebar">
+<span class="material-icons-outlined">menu</span>
+</button>
+<h1 class="text-3xl font-bold text-[#1F1B16]">Welcome to Equoria</h1>
+<p class="text-[#1F1B16] mt-2">Your mystical horse adventure awaits!</p>
+</div>
+</div>
+<script>
+      // Simple script to toggle sidebar on mobile
+      const sidebar = document.querySelector('.fixed.left-0');
+      const openSidebarButton = document.getElementById('open-sidebar');
+      const mainContent = document.querySelector('.flex-1'); // Assuming this is your main content area
+      if (openSidebarButton && sidebar && mainContent) {
+        openSidebarButton.addEventListener('click', (e) => {
+          e.stopPropagation(); // Prevent click from bubbling up to the document
+          sidebar.classList.toggle('-translate-x-full');
+        });
+        // Close sidebar when clicking outside of it on mobile
+        document.addEventListener('click', (e) => {
+          if (
+            !sidebar.contains(e.target) && // Click was outside the sidebar
+            !openSidebarButton.contains(e.target) && // Click was not on the open button
+            !sidebar.classList.contains('-translate-x-full') && // Sidebar is currently open
+            window.innerWidth < 768 // Only on mobile screens (Tailwind's md breakpoint)
+          ) {
+            sidebar.classList.add('-translate-x-full');
+          }
+        });
+      }
+    </script>
+
+</body></html>
