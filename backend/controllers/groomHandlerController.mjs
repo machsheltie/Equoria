@@ -39,7 +39,7 @@ export async function getHorseHandler(req, res) {
     // Check horse ownership
     const horse = await prisma.horse.findUnique({
       where: { id: parsedHorseId },
-      select: { id: true, name: true, ownerId: true },
+      select: { id: true, name: true, userId: true },
     });
 
     if (!horse) {
@@ -50,7 +50,7 @@ export async function getHorseHandler(req, res) {
       });
     }
 
-    if (horse.ownerId !== userId) {
+    if (horse.userId !== userId) {
       return res.status(403).json({
         success: false,
         message: 'You do not own this horse',
@@ -72,22 +72,25 @@ export async function getHorseHandler(req, res) {
           id: horse.id,
           name: horse.name,
         },
-        handler: handlerData.hasHandler ? {
-          id: handlerData.groom.id,
-          name: handlerData.groom.name,
-          skillLevel: handlerData.groom.skillLevel,
-          speciality: handlerData.groom.speciality,
-          personality: handlerData.groom.personality,
-          experience: handlerData.groom.experience,
-        } : 'none',
-        assignment: handlerData.hasHandler ? {
-          id: handlerData.assignment.id,
-          priority: handlerData.assignment.priority,
-          createdAt: handlerData.assignment.createdAt,
-        } : 'none',
+        handler: handlerData.hasHandler
+          ? {
+              id: handlerData.groom.id,
+              name: handlerData.groom.name,
+              skillLevel: handlerData.groom.skillLevel,
+              speciality: handlerData.groom.speciality,
+              personality: handlerData.groom.personality,
+              experience: handlerData.groom.experience,
+            }
+          : 'none',
+        assignment: handlerData.hasHandler
+          ? {
+              id: handlerData.assignment.id,
+              priority: handlerData.assignment.priority,
+              createdAt: handlerData.assignment.createdAt,
+            }
+          : 'none',
       },
     });
-
   } catch (error) {
     logger.error(`[groomHandlerController] Error getting horse handler: ${error.message}`);
     res.status(500).json({
@@ -107,7 +110,9 @@ export async function checkHandlerEligibility(req, res) {
     const { horseId, className } = req.params;
     const userId = req.user?.id;
 
-    logger.info(`[groomHandlerController] Checking handler eligibility for horse ${horseId} in conformation class ${className}`);
+    logger.info(
+      `[groomHandlerController] Checking handler eligibility for horse ${horseId} in conformation class ${className}`,
+    );
 
     // Validate horse ID
     const parsedHorseId = parseInt(horseId);
@@ -125,7 +130,7 @@ export async function checkHandlerEligibility(req, res) {
       select: {
         id: true,
         name: true,
-        ownerId: true,
+        userId: true,
         bondScore: true,
         stressLevel: true,
       },
@@ -139,7 +144,7 @@ export async function checkHandlerEligibility(req, res) {
       });
     }
 
-    if (horse.ownerId !== userId) {
+    if (horse.userId !== userId) {
       return res.status(403).json({
         success: false,
         message: 'You do not own this horse',
@@ -174,18 +179,19 @@ export async function checkHandlerEligibility(req, res) {
         recommendation: eligibility.recommendation,
         handlerBonus: eligibility.handlerBonus,
         bonusBreakdown: eligibility.bonusBreakdown,
-        handler: eligibility.groom ? {
-          id: eligibility.groom.id,
-          name: eligibility.groom.name,
-          skillLevel: eligibility.groom.skillLevel,
-          speciality: eligibility.groom.speciality,
-          personality: eligibility.groom.personality,
-          experience: eligibility.groom.experience,
-        } : null,
+        handler: eligibility.groom
+          ? {
+              id: eligibility.groom.id,
+              name: eligibility.groom.name,
+              skillLevel: eligibility.groom.skillLevel,
+              speciality: eligibility.groom.speciality,
+              personality: eligibility.groom.personality,
+              experience: eligibility.groom.experience,
+            }
+          : null,
         isConformationShow: true,
       },
     });
-
   } catch (error) {
     logger.error(`[groomHandlerController] Error checking handler eligibility: ${error.message}`);
     res.status(500).json({
@@ -218,7 +224,6 @@ export async function getHandlerConfig(req, res) {
         },
       },
     });
-
   } catch (error) {
     logger.error(`[groomHandlerController] Error getting handler config: ${error.message}`);
     res.status(500).json({
@@ -257,7 +262,7 @@ export async function getHandlerRecommendations(req, res) {
       select: {
         id: true,
         name: true,
-        ownerId: true,
+        userId: true,
         bondScore: true,
         stressLevel: true,
       },
@@ -271,7 +276,7 @@ export async function getHandlerRecommendations(req, res) {
       });
     }
 
-    if (horse.ownerId !== userId) {
+    if (horse.userId !== userId) {
       return res.status(403).json({
         success: false,
         message: 'You do not own this horse',
@@ -313,7 +318,9 @@ export async function getHandlerRecommendations(req, res) {
     // Check if any is the current handler
     const currentHandler = await getAssignedHandler(parsedHorseId, userId);
     if (currentHandler.hasHandler) {
-      const currentHandlerIndex = recommendations.findIndex(r => r.groom.id === currentHandler.groom.id);
+      const currentHandlerIndex = recommendations.findIndex(
+        r => r.groom.id === currentHandler.groom.id,
+      );
       if (currentHandlerIndex >= 0) {
         recommendations[currentHandlerIndex].isCurrentHandler = true;
       }
@@ -330,15 +337,18 @@ export async function getHandlerRecommendations(req, res) {
         },
         className: className || 'General',
         recommendations,
-        currentHandler: currentHandler.hasHandler ? {
-          id: currentHandler.groom.id,
-          name: currentHandler.groom.name,
-        } : null,
+        currentHandler: currentHandler.hasHandler
+          ? {
+              id: currentHandler.groom.id,
+              name: currentHandler.groom.name,
+            }
+          : null,
       },
     });
-
   } catch (error) {
-    logger.error(`[groomHandlerController] Error getting handler recommendations: ${error.message}`);
+    logger.error(
+      `[groomHandlerController] Error getting handler recommendations: ${error.message}`,
+    );
     res.status(500).json({
       success: false,
       message: 'Internal server error',
