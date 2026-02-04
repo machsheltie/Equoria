@@ -20,9 +20,10 @@ import {
 export async function getEnhancedInteractions(req, res) {
   try {
     const { groomId, horseId } = req.params;
-    const _userId = req.user?.id;
 
-    logger.info(`[enhancedGroomController] Getting enhanced interactions for groom ${groomId} and horse ${horseId}`);
+    logger.info(
+      `[enhancedGroomController] Getting enhanced interactions for groom ${groomId} and horse ${horseId}`,
+    );
 
     // Validate IDs
     if (!groomId || !horseId) {
@@ -63,7 +64,9 @@ export async function getEnhancedInteractions(req, res) {
     // No additional checks needed
 
     // Calculate age from date of birth
-    const ageInDays = Math.floor((Date.now() - new Date(horse.dateOfBirth).getTime()) / (1000 * 60 * 60 * 24));
+    const ageInDays = Math.floor(
+      (Date.now() - new Date(horse.dateOfBirth).getTime()) / (1000 * 60 * 60 * 24),
+    );
     horse.age = ageInDays;
 
     // Get relationship level
@@ -125,7 +128,6 @@ export async function getEnhancedInteractions(req, res) {
         recommendations: generateInteractionRecommendations(groom, horse, relationshipLevel),
       },
     });
-
   } catch (error) {
     logger.error(`[enhancedGroomController] Error getting enhanced interactions: ${error.message}`);
     res.status(500).json({
@@ -207,7 +209,7 @@ export async function performEnhancedInteraction(req, res) {
     const horse = await prisma.horse.findFirst({
       where: {
         id: parseInt(horseId),
-        ownerId: userId,
+        userId: userId,
       },
       select: {
         id: true,
@@ -227,7 +229,9 @@ export async function performEnhancedInteraction(req, res) {
     }
 
     // Calculate age from date of birth
-    const ageInDays = Math.floor((Date.now() - new Date(horse.dateOfBirth).getTime()) / (1000 * 60 * 60 * 24));
+    const ageInDays = Math.floor(
+      (Date.now() - new Date(horse.dateOfBirth).getTime()) / (1000 * 60 * 60 * 24),
+    );
     horse.age = ageInDays;
 
     // Calculate enhanced effects
@@ -244,13 +248,21 @@ export async function performEnhancedInteraction(req, res) {
         stressChange: effects.stressChange,
         quality: effects.quality,
         cost: effects.cost,
-        notes: notes || `Enhanced ${interactionType}: ${variation}${effects.specialEvent ? ` - ${effects.specialEvent.name}!` : ''}`,
+        notes:
+          notes ||
+          `Enhanced ${interactionType}: ${variation}${effects.specialEvent ? ` - ${effects.specialEvent.name}!` : ''}`,
       },
     });
 
     // Update horse's bond score and stress level
-    const newBondScore = Math.max(0, Math.min(100, (horse.bondScore || 50) + effects.bondingChange));
-    const newStressLevel = Math.max(0, Math.min(100, (horse.stressLevel || 0) + effects.stressChange));
+    const newBondScore = Math.max(
+      0,
+      Math.min(100, (horse.bondScore || 50) + effects.bondingChange),
+    );
+    const newStressLevel = Math.max(
+      0,
+      Math.min(100, (horse.stressLevel || 0) + effects.stressChange),
+    );
 
     await prisma.horse.update({
       where: { id: parseInt(horseId) },
@@ -265,14 +277,18 @@ export async function performEnhancedInteraction(req, res) {
     const newLevel = calculateRelationshipLevel(newBondScore);
     const levelUp = newLevel.level > oldLevel.level;
 
-    logger.info(`[enhancedGroomController] Enhanced interaction completed: +${effects.bondingChange} bonding, ${effects.stressChange} stress`);
+    logger.info(
+      `[enhancedGroomController] Enhanced interaction completed: +${effects.bondingChange} bonding, ${effects.stressChange} stress`,
+    );
 
     if (effects.specialEvent) {
       logger.info(`[enhancedGroomController] Special event occurred: ${effects.specialEvent.name}`);
     }
 
     if (levelUp) {
-      logger.info(`[enhancedGroomController] Relationship level increased: ${oldLevel.name} -> ${newLevel.name}`);
+      logger.info(
+        `[enhancedGroomController] Relationship level increased: ${oldLevel.name} -> ${newLevel.name}`,
+      );
     }
 
     res.status(201).json({
@@ -309,9 +325,10 @@ export async function performEnhancedInteraction(req, res) {
         },
       },
     });
-
   } catch (error) {
-    logger.error(`[enhancedGroomController] Error performing enhanced interaction: ${error.message}`);
+    logger.error(
+      `[enhancedGroomController] Error performing enhanced interaction: ${error.message}`,
+    );
     res.status(500).json({
       success: false,
       message: 'Internal server error',
@@ -342,10 +359,10 @@ export async function getRelationshipDetails(req, res) {
     // Get current horse data
     const horse = await prisma.horse.findUnique({
       where: { id: parseInt(horseId) },
-      select: { bondScore: true, name: true, ownerId: true },
+      select: { bondScore: true, name: true, userId: true },
     });
 
-    if (!horse || horse.ownerId !== userId) {
+    if (!horse || horse.userId !== userId) {
       return res.status(404).json({
         success: false,
         message: 'Horse not found or not owned by user',
@@ -374,7 +391,6 @@ export async function getRelationshipDetails(req, res) {
         milestones: generateRelationshipMilestones(interactions, relationshipLevel),
       },
     });
-
   } catch (error) {
     logger.error(`[enhancedGroomController] Error getting relationship details: ${error.message}`);
     res.status(500).json({
@@ -428,9 +444,8 @@ function generateInteractionRecommendations(groom, horse, relationshipLevel) {
 function calculateRelationshipStats(interactions) {
   const totalInteractions = interactions.length;
   const totalBonding = interactions.reduce((sum, i) => sum + (i.bondingChange || 0), 0);
-  const averageQuality = interactions.length > 0
-    ? interactions.filter(i => i.quality).length / interactions.length
-    : 0;
+  const averageQuality =
+    interactions.length > 0 ? interactions.filter(i => i.quality).length / interactions.length : 0;
 
   const qualityDistribution = interactions.reduce((dist, i) => {
     if (i.quality) {

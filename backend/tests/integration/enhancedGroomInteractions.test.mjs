@@ -47,7 +47,7 @@ describe('Enhanced Groom Interactions Integration Tests', () => {
       data: {
         name: 'Enhanced Test Groom',
         userId: testUser.id,
-        speciality: 'foal_care',
+        speciality: 'foalCare',
         skillLevel: 'intermediate',
         personality: 'gentle',
         experience: 5,
