@@ -1,6 +1,5 @@
 import logger from '../utils/logger.mjs';
 import { trackSecurityEventWithThreshold, SecurityEventTypes } from '../config/sentry.mjs';
-// import prisma from '../db/index.mjs'; // TODO: Implement audit logging
 
 /**
  * Audit Logging Middleware
@@ -126,25 +125,8 @@ async function logOperation(req, res, operationType, sensitivityLevel, duration,
  */
 async function storeAuditLog(logEntry) {
   try {
-    // Note: You'll need to create an audit_logs table in your schema
-    // For now, we'll just log to file
+    // Log high-sensitivity operations to file (database storage not yet implemented)
     logger.warn('[audit] HIGH SENSITIVITY OPERATION:', logEntry);
-
-    // TODO: Implement database storage
-    // await prisma.auditLog.create({
-    //   data: {
-    //     userId: logEntry.userId,
-    //     operationType: logEntry.operationType,
-    //     method: logEntry.method,
-    //     path: logEntry.path,
-    //     ip: logEntry.ip,
-    //     statusCode: logEntry.statusCode,
-    //     duration: logEntry.duration,
-    //     requestData: JSON.stringify(logEntry.requestBody),
-    //     success: logEntry.success,
-    //     timestamp: logEntry.timestamp
-    //   }
-    // });
   } catch (error) {
     logger.error('[audit] Failed to store audit log:', error);
   }

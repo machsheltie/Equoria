@@ -1,5 +1,4 @@
 import logger from './utils/logger.mjs';
-// import prisma from '../db/index.mjs'; // TODO: Implement audit logging
 
 /**
  * Jest Test Setup and Cleanup

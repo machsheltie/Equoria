@@ -6,6 +6,7 @@
  * trait development in horses under 3 years old.
  */
 
+import logger from './logger.mjs';
 import { EPIGENETIC_FLAGS, GROOM_PERSONALITIES, evaluateEpigeneticFlags } from './epigeneticFlags.mjs';
 import { evaluateUltraRareTriggers, evaluateExoticUnlocks } from './ultraRareTriggerEngine.mjs';
 // Note: Using existing trait effects system instead of separate definitions
@@ -71,7 +72,7 @@ export async function evaluateEnhancedMilestone(horse, groomCareHistory, current
     };
   } catch (error) {
     // Log error but don't fail milestone evaluation
-    console.warn('[enhancedMilestoneEvaluation] Ultra-rare trait evaluation failed:', error.message);
+    logger.warn('[enhancedMilestoneEvaluation] Ultra-rare trait evaluation failed', { error: error.message });
     ultraRareEvaluation = {
       ultraRareTriggered: [],
       exoticUnlocked: [],

@@ -1,5 +1,3 @@
-// TODO: Re-enable when stat scoring is needed for reward calculations
-// import { getStatScore } from './getStatScore.mjs';
 import logger from './logger.mjs';
 
 /**

@@ -224,12 +224,6 @@ export async function sendVerificationEmail(email, token, user = {}) {
         textLength: plainTextEmail.length,
       });
 
-      console.log('\n=== EMAIL VERIFICATION (DEV MODE) ===');
-      console.log(`To: ${email}`);
-      console.log(`Subject: ${subject}`);
-      console.log(`Verification URL: ${verificationUrl}`);
-      console.log('=====================================\n');
-
       return {
         success: true,
         messageId: `dev-mode-${Date.now()}`,
@@ -237,51 +231,7 @@ export async function sendVerificationEmail(email, token, user = {}) {
       };
     }
 
-    // TODO: In production, send via AWS SES
-    // Example AWS SES implementation:
-    /*
-    const AWS = require('@aws-sdk/client-ses');
-    const ses = new AWS.SES({
-      region: process.env.AWS_REGION || 'us-east-1',
-    });
-
-    const params = {
-      Source: `${EMAIL_CONFIG.FROM_NAME} <${EMAIL_CONFIG.FROM_EMAIL}>`,
-      Destination: {
-        ToAddresses: [email],
-      },
-      Message: {
-        Subject: {
-          Data: subject,
-          Charset: 'UTF-8',
-        },
-        Body: {
-          Html: {
-            Data: htmlEmail,
-            Charset: 'UTF-8',
-          },
-          Text: {
-            Data: plainTextEmail,
-            Charset: 'UTF-8',
-          },
-        },
-      },
-    };
-
-    const result = await ses.sendEmail(params).promise();
-
-    logger.info('[EmailService] Email sent successfully', {
-      to: email,
-      messageId: result.MessageId,
-    });
-
-    return {
-      success: true,
-      messageId: result.MessageId,
-    };
-    */
-
-    // Fallback for now
+    // Production email sending via AWS SES is not yet configured
     logger.warn('[EmailService] AWS SES not configured, email not sent', {
       to: email,
     });

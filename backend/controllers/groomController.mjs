@@ -37,7 +37,6 @@ import {
 import prisma from '../db/index.mjs';
 import logger from '../utils/logger.mjs';
 import { awardGroomXP } from '../services/groomProgressionService.mjs';
-// import { ensureDefaultGroomAssignment } from '../services/groomService'; // TODO: Implement when needed
 
 /**
  * Determine the current milestone window for a horse based on age
