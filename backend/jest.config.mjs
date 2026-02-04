@@ -75,7 +75,7 @@ export default {
   errorOnDeprecated: true,
 
   // Test patterns to ignore
-  testPathIgnorePatterns: ['/node_modules/', '/coverage/', '/dist/', '/build/'],
+  testPathIgnorePatterns: ['/node_modules/', '/coverage/', '/dist/', '/build/', '/tests/load/'],
 
   // Watch mode configuration
   watchPathIgnorePatterns: ['/node_modules/', '/coverage/', '/dist/', '/build/'],
