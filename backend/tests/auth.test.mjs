@@ -241,7 +241,11 @@ describe('🔐 INTEGRATION: Authentication System - User Registration & Session 
         password: 'Password123!',
       };
 
-      const response = await authPost('/api/auth/login').send(loginData).set('x-test-require-auth', 'true').expect(401);
+      const response = await authPost('/api/auth/login')
+        .set('x-test-bypass-rate-limit', 'true')
+        .send(loginData)
+        .set('x-test-require-auth', 'true')
+        .expect(401);
 
       expect(response.body.success).toBe(false);
       expect(response.body.message).toBe('Invalid credentials');
@@ -253,7 +257,11 @@ describe('🔐 INTEGRATION: Authentication System - User Registration & Session 
         password: 'wrongpassword',
       };
 
-      const response = await authPost('/api/auth/login').send(loginData).set('x-test-require-auth', 'true').expect(401);
+      const response = await authPost('/api/auth/login')
+        .set('x-test-bypass-rate-limit', 'true')
+        .send(loginData)
+        .set('x-test-require-auth', 'true')
+        .expect(401);
 
       expect(response.body.success).toBe(false);
       expect(response.body.message).toBe('Invalid credentials');
@@ -265,7 +273,10 @@ describe('🔐 INTEGRATION: Authentication System - User Registration & Session 
         password: 'Password123!',
       };
 
-      const response = await authPost('/api/auth/login').send(loginData).expect(400);
+      const response = await authPost('/api/auth/login')
+        .set('x-test-bypass-rate-limit', 'true')
+        .send(loginData)
+        .expect(400);
 
       expect(response.body.success).toBe(false);
       expect(response.body.message).toBe('Valid email is required');
@@ -278,7 +289,10 @@ describe('🔐 INTEGRATION: Authentication System - User Registration & Session 
       // Create user and get refresh token
       const userData = createTestUser();
 
-      const registerResponse = await authPost('/api/auth/register').send(userData);
+      const registerResponse = await authPost('/api/auth/register')
+        .set('x-test-bypass-rate-limit', 'true')
+        .send(userData)
+        .expect(201);
       trackUser(registerResponse);
 
       // Extract refresh token from cookies
@@ -287,7 +301,10 @@ describe('🔐 INTEGRATION: Authentication System - User Registration & Session 
     });
 
     it('should refresh token successfully with valid refresh token', async () => {
-      const response = await authPost('/api/auth/refresh').send({ refreshToken: refreshTokenValue }).expect(200);
+      const response = await authPost('/api/auth/refresh')
+        .set('x-test-bypass-rate-limit', 'true')
+        .send({ refreshToken: refreshTokenValue })
+        .expect(200);
       expect(response.body.status).toBe('success');
       expect(response.body.message).toBe('Token refreshed successfully');
 
@@ -300,6 +317,7 @@ describe('🔐 INTEGRATION: Authentication System - User Registration & Session 
 
     it('should reject refresh with invalid token', async () => {
       const response = await authPost('/api/auth/refresh')
+        .set('x-test-bypass-rate-limit', 'true')
         .send({ refreshToken: 'invalid-token' })
         .set('x-test-require-auth', 'true')
         .expect(401);
@@ -309,7 +327,7 @@ describe('🔐 INTEGRATION: Authentication System - User Registration & Session 
     });
 
     it('should reject refresh without token', async () => {
-      const response = await authPost('/api/auth/refresh').send({}).expect(400);
+      const response = await authPost('/api/auth/refresh').set('x-test-bypass-rate-limit', 'true').send({}).expect(400);
 
       expect(response.body.success).toBe(false);
       expect(response.body.message).toBe('Refresh token is required');
