@@ -172,8 +172,8 @@ describe('🏆 INTEGRATION: Competition Controller Business Logic - Real Competi
       data: {
         name: 'Competition Star',
         age: 5,
-        breedId: testBreed.id,
-        userId: testUser.id,
+        breed: { connect: { id: testBreed.id } },
+        user: { connect: { id: testUser.id } },
         stable: { connect: { id: testStable.id } },
         sex: 'Stallion',
         dateOfBirth: birthDate5YearsOld,
@@ -195,8 +195,8 @@ describe('🏆 INTEGRATION: Competition Controller Business Logic - Real Competi
       data: {
         name: 'Competition Runner',
         age: 4,
-        breedId: testBreed.id,
-        userId: testUser.id,
+        breed: { connect: { id: testBreed.id } },
+        user: { connect: { id: testUser.id } },
         stable: { connect: { id: testStable.id } },
         sex: 'Mare',
         dateOfBirth: birthDate4YearsOld,
@@ -218,8 +218,8 @@ describe('🏆 INTEGRATION: Competition Controller Business Logic - Real Competi
       data: {
         name: 'Competition Novice',
         age: 3,
-        breedId: testBreed.id,
-        userId: testUser.id,
+        breed: { connect: { id: testBreed.id } },
+        user: { connect: { id: testUser.id } },
         stable: { connect: { id: testStable.id } },
         sex: 'Gelding',
         dateOfBirth: birthDate3YearsOld,
