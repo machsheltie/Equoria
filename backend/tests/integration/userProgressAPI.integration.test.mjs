@@ -191,8 +191,8 @@ describe('🎯 INTEGRATION: User Progress API - Complete Progress Tracking', () 
       testHorse = await prisma.horse.create({
         data: {
           name: 'Progress Test Horse',
-          breedId: breed.id,
-          userId: testUser.id,
+          breed: { connect: { id: breed.id } },
+          user: { connect: { id: testUser.id } },
           sex: 'Mare',
           dateOfBirth: birthDate,
           age: calculatedAge, // CRITICAL: Training system requires age field

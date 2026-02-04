@@ -40,9 +40,13 @@ const { default: prisma } = await import('../../db/index.mjs');
  * @returns {string|null} - Cookie value or null if not found
  */
 const extractCookie = (cookies, name) => {
-  if (!cookies || !Array.isArray(cookies)) { return null; }
+  if (!cookies || !Array.isArray(cookies)) {
+    return null;
+  }
   const cookie = cookies.find(c => c.startsWith(`${name}=`));
-  if (!cookie) { return null; }
+  if (!cookie) {
+    return null;
+  }
   // Extract value between = and ; (or end of string)
   const match = cookie.match(new RegExp(`${name}=([^;]+)`));
   return match ? match[1] : null;
@@ -155,10 +159,10 @@ describe('🐎 INTEGRATION: Complete Horse Breeding Workflow', () => {
         data: {
           name: 'Integration Test Mare',
           age: 5,
-          breedId: breed.id,
+          breed: { connect: { id: breed.id } },
           sex: 'Mare',
           healthStatus: 'Excellent',
-          userId: testUser.id,
+          user: { connect: { id: testUser.id } },
           dateOfBirth: fiveYearsAgoForMare, // FIXED: Use calculated date
           disciplineScores: {
             Racing: 85,
@@ -190,10 +194,10 @@ describe('🐎 INTEGRATION: Complete Horse Breeding Workflow', () => {
         data: {
           name: 'Integration Test Stallion',
           age: 6,
-          breedId: breed.id,
+          breed: { connect: { id: breed.id } },
           sex: 'Stallion',
           healthStatus: 'Excellent',
-          userId: testUser.id,
+          user: { connect: { id: testUser.id } },
           dateOfBirth: sixYearsAgoForStallion, // FIXED: Use calculated date
           disciplineScores: {
             Racing: 90,
@@ -223,12 +227,12 @@ describe('🐎 INTEGRATION: Complete Horse Breeding Workflow', () => {
         data: {
           name: 'Integration Test Foal',
           age: 0, // Newborn
-          breedId: breed.id,
+          breed: { connect: { id: breed.id } },
           sex: 'Colt',
           sire: { connect: { id: stallion.id } },
           dam: { connect: { id: mare.id } },
           healthStatus: 'Excellent',
-          userId: testUser.id,
+          user: { connect: { id: testUser.id } },
           dateOfBirth: new Date(), // Born today
           disciplineScores: {}, // No training yet
           epigeneticModifiers: {

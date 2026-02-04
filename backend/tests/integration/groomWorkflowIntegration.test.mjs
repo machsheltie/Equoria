@@ -147,8 +147,8 @@ describe('Groom Workflow Integration Tests', () => {
         sex: 'Filly',
         dateOfBirth: new Date(Date.now() - 365 * 24 * 60 * 60 * 1000), // 1 year old
         age: 365,
-        userId: testUser.id,
-        breedId: testBreed.id,
+        user: { connect: { id: testUser.id } },
+        breed: { connect: { id: testBreed.id } },
         bondScore: 50,
         stressLevel: 20,
         taskLog: null,
@@ -166,8 +166,8 @@ describe('Groom Workflow Integration Tests', () => {
         sex: 'Colt',
         dateOfBirth: new Date(Date.now() - 2 * 365 * 24 * 60 * 60 * 1000), // 2 years old
         age: 730,
-        userId: testUser.id,
-        breedId: testBreed.id,
+        user: { connect: { id: testUser.id } },
+        breed: { connect: { id: testBreed.id } },
         bondScore: 60,
         stressLevel: 15,
         taskLog: null,
@@ -185,8 +185,8 @@ describe('Groom Workflow Integration Tests', () => {
         sex: 'Mare',
         dateOfBirth: new Date(Date.now() - 4 * 365 * 24 * 60 * 60 * 1000), // 4 years old
         age: 28, // 4 years old (28 days = 4 years in game time)
-        userId: testUser.id,
-        breedId: testBreed.id,
+        user: { connect: { id: testUser.id } },
+        breed: { connect: { id: testBreed.id } },
         bondScore: 70,
         stressLevel: 10,
         taskLog: null,

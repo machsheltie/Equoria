@@ -125,8 +125,8 @@ describe('🏆 INTEGRATION: Complete Competition Workflow', () => {
         data: {
           name: 'Competition Integration Champion',
           age: 35, // 5 years = 35 days (mature and experienced)
-          breedId: breed.id,
-          userId: testUser.id,
+          breed: { connect: { id: breed.id } },
+          user: { connect: { id: testUser.id } },
           sex: 'Stallion',
           dateOfBirth: new Date('2019-01-01'),
           healthStatus: 'Excellent',
