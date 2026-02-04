@@ -19,6 +19,7 @@ import {
 } from '../services/traitHistoryService.mjs';
 import { EPIGENETIC_FLAGS, GROOM_PERSONALITIES } from '../utils/epigeneticFlags.mjs';
 import { PrismaClient } from '../../packages/database/node_modules/@prisma/client/index.js';
+import logger from '../utils/logger.mjs';
 
 const router = express.Router();
 const prisma = new PrismaClient();
@@ -39,7 +40,7 @@ router.get('/definitions', (req, res) => {
       },
     });
   } catch (error) {
-    console.error('Error fetching epigenetic trait definitions:', error);
+    logger.error('Error fetching epigenetic trait definitions:', error);
     res.status(500).json({
       success: false,
       error: 'Failed to fetch definitions',
@@ -53,7 +54,8 @@ router.get('/definitions', (req, res) => {
  *
  * Security: Validates horse ownership using requireOwnership middleware (atomic, prevents CWE-639)
  */
-router.post('/evaluate-milestone/:horseId',
+router.post(
+  '/evaluate-milestone/:horseId',
   authenticateToken,
   [
     param('horseId').isInt().withMessage('Horse ID must be an integer'),
@@ -74,7 +76,6 @@ router.post('/evaluate-milestone/:horseId',
 
       const { horseId } = req.params;
       const { milestoneData = {}, includeHistory = true } = req.body;
-      const _userId = req.user.id;
 
       // Ownership already validated by middleware, fetch full horse with includes
       const horse = await prisma.horse.findUnique({
@@ -124,9 +125,8 @@ router.post('/evaluate-milestone/:horseId',
           careHistoryIncluded: includeHistory,
         },
       });
-
     } catch (error) {
-      console.error('Error evaluating enhanced milestone:', error);
+      logger.error('Error evaluating enhanced milestone:', error);
       res.status(500).json({
         success: false,
         error: 'Failed to evaluate milestone',
@@ -142,14 +142,20 @@ router.post('/evaluate-milestone/:horseId',
  * Security: Validates horse ownership using findOwnedResource helper (atomic, prevents CWE-639)
  * Note: Uses helper directly since horseId is in body, not params
  */
-router.post('/log-trait',
+router.post(
+  '/log-trait',
   authenticateToken,
   [
     body('horseId').isInt().withMessage('Horse ID must be an integer'),
     body('traitName').isString().notEmpty().withMessage('Trait name is required'),
-    body('sourceType').isIn(['groom', 'milestone', 'environmental', 'genetic']).withMessage('Invalid source type'),
+    body('sourceType')
+      .isIn(['groom', 'milestone', 'environmental', 'genetic'])
+      .withMessage('Invalid source type'),
     body('sourceId').optional().isString(),
-    body('influenceScore').optional().isFloat({ min: -10, max: 10 }).withMessage('Influence score must be between -10 and 10'),
+    body('influenceScore')
+      .optional()
+      .isFloat({ min: -10, max: 10 })
+      .withMessage('Influence score must be between -10 and 10'),
     body('isEpigenetic').optional().isBoolean(),
     body('groomId').optional().isInt(),
     body('bondScore').optional().isInt({ min: 0, max: 100 }),
@@ -185,9 +191,8 @@ router.post('/log-trait',
         success: true,
         data: historyEntry,
       });
-
     } catch (error) {
-      console.error('Error logging trait assignment:', error);
+      logger.error('Error logging trait assignment:', error);
       res.status(500).json({
         success: false,
         error: 'Failed to log trait assignment',
@@ -202,11 +207,15 @@ router.post('/log-trait',
  *
  * Security: Validates horse ownership using requireOwnership middleware (atomic, prevents CWE-639)
  */
-router.get('/history/:horseId',
+router.get(
+  '/history/:horseId',
   authenticateToken,
   [
     param('horseId').isInt().withMessage('Horse ID must be an integer'),
-    query('limit').optional().isInt({ min: 1, max: 100 }).withMessage('Limit must be between 1 and 100'),
+    query('limit')
+      .optional()
+      .isInt({ min: 1, max: 100 })
+      .withMessage('Limit must be between 1 and 100'),
     query('offset').optional().isInt({ min: 0 }).withMessage('Offset must be non-negative'),
     query('sourceType').optional().isIn(['groom', 'milestone', 'environmental', 'genetic']),
     query('isEpigenetic').optional().isBoolean(),
@@ -250,9 +259,8 @@ router.get('/history/:horseId',
           options,
         },
       });
-
     } catch (error) {
-      console.error('Error fetching trait history:', error);
+      logger.error('Error fetching trait history:', error);
       res.status(500).json({
         success: false,
         error: 'Failed to fetch trait history',
@@ -267,11 +275,10 @@ router.get('/history/:horseId',
  *
  * Security: Validates horse ownership using requireOwnership middleware (atomic, prevents CWE-639)
  */
-router.get('/summary/:horseId',
+router.get(
+  '/summary/:horseId',
   authenticateToken,
-  [
-    param('horseId').isInt().withMessage('Horse ID must be an integer'),
-  ],
+  [param('horseId').isInt().withMessage('Horse ID must be an integer')],
   requireOwnership('horse', { idParam: 'horseId' }),
   async (req, res) => {
     try {
@@ -297,9 +304,8 @@ router.get('/summary/:horseId',
           summary,
         },
       });
-
     } catch (error) {
-      console.error('Error fetching trait development summary:', error);
+      logger.error('Error fetching trait development summary:', error);
       res.status(500).json({
         success: false,
         error: 'Failed to fetch development summary',
@@ -314,11 +320,10 @@ router.get('/summary/:horseId',
  *
  * Security: Validates horse ownership using requireOwnership middleware (atomic, prevents CWE-639)
  */
-router.get('/breeding-insights/:horseId',
+router.get(
+  '/breeding-insights/:horseId',
   authenticateToken,
-  [
-    param('horseId').isInt().withMessage('Horse ID must be an integer'),
-  ],
+  [param('horseId').isInt().withMessage('Horse ID must be an integer')],
   requireOwnership('horse', { idParam: 'horseId' }),
   async (req, res) => {
     try {
@@ -344,9 +349,8 @@ router.get('/breeding-insights/:horseId',
           insights,
         },
       });
-
     } catch (error) {
-      console.error('Error fetching breeding insights:', error);
+      logger.error('Error fetching breeding insights:', error);
       res.status(500).json({
         success: false,
         error: 'Failed to fetch breeding insights',
@@ -401,27 +405,24 @@ async function getGroomCareHistory(horseId) {
  * Development/testing cleanup endpoint
  */
 if (process.env.NODE_ENV !== 'production') {
-  router.delete('/test/cleanup',
-    authenticateToken,
-    async (req, res) => {
-      try {
-        const userId = req.user.id;
-        const result = await cleanupTraitHistory(userId);
+  router.delete('/test/cleanup', authenticateToken, async (req, res) => {
+    try {
+      const userId = req.user.id;
+      const result = await cleanupTraitHistory(userId);
 
-        res.json({
-          success: true,
-          message: 'Trait history cleaned up successfully',
-          data: result,
-        });
-      } catch (error) {
-        console.error('Error cleaning up trait history:', error);
-        res.status(500).json({
-          success: false,
-          error: 'Failed to cleanup trait history',
-        });
-      }
-    },
-  );
+      res.json({
+        success: true,
+        message: 'Trait history cleaned up successfully',
+        data: result,
+      });
+    } catch (error) {
+      logger.error('Error cleaning up trait history:', error);
+      res.status(500).json({
+        success: false,
+        error: 'Failed to cleanup trait history',
+      });
+    }
+  });
 }
 
 export default router;

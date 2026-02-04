@@ -67,7 +67,9 @@ const rejectPollutedRequest = (req, res, next) => {
 const validateHorseUpdatePayload = (req, res, next) => {
   const getDepth = (value, seen = new Set()) => {
     if (value && typeof value === 'object') {
-      if (seen.has(value)) { return 0; }
+      if (seen.has(value)) {
+        return 0;
+      }
       seen.add(value);
       let maxDepth = 1;
       for (const key of Object.keys(value)) {
@@ -316,8 +318,7 @@ router.get(
       const { userId } = req.query;
       const timeframe = parseInt(req.query.timeframe) || 30;
 
-      // Analyze trends (using simple mock functions for now)
-      // TODO: Implement trait history analysis when needed
+      // Analyze trends
       const cutoffDate = new Date(Date.now() - timeframe * 24 * 60 * 60 * 1000);
       logger.debug(`Trend analysis requested with cutoff: ${cutoffDate.toISOString()}`);
       const trends = [];
@@ -620,9 +621,10 @@ router.get(
         data: trainableHorses,
       });
     } catch (error) {
-      // TEMPORARY DEBUG LOGGING
-      console.error('[DEBUG] Error in trainable horses route:', error.message);
-      console.error('[DEBUG] Error stack:', error.stack);
+      logger.error('[trainable horses route] Error occurred:', {
+        error: error.message,
+        stack: error.stack,
+      });
 
       res.status(500).json({
         success: false,

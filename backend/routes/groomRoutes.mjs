@@ -7,8 +7,6 @@ import express from 'express';
 import { body, param, validationResult } from 'express-validator';
 import { authenticateToken } from '../middleware/auth.mjs';
 import { requireOwnership } from '../middleware/ownership.mjs';
-// TODO: Add query validation when needed for filtering/pagination
-// import { query } from 'express-validator';
 import {
   assignGroom,
   cleanupTestData,
