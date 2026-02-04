@@ -52,8 +52,12 @@ describe('Ownership Violation Attempts Integration Tests', () => {
       },
     });
 
-    tokenA = createMockToken(userA.id);
-    _tokenB = createMockToken(userB.id);
+    tokenA = createMockToken(userA.id, {
+      payload: { email: userA.email, role: userA.role || 'user' },
+    });
+    _tokenB = createMockToken(userB.id, {
+      payload: { email: userB.email, role: userB.role || 'user' },
+    });
 
     horseA = await prisma.horse.create({
       data: {

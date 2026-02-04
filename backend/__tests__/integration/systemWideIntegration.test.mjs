@@ -19,9 +19,9 @@
 
 // jest import removed - not used in this file
 import request from 'supertest';
-import jwt from 'jsonwebtoken';
 import app from '../../app.mjs';
 import prisma from '../../../packages/database/prismaClient.mjs';
+import { generateTestToken } from '../../tests/helpers/authHelper.mjs';
 // logger import removed - not used in this file
 
 describe('System-Wide Integration Tests', () => {
@@ -55,8 +55,8 @@ describe('System-Wide Integration Tests', () => {
       },
     });
 
-    // Create auth token for global tests
-    authToken = jwt.sign({ id: testUser.id, username: testUser.username }, process.env.JWT_SECRET, { expiresIn: '1h' });
+    // Create auth token for global tests using centralized helper
+    authToken = generateTestToken({ id: testUser.id, email: testUser.email });
 
     // Create test horse for global tests
     testHorse = await prisma.horse.create({

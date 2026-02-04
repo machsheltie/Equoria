@@ -27,6 +27,7 @@ import {
   expectRateLimitExceeded,
   resetRateLimitStore,
 } from '../config/test-helpers.mjs';
+import { generateTestToken } from '../../tests/helpers/authHelper.mjs';
 
 process.env.TEST_BYPASS_RATE_LIMIT = 'false';
 process.env.TEST_RATE_LIMIT_MAX_REQUESTS = '5';
@@ -36,8 +37,8 @@ const { default: app } = await import('../../app.mjs');
 
 describe('Rate Limiting System', () => {
   let testUser;
+  let authToken;
   let server;
-  const bypassAuthHeaders = { 'X-Test-Bypass-Auth': 'true' };
   const limiterBypassed = process.env.NODE_ENV === 'test';
 
   // Helper to generate a unique IP for each test to avoid interference
@@ -52,6 +53,13 @@ describe('Rate Limiting System', () => {
     testUser = await createTestUser({
       username: 'ratelimituser',
       email: 'ratelimit@example.com',
+    });
+
+    // Generate a real JWT token for the test user
+    authToken = generateTestToken({
+      id: testUser.id,
+      email: testUser.email,
+      role: 'user',
     });
   });
 
@@ -131,7 +139,6 @@ describe('Rate Limiting System', () => {
       // Successful login should reset counter
       const successResponse = await request(app)
         .post('/api/auth/login')
-        .set(bypassAuthHeaders)
         .set('X-Forwarded-For', ip)
         .send({
           email: testUser.email,
@@ -264,7 +271,6 @@ describe('Rate Limiting System', () => {
       // Login to get refresh token (using a different IP than the refresh attempts)
       const loginResponse = await request(app)
         .post('/api/auth/login')
-        .set(bypassAuthHeaders)
         .set('X-Forwarded-For', loginIP)
         .send({
           email: testUser.email,

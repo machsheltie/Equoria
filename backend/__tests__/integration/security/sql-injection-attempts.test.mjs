@@ -53,7 +53,9 @@ describe('SQL Injection Attempts Integration Tests', () => {
       },
     });
 
-    validToken = createMockToken(testUser.id);
+    validToken = createMockToken(testUser.id, {
+      payload: { email: testUser.email, role: 'user' },
+    });
 
     // Create test horse owned by user
     testHorse = await prisma.horse.create({

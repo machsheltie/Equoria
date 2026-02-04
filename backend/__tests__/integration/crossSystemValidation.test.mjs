@@ -20,6 +20,7 @@
 import request from 'supertest';
 import app from '../../app.mjs';
 import prisma from '../../../packages/database/prismaClient.mjs';
+import { generateTestToken } from '../../tests/helpers/authHelper.mjs';
 // getMemoryManager import removed - not used in this file
 // logger import removed - not used in this file
 
@@ -31,29 +32,28 @@ describe('Cross-System Validation Tests', () => {
   let testGroom;
 
   beforeAll(async () => {
-    // Create test user
+    // Use timestamp to ensure unique test data across runs
+    const timestamp = Date.now();
+    const suffix = timestamp.toString().slice(-6);
+
+    // Create test user with unique username/email
     testUser = await prisma.user.create({
       data: {
-        username: 'crossSystemTestUser',
-        email: 'crosssystem@test.com',
+        username: `crossSysUser${suffix}`,
+        email: `crosssystem${timestamp}@test.com`,
         password: 'testPassword123',
         firstName: 'Cross',
         lastName: 'System',
       },
     });
 
-    // Generate auth token
-    const jwt = await import('jsonwebtoken');
-    authToken = jwt.default.sign(
-      { id: testUser.id, username: testUser.username },
-      process.env.JWT_SECRET || 'test-secret',
-      { expiresIn: '1h' },
-    );
+    // Generate auth token using centralized helper
+    authToken = generateTestToken({ id: testUser.id, email: testUser.email });
 
-    // Create test breed
+    // Create test breed with unique name
     testBreed = await prisma.breed.create({
       data: {
-        name: 'Cross System Test Breed',
+        name: `Cross System Test Breed ${suffix}`,
         description: 'Test breed for cross-system validation',
       },
     });
@@ -100,13 +100,15 @@ describe('Cross-System Validation Tests', () => {
   });
 
   afterAll(async () => {
-    // Cleanup test data
-    await Promise.all([
-      prisma.horse.deleteMany({ where: { ownerId: testUser.id } }),
-      prisma.groom.deleteMany({ where: { userId: testUser.id } }),
-    ]);
-    await prisma.user.delete({ where: { id: testUser.id } });
-    await prisma.breed.delete({ where: { id: testBreed.id } });
+    // Cleanup test data - guard against partial setup failures
+    if (testUser) {
+      await prisma.horse.deleteMany({ where: { userId: testUser.id } });
+      await prisma.groom.deleteMany({ where: { userId: testUser.id } });
+      await prisma.user.delete({ where: { id: testUser.id } });
+    }
+    if (testBreed) {
+      await prisma.breed.delete({ where: { id: testBreed.id } });
+    }
   }, 20000);
 
   describe('Epigenetic Trait System Integration', () => {
