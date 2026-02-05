@@ -167,6 +167,56 @@ const PERSONALITY_TRAIT_DEFINITIONS = {
       },
     ],
   },
+  balanced: {
+    name: 'Balanced',
+    description: 'Well-rounded, adaptable approach combining multiple care styles',
+    traits: [
+      {
+        name: 'adaptable',
+        description: 'Adjusts approach based on horse needs and situations',
+        effects: {
+          bondingModifier: 1.15,
+          qualityModifier: 1.15,
+          adaptabilityBonus: 1.2,
+        },
+        compatibleWith: ['all-types'],
+        incompatibleWith: [],
+      },
+      {
+        name: 'versatile',
+        description: 'Competent across various care activities and horse types',
+        effects: {
+          skillRange: 1.2,
+          consistencyBonus: 1.1,
+          learningModifier: 1.1,
+        },
+        compatibleWith: ['mixed-temperaments'],
+        incompatibleWith: [],
+      },
+      {
+        name: 'moderate',
+        description: 'Provides steady, reliable care without extremes',
+        effects: {
+          stressReduction: 0.75,
+          trustBuilding: 1.1,
+          reliabilityBonus: 1.2,
+        },
+        compatibleWith: ['stable', 'developing'],
+        incompatibleWith: ['crisis-situations'],
+      },
+      {
+        name: 'composed',
+        description: 'Maintains calm professionalism in varied situations',
+        effects: {
+          emotionalStability: 1.2,
+          confidenceBuilding: 1.1,
+          stressManagement: 1.15,
+        },
+        compatibleWith: ['all-ages', 'varied-temperaments'],
+        incompatibleWith: [],
+      },
+    ],
+  },
 };
 
 /**
@@ -217,7 +267,6 @@ export async function getGroomPersonalityTraits(groomId) {
       traits: enhancedTraits,
       personalityDescription: personalityDef.description,
     };
-
   } catch (error) {
     logger.error(`Error getting groom personality traits for groom ${groomId}:`, error);
     throw error;
@@ -262,29 +311,29 @@ export async function calculatePersonalityModifiers(groomId, horseId, taskType) 
       if (compatibility > 0) {
         // Apply positive effects with compatibility scaling
         if (trait.effects.bondingModifier) {
-          bondingModifier *= 1.0 + ((trait.effects.bondingModifier - 1.0) * compatibility);
+          bondingModifier *= 1.0 + (trait.effects.bondingModifier - 1.0) * compatibility;
         }
         if (trait.effects.stressReduction) {
           stressModifier *= trait.effects.stressReduction;
         }
         if (trait.effects.qualityModifier) {
-          qualityModifier *= 1.0 + ((trait.effects.qualityModifier - 1.0) * compatibility);
+          qualityModifier *= 1.0 + (trait.effects.qualityModifier - 1.0) * compatibility;
         }
 
         // Task-specific bonuses
         if (taskType === 'trust_building' && trait.effects.trustBuilding) {
-          taskEffectiveness *= 1.0 + ((trait.effects.trustBuilding - 1.0) * compatibility);
+          taskEffectiveness *= 1.0 + (trait.effects.trustBuilding - 1.0) * compatibility;
         }
         if (taskType === 'desensitization' && trait.effects.stimulationBonus) {
-          taskEffectiveness *= 1.0 + ((trait.effects.stimulationBonus - 1.0) * compatibility);
+          taskEffectiveness *= 1.0 + (trait.effects.stimulationBonus - 1.0) * compatibility;
         }
 
         // Apply general task effectiveness for all compatible traits
-        taskEffectiveness *= 1.0 + (0.1 * compatibility); // Base 10% bonus per compatible trait
+        taskEffectiveness *= 1.0 + 0.1 * compatibility; // Base 10% bonus per compatible trait
 
         // Apply general bonding bonus for compatible traits that don't have specific bonding modifiers
         if (!trait.effects.bondingModifier && compatibility > 0.2) {
-          bondingModifier *= 1.0 + (0.15 * compatibility); // 15% bonding bonus for compatible traits
+          bondingModifier *= 1.0 + 0.15 * compatibility; // 15% bonding bonus for compatible traits
         }
       } else if (compatibility < 0) {
         // Apply negative effects for incompatible combinations
@@ -294,7 +343,7 @@ export async function calculatePersonalityModifiers(groomId, horseId, taskType) 
       } else {
         // Neutral compatibility - still apply some base trait effects
         if (trait.effects.qualityModifier && trait.effects.qualityModifier > 1.0) {
-          qualityModifier *= 1.0 + ((trait.effects.qualityModifier - 1.0) * 0.5); // 50% of effect for neutral
+          qualityModifier *= 1.0 + (trait.effects.qualityModifier - 1.0) * 0.5; // 50% of effect for neutral
         }
         taskEffectiveness *= 1.05; // Small base bonus for any trait
       }
@@ -312,7 +361,6 @@ export async function calculatePersonalityModifiers(groomId, horseId, taskType) 
       groomPersonality: groomTraits.primaryPersonality,
       horseFlags: horse.epigeneticFlags,
     };
-
   } catch (error) {
     logger.error('Error calculating personality modifiers:', error);
     throw error;
@@ -354,9 +402,13 @@ export async function analyzePersonalityCompatibility(groomId, horseId) {
       const compatibility = calculateTraitCompatibility(trait, horse.epigeneticFlags);
 
       if (compatibility > 0.2) {
-        strengths.push(`${trait.name}: ${trait.description} - works well with ${horse.epigeneticFlags.join(', ') || 'neutral temperament'}`);
+        strengths.push(
+          `${trait.name}: ${trait.description} - works well with ${horse.epigeneticFlags.join(', ') || 'neutral temperament'}`,
+        );
       } else if (compatibility < -0.1) {
-        challenges.push(`${trait.name}: May be too ${trait.name} for ${horse.epigeneticFlags.join(', ') || 'this horse'}`);
+        challenges.push(
+          `${trait.name}: May be too ${trait.name} for ${horse.epigeneticFlags.join(', ') || 'this horse'}`,
+        );
       }
     });
 
@@ -376,7 +428,7 @@ export async function analyzePersonalityCompatibility(groomId, horseId) {
       recommendations.push('Consider increasing interaction frequency to maximize benefits');
     } else {
       recommendations.push('Moderate compatibility - monitor interactions closely');
-      recommendations.push('Adjust approach based on horse\'s daily mood and stress level');
+      recommendations.push("Adjust approach based on horse's daily mood and stress level");
     }
 
     return {
@@ -390,7 +442,6 @@ export async function analyzePersonalityCompatibility(groomId, horseId) {
       recommendations,
       compatibilityLevel: getCompatibilityLevel(overallScore),
     };
-
   } catch (error) {
     logger.error('Error analyzing personality compatibility:', error);
     throw error;
@@ -443,7 +494,9 @@ export async function updatePersonalityTraits(groomId) {
 
     // Analyze interaction quality to determine trait development
     const avgQuality = calculateAverageQuality(recentInteractions);
-    const avgBondChange = recentInteractions.reduce((sum, i) => sum + (i.bondingChange || 0), 0) / recentInteractions.length;
+    const avgBondChange =
+      recentInteractions.reduce((sum, i) => sum + (i.bondingChange || 0), 0) /
+      recentInteractions.length;
 
     const traitsUpdated = [];
 
@@ -472,7 +525,6 @@ export async function updatePersonalityTraits(groomId) {
         interactionCount: recentInteractions.length,
       },
     };
-
   } catch (error) {
     logger.error(`Error updating personality traits for groom ${groomId}:`, error);
     throw error;
@@ -495,7 +547,6 @@ export async function getPersonalityTraitDefinitions() {
         expert: { min: 201, max: 999, description: 'Mastered traits, exceptional effectiveness' },
       },
     };
-
   } catch (error) {
     logger.error('Error getting personality trait definitions:', error);
     throw error;
@@ -506,9 +557,15 @@ export async function getPersonalityTraitDefinitions() {
  * Calculate experience level based on experience points
  */
 function calculateExperienceLevel(experience) {
-  if (experience <= 50) { return 'low'; }
-  if (experience <= 100) { return 'medium'; }
-  if (experience <= 200) { return 'high'; }
+  if (experience <= 50) {
+    return 'low';
+  }
+  if (experience <= 100) {
+    return 'medium';
+  }
+  if (experience <= 200) {
+    return 'high';
+  }
   return 'expert';
 }
 
@@ -518,7 +575,7 @@ function calculateExperienceLevel(experience) {
 function calculateTraitStrength(experience, level) {
   const experienceComponent = Math.min(experience / 150, 1.0); // Max 1.0 from experience (lowered threshold)
   const levelComponent = Math.min(level / 8, 1.0); // Max 1.0 from level (lowered threshold)
-  return Math.min(1.0, (experienceComponent * 0.6 + levelComponent * 0.4) + 0.2); // Base 0.2 + weighted combination
+  return Math.min(1.0, experienceComponent * 0.6 + levelComponent * 0.4 + 0.2); // Base 0.2 + weighted combination
 }
 
 /**
@@ -532,10 +589,10 @@ function applyExperienceModifiers(effects, traitStrength) {
       // Apply trait strength to numeric effects
       if (value > 1.0) {
         // Bonus effects - scale with trait strength
-        modifiedEffects[key] = 1.0 + ((value - 1.0) * traitStrength);
+        modifiedEffects[key] = 1.0 + (value - 1.0) * traitStrength;
       } else if (value < 1.0) {
         // Reduction effects - scale with trait strength
-        modifiedEffects[key] = 1.0 - ((1.0 - value) * traitStrength);
+        modifiedEffects[key] = 1.0 - (1.0 - value) * traitStrength;
       } else {
         modifiedEffects[key] = value;
       }
@@ -608,10 +665,18 @@ function calculateOverallCompatibility(groomTraits, horse) {
  * Get compatibility level description
  */
 function getCompatibilityLevel(score) {
-  if (score >= 0.8) { return 'excellent'; }
-  if (score >= 0.6) { return 'good'; }
-  if (score >= 0.4) { return 'moderate'; }
-  if (score >= 0.2) { return 'poor'; }
+  if (score >= 0.8) {
+    return 'excellent';
+  }
+  if (score >= 0.6) {
+    return 'good';
+  }
+  if (score >= 0.4) {
+    return 'moderate';
+  }
+  if (score >= 0.2) {
+    return 'poor';
+  }
   return 'very_poor';
 }
 
