@@ -1,15 +1,9 @@
 import bcrypt from 'bcryptjs';
-import _jwt from 'jsonwebtoken';
-import { generateToken as _generateToken, generateRefreshToken as _generateRefreshToken } from '../middleware/auth.mjs';
 import { AppError, ValidationError } from '../errors/index.mjs';
 import logger from '../utils/logger.mjs';
 import prisma from '../db/index.mjs';
 import { resetAuthRateLimit } from '../middleware/authRateLimiter.mjs';
-import {
-  createTokenPair,
-  rotateRefreshToken,
-  invalidateTokenFamily as _invalidateTokenFamily,
-} from '../utils/tokenRotationService.mjs';
+import { createTokenPair, rotateRefreshToken } from '../utils/tokenRotationService.mjs';
 import {
   createVerificationToken,
   verifyEmailToken,
@@ -251,8 +245,9 @@ export const refreshToken = async (req, res, next) => {
       });
     }
 
-    // Read refresh token from httpOnly cookie
-    const providedRefreshToken = req.cookies.refreshToken;
+    // Read refresh token from body (for explicit refresh) or httpOnly cookie
+    // Priority: body > cookie (allows explicit token refresh in tests)
+    const providedRefreshToken = req.body.refreshToken || req.cookies.refreshToken;
 
     if (!providedRefreshToken) {
       throw new AppError('Refresh token is required', 400);
@@ -264,7 +259,9 @@ export const refreshToken = async (req, res, next) => {
     if (!rotationResult.success) {
       // Handle different types of failures
       if (rotationResult.familyInvalidated) {
-        logger.warn('[authController.refreshToken] Token family invalidated due to reuse detection');
+        logger.warn(
+          '[authController.refreshToken] Token family invalidated due to reuse detection',
+        );
         throw new AppError('Token reuse detected - please login again', 401);
       }
 
