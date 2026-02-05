@@ -31,10 +31,7 @@ import {
   checkTaskMutualExclusivity as _checkTaskMutualExclusivity,
   checkBurnoutImmunity,
 } from '../utils/groomBondingSystem.mjs';
-import {
-  DEVELOPMENTAL_WINDOWS,
-  MILESTONE_TYPES as _MILESTONE_TYPES,
-} from '../utils/enhancedMilestoneEvaluationSystem.mjs';
+import { DEVELOPMENTAL_WINDOWS } from '../utils/enhancedMilestoneEvaluationSystem.mjs';
 import prisma from '../db/index.mjs';
 import logger from '../utils/logger.mjs';
 import { awardGroomXP } from '../services/groomProgressionService.mjs';
@@ -70,11 +67,11 @@ function getCurrentMilestoneWindow(dateOfBirth) {
 function determineTaskType(interactionType, ageInDays) {
   // Map interaction types to milestone-relevant task types
   const taskTypeMapping = {
-    'daily_care': ageInDays < 7 ? 'imprinting_care' : 'routine_care',
-    'feeding': 'feeding',
-    'grooming': ageInDays < 14 ? 'early_handling' : 'grooming',
-    'exercise': ageInDays < 21 ? 'play_interaction' : 'exercise',
-    'medical_check': 'health_monitoring',
+    daily_care: ageInDays < 7 ? 'imprinting_care' : 'routine_care',
+    feeding: 'feeding',
+    grooming: ageInDays < 14 ? 'early_handling' : 'grooming',
+    exercise: ageInDays < 21 ? 'play_interaction' : 'exercise',
+    medical_check: 'health_monitoring',
   };
 
   return taskTypeMapping[interactionType] || interactionType;
@@ -112,7 +109,7 @@ export async function assignGroom(req, res) {
     // Ownership check: Only the owner can assign a groom
     const foal = await prisma.horse.findUnique({
       where: { id: foalId },
-      select: { id: true, ownerId: true },
+      select: { id: true, userId: true },
     });
     if (!foal) {
       return res.status(404).json({
@@ -121,7 +118,7 @@ export async function assignGroom(req, res) {
         data: null,
       });
     }
-    if (foal.ownerId !== userId) {
+    if (foal.userId !== userId) {
       return res.status(403).json({
         success: false,
         error: 'Forbidden: You do not own this horse',
@@ -188,7 +185,7 @@ export async function ensureDefaultAssignment(req, res) {
     // Validate foal ownership
     const foal = await prisma.horse.findUnique({
       where: { id: parsedFoalId },
-      select: { id: true, name: true, ownerId: true },
+      select: { id: true, name: true, userId: true },
     });
 
     if (!foal) {
@@ -199,7 +196,7 @@ export async function ensureDefaultAssignment(req, res) {
       });
     }
 
-    if (foal.ownerId !== userId) {
+    if (foal.userId !== userId) {
       return res.status(403).json({
         success: false,
         message: 'Forbidden: You do not own this foal',
@@ -420,9 +417,14 @@ export async function recordInteraction(req, res) {
     const milestoneWindowId = getCurrentMilestoneWindow(foal.dateOfBirth);
     const ageInDays = Math.floor((Date.now() - new Date(foal.dateOfBirth)) / (1000 * 60 * 60 * 24));
     const taskType = determineTaskType(interactionType, ageInDays);
-    const qualityScore = effects.quality === 'excellent' ? 1.0 :
-      effects.quality === 'good' ? 0.75 :
-        effects.quality === 'fair' ? 0.5 : 0.25;
+    const qualityScore =
+      effects.quality === 'excellent'
+        ? 1.0
+        : effects.quality === 'good'
+          ? 0.75
+          : effects.quality === 'fair'
+            ? 0.5
+            : 0.25;
 
     // Record the interaction
     const interaction = await prisma.groomInteraction.create({
@@ -481,9 +483,13 @@ export async function recordInteraction(req, res) {
     try {
       const experienceGain = 2; // 2 XP per interaction (consistent with groomPersonalityTraits.mjs)
       await awardGroomXP(groomId, 'interaction_completed', experienceGain);
-      logger.info(`[groomController.recordInteraction] Awarded ${experienceGain} XP to groom ${groomId} for interaction`);
+      logger.info(
+        `[groomController.recordInteraction] Awarded ${experienceGain} XP to groom ${groomId} for interaction`,
+      );
     } catch (xpError) {
-      logger.error(`[groomController.recordInteraction] Failed to award XP to groom ${groomId}: ${xpError.message}`);
+      logger.error(
+        `[groomController.recordInteraction] Failed to award XP to groom ${groomId}: ${xpError.message}`,
+      );
       // Don't fail the interaction if XP awarding fails
     }
 
@@ -621,8 +627,13 @@ export async function hireGroom(req, res) {
     }
 
     // Validate experience (must be positive integer if provided)
-    const sanitizedExperience = experience !== undefined && experience !== null ? parseInt(experience) : 1;
-    if (experience !== undefined && experience !== null && (isNaN(sanitizedExperience) || sanitizedExperience < 1 || sanitizedExperience > 20)) {
+    const sanitizedExperience =
+      experience !== undefined && experience !== null ? parseInt(experience) : 1;
+    if (
+      experience !== undefined &&
+      experience !== null &&
+      (isNaN(sanitizedExperience) || sanitizedExperience < 1 || sanitizedExperience > 20)
+    ) {
       return res.status(400).json({
         success: false,
         message: 'experience must be between 1 and 20 years',
@@ -631,8 +642,13 @@ export async function hireGroom(req, res) {
     }
 
     // Validate session rate (must be positive number if provided)
-    const sanitizedSessionRate = session_rate !== undefined && session_rate !== null ? parseFloat(session_rate) : null;
-    if (session_rate !== undefined && session_rate !== null && (isNaN(sanitizedSessionRate) || sanitizedSessionRate <= 0)) {
+    const sanitizedSessionRate =
+      session_rate !== undefined && session_rate !== null ? parseFloat(session_rate) : null;
+    if (
+      session_rate !== undefined &&
+      session_rate !== null &&
+      (isNaN(sanitizedSessionRate) || sanitizedSessionRate <= 0)
+    ) {
       return res.status(400).json({
         success: false,
         message: 'session rate must be a positive number',
@@ -881,24 +897,28 @@ export async function getGroomProfile(req, res) {
     }
 
     // Calculate personality compatibility with current assignments
-    const { calculatePersonalityCompatibility } = await import('../utils/groomPersonalityTraitBonus.mjs');
-    const personalityCompatibility = groom.groomAssignments.map(assignment => {
-      if (assignment.foal.temperament) {
-        const compatibility = calculatePersonalityCompatibility(
-          groom.personality,
-          assignment.foal.temperament,
-          assignment.foal.bondScore || 50,
-        );
+    const { calculatePersonalityCompatibility } = await import(
+      '../utils/groomPersonalityTraitBonus.mjs'
+    );
+    const personalityCompatibility = groom.groomAssignments
+      .map(assignment => {
+        if (assignment.foal.temperament) {
+          const compatibility = calculatePersonalityCompatibility(
+            groom.personality,
+            assignment.foal.temperament,
+            assignment.foal.bondScore || 50,
+          );
 
-        return {
-          foalId: assignment.foal.id,
-          foalName: assignment.foal.name,
-          foalTemperament: assignment.foal.temperament,
-          compatibility,
-        };
-      }
-      return null;
-    }).filter(Boolean);
+          return {
+            foalId: assignment.foal.id,
+            foalName: assignment.foal.name,
+            foalTemperament: assignment.foal.temperament,
+            compatibility,
+          };
+        }
+        return null;
+      })
+      .filter(Boolean);
 
     const profile = {
       id: groom.id,
@@ -1001,7 +1021,9 @@ export async function updateGroomBonusTraits(req, res) {
       });
     }
 
-    logger.info(`[groomController.updateGroomBonusTraits] Updating bonus traits for groom ${groomId}`);
+    logger.info(
+      `[groomController.updateGroomBonusTraits] Updating bonus traits for groom ${groomId}`,
+    );
 
     const { assignBonusTraits } = await import('../services/groomBonusTraitService.mjs');
     const result = await assignBonusTraits(groomId, bonusTraits);
