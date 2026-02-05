@@ -63,7 +63,7 @@ describe('Input Validation Integration Tests', () => {
 
     describe('Password Validation - Enhanced Requirements', () => {
       it('should reject password without lowercase letter', async () => {
-        const response = await request(app).post('/api/auth/register').send({
+        const response = await request(app).post('/api/auth/register').set('x-test-bypass-rate-limit', 'true').send({
           email: 'test@example.com',
           username: 'testuser123',
           password: 'VALIDPASS123!',
@@ -77,7 +77,7 @@ describe('Input Validation Integration Tests', () => {
       });
 
       it('should reject password without uppercase letter', async () => {
-        const response = await request(app).post('/api/auth/register').send({
+        const response = await request(app).post('/api/auth/register').set('x-test-bypass-rate-limit', 'true').send({
           email: 'test@example.com',
           username: 'testuser123',
           password: 'validpass123!',
@@ -91,7 +91,7 @@ describe('Input Validation Integration Tests', () => {
       });
 
       it('should reject password without number', async () => {
-        const response = await request(app).post('/api/auth/register').send({
+        const response = await request(app).post('/api/auth/register').set('x-test-bypass-rate-limit', 'true').send({
           email: 'test@example.com',
           username: 'testuser123',
           password: 'ValidPassword!',
@@ -105,7 +105,7 @@ describe('Input Validation Integration Tests', () => {
       });
 
       it('should reject password without special character', async () => {
-        const response = await request(app).post('/api/auth/register').send({
+        const response = await request(app).post('/api/auth/register').set('x-test-bypass-rate-limit', 'true').send({
           email: 'test@example.com',
           username: 'testuser123',
           password: 'ValidPass123',
@@ -119,7 +119,7 @@ describe('Input Validation Integration Tests', () => {
       });
 
       it('should reject password shorter than 8 characters', async () => {
-        const response = await request(app).post('/api/auth/register').send({
+        const response = await request(app).post('/api/auth/register').set('x-test-bypass-rate-limit', 'true').send({
           email: 'test@example.com',
           username: 'testuser123',
           password: 'Val1!',
@@ -134,7 +134,7 @@ describe('Input Validation Integration Tests', () => {
 
       it('should reject password longer than 128 characters', async () => {
         const longPassword = `${'A'.repeat(100)}a1@${'b'.repeat(30)}`;
-        const response = await request(app).post('/api/auth/register').send({
+        const response = await request(app).post('/api/auth/register').set('x-test-bypass-rate-limit', 'true').send({
           email: 'test@example.com',
           username: 'testuser123',
           password: longPassword,

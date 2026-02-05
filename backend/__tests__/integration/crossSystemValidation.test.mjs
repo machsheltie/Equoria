@@ -150,7 +150,7 @@ describe('Cross-System Validation Tests', () => {
 
       // Test trait discovery after care
       const traitDiscoveryResponse = await request(app)
-        .post(`/api/traits/discover/${foal.id}`)
+        .post(`/api/trait-discovery/discover/${foal.id}`)
         .set('Authorization', `Bearer ${authToken}`)
         .set('x-test-skip-csrf', 'true')
         .expect(200);
@@ -191,17 +191,6 @@ describe('Cross-System Validation Tests', () => {
 
     test('Environmental trigger system integration', async () => {
       // Test environmental factors affecting trait expression
-      const _environmentalData = {
-        horseId: testHorse.id,
-        environmentalFactors: {
-          temperature: 22,
-          humidity: 65,
-          noiseLevel: 'low',
-          socialInteraction: 'high',
-          exerciseLevel: 'moderate',
-        },
-      };
-
       const environmentalResponse = await request(app)
         .get(`/api/horses/${testHorse.id}/environmental-analysis`)
         .set('Authorization', `Bearer ${authToken}`)
@@ -295,11 +284,6 @@ describe('Cross-System Validation Tests', () => {
       expect(entryResponse.body.success).toBe(true);
 
       // Execute competition
-      const _executeData = {
-        showId: testShow.id,
-        discipline: 'Racing',
-      };
-
       const executeResponse = await request(app)
         .post('/api/competition/execute')
         .set('Authorization', `Bearer ${authToken}`)
@@ -444,7 +428,6 @@ describe('Cross-System Validation Tests', () => {
         .expect(200);
 
       expect(initialMemoryResponse.body.success).toBe(true);
-      const _initialMemory = initialMemoryResponse.body.data;
 
       // Perform memory-intensive operations
       const operations = [];
