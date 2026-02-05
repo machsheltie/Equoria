@@ -16,6 +16,7 @@ import {
 import {
   analyzeHorseTraitImpact,
   compareTraitImpactAcrossDisciplines,
+  getDisciplineRecommendations,
   getTraitCompetitionEffects,
 } from '../controllers/traitCompetitionController.mjs';
 import logger from '../utils/logger.mjs';
@@ -504,6 +505,94 @@ router.get(
     requireOwnership('horse', { idParam: 'horseId' }),
   ],
   compareTraitImpactAcrossDisciplines,
+);
+
+/**
+ * @swagger
+ * /api/traits/discipline-recommendations/{horseId}:
+ *   get:
+ *     summary: Get discipline recommendations based on specialized trait effects
+ *     tags: [Traits, Competition]
+ *     parameters:
+ *       - in: path
+ *         name: horseId
+ *         required: true
+ *         schema:
+ *           type: integer
+ *           minimum: 1
+ *         description: ID of the horse
+ *     responses:
+ *       200:
+ *         description: Discipline recommendations generated
+ *         content:
+ *           application/json:
+ *             schema:
+ *               type: object
+ *               properties:
+ *                 success:
+ *                   type: boolean
+ *                 message:
+ *                   type: string
+ *                 data:
+ *                   type: object
+ *                   properties:
+ *                     horseId:
+ *                       type: integer
+ *                     horseName:
+ *                       type: string
+ *                     recommendations:
+ *                       type: array
+ *                       items:
+ *                         type: object
+ *                         properties:
+ *                           discipline:
+ *                             type: string
+ *                           specializedTraits:
+ *                             type: array
+ *                           totalSpecialized:
+ *                             type: integer
+ *                           positiveTraits:
+ *                             type: integer
+ *                           negativeTraits:
+ *                             type: integer
+ *                           overallModifier:
+ *                             type: number
+ *                           percentageEffect:
+ *                             type: string
+ *                           recommendationScore:
+ *                             type: number
+ *                           recommendation:
+ *                             type: string
+ *                             enum: [highly_recommended, recommended, neutral, not_recommended]
+ *                     summary:
+ *                       type: object
+ *                       properties:
+ *                         totalTraits:
+ *                           type: integer
+ *                         specializedTraits:
+ *                           type: integer
+ *                         recommendedDisciplines:
+ *                           type: integer
+ *                         notRecommendedDisciplines:
+ *                           type: integer
+ *                         bestDiscipline:
+ *                           type: object
+ *                           nullable: true
+ *       400:
+ *         description: Invalid horse ID
+ *       404:
+ *         description: Horse not found
+ *       500:
+ *         description: Internal server error
+ */
+router.get(
+  '/discipline-recommendations/:horseId',
+  [
+    param('horseId').isInt({ min: 1 }).withMessage('Horse ID must be a positive integer'),
+    handleValidationErrors,
+    requireOwnership('horse', { idParam: 'horseId' }),
+  ],
+  getDisciplineRecommendations,
 );
 
 /**

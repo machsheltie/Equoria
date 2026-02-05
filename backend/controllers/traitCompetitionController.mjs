@@ -6,15 +6,10 @@
 import {
   calculateTraitCompetitionImpact,
   getAllTraitCompetitionEffects,
-  // TODO: Re-enable when specialized effects are implemented
-  // hasSpecializedEffect as _hasSpecializedEffect,
+  hasSpecializedEffect,
 } from '../utils/traitCompetitionImpact.mjs';
 import prisma from '../db/index.mjs';
 import logger from '../utils/logger.mjs';
-
-// TODO: Implement hasSpecializedEffect usage for enhanced trait analysis
-// This function will be used to provide more detailed trait specialization information
-// in future API endpoints for discipline-specific trait recommendations
 
 /**
  * Analyze trait impact for a specific horse and discipline
@@ -61,7 +56,9 @@ export async function analyzeHorseTraitImpact(req, res) {
     });
 
     if (!horse) {
-      logger.error(`[traitCompetitionController.analyzeHorseTraitImpact] Horse ${horseId} not found after middleware validation`);
+      logger.error(
+        `[traitCompetitionController.analyzeHorseTraitImpact] Horse ${horseId} not found after middleware validation`,
+      );
       return res.status(404).json({
         success: false,
         message: 'Horse not found',
@@ -174,7 +171,9 @@ export async function compareTraitImpactAcrossDisciplines(req, res) {
     });
 
     if (!horse) {
-      logger.error(`[traitCompetitionController.compareTraitImpactAcrossDisciplines] Horse ${horseId} not found after middleware validation`);
+      logger.error(
+        `[traitCompetitionController.compareTraitImpactAcrossDisciplines] Horse ${horseId} not found after middleware validation`,
+      );
       return res.status(404).json({
         success: false,
         message: 'Horse not found',
@@ -249,6 +248,181 @@ export async function compareTraitImpactAcrossDisciplines(req, res) {
     res.status(500).json({
       success: false,
       message: 'Failed to compare trait impact',
+      data: null,
+    });
+  }
+}
+
+/**
+ * Get discipline recommendations based on specialized trait effects
+ * GET /api/traits/discipline-recommendations/:horseId
+ */
+export async function getDisciplineRecommendations(req, res) {
+  try {
+    const { horseId } = req.params;
+
+    // Validate horse ID
+    if (!horseId || isNaN(parseInt(horseId))) {
+      return res.status(400).json({
+        success: false,
+        message: 'Valid horse ID is required',
+        data: null,
+      });
+    }
+
+    // Fetch horse data with traits
+    const horse = await prisma.horse.findUnique({
+      where: { id: parseInt(horseId) },
+      select: {
+        id: true,
+        name: true,
+        epigenetic_modifiers: true,
+      },
+    });
+
+    if (!horse) {
+      return res.status(404).json({
+        success: false,
+        message: 'Horse not found',
+        data: null,
+      });
+    }
+
+    // Get all visible traits
+    const traits = horse.epigenetic_modifiers || { positive: [], negative: [], hidden: [] };
+    const allVisibleTraits = [...(traits.positive || []), ...(traits.negative || [])];
+
+    if (allVisibleTraits.length === 0) {
+      return res.json({
+        success: true,
+        message: 'No traits available for analysis',
+        data: {
+          horseId: horse.id,
+          horseName: horse.name,
+          recommendations: [],
+          summary: {
+            totalTraits: 0,
+            specializedTraits: 0,
+            recommendedDisciplines: 0,
+          },
+        },
+      });
+    }
+
+    // Define all competition disciplines
+    const disciplines = [
+      'Dressage',
+      'Show Jumping',
+      'Cross Country',
+      'Racing',
+      'Endurance',
+      'Reining',
+      'Driving',
+      'Trail',
+      'Eventing',
+    ];
+
+    // Analyze each discipline for specialized traits
+    const disciplineAnalysis = {};
+
+    disciplines.forEach(discipline => {
+      const specializedTraits = [];
+      let positiveCount = 0;
+      let negativeCount = 0;
+
+      allVisibleTraits.forEach(traitName => {
+        if (hasSpecializedEffect(traitName, discipline)) {
+          const traitImpact = calculateTraitCompetitionImpact(horse, discipline, 100);
+          const traitDetail = traitImpact.appliedTraits.find(
+            t => t.name === traitName && t.isSpecialized,
+          );
+
+          if (traitDetail) {
+            specializedTraits.push({
+              name: traitName,
+              type: traitDetail.type,
+              modifier: traitDetail.modifier,
+              percentageEffect: `${(traitDetail.modifier * 100).toFixed(2)}%`,
+              description: traitDetail.description,
+            });
+
+            if (traitDetail.type === 'positive') {
+              positiveCount++;
+            } else {
+              negativeCount++;
+            }
+          }
+        }
+      });
+
+      if (specializedTraits.length > 0) {
+        // Calculate overall recommendation score
+        const totalModifier = specializedTraits.reduce((sum, t) => sum + t.modifier, 0);
+
+        disciplineAnalysis[discipline] = {
+          discipline,
+          specializedTraits,
+          totalSpecialized: specializedTraits.length,
+          positiveTraits: positiveCount,
+          negativeTraits: negativeCount,
+          overallModifier: totalModifier,
+          percentageEffect: `${(totalModifier * 100).toFixed(2)}%`,
+          recommendationScore: totalModifier,
+          recommendation:
+            totalModifier > 0.05
+              ? 'highly_recommended'
+              : totalModifier > 0
+                ? 'recommended'
+                : totalModifier < -0.05
+                  ? 'not_recommended'
+                  : 'neutral',
+        };
+      }
+    });
+
+    // Sort disciplines by recommendation score (best to worst)
+    const recommendations = Object.values(disciplineAnalysis).sort(
+      (a, b) => b.recommendationScore - a.recommendationScore,
+    );
+
+    // Calculate summary statistics
+    const summary = {
+      totalTraits: allVisibleTraits.length,
+      specializedTraits: new Set(recommendations.flatMap(r => r.specializedTraits.map(t => t.name)))
+        .size,
+      recommendedDisciplines: recommendations.filter(r => r.recommendationScore > 0).length,
+      notRecommendedDisciplines: recommendations.filter(r => r.recommendationScore < -0.05).length,
+      bestDiscipline:
+        recommendations.length > 0
+          ? {
+              name: recommendations[0].discipline,
+              effect: recommendations[0].percentageEffect,
+              specializedTraits: recommendations[0].totalSpecialized,
+            }
+          : null,
+    };
+
+    logger.info(
+      `[traitCompetitionController] Generated discipline recommendations for horse ${horse.name}: ${recommendations.length} disciplines analyzed`,
+    );
+
+    res.json({
+      success: true,
+      message: 'Discipline recommendations generated',
+      data: {
+        horseId: horse.id,
+        horseName: horse.name,
+        recommendations,
+        summary,
+      },
+    });
+  } catch (error) {
+    logger.error(
+      `[traitCompetitionController.getDisciplineRecommendations] Error: ${error.message}`,
+    );
+    res.status(500).json({
+      success: false,
+      message: 'Failed to generate discipline recommendations',
       data: null,
     });
   }

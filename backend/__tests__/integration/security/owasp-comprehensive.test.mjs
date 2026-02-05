@@ -17,7 +17,6 @@ import app from '../../../app.mjs';
 import { createMockToken } from '../../factories/index.mjs';
 import prisma from '../../../../packages/database/prismaClient.mjs';
 import bcrypt from 'bcryptjs';
-import jwt from 'jsonwebtoken';
 import fs from 'fs';
 import path from 'path';
 import { fileURLToPath } from 'url';
@@ -65,10 +64,10 @@ describe('🔒 OWASP Top 10 - Comprehensive Security Tests', () => {
     testHorse = await prisma.horse.create({
       data: {
         name: 'OWASP Test Horse',
-        breedId: 1,
+        breed: { connect: { id: 1 } },
         sex: 'Stallion',
         dateOfBirth: new Date(Date.now() - 5 * 365 * 24 * 60 * 60 * 1000), // 5 years old
-        userId: testUser.id,
+        user: { connect: { id: testUser.id } },
       },
     });
   });
@@ -306,21 +305,17 @@ describe('🔒 OWASP Top 10 - Comprehensive Security Tests', () => {
     describe('Unsigned or Tampered JWT Prevention', () => {
       it('should reject unsigned JWT tokens', async () => {
         // Create unsigned token (algorithm: none)
-        const unsignedToken =
-          `${Buffer.from(
-            JSON.stringify({
-              alg: 'none',
-              typ: 'JWT',
-            }),
-          ).toString('base64')
-          }.${
-            Buffer.from(
-              JSON.stringify({
-                userId: testUser.id,
-                role: 'admin',
-              }),
-            ).toString('base64')
-          }.`;
+        const unsignedToken = `${Buffer.from(
+          JSON.stringify({
+            alg: 'none',
+            typ: 'JWT',
+          }),
+        ).toString('base64')}.${Buffer.from(
+          JSON.stringify({
+            userId: testUser.id,
+            role: 'admin',
+          }),
+        ).toString('base64')}.`;
 
         const response = await request(app).get('/api/users/me').set('Authorization', `Bearer ${unsignedToken}`);
 
@@ -402,10 +397,10 @@ describe('🔒 OWASP Top 10 - Comprehensive Security Tests', () => {
         const otherHorse = await prisma.horse.create({
           data: {
             name: 'Other User Horse',
-            breedId: 1,
+            breed: { connect: { id: 1 } },
             sex: 'Mare',
             dateOfBirth: new Date(Date.now() - 5 * 365 * 24 * 60 * 60 * 1000),
-            userId: otherUser.id,
+            user: { connect: { id: otherUser.id } },
           },
         });
 

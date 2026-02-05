@@ -37,7 +37,6 @@ const { default: app } = await import('../../app.mjs');
 
 describe('Rate Limiting System', () => {
   let testUser;
-  let authToken;
   let server;
   const limiterBypassed = process.env.NODE_ENV === 'test';
 
@@ -55,8 +54,8 @@ describe('Rate Limiting System', () => {
       email: 'ratelimit@example.com',
     });
 
-    // Generate a real JWT token for the test user
-    authToken = generateTestToken({
+    // Generate a real JWT token for the test user (not used in rate limit tests)
+    generateTestToken({
       id: testUser.id,
       email: testUser.email,
       role: 'user',
@@ -137,13 +136,10 @@ describe('Rate Limiting System', () => {
       }
 
       // Successful login should reset counter
-      const successResponse = await request(app)
-        .post('/api/auth/login')
-        .set('X-Forwarded-For', ip)
-        .send({
-          email: testUser.email,
-          password: testUser.plainPassword,
-        });
+      const successResponse = await request(app).post('/api/auth/login').set('X-Forwarded-For', ip).send({
+        email: testUser.email,
+        password: testUser.plainPassword,
+      });
 
       expect([200, 201, 401, 429]).toContain(successResponse.status);
 
@@ -269,13 +265,10 @@ describe('Rate Limiting System', () => {
       await sleep(100);
 
       // Login to get refresh token (using a different IP than the refresh attempts)
-      const loginResponse = await request(app)
-        .post('/api/auth/login')
-        .set('X-Forwarded-For', loginIP)
-        .send({
-          email: testUser.email,
-          password: testUser.plainPassword,
-        });
+      const loginResponse = await request(app).post('/api/auth/login').set('X-Forwarded-For', loginIP).send({
+        email: testUser.email,
+        password: testUser.plainPassword,
+      });
 
       if (![200, 201].includes(loginResponse.status)) {
         // If authentication fails in test mode, skip refresh-specific assertions
@@ -386,7 +379,6 @@ describe('Rate Limiting System', () => {
       });
 
       const resetTimestamp = parseInt(response.headers['ratelimit-reset']);
-      const _now = Math.floor(Date.now() / 1000);
 
       if (!Number.isNaN(resetTimestamp)) {
         // Express-rate-limit sends seconds until reset; allow any positive number within 15 minutes
