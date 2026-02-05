@@ -43,6 +43,21 @@ import { register, login } from '../controllers/authController.mjs';
 import { authenticateToken } from '../middleware/auth.mjs';
 import prisma from '../db/index.mjs';
 
+/**
+ * Extract cookie value from Set-Cookie header array
+ */
+const extractCookie = (cookies, name) => {
+  if (!cookies || !Array.isArray(cookies)) {
+    return null;
+  }
+  const cookie = cookies.find(c => c.startsWith(`${name}=`));
+  if (!cookie) {
+    return null;
+  }
+  const match = cookie.match(new RegExp(`${name}=([^;]+)`));
+  return match ? match[1] : null;
+};
+
 // Create a minimal test app for training tests
 const createTestApp = () => {
   const app = express();
@@ -162,11 +177,19 @@ describe('🏋️ INTEGRATION: Training System Complete - End-to-End Workflow', 
       lastName: 'User',
     };
 
-    const registerResponse = await request(app).post('/api/auth/register').send(userData);
+    const registerResponse = await request(app)
+      .post('/api/auth/register')
+      .set('x-test-bypass-rate-limit', 'true')
+      .send(userData);
 
     expect(registerResponse.status).toBe(201);
-    authToken = registerResponse.body.data.token;
+
+    // Extract accessToken from httpOnly cookie
+    const cookies = registerResponse.headers['set-cookie'];
+    authToken = extractCookie(cookies, 'accessToken');
     testUser = registerResponse.body.data.user;
+
+    expect(authToken).toBeDefined();
 
     // Create some test horses linked to this user
     let breed = await prisma.breed.findFirst();
