@@ -170,6 +170,7 @@ describe('Input Validation Integration Tests', () => {
         for (const char of specialChars) {
           const response = await request(app)
             .post('/api/auth/register')
+            .set('x-test-bypass-rate-limit', 'true')
             .send({
               email: `test${Date.now()}@example.com`,
               username: `testuser${Date.now()}`,
