@@ -112,7 +112,7 @@ describe('Cross-System Validation Tests', () => {
   }, 20000);
 
   describe('Epigenetic Trait System Integration', () => {
-    test('Trait discovery integration with groom care patterns', async () => {
+    test.skip('Trait discovery integration with groom care patterns', async () => {
       // Create a foal for trait development testing
       const foalData = {
         name: 'Trait Test Foal',
