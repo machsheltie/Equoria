@@ -67,12 +67,13 @@ beforeAll(async () => {
   });
 
   const { authenticateToken } = await import('../../middleware/auth.mjs');
+  const { foalRateLimiter } = await import('../../middleware/rateLimiting.mjs');
   const { default: foalRoutes } = await import('../../routes/foalRoutes.mjs');
 
   app = express();
   app.use(express.json());
   app.use(authenticateToken);
-  app.use('/api/foals', foalRoutes);
+  app.use('/api/foals', foalRateLimiter, foalRoutes);
 });
 
 beforeEach(() => {
