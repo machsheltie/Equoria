@@ -12,7 +12,6 @@ import { describe, test, expect, beforeAll, afterAll, beforeEach, afterEach } fr
 import request from 'supertest';
 import app from '../../app.mjs';
 import prisma from '../../db/index.mjs';
-import _logger from '../../utils/_logger.mjs';
 import { createTestUser } from '../helpers/testAuth.mjs';
 
 describe('🧬 Advanced Breeding Genetics API Integration', () => {
@@ -79,7 +78,7 @@ describe('🧬 Advanced Breeding Genetics API Integration', () => {
       .post('/api/horses')
       .set('Authorization', `Bearer ${authToken}`)
       .set('x-test-skip-csrf', 'true')
-      .set('x-test-skip-csrf', 'true')
+      .set('x-test-bypass-rate-limit', 'true')
       .send({
         name: 'Genetic Test Stallion',
         breedId: testBreed.id,
@@ -99,7 +98,7 @@ describe('🧬 Advanced Breeding Genetics API Integration', () => {
       .post('/api/horses')
       .set('Authorization', `Bearer ${authToken}`)
       .set('x-test-skip-csrf', 'true')
-      .set('x-test-skip-csrf', 'true')
+      .set('x-test-bypass-rate-limit', 'true')
       .send({
         name: 'Genetic Test Mare',
         breedId: testBreed.id,
@@ -446,6 +445,7 @@ describe('🧬 Advanced Breeding Genetics API Integration', () => {
       const otherUserResponse = await request(app)
         .post('/api/auth/register')
         .set('x-test-skip-csrf', 'true')
+        .set('x-test-bypass-rate-limit', 'true')
         .send({
           username: `otherUser_${usernameSuffix}`,
           email: `other+${testSuffix}@test.com`,
@@ -457,12 +457,26 @@ describe('🧬 Advanced Breeding Genetics API Integration', () => {
       const otherLoginResponse = await request(app)
         .post('/api/auth/login')
         .set('x-test-skip-csrf', 'true')
+        .set('x-test-bypass-rate-limit', 'true')
         .send({
           email: `other+${testSuffix}@test.com`,
           password: 'TestPassword123!',
         });
 
-      const otherToken = otherLoginResponse.body.data?.token;
+      // Extract token from httpOnly cookie
+      const extractCookie = (cookies, name) => {
+        if (!cookies || !Array.isArray(cookies)) {
+          return null;
+        }
+        const cookie = cookies.find(c => c.startsWith(`${name}=`));
+        if (!cookie) {
+          return null;
+        }
+        const match = cookie.match(new RegExp(`${name}=([^;]+)`));
+        return match ? match[1] : null;
+      };
+
+      const otherToken = extractCookie(otherLoginResponse.headers['set-cookie'], 'accessToken');
 
       // Try to access genetic analysis with horses not owned by the user
       const response = await request(app)
