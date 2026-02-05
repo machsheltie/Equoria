@@ -32,7 +32,7 @@ describe('Input Validation Integration Tests', () => {
   describe('Registration Validation', () => {
     describe('Email Validation', () => {
       it('should reject invalid email format', async () => {
-        const response = await request(app).post('/api/auth/register').send({
+        const response = await request(app).post('/api/auth/register').set('x-test-bypass-rate-limit', 'true').send({
           email: 'invalid-email',
           username: 'testuser123',
           password: 'ValidPass123!',
@@ -48,6 +48,7 @@ describe('Input Validation Integration Tests', () => {
       it('should accept valid email format', async () => {
         const response = await request(app)
           .post('/api/auth/register')
+          .set('x-test-bypass-rate-limit', 'true')
           .send({
             email: `valid${Date.now()}@example.com`,
             username: `testuser${Date.now()}`,
@@ -150,6 +151,7 @@ describe('Input Validation Integration Tests', () => {
       it('should accept password meeting all requirements', async () => {
         const response = await request(app)
           .post('/api/auth/register')
+          .set('x-test-bypass-rate-limit', 'true')
           .send({
             email: `test${Date.now()}@example.com`,
             username: `testuser${Date.now()}`,
@@ -184,7 +186,7 @@ describe('Input Validation Integration Tests', () => {
 
     describe('Username Validation', () => {
       it('should reject username shorter than 3 characters', async () => {
-        const response = await request(app).post('/api/auth/register').send({
+        const response = await request(app).post('/api/auth/register').set('x-test-bypass-rate-limit', 'true').send({
           email: 'test@example.com',
           username: 'ab',
           password: 'ValidPass123!',
@@ -200,6 +202,7 @@ describe('Input Validation Integration Tests', () => {
       it('should reject username longer than 30 characters', async () => {
         const response = await request(app)
           .post('/api/auth/register')
+          .set('x-test-bypass-rate-limit', 'true')
           .send({
             email: 'test@example.com',
             username: 'a'.repeat(31),
@@ -214,7 +217,7 @@ describe('Input Validation Integration Tests', () => {
       });
 
       it('should reject username with special characters', async () => {
-        const response = await request(app).post('/api/auth/register').send({
+        const response = await request(app).post('/api/auth/register').set('x-test-bypass-rate-limit', 'true').send({
           email: 'test@example.com',
           username: 'test-user!',
           password: 'ValidPass123!',
@@ -230,6 +233,7 @@ describe('Input Validation Integration Tests', () => {
       it('should accept valid username', async () => {
         const response = await request(app)
           .post('/api/auth/register')
+          .set('x-test-bypass-rate-limit', 'true')
           .send({
             email: `test${Date.now()}@example.com`,
             username: `test_user_${Date.now()}`,
@@ -245,7 +249,7 @@ describe('Input Validation Integration Tests', () => {
 
     describe('Name Validation', () => {
       it('should reject empty first name', async () => {
-        const response = await request(app).post('/api/auth/register').send({
+        const response = await request(app).post('/api/auth/register').set('x-test-bypass-rate-limit', 'true').send({
           email: 'test@example.com',
           username: 'testuser123',
           password: 'ValidPass123!',
@@ -260,6 +264,7 @@ describe('Input Validation Integration Tests', () => {
       it('should reject first name longer than 50 characters', async () => {
         const response = await request(app)
           .post('/api/auth/register')
+          .set('x-test-bypass-rate-limit', 'true')
           .send({
             email: 'test@example.com',
             username: 'testuser123',
@@ -396,7 +401,7 @@ describe('Input Validation Integration Tests', () => {
 
   describe('XSS Prevention Integration', () => {
     it('should sanitize registration inputs with HTML tags', async () => {
-      const response = await request(app).post('/api/auth/register').send({
+      const response = await request(app).post('/api/auth/register').set('x-test-bypass-rate-limit', 'true').send({
         email: 'test@example.com',
         username: 'testuser123',
         password: 'ValidPass123!',
@@ -422,7 +427,7 @@ describe('Input Validation Integration Tests', () => {
 
   describe('Field Trimming and Normalization', () => {
     it('should trim whitespace from names', async () => {
-      const response = await request(app).post('/api/auth/register').send({
+      const response = await request(app).post('/api/auth/register').set('x-test-bypass-rate-limit', 'true').send({
         email: 'test@example.com',
         username: 'testuser123',
         password: 'ValidPass123!',
@@ -436,7 +441,7 @@ describe('Input Validation Integration Tests', () => {
     });
 
     it('should normalize email addresses', async () => {
-      const response = await request(app).post('/api/auth/register').send({
+      const response = await request(app).post('/api/auth/register').set('x-test-bypass-rate-limit', 'true').send({
         email: '  TEST@EXAMPLE.COM  ',
         username: 'testuser123',
         password: 'ValidPass123!',
@@ -452,7 +457,7 @@ describe('Input Validation Integration Tests', () => {
 
   describe('Required Fields Validation', () => {
     it('should reject registration without email', async () => {
-      const response = await request(app).post('/api/auth/register').send({
+      const response = await request(app).post('/api/auth/register').set('x-test-bypass-rate-limit', 'true').send({
         username: 'testuser123',
         password: 'ValidPass123!',
         firstName: 'Test',
@@ -464,7 +469,7 @@ describe('Input Validation Integration Tests', () => {
     });
 
     it('should reject registration without username', async () => {
-      const response = await request(app).post('/api/auth/register').send({
+      const response = await request(app).post('/api/auth/register').set('x-test-bypass-rate-limit', 'true').send({
         email: 'test@example.com',
         password: 'ValidPass123!',
         firstName: 'Test',
@@ -476,7 +481,7 @@ describe('Input Validation Integration Tests', () => {
     });
 
     it('should reject registration without password', async () => {
-      const response = await request(app).post('/api/auth/register').send({
+      const response = await request(app).post('/api/auth/register').set('x-test-bypass-rate-limit', 'true').send({
         email: 'test@example.com',
         username: 'testuser123',
         firstName: 'Test',
