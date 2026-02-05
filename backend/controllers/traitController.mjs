@@ -38,7 +38,9 @@ export async function discoverTraits(req, res) {
     const horse = req.validatedResources?.horse || null;
 
     if (!horse) {
-      logger.error(`[traitController.discoverTraits] Horse not found in validated resources for horse ${horseId}`);
+      logger.error(
+        `[traitController.discoverTraits] Horse not found in validated resources for horse ${horseId}`,
+      );
       return res.status(404).json({
         success: false,
         message: `Horse with ID ${horseId} not found`,
@@ -91,7 +93,8 @@ export async function discoverTraits(req, res) {
         updatedTraits: revealedTraits, // For backward compatibility
         hiddenTraitsRemaining: discoveryResult.totalHiddenAfter || 0,
         summary: {
-          totalConditionsMet: (discoveryResult.conditionsMet || discoveryResult.conditions || []).length,
+          totalConditionsMet: (discoveryResult.conditionsMet || discoveryResult.conditions || [])
+            .length,
           totalTraitsRevealed: revealedTraits.length,
           hiddenBefore: discoveryResult.totalHiddenBefore || 0,
           hiddenAfter: discoveryResult.totalHiddenAfter || 0,
@@ -135,17 +138,17 @@ export async function getHorseTraits(req, res) {
       select: {
         id: true,
         name: true,
-        epigenetic_modifiers: true,
+        epigeneticModifiers: true,
         bondScore: true,
-        bond_score: true,
         stressLevel: true,
-        stress_level: true,
         age: true,
       },
     });
 
     if (!horse) {
-      logger.error(`[traitController.getHorseTraits] Horse ${parsedHorseId} not found after middleware validation`);
+      logger.error(
+        `[traitController.getHorseTraits] Horse ${parsedHorseId} not found after middleware validation`,
+      );
       return res.status(404).json({
         success: false,
         message: 'Horse not found',
@@ -154,7 +157,7 @@ export async function getHorseTraits(req, res) {
     }
 
     // Parse and enhance traits with definitions
-    const traits = horse.epigenetic_modifiers || { positive: [], negative: [], hidden: [] };
+    const traits = horse.epigeneticModifiers || { positive: [], negative: [], hidden: [] };
 
     const enhancedTraits = {
       positive:
@@ -180,8 +183,8 @@ export async function getHorseTraits(req, res) {
       data: {
         horseId: parsedHorseId,
         horseName: horse.name,
-        bondScore: horse.bondScore || horse.bond_score,
-        stressLevel: horse.stressLevel || horse.stress_level,
+        bondScore: horse.bondScore,
+        stressLevel: horse.stressLevel,
         age: horse.age,
         traits: enhancedTraits,
         summary: {
@@ -289,7 +292,9 @@ export async function getDiscoveryStatus(req, res) {
     });
 
     if (!horse) {
-      logger.error(`[traitController.getDiscoveryStatus] Horse ${parsedHorseId} not found after middleware validation`);
+      logger.error(
+        `[traitController.getDiscoveryStatus] Horse ${parsedHorseId} not found after middleware validation`,
+      );
       return res.status(404).json({
         success: false,
         message: 'Horse not found',
