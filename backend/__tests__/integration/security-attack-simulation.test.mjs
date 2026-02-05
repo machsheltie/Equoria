@@ -360,7 +360,7 @@ describe('Security Attack Simulation Tests', () => {
         ];
 
         for (const payload of sqlPayloads) {
-          const response = await request(app).post('/api/auth/register').send({
+          const response = await request(app).post('/api/auth/register').set('x-test-bypass-rate-limit', 'true').send({
             email: payload,
             username: 'testuser',
             password: 'ValidPass123!',
@@ -375,7 +375,7 @@ describe('Security Attack Simulation Tests', () => {
       });
 
       it('should block SQL injection in username field', async () => {
-        const response = await request(app).post('/api/auth/register').send({
+        const response = await request(app).post('/api/auth/register').set('x-test-bypass-rate-limit', 'true').send({
           email: 'test@example.com',
           username: "admin' OR '1'='1",
           password: 'ValidPass123!',
@@ -422,6 +422,7 @@ describe('Security Attack Simulation Tests', () => {
       it('should sanitize XSS payloads in name fields', async () => {
         const response = await request(app)
           .post('/api/auth/register')
+          .set('x-test-bypass-rate-limit', 'true')
           .send({
             email: `test${Date.now()}@example.com`,
             username: `testuser${Date.now()}`,
@@ -450,7 +451,7 @@ describe('Security Attack Simulation Tests', () => {
       it('should reject extremely long email addresses', async () => {
         const longEmail = `${'a'.repeat(1000)}@example.com`;
 
-        const response = await request(app).post('/api/auth/register').send({
+        const response = await request(app).post('/api/auth/register').set('x-test-bypass-rate-limit', 'true').send({
           email: longEmail,
           username: 'testuser123',
           password: 'ValidPass123!',
@@ -465,7 +466,7 @@ describe('Security Attack Simulation Tests', () => {
       it('should reject extremely long usernames', async () => {
         const longUsername = 'a'.repeat(1000);
 
-        const response = await request(app).post('/api/auth/register').send({
+        const response = await request(app).post('/api/auth/register').set('x-test-bypass-rate-limit', 'true').send({
           email: 'test@example.com',
           username: longUsername,
           password: 'ValidPass123!',
@@ -481,7 +482,7 @@ describe('Security Attack Simulation Tests', () => {
       it('should reject extremely long passwords', async () => {
         const longPassword = `A1!${'a'.repeat(500)}`;
 
-        const response = await request(app).post('/api/auth/register').send({
+        const response = await request(app).post('/api/auth/register').set('x-test-bypass-rate-limit', 'true').send({
           email: 'test@example.com',
           username: 'testuser123',
           password: longPassword,
@@ -512,7 +513,7 @@ describe('Security Attack Simulation Tests', () => {
 
     describe('Special Character Injection', () => {
       it('should handle null bytes in input', async () => {
-        const response = await request(app).post('/api/auth/register').send({
+        const response = await request(app).post('/api/auth/register').set('x-test-bypass-rate-limit', 'true').send({
           email: 'test\x00@example.com',
           username: 'testuser\x00',
           password: 'ValidPass123!',
