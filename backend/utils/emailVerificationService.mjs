@@ -79,7 +79,7 @@ export async function createVerificationToken(userId, email, metadata = {}) {
         const remainingSeconds = Math.ceil((cooldownMs - timeSinceLastToken) / 1000);
         throw new AppError(
           `Please wait ${remainingSeconds} seconds before requesting another verification email`,
-          500,
+          429,
         );
       }
     }
@@ -88,9 +88,7 @@ export async function createVerificationToken(userId, email, metadata = {}) {
     const token = generateVerificationToken();
 
     // Calculate expiration
-    const expiresAt = new Date(
-      Date.now() + EMAIL_CONFIG.TOKEN_EXPIRY_HOURS * 60 * 60 * 1000,
-    );
+    const expiresAt = new Date(Date.now() + EMAIL_CONFIG.TOKEN_EXPIRY_HOURS * 60 * 60 * 1000);
 
     // Create token record
     const tokenRecord = await prisma.emailVerificationToken.create({
@@ -141,7 +139,7 @@ export async function verifyEmailToken(token, metadata = {}) {
     // Timing-safe check to prevent email enumeration
     if (!tokenRecord) {
       // Simulate database delay to prevent timing attacks
-      await new Promise((resolve) => setTimeout(resolve, 100));
+      await new Promise(resolve => setTimeout(resolve, 100));
 
       return {
         success: false,
@@ -160,7 +158,7 @@ export async function verifyEmailToken(token, metadata = {}) {
     }
 
     // Use transaction to ensure atomicity with race condition protection
-    const result = await prisma.$transaction(async (prisma) => {
+    const result = await prisma.$transaction(async prisma => {
       // Atomic update: only update if token hasn't been used yet
       // This prevents race conditions where two requests try to use the same token
       const updateResult = await prisma.emailVerificationToken.updateMany({
