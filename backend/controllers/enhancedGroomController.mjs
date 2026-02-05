@@ -209,7 +209,7 @@ export async function performEnhancedInteraction(req, res) {
     const horse = await prisma.horse.findFirst({
       where: {
         id: parseInt(horseId),
-        userId: userId,
+        userId,
       },
       select: {
         id: true,
