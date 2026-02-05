@@ -42,6 +42,21 @@ dotenv.config({ path: join(__dirname, '../../.env.test') });
 const app = (await import('../../app.mjs')).default;
 const { default: prisma } = await import('../../db/index.mjs');
 
+/**
+ * Extract cookie value from Set-Cookie header array
+ */
+const extractCookie = (cookies, name) => {
+  if (!cookies || !Array.isArray(cookies)) {
+    return null;
+  }
+  const cookie = cookies.find(c => c.startsWith(`${name}=`));
+  if (!cookie) {
+    return null;
+  }
+  const match = cookie.match(new RegExp(`${name}=([^;]+)`));
+  return match ? match[1] : null;
+};
+
 describe('🏋️ INTEGRATION: Complete Training Progression Workflow', () => {
   let testUser;
   let authToken;
@@ -102,10 +117,18 @@ describe('🏋️ INTEGRATION: Complete Training Progression Workflow', () => {
         level: 1,
       };
 
-      const response = await request(app).post('/api/auth/register').send(userData).expect(201);
+      const response = await request(app)
+        .post('/api/auth/register')
+        .set('x-test-bypass-rate-limit', 'true')
+        .send(userData)
+        .expect(201);
 
       testUser = response.body.data.user;
-      authToken = response.body.data.token;
+
+      // Extract accessToken from httpOnly cookie
+      const cookies = response.headers['set-cookie'];
+      authToken = extractCookie(cookies, 'accessToken');
+      expect(authToken).toBeDefined();
 
       // VERIFY: User starts with correct progression stats
       expect(testUser.xp).toBe(0);
