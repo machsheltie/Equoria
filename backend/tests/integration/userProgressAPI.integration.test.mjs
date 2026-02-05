@@ -38,6 +38,21 @@ import app from '../../app.mjs';
 import prisma from '../../db/index.mjs';
 import { invalidateCache } from '../../utils/cacheHelper.mjs';
 
+/**
+ * Extract cookie value from Set-Cookie header array
+ */
+const extractCookie = (cookies, name) => {
+  if (!cookies || !Array.isArray(cookies)) {
+    return null;
+  }
+  const cookie = cookies.find(c => c.startsWith(`${name}=`));
+  if (!cookie) {
+    return null;
+  }
+  const match = cookie.match(new RegExp(`${name}=([^;]+)`));
+  return match ? match[1] : null;
+};
+
 describe('🎯 INTEGRATION: User Progress API - Complete Progress Tracking', () => {
   let testUser;
   let authToken;
@@ -120,6 +135,7 @@ describe('🎯 INTEGRATION: User Progress API - Complete Progress Tracking', () 
       // STEP 1: Register user
       const registerResponse = await request(app)
         .post('/api/auth/register')
+        .set('x-test-bypass-rate-limit', 'true')
         .send({
           username: 'progresstest',
           firstName: 'Progress',
@@ -135,6 +151,7 @@ describe('🎯 INTEGRATION: User Progress API - Complete Progress Tracking', () 
       // STEP 2: Login to get auth token
       const loginResponse = await request(app)
         .post('/api/auth/login')
+        .set('x-test-bypass-rate-limit', 'true')
         .send({
           email: 'progress-test@example.com',
           password: 'TestPassword123!',
@@ -142,7 +159,11 @@ describe('🎯 INTEGRATION: User Progress API - Complete Progress Tracking', () 
         .expect(200);
 
       expect(loginResponse.body.status).toBe('success');
-      authToken = loginResponse.body.data.token;
+
+      // Extract accessToken from httpOnly cookie
+      const cookies = loginResponse.headers['set-cookie'];
+      authToken = extractCookie(cookies, 'accessToken');
+      expect(authToken).toBeDefined();
 
       // STEP 3: Verify initial progress state
       expect(testUser.level).toBe(1);
