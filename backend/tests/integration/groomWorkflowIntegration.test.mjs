@@ -114,6 +114,17 @@ describe('Groom Workflow Integration Tests', () => {
     // Clean up before starting
     await cleanupTestData();
 
+    // Clean up any stale test data by name patterns
+    await prisma.groom.deleteMany({
+      where: {
+        OR: [
+          { name: { contains: 'Sarah Johnson' } },
+          { name: { contains: 'Test Assignment Groom' } },
+          { name: { contains: 'Age Test Groom' } },
+        ],
+      },
+    });
+
     // Create unique suffix
     const suffix = `${Date.now()}_${Math.random().toString(36).substr(2, 5)}`;
 
