@@ -1,192 +1,128 @@
 openapi: 3.0.3
 info:
-  title: 'Equoria API'
-  description: 'Backend API for Equoria horse breeding and competition game'
-  version: 1.0.0
-  contact:
-    name: 'Equoria Team'
-  x-generated:
-    timestamp: '2026-02-06T11:18:17.321Z'
-    endpointCount: 0
-    schemaCount: 2
-    generator: ApiDocumentationService
+    title: 'Equoria API'
+    description: 'Backend API for Equoria horse breeding and competition game'
+    version: 1.0.0
+    contact:
+        name: 'Equoria Team'
+    x-generated:
+        timestamp: '2026-02-16T17:01:33.659Z'
+        endpointCount: 0
+        schemaCount: 2
+        generator: ApiDocumentationService
 servers:
-  - url: 'http://localhost:3000/api'
-    description: 'Development server'
+    -
+        url: 'http://localhost:3000/api'
+        description: 'Development server'
 tags:
-  - name: Auth
-    description: 'Authentication endpoints'
-  - name: Horses
-    description: 'Horse management endpoints'
-  - name: Breeding
-    description: 'Breeding operations'
-  - name: Competitions
-    description: 'Competition endpoints'
-  - name: Health
-    description: 'Health check endpoints'
+    -
+        name: Auth
+        description: 'Authentication endpoints'
+    -
+        name: Horses
+        description: 'Horse management endpoints'
+    -
+        name: Breeding
+        description: 'Breeding operations'
+    -
+        name: Competitions
+        description: 'Competition endpoints'
+    -
+        name: Health
+        description: 'Health check endpoints'
 paths:
-  /health:
-    get:
-      tags: [Health]
-      summary: 'Health check'
-      description: 'Returns API health status'
-      responses:
-        {
-          '200':
-            {
-              description: 'API is healthy',
-              content:
-                {
-                  application/json:
-                    {
-                      schema:
-                        {
-                          type: object,
-                          properties:
-                            {
-                              status: { type: string, example: ok },
-                              timestamp: { type: string, format: date-time },
-                            },
-                        },
-                    },
-                },
-            },
-        }
-  /auth/register:
-    post:
-      tags: [Auth]
-      summary: 'Register a new user'
-      requestBody:
-        {
-          required: true,
-          content:
-            { application/json: { schema: { $ref: '#/components/schemas/RegisterRequest' } } },
-        }
-      responses:
-        {
-          '201': { description: 'User registered successfully' },
-          '400': { description: 'Validation error' },
-        }
-  /auth/login:
-    post:
-      tags: [Auth]
-      summary: 'Login user'
-      requestBody:
-        {
-          required: true,
-          content: { application/json: { schema: { $ref: '#/components/schemas/LoginRequest' } } },
-        }
-      responses:
-        {
-          '200':
-            {
-              description: 'Login successful',
-              content:
-                { application/json: { schema: { $ref: '#/components/schemas/AuthResponse' } } },
-            },
-          '401': { description: 'Invalid credentials' },
-        }
-  /auth/logout:
-    post:
-      tags: [Auth]
-      summary: 'Logout user'
-      security: [{ bearerAuth: [] }]
-      responses: { '200': { description: 'Logout successful' } }
-  /horses:
-    get:
-      tags: [Horses]
-      summary: 'Get all horses'
-      security: [{ bearerAuth: [] }]
-      responses:
-        {
-          '200':
-            {
-              description: 'List of horses',
-              content:
-                {
-                  application/json:
-                    { schema: { type: array, items: { $ref: '#/components/schemas/Horse' } } },
-                },
-            },
-        }
-  /api/users:
-    get:
-      tags: [Users]
-      summary: 'List users'
-      description: 'Get all users'
-      parameters: []
-      requestBody: null
-      responses: { '200': { description: Success } }
-      security: []
-      deprecated: false
-  /api/test/integration:
-    get:
-      tags: [Testing]
-      summary: 'Integration test endpoint'
-      description: 'Test endpoint for documentation integration'
-      parameters: []
-      requestBody: null
-      responses:
-        { '200': { description: 'Success response' }, '401': { description: Unauthorized } }
-      security: []
-      deprecated: false
-  /api/test/create:
-    post:
-      tags: [Testing]
-      summary: 'Create test resource'
-      description: ''
-      parameters: []
-      requestBody: null
-      responses: { '201': { description: Created } }
-      security: []
-      deprecated: false
+    /health:
+        get:
+            tags: [Health]
+            summary: 'Health check'
+            description: 'Returns API health status'
+            responses: {'200': {description: 'API is healthy', content: {application/json: {schema: {type: object, properties: {status: {type: string, example: ok}, timestamp: {type: string, format: date-time}}}}}}}
+    /auth/register:
+        post:
+            tags: [Auth]
+            summary: 'Register a new user'
+            requestBody: {required: true, content: {application/json: {schema: {$ref: '#/components/schemas/RegisterRequest'}}}}
+            responses: {'201': {description: 'User registered successfully'}, '400': {description: 'Validation error'}}
+    /auth/login:
+        post:
+            tags: [Auth]
+            summary: 'Login user'
+            requestBody: {required: true, content: {application/json: {schema: {$ref: '#/components/schemas/LoginRequest'}}}}
+            responses: {'200': {description: 'Login successful', content: {application/json: {schema: {$ref: '#/components/schemas/AuthResponse'}}}}, '401': {description: 'Invalid credentials'}}
+    /auth/logout:
+        post:
+            tags: [Auth]
+            summary: 'Logout user'
+            security: [{bearerAuth: []}]
+            responses: {'200': {description: 'Logout successful'}}
+    /horses:
+        get:
+            tags: [Horses]
+            summary: 'Get all horses'
+            security: [{bearerAuth: []}]
+            responses: {'200': {description: 'List of horses', content: {application/json: {schema: {type: array, items: {$ref: '#/components/schemas/Horse'}}}}}}
+    /api/users:
+        get:
+            tags: [Users]
+            summary: 'List users'
+            description: 'Get all users'
+            parameters: []
+            requestBody: null
+            responses: {'200': {description: Success}}
+            security: []
+            deprecated: false
+    /api/test/integration:
+        get:
+            tags: [Testing]
+            summary: 'Integration test endpoint'
+            description: 'Test endpoint for documentation integration'
+            parameters: []
+            requestBody: null
+            responses: {'200': {description: 'Success response'}, '401': {description: Unauthorized}}
+            security: []
+            deprecated: false
+    /api/test/create:
+        post:
+            tags: [Testing]
+            summary: 'Create test resource'
+            description: ""
+            parameters: []
+            requestBody: null
+            responses: {'201': {description: Created}}
+            security: []
+            deprecated: false
 components:
-  securitySchemes:
-    bearerAuth:
-      type: http
-      scheme: bearer
-      bearerFormat: JWT
-  schemas:
-    RegisterRequest:
-      type: object
-      required: [email, password, username]
-      properties:
-        {
-          email: { type: string, format: email },
-          password: { type: string, minLength: 8 },
-          username: { type: string },
-        }
-    LoginRequest:
-      type: object
-      required: [email, password]
-      properties: { email: { type: string, format: email }, password: { type: string } }
-    AuthResponse:
-      type: object
-      properties:
-        {
-          token: { type: string },
-          refreshToken: { type: string },
-          user: { $ref: '#/components/schemas/User' },
-        }
-    User:
-      type: object
-      properties: { id: { type: string } }
-      registeredAt: '2026-02-06T11:18:17.195Z'
-    Horse:
-      type: object
-      properties: { id: { type: string } }
-      registeredAt: '2026-02-06T11:18:17.249Z'
-    TestSchema:
-      type: object
-      properties:
-        {
-          id: { type: string, description: 'Unique identifier' },
-          name: { type: string, description: 'Test name' },
-          timestamp: { type: string, format: date-time },
-        }
-      required: [id, name]
-      registeredAt: '2026-02-06T11:12:30.951Z'
-    CreateTestSchema:
-      type: object
-      properties: { name: { type: string } }
-      registeredAt: '2026-02-06T11:12:31.810Z'
+    securitySchemes:
+        bearerAuth:
+            type: http
+            scheme: bearer
+            bearerFormat: JWT
+    schemas:
+        RegisterRequest:
+            type: object
+            required: [email, password, username]
+            properties: {email: {type: string, format: email}, password: {type: string, minLength: 8}, username: {type: string}}
+        LoginRequest:
+            type: object
+            required: [email, password]
+            properties: {email: {type: string, format: email}, password: {type: string}}
+        AuthResponse:
+            type: object
+            properties: {token: {type: string}, refreshToken: {type: string}, user: {$ref: '#/components/schemas/User'}}
+        User:
+            type: object
+            properties: {id: {type: string}}
+            registeredAt: '2026-02-16T17:01:33.582Z'
+        Horse:
+            type: object
+            properties: {id: {type: string}}
+            registeredAt: '2026-02-16T17:01:33.611Z'
+        TestSchema:
+            type: object
+            properties: {id: {type: string, description: 'Unique identifier'}, name: {type: string, description: 'Test name'}, timestamp: {type: string, format: date-time}}
+            required: [id, name]
+            registeredAt: '2026-02-16T16:55:40.538Z'
+        CreateTestSchema:
+            type: object
+            properties: {name: {type: string}}
+            registeredAt: '2026-02-16T16:55:41.094Z'

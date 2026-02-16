@@ -395,10 +395,10 @@ export async function getDisciplineRecommendations(req, res) {
       bestDiscipline:
         recommendations.length > 0
           ? {
-              name: recommendations[0].discipline,
-              effect: recommendations[0].percentageEffect,
-              specializedTraits: recommendations[0].totalSpecialized,
-            }
+            name: recommendations[0].discipline,
+            effect: recommendations[0].percentageEffect,
+            specializedTraits: recommendations[0].totalSpecialized,
+          }
           : null,
     };
 

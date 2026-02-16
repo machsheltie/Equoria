@@ -115,8 +115,8 @@ describe('🏪 INTEGRATION: Groom Marketplace API', () => {
 
       const initialGrooms = initialResponse.body.data.grooms;
 
-      // Wait for free refresh to become available (test environment has very short interval)
-      await new Promise(resolve => setTimeout(resolve, 500));
+      // Wait for free refresh to become available (test environment has 10 second interval)
+      await new Promise(resolve => setTimeout(resolve, 11000));
 
       // Refresh marketplace
       const refreshResponse = await request(app)

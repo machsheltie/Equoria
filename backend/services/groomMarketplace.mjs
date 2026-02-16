@@ -20,7 +20,7 @@ export const MARKETPLACE_CONFIG = {
   MIN_MARKETPLACE_SIZE: 6,
 
   // Refresh timing (in hours)
-  REFRESH_INTERVAL_HOURS: process.env.NODE_ENV === 'test' ? 0.0001 : 24, // Extremely short for tests, daily for production
+  REFRESH_INTERVAL_HOURS: process.env.NODE_ENV === 'test' ? 0.00278 : 24, // 10 seconds for tests (balances stability vs testability), daily for production
   PREMIUM_REFRESH_COST: 100, // Cost for manual refresh
 
   // Quality distribution (percentages)

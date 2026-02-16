@@ -1,4 +1,5 @@
 import { useState } from 'react';
+import BreedingPairSelection from '@/pages/breeding/BreedingPairSelection';
 import BreedingCenter from '@/components/breeding/BreedingCenter';
 import BreedingPairSelector from '@/components/breeding/BreedingPairSelector';
 import FoalDevelopmentTracker from '@/components/breeding/FoalDevelopmentTracker';
@@ -29,37 +30,49 @@ const BreedingPage = () => {
   }
 
   return (
-    <div className="mx-auto max-w-6xl space-y-6 px-4 py-8">
-      <BreedingCenter />
-      {/* <BreedingPairSelector stallionId={0} mareId={0} /> - TODO: Add actual horse selection */}
+    <div className="mx-auto max-w-7xl px-4 py-8">
+      {/* Main Breeding Pair Selection (Story 6-1) */}
+      <BreedingPairSelection userId={user?.id} />
 
-      <div className="rounded-lg border border-slate-200 bg-white p-4 shadow-sm">
-        <div className="flex items-center justify-between">
-          <div>
-            <p className="text-xs uppercase tracking-wide text-slate-500">Foal Development</p>
-            <h3 className="text-base font-semibold text-slate-900">Track an existing foal</h3>
-          </div>
-          <div className="flex items-center gap-2">
-            <input
-              type="number"
-              value={foalId}
-              onChange={(event) =>
-                setFoalId(event.target.value === '' ? '' : Number(event.target.value))
-              }
-              placeholder="Foal ID"
-              className="w-32 rounded-md border border-slate-200 px-3 py-2 text-sm text-slate-900 shadow-sm focus:border-emerald-500 focus:outline-none focus:ring-2 focus:ring-emerald-500"
-            />
-          </div>
+      {/* Legacy breeding components - will be deprecated */}
+      <div className="mt-8 space-y-6 border-t border-slate-200 pt-8">
+        <div className="rounded-lg border border-amber-200 bg-amber-50 p-4">
+          <p className="text-sm text-amber-800">
+            <strong>Note:</strong> The sections below show legacy breeding features and will be
+            replaced with the new breeding system components.
+          </p>
         </div>
-        {foalId !== '' ? (
-          <div className="mt-4">
-            <FoalDevelopmentTracker foalId={Number(foalId)} />
+
+        <BreedingCenter />
+
+        <div className="rounded-lg border border-slate-200 bg-white p-4 shadow-sm">
+          <div className="flex items-center justify-between">
+            <div>
+              <p className="text-xs uppercase tracking-wide text-slate-500">Foal Development</p>
+              <h3 className="text-base font-semibold text-slate-900">Track an existing foal</h3>
+            </div>
+            <div className="flex items-center gap-2">
+              <input
+                type="number"
+                value={foalId}
+                onChange={(event) =>
+                  setFoalId(event.target.value === '' ? '' : Number(event.target.value))
+                }
+                placeholder="Foal ID"
+                className="w-32 rounded-md border border-slate-200 px-3 py-2 text-sm text-slate-900 shadow-sm focus:border-emerald-500 focus:outline-none focus:ring-2 focus:ring-emerald-500"
+              />
+            </div>
           </div>
-        ) : (
-          <div className="mt-3 rounded-md border border-slate-200 bg-slate-50 px-3 py-2 text-sm text-slate-600">
-            Enter a foal ID to load development details.
-          </div>
-        )}
+          {foalId !== '' ? (
+            <div className="mt-4">
+              <FoalDevelopmentTracker foalId={Number(foalId)} />
+            </div>
+          ) : (
+            <div className="mt-3 rounded-md border border-slate-200 bg-slate-50 px-3 py-2 text-sm text-slate-600">
+              Enter a foal ID to load development details.
+            </div>
+          )}
+        </div>
       </div>
     </div>
   );
