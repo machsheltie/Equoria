@@ -28,10 +28,7 @@ describe('CompatibilityDisplay - Story 6-1', () => {
     temperamentMatch: 68,
     traitSynergy: 72,
     geneticDiversity: 70,
-    recommendations: [
-      'Compatible temperaments',
-      'Moderate trait synergy',
-    ],
+    recommendations: ['Compatible temperaments', 'Moderate trait synergy'],
   };
 
   const mockCompatibilityPoor: CompatibilityAnalysis = {
@@ -39,10 +36,7 @@ describe('CompatibilityDisplay - Story 6-1', () => {
     temperamentMatch: 50,
     traitSynergy: 40,
     geneticDiversity: 45,
-    recommendations: [
-      'Low temperament compatibility',
-      'Consider alternative pairing',
-    ],
+    recommendations: ['Low temperament compatibility', 'Consider alternative pairing'],
   };
 
   describe('Loading State', () => {
@@ -53,7 +47,7 @@ describe('CompatibilityDisplay - Story 6-1', () => {
     });
 
     it('should show loading animation', () => {
-      const { container } = render(<CompatibilityDisplay compatibility={null} isLoading={true} />);
+      render(<CompatibilityDisplay compatibility={null} isLoading={true} />);
 
       const spinner = container.querySelector('.animate-spin');
       expect(spinner).toBeInTheDocument();
@@ -65,9 +59,7 @@ describe('CompatibilityDisplay - Story 6-1', () => {
       render(<CompatibilityDisplay compatibility={null} isLoading={false} />);
 
       expect(screen.getByText(/Select Both Parents/i)).toBeInTheDocument();
-      expect(
-        screen.getByText(/Choose a sire and dam from the lists above/i)
-      ).toBeInTheDocument();
+      expect(screen.getByText(/Choose a sire and dam from the lists above/i)).toBeInTheDocument();
     });
   });
 
@@ -97,9 +89,7 @@ describe('CompatibilityDisplay - Story 6-1', () => {
 
   describe('Color Coding', () => {
     it('should show green color for excellent scores (>80)', () => {
-      const { container } = render(
-        <CompatibilityDisplay compatibility={mockCompatibilityExcellent} isLoading={false} />
-      );
+      render(<CompatibilityDisplay compatibility={mockCompatibilityExcellent} isLoading={false} />);
 
       expect(screen.getByText(/Excellent Match/i)).toBeInTheDocument();
 
@@ -109,9 +99,7 @@ describe('CompatibilityDisplay - Story 6-1', () => {
     });
 
     it('should show yellow color for good scores (60-80)', () => {
-      const { container } = render(
-        <CompatibilityDisplay compatibility={mockCompatibilityGood} isLoading={false} />
-      );
+      render(<CompatibilityDisplay compatibility={mockCompatibilityGood} isLoading={false} />);
 
       expect(screen.getByText(/Good Match/i)).toBeInTheDocument();
 
@@ -124,9 +112,7 @@ describe('CompatibilityDisplay - Story 6-1', () => {
     });
 
     it('should show red color for poor scores (<60)', () => {
-      const { container } = render(
-        <CompatibilityDisplay compatibility={mockCompatibilityPoor} isLoading={false} />
-      );
+      render(<CompatibilityDisplay compatibility={mockCompatibilityPoor} isLoading={false} />);
 
       expect(screen.getByText(/Poor Match/i)).toBeInTheDocument();
 
@@ -141,18 +127,14 @@ describe('CompatibilityDisplay - Story 6-1', () => {
 
   describe('Progress Bars', () => {
     it('should render progress bars for all metrics', () => {
-      const { container } = render(
-        <CompatibilityDisplay compatibility={mockCompatibilityExcellent} isLoading={false} />
-      );
+      render(<CompatibilityDisplay compatibility={mockCompatibilityExcellent} isLoading={false} />);
 
       const progressBars = container.querySelectorAll('[role="progressbar"]');
       expect(progressBars.length).toBeGreaterThanOrEqual(3); // At least 3 metric progress bars
     });
 
     it('should set correct aria values for progress bars', () => {
-      const { container } = render(
-        <CompatibilityDisplay compatibility={mockCompatibilityExcellent} isLoading={false} />
-      );
+      render(<CompatibilityDisplay compatibility={mockCompatibilityExcellent} isLoading={false} />);
 
       const progressBars = container.querySelectorAll('[role="progressbar"]');
       progressBars.forEach((bar) => {
@@ -163,9 +145,7 @@ describe('CompatibilityDisplay - Story 6-1', () => {
     });
 
     it('should display progress bars with correct widths', () => {
-      const { container } = render(
-        <CompatibilityDisplay compatibility={mockCompatibilityExcellent} isLoading={false} />
-      );
+      render(<CompatibilityDisplay compatibility={mockCompatibilityExcellent} isLoading={false} />);
 
       const progressBars = container.querySelectorAll('[role="progressbar"]');
 
@@ -210,9 +190,7 @@ describe('CompatibilityDisplay - Story 6-1', () => {
 
   describe('Accessibility', () => {
     it('should have proper ARIA labels for progress bars', () => {
-      const { container } = render(
-        <CompatibilityDisplay compatibility={mockCompatibilityExcellent} isLoading={false} />
-      );
+      render(<CompatibilityDisplay compatibility={mockCompatibilityExcellent} isLoading={false} />);
 
       const progressBars = container.querySelectorAll('[role="progressbar"]');
       progressBars.forEach((bar) => {
@@ -221,14 +199,10 @@ describe('CompatibilityDisplay - Story 6-1', () => {
     });
 
     it('should include metric names in progress bar labels', () => {
-      const { container } = render(
-        <CompatibilityDisplay compatibility={mockCompatibilityExcellent} isLoading={false} />
-      );
+      render(<CompatibilityDisplay compatibility={mockCompatibilityExcellent} isLoading={false} />);
 
       const progressBars = container.querySelectorAll('[role="progressbar"]');
-      const labels = Array.from(progressBars).map(
-        (bar) => bar.getAttribute('aria-label') || ''
-      );
+      const labels = Array.from(progressBars).map((bar) => bar.getAttribute('aria-label') || '');
 
       const hasRelevantLabels = labels.some(
         (label) =>
@@ -243,9 +217,7 @@ describe('CompatibilityDisplay - Story 6-1', () => {
 
   describe('Visual Hierarchy', () => {
     it('should display overall score larger than individual metrics', () => {
-      const { container } = render(
-        <CompatibilityDisplay compatibility={mockCompatibilityExcellent} isLoading={false} />
-      );
+      render(<CompatibilityDisplay compatibility={mockCompatibilityExcellent} isLoading={false} />);
 
       const overallScore = container.querySelector('.text-4xl');
       expect(overallScore).toBeInTheDocument();
