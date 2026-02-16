@@ -348,17 +348,19 @@ describe('MilestoneEvaluationDisplay Component', () => {
 
   describe('modal interaction', () => {
     it('should open modal when View Details is clicked', () => {
-      vi.clearAllMocks();
-      vi.mocked(useQuery)
-        .mockReturnValueOnce({
-          data: mockEvaluationHistory,
-          isLoading: false,
-          error: null,
-        })
-        .mockReturnValueOnce({
+      vi.mocked(useQuery).mockImplementation((options: { queryKey: string[] }) => {
+        if (options.queryKey[0] === 'milestone-evaluations') {
+          return {
+            data: mockEvaluationHistory,
+            isLoading: false,
+            error: null,
+          } as never;
+        }
+        return {
           data: mockTraitData,
           isLoading: false,
-        });
+        } as never;
+      });
       renderWithProvider(<MilestoneEvaluationDisplay foalId={1} />);
 
       const viewButton = screen.getAllByText('View Details')[0];
@@ -369,17 +371,19 @@ describe('MilestoneEvaluationDisplay Component', () => {
     });
 
     it('should display selected evaluation in modal', () => {
-      vi.clearAllMocks();
-      vi.mocked(useQuery)
-        .mockReturnValueOnce({
-          data: mockEvaluationHistory,
-          isLoading: false,
-          error: null,
-        })
-        .mockReturnValueOnce({
+      vi.mocked(useQuery).mockImplementation((options: { queryKey: string[] }) => {
+        if (options.queryKey[0] === 'milestone-evaluations') {
+          return {
+            data: mockEvaluationHistory,
+            isLoading: false,
+            error: null,
+          } as never;
+        }
+        return {
           data: mockTraitData,
           isLoading: false,
-        });
+        } as never;
+      });
       renderWithProvider(<MilestoneEvaluationDisplay foalId={1} />);
 
       const viewButton = screen.getAllByText('View Details')[0];
@@ -389,17 +393,19 @@ describe('MilestoneEvaluationDisplay Component', () => {
     });
 
     it('should close modal when Close button is clicked', () => {
-      vi.clearAllMocks();
-      vi.mocked(useQuery)
-        .mockReturnValueOnce({
-          data: mockEvaluationHistory,
-          isLoading: false,
-          error: null,
-        })
-        .mockReturnValueOnce({
+      vi.mocked(useQuery).mockImplementation((options: { queryKey: string[] }) => {
+        if (options.queryKey[0] === 'milestone-evaluations') {
+          return {
+            data: mockEvaluationHistory,
+            isLoading: false,
+            error: null,
+          } as never;
+        }
+        return {
           data: mockTraitData,
           isLoading: false,
-        });
+        } as never;
+      });
       renderWithProvider(<MilestoneEvaluationDisplay foalId={1} />);
 
       const viewButton = screen.getAllByText('View Details')[0];
@@ -413,17 +419,19 @@ describe('MilestoneEvaluationDisplay Component', () => {
     });
 
     it('should close modal when Continue button is clicked', () => {
-      vi.clearAllMocks();
-      vi.mocked(useQuery)
-        .mockReturnValueOnce({
-          data: mockEvaluationHistory,
-          isLoading: false,
-          error: null,
-        })
-        .mockReturnValueOnce({
+      vi.mocked(useQuery).mockImplementation((options: { queryKey: string[] }) => {
+        if (options.queryKey[0] === 'milestone-evaluations') {
+          return {
+            data: mockEvaluationHistory,
+            isLoading: false,
+            error: null,
+          } as never;
+        }
+        return {
           data: mockTraitData,
           isLoading: false,
-        });
+        } as never;
+      });
       renderWithProvider(<MilestoneEvaluationDisplay foalId={1} />);
 
       const viewButton = screen.getAllByText('View Details')[0];
@@ -437,21 +445,20 @@ describe('MilestoneEvaluationDisplay Component', () => {
   });
 
   describe('modal content', () => {
-    beforeEach(() => {
-      vi.clearAllMocks();
-    });
-
     const setupAndOpenModal = () => {
-      vi.mocked(useQuery)
-        .mockReturnValueOnce({
-          data: mockEvaluationHistory,
-          isLoading: false,
-          error: null,
-        })
-        .mockReturnValueOnce({
+      vi.mocked(useQuery).mockImplementation((options: { queryKey: string[] }) => {
+        if (options.queryKey[0] === 'milestone-evaluations') {
+          return {
+            data: mockEvaluationHistory,
+            isLoading: false,
+            error: null,
+          } as never;
+        }
+        return {
           data: mockTraitData,
           isLoading: false,
-        });
+        } as never;
+      });
       renderWithProvider(<MilestoneEvaluationDisplay foalId={1} />);
       const viewButton = screen.getAllByText('View Details')[0];
       fireEvent.click(viewButton);
@@ -499,36 +506,38 @@ describe('MilestoneEvaluationDisplay Component', () => {
   });
 
   describe('auto-show functionality', () => {
-    beforeEach(() => {
-      vi.clearAllMocks();
-    });
-
     it('should not auto-show modal by default', () => {
-      vi.mocked(useQuery)
-        .mockReturnValueOnce({
-          data: mockEvaluationHistory,
-          isLoading: false,
-          error: null,
-        })
-        .mockReturnValueOnce({
+      vi.mocked(useQuery).mockImplementation((options: { queryKey: string[] }) => {
+        if (options.queryKey[0] === 'milestone-evaluations') {
+          return {
+            data: mockEvaluationHistory,
+            isLoading: false,
+            error: null,
+          } as never;
+        }
+        return {
           data: mockTraitData,
           isLoading: false,
-        });
+        } as never;
+      });
       renderWithProvider(<MilestoneEvaluationDisplay foalId={1} />);
       expect(screen.queryByTestId('base-modal')).not.toBeInTheDocument();
     });
 
     it('should auto-show latest evaluation when autoShowLatest is true', () => {
-      vi.mocked(useQuery)
-        .mockReturnValueOnce({
-          data: mockEvaluationHistory,
-          isLoading: false,
-          error: null,
-        })
-        .mockReturnValueOnce({
+      vi.mocked(useQuery).mockImplementation((options: { queryKey: string[] }) => {
+        if (options.queryKey[0] === 'milestone-evaluations') {
+          return {
+            data: mockEvaluationHistory,
+            isLoading: false,
+            error: null,
+          } as never;
+        }
+        return {
           data: mockTraitData,
           isLoading: false,
-        });
+        } as never;
+      });
       renderWithProvider(<MilestoneEvaluationDisplay foalId={1} autoShowLatest={true} />);
       expect(screen.getByTestId('base-modal')).toBeInTheDocument();
       expect(screen.getByText(/Socialization Complete!/)).toBeInTheDocument();
@@ -552,21 +561,20 @@ describe('MilestoneEvaluationDisplay Component', () => {
   });
 
   describe('trait filtering', () => {
-    beforeEach(() => {
-      vi.clearAllMocks();
-    });
-
     it('should only display traits that are confirmed', () => {
-      vi.mocked(useQuery)
-        .mockReturnValueOnce({
-          data: mockEvaluationHistory,
-          isLoading: false,
-          error: null,
-        })
-        .mockReturnValueOnce({
+      vi.mocked(useQuery).mockImplementation((options: { queryKey: string[] }) => {
+        if (options.queryKey[0] === 'milestone-evaluations') {
+          return {
+            data: mockEvaluationHistory,
+            isLoading: false,
+            error: null,
+          } as never;
+        }
+        return {
           data: mockTraitData,
           isLoading: false,
-        });
+        } as never;
+      });
       renderWithProvider(<MilestoneEvaluationDisplay foalId={1} />);
 
       const viewButton = screen.getAllByText('View Details')[0];
@@ -579,16 +587,19 @@ describe('MilestoneEvaluationDisplay Component', () => {
     });
 
     it('should display different traits for different evaluations', () => {
-      vi.mocked(useQuery)
-        .mockReturnValueOnce({
-          data: mockEvaluationHistory,
-          isLoading: false,
-          error: null,
-        })
-        .mockReturnValueOnce({
+      vi.mocked(useQuery).mockImplementation((options: { queryKey: string[] }) => {
+        if (options.queryKey[0] === 'milestone-evaluations') {
+          return {
+            data: mockEvaluationHistory,
+            isLoading: false,
+            error: null,
+          } as never;
+        }
+        return {
           data: mockTraitData,
           isLoading: false,
-        });
+        } as never;
+      });
       renderWithProvider(<MilestoneEvaluationDisplay foalId={1} />);
 
       // View imprinting evaluation (second one)
@@ -611,16 +622,19 @@ describe('MilestoneEvaluationDisplay Component', () => {
         ],
       };
 
-      vi.mocked(useQuery)
-        .mockReturnValueOnce({
-          data: noTraitsHistory,
-          isLoading: false,
-          error: null,
-        })
-        .mockReturnValueOnce({
+      vi.mocked(useQuery).mockImplementation((options: { queryKey: string[] }) => {
+        if (options.queryKey[0] === 'milestone-evaluations') {
+          return {
+            data: noTraitsHistory,
+            isLoading: false,
+            error: null,
+          } as never;
+        }
+        return {
           data: mockTraitData,
           isLoading: false,
-        });
+        } as never;
+      });
 
       renderWithProvider(<MilestoneEvaluationDisplay foalId={1} />);
 
