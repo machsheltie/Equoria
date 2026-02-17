@@ -1693,12 +1693,15 @@ development_status:
 
   7-3-task-assignment-ui:
     title: 'Task Assignment UI'
-    status: backlog
+    status: completed
+    completed_date: '2026-02-17'
     priority: P0
     fr: FR-G3
     epic: 7
     story: 3
     prerequisites: [7-1-groom-hiring-interface, 7-2-groom-personality-display]
+    story_file: 'docs/sprint-artifacts/7-3-task-assignment-ui.md'
+    completion_notes: '54 AC tests passing; GroomTaskPanel (age-based tasks) + GroomAssignmentCard (bond score, reassign, completion notices); groomTasks.ts with 19 tasks across 3 categories'
 
   7-4-career-lifecycle-dashboard:
     title: 'Career Lifecycle Dashboard'
