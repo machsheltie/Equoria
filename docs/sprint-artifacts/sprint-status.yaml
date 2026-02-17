@@ -1654,14 +1654,19 @@ development_status:
       - 'Inline testing for critical logic (helpers, calculations, algorithms)'
       - 'Story splitting guidelines for >1 day estimates'
 
-  # Epic 7: Groom System (P0/P1/P2 mixed)
+  # Epic 7: Groom System (P0/P1/P2 mixed - COMPLETE)
   epic-7:
     title: 'Groom System'
-    status: in_progress
+    status: completed
     start_date: '2026-02-17'
+    completed_date: '2026-02-17'
     priority: P0
     frs: [FR-G1, FR-G2, FR-G3, FR-G4, FR-G5, FR-G6, FR-G7, FR-R1, FR-R2, FR-R3, FR-R4]
     prerequisites: [epic-2]
+    total_tests: 464
+    components: 9
+    type_files: 7
+    retro_file: 'docs/sprint-artifacts/epic-7-retro-2026-02-17.md'
 
   7-1-groom-hiring-interface:
     title: 'Groom Hiring Interface'
@@ -1753,7 +1758,9 @@ development_status:
 
   epic-7-retrospective:
     title: 'Epic 7 Retrospective'
-    status: pending
+    status: completed
+    completed_date: '2026-02-17'
+    retro_file: 'docs/sprint-artifacts/epic-7-retro-2026-02-17.md'
     prerequisites:
       [
         7-1-groom-hiring-interface,
@@ -2997,6 +3004,79 @@ action_items:
     time_estimate: '0.5 days'
     impact: 'MEDIUM - Reference for future chart implementations (training progress, competition results, stat growth)'
 
+  # Epic 7 Action Items (from Epic 7 Retrospective - 2026-02-17)
+  action-7-1:
+    id: 'action-7-1'
+    title: 'Stabilize Flaky Pre-Push Tests'
+    status: pending
+    priority: P0
+    owner: 'Charlie (Senior Dev)'
+    epic: 7
+    created_date: '2026-02-17'
+    due_date: 'Pre-Epic 8'
+    description: 'Two backend tests fail intermittently under parallel load during pre-push hook: (1) databaseOptimization.test.mjs p95 timing threshold, (2) userRoutes.test.mjs 403 due to hardcoded UUID collision with other tests teardown. Both pass in isolation. Caused 4 retried pushes across Epic 7.'
+    acceptance_criteria:
+      - 'databaseOptimization.test.mjs: p95 timing test uses relaxed threshold or mocked clock'
+      - 'userRoutes.test.mjs: hardcoded UUID replaced with unique generated value per test run'
+      - 'Both tests pass consistently in parallel suite (5 consecutive clean pushes)'
+      - 'No retried pushes due to these tests in Epic 8'
+    deliverable: 'Fixed test files committed'
+    impact: 'HIGH - Flaky tests erode confidence and waste time'
+
+  action-7-2:
+    id: 'action-7-2'
+    title: 'Document TypeScript _ Prefix ESLint Rule'
+    status: pending
+    priority: P1
+    owner: 'Elena (Junior Dev)'
+    epic: 7
+    created_date: '2026-02-17'
+    due_date: 'Epic 8 start'
+    description: 'Named parameters in TypeScript interface function type signatures (e.g., onSelect?: (tier: string) => void) trigger @typescript-eslint/no-unused-vars even when parameters are never used in the implementation. Fix: prefix named params with _ (e.g., _tier: string). This caught multiple devs off-guard in Epic 7.'
+    acceptance_criteria:
+      - 'Pattern added to PATTERN_LIBRARY.md under TypeScript Patterns section'
+      - 'Rule: Named function type params in interfaces must use _ prefix'
+      - 'Example provided: onSelect?: (_tier: string) => void'
+      - 'Note: Only affects interface function TYPE signatures, not implementations'
+    deliverable: 'Updated PATTERN_LIBRARY.md'
+    impact: 'MEDIUM - Recurring gotcha that breaks lint and blocks commits'
+
+  action-7-3:
+    id: 'action-7-3'
+    title: 'Document within() Scoping Pattern'
+    status: pending
+    priority: P1
+    owner: 'Dana (QA Engineer)'
+    epic: 7
+    created_date: '2026-02-17'
+    due_date: 'Epic 8 start'
+    description: 'When a component renders duplicate testIds across sections (e.g., GroomLegacyPanel with mentor/protege sections both using talent-icon), tests must use within(container) to scope queries. This pattern was discovered in Story 7-5 and used again in 7-6. Should be documented before Epic 8 API integration tests.'
+    acceptance_criteria:
+      - 'Pattern added to PATTERN_LIBRARY.md under Testing Patterns section'
+      - 'Example: const mentorSection = screen.getByTestId("mentor-section"); within(mentorSection).getByTestId("talent-icon")'
+      - 'When to use: any component with repeated testIds in distinct sub-sections'
+      - 'When NOT to use: unique testIds (adds unnecessary complexity)'
+    deliverable: 'Updated PATTERN_LIBRARY.md'
+    impact: 'MEDIUM - Prevents test failures due to ambiguous selector errors'
+
+  action-7-4:
+    id: 'action-7-4'
+    title: 'Auto-Unblock Prerequisite Stories'
+    status: pending
+    priority: P2
+    owner: 'Bob (Scrum Master)'
+    epic: 7
+    created_date: '2026-02-17'
+    due_date: 'Before Epic 8 sprint planning'
+    description: 'Story 7-7 was blocked on epic-6 as prerequisite. When epic-6 completed, the sprint workflow did not automatically surface 7-7 as unblocked — it required manual status check. Review the prerequisite tracking flow in sprint-status.yaml and workflow-status to surface newly unblocked stories automatically.'
+    acceptance_criteria:
+      - 'Review: sprint-status.yaml prerequisite field handling in workflow-status workflow'
+      - 'Proposal: Add "ready_to_unblock" list to sprint-status summary section'
+      - 'When epic completes, stories with that epic as prerequisite appear in next-ready list'
+      - 'Documented in sprint planning workflow instructions'
+    deliverable: 'Documented improvement in workflow'
+    impact: 'LOW - Quality-of-life improvement for sprint planning'
+
 # Summary
 summary:
   total_epics: 7
@@ -3005,16 +3085,20 @@ summary:
   p1_stories: 9
   p2_stories: 3
   fr_coverage: '44/44 (100%)'
-  current_epic: 6
-  current_story: 'action-6-1-testing-sprint'
-  epics_completed: 6
-  stories_completed: 35
+  current_epic: 7
+  current_story: 'epic-7-retrospective'
+  epics_completed: 7
+  stories_completed: 40
   stories_in_progress: 0
   stories_ready_for_dev: 0
-  stories_backlog: 7
-  total_tests_passing: 606
-  action_items_total: 19
+  stories_backlog: 0
+  total_tests_passing: 1070
+  action_items_total: 23
   action_items_completed: 11
-  action_items_pending: 8
+  action_items_pending: 12
   action_items_blocking: 4
+  # Milestone: ALL 7 EPICS COMPLETE - Epic 8 (API Integration) planning next
+  epic_7_completed_date: '2026-02-17'
+  epic_7_total_tests: 464
+  epic_7_retro_file: 'docs/sprint-artifacts/epic-7-retro-2026-02-17.md'
   next_milestone: 'Epic 6 Testing Sprint (5 days) - Verify all features before Epic 7'
