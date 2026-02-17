@@ -107,8 +107,8 @@ const MilestoneTooltip: React.FC<MilestoneTooltipProps> = ({ active, payload }) 
               status === 'completed'
                 ? 'bg-green-500'
                 : status === 'current'
-                ? 'bg-blue-500'
-                : 'bg-gray-400'
+                  ? 'bg-blue-500'
+                  : 'bg-gray-400'
             }`}
             style={{ width: `${progress}%` }}
           />

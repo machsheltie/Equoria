@@ -17,10 +17,7 @@ import React from 'react';
 import { describe, it, expect, vi, beforeEach } from 'vitest';
 import { render, screen, within } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
-import PrizeSummaryCard, {
-  type PrizeSummaryCardProps,
-  type HorsePrize,
-} from '../PrizeSummaryCard';
+import PrizeSummaryCard, { type PrizeSummaryCardProps, type HorsePrize } from '../PrizeSummaryCard';
 
 describe('PrizeSummaryCard', () => {
   const mockOnToggleExpand = vi.fn();

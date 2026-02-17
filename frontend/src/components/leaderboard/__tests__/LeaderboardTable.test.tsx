@@ -115,9 +115,7 @@ describe('LeaderboardTable', () => {
     it('calls onPageChange with previous page when Previous is clicked', async () => {
       const user = userEvent.setup();
       const onPageChange = vi.fn();
-      render(
-        <LeaderboardTable {...defaultProps} onPageChange={onPageChange} currentPage={2} />
-      );
+      render(<LeaderboardTable {...defaultProps} onPageChange={onPageChange} currentPage={2} />);
 
       await user.click(screen.getByTestId('pagination-prev'));
       expect(onPageChange).toHaveBeenCalledWith(1);
@@ -160,13 +158,7 @@ describe('LeaderboardTable', () => {
       const user = userEvent.setup();
       const onEntryClick = vi.fn();
       const entries = createEntries(3);
-      render(
-        <LeaderboardTable
-          {...defaultProps}
-          entries={entries}
-          onEntryClick={onEntryClick}
-        />
-      );
+      render(<LeaderboardTable {...defaultProps} entries={entries} onEntryClick={onEntryClick} />);
 
       const allEntries = screen.getAllByTestId('leaderboard-entry');
       await user.click(allEntries[0]);
@@ -183,10 +175,7 @@ describe('LeaderboardTable', () => {
 
     it('pagination buttons have accessible labels', () => {
       render(<LeaderboardTable {...defaultProps} />);
-      expect(screen.getByTestId('pagination-prev')).toHaveAttribute(
-        'aria-label',
-        'Previous page'
-      );
+      expect(screen.getByTestId('pagination-prev')).toHaveAttribute('aria-label', 'Previous page');
       expect(screen.getByTestId('pagination-next')).toHaveAttribute('aria-label', 'Next page');
     });
   });

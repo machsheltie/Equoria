@@ -10,11 +10,7 @@
 import React, { useState } from 'react';
 import { Calendar, ChevronDown, ChevronUp, Award } from 'lucide-react';
 import type { MilestoneEvaluation } from '@/types/foal';
-import {
-  getEvaluationCategory,
-  getEvaluationColor,
-  formatMilestoneName,
-} from '@/types/foal';
+import { getEvaluationCategory, getEvaluationColor, formatMilestoneName } from '@/types/foal';
 import EvaluationScoreDisplay from './EvaluationScoreDisplay';
 import ScoreBreakdownPanel from './ScoreBreakdownPanel';
 
@@ -46,8 +42,15 @@ const EvaluationHistoryItem: React.FC<EvaluationHistoryItemProps> = ({
 }) => {
   const [isExpanded, setIsExpanded] = useState(defaultExpanded);
 
-  const { milestone, score, traitsConfirmed, evaluatedAt, bondModifier, taskConsistency, careQuality } =
-    evaluation;
+  const {
+    milestone,
+    score,
+    traitsConfirmed,
+    evaluatedAt,
+    bondModifier,
+    taskConsistency,
+    careQuality,
+  } = evaluation;
 
   const milestoneName = evaluation.milestoneName || formatMilestoneName(milestone);
   const category = getEvaluationCategory(score);
@@ -173,7 +176,11 @@ const EvaluationHistoryItem: React.FC<EvaluationHistoryItemProps> = ({
               <p className="text-xs text-slate-600 mb-1">Bond</p>
               <p
                 className={`text-lg font-bold ${
-                  bondModifier > 0 ? 'text-green-600' : bondModifier < 0 ? 'text-red-600' : 'text-slate-600'
+                  bondModifier > 0
+                    ? 'text-green-600'
+                    : bondModifier < 0
+                      ? 'text-red-600'
+                      : 'text-slate-600'
                 }`}
               >
                 {bondModifier > 0 ? '+' : ''}

@@ -93,13 +93,7 @@ describe('XpGainNotification', () => {
     });
 
     it('should display the progress bar fill with correct percentage', () => {
-      render(
-        <XpGainNotification
-          {...defaultProps}
-          xpForCurrentLevel={50}
-          xpToNextLevel={100}
-        />
-      );
+      render(<XpGainNotification {...defaultProps} xpForCurrentLevel={50} xpToNextLevel={100} />);
 
       const progressFill = screen.getByTestId('xp-progress-fill');
       expect(progressFill).toBeInTheDocument();
@@ -108,13 +102,7 @@ describe('XpGainNotification', () => {
     });
 
     it('should calculate progress bar percentage correctly for various values', () => {
-      render(
-        <XpGainNotification
-          {...defaultProps}
-          xpForCurrentLevel={75}
-          xpToNextLevel={300}
-        />
-      );
+      render(<XpGainNotification {...defaultProps} xpForCurrentLevel={75} xpToNextLevel={300} />);
 
       const progressFill = screen.getByTestId('xp-progress-fill');
       // 75/300 = 25%
@@ -122,13 +110,7 @@ describe('XpGainNotification', () => {
     });
 
     it('should cap progress bar at 100% when xpForCurrentLevel exceeds xpToNextLevel', () => {
-      render(
-        <XpGainNotification
-          {...defaultProps}
-          xpForCurrentLevel={150}
-          xpToNextLevel={100}
-        />
-      );
+      render(<XpGainNotification {...defaultProps} xpForCurrentLevel={150} xpToNextLevel={100} />);
 
       const progressFill = screen.getByTestId('xp-progress-fill');
       expect(progressFill).toHaveStyle({ width: '100%' });
@@ -145,13 +127,7 @@ describe('XpGainNotification', () => {
     });
 
     it('should display XP progress text in "X/Y XP" format', () => {
-      render(
-        <XpGainNotification
-          {...defaultProps}
-          xpForCurrentLevel={45}
-          xpToNextLevel={100}
-        />
-      );
+      render(<XpGainNotification {...defaultProps} xpForCurrentLevel={45} xpToNextLevel={100} />);
 
       const xpText = screen.getByTestId('xp-progress-text');
       expect(xpText).toHaveTextContent('45/100 XP');
@@ -176,9 +152,7 @@ describe('XpGainNotification', () => {
   describe('Auto-Dismiss Tests', () => {
     it('should auto-dismiss after default delay of 4 seconds', async () => {
       const onClose = vi.fn();
-      render(
-        <XpGainNotification {...defaultProps} onClose={onClose} />
-      );
+      render(<XpGainNotification {...defaultProps} onClose={onClose} />);
 
       expect(screen.getByTestId('xp-gain-notification')).toBeInTheDocument();
 
@@ -194,13 +168,7 @@ describe('XpGainNotification', () => {
 
     it('should auto-dismiss after custom delay', async () => {
       const onClose = vi.fn();
-      render(
-        <XpGainNotification
-          {...defaultProps}
-          autoDismissDelay={2000}
-          onClose={onClose}
-        />
-      );
+      render(<XpGainNotification {...defaultProps} autoDismissDelay={2000} onClose={onClose} />);
 
       // Should not dismiss before the delay
       act(() => {
@@ -220,13 +188,7 @@ describe('XpGainNotification', () => {
 
     it('should not auto-dismiss when autoDismiss is false', async () => {
       const onClose = vi.fn();
-      render(
-        <XpGainNotification
-          {...defaultProps}
-          autoDismiss={false}
-          onClose={onClose}
-        />
-      );
+      render(<XpGainNotification {...defaultProps} autoDismiss={false} onClose={onClose} />);
 
       // Advance well past the default 4 second delay
       act(() => {
@@ -289,9 +251,7 @@ describe('XpGainNotification', () => {
       // Use real timers for user-event interaction
       vi.useRealTimers();
 
-      render(
-        <XpGainNotification {...defaultProps} autoDismiss={false} onClose={onClose} />
-      );
+      render(<XpGainNotification {...defaultProps} autoDismiss={false} onClose={onClose} />);
 
       // Press Escape key
       fireEvent.keyDown(document, { key: 'Escape' });
@@ -304,9 +264,7 @@ describe('XpGainNotification', () => {
     it('should not close on other key presses', () => {
       const onClose = vi.fn();
 
-      render(
-        <XpGainNotification {...defaultProps} autoDismiss={false} onClose={onClose} />
-      );
+      render(<XpGainNotification {...defaultProps} autoDismiss={false} onClose={onClose} />);
 
       fireEvent.keyDown(document, { key: 'Enter' });
       fireEvent.keyDown(document, { key: 'Tab' });
@@ -365,13 +323,7 @@ describe('XpGainNotification', () => {
     });
 
     it('should handle 0 xpToNextLevel without division error', () => {
-      render(
-        <XpGainNotification
-          {...defaultProps}
-          xpForCurrentLevel={0}
-          xpToNextLevel={0}
-        />
-      );
+      render(<XpGainNotification {...defaultProps} xpForCurrentLevel={0} xpToNextLevel={0} />);
 
       const progressFill = screen.getByTestId('xp-progress-fill');
       // Should default to 0% instead of NaN/Infinity

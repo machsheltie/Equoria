@@ -367,10 +367,7 @@ export function getTraitSource(
 /**
  * Calculate lineage quality score
  */
-export function calculateLineageQuality(
-  sire: Horse,
-  dam: Horse
-): number {
+export function calculateLineageQuality(sire: Horse, dam: Horse): number {
   let score = 50; // Base score
 
   // Factor in stats (if available)

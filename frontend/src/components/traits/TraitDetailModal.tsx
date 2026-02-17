@@ -57,7 +57,9 @@ const TraitDetailModal: React.FC<TraitDetailModalProps> = ({
           <div className="relative">
             {/* Tier Badge */}
             <div className="flex items-center justify-between mb-3">
-              <span className={`inline-block px-3 py-1 text-sm font-bold uppercase tracking-wide ${tierStyle.badgeColor} rounded`}>
+              <span
+                className={`inline-block px-3 py-1 text-sm font-bold uppercase tracking-wide ${tierStyle.badgeColor} rounded`}
+              >
                 {getTierDisplayName(trait.tier)}
               </span>
               <div className="flex items-center gap-2">
@@ -117,7 +119,9 @@ const TraitDetailModal: React.FC<TraitDetailModalProps> = ({
                 {trait.discoverySource && (
                   <p className="text-sm text-blue-700 mt-1">
                     <span className="font-medium">Source:</span>{' '}
-                    {trait.discoverySource.replace(/_/g, ' ').replace(/\b\w/g, (l) => l.toUpperCase())}
+                    {trait.discoverySource
+                      .replace(/_/g, ' ')
+                      .replace(/\b\w/g, (l) => l.toUpperCase())}
                   </p>
                 )}
               </div>
@@ -148,9 +152,7 @@ const TraitDetailModal: React.FC<TraitDetailModalProps> = ({
         {/* Trait Type Indicator */}
         <div
           className={`rounded-lg border p-4 ${
-            trait.isPositive
-              ? 'border-green-200 bg-green-50'
-              : 'border-red-200 bg-red-50'
+            trait.isPositive ? 'border-green-200 bg-green-50' : 'border-red-200 bg-red-50'
           }`}
         >
           <p
@@ -160,11 +162,7 @@ const TraitDetailModal: React.FC<TraitDetailModalProps> = ({
           >
             {trait.isPositive ? '✓ Beneficial Trait' : '✕ Detrimental Trait'}
           </p>
-          <p
-            className={`text-sm mt-1 ${
-              trait.isPositive ? 'text-green-700' : 'text-red-700'
-            }`}
-          >
+          <p className={`text-sm mt-1 ${trait.isPositive ? 'text-green-700' : 'text-red-700'}`}>
             This trait {trait.isPositive ? 'provides benefits' : 'presents challenges'} for your
             horse's development and competition performance.
           </p>

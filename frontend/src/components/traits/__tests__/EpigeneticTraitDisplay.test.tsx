@@ -27,7 +27,7 @@ import type { EpigeneticTrait } from '@/types/traits';
 // Mock component prop types
 interface TraitCardProps {
   trait: EpigeneticTrait;
-  onClick: (trait: EpigeneticTrait) => void;
+  onClick: (_trait: EpigeneticTrait) => void;
 }
 interface HiddenTraitIndicatorProps {
   discoveryStatus: { hiddenTraits: number };

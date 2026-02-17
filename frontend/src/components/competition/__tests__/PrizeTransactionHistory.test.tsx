@@ -16,7 +16,7 @@
 
 import React from 'react';
 import { describe, it, expect, vi, beforeEach } from 'vitest';
-import { render, screen, within } from '@testing-library/react';
+import { render, screen } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import PrizeTransactionHistory, {
   type PrizeTransactionHistoryProps,
@@ -114,13 +114,7 @@ describe('PrizeTransactionHistory', () => {
   ];
 
   // Sample disciplines for filter dropdown
-  const sampleDisciplines = [
-    'Racing',
-    'Dressage',
-    'Show Jumping',
-    'Endurance',
-    'Cross Country',
-  ];
+  const sampleDisciplines = ['Racing', 'Dressage', 'Show Jumping', 'Endurance', 'Cross Country'];
 
   const defaultProps: PrizeTransactionHistoryProps = {
     transactions: sampleTransactions,
@@ -212,9 +206,7 @@ describe('PrizeTransactionHistory', () => {
       const horseFilter = screen.getByTestId('filter-horse');
       await user.selectOptions(horseFilter, '101');
 
-      expect(mockOnFilterChange).toHaveBeenCalledWith(
-        expect.objectContaining({ horseId: 101 })
-      );
+      expect(mockOnFilterChange).toHaveBeenCalledWith(expect.objectContaining({ horseId: 101 }));
     });
 
     it('discipline filter works correctly', async () => {
@@ -237,12 +229,7 @@ describe('PrizeTransactionHistory', () => {
         discipline: 'Racing',
       };
 
-      render(
-        <PrizeTransactionHistory
-          {...defaultProps}
-          filters={filtersApplied}
-        />
-      );
+      render(<PrizeTransactionHistory {...defaultProps} filters={filtersApplied} />);
 
       const clearButton = screen.getByTestId('clear-filters');
       await user.click(clearButton);
@@ -276,12 +263,7 @@ describe('PrizeTransactionHistory', () => {
         discipline: 'all',
       };
 
-      render(
-        <PrizeTransactionHistory
-          {...defaultProps}
-          filters={filtersApplied}
-        />
-      );
+      render(<PrizeTransactionHistory {...defaultProps} filters={filtersApplied} />);
 
       expect(screen.getByTestId('filtered-empty-state')).toBeInTheDocument();
       expect(screen.getByText(/no transactions match/i)).toBeInTheDocument();
@@ -447,11 +429,7 @@ describe('PrizeTransactionHistory', () => {
       }));
 
       render(
-        <PrizeTransactionHistory
-          {...defaultProps}
-          transactions={manyTransactions}
-          pageSize={20}
-        />
+        <PrizeTransactionHistory {...defaultProps} transactions={manyTransactions} pageSize={20} />
       );
 
       // 45 transactions / 20 per page = 3 pages (ceil)
@@ -465,24 +443,14 @@ describe('PrizeTransactionHistory', () => {
   // =========================================
   describe('Edge Cases', () => {
     it('empty state shows when no transactions', () => {
-      render(
-        <PrizeTransactionHistory
-          {...defaultProps}
-          transactions={[]}
-        />
-      );
+      render(<PrizeTransactionHistory {...defaultProps} transactions={[]} />);
 
       expect(screen.getByTestId('empty-state')).toBeInTheDocument();
       expect(screen.getByText(/no transactions yet/i)).toBeInTheDocument();
     });
 
     it('loading state shows skeleton rows', () => {
-      render(
-        <PrizeTransactionHistory
-          {...defaultProps}
-          isLoading={true}
-        />
-      );
+      render(<PrizeTransactionHistory {...defaultProps} isLoading={true} />);
 
       const skeletons = screen.getAllByTestId('transaction-skeleton');
       expect(skeletons.length).toBeGreaterThan(0);
@@ -520,12 +488,7 @@ describe('PrizeTransactionHistory', () => {
         direction: 'asc',
       };
 
-      render(
-        <PrizeTransactionHistory
-          {...defaultProps}
-          sortConfig={sortConfig}
-        />
-      );
+      render(<PrizeTransactionHistory {...defaultProps} sortConfig={sortConfig} />);
 
       expect(screen.getByTestId('sort-asc-indicator')).toBeInTheDocument();
     });
@@ -536,12 +499,7 @@ describe('PrizeTransactionHistory', () => {
         direction: 'desc',
       };
 
-      render(
-        <PrizeTransactionHistory
-          {...defaultProps}
-          sortConfig={sortConfig}
-        />
-      );
+      render(<PrizeTransactionHistory {...defaultProps} sortConfig={sortConfig} />);
 
       expect(screen.getByTestId('sort-desc-indicator')).toBeInTheDocument();
     });
@@ -585,12 +543,7 @@ describe('PrizeTransactionHistory', () => {
     });
 
     it('previous button is disabled on first page', () => {
-      render(
-        <PrizeTransactionHistory
-          {...defaultProps}
-          currentPage={1}
-        />
-      );
+      render(<PrizeTransactionHistory {...defaultProps} currentPage={1} />);
 
       const prevBtn = screen.getByTestId('prev-page-btn');
       expect(prevBtn).toBeDisabled();
@@ -673,11 +626,7 @@ describe('PrizeTransactionHistory', () => {
       }));
 
       render(
-        <PrizeTransactionHistory
-          {...defaultProps}
-          transactions={manyTransactions}
-          pageSize={5}
-        />
+        <PrizeTransactionHistory {...defaultProps} transactions={manyTransactions} pageSize={5} />
       );
 
       // Should show only 5 transactions (custom page size)
@@ -696,7 +645,9 @@ describe('PrizeTransactionHistory', () => {
     it('displays correct title', () => {
       render(<PrizeTransactionHistory {...defaultProps} />);
 
-      expect(screen.getByRole('heading', { level: 2 })).toHaveTextContent('Prize Transaction History');
+      expect(screen.getByRole('heading', { level: 2 })).toHaveTextContent(
+        'Prize Transaction History'
+      );
     });
   });
 });

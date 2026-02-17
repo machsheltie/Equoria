@@ -202,11 +202,7 @@ describe('BalanceUpdateIndicator', () => {
     it('should handle no change (old === new) gracefully', () => {
       const onComplete = vi.fn();
       render(
-        <BalanceUpdateIndicator
-          oldValue={1000}
-          newValue={1000}
-          onAnimationComplete={onComplete}
-        />
+        <BalanceUpdateIndicator oldValue={1000} newValue={1000} onAnimationComplete={onComplete} />
       );
 
       const display = screen.getByTestId('balance-display');
@@ -249,25 +245,13 @@ describe('BalanceUpdateIndicator', () => {
   // ==================== 7. PROPS TESTS (2 bonus tests) ====================
   describe('Props Tests', () => {
     it('should use custom prefix when provided', () => {
-      render(
-        <BalanceUpdateIndicator
-          oldValue={1000}
-          newValue={1000}
-          prefix="EUR "
-        />
-      );
+      render(<BalanceUpdateIndicator oldValue={1000} newValue={1000} prefix="EUR " />);
 
       expect(screen.getByText('EUR 1,000.00')).toBeInTheDocument();
     });
 
     it('should use custom decimal places when provided', () => {
-      render(
-        <BalanceUpdateIndicator
-          oldValue={1234.5678}
-          newValue={1234.5678}
-          decimals={0}
-        />
-      );
+      render(<BalanceUpdateIndicator oldValue={1234.5678} newValue={1234.5678} decimals={0} />);
 
       expect(screen.getByText('$1,235')).toBeInTheDocument();
     });

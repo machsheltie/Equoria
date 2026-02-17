@@ -102,16 +102,12 @@ const MilestoneCard: React.FC<MilestoneCardProps> = ({
           </div>
 
           {/* Arrow icon for clickable cards */}
-          {onClick && (
-            <ChevronRight className="h-5 w-5 text-slate-400 flex-shrink-0" />
-          )}
+          {onClick && <ChevronRight className="h-5 w-5 text-slate-400 flex-shrink-0" />}
         </div>
       </div>
 
       {/* Description */}
-      {description && (
-        <p className="text-sm text-slate-600 mt-2 ml-8">{description}</p>
-      )}
+      {description && <p className="text-sm text-slate-600 mt-2 ml-8">{description}</p>}
 
       {/* Focus area */}
       {milestone.focus && (

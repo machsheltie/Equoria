@@ -9,7 +9,6 @@
  */
 
 import React, { useState, useMemo } from 'react';
-import { useQuery } from '@tanstack/react-query';
 import {
   ComposedChart,
   Line,
@@ -30,7 +29,6 @@ import {
   calculateMilestoneProgress,
   getCurrentMilestone,
   calculateDevelopmentProgress,
-  getDaysUntilMilestone,
 } from '@/types/foal';
 
 export interface FoalMilestoneTimelineProps {
@@ -61,7 +59,7 @@ function getSexLabel(sex: string): string {
  * FoalMilestoneTimeline Component
  */
 const FoalMilestoneTimeline: React.FC<FoalMilestoneTimelineProps> = ({ foal, milestones }) => {
-  const [selectedMilestone, setSelectedMilestone] = useState<Milestone | null>(null);
+  const [, setSelectedMilestone] = useState<Milestone | null>(null);
 
   // Calculate current milestone and overall progress
   const currentMilestone = useMemo(
@@ -74,9 +72,7 @@ const FoalMilestoneTimeline: React.FC<FoalMilestoneTimelineProps> = ({ foal, mil
     [milestones, foal.ageInDays]
   );
 
-  const daysUntilNext = currentMilestone
-    ? currentMilestone.ageWindow.max - foal.ageInDays
-    : 0;
+  const daysUntilNext = currentMilestone ? currentMilestone.ageWindow.max - foal.ageInDays : 0;
 
   // Prepare data for Recharts timeline
   const timelineData: MilestoneTimelineData[] = useMemo(() => {
@@ -89,7 +85,11 @@ const FoalMilestoneTimeline: React.FC<FoalMilestoneTimelineProps> = ({ foal, mil
         name: milestone.name,
         ageDay: milestone.ageWindow.min,
         progress,
-        status: isCompleted ? 'completed' as const : isCurrent ? 'current' as const : 'pending' as const,
+        status: isCompleted
+          ? ('completed' as const)
+          : isCurrent
+            ? ('current' as const)
+            : ('pending' as const),
         completed: isCompleted,
         current: isCurrent,
         traits: milestone.traitsConfirmed || [],
@@ -110,9 +110,7 @@ const FoalMilestoneTimeline: React.FC<FoalMilestoneTimelineProps> = ({ foal, mil
       <div className="rounded-lg border border-slate-200 bg-gradient-to-r from-slate-50 to-white p-6 shadow-sm">
         <div className="flex items-start justify-between">
           <div className="flex-1">
-            <h2 className="text-2xl font-bold text-slate-900">
-              {foal.name || 'Unnamed Foal'}
-            </h2>
+            <h2 className="text-2xl font-bold text-slate-900">{foal.name || 'Unnamed Foal'}</h2>
             <p className="text-slate-600 mt-1">
               {getSexLabel(foal.sex)} • {foal.ageInDays} days old
             </p>
@@ -137,9 +135,7 @@ const FoalMilestoneTimeline: React.FC<FoalMilestoneTimelineProps> = ({ foal, mil
           <div className="flex items-center justify-between mb-2">
             <div className="flex items-center gap-2">
               <TrendingUp className="h-5 w-5 text-emerald-600" />
-              <span className="text-sm font-semibold text-slate-700">
-                Development Progress
-              </span>
+              <span className="text-sm font-semibold text-slate-700">Development Progress</span>
             </div>
             <span className="text-lg font-bold text-emerald-600">{overallProgress}%</span>
           </div>
@@ -162,10 +158,7 @@ const FoalMilestoneTimeline: React.FC<FoalMilestoneTimelineProps> = ({ foal, mil
         <h3 className="text-lg font-bold text-slate-900 mb-4">Timeline Visualization</h3>
 
         <ResponsiveContainer width="100%" height={300}>
-          <ComposedChart
-            data={timelineData}
-            margin={{ top: 20, right: 30, left: 20, bottom: 40 }}
-          >
+          <ComposedChart data={timelineData} margin={{ top: 20, right: 30, left: 20, bottom: 40 }}>
             <CartesianGrid strokeDasharray="3 3" stroke="#e5e7eb" />
             <XAxis
               dataKey="name"

@@ -214,10 +214,17 @@ const ScoreBreakdownPanel: React.FC<ScoreBreakdownPanelProps> = ({
                 {bondModifier} + {taskConsistency} + {careQuality > 0 ? '+' : ''}
                 {careQuality}
               </div>
-              <span className={`text-xl font-bold ${
-                totalScore >= 3 ? 'text-green-600' : totalScore >= 0 ? 'text-yellow-600' : 'text-red-600'
-              }`}>
-                = {totalScore > 0 ? '+' : ''}{totalScore}
+              <span
+                className={`text-xl font-bold ${
+                  totalScore >= 3
+                    ? 'text-green-600'
+                    : totalScore >= 0
+                      ? 'text-yellow-600'
+                      : 'text-red-600'
+                }`}
+              >
+                = {totalScore > 0 ? '+' : ''}
+                {totalScore}
               </span>
             </div>
           </div>

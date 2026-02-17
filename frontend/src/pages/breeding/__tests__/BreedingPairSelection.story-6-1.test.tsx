@@ -405,9 +405,7 @@ describe('BreedingPairSelection - Story 6-1 Integration', () => {
 
     it('should display error message when breeding fails', async () => {
       const user = userEvent.setup();
-      vi.mocked(apiClient.breedingApi.breedFoal).mockRejectedValue(
-        new Error('Insufficient funds')
-      );
+      vi.mocked(apiClient.breedingApi.breedFoal).mockRejectedValue(new Error('Insufficient funds'));
 
       renderComponent();
 

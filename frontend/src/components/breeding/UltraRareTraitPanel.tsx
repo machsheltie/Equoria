@@ -107,10 +107,10 @@ const UltraRareTraitPanel: React.FC<UltraRareTraitPanelProps> = ({ traits }) => 
                     trait.baseProbability >= 60
                       ? 'bg-gradient-to-r from-green-400 to-green-500'
                       : trait.baseProbability >= 40
-                      ? 'bg-gradient-to-r from-blue-400 to-blue-500'
-                      : trait.baseProbability >= 20
-                      ? 'bg-gradient-to-r from-yellow-400 to-yellow-500'
-                      : 'bg-gradient-to-r from-amber-400 to-amber-500'
+                        ? 'bg-gradient-to-r from-blue-400 to-blue-500'
+                        : trait.baseProbability >= 20
+                          ? 'bg-gradient-to-r from-yellow-400 to-yellow-500'
+                          : 'bg-gradient-to-r from-amber-400 to-amber-500'
                   }`}
                   style={{ width: `${trait.baseProbability}%` }}
                 />
@@ -125,7 +125,9 @@ const UltraRareTraitPanel: React.FC<UltraRareTraitPanelProps> = ({ traits }) => 
               <ul className="space-y-1.5">
                 {trait.requirements.map((requirement, index) => (
                   <li key={index} className="flex items-start gap-2 text-sm text-slate-700">
-                    <span className={`inline-block w-1 h-1 rounded-full ${style.textColor} mt-1.5 flex-shrink-0`} />
+                    <span
+                      className={`inline-block w-1 h-1 rounded-full ${style.textColor} mt-1.5 flex-shrink-0`}
+                    />
                     <span>{requirement}</span>
                   </li>
                 ))}

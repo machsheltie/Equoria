@@ -16,7 +16,7 @@
  */
 
 import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest';
-import { render, screen, fireEvent, waitFor, act } from '@testing-library/react';
+import { render, screen, fireEvent, act } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import PrizeNotificationModal, {
   type PrizeNotificationModalProps,
@@ -362,12 +362,7 @@ describe('PrizeNotificationModal', () => {
       const { rerender } = renderModal();
       expect(document.body.style.overflow).toBe('hidden');
 
-      rerender(
-        <PrizeNotificationModal
-          {...defaultProps}
-          isOpen={false}
-        />
-      );
+      rerender(<PrizeNotificationModal {...defaultProps} isOpen={false} />);
 
       expect(document.body.style.overflow).toBe('');
     });

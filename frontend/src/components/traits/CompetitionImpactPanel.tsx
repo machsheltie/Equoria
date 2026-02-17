@@ -10,7 +10,7 @@
 
 import React from 'react';
 import { Trophy, TrendingUp, TrendingDown, Zap } from 'lucide-react';
-import type { EpigeneticTrait, CompetitionImpact, Discipline } from '@/types/traits';
+import type { EpigeneticTrait, Discipline } from '@/types/traits';
 import {
   getImpactColor,
   formatImpactModifier,
@@ -34,7 +34,6 @@ const ImpactBar: React.FC<{ discipline: string; modifier: number }> = ({
   const ImpactIcon = modifier > 0 ? TrendingUp : modifier < 0 ? TrendingDown : null;
 
   // Calculate bar width (scale -10 to +10 to 0-100%)
-  const maxValue = 10;
   const percentage = Math.abs(modifier) * 10; // Convert to percentage
   const isPositive = modifier > 0;
 
@@ -117,8 +116,8 @@ const CompetitionImpactPanel: React.FC<CompetitionImpactPanelProps> = ({
                 totalImpact > 0
                   ? 'text-green-600'
                   : totalImpact < 0
-                  ? 'text-red-600'
-                  : 'text-slate-400'
+                    ? 'text-red-600'
+                    : 'text-slate-400'
               }`}
             >
               {formatImpactModifier(totalImpact)}
@@ -149,9 +148,7 @@ const CompetitionImpactPanel: React.FC<CompetitionImpactPanelProps> = ({
 
       {/* Discipline-by-Discipline Breakdown */}
       <div className="rounded-lg border border-slate-200 bg-white p-6">
-        <h4 className="text-sm font-bold text-slate-900 mb-4">
-          Discipline Impact Breakdown
-        </h4>
+        <h4 className="text-sm font-bold text-slate-900 mb-4">Discipline Impact Breakdown</h4>
         <div className="space-y-4">
           {disciplines.map((disc) => (
             <ImpactBar key={disc.key} discipline={disc.name} modifier={disc.modifier} />
@@ -174,13 +171,8 @@ const CompetitionImpactPanel: React.FC<CompetitionImpactPanelProps> = ({
 
           <div className="space-y-3">
             {trait.competitionImpact.synergyBonuses!.map((synergy, index) => (
-              <div
-                key={index}
-                className="rounded-lg border border-purple-200 bg-white p-4"
-              >
-                <p className="text-sm font-semibold text-purple-900 mb-2">
-                  {synergy.description}
-                </p>
+              <div key={index} className="rounded-lg border border-purple-200 bg-white p-4">
+                <p className="text-sm font-semibold text-purple-900 mb-2">{synergy.description}</p>
 
                 <div className="flex items-center gap-2 mb-2">
                   <span className="text-xs font-medium text-purple-700">Requires:</span>

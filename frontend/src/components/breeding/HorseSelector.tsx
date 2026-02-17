@@ -15,7 +15,7 @@ import type { Horse } from '@/types/breeding';
 export interface HorseSelectorProps {
   horses: Horse[];
   selectedHorse: Horse | null;
-  onSelect: (horse: Horse) => void;
+  onSelect: (_horse: Horse) => void;
   filter: 'male' | 'female';
   title: string;
 }
@@ -40,7 +40,9 @@ function canHorseBreed(horse: Horse): { canBreed: boolean; reason?: string } {
     const now = new Date();
 
     if (cooldownDate > now) {
-      const daysRemaining = Math.ceil((cooldownDate.getTime() - now.getTime()) / (1000 * 60 * 60 * 24));
+      const daysRemaining = Math.ceil(
+        (cooldownDate.getTime() - now.getTime()) / (1000 * 60 * 60 * 24)
+      );
       return { canBreed: false, reason: `Cooldown (${daysRemaining}d remaining)` };
     }
   }
@@ -84,9 +86,10 @@ const HorseSelector: React.FC<HorseSelectorProps> = ({
     // Filter by search term
     if (searchTerm.trim()) {
       const searchLower = searchTerm.toLowerCase();
-      filtered = filtered.filter((horse) =>
-        horse.name.toLowerCase().includes(searchLower) ||
-        horse.breedName?.toLowerCase().includes(searchLower)
+      filtered = filtered.filter(
+        (horse) =>
+          horse.name.toLowerCase().includes(searchLower) ||
+          horse.breedName?.toLowerCase().includes(searchLower)
       );
     }
 
@@ -153,8 +156,8 @@ const HorseSelector: React.FC<HorseSelectorProps> = ({
                   isSelected
                     ? 'border-emerald-500 bg-emerald-50 ring-2 ring-emerald-500'
                     : canBreed
-                    ? 'border-slate-200 bg-white hover:border-emerald-300 hover:bg-emerald-50'
-                    : 'border-slate-200 bg-slate-50 opacity-60 cursor-not-allowed'
+                      ? 'border-slate-200 bg-white hover:border-emerald-300 hover:bg-emerald-50'
+                      : 'border-slate-200 bg-slate-50 opacity-60 cursor-not-allowed'
                 }`}
                 aria-label={`Select ${horse.name}`}
                 aria-pressed={isSelected}
@@ -186,7 +189,9 @@ const HorseSelector: React.FC<HorseSelectorProps> = ({
 
                       {/* Breeding Status */}
                       {!canBreed && reason && (
-                        <div className={`flex items-center gap-1 text-xs border rounded px-2 py-0.5 ${getStatusColor(canBreed, reason)}`}>
+                        <div
+                          className={`flex items-center gap-1 text-xs border rounded px-2 py-0.5 ${getStatusColor(canBreed, reason)}`}
+                        >
                           {reason.includes('Cooldown') ? (
                             <Clock className="h-3 w-3" />
                           ) : (
@@ -220,7 +225,8 @@ const HorseSelector: React.FC<HorseSelectorProps> = ({
       {/* Summary */}
       <div className="mt-3 pt-3 border-t border-slate-200">
         <p className="text-xs text-slate-600">
-          {sortedHorses.filter((h) => canHorseBreed(h).canBreed).length} of {sortedHorses.length} available
+          {sortedHorses.filter((h) => canHorseBreed(h).canBreed).length} of {sortedHorses.length}{' '}
+          available
         </p>
       </div>
     </div>

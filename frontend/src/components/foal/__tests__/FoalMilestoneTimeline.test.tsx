@@ -140,7 +140,6 @@ vi.mock('@/types/foal', async () => {
     getCurrentMilestone: vi.fn((milestones: Milestone[], foalAge: number) => {
       return milestones.find((m) => foalAge >= m.ageWindow.min && foalAge <= m.ageWindow.max);
     }),
-    // eslint-disable-next-line @typescript-eslint/no-unused-vars
     calculateDevelopmentProgress: vi.fn((milestones: Milestone[], _foalAge: number) => {
       const completed = milestones.filter((m) => m.status === 'completed').length;
       return Math.round((completed / milestones.length) * 100);

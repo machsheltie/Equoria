@@ -123,12 +123,10 @@ const CompatibilityDisplay: React.FC<CompatibilityDisplayProps> = ({
       <div className="rounded-lg border border-slate-200 bg-slate-50 p-6 shadow-sm">
         <div className="flex flex-col items-center justify-center h-64 text-center">
           <Target className="h-16 w-16 text-slate-300 mb-4" />
-          <h3 className="text-lg font-semibold text-slate-700 mb-2">
-            Select Both Parents
-          </h3>
+          <h3 className="text-lg font-semibold text-slate-700 mb-2">Select Both Parents</h3>
           <p className="text-sm text-slate-600 max-w-md">
-            Choose a sire and dam from the lists above to view their breeding compatibility
-            analysis and recommendations.
+            Choose a sire and dam from the lists above to view their breeding compatibility analysis
+            and recommendations.
           </p>
         </div>
       </div>
@@ -144,9 +142,7 @@ const CompatibilityDisplay: React.FC<CompatibilityDisplayProps> = ({
         <div className="flex items-center justify-between">
           <div>
             <h3 className="text-lg font-semibold text-slate-900">Compatibility Analysis</h3>
-            <p className="text-sm text-slate-600 mt-1">
-              Breeding pair compatibility assessment
-            </p>
+            <p className="text-sm text-slate-600 mt-1">Breeding pair compatibility assessment</p>
           </div>
           <div className="text-right">
             <div className={`text-4xl font-bold ${overallColors.text}`}>
@@ -195,9 +191,7 @@ const CompatibilityDisplay: React.FC<CompatibilityDisplayProps> = ({
         <div className="border-t border-slate-200 bg-slate-50 p-6">
           <div className="flex items-start gap-2 mb-3">
             <Lightbulb className="h-5 w-5 text-amber-500 flex-shrink-0 mt-0.5" />
-            <h4 className="text-sm font-semibold text-slate-900">
-              Breeding Recommendations
-            </h4>
+            <h4 className="text-sm font-semibold text-slate-900">Breeding Recommendations</h4>
           </div>
           <ul className="space-y-2 ml-7">
             {compatibility.recommendations.map((recommendation, index) => (

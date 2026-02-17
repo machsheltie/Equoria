@@ -101,26 +101,20 @@ describe('XpHistoryEntry', () => {
   // =========================================================================
   describe('Basic Rendering', () => {
     it('should render the entry container with correct test id', () => {
-      render(
-        <XpHistoryEntry entry={standardEntry} isLevelUp={false} />
-      );
+      render(<XpHistoryEntry entry={standardEntry} isLevelUp={false} />);
 
       const entryElement = screen.getByTestId('xp-history-entry');
       expect(entryElement).toBeInTheDocument();
     });
 
     it('should display the source name', () => {
-      render(
-        <XpHistoryEntry entry={standardEntry} isLevelUp={false} />
-      );
+      render(<XpHistoryEntry entry={standardEntry} isLevelUp={false} />);
 
       expect(screen.getByText('Spring Derby Championship')).toBeInTheDocument();
     });
 
     it('should display the XP amount with "+" prefix', () => {
-      render(
-        <XpHistoryEntry entry={standardEntry} isLevelUp={false} />
-      );
+      render(<XpHistoryEntry entry={standardEntry} isLevelUp={false} />);
 
       expect(screen.getByTestId('xp-amount')).toHaveTextContent('+150');
     });
@@ -131,9 +125,7 @@ describe('XpHistoryEntry', () => {
   // =========================================================================
   describe('Date and Time Display', () => {
     it('should display formatted date and time', () => {
-      render(
-        <XpHistoryEntry entry={standardEntry} isLevelUp={false} />
-      );
+      render(<XpHistoryEntry entry={standardEntry} isLevelUp={false} />);
 
       const dateElement = screen.getByTestId('entry-date');
       expect(dateElement).toBeInTheDocument();
@@ -150,9 +142,7 @@ describe('XpHistoryEntry', () => {
   // =========================================================================
   describe('Source Type Badge', () => {
     it('should display competition badge with blue styling', () => {
-      render(
-        <XpHistoryEntry entry={standardEntry} isLevelUp={false} />
-      );
+      render(<XpHistoryEntry entry={standardEntry} isLevelUp={false} />);
 
       const badge = screen.getByTestId('source-badge');
       expect(badge).toBeInTheDocument();
@@ -162,9 +152,7 @@ describe('XpHistoryEntry', () => {
     });
 
     it('should display training badge with green styling', () => {
-      render(
-        <XpHistoryEntry entry={levelUpEntry} isLevelUp={true} />
-      );
+      render(<XpHistoryEntry entry={levelUpEntry} isLevelUp={true} />);
 
       const badge = screen.getByTestId('source-badge');
       expect(badge).toHaveTextContent(/training/i);
@@ -173,9 +161,7 @@ describe('XpHistoryEntry', () => {
     });
 
     it('should display achievement badge with purple styling', () => {
-      render(
-        <XpHistoryEntry entry={achievementEntry} isLevelUp={false} />
-      );
+      render(<XpHistoryEntry entry={achievementEntry} isLevelUp={false} />);
 
       const badge = screen.getByTestId('source-badge');
       expect(badge).toHaveTextContent(/achievement/i);
@@ -184,9 +170,7 @@ describe('XpHistoryEntry', () => {
     });
 
     it('should display bonus badge with orange styling', () => {
-      render(
-        <XpHistoryEntry entry={bonusEntry} isLevelUp={false} />
-      );
+      render(<XpHistoryEntry entry={bonusEntry} isLevelUp={false} />);
 
       const badge = screen.getByTestId('source-badge');
       expect(badge).toHaveTextContent(/bonus/i);
@@ -200,9 +184,7 @@ describe('XpHistoryEntry', () => {
   // =========================================================================
   describe('Level Display', () => {
     it('should display the current level for non-level-up entries', () => {
-      render(
-        <XpHistoryEntry entry={standardEntry} isLevelUp={false} />
-      );
+      render(<XpHistoryEntry entry={standardEntry} isLevelUp={false} />);
 
       const levelDisplay = screen.getByTestId('level-display');
       expect(levelDisplay).toBeInTheDocument();
@@ -210,9 +192,7 @@ describe('XpHistoryEntry', () => {
     });
 
     it('should display level transition for level-up entries', () => {
-      render(
-        <XpHistoryEntry entry={levelUpEntry} isLevelUp={true} />
-      );
+      render(<XpHistoryEntry entry={levelUpEntry} isLevelUp={true} />);
 
       const levelTransition = screen.getByTestId('level-transition');
       expect(levelTransition).toBeInTheDocument();
@@ -227,9 +207,7 @@ describe('XpHistoryEntry', () => {
   // =========================================================================
   describe('Level-Up Highlighting', () => {
     it('should apply gold/yellow background for level-up entries', () => {
-      render(
-        <XpHistoryEntry entry={levelUpEntry} isLevelUp={true} />
-      );
+      render(<XpHistoryEntry entry={levelUpEntry} isLevelUp={true} />);
 
       const entryCard = screen.getByTestId('entry-card');
       expect(entryCard).toHaveClass('bg-yellow-50');
@@ -237,18 +215,14 @@ describe('XpHistoryEntry', () => {
     });
 
     it('should display trophy icon for level-up entries', () => {
-      render(
-        <XpHistoryEntry entry={levelUpEntry} isLevelUp={true} />
-      );
+      render(<XpHistoryEntry entry={levelUpEntry} isLevelUp={true} />);
 
       const trophyIcon = screen.getByTestId('level-up-icon');
       expect(trophyIcon).toBeInTheDocument();
     });
 
     it('should NOT apply gold background for non-level-up entries', () => {
-      render(
-        <XpHistoryEntry entry={standardEntry} isLevelUp={false} />
-      );
+      render(<XpHistoryEntry entry={standardEntry} isLevelUp={false} />);
 
       const entryCard = screen.getByTestId('entry-card');
       expect(entryCard).not.toHaveClass('bg-yellow-50');
@@ -261,35 +235,27 @@ describe('XpHistoryEntry', () => {
   // =========================================================================
   describe('Timeline Connector', () => {
     it('should render timeline connector line by default', () => {
-      render(
-        <XpHistoryEntry entry={standardEntry} isLevelUp={false} />
-      );
+      render(<XpHistoryEntry entry={standardEntry} isLevelUp={false} />);
 
       const connector = screen.getByTestId('timeline-connector');
       expect(connector).toBeInTheDocument();
     });
 
     it('should render timeline dot marker', () => {
-      render(
-        <XpHistoryEntry entry={standardEntry} isLevelUp={false} />
-      );
+      render(<XpHistoryEntry entry={standardEntry} isLevelUp={false} />);
 
       const dot = screen.getByTestId('timeline-dot');
       expect(dot).toBeInTheDocument();
     });
 
     it('should hide connector line for first entry when isFirst is true', () => {
-      render(
-        <XpHistoryEntry entry={standardEntry} isLevelUp={false} isFirst={true} />
-      );
+      render(<XpHistoryEntry entry={standardEntry} isLevelUp={false} isFirst={true} />);
 
       expect(screen.queryByTestId('timeline-connector-top')).not.toBeInTheDocument();
     });
 
     it('should hide bottom connector for last entry when isLast is true', () => {
-      render(
-        <XpHistoryEntry entry={standardEntry} isLevelUp={false} isLast={true} />
-      );
+      render(<XpHistoryEntry entry={standardEntry} isLevelUp={false} isLast={true} />);
 
       expect(screen.queryByTestId('timeline-connector-bottom')).not.toBeInTheDocument();
     });
@@ -300,18 +266,14 @@ describe('XpHistoryEntry', () => {
   // =========================================================================
   describe('Accessibility', () => {
     it('should have accessible article role for each entry', () => {
-      render(
-        <XpHistoryEntry entry={standardEntry} isLevelUp={false} />
-      );
+      render(<XpHistoryEntry entry={standardEntry} isLevelUp={false} />);
 
       const article = screen.getByRole('article');
       expect(article).toBeInTheDocument();
     });
 
     it('should have aria-label describing the XP gain', () => {
-      render(
-        <XpHistoryEntry entry={standardEntry} isLevelUp={false} />
-      );
+      render(<XpHistoryEntry entry={standardEntry} isLevelUp={false} />);
 
       const article = screen.getByRole('article');
       expect(article).toHaveAttribute('aria-label');

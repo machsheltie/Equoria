@@ -16,10 +16,10 @@ import type { Horse } from './breeding';
  * Represents the 5 critical development milestones in foal's first 30 days
  */
 export type MilestoneType =
-  | 'imprinting'           // Day 1: Initial bonding
-  | 'socialization'        // Week 1 (Days 1-7): Social awareness
-  | 'curiosity_play'       // Week 2 (Days 8-14): Exploration behavior
-  | 'trust_handling'       // Week 3 (Days 15-21): Human interaction
+  | 'imprinting' // Day 1: Initial bonding
+  | 'socialization' // Week 1 (Days 1-7): Social awareness
+  | 'curiosity_play' // Week 2 (Days 8-14): Exploration behavior
+  | 'trust_handling' // Week 3 (Days 15-21): Human interaction
   | 'confidence_reactivity'; // Week 4 (Days 22-30): Final temperament formation
 
 /**
@@ -31,12 +31,12 @@ export type MilestoneStatus = 'pending' | 'in_progress' | 'completed';
  * Development stage based on foal age
  */
 export type DevelopmentStage =
-  | 'newborn'   // Day 1
-  | 'week1'     // Days 1-7
-  | 'week2'     // Days 8-14
-  | 'week3'     // Days 15-21
-  | 'week4'     // Days 22-30
-  | 'mature';   // 30+ days
+  | 'newborn' // Day 1
+  | 'week1' // Days 1-7
+  | 'week2' // Days 8-14
+  | 'week3' // Days 15-21
+  | 'week4' // Days 22-30
+  | 'mature'; // 30+ days
 
 /**
  * Milestone definition and status
@@ -185,10 +185,7 @@ export interface MilestoneTimelineData {
 /**
  * Calculate milestone progress based on foal age
  */
-export function calculateMilestoneProgress(
-  milestone: Milestone,
-  foalAge: number
-): number {
+export function calculateMilestoneProgress(milestone: Milestone, foalAge: number): number {
   if (milestone.status === 'completed') return 100;
   if (foalAge < milestone.ageWindow.min) return 0;
 
@@ -200,10 +197,7 @@ export function calculateMilestoneProgress(
 /**
  * Get milestone status based on foal age and evaluation
  */
-export function getMilestoneStatus(
-  milestone: Milestone,
-  foalAge: number
-): MilestoneStatus {
+export function getMilestoneStatus(milestone: Milestone, foalAge: number): MilestoneStatus {
   if (milestone.status === 'completed') return 'completed';
 
   if (foalAge >= milestone.ageWindow.min && foalAge <= milestone.ageWindow.max) {
@@ -221,10 +215,7 @@ export function getMilestoneStatus(
 /**
  * Calculate days until next milestone
  */
-export function getDaysUntilMilestone(
-  milestone: Milestone,
-  foalAge: number
-): number {
+export function getDaysUntilMilestone(milestone: Milestone, foalAge: number): number {
   if (foalAge >= milestone.ageWindow.min) return 0;
   return milestone.ageWindow.min - foalAge;
 }
@@ -232,25 +223,17 @@ export function getDaysUntilMilestone(
 /**
  * Get current milestone based on foal age
  */
-export function getCurrentMilestone(
-  milestones: Milestone[],
-  foalAge: number
-): Milestone | null {
-  return milestones.find(
-    m => foalAge >= m.ageWindow.min && foalAge <= m.ageWindow.max
-  ) || null;
+export function getCurrentMilestone(milestones: Milestone[], foalAge: number): Milestone | null {
+  return milestones.find((m) => foalAge >= m.ageWindow.min && foalAge <= m.ageWindow.max) || null;
 }
 
 /**
  * Calculate overall development progress (0-100)
  */
-export function calculateDevelopmentProgress(
-  milestones: Milestone[],
-  foalAge: number
-): number {
+export function calculateDevelopmentProgress(milestones: Milestone[], foalAge: number): number {
   if (milestones.length === 0) return 0;
 
-  const completedCount = milestones.filter(m => m.status === 'completed').length;
+  const completedCount = milestones.filter((m) => m.status === 'completed').length;
   const currentMilestone = getCurrentMilestone(milestones, foalAge);
 
   let progress = (completedCount / milestones.length) * 100;
@@ -258,7 +241,7 @@ export function calculateDevelopmentProgress(
   // Add partial progress for current milestone
   if (currentMilestone) {
     const milestoneProgress = calculateMilestoneProgress(currentMilestone, foalAge);
-    progress += (milestoneProgress / milestones.length);
+    progress += milestoneProgress / milestones.length;
   }
 
   return Math.min(100, Math.round(progress));
@@ -275,10 +258,10 @@ export function calculateDevelopmentProgress(
  * Corresponds to different types of developmental activities
  */
 export type EnrichmentCategory =
-  | 'trust'           // Building confidence and bonding
+  | 'trust' // Building confidence and bonding
   | 'desensitization' // Exposure to stimuli
-  | 'exposure'        // New environments and experiences
-  | 'habituation';    // Routine and consistency
+  | 'exposure' // New environments and experiences
+  | 'habituation'; // Routine and consistency
 
 /**
  * Activity availability status
@@ -510,7 +493,7 @@ export function canPerformActivity(
   if (status.status !== 'available') {
     return {
       canPerform: false,
-      reason: getActivityStatusLabel(status.status)
+      reason: getActivityStatusLabel(status.status),
     };
   }
 
@@ -520,28 +503,28 @@ export function canPerformActivity(
     if (minAge !== undefined && foal.ageInDays < minAge) {
       return {
         canPerform: false,
-        reason: `Requires foal to be at least ${minAge} days old`
+        reason: `Requires foal to be at least ${minAge} days old`,
       };
     }
 
     if (maxAge !== undefined && foal.ageInDays > maxAge) {
       return {
         canPerform: false,
-        reason: `Activity only for foals under ${maxAge} days old`
+        reason: `Activity only for foals under ${maxAge} days old`,
       };
     }
 
     if (milestoneRequired && !foal.completedMilestones.includes(milestoneRequired)) {
       return {
         canPerform: false,
-        reason: `Requires completion of ${milestoneRequired} milestone`
+        reason: `Requires completion of ${milestoneRequired} milestone`,
       };
     }
 
     if (maxStressLevel !== undefined && foal.stressLevel && foal.stressLevel > maxStressLevel) {
       return {
         canPerform: false,
-        reason: `Foal stress level too high (${foal.stressLevel}/${maxStressLevel})`
+        reason: `Foal stress level too high (${foal.stressLevel}/${maxStressLevel})`,
       };
     }
   }
@@ -636,7 +619,7 @@ export function getMilestoneDescription(milestoneType: MilestoneType): string {
 export function getEvaluationExplanation(
   score: number,
   milestone: MilestoneType,
-  traits: string[]
+  _traits: string[]
 ): string {
   const category = getEvaluationCategory(score);
   const milestoneName = formatMilestoneName(milestone);

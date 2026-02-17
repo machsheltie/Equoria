@@ -30,6 +30,10 @@ export default [
     rules: {
       'prettier/prettier': 'error',
       'no-unused-vars': ['warn', { argsIgnorePattern: '^_' }],
+      '@typescript-eslint/no-unused-vars': [
+        'error',
+        { argsIgnorePattern: '^_', varsIgnorePattern: '^_' },
+      ],
       'no-console': 'off',
       'no-undef': 'off',
     },
@@ -41,5 +45,15 @@ export default [
       parser: tseslint.parser,
     },
     rules: {},
+  },
+  {
+    files: [
+      'frontend/**/*.test.{ts,tsx}',
+      'frontend/**/*.spec.{ts,tsx}',
+      'frontend/**/__tests__/**/*.{ts,tsx}',
+    ],
+    rules: {
+      '@typescript-eslint/no-explicit-any': 'off',
+    },
   },
 ];

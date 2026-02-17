@@ -167,8 +167,12 @@ function generatePredictions(sire: Horse, dam: Horse) {
 
   // Add care strategies
   insights.optimalCareStrategies.push('Complete all 5 enrichment activities daily');
-  insights.optimalCareStrategies.push('Maintain consistent groom interactions (once per day minimum)');
-  insights.optimalCareStrategies.push('Focus on socialization milestone for best trait development');
+  insights.optimalCareStrategies.push(
+    'Maintain consistent groom interactions (once per day minimum)'
+  );
+  insights.optimalCareStrategies.push(
+    'Focus on socialization milestone for best trait development'
+  );
 
   // Add considerations
   const explorativeProbability = traitPredictions.find(
@@ -279,7 +283,8 @@ const BreedingPredictionsPanel: React.FC<BreedingPredictionsPanelProps> = ({ sir
               {sire.name} (Sire) × {dam.name} (Dam)
             </p>
             <p className="text-sm text-slate-600 mt-1">
-              Prediction Confidence: {predictions.confidence.level.charAt(0).toUpperCase() +
+              Prediction Confidence:{' '}
+              {predictions.confidence.level.charAt(0).toUpperCase() +
                 predictions.confidence.level.slice(1)}{' '}
               ({predictions.confidence.percentage}%)
             </p>

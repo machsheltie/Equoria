@@ -20,18 +20,14 @@ import {
 
 export interface TraitCardProps {
   trait: EpigeneticTrait;
-  onClick?: (trait: EpigeneticTrait) => void;
+  onClick?: (_trait: EpigeneticTrait) => void;
   showCompetitionImpact?: boolean;
 }
 
 /**
  * TraitCard Component
  */
-const TraitCard: React.FC<TraitCardProps> = ({
-  trait,
-  onClick,
-  showCompetitionImpact = true,
-}) => {
+const TraitCard: React.FC<TraitCardProps> = ({ trait, onClick, showCompetitionImpact = true }) => {
   const tierStyle = getTierStyle(trait.tier);
   const totalImpact = calculateTotalImpact(trait.competitionImpact);
   const bestDisciplines = getBestDisciplines(trait.competitionImpact);
@@ -144,14 +140,9 @@ const TraitCard: React.FC<TraitCardProps> = ({
           <p className="text-xs font-semibold text-slate-600 mb-1">Best For:</p>
           <div className="flex flex-wrap gap-1">
             {bestDisciplines.map((disc, index) => (
-              <span
-                key={index}
-                className="text-xs text-slate-700 bg-white/70 px-2 py-0.5 rounded"
-              >
+              <span key={index} className="text-xs text-slate-700 bg-white/70 px-2 py-0.5 rounded">
                 {disc.discipline}
-                <span className="text-green-600 font-semibold ml-1">
-                  +{disc.modifier}
-                </span>
+                <span className="text-green-600 font-semibold ml-1">+{disc.modifier}</span>
               </span>
             ))}
           </div>
@@ -162,9 +153,15 @@ const TraitCard: React.FC<TraitCardProps> = ({
       {trait.discoveryStatus !== 'discovered' && (
         <div className="absolute top-2 right-2">
           {trait.discoveryStatus === 'partially_discovered' ? (
-            <span className="inline-block w-3 h-3 bg-yellow-400 rounded-full border-2 border-white shadow-sm" title="Partially Discovered" />
+            <span
+              className="inline-block w-3 h-3 bg-yellow-400 rounded-full border-2 border-white shadow-sm"
+              title="Partially Discovered"
+            />
           ) : (
-            <span className="inline-block w-3 h-3 bg-slate-300 rounded-full border-2 border-white shadow-sm" title="Hidden" />
+            <span
+              className="inline-block w-3 h-3 bg-slate-300 rounded-full border-2 border-white shadow-sm"
+              title="Hidden"
+            />
           )}
         </div>
       )}

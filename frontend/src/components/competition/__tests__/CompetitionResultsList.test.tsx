@@ -142,22 +142,14 @@ describe('CompetitionResultsList', () => {
   describe('Component Rendering', () => {
     it('renders with results list', () => {
       render(
-        <CompetitionResultsList
-          {...defaultProps}
-          results={sampleResults}
-          isLoading={false}
-        />
+        <CompetitionResultsList {...defaultProps} results={sampleResults} isLoading={false} />
       );
       expect(screen.getByTestId('competition-results-list')).toBeInTheDocument();
     });
 
     it('shows filter controls', () => {
       render(
-        <CompetitionResultsList
-          {...defaultProps}
-          results={sampleResults}
-          isLoading={false}
-        />
+        <CompetitionResultsList {...defaultProps} results={sampleResults} isLoading={false} />
       );
       expect(screen.getByTestId('filter-status')).toBeInTheDocument();
       expect(screen.getByTestId('filter-discipline')).toBeInTheDocument();
@@ -165,35 +157,21 @@ describe('CompetitionResultsList', () => {
 
     it('shows sort dropdown', () => {
       render(
-        <CompetitionResultsList
-          {...defaultProps}
-          results={sampleResults}
-          isLoading={false}
-        />
+        <CompetitionResultsList {...defaultProps} results={sampleResults} isLoading={false} />
       );
       expect(screen.getByTestId('sort-dropdown')).toBeInTheDocument();
     });
 
     it('displays competition cards', () => {
       render(
-        <CompetitionResultsList
-          {...defaultProps}
-          results={sampleResults}
-          isLoading={false}
-        />
+        <CompetitionResultsList {...defaultProps} results={sampleResults} isLoading={false} />
       );
       const cards = screen.getAllByTestId('result-card');
       expect(cards).toHaveLength(5);
     });
 
     it('renders empty state with no results', () => {
-      render(
-        <CompetitionResultsList
-          {...defaultProps}
-          results={[]}
-          isLoading={false}
-        />
-      );
+      render(<CompetitionResultsList {...defaultProps} results={[]} isLoading={false} />);
       expect(screen.getByTestId('empty-state')).toBeInTheDocument();
       expect(screen.getByText(/no competition results found/i)).toBeInTheDocument();
     });
@@ -206,11 +184,7 @@ describe('CompetitionResultsList', () => {
     it('status filter "All" shows all results', async () => {
       const user = userEvent.setup();
       render(
-        <CompetitionResultsList
-          {...defaultProps}
-          results={sampleResults}
-          isLoading={false}
-        />
+        <CompetitionResultsList {...defaultProps} results={sampleResults} isLoading={false} />
       );
 
       const statusFilter = screen.getByTestId('filter-status');
@@ -221,7 +195,6 @@ describe('CompetitionResultsList', () => {
     });
 
     it('status filter "Wins" shows only 1st place results', async () => {
-      const user = userEvent.setup();
       render(
         <CompetitionResultsList
           {...defaultProps}
@@ -240,7 +213,6 @@ describe('CompetitionResultsList', () => {
     });
 
     it('status filter "Top3" shows only 1st/2nd/3rd place results', async () => {
-      const user = userEvent.setup();
       render(
         <CompetitionResultsList
           {...defaultProps}
@@ -256,7 +228,6 @@ describe('CompetitionResultsList', () => {
     });
 
     it('status filter "Participated" shows all entries', async () => {
-      const user = userEvent.setup();
       render(
         <CompetitionResultsList
           {...defaultProps}
@@ -273,11 +244,7 @@ describe('CompetitionResultsList', () => {
     it('discipline filter works correctly', async () => {
       const user = userEvent.setup();
       render(
-        <CompetitionResultsList
-          {...defaultProps}
-          results={sampleResults}
-          isLoading={false}
-        />
+        <CompetitionResultsList {...defaultProps} results={sampleResults} isLoading={false} />
       );
 
       const disciplineFilter = screen.getByTestId('filter-discipline');
@@ -312,7 +279,6 @@ describe('CompetitionResultsList', () => {
   // =========================================
   describe('Sort Functionality', () => {
     it('sort by recent shows newest first', async () => {
-      const user = userEvent.setup();
       render(
         <CompetitionResultsList
           {...defaultProps}
@@ -329,7 +295,6 @@ describe('CompetitionResultsList', () => {
     });
 
     it('sort by prize shows highest prizes first', async () => {
-      const user = userEvent.setup();
       render(
         <CompetitionResultsList
           {...defaultProps}
@@ -346,7 +311,6 @@ describe('CompetitionResultsList', () => {
     });
 
     it('sort by placement shows best ranks first', async () => {
-      const user = userEvent.setup();
       render(
         <CompetitionResultsList
           {...defaultProps}
@@ -363,7 +327,7 @@ describe('CompetitionResultsList', () => {
       const firstCardText = firstCard.textContent;
       expect(
         firstCardText?.includes('Spring Derby Championship') ||
-        firstCardText?.includes('Cross Country Masters')
+          firstCardText?.includes('Cross Country Masters')
       ).toBe(true);
     });
   });
@@ -374,11 +338,7 @@ describe('CompetitionResultsList', () => {
   describe('Competition Cards', () => {
     it('cards display all competition details', () => {
       render(
-        <CompetitionResultsList
-          {...defaultProps}
-          results={sampleResults}
-          isLoading={false}
-        />
+        <CompetitionResultsList {...defaultProps} results={sampleResults} isLoading={false} />
       );
 
       // Check first competition details
@@ -391,11 +351,7 @@ describe('CompetitionResultsList', () => {
 
     it('placement badges show correct colors for gold/silver/bronze/gray', () => {
       render(
-        <CompetitionResultsList
-          {...defaultProps}
-          results={sampleResults}
-          isLoading={false}
-        />
+        <CompetitionResultsList {...defaultProps} results={sampleResults} isLoading={false} />
       );
 
       // Gold badge for 1st place
@@ -417,11 +373,7 @@ describe('CompetitionResultsList', () => {
 
     it('prize amounts formatted correctly', () => {
       render(
-        <CompetitionResultsList
-          {...defaultProps}
-          results={sampleResults}
-          isLoading={false}
-        />
+        <CompetitionResultsList {...defaultProps} results={sampleResults} isLoading={false} />
       );
 
       // Check formatted currency display
@@ -432,11 +384,7 @@ describe('CompetitionResultsList', () => {
     it('click handler called with competition ID', async () => {
       const user = userEvent.setup();
       render(
-        <CompetitionResultsList
-          {...defaultProps}
-          results={sampleResults}
-          isLoading={false}
-        />
+        <CompetitionResultsList {...defaultProps} results={sampleResults} isLoading={false} />
       );
 
       const cards = screen.getAllByTestId('result-card');
@@ -447,11 +395,7 @@ describe('CompetitionResultsList', () => {
 
     it('multiple horses shown if entered multiple', () => {
       render(
-        <CompetitionResultsList
-          {...defaultProps}
-          results={sampleResults}
-          isLoading={false}
-        />
+        <CompetitionResultsList {...defaultProps} results={sampleResults} isLoading={false} />
       );
 
       // Cross Country Masters has 2 horses entered
@@ -465,13 +409,7 @@ describe('CompetitionResultsList', () => {
   // =========================================
   describe('Loading and Error States', () => {
     it('loading state shows skeleton cards', () => {
-      render(
-        <CompetitionResultsList
-          {...defaultProps}
-          results={[]}
-          isLoading={true}
-        />
-      );
+      render(<CompetitionResultsList {...defaultProps} results={[]} isLoading={true} />);
 
       const skeletons = screen.getAllByTestId('result-card-skeleton');
       expect(skeletons.length).toBeGreaterThan(0);
@@ -518,11 +456,7 @@ describe('CompetitionResultsList', () => {
   describe('Visual Elements', () => {
     it('1st place badge is gold colored', () => {
       render(
-        <CompetitionResultsList
-          {...defaultProps}
-          results={sampleResults}
-          isLoading={false}
-        />
+        <CompetitionResultsList {...defaultProps} results={sampleResults} isLoading={false} />
       );
 
       const goldBadges = screen.getAllByTestId('placement-badge-1');
@@ -533,11 +467,7 @@ describe('CompetitionResultsList', () => {
 
     it('2nd place badge is silver colored', () => {
       render(
-        <CompetitionResultsList
-          {...defaultProps}
-          results={sampleResults}
-          isLoading={false}
-        />
+        <CompetitionResultsList {...defaultProps} results={sampleResults} isLoading={false} />
       );
 
       const silverBadge = screen.getByTestId('placement-badge-2');
@@ -546,11 +476,7 @@ describe('CompetitionResultsList', () => {
 
     it('3rd place badge is bronze colored', () => {
       render(
-        <CompetitionResultsList
-          {...defaultProps}
-          results={sampleResults}
-          isLoading={false}
-        />
+        <CompetitionResultsList {...defaultProps} results={sampleResults} isLoading={false} />
       );
 
       const bronzeBadge = screen.getByTestId('placement-badge-3');
@@ -564,11 +490,7 @@ describe('CompetitionResultsList', () => {
   describe('Accessibility', () => {
     it('has proper ARIA attributes for region', () => {
       render(
-        <CompetitionResultsList
-          {...defaultProps}
-          results={sampleResults}
-          isLoading={false}
-        />
+        <CompetitionResultsList {...defaultProps} results={sampleResults} isLoading={false} />
       );
 
       const container = screen.getByTestId('competition-results-list');
@@ -578,11 +500,7 @@ describe('CompetitionResultsList', () => {
 
     it('filter controls have proper labels', () => {
       render(
-        <CompetitionResultsList
-          {...defaultProps}
-          results={sampleResults}
-          isLoading={false}
-        />
+        <CompetitionResultsList {...defaultProps} results={sampleResults} isLoading={false} />
       );
 
       expect(screen.getByLabelText(/filter by status/i)).toBeInTheDocument();
@@ -592,11 +510,7 @@ describe('CompetitionResultsList', () => {
 
     it('cards are keyboard navigable', () => {
       render(
-        <CompetitionResultsList
-          {...defaultProps}
-          results={sampleResults}
-          isLoading={false}
-        />
+        <CompetitionResultsList {...defaultProps} results={sampleResults} isLoading={false} />
       );
 
       const cards = screen.getAllByTestId('result-card');
@@ -609,11 +523,7 @@ describe('CompetitionResultsList', () => {
   describe('Responsive Grid Layout', () => {
     it('applies responsive grid classes', () => {
       render(
-        <CompetitionResultsList
-          {...defaultProps}
-          results={sampleResults}
-          isLoading={false}
-        />
+        <CompetitionResultsList {...defaultProps} results={sampleResults} isLoading={false} />
       );
 
       const grid = screen.getByTestId('results-grid');

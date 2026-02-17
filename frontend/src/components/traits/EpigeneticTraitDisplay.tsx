@@ -30,7 +30,7 @@ export interface EpigeneticTraitDisplayProps {
  * Mock API - Replace with actual API calls
  */
 const mockApi = {
-  getTraits: async (horseId: number): Promise<EpigeneticTrait[]> => {
+  getTraits: async (_horseId: number): Promise<EpigeneticTrait[]> => {
     // Mock trait data
     return [
       {
@@ -80,8 +80,7 @@ const mockApi = {
         name: 'Resilient Spirit',
         tier: 'rare',
         category: 'Mental',
-        description:
-          'Remarkable ability to bounce back from setbacks and perform under stress',
+        description: 'Remarkable ability to bounce back from setbacks and perform under stress',
         discoveryStatus: 'discovered',
         epigeneticFlags: ['stress-induced', 'milestone-triggered'],
         competitionImpact: {
@@ -134,8 +133,7 @@ const mockApi = {
       discoveredTraits: 3,
       partiallyDiscoveredTraits: 1,
       hiddenTraits: 6,
-      nextDiscoveryHint:
-        'Complete the Trust Handling milestone to unlock a new behavioral trait',
+      nextDiscoveryHint: 'Complete the Trust Handling milestone to unlock a new behavioral trait',
       discoveryProgress: 35,
     };
   },
@@ -163,7 +161,8 @@ const mockApi = {
           timestamp: new Date('2026-01-16T14:20:00'),
           eventType: 'activation',
           trigger: 'First Competition Participation',
-          description: 'Trait activated and provided significant performance boost in debut competition',
+          description:
+            'Trait activated and provided significant performance boost in debut competition',
         },
       ],
     };
@@ -189,19 +188,14 @@ const EpigeneticTraitDisplay: React.FC<EpigeneticTraitDisplayProps> = ({ horseId
   });
 
   // Fetch discovery status
-  const {
-    data: discoveryStatus,
-    isLoading: discoveryLoading,
-  } = useQuery({
+  const { data: discoveryStatus, isLoading: discoveryLoading } = useQuery({
     queryKey: ['traitDiscoveryStatus', horseId],
     queryFn: () => mockApi.getDiscoveryStatus(horseId),
     staleTime: 60000, // 1 minute
   });
 
   // Fetch trait history for selected trait
-  const {
-    data: traitHistory,
-  } = useQuery({
+  const { data: traitHistory } = useQuery({
     queryKey: ['traitHistory', horseId, selectedTrait?.id],
     queryFn: () => mockApi.getTraitHistory(horseId, selectedTrait!.id),
     enabled: modalOpen && !!selectedTrait,
@@ -279,9 +273,7 @@ const EpigeneticTraitDisplay: React.FC<EpigeneticTraitDisplayProps> = ({ horseId
 
         return (
           <div key={tier} className="space-y-3">
-            <h3 className="text-lg font-bold text-slate-900">
-              {getTierDisplayName(tier)} Traits
-            </h3>
+            <h3 className="text-lg font-bold text-slate-900">{getTierDisplayName(tier)} Traits</h3>
             <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
               {tierTraits.map((trait) => (
                 <TraitCard

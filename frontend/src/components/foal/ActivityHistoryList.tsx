@@ -8,16 +8,7 @@
  */
 
 import React from 'react';
-import {
-  Heart,
-  Shield,
-  Compass,
-  Clock,
-  TrendingUp,
-  Award,
-  Sparkles,
-  Calendar,
-} from 'lucide-react';
+import { Heart, Shield, Compass, Clock, TrendingUp, Award, Sparkles, Calendar } from 'lucide-react';
 import type { ActivityHistoryItem, EnrichmentCategory } from '@/types/foal';
 import { getCategoryColor } from '@/types/foal';
 
@@ -85,10 +76,7 @@ function getResultColor(value: number): string {
 /**
  * ActivityHistoryList Component
  */
-const ActivityHistoryList: React.FC<ActivityHistoryListProps> = ({
-  history,
-  maxItems,
-}) => {
+const ActivityHistoryList: React.FC<ActivityHistoryListProps> = ({ history, maxItems }) => {
   const displayedHistory = maxItems ? history.slice(0, maxItems) : history;
 
   if (history.length === 0) {
@@ -185,9 +173,7 @@ const ActivityHistoryList: React.FC<ActivityHistoryListProps> = ({
                 <div className="flex items-center gap-2 text-xs">
                   <TrendingUp className="h-3 w-3 text-emerald-500" />
                   <span className="text-slate-600">Stress:</span>
-                  <span
-                    className={`font-semibold ${getResultColor(-item.results.stressChange)}`}
-                  >
+                  <span className={`font-semibold ${getResultColor(-item.results.stressChange)}`}>
                     {item.results.stressChange > 0 ? '+' : ''}
                     {item.results.stressChange}
                   </span>
@@ -202,20 +188,16 @@ const ActivityHistoryList: React.FC<ActivityHistoryListProps> = ({
                     Temperament Changes:
                   </p>
                   <div className="flex flex-wrap gap-2">
-                    {Object.entries(item.results.temperamentChanges || {}).map(
-                      ([stat, value]) => (
-                        <span
-                          key={stat}
-                          className={`inline-block px-2 py-0.5 text-xs font-medium rounded ${
-                            value > 0
-                              ? 'bg-green-50 text-green-700'
-                              : 'bg-amber-50 text-amber-700'
-                          }`}
-                        >
-                          {formatTemperamentChange(stat, value)}
-                        </span>
-                      )
-                    )}
+                    {Object.entries(item.results.temperamentChanges || {}).map(([stat, value]) => (
+                      <span
+                        key={stat}
+                        className={`inline-block px-2 py-0.5 text-xs font-medium rounded ${
+                          value > 0 ? 'bg-green-50 text-green-700' : 'bg-amber-50 text-amber-700'
+                        }`}
+                      >
+                        {formatTemperamentChange(stat, value)}
+                      </span>
+                    ))}
                   </div>
                 </div>
               )}

@@ -259,14 +259,8 @@ describe('HorseLevelBadge', () => {
     it('should have ARIA label describing level and tier', () => {
       render(<HorseLevelBadge level={12} />);
       const badge = screen.getByTestId('horse-level-badge');
-      expect(badge).toHaveAttribute(
-        'aria-label',
-        expect.stringContaining('Level 12')
-      );
-      expect(badge).toHaveAttribute(
-        'aria-label',
-        expect.stringContaining('Gold')
-      );
+      expect(badge).toHaveAttribute('aria-label', expect.stringContaining('Level 12'));
+      expect(badge).toHaveAttribute('aria-label', expect.stringContaining('Gold'));
     });
 
     it('should be keyboard focusable when tooltip is enabled', async () => {

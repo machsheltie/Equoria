@@ -231,10 +231,7 @@ describe('LeaderboardHorseDetailModal', () => {
       const user = userEvent.setup();
       const onViewFullProfile = vi.fn();
       render(
-        <LeaderboardHorseDetailModal
-          {...defaultProps}
-          onViewFullProfile={onViewFullProfile}
-        />
+        <LeaderboardHorseDetailModal {...defaultProps} onViewFullProfile={onViewFullProfile} />
       );
 
       await user.click(screen.getByTestId('view-full-profile-button'));
@@ -286,12 +283,7 @@ describe('LeaderboardHorseDetailModal', () => {
           recentCompetitions: [],
         },
       };
-      render(
-        <LeaderboardHorseDetailModal
-          {...defaultProps}
-          horseData={horseWithNoComps}
-        />
-      );
+      render(<LeaderboardHorseDetailModal {...defaultProps} horseData={horseWithNoComps} />);
       expect(screen.getByTestId('no-recent-competitions')).toBeInTheDocument();
     });
   });

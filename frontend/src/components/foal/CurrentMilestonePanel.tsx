@@ -101,9 +101,7 @@ const CurrentMilestonePanel: React.FC<CurrentMilestonePanelProps> = ({
       )}
 
       {/* Description */}
-      {description && (
-        <p className="text-sm text-slate-700 mb-4">{description}</p>
-      )}
+      {description && <p className="text-sm text-slate-700 mb-4">{description}</p>}
 
       {/* Days Remaining */}
       <div className="mb-4 flex items-center gap-2">
@@ -164,10 +162,10 @@ const CurrentMilestonePanel: React.FC<CurrentMilestonePanelProps> = ({
           {enrichmentPercentage >= 80
             ? '🌟 Excellent progress! Keep up the great care.'
             : enrichmentPercentage >= 60
-            ? '✨ Good progress. A few more activities will help.'
-            : enrichmentPercentage >= 40
-            ? '💫 Making progress. More enrichment recommended.'
-            : '⏳ More enrichment activities needed for optimal development.'}
+              ? '✨ Good progress. A few more activities will help.'
+              : enrichmentPercentage >= 40
+                ? '💫 Making progress. More enrichment recommended.'
+                : '⏳ More enrichment activities needed for optimal development.'}
         </p>
       </div>
 
@@ -178,8 +176,8 @@ const CurrentMilestonePanel: React.FC<CurrentMilestonePanelProps> = ({
           {daysRemaining <= 2
             ? 'Milestone evaluation is approaching! Complete any remaining enrichment activities.'
             : progress < 50
-            ? 'Focus on daily enrichment activities to build positive traits.'
-            : 'Continue consistent care and bonding activities for best results.'}
+              ? 'Focus on daily enrichment activities to build positive traits.'
+              : 'Continue consistent care and bonding activities for best results.'}
         </p>
       </div>
     </div>

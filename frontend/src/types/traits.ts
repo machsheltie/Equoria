@@ -258,7 +258,9 @@ export function calculateTotalImpact(impact: CompetitionImpact): number {
 /**
  * Get best disciplines for a trait (top 3 positive impacts)
  */
-export function getBestDisciplines(impact: CompetitionImpact): Array<{ discipline: string; modifier: number }> {
+export function getBestDisciplines(
+  impact: CompetitionImpact
+): Array<{ discipline: string; modifier: number }> {
   const disciplines: Array<{ discipline: string; modifier: number }> = [
     { discipline: 'Dressage', modifier: impact.dressage },
     { discipline: 'Show Jumping', modifier: impact.show_jumping },
@@ -268,7 +270,10 @@ export function getBestDisciplines(impact: CompetitionImpact): Array<{ disciplin
     { discipline: 'Western', modifier: impact.western },
   ];
 
-  return disciplines.filter((d) => d.modifier > 0).sort((a, b) => b.modifier - a.modifier).slice(0, 3);
+  return disciplines
+    .filter((d) => d.modifier > 0)
+    .sort((a, b) => b.modifier - a.modifier)
+    .slice(0, 3);
 }
 
 /**
@@ -353,10 +358,7 @@ export function groupTraitsByTier(traits: EpigeneticTrait[]): Map<TraitTier, Epi
 /**
  * Check if trait provides synergy bonus with given trait IDs
  */
-export function checkSynergy(
-  trait: EpigeneticTrait,
-  otherTraitIds: string[]
-): SynergyBonus | null {
+export function checkSynergy(trait: EpigeneticTrait, otherTraitIds: string[]): SynergyBonus | null {
   if (!trait.competitionImpact.synergyBonuses) return null;
 
   for (const synergy of trait.competitionImpact.synergyBonuses) {

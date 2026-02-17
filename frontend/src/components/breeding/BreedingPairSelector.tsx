@@ -4,7 +4,6 @@ import {
   useInbreedingAnalysis,
   useGeneticProbability,
 } from '@/hooks/api/useBreedingPrediction';
-import type { TraitCategory } from '@/types/breeding';
 
 interface BreedingPairSelectorProps {
   stallionId: number;
@@ -46,8 +45,8 @@ const BreedingPairSelector: React.FC<BreedingPairSelectorProps> = ({ stallionId,
     return (
       <div className="rounded-lg border border-red-200 bg-red-50 p-6 shadow-sm">
         <p className="text-red-600">
-          {(stallionError as any)?.message ||
-            (mareError as any)?.message ||
+          {(stallionError as Error)?.message ||
+            (mareError as Error)?.message ||
             'Failed to fetch breeding data'}
         </p>
       </div>

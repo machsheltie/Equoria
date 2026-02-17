@@ -133,13 +133,7 @@ describe('CompetitionHistory', () => {
   // =========================================
   describe('Component Rendering', () => {
     it('renders with horse name header', () => {
-      render(
-        <CompetitionHistory
-          {...defaultProps}
-          data={sampleData}
-          isLoading={false}
-        />
-      );
+      render(<CompetitionHistory {...defaultProps} data={sampleData} isLoading={false} />);
 
       expect(screen.getByTestId('competition-history')).toBeInTheDocument();
       expect(screen.getByText('Thunder Bolt')).toBeInTheDocument();
@@ -147,25 +141,13 @@ describe('CompetitionHistory', () => {
     });
 
     it('displays statistics summary card', () => {
-      render(
-        <CompetitionHistory
-          {...defaultProps}
-          data={sampleData}
-          isLoading={false}
-        />
-      );
+      render(<CompetitionHistory {...defaultProps} data={sampleData} isLoading={false} />);
 
       expect(screen.getByTestId('statistics-card')).toBeInTheDocument();
     });
 
     it('shows filter controls', () => {
-      render(
-        <CompetitionHistory
-          {...defaultProps}
-          data={sampleData}
-          isLoading={false}
-        />
-      );
+      render(<CompetitionHistory {...defaultProps} data={sampleData} isLoading={false} />);
 
       expect(screen.getByTestId('filter-discipline')).toBeInTheDocument();
       expect(screen.getByTestId('filter-date-range')).toBeInTheDocument();
@@ -173,13 +155,7 @@ describe('CompetitionHistory', () => {
     });
 
     it('renders competition history list', () => {
-      render(
-        <CompetitionHistory
-          {...defaultProps}
-          data={sampleData}
-          isLoading={false}
-        />
-      );
+      render(<CompetitionHistory {...defaultProps} data={sampleData} isLoading={false} />);
 
       expect(screen.getByTestId('competition-list')).toBeInTheDocument();
       const entries = screen.getAllByTestId('competition-entry');
@@ -192,13 +168,7 @@ describe('CompetitionHistory', () => {
   // =========================================
   describe('Statistics Display', () => {
     it('displays all statistics correctly', () => {
-      render(
-        <CompetitionHistory
-          {...defaultProps}
-          data={sampleData}
-          isLoading={false}
-        />
-      );
+      render(<CompetitionHistory {...defaultProps} data={sampleData} isLoading={false} />);
 
       // Total Competitions
       expect(screen.getByTestId('stat-total-competitions')).toHaveTextContent('6');
@@ -214,39 +184,21 @@ describe('CompetitionHistory', () => {
     });
 
     it('formats win rate as percentage', () => {
-      render(
-        <CompetitionHistory
-          {...defaultProps}
-          data={sampleData}
-          isLoading={false}
-        />
-      );
+      render(<CompetitionHistory {...defaultProps} data={sampleData} isLoading={false} />);
 
       const winRateStat = screen.getByTestId('stat-win-rate');
       expect(winRateStat).toHaveTextContent('33.3%');
     });
 
     it('formats total prize money as currency', () => {
-      render(
-        <CompetitionHistory
-          {...defaultProps}
-          data={sampleData}
-          isLoading={false}
-        />
-      );
+      render(<CompetitionHistory {...defaultProps} data={sampleData} isLoading={false} />);
 
       const prizeStat = screen.getByTestId('stat-total-prize');
       expect(prizeStat).toHaveTextContent('$17,000');
     });
 
     it('shows average placement with 1 decimal place', () => {
-      render(
-        <CompetitionHistory
-          {...defaultProps}
-          data={sampleData}
-          isLoading={false}
-        />
-      );
+      render(<CompetitionHistory {...defaultProps} data={sampleData} isLoading={false} />);
 
       const avgStat = screen.getByTestId('stat-avg-placement');
       expect(avgStat).toHaveTextContent('3.3');
@@ -259,13 +211,7 @@ describe('CompetitionHistory', () => {
   describe('Filter Functionality', () => {
     it('discipline filter works correctly', async () => {
       const user = userEvent.setup();
-      render(
-        <CompetitionHistory
-          {...defaultProps}
-          data={sampleData}
-          isLoading={false}
-        />
-      );
+      render(<CompetitionHistory {...defaultProps} data={sampleData} isLoading={false} />);
 
       const disciplineFilter = screen.getByTestId('filter-discipline');
       await user.selectOptions(disciplineFilter, 'racing');
@@ -279,13 +225,7 @@ describe('CompetitionHistory', () => {
 
     it('date range filter works correctly', async () => {
       const user = userEvent.setup();
-      render(
-        <CompetitionHistory
-          {...defaultProps}
-          data={sampleData}
-          isLoading={false}
-        />
-      );
+      render(<CompetitionHistory {...defaultProps} data={sampleData} isLoading={false} />);
 
       const dateFilter = screen.getByTestId('filter-date-range');
       await user.selectOptions(dateFilter, 'last-month');
@@ -298,13 +238,7 @@ describe('CompetitionHistory', () => {
 
     it('placement filter works correctly', async () => {
       const user = userEvent.setup();
-      render(
-        <CompetitionHistory
-          {...defaultProps}
-          data={sampleData}
-          isLoading={false}
-        />
-      );
+      render(<CompetitionHistory {...defaultProps} data={sampleData} isLoading={false} />);
 
       const placementFilter = screen.getByTestId('filter-placement');
       await user.selectOptions(placementFilter, 'wins');
@@ -316,13 +250,7 @@ describe('CompetitionHistory', () => {
 
     it('multiple filters work together', async () => {
       const user = userEvent.setup();
-      render(
-        <CompetitionHistory
-          {...defaultProps}
-          data={sampleData}
-          isLoading={false}
-        />
-      );
+      render(<CompetitionHistory {...defaultProps} data={sampleData} isLoading={false} />);
 
       // Apply placement filter first
       const placementFilter = screen.getByTestId('filter-placement');
@@ -340,13 +268,7 @@ describe('CompetitionHistory', () => {
 
     it('clear filters resets all', async () => {
       const user = userEvent.setup();
-      render(
-        <CompetitionHistory
-          {...defaultProps}
-          data={sampleData}
-          isLoading={false}
-        />
-      );
+      render(<CompetitionHistory {...defaultProps} data={sampleData} isLoading={false} />);
 
       // Apply some filters
       const disciplineFilter = screen.getByTestId('filter-discipline');
@@ -370,13 +292,7 @@ describe('CompetitionHistory', () => {
   // =========================================
   describe('Competition Entries', () => {
     it('displays entries in chronological order (recent first)', () => {
-      render(
-        <CompetitionHistory
-          {...defaultProps}
-          data={sampleData}
-          isLoading={false}
-        />
-      );
+      render(<CompetitionHistory {...defaultProps} data={sampleData} isLoading={false} />);
 
       const entries = screen.getAllByTestId('competition-entry');
 
@@ -390,13 +306,7 @@ describe('CompetitionHistory', () => {
     });
 
     it('placement badges match ranks correctly', () => {
-      render(
-        <CompetitionHistory
-          {...defaultProps}
-          data={sampleData}
-          isLoading={false}
-        />
-      );
+      render(<CompetitionHistory {...defaultProps} data={sampleData} isLoading={false} />);
 
       // Gold badge for 1st place
       const goldBadges = screen.getAllByTestId('placement-badge-1');
@@ -416,13 +326,7 @@ describe('CompetitionHistory', () => {
 
     it('click on entry calls onViewResults callback', async () => {
       const user = userEvent.setup();
-      render(
-        <CompetitionHistory
-          {...defaultProps}
-          data={sampleData}
-          isLoading={false}
-        />
-      );
+      render(<CompetitionHistory {...defaultProps} data={sampleData} isLoading={false} />);
 
       const entries = screen.getAllByTestId('competition-entry');
       await user.click(entries[0]);
@@ -432,13 +336,7 @@ describe('CompetitionHistory', () => {
 
     it('view performance button calls onViewPerformance callback', async () => {
       const user = userEvent.setup();
-      render(
-        <CompetitionHistory
-          {...defaultProps}
-          data={sampleData}
-          isLoading={false}
-        />
-      );
+      render(<CompetitionHistory {...defaultProps} data={sampleData} isLoading={false} />);
 
       const performanceButtons = screen.getAllByTestId('view-performance-btn');
       await user.click(performanceButtons[0]);
@@ -452,12 +350,7 @@ describe('CompetitionHistory', () => {
   // =========================================
   describe('States', () => {
     it('loading state shows skeletons', () => {
-      render(
-        <CompetitionHistory
-          {...defaultProps}
-          isLoading={true}
-        />
-      );
+      render(<CompetitionHistory {...defaultProps} isLoading={true} />);
 
       const skeletons = screen.getAllByTestId('entry-skeleton');
       expect(skeletons.length).toBeGreaterThan(0);
@@ -479,13 +372,7 @@ describe('CompetitionHistory', () => {
         competitions: [],
       };
 
-      render(
-        <CompetitionHistory
-          {...defaultProps}
-          data={emptyData}
-          isLoading={false}
-        />
-      );
+      render(<CompetitionHistory {...defaultProps} data={emptyData} isLoading={false} />);
 
       expect(screen.getByTestId('empty-state')).toBeInTheDocument();
       expect(screen.getByText(/no competition history yet/i)).toBeInTheDocument();
@@ -495,13 +382,7 @@ describe('CompetitionHistory', () => {
 
     it('filtered empty state shows different message', async () => {
       const user = userEvent.setup();
-      render(
-        <CompetitionHistory
-          {...defaultProps}
-          data={sampleData}
-          isLoading={false}
-        />
-      );
+      render(<CompetitionHistory {...defaultProps} data={sampleData} isLoading={false} />);
 
       // Apply a filter that will result in no matches
       const disciplineFilter = screen.getByTestId('filter-discipline');
@@ -537,13 +418,7 @@ describe('CompetitionHistory', () => {
   // =========================================
   describe('Accessibility', () => {
     it('has proper ARIA attributes for main container', () => {
-      render(
-        <CompetitionHistory
-          {...defaultProps}
-          data={sampleData}
-          isLoading={false}
-        />
-      );
+      render(<CompetitionHistory {...defaultProps} data={sampleData} isLoading={false} />);
 
       const container = screen.getByTestId('competition-history');
       expect(container).toHaveAttribute('role', 'region');
@@ -551,13 +426,7 @@ describe('CompetitionHistory', () => {
     });
 
     it('filter controls have proper labels', () => {
-      render(
-        <CompetitionHistory
-          {...defaultProps}
-          data={sampleData}
-          isLoading={false}
-        />
-      );
+      render(<CompetitionHistory {...defaultProps} data={sampleData} isLoading={false} />);
 
       expect(screen.getByLabelText(/filter by discipline/i)).toBeInTheDocument();
       expect(screen.getByLabelText(/filter by date range/i)).toBeInTheDocument();
@@ -567,13 +436,7 @@ describe('CompetitionHistory', () => {
 
   describe('Entry Details Display', () => {
     it('displays all entry information correctly', () => {
-      render(
-        <CompetitionHistory
-          {...defaultProps}
-          data={sampleData}
-          isLoading={false}
-        />
-      );
+      render(<CompetitionHistory {...defaultProps} data={sampleData} isLoading={false} />);
 
       const entries = screen.getAllByTestId('competition-entry');
       const firstEntry = entries[0];

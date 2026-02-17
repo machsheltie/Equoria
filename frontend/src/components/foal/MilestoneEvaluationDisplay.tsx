@@ -36,7 +36,7 @@ export interface MilestoneEvaluationDisplayProps {
  * Mock API - Replace with actual API calls
  */
 const mockApi = {
-  getEvaluationHistory: async (foalId: number): Promise<MilestoneEvaluationHistory> => {
+  getEvaluationHistory: async (_foalId: number): Promise<MilestoneEvaluationHistory> => {
     // Mock data - replace with actual API call
     return {
       evaluations: [
@@ -123,7 +123,7 @@ const mockApi = {
  */
 const MilestoneEvaluationDisplay: React.FC<MilestoneEvaluationDisplayProps> = ({
   foalId,
-  milestoneType,
+  milestoneType: _milestoneType,
   showHistory = true,
   autoShowLatest = false,
 }) => {
@@ -143,10 +143,7 @@ const MilestoneEvaluationDisplay: React.FC<MilestoneEvaluationDisplayProps> = ({
   });
 
   // Fetch trait definitions
-  const {
-    data: traitData,
-    isLoading: traitsLoading,
-  } = useQuery({
+  const { data: traitData, isLoading: traitsLoading } = useQuery({
     queryKey: ['trait-definitions'],
     queryFn: mockApi.getTraitDefinitions,
     staleTime: 600000,
@@ -259,10 +256,13 @@ const MilestoneEvaluationDisplay: React.FC<MilestoneEvaluationDisplayProps> = ({
                 <Sparkles className="h-8 w-8 text-blue-600" />
               </div>
               <h2 className="text-2xl font-bold text-slate-900 mb-2">
-                {selectedEvaluation.milestoneName || formatMilestoneName(selectedEvaluation.milestone)} Complete!
+                {selectedEvaluation.milestoneName ||
+                  formatMilestoneName(selectedEvaluation.milestone)}{' '}
+                Complete!
               </h2>
               <p className="text-sm text-slate-600">
-                Completed: {new Date(selectedEvaluation.evaluatedAt).toLocaleDateString('en-US', {
+                Completed:{' '}
+                {new Date(selectedEvaluation.evaluatedAt).toLocaleDateString('en-US', {
                   month: 'long',
                   day: 'numeric',
                   year: 'numeric',

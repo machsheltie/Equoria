@@ -106,12 +106,7 @@ describe('XpGainedBadge', () => {
     it('should call onFadeComplete after duration', async () => {
       const onFadeComplete = vi.fn();
       render(
-        <XpGainedBadge
-          xpAmount={150}
-          show={true}
-          duration={2000}
-          onFadeComplete={onFadeComplete}
-        />
+        <XpGainedBadge xpAmount={150} show={true} duration={2000} onFadeComplete={onFadeComplete} />
       );
 
       // Badge should be visible

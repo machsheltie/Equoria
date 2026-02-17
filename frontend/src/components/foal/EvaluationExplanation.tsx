@@ -10,11 +10,7 @@
 import React from 'react';
 import { Info, Lightbulb, TrendingUp } from 'lucide-react';
 import type { MilestoneType } from '@/types/foal';
-import {
-  getEvaluationCategory,
-  getEvaluationExplanation,
-  getFutureCareGuidance,
-} from '@/types/foal';
+import { getEvaluationExplanation, getFutureCareGuidance } from '@/types/foal';
 
 export interface EvaluationExplanationProps {
   score: number;
@@ -57,7 +53,6 @@ const EvaluationExplanation: React.FC<EvaluationExplanationProps> = ({
   milestone,
   traits,
 }) => {
-  const category = getEvaluationCategory(score);
   const explanation = getEvaluationExplanation(score, milestone, traits);
   const guidance = getFutureCareGuidance(score);
   const containerColor = getExplanationColor(score);
@@ -83,16 +78,16 @@ const EvaluationExplanation: React.FC<EvaluationExplanationProps> = ({
               {score >= 3
                 ? '✨ Positive Traits Confirmed:'
                 : score >= 0
-                ? '📊 Traits Confirmed:'
-                : '⚠️ Traits to Be Aware Of:'}
+                  ? '📊 Traits Confirmed:'
+                  : '⚠️ Traits to Be Aware Of:'}
             </p>
             <div className="space-y-2">
               {traits.map((trait, index) => (
                 <div key={index} className="flex items-start gap-2">
                   <span className="inline-block w-1.5 h-1.5 rounded-full bg-current mt-1.5 flex-shrink-0" />
                   <p className="flex-1">
-                    <span className="font-medium">{trait}</span> will influence your horse's behavior
-                    and performance throughout their life.
+                    <span className="font-medium">{trait}</span> will influence your horse's
+                    behavior and performance throughout their life.
                   </p>
                 </div>
               ))}

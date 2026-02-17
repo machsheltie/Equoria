@@ -41,9 +41,7 @@ const HorseCard: React.FC<HorseCardProps> = ({ horse, type }) => {
     <div className={`rounded-lg border ${colorClass} p-4`}>
       <div className="flex items-start justify-between mb-3">
         <div>
-          <p className={`text-xs font-semibold uppercase tracking-wide ${labelColor}`}>
-            {label}
-          </p>
+          <p className={`text-xs font-semibold uppercase tracking-wide ${labelColor}`}>{label}</p>
           <h4 className="text-lg font-bold text-slate-900 mt-1">{horse.name}</h4>
         </div>
         {horse.imageUrl && (
@@ -112,11 +110,12 @@ const BreedingConfirmationModal: React.FC<BreedingConfirmationModalProps> = ({
   isSubmitting,
 }) => {
   // Get compatibility color
-  const compatibilityColor = compatibility.overall >= 80
-    ? 'text-green-600'
-    : compatibility.overall >= 60
-    ? 'text-yellow-600'
-    : 'text-red-600';
+  const compatibilityColor =
+    compatibility.overall >= 80
+      ? 'text-green-600'
+      : compatibility.overall >= 60
+        ? 'text-yellow-600'
+        : 'text-red-600';
 
   return (
     <BaseModal
@@ -161,9 +160,7 @@ const BreedingConfirmationModal: React.FC<BreedingConfirmationModalProps> = ({
           <div className="flex items-center justify-between mb-2">
             <div className="flex items-center gap-2">
               <TrendingUp className="h-5 w-5 text-slate-600" />
-              <h5 className="text-sm font-semibold text-slate-900">
-                Compatibility Score
-              </h5>
+              <h5 className="text-sm font-semibold text-slate-900">Compatibility Score</h5>
             </div>
             <span className={`text-2xl font-bold ${compatibilityColor}`}>
               {compatibility.overall}/100
@@ -194,9 +191,7 @@ const BreedingConfirmationModal: React.FC<BreedingConfirmationModalProps> = ({
               <DollarSign className="h-5 w-5 text-emerald-600" />
               <span className="text-sm font-semibold text-slate-900">Stud Fee</span>
             </div>
-            <span className="text-xl font-bold text-emerald-700">
-              ${studFee.toLocaleString()}
-            </span>
+            <span className="text-xl font-bold text-emerald-700">${studFee.toLocaleString()}</span>
           </div>
           <p className="text-xs text-slate-600 mt-2">
             This amount will be deducted from your account balance immediately.
@@ -208,22 +203,20 @@ const BreedingConfirmationModal: React.FC<BreedingConfirmationModalProps> = ({
           <div className="flex items-start gap-2">
             <AlertTriangle className="h-5 w-5 text-amber-600 flex-shrink-0 mt-0.5" />
             <div className="flex-1">
-              <h5 className="text-sm font-semibold text-amber-900 mb-1">
-                Important Information
-              </h5>
+              <h5 className="text-sm font-semibold text-amber-900 mb-1">Important Information</h5>
               <ul className="space-y-2 text-sm text-amber-800">
                 <li className="flex items-start gap-2">
                   <Clock className="h-4 w-4 flex-shrink-0 mt-0.5" />
                   <span>
-                    <strong>30-Day Breeding Cooldown:</strong> Both parents will be unavailable
-                    for breeding for 30 days after confirmation.
+                    <strong>30-Day Breeding Cooldown:</strong> Both parents will be unavailable for
+                    breeding for 30 days after confirmation.
                   </span>
                 </li>
                 <li className="flex items-start gap-2">
                   <span className="font-bold text-amber-900 flex-shrink-0">•</span>
                   <span>
-                    <strong>Gestation Period:</strong> The foal will be born immediately and
-                    enter the critical 30-day development phase.
+                    <strong>Gestation Period:</strong> The foal will be born immediately and enter
+                    the critical 30-day development phase.
                   </span>
                 </li>
                 <li className="flex items-start gap-2">

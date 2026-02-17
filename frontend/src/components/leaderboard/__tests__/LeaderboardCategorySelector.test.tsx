@@ -21,8 +21,6 @@ import { describe, it, expect, vi, beforeEach } from 'vitest';
 import { render, screen, within } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import LeaderboardCategorySelector, {
-  type LeaderboardCategory,
-  type TimePeriod,
   type LeaderboardCategorySelectorProps,
 } from '../LeaderboardCategorySelector';
 
@@ -148,9 +146,7 @@ describe('LeaderboardCategorySelector', () => {
     });
 
     it('shows discipline selector when category is discipline', () => {
-      render(
-        <LeaderboardCategorySelector {...defaultProps} selectedCategory="discipline" />
-      );
+      render(<LeaderboardCategorySelector {...defaultProps} selectedCategory="discipline" />);
       expect(screen.getByTestId('discipline-selector')).toBeInTheDocument();
     });
 
@@ -224,10 +220,7 @@ describe('LeaderboardCategorySelector', () => {
       render(<LeaderboardCategorySelector {...defaultProps} selectedCategory="level" />);
 
       expect(screen.getByTestId('category-level')).toHaveAttribute('aria-pressed', 'true');
-      expect(screen.getByTestId('category-prize-money')).toHaveAttribute(
-        'aria-pressed',
-        'false'
-      );
+      expect(screen.getByTestId('category-prize-money')).toHaveAttribute('aria-pressed', 'false');
     });
 
     it('has a role of tablist on the category container', () => {

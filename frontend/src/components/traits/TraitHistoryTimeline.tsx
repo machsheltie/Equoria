@@ -8,7 +8,7 @@
  */
 
 import React from 'react';
-import { LineChart, Line, XAxis, YAxis, Tooltip, ResponsiveContainer, Dot } from 'recharts';
+import { LineChart, Line, XAxis, YAxis, Tooltip, ResponsiveContainer } from 'recharts';
 import { Calendar, Sparkles, Activity, Edit3 } from 'lucide-react';
 import type { TraitHistory, TraitHistoryEvent } from '@/types/traits';
 import { getTierStyle } from '@/types/traits';
@@ -20,7 +20,7 @@ export interface TraitHistoryTimelineProps {
 /**
  * Custom Timeline Event Dot
  */
-const EventDot: React.FC<any> = (props) => {
+const EventDot: React.FC<Record<string, unknown>> = (props) => {
   const { cx, cy, payload } = props;
 
   if (!payload || !payload.eventType) return null;
@@ -45,7 +45,7 @@ const EventDot: React.FC<any> = (props) => {
 /**
  * Custom Tooltip
  */
-const CustomTooltip: React.FC<any> = ({ active, payload }) => {
+const CustomTooltip: React.FC<Record<string, unknown>> = ({ active, payload }) => {
   if (!active || !payload || !payload[0]) return null;
 
   const event: TraitHistoryEvent = payload[0].payload;
@@ -127,11 +127,7 @@ const TraitHistoryTimeline: React.FC<TraitHistoryTimelineProps> = ({ history }) 
         <h4 className="text-sm font-bold text-slate-900 mb-4">Timeline Visualization</h4>
         <ResponsiveContainer width="100%" height={200}>
           <LineChart data={chartData}>
-            <XAxis
-              dataKey="displayDate"
-              tick={{ fontSize: 12 }}
-              stroke="#64748b"
-            />
+            <XAxis dataKey="displayDate" tick={{ fontSize: 12 }} stroke="#64748b" />
             <YAxis hide />
             <Tooltip content={<CustomTooltip />} />
             <Line
@@ -148,7 +144,7 @@ const TraitHistoryTimeline: React.FC<TraitHistoryTimelineProps> = ({ history }) 
       {/* Event List */}
       <div className="space-y-3">
         <h4 className="text-sm font-bold text-slate-900">Event History</h4>
-        {chartData.map((event, index) => {
+        {chartData.map((event, _index) => {
           const tierStyle = getTierStyle(event.tier);
 
           // Icon based on event type

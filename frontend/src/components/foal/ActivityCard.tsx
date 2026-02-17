@@ -19,11 +19,7 @@ import {
   Lock,
   CheckCircle,
 } from 'lucide-react';
-import type {
-  EnrichmentActivityDefinition,
-  EnrichmentActivityStatus,
-  Foal,
-} from '@/types/foal';
+import type { EnrichmentActivityDefinition, EnrichmentActivityStatus, Foal } from '@/types/foal';
 import {
   getActivityStatusColor,
   getActivityStatusLabel,
@@ -156,7 +152,9 @@ const ActivityCard: React.FC<ActivityCardProps> = ({
         </div>
 
         {/* Status Badge */}
-        <div className={`flex items-center gap-1 px-2 py-1 text-xs font-medium rounded ${statusColors}`}>
+        <div
+          className={`flex items-center gap-1 px-2 py-1 text-xs font-medium rounded ${statusColors}`}
+        >
           <StatusIcon className="h-3 w-3" />
           <span>{getActivityStatusLabel(status.status)}</span>
         </div>
@@ -210,9 +208,7 @@ const ActivityCard: React.FC<ActivityCardProps> = ({
             Object.entries(benefits.temperamentModifiers).map(([stat, value]) => (
               <div key={stat} className="flex items-center justify-between">
                 <span className="text-slate-600 capitalize">{stat}:</span>
-                <span className="font-medium text-slate-900">
-                  {formatBenefit(value, true)}
-                </span>
+                <span className="font-medium text-slate-900">{formatBenefit(value, true)}</span>
               </div>
             ))}
 
@@ -226,23 +222,17 @@ const ActivityCard: React.FC<ActivityCardProps> = ({
 
           <div className="flex items-center justify-between">
             <span className="text-slate-600">Milestone:</span>
-            <span className="font-medium text-slate-900">
-              +{benefits.milestoneBonus} pts
-            </span>
+            <span className="font-medium text-slate-900">+{benefits.milestoneBonus} pts</span>
           </div>
 
           <div className="flex items-center justify-between">
             <span className="text-slate-600">Bonding:</span>
-            <span className="font-medium text-slate-900">
-              +{benefits.bondingIncrease}
-            </span>
+            <span className="font-medium text-slate-900">+{benefits.bondingIncrease}</span>
           </div>
 
           <div className="flex items-center justify-between">
             <span className="text-slate-600">Stress:</span>
-            <span className="font-medium text-emerald-600">
-              -{benefits.stressReduction}
-            </span>
+            <span className="font-medium text-emerald-600">-{benefits.stressReduction}</span>
           </div>
         </div>
       </div>

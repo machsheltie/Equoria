@@ -118,39 +118,21 @@ describe('XpHistoryTimeline', () => {
   // =========================================================================
   describe('Basic Rendering', () => {
     it('should render the timeline container', () => {
-      render(
-        <XpHistoryTimeline
-          horseId={101}
-          horseName="Thunder Bolt"
-          entries={sampleEntries}
-        />
-      );
+      render(<XpHistoryTimeline horseId={101} horseName="Thunder Bolt" entries={sampleEntries} />);
 
       const timeline = screen.getByTestId('xp-history-timeline');
       expect(timeline).toBeInTheDocument();
     });
 
     it('should display header with horse name', () => {
-      render(
-        <XpHistoryTimeline
-          horseId={101}
-          horseName="Thunder Bolt"
-          entries={sampleEntries}
-        />
-      );
+      render(<XpHistoryTimeline horseId={101} horseName="Thunder Bolt" entries={sampleEntries} />);
 
       expect(screen.getByText(/Thunder Bolt/)).toBeInTheDocument();
       expect(screen.getByText(/XP History/i)).toBeInTheDocument();
     });
 
     it('should render all entries', () => {
-      render(
-        <XpHistoryTimeline
-          horseId={101}
-          horseName="Thunder Bolt"
-          entries={sampleEntries}
-        />
-      );
+      render(<XpHistoryTimeline horseId={101} horseName="Thunder Bolt" entries={sampleEntries} />);
 
       const entries = screen.getAllByTestId('xp-history-entry');
       expect(entries).toHaveLength(5);
@@ -236,13 +218,7 @@ describe('XpHistoryTimeline', () => {
   // =========================================================================
   describe('Chronological Sorting', () => {
     it('should display entries in newest-first order', () => {
-      render(
-        <XpHistoryTimeline
-          horseId={101}
-          horseName="Thunder Bolt"
-          entries={sampleEntries}
-        />
-      );
+      render(<XpHistoryTimeline horseId={101} horseName="Thunder Bolt" entries={sampleEntries} />);
 
       const entries = screen.getAllByTestId('xp-history-entry');
       // The first entry should be the newest (Jan 25)
@@ -260,13 +236,7 @@ describe('XpHistoryTimeline', () => {
   // =========================================================================
   describe('Empty State', () => {
     it('should display empty state when no entries', () => {
-      render(
-        <XpHistoryTimeline
-          horseId={101}
-          horseName="Thunder Bolt"
-          entries={[]}
-        />
-      );
+      render(<XpHistoryTimeline horseId={101} horseName="Thunder Bolt" entries={[]} />);
 
       const emptyState = screen.getByTestId('empty-state');
       expect(emptyState).toBeInTheDocument();
@@ -274,13 +244,7 @@ describe('XpHistoryTimeline', () => {
     });
 
     it('should display a friendly icon in empty state', () => {
-      render(
-        <XpHistoryTimeline
-          horseId={101}
-          horseName="Thunder Bolt"
-          entries={[]}
-        />
-      );
+      render(<XpHistoryTimeline horseId={101} horseName="Thunder Bolt" entries={[]} />);
 
       const emptyIcon = screen.getByTestId('empty-state-icon');
       expect(emptyIcon).toBeInTheDocument();
@@ -293,12 +257,7 @@ describe('XpHistoryTimeline', () => {
   describe('Loading State', () => {
     it('should display loading skeletons when isLoading is true', () => {
       render(
-        <XpHistoryTimeline
-          horseId={101}
-          horseName="Thunder Bolt"
-          entries={[]}
-          isLoading={true}
-        />
+        <XpHistoryTimeline horseId={101} horseName="Thunder Bolt" entries={[]} isLoading={true} />
       );
 
       const skeletons = screen.getAllByTestId('timeline-skeleton');
@@ -327,12 +286,7 @@ describe('XpHistoryTimeline', () => {
       const error = new Error('Failed to load XP history');
 
       render(
-        <XpHistoryTimeline
-          horseId={101}
-          horseName="Thunder Bolt"
-          entries={[]}
-          error={error}
-        />
+        <XpHistoryTimeline horseId={101} horseName="Thunder Bolt" entries={[]} error={error} />
       );
 
       const errorState = screen.getByTestId('error-state');
@@ -361,13 +315,7 @@ describe('XpHistoryTimeline', () => {
   // =========================================================================
   describe('Entry Props', () => {
     it('should mark the first entry with isFirst', () => {
-      render(
-        <XpHistoryTimeline
-          horseId={101}
-          horseName="Thunder Bolt"
-          entries={sampleEntries}
-        />
-      );
+      render(<XpHistoryTimeline horseId={101} horseName="Thunder Bolt" entries={sampleEntries} />);
 
       // The first entry should not have a top connector
       const entries = screen.getAllByTestId('xp-history-entry');
@@ -376,13 +324,7 @@ describe('XpHistoryTimeline', () => {
     });
 
     it('should mark the last entry with isLast', () => {
-      render(
-        <XpHistoryTimeline
-          horseId={101}
-          horseName="Thunder Bolt"
-          entries={sampleEntries}
-        />
-      );
+      render(<XpHistoryTimeline horseId={101} horseName="Thunder Bolt" entries={sampleEntries} />);
 
       // The last entry should not have a bottom connector
       const entries = screen.getAllByTestId('xp-history-entry');
@@ -391,13 +333,7 @@ describe('XpHistoryTimeline', () => {
     });
 
     it('should correctly identify level-up entries', () => {
-      render(
-        <XpHistoryTimeline
-          horseId={101}
-          horseName="Thunder Bolt"
-          entries={sampleEntries}
-        />
-      );
+      render(<XpHistoryTimeline horseId={101} horseName="Thunder Bolt" entries={sampleEntries} />);
 
       // The second entry (xp-002) is a level-up entry
       // It should have level-up styling
@@ -414,13 +350,7 @@ describe('XpHistoryTimeline', () => {
   // =========================================================================
   describe('Accessibility', () => {
     it('should have ARIA region role for the timeline', () => {
-      render(
-        <XpHistoryTimeline
-          horseId={101}
-          horseName="Thunder Bolt"
-          entries={sampleEntries}
-        />
-      );
+      render(<XpHistoryTimeline horseId={101} horseName="Thunder Bolt" entries={sampleEntries} />);
 
       const timeline = screen.getByTestId('xp-history-timeline');
       expect(timeline).toHaveAttribute('role', 'region');
@@ -446,13 +376,7 @@ describe('XpHistoryTimeline', () => {
   // =========================================================================
   describe('Integration with XpHistoryEntry', () => {
     it('should render XpHistoryEntry components for each entry', () => {
-      render(
-        <XpHistoryTimeline
-          horseId={101}
-          horseName="Thunder Bolt"
-          entries={sampleEntries}
-        />
-      );
+      render(<XpHistoryTimeline horseId={101} horseName="Thunder Bolt" entries={sampleEntries} />);
 
       // Verify source names from entries are displayed
       expect(screen.getByText('Spring Derby Championship')).toBeInTheDocument();
@@ -463,13 +387,7 @@ describe('XpHistoryTimeline', () => {
     });
 
     it('should display XP amounts for all entries', () => {
-      render(
-        <XpHistoryTimeline
-          horseId={101}
-          horseName="Thunder Bolt"
-          entries={sampleEntries}
-        />
-      );
+      render(<XpHistoryTimeline horseId={101} horseName="Thunder Bolt" entries={sampleEntries} />);
 
       const xpAmounts = screen.getAllByTestId('xp-amount');
       expect(xpAmounts).toHaveLength(5);

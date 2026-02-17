@@ -193,9 +193,7 @@ const EnrichmentActivityPanel: React.FC<EnrichmentActivityPanelProps> = ({ foal 
 
   // Handle activity selection
   const handleActivityClick = (activity: EnrichmentActivityDefinition) => {
-    const status = enrichmentStatus?.activityStatuses.find(
-      (s) => s.activityId === activity.id
-    );
+    const status = enrichmentStatus?.activityStatuses.find((s) => s.activityId === activity.id);
     if (status?.canPerform) {
       setSelectedActivity(activity);
       setIsConfirmModalOpen(true);
@@ -258,9 +256,7 @@ const EnrichmentActivityPanel: React.FC<EnrichmentActivityPanelProps> = ({ foal 
         {/* Daily Activity Counter */}
         <div className="mt-4">
           <div className="flex items-center justify-between mb-2">
-            <span className="text-sm font-semibold text-slate-700">
-              Daily Activities Completed
-            </span>
+            <span className="text-sm font-semibold text-slate-700">Daily Activities Completed</span>
             <span className="text-sm font-bold text-emerald-600">
               {enrichmentStatus.dailyActivitiesCompleted} / {enrichmentStatus.dailyActivitiesLimit}
             </span>

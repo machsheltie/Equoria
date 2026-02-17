@@ -97,11 +97,12 @@ const BreedingPairSelection: React.FC<BreedingPairSelectionProps> = ({ userId: p
       // Transform backend response to CompatibilityAnalysis
       // This is a placeholder - adjust based on actual backend response
       return {
-        overall: (response as any).overallScore || 75,
-        temperamentMatch: (response as any).temperamentCompatibility || 80,
-        traitSynergy: (response as any).traitSynergy || 70,
-        geneticDiversity: (response as any).geneticDiversity || 75,
-        recommendations: (response as any).recommendations || [
+        overall: ((response as Record<string, unknown>).overallScore as number) || 75,
+        temperamentMatch:
+          ((response as Record<string, unknown>).temperamentCompatibility as number) || 80,
+        traitSynergy: ((response as Record<string, unknown>).traitSynergy as number) || 70,
+        geneticDiversity: ((response as Record<string, unknown>).geneticDiversity as number) || 75,
+        recommendations: ((response as Record<string, unknown>).recommendations as string[]) || [
           'Compatible temperaments for stable offspring',
           'Good genetic diversity reduces inbreeding risk',
           'Strong trait synergy for athletic abilities',

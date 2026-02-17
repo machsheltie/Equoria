@@ -16,7 +16,7 @@
 
 import React from 'react';
 import { describe, it, expect, vi, beforeEach } from 'vitest';
-import { render, screen, within } from '@testing-library/react';
+import { render, screen } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import PrizeTransactionRow, {
   type PrizeTransactionRowProps,
@@ -181,22 +181,14 @@ describe('PrizeTransactionRow', () => {
     it('2nd place has silver badge and 3rd has bronze badge', () => {
       // Test 2nd place
       const { rerender } = render(
-        <PrizeTransactionRow
-          {...defaultProps}
-          transaction={secondPlaceTransaction}
-        />
+        <PrizeTransactionRow {...defaultProps} transaction={secondPlaceTransaction} />
       );
 
       let badge = screen.getByTestId('placement-badge');
       expect(badge).toHaveClass('bg-gray-300');
 
       // Test 3rd place
-      rerender(
-        <PrizeTransactionRow
-          {...defaultProps}
-          transaction={thirdPlaceTransaction}
-        />
-      );
+      rerender(<PrizeTransactionRow {...defaultProps} transaction={thirdPlaceTransaction} />);
 
       badge = screen.getByTestId('placement-badge');
       expect(badge).toHaveClass('bg-orange-400');

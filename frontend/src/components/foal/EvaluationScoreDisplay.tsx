@@ -8,7 +8,7 @@
  */
 
 import React from 'react';
-import { TrendingUp, Award } from 'lucide-react';
+import { Award } from 'lucide-react';
 import {
   getEvaluationCategory,
   getEvaluationColor,
@@ -102,9 +102,7 @@ const EvaluationScoreDisplay: React.FC<EvaluationScoreDisplayProps> = ({
       <div className="flex items-center justify-between mb-4">
         <div className="flex items-center gap-2">
           <Award className={`${sizeClasses.icon} ${iconColor}`} />
-          <span className={`font-semibold ${colorClasses.split(' ')[0]}`}>
-            Overall Score
-          </span>
+          <span className={`font-semibold ${colorClasses.split(' ')[0]}`}>Overall Score</span>
         </div>
         {showCategory && (
           <span
@@ -120,9 +118,7 @@ const EvaluationScoreDisplay: React.FC<EvaluationScoreDisplayProps> = ({
         <div className={`${sizeClasses.score} font-bold ${colorClasses.split(' ')[0]}`}>
           {formattedScore}
         </div>
-        <div className={`${sizeClasses.label} text-slate-600 mt-1`}>
-          out of ±10
-        </div>
+        <div className={`${sizeClasses.label} text-slate-600 mt-1`}>out of ±10</div>
       </div>
 
       {/* Progress Bar */}
@@ -133,7 +129,9 @@ const EvaluationScoreDisplay: React.FC<EvaluationScoreDisplayProps> = ({
             <span>0</span>
             <span>+10</span>
           </div>
-          <div className={`w-full bg-slate-200 rounded-full ${sizeClasses.progressHeight} overflow-hidden`}>
+          <div
+            className={`w-full bg-slate-200 rounded-full ${sizeClasses.progressHeight} overflow-hidden`}
+          >
             <div
               className={`h-full bg-gradient-to-r ${progressGradient} transition-all duration-500 ease-out`}
               style={{ width: `${progressPercentage}%` }}
@@ -150,15 +148,23 @@ const EvaluationScoreDisplay: React.FC<EvaluationScoreDisplayProps> = ({
             {/* Center marker (0) */}
             <div className="absolute left-1/2 top-0 w-0.5 h-full bg-slate-400 -translate-x-1/2" />
             {/* Good threshold marker (+3) */}
-            <div className="absolute left-[65%] top-0 w-0.5 h-2 bg-green-400" title="Good threshold (+3)" />
+            <div
+              className="absolute left-[65%] top-0 w-0.5 h-2 bg-green-400"
+              title="Good threshold (+3)"
+            />
             {/* Poor threshold marker (-3) */}
-            <div className="absolute left-[35%] top-0 w-0.5 h-2 bg-red-400" title="Poor threshold (-3)" />
+            <div
+              className="absolute left-[35%] top-0 w-0.5 h-2 bg-red-400"
+              title="Poor threshold (-3)"
+            />
           </div>
         </div>
       )}
 
       {/* Score interpretation */}
-      <div className={`mt-4 text-center ${sizeClasses.label} ${colorClasses.split(' ')[0]} font-medium`}>
+      <div
+        className={`mt-4 text-center ${sizeClasses.label} ${colorClasses.split(' ')[0]} font-medium`}
+      >
         {category === 'Excellent' && '🌟 Outstanding development!'}
         {category === 'Good' && '✨ Positive development'}
         {category === 'Neutral' && '📊 Average development'}

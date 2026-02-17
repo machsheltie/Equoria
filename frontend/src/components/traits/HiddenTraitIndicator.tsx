@@ -51,7 +51,8 @@ const HiddenTraitIndicator: React.FC<HiddenTraitIndicatorProps> = ({
         <div className="flex-1">
           <h3 className="text-lg font-bold text-slate-900">Hidden Traits</h3>
           <p className="text-sm text-slate-600">
-            {discoveryStatus.hiddenTraits} trait{discoveryStatus.hiddenTraits !== 1 ? 's' : ''} yet to be discovered
+            {discoveryStatus.hiddenTraits} trait{discoveryStatus.hiddenTraits !== 1 ? 's' : ''} yet
+            to be discovered
           </p>
         </div>
       </div>

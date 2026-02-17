@@ -13,7 +13,7 @@ import type { EnrichmentCategory } from '@/types/foal';
 
 export interface CategoryFilterProps {
   selectedCategory: EnrichmentCategory | 'all';
-  onCategoryChange: (category: EnrichmentCategory | 'all') => void;
+  onCategoryChange: (_category: EnrichmentCategory | 'all') => void;
   categoryCounts?: Record<EnrichmentCategory | 'all', number>;
   showCounts?: boolean;
 }

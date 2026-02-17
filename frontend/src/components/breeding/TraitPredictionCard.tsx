@@ -90,13 +90,13 @@ const TraitPredictionCard: React.FC<TraitPredictionCardProps> = ({
         <div className="flex items-center justify-between">
           <div className="flex items-center gap-2 flex-1">
             <TraitTypeIcon
-              className={`h-4 w-4 flex-shrink-0 ${
-                isPositive ? 'text-green-600' : 'text-red-600'
-              }`}
+              className={`h-4 w-4 flex-shrink-0 ${isPositive ? 'text-green-600' : 'text-red-600'}`}
             />
             <span className="text-sm font-medium text-slate-900">{traitName}</span>
           </div>
-          <div className={`flex items-center gap-2 px-2 py-1 rounded text-xs font-bold ${probabilityColor}`}>
+          <div
+            className={`flex items-center gap-2 px-2 py-1 rounded text-xs font-bold ${probabilityColor}`}
+          >
             <TrendingUp className="h-3 w-3" />
             <span>{formatProbability(probability)}</span>
           </div>
@@ -135,9 +135,7 @@ const TraitPredictionCard: React.FC<TraitPredictionCardProps> = ({
       </div>
 
       {/* Description */}
-      {description && (
-        <p className="text-sm text-slate-600 mb-3">{description}</p>
-      )}
+      {description && <p className="text-sm text-slate-600 mb-3">{description}</p>}
 
       {/* Progress Bar */}
       <div className="mb-3">
@@ -147,10 +145,10 @@ const TraitPredictionCard: React.FC<TraitPredictionCardProps> = ({
               probability >= 80
                 ? 'bg-green-500'
                 : probability >= 60
-                ? 'bg-blue-500'
-                : probability >= 40
-                ? 'bg-yellow-500'
-                : 'bg-amber-500'
+                  ? 'bg-blue-500'
+                  : probability >= 40
+                    ? 'bg-yellow-500'
+                    : 'bg-amber-500'
             }`}
             style={{ width: `${probability}%` }}
             role="progressbar"
@@ -174,9 +172,7 @@ const TraitPredictionCard: React.FC<TraitPredictionCardProps> = ({
       <div className="mt-2">
         <span
           className={`inline-flex items-center gap-1 px-2 py-0.5 text-xs font-medium rounded ${
-            isPositive
-              ? 'text-green-700 bg-green-100'
-              : 'text-red-700 bg-red-100'
+            isPositive ? 'text-green-700 bg-green-100' : 'text-red-700 bg-red-100'
           }`}
         >
           {isPositive ? 'Positive Trait' : 'Negative Trait'}

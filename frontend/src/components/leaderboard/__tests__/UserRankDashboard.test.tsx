@@ -228,12 +228,7 @@ describe('UserRankDashboard', () => {
   describe('Empty State', () => {
     it('renders empty state message when rankings array is empty and not loading', () => {
       render(
-        <UserRankDashboard
-          userId="user-1"
-          userName="John Doe"
-          rankings={[]}
-          bestRankings={[]}
-        />
+        <UserRankDashboard userId="user-1" userName="John Doe" rankings={[]} bestRankings={[]} />
       );
       expect(screen.getByTestId('empty-rankings-state')).toBeInTheDocument();
       expect(screen.getByText(/no rankings yet/i)).toBeInTheDocument();
