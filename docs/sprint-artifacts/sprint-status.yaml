@@ -1705,12 +1705,15 @@ development_status:
 
   7-4-career-lifecycle-dashboard:
     title: 'Career Lifecycle Dashboard'
-    status: backlog
+    status: completed
+    completed_date: '2026-02-17'
     priority: P1
     fr: FR-G4
     epic: 7
     story: 4
     prerequisites: [7-3-task-assignment-ui]
+    story_file: 'docs/sprint-artifacts/7-4-career-lifecycle-dashboard.md'
+    completion_notes: '79 AC tests passing; GroomCareerPanel with XP/level progress, career timeline, retirement warnings, performance metrics, career milestones; groomCareer.ts with XP helpers and retirement calculator'
 
   7-5-legacy-system-ui:
     title: 'Legacy System UI'
