@@ -1717,12 +1717,15 @@ development_status:
 
   7-5-legacy-system-ui:
     title: 'Legacy System UI'
-    status: backlog
+    status: completed
+    completed_date: '2026-02-17'
     priority: P2
     fr: FR-G5
     epic: 7
     story: 5
     prerequisites: [7-4-career-lifecycle-dashboard]
+    story_file: 'docs/sprint-artifacts/7-5-legacy-system-ui.md'
+    completion_notes: '60 AC tests passing; GroomLegacyPanel with LegacyTree, PerkCard, InheritedPerkSection, MentorEligibilitySection, LegacyBonusesSection, TraitInheritancePreview, ProtégéSection; groomLegacy.ts with 15 perks across 5 personality types'
 
   7-6-talent-tree-visualization:
     title: 'Talent Tree Visualization'
