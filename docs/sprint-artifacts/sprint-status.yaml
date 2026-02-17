@@ -1741,12 +1741,15 @@ development_status:
 
   7-7-show-handling-rare-traits:
     title: 'Show Handling & Rare Traits'
-    status: backlog
+    status: completed
+    completed_date: '2026-02-17'
     priority: P1
     fr: [FR-G7, FR-R1, FR-R2, FR-R3, FR-R4]
     epic: 7
     story: 7
     prerequisites: [7-3-task-assignment-ui, epic-6]
+    story_file: docs/sprint-artifacts/7-7-show-handling-rare-traits.md
+    completion_notes: 'GroomShowHandlerPanel (FR-G7) + GroomBonusTraitPanel (FR-R1–R4); 120/120 tests; groomShowHandler.ts + groomBonusTrait.ts types'
 
   epic-7-retrospective:
     title: 'Epic 7 Retrospective'
