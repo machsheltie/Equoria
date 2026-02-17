@@ -7,10 +7,11 @@
  */
 
 import React, { useState } from 'react';
-import { useQueryClient } from '@tanstack/react-query';
-import { Users, TrendingUp, DollarSign, AlertCircle, Calendar, Trash2 } from 'lucide-react';
+import { Users, DollarSign, AlertCircle, Calendar, Trash2 } from 'lucide-react';
 import AssignGroomModal from './AssignGroomModal';
 import FantasyButton from './FantasyButton';
+import GroomPersonalityBadge from './groom/GroomPersonalityBadge';
+import GroomPersonalityDisplay from './groom/GroomPersonalityDisplay';
 import {
   useUserGrooms,
   useGroomAssignments,
@@ -20,13 +21,6 @@ import {
   type GroomAssignment,
   type SalarySummary,
 } from '../hooks/api/useGrooms';
-
-// TypeScript interfaces (local only)
-interface Horse {
-  id: number;
-  name: string;
-  age: number;
-}
 
 interface MyGroomsDashboardProps {
   userId: number;
@@ -57,14 +51,13 @@ const MyGroomsDashboard: React.FC<MyGroomsDashboardProps> = ({
   assignmentsData,
   salaryCostsData,
 }) => {
-  const queryClient = useQueryClient();
-  const [selectedGroomId, setSelectedGroomId] = useState<number | null>(null);
   const [selectedHorseId, setSelectedHorseId] = useState<number | null>(null);
   const [selectedHorseName, setSelectedHorseName] = useState<string>('');
   const [isAssignModalOpen, setIsAssignModalOpen] = useState(false);
   const [skillLevelFilter, setSkillLevelFilter] = useState<string>('all');
   const [specialtyFilter, setSpecialtyFilter] = useState<string>('all');
   const [sortBy, setSortBy] = useState<string>('name');
+  const [expandedPersonalityId, setExpandedPersonalityId] = useState<number | null>(null);
 
   // Fetch grooms data using centralized hook
   const { data: groomsResponse, isLoading: groomsLoading } = useUserGrooms(userId);
@@ -128,8 +121,7 @@ const MyGroomsDashboard: React.FC<MyGroomsDashboardProps> = ({
   }).length;
 
   // Handle assign button click
-  const handleAssignClick = (groomId: number) => {
-    setSelectedGroomId(groomId);
+  const handleAssignClick = (_groomId: number) => {
     // In a real app, you'd open a horse selection modal here
     // For now, we'll just open the assign modal with a placeholder
     setSelectedHorseId(101); // Placeholder
@@ -147,7 +139,6 @@ const MyGroomsDashboard: React.FC<MyGroomsDashboardProps> = ({
   // Handle assignment complete
   const handleAssignmentComplete = () => {
     setIsAssignModalOpen(false);
-    setSelectedGroomId(null);
     setSelectedHorseId(null);
     setSelectedHorseName('');
   };
@@ -344,6 +335,10 @@ const MyGroomsDashboard: React.FC<MyGroomsDashboardProps> = ({
                     </span>
                   </div>
                   <div className="flex justify-between items-center">
+                    <span className="fantasy-caption text-xs">Personality</span>
+                    <GroomPersonalityBadge personality={groom.personality} />
+                  </div>
+                  <div className="flex justify-between items-center">
                     <span className="fantasy-caption text-xs">Salary</span>
                     <span className="fantasy-body text-forest-green font-bold">
                       ${groom.sessionRate}/week
@@ -365,6 +360,31 @@ const MyGroomsDashboard: React.FC<MyGroomsDashboardProps> = ({
                       />
                     </div>
                   </div>
+                </div>
+
+                {/* Personality Toggle */}
+                <div className="mb-4">
+                  <button
+                    type="button"
+                    onClick={() =>
+                      setExpandedPersonalityId(expandedPersonalityId === groom.id ? null : groom.id)
+                    }
+                    className="w-full text-left text-xs fantasy-caption text-aged-bronze hover:text-burnished-gold transition-colors flex items-center justify-between py-1"
+                    aria-expanded={expandedPersonalityId === groom.id}
+                    data-testid={`personality-toggle-${groom.id}`}
+                  >
+                    <span>Personality Details</span>
+                    <span>{expandedPersonalityId === groom.id ? '▲' : '▼'}</span>
+                  </button>
+                  {expandedPersonalityId === groom.id && (
+                    <div className="mt-2" data-testid={`personality-panel-${groom.id}`}>
+                      <GroomPersonalityDisplay
+                        personality={groom.personality}
+                        experience={groom.experience}
+                        compact
+                      />
+                    </div>
+                  )}
                 </div>
 
                 {/* Assignments */}

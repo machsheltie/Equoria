@@ -1681,12 +1681,15 @@ development_status:
 
   7-2-groom-personality-display:
     title: 'Groom Personality Display'
-    status: backlog
+    status: completed
+    completed_date: '2026-02-17'
     priority: P0
     fr: FR-G2
     epic: 7
     story: 2
     prerequisites: [7-1-groom-hiring-interface]
+    story_file: 'docs/sprint-artifacts/7-2-groom-personality-display.md'
+    completion_notes: '51 AC tests passing; GroomPersonalityBadge + GroomPersonalityDisplay components; personality types, trait influences, compatibility matrix, effectiveness ratings, career development'
 
   7-3-task-assignment-ui:
     title: 'Task Assignment UI'

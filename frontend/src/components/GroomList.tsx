@@ -12,26 +12,11 @@
  */
 
 import React, { useState, useMemo, useEffect } from 'react';
-import { useQueryClient } from '@tanstack/react-query';
-import {
-  Search,
-  Filter,
-  Users,
-  DollarSign,
-  Star,
-  ChevronRight,
-  RefreshCw,
-  Clock,
-  AlertCircle,
-  TrendingUp,
-  Award,
-  CheckCircle2,
-  X,
-  Loader2,
-} from 'lucide-react';
+import { Users, DollarSign, Star, RefreshCw, Clock, AlertCircle, X } from 'lucide-react';
 import { useGroomMarketplace, useHireGroom, useRefreshMarketplace } from '../hooks/api/useGrooms';
 import { useAuth } from '../contexts/AuthContext';
 import { MarketplaceGroom, MarketplaceData } from '../lib/api-client';
+import GroomPersonalityBadge from './groom/GroomPersonalityBadge';
 
 interface GroomListProps {
   userId: number;
@@ -41,7 +26,7 @@ interface GroomListProps {
 }
 
 const GroomList: React.FC<GroomListProps> = ({
-  userId,
+  userId: _userId,
   onGroomHired,
   marketplaceData: propMarketplaceData,
 }) => {
@@ -370,11 +355,9 @@ const GroomList: React.FC<GroomListProps> = ({
                           {groom.experience} years
                         </span>
                       </div>
-                      <div className="flex justify-between">
+                      <div className="flex justify-between items-center">
                         <span className="text-slate-500">Personality:</span>
-                        <span className="font-semibold text-slate-900 capitalize">
-                          {groom.personality}
-                        </span>
+                        <GroomPersonalityBadge personality={groom.personality} />
                       </div>
                       <div className="flex justify-between">
                         <span className="text-slate-500">Weekly Salary:</span>
