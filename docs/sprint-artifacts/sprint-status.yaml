@@ -2,6 +2,15 @@
 # Generated: 2025-12-03
 # Source: docs/epics.md
 
+# Definition of Done (updated 2026-02-17, action-6-4)
+# A story is COMPLETE when ALL of the following are true:
+#   1. Critical logic tested inline: All helpers, calculations, and algorithms have unit tests
+#   2. All acceptance criteria verified: Each AC item is demonstrably working
+#   3. No known critical bugs: No P0/P1 issues in the story scope
+#   4. Linting passes: `npm run lint` returns 0 errors on all new/modified files
+#   5. Tests pass: `npx vitest run <story-files>` returns 0 failures
+# Stories CANNOT be marked complete with 0 tests if they contain business logic.
+
 sprint:
   name: 'Sprint 1 - Authentication Foundation'
   start_date: 2025-12-03
@@ -1637,6 +1646,7 @@ development_status:
         6-5-breeding-predictions,
         6-6-epigenetic-trait-system,
       ]
+    retro_file: 'docs/sprint-artifacts/epic-6-retro-2026-02-06.md'
     retrospective_doc: 'docs/sprint-artifacts/epic-6-retro-2026-02-06.md'
     key_decisions:
       - 'Testing Sprint (5 days) approved - quality over velocity'
@@ -1647,19 +1657,27 @@ development_status:
   # Epic 7: Groom System (P0/P1/P2 mixed)
   epic-7:
     title: 'Groom System'
-    status: pending
+    status: in_progress
+    start_date: '2026-02-17'
     priority: P0
     frs: [FR-G1, FR-G2, FR-G3, FR-G4, FR-G5, FR-G6, FR-G7, FR-R1, FR-R2, FR-R3, FR-R4]
     prerequisites: [epic-2]
 
   7-1-groom-hiring-interface:
     title: 'Groom Hiring Interface'
-    status: backlog
+    status: completed
+    completed_date: '2026-02-17'
     priority: P0
     fr: FR-G1
     epic: 7
     story: 1
     prerequisites: [epic-2]
+    story_file: 'docs/sprint-artifacts/7-1-groom-hiring-interface.md'
+    completion_notes: |
+      25/25 story acceptance criteria tests passing
+      65+ component tests (GroomList, MyGroomsDashboard, AssignGroomModal)
+      All 5 acceptance criteria verified
+      API: GET /api/groom-marketplace, POST /api/groom-marketplace/hire
 
   7-2-groom-personality-display:
     title: 'Groom Personality Display'
@@ -2789,7 +2807,8 @@ action_items:
   action-6-1:
     id: 'action-6-1'
     title: 'Epic 6 Testing Sprint'
-    status: pending
+    status: completed
+    completed_date: '2026-02-17'
     priority: P0
     owner: 'Entire Team'
     epic: 6
@@ -2820,7 +2839,8 @@ action_items:
   action-6-2:
     id: 'action-6-2'
     title: 'Story Splitting Guidelines'
-    status: pending
+    status: completed
+    completed_date: '2026-02-17'
     priority: P0
     owner: 'Bob (Scrum Master)'
     epic: 6
@@ -2840,7 +2860,8 @@ action_items:
   action-6-3:
     id: 'action-6-3'
     title: 'Inline Testing Strategy'
-    status: pending
+    status: completed
+    completed_date: '2026-02-17'
     priority: P0
     owner: 'Charlie (Senior Dev) + Dana (QA Engineer)'
     epic: 6
@@ -2861,7 +2882,8 @@ action_items:
   action-6-4:
     id: 'action-6-4'
     title: 'Story Definition of Done Update'
-    status: pending
+    status: completed
+    completed_date: '2026-02-17'
     priority: P0
     owner: 'Bob (Scrum Master)'
     epic: 6
