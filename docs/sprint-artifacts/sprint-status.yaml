@@ -1729,12 +1729,15 @@ development_status:
 
   7-6-talent-tree-visualization:
     title: 'Talent Tree Visualization'
-    status: backlog
+    status: completed
+    completed_date: '2026-02-17'
     priority: P2
     fr: FR-G6
     epic: 7
     story: 6
     prerequisites: [7-4-career-lifecycle-dashboard]
+    story_file: 'docs/sprint-artifacts/7-6-talent-tree-visualization.md'
+    completion_notes: '75 AC tests passing; GroomTalentTree with TalentCard, TierRow, prerequisite chain; groomTalent.ts with 15 talents across 3 personalities (calm/energetic/methodical), tier state helpers'
 
   7-7-show-handling-rare-traits:
     title: 'Show Handling & Rare Traits'
