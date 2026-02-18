@@ -3111,7 +3111,7 @@ action_items:
 
   8-3-horse-management-live:
     title: 'Horse Management Live'
-    status: backlog
+    status: review
     priority: P0
     fr: [FR-H1, FR-H2, FR-H3]
     epic: 8

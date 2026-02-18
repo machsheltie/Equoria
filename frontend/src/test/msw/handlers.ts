@@ -185,18 +185,88 @@ export const handlers = [
     HttpResponse.json({
       success: true,
       data: [
-        { id: 1, name: 'Storm Runner', breed: 'Thoroughbred', gender: 'stallion' },
-        { id: 2, name: 'Midnight Dream', breed: 'Arabian', gender: 'mare' },
+        {
+          id: 1,
+          name: 'Storm Runner',
+          breed: 'Thoroughbred',
+          gender: 'stallion',
+          age: 5,
+          dateOfBirth: '2020-01-01T00:00:00Z',
+          healthStatus: 'Good',
+          imageUrl: undefined,
+          stats: {
+            speed: 75,
+            stamina: 70,
+            agility: 65,
+            strength: 60,
+            intelligence: 55,
+            health: 80,
+          },
+          disciplineScores: { dressage: 45, show_jumping: 55 },
+          traits: ['Bold', 'Athletic'],
+          description: 'A spirited thoroughbred with excellent racing potential.',
+          parentIds: { sireId: 10, damId: 11 },
+        },
+        {
+          id: 2,
+          name: 'Midnight Dream',
+          breed: 'Arabian',
+          gender: 'mare',
+          age: 4,
+          dateOfBirth: '2021-03-15T00:00:00Z',
+          healthStatus: 'Excellent',
+          imageUrl: undefined,
+          stats: {
+            speed: 80,
+            stamina: 75,
+            agility: 85,
+            strength: 55,
+            intelligence: 90,
+            health: 85,
+          },
+          disciplineScores: { dressage: 65, endurance: 70 },
+          traits: ['Intelligent', 'Agile'],
+          description: 'An elegant Arabian with exceptional endurance.',
+          parentIds: {},
+        },
       ],
     })
   ),
+  // Single horse detail (used by useHorse hook → HorseDetailPage)
+  http.get(`${base}/api/horses/:id`, ({ params }) => {
+    if (params.id === '999') {
+      return HttpResponse.json({ status: 'error', message: 'Horse not found' }, { status: 404 });
+    }
+    return HttpResponse.json({
+      success: true,
+      data: {
+        id: Number(params.id),
+        name: 'Storm Runner',
+        breed: 'Thoroughbred',
+        gender: 'stallion',
+        age: 5,
+        dateOfBirth: '2020-01-01T00:00:00Z',
+        healthStatus: 'Good',
+        imageUrl: undefined,
+        stats: { speed: 75, stamina: 70, agility: 65, strength: 60, intelligence: 55, health: 80 },
+        disciplineScores: { dressage: 45, show_jumping: 55 },
+        traits: ['Bold', 'Athletic'],
+        description: 'A spirited thoroughbred with excellent racing potential.',
+        parentIds: { sireId: 10, damId: 11 },
+      },
+    });
+  }),
   http.get(`${base}/api/horses/:id/training-history`, () =>
     HttpResponse.json({
       success: true,
-      data: [
-        { id: 101, discipline: 'dressage', score: 40, trainedAt: '2025-12-01T00:00:00Z' },
-        { id: 102, discipline: 'racing', score: 55, trainedAt: '2025-12-02T00:00:00Z' },
-      ],
+      data: {
+        trainingHistory: [
+          { id: 101, discipline: 'dressage', score: 40, trainedAt: '2025-12-01T00:00:00Z' },
+          { id: 102, discipline: 'racing', score: 55, trainedAt: '2025-12-02T00:00:00Z' },
+        ],
+        disciplineBalance: {},
+        trainingFrequency: {},
+      },
     })
   ),
 
