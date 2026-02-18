@@ -271,6 +271,16 @@ export const handlers = [
   ),
 
   // Breeding / foals
+  // POST /api/horses/foals — correct path used by breedingApi.breedFoal
+  http.post(`${base}/api/horses/foals`, () =>
+    HttpResponse.json({
+      success: true,
+      foalId: 10,
+      message: 'Foal created',
+      foal: { id: 10, name: 'New Foal', sireId: 1, damId: 2, ageDays: 0, traits: [] },
+    })
+  ),
+  // Preserved for backward-compat (other components may call this path)
   http.post(`${base}/api/foals/breeding/breed`, () =>
     HttpResponse.json({
       success: true,
@@ -557,6 +567,60 @@ export const handlers = [
       success: true,
       data: {
         forecasts: [],
+      },
+    })
+  ),
+  http.get(`${base}/api/horses/:id/breeding-data`, ({ params }) =>
+    HttpResponse.json({
+      success: true,
+      data: {
+        horseId: Number(params.id),
+        breedingHistory: [],
+        offspringCount: 0,
+        lastBreedingDate: null,
+        eligibleForBreeding: true,
+      },
+    })
+  ),
+
+  // Breeding Prediction API
+  http.post(`${base}/api/genetics/inbreeding-analysis`, () =>
+    HttpResponse.json({
+      success: true,
+      data: {
+        inbreedingCoefficient: 0.0625,
+        riskLevel: 'low',
+        commonAncestors: [],
+      },
+    })
+  ),
+  http.get(`${base}/api/breeding/lineage-analysis/:stallionId/:mareId`, () =>
+    HttpResponse.json({
+      success: true,
+      data: {
+        stallionLineage: [],
+        mareLineage: [],
+        commonAncestors: [],
+        generationsSearched: 5,
+      },
+    })
+  ),
+  http.post(`${base}/api/breeding/genetic-probability`, () =>
+    HttpResponse.json({
+      success: true,
+      data: {
+        traitProbabilities: { bold: 0.75, athletic: 0.5 },
+        expectedStatRanges: { speed: [60, 80], stamina: [55, 75] },
+      },
+    })
+  ),
+  http.post(`${base}/api/genetics/breeding-compatibility`, () =>
+    HttpResponse.json({
+      success: true,
+      data: {
+        compatibilityScore: 82,
+        recommendation: 'Good match',
+        concerns: [],
       },
     })
   ),

@@ -3141,7 +3141,7 @@ action_items:
 
   8-6-breeding-live:
     title: 'Breeding Live'
-    status: backlog
+    status: review
     priority: P0
     fr: [FR-B1, FR-B2, FR-B3, FR-B4, FR-E1]
     epic: 8
