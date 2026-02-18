@@ -19,15 +19,16 @@ This document provides the complete epic and story breakdown for Equoria, decomp
 
 ### Prerequisites Verified
 
-| Document | Status | Content Summary |
-|----------|--------|-----------------|
-| **PRD** | ✅ Found | 4 documents (PRD-00 through PRD-04) covering brief, overview, core features, gameplay systems, and advanced systems |
-| **Architecture** | ✅ Found | Comprehensive ADD with 8 ADRs, 15+ patterns, 62 files mapped |
-| **UX Design** | ⚠️ Not Found | No UX design documents - will proceed without UI/UX specifications |
+| Document         | Status       | Content Summary                                                                                                     |
+| ---------------- | ------------ | ------------------------------------------------------------------------------------------------------------------- |
+| **PRD**          | ✅ Found     | 4 documents (PRD-00 through PRD-04) covering brief, overview, core features, gameplay systems, and advanced systems |
+| **Architecture** | ✅ Found     | Comprehensive ADD with 8 ADRs, 15+ patterns, 62 files mapped                                                        |
+| **UX Design**    | ⚠️ Not Found | No UX design documents - will proceed without UI/UX specifications                                                  |
 
 ### Documents Analyzed
 
 **PRD Documents:**
+
 1. **PRD-00-Brief.md** - Product purpose, personas, core value, constraints
 2. **PRD-01-Overview.md** - Vision, metrics, personas, feature priority framework
 3. **PRD-02-Core-Features.md** - User management, horse management, progression systems
@@ -35,6 +36,7 @@ This document provides the complete epic and story breakdown for Equoria, decomp
 5. **PRD-04-Advanced-Systems.md** - Epigenetics, flags, ultra-rare traits, discovery system
 
 **Architecture Document:**
+
 - **architecture.md** - Complete Architecture Decision Document with:
   - 8 ADRs (State Management, Form Handling, Auth Storage, API Client, Error Display, Loading States, File Organization, Test Organization)
   - Implementation patterns for React Query, Zod, TailwindCSS
@@ -43,14 +45,14 @@ This document provides the complete epic and story breakdown for Equoria, decomp
 
 ### Project Context
 
-| Aspect | Detail |
-|--------|--------|
-| **Platform** | Web browser-based (React 19 + Vite) |
-| **Backend Status** | 100% Production-Ready (942+ tests, 90.1% success) |
-| **Frontend Status** | ~60% Complete (19 components, 6,424 lines) |
-| **Database** | PostgreSQL 15+ with Prisma ORM (30+ tables) |
-| **API Endpoints** | 130+ documented endpoints |
-| **Testing** | Jest + RTL, MSW for mocking |
+| Aspect              | Detail                                            |
+| ------------------- | ------------------------------------------------- |
+| **Platform**        | Web browser-based (React 19 + Vite)               |
+| **Backend Status**  | 100% Production-Ready (942+ tests, 90.1% success) |
+| **Frontend Status** | ~60% Complete (19 components, 6,424 lines)        |
+| **Database**        | PostgreSQL 15+ with Prisma ORM (30+ tables)       |
+| **API Endpoints**   | 130+ documented endpoints                         |
+| **Testing**         | Jest + RTL, MSW for mocking                       |
 
 ---
 
@@ -58,111 +60,111 @@ This document provides the complete epic and story breakdown for Equoria, decomp
 
 ### User Management (PRD-02)
 
-| FR ID | Requirement | Priority | Backend Status | Frontend Status |
-|-------|-------------|----------|----------------|-----------------|
-| **FR-U1** | User registration with email/password | P0 | ✅ Complete | ❌ Pending |
-| **FR-U2** | JWT authentication with refresh tokens | P0 | ✅ Complete | ❌ Pending |
-| **FR-U3** | Password reset and email verification | P0 | ✅ Complete | ❌ Pending |
-| **FR-U4** | Role-based access control (User/Moderator/Admin) | P0 | ✅ Complete | ❌ Pending |
-| **FR-U5** | Profile management (avatar, display name, bio) | P1 | ✅ Complete | ❌ Pending |
-| **FR-U6** | User level/XP progression system | P0 | ✅ Complete | ❌ Pending |
-| **FR-U7** | In-game currency management | P0 | ✅ Complete | ❌ Pending |
-| **FR-U8** | User dashboard with statistics | P0 | ✅ Complete | ⚠️ Partial |
+| FR ID     | Requirement                                      | Priority | Backend Status | Frontend Status |
+| --------- | ------------------------------------------------ | -------- | -------------- | --------------- |
+| **FR-U1** | User registration with email/password            | P0       | ✅ Complete    | ❌ Pending      |
+| **FR-U2** | JWT authentication with refresh tokens           | P0       | ✅ Complete    | ❌ Pending      |
+| **FR-U3** | Password reset and email verification            | P0       | ✅ Complete    | ❌ Pending      |
+| **FR-U4** | Role-based access control (User/Moderator/Admin) | P0       | ✅ Complete    | ❌ Pending      |
+| **FR-U5** | Profile management (avatar, display name, bio)   | P1       | ✅ Complete    | ❌ Pending      |
+| **FR-U6** | User level/XP progression system                 | P0       | ✅ Complete    | ❌ Pending      |
+| **FR-U7** | In-game currency management                      | P0       | ✅ Complete    | ❌ Pending      |
+| **FR-U8** | User dashboard with statistics                   | P0       | ✅ Complete    | ⚠️ Partial      |
 
 ### Horse Management (PRD-02)
 
-| FR ID | Requirement | Priority | Backend Status | Frontend Status |
-|-------|-------------|----------|----------------|-----------------|
-| **FR-H1** | Horse CRUD operations | P0 | ✅ Complete | ⚠️ Partial |
-| **FR-H2** | Horse attributes (stats, disciplines, genetics) | P0 | ✅ Complete | ⚠️ Partial |
-| **FR-H3** | Horse XP and stat progression | P0 | ✅ Complete | ❌ Pending |
-| **FR-H4** | Conformation scoring system (8 regions) | P1 | ✅ Complete | ❌ Pending |
-| **FR-H5** | Horse search and filtering | P1 | ✅ Complete | ⚠️ Partial |
+| FR ID     | Requirement                                     | Priority | Backend Status | Frontend Status |
+| --------- | ----------------------------------------------- | -------- | -------------- | --------------- |
+| **FR-H1** | Horse CRUD operations                           | P0       | ✅ Complete    | ⚠️ Partial      |
+| **FR-H2** | Horse attributes (stats, disciplines, genetics) | P0       | ✅ Complete    | ⚠️ Partial      |
+| **FR-H3** | Horse XP and stat progression                   | P0       | ✅ Complete    | ❌ Pending      |
+| **FR-H4** | Conformation scoring system (8 regions)         | P1       | ✅ Complete    | ❌ Pending      |
+| **FR-H5** | Horse search and filtering                      | P1       | ✅ Complete    | ⚠️ Partial      |
 
 ### Training System (PRD-03)
 
-| FR ID | Requirement | Priority | Backend Status | Frontend Status |
-|-------|-------------|----------|----------------|-----------------|
-| **FR-T1** | Training sessions with 23 disciplines | P0 | ✅ Complete | ❌ Pending |
-| **FR-T2** | Training eligibility (age 3-20, 7-day cooldown) | P0 | ✅ Complete | ❌ Pending |
-| **FR-T3** | Discipline score progression (+5 per session) | P0 | ✅ Complete | ❌ Pending |
-| **FR-T4** | Trait integration (bonuses/penalties) | P0 | ✅ Complete | ❌ Pending |
-| **FR-T5** | Training status dashboard | P1 | ✅ Complete | ❌ Pending |
+| FR ID     | Requirement                                     | Priority | Backend Status | Frontend Status |
+| --------- | ----------------------------------------------- | -------- | -------------- | --------------- |
+| **FR-T1** | Training sessions with 23 disciplines           | P0       | ✅ Complete    | ❌ Pending      |
+| **FR-T2** | Training eligibility (age 3-20, 7-day cooldown) | P0       | ✅ Complete    | ❌ Pending      |
+| **FR-T3** | Discipline score progression (+5 per session)   | P0       | ✅ Complete    | ❌ Pending      |
+| **FR-T4** | Trait integration (bonuses/penalties)           | P0       | ✅ Complete    | ❌ Pending      |
+| **FR-T5** | Training status dashboard                       | P1       | ✅ Complete    | ❌ Pending      |
 
 ### Competition System (PRD-03)
 
-| FR ID | Requirement | Priority | Backend Status | Frontend Status |
-|-------|-------------|----------|----------------|-----------------|
-| **FR-C1** | Competition entry and eligibility | P0 | ✅ Complete | ⚠️ Partial |
-| **FR-C2** | Scoring algorithm with traits | P0 | ✅ Complete | ⚠️ Partial |
-| **FR-C3** | Prize distribution (50%/30%/20%) | P0 | ✅ Complete | ⚠️ Partial |
-| **FR-C4** | Horse/User XP awards | P0 | ✅ Complete | ⚠️ Partial |
-| **FR-C5** | Leaderboards by discipline | P1 | ✅ Complete | ⚠️ Partial |
+| FR ID     | Requirement                       | Priority | Backend Status | Frontend Status |
+| --------- | --------------------------------- | -------- | -------------- | --------------- |
+| **FR-C1** | Competition entry and eligibility | P0       | ✅ Complete    | ⚠️ Partial      |
+| **FR-C2** | Scoring algorithm with traits     | P0       | ✅ Complete    | ⚠️ Partial      |
+| **FR-C3** | Prize distribution (50%/30%/20%)  | P0       | ✅ Complete    | ⚠️ Partial      |
+| **FR-C4** | Horse/User XP awards              | P0       | ✅ Complete    | ⚠️ Partial      |
+| **FR-C5** | Leaderboards by discipline        | P1       | ✅ Complete    | ⚠️ Partial      |
 
 ### Groom System (PRD-03)
 
-| FR ID | Requirement | Priority | Backend Status | Frontend Status |
-|-------|-------------|----------|----------------|-----------------|
-| **FR-G1** | Groom hiring and assignment | P0 | ✅ Complete | ⚠️ Partial |
-| **FR-G2** | Personality-based trait influence | P0 | ✅ Complete | ⚠️ Partial |
-| **FR-G3** | Age-based task system (enrichment, grooming) | P0 | ✅ Complete | ⚠️ Partial |
-| **FR-G4** | Career lifecycle and retirement | P1 | ✅ Complete | ❌ Pending |
-| **FR-G5** | Legacy system (protégé generation) | P2 | ✅ Complete | ❌ Pending |
-| **FR-G6** | Talent tree (3 tiers, 24 talents) | P2 | ✅ Complete | ❌ Pending |
-| **FR-G7** | Conformation show handling | P1 | ✅ Complete | ❌ Pending |
+| FR ID     | Requirement                                  | Priority | Backend Status | Frontend Status |
+| --------- | -------------------------------------------- | -------- | -------------- | --------------- |
+| **FR-G1** | Groom hiring and assignment                  | P0       | ✅ Complete    | ⚠️ Partial      |
+| **FR-G2** | Personality-based trait influence            | P0       | ✅ Complete    | ⚠️ Partial      |
+| **FR-G3** | Age-based task system (enrichment, grooming) | P0       | ✅ Complete    | ⚠️ Partial      |
+| **FR-G4** | Career lifecycle and retirement              | P1       | ✅ Complete    | ❌ Pending      |
+| **FR-G5** | Legacy system (protégé generation)           | P2       | ✅ Complete    | ❌ Pending      |
+| **FR-G6** | Talent tree (3 tiers, 24 talents)            | P2       | ✅ Complete    | ❌ Pending      |
+| **FR-G7** | Conformation show handling                   | P1       | ✅ Complete    | ❌ Pending      |
 
 ### Breeding System (PRD-03)
 
-| FR ID | Requirement | Priority | Backend Status | Frontend Status |
-|-------|-------------|----------|----------------|-----------------|
-| **FR-B1** | Breeding mechanics (pairing, cooldowns) | P0 | ✅ Complete | ❌ Pending |
-| **FR-B2** | Foal development (days 0-6 milestones) | P0 | ✅ Complete | ❌ Pending |
-| **FR-B3** | Enrichment activities for foals | P0 | ✅ Complete | ❌ Pending |
-| **FR-B4** | Milestone evaluation and trait confirmation | P0 | ✅ Complete | ❌ Pending |
-| **FR-B5** | Breeding predictions and insights | P1 | ✅ Complete | ❌ Pending |
+| FR ID     | Requirement                                 | Priority | Backend Status | Frontend Status |
+| --------- | ------------------------------------------- | -------- | -------------- | --------------- |
+| **FR-B1** | Breeding mechanics (pairing, cooldowns)     | P0       | ✅ Complete    | ❌ Pending      |
+| **FR-B2** | Foal development (days 0-6 milestones)      | P0       | ✅ Complete    | ❌ Pending      |
+| **FR-B3** | Enrichment activities for foals             | P0       | ✅ Complete    | ❌ Pending      |
+| **FR-B4** | Milestone evaluation and trait confirmation | P0       | ✅ Complete    | ❌ Pending      |
+| **FR-B5** | Breeding predictions and insights           | P1       | ✅ Complete    | ❌ Pending      |
 
 ### Epigenetic System (PRD-04)
 
-| FR ID | Requirement | Priority | Backend Status | Frontend Status |
-|-------|-------------|----------|----------------|-----------------|
-| **FR-E1** | Epigenetic trait assignment (10+ traits) | P0 | ✅ Complete | ❌ Pending |
-| **FR-E2** | Development windows (0-3 years) | P0 | ✅ Complete | ❌ Pending |
-| **FR-E3** | Trait stacking rules (max 3 visible) | P0 | ✅ Complete | ❌ Pending |
-| **FR-E4** | Epigenetic flag system (9 flags) | P0 | ✅ Complete | ❌ Pending |
-| **FR-E5** | Flag assignment engine | P0 | ✅ Complete | ❌ Pending |
+| FR ID     | Requirement                              | Priority | Backend Status | Frontend Status |
+| --------- | ---------------------------------------- | -------- | -------------- | --------------- |
+| **FR-E1** | Epigenetic trait assignment (10+ traits) | P0       | ✅ Complete    | ❌ Pending      |
+| **FR-E2** | Development windows (0-3 years)          | P0       | ✅ Complete    | ❌ Pending      |
+| **FR-E3** | Trait stacking rules (max 3 visible)     | P0       | ✅ Complete    | ❌ Pending      |
+| **FR-E4** | Epigenetic flag system (9 flags)         | P0       | ✅ Complete    | ❌ Pending      |
+| **FR-E5** | Flag assignment engine                   | P0       | ✅ Complete    | ❌ Pending      |
 
 ### Ultra-Rare Traits (PRD-04)
 
-| FR ID | Requirement | Priority | Backend Status | Frontend Status |
-|-------|-------------|----------|----------------|-----------------|
-| **FR-R1** | Ultra-rare traits (5 total, <3% chance) | P1 | ✅ Complete | ❌ Pending |
-| **FR-R2** | Exotic traits (5 total, conditional) | P1 | ✅ Complete | ❌ Pending |
-| **FR-R3** | Groom perk influence on rare traits | P2 | ✅ Complete | ❌ Pending |
-| **FR-R4** | Trait discovery system | P1 | ✅ Complete | ❌ Pending |
+| FR ID     | Requirement                             | Priority | Backend Status | Frontend Status |
+| --------- | --------------------------------------- | -------- | -------------- | --------------- |
+| **FR-R1** | Ultra-rare traits (5 total, <3% chance) | P1       | ✅ Complete    | ❌ Pending      |
+| **FR-R2** | Exotic traits (5 total, conditional)    | P1       | ✅ Complete    | ❌ Pending      |
+| **FR-R3** | Groom perk influence on rare traits     | P2       | ✅ Complete    | ❌ Pending      |
+| **FR-R4** | Trait discovery system                  | P1       | ✅ Complete    | ❌ Pending      |
 
 ### Non-Functional Requirements
 
-| NFR ID | Requirement | Target | Status |
-|--------|-------------|--------|--------|
-| **NFR-1** | API latency | <200ms @ p95 | ✅ Backend enforced |
-| **NFR-2** | Dashboard load time | <500ms | React Query caching |
-| **NFR-3** | Auth rate limiting | 5 req/15 min | ✅ Backend enforced |
-| **NFR-4** | Test coverage | 80% minimum | CI/CD gate |
-| **NFR-5** | Server uptime | 99.9% | Production target |
+| NFR ID    | Requirement         | Target       | Status              |
+| --------- | ------------------- | ------------ | ------------------- |
+| **NFR-1** | API latency         | <200ms @ p95 | ✅ Backend enforced |
+| **NFR-2** | Dashboard load time | <500ms       | React Query caching |
+| **NFR-3** | Auth rate limiting  | 5 req/15 min | ✅ Backend enforced |
+| **NFR-4** | Test coverage       | 80% minimum  | CI/CD gate          |
+| **NFR-5** | Server uptime       | 99.9%        | Production target   |
 
 ---
 
 ## Epic Summary
 
-| Epic | Title | Priority | Stories | FRs Covered | Status |
-|------|-------|----------|---------|-------------|--------|
-| 1 | Authentication & User Foundation | P0 | 6 | FR-U1, FR-U2, FR-U3, FR-U4 | ❌ Pending |
-| 2 | User Dashboard & Profile | P0 | 5 | FR-U5, FR-U6, FR-U7, FR-U8 | ⚠️ Partial |
-| 3 | Horse Management | P0 | 6 | FR-H1, FR-H2, FR-H3, FR-H4, FR-H5 | ⚠️ Partial |
-| 4 | Training System | P0 | 5 | FR-T1, FR-T2, FR-T3, FR-T4, FR-T5 | ❌ Pending |
-| 5 | Competition System | P0 | 5 | FR-C1, FR-C2, FR-C3, FR-C4, FR-C5 | ⚠️ Partial |
-| 6 | Breeding & Foal Development | P0 | 6 | FR-B1, FR-B2, FR-B3, FR-B4, FR-B5, FR-E1-E5 | ❌ Pending |
-| 7 | Groom System | P0/P1/P2 | 7 | FR-G1, FR-G2, FR-G3, FR-G4, FR-G5, FR-G6, FR-G7, FR-R1-R4 | ⚠️ Partial |
+| Epic | Title                            | Priority | Stories | FRs Covered                                               | Status     |
+| ---- | -------------------------------- | -------- | ------- | --------------------------------------------------------- | ---------- |
+| 1    | Authentication & User Foundation | P0       | 6       | FR-U1, FR-U2, FR-U3, FR-U4                                | ❌ Pending |
+| 2    | User Dashboard & Profile         | P0       | 5       | FR-U5, FR-U6, FR-U7, FR-U8                                | ⚠️ Partial |
+| 3    | Horse Management                 | P0       | 6       | FR-H1, FR-H2, FR-H3, FR-H4, FR-H5                         | ⚠️ Partial |
+| 4    | Training System                  | P0       | 5       | FR-T1, FR-T2, FR-T3, FR-T4, FR-T5                         | ❌ Pending |
+| 5    | Competition System               | P0       | 5       | FR-C1, FR-C2, FR-C3, FR-C4, FR-C5                         | ⚠️ Partial |
+| 6    | Breeding & Foal Development      | P0       | 6       | FR-B1, FR-B2, FR-B3, FR-B4, FR-B5, FR-E1-E5               | ❌ Pending |
+| 7    | Groom System                     | P0/P1/P2 | 7       | FR-G1, FR-G2, FR-G3, FR-G4, FR-G5, FR-G6, FR-G7, FR-R1-R4 | ⚠️ Partial |
 
 **Total Stories:** 40 | **Total FRs Covered:** 44/44 (100%)
 
@@ -170,61 +172,61 @@ This document provides the complete epic and story breakdown for Equoria, decomp
 
 ## FR Coverage Map
 
-| FR ID | Epic | Story | Implementation Notes |
-|-------|------|-------|---------------------|
-| FR-U1 | Epic 1 | 1.1 | Registration form with Zod validation |
-| FR-U2 | Epic 1 | 1.2, 1.3 | HttpOnly cookies, React Query auth |
-| FR-U3 | Epic 1 | 1.4, 1.5 | Password reset flow, email verification |
-| FR-U4 | Epic 1 | 1.6 | Role-based route protection |
-| FR-U5 | Epic 2 | 2.1 | Profile editor with avatar upload |
-| FR-U6 | Epic 2 | 2.2 | XP progress bar, level display |
-| FR-U7 | Epic 2 | 2.3 | Currency balance, transaction history |
-| FR-U8 | Epic 2 | 2.4, 2.5 | Statistics dashboard, charts |
-| FR-H1 | Epic 3 | 3.1, 3.2 | Horse list, detail views |
-| FR-H2 | Epic 3 | 3.3 | Attributes panel with genetics |
-| FR-H3 | Epic 3 | 3.4 | XP/stat progression display |
-| FR-H4 | Epic 3 | 3.5 | Conformation scoring UI (8 regions) |
-| FR-H5 | Epic 3 | 3.6 | Search/filter with React Query |
-| FR-T1 | Epic 4 | 4.1 | Training session interface |
-| FR-T2 | Epic 4 | 4.2 | Eligibility checks (age, cooldown) |
-| FR-T3 | Epic 4 | 4.3 | Score progression display |
-| FR-T4 | Epic 4 | 4.4 | Trait bonus/penalty integration |
-| FR-T5 | Epic 4 | 4.5 | Training dashboard overview |
-| FR-C1 | Epic 5 | 5.1 | Competition entry form |
-| FR-C2 | Epic 5 | 5.2 | Scoring results display |
-| FR-C3 | Epic 5 | 5.3 | Prize distribution UI |
-| FR-C4 | Epic 5 | 5.4 | XP award notifications |
-| FR-C5 | Epic 5 | 5.5 | Leaderboard pages |
-| FR-B1 | Epic 6 | 6.1 | Breeding pair selection |
-| FR-B2 | Epic 6 | 6.2 | Foal milestone timeline |
-| FR-B3 | Epic 6 | 6.3 | Enrichment activity UI |
-| FR-B4 | Epic 6 | 6.4 | Milestone evaluation display |
-| FR-B5 | Epic 6 | 6.5 | Breeding predictions panel |
-| FR-E1-E5 | Epic 6 | 6.6 | Epigenetic trait visualization |
-| FR-G1 | Epic 7 | 7.1 | Groom hiring interface |
-| FR-G2 | Epic 7 | 7.2 | Personality trait display |
-| FR-G3 | Epic 7 | 7.3 | Task assignment UI |
-| FR-G4 | Epic 7 | 7.4 | Career lifecycle dashboard |
-| FR-G5 | Epic 7 | 7.5 | Legacy/protégé system UI |
-| FR-G6 | Epic 7 | 7.6 | Talent tree visualization |
-| FR-G7 | Epic 7 | 7.7 | Show handling interface |
-| FR-R1-R4 | Epic 7 | 7.7 | Ultra-rare trait discovery |
+| FR ID    | Epic   | Story    | Implementation Notes                    |
+| -------- | ------ | -------- | --------------------------------------- |
+| FR-U1    | Epic 1 | 1.1      | Registration form with Zod validation   |
+| FR-U2    | Epic 1 | 1.2, 1.3 | HttpOnly cookies, React Query auth      |
+| FR-U3    | Epic 1 | 1.4, 1.5 | Password reset flow, email verification |
+| FR-U4    | Epic 1 | 1.6      | Role-based route protection             |
+| FR-U5    | Epic 2 | 2.1      | Profile editor with avatar upload       |
+| FR-U6    | Epic 2 | 2.2      | XP progress bar, level display          |
+| FR-U7    | Epic 2 | 2.3      | Currency balance, transaction history   |
+| FR-U8    | Epic 2 | 2.4, 2.5 | Statistics dashboard, charts            |
+| FR-H1    | Epic 3 | 3.1, 3.2 | Horse list, detail views                |
+| FR-H2    | Epic 3 | 3.3      | Attributes panel with genetics          |
+| FR-H3    | Epic 3 | 3.4      | XP/stat progression display             |
+| FR-H4    | Epic 3 | 3.5      | Conformation scoring UI (8 regions)     |
+| FR-H5    | Epic 3 | 3.6      | Search/filter with React Query          |
+| FR-T1    | Epic 4 | 4.1      | Training session interface              |
+| FR-T2    | Epic 4 | 4.2      | Eligibility checks (age, cooldown)      |
+| FR-T3    | Epic 4 | 4.3      | Score progression display               |
+| FR-T4    | Epic 4 | 4.4      | Trait bonus/penalty integration         |
+| FR-T5    | Epic 4 | 4.5      | Training dashboard overview             |
+| FR-C1    | Epic 5 | 5.1      | Competition entry form                  |
+| FR-C2    | Epic 5 | 5.2      | Scoring results display                 |
+| FR-C3    | Epic 5 | 5.3      | Prize distribution UI                   |
+| FR-C4    | Epic 5 | 5.4      | XP award notifications                  |
+| FR-C5    | Epic 5 | 5.5      | Leaderboard pages                       |
+| FR-B1    | Epic 6 | 6.1      | Breeding pair selection                 |
+| FR-B2    | Epic 6 | 6.2      | Foal milestone timeline                 |
+| FR-B3    | Epic 6 | 6.3      | Enrichment activity UI                  |
+| FR-B4    | Epic 6 | 6.4      | Milestone evaluation display            |
+| FR-B5    | Epic 6 | 6.5      | Breeding predictions panel              |
+| FR-E1-E5 | Epic 6 | 6.6      | Epigenetic trait visualization          |
+| FR-G1    | Epic 7 | 7.1      | Groom hiring interface                  |
+| FR-G2    | Epic 7 | 7.2      | Personality trait display               |
+| FR-G3    | Epic 7 | 7.3      | Task assignment UI                      |
+| FR-G4    | Epic 7 | 7.4      | Career lifecycle dashboard              |
+| FR-G5    | Epic 7 | 7.5      | Legacy/protégé system UI                |
+| FR-G6    | Epic 7 | 7.6      | Talent tree visualization               |
+| FR-G7    | Epic 7 | 7.7      | Show handling interface                 |
+| FR-R1-R4 | Epic 7 | 7.7      | Ultra-rare trait discovery              |
 
 ---
 
 ## FR Summary
 
-| Category | Total FRs | P0 | P1 | P2 | Backend Complete | Frontend Pending |
-|----------|-----------|----|----|----|-----------------:|----------------:|
-| User Management | 8 | 7 | 1 | 0 | 8 | 7 |
-| Horse Management | 5 | 3 | 2 | 0 | 5 | 3 |
-| Training | 5 | 4 | 1 | 0 | 5 | 5 |
-| Competition | 5 | 4 | 1 | 0 | 5 | 0 |
-| Groom | 7 | 3 | 2 | 2 | 7 | 4 |
-| Breeding | 5 | 4 | 1 | 0 | 5 | 5 |
-| Epigenetics | 5 | 5 | 0 | 0 | 5 | 5 |
-| Ultra-Rare | 4 | 0 | 3 | 1 | 4 | 4 |
-| **TOTAL** | **44** | **30** | **11** | **3** | **44** | **33** |
+| Category         | Total FRs | P0     | P1     | P2    | Backend Complete | Frontend Pending |
+| ---------------- | --------- | ------ | ------ | ----- | ---------------: | ---------------: |
+| User Management  | 8         | 7      | 1      | 0     |                8 |                7 |
+| Horse Management | 5         | 3      | 2      | 0     |                5 |                3 |
+| Training         | 5         | 4      | 1      | 0     |                5 |                5 |
+| Competition      | 5         | 4      | 1      | 0     |                5 |                0 |
+| Groom            | 7         | 3      | 2      | 2     |                7 |                4 |
+| Breeding         | 5         | 4      | 1      | 0     |                5 |                5 |
+| Epigenetics      | 5         | 5      | 0      | 0     |                5 |                5 |
+| Ultra-Rare       | 4         | 0      | 3      | 1     |                4 |                4 |
+| **TOTAL**        | **44**    | **30** | **11** | **3** |           **44** |           **33** |
 
 ---
 
@@ -235,6 +237,7 @@ This document provides the complete epic and story breakdown for Equoria, decomp
 **Priority:** P0 (BLOCKING - No other features work without authentication)
 
 **Technical Context (from Architecture):**
+
 - Authentication via HttpOnly cookies with `credentials: 'include'`
 - React Query for auth state management
 - Zod for form validation
@@ -263,6 +266,7 @@ So that **I can start playing Equoria and manage my stable**.
 **Prerequisites:** None (entry point)
 
 **Technical Notes:**
+
 - Use `RegisterForm` component with Zod schema
 - API: `POST /api/v1/auth/register`
 - Store auth state via React Query's `useAuth` hook
@@ -289,6 +293,7 @@ So that **I can access my horses and continue playing**.
 **Prerequisites:** Story 1.1 (account exists)
 
 **Technical Notes:**
+
 - API: `POST /api/v1/auth/login`
 - HttpOnly cookie set by backend
 - React Query invalidates and refetches user data
@@ -315,6 +320,7 @@ So that **I don't have to login repeatedly**.
 **Prerequisites:** Story 1.2
 
 **Technical Notes:**
+
 - React Query `staleTime` for auth state
 - API: `GET /api/v1/auth/me` for session validation
 - API: `POST /api/v1/auth/logout`
@@ -341,6 +347,7 @@ So that **I can regain access to my account**.
 **Prerequisites:** Story 1.1 (account exists)
 
 **Technical Notes:**
+
 - API: `POST /api/v1/auth/forgot-password`
 - No email enumeration (always show success)
 - Backend handles email sending
@@ -366,6 +373,7 @@ So that **I can login with my new credentials**.
 **Prerequisites:** Story 1.4
 
 **Technical Notes:**
+
 - API: `POST /api/v1/auth/reset-password`
 - Token validation on page load
 - Redirect to login on success
@@ -392,6 +400,7 @@ So that **the interface is relevant to my role**.
 **Prerequisites:** Story 1.2
 
 **Technical Notes:**
+
 - React Router protected routes
 - Role checks in navigation components
 - API returns user role in auth response
@@ -406,6 +415,7 @@ So that **the interface is relevant to my role**.
 **Priority:** P0
 
 **Technical Context:**
+
 - React Query for data fetching
 - Dashboard components already partially exist (enhance, don't rebuild)
 - API endpoints for user stats, currency, profile
@@ -434,6 +444,7 @@ So that **I can personalize my identity in the game**.
 **Prerequisites:** Epic 1 complete
 
 **Technical Notes:**
+
 - API: `PATCH /api/v1/users/profile`
 - File upload for avatar
 - React Query mutation with optimistic updates
@@ -460,6 +471,7 @@ So that **I can track my advancement in the game**.
 **Prerequisites:** Story 2.1
 
 **Technical Notes:**
+
 - API: `GET /api/v1/users/stats`
 - Progress bar component with animation
 - Toast notifications for level-up
@@ -485,6 +497,7 @@ So that **I can manage my spending**.
 **Prerequisites:** Story 2.1
 
 **Technical Notes:**
+
 - API: `GET /api/v1/users/currency`
 - API: `GET /api/v1/users/transactions`
 - React Query for real-time balance
@@ -510,6 +523,7 @@ So that **I can track my achievements and progress**.
 **Prerequisites:** Story 2.1
 
 **Technical Notes:**
+
 - API: `GET /api/v1/users/stats`
 - Chart.js or Recharts for visualizations
 - React Query with appropriate staleTime
@@ -535,6 +549,7 @@ So that **I can track what's happening with my stable**.
 **Prerequisites:** Story 2.4
 
 **Technical Notes:**
+
 - API: `GET /api/v1/users/activity`
 - Infinite scroll pagination
 - WebSocket for real-time updates (optional enhancement)
@@ -548,6 +563,7 @@ So that **I can track what's happening with my stable**.
 **Priority:** P0
 
 **Technical Context:**
+
 - Partial implementation exists (enhance existing components)
 - Horse data includes genetics, stats, disciplines, traits
 - 8-region conformation scoring system
@@ -575,6 +591,7 @@ So that **I can quickly find and select a horse to manage**.
 **Prerequisites:** Epic 1 complete
 
 **Technical Notes:**
+
 - API: `GET /api/v1/horses`
 - React Query with pagination
 - Existing HorseListView component - enhance
@@ -600,6 +617,7 @@ So that **I can understand their capabilities and plan their development**.
 **Prerequisites:** Story 3.1
 
 **Technical Notes:**
+
 - API: `GET /api/v1/horses/:id`
 - Tab component for sections
 - Existing components - integrate and enhance
@@ -625,6 +643,7 @@ So that **I can make informed breeding and training decisions**.
 **Prerequisites:** Story 3.2
 
 **Technical Notes:**
+
 - Display genetic alleles and phenotypes
 - Trait cards with tooltips for details
 - Color-coded trait categories
@@ -650,6 +669,7 @@ So that **I can track their development over time**.
 **Prerequisites:** Story 3.2
 
 **Technical Notes:**
+
 - API includes progression data
 - Chart.js for historical display
 - Calculate age-based recommendations
@@ -675,6 +695,7 @@ So that **I can prepare for conformation shows**.
 **Prerequisites:** Story 3.2
 
 **Technical Notes:**
+
 - Horse silhouette SVG with clickable regions
 - Tooltips with detailed scores
 - API includes conformation data
@@ -701,6 +722,7 @@ So that **I can quickly find specific horses**.
 **Prerequisites:** Story 3.1
 
 **Technical Notes:**
+
 - URL query params for filter state
 - React Query with dynamic filters
 - Debounced search input
@@ -715,6 +737,7 @@ So that **I can quickly find specific horses**.
 **Priority:** P0
 
 **Technical Context:**
+
 - 23 disciplines across 4 categories: Western, English, Racing, Specialty
 - Training eligibility: ages 3-20, 7-day cooldown per discipline
 - +5 score per training session
@@ -744,6 +767,7 @@ So that **they can improve their competitive scores**.
 **Prerequisites:** Epic 3 complete
 
 **Technical Notes:**
+
 - API: `POST /api/v1/training/sessions`
 - Discipline picker grouped by category
 - Result modal with score breakdown
@@ -769,6 +793,7 @@ So that **I know who can train and when**.
 **Prerequisites:** Story 4.1
 
 **Technical Notes:**
+
 - API returns eligibility status
 - Countdown timer for cooldowns
 - Filter to show only eligible horses
@@ -794,6 +819,7 @@ So that **I can plan their training strategy**.
 **Prerequisites:** Story 4.1
 
 **Technical Notes:**
+
 - API: `GET /api/v1/horses/:id/training-history`
 - Radar/spider chart for discipline visualization
 - Training log table with pagination
@@ -820,6 +846,7 @@ So that **I can leverage my horse's strengths**.
 **Prerequisites:** Story 4.1, Epic 6 (traits)
 
 **Technical Notes:**
+
 - API returns trait modifiers in training preview
 - Visual indicators for positive/negative
 - Link to trait documentation
@@ -846,6 +873,7 @@ So that **I can efficiently manage training schedules**.
 **Prerequisites:** Stories 4.1-4.4
 
 **Technical Notes:**
+
 - Summary view of all horses
 - Calendar component for schedule
 - Batch action support
@@ -859,6 +887,7 @@ So that **I can efficiently manage training schedules**.
 **Priority:** P0
 
 **Technical Context:**
+
 - Competition entry with eligibility checks
 - Scoring algorithm incorporates traits
 - Prize distribution: 50%/30%/20% for 1st/2nd/3rd
@@ -888,6 +917,7 @@ So that **I can win prizes and earn XP**.
 **Prerequisites:** Epic 3, Epic 4 (trained horses)
 
 **Technical Notes:**
+
 - API: `POST /api/v1/competitions/entries`
 - Competition browser with filters
 - Horse eligibility check before entry
@@ -914,6 +944,7 @@ So that **I can understand how my horse performed**.
 **Prerequisites:** Story 5.1
 
 **Technical Notes:**
+
 - API: `GET /api/v1/competitions/:id/results`
 - Results table with sorting
 - Score breakdown modal
@@ -939,6 +970,7 @@ So that **I know what I've won**.
 **Prerequisites:** Story 5.2
 
 **Technical Notes:**
+
 - API includes prize data in results
 - Celebratory animation for wins
 - Link to transaction history
@@ -964,6 +996,7 @@ So that **I can track my progression**.
 **Prerequisites:** Story 5.2
 
 **Technical Notes:**
+
 - Toast notification system
 - API returns XP details
 - Integrate with Story 2.2 XP display
@@ -990,6 +1023,7 @@ So that **I can see top performers and my ranking**.
 **Prerequisites:** Story 5.2
 
 **Technical Notes:**
+
 - API: `GET /api/v1/leaderboards/:discipline`
 - Paginated tables
 - Time-based filtering
@@ -1003,6 +1037,7 @@ So that **I can see top performers and my ranking**.
 **Priority:** P0
 
 **Technical Context:**
+
 - Breeding mechanics with pairing and cooldowns
 - Foal development: 7 milestones (days 0-6)
 - Enrichment activities influence trait development
@@ -1032,6 +1067,7 @@ So that **I can produce foals with desired traits**.
 **Prerequisites:** Epic 3 (own horses)
 
 **Technical Notes:**
+
 - API: `POST /api/v1/breeding/pairs`
 - Side-by-side horse comparison
 - Compatibility algorithm display
@@ -1058,6 +1094,7 @@ So that **I can ensure optimal growth**.
 **Prerequisites:** Story 6.1
 
 **Technical Notes:**
+
 - API: `GET /api/v1/foals/:id/milestones`
 - Timeline component
 - Push notifications for milestones
@@ -1084,6 +1121,7 @@ So that **I can influence their trait development**.
 **Prerequisites:** Story 6.2
 
 **Technical Notes:**
+
 - API: `POST /api/v1/foals/:id/enrichment`
 - Activity picker with descriptions
 - Impact preview before confirmation
@@ -1110,6 +1148,7 @@ So that **I understand how my foal is developing**.
 **Prerequisites:** Story 6.2
 
 **Technical Notes:**
+
 - Milestone result modal
 - Before/after comparison
 - Trait card animations for discoveries
@@ -1136,6 +1175,7 @@ So that **I can make informed breeding decisions**.
 **Prerequisites:** Story 6.1
 
 **Technical Notes:**
+
 - API: `GET /api/v1/breeding/predict`
 - Probability visualizations
 - Monte Carlo simulation results from backend
@@ -1163,6 +1203,7 @@ So that **I can leverage unique abilities**.
 **Prerequisites:** Epic 3, Story 6.4
 
 **Technical Notes:**
+
 - Trait cards with states: hidden, hinted, discovered
 - Flag badges for epigenetic status
 - Age-based trait lock visualization
@@ -1176,6 +1217,7 @@ So that **I can leverage unique abilities**.
 **Priority:** Mixed (P0 core, P1/P2 advanced features)
 
 **Technical Context:**
+
 - Groom hiring with personality types
 - Task system varies by horse age
 - Career lifecycle with retirement
@@ -1207,6 +1249,7 @@ So that **I can improve horse care and training**.
 **Prerequisites:** Epic 2 (currency)
 
 **Technical Notes:**
+
 - API: `GET /api/v1/grooms/available`
 - API: `POST /api/v1/grooms/hire`
 - Existing groom components - enhance
@@ -1233,6 +1276,7 @@ So that **I can assign them to compatible horses**.
 **Prerequisites:** Story 7.1
 
 **Technical Notes:**
+
 - Personality type icons and descriptions
 - Compatibility matrix visualization
 - Tooltip explanations
@@ -1259,6 +1303,7 @@ So that **my horses receive appropriate care**.
 **Prerequisites:** Stories 7.1, 7.2
 
 **Technical Notes:**
+
 - API: `POST /api/v1/grooms/:id/assign`
 - Drag-and-drop assignment UI
 - Task queue visualization
@@ -1285,6 +1330,7 @@ So that **I can plan for retirement and succession**.
 **Prerequisites:** Story 7.3
 
 **Technical Notes:**
+
 - Career timeline component
 - XP progress visualization
 - Retirement countdown
@@ -1311,6 +1357,7 @@ So that **experienced grooms can train successors**.
 **Prerequisites:** Story 7.4
 
 **Technical Notes:**
+
 - API: `POST /api/v1/grooms/:id/mentor`
 - Family tree visualization
 - Trait transfer previews
@@ -1337,6 +1384,7 @@ So that **they gain specialized abilities**.
 **Prerequisites:** Story 7.4
 
 **Technical Notes:**
+
 - Interactive talent tree component
 - API: `POST /api/v1/grooms/:id/talents`
 - Prerequisite visualization
@@ -1363,6 +1411,7 @@ So that **I can maximize show performance and find unique abilities**.
 **Prerequisites:** Stories 7.3, Epic 6
 
 **Technical Notes:**
+
 - Handler assignment in show entry
 - Trait discovery notifications
 - Rare trait collection tracking
@@ -1371,17 +1420,229 @@ So that **I can maximize show performance and find unique abilities**.
 
 ## FR Coverage Matrix
 
-| Epic | Stories | P0 FRs | P1 FRs | P2 FRs | Coverage |
-|------|---------|--------|--------|--------|----------|
-| Epic 1: Authentication | 6 | FR-U1, FR-U2, FR-U3, FR-U4 | - | - | 100% |
-| Epic 2: Dashboard | 5 | FR-U6, FR-U7, FR-U8 | FR-U5 | - | 100% |
-| Epic 3: Horses | 6 | FR-H1, FR-H2, FR-H3 | FR-H4, FR-H5 | - | 100% |
-| Epic 4: Training | 5 | FR-T1, FR-T2, FR-T3, FR-T4 | FR-T5 | - | 100% |
-| Epic 5: Competition | 5 | FR-C1, FR-C2, FR-C3, FR-C4 | FR-C5 | - | 100% |
-| Epic 6: Breeding | 6 | FR-B1, FR-B2, FR-B3, FR-B4, FR-E1-E5 | FR-B5 | - | 100% |
-| Epic 7: Grooms | 7 | FR-G1, FR-G2, FR-G3 | FR-G4, FR-G7, FR-R1, FR-R2, FR-R4 | FR-G5, FR-G6, FR-R3 | 100% |
+| Epic                    | Stories | P0 FRs                                                        | P1 FRs                            | P2 FRs              | Coverage    |
+| ----------------------- | ------- | ------------------------------------------------------------- | --------------------------------- | ------------------- | ----------- |
+| Epic 1: Authentication  | 6       | FR-U1, FR-U2, FR-U3, FR-U4                                    | -                                 | -                   | 100%        |
+| Epic 2: Dashboard       | 5       | FR-U6, FR-U7, FR-U8                                           | FR-U5                             | -                   | 100%        |
+| Epic 3: Horses          | 6       | FR-H1, FR-H2, FR-H3                                           | FR-H4, FR-H5                      | -                   | 100%        |
+| Epic 4: Training        | 5       | FR-T1, FR-T2, FR-T3, FR-T4                                    | FR-T5                             | -                   | 100%        |
+| Epic 5: Competition     | 5       | FR-C1, FR-C2, FR-C3, FR-C4                                    | FR-C5                             | -                   | 100%        |
+| Epic 6: Breeding        | 6       | FR-B1, FR-B2, FR-B3, FR-B4, FR-E1-E5                          | FR-B5                             | -                   | 100%        |
+| Epic 7: Grooms          | 7       | FR-G1, FR-G2, FR-G3                                           | FR-G4, FR-G7, FR-R1, FR-R2, FR-R4 | FR-G5, FR-G6, FR-R3 | 100%        |
+| Epic 8: API Integration | 6       | FR-U1, FR-U2, FR-U4, FR-H1, FR-H2, FR-G1, FR-T1, FR-C1, FR-B1 | FR-U5, FR-U8, FR-G4, FR-C2, FR-B2 | -                   | Integration |
 
-**Total Coverage:** 44/44 FRs (100%)
+**Total Coverage:** 44/44 FRs (100%) — Epic 8 closes all frontend-pending FRs
+
+---
+
+## Epic 8: API Integration Layer
+
+**Goal:** Connect all built frontend components to the live backend API, transitioning Equoria from a prototype with mock data to a fully functional product.
+
+**Priority:** P0 (BLOCKING — zero frontend functionality without real API connections)
+
+**Technical Context (from Architecture):**
+
+- Auth via HttpOnly cookies with `credentials: 'include'` on all requests
+- React Query hooks already exist — swap MSW handlers for real API calls
+- API client at `frontend/src/lib/api-client.ts` — update `baseURL` to live backend
+- Backend 100% complete: 3,500+ tests, all endpoints documented in swagger.yaml
+- No new UI components — pure integration work
+
+**FRs Closed (Frontend column):** FR-U1, FR-U2, FR-U3, FR-U4, FR-U5, FR-U6, FR-U7, FR-U8, FR-H1, FR-H2, FR-H3, FR-H4, FR-H5, FR-T1–T5, FR-C1–C5, FR-G1–G7, FR-B1–B5, FR-R1–R4
+
+**Prerequisites:** Epics 1–7 complete ✅
+
+---
+
+### Story 8.1: Authentication End-to-End (P0)
+
+As a **player**,
+I want to **log in with my real credentials and stay logged in**,
+So that **I can access my horses and stable data**.
+
+**Acceptance Criteria:**
+
+**Given** I am on the login page
+**When** I enter valid email and password
+**Then** I am authenticated via real `POST /api/auth/login`, HttpOnly cookie is set, and I am redirected to my dashboard
+
+**And** page refresh maintains session (cookie persists, `GET /api/auth/me` validates)
+**And** expired/invalid cookie redirects to login with "Session expired" message
+**And** `POST /api/auth/logout` clears cookie and redirects to login
+**And** invalid credentials return generic "Invalid credentials" error — no email enumeration
+**And** protected routes redirect unauthenticated users to login
+**And** role-based route access enforced (User/Moderator/Admin)
+
+**Prerequisites:** None — entry point for Epic 8
+
+**Technical Notes:**
+
+- Update `api-client.ts`: `baseURL: 'http://localhost:3000'`, `withCredentials: true`
+- Wire `useAuth` hook to real `POST /api/auth/login` endpoint
+- Wire `ProtectedRoute` to validate against real session via `GET /api/auth/me`
+- Remove MSW auth handlers from test setup for integration tests
+- API: `POST /api/auth/login`, `GET /api/auth/me`, `POST /api/auth/logout`
+
+---
+
+### Story 8.2: User Dashboard Live Data (P0)
+
+As a **player**,
+I want to **see my real stats, level, currency, and activity on the dashboard**,
+So that **my dashboard reflects my actual game progress**.
+
+**Acceptance Criteria:**
+
+**Given** I am authenticated and on the dashboard
+**When** the page loads
+**Then** I see my real username, level, XP, and currency balance from the API
+
+**And** horse count reflects actual horses I own
+**And** activity feed shows real recent events
+**And** data refreshes correctly on subsequent visits (React Query cache + staleTime)
+**And** loading states shown during data fetch
+**And** error states shown if API is unavailable
+
+**Prerequisites:** Story 8.1
+
+**Technical Notes:**
+
+- Wire `useUser`, `useDashboard` hooks to real endpoints
+- API: `GET /api/users/:id/progress`, `GET /api/dashboard/:userId`
+- React Query staleTime: 30s for balance, 2min for stats
+- Replace all mock fixtures in UserDashboard, XpProgressTracker
+
+---
+
+### Story 8.3: Horse Management Live (P0)
+
+As a **player**,
+I want to **see and manage my real horses**,
+So that **I can plan training and breeding with accurate data**.
+
+**Acceptance Criteria:**
+
+**Given** I am authenticated
+**When** I navigate to the horses page
+**Then** I see my actual horses fetched from `GET /api/horses`
+
+**And** horse detail page loads real attributes, stats, and traits
+**And** search and filter work against real API query params
+**And** conformation scores load from real data
+**And** horse XP and progression data is accurate
+**And** pagination works correctly for large stables
+
+**Prerequisites:** Story 8.1
+
+**Technical Notes:**
+
+- Wire `useHorses`, `useHorse` hooks to real endpoints
+- API: `GET /api/horses`, `GET /api/horses/:id`
+- Replace MSW horse fixtures with real API responses
+- Existing HorseListView, HorseDetailPage components — no UI changes needed
+
+---
+
+### Story 8.4: Groom System Live (P0)
+
+As a **player**,
+I want to **hire, assign, and manage grooms using real data**,
+So that **groom actions have real effects on my stable**.
+
+**Acceptance Criteria:**
+
+**Given** I am authenticated
+**When** I open the groom marketplace
+**Then** I see available grooms fetched from `GET /api/grooms/marketplace`
+
+**And** hiring a groom calls real `POST /api/grooms/hire` and deducts currency
+**And** my grooms list reflects real hired grooms from `GET /api/grooms/user/:userId`
+**And** assigning a groom calls real `POST /api/grooms/assign`
+**And** all 9 Epic 7 components (GroomHiringInterface, GroomPersonalityDisplay, GroomTaskPanel, GroomCareerPanel, GroomLegacyPanel, GroomTalentTree, GroomShowHandlerPanel, GroomBonusTraitPanel) display real API data
+**And** groom interactions record via real `POST /api/grooms/interact`
+
+**Prerequisites:** Stories 8.1, 8.2
+
+**Technical Notes:**
+
+- Wire `useGrooms` hook to real endpoints (already exists, points at MSW)
+- API: `GET /api/grooms/marketplace`, `POST /api/grooms/hire`, `GET /api/grooms/user/:userId`, `POST /api/grooms/assign`, `POST /api/grooms/interact`
+- Type files (groomPersonality.ts, groomTasks.ts, etc.) already match API response shapes
+
+---
+
+### Story 8.5: Training & Competition Live (P0)
+
+As a **player**,
+I want to **train my horses and enter competitions with real results**,
+So that **my horses actually progress and earn prizes**.
+
+**Acceptance Criteria:**
+
+**Given** I am authenticated with eligible horses
+**When** I initiate a training session
+**Then** `POST /api/training/sessions` fires, discipline score updates, and I see real results
+
+**And** training eligibility (age, cooldown) reflects real backend validation
+**And** competition entry calls real `POST /api/competition/enter`
+**And** competition results display real scores and placements
+**And** XP awards and currency prizes update immediately after competition
+**And** leaderboards load real rankings from `GET /api/leaderboards/:discipline`
+
+**Prerequisites:** Stories 8.1, 8.3
+
+**Technical Notes:**
+
+- Wire `useTraining`, `useCompetitions` hooks to real endpoints
+- API: `POST /api/training/sessions`, `POST /api/competition/enter`, `GET /api/competitions/:id/results`
+- Optimistic updates for training score (show +5 immediately, confirm on response)
+- Error handling for eligibility failures (age, cooldown, health)
+
+---
+
+### Story 8.6: Breeding Live (P0)
+
+As a **player**,
+I want to **breed horses and raise foals using real game mechanics**,
+So that **foal development and trait discovery are genuine gameplay**.
+
+**Acceptance Criteria:**
+
+**Given** I am authenticated with eligible horses
+**When** I initiate breeding
+**Then** `POST /api/breeding/pairs` fires and a foal is created with real genetics
+
+**And** foal milestone timeline loads from real `GET /api/foals/:id/milestones`
+**And** enrichment activities call real `POST /api/foals/:id/enrichment`
+**And** milestone evaluations reveal real trait discoveries
+**And** breeding predictions display real probability data from `GET /api/breeding/predict`
+**And** epigenetic trait system displays real discovery status and effects
+
+**Prerequisites:** Stories 8.1, 8.3
+
+**Technical Notes:**
+
+- Wire `useBreeding`, `useFoals` hooks to real endpoints
+- API: `POST /api/breeding/pairs`, `GET /api/foals/:id/milestones`, `POST /api/foals/:id/enrichment`, `GET /api/breeding/predict`
+- All Epic 6 foal components already built — no new UI needed
+
+---
+
+## FR Coverage Matrix (Updated)
+
+| Epic                        | Stories | P0 FRs                               | P1 FRs                            | P2 FRs              | Coverage       |
+| --------------------------- | ------- | ------------------------------------ | --------------------------------- | ------------------- | -------------- |
+| Epic 1: Authentication      | 6       | FR-U1, FR-U2, FR-U3, FR-U4           | -                                 | -                   | 100%           |
+| Epic 2: Dashboard           | 5       | FR-U6, FR-U7, FR-U8                  | FR-U5                             | -                   | 100%           |
+| Epic 3: Horses              | 6       | FR-H1, FR-H2, FR-H3                  | FR-H4, FR-H5                      | -                   | 100%           |
+| Epic 4: Training            | 5       | FR-T1, FR-T2, FR-T3, FR-T4           | FR-T5                             | -                   | 100%           |
+| Epic 5: Competition         | 5       | FR-C1, FR-C2, FR-C3, FR-C4           | FR-C5                             | -                   | 100%           |
+| Epic 6: Breeding            | 6       | FR-B1, FR-B2, FR-B3, FR-B4, FR-E1-E5 | FR-B5                             | -                   | 100%           |
+| Epic 7: Grooms              | 7       | FR-G1, FR-G2, FR-G3                  | FR-G4, FR-G7, FR-R1, FR-R2, FR-R4 | FR-G5, FR-G6, FR-R3 | 100%           |
+| **Epic 8: API Integration** | **6**   | **All frontend-pending P0 FRs**      | **All frontend-pending P1 FRs**   | -                   | **Closes all** |
+
+**Total Coverage after Epic 8:** 44/44 FRs — 100% frontend + backend
 
 ---
 
@@ -1389,14 +1650,14 @@ So that **I can maximize show performance and find unique abilities**.
 
 ### Epic Breakdown Statistics
 
-| Metric | Value |
-|--------|-------|
-| **Total Epics** | 7 |
-| **Total Stories** | 40 |
-| **P0 Stories** | 28 |
-| **P1 Stories** | 9 |
-| **P2 Stories** | 3 |
-| **FR Coverage** | 44/44 (100%) |
+| Metric            | Value        |
+| ----------------- | ------------ |
+| **Total Epics**   | 8            |
+| **Total Stories** | 46           |
+| **P0 Stories**    | 34           |
+| **P1 Stories**    | 9            |
+| **P2 Stories**    | 3            |
+| **FR Coverage**   | 44/44 (100%) |
 
 ### Implementation Sequence (Recommended)
 
@@ -1407,30 +1668,33 @@ So that **I can maximize show performance and find unique abilities**.
 5. **Epic 5: Competition** - Rewards and progression
 6. **Epic 6: Breeding** - Advanced gameplay
 7. **Epic 7: Grooms** - Enhancement features
+8. **Epic 8: API Integration** - Connect all frontend to live backend ← CURRENT
 
 ### Effort Estimation
 
-| Epic | Story Count | Estimated Effort |
-|------|-------------|------------------|
-| Epic 1 | 6 | 3-4 days |
-| Epic 2 | 5 | 2-3 days |
-| Epic 3 | 6 | 3-4 days |
-| Epic 4 | 5 | 2-3 days |
-| Epic 5 | 5 | 2-3 days |
-| Epic 6 | 6 | 4-5 days |
-| Epic 7 | 7 | 4-5 days |
-| **Total** | **40** | **20-27 days** |
+| Epic       | Story Count | Notes                                             |
+| ---------- | ----------- | ------------------------------------------------- |
+| Epic 1     | 6           | Complete ✅                                       |
+| Epic 2     | 5           | Complete ✅                                       |
+| Epic 3     | 6           | Complete ✅                                       |
+| Epic 4     | 5           | Complete ✅                                       |
+| Epic 5     | 5           | Complete ✅                                       |
+| Epic 6     | 6           | Complete ✅                                       |
+| Epic 7     | 7           | Complete ✅                                       |
+| **Epic 8** | **6**       | **In progress — API integration only, no new UI** |
 
 ### Dependencies
 
 ```
 Epic 1 ──► Epic 2 ──► Epic 3 ──► Epic 4 ──► Epic 5
-                          │
-                          └──► Epic 6 ──► Epic 7
+                          │                      │
+                          └──► Epic 6 ──► Epic 7 ┘
+                                                  │
+                                             Epic 8 (all paths converge)
 ```
 
 ---
 
 _For implementation: Use the `create-story` workflow to generate individual story implementation plans from this epic breakdown._
 
-_This document will be updated after UX Design completion to incorporate interaction details and visual specifications._
+_Epic 8 added 2026-02-17. All 6 stories are integration-only — no new UI components required._
