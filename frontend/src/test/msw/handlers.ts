@@ -601,6 +601,75 @@ export const handlers = [
     })
   ),
 
+  // Competition API - singular path (used by competitionsApi in api-client.ts)
+  http.get(`${base}/api/competition`, () =>
+    HttpResponse.json({
+      success: true,
+      data: [
+        {
+          id: 1,
+          name: 'Spring Dressage Championship',
+          discipline: 'dressage',
+          date: '2026-03-15T10:00:00Z',
+          entryFee: 50,
+          prizePool: 5000,
+          status: 'open',
+          maxEntries: 20,
+          currentEntries: 12,
+          location: 'Central Arena',
+        },
+        {
+          id: 2,
+          name: 'Weekly Jumping Series',
+          discipline: 'jumping',
+          date: '2026-02-10T14:00:00Z',
+          entryFee: 25,
+          prizePool: 2500,
+          status: 'open',
+          maxEntries: 30,
+          currentEntries: 28,
+        },
+        {
+          id: 3,
+          name: 'Free Training Show',
+          discipline: 'eventing',
+          date: '2026-02-05T09:00:00Z',
+          entryFee: 0,
+          prizePool: 0,
+          status: 'open',
+          maxEntries: 50,
+          currentEntries: 15,
+        },
+      ],
+    })
+  ),
+  http.get(`${base}/api/competition/disciplines`, () =>
+    HttpResponse.json({
+      success: true,
+      data: {
+        disciplines: ['dressage', 'jumping', 'eventing', 'racing', 'endurance'],
+        disciplineDetails: [],
+      },
+    })
+  ),
+  http.get(`${base}/api/competition/eligibility/:horseId/:discipline`, () =>
+    HttpResponse.json({
+      success: true,
+      data: {
+        eligibility: {
+          eligible: true,
+          reasons: [],
+        },
+      },
+    })
+  ),
+  http.post(`${base}/api/competition/enter`, () =>
+    HttpResponse.json({
+      success: true,
+      data: { entryId: 101 },
+    })
+  ),
+
   // Competition System - Filtered List
   http.get(`${base}/api/competitions`, ({ request }) => {
     const url = new URL(request.url);

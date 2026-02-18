@@ -3131,7 +3131,7 @@ action_items:
 
   8-5-training-competition-live:
     title: 'Training & Competition Live'
-    status: backlog
+    status: review
     priority: P0
     fr: [FR-T1, FR-T2, FR-T3, FR-T4, FR-C1, FR-C2, FR-C3, FR-C4]
     epic: 8
