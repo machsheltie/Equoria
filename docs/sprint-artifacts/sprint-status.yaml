@@ -3077,28 +3077,105 @@ action_items:
     deliverable: 'Documented improvement in workflow'
     impact: 'LOW - Quality-of-life improvement for sprint planning'
 
+  # ─────────────────────────────────────────────────────────
+  # Epic 8: API Integration Layer (P0 - CURRENT)
+  # ─────────────────────────────────────────────────────────
+  epic-8:
+    title: 'API Integration Layer'
+    status: in_progress
+    start_date: '2026-02-17'
+    priority: P0
+    prerequisites: [epic-1, epic-2, epic-3, epic-4, epic-5, epic-6, epic-7]
+
+  8-1-authentication-end-to-end:
+    title: 'Authentication End-to-End'
+    status: backlog
+    priority: P0
+    fr: [FR-U1, FR-U2, FR-U3, FR-U4]
+    epic: 8
+    story: 1
+    prerequisites: []
+    created_date: '2026-02-17'
+
+  8-2-user-dashboard-live-data:
+    title: 'User Dashboard Live Data'
+    status: backlog
+    priority: P0
+    fr: [FR-U6, FR-U7, FR-U8]
+    epic: 8
+    story: 2
+    prerequisites: [8-1-authentication-end-to-end]
+    created_date: '2026-02-17'
+
+  8-3-horse-management-live:
+    title: 'Horse Management Live'
+    status: backlog
+    priority: P0
+    fr: [FR-H1, FR-H2, FR-H3]
+    epic: 8
+    story: 3
+    prerequisites: [8-1-authentication-end-to-end]
+    created_date: '2026-02-17'
+
+  8-4-groom-system-live:
+    title: 'Groom System Live'
+    status: backlog
+    priority: P0
+    fr: [FR-G1, FR-G2, FR-G3]
+    epic: 8
+    story: 4
+    prerequisites: [8-1-authentication-end-to-end, 8-2-user-dashboard-live-data]
+    created_date: '2026-02-17'
+
+  8-5-training-competition-live:
+    title: 'Training & Competition Live'
+    status: backlog
+    priority: P0
+    fr: [FR-T1, FR-T2, FR-T3, FR-T4, FR-C1, FR-C2, FR-C3, FR-C4]
+    epic: 8
+    story: 5
+    prerequisites: [8-1-authentication-end-to-end, 8-3-horse-management-live]
+    created_date: '2026-02-17'
+
+  8-6-breeding-live:
+    title: 'Breeding Live'
+    status: backlog
+    priority: P0
+    fr: [FR-B1, FR-B2, FR-B3, FR-B4, FR-E1]
+    epic: 8
+    story: 6
+    prerequisites: [8-1-authentication-end-to-end, 8-3-horse-management-live]
+    created_date: '2026-02-17'
+
+  epic-8-retrospective:
+    title: 'Epic 8 Retrospective'
+    status: optional
+    epic: 8
+    created_date: '2026-02-17'
+
 # Summary
 summary:
-  total_epics: 7
-  total_stories: 40
-  p0_stories: 28
+  total_epics: 8
+  total_stories: 46
+  p0_stories: 34
   p1_stories: 9
   p2_stories: 3
   fr_coverage: '44/44 (100%)'
-  current_epic: 7
-  current_story: 'epic-7-retrospective'
+  current_epic: 8
+  current_story: '8-1-authentication-end-to-end'
   epics_completed: 7
   stories_completed: 40
   stories_in_progress: 0
   stories_ready_for_dev: 0
-  stories_backlog: 0
+  stories_backlog: 6
   total_tests_passing: 1070
   action_items_total: 23
   action_items_completed: 11
   action_items_pending: 12
   action_items_blocking: 4
-  # Milestone: ALL 7 EPICS COMPLETE - Epic 8 (API Integration) planning next
+  # Milestone: ALL 7 EPICS COMPLETE - Epic 8 (API Integration) in progress
   epic_7_completed_date: '2026-02-17'
   epic_7_total_tests: 464
   epic_7_retro_file: 'docs/sprint-artifacts/epic-7-retro-2026-02-17.md'
-  next_milestone: 'Epic 6 Testing Sprint (5 days) - Verify all features before Epic 7'
+  epic_8_start_date: '2026-02-17'
+  next_milestone: 'Epic 8: API Integration Layer - Story 8.1 Authentication End-to-End'
