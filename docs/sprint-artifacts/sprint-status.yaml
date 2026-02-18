@@ -3151,9 +3151,11 @@ action_items:
 
   epic-8-retrospective:
     title: 'Epic 8 Retrospective'
-    status: optional
+    status: done
     epic: 8
     created_date: '2026-02-17'
+    completed_date: '2026-02-18'
+    retro_file: 'docs/sprint-artifacts/epic-8-retro-2026-02-18.md'
 
 # Summary
 summary:
