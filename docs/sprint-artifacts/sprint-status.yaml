@@ -3158,27 +3158,103 @@ action_items:
     completed_date: '2026-02-18'
     retro_file: 'docs/sprint-artifacts/epic-8-retro-2026-02-18.md'
 
+  # ─── Epic 9A: Technical Health Sprint ──────────────────────────────────────
+
+  epic-9a:
+    title: 'Technical Health Sprint'
+    status: backlog
+    start_date: null
+    priority: P0
+    prerequisites: [epic-8]
+    created_date: '2026-02-18'
+
+  9a-1-stabilize-flaky-backend-tests:
+    title: 'Stabilize Flaky Backend Tests + Restore Pre-Push Hook'
+    status: backlog
+    priority: P0
+    epic: '9a'
+    story: 1
+    prerequisites: []
+    created_date: '2026-02-18'
+    beads_issue: 'Equoria-yll'
+    ac:
+      - databaseOptimization.test.mjs p95 threshold raised to 500ms
+      - userRoutes.test.mjs uses crypto.randomUUID() for test user IDs
+      - Both tests pass in 5 consecutive full-suite runs without failure
+      - git push without --no-verify works cleanly on a new commit
+
+  9a-2-playwright-e2e-for-core-game-flows:
+    title: 'Playwright E2E for Core Game Flows'
+    status: backlog
+    priority: P1
+    epic: '9a'
+    story: 2
+    prerequisites: []
+    created_date: '2026-02-18'
+    beads_issue: 'Equoria-cm1'
+    ac:
+      - Login flow - valid credentials to dashboard redirect
+      - Session persistence - page refresh stays authenticated
+      - Stable page loads with horse list
+      - Training session - initiate to result displayed
+      - Competition entry - select horse to confirm to result displayed
+
+  9a-3-project-health-pass:
+    title: 'Project Health Pass'
+    status: backlog
+    priority: P1
+    epic: '9a'
+    story: 3
+    prerequisites: []
+    created_date: '2026-02-18'
+    beads_issue: 'Equoria-vkv'
+    ac:
+      - CLAUDE.md updated to reflect current project state (Epic 8 complete, Epic 9 starting)
+      - nul file artifact removed from working tree
+      - sprint-status current_story and epics_completed fields updated
+
+  9a-quick-actions-bundle:
+    title: 'Quick Action Items Bundle (AI-7-2, AI-7-3, AI-7-4, AI-8-1)'
+    status: backlog
+    priority: P1
+    epic: '9a'
+    story: 0
+    type: quick-actions
+    prerequisites: []
+    created_date: '2026-02-18'
+    items:
+      - 'AI-7-2: Add _ prefix rule to PATTERN_LIBRARY.md under TypeScript Patterns'
+      - 'AI-7-3: Add within() scoping pattern to PATTERN_LIBRARY.md under Testing Patterns'
+      - 'AI-7-4: Add bd ready to session start checklist in CLAUDE.md'
+      - 'AI-8-1: Add path registry comment block to handlers.ts'
+
+  epic-9a-retrospective:
+    title: 'Epic 9A Retrospective'
+    status: optional
+    epic: '9a'
+    created_date: '2026-02-18'
+
 # Summary
 summary:
-  total_epics: 8
-  total_stories: 46
-  p0_stories: 34
-  p1_stories: 9
+  total_epics: 9
+  total_stories: 50
+  p0_stories: 35
+  p1_stories: 12
   p2_stories: 3
   fr_coverage: '44/44 (100%)'
-  current_epic: 9
-  current_story: null
+  current_epic: '9a'
+  current_story: '9a-1-stabilize-flaky-backend-tests'
   epics_completed: 8
   stories_completed: 46
   stories_in_progress: 0
   stories_ready_for_dev: 0
-  stories_backlog: 6
+  stories_backlog: 4
   total_tests_passing: 1070
   action_items_total: 23
   action_items_completed: 11
   action_items_pending: 12
   action_items_blocking: 4
-  # Milestone: ALL 7 EPICS COMPLETE - Epic 8 (API Integration) in progress
+  # Milestone: ALL 8 EPICS COMPLETE - Epic 9A (Technical Health Sprint) starting
   epic_7_completed_date: '2026-02-17'
   epic_7_total_tests: 464
   epic_7_retro_file: 'docs/sprint-artifacts/epic-7-retro-2026-02-17.md'
