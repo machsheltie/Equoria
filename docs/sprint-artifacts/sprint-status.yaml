@@ -3082,14 +3082,15 @@ action_items:
   # ─────────────────────────────────────────────────────────
   epic-8:
     title: 'API Integration Layer'
-    status: in_progress
+    status: completed
     start_date: '2026-02-17'
+    completed_date: '2026-02-18'
     priority: P0
     prerequisites: [epic-1, epic-2, epic-3, epic-4, epic-5, epic-6, epic-7]
 
   8-1-authentication-end-to-end:
     title: 'Authentication End-to-End'
-    status: review
+    status: completed
     priority: P0
     fr: [FR-U1, FR-U2, FR-U3, FR-U4]
     epic: 8
@@ -3100,7 +3101,7 @@ action_items:
 
   8-2-user-dashboard-live-data:
     title: 'User Dashboard Live Data'
-    status: review
+    status: completed
     priority: P0
     fr: [FR-U6, FR-U7, FR-U8]
     epic: 8
@@ -3111,7 +3112,7 @@ action_items:
 
   8-3-horse-management-live:
     title: 'Horse Management Live'
-    status: review
+    status: completed
     priority: P0
     fr: [FR-H1, FR-H2, FR-H3]
     epic: 8
@@ -3121,7 +3122,7 @@ action_items:
 
   8-4-groom-system-live:
     title: 'Groom System Live'
-    status: review
+    status: completed
     priority: P0
     fr: [FR-G1, FR-G2, FR-G3]
     epic: 8
@@ -3131,7 +3132,7 @@ action_items:
 
   8-5-training-competition-live:
     title: 'Training & Competition Live'
-    status: review
+    status: completed
     priority: P0
     fr: [FR-T1, FR-T2, FR-T3, FR-T4, FR-C1, FR-C2, FR-C3, FR-C4]
     epic: 8
@@ -3141,7 +3142,7 @@ action_items:
 
   8-6-breeding-live:
     title: 'Breeding Live'
-    status: review
+    status: completed
     priority: P0
     fr: [FR-B1, FR-B2, FR-B3, FR-B4, FR-E1]
     epic: 8
@@ -3165,10 +3166,10 @@ summary:
   p1_stories: 9
   p2_stories: 3
   fr_coverage: '44/44 (100%)'
-  current_epic: 8
-  current_story: '8-1-authentication-end-to-end'
-  epics_completed: 7
-  stories_completed: 40
+  current_epic: 9
+  current_story: null
+  epics_completed: 8
+  stories_completed: 46
   stories_in_progress: 0
   stories_ready_for_dev: 0
   stories_backlog: 6
