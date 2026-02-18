@@ -30,7 +30,7 @@ export function useUserProgress(userId: string | number) {
     queryKey: progressKeys.user(userId),
     queryFn: () => userProgressApi.getProgress(userId),
     enabled: Boolean(userId),
-    staleTime: 60 * 1000, // 1 minute
+    staleTime: 30 * 1000, // 30 seconds (AC: balance currency freshness)
   });
 }
 
@@ -48,7 +48,7 @@ export function useActivityFeed(userId: string | number) {
     queryKey: progressKeys.activity(userId),
     queryFn: () => userProgressApi.getActivity(userId),
     enabled: Boolean(userId),
-    staleTime: 60 * 1000, // 1 minute
+    staleTime: 30 * 1000, // 30 seconds (AC: keep activity feed current)
   });
 }
 

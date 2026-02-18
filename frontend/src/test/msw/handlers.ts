@@ -352,6 +352,23 @@ export const handlers = [
       data: [],
     })
   ),
+  // User profile (used by useUser hook) — MUST be after all /users/:id/* sub-routes
+  http.get(`${base}/api/users/:id`, ({ params }) => {
+    if (params.id === '999999') {
+      return new HttpResponse(null, { status: 404 });
+    }
+    return HttpResponse.json({
+      success: true,
+      data: {
+        id: params.id,
+        username: 'testuser',
+        money: 1000,
+        level: 1,
+        currentHorses: 2,
+        stableLimit: 10,
+      },
+    });
+  }),
 
   // Advanced Horse Analysis
   http.get(`${base}/api/horses/:id/environmental-analysis`, () =>

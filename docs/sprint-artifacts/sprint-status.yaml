@@ -3100,7 +3100,7 @@ action_items:
 
   8-2-user-dashboard-live-data:
     title: 'User Dashboard Live Data'
-    status: ready-for-dev
+    status: review
     priority: P0
     fr: [FR-U6, FR-U7, FR-U8]
     epic: 8
