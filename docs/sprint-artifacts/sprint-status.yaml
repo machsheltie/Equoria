@@ -3100,13 +3100,14 @@ action_items:
 
   8-2-user-dashboard-live-data:
     title: 'User Dashboard Live Data'
-    status: backlog
+    status: ready-for-dev
     priority: P0
     fr: [FR-U6, FR-U7, FR-U8]
     epic: 8
     story: 2
     prerequisites: [8-1-authentication-end-to-end]
     created_date: '2026-02-17'
+    story_file: 'docs/sprint-artifacts/8-2-user-dashboard-live-data.md'
 
   8-3-horse-management-live:
     title: 'Horse Management Live'
