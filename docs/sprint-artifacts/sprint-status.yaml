@@ -3089,7 +3089,7 @@ action_items:
 
   8-1-authentication-end-to-end:
     title: 'Authentication End-to-End'
-    status: ready-for-dev
+    status: review
     priority: P0
     fr: [FR-U1, FR-U2, FR-U3, FR-U4]
     epic: 8

@@ -6,7 +6,7 @@ import {
 } from '../fixtures/leaderboards';
 import type { LeaderboardCategory } from '@/components/leaderboard/LeaderboardCategorySelector';
 
-const base = 'http://localhost:3001';
+const base = import.meta.env.VITE_API_URL || 'http://localhost:3000';
 
 export const handlers = [
   // Auth login/register/logout
@@ -84,13 +84,24 @@ export const handlers = [
   // Auth profile
   http.get(`${base}/api/auth/profile`, () =>
     HttpResponse.json({
-      success: true,
+      status: 'success',
       data: {
         user: {
           id: 1,
           username: 'testuser',
           email: 'test@example.com',
+          firstName: 'Test',
+          lastName: 'User',
+          role: 'user',
         },
+      },
+    })
+  ),
+  http.get(`${base}/api/auth/me`, () =>
+    HttpResponse.json({
+      status: 'success',
+      data: {
+        user: { id: 1, username: 'testuser', email: 'test@example.com', role: 'user' },
       },
     })
   ),
@@ -132,7 +143,7 @@ export const handlers = [
       },
     });
   }),
-  http.get(`${base}/api/training/status/:horseId/:discipline`, ({ params: _params }) =>
+  http.get(`${base}/api/training/status/:horseId/:discipline`, ({ params }) =>
     HttpResponse.json({
       success: true,
       data: {
@@ -152,7 +163,7 @@ export const handlers = [
       ],
     })
   ),
-  http.get(`${base}/api/training/trainable/:userId`, ({ params: _params }) =>
+  http.get(`${base}/api/training/trainable/:userId`, ({ params }) =>
     HttpResponse.json({
       success: true,
       data: [
@@ -196,7 +207,7 @@ export const handlers = [
       data: { foalId: 10, message: 'Foal created' },
     })
   ),
-  http.get(`${base}/api/foals/:id`, ({ params: _params }) =>
+  http.get(`${base}/api/foals/:id`, ({ params }) =>
     HttpResponse.json({
       success: true,
       data: {
@@ -209,7 +220,7 @@ export const handlers = [
       },
     })
   ),
-  http.get(`${base}/api/foals/:id/development`, ({ params: _params }) =>
+  http.get(`${base}/api/foals/:id/development`, ({ params }) =>
     HttpResponse.json({
       success: true,
       data: {
@@ -230,7 +241,7 @@ export const handlers = [
       ],
     })
   ),
-  http.post(`${base}/api/foals/:id/activity`, async ({ request, _params }) => {
+  http.post(`${base}/api/foals/:id/activity`, async ({ request, params }) => {
     const body = (await request.json()) as { activityType?: string; activity?: string };
     return HttpResponse.json({
       success: true,
@@ -241,7 +252,7 @@ export const handlers = [
       },
     });
   }),
-  http.post(`${base}/api/foals/:id/enrich`, async ({ request, _params }) => {
+  http.post(`${base}/api/foals/:id/enrich`, async ({ request, params }) => {
     const body = (await request.json()) as { activity?: string };
     return HttpResponse.json({
       success: true,
@@ -251,7 +262,7 @@ export const handlers = [
   http.post(`${base}/api/foals/:id/reveal-traits`, () =>
     HttpResponse.json({ success: true, data: { traits: ['brave', 'athletic'] } })
   ),
-  http.put(`${base}/api/foals/:id/develop`, async ({ request, _params }) => {
+  http.put(`${base}/api/foals/:id/develop`, async ({ request, params }) => {
     const updates = (await request.json()) as Record<string, unknown>;
     return HttpResponse.json({
       success: true,
@@ -296,7 +307,7 @@ export const handlers = [
   ),
 
   // User Dashboard & Progress
-  http.get(`${base}/api/users/:id/progress`, ({ params: _params }) => {
+  http.get(`${base}/api/users/:id/progress`, ({ params }) => {
     if (params.id === '999999') {
       return new HttpResponse(null, { status: 404 });
     }
@@ -315,7 +326,7 @@ export const handlers = [
       },
     });
   }),
-  http.get(`${base}/api/users/dashboard/:id`, ({ params: _params }) => {
+  http.get(`${base}/api/users/dashboard/:id`, ({ params }) => {
     if (params.id === '999999') {
       return new HttpResponse(null, { status: 404 });
     }
@@ -437,7 +448,7 @@ export const handlers = [
   }),
 
   // Competition System - Single Competition Details
-  http.get(`${base}/api/competitions/:id`, ({ params: _params }) => {
+  http.get(`${base}/api/competitions/:id`, ({ params }) => {
     const id = Number(params.id);
     if (id === 999) {
       return HttpResponse.json(
@@ -470,7 +481,7 @@ export const handlers = [
   }),
 
   // Competition System - Horse Eligibility
-  http.get(`${base}/api/competitions/:compId/eligibility/:userId`, ({ params: _params }) => {
+  http.get(`${base}/api/competitions/:compId/eligibility/:userId`, () => {
     return HttpResponse.json({
       success: true,
       data: [
@@ -529,7 +540,7 @@ export const handlers = [
   ),
 
   // Competition Results System - Competition Results
-  http.get(`${base}/api/competitions/:id/results`, ({ params: _params }) => {
+  http.get(`${base}/api/competitions/:id/results`, ({ params }) => {
     const id = Number(params.id);
 
     // Return 404 for competition ID 999 (error test case)
@@ -633,7 +644,7 @@ export const handlers = [
   }),
 
   // Competition Results System - Horse Competition History
-  http.get(`${base}/api/horses/:id/competition-history`, ({ params: _params }) => {
+  http.get(`${base}/api/horses/:id/competition-history`, ({ params }) => {
     const id = Number(params.id);
 
     // Return 404 for horse ID 999 (error test case)
@@ -716,7 +727,7 @@ export const handlers = [
   }),
 
   // Competition Results System - User Competition Stats
-  http.get(`${base}/api/users/:id/competition-stats`, ({ params: _params }) => {
+  http.get(`${base}/api/users/:id/competition-stats`, ({ params }) => {
     const id = params.id as string;
 
     // Return 404 for user ID 'error-user' (error test case)
@@ -820,7 +831,7 @@ export const handlers = [
   http.get(`${base}/api/users/:userId/prize-history`, ({ params, request }) => {
     const userId = params.userId as string;
     const url = new URL(request.url);
-    const __dateRange = url.searchParams.get('dateRange');
+    const dateRange = url.searchParams.get('dateRange');
     const horseId = url.searchParams.get('horseId');
     const discipline = url.searchParams.get('discipline');
 
@@ -917,7 +928,7 @@ export const handlers = [
   }),
 
   // Prize System - Horse Prize Summary
-  http.get(`${base}/api/horses/:horseId/prize-summary`, ({ params: _params }) => {
+  http.get(`${base}/api/horses/:horseId/prize-summary`, ({ params }) => {
     const horseId = Number(params.horseId);
 
     // Return 404 for horse ID 999 (error test case)
@@ -990,7 +1001,7 @@ export const handlers = [
   }),
 
   // XP System - Horse Level Info
-  http.get(`${base}/api/horses/:horseId/level-info`, ({ params: _params }) => {
+  http.get(`${base}/api/horses/:horseId/level-info`, ({ params }) => {
     const horseId = Number(params.horseId);
 
     // Return 404 for horse ID 999 (error test case)
@@ -1112,7 +1123,7 @@ export const handlers = [
   }),
 
   // Prize System - Claim Competition Prizes
-  http.post(`${base}/api/competitions/:competitionId/claim-prizes`, ({ params: _params }) => {
+  http.post(`${base}/api/competitions/:competitionId/claim-prizes`, ({ params }) => {
     const competitionId = Number(params.competitionId);
 
     // Return 404 for competition ID 999 (not found)

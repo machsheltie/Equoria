@@ -30,3 +30,5 @@ export {
   type RoleProtectedRouteProps,
   type UserRole,
 } from './RoleProtectedRoute';
+
+export { ProtectedRoute, type ProtectedRouteProps } from './ProtectedRoute';

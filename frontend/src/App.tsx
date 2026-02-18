@@ -4,7 +4,6 @@ import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
 import { BrowserRouter, Routes, Route } from 'react-router-dom';
 import { navItems } from './nav-items';
 import { AuthProvider } from './contexts/AuthContext';
-import Index from './pages/Index';
 import StableView from './pages/StableView';
 import LoginPage from './pages/LoginPage';
 import RegisterPage from './pages/RegisterPage';
@@ -13,6 +12,8 @@ import ForgotPasswordPage from './pages/ForgotPasswordPage';
 import ResetPasswordPage from './pages/ResetPasswordPage';
 import ProfilePage from './pages/ProfilePage';
 import HorseDetailPage from './pages/HorseDetailPage';
+import { StarField } from '@/components/layout/StarField';
+import { ProtectedRoute } from '@/components/auth';
 
 const queryClient = new QueryClient();
 
@@ -21,6 +22,9 @@ const App = () => (
     <AuthProvider>
       <TooltipProvider>
         <Sonner />
+        <div className="fixed inset-0 z-[-1]">
+          <StarField density="medium" speed="slow" />
+        </div>
         <BrowserRouter
           future={{
             v7_startTransition: true,
@@ -33,11 +37,32 @@ const App = () => (
             <Route path="/verify-email" element={<VerifyEmailPage />} />
             <Route path="/forgot-password" element={<ForgotPasswordPage />} />
             <Route path="/reset-password" element={<ResetPasswordPage />} />
-            <Route path="/profile" element={<ProfilePage />} />
-            <Route path="/stable" element={<StableView />} />
-            <Route path="/horses/:id" element={<HorseDetailPage />} />
+            <Route
+              path="/profile"
+              element={
+                <ProtectedRoute>
+                  <ProfilePage />
+                </ProtectedRoute>
+              }
+            />
+            <Route
+              path="/stable"
+              element={
+                <ProtectedRoute>
+                  <StableView />
+                </ProtectedRoute>
+              }
+            />
+            <Route
+              path="/horses/:id"
+              element={
+                <ProtectedRoute>
+                  <HorseDetailPage />
+                </ProtectedRoute>
+              }
+            />
             {navItems.map(({ to, page }) => (
-              <Route key={to} path={to} element={page} />
+              <Route key={to} path={to} element={<ProtectedRoute>{page}</ProtectedRoute>} />
             ))}
           </Routes>
         </BrowserRouter>
