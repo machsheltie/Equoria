@@ -344,26 +344,112 @@ export const handlers = [
   http.get(`${base}/api/grooms/user/:userId`, () =>
     HttpResponse.json({
       success: true,
-      data: [],
+      data: [
+        {
+          id: 10,
+          name: 'Alice Thornton',
+          skillLevel: 'Expert',
+          specialty: 'Dressage',
+          personality: 'Calm',
+          experience: 8,
+          sessionRate: 150,
+          isActive: true,
+          availableSlots: 2,
+          currentAssignments: 1,
+          maxAssignments: 3,
+        },
+      ],
     })
   ),
   http.get(`${base}/api/groom-assignments`, () =>
     HttpResponse.json({
       success: true,
-      data: [],
+      data: [
+        {
+          id: 1,
+          groomId: 10,
+          horseId: 1,
+          priority: 1,
+          isActive: true,
+          startDate: '2026-01-01T00:00:00Z',
+        },
+      ],
     })
   ),
   http.get(`${base}/api/groom-salaries/summary`, () =>
     HttpResponse.json({
       success: true,
       data: {
-        totalMonthlyCost: 0,
-        totalWeeklyCost: 0,
-        groomCount: 0,
-        breakdown: [],
+        totalMonthlyCost: 600,
+        totalWeeklyCost: 150,
+        groomCount: 1,
+        breakdown: [
+          { groomId: 10, groomName: 'Alice Thornton', weeklyCost: 150, assignmentCount: 1 },
+        ],
       },
     })
   ),
+  http.post(`${base}/api/groom-marketplace/hire`, () =>
+    HttpResponse.json({
+      success: true,
+      data: {
+        groom: {
+          id: 10,
+          name: 'Alice Thornton',
+          skillLevel: 'Expert',
+          specialty: 'Dressage',
+          personality: 'Calm',
+          experience: 8,
+          sessionRate: 150,
+          isActive: true,
+          availableSlots: 2,
+          currentAssignments: 1,
+          maxAssignments: 3,
+        },
+        cost: 150,
+        remainingMoney: 4850,
+      },
+    })
+  ),
+  http.post(`${base}/api/groom-marketplace/refresh`, () =>
+    HttpResponse.json({
+      success: true,
+      data: {
+        grooms: [
+          {
+            marketplaceId: 'mp-001',
+            firstName: 'Alice',
+            lastName: 'Thornton',
+            specialty: 'Dressage',
+            skillLevel: 'Expert',
+            personality: 'Calm',
+            experience: 8,
+            sessionRate: 150,
+            bio: 'Experienced dressage specialist.',
+            availability: true,
+          },
+          {
+            marketplaceId: 'mp-002',
+            firstName: 'Ben',
+            lastName: 'Marsh',
+            specialty: 'Show Jumping',
+            skillLevel: 'Intermediate',
+            personality: 'Energetic',
+            experience: 4,
+            sessionRate: 100,
+            bio: 'Show jumping enthusiast.',
+            availability: true,
+          },
+        ],
+        lastRefresh: '2026-02-25T00:00:00Z',
+        nextFreeRefresh: '2026-03-04T00:00:00Z',
+        refreshCost: 500,
+        canRefreshFree: true,
+        refreshCount: 4,
+      },
+    })
+  ),
+  http.post(`${base}/api/groom-assignments`, () => HttpResponse.json({ success: true })),
 
   // Auth Status
   http.get(`${base}/api/auth/verification-status`, () =>
@@ -479,7 +565,39 @@ export const handlers = [
   http.get(`${base}/api/groom-marketplace`, () =>
     HttpResponse.json({
       success: true,
-      data: [],
+      data: {
+        grooms: [
+          {
+            marketplaceId: 'mp-001',
+            firstName: 'Alice',
+            lastName: 'Thornton',
+            specialty: 'Dressage',
+            skillLevel: 'Expert',
+            personality: 'Calm',
+            experience: 8,
+            sessionRate: 150,
+            bio: 'Experienced dressage specialist.',
+            availability: true,
+          },
+          {
+            marketplaceId: 'mp-002',
+            firstName: 'Ben',
+            lastName: 'Marsh',
+            specialty: 'Show Jumping',
+            skillLevel: 'Intermediate',
+            personality: 'Energetic',
+            experience: 4,
+            sessionRate: 100,
+            bio: 'Show jumping enthusiast.',
+            availability: true,
+          },
+        ],
+        lastRefresh: '2026-02-18T00:00:00Z',
+        nextFreeRefresh: '2026-02-25T00:00:00Z',
+        refreshCost: 500,
+        canRefreshFree: false,
+        refreshCount: 3,
+      },
     })
   ),
 

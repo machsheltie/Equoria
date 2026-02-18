@@ -3121,7 +3121,7 @@ action_items:
 
   8-4-groom-system-live:
     title: 'Groom System Live'
-    status: backlog
+    status: review
     priority: P0
     fr: [FR-G1, FR-G2, FR-G3]
     epic: 8
