@@ -3089,13 +3089,14 @@ action_items:
 
   8-1-authentication-end-to-end:
     title: 'Authentication End-to-End'
-    status: backlog
+    status: ready-for-dev
     priority: P0
     fr: [FR-U1, FR-U2, FR-U3, FR-U4]
     epic: 8
     story: 1
     prerequisites: []
     created_date: '2026-02-17'
+    story_file: 'docs/sprint-artifacts/8-1-authentication-end-to-end.md'
 
   8-2-user-dashboard-live-data:
     title: 'User Dashboard Live Data'
