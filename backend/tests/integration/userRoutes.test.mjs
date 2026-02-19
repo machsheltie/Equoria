@@ -38,6 +38,7 @@
  *    with strategic mocking of data layer while validating API contracts.
  */
 
+import { randomUUID } from 'crypto';
 import { describe, beforeAll, afterAll, expect, it } from '@jest/globals';
 import request from 'supertest';
 import { createTestUser, cleanupTestData } from '../helpers/testAuth.mjs';
@@ -54,8 +55,8 @@ describe('🌐 INTEGRATION: User Routes - HTTP API Endpoints', () => {
   beforeAll(async () => {
     // Create test user with authentication token
     const userResult = await createTestUser({
-      username: `userroutes_${Date.now()}`,
-      email: `userroutes_${Date.now()}@test.com`,
+      username: `userroutes_${randomUUID().slice(0, 8)}`,
+      email: `userroutes_${randomUUID().slice(0, 8)}@test.com`,
       money: 5000,
       xp: 100,
       level: 2,
@@ -65,8 +66,8 @@ describe('🌐 INTEGRATION: User Routes - HTTP API Endpoints', () => {
 
     // Create additional test user for CRUD operations
     const crudUserResult = await createTestUser({
-      username: `crud_user_${Date.now()}`,
-      email: `crud_${Date.now()}@test.com`,
+      username: `crud_user_${randomUUID().slice(0, 8)}`,
+      email: `crud_${randomUUID().slice(0, 8)}@test.com`,
       money: 1500,
       xp: 50,
       level: 1,
@@ -288,10 +289,10 @@ describe('🌐 INTEGRATION: User Routes - HTTP API Endpoints', () => {
   describe('POST /api/users', () => {
     it('should create a new user', async () => {
       const userData = {
-        username: `NewUser_${Date.now()}`,
+        username: `NewUser_${randomUUID().slice(0, 8)}`,
         firstName: 'New',
         lastName: 'User',
-        email: `new_${Date.now()}@example.com`,
+        email: `new_${randomUUID().slice(0, 8)}@example.com`,
         password: 'password123',
       };
 
@@ -370,8 +371,8 @@ describe('🌐 INTEGRATION: User Routes - HTTP API Endpoints', () => {
     it('should delete a user', async () => {
       // Create a fresh user to delete to avoid affecting other tests
       const deleteUserResult = await createTestUser({
-        username: `delete_user_${Date.now()}`,
-        email: `delete_${Date.now()}@test.com`,
+        username: `delete_user_${randomUUID().slice(0, 8)}`,
+        email: `delete_${randomUUID().slice(0, 8)}@test.com`,
       });
 
       const deleteAuthToken = deleteUserResult.token;

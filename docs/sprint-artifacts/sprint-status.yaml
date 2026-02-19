@@ -3162,15 +3162,15 @@ action_items:
 
   epic-9a:
     title: 'Technical Health Sprint'
-    status: backlog
-    start_date: null
+    status: in_progress
+    start_date: '2026-02-18'
     priority: P0
     prerequisites: [epic-8]
     created_date: '2026-02-18'
 
   9a-1-stabilize-flaky-backend-tests:
     title: 'Stabilize Flaky Backend Tests + Restore Pre-Push Hook'
-    status: backlog
+    status: in-progress
     priority: P0
     epic: '9a'
     story: 1
