@@ -3170,7 +3170,7 @@ action_items:
 
   9a-1-stabilize-flaky-backend-tests:
     title: 'Stabilize Flaky Backend Tests + Restore Pre-Push Hook'
-    status: review
+    status: completed
     priority: P0
     epic: '9a'
     story: 1
@@ -3185,7 +3185,7 @@ action_items:
 
   9a-2-playwright-e2e-for-core-game-flows:
     title: 'Playwright E2E for Core Game Flows'
-    status: backlog
+    status: in_progress
     priority: P1
     epic: '9a'
     story: 2
@@ -3201,7 +3201,7 @@ action_items:
 
   9a-3-project-health-pass:
     title: 'Project Health Pass'
-    status: backlog
+    status: completed
     priority: P1
     epic: '9a'
     story: 3
@@ -3215,7 +3215,7 @@ action_items:
 
   9a-quick-actions-bundle:
     title: 'Quick Action Items Bundle (AI-7-2, AI-7-3, AI-7-4, AI-8-1)'
-    status: backlog
+    status: completed
     priority: P1
     epic: '9a'
     story: 0

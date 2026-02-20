@@ -1,25 +1,34 @@
 # Equoria - Claude Code Configuration
 
-**Version:** 2.0.0 (Lean)
-**Last Updated:** 2026-01-27
+**Version:** 2.1.0
+**Last Updated:** 2026-02-20
 **Project:** Web browser-based horse breeding simulation game
 
 ---
 
-## 🎯 Current Sprint (Week 3, Day 1)
+## 🎯 Current Sprint
 
-### Active Priority: Security Testing Phase 1
+### Active Priority: Epic 9A — Technical Health Sprint
 
-- **Status:** Tasks 1.2-1.4 complete (JWT hardening, rate limiting)
-- **Next:** Complete remaining 38/41 auth migration tests
-- **Location:** `backend/__tests__/integration/`
+- **Status:** Story 9A-1 (Flaky Tests + Pre-Push Hook) → Ready for Review ✅
+- **Next:** 9A-2 (Playwright E2E), 9A-3 (Project Health Pass), Quick Actions Bundle
+- **Branch:** `cleanup-session-2026-01-30`
 
 ### Project Status
 
-- ✅ **Backend:** 100% Production-Ready (468+ tests, 90.1% pass rate)
-- ✅ **Security:** Phase 1 in progress (JWT tokens, rate limiting verified)
-- ⚠️ **Frontend:** ~60% complete (React 19 + TypeScript in `/frontend/`)
+- ✅ **Backend:** 100% complete — 3530+ tests passing, pre-push hook restored
+- ✅ **Epics 1–8:** All complete (API integration layer done)
+- ⚠️ **Frontend:** ~70% complete (React 19 + TypeScript in `/frontend/`)
 - ⚠️ **Deployment:** 10% complete
+- 🔄 **Epic 9A:** Technical Health Sprint in progress
+
+### Session Start Checklist
+
+```bash
+bd ready            # ALWAYS run this first — find available work
+bd show <id>        # Review issue before claiming
+bd update <id> --status=in_progress  # Claim before starting
+```
 
 ---
 
@@ -47,7 +56,9 @@ module.exports = myFunction;
 
 - **Balanced mocking:** External dependencies only (DB, HTTP, logger)
 - **Real business logic:** Test actual implementations
-- **Target:** 90%+ test pass rate (current: 90.1%)
+- **Backend:** 3530+ tests passing (221 suites)
+- **Frontend:** Vitest + MSW (`onUnhandledRequest: 'error'` strict mode)
+- **E2E:** Playwright (Epic 9A-2)
 
 ### Issue Tracking
 
@@ -133,17 +144,20 @@ equoria/
 
 ## 🔧 Current Focus Areas
 
-### This Week (Week 3)
+### Epic 9A: Technical Health Sprint
 
-1. **Auth Migration:** Migrate 38 remaining test files to real JWT auth
-2. **Rate Limiting:** Verify all endpoints respect limits
-3. **Token Security:** Clock skew tolerance, fingerprinting
+1. **9A-1** ✅ Stabilize flaky tests + restore pre-push hook (ready for review)
+2. **9A-2** 🔄 Playwright E2E for core game flows
+3. **9A-3** 🔄 Project Health Pass (CLAUDE.md, sprint-status sync)
+4. **Quick Actions Bundle** 🔄 AI-7-2, AI-7-3, AI-7-4, AI-8-1
 
-### Next Week (Week 4)
+### Next Epic (9B): Navigation & World Hub
 
-1. **Frontend Auth:** Complete authentication screens
-2. **API Integration:** Connect frontend to backend
-3. **E2E Testing:** Playwright test suite
+1. World Hub Page (8 locations)
+2. Navigation restructure (place-based vs category-based)
+3. Horse Care Status Strip on every horse card
+4. Settings Page
+5. Wire to live API
 
 ---
 

@@ -1,3 +1,101 @@
+/**
+ * MSW Handler Path Registry (AI-8-1)
+ *
+ * SINGLE SOURCE OF TRUTH for all API paths mocked in tests.
+ * When adding or changing a path in api-client.ts, update the matching
+ * handler here AND update this registry comment. This prevents the silent
+ * drift that caused 3/6 Epic 8 stories to have URL mismatches.
+ *
+ * FORMAT: METHOD /api/path  →  handler description
+ *
+ * ── Auth ─────────────────────────────────────────────────────────────────
+ * POST   /api/auth/login                          login with email/password
+ * POST   /api/auth/register                       register new user
+ * POST   /api/auth/logout                         logout
+ * POST   /api/auth/refresh-token                  refresh JWT
+ * GET    /api/auth/profile                        get current user profile
+ * GET    /api/auth/me                             alias for profile
+ * POST   /api/auth/forgot-password                send reset email
+ * POST   /api/auth/reset-password                 reset with token
+ * GET    /api/auth/verification-status            email verification status
+ *
+ * ── Users ────────────────────────────────────────────────────────────────
+ * GET    /api/users/:id                           get user by id
+ * GET    /api/users/:id/progress                  user XP/level progress
+ * GET    /api/users/:id/activity                  recent activity feed
+ * GET    /api/users/:id/competition-stats         competition statistics
+ * GET    /api/users/:id/prize-history             prize history (paginated)
+ * GET    /api/users/dashboard/:id                 dashboard summary
+ *
+ * ── Horses ───────────────────────────────────────────────────────────────
+ * GET    /api/horses                              list all user horses
+ * GET    /api/horses/:id                          horse detail
+ * GET    /api/horses/:id/training-history         training log
+ * GET    /api/horses/:id/environmental-analysis   epigenetic environment
+ * GET    /api/horses/:id/trait-interactions        trait synergy analysis
+ * GET    /api/horses/:id/developmental-timeline   foal milestone timeline
+ * GET    /api/horses/:id/forecast                 genetic potential forecast
+ * GET    /api/horses/:id/breeding-data            breeding stats
+ * GET    /api/horses/:id/competition-history      show results history
+ * GET    /api/horses/:id/prize-summary            prize earnings summary
+ * GET    /api/horses/:id/level-info               level/XP info
+ * GET    /api/horses/:id/xp-history               XP gain history
+ * POST   /api/horses/add-xp                       manually add XP
+ * POST   /api/horses/foals                        create foal
+ * GET    /api/horses/user/eligible                horses eligible for competition
+ *
+ * ── Training ─────────────────────────────────────────────────────────────
+ * POST   /api/training/check-eligibility          eligibility check
+ * POST   /api/training/train                      execute training session
+ * GET    /api/training/status/:horseId            all disciplines status
+ * GET    /api/training/status/:horseId/:discipline  single discipline status
+ * GET    /api/training/trainable/:userId          trainable horses list
+ *
+ * ── Competitions ─────────────────────────────────────────────────────────
+ * GET    /api/competition                         show list (legacy)
+ * GET    /api/competition/disciplines             available disciplines
+ * GET    /api/competition/eligibility/:horseId/:discipline  eligibility
+ * POST   /api/competition/enter                   enter show (legacy)
+ * GET    /api/competitions                        paginated competition list
+ * GET    /api/competitions/:id                    competition detail
+ * GET    /api/competitions/:id/entries            competition entries
+ * GET    /api/competitions/:id/results            competition results
+ * GET    /api/competitions/:compId/eligibility/:userId  user eligibility
+ * POST   /api/competitions/enter                  enter competition
+ * POST   /api/competitions/:competitionId/claim-prizes  claim prize
+ *
+ * ── Breeding ─────────────────────────────────────────────────────────────
+ * POST   /api/foals/breeding/breed                breed two horses
+ * GET    /api/foals/:id                           foal detail
+ * GET    /api/foals/:id/development               development status
+ * GET    /api/foals/:id/activities                available activities
+ * POST   /api/foals/:id/activity                  record activity
+ * POST   /api/foals/:id/enrich                    enrichment interaction
+ * POST   /api/foals/:id/reveal-traits             reveal hidden traits
+ * PUT    /api/foals/:id/develop                   apply development milestone
+ * POST   /api/genetics/inbreeding-analysis        inbreeding coefficient
+ * POST   /api/genetics/breeding-compatibility     compatibility score
+ * GET    /api/breeding/lineage-analysis/:stallionId/:mareId  lineage tree
+ * POST   /api/breeding/genetic-probability        genetic probability calc
+ *
+ * ── Grooms ───────────────────────────────────────────────────────────────
+ * GET    /api/grooms/user/:userId                 grooms for user
+ * GET    /api/groom-assignments                   active assignments
+ * GET    /api/groom-salaries/summary              salary summary
+ * POST   /api/groom-assignments                   create assignment
+ * GET    /api/groom-marketplace                   available grooms to hire
+ * POST   /api/groom-marketplace/hire              hire a groom
+ * POST   /api/groom-marketplace/refresh           refresh marketplace
+ *
+ * ── Leaderboards ─────────────────────────────────────────────────────────
+ * GET    /api/leaderboards/:category              leaderboard by category
+ * GET    /api/leaderboards/user-summary/:userId   user rank summary
+ *
+ * ─────────────────────────────────────────────────────────────────────────
+ * To add a new handler: add the path above, then add http.verb() below.
+ * Keep in sync with: frontend/src/lib/api-client.ts
+ */
+
 import { http, HttpResponse } from 'msw';
 import {
   getLeaderboardEntries,
@@ -1367,7 +1465,7 @@ export const handlers = [
   http.get(`${base}/api/horses/:horseId/xp-history`, ({ params, request }) => {
     const horseId = Number(params.horseId);
     const url = new URL(request.url);
-    const __dateRange = url.searchParams.get('dateRange');
+    url.searchParams.get('dateRange'); // read but not filtered — all dates returned
     const source = url.searchParams.get('source');
 
     // Return 404 for horse ID 999 (error test case)
