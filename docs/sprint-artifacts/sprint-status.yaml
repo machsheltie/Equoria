@@ -3170,7 +3170,7 @@ action_items:
 
   9a-1-stabilize-flaky-backend-tests:
     title: 'Stabilize Flaky Backend Tests + Restore Pre-Push Hook'
-    status: in-progress
+    status: review
     priority: P0
     epic: '9a'
     story: 1

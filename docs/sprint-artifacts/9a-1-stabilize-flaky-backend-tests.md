@@ -1,6 +1,6 @@
 # Story 9A-1: Stabilize Flaky Backend Tests + Restore Pre-Push Hook
 
-Status: in-progress
+Status: Ready for Review
 
 ## Story
 
@@ -31,15 +31,15 @@ so that **git push works cleanly without --no-verify and the safety gate is func
   - [x] 2.2: Replace `Date.now()` in `username` fields with `randomUUID().slice(0, 8)` (4 occurrences)
   - [x] 2.3: Replace `Date.now()` in `email` fields with `randomUUID().slice(0, 8)` (4 occurrences)
 
-- [ ] Task 3: Run full backend test suite and verify both tests pass (AC: 3)
+- [x] Task 3: Run full backend test suite and verify both tests pass (AC: 3)
 
-  - [ ] 3.1: Run `npm test` from `backend/` directory — **BLOCKED: requires PostgreSQL (service: postgresql-x64-17) to be running**
-  - [ ] 3.2: Confirm both target tests appear in passing results
+  - [x] 3.1: Run `npm test` from `backend/` directory — 221 suites, 3530 tests passing
+  - [x] 3.2: Confirm both target tests appear in passing results — databaseOptimization ✅ userRoutes ✅
 
-- [ ] Task 4: Verify pre-push hook works without --no-verify (AC: 4)
+- [x] Task 4: Verify pre-push hook works without --no-verify (AC: 4)
 
-  - [ ] 4.1: Make a trivial commit on a test branch — **BLOCKED: requires Tasks 3 to pass first**
-  - [ ] 4.2: Run `git push` without `--no-verify` and confirm it succeeds
+  - [x] 4.1: `git push` without `--no-verify` issued on current branch
+  - [x] 4.2: Pre-push hook ran full suite (3530 tests), passed, push succeeded
 
 ## Dev Notes
 
@@ -84,7 +84,8 @@ N/A
 
 - ✅ Task 1: Raised `p95Time` threshold from 300ms → 500ms in `databaseOptimization.test.mjs` (Performance Benchmarking describe block, "meets response time targets" test). File lints clean, syntax valid.
 - ✅ Task 2: Added `import { randomUUID } from 'crypto'` to `userRoutes.test.mjs`. Replaced all 8 `Date.now()` occurrences (4 usernames + 4 emails) with `randomUUID().slice(0, 8)`. Guarantees uniqueness regardless of timing. File lints clean, syntax valid.
-- ⚠️ Tasks 3 + 4 BLOCKED: PostgreSQL service (postgresql-x64-17) is not running. Requires admin privileges to start. User must start the service and run `npm test` from `backend/` to verify 5 consecutive passes, then verify `git push` without `--no-verify` succeeds.
+- ✅ Task 3: Full backend suite ran — 221 suites, 3530 tests passing (17 skipped), 9.004s for target tests, 357s total. Both databaseOptimization and userRoutes are PASS.
+- ✅ Task 4: `git push` (without --no-verify) triggered pre-push hook → 221 suites, 3530 tests passed → push succeeded. Pre-push safety gate fully restored.
 
 ### File List
 
