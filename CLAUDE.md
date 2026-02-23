@@ -1,6 +1,6 @@
 # Equoria - Claude Code Configuration
 
-**Version:** 2.8.0
+**Version:** 2.9.0
 **Last Updated:** 2026-02-23
 **Project:** Web browser-based horse breeding simulation game
 
@@ -8,12 +8,25 @@
 
 ## 🎯 Current Sprint
 
-### Active Priority: Epic 13 — Trainer System ✅ COMPLETE
+### Active Priority: Epic 14 — Deployment & Production ✅ COMPLETE
 
-- **Status:** Epic 13 (Trainer System) → Complete ✅ (13-5 deferred — no backend)
-- **Stories:** 13-1 Hiring, 13-2 Assignment, 13-3 Discovery, 13-4 Career (all complete); 13-5 API wire-up (backlog)
-- **Next:** Epic 14 (Deployment) or Epic 15 (Onboarding & Polish)
+- **Status:** Epic 14 (Deployment) → Complete ✅
+- **Stories:** 14-1 CI/CD Docker, 14-2 Railway Config, 14-3 Production Env, 14-4 DB Migration, 14-5 Sentry, 14-6 Lighthouse (all complete)
+- **Next:** Epic 15 (Onboarding & Polish) or production launch
 - **Branch:** `cleanup-session-2026-01-30`
+
+### Epic 14 Deliverables
+
+- `Dockerfile` — Multi-stage: `frontend-builder` (Vite) → `production` (Express + embedded SPA)
+- `railway.toml` — Railway build + deploy config; `prisma migrate deploy` before server start
+- `backend/app.mjs` — `express.static(public/)` + SPA `index.html` fallback (production only)
+- `frontend/src/lib/api-client.ts` — `VITE_API_URL ?? ''` for relative API URLs
+- `frontend/src/lib/sentry.ts` — `initSentry()` + `SentryErrorBoundary` (opt-in via env var)
+- `frontend/src/App.tsx` — Sentry ErrorBoundary wrapper
+- `frontend/vite.config.ts` — `rollup-plugin-visualizer` → `dist/bundle-stats.html`
+- `.github/workflows/ci-cd.yml` — Jobs 10 (Docker smoke test) + 11 (Lighthouse CI)
+- `.lighthouserc.yml` — Lighthouse CI thresholds (a11y error ≥0.85, perf warn ≥0.6)
+- `docs/deployment/RAILWAY_SETUP.md` — Step-by-step Railway setup guide
 
 ### Epic 13 Deliverables
 
@@ -48,11 +61,10 @@
 ### Project Status
 
 - ✅ **Backend:** 100% complete — 3530+ tests passing, pre-push hook active
-- ✅ **Backend:** 100% complete — 3530+ tests passing, pre-push hook active
-- ✅ **Epics 1–13:** All complete (API integration + technical health + nav + riders + world + stable + community + trainers)
+- ✅ **Epics 1–14:** All complete (API integration + technical health + nav + riders + world + stable + community + trainers + deployment)
 - ✅ **E2E Tests:** Playwright suite passing (core-game-flows, auth, breeding)
-- ⚠️ **Frontend:** ~95% complete (React 19 + TypeScript in `/frontend/`)
-- ⚠️ **Deployment:** 10% complete
+- ✅ **Deployment:** Railway-ready — multi-stage Docker, railway.toml, migrate deploy pipeline
+- ✅ **Frontend:** ~95% complete (React 19 + TypeScript in `/frontend/`)
 
 ### Session Start Checklist
 

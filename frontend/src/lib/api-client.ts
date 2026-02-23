@@ -12,7 +12,9 @@
  * - Comprehensive error handling
  */
 
-const API_BASE_URL = import.meta.env.VITE_API_URL || 'http://localhost:3001';
+// Nullish coalescing: empty string = relative URLs (correct for monolithic deploy).
+// Set VITE_API_URL only for split-deploy scenarios.
+const API_BASE_URL = import.meta.env.VITE_API_URL ?? '';
 
 // Track if a token refresh is in progress to avoid multiple concurrent refreshes
 let isRefreshing = false;

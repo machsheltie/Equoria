@@ -1,50 +1,60 @@
-# Use Node.js 18 Alpine for smaller image size
-FROM node:18-alpine
+# ─── Stage 1: Build frontend ────────────────────────────────────────────────
+FROM node:18-alpine AS frontend-builder
 
-# Set working directory
-WORKDIR /app
+WORKDIR /app/frontend
 
-# Install system dependencies
+# Copy package files for layer caching
+COPY frontend/package*.json ./
+RUN npm ci
+
+# Copy frontend source
+COPY frontend/ ./
+
+# Build — use vite build directly (tsc type-checking runs separately in CI)
+# VITE_API_URL intentionally unset: relative URLs (/api/...) for monolithic
+RUN npx vite build
+
+# ─── Stage 2: Production backend ────────────────────────────────────────────
+FROM node:18-alpine AS production
+
+# curl needed for health check
 RUN apk add --no-cache curl
 
-# Copy package files for better caching
-COPY backend/package*.json ./backend/
-COPY packages/database/package*.json ./packages/database/
-
-# Install dependencies
+# Install backend dependencies
 WORKDIR /app/backend
+COPY backend/package*.json ./
 RUN npm ci --only=production
 
+# Install database package dependencies
 WORKDIR /app/packages/database
+COPY packages/database/package*.json ./
 RUN npm ci --only=production
 
-# Copy application code
+# Copy application source
 WORKDIR /app
-COPY . .
+COPY backend/ ./backend/
+COPY packages/ ./packages/
 
-# Generate Prisma client
+# Generate Prisma client (must run after source copy)
 WORKDIR /app/packages/database
 RUN npx prisma generate
 
-# Create non-root user for security
+# Embed the frontend build into the backend's public folder
+# Express will serve these as static assets in production
+COPY --from=frontend-builder /app/frontend/dist /app/backend/public
+
+# Security: run as non-root user
 RUN addgroup -g 1001 -S nodejs && \
     adduser -S nodejs -u 1001
-
-# Change ownership of the app directory
 RUN chown -R nodejs:nodejs /app
-
-# Switch to non-root user
 USER nodejs
 
-# Set working directory back to backend
 WORKDIR /app/backend
 
-# Expose port
 EXPOSE 3000
 
-# Health check
-HEALTHCHECK --interval=30s --timeout=3s --start-period=5s --retries=3 \
+# Allow extra start time for DB connection on cold boot
+HEALTHCHECK --interval=30s --timeout=10s --start-period=30s --retries=3 \
   CMD curl -f http://localhost:3000/health || exit 1
 
-# Start the application
-CMD ["npm", "start"]
+CMD ["node", "server.mjs"]

@@ -14,61 +14,67 @@ import ProfilePage from './pages/ProfilePage';
 import HorseDetailPage from './pages/HorseDetailPage';
 import { StarField } from '@/components/layout/StarField';
 import { ProtectedRoute } from '@/components/auth';
+import { initSentry, SentryErrorBoundary } from '@/lib/sentry';
+
+// Initialise Sentry once at module load (no-op if VITE_SENTRY_DSN not set)
+initSentry();
 
 const queryClient = new QueryClient();
 
 const App = () => (
-  <QueryClientProvider client={queryClient}>
-    <AuthProvider>
-      <TooltipProvider>
-        <Sonner />
-        <div className="fixed inset-0 z-[-1]">
-          <StarField density="medium" speed="slow" />
-        </div>
-        <BrowserRouter
-          future={{
-            v7_startTransition: true,
-            v7_relativeSplatPath: true,
-          }}
-        >
-          <Routes>
-            <Route path="/login" element={<LoginPage />} />
-            <Route path="/register" element={<RegisterPage />} />
-            <Route path="/verify-email" element={<VerifyEmailPage />} />
-            <Route path="/forgot-password" element={<ForgotPasswordPage />} />
-            <Route path="/reset-password" element={<ResetPasswordPage />} />
-            <Route
-              path="/profile"
-              element={
-                <ProtectedRoute>
-                  <ProfilePage />
-                </ProtectedRoute>
-              }
-            />
-            <Route
-              path="/stable"
-              element={
-                <ProtectedRoute>
-                  <StableView />
-                </ProtectedRoute>
-              }
-            />
-            <Route
-              path="/horses/:id"
-              element={
-                <ProtectedRoute>
-                  <HorseDetailPage />
-                </ProtectedRoute>
-              }
-            />
-            {navItems.map(({ to, page }) => (
-              <Route key={to} path={to} element={<ProtectedRoute>{page}</ProtectedRoute>} />
-            ))}
-          </Routes>
-        </BrowserRouter>
-      </TooltipProvider>
-    </AuthProvider>
-  </QueryClientProvider>
+  <SentryErrorBoundary fallback={<p className="text-white p-8">Something went wrong.</p>}>
+    <QueryClientProvider client={queryClient}>
+      <AuthProvider>
+        <TooltipProvider>
+          <Sonner />
+          <div className="fixed inset-0 z-[-1]">
+            <StarField density="medium" speed="slow" />
+          </div>
+          <BrowserRouter
+            future={{
+              v7_startTransition: true,
+              v7_relativeSplatPath: true,
+            }}
+          >
+            <Routes>
+              <Route path="/login" element={<LoginPage />} />
+              <Route path="/register" element={<RegisterPage />} />
+              <Route path="/verify-email" element={<VerifyEmailPage />} />
+              <Route path="/forgot-password" element={<ForgotPasswordPage />} />
+              <Route path="/reset-password" element={<ResetPasswordPage />} />
+              <Route
+                path="/profile"
+                element={
+                  <ProtectedRoute>
+                    <ProfilePage />
+                  </ProtectedRoute>
+                }
+              />
+              <Route
+                path="/stable"
+                element={
+                  <ProtectedRoute>
+                    <StableView />
+                  </ProtectedRoute>
+                }
+              />
+              <Route
+                path="/horses/:id"
+                element={
+                  <ProtectedRoute>
+                    <HorseDetailPage />
+                  </ProtectedRoute>
+                }
+              />
+              {navItems.map(({ to, page }) => (
+                <Route key={to} path={to} element={<ProtectedRoute>{page}</ProtectedRoute>} />
+              ))}
+            </Routes>
+          </BrowserRouter>
+        </TooltipProvider>
+      </AuthProvider>
+    </QueryClientProvider>
+  </SentryErrorBoundary>
 );
 
 export default App;

@@ -1,0 +1,28 @@
+ci:
+  collect:
+    # Run against the static Vite build (no server needed)
+    staticDistDir: ./frontend/dist
+    numberOfRuns: 1
+
+  assert:
+    preset: lighthouse:no-pwa
+    assertions:
+      # Warn on performance — game has rich UI, strict pass would be too aggressive
+      categories:performance:
+        - warn
+        - minScore: 0.6
+      # Error on accessibility — must meet minimum WCAG bar
+      categories:accessibility:
+        - error
+        - minScore: 0.85
+      # Warn on best practices
+      categories:best-practices:
+        - warn
+        - minScore: 0.8
+      # SEO not enforced for a game (logged-in app)
+      categories:seo:
+        - warn
+        - minScore: 0.5
+
+  upload:
+    target: temporary-public-storage

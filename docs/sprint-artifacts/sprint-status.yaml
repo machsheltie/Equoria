@@ -3729,21 +3729,94 @@ epic-9c:
       - Community stats banner
       - Recent activity feed
 
+epic_14:
+  name: 'Deployment & Production'
+  status: completed
+  priority: P0
+  completed_date: '2026-02-23'
+  platform: Railway
+  architecture: Monolithic (Express serves Vite SPA)
+  stories:
+    - id: '14-1'
+      title: 'CI/CD Pipeline — Docker Build Validation'
+      status: completed
+      created_date: '2026-02-23'
+      completed_date: '2026-02-23'
+      ac:
+        - build-docker job added to ci-cd.yml (master only)
+        - Smoke-tests container startup — accepts 200 or 500 (no DB in CI)
+        - Verifies frontend index.html embedded in /app/backend/public
+    - id: '14-2'
+      title: 'Railway Configuration (Staging + Production)'
+      status: completed
+      created_date: '2026-02-23'
+      completed_date: '2026-02-23'
+      ac:
+        - railway.toml created with DOCKERFILE builder
+        - startCommand runs prisma migrate deploy then node server.mjs
+        - Dockerfile upgraded to multi-stage (frontend-builder + production)
+        - backend/app.mjs serves static files + SPA fallback in production
+        - api-client.ts uses nullish coalescing for relative API URLs
+        - RAILWAY_SETUP.md documents full setup procedure
+    - id: '14-3'
+      title: 'Production Environment'
+      status: completed
+      created_date: '2026-02-23'
+      completed_date: '2026-02-23'
+      ac:
+        - NODE_ENV=production enables static file serving
+        - All env vars documented in RAILWAY_SETUP.md
+        - COOKIE_DOMAIN, ALLOWED_ORIGINS, JWT_SECRET documented
+        - Staging vs production environment guidance included
+    - id: '14-4'
+      title: 'Database Migration Pipeline'
+      status: completed
+      created_date: '2026-02-23'
+      completed_date: '2026-02-23'
+      ac:
+        - prisma migrate deploy in railway.toml startCommand
+        - migrate:production npm script in backend/package.json
+        - Idempotent — safe to run on every deploy
+        - Fails fast if migration fails (prevents broken server start)
+    - id: '14-5'
+      title: 'Monitoring + Error Tracking (Sentry)'
+      status: completed
+      created_date: '2026-02-23'
+      completed_date: '2026-02-23'
+      ac:
+        - '@sentry/react installed in frontend'
+        - frontend/src/lib/sentry.ts — initSentry() + SentryErrorBoundary
+        - App.tsx wrapped in SentryErrorBoundary
+        - Backend Sentry already wired (config/sentry.mjs)
+        - SENTRY_DSN added to backend/.env.example
+        - VITE_SENTRY_DSN added to frontend/.env.example
+    - id: '14-6'
+      title: 'Performance Audit'
+      status: completed
+      created_date: '2026-02-23'
+      completed_date: '2026-02-23'
+      ac:
+        - rollup-plugin-visualizer installed
+        - vite.config.ts generates dist/bundle-stats.html on build
+        - .lighthouserc.yml — perf warn ≥0.6, a11y error ≥0.85
+        - lighthouse job added to ci-cd.yml (master only)
+        - Frontend build verified — 2836 modules, dist/ produced
+
 # Summary
 summary:
-  total_epics: 15
-  total_stories: 81
-  p0_stories: 40
+  total_epics: 16
+  total_stories: 87
+  p0_stories: 46
   p1_stories: 32
   p2_stories: 9
   fr_coverage: '44/44 (100%)'
   current_epic: 'none'
   current_story: 'none'
-  epics_completed: 15
-  stories_completed: 80
+  epics_completed: 16
+  stories_completed: 86
   stories_in_progress: 0
   stories_ready_for_dev: 0
-  stories_backlog: 0
+  stories_backlog: 1
   total_tests_passing: 1070
   action_items_total: 23
   action_items_completed: 11
@@ -3760,4 +3833,6 @@ summary:
   epic_12_completed_date: '2026-02-23'
   epic_13_completed_date: '2026-02-23'
   epic_13_note: 'Story 13-5 (API wire-up) in backlog — no backend routes yet'
-  next_milestone: 'Epic 14 (Deployment) or Epic 15 (Onboarding & Polish)'
+  epic_14_completed_date: '2026-02-23'
+  epic_14_note: 'Railway monolithic deploy — Dockerfile, railway.toml, Sentry, Lighthouse'
+  next_milestone: 'Epic 15 (Onboarding & Polish) or production launch'

@@ -37,6 +37,12 @@ import express from 'express';
 import cors from 'cors';
 import helmet from 'helmet';
 import cookieParser from 'cookie-parser';
+import { fileURLToPath } from 'url';
+import { dirname, join } from 'path';
+
+// ESM equivalents of __filename / __dirname
+const __filename = fileURLToPath(import.meta.url);
+const __dirname = dirname(__filename);
 import config from './config/config.mjs';
 import logger from './utils/logger.mjs';
 
@@ -403,8 +409,25 @@ app.use('/api/admin', adminRouter);
 app.use('/api/v1', authRouter);
 app.use('/api', authRouter);
 
+// Serve frontend static assets in production (CSS/JS/images from dist/)
+// Must come before the 404 handler so asset requests are served, not rejected
+if (process.env.NODE_ENV === 'production') {
+  app.use(express.static(join(__dirname, 'public')));
+}
+
 // 404 handler for undefined routes
+// In production: serve index.html for non-API routes (SPA client-side routing)
+// In development: return JSON 404 so API callers get useful errors
 app.use('*', (req, res) => {
+  if (
+    process.env.NODE_ENV === 'production' &&
+    !req.path.startsWith('/api') &&
+    !req.path.startsWith('/health') &&
+    !req.path.startsWith('/api-docs')
+  ) {
+    return res.sendFile(join(__dirname, 'public', 'index.html'));
+  }
+
   logger.warn(`404 - Route not found: ${req.method} ${req.originalUrl} from ${req.ip}`);
   res.status(404).json({
     success: false,
