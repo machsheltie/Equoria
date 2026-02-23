@@ -3578,18 +3578,102 @@ epic-9c:
       - List / Stud button (activates stud-sale tab)
       - pb-20 on outer page div prevents content hiding behind bar
 
+  # Epic 11: Community Features (P1 - COMPLETE)
+  epic-11:
+    title: 'Community Features'
+    status: completed
+    completed_date: '2026-02-23'
+    priority: P1
+    story_file: 'docs/sprint-artifacts/11-community-features.md'
+
+  11-1-2-message-board:
+    title: 'Message Board — All 5 Sections'
+    status: completed
+    priority: P1
+    epic: '11'
+    story: '1-2'
+    prerequisites: []
+    created_date: '2026-02-23'
+    completed_date: '2026-02-23'
+    ac:
+      - /message-board route renders MessageBoardPage
+      - 5 section tabs (General Chat, Art, Horse Sales, Services, Venting)
+      - Thread list with pinned threads, tags, reply/view counts, last activity
+      - New Post button visible but disabled
+
+  11-3-4-5-clubs:
+    title: 'Clubs System — Discipline, Breed, Governance'
+    status: completed
+    priority: P1
+    epic: '11'
+    story: '3-4-5'
+    prerequisites: []
+    created_date: '2026-02-23'
+    completed_date: '2026-02-23'
+    ac:
+      - /clubs route renders ClubsPage with 3 tabs
+      - Discipline Clubs tab shows 5 clubs with member counts, join buttons disabled
+      - Breed Clubs tab shows 8 clubs with breed icons
+      - My Club tab shows active elections with vote bars and governance placeholder
+      - Club leaderboard shows top 5 clubs
+
+  11-6-notifications-bell:
+    title: 'Notifications Bell + Community Nav'
+    status: completed
+    priority: P1
+    epic: '11'
+    story: '6'
+    prerequisites: []
+    created_date: '2026-02-23'
+    completed_date: '2026-02-23'
+    ac:
+      - Bell in MainNavigation navigates to /messages
+      - aria-label added to bell link
+      - Community item added to navigationItems array with icon 💬
+
+  11-7-messages-inbox:
+    title: 'Messages / Inbox System'
+    status: completed
+    priority: P1
+    epic: '11'
+    story: '7'
+    prerequisites: []
+    created_date: '2026-02-23'
+    completed_date: '2026-02-23'
+    ac:
+      - /messages route renders MessagesPage
+      - Inbox tab with unread badge (3 unread)
+      - Sent tab with sent messages
+      - Compose button visible but disabled
+      - Message rows show sender, subject, preview, date, tag
+
+  11-hub-community-page:
+    title: 'Community Hub Page'
+    status: completed
+    priority: P1
+    epic: '11'
+    story: 'hub'
+    prerequisites: []
+    created_date: '2026-02-23'
+    completed_date: '2026-02-23'
+    ac:
+      - /community hub page with 3 feature cards
+      - Elections open badge on Clubs card
+      - Community stats banner
+      - Recent activity feed
+
 # Summary
 summary:
-  total_epics: 13
-  total_stories: 69
+  total_epics: 14
+  total_stories: 76
   p0_stories: 40
-  p1_stories: 25
+  p1_stories: 32
   p2_stories: 4
   fr_coverage: '44/44 (100%)'
-  current_epic: '12'
+  current_epic: 'none'
   current_story: 'none'
-  epics_completed: 13
-  stories_completed: 69
+  epics_completed: 14
+  stories_completed: 76
   stories_in_progress: 0
   stories_ready_for_dev: 0
   stories_backlog: 0
@@ -3605,5 +3689,6 @@ summary:
   epic_9b_completed_date: '2026-02-23'
   epic_9c_completed_date: '2026-02-23'
   epic_10_completed_date: '2026-02-23'
+  epic_11_completed_date: '2026-02-23'
   epic_12_completed_date: '2026-02-23'
-  next_milestone: 'Epic 11: Community Features (deferred) — circle back after Epic 12'
+  next_milestone: 'TBD — all current epics complete'

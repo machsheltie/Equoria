@@ -29,6 +29,11 @@ import TackShopPage from './pages/TackShopPage';
 import BankPage from './pages/BankPage';
 import InventoryPage from './pages/InventoryPage';
 import MyStablePage from './pages/MyStablePage';
+// Epic 11 — Community pages
+import CommunityPage from './pages/CommunityPage';
+import MessageBoardPage from './pages/MessageBoardPage';
+import ClubsPage from './pages/ClubsPage';
+import MessagesPage from './pages/MessagesPage';
 
 /**
  * Navigation items for the Equoria application
@@ -146,6 +151,31 @@ export const navItems = [
     to: '/my-stable',
     icon: null,
     page: <MyStablePage />,
+  },
+  // Epic 11 — Community pages (Community linked from main nav; sub-pages route-only)
+  {
+    title: 'Community',
+    to: '/community',
+    icon: null,
+    page: <CommunityPage />,
+  },
+  {
+    title: 'Message Board',
+    to: '/message-board',
+    icon: null,
+    page: <MessageBoardPage />,
+  },
+  {
+    title: 'Clubs',
+    to: '/clubs',
+    icon: null,
+    page: <ClubsPage />,
+  },
+  {
+    title: 'Messages',
+    to: '/messages',
+    icon: null,
+    page: <MessagesPage />,
   },
 ];
 

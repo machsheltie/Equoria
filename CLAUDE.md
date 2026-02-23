@@ -1,6 +1,6 @@
 # Equoria - Claude Code Configuration
 
-**Version:** 2.6.0
+**Version:** 2.7.0
 **Last Updated:** 2026-02-23
 **Project:** Web browser-based horse breeding simulation game
 
@@ -8,12 +8,21 @@
 
 ## 🎯 Current Sprint
 
-### Active Priority: Epic 12 — Stable Management Completions ✅ COMPLETE
+### Active Priority: Epic 11 — Community Features ✅ COMPLETE
 
-- **Status:** Epic 12 (Stable Management Completions) → Complete ✅
-- **Stories:** 12-1 Bank, 12-2 Inventory, 12-3 My Stable, 12-4 Horse Profile Tabs, 12-5 Action Bar
-- **Next:** Epic 11 — Community Features (deferred — circle back now)
+- **Status:** Epic 11 (Community Features) → Complete ✅
+- **Stories:** Message Board (11-1/2), Clubs (11-3/4/5), Bell+Nav (11-6), Messages (11-7), Community Hub
+- **Next:** TBD — all current epics complete
 - **Branch:** `cleanup-session-2026-01-30`
+
+### Epic 11 Deliverables
+
+- `CommunityPage.tsx` (`/community`) — Hub with 3 feature cards + activity feed
+- `MessageBoardPage.tsx` (`/message-board`) — 5 section tabs, mock threads, "New Post" disabled
+- `ClubsPage.tsx` (`/clubs`) — Discipline clubs, breed clubs, governance + elections
+- `MessagesPage.tsx` (`/messages`) — Inbox/Sent tabs, unread badge, "Compose" disabled
+- `MainNavigation.tsx` — Bell → Link to /messages, "Community" added to nav
+- `nav-items.tsx` — 4 new routes registered
 
 ### Epic 12 Deliverables
 
@@ -22,12 +31,11 @@
 - `MyStablePage.tsx` (`/my-stable`) — Stable profile + Hall of Fame tabs
 - `HorseDetailPage.tsx` — Added Pedigree, Health & Vet, Stud / Sale tabs (parchment theme)
 - `HorseDetailPage.tsx` — Sticky bottom action bar (Feed/Train/Breed/Assign/List)
-- `nav-items.tsx` — 3 new routes registered (/bank, /inventory, /my-stable)
 
 ### Project Status
 
 - ✅ **Backend:** 100% complete — 3530+ tests passing, pre-push hook active
-- ✅ **Epics 1–10, 12:** All complete (API integration + technical health + nav/world hub + riders + world locations + stable management)
+- ✅ **Epics 1–12:** All complete (API integration + technical health + nav + riders + world + stable + community)
 - ✅ **E2E Tests:** Playwright suite passing (core-game-flows, auth, breeding)
 - ⚠️ **Frontend:** ~87% complete (React 19 + TypeScript in `/frontend/`)
 - ⚠️ **Deployment:** 10% complete

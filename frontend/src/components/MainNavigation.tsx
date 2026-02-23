@@ -53,6 +53,7 @@ const MainNavigation: React.FC = () => {
     { name: 'Competitions', href: '/competitions', icon: '🏆' },
     { name: 'Breeding', href: '/breeding', icon: '🧬' },
     { name: 'World', href: '/world', icon: '🌍' },
+    { name: 'Community', href: '/community', icon: '💬' },
     { name: 'Riders', href: '/riders', icon: '🏇' },
     { name: 'Leaderboards', href: '/leaderboards', icon: '📊' },
   ];
@@ -143,10 +144,12 @@ const MainNavigation: React.FC = () => {
                 />
               </form>
 
-              {/* Notifications */}
-              <button
+              {/* Notifications — links to /messages */}
+              <Link
+                to="/messages"
                 className="p-2 text-white/70 hover:text-celestial-gold hover:bg-white/5 rounded-full transition-colors relative"
                 data-testid="notification-indicator"
+                aria-label="Messages and notifications"
               >
                 <Bell className="w-5 h-5" />
                 {unreadNotifications > 0 && (
@@ -157,7 +160,7 @@ const MainNavigation: React.FC = () => {
                     {unreadNotifications}
                   </span>
                 )}
-              </button>
+              </Link>
 
               {/* User Profile Dropdown */}
               <div className="relative" data-testid="user-profile-section">
