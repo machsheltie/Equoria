@@ -45,7 +45,7 @@ export interface PrizeSummaryCardProps {
   prizes: HorsePrize[];
   isExpanded?: boolean;
   onToggleExpand?: () => void;
-  onViewPerformance?: (horseId: number) => void;
+  onViewPerformance?: (_horseId: number) => void;
   className?: string;
 }
 
@@ -95,13 +95,13 @@ const getOrdinalSuffix = (n: number): string => {
 const getCardClasses = (bestPlacement: number): string => {
   switch (bestPlacement) {
     case 1:
-      return 'bg-yellow-50 border-yellow-300'; // Gold
+      return 'bg-[rgba(212,168,67,0.1)] border-burnished-gold/50'; // Gold
     case 2:
-      return 'bg-gray-50 border-gray-300'; // Silver
+      return 'bg-[rgba(148,163,184,0.1)] border-[rgba(148,163,184,0.4)]'; // Silver
     case 3:
-      return 'bg-orange-50 border-orange-300'; // Bronze
+      return 'bg-[rgba(180,83,9,0.1)] border-orange-500/40'; // Bronze
     default:
-      return 'bg-blue-50 border-blue-300'; // Default/Participation
+      return 'bg-[rgba(37,99,235,0.1)] border-[rgba(37,99,235,0.3)]'; // Default/Participation
   }
 };
 
@@ -111,17 +111,13 @@ const getCardClasses = (bestPlacement: number): string => {
 const PlacementIcon = memo(({ rank }: { rank: number }) => {
   if (rank === 1) {
     return (
-      <Trophy
-        className="h-4 w-4 text-yellow-600"
-        aria-hidden="true"
-        data-testid="trophy-icon"
-      />
+      <Trophy className="h-4 w-4 text-yellow-600" aria-hidden="true" data-testid="trophy-icon" />
     );
   }
   if (rank === 2 || rank === 3) {
     return (
       <Medal
-        className="h-4 w-4 text-gray-600"
+        className="h-4 w-4 text-[rgb(148,163,184)]"
         aria-hidden="true"
         data-testid="medal-icon"
       />
@@ -135,28 +131,27 @@ PlacementIcon.displayName = 'PlacementIcon';
 /**
  * Horse prize entry component for expanded view
  */
-const HorsePrizeEntry = memo(({
-  prize,
-  onClick,
-}: {
-  prize: HorsePrize;
-  onClick?: () => void;
-}) => {
+const HorsePrizeEntry = memo(({ prize, onClick }: { prize: HorsePrize; onClick?: () => void }) => {
   const handleClick = useCallback(() => {
     onClick?.();
   }, [onClick]);
 
-  const handleKeyDown = useCallback((event: React.KeyboardEvent) => {
-    if (event.key === 'Enter' || event.key === ' ') {
-      event.preventDefault();
-      onClick?.();
-    }
-  }, [onClick]);
+  const handleKeyDown = useCallback(
+    (event: React.KeyboardEvent) => {
+      if (event.key === 'Enter' || event.key === ' ') {
+        event.preventDefault();
+        onClick?.();
+      }
+    },
+    [onClick]
+  );
 
   return (
     <div
-      className={`flex items-center justify-between p-3 rounded-lg bg-white border border-slate-200 ${
-        onClick ? 'cursor-pointer hover:bg-slate-50 focus:outline-none focus:ring-2 focus:ring-blue-500' : ''
+      className={`flex items-center justify-between p-3 rounded-lg bg-[rgba(15,35,70,0.4)] border border-[rgba(37,99,235,0.2)] ${
+        onClick
+          ? 'cursor-pointer hover:bg-[rgba(37,99,235,0.1)] focus:outline-none focus:ring-2 focus:ring-blue-500'
+          : ''
       }`}
       data-testid="horse-prize-entry"
       role={onClick ? 'button' : undefined}
@@ -169,8 +164,10 @@ const HorsePrizeEntry = memo(({
       <div className="flex items-center gap-3">
         <PlacementIcon rank={prize.placement} />
         <div>
-          <p className="text-sm font-semibold text-slate-800">{prize.horseName}</p>
-          <p className="text-xs text-slate-500">{getOrdinalSuffix(prize.placement)} Place</p>
+          <p className="text-sm font-semibold text-[rgb(220,235,255)]">{prize.horseName}</p>
+          <p className="text-xs text-[rgb(148,163,184)]">
+            {getOrdinalSuffix(prize.placement)} Place
+          </p>
         </div>
       </div>
 
@@ -178,11 +175,15 @@ const HorsePrizeEntry = memo(({
       <div className="flex items-center gap-4 text-sm">
         <div className="flex items-center gap-1">
           <DollarSign className="h-3 w-3 text-green-500" aria-hidden="true" />
-          <span className="font-medium text-slate-800">{formatCurrency(prize.prizeMoney)}</span>
+          <span className="font-medium text-[rgb(220,235,255)]">
+            {formatCurrency(prize.prizeMoney)}
+          </span>
         </div>
         <div className="flex items-center gap-1">
-          <Zap className="h-3 w-3 text-purple-500" aria-hidden="true" />
-          <span className="font-medium text-slate-800">{formatNumber(prize.xpGained)}</span>
+          <Zap className="h-3 w-3 text-purple-400" aria-hidden="true" />
+          <span className="font-medium text-[rgb(220,235,255)]">
+            {formatNumber(prize.xpGained)}
+          </span>
         </div>
       </div>
     </div>
@@ -198,7 +199,7 @@ HorsePrizeEntry.displayName = 'HorsePrizeEntry';
  * expandable details for per-horse breakdown.
  */
 const PrizeSummaryCard: React.FC<PrizeSummaryCardProps> = ({
-  competitionId,
+  competitionId: _competitionId,
   competitionName,
   date,
   prizes,
@@ -284,8 +285,8 @@ const PrizeSummaryCard: React.FC<PrizeSummaryCardProps> = ({
         {/* Competition Info Row */}
         <div className="flex items-start justify-between mb-3">
           <div>
-            <h3 className="text-lg font-bold text-slate-900">{competitionName}</h3>
-            <div className="flex items-center gap-1 text-sm text-slate-600 mt-1">
+            <h3 className="text-lg font-bold text-[rgb(220,235,255)]">{competitionName}</h3>
+            <div className="flex items-center gap-1 text-sm text-[rgb(148,163,184)] mt-1">
               <Calendar className="h-4 w-4" aria-hidden="true" />
               <span>{formatDate(date)}</span>
             </div>
@@ -293,11 +294,11 @@ const PrizeSummaryCard: React.FC<PrizeSummaryCardProps> = ({
 
           {/* Best Placement Badge */}
           <div
-            className="flex items-center gap-1 px-2 py-1 rounded-full bg-white/80 border border-slate-200"
+            className="flex items-center gap-1 px-2 py-1 rounded-full bg-[rgba(15,35,70,0.5)] border border-[rgba(37,99,235,0.3)]"
             data-testid="best-placement"
           >
             <PlacementIcon rank={bestPlacement} />
-            <span className="text-sm font-semibold text-slate-700">
+            <span className="text-sm font-semibold text-[rgb(220,235,255)]">
               {bestPlacement > 0 ? `Best: ${getOrdinalSuffix(bestPlacement)}` : '-'}
             </span>
           </div>
@@ -306,34 +307,37 @@ const PrizeSummaryCard: React.FC<PrizeSummaryCardProps> = ({
         {/* Summary Stats Row */}
         <div className="grid grid-cols-3 gap-4 mb-3">
           {/* Total Prize Money */}
-          <div className="text-center p-2 rounded-lg bg-white/60">
+          <div className="text-center p-2 rounded-lg bg-[rgba(15,35,70,0.4)]">
             <div className="flex items-center justify-center gap-1 mb-1">
-              <DollarSign className="h-4 w-4 text-green-600" aria-hidden="true" />
-              <span className="text-xs text-slate-500">Prize</span>
+              <DollarSign className="h-4 w-4 text-emerald-400" aria-hidden="true" />
+              <span className="text-xs text-[rgb(148,163,184)]">Prize</span>
             </div>
-            <p className="text-lg font-bold text-slate-800" data-testid="total-prize-money">
+            <p
+              className="text-lg font-bold text-[rgb(220,235,255)]"
+              data-testid="total-prize-money"
+            >
               {formatCurrency(totalPrizeMoney)}
             </p>
           </div>
 
           {/* Total XP */}
-          <div className="text-center p-2 rounded-lg bg-white/60">
+          <div className="text-center p-2 rounded-lg bg-[rgba(15,35,70,0.4)]">
             <div className="flex items-center justify-center gap-1 mb-1">
-              <Zap className="h-4 w-4 text-purple-600" aria-hidden="true" />
-              <span className="text-xs text-slate-500">XP</span>
+              <Zap className="h-4 w-4 text-purple-400" aria-hidden="true" />
+              <span className="text-xs text-[rgb(148,163,184)]">XP</span>
             </div>
-            <p className="text-lg font-bold text-slate-800" data-testid="total-xp">
+            <p className="text-lg font-bold text-[rgb(220,235,255)]" data-testid="total-xp">
               {formatNumber(totalXp)}
             </p>
           </div>
 
           {/* Placed Horses Count */}
-          <div className="text-center p-2 rounded-lg bg-white/60">
+          <div className="text-center p-2 rounded-lg bg-[rgba(15,35,70,0.4)]">
             <div className="flex items-center justify-center gap-1 mb-1">
-              <Trophy className="h-4 w-4 text-yellow-600" aria-hidden="true" />
-              <span className="text-xs text-slate-500">Placed</span>
+              <Trophy className="h-4 w-4 text-yellow-500" aria-hidden="true" />
+              <span className="text-xs text-[rgb(148,163,184)]">Placed</span>
             </div>
-            <p className="text-lg font-bold text-slate-800" data-testid="placed-count">
+            <p className="text-lg font-bold text-[rgb(220,235,255)]" data-testid="placed-count">
               {placedCount}
             </p>
           </div>
@@ -342,7 +346,7 @@ const PrizeSummaryCard: React.FC<PrizeSummaryCardProps> = ({
         {/* Expand/Collapse Toggle */}
         <button
           onClick={handleToggle}
-          className="w-full flex items-center justify-center gap-2 py-2 text-sm font-medium text-slate-600 hover:text-slate-800 focus:outline-none focus:ring-2 focus:ring-blue-500 rounded-lg transition-colors"
+          className="w-full flex items-center justify-center gap-2 py-2 text-sm font-medium text-[rgb(148,163,184)] hover:text-[rgb(220,235,255)] focus:outline-none focus:ring-2 focus:ring-blue-500 rounded-lg transition-colors"
           data-testid="expand-toggle"
           aria-label={isExpanded ? 'Collapse horse details' : 'Expand horse details'}
           aria-expanded={isExpanded}
@@ -359,10 +363,10 @@ const PrizeSummaryCard: React.FC<PrizeSummaryCardProps> = ({
       {/* Expanded Details Section */}
       {isExpanded && (
         <div
-          className="border-t border-slate-200 p-4 space-y-2"
+          className="border-t border-[rgba(37,99,235,0.2)] p-4 space-y-2"
           data-testid="horse-breakdown-list"
         >
-          <p className="text-sm font-semibold text-slate-700 mb-3">Horse Breakdown</p>
+          <p className="text-sm font-semibold text-[rgb(220,235,255)] mb-3">Horse Breakdown</p>
           {sortedPrizes.map((prize) => (
             <HorsePrizeEntry
               key={prize.horseId}
@@ -371,7 +375,9 @@ const PrizeSummaryCard: React.FC<PrizeSummaryCardProps> = ({
             />
           ))}
           {prizes.length === 0 && (
-            <p className="text-sm text-slate-500 text-center py-4">No horses participated</p>
+            <p className="text-sm text-[rgb(148,163,184)] text-center py-4">
+              No horses participated
+            </p>
           )}
         </div>
       )}

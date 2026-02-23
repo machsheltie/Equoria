@@ -42,9 +42,9 @@ export const FantasyInput = ({ label, error, tooltip, className, ...props }: Fan
           onMouseEnter={() => tooltip && setShowTooltip(true)}
           onMouseLeave={() => setShowTooltip(false)}
           className={`
-            bg-parchment border-2 border-aged-bronze rounded-lg px-3 py-2
+            celestial-input w-full
             focus:border-burnished-gold focus:ring-1 focus:ring-burnished-gold/50
-            fantasy-body text-midnight-ink placeholder:text-aged-bronze/60 placeholder:italic
+            fantasy-body text-[rgb(220,235,255)] placeholder:text-aged-bronze/60 placeholder:italic
             transition-all duration-200
             ${error ? 'border-red-500 animate-pulse' : ''}
             ${isFocused ? 'shadow-lg magical-glow' : 'shadow-sm'}
@@ -58,15 +58,15 @@ export const FantasyInput = ({ label, error, tooltip, className, ...props }: Fan
         {/* Tooltip */}
         {showTooltip && tooltip && (
           <div className="absolute top-full left-0 mt-2 z-20 animate-fade-in">
-            <div className="bg-midnight-ink text-parchment px-3 py-2 rounded-lg text-sm fantasy-body shadow-xl max-w-xs">
+            <div className="glass-panel text-[rgb(220,235,255)] px-3 py-2 rounded-lg text-sm fantasy-body shadow-xl max-w-xs border border-[rgba(37,99,235,0.3)]">
               {tooltip}
-              <div className="absolute bottom-full left-4 border-4 border-transparent border-b-midnight-ink" />
+              <div className="absolute bottom-full left-4 border-4 border-transparent border-b-[rgba(15,35,70,0.9)]" />
             </div>
           </div>
         )}
       </div>
 
-      {error && <p className="text-red-500 text-sm fantasy-body animate-pulse">{error}</p>}
+      {error && <p className="text-red-400 text-sm fantasy-body animate-pulse">{error}</p>}
     </div>
   );
 };
@@ -103,9 +103,9 @@ export const FantasyTextarea = ({ label, error, className, ...props }: FantasyTe
             props.onBlur?.(e);
           }}
           className={`
-            bg-parchment border-2 border-aged-bronze rounded-xl px-4 py-3
+            celestial-input w-full rounded-xl px-4 py-3
             focus:border-burnished-gold focus:ring-1 focus:ring-burnished-gold/50
-            fantasy-body text-midnight-ink placeholder:text-aged-bronze/60 placeholder:italic
+            fantasy-body text-[rgb(220,235,255)] placeholder:text-aged-bronze/60 placeholder:italic
             min-h-[100px] resize-vertical
             transition-all duration-200
             ${error ? 'border-red-500 animate-pulse' : ''}
@@ -117,7 +117,7 @@ export const FantasyTextarea = ({ label, error, className, ...props }: FantasyTe
         <div className="absolute inset-2 border border-burnished-gold/30 rounded-lg pointer-events-none" />
       </div>
 
-      {error && <p className="text-red-500 text-sm fantasy-body animate-pulse">{error}</p>}
+      {error && <p className="text-red-400 text-sm fantasy-body animate-pulse">{error}</p>}
     </div>
   );
 };
@@ -125,7 +125,7 @@ export const FantasyTextarea = ({ label, error, className, ...props }: FantasyTe
 interface FantasySelectProps {
   label?: string;
   value: string;
-  onValueChange: (value: string) => void;
+  onValueChange: (_value: string) => void;
   options: { value: string; label: string }[];
   placeholder?: string;
 }
@@ -150,7 +150,7 @@ export const FantasySelect = ({
       <div className="relative">
         <button
           onClick={() => setIsOpen(!isOpen)}
-          className="w-full bg-parchment border-2 border-aged-bronze rounded-lg px-3 py-2 text-left fantasy-body text-midnight-ink hover:border-burnished-gold transition-colors duration-200 flex items-center justify-between"
+          className="w-full bg-[rgba(15,35,70,0.5)] border border-[rgba(37,99,235,0.3)] rounded-lg px-3 py-2 text-left fantasy-body text-[rgb(220,235,255)] hover:border-burnished-gold/50 transition-colors duration-200 flex items-center justify-between"
         >
           <span>{value ? options.find((opt) => opt.value === value)?.label : placeholder}</span>
           <ChevronDown
@@ -161,7 +161,7 @@ export const FantasySelect = ({
         <div className="absolute inset-1 border border-burnished-gold/30 rounded-md pointer-events-none" />
 
         {isOpen && (
-          <div className="absolute top-full left-0 right-0 mt-1 bg-parchment border-2 border-aged-bronze rounded-lg shadow-xl z-10 max-h-40 overflow-y-auto">
+          <div className="absolute top-full left-0 right-0 mt-1 glass-panel border border-[rgba(37,99,235,0.3)] rounded-lg shadow-xl z-10 max-h-40 overflow-y-auto">
             {options.map((option) => (
               <button
                 key={option.value}
@@ -169,7 +169,7 @@ export const FantasySelect = ({
                   onValueChange(option.value);
                   setIsOpen(false);
                 }}
-                className="w-full px-3 py-2 text-left fantasy-body text-midnight-ink hover:bg-burnished-gold/20 transition-colors duration-150 border-b border-aged-bronze/20 last:border-b-0"
+                className="w-full px-3 py-2 text-left fantasy-body text-[rgb(220,235,255)] hover:bg-[rgba(37,99,235,0.15)] transition-colors duration-150 border-b border-[rgba(37,99,235,0.15)] last:border-b-0"
               >
                 {option.label}
               </button>
@@ -184,7 +184,7 @@ export const FantasySelect = ({
 interface FantasyCheckboxProps {
   label: string;
   checked: boolean;
-  onCheckedChange: (checked: boolean) => void;
+  onCheckedChange: (_checked: boolean) => void;
 }
 
 export const FantasyCheckbox = ({ label, checked, onCheckedChange }: FantasyCheckboxProps) => {
@@ -194,18 +194,18 @@ export const FantasyCheckbox = ({ label, checked, onCheckedChange }: FantasyChec
         <Checkbox
           checked={checked}
           onCheckedChange={onCheckedChange}
-          className="bg-parchment border-2 border-aged-bronze data-[state=checked]:bg-burnished-gold data-[state=checked]:border-burnished-gold rounded-md w-6 h-6"
+          className="bg-[rgba(15,35,70,0.5)] border-2 border-[rgba(37,99,235,0.4)] data-[state=checked]:bg-burnished-gold data-[state=checked]:border-burnished-gold rounded-md w-6 h-6"
         />
         {checked && (
           <div className="absolute inset-0 flex items-center justify-center pointer-events-none">
-            <Check className="w-4 h-4 text-parchment drop-shadow" />
+            <Check className="w-4 h-4 text-[rgb(10,22,40)] drop-shadow" />
           </div>
         )}
         {checked && (
           <div className="absolute -inset-1 bg-burnished-gold/20 rounded-lg animate-pulse" />
         )}
       </div>
-      <Label className="fantasy-body text-midnight-ink cursor-pointer">{label}</Label>
+      <Label className="fantasy-body text-[rgb(220,235,255)] cursor-pointer">{label}</Label>
     </div>
   );
 };
@@ -213,30 +213,30 @@ export const FantasyCheckbox = ({ label, checked, onCheckedChange }: FantasyChec
 interface FantasyToggleProps {
   label: string;
   checked: boolean;
-  onCheckedChange: (checked: boolean) => void;
+  onCheckedChange: (_checked: boolean) => void;
 }
 
 export const FantasyToggle = ({ label, checked, onCheckedChange }: FantasyToggleProps) => {
   return (
     <div className="flex items-center justify-between">
-      <Label className="fantasy-body text-midnight-ink">{label}</Label>
+      <Label className="fantasy-body text-[rgb(220,235,255)]">{label}</Label>
 
       <button
         onClick={() => onCheckedChange(!checked)}
         className={`
           relative w-12 h-6 rounded-full transition-all duration-300
-          ${checked ? 'bg-forest-green shadow-lg magical-glow' : 'bg-aged-bronze'}
+          ${checked ? 'bg-[rgba(37,99,235,0.8)] shadow-lg magical-glow' : 'bg-aged-bronze'}
         `}
       >
         <div
           className={`
-          absolute top-1 w-4 h-4 bg-parchment rounded-full shadow-md transition-transform duration-300 border border-burnished-gold/50
+          absolute top-1 w-4 h-4 bg-[rgb(220,235,255)] rounded-full shadow-md transition-transform duration-300 border border-burnished-gold/50
           ${checked ? 'translate-x-7' : 'translate-x-1'}
         `}
         />
 
         {checked && (
-          <div className="absolute inset-0 rounded-full bg-forest-green/20 animate-pulse" />
+          <div className="absolute inset-0 rounded-full bg-[rgba(37,99,235,0.2)] animate-pulse" />
         )}
       </button>
     </div>

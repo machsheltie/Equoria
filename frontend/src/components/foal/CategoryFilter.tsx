@@ -30,31 +30,36 @@ const categoryOptions: CategoryOption[] = [
     value: 'all',
     label: 'All Activities',
     icon: Sparkles,
-    color: 'text-slate-600 bg-slate-50 border-slate-200 hover:bg-slate-100',
+    color:
+      'text-[rgb(148,163,184)] bg-[rgba(37,99,235,0.05)] border-[rgba(37,99,235,0.2)] hover:bg-[rgba(37,99,235,0.1)]',
   },
   {
     value: 'trust',
     label: 'Trust',
     icon: Heart,
-    color: 'text-blue-600 bg-blue-50 border-blue-200 hover:bg-blue-100',
+    color:
+      'text-blue-400 bg-[rgba(37,99,235,0.1)] border-blue-500/30 hover:bg-[rgba(37,99,235,0.2)]',
   },
   {
     value: 'desensitization',
     label: 'Desensitization',
     icon: Shield,
-    color: 'text-purple-600 bg-purple-50 border-purple-200 hover:bg-purple-100',
+    color:
+      'text-purple-400 bg-[rgba(147,51,234,0.1)] border-purple-500/30 hover:bg-[rgba(147,51,234,0.2)]',
   },
   {
     value: 'exposure',
     label: 'Exposure',
     icon: Compass,
-    color: 'text-emerald-600 bg-emerald-50 border-emerald-200 hover:bg-emerald-100',
+    color:
+      'text-emerald-400 bg-[rgba(16,185,129,0.1)] border-emerald-500/30 hover:bg-[rgba(16,185,129,0.2)]',
   },
   {
     value: 'habituation',
     label: 'Habituation',
     icon: Clock,
-    color: 'text-amber-600 bg-amber-50 border-amber-200 hover:bg-amber-100',
+    color:
+      'text-amber-400 bg-[rgba(212,168,67,0.1)] border-amber-500/30 hover:bg-[rgba(212,168,67,0.2)]',
   },
 ];
 
@@ -78,7 +83,7 @@ const CategoryFilter: React.FC<CategoryFilterProps> = ({
           id="category-select"
           value={selectedCategory}
           onChange={(e) => onCategoryChange(e.target.value as EnrichmentCategory | 'all')}
-          className="block w-full px-3 py-2 text-sm border border-slate-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
+          className="celestial-input w-full text-sm"
         >
           {categoryOptions.map((option) => (
             <option key={option.value} value={option.value}>
@@ -106,7 +111,7 @@ const CategoryFilter: React.FC<CategoryFilterProps> = ({
                 inline-flex items-center gap-2 px-4 py-2 text-sm font-medium rounded-lg border transition-all
                 ${
                   isSelected
-                    ? `${option.color} ring-2 ring-offset-2 ${option.color.split(' ')[0].replace('text-', 'ring-')}`
+                    ? `${option.color} ring-2 ring-offset-2 ring-offset-[rgb(10,22,40)] ${option.color.split(' ')[0].replace('text-', 'ring-')}`
                     : `${option.color} border-transparent opacity-60 hover:opacity-100`
                 }
               `}
@@ -119,7 +124,7 @@ const CategoryFilter: React.FC<CategoryFilterProps> = ({
                 <span
                   className={`
                     inline-flex items-center justify-center min-w-[20px] h-5 px-1.5 text-xs font-bold rounded-full
-                    ${isSelected ? 'bg-white/80' : 'bg-white/60'}
+                    ${isSelected ? 'bg-[rgba(15,35,70,0.5)]' : 'bg-[rgba(15,35,70,0.4)]'}
                   `}
                 >
                   {count}
@@ -129,36 +134,6 @@ const CategoryFilter: React.FC<CategoryFilterProps> = ({
           );
         })}
       </div>
-
-      {/* Compact Pills View (Alternative Desktop Style) */}
-      {/* Uncomment to use this style instead:
-      <div className="hidden sm:flex sm:items-center sm:gap-2">
-        <span className="text-sm font-medium text-slate-700 mr-2">Filter:</span>
-        {categoryOptions.map((option) => {
-          const Icon = option.icon;
-          const isSelected = selectedCategory === option.value;
-          const count = showCounts && categoryCounts?.[option.value];
-
-          return (
-            <button
-              key={option.value}
-              onClick={() => onCategoryChange(option.value)}
-              className={`
-                inline-flex items-center gap-1.5 px-3 py-1.5 text-xs font-medium rounded-full transition-all
-                ${isSelected ? option.color : 'text-slate-500 bg-slate-100 border-slate-200 hover:bg-slate-200'}
-              `}
-              aria-pressed={isSelected}
-            >
-              <Icon className="h-3 w-3" />
-              <span>{option.label}</span>
-              {typeof count === 'number' && (
-                <span className="ml-1">({count})</span>
-              )}
-            </button>
-          );
-        })}
-      </div>
-      */}
     </div>
   );
 };

@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import { ChevronDown, ChevronRight } from 'lucide-react';
+import { ChevronDown } from 'lucide-react';
 import { Tabs, TabsList, TabsTrigger, TabsContent } from '@/components/ui/tabs';
 import { Collapsible, CollapsibleTrigger, CollapsibleContent } from '@/components/ui/collapsible';
 
@@ -34,19 +34,15 @@ export const FantasyTabs = ({
             key={tab.value}
             value={tab.value}
             className={`
-              relative bg-parchment border-2 border-aged-bronze rounded-t-lg px-4 py-3
-              fantasy-title text-base transition-all duration-300 min-w-0
-              data-[state=active]:bg-forest-green data-[state=active]:text-parchment data-[state=active]:border-burnished-gold
+              relative bg-[rgba(15,35,70,0.5)] border border-[rgba(37,99,235,0.2)] rounded-t-lg px-4 py-3
+              fantasy-title text-base text-[rgb(148,163,184)] transition-all duration-300 min-w-0
+              data-[state=active]:bg-[rgba(37,99,235,0.2)] data-[state=active]:text-[rgb(220,235,255)] data-[state=active]:border-[rgba(212,168,67,0.5)]
               data-[state=active]:shadow-lg data-[state=active]:magical-glow
-              hover:bg-burnished-gold/10 hover:border-burnished-gold/50
+              hover:bg-[rgba(37,99,235,0.1)] hover:border-[rgba(37,99,235,0.4)] hover:text-[rgb(220,235,255)]
               ${orientation === 'vertical' ? 'rounded-r-lg rounded-t-lg w-full' : ''}
               ${activeTab === tab.value ? 'transform -translate-y-1' : ''}
             `}
           >
-            {/* Curled page edge effect */}
-            <div className="absolute top-0 right-0 w-3 h-3 bg-aged-bronze/20 rounded-bl-full" />
-            <div className="absolute top-0 left-0 w-3 h-3 bg-aged-bronze/20 rounded-br-full" />
-
             {/* Tab content */}
             <div className="flex items-center space-x-2 relative z-10">
               {tab.icon && (
@@ -61,14 +57,12 @@ export const FantasyTabs = ({
 
             {/* Active underline glow */}
             {activeTab === tab.value && (
-              <div className="absolute bottom-0 left-2 right-2 h-1 bg-gradient-to-r from-transparent via-burnished-gold to-transparent animate-pulse" />
+              <div className="absolute bottom-0 left-2 right-2 h-0.5 bg-gradient-to-r from-transparent via-burnished-gold to-transparent" />
             )}
 
             {/* Decorative divider */}
             {index < tabs.length - 1 && orientation === 'horizontal' && (
-              <div className="absolute top-1/2 -right-1 w-2 h-8 transform -translate-y-1/2">
-                <div className="w-full h-full bg-gradient-to-b from-transparent via-aged-bronze/30 to-transparent" />
-              </div>
+              <div className="absolute top-1/2 -right-1 w-px h-5 transform -translate-y-1/2 bg-[rgba(37,99,235,0.2)]" />
             )}
           </TabsTrigger>
         ))}
@@ -79,20 +73,20 @@ export const FantasyTabs = ({
           key={tab.value}
           value={tab.value}
           className={`
-            mt-0 bg-parchment border-2 border-aged-bronze rounded-lg p-6 parchment-texture
+            mt-0 glass-panel border border-[rgba(37,99,235,0.2)] rounded-lg p-6
             ${orientation === 'horizontal' ? 'rounded-tl-none' : 'ml-4 rounded-l-none'}
             shadow-lg
           `}
         >
-          {/* Inner gold border */}
-          <div className="absolute inset-2 border border-burnished-gold/30 rounded-md pointer-events-none" />
+          {/* Inner accent border */}
+          <div className="absolute inset-2 border border-burnished-gold/20 rounded-md pointer-events-none" />
 
           {/* Content */}
           <div className="relative z-10">{tab.content}</div>
 
           {/* Decorative corner elements */}
-          <div className="absolute top-3 right-3 w-4 h-4 border-r-2 border-t-2 border-burnished-gold/40 rounded-tr-md" />
-          <div className="absolute bottom-3 left-3 w-4 h-4 border-l-2 border-b-2 border-burnished-gold/40 rounded-bl-md" />
+          <div className="absolute top-3 right-3 w-4 h-4 border-r border-t border-burnished-gold/30 rounded-tr-md" />
+          <div className="absolute bottom-3 left-3 w-4 h-4 border-l border-b border-burnished-gold/30 rounded-bl-md" />
         </TabsContent>
       ))}
     </Tabs>
@@ -136,14 +130,14 @@ export const FantasyAccordion = ({ items, type = 'single' }: FantasyAccordionPro
             <CollapsibleTrigger className="w-full">
               <div
                 className={`
-                bg-parchment border-2 border-aged-bronze rounded-lg p-4 
-                hover:border-burnished-gold transition-all duration-200
+                glass-panel border border-[rgba(37,99,235,0.2)] rounded-lg p-4
+                hover:border-[rgba(37,99,235,0.5)] transition-all duration-200
                 ${isOpen ? 'rounded-b-none border-b-0 magical-glow' : ''}
                 group
               `}
               >
-                {/* Scroll band background */}
-                <div className="absolute inset-0 bg-gradient-to-r from-burnished-gold/10 via-aged-bronze/5 to-burnished-gold/10 rounded-lg opacity-0 group-hover:opacity-100 transition-opacity duration-200" />
+                {/* Hover glow overlay */}
+                <div className="absolute inset-0 bg-gradient-to-r from-[rgba(37,99,235,0.05)] via-transparent to-[rgba(37,99,235,0.05)] rounded-lg opacity-0 group-hover:opacity-100 transition-opacity duration-200" />
 
                 <div className="flex items-center justify-between relative z-10">
                   <div className="flex items-center space-x-3">
@@ -152,7 +146,7 @@ export const FantasyAccordion = ({ items, type = 'single' }: FantasyAccordionPro
                         {item.icon}
                       </span>
                     )}
-                    <h3 className="fantasy-header text-lg text-midnight-ink text-left">
+                    <h3 className="fantasy-header text-lg text-[rgb(220,235,255)] text-left">
                       {item.title}
                     </h3>
                   </div>
@@ -164,21 +158,20 @@ export const FantasyAccordion = ({ items, type = 'single' }: FantasyAccordionPro
                   `}
                   />
                 </div>
-
-                {/* Pull-tab motif */}
-                <div className="absolute top-1/2 right-2 w-1 h-6 bg-aged-bronze/30 rounded-full transform -translate-y-1/2" />
               </div>
             </CollapsibleTrigger>
 
             <CollapsibleContent>
-              <div className="bg-parchment border-2 border-aged-bronze border-t-0 rounded-b-lg p-6 parchment-texture scroll-entrance">
-                {/* Inner scroll texture */}
-                <div className="absolute inset-2 border border-burnished-gold/20 rounded-md pointer-events-none" />
+              <div className="glass-panel border border-[rgba(37,99,235,0.2)] border-t-0 rounded-b-lg p-6">
+                {/* Inner accent border */}
+                <div className="absolute inset-2 border border-burnished-gold/10 rounded-md pointer-events-none" />
 
-                <div className="relative z-10 fantasy-body text-midnight-ink">{item.content}</div>
+                <div className="relative z-10 fantasy-body text-[rgb(220,235,255)]">
+                  {item.content}
+                </div>
 
                 {/* Decorative bottom flourish */}
-                <div className="absolute bottom-2 left-1/2 transform -translate-x-1/2 w-12 h-1 bg-gradient-to-r from-transparent via-aged-bronze/40 to-transparent rounded-full" />
+                <div className="absolute bottom-2 left-1/2 transform -translate-x-1/2 w-12 h-px bg-gradient-to-r from-transparent via-burnished-gold/30 to-transparent rounded-full" />
               </div>
             </CollapsibleContent>
           </Collapsible>

@@ -19,7 +19,7 @@ export interface TraitCardProps {
       disciplines?: Record<string, number>;
     };
   };
-  onViewParent?: (parentId: number) => void;
+  onViewParent?: (_parentId: number) => void;
   showTooltip?: boolean;
 }
 
@@ -27,28 +27,28 @@ export interface TraitCardProps {
  * Get border and background colors based on trait type and rarity
  */
 const getTraitColors = (type: 'genetic' | 'epigenetic', rarity: string) => {
-  // Base colors by type
+  // Base colors by type (dark theme equivalents)
   const typeColors: Record<
     string,
     { border: string; bg: string; text: string; accent?: string; animation?: string }
   > = {
     genetic: {
-      border: 'border-blue-500',
-      bg: 'bg-blue-50',
-      text: 'text-blue-700',
+      border: 'border-blue-500/40',
+      bg: 'bg-[rgba(37,99,235,0.1)]',
+      text: 'text-blue-400',
     },
     epigenetic: {
-      border: 'border-purple-500',
-      bg: 'bg-purple-50',
-      text: 'text-purple-700',
+      border: 'border-purple-500/40',
+      bg: 'bg-[rgba(147,51,234,0.1)]',
+      text: 'text-purple-400',
     },
   };
 
   // Override for rare/legendary
   if (rarity === 'rare') {
     return {
-      border: 'border-burnished-gold',
-      bg: 'bg-amber-50',
+      border: 'border-burnished-gold/50',
+      bg: 'bg-[rgba(212,168,67,0.1)]',
       text: 'text-burnished-gold',
       accent: 'text-burnished-gold',
     };
@@ -56,9 +56,9 @@ const getTraitColors = (type: 'genetic' | 'epigenetic', rarity: string) => {
 
   if (rarity === 'legendary') {
     return {
-      border: 'border-gradient-to-r from-burnished-gold via-purple-500 to-burnished-gold',
-      bg: 'bg-gradient-to-br from-amber-50 to-purple-50',
-      text: 'text-transparent bg-clip-text bg-gradient-to-r from-burnished-gold to-purple-600',
+      border: 'border-burnished-gold/60',
+      bg: 'bg-gradient-to-br from-[rgba(212,168,67,0.12)] to-[rgba(147,51,234,0.12)]',
+      text: 'text-transparent bg-clip-text bg-gradient-to-r from-burnished-gold to-purple-400',
       accent: 'text-burnished-gold',
       animation: 'animate-pulse',
     };
@@ -80,8 +80,8 @@ const getStrengthInfo = (strength: number) => {
   }
   if (strength >= 51) {
     return {
-      color: 'text-forest-green',
-      bgColor: 'bg-forest-green',
+      color: 'text-emerald-400',
+      bgColor: 'bg-emerald-500',
       label: 'High',
     };
   }
@@ -93,8 +93,8 @@ const getStrengthInfo = (strength: number) => {
     };
   }
   return {
-    color: 'text-mystic-silver',
-    bgColor: 'bg-mystic-silver',
+    color: 'text-[rgb(148,163,184)]',
+    bgColor: 'bg-[rgb(148,163,184)]',
     label: 'Low',
   };
 };
@@ -127,7 +127,7 @@ const getSourceInfo = (source?: 'sire' | 'dam' | 'mutation') => {
  */
 export const TraitCard: React.FC<TraitCardProps> = ({
   trait,
-  onViewParent,
+  onViewParent: _onViewParent,
   showTooltip = true,
 }) => {
   const [isHovered, setIsHovered] = useState(false);
@@ -137,9 +137,9 @@ export const TraitCard: React.FC<TraitCardProps> = ({
 
   return (
     <div
-      className={`relative p-4 rounded-lg border-2 transition-all duration-200 ${colors.border} ${colors.bg} ${
+      className={`relative p-4 rounded-lg border transition-all duration-200 ${colors.border} ${colors.bg} ${
         colors.animation || ''
-      } ${isHovered ? 'shadow-lg scale-105' : 'shadow-sm'}`}
+      } ${isHovered ? 'shadow-lg scale-105 magical-glow' : 'shadow-sm'}`}
       onMouseEnter={() => setIsHovered(true)}
       onMouseLeave={() => setIsHovered(false)}
     >
@@ -169,7 +169,7 @@ export const TraitCard: React.FC<TraitCardProps> = ({
                   ? 'bg-gradient-to-r from-burnished-gold to-purple-500 text-white'
                   : trait.rarity === 'rare'
                     ? 'bg-burnished-gold text-white'
-                    : 'bg-gray-200 text-gray-700'
+                    : 'bg-[rgba(37,99,235,0.2)] text-[rgb(148,163,184)]'
               }`}
             >
               {trait.rarity.charAt(0).toUpperCase() + trait.rarity.slice(1)}
@@ -179,7 +179,9 @@ export const TraitCard: React.FC<TraitCardProps> = ({
             {trait.type === 'epigenetic' && trait.isActive !== undefined && (
               <span
                 className={`text-xs px-2 py-1 rounded-full ${
-                  trait.isActive ? 'bg-forest-green text-white' : 'bg-gray-300 text-gray-600'
+                  trait.isActive
+                    ? 'bg-emerald-500/20 text-emerald-400 border border-emerald-500/30'
+                    : 'bg-[rgba(37,99,235,0.1)] text-[rgb(148,163,184)] border border-[rgba(37,99,235,0.2)]'
                 }`}
               >
                 {trait.isActive ? 'Active' : 'Dormant'}
@@ -195,7 +197,7 @@ export const TraitCard: React.FC<TraitCardProps> = ({
       {/* Strength Meter */}
       <div className="mb-3">
         <div className="flex justify-between items-center mb-1">
-          <span className="text-xs text-gray-600 flex items-center gap-1">
+          <span className="text-xs text-[rgb(148,163,184)] flex items-center gap-1">
             <TrendingUp className="w-3 h-3" />
             Strength
           </span>
@@ -203,7 +205,7 @@ export const TraitCard: React.FC<TraitCardProps> = ({
             {strengthInfo.label} ({trait.strength})
           </span>
         </div>
-        <div className="h-2 bg-parchment rounded-full overflow-hidden border border-aged-bronze">
+        <div className="h-2 bg-[rgba(15,35,70,0.5)] rounded-full overflow-hidden border border-[rgba(37,99,235,0.2)]">
           <div
             className={`h-full ${strengthInfo.bgColor} transition-all duration-300`}
             style={{ width: `${trait.strength}%` }}
@@ -216,7 +218,8 @@ export const TraitCard: React.FC<TraitCardProps> = ({
         <div className="mb-3">
           <div className="flex items-center gap-2">
             <span className="text-sm">
-              {sourceInfo.icon} <span className="text-xs text-gray-600">{sourceInfo.label}</span>
+              {sourceInfo.icon}{' '}
+              <span className="text-xs text-[rgb(148,163,184)]">{sourceInfo.label}</span>
             </span>
           </div>
         </div>
@@ -224,16 +227,16 @@ export const TraitCard: React.FC<TraitCardProps> = ({
 
       {/* Discovery Date (Epigenetic Only) */}
       {trait.type === 'epigenetic' && trait.discoveryDate && (
-        <div className="text-xs text-gray-500 mb-2">
+        <div className="text-xs text-[rgb(148,163,184)] mb-2">
           Discovered: {new Date(trait.discoveryDate).toLocaleDateString()}
         </div>
       )}
 
       {/* Tooltip on Hover */}
       {showTooltip && isHovered && (
-        <div className="absolute z-10 top-full left-0 mt-2 p-4 bg-white rounded-lg shadow-xl border-2 border-aged-bronze w-80 max-w-[90vw]">
+        <div className="absolute z-10 top-full left-0 mt-2 p-4 glass-panel rounded-lg shadow-xl border border-[rgba(37,99,235,0.3)] w-80 max-w-[90vw]">
           {/* Trait Description */}
-          <p className="text-sm text-midnight-ink mb-3">{trait.description}</p>
+          <p className="text-sm text-[rgb(220,235,255)] mb-3">{trait.description}</p>
 
           {/* Impact on Stats */}
           {trait.impact.stats && Object.keys(trait.impact.stats).length > 0 && (
@@ -242,8 +245,8 @@ export const TraitCard: React.FC<TraitCardProps> = ({
               <div className="grid grid-cols-2 gap-2">
                 {Object.entries(trait.impact.stats).map(([stat, value]) => (
                   <div key={stat} className="flex justify-between text-xs">
-                    <span className="capitalize">{stat}:</span>
-                    <span className={value > 0 ? 'text-forest-green' : 'text-red-500'}>
+                    <span className="capitalize text-[rgb(148,163,184)]">{stat}:</span>
+                    <span className={value > 0 ? 'text-emerald-400' : 'text-red-400'}>
                       {value > 0 ? '+' : ''}
                       {value}
                     </span>
@@ -260,8 +263,8 @@ export const TraitCard: React.FC<TraitCardProps> = ({
               <div className="grid grid-cols-2 gap-2">
                 {Object.entries(trait.impact.disciplines).map(([discipline, value]) => (
                   <div key={discipline} className="flex justify-between text-xs">
-                    <span className="capitalize">{discipline}:</span>
-                    <span className={value > 0 ? 'text-forest-green' : 'text-red-500'}>
+                    <span className="capitalize text-[rgb(148,163,184)]">{discipline}:</span>
+                    <span className={value > 0 ? 'text-emerald-400' : 'text-red-400'}>
                       {value > 0 ? '+' : ''}
                       {value}
                     </span>
@@ -273,7 +276,7 @@ export const TraitCard: React.FC<TraitCardProps> = ({
 
           {/* Rarity Info */}
           {trait.rarity === 'legendary' && (
-            <div className="mt-3 pt-3 border-t border-aged-bronze">
+            <div className="mt-3 pt-3 border-t border-aged-bronze/30">
               <p className="text-xs text-burnished-gold font-semibold flex items-center gap-1">
                 <Sparkles className="w-3 h-3" />
                 Legendary Trait - Extremely Rare

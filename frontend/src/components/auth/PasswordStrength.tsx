@@ -49,7 +49,7 @@ const RequirementCheck: React.FC<RequirementCheckProps> = ({ met, label }) => (
     data-testid={`requirement-${label.toLowerCase().replace(/\s+/g, '-').replace(/\+/g, '')}`}
   >
     {met ? (
-      <Check className="w-3 h-3 text-forest-green" aria-hidden="true" />
+      <Check className="w-3 h-3 text-emerald-400" aria-hidden="true" />
     ) : (
       <X className="w-3 h-3 text-red-500" aria-hidden="true" />
     )}
@@ -106,7 +106,7 @@ export const PasswordStrength: React.FC<PasswordStrengthProps> = ({
         role="group"
         aria-label="Password strength indicator"
       >
-        <div className="flex-1 h-1.5 bg-gray-200 rounded-full overflow-hidden">
+        <div className="flex-1 h-1.5 bg-[rgba(37,99,235,0.2)] rounded-full overflow-hidden">
           <div
             className="h-full transition-all duration-300 rounded-full"
             style={{

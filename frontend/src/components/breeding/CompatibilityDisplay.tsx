@@ -30,22 +30,22 @@ function getScoreColor(score: number): {
 } {
   if (score >= 80) {
     return {
-      text: 'text-green-700',
-      bg: 'bg-green-50',
-      bar: 'bg-green-500',
+      text: 'text-emerald-400',
+      bg: 'bg-[rgba(16,185,129,0.1)]',
+      bar: 'bg-emerald-500',
       label: 'Excellent',
     };
   } else if (score >= 60) {
     return {
-      text: 'text-yellow-700',
-      bg: 'bg-yellow-50',
+      text: 'text-yellow-400',
+      bg: 'bg-[rgba(234,179,8,0.1)]',
       bar: 'bg-yellow-500',
       label: 'Good',
     };
   } else {
     return {
-      text: 'text-red-700',
-      bg: 'bg-red-50',
+      text: 'text-red-400',
+      bg: 'bg-[rgba(239,68,68,0.1)]',
       bar: 'bg-red-500',
       label: 'Poor',
     };
@@ -70,7 +70,7 @@ const ProgressBar: React.FC<ProgressBarProps> = ({ value, label, icon }) => {
       <div className="flex items-center justify-between">
         <div className="flex items-center gap-2">
           <div className={`${colors.text}`}>{icon}</div>
-          <span className="text-sm font-medium text-slate-700">{label}</span>
+          <span className="text-sm font-medium text-[rgb(220,235,255)]">{label}</span>
         </div>
         <div className="flex items-center gap-2">
           <span className={`text-sm font-bold ${colors.text}`}>{value}/100</span>
@@ -81,7 +81,7 @@ const ProgressBar: React.FC<ProgressBarProps> = ({ value, label, icon }) => {
       </div>
 
       {/* Progress Bar */}
-      <div className="w-full bg-slate-200 rounded-full h-2.5 overflow-hidden">
+      <div className="w-full bg-[rgba(15,35,70,0.5)] rounded-full h-2.5 overflow-hidden">
         <div
           className={`h-full ${colors.bar} transition-all duration-500 ease-out`}
           style={{ width: `${value}%` }}
@@ -106,11 +106,11 @@ const CompatibilityDisplay: React.FC<CompatibilityDisplayProps> = ({
   // Loading state
   if (isLoading) {
     return (
-      <div className="rounded-lg border border-slate-200 bg-white p-6 shadow-sm">
+      <div className="glass-panel rounded-lg border border-[rgba(37,99,235,0.2)] p-6">
         <div className="flex items-center justify-center h-64">
           <div className="text-center">
             <div className="inline-block h-8 w-8 animate-spin rounded-full border-4 border-solid border-emerald-500 border-r-transparent"></div>
-            <p className="mt-3 text-sm text-slate-600">Analyzing compatibility...</p>
+            <p className="mt-3 text-sm text-[rgb(148,163,184)]">Analyzing compatibility...</p>
           </div>
         </div>
       </div>
@@ -120,11 +120,13 @@ const CompatibilityDisplay: React.FC<CompatibilityDisplayProps> = ({
   // Placeholder state (no pair selected)
   if (!compatibility) {
     return (
-      <div className="rounded-lg border border-slate-200 bg-slate-50 p-6 shadow-sm">
+      <div className="glass-panel rounded-lg border border-[rgba(37,99,235,0.2)] p-6">
         <div className="flex flex-col items-center justify-center h-64 text-center">
-          <Target className="h-16 w-16 text-slate-300 mb-4" />
-          <h3 className="text-lg font-semibold text-slate-700 mb-2">Select Both Parents</h3>
-          <p className="text-sm text-slate-600 max-w-md">
+          <Target className="h-16 w-16 text-[rgb(148,163,184)] mb-4" />
+          <h3 className="text-lg font-semibold text-[rgb(220,235,255)] mb-2">
+            Select Both Parents
+          </h3>
+          <p className="text-sm text-[rgb(148,163,184)] max-w-md">
             Choose a sire and dam from the lists above to view their breeding compatibility analysis
             and recommendations.
           </p>
@@ -136,13 +138,17 @@ const CompatibilityDisplay: React.FC<CompatibilityDisplayProps> = ({
   const overallColors = getScoreColor(compatibility.overall);
 
   return (
-    <div className="rounded-lg border border-slate-200 bg-white shadow-sm overflow-hidden">
+    <div className="glass-panel rounded-lg border border-[rgba(37,99,235,0.2)] overflow-hidden">
       {/* Header with Overall Score */}
-      <div className={`${overallColors.bg} border-b border-slate-200 p-6`}>
+      <div className={`${overallColors.bg} border-b border-[rgba(37,99,235,0.2)] p-6`}>
         <div className="flex items-center justify-between">
           <div>
-            <h3 className="text-lg font-semibold text-slate-900">Compatibility Analysis</h3>
-            <p className="text-sm text-slate-600 mt-1">Breeding pair compatibility assessment</p>
+            <h3 className="text-lg font-semibold text-[rgb(220,235,255)]">
+              Compatibility Analysis
+            </h3>
+            <p className="text-sm text-[rgb(148,163,184)] mt-1">
+              Breeding pair compatibility assessment
+            </p>
           </div>
           <div className="text-right">
             <div className={`text-4xl font-bold ${overallColors.text}`}>
@@ -156,7 +162,7 @@ const CompatibilityDisplay: React.FC<CompatibilityDisplayProps> = ({
 
         {/* Overall Progress Bar */}
         <div className="mt-4">
-          <div className="w-full bg-white/50 rounded-full h-3 overflow-hidden">
+          <div className="w-full bg-[rgba(15,35,70,0.4)] rounded-full h-3 overflow-hidden">
             <div
               className={`h-full ${overallColors.bar} transition-all duration-500`}
               style={{ width: `${compatibility.overall}%` }}
@@ -188,15 +194,17 @@ const CompatibilityDisplay: React.FC<CompatibilityDisplayProps> = ({
 
       {/* Recommendations */}
       {compatibility.recommendations && compatibility.recommendations.length > 0 && (
-        <div className="border-t border-slate-200 bg-slate-50 p-6">
+        <div className="border-t border-[rgba(37,99,235,0.2)] bg-[rgba(15,35,70,0.3)] p-6">
           <div className="flex items-start gap-2 mb-3">
-            <Lightbulb className="h-5 w-5 text-amber-500 flex-shrink-0 mt-0.5" />
-            <h4 className="text-sm font-semibold text-slate-900">Breeding Recommendations</h4>
+            <Lightbulb className="h-5 w-5 text-amber-400 flex-shrink-0 mt-0.5" />
+            <h4 className="text-sm font-semibold text-[rgb(220,235,255)]">
+              Breeding Recommendations
+            </h4>
           </div>
           <ul className="space-y-2 ml-7">
             {compatibility.recommendations.map((recommendation, index) => (
-              <li key={index} className="text-sm text-slate-700 flex items-start gap-2">
-                <span className="text-emerald-500 font-bold flex-shrink-0">•</span>
+              <li key={index} className="text-sm text-[rgb(220,235,255)] flex items-start gap-2">
+                <span className="text-emerald-400 font-bold flex-shrink-0">•</span>
                 <span>{recommendation}</span>
               </li>
             ))}

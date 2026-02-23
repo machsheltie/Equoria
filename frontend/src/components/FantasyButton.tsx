@@ -39,8 +39,8 @@ const FantasyButton = ({
 
   const variantClasses =
     variant === 'primary'
-      ? 'bg-forest-green text-white magical-glow hover:shadow-lg'
-      : 'bg-saddle-leather text-midnight-ink border border-aged-bronze hover:opacity-90';
+      ? 'bg-[rgba(37,99,235,0.9)] text-white magical-glow hover:bg-[rgba(37,99,235,1)] hover:shadow-lg'
+      : 'bg-[rgba(15,35,70,0.5)] text-[rgb(220,235,255)] border border-[rgba(37,99,235,0.3)] hover:bg-[rgba(15,35,70,0.7)]';
 
   const pressedClasses = isPressed ? 'transform scale-95' : '';
 
@@ -53,7 +53,7 @@ const FantasyButton = ({
       onMouseEnter={() => !disabled && setShowShimmer(true)}
       onMouseLeave={() => setShowShimmer(false)}
     >
-      <span className="relative z-10 parchment-texture">{children}</span>
+      <span className="relative z-10">{children}</span>
 
       {/* Shimmer effect */}
       {showShimmer && <div className="absolute inset-0 shimmer-effect opacity-60" />}
