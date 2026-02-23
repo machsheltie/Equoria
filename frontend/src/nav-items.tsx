@@ -8,6 +8,7 @@ import {
   Globe,
   Settings,
   BarChart3,
+  PersonStanding,
 } from 'lucide-react';
 import Index from './pages/Index';
 import TrainingPage from './pages/TrainingPage';
@@ -18,6 +19,7 @@ import CompetitionBrowserPage from './pages/CompetitionBrowserPage';
 import WorldHubPage from './pages/WorldHubPage';
 import SettingsPage from './pages/SettingsPage';
 import LeaderboardsPage from './pages/LeaderboardsPage';
+import RidersPage from './pages/RidersPage';
 
 /**
  * Navigation items for the Equoria application
@@ -59,6 +61,12 @@ export const navItems = [
     to: '/world',
     icon: <Globe className="h-4 w-4" />,
     page: <WorldHubPage />,
+  },
+  {
+    title: 'Riders',
+    to: '/riders',
+    icon: <PersonStanding className="h-4 w-4" />,
+    page: <RidersPage />,
   },
   {
     title: 'Leaderboards',

@@ -94,7 +94,7 @@ const worldLocations: WorldLocation[] = [
     name: 'Riders',
     description: 'Find skilled jockeys and riders to partner with your competition horses.',
     icon: '🏇',
-    href: '/competitions',
+    href: '/riders',
     accentColor: 'border-orange-400/40 hover:border-orange-400/70',
     bgColor: 'from-orange-900/30 to-orange-800/10',
   },

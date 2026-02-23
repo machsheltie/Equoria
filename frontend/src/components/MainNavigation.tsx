@@ -53,6 +53,7 @@ const MainNavigation: React.FC = () => {
     { name: 'Competitions', href: '/competitions', icon: '🏆' },
     { name: 'Breeding', href: '/breeding', icon: '🧬' },
     { name: 'World', href: '/world', icon: '🌍' },
+    { name: 'Riders', href: '/riders', icon: '🏇' },
     { name: 'Leaderboards', href: '/leaderboards', icon: '📊' },
   ];
 

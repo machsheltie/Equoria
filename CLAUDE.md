@@ -1,6 +1,6 @@
 # Equoria - Claude Code Configuration
 
-**Version:** 2.3.0
+**Version:** 2.4.0
 **Last Updated:** 2026-02-23
 **Project:** Web browser-based horse breeding simulation game
 
@@ -8,20 +8,20 @@
 
 ## 🎯 Current Sprint
 
-### Active Priority: Epic 9B — Navigation & World Hub ✅ COMPLETE
+### Active Priority: Epic 9C — Rider System ✅ COMPLETE
 
-- **Status:** Epic 9B (Navigation & World Hub) → Complete ✅
-- **Next:** Epic 9C or 10 — TBD
+- **Status:** Epic 9C (Rider System) → Complete ✅
+- **Next:** Epic 10 — TBD
 - **Branch:** `cleanup-session-2026-01-30`
 
 ### Project Status
 
 - ✅ **Backend:** 100% complete — 3530+ tests passing, pre-push hook active
-- ✅ **Epics 1–9B:** All complete (API integration + technical health + nav/world hub done)
+- ✅ **Epics 1–9C:** All complete (API integration + technical health + nav/world hub + riders done)
 - ✅ **E2E Tests:** Playwright suite passing (core-game-flows, auth, breeding)
-- ⚠️ **Frontend:** ~75% complete (React 19 + TypeScript in `/frontend/`)
+- ⚠️ **Frontend:** ~78% complete (React 19 + TypeScript in `/frontend/`)
 - ⚠️ **Deployment:** 10% complete
-- 🔄 **Epic 9C/10:** TBD
+- 🔄 **Epic 10:** TBD
 
 ### Session Start Checklist
 
@@ -159,7 +159,15 @@ equoria/
 3. **9B-3** ✅ Horse Care Status Strip — `careStatus` prop on HorseCard
 4. **9B-4** ✅ Settings Page (`/settings`) — Account / Notifications / Display
 
-### Next Epic: TBD (Epic 9C or 10)
+### Epic 9C: Rider System ✅ COMPLETE
+
+1. **9C-1** ✅ Rider Type System — 4 personalities, 3 skill levels, personality badge/display
+2. **9C-2** ✅ Rider Dashboard — slot counter, rider cards, AssignRiderModal
+3. **9C-3** ✅ Career & Discovery — XP/level progress, 3 discovery categories (6 slots)
+4. **9C-4** ✅ Rider Marketplace — RiderList with filter/sort, hire flow, RidersPage
+5. **9C-5** ⏭️ Wire to Live API — deferred (no backend rider endpoints yet)
+
+### Next Epic: TBD (Epic 10)
 
 ---
 

@@ -764,6 +764,79 @@ export const horsesApi = {
 };
 
 /**
+ * Rider interfaces (Epic 9C)
+ */
+interface Rider {
+  id: number;
+  name: string;
+  firstName: string;
+  lastName: string;
+  skillLevel: string; // rookie | developing | experienced
+  personality: string; // daring | methodical | intuitive | competitive
+  experience: number; // total XP
+  level: number; // 1–10
+  weeklyRate: number;
+  careerWeeks: number;
+  totalWins: number;
+  prestige: number; // 0–100
+  isActive: boolean;
+  assignedHorseId?: number | null;
+  bio: string;
+}
+
+interface RiderAssignment {
+  id: number;
+  riderId: number;
+  horseId: number;
+  horseName: string;
+  startDate: string;
+  isActive: boolean;
+}
+
+interface MarketplaceRider {
+  marketplaceId: string;
+  firstName: string;
+  lastName: string;
+  skillLevel: string;
+  personality: string;
+  experience: number;
+  weeklyRate: number;
+  bio: string;
+  availability: boolean;
+  knownAffinities: string[]; // only visible for 'experienced' skill level
+}
+
+interface RiderMarketplaceData {
+  riders: MarketplaceRider[];
+  lastRefresh: string;
+  nextFreeRefresh: string;
+  refreshCost: number;
+  canRefreshFree: boolean;
+}
+
+interface RiderDiscoveryData {
+  riderId: number;
+  totalSlots: number;
+  discoveredCount: number;
+  slots: Array<{
+    slotIndex: number;
+    category: string;
+    discovered: boolean;
+    trait?: {
+      id: string;
+      category: string;
+      label: string;
+      value: string;
+      strength: string;
+      discoveredAt?: string;
+      icon: string;
+      description: string;
+    };
+  }>;
+  nextDiscoveryAt?: number;
+}
+
+/**
  * Groom API surface
  */
 export const groomsApi = {
@@ -788,6 +861,38 @@ export const groomsApi = {
   }) => apiClient.post<{ success: boolean }>('/api/groom-assignments', data),
   deleteAssignment: (assignmentId: number) =>
     apiClient.delete<{ success: boolean }>(`/api/groom-assignments/${assignmentId}`),
+};
+
+/**
+ * Rider API surface (Epic 9C)
+ *
+ * Path registry:
+ *   GET  /api/riders/user/:userId       → Rider[]
+ *   GET  /api/riders/assignments        → RiderAssignment[]
+ *   GET  /api/riders/marketplace        → RiderMarketplaceData
+ *   POST /api/riders/marketplace/hire   → { success, data: { rider, cost } }
+ *   POST /api/riders/marketplace/refresh → RiderMarketplaceData
+ *   POST /api/riders/assignments        → { success }
+ *   DELETE /api/riders/assignments/:id  → { success }
+ *   GET  /api/riders/:id/discovery      → RiderDiscoveryData
+ */
+export const ridersApi = {
+  getUserRiders: (userId: string | number) => apiClient.get<Rider[]>(`/api/riders/user/${userId}`),
+  getAssignments: () => apiClient.get<RiderAssignment[]>('/api/riders/assignments'),
+  getMarketplace: () => apiClient.get<RiderMarketplaceData>('/api/riders/marketplace'),
+  hireRider: (marketplaceId: string) =>
+    apiClient.post<{
+      success: boolean;
+      data: { rider: Rider; cost: number; remainingMoney: number };
+    }>('/api/riders/marketplace/hire', { marketplaceId }),
+  refreshMarketplace: (force: boolean = false) =>
+    apiClient.post<RiderMarketplaceData>('/api/riders/marketplace/refresh', { force }),
+  assignRider: (data: { riderId: number; horseId: number; notes?: string }) =>
+    apiClient.post<{ success: boolean }>('/api/riders/assignments', data),
+  deleteAssignment: (assignmentId: number) =>
+    apiClient.delete<{ success: boolean }>(`/api/riders/assignments/${assignmentId}`),
+  getDiscovery: (riderId: number) =>
+    apiClient.get<RiderDiscoveryData>(`/api/riders/${riderId}/discovery`),
 };
 
 /**
@@ -1043,6 +1148,11 @@ export type {
   MarketplaceGroom,
   MarketplaceData,
   MarketplaceStats,
+  Rider,
+  RiderAssignment,
+  MarketplaceRider,
+  RiderMarketplaceData,
+  RiderDiscoveryData,
   RecentGains,
   SalarySummary,
   StatGain,

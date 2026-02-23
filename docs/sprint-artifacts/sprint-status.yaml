@@ -3309,18 +3309,98 @@ epic-9b:
       - Display has 3 toggle switches (reduced motion, high contrast, compact cards)
       - Sidebar nav with active section highlighting
 
+epic-9c:
+  title: 'Rider System'
+  status: completed
+  start_date: '2026-02-23'
+  completed_date: '2026-02-23'
+  story_file: 'docs/sprint-artifacts/9c-rider-system.md'
+
+  9c-1-rider-type-system:
+    title: 'Rider Type System & Personality Framework'
+    status: completed
+    priority: P0
+    epic: '9c'
+    story: 1
+    prerequisites: []
+    created_date: '2026-02-23'
+    completed_date: '2026-02-23'
+    ac:
+      - 4 personality types (daring, methodical, intuitive, competitive)
+      - 3 skill levels (rookie/developing/experienced) with visibility rules
+      - RIDER_PERSONALITY_DATA record with affinities, badge/color classes
+      - RiderPersonalityBadge component (sm/md sizes)
+      - RiderPersonalityDisplay component (compact + expanded)
+
+  9c-2-rider-dashboard:
+    title: 'Rider Dashboard & Assignment Management'
+    status: completed
+    priority: P0
+    epic: '9c'
+    story: 2
+    prerequisites: [9c-1-rider-type-system]
+    created_date: '2026-02-23'
+    completed_date: '2026-02-23'
+    ac:
+      - MyRidersDashboard with slot counter + pip visualization
+      - Rider cards showing level, wins, career weeks
+      - AssignRiderModal with unassigned rider list
+      - RiderAssignmentCard with unassign button
+      - Warning banners for unassigned riders and approaching retirement
+
+  9c-3-career-discovery:
+    title: 'Career Lifecycle & Discovery Panels'
+    status: completed
+    priority: P0
+    epic: '9c'
+    story: 3
+    prerequisites: [9c-2-rider-dashboard]
+    created_date: '2026-02-23'
+    completed_date: '2026-02-23'
+    ac:
+      - riderCareer.ts with XP formula, retirement constants, milestone builder
+      - riderDiscovery.ts with 3 categories (discipline/temperament/gait), 6 slots
+      - RiderCareerPanel with XP progress bar, stats, retirement warning, legacy badge
+      - RiderDiscoveryPanel with slot grid and progress bar
+
+  9c-4-rider-marketplace:
+    title: 'Rider Marketplace (Hire Tab)'
+    status: completed
+    priority: P0
+    epic: '9c'
+    story: 4
+    prerequisites: [9c-1-rider-type-system]
+    created_date: '2026-02-23'
+    completed_date: '2026-02-23'
+    ac:
+      - RiderList with personality + skill level filter + sort
+      - 4-week upfront cost calculation per hire
+      - Known affinities visible for experienced riders only
+      - Low balance warning, empty state with retry button
+      - RidersPage with Hire/Manage tab toggle and breadcrumb
+
+  9c-5-wire-to-api:
+    title: 'Wire Rider Hooks to Live API'
+    status: deferred
+    priority: P1
+    epic: '9c'
+    story: 5
+    prerequisites: []
+    created_date: '2026-02-23'
+    deferred_reason: 'Backend rider endpoints not yet implemented. Frontend hooks point to expected /api/riders/* paths.'
+
 # Summary
 summary:
-  total_epics: 10
-  total_stories: 54
-  p0_stories: 35
+  total_epics: 11
+  total_stories: 58
+  p0_stories: 39
   p1_stories: 15
   p2_stories: 4
   fr_coverage: '44/44 (100%)'
-  current_epic: '9b'
+  current_epic: '9c'
   current_story: 'none'
-  epics_completed: 10
-  stories_completed: 54
+  epics_completed: 11
+  stories_completed: 58
   stories_in_progress: 0
   stories_ready_for_dev: 0
   stories_backlog: 0
@@ -3334,4 +3414,5 @@ summary:
   epic_7_retro_file: 'docs/sprint-artifacts/epic-7-retro-2026-02-17.md'
   epic_9a_completed_date: '2026-02-23'
   epic_9b_completed_date: '2026-02-23'
-  next_milestone: 'Epic 9C or 10: TBD'
+  epic_9c_completed_date: '2026-02-23'
+  next_milestone: 'Epic 10: TBD'
