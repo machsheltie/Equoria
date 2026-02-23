@@ -3238,18 +3238,89 @@ action_items:
     epic: '9a'
     created_date: '2026-02-18'
 
+# Epic 9B: Navigation & World Hub
+epic-9b:
+  title: 'Navigation & World Hub'
+  status: completed
+  start_date: '2026-02-23'
+  completed_date: '2026-02-23'
+
+  9b-1-world-hub-page:
+    title: 'World Hub Page (/world)'
+    status: completed
+    priority: P1
+    epic: '9b'
+    story: 1
+    prerequisites: []
+    created_date: '2026-02-23'
+    completed_date: '2026-02-23'
+    ac:
+      - /world route renders WorldHubPage
+      - 8 location cards (Vet, Farrier, Tack Shop, Feed Shop, Training Center, Grooms, Riders, Breeding Specialist)
+      - Each card has name, description, icon, visit link, optional alert badge
+      - Responsive grid (1/2/4 columns)
+
+  9b-2-navigation-restructure:
+    title: 'Navigation Restructure'
+    status: completed
+    priority: P1
+    epic: '9b'
+    story: 2
+    prerequisites: []
+    created_date: '2026-02-23'
+    completed_date: '2026-02-23'
+    ac:
+      - MainNavigation routes fixed (Home->/, Competitions->/competitions)
+      - Broken Genetics and Analytics links removed
+      - World (/world) and Leaderboards (/leaderboards) added to nav
+      - isActiveRoute logic fixed for / root path
+      - nav-items.tsx updated with World, Leaderboards, Settings routes
+
+  9b-3-horse-care-status-strip:
+    title: 'Horse Care Status Strip'
+    status: completed
+    priority: P1
+    epic: '9b'
+    story: 3
+    prerequisites: []
+    created_date: '2026-02-23'
+    completed_date: '2026-02-23'
+    ac:
+      - HorseCard accepts optional careStatus prop
+      - Care strip shows Last Shod, Last Fed, Last Trained dates
+      - Last Foaled shown only when sex === mare
+      - Dates formatted as Today / Nd ago / Never
+      - Strip hidden when careStatus prop not provided
+
+  9b-4-settings-page:
+    title: 'Settings Page (/settings)'
+    status: completed
+    priority: P2
+    epic: '9b'
+    story: 4
+    prerequisites: []
+    created_date: '2026-02-23'
+    completed_date: '2026-02-23'
+    ac:
+      - /settings route renders SettingsPage
+      - Three sections: Account, Notifications, Display
+      - Account has username/email fields and password change
+      - Notifications has 6 toggle switches with labels/descriptions
+      - Display has 3 toggle switches (reduced motion, high contrast, compact cards)
+      - Sidebar nav with active section highlighting
+
 # Summary
 summary:
-  total_epics: 9
-  total_stories: 50
+  total_epics: 10
+  total_stories: 54
   p0_stories: 35
-  p1_stories: 12
-  p2_stories: 3
+  p1_stories: 15
+  p2_stories: 4
   fr_coverage: '44/44 (100%)'
   current_epic: '9b'
   current_story: 'none'
-  epics_completed: 9
-  stories_completed: 50
+  epics_completed: 10
+  stories_completed: 54
   stories_in_progress: 0
   stories_ready_for_dev: 0
   stories_backlog: 0
@@ -3258,9 +3329,9 @@ summary:
   action_items_completed: 11
   action_items_pending: 12
   action_items_blocking: 4
-  # Milestone: ALL 8 EPICS COMPLETE - Epic 9A (Technical Health Sprint) starting
   epic_7_completed_date: '2026-02-17'
   epic_7_total_tests: 464
   epic_7_retro_file: 'docs/sprint-artifacts/epic-7-retro-2026-02-17.md'
-  epic_8_start_date: '2026-02-17'
-  next_milestone: 'Epic 8: API Integration Layer - Story 8.1 Authentication End-to-End'
+  epic_9a_completed_date: '2026-02-23'
+  epic_9b_completed_date: '2026-02-23'
+  next_milestone: 'Epic 9C or 10: TBD'

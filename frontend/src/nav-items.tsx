@@ -1,9 +1,23 @@
-import { Home, Dumbbell, HeartHandshake, Warehouse, User } from 'lucide-react';
+import {
+  Home,
+  Dumbbell,
+  HeartHandshake,
+  Warehouse,
+  User,
+  Trophy,
+  Globe,
+  Settings,
+  BarChart3,
+} from 'lucide-react';
 import Index from './pages/Index';
 import TrainingPage from './pages/TrainingPage';
 import BreedingPage from './pages/BreedingPage';
 import StableView from './pages/StableView';
 import ProfilePage from './pages/ProfilePage';
+import CompetitionBrowserPage from './pages/CompetitionBrowserPage';
+import WorldHubPage from './pages/WorldHubPage';
+import SettingsPage from './pages/SettingsPage';
+import LeaderboardsPage from './pages/LeaderboardsPage';
 
 /**
  * Navigation items for the Equoria application
@@ -33,6 +47,30 @@ export const navItems = [
     to: '/breeding',
     icon: <HeartHandshake className="h-4 w-4" />,
     page: <BreedingPage />,
+  },
+  {
+    title: 'Competitions',
+    to: '/competitions',
+    icon: <Trophy className="h-4 w-4" />,
+    page: <CompetitionBrowserPage />,
+  },
+  {
+    title: 'World',
+    to: '/world',
+    icon: <Globe className="h-4 w-4" />,
+    page: <WorldHubPage />,
+  },
+  {
+    title: 'Leaderboards',
+    to: '/leaderboards',
+    icon: <BarChart3 className="h-4 w-4" />,
+    page: <LeaderboardsPage />,
+  },
+  {
+    title: 'Settings',
+    to: '/settings',
+    icon: <Settings className="h-4 w-4" />,
+    page: <SettingsPage />,
   },
   {
     title: 'Profile',

@@ -1,6 +1,6 @@
 # Equoria - Claude Code Configuration
 
-**Version:** 2.2.0
+**Version:** 2.3.0
 **Last Updated:** 2026-02-23
 **Project:** Web browser-based horse breeding simulation game
 
@@ -8,20 +8,20 @@
 
 ## 🎯 Current Sprint
 
-### Active Priority: Epic 9B — Navigation & World Hub
+### Active Priority: Epic 9B — Navigation & World Hub ✅ COMPLETE
 
-- **Status:** Epic 9A (Technical Health Sprint) → Complete ✅
-- **Next:** Epic 9B — Navigation restructure, World Hub, Horse Care Strip
+- **Status:** Epic 9B (Navigation & World Hub) → Complete ✅
+- **Next:** Epic 9C or 10 — TBD
 - **Branch:** `cleanup-session-2026-01-30`
 
 ### Project Status
 
 - ✅ **Backend:** 100% complete — 3530+ tests passing, pre-push hook active
-- ✅ **Epics 1–9A:** All complete (API integration + technical health done)
+- ✅ **Epics 1–9B:** All complete (API integration + technical health + nav/world hub done)
 - ✅ **E2E Tests:** Playwright suite passing (core-game-flows, auth, breeding)
-- ⚠️ **Frontend:** ~70% complete (React 19 + TypeScript in `/frontend/`)
+- ⚠️ **Frontend:** ~75% complete (React 19 + TypeScript in `/frontend/`)
 - ⚠️ **Deployment:** 10% complete
-- 🔄 **Epic 9B:** Navigation & World Hub (next)
+- 🔄 **Epic 9C/10:** TBD
 
 ### Session Start Checklist
 
@@ -152,13 +152,14 @@ equoria/
 3. **9A-3** ✅ Project Health Pass (CLAUDE.md, sprint-status sync)
 4. **Quick Actions Bundle** ✅ AI-7-2, AI-7-3, AI-7-4, AI-8-1
 
-### Current Epic (9B): Navigation & World Hub
+### Epic 9B: Navigation & World Hub ✅ COMPLETE
 
-1. World Hub Page (8 locations)
-2. Navigation restructure (place-based vs category-based)
-3. Horse Care Status Strip on every horse card
-4. Settings Page
-5. Wire to live API
+1. **9B-1** ✅ World Hub Page (`/world`) — 8 location cards
+2. **9B-2** ✅ Navigation Restructure — fixed routes, added World/Leaderboards/Settings
+3. **9B-3** ✅ Horse Care Status Strip — `careStatus` prop on HorseCard
+4. **9B-4** ✅ Settings Page (`/settings`) — Account / Notifications / Display
+
+### Next Epic: TBD (Epic 9C or 10)
 
 ---
 

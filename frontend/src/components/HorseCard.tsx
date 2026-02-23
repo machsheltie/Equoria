@@ -1,11 +1,23 @@
-import React, { useState } from 'react';
-import { Clock, Zap, Shield, Heart, Star, Trophy } from 'lucide-react';
+import React from 'react';
+import { Clock, Zap, Shield, Heart, Star, Trophy, Sparkles } from 'lucide-react';
+import { cn } from '@/lib/utils';
+import { Card, CardContent } from '@/components/ui/card';
+import { Badge } from '@/components/ui/badge';
+import { Progress } from '@/components/ui/progress';
+
+interface CareStatus {
+  lastShod?: Date | string | null;
+  lastFed?: Date | string | null;
+  lastTrained?: Date | string | null;
+  lastFoaled?: Date | string | null;
+}
 
 interface HorseCardProps {
   horseName: string;
   horseImage?: string;
   age: number;
   discipline: string;
+  sex?: 'mare' | 'stallion' | 'gelding' | 'colt' | 'filly';
   isLegendary?: boolean;
   cooldownHours?: number;
   stats?: {
@@ -16,14 +28,26 @@ interface HorseCardProps {
     intelligence: number;
     health: number;
   };
+  careStatus?: CareStatus;
   onClick?: () => void;
+  className?: string;
 }
+
+const formatCareDate = (date: Date | string | null | undefined): string => {
+  if (!date) return 'Never';
+  const d = typeof date === 'string' ? new Date(date) : date;
+  const daysAgo = Math.floor((Date.now() - d.getTime()) / (1000 * 60 * 60 * 24));
+  if (daysAgo === 0) return 'Today';
+  if (daysAgo === 1) return '1d ago';
+  return `${daysAgo}d ago`;
+};
 
 const HorseCard = ({
   horseName,
   horseImage = '/placeholder.svg',
   age,
   discipline,
+  sex,
   isLegendary = false,
   cooldownHours = 0,
   stats = {
@@ -34,146 +58,154 @@ const HorseCard = ({
     intelligence: 76,
     health: 95,
   },
+  careStatus,
   onClick,
+  className,
 }: HorseCardProps) => {
-  const [isHovered, setIsHovered] = useState(false);
-  const [hoveredStat, setHoveredStat] = useState<string | null>(null);
-
   const getStatIcon = (statName: string) => {
     switch (statName) {
       case 'speed':
-        return <Zap className="w-4 h-4" />;
+        return <Zap className="w-3 h-3" />;
       case 'stamina':
-        return <Heart className="w-4 h-4" />;
+        return <Heart className="w-3 h-3" />;
       case 'agility':
-        return <Star className="w-4 h-4" />;
+        return <Star className="w-3 h-3" />;
       case 'strength':
-        return <Shield className="w-4 h-4" />;
+        return <Shield className="w-3 h-3" />;
       case 'intelligence':
-        return <Trophy className="w-4 h-4" />;
+        return <Trophy className="w-3 h-3" />;
       case 'health':
-        return <Heart className="w-4 h-4" />;
+        return <Heart className="w-3 h-3" />;
       default:
-        return <Star className="w-4 h-4" />;
+        return <Star className="w-3 h-3" />;
     }
   };
 
   const getStatColor = (value: number) => {
-    if (value >= 90) return 'text-burnished-gold';
-    if (value >= 75) return 'text-forest-green';
-    if (value >= 60) return 'text-aged-bronze';
-    return 'text-mystic-silver';
+    if (value >= 90) return 'text-celestial-gold';
+    if (value >= 75) return 'text-emerald-400';
+    if (value >= 60) return 'text-blue-400';
+    return 'text-white/60';
   };
 
   return (
-    <div
-      className={`relative w-full max-w-sm mx-auto transition-all duration-300 cursor-pointer ${
-        isHovered ? 'transform -translate-y-1' : ''
-      }`}
-      onMouseEnter={() => setIsHovered(true)}
-      onMouseLeave={() => setIsHovered(false)}
+    <Card
+      className={cn(
+        'group relative overflow-hidden transition-all duration-300 hover:shadow-lg cursor-pointer border-white/10 bg-black/40 backdrop-blur-md',
+        isLegendary
+          ? 'border-celestial-gold/50 shadow-[0_0_15px_rgba(255,215,0,0.15)]'
+          : 'hover:border-white/20',
+        className
+      )}
       onClick={onClick}
     >
-      {/* Legendary gem pulse effect */}
-      {isLegendary && (
-        <div className="absolute -top-2 -right-2 z-20">
-          <div className="w-8 h-8 bg-gradient-to-br from-burnished-gold to-aged-bronze rounded-full border-2 border-parchment magical-pulse">
-            <div className="absolute inset-1 bg-gradient-to-br from-burnished-gold/60 to-transparent rounded-full" />
-            <div className="absolute inset-0 sparkle-trail rounded-full" />
-          </div>
-        </div>
-      )}
+      <CardContent className="p-0">
+        {/* Image Section */}
+        <div className="relative h-48 w-full overflow-hidden">
+          <div className="absolute inset-0 bg-gradient-to-t from-black/80 via-transparent to-transparent z-10" />
+          <img
+            src={horseImage}
+            alt={horseName}
+            className="h-full w-full object-cover transition-transform duration-500 group-hover:scale-110"
+          />
 
-      {/* Outer gold border */}
-      <div
-        className={`absolute -inset-1 bg-gradient-to-br from-burnished-gold via-aged-bronze to-burnished-gold rounded-lg p-1 ${
-          isHovered ? 'magical-glow' : ''
-        }`}
-      >
-        <div className="absolute inset-0 parchment-texture rounded-lg" />
-      </div>
-
-      {/* Main card */}
-      <div className="relative bg-parchment parchment-texture rounded-lg p-4 h-48 border border-aged-bronze overflow-hidden">
-        {/* Embossed crest */}
-        <div className="absolute top-2 left-2 w-8 h-8 bg-gradient-to-br from-aged-bronze to-saddle-leather rounded-full border border-burnished-gold opacity-80">
-          <div className="absolute inset-1 bg-gradient-to-br from-burnished-gold/30 to-transparent rounded-full" />
-        </div>
-
-        {/* Horse image */}
-        <div className="relative mb-3">
-          <div className="w-20 h-16 mx-auto rounded border border-aged-bronze overflow-hidden bg-mystic-silver/20">
-            <img src={horseImage} alt={horseName} className="w-full h-full object-cover" />
-          </div>
-
-          {/* Cooldown timer */}
-          {cooldownHours > 0 && (
-            <div className="absolute -bottom-1 left-1/2 transform -translate-x-1/2">
-              <div className="bg-aged-bronze text-parchment px-2 py-1 rounded-full flex items-center space-x-1 text-xs">
-                <Clock className="w-3 h-3" />
-                <span>{cooldownHours}h</span>
-              </div>
+          {/* Legend Badge */}
+          {isLegendary && (
+            <div className="absolute top-2 right-2 z-20">
+              <Badge
+                variant="secondary"
+                className="bg-celestial-gold/20 text-celestial-gold border-celestial-gold/50 backdrop-blur-md"
+              >
+                <Sparkles className="w-3 h-3 mr-1" />
+                Legendary
+              </Badge>
             </div>
           )}
-        </div>
 
-        {/* Horse info */}
-        <div className="text-center mb-3">
-          <h3
-            className="fantasy-title text-lg text-midnight-ink mb-1 leading-tight"
-            style={{
-              textShadow: '1px 1px 2px rgba(214, 166, 74, 0.3)',
-              color: '#1F1B16',
-            }}
-          >
-            {horseName}
-          </h3>
-          <div className="flex justify-center items-center space-x-2 text-xs">
-            <span className="fantasy-body text-aged-bronze">Age {age}</span>
-            <div className="w-1 h-1 bg-aged-bronze rounded-full" />
-            <span className="fantasy-body text-aged-bronze">{discipline}</span>
+          {/* Cooldown */}
+          {cooldownHours > 0 && (
+            <div className="absolute top-2 left-2 z-20">
+              <Badge
+                variant="secondary"
+                className="bg-black/60 text-white border-white/10 backdrop-blur-md"
+              >
+                <Clock className="w-3 h-3 mr-1" />
+                {cooldownHours}h
+              </Badge>
+            </div>
+          )}
+
+          {/* Name & Basic Info Overlay */}
+          <div className="absolute bottom-0 left-0 right-0 p-4 z-20">
+            <h3 className="text-lg font-bold text-white mb-1 leading-none tracking-tight">
+              {horseName}
+            </h3>
+            <div className="flex items-center space-x-2 text-xs text-white/80">
+              <span className="bg-white/10 px-1.5 py-0.5 rounded backdrop-blur-sm">
+                {discipline}
+              </span>
+              <span>•</span>
+              <span>{age} years</span>
+            </div>
           </div>
         </div>
 
-        {/* Stats grid */}
-        <div className="grid grid-cols-6 gap-2 mt-auto">
-          {Object.entries(stats).map(([statName, value]) => (
-            <div
-              key={statName}
-              className="relative flex flex-col items-center group"
-              onMouseEnter={() => setHoveredStat(statName)}
-              onMouseLeave={() => setHoveredStat(null)}
-            >
-              <div
-                className={`transition-all duration-200 ${getStatColor(value)} ${
-                  hoveredStat === statName ? 'scale-110 magical-glow' : ''
-                }`}
-              >
-                {getStatIcon(statName)}
-              </div>
-              <span className="text-xs fantasy-caption text-midnight-ink mt-1">{value}</span>
-
-              {/* Tooltip */}
-              {hoveredStat === statName && (
-                <div className="absolute bottom-full left-1/2 transform -translate-x-1/2 mb-2 z-30">
-                  <div className="bg-midnight-ink text-parchment px-2 py-1 rounded text-xs fantasy-body shadow-lg whitespace-nowrap">
-                    {statName.charAt(0).toUpperCase() + statName.slice(1)}: {value}
-                    <div className="absolute top-full left-1/2 transform -translate-x-1/2">
-                      <div className="border-4 border-transparent border-t-midnight-ink" />
-                    </div>
-                  </div>
+        {/* Stats Grid */}
+        <div className="grid grid-cols-3 gap-2 p-3 bg-white/5">
+          {Object.entries(stats)
+            .slice(0, 3)
+            .map(([statName, value]) => (
+              <div key={statName} className="flex flex-col gap-1">
+                <div className="flex items-center justify-between text-[10px] uppercase tracking-wider text-white/60">
+                  <span className="flex items-center gap-1">
+                    {getStatIcon(statName)}
+                    {statName.slice(0, 3)}
+                  </span>
+                  <span className={getStatColor(value)}>{value}</span>
                 </div>
-              )}
-            </div>
-          ))}
+                <Progress
+                  value={value}
+                  className="h-1 bg-white/10"
+                  indicatorClassName={cn(
+                    value >= 90
+                      ? 'bg-celestial-gold'
+                      : value >= 75
+                        ? 'bg-emerald-500'
+                        : 'bg-blue-500'
+                  )}
+                />
+              </div>
+            ))}
         </div>
 
-        {/* Decorative corner flourishes */}
-        <div className="absolute top-1 right-1 w-4 h-4 border-r border-t border-burnished-gold opacity-40" />
-        <div className="absolute bottom-1 left-1 w-4 h-4 border-l border-b border-burnished-gold opacity-40" />
-        <div className="absolute bottom-1 right-1 w-4 h-4 border-r border-b border-burnished-gold opacity-40" />
-      </div>
-    </div>
+        {/* Care Status Strip */}
+        {careStatus && (
+          <div
+            className="grid grid-cols-2 gap-x-3 gap-y-1 px-3 py-2 border-t border-white/5 bg-black/20"
+            data-testid="care-status-strip"
+          >
+            <div className="flex items-center justify-between text-[10px] text-white/50">
+              <span>🔨 Shod</span>
+              <span className="text-white/70">{formatCareDate(careStatus.lastShod)}</span>
+            </div>
+            <div className="flex items-center justify-between text-[10px] text-white/50">
+              <span>🌾 Fed</span>
+              <span className="text-white/70">{formatCareDate(careStatus.lastFed)}</span>
+            </div>
+            <div className="flex items-center justify-between text-[10px] text-white/50">
+              <span>🏋️ Trained</span>
+              <span className="text-white/70">{formatCareDate(careStatus.lastTrained)}</span>
+            </div>
+            {sex === 'mare' && (
+              <div className="flex items-center justify-between text-[10px] text-white/50">
+                <span>🐣 Foaled</span>
+                <span className="text-white/70">{formatCareDate(careStatus.lastFoaled)}</span>
+              </div>
+            )}
+          </div>
+        )}
+      </CardContent>
+    </Card>
   );
 };
 
