@@ -20,10 +20,17 @@ import WorldHubPage from './pages/WorldHubPage';
 import SettingsPage from './pages/SettingsPage';
 import LeaderboardsPage from './pages/LeaderboardsPage';
 import RidersPage from './pages/RidersPage';
+import GroomsPage from './pages/GroomsPage';
+import VeterinarianPage from './pages/VeterinarianPage';
+import FarrierPage from './pages/FarrierPage';
+import FeedShopPage from './pages/FeedShopPage';
+import TackShopPage from './pages/TackShopPage';
 
 /**
  * Navigation items for the Equoria application
- * Defines the main navigation structure with routes, icons, and page components
+ * Defines the main navigation structure with routes, icons, and page components.
+ * World sub-location routes (/vet, /farrier, /grooms, etc.) are registered here
+ * for App.tsx route mapping but do not appear in the main navigation bar.
  */
 export const navItems = [
   {
@@ -85,6 +92,37 @@ export const navItems = [
     to: '/profile',
     icon: <User className="h-4 w-4" />,
     page: <ProfilePage />,
+  },
+  // World sub-locations — routes only, not shown in main nav bar
+  {
+    title: 'Grooms',
+    to: '/grooms',
+    icon: null,
+    page: <GroomsPage />,
+  },
+  {
+    title: 'Vet Clinic',
+    to: '/vet',
+    icon: null,
+    page: <VeterinarianPage />,
+  },
+  {
+    title: 'Farrier',
+    to: '/farrier',
+    icon: null,
+    page: <FarrierPage />,
+  },
+  {
+    title: 'Feed Shop',
+    to: '/feed-shop',
+    icon: null,
+    page: <FeedShopPage />,
+  },
+  {
+    title: 'Tack Shop',
+    to: '/tack-shop',
+    icon: null,
+    page: <TackShopPage />,
   },
 ];
 

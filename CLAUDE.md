@@ -1,6 +1,6 @@
 # Equoria - Claude Code Configuration
 
-**Version:** 2.4.0
+**Version:** 2.5.0
 **Last Updated:** 2026-02-23
 **Project:** Web browser-based horse breeding simulation game
 
@@ -8,20 +8,31 @@
 
 ## 🎯 Current Sprint
 
-### Active Priority: Epic 9C — Rider System ✅ COMPLETE
+### Active Priority: Epic 10 — World Locations ✅ COMPLETE
 
-- **Status:** Epic 9C (Rider System) → Complete ✅
-- **Next:** Epic 10 — TBD
+- **Status:** Epic 10 (World Locations / Service Hubs) → Complete ✅
+- **Stories:** 10-1 Vet Clinic, 10-2 Farrier, 10-3 Feed Shop, 10-4 Tack Shop, Grooms Page (10-5 deferred)
+- **Next:** Epic 11 — Community Features
 - **Branch:** `cleanup-session-2026-01-30`
+
+### Epic 10 Deliverables
+
+- `VeterinarianPage.tsx` (`/vet`) — Health checks, treatments, genetics, certificates
+- `FarrierPage.tsx` (`/farrier`) — Hoof trim, shoeing, corrective, emergency removal
+- `FeedShopPage.tsx` (`/feed-shop`) — Basic feed, performance mix, supplements, diet plan
+- `TackShopPage.tsx` (`/tack-shop`) — Training/competition saddles + standard/competition bridles
+- `GroomsPage.tsx` (`/grooms`) — Wraps Epic 7 MyGroomsDashboard + GroomList components
+- `WorldHubPage.tsx` — 5 broken `/stable` hrefs fixed to correct routes
+- `nav-items.tsx` — 5 new World sub-location routes registered
 
 ### Project Status
 
 - ✅ **Backend:** 100% complete — 3530+ tests passing, pre-push hook active
-- ✅ **Epics 1–9C:** All complete (API integration + technical health + nav/world hub + riders done)
+- ✅ **Epics 1–10:** All complete (API integration + technical health + nav/world hub + riders + world locations)
 - ✅ **E2E Tests:** Playwright suite passing (core-game-flows, auth, breeding)
-- ⚠️ **Frontend:** ~78% complete (React 19 + TypeScript in `/frontend/`)
+- ⚠️ **Frontend:** ~82% complete (React 19 + TypeScript in `/frontend/`)
 - ⚠️ **Deployment:** 10% complete
-- 🔄 **Epic 10:** TBD
+- 🔄 **Epic 11:** Community Features (next)
 
 ### Session Start Checklist
 

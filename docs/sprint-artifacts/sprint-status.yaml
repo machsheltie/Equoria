@@ -3389,18 +3389,115 @@ epic-9c:
     created_date: '2026-02-23'
     deferred_reason: 'Backend rider endpoints not yet implemented. Frontend hooks point to expected /api/riders/* paths.'
 
+  # Epic 10: World Locations (Service Hubs) — COMPLETE
+  epic-10:
+    title: 'World Locations (Service Hubs)'
+    status: completed
+    completed_date: '2026-02-23'
+    priority: P1
+    story_file: 'docs/sprint-artifacts/10-world-locations.md'
+
+  10-1-vet-clinic:
+    title: 'Vet Clinic Page'
+    status: completed
+    priority: P0
+    epic: '10'
+    story: 1
+    prerequisites: []
+    created_date: '2026-02-23'
+    completed_date: '2026-02-23'
+    ac:
+      - '/vet route renders VeterinarianPage'
+      - World Hub Vet Clinic card links to /vet
+      - My Horses tab with empty state and stable link
+      - Services tab with 4 service cards (health-check, treatment, genetics, vetting-certificate)
+      - Tablist/tabpanel ARIA pattern, breadcrumb, back arrow
+
+  10-2-farrier:
+    title: 'Farrier Page'
+    status: completed
+    priority: P1
+    epic: '10'
+    story: 2
+    prerequisites: []
+    created_date: '2026-02-23'
+    completed_date: '2026-02-23'
+    ac:
+      - '/farrier route renders FarrierPage'
+      - World Hub Farrier card links to /farrier
+      - My Horses tab with empty state and stable link
+      - Services tab with 4 service cards (hoof-trim, standard-shoeing, corrective-shoeing, emergency-removal)
+      - Tablist/tabpanel ARIA pattern, breadcrumb, back arrow
+
+  10-3-feed-shop:
+    title: 'Feed Shop Page'
+    status: completed
+    priority: P1
+    epic: '10'
+    story: 3
+    prerequisites: []
+    created_date: '2026-02-23'
+    completed_date: '2026-02-23'
+    ac:
+      - '/feed-shop route renders FeedShopPage'
+      - World Hub Feed Shop card links to /feed-shop
+      - My Horses tab with empty state and stable link
+      - Shop tab with 4 items (basic-feed, performance-mix, vitamin-supplement, custom-diet-plan)
+      - Tablist/tabpanel ARIA pattern, breadcrumb, back arrow
+
+  10-4-tack-shop:
+    title: 'Tack Shop Page'
+    status: completed
+    priority: P1
+    epic: '10'
+    story: 4
+    prerequisites: []
+    created_date: '2026-02-23'
+    completed_date: '2026-02-23'
+    ac:
+      - '/tack-shop route renders TackShopPage'
+      - World Hub Tack Shop card links to /tack-shop
+      - My Horses tab with empty state and stable link
+      - Shop tab with saddles section (training, competition) and bridles section (standard, competition)
+      - Tablist/tabpanel ARIA pattern, breadcrumb, back arrow
+
+  10-grooms-page:
+    title: 'Grooms Page (World sub-location)'
+    status: completed
+    priority: P1
+    epic: '10'
+    prerequisites: []
+    created_date: '2026-02-23'
+    completed_date: '2026-02-23'
+    ac:
+      - '/grooms route renders GroomsPage'
+      - World Hub Grooms card links to /grooms
+      - Manage tab wraps MyGroomsDashboard (Epic 7 component)
+      - Hire tab wraps GroomList (Epic 7 component)
+      - Mirrors RidersPage pattern exactly
+
+  10-5-wire-to-api:
+    title: 'Wire World Locations to Live API'
+    status: deferred
+    priority: P1
+    epic: '10'
+    story: 5
+    prerequisites: []
+    created_date: '2026-02-23'
+    deferred_reason: 'Backend vet/farrier/feed-shop/tack-shop endpoints do not yet exist. All pages are mock-ready with disabled action buttons.'
+
 # Summary
 summary:
-  total_epics: 11
-  total_stories: 58
-  p0_stories: 39
-  p1_stories: 15
+  total_epics: 12
+  total_stories: 64
+  p0_stories: 40
+  p1_stories: 20
   p2_stories: 4
   fr_coverage: '44/44 (100%)'
-  current_epic: '9c'
+  current_epic: '10'
   current_story: 'none'
-  epics_completed: 11
-  stories_completed: 58
+  epics_completed: 12
+  stories_completed: 64
   stories_in_progress: 0
   stories_ready_for_dev: 0
   stories_backlog: 0
@@ -3415,4 +3512,5 @@ summary:
   epic_9a_completed_date: '2026-02-23'
   epic_9b_completed_date: '2026-02-23'
   epic_9c_completed_date: '2026-02-23'
-  next_milestone: 'Epic 10: TBD'
+  epic_10_completed_date: '2026-02-23'
+  next_milestone: 'Epic 11: Community Features'
