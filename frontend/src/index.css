@@ -1,50 +1,59 @@
-
 @tailwind base;
 @tailwind components;
 @tailwind utilities;
 
-/* Equoria Fantasy Design System */
+/* Equoria — Celestial Night Design System */
+/* Visual identity: deep midnight navy, gold titles, cobalt-blue CTAs, glassmorphism panels */
 
 @layer base {
   :root {
-    /* Fantasy Color Palette */
-    --forest-green: 44 74 42;
-    --aged-bronze: 106 78 45;
-    --burnished-gold: 214 166 74;
-    --saddle-leather: 139 94 60;
-    --parchment: 253 248 227;
-    --midnight-ink: 31 27 22;
-    --mystic-silver: 176 179 184;
-    
-    /* Base System Colors */
+    /* ── Celestial Night Palette ─────────────────────────────────────── */
+
+    /* Base surfaces */
+    --parchment: 10 22 40; /* midnight navy  — was beige, now #0a1628 */
+    --saddle-leather: 15 35 70; /* deep navy card — was brown,  now #0f2346 */
+    --midnight-ink: 220 235 255; /* near-white     — was dark,   now soft blue-white */
+
+    /* Accents */
+    --burnished-gold: 212 168 67; /* gold/amber title colour — unchanged */
+    --aged-bronze: 100 130 165; /* muted steel-blue — was brown */
+    --mystic-silver: 148 163 184; /* slate-blue muted text */
+
+    /* Primary action */
+    --forest-green: 37 99 235; /* cobalt blue — was dark green, now #2563eb */
+
+    /* Unused legacy — kept so tailwind tokens don't break */
+    --mystic-navy: 10 22 40;
+
+    /* ── Semantic System Tokens ──────────────────────────────────────── */
     --background: var(--parchment);
     --foreground: var(--midnight-ink);
-    
-    --card: var(--parchment);
+
+    --card: var(--saddle-leather);
     --card-foreground: var(--midnight-ink);
-    
-    --popover: var(--parchment);
+
+    --popover: var(--saddle-leather);
     --popover-foreground: var(--midnight-ink);
-    
+
     --primary: var(--forest-green);
-    --primary-foreground: var(--parchment);
-    
-    --secondary: var(--aged-bronze);
-    --secondary-foreground: var(--parchment);
-    
-    --muted: var(--mystic-silver);
-    --muted-foreground: var(--midnight-ink);
-    
+    --primary-foreground: 255 255 255;
+
+    --secondary: var(--saddle-leather);
+    --secondary-foreground: var(--midnight-ink);
+
+    --muted: 20 45 80;
+    --muted-foreground: var(--mystic-silver);
+
     --accent: var(--burnished-gold);
-    --accent-foreground: var(--midnight-ink);
-    
+    --accent-foreground: 10 22 40;
+
     --destructive: 0 84.2% 60.2%;
-    --destructive-foreground: var(--parchment);
-    
-    --border: var(--aged-bronze);
-    --input: var(--parchment);
-    --ring: var(--burnished-gold);
-    
+    --destructive-foreground: 255 255 255;
+
+    --border: 30 55 100;
+    --input: var(--saddle-leather);
+    --ring: var(--forest-green);
+
     --radius: 0.5rem;
   }
 }
@@ -53,118 +62,192 @@
   * {
     @apply border-border;
   }
-  
+
   body {
     @apply bg-background text-foreground;
     font-family: 'Jost', sans-serif;
-    background-image: 
-      radial-gradient(circle at 20% 20%, rgba(214, 166, 74, 0.1) 0%, transparent 50%),
-      radial-gradient(circle at 80% 80%, rgba(106, 78, 45, 0.1) 0%, transparent 50%),
-      linear-gradient(135deg, rgba(253, 248, 227, 0.9) 0%, rgba(214, 166, 74, 0.1) 100%);
+    /* Subtle starfield gradient */
+    background-image:
+      radial-gradient(ellipse at 20% 10%, rgba(37, 99, 235, 0.08) 0%, transparent 50%),
+      radial-gradient(ellipse at 80% 90%, rgba(212, 168, 67, 0.06) 0%, transparent 50%),
+      linear-gradient(180deg, rgb(10, 22, 40) 0%, rgb(6, 15, 28) 100%);
     background-attachment: fixed;
   }
 }
 
-/* Custom Typography Classes */
+/* ── Typography ─────────────────────────────────────────────────────── */
 @layer components {
   .fantasy-title {
     font-family: 'Yeseva One', serif;
     font-weight: 700;
     text-transform: uppercase;
     letter-spacing: 0.05em;
-    text-shadow: 2px 2px 4px rgba(0, 0, 0, 0.3);
+    text-shadow:
+      0 0 30px rgba(212, 168, 67, 0.6),
+      0 0 60px rgba(212, 168, 67, 0.2),
+      2px 2px 4px rgba(0, 0, 0, 0.8);
+    color: rgb(212, 168, 67);
   }
-  
+
   .fantasy-header {
     font-family: 'Cormorant Garamond', serif;
     font-weight: 600;
+    color: rgb(220, 235, 255);
   }
-  
+
   .fantasy-body {
     font-family: 'Jost', sans-serif;
     font-weight: 400;
+    color: rgb(220, 235, 255);
   }
-  
+
   .fantasy-caption {
     font-family: 'Jost', sans-serif;
     font-weight: 400;
     text-transform: uppercase;
     letter-spacing: 0.1em;
     font-size: 0.75rem;
+    color: rgb(148, 163, 184);
   }
 }
 
-/* Custom Component Styles */
+/* ── Glassmorphism panel ────────────────────────────────────────────── */
 @layer components {
+  .glass-panel {
+    background: rgba(10, 22, 40, 0.75);
+    backdrop-filter: blur(12px);
+    -webkit-backdrop-filter: blur(12px);
+    border: 1px solid rgba(37, 99, 235, 0.25);
+    border-radius: 1rem;
+    box-shadow:
+      0 8px 32px rgba(0, 0, 0, 0.5),
+      inset 0 1px 0 rgba(255, 255, 255, 0.05);
+  }
+
+  /* Legacy alias — keeps existing code working */
   .parchment-texture {
-    background-image: 
-      radial-gradient(circle at 25% 25%, rgba(214, 166, 74, 0.1) 0%, transparent 50%),
-      radial-gradient(circle at 75% 75%, rgba(106, 78, 45, 0.05) 0%, transparent 50%);
+    background: transparent;
     position: relative;
   }
-  
-  .parchment-texture::before {
-    content: '';
-    position: absolute;
-    top: 0;
-    left: 0;
-    right: 0;
-    bottom: 0;
-    background: 
-      repeating-linear-gradient(
-        45deg,
-        transparent,
-        transparent 2px,
-        rgba(214, 166, 74, 0.03) 2px,
-        rgba(214, 166, 74, 0.03) 4px
-      );
-    pointer-events: none;
-  }
-  
+
   .gold-border {
-    border: 2px solid rgb(var(--burnished-gold));
+    border: 1px solid rgba(212, 168, 67, 0.4);
     position: relative;
   }
-  
-  .gold-border::before {
-    content: '';
-    position: absolute;
-    top: 1px;
-    left: 1px;
-    right: 1px;
-    bottom: 1px;
-    border: 1px solid rgb(var(--aged-bronze));
-    border-radius: inherit;
-    pointer-events: none;
-  }
-  
+
+  /* Cobalt glow for primary buttons */
   .magical-glow {
-    box-shadow: 
-      0 0 10px rgba(214, 166, 74, 0.3),
-      0 0 20px rgba(214, 166, 74, 0.1),
-      inset 0 1px 0 rgba(214, 166, 74, 0.2);
+    box-shadow:
+      0 0 12px rgba(37, 99, 235, 0.5),
+      0 0 24px rgba(37, 99, 235, 0.2),
+      inset 0 1px 0 rgba(255, 255, 255, 0.1);
   }
-  
+
   .shimmer-effect {
     background: linear-gradient(
       90deg,
       transparent 0%,
-      rgba(214, 166, 74, 0.4) 50%,
+      rgba(255, 255, 255, 0.15) 50%,
       transparent 100%
     );
     background-size: 200% 100%;
     animation: shimmer 2s infinite;
   }
-  
+
   .scroll-entrance {
     animation: scrollEntrance 0.6s ease-out;
   }
+
+  /* Celestial input style */
+  .celestial-input {
+    background: rgba(6, 15, 28, 0.6);
+    border: 1px solid rgba(37, 99, 235, 0.35);
+    border-radius: 9999px;
+    color: rgb(220, 235, 255);
+    padding: 0.75rem 1rem 0.75rem 2.75rem;
+    width: 100%;
+    font-family: 'Jost', sans-serif;
+    transition:
+      border-color 0.2s,
+      box-shadow 0.2s;
+    outline: none;
+  }
+
+  .celestial-input::placeholder {
+    color: rgb(100, 130, 165);
+  }
+
+  .celestial-input:focus {
+    border-color: rgba(37, 99, 235, 0.7);
+    box-shadow: 0 0 0 3px rgba(37, 99, 235, 0.15);
+  }
+
+  /* Cobalt pill button */
+  .btn-cobalt {
+    background: linear-gradient(135deg, #2563eb 0%, #1d4ed8 100%);
+    border: none;
+    border-radius: 9999px;
+    color: #fff;
+    font-family: 'Jost', sans-serif;
+    font-weight: 600;
+    font-size: 1rem;
+    padding: 0.8rem 1rem;
+    width: 100%;
+    cursor: pointer;
+    transition:
+      opacity 0.2s,
+      transform 0.1s,
+      box-shadow 0.2s;
+    box-shadow: 0 4px 20px rgba(37, 99, 235, 0.45);
+    letter-spacing: 0.02em;
+  }
+
+  .btn-cobalt:hover:not(:disabled) {
+    opacity: 0.92;
+    box-shadow: 0 6px 28px rgba(37, 99, 235, 0.6);
+  }
+
+  .btn-cobalt:active:not(:disabled) {
+    transform: scale(0.98);
+  }
+
+  .btn-cobalt:disabled {
+    opacity: 0.5;
+    cursor: not-allowed;
+  }
+
+  /* Outlined secondary pill button */
+  .btn-outline-celestial {
+    background: rgba(10, 22, 40, 0.5);
+    border: 1px solid rgba(148, 163, 184, 0.4);
+    border-radius: 9999px;
+    color: rgb(220, 235, 255);
+    font-family: 'Jost', sans-serif;
+    font-weight: 500;
+    font-size: 1rem;
+    padding: 0.8rem 1rem;
+    width: 100%;
+    cursor: pointer;
+    transition:
+      background 0.2s,
+      border-color 0.2s;
+    letter-spacing: 0.02em;
+  }
+
+  .btn-outline-celestial:hover {
+    background: rgba(37, 99, 235, 0.1);
+    border-color: rgba(37, 99, 235, 0.5);
+  }
 }
 
-/* Animations */
+/* ── Animations ─────────────────────────────────────────────────────── */
 @keyframes shimmer {
-  0% { background-position: -200% 0; }
-  100% { background-position: 200% 0; }
+  0% {
+    background-position: -200% 0;
+  }
+  100% {
+    background-position: 200% 0;
+  }
 }
 
 @keyframes scrollEntrance {
@@ -179,15 +262,16 @@
 }
 
 @keyframes magicalPulse {
-  0%, 100% {
-    box-shadow: 
-      0 0 10px rgba(214, 166, 74, 0.3),
-      0 0 20px rgba(214, 166, 74, 0.1);
+  0%,
+  100% {
+    box-shadow:
+      0 0 10px rgba(37, 99, 235, 0.3),
+      0 0 20px rgba(37, 99, 235, 0.1);
   }
   50% {
-    box-shadow: 
-      0 0 20px rgba(214, 166, 74, 0.5),
-      0 0 40px rgba(214, 166, 74, 0.2);
+    box-shadow:
+      0 0 20px rgba(37, 99, 235, 0.5),
+      0 0 40px rgba(37, 99, 235, 0.2);
   }
 }
 

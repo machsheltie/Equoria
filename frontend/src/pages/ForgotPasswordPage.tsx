@@ -1,211 +1,193 @@
 /**
- * Forgot Password Page
+ * Forgot Password Page — Celestial Night design
  *
- * Allows users to request a password reset email.
- * Uses fantasy-themed components.
+ * Matches login/register visual style: full-bleed atmospheric
+ * background with glassmorphism card. Two states: form and success.
  */
 
 import React, { useState } from 'react';
-import { Link } from 'react-router-dom';
-import { Mail, ArrowLeft, CheckCircle, Sparkles } from 'lucide-react';
-import { FantasyInput } from '../components/FantasyForm';
-import FantasyButton from '../components/FantasyButton';
+import { Link, useNavigate } from 'react-router-dom';
+import { Mail, ArrowLeft, CheckCircle } from 'lucide-react';
 import { forgotPasswordSchema, type ForgotPasswordFormData } from '../lib/validation-schemas';
 import { useForgotPassword } from '../hooks/useAuth';
 
 const ForgotPasswordPage: React.FC = () => {
+  const navigate = useNavigate();
   const { mutate: forgotPassword, isPending, isSuccess, error, reset } = useForgotPassword();
 
-  // Form state
   const [email, setEmail] = useState('');
   const [validationErrors, setValidationErrors] = useState<Record<string, string>>({});
 
-  // Handle input change
   const handleChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     setEmail(e.target.value);
-    if (validationErrors.email) {
-      setValidationErrors({});
-    }
-    // Reset mutation state when user starts typing again
-    if (isSuccess || error) {
-      reset();
-    }
+    if (validationErrors.email) setValidationErrors({});
+    if (isSuccess || error) reset();
   };
 
-  // Handle form submission
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
-
-    // Validate with Zod
     const formData: ForgotPasswordFormData = { email };
     const result = forgotPasswordSchema.safeParse(formData);
     if (!result.success) {
       const errors: Record<string, string> = {};
       result.error.issues.forEach((issue) => {
-        if (issue.path[0]) {
-          errors[issue.path[0] as string] = issue.message;
-        }
+        if (issue.path[0]) errors[issue.path[0] as string] = issue.message;
       });
       setValidationErrors(errors);
       return;
     }
-
-    // Submit to API
     forgotPassword(result.data.email);
   };
 
   return (
-    <div className="min-h-screen bg-background flex flex-col">
-      {/* Header */}
-      <header className="bg-parchment parchment-texture border-b-2 border-aged-bronze shadow-lg relative">
-        <div className="flex items-center justify-center p-4">
+    <div
+      className="min-h-screen w-full flex flex-col items-center justify-center relative overflow-hidden"
+      style={{
+        backgroundImage: "url('/equoriacelestial.png')",
+        backgroundSize: 'cover',
+        backgroundPosition: 'center top',
+        backgroundRepeat: 'no-repeat',
+      }}
+    >
+      {/* Dark overlay */}
+      <div className="absolute inset-0 bg-black/40 pointer-events-none" />
+
+      {/* Content */}
+      <div className="relative z-10 w-full max-w-sm px-4 flex flex-col items-center gap-8">
+        {/* Title — must be a link per tests */}
+        <div className="text-center select-none">
           <Link
             to="/"
-            className="fantasy-title text-3xl text-midnight-ink hover:text-burnished-gold transition-colors"
+            className="fantasy-title text-5xl tracking-widest hover:opacity-90 transition-opacity"
           >
             Equoria
           </Link>
         </div>
-        <div className="absolute bottom-0 left-0 right-0 h-1 bg-gradient-to-r from-aged-bronze via-burnished-gold to-aged-bronze" />
-      </header>
 
-      {/* Main Content */}
-      <main className="flex-1 flex items-center justify-center p-4">
-        <div className="w-full max-w-md">
-          {/* Card */}
-          <div className="bg-parchment parchment-texture rounded-lg border-2 border-aged-bronze shadow-xl p-6 space-y-6">
-            {/* Back link */}
-            <Link
-              to="/login"
-              className="inline-flex items-center gap-2 text-aged-bronze hover:text-burnished-gold transition-colors text-sm"
-            >
-              <ArrowLeft className="w-4 h-4" />
-              Back to Login
-            </Link>
-
-            {isSuccess ? (
-              // Success State
-              <div className="text-center space-y-4">
-                <div className="flex justify-center">
-                  <div className="w-20 h-20 bg-gradient-to-br from-forest-green to-emerald-700 rounded-full border-2 border-burnished-gold flex items-center justify-center magical-glow">
-                    <CheckCircle className="w-10 h-10 text-parchment" />
-                  </div>
-                </div>
-                <h2 className="fantasy-header text-2xl text-midnight-ink">Check Your Inbox</h2>
-                <p className="fantasy-body text-aged-bronze">
-                  If an account exists with <strong>{email}</strong>, we've sent instructions to
-                  reset your password.
-                </p>
-                <p className="fantasy-body text-sm text-aged-bronze">
-                  The link will expire in 1 hour. Check your spam folder if you don't see it.
-                </p>
-                <div className="pt-4 space-y-3">
-                  <FantasyButton
-                    variant="secondary"
-                    className="w-full"
-                    onClick={() => {
-                      reset();
-                      setEmail('');
-                    }}
-                  >
-                    Try Another Email
-                  </FantasyButton>
-                  <Link to="/login">
-                    <FantasyButton variant="primary" className="w-full">
-                      Return to Login
-                    </FantasyButton>
-                  </Link>
+        {/* Glassmorphism card */}
+        <div className="glass-panel w-full px-6 py-7">
+          {isSuccess ? (
+            /* ── Success state ─────────────────────────────────── */
+            <div className="text-center space-y-4">
+              <div className="flex justify-center">
+                <div
+                  className="w-16 h-16 rounded-full flex items-center justify-center magical-glow"
+                  style={{ background: 'linear-gradient(135deg, #2563eb 0%, #1d4ed8 100%)' }}
+                >
+                  <CheckCircle className="w-8 h-8 text-white" />
                 </div>
               </div>
-            ) : (
-              // Form State
-              <>
-                {/* Title */}
-                <div className="text-center space-y-2">
-                  <div className="flex justify-center">
-                    <div className="w-16 h-16 bg-gradient-to-br from-burnished-gold to-aged-bronze rounded-full border-2 border-aged-bronze flex items-center justify-center">
-                      <Sparkles className="w-8 h-8 text-parchment" />
-                    </div>
-                  </div>
-                  <h2 className="fantasy-header text-2xl text-midnight-ink">Forgot Password?</h2>
-                  <p className="fantasy-body text-aged-bronze text-sm">
-                    No worries! Enter your email and we'll send you reset instructions.
-                  </p>
-                </div>
 
-                {/* API Error */}
-                {error && (
-                  <div className="bg-red-50 border border-red-200 rounded-lg p-3">
-                    <p className="text-red-700 text-sm text-center">
-                      {error.message || 'Something went wrong. Please try again.'}
-                    </p>
-                  </div>
-                )}
+              <h2 className="fantasy-header text-xl" style={{ color: 'rgb(212,168,67)' }}>
+                Check Your Inbox
+              </h2>
 
-                {/* Form */}
-                <form onSubmit={handleSubmit} className="space-y-4">
-                  {/* Email Field */}
-                  <div className="space-y-1">
-                    <label
-                      htmlFor="email"
-                      className="fantasy-body text-sm text-midnight-ink font-medium"
-                    >
-                      Email Address
-                    </label>
-                    <div className="relative">
-                      <Mail className="absolute left-3 top-1/2 -translate-y-1/2 w-5 h-5 text-aged-bronze" />
-                      <FantasyInput
-                        id="email"
-                        name="email"
-                        type="email"
-                        placeholder="your@email.com"
-                        value={email}
-                        onChange={handleChange}
-                        className="pl-10"
-                        autoComplete="email"
-                      />
-                    </div>
-                    {validationErrors.email && (
-                      <p className="text-red-600 text-xs">{validationErrors.email}</p>
-                    )}
-                  </div>
+              <p className="text-sm text-[rgb(220,235,255)]">
+                If an account exists with <strong className="text-white">{email}</strong>, we've
+                sent instructions to reset your password.
+              </p>
 
-                  {/* Submit Button */}
-                  <FantasyButton
-                    type="submit"
-                    variant="primary"
-                    size="large"
-                    className="w-full"
-                    disabled={isPending}
+              <p className="text-xs text-[rgb(148,163,184)]">
+                The link will expire in 1 hour. Check your spam folder if you don't see it.
+              </p>
+
+              <div className="space-y-2 pt-2">
+                <button
+                  type="button"
+                  className="btn-outline-celestial"
+                  onClick={() => {
+                    reset();
+                    setEmail('');
+                  }}
+                >
+                  Try Another Email
+                </button>
+                <button type="button" className="btn-cobalt" onClick={() => navigate('/login')}>
+                  Return to Login
+                </button>
+              </div>
+            </div>
+          ) : (
+            /* ── Form state ────────────────────────────────────── */
+            <div className="space-y-5">
+              {/* Back link */}
+              <Link
+                to="/login"
+                className="inline-flex items-center gap-1.5 text-xs text-[rgb(148,163,184)] hover:text-white transition-colors"
+              >
+                <ArrowLeft className="w-3.5 h-3.5" />
+                Back to Login
+              </Link>
+
+              {/* Heading */}
+              <div className="text-center space-y-1">
+                <h2 className="fantasy-header text-xl" style={{ color: 'rgb(212,168,67)' }}>
+                  Forgot Password?
+                </h2>
+                <p className="text-xs text-[rgb(148,163,184)]">
+                  No worries! Enter your email and we'll send you reset instructions.
+                </p>
+              </div>
+
+              {/* API error */}
+              {error && (
+                <p className="text-red-400 text-sm text-center">
+                  {error.message || 'Something went wrong. Please try again.'}
+                </p>
+              )}
+
+              <form onSubmit={handleSubmit} className="space-y-3">
+                {/* Email */}
+                <div className="space-y-1">
+                  <label
+                    htmlFor="email"
+                    className="block text-xs text-[rgb(148,163,184)] uppercase tracking-wider"
                   >
-                    {isPending ? 'Sending...' : 'Send Reset Link'}
-                  </FantasyButton>
-                </form>
-
-                {/* Register Link */}
-                <div className="text-center pt-4 border-t border-aged-bronze">
-                  <p className="fantasy-body text-sm text-aged-bronze">
-                    Remember your password?{' '}
-                    <Link
-                      to="/login"
-                      className="text-burnished-gold hover:text-midnight-ink font-medium transition-colors"
-                    >
-                      Sign In
-                    </Link>
-                  </p>
+                    Email Address
+                  </label>
+                  <div className="relative">
+                    <Mail className="absolute left-3.5 top-1/2 -translate-y-1/2 w-4 h-4 text-[rgb(100,130,165)] pointer-events-none" />
+                    <input
+                      id="email"
+                      name="email"
+                      type="email"
+                      placeholder="your@email.com"
+                      value={email}
+                      onChange={handleChange}
+                      autoComplete="email"
+                      className="celestial-input"
+                      style={{ paddingLeft: '2.5rem' }}
+                    />
+                  </div>
+                  {validationErrors.email && (
+                    <p className="text-red-400 text-xs">{validationErrors.email}</p>
+                  )}
                 </div>
-              </>
-            )}
-          </div>
-        </div>
-      </main>
 
-      {/* Footer */}
-      <footer className="bg-parchment border-t border-aged-bronze p-4 text-center">
-        <p className="fantasy-body text-xs text-aged-bronze">
+                <button type="submit" disabled={isPending} className="btn-cobalt">
+                  {isPending ? 'Sending...' : 'Send Reset Link'}
+                </button>
+              </form>
+
+              {/* Sign in link */}
+              <p className="text-center text-xs text-[rgb(148,163,184)] pt-1 border-t border-[rgba(30,55,100,0.5)]">
+                Remember your password?{' '}
+                <Link
+                  to="/login"
+                  className="text-[rgb(212,168,67)] hover:text-white font-medium transition-colors"
+                >
+                  Sign In
+                </Link>
+              </p>
+            </div>
+          )}
+        </div>
+
+        {/* Footer */}
+        <p className="text-xs text-[rgb(100,130,165)] select-none">
           &copy; 2025 Equoria. All rights reserved.
         </p>
-      </footer>
+      </div>
     </div>
   );
 };

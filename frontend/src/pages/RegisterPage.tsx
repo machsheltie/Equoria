@@ -1,16 +1,14 @@
 /**
- * Registration Page
+ * Registration Page — Celestial Night design
  *
- * Provides user registration with form validation.
- * Uses fantasy-themed components and Zod validation.
- * Includes password strength indicator.
+ * Full-bleed atmospheric background matching the login page.
+ * Glassmorphism card with all required registration fields.
+ * Preserves all a11y attributes and test expectations.
  */
 
 import React, { useState, useMemo } from 'react';
 import { useNavigate, Link } from 'react-router-dom';
-import { Eye, EyeOff, Mail, Lock, User, Sparkles, Check, X } from 'lucide-react';
-import { FantasyInput } from '../components/FantasyForm';
-import FantasyButton from '../components/FantasyButton';
+import { Eye, EyeOff, Mail, Lock, User, Check, X } from 'lucide-react';
 import {
   registerSchema,
   calculatePasswordStrength,
@@ -22,7 +20,6 @@ const RegisterPage: React.FC = () => {
   const navigate = useNavigate();
   const { mutate: register, isPending, error } = useRegister();
 
-  // Form state
   const [formData, setFormData] = useState<RegisterFormData>({
     email: '',
     username: '',
@@ -35,28 +32,24 @@ const RegisterPage: React.FC = () => {
   const [showConfirmPassword, setShowConfirmPassword] = useState(false);
   const [validationErrors, setValidationErrors] = useState<Record<string, string>>({});
 
-  // Password strength
   const passwordStrength = useMemo(
     () => calculatePasswordStrength(formData.password),
     [formData.password]
   );
 
-  // Password requirements status
   const passwordRequirements = useMemo(() => {
-    const password = formData.password;
+    const p = formData.password;
     return {
-      minLength: password.length >= 8,
-      hasLowercase: /[a-z]/.test(password),
-      hasUppercase: /[A-Z]/.test(password),
-      hasNumber: /[0-9]/.test(password),
+      minLength: p.length >= 8,
+      hasLowercase: /[a-z]/.test(p),
+      hasUppercase: /[A-Z]/.test(p),
+      hasNumber: /[0-9]/.test(p),
     };
   }, [formData.password]);
 
-  // Handle input change
   const handleChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     const { name, value } = e.target;
     setFormData((prev) => ({ ...prev, [name]: value }));
-    // Clear validation error when user types
     if (validationErrors[name]) {
       setValidationErrors((prev) => {
         const next = { ...prev };
@@ -66,24 +59,17 @@ const RegisterPage: React.FC = () => {
     }
   };
 
-  // Handle form submission
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
-
-    // Validate with Zod
     const result = registerSchema.safeParse(formData);
     if (!result.success) {
       const errors: Record<string, string> = {};
       result.error.issues.forEach((issue) => {
-        if (issue.path[0]) {
-          errors[issue.path[0] as string] = issue.message;
-        }
+        if (issue.path[0]) errors[issue.path[0] as string] = issue.message;
       });
       setValidationErrors(errors);
       return;
     }
-
-    // Submit to API
     register(
       {
         email: result.data.email,
@@ -92,302 +78,287 @@ const RegisterPage: React.FC = () => {
         firstName: result.data.firstName,
         lastName: result.data.lastName,
       },
-      {
-        onSuccess: () => {
-          navigate('/');
-        },
-      }
+      { onSuccess: () => navigate('/') }
     );
   };
 
-  // Requirement check component
   const RequirementCheck = ({ met, label }: { met: boolean; label: string }) => (
-    <div className="flex items-center gap-2 text-xs">
+    <div className="flex items-center gap-1.5 text-xs">
       {met ? (
-        <Check className="w-3 h-3 text-forest-green" />
+        <Check className="w-3 h-3 text-[rgb(37,99,235)]" />
       ) : (
-        <X className="w-3 h-3 text-red-500" />
+        <X className="w-3 h-3 text-red-400" />
       )}
-      <span className={met ? 'text-forest-green' : 'text-aged-bronze'}>{label}</span>
+      <span className={met ? 'text-[rgb(37,99,235)]' : 'text-[rgb(148,163,184)]'}>{label}</span>
     </div>
   );
 
   return (
-    <div className="min-h-screen bg-background flex flex-col">
-      {/* Header */}
-      <header className="bg-parchment parchment-texture border-b-2 border-aged-bronze shadow-lg relative">
-        <div className="flex items-center justify-center p-4">
-          <h1 className="fantasy-title text-3xl text-midnight-ink">Equoria</h1>
+    <div
+      className="min-h-screen w-full flex flex-col items-center justify-center relative overflow-hidden py-8"
+      style={{
+        backgroundImage: "url('/equoriacelestial.png')",
+        backgroundSize: 'cover',
+        backgroundPosition: 'center top',
+        backgroundRepeat: 'no-repeat',
+      }}
+    >
+      {/* Dark overlay */}
+      <div className="absolute inset-0 bg-black/40 pointer-events-none" />
+
+      {/* Content */}
+      <div className="relative z-10 w-full max-w-sm px-4 flex flex-col items-center gap-6">
+        {/* Title — h1 required by a11y tests */}
+        <div className="text-center select-none">
+          <h1 className="fantasy-title text-5xl tracking-widest">Equoria</h1>
         </div>
-        <div className="absolute bottom-0 left-0 right-0 h-1 bg-gradient-to-r from-aged-bronze via-burnished-gold to-aged-bronze" />
-      </header>
 
-      {/* Main Content */}
-      <main className="flex-1 flex items-center justify-center p-4 py-8">
-        <div className="w-full max-w-md">
-          {/* Registration Card */}
-          <div className="bg-parchment parchment-texture rounded-lg border-2 border-aged-bronze shadow-xl p-6 space-y-6">
-            {/* Title */}
-            <div className="text-center space-y-2">
-              <div className="flex justify-center">
-                <div className="w-16 h-16 bg-gradient-to-br from-burnished-gold to-aged-bronze rounded-full border-2 border-aged-bronze flex items-center justify-center">
-                  <Sparkles className="w-8 h-8 text-parchment" />
-                </div>
-              </div>
-              <h2 className="fantasy-header text-2xl text-midnight-ink">Join the Realm</h2>
-              <p className="fantasy-body text-aged-bronze text-sm">
-                Create your account and begin your journey
-              </p>
-            </div>
-
-            {/* API Error */}
-            {error && (
-              <div className="bg-red-50 border border-red-200 rounded-lg p-3">
-                <p className="text-red-700 text-sm text-center">
-                  {error.message || 'Registration failed. Please try again.'}
-                </p>
-              </div>
-            )}
-
-            {/* Form */}
-            <form onSubmit={handleSubmit} className="space-y-4">
-              {/* Name Fields (side by side) */}
-              <div className="grid grid-cols-2 gap-3">
-                <div className="space-y-1">
-                  <label
-                    htmlFor="firstName"
-                    className="fantasy-body text-sm text-midnight-ink font-medium"
-                  >
-                    First Name
-                  </label>
-                  <FantasyInput
-                    id="firstName"
-                    name="firstName"
-                    type="text"
-                    placeholder="First name"
-                    value={formData.firstName}
-                    onChange={handleChange}
-                    autoComplete="given-name"
-                  />
-                  {validationErrors.firstName && (
-                    <p className="text-red-600 text-xs">{validationErrors.firstName}</p>
-                  )}
-                </div>
-                <div className="space-y-1">
-                  <label
-                    htmlFor="lastName"
-                    className="fantasy-body text-sm text-midnight-ink font-medium"
-                  >
-                    Last Name
-                  </label>
-                  <FantasyInput
-                    id="lastName"
-                    name="lastName"
-                    type="text"
-                    placeholder="Last name"
-                    value={formData.lastName}
-                    onChange={handleChange}
-                    autoComplete="family-name"
-                  />
-                  {validationErrors.lastName && (
-                    <p className="text-red-600 text-xs">{validationErrors.lastName}</p>
-                  )}
-                </div>
-              </div>
-
-              {/* Username Field */}
-              <div className="space-y-1">
-                <label
-                  htmlFor="username"
-                  className="fantasy-body text-sm text-midnight-ink font-medium"
-                >
-                  Username
-                </label>
-                <div className="relative">
-                  <User className="absolute left-3 top-1/2 -translate-y-1/2 w-5 h-5 text-aged-bronze" />
-                  <FantasyInput
-                    id="username"
-                    name="username"
-                    type="text"
-                    placeholder="Choose a username"
-                    value={formData.username}
-                    onChange={handleChange}
-                    className="pl-10"
-                    autoComplete="username"
-                  />
-                </div>
-                {validationErrors.username && (
-                  <p className="text-red-600 text-xs">{validationErrors.username}</p>
-                )}
-              </div>
-
-              {/* Email Field */}
-              <div className="space-y-1">
-                <label
-                  htmlFor="email"
-                  className="fantasy-body text-sm text-midnight-ink font-medium"
-                >
-                  Email Address
-                </label>
-                <div className="relative">
-                  <Mail className="absolute left-3 top-1/2 -translate-y-1/2 w-5 h-5 text-aged-bronze" />
-                  <FantasyInput
-                    id="email"
-                    name="email"
-                    type="email"
-                    placeholder="your@email.com"
-                    value={formData.email}
-                    onChange={handleChange}
-                    className="pl-10"
-                    autoComplete="email"
-                  />
-                </div>
-                {validationErrors.email && (
-                  <p className="text-red-600 text-xs">{validationErrors.email}</p>
-                )}
-              </div>
-
-              {/* Password Field */}
-              <div className="space-y-1">
-                <label
-                  htmlFor="password"
-                  className="fantasy-body text-sm text-midnight-ink font-medium"
-                >
-                  Password
-                </label>
-                <div className="relative">
-                  <Lock className="absolute left-3 top-1/2 -translate-y-1/2 w-5 h-5 text-aged-bronze" />
-                  <FantasyInput
-                    id="password"
-                    name="password"
-                    type={showPassword ? 'text' : 'password'}
-                    placeholder="Create a password"
-                    value={formData.password}
-                    onChange={handleChange}
-                    className="pl-10 pr-10"
-                    autoComplete="new-password"
-                  />
-                  <button
-                    type="button"
-                    onClick={() => setShowPassword(!showPassword)}
-                    className="absolute right-3 top-1/2 -translate-y-1/2 text-aged-bronze hover:text-burnished-gold transition-colors"
-                    aria-label={showPassword ? 'Hide password' : 'Show password'}
-                  >
-                    {showPassword ? <EyeOff className="w-5 h-5" /> : <Eye className="w-5 h-5" />}
-                  </button>
-                </div>
-                {validationErrors.password && (
-                  <p className="text-red-600 text-xs">{validationErrors.password}</p>
-                )}
-
-                {/* Password Strength Indicator */}
-                {formData.password && (
-                  <div className="space-y-2 pt-2">
-                    {/* Strength Bar */}
-                    <div className="flex items-center gap-2">
-                      <div className="flex-1 h-1.5 bg-gray-200 rounded-full overflow-hidden">
-                        <div
-                          className="h-full transition-all duration-300 rounded-full"
-                          style={{
-                            width: `${(passwordStrength.score / 4) * 100}%`,
-                            backgroundColor: passwordStrength.color,
-                          }}
-                        />
-                      </div>
-                      <span
-                        className="text-xs font-medium capitalize"
-                        style={{ color: passwordStrength.color }}
-                      >
-                        {passwordStrength.label}
-                      </span>
-                    </div>
-
-                    {/* Requirements Checklist */}
-                    <div className="grid grid-cols-2 gap-1">
-                      <RequirementCheck
-                        met={passwordRequirements.minLength}
-                        label="8+ characters"
-                      />
-                      <RequirementCheck met={passwordRequirements.hasLowercase} label="Lowercase" />
-                      <RequirementCheck met={passwordRequirements.hasUppercase} label="Uppercase" />
-                      <RequirementCheck met={passwordRequirements.hasNumber} label="Number" />
-                    </div>
-                  </div>
-                )}
-              </div>
-
-              {/* Confirm Password Field */}
-              <div className="space-y-1">
-                <label
-                  htmlFor="confirmPassword"
-                  className="fantasy-body text-sm text-midnight-ink font-medium"
-                >
-                  Confirm Password
-                </label>
-                <div className="relative">
-                  <Lock className="absolute left-3 top-1/2 -translate-y-1/2 w-5 h-5 text-aged-bronze" />
-                  <FantasyInput
-                    id="confirmPassword"
-                    name="confirmPassword"
-                    type={showConfirmPassword ? 'text' : 'password'}
-                    placeholder="Confirm your password"
-                    value={formData.confirmPassword}
-                    onChange={handleChange}
-                    className="pl-10 pr-10"
-                    autoComplete="new-password"
-                  />
-                  <button
-                    type="button"
-                    onClick={() => setShowConfirmPassword(!showConfirmPassword)}
-                    className="absolute right-3 top-1/2 -translate-y-1/2 text-aged-bronze hover:text-burnished-gold transition-colors"
-                    aria-label={showConfirmPassword ? 'Hide password' : 'Show password'}
-                  >
-                    {showConfirmPassword ? (
-                      <EyeOff className="w-5 h-5" />
-                    ) : (
-                      <Eye className="w-5 h-5" />
-                    )}
-                  </button>
-                </div>
-                {validationErrors.confirmPassword && (
-                  <p className="text-red-600 text-xs">{validationErrors.confirmPassword}</p>
-                )}
-              </div>
-
-              {/* Submit Button */}
-              <FantasyButton
-                type="submit"
-                variant="primary"
-                size="large"
-                className="w-full"
-                disabled={isPending}
-              >
-                {isPending ? 'Creating Account...' : 'Begin Your Journey'}
-              </FantasyButton>
-            </form>
-
-            {/* Login Link */}
-            <div className="text-center pt-4 border-t border-aged-bronze">
-              <p className="fantasy-body text-sm text-aged-bronze">
-                Already have an account?{' '}
-                <Link
-                  to="/login"
-                  className="text-burnished-gold hover:text-midnight-ink font-medium transition-colors"
-                >
-                  Sign In
-                </Link>
-              </p>
-            </div>
+        {/* Glassmorphism card */}
+        <div className="glass-panel w-full px-6 py-6 space-y-4">
+          {/* Card heading — h2 required by a11y tests */}
+          <div className="text-center space-y-1">
+            <h2 className="fantasy-header text-xl" style={{ color: 'rgb(212,168,67)' }}>
+              Join the Realm
+            </h2>
+            <p className="text-xs text-[rgb(148,163,184)]">
+              Create your account and begin your journey
+            </p>
           </div>
-        </div>
-      </main>
 
-      {/* Footer */}
-      <footer className="bg-parchment border-t border-aged-bronze p-4 text-center">
-        <p className="fantasy-body text-xs text-aged-bronze">
-          &copy; 2025 Equoria. All rights reserved.
-        </p>
-      </footer>
+          {/* API error */}
+          {error && (
+            <p className="text-red-400 text-sm text-center">
+              {error.message || 'Registration failed. Please try again.'}
+            </p>
+          )}
+
+          <form onSubmit={handleSubmit} className="space-y-3">
+            {/* First + Last name — side by side */}
+            <div className="grid grid-cols-2 gap-2">
+              <div className="space-y-1">
+                <label
+                  htmlFor="firstName"
+                  className="block text-xs text-[rgb(148,163,184)] uppercase tracking-wider"
+                >
+                  First Name
+                </label>
+                <input
+                  id="firstName"
+                  name="firstName"
+                  type="text"
+                  placeholder="First"
+                  value={formData.firstName}
+                  onChange={handleChange}
+                  autoComplete="given-name"
+                  className="celestial-input"
+                  style={{ paddingLeft: '0.875rem', borderRadius: '0.5rem' }}
+                />
+                {validationErrors.firstName && (
+                  <p className="text-red-400 text-xs">{validationErrors.firstName}</p>
+                )}
+              </div>
+              <div className="space-y-1">
+                <label
+                  htmlFor="lastName"
+                  className="block text-xs text-[rgb(148,163,184)] uppercase tracking-wider"
+                >
+                  Last Name
+                </label>
+                <input
+                  id="lastName"
+                  name="lastName"
+                  type="text"
+                  placeholder="Last"
+                  value={formData.lastName}
+                  onChange={handleChange}
+                  autoComplete="family-name"
+                  className="celestial-input"
+                  style={{ paddingLeft: '0.875rem', borderRadius: '0.5rem' }}
+                />
+                {validationErrors.lastName && (
+                  <p className="text-red-400 text-xs">{validationErrors.lastName}</p>
+                )}
+              </div>
+            </div>
+
+            {/* Username */}
+            <div className="space-y-1">
+              <label
+                htmlFor="username"
+                className="block text-xs text-[rgb(148,163,184)] uppercase tracking-wider"
+              >
+                Username
+              </label>
+              <div className="relative">
+                <User className="absolute left-3.5 top-1/2 -translate-y-1/2 w-4 h-4 text-[rgb(100,130,165)] pointer-events-none" />
+                <input
+                  id="username"
+                  name="username"
+                  type="text"
+                  placeholder="Choose a username"
+                  value={formData.username}
+                  onChange={handleChange}
+                  autoComplete="username"
+                  className="celestial-input"
+                  style={{ paddingLeft: '2.5rem' }}
+                />
+              </div>
+              {validationErrors.username && (
+                <p className="text-red-400 text-xs">{validationErrors.username}</p>
+              )}
+            </div>
+
+            {/* Email */}
+            <div className="space-y-1">
+              <label
+                htmlFor="email"
+                className="block text-xs text-[rgb(148,163,184)] uppercase tracking-wider"
+              >
+                Email Address
+              </label>
+              <div className="relative">
+                <Mail className="absolute left-3.5 top-1/2 -translate-y-1/2 w-4 h-4 text-[rgb(100,130,165)] pointer-events-none" />
+                <input
+                  id="email"
+                  name="email"
+                  type="email"
+                  placeholder="your@email.com"
+                  value={formData.email}
+                  onChange={handleChange}
+                  autoComplete="email"
+                  className="celestial-input"
+                  style={{ paddingLeft: '2.5rem' }}
+                />
+              </div>
+              {validationErrors.email && (
+                <p className="text-red-400 text-xs">{validationErrors.email}</p>
+              )}
+            </div>
+
+            {/* Password */}
+            <div className="space-y-1">
+              <label
+                htmlFor="password"
+                className="block text-xs text-[rgb(148,163,184)] uppercase tracking-wider"
+              >
+                Password
+              </label>
+              <div className="relative">
+                <Lock className="absolute left-3.5 top-1/2 -translate-y-1/2 w-4 h-4 text-[rgb(100,130,165)] pointer-events-none" />
+                <input
+                  id="password"
+                  name="password"
+                  type={showPassword ? 'text' : 'password'}
+                  placeholder="Create a password"
+                  value={formData.password}
+                  onChange={handleChange}
+                  autoComplete="new-password"
+                  className="celestial-input pr-10"
+                  style={{ paddingLeft: '2.5rem' }}
+                />
+                <button
+                  type="button"
+                  onClick={() => setShowPassword(!showPassword)}
+                  className="absolute right-3.5 top-1/2 -translate-y-1/2 text-[rgb(100,130,165)] hover:text-white transition-colors"
+                  aria-label={showPassword ? 'Hide password' : 'Show password'}
+                >
+                  {showPassword ? <EyeOff className="w-4 h-4" /> : <Eye className="w-4 h-4" />}
+                </button>
+              </div>
+              {validationErrors.password && (
+                <p className="text-red-400 text-xs">{validationErrors.password}</p>
+              )}
+
+              {/* Password strength indicator */}
+              {formData.password && (
+                <div className="space-y-2 pt-1">
+                  <div className="flex items-center gap-2">
+                    <div
+                      className="flex-1 h-1 rounded-full overflow-hidden"
+                      style={{ background: 'rgba(30,55,100,0.5)' }}
+                    >
+                      <div
+                        className="h-full transition-all duration-300 rounded-full"
+                        style={{
+                          width: `${(passwordStrength.score / 4) * 100}%`,
+                          backgroundColor: passwordStrength.color,
+                        }}
+                      />
+                    </div>
+                    <span
+                      className="text-xs font-medium capitalize"
+                      style={{ color: passwordStrength.color }}
+                    >
+                      {passwordStrength.label}
+                    </span>
+                  </div>
+                  <div className="grid grid-cols-2 gap-x-4 gap-y-0.5">
+                    <RequirementCheck met={passwordRequirements.minLength} label="8+ characters" />
+                    <RequirementCheck met={passwordRequirements.hasLowercase} label="Lowercase" />
+                    <RequirementCheck met={passwordRequirements.hasUppercase} label="Uppercase" />
+                    <RequirementCheck met={passwordRequirements.hasNumber} label="Number" />
+                  </div>
+                </div>
+              )}
+            </div>
+
+            {/* Confirm Password */}
+            <div className="space-y-1">
+              <label
+                htmlFor="confirmPassword"
+                className="block text-xs text-[rgb(148,163,184)] uppercase tracking-wider"
+              >
+                Confirm Password
+              </label>
+              <div className="relative">
+                <Lock className="absolute left-3.5 top-1/2 -translate-y-1/2 w-4 h-4 text-[rgb(100,130,165)] pointer-events-none" />
+                <input
+                  id="confirmPassword"
+                  name="confirmPassword"
+                  type={showConfirmPassword ? 'text' : 'password'}
+                  placeholder="Confirm your password"
+                  value={formData.confirmPassword}
+                  onChange={handleChange}
+                  autoComplete="new-password"
+                  className="celestial-input pr-10"
+                  style={{ paddingLeft: '2.5rem' }}
+                />
+                <button
+                  type="button"
+                  onClick={() => setShowConfirmPassword(!showConfirmPassword)}
+                  className="absolute right-3.5 top-1/2 -translate-y-1/2 text-[rgb(100,130,165)] hover:text-white transition-colors"
+                  aria-label={showConfirmPassword ? 'Hide password' : 'Show password'}
+                >
+                  {showConfirmPassword ? (
+                    <EyeOff className="w-4 h-4" />
+                  ) : (
+                    <Eye className="w-4 h-4" />
+                  )}
+                </button>
+              </div>
+              {validationErrors.confirmPassword && (
+                <p className="text-red-400 text-xs">{validationErrors.confirmPassword}</p>
+              )}
+            </div>
+
+            {/* Submit */}
+            <button type="submit" disabled={isPending} className="btn-cobalt mt-1">
+              {isPending ? 'Creating Account...' : 'Begin Your Journey'}
+            </button>
+          </form>
+
+          {/* Login link */}
+          <p className="text-center text-xs text-[rgb(148,163,184)] pt-1 border-t border-[rgba(30,55,100,0.5)]">
+            Already have an account?{' '}
+            <Link
+              to="/login"
+              className="text-[rgb(212,168,67)] hover:text-white font-medium transition-colors"
+            >
+              Sign In
+            </Link>
+          </p>
+        </div>
+      </div>
     </div>
   );
 };

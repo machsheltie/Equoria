@@ -39,8 +39,8 @@ const FantasyButton = ({
 
   const variantClasses =
     variant === 'primary'
-      ? 'bg-forest-green text-parchment gold-border magical-glow hover:shadow-lg'
-      : 'bg-aged-bronze text-parchment border-2 border-burnished-gold hover:bg-saddle-leather';
+      ? 'bg-forest-green text-white magical-glow hover:shadow-lg'
+      : 'bg-saddle-leather text-midnight-ink border border-aged-bronze hover:opacity-90';
 
   const pressedClasses = isPressed ? 'transform scale-95' : '';
 
