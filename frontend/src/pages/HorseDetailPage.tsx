@@ -39,7 +39,6 @@ import {
   Tag,
 } from 'lucide-react';
 import { useHorse } from '../hooks/api/useHorses';
-import FantasyButton from '../components/FantasyButton';
 import TraitCard from '../components/TraitCard';
 import {
   useHorseEpigeneticInsights,
@@ -142,10 +141,10 @@ const HorseDetailPage: React.FC = () => {
   // Loading state
   if (isLoading) {
     return (
-      <div className="min-h-screen bg-parchment parchment-texture flex items-center justify-center">
-        <div className="text-center">
-          <Loader2 className="w-12 h-12 text-aged-bronze animate-spin mx-auto mb-4" />
-          <p className="fantasy-body text-midnight-ink">Loading horse details...</p>
+      <div className="min-h-screen flex items-center justify-center">
+        <div className="text-center space-y-3">
+          <Loader2 className="w-12 h-12 text-[rgb(37,99,235)] animate-spin mx-auto" />
+          <p className="text-sm text-[rgb(148,163,184)]">Loading horse details…</p>
         </div>
       </div>
     );
@@ -154,23 +153,29 @@ const HorseDetailPage: React.FC = () => {
   // Error state
   if (isError || !horse) {
     return (
-      <div className="min-h-screen bg-parchment parchment-texture flex items-center justify-center p-4">
-        <div className="max-w-md w-full bg-white/80 rounded-lg border-2 border-aged-bronze p-6 text-center">
-          <AlertCircle className="w-16 h-16 text-aged-bronze mx-auto mb-4" />
-          <h2 className="fantasy-title text-2xl text-midnight-ink mb-2">
+      <div className="min-h-screen flex items-center justify-center p-4">
+        <div className="glass-panel max-w-md w-full px-6 py-7 text-center space-y-4">
+          <AlertCircle className="w-12 h-12 text-red-400 mx-auto" />
+          <h2 className="fantasy-header text-xl" style={{ color: 'rgb(212,168,67)' }}>
             {error?.message === 'Horse not found' ? 'Horse Not Found' : 'Error Loading Horse'}
           </h2>
-          <p className="fantasy-body text-aged-bronze mb-6">
+          <p className="text-sm text-[rgb(220,235,255)]">
             {error?.message === 'Horse not found'
               ? 'The horse you are looking for does not exist or has been removed.'
               : 'An error occurred while loading the horse details. Please try again.'}
           </p>
           <div className="flex gap-3 justify-center">
-            <FantasyButton onClick={() => navigate('/horses')} variant="secondary">
+            <button
+              type="button"
+              className="btn-outline-celestial"
+              onClick={() => navigate('/horses')}
+            >
               Back to Horse List
-            </FantasyButton>
+            </button>
             {error?.message !== 'Horse not found' && (
-              <FantasyButton onClick={() => refetch()}>Retry</FantasyButton>
+              <button type="button" className="btn-cobalt" onClick={() => refetch()}>
+                Retry
+              </button>
             )}
           </div>
         </div>
@@ -193,13 +198,13 @@ const HorseDetailPage: React.FC = () => {
   ];
 
   return (
-    <div className="min-h-screen bg-parchment parchment-texture pb-20">
+    <div className="min-h-screen pb-20">
       <div className="max-w-7xl mx-auto p-4 md:p-6">
         {/* Header */}
         <div className="mb-6">
           <button
             onClick={() => navigate('/horses')}
-            className="flex items-center gap-2 text-aged-bronze hover:text-burnished-gold transition-colors mb-4 fantasy-body"
+            className="flex items-center gap-2 text-[rgb(148,163,184)] hover:text-white transition-colors mb-4 text-sm"
           >
             <ArrowLeft className="w-4 h-4" />
             Back to Horse List
@@ -268,31 +273,31 @@ const HorseDetailPage: React.FC = () => {
 
         {/* Quick Actions Bar */}
         <div className="flex flex-wrap gap-3 mb-6">
-          <FantasyButton onClick={() => navigate(`/training?horseId=${horse.id}`)}>
-            <div className="flex items-center gap-2">
-              <Dumbbell className="w-4 h-4" />
-              Train This Horse
-            </div>
-          </FantasyButton>
-          <FantasyButton
-            onClick={() => navigate(`/competition?horseId=${horse.id}`)}
-            variant="secondary"
+          <button
+            type="button"
+            className="btn-cobalt inline-flex items-center gap-2"
+            onClick={() => navigate(`/training?horseId=${horse.id}`)}
           >
-            <div className="flex items-center gap-2">
-              <Award className="w-4 h-4" />
-              Enter Competition
-            </div>
-          </FantasyButton>
+            <Dumbbell className="w-4 h-4" />
+            Train This Horse
+          </button>
+          <button
+            type="button"
+            className="btn-outline-celestial inline-flex items-center gap-2"
+            onClick={() => navigate(`/competition?horseId=${horse.id}`)}
+          >
+            <Award className="w-4 h-4" />
+            Enter Competition
+          </button>
           {horse.parentIds?.sireId && (
-            <FantasyButton
+            <button
+              type="button"
+              className="btn-outline-celestial inline-flex items-center gap-2"
               onClick={() => navigate(`/horses/${horse.parentIds.sireId}`)}
-              variant="secondary"
             >
-              <div className="flex items-center gap-2">
-                <Users className="w-4 h-4" />
-                View Parents
-              </div>
-            </FantasyButton>
+              <Users className="w-4 h-4" />
+              View Parents
+            </button>
           )}
         </div>
 

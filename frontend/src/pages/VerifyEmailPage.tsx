@@ -1,15 +1,15 @@
 /**
- * Email Verification Page
+ * Email Verification Page — Celestial Night design
  *
  * Handles email verification tokens from verification emails.
  * Automatically attempts verification on mount if token present.
  * Allows resending verification emails.
+ * Matches the auth-page visual style: full-bleed background + glass-panel card.
  */
 
 import React, { useEffect, useState } from 'react';
 import { useSearchParams, Link, useNavigate } from 'react-router-dom';
-import { Mail, CheckCircle, XCircle, RefreshCw, Sparkles, Loader2 } from 'lucide-react';
-import FantasyButton from '../components/FantasyButton';
+import { Mail, CheckCircle, XCircle, RefreshCw, Loader2 } from 'lucide-react';
 import { useVerifyEmail, useResendVerification, useVerificationStatus } from '../hooks/useAuth';
 import { useAuth } from '../contexts/AuthContext';
 
@@ -34,7 +34,6 @@ const VerifyEmailPage: React.FC = () => {
   const [state, setState] = useState<VerificationState>('idle');
   const [verifiedEmail, setVerifiedEmail] = useState<string | null>(null);
 
-  // Check if already verified
   useEffect(() => {
     if (isEmailVerified || verificationStatus?.verified) {
       setState('already-verified');
@@ -42,7 +41,6 @@ const VerifyEmailPage: React.FC = () => {
     }
   }, [isEmailVerified, verificationStatus]);
 
-  // Auto-verify when token is present
   useEffect(() => {
     if (token && state === 'idle' && !isEmailVerified) {
       setState('verifying');
@@ -58,261 +56,272 @@ const VerifyEmailPage: React.FC = () => {
     }
   }, [token, state, isEmailVerified, verifyEmail]);
 
-  // Handle resend verification
   const handleResend = () => {
     resetResend();
     resendVerification();
   };
 
-  // Render content based on state
-  const renderContent = () => {
-    // Already verified state
-    if (state === 'already-verified') {
-      return (
-        <div className="text-center space-y-4">
-          <div className="flex justify-center">
-            <div className="w-20 h-20 bg-gradient-to-br from-forest-green to-emerald-700 rounded-full border-2 border-burnished-gold flex items-center justify-center">
-              <CheckCircle className="w-10 h-10 text-parchment" />
-            </div>
-          </div>
-          <h2 className="fantasy-header text-2xl text-midnight-ink">Already Verified</h2>
-          <p className="fantasy-body text-aged-bronze">
-            Your email {verifiedEmail && <strong>{verifiedEmail}</strong>} is already verified.
-          </p>
-          <div className="pt-4 space-y-3">
-            <FantasyButton variant="primary" className="w-full" onClick={() => navigate('/')}>
-              Continue to Home
-            </FantasyButton>
-          </div>
-        </div>
-      );
-    }
-
-    // Verifying state
-    if (state === 'verifying' || isVerifying) {
-      return (
-        <div className="text-center space-y-4">
-          <div className="flex justify-center">
-            <div className="w-20 h-20 bg-gradient-to-br from-burnished-gold to-aged-bronze rounded-full border-2 border-aged-bronze flex items-center justify-center">
-              <Loader2 className="w-10 h-10 text-parchment animate-spin" />
-            </div>
-          </div>
-          <h2 className="fantasy-header text-2xl text-midnight-ink">Verifying Your Email</h2>
-          <p className="fantasy-body text-aged-bronze">Please wait while we verify your email...</p>
-        </div>
-      );
-    }
-
-    // Success state
-    if (state === 'success') {
-      return (
-        <div className="text-center space-y-4">
-          <div className="flex justify-center">
-            <div className="w-20 h-20 bg-gradient-to-br from-forest-green to-emerald-700 rounded-full border-2 border-burnished-gold flex items-center justify-center magical-glow">
-              <CheckCircle className="w-10 h-10 text-parchment" />
-            </div>
-          </div>
-          <h2 className="fantasy-header text-2xl text-midnight-ink">Email Verified!</h2>
-          <p className="fantasy-body text-aged-bronze">
-            Your email {verifiedEmail && <strong>{verifiedEmail}</strong>} has been successfully
-            verified.
-          </p>
-          <p className="fantasy-body text-sm text-forest-green">
-            You now have full access to Equoria!
-          </p>
-          <div className="pt-4 space-y-3">
-            <FantasyButton variant="primary" className="w-full" onClick={() => navigate('/')}>
-              Enter the Realm
-            </FantasyButton>
-          </div>
-        </div>
-      );
-    }
-
-    // Error state
-    if (state === 'error' || verifyError) {
-      return (
-        <div className="text-center space-y-4">
-          <div className="flex justify-center">
-            <div className="w-20 h-20 bg-gradient-to-br from-red-500 to-red-700 rounded-full border-2 border-red-300 flex items-center justify-center">
-              <XCircle className="w-10 h-10 text-parchment" />
-            </div>
-          </div>
-          <h2 className="fantasy-header text-2xl text-midnight-ink">Verification Failed</h2>
-          <p className="fantasy-body text-aged-bronze">
-            {verifyError?.message || 'The verification link is invalid or has expired.'}
-          </p>
-
-          {isAuthenticated ? (
-            <div className="pt-4 space-y-3">
-              <p className="fantasy-body text-sm text-aged-bronze">
-                Would you like us to send a new verification email?
-              </p>
-              <FantasyButton
-                variant="primary"
-                className="w-full"
-                onClick={handleResend}
-                disabled={isResending}
-              >
-                {isResending ? (
-                  <>
-                    <RefreshCw className="w-4 h-4 mr-2 inline animate-spin" />
-                    Sending...
-                  </>
-                ) : (
-                  <>
-                    <Mail className="w-4 h-4 mr-2 inline" />
-                    Resend Verification Email
-                  </>
-                )}
-              </FantasyButton>
-
-              {resendSuccess && (
-                <p className="text-forest-green text-sm">
-                  A new verification email has been sent. Check your inbox!
-                </p>
-              )}
-
-              {resendError && (
-                <p className="text-red-600 text-sm">
-                  {resendError.message || 'Failed to send verification email. Try again later.'}
-                </p>
-              )}
-            </div>
-          ) : (
-            <div className="pt-4 space-y-3">
-              <p className="fantasy-body text-sm text-aged-bronze">
-                Please log in to request a new verification email.
-              </p>
-              <FantasyButton
-                variant="primary"
-                className="w-full"
-                onClick={() => navigate('/login')}
-              >
-                Go to Login
-              </FantasyButton>
-            </div>
-          )}
-        </div>
-      );
-    }
-
-    // Idle state (no token, not verified)
-    return (
-      <div className="text-center space-y-4">
-        <div className="flex justify-center">
-          <div className="w-20 h-20 bg-gradient-to-br from-burnished-gold to-aged-bronze rounded-full border-2 border-aged-bronze flex items-center justify-center">
-            <Mail className="w-10 h-10 text-parchment" />
-          </div>
-        </div>
-        <h2 className="fantasy-header text-2xl text-midnight-ink">Verify Your Email</h2>
-
-        {isAuthenticated ? (
-          <>
-            <p className="fantasy-body text-aged-bronze">
-              Please check your inbox for a verification email. Click the link to verify your
-              account.
-            </p>
-            <div className="pt-4 space-y-3">
-              <FantasyButton
-                variant="primary"
-                className="w-full"
-                onClick={handleResend}
-                disabled={isResending}
-              >
-                {isResending ? (
-                  <>
-                    <RefreshCw className="w-4 h-4 mr-2 inline animate-spin" />
-                    Sending...
-                  </>
-                ) : (
-                  <>
-                    <Mail className="w-4 h-4 mr-2 inline" />
-                    Resend Verification Email
-                  </>
-                )}
-              </FantasyButton>
-
-              {resendSuccess && (
-                <p className="text-forest-green text-sm">
-                  A new verification email has been sent. Check your inbox!
-                </p>
-              )}
-
-              {resendError && (
-                <p className="text-red-600 text-sm">
-                  {resendError.message || 'Failed to send verification email. Try again later.'}
-                </p>
-              )}
-
-              <FantasyButton variant="secondary" className="w-full" onClick={() => navigate('/')}>
-                Continue to Home
-              </FantasyButton>
-            </div>
-          </>
-        ) : (
-          <>
-            <p className="fantasy-body text-aged-bronze">
-              Please log in to verify your email or access your account.
-            </p>
-            <div className="pt-4 space-y-3">
-              <FantasyButton
-                variant="primary"
-                className="w-full"
-                onClick={() => navigate('/login')}
-              >
-                Go to Login
-              </FantasyButton>
-              <FantasyButton
-                variant="secondary"
-                className="w-full"
-                onClick={() => navigate('/register')}
-              >
-                Create Account
-              </FantasyButton>
-            </div>
-          </>
-        )}
-      </div>
-    );
-  };
-
-  return (
-    <div className="min-h-screen bg-background flex flex-col">
-      {/* Header */}
-      <header className="bg-parchment parchment-texture border-b-2 border-aged-bronze shadow-lg relative">
-        <div className="flex items-center justify-center p-4">
+  const pageShell = (children: React.ReactNode) => (
+    <div
+      className="min-h-screen w-full flex flex-col items-center justify-center relative overflow-hidden py-8"
+      style={{
+        backgroundImage: "url('/equoriacelestial.png')",
+        backgroundSize: 'cover',
+        backgroundPosition: 'center top',
+        backgroundRepeat: 'no-repeat',
+      }}
+    >
+      <div className="absolute inset-0 bg-black/40 pointer-events-none" />
+      <div className="relative z-10 w-full max-w-sm px-4 flex flex-col items-center gap-8">
+        <div className="text-center select-none">
           <Link
             to="/"
-            className="fantasy-title text-3xl text-midnight-ink hover:text-burnished-gold transition-colors"
+            className="fantasy-title text-5xl tracking-widest hover:opacity-90 transition-opacity"
           >
             Equoria
           </Link>
         </div>
-        <div className="absolute bottom-0 left-0 right-0 h-1 bg-gradient-to-r from-aged-bronze via-burnished-gold to-aged-bronze" />
-      </header>
-
-      {/* Main Content */}
-      <main className="flex-1 flex items-center justify-center p-4">
-        <div className="w-full max-w-md">
-          {/* Card */}
-          <div className="bg-parchment parchment-texture rounded-lg border-2 border-aged-bronze shadow-xl p-6 space-y-6">
-            {/* Decorative header */}
-            <div className="flex justify-center">
-              <Sparkles className="w-6 h-6 text-burnished-gold" />
-            </div>
-
-            {renderContent()}
-          </div>
-        </div>
-      </main>
-
-      {/* Footer */}
-      <footer className="bg-parchment border-t border-aged-bronze p-4 text-center">
-        <p className="fantasy-body text-xs text-aged-bronze">
+        <div className="glass-panel w-full px-6 py-7">{children}</div>
+        <p className="text-xs text-[rgb(100,130,165)] select-none">
           &copy; 2025 Equoria. All rights reserved.
         </p>
-      </footer>
+      </div>
+    </div>
+  );
+
+  // ── Already verified ─────────────────────────────────────────────────
+  if (state === 'already-verified') {
+    return pageShell(
+      <div className="text-center space-y-5">
+        <div className="flex justify-center">
+          <div
+            className="w-16 h-16 rounded-full flex items-center justify-center magical-glow"
+            style={{ background: 'linear-gradient(135deg, #2563eb 0%, #1d4ed8 100%)' }}
+          >
+            <CheckCircle className="w-8 h-8 text-white" />
+          </div>
+        </div>
+        <div className="space-y-2">
+          <h2 className="fantasy-header text-xl" style={{ color: 'rgb(212,168,67)' }}>
+            Already Verified
+          </h2>
+          <p className="text-sm text-[rgb(220,235,255)]">
+            Your email
+            {verifiedEmail && (
+              <>
+                {' '}
+                <strong className="text-white">{verifiedEmail}</strong>
+              </>
+            )}{' '}
+            is already verified.
+          </p>
+        </div>
+        <button type="button" className="btn-cobalt" onClick={() => navigate('/')}>
+          Continue to Home
+        </button>
+      </div>
+    );
+  }
+
+  // ── Verifying ────────────────────────────────────────────────────────
+  if (state === 'verifying' || isVerifying) {
+    return pageShell(
+      <div className="text-center space-y-5">
+        <div className="flex justify-center">
+          <div
+            className="w-16 h-16 rounded-full flex items-center justify-center"
+            style={{ background: 'linear-gradient(135deg, #2563eb 0%, #1d4ed8 100%)' }}
+          >
+            <Loader2 className="w-8 h-8 text-white animate-spin" />
+          </div>
+        </div>
+        <div className="space-y-2">
+          <h2 className="fantasy-header text-xl" style={{ color: 'rgb(212,168,67)' }}>
+            Verifying Your Email
+          </h2>
+          <p className="text-sm text-[rgb(220,235,255)]">Please wait while we verify your email…</p>
+        </div>
+      </div>
+    );
+  }
+
+  // ── Success ──────────────────────────────────────────────────────────
+  if (state === 'success') {
+    return pageShell(
+      <div className="text-center space-y-5">
+        <div className="flex justify-center">
+          <div
+            className="w-16 h-16 rounded-full flex items-center justify-center magical-glow"
+            style={{ background: 'linear-gradient(135deg, #2563eb 0%, #1d4ed8 100%)' }}
+          >
+            <CheckCircle className="w-8 h-8 text-white" />
+          </div>
+        </div>
+        <div className="space-y-2">
+          <h2 className="fantasy-header text-xl" style={{ color: 'rgb(212,168,67)' }}>
+            Email Verified!
+          </h2>
+          <p className="text-sm text-[rgb(220,235,255)]">
+            Your email
+            {verifiedEmail && (
+              <>
+                {' '}
+                <strong className="text-white">{verifiedEmail}</strong>
+              </>
+            )}{' '}
+            has been successfully verified.
+          </p>
+          <p className="text-sm" style={{ color: 'rgb(37,99,235)' }}>
+            You now have full access to Equoria!
+          </p>
+        </div>
+        <button type="button" className="btn-cobalt" onClick={() => navigate('/')}>
+          Enter the Realm
+        </button>
+      </div>
+    );
+  }
+
+  // ── Error ────────────────────────────────────────────────────────────
+  if (state === 'error' || verifyError) {
+    return pageShell(
+      <div className="text-center space-y-5">
+        <div className="flex justify-center">
+          <div
+            className="w-16 h-16 rounded-full flex items-center justify-center"
+            style={{ background: 'linear-gradient(135deg, #dc2626 0%, #991b1b 100%)' }}
+          >
+            <XCircle className="w-8 h-8 text-white" />
+          </div>
+        </div>
+        <div className="space-y-2">
+          <h2 className="fantasy-header text-xl" style={{ color: 'rgb(212,168,67)' }}>
+            Verification Failed
+          </h2>
+          <p className="text-sm text-[rgb(220,235,255)]">
+            {verifyError?.message || 'The verification link is invalid or has expired.'}
+          </p>
+        </div>
+
+        {isAuthenticated ? (
+          <div className="space-y-3 pt-1">
+            <p className="text-xs text-[rgb(148,163,184)]">
+              Would you like us to send a new verification email?
+            </p>
+            <button
+              type="button"
+              className="btn-cobalt"
+              onClick={handleResend}
+              disabled={isResending}
+            >
+              {isResending ? (
+                <span className="inline-flex items-center gap-2">
+                  <RefreshCw className="w-4 h-4 animate-spin" />
+                  Sending…
+                </span>
+              ) : (
+                <span className="inline-flex items-center gap-2">
+                  <Mail className="w-4 h-4" />
+                  Resend Verification Email
+                </span>
+              )}
+            </button>
+            {resendSuccess && (
+              <p className="text-sm" style={{ color: 'rgb(37,99,235)' }}>
+                A new verification email has been sent. Check your inbox!
+              </p>
+            )}
+            {resendError && (
+              <p className="text-red-400 text-sm">
+                {resendError.message || 'Failed to send verification email. Try again later.'}
+              </p>
+            )}
+          </div>
+        ) : (
+          <div className="space-y-2 pt-1">
+            <p className="text-xs text-[rgb(148,163,184)]">
+              Please log in to request a new verification email.
+            </p>
+            <button type="button" className="btn-cobalt" onClick={() => navigate('/login')}>
+              Go to Login
+            </button>
+          </div>
+        )}
+      </div>
+    );
+  }
+
+  // ── Idle (no token, not verified) ────────────────────────────────────
+  return pageShell(
+    <div className="text-center space-y-5">
+      <div className="flex justify-center">
+        <div
+          className="w-16 h-16 rounded-full flex items-center justify-center"
+          style={{ background: 'linear-gradient(135deg, #2563eb 0%, #1d4ed8 100%)' }}
+        >
+          <Mail className="w-8 h-8 text-white" />
+        </div>
+      </div>
+      <div className="space-y-2">
+        <h2 className="fantasy-header text-xl" style={{ color: 'rgb(212,168,67)' }}>
+          Verify Your Email
+        </h2>
+      </div>
+
+      {isAuthenticated ? (
+        <div className="space-y-3">
+          <p className="text-sm text-[rgb(220,235,255)]">
+            Please check your inbox for a verification email. Click the link to verify your account.
+          </p>
+          <button
+            type="button"
+            className="btn-cobalt"
+            onClick={handleResend}
+            disabled={isResending}
+          >
+            {isResending ? (
+              <span className="inline-flex items-center gap-2">
+                <RefreshCw className="w-4 h-4 animate-spin" />
+                Sending…
+              </span>
+            ) : (
+              <span className="inline-flex items-center gap-2">
+                <Mail className="w-4 h-4" />
+                Resend Verification Email
+              </span>
+            )}
+          </button>
+          {resendSuccess && (
+            <p className="text-sm" style={{ color: 'rgb(37,99,235)' }}>
+              A new verification email has been sent. Check your inbox!
+            </p>
+          )}
+          {resendError && (
+            <p className="text-red-400 text-sm">
+              {resendError.message || 'Failed to send verification email. Try again later.'}
+            </p>
+          )}
+          <button type="button" className="btn-outline-celestial" onClick={() => navigate('/')}>
+            Continue to Home
+          </button>
+        </div>
+      ) : (
+        <div className="space-y-2">
+          <p className="text-sm text-[rgb(220,235,255)]">
+            Please log in to verify your email or access your account.
+          </p>
+          <button type="button" className="btn-cobalt" onClick={() => navigate('/login')}>
+            Go to Login
+          </button>
+          <button
+            type="button"
+            className="btn-outline-celestial"
+            onClick={() => navigate('/register')}
+          >
+            Create Account
+          </button>
+        </div>
+      )}
     </div>
   );
 };

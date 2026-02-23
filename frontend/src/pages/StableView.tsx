@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React from 'react';
 import { Coins, Star, Users, Plus, Settings, AlertCircle, Loader2 } from 'lucide-react';
 import HorseCard from '../components/HorseCard';
 import { FantasyTabs } from '../components/FantasyTabs';
@@ -81,9 +81,9 @@ const StableView = () => {
     if (isLoading) {
       return (
         <div className="flex items-center justify-center p-12">
-          <div className="text-center space-y-4">
-            <Loader2 className="w-8 h-8 text-burnished-gold animate-spin mx-auto" />
-            <p className="fantasy-body text-aged-bronze">Loading your stable...</p>
+          <div className="text-center space-y-3">
+            <Loader2 className="w-8 h-8 text-[rgb(37,99,235)] animate-spin mx-auto" />
+            <p className="text-sm text-[rgb(148,163,184)]">Loading your stable…</p>
           </div>
         </div>
       );
@@ -94,15 +94,12 @@ const StableView = () => {
       return (
         <div className="flex items-center justify-center p-12">
           <div className="text-center space-y-4 max-w-md">
-            <AlertCircle className="w-12 h-12 text-red-500 mx-auto" />
-            <h3 className="fantasy-title text-lg text-midnight-ink">Unable to Load Horses</h3>
-            <p className="fantasy-body text-sm text-aged-bronze">
+            <AlertCircle className="w-12 h-12 text-red-400 mx-auto" />
+            <h3 className="text-lg font-semibold text-[rgb(220,235,255)]">Unable to Load Horses</h3>
+            <p className="text-sm text-[rgb(148,163,184)]">
               {error?.message || 'Failed to fetch horses. Please check your connection.'}
             </p>
-            <button
-              onClick={() => refetch()}
-              className="px-6 py-2 bg-gradient-to-br from-burnished-gold to-aged-bronze text-parchment rounded-lg shadow-md hover:scale-105 transition-transform fantasy-button"
-            >
+            <button onClick={() => refetch()} className="btn-cobalt">
               Try Again
             </button>
           </div>
@@ -125,12 +122,12 @@ const StableView = () => {
     if (!filtered.length) {
       return (
         <div className="flex items-center justify-center p-12">
-          <div className="text-center space-y-4">
-            <Star className="w-12 h-12 text-aged-bronze/50 mx-auto" />
-            <p className="fantasy-body text-aged-bronze">No horses in this category</p>
+          <div className="text-center space-y-3">
+            <Star className="w-12 h-12 text-[rgb(37,99,235)] opacity-40 mx-auto" />
+            <p className="text-sm text-[rgb(148,163,184)]">No horses in this category</p>
             <button
               onClick={() => refetch()}
-              className="text-xs text-burnished-gold underline hover:text-aged-bronze transition-colors"
+              className="text-xs text-[rgb(212,168,67)] underline hover:text-white transition-colors"
             >
               Refresh List
             </button>
@@ -192,101 +189,95 @@ const StableView = () => {
   ];
 
   return (
-    <div className="min-h-screen bg-gradient-to-b from-forest-green/20 to-parchment relative overflow-hidden">
-      {/* Background overlay with stable atmosphere */}
-      <div className="absolute inset-0 bg-gradient-to-br from-forest-green/10 via-parchment/80 to-aged-bronze/20 pointer-events-none" />
-
-      {/* Floating particles effect */}
-      <div className="absolute inset-0 pointer-events-none">
-        <div className="absolute top-1/4 left-1/3 w-1 h-1 bg-burnished-gold/30 rounded-full animate-pulse" />
-        <div className="absolute top-3/4 right-1/4 w-1.5 h-1.5 bg-burnished-gold/20 rounded-full animate-pulse animation-delay-200" />
-        <div className="absolute bottom-1/3 left-1/4 w-0.5 h-0.5 bg-aged-bronze/40 rounded-full animate-pulse animation-delay-400" />
-      </div>
-
+    <div className="min-h-screen flex flex-col">
       {/* Player Info Bar */}
-      <div className="sticky top-0 z-20 bg-parchment/95 border-b-2 border-aged-bronze shadow-lg backdrop-blur-sm">
-        <div className="absolute inset-0 parchment-texture opacity-30" />
-        <div className="relative p-4">
+      <div
+        className="sticky top-0 z-20 backdrop-blur-sm border-b"
+        style={{ background: 'rgba(10,22,40,0.9)', borderColor: 'rgba(37,99,235,0.3)' }}
+      >
+        <div className="px-4 py-3">
           <div className="flex items-center justify-between">
-            {/* Gold coins */}
-            <div className="flex items-center space-x-2">
-              <div className="w-8 h-8 bg-gradient-to-br from-burnished-gold to-aged-bronze rounded-full flex items-center justify-center">
-                <Coins className="w-5 h-5 text-parchment" />
+            {/* Coins */}
+            <div className="flex items-center gap-2">
+              <div
+                className="w-8 h-8 rounded-full flex items-center justify-center"
+                style={{ background: 'linear-gradient(135deg, rgb(212,168,67), rgb(100,130,165))' }}
+              >
+                <Coins className="w-4 h-4 text-white" />
               </div>
-              <span className="fantasy-title text-lg text-midnight-ink">
+              <span className="text-base font-semibold" style={{ color: 'rgb(212,168,67)' }}>
                 {playerStats.coins.toLocaleString()}
               </span>
             </div>
 
-            {/* XP and Level */}
-            <div className="flex items-center space-x-4">
+            {/* XP + Level */}
+            <div className="flex items-center gap-4">
               <div className="text-center">
-                <div className="fantasy-caption text-xs text-aged-bronze mb-1">XP</div>
-                <div className="w-24 h-2 bg-aged-bronze/30 rounded-full overflow-hidden">
+                <p className="text-xs text-[rgb(148,163,184)] mb-1">XP</p>
+                <div
+                  className="w-24 h-1.5 rounded-full overflow-hidden"
+                  style={{ background: 'rgba(37,99,235,0.2)' }}
+                >
                   <div
-                    className="h-full bg-gradient-to-r from-burnished-gold to-aged-bronze magical-glow"
-                    style={{ width: '65%' }}
+                    className="h-full rounded-full magical-glow"
+                    style={{ width: '65%', background: 'rgb(37,99,235)' }}
                   />
                 </div>
-                <div className="fantasy-body text-xs text-midnight-ink mt-1">
+                <p className="text-xs text-[rgb(220,235,255)] mt-1">
                   {playerStats.xp.toLocaleString()}
-                </div>
+                </p>
               </div>
-
               <div className="text-center">
-                <div className="fantasy-caption text-xs text-aged-bronze">Level</div>
-                <div className="fantasy-title text-xl text-burnished-gold">{playerStats.level}</div>
+                <p className="text-xs text-[rgb(148,163,184)]">Level</p>
+                <p className="text-xl font-bold" style={{ color: 'rgb(212,168,67)' }}>
+                  {playerStats.level}
+                </p>
               </div>
             </div>
 
             {/* Stable capacity */}
             <div className="text-center">
-              <div className="fantasy-caption text-xs text-aged-bronze mb-1">Stable</div>
-              <div className="fantasy-body text-sm text-midnight-ink">
+              <p className="text-xs text-[rgb(148,163,184)] mb-1">Stable</p>
+              <p className="text-sm text-[rgb(220,235,255)]">
                 {playerStats.stableSlots.used}/{playerStats.stableSlots.total}
-              </div>
-              <div className="w-16 h-1 bg-aged-bronze/30 rounded-full overflow-hidden mt-1">
+              </p>
+              <div
+                className="w-16 h-1 rounded-full overflow-hidden mt-1"
+                style={{ background: 'rgba(37,99,235,0.2)' }}
+              >
                 <div
-                  className="h-full bg-forest-green"
+                  className="h-full rounded-full"
                   style={{
                     width: `${(playerStats.stableSlots.used / playerStats.stableSlots.total) * 100}%`,
+                    background: 'rgb(37,99,235)',
                   }}
                 />
               </div>
             </div>
           </div>
         </div>
-
-        {/* Decorative border */}
-        <div className="absolute bottom-0 left-0 right-0 h-0.5 bg-gradient-to-r from-aged-bronze via-burnished-gold to-aged-bronze" />
       </div>
 
       {/* Main content */}
-      <div className="relative z-10 pb-20">
+      <div className="flex-1 pb-20">
         <FantasyTabs tabs={tabs} defaultValue="all" orientation="horizontal" />
       </div>
 
       {/* Action buttons */}
       <div className="fixed bottom-6 right-6 space-y-3 z-30">
-        {/* Add Horse button */}
-        <button className="group relative bg-gradient-to-br from-burnished-gold to-aged-bronze rounded-full p-4 shadow-lg hover:scale-110 transition-all duration-200 magical-glow">
-          <div className="absolute inset-1 bg-gradient-to-br from-burnished-gold/30 to-transparent rounded-full" />
-          <Plus className="w-6 h-6 text-parchment relative z-10" />
-
-          {/* Wax seal effect */}
-          <div className="absolute -top-1 -right-1 w-4 h-4 bg-gradient-to-br from-aged-bronze to-saddle-leather rounded-full border border-burnished-gold opacity-80 group-hover:animate-pulse" />
+        <button
+          className="w-14 h-14 rounded-full flex items-center justify-center shadow-lg hover:scale-110 transition-transform magical-glow"
+          style={{ background: 'linear-gradient(135deg, #2563eb 0%, #1d4ed8 100%)' }}
+        >
+          <Plus className="w-6 h-6 text-white" />
         </button>
-
-        {/* Organize button */}
-        <button className="group relative bg-gradient-to-br from-aged-bronze to-saddle-leather rounded-full p-3 shadow-lg hover:scale-110 transition-all duration-200">
-          <div className="absolute inset-1 bg-gradient-to-br from-aged-bronze/30 to-transparent rounded-full" />
-          <Settings className="w-5 h-5 text-parchment relative z-10" />
+        <button
+          className="w-11 h-11 rounded-full flex items-center justify-center shadow-lg hover:scale-110 transition-transform"
+          style={{ background: 'rgba(37,99,235,0.3)', border: '1px solid rgba(37,99,235,0.5)' }}
+        >
+          <Settings className="w-5 h-5 text-white" />
         </button>
       </div>
-
-      {/* Decorative corner flourishes */}
-      <div className="absolute top-20 left-2 w-8 h-8 border-l-2 border-t-2 border-burnished-gold/40 rounded-tl-lg pointer-events-none" />
-      <div className="absolute top-20 right-2 w-8 h-8 border-r-2 border-t-2 border-burnished-gold/40 rounded-tr-lg pointer-events-none" />
     </div>
   );
 };

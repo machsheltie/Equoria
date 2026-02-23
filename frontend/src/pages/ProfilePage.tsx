@@ -1,16 +1,14 @@
 /**
- * Profile Page
+ * Profile Page — Celestial Night design
  *
  * Allows users to view and edit their profile information.
- * Uses fantasy-themed components and Zod validation.
+ * Uses Zod validation and the dark Celestial Night visual style.
  *
  * Story 2.1: Profile Management - AC-1 through AC-6
  */
 
 import React, { useState, useEffect } from 'react';
 import { User, FileText, Save, X } from 'lucide-react';
-import { FantasyInput, FantasyTextarea } from '../components/FantasyForm';
-import FantasyButton from '../components/FantasyButton';
 import XPLevelDisplay from '../components/XPLevelDisplay';
 import CurrencyDisplay from '../components/CurrencyDisplay';
 import StatisticsCard from '../components/StatisticsCard';
@@ -40,14 +38,12 @@ const ProfilePage: React.FC = () => {
   } = useActivityFeed(userId);
   const { data: progressData, isLoading: isProgressLoading } = useUserProgress(userId);
 
-  // Form state
   const [formData, setFormData] = useState<ProfileFormData>({
     username: '',
     bio: '',
   });
   const [validationErrors, setValidationErrors] = useState<Record<string, string>>({});
 
-  // Initialize form with user data
   useEffect(() => {
     if (profileData?.user) {
       setFormData({
@@ -57,11 +53,9 @@ const ProfilePage: React.FC = () => {
     }
   }, [profileData]);
 
-  // Handle input change
   const handleChange = (e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement>) => {
     const { name, value } = e.target;
     setFormData((prev) => ({ ...prev, [name]: value }));
-    // Clear validation error when user types
     if (validationErrors[name]) {
       setValidationErrors((prev) => {
         const next = { ...prev };
@@ -71,11 +65,8 @@ const ProfilePage: React.FC = () => {
     }
   };
 
-  // Handle form submission
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
-
-    // Validate with Zod
     const result = profileSchema.safeParse(formData);
     if (!result.success) {
       const errors: Record<string, string> = {};
@@ -87,12 +78,9 @@ const ProfilePage: React.FC = () => {
       setValidationErrors(errors);
       return;
     }
-
-    // Submit to API
     updateProfile(result.data);
   };
 
-  // Handle cancel - reset form to original values
   const handleCancel = () => {
     if (profileData?.user) {
       setFormData({
@@ -103,13 +91,11 @@ const ProfilePage: React.FC = () => {
     setValidationErrors({});
   };
 
-  // Calculate remaining characters for bio
   const bioCharactersRemaining = VALIDATION_RULES.bio.maxLength - (formData.bio?.length || 0);
   const activities: Activity[] = activityItems.map((activity) => {
     const type = Object.values(ActivityType).includes(activity.type as ActivityType)
       ? (activity.type as ActivityType)
       : ActivityType.ACHIEVEMENT;
-
     return {
       id: String(activity.id),
       type,
@@ -127,24 +113,27 @@ const ProfilePage: React.FC = () => {
       ? (progressData as { winRate?: number }).winRate
       : 0;
 
-  // Loading state
+  // ── Loading ───────────────────────────────────────────────────────────
   if (isLoading) {
     return (
-      <div className="min-h-screen bg-background flex items-center justify-center">
-        <div className="text-center">
-          <div className="w-16 h-16 border-4 border-aged-bronze border-t-burnished-gold rounded-full animate-spin mx-auto mb-4" />
-          <p className="fantasy-body text-aged-bronze">Loading profile...</p>
+      <div className="min-h-screen flex items-center justify-center">
+        <div className="text-center space-y-3">
+          <div
+            className="w-12 h-12 rounded-full border-4 border-t-transparent animate-spin mx-auto"
+            style={{ borderColor: 'rgba(37,99,235,0.3)', borderTopColor: 'rgb(37,99,235)' }}
+          />
+          <p className="text-sm text-[rgb(148,163,184)]">Loading profile…</p>
         </div>
       </div>
     );
   }
 
-  // Error state
+  // ── Error ─────────────────────────────────────────────────────────────
   if (isError) {
     return (
-      <div className="min-h-screen bg-background flex items-center justify-center">
-        <div className="bg-red-50 border border-red-200 rounded-lg p-6 max-w-md">
-          <p className="text-red-700 text-center">
+      <div className="min-h-screen flex items-center justify-center">
+        <div className="glass-panel px-6 py-5 max-w-md text-center">
+          <p className="text-red-400 text-sm">
             {profileError?.message || 'Failed to load profile. Please try again.'}
           </p>
         </div>
@@ -153,56 +142,69 @@ const ProfilePage: React.FC = () => {
   }
 
   return (
-    <div className="min-h-screen bg-background flex flex-col">
+    <div className="min-h-screen flex flex-col">
       {/* Header */}
-      <header className="bg-parchment parchment-texture border-b-2 border-aged-bronze shadow-lg relative">
-        <div className="flex items-center justify-center p-4">
-          <h1 className="fantasy-title text-3xl text-midnight-ink">{UI_TEXT.profile.title}</h1>
-        </div>
-        <div className="absolute bottom-0 left-0 right-0 h-1 bg-gradient-to-r from-aged-bronze via-burnished-gold to-aged-bronze" />
+      <header
+        className="relative border-b flex items-center justify-center p-4"
+        style={{ borderColor: 'rgba(37,99,235,0.3)', background: 'rgba(10,22,40,0.8)' }}
+      >
+        <h1 className="fantasy-title text-2xl tracking-widest">{UI_TEXT.profile.title}</h1>
       </header>
 
-      {/* Main Content */}
-      <main className="flex-1 flex items-center justify-center p-4">
-        <div className="w-full max-w-md">
-          {/* Profile Card */}
-          <div className="bg-parchment parchment-texture rounded-lg border-2 border-aged-bronze shadow-xl p-6 space-y-6">
-            {/* Title */}
+      {/* Main */}
+      <main className="flex-1 flex items-start justify-center p-4 pt-8">
+        <div className="w-full max-w-md space-y-5">
+          {/* Profile card */}
+          <div className="glass-panel px-6 py-6 space-y-5">
+            {/* Avatar + subtitle */}
             <div className="text-center space-y-2">
               <div className="flex justify-center">
-                <div className="w-16 h-16 bg-gradient-to-br from-burnished-gold to-aged-bronze rounded-full border-2 border-aged-bronze flex items-center justify-center">
-                  <User className="w-8 h-8 text-parchment" />
+                <div
+                  className="w-16 h-16 rounded-full flex items-center justify-center magical-glow"
+                  style={{ background: 'linear-gradient(135deg, #2563eb 0%, #1d4ed8 100%)' }}
+                >
+                  <User className="w-8 h-8 text-white" />
                 </div>
               </div>
-              <p className="fantasy-body text-aged-bronze text-sm">{UI_TEXT.profile.subtitle}</p>
+              <p className="text-xs text-[rgb(148,163,184)]">{UI_TEXT.profile.subtitle}</p>
             </div>
 
-            {/* Success Message */}
+            {/* Success */}
             {isSuccess && (
-              <div className="bg-green-50 border border-green-200 rounded-lg p-3">
-                <p className="text-green-700 text-sm text-center">
-                  {SUCCESS_MESSAGES.profile.updated}
-                </p>
-              </div>
+              <p className="text-sm text-center" style={{ color: 'rgb(37,99,235)' }}>
+                {SUCCESS_MESSAGES.profile.updated}
+              </p>
             )}
 
-            {/* API Error */}
+            {/* API error */}
             {isUpdateError && (
-              <div className="bg-red-50 border border-red-200 rounded-lg p-3">
-                <p className="text-red-700 text-sm text-center">
-                  {updateError?.message || 'Failed to update profile. Please try again.'}
-                </p>
-              </div>
+              <p className="text-red-400 text-sm text-center">
+                {updateError?.message || 'Failed to update profile. Please try again.'}
+              </p>
             )}
 
-            {/* Email Display (Read-only) */}
-            <div className="bg-aged-bronze/10 rounded-lg p-3">
-              <p className="fantasy-body text-xs text-aged-bronze uppercase mb-1">Email</p>
-              <p className="fantasy-body text-midnight-ink">{profileData?.user?.email}</p>
+            {/* Email (read-only) */}
+            <div
+              className="rounded-lg px-3 py-2"
+              style={{
+                background: 'rgba(37,99,235,0.08)',
+                border: '1px solid rgba(37,99,235,0.2)',
+              }}
+            >
+              <p className="text-xs text-[rgb(148,163,184)] uppercase tracking-wider mb-0.5">
+                Email
+              </p>
+              <p className="text-sm text-[rgb(220,235,255)]">{profileData?.user?.email}</p>
             </div>
 
-            {/* XP & Level Display (Story 2.2) */}
-            <div className="bg-aged-bronze/10 rounded-lg p-3">
+            {/* XP & Level */}
+            <div
+              className="rounded-lg px-3 py-2"
+              style={{
+                background: 'rgba(37,99,235,0.08)',
+                border: '1px solid rgba(37,99,235,0.2)',
+              }}
+            >
               <XPLevelDisplay
                 xp={profileData?.user?.xp}
                 level={profileData?.user?.level}
@@ -210,8 +212,14 @@ const ProfilePage: React.FC = () => {
               />
             </div>
 
-            {/* Currency Display (Story 2.3) */}
-            <div className="bg-aged-bronze/10 rounded-lg p-3">
+            {/* Currency */}
+            <div
+              className="rounded-lg px-3 py-2"
+              style={{
+                background: 'rgba(37,99,235,0.08)',
+                border: '1px solid rgba(37,99,235,0.2)',
+              }}
+            >
               <CurrencyDisplay
                 amount={profileData?.user?.money}
                 label="Balance"
@@ -220,9 +228,9 @@ const ProfilePage: React.FC = () => {
               />
             </div>
 
-            {/* Statistics Dashboard (Story 2.4) */}
+            {/* Statistics */}
             <div className="space-y-2">
-              <p className="fantasy-body text-xs text-aged-bronze uppercase tracking-wide">
+              <p className="text-xs text-[rgb(148,163,184)] uppercase tracking-wider">
                 Game Statistics
               </p>
               <div className="grid grid-cols-2 gap-3">
@@ -257,8 +265,14 @@ const ProfilePage: React.FC = () => {
               </div>
             </div>
 
-            {/* Activity Feed (Story 2.5) */}
-            <div className="bg-aged-bronze/10 rounded-lg p-3">
+            {/* Activity Feed */}
+            <div
+              className="rounded-lg px-3 py-2"
+              style={{
+                background: 'rgba(37,99,235,0.08)',
+                border: '1px solid rgba(37,99,235,0.2)',
+              }}
+            >
               <ActivityFeed
                 activities={activities}
                 title="Recent Activity"
@@ -274,82 +288,84 @@ const ProfilePage: React.FC = () => {
               />
             </div>
 
-            {/* Form */}
+            {/* Edit form */}
             <form onSubmit={handleSubmit} className="space-y-4">
-              {/* Display Name Field */}
+              {/* Display Name */}
               <div className="space-y-1">
                 <label
                   htmlFor="username"
-                  className="fantasy-body text-sm text-midnight-ink font-medium"
+                  className="block text-xs text-[rgb(148,163,184)] uppercase tracking-wider"
                 >
                   {UI_TEXT.profile.displayNameLabel}
                 </label>
                 <div className="relative">
-                  <User className="absolute left-3 top-1/2 -translate-y-1/2 w-5 h-5 text-aged-bronze" />
-                  <FantasyInput
+                  <User className="absolute left-3.5 top-1/2 -translate-y-1/2 w-4 h-4 text-[rgb(100,130,165)] pointer-events-none" />
+                  <input
                     id="username"
                     name="username"
                     type="text"
                     placeholder={UI_TEXT.profile.displayNamePlaceholder}
                     value={formData.username}
                     onChange={handleChange}
-                    className="pl-10"
                     autoComplete="username"
+                    className="celestial-input"
+                    style={{ paddingLeft: '2.5rem' }}
                   />
                 </div>
                 {validationErrors.username && (
-                  <p className="text-red-600 text-xs mt-1">{validationErrors.username}</p>
+                  <p className="text-red-400 text-xs">{validationErrors.username}</p>
                 )}
               </div>
 
-              {/* Bio Field */}
+              {/* Bio */}
               <div className="space-y-1">
-                <label htmlFor="bio" className="fantasy-body text-sm text-midnight-ink font-medium">
+                <label
+                  htmlFor="bio"
+                  className="block text-xs text-[rgb(148,163,184)] uppercase tracking-wider"
+                >
                   {UI_TEXT.profile.bioLabel}
                 </label>
                 <div className="relative">
-                  <FileText className="absolute left-3 top-3 w-5 h-5 text-aged-bronze" />
-                  <FantasyTextarea
+                  <FileText className="absolute left-3.5 top-3 w-4 h-4 text-[rgb(100,130,165)] pointer-events-none" />
+                  <textarea
                     id="bio"
                     name="bio"
                     placeholder={UI_TEXT.profile.bioPlaceholder}
                     value={formData.bio || ''}
                     onChange={handleChange}
-                    className="pl-10 min-h-[120px]"
                     maxLength={VALIDATION_RULES.bio.maxLength}
+                    rows={4}
+                    className="celestial-input min-h-[100px] resize-vertical"
+                    style={{ paddingLeft: '2.5rem', paddingTop: '0.625rem' }}
                   />
                 </div>
-                <p className="text-aged-bronze text-xs text-right">
+                <p className="text-xs text-[rgb(148,163,184)] text-right">
                   {UI_TEXT.profile.charactersRemaining(bioCharactersRemaining)}
                 </p>
                 {validationErrors.bio && (
-                  <p className="text-red-600 text-xs mt-1">{validationErrors.bio}</p>
+                  <p className="text-red-400 text-xs">{validationErrors.bio}</p>
                 )}
               </div>
 
-              {/* Action Buttons */}
-              <div className="flex gap-3 pt-2">
-                <FantasyButton
+              {/* Action buttons */}
+              <div className="flex gap-3 pt-1">
+                <button
                   type="button"
-                  variant="secondary"
-                  size="default"
-                  className="flex-1"
+                  className="btn-outline-celestial flex-1 inline-flex items-center justify-center gap-2"
                   onClick={handleCancel}
                   disabled={isPending}
                 >
-                  <X className="w-4 h-4 mr-2" />
+                  <X className="w-4 h-4" />
                   {UI_TEXT.profile.cancelButton}
-                </FantasyButton>
-                <FantasyButton
+                </button>
+                <button
                   type="submit"
-                  variant="primary"
-                  size="default"
-                  className="flex-1"
+                  className="btn-cobalt flex-1 inline-flex items-center justify-center gap-2"
                   disabled={isPending}
                 >
-                  <Save className="w-4 h-4 mr-2" />
+                  <Save className="w-4 h-4" />
                   {isPending ? UI_TEXT.profile.savingButton : UI_TEXT.profile.saveButton}
-                </FantasyButton>
+                </button>
               </div>
             </form>
           </div>
@@ -357,10 +373,8 @@ const ProfilePage: React.FC = () => {
       </main>
 
       {/* Footer */}
-      <footer className="bg-parchment border-t border-aged-bronze p-4 text-center">
-        <p className="fantasy-body text-xs text-aged-bronze">
-          &copy; 2025 Equoria. All rights reserved.
-        </p>
+      <footer className="p-4 text-center border-t" style={{ borderColor: 'rgba(37,99,235,0.2)' }}>
+        <p className="text-xs text-[rgb(100,130,165)]">&copy; 2025 Equoria. All rights reserved.</p>
       </footer>
     </div>
   );
