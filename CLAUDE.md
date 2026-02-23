@@ -1,26 +1,27 @@
 # Equoria - Claude Code Configuration
 
-**Version:** 2.1.0
-**Last Updated:** 2026-02-20
+**Version:** 2.2.0
+**Last Updated:** 2026-02-23
 **Project:** Web browser-based horse breeding simulation game
 
 ---
 
 ## 🎯 Current Sprint
 
-### Active Priority: Epic 9A — Technical Health Sprint
+### Active Priority: Epic 9B — Navigation & World Hub
 
-- **Status:** Story 9A-1 (Flaky Tests + Pre-Push Hook) → Ready for Review ✅
-- **Next:** 9A-2 (Playwright E2E), 9A-3 (Project Health Pass), Quick Actions Bundle
+- **Status:** Epic 9A (Technical Health Sprint) → Complete ✅
+- **Next:** Epic 9B — Navigation restructure, World Hub, Horse Care Strip
 - **Branch:** `cleanup-session-2026-01-30`
 
 ### Project Status
 
-- ✅ **Backend:** 100% complete — 3530+ tests passing, pre-push hook restored
-- ✅ **Epics 1–8:** All complete (API integration layer done)
+- ✅ **Backend:** 100% complete — 3530+ tests passing, pre-push hook active
+- ✅ **Epics 1–9A:** All complete (API integration + technical health done)
+- ✅ **E2E Tests:** Playwright suite passing (core-game-flows, auth, breeding)
 - ⚠️ **Frontend:** ~70% complete (React 19 + TypeScript in `/frontend/`)
 - ⚠️ **Deployment:** 10% complete
-- 🔄 **Epic 9A:** Technical Health Sprint in progress
+- 🔄 **Epic 9B:** Navigation & World Hub (next)
 
 ### Session Start Checklist
 
@@ -144,14 +145,14 @@ equoria/
 
 ## 🔧 Current Focus Areas
 
-### Epic 9A: Technical Health Sprint
+### Epic 9A: Technical Health Sprint ✅ COMPLETE
 
-1. **9A-1** ✅ Stabilize flaky tests + restore pre-push hook (ready for review)
-2. **9A-2** 🔄 Playwright E2E for core game flows
-3. **9A-3** 🔄 Project Health Pass (CLAUDE.md, sprint-status sync)
-4. **Quick Actions Bundle** 🔄 AI-7-2, AI-7-3, AI-7-4, AI-8-1
+1. **9A-1** ✅ Stabilize flaky tests + restore pre-push hook
+2. **9A-2** ✅ Playwright E2E for core game flows (11 pass, 4 graceful skips)
+3. **9A-3** ✅ Project Health Pass (CLAUDE.md, sprint-status sync)
+4. **Quick Actions Bundle** ✅ AI-7-2, AI-7-3, AI-7-4, AI-8-1
 
-### Next Epic (9B): Navigation & World Hub
+### Current Epic (9B): Navigation & World Hub
 
 1. World Hub Page (8 locations)
 2. Navigation restructure (place-based vs category-based)

@@ -24,9 +24,9 @@ import CompetitionFilters, {
   EntryFeeFilter,
 } from '@/components/CompetitionFilters';
 import { CompetitionList } from '@/components/competition';
-
-// Constants
-const STALE_TIME_MINUTES = 5;
+import CompetitionDetailModal, {
+  type Competition as ModalCompetition,
+} from '@/components/competition/CompetitionDetailModal';
 
 /**
  * Competition Browser Page Component
@@ -39,6 +39,9 @@ const CompetitionBrowserPage = (): JSX.Element => {
   const [dateRangeFilter, setDateRangeFilter] = useState<DateRangeFilter>('all');
   const [entryFeeFilter, setEntryFeeFilter] = useState<EntryFeeFilter>('all');
 
+  // Competition detail modal state
+  const [selectedCompetition, setSelectedCompetition] = useState<ModalCompetition | null>(null);
+
   // Filter handlers
   const handleClearFilters = useCallback(() => {
     setDisciplineFilter('all');
@@ -46,11 +49,26 @@ const CompetitionBrowserPage = (): JSX.Element => {
     setEntryFeeFilter('all');
   }, []);
 
-  // Competition click handler (will open detail modal in Task 4)
-  const handleCompetitionClick = useCallback((competitionId: number) => {
-    console.log('Competition clicked:', competitionId);
-    // TODO: Task 4 - Open competition detail modal
-  }, []);
+  // Competition click handler — open detail modal
+  const handleCompetitionClick = useCallback(
+    (competitionId: number) => {
+      const found = (data ?? []).find((c) => c.id === competitionId);
+      if (!found) return;
+      setSelectedCompetition({
+        id: found.id,
+        name: found.name,
+        discipline: found.discipline,
+        date: found.date,
+        prizePool: found.prizePool,
+        entryFee: found.entryFee,
+        description: found.description,
+        location: found.location,
+        maxParticipants: found.maxEntries,
+        currentParticipants: found.currentEntries,
+      });
+    },
+    [data]
+  );
 
   // Loading state
   if (isLoading) {
@@ -143,6 +161,13 @@ const CompetitionBrowserPage = (): JSX.Element => {
           title="Available Competitions"
         />
       </main>
+
+      {/* Competition Detail Modal */}
+      <CompetitionDetailModal
+        isOpen={selectedCompetition !== null}
+        onClose={() => setSelectedCompetition(null)}
+        competition={selectedCompetition}
+      />
     </div>
   );
 };

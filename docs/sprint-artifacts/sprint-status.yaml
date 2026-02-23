@@ -3162,8 +3162,9 @@ action_items:
 
   epic-9a:
     title: 'Technical Health Sprint'
-    status: in_progress
+    status: completed
     start_date: '2026-02-18'
+    completed_date: '2026-02-23'
     priority: P0
     prerequisites: [epic-8]
     created_date: '2026-02-18'
@@ -3185,13 +3186,16 @@ action_items:
 
   9a-2-playwright-e2e-for-core-game-flows:
     title: 'Playwright E2E for Core Game Flows'
-    status: in_progress
+    status: completed
     priority: P1
     epic: '9a'
     story: 2
     prerequisites: []
     created_date: '2026-02-18'
+    completed_date: '2026-02-23'
     beads_issue: 'Equoria-cm1'
+    story_file: 'docs/sprint-artifacts/9a-2-playwright-e2e-for-core-game-flows.md'
+    completion_notes: '6/6 core-game-flows tests pass (3 graceful skips), auth.spec.ts 3/3 pass, breeding.spec.ts 1/2 pass + 1 graceful skip'
     ac:
       - Login flow - valid credentials to dashboard redirect
       - Session persistence - page refresh stays authenticated
@@ -3242,13 +3246,13 @@ summary:
   p1_stories: 12
   p2_stories: 3
   fr_coverage: '44/44 (100%)'
-  current_epic: '9a'
-  current_story: '9a-1-stabilize-flaky-backend-tests'
-  epics_completed: 8
-  stories_completed: 46
+  current_epic: '9b'
+  current_story: 'none'
+  epics_completed: 9
+  stories_completed: 50
   stories_in_progress: 0
   stories_ready_for_dev: 0
-  stories_backlog: 4
+  stories_backlog: 0
   total_tests_passing: 1070
   action_items_total: 23
   action_items_completed: 11

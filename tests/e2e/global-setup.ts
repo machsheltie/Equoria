@@ -1,9 +1,13 @@
 import { chromium, type FullConfig } from '@playwright/test';
 import path from 'path';
 import { fileURLToPath } from 'url';
+import fs from 'fs';
 
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
+
+/** Path where test credentials are saved for reuse in login-flow test */
+export const CREDENTIALS_FILE = path.resolve(__dirname, 'test-credentials.json');
 
 async function globalSetup(config: FullConfig) {
   const { baseURL, storageState } = config.projects[0].use;
@@ -13,28 +17,36 @@ async function globalSetup(config: FullConfig) {
   page.on('console', (msg) => console.log(`BROWSER LOG: ${msg.text()}`));
   page.on('pageerror', (err) => console.error(`BROWSER ERROR: ${err.message}`));
 
+  // Unique credentials per run
+  const timestamp = Date.now();
+  const username = `e2e_user_${timestamp}`;
+  const email = `e2e_${timestamp}@example.com`;
+  const password = 'Password123!';
+
   try {
-    // 1. Navigate to register
+    // ── 0. Intercept auth API calls to bypass rate limiting in test setup ─────
+    // The authRateLimiter has a 5-per-15min limit; bypass it via header injection
+    await page.route('**/api/auth/**', (route) => {
+      const headers = { ...route.request().headers(), 'x-test-bypass-rate-limit': 'true' };
+      route.continue({ headers });
+    });
+
+    // ── 1. Register test user via UI ─────────────────────────────────────────
     console.log('Navigating to:', baseURL + '/register');
     await page.goto(baseURL + '/register', { waitUntil: 'networkidle', timeout: 60000 });
-
-    // 2. Register a unique test user for this session
-    const timestamp = Date.now();
-    const username = `e2e_user_${timestamp}`;
-    const email = `e2e_${timestamp}@example.com`;
 
     console.log('Registering user:', username);
     await page.fill('input[name="firstName"]', 'E2E');
     await page.fill('input[name="lastName"]', 'Tester');
     await page.fill('input[name="username"]', username);
     await page.fill('input[name="email"]', email);
-    await page.fill('input[name="password"]', 'Password123!');
-    await page.fill('input[name="confirmPassword"]', 'Password123!');
+    await page.fill('input[name="password"]', password);
+    await page.fill('input[name="confirmPassword"]', password);
 
     console.log('Clicking Submit...');
     await page.click('button[type="submit"]');
 
-    // 3. Wait for navigation to home/dashboard
+    // ── 2. Wait for post-registration redirect to home ───────────────────────
     console.log('Waiting for navigation to home...');
     try {
       await page.waitForURL(baseURL + '/', { timeout: 30000 });
@@ -44,11 +56,60 @@ async function globalSetup(config: FullConfig) {
       throw e;
     }
 
-    // 4. Save storage state
+    // ── 3. Save storageState (auth cookies) for all authenticated tests ──────
     await page.context().storageState({ path: storageState as string });
-    console.log('Global setup complete. Storage state saved.');
+    console.log('Storage state saved.');
+
+    // ── 4. Persist credentials so login-flow test can fill them ─────────────
+    const creds: Record<string, string | number> = { email, password, username };
+    fs.writeFileSync(CREDENTIALS_FILE, JSON.stringify(creds, null, 2), 'utf-8');
+    console.log('Credentials saved:', CREDENTIALS_FILE);
+
+    // ── 5. Create a test horse (used by training + competition tests) ─────────
+    // Fetch a valid breedId first (IDs are auto-incremented, not starting at 1)
+    console.log('Fetching available breeds...');
+    let breedId = 1;
+    const breedsRes = await page.request.get(`${baseURL}/api/breeds`);
+    if (breedsRes.ok()) {
+      const breedsJson = await breedsRes.json();
+      const breeds = breedsJson?.data ?? breedsJson ?? [];
+      if (Array.isArray(breeds) && breeds.length > 0) {
+        breedId = breeds[0].id;
+        console.log('Using breedId:', breedId);
+      }
+    }
+
+    console.log('Creating test horse via API...');
+    const horseRes = await page.request.post(`${baseURL}/api/horses`, {
+      headers: { 'x-test-skip-csrf': 'true' },
+      data: { name: `E2E Horse ${timestamp}`, breedId, age: 5, sex: 'mare' },
+    });
+    if (horseRes.ok()) {
+      const horseJson = await horseRes.json();
+      const horseId = horseJson?.data?.id ?? horseJson?.id ?? null;
+      console.log('Test horse id:', horseId);
+      creds.testHorseId = horseId;
+      fs.writeFileSync(CREDENTIALS_FILE, JSON.stringify(creds, null, 2), 'utf-8');
+    } else {
+      console.warn('Horse creation failed:', horseRes.status(), await horseRes.text());
+    }
+
+    // ── 6. Seed test competition shows ────────────────────────────────────────
+    console.log('Seeding competition shows...');
+    const showRes = await page.request.post(`${baseURL}/api/competition/test/setup`, {
+      headers: { 'x-test-skip-csrf': 'true' },
+    });
+    if (showRes.ok()) {
+      const showJson = await showRes.json();
+      console.log('Shows created:', showJson?.data?.length ?? 0);
+    } else {
+      console.warn('Show seeding failed:', showRes.status(), await showRes.text());
+    }
+
+    console.log('Global setup complete.');
   } catch (error) {
     console.error('Global setup failed:', error);
+    throw error;
   } finally {
     await browser.close();
   }
