@@ -25,6 +25,10 @@ import VeterinarianPage from './pages/VeterinarianPage';
 import FarrierPage from './pages/FarrierPage';
 import FeedShopPage from './pages/FeedShopPage';
 import TackShopPage from './pages/TackShopPage';
+// Epic 12 — Stable Management pages
+import BankPage from './pages/BankPage';
+import InventoryPage from './pages/InventoryPage';
+import MyStablePage from './pages/MyStablePage';
 
 /**
  * Navigation items for the Equoria application
@@ -123,6 +127,25 @@ export const navItems = [
     to: '/tack-shop',
     icon: null,
     page: <TackShopPage />,
+  },
+  // Epic 12 — Stable management pages (routes only, linked from dashboard/nav)
+  {
+    title: 'Bank',
+    to: '/bank',
+    icon: null,
+    page: <BankPage />,
+  },
+  {
+    title: 'Inventory',
+    to: '/inventory',
+    icon: null,
+    page: <InventoryPage />,
+  },
+  {
+    title: 'My Stable',
+    to: '/my-stable',
+    icon: null,
+    page: <MyStablePage />,
   },
 ];
 

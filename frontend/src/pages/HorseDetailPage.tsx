@@ -14,7 +14,7 @@
  */
 
 import React, { useState } from 'react';
-import { useParams, useNavigate } from 'react-router-dom';
+import { useParams, useNavigate, Link } from 'react-router-dom';
 import {
   Zap,
   Heart,
@@ -29,16 +29,17 @@ import {
   AlertCircle,
   Loader2,
   Filter,
-  ChevronDown,
   Sparkles,
   TrendingUp,
   Ruler,
   Clock,
   CheckCircle,
+  GitBranch,
+  Stethoscope,
+  Tag,
 } from 'lucide-react';
 import { useHorse } from '../hooks/api/useHorses';
 import FantasyButton from '../components/FantasyButton';
-import HorseCard from '../components/HorseCard';
 import TraitCard from '../components/TraitCard';
 import {
   useHorseEpigeneticInsights,
@@ -96,7 +97,10 @@ type TabType =
   | 'conformation'
   | 'progression'
   | 'training'
-  | 'competition';
+  | 'competition'
+  | 'pedigree'
+  | 'health'
+  | 'stud-sale';
 
 // Stat icon mapping (consistent with HorseCard)
 const getStatIcon = (statName: string) => {
@@ -183,10 +187,13 @@ const HorseDetailPage: React.FC = () => {
     { id: 'progression', label: 'Progression', icon: <TrendingUp className="w-4 h-4" /> },
     { id: 'training', label: 'Training', icon: <Dumbbell className="w-4 h-4" /> },
     { id: 'competition', label: 'Competitions', icon: <Award className="w-4 h-4" /> },
+    { id: 'pedigree', label: 'Pedigree', icon: <GitBranch className="w-4 h-4" /> },
+    { id: 'health', label: 'Health & Vet', icon: <Stethoscope className="w-4 h-4" /> },
+    { id: 'stud-sale', label: 'Stud / Sale', icon: <Tag className="w-4 h-4" /> },
   ];
 
   return (
-    <div className="min-h-screen bg-parchment parchment-texture">
+    <div className="min-h-screen bg-parchment parchment-texture pb-20">
       <div className="max-w-7xl mx-auto p-4 md:p-6">
         {/* Header */}
         <div className="mb-6">
@@ -332,7 +339,69 @@ const HorseDetailPage: React.FC = () => {
             {activeTab === 'progression' && <ProgressionTab horse={horse} />}
             {activeTab === 'training' && <TrainingTab horse={horse} />}
             {activeTab === 'competition' && <PlaceholderTab title="Competition Results" />}
+            {activeTab === 'pedigree' && <PedigreeTab horse={horse} />}
+            {activeTab === 'health' && <HealthVetTab horse={horse} />}
+            {activeTab === 'stud-sale' && <StudSaleTab horse={horse} />}
           </div>
+        </div>
+      </div>
+
+      {/* Story 12-5 — Sticky Bottom Action Bar */}
+      <div
+        className="fixed bottom-0 left-0 right-0 z-40 bg-white/90 border-t-2 border-burnished-gold backdrop-blur-sm"
+        data-testid="horse-action-bar"
+      >
+        <div className="max-w-7xl mx-auto px-4 py-3 flex items-center gap-3 overflow-x-auto">
+          <span className="text-xs fantasy-caption text-aged-bronze whitespace-nowrap mr-1 flex-shrink-0">
+            Quick Actions:
+          </span>
+          <button
+            type="button"
+            disabled
+            className="flex items-center gap-1.5 px-4 py-2 rounded-lg bg-aged-bronze/10 border border-aged-bronze/30 text-aged-bronze text-sm fantasy-body whitespace-nowrap cursor-not-allowed opacity-60"
+            title="Feed management — coming soon"
+            data-testid="action-feed"
+          >
+            <span aria-hidden="true">🌾</span>
+            Feed
+          </button>
+          <button
+            type="button"
+            onClick={() => navigate(`/training?horseId=${horse.id}`)}
+            className="flex items-center gap-1.5 px-4 py-2 rounded-lg bg-burnished-gold/20 border border-burnished-gold/40 text-midnight-ink text-sm fantasy-body whitespace-nowrap hover:bg-burnished-gold/30 transition-colors"
+            data-testid="action-train"
+          >
+            <Dumbbell className="w-3.5 h-3.5" />
+            Train
+          </button>
+          <button
+            type="button"
+            onClick={() => navigate(`/breeding?horseId=${horse.id}`)}
+            className="flex items-center gap-1.5 px-4 py-2 rounded-lg bg-aged-bronze/10 border border-aged-bronze/30 text-midnight-ink text-sm fantasy-body whitespace-nowrap hover:bg-aged-bronze/20 transition-colors"
+            data-testid="action-breed"
+          >
+            <Heart className="w-3.5 h-3.5" />
+            Breed
+          </button>
+          <button
+            type="button"
+            disabled
+            className="flex items-center gap-1.5 px-4 py-2 rounded-lg bg-aged-bronze/10 border border-aged-bronze/30 text-aged-bronze text-sm fantasy-body whitespace-nowrap cursor-not-allowed opacity-60"
+            title="Rider assignment — coming soon"
+            data-testid="action-assign-rider"
+          >
+            <Users className="w-3.5 h-3.5" />
+            Assign Rider
+          </button>
+          <button
+            type="button"
+            onClick={() => setActiveTab('stud-sale')}
+            className="flex items-center gap-1.5 px-4 py-2 rounded-lg bg-aged-bronze/10 border border-aged-bronze/30 text-midnight-ink text-sm fantasy-body whitespace-nowrap hover:bg-aged-bronze/20 transition-colors"
+            data-testid="action-list-for-sale"
+          >
+            <Tag className="w-3.5 h-3.5" />
+            List / Stud
+          </button>
         </div>
       </div>
     </div>
@@ -1420,5 +1489,304 @@ const PlaceholderTab: React.FC<{ title: string }> = ({ title }) => (
     </p>
   </div>
 );
+
+// Pedigree Tab Component — Story 12-4
+const PedigreeTab: React.FC<{ horse: Horse }> = ({ horse }) => {
+  const hasSire = Boolean(horse.parentIds?.sireId);
+  const hasDam = Boolean(horse.parentIds?.damId);
+  const hasAnyParent = hasSire || hasDam;
+
+  return (
+    <div className="space-y-6" data-testid="pedigree-tab">
+      <div>
+        <h3 className="fantasy-title text-xl text-midnight-ink mb-3">Family Tree</h3>
+        <p className="fantasy-body text-aged-bronze text-sm mb-6">
+          Parentage and bloodline information for {horse.name}.
+        </p>
+      </div>
+
+      {hasAnyParent ? (
+        <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+          {/* Sire */}
+          <div
+            className="p-5 bg-parchment/50 rounded-lg border border-aged-bronze"
+            data-testid="pedigree-sire"
+          >
+            <p className="fantasy-caption text-aged-bronze mb-1 text-xs uppercase tracking-wider">
+              Sire (Father)
+            </p>
+            {hasSire ? (
+              <Link
+                to={`/horses/${horse.parentIds!.sireId}`}
+                className="fantasy-title text-lg text-burnished-gold hover:text-midnight-ink transition-colors flex items-center gap-2"
+              >
+                <GitBranch className="w-4 h-4" />
+                View Sire Profile
+              </Link>
+            ) : (
+              <p className="fantasy-body text-mystic-silver italic">Unknown</p>
+            )}
+          </div>
+
+          {/* Dam */}
+          <div
+            className="p-5 bg-parchment/50 rounded-lg border border-aged-bronze"
+            data-testid="pedigree-dam"
+          >
+            <p className="fantasy-caption text-aged-bronze mb-1 text-xs uppercase tracking-wider">
+              Dam (Mother)
+            </p>
+            {hasDam ? (
+              <Link
+                to={`/horses/${horse.parentIds!.damId}`}
+                className="fantasy-title text-lg text-burnished-gold hover:text-midnight-ink transition-colors flex items-center gap-2"
+              >
+                <GitBranch className="w-4 h-4" />
+                View Dam Profile
+              </Link>
+            ) : (
+              <p className="fantasy-body text-mystic-silver italic">Unknown</p>
+            )}
+          </div>
+        </div>
+      ) : (
+        <div
+          className="text-center py-10 bg-parchment/50 rounded-lg border border-aged-bronze"
+          data-testid="pedigree-empty"
+        >
+          <GitBranch className="w-10 h-10 text-aged-bronze/40 mx-auto mb-3" />
+          <p className="fantasy-title text-lg text-midnight-ink mb-2">No Pedigree Recorded</p>
+          <p className="fantasy-body text-aged-bronze text-sm max-w-sm mx-auto">
+            This horse was not bred via the in-game breeding system. Parentage records are only
+            available for horses with a registered sire and dam.
+          </p>
+        </div>
+      )}
+
+      {/* Offspring section — future expansion */}
+      <div className="p-4 bg-parchment/30 rounded-lg border border-aged-bronze/50">
+        <p className="fantasy-caption text-aged-bronze text-xs uppercase tracking-wider mb-1">
+          Offspring
+        </p>
+        <p className="fantasy-body text-aged-bronze text-sm italic">
+          Offspring records are displayed once this horse has produced foals through the breeding
+          system.
+        </p>
+      </div>
+    </div>
+  );
+};
+
+// Health & Vet Tab Component — Story 12-4
+// Mock vet history — replaced by live API in Story 12-5 wire-up
+interface VetRecord {
+  date: string;
+  type: string;
+  result: string;
+  vet: string;
+}
+
+const MOCK_VET_HISTORY: VetRecord[] = [
+  {
+    date: '2026-02-10',
+    type: 'Health Check',
+    result: 'Excellent — cleared for competition',
+    vet: 'Dr. Ashwood',
+  },
+  {
+    date: '2026-01-15',
+    type: 'Injury Assessment',
+    result: 'Minor strain — 3 days rest advised',
+    vet: 'Dr. Whitmore',
+  },
+  {
+    date: '2025-12-01',
+    type: 'Annual Vaccination',
+    result: 'Complete — all vaccines administered',
+    vet: 'Dr. Ashwood',
+  },
+];
+
+const HealthVetTab: React.FC<{ horse: Horse }> = ({ horse }) => {
+  const healthColor =
+    horse.healthStatus?.toLowerCase() === 'healthy'
+      ? 'text-forest-green'
+      : horse.healthStatus?.toLowerCase().includes('injured')
+        ? 'text-aged-bronze'
+        : 'text-burnished-gold';
+
+  return (
+    <div className="space-y-6" data-testid="health-vet-tab">
+      {/* Current Status */}
+      <div>
+        <h3 className="fantasy-title text-xl text-midnight-ink mb-3">Current Health Status</h3>
+        <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+          <div className="p-4 bg-parchment/50 rounded-lg border border-aged-bronze">
+            <p className="fantasy-caption text-aged-bronze mb-1 text-xs uppercase tracking-wider">
+              Status
+            </p>
+            <p className={`fantasy-title text-xl ${healthColor}`}>{horse.healthStatus}</p>
+          </div>
+          <div className="p-4 bg-parchment/50 rounded-lg border border-aged-bronze">
+            <p className="fantasy-caption text-aged-bronze mb-1 text-xs uppercase tracking-wider">
+              Next Recommended Check
+            </p>
+            <p className="fantasy-body text-midnight-ink">6 weeks from last visit</p>
+          </div>
+        </div>
+      </div>
+
+      {/* Vet History */}
+      <div>
+        <h3 className="fantasy-title text-xl text-midnight-ink mb-3">Veterinary History</h3>
+        {MOCK_VET_HISTORY.length === 0 ? (
+          <div className="text-center py-8 bg-parchment/30 rounded-lg border border-aged-bronze/50">
+            <Stethoscope className="w-8 h-8 text-aged-bronze/40 mx-auto mb-2" />
+            <p className="fantasy-body text-aged-bronze">No vet records on file.</p>
+          </div>
+        ) : (
+          <div className="space-y-3">
+            {MOCK_VET_HISTORY.map((record, idx) => (
+              <div
+                key={idx}
+                className="p-4 bg-parchment/50 rounded-lg border border-aged-bronze hover:border-burnished-gold transition-colors"
+                data-testid={`vet-record-${idx}`}
+              >
+                <div className="flex items-start justify-between mb-1">
+                  <p className="fantasy-title text-midnight-ink text-sm">{record.type}</p>
+                  <span className="text-xs fantasy-caption text-aged-bronze flex items-center gap-1">
+                    <Clock className="w-3 h-3" />
+                    {new Date(record.date).toLocaleDateString('en-GB', {
+                      day: 'numeric',
+                      month: 'short',
+                      year: 'numeric',
+                    })}
+                  </span>
+                </div>
+                <p className="fantasy-body text-midnight-ink text-sm mb-1">{record.result}</p>
+                <p className="fantasy-caption text-aged-bronze text-xs">Vet: {record.vet}</p>
+              </div>
+            ))}
+          </div>
+        )}
+      </div>
+
+      {/* Book Appointment CTA */}
+      <div className="p-4 bg-parchment/30 rounded-lg border border-aged-bronze/50 flex items-center justify-between">
+        <div>
+          <p className="fantasy-title text-midnight-ink text-sm">Need a Vet Appointment?</p>
+          <p className="fantasy-body text-aged-bronze text-sm">
+            Visit the Vet Clinic to book a health check or treatment.
+          </p>
+        </div>
+        <Link
+          to="/vet"
+          className="px-4 py-2 bg-aged-bronze/10 border border-aged-bronze/40 rounded-lg text-sm fantasy-body text-aged-bronze hover:bg-aged-bronze/20 transition-colors whitespace-nowrap"
+        >
+          Go to Vet Clinic
+        </Link>
+      </div>
+    </div>
+  );
+};
+
+// Stud / Sale Tab Component — Story 12-4
+const StudSaleTab: React.FC<{ horse: Horse }> = ({ horse }) => {
+  const [listingType, setListingType] = useState<'none' | 'stud' | 'sale'>('none');
+
+  const isMale =
+    horse.gender?.toLowerCase() === 'stallion' || horse.gender?.toLowerCase() === 'male';
+  const isFemale =
+    horse.gender?.toLowerCase() === 'mare' || horse.gender?.toLowerCase() === 'female';
+
+  return (
+    <div className="space-y-6" data-testid="stud-sale-tab">
+      <div>
+        <h3 className="fantasy-title text-xl text-midnight-ink mb-2">Listing Options</h3>
+        <p className="fantasy-body text-aged-bronze text-sm">
+          List {horse.name} as a stud service or for outright sale. Pricing and listing management
+          will be wired to the live API in a future update.
+        </p>
+      </div>
+
+      {/* Current Listing Status */}
+      <div className="p-4 bg-parchment/50 rounded-lg border border-aged-bronze">
+        <p className="fantasy-caption text-aged-bronze text-xs uppercase tracking-wider mb-1">
+          Current Status
+        </p>
+        <p className="fantasy-title text-lg text-midnight-ink">
+          {listingType === 'none'
+            ? 'Not Listed'
+            : listingType === 'stud'
+              ? 'Listed as Stud'
+              : 'Listed for Sale'}
+        </p>
+      </div>
+
+      {/* Listing Type Buttons */}
+      <div className="space-y-3">
+        {isMale && (
+          <button
+            type="button"
+            onClick={() => setListingType(listingType === 'stud' ? 'none' : 'stud')}
+            disabled
+            className="w-full flex items-center justify-between p-4 bg-parchment/50 rounded-lg border border-aged-bronze/50 text-left cursor-not-allowed opacity-60"
+            title="Stud listing — coming soon"
+            data-testid="stud-listing-btn"
+          >
+            <div>
+              <p className="fantasy-title text-midnight-ink text-sm">Offer as Stud Service</p>
+              <p className="fantasy-body text-aged-bronze text-xs mt-0.5">
+                Other players can pay a breeding fee to use {horse.name}
+              </p>
+            </div>
+            <span className="text-xs fantasy-caption text-aged-bronze">Coming Soon</span>
+          </button>
+        )}
+
+        {!isFemale && !isMale && (
+          <div className="p-4 bg-parchment/30 rounded-lg border border-aged-bronze/30">
+            <p className="fantasy-body text-aged-bronze text-sm italic">
+              Stud listing is only available for stallions.
+            </p>
+          </div>
+        )}
+
+        <button
+          type="button"
+          onClick={() => setListingType(listingType === 'sale' ? 'none' : 'sale')}
+          disabled
+          className="w-full flex items-center justify-between p-4 bg-parchment/50 rounded-lg border border-aged-bronze/50 text-left cursor-not-allowed opacity-60"
+          title="Sale listing — coming soon"
+          data-testid="sale-listing-btn"
+        >
+          <div>
+            <p className="fantasy-title text-midnight-ink text-sm">List for Sale</p>
+            <p className="fantasy-body text-aged-bronze text-xs mt-0.5">
+              Place {horse.name} on the Marketplace for other players to purchase
+            </p>
+          </div>
+          <span className="text-xs fantasy-caption text-aged-bronze">Coming Soon</span>
+        </button>
+      </div>
+
+      {/* Marketplace Link */}
+      <div className="p-4 bg-parchment/30 rounded-lg border border-aged-bronze/50 flex items-center justify-between">
+        <div>
+          <p className="fantasy-title text-midnight-ink text-sm">Browse the Marketplace</p>
+          <p className="fantasy-body text-aged-bronze text-sm">
+            See horses listed for sale by other players.
+          </p>
+        </div>
+        <Link
+          to="/marketplace"
+          className="px-4 py-2 bg-aged-bronze/10 border border-aged-bronze/40 rounded-lg text-sm fantasy-body text-aged-bronze hover:bg-aged-bronze/20 transition-colors whitespace-nowrap"
+        >
+          Marketplace
+        </Link>
+      </div>
+    </div>
+  );
+};
 
 export default HorseDetailPage;

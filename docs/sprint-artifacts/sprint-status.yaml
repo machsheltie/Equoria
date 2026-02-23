@@ -3486,18 +3486,110 @@ epic-9c:
     created_date: '2026-02-23'
     deferred_reason: 'Backend vet/farrier/feed-shop/tack-shop endpoints do not yet exist. All pages are mock-ready with disabled action buttons.'
 
+  # Epic 12: Stable Management Completions (COMPLETE)
+  epic-12:
+    title: 'Stable Management Completions'
+    status: completed
+    completed_date: '2026-02-23'
+    priority: P1
+    story_file: 'docs/sprint-artifacts/12-stable-management-completions.md'
+
+  12-1-bank-currency-ui:
+    title: 'Bank / Currency UI'
+    status: completed
+    priority: P1
+    epic: '12'
+    story: 1
+    prerequisites: []
+    created_date: '2026-02-23'
+    completed_date: '2026-02-23'
+    ac:
+      - '/bank route renders BankPage'
+      - Balance card shows current coin total
+      - Weekly reward claim button (+500, shows Claimed state after use)
+      - Transaction history with credit/debit styling, date, amount
+      - Celestial Night theme, breadcrumb, info panel
+
+  12-2-inventory-page:
+    title: 'Inventory Page'
+    status: completed
+    priority: P1
+    epic: '12'
+    story: 2
+    prerequisites: []
+    created_date: '2026-02-23'
+    completed_date: '2026-02-23'
+    ac:
+      - '/inventory route renders InventoryPage'
+      - Category filter: All / Tack / Consumables / Special
+      - Item cards with icon, name, bonus, description, quantity, equipped state
+      - Empty state when no items in selected category
+      - Equip/Use buttons disabled (mock-ready)
+      - Celestial Night theme, breadcrumb, info panel
+
+  12-3-my-stable-page:
+    title: 'My Stable Page / Stable Profile'
+    status: completed
+    priority: P1
+    epic: '12'
+    story: 3
+    prerequisites: []
+    created_date: '2026-02-23'
+    completed_date: '2026-02-23'
+    ac:
+      - '/my-stable route renders MyStablePage (distinct from /profile)'
+      - Stable Profile tab with banner, name, bio, 6 stat blocks
+      - Hall of Fame tab with retired horses and career stats
+      - Tablist/tabpanel ARIA pattern, breadcrumb, info panel
+      - Celestial Night theme
+
+  12-4-horse-profile-missing-tabs:
+    title: 'Horse Profile Missing Tabs (Pedigree, Health/Vet, Stud/Sale)'
+    status: completed
+    priority: P1
+    epic: '12'
+    story: 4
+    prerequisites: []
+    created_date: '2026-02-23'
+    completed_date: '2026-02-23'
+    ac:
+      - Pedigree tab with sire/dam links (or empty state for non-bred horses)
+      - Health & Vet tab with mock vet history + vet clinic link
+      - Stud / Sale tab with gender-aware listing options (stallion stud, all sale)
+      - All tabs use parchment/fantasy theme matching existing HorseDetailPage tabs
+      - TabType union extended to include pedigree/health/stud-sale
+      - Pre-existing unused imports (ChevronDown, HorseCard) cleaned up
+
+  12-5-horse-profile-action-bar:
+    title: 'Horse Profile Action Bar (Feed/Train/Breed/Assign Rider)'
+    status: completed
+    priority: P1
+    epic: '12'
+    story: 5
+    prerequisites: [12-4-horse-profile-missing-tabs]
+    created_date: '2026-02-23'
+    completed_date: '2026-02-23'
+    ac:
+      - Sticky bottom action bar (fixed bottom-0) on HorseDetailPage
+      - Feed button (disabled, coming soon)
+      - Train button (navigates to /training?horseId=X)
+      - Breed button (navigates to /breeding?horseId=X)
+      - Assign Rider button (disabled, coming soon)
+      - List / Stud button (activates stud-sale tab)
+      - pb-20 on outer page div prevents content hiding behind bar
+
 # Summary
 summary:
-  total_epics: 12
-  total_stories: 64
+  total_epics: 13
+  total_stories: 69
   p0_stories: 40
-  p1_stories: 20
+  p1_stories: 25
   p2_stories: 4
   fr_coverage: '44/44 (100%)'
-  current_epic: '10'
+  current_epic: '12'
   current_story: 'none'
-  epics_completed: 12
-  stories_completed: 64
+  epics_completed: 13
+  stories_completed: 69
   stories_in_progress: 0
   stories_ready_for_dev: 0
   stories_backlog: 0
@@ -3513,4 +3605,5 @@ summary:
   epic_9b_completed_date: '2026-02-23'
   epic_9c_completed_date: '2026-02-23'
   epic_10_completed_date: '2026-02-23'
-  next_milestone: 'Epic 11: Community Features'
+  epic_12_completed_date: '2026-02-23'
+  next_milestone: 'Epic 11: Community Features (deferred) — circle back after Epic 12'

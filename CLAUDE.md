@@ -1,6 +1,6 @@
 # Equoria - Claude Code Configuration
 
-**Version:** 2.5.0
+**Version:** 2.6.0
 **Last Updated:** 2026-02-23
 **Project:** Web browser-based horse breeding simulation game
 
@@ -8,31 +8,30 @@
 
 ## 🎯 Current Sprint
 
-### Active Priority: Epic 10 — World Locations ✅ COMPLETE
+### Active Priority: Epic 12 — Stable Management Completions ✅ COMPLETE
 
-- **Status:** Epic 10 (World Locations / Service Hubs) → Complete ✅
-- **Stories:** 10-1 Vet Clinic, 10-2 Farrier, 10-3 Feed Shop, 10-4 Tack Shop, Grooms Page (10-5 deferred)
-- **Next:** Epic 11 — Community Features
+- **Status:** Epic 12 (Stable Management Completions) → Complete ✅
+- **Stories:** 12-1 Bank, 12-2 Inventory, 12-3 My Stable, 12-4 Horse Profile Tabs, 12-5 Action Bar
+- **Next:** Epic 11 — Community Features (deferred — circle back now)
 - **Branch:** `cleanup-session-2026-01-30`
 
-### Epic 10 Deliverables
+### Epic 12 Deliverables
 
-- `VeterinarianPage.tsx` (`/vet`) — Health checks, treatments, genetics, certificates
-- `FarrierPage.tsx` (`/farrier`) — Hoof trim, shoeing, corrective, emergency removal
-- `FeedShopPage.tsx` (`/feed-shop`) — Basic feed, performance mix, supplements, diet plan
-- `TackShopPage.tsx` (`/tack-shop`) — Training/competition saddles + standard/competition bridles
-- `GroomsPage.tsx` (`/grooms`) — Wraps Epic 7 MyGroomsDashboard + GroomList components
-- `WorldHubPage.tsx` — 5 broken `/stable` hrefs fixed to correct routes
-- `nav-items.tsx` — 5 new World sub-location routes registered
+- `BankPage.tsx` (`/bank`) — Balance card, weekly claim, transaction history
+- `InventoryPage.tsx` (`/inventory`) — Category filter, item grid, equip buttons (mock-ready)
+- `MyStablePage.tsx` (`/my-stable`) — Stable profile + Hall of Fame tabs
+- `HorseDetailPage.tsx` — Added Pedigree, Health & Vet, Stud / Sale tabs (parchment theme)
+- `HorseDetailPage.tsx` — Sticky bottom action bar (Feed/Train/Breed/Assign/List)
+- `nav-items.tsx` — 3 new routes registered (/bank, /inventory, /my-stable)
 
 ### Project Status
 
 - ✅ **Backend:** 100% complete — 3530+ tests passing, pre-push hook active
-- ✅ **Epics 1–10:** All complete (API integration + technical health + nav/world hub + riders + world locations)
+- ✅ **Epics 1–10, 12:** All complete (API integration + technical health + nav/world hub + riders + world locations + stable management)
 - ✅ **E2E Tests:** Playwright suite passing (core-game-flows, auth, breeding)
-- ⚠️ **Frontend:** ~82% complete (React 19 + TypeScript in `/frontend/`)
+- ⚠️ **Frontend:** ~87% complete (React 19 + TypeScript in `/frontend/`)
 - ⚠️ **Deployment:** 10% complete
-- 🔄 **Epic 11:** Community Features (next)
+- 🔄 **Epic 11:** Community Features (next — was deferred, circle back now)
 
 ### Session Start Checklist
 
