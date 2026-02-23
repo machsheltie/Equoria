@@ -54,11 +54,13 @@ export interface AuthFooterLinkProps {
  * Authentication page header with logo
  */
 export const AuthHeader: React.FC = () => (
-  <header className="bg-parchment parchment-texture border-b-2 border-aged-bronze shadow-lg relative">
+  <header
+    className="border-b relative"
+    style={{ background: 'rgba(10,22,40,0.9)', borderColor: 'rgba(37,99,235,0.3)' }}
+  >
     <div className="flex items-center justify-center p-4">
-      <h1 className="fantasy-title text-3xl text-midnight-ink">Equoria</h1>
+      <h1 className="fantasy-title text-3xl">Equoria</h1>
     </div>
-    <div className="absolute bottom-0 left-0 right-0 h-1 bg-gradient-to-r from-aged-bronze via-burnished-gold to-aged-bronze" />
   </header>
 );
 
@@ -66,8 +68,8 @@ export const AuthHeader: React.FC = () => (
  * Authentication page footer
  */
 export const AuthFooter: React.FC = () => (
-  <footer className="bg-parchment border-t border-aged-bronze p-4 text-center">
-    <p className="fantasy-body text-xs text-aged-bronze">
+  <footer className="p-4 text-center border-t" style={{ borderColor: 'rgba(37,99,235,0.2)' }}>
+    <p className="text-xs text-[rgb(100,130,165)]">
       &copy; {new Date().getFullYear()} Equoria. All rights reserved.
     </p>
   </footer>
@@ -79,12 +81,15 @@ export const AuthFooter: React.FC = () => (
 export const AuthCardHeader: React.FC<AuthCardHeaderProps> = ({ title, subtitle, icon }) => (
   <div className="text-center space-y-2">
     <div className="flex justify-center">
-      <div className="w-16 h-16 bg-gradient-to-br from-burnished-gold to-aged-bronze rounded-full border-2 border-aged-bronze flex items-center justify-center">
-        {icon || <Sparkles className="w-8 h-8 text-parchment" aria-hidden="true" />}
+      <div
+        className="w-16 h-16 rounded-full flex items-center justify-center magical-glow"
+        style={{ background: 'linear-gradient(135deg, #2563eb 0%, #1d4ed8 100%)' }}
+      >
+        {icon || <Sparkles className="w-8 h-8 text-white" aria-hidden="true" />}
       </div>
     </div>
-    <h2 className="fantasy-header text-2xl text-midnight-ink">{title}</h2>
-    <p className="fantasy-body text-aged-bronze text-sm">{subtitle}</p>
+    <h2 className="fantasy-header text-2xl text-[rgb(212,168,67)]">{title}</h2>
+    <p className="text-sm text-[rgb(148,163,184)]">{subtitle}</p>
   </div>
 );
 
@@ -108,15 +113,13 @@ export const AuthError: React.FC<AuthErrorProps> = ({
  * Footer link section (e.g., "Already have an account? Sign In")
  */
 export const AuthFooterLink: React.FC<AuthFooterLinkProps> = ({ prompt, linkText, linkTo }) => {
-  // Using regular anchor since we want to use with React Router
-  // Parent component should wrap with Link from react-router-dom
   return (
-    <div className="text-center pt-4 border-t border-aged-bronze">
-      <p className="fantasy-body text-sm text-aged-bronze">
+    <div className="text-center pt-4 border-t" style={{ borderColor: 'rgba(37,99,235,0.2)' }}>
+      <p className="text-sm text-[rgb(148,163,184)]">
         {prompt}{' '}
         <a
           href={linkTo}
-          className="text-burnished-gold hover:text-midnight-ink font-medium transition-colors"
+          className="text-[rgb(212,168,67)] hover:text-white font-medium transition-colors"
         >
           {linkText}
         </a>
@@ -162,9 +165,7 @@ export const AuthLayout: React.FC<AuthLayoutProps> = ({
       <main className="flex-1 flex items-center justify-center p-4 py-8">
         <div className="w-full max-w-md">
           {/* Auth Card */}
-          <div
-            className={`bg-parchment parchment-texture rounded-lg border-2 border-aged-bronze shadow-xl p-6 space-y-6 ${cardClassName}`}
-          >
+          <div className={`glass-panel p-6 space-y-6 ${cardClassName}`}>
             <AuthCardHeader title={title} subtitle={subtitle} icon={icon} />
             {children}
           </div>

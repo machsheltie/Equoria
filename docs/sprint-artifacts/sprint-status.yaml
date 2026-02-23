@@ -3578,6 +3578,73 @@ epic-9c:
       - List / Stud button (activates stud-sale tab)
       - pb-20 on outer page div prevents content hiding behind bar
 
+  # Epic 13: Trainer System (P2 - COMPLETE, 13-5 deferred)
+  epic-13:
+    title: 'Trainer System'
+    status: completed
+    completed_date: '2026-02-23'
+    priority: P2
+    story_file: 'docs/sprint-artifacts/13-trainer-system.md'
+    note: 'Story 13-5 (API wire-up) deferred — no backend routes yet'
+
+  13-1-trainer-hiring:
+    title: 'Trainer Hiring Interface'
+    status: completed
+    priority: P2
+    epic: '13'
+    story: '1'
+    acceptance_criteria:
+      - TrainerList with 6 mock trainers in marketplace
+      - Hire buttons disabled pending auth wire-up
+      - Personality badge (5 types) + skill level chips
+      - Filter by skill level and personality
+      - MOCK_AVAILABLE_TRAINERS labelled for /api/trainers/marketplace
+
+  13-2-trainer-assignment:
+    title: 'Trainer Assignment + Management'
+    status: completed
+    priority: P2
+    epic: '13'
+    story: '2'
+    acceptance_criteria:
+      - MyTrainersDashboard with 2 mock trainers
+      - Slot counter (N of 4 slots used)
+      - Assign button disabled pending auth wire-up
+      - TrainerAssignmentCard showing assigned horses
+      - MOCK_MY_TRAINERS + MOCK_ASSIGNMENTS labelled for API replacement
+
+  13-3-trainer-discovery:
+    title: 'Trainer Discovery System'
+    status: completed
+    priority: P2
+    epic: '13'
+    story: '3'
+    acceptance_criteria:
+      - TrainerDiscoveryPanel with 3 categories x 2 slots
+      - Undiscovered slots show question mark placeholders
+      - Progress bar and next-discovery hint
+      - buildEmptyTrainerDiscoveryProfile helper
+
+  13-4-trainer-career:
+    title: 'Trainer Career + Legacy'
+    status: completed
+    priority: P2
+    epic: '13'
+    story: '4'
+    acceptance_criteria:
+      - TrainerCareerPanel with XP bar (same formula as Grooms/Riders)
+      - Retirement warning at 72w+, mandatory at 80w
+      - Legacy certification badge at Level 7+
+      - 7 career milestones with CheckCircle/Circle indicators
+
+  13-5-trainer-api-wire:
+    title: 'Wire Trainer Hooks to Live API'
+    status: backlog
+    priority: P2
+    epic: '13'
+    story: '5'
+    blocked_by: 'No backend /api/trainers/* routes exist yet'
+
   # Epic 11: Community Features (P1 - COMPLETE)
   epic-11:
     title: 'Community Features'
@@ -3664,16 +3731,16 @@ epic-9c:
 
 # Summary
 summary:
-  total_epics: 14
-  total_stories: 76
+  total_epics: 15
+  total_stories: 81
   p0_stories: 40
   p1_stories: 32
-  p2_stories: 4
+  p2_stories: 9
   fr_coverage: '44/44 (100%)'
   current_epic: 'none'
   current_story: 'none'
-  epics_completed: 14
-  stories_completed: 76
+  epics_completed: 15
+  stories_completed: 80
   stories_in_progress: 0
   stories_ready_for_dev: 0
   stories_backlog: 0
@@ -3691,4 +3758,6 @@ summary:
   epic_10_completed_date: '2026-02-23'
   epic_11_completed_date: '2026-02-23'
   epic_12_completed_date: '2026-02-23'
-  next_milestone: 'TBD — all current epics complete'
+  epic_13_completed_date: '2026-02-23'
+  epic_13_note: 'Story 13-5 (API wire-up) in backlog — no backend routes yet'
+  next_milestone: 'Epic 14 (Deployment) or Epic 15 (Onboarding & Polish)'

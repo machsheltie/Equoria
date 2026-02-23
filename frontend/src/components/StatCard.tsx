@@ -19,8 +19,8 @@ const StatCard = ({ label, value, icon, tooltip }: StatCardProps) => {
     >
       <div className="flex items-center justify-between">
         <div>
-          <p className="fantasy-caption text-parchment opacity-80 mb-1">{label}</p>
-          <p className="fantasy-header text-2xl font-bold text-parchment">{value}</p>
+          <p className="fantasy-caption text-[rgb(220,235,255)] opacity-80 mb-1">{label}</p>
+          <p className="fantasy-header text-2xl font-bold text-[rgb(220,235,255)]">{value}</p>
         </div>
         {icon && (
           <div className="text-burnished-gold opacity-80 group-hover:opacity-100 transition-opacity">
@@ -32,7 +32,7 @@ const StatCard = ({ label, value, icon, tooltip }: StatCardProps) => {
       {/* Tooltip */}
       {showTooltip && tooltip && (
         <div className="absolute bottom-full left-1/2 transform -translate-x-1/2 mb-2 z-10">
-          <div className="bg-midnight-ink text-parchment px-3 py-2 rounded-lg text-sm fantasy-body shadow-lg">
+          <div className="bg-midnight-ink text-[rgb(220,235,255)] px-3 py-2 rounded-lg text-sm fantasy-body shadow-lg">
             {tooltip}
             <div className="absolute top-full left-1/2 transform -translate-x-1/2">
               <div className="border-4 border-transparent border-t-midnight-ink" />

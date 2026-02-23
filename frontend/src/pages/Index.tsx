@@ -1,7 +1,6 @@
 import React, { useState } from 'react';
 import { Menu, Star, Coins, Trophy } from 'lucide-react';
 import Sidebar from '../components/Sidebar';
-import FantasyButton from '../components/FantasyButton';
 import StatCard from '../components/StatCard';
 import FeaturedHorseCard from '../components/FeaturedHorseCard';
 import NewsCard from '../components/NewsCard';
@@ -37,32 +36,40 @@ const Index = () => {
   return (
     <div className="min-h-screen bg-background">
       {/* Header */}
-      <header className="bg-parchment parchment-texture border-b-2 border-aged-bronze shadow-lg relative">
+      <header
+        className="sticky top-0 z-20 backdrop-blur-sm border-b"
+        style={{ background: 'rgba(10,22,40,0.9)', borderColor: 'rgba(37,99,235,0.3)' }}
+      >
         <div className="flex items-center justify-between p-4">
           <button
             onClick={() => setSidebarOpen(true)}
-            className="p-2 rounded-lg hover:bg-burnished-gold hover:bg-opacity-20 transition-colors"
+            className="p-2 rounded-lg hover:bg-[rgba(37,99,235,0.15)] transition-colors"
           >
-            <Menu className="w-6 h-6 text-midnight-ink" />
+            <Menu className="w-6 h-6 text-[rgb(148,163,184)]" />
           </button>
 
-          <h1 className="fantasy-title text-3xl text-midnight-ink">Equoria</h1>
+          <h1 className="fantasy-title text-3xl">Equoria</h1>
 
-          <div className="w-10 h-10 bg-gradient-to-br from-burnished-gold to-aged-bronze rounded-full border-2 border-aged-bronze flex items-center justify-center">
-            <Star className="w-5 h-5 text-parchment" />
+          <div
+            className="w-10 h-10 rounded-full border flex items-center justify-center magical-glow"
+            style={{
+              background: 'linear-gradient(135deg, #2563eb 0%, #1d4ed8 100%)',
+              borderColor: 'rgba(37,99,235,0.5)',
+            }}
+          >
+            <Star className="w-5 h-5 text-white" />
           </div>
         </div>
-
-        {/* Decorative border */}
-        <div className="absolute bottom-0 left-0 right-0 h-1 bg-gradient-to-r from-aged-bronze via-burnished-gold to-aged-bronze" />
       </header>
 
       {/* Main Content */}
       <main className="p-4 space-y-8">
         {/* Welcome Section */}
         <div className="text-center space-y-4">
-          <h2 className="fantasy-header text-2xl text-midnight-ink">Welcome back, Noble Rider</h2>
-          <p className="fantasy-body text-aged-bronze">
+          <h2 className="fantasy-header text-2xl text-[rgb(220,235,255)]">
+            Welcome back, Noble Rider
+          </h2>
+          <p className="text-[rgb(148,163,184)]">
             Your mystical companions await your return to the realm
           </p>
         </div>
@@ -97,12 +104,12 @@ const Index = () => {
         {/* Action Buttons */}
         <section className="space-y-4">
           <div className="grid grid-cols-2 gap-4">
-            <FantasyButton variant="primary">Visit Stable</FantasyButton>
-            <FantasyButton variant="secondary">Explore World</FantasyButton>
+            <button className="btn-cobalt">Visit Stable</button>
+            <button className="btn-outline-celestial">Explore World</button>
           </div>
-          <FantasyButton variant="primary" size="large" className="w-full">
+          <button className="btn-cobalt w-full" style={{ fontSize: '1.1rem', padding: '1rem' }}>
             Join Tournament
-          </FantasyButton>
+          </button>
         </section>
 
         {/* News/Chronicles */}

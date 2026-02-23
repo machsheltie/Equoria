@@ -124,7 +124,7 @@ const StatisticsCardSkeleton: React.FC<{ size: 'sm' | 'md' | 'lg' }> = ({ size }
   return (
     <div
       data-testid="stat-loading-skeleton"
-      className={`stat-card-skeleton animate-pulse rounded-lg bg-parchment-cream/50 border border-aged-bronze/20 ${sizeClasses[size]}`}
+      className={`stat-card-skeleton animate-pulse rounded-lg bg-[rgba(15,35,70,0.5)] border border-aged-bronze/20 ${sizeClasses[size]}`}
     >
       <div className="flex items-center gap-3">
         {/* Icon skeleton */}
@@ -228,7 +228,7 @@ const StatisticsCard: React.FC<StatisticsCardProps> = ({
   return (
     <div
       data-testid="statistics-card"
-      className={`stat-card rounded-lg bg-parchment-cream border border-aged-bronze/20 shadow-sm ${sizeClasses[size]} ${clickableClasses}`}
+      className={`stat-card rounded-lg bg-[rgba(15,35,70,0.5)] border border-[rgba(37,99,235,0.15)] shadow-sm ${sizeClasses[size]} ${clickableClasses}`}
       aria-label={`${label}: ${displayValue}`}
       onClick={onClick}
       {...accessibilityProps}

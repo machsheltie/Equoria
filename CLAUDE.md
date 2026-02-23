@@ -1,6 +1,6 @@
 # Equoria - Claude Code Configuration
 
-**Version:** 2.7.0
+**Version:** 2.8.0
 **Last Updated:** 2026-02-23
 **Project:** Web browser-based horse breeding simulation game
 
@@ -8,12 +8,25 @@
 
 ## 🎯 Current Sprint
 
-### Active Priority: Epic 11 — Community Features ✅ COMPLETE
+### Active Priority: Epic 13 — Trainer System ✅ COMPLETE
 
-- **Status:** Epic 11 (Community Features) → Complete ✅
-- **Stories:** Message Board (11-1/2), Clubs (11-3/4/5), Bell+Nav (11-6), Messages (11-7), Community Hub
-- **Next:** TBD — all current epics complete
+- **Status:** Epic 13 (Trainer System) → Complete ✅ (13-5 deferred — no backend)
+- **Stories:** 13-1 Hiring, 13-2 Assignment, 13-3 Discovery, 13-4 Career (all complete); 13-5 API wire-up (backlog)
+- **Next:** Epic 14 (Deployment) or Epic 15 (Onboarding & Polish)
 - **Branch:** `cleanup-session-2026-01-30`
+
+### Epic 13 Deliverables
+
+- `TrainersPage.tsx` (`/trainers`) — Two tabs: Manage / Hire, World sub-location
+- `TrainerList.tsx` — 6 mock trainers, filters, hire buttons disabled
+- `MyTrainersDashboard.tsx` — 2 hired trainers, slot counter, expandable career/discovery
+- `trainer/TrainerPersonalityBadge.tsx` — 5 personalities (focused/encouraging/technical/competitive/patient)
+- `trainer/TrainerPersonalityDisplay.tsx` — Discipline tendencies + horse compatibility
+- `trainer/TrainerAssignmentCard.tsx` — Assigned horse chip with disabled unassign
+- `trainer/TrainerCareerPanel.tsx` — XP bar, milestones, retirement warning
+- `trainer/TrainerDiscoveryPanel.tsx` — 3 categories × 2 discovery slots
+- `WorldHubPage.tsx` — Added 9th location card (Trainers 🎓)
+- `nav-items.tsx` — `/trainers` route registered (icon: null)
 
 ### Epic 11 Deliverables
 
@@ -35,11 +48,11 @@
 ### Project Status
 
 - ✅ **Backend:** 100% complete — 3530+ tests passing, pre-push hook active
-- ✅ **Epics 1–12:** All complete (API integration + technical health + nav + riders + world + stable + community)
+- ✅ **Backend:** 100% complete — 3530+ tests passing, pre-push hook active
+- ✅ **Epics 1–13:** All complete (API integration + technical health + nav + riders + world + stable + community + trainers)
 - ✅ **E2E Tests:** Playwright suite passing (core-game-flows, auth, breeding)
-- ⚠️ **Frontend:** ~87% complete (React 19 + TypeScript in `/frontend/`)
+- ⚠️ **Frontend:** ~95% complete (React 19 + TypeScript in `/frontend/`)
 - ⚠️ **Deployment:** 10% complete
-- 🔄 **Epic 11:** Community Features (next — was deferred, circle back now)
 
 ### Session Start Checklist
 

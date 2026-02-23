@@ -34,7 +34,7 @@ interface ActivityFeedProps {
   /** Compact mode - hides activity labels */
   compact?: boolean;
   /** Click handler for activity items */
-  onItemClick?: (activity: Activity) => void;
+  onItemClick?: (_activity: Activity) => void;
   /** Click handler for "View All" */
   onViewAllClick?: () => void;
 }
@@ -58,7 +58,7 @@ const ActivityLoadingSkeleton: React.FC<{ count: number; size: 'sm' | 'md' | 'lg
         <div
           key={`skeleton-${index}`}
           data-testid="activity-item-skeleton"
-          className={`activity-item-skeleton animate-pulse rounded-lg bg-parchment-cream/50 border border-aged-bronze/20 ${sizeClasses[size]}`}
+          className={`activity-item-skeleton animate-pulse rounded-lg bg-[rgba(15,35,70,0.5)] border border-[rgba(37,99,235,0.15)] ${sizeClasses[size]}`}
         >
           <div className="flex items-center gap-3">
             <div className="w-8 h-8 rounded-full bg-aged-bronze/20" />

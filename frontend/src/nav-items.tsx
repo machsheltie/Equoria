@@ -29,6 +29,8 @@ import TackShopPage from './pages/TackShopPage';
 import BankPage from './pages/BankPage';
 import InventoryPage from './pages/InventoryPage';
 import MyStablePage from './pages/MyStablePage';
+// Epic 13 — Trainer System (World sub-location, route-only)
+import TrainersPage from './pages/TrainersPage';
 // Epic 11 — Community pages
 import CommunityPage from './pages/CommunityPage';
 import MessageBoardPage from './pages/MessageBoardPage';
@@ -151,6 +153,13 @@ export const navItems = [
     to: '/my-stable',
     icon: null,
     page: <MyStablePage />,
+  },
+  // Epic 13 — Trainer System (World sub-location, accessible via World Hub card)
+  {
+    title: 'Trainers',
+    to: '/trainers',
+    icon: null,
+    page: <TrainersPage />,
   },
   // Epic 11 — Community pages (Community linked from main nav; sub-pages route-only)
   {

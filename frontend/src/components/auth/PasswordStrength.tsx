@@ -53,7 +53,7 @@ const RequirementCheck: React.FC<RequirementCheckProps> = ({ met, label }) => (
     ) : (
       <X className="w-3 h-3 text-red-500" aria-hidden="true" />
     )}
-    <span className={met ? 'text-forest-green' : 'text-aged-bronze'}>{label}</span>
+    <span className={met ? 'text-[rgb(37,99,235)]' : 'text-[rgb(148,163,184)]'}>{label}</span>
   </div>
 );
 

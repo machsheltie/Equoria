@@ -33,7 +33,7 @@ interface ActivityFeedItemProps {
   /** Show loading skeleton */
   isLoading?: boolean;
   /** Click handler */
-  onClick?: (activity: ActivityData) => void;
+  onClick?: (_activity: ActivityData) => void;
   /** Component size variant */
   size?: 'sm' | 'md' | 'lg';
   /** Compact mode - hides activity label */
@@ -81,7 +81,7 @@ const ActivityItemSkeleton: React.FC<{ size: 'sm' | 'md' | 'lg' }> = ({ size }) 
   return (
     <div
       data-testid="activity-item-skeleton"
-      className={`activity-item-skeleton animate-pulse rounded-lg bg-parchment-cream/50 border border-aged-bronze/20 ${sizeClasses[size]}`}
+      className={`activity-item-skeleton animate-pulse rounded-lg bg-[rgba(15,35,70,0.5)] border border-aged-bronze/20 ${sizeClasses[size]}`}
     >
       <div className="flex items-center gap-3">
         {/* Icon skeleton */}
@@ -179,7 +179,7 @@ const ActivityFeedItem: React.FC<ActivityFeedItemProps> = ({
   return (
     <div
       data-testid="activity-feed-item"
-      className={`activity-item rounded-lg bg-parchment-cream/30 border border-aged-bronze/10 ${sizeClasses[size]} ${clickableClasses}`}
+      className={`activity-item rounded-lg bg-[rgba(37,99,235,0.05)] border border-[rgba(37,99,235,0.1)] ${sizeClasses[size]} ${clickableClasses}`}
       onClick={handleClick}
       {...accessibilityProps}
     >

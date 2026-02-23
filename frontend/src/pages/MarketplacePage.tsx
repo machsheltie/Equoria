@@ -1,23 +1,14 @@
 /**
  * Groom Marketplace Page
  *
- * A fantasy-themed marketplace for hiring grooms with full medieval aesthetic.
+ * Celestial Night themed marketplace for hiring grooms.
  * Features marketplace browsing, hiring functionality, and refresh mechanics.
- *
- * Design System:
- * - Fantasy color scheme (forest-green, parchment, aged-bronze, burnished-gold)
- * - Corner embellishments and gold borders
- * - Shimmer effects on hover
- * - Parchment textures
- * - Medieval typography
  */
 
 import React, { useState } from 'react';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { groomsApi, userProgressApi, type MarketplaceGroom } from '../lib/api-client';
 import { useProfile } from '../hooks/useAuth';
-import FantasyButton from '../components/FantasyButton';
-import FantasyModal from '../components/FantasyModal';
 import {
   Coins,
   RefreshCw,
@@ -32,39 +23,56 @@ import {
   CheckCircle2,
   XCircle,
   Sparkles,
+  X,
 } from 'lucide-react';
 
 /**
  * Skill level badge styling
  */
-const getSkillBadgeColor = (skillLevel: string) => {
+const getSkillBadgeStyle = (skillLevel: string): React.CSSProperties => {
   switch (skillLevel.toLowerCase()) {
     case 'expert':
-      return 'bg-burnished-gold text-midnight-ink border-burnished-gold';
+      return {
+        background: 'rgba(212,168,67,0.15)',
+        border: '1px solid rgba(212,168,67,0.4)',
+        color: 'rgb(212,168,67)',
+      };
     case 'advanced':
-      return 'bg-forest-green text-parchment border-forest-green';
+      return {
+        background: 'rgba(37,99,235,0.15)',
+        border: '1px solid rgba(37,99,235,0.4)',
+        color: 'rgb(37,99,235)',
+      };
     case 'intermediate':
-      return 'bg-aged-bronze text-parchment border-aged-bronze';
+      return {
+        background: 'rgba(100,130,165,0.15)',
+        border: '1px solid rgba(100,130,165,0.4)',
+        color: 'rgb(148,163,184)',
+      };
     default:
-      return 'bg-saddle-leather text-parchment border-saddle-leather';
+      return {
+        background: 'rgba(15,35,70,0.5)',
+        border: '1px solid rgba(37,99,235,0.2)',
+        color: 'rgb(148,163,184)',
+      };
   }
 };
 
 /**
- * Personality badge styling
+ * Personality color
  */
-const getPersonalityColor = (personality: string) => {
+const getPersonalityColor = (personality: string): string => {
   switch (personality.toLowerCase()) {
     case 'patient':
-      return 'text-blue-500';
+      return 'text-blue-400';
     case 'energetic':
-      return 'text-orange-500';
+      return 'text-orange-400';
     case 'gentle':
-      return 'text-green-500';
+      return 'text-green-400';
     case 'strict':
-      return 'text-red-500';
+      return 'text-red-400';
     default:
-      return 'text-aged-bronze';
+      return 'text-[rgb(148,163,184)]';
   }
 };
 
@@ -77,199 +85,201 @@ const GroomCard = ({
   isHiring,
 }: {
   groom: MarketplaceGroom;
-  onHire: (marketplaceId: string) => void;
+  onHire: (_marketplaceId: string) => void;
   isHiring: boolean;
 }) => {
   const [showDetails, setShowDetails] = useState(false);
-  const hiringCost = groom.sessionRate * 7; // One week upfront
+  const hiringCost = groom.sessionRate * 7;
 
   return (
     <>
       {/* Groom Card */}
-      <div className="relative group">
-        {/* Shimmer effect on hover */}
-        <div className="absolute inset-0 shimmer-effect opacity-0 group-hover:opacity-30 transition-opacity duration-300 rounded-xl pointer-events-none" />
+      <div className="glass-panel p-6 space-y-4 hover:border-[rgba(37,99,235,0.5)] transition-colors">
+        {/* Header */}
+        <div className="flex items-start justify-between">
+          <div className="flex-1">
+            <h3 className="fantasy-header text-xl text-[rgb(220,235,255)] mb-1">
+              {groom.firstName} {groom.lastName}
+            </h3>
+            <p className="text-sm text-[rgb(148,163,184)]">{groom.specialty} Specialist</p>
+          </div>
+          <span
+            className="px-3 py-1 rounded-full text-xs uppercase tracking-wider font-bold"
+            style={getSkillBadgeStyle(groom.skillLevel)}
+          >
+            {groom.skillLevel}
+          </span>
+        </div>
 
-        {/* Main card container */}
-        <div className="relative bg-parchment parchment-texture rounded-xl border-2 border-aged-bronze shadow-lg hover:shadow-2xl transition-all duration-300 overflow-hidden">
-          {/* Gold accent top border */}
-          <div className="h-1 bg-gradient-to-r from-transparent via-burnished-gold to-transparent" />
-
-          {/* Card content */}
-          <div className="p-6 space-y-4">
-            {/* Header with name and skill level */}
-            <div className="flex items-start justify-between">
-              <div className="flex-1">
-                <h3 className="fantasy-title text-xl text-midnight-ink group-hover:text-forest-green transition-colors duration-200">
-                  {groom.firstName} {groom.lastName}
-                </h3>
-                <p className="fantasy-body text-sm text-aged-bronze mt-1">
-                  {groom.specialty} Specialist
-                </p>
-              </div>
-              <div
-                className={`px-3 py-1 rounded-lg border-2 ${getSkillBadgeColor(groom.skillLevel)} fantasy-caption text-xs uppercase tracking-wider font-bold shadow-sm`}
-              >
-                {groom.skillLevel}
-              </div>
-            </div>
-
-            {/* Stats grid */}
-            <div className="grid grid-cols-2 gap-3">
-              {/* Experience */}
-              <div className="flex items-center gap-2 bg-aged-bronze/10 rounded-lg px-3 py-2 border border-aged-bronze/30">
-                <Award className="w-4 h-4 text-burnished-gold" />
-                <div className="flex-1">
-                  <p className="fantasy-caption text-xs text-aged-bronze uppercase">Experience</p>
-                  <p className="fantasy-body text-sm text-midnight-ink font-semibold">
-                    {groom.experience} years
-                  </p>
-                </div>
-              </div>
-
-              {/* Personality */}
-              <div className="flex items-center gap-2 bg-aged-bronze/10 rounded-lg px-3 py-2 border border-aged-bronze/30">
-                <Heart className={`w-4 h-4 ${getPersonalityColor(groom.personality)}`} />
-                <div className="flex-1">
-                  <p className="fantasy-caption text-xs text-aged-bronze uppercase">Personality</p>
-                  <p className="fantasy-body text-sm text-midnight-ink font-semibold">
-                    {groom.personality}
-                  </p>
-                </div>
-              </div>
-            </div>
-
-            {/* Bio preview */}
-            <div className="bg-parchment border border-aged-bronze/20 rounded-lg p-3">
-              <p className="fantasy-body text-sm text-midnight-ink line-clamp-2 italic">
-                "{groom.bio}"
+        {/* Stats grid */}
+        <div className="grid grid-cols-2 gap-3">
+          <div
+            className="flex items-center gap-2 rounded-lg px-3 py-2"
+            style={{ background: 'rgba(37,99,235,0.08)', border: '1px solid rgba(37,99,235,0.15)' }}
+          >
+            <Award className="w-4 h-4 text-[rgb(212,168,67)]" />
+            <div className="flex-1">
+              <p className="text-xs text-[rgb(100,130,165)] uppercase">Experience</p>
+              <p className="text-sm text-[rgb(220,235,255)] font-semibold">
+                {groom.experience} years
               </p>
             </div>
-
-            {/* Pricing */}
-            <div className="flex items-center justify-between pt-2 border-t border-aged-bronze/30">
-              <div className="flex items-center gap-2">
-                <Coins className="w-5 h-5 text-burnished-gold" />
-                <div>
-                  <p className="fantasy-caption text-xs text-aged-bronze uppercase">Hiring Cost</p>
-                  <p className="fantasy-title text-lg text-forest-green">${hiringCost}</p>
-                </div>
-              </div>
-              <p className="fantasy-body text-xs text-aged-bronze">${groom.sessionRate}/day</p>
-            </div>
-
-            {/* Action buttons */}
-            <div className="flex gap-2 pt-2">
-              <button
-                onClick={() => setShowDetails(true)}
-                className="flex-1 px-4 py-2 rounded-lg border-2 border-aged-bronze bg-parchment hover:bg-aged-bronze/20 transition-colors duration-200 fantasy-body text-sm text-midnight-ink uppercase tracking-wider font-semibold"
-              >
-                <Info className="w-4 h-4 inline mr-2" />
-                Details
-              </button>
-              <FantasyButton
-                onClick={() => onHire(groom.marketplaceId)}
-                disabled={isHiring}
-                variant="primary"
-                className="flex-1"
-              >
-                <Sparkles className="w-4 h-4 inline mr-2" />
-                Hire
-              </FantasyButton>
+          </div>
+          <div
+            className="flex items-center gap-2 rounded-lg px-3 py-2"
+            style={{ background: 'rgba(37,99,235,0.08)', border: '1px solid rgba(37,99,235,0.15)' }}
+          >
+            <Heart className={`w-4 h-4 ${getPersonalityColor(groom.personality)}`} />
+            <div className="flex-1">
+              <p className="text-xs text-[rgb(100,130,165)] uppercase">Personality</p>
+              <p className="text-sm text-[rgb(220,235,255)] font-semibold">{groom.personality}</p>
             </div>
           </div>
+        </div>
 
-          {/* Corner embellishments */}
-          <div className="absolute top-2 left-2 w-3 h-3 border-l-2 border-t-2 border-burnished-gold opacity-40" />
-          <div className="absolute top-2 right-2 w-3 h-3 border-r-2 border-t-2 border-burnished-gold opacity-40" />
-          <div className="absolute bottom-2 left-2 w-3 h-3 border-l-2 border-b-2 border-burnished-gold opacity-40" />
-          <div className="absolute bottom-2 right-2 w-3 h-3 border-r-2 border-b-2 border-burnished-gold opacity-40" />
+        {/* Bio preview */}
+        <div
+          className="rounded-lg p-3"
+          style={{ background: 'rgba(37,99,235,0.05)', border: '1px solid rgba(37,99,235,0.1)' }}
+        >
+          <p className="text-sm text-[rgb(148,163,184)] line-clamp-2 italic">"{groom.bio}"</p>
+        </div>
+
+        {/* Pricing */}
+        <div
+          className="flex items-center justify-between pt-2 border-t"
+          style={{ borderColor: 'rgba(37,99,235,0.2)' }}
+        >
+          <div className="flex items-center gap-2">
+            <Coins className="w-5 h-5 text-[rgb(212,168,67)]" />
+            <div>
+              <p className="text-xs text-[rgb(100,130,165)] uppercase">Hiring Cost</p>
+              <p className="text-lg font-bold text-[rgb(212,168,67)]">${hiringCost}</p>
+            </div>
+          </div>
+          <p className="text-xs text-[rgb(100,130,165)]">${groom.sessionRate}/day</p>
+        </div>
+
+        {/* Action buttons */}
+        <div className="flex gap-2 pt-2">
+          <button
+            onClick={() => setShowDetails(true)}
+            className="btn-outline-celestial flex-1"
+            style={{ padding: '0.6rem 1rem', fontSize: '0.875rem' }}
+          >
+            <Info className="w-4 h-4 inline mr-1" />
+            Details
+          </button>
+          <button
+            onClick={() => onHire(groom.marketplaceId)}
+            disabled={isHiring}
+            className="btn-cobalt flex-1"
+            style={{ padding: '0.6rem 1rem', fontSize: '0.875rem' }}
+          >
+            <Sparkles className="w-4 h-4 inline mr-1" />
+            {isHiring ? 'Hiring…' : 'Hire'}
+          </button>
         </div>
       </div>
 
       {/* Details Modal */}
-      <FantasyModal
-        isOpen={showDetails}
-        onClose={() => setShowDetails(false)}
-        title={`${groom.firstName} ${groom.lastName}`}
-        type="event"
-      >
-        <div className="space-y-4">
-          {/* Full stats */}
-          <div className="grid grid-cols-2 gap-4">
-            <div className="bg-aged-bronze/10 rounded-lg p-4 border border-aged-bronze/30">
-              <div className="flex items-center gap-2 mb-2">
-                <Briefcase className="w-5 h-5 text-burnished-gold" />
-                <p className="fantasy-caption text-xs text-aged-bronze uppercase">Specialty</p>
-              </div>
-              <p className="fantasy-body text-midnight-ink font-semibold">{groom.specialty}</p>
+      {showDetails && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center p-4">
+          <div className="absolute inset-0 bg-black/60" onClick={() => setShowDetails(false)} />
+          <div className="glass-panel relative w-full max-w-md p-6 space-y-4 max-h-[80vh] overflow-y-auto z-10">
+            {/* Modal header */}
+            <div className="flex items-center justify-between mb-2">
+              <h2 className="fantasy-header text-xl text-[rgb(212,168,67)]">
+                {groom.firstName} {groom.lastName}
+              </h2>
+              <button
+                onClick={() => setShowDetails(false)}
+                className="w-8 h-8 rounded-full flex items-center justify-center hover:bg-[rgba(37,99,235,0.2)] transition-colors"
+              >
+                <X className="w-4 h-4 text-[rgb(148,163,184)]" />
+              </button>
             </div>
-            <div className="bg-aged-bronze/10 rounded-lg p-4 border border-aged-bronze/30">
-              <div className="flex items-center gap-2 mb-2">
-                <Star className="w-5 h-5 text-burnished-gold" />
-                <p className="fantasy-caption text-xs text-aged-bronze uppercase">Skill Level</p>
-              </div>
-              <p className="fantasy-body text-midnight-ink font-semibold">{groom.skillLevel}</p>
-            </div>
-            <div className="bg-aged-bronze/10 rounded-lg p-4 border border-aged-bronze/30">
-              <div className="flex items-center gap-2 mb-2">
-                <Award className="w-5 h-5 text-burnished-gold" />
-                <p className="fantasy-caption text-xs text-aged-bronze uppercase">Experience</p>
-              </div>
-              <p className="fantasy-body text-midnight-ink font-semibold">
-                {groom.experience} years
-              </p>
-            </div>
-            <div className="bg-aged-bronze/10 rounded-lg p-4 border border-aged-bronze/30">
-              <div className="flex items-center gap-2 mb-2">
-                <Heart className={`w-5 h-5 ${getPersonalityColor(groom.personality)}`} />
-                <p className="fantasy-caption text-xs text-aged-bronze uppercase">Personality</p>
-              </div>
-              <p className="fantasy-body text-midnight-ink font-semibold">{groom.personality}</p>
-            </div>
-          </div>
 
-          {/* Full bio */}
-          <div className="bg-parchment border-2 border-aged-bronze/30 rounded-lg p-4">
-            <p className="fantasy-caption text-xs text-aged-bronze uppercase mb-2">Biography</p>
-            <p className="fantasy-body text-sm text-midnight-ink italic">"{groom.bio}"</p>
-          </div>
+            {/* Full stats */}
+            <div className="grid grid-cols-2 gap-3">
+              {[
+                { icon: Briefcase, label: 'Specialty', value: groom.specialty },
+                { icon: Star, label: 'Skill Level', value: groom.skillLevel },
+                { icon: Award, label: 'Experience', value: `${groom.experience} years` },
+                { icon: Heart, label: 'Personality', value: groom.personality },
+              ].map(({ icon: Icon, label, value }) => (
+                <div
+                  key={label}
+                  className="rounded-lg p-3"
+                  style={{
+                    background: 'rgba(37,99,235,0.08)',
+                    border: '1px solid rgba(37,99,235,0.15)',
+                  }}
+                >
+                  <div className="flex items-center gap-2 mb-1">
+                    <Icon className="w-4 h-4 text-[rgb(212,168,67)]" />
+                    <p className="text-xs text-[rgb(100,130,165)] uppercase">{label}</p>
+                  </div>
+                  <p className="text-sm text-[rgb(220,235,255)] font-semibold">{value}</p>
+                </div>
+              ))}
+            </div>
 
-          {/* Pricing breakdown */}
-          <div className="bg-forest-green/10 border-2 border-forest-green/30 rounded-lg p-4">
-            <p className="fantasy-caption text-xs text-aged-bronze uppercase mb-2">Pricing</p>
-            <div className="space-y-1 fantasy-body text-sm text-midnight-ink">
-              <div className="flex justify-between">
-                <span>Daily Rate:</span>
-                <span className="font-semibold">${groom.sessionRate}</span>
-              </div>
-              <div className="flex justify-between">
-                <span>Weekly Cost:</span>
-                <span className="font-semibold">${groom.sessionRate * 7}</span>
-              </div>
-              <div className="flex justify-between pt-2 border-t border-forest-green/30">
-                <span className="font-bold">Hiring Fee (1 week):</span>
-                <span className="text-forest-green font-bold text-lg">${hiringCost}</span>
+            {/* Full bio */}
+            <div
+              className="rounded-lg p-4"
+              style={{
+                background: 'rgba(37,99,235,0.05)',
+                border: '1px solid rgba(37,99,235,0.15)',
+              }}
+            >
+              <p className="text-xs text-[rgb(100,130,165)] uppercase mb-2">Biography</p>
+              <p className="text-sm text-[rgb(220,235,255)] italic">"{groom.bio}"</p>
+            </div>
+
+            {/* Pricing breakdown */}
+            <div
+              className="rounded-lg p-4"
+              style={{
+                background: 'rgba(37,99,235,0.08)',
+                border: '1px solid rgba(37,99,235,0.2)',
+              }}
+            >
+              <p className="text-xs text-[rgb(100,130,165)] uppercase mb-2">Pricing</p>
+              <div className="space-y-1 text-sm text-[rgb(220,235,255)]">
+                <div className="flex justify-between">
+                  <span>Daily Rate:</span>
+                  <span className="font-semibold">${groom.sessionRate}</span>
+                </div>
+                <div className="flex justify-between">
+                  <span>Weekly Cost:</span>
+                  <span className="font-semibold">${groom.sessionRate * 7}</span>
+                </div>
+                <div
+                  className="flex justify-between pt-2 border-t"
+                  style={{ borderColor: 'rgba(37,99,235,0.2)' }}
+                >
+                  <span className="font-bold">Hiring Fee (1 week):</span>
+                  <span className="font-bold text-[rgb(212,168,67)] text-base">${hiringCost}</span>
+                </div>
               </div>
             </div>
-          </div>
 
-          {/* Hire button */}
-          <FantasyButton
-            onClick={() => {
-              setShowDetails(false);
-              onHire(groom.marketplaceId);
-            }}
-            disabled={isHiring}
-            variant="primary"
-            size="large"
-            className="w-full"
-          >
-            <Sparkles className="w-5 h-5 inline mr-2" />
-            Hire {groom.firstName} {groom.lastName}
-          </FantasyButton>
+            {/* Hire button */}
+            <button
+              onClick={() => {
+                setShowDetails(false);
+                onHire(groom.marketplaceId);
+              }}
+              disabled={isHiring}
+              className="btn-cobalt"
+            >
+              <Sparkles className="w-4 h-4 inline mr-2" />
+              Hire {groom.firstName} {groom.lastName}
+            </button>
+          </div>
         </div>
-      </FantasyModal>
+      )}
     </>
   );
 };
@@ -288,7 +298,6 @@ const MarketplacePage = () => {
     message: string;
   } | null>(null);
 
-  // Fetch marketplace data
   const {
     data: marketplace,
     isLoading: isLoadingMarketplace,
@@ -299,7 +308,6 @@ const MarketplacePage = () => {
     enabled: !!userId,
   });
 
-  // Fetch user data for money display
   const { data: userData } = useQuery({
     queryKey: ['user', userId],
     queryFn: () => userProgressApi.getUser(userId!),
@@ -313,7 +321,6 @@ const MarketplacePage = () => {
     enabled: !!userId,
   });
 
-  // Hire groom mutation
   const hireMutation = useMutation({
     mutationFn: groomsApi.hireGroom,
     onSuccess: (data) => {
@@ -335,17 +342,13 @@ const MarketplacePage = () => {
     },
   });
 
-  // Refresh marketplace mutation
   const refreshMutation = useMutation({
     mutationFn: (force: boolean) => groomsApi.refreshMarketplace(force),
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['marketplace'] });
       queryClient.invalidateQueries({ queryKey: ['marketplaceStats'] });
       queryClient.invalidateQueries({ queryKey: ['user', userId] });
-      setNotification({
-        type: 'success',
-        message: 'Marketplace refreshed successfully!',
-      });
+      setNotification({ type: 'success', message: 'Marketplace refreshed successfully!' });
       setTimeout(() => setNotification(null), 3000);
     },
     onError: (error: Error) => {
@@ -372,12 +375,10 @@ const MarketplacePage = () => {
 
   if (isLoadingMarketplace) {
     return (
-      <div className="min-h-screen bg-gradient-to-br from-forest-green/20 via-parchment to-aged-bronze/20 p-8">
-        <div className="max-w-7xl mx-auto">
-          <div className="text-center py-20">
-            <RefreshCw className="w-12 h-12 text-burnished-gold animate-spin mx-auto mb-4" />
-            <p className="fantasy-title text-2xl text-midnight-ink">Loading Marketplace...</p>
-          </div>
+      <div className="min-h-screen flex items-center justify-center">
+        <div className="text-center space-y-3">
+          <RefreshCw className="w-12 h-12 text-[rgb(37,99,235)] animate-spin mx-auto" />
+          <p className="text-[rgb(148,163,184)]">Loading Marketplace…</p>
         </div>
       </div>
     );
@@ -385,140 +386,102 @@ const MarketplacePage = () => {
 
   if (marketplaceError) {
     return (
-      <div className="min-h-screen bg-gradient-to-br from-forest-green/20 via-parchment to-aged-bronze/20 p-8">
-        <div className="max-w-7xl mx-auto">
-          <div className="bg-red-50 border-2 border-red-500 rounded-xl p-6 text-center">
-            <XCircle className="w-12 h-12 text-red-500 mx-auto mb-4" />
-            <p className="fantasy-body text-red-700">
-              Failed to load marketplace. Please try again.
-            </p>
-          </div>
+      <div className="min-h-screen flex items-center justify-center p-8">
+        <div className="glass-panel p-6 text-center max-w-md">
+          <XCircle className="w-12 h-12 text-red-400 mx-auto mb-4" />
+          <p className="text-red-400">Failed to load marketplace. Please try again.</p>
         </div>
       </div>
     );
   }
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-forest-green/20 via-parchment to-aged-bronze/20 p-4 md:p-8">
+    <div className="min-h-screen p-4 md:p-8">
       <div className="max-w-7xl mx-auto">
         {/* Page Header */}
-        <div className="relative mb-8">
-          {/* Background decoration */}
-          <div className="absolute inset-0 parchment-texture opacity-30 rounded-2xl" />
-
-          <div className="relative bg-parchment border-2 border-aged-bronze rounded-2xl p-6 md:p-8 shadow-xl">
-            {/* Gold accent line */}
-            <div className="absolute top-0 left-0 right-0 h-2 bg-gradient-to-r from-transparent via-burnished-gold to-transparent rounded-t-2xl" />
-
-            <div className="flex flex-col md:flex-row items-start md:items-center justify-between gap-4">
-              <div>
-                <h1 className="fantasy-title text-3xl md:text-4xl text-forest-green mb-2 flex items-center gap-3">
-                  <Users className="w-8 h-8" />
-                  Groom Marketplace
-                </h1>
-                <p className="fantasy-body text-aged-bronze">
-                  Hire skilled grooms to care for your horses
-                </p>
-              </div>
-
-              {/* User money display */}
-              {userData && (
-                <div className="bg-forest-green/10 border-2 border-forest-green/30 rounded-lg px-6 py-3 flex items-center gap-3">
-                  <Coins className="w-6 h-6 text-burnished-gold" />
-                  <div>
-                    <p className="fantasy-caption text-xs text-aged-bronze uppercase">
-                      Your Balance
-                    </p>
-                    <p className="fantasy-title text-2xl text-forest-green">
-                      ${userData.money.toLocaleString()}
-                    </p>
-                  </div>
-                </div>
-              )}
+        <div className="glass-panel p-6 md:p-8 mb-8">
+          <div className="flex flex-col md:flex-row items-start md:items-center justify-between gap-4">
+            <div>
+              <h1 className="fantasy-title text-3xl md:text-4xl mb-2 flex items-center gap-3">
+                <Users className="w-8 h-8" />
+                Groom Marketplace
+              </h1>
+              <p className="text-[rgb(148,163,184)]">Hire skilled grooms to care for your horses</p>
             </div>
 
-            {/* Corner embellishments */}
-            <div className="absolute top-3 left-3 w-4 h-4 border-l-2 border-t-2 border-burnished-gold opacity-60" />
-            <div className="absolute top-3 right-3 w-4 h-4 border-r-2 border-t-2 border-burnished-gold opacity-60" />
-            <div className="absolute bottom-3 left-3 w-4 h-4 border-l-2 border-b-2 border-burnished-gold opacity-60" />
-            <div className="absolute bottom-3 right-3 w-4 h-4 border-r-2 border-b-2 border-burnished-gold opacity-60" />
+            {/* User balance */}
+            {userData && (
+              <div
+                className="rounded-lg px-6 py-3 flex items-center gap-3"
+                style={{
+                  background: 'rgba(37,99,235,0.1)',
+                  border: '1px solid rgba(37,99,235,0.25)',
+                }}
+              >
+                <Coins className="w-6 h-6 text-[rgb(212,168,67)]" />
+                <div>
+                  <p className="text-xs text-[rgb(100,130,165)] uppercase">Your Balance</p>
+                  <p className="text-2xl font-bold text-[rgb(212,168,67)]">
+                    ${userData.money.toLocaleString()}
+                  </p>
+                </div>
+              </div>
+            )}
           </div>
         </div>
 
         {/* Notification banner */}
         {notification && (
           <div
-            className={`mb-6 rounded-xl border-2 p-4 flex items-center gap-3 ${
+            className={`mb-6 rounded-xl p-4 flex items-center gap-3 ${
               notification.type === 'success'
-                ? 'bg-green-50 border-green-500'
-                : 'bg-red-50 border-red-500'
+                ? 'bg-green-900/30 border border-green-500/40'
+                : 'bg-red-900/30 border border-red-500/40'
             }`}
           >
             {notification.type === 'success' ? (
-              <CheckCircle2 className="w-6 h-6 text-green-500 flex-shrink-0" />
+              <CheckCircle2 className="w-6 h-6 text-green-400 flex-shrink-0" />
             ) : (
-              <XCircle className="w-6 h-6 text-red-500 flex-shrink-0" />
+              <XCircle className="w-6 h-6 text-red-400 flex-shrink-0" />
             )}
-            <p
-              className={`fantasy-body ${
-                notification.type === 'success' ? 'text-green-700' : 'text-red-700'
-              }`}
-            >
+            <p className={notification.type === 'success' ? 'text-green-300' : 'text-red-300'}>
               {notification.message}
             </p>
           </div>
         )}
 
-        {/* Marketplace stats and controls */}
+        {/* Stats and controls row */}
         <div className="grid grid-cols-1 md:grid-cols-4 gap-4 mb-8">
-          {/* Total grooms */}
-          <div className="bg-parchment border-2 border-aged-bronze rounded-xl p-4 parchment-texture">
-            <div className="flex items-center gap-3">
-              <Users className="w-8 h-8 text-burnished-gold" />
-              <div>
-                <p className="fantasy-caption text-xs text-aged-bronze uppercase">Available</p>
-                <p className="fantasy-title text-2xl text-midnight-ink">
-                  {marketplace?.grooms?.length || 0}
-                </p>
+          {[
+            { icon: Users, label: 'Available', value: marketplace?.grooms?.length || 0 },
+            {
+              icon: Calendar,
+              label: 'Last Refresh',
+              value: marketplace?.lastRefresh
+                ? new Date(marketplace.lastRefresh).toLocaleDateString()
+                : 'Never',
+            },
+            { icon: TrendingUp, label: 'Refreshes', value: marketplace?.refreshCount || 0 },
+          ].map(({ icon: Icon, label, value }) => (
+            <div key={label} className="glass-panel p-4">
+              <div className="flex items-center gap-3">
+                <Icon className="w-8 h-8 text-[rgb(212,168,67)]" />
+                <div>
+                  <p className="text-xs text-[rgb(100,130,165)] uppercase">{label}</p>
+                  <p className="text-2xl font-bold text-[rgb(220,235,255)]">{value}</p>
+                </div>
               </div>
             </div>
-          </div>
-
-          {/* Last refresh */}
-          <div className="bg-parchment border-2 border-aged-bronze rounded-xl p-4 parchment-texture">
-            <div className="flex items-center gap-3">
-              <Calendar className="w-8 h-8 text-burnished-gold" />
-              <div>
-                <p className="fantasy-caption text-xs text-aged-bronze uppercase">Last Refresh</p>
-                <p className="fantasy-body text-sm text-midnight-ink">
-                  {marketplace?.lastRefresh
-                    ? new Date(marketplace.lastRefresh).toLocaleDateString()
-                    : 'Never'}
-                </p>
-              </div>
-            </div>
-          </div>
-
-          {/* Refresh count */}
-          <div className="bg-parchment border-2 border-aged-bronze rounded-xl p-4 parchment-texture">
-            <div className="flex items-center gap-3">
-              <TrendingUp className="w-8 h-8 text-burnished-gold" />
-              <div>
-                <p className="fantasy-caption text-xs text-aged-bronze uppercase">Refreshes</p>
-                <p className="fantasy-title text-2xl text-midnight-ink">
-                  {marketplace?.refreshCount || 0}
-                </p>
-              </div>
-            </div>
-          </div>
+          ))}
 
           {/* Refresh button */}
-          <div className="bg-parchment border-2 border-aged-bronze rounded-xl p-4 parchment-texture flex items-center justify-center">
-            <FantasyButton
+          <div className="glass-panel p-4 flex items-center justify-center">
+            <button
               onClick={handleRefresh}
               disabled={refreshMutation.isPending}
-              variant={marketplace?.canRefreshFree ? 'primary' : 'secondary'}
-              className="w-full"
+              className={
+                marketplace?.canRefreshFree ? 'btn-cobalt w-full' : 'btn-outline-celestial w-full'
+              }
             >
               <RefreshCw
                 className={`w-4 h-4 inline mr-2 ${refreshMutation.isPending ? 'animate-spin' : ''}`}
@@ -526,7 +489,7 @@ const MarketplacePage = () => {
               {marketplace?.canRefreshFree
                 ? 'Free Refresh'
                 : `Refresh ($${marketplace?.refreshCost})`}
-            </FantasyButton>
+            </button>
           </div>
         </div>
 
@@ -543,18 +506,25 @@ const MarketplacePage = () => {
             ))}
           </div>
         ) : (
-          <div className="bg-parchment border-2 border-aged-bronze rounded-xl p-12 text-center parchment-texture">
-            <Users className="w-16 h-16 text-aged-bronze mx-auto mb-4 opacity-50" />
-            <p className="fantasy-title text-xl text-midnight-ink mb-2">No Grooms Available</p>
-            <p className="fantasy-body text-aged-bronze mb-6">
+          <div className="glass-panel p-12 text-center">
+            <Users className="w-16 h-16 text-[rgb(100,130,165)] mx-auto mb-4 opacity-50" />
+            <p className="fantasy-header text-xl text-[rgb(220,235,255)] mb-2">
+              No Grooms Available
+            </p>
+            <p className="text-[rgb(148,163,184)] mb-6">
               Refresh the marketplace to see new grooms
             </p>
-            <FantasyButton onClick={handleRefresh} disabled={refreshMutation.isPending}>
+            <button
+              onClick={handleRefresh}
+              disabled={refreshMutation.isPending}
+              className="btn-cobalt"
+              style={{ maxWidth: '200px', margin: '0 auto' }}
+            >
               <RefreshCw
                 className={`w-4 h-4 inline mr-2 ${refreshMutation.isPending ? 'animate-spin' : ''}`}
               />
               Refresh Marketplace
-            </FantasyButton>
+            </button>
           </div>
         )}
       </div>

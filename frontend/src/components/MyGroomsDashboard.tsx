@@ -9,7 +9,6 @@
 import React, { useState } from 'react';
 import { Users, DollarSign, AlertCircle, Calendar, Trash2 } from 'lucide-react';
 import AssignGroomModal from './AssignGroomModal';
-import FantasyButton from './FantasyButton';
 import GroomPersonalityBadge from './groom/GroomPersonalityBadge';
 import GroomPersonalityDisplay from './groom/GroomPersonalityDisplay';
 import {
@@ -90,8 +89,8 @@ const MyGroomsDashboard: React.FC<MyGroomsDashboardProps> = ({
   // Loading state
   if (!groomsData && (groomsLoading || assignmentsLoading || salaryCostsLoading)) {
     return (
-      <div className="flex items-center justify-center min-h-screen bg-parchment parchment-texture">
-        <div className="text-lg fantasy-body text-midnight-ink">Loading...</div>
+      <div className="flex items-center justify-center min-h-screen bg-background">
+        <div className="text-lg fantasy-body text-[rgb(148,163,184)]">Loading...</div>
       </div>
     );
   }
@@ -99,10 +98,10 @@ const MyGroomsDashboard: React.FC<MyGroomsDashboardProps> = ({
   // Empty state
   if (finalGrooms.length === 0) {
     return (
-      <div className="flex flex-col items-center justify-center min-h-screen p-8 bg-parchment parchment-texture">
-        <Users className="w-16 h-16 text-aged-bronze mb-4" />
-        <h2 className="fantasy-title text-2xl text-midnight-ink mb-2">No Grooms Hired</h2>
-        <p className="fantasy-body text-aged-bronze text-center max-w-md">
+      <div className="flex flex-col items-center justify-center min-h-screen p-8 bg-background">
+        <Users className="w-16 h-16 text-[rgb(100,130,165)] mb-4" />
+        <h2 className="fantasy-title text-2xl text-[rgb(212,168,67)] mb-2">No Grooms Hired</h2>
+        <p className="fantasy-body text-[rgb(148,163,184)] text-center max-w-md">
           You haven't hired any grooms yet. Visit the marketplace to hire your first groom!
         </p>
       </div>
@@ -166,50 +165,70 @@ const MyGroomsDashboard: React.FC<MyGroomsDashboardProps> = ({
     });
 
   return (
-    <div className="min-h-screen bg-parchment parchment-texture px-4 py-8">
+    <div className="min-h-screen bg-background px-4 py-8">
       <div className="container mx-auto">
         {/* Header */}
         <div className="mb-8">
-          <h1 className="fantasy-title text-4xl text-midnight-ink mb-6">My Grooms</h1>
+          <h1 className="fantasy-title text-4xl text-[rgb(212,168,67)] mb-6">My Grooms</h1>
 
           {/* Salary Summary */}
           <div className="grid grid-cols-1 md:grid-cols-3 gap-6 mb-8">
-            <div className="bg-white/80 rounded-lg gold-border p-6 shadow-md">
+            <div className="glass-panel p-6">
               <div className="flex items-center justify-between">
                 <div>
-                  <p className="fantasy-caption text-aged-bronze mb-1">Weekly Cost</p>
-                  <p className="fantasy-title text-2xl text-midnight-ink">
+                  <p className="fantasy-caption text-[rgb(148,163,184)] mb-1">Weekly Cost</p>
+                  <p className="fantasy-title text-2xl text-[rgb(220,235,255)]">
                     ${finalSalaryCosts.totalWeeklyCost.toLocaleString()}
                   </p>
                 </div>
-                <div className="bg-blue-50 p-3 rounded-full">
-                  <DollarSign className="w-8 h-8 text-blue-600" />
+                <div
+                  className="p-3 rounded-full"
+                  style={{
+                    background: 'rgba(37,99,235,0.15)',
+                    border: '1px solid rgba(37,99,235,0.3)',
+                  }}
+                >
+                  <DollarSign className="w-8 h-8 text-[rgb(37,99,235)]" />
                 </div>
               </div>
             </div>
 
-            <div className="bg-white/80 rounded-lg gold-border p-6 shadow-md">
+            <div className="glass-panel p-6">
               <div className="flex items-center justify-between">
                 <div>
-                  <p className="fantasy-caption text-aged-bronze mb-1">Monthly Cost</p>
-                  <p className="fantasy-title text-2xl text-midnight-ink">
+                  <p className="fantasy-caption text-[rgb(148,163,184)] mb-1">Monthly Cost</p>
+                  <p className="fantasy-title text-2xl text-[rgb(220,235,255)]">
                     ${finalSalaryCosts.totalMonthlyCost.toLocaleString()}
                   </p>
                 </div>
-                <div className="bg-green-50 p-3 rounded-full">
-                  <Calendar className="w-8 h-8 text-green-600" />
+                <div
+                  className="p-3 rounded-full"
+                  style={{
+                    background: 'rgba(16,185,129,0.15)',
+                    border: '1px solid rgba(16,185,129,0.3)',
+                  }}
+                >
+                  <Calendar className="w-8 h-8 text-[rgb(16,185,129)]" />
                 </div>
               </div>
             </div>
 
-            <div className="bg-white/80 rounded-lg gold-border p-6 shadow-md">
+            <div className="glass-panel p-6">
               <div className="flex items-center justify-between">
                 <div>
-                  <p className="fantasy-caption text-aged-bronze mb-1">Total Grooms</p>
-                  <p className="fantasy-title text-2xl text-midnight-ink">{finalGrooms.length}</p>
+                  <p className="fantasy-caption text-[rgb(148,163,184)] mb-1">Total Grooms</p>
+                  <p className="fantasy-title text-2xl text-[rgb(220,235,255)]">
+                    {finalGrooms.length}
+                  </p>
                 </div>
-                <div className="bg-purple-50 p-3 rounded-full">
-                  <Users className="w-8 h-8 text-purple-600" />
+                <div
+                  className="p-3 rounded-full"
+                  style={{
+                    background: 'rgba(139,92,246,0.15)',
+                    border: '1px solid rgba(139,92,246,0.3)',
+                  }}
+                >
+                  <Users className="w-8 h-8 text-[rgb(139,92,246)]" />
                 </div>
               </div>
             </div>
@@ -217,14 +236,20 @@ const MyGroomsDashboard: React.FC<MyGroomsDashboardProps> = ({
 
           {/* Unassigned Grooms Warning */}
           {unassignedGroomsCount > 0 && (
-            <div className="bg-yellow-50 border-l-4 border-burnished-gold p-4 mb-8 rounded-r-lg shadow-sm animate-pulse">
+            <div
+              className="border-l-4 p-4 mb-8 rounded-r-lg"
+              style={{
+                background: 'rgba(212,168,67,0.08)',
+                borderLeftColor: 'rgb(212,168,67)',
+              }}
+            >
               <div className="flex items-center">
-                <AlertCircle className="w-6 h-6 text-burnished-gold mr-3" />
-                <p className="fantasy-body text-midnight-ink">
-                  <span className="font-bold">
+                <AlertCircle className="w-6 h-6 text-[rgb(212,168,67)] mr-3 flex-shrink-0" />
+                <p className="fantasy-body text-[rgb(220,235,255)]">
+                  <span className="font-bold text-[rgb(212,168,67)]">
                     {unassignedGroomsCount} groom{unassignedGroomsCount > 1 ? 's' : ''}
                   </span>{' '}
-                  with no assignments - consider assigning them to horses or releasing them to save
+                  with no assignments — consider assigning them to horses or releasing them to save
                   money.
                 </p>
               </div>
@@ -232,11 +257,14 @@ const MyGroomsDashboard: React.FC<MyGroomsDashboardProps> = ({
           )}
 
           {/* Filters and Sort */}
-          <div className="flex flex-wrap gap-6 mb-8 p-4 bg-white/40 rounded-lg border border-aged-bronze/30">
+          <div
+            className="flex flex-wrap gap-6 mb-8 p-4 rounded-lg"
+            style={{ background: 'rgba(15,35,70,0.5)', border: '1px solid rgba(37,99,235,0.2)' }}
+          >
             <div className="flex-1 min-w-[200px]">
               <label
                 htmlFor="skill-filter"
-                className="fantasy-caption block text-midnight-ink mb-2"
+                className="fantasy-caption block text-[rgb(148,163,184)] mb-2"
               >
                 Filter by Skill Level
               </label>
@@ -244,7 +272,7 @@ const MyGroomsDashboard: React.FC<MyGroomsDashboardProps> = ({
                 id="skill-filter"
                 value={skillLevelFilter}
                 onChange={(e) => setSkillLevelFilter(e.target.value)}
-                className="w-full bg-parchment/80 border-2 border-aged-bronze rounded-md px-3 py-2 fantasy-body focus:ring-2 focus:ring-burnished-gold outline-none"
+                className="celestial-input w-full"
               >
                 <option value="all">All Levels</option>
                 <option value="novice">Novice</option>
@@ -257,7 +285,7 @@ const MyGroomsDashboard: React.FC<MyGroomsDashboardProps> = ({
             <div className="flex-1 min-w-[200px]">
               <label
                 htmlFor="specialty-filter"
-                className="fantasy-caption block text-midnight-ink mb-2"
+                className="fantasy-caption block text-[rgb(148,163,184)] mb-2"
               >
                 Filter by Specialty
               </label>
@@ -265,7 +293,7 @@ const MyGroomsDashboard: React.FC<MyGroomsDashboardProps> = ({
                 id="specialty-filter"
                 value={specialtyFilter}
                 onChange={(e) => setSpecialtyFilter(e.target.value)}
-                className="w-full bg-parchment/80 border-2 border-aged-bronze rounded-md px-3 py-2 fantasy-body focus:ring-2 focus:ring-burnished-gold outline-none"
+                className="celestial-input w-full"
               >
                 <option value="all">All Specialties</option>
                 <option value="foalCare">Foal Care</option>
@@ -276,14 +304,17 @@ const MyGroomsDashboard: React.FC<MyGroomsDashboardProps> = ({
             </div>
 
             <div className="flex-1 min-w-[200px]">
-              <label htmlFor="sort-by" className="fantasy-caption block text-midnight-ink mb-2">
+              <label
+                htmlFor="sort-by"
+                className="fantasy-caption block text-[rgb(148,163,184)] mb-2"
+              >
                 Sort By
               </label>
               <select
                 id="sort-by"
                 value={sortBy}
                 onChange={(e) => setSortBy(e.target.value)}
-                className="w-full bg-parchment/80 border-2 border-aged-bronze rounded-md px-3 py-2 fantasy-body focus:ring-2 focus:ring-burnished-gold outline-none"
+                className="celestial-input w-full"
               >
                 <option value="name">Name</option>
                 <option value="salary">Salary</option>
@@ -309,54 +340,87 @@ const MyGroomsDashboard: React.FC<MyGroomsDashboardProps> = ({
                 key={groom.id}
                 data-testid={`groom-card-${groom.id}`}
                 aria-label={`Groom: ${groom.name}`}
-                className="bg-white/90 rounded-lg gold-border p-6 shadow-md hover:shadow-xl transition-all hover:-translate-y-1 group"
+                className="glass-panel p-6 hover:shadow-xl transition-all hover:-translate-y-1 group"
               >
                 {/* Groom Header */}
                 <div className="mb-6">
-                  <h3 className="fantasy-title text-2xl text-midnight-ink group-hover:text-burnished-gold transition-colors">
+                  <h3
+                    className="fantasy-title text-2xl text-[rgb(220,235,255)] group-hover:text-[rgb(212,168,67)] transition-colors"
+                    data-testid="groom-name"
+                  >
                     {groom.name}
                   </h3>
                   <div className="flex items-center gap-2 mt-3">
-                    <span className="px-3 py-1 bg-aged-bronze/10 text-aged-bronze text-xs font-bold uppercase tracking-tighter rounded-md border border-aged-bronze/20">
+                    <span
+                      className="px-3 py-1 text-xs font-bold uppercase tracking-tighter rounded-md"
+                      style={{
+                        background: 'rgba(100,130,165,0.15)',
+                        color: 'rgb(148,163,184)',
+                        border: '1px solid rgba(100,130,165,0.3)',
+                      }}
+                    >
                       {groom.skillLevel}
                     </span>
-                    <span className="px-3 py-1 bg-forest-green/10 text-forest-green text-xs font-bold uppercase tracking-tighter rounded-md border border-forest-green/20">
+                    <span
+                      className="px-3 py-1 text-xs font-bold uppercase tracking-tighter rounded-md"
+                      style={{
+                        background: 'rgba(16,185,129,0.12)',
+                        color: 'rgb(16,185,129)',
+                        border: '1px solid rgba(16,185,129,0.25)',
+                      }}
+                    >
                       {formatSpecialty(groom.specialty)}
                     </span>
                   </div>
                 </div>
 
                 {/* Groom Details */}
-                <div className="space-y-3 mb-6 p-4 bg-parchment/30 rounded-lg border border-aged-bronze/10">
+                <div
+                  className="space-y-3 mb-6 p-4 rounded-lg"
+                  style={{
+                    background: 'rgba(15,35,70,0.5)',
+                    border: '1px solid rgba(37,99,235,0.12)',
+                  }}
+                >
                   <div className="flex justify-between items-center">
-                    <span className="fantasy-caption text-xs">Experience</span>
-                    <span className="fantasy-body text-midnight-ink font-bold">
+                    <span className="fantasy-caption text-xs text-[rgb(148,163,184)]">
+                      Experience
+                    </span>
+                    <span className="fantasy-body text-[rgb(220,235,255)] font-bold">
                       {groom.experience} years
                     </span>
                   </div>
                   <div className="flex justify-between items-center">
-                    <span className="fantasy-caption text-xs">Personality</span>
+                    <span className="fantasy-caption text-xs text-[rgb(148,163,184)]">
+                      Personality
+                    </span>
                     <GroomPersonalityBadge personality={groom.personality} />
                   </div>
                   <div className="flex justify-between items-center">
-                    <span className="fantasy-caption text-xs">Salary</span>
-                    <span className="fantasy-body text-forest-green font-bold">
+                    <span className="fantasy-caption text-xs text-[rgb(148,163,184)]">Salary</span>
+                    <span className="fantasy-body text-[rgb(16,185,129)] font-bold">
                       ${groom.sessionRate}/week
                     </span>
                   </div>
                   <div className="space-y-1">
-                    <div className="flex justify-between items-center text-xs fantasy-caption">
+                    <div className="flex justify-between items-center text-xs fantasy-caption text-[rgb(148,163,184)]">
                       <span>Assignments</span>
                       <span>
                         {groomAssignments.length} / {maxAssignments}
                       </span>
                     </div>
-                    <div className="h-2 bg-gray-200 rounded-full overflow-hidden">
+                    <div
+                      className="h-2 rounded-full overflow-hidden"
+                      style={{ background: 'rgba(37,99,235,0.15)' }}
+                    >
                       <div
-                        className={`h-full transition-all duration-500 ${
-                          isFullyAssigned ? 'bg-aged-bronze' : 'bg-burnished-gold'
-                        }`}
-                        style={{ width: `${(groomAssignments.length / maxAssignments) * 100}%` }}
+                        className="h-full transition-all duration-500"
+                        style={{
+                          width: `${(groomAssignments.length / maxAssignments) * 100}%`,
+                          background: isFullyAssigned
+                            ? 'rgb(100,130,165)'
+                            : 'linear-gradient(90deg, rgb(37,99,235), rgb(29,78,216))',
+                        }}
                       />
                     </div>
                   </div>
@@ -369,7 +433,7 @@ const MyGroomsDashboard: React.FC<MyGroomsDashboardProps> = ({
                     onClick={() =>
                       setExpandedPersonalityId(expandedPersonalityId === groom.id ? null : groom.id)
                     }
-                    className="w-full text-left text-xs fantasy-caption text-aged-bronze hover:text-burnished-gold transition-colors flex items-center justify-between py-1"
+                    className="w-full text-left text-xs fantasy-caption text-[rgb(100,130,165)] hover:text-[rgb(212,168,67)] transition-colors flex items-center justify-between py-1"
                     aria-expanded={expandedPersonalityId === groom.id}
                     data-testid={`personality-toggle-${groom.id}`}
                   >
@@ -389,12 +453,18 @@ const MyGroomsDashboard: React.FC<MyGroomsDashboardProps> = ({
 
                 {/* Assignments */}
                 <div className="mb-6">
-                  <h4 className="fantasy-caption text-midnight-ink mb-3 border-b border-aged-bronze/20 pb-1">
+                  <h4
+                    className="fantasy-caption text-[rgb(148,163,184)] mb-3 pb-1"
+                    style={{ borderBottom: '1px solid rgba(37,99,235,0.2)' }}
+                  >
                     Current Assignments
                   </h4>
                   {groomAssignments.length === 0 ? (
-                    <div className="py-4 text-center bg-gray-50/50 rounded-lg border-2 border-dashed border-gray-200">
-                      <p className="fantasy-body text-aged-bronze text-sm italic">
+                    <div
+                      className="py-4 text-center rounded-lg border-2 border-dashed"
+                      style={{ borderColor: 'rgba(37,99,235,0.2)' }}
+                    >
+                      <p className="fantasy-body text-[rgb(100,130,165)] text-sm italic">
                         Available for Hire
                       </p>
                     </div>
@@ -403,13 +473,17 @@ const MyGroomsDashboard: React.FC<MyGroomsDashboardProps> = ({
                       {groomAssignments.map((assignment) => (
                         <div
                           key={assignment.id}
-                          className="flex items-center justify-between bg-white border border-aged-bronze/20 rounded-lg p-3 hover:border-burnished-gold transition-colors"
+                          className="flex items-center justify-between rounded-lg p-3 transition-colors"
+                          style={{
+                            background: 'rgba(15,35,70,0.4)',
+                            border: '1px solid rgba(37,99,235,0.2)',
+                          }}
                         >
                           <div className="flex-1">
-                            <p className="fantasy-body text-sm font-bold text-midnight-ink">
+                            <p className="fantasy-body text-sm font-bold text-[rgb(220,235,255)]">
                               Horse ID: {assignment.horseId}
                             </p>
-                            <p className="text-[10px] fantasy-caption text-aged-bronze">
+                            <p className="text-[10px] fantasy-caption text-[rgb(100,130,165)]">
                               Priority: {assignment.priority} |{' '}
                               {new Date(assignment.startDate).toLocaleDateString()}
                             </p>
@@ -417,7 +491,7 @@ const MyGroomsDashboard: React.FC<MyGroomsDashboardProps> = ({
                           <button
                             type="button"
                             onClick={() => handleUnassignClick(assignment.id)}
-                            className="p-2 text-red-400 hover:text-red-600 hover:bg-red-50 rounded-full transition-all"
+                            className="p-2 text-red-400 hover:text-red-300 hover:bg-red-900/20 rounded-full transition-all"
                             title="Unassign Groom"
                           >
                             <Trash2 className="w-4 h-4" />
@@ -429,14 +503,14 @@ const MyGroomsDashboard: React.FC<MyGroomsDashboardProps> = ({
                 </div>
 
                 {/* Assign Button */}
-                <FantasyButton
+                <button
+                  type="button"
                   onClick={() => handleAssignClick(groom.id)}
                   disabled={isFullyAssigned}
-                  className="w-full"
-                  variant={isFullyAssigned ? 'secondary' : 'primary'}
+                  className={isFullyAssigned ? 'btn-outline-celestial w-full' : 'btn-cobalt w-full'}
                 >
                   {isFullyAssigned ? 'Max Assignments' : 'Assign to Horse'}
-                </FantasyButton>
+                </button>
               </div>
             );
           })}

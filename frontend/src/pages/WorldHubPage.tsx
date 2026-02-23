@@ -107,6 +107,15 @@ const worldLocations: WorldLocation[] = [
     accentColor: 'border-pink-400/40 hover:border-pink-400/70',
     bgColor: 'from-pink-900/30 to-pink-800/10',
   },
+  {
+    id: 'trainers',
+    name: 'Trainers',
+    description: 'Hire expert trainers and assign them to your horses to boost training results.',
+    icon: '🎓',
+    href: '/trainers',
+    accentColor: 'border-violet-400/40 hover:border-violet-400/70',
+    bgColor: 'from-violet-900/30 to-violet-800/10',
+  },
 ];
 
 const WorldLocationCard: React.FC<{ location: WorldLocation }> = ({ location }) => (
