@@ -96,10 +96,10 @@ export interface LeaderboardHorseDetailModalProps {
 
 /**
  * Returns a Tailwind background color class based on stat value.
- * Green for high (80+), yellow for medium (50-79), red for low (<50).
+ * Emerald for high (80+), yellow for medium (50-79), red for low (<50).
  */
 function getStatColorClass(value: number): string {
-  if (value >= 80) return 'bg-green-500';
+  if (value >= 80) return 'bg-emerald-500';
   if (value >= 50) return 'bg-yellow-500';
   return 'bg-red-500';
 }
@@ -137,28 +137,28 @@ const LoadingSkeleton = () => (
   <div className="space-y-6 animate-pulse">
     {/* Header skeleton */}
     <div data-testid="skeleton-block" className="space-y-2">
-      <div className="h-8 bg-gray-200 rounded w-3/4" />
-      <div className="h-4 bg-gray-200 rounded w-1/2" />
+      <div className="h-8 bg-[rgba(37,99,235,0.15)] rounded w-3/4" />
+      <div className="h-4 bg-[rgba(37,99,235,0.15)] rounded w-1/2" />
     </div>
     {/* Stats skeleton */}
     <div data-testid="skeleton-block" className="space-y-2">
-      <div className="h-4 bg-gray-200 rounded w-full" />
-      <div className="h-4 bg-gray-200 rounded w-full" />
-      <div className="h-4 bg-gray-200 rounded w-5/6" />
-      <div className="h-4 bg-gray-200 rounded w-4/6" />
+      <div className="h-4 bg-[rgba(37,99,235,0.15)] rounded w-full" />
+      <div className="h-4 bg-[rgba(37,99,235,0.15)] rounded w-full" />
+      <div className="h-4 bg-[rgba(37,99,235,0.15)] rounded w-5/6" />
+      <div className="h-4 bg-[rgba(37,99,235,0.15)] rounded w-4/6" />
     </div>
     {/* History skeleton */}
     <div data-testid="skeleton-block" className="space-y-2">
-      <div className="h-6 bg-gray-200 rounded w-1/3" />
-      <div className="h-4 bg-gray-200 rounded w-full" />
-      <div className="h-4 bg-gray-200 rounded w-full" />
+      <div className="h-6 bg-[rgba(37,99,235,0.15)] rounded w-1/3" />
+      <div className="h-4 bg-[rgba(37,99,235,0.15)] rounded w-full" />
+      <div className="h-4 bg-[rgba(37,99,235,0.15)] rounded w-full" />
     </div>
     {/* Achievements skeleton */}
     <div data-testid="skeleton-block" className="space-y-2">
-      <div className="h-6 bg-gray-200 rounded w-1/4" />
+      <div className="h-6 bg-[rgba(37,99,235,0.15)] rounded w-1/4" />
       <div className="flex gap-2">
-        <div className="h-8 bg-gray-200 rounded w-32" />
-        <div className="h-8 bg-gray-200 rounded w-28" />
+        <div className="h-8 bg-[rgba(37,99,235,0.15)] rounded w-32" />
+        <div className="h-8 bg-[rgba(37,99,235,0.15)] rounded w-28" />
       </div>
     </div>
   </div>
@@ -169,7 +169,7 @@ const LoadingSkeleton = () => (
  */
 const EmptyHorseState = () => (
   <div
-    className="flex flex-col items-center justify-center py-16 text-gray-500"
+    className="flex flex-col items-center justify-center py-16 text-[rgb(148,163,184)]"
     data-testid="empty-horse-state"
   >
     <p className="text-lg font-medium">Horse details not available</p>
@@ -182,15 +182,15 @@ const EmptyHorseState = () => (
  */
 const StatBar = ({ label, value }: { label: string; value: number }) => (
   <div className="flex items-center gap-3">
-    <span className="w-24 text-sm text-gray-600 capitalize">{label}</span>
-    <div className="flex-1 h-2 bg-gray-200 rounded-full overflow-hidden">
+    <span className="w-24 text-sm text-[rgb(148,163,184)] capitalize">{label}</span>
+    <div className="flex-1 h-2 bg-[rgba(15,35,70,0.6)] rounded-full overflow-hidden">
       <div
         className={`h-full rounded-full ${getStatColorClass(value)}`}
         style={{ width: `${Math.min(value, 100)}%` }}
         data-testid="stat-progress-bar"
       />
     </div>
-    <span className="w-8 text-sm font-medium text-gray-700 text-right">{value}</span>
+    <span className="w-8 text-sm font-medium text-[rgb(220,235,255)] text-right">{value}</span>
   </div>
 );
 
@@ -198,9 +198,9 @@ const StatBar = ({ label, value }: { label: string; value: number }) => (
  * Competition summary stat card showing a single metric.
  */
 const SummaryStatCard = ({ label, value }: { label: string; value: string }) => (
-  <div className="bg-gray-50 rounded-lg p-3 text-center">
-    <div className="text-xl font-bold text-gray-900">{value}</div>
-    <div className="text-xs text-gray-500 mt-1">{label}</div>
+  <div className="bg-[rgba(15,35,70,0.5)] rounded-lg p-3 text-center">
+    <div className="text-xl font-bold text-[rgb(220,235,255)]">{value}</div>
+    <div className="text-xs text-[rgb(148,163,184)] mt-1">{label}</div>
   </div>
 );
 
@@ -280,7 +280,7 @@ const LeaderboardHorseDetailModal = ({
     <div data-testid="horse-detail-modal">
       {/* Backdrop */}
       <div
-        className="fixed inset-0 z-50 flex items-center justify-center bg-black/50"
+        className="fixed inset-0 z-50 flex items-center justify-center bg-black/70"
         data-testid="modal-backdrop"
         onClick={handleBackdropClick}
       >
@@ -289,12 +289,12 @@ const LeaderboardHorseDetailModal = ({
           role="dialog"
           aria-modal="true"
           aria-labelledby="horse-detail-title"
-          className={`relative bg-white rounded-2xl shadow-xl w-full max-w-3xl max-h-[90vh] overflow-y-auto mx-4 ${className}`}
+          className={`relative glass-panel rounded-2xl shadow-xl w-full max-w-3xl max-h-[90vh] overflow-y-auto mx-4 ${className}`}
           onClick={(e) => e.stopPropagation()}
         >
           {/* Close Button */}
           <button
-            className="absolute top-4 right-4 p-1 rounded-full text-gray-400 hover:text-gray-600 hover:bg-gray-100 transition-colors"
+            className="absolute top-4 right-4 p-1 rounded-full text-[rgb(148,163,184)] hover:text-[rgb(220,235,255)] hover:bg-[rgba(37,99,235,0.2)] transition-colors"
             onClick={onClose}
             data-testid="modal-close-button"
             aria-label="Close horse details"
@@ -320,30 +320,29 @@ const LeaderboardHorseDetailModal = ({
                   <div className="flex-1">
                     <h2
                       id="horse-detail-title"
-                      className="text-3xl font-bold text-gray-800"
+                      className="text-3xl font-bold text-[rgb(220,235,255)]"
                     >
                       {horseData.horseName}
                     </h2>
-                    <p className="text-sm text-gray-500 mt-1">
-                      {horseData.breed} &middot; {horseData.age} years old &middot;{' '}
-                      {horseData.sex}
+                    <p className="text-sm text-[rgb(148,163,184)] mt-1">
+                      {horseData.breed} &middot; {horseData.age} years old &middot; {horseData.sex}
                     </p>
                     <div className="flex items-center gap-2 mt-2">
                       <span
-                        className="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-bold bg-blue-100 text-blue-800"
+                        className="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-bold bg-[rgba(37,99,235,0.2)] text-blue-300"
                         data-testid="level-badge"
                       >
                         Lvl {horseData.level}
                       </span>
                       {horseData.primaryDiscipline && (
-                        <span className="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-purple-100 text-purple-800">
+                        <span className="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-[rgba(139,92,246,0.2)] text-purple-300">
                           {horseData.primaryDiscipline}
                         </span>
                       )}
                     </div>
                   </div>
                   {/* Owner Info */}
-                  <div className="flex items-center gap-1.5 text-sm text-gray-500">
+                  <div className="flex items-center gap-1.5 text-sm text-[rgb(148,163,184)]">
                     <User size={16} aria-hidden="true" />
                     <span>{horseData.owner.ownerName}</span>
                   </div>
@@ -353,29 +352,21 @@ const LeaderboardHorseDetailModal = ({
                     Stats Section
                 -------------------------------------------------------- */}
                 <div data-testid="stats-section">
-                  <h3 className="text-lg font-semibold text-gray-700 mb-3">Stats</h3>
+                  <h3 className="text-lg font-semibold text-[rgb(220,235,255)] mb-3">Stats</h3>
 
                   {/* Physical Stats */}
-                  <h4 className="text-sm font-medium text-gray-500 mb-2">Physical</h4>
+                  <h4 className="text-sm font-medium text-[rgb(148,163,184)] mb-2">Physical</h4>
                   <div className="space-y-2 mb-4">
                     {physicalStats.map((stat) => (
-                      <StatBar
-                        key={stat}
-                        label={stat}
-                        value={horseData.stats[stat]}
-                      />
+                      <StatBar key={stat} label={stat} value={horseData.stats[stat]} />
                     ))}
                   </div>
 
                   {/* Mental Stats */}
-                  <h4 className="text-sm font-medium text-gray-500 mb-2">Mental</h4>
+                  <h4 className="text-sm font-medium text-[rgb(148,163,184)] mb-2">Mental</h4>
                   <div className="space-y-2">
                     {mentalStats.map((stat) => (
-                      <StatBar
-                        key={stat}
-                        label={stat}
-                        value={horseData.stats[stat]}
-                      />
+                      <StatBar key={stat} label={stat} value={horseData.stats[stat]} />
                     ))}
                   </div>
                 </div>
@@ -384,7 +375,7 @@ const LeaderboardHorseDetailModal = ({
                     Competition History Section
                 -------------------------------------------------------- */}
                 <div data-testid="competition-history-section">
-                  <h3 className="text-lg font-semibold text-gray-700 mb-3">
+                  <h3 className="text-lg font-semibold text-[rgb(220,235,255)] mb-3">
                     Competition History
                   </h3>
 
@@ -409,22 +400,19 @@ const LeaderboardHorseDetailModal = ({
                   </div>
 
                   {/* Total Prize Money */}
-                  <p className="text-sm text-gray-600 mb-4">
+                  <p className="text-sm text-[rgb(148,163,184)] mb-4">
                     Total Prize Money:{' '}
-                    <span className="font-semibold text-gray-800">
+                    <span className="font-semibold text-[rgb(220,235,255)]">
                       {formatCurrency(horseData.competitionHistory.totalPrizeMoney)}
                     </span>
                   </p>
 
                   {/* Recent Competitions Table */}
                   {horseData.competitionHistory.recentCompetitions.length > 0 ? (
-                    <div
-                      className="overflow-x-auto"
-                      data-testid="recent-competitions-table"
-                    >
+                    <div className="overflow-x-auto" data-testid="recent-competitions-table">
                       <table className="w-full text-sm">
                         <thead>
-                          <tr className="bg-gray-50 text-left text-gray-600">
+                          <tr className="bg-[rgba(15,35,70,0.5)] text-left text-[rgb(148,163,184)]">
                             <th className="px-3 py-2 font-medium">Date</th>
                             <th className="px-3 py-2 font-medium">Competition</th>
                             <th className="px-3 py-2 font-medium">Discipline</th>
@@ -433,32 +421,34 @@ const LeaderboardHorseDetailModal = ({
                           </tr>
                         </thead>
                         <tbody>
-                          {horseData.competitionHistory.recentCompetitions.map(
-                            (comp, index) => (
-                              <tr
-                                key={comp.competitionId}
-                                className={index % 2 === 1 ? 'bg-gray-50' : ''}
-                              >
-                                <td className="px-3 py-2 whitespace-nowrap">
-                                  {formatDate(comp.date)}
-                                </td>
-                                <td className="px-3 py-2">{comp.competitionName}</td>
-                                <td className="px-3 py-2">{comp.discipline}</td>
-                                <td className="px-3 py-2 text-right">
-                                  {comp.rank}/{comp.totalParticipants}
-                                </td>
-                                <td className="px-3 py-2 text-right">
-                                  {formatCurrency(comp.prizeWon)}
-                                </td>
-                              </tr>
-                            )
-                          )}
+                          {horseData.competitionHistory.recentCompetitions.map((comp, index) => (
+                            <tr
+                              key={comp.competitionId}
+                              className={index % 2 === 1 ? 'bg-[rgba(15,35,70,0.3)]' : ''}
+                            >
+                              <td className="px-3 py-2 whitespace-nowrap text-[rgb(220,235,255)]">
+                                {formatDate(comp.date)}
+                              </td>
+                              <td className="px-3 py-2 text-[rgb(220,235,255)]">
+                                {comp.competitionName}
+                              </td>
+                              <td className="px-3 py-2 text-[rgb(220,235,255)]">
+                                {comp.discipline}
+                              </td>
+                              <td className="px-3 py-2 text-right text-[rgb(220,235,255)]">
+                                {comp.rank}/{comp.totalParticipants}
+                              </td>
+                              <td className="px-3 py-2 text-right text-[rgb(220,235,255)]">
+                                {formatCurrency(comp.prizeWon)}
+                              </td>
+                            </tr>
+                          ))}
                         </tbody>
                       </table>
                     </div>
                   ) : (
                     <div
-                      className="text-center text-gray-400 py-6"
+                      className="text-center text-[rgb(148,163,184)] py-6"
                       data-testid="no-recent-competitions"
                     >
                       <p>No recent competitions</p>
@@ -470,7 +460,7 @@ const LeaderboardHorseDetailModal = ({
                     Achievements Section
                 -------------------------------------------------------- */}
                 <div data-testid="achievements-section">
-                  <h3 className="text-lg font-semibold text-gray-700 mb-3">
+                  <h3 className="text-lg font-semibold text-[rgb(220,235,255)] mb-3">
                     Achievements
                   </h3>
                   {horseData.achievements.length > 0 ? (
@@ -478,7 +468,7 @@ const LeaderboardHorseDetailModal = ({
                       {horseData.achievements.map((achievement) => (
                         <span
                           key={achievement}
-                          className="inline-flex items-center gap-1 px-3 py-1.5 rounded-full text-xs font-medium bg-amber-50 text-amber-800 border border-amber-200"
+                          className="inline-flex items-center gap-1 px-3 py-1.5 rounded-full text-xs font-medium bg-[rgba(212,168,67,0.1)] text-amber-300 border border-amber-500/30"
                         >
                           <Award size={14} aria-hidden="true" />
                           {achievement}
@@ -486,14 +476,14 @@ const LeaderboardHorseDetailModal = ({
                       ))}
                     </div>
                   ) : (
-                    <p className="text-sm text-gray-400">No achievements yet</p>
+                    <p className="text-sm text-[rgb(148,163,184)]">No achievements yet</p>
                   )}
                 </div>
 
                 {/* --------------------------------------------------------
                     Action Buttons
                 -------------------------------------------------------- */}
-                <div className="flex items-center gap-3 pt-4 border-t border-gray-200">
+                <div className="flex items-center gap-3 pt-4 border-t border-[rgba(37,99,235,0.3)]">
                   {onViewFullProfile && (
                     <button
                       className="inline-flex items-center gap-2 px-4 py-2 bg-blue-600 text-white text-sm font-medium rounded-lg hover:bg-blue-700 transition-colors"
@@ -505,7 +495,7 @@ const LeaderboardHorseDetailModal = ({
                     </button>
                   )}
                   <button
-                    className="inline-flex items-center gap-2 px-4 py-2 bg-gray-100 text-gray-700 text-sm font-medium rounded-lg hover:bg-gray-200 transition-colors"
+                    className="inline-flex items-center gap-2 px-4 py-2 bg-[rgba(15,35,70,0.5)] text-[rgb(220,235,255)] text-sm font-medium rounded-lg hover:bg-[rgba(37,99,235,0.2)] transition-colors"
                     onClick={onClose}
                   >
                     Close

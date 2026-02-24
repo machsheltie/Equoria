@@ -35,7 +35,7 @@ import type { TraitModifier } from './TraitModifierBadge';
 interface TrainingSessionModalProps {
   horse: TrainableHorse;
   onClose: () => void;
-  onCompleted?: (result: TrainingResult) => void;
+  onCompleted?: (_result: TrainingResult) => void;
 }
 
 /**
@@ -209,19 +209,21 @@ const TrainingSessionModal = ({ horse, onClose, onCompleted }: TrainingSessionMo
   };
 
   return (
-    <div className="fixed inset-0 z-50 flex items-center justify-center bg-slate-900/40 p-4">
-      <div className="w-full max-w-xl rounded-xl bg-white p-6 shadow-xl">
+    <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/60 p-4">
+      <div className="w-full max-w-xl rounded-xl glass-panel p-6 shadow-xl">
         {/* Show training results if available */}
         {trainingResult ? (
           <div>
             <div className="mb-4 flex items-start justify-between">
               <div>
-                <p className="text-xs uppercase tracking-wide text-slate-500">Training Complete</p>
-                <h3 className="text-xl font-bold text-slate-900">{horse.name}</h3>
+                <p className="text-xs uppercase tracking-wide text-[rgb(148,163,184)]">
+                  Training Complete
+                </p>
+                <h3 className="text-xl font-bold text-[rgb(220,235,255)]">{horse.name}</h3>
               </div>
               <button
                 type="button"
-                className="rounded-md border border-slate-200 px-3 py-1 text-sm font-semibold text-slate-700 hover:bg-slate-50"
+                className="rounded-md border border-[rgba(37,99,235,0.3)] px-3 py-1 text-sm font-semibold text-[rgb(148,163,184)] hover:bg-[rgba(15,35,70,0.5)]"
                 onClick={onClose}
               >
                 Close
@@ -239,15 +241,17 @@ const TrainingSessionModal = ({ horse, onClose, onCompleted }: TrainingSessionMo
             {/* Training Form */}
             <div className="flex items-start justify-between">
               <div>
-                <p className="text-xs uppercase tracking-wide text-slate-500">Training Session</p>
-                <h3 className="text-xl font-bold text-slate-900">{horse.name}</h3>
-                <p className="text-sm text-slate-600">
+                <p className="text-xs uppercase tracking-wide text-[rgb(148,163,184)]">
+                  Training Session
+                </p>
+                <h3 className="text-xl font-bold text-[rgb(220,235,255)]">{horse.name}</h3>
+                <p className="text-sm text-[rgb(148,163,184)]">
                   Choose a discipline to train. Eligibility and cooldown are enforced server-side.
                 </p>
               </div>
               <button
                 type="button"
-                className="rounded-md border border-slate-200 px-3 py-1 text-sm font-semibold text-slate-700 hover:bg-slate-50"
+                className="rounded-md border border-[rgba(37,99,235,0.3)] px-3 py-1 text-sm font-semibold text-[rgb(148,163,184)] hover:bg-[rgba(15,35,70,0.5)]"
                 onClick={onClose}
               >
                 Close
@@ -268,17 +272,17 @@ const TrainingSessionModal = ({ horse, onClose, onCompleted }: TrainingSessionMo
               />
             </div>
 
-            <div className="mt-3 rounded-md border border-slate-100 bg-slate-50 px-3 py-2 text-sm text-slate-700">
+            <div className="mt-3 rounded-md border border-[rgba(37,99,235,0.3)] bg-[rgba(15,35,70,0.3)] px-3 py-2 text-sm text-[rgb(220,235,255)]">
               {statusSummary}
             </div>
 
             {/* Trait Modifiers Section */}
             <div className="mt-4" data-testid="trait-modifiers-section">
               <div className="flex items-center gap-2 mb-3">
-                <h3 className="text-sm font-semibold text-gray-700">Trait Modifiers</h3>
+                <h3 className="text-sm font-semibold text-[rgb(220,235,255)]">Trait Modifiers</h3>
                 <button
                   onClick={handleLearnMore}
-                  className="text-blue-600 hover:text-blue-800"
+                  className="text-blue-400 hover:text-blue-300"
                   aria-label="Learn more about traits"
                   type="button"
                 >
@@ -295,12 +299,12 @@ const TrainingSessionModal = ({ horse, onClose, onCompleted }: TrainingSessionMo
 
             {/* Expected Score Display */}
             <div
-              className="mt-3 rounded-md border border-blue-100 bg-blue-50 px-3 py-2 text-sm text-blue-800"
+              className="mt-3 rounded-md border border-blue-500/30 bg-[rgba(37,99,235,0.1)] px-3 py-2 text-sm text-blue-300"
               data-testid="expected-score-display"
             >
               <span className="font-semibold">Expected New Score:</span>{' '}
               <span data-testid="expected-score-value">{expectedNewScore}</span>
-              <span className="text-blue-600 ml-2">
+              <span className="text-blue-400 ml-2">
                 (Current: {currentScore} + Net Effect: {netEffect})
               </span>
             </div>
@@ -309,8 +313,8 @@ const TrainingSessionModal = ({ horse, onClose, onCompleted }: TrainingSessionMo
               <div
                 className={`mt-3 rounded-md px-3 py-2 text-sm ${
                   eligibility.eligible
-                    ? 'border border-emerald-200 bg-emerald-50 text-emerald-800'
-                    : 'border border-amber-200 bg-amber-50 text-amber-800'
+                    ? 'border border-emerald-500/30 bg-[rgba(16,185,129,0.1)] text-emerald-400'
+                    : 'border border-amber-500/30 bg-[rgba(212,168,67,0.1)] text-amber-400'
                 }`}
               >
                 {eligibility.eligible
@@ -320,7 +324,7 @@ const TrainingSessionModal = ({ horse, onClose, onCompleted }: TrainingSessionMo
             )}
 
             {errorMessage && (
-              <div className="mt-3 rounded-md border border-rose-200 bg-rose-50 px-3 py-2 text-sm text-rose-800">
+              <div className="mt-3 rounded-md border border-red-500/30 bg-[rgba(239,68,68,0.1)] px-3 py-2 text-sm text-red-400">
                 {errorMessage}
               </div>
             )}
@@ -330,7 +334,7 @@ const TrainingSessionModal = ({ horse, onClose, onCompleted }: TrainingSessionMo
                 type="button"
                 onClick={handleCheckEligibility}
                 disabled={checking || isTraining}
-                className="rounded-md border border-slate-200 px-3 py-2 text-sm font-semibold text-slate-700 shadow-sm hover:bg-slate-50 disabled:cursor-not-allowed disabled:opacity-60"
+                className="rounded-md border border-[rgba(37,99,235,0.3)] px-3 py-2 text-sm font-semibold text-[rgb(148,163,184)] shadow-sm hover:bg-[rgba(15,35,70,0.5)] disabled:cursor-not-allowed disabled:opacity-60"
               >
                 {checking ? 'Checking...' : 'Check Eligibility'}
               </button>
@@ -338,7 +342,7 @@ const TrainingSessionModal = ({ horse, onClose, onCompleted }: TrainingSessionMo
                 type="button"
                 onClick={handleTrain}
                 disabled={isTraining}
-                className="rounded-md bg-emerald-600 px-4 py-2 text-sm font-semibold text-white shadow hover:bg-emerald-500 focus:outline-none focus:ring-2 focus:ring-emerald-500 focus:ring-offset-2 disabled:cursor-not-allowed disabled:opacity-70"
+                className="rounded-md bg-emerald-600 px-4 py-2 text-sm font-semibold text-white shadow hover:bg-emerald-500 focus:outline-none focus:ring-2 focus:ring-emerald-500 focus:ring-offset-2 focus:ring-offset-[rgba(15,35,70,0.9)] disabled:cursor-not-allowed disabled:opacity-70"
               >
                 {isTraining ? 'Training...' : 'Start Training'}
               </button>

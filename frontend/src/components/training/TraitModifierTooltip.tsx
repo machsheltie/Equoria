@@ -245,35 +245,38 @@ const TraitModifierTooltip = ({
         <div
           id={fullTooltipId}
           role="tooltip"
-          className="absolute z-50 w-64 p-3 mt-2 bg-white rounded-lg shadow-lg border border-gray-200"
+          className="absolute z-50 w-64 p-3 mt-2 glass-panel rounded-lg shadow-lg border border-[rgba(37,99,235,0.3)]"
           onMouseEnter={handleTooltipMouseEnter}
           onMouseLeave={handleTooltipMouseLeave}
         >
           {/* Trait name heading */}
-          <h4 className="font-semibold text-sm mb-2">{modifier.traitName}</h4>
+          <h4 className="font-semibold text-sm mb-2 text-[rgb(220,235,255)]">
+            {modifier.traitName}
+          </h4>
 
           {/* Divider */}
-          <hr className="border-gray-200 mb-2" />
+          <hr className="border-[rgba(37,99,235,0.3)] mb-2" />
 
           {/* Effect description */}
-          <p className="text-xs text-gray-600 mb-2">
-            <span className="font-medium">Effect:</span> {effectDescription}
+          <p className="text-xs text-[rgb(148,163,184)] mb-2">
+            <span className="font-medium text-[rgb(220,235,255)]">Effect:</span> {effectDescription}
           </p>
 
           {/* Affected disciplines */}
-          <p className="text-xs text-gray-600 mb-2">
-            <span className="font-medium">Disciplines:</span> {disciplineList}
+          <p className="text-xs text-[rgb(148,163,184)] mb-2">
+            <span className="font-medium text-[rgb(220,235,255)]">Disciplines:</span>{' '}
+            {disciplineList}
           </p>
 
           {/* Full description */}
-          <p className="text-xs text-gray-700 mb-3">{modifier.description}</p>
+          <p className="text-xs text-[rgb(148,163,184)] mb-3">{modifier.description}</p>
 
           {/* Learn More button (optional) */}
           {onLearnMore && (
             <button
               type="button"
               onClick={onLearnMore}
-              className="text-xs text-blue-600 hover:text-blue-800 font-medium"
+              className="text-xs text-blue-400 hover:text-blue-300 font-medium"
             >
               Learn More &rarr;
             </button>

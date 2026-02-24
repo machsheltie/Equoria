@@ -64,21 +64,24 @@ const TrainingRecommendations = ({ horses, className = '' }: TrainingRecommendat
   const noReadyHorses = recommendations.length === 0 && horses.length > 0;
 
   return (
-    <div className={`bg-white rounded-lg shadow p-6 ${className}`} data-testid="recommendations">
+    <div className={`glass-panel rounded-lg p-6 ${className}`} data-testid="recommendations">
       {/* Header */}
       <div className="flex items-center gap-2 mb-4">
-        <Lightbulb className="h-5 w-5 text-amber-500" aria-hidden="true" />
-        <h2 className="text-lg font-semibold text-slate-900">Training Recommendations</h2>
+        <Lightbulb className="h-5 w-5 text-amber-400" aria-hidden="true" />
+        <h2 className="text-lg font-semibold text-[rgb(220,235,255)]">Training Recommendations</h2>
       </div>
-      <p className="text-sm text-slate-600 mb-6">
+      <p className="text-sm text-[rgb(148,163,184)] mb-6">
         AI-powered suggestions to optimize your training strategy
       </p>
 
       {/* Empty State - No Horses */}
       {noHorses && (
         <div className="py-8 text-center" data-testid="empty-recommendations">
-          <Lightbulb className="mx-auto h-12 w-12 text-slate-400 mb-4" aria-hidden="true" />
-          <p className="text-sm text-slate-600">
+          <Lightbulb
+            className="mx-auto h-12 w-12 text-[rgb(148,163,184)] mb-4"
+            aria-hidden="true"
+          />
+          <p className="text-sm text-[rgb(148,163,184)]">
             Add horses to receive training recommendations tailored to your stable
           </p>
         </div>
@@ -87,8 +90,8 @@ const TrainingRecommendations = ({ horses, className = '' }: TrainingRecommendat
       {/* Empty State - No Ready Horses */}
       {noReadyHorses && (
         <div className="py-8 text-center mb-6" data-testid="empty-recommendations">
-          <Clock className="mx-auto h-12 w-12 text-slate-400 mb-4" aria-hidden="true" />
-          <p className="text-sm text-slate-600">
+          <Clock className="mx-auto h-12 w-12 text-[rgb(148,163,184)] mb-4" aria-hidden="true" />
+          <p className="text-sm text-[rgb(148,163,184)]">
             No training recommendations available - all horses are on cooldown or ineligible
           </p>
         </div>
@@ -97,26 +100,26 @@ const TrainingRecommendations = ({ horses, className = '' }: TrainingRecommendat
       {/* Priority Recommendations */}
       {recommendations.length > 0 && (
         <div className="mb-6">
-          <h3 className="text-sm font-semibold text-slate-900 mb-3">Priority Training</h3>
+          <h3 className="text-sm font-semibold text-[rgb(220,235,255)] mb-3">Priority Training</h3>
           <div className="space-y-3">
             {recommendations.map((rec) => (
               <div
                 key={rec.horseId}
-                className="flex items-start gap-3 p-3 bg-blue-50 border border-blue-200 rounded-lg"
+                className="flex items-start gap-3 p-3 bg-[rgba(37,99,235,0.1)] border border-blue-500/30 rounded-lg"
                 data-testid="horse-recommendation"
               >
                 <TrendingUp
-                  className="h-5 w-5 text-blue-600 flex-shrink-0 mt-0.5"
+                  className="h-5 w-5 text-blue-400 flex-shrink-0 mt-0.5"
                   aria-hidden="true"
                 />
                 <div className="flex-1">
-                  <div className="font-medium text-slate-900">
+                  <div className="font-medium text-[rgb(220,235,255)]">
                     {rec.horseName}
-                    <span className="ml-2 text-sm text-slate-600 font-normal">
+                    <span className="ml-2 text-sm text-[rgb(148,163,184)] font-normal">
                       {rec.age} {rec.age === 1 ? 'year' : 'years'} old
                     </span>
                   </div>
-                  <p className="text-sm text-slate-600 mt-1">{rec.reason}</p>
+                  <p className="text-sm text-[rgb(148,163,184)] mt-1">{rec.reason}</p>
                 </div>
               </div>
             ))}
@@ -126,18 +129,21 @@ const TrainingRecommendations = ({ horses, className = '' }: TrainingRecommendat
 
       {/* Training Tips */}
       <div>
-        <h3 className="text-sm font-semibold text-slate-900 mb-3">Training Tips</h3>
+        <h3 className="text-sm font-semibold text-[rgb(220,235,255)] mb-3">Training Tips</h3>
         <div className="space-y-2">
           {trainingTips.map((tip, index) => {
             const Icon = tip.icon;
             return (
               <div
                 key={index}
-                className="flex items-start gap-3 p-3 bg-slate-50 rounded-lg"
+                className="flex items-start gap-3 p-3 bg-[rgba(15,35,70,0.3)] rounded-lg"
                 data-testid="training-tip"
               >
-                <Icon className="h-4 w-4 text-slate-500 flex-shrink-0 mt-0.5" aria-hidden="true" />
-                <p className="text-sm text-slate-700">{tip.text}</p>
+                <Icon
+                  className="h-4 w-4 text-[rgb(148,163,184)] flex-shrink-0 mt-0.5"
+                  aria-hidden="true"
+                />
+                <p className="text-sm text-[rgb(220,235,255)]">{tip.text}</p>
               </div>
             );
           })}

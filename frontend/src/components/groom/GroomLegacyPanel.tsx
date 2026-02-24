@@ -45,34 +45,42 @@ function PerkCard({ perk, isInherited = false }: { perk: LegacyPerk; isInherited
   return (
     <div
       className={`rounded-lg border p-3 ${
-        isInherited ? 'bg-amber-50 border-amber-200' : 'bg-white border-gray-200'
+        isInherited
+          ? 'bg-[rgba(212,168,67,0.1)] border-[rgba(212,168,67,0.3)]'
+          : 'bg-[rgba(15,35,70,0.4)] border-[rgba(37,99,235,0.3)]'
       }`}
       data-testid={`perk-card-${perk.id}`}
     >
       <div className="flex items-center gap-2 mb-1">
         {isInherited && (
-          <Sparkles className="w-3 h-3 text-amber-500 flex-shrink-0" aria-hidden="true" />
+          <Sparkles className="w-3 h-3 text-amber-400 flex-shrink-0" aria-hidden="true" />
         )}
-        <span className="text-sm font-semibold text-gray-800" data-testid={`perk-name-${perk.id}`}>
+        <span
+          className="text-sm font-semibold text-[rgb(220,235,255)]"
+          data-testid={`perk-name-${perk.id}`}
+        >
           {perk.name}
         </span>
         {isInherited && (
           <span
-            className="text-xs bg-amber-100 text-amber-700 px-1.5 py-0.5 rounded"
+            className="text-xs bg-[rgba(212,168,67,0.1)] text-amber-400 px-1.5 py-0.5 rounded"
             data-testid={`perk-inherited-badge-${perk.id}`}
           >
             Inherited
           </span>
         )}
       </div>
-      <p className="text-xs text-gray-500 mb-2" data-testid={`perk-description-${perk.id}`}>
+      <p
+        className="text-xs text-[rgb(148,163,184)] mb-2"
+        data-testid={`perk-description-${perk.id}`}
+      >
         {perk.description}
       </p>
       <div className="flex flex-wrap gap-1" data-testid={`perk-effects-${perk.id}`}>
         {Object.entries(perk.effect).map(([key, value]) => (
           <span
             key={key}
-            className="text-xs bg-green-50 text-green-700 border border-green-200 px-2 py-0.5 rounded"
+            className="text-xs bg-[rgba(16,185,129,0.1)] text-emerald-400 border border-emerald-500/30 px-2 py-0.5 rounded"
           >
             {formatPerkEffect(key, value)}
           </span>
@@ -100,14 +108,14 @@ function LineageNode({
     <div
       className={`text-center px-3 py-2 rounded-lg border ${
         isCenter
-          ? 'bg-blue-50 border-blue-200 text-blue-800'
-          : 'bg-white border-gray-200 text-gray-700'
+          ? 'bg-[rgba(37,99,235,0.1)] border-blue-500/30 text-[rgb(220,235,255)]'
+          : 'bg-[rgba(15,35,70,0.4)] border-[rgba(37,99,235,0.3)] text-[rgb(220,235,255)]'
       }`}
       data-testid={testId}
     >
-      <p className="text-xs text-gray-500 mb-0.5">{role}</p>
+      <p className="text-xs text-[rgb(148,163,184)] mb-0.5">{role}</p>
       <p className="text-sm font-semibold">{name}</p>
-      <p className="text-xs text-gray-400">Level {level}</p>
+      <p className="text-xs text-[rgb(148,163,184)]">Level {level}</p>
     </div>
   );
 }
@@ -124,7 +132,7 @@ function LegacyTree({
 }) {
   return (
     <div data-testid="legacy-tree-section">
-      <h4 className="text-xs font-semibold text-gray-600 uppercase tracking-wide mb-3 flex items-center gap-1">
+      <h4 className="text-xs font-semibold text-[rgb(148,163,184)] uppercase tracking-wide mb-3 flex items-center gap-1">
         <GitBranch className="w-3 h-3" aria-hidden="true" />
         Legacy Lineage
       </h4>
@@ -139,7 +147,7 @@ function LegacyTree({
           />
         ) : (
           <div
-            className="text-center px-3 py-2 rounded-lg border border-dashed border-gray-300 text-gray-400"
+            className="text-center px-3 py-2 rounded-lg border border-dashed border-[rgba(37,99,235,0.3)] text-[rgb(148,163,184)]"
             data-testid="legacy-tree-no-mentor"
           >
             <p className="text-xs mb-0.5">Mentor</p>
@@ -147,7 +155,11 @@ function LegacyTree({
           </div>
         )}
 
-        <ChevronRight className="text-gray-400 flex-shrink-0" size={16} aria-hidden="true" />
+        <ChevronRight
+          className="text-[rgb(148,163,184)] flex-shrink-0"
+          size={16}
+          aria-hidden="true"
+        />
 
         {/* Current groom (center) */}
         <LineageNode
@@ -158,7 +170,11 @@ function LegacyTree({
           isCenter
         />
 
-        <ChevronRight className="text-gray-400 flex-shrink-0" size={16} aria-hidden="true" />
+        <ChevronRight
+          className="text-[rgb(148,163,184)] flex-shrink-0"
+          size={16}
+          aria-hidden="true"
+        />
 
         {/* Protégé (if any) */}
         {protégéInfo ? (
@@ -170,7 +186,7 @@ function LegacyTree({
           />
         ) : (
           <div
-            className="text-center px-3 py-2 rounded-lg border border-dashed border-gray-300 text-gray-400"
+            className="text-center px-3 py-2 rounded-lg border border-dashed border-[rgba(37,99,235,0.3)] text-[rgb(148,163,184)]"
             data-testid="legacy-tree-no-protege"
           >
             <p className="text-xs mb-0.5">Protégé</p>
@@ -194,40 +210,49 @@ function MentorEligibilitySection({
 
   return (
     <div data-testid="mentor-eligibility-section">
-      <h4 className="text-xs font-semibold text-gray-600 uppercase tracking-wide mb-2 flex items-center gap-1">
+      <h4 className="text-xs font-semibold text-[rgb(148,163,184)] uppercase tracking-wide mb-2 flex items-center gap-1">
         <Award className="w-3 h-3" aria-hidden="true" />
         Mentor Eligibility
       </h4>
       <div
         className={`flex items-start gap-2 rounded-lg p-3 border ${
-          eligibility.isEligible ? 'bg-green-50 border-green-200' : 'bg-gray-50 border-gray-200'
+          eligibility.isEligible
+            ? 'bg-[rgba(16,185,129,0.1)] border-emerald-500/30'
+            : 'bg-[rgba(15,35,70,0.3)] border-[rgba(37,99,235,0.3)]'
         }`}
         data-testid="mentor-eligibility-status"
       >
         {eligibility.isEligible ? (
           <CheckCircle
-            className="text-green-500 flex-shrink-0 mt-0.5"
+            className="text-emerald-400 flex-shrink-0 mt-0.5"
             size={14}
             aria-hidden="true"
           />
         ) : (
-          <Lock className="text-gray-400 flex-shrink-0 mt-0.5" size={14} aria-hidden="true" />
+          <Lock
+            className="text-[rgb(148,163,184)] flex-shrink-0 mt-0.5"
+            size={14}
+            aria-hidden="true"
+          />
         )}
         <div>
           {eligibility.isEligible ? (
-            <p className="text-sm font-medium text-green-700" data-testid="eligible-message">
+            <p className="text-sm font-medium text-emerald-400" data-testid="eligible-message">
               Eligible to mentor a protégé
             </p>
           ) : (
             <>
-              <p className="text-sm font-medium text-gray-600" data-testid="ineligible-message">
+              <p
+                className="text-sm font-medium text-[rgb(148,163,184)]"
+                data-testid="ineligible-message"
+              >
                 Not yet eligible to mentor
               </p>
               <ul className="mt-1 space-y-0.5">
                 {eligibility.reasons.map((reason) => (
                   <li
                     key={reason}
-                    className="text-xs text-gray-500"
+                    className="text-xs text-[rgb(148,163,184)]"
                     data-testid={`eligibility-reason`}
                   >
                     {reason}
@@ -238,7 +263,7 @@ function MentorEligibilitySection({
           )}
         </div>
       </div>
-      <p className="text-xs text-gray-400 mt-1" data-testid="mentor-level-requirement">
+      <p className="text-xs text-[rgb(148,163,184)] mt-1" data-testid="mentor-level-requirement">
         Requires Level {LEGACY_CONSTANTS.MINIMUM_MENTOR_LEVEL}+ and retired status
       </p>
     </div>
@@ -251,11 +276,11 @@ function InheritedPerkSection({ mentorInfo }: { mentorInfo: MentorInfo }) {
 
   return (
     <div data-testid="inherited-perk-section">
-      <h4 className="text-xs font-semibold text-gray-600 uppercase tracking-wide mb-2 flex items-center gap-1">
+      <h4 className="text-xs font-semibold text-[rgb(148,163,184)] uppercase tracking-wide mb-2 flex items-center gap-1">
         <Star className="w-3 h-3" aria-hidden="true" />
         Inherited from {mentorInfo.mentorName}
       </h4>
-      <p className="text-xs text-gray-500 mb-2" data-testid="mentorship-date">
+      <p className="text-xs text-[rgb(148,163,184)] mb-2" data-testid="mentorship-date">
         Mentored on {mentorDate}
       </p>
       <PerkCard perk={mentorInfo.inheritedPerk} isInherited />
@@ -267,11 +292,11 @@ function InheritedPerkSection({ mentorInfo }: { mentorInfo: MentorInfo }) {
 function LegacyBonusesSection() {
   return (
     <div
-      className="bg-blue-50 border border-blue-100 rounded-lg p-3"
+      className="bg-[rgba(37,99,235,0.1)] border border-blue-500/30 rounded-lg p-3"
       data-testid="legacy-bonuses-section"
     >
-      <h4 className="text-xs font-semibold text-blue-700 mb-2">Legacy Protégé Bonuses</h4>
-      <ul className="space-y-1 text-xs text-blue-600">
+      <h4 className="text-xs font-semibold text-[rgb(220,235,255)] mb-2">Legacy Protégé Bonuses</h4>
+      <ul className="space-y-1 text-xs text-[rgb(148,163,184)]">
         <li data-testid="bonus-experience">
           +{LEGACY_CONSTANTS.PROTEGE_EXPERIENCE_BONUS} bonus starting XP
         </li>
@@ -295,10 +320,10 @@ function TraitInheritancePreview({ groom }: { groom: GroomLegacyData }) {
 
   return (
     <div data-testid="trait-inheritance-preview">
-      <h4 className="text-xs font-semibold text-gray-600 uppercase tracking-wide mb-2">
+      <h4 className="text-xs font-semibold text-[rgb(148,163,184)] uppercase tracking-wide mb-2">
         Transferable Perks
       </h4>
-      <p className="text-xs text-gray-500 mb-3" data-testid="perk-personality-label">
+      <p className="text-xs text-[rgb(148,163,184)] mb-3" data-testid="perk-personality-label">
         From {groom.groomPersonality} personality — one perk chosen at random
       </p>
       <div className="space-y-2">
@@ -316,17 +341,17 @@ function ProtégéSection({ protégéInfo }: { protégéInfo: ProtégéInfo }) {
 
   return (
     <div data-testid="protege-section">
-      <h4 className="text-xs font-semibold text-gray-600 uppercase tracking-wide mb-2">
+      <h4 className="text-xs font-semibold text-[rgb(148,163,184)] uppercase tracking-wide mb-2">
         Your Protégé
       </h4>
-      <div className="bg-white border border-gray-200 rounded-lg p-3">
-        <p className="text-sm font-semibold text-gray-800" data-testid="protege-name">
+      <div className="bg-[rgba(15,35,70,0.4)] border border-[rgba(37,99,235,0.3)] rounded-lg p-3">
+        <p className="text-sm font-semibold text-[rgb(220,235,255)]" data-testid="protege-name">
           {protégéInfo.protégéName}
         </p>
-        <p className="text-xs text-gray-500 mb-2" data-testid="protege-created-date">
+        <p className="text-xs text-[rgb(148,163,184)] mb-2" data-testid="protege-created-date">
           Created {createdDate}
         </p>
-        <p className="text-xs text-gray-600 mb-2">Inherited perk:</p>
+        <p className="text-xs text-[rgb(148,163,184)] mb-2">Inherited perk:</p>
         <PerkCard perk={protégéInfo.inheritedPerk} />
       </div>
     </div>
@@ -347,18 +372,18 @@ const GroomLegacyPanel: React.FC<GroomLegacyPanelProps> = ({
 }) => {
   return (
     <div
-      className="rounded-lg border border-gray-200 bg-gray-50 p-4 space-y-5"
+      className="rounded-lg border border-[rgba(37,99,235,0.3)] bg-[rgba(15,35,70,0.5)] p-4 space-y-5"
       data-testid="groom-legacy-panel"
       aria-label={`Legacy information for ${groom.name}`}
     >
       {/* Panel header */}
       <div className="flex items-center justify-between">
-        <h3 className="font-semibold text-gray-900" data-testid="legacy-panel-title">
+        <h3 className="font-semibold text-[rgb(220,235,255)]" data-testid="legacy-panel-title">
           Legacy & Mentorship
         </h3>
         {mentorInfo && (
           <span
-            className="text-xs bg-amber-100 text-amber-700 px-2 py-0.5 rounded"
+            className="text-xs bg-[rgba(212,168,67,0.1)] text-amber-400 px-2 py-0.5 rounded"
             data-testid="legacy-groom-badge"
           >
             Legacy Groom

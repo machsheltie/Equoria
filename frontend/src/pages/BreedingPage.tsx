@@ -1,7 +1,6 @@
 import { useState } from 'react';
 import BreedingPairSelection from '@/pages/breeding/BreedingPairSelection';
 import BreedingCenter from '@/components/breeding/BreedingCenter';
-import BreedingPairSelector from '@/components/breeding/BreedingPairSelector';
 import FoalDevelopmentTracker from '@/components/breeding/FoalDevelopmentTracker';
 import { useAuth } from '@/contexts/AuthContext';
 
@@ -14,7 +13,7 @@ const BreedingPage = () => {
   if (isLoading) {
     return (
       <div className="mx-auto max-w-6xl px-4 py-8">
-        <div className="text-sm text-slate-600">Checking authentication…</div>
+        <div className="text-sm text-[rgb(148,163,184)]">Checking authentication…</div>
       </div>
     );
   }
@@ -22,7 +21,7 @@ const BreedingPage = () => {
   if (!isAuthenticated) {
     return (
       <div className="mx-auto max-w-6xl px-4 py-8">
-        <div className="rounded-md border border-amber-200 bg-amber-50 px-4 py-3 text-sm text-amber-800 shadow-sm">
+        <div className="rounded-md border border-amber-500/30 bg-[rgba(212,168,67,0.1)] px-4 py-3 text-sm text-amber-400 shadow-sm">
           Please log in to access breeding features.
         </div>
       </div>
@@ -35,9 +34,9 @@ const BreedingPage = () => {
       <BreedingPairSelection userId={user?.id} />
 
       {/* Legacy breeding components - will be deprecated */}
-      <div className="mt-8 space-y-6 border-t border-slate-200 pt-8">
-        <div className="rounded-lg border border-amber-200 bg-amber-50 p-4">
-          <p className="text-sm text-amber-800">
+      <div className="mt-8 space-y-6 border-t border-[rgba(37,99,235,0.2)] pt-8">
+        <div className="rounded-lg border border-amber-500/30 bg-[rgba(212,168,67,0.1)] p-4">
+          <p className="text-sm text-amber-400">
             <strong>Note:</strong> The sections below show legacy breeding features and will be
             replaced with the new breeding system components.
           </p>
@@ -45,11 +44,15 @@ const BreedingPage = () => {
 
         <BreedingCenter />
 
-        <div className="rounded-lg border border-slate-200 bg-white p-4 shadow-sm">
+        <div className="rounded-lg border border-[rgba(37,99,235,0.2)] bg-[rgba(15,35,70,0.4)] p-4 shadow-sm">
           <div className="flex items-center justify-between">
             <div>
-              <p className="text-xs uppercase tracking-wide text-slate-500">Foal Development</p>
-              <h3 className="text-base font-semibold text-slate-900">Track an existing foal</h3>
+              <p className="text-xs uppercase tracking-wide text-[rgb(148,163,184)]">
+                Foal Development
+              </p>
+              <h3 className="text-base font-semibold text-[rgb(220,235,255)]">
+                Track an existing foal
+              </h3>
             </div>
             <div className="flex items-center gap-2">
               <input
@@ -59,7 +62,7 @@ const BreedingPage = () => {
                   setFoalId(event.target.value === '' ? '' : Number(event.target.value))
                 }
                 placeholder="Foal ID"
-                className="w-32 rounded-md border border-slate-200 px-3 py-2 text-sm text-slate-900 shadow-sm focus:border-emerald-500 focus:outline-none focus:ring-2 focus:ring-emerald-500"
+                className="celestial-input w-32"
               />
             </div>
           </div>
@@ -68,7 +71,7 @@ const BreedingPage = () => {
               <FoalDevelopmentTracker foalId={Number(foalId)} />
             </div>
           ) : (
-            <div className="mt-3 rounded-md border border-slate-200 bg-slate-50 px-3 py-2 text-sm text-slate-600">
+            <div className="mt-3 rounded-md border border-[rgba(37,99,235,0.2)] bg-[rgba(15,35,70,0.5)] px-3 py-2 text-sm text-[rgb(148,163,184)]">
               Enter a foal ID to load development details.
             </div>
           )}

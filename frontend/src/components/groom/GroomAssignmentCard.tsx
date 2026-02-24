@@ -60,16 +60,17 @@ function skillLabel(skillLevel: string): string {
 /** Bond score progress bar */
 function BondScoreBar({ score }: { score: number }) {
   const clamped = Math.max(0, Math.min(100, score));
-  const colorClass = clamped >= 70 ? 'bg-green-500' : clamped >= 40 ? 'bg-amber-500' : 'bg-red-400';
+  const colorClass =
+    clamped >= 70 ? 'bg-emerald-500' : clamped >= 40 ? 'bg-amber-500' : 'bg-red-400';
 
   return (
     <div className="mt-2" data-testid="bond-score-section">
-      <div className="flex justify-between text-xs text-gray-500 mb-1">
+      <div className="flex justify-between text-xs text-[rgb(148,163,184)] mb-1">
         <span>Bond Score</span>
         <span data-testid="bond-score-value">{clamped}/100</span>
       </div>
       <div
-        className="h-2 bg-gray-200 rounded-full overflow-hidden"
+        className="h-2 bg-[rgba(15,35,70,0.5)] rounded-full overflow-hidden"
         role="progressbar"
         aria-valuenow={clamped}
         aria-valuemin={0}
@@ -98,15 +99,15 @@ function TaskCompletionNotice({ completedAt }: { completedAt: string }) {
 
   return (
     <div
-      className="flex items-center gap-2 bg-green-50 border border-green-200 rounded-lg p-3 mt-3"
+      className="flex items-center gap-2 bg-[rgba(16,185,129,0.1)] border border-emerald-500/30 rounded-lg p-3 mt-3"
       data-testid="task-completion-notice"
       role="status"
       aria-label="Task completed notification"
     >
-      <CheckCircle className="text-green-600 flex-shrink-0" size={16} />
+      <CheckCircle className="text-emerald-400 flex-shrink-0" size={16} />
       <div>
-        <p className="text-sm font-medium text-green-800">Last task completed</p>
-        <p className="text-xs text-green-600">{timeStr}</p>
+        <p className="text-sm font-medium text-emerald-400">Last task completed</p>
+        <p className="text-xs text-emerald-400/80">{timeStr}</p>
       </div>
     </div>
   );
@@ -129,17 +130,17 @@ const GroomAssignmentCard: React.FC<GroomAssignmentCardProps> = ({
   if (!assignment) {
     return (
       <div
-        className="rounded-lg border-2 border-dashed border-gray-300 bg-white p-6 text-center"
+        className="rounded-lg border-2 border-dashed border-[rgba(37,99,235,0.3)] bg-[rgba(15,35,70,0.4)] p-6 text-center"
         data-testid="no-assignment-card"
       >
-        <User className="mx-auto text-gray-400 mb-3" size={32} />
-        <h3 className="font-medium text-gray-700 mb-1">No Groom Assigned</h3>
-        <p className="text-sm text-gray-500 mb-4">
+        <User className="mx-auto text-[rgb(148,163,184)] mb-3" size={32} />
+        <h3 className="font-medium text-[rgb(220,235,255)] mb-1">No Groom Assigned</h3>
+        <p className="text-sm text-[rgb(148,163,184)] mb-4">
           Assign a groom to {horseName} to begin task-based care and bonding.
         </p>
         <button
           onClick={onAssign}
-          className="px-4 py-2 bg-blue-600 text-white rounded-lg text-sm font-medium hover:bg-blue-700 transition-colors"
+          className="btn-cobalt px-4 py-2 text-sm font-medium"
           data-testid="assign-groom-button"
           aria-label={`Assign a groom to ${horseName}`}
         >
@@ -152,21 +153,24 @@ const GroomAssignmentCard: React.FC<GroomAssignmentCardProps> = ({
   // Assigned state
   return (
     <div
-      className="rounded-lg border border-gray-200 bg-white overflow-hidden"
+      className="rounded-lg border border-[rgba(37,99,235,0.3)] bg-[rgba(15,35,70,0.4)] overflow-hidden"
       data-testid="assignment-card"
     >
       {/* Groom info header */}
-      <div className="p-4 border-b border-gray-100">
+      <div className="p-4 border-b border-[rgba(37,99,235,0.3)]">
         <div className="flex items-start justify-between">
           <div className="flex-1">
             <div className="flex items-center gap-2 mb-1">
               <Heart className="text-rose-400 flex-shrink-0" size={14} />
-              <h3 className="font-semibold text-gray-900" data-testid="assigned-groom-name">
+              <h3
+                className="font-semibold text-[rgb(220,235,255)]"
+                data-testid="assigned-groom-name"
+              >
                 {assignment.groomName}
               </h3>
               {assignment.priority === 1 && (
                 <span
-                  className="text-xs bg-amber-100 text-amber-700 px-1.5 py-0.5 rounded"
+                  className="text-xs bg-[rgba(212,168,67,0.1)] text-burnished-gold px-1.5 py-0.5 rounded"
                   data-testid="primary-badge"
                 >
                   Primary
@@ -175,11 +179,14 @@ const GroomAssignmentCard: React.FC<GroomAssignmentCardProps> = ({
             </div>
 
             <div className="flex flex-wrap items-center gap-2 mb-2">
-              <span className="text-xs text-gray-500 capitalize" data-testid="groom-skill-level">
+              <span
+                className="text-xs text-[rgb(148,163,184)] capitalize"
+                data-testid="groom-skill-level"
+              >
                 {skillLabel(assignment.skillLevel)}
               </span>
-              <span className="text-gray-300">·</span>
-              <span className="text-xs text-gray-500" data-testid="groom-experience">
+              <span className="text-[rgba(37,99,235,0.3)]">·</span>
+              <span className="text-xs text-[rgb(148,163,184)]" data-testid="groom-experience">
                 {assignment.experience} yr{assignment.experience !== 1 ? 's' : ''} exp.
               </span>
             </div>
@@ -193,7 +200,7 @@ const GroomAssignmentCard: React.FC<GroomAssignmentCardProps> = ({
 
           <button
             onClick={onAssign}
-            className="ml-3 flex items-center gap-1 text-xs text-gray-500 hover:text-blue-600 border border-gray-200 hover:border-blue-300 rounded px-2 py-1 transition-colors"
+            className="ml-3 flex items-center gap-1 text-xs text-[rgb(148,163,184)] hover:text-[rgb(220,235,255)] border border-[rgba(37,99,235,0.3)] hover:border-[rgba(37,99,235,0.6)] rounded px-2 py-1 transition-colors"
             data-testid="change-groom-button"
             aria-label={`Change groom assigned to ${horseName}`}
           >
@@ -213,7 +220,7 @@ const GroomAssignmentCard: React.FC<GroomAssignmentCardProps> = ({
         {/* Notes */}
         {assignment.notes && (
           <p
-            className="text-xs text-gray-500 italic mt-3 border-t pt-2"
+            className="text-xs text-[rgb(148,163,184)] italic mt-3 border-t border-[rgba(37,99,235,0.3)] pt-2"
             data-testid="assignment-notes"
           >
             {assignment.notes}

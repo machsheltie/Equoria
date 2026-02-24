@@ -31,10 +31,10 @@ const HiddenTraitIndicator: React.FC<HiddenTraitIndicatorProps> = ({
 
   if (!hasHiddenTraits) {
     return (
-      <div className="rounded-lg border-2 border-green-200 bg-gradient-to-br from-green-50 to-emerald-50 p-6 text-center">
-        <Sparkles className="h-12 w-12 text-green-600 mx-auto mb-3" />
-        <h3 className="text-lg font-bold text-green-900 mb-2">All Traits Discovered!</h3>
-        <p className="text-sm text-green-700">
+      <div className="rounded-lg border-2 border-[rgba(16,185,129,0.3)] bg-[rgba(16,185,129,0.1)] p-6 text-center">
+        <Sparkles className="h-12 w-12 text-emerald-400 mx-auto mb-3" />
+        <h3 className="text-lg font-bold text-emerald-400 mb-2">All Traits Discovered!</h3>
+        <p className="text-sm text-[rgb(148,163,184)]">
           You have discovered all traits for this horse. Congratulations!
         </p>
       </div>
@@ -42,15 +42,15 @@ const HiddenTraitIndicator: React.FC<HiddenTraitIndicatorProps> = ({
   }
 
   return (
-    <div className="rounded-lg border-2 border-slate-300 bg-gradient-to-br from-slate-50 to-gray-50 p-6">
+    <div className="rounded-lg border-2 border-[rgba(37,99,235,0.3)] bg-[rgba(15,35,70,0.4)] p-6">
       {/* Header */}
       <div className="flex items-center gap-3 mb-4">
-        <div className="p-3 rounded-lg bg-slate-200">
-          <Lock className="h-6 w-6 text-slate-600" />
+        <div className="p-3 rounded-lg bg-[rgba(15,35,70,0.5)]">
+          <Lock className="h-6 w-6 text-[rgb(148,163,184)]" />
         </div>
         <div className="flex-1">
-          <h3 className="text-lg font-bold text-slate-900">Hidden Traits</h3>
-          <p className="text-sm text-slate-600">
+          <h3 className="text-lg font-bold text-[rgb(220,235,255)]">Hidden Traits</h3>
+          <p className="text-sm text-[rgb(148,163,184)]">
             {discoveryStatus.hiddenTraits} trait{discoveryStatus.hiddenTraits !== 1 ? 's' : ''} yet
             to be discovered
           </p>
@@ -61,16 +61,16 @@ const HiddenTraitIndicator: React.FC<HiddenTraitIndicatorProps> = ({
       {showProgress && (
         <div className="mb-4">
           <div className="flex items-center justify-between mb-2">
-            <span className="text-sm font-medium text-slate-700">Discovery Progress</span>
-            <span className="text-sm font-bold text-slate-900">{progress}%</span>
+            <span className="text-sm font-medium text-[rgb(220,235,255)]">Discovery Progress</span>
+            <span className="text-sm font-bold text-[rgb(220,235,255)]">{progress}%</span>
           </div>
-          <div className="w-full bg-slate-200 rounded-full h-3 overflow-hidden">
+          <div className="w-full bg-[rgba(15,35,70,0.5)] rounded-full h-3 overflow-hidden">
             <div
               className="h-full bg-gradient-to-r from-blue-500 to-purple-500 transition-all duration-500"
               style={{ width: `${progress}%` }}
             />
           </div>
-          <div className="flex items-center justify-between mt-1 text-xs text-slate-600">
+          <div className="flex items-center justify-between mt-1 text-xs text-[rgb(148,163,184)]">
             <span>{discoveryStatus.discoveredTraits} discovered</span>
             {discoveryStatus.partiallyDiscoveredTraits > 0 && (
               <span>{discoveryStatus.partiallyDiscoveredTraits} partial</span>
@@ -82,12 +82,12 @@ const HiddenTraitIndicator: React.FC<HiddenTraitIndicatorProps> = ({
 
       {/* Discovery Hint */}
       {showHint && discoveryStatus.nextDiscoveryHint && (
-        <div className="rounded-lg border border-blue-200 bg-blue-50 p-4">
+        <div className="rounded-lg border border-blue-500/30 bg-[rgba(37,99,235,0.1)] p-4">
           <div className="flex items-start gap-2">
-            <HelpCircle className="h-5 w-5 text-blue-600 flex-shrink-0 mt-0.5" />
+            <HelpCircle className="h-5 w-5 text-blue-400 flex-shrink-0 mt-0.5" />
             <div className="flex-1">
-              <p className="text-sm font-semibold text-blue-900 mb-1">Discovery Hint</p>
-              <p className="text-sm text-blue-700">{discoveryStatus.nextDiscoveryHint}</p>
+              <p className="text-sm font-semibold text-[rgb(220,235,255)] mb-1">Discovery Hint</p>
+              <p className="text-sm text-[rgb(148,163,184)]">{discoveryStatus.nextDiscoveryHint}</p>
             </div>
           </div>
         </div>
@@ -95,26 +95,26 @@ const HiddenTraitIndicator: React.FC<HiddenTraitIndicatorProps> = ({
 
       {/* Generic Encouragement */}
       {showHint && !discoveryStatus.nextDiscoveryHint && (
-        <div className="rounded-lg border border-purple-200 bg-purple-50 p-4">
+        <div className="rounded-lg border border-purple-500/30 bg-[rgba(15,35,70,0.4)] p-4">
           <div className="flex items-start gap-2">
-            <Sparkles className="h-5 w-5 text-purple-600 flex-shrink-0 mt-0.5" />
+            <Sparkles className="h-5 w-5 text-purple-400 flex-shrink-0 mt-0.5" />
             <div className="flex-1">
-              <p className="text-sm font-semibold text-purple-900 mb-1">How to Discover Traits</p>
-              <ul className="text-sm text-purple-700 space-y-1">
+              <p className="text-sm font-semibold text-purple-300 mb-1">How to Discover Traits</p>
+              <ul className="text-sm text-[rgb(148,163,184)] space-y-1">
                 <li className="flex items-start gap-2">
-                  <span className="inline-block w-1 h-1 rounded-full bg-purple-600 mt-1.5 flex-shrink-0" />
+                  <span className="inline-block w-1 h-1 rounded-full bg-purple-400 mt-1.5 flex-shrink-0" />
                   <span>Complete developmental milestones</span>
                 </li>
                 <li className="flex items-start gap-2">
-                  <span className="inline-block w-1 h-1 rounded-full bg-purple-600 mt-1.5 flex-shrink-0" />
+                  <span className="inline-block w-1 h-1 rounded-full bg-purple-400 mt-1.5 flex-shrink-0" />
                   <span>Engage in enrichment activities</span>
                 </li>
                 <li className="flex items-start gap-2">
-                  <span className="inline-block w-1 h-1 rounded-full bg-purple-600 mt-1.5 flex-shrink-0" />
+                  <span className="inline-block w-1 h-1 rounded-full bg-purple-400 mt-1.5 flex-shrink-0" />
                   <span>Maintain consistent care quality</span>
                 </li>
                 <li className="flex items-start gap-2">
-                  <span className="inline-block w-1 h-1 rounded-full bg-purple-600 mt-1.5 flex-shrink-0" />
+                  <span className="inline-block w-1 h-1 rounded-full bg-purple-400 mt-1.5 flex-shrink-0" />
                   <span>Compete in various disciplines</span>
                 </li>
               </ul>
@@ -128,14 +128,14 @@ const HiddenTraitIndicator: React.FC<HiddenTraitIndicatorProps> = ({
         {Array.from({ length: Math.min(discoveryStatus.hiddenTraits, 6) }).map((_, index) => (
           <div
             key={index}
-            className="aspect-square rounded-lg border-2 border-dashed border-slate-300 bg-slate-100 flex items-center justify-center"
+            className="aspect-square rounded-lg border-2 border-dashed border-[rgba(37,99,235,0.3)] bg-[rgba(15,35,70,0.3)] flex items-center justify-center"
           >
-            <span className="text-2xl text-slate-400">?</span>
+            <span className="text-2xl text-[rgb(148,163,184)]">?</span>
           </div>
         ))}
         {discoveryStatus.hiddenTraits > 6 && (
-          <div className="aspect-square rounded-lg border-2 border-dashed border-slate-300 bg-slate-100 flex items-center justify-center">
-            <span className="text-xs text-slate-500 font-semibold">
+          <div className="aspect-square rounded-lg border-2 border-dashed border-[rgba(37,99,235,0.3)] bg-[rgba(15,35,70,0.3)] flex items-center justify-center">
+            <span className="text-xs text-[rgb(148,163,184)] font-semibold">
               +{discoveryStatus.hiddenTraits - 6}
             </span>
           </div>

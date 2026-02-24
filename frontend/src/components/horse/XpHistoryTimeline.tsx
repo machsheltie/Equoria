@@ -41,7 +41,7 @@ export interface XpHistoryTimelineProps {
   /** Controlled date filter value */
   dateFilter?: DateFilter;
   /** Callback when the date filter changes */
-  onDateFilterChange?: (filter: DateFilter) => void;
+  onDateFilterChange?: (_filter: DateFilter) => void;
   /** Whether the data is currently loading */
   isLoading?: boolean;
   /** Error object if data fetching failed */
@@ -54,10 +54,7 @@ export interface XpHistoryTimelineProps {
  * Filter entries by date range.
  * Returns entries within the specified time window from now.
  */
-function filterEntriesByDate(
-  entries: XpGain[],
-  filter: DateFilter
-): XpGain[] {
+function filterEntriesByDate(entries: XpGain[], filter: DateFilter): XpGain[] {
   if (filter === 'all') return entries;
 
   const now = new Date();
@@ -83,20 +80,20 @@ const TimelineSkeleton = memo(() => (
   <div data-testid="timeline-skeleton" className="relative flex gap-4 animate-pulse">
     {/* Timeline connector column */}
     <div className="relative flex flex-col items-center" aria-hidden="true">
-      <div className="w-0.5 flex-1 bg-slate-200" />
-      <div className="w-3 h-3 rounded-full bg-slate-300 z-10" />
-      <div className="w-0.5 flex-1 bg-slate-200" />
+      <div className="w-0.5 flex-1 bg-[rgba(37,99,235,0.3)]" />
+      <div className="w-3 h-3 rounded-full bg-[rgba(15,35,70,0.5)] z-10" />
+      <div className="w-0.5 flex-1 bg-[rgba(37,99,235,0.3)]" />
     </div>
     {/* Skeleton card */}
-    <div className="flex-1 mb-3 bg-white border border-slate-200 rounded-lg shadow-sm p-4">
+    <div className="flex-1 mb-3 bg-[rgba(15,35,70,0.4)] border border-[rgba(37,99,235,0.3)] rounded-lg shadow-sm p-4">
       <div className="flex items-center justify-between mb-2">
-        <div className="h-4 bg-slate-200 rounded w-32" />
-        <div className="h-5 bg-slate-200 rounded-full w-20" />
+        <div className="h-4 bg-[rgba(15,35,70,0.5)] rounded w-32" />
+        <div className="h-5 bg-[rgba(15,35,70,0.5)] rounded-full w-20" />
       </div>
-      <div className="h-4 bg-slate-200 rounded w-48 mb-2" />
+      <div className="h-4 bg-[rgba(15,35,70,0.5)] rounded w-48 mb-2" />
       <div className="flex items-center justify-between">
-        <div className="h-6 bg-slate-200 rounded w-16" />
-        <div className="h-4 bg-slate-200 rounded w-20" />
+        <div className="h-6 bg-[rgba(15,35,70,0.5)] rounded w-16" />
+        <div className="h-4 bg-[rgba(15,35,70,0.5)] rounded w-20" />
       </div>
     </div>
   </div>
@@ -151,11 +148,11 @@ const XpHistoryTimeline: React.FC<XpHistoryTimelineProps> = memo(
           data-testid="xp-history-timeline"
           role="region"
           aria-label={`${horseName} XP History`}
-          className={`bg-white rounded-lg shadow-sm border border-slate-200 p-6 ${className}`}
+          className={`bg-[rgba(15,35,70,0.5)] rounded-lg shadow-sm border border-[rgba(37,99,235,0.3)] p-6 ${className}`}
         >
           {/* Header */}
           <div className="flex items-center justify-between mb-6">
-            <h2 className="text-lg font-semibold text-slate-900">
+            <h2 className="text-lg font-semibold text-[rgb(220,235,255)]">
               {horseName} - XP History
             </h2>
           </div>
@@ -177,27 +174,20 @@ const XpHistoryTimeline: React.FC<XpHistoryTimelineProps> = memo(
           data-testid="xp-history-timeline"
           role="region"
           aria-label={`${horseName} XP History`}
-          className={`bg-white rounded-lg shadow-sm border border-slate-200 p-6 ${className}`}
+          className={`bg-[rgba(15,35,70,0.5)] rounded-lg shadow-sm border border-[rgba(37,99,235,0.3)] p-6 ${className}`}
         >
           {/* Header */}
           <div className="flex items-center justify-between mb-6">
-            <h2 className="text-lg font-semibold text-slate-900">
+            <h2 className="text-lg font-semibold text-[rgb(220,235,255)]">
               {horseName} - XP History
             </h2>
           </div>
 
           {/* Error display */}
           <div data-testid="error-state" className="py-8 text-center">
-            <AlertCircle
-              className="mx-auto h-12 w-12 text-red-400 mb-3"
-              aria-hidden="true"
-            />
-            <p className="text-sm text-red-600 font-medium mb-1">
-              {error.message}
-            </p>
-            <p className="text-xs text-slate-500">
-              Please try again later.
-            </p>
+            <AlertCircle className="mx-auto h-12 w-12 text-red-400 mb-3" aria-hidden="true" />
+            <p className="text-sm text-red-400 font-medium mb-1">{error.message}</p>
+            <p className="text-xs text-[rgb(148,163,184)]">Please try again later.</p>
           </div>
         </div>
       );
@@ -210,11 +200,11 @@ const XpHistoryTimeline: React.FC<XpHistoryTimelineProps> = memo(
           data-testid="xp-history-timeline"
           role="region"
           aria-label={`${horseName} XP History`}
-          className={`bg-white rounded-lg shadow-sm border border-slate-200 p-6 ${className}`}
+          className={`bg-[rgba(15,35,70,0.5)] rounded-lg shadow-sm border border-[rgba(37,99,235,0.3)] p-6 ${className}`}
         >
           {/* Header */}
           <div className="flex items-center justify-between mb-6">
-            <h2 className="text-lg font-semibold text-slate-900">
+            <h2 className="text-lg font-semibold text-[rgb(220,235,255)]">
               {horseName} - XP History
             </h2>
             {/* Date filter - show only when there could be entries */}
@@ -223,13 +213,13 @@ const XpHistoryTimeline: React.FC<XpHistoryTimelineProps> = memo(
                 <label htmlFor={`date-filter-${horseId}`} className="sr-only">
                   Filter by date range
                 </label>
-                <Calendar className="h-4 w-4 text-slate-400" aria-hidden="true" />
+                <Calendar className="h-4 w-4 text-[rgb(148,163,184)]" aria-hidden="true" />
                 <select
                   id={`date-filter-${horseId}`}
                   data-testid="date-filter"
                   value={dateFilter}
                   onChange={handleDateFilterChange}
-                  className="px-3 py-1.5 border border-slate-300 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
+                  className="px-3 py-1.5 border border-[rgba(37,99,235,0.3)] bg-[rgba(15,35,70,0.4)] text-[rgb(220,235,255)] rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
                   aria-label="Filter by date range"
                 >
                   <option value="all">All Time</option>
@@ -245,14 +235,12 @@ const XpHistoryTimeline: React.FC<XpHistoryTimelineProps> = memo(
           <div data-testid="empty-state" className="py-12 text-center">
             <div data-testid="empty-state-icon">
               <Trophy
-                className="mx-auto h-16 w-16 text-slate-300 mb-4"
+                className="mx-auto h-16 w-16 text-[rgb(148,163,184)] mb-4"
                 aria-hidden="true"
               />
             </div>
-            <h3 className="text-lg font-medium text-slate-900 mb-2">
-              No XP gains yet
-            </h3>
-            <p className="text-sm text-slate-600 max-w-sm mx-auto">
+            <h3 className="text-lg font-medium text-[rgb(220,235,255)] mb-2">No XP gains yet</h3>
+            <p className="text-sm text-[rgb(148,163,184)] max-w-sm mx-auto">
               Train and compete to start earning XP. Your history will appear here.
             </p>
           </div>
@@ -266,11 +254,11 @@ const XpHistoryTimeline: React.FC<XpHistoryTimelineProps> = memo(
         data-testid="xp-history-timeline"
         role="region"
         aria-label={`${horseName} XP History`}
-        className={`bg-white rounded-lg shadow-sm border border-slate-200 p-6 ${className}`}
+        className={`bg-[rgba(15,35,70,0.5)] rounded-lg shadow-sm border border-[rgba(37,99,235,0.3)] p-6 ${className}`}
       >
         {/* Header with filter */}
         <div className="flex items-center justify-between mb-6">
-          <h2 className="text-lg font-semibold text-slate-900">
+          <h2 className="text-lg font-semibold text-[rgb(220,235,255)]">
             {horseName} - XP History
           </h2>
 
@@ -279,13 +267,13 @@ const XpHistoryTimeline: React.FC<XpHistoryTimelineProps> = memo(
             <label htmlFor={`date-filter-${horseId}`} className="sr-only">
               Filter by date range
             </label>
-            <Calendar className="h-4 w-4 text-slate-400" aria-hidden="true" />
+            <Calendar className="h-4 w-4 text-[rgb(148,163,184)]" aria-hidden="true" />
             <select
               id={`date-filter-${horseId}`}
               data-testid="date-filter"
               value={dateFilter}
               onChange={handleDateFilterChange}
-              className="px-3 py-1.5 border border-slate-300 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
+              className="px-3 py-1.5 border border-[rgba(37,99,235,0.3)] bg-[rgba(15,35,70,0.4)] text-[rgb(220,235,255)] rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
               aria-label="Filter by date range"
             >
               <option value="all">All Time</option>

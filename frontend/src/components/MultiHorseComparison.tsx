@@ -426,7 +426,7 @@ const HorseSelectionItem: React.FC<HorseSelectionItemProps> = ({
                 isSelected ? 'bg-blue-500 border-blue-500' : 'border-[rgba(37,99,235,0.3)]'
               }`}
             >
-              {isSelected && <div className="w-2 h-2 bg-white rounded-full"></div>}
+              {isSelected && <div className="w-2 h-2 bg-[rgb(220,235,255)] rounded-full"></div>}
             </div>
             <div>
               <span className="font-medium text-[rgb(220,235,255)]">{horse.name}</span>

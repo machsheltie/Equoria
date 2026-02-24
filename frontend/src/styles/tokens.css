@@ -1,0 +1,369 @@
+/**
+ * Equoria — Celestial Night Design Token System
+ *
+ * Canonical CSS custom properties for the entire UI.
+ * Source of truth: docs/ux-design-specification.md §Design Token System
+ *
+ * RULES (enforced at code review):
+ *   - No raw hex / rgba values in component files — always use a token
+ *   - --discipline-* tokens: action buttons only, NEVER nav/sidebar/breadcrumbs
+ *   - --celestial-primary: default T1 buttons, active nav states, tab underlines
+ *   - Max ONE active backdrop-filter: blur() layer visible at any time
+ *
+ * Usage:
+ *   @import './styles/tokens.css'; in index.css or main.tsx global styles
+ */
+
+/* ─────────────────────────────────────────────────────────────────────────── */
+/*  CELESTIAL NIGHT — CORE PALETTE                                             */
+/* ─────────────────────────────────────────────────────────────────────────── */
+
+:root {
+  /* ── Navy scale (backgrounds & surfaces) ──────────────────────────────── */
+  --celestial-navy-950: #050d1a; /* deepest bg — used for overlays      */
+  --celestial-navy-900: #0a1628; /* primary page background              */
+  --celestial-navy-800: #0d1f3c; /* surface 1 — sidebars, topbars        */
+  --celestial-navy-700: #1a3a6b; /* surface 2 — panels, cards            */
+  --celestial-navy-600: #2a4a8b; /* surface 3 — elevated cards, modals   */
+  --celestial-navy-100: #c8d8f0; /* lightest tint — borders, dividers    */
+
+  /* ── Gold scale (titles, accents, rewards) ───────────────────────────── */
+  --gold-700: #9a7820; /* dark gold — hover states             */
+  --gold-500: #c9a227; /* primary gold — titles, icons         */
+  --gold-400: #dbb840; /* medium gold — labels on dark         */
+  --gold-300: #e8c547; /* bright gold — highlights, active glow*/
+
+  /* ── Electric blue (primary CTAs, active indicators) ─────────────────── */
+  --electric-blue-700: #2a5cb8; /* pressed / deep state                 */
+  --electric-blue-500: #3a6fdd; /* primary button fill, active state    */
+  --electric-blue-400: #5585e8; /* hover state                          */
+  --electric-blue-300: #6a9aff; /* focus ring, light tint               */
+
+  /* ── Neutral text & UI ───────────────────────────────────────────────── */
+  --cream: #e8e0d0; /* body text on dark backgrounds        */
+  --glow-white: #a0c4ff; /* star/sparkle white                   */
+  --text-muted: #8a9bba; /* placeholders, captions, disabled     */
+
+  /* ── Semantic status ─────────────────────────────────────────────────── */
+  --status-success: #4caf82; /* care done, eligible, unlocked        */
+  --status-warning: #d4a843; /* care needed, cooldown active         */
+  --status-error: #e05a5a; /* destructive, ineligible, overdue     */
+  --status-info: #5585e8; /* neutral informational                */
+
+  /* ── Discipline accent colours (action buttons ONLY) ─────────────────── */
+  /* ⚠ FORBIDDEN in: nav components, sidebar active states, tab indicators, breadcrumbs */
+  --discipline-dressage-primary: #7c5cbf; /* violet-purple             */
+  --discipline-dressage-glow: rgba(124, 92, 191, 0.6);
+  --discipline-showjumping-primary: #2e8b57; /* forest green              */
+  --discipline-showjumping-glow: rgba(46, 139, 87, 0.6);
+  --discipline-racing-primary: #c0392b; /* racing red                */
+  --discipline-racing-glow: rgba(192, 57, 43, 0.6);
+  --discipline-crosscountry-primary: #8b6914; /* earthy amber              */
+  --discipline-crosscountry-glow: rgba(139, 105, 20, 0.6);
+  --discipline-western-primary: #7b3f00; /* saddle brown              */
+  --discipline-western-glow: rgba(123, 63, 0, 0.6);
+  --discipline-endurance-primary: #1a7a7a; /* teal                      */
+  --discipline-endurance-glow: rgba(26, 122, 122, 0.6);
+
+  /* ── Rarity colours (trait discovery) ───────────────────────────────── */
+  --rarity-common: #8a9bba;
+  --rarity-uncommon: #4caf82;
+  --rarity-rare: #3a6fdd;
+  --rarity-ultra-rare: #c9a227;
+  --rarity-legendary: #c39bd3; /* celestial violet                    */
+}
+
+/* ─────────────────────────────────────────────────────────────────────────── */
+/*  SEMANTIC / ALIAS TOKENS                                                    */
+/* ─────────────────────────────────────────────────────────────────────────── */
+
+:root {
+  /* Primary action colour — used for T1 buttons, active nav, tab underlines */
+  --celestial-primary: var(--electric-blue-500);
+  --celestial-primary-hover: var(--electric-blue-400);
+  --celestial-primary-pressed: var(--electric-blue-700);
+
+  /* Page structure */
+  --bg-page: var(--celestial-navy-900);
+  --bg-sidebar: var(--celestial-navy-800);
+  --bg-surface: var(--celestial-navy-700);
+  --bg-card: var(--celestial-navy-600);
+  --bg-overlay: var(--celestial-navy-950);
+
+  /* Text */
+  --text-primary: var(--cream);
+  --text-secondary: var(--text-muted);
+  --text-accent: var(--gold-500);
+  --text-link: var(--electric-blue-300);
+
+  /* Borders */
+  --border-default: rgba(201, 162, 39, 0.25); /* gold-tinted subtle  */
+  --border-active: rgba(201, 162, 39, 0.55); /* gold-tinted bright  */
+  --border-muted: rgba(100, 130, 165, 0.3); /* blue-grey           */
+  --border-error: rgba(224, 90, 90, 0.7);
+}
+
+/* ─────────────────────────────────────────────────────────────────────────── */
+/*  GLOW TOKENS                                                                */
+/* ─────────────────────────────────────────────────────────────────────────── */
+
+:root {
+  --glow-gold: 0 0 12px rgba(201, 162, 39, 0.6);
+  --glow-gold-intense: 0 0 24px rgba(201, 162, 39, 0.9);
+  --glow-electric: 0 0 20px rgba(58, 111, 221, 0.8);
+  --glow-electric-hover: 0 0 32px rgba(58, 111, 221, 1);
+  --glow-atmospheric: 0 0 40px rgba(58, 111, 221, 0.3);
+  --glow-none: none;
+  --error-glow: 0 0 12px rgba(224, 90, 90, 0.6);
+  --success-glow: 0 0 12px rgba(76, 175, 130, 0.6);
+}
+
+/* ─────────────────────────────────────────────────────────────────────────── */
+/*  GLASS SURFACE TOKENS                                                       */
+/* ─────────────────────────────────────────────────────────────────────────── */
+
+:root {
+  /* Backgrounds — apply to .glass-panel elements */
+  --glass-surface-bg: rgba(10, 22, 40, 0.72);
+  --glass-surface-heavy-bg: rgba(10, 22, 40, 0.88);
+  --glass-surface-subtle-bg: rgba(10, 22, 40, 0.45);
+
+  /* Backdrop blur amount — only applied to the outermost glass layer */
+  --glass-blur: blur(12px);
+  --glass-blur-heavy: blur(16px);
+  --glass-blur-light: blur(6px);
+
+  /* Borders */
+  --glass-border: 1px solid rgba(201, 162, 39, 0.25);
+  --glass-border-bright: 1px solid rgba(201, 162, 39, 0.55);
+  --glass-border-dim: 1px solid rgba(100, 130, 165, 0.3);
+}
+
+/* ─────────────────────────────────────────────────────────────────────────── */
+/*  TYPOGRAPHY TOKENS                                                          */
+/* ─────────────────────────────────────────────────────────────────────────── */
+
+:root {
+  /* Font families */
+  --font-display: 'Cinzel Decorative', serif; /* EQUORIA wordmark only  */
+  --font-heading: 'Cinzel', serif; /* Horse names, titles    */
+  --font-body: 'Jost', sans-serif; /* All UI text            */
+  --font-mono: 'JetBrains Mono', monospace; /* Debug / data display   */
+
+  /* Font sizes (rem — never px) */
+  --text-xs: 0.75rem; /* 12px — captions, legal, micro labels         */
+  --text-sm: 0.875rem; /* 14px — secondary labels, filter text         */
+  --text-base: 1rem; /* 16px — body text, tab labels                 */
+  --text-lg: 1.125rem; /* 18px — card titles, section subheadings      */
+  --text-xl: 1.25rem; /* 20px — page subheadings                      */
+  --text-2xl: 1.5rem; /* 24px — horse names in detail view            */
+  --text-3xl: 1.875rem; /* 30px — page headings                         */
+  --text-4xl: 2.25rem; /* 36px — hero headings (EQUORIA wordmark base) */
+  --text-5xl: 3rem; /* 48px — cinematic / full-screen moments only  */
+
+  /* Font weights */
+  --weight-normal: 400;
+  --weight-medium: 500;
+  --weight-semibold: 600;
+  --weight-bold: 700;
+
+  /* Line heights */
+  --leading-tight: 1.25;
+  --leading-normal: 1.5;
+  --leading-loose: 1.75;
+
+  /* Letter spacing */
+  --tracking-tight: -0.02em;
+  --tracking-normal: 0;
+  --tracking-wide: 0.05em;
+  --tracking-wider: 0.1em; /* fantasy captions, labels                   */
+}
+
+/* ─────────────────────────────────────────────────────────────────────────── */
+/*  RADIUS TOKENS                                                              */
+/* ─────────────────────────────────────────────────────────────────────────── */
+
+:root {
+  --radius-none: 0;
+  --radius-sm: 4px;
+  --radius-badge: 6px;
+  --radius-card: 12px;
+  --radius-panel: 16px;
+  --radius-modal: 20px;
+  --radius-pill: 9999px; /* pill buttons, status chips, input fields    */
+  --radius-button: 9999px;
+  --radius-circle: 50%; /* avatar, dot indicators                      */
+}
+
+/* ─────────────────────────────────────────────────────────────────────────── */
+/*  SHADOW TOKENS                                                              */
+/* ─────────────────────────────────────────────────────────────────────────── */
+
+:root {
+  --shadow-panel: 0 8px 32px rgba(5, 13, 26, 0.8), 0 0 0 1px rgba(201, 162, 39, 0.1);
+
+  --shadow-button: 0 4px 15px rgba(0, 0, 0, 0.4);
+
+  --shadow-modal: 0 24px 64px rgba(5, 13, 26, 0.9), 0 0 0 1px rgba(201, 162, 39, 0.15);
+
+  --shadow-card: 0 4px 16px rgba(5, 13, 26, 0.5);
+
+  --shadow-card-hover: 0 8px 28px rgba(5, 13, 26, 0.7), 0 0 0 1px rgba(201, 162, 39, 0.2);
+
+  --shadow-dropdown: 0 8px 24px rgba(5, 13, 26, 0.7);
+
+  --shadow-none: none;
+}
+
+/* ─────────────────────────────────────────────────────────────────────────── */
+/*  SPACING TOKENS                                                             */
+/* ─────────────────────────────────────────────────────────────────────────── */
+
+:root {
+  /* Base unit: 4px. Multiples match Tailwind's scale */
+  --space-1: 0.25rem; /*  4px */
+  --space-2: 0.5rem; /*  8px */
+  --space-3: 0.75rem; /* 12px */
+  --space-4: 1rem; /* 16px */
+  --space-5: 1.25rem; /* 20px */
+  --space-6: 1.5rem; /* 24px */
+  --space-8: 2rem; /* 32px */
+  --space-10: 2.5rem; /* 40px */
+  --space-12: 3rem; /* 48px */
+  --space-16: 4rem; /* 64px */
+  --space-20: 5rem; /* 80px */
+  --space-24: 6rem; /* 96px */
+
+  /* Component-specific layout sizes */
+  --sidebar-width: 280px; /* desktop/tablet sidebar                  */
+  --topbar-height: 60px; /* desktop page topbar                     */
+  --bottom-nav-height: 56px; /* mobile bottom navigation                */
+  --horse-card-width: 200px; /* stable grid card                        */
+  --horse-card-height: 160px; /* stable grid card                        */
+  --horse-portrait-hero: 800px; /* 3:4 ratio portrait height = 1067px      */
+  --touch-target-min: 44px; /* WCAG 2.1 AA minimum touch target        */
+}
+
+/* ─────────────────────────────────────────────────────────────────────────── */
+/*  Z-INDEX TOKENS                                                             */
+/* ─────────────────────────────────────────────────────────────────────────── */
+
+:root {
+  --z-below: -1;
+  --z-base: 0;
+  --z-raised: 10; /* horse card hover lift                          */
+  --z-sticky: 20; /* topbar, filter bar when scrolling              */
+  --z-nav: 30; /* sidebar, bottom nav                            */
+  --z-dropdown: 40; /* dropdowns, select menus                        */
+  --z-tooltip: 50; /* tooltips, popovers                             */
+  --z-overlay: 60; /* backdrop / scrim                               */
+  --z-modal: 70; /* modal dialogs                                  */
+  --z-toast: 80; /* toast notifications                            */
+  --z-celebration: 90; /* cinematic moments — trait reveal, foal birth   */
+  --z-above-all: 100;
+}
+
+/* ─────────────────────────────────────────────────────────────────────────── */
+/*  ANIMATION / TRANSITION TOKENS                                              */
+/* ─────────────────────────────────────────────────────────────────────────── */
+
+:root {
+  /* Durations — shorter for state feedback, longer for reveals */
+  --duration-instant: 50ms;
+  --duration-fast: 150ms; /* hover, active state feedback              */
+  --duration-normal: 250ms; /* panel transitions, tab switches           */
+  --duration-slow: 400ms; /* card entrances, modal open                */
+  --duration-reveal: 600ms; /* skill/trait reveal bar fills              */
+  --duration-cinematic: 1200ms; /* foal birth, ultra-rare trait reveal       */
+
+  /* Easing */
+  --ease-default: cubic-bezier(0.4, 0, 0.2, 1); /* standard material   */
+  --ease-in: cubic-bezier(0.4, 0, 1, 1); /* exit animations     */
+  --ease-out: cubic-bezier(0, 0, 0.2, 1); /* entrance animations */
+  --ease-bounce: cubic-bezier(0.34, 1.56, 0.64, 1); /* reward moments    */
+  --ease-linear: linear;
+
+  /* Shorthand transitions (CSS only — routine states) */
+  --transition-hover:
+    background var(--duration-fast) var(--ease-default),
+    box-shadow var(--duration-fast) var(--ease-default),
+    border-color var(--duration-fast) var(--ease-default);
+  --transition-color: color var(--duration-fast) var(--ease-default);
+  --transition-transform: transform var(--duration-fast) var(--ease-default);
+  --transition-opacity: opacity var(--duration-fast) var(--ease-default);
+  --transition-all: all var(--duration-normal) var(--ease-default);
+}
+
+/* ─────────────────────────────────────────────────────────────────────────── */
+/*  LOADING / SKELETON TOKENS                                                  */
+/* ─────────────────────────────────────────────────────────────────────────── */
+
+:root {
+  --skeleton-base: rgba(26, 58, 107, 0.6); /* base shimmer bg          */
+  --skeleton-shimmer-from: rgba(26, 58, 107, 0.6);
+  --skeleton-shimmer-via: rgba(42, 74, 139, 0.8);
+  --skeleton-shimmer-to: rgba(26, 58, 107, 0.6);
+  --skeleton-shimmer-duration: 2s;
+}
+
+/* ─────────────────────────────────────────────────────────────────────────── */
+/*  BREAKPOINT REFERENCE (read-only — for documentation & JS consumption)     */
+/* ─────────────────────────────────────────────────────────────────────────── */
+
+:root {
+  /* Tailwind defaults — mirrored here so JS media queries can import them   */
+  --bp-sm: 640px; /* ≥ sm: tablet portrait                              */
+  --bp-md: 768px; /* ≥ md: tablet landscape                             */
+  --bp-lg: 1024px; /* ≥ lg: laptop — sidebar appears, bottom nav hides   */
+  --bp-xl: 1280px; /* ≥ xl: standard desktop                             */
+  --bp-2xl: 1536px; /* ≥ 2xl: large desktop                               */
+}
+
+/* ─────────────────────────────────────────────────────────────────────────── */
+/*  REDUCED MOTION — override tokens for users with motion preferences        */
+/* ─────────────────────────────────────────────────────────────────────────── */
+
+@media (prefers-reduced-motion: reduce) {
+  :root {
+    --duration-fast: 0ms;
+    --duration-normal: 0ms;
+    --duration-slow: 0ms;
+    --duration-reveal: 0ms;
+    --duration-cinematic: 0ms;
+    --ease-bounce: linear;
+    --skeleton-shimmer-duration: 0s;
+  }
+}
+
+/* ─────────────────────────────────────────────────────────────────────────── */
+/*  HIGH CONTRAST — override glass surfaces with opaque fallbacks              */
+/* ─────────────────────────────────────────────────────────────────────────── */
+
+@media (forced-colors: active) {
+  :root {
+    --glass-surface-bg: Canvas;
+    --glass-surface-heavy-bg: Canvas;
+    --glass-surface-subtle-bg: Canvas;
+    --border-default: ButtonText;
+    --border-active: Highlight;
+    --text-primary: CanvasText;
+    --text-secondary: GrayText;
+    --celestial-primary: Highlight;
+  }
+}
+
+/* ─────────────────────────────────────────────────────────────────────────── */
+/*  BACKWARD-COMPAT ALIASES (bridges index.css legacy tokens → UX spec names) */
+/*  Remove after full migration to UX spec tokens is complete.                */
+/* ─────────────────────────────────────────────────────────────────────────── */
+
+:root {
+  /* Old token → new token mapping */
+  --parchment-compat: var(--celestial-navy-900); /* was --parchment      */
+  --saddle-leather-compat: var(--celestial-navy-700); /* was --saddle-leather */
+  --midnight-ink-compat: var(--cream); /* was --midnight-ink   */
+  --burnished-gold-compat: var(--gold-500); /* was --burnished-gold */
+  --aged-bronze-compat: var(--text-muted); /* was --aged-bronze    */
+  --forest-green-compat: var(--celestial-primary); /* was --forest-green   */
+  --mystic-silver-compat: var(--text-muted); /* was --mystic-silver  */
+}

@@ -12,7 +12,7 @@ const StatCard = ({ label, value, icon, tooltip }: StatCardProps) => {
 
   return (
     <div
-      className="relative p-4 bg-saddle-leather parchment-texture rounded-lg gold-border hover:magical-glow transition-all duration-300 cursor-pointer group"
+      className="relative p-4 glass-panel hover:magical-glow transition-all duration-300 cursor-pointer group"
       onMouseEnter={() => setShowTooltip(true)}
       onMouseLeave={() => setShowTooltip(false)}
       onClick={() => setShowTooltip(!showTooltip)}
@@ -32,10 +32,10 @@ const StatCard = ({ label, value, icon, tooltip }: StatCardProps) => {
       {/* Tooltip */}
       {showTooltip && tooltip && (
         <div className="absolute bottom-full left-1/2 transform -translate-x-1/2 mb-2 z-10">
-          <div className="bg-midnight-ink text-[rgb(220,235,255)] px-3 py-2 rounded-lg text-sm fantasy-body shadow-lg">
+          <div className="bg-[rgba(5,15,40,0.95)] text-[rgb(220,235,255)] px-3 py-2 rounded-lg text-sm fantasy-body shadow-lg border border-[rgba(37,99,235,0.3)]">
             {tooltip}
             <div className="absolute top-full left-1/2 transform -translate-x-1/2">
-              <div className="border-4 border-transparent border-t-midnight-ink" />
+              <div className="border-4 border-transparent border-t-[rgba(5,15,40,0.95)]" />
             </div>
           </div>
         </div>

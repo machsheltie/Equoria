@@ -48,13 +48,13 @@ const TrainingDashboardTable = ({
   }, [horses, sortBy]);
 
   return (
-    <div className={`bg-white rounded-lg shadow ${className}`} data-testid="dashboard-table">
+    <div className={`glass-panel rounded-lg ${className}`} data-testid="dashboard-table">
       <div className="p-6">
         {/* Header */}
         <div className="flex items-center justify-between mb-4">
           <div>
-            <h2 className="text-lg font-semibold text-slate-900">Training Status</h2>
-            <p className="text-sm text-slate-600">
+            <h2 className="text-lg font-semibold text-[rgb(220,235,255)]">Training Status</h2>
+            <p className="text-sm text-[rgb(148,163,184)]">
               {horses.length} {horses.length === 1 ? 'horse' : 'horses'} total
             </p>
           </div>
@@ -62,14 +62,14 @@ const TrainingDashboardTable = ({
           {/* Sort Controls */}
           {horses.length > 0 && (
             <div className="flex items-center gap-2" data-testid="sort-controls">
-              <span className="text-sm text-slate-600">Sort by:</span>
+              <span className="text-sm text-[rgb(148,163,184)]">Sort by:</span>
               <div className="flex gap-2">
                 <button
                   onClick={() => setSortBy('name')}
                   className={`px-3 py-1 rounded text-sm font-medium transition-colors ${
                     sortBy === 'name'
                       ? 'bg-blue-600 text-white'
-                      : 'bg-slate-100 text-slate-700 hover:bg-slate-200'
+                      : 'bg-[rgba(15,35,70,0.5)] text-[rgb(220,235,255)] hover:bg-[rgba(37,99,235,0.1)]'
                   }`}
                   data-testid="sort-name"
                   aria-pressed={sortBy === 'name'}
@@ -81,7 +81,7 @@ const TrainingDashboardTable = ({
                   className={`px-3 py-1 rounded text-sm font-medium transition-colors ${
                     sortBy === 'age'
                       ? 'bg-blue-600 text-white'
-                      : 'bg-slate-100 text-slate-700 hover:bg-slate-200'
+                      : 'bg-[rgba(15,35,70,0.5)] text-[rgb(220,235,255)] hover:bg-[rgba(37,99,235,0.1)]'
                   }`}
                   data-testid="sort-age"
                   aria-pressed={sortBy === 'age'}
@@ -93,7 +93,7 @@ const TrainingDashboardTable = ({
                   className={`px-3 py-1 rounded text-sm font-medium transition-colors ${
                     sortBy === 'status'
                       ? 'bg-blue-600 text-white'
-                      : 'bg-slate-100 text-slate-700 hover:bg-slate-200'
+                      : 'bg-[rgba(15,35,70,0.5)] text-[rgb(220,235,255)] hover:bg-[rgba(37,99,235,0.1)]'
                   }`}
                   data-testid="sort-status"
                   aria-pressed={sortBy === 'status'}
@@ -108,9 +108,9 @@ const TrainingDashboardTable = ({
         {/* Empty State */}
         {horses.length === 0 && (
           <div className="py-12 text-center" data-testid="empty-state">
-            <Search className="mx-auto h-12 w-12 text-slate-400 mb-4" aria-hidden="true" />
-            <h3 className="text-lg font-medium text-slate-900 mb-2">No horses found</h3>
-            <p className="text-sm text-slate-600">
+            <Search className="mx-auto h-12 w-12 text-[rgb(148,163,184)] mb-4" aria-hidden="true" />
+            <h3 className="text-lg font-medium text-[rgb(220,235,255)] mb-2">No horses found</h3>
+            <p className="text-sm text-[rgb(148,163,184)]">
               Try adjusting your filters or search criteria to see more results.
             </p>
           </div>

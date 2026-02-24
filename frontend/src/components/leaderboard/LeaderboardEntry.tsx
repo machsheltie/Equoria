@@ -7,7 +7,7 @@
  *
  * Features:
  * - RankBadge integration for visual rank display
- * - Current user highlighting (light blue background, blue border)
+ * - Current user highlighting (dark blue tinted background, blue border)
  * - Rank change indicators (green up, red down, gray unchanged)
  * - Category-specific secondary stat display
  * - Clickable rows with hover effect
@@ -124,74 +124,64 @@ const SecondaryStats = ({
   switch (category) {
     case 'level':
       return (
-        <div className="flex gap-4 text-sm text-gray-600">
+        <div className="flex gap-4 text-sm text-[rgb(148,163,184)]">
           {stats.winRate !== undefined && (
             <span data-testid="secondary-stat-win-rate">WR: {stats.winRate}%</span>
           )}
           {stats.totalCompetitions !== undefined && (
-            <span data-testid="secondary-stat-competitions">
-              Comps: {stats.totalCompetitions}
-            </span>
+            <span data-testid="secondary-stat-competitions">Comps: {stats.totalCompetitions}</span>
           )}
         </div>
       );
     case 'prize-money':
       return (
-        <div className="flex gap-4 text-sm text-gray-600">
+        <div className="flex gap-4 text-sm text-[rgb(148,163,184)]">
           {stats.wins !== undefined && (
             <span data-testid="secondary-stat-wins">Wins: {stats.wins}</span>
           )}
           {stats.totalCompetitions !== undefined && (
-            <span data-testid="secondary-stat-competitions">
-              Comps: {stats.totalCompetitions}
-            </span>
+            <span data-testid="secondary-stat-competitions">Comps: {stats.totalCompetitions}</span>
           )}
         </div>
       );
     case 'win-rate':
       return (
-        <div className="flex gap-4 text-sm text-gray-600">
+        <div className="flex gap-4 text-sm text-[rgb(148,163,184)]">
           {stats.wins !== undefined && (
             <span data-testid="secondary-stat-wins">Wins: {stats.wins}</span>
           )}
           {stats.totalCompetitions !== undefined && (
-            <span data-testid="secondary-stat-competitions">
-              Races: {stats.totalCompetitions}
-            </span>
+            <span data-testid="secondary-stat-competitions">Races: {stats.totalCompetitions}</span>
           )}
         </div>
       );
     case 'discipline':
       return (
-        <div className="flex gap-4 text-sm text-gray-600">
+        <div className="flex gap-4 text-sm text-[rgb(148,163,184)]">
           {stats.level !== undefined && (
             <span data-testid="secondary-stat-level">Lvl: {stats.level}</span>
           )}
           {stats.totalCompetitions !== undefined && (
-            <span data-testid="secondary-stat-competitions">
-              Comps: {stats.totalCompetitions}
-            </span>
+            <span data-testid="secondary-stat-competitions">Comps: {stats.totalCompetitions}</span>
           )}
         </div>
       );
     case 'owner':
       return (
-        <div className="flex gap-4 text-sm text-gray-600">
+        <div className="flex gap-4 text-sm text-[rgb(148,163,184)]">
           {stats.totalPrizeMoney !== undefined && (
             <span data-testid="secondary-stat-prize-money">
               Prize: ${stats.totalPrizeMoney.toLocaleString()}
             </span>
           )}
           {stats.totalCompetitions !== undefined && (
-            <span data-testid="secondary-stat-competitions">
-              Comps: {stats.totalCompetitions}
-            </span>
+            <span data-testid="secondary-stat-competitions">Comps: {stats.totalCompetitions}</span>
           )}
         </div>
       );
     case 'recent-winners':
       return (
-        <div className="flex gap-4 text-sm text-gray-600">
+        <div className="flex gap-4 text-sm text-[rgb(148,163,184)]">
           {stats.totalPrizeMoney !== undefined && (
             <span data-testid="secondary-stat-prize-money">
               Won: ${stats.totalPrizeMoney.toLocaleString()}
@@ -216,7 +206,7 @@ const LeaderboardEntryComponent = ({
   isClickable = false,
 }: LeaderboardEntryProps) => {
   const rowStyle: React.CSSProperties = entry.isCurrentUser
-    ? { backgroundColor: '#DBEAFE', border: '2px solid #3B82F6' }
+    ? { backgroundColor: 'rgba(37,99,235,0.15)', border: '2px solid rgba(37,99,235,0.6)' }
     : {};
 
   const handleClick = () => {
@@ -235,7 +225,7 @@ const LeaderboardEntryComponent = ({
   return (
     <div
       className={`flex items-center gap-4 px-4 py-3 rounded-lg ${
-        isClickable ? 'cursor-pointer hover:bg-gray-50' : ''
+        isClickable ? 'cursor-pointer hover:bg-[rgba(37,99,235,0.08)]' : ''
       } ${entry.isCurrentUser ? 'font-semibold' : ''}`}
       style={rowStyle}
       data-testid="leaderboard-entry"
@@ -257,14 +247,14 @@ const LeaderboardEntryComponent = ({
       {/* Horse/Owner Name */}
       <div className="flex-1 min-w-0">
         {entry.horseName && (
-          <div className="truncate font-medium text-gray-900">{entry.horseName}</div>
+          <div className="truncate font-medium text-[rgb(220,235,255)]">{entry.horseName}</div>
         )}
-        <div className="truncate text-sm text-gray-500">{entry.ownerName}</div>
+        <div className="truncate text-sm text-[rgb(148,163,184)]">{entry.ownerName}</div>
       </div>
 
       {/* Primary Stat */}
       <div className="flex-shrink-0 text-right" data-testid="primary-stat">
-        <span className="text-lg font-bold text-gray-900">
+        <span className="text-lg font-bold text-[rgb(220,235,255)]">
           {formatPrimaryStat(entry.primaryStat, category)}
         </span>
       </div>

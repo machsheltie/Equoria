@@ -172,7 +172,8 @@ const StatHistoryGraph: React.FC<StatHistoryGraphProps> = ({ horseId }) => {
           callbacks: {
             title: (tooltipItems) => {
               const index = tooltipItems[0].dataIndex;
-              const event = (chartData.datasets[0] as any).metadata?.[index];
+              const dataset = chartData.datasets[0] as unknown as { metadata?: HorseXPEvent[] };
+              const event = dataset.metadata?.[index];
               if (event?.timestamp) {
                 const date = new Date(event.timestamp);
                 return date.toLocaleDateString('en-US', {
@@ -190,7 +191,8 @@ const StatHistoryGraph: React.FC<StatHistoryGraphProps> = ({ horseId }) => {
             },
             afterLabel: (context) => {
               const index = context.dataIndex;
-              const event = (chartData.datasets[0] as any).metadata?.[index];
+              const dataset2 = chartData.datasets[0] as unknown as { metadata?: HorseXPEvent[] };
+              const event = dataset2.metadata?.[index];
               if (event?.reason) {
                 return `Reason: ${event.reason}`;
               }
@@ -219,12 +221,12 @@ const StatHistoryGraph: React.FC<StatHistoryGraphProps> = ({ horseId }) => {
   // Loading state
   if (isLoading) {
     return (
-      <div className="p-4 bg-white rounded-lg shadow">
+      <div className="p-4 bg-[rgba(15,35,70,0.5)] rounded-lg shadow border border-[rgba(37,99,235,0.3)]">
         <div className="animate-pulse">
-          <div className="h-6 bg-gray-200 rounded w-1/4 mb-4"></div>
-          <div className="h-64 bg-gray-100 rounded"></div>
+          <div className="h-6 bg-[rgba(15,35,70,0.5)] rounded w-1/4 mb-4"></div>
+          <div className="h-64 bg-[rgba(15,35,70,0.3)] rounded"></div>
         </div>
-        <p className="text-center text-gray-500 mt-4">Loading XP history...</p>
+        <p className="text-center text-[rgb(148,163,184)] mt-4">Loading XP history...</p>
       </div>
     );
   }
@@ -232,10 +234,10 @@ const StatHistoryGraph: React.FC<StatHistoryGraphProps> = ({ horseId }) => {
   // Error state
   if (isError && error) {
     return (
-      <div className="p-4 bg-white rounded-lg shadow">
-        <h3 className="text-lg font-semibold text-gray-900 mb-2">XP History</h3>
-        <div className="bg-red-50 border border-red-200 rounded p-4 text-center">
-          <p className="text-red-800 mb-3">
+      <div className="p-4 bg-[rgba(15,35,70,0.5)] rounded-lg shadow border border-[rgba(37,99,235,0.3)]">
+        <h3 className="text-lg font-semibold text-[rgb(220,235,255)] mb-2">XP History</h3>
+        <div className="bg-[rgba(239,68,68,0.1)] border border-red-500/30 rounded p-4 text-center">
+          <p className="text-red-400 mb-3">
             Failed to fetch XP history: {error.message || 'Unknown error'}
           </p>
           <button
@@ -252,10 +254,10 @@ const StatHistoryGraph: React.FC<StatHistoryGraphProps> = ({ horseId }) => {
   // Empty state
   if (!filteredEvents.length) {
     return (
-      <div className="p-4 bg-white rounded-lg shadow">
-        <h3 className="text-lg font-semibold text-gray-900 mb-4">XP History</h3>
-        <div className="bg-gray-50 border border-gray-200 rounded p-8 text-center">
-          <p className="text-gray-600">No XP history available for this horse</p>
+      <div className="p-4 bg-[rgba(15,35,70,0.5)] rounded-lg shadow border border-[rgba(37,99,235,0.3)]">
+        <h3 className="text-lg font-semibold text-[rgb(220,235,255)] mb-4">XP History</h3>
+        <div className="bg-[rgba(15,35,70,0.3)] border border-[rgba(37,99,235,0.3)] rounded p-8 text-center">
+          <p className="text-[rgb(148,163,184)]">No XP history available for this horse</p>
         </div>
       </div>
     );
@@ -263,9 +265,9 @@ const StatHistoryGraph: React.FC<StatHistoryGraphProps> = ({ horseId }) => {
 
   // Main render
   return (
-    <div className="p-4 bg-white rounded-lg shadow">
+    <div className="p-4 bg-[rgba(15,35,70,0.5)] rounded-lg shadow border border-[rgba(37,99,235,0.3)]">
       <div className="flex justify-between items-center mb-4">
-        <h3 className="text-lg font-semibold text-gray-900">XP History</h3>
+        <h3 className="text-lg font-semibold text-[rgb(220,235,255)]">XP History</h3>
 
         {/* Time Range Selector */}
         <div className="flex gap-2" role="group" aria-label="Time range selector">
@@ -274,7 +276,7 @@ const StatHistoryGraph: React.FC<StatHistoryGraphProps> = ({ horseId }) => {
             className={`px-3 py-1 text-sm rounded transition-colors focus:outline-none focus:ring-2 focus:ring-emerald-500 ${
               timeRange === '7d'
                 ? 'bg-emerald-600 text-white active'
-                : 'bg-gray-100 text-gray-700 hover:bg-gray-200'
+                : 'bg-[rgba(15,35,70,0.5)] text-[rgb(148,163,184)] hover:bg-[rgba(15,35,70,0.3)]'
             }`}
             aria-pressed={timeRange === '7d'}
           >
@@ -285,7 +287,7 @@ const StatHistoryGraph: React.FC<StatHistoryGraphProps> = ({ horseId }) => {
             className={`px-3 py-1 text-sm rounded transition-colors focus:outline-none focus:ring-2 focus:ring-emerald-500 ${
               timeRange === '30d'
                 ? 'bg-emerald-600 text-white active'
-                : 'bg-gray-100 text-gray-700 hover:bg-gray-200'
+                : 'bg-[rgba(15,35,70,0.5)] text-[rgb(148,163,184)] hover:bg-[rgba(15,35,70,0.3)]'
             }`}
             aria-pressed={timeRange === '30d'}
           >
@@ -296,7 +298,7 @@ const StatHistoryGraph: React.FC<StatHistoryGraphProps> = ({ horseId }) => {
             className={`px-3 py-1 text-sm rounded transition-colors focus:outline-none focus:ring-2 focus:ring-emerald-500 ${
               timeRange === '90d'
                 ? 'bg-emerald-600 text-white active'
-                : 'bg-gray-100 text-gray-700 hover:bg-gray-200'
+                : 'bg-[rgba(15,35,70,0.5)] text-[rgb(148,163,184)] hover:bg-[rgba(15,35,70,0.3)]'
             }`}
             aria-pressed={timeRange === '90d'}
           >
@@ -307,7 +309,7 @@ const StatHistoryGraph: React.FC<StatHistoryGraphProps> = ({ horseId }) => {
             className={`px-3 py-1 text-sm rounded transition-colors focus:outline-none focus:ring-2 focus:ring-emerald-500 ${
               timeRange === 'all'
                 ? 'bg-emerald-600 text-white active'
-                : 'bg-gray-100 text-gray-700 hover:bg-gray-200'
+                : 'bg-[rgba(15,35,70,0.5)] text-[rgb(148,163,184)] hover:bg-[rgba(15,35,70,0.3)]'
             }`}
             aria-pressed={timeRange === 'all'}
           >

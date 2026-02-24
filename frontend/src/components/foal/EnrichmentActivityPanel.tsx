@@ -219,12 +219,14 @@ const EnrichmentActivityPanel: React.FC<EnrichmentActivityPanelProps> = ({ foal 
 
   if (error) {
     return (
-      <div className="rounded-lg border border-red-200 bg-red-50 p-6">
+      <div className="rounded-lg border border-red-500/30 bg-[rgba(239,68,68,0.1)] p-6">
         <div className="flex items-start gap-3">
-          <AlertCircle className="h-5 w-5 text-red-600 flex-shrink-0 mt-0.5" />
+          <AlertCircle className="h-5 w-5 text-red-400 flex-shrink-0 mt-0.5" />
           <div>
-            <p className="font-semibold text-red-900">Error loading enrichment activities</p>
-            <p className="text-sm text-red-700 mt-1">
+            <p className="font-semibold text-[rgb(220,235,255)]">
+              Error loading enrichment activities
+            </p>
+            <p className="text-sm text-[rgb(148,163,184)] mt-1">
               {error instanceof Error ? error.message : 'An error occurred'}
             </p>
           </div>
@@ -240,14 +242,14 @@ const EnrichmentActivityPanel: React.FC<EnrichmentActivityPanelProps> = ({ foal 
   return (
     <div className="space-y-6">
       {/* Header */}
-      <div className="rounded-lg border border-slate-200 bg-gradient-to-r from-slate-50 to-white p-6 shadow-sm">
+      <div className="glass-panel rounded-lg p-6">
         <div className="flex items-start justify-between">
           <div className="flex-1">
             <div className="flex items-center gap-2">
-              <Sparkles className="h-6 w-6 text-emerald-600" />
-              <h2 className="text-2xl font-bold text-slate-900">Enrichment Activities</h2>
+              <Sparkles className="h-6 w-6 text-emerald-400" />
+              <h2 className="text-2xl font-bold text-[rgb(220,235,255)]">Enrichment Activities</h2>
             </div>
-            <p className="text-slate-600 mt-1">
+            <p className="text-[rgb(148,163,184)] mt-1">
               Build trust, discover traits, and support your foal's development
             </p>
           </div>
@@ -256,12 +258,14 @@ const EnrichmentActivityPanel: React.FC<EnrichmentActivityPanelProps> = ({ foal 
         {/* Daily Activity Counter */}
         <div className="mt-4">
           <div className="flex items-center justify-between mb-2">
-            <span className="text-sm font-semibold text-slate-700">Daily Activities Completed</span>
-            <span className="text-sm font-bold text-emerald-600">
+            <span className="text-sm font-semibold text-[rgb(220,235,255)]">
+              Daily Activities Completed
+            </span>
+            <span className="text-sm font-bold text-emerald-400">
               {enrichmentStatus.dailyActivitiesCompleted} / {enrichmentStatus.dailyActivitiesLimit}
             </span>
           </div>
-          <div className="w-full bg-slate-200 rounded-full h-2 overflow-hidden">
+          <div className="w-full bg-[rgba(15,35,70,0.5)] rounded-full h-2 overflow-hidden">
             <div
               className="h-full bg-emerald-500 transition-all duration-500"
               style={{
@@ -277,7 +281,7 @@ const EnrichmentActivityPanel: React.FC<EnrichmentActivityPanelProps> = ({ foal 
       </div>
 
       {/* Category Filter */}
-      <div className="rounded-lg border border-slate-200 bg-white p-4 shadow-sm">
+      <div className="glass-panel rounded-lg p-4">
         <CategoryFilter
           selectedCategory={selectedCategory}
           onCategoryChange={setSelectedCategory}
@@ -287,12 +291,12 @@ const EnrichmentActivityPanel: React.FC<EnrichmentActivityPanelProps> = ({ foal 
       </div>
 
       {/* Available Activities */}
-      <div className="rounded-lg border border-slate-200 bg-white p-6 shadow-sm">
+      <div className="glass-panel rounded-lg p-6">
         <div className="flex items-center gap-2 mb-4">
-          <Activity className="h-5 w-5 text-slate-700" />
-          <h3 className="text-lg font-bold text-slate-900">Available Activities</h3>
+          <Activity className="h-5 w-5 text-[rgb(148,163,184)]" />
+          <h3 className="text-lg font-bold text-[rgb(220,235,255)]">Available Activities</h3>
           {selectedCategory !== 'all' && (
-            <span className="text-sm text-slate-500">
+            <span className="text-sm text-[rgb(148,163,184)]">
               ({filteredActivities.length} {selectedCategory})
             </span>
           )}
@@ -319,17 +323,17 @@ const EnrichmentActivityPanel: React.FC<EnrichmentActivityPanelProps> = ({ foal 
             })}
           </div>
         ) : (
-          <div className="text-center py-8 text-slate-500">
+          <div className="text-center py-8 text-[rgb(148,163,184)]">
             <p>No {selectedCategory !== 'all' ? selectedCategory : ''} activities available.</p>
           </div>
         )}
       </div>
 
       {/* Activity History */}
-      <div className="rounded-lg border border-slate-200 bg-white p-6 shadow-sm">
+      <div className="glass-panel rounded-lg p-6">
         <div className="flex items-center gap-2 mb-4">
-          <History className="h-5 w-5 text-slate-700" />
-          <h3 className="text-lg font-bold text-slate-900">Recent Activity History</h3>
+          <History className="h-5 w-5 text-[rgb(148,163,184)]" />
+          <h3 className="text-lg font-bold text-[rgb(220,235,255)]">Recent Activity History</h3>
         </div>
 
         <ActivityHistoryList history={enrichmentStatus.recentHistory} maxItems={5} />

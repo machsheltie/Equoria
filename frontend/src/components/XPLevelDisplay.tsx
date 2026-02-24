@@ -9,12 +9,7 @@
 
 import React from 'react';
 import { Star } from 'lucide-react';
-import {
-  calculateLevel,
-  getXPProgress,
-  getXPProgressPercent,
-  formatXPDisplay,
-} from '../lib/xp-utils';
+import { calculateLevel, getXPProgressPercent, formatXPDisplay } from '../lib/xp-utils';
 
 interface XPLevelDisplayProps {
   /** User's total XP (optional, calculates level if not provided) */
@@ -133,7 +128,7 @@ const XPLevelDisplay: React.FC<XPLevelDisplayProps> = ({
             Level
           </span>
           {showProgressText && (
-            <span className="fantasy-body text-xs text-midnight-ink">{xpText}</span>
+            <span className="fantasy-body text-xs text-[rgb(148,163,184)]">{xpText}</span>
           )}
         </div>
 

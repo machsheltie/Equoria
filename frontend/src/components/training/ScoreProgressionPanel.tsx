@@ -93,8 +93,8 @@ function transformHistoryToTableFormat(
 function ChartSkeleton() {
   return (
     <div data-testid="chart-skeleton" className="animate-pulse">
-      <div className="h-6 w-48 rounded bg-slate-200" />
-      <div className="mt-4 aspect-square w-full rounded-lg bg-slate-200" />
+      <div className="h-6 w-48 rounded bg-[rgba(15,35,70,0.5)]" />
+      <div className="mt-4 aspect-square w-full rounded-lg bg-[rgba(15,35,70,0.5)]" />
     </div>
   );
 }
@@ -105,10 +105,10 @@ function ChartSkeleton() {
 function TableSkeleton() {
   return (
     <div data-testid="table-skeleton" className="animate-pulse">
-      <div className="h-6 w-40 rounded bg-slate-200" />
+      <div className="h-6 w-40 rounded bg-[rgba(15,35,70,0.5)]" />
       <div className="mt-4 space-y-2">
         {[0, 1, 2, 3, 4].map((i) => (
-          <div key={i} className="h-10 w-full rounded bg-slate-200" />
+          <div key={i} className="h-10 w-full rounded bg-[rgba(15,35,70,0.5)]" />
         ))}
       </div>
     </div>
@@ -170,9 +170,9 @@ const ScoreProgressionPanel: React.FC<ScoreProgressionPanelProps> = ({
       <div data-testid="score-progression-panel" className={`space-y-6 p-4 ${className}`}>
         <div
           data-testid="error-container"
-          className="rounded-lg border border-red-200 bg-red-50 p-6 text-center"
+          className="rounded-lg border border-red-500/30 bg-[rgba(239,68,68,0.1)] p-6 text-center"
         >
-          <div className="mb-2 text-red-600">
+          <div className="mb-2 text-red-400">
             <svg
               className="mx-auto h-8 w-8"
               fill="none"
@@ -188,7 +188,7 @@ const ScoreProgressionPanel: React.FC<ScoreProgressionPanelProps> = ({
               />
             </svg>
           </div>
-          <p className="text-red-700">{error.message}</p>
+          <p className="text-red-400">{error.message}</p>
           <button
             type="button"
             onClick={handleRetry}
@@ -209,14 +209,16 @@ const ScoreProgressionPanel: React.FC<ScoreProgressionPanelProps> = ({
       {/* Main content grid - responsive 2 columns on desktop, 1 on mobile */}
       <div data-testid="content-grid" className="grid grid-cols-1 gap-6 md:grid-cols-2">
         {/* Section 1: Radar Chart */}
-        <div className="rounded-lg border border-slate-200 bg-white p-4 shadow-sm">
-          <h3 className="mb-4 text-lg font-semibold text-slate-900">Discipline Distribution</h3>
+        <div className="glass-panel rounded-lg border border-[rgba(37,99,235,0.2)] p-4">
+          <h3 className="mb-4 text-lg font-semibold text-[rgb(220,235,255)]">
+            Discipline Distribution
+          </h3>
           <ScoreRadarChart disciplineScores={disciplineScores} height={300} className="w-full" />
         </div>
 
         {/* Section 2: Training History Table */}
-        <div className="rounded-lg border border-slate-200 bg-white p-4 shadow-sm">
-          <h3 className="mb-4 text-lg font-semibold text-slate-900">Training History</h3>
+        <div className="glass-panel rounded-lg border border-[rgba(37,99,235,0.2)] p-4">
+          <h3 className="mb-4 text-lg font-semibold text-[rgb(220,235,255)]">Training History</h3>
           <TrainingHistoryTable
             history={tableHistory}
             loading={false}
@@ -229,22 +231,22 @@ const ScoreProgressionPanel: React.FC<ScoreProgressionPanelProps> = ({
       {/* Section 3: Score Caps & Bonuses Info */}
       <div
         data-testid="score-caps-section"
-        className="rounded-lg border border-slate-200 bg-slate-50 p-4 shadow-sm"
+        className="rounded-lg border border-[rgba(37,99,235,0.2)] bg-[rgba(15,35,70,0.5)] p-4"
       >
-        <h3 className="mb-3 text-lg font-semibold text-slate-900">
+        <h3 className="mb-3 text-lg font-semibold text-[rgb(220,235,255)]">
           {'\uD83D\uDCCA'} Score Caps & Bonuses
         </h3>
-        <ul className="space-y-2 text-sm text-slate-700">
+        <ul className="space-y-2 text-sm text-[rgb(220,235,255)]">
           <li className="flex items-start">
-            <span className="mr-2 text-slate-400">{'•'}</span>
+            <span className="mr-2 text-[rgb(148,163,184)]">{'•'}</span>
             <span>Base score cap: 100 per discipline</span>
           </li>
           <li className="flex items-start">
-            <span className="mr-2 text-slate-400">{'•'}</span>
+            <span className="mr-2 text-[rgb(148,163,184)]">{'•'}</span>
             <span>Trait bonuses can add +10-20</span>
           </li>
           <li className="flex items-start">
-            <span className="mr-2 text-slate-400">{'•'}</span>
+            <span className="mr-2 text-[rgb(148,163,184)]">{'•'}</span>
             <span>Groom bonuses can add +5-15</span>
           </li>
         </ul>

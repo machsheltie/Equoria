@@ -58,14 +58,20 @@ const CATEGORY_COLORS: Record<string, string> = {
 /**
  * Custom tooltip content component for the radar chart
  */
-const CustomTooltip = ({ active, payload }: any) => {
+const CustomTooltip = ({
+  active,
+  payload,
+}: {
+  active?: boolean;
+  payload?: Array<{ payload: ChartDataPoint }>;
+}) => {
   if (active && payload && payload.length > 0) {
     const data = payload[0].payload as ChartDataPoint;
     return (
-      <div className="bg-white border border-slate-200 rounded-lg p-3 shadow-lg">
-        <p className="font-semibold text-slate-900">{data.discipline}</p>
-        <p className="text-slate-600">
-          Score: <span className="font-medium">{data.score}</span>
+      <div className="glass-panel border border-[rgba(37,99,235,0.3)] rounded-lg p-3 shadow-lg">
+        <p className="font-semibold text-[rgb(220,235,255)]">{data.discipline}</p>
+        <p className="text-[rgb(148,163,184)]">
+          Score: <span className="font-medium text-[rgb(220,235,255)]">{data.score}</span>
         </p>
         <p className="text-sm" style={{ color: CATEGORY_COLORS[data.category] }}>
           {data.category}
@@ -133,8 +139,12 @@ const ScoreRadarChart: React.FC<ScoreRadarChartProps> = ({
           aria-describedby={descriptionId}
         >
           <PolarGrid />
-          <PolarAngleAxis dataKey="discipline" tick={{ fontSize: 10 }} />
-          <PolarRadiusAxis angle={30} domain={[0, 100]} tick={{ fontSize: 9 }} />
+          <PolarAngleAxis dataKey="discipline" tick={{ fontSize: 10, fill: 'rgb(148,163,184)' }} />
+          <PolarRadiusAxis
+            angle={30}
+            domain={[0, 100]}
+            tick={{ fontSize: 9, fill: 'rgb(148,163,184)' }}
+          />
           <Radar
             name="Score"
             dataKey="score"
@@ -146,7 +156,9 @@ const ScoreRadarChart: React.FC<ScoreRadarChartProps> = ({
           {showLegend && (
             <Legend
               wrapperStyle={{ paddingTop: '10px' }}
-              formatter={(value) => <span className="text-sm text-slate-700">{value}</span>}
+              formatter={(value) => (
+                <span className="text-sm text-[rgb(148,163,184)]">{value}</span>
+              )}
             />
           )}
         </RadarChart>

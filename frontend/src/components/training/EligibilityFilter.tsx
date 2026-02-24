@@ -88,14 +88,15 @@ const filterConfigs: FilterConfig[] = [
     key: 'ineligible',
     label: 'Ineligible',
     ariaLabel: 'Show ineligible horses',
-    activeClass: 'bg-gray-600 text-white',
+    activeClass: 'bg-[rgba(15,35,70,0.6)] text-[rgb(220,235,255)]',
   },
 ];
 
 /**
  * Base styling for inactive buttons
  */
-const inactiveClass = 'bg-gray-200 text-gray-700 hover:bg-gray-300';
+const inactiveClass =
+  'bg-[rgba(15,35,70,0.5)] text-[rgb(220,235,255)] hover:bg-[rgba(37,99,235,0.1)]';
 
 /**
  * Calculate eligibility counts for horses

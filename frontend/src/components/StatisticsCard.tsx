@@ -90,7 +90,7 @@ const TrendIndicator: React.FC<{ trend: number }> = ({ trend }) => {
   const directionClasses = {
     [TrendDirection.UP]: 'trend-positive text-emerald-600',
     [TrendDirection.DOWN]: 'trend-negative text-red-600',
-    [TrendDirection.NEUTRAL]: 'trend-neutral text-gray-500',
+    [TrendDirection.NEUTRAL]: 'trend-neutral text-[rgb(148,163,184)]',
   };
 
   const ArrowIcon = {
@@ -246,7 +246,7 @@ const StatisticsCard: React.FC<StatisticsCardProps> = ({
         {/* Value and Label */}
         <div className="flex-1">
           <div className="flex items-center gap-2">
-            <span className={`font-bold text-midnight-ink ${valueSizes[size]}`}>
+            <span className={`font-bold text-[rgb(220,235,255)] ${valueSizes[size]}`}>
               {displayValue}
             </span>
             {trend !== undefined && <TrendIndicator trend={trend} />}

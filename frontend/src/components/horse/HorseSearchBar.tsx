@@ -26,7 +26,7 @@ export interface HorseSearchBarProps {
   /**
    * Callback when search value changes (debounced)
    */
-  onChange: (value: string) => void;
+  onChange: (_value: string) => void;
 
   /**
    * Placeholder text for the input
@@ -155,7 +155,11 @@ const HorseSearchBar = ({
       >
         <Search
           className={`w-5 h-5 transition-colors ${
-            isLoading ? 'text-blue-500 animate-pulse' : hasValue ? 'text-gray-700' : 'text-gray-400'
+            isLoading
+              ? 'text-blue-400 animate-pulse'
+              : hasValue
+                ? 'text-[rgb(220,235,255)]'
+                : 'text-[rgb(148,163,184)]'
           }`}
         />
       </div>
@@ -172,11 +176,11 @@ const HorseSearchBar = ({
         autoFocus={autoFocus}
         className={`
           w-full pl-11 pr-10 py-2.5
-          border border-gray-300 rounded-lg
-          text-gray-900 placeholder-gray-500
+          border border-[rgba(37,99,235,0.3)] rounded-lg
+          text-[rgb(220,235,255)] placeholder-[rgb(148,163,184)]
           focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent
           transition-all duration-200
-          ${isLoading ? 'bg-blue-50' : 'bg-white'}
+          ${isLoading ? 'bg-[rgba(37,99,235,0.1)]' : 'bg-[rgba(15,35,70,0.4)]'}
         `}
         aria-label="Search horses by name, breed, or traits"
         aria-describedby={hasValue ? 'search-clear-button' : undefined}
@@ -192,7 +196,7 @@ const HorseSearchBar = ({
           className={`
             absolute right-3 top-1/2 -translate-y-1/2
             p-1 rounded-full
-            text-gray-400 hover:text-gray-600 hover:bg-gray-100
+            text-[rgb(148,163,184)] hover:text-[rgb(220,235,255)] hover:bg-[rgba(15,35,70,0.5)]
             focus:outline-none focus:ring-2 focus:ring-blue-500
             transition-all duration-200
           `}

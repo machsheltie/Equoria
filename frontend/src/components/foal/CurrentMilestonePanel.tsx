@@ -24,7 +24,7 @@ export interface CurrentMilestonePanelProps {
  * Get progress bar color based on progress percentage
  */
 function getProgressColor(progress: number): string {
-  if (progress >= 75) return 'bg-green-500';
+  if (progress >= 75) return 'bg-emerald-500';
   if (progress >= 50) return 'bg-blue-500';
   if (progress >= 25) return 'bg-yellow-500';
   return 'bg-amber-500';
@@ -35,10 +35,10 @@ function getProgressColor(progress: number): string {
  */
 function getEnrichmentStatusColor(completed: number, total: number): string {
   const percentage = (completed / total) * 100;
-  if (percentage >= 80) return 'text-green-600';
-  if (percentage >= 60) return 'text-blue-600';
-  if (percentage >= 40) return 'text-yellow-600';
-  return 'text-amber-600';
+  if (percentage >= 80) return 'text-emerald-400';
+  if (percentage >= 60) return 'text-blue-400';
+  if (percentage >= 40) return 'text-yellow-400';
+  return 'text-amber-400';
 }
 
 /**
@@ -59,56 +59,56 @@ const CurrentMilestonePanel: React.FC<CurrentMilestonePanelProps> = ({
   );
 
   return (
-    <div className="rounded-lg border border-blue-200 bg-gradient-to-br from-blue-50 to-white p-6 shadow-sm">
+    <div className="rounded-lg border border-blue-500/30 bg-[rgba(37,99,235,0.1)] p-6 shadow-sm">
       {/* Header */}
       <div className="flex items-start gap-3 mb-4">
-        <div className="rounded-full bg-blue-100 p-2">
-          <Target className="h-6 w-6 text-blue-600" />
+        <div className="rounded-full bg-[rgba(37,99,235,0.2)] p-2">
+          <Target className="h-6 w-6 text-blue-400" />
         </div>
         <div className="flex-1">
-          <h3 className="text-lg font-bold text-slate-900">Current Milestone</h3>
-          <p className="text-2xl font-bold text-blue-600 mt-1">{name}</p>
+          <h3 className="text-lg font-bold text-[rgb(220,235,255)]">Current Milestone</h3>
+          <p className="text-2xl font-bold text-blue-400 mt-1">{name}</p>
         </div>
       </div>
 
       {/* Age Window */}
-      <div className="mb-4 pb-4 border-b border-blue-200">
+      <div className="mb-4 pb-4 border-b border-blue-500/30">
         <div className="flex items-center justify-between text-sm">
-          <span className="text-slate-600">Age Window:</span>
-          <span className="font-semibold text-slate-900">
+          <span className="text-[rgb(148,163,184)]">Age Window:</span>
+          <span className="font-semibold text-[rgb(220,235,255)]">
             Days {ageWindow.min}-{ageWindow.max}
           </span>
         </div>
         <div className="flex items-center justify-between text-sm mt-1">
-          <span className="text-slate-600">Foal Age:</span>
-          <span className="font-semibold text-blue-600">{foalAge} days old</span>
+          <span className="text-[rgb(148,163,184)]">Foal Age:</span>
+          <span className="font-semibold text-blue-400">{foalAge} days old</span>
         </div>
       </div>
 
       {/* Focus Area */}
       {focus && (
-        <div className="mb-4 rounded-lg bg-blue-100/50 p-3">
+        <div className="mb-4 rounded-lg bg-[rgba(37,99,235,0.15)] p-3">
           <div className="flex items-start gap-2">
-            <Sparkles className="h-5 w-5 text-blue-600 flex-shrink-0 mt-0.5" />
+            <Sparkles className="h-5 w-5 text-blue-400 flex-shrink-0 mt-0.5" />
             <div>
-              <p className="text-xs font-semibold text-blue-900 uppercase tracking-wide">
+              <p className="text-xs font-semibold text-blue-300 uppercase tracking-wide">
                 Developmental Focus
               </p>
-              <p className="text-sm text-blue-800 mt-1">{focus}</p>
+              <p className="text-sm text-[rgb(220,235,255)] mt-1">{focus}</p>
             </div>
           </div>
         </div>
       )}
 
       {/* Description */}
-      {description && <p className="text-sm text-slate-700 mb-4">{description}</p>}
+      {description && <p className="text-sm text-[rgb(148,163,184)] mb-4">{description}</p>}
 
       {/* Days Remaining */}
       <div className="mb-4 flex items-center gap-2">
-        <Clock className="h-5 w-5 text-slate-500" />
+        <Clock className="h-5 w-5 text-[rgb(148,163,184)]" />
         <div className="flex-1">
-          <p className="text-sm text-slate-600">Days remaining in window:</p>
-          <p className="text-lg font-bold text-slate-900">
+          <p className="text-sm text-[rgb(148,163,184)]">Days remaining in window:</p>
+          <p className="text-lg font-bold text-[rgb(220,235,255)]">
             {daysRemaining} day{daysRemaining !== 1 ? 's' : ''}
           </p>
         </div>
@@ -117,13 +117,13 @@ const CurrentMilestonePanel: React.FC<CurrentMilestonePanelProps> = ({
       {/* Progress Bar */}
       <div className="mb-4">
         <div className="flex items-center gap-2 mb-2">
-          <TrendingUp className="h-5 w-5 text-slate-500" />
+          <TrendingUp className="h-5 w-5 text-[rgb(148,163,184)]" />
           <div className="flex-1 flex items-center justify-between">
-            <span className="text-sm font-medium text-slate-700">Milestone Progress</span>
-            <span className="text-sm font-bold text-slate-900">{progress}%</span>
+            <span className="text-sm font-medium text-[rgb(220,235,255)]">Milestone Progress</span>
+            <span className="text-sm font-bold text-[rgb(220,235,255)]">{progress}%</span>
           </div>
         </div>
-        <div className="w-full bg-slate-200 rounded-full h-3 overflow-hidden">
+        <div className="w-full bg-[rgba(15,35,70,0.5)] rounded-full h-3 overflow-hidden">
           <div
             className={`h-full ${progressColor} transition-all duration-500 ease-out`}
             style={{ width: `${progress}%` }}
@@ -134,15 +134,15 @@ const CurrentMilestonePanel: React.FC<CurrentMilestonePanelProps> = ({
             aria-label={`Milestone progress: ${progress}%`}
           />
         </div>
-        <p className="text-xs text-slate-500 mt-1">
+        <p className="text-xs text-[rgb(148,163,184)] mt-1">
           Day {foalAge - ageWindow.min + 1} of {ageWindow.max - ageWindow.min + 1} in this window
         </p>
       </div>
 
       {/* Enrichment Activities */}
-      <div className="rounded-lg border border-emerald-200 bg-emerald-50 p-3">
+      <div className="rounded-lg border border-emerald-500/30 bg-[rgba(16,185,129,0.1)] p-3">
         <div className="flex items-center justify-between mb-2">
-          <p className="text-sm font-semibold text-emerald-900">Enrichment Activities</p>
+          <p className="text-sm font-semibold text-emerald-300">Enrichment Activities</p>
           <span
             className={`text-sm font-bold ${getEnrichmentStatusColor(
               enrichmentActivitiesCompleted,
@@ -152,13 +152,13 @@ const CurrentMilestonePanel: React.FC<CurrentMilestonePanelProps> = ({
             {enrichmentActivitiesCompleted} / {totalEnrichmentActivities}
           </span>
         </div>
-        <div className="w-full bg-emerald-200 rounded-full h-2">
+        <div className="w-full bg-[rgba(15,35,70,0.5)] rounded-full h-2">
           <div
-            className="h-full bg-emerald-600 rounded-full transition-all"
+            className="h-full bg-emerald-500 rounded-full transition-all"
             style={{ width: `${enrichmentPercentage}%` }}
           />
         </div>
-        <p className="text-xs text-emerald-700 mt-2">
+        <p className="text-xs text-emerald-300 mt-2">
           {enrichmentPercentage >= 80
             ? '🌟 Excellent progress! Keep up the great care.'
             : enrichmentPercentage >= 60
@@ -170,9 +170,9 @@ const CurrentMilestonePanel: React.FC<CurrentMilestonePanelProps> = ({
       </div>
 
       {/* Guidance */}
-      <div className="mt-4 rounded-lg bg-amber-50 border border-amber-200 p-3">
-        <p className="text-xs font-semibold text-amber-900 mb-1">💡 Care Tip</p>
-        <p className="text-xs text-amber-800">
+      <div className="mt-4 rounded-lg bg-[rgba(212,168,67,0.1)] border border-amber-500/30 p-3">
+        <p className="text-xs font-semibold text-amber-300 mb-1">💡 Care Tip</p>
+        <p className="text-xs text-amber-200">
           {daysRemaining <= 2
             ? 'Milestone evaluation is approaching! Complete any remaining enrichment activities.'
             : progress < 50

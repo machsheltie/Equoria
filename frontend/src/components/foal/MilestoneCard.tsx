@@ -24,12 +24,12 @@ export interface MilestoneCardProps {
  */
 function getStatusIcon(status: string, isCurrent: boolean) {
   if (status === 'completed') {
-    return <CheckCircle className="h-5 w-5 text-green-600" />;
+    return <CheckCircle className="h-5 w-5 text-emerald-400" />;
   }
   if (isCurrent) {
-    return <Target className="h-5 w-5 text-blue-600" />;
+    return <Target className="h-5 w-5 text-blue-400" />;
   }
-  return <Clock className="h-5 w-5 text-gray-400" />;
+  return <Clock className="h-5 w-5 text-[rgb(148,163,184)]" />;
 }
 
 /**
@@ -46,12 +46,12 @@ function getStatusLabel(status: string, isCurrent: boolean): string {
  */
 function formatScore(score: number): { text: string; color: string } {
   const prefix = score > 0 ? '+' : '';
-  let color = 'text-gray-600';
+  let color = 'text-[rgb(148,163,184)]';
 
-  if (score >= 5) color = 'text-green-600';
-  else if (score >= 0) color = 'text-blue-600';
-  else if (score >= -5) color = 'text-amber-600';
-  else color = 'text-red-600';
+  if (score >= 5) color = 'text-emerald-400';
+  else if (score >= 0) color = 'text-blue-400';
+  else if (score >= -5) color = 'text-amber-400';
+  else color = 'text-red-400';
 
   return {
     text: `${prefix}${score}`,
@@ -76,9 +76,9 @@ const MilestoneCard: React.FC<MilestoneCardProps> = ({
   // Card styling based on status
   const cardClasses = `
     rounded-lg border p-4 transition-all duration-200
-    ${isCurrent ? 'border-blue-500 bg-blue-50 ring-2 ring-blue-500' : 'border-slate-200 bg-white'}
-    ${isCompleted ? 'bg-green-50/50 border-green-200' : ''}
-    ${isPending ? 'bg-gray-50/50 border-gray-200 opacity-80' : ''}
+    ${isCurrent ? 'border-blue-500/50 bg-[rgba(37,99,235,0.15)] ring-2 ring-blue-500/40' : 'border-[rgba(37,99,235,0.3)] bg-[rgba(15,35,70,0.4)]'}
+    ${isCompleted ? 'bg-[rgba(16,185,129,0.08)] border-emerald-500/30' : ''}
+    ${isPending ? 'bg-[rgba(15,35,70,0.3)] border-[rgba(37,99,235,0.2)] opacity-80' : ''}
     ${onClick ? 'cursor-pointer hover:shadow-md' : ''}
   `;
 
@@ -92,27 +92,27 @@ const MilestoneCard: React.FC<MilestoneCardProps> = ({
 
           {/* Milestone Info */}
           <div className="flex-1 min-w-0">
-            <h4 className="font-semibold text-slate-900 text-sm">{name}</h4>
-            <p className="text-xs text-slate-600 mt-1">
+            <h4 className="font-semibold text-[rgb(220,235,255)] text-sm">{name}</h4>
+            <p className="text-xs text-[rgb(148,163,184)] mt-1">
               Age Window: Days {ageWindow.min}-{ageWindow.max}
             </p>
-            <p className="text-xs font-medium text-slate-700 mt-1">
+            <p className="text-xs font-medium text-[rgb(220,235,255)] mt-1">
               {getStatusLabel(status, isCurrent)}
             </p>
           </div>
 
           {/* Arrow icon for clickable cards */}
-          {onClick && <ChevronRight className="h-5 w-5 text-slate-400 flex-shrink-0" />}
+          {onClick && <ChevronRight className="h-5 w-5 text-[rgb(148,163,184)] flex-shrink-0" />}
         </div>
       </div>
 
       {/* Description */}
-      {description && <p className="text-sm text-slate-600 mt-2 ml-8">{description}</p>}
+      {description && <p className="text-sm text-[rgb(148,163,184)] mt-2 ml-8">{description}</p>}
 
       {/* Focus area */}
       {milestone.focus && (
         <div className="mt-2 ml-8">
-          <p className="text-xs text-slate-500">
+          <p className="text-xs text-[rgb(148,163,184)]">
             <span className="font-medium">Focus:</span> {milestone.focus}
           </p>
         </div>
@@ -124,8 +124,8 @@ const MilestoneCard: React.FC<MilestoneCardProps> = ({
           {/* Evaluation score */}
           {score !== undefined && (
             <div className="flex items-center gap-2">
-              <Award className="h-4 w-4 text-amber-500" />
-              <span className="text-xs text-slate-600">Score:</span>
+              <Award className="h-4 w-4 text-amber-400" />
+              <span className="text-xs text-[rgb(148,163,184)]">Score:</span>
               <span className={`text-sm font-bold ${formatScore(score).color}`}>
                 {formatScore(score).text}
               </span>
@@ -135,12 +135,12 @@ const MilestoneCard: React.FC<MilestoneCardProps> = ({
           {/* Traits confirmed */}
           {traitsConfirmed && traitsConfirmed.length > 0 && (
             <div>
-              <p className="text-xs text-slate-600 mb-1">Traits Confirmed:</p>
+              <p className="text-xs text-[rgb(148,163,184)] mb-1">Traits Confirmed:</p>
               <div className="flex flex-wrap gap-1">
                 {traitsConfirmed.map((trait, index) => (
                   <span
                     key={index}
-                    className="inline-block px-2 py-0.5 text-xs font-medium bg-green-100 text-green-700 rounded"
+                    className="inline-block px-2 py-0.5 text-xs font-medium bg-[rgba(16,185,129,0.15)] text-emerald-400 rounded"
                   >
                     {trait}
                   </span>
@@ -154,8 +154,8 @@ const MilestoneCard: React.FC<MilestoneCardProps> = ({
       {/* Pending milestone info */}
       {isPending && daysUntil > 0 && (
         <div className="mt-2 ml-8">
-          <p className="text-xs text-slate-600">
-            Begins in: <span className="font-medium text-slate-900">{daysUntil} days</span>
+          <p className="text-xs text-[rgb(148,163,184)]">
+            Begins in: <span className="font-medium text-[rgb(220,235,255)]">{daysUntil} days</span>
           </p>
         </div>
       )}
@@ -164,14 +164,14 @@ const MilestoneCard: React.FC<MilestoneCardProps> = ({
       {isCurrent && (
         <div className="mt-3 ml-8">
           <div className="flex items-center justify-between text-xs mb-1">
-            <span className="text-slate-600">Progress in window:</span>
-            <span className="font-medium text-blue-600">
+            <span className="text-[rgb(148,163,184)]">Progress in window:</span>
+            <span className="font-medium text-blue-400">
               Day {foalAge} of {ageWindow.max}
             </span>
           </div>
-          <div className="w-full bg-blue-200 rounded-full h-1.5">
+          <div className="w-full bg-[rgba(37,99,235,0.2)] rounded-full h-1.5">
             <div
-              className="h-full bg-blue-600 rounded-full transition-all"
+              className="h-full bg-blue-500 rounded-full transition-all"
               style={{
                 width: `${Math.min(
                   100,

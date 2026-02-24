@@ -38,22 +38,22 @@ function getStatusInfo(status: 'completed' | 'current' | 'pending') {
     case 'completed':
       return {
         icon: CheckCircle,
-        color: 'text-green-600',
-        bg: 'bg-green-50',
+        color: 'text-emerald-400',
+        bg: 'bg-[rgba(16,185,129,0.1)]',
         label: 'Completed',
       };
     case 'current':
       return {
         icon: Target,
-        color: 'text-blue-600',
-        bg: 'bg-blue-50',
+        color: 'text-blue-400',
+        bg: 'bg-[rgba(37,99,235,0.1)]',
         label: 'In Progress',
       };
     case 'pending':
       return {
         icon: Clock,
-        color: 'text-gray-600',
-        bg: 'bg-gray-50',
+        color: 'text-[rgb(148,163,184)]',
+        bg: 'bg-[rgba(15,35,70,0.3)]',
         label: 'Upcoming',
       };
   }
@@ -76,12 +76,12 @@ const MilestoneTooltip: React.FC<MilestoneTooltipProps> = ({ active, payload }) 
   const StatusIcon = statusInfo.icon;
 
   return (
-    <div className="bg-white border border-gray-200 rounded-lg p-4 shadow-lg max-w-xs">
+    <div className="bg-[rgba(15,35,70,0.95)] border border-[rgba(37,99,235,0.3)] rounded-lg p-4 shadow-lg max-w-xs">
       {/* Header with status */}
       <div className="flex items-center gap-2 mb-2">
         <StatusIcon className={`h-5 w-5 ${statusInfo.color}`} />
         <div className="flex-1">
-          <p className="font-semibold text-slate-900 text-sm">{name}</p>
+          <p className="font-semibold text-[rgb(220,235,255)] text-sm">{name}</p>
           <p className={`text-xs font-medium ${statusInfo.color}`}>{statusInfo.label}</p>
         </div>
       </div>
@@ -90,25 +90,25 @@ const MilestoneTooltip: React.FC<MilestoneTooltipProps> = ({ active, payload }) 
       <div className="space-y-2 mt-3">
         {/* Age */}
         <div className="flex items-center justify-between text-xs">
-          <span className="text-slate-600">Age Window:</span>
-          <span className="font-medium text-slate-900">Day {ageDay}+</span>
+          <span className="text-[rgb(148,163,184)]">Age Window:</span>
+          <span className="font-medium text-[rgb(220,235,255)]">Day {ageDay}+</span>
         </div>
 
         {/* Progress */}
         <div className="flex items-center justify-between text-xs">
-          <span className="text-slate-600">Progress:</span>
-          <span className="font-medium text-slate-900">{progress}%</span>
+          <span className="text-[rgb(148,163,184)]">Progress:</span>
+          <span className="font-medium text-[rgb(220,235,255)]">{progress}%</span>
         </div>
 
         {/* Progress bar */}
-        <div className="w-full bg-gray-200 rounded-full h-1.5 mt-1">
+        <div className="w-full bg-[rgba(15,35,70,0.5)] rounded-full h-1.5 mt-1">
           <div
             className={`h-full rounded-full transition-all ${
               status === 'completed'
                 ? 'bg-green-500'
                 : status === 'current'
                   ? 'bg-blue-500'
-                  : 'bg-gray-400'
+                  : 'bg-[rgb(148,163,184)]'
             }`}
             style={{ width: `${progress}%` }}
           />
@@ -116,11 +116,11 @@ const MilestoneTooltip: React.FC<MilestoneTooltipProps> = ({ active, payload }) 
 
         {/* Score (if completed) */}
         {status === 'completed' && score !== undefined && (
-          <div className="flex items-center justify-between text-xs mt-2 pt-2 border-t border-gray-200">
-            <span className="text-slate-600">Evaluation Score:</span>
+          <div className="flex items-center justify-between text-xs mt-2 pt-2 border-t border-[rgba(37,99,235,0.3)]">
+            <span className="text-[rgb(148,163,184)]">Evaluation Score:</span>
             <span
               className={`font-semibold ${
-                score >= 5 ? 'text-green-600' : score >= 0 ? 'text-blue-600' : 'text-amber-600'
+                score >= 5 ? 'text-emerald-400' : score >= 0 ? 'text-blue-400' : 'text-amber-400'
               }`}
             >
               {score > 0 ? '+' : ''}
@@ -131,13 +131,13 @@ const MilestoneTooltip: React.FC<MilestoneTooltipProps> = ({ active, payload }) 
 
         {/* Traits confirmed */}
         {traits.length > 0 && (
-          <div className="mt-2 pt-2 border-t border-gray-200">
-            <p className="text-xs font-medium text-slate-700 mb-1">Traits Confirmed:</p>
+          <div className="mt-2 pt-2 border-t border-[rgba(37,99,235,0.3)]">
+            <p className="text-xs font-medium text-[rgb(220,235,255)] mb-1">Traits Confirmed:</p>
             <div className="flex flex-wrap gap-1">
               {traits.map((trait, index) => (
                 <span
                   key={index}
-                  className="inline-block px-2 py-0.5 text-xs font-medium bg-green-100 text-green-700 rounded"
+                  className="inline-block px-2 py-0.5 text-xs font-medium bg-[rgba(16,185,129,0.15)] text-emerald-400 rounded"
                 >
                   {trait}
                 </span>

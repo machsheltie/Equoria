@@ -144,7 +144,7 @@ const UserDashboard: React.FC<UserDashboardProps> = ({
         {/* Header Section */}
         <div className="flex flex-col lg:flex-row lg:items-end lg:justify-between mb-8 pb-6 border-b border-white/10">
           <div>
-            <h1 className="text-5xl font-heading font-bold text-transparent bg-clip-text bg-gradient-to-r from-starlight-white to-gray-400 mb-2 drop-shadow-md">
+            <h1 className="text-5xl font-heading font-bold text-transparent bg-clip-text bg-gradient-to-r from-starlight-white to-[rgb(100,130,165)] mb-2 drop-shadow-md">
               Welcome, {dashboardData?.user.username}
             </h1>
             <div className="flex items-center space-x-6 text-sm text-starlight-white/70 font-body tracking-wider">

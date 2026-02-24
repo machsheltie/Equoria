@@ -115,33 +115,33 @@ const TrainingRecommendations = ({ horseId }: TrainingRecommendationsProps) => {
       case 'too young':
         return {
           text: 'Too young for intensive training. Wait before training starts.',
-          color: 'text-amber-700',
+          color: 'text-amber-400',
         };
       case 'prime':
         return {
           text: 'Prime training window - best time to train for maximum gains!',
-          color: 'text-emerald-700',
+          color: 'text-emerald-400',
         };
       case 'maintenance':
         return {
           text: 'Maintenance training - maintain current level and preserve stats.',
-          color: 'text-blue-700',
+          color: 'text-blue-400',
         };
       case 'senior':
         return {
           text: 'Senior horse - limited training capacity, gentle exercise only.',
-          color: 'text-slate-700',
+          color: 'text-[rgb(148,163,184)]',
         };
       default:
-        return { text: '', color: 'text-slate-700' };
+        return { text: '', color: 'text-[rgb(148,163,184)]' };
     }
   };
 
   // Loading state
   if (isLoading) {
     return (
-      <div className="rounded-lg border border-slate-200 bg-white p-6 shadow-sm">
-        <div className="text-center text-sm text-slate-600">
+      <div className="rounded-lg border border-[rgba(37,99,235,0.3)] bg-[rgba(15,35,70,0.5)] p-6 shadow-sm">
+        <div className="text-center text-sm text-[rgb(148,163,184)]">
           Loading training recommendations...
         </div>
       </div>
@@ -151,12 +151,12 @@ const TrainingRecommendations = ({ horseId }: TrainingRecommendationsProps) => {
   // Error state
   if (isError || !statsData) {
     return (
-      <div className="rounded-lg border border-rose-200 bg-rose-50 p-6 shadow-sm">
+      <div className="rounded-lg border border-rose-500/30 bg-[rgba(239,68,68,0.1)] p-6 shadow-sm">
         <div className="flex items-start gap-3">
-          <AlertCircle className="h-5 w-5 text-rose-600 mt-0.5" aria-hidden="true" />
+          <AlertCircle className="h-5 w-5 text-rose-400 mt-0.5" aria-hidden="true" />
           <div className="flex-1">
-            <p className="text-sm font-semibold text-rose-900">Error Loading Recommendations</p>
-            <p className="text-sm text-rose-700 mt-1">
+            <p className="text-sm font-semibold text-rose-300">Error Loading Recommendations</p>
+            <p className="text-sm text-rose-400 mt-1">
               {error?.message || 'Failed to fetch training recommendations'}
             </p>
             <button
@@ -179,15 +179,17 @@ const TrainingRecommendations = ({ horseId }: TrainingRecommendationsProps) => {
     return (
       <div
         data-testid="training-recommendations"
-        className="w-full rounded-lg border border-slate-200 bg-white p-6 shadow-sm"
+        className="w-full rounded-lg border border-[rgba(37,99,235,0.3)] bg-[rgba(15,35,70,0.5)] p-6 shadow-sm"
       >
         <div className="flex items-center gap-2 mb-4">
-          <Target className="h-5 w-5 text-emerald-600" aria-hidden="true" />
-          <h3 className="text-lg font-semibold text-slate-900">Training Recommendations</h3>
+          <Target className="h-5 w-5 text-emerald-400" aria-hidden="true" />
+          <h3 className="text-lg font-semibold text-[rgb(220,235,255)]">
+            Training Recommendations
+          </h3>
         </div>
 
-        <div className="rounded-md bg-emerald-50 border border-emerald-200 p-4">
-          <p className="text-sm text-emerald-800">
+        <div className="rounded-md bg-[rgba(16,185,129,0.1)] border border-emerald-500/30 p-4">
+          <p className="text-sm text-emerald-400">
             {statsData.horseName} has reached maximum potential - fully trained! No recommendations
             needed. Continue maintenance training to preserve current abilities.
           </p>
@@ -195,11 +197,11 @@ const TrainingRecommendations = ({ horseId }: TrainingRecommendationsProps) => {
 
         {/* Training Window */}
         {trainingWindowInfo.text && (
-          <div className="mt-4 rounded-md bg-slate-50 border border-slate-200 p-4">
+          <div className="mt-4 rounded-md bg-[rgba(15,35,70,0.3)] border border-[rgba(37,99,235,0.3)] p-4">
             <p className={`text-sm font-semibold ${trainingWindowInfo.color}`}>
               Training Window: {statsData.trainingWindow}
             </p>
-            <p className="text-sm text-slate-700 mt-1">{trainingWindowInfo.text}</p>
+            <p className="text-sm text-[rgb(220,235,255)] mt-1">{trainingWindowInfo.text}</p>
           </div>
         )}
       </div>
@@ -209,18 +211,20 @@ const TrainingRecommendations = ({ horseId }: TrainingRecommendationsProps) => {
   return (
     <div
       data-testid="training-recommendations"
-      className="w-full rounded-lg border border-slate-200 bg-white p-6 shadow-sm"
+      className="w-full rounded-lg border border-[rgba(37,99,235,0.3)] bg-[rgba(15,35,70,0.5)] p-6 shadow-sm"
     >
       {/* Header */}
       <div className="mb-4">
         <div className="flex items-center justify-between">
           <div className="flex items-center gap-2">
-            <Target className="h-5 w-5 text-blue-600" aria-hidden="true" />
-            <h3 className="text-lg font-semibold text-slate-900">Training Recommendations</h3>
+            <Target className="h-5 w-5 text-blue-400" aria-hidden="true" />
+            <h3 className="text-lg font-semibold text-[rgb(220,235,255)]">
+              Training Recommendations
+            </h3>
           </div>
           <button
             onClick={() => setShowDetails(!showDetails)}
-            className="text-sm text-blue-600 hover:text-blue-700 flex items-center gap-1"
+            className="text-sm text-blue-400 hover:text-blue-300 flex items-center gap-1"
             aria-label={showDetails ? 'Hide details' : 'Show more'}
             aria-expanded={showDetails}
           >
@@ -235,7 +239,7 @@ const TrainingRecommendations = ({ horseId }: TrainingRecommendationsProps) => {
             )}
           </button>
         </div>
-        <div className="mt-2 flex items-center gap-4 text-sm text-slate-600">
+        <div className="mt-2 flex items-center gap-4 text-sm text-[rgb(148,163,184)]">
           <span className="font-semibold">{statsData.horseName}</span>
           <span>•</span>
           <span>
@@ -249,16 +253,16 @@ const TrainingRecommendations = ({ horseId }: TrainingRecommendationsProps) => {
         <div
           className={`mb-4 rounded-md p-4 ${
             statsData.trainingWindow === 'prime'
-              ? 'bg-emerald-50 border border-emerald-200'
+              ? 'bg-[rgba(16,185,129,0.1)] border border-emerald-500/30'
               : statsData.trainingWindow === 'too young'
-                ? 'bg-amber-50 border border-amber-200'
-                : 'bg-slate-50 border border-slate-200'
+                ? 'bg-[rgba(212,168,67,0.1)] border border-amber-500/30'
+                : 'bg-[rgba(15,35,70,0.3)] border border-[rgba(37,99,235,0.3)]'
           }`}
         >
           <p className={`text-sm font-semibold ${trainingWindowInfo.color}`}>
             Training Window: {statsData.trainingWindow}
           </p>
-          <p className="text-sm text-slate-700 mt-1">{trainingWindowInfo.text}</p>
+          <p className="text-sm text-[rgb(220,235,255)] mt-1">{trainingWindowInfo.text}</p>
         </div>
       )}
 
@@ -267,21 +271,21 @@ const TrainingRecommendations = ({ horseId }: TrainingRecommendationsProps) => {
         {recommendations.map((rec) => {
           const priorityStyles = {
             high: {
-              bg: 'bg-rose-50',
-              border: 'border-rose-200',
-              text: 'text-rose-900',
+              bg: 'bg-[rgba(239,68,68,0.1)]',
+              border: 'border-red-500/30',
+              text: 'text-red-300',
               badge: 'bg-rose-600 text-white',
             },
             medium: {
-              bg: 'bg-amber-50',
-              border: 'border-amber-200',
-              text: 'text-amber-900',
+              bg: 'bg-[rgba(212,168,67,0.1)]',
+              border: 'border-amber-500/30',
+              text: 'text-amber-300',
               badge: 'bg-amber-600 text-white',
             },
             low: {
-              bg: 'bg-blue-50',
-              border: 'border-blue-200',
-              text: 'text-blue-900',
+              bg: 'bg-[rgba(37,99,235,0.1)]',
+              border: 'border-blue-500/30',
+              text: 'text-blue-300',
               badge: 'bg-blue-600 text-white',
             },
           };
@@ -303,17 +307,20 @@ const TrainingRecommendations = ({ horseId }: TrainingRecommendationsProps) => {
                     {rec.priority} priority
                   </span>
                 </div>
-                <span className="text-sm text-slate-600">
+                <span className="text-sm text-[rgb(148,163,184)]">
                   {rec.currentValue}/{rec.potentialValue} (+{rec.gap})
                 </span>
               </div>
 
               <div className="mt-3 space-y-2">
-                <p className="text-xs font-semibold text-slate-700">Suggested Training:</p>
+                <p className="text-xs font-semibold text-[rgb(148,163,184)]">Suggested Training:</p>
                 <ul className="space-y-1">
                   {rec.suggestions.map((suggestion, idx) => (
-                    <li key={idx} className="text-xs text-slate-700 flex items-start gap-2">
-                      <span className="text-blue-600">•</span>
+                    <li
+                      key={idx}
+                      className="text-xs text-[rgb(220,235,255)] flex items-start gap-2"
+                    >
+                      <span className="text-blue-400">•</span>
                       <span>{suggestion}</span>
                     </li>
                   ))}
@@ -326,9 +333,9 @@ const TrainingRecommendations = ({ horseId }: TrainingRecommendationsProps) => {
 
       {/* Discipline-Specific Recommendations */}
       {statsData.discipline && statsData.discipline.toLowerCase() === 'racing' && (
-        <div className="mt-6 rounded-md bg-blue-50 border border-blue-200 p-4">
-          <p className="text-sm font-semibold text-blue-900">Racing Focus - Ideal for Racing</p>
-          <p className="text-xs text-blue-700 mt-1">
+        <div className="mt-6 rounded-md bg-[rgba(37,99,235,0.1)] border border-blue-500/30 p-4">
+          <p className="text-sm font-semibold text-blue-300">Racing Focus - Ideal for Racing</p>
+          <p className="text-xs text-blue-400 mt-1">
             This horse has excellent racing potential. Focus on developing acceleration and
             endurance for optimal race performance.
           </p>
@@ -337,12 +344,12 @@ const TrainingRecommendations = ({ horseId }: TrainingRecommendationsProps) => {
 
       {/* Detailed Training Plan (Expandable) */}
       {showDetails && recommendations.length > 0 && (
-        <div className="mt-6 rounded-md bg-indigo-50 border border-indigo-200 p-4">
-          <p className="text-sm font-semibold text-indigo-900 mb-2">Detailed Training Plan</p>
-          <p className="text-xs text-indigo-700 mb-3">
+        <div className="mt-6 rounded-md bg-[rgba(37,99,235,0.1)] border border-blue-500/30 p-4">
+          <p className="text-sm font-semibold text-blue-300 mb-2">Detailed Training Plan</p>
+          <p className="text-xs text-blue-400 mb-3">
             Follow this training schedule for optimal stat development:
           </p>
-          <ul className="space-y-1 text-xs text-indigo-700">
+          <ul className="space-y-1 text-xs text-blue-400">
             <li>• Week 1-2: Focus on {recommendations[0]?.stat} (high priority)</li>
             <li>
               • Week 3-4: Continue {recommendations[0]?.stat}, add {recommendations[1]?.stat} work
@@ -355,9 +362,9 @@ const TrainingRecommendations = ({ horseId }: TrainingRecommendationsProps) => {
 
       {/* Action Footer */}
       {recommendations.length > 0 && (
-        <div className="mt-6 rounded-md bg-slate-50 border border-slate-200 p-4">
-          <p className="text-xs font-semibold text-slate-700 mb-2">Training Tips:</p>
-          <ul className="space-y-1 text-xs text-slate-600">
+        <div className="mt-6 rounded-md bg-[rgba(15,35,70,0.3)] border border-[rgba(37,99,235,0.3)] p-4">
+          <p className="text-xs font-semibold text-[rgb(148,163,184)] mb-2">Training Tips:</p>
+          <ul className="space-y-1 text-xs text-[rgb(148,163,184)]">
             <li>• Focus on high priority stats first for maximum improvement</li>
             <li>• Training effectiveness varies by age and training window</li>
             <li>• Consistent training yields better results than sporadic sessions</li>

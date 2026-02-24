@@ -44,8 +44,8 @@ const ConformationTab = ({ horseId, breedId }: ConformationTabProps) => {
         data-testid="conformation-loading"
       >
         <div className="text-center">
-          <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-blue-600 mx-auto mb-4" />
-          <p className="text-sm text-slate-600">Loading conformation scores...</p>
+          <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-blue-500 mx-auto mb-4" />
+          <p className="text-sm text-[rgb(148,163,184)]">Loading conformation scores...</p>
         </div>
       </div>
     );
@@ -55,14 +55,14 @@ const ConformationTab = ({ horseId, breedId }: ConformationTabProps) => {
   if (conformationError) {
     return (
       <div
-        className="w-full rounded-lg border border-rose-200 bg-rose-50 p-6"
+        className="w-full rounded-lg border border-rose-500/30 bg-[rgba(239,68,68,0.1)] p-6"
         data-testid="conformation-error"
       >
         <div className="flex items-start gap-3">
-          <AlertCircle className="h-5 w-5 text-rose-600 mt-0.5" aria-hidden="true" />
+          <AlertCircle className="h-5 w-5 text-rose-400 mt-0.5" aria-hidden="true" />
           <div className="flex-1">
-            <p className="text-sm font-semibold text-rose-900">Error Loading Conformation Data</p>
-            <p className="text-sm text-rose-700 mt-1">
+            <p className="text-sm font-semibold text-rose-300">Error Loading Conformation Data</p>
+            <p className="text-sm text-rose-400 mt-1">
               {conformationError.message || 'Failed to fetch conformation scores'}
             </p>
             <button
@@ -81,10 +81,12 @@ const ConformationTab = ({ horseId, breedId }: ConformationTabProps) => {
   if (!conformation) {
     return (
       <div
-        className="w-full rounded-lg border border-slate-200 bg-slate-50 p-6 text-center"
+        className="w-full rounded-lg border border-[rgba(37,99,235,0.3)] bg-[rgba(15,35,70,0.5)] p-6 text-center"
         data-testid="conformation-no-data"
       >
-        <p className="text-sm text-slate-600">No conformation data available for this horse.</p>
+        <p className="text-sm text-[rgb(148,163,184)]">
+          No conformation data available for this horse.
+        </p>
       </div>
     );
   }
@@ -107,20 +109,22 @@ const ConformationTab = ({ horseId, breedId }: ConformationTabProps) => {
       {/* Header with Comparison Toggle */}
       <div className="flex items-center justify-between">
         <div>
-          <h3 className="text-xl font-semibold text-slate-900">Conformation Scores</h3>
-          <p className="text-sm text-slate-600 mt-1">Physical assessment across 8 body regions</p>
+          <h3 className="text-xl font-semibold text-[rgb(220,235,255)]">Conformation Scores</h3>
+          <p className="text-sm text-[rgb(148,163,184)] mt-1">
+            Physical assessment across 8 body regions
+          </p>
         </div>
 
         {breedId && (
           <div className="flex items-center gap-2">
-            <label htmlFor="breed-comparison-toggle" className="text-sm text-slate-700">
+            <label htmlFor="breed-comparison-toggle" className="text-sm text-[rgb(148,163,184)]">
               Show breed comparison
             </label>
             <button
               id="breed-comparison-toggle"
               onClick={() => setShowComparison(!showComparison)}
               className={`relative inline-flex h-6 w-11 items-center rounded-full transition-colors ${
-                showComparison ? 'bg-blue-600' : 'bg-slate-300'
+                showComparison ? 'bg-blue-600' : 'bg-[rgba(37,99,235,0.3)]'
               }`}
               role="switch"
               aria-checked={showComparison}
@@ -128,7 +132,7 @@ const ConformationTab = ({ horseId, breedId }: ConformationTabProps) => {
               data-testid="breed-comparison-toggle"
             >
               <span
-                className={`inline-block h-4 w-4 transform rounded-full bg-white transition-transform ${
+                className={`inline-block h-4 w-4 transform rounded-full bg-[rgb(220,235,255)] transition-transform ${
                   showComparison ? 'translate-x-6' : 'translate-x-1'
                 }`}
               />
@@ -140,16 +144,16 @@ const ConformationTab = ({ horseId, breedId }: ConformationTabProps) => {
       {/* Breed Comparison Info Banner */}
       {canShowComparison && (
         <div
-          className="rounded-lg border border-blue-200 bg-blue-50 p-4"
+          className="rounded-lg border border-blue-500/30 bg-[rgba(37,99,235,0.1)] p-4"
           data-testid="breed-info-banner"
         >
           <div className="flex items-start gap-2">
-            <Info className="h-5 w-5 text-blue-600 mt-0.5" aria-hidden="true" />
+            <Info className="h-5 w-5 text-blue-400 mt-0.5" aria-hidden="true" />
             <div className="flex-1">
-              <p className="text-sm font-semibold text-blue-900">
+              <p className="text-sm font-semibold text-blue-300">
                 Comparing to {breedData.breedName} Breed Average
               </p>
-              <p className="text-xs text-blue-700 mt-1">
+              <p className="text-xs text-blue-400 mt-1">
                 Scores are compared to typical {breedData.breedName} horses to show relative
                 strengths and weaknesses.
               </p>
@@ -178,9 +182,11 @@ const ConformationTab = ({ horseId, breedId }: ConformationTabProps) => {
       </div>
 
       {/* Educational Footer */}
-      <div className="rounded-lg border border-slate-200 bg-slate-50 p-4">
-        <p className="text-xs font-semibold text-slate-700 mb-2">About Conformation Scoring:</p>
-        <ul className="space-y-1 text-xs text-slate-600">
+      <div className="rounded-lg border border-[rgba(37,99,235,0.3)] bg-[rgba(15,35,70,0.4)] p-4">
+        <p className="text-xs font-semibold text-[rgb(220,235,255)] mb-2">
+          About Conformation Scoring:
+        </p>
+        <ul className="space-y-1 text-xs text-[rgb(148,163,184)]">
           <li>
             • Conformation scores assess physical structure and balance across 8 key body regions
           </li>

@@ -34,8 +34,8 @@ const BreedingPairSelector: React.FC<BreedingPairSelectorProps> = ({ stallionId,
   // Loading state
   if (stallionLoading || mareLoading || predictionsLoading || inbreedingLoading) {
     return (
-      <div className="rounded-lg border border-slate-200 bg-white p-6 shadow-sm">
-        <p className="text-slate-600">Loading breeding data...</p>
+      <div className="rounded-lg border border-[rgba(37,99,235,0.2)] bg-[rgba(15,35,70,0.4)] p-6 shadow-sm">
+        <p className="text-[rgb(148,163,184)]">Loading breeding data...</p>
       </div>
     );
   }
@@ -43,8 +43,8 @@ const BreedingPairSelector: React.FC<BreedingPairSelectorProps> = ({ stallionId,
   // Error state
   if (stallionError || mareError) {
     return (
-      <div className="rounded-lg border border-red-200 bg-red-50 p-6 shadow-sm">
-        <p className="text-red-600">
+      <div className="rounded-lg border border-red-500/30 bg-[rgba(239,68,68,0.1)] p-6 shadow-sm">
+        <p className="text-red-400">
           {(stallionError as Error)?.message ||
             (mareError as Error)?.message ||
             'Failed to fetch breeding data'}
@@ -67,11 +67,11 @@ const BreedingPairSelector: React.FC<BreedingPairSelectorProps> = ({ stallionId,
     stallionData.temperamentInfluence?.temperament && mareData.temperamentInfluence?.temperament;
 
   return (
-    <div className="space-y-6 rounded-lg border border-slate-200 bg-white p-6 shadow-sm">
+    <div className="space-y-6 rounded-lg border border-[rgba(37,99,235,0.2)] bg-[rgba(15,35,70,0.4)] p-6 shadow-sm">
       {/* Header */}
       <div>
-        <h2 className="text-2xl font-bold text-slate-900">Breeding Pair Analysis</h2>
-        <p className="mt-1 text-sm text-slate-600">
+        <h2 className="text-2xl font-bold text-[rgb(220,235,255)]">Breeding Pair Analysis</h2>
+        <p className="mt-1 text-sm text-[rgb(148,163,184)]">
           Compare stallion and mare compatibility, view offspring predictions, and assess genetic
           risks.
         </p>
@@ -79,19 +79,22 @@ const BreedingPairSelector: React.FC<BreedingPairSelectorProps> = ({ stallionId,
 
       {/* Inbreeding Warning */}
       {showInbreedingWarning && (
-        <div role="alert" className="rounded-lg border border-amber-200 bg-amber-50 p-4">
-          <h3 className="text-lg font-semibold text-amber-900">Inbreeding Warning</h3>
+        <div
+          role="alert"
+          className="rounded-lg border border-amber-500/30 bg-[rgba(212,168,67,0.1)] p-4"
+        >
+          <h3 className="text-lg font-semibold text-[rgb(220,235,255)]">Inbreeding Warning</h3>
           <div className="mt-2 space-y-2">
-            <p className="text-sm font-medium text-amber-800">
+            <p className="text-sm font-medium text-amber-400">
               Coefficient: {Math.round(inbreedingAnalysis.inbreedingCoefficient * 100)}%
             </p>
             {inbreedingAnalysis.warnings.map((warning, index) => (
-              <p key={index} className="text-sm text-amber-700">
+              <p key={index} className="text-sm text-amber-400">
                 {warning}
               </p>
             ))}
             {inbreedingAnalysis.recommendations.map((recommendation, index) => (
-              <p key={index} className="text-sm font-medium text-amber-800">
+              <p key={index} className="text-sm font-medium text-amber-400">
                 • {recommendation}
               </p>
             ))}
@@ -102,28 +105,30 @@ const BreedingPairSelector: React.FC<BreedingPairSelectorProps> = ({ stallionId,
       {/* Side-by-side horse comparison */}
       <div className="grid gap-6 md:grid-cols-2">
         {/* Stallion */}
-        <div className="rounded-lg border border-blue-200 bg-blue-50 p-4">
-          <h3 className="text-lg font-semibold text-slate-900">{stallionData.horseName}</h3>
-          <p className="text-sm font-medium uppercase tracking-wide text-blue-600">Stallion</p>
+        <div className="rounded-lg border border-blue-500/30 bg-[rgba(37,99,235,0.1)] p-4">
+          <h3 className="text-lg font-semibold text-[rgb(220,235,255)]">
+            {stallionData.horseName}
+          </h3>
+          <p className="text-sm font-medium uppercase tracking-wide text-blue-400">Stallion</p>
 
           <div className="mt-4 space-y-2">
             <div>
-              <p className="text-sm text-slate-600">Breeding Quality</p>
-              <p className="text-base font-medium capitalize text-slate-900">
+              <p className="text-sm text-[rgb(148,163,184)]">Breeding Quality</p>
+              <p className="text-base font-medium capitalize text-[rgb(220,235,255)]">
                 {stallionData.breedingQuality}
               </p>
             </div>
 
             <div>
-              <p className="text-sm text-slate-600">Traits</p>
-              <p className="text-base font-medium text-slate-900">
+              <p className="text-sm text-[rgb(148,163,184)]">Traits</p>
+              <p className="text-base font-medium text-[rgb(220,235,255)]">
                 {stallionData.traitSummary.totalTraits} traits
               </p>
             </div>
 
             <div>
-              <p className="text-sm text-slate-600">Temperament</p>
-              <p className="text-base font-medium capitalize text-slate-900">
+              <p className="text-sm text-[rgb(148,163,184)]">Temperament</p>
+              <p className="text-base font-medium capitalize text-[rgb(220,235,255)]">
                 {stallionData.temperamentInfluence?.temperament || 'Unknown'}
               </p>
             </div>
@@ -131,28 +136,28 @@ const BreedingPairSelector: React.FC<BreedingPairSelectorProps> = ({ stallionId,
         </div>
 
         {/* Mare */}
-        <div className="rounded-lg border border-pink-200 bg-pink-50 p-4">
-          <h3 className="text-lg font-semibold text-slate-900">{mareData.horseName}</h3>
-          <p className="text-sm font-medium uppercase tracking-wide text-pink-600">Mare</p>
+        <div className="rounded-lg border border-purple-500/30 bg-[rgba(147,51,234,0.1)] p-4">
+          <h3 className="text-lg font-semibold text-[rgb(220,235,255)]">{mareData.horseName}</h3>
+          <p className="text-sm font-medium uppercase tracking-wide text-purple-400">Mare</p>
 
           <div className="mt-4 space-y-2">
             <div>
-              <p className="text-sm text-slate-600">Breeding Quality</p>
-              <p className="text-base font-medium capitalize text-slate-900">
+              <p className="text-sm text-[rgb(148,163,184)]">Breeding Quality</p>
+              <p className="text-base font-medium capitalize text-[rgb(220,235,255)]">
                 {mareData.breedingQuality}
               </p>
             </div>
 
             <div>
-              <p className="text-sm text-slate-600">Traits</p>
-              <p className="text-base font-medium text-slate-900">
+              <p className="text-sm text-[rgb(148,163,184)]">Traits</p>
+              <p className="text-base font-medium text-[rgb(220,235,255)]">
                 {mareData.traitSummary.totalTraits} traits
               </p>
             </div>
 
             <div>
-              <p className="text-sm text-slate-600">Temperament</p>
-              <p className="text-base font-medium capitalize text-slate-900">
+              <p className="text-sm text-[rgb(148,163,184)]">Temperament</p>
+              <p className="text-base font-medium capitalize text-[rgb(220,235,255)]">
                 {mareData.temperamentInfluence?.temperament || 'Unknown'}
               </p>
             </div>
@@ -162,45 +167,49 @@ const BreedingPairSelector: React.FC<BreedingPairSelectorProps> = ({ stallionId,
 
       {/* Temperament Compatibility */}
       {isTemperamentCompatible && (
-        <div className="rounded-lg border border-green-200 bg-green-50 p-3">
-          <p className="text-sm font-medium text-green-800">✓ Compatible temperaments</p>
+        <div className="rounded-lg border border-emerald-500/30 bg-[rgba(16,185,129,0.1)] p-3">
+          <p className="text-sm font-medium text-emerald-400">✓ Compatible temperaments</p>
         </div>
       )}
 
       {/* Offspring Predictions */}
       {predictions && (
-        <div className="rounded-lg border border-slate-200 bg-slate-50 p-4">
-          <h3 className="text-lg font-semibold text-slate-900">Offspring Predictions</h3>
+        <div className="rounded-lg border border-[rgba(37,99,235,0.2)] bg-[rgba(15,35,70,0.5)] p-4">
+          <h3 className="text-lg font-semibold text-[rgb(220,235,255)]">Offspring Predictions</h3>
 
           <div className="mt-4 space-y-4">
             {/* Predicted trait count */}
             <div>
-              <p className="text-sm text-slate-600">Predicted Traits</p>
-              <p className="text-2xl font-bold text-slate-900">
+              <p className="text-sm text-[rgb(148,163,184)]">Predicted Traits</p>
+              <p className="text-2xl font-bold text-[rgb(220,235,255)]">
                 {predictions.estimatedTraitCount.expected}
               </p>
-              <p className="text-xs text-slate-500">
+              <p className="text-xs text-[rgb(148,163,184)]">
                 Range: {predictions.estimatedTraitCount.min} - {predictions.estimatedTraitCount.max}
               </p>
             </div>
 
             {/* Confidence level */}
             <div>
-              <p className="text-sm text-slate-600">Confidence</p>
-              <p className="text-base font-medium capitalize text-slate-900">
+              <p className="text-sm text-[rgb(148,163,184)]">Confidence</p>
+              <p className="text-base font-medium capitalize text-[rgb(220,235,255)]">
                 {predictions.confidenceLevel} confidence
               </p>
             </div>
 
             {/* Category probabilities */}
             <div>
-              <p className="text-sm font-medium text-slate-700 mb-2">Category Probabilities</p>
+              <p className="text-sm font-medium text-[rgb(220,235,255)] mb-2">
+                Category Probabilities
+              </p>
               <div className="grid grid-cols-2 gap-2">
                 {Object.entries(predictions.categoryProbabilities).map(
                   ([category, probability]) => (
                     <div key={category} className="flex justify-between text-sm">
-                      <span className="capitalize text-slate-600">{category}</span>
-                      <span className="font-medium text-slate-900">{probability as number}%</span>
+                      <span className="capitalize text-[rgb(148,163,184)]">{category}</span>
+                      <span className="font-medium text-[rgb(220,235,255)]">
+                        {probability as number}%
+                      </span>
                     </div>
                   )
                 )}

@@ -89,28 +89,32 @@ const HorseCard = ({ horse, onTrainClick }: HorseCardProps): JSX.Element => {
   return (
     <div
       data-testid={`horse-card-${horse.id}`}
-      className="flex flex-col justify-between rounded-lg border border-slate-200 bg-white p-4 shadow-sm"
+      className="flex flex-col justify-between glass-panel rounded-lg border border-[rgba(37,99,235,0.2)] p-4"
     >
       {/* Horse Header */}
       <div>
         <div className="flex items-start justify-between">
           <div>
-            <h4 className="text-lg font-semibold text-slate-900">{horse.name}</h4>
-            <p className="text-sm text-slate-600">Age: {horse.ageYears ?? 'Unknown'} years</p>
+            <h4 className="text-lg font-semibold text-[rgb(220,235,255)]">{horse.name}</h4>
+            <p className="text-sm text-[rgb(148,163,184)]">
+              Age: {horse.ageYears ?? 'Unknown'} years
+            </p>
           </div>
           {horse.level !== undefined && (
-            <span className="rounded bg-slate-100 px-2 py-1 text-xs font-medium text-slate-600">
+            <span className="rounded bg-[rgba(15,35,70,0.5)] px-2 py-1 text-xs font-medium text-[rgb(148,163,184)] border border-[rgba(37,99,235,0.2)]">
               Level {horse.level}
             </span>
           )}
         </div>
 
         {/* Breed Info */}
-        {horse.breed && <p className="mt-1 text-sm text-slate-500">{horse.breed}</p>}
+        {horse.breed && <p className="mt-1 text-sm text-[rgb(148,163,184)]">{horse.breed}</p>}
 
         {/* Best Disciplines */}
         {horse.bestDisciplines && horse.bestDisciplines.length > 0 && (
-          <p className="mt-1 text-xs text-slate-400">Best: {horse.bestDisciplines.join(', ')}</p>
+          <p className="mt-1 text-xs text-[rgb(148,163,184)]">
+            Best: {horse.bestDisciplines.join(', ')}
+          </p>
         )}
       </div>
 
@@ -196,6 +200,9 @@ const TrainingDashboard = ({ userId: userIdProp }: TrainingDashboardProps): JSX.
     // For direct navigation: navigate(`/horses/${horse.id}/training`);
   };
 
+  // Suppress unused variable warning for navigate - used for direct navigation pattern above
+  void navigate;
+
   // Handle filter change
   const handleFilterChange = (filter: EligibilityFilterType) => {
     setSelectedFilter(filter);
@@ -206,7 +213,7 @@ const TrainingDashboard = ({ userId: userIdProp }: TrainingDashboardProps): JSX.
     return (
       <div
         data-testid="loading-state"
-        className="text-center py-12 text-slate-600"
+        className="text-center py-12 text-[rgb(148,163,184)]"
         role="status"
         aria-label="Loading horses"
       >
@@ -218,7 +225,7 @@ const TrainingDashboard = ({ userId: userIdProp }: TrainingDashboardProps): JSX.
   // Error state
   if (isError) {
     return (
-      <div data-testid="error-state" className="text-center py-12 text-red-600" role="alert">
+      <div data-testid="error-state" className="text-center py-12 text-red-400" role="alert">
         Error loading horses: {error?.message || 'Unknown error'}
       </div>
     );
@@ -227,7 +234,7 @@ const TrainingDashboard = ({ userId: userIdProp }: TrainingDashboardProps): JSX.
   // Empty state (no horses at all)
   if (!horses || horses.length === 0) {
     return (
-      <div data-testid="empty-state" className="text-center py-12 text-slate-600">
+      <div data-testid="empty-state" className="text-center py-12 text-[rgb(148,163,184)]">
         No trainable horses found. Add horses to start training.
       </div>
     );
@@ -239,7 +246,9 @@ const TrainingDashboard = ({ userId: userIdProp }: TrainingDashboardProps): JSX.
       {/* Ready to Train Section */}
       {ready.length > 0 && (
         <section data-testid="section-ready" className="space-y-3">
-          <h3 className="text-lg font-semibold text-slate-900">Ready to Train ({ready.length})</h3>
+          <h3 className="text-lg font-semibold text-[rgb(220,235,255)]">
+            Ready to Train ({ready.length})
+          </h3>
           <div className="grid grid-cols-1 gap-4 md:grid-cols-2 lg:grid-cols-3">
             {ready.map((horse) => (
               <HorseCard key={horse.id} horse={horse} onTrainClick={handleTrainClick} />
@@ -251,7 +260,9 @@ const TrainingDashboard = ({ userId: userIdProp }: TrainingDashboardProps): JSX.
       {/* On Cooldown Section */}
       {cooldown.length > 0 && (
         <section data-testid="section-cooldown" className="space-y-3">
-          <h3 className="text-lg font-semibold text-slate-900">On Cooldown ({cooldown.length})</h3>
+          <h3 className="text-lg font-semibold text-[rgb(220,235,255)]">
+            On Cooldown ({cooldown.length})
+          </h3>
           <div className="grid grid-cols-1 gap-4 md:grid-cols-2 lg:grid-cols-3">
             {cooldown.map((horse) => (
               <HorseCard key={horse.id} horse={horse} onTrainClick={handleTrainClick} />
@@ -263,7 +274,9 @@ const TrainingDashboard = ({ userId: userIdProp }: TrainingDashboardProps): JSX.
       {/* Ineligible Section */}
       {ineligible.length > 0 && (
         <section data-testid="section-ineligible" className="space-y-3">
-          <h3 className="text-lg font-semibold text-slate-900">Ineligible ({ineligible.length})</h3>
+          <h3 className="text-lg font-semibold text-[rgb(220,235,255)]">
+            Ineligible ({ineligible.length})
+          </h3>
           <div className="grid grid-cols-1 gap-4 md:grid-cols-2 lg:grid-cols-3">
             {ineligible.map((horse) => (
               <HorseCard key={horse.id} horse={horse} onTrainClick={handleTrainClick} />
@@ -288,7 +301,7 @@ const TrainingDashboard = ({ userId: userIdProp }: TrainingDashboardProps): JSX.
       return (
         <div
           data-testid="empty-filtered-state"
-          className="rounded-lg border border-slate-200 bg-white p-6 text-center text-slate-600"
+          className="glass-panel rounded-lg border border-[rgba(37,99,235,0.2)] p-6 text-center text-[rgb(148,163,184)]"
         >
           No {filterLabels[selectedFilter]} horses found.
         </div>
@@ -312,15 +325,15 @@ const TrainingDashboard = ({ userId: userIdProp }: TrainingDashboardProps): JSX.
       {/* Header */}
       <div className="flex items-center justify-between">
         <div>
-          <h2 className="text-2xl font-bold text-slate-900">Training Dashboard</h2>
-          <p className="text-sm text-slate-600">
+          <h2 className="text-2xl font-bold text-[rgb(220,235,255)]">Training Dashboard</h2>
+          <p className="text-sm text-[rgb(148,163,184)]">
             Track readiness, start sessions, and review training progress.
           </p>
         </div>
         <button
           type="button"
           onClick={() => refetch()}
-          className="rounded-md border border-slate-200 px-3 py-2 text-sm font-semibold text-slate-700 shadow-sm hover:bg-slate-50 focus:outline-none focus:ring-2 focus:ring-slate-500 focus:ring-offset-2"
+          className="rounded-md border border-[rgba(37,99,235,0.3)] px-3 py-2 text-sm font-semibold text-[rgb(220,235,255)] hover:bg-[rgba(37,99,235,0.08)] focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-2"
         >
           Refresh
         </button>

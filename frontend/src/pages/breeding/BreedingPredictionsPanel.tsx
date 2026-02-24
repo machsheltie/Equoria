@@ -244,19 +244,19 @@ const BreedingPredictionsPanel: React.FC<BreedingPredictionsPanelProps> = ({ sir
   if (isLoading) {
     return (
       <div className="flex items-center justify-center py-12">
-        <div className="h-8 w-8 border-4 border-blue-600 border-t-transparent rounded-full animate-spin"></div>
+        <div className="h-8 w-8 border-4 border-blue-400 border-t-transparent rounded-full animate-spin"></div>
       </div>
     );
   }
 
   if (error) {
     return (
-      <div className="rounded-lg border border-red-200 bg-red-50 p-6">
+      <div className="rounded-lg border border-red-500/30 bg-[rgba(239,68,68,0.1)] p-6">
         <div className="flex items-start gap-3">
-          <AlertCircle className="h-5 w-5 text-red-600 flex-shrink-0 mt-0.5" />
+          <AlertCircle className="h-5 w-5 text-red-400 flex-shrink-0 mt-0.5" />
           <div>
-            <p className="font-semibold text-red-900">Error loading predictions</p>
-            <p className="text-sm text-red-700 mt-1">
+            <p className="font-semibold text-[rgb(220,235,255)]">Error loading predictions</p>
+            <p className="text-sm text-red-400 mt-1">
               {error instanceof Error ? error.message : 'An error occurred'}
             </p>
           </div>
@@ -272,17 +272,17 @@ const BreedingPredictionsPanel: React.FC<BreedingPredictionsPanelProps> = ({ sir
   return (
     <div className="space-y-6">
       {/* Header */}
-      <div className="rounded-lg border border-slate-200 bg-gradient-to-r from-blue-50 to-purple-50 p-6 shadow-sm">
+      <div className="rounded-lg border border-[rgba(37,99,235,0.2)] bg-[rgba(15,35,70,0.4)] p-6 shadow-sm">
         <div className="flex items-start justify-between">
           <div className="flex-1">
             <div className="flex items-center gap-2 mb-2">
-              <Sparkles className="h-6 w-6 text-blue-600" />
-              <h2 className="text-2xl font-bold text-slate-900">Breeding Predictions</h2>
+              <Sparkles className="h-6 w-6 text-blue-400" />
+              <h2 className="text-2xl font-bold text-[rgb(220,235,255)]">Breeding Predictions</h2>
             </div>
-            <p className="text-slate-700 font-medium">
+            <p className="text-[rgb(220,235,255)] font-medium">
               {sire.name} (Sire) × {dam.name} (Dam)
             </p>
-            <p className="text-sm text-slate-600 mt-1">
+            <p className="text-sm text-[rgb(148,163,184)] mt-1">
               Prediction Confidence:{' '}
               {predictions.confidence.level.charAt(0).toUpperCase() +
                 predictions.confidence.level.slice(1)}{' '}
@@ -292,7 +292,7 @@ const BreedingPredictionsPanel: React.FC<BreedingPredictionsPanelProps> = ({ sir
 
           <button
             onClick={handleRefresh}
-            className="flex items-center gap-2 px-4 py-2 text-sm font-medium text-blue-600 bg-white border border-blue-200 rounded-lg hover:bg-blue-50 transition-colors"
+            className="flex items-center gap-2 px-4 py-2 text-sm font-medium text-blue-400 bg-[rgba(15,35,70,0.4)] border border-blue-500/30 rounded-lg hover:bg-[rgba(37,99,235,0.1)] transition-colors"
             aria-label="Refresh predictions"
           >
             <RefreshCw className="h-4 w-4" />
@@ -302,8 +302,10 @@ const BreedingPredictionsPanel: React.FC<BreedingPredictionsPanelProps> = ({ sir
       </div>
 
       {/* Trait Inheritance Predictions */}
-      <div className="rounded-lg border border-slate-200 bg-white p-6 shadow-sm">
-        <h3 className="text-lg font-bold text-slate-900 mb-4">Trait Inheritance Predictions</h3>
+      <div className="rounded-lg border border-[rgba(37,99,235,0.2)] bg-[rgba(15,35,70,0.4)] p-6 shadow-sm">
+        <h3 className="text-lg font-bold text-[rgb(220,235,255)] mb-4">
+          Trait Inheritance Predictions
+        </h3>
         <div className="grid grid-cols-1 lg:grid-cols-2 gap-3">
           {predictions.traitPredictions.map((prediction) => (
             <TraitPredictionCard key={prediction.traitId} prediction={prediction} />
@@ -312,14 +314,16 @@ const BreedingPredictionsPanel: React.FC<BreedingPredictionsPanelProps> = ({ sir
       </div>
 
       {/* Ultra-Rare Trait Potential */}
-      <div className="rounded-lg border border-slate-200 bg-white p-6 shadow-sm">
-        <h3 className="text-lg font-bold text-slate-900 mb-4">Ultra-Rare Trait Potential</h3>
+      <div className="rounded-lg border border-[rgba(37,99,235,0.2)] bg-[rgba(15,35,70,0.4)] p-6 shadow-sm">
+        <h3 className="text-lg font-bold text-[rgb(220,235,255)] mb-4">
+          Ultra-Rare Trait Potential
+        </h3>
         <UltraRareTraitPanel traits={predictions.ultraRareTraits} />
       </div>
 
       {/* Breeding Insights */}
-      <div className="rounded-lg border border-slate-200 bg-white p-6 shadow-sm">
-        <h3 className="text-lg font-bold text-slate-900 mb-4">Breeding Insights</h3>
+      <div className="rounded-lg border border-[rgba(37,99,235,0.2)] bg-[rgba(15,35,70,0.4)] p-6 shadow-sm">
+        <h3 className="text-lg font-bold text-[rgb(220,235,255)] mb-4">Breeding Insights</h3>
         <BreedingInsightsCard insights={predictions.insights} />
       </div>
     </div>

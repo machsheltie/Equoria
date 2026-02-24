@@ -191,22 +191,22 @@ const CompetitionDetailModal = memo(function CompetitionDetailModal({
         aria-labelledby="competition-modal-title"
         aria-describedby="competition-modal-description"
         tabIndex={-1}
-        className="bg-white rounded-lg shadow-xl max-w-2xl w-full max-h-[90vh] overflow-y-auto focus:outline-none"
+        className="glass-panel rounded-lg shadow-xl max-w-2xl w-full max-h-[90vh] overflow-y-auto focus:outline-none"
         onClick={(e) => e.stopPropagation()}
         data-testid="competition-detail-modal"
       >
         {/* Header */}
-        <div className="flex items-start justify-between p-6 border-b border-gray-200">
+        <div className="flex items-start justify-between p-6 border-b border-[rgba(37,99,235,0.2)]">
           <div className="flex-1 pr-4">
             <h2
               id="competition-modal-title"
-              className="text-2xl font-bold text-gray-900 truncate"
+              className="text-2xl font-bold text-[rgb(220,235,255)] truncate"
               data-testid="competition-name"
             >
               {competition.name}
             </h2>
             <span
-              className="inline-block mt-2 px-3 py-1 bg-blue-100 text-blue-800 text-sm font-medium rounded-full"
+              className="inline-block mt-2 px-3 py-1 bg-[rgba(37,99,235,0.1)] text-blue-400 text-sm font-medium rounded-full border border-blue-500/30"
               data-testid="competition-discipline"
             >
               {competition.discipline}
@@ -216,7 +216,7 @@ const CompetitionDetailModal = memo(function CompetitionDetailModal({
             type="button"
             onClick={onClose}
             disabled={isSubmitting}
-            className="text-gray-400 hover:text-gray-600 transition-colors disabled:opacity-50 disabled:cursor-not-allowed p-1"
+            className="text-[rgb(148,163,184)] hover:text-[rgb(220,235,255)] transition-colors disabled:opacity-50 disabled:cursor-not-allowed p-1"
             aria-label="Close modal"
             data-testid="close-modal-button"
           >
@@ -230,7 +230,7 @@ const CompetitionDetailModal = memo(function CompetitionDetailModal({
           {competition.description && (
             <p
               id="competition-modal-description"
-              className="text-gray-600"
+              className="text-[rgb(148,163,184)]"
               data-testid="competition-description"
             >
               {competition.description}
@@ -246,36 +246,42 @@ const CompetitionDetailModal = memo(function CompetitionDetailModal({
           <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
             {/* Date */}
             <div
-              className="flex items-center space-x-3 p-3 bg-gray-50 rounded-lg"
+              className="flex items-center space-x-3 p-3 bg-[rgba(15,35,70,0.5)] rounded-lg"
               data-testid="competition-date"
             >
-              <Calendar className="h-5 w-5 text-gray-400" aria-hidden="true" />
+              <Calendar className="h-5 w-5 text-[rgb(148,163,184)]" aria-hidden="true" />
               <div>
-                <p className="text-xs text-gray-500 uppercase tracking-wider">Event Date</p>
-                <p className="text-gray-900 font-medium">{formatDate(competition.date)}</p>
+                <p className="text-xs text-[rgb(148,163,184)] uppercase tracking-wider">
+                  Event Date
+                </p>
+                <p className="text-[rgb(220,235,255)] font-medium">
+                  {formatDate(competition.date)}
+                </p>
               </div>
             </div>
 
             {/* Location */}
             {competition.location && (
-              <div className="flex items-center space-x-3 p-3 bg-gray-50 rounded-lg">
-                <Users className="h-5 w-5 text-gray-400" aria-hidden="true" />
+              <div className="flex items-center space-x-3 p-3 bg-[rgba(15,35,70,0.5)] rounded-lg">
+                <Users className="h-5 w-5 text-[rgb(148,163,184)]" aria-hidden="true" />
                 <div>
-                  <p className="text-xs text-gray-500 uppercase tracking-wider">Location</p>
-                  <p className="text-gray-900 font-medium">{competition.location}</p>
+                  <p className="text-xs text-[rgb(148,163,184)] uppercase tracking-wider">
+                    Location
+                  </p>
+                  <p className="text-[rgb(220,235,255)] font-medium">{competition.location}</p>
                 </div>
               </div>
             )}
 
             {/* Prize Pool */}
             <div
-              className="flex items-center space-x-3 p-3 bg-amber-50 rounded-lg"
+              className="flex items-center space-x-3 p-3 bg-[rgba(212,168,67,0.1)] rounded-lg"
               data-testid="competition-prize-pool"
             >
               <Trophy className="h-5 w-5 text-amber-500" aria-hidden="true" />
               <div>
-                <p className="text-xs text-amber-700 uppercase tracking-wider">Total Prize Pool</p>
-                <p className="text-amber-900 font-bold text-lg">
+                <p className="text-xs text-amber-400 uppercase tracking-wider">Total Prize Pool</p>
+                <p className="text-[rgb(220,235,255)] font-bold text-lg">
                   {formatCurrency(competition.prizePool)}
                 </p>
               </div>
@@ -283,13 +289,13 @@ const CompetitionDetailModal = memo(function CompetitionDetailModal({
 
             {/* Entry Fee */}
             <div
-              className="flex items-center space-x-3 p-3 bg-green-50 rounded-lg"
+              className="flex items-center space-x-3 p-3 bg-[rgba(16,185,129,0.1)] rounded-lg"
               data-testid="competition-entry-fee"
             >
               <DollarSign className="h-5 w-5 text-green-500" aria-hidden="true" />
               <div>
-                <p className="text-xs text-green-700 uppercase tracking-wider">Entry Fee</p>
-                <p className="text-green-900 font-bold text-lg">
+                <p className="text-xs text-emerald-400 uppercase tracking-wider">Entry Fee</p>
+                <p className="text-[rgb(220,235,255)] font-bold text-lg">
                   {formatCurrency(competition.entryFee)}
                 </p>
               </div>
@@ -298,52 +304,54 @@ const CompetitionDetailModal = memo(function CompetitionDetailModal({
 
           {/* Prize Distribution */}
           <div
-            className="bg-gradient-to-r from-amber-50 to-yellow-50 rounded-lg p-4"
+            className="bg-[rgba(212,168,67,0.1)] border border-amber-500/30 rounded-lg p-4"
             data-testid="prize-distribution"
           >
-            <h3 className="text-sm font-semibold text-gray-900 mb-3 flex items-center">
+            <h3 className="text-sm font-semibold text-[rgb(220,235,255)] mb-3 flex items-center">
               <Trophy className="h-4 w-4 text-amber-500 mr-2" aria-hidden="true" />
               Prize Distribution
             </h3>
             <div className="grid grid-cols-3 gap-3">
               <div className="text-center" data-testid="prize-1st">
                 <div className="text-2xl mb-1">1st</div>
-                <div className="text-amber-700 font-bold">
+                <div className="text-amber-400 font-bold">
                   {formatCurrency(prizeDistribution.first)}
                 </div>
-                <div className="text-xs text-gray-500">50%</div>
+                <div className="text-xs text-[rgb(148,163,184)]">50%</div>
               </div>
               <div className="text-center" data-testid="prize-2nd">
                 <div className="text-2xl mb-1">2nd</div>
-                <div className="text-gray-600 font-bold">
+                <div className="text-[rgb(148,163,184)] font-bold">
                   {formatCurrency(prizeDistribution.second)}
                 </div>
-                <div className="text-xs text-gray-500">30%</div>
+                <div className="text-xs text-[rgb(148,163,184)]">30%</div>
               </div>
               <div className="text-center" data-testid="prize-3rd">
                 <div className="text-2xl mb-1">3rd</div>
                 <div className="text-orange-600 font-bold">
                   {formatCurrency(prizeDistribution.third)}
                 </div>
-                <div className="text-xs text-gray-500">20%</div>
+                <div className="text-xs text-[rgb(148,163,184)]">20%</div>
               </div>
             </div>
           </div>
 
           {/* Entry Requirements */}
           <div data-testid="entry-requirements">
-            <h3 className="text-sm font-semibold text-gray-900 mb-2">Entry Requirements</h3>
+            <h3 className="text-sm font-semibold text-[rgb(220,235,255)] mb-2">
+              Entry Requirements
+            </h3>
             {hasRequirements ? (
               <ul className="space-y-2">
                 {competition.entryRequirements!.map((requirement, index) => (
-                  <li key={index} className="flex items-start text-sm text-gray-600">
+                  <li key={index} className="flex items-start text-sm text-[rgb(148,163,184)]">
                     <span className="inline-block w-1.5 h-1.5 bg-blue-500 rounded-full mt-2 mr-2 flex-shrink-0" />
                     {requirement}
                   </li>
                 ))}
               </ul>
             ) : (
-              <p className="text-sm text-gray-500">
+              <p className="text-sm text-[rgb(148,163,184)]">
                 No specific requirements for this competition.
               </p>
             )}
@@ -351,9 +359,9 @@ const CompetitionDetailModal = memo(function CompetitionDetailModal({
 
           {/* Participants Info */}
           {competition.maxParticipants !== undefined && (
-            <div className="flex items-center justify-between p-3 bg-gray-50 rounded-lg">
-              <span className="text-sm text-gray-600">Current Participants</span>
-              <span className="font-medium">
+            <div className="flex items-center justify-between p-3 bg-[rgba(15,35,70,0.5)] rounded-lg">
+              <span className="text-sm text-[rgb(148,163,184)]">Current Participants</span>
+              <span className="font-medium text-[rgb(220,235,255)]">
                 {competition.currentParticipants ?? 0} / {competition.maxParticipants}
               </span>
             </div>
@@ -361,12 +369,12 @@ const CompetitionDetailModal = memo(function CompetitionDetailModal({
 
           {/* Horse Selector Placeholder */}
           <div
-            className="border-2 border-dashed border-gray-300 rounded-lg p-6 text-center"
+            className="border-2 border-dashed border-[rgba(37,99,235,0.3)] rounded-lg p-6 text-center"
             data-testid="horse-selector-placeholder"
           >
-            <Users className="h-8 w-8 text-gray-400 mx-auto mb-2" aria-hidden="true" />
-            <p className="text-gray-500 font-medium">Select a Horse</p>
-            <p className="text-sm text-gray-400 mt-1">
+            <Users className="h-8 w-8 text-[rgb(148,163,184)] mx-auto mb-2" aria-hidden="true" />
+            <p className="text-[rgb(148,163,184)] font-medium">Select a Horse</p>
+            <p className="text-sm text-[rgb(148,163,184)] mt-1">
               Horse selector will be implemented in Task 5
             </p>
           </div>
@@ -374,22 +382,22 @@ const CompetitionDetailModal = memo(function CompetitionDetailModal({
           {/* Error Message */}
           {error && (
             <div
-              className="flex items-center space-x-2 p-3 bg-red-50 border border-red-200 rounded-lg"
+              className="flex items-center space-x-2 p-3 bg-[rgba(239,68,68,0.1)] border border-red-500/30 rounded-lg"
               data-testid="error-message"
             >
               <AlertCircle className="h-5 w-5 text-red-500 flex-shrink-0" aria-hidden="true" />
-              <p className="text-sm text-red-700">{error}</p>
+              <p className="text-sm text-red-400">{error}</p>
             </div>
           )}
         </div>
 
         {/* Footer */}
-        <div className="flex justify-end space-x-3 p-6 border-t border-gray-200 bg-gray-50">
+        <div className="flex justify-end space-x-3 p-6 border-t border-[rgba(37,99,235,0.2)] bg-[rgba(15,35,70,0.5)]">
           <button
             type="button"
             onClick={onClose}
             disabled={isSubmitting}
-            className="px-4 py-2 border border-gray-300 rounded-lg text-gray-700 hover:bg-gray-100 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
+            className="px-4 py-2 border border-[rgba(37,99,235,0.3)] rounded-lg text-[rgb(220,235,255)] hover:bg-[rgba(37,99,235,0.1)] transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
           >
             Cancel
           </button>

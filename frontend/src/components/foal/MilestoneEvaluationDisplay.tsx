@@ -188,12 +188,12 @@ const MilestoneEvaluationDisplay: React.FC<MilestoneEvaluationDisplayProps> = ({
 
   if (historyError) {
     return (
-      <div className="rounded-lg border border-red-200 bg-red-50 p-6">
+      <div className="rounded-lg border border-red-500/30 bg-[rgba(239,68,68,0.1)] p-6">
         <div className="flex items-start gap-3">
-          <AlertCircle className="h-5 w-5 text-red-600 flex-shrink-0 mt-0.5" />
+          <AlertCircle className="h-5 w-5 text-red-400 flex-shrink-0 mt-0.5" />
           <div>
-            <p className="font-semibold text-red-900">Error loading evaluations</p>
-            <p className="text-sm text-red-700 mt-1">
+            <p className="font-semibold text-[rgb(220,235,255)]">Error loading evaluations</p>
+            <p className="text-sm text-[rgb(148,163,184)] mt-1">
               {historyError instanceof Error ? historyError.message : 'An error occurred'}
             </p>
           </div>
@@ -205,11 +205,11 @@ const MilestoneEvaluationDisplay: React.FC<MilestoneEvaluationDisplayProps> = ({
   if (!evaluationHistory || evaluationHistory.evaluations.length === 0) {
     return (
       <div className="text-center py-12">
-        <div className="inline-flex items-center justify-center w-16 h-16 rounded-full bg-slate-100 mb-4">
-          <Award className="h-8 w-8 text-slate-400" />
+        <div className="inline-flex items-center justify-center w-16 h-16 rounded-full bg-[rgba(15,35,70,0.5)] mb-4">
+          <Award className="h-8 w-8 text-[rgb(148,163,184)]" />
         </div>
-        <p className="text-slate-600 text-sm">No milestone evaluations yet</p>
-        <p className="text-slate-500 text-xs mt-1">
+        <p className="text-[rgb(148,163,184)] text-sm">No milestone evaluations yet</p>
+        <p className="text-[rgb(148,163,184)] text-xs mt-1">
           Evaluations will appear as your foal completes developmental milestones
         </p>
       </div>
@@ -222,10 +222,12 @@ const MilestoneEvaluationDisplay: React.FC<MilestoneEvaluationDisplayProps> = ({
     <div className="space-y-6">
       {/* Evaluation History */}
       {showHistory && (
-        <div className="rounded-lg border border-slate-200 bg-white p-6 shadow-sm">
+        <div className="glass-panel rounded-lg p-6">
           <div className="flex items-center gap-2 mb-4">
-            <History className="h-5 w-5 text-slate-700" />
-            <h3 className="text-lg font-bold text-slate-900">Milestone Evaluation History</h3>
+            <History className="h-5 w-5 text-[rgb(148,163,184)]" />
+            <h3 className="text-lg font-bold text-[rgb(220,235,255)]">
+              Milestone Evaluation History
+            </h3>
           </div>
 
           <div className="space-y-3">
@@ -251,16 +253,16 @@ const MilestoneEvaluationDisplay: React.FC<MilestoneEvaluationDisplayProps> = ({
         >
           <div className="space-y-6">
             {/* Header */}
-            <div className="text-center pb-4 border-b border-slate-200">
-              <div className="inline-flex items-center justify-center w-16 h-16 rounded-full bg-blue-100 mb-4">
-                <Sparkles className="h-8 w-8 text-blue-600" />
+            <div className="text-center pb-4 border-b border-[rgba(37,99,235,0.3)]">
+              <div className="inline-flex items-center justify-center w-16 h-16 rounded-full bg-[rgba(37,99,235,0.15)] mb-4">
+                <Sparkles className="h-8 w-8 text-blue-400" />
               </div>
-              <h2 className="text-2xl font-bold text-slate-900 mb-2">
+              <h2 className="text-2xl font-bold text-[rgb(220,235,255)] mb-2">
                 {selectedEvaluation.milestoneName ||
                   formatMilestoneName(selectedEvaluation.milestone)}{' '}
                 Complete!
               </h2>
-              <p className="text-sm text-slate-600">
+              <p className="text-sm text-[rgb(148,163,184)]">
                 Completed:{' '}
                 {new Date(selectedEvaluation.evaluatedAt).toLocaleDateString('en-US', {
                   month: 'long',
@@ -268,7 +270,7 @@ const MilestoneEvaluationDisplay: React.FC<MilestoneEvaluationDisplayProps> = ({
                   year: 'numeric',
                 })}
               </p>
-              <p className="text-xs text-slate-500 mt-1">
+              <p className="text-xs text-[rgb(148,163,184)] mt-1">
                 {getMilestoneDescription(selectedEvaluation.milestone)}
               </p>
             </div>
@@ -287,8 +289,8 @@ const MilestoneEvaluationDisplay: React.FC<MilestoneEvaluationDisplayProps> = ({
             {/* Traits Confirmed */}
             {traits.length > 0 && (
               <div className="space-y-3">
-                <h3 className="text-lg font-bold text-slate-900 flex items-center gap-2">
-                  <Award className="h-5 w-5 text-emerald-600" />
+                <h3 className="text-lg font-bold text-[rgb(220,235,255)] flex items-center gap-2">
+                  <Award className="h-5 w-5 text-emerald-400" />
                   Traits Confirmed
                 </h3>
                 {traits.map((trait) => (
@@ -310,7 +312,7 @@ const MilestoneEvaluationDisplay: React.FC<MilestoneEvaluationDisplayProps> = ({
             />
 
             {/* Continue Button */}
-            <div className="pt-4 border-t border-slate-200">
+            <div className="pt-4 border-t border-[rgba(37,99,235,0.3)]">
               <button
                 onClick={handleCloseModal}
                 className="w-full px-4 py-3 text-base font-medium text-white bg-blue-600 rounded-lg hover:bg-blue-700 transition-colors"

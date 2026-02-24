@@ -24,14 +24,14 @@ export interface ScoreBreakdownPanelProps {
 function getComponentColor(value: number, isModifier: boolean = false): string {
   if (isModifier) {
     // For bond modifier: green if positive, red if negative, yellow if 0
-    if (value > 0) return 'text-green-600';
-    if (value < 0) return 'text-red-600';
-    return 'text-yellow-600';
+    if (value > 0) return 'text-emerald-400';
+    if (value < 0) return 'text-red-400';
+    return 'text-yellow-400';
   } else {
     // For other components: green if high, yellow if medium, gray if low
-    if (value >= 2) return 'text-green-600';
-    if (value >= 1) return 'text-yellow-600';
-    return 'text-slate-600';
+    if (value >= 2) return 'text-emerald-400';
+    if (value >= 1) return 'text-yellow-400';
+    return 'text-[rgb(148,163,184)]';
   }
 }
 
@@ -101,11 +101,11 @@ const ScoreBreakdownPanel: React.FC<ScoreBreakdownPanelProps> = ({
   const CareTrendIcon = getTrendIcon(careQuality);
 
   return (
-    <div className="rounded-lg border border-slate-200 bg-white p-6">
+    <div className="rounded-lg border border-[rgba(37,99,235,0.3)] bg-[rgba(15,35,70,0.4)] p-6">
       {/* Header */}
       <div className="flex items-center gap-2 mb-6">
-        <Sparkles className="h-5 w-5 text-blue-600" />
-        <h3 className="text-lg font-bold text-slate-900">Score Breakdown</h3>
+        <Sparkles className="h-5 w-5 text-blue-400" />
+        <h3 className="text-lg font-bold text-[rgb(220,235,255)]">Score Breakdown</h3>
       </div>
 
       <div className="space-y-6">
@@ -113,8 +113,8 @@ const ScoreBreakdownPanel: React.FC<ScoreBreakdownPanelProps> = ({
         <div>
           <div className="flex items-center justify-between mb-2">
             <div className="flex items-center gap-2">
-              <Heart className="h-5 w-5 text-blue-600" />
-              <span className="text-sm font-semibold text-slate-700">Bond Modifier</span>
+              <Heart className="h-5 w-5 text-blue-400" />
+              <span className="text-sm font-semibold text-[rgb(220,235,255)]">Bond Modifier</span>
             </div>
             <div className="flex items-center gap-2">
               <BondTrendIcon className={`h-4 w-4 ${getComponentColor(bondModifier, true)}`} />
@@ -127,7 +127,7 @@ const ScoreBreakdownPanel: React.FC<ScoreBreakdownPanelProps> = ({
 
           {/* Progress bar for bond modifier (-2 to +2) */}
           <div className="relative mb-2">
-            <div className="w-full bg-slate-200 rounded-full h-3 overflow-hidden">
+            <div className="w-full bg-[rgba(15,35,70,0.5)] rounded-full h-3 overflow-hidden">
               <div
                 className={`h-full transition-all duration-500 ${
                   bondModifier >= 0 ? 'bg-green-500' : 'bg-red-500'
@@ -139,18 +139,20 @@ const ScoreBreakdownPanel: React.FC<ScoreBreakdownPanelProps> = ({
               />
             </div>
             {/* Center line */}
-            <div className="absolute left-1/2 top-0 w-0.5 h-full bg-slate-400 -translate-x-1/2" />
+            <div className="absolute left-1/2 top-0 w-0.5 h-full bg-[rgb(148,163,184)] -translate-x-1/2" />
           </div>
 
-          <p className="text-xs text-slate-600">{getBondExplanation(bondModifier)}</p>
+          <p className="text-xs text-[rgb(148,163,184)]">{getBondExplanation(bondModifier)}</p>
         </div>
 
         {/* Task Consistency */}
         <div>
           <div className="flex items-center justify-between mb-2">
             <div className="flex items-center gap-2">
-              <CheckSquare className="h-5 w-5 text-emerald-600" />
-              <span className="text-sm font-semibold text-slate-700">Task Consistency</span>
+              <CheckSquare className="h-5 w-5 text-emerald-400" />
+              <span className="text-sm font-semibold text-[rgb(220,235,255)]">
+                Task Consistency
+              </span>
             </div>
             <div className="flex items-center gap-2">
               <TaskTrendIcon className={`h-4 w-4 ${getComponentColor(taskConsistency)}`} />
@@ -162,7 +164,7 @@ const ScoreBreakdownPanel: React.FC<ScoreBreakdownPanelProps> = ({
 
           {/* Progress bar (0 to 3) */}
           <div className="mb-2">
-            <div className="w-full bg-slate-200 rounded-full h-3 overflow-hidden">
+            <div className="w-full bg-[rgba(15,35,70,0.5)] rounded-full h-3 overflow-hidden">
               <div
                 className={`h-full ${getProgressBarColor(taskConsistency, 3)} transition-all duration-500`}
                 style={{ width: `${(taskConsistency / 3) * 100}%` }}
@@ -170,15 +172,15 @@ const ScoreBreakdownPanel: React.FC<ScoreBreakdownPanelProps> = ({
             </div>
           </div>
 
-          <p className="text-xs text-slate-600">{getTaskExplanation(taskConsistency)}</p>
+          <p className="text-xs text-[rgb(148,163,184)]">{getTaskExplanation(taskConsistency)}</p>
         </div>
 
         {/* Care Quality */}
         <div>
           <div className="flex items-center justify-between mb-2">
             <div className="flex items-center gap-2">
-              <Sparkles className="h-5 w-5 text-amber-600" />
-              <span className="text-sm font-semibold text-slate-700">Care Quality</span>
+              <Sparkles className="h-5 w-5 text-amber-400" />
+              <span className="text-sm font-semibold text-[rgb(220,235,255)]">Care Quality</span>
             </div>
             <div className="flex items-center gap-2">
               <CareTrendIcon className={`h-4 w-4 ${getComponentColor(careQuality)}`} />
@@ -191,7 +193,7 @@ const ScoreBreakdownPanel: React.FC<ScoreBreakdownPanelProps> = ({
 
           {/* Progress bar (variable max, but typically 0-5) */}
           <div className="mb-2">
-            <div className="w-full bg-slate-200 rounded-full h-3 overflow-hidden">
+            <div className="w-full bg-[rgba(15,35,70,0.5)] rounded-full h-3 overflow-hidden">
               <div
                 className={`h-full ${getProgressBarColor(careQuality, 5)} transition-all duration-500`}
                 style={{ width: `${Math.min(100, (careQuality / 5) * 100)}%` }}
@@ -199,17 +201,17 @@ const ScoreBreakdownPanel: React.FC<ScoreBreakdownPanelProps> = ({
             </div>
           </div>
 
-          <p className="text-xs text-slate-600">{getCareExplanation(careQuality)}</p>
+          <p className="text-xs text-[rgb(148,163,184)]">{getCareExplanation(careQuality)}</p>
         </div>
 
         {/* Total Calculation */}
-        <div className="pt-4 border-t border-slate-200">
+        <div className="pt-4 border-t border-[rgba(37,99,235,0.3)]">
           <div className="flex items-center justify-between">
             <div className="flex items-center gap-2">
-              <span className="text-sm font-semibold text-slate-700">Total Score</span>
+              <span className="text-sm font-semibold text-[rgb(220,235,255)]">Total Score</span>
             </div>
             <div className="flex items-center gap-3">
-              <div className="text-xs text-slate-500">
+              <div className="text-xs text-[rgb(148,163,184)]">
                 {bondModifier > 0 ? '+' : ''}
                 {bondModifier} + {taskConsistency} + {careQuality > 0 ? '+' : ''}
                 {careQuality}
@@ -217,10 +219,10 @@ const ScoreBreakdownPanel: React.FC<ScoreBreakdownPanelProps> = ({
               <span
                 className={`text-xl font-bold ${
                   totalScore >= 3
-                    ? 'text-green-600'
+                    ? 'text-emerald-400'
                     : totalScore >= 0
-                      ? 'text-yellow-600'
-                      : 'text-red-600'
+                      ? 'text-yellow-400'
+                      : 'text-red-400'
                 }`}
               >
                 = {totalScore > 0 ? '+' : ''}
@@ -231,42 +233,42 @@ const ScoreBreakdownPanel: React.FC<ScoreBreakdownPanelProps> = ({
         </div>
 
         {/* Key factors summary */}
-        <div className="rounded-lg bg-slate-50 border border-slate-200 p-3">
-          <p className="text-xs font-semibold text-slate-700 mb-2">Key Factors:</p>
-          <div className="space-y-1 text-xs text-slate-600">
+        <div className="rounded-lg bg-[rgba(15,35,70,0.3)] border border-[rgba(37,99,235,0.3)] p-3">
+          <p className="text-xs font-semibold text-[rgb(220,235,255)] mb-2">Key Factors:</p>
+          <div className="space-y-1 text-xs text-[rgb(148,163,184)]">
             {bondModifier > 0 && (
               <div className="flex items-center gap-2">
-                <span className="text-green-600">✓</span>
+                <span className="text-emerald-400">✓</span>
                 <span>Strong bond with groom helped score</span>
               </div>
             )}
             {bondModifier < 0 && (
               <div className="flex items-center gap-2">
-                <span className="text-red-600">✗</span>
+                <span className="text-red-400">✗</span>
                 <span>Weak bond with groom hurt score</span>
               </div>
             )}
             {taskConsistency >= 2 && (
               <div className="flex items-center gap-2">
-                <span className="text-green-600">✓</span>
+                <span className="text-emerald-400">✓</span>
                 <span>Consistent care routine helped score</span>
               </div>
             )}
             {taskConsistency < 2 && (
               <div className="flex items-center gap-2">
-                <span className="text-amber-600">!</span>
+                <span className="text-amber-400">!</span>
                 <span>More consistent care would improve results</span>
               </div>
             )}
             {careQuality > 0 && (
               <div className="flex items-center gap-2">
-                <span className="text-green-600">✓</span>
+                <span className="text-emerald-400">✓</span>
                 <span>Groom bonuses provided extra benefits</span>
               </div>
             )}
             {careQuality === 0 && (
               <div className="flex items-center gap-2">
-                <span className="text-slate-400">○</span>
+                <span className="text-[rgb(148,163,184)]">○</span>
                 <span>No special groom bonuses this milestone</span>
               </div>
             )}

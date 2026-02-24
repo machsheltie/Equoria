@@ -24,8 +24,8 @@ export interface TraitConfirmationCardProps {
  */
 function getTraitTypeColor(isPositive: boolean): string {
   return isPositive
-    ? 'text-green-600 bg-green-50 border-green-200'
-    : 'text-red-600 bg-red-50 border-red-200';
+    ? 'text-emerald-400 bg-[rgba(16,185,129,0.1)] border-emerald-500/30'
+    : 'text-red-400 bg-[rgba(239,68,68,0.1)] border-red-500/30';
 }
 
 /**
@@ -34,15 +34,15 @@ function getTraitTypeColor(isPositive: boolean): string {
 function getTierColor(tier?: string): string {
   switch (tier?.toLowerCase()) {
     case 'exotic':
-      return 'text-purple-600 bg-purple-50 border-purple-200';
+      return 'text-purple-400 bg-[rgba(147,51,234,0.1)] border-purple-500/30';
     case 'ultra-rare':
-      return 'text-pink-600 bg-pink-50 border-pink-200';
+      return 'text-pink-400 bg-[rgba(236,72,153,0.1)] border-pink-500/30';
     case 'rare':
-      return 'text-blue-600 bg-blue-50 border-blue-200';
+      return 'text-blue-400 bg-[rgba(37,99,235,0.1)] border-blue-500/30';
     case 'uncommon':
-      return 'text-emerald-600 bg-emerald-50 border-emerald-200';
+      return 'text-emerald-400 bg-[rgba(16,185,129,0.1)] border-emerald-500/30';
     default:
-      return 'text-slate-600 bg-slate-50 border-slate-200';
+      return 'text-[rgb(148,163,184)] bg-[rgba(15,35,70,0.3)] border-[rgba(37,99,235,0.3)]';
   }
 }
 
@@ -80,14 +80,14 @@ const TraitConfirmationCard: React.FC<TraitConfirmationCardProps> = ({
               <h4 className={`font-semibold text-sm ${typeColor.split(' ')[0]}`}>{trait.name}</h4>
               {trait.tier && (
                 <span
-                  className={`inline-flex items-center gap-1 px-2 py-0.5 text-xs font-medium rounded ${tierColor}`}
+                  className={`inline-flex items-center gap-1 px-2 py-0.5 text-xs font-medium rounded border ${tierColor}`}
                 >
                   <Sparkles className="h-3 w-3" />
                   {getTierDisplayName(trait.tier)}
                 </span>
               )}
             </div>
-            <p className="text-xs text-slate-600 mt-1">{trait.description}</p>
+            <p className="text-xs text-[rgb(148,163,184)] mt-1">{trait.description}</p>
           </div>
         </div>
       </div>
@@ -104,13 +104,13 @@ const TraitConfirmationCard: React.FC<TraitConfirmationCardProps> = ({
             <h4 className={`font-bold text-lg ${typeColor.split(' ')[0]}`}>{trait.name}</h4>
             <div className="flex items-center gap-2 mt-1 flex-wrap">
               <span
-                className={`inline-flex items-center gap-1 px-2 py-1 text-xs font-medium rounded ${typeColor}`}
+                className={`inline-flex items-center gap-1 px-2 py-1 text-xs font-medium rounded border ${typeColor}`}
               >
                 {isPositive ? 'Positive Trait' : 'Negative Trait'}
               </span>
               {trait.tier && (
                 <span
-                  className={`inline-flex items-center gap-1 px-2 py-1 text-xs font-medium rounded ${tierColor}`}
+                  className={`inline-flex items-center gap-1 px-2 py-1 text-xs font-medium rounded border ${tierColor}`}
                 >
                   <Sparkles className="h-3 w-3" />
                   {getTierDisplayName(trait.tier)}
@@ -122,14 +122,14 @@ const TraitConfirmationCard: React.FC<TraitConfirmationCardProps> = ({
       </div>
 
       {/* Description */}
-      <p className="text-sm text-slate-700 mb-4">{trait.description}</p>
+      <p className="text-sm text-[rgb(220,235,255)] mb-4">{trait.description}</p>
 
       {/* Effects & Benefits */}
       {trait.effects && trait.effects.length > 0 && (
         <div className="space-y-3 mb-4">
           <div className="flex items-center gap-2">
             <TrendingUp className={`h-4 w-4 ${typeColor.split(' ')[0]}`} />
-            <span className="text-xs font-semibold text-slate-700 uppercase tracking-wide">
+            <span className="text-xs font-semibold text-[rgb(220,235,255)] uppercase tracking-wide">
               Effects & Benefits
             </span>
           </div>
@@ -139,7 +139,7 @@ const TraitConfirmationCard: React.FC<TraitConfirmationCardProps> = ({
               <div key={index} className="flex items-start gap-2 text-sm">
                 <Award className={`h-4 w-4 ${typeColor.split(' ')[0]} flex-shrink-0 mt-0.5`} />
                 <div className="flex-1">
-                  <p className="font-medium text-slate-900">
+                  <p className="font-medium text-[rgb(220,235,255)]">
                     {effect.type}:{' '}
                     <span className={typeColor.split(' ')[0]}>
                       {effect.value > 0 ? '+' : ''}
@@ -147,7 +147,7 @@ const TraitConfirmationCard: React.FC<TraitConfirmationCardProps> = ({
                       {effect.type.toLowerCase().includes('percent') ? '%' : ''}
                     </span>
                   </p>
-                  <p className="text-xs text-slate-600 mt-0.5">{effect.description}</p>
+                  <p className="text-xs text-[rgb(148,163,184)] mt-0.5">{effect.description}</p>
                 </div>
               </div>
             ))}
@@ -161,8 +161,8 @@ const TraitConfirmationCard: React.FC<TraitConfirmationCardProps> = ({
           <div className="flex items-start gap-2">
             <Info className={`h-4 w-4 ${typeColor.split(' ')[0]} flex-shrink-0 mt-0.5`} />
             <div>
-              <p className="text-xs font-semibold text-slate-700 mb-1">Why This Trait?</p>
-              <p className="text-xs text-slate-600">{confirmationReason}</p>
+              <p className="text-xs font-semibold text-[rgb(220,235,255)] mb-1">Why This Trait?</p>
+              <p className="text-xs text-[rgb(148,163,184)]">{confirmationReason}</p>
             </div>
           </div>
         </div>
@@ -170,7 +170,7 @@ const TraitConfirmationCard: React.FC<TraitConfirmationCardProps> = ({
 
       {/* Category Badge (if available) */}
       {trait.category && (
-        <div className="mt-3 text-xs text-slate-500">
+        <div className="mt-3 text-xs text-[rgb(148,163,184)]">
           <span className="font-medium">Category:</span> {trait.category}
         </div>
       )}

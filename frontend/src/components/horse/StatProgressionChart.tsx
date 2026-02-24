@@ -169,8 +169,8 @@ const StatProgressionChart = ({ horseId }: StatProgressionChartProps) => {
   // Loading state
   if (isLoading) {
     return (
-      <div className="rounded-lg border border-slate-200 bg-white p-6 shadow-sm">
-        <div className="text-center text-sm text-slate-600">Loading XP progression...</div>
+      <div className="rounded-lg border border-[rgba(37,99,235,0.3)] bg-[rgba(15,35,70,0.5)] p-6 shadow-sm">
+        <div className="text-center text-sm text-[rgb(148,163,184)]">Loading XP progression...</div>
       </div>
     );
   }
@@ -178,8 +178,8 @@ const StatProgressionChart = ({ horseId }: StatProgressionChartProps) => {
   // Error state
   if (isError || !historyData) {
     return (
-      <div className="rounded-lg border border-rose-200 bg-rose-50 p-6 shadow-sm">
-        <div className="text-sm text-rose-800">
+      <div className="rounded-lg border border-rose-500/30 bg-[rgba(239,68,68,0.1)] p-6 shadow-sm">
+        <div className="text-sm text-rose-400">
           {error?.message || 'Failed to fetch XP history'}
         </div>
         <button
@@ -195,8 +195,8 @@ const StatProgressionChart = ({ horseId }: StatProgressionChartProps) => {
   // Empty data state
   if (!chartData || historyData.events.length === 0) {
     return (
-      <div className="rounded-lg border border-slate-200 bg-white p-6 shadow-sm">
-        <div className="text-center text-sm text-slate-600">
+      <div className="rounded-lg border border-[rgba(37,99,235,0.3)] bg-[rgba(15,35,70,0.5)] p-6 shadow-sm">
+        <div className="text-center text-sm text-[rgb(148,163,184)]">
           No XP history data available for this time range.
         </div>
       </div>
@@ -204,10 +204,10 @@ const StatProgressionChart = ({ horseId }: StatProgressionChartProps) => {
   }
 
   return (
-    <div className="rounded-lg border border-slate-200 bg-white p-6 shadow-sm">
+    <div className="rounded-lg border border-[rgba(37,99,235,0.3)] bg-[rgba(15,35,70,0.5)] p-6 shadow-sm">
       {/* Header */}
       <div className="mb-4 flex items-center justify-between">
-        <h3 className="text-lg font-semibold text-slate-900">XP Progression</h3>
+        <h3 className="text-lg font-semibold text-[rgb(220,235,255)]">XP Progression</h3>
 
         {/* Time Range Selector */}
         <div className="flex gap-2">
@@ -218,7 +218,7 @@ const StatProgressionChart = ({ horseId }: StatProgressionChartProps) => {
               className={`rounded-md px-3 py-1.5 text-sm font-medium transition-colors ${
                 selectedRange === range
                   ? 'bg-emerald-600 text-white'
-                  : 'bg-slate-100 text-slate-700 hover:bg-slate-200'
+                  : 'bg-[rgba(15,35,70,0.5)] text-[rgb(148,163,184)] hover:bg-[rgba(15,35,70,0.3)]'
               }`}
               aria-label={TIME_RANGE_LABELS[range]}
             >
@@ -238,20 +238,22 @@ const StatProgressionChart = ({ horseId }: StatProgressionChartProps) => {
       </div>
 
       {/* Summary Stats */}
-      <div className="mt-4 grid grid-cols-3 gap-4 border-t border-slate-200 pt-4">
+      <div className="mt-4 grid grid-cols-3 gap-4 border-t border-[rgba(37,99,235,0.3)] pt-4">
         <div className="text-center">
-          <p className="text-xs text-slate-500">Total XP Gained</p>
-          <p className="text-lg font-semibold text-emerald-600">
+          <p className="text-xs text-[rgb(148,163,184)]">Total XP Gained</p>
+          <p className="text-lg font-semibold text-emerald-400">
             +{historyData.events.reduce((sum, event) => sum + event.amount, 0)}
           </p>
         </div>
         <div className="text-center">
-          <p className="text-xs text-slate-500">Data Points</p>
-          <p className="text-lg font-semibold text-slate-900">{historyData.events.length}</p>
+          <p className="text-xs text-[rgb(148,163,184)]">Data Points</p>
+          <p className="text-lg font-semibold text-[rgb(220,235,255)]">
+            {historyData.events.length}
+          </p>
         </div>
         <div className="text-center">
-          <p className="text-xs text-slate-500">Current XP</p>
-          <p className="text-lg font-semibold text-slate-900">
+          <p className="text-xs text-[rgb(148,163,184)]">Current XP</p>
+          <p className="text-lg font-semibold text-[rgb(220,235,255)]">
             {historyData.events[historyData.events.length - 1]?.amount || 0}
           </p>
         </div>

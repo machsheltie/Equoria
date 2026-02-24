@@ -14,7 +14,7 @@
  * Story 3-6: Horse Search & Filter - Task 4
  */
 
-import { Filter, X, ChevronDown, ChevronUp } from 'lucide-react';
+import { Filter, ChevronDown, ChevronUp } from 'lucide-react';
 import { useState } from 'react';
 
 export interface HorseFiltersProps {
@@ -32,22 +32,22 @@ export interface HorseFiltersProps {
   /**
    * Callback to update age range
    */
-  onAgeRangeChange: (minAge?: number, maxAge?: number) => void;
+  onAgeRangeChange: (_minAge?: number, _maxAge?: number) => void;
 
   /**
    * Callback to toggle breed selection
    */
-  onBreedToggle: (breedId: string) => void;
+  onBreedToggle: (_breedId: string) => void;
 
   /**
    * Callback to toggle discipline selection
    */
-  onDisciplineToggle: (discipline: string) => void;
+  onDisciplineToggle: (_discipline: string) => void;
 
   /**
    * Callback to change training status
    */
-  onTrainingStatusChange: (status: 'all' | 'trained' | 'untrained' | 'in_training') => void;
+  onTrainingStatusChange: (_status: 'all' | 'trained' | 'untrained' | 'in_training') => void;
 
   /**
    * Callback to clear all filters
@@ -145,15 +145,17 @@ const HorseFilters = ({
   const hasActiveFilters = activeFilterCount > 0;
 
   return (
-    <div className={`bg-white border border-gray-200 rounded-lg ${className}`}>
+    <div
+      className={`bg-[rgba(15,35,70,0.5)] border border-[rgba(37,99,235,0.3)] rounded-lg ${className}`}
+    >
       {/* Header */}
-      <div className="flex items-center justify-between p-4 border-b border-gray-200">
+      <div className="flex items-center justify-between p-4 border-b border-[rgba(37,99,235,0.3)]">
         <div className="flex items-center gap-2">
-          <Filter className="w-5 h-5 text-gray-600" aria-hidden="true" />
-          <h2 className="text-lg font-semibold text-gray-900">Filters</h2>
+          <Filter className="w-5 h-5 text-[rgb(148,163,184)]" aria-hidden="true" />
+          <h2 className="text-lg font-semibold text-[rgb(220,235,255)]">Filters</h2>
           {hasActiveFilters && (
             <span
-              className="px-2 py-0.5 text-xs font-medium bg-blue-100 text-blue-700 rounded-full"
+              className="px-2 py-0.5 text-xs font-medium bg-[rgba(37,99,235,0.1)] text-blue-400 rounded-full"
               aria-label={`${activeFilterCount} active filters`}
             >
               {activeFilterCount}
@@ -168,7 +170,7 @@ const HorseFilters = ({
               type="button"
               onClick={onClearFilters}
               disabled={isLoading}
-              className="text-sm text-blue-600 hover:text-blue-700 disabled:opacity-50 disabled:cursor-not-allowed"
+              className="text-sm text-blue-400 hover:text-blue-300 disabled:opacity-50 disabled:cursor-not-allowed"
               aria-label="Clear all filters"
             >
               Clear all
@@ -179,14 +181,14 @@ const HorseFilters = ({
           <button
             type="button"
             onClick={() => setIsExpanded(!isExpanded)}
-            className="p-1 hover:bg-gray-100 rounded transition-colors"
+            className="p-1 hover:bg-[rgba(15,35,70,0.5)] rounded transition-colors"
             aria-label={isExpanded ? 'Collapse filters' : 'Expand filters'}
             aria-expanded={isExpanded}
           >
             {isExpanded ? (
-              <ChevronUp className="w-5 h-5 text-gray-600" aria-hidden="true" />
+              <ChevronUp className="w-5 h-5 text-[rgb(148,163,184)]" aria-hidden="true" />
             ) : (
-              <ChevronDown className="w-5 h-5 text-gray-600" aria-hidden="true" />
+              <ChevronDown className="w-5 h-5 text-[rgb(148,163,184)]" aria-hidden="true" />
             )}
           </button>
         </div>
@@ -197,7 +199,9 @@ const HorseFilters = ({
         <div className="p-4 space-y-6">
           {/* Age Range Filter */}
           <div>
-            <label className="block text-sm font-medium text-gray-700 mb-2">Age Range</label>
+            <label className="block text-sm font-medium text-[rgb(148,163,184)] mb-2">
+              Age Range
+            </label>
             <div className="grid grid-cols-2 gap-3">
               <div>
                 <label htmlFor="min-age" className="sr-only">
@@ -212,7 +216,7 @@ const HorseFilters = ({
                   value={filters.minAge ?? ''}
                   onChange={handleMinAgeChange}
                   disabled={isLoading}
-                  className="w-full px-3 py-2 border border-gray-300 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-blue-500 disabled:bg-gray-100 disabled:cursor-not-allowed"
+                  className="w-full px-3 py-2 border border-[rgba(37,99,235,0.3)] rounded-lg text-sm bg-[rgba(15,35,70,0.4)] text-[rgb(220,235,255)] placeholder-[rgb(148,163,184)] focus:outline-none focus:ring-2 focus:ring-blue-500 disabled:bg-[rgba(15,35,70,0.3)] disabled:cursor-not-allowed"
                   aria-label="Minimum age filter"
                 />
               </div>
@@ -229,7 +233,7 @@ const HorseFilters = ({
                   value={filters.maxAge ?? ''}
                   onChange={handleMaxAgeChange}
                   disabled={isLoading}
-                  className="w-full px-3 py-2 border border-gray-300 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-blue-500 disabled:bg-gray-100 disabled:cursor-not-allowed"
+                  className="w-full px-3 py-2 border border-[rgba(37,99,235,0.3)] rounded-lg text-sm bg-[rgba(15,35,70,0.4)] text-[rgb(220,235,255)] placeholder-[rgb(148,163,184)] focus:outline-none focus:ring-2 focus:ring-blue-500 disabled:bg-[rgba(15,35,70,0.3)] disabled:cursor-not-allowed"
                   aria-label="Maximum age filter"
                 />
               </div>
@@ -239,22 +243,24 @@ const HorseFilters = ({
           {/* Breed Filter */}
           {breeds.length > 0 && (
             <div>
-              <label className="block text-sm font-medium text-gray-700 mb-2">Breeds</label>
+              <label className="block text-sm font-medium text-[rgb(148,163,184)] mb-2">
+                Breeds
+              </label>
               <div className="space-y-2 max-h-40 overflow-y-auto">
                 {breeds.map((breed) => (
                   <label
                     key={breed.id}
-                    className="flex items-center gap-2 cursor-pointer hover:bg-gray-50 px-2 py-1 rounded transition-colors"
+                    className="flex items-center gap-2 cursor-pointer hover:bg-[rgba(15,35,70,0.5)] px-2 py-1 rounded transition-colors"
                   >
                     <input
                       type="checkbox"
                       checked={isBreedSelected(breed.id)}
                       onChange={() => onBreedToggle(breed.id)}
                       disabled={isLoading}
-                      className="w-4 h-4 text-blue-600 border-gray-300 rounded focus:ring-blue-500 disabled:cursor-not-allowed"
+                      className="w-4 h-4 text-blue-500 border-[rgba(37,99,235,0.3)] rounded focus:ring-blue-500 disabled:cursor-not-allowed"
                       aria-label={`Filter by ${breed.name}`}
                     />
-                    <span className="text-sm text-gray-700">{breed.name}</span>
+                    <span className="text-sm text-[rgb(220,235,255)]">{breed.name}</span>
                   </label>
                 ))}
               </div>
@@ -263,22 +269,24 @@ const HorseFilters = ({
 
           {/* Discipline Filter */}
           <div>
-            <label className="block text-sm font-medium text-gray-700 mb-2">Disciplines</label>
+            <label className="block text-sm font-medium text-[rgb(148,163,184)] mb-2">
+              Disciplines
+            </label>
             <div className="space-y-2">
               {DISCIPLINES.map((discipline) => (
                 <label
                   key={discipline}
-                  className="flex items-center gap-2 cursor-pointer hover:bg-gray-50 px-2 py-1 rounded transition-colors"
+                  className="flex items-center gap-2 cursor-pointer hover:bg-[rgba(15,35,70,0.5)] px-2 py-1 rounded transition-colors"
                 >
                   <input
                     type="checkbox"
                     checked={isDisciplineSelected(discipline)}
                     onChange={() => onDisciplineToggle(discipline)}
                     disabled={isLoading}
-                    className="w-4 h-4 text-blue-600 border-gray-300 rounded focus:ring-blue-500 disabled:cursor-not-allowed"
+                    className="w-4 h-4 text-blue-500 border-[rgba(37,99,235,0.3)] rounded focus:ring-blue-500 disabled:cursor-not-allowed"
                     aria-label={`Filter by ${discipline}`}
                   />
-                  <span className="text-sm text-gray-700">{discipline}</span>
+                  <span className="text-sm text-[rgb(220,235,255)]">{discipline}</span>
                 </label>
               ))}
             </div>
@@ -286,12 +294,14 @@ const HorseFilters = ({
 
           {/* Training Status Filter */}
           <div>
-            <label className="block text-sm font-medium text-gray-700 mb-2">Training Status</label>
+            <label className="block text-sm font-medium text-[rgb(148,163,184)] mb-2">
+              Training Status
+            </label>
             <div className="space-y-2">
               {TRAINING_STATUSES.map(({ value, label }) => (
                 <label
                   key={value}
-                  className="flex items-center gap-2 cursor-pointer hover:bg-gray-50 px-2 py-1 rounded transition-colors"
+                  className="flex items-center gap-2 cursor-pointer hover:bg-[rgba(15,35,70,0.5)] px-2 py-1 rounded transition-colors"
                 >
                   <input
                     type="radio"
@@ -304,10 +314,10 @@ const HorseFilters = ({
                       )
                     }
                     disabled={isLoading}
-                    className="w-4 h-4 text-blue-600 border-gray-300 focus:ring-blue-500 disabled:cursor-not-allowed"
+                    className="w-4 h-4 text-blue-500 border-[rgba(37,99,235,0.3)] focus:ring-blue-500 disabled:cursor-not-allowed"
                     aria-label={`Filter by ${label}`}
                   />
-                  <span className="text-sm text-gray-700">{label}</span>
+                  <span className="text-sm text-[rgb(220,235,255)]">{label}</span>
                 </label>
               ))}
             </div>
@@ -317,8 +327,8 @@ const HorseFilters = ({
 
       {/* Loading Overlay */}
       {isLoading && (
-        <div className="absolute inset-0 bg-white bg-opacity-50 flex items-center justify-center rounded-lg">
-          <div className="text-sm text-gray-600" role="status" aria-live="polite">
+        <div className="absolute inset-0 bg-[rgba(15,35,70,0.5)] flex items-center justify-center rounded-lg">
+          <div className="text-sm text-[rgb(148,163,184)]" role="status" aria-live="polite">
             Applying filters...
           </div>
         </div>

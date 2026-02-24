@@ -60,25 +60,25 @@ interface CategoryConfig {
 }
 
 /**
- * Style configurations for each trait category
+ * Style configurations for each trait category (Celestial Night palette)
  */
 const categoryConfigs: Record<TraitModifier['category'], CategoryConfig> = {
   positive: {
-    bgColor: 'bg-green-100',
-    borderColor: 'border-green-500',
-    textColor: 'text-green-700',
+    bgColor: 'bg-[rgba(16,185,129,0.1)]',
+    borderColor: 'border-emerald-500/30',
+    textColor: 'text-emerald-400',
     Icon: Plus,
   },
   negative: {
-    bgColor: 'bg-red-100',
-    borderColor: 'border-red-500',
-    textColor: 'text-red-700',
+    bgColor: 'bg-[rgba(239,68,68,0.1)]',
+    borderColor: 'border-red-500/30',
+    textColor: 'text-red-400',
     Icon: Minus,
   },
   neutral: {
-    bgColor: 'bg-gray-100',
-    borderColor: 'border-gray-300',
-    textColor: 'text-gray-600',
+    bgColor: 'bg-[rgba(15,35,70,0.3)]',
+    borderColor: 'border-[rgba(37,99,235,0.3)]',
+    textColor: 'text-[rgb(148,163,184)]',
     Icon: Info,
   },
 };

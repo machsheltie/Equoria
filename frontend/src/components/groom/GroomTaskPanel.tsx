@@ -31,7 +31,7 @@ interface GroomTaskPanelProps {
 function DurationBadge({ minutes }: { minutes: number }) {
   return (
     <span
-      className="inline-flex items-center text-xs bg-gray-100 text-gray-600 px-2 py-0.5 rounded"
+      className="inline-flex items-center text-xs bg-[rgba(15,35,70,0.5)] text-[rgb(148,163,184)] px-2 py-0.5 rounded"
       aria-label={`Duration: ${formatDuration(minutes)}`}
     >
       ⏱ {formatDuration(minutes)}
@@ -43,8 +43,8 @@ function DurationBadge({ minutes }: { minutes: number }) {
 function EffectChip({ label, type }: { label: string; type: 'positive' | 'neutral' }) {
   const colorClass =
     type === 'positive'
-      ? 'bg-green-50 text-green-700 border border-green-200'
-      : 'bg-gray-50 text-gray-600 border border-gray-200';
+      ? 'bg-[rgba(16,185,129,0.1)] text-emerald-400 border border-emerald-500/30'
+      : 'bg-[rgba(15,35,70,0.3)] text-[rgb(148,163,184)] border border-[rgba(37,99,235,0.3)]';
   return <span className={`inline-block text-xs px-2 py-0.5 rounded ${colorClass}`}>{label}</span>;
 }
 
@@ -52,18 +52,24 @@ function EffectChip({ label, type }: { label: string; type: 'positive' | 'neutra
 function TaskCard({ task, compact }: { task: TaskInfo; compact: boolean }) {
   return (
     <div
-      className="border border-gray-200 rounded-lg p-3 bg-white"
+      className="border border-[rgba(37,99,235,0.3)] rounded-lg p-3 bg-[rgba(15,35,70,0.4)]"
       data-testid={`task-card-${task.id}`}
     >
       <div className="flex items-start justify-between gap-2">
-        <span className="font-medium text-gray-900 text-sm" data-testid={`task-name-${task.id}`}>
+        <span
+          className="font-medium text-[rgb(220,235,255)] text-sm"
+          data-testid={`task-name-${task.id}`}
+        >
           {task.name}
         </span>
         <DurationBadge minutes={task.recommendedDurationMinutes} />
       </div>
 
       {!compact && (
-        <p className="text-xs text-gray-500 mt-1 mb-2" data-testid={`task-description-${task.id}`}>
+        <p
+          className="text-xs text-[rgb(148,163,184)] mt-1 mb-2"
+          data-testid={`task-description-${task.id}`}
+        >
           {task.description}
         </p>
       )}
@@ -109,7 +115,10 @@ function CategorySection({
       </div>
 
       {!compact && (
-        <p className="text-xs text-gray-500 mb-3" data-testid={`category-description-${category}`}>
+        <p
+          className="text-xs text-[rgb(148,163,184)] mb-3"
+          data-testid={`category-description-${category}`}
+        >
           {info.description}
         </p>
       )}
@@ -138,17 +147,17 @@ const GroomTaskPanel: React.FC<GroomTaskPanelProps> = ({ horseAge, compact = fal
 
   return (
     <div
-      className="rounded-lg border border-gray-200 bg-gray-50 p-4"
+      className="rounded-lg border border-[rgba(37,99,235,0.3)] bg-[rgba(15,35,70,0.5)] p-4"
       data-testid="groom-task-panel"
       aria-label={`Available groom tasks for horse aged ${ageLabel}`}
     >
       {/* Panel header */}
       <div className="flex items-center justify-between mb-4">
-        <h3 className="font-semibold text-gray-900" data-testid="task-panel-title">
+        <h3 className="font-semibold text-[rgb(220,235,255)]" data-testid="task-panel-title">
           Available Tasks
         </h3>
         <span
-          className="text-xs text-gray-500 bg-white px-2 py-1 rounded border"
+          className="text-xs text-[rgb(148,163,184)] bg-[rgba(15,35,70,0.4)] px-2 py-1 rounded border border-[rgba(37,99,235,0.3)]"
           data-testid="horse-age-label"
         >
           Horse age: {ageLabel}
@@ -157,7 +166,10 @@ const GroomTaskPanel: React.FC<GroomTaskPanelProps> = ({ horseAge, compact = fal
 
       {/* No tasks available */}
       {availableCategories.length === 0 && (
-        <p className="text-sm text-gray-500 text-center py-4" data-testid="no-tasks-message">
+        <p
+          className="text-sm text-[rgb(148,163,184)] text-center py-4"
+          data-testid="no-tasks-message"
+        >
           No tasks available for this horse age.
         </p>
       )}
@@ -177,7 +189,7 @@ const GroomTaskPanel: React.FC<GroomTaskPanelProps> = ({ horseAge, compact = fal
       {/* Mutual exclusivity note */}
       {!compact && availableCategories.length > 0 && (
         <p
-          className="text-xs text-gray-400 mt-4 border-t pt-3"
+          className="text-xs text-[rgb(148,163,184)] mt-4 border-t border-[rgba(37,99,235,0.3)] pt-3"
           data-testid="mutual-exclusivity-note"
         >
           Note: Only one enrichment or grooming task may be performed per day.

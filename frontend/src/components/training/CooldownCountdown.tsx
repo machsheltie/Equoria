@@ -57,7 +57,7 @@ const CooldownCountdown = ({ endsAt, className = '' }: CooldownCountdownProps) =
 
   return (
     <div
-      className={`flex items-center text-sm text-slate-600 ${className}`}
+      className={`flex items-center text-sm text-[rgb(148,163,184)] ${className}`}
       data-testid="cooldown-countdown"
     >
       <Clock className="h-4 w-4 mr-1" aria-hidden="true" />

@@ -103,7 +103,7 @@ const LeaderboardCategorySelector = ({
 }: LeaderboardCategorySelectorProps) => {
   return (
     <div
-      className={`bg-white rounded-lg shadow p-4 ${className}`}
+      className={`glass-panel rounded-lg p-4 ${className}`}
       data-testid="leaderboard-category-selector"
     >
       {/* Category Tabs */}
@@ -122,7 +122,7 @@ const LeaderboardCategorySelector = ({
               className={`px-4 py-2 rounded-t-lg text-sm font-medium whitespace-nowrap transition-colors ${
                 isActive
                   ? 'bg-blue-500 text-white'
-                  : 'bg-gray-200 text-gray-800 hover:bg-gray-300'
+                  : 'bg-[rgba(15,35,70,0.5)] text-[rgb(148,163,184)] hover:bg-[rgba(37,99,235,0.2)]'
               } ${isLoading ? 'opacity-50 cursor-not-allowed' : ''}`}
               data-testid={`category-${category}`}
               aria-pressed={isActive}
@@ -146,7 +146,7 @@ const LeaderboardCategorySelector = ({
             value={selectedDiscipline || ''}
             onChange={(e) => onDisciplineChange?.(e.target.value)}
             disabled={isLoading}
-            className="w-full md:w-64 px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
+            className="celestial-input w-full md:w-64"
             data-testid="discipline-selector"
             aria-label="Select discipline"
           >
@@ -171,7 +171,7 @@ const LeaderboardCategorySelector = ({
               className={`px-3 py-1 rounded text-sm font-medium transition-colors ${
                 isActive
                   ? 'bg-blue-500 text-white'
-                  : 'bg-gray-200 text-gray-800 hover:bg-gray-300'
+                  : 'bg-[rgba(15,35,70,0.5)] text-[rgb(148,163,184)] hover:bg-[rgba(37,99,235,0.2)]'
               } ${isLoading ? 'opacity-50 cursor-not-allowed' : ''}`}
               data-testid={`period-${period}`}
               aria-pressed={isActive}

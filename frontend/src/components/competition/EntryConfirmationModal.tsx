@@ -227,17 +227,17 @@ const EntryConfirmationModal = memo(function EntryConfirmationModal({
         aria-labelledby="entry-confirmation-title"
         aria-describedby="entry-confirmation-description"
         tabIndex={-1}
-        className="bg-white rounded-lg shadow-xl max-w-lg w-full max-h-[90vh] overflow-y-auto focus:outline-none"
+        className="glass-panel rounded-lg shadow-xl max-w-lg w-full max-h-[90vh] overflow-y-auto focus:outline-none"
         onClick={(e) => e.stopPropagation()}
         data-testid="entry-confirmation-modal"
       >
         {/* Header */}
-        <div className="flex items-start justify-between p-6 border-b border-gray-200">
+        <div className="flex items-start justify-between p-6 border-b border-[rgba(37,99,235,0.2)]">
           <div className="flex-1 pr-4">
-            <h2 id="entry-confirmation-title" className="text-xl font-bold text-gray-900">
+            <h2 id="entry-confirmation-title" className="text-xl font-bold text-[rgb(220,235,255)]">
               Confirm Entry
             </h2>
-            <p id="entry-confirmation-description" className="text-sm text-gray-500 mt-1">
+            <p id="entry-confirmation-description" className="text-sm text-[rgb(148,163,184)] mt-1">
               Review your competition entry details before submitting
             </p>
           </div>
@@ -245,7 +245,7 @@ const EntryConfirmationModal = memo(function EntryConfirmationModal({
             type="button"
             onClick={handleCloseClick}
             disabled={isSubmitting}
-            className="text-gray-400 hover:text-gray-600 transition-colors disabled:opacity-50 disabled:cursor-not-allowed p-1"
+            className="text-[rgb(148,163,184)] hover:text-[rgb(220,235,255)] transition-colors disabled:opacity-50 disabled:cursor-not-allowed p-1"
             aria-label="Close modal"
             data-testid="close-modal-button"
           >
@@ -258,16 +258,16 @@ const EntryConfirmationModal = memo(function EntryConfirmationModal({
           {/* Success State */}
           {submitSuccess && (
             <div
-              className="flex items-start space-x-3 p-4 bg-green-50 border border-green-200 rounded-lg"
+              className="flex items-start space-x-3 p-4 bg-[rgba(16,185,129,0.1)] border border-emerald-500/30 rounded-lg"
               data-testid="success-message"
             >
               <CheckCircle
-                className="h-6 w-6 text-green-500 flex-shrink-0 mt-0.5"
+                className="h-6 w-6 text-emerald-400 flex-shrink-0 mt-0.5"
                 aria-hidden="true"
               />
               <div>
-                <p className="font-medium text-green-800">Entry Confirmed!</p>
-                <p className="text-sm text-green-700 mt-1">
+                <p className="font-medium text-[rgb(220,235,255)]">Entry Confirmed!</p>
+                <p className="text-sm text-emerald-400 mt-1">
                   Your entry to <span className="font-semibold">{competition.name}</span> has been
                   successfully submitted.
                 </p>
@@ -278,45 +278,48 @@ const EntryConfirmationModal = memo(function EntryConfirmationModal({
           {/* Error State */}
           {submitError && (
             <div
-              className="flex items-start space-x-3 p-4 bg-red-50 border border-red-200 rounded-lg"
+              className="flex items-start space-x-3 p-4 bg-[rgba(239,68,68,0.1)] border border-red-500/30 rounded-lg"
               data-testid="error-message"
             >
               <XCircle className="h-6 w-6 text-red-500 flex-shrink-0 mt-0.5" aria-hidden="true" />
               <div>
-                <p className="font-medium text-red-800">Submission Failed</p>
-                <p className="text-sm text-red-700 mt-1">{submitError}</p>
+                <p className="font-medium text-[rgb(220,235,255)]">Submission Failed</p>
+                <p className="text-sm text-red-400 mt-1">{submitError}</p>
               </div>
             </div>
           )}
 
           {/* Competition Details */}
-          <div className="bg-gray-50 rounded-lg p-4">
-            <h3 className="text-sm font-semibold text-gray-900 mb-3 flex items-center">
+          <div className="bg-[rgba(15,35,70,0.5)] rounded-lg p-4">
+            <h3 className="text-sm font-semibold text-[rgb(220,235,255)] mb-3 flex items-center">
               <Trophy className="h-4 w-4 text-amber-500 mr-2" aria-hidden="true" />
               Competition Details
             </h3>
             <div className="space-y-2">
               <div className="flex justify-between items-center">
-                <span className="text-sm text-gray-600">Name</span>
-                <span className="text-sm font-medium text-gray-900" data-testid="competition-name">
+                <span className="text-sm text-[rgb(148,163,184)]">Name</span>
+                <span
+                  className="text-sm font-medium text-[rgb(220,235,255)]"
+                  data-testid="competition-name"
+                >
                   {competition.name}
                 </span>
               </div>
               <div className="flex justify-between items-center">
-                <span className="text-sm text-gray-600">Discipline</span>
+                <span className="text-sm text-[rgb(148,163,184)]">Discipline</span>
                 <span
-                  className="inline-block px-2 py-0.5 bg-blue-100 text-blue-800 text-xs font-medium rounded-full"
+                  className="inline-block px-2 py-0.5 bg-[rgba(37,99,235,0.1)] text-blue-400 text-xs font-medium rounded-full border border-blue-500/30"
                   data-testid="competition-discipline"
                 >
                   {competition.discipline}
                 </span>
               </div>
               <div className="flex justify-between items-center" data-testid="competition-date">
-                <span className="text-sm text-gray-600 flex items-center">
+                <span className="text-sm text-[rgb(148,163,184)] flex items-center">
                   <Calendar className="h-3 w-3 mr-1" aria-hidden="true" />
                   Date
                 </span>
-                <span className="text-sm font-medium text-gray-900">
+                <span className="text-sm font-medium text-[rgb(220,235,255)]">
                   {formatDate(competition.date)}
                 </span>
               </div>
@@ -325,7 +328,7 @@ const EntryConfirmationModal = memo(function EntryConfirmationModal({
 
           {/* Selected Horses */}
           <div>
-            <h3 className="text-sm font-semibold text-gray-900 mb-3">
+            <h3 className="text-sm font-semibold text-[rgb(220,235,255)] mb-3">
               Selected Horses ({selectedHorses.length})
             </h3>
             <div className="space-y-2" data-testid="selected-horses-list">
@@ -333,15 +336,15 @@ const EntryConfirmationModal = memo(function EntryConfirmationModal({
                 selectedHorses.map((horse) => (
                   <div
                     key={horse.id}
-                    className="flex justify-between items-center p-3 bg-gray-50 rounded-lg"
+                    className="flex justify-between items-center p-3 bg-[rgba(15,35,70,0.5)] rounded-lg"
                     data-testid={`horse-item-${horse.id}`}
                   >
-                    <span className="font-medium text-gray-900">{horse.name}</span>
-                    <span className="text-sm text-gray-500">Level {horse.level}</span>
+                    <span className="font-medium text-[rgb(220,235,255)]">{horse.name}</span>
+                    <span className="text-sm text-[rgb(148,163,184)]">Level {horse.level}</span>
                   </div>
                 ))
               ) : (
-                <p className="text-sm text-gray-500 italic p-3 bg-gray-50 rounded-lg">
+                <p className="text-sm text-[rgb(148,163,184)] italic p-3 bg-[rgba(15,35,70,0.5)] rounded-lg">
                   No horses selected
                 </p>
               )}
@@ -352,37 +355,42 @@ const EntryConfirmationModal = memo(function EntryConfirmationModal({
           <div
             className={cn(
               'rounded-lg p-4 border-2',
-              hasSufficientBalance ? 'border-green-200 bg-green-50' : 'border-red-200 bg-red-50'
+              hasSufficientBalance
+                ? 'border-emerald-500/30 bg-[rgba(16,185,129,0.1)]'
+                : 'border-red-500/30 bg-[rgba(239,68,68,0.1)]'
             )}
             data-testid="balance-section"
           >
             {/* Entry Fee */}
             <div className="flex justify-between items-center mb-3" data-testid="entry-fee-section">
-              <span className="text-sm font-medium text-gray-700 flex items-center">
+              <span className="text-sm font-medium text-[rgb(220,235,255)] flex items-center">
                 <DollarSign className="h-4 w-4 mr-1" aria-hidden="true" />
                 Entry Fee
               </span>
-              <span className="text-lg font-bold text-gray-900" data-testid="entry-fee">
+              <span className="text-lg font-bold text-[rgb(220,235,255)]" data-testid="entry-fee">
                 {formatEntryFee(entryFee)}
               </span>
             </div>
 
-            <div className="border-t border-gray-200 pt-3 space-y-2">
+            <div className="border-t border-[rgba(37,99,235,0.2)] pt-3 space-y-2">
               {/* Current Balance */}
               <div className="flex justify-between items-center">
-                <span className="text-sm text-gray-600">Current Balance</span>
-                <span className="text-sm font-medium text-gray-900" data-testid="current-balance">
+                <span className="text-sm text-[rgb(148,163,184)]">Current Balance</span>
+                <span
+                  className="text-sm font-medium text-[rgb(220,235,255)]"
+                  data-testid="current-balance"
+                >
                   {formatCurrency(userBalance)}
                 </span>
               </div>
 
               {/* New Balance */}
               <div className="flex justify-between items-center">
-                <span className="text-sm text-gray-600">Balance After Entry</span>
+                <span className="text-sm text-[rgb(148,163,184)]">Balance After Entry</span>
                 <span
                   className={cn(
                     'text-sm font-medium',
-                    hasSufficientBalance ? 'text-green-700' : 'text-red-700'
+                    hasSufficientBalance ? 'text-emerald-400' : 'text-red-400'
                   )}
                   data-testid="new-balance"
                 >
@@ -392,7 +400,7 @@ const EntryConfirmationModal = memo(function EntryConfirmationModal({
 
               {/* Balance Status */}
               {hasSufficientBalance ? (
-                <div className="flex items-center mt-2 text-green-700">
+                <div className="flex items-center mt-2 text-emerald-400">
                   <CheckCircle
                     className="h-4 w-4 mr-1"
                     aria-hidden="true"
@@ -402,14 +410,14 @@ const EntryConfirmationModal = memo(function EntryConfirmationModal({
                 </div>
               ) : (
                 <div
-                  className="flex items-start mt-2 p-2 bg-red-100 rounded"
+                  className="flex items-start mt-2 p-2 bg-[rgba(239,68,68,0.15)] rounded"
                   data-testid="insufficient-balance-warning"
                 >
                   <AlertTriangle
-                    className="h-4 w-4 text-red-600 mr-2 mt-0.5 flex-shrink-0"
+                    className="h-4 w-4 text-red-400 mr-2 mt-0.5 flex-shrink-0"
                     aria-hidden="true"
                   />
-                  <span className="text-sm text-red-700">
+                  <span className="text-sm text-red-400">
                     Insufficient balance. You need {formatCurrency(entryFee - userBalance)} more to
                     enter this competition.
                   </span>
@@ -420,12 +428,12 @@ const EntryConfirmationModal = memo(function EntryConfirmationModal({
         </div>
 
         {/* Footer */}
-        <div className="flex justify-end space-x-3 p-6 border-t border-gray-200 bg-gray-50">
+        <div className="flex justify-end space-x-3 p-6 border-t border-[rgba(37,99,235,0.2)] bg-[rgba(15,35,70,0.5)]">
           <button
             type="button"
             onClick={handleCancelClick}
             disabled={isSubmitting}
-            className="px-4 py-2 border border-gray-300 rounded-lg text-gray-700 hover:bg-gray-100 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
+            className="px-4 py-2 border border-[rgba(37,99,235,0.3)] rounded-lg text-[rgb(220,235,255)] hover:bg-[rgba(37,99,235,0.1)] transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
             data-testid="cancel-button"
           >
             {submitSuccess ? 'Close' : 'Cancel'}

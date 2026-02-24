@@ -68,9 +68,9 @@ function formatTemperamentChange(stat: string, value: number): string {
  * Get result value color
  */
 function getResultColor(value: number): string {
-  if (value > 0) return 'text-green-600';
-  if (value < 0) return 'text-red-600';
-  return 'text-slate-600';
+  if (value > 0) return 'text-emerald-400';
+  if (value < 0) return 'text-red-400';
+  return 'text-[rgb(148,163,184)]';
 }
 
 /**
@@ -82,11 +82,11 @@ const ActivityHistoryList: React.FC<ActivityHistoryListProps> = ({ history, maxI
   if (history.length === 0) {
     return (
       <div className="text-center py-12">
-        <div className="inline-flex items-center justify-center w-16 h-16 rounded-full bg-slate-100 mb-4">
-          <Clock className="h-8 w-8 text-slate-400" />
+        <div className="inline-flex items-center justify-center w-16 h-16 rounded-full bg-[rgba(15,35,70,0.5)] mb-4">
+          <Clock className="h-8 w-8 text-[rgb(148,163,184)]" />
         </div>
-        <p className="text-slate-600 text-sm">No activities completed yet</p>
-        <p className="text-slate-500 text-xs mt-1">
+        <p className="text-[rgb(148,163,184)] text-sm">No activities completed yet</p>
+        <p className="text-[rgb(148,163,184)] text-xs mt-1">
           Start enrichment activities to see your foal's progress here
         </p>
       </div>
@@ -107,7 +107,7 @@ const ActivityHistoryList: React.FC<ActivityHistoryListProps> = ({ history, maxI
         return (
           <div
             key={item.id}
-            className="rounded-lg border border-slate-200 bg-white p-4 hover:shadow-sm transition-shadow"
+            className="rounded-lg border border-[rgba(37,99,235,0.3)] bg-[rgba(15,35,70,0.4)] p-4 hover:shadow-sm transition-shadow"
           >
             {/* Header */}
             <div className="flex items-start justify-between mb-3">
@@ -119,7 +119,9 @@ const ActivityHistoryList: React.FC<ActivityHistoryListProps> = ({ history, maxI
 
                 {/* Activity Info */}
                 <div className="flex-1 min-w-0">
-                  <h4 className="font-semibold text-slate-900 text-sm">{item.activityName}</h4>
+                  <h4 className="font-semibold text-[rgb(220,235,255)] text-sm">
+                    {item.activityName}
+                  </h4>
                   <div className="flex items-center gap-2 mt-1">
                     <span
                       className={`inline-block px-2 py-0.5 text-xs font-medium rounded ${categoryColors}`}
@@ -132,11 +134,11 @@ const ActivityHistoryList: React.FC<ActivityHistoryListProps> = ({ history, maxI
 
               {/* Time Info */}
               <div className="text-right flex-shrink-0">
-                <div className="flex items-center gap-1 text-xs text-slate-500">
+                <div className="flex items-center gap-1 text-xs text-[rgb(148,163,184)]">
                   <Calendar className="h-3 w-3" />
                   <span>{formatActivityDate(item.performedAt)}</span>
                 </div>
-                <div className="flex items-center gap-1 text-xs text-slate-500 mt-1">
+                <div className="flex items-center gap-1 text-xs text-[rgb(148,163,184)] mt-1">
                   <Clock className="h-3 w-3" />
                   <span>{item.durationMinutes}m</span>
                 </div>
@@ -148,9 +150,9 @@ const ActivityHistoryList: React.FC<ActivityHistoryListProps> = ({ history, maxI
               {/* Milestone Points */}
               {item.results.milestonePoints > 0 && (
                 <div className="flex items-center gap-2 text-xs">
-                  <Award className="h-3 w-3 text-amber-500" />
-                  <span className="text-slate-600">Milestone:</span>
-                  <span className="font-semibold text-amber-600">
+                  <Award className="h-3 w-3 text-amber-400" />
+                  <span className="text-[rgb(148,163,184)]">Milestone:</span>
+                  <span className="font-semibold text-amber-400">
                     +{item.results.milestonePoints} pts
                   </span>
                 </div>
@@ -159,8 +161,8 @@ const ActivityHistoryList: React.FC<ActivityHistoryListProps> = ({ history, maxI
               {/* Bonding Change */}
               {item.results.bondingChange !== 0 && (
                 <div className="flex items-center gap-2 text-xs">
-                  <Heart className="h-3 w-3 text-blue-500" />
-                  <span className="text-slate-600">Bonding:</span>
+                  <Heart className="h-3 w-3 text-blue-400" />
+                  <span className="text-[rgb(148,163,184)]">Bonding:</span>
                   <span className={`font-semibold ${getResultColor(item.results.bondingChange)}`}>
                     {item.results.bondingChange > 0 ? '+' : ''}
                     {item.results.bondingChange}
@@ -171,8 +173,8 @@ const ActivityHistoryList: React.FC<ActivityHistoryListProps> = ({ history, maxI
               {/* Stress Change */}
               {item.results.stressChange !== 0 && (
                 <div className="flex items-center gap-2 text-xs">
-                  <TrendingUp className="h-3 w-3 text-emerald-500" />
-                  <span className="text-slate-600">Stress:</span>
+                  <TrendingUp className="h-3 w-3 text-emerald-400" />
+                  <span className="text-[rgb(148,163,184)]">Stress:</span>
                   <span className={`font-semibold ${getResultColor(-item.results.stressChange)}`}>
                     {item.results.stressChange > 0 ? '+' : ''}
                     {item.results.stressChange}
@@ -182,8 +184,8 @@ const ActivityHistoryList: React.FC<ActivityHistoryListProps> = ({ history, maxI
 
               {/* Temperament Changes */}
               {hasTemperamentChanges && (
-                <div className="pt-2 border-t border-slate-100">
-                  <p className="text-xs font-medium text-slate-700 mb-1 flex items-center gap-1">
+                <div className="pt-2 border-t border-[rgba(37,99,235,0.2)]">
+                  <p className="text-xs font-medium text-[rgb(220,235,255)] mb-1 flex items-center gap-1">
                     <TrendingUp className="h-3 w-3" />
                     Temperament Changes:
                   </p>
@@ -192,7 +194,9 @@ const ActivityHistoryList: React.FC<ActivityHistoryListProps> = ({ history, maxI
                       <span
                         key={stat}
                         className={`inline-block px-2 py-0.5 text-xs font-medium rounded ${
-                          value > 0 ? 'bg-green-50 text-green-700' : 'bg-amber-50 text-amber-700'
+                          value > 0
+                            ? 'bg-[rgba(16,185,129,0.1)] text-emerald-400'
+                            : 'bg-[rgba(212,168,67,0.1)] text-amber-400'
                         }`}
                       >
                         {formatTemperamentChange(stat, value)}
@@ -204,8 +208,8 @@ const ActivityHistoryList: React.FC<ActivityHistoryListProps> = ({ history, maxI
 
               {/* Traits Discovered */}
               {hasTraitsDiscovered && (
-                <div className="pt-2 border-t border-slate-100">
-                  <p className="text-xs font-medium text-emerald-700 mb-1 flex items-center gap-1">
+                <div className="pt-2 border-t border-[rgba(37,99,235,0.2)]">
+                  <p className="text-xs font-medium text-emerald-400 mb-1 flex items-center gap-1">
                     <Sparkles className="h-3 w-3" />
                     Traits Discovered:
                   </p>
@@ -213,7 +217,7 @@ const ActivityHistoryList: React.FC<ActivityHistoryListProps> = ({ history, maxI
                     {item.results.traitsDiscovered?.map((trait, index) => (
                       <span
                         key={index}
-                        className="inline-block px-2 py-0.5 text-xs font-medium bg-emerald-100 text-emerald-700 rounded"
+                        className="inline-block px-2 py-0.5 text-xs font-medium bg-[rgba(16,185,129,0.1)] text-emerald-400 rounded"
                       >
                         {trait}
                       </span>
@@ -229,7 +233,7 @@ const ActivityHistoryList: React.FC<ActivityHistoryListProps> = ({ history, maxI
       {/* Show More indicator */}
       {maxItems && history.length > maxItems && (
         <div className="text-center py-2">
-          <p className="text-xs text-slate-500">
+          <p className="text-xs text-[rgb(148,163,184)]">
             Showing {maxItems} of {history.length} activities
           </p>
         </div>

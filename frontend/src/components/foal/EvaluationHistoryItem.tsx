@@ -65,10 +65,10 @@ const EvaluationHistoryItem: React.FC<EvaluationHistoryItemProps> = ({
   };
 
   return (
-    <div className="rounded-lg border border-slate-200 bg-white shadow-sm transition-all">
+    <div className="rounded-lg border border-[rgba(37,99,235,0.3)] bg-[rgba(15,35,70,0.4)] shadow-sm transition-all">
       {/* Summary View (always visible) */}
       <div
-        className="p-4 cursor-pointer hover:bg-slate-50 transition-colors"
+        className="p-4 cursor-pointer hover:bg-[rgba(15,35,70,0.6)] transition-colors"
         onClick={handleToggle}
         role="button"
         aria-expanded={isExpanded}
@@ -78,10 +78,10 @@ const EvaluationHistoryItem: React.FC<EvaluationHistoryItemProps> = ({
           <div className="flex-1">
             {/* Milestone Name & Date */}
             <div className="flex items-start gap-3 mb-2">
-              <Award className="h-5 w-5 text-blue-600 flex-shrink-0 mt-0.5" />
+              <Award className="h-5 w-5 text-blue-400 flex-shrink-0 mt-0.5" />
               <div className="flex-1">
-                <h4 className="font-semibold text-slate-900">{milestoneName}</h4>
-                <div className="flex items-center gap-2 mt-1 text-xs text-slate-600">
+                <h4 className="font-semibold text-[rgb(220,235,255)]">{milestoneName}</h4>
+                <div className="flex items-center gap-2 mt-1 text-xs text-[rgb(148,163,184)]">
                   <Calendar className="h-3 w-3" />
                   <span>{formatEvaluationDate(evaluatedAt)}</span>
                 </div>
@@ -100,18 +100,18 @@ const EvaluationHistoryItem: React.FC<EvaluationHistoryItemProps> = ({
               {/* Traits */}
               {traitsConfirmed && traitsConfirmed.length > 0 && (
                 <div className="flex items-center gap-2">
-                  <span className="text-xs text-slate-500">Traits:</span>
+                  <span className="text-xs text-[rgb(148,163,184)]">Traits:</span>
                   <div className="flex flex-wrap gap-1">
                     {traitsConfirmed.slice(0, 2).map((trait, index) => (
                       <span
                         key={index}
-                        className="inline-block px-2 py-0.5 text-xs font-medium bg-emerald-100 text-emerald-700 rounded"
+                        className="inline-block px-2 py-0.5 text-xs font-medium bg-[rgba(16,185,129,0.15)] text-emerald-400 rounded"
                       >
                         {trait}
                       </span>
                     ))}
                     {traitsConfirmed.length > 2 && (
-                      <span className="text-xs text-slate-500">
+                      <span className="text-xs text-[rgb(148,163,184)]">
                         +{traitsConfirmed.length - 2} more
                       </span>
                     )}
@@ -123,7 +123,7 @@ const EvaluationHistoryItem: React.FC<EvaluationHistoryItemProps> = ({
 
           {/* Expand/Collapse Button */}
           <button
-            className="flex-shrink-0 p-2 rounded-lg hover:bg-slate-100 transition-colors"
+            className="flex-shrink-0 p-2 rounded-lg hover:bg-[rgba(15,35,70,0.5)] transition-colors"
             onClick={(e) => {
               e.stopPropagation();
               handleToggle();
@@ -131,9 +131,9 @@ const EvaluationHistoryItem: React.FC<EvaluationHistoryItemProps> = ({
             aria-label={isExpanded ? 'Collapse details' : 'View details'}
           >
             {isExpanded ? (
-              <ChevronUp className="h-5 w-5 text-slate-600" />
+              <ChevronUp className="h-5 w-5 text-[rgb(148,163,184)]" />
             ) : (
-              <ChevronDown className="h-5 w-5 text-slate-600" />
+              <ChevronDown className="h-5 w-5 text-[rgb(148,163,184)]" />
             )}
           </button>
         </div>
@@ -141,7 +141,7 @@ const EvaluationHistoryItem: React.FC<EvaluationHistoryItemProps> = ({
 
       {/* Detailed View (expandable) */}
       {isExpanded && (
-        <div className="border-t border-slate-200 p-4 bg-slate-50 space-y-4">
+        <div className="border-t border-[rgba(37,99,235,0.3)] p-4 bg-[rgba(15,35,70,0.3)] space-y-4">
           {/* Score Display */}
           <EvaluationScoreDisplay score={score} size="small" showProgressBar showCategory={false} />
 
@@ -155,13 +155,15 @@ const EvaluationHistoryItem: React.FC<EvaluationHistoryItemProps> = ({
 
           {/* All Traits Confirmed */}
           {traitsConfirmed && traitsConfirmed.length > 0 && (
-            <div className="rounded-lg border border-slate-200 bg-white p-4">
-              <h5 className="text-sm font-semibold text-slate-700 mb-3">Traits Confirmed:</h5>
+            <div className="rounded-lg border border-[rgba(37,99,235,0.3)] bg-[rgba(15,35,70,0.4)] p-4">
+              <h5 className="text-sm font-semibold text-[rgb(220,235,255)] mb-3">
+                Traits Confirmed:
+              </h5>
               <div className="flex flex-wrap gap-2">
                 {traitsConfirmed.map((trait, index) => (
                   <span
                     key={index}
-                    className="inline-block px-3 py-1.5 text-sm font-medium bg-emerald-50 text-emerald-700 border border-emerald-200 rounded-lg"
+                    className="inline-block px-3 py-1.5 text-sm font-medium bg-[rgba(16,185,129,0.1)] text-emerald-400 border border-emerald-500/30 rounded-lg"
                   >
                     {trait}
                   </span>
@@ -172,28 +174,28 @@ const EvaluationHistoryItem: React.FC<EvaluationHistoryItemProps> = ({
 
           {/* Quick Stats Summary */}
           <div className="grid grid-cols-3 gap-3">
-            <div className="rounded-lg bg-white border border-slate-200 p-3 text-center">
-              <p className="text-xs text-slate-600 mb-1">Bond</p>
+            <div className="rounded-lg bg-[rgba(15,35,70,0.4)] border border-[rgba(37,99,235,0.3)] p-3 text-center">
+              <p className="text-xs text-[rgb(148,163,184)] mb-1">Bond</p>
               <p
                 className={`text-lg font-bold ${
                   bondModifier > 0
-                    ? 'text-green-600'
+                    ? 'text-emerald-400'
                     : bondModifier < 0
-                      ? 'text-red-600'
-                      : 'text-slate-600'
+                      ? 'text-red-400'
+                      : 'text-[rgb(148,163,184)]'
                 }`}
               >
                 {bondModifier > 0 ? '+' : ''}
                 {bondModifier}
               </p>
             </div>
-            <div className="rounded-lg bg-white border border-slate-200 p-3 text-center">
-              <p className="text-xs text-slate-600 mb-1">Consistency</p>
-              <p className="text-lg font-bold text-emerald-600">+{taskConsistency}</p>
+            <div className="rounded-lg bg-[rgba(15,35,70,0.4)] border border-[rgba(37,99,235,0.3)] p-3 text-center">
+              <p className="text-xs text-[rgb(148,163,184)] mb-1">Consistency</p>
+              <p className="text-lg font-bold text-emerald-400">+{taskConsistency}</p>
             </div>
-            <div className="rounded-lg bg-white border border-slate-200 p-3 text-center">
-              <p className="text-xs text-slate-600 mb-1">Quality</p>
-              <p className="text-lg font-bold text-amber-600">
+            <div className="rounded-lg bg-[rgba(15,35,70,0.4)] border border-[rgba(37,99,235,0.3)] p-3 text-center">
+              <p className="text-xs text-[rgb(148,163,184)] mb-1">Quality</p>
+              <p className="text-lg font-bold text-amber-400">
                 {careQuality > 0 ? '+' : ''}
                 {careQuality}
               </p>

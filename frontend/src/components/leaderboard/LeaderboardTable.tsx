@@ -44,18 +44,15 @@ const SKELETON_ROW_COUNT = 10;
  * Animated skeleton row placeholder shown during loading.
  */
 const SkeletonRow = () => (
-  <div
-    className="flex items-center gap-4 px-4 py-3 animate-pulse"
-    data-testid="skeleton-row"
-  >
-    <div className="w-10 h-10 rounded-full bg-gray-200" />
-    <div className="w-12 h-4 rounded bg-gray-200" />
+  <div className="flex items-center gap-4 px-4 py-3 animate-pulse" data-testid="skeleton-row">
+    <div className="w-10 h-10 rounded-full bg-[rgba(15,35,70,0.5)]" />
+    <div className="w-12 h-4 rounded bg-[rgba(15,35,70,0.5)]" />
     <div className="flex-1 space-y-2">
-      <div className="h-4 bg-gray-200 rounded w-3/4" />
-      <div className="h-3 bg-gray-200 rounded w-1/2" />
+      <div className="h-4 bg-[rgba(15,35,70,0.5)] rounded w-3/4" />
+      <div className="h-3 bg-[rgba(15,35,70,0.5)] rounded w-1/2" />
     </div>
-    <div className="w-16 h-6 bg-gray-200 rounded" />
-    <div className="hidden md:block w-40 h-4 bg-gray-200 rounded" />
+    <div className="w-16 h-6 bg-[rgba(15,35,70,0.5)] rounded" />
+    <div className="hidden md:block w-40 h-4 bg-[rgba(15,35,70,0.5)] rounded" />
   </div>
 );
 
@@ -64,7 +61,7 @@ const SkeletonRow = () => (
  */
 const EmptyState = () => (
   <div
-    className="flex flex-col items-center justify-center py-16 text-gray-500"
+    className="flex flex-col items-center justify-center py-16 text-[rgb(148,163,184)]"
     data-testid="empty-state"
   >
     <p className="text-lg font-medium">No entries found</p>
@@ -89,15 +86,12 @@ const LeaderboardTable = ({
   const isClickable = Boolean(onEntryClick);
 
   return (
-    <div
-      className={`bg-white rounded-lg shadow ${className}`}
-      data-testid="leaderboard-table"
-    >
+    <div className={`glass-panel rounded-lg ${className}`} data-testid="leaderboard-table">
       {/* Table with ARIA role */}
       <div role="table" aria-label="Leaderboard rankings">
         {/* Column Headers */}
         <div
-          className="flex items-center gap-4 px-4 py-2 bg-gray-100 rounded-t-lg font-bold text-sm text-gray-700"
+          className="flex items-center gap-4 px-4 py-2 bg-[rgba(15,35,70,0.5)] rounded-t-lg font-bold text-sm text-[rgb(148,163,184)]"
           data-testid="table-header"
           role="row"
         >
@@ -148,11 +142,11 @@ const LeaderboardTable = ({
 
       {/* Pagination Controls */}
       <div
-        className="flex items-center justify-between px-4 py-3 border-t border-gray-200"
+        className="flex items-center justify-between px-4 py-3 border-t border-[rgba(37,99,235,0.3)]"
         data-testid="pagination"
       >
         <button
-          className="inline-flex items-center gap-1 px-3 py-1.5 text-sm font-medium text-gray-700 bg-white border border-gray-300 rounded hover:bg-gray-50 disabled:opacity-50 disabled:cursor-not-allowed"
+          className="inline-flex items-center gap-1 px-3 py-1.5 text-sm font-medium text-[rgb(220,235,255)] bg-[rgba(15,35,70,0.4)] border border-[rgba(37,99,235,0.3)] rounded hover:bg-[rgba(15,35,70,0.6)] disabled:opacity-50 disabled:cursor-not-allowed"
           onClick={() => onPageChange(currentPage - 1)}
           disabled={currentPage <= 1}
           data-testid="pagination-prev"
@@ -162,12 +156,12 @@ const LeaderboardTable = ({
           Previous
         </button>
 
-        <span className="text-sm text-gray-600">
+        <span className="text-sm text-[rgb(148,163,184)]">
           Page {currentPage} of {totalPages}
         </span>
 
         <button
-          className="inline-flex items-center gap-1 px-3 py-1.5 text-sm font-medium text-gray-700 bg-white border border-gray-300 rounded hover:bg-gray-50 disabled:opacity-50 disabled:cursor-not-allowed"
+          className="inline-flex items-center gap-1 px-3 py-1.5 text-sm font-medium text-[rgb(220,235,255)] bg-[rgba(15,35,70,0.4)] border border-[rgba(37,99,235,0.3)] rounded hover:bg-[rgba(15,35,70,0.6)] disabled:opacity-50 disabled:cursor-not-allowed"
           onClick={() => onPageChange(currentPage + 1)}
           disabled={currentPage >= totalPages}
           data-testid="pagination-next"

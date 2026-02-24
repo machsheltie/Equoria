@@ -65,19 +65,21 @@ const QuickTrainModal = ({ isOpen, horses, onClose, onTrain }: QuickTrainModalPr
         role="dialog"
         aria-modal="true"
         aria-labelledby="quick-train-modal-title"
-        className="bg-white rounded-lg shadow-xl max-w-2xl w-full mx-4 max-h-[80vh] flex flex-col"
+        className="glass-panel rounded-lg shadow-xl max-w-2xl w-full mx-4 max-h-[80vh] flex flex-col border border-[rgba(37,99,235,0.3)]"
       >
         {/* Header */}
-        <div className="flex items-center justify-between p-6 border-b border-slate-200">
+        <div className="flex items-center justify-between p-6 border-b border-[rgba(37,99,235,0.2)]">
           <div>
-            <h2 id="quick-train-modal-title" className="text-xl font-bold text-slate-900">
+            <h2 id="quick-train-modal-title" className="text-xl font-bold text-[rgb(220,235,255)]">
               Quick Train
             </h2>
-            <p className="text-sm text-slate-600 mt-1">Select horses to train simultaneously</p>
+            <p className="text-sm text-[rgb(148,163,184)] mt-1">
+              Select horses to train simultaneously
+            </p>
           </div>
           <button
             onClick={onClose}
-            className="text-slate-400 hover:text-slate-600 focus:outline-none focus:ring-2 focus:ring-blue-500 rounded"
+            className="text-[rgb(148,163,184)] hover:text-[rgb(220,235,255)] focus:outline-none focus:ring-2 focus:ring-blue-500 rounded"
             data-testid="close-button"
             aria-label="Close quick train modal"
           >
@@ -90,11 +92,11 @@ const QuickTrainModal = ({ isOpen, horses, onClose, onTrain }: QuickTrainModalPr
           {readyHorses.length === 0 ? (
             /* Empty State */
             <div className="py-12 text-center" data-testid="empty-state">
-              <Zap className="mx-auto h-12 w-12 text-slate-400 mb-4" aria-hidden="true" />
-              <h3 className="text-lg font-medium text-slate-900 mb-2">
+              <Zap className="mx-auto h-12 w-12 text-[rgb(148,163,184)] mb-4" aria-hidden="true" />
+              <h3 className="text-lg font-medium text-[rgb(220,235,255)] mb-2">
                 No horses ready for training
               </h3>
-              <p className="text-sm text-slate-600">
+              <p className="text-sm text-[rgb(148,163,184)]">
                 All your horses are either on cooldown or ineligible for training.
               </p>
             </div>
@@ -102,10 +104,10 @@ const QuickTrainModal = ({ isOpen, horses, onClose, onTrain }: QuickTrainModalPr
             <>
               {/* Horse Count and Select All */}
               <div className="flex items-center justify-between mb-4">
-                <div className="text-sm text-slate-600">
+                <div className="text-sm text-[rgb(148,163,184)]">
                   {readyHorses.length} {readyHorses.length === 1 ? 'horse' : 'horses'} ready
                   {hasSelection && (
-                    <span className="ml-2 font-medium text-blue-600">
+                    <span className="ml-2 font-medium text-blue-400">
                       ({selectedIds.size} selected)
                     </span>
                   )}
@@ -118,9 +120,9 @@ const QuickTrainModal = ({ isOpen, horses, onClose, onTrain }: QuickTrainModalPr
                     className="sr-only"
                     aria-label="Select all horses"
                   />
-                  <div className="flex items-center gap-2 text-sm text-slate-700 hover:text-blue-600">
+                  <div className="flex items-center gap-2 text-sm text-[rgb(220,235,255)] hover:text-blue-400">
                     {allSelected ? (
-                      <CheckSquare className="h-5 w-5 text-blue-600" aria-hidden="true" />
+                      <CheckSquare className="h-5 w-5 text-blue-400" aria-hidden="true" />
                     ) : (
                       <Square className="h-5 w-5" aria-hidden="true" />
                     )}
@@ -134,7 +136,7 @@ const QuickTrainModal = ({ isOpen, horses, onClose, onTrain }: QuickTrainModalPr
                 {readyHorses.map((horse) => (
                   <label
                     key={horse.id}
-                    className="flex items-center gap-3 p-3 border border-slate-200 rounded-lg hover:bg-slate-50 cursor-pointer"
+                    className="flex items-center gap-3 p-3 border border-[rgba(37,99,235,0.2)] rounded-lg hover:bg-[rgba(37,99,235,0.08)] cursor-pointer"
                   >
                     <input
                       type="checkbox"
@@ -145,14 +147,14 @@ const QuickTrainModal = ({ isOpen, horses, onClose, onTrain }: QuickTrainModalPr
                     />
                     <div className="flex-shrink-0">
                       {selectedIds.has(horse.id) ? (
-                        <CheckSquare className="h-5 w-5 text-blue-600" aria-hidden="true" />
+                        <CheckSquare className="h-5 w-5 text-blue-400" aria-hidden="true" />
                       ) : (
-                        <Square className="h-5 w-5 text-slate-400" aria-hidden="true" />
+                        <Square className="h-5 w-5 text-[rgb(148,163,184)]" aria-hidden="true" />
                       )}
                     </div>
                     <div className="flex-1">
-                      <div className="font-medium text-slate-900">{horse.name}</div>
-                      <div className="text-sm text-slate-600">
+                      <div className="font-medium text-[rgb(220,235,255)]">{horse.name}</div>
+                      <div className="text-sm text-[rgb(148,163,184)]">
                         {horse.age} {horse.age === 1 ? 'year' : 'years'} old
                       </div>
                     </div>
@@ -165,10 +167,10 @@ const QuickTrainModal = ({ isOpen, horses, onClose, onTrain }: QuickTrainModalPr
 
         {/* Footer */}
         {readyHorses.length > 0 && (
-          <div className="flex items-center justify-end gap-3 p-6 border-t border-slate-200">
+          <div className="flex items-center justify-end gap-3 p-6 border-t border-[rgba(37,99,235,0.2)]">
             <button
               onClick={onClose}
-              className="px-4 py-2 text-slate-700 hover:text-slate-900 focus:outline-none focus:ring-2 focus:ring-blue-500 rounded"
+              className="px-4 py-2 text-[rgb(220,235,255)] hover:text-white focus:outline-none focus:ring-2 focus:ring-blue-500 rounded"
               data-testid="cancel-button"
             >
               Cancel

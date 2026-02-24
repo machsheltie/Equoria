@@ -47,15 +47,15 @@ const DisciplineSelector: React.FC<DisciplineSelectorProps> = ({
 
   return (
     <div>
-      <label htmlFor="discipline-selector" className="text-sm font-medium text-slate-700">
+      <label htmlFor="discipline-selector" className="text-sm font-medium text-[rgb(220,235,255)]">
         Discipline
       </label>
-      {description && <p className="mt-1 text-xs text-slate-500">{description}</p>}
+      {description && <p className="mt-1 text-xs text-[rgb(148,163,184)]">{description}</p>}
       <select
         id="discipline-selector"
         value={selectedDiscipline}
         onChange={handleChange}
-        className="mt-2 w-full rounded-md border border-slate-200 px-3 py-2 text-sm text-slate-900 shadow-sm focus:border-emerald-500 focus:outline-none focus:ring-2 focus:ring-emerald-500"
+        className="celestial-input w-full mt-2"
       >
         {disciplines.map((discipline) => (
           <option key={discipline} value={discipline}>

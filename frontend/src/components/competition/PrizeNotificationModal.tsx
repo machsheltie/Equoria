@@ -120,7 +120,7 @@ const getGradientClasses = (placement: 1 | 2 | 3): string => {
     case 1:
       return 'from-yellow-400 via-amber-500 to-yellow-600'; // Gold gradient
     case 2:
-      return 'from-gray-300 via-slate-400 to-gray-500'; // Silver gradient
+      return 'from-[rgb(148,163,184)] via-[rgb(100,130,165)] to-[rgb(75,100,135)]'; // Silver gradient
     case 3:
       return 'from-orange-400 via-orange-500 to-orange-600'; // Bronze gradient
   }
@@ -142,7 +142,7 @@ const PlacementIcon = memo(({ placement }: { placement: 1 | 2 | 3 }) => {
   return (
     <Medal
       className={`h-10 w-10 drop-shadow-lg ${
-        placement === 2 ? 'text-gray-400' : 'text-orange-500'
+        placement === 2 ? 'text-[rgb(148,163,184)]' : 'text-orange-500'
       }`}
       aria-hidden="true"
       data-testid="medal-icon"

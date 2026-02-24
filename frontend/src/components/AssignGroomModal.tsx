@@ -16,7 +16,7 @@
  */
 
 import React, { useState, useEffect } from 'react';
-import { X, User, Star, AlertCircle, CheckCircle } from 'lucide-react';
+import { X, User, AlertCircle, CheckCircle } from 'lucide-react';
 import { useAssignGroom } from '../hooks/api/useGrooms';
 
 // Type definitions
@@ -40,7 +40,7 @@ interface AssignGroomModalProps {
   horseId: number;
   horseName: string;
   userId: number;
-  onAssignmentComplete?: (assignment: any) => void;
+  onAssignmentComplete?: (_assignment: unknown) => void;
   availableGrooms?: Groom[];
 }
 
@@ -49,7 +49,7 @@ const AssignGroomModal: React.FC<AssignGroomModalProps> = ({
   onClose,
   horseId,
   horseName,
-  userId,
+  userId: _userId,
   onAssignmentComplete,
   availableGrooms = [],
 }) => {
@@ -137,18 +137,18 @@ const AssignGroomModal: React.FC<AssignGroomModalProps> = ({
       data-testid="assign-groom-modal"
     >
       <div
-        className="bg-white rounded-lg shadow-xl max-w-2xl w-full max-h-[90vh] overflow-y-auto"
+        className="bg-[rgba(15,35,70,0.95)] rounded-lg shadow-xl max-w-2xl w-full max-h-[90vh] overflow-y-auto border border-[rgba(37,99,235,0.3)]"
         onClick={(e) => e.stopPropagation()}
         role="dialog"
         aria-label="Assign groom to horse"
         aria-modal="true"
       >
         {/* Header */}
-        <div className="sticky top-0 bg-white border-b border-gray-200 px-6 py-4 flex items-center justify-between">
-          <h2 className="text-2xl font-bold text-gray-900">Assign Groom</h2>
+        <div className="sticky top-0 bg-[rgba(15,35,70,0.95)] border-b border-[rgba(37,99,235,0.3)] px-6 py-4 flex items-center justify-between">
+          <h2 className="text-2xl font-bold text-[rgb(220,235,255)]">Assign Groom</h2>
           <button
             onClick={onClose}
-            className="text-gray-400 hover:text-gray-600 transition-colors"
+            className="text-[rgb(148,163,184)] hover:text-[rgb(220,235,255)] transition-colors"
             aria-label="Close modal"
           >
             <X size={24} />
@@ -158,34 +158,34 @@ const AssignGroomModal: React.FC<AssignGroomModalProps> = ({
         {/* Content */}
         <div className="px-6 py-4">
           {/* Horse Information */}
-          <div className="bg-blue-50 rounded-lg p-4 mb-6">
-            <h3 className="text-lg font-semibold text-gray-900 mb-2">Horse</h3>
-            <p className="text-gray-700">{horseName}</p>
+          <div className="bg-[rgba(37,99,235,0.1)] border border-[rgba(37,99,235,0.3)] rounded-lg p-4 mb-6">
+            <h3 className="text-lg font-semibold text-[rgb(220,235,255)] mb-2">Horse</h3>
+            <p className="text-[rgb(148,163,184)]">{horseName}</p>
           </div>
 
           {/* Success Message */}
           {success && (
-            <div className="bg-green-50 border border-green-200 rounded-lg p-4 mb-6 flex items-center">
-              <CheckCircle className="text-green-600 mr-3" size={20} />
-              <p className="text-green-800">Groom assigned successfully!</p>
+            <div className="bg-[rgba(16,185,129,0.1)] border border-emerald-500/30 rounded-lg p-4 mb-6 flex items-center">
+              <CheckCircle className="text-emerald-400 mr-3" size={20} />
+              <p className="text-emerald-400">Groom assigned successfully!</p>
             </div>
           )}
 
           {/* Error Message */}
           {error && (
-            <div className="bg-red-50 border border-red-200 rounded-lg p-4 mb-6 flex items-center">
-              <AlertCircle className="text-red-600 mr-3" size={20} />
-              <p className="text-red-800">{error}</p>
+            <div className="bg-[rgba(239,68,68,0.1)] border border-red-500/30 rounded-lg p-4 mb-6 flex items-center">
+              <AlertCircle className="text-red-400 mr-3" size={20} />
+              <p className="text-red-400">{error}</p>
             </div>
           )}
 
           {/* Available Grooms */}
           <div className="mb-6">
-            <h3 className="text-lg font-semibold text-gray-900 mb-4">Select Groom</h3>
+            <h3 className="text-lg font-semibold text-[rgb(220,235,255)] mb-4">Select Groom</h3>
 
             {availableGrooms.length === 0 ? (
-              <div className="text-center py-8 text-gray-500">
-                <User size={48} className="mx-auto mb-4 text-gray-400" />
+              <div className="text-center py-8 text-[rgb(148,163,184)]">
+                <User size={48} className="mx-auto mb-4 text-[rgb(148,163,184)]" />
                 <p className="text-lg">No grooms available</p>
                 <p className="text-sm mt-2">
                   Hire grooms from the marketplace to assign them to your horses.
@@ -198,10 +198,10 @@ const AssignGroomModal: React.FC<AssignGroomModalProps> = ({
                     key={groom.id}
                     className={`block border rounded-lg p-4 cursor-pointer transition-all ${
                       selectedGroomId === groom.id
-                        ? 'border-blue-500 bg-blue-50'
+                        ? 'border-blue-500 bg-[rgba(37,99,235,0.15)]'
                         : groom.availableSlots === 0
-                          ? 'border-gray-200 bg-gray-50 cursor-not-allowed opacity-60'
-                          : 'border-gray-300 hover:border-blue-300 hover:bg-gray-50'
+                          ? 'border-[rgba(37,99,235,0.2)] bg-[rgba(15,35,70,0.3)] cursor-not-allowed opacity-60'
+                          : 'border-[rgba(37,99,235,0.3)] hover:border-blue-400 hover:bg-[rgba(37,99,235,0.1)]'
                     }`}
                   >
                     <div className="flex items-start">
@@ -217,12 +217,12 @@ const AssignGroomModal: React.FC<AssignGroomModalProps> = ({
                       />
                       <div className="flex-1">
                         <div className="flex items-center justify-between mb-2">
-                          <h4 className="font-semibold text-gray-900">{groom.name}</h4>
-                          <span className="text-sm text-gray-600 capitalize">
+                          <h4 className="font-semibold text-[rgb(220,235,255)]">{groom.name}</h4>
+                          <span className="text-sm text-[rgb(148,163,184)] capitalize">
                             {groom.skillLevel}
                           </span>
                         </div>
-                        <div className="text-sm text-gray-600 space-y-1">
+                        <div className="text-sm text-[rgb(148,163,184)] space-y-1">
                           <p>
                             <span className="font-medium">Specialty:</span>{' '}
                             <span className="capitalize">{formatSpecialty(groom.specialty)}</span>
@@ -236,8 +236,8 @@ const AssignGroomModal: React.FC<AssignGroomModalProps> = ({
                             <span
                               className={
                                 groom.availableSlots === 0
-                                  ? 'text-red-600 font-semibold'
-                                  : 'text-green-600 font-semibold'
+                                  ? 'text-red-400 font-semibold'
+                                  : 'text-emerald-400 font-semibold'
                               }
                             >
                               {groom.availableSlots} {groom.availableSlots === 1 ? 'slot' : 'slots'}{' '}
@@ -257,18 +257,21 @@ const AssignGroomModal: React.FC<AssignGroomModalProps> = ({
           {/* Assignment Options */}
           {selectedGroom && (
             <div className="space-y-4 mb-6">
-              <h3 className="text-lg font-semibold text-gray-900">Assignment Options</h3>
+              <h3 className="text-lg font-semibold text-[rgb(220,235,255)]">Assignment Options</h3>
 
               {/* Priority Selection */}
               <div>
-                <label htmlFor="priority" className="block text-sm font-medium text-gray-700 mb-2">
+                <label
+                  htmlFor="priority"
+                  className="block text-sm font-medium text-[rgb(148,163,184)] mb-2"
+                >
                   Priority Level
                 </label>
                 <select
                   id="priority"
                   value={priority}
                   onChange={(e) => setPriority(Number(e.target.value))}
-                  className="w-full border border-gray-300 rounded-lg px-3 py-2 focus:outline-none focus:ring-2 focus:ring-blue-500"
+                  className="w-full bg-[rgba(15,35,70,0.5)] border border-[rgba(37,99,235,0.3)] text-[rgb(220,235,255)] rounded-lg px-3 py-2 focus:outline-none focus:ring-2 focus:ring-blue-500"
                   aria-label="Priority level"
                 >
                   <option value={1}>1 - Primary (Highest)</option>
@@ -277,7 +280,7 @@ const AssignGroomModal: React.FC<AssignGroomModalProps> = ({
                   <option value={4}>4 - Low</option>
                   <option value={5}>5 - Lowest</option>
                 </select>
-                <p className="text-xs text-gray-500 mt-1">
+                <p className="text-xs text-[rgb(148,163,184)] mt-1">
                   Priority 1 assignments receive the most attention from the groom
                 </p>
               </div>
@@ -292,9 +295,11 @@ const AssignGroomModal: React.FC<AssignGroomModalProps> = ({
                     onChange={(e) => setReplacePrimary(e.target.checked)}
                     className="mt-1 mr-3"
                   />
-                  <label htmlFor="replacePrimary" className="text-sm text-gray-700">
-                    <span className="font-medium">Replace existing primary assignment</span>
-                    <p className="text-xs text-gray-500 mt-1">
+                  <label htmlFor="replacePrimary" className="text-sm text-[rgb(148,163,184)]">
+                    <span className="font-medium text-[rgb(220,235,255)]">
+                      Replace existing primary assignment
+                    </span>
+                    <p className="text-xs text-[rgb(148,163,184)] mt-1">
                       If this horse already has a primary groom, deactivate that assignment
                     </p>
                   </label>
@@ -303,7 +308,10 @@ const AssignGroomModal: React.FC<AssignGroomModalProps> = ({
 
               {/* Notes Input */}
               <div>
-                <label htmlFor="notes" className="block text-sm font-medium text-gray-700 mb-2">
+                <label
+                  htmlFor="notes"
+                  className="block text-sm font-medium text-[rgb(148,163,184)] mb-2"
+                >
                   Notes (Optional)
                 </label>
                 <textarea
@@ -312,21 +320,23 @@ const AssignGroomModal: React.FC<AssignGroomModalProps> = ({
                   onChange={(e) => setNotes(e.target.value)}
                   maxLength={500}
                   rows={3}
-                  className="w-full border border-gray-300 rounded-lg px-3 py-2 focus:outline-none focus:ring-2 focus:ring-blue-500"
+                  className="w-full bg-[rgba(15,35,70,0.5)] border border-[rgba(37,99,235,0.3)] text-[rgb(220,235,255)] rounded-lg px-3 py-2 focus:outline-none focus:ring-2 focus:ring-blue-500"
                   placeholder="Add any special instructions or notes for this assignment..."
                   aria-label="Assignment notes"
                 />
-                <p className="text-xs text-gray-500 mt-1">{notes.length}/500 characters</p>
+                <p className="text-xs text-[rgb(148,163,184)] mt-1">
+                  {notes.length}/500 characters
+                </p>
               </div>
             </div>
           )}
         </div>
 
         {/* Footer */}
-        <div className="sticky bottom-0 bg-gray-50 border-t border-gray-200 px-6 py-4 flex justify-end space-x-3">
+        <div className="sticky bottom-0 bg-[rgba(5,15,40,0.95)] border-t border-[rgba(37,99,235,0.3)] px-6 py-4 flex justify-end space-x-3">
           <button
             onClick={onClose}
-            className="px-4 py-2 border border-gray-300 rounded-lg text-gray-700 hover:bg-gray-100 transition-colors"
+            className="px-4 py-2 border border-[rgba(37,99,235,0.3)] rounded-lg text-[rgb(220,235,255)] hover:bg-[rgba(37,99,235,0.1)] transition-colors"
             aria-label="Cancel"
           >
             Cancel

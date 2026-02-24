@@ -65,15 +65,15 @@ const formatDate = (dateString: string): string => {
  */
 const CompetitionCardSkeleton = ({ className = '' }: { className?: string }) => (
   <div
-    className={`bg-white rounded-lg shadow p-4 animate-pulse ${className}`}
+    className={`glass-panel rounded-lg p-4 animate-pulse ${className}`}
     data-testid="competition-card-skeleton"
   >
-    <div className="h-6 bg-slate-200 rounded w-3/4 mb-2" />
-    <div className="h-4 bg-slate-200 rounded w-1/2 mb-4" />
+    <div className="h-6 bg-[rgba(37,99,235,0.2)] rounded w-3/4 mb-2" />
+    <div className="h-4 bg-[rgba(37,99,235,0.2)] rounded w-1/2 mb-4" />
     <div className="space-y-2">
-      <div className="h-4 bg-slate-200 rounded w-2/3" />
-      <div className="h-4 bg-slate-200 rounded w-1/2" />
-      <div className="h-4 bg-slate-200 rounded w-3/5" />
+      <div className="h-4 bg-[rgba(37,99,235,0.2)] rounded w-2/3" />
+      <div className="h-4 bg-[rgba(37,99,235,0.2)] rounded w-1/2" />
+      <div className="h-4 bg-[rgba(37,99,235,0.2)] rounded w-3/5" />
     </div>
   </div>
 );
@@ -112,7 +112,7 @@ const CompetitionCard = ({
 
   return (
     <div
-      className={`bg-white rounded-lg shadow p-4 cursor-pointer transition-shadow hover:shadow-lg focus:outline-none focus:ring-2 focus:ring-blue-500 ${className}`}
+      className={`glass-panel rounded-lg p-4 cursor-pointer transition-shadow hover:shadow-lg focus:outline-none focus:ring-2 focus:ring-blue-500 ${className}`}
       data-testid="competition-card"
       role="button"
       tabIndex={0}
@@ -122,28 +122,28 @@ const CompetitionCard = ({
     >
       {/* Header: Name and Discipline */}
       <div className="mb-3">
-        <h3 className="text-lg font-semibold text-slate-900 truncate">{name}</h3>
-        <p className="text-sm text-slate-600">{discipline}</p>
+        <h3 className="text-lg font-semibold text-[rgb(220,235,255)] truncate">{name}</h3>
+        <p className="text-sm text-[rgb(148,163,184)]">{discipline}</p>
       </div>
 
       {/* Competition Details */}
       <div className="space-y-2 text-sm">
         {/* Date */}
         <div className="flex items-center" data-testid="competition-date">
-          <Calendar className="h-4 w-4 text-slate-400 mr-2" aria-hidden="true" />
-          <span className="text-slate-700">{formatDate(date)}</span>
+          <Calendar className="h-4 w-4 text-[rgb(148,163,184)] mr-2" aria-hidden="true" />
+          <span className="text-[rgb(220,235,255)]">{formatDate(date)}</span>
         </div>
 
         {/* Prize Pool */}
         <div className="flex items-center" data-testid="competition-prize">
           <Trophy className="h-4 w-4 text-amber-500 mr-2" aria-hidden="true" />
-          <span className="text-slate-700">Prize: {formatCurrency(prizePool)}</span>
+          <span className="text-[rgb(220,235,255)]">Prize: {formatCurrency(prizePool)}</span>
         </div>
 
         {/* Entry Fee */}
         <div className="flex items-center" data-testid="competition-fee">
           <DollarSign className="h-4 w-4 text-green-500 mr-2" aria-hidden="true" />
-          <span className="text-slate-700">
+          <span className="text-[rgb(220,235,255)]">
             Entry: {entryFee === 0 ? 'Free' : formatCurrency(entryFee)}
           </span>
         </div>
@@ -152,7 +152,7 @@ const CompetitionCard = ({
         {hasParticipantInfo && (
           <div className="flex items-center" data-testid="competition-participants">
             <Users className="h-4 w-4 text-blue-500 mr-2" aria-hidden="true" />
-            <span className="text-slate-700">
+            <span className="text-[rgb(220,235,255)]">
               {currentParticipants}/{maxParticipants} participants
             </span>
           </div>

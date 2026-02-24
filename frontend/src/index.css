@@ -2,6 +2,9 @@
 @tailwind components;
 @tailwind utilities;
 
+/* Equoria — Canonical design token system (UX spec §Design Token System) */
+@import './styles/tokens.css';
+
 /* Equoria — Celestial Night Design System */
 /* Visual identity: deep midnight navy, gold titles, cobalt-blue CTAs, glassmorphism panels */
 

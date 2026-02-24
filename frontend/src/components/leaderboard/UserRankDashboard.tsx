@@ -78,10 +78,10 @@ const DashboardSkeleton = () => (
  */
 const EmptyRankingsState = () => (
   <div
-    className="flex flex-col items-center justify-center py-12 text-gray-500"
+    className="flex flex-col items-center justify-center py-12 text-[rgb(148,163,184)]"
     data-testid="empty-rankings-state"
   >
-    <Trophy size={48} className="mb-4 text-gray-300" aria-hidden="true" />
+    <Trophy size={48} className="mb-4 text-[rgb(148,163,184)]" aria-hidden="true" />
     <p className="text-lg font-medium">No rankings yet</p>
     <p className="text-sm mt-1">
       Compete in shows and train your horses to appear on the leaderboards.
@@ -95,10 +95,10 @@ const EmptyRankingsState = () => (
 const BestRankingItem = ({ bestRanking }: { bestRanking: BestRanking }) => (
   <div className="flex items-center gap-3 py-2">
     <Star size={16} className="text-yellow-500 flex-shrink-0" aria-hidden="true" />
-    <span className="text-sm text-gray-700">
+    <span className="text-sm text-[rgb(220,235,255)]">
       {bestRanking.achievement} in {bestRanking.categoryLabel}
     </span>
-    <span className="text-xs text-gray-400 ml-auto">#{bestRanking.rank}</span>
+    <span className="text-xs text-[rgb(148,163,184)] ml-auto">#{bestRanking.rank}</span>
   </div>
 );
 
@@ -132,7 +132,7 @@ const UserRankDashboard = ({
           data-testid="dashboard-header-icon"
           aria-hidden="true"
         />
-        <h2 className="text-xl font-bold text-gray-900">{userName}&apos;s Rankings</h2>
+        <h2 className="text-xl font-bold text-[rgb(220,235,255)]">{userName}&apos;s Rankings</h2>
       </div>
 
       {/* Loading State */}
@@ -152,9 +152,7 @@ const UserRankDashboard = ({
               key={ranking.category}
               ranking={ranking}
               isClickable={isClickable}
-              onClick={
-                onCategoryClick ? () => onCategoryClick(ranking.category) : undefined
-              }
+              onClick={onCategoryClick ? () => onCategoryClick(ranking.category) : undefined}
             />
           ))}
         </div>
@@ -163,15 +161,15 @@ const UserRankDashboard = ({
       {/* Best Rankings Section */}
       {!isLoading && (
         <div data-testid="best-rankings-section">
-          <h3 className="text-lg font-bold text-gray-900 mb-3 flex items-center gap-2">
+          <h3 className="text-lg font-bold text-[rgb(220,235,255)] mb-3 flex items-center gap-2">
             <Star size={20} className="text-yellow-500" aria-hidden="true" />
             Best Rankings
           </h3>
 
           {bestRankings.length === 0 ? (
-            <p className="text-sm text-gray-500 py-2">No achievements yet</p>
+            <p className="text-sm text-[rgb(148,163,184)] py-2">No achievements yet</p>
           ) : (
-            <div className="bg-white rounded-lg shadow p-4 divide-y divide-gray-100">
+            <div className="glass-panel rounded-lg p-4 divide-y divide-[rgba(37,99,235,0.3)]">
               {bestRankings.map((best) => (
                 <BestRankingItem key={best.category} bestRanking={best} />
               ))}

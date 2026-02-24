@@ -46,22 +46,27 @@ const Breadcrumb = ({ items }: { items: BreadcrumbItem[] }) => (
   <nav
     aria-label="Breadcrumb navigation"
     data-testid="breadcrumb-nav"
-    className="flex items-center space-x-2 text-sm text-slate-600"
+    className="flex items-center space-x-2 text-sm text-[rgb(148,163,184)]"
   >
     {items.map((item, index) => (
       <div key={item.label} className="flex items-center">
-        {index > 0 && <ChevronRight className="mx-2 h-4 w-4 text-slate-400" aria-hidden="true" />}
+        {index > 0 && (
+          <ChevronRight className="mx-2 h-4 w-4 text-[rgb(148,163,184)]" aria-hidden="true" />
+        )}
         {item.to && !item.isCurrentPage ? (
           <Link
             to={item.to}
-            className="flex items-center hover:text-slate-900 hover:underline focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-2 rounded"
+            className="flex items-center hover:text-[rgb(220,235,255)] hover:underline focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-2 rounded"
             aria-label={`Navigate to ${item.label}`}
           >
             {index === 0 && <Home className="mr-1 h-4 w-4" aria-hidden="true" />}
             {item.label}
           </Link>
         ) : (
-          <span aria-current="page" className="flex items-center font-medium text-slate-900">
+          <span
+            aria-current="page"
+            className="flex items-center font-medium text-[rgb(220,235,255)]"
+          >
             {item.label}
           </span>
         )}
@@ -81,7 +86,7 @@ const Breadcrumb = ({ items }: { items: BreadcrumbItem[] }) => (
  * - Authentication protection
  */
 const TrainingDashboardPage = ({ className = '' }: TrainingDashboardPageProps): JSX.Element => {
-  const { user, isAuthenticated, isLoading } = useAuth();
+  const { isAuthenticated, isLoading } = useAuth();
   const navigate = useNavigate();
 
   // SEO: Set document title on mount and clean up on unmount
@@ -162,8 +167,8 @@ const TrainingDashboardPage = ({ className = '' }: TrainingDashboardPageProps): 
       >
         <div className="flex items-center justify-center py-12">
           <div className="text-center">
-            <div className="h-8 w-8 animate-spin rounded-full border-4 border-slate-200 border-t-blue-600 mx-auto mb-4" />
-            <p className="text-sm text-slate-600">Checking authentication...</p>
+            <div className="h-8 w-8 animate-spin rounded-full border-4 border-[rgba(37,99,235,0.3)] border-t-blue-500 mx-auto mb-4" />
+            <p className="text-sm text-[rgb(148,163,184)]">Checking authentication...</p>
           </div>
         </div>
       </main>
@@ -178,7 +183,7 @@ const TrainingDashboardPage = ({ className = '' }: TrainingDashboardPageProps): 
         data-testid="unauthenticated-state"
       >
         <div
-          className="rounded-md border border-amber-200 bg-amber-50 px-4 py-3 text-sm text-amber-800 shadow-sm"
+          className="rounded-md border border-amber-500/30 bg-[rgba(212,168,67,0.1)] px-4 py-3 text-sm text-amber-400 shadow-sm"
           role="alert"
         >
           Please log in to access the training dashboard.
@@ -188,7 +193,10 @@ const TrainingDashboardPage = ({ className = '' }: TrainingDashboardPageProps): 
   }
 
   return (
-    <div className={`min-h-screen bg-slate-50 ${className}`} data-testid="training-dashboard-page">
+    <div
+      className={`min-h-screen bg-[rgba(15,35,70,0.3)] ${className}`}
+      data-testid="training-dashboard-page"
+    >
       {/* Page Container */}
       <main className="mx-auto max-w-7xl px-4 py-6 sm:px-6 lg:px-8">
         {/* Breadcrumb Navigation */}
@@ -201,7 +209,7 @@ const TrainingDashboardPage = ({ className = '' }: TrainingDashboardPageProps): 
           <button
             type="button"
             onClick={handleBackNavigation}
-            className="flex items-center text-sm text-slate-600 hover:text-slate-900 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-2 rounded"
+            className="flex items-center text-sm text-[rgb(148,163,184)] hover:text-[rgb(220,235,255)] focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-2 rounded"
             aria-label="Go back to previous page"
             data-testid="back-button"
           >
@@ -213,14 +221,17 @@ const TrainingDashboardPage = ({ className = '' }: TrainingDashboardPageProps): 
         {/* Page Header */}
         <header className="mb-8">
           <div className="flex items-center space-x-3 mb-2">
-            <div className="flex h-10 w-10 items-center justify-center rounded-lg bg-blue-100 text-blue-600">
+            <div className="flex h-10 w-10 items-center justify-center rounded-lg bg-[rgba(37,99,235,0.1)] text-blue-400">
               <Dumbbell className="h-5 w-5" aria-hidden="true" />
             </div>
-            <h1 className="text-2xl font-bold text-slate-900 sm:text-3xl" data-testid="page-title">
+            <h1
+              className="text-2xl font-bold text-[rgb(220,235,255)] sm:text-3xl"
+              data-testid="page-title"
+            >
               Training Dashboard
             </h1>
           </div>
-          <p className="mt-2 text-slate-600" data-testid="page-description">
+          <p className="mt-2 text-[rgb(148,163,184)]" data-testid="page-description">
             Manage your horses' training sessions, track eligibility status, and monitor progress
             across all disciplines. Ready horses can start training immediately.
           </p>
@@ -256,9 +267,9 @@ const TrainingDashboardPage = ({ className = '' }: TrainingDashboardPageProps): 
       </main>
 
       {/* Footer */}
-      <footer className="mt-12 border-t border-slate-200 bg-white py-6">
+      <footer className="mt-12 border-t border-[rgba(37,99,235,0.3)] bg-[rgba(15,35,70,0.4)] py-6">
         <div className="mx-auto max-w-7xl px-4 sm:px-6 lg:px-8">
-          <p className="text-center text-xs text-slate-500">
+          <p className="text-center text-xs text-[rgb(148,163,184)]">
             &copy; {new Date().getFullYear()} Equoria. All rights reserved.
           </p>
         </div>

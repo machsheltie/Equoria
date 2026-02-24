@@ -193,20 +193,20 @@ const TrainingConfirmModal = ({
         aria-modal="true"
         aria-labelledby="training-confirm-title"
         tabIndex={-1}
-        className="bg-white rounded-lg shadow-xl max-w-md w-full p-6 focus:outline-none"
+        className="glass-panel rounded-lg shadow-xl max-w-md w-full p-6 focus:outline-none border border-[rgba(37,99,235,0.3)]"
         onClick={(e) => e.stopPropagation()}
         data-testid="training-confirm-modal"
       >
         {/* Header */}
         <div className="flex items-center justify-between mb-6">
-          <h2 id="training-confirm-title" className="text-2xl font-bold text-gray-900">
+          <h2 id="training-confirm-title" className="text-2xl font-bold text-[rgb(220,235,255)]">
             Confirm Training
           </h2>
           <button
             type="button"
             onClick={onClose}
             disabled={isLoading}
-            className="text-gray-400 hover:text-gray-600 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
+            className="text-[rgb(148,163,184)] hover:text-[rgb(220,235,255)] transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
             aria-label="Close modal"
             data-testid="close-button"
           >
@@ -217,16 +217,16 @@ const TrainingConfirmModal = ({
         {/* Training Details */}
         <div className="space-y-4">
           {/* Horse and Discipline Info */}
-          <div className="bg-blue-50 rounded-lg p-4">
+          <div className="bg-[rgba(37,99,235,0.1)] rounded-lg p-4 border border-blue-500/30">
             <div className="flex justify-between items-center mb-2">
-              <span className="text-sm font-medium text-gray-700">Horse</span>
-              <span className="text-gray-900 font-semibold" data-testid="horse-name">
+              <span className="text-sm font-medium text-[rgb(148,163,184)]">Horse</span>
+              <span className="text-[rgb(220,235,255)] font-semibold" data-testid="horse-name">
                 {horseName}
               </span>
             </div>
             <div className="flex justify-between items-center">
-              <span className="text-sm font-medium text-gray-700">Discipline</span>
-              <span className="text-gray-900 font-semibold" data-testid="discipline-name">
+              <span className="text-sm font-medium text-[rgb(148,163,184)]">Discipline</span>
+              <span className="text-[rgb(220,235,255)] font-semibold" data-testid="discipline-name">
                 {disciplineName}
               </span>
             </div>
@@ -234,23 +234,28 @@ const TrainingConfirmModal = ({
 
           {/* Expected Outcome */}
           <div>
-            <h3 className="text-sm font-medium text-gray-700 mb-3">Expected Outcome</h3>
+            <h3 className="text-sm font-medium text-[rgb(148,163,184)] mb-3">Expected Outcome</h3>
 
             {/* Base Score Gain */}
             <div className="flex justify-between items-center mb-2">
-              <span className="text-sm text-gray-600">Base Score Gain</span>
-              <span className="text-sm font-semibold text-green-600" data-testid="base-score-gain">
+              <span className="text-sm text-[rgb(148,163,184)]">Base Score Gain</span>
+              <span
+                className="text-sm font-semibold text-emerald-400"
+                data-testid="base-score-gain"
+              >
                 +{baseScoreGain}
               </span>
             </div>
 
             {/* Score Progression */}
             <div className="flex justify-between items-center mb-3">
-              <span className="text-sm text-gray-600">Score Progression</span>
+              <span className="text-sm text-[rgb(148,163,184)]">Score Progression</span>
               <span className="text-lg font-semibold" data-testid="score-progression">
-                <span data-testid="current-score">{currentScore}</span>
-                <span className="mx-2 text-gray-400">→</span>
-                <span className="text-blue-600" data-testid="new-score">
+                <span data-testid="current-score" className="text-[rgb(220,235,255)]">
+                  {currentScore}
+                </span>
+                <span className="mx-2 text-[rgb(148,163,184)]">→</span>
+                <span className="text-blue-400" data-testid="new-score">
                   {newScore}
                 </span>
               </span>
@@ -258,8 +263,8 @@ const TrainingConfirmModal = ({
 
             {/* Trait Modifiers */}
             {traitModifiers.length > 0 && (
-              <div className="border-t border-gray-200 pt-3 mt-3">
-                <h4 className="text-xs font-medium text-gray-500 uppercase tracking-wider mb-2">
+              <div className="border-t border-[rgba(37,99,235,0.2)] pt-3 mt-3">
+                <h4 className="text-xs font-medium text-[rgb(148,163,184)] uppercase tracking-wider mb-2">
                   Trait Modifiers
                 </h4>
                 <ul className="space-y-1" data-testid="trait-modifiers-list">
@@ -269,10 +274,10 @@ const TrainingConfirmModal = ({
                       className="flex justify-between items-center text-sm"
                       data-testid={`trait-modifier-${index}`}
                     >
-                      <span className="text-gray-600">{trait.name}</span>
+                      <span className="text-[rgb(148,163,184)]">{trait.name}</span>
                       <span
                         className={`font-semibold ${
-                          trait.modifier >= 0 ? 'text-green-600' : 'text-red-600'
+                          trait.modifier >= 0 ? 'text-emerald-400' : 'text-red-400'
                         }`}
                         data-testid={`trait-modifier-value-${index}`}
                       >
@@ -282,11 +287,13 @@ const TrainingConfirmModal = ({
                     </li>
                   ))}
                 </ul>
-                <div className="flex justify-between items-center mt-2 pt-2 border-t border-gray-100">
-                  <span className="text-sm font-medium text-gray-700">Total Modifier</span>
+                <div className="flex justify-between items-center mt-2 pt-2 border-t border-[rgba(37,99,235,0.2)]">
+                  <span className="text-sm font-medium text-[rgb(220,235,255)]">
+                    Total Modifier
+                  </span>
                   <span
                     className={`font-semibold ${
-                      totalModifier >= 0 ? 'text-green-600' : 'text-red-600'
+                      totalModifier >= 0 ? 'text-emerald-400' : 'text-red-400'
                     }`}
                     data-testid="total-modifier"
                   >
@@ -299,15 +306,17 @@ const TrainingConfirmModal = ({
           </div>
 
           {/* Next Training Availability */}
-          <div className="bg-gray-50 rounded-lg p-3">
+          <div className="bg-[rgba(15,35,70,0.5)] rounded-lg p-3 border border-[rgba(37,99,235,0.2)]">
             <div className="flex justify-between items-center">
-              <span className="text-sm font-medium text-gray-700">Next Training Available</span>
-              <span className="text-sm text-gray-600" data-testid="next-training-date">
+              <span className="text-sm font-medium text-[rgb(148,163,184)]">
+                Next Training Available
+              </span>
+              <span className="text-sm text-[rgb(220,235,255)]" data-testid="next-training-date">
                 {nextAvailableDate}
               </span>
             </div>
             {cooldownDays > 0 && (
-              <p className="text-xs text-gray-500 mt-1">
+              <p className="text-xs text-[rgb(148,163,184)] mt-1">
                 {cooldownDays} day{cooldownDays !== 1 ? 's' : ''} cooldown after this session
               </p>
             )}
@@ -320,7 +329,7 @@ const TrainingConfirmModal = ({
             type="button"
             onClick={onClose}
             disabled={isLoading}
-            className="px-4 py-2 border border-gray-300 rounded-lg text-gray-700 hover:bg-gray-100 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
+            className="px-4 py-2 border border-[rgba(37,99,235,0.3)] rounded-lg text-[rgb(220,235,255)] hover:bg-[rgba(37,99,235,0.1)] transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
             data-testid="cancel-button"
           >
             Cancel

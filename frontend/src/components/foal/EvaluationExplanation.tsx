@@ -31,18 +31,18 @@ function getExplanationIcon(score: number) {
  * Get explanation container color
  */
 function getExplanationColor(score: number): string {
-  if (score >= 3) return 'border-green-200 bg-green-50';
-  if (score >= 0) return 'border-blue-200 bg-blue-50';
-  return 'border-amber-200 bg-amber-50';
+  if (score >= 3) return 'border-emerald-500/30 bg-[rgba(16,185,129,0.1)]';
+  if (score >= 0) return 'border-blue-500/30 bg-[rgba(37,99,235,0.1)]';
+  return 'border-[rgba(212,168,67,0.3)] bg-[rgba(212,168,67,0.1)]';
 }
 
 /**
  * Get icon color
  */
 function getIconColor(score: number): string {
-  if (score >= 3) return 'text-green-600';
-  if (score >= 0) return 'text-blue-600';
-  return 'text-amber-600';
+  if (score >= 3) return 'text-emerald-400';
+  if (score >= 0) return 'text-blue-400';
+  return 'text-amber-400';
 }
 
 /**
@@ -68,7 +68,7 @@ const EvaluationExplanation: React.FC<EvaluationExplanationProps> = ({
       </div>
 
       {/* Main Explanation */}
-      <div className="space-y-3 text-sm text-slate-700">
+      <div className="space-y-3 text-sm text-[rgb(220,235,255)]">
         <p className="leading-relaxed">{explanation}</p>
 
         {/* Trait Impact Section */}
@@ -108,7 +108,9 @@ const EvaluationExplanation: React.FC<EvaluationExplanationProps> = ({
 
         {/* Additional Context Based on Score */}
         {score >= 5 && (
-          <div className={`rounded-lg border border-green-300 bg-green-100 p-3 ${iconColor}`}>
+          <div
+            className={`rounded-lg border border-emerald-500/30 bg-[rgba(16,185,129,0.15)] p-3 ${iconColor}`}
+          >
             <p className="text-xs font-semibold mb-1">🌟 Exceptional Achievement!</p>
             <p className="text-xs leading-relaxed">
               You've achieved an outstanding evaluation. This level of care sets your foal up for
@@ -118,7 +120,9 @@ const EvaluationExplanation: React.FC<EvaluationExplanationProps> = ({
         )}
 
         {score >= 3 && score < 5 && (
-          <div className={`rounded-lg border border-green-300 bg-green-100 p-3 ${iconColor}`}>
+          <div
+            className={`rounded-lg border border-emerald-500/30 bg-[rgba(16,185,129,0.15)] p-3 ${iconColor}`}
+          >
             <p className="text-xs font-semibold mb-1">✨ Great Job!</p>
             <p className="text-xs leading-relaxed">
               Your consistent care has paid off with positive trait development. Keep up this level
@@ -128,7 +132,9 @@ const EvaluationExplanation: React.FC<EvaluationExplanationProps> = ({
         )}
 
         {score >= 0 && score < 3 && (
-          <div className={`rounded-lg border border-blue-300 bg-blue-100 p-3 ${iconColor}`}>
+          <div
+            className={`rounded-lg border border-blue-500/30 bg-[rgba(37,99,235,0.15)] p-3 ${iconColor}`}
+          >
             <p className="text-xs font-semibold mb-1">📊 Room for Improvement</p>
             <p className="text-xs leading-relaxed">
               Your foal is developing normally, but there's potential for better outcomes. Focus on
@@ -138,7 +144,9 @@ const EvaluationExplanation: React.FC<EvaluationExplanationProps> = ({
         )}
 
         {score < 0 && score >= -3 && (
-          <div className={`rounded-lg border border-amber-300 bg-amber-100 p-3 ${iconColor}`}>
+          <div
+            className={`rounded-lg border border-[rgba(212,168,67,0.3)] bg-[rgba(212,168,67,0.1)] p-3 ${iconColor}`}
+          >
             <p className="text-xs font-semibold mb-1">⚠️ Needs Attention</p>
             <p className="text-xs leading-relaxed">
               Your foal's development is below optimal. Increase your care frequency, complete more
@@ -149,7 +157,9 @@ const EvaluationExplanation: React.FC<EvaluationExplanationProps> = ({
         )}
 
         {score < -3 && (
-          <div className={`rounded-lg border border-red-300 bg-red-100 p-3 text-red-700`}>
+          <div
+            className={`rounded-lg border border-red-500/30 bg-[rgba(239,68,68,0.1)] p-3 text-red-400`}
+          >
             <p className="text-xs font-semibold mb-1">❌ Critical Care Required</p>
             <p className="text-xs leading-relaxed">
               Your foal has developed significant behavioral challenges. This requires immediate

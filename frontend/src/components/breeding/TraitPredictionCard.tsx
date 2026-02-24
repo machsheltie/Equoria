@@ -58,15 +58,15 @@ function getSourceLabel(source: string): string {
 function getSourceColor(source: string): string {
   switch (source) {
     case 'both':
-      return 'text-purple-600 bg-purple-50';
+      return 'text-purple-400 bg-[rgba(147,51,234,0.1)]';
     case 'sire':
-      return 'text-blue-600 bg-blue-50';
+      return 'text-blue-400 bg-[rgba(37,99,235,0.1)]';
     case 'dam':
-      return 'text-pink-600 bg-pink-50';
+      return 'text-purple-400 bg-[rgba(147,51,234,0.1)]';
     case 'random':
-      return 'text-slate-600 bg-slate-50';
+      return 'text-[rgb(148,163,184)] bg-[rgba(15,35,70,0.5)]';
     default:
-      return 'text-slate-600 bg-slate-50';
+      return 'text-[rgb(148,163,184)] bg-[rgba(15,35,70,0.5)]';
   }
 }
 
@@ -86,13 +86,13 @@ const TraitPredictionCard: React.FC<TraitPredictionCardProps> = ({
 
   if (compact) {
     return (
-      <div className="rounded-lg border border-slate-200 bg-white p-3">
+      <div className="rounded-lg border border-[rgba(37,99,235,0.2)] bg-[rgba(15,35,70,0.4)] p-3">
         <div className="flex items-center justify-between">
           <div className="flex items-center gap-2 flex-1">
             <TraitTypeIcon
-              className={`h-4 w-4 flex-shrink-0 ${isPositive ? 'text-green-600' : 'text-red-600'}`}
+              className={`h-4 w-4 flex-shrink-0 ${isPositive ? 'text-emerald-400' : 'text-red-400'}`}
             />
-            <span className="text-sm font-medium text-slate-900">{traitName}</span>
+            <span className="text-sm font-medium text-[rgb(220,235,255)]">{traitName}</span>
           </div>
           <div
             className={`flex items-center gap-2 px-2 py-1 rounded text-xs font-bold ${probabilityColor}`}
@@ -106,19 +106,19 @@ const TraitPredictionCard: React.FC<TraitPredictionCardProps> = ({
   }
 
   return (
-    <div className="rounded-lg border border-slate-200 bg-white p-4 hover:shadow-md transition-shadow">
+    <div className="rounded-lg border border-[rgba(37,99,235,0.2)] bg-[rgba(15,35,70,0.4)] p-4 hover:shadow-md transition-shadow">
       {/* Header */}
       <div className="flex items-start justify-between mb-3">
         <div className="flex items-start gap-3 flex-1">
           <TraitTypeIcon
             className={`h-5 w-5 flex-shrink-0 mt-0.5 ${
-              isPositive ? 'text-green-600' : 'text-red-600'
+              isPositive ? 'text-emerald-400' : 'text-red-400'
             }`}
           />
           <div className="flex-1 min-w-0">
-            <h4 className="font-semibold text-slate-900">{traitName}</h4>
+            <h4 className="font-semibold text-[rgb(220,235,255)]">{traitName}</h4>
             {category && (
-              <span className="inline-block mt-1 px-2 py-0.5 text-xs font-medium text-slate-600 bg-slate-100 rounded">
+              <span className="inline-block mt-1 px-2 py-0.5 text-xs font-medium text-[rgb(148,163,184)] bg-[rgba(15,35,70,0.5)] rounded">
                 {category}
               </span>
             )}
@@ -135,19 +135,19 @@ const TraitPredictionCard: React.FC<TraitPredictionCardProps> = ({
       </div>
 
       {/* Description */}
-      {description && <p className="text-sm text-slate-600 mb-3">{description}</p>}
+      {description && <p className="text-sm text-[rgb(148,163,184)] mb-3">{description}</p>}
 
       {/* Progress Bar */}
       <div className="mb-3">
-        <div className="w-full bg-slate-200 rounded-full h-2 overflow-hidden">
+        <div className="w-full bg-[rgba(15,35,70,0.5)] rounded-full h-2 overflow-hidden">
           <div
             className={`h-full transition-all duration-500 ${
               probability >= 80
-                ? 'bg-green-500'
+                ? 'bg-emerald-400'
                 : probability >= 60
                   ? 'bg-blue-500'
                   : probability >= 40
-                    ? 'bg-yellow-500'
+                    ? 'bg-amber-400'
                     : 'bg-amber-500'
             }`}
             style={{ width: `${probability}%` }}
@@ -172,7 +172,9 @@ const TraitPredictionCard: React.FC<TraitPredictionCardProps> = ({
       <div className="mt-2">
         <span
           className={`inline-flex items-center gap-1 px-2 py-0.5 text-xs font-medium rounded ${
-            isPositive ? 'text-green-700 bg-green-100' : 'text-red-700 bg-red-100'
+            isPositive
+              ? 'text-emerald-400 bg-[rgba(16,185,129,0.1)]'
+              : 'text-red-400 bg-[rgba(239,68,68,0.1)]'
           }`}
         >
           {isPositive ? 'Positive Trait' : 'Negative Trait'}

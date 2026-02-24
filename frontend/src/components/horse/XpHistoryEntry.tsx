@@ -71,10 +71,10 @@ function formatEntryDate(timestamp: string): string {
  */
 function getSourceBadgeColor(source: XpGain['source']): string {
   const colors: Record<XpGain['source'], string> = {
-    competition: 'bg-blue-100 text-blue-700',
-    training: 'bg-green-100 text-green-700',
-    achievement: 'bg-purple-100 text-purple-700',
-    bonus: 'bg-orange-100 text-orange-700',
+    competition: 'bg-[rgba(37,99,235,0.1)] text-blue-400',
+    training: 'bg-[rgba(16,185,129,0.1)] text-emerald-400',
+    achievement: 'bg-purple-900/30 text-purple-400',
+    bonus: 'bg-orange-900/30 text-orange-400',
   };
   return colors[source];
 }
@@ -109,13 +109,13 @@ const XpHistoryEntry: React.FC<XpHistoryEntryProps> = memo(
 
     // Determine card styling based on level-up status
     const cardClasses = isLevelUp
-      ? 'bg-yellow-50 border border-yellow-300 rounded-lg shadow-sm p-4'
-      : 'bg-white border border-slate-200 rounded-lg shadow-sm p-4';
+      ? 'bg-[rgba(212,168,67,0.1)] border border-amber-500/30 rounded-lg shadow-sm p-4'
+      : 'bg-[rgba(15,35,70,0.4)] border border-[rgba(37,99,235,0.3)] rounded-lg shadow-sm p-4';
 
     // Determine timeline dot styling
     const dotClasses = isLevelUp
       ? 'w-4 h-4 rounded-full bg-yellow-400 border-2 border-yellow-500 z-10'
-      : 'w-3 h-3 rounded-full bg-slate-400 border-2 border-slate-300 z-10';
+      : 'w-3 h-3 rounded-full bg-[rgb(148,163,184)] border-2 border-[rgba(37,99,235,0.3)] z-10';
 
     return (
       <div
@@ -134,7 +134,7 @@ const XpHistoryEntry: React.FC<XpHistoryEntryProps> = memo(
           {!isFirst && (
             <div
               data-testid="timeline-connector-top"
-              className={`w-0.5 flex-1 ${isLevelUp ? 'bg-yellow-300' : 'bg-slate-200'}`}
+              className={`w-0.5 flex-1 ${isLevelUp ? 'bg-yellow-500/30' : 'bg-[rgba(37,99,235,0.3)]'}`}
             />
           )}
           {isFirst && <div className="flex-1" />}
@@ -146,7 +146,7 @@ const XpHistoryEntry: React.FC<XpHistoryEntryProps> = memo(
           {!isLast && (
             <div
               data-testid="timeline-connector-bottom"
-              className={`w-0.5 flex-1 ${isLevelUp ? 'bg-yellow-300' : 'bg-slate-200'}`}
+              className={`w-0.5 flex-1 ${isLevelUp ? 'bg-yellow-500/30' : 'bg-[rgba(37,99,235,0.3)]'}`}
             />
           )}
           {isLast && <div className="flex-1" />}
@@ -156,10 +156,7 @@ const XpHistoryEntry: React.FC<XpHistoryEntryProps> = memo(
         <div data-testid="entry-card" className={`${cardClasses} flex-1 mb-3`}>
           {/* Top row: date and source badge */}
           <div className="flex items-center justify-between mb-2">
-            <span
-              data-testid="entry-date"
-              className="text-sm text-slate-500"
-            >
+            <span data-testid="entry-date" className="text-sm text-[rgb(148,163,184)]">
               {formattedDate}
             </span>
 
@@ -173,19 +170,14 @@ const XpHistoryEntry: React.FC<XpHistoryEntryProps> = memo(
           </div>
 
           {/* Source name */}
-          <div className="text-sm font-medium text-slate-800 mb-2">
-            {entry.sourceName}
-          </div>
+          <div className="text-sm font-medium text-[rgb(220,235,255)] mb-2">{entry.sourceName}</div>
 
           {/* Bottom row: XP amount and level */}
           <div className="flex items-center justify-between">
             {/* XP amount */}
-            <span
-              data-testid="xp-amount"
-              className="text-lg font-bold text-green-600"
-            >
+            <span data-testid="xp-amount" className="text-lg font-bold text-emerald-400">
               +{entry.xpAmount}
-              <span className="text-sm font-normal text-slate-500 ml-1">XP</span>
+              <span className="text-sm font-normal text-[rgb(148,163,184)] ml-1">XP</span>
             </span>
 
             {/* Level display */}
@@ -193,20 +185,17 @@ const XpHistoryEntry: React.FC<XpHistoryEntryProps> = memo(
               {isLevelUp ? (
                 <>
                   <span data-testid="level-up-icon" aria-hidden="true">
-                    <Trophy className="h-5 w-5 text-yellow-500" />
+                    <Trophy className="h-5 w-5 text-yellow-400" />
                   </span>
                   <span
                     data-testid="level-transition"
-                    className="text-sm font-semibold text-yellow-700"
+                    className="text-sm font-semibold text-yellow-400"
                   >
                     Level {entry.oldLevel} &rarr; {entry.newLevel}
                   </span>
                 </>
               ) : (
-                <span
-                  data-testid="level-display"
-                  className="text-sm text-slate-500"
-                >
+                <span data-testid="level-display" className="text-sm text-[rgb(148,163,184)]">
                   Level {entry.newLevel}
                 </span>
               )}

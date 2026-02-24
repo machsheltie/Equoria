@@ -27,13 +27,15 @@ const FoalDevelopmentTracker = ({ foalId }: FoalDevelopmentTrackerProps) => {
   const [duration, setDuration] = useState<number | ''>(15);
 
   return (
-    <div className="space-y-4 rounded-lg border border-slate-200 bg-white p-6 shadow-sm">
+    <div className="space-y-4 rounded-lg border border-[rgba(37,99,235,0.2)] bg-[rgba(15,35,70,0.4)] p-6 shadow-sm">
       <div className="flex items-center justify-between">
         <div>
-          <p className="text-xs uppercase tracking-wide text-slate-500">Foal Development</p>
-          <h3 className="text-xl font-bold text-slate-900">Foal #{foalId}</h3>
+          <p className="text-xs uppercase tracking-wide text-[rgb(148,163,184)]">
+            Foal Development
+          </p>
+          <h3 className="text-xl font-bold text-[rgb(220,235,255)]">Foal #{foalId}</h3>
           {foal && (
-            <p className="text-sm text-slate-600">
+            <p className="text-sm text-[rgb(148,163,184)]">
               {foal.name ?? 'Unnamed foal'} • Age {foal.ageDays ?? '—'} days
             </p>
           )}
@@ -41,7 +43,7 @@ const FoalDevelopmentTracker = ({ foalId }: FoalDevelopmentTrackerProps) => {
         <button
           type="button"
           onClick={() => developFoal.mutate({ progress: (development?.progress ?? 0) + 5 })}
-          className="rounded-md border border-slate-200 px-3 py-2 text-sm font-semibold text-slate-700 shadow-sm hover:bg-slate-50"
+          className="rounded-md border border-[rgba(37,99,235,0.2)] px-3 py-2 text-sm font-semibold text-[rgb(220,235,255)] shadow-sm hover:bg-[rgba(37,99,235,0.08)]"
           disabled={developFoal.isPending}
         >
           {developFoal.isPending ? 'Updating…' : 'Advance Stage'}
@@ -49,28 +51,32 @@ const FoalDevelopmentTracker = ({ foalId }: FoalDevelopmentTrackerProps) => {
       </div>
 
       {devError && (
-        <div className="rounded-md border border-rose-200 bg-rose-50 px-3 py-2 text-sm text-rose-800">
+        <div className="rounded-md border border-red-500/30 bg-[rgba(239,68,68,0.1)] px-3 py-2 text-sm text-red-400">
           {devError.message}
         </div>
       )}
 
       {(loadingFoal || loadingDev) && (
-        <div className="text-sm text-slate-600">Loading foal details and development…</div>
+        <div className="text-sm text-[rgb(148,163,184)]">Loading foal details and development…</div>
       )}
 
       {development && (
         <div className="grid gap-3 md:grid-cols-2">
-          <div className="rounded-md border border-slate-100 bg-slate-50 p-4">
-            <div className="text-sm font-semibold text-slate-900">Stage</div>
-            <div className="text-xl font-bold text-slate-900">{development.stage ?? 'Unknown'}</div>
-            <div className="text-xs text-slate-600">Progress: {development.progress ?? 0}%</div>
+          <div className="rounded-md border border-[rgba(37,99,235,0.2)] bg-[rgba(15,35,70,0.5)] p-4">
+            <div className="text-sm font-semibold text-[rgb(220,235,255)]">Stage</div>
+            <div className="text-xl font-bold text-[rgb(220,235,255)]">
+              {development.stage ?? 'Unknown'}
+            </div>
+            <div className="text-xs text-[rgb(148,163,184)]">
+              Progress: {development.progress ?? 0}%
+            </div>
           </div>
-          <div className="rounded-md border border-slate-100 bg-slate-50 p-4">
-            <div className="text-sm font-semibold text-slate-900">Wellbeing</div>
-            <div className="text-xs text-slate-600">
+          <div className="rounded-md border border-[rgba(37,99,235,0.2)] bg-[rgba(15,35,70,0.5)] p-4">
+            <div className="text-sm font-semibold text-[rgb(220,235,255)]">Wellbeing</div>
+            <div className="text-xs text-[rgb(148,163,184)]">
               Bonding: {development.bonding ?? 0} • Stress: {development.stress ?? 0}
             </div>
-            <div className="text-xs text-slate-600">
+            <div className="text-xs text-[rgb(148,163,184)]">
               Enrichment: {development.enrichmentLevel ?? 0}
             </div>
           </div>
@@ -78,13 +84,13 @@ const FoalDevelopmentTracker = ({ foalId }: FoalDevelopmentTrackerProps) => {
       )}
 
       <div className="grid gap-4 md:grid-cols-2">
-        <div className="space-y-3 rounded-md border border-slate-100 bg-slate-50 p-4">
-          <div className="text-sm font-semibold text-slate-900">Log Activity</div>
+        <div className="space-y-3 rounded-md border border-[rgba(37,99,235,0.2)] bg-[rgba(15,35,70,0.5)] p-4">
+          <div className="text-sm font-semibold text-[rgb(220,235,255)]">Log Activity</div>
           <input
             type="text"
             value={activityName}
             onChange={(event) => setActivityName(event.target.value)}
-            className="w-full rounded-md border border-slate-200 px-3 py-2 text-sm text-slate-900 shadow-sm focus:border-indigo-500 focus:outline-none focus:ring-2 focus:ring-indigo-500"
+            className="celestial-input w-full"
             placeholder="Activity name"
           />
           <input
@@ -93,7 +99,7 @@ const FoalDevelopmentTracker = ({ foalId }: FoalDevelopmentTrackerProps) => {
             onChange={(event) =>
               setDuration(event.target.value === '' ? '' : Number(event.target.value))
             }
-            className="w-full rounded-md border border-slate-200 px-3 py-2 text-sm text-slate-900 shadow-sm focus:border-indigo-500 focus:outline-none focus:ring-2 focus:ring-indigo-500"
+            className="celestial-input w-full"
             placeholder="Duration (minutes)"
           />
           <div className="flex gap-2">
@@ -113,18 +119,18 @@ const FoalDevelopmentTracker = ({ foalId }: FoalDevelopmentTrackerProps) => {
                 enrichFoal.mutate({ activity: 'enrichment', duration: Number(duration) })
               }
               disabled={enrichFoal.isPending || duration === ''}
-              className="w-full rounded-md border border-emerald-200 bg-emerald-50 px-4 py-2 text-sm font-semibold text-emerald-900 shadow-sm hover:bg-emerald-100 focus:outline-none focus:ring-2 focus:ring-emerald-500 focus:ring-offset-2 disabled:cursor-not-allowed disabled:opacity-70"
+              className="w-full rounded-md border border-emerald-500/30 bg-[rgba(16,185,129,0.1)] px-4 py-2 text-sm font-semibold text-emerald-400 shadow-sm hover:bg-[rgba(16,185,129,0.2)] focus:outline-none focus:ring-2 focus:ring-emerald-500 focus:ring-offset-2 disabled:cursor-not-allowed disabled:opacity-70"
             >
               {enrichFoal.isPending ? 'Enriching…' : 'Enrich'}
             </button>
           </div>
         </div>
 
-        <div className="space-y-3 rounded-md border border-slate-100 bg-slate-50 p-4">
+        <div className="space-y-3 rounded-md border border-[rgba(37,99,235,0.2)] bg-[rgba(15,35,70,0.5)] p-4">
           <div className="flex items-center justify-between">
             <div>
-              <div className="text-sm font-semibold text-slate-900">Traits</div>
-              <div className="text-xs text-slate-600">
+              <div className="text-sm font-semibold text-[rgb(220,235,255)]">Traits</div>
+              <div className="text-xs text-[rgb(148,163,184)]">
                 Reveal traits once available; server computes inheritance.
               </div>
             </div>
@@ -132,33 +138,35 @@ const FoalDevelopmentTracker = ({ foalId }: FoalDevelopmentTrackerProps) => {
               type="button"
               onClick={() => revealTraits.mutate()}
               disabled={revealTraits.isPending}
-              className="rounded-md border border-slate-200 px-3 py-2 text-sm font-semibold text-slate-700 shadow-sm hover:bg-slate-100 disabled:cursor-not-allowed disabled:opacity-70"
+              className="rounded-md border border-[rgba(37,99,235,0.2)] px-3 py-2 text-sm font-semibold text-[rgb(220,235,255)] shadow-sm hover:bg-[rgba(37,99,235,0.1)] disabled:cursor-not-allowed disabled:opacity-70"
             >
               {revealTraits.isPending ? 'Revealing…' : 'Reveal Traits'}
             </button>
           </div>
-          <div className="rounded-md border border-white/60 bg-white px-3 py-2 text-sm text-slate-700 shadow-inner">
+          <div className="rounded-md border border-[rgba(37,99,235,0.2)] bg-[rgba(15,35,70,0.4)] px-3 py-2 text-sm text-[rgb(220,235,255)] shadow-inner">
             {foal?.traits && foal.traits.length > 0
               ? foal.traits.join(', ')
               : 'Traits pending discovery.'}
           </div>
 
           <div>
-            <div className="text-sm font-semibold text-slate-900">Activity Log</div>
-            <div className="text-xs text-slate-600">Latest activities fetched from the API.</div>
+            <div className="text-sm font-semibold text-[rgb(220,235,255)]">Activity Log</div>
+            <div className="text-xs text-[rgb(148,163,184)]">
+              Latest activities fetched from the API.
+            </div>
             <div className="mt-2 space-y-2">
               {activities?.map((activity) => (
                 <div
                   key={`${activity.activity}-${activity.createdAt ?? activity.id ?? 'pending'}`}
-                  className="rounded-md border border-slate-200 bg-white px-3 py-2 text-sm text-slate-700 shadow-sm"
+                  className="rounded-md border border-[rgba(37,99,235,0.2)] bg-[rgba(15,35,70,0.4)] px-3 py-2 text-sm text-[rgb(220,235,255)] shadow-sm"
                 >
                   <div className="flex items-center justify-between">
                     <span className="font-semibold">{activity.activity}</span>
-                    <span className="text-xs text-slate-500">
+                    <span className="text-xs text-[rgb(148,163,184)]">
                       {activity.duration ? `${activity.duration} min` : '—'}
                     </span>
                   </div>
-                  <div className="text-xs text-slate-500">
+                  <div className="text-xs text-[rgb(148,163,184)]">
                     {activity.createdAt
                       ? new Date(activity.createdAt).toLocaleString()
                       : 'Timestamp pending'}
@@ -166,7 +174,7 @@ const FoalDevelopmentTracker = ({ foalId }: FoalDevelopmentTrackerProps) => {
                 </div>
               ))}
               {!activities?.length && (
-                <div className="rounded-md border border-slate-200 bg-white px-3 py-2 text-sm text-slate-600 shadow-sm">
+                <div className="rounded-md border border-[rgba(37,99,235,0.2)] bg-[rgba(15,35,70,0.4)] px-3 py-2 text-sm text-[rgb(148,163,184)] shadow-sm">
                   No activities logged yet.
                 </div>
               )}

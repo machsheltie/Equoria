@@ -48,14 +48,14 @@ function LevelProgressBar({ experience }: { experience: number }) {
     <div data-testid="level-progress-section">
       <div className="flex items-center gap-3 mb-2">
         <span
-          className="inline-flex items-center justify-center w-10 h-10 rounded-full bg-blue-100 text-blue-800 font-bold text-lg"
+          className="inline-flex items-center justify-center w-10 h-10 rounded-full bg-[rgba(37,99,235,0.2)] text-[rgb(220,235,255)] font-bold text-lg"
           data-testid="level-badge"
           aria-label={`Level ${progress.level}`}
         >
           {progress.level}
         </span>
         <div className="flex-1">
-          <div className="flex justify-between text-xs text-gray-500 mb-1">
+          <div className="flex justify-between text-xs text-[rgb(148,163,184)] mb-1">
             <span data-testid="level-label">
               Level {progress.level}
               {progress.isMaxLevel ? ' (Max)' : ''}
@@ -67,7 +67,7 @@ function LevelProgressBar({ experience }: { experience: number }) {
             </span>
           </div>
           <div
-            className="h-2 bg-gray-200 rounded-full overflow-hidden"
+            className="h-2 bg-[rgba(15,35,70,0.5)] rounded-full overflow-hidden"
             role="progressbar"
             aria-valuenow={progress.progressPercent}
             aria-valuemin={0}
@@ -83,7 +83,7 @@ function LevelProgressBar({ experience }: { experience: number }) {
           </div>
         </div>
       </div>
-      <p className="text-xs text-gray-400" data-testid="total-xp">
+      <p className="text-xs text-[rgb(148,163,184)]" data-testid="total-xp">
         Total XP: {experience}
       </p>
     </div>
@@ -106,10 +106,10 @@ function CareerTimeline({
 
   return (
     <div data-testid="career-timeline-section">
-      <h4 className="text-xs font-semibold text-gray-600 uppercase tracking-wide mb-2">
+      <h4 className="text-xs font-semibold text-[rgb(148,163,184)] uppercase tracking-wide mb-2">
         Career Timeline
       </h4>
-      <div className="flex justify-between text-xs text-gray-500 mb-1">
+      <div className="flex justify-between text-xs text-[rgb(148,163,184)] mb-1">
         <span>
           <Clock className="inline w-3 h-3 mr-1" aria-hidden="true" />
           <span data-testid="career-weeks">{careerWeeks} weeks active</span>
@@ -119,7 +119,7 @@ function CareerTimeline({
         </span>
       </div>
       <div
-        className="h-2 bg-gray-200 rounded-full overflow-hidden mb-1"
+        className="h-2 bg-[rgba(15,35,70,0.5)] rounded-full overflow-hidden mb-1"
         role="progressbar"
         aria-valuenow={careerWeeks}
         aria-valuemin={0}
@@ -133,13 +133,13 @@ function CareerTimeline({
               ? 'bg-red-500'
               : progressPercent >= 75
                 ? 'bg-amber-500'
-                : 'bg-green-500'
+                : 'bg-emerald-500'
           }`}
           style={{ width: `${progressPercent}%` }}
           data-testid="career-progress-fill"
         />
       </div>
-      <p className="text-xs text-gray-400" data-testid="retirement-deadline">
+      <p className="text-xs text-[rgb(148,163,184)]" data-testid="retirement-deadline">
         Mandatory retirement at {MANDATORY_RETIREMENT_WEEKS} weeks
       </p>
     </div>
@@ -164,8 +164,8 @@ function RetirementWarning({
     <div
       className={`flex items-start gap-2 rounded-lg p-3 border ${
         isApproachingRetirement
-          ? 'bg-red-50 border-red-200 text-red-800'
-          : 'bg-amber-50 border-amber-200 text-amber-800'
+          ? 'bg-[rgba(239,68,68,0.1)] border-red-500/30 text-red-400'
+          : 'bg-[rgba(212,168,67,0.1)] border-amber-500/30 text-amber-400'
       }`}
       role="alert"
       data-testid="retirement-warning"
@@ -209,17 +209,21 @@ function RetiredNotice({
 
   return (
     <div
-      className="flex items-start gap-2 bg-gray-100 border border-gray-300 rounded-lg p-3"
+      className="flex items-start gap-2 bg-[rgba(15,35,70,0.5)] border border-[rgba(37,99,235,0.3)] rounded-lg p-3"
       role="status"
       data-testid="retired-notice"
     >
-      <Award className="flex-shrink-0 text-gray-500 mt-0.5" size={16} aria-hidden="true" />
+      <Award
+        className="flex-shrink-0 text-[rgb(148,163,184)] mt-0.5"
+        size={16}
+        aria-hidden="true"
+      />
       <div>
-        <p className="text-sm font-medium text-gray-700" data-testid="retired-reason">
+        <p className="text-sm font-medium text-[rgb(220,235,255)]" data-testid="retired-reason">
           {reasonLabel}
         </p>
         {retiredDate && (
-          <p className="text-xs text-gray-500" data-testid="retired-date">
+          <p className="text-xs text-[rgb(148,163,184)]" data-testid="retired-date">
             Retired on {retiredDate}
           </p>
         )}
@@ -243,11 +247,11 @@ function PerformanceMetricsGrid({ metrics }: { metrics: GroomPerformanceMetrics 
   ];
 
   const getScoreColor = (value: number) =>
-    value >= 70 ? 'text-green-600' : value >= 40 ? 'text-amber-600' : 'text-red-500';
+    value >= 70 ? 'text-emerald-400' : value >= 40 ? 'text-amber-400' : 'text-red-400';
 
   return (
     <div data-testid="performance-metrics-section">
-      <h4 className="text-xs font-semibold text-gray-600 uppercase tracking-wide mb-3 flex items-center gap-1">
+      <h4 className="text-xs font-semibold text-[rgb(148,163,184)] uppercase tracking-wide mb-3 flex items-center gap-1">
         <TrendingUp className="w-3 h-3" aria-hidden="true" />
         Performance History
       </h4>
@@ -255,9 +259,9 @@ function PerformanceMetricsGrid({ metrics }: { metrics: GroomPerformanceMetrics 
         {metricRows.map((m) => (
           <div
             key={m.testId}
-            className="flex items-center justify-between bg-white rounded px-3 py-2 border border-gray-100"
+            className="flex items-center justify-between bg-[rgba(15,35,70,0.4)] rounded px-3 py-2 border border-[rgba(37,99,235,0.3)]"
           >
-            <span className="text-xs text-gray-500">{m.label}</span>
+            <span className="text-xs text-[rgb(148,163,184)]">{m.label}</span>
             <span
               className={`text-sm font-semibold ${getScoreColor(m.value)}`}
               data-testid={m.testId}
@@ -266,10 +270,10 @@ function PerformanceMetricsGrid({ metrics }: { metrics: GroomPerformanceMetrics 
             </span>
           </div>
         ))}
-        <div className="flex items-center justify-between bg-white rounded px-3 py-2 border border-gray-100">
-          <span className="text-xs text-gray-500">Interactions</span>
+        <div className="flex items-center justify-between bg-[rgba(15,35,70,0.4)] rounded px-3 py-2 border border-[rgba(37,99,235,0.3)]">
+          <span className="text-xs text-[rgb(148,163,184)]">Interactions</span>
           <span
-            className="text-sm font-semibold text-gray-700"
+            className="text-sm font-semibold text-[rgb(220,235,255)]"
             data-testid="metric-total-interactions"
           >
             {metrics.totalInteractions}
@@ -284,7 +288,7 @@ function PerformanceMetricsGrid({ metrics }: { metrics: GroomPerformanceMetrics 
 function MilestoneTracker({ milestones }: { milestones: CareerMilestone[] }) {
   return (
     <div data-testid="career-milestones-section">
-      <h4 className="text-xs font-semibold text-gray-600 uppercase tracking-wide mb-3 flex items-center gap-1">
+      <h4 className="text-xs font-semibold text-[rgb(148,163,184)] uppercase tracking-wide mb-3 flex items-center gap-1">
         <Star className="w-3 h-3" aria-hidden="true" />
         Career Milestones
       </h4>
@@ -292,21 +296,21 @@ function MilestoneTracker({ milestones }: { milestones: CareerMilestone[] }) {
         {milestones.map((milestone) => (
           <div
             key={milestone.id}
-            className={`flex items-center gap-2 text-xs ${milestone.reached ? 'text-gray-800' : 'text-gray-400'}`}
+            className={`flex items-center gap-2 text-xs ${milestone.reached ? 'text-[rgb(220,235,255)]' : 'text-[rgb(148,163,184)]'}`}
             data-testid={`milestone-${milestone.id}`}
           >
             {milestone.reached ? (
-              <CheckCircle className="w-4 h-4 text-green-500 flex-shrink-0" aria-hidden="true" />
+              <CheckCircle className="w-4 h-4 text-emerald-400 flex-shrink-0" aria-hidden="true" />
             ) : (
               <div
-                className="w-4 h-4 rounded-full border-2 border-gray-300 flex-shrink-0"
+                className="w-4 h-4 rounded-full border-2 border-[rgba(37,99,235,0.3)] flex-shrink-0"
                 aria-hidden="true"
               />
             )}
             <div>
               <span className="font-medium">{milestone.label}</span>
               {!milestone.reached && (
-                <span className="ml-1 text-gray-400">— {milestone.description}</span>
+                <span className="ml-1 text-[rgb(148,163,184)]">— {milestone.description}</span>
               )}
             </div>
           </div>
@@ -320,14 +324,14 @@ function MilestoneTracker({ milestones }: { milestones: CareerMilestone[] }) {
 function RetirementBenefitsInfo() {
   return (
     <div
-      className="bg-blue-50 border border-blue-100 rounded-lg p-3"
+      className="bg-[rgba(37,99,235,0.1)] border border-blue-500/30 rounded-lg p-3"
       data-testid="retirement-benefits-info"
     >
-      <h4 className="text-xs font-semibold text-blue-700 mb-2 flex items-center gap-1">
+      <h4 className="text-xs font-semibold text-[rgb(220,235,255)] mb-2 flex items-center gap-1">
         <Calendar className="w-3 h-3" aria-hidden="true" />
         Retirement Rules
       </h4>
-      <ul className="space-y-1 text-xs text-blue-600">
+      <ul className="space-y-1 text-xs text-[rgb(148,163,184)]">
         <li data-testid="rule-mandatory">
           Mandatory retirement at {CAREER_CONSTANTS.MANDATORY_RETIREMENT_WEEKS} weeks (2 years)
         </li>
@@ -367,18 +371,18 @@ const GroomCareerPanel: React.FC<GroomCareerPanelProps> = ({
 
   return (
     <div
-      className="rounded-lg border border-gray-200 bg-gray-50 p-4 space-y-5"
+      className="rounded-lg border border-[rgba(37,99,235,0.3)] bg-[rgba(15,35,70,0.5)] p-4 space-y-5"
       data-testid="groom-career-panel"
       aria-label={`Career information for ${groom.name}`}
     >
       {/* Panel header */}
       <div className="flex items-center justify-between">
-        <h3 className="font-semibold text-gray-900" data-testid="career-panel-title">
+        <h3 className="font-semibold text-[rgb(220,235,255)]" data-testid="career-panel-title">
           Career Overview
         </h3>
         {groom.retired && (
           <span
-            className="text-xs bg-gray-200 text-gray-600 px-2 py-0.5 rounded"
+            className="text-xs bg-[rgba(15,35,70,0.5)] text-[rgb(148,163,184)] px-2 py-0.5 rounded border border-[rgba(37,99,235,0.3)]"
             data-testid="retired-badge"
           >
             Retired

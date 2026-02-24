@@ -57,7 +57,7 @@ const CustomTooltip: React.FC<Record<string, unknown>> = ({ active, payload }) =
   if (event.eventType === 'modification') EventIcon = Edit3;
 
   return (
-    <div className="bg-white rounded-lg shadow-xl border border-slate-200 p-4 max-w-xs">
+    <div className="glass-panel rounded-lg border border-[rgba(37,99,235,0.3)] p-4 max-w-xs">
       {/* Trait Name */}
       <div className="flex items-center gap-2 mb-2">
         <EventIcon className={`h-5 w-5 ${tierStyle.textColor}`} />
@@ -65,20 +65,20 @@ const CustomTooltip: React.FC<Record<string, unknown>> = ({ active, payload }) =
       </div>
 
       {/* Event Type */}
-      <p className="text-xs font-semibold text-slate-600 uppercase tracking-wide mb-1">
+      <p className="text-xs font-semibold text-[rgb(148,163,184)] uppercase tracking-wide mb-1">
         {event.eventType}
       </p>
 
       {/* Trigger */}
-      <p className="text-sm text-slate-700 mb-2">
+      <p className="text-sm text-[rgb(220,235,255)] mb-2">
         <span className="font-medium">Trigger:</span> {event.trigger}
       </p>
 
       {/* Description */}
-      <p className="text-xs text-slate-600">{event.description}</p>
+      <p className="text-xs text-[rgb(148,163,184)]">{event.description}</p>
 
       {/* Timestamp */}
-      <p className="text-xs text-slate-500 mt-2">
+      <p className="text-xs text-[rgb(148,163,184)] mt-2">
         {new Date(event.timestamp).toLocaleDateString('en-US', {
           month: 'short',
           day: 'numeric',
@@ -97,10 +97,10 @@ const CustomTooltip: React.FC<Record<string, unknown>> = ({ active, payload }) =
 const TraitHistoryTimeline: React.FC<TraitHistoryTimelineProps> = ({ history }) => {
   if (history.events.length === 0) {
     return (
-      <div className="rounded-lg border border-slate-200 bg-slate-50 p-8 text-center">
-        <Calendar className="h-12 w-12 text-slate-400 mx-auto mb-3" />
-        <p className="text-sm text-slate-600">No trait history events recorded yet</p>
-        <p className="text-xs text-slate-500 mt-1">
+      <div className="rounded-lg border border-[rgba(37,99,235,0.3)] bg-[rgba(15,35,70,0.3)] p-8 text-center">
+        <Calendar className="h-12 w-12 text-[rgb(148,163,184)] mx-auto mb-3" />
+        <p className="text-sm text-[rgb(148,163,184)]">No trait history events recorded yet</p>
+        <p className="text-xs text-[rgb(148,163,184)] mt-1">
           Events will appear here as traits are discovered and activated
         </p>
       </div>
@@ -123,11 +123,15 @@ const TraitHistoryTimeline: React.FC<TraitHistoryTimelineProps> = ({ history }) 
   return (
     <div className="space-y-4">
       {/* Chart */}
-      <div className="rounded-lg border border-slate-200 bg-white p-4">
-        <h4 className="text-sm font-bold text-slate-900 mb-4">Timeline Visualization</h4>
+      <div className="rounded-lg border border-[rgba(37,99,235,0.3)] bg-[rgba(15,35,70,0.4)] p-4">
+        <h4 className="text-sm font-bold text-[rgb(220,235,255)] mb-4">Timeline Visualization</h4>
         <ResponsiveContainer width="100%" height={200}>
           <LineChart data={chartData}>
-            <XAxis dataKey="displayDate" tick={{ fontSize: 12 }} stroke="#64748b" />
+            <XAxis
+              dataKey="displayDate"
+              tick={{ fontSize: 12, fill: '#94a3b8' }}
+              stroke="#94a3b8"
+            />
             <YAxis hide />
             <Tooltip content={<CustomTooltip />} />
             <Line
@@ -143,26 +147,27 @@ const TraitHistoryTimeline: React.FC<TraitHistoryTimelineProps> = ({ history }) 
 
       {/* Event List */}
       <div className="space-y-3">
-        <h4 className="text-sm font-bold text-slate-900">Event History</h4>
+        <h4 className="text-sm font-bold text-[rgb(220,235,255)]">Event History</h4>
         {chartData.map((event, _index) => {
           const tierStyle = getTierStyle(event.tier);
 
           // Icon based on event type
           let EventIcon = Sparkles;
-          let eventColor = 'text-green-600 bg-green-50 border-green-200';
+          let eventColor =
+            'text-emerald-400 bg-[rgba(16,185,129,0.1)] border-[rgba(16,185,129,0.3)]';
           if (event.eventType === 'activation') {
             EventIcon = Activity;
-            eventColor = 'text-blue-600 bg-blue-50 border-blue-200';
+            eventColor = 'text-blue-400 bg-[rgba(37,99,235,0.1)] border-blue-500/30';
           }
           if (event.eventType === 'modification') {
             EventIcon = Edit3;
-            eventColor = 'text-amber-600 bg-amber-50 border-amber-200';
+            eventColor = 'text-amber-400 bg-[rgba(212,168,67,0.1)] border-[rgba(212,168,67,0.3)]';
           }
 
           return (
             <div
               key={event.id}
-              className="rounded-lg border border-slate-200 bg-white p-4 hover:shadow-md transition-shadow"
+              className="rounded-lg border border-[rgba(37,99,235,0.3)] bg-[rgba(15,35,70,0.4)] p-4 hover:shadow-md transition-shadow"
             >
               <div className="flex items-start gap-3">
                 {/* Icon */}
@@ -174,18 +179,18 @@ const TraitHistoryTimeline: React.FC<TraitHistoryTimelineProps> = ({ history }) 
                 <div className="flex-1">
                   <div className="flex items-center gap-2 mb-1">
                     <p className={`font-bold ${tierStyle.textColor}`}>{event.traitName}</p>
-                    <span className="text-xs font-semibold text-slate-500 uppercase">
+                    <span className="text-xs font-semibold text-[rgb(148,163,184)] uppercase">
                       {event.eventType}
                     </span>
                   </div>
 
-                  <p className="text-sm text-slate-700 mb-1">
+                  <p className="text-sm text-[rgb(220,235,255)] mb-1">
                     <span className="font-medium">Trigger:</span> {event.trigger}
                   </p>
 
-                  <p className="text-xs text-slate-600">{event.description}</p>
+                  <p className="text-xs text-[rgb(148,163,184)]">{event.description}</p>
 
-                  <p className="text-xs text-slate-500 mt-2">
+                  <p className="text-xs text-[rgb(148,163,184)] mt-2">
                     {new Date(event.timestamp).toLocaleDateString('en-US', {
                       month: 'long',
                       day: 'numeric',

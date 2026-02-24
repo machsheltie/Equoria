@@ -84,7 +84,7 @@ export function getLevelTier(level: number): LevelTierResult {
     return {
       tier: 'silver',
       tierName: 'Silver',
-      colorClasses: 'bg-slate-400 text-slate-900 border-slate-500',
+      colorClasses: 'bg-[rgba(15,35,70,0.5)] text-[rgb(220,235,255)] border-[rgba(37,99,235,0.3)]',
       nextTierLevel: 11,
       nextTierName: 'Gold',
     };
@@ -155,11 +155,7 @@ const HorseLevelBadge = memo(function HorseLevelBadge({
 
   // Build the icon element when showIcon is enabled
   const iconElement = showIcon ? (
-    <Star
-      data-testid="level-badge-icon"
-      size={iconSizes[size]}
-      className="fill-current"
-    />
+    <Star data-testid="level-badge-icon" size={iconSizes[size]} className="fill-current" />
   ) : null;
 
   // Compose badge content with icon positioning
@@ -193,17 +189,16 @@ const HorseLevelBadge = memo(function HorseLevelBadge({
         <span
           data-testid="level-tooltip"
           role="tooltip"
-          className="absolute left-1/2 top-full z-10 mt-1 w-48 -translate-x-1/2 rounded-md border border-slate-200 bg-white p-2 text-left text-xs font-normal text-slate-800 shadow-lg"
+          className="absolute left-1/2 top-full z-10 mt-1 w-48 -translate-x-1/2 rounded-md border border-[rgba(37,99,235,0.3)] bg-[rgba(15,35,70,0.5)] p-2 text-left text-xs font-normal text-[rgb(220,235,255)] shadow-lg"
         >
-          <span className="block font-semibold text-slate-900">
+          <span className="block font-semibold text-[rgb(220,235,255)]">
             {tierInfo.tierName} Tier
           </span>
-          <span className="block text-slate-600">Level {displayLevel}</span>
+          <span className="block text-[rgb(148,163,184)]">Level {displayLevel}</span>
           {tierInfo.nextTierLevel && tierInfo.nextTierName && (
-            <span className="mt-1 block text-slate-500">
+            <span className="mt-1 block text-[rgb(148,163,184)]">
               {tierInfo.nextTierLevel - displayLevel} more level
-              {tierInfo.nextTierLevel - displayLevel !== 1 ? 's' : ''} to{' '}
-              {tierInfo.nextTierName}
+              {tierInfo.nextTierLevel - displayLevel !== 1 ? 's' : ''} to {tierInfo.nextTierName}
             </span>
           )}
         </span>

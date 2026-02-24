@@ -182,7 +182,7 @@ const TrainingResultModal = ({
 
   const modalContent = (
     <div
-      className="fixed inset-0 bg-black/50 flex items-center justify-center z-50 p-4"
+      className="fixed inset-0 bg-black/70 flex items-center justify-center z-50 p-4"
       onClick={handleBackdropClick}
       data-testid="training-result-modal-backdrop"
     >
@@ -190,15 +190,15 @@ const TrainingResultModal = ({
         role="dialog"
         aria-modal="true"
         aria-labelledby="training-result-title"
-        className="bg-white rounded-lg shadow-xl max-w-md w-full p-6 focus:outline-none"
+        className="glass-panel rounded-lg shadow-xl max-w-md w-full p-6 focus:outline-none"
         onClick={(e) => e.stopPropagation()}
         data-testid="training-result-modal"
       >
         {/* Header with celebration */}
         <div className="text-center mb-6">
           <div className="flex items-center justify-center mb-2">
-            <PartyPopper className="w-8 h-8 text-green-600 mr-2" aria-hidden="true" />
-            <h2 id="training-result-title" className="text-2xl font-bold text-green-600">
+            <PartyPopper className="w-8 h-8 text-emerald-400 mr-2" aria-hidden="true" />
+            <h2 id="training-result-title" className="text-2xl font-bold text-emerald-400">
               Training Complete!
             </h2>
             <span className="ml-2 text-2xl" role="img" aria-label="celebration">
@@ -209,42 +209,49 @@ const TrainingResultModal = ({
 
         {/* Discipline and Score Information */}
         <div className="text-center">
-          <p className="text-lg font-semibold text-gray-700" data-testid="discipline-name">
+          <p
+            className="text-lg font-semibold text-[rgb(220,235,255)]"
+            data-testid="discipline-name"
+          >
             {disciplineName}
           </p>
 
-          <p className="text-4xl font-bold text-green-600 mt-3" data-testid="score-gain">
+          <p className="text-4xl font-bold text-emerald-400 mt-3" data-testid="score-gain">
             +{scoreGain}
           </p>
 
-          <p className="text-sm text-gray-600 mt-1" data-testid="score-breakdown">
+          <p className="text-sm text-[rgb(148,163,184)] mt-1" data-testid="score-breakdown">
             ({scoreBreakdown})
           </p>
         </div>
 
         {/* New Score Display */}
         <div className="mt-4 text-center">
-          <p className="font-semibold text-gray-900" data-testid="new-score">
-            New Score: <span className="text-blue-600">{newScore}</span>
+          <p className="font-semibold text-[rgb(220,235,255)]" data-testid="new-score">
+            New Score: <span className="text-blue-400">{newScore}</span>
           </p>
         </div>
 
         {/* Additional Gains Section */}
         {hasAdditionalGains && (
           <div
-            className="mt-4 border-t border-gray-200 pt-4"
+            className="mt-4 border-t border-[rgba(37,99,235,0.3)] pt-4"
             data-testid="additional-gains-section"
           >
-            <h3 className="font-semibold text-gray-700 mb-2">Additional Gains:</h3>
+            <h3 className="font-semibold text-[rgb(220,235,255)] mb-2">Additional Gains:</h3>
             <ul className="space-y-1 text-sm" data-testid="gains-list">
               {statGains &&
                 Object.entries(statGains).map(([stat, gain]) => (
-                  <li key={stat} className="text-gray-600" data-testid={`stat-gain-${stat}`}>
-                    • {stat}: <span className="text-green-600 font-medium">+{gain}</span>
+                  <li
+                    key={stat}
+                    className="text-[rgb(148,163,184)]"
+                    data-testid={`stat-gain-${stat}`}
+                  >
+                    • {stat}: <span className="text-emerald-400 font-medium">+{gain}</span>
                   </li>
                 ))}
               {xpGain !== undefined && xpGain > 0 && (
-                <li className="text-yellow-600 font-semibold" data-testid="xp-gain">
+                <li className="text-amber-400 font-semibold" data-testid="xp-gain">
                   • XP: +{xpGain}
                 </li>
               )}
@@ -254,7 +261,7 @@ const TrainingResultModal = ({
 
         {/* Next Training Date */}
         <div
-          className="mt-4 text-sm text-gray-500 flex items-center justify-center"
+          className="mt-4 text-sm text-[rgb(148,163,184)] flex items-center justify-center"
           data-testid="next-training-section"
         >
           <Calendar className="w-4 h-4 mr-1" aria-hidden="true" />
@@ -266,7 +273,7 @@ const TrainingResultModal = ({
           ref={closeButtonRef}
           type="button"
           onClick={onClose}
-          className="w-full mt-6 bg-blue-600 text-white py-3 px-4 rounded-lg hover:bg-blue-700 transition-colors font-semibold focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-2"
+          className="w-full mt-6 bg-blue-600 text-white py-3 px-4 rounded-lg hover:bg-blue-700 transition-colors font-semibold focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-2 focus:ring-offset-[rgba(15,35,70,0.9)]"
           data-testid="close-button"
         >
           Close

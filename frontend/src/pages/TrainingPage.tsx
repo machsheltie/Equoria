@@ -7,7 +7,7 @@ const TrainingPage = () => {
   if (isLoading) {
     return (
       <div className="mx-auto max-w-6xl px-4 py-8">
-        <div className="text-sm text-slate-600">Checking authentication…</div>
+        <div className="text-sm text-[rgb(148,163,184)]">Checking authentication…</div>
       </div>
     );
   }
@@ -15,7 +15,7 @@ const TrainingPage = () => {
   if (!isAuthenticated) {
     return (
       <div className="mx-auto max-w-6xl px-4 py-8">
-        <div className="rounded-md border border-amber-200 bg-amber-50 px-4 py-3 text-sm text-amber-800 shadow-sm">
+        <div className="rounded-md border border-amber-500/30 bg-[rgba(212,168,67,0.1)] px-4 py-3 text-sm text-amber-400 shadow-sm">
           Please log in to access the training center.
         </div>
       </div>

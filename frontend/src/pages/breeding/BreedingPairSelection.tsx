@@ -169,7 +169,7 @@ const BreedingPairSelection: React.FC<BreedingPairSelectionProps> = ({ userId: p
         <div className="flex items-center justify-center h-64">
           <div className="text-center">
             <div className="inline-block h-8 w-8 animate-spin rounded-full border-4 border-solid border-emerald-500 border-r-transparent"></div>
-            <p className="mt-3 text-sm text-slate-600">Loading horses...</p>
+            <p className="mt-3 text-sm text-[rgb(148,163,184)]">Loading horses...</p>
           </div>
         </div>
       </div>
@@ -180,10 +180,10 @@ const BreedingPairSelection: React.FC<BreedingPairSelectionProps> = ({ userId: p
   if (horsesError) {
     return (
       <div className="mx-auto max-w-7xl px-4 py-8">
-        <div className="rounded-lg border border-red-200 bg-red-50 p-6">
+        <div className="rounded-lg border border-red-500/30 bg-[rgba(239,68,68,0.1)] p-6">
           <div className="flex items-center gap-2">
-            <AlertCircle className="h-5 w-5 text-red-600" />
-            <p className="text-red-800">Failed to load horses. Please try again.</p>
+            <AlertCircle className="h-5 w-5 text-red-400" />
+            <p className="text-[rgb(220,235,255)]">Failed to load horses. Please try again.</p>
           </div>
         </div>
       </div>
@@ -196,8 +196,8 @@ const BreedingPairSelection: React.FC<BreedingPairSelectionProps> = ({ userId: p
     <div className="mx-auto max-w-7xl px-4 py-8 space-y-6">
       {/* Page Header */}
       <div>
-        <h1 className="text-3xl font-bold text-slate-900">Breeding Pair Selection</h1>
-        <p className="text-slate-600 mt-2">
+        <h1 className="text-3xl font-bold text-[rgb(220,235,255)]">Breeding Pair Selection</h1>
+        <p className="text-[rgb(148,163,184)] mt-2">
           Select a sire and dam from your horses to initiate breeding. View compatibility analysis
           and recommendations before confirming.
         </p>
@@ -205,30 +205,30 @@ const BreedingPairSelection: React.FC<BreedingPairSelectionProps> = ({ userId: p
 
       {/* Success Message */}
       {successMessage && (
-        <div className="rounded-lg border border-green-200 bg-green-50 p-4">
+        <div className="rounded-lg border border-emerald-500/30 bg-[rgba(16,185,129,0.1)] p-4">
           <div className="flex items-center gap-2">
-            <CheckCircle className="h-5 w-5 text-green-600" />
-            <p className="text-green-800">{successMessage}</p>
+            <CheckCircle className="h-5 w-5 text-emerald-400" />
+            <p className="text-[rgb(220,235,255)]">{successMessage}</p>
           </div>
         </div>
       )}
 
       {/* Error Message */}
       {errorMessage && (
-        <div className="rounded-lg border border-red-200 bg-red-50 p-4">
+        <div className="rounded-lg border border-red-500/30 bg-[rgba(239,68,68,0.1)] p-4">
           <div className="flex items-center gap-2">
-            <AlertCircle className="h-5 w-5 text-red-600" />
-            <p className="text-red-800">{errorMessage}</p>
+            <AlertCircle className="h-5 w-5 text-red-400" />
+            <p className="text-[rgb(220,235,255)]">{errorMessage}</p>
           </div>
         </div>
       )}
 
       {/* Compatibility Error */}
       {compatibilityError && selectedSire && selectedDam && (
-        <div className="rounded-lg border border-amber-200 bg-amber-50 p-4">
+        <div className="rounded-lg border border-amber-500/30 bg-[rgba(212,168,67,0.1)] p-4">
           <div className="flex items-center gap-2">
-            <AlertCircle className="h-5 w-5 text-amber-600" />
-            <p className="text-amber-800">
+            <AlertCircle className="h-5 w-5 text-amber-400" />
+            <p className="text-amber-400">
               Could not load compatibility analysis. You can still proceed with breeding.
             </p>
           </div>
@@ -265,16 +265,18 @@ const BreedingPairSelection: React.FC<BreedingPairSelectionProps> = ({ userId: p
       )}
 
       {/* Action Buttons */}
-      <div className="flex items-center justify-between rounded-lg border border-slate-200 bg-slate-50 p-6">
+      <div className="flex items-center justify-between rounded-lg border border-[rgba(37,99,235,0.2)] bg-[rgba(15,35,70,0.5)] p-6">
         <div className="flex items-center gap-4">
           <div>
-            <p className="text-sm text-slate-600">Stud Fee</p>
-            <p className="text-2xl font-bold text-slate-900">${studFee.toLocaleString()}</p>
+            <p className="text-sm text-[rgb(148,163,184)]">Stud Fee</p>
+            <p className="text-2xl font-bold text-[rgb(220,235,255)]">
+              ${studFee.toLocaleString()}
+            </p>
           </div>
-          <div className="h-12 w-px bg-slate-300" />
+          <div className="h-12 w-px bg-[rgba(37,99,235,0.3)]" />
           <div>
-            <p className="text-sm text-slate-600">Breeding Cooldown</p>
-            <p className="text-lg font-semibold text-slate-900">30 days</p>
+            <p className="text-sm text-[rgb(148,163,184)]">Breeding Cooldown</p>
+            <p className="text-lg font-semibold text-[rgb(220,235,255)]">30 days</p>
           </div>
         </div>
 

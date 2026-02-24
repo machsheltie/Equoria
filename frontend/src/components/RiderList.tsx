@@ -35,7 +35,7 @@ const SKILL_LEVEL_LABELS: Record<
 > = {
   rookie: {
     label: 'Rookie',
-    colorClass: 'bg-slate-700 text-slate-300',
+    colorClass: 'bg-[rgba(15,35,70,0.6)] text-[rgb(100,130,165)]',
     visibility: 'Stats hidden — unknown potential',
   },
   developing: {

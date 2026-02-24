@@ -30,8 +30,8 @@ interface GroomPersonalityDisplayProps {
 }
 
 const CompatibilityRow: React.FC<{ rating: CompatibilityRating }> = ({ rating }) => (
-  <div className="flex items-center justify-between py-1.5 border-b border-slate-100 last:border-0">
-    <span className="text-sm text-slate-700">{rating.horseType}</span>
+  <div className="flex items-center justify-between py-1.5 border-b border-[rgba(37,99,235,0.3)] last:border-0">
+    <span className="text-sm text-[rgb(220,235,255)]">{rating.horseType}</span>
     <span
       className={`text-sm font-semibold ${compatibilityColorClass(rating.rating)}`}
       data-testid={`compatibility-${rating.horseType.toLowerCase().replace(/[^a-z0-9]/g, '-')}`}
@@ -42,8 +42,8 @@ const CompatibilityRow: React.FC<{ rating: CompatibilityRating }> = ({ rating })
 );
 
 const TraitInfluenceRow: React.FC<{ influence: TraitInfluence }> = ({ influence }) => (
-  <div className="flex items-center justify-between py-1.5 border-b border-slate-100 last:border-0">
-    <span className="text-sm text-slate-700">{influence.trait}</span>
+  <div className="flex items-center justify-between py-1.5 border-b border-[rgba(37,99,235,0.3)] last:border-0">
+    <span className="text-sm text-[rgb(220,235,255)]">{influence.trait}</span>
     <span
       className={`text-sm capitalize ${magnitudeColorClass(influence.magnitude)}`}
       data-testid={`trait-${influence.trait.toLowerCase().replace(/\s+/g, '-')}`}
@@ -66,10 +66,10 @@ const GroomPersonalityDisplay: React.FC<GroomPersonalityDisplayProps> = ({
 
   const effectivenessColor =
     info.effectivenessRating === 'high'
-      ? 'text-green-600 bg-green-50 border-green-200'
+      ? 'text-emerald-400 bg-[rgba(16,185,129,0.1)] border-emerald-500/30'
       : info.effectivenessRating === 'medium'
-        ? 'text-amber-600 bg-amber-50 border-amber-200'
-        : 'text-slate-600 bg-slate-50 border-slate-200';
+        ? 'text-amber-400 bg-[rgba(212,168,67,0.1)] border-[rgba(212,168,67,0.3)]'
+        : 'text-[rgb(148,163,184)] bg-[rgba(15,35,70,0.3)] border-[rgba(37,99,235,0.3)]';
 
   const experienceLabel =
     experience >= 10
@@ -82,7 +82,7 @@ const GroomPersonalityDisplay: React.FC<GroomPersonalityDisplayProps> = ({
 
   return (
     <div
-      className="rounded-lg border border-slate-200 overflow-hidden"
+      className="rounded-lg border border-[rgba(37,99,235,0.3)] overflow-hidden"
       data-testid="personality-display"
       aria-label={`Personality display: ${info.label}`}
     >
@@ -101,10 +101,10 @@ const GroomPersonalityDisplay: React.FC<GroomPersonalityDisplayProps> = ({
         </div>
       </div>
 
-      <div className="bg-white px-4 py-4 space-y-4">
+      <div className="bg-[rgba(15,35,70,0.4)] px-4 py-4 space-y-4">
         {/* Effectiveness Rating */}
         <div className="flex items-center justify-between">
-          <span className="text-sm font-medium text-slate-700">Overall Effectiveness</span>
+          <span className="text-sm font-medium text-[rgb(220,235,255)]">Overall Effectiveness</span>
           <span
             className={`text-xs font-bold px-2 py-1 rounded-full border capitalize ${effectivenessColor}`}
             data-testid="effectiveness-rating"
@@ -115,7 +115,7 @@ const GroomPersonalityDisplay: React.FC<GroomPersonalityDisplayProps> = ({
 
         {/* Trait Influences */}
         <div>
-          <h5 className="text-xs font-bold text-slate-500 uppercase tracking-wide mb-2">
+          <h5 className="text-xs font-bold text-[rgb(148,163,184)] uppercase tracking-wide mb-2">
             Trait Influences
           </h5>
           <div data-testid="trait-influences">
@@ -128,7 +128,7 @@ const GroomPersonalityDisplay: React.FC<GroomPersonalityDisplayProps> = ({
         {/* Compatibility Ratings (hidden in compact mode) */}
         {!compact && (
           <div>
-            <h5 className="text-xs font-bold text-slate-500 uppercase tracking-wide mb-2">
+            <h5 className="text-xs font-bold text-[rgb(148,163,184)] uppercase tracking-wide mb-2">
               Horse Compatibility
             </h5>
             <div data-testid="compatibility-ratings">
@@ -141,18 +141,18 @@ const GroomPersonalityDisplay: React.FC<GroomPersonalityDisplayProps> = ({
 
         {/* Career Development Note */}
         <div
-          className="bg-slate-50 rounded-md p-3 border border-slate-100"
+          className="bg-[rgba(15,35,70,0.3)] rounded-md p-3 border border-[rgba(37,99,235,0.3)]"
           data-testid="development-note"
         >
-          <p className="text-xs font-semibold text-slate-500 uppercase tracking-wide mb-1">
+          <p className="text-xs font-semibold text-[rgb(148,163,184)] uppercase tracking-wide mb-1">
             Career Development
             {experience > 0 && (
-              <span className="ml-2 normal-case font-normal text-slate-400">
+              <span className="ml-2 normal-case font-normal text-[rgb(148,163,184)]">
                 — {experienceLabel} ({experience} yr{experience !== 1 ? 's' : ''})
               </span>
             )}
           </p>
-          <p className="text-sm text-slate-600">{info.developmentNote}</p>
+          <p className="text-sm text-[rgb(148,163,184)]">{info.developmentNote}</p>
         </div>
       </div>
     </div>

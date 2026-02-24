@@ -62,14 +62,14 @@ const TraitModifierList = ({
     <div className={`space-y-4 ${className}`.trim()}>
       {/* Base Gain */}
       <div className="flex items-center gap-2 text-sm">
-        <span className="font-semibold">Base Gain:</span>
-        <span className="font-bold text-blue-600">+{baseGain}</span>
+        <span className="font-semibold text-[rgb(220,235,255)]">Base Gain:</span>
+        <span className="font-bold text-blue-400">+{baseGain}</span>
       </div>
 
       {/* Positive Traits Section */}
       {positiveModifiers.length > 0 && (
         <div>
-          <h4 className="text-sm font-semibold text-gray-700 mb-2">Positive Traits:</h4>
+          <h4 className="text-sm font-semibold text-[rgb(220,235,255)] mb-2">Positive Traits:</h4>
           <div className="flex flex-wrap gap-2">
             {positiveModifiers.map((modifier) => (
               <TraitModifierTooltip
@@ -87,7 +87,7 @@ const TraitModifierList = ({
       {/* Negative Traits Section */}
       {negativeModifiers.length > 0 && (
         <div>
-          <h4 className="text-sm font-semibold text-gray-700 mb-2">Negative Traits:</h4>
+          <h4 className="text-sm font-semibold text-[rgb(220,235,255)] mb-2">Negative Traits:</h4>
           <div className="flex flex-wrap gap-2">
             {negativeModifiers.map((modifier) => (
               <TraitModifierTooltip
@@ -105,7 +105,7 @@ const TraitModifierList = ({
       {/* Neutral Traits Section (Other Traits) */}
       {neutralModifiers.length > 0 && (
         <div>
-          <h4 className="text-sm font-semibold text-gray-700 mb-2">Other Traits:</h4>
+          <h4 className="text-sm font-semibold text-[rgb(220,235,255)] mb-2">Other Traits:</h4>
           <div className="flex flex-wrap gap-2">
             {neutralModifiers.map((modifier) => (
               <TraitModifierTooltip
@@ -122,10 +122,10 @@ const TraitModifierList = ({
 
       {/* Net Effect (if showNetEffect is true) */}
       {showNetEffect && (
-        <div className="pt-3 border-t border-gray-200">
+        <div className="pt-3 border-t border-[rgba(37,99,235,0.3)]">
           <div className="flex items-center gap-2 text-sm">
-            <span className="font-semibold">Net Effect:</span>
-            <span className="font-bold text-lg text-purple-600">
+            <span className="font-semibold text-[rgb(220,235,255)]">Net Effect:</span>
+            <span className="font-bold text-lg text-purple-400">
               +{netEffect} ({baseGain} + {positiveSum} - {negativeSum})
             </span>
           </div>
@@ -134,7 +134,9 @@ const TraitModifierList = ({
 
       {/* Empty State */}
       {modifiers.length === 0 && (
-        <p className="text-sm text-gray-500 italic">No trait modifiers for this discipline</p>
+        <p className="text-sm text-[rgb(148,163,184)] italic">
+          No trait modifiers for this discipline
+        </p>
       )}
     </div>
   );

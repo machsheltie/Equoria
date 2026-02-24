@@ -43,28 +43,28 @@ const TrainingResultsDisplay: React.FC<TrainingResultsDisplayProps> = ({
   };
 
   return (
-    <div className="rounded-md border border-slate-200 bg-white p-6 shadow-sm">
-      <h3 className="mb-4 text-lg font-bold text-slate-900">Training Results</h3>
+    <div className="rounded-md border border-[rgba(37,99,235,0.3)] bg-[rgba(15,35,70,0.4)] p-6 shadow-sm">
+      <h3 className="mb-4 text-lg font-bold text-[rgb(220,235,255)]">Training Results</h3>
 
       {/* Discipline */}
       <div className="mb-4">
-        <p className="text-sm font-medium text-slate-600">Discipline</p>
-        <p className="text-base font-semibold text-slate-900">{result.discipline}</p>
+        <p className="text-sm font-medium text-[rgb(148,163,184)]">Discipline</p>
+        <p className="text-base font-semibold text-[rgb(220,235,255)]">{result.discipline}</p>
       </div>
 
       {/* Score Display */}
       <div className="mb-4">
-        <p className="text-sm font-medium text-slate-600">Score</p>
+        <p className="text-sm font-medium text-[rgb(148,163,184)]">Score</p>
         <div className="flex items-baseline gap-2">
-          <span className="text-2xl font-bold text-slate-900">{result.updatedScore}</span>
+          <span className="text-2xl font-bold text-[rgb(220,235,255)]">{result.updatedScore}</span>
           {scoreChange !== null && (
             <span
               className={`text-lg font-semibold ${
                 scoreImproved
-                  ? 'text-emerald-600'
+                  ? 'text-emerald-400'
                   : scoreDeclined
-                    ? 'text-amber-600'
-                    : 'text-slate-500'
+                    ? 'text-amber-400'
+                    : 'text-[rgb(148,163,184)]'
               }`}
             >
               ({formatScoreChange(scoreChange)})
@@ -78,10 +78,10 @@ const TrainingResultsDisplay: React.FC<TrainingResultsDisplayProps> = ({
         <div
           className={`mb-4 rounded-md px-3 py-2 text-sm ${
             scoreImproved
-              ? 'border border-emerald-200 bg-emerald-50 text-emerald-800'
+              ? 'border border-emerald-500/30 bg-[rgba(16,185,129,0.1)] text-emerald-400'
               : scoreDeclined
-                ? 'border border-amber-200 bg-amber-50 text-amber-800'
-                : 'border border-slate-200 bg-slate-50 text-slate-700'
+                ? 'border border-amber-500/30 bg-[rgba(212,168,67,0.1)] text-amber-400'
+                : 'border border-[rgba(37,99,235,0.3)] bg-[rgba(15,35,70,0.3)] text-[rgb(148,163,184)]'
           }`}
         >
           {scoreImproved && <span>✨ Score improved!</span>}
@@ -92,15 +92,15 @@ const TrainingResultsDisplay: React.FC<TrainingResultsDisplayProps> = ({
 
       {/* Message */}
       {result.message && (
-        <div className="mb-4 rounded-md border border-slate-100 bg-slate-50 px-3 py-2 text-sm text-slate-700">
+        <div className="mb-4 rounded-md border border-[rgba(37,99,235,0.3)] bg-[rgba(15,35,70,0.3)] px-3 py-2 text-sm text-[rgb(220,235,255)]">
           {result.message}
         </div>
       )}
 
       {/* Next Eligible Date */}
       <div className="mb-6">
-        <p className="text-sm font-medium text-slate-600">Next Training:</p>
-        <p className="text-sm text-slate-900">{formatDate(result.nextEligibleDate)}</p>
+        <p className="text-sm font-medium text-[rgb(148,163,184)]">Next Training:</p>
+        <p className="text-sm text-[rgb(220,235,255)]">{formatDate(result.nextEligibleDate)}</p>
       </div>
 
       {/* Action Buttons */}
@@ -108,14 +108,14 @@ const TrainingResultsDisplay: React.FC<TrainingResultsDisplayProps> = ({
         <button
           type="button"
           onClick={onClose}
-          className="rounded-md border border-slate-200 px-4 py-2 text-sm font-semibold text-slate-700 shadow-sm hover:bg-slate-50 focus:outline-none focus:ring-2 focus:ring-slate-500 focus:ring-offset-2"
+          className="rounded-md border border-[rgba(37,99,235,0.3)] px-4 py-2 text-sm font-semibold text-[rgb(148,163,184)] shadow-sm hover:bg-[rgba(15,35,70,0.5)] focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-2 focus:ring-offset-[rgba(15,35,70,0.9)]"
         >
           Close
         </button>
         <button
           type="button"
           onClick={onTrainAgain}
-          className="rounded-md bg-emerald-600 px-4 py-2 text-sm font-semibold text-white shadow hover:bg-emerald-500 focus:outline-none focus:ring-2 focus:ring-emerald-500 focus:ring-offset-2"
+          className="rounded-md bg-emerald-600 px-4 py-2 text-sm font-semibold text-white shadow hover:bg-emerald-500 focus:outline-none focus:ring-2 focus:ring-emerald-500 focus:ring-offset-2 focus:ring-offset-[rgba(15,35,70,0.9)]"
         >
           Train Again
         </button>

@@ -201,7 +201,7 @@ const ActivityFeedItem: React.FC<ActivityFeedItemProps> = ({
           )}
 
           {/* Description */}
-          <p className={`fantasy-body text-midnight-ink ${textSizes[size]} leading-snug`}>
+          <p className={`fantasy-body text-[rgb(220,235,255)] ${textSizes[size]} leading-snug`}>
             {description}
           </p>
 

@@ -78,7 +78,7 @@ const RankChangeIndicator = ({ rankChange }: { rankChange: number }) => {
   if (rankChange > 0) {
     return (
       <span
-        className="inline-flex items-center gap-0.5 px-2 py-0.5 rounded-full text-xs font-medium bg-green-100 text-green-700"
+        className="inline-flex items-center gap-0.5 px-2 py-0.5 rounded-full text-xs font-medium bg-[rgba(16,185,129,0.1)] text-emerald-400"
         data-testid="rank-change-indicator"
       >
         <TrendingUp size={12} aria-hidden="true" />
@@ -90,7 +90,7 @@ const RankChangeIndicator = ({ rankChange }: { rankChange: number }) => {
   if (rankChange < 0) {
     return (
       <span
-        className="inline-flex items-center gap-0.5 px-2 py-0.5 rounded-full text-xs font-medium bg-red-100 text-red-700"
+        className="inline-flex items-center gap-0.5 px-2 py-0.5 rounded-full text-xs font-medium bg-[rgba(239,68,68,0.1)] text-red-400"
         data-testid="rank-change-indicator"
       >
         <TrendingDown size={12} aria-hidden="true" />
@@ -102,7 +102,7 @@ const RankChangeIndicator = ({ rankChange }: { rankChange: number }) => {
   // rankChange === 0
   return (
     <span
-      className="inline-flex items-center gap-0.5 px-2 py-0.5 rounded-full text-xs font-medium bg-gray-100 text-gray-500"
+      className="inline-flex items-center gap-0.5 px-2 py-0.5 rounded-full text-xs font-medium bg-[rgba(15,35,70,0.5)] text-[rgb(148,163,184)]"
       data-testid="rank-change-indicator"
     >
       <Minus size={12} aria-hidden="true" />
@@ -116,13 +116,13 @@ const RankChangeIndicator = ({ rankChange }: { rankChange: number }) => {
  */
 const SkeletonCard = ({ className = '' }: { className?: string }) => (
   <div
-    className={`bg-white rounded-lg shadow p-4 animate-pulse ${className}`}
+    className={`glass-panel rounded-lg p-4 animate-pulse ${className}`}
     data-testid="rank-summary-card-skeleton"
   >
-    <div className="h-5 bg-gray-200 rounded w-2/3 mb-3" data-testid="skeleton-pulse" />
-    <div className="h-8 bg-gray-200 rounded w-1/2 mb-2" data-testid="skeleton-pulse" />
-    <div className="h-4 bg-gray-200 rounded w-1/3 mb-3" data-testid="skeleton-pulse" />
-    <div className="h-4 bg-gray-200 rounded w-1/4" data-testid="skeleton-pulse" />
+    <div className="h-5 bg-[rgba(15,35,70,0.5)] rounded w-2/3 mb-3" data-testid="skeleton-pulse" />
+    <div className="h-8 bg-[rgba(15,35,70,0.5)] rounded w-1/2 mb-2" data-testid="skeleton-pulse" />
+    <div className="h-4 bg-[rgba(15,35,70,0.5)] rounded w-1/3 mb-3" data-testid="skeleton-pulse" />
+    <div className="h-4 bg-[rgba(15,35,70,0.5)] rounded w-1/4" data-testid="skeleton-pulse" />
   </div>
 );
 
@@ -161,7 +161,7 @@ const RankSummaryCard = ({
 
   return (
     <div
-      className={`bg-white rounded-lg shadow p-4 transition-all ${
+      className={`glass-panel rounded-lg p-4 transition-all ${
         isClickable ? 'cursor-pointer hover:shadow-md hover:scale-[1.02]' : ''
       } ${className}`}
       data-testid="rank-summary-card"
@@ -173,20 +173,20 @@ const RankSummaryCard = ({
     >
       {/* Header: Category Label and Rank Change */}
       <div className="flex items-center justify-between mb-2">
-        <h3 className="text-base font-bold text-gray-900">{ranking.categoryLabel}</h3>
+        <h3 className="text-base font-bold text-[rgb(220,235,255)]">{ranking.categoryLabel}</h3>
         <RankChangeIndicator rankChange={ranking.rankChange} />
       </div>
 
       {/* Rank Display */}
       <div className="text-center my-3">
-        <span className="text-2xl font-extrabold text-gray-900">#{ranking.rank}</span>
-        <span className="text-sm text-gray-500 ml-1">
+        <span className="text-2xl font-extrabold text-[rgb(220,235,255)]">#{ranking.rank}</span>
+        <span className="text-sm text-[rgb(148,163,184)] ml-1">
           of {ranking.totalEntries.toLocaleString()}
         </span>
       </div>
 
       {/* Primary Stat */}
-      <div className="text-center text-sm font-medium text-blue-600 mb-2">
+      <div className="text-center text-sm font-medium text-blue-400 mb-2">
         {formatStat(ranking)}
       </div>
 
@@ -195,8 +195,8 @@ const RankSummaryCard = ({
         <div
           className={`flex items-center justify-center gap-1 mt-2 px-2 py-1 rounded-full text-xs font-semibold ${
             isGoldAchievement
-              ? 'bg-yellow-100 text-yellow-700'
-              : 'bg-gray-200 text-gray-600'
+              ? 'bg-[rgba(212,168,67,0.1)] text-yellow-400'
+              : 'bg-[rgba(15,35,70,0.5)] text-[rgb(148,163,184)]'
           }`}
           data-testid="achievement-badge"
         >

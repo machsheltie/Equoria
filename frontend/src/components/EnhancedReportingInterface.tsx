@@ -579,7 +579,7 @@ const ReportBuilderTab: React.FC<ReportBuilderTabProps> = ({
                         }`}
                       >
                         {reportConfig.sections.includes(metric.id) && (
-                          <div className="w-2 h-2 bg-white rounded-full"></div>
+                          <div className="w-2 h-2 bg-[rgb(220,235,255)] rounded-full"></div>
                         )}
                       </div>
                     </div>

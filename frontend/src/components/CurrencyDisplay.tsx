@@ -103,7 +103,7 @@ const CurrencyDisplay: React.FC<CurrencyDisplayProps> = ({
       <Coins data-testid="currency-icon" className={`${iconSizes[size]} text-burnished-gold`} />
 
       {/* Amount */}
-      <span className="font-bold text-midnight-ink">{displayAmount}</span>
+      <span className="font-bold text-[rgb(220,235,255)]">{displayAmount}</span>
     </div>
   );
 };

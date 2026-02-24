@@ -71,34 +71,34 @@ interface StatusConfig {
 const statusConfigs: Record<EligibilityStatus, StatusConfig> = {
   ready: {
     text: 'Ready to Train',
-    bgColor: 'bg-green-100',
-    borderColor: 'border-green-500',
-    textColor: 'text-green-800',
-    iconColor: 'text-green-600',
+    bgColor: 'bg-[rgba(16,185,129,0.1)]',
+    borderColor: 'border-emerald-500/30',
+    textColor: 'text-emerald-400',
+    iconColor: 'text-emerald-400',
     Icon: CheckCircle,
   },
   cooldown: {
     text: 'On Cooldown',
-    bgColor: 'bg-amber-100',
-    borderColor: 'border-amber-500',
-    textColor: 'text-amber-800',
-    iconColor: 'text-amber-600',
+    bgColor: 'bg-[rgba(212,168,67,0.1)]',
+    borderColor: 'border-amber-500/30',
+    textColor: 'text-amber-400',
+    iconColor: 'text-amber-400',
     Icon: Clock,
   },
   'too-young': {
     text: 'Too Young',
-    bgColor: 'bg-gray-100',
-    borderColor: 'border-gray-400',
-    textColor: 'text-gray-700',
-    iconColor: 'text-gray-500',
+    bgColor: 'bg-[rgba(15,35,70,0.5)]',
+    borderColor: 'border-[rgba(37,99,235,0.2)]',
+    textColor: 'text-[rgb(148,163,184)]',
+    iconColor: 'text-[rgb(148,163,184)]',
     Icon: X,
   },
   'too-old': {
     text: 'Too Old',
-    bgColor: 'bg-red-100',
-    borderColor: 'border-red-500',
-    textColor: 'text-red-800',
-    iconColor: 'text-red-600',
+    bgColor: 'bg-[rgba(239,68,68,0.1)]',
+    borderColor: 'border-red-500/30',
+    textColor: 'text-red-400',
+    iconColor: 'text-red-400',
     Icon: AlertCircle,
   },
 };
@@ -200,7 +200,7 @@ const EligibilityIndicator = ({
         {shouldShowDate && cooldownDateText && (
           <div
             data-testid="cooldown-date"
-            className={`${isCompact ? 'text-[10px]' : 'text-xs'} text-gray-600`}
+            className={`${isCompact ? 'text-[10px]' : 'text-xs'} text-[rgb(148,163,184)]`}
           >
             {cooldownDateText}
           </div>

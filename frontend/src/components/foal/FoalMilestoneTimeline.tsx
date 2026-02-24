@@ -107,14 +107,16 @@ const FoalMilestoneTimeline: React.FC<FoalMilestoneTimelineProps> = ({ foal, mil
   return (
     <div className="space-y-6">
       {/* Foal Header */}
-      <div className="rounded-lg border border-slate-200 bg-gradient-to-r from-slate-50 to-white p-6 shadow-sm">
+      <div className="glass-panel rounded-lg p-6">
         <div className="flex items-start justify-between">
           <div className="flex-1">
-            <h2 className="text-2xl font-bold text-slate-900">{foal.name || 'Unnamed Foal'}</h2>
-            <p className="text-slate-600 mt-1">
+            <h2 className="text-2xl font-bold text-[rgb(220,235,255)]">
+              {foal.name || 'Unnamed Foal'}
+            </h2>
+            <p className="text-[rgb(148,163,184)] mt-1">
               {getSexLabel(foal.sex)} • {foal.ageInDays} days old
             </p>
-            <div className="flex items-center gap-2 mt-2 text-sm text-slate-600">
+            <div className="flex items-center gap-2 mt-2 text-sm text-[rgb(148,163,184)]">
               <Calendar className="h-4 w-4" />
               <span>Born: {formatDate(foal.birthDate)}</span>
             </div>
@@ -122,11 +124,11 @@ const FoalMilestoneTimeline: React.FC<FoalMilestoneTimelineProps> = ({ foal, mil
 
           {/* Help Button */}
           <button
-            className="p-2 rounded-full hover:bg-slate-100 transition-colors"
+            className="p-2 rounded-full hover:bg-[rgba(15,35,70,0.5)] transition-colors"
             aria-label="Help"
             title="View milestone guide"
           >
-            <HelpCircle className="h-5 w-5 text-slate-400" />
+            <HelpCircle className="h-5 w-5 text-[rgb(148,163,184)]" />
           </button>
         </div>
 
@@ -134,12 +136,14 @@ const FoalMilestoneTimeline: React.FC<FoalMilestoneTimelineProps> = ({ foal, mil
         <div className="mt-4">
           <div className="flex items-center justify-between mb-2">
             <div className="flex items-center gap-2">
-              <TrendingUp className="h-5 w-5 text-emerald-600" />
-              <span className="text-sm font-semibold text-slate-700">Development Progress</span>
+              <TrendingUp className="h-5 w-5 text-emerald-400" />
+              <span className="text-sm font-semibold text-[rgb(220,235,255)]">
+                Development Progress
+              </span>
             </div>
-            <span className="text-lg font-bold text-emerald-600">{overallProgress}%</span>
+            <span className="text-lg font-bold text-emerald-400">{overallProgress}%</span>
           </div>
-          <div className="w-full bg-slate-200 rounded-full h-3 overflow-hidden">
+          <div className="w-full bg-[rgba(15,35,70,0.5)] rounded-full h-3 overflow-hidden">
             <div
               className="h-full bg-emerald-500 transition-all duration-500"
               style={{ width: `${overallProgress}%` }}
@@ -154,15 +158,15 @@ const FoalMilestoneTimeline: React.FC<FoalMilestoneTimelineProps> = ({ foal, mil
       </div>
 
       {/* Timeline Visualization */}
-      <div className="rounded-lg border border-slate-200 bg-white p-6 shadow-sm">
-        <h3 className="text-lg font-bold text-slate-900 mb-4">Timeline Visualization</h3>
+      <div className="glass-panel rounded-lg p-6">
+        <h3 className="text-lg font-bold text-[rgb(220,235,255)] mb-4">Timeline Visualization</h3>
 
         <ResponsiveContainer width="100%" height={300}>
           <ComposedChart data={timelineData} margin={{ top: 20, right: 30, left: 20, bottom: 40 }}>
-            <CartesianGrid strokeDasharray="3 3" stroke="#e5e7eb" />
+            <CartesianGrid strokeDasharray="3 3" stroke="rgba(37,99,235,0.2)" />
             <XAxis
               dataKey="name"
-              tick={{ fontSize: 12, fill: '#64748b' }}
+              tick={{ fontSize: 12, fill: 'rgb(148,163,184)' }}
               interval={0}
               angle={-45}
               textAnchor="end"
@@ -203,16 +207,16 @@ const FoalMilestoneTimeline: React.FC<FoalMilestoneTimelineProps> = ({ foal, mil
         {/* Legend */}
         <div className="flex items-center justify-center gap-6 mt-4 text-sm">
           <div className="flex items-center gap-2">
-            <div className="h-3 w-3 rounded-full bg-green-500 border-2 border-white"></div>
-            <span className="text-slate-600">Completed</span>
+            <div className="h-3 w-3 rounded-full bg-green-500 border-2 border-[rgba(15,35,70,0.5)]"></div>
+            <span className="text-[rgb(148,163,184)]">Completed</span>
           </div>
           <div className="flex items-center gap-2">
-            <div className="h-3 w-3 rounded-full bg-blue-500 border-2 border-white"></div>
-            <span className="text-slate-600">Current</span>
+            <div className="h-3 w-3 rounded-full bg-blue-500 border-2 border-[rgba(15,35,70,0.5)]"></div>
+            <span className="text-[rgb(148,163,184)]">Current</span>
           </div>
           <div className="flex items-center gap-2">
-            <div className="h-3 w-3 rounded-full bg-gray-400 border-2 border-white"></div>
-            <span className="text-slate-600">Upcoming</span>
+            <div className="h-3 w-3 rounded-full bg-[rgb(148,163,184)] border-2 border-[rgba(15,35,70,0.5)]"></div>
+            <span className="text-[rgb(148,163,184)]">Upcoming</span>
           </div>
         </div>
       </div>
@@ -229,8 +233,8 @@ const FoalMilestoneTimeline: React.FC<FoalMilestoneTimelineProps> = ({ foal, mil
       )}
 
       {/* Milestone History */}
-      <div className="rounded-lg border border-slate-200 bg-white p-6 shadow-sm">
-        <h3 className="text-lg font-bold text-slate-900 mb-4">Milestone History</h3>
+      <div className="glass-panel rounded-lg p-6">
+        <h3 className="text-lg font-bold text-[rgb(220,235,255)] mb-4">Milestone History</h3>
 
         <div className="space-y-3">
           {sortedMilestones.map((milestone) => {
@@ -249,7 +253,7 @@ const FoalMilestoneTimeline: React.FC<FoalMilestoneTimelineProps> = ({ foal, mil
         </div>
 
         {sortedMilestones.length === 0 && (
-          <div className="text-center py-8 text-slate-500">
+          <div className="text-center py-8 text-[rgb(148,163,184)]">
             <p>No milestone data available.</p>
           </div>
         )}

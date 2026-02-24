@@ -34,15 +34,15 @@ const LoadingSkeletons = () => (
     {Array.from({ length: 6 }).map((_, index) => (
       <div
         key={`skeleton-${index}`}
-        className="bg-white rounded-lg shadow p-4 animate-pulse"
+        className="glass-panel rounded-lg p-4 animate-pulse"
         data-testid="competition-card-skeleton"
       >
-        <div className="h-6 bg-slate-200 rounded w-3/4 mb-2" />
-        <div className="h-4 bg-slate-200 rounded w-1/2 mb-4" />
+        <div className="h-6 bg-[rgba(37,99,235,0.2)] rounded w-3/4 mb-2" />
+        <div className="h-4 bg-[rgba(37,99,235,0.2)] rounded w-1/2 mb-4" />
         <div className="space-y-2">
-          <div className="h-4 bg-slate-200 rounded w-2/3" />
-          <div className="h-4 bg-slate-200 rounded w-1/2" />
-          <div className="h-4 bg-slate-200 rounded w-3/5" />
+          <div className="h-4 bg-[rgba(37,99,235,0.2)] rounded w-2/3" />
+          <div className="h-4 bg-[rgba(37,99,235,0.2)] rounded w-1/2" />
+          <div className="h-4 bg-[rgba(37,99,235,0.2)] rounded w-3/5" />
         </div>
       </div>
     ))}
@@ -54,9 +54,11 @@ const LoadingSkeletons = () => (
  */
 const EmptyState = () => (
   <div className="py-12 text-center" data-testid="empty-state">
-    <Trophy className="mx-auto h-12 w-12 text-slate-400 mb-4" aria-hidden="true" />
-    <h3 className="text-lg font-medium text-slate-900 mb-2">No competitions found</h3>
-    <p className="text-sm text-slate-600">Check back later for upcoming competitions to enter.</p>
+    <Trophy className="mx-auto h-12 w-12 text-[rgb(148,163,184)] mb-4" aria-hidden="true" />
+    <h3 className="text-lg font-medium text-[rgb(220,235,255)] mb-2">No competitions found</h3>
+    <p className="text-sm text-[rgb(148,163,184)]">
+      Check back later for upcoming competitions to enter.
+    </p>
   </div>
 );
 
@@ -77,7 +79,7 @@ const CompetitionList = ({
 
   return (
     <div
-      className={`bg-white rounded-lg shadow ${className}`}
+      className={`glass-panel rounded-lg ${className}`}
       data-testid="competition-list"
       role="region"
       aria-label="Competition listings"
@@ -85,13 +87,13 @@ const CompetitionList = ({
       <div className="p-6">
         {/* Header */}
         <div className="mb-4">
-          <h2 className="text-lg font-semibold text-slate-900">{displayTitle}</h2>
+          <h2 className="text-lg font-semibold text-[rgb(220,235,255)]">{displayTitle}</h2>
           {!isLoading && (
-            <p className="text-sm text-slate-600">
+            <p className="text-sm text-[rgb(148,163,184)]">
               {competitionCount} {competitionCount === 1 ? 'competition' : 'competitions'} available
             </p>
           )}
-          {isLoading && <p className="text-sm text-slate-600">Loading competitions...</p>}
+          {isLoading && <p className="text-sm text-[rgb(148,163,184)]">Loading competitions...</p>}
         </div>
 
         {/* Loading State */}

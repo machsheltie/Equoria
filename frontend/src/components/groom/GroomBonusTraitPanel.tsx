@@ -63,26 +63,26 @@ function BonusTraitRow({
       <div className="flex-1 min-w-0">
         <div className="flex justify-between text-xs mb-0.5">
           <span
-            className="font-medium text-gray-800 truncate"
+            className="font-medium text-[rgb(220,235,255)] truncate"
             data-testid={`bonus-trait-name-${traitName.replace(/\s+/g, '-').toLowerCase()}`}
           >
             {traitName}
           </span>
           <span
-            className="text-purple-700 font-semibold ml-2 flex-shrink-0"
+            className="text-purple-400 font-semibold ml-2 flex-shrink-0"
             data-testid={`bonus-trait-percent-${traitName.replace(/\s+/g, '-').toLowerCase()}`}
           >
             {formatBonusPercent(bonusDecimal)}
           </span>
         </div>
-        <div className="h-1.5 bg-gray-100 rounded-full overflow-hidden">
+        <div className="h-1.5 bg-[rgba(15,35,70,0.5)] rounded-full overflow-hidden">
           <div
             className="h-full rounded-full bg-purple-400"
             style={{ width: `${widthPercent}%` }}
             aria-hidden="true"
           />
         </div>
-        <p className="text-xs text-gray-400 mt-0.5">{bonusPercent}% of 30% max</p>
+        <p className="text-xs text-[rgb(148,163,184)] mt-0.5">{bonusPercent}% of 30% max</p>
       </div>
     </div>
   );
@@ -95,8 +95,8 @@ function EmptyTraitSlot({ slotNumber }: { slotNumber: number }) {
       className="flex items-center gap-2 py-1.5 opacity-50"
       data-testid={`bonus-trait-empty-slot-${slotNumber}`}
     >
-      <Plus className="w-3 h-3 text-gray-300 flex-shrink-0" aria-hidden="true" />
-      <span className="text-xs text-gray-400 italic">Empty bonus trait slot</span>
+      <Plus className="w-3 h-3 text-[rgb(148,163,184)] flex-shrink-0" aria-hidden="true" />
+      <span className="text-xs text-[rgb(148,163,184)] italic">Empty bonus trait slot</span>
     </div>
   );
 }
@@ -120,7 +120,7 @@ function EligibilityRow({
       <div className="flex items-center gap-1.5">
         {met ? (
           <CheckCircle
-            className="w-3.5 h-3.5 text-green-500 flex-shrink-0"
+            className="w-3.5 h-3.5 text-emerald-400 flex-shrink-0"
             aria-hidden="true"
             data-testid={`${testId}-pass-icon`}
           />
@@ -131,10 +131,10 @@ function EligibilityRow({
             data-testid={`${testId}-fail-icon`}
           />
         )}
-        <span className="text-xs text-gray-600">{label}</span>
+        <span className="text-xs text-[rgb(148,163,184)]">{label}</span>
       </div>
       <span
-        className={`text-xs font-medium ${met ? 'text-green-700' : 'text-red-600'}`}
+        className={`text-xs font-medium ${met ? 'text-emerald-400' : 'text-red-400'}`}
         data-testid={`${testId}-value`}
       >
         {value} / {threshold} required
@@ -161,20 +161,23 @@ const GroomBonusTraitPanel: React.FC<GroomBonusTraitPanelProps> = ({ groom, elig
 
   return (
     <div
-      className="rounded-lg border border-gray-200 bg-gray-50 p-4 space-y-4"
+      className="rounded-lg border border-[rgba(37,99,235,0.3)] bg-[rgba(15,35,70,0.5)] p-4 space-y-4"
       data-testid="groom-bonus-trait-panel"
       aria-label={`Bonus traits for ${groom.name}`}
     >
       {/* Panel header */}
       <div className="flex items-center justify-between">
         <div className="flex items-center gap-2">
-          <Sparkles className="w-4 h-4 text-purple-500" aria-hidden="true" />
-          <h3 className="font-semibold text-gray-900" data-testid="bonus-trait-panel-title">
+          <Sparkles className="w-4 h-4 text-purple-400" aria-hidden="true" />
+          <h3
+            className="font-semibold text-[rgb(220,235,255)]"
+            data-testid="bonus-trait-panel-title"
+          >
             Rare Trait Bonuses
           </h3>
         </div>
         <span
-          className="text-xs bg-purple-100 text-purple-700 px-2 py-0.5 rounded font-medium"
+          className="text-xs bg-[rgba(147,51,234,0.15)] text-purple-400 px-2 py-0.5 rounded font-medium"
           data-testid="bonus-trait-count-badge"
         >
           {traitCount} / {BONUS_TRAIT_CONSTANTS.MAX_BONUS_TRAITS} traits
@@ -182,27 +185,32 @@ const GroomBonusTraitPanel: React.FC<GroomBonusTraitPanelProps> = ({ groom, elig
       </div>
 
       {/* Total bonus probability */}
-      <div className="bg-white rounded-lg border border-gray-200 p-3">
-        <p className="text-xs font-medium text-gray-500 mb-1">Total Bonus Probability</p>
-        <p className="text-lg font-bold text-purple-700" data-testid="total-bonus-probability">
+      <div className="bg-[rgba(15,35,70,0.4)] rounded-lg border border-[rgba(37,99,235,0.3)] p-3">
+        <p className="text-xs font-medium text-[rgb(148,163,184)] mb-1">Total Bonus Probability</p>
+        <p className="text-lg font-bold text-purple-400" data-testid="total-bonus-probability">
           {totalPercent > 0 ? `+${totalPercent}%` : '0%'}
         </p>
-        <p className="text-xs text-gray-400 mt-0.5">Applies to randomized rare trait acquisition</p>
+        <p className="text-xs text-[rgb(148,163,184)] mt-0.5">
+          Applies to randomized rare trait acquisition
+        </p>
       </div>
 
       {/* Bonus traits list */}
       <div data-testid="bonus-traits-list">
-        <p className="text-xs font-semibold text-gray-600 mb-2 uppercase tracking-wide">
+        <p className="text-xs font-semibold text-[rgb(148,163,184)] mb-2 uppercase tracking-wide">
           Assigned Bonus Traits
         </p>
 
         {entries.length === 0 && (
-          <p className="text-xs text-gray-400 italic py-1" data-testid="no-bonus-traits-message">
+          <p
+            className="text-xs text-[rgb(148,163,184)] italic py-1"
+            data-testid="no-bonus-traits-message"
+          >
             No bonus traits assigned
           </p>
         )}
 
-        <div className="divide-y divide-gray-100">
+        <div className="divide-y divide-[rgba(37,99,235,0.2)]">
           {entries.map((entry) => (
             <BonusTraitRow
               key={entry.traitName}
@@ -220,29 +228,31 @@ const GroomBonusTraitPanel: React.FC<GroomBonusTraitPanelProps> = ({ groom, elig
       {/* Eligibility section */}
       {eligibility && (
         <div data-testid="bonus-eligibility-section">
-          <p className="text-xs font-semibold text-gray-600 mb-1.5 uppercase tracking-wide">
+          <p className="text-xs font-semibold text-[rgb(148,163,184)] mb-1.5 uppercase tracking-wide">
             Bonus Eligibility
           </p>
 
           {/* Overall status */}
           <div
             className={`rounded-lg border px-3 py-2 mb-2 ${
-              eligibility.eligible ? 'bg-green-50 border-green-200' : 'bg-red-50 border-red-200'
+              eligibility.eligible
+                ? 'bg-[rgba(16,185,129,0.1)] border-emerald-500/30'
+                : 'bg-[rgba(239,68,68,0.1)] border-red-500/30'
             }`}
             data-testid="eligibility-status-banner"
           >
             <div className="flex items-center gap-1.5">
               {eligibility.eligible ? (
                 <CheckCircle
-                  className="w-3.5 h-3.5 text-green-600 flex-shrink-0"
+                  className="w-3.5 h-3.5 text-emerald-400 flex-shrink-0"
                   aria-hidden="true"
                 />
               ) : (
-                <XCircle className="w-3.5 h-3.5 text-red-500 flex-shrink-0" aria-hidden="true" />
+                <XCircle className="w-3.5 h-3.5 text-red-400 flex-shrink-0" aria-hidden="true" />
               )}
               <p
                 className={`text-xs font-medium ${
-                  eligibility.eligible ? 'text-green-700' : 'text-red-600'
+                  eligibility.eligible ? 'text-emerald-400' : 'text-red-400'
                 }`}
                 data-testid="eligibility-status-text"
               >
@@ -251,7 +261,7 @@ const GroomBonusTraitPanel: React.FC<GroomBonusTraitPanelProps> = ({ groom, elig
             </div>
           </div>
 
-          <div className="bg-white rounded-lg border border-gray-200 px-3 divide-y divide-gray-100">
+          <div className="bg-[rgba(15,35,70,0.4)] rounded-lg border border-[rgba(37,99,235,0.3)] px-3 divide-y divide-[rgba(37,99,235,0.2)]">
             <EligibilityRow
               label="Bond Score"
               met={bondMet}
@@ -272,10 +282,10 @@ const GroomBonusTraitPanel: React.FC<GroomBonusTraitPanelProps> = ({ groom, elig
 
       {/* Educational note */}
       <div
-        className="bg-gray-100 rounded-lg p-2.5 border border-gray-200"
+        className="bg-[rgba(15,35,70,0.5)] rounded-lg p-2.5 border border-[rgba(37,99,235,0.3)]"
         data-testid="bonus-trait-note"
       >
-        <p className="text-xs text-gray-500">
+        <p className="text-xs text-[rgb(148,163,184)]">
           <span className="font-medium">Note:</span> Bonus traits only increase probability for
           randomized rare traits, not guaranteed trait outcomes.
         </p>

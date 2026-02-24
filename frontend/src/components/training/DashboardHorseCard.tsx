@@ -32,21 +32,21 @@ const DashboardHorseCard = ({ horse, onTrain, className = '' }: DashboardHorseCa
   const statusConfig = {
     ready: {
       text: 'Ready',
-      bgColor: 'bg-green-100',
-      textColor: 'text-green-800',
-      borderColor: 'border-green-500',
+      bgColor: 'bg-[rgba(16,185,129,0.1)]',
+      textColor: 'text-emerald-400',
+      borderColor: 'border-emerald-500/30',
     },
     cooldown: {
       text: 'Cooldown',
-      bgColor: 'bg-amber-100',
-      textColor: 'text-amber-800',
-      borderColor: 'border-amber-500',
+      bgColor: 'bg-[rgba(212,168,67,0.1)]',
+      textColor: 'text-amber-400',
+      borderColor: 'border-amber-500/30',
     },
     ineligible: {
       text: 'Ineligible',
-      bgColor: 'bg-slate-100',
-      textColor: 'text-slate-700',
-      borderColor: 'border-slate-400',
+      bgColor: 'bg-[rgba(15,35,70,0.5)]',
+      textColor: 'text-[rgb(148,163,184)]',
+      borderColor: 'border-[rgba(37,99,235,0.2)]',
     },
   };
 
@@ -54,14 +54,14 @@ const DashboardHorseCard = ({ horse, onTrain, className = '' }: DashboardHorseCa
 
   return (
     <div
-      className={`bg-white rounded-lg border border-slate-200 shadow-sm hover:shadow-md transition-shadow p-4 ${className}`}
+      className={`glass-panel rounded-lg border border-[rgba(37,99,235,0.2)] hover:border-[rgba(37,99,235,0.4)] transition-shadow p-4 ${className}`}
       data-testid="horse-card"
     >
       {/* Header: Name and Status */}
       <div className="flex items-start justify-between mb-3">
         <div>
-          <h3 className="text-lg font-semibold text-slate-900">{name}</h3>
-          <p className="text-sm text-slate-600">
+          <h3 className="text-lg font-semibold text-[rgb(220,235,255)]">{name}</h3>
+          <p className="text-sm text-[rgb(148,163,184)]">
             {age} {age === 1 ? 'year' : 'years'} old
           </p>
         </div>
@@ -85,7 +85,7 @@ const DashboardHorseCard = ({ horse, onTrain, className = '' }: DashboardHorseCa
 
         {/* Ineligible: Show reason */}
         {trainingStatus === 'ineligible' && (
-          <p className="text-sm text-slate-600">
+          <p className="text-sm text-[rgb(148,163,184)]">
             {ineligibilityReason || 'Not eligible for training'}
           </p>
         )}

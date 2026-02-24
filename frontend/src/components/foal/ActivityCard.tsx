@@ -104,8 +104,8 @@ const ActivityCard: React.FC<ActivityCardProps> = ({
   // Card styling based on status and recommended state
   const cardClasses = `
     rounded-lg border p-4 transition-all duration-200
-    ${canPerform ? 'bg-white hover:shadow-md border-slate-200' : 'bg-gray-50 border-gray-200 opacity-75'}
-    ${isRecommended ? 'ring-2 ring-blue-400 border-blue-300' : ''}
+    ${canPerform ? 'bg-[rgba(15,35,70,0.5)] hover:shadow-md border-[rgba(37,99,235,0.3)]' : 'bg-[rgba(15,35,70,0.4)] border-[rgba(37,99,235,0.2)] opacity-75'}
+    ${isRecommended ? 'ring-2 ring-blue-400 border-blue-500/40' : ''}
     ${canPerform && onClick ? 'cursor-pointer' : 'cursor-default'}
   `;
 
@@ -133,9 +133,9 @@ const ActivityCard: React.FC<ActivityCardProps> = ({
           {/* Activity Info */}
           <div className="flex-1 min-w-0">
             <div className="flex items-start gap-2">
-              <h4 className="font-semibold text-slate-900 text-sm">{name}</h4>
+              <h4 className="font-semibold text-[rgb(220,235,255)] text-sm">{name}</h4>
               {isRecommended && (
-                <span className="inline-flex items-center gap-1 px-2 py-0.5 text-xs font-medium bg-blue-100 text-blue-700 rounded">
+                <span className="inline-flex items-center gap-1 px-2 py-0.5 text-xs font-medium bg-[rgba(37,99,235,0.1)] text-blue-300 rounded">
                   <Sparkles className="h-3 w-3" />
                   Recommended
                 </span>
@@ -161,10 +161,10 @@ const ActivityCard: React.FC<ActivityCardProps> = ({
       </div>
 
       {/* Description */}
-      <p className="text-sm text-slate-600 mb-3 ml-11">{description}</p>
+      <p className="text-sm text-[rgb(148,163,184)] mb-3 ml-11">{description}</p>
 
       {/* Time Info */}
-      <div className="flex items-center gap-4 mb-3 ml-11 text-xs text-slate-600">
+      <div className="flex items-center gap-4 mb-3 ml-11 text-xs text-[rgb(148,163,184)]">
         <div className="flex items-center gap-1">
           <Clock className="h-3 w-3" />
           <span>Duration: {durationMinutes}m</span>
@@ -178,7 +178,7 @@ const ActivityCard: React.FC<ActivityCardProps> = ({
       {/* Cooldown Timer */}
       {status.status === 'on_cooldown' && status.cooldownRemainingMinutes !== undefined && (
         <div className="mb-3 ml-11">
-          <div className="flex items-center gap-2 text-xs text-amber-700 bg-amber-50 rounded px-2 py-1.5">
+          <div className="flex items-center gap-2 text-xs text-amber-300 bg-[rgba(212,168,67,0.1)] rounded px-2 py-1.5">
             <Timer className="h-3 w-3" />
             <span>Available in {formatCooldownTime(status.cooldownRemainingMinutes)}</span>
           </div>
@@ -188,7 +188,7 @@ const ActivityCard: React.FC<ActivityCardProps> = ({
       {/* Cannot Perform Reason */}
       {!canPerform && reason && status.status !== 'on_cooldown' && (
         <div className="mb-3 ml-11">
-          <div className="flex items-center gap-2 text-xs text-gray-700 bg-gray-100 rounded px-2 py-1.5">
+          <div className="flex items-center gap-2 text-xs text-[rgb(148,163,184)] bg-[rgba(15,35,70,0.4)] rounded px-2 py-1.5">
             <Lock className="h-3 w-3" />
             <span>{reason}</span>
           </div>
@@ -196,10 +196,10 @@ const ActivityCard: React.FC<ActivityCardProps> = ({
       )}
 
       {/* Benefits */}
-      <div className="border-t border-slate-200 pt-3 ml-11">
+      <div className="border-t border-[rgba(37,99,235,0.3)] pt-3 ml-11">
         <div className="flex items-center gap-2 mb-2">
-          <TrendingUp className="h-4 w-4 text-emerald-600" />
-          <span className="text-xs font-semibold text-slate-700">Benefits:</span>
+          <TrendingUp className="h-4 w-4 text-emerald-400" />
+          <span className="text-xs font-semibold text-[rgb(220,235,255)]">Benefits:</span>
         </div>
 
         <div className="grid grid-cols-2 gap-2 text-xs">
@@ -207,39 +207,43 @@ const ActivityCard: React.FC<ActivityCardProps> = ({
           {benefits.temperamentModifiers &&
             Object.entries(benefits.temperamentModifiers).map(([stat, value]) => (
               <div key={stat} className="flex items-center justify-between">
-                <span className="text-slate-600 capitalize">{stat}:</span>
-                <span className="font-medium text-slate-900">{formatBenefit(value, true)}</span>
+                <span className="text-[rgb(148,163,184)] capitalize">{stat}:</span>
+                <span className="font-medium text-[rgb(220,235,255)]">
+                  {formatBenefit(value, true)}
+                </span>
               </div>
             ))}
 
           {/* Other Benefits */}
           <div className="flex items-center justify-between">
-            <span className="text-slate-600">Trait Discovery:</span>
-            <span className="font-medium text-slate-900">
+            <span className="text-[rgb(148,163,184)]">Trait Discovery:</span>
+            <span className="font-medium text-[rgb(220,235,255)]">
               {formatBenefit(benefits.traitDiscoveryBoost)}
             </span>
           </div>
 
           <div className="flex items-center justify-between">
-            <span className="text-slate-600">Milestone:</span>
-            <span className="font-medium text-slate-900">+{benefits.milestoneBonus} pts</span>
+            <span className="text-[rgb(148,163,184)]">Milestone:</span>
+            <span className="font-medium text-[rgb(220,235,255)]">
+              +{benefits.milestoneBonus} pts
+            </span>
           </div>
 
           <div className="flex items-center justify-between">
-            <span className="text-slate-600">Bonding:</span>
-            <span className="font-medium text-slate-900">+{benefits.bondingIncrease}</span>
+            <span className="text-[rgb(148,163,184)]">Bonding:</span>
+            <span className="font-medium text-[rgb(220,235,255)]">+{benefits.bondingIncrease}</span>
           </div>
 
           <div className="flex items-center justify-between">
-            <span className="text-slate-600">Stress:</span>
-            <span className="font-medium text-emerald-600">-{benefits.stressReduction}</span>
+            <span className="text-[rgb(148,163,184)]">Stress:</span>
+            <span className="font-medium text-emerald-400">-{benefits.stressReduction}</span>
           </div>
         </div>
       </div>
 
       {/* Action hint for available activities */}
       {canPerform && onClick && (
-        <div className="mt-3 ml-11 text-xs text-blue-600 font-medium">
+        <div className="mt-3 ml-11 text-xs text-blue-400 font-medium">
           Click to start activity →
         </div>
       )}

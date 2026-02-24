@@ -719,13 +719,15 @@ const PrizeTransactionHistory: React.FC<PrizeTransactionHistoryProps> = ({
 
   return (
     <div
-      className={`bg-white rounded-lg shadow ${className}`}
+      className={`glass-panel rounded-lg ${className}`}
       data-testid="prize-transaction-history"
       role="region"
       aria-label="Prize transaction history"
     >
       <div className="p-6">
-        <h2 className="text-lg font-semibold text-slate-900 mb-4">Prize Transaction History</h2>
+        <h2 className="text-lg font-semibold text-[rgb(220,235,255)] mb-4">
+          Prize Transaction History
+        </h2>
 
         <FilterControls
           filters={filters}

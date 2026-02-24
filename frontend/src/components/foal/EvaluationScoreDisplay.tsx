@@ -30,12 +30,12 @@ function getCategoryIconColor(category: EvaluationCategory): string {
   switch (category) {
     case 'Excellent':
     case 'Good':
-      return 'text-green-600';
+      return 'text-emerald-400';
     case 'Neutral':
-      return 'text-yellow-600';
+      return 'text-yellow-400';
     case 'Poor':
     case 'Bad':
-      return 'text-red-600';
+      return 'text-red-400';
   }
 }
 
@@ -118,19 +118,19 @@ const EvaluationScoreDisplay: React.FC<EvaluationScoreDisplayProps> = ({
         <div className={`${sizeClasses.score} font-bold ${colorClasses.split(' ')[0]}`}>
           {formattedScore}
         </div>
-        <div className={`${sizeClasses.label} text-slate-600 mt-1`}>out of ±10</div>
+        <div className={`${sizeClasses.label} text-[rgb(148,163,184)] mt-1`}>out of ±10</div>
       </div>
 
       {/* Progress Bar */}
       {showProgressBar && (
         <div className="space-y-2">
-          <div className="flex items-center justify-between text-xs text-slate-600">
+          <div className="flex items-center justify-between text-xs text-[rgb(148,163,184)]">
             <span>-10</span>
             <span>0</span>
             <span>+10</span>
           </div>
           <div
-            className={`w-full bg-slate-200 rounded-full ${sizeClasses.progressHeight} overflow-hidden`}
+            className={`w-full bg-[rgba(15,35,70,0.5)] rounded-full ${sizeClasses.progressHeight} overflow-hidden`}
           >
             <div
               className={`h-full bg-gradient-to-r ${progressGradient} transition-all duration-500 ease-out`}
@@ -146,7 +146,7 @@ const EvaluationScoreDisplay: React.FC<EvaluationScoreDisplayProps> = ({
           {/* Score markers */}
           <div className="relative h-4">
             {/* Center marker (0) */}
-            <div className="absolute left-1/2 top-0 w-0.5 h-full bg-slate-400 -translate-x-1/2" />
+            <div className="absolute left-1/2 top-0 w-0.5 h-full bg-[rgb(148,163,184)] -translate-x-1/2" />
             {/* Good threshold marker (+3) */}
             <div
               className="absolute left-[65%] top-0 w-0.5 h-2 bg-green-400"

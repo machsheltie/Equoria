@@ -74,7 +74,7 @@ const CompetitionBrowserPage = (): JSX.Element => {
   if (isLoading) {
     return (
       <main
-        className="min-h-screen bg-slate-50 px-4 sm:px-6 lg:px-8 py-8"
+        className="min-h-screen bg-background px-4 sm:px-6 lg:px-8 py-8"
         role="status"
         aria-label="Loading competitions"
       >
@@ -83,8 +83,8 @@ const CompetitionBrowserPage = (): JSX.Element => {
             className="flex flex-col items-center justify-center py-12"
             data-testid="loading-spinner"
           >
-            <div className="h-12 w-12 animate-spin rounded-full border-4 border-slate-200 border-t-blue-600 mb-4" />
-            <p className="text-slate-600">Loading competitions...</p>
+            <div className="h-12 w-12 animate-spin rounded-full border-4 border-[rgba(37,99,235,0.3)] border-t-blue-400 mb-4" />
+            <p className="text-[rgb(148,163,184)]">Loading competitions...</p>
           </div>
         </div>
       </main>
@@ -94,15 +94,15 @@ const CompetitionBrowserPage = (): JSX.Element => {
   // Error state
   if (error) {
     return (
-      <main className="min-h-screen bg-slate-50 px-4 sm:px-6 lg:px-8 py-8">
+      <main className="min-h-screen bg-background px-4 sm:px-6 lg:px-8 py-8">
         <div className="mx-auto max-w-7xl">
           <div
-            className="rounded-md border border-red-200 bg-red-50 p-6 text-center"
+            className="rounded-md border border-red-500/30 bg-[rgba(239,68,68,0.1)] p-6 text-center"
             data-testid="error-state"
             role="alert"
           >
             <svg
-              className="mx-auto h-12 w-12 text-red-600 mb-4"
+              className="mx-auto h-12 w-12 text-red-400 mb-4"
               fill="none"
               viewBox="0 0 24 24"
               stroke="currentColor"
@@ -115,7 +115,7 @@ const CompetitionBrowserPage = (): JSX.Element => {
                 d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z"
               />
             </svg>
-            <p className="text-lg font-medium text-red-900 mb-4">Failed to load competitions</p>
+            <p className="text-lg font-medium text-red-300 mb-4">Failed to load competitions</p>
             <button
               type="button"
               onClick={() => refetch()}
@@ -131,12 +131,12 @@ const CompetitionBrowserPage = (): JSX.Element => {
 
   // Success state
   return (
-    <div className="min-h-screen bg-slate-50" data-testid="competition-browser-page">
+    <div className="min-h-screen bg-background" data-testid="competition-browser-page">
       <main className="mx-auto max-w-7xl px-4 sm:px-6 lg:px-8 py-8">
         {/* Page Header */}
         <header className="mb-8" data-testid="page-header">
-          <h1 className="text-3xl font-bold text-slate-900 mb-2">Competitions</h1>
-          <p className="text-slate-600">
+          <h1 className="text-3xl font-bold text-[rgb(220,235,255)] mb-2">Competitions</h1>
+          <p className="text-[rgb(148,163,184)]">
             Browse and enter horse competitions to test your skills and earn prizes
           </p>
         </header>

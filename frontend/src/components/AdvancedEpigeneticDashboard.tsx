@@ -23,10 +23,10 @@ interface AdvancedEpigeneticDashboardProps {
   enableRealTime?: boolean;
   className?: string;
   // Data props (optional - if not provided, component will fetch)
-  environmentalData?: any;
-  traitData?: any;
-  developmentalData?: any;
-  forecastData?: any;
+  environmentalData?: unknown;
+  traitData?: unknown;
+  developmentalData?: Record<string, unknown>;
+  forecastData?: Record<string, unknown>;
 }
 
 // Main Component
@@ -44,10 +44,14 @@ const AdvancedEpigeneticDashboard: React.FC<AdvancedEpigeneticDashboardProps> = 
   const [isRefreshing, setIsRefreshing] = useState(false);
   const [hasError, setHasError] = useState(false);
   const [partialDataError, setPartialDataError] = useState(false);
-  const [environmentalData, setEnvironmentalData] = useState<any>(propEnvironmentalData || null);
-  const [traitData, setTraitData] = useState<any>(propTraitData || null);
-  const [developmentalData, setDevelopmentalData] = useState<any>(propDevelopmentalData || null);
-  const [forecastData, setForecastData] = useState<any>(propForecastData || null);
+  const [, setEnvironmentalData] = useState<unknown>(propEnvironmentalData || null);
+  const [, setTraitData] = useState<unknown>(propTraitData || null);
+  const [developmentalData, setDevelopmentalData] = useState<Record<string, unknown> | null>(
+    (propDevelopmentalData as Record<string, unknown>) || null
+  );
+  const [forecastData, setForecastData] = useState<Record<string, unknown> | null>(
+    (propForecastData as Record<string, unknown>) || null
+  );
   const [isLoading, setIsLoading] = useState(
     !propEnvironmentalData && !propTraitData && !propDevelopmentalData && !propForecastData
   );
@@ -97,15 +101,12 @@ const AdvancedEpigeneticDashboard: React.FC<AdvancedEpigeneticDashboardProps> = 
         setHasError(false);
         setPartialDataError(false);
 
-        let allFailed = true;
-
         // Fetch environmental data
         try {
           const envResponse = await fetch(`/api/horses/${horseId}/environmental-analysis`);
           if (envResponse && envResponse.ok) {
             const envData = await envResponse.json();
             setEnvironmentalData(envData.data);
-            allFailed = false;
           }
         } catch (e) {
           // Check if this is an explicit rejection (Error object)
@@ -123,7 +124,6 @@ const AdvancedEpigeneticDashboard: React.FC<AdvancedEpigeneticDashboardProps> = 
           if (traitResponse && traitResponse.ok) {
             const traitDataResponse = await traitResponse.json();
             setTraitData(traitDataResponse.data);
-            allFailed = false;
           } else if (traitResponse) {
             setPartialDataError(true);
           }
@@ -143,7 +143,6 @@ const AdvancedEpigeneticDashboard: React.FC<AdvancedEpigeneticDashboardProps> = 
           if (devResponse && devResponse.ok) {
             const devData = await devResponse.json();
             setDevelopmentalData(devData.data);
-            allFailed = false;
           }
         } catch (e) {
           if (e instanceof Error && e.message === 'API Error') {
@@ -160,7 +159,6 @@ const AdvancedEpigeneticDashboard: React.FC<AdvancedEpigeneticDashboardProps> = 
           if (forecastResponse && forecastResponse.ok) {
             const forecastDataResponse = await forecastResponse.json();
             setForecastData(forecastDataResponse.data);
-            allFailed = false;
           }
         } catch (e) {
           if (e instanceof Error && e.message === 'API Error') {
@@ -221,7 +219,7 @@ const AdvancedEpigeneticDashboard: React.FC<AdvancedEpigeneticDashboardProps> = 
   if (!horseId) {
     return (
       <div data-testid="epigenetic-dashboard" className={`text-center py-12 ${className}`}>
-        <p className="text-gray-600">Please select a horse to view epigenetic data</p>
+        <p className="text-[rgb(148,163,184)]">Please select a horse to view epigenetic data</p>
       </div>
     );
   }
@@ -248,10 +246,12 @@ const AdvancedEpigeneticDashboard: React.FC<AdvancedEpigeneticDashboardProps> = 
     >
       {/* Dashboard Header */}
       <div className="flex items-center justify-between">
-        <h2 className="text-2xl font-bold text-gray-900">Advanced Epigenetic Dashboard</h2>
+        <h2 className="text-2xl font-bold text-[rgb(220,235,255)]">
+          Advanced Epigenetic Dashboard
+        </h2>
         <div className="flex items-center gap-4">
           {enableRealTime && (
-            <span className="text-sm text-green-600">Real-time updates enabled</span>
+            <span className="text-sm text-emerald-400">Real-time updates enabled</span>
           )}
           <button onClick={refreshData} aria-label="Refresh Data">
             {isRefreshing ? 'Refreshing...' : 'Refresh'}
@@ -315,12 +315,14 @@ const AdvancedEpigeneticDashboard: React.FC<AdvancedEpigeneticDashboardProps> = 
           )}
           <div>Milestones</div>
           {developmentalData?.milestones
-            ? developmentalData.milestones.map((milestone: any, index: number) => (
-                <div key={index}>
-                  <div>{milestone.name}</div>
-                  <div>{milestone.score}</div>
-                </div>
-              ))
+            ? (developmentalData.milestones as Array<{ name: string; score: number }>).map(
+                (milestone, index: number) => (
+                  <div key={index}>
+                    <div>{milestone.name}</div>
+                    <div>{milestone.score}</div>
+                  </div>
+                )
+              )
             : !isLoading && (
                 <>
                   <div>Imprinting</div>
@@ -331,7 +333,13 @@ const AdvancedEpigeneticDashboard: React.FC<AdvancedEpigeneticDashboardProps> = 
               )}
           <div>Upcoming Windows</div>
           {developmentalData?.upcomingWindows
-            ? developmentalData.upcomingWindows.map((window: any, index: number) => (
+            ? (
+                developmentalData.upcomingWindows as Array<{
+                  name: string;
+                  startsIn?: string;
+                  timeframe?: string;
+                }>
+              ).map((window, index: number) => (
                 <div key={index}>
                   <div>{window.name}</div>
                   <div>{window.startsIn ? `Starts in ${window.startsIn}` : window.timeframe}</div>
@@ -350,7 +358,13 @@ const AdvancedEpigeneticDashboard: React.FC<AdvancedEpigeneticDashboardProps> = 
           <h3>Forecasting</h3>
           <div>Trait Predictions</div>
           {forecastData?.predictions
-            ? forecastData.predictions.map((prediction: any, index: number) => (
+            ? (
+                forecastData.predictions as Array<{
+                  trait: string;
+                  probability: number;
+                  confidence: number;
+                }>
+              ).map((prediction, index: number) => (
                 <div key={index}>
                   <div>{prediction.trait}</div>
                   <div>{Math.round(prediction.probability * 100)}%</div>
@@ -366,7 +380,13 @@ const AdvancedEpigeneticDashboard: React.FC<AdvancedEpigeneticDashboardProps> = 
               )}
           <div>Recommendations</div>
           {forecastData?.recommendations
-            ? forecastData.recommendations.map((rec: any, index: number) => (
+            ? (
+                forecastData.recommendations as Array<{
+                  action: string;
+                  priority: string;
+                  expectedBenefit: string;
+                }>
+              ).map((rec, index: number) => (
                 <div key={index}>
                   <div>{rec.action}</div>
                   <div>{rec.priority.charAt(0).toUpperCase() + rec.priority.slice(1)} Priority</div>

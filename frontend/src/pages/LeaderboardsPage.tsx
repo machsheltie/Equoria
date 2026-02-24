@@ -187,10 +187,7 @@ const LeaderboardsPage = () => {
     refetch: refetchLeaderboard,
   } = useLeaderboard({ category, period, discipline, page });
 
-  const {
-    data: userRankData,
-    isLoading: isUserRankLoading,
-  } = useUserRankSummary({ userId });
+  const { data: userRankData, isLoading: isUserRankLoading } = useUserRankSummary({ userId });
 
   // Modal state
   const [selectedEntry, setSelectedEntry] = useState<LeaderboardEntryData | null>(null);
@@ -229,16 +226,16 @@ const LeaderboardsPage = () => {
     : null;
 
   return (
-    <main className="min-h-screen bg-gray-50">
+    <main className="min-h-screen bg-[rgba(15,35,70,0.3)]">
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8 space-y-8">
         {/* ---------------------------------------------------------------
             Page Header
         --------------------------------------------------------------- */}
         <div className="flex items-center gap-3">
-          <Trophy size={32} className="text-yellow-500" aria-hidden="true" />
+          <Trophy size={32} className="text-yellow-400" aria-hidden="true" />
           <div>
-            <h1 className="text-3xl font-bold text-gray-900">Leaderboards</h1>
-            <p className="text-gray-500 mt-1">
+            <h1 className="text-3xl font-bold text-[rgb(220,235,255)]">Leaderboards</h1>
+            <p className="text-[rgb(148,163,184)] mt-1">
               View top performers across all categories
             </p>
           </div>
@@ -278,11 +275,11 @@ const LeaderboardsPage = () => {
         --------------------------------------------------------------- */}
         {isLeaderboardError && (
           <div
-            className="bg-red-50 border border-red-200 rounded-lg p-6 text-center"
+            className="bg-[rgba(239,68,68,0.1)] border border-red-500/30 rounded-lg p-6 text-center"
             role="alert"
           >
-            <p className="text-red-700 font-medium">Failed to load leaderboard data</p>
-            <p className="text-red-500 text-sm mt-1">
+            <p className="text-red-400 font-medium">Failed to load leaderboard data</p>
+            <p className="text-red-500/80 text-sm mt-1">
               Something went wrong while fetching the leaderboard. Please try again.
             </p>
             <button

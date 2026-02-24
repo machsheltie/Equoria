@@ -70,7 +70,9 @@ const DisciplineCategory = ({
   return (
     <div className="space-y-3">
       {/* Category Header */}
-      <h3 className="text-sm font-semibold text-gray-700 uppercase tracking-wider">{title}</h3>
+      <h3 className="text-sm font-semibold text-[rgb(148,163,184)] uppercase tracking-wider">
+        {title}
+      </h3>
 
       {/* Discipline Buttons */}
       <div className="space-y-2">
@@ -95,8 +97,8 @@ const DisciplineCategory = ({
                   isSelected
                     ? 'bg-blue-600 text-white border-blue-600 shadow-md'
                     : isDisabled
-                      ? 'bg-gray-100 text-gray-400 border-gray-200 cursor-not-allowed'
-                      : 'bg-white text-gray-900 border-gray-300 hover:border-blue-400 hover:shadow-sm cursor-pointer'
+                      ? 'bg-[rgba(15,35,70,0.5)] text-[rgb(148,163,184)] border-[rgba(37,99,235,0.2)] cursor-not-allowed'
+                      : 'bg-[rgba(15,35,70,0.4)] text-[rgb(220,235,255)] border-[rgba(37,99,235,0.3)] hover:border-blue-400 hover:bg-[rgba(37,99,235,0.08)] cursor-pointer'
                 }
               `}
             >
@@ -104,7 +106,11 @@ const DisciplineCategory = ({
                 <span className="text-sm font-medium">{discipline.name}</span>
                 <span
                   className={`text-xs font-semibold ${
-                    isSelected ? 'text-blue-100' : isDisabled ? 'text-gray-400' : 'text-gray-500'
+                    isSelected
+                      ? 'text-blue-100'
+                      : isDisabled
+                        ? 'text-[rgb(148,163,184)]'
+                        : 'text-[rgb(148,163,184)]'
                   }`}
                 >
                   Score: {score}
@@ -169,7 +175,11 @@ const DisciplinePicker = ({
 
       {/* Loading Overlay */}
       {isLoading && (
-        <div className="mt-4 text-center text-sm text-gray-600" role="status" aria-live="polite">
+        <div
+          className="mt-4 text-center text-sm text-[rgb(148,163,184)]"
+          role="status"
+          aria-live="polite"
+        >
           Loading disciplines...
         </div>
       )}

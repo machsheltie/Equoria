@@ -218,8 +218,8 @@ const EpigeneticTraitDisplay: React.FC<EpigeneticTraitDisplayProps> = ({ horseId
     return (
       <div className="flex items-center justify-center py-12">
         <div className="text-center">
-          <div className="inline-block h-8 w-8 animate-spin rounded-full border-4 border-solid border-blue-600 border-r-transparent" />
-          <p className="mt-3 text-sm text-slate-600">Loading traits...</p>
+          <div className="inline-block h-8 w-8 animate-spin rounded-full border-4 border-solid border-blue-500 border-r-transparent" />
+          <p className="mt-3 text-sm text-[rgb(148,163,184)]">Loading traits...</p>
         </div>
       </div>
     );
@@ -228,12 +228,12 @@ const EpigeneticTraitDisplay: React.FC<EpigeneticTraitDisplayProps> = ({ horseId
   // Error state
   if (traitsError) {
     return (
-      <div className="rounded-lg border border-red-200 bg-red-50 p-6">
+      <div className="rounded-lg border border-red-500/30 bg-[rgba(239,68,68,0.1)] p-6">
         <div className="flex items-start gap-3">
-          <AlertCircle className="h-5 w-5 text-red-600 flex-shrink-0 mt-0.5" />
+          <AlertCircle className="h-5 w-5 text-red-400 flex-shrink-0 mt-0.5" />
           <div>
-            <p className="font-semibold text-red-900">Error loading traits</p>
-            <p className="text-sm text-red-700 mt-1">
+            <p className="font-semibold text-red-300">Error loading traits</p>
+            <p className="text-sm text-red-400 mt-1">
               {traitsError instanceof Error ? traitsError.message : 'An error occurred'}
             </p>
           </div>
@@ -253,12 +253,12 @@ const EpigeneticTraitDisplay: React.FC<EpigeneticTraitDisplayProps> = ({ horseId
   return (
     <div className="space-y-6">
       {/* Header */}
-      <div className="rounded-lg border border-slate-200 bg-gradient-to-r from-blue-50 to-purple-50 p-6">
+      <div className="rounded-lg border border-[rgba(37,99,235,0.3)] bg-[rgba(15,35,70,0.4)] p-6">
         <div className="flex items-center gap-3">
-          <Sparkles className="h-6 w-6 text-blue-600" />
+          <Sparkles className="h-6 w-6 text-blue-400" />
           <div className="flex-1">
-            <h2 className="text-2xl font-bold text-slate-900">Epigenetic Traits</h2>
-            <p className="text-sm text-slate-700 mt-1">
+            <h2 className="text-2xl font-bold text-[rgb(220,235,255)]">Epigenetic Traits</h2>
+            <p className="text-sm text-[rgb(148,163,184)] mt-1">
               {discoveryStatus.discoveredTraits} of {discoveryStatus.totalTraits} traits discovered
               ({discoveryStatus.discoveryProgress}%)
             </p>
@@ -273,7 +273,9 @@ const EpigeneticTraitDisplay: React.FC<EpigeneticTraitDisplayProps> = ({ horseId
 
         return (
           <div key={tier} className="space-y-3">
-            <h3 className="text-lg font-bold text-slate-900">{getTierDisplayName(tier)} Traits</h3>
+            <h3 className="text-lg font-bold text-[rgb(220,235,255)]">
+              {getTierDisplayName(tier)} Traits
+            </h3>
             <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
               {tierTraits.map((trait) => (
                 <TraitCard

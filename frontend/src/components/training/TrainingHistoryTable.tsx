@@ -37,7 +37,7 @@ export interface TrainingHistoryEntry {
 export interface TrainingHistoryTableProps {
   history: TrainingHistoryEntry[];
   loading?: boolean;
-  onSort?: (column: string, direction: 'asc' | 'desc') => void;
+  onSort?: (_column: string, _direction: 'asc' | 'desc') => void;
   pageSize?: number; // default: 10
   className?: string;
 }
@@ -58,12 +58,12 @@ function formatDate(dateString: string): string {
  */
 function formatGain(gain: number): { text: string; className: string } {
   if (gain > 0) {
-    return { text: `+${gain}`, className: 'text-green-600' };
+    return { text: `+${gain}`, className: 'text-emerald-400' };
   }
   if (gain < 0) {
-    return { text: `${gain}`, className: 'text-red-600' };
+    return { text: `${gain}`, className: 'text-red-400' };
   }
-  return { text: '0', className: 'text-gray-600' };
+  return { text: '0', className: 'text-[rgb(148,163,184)]' };
 }
 
 /**
@@ -73,19 +73,19 @@ function SkeletonRow({ index }: { index: number }) {
   return (
     <tr data-testid={`skeleton-row-${index}`} className="animate-pulse">
       <td className="px-4 py-3">
-        <div className="h-4 w-16 rounded bg-gray-200" />
+        <div className="h-4 w-16 rounded bg-[rgba(15,35,70,0.5)]" />
       </td>
       <td className="px-4 py-3">
-        <div className="h-4 w-24 rounded bg-gray-200" />
+        <div className="h-4 w-24 rounded bg-[rgba(15,35,70,0.5)]" />
       </td>
       <td className="px-4 py-3">
-        <div className="h-4 w-12 rounded bg-gray-200" />
+        <div className="h-4 w-12 rounded bg-[rgba(15,35,70,0.5)]" />
       </td>
       <td className="px-4 py-3">
-        <div className="h-4 w-12 rounded bg-gray-200" />
+        <div className="h-4 w-12 rounded bg-[rgba(15,35,70,0.5)]" />
       </td>
       <td className="px-4 py-3">
-        <div className="h-4 w-10 rounded bg-gray-200" />
+        <div className="h-4 w-10 rounded bg-[rgba(15,35,70,0.5)]" />
       </td>
     </tr>
   );
@@ -107,7 +107,7 @@ function SortableHeader({
   label: string;
   currentSort: string | null;
   currentDirection: 'asc' | 'desc';
-  onSort?: (column: string, direction: 'asc' | 'desc') => void;
+  onSort?: (_column: string, _direction: 'asc' | 'desc') => void;
 }) {
   const isActive = currentSort === sortKey;
 
@@ -121,7 +121,7 @@ function SortableHeader({
   return (
     <th
       scope="col"
-      className="px-4 py-3 text-left text-xs font-medium uppercase tracking-wider text-gray-700"
+      className="px-4 py-3 text-left text-xs font-medium uppercase tracking-wider text-[rgb(148,163,184)]"
     >
       {onSort ? (
         <button
@@ -129,7 +129,7 @@ function SortableHeader({
           data-testid={`sort-${column}`}
           aria-label={`Sort by ${label.toLowerCase()}`}
           onClick={handleClick}
-          className="flex items-center gap-1 hover:text-gray-900"
+          className="flex items-center gap-1 hover:text-[rgb(220,235,255)]"
         >
           {label}
           {isActive && (
@@ -192,50 +192,42 @@ const TrainingHistoryTable: React.FC<TrainingHistoryTableProps> = ({
     }
   };
 
+  // Shared table header cells (non-sortable)
+  const staticHeaderCellClass =
+    'px-4 py-3 text-left text-xs font-medium uppercase tracking-wider text-[rgb(148,163,184)]';
+
   // Loading state
   if (loading) {
     return (
       <div data-testid="training-history-table" className={className}>
         <div data-testid="table-container" className="overflow-x-auto">
-          <table className="min-w-full table-auto divide-y divide-gray-200">
+          <table className="min-w-full table-auto divide-y divide-[rgba(37,99,235,0.3)]">
             <caption className="sr-only">
               Training history showing date, discipline, and score changes
             </caption>
-            <thead data-testid="history-thead" className="bg-gray-100">
+            <thead data-testid="history-thead" className="bg-[rgba(15,35,70,0.5)]">
               <tr>
-                <th
-                  scope="col"
-                  className="px-4 py-3 text-left text-xs font-medium uppercase tracking-wider text-gray-700"
-                >
+                <th scope="col" className={staticHeaderCellClass}>
                   Date
                 </th>
-                <th
-                  scope="col"
-                  className="px-4 py-3 text-left text-xs font-medium uppercase tracking-wider text-gray-700"
-                >
+                <th scope="col" className={staticHeaderCellClass}>
                   Discipline
                 </th>
-                <th
-                  scope="col"
-                  className="px-4 py-3 text-left text-xs font-medium uppercase tracking-wider text-gray-700"
-                >
+                <th scope="col" className={staticHeaderCellClass}>
                   Before
                 </th>
-                <th
-                  scope="col"
-                  className="px-4 py-3 text-left text-xs font-medium uppercase tracking-wider text-gray-700"
-                >
+                <th scope="col" className={staticHeaderCellClass}>
                   After
                 </th>
-                <th
-                  scope="col"
-                  className="px-4 py-3 text-left text-xs font-medium uppercase tracking-wider text-gray-700"
-                >
+                <th scope="col" className={staticHeaderCellClass}>
                   Gain
                 </th>
               </tr>
             </thead>
-            <tbody data-testid="history-tbody" className="divide-y divide-gray-200 bg-white">
+            <tbody
+              data-testid="history-tbody"
+              className="divide-y divide-[rgba(37,99,235,0.3)] bg-[rgba(15,35,70,0.4)]"
+            >
               {[0, 1, 2, 3, 4].map((index) => (
                 <SkeletonRow key={index} index={index} />
               ))}
@@ -251,48 +243,39 @@ const TrainingHistoryTable: React.FC<TrainingHistoryTableProps> = ({
     return (
       <div data-testid="training-history-table" className={className}>
         <div data-testid="table-container" className="overflow-x-auto">
-          <table className="min-w-full table-auto divide-y divide-gray-200">
+          <table className="min-w-full table-auto divide-y divide-[rgba(37,99,235,0.3)]">
             <caption className="sr-only">
               Training history showing date, discipline, and score changes
             </caption>
-            <thead data-testid="history-thead" className="bg-gray-100">
+            <thead data-testid="history-thead" className="bg-[rgba(15,35,70,0.5)]">
               <tr>
-                <th
-                  scope="col"
-                  className="px-4 py-3 text-left text-xs font-medium uppercase tracking-wider text-gray-700"
-                >
+                <th scope="col" className={staticHeaderCellClass}>
                   Date
                 </th>
-                <th
-                  scope="col"
-                  className="px-4 py-3 text-left text-xs font-medium uppercase tracking-wider text-gray-700"
-                >
+                <th scope="col" className={staticHeaderCellClass}>
                   Discipline
                 </th>
-                <th
-                  scope="col"
-                  className="px-4 py-3 text-left text-xs font-medium uppercase tracking-wider text-gray-700"
-                >
+                <th scope="col" className={staticHeaderCellClass}>
                   Before
                 </th>
-                <th
-                  scope="col"
-                  className="px-4 py-3 text-left text-xs font-medium uppercase tracking-wider text-gray-700"
-                >
+                <th scope="col" className={staticHeaderCellClass}>
                   After
                 </th>
-                <th
-                  scope="col"
-                  className="px-4 py-3 text-left text-xs font-medium uppercase tracking-wider text-gray-700"
-                >
+                <th scope="col" className={staticHeaderCellClass}>
                   Gain
                 </th>
               </tr>
             </thead>
-            <tbody data-testid="history-tbody" className="divide-y divide-gray-200 bg-white">
+            <tbody
+              data-testid="history-tbody"
+              className="divide-y divide-[rgba(37,99,235,0.3)] bg-[rgba(15,35,70,0.4)]"
+            >
               <tr>
                 <td colSpan={5}>
-                  <div data-testid="empty-state" className="py-8 text-center text-gray-500">
+                  <div
+                    data-testid="empty-state"
+                    className="py-8 text-center text-[rgb(148,163,184)]"
+                  >
                     No training history found
                   </div>
                 </td>
@@ -307,11 +290,11 @@ const TrainingHistoryTable: React.FC<TrainingHistoryTableProps> = ({
   return (
     <div data-testid="training-history-table" className={className}>
       <div data-testid="table-container" className="overflow-x-auto">
-        <table className="min-w-full table-auto divide-y divide-gray-200">
+        <table className="min-w-full table-auto divide-y divide-[rgba(37,99,235,0.3)]">
           <caption className="sr-only">
             Training history showing date, discipline, and score changes
           </caption>
-          <thead data-testid="history-thead" className="bg-gray-100">
+          <thead data-testid="history-thead" className="bg-[rgba(15,35,70,0.5)]">
             <tr>
               <SortableHeader
                 column="date"
@@ -329,16 +312,10 @@ const TrainingHistoryTable: React.FC<TrainingHistoryTableProps> = ({
                 currentDirection={sortDirection}
                 onSort={onSort ? handleSort : undefined}
               />
-              <th
-                scope="col"
-                className="px-4 py-3 text-left text-xs font-medium uppercase tracking-wider text-gray-700"
-              >
+              <th scope="col" className={staticHeaderCellClass}>
                 Before
               </th>
-              <th
-                scope="col"
-                className="px-4 py-3 text-left text-xs font-medium uppercase tracking-wider text-gray-700"
-              >
+              <th scope="col" className={staticHeaderCellClass}>
                 After
               </th>
               <SortableHeader
@@ -351,21 +328,24 @@ const TrainingHistoryTable: React.FC<TrainingHistoryTableProps> = ({
               />
             </tr>
           </thead>
-          <tbody data-testid="history-tbody" className="divide-y divide-gray-200 bg-white">
+          <tbody
+            data-testid="history-tbody"
+            className="divide-y divide-[rgba(37,99,235,0.3)] bg-[rgba(15,35,70,0.4)]"
+          >
             {paginatedHistory.map((entry) => {
               const gainFormatted = formatGain(entry.scoreGain);
               return (
-                <tr key={entry.id} className="even:bg-gray-50">
-                  <td className="whitespace-nowrap px-4 py-3 text-sm text-gray-900">
+                <tr key={entry.id} className="even:bg-[rgba(15,35,70,0.3)]">
+                  <td className="whitespace-nowrap px-4 py-3 text-sm text-[rgb(220,235,255)]">
                     {formatDate(entry.date)}
                   </td>
-                  <td className="whitespace-nowrap px-4 py-3 text-sm text-gray-900">
+                  <td className="whitespace-nowrap px-4 py-3 text-sm text-[rgb(220,235,255)]">
                     {formatDisciplineName(entry.discipline)}
                   </td>
-                  <td className="whitespace-nowrap px-4 py-3 text-sm text-gray-900">
+                  <td className="whitespace-nowrap px-4 py-3 text-sm text-[rgb(220,235,255)]">
                     {entry.previousScore}
                   </td>
-                  <td className="whitespace-nowrap px-4 py-3 text-sm text-gray-900">
+                  <td className="whitespace-nowrap px-4 py-3 text-sm text-[rgb(220,235,255)]">
                     {entry.newScore}
                   </td>
                   <td
@@ -389,11 +369,11 @@ const TrainingHistoryTable: React.FC<TrainingHistoryTableProps> = ({
             aria-label="Go to previous page"
             onClick={goToPreviousPage}
             disabled={currentPage === 1}
-            className="rounded bg-gray-100 px-3 py-1.5 text-sm text-gray-700 hover:bg-gray-200 disabled:cursor-not-allowed disabled:opacity-50"
+            className="rounded bg-[rgba(15,35,70,0.5)] px-3 py-1.5 text-sm text-[rgb(148,163,184)] hover:bg-[rgba(15,35,70,0.7)] disabled:cursor-not-allowed disabled:opacity-50"
           >
             Previous
           </button>
-          <span data-testid="pagination-info" className="text-sm text-gray-600">
+          <span data-testid="pagination-info" className="text-sm text-[rgb(148,163,184)]">
             Page {currentPage} of {totalPages}
           </span>
           <button
@@ -402,7 +382,7 @@ const TrainingHistoryTable: React.FC<TrainingHistoryTableProps> = ({
             aria-label="Go to next page"
             onClick={goToNextPage}
             disabled={currentPage === totalPages}
-            className="rounded bg-gray-100 px-3 py-1.5 text-sm text-gray-700 hover:bg-gray-200 disabled:cursor-not-allowed disabled:opacity-50"
+            className="rounded bg-[rgba(15,35,70,0.5)] px-3 py-1.5 text-sm text-[rgb(148,163,184)] hover:bg-[rgba(15,35,70,0.7)] disabled:cursor-not-allowed disabled:opacity-50"
           >
             Next
           </button>

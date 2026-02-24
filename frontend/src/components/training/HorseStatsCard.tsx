@@ -23,44 +23,46 @@ const HorseStatsCard: React.FC<HorseStatsCardProps> = ({ horse }) => {
   }
 
   return (
-    <div className="rounded-md border border-slate-200 bg-slate-50 p-4">
-      <h4 className="mb-3 text-sm font-semibold text-slate-700">Horse Stats</h4>
+    <div className="rounded-md border border-[rgba(37,99,235,0.2)] bg-[rgba(15,35,70,0.5)] p-4">
+      <h4 className="mb-3 text-sm font-semibold text-[rgb(220,235,255)]">Horse Stats</h4>
 
       {/* Horse Name and Level */}
       <div className="mb-3">
-        <p className="text-lg font-bold text-slate-900">{horse.name}</p>
-        {horse.level !== undefined && <p className="text-sm text-slate-600">Level {horse.level}</p>}
+        <p className="text-lg font-bold text-[rgb(220,235,255)]">{horse.name}</p>
+        {horse.level !== undefined && (
+          <p className="text-sm text-[rgb(148,163,184)]">Level {horse.level}</p>
+        )}
       </div>
 
       {/* Stats Grid */}
       <div className="grid gap-2">
         {horse.breed && (
           <div className="flex justify-between text-sm">
-            <span className="font-medium text-slate-600">Breed:</span>
-            <span className="text-slate-900">{horse.breed}</span>
+            <span className="font-medium text-[rgb(148,163,184)]">Breed:</span>
+            <span className="text-[rgb(220,235,255)]">{horse.breed}</span>
           </div>
         )}
 
         {horse.ageYears !== undefined && (
           <div className="flex justify-between text-sm">
-            <span className="font-medium text-slate-600">Age:</span>
-            <span className="text-slate-900">{formatAge(horse.ageYears)}</span>
+            <span className="font-medium text-[rgb(148,163,184)]">Age:</span>
+            <span className="text-[rgb(220,235,255)]">{formatAge(horse.ageYears)}</span>
           </div>
         )}
 
         {horse.gender && (
           <div className="flex justify-between text-sm">
-            <span className="font-medium text-slate-600">Gender:</span>
-            <span className="text-slate-900">{horse.gender}</span>
+            <span className="font-medium text-[rgb(148,163,184)]">Gender:</span>
+            <span className="text-[rgb(220,235,255)]">{horse.gender}</span>
           </div>
         )}
 
         {horse.bestDisciplines && horse.bestDisciplines.length > 0 && (
-          <div className="mt-2 pt-2 border-t border-slate-200">
-            <p className="text-xs font-semibold uppercase tracking-wide text-slate-600 mb-1">
+          <div className="mt-2 pt-2 border-t border-[rgba(37,99,235,0.2)]">
+            <p className="text-xs font-semibold uppercase tracking-wide text-[rgb(148,163,184)] mb-1">
               Best Disciplines:
             </p>
-            <p className="text-sm text-slate-900">{horse.bestDisciplines.join(', ')}</p>
+            <p className="text-sm text-[rgb(220,235,255)]">{horse.bestDisciplines.join(', ')}</p>
           </div>
         )}
       </div>
