@@ -2,12 +2,10 @@
  * TrainerList Component — Trainer Marketplace (Epic 13 — Story 13-1)
  *
  * Trainer hiring marketplace interface:
- * - Marketplace trainer listing with filtering and sorting
- * - Hire button disabled (mock-ready, pending 13-5 API wire-up)
- * - Skill level transparency note (same as Rider marketplace)
+ * - Fetches live data from /api/trainers/marketplace via useTrainerMarketplace()
+ * - Loading/error/empty states handled inline
+ * - Hire button disabled pending auth wire-up (Story 13-5)
  * - Personality and skill-level filter controls
- *
- * All data uses MOCK_AVAILABLE_TRAINERS — replace with /api/trainers/marketplace endpoint.
  *
  * Mirrors RiderList.tsx for the Trainer System.
  */
@@ -15,91 +13,8 @@
 import React, { useState, useMemo } from 'react';
 import { GraduationCap, DollarSign, RefreshCw } from 'lucide-react';
 import TrainerPersonalityBadge from './trainer/TrainerPersonalityBadge';
-
-// ─── Types ───────────────────────────────────────────────────────────────────
-
-interface MarketplaceTrainer {
-  id: string;
-  firstName: string;
-  lastName: string;
-  personality: string;
-  skillLevel: 'novice' | 'developing' | 'expert';
-  experience: number;
-  weeklyRate: number;
-  disciplines: string[]; // known specializations (empty for novice)
-  bio: string;
-}
-
-// ─── Mock Data — replace with /api/trainers/marketplace ──────────────────────
-
-const MOCK_AVAILABLE_TRAINERS: MarketplaceTrainer[] = [
-  {
-    id: 'tm-1',
-    firstName: 'Michael',
-    lastName: 'Torres',
-    personality: 'focused',
-    skillLevel: 'novice',
-    experience: 0,
-    weeklyRate: 1200,
-    disciplines: [],
-    bio: 'Recently certified — eager to prove himself. Hidden potential.',
-  },
-  {
-    id: 'tm-2',
-    firstName: 'Sarah',
-    lastName: 'Chen',
-    personality: 'technical',
-    skillLevel: 'expert',
-    experience: 4800,
-    weeklyRate: 3400,
-    disciplines: ['Dressage', 'Show Jumping'],
-    bio: 'Former Olympic support staff. Precision-focused methodology with proven results.',
-  },
-  {
-    id: 'tm-3',
-    firstName: 'Jake',
-    lastName: 'Kowalski',
-    personality: 'competitive',
-    skillLevel: 'developing',
-    experience: 1200,
-    weeklyRate: 2100,
-    disciplines: ['Cross Country'],
-    bio: 'Ex-jockey turned trainer. Knows what it takes to win on race day.',
-  },
-  {
-    id: 'tm-4',
-    firstName: 'Emma',
-    lastName: 'Blanc',
-    personality: 'encouraging',
-    skillLevel: 'novice',
-    experience: 0,
-    weeklyRate: 1000,
-    disciplines: [],
-    bio: 'First year out of training school. Her horses adore her — that counts for a lot.',
-  },
-  {
-    id: 'tm-5',
-    firstName: 'David',
-    lastName: 'Osei',
-    personality: 'patient',
-    skillLevel: 'expert',
-    experience: 3900,
-    weeklyRate: 2900,
-    disciplines: ['Western', 'Endurance'],
-    bio: 'Specialises in difficult horses. No horse is beyond reaching — just a matter of time.',
-  },
-  {
-    id: 'tm-6',
-    firstName: 'Lily',
-    lastName: 'Nakamura',
-    personality: 'focused',
-    skillLevel: 'developing',
-    experience: 870,
-    weeklyRate: 1800,
-    disciplines: ['Dressage'],
-    bio: 'Two-year professional. Dressage specialist building a strong track record.',
-  },
-];
+import { useTrainerMarketplace } from '@/hooks/api/useTrainers';
+import type { MarketplaceTrainer } from '@/hooks/api/useTrainers';
 
 // ─── Constants ────────────────────────────────────────────────────────────────
 
@@ -135,10 +50,13 @@ const TrainerList: React.FC<TrainerListProps> = () => {
   const [filterPersonality, setFilterPersonality] = useState<string>('all');
   const [sortBy, setSortBy] = useState<string>('name');
 
-  const calculateHiringCost = (weeklyRate: number) => weeklyRate * 4; // 4-week upfront
+  const { data, isLoading, isError, error } = useTrainerMarketplace();
+
+  const calculateHiringCost = (sessionRate: number) => sessionRate * 4; // 4-week upfront
 
   const filteredAndSortedTrainers = useMemo(() => {
-    let filtered = [...MOCK_AVAILABLE_TRAINERS];
+    const trainers: MarketplaceTrainer[] = data?.trainers ?? [];
+    let filtered = [...trainers];
 
     if (filterSkillLevel !== 'all') {
       filtered = filtered.filter((t) => t.skillLevel === filterSkillLevel);
@@ -150,18 +68,16 @@ const TrainerList: React.FC<TrainerListProps> = () => {
     filtered.sort((a, b) => {
       switch (sortBy) {
         case 'rate-asc':
-          return a.weeklyRate - b.weeklyRate;
+          return a.sessionRate - b.sessionRate;
         case 'rate-desc':
-          return b.weeklyRate - a.weeklyRate;
-        case 'experience-desc':
-          return b.experience - a.experience;
+          return b.sessionRate - a.sessionRate;
         default:
           return `${a.firstName} ${a.lastName}`.localeCompare(`${b.firstName} ${b.lastName}`);
       }
     });
 
     return filtered;
-  }, [filterSkillLevel, filterPersonality, sortBy]);
+  }, [data, filterSkillLevel, filterPersonality, sortBy]);
 
   return (
     <main
@@ -269,32 +185,52 @@ const TrainerList: React.FC<TrainerListProps> = () => {
             <option value="name">Name</option>
             <option value="rate-asc">Rate (Low → High)</option>
             <option value="rate-desc">Rate (High → Low)</option>
-            <option value="experience-desc">Most Experienced</option>
           </select>
         </div>
       </div>
 
       {/* Trainer Grid */}
       <div data-testid="trainer-marketplace">
-        {filteredAndSortedTrainers.length === 0 ? (
+        {isLoading && (
+          <div className="text-center py-12 border border-white/10 rounded-xl">
+            <GraduationCap className="w-12 h-12 text-white/20 mx-auto mb-3 animate-pulse" />
+            <p className="text-sm text-white/40">Loading trainers...</p>
+          </div>
+        )}
+
+        {isError && (
+          <div className="text-center py-12 border border-red-500/20 rounded-xl bg-red-900/10">
+            <GraduationCap className="w-12 h-12 text-red-400/40 mx-auto mb-3" />
+            <h3 className="text-lg font-semibold text-red-400/70 mb-1">Failed to Load Trainers</h3>
+            <p className="text-sm text-white/30">
+              {error?.message ?? 'Unable to reach the marketplace. Please try again later.'}
+            </p>
+          </div>
+        )}
+
+        {!isLoading && !isError && filteredAndSortedTrainers.length === 0 && (
           <div className="text-center py-12 border border-white/10 rounded-xl">
             <GraduationCap className="w-12 h-12 text-white/20 mx-auto mb-3" />
             <h3 className="text-lg font-semibold text-white/50 mb-1">No Trainers Match</h3>
             <p className="text-sm text-white/30 mb-4">Try adjusting your filters</p>
           </div>
-        ) : (
+        )}
+
+        {!isLoading && !isError && filteredAndSortedTrainers.length > 0 && (
           <div
             data-testid="trainer-grid"
             className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-5"
           >
             {filteredAndSortedTrainers.map((trainer) => {
-              const hiringCost = calculateHiringCost(trainer.weeklyRate);
+              const hiringCost = calculateHiringCost(trainer.sessionRate);
               const skillMeta = SKILL_LEVEL_LABELS[trainer.skillLevel] ?? SKILL_LEVEL_LABELS.novice;
+              const showSpeciality =
+                trainer.skillLevel === 'expert' && trainer.speciality.trim().length > 0;
 
               return (
                 <div
-                  key={trainer.id}
-                  data-testid={`trainer-card-${trainer.id}`}
+                  key={trainer.marketplaceId}
+                  data-testid={`trainer-card-${trainer.marketplaceId}`}
                   className="bg-white/5 border border-white/10 rounded-xl p-5 hover:border-white/20 transition-all hover:-translate-y-0.5 hover:shadow-lg"
                 >
                   {/* Header */}
@@ -317,15 +253,9 @@ const TrainerList: React.FC<TrainerListProps> = () => {
                   {/* Details */}
                   <div className="space-y-2 text-sm border-y border-white/5 py-3 mb-4">
                     <div className="flex justify-between">
-                      <span className="text-white/40">Experience:</span>
-                      <span className="text-white/70">
-                        {trainer.skillLevel === 'novice' ? '???' : `${trainer.experience} XP`}
-                      </span>
-                    </div>
-                    <div className="flex justify-between">
                       <span className="text-white/40">Weekly Rate:</span>
                       <span className="font-semibold text-celestial-gold">
-                        {trainer.weeklyRate.toLocaleString()} Coins/wk
+                        {trainer.sessionRate.toLocaleString()} Coins/wk
                       </span>
                     </div>
                     <div className="flex justify-between items-center">
@@ -336,21 +266,16 @@ const TrainerList: React.FC<TrainerListProps> = () => {
                     </div>
                   </div>
 
-                  {/* Known Disciplines (expert only) */}
-                  {trainer.skillLevel === 'expert' && trainer.disciplines.length > 0 && (
+                  {/* Known Speciality (expert only) */}
+                  {showSpeciality && (
                     <div className="mb-4">
                       <p className="text-[10px] text-white/30 uppercase tracking-wider mb-1">
                         Known Specializations
                       </p>
                       <div className="flex flex-wrap gap-1">
-                        {trainer.disciplines.map((d) => (
-                          <span
-                            key={d}
-                            className="px-1.5 py-0.5 bg-violet-900/30 text-violet-400 text-[10px] rounded"
-                          >
-                            {d}
-                          </span>
-                        ))}
+                        <span className="px-1.5 py-0.5 bg-violet-900/30 text-violet-400 text-[10px] rounded">
+                          {trainer.speciality}
+                        </span>
                       </div>
                     </div>
                   )}
@@ -366,7 +291,7 @@ const TrainerList: React.FC<TrainerListProps> = () => {
                     disabled
                     title="Sign in to hire trainers"
                     className="w-full py-2.5 px-4 rounded-lg font-bold text-sm bg-white/5 text-white/30 cursor-not-allowed border border-white/10"
-                    data-testid={`hire-button-${trainer.id}`}
+                    data-testid={`hire-button-${trainer.marketplaceId}`}
                   >
                     Hire — {hiringCost.toLocaleString()} Coins
                   </button>
@@ -377,9 +302,9 @@ const TrainerList: React.FC<TrainerListProps> = () => {
         )}
       </div>
 
-      {/* API placeholder note */}
+      {/* API status note */}
       <div className="px-4 py-3 rounded-lg bg-white/3 border border-white/8 text-xs text-white/30 text-center">
-        Mock data — hire functionality requires auth wire-up (Story 13-5)
+        Live marketplace data — hire functionality requires auth wire-up (Story 13-5)
       </div>
     </main>
   );
