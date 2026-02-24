@@ -112,7 +112,7 @@ export interface CompetitionResultsModalProps {
   /** Competition ID to fetch results for */
   competitionId: number | null;
   /** Callback when user clicks to view performance breakdown */
-  onViewPerformance?: (horseId: number) => void;
+  onViewPerformance?: (_horseId: number) => void;
   /** Callback for retrying data fetch on error */
   onRetry?: () => void;
   /** Callback when modal first opened with prizes (Story 5-3) */
@@ -176,11 +176,11 @@ const getPlacementBadgeClasses = (rank: number): string => {
     case 1:
       return 'bg-yellow-400 text-yellow-900'; // Gold
     case 2:
-      return 'bg-gray-300 text-gray-900'; // Silver
+      return 'bg-[rgba(148,163,184,0.3)] text-[rgb(220,235,255)]'; // Silver
     case 3:
       return 'bg-orange-400 text-orange-900'; // Bronze
     default:
-      return 'bg-gray-200 text-gray-700'; // Other
+      return 'bg-[rgba(15,35,70,0.5)] text-[rgb(148,163,184)]'; // Other
   }
 };
 
@@ -216,19 +216,19 @@ const LoadingSkeletons = memo(() => (
     {Array.from({ length: 8 }).map((_, index) => (
       <tr key={`skeleton-${index}`} data-testid="skeleton-row" className="animate-pulse">
         <td className="px-4 py-3">
-          <div className="h-4 bg-slate-200 rounded w-8" />
+          <div className="h-4 bg-[rgba(37,99,235,0.2)] rounded w-8" />
         </td>
         <td className="px-4 py-3">
-          <div className="h-4 bg-slate-200 rounded w-32" />
+          <div className="h-4 bg-[rgba(37,99,235,0.2)] rounded w-32" />
         </td>
         <td className="px-4 py-3">
-          <div className="h-4 bg-slate-200 rounded w-24" />
+          <div className="h-4 bg-[rgba(37,99,235,0.2)] rounded w-24" />
         </td>
         <td className="px-4 py-3">
-          <div className="h-4 bg-slate-200 rounded w-16" />
+          <div className="h-4 bg-[rgba(37,99,235,0.2)] rounded w-16" />
         </td>
         <td className="px-4 py-3">
-          <div className="h-4 bg-slate-200 rounded w-20" />
+          <div className="h-4 bg-[rgba(37,99,235,0.2)] rounded w-20" />
         </td>
       </tr>
     ))}
@@ -242,9 +242,11 @@ LoadingSkeletons.displayName = 'LoadingSkeletons';
  */
 const EmptyState = memo(() => (
   <div className="py-12 text-center" data-testid="empty-state">
-    <Trophy className="mx-auto h-12 w-12 text-slate-400 mb-4" aria-hidden="true" />
-    <h3 className="text-lg font-medium text-slate-900 mb-2">No results available</h3>
-    <p className="text-sm text-slate-600">Results for this competition are not yet available.</p>
+    <Trophy className="mx-auto h-12 w-12 text-[rgb(148,163,184)] mb-4" aria-hidden="true" />
+    <h3 className="text-lg font-medium text-[rgb(220,235,255)] mb-2">No results available</h3>
+    <p className="text-sm text-[rgb(148,163,184)]">
+      Results for this competition are not yet available.
+    </p>
   </div>
 ));
 
@@ -256,8 +258,8 @@ EmptyState.displayName = 'EmptyState';
 const ErrorState = memo(({ message, onRetry }: { message: string; onRetry?: () => void }) => (
   <div className="py-12 text-center" data-testid="error-state">
     <AlertCircle className="mx-auto h-12 w-12 text-red-400 mb-4" aria-hidden="true" />
-    <h3 className="text-lg font-medium text-slate-900 mb-2">Unable to load results</h3>
-    <p className="text-sm text-slate-600 mb-4">{message}</p>
+    <h3 className="text-lg font-medium text-[rgb(220,235,255)] mb-2">Unable to load results</h3>
+    <p className="text-sm text-[rgb(148,163,184)] mb-4">{message}</p>
     {onRetry && (
       <button
         onClick={onRetry}
@@ -288,7 +290,7 @@ const SortHeader = memo(
     field: SortField;
     currentField: SortField;
     direction: SortDirection;
-    onSort: (field: SortField) => void;
+    onSort: (_field: SortField) => void;
   }) => {
     const isActive = currentField === field;
     const Icon = isActive ? (direction === 'asc' ? ArrowUp : ArrowDown) : ArrowUpDown;
@@ -296,8 +298,8 @@ const SortHeader = memo(
     return (
       <button
         onClick={() => onSort(field)}
-        className={`inline-flex items-center gap-1 font-semibold text-left hover:text-blue-600 transition-colors ${
-          isActive ? 'text-blue-600' : 'text-slate-700'
+        className={`inline-flex items-center gap-1 font-semibold text-left hover:text-blue-400 transition-colors ${
+          isActive ? 'text-blue-400' : 'text-[rgb(220,235,255)]'
         }`}
         data-testid={`sort-by-${field}`}
         aria-label={`Sort by ${label}`}
@@ -559,35 +561,35 @@ const CompetitionResultsModal = memo(function CompetitionResultsModal({
       return (
         <div className="overflow-x-auto">
           <table className="min-w-full" role="table">
-            <thead className="sticky top-0 bg-gray-100 z-10">
+            <thead className="sticky top-0 bg-[rgba(15,35,70,0.5)] z-10">
               <tr>
                 <th
                   scope="col"
-                  className="px-4 py-3 text-left text-xs font-semibold text-gray-700 uppercase tracking-wider"
+                  className="px-4 py-3 text-left text-xs font-semibold text-[rgb(220,235,255)] uppercase tracking-wider"
                 >
                   Rank
                 </th>
                 <th
                   scope="col"
-                  className="px-4 py-3 text-left text-xs font-semibold text-gray-700 uppercase tracking-wider"
+                  className="px-4 py-3 text-left text-xs font-semibold text-[rgb(220,235,255)] uppercase tracking-wider"
                 >
                   Horse
                 </th>
                 <th
                   scope="col"
-                  className="px-4 py-3 text-left text-xs font-semibold text-gray-700 uppercase tracking-wider"
+                  className="px-4 py-3 text-left text-xs font-semibold text-[rgb(220,235,255)] uppercase tracking-wider"
                 >
                   Owner
                 </th>
                 <th
                   scope="col"
-                  className="px-4 py-3 text-left text-xs font-semibold text-gray-700 uppercase tracking-wider"
+                  className="px-4 py-3 text-left text-xs font-semibold text-[rgb(220,235,255)] uppercase tracking-wider"
                 >
                   Score
                 </th>
                 <th
                   scope="col"
-                  className="px-4 py-3 text-left text-xs font-semibold text-gray-700 uppercase tracking-wider"
+                  className="px-4 py-3 text-left text-xs font-semibold text-[rgb(220,235,255)] uppercase tracking-wider"
                 >
                   Prize
                 </th>
@@ -619,8 +621,8 @@ const CompetitionResultsModal = memo(function CompetitionResultsModal({
     // Results table
     return (
       <div className="overflow-x-auto" data-testid="results-table">
-        <table className="min-w-full divide-y divide-gray-200" role="table">
-          <thead className="sticky top-0 bg-gray-100 z-10 shadow-sm">
+        <table className="min-w-full divide-y divide-[rgba(37,99,235,0.2)]" role="table">
+          <thead className="sticky top-0 bg-[rgba(15,35,70,0.5)] z-10 shadow-sm">
             <tr>
               <th scope="col" className="px-4 py-3 text-left text-xs uppercase tracking-wider">
                 <SortHeader
@@ -660,23 +662,23 @@ const CompetitionResultsModal = memo(function CompetitionResultsModal({
               </th>
               <th
                 scope="col"
-                className="px-4 py-3 text-left text-xs font-semibold text-gray-700 uppercase tracking-wider"
+                className="px-4 py-3 text-left text-xs font-semibold text-[rgb(220,235,255)] uppercase tracking-wider"
               >
                 Prize
               </th>
               <th
                 scope="col"
-                className="px-4 py-3 text-left text-xs font-semibold text-gray-700 uppercase tracking-wider"
+                className="px-4 py-3 text-left text-xs font-semibold text-[rgb(220,235,255)] uppercase tracking-wider"
               >
                 XP Progress
               </th>
             </tr>
           </thead>
-          <tbody className="divide-y divide-gray-200">
+          <tbody className="divide-y divide-[rgba(37,99,235,0.2)]">
             {sortedResults.map((result, index) => {
               const isUserHorse = result.isCurrentUser;
               const rowClasses = `
-                ${isUserHorse ? 'bg-blue-50 cursor-pointer hover:bg-blue-100' : index % 2 === 0 ? 'bg-white' : 'bg-gray-50'}
+                ${isUserHorse ? 'bg-[rgba(37,99,235,0.1)] cursor-pointer hover:bg-[rgba(37,99,235,0.2)]' : index % 2 === 0 ? 'bg-[rgba(15,35,70,0.4)]' : 'bg-[rgba(15,35,70,0.5)]'}
                 transition-colors
               `;
 
@@ -702,7 +704,10 @@ const CompetitionResultsModal = memo(function CompetitionResultsModal({
                 >
                   <td className="px-4 py-3 whitespace-nowrap">
                     <div className="flex items-center gap-2">
-                      <span data-testid="rank-value" className="font-medium text-gray-900">
+                      <span
+                        data-testid="rank-value"
+                        className="font-medium text-[rgb(220,235,255)]"
+                      >
                         {result.rank}
                       </span>
                       <PlacementBadge rank={result.rank} />
@@ -710,22 +715,22 @@ const CompetitionResultsModal = memo(function CompetitionResultsModal({
                   </td>
                   <td className="px-4 py-3 whitespace-nowrap">
                     <div className="flex items-center gap-2">
-                      <span data-testid="horse-name" className="font-medium text-gray-900">
+                      <span
+                        data-testid="horse-name"
+                        className="font-medium text-[rgb(220,235,255)]"
+                      >
                         {result.horseName}
                       </span>
-                      <HorseLevelBadge
-                        level={horseLevelData?.currentLevel ?? 1}
-                        size="small"
-                      />
+                      <HorseLevelBadge level={horseLevelData?.currentLevel ?? 1} size="small" />
                     </div>
                   </td>
                   <td className="px-4 py-3 whitespace-nowrap">
-                    <span data-testid="owner-name" className="text-gray-600">
+                    <span data-testid="owner-name" className="text-[rgb(148,163,184)]">
                       {result.ownerName}
                     </span>
                   </td>
                   <td className="px-4 py-3 whitespace-nowrap">
-                    <span data-testid="score-value" className="font-medium text-gray-900">
+                    <span data-testid="score-value" className="font-medium text-[rgb(220,235,255)]">
                       {result.finalScore.toFixed(1)}
                     </span>
                   </td>
@@ -733,7 +738,9 @@ const CompetitionResultsModal = memo(function CompetitionResultsModal({
                     <span
                       data-testid="prize-value"
                       className={
-                        result.prizeWon > 0 ? 'font-semibold text-green-600' : 'text-gray-500'
+                        result.prizeWon > 0
+                          ? 'font-semibold text-emerald-400'
+                          : 'text-[rgb(148,163,184)]'
                       }
                     >
                       {formatCurrency(result.prizeWon)}
@@ -769,35 +776,35 @@ const CompetitionResultsModal = memo(function CompetitionResultsModal({
         aria-modal="true"
         aria-labelledby="results-modal-title"
         tabIndex={-1}
-        className="bg-white rounded-lg shadow-xl max-w-4xl w-full max-h-[90vh] overflow-hidden flex flex-col focus:outline-none"
+        className="glass-panel rounded-lg shadow-xl max-w-4xl w-full max-h-[90vh] overflow-hidden flex flex-col focus:outline-none"
         onClick={(e) => e.stopPropagation()}
         data-testid="competition-results-modal"
       >
         {/* Header */}
-        <div className="flex items-start justify-between p-6 border-b border-gray-200 flex-shrink-0">
+        <div className="flex items-start justify-between p-6 border-b border-[rgba(37,99,235,0.2)] flex-shrink-0">
           <div className="flex-1 pr-4">
             <h2
               id="results-modal-title"
-              className="text-2xl font-bold text-gray-900 truncate"
+              className="text-2xl font-bold text-[rgb(220,235,255)] truncate"
               data-testid="competition-name"
             >
               {results?.competitionName || 'Competition Results'}
             </h2>
             <div className="flex items-center gap-4 mt-2 flex-wrap">
               <span
-                className="inline-block px-3 py-1 bg-blue-100 text-blue-800 text-sm font-medium rounded-full"
+                className="inline-block px-3 py-1 bg-[rgba(37,99,235,0.1)] text-blue-400 text-sm font-medium rounded-full border border-blue-500/30"
                 data-testid="competition-discipline"
               >
                 {results?.discipline || 'N/A'}
               </span>
               <div
-                className="flex items-center text-sm text-gray-600"
+                className="flex items-center text-sm text-[rgb(148,163,184)]"
                 data-testid="competition-date"
               >
                 <Calendar className="h-4 w-4 mr-1" aria-hidden="true" />
                 {results?.date ? formatDate(results.date) : 'N/A'}
               </div>
-              <div className="flex items-center text-sm text-gray-600">
+              <div className="flex items-center text-sm text-[rgb(148,163,184)]">
                 <Users className="h-4 w-4 mr-1" aria-hidden="true" />
                 <span data-testid="total-participants">{results?.totalParticipants || 0}</span>
                 <span className="ml-1">participants</span>
@@ -807,7 +814,7 @@ const CompetitionResultsModal = memo(function CompetitionResultsModal({
           <button
             type="button"
             onClick={onClose}
-            className="text-gray-400 hover:text-gray-600 transition-colors p-1"
+            className="text-[rgb(148,163,184)] hover:text-[rgb(220,235,255)] transition-colors p-1"
             aria-label="Close modal"
             data-testid="close-modal-button"
           >
@@ -818,34 +825,34 @@ const CompetitionResultsModal = memo(function CompetitionResultsModal({
         {/* Prize Distribution */}
         {results && (
           <div
-            className="bg-gradient-to-r from-amber-50 to-yellow-50 p-4 border-b border-gray-200 flex-shrink-0"
+            className="bg-[rgba(212,168,67,0.1)] border-b border-[rgba(37,99,235,0.2)] p-4 flex-shrink-0"
             data-testid="prize-distribution"
           >
             <div className="flex items-center mb-3">
               <Trophy className="h-5 w-5 text-amber-500 mr-2" aria-hidden="true" />
-              <h3 className="text-sm font-semibold text-gray-900">
+              <h3 className="text-sm font-semibold text-[rgb(220,235,255)]">
                 Prize Pool: {formatCurrency(results.prizePool)}
               </h3>
             </div>
             <div className="grid grid-cols-3 gap-4">
               <div className="text-center" data-testid="prize-1st">
-                <div className="text-lg font-bold text-amber-700">1st</div>
-                <div className="text-sm text-gray-500">50%</div>
-                <div className="font-semibold text-amber-800">
+                <div className="text-lg font-bold text-amber-400">1st</div>
+                <div className="text-sm text-[rgb(148,163,184)]">50%</div>
+                <div className="font-semibold text-[rgb(220,235,255)]">
                   {formatCurrency(results.prizeDistribution.first)}
                 </div>
               </div>
               <div className="text-center" data-testid="prize-2nd">
-                <div className="text-lg font-bold text-gray-600">2nd</div>
-                <div className="text-sm text-gray-500">30%</div>
-                <div className="font-semibold text-gray-700">
+                <div className="text-lg font-bold text-[rgb(148,163,184)]">2nd</div>
+                <div className="text-sm text-[rgb(148,163,184)]">30%</div>
+                <div className="font-semibold text-[rgb(220,235,255)]">
                   {formatCurrency(results.prizeDistribution.second)}
                 </div>
               </div>
               <div className="text-center" data-testid="prize-3rd">
                 <div className="text-lg font-bold text-orange-600">3rd</div>
-                <div className="text-sm text-gray-500">20%</div>
-                <div className="font-semibold text-orange-700">
+                <div className="text-sm text-[rgb(148,163,184)]">20%</div>
+                <div className="font-semibold text-orange-600">
                   {formatCurrency(results.prizeDistribution.third)}
                 </div>
               </div>
@@ -874,11 +881,11 @@ const CompetitionResultsModal = memo(function CompetitionResultsModal({
         </div>
 
         {/* Footer */}
-        <div className="flex justify-between items-center p-4 border-t border-gray-200 bg-gray-50 flex-shrink-0">
+        <div className="flex justify-between items-center p-4 border-t border-[rgba(37,99,235,0.2)] bg-[rgba(15,35,70,0.5)] flex-shrink-0">
           {/* Prize History Link - Story 5-3 */}
           <Link
             to="/prizes"
-            className="inline-flex items-center gap-2 text-blue-600 hover:text-blue-800 text-sm font-medium transition-colors"
+            className="inline-flex items-center gap-2 text-blue-400 hover:text-blue-300 text-sm font-medium transition-colors"
           >
             <History className="h-4 w-4" aria-hidden="true" />
             Prize History
@@ -886,7 +893,7 @@ const CompetitionResultsModal = memo(function CompetitionResultsModal({
           <button
             type="button"
             onClick={onClose}
-            className="px-4 py-2 border border-gray-300 rounded-lg text-gray-700 hover:bg-gray-100 transition-colors"
+            className="px-4 py-2 border border-[rgba(37,99,235,0.3)] rounded-lg text-[rgb(220,235,255)] hover:bg-[rgba(37,99,235,0.1)] transition-colors"
           >
             Close
           </button>

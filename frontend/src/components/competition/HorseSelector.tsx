@@ -30,7 +30,7 @@ export interface HorseSelectorProps {
   competitionId: number;
   discipline: string;
   selectedHorses: number[];
-  onSelectionChange: (horseIds: number[]) => void;
+  onSelectionChange: (_horseIds: number[]) => void;
   maxSelections?: number;
   className?: string;
 }
@@ -136,8 +136,8 @@ const LoadingSpinner = () => (
     data-testid="horse-selector-loading"
     className="flex flex-col items-center justify-center py-12"
   >
-    <Loader2 className="h-8 w-8 animate-spin text-blue-500" aria-hidden="true" />
-    <p className="mt-2 text-sm text-slate-500">Loading horses...</p>
+    <Loader2 className="h-8 w-8 animate-spin text-blue-400" aria-hidden="true" />
+    <p className="mt-2 text-sm text-[rgb(148,163,184)]">Loading horses...</p>
   </div>
 );
 
@@ -149,9 +149,9 @@ const EmptyState = () => (
     data-testid="horse-selector-empty"
     className="flex flex-col items-center justify-center py-12 text-center"
   >
-    <div className="rounded-full bg-slate-100 p-4 mb-4">
+    <div className="rounded-full bg-[rgba(15,35,70,0.5)] p-4 mb-4">
       <svg
-        className="h-8 w-8 text-slate-400"
+        className="h-8 w-8 text-[rgb(148,163,184)]"
         fill="none"
         viewBox="0 0 24 24"
         stroke="currentColor"
@@ -165,8 +165,8 @@ const EmptyState = () => (
         />
       </svg>
     </div>
-    <p className="text-slate-600 font-medium">No eligible horses</p>
-    <p className="text-sm text-slate-400 mt-1">
+    <p className="text-[rgb(220,235,255)] font-medium">No eligible horses</p>
+    <p className="text-sm text-[rgb(148,163,184)] mt-1">
       You don't have any horses that can enter this competition.
     </p>
   </div>
@@ -180,9 +180,9 @@ const ErrorState = ({ message }: { message: string }) => (
     data-testid="horse-selector-error"
     className="flex flex-col items-center justify-center py-12 text-center"
   >
-    <div className="rounded-full bg-red-100 p-4 mb-4">
+    <div className="rounded-full bg-[rgba(239,68,68,0.15)] p-4 mb-4">
       <svg
-        className="h-8 w-8 text-red-500"
+        className="h-8 w-8 text-red-400"
         fill="none"
         viewBox="0 0 24 24"
         stroke="currentColor"
@@ -196,8 +196,8 @@ const ErrorState = ({ message }: { message: string }) => (
         />
       </svg>
     </div>
-    <p className="text-red-600 font-medium">Failed to load horses</p>
-    <p className="text-sm text-slate-400 mt-1">{message}</p>
+    <p className="text-red-400 font-medium">Failed to load horses</p>
+    <p className="text-sm text-[rgb(148,163,184)] mt-1">{message}</p>
   </div>
 );
 
@@ -386,10 +386,14 @@ const HorseSelector = memo(
         {/* Header with title and controls */}
         <div className="flex items-center justify-between">
           <div>
-            <h3 className="text-lg font-semibold text-slate-900" role="heading" aria-level={3}>
+            <h3
+              className="text-lg font-semibold text-[rgb(220,235,255)]"
+              role="heading"
+              aria-level={3}
+            >
               Select Horses
             </h3>
-            <p className="text-sm text-slate-500">
+            <p className="text-sm text-[rgb(148,163,184)]">
               <span data-testid="eligible-count" className="font-medium">
                 {eligibleHorses.length}
               </span>{' '}
@@ -399,7 +403,7 @@ const HorseSelector = memo(
 
           <div className="flex items-center gap-2">
             {/* Selection count */}
-            <div className="text-sm text-slate-600">
+            <div className="text-sm text-[rgb(148,163,184)]">
               <span data-testid="selected-count" className="font-medium">
                 {selectedHorses.length}
               </span>
@@ -415,7 +419,7 @@ const HorseSelector = memo(
                 disabled={eligibleHorses.length === 0}
                 className={cn(
                   'px-3 py-1.5 text-xs font-medium rounded-md transition-colors',
-                  'bg-blue-50 text-blue-700 hover:bg-blue-100',
+                  'bg-[rgba(37,99,235,0.1)] text-blue-400 hover:bg-[rgba(37,99,235,0.2)]',
                   'disabled:opacity-50 disabled:cursor-not-allowed'
                 )}
               >
@@ -428,7 +432,7 @@ const HorseSelector = memo(
                 disabled={selectedHorses.length === 0}
                 className={cn(
                   'px-3 py-1.5 text-xs font-medium rounded-md transition-colors',
-                  'bg-slate-50 text-slate-700 hover:bg-slate-100',
+                  'bg-[rgba(15,35,70,0.5)] text-[rgb(148,163,184)] hover:bg-[rgba(15,35,70,0.7)]',
                   'disabled:opacity-50 disabled:cursor-not-allowed'
                 )}
               >

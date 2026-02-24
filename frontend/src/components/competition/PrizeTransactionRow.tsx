@@ -14,14 +14,7 @@
  */
 
 import React, { memo, useCallback } from 'react';
-import {
-  Trophy,
-  Medal,
-  Star,
-  Calendar,
-  DollarSign,
-  Zap,
-} from 'lucide-react';
+import { Trophy, Medal, Star, Calendar, DollarSign, Zap } from 'lucide-react';
 
 /**
  * Prize transaction data structure
@@ -46,8 +39,8 @@ export interface PrizeTransaction {
  */
 export interface PrizeTransactionRowProps {
   transaction: PrizeTransaction;
-  onViewCompetition?: (competitionId: number) => void;
-  onViewHorse?: (horseId: number) => void;
+  onViewCompetition?: (_competitionId: number) => void;
+  onViewHorse?: (_horseId: number) => void;
   layout?: 'table' | 'card';
 }
 
@@ -99,11 +92,11 @@ const getPlacementBadgeClasses = (rank: number): string => {
     case 1:
       return 'bg-yellow-400 text-yellow-900';
     case 2:
-      return 'bg-gray-300 text-gray-900';
+      return 'bg-[rgba(148,163,184,0.3)] text-[rgb(220,235,255)]';
     case 3:
       return 'bg-orange-400 text-orange-900';
     default:
-      return 'bg-slate-200 text-slate-700';
+      return 'bg-[rgba(15,35,70,0.5)] text-[rgb(148,163,184)]';
   }
 };
 
@@ -144,229 +137,249 @@ PlacementBadge.displayName = 'PlacementBadge';
 /**
  * Table row layout for desktop
  */
-const TableRowLayout = memo(({
-  transaction,
-  onViewCompetition,
-  onViewHorse,
-}: Omit<PrizeTransactionRowProps, 'layout'>) => {
-  const handleCompetitionClick = useCallback((e: React.MouseEvent) => {
-    e.preventDefault();
-    onViewCompetition?.(transaction.competitionId);
-  }, [onViewCompetition, transaction.competitionId]);
+const TableRowLayout = memo(
+  ({ transaction, onViewCompetition, onViewHorse }: Omit<PrizeTransactionRowProps, 'layout'>) => {
+    const handleCompetitionClick = useCallback(
+      (e: React.MouseEvent) => {
+        e.preventDefault();
+        onViewCompetition?.(transaction.competitionId);
+      },
+      [onViewCompetition, transaction.competitionId]
+    );
 
-  const handleHorseClick = useCallback((e: React.MouseEvent) => {
-    e.preventDefault();
-    onViewHorse?.(transaction.horseId);
-  }, [onViewHorse, transaction.horseId]);
+    const handleHorseClick = useCallback(
+      (e: React.MouseEvent) => {
+        e.preventDefault();
+        onViewHorse?.(transaction.horseId);
+      },
+      [onViewHorse, transaction.horseId]
+    );
 
-  const handleCompetitionKeyDown = useCallback((e: React.KeyboardEvent) => {
-    if (e.key === 'Enter' || e.key === ' ') {
-      e.preventDefault();
-      onViewCompetition?.(transaction.competitionId);
-    }
-  }, [onViewCompetition, transaction.competitionId]);
+    const handleCompetitionKeyDown = useCallback(
+      (e: React.KeyboardEvent) => {
+        if (e.key === 'Enter' || e.key === ' ') {
+          e.preventDefault();
+          onViewCompetition?.(transaction.competitionId);
+        }
+      },
+      [onViewCompetition, transaction.competitionId]
+    );
 
-  const handleHorseKeyDown = useCallback((e: React.KeyboardEvent) => {
-    if (e.key === 'Enter' || e.key === ' ') {
-      e.preventDefault();
-      onViewHorse?.(transaction.horseId);
-    }
-  }, [onViewHorse, transaction.horseId]);
+    const handleHorseKeyDown = useCallback(
+      (e: React.KeyboardEvent) => {
+        if (e.key === 'Enter' || e.key === ' ') {
+          e.preventDefault();
+          onViewHorse?.(transaction.horseId);
+        }
+      },
+      [onViewHorse, transaction.horseId]
+    );
 
-  return (
-    <tr
-      className="border-b border-slate-100 hover:bg-slate-50 transition-colors"
-      data-testid="prize-transaction-row"
-      data-layout="table"
-    >
-      {/* Date */}
-      <td className="px-4 py-3 whitespace-nowrap">
-        <span
-          className="text-sm text-slate-600 flex items-center gap-1"
-          data-testid="transaction-date"
-        >
-          <Calendar className="h-4 w-4 text-slate-400" aria-hidden="true" />
-          {formatDate(transaction.date)}
-        </span>
-      </td>
+    return (
+      <tr
+        className="border-b border-[rgba(37,99,235,0.2)] hover:bg-[rgba(37,99,235,0.05)] transition-colors"
+        data-testid="prize-transaction-row"
+        data-layout="table"
+      >
+        {/* Date */}
+        <td className="px-4 py-3 whitespace-nowrap">
+          <span
+            className="text-sm text-[rgb(148,163,184)] flex items-center gap-1"
+            data-testid="transaction-date"
+          >
+            <Calendar className="h-4 w-4 text-[rgb(148,163,184)]" aria-hidden="true" />
+            {formatDate(transaction.date)}
+          </span>
+        </td>
 
-      {/* Competition */}
-      <td className="px-4 py-3">
-        <button
-          onClick={handleCompetitionClick}
-          onKeyDown={handleCompetitionKeyDown}
-          className="text-sm font-medium text-blue-600 hover:text-blue-800 hover:underline focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-2 rounded"
-          data-testid="competition-link"
-          aria-label={`View competition: ${transaction.competitionName}`}
-        >
-          {transaction.competitionName}
-        </button>
-      </td>
+        {/* Competition */}
+        <td className="px-4 py-3">
+          <button
+            onClick={handleCompetitionClick}
+            onKeyDown={handleCompetitionKeyDown}
+            className="text-sm font-medium text-blue-400 hover:text-blue-300 hover:underline focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-2 rounded"
+            data-testid="competition-link"
+            aria-label={`View competition: ${transaction.competitionName}`}
+          >
+            {transaction.competitionName}
+          </button>
+        </td>
 
-      {/* Horse */}
-      <td className="px-4 py-3">
-        <button
-          onClick={handleHorseClick}
-          onKeyDown={handleHorseKeyDown}
-          className="text-sm font-medium text-blue-600 hover:text-blue-800 hover:underline focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-2 rounded"
-          data-testid="horse-link"
-          aria-label={`View horse: ${transaction.horseName}`}
-        >
-          {transaction.horseName}
-        </button>
-      </td>
+        {/* Horse */}
+        <td className="px-4 py-3">
+          <button
+            onClick={handleHorseClick}
+            onKeyDown={handleHorseKeyDown}
+            className="text-sm font-medium text-blue-400 hover:text-blue-300 hover:underline focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-2 rounded"
+            data-testid="horse-link"
+            aria-label={`View horse: ${transaction.horseName}`}
+          >
+            {transaction.horseName}
+          </button>
+        </td>
 
-      {/* Discipline */}
-      <td className="px-4 py-3">
-        <span
-          className="inline-flex items-center px-2 py-0.5 rounded text-xs font-medium bg-blue-100 text-blue-800"
-          data-testid="discipline-badge"
-        >
-          {transaction.discipline}
-        </span>
-      </td>
+        {/* Discipline */}
+        <td className="px-4 py-3">
+          <span
+            className="inline-flex items-center px-2 py-0.5 rounded text-xs font-medium bg-[rgba(37,99,235,0.1)] text-blue-400"
+            data-testid="discipline-badge"
+          >
+            {transaction.discipline}
+          </span>
+        </td>
 
-      {/* Placement */}
-      <td className="px-4 py-3 text-center">
-        <PlacementBadge rank={transaction.placement} />
-      </td>
+        {/* Placement */}
+        <td className="px-4 py-3 text-center">
+          <PlacementBadge rank={transaction.placement} />
+        </td>
 
-      {/* Prize Money */}
-      <td className="px-4 py-3 text-right">
-        <span
-          className="text-sm font-medium text-green-600 flex items-center justify-end gap-1"
-          data-testid="prize-money"
-        >
-          <DollarSign className="h-4 w-4" aria-hidden="true" />
-          {formatCurrency(transaction.prizeMoney).replace('$', '')}
-        </span>
-      </td>
+        {/* Prize Money */}
+        <td className="px-4 py-3 text-right">
+          <span
+            className="text-sm font-medium text-emerald-400 flex items-center justify-end gap-1"
+            data-testid="prize-money"
+          >
+            <DollarSign className="h-4 w-4" aria-hidden="true" />
+            {formatCurrency(transaction.prizeMoney).replace('$', '')}
+          </span>
+        </td>
 
-      {/* XP */}
-      <td className="px-4 py-3 text-right">
-        <span
-          className="text-sm font-medium text-purple-600 flex items-center justify-end gap-1"
-          data-testid="xp-gained"
-        >
-          <Zap className="h-4 w-4" aria-hidden="true" />
-          {formatNumber(transaction.xpGained)}
-          <span className="text-slate-500 font-normal">XP</span>
-        </span>
-      </td>
-    </tr>
-  );
-});
+        {/* XP */}
+        <td className="px-4 py-3 text-right">
+          <span
+            className="text-sm font-medium text-purple-400 flex items-center justify-end gap-1"
+            data-testid="xp-gained"
+          >
+            <Zap className="h-4 w-4" aria-hidden="true" />
+            {formatNumber(transaction.xpGained)}
+            <span className="text-[rgb(148,163,184)] font-normal">XP</span>
+          </span>
+        </td>
+      </tr>
+    );
+  }
+);
 
 TableRowLayout.displayName = 'TableRowLayout';
 
 /**
  * Card layout for mobile
  */
-const CardLayout = memo(({
-  transaction,
-  onViewCompetition,
-  onViewHorse,
-}: Omit<PrizeTransactionRowProps, 'layout'>) => {
-  const handleCompetitionClick = useCallback((e: React.MouseEvent) => {
-    e.preventDefault();
-    onViewCompetition?.(transaction.competitionId);
-  }, [onViewCompetition, transaction.competitionId]);
+const CardLayout = memo(
+  ({ transaction, onViewCompetition, onViewHorse }: Omit<PrizeTransactionRowProps, 'layout'>) => {
+    const handleCompetitionClick = useCallback(
+      (e: React.MouseEvent) => {
+        e.preventDefault();
+        onViewCompetition?.(transaction.competitionId);
+      },
+      [onViewCompetition, transaction.competitionId]
+    );
 
-  const handleHorseClick = useCallback((e: React.MouseEvent) => {
-    e.preventDefault();
-    onViewHorse?.(transaction.horseId);
-  }, [onViewHorse, transaction.horseId]);
+    const handleHorseClick = useCallback(
+      (e: React.MouseEvent) => {
+        e.preventDefault();
+        onViewHorse?.(transaction.horseId);
+      },
+      [onViewHorse, transaction.horseId]
+    );
 
-  const handleCompetitionKeyDown = useCallback((e: React.KeyboardEvent) => {
-    if (e.key === 'Enter' || e.key === ' ') {
-      e.preventDefault();
-      onViewCompetition?.(transaction.competitionId);
-    }
-  }, [onViewCompetition, transaction.competitionId]);
+    const handleCompetitionKeyDown = useCallback(
+      (e: React.KeyboardEvent) => {
+        if (e.key === 'Enter' || e.key === ' ') {
+          e.preventDefault();
+          onViewCompetition?.(transaction.competitionId);
+        }
+      },
+      [onViewCompetition, transaction.competitionId]
+    );
 
-  const handleHorseKeyDown = useCallback((e: React.KeyboardEvent) => {
-    if (e.key === 'Enter' || e.key === ' ') {
-      e.preventDefault();
-      onViewHorse?.(transaction.horseId);
-    }
-  }, [onViewHorse, transaction.horseId]);
+    const handleHorseKeyDown = useCallback(
+      (e: React.KeyboardEvent) => {
+        if (e.key === 'Enter' || e.key === ' ') {
+          e.preventDefault();
+          onViewHorse?.(transaction.horseId);
+        }
+      },
+      [onViewHorse, transaction.horseId]
+    );
 
-  return (
-    <div
-      className="bg-white rounded-lg shadow-sm border border-slate-200 p-4 mb-3"
-      data-testid="prize-transaction-row"
-      data-layout="card"
-    >
-      {/* Header Row */}
-      <div className="flex justify-between items-start mb-3">
-        <div>
-          <button
-            onClick={handleCompetitionClick}
-            onKeyDown={handleCompetitionKeyDown}
-            className="text-base font-semibold text-blue-600 hover:text-blue-800 hover:underline focus:outline-none focus:ring-2 focus:ring-blue-500 rounded"
-            data-testid="competition-link"
-            aria-label={`View competition: ${transaction.competitionName}`}
-          >
-            {transaction.competitionName}
-          </button>
-          <div className="flex items-center gap-2 mt-1">
-            <span
-              className="text-xs text-slate-500 flex items-center gap-1"
-              data-testid="transaction-date"
+    return (
+      <div
+        className="glass-panel rounded-lg p-4 mb-3"
+        data-testid="prize-transaction-row"
+        data-layout="card"
+      >
+        {/* Header Row */}
+        <div className="flex justify-between items-start mb-3">
+          <div>
+            <button
+              onClick={handleCompetitionClick}
+              onKeyDown={handleCompetitionKeyDown}
+              className="text-base font-semibold text-blue-400 hover:text-blue-300 hover:underline focus:outline-none focus:ring-2 focus:ring-blue-500 rounded"
+              data-testid="competition-link"
+              aria-label={`View competition: ${transaction.competitionName}`}
             >
-              <Calendar className="h-3 w-3" aria-hidden="true" />
-              {formatDate(transaction.date)}
+              {transaction.competitionName}
+            </button>
+            <div className="flex items-center gap-2 mt-1">
+              <span
+                className="text-xs text-[rgb(148,163,184)] flex items-center gap-1"
+                data-testid="transaction-date"
+              >
+                <Calendar className="h-3 w-3" aria-hidden="true" />
+                {formatDate(transaction.date)}
+              </span>
+              <span
+                className="inline-flex items-center px-2 py-0.5 rounded text-xs font-medium bg-[rgba(37,99,235,0.1)] text-blue-400"
+                data-testid="discipline-badge"
+              >
+                {transaction.discipline}
+              </span>
+            </div>
+          </div>
+          <PlacementBadge rank={transaction.placement} />
+        </div>
+
+        {/* Horse and Details Row */}
+        <div className="flex items-center justify-between border-t border-[rgba(37,99,235,0.2)] pt-3">
+          <div>
+            <span className="text-xs text-[rgb(148,163,184)]">Horse: </span>
+            <button
+              onClick={handleHorseClick}
+              onKeyDown={handleHorseKeyDown}
+              className="text-sm font-medium text-blue-400 hover:text-blue-300 hover:underline focus:outline-none focus:ring-2 focus:ring-blue-500 rounded"
+              data-testid="horse-link"
+              aria-label={`View horse: ${transaction.horseName}`}
+            >
+              {transaction.horseName}
+            </button>
+          </div>
+
+          <div className="flex items-center gap-4">
+            {/* Prize Money */}
+            <span
+              className="text-sm font-medium text-emerald-400 flex items-center gap-1"
+              data-testid="prize-money"
+            >
+              <DollarSign className="h-4 w-4" aria-hidden="true" />
+              {formatCurrency(transaction.prizeMoney).replace('$', '')}
             </span>
+
+            {/* XP */}
             <span
-              className="inline-flex items-center px-2 py-0.5 rounded text-xs font-medium bg-blue-100 text-blue-800"
-              data-testid="discipline-badge"
+              className="text-sm font-medium text-purple-400 flex items-center gap-1"
+              data-testid="xp-gained"
             >
-              {transaction.discipline}
+              <Zap className="h-4 w-4" aria-hidden="true" />
+              {formatNumber(transaction.xpGained)}
+              <span className="text-[rgb(148,163,184)] font-normal">XP</span>
             </span>
           </div>
         </div>
-        <PlacementBadge rank={transaction.placement} />
       </div>
-
-      {/* Horse and Details Row */}
-      <div className="flex items-center justify-between border-t border-slate-100 pt-3">
-        <div>
-          <span className="text-xs text-slate-500">Horse: </span>
-          <button
-            onClick={handleHorseClick}
-            onKeyDown={handleHorseKeyDown}
-            className="text-sm font-medium text-blue-600 hover:text-blue-800 hover:underline focus:outline-none focus:ring-2 focus:ring-blue-500 rounded"
-            data-testid="horse-link"
-            aria-label={`View horse: ${transaction.horseName}`}
-          >
-            {transaction.horseName}
-          </button>
-        </div>
-
-        <div className="flex items-center gap-4">
-          {/* Prize Money */}
-          <span
-            className="text-sm font-medium text-green-600 flex items-center gap-1"
-            data-testid="prize-money"
-          >
-            <DollarSign className="h-4 w-4" aria-hidden="true" />
-            {formatCurrency(transaction.prizeMoney).replace('$', '')}
-          </span>
-
-          {/* XP */}
-          <span
-            className="text-sm font-medium text-purple-600 flex items-center gap-1"
-            data-testid="xp-gained"
-          >
-            <Zap className="h-4 w-4" aria-hidden="true" />
-            {formatNumber(transaction.xpGained)}
-            <span className="text-slate-500 font-normal">XP</span>
-          </span>
-        </div>
-      </div>
-    </div>
-  );
-});
+    );
+  }
+);
 
 CardLayout.displayName = 'CardLayout';
 

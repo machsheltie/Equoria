@@ -139,11 +139,11 @@ const getPlacementBadgeClasses = (rank: number): string => {
     case 1:
       return 'bg-yellow-400 text-yellow-900'; // Gold
     case 2:
-      return 'bg-gray-300 text-gray-900'; // Silver
+      return 'bg-[rgba(148,163,184,0.3)] text-[rgb(220,235,255)]'; // Silver
     case 3:
       return 'bg-orange-400 text-orange-900'; // Bronze
     default:
-      return 'bg-gray-200 text-gray-700'; // Other
+      return 'bg-[rgba(15,35,70,0.5)] text-[rgb(148,163,184)]'; // Other
   }
 };
 
@@ -180,60 +180,56 @@ PlacementBadge.displayName = 'PlacementBadge';
 /**
  * Value display component with color coding
  */
-const ValueDisplay = memo(({
-  value,
-  testId,
-  showSign = true,
-  decimals = 0,
-}: {
-  value: number;
-  testId?: string;
-  showSign?: boolean;
-  decimals?: number;
-}) => {
-  const isPositive = value > 0;
-  const isNegative = value < 0;
-  const colorClass = isPositive ? 'text-green-600' : isNegative ? 'text-red-600' : 'text-slate-600';
+const ValueDisplay = memo(
+  ({
+    value,
+    testId,
+    showSign = true,
+    decimals = 0,
+  }: {
+    value: number;
+    testId?: string;
+    showSign?: boolean;
+    decimals?: number;
+  }) => {
+    const isPositive = value > 0;
+    const isNegative = value < 0;
+    const colorClass = isPositive
+      ? 'text-emerald-400'
+      : isNegative
+        ? 'text-red-400'
+        : 'text-[rgb(148,163,184)]';
 
-  const displayValue = showSign
-    ? formatWithSign(value, decimals)
-    : value.toFixed(decimals);
+    const displayValue = showSign ? formatWithSign(value, decimals) : value.toFixed(decimals);
 
-  return (
-    <span className={`font-semibold ${colorClass}`} data-testid={testId}>
-      {displayValue}
-    </span>
-  );
-});
+    return (
+      <span className={`font-semibold ${colorClass}`} data-testid={testId}>
+        {displayValue}
+      </span>
+    );
+  }
+);
 
 ValueDisplay.displayName = 'ValueDisplay';
 
 /**
  * Difference indicator with arrow
  */
-const DiffIndicator = memo(({
-  diff,
-  testId,
-}: {
-  diff: number;
-  testId: string;
-}) => {
+const DiffIndicator = memo(({ diff, testId }: { diff: number; testId: string }) => {
   const isPositive = diff > 0;
   const isNegative = diff < 0;
 
   return (
     <span
       className={`inline-flex items-center gap-1 ${
-        isPositive ? 'text-green-600' : isNegative ? 'text-red-600' : 'text-slate-500'
+        isPositive ? 'text-emerald-400' : isNegative ? 'text-red-400' : 'text-[rgb(148,163,184)]'
       }`}
       data-testid={testId}
     >
       {isPositive && <TrendingUp className="h-4 w-4" aria-hidden="true" />}
       {isNegative && <TrendingDown className="h-4 w-4" aria-hidden="true" />}
       {diff === 0 && <Minus className="h-4 w-4" aria-hidden="true" />}
-      <span className="font-medium">
-        {formatWithSign(diff, 1)}
-      </span>
+      <span className="font-medium">{formatWithSign(diff, 1)}</span>
     </span>
   );
 });
@@ -243,35 +239,39 @@ DiffIndicator.displayName = 'DiffIndicator';
 /**
  * Breakdown row component
  */
-const BreakdownRow = memo(({
-  icon: Icon,
-  label,
-  value,
-  sublabel,
-  testId,
-  children,
-}: {
-  icon: React.ComponentType<{ className?: string }>;
-  label: string;
-  value?: number;
-  sublabel?: string;
-  testId?: string;
-  children?: React.ReactNode;
-}) => (
-  <div className="flex items-start justify-between py-2 border-b border-slate-100 last:border-0">
-    <div className="flex items-start gap-2">
-      <Icon className="h-4 w-4 text-slate-400 mt-0.5" aria-hidden="true" />
-      <div>
-        <p className="text-sm font-medium text-slate-700">{label}</p>
-        {sublabel && <p className="text-xs text-slate-500">{sublabel}</p>}
+const BreakdownRow = memo(
+  ({
+    icon: Icon,
+    label,
+    value,
+    sublabel,
+    testId,
+    children,
+  }: {
+    icon: React.ComponentType<{ className?: string }>;
+    label: string;
+    value?: number;
+    sublabel?: string;
+    testId?: string;
+    children?: React.ReactNode;
+  }) => (
+    <div className="flex items-start justify-between py-2 border-b border-[rgba(37,99,235,0.2)] last:border-0">
+      <div className="flex items-start gap-2">
+        <Icon className="h-4 w-4 text-[rgb(148,163,184)] mt-0.5" aria-hidden="true" />
+        <div>
+          <p className="text-sm font-medium text-[rgb(220,235,255)]">{label}</p>
+          {sublabel && <p className="text-xs text-[rgb(148,163,184)]">{sublabel}</p>}
+        </div>
+      </div>
+      <div className="text-right">
+        {value !== undefined && (
+          <ValueDisplay value={value} testId={testId} showSign decimals={1} />
+        )}
+        {children}
       </div>
     </div>
-    <div className="text-right">
-      {value !== undefined && <ValueDisplay value={value} testId={testId} showSign decimals={1} />}
-      {children}
-    </div>
-  </div>
-));
+  )
+);
 
 BreakdownRow.displayName = 'BreakdownRow';
 
@@ -282,11 +282,11 @@ BreakdownRow.displayName = 'BreakdownRow';
  * with visual chart, detailed components, comparisons, and insights.
  */
 const PerformanceBreakdown: React.FC<PerformanceBreakdownProps> = ({
-  horseId,
+  horseId: _horseId,
   horseName,
-  competitionId,
+  competitionId: _competitionId,
   competitionName,
-  discipline,
+  discipline: _discipline,
   rank,
   totalParticipants,
   finalScore,
@@ -315,7 +315,8 @@ const PerformanceBreakdown: React.FC<PerformanceBreakdownProps> = ({
   // Generate insights based on performance
   const insights = useMemo(() => {
     const suggestions: string[] = [];
-    const { baseScore, trainingBonus, equipmentBonuses, riderEffect, healthModifier } = scoreBreakdown;
+    const { baseScore, trainingBonus, equipmentBonuses, riderEffect, healthModifier } =
+      scoreBreakdown;
 
     // Check for low base stats
     const lowestStat = [
@@ -325,7 +326,9 @@ const PerformanceBreakdown: React.FC<PerformanceBreakdownProps> = ({
     ].sort((a, b) => a.value - b.value)[0];
 
     if (lowestStat.value < 60) {
-      suggestions.push(`Focus training on ${lowestStat.name} (currently ${lowestStat.value}) to improve base stats.`);
+      suggestions.push(
+        `Focus training on ${lowestStat.name} (currently ${lowestStat.value}) to improve base stats.`
+      );
     }
 
     // Check for low training bonus
@@ -335,7 +338,9 @@ const PerformanceBreakdown: React.FC<PerformanceBreakdownProps> = ({
 
     // Check for missing equipment
     if (equipmentBonuses.total === 0) {
-      suggestions.push('Consider upgrading equipment - saddle and bridle can provide significant bonuses.');
+      suggestions.push(
+        'Consider upgrading equipment - saddle and bridle can provide significant bonuses.'
+      );
     } else if (equipmentBonuses.saddle === 0 || equipmentBonuses.bridle === 0) {
       suggestions.push('Upgrade missing equipment to maximize your equipment bonuses.');
     }
@@ -347,7 +352,9 @@ const PerformanceBreakdown: React.FC<PerformanceBreakdownProps> = ({
 
     // Check health
     if (healthModifier < -5) {
-      suggestions.push('Improve horse health before the next competition to avoid performance penalties.');
+      suggestions.push(
+        'Improve horse health before the next competition to avoid performance penalties.'
+      );
     }
 
     return suggestions;
@@ -360,28 +367,25 @@ const PerformanceBreakdown: React.FC<PerformanceBreakdownProps> = ({
 
   return (
     <div
-      className={`bg-white rounded-lg shadow-lg ${className}`}
+      className={`glass-panel rounded-lg shadow-lg ${className}`}
       data-testid="performance-breakdown"
       role="region"
       aria-label="Performance breakdown"
     >
       {/* Header Section */}
-      <div
-        className="border-b border-slate-200 p-6"
-        data-testid="header-section"
-      >
+      <div className="border-b border-[rgba(37,99,235,0.2)] p-6" data-testid="header-section">
         <div className="flex flex-col md:flex-row md:items-center md:justify-between gap-4">
           {/* Horse and Competition Info */}
           <div>
-            <h2 className="text-2xl font-bold text-slate-900">{horseName}</h2>
-            <p className="text-sm text-slate-600">{competitionName}</p>
+            <h2 className="text-2xl font-bold text-[rgb(220,235,255)]">{horseName}</h2>
+            <p className="text-sm text-[rgb(148,163,184)]">{competitionName}</p>
           </div>
 
           {/* Score and Placement */}
           <div className="flex items-center gap-6">
             <div className="text-right">
-              <p className="text-xs text-slate-500 uppercase tracking-wide">Final Score</p>
-              <p className="text-3xl font-bold text-slate-900">{finalScore.toFixed(1)}</p>
+              <p className="text-xs text-[rgb(148,163,184)] uppercase tracking-wide">Final Score</p>
+              <p className="text-3xl font-bold text-[rgb(220,235,255)]">{finalScore.toFixed(1)}</p>
             </div>
             <PlacementBadge rank={rank} />
           </div>
@@ -390,12 +394,14 @@ const PerformanceBreakdown: React.FC<PerformanceBreakdownProps> = ({
         {/* Prize and XP Row */}
         <div className="flex items-center gap-6 mt-4">
           <div className="flex items-center gap-2">
-            <DollarSign className="h-5 w-5 text-green-500" aria-hidden="true" />
-            <span className="text-lg font-semibold text-slate-800">{formatCurrency(prizeWon)}</span>
+            <DollarSign className="h-5 w-5 text-emerald-400" aria-hidden="true" />
+            <span className="text-lg font-semibold text-[rgb(220,235,255)]">
+              {formatCurrency(prizeWon)}
+            </span>
           </div>
           <div className="flex items-center gap-2">
-            <Zap className="h-5 w-5 text-purple-500" aria-hidden="true" />
-            <span className="text-lg font-semibold text-slate-800">{xpGained} XP</span>
+            <Zap className="h-5 w-5 text-purple-400" aria-hidden="true" />
+            <span className="text-lg font-semibold text-[rgb(220,235,255)]">{xpGained} XP</span>
           </div>
         </div>
       </div>
@@ -404,8 +410,8 @@ const PerformanceBreakdown: React.FC<PerformanceBreakdownProps> = ({
       <div className="p-6 grid grid-cols-1 lg:grid-cols-2 gap-6">
         {/* Left Column: Chart */}
         <div data-testid="breakdown-section">
-          <h3 className="text-lg font-semibold text-slate-900 mb-4 flex items-center gap-2">
-            <Award className="h-5 w-5 text-blue-500" aria-hidden="true" />
+          <h3 className="text-lg font-semibold text-[rgb(220,235,255)] mb-4 flex items-center gap-2">
+            <Award className="h-5 w-5 text-blue-400" aria-hidden="true" />
             Score Breakdown Chart
           </h3>
           <ScoreBreakdownChart
@@ -418,33 +424,47 @@ const PerformanceBreakdown: React.FC<PerformanceBreakdownProps> = ({
 
         {/* Right Column: Detailed List */}
         <div>
-          <h3 className="text-lg font-semibold text-slate-900 mb-4 flex items-center gap-2">
-            <Info className="h-5 w-5 text-blue-500" aria-hidden="true" />
+          <h3 className="text-lg font-semibold text-[rgb(220,235,255)] mb-4 flex items-center gap-2">
+            <Info className="h-5 w-5 text-blue-400" aria-hidden="true" />
             Detailed Breakdown
           </h3>
 
           {/* Base Stats */}
-          <div className="bg-slate-50 rounded-lg p-4 mb-4">
-            <h4 className="text-sm font-semibold text-slate-700 mb-3 flex items-center gap-2">
+          <div className="bg-[rgba(15,35,70,0.5)] rounded-lg p-4 mb-4">
+            <h4 className="text-sm font-semibold text-[rgb(220,235,255)] mb-3 flex items-center gap-2">
               <Target className="h-4 w-4" aria-hidden="true" />
               Base Stats
             </h4>
             <div className="space-y-2 text-sm">
               <div className="flex justify-between">
-                <span className="text-slate-600">Speed <span className="text-xs text-slate-400">(50%)</span></span>
-                <span className="font-medium text-slate-800">{scoreBreakdown.baseScore.speed}</span>
+                <span className="text-[rgb(148,163,184)]">
+                  Speed <span className="text-xs text-[rgb(148,163,184)]/60">(50%)</span>
+                </span>
+                <span className="font-medium text-[rgb(220,235,255)]">
+                  {scoreBreakdown.baseScore.speed}
+                </span>
               </div>
               <div className="flex justify-between">
-                <span className="text-slate-600">Stamina <span className="text-xs text-slate-400">(30%)</span></span>
-                <span className="font-medium text-slate-800">{scoreBreakdown.baseScore.stamina}</span>
+                <span className="text-[rgb(148,163,184)]">
+                  Stamina <span className="text-xs text-[rgb(148,163,184)]/60">(30%)</span>
+                </span>
+                <span className="font-medium text-[rgb(220,235,255)]">
+                  {scoreBreakdown.baseScore.stamina}
+                </span>
               </div>
               <div className="flex justify-between">
-                <span className="text-slate-600">Agility <span className="text-xs text-slate-400">(20%)</span></span>
-                <span className="font-medium text-slate-800">{scoreBreakdown.baseScore.agility}</span>
+                <span className="text-[rgb(148,163,184)]">
+                  Agility <span className="text-xs text-[rgb(148,163,184)]/60">(20%)</span>
+                </span>
+                <span className="font-medium text-[rgb(220,235,255)]">
+                  {scoreBreakdown.baseScore.agility}
+                </span>
               </div>
-              <div className="flex justify-between pt-2 border-t border-slate-200">
-                <span className="font-medium text-slate-700">Weighted Total</span>
-                <span className="font-bold text-blue-600">{scoreBreakdown.baseScore.total.toFixed(1)}</span>
+              <div className="flex justify-between pt-2 border-t border-[rgba(37,99,235,0.2)]">
+                <span className="font-medium text-[rgb(220,235,255)]">Weighted Total</span>
+                <span className="font-bold text-blue-400">
+                  {scoreBreakdown.baseScore.total.toFixed(1)}
+                </span>
               </div>
             </div>
           </div>
@@ -459,18 +479,21 @@ const PerformanceBreakdown: React.FC<PerformanceBreakdownProps> = ({
             />
 
             {/* Trait Bonuses */}
-            <div className="py-2 border-b border-slate-100">
+            <div className="py-2 border-b border-[rgba(37,99,235,0.2)]">
               <div className="flex items-start gap-2 mb-2">
-                <Sparkles className="h-4 w-4 text-slate-400 mt-0.5" aria-hidden="true" />
+                <Sparkles className="h-4 w-4 text-[rgb(148,163,184)] mt-0.5" aria-hidden="true" />
                 <div className="flex-1">
                   <div className="flex justify-between">
-                    <p className="text-sm font-medium text-slate-700">Trait Bonuses</p>
+                    <p className="text-sm font-medium text-[rgb(220,235,255)]">Trait Bonuses</p>
                     <ValueDisplay value={totalTraitBonus} showSign decimals={0} />
                   </div>
                   {scoreBreakdown.traitBonuses.length > 0 && (
                     <div className="mt-1 space-y-1">
                       {scoreBreakdown.traitBonuses.map((tb, i) => (
-                        <div key={i} className="flex justify-between text-xs text-slate-500">
+                        <div
+                          key={i}
+                          className="flex justify-between text-xs text-[rgb(148,163,184)]"
+                        >
                           <span>{tb.trait}</span>
                           <ValueDisplay value={tb.bonus} showSign decimals={0} />
                         </div>
@@ -482,22 +505,34 @@ const PerformanceBreakdown: React.FC<PerformanceBreakdownProps> = ({
             </div>
 
             {/* Equipment */}
-            <div className="py-2 border-b border-slate-100">
+            <div className="py-2 border-b border-[rgba(37,99,235,0.2)]">
               <div className="flex items-start gap-2">
-                <Briefcase className="h-4 w-4 text-slate-400 mt-0.5" aria-hidden="true" />
+                <Briefcase className="h-4 w-4 text-[rgb(148,163,184)] mt-0.5" aria-hidden="true" />
                 <div className="flex-1">
                   <div className="flex justify-between">
-                    <p className="text-sm font-medium text-slate-700">Equipment</p>
-                    <ValueDisplay value={scoreBreakdown.equipmentBonuses.total} showSign decimals={0} />
+                    <p className="text-sm font-medium text-[rgb(220,235,255)]">Equipment</p>
+                    <ValueDisplay
+                      value={scoreBreakdown.equipmentBonuses.total}
+                      showSign
+                      decimals={0}
+                    />
                   </div>
                   <div className="mt-1 space-y-1">
-                    <div className="flex justify-between text-xs text-slate-500">
+                    <div className="flex justify-between text-xs text-[rgb(148,163,184)]">
                       <span>Saddle</span>
-                      <ValueDisplay value={scoreBreakdown.equipmentBonuses.saddle} showSign decimals={0} />
+                      <ValueDisplay
+                        value={scoreBreakdown.equipmentBonuses.saddle}
+                        showSign
+                        decimals={0}
+                      />
                     </div>
-                    <div className="flex justify-between text-xs text-slate-500">
+                    <div className="flex justify-between text-xs text-[rgb(148,163,184)]">
                       <span>Bridle</span>
-                      <ValueDisplay value={scoreBreakdown.equipmentBonuses.bridle} showSign decimals={0} />
+                      <ValueDisplay
+                        value={scoreBreakdown.equipmentBonuses.bridle}
+                        showSign
+                        decimals={0}
+                      />
                     </div>
                   </div>
                 </div>
@@ -529,46 +564,54 @@ const PerformanceBreakdown: React.FC<PerformanceBreakdownProps> = ({
           </div>
 
           {/* Total */}
-          <div className="flex justify-between items-center pt-4 mt-4 border-t-2 border-slate-200">
-            <span className="text-lg font-bold text-slate-900">Total Score</span>
-            <span className="text-2xl font-bold text-blue-600">{scoreBreakdown.total.toFixed(1)}</span>
+          <div className="flex justify-between items-center pt-4 mt-4 border-t-2 border-[rgba(37,99,235,0.3)]">
+            <span className="text-lg font-bold text-[rgb(220,235,255)]">Total Score</span>
+            <span className="text-2xl font-bold text-blue-400">
+              {scoreBreakdown.total.toFixed(1)}
+            </span>
           </div>
         </div>
       </div>
 
       {/* Comparison Section */}
       {comparisonData && (
-        <div
-          className="border-t border-slate-200 p-6"
-          data-testid="comparison-section"
-        >
-          <h3 className="text-lg font-semibold text-slate-900 mb-4 flex items-center gap-2">
-            <TrendingUp className="h-5 w-5 text-blue-500" aria-hidden="true" />
+        <div className="border-t border-[rgba(37,99,235,0.2)] p-6" data-testid="comparison-section">
+          <h3 className="text-lg font-semibold text-[rgb(220,235,255)] mb-4 flex items-center gap-2">
+            <TrendingUp className="h-5 w-5 text-blue-400" aria-hidden="true" />
             Performance Comparison
           </h3>
 
           <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
             {/* vs Average */}
-            <div className="bg-slate-50 rounded-lg p-4">
-              <p className="text-sm text-slate-500 mb-1">vs Competition Average</p>
-              <p className="text-lg font-medium text-slate-700">{comparisonData.averageScore.toFixed(1)}</p>
+            <div className="bg-[rgba(15,35,70,0.5)] rounded-lg p-4">
+              <p className="text-sm text-[rgb(148,163,184)] mb-1">vs Competition Average</p>
+              <p className="text-lg font-medium text-[rgb(220,235,255)]">
+                {comparisonData.averageScore.toFixed(1)}
+              </p>
               <DiffIndicator diff={avgDiff} testId="average-diff" />
             </div>
 
             {/* vs Winner */}
-            <div className="bg-slate-50 rounded-lg p-4">
-              <p className="text-sm text-slate-500 mb-1">vs Winner ({comparisonData.winnerName})</p>
-              <p className="text-lg font-medium text-slate-700">{comparisonData.winnerScore.toFixed(1)}</p>
+            <div className="bg-[rgba(15,35,70,0.5)] rounded-lg p-4">
+              <p className="text-sm text-[rgb(148,163,184)] mb-1">
+                vs Winner ({comparisonData.winnerName})
+              </p>
+              <p className="text-lg font-medium text-[rgb(220,235,255)]">
+                {comparisonData.winnerScore.toFixed(1)}
+              </p>
               <DiffIndicator diff={winnerDiff} testId="winner-diff" />
             </div>
 
             {/* Percentile */}
-            <div className="bg-slate-50 rounded-lg p-4" data-testid="percentile-ranking">
-              <p className="text-sm text-slate-500 mb-1">Ranking</p>
-              <p className="text-lg font-bold text-blue-600">
+            <div
+              className="bg-[rgba(15,35,70,0.5)] rounded-lg p-4"
+              data-testid="percentile-ranking"
+            >
+              <p className="text-sm text-[rgb(148,163,184)] mb-1">Ranking</p>
+              <p className="text-lg font-bold text-blue-400">
                 Top {Math.ceil(100 - percentile + 1)}%
               </p>
-              <p className="text-xs text-slate-500">of {totalParticipants} participants</p>
+              <p className="text-xs text-[rgb(148,163,184)]">of {totalParticipants} participants</p>
             </div>
           </div>
         </div>
@@ -577,17 +620,17 @@ const PerformanceBreakdown: React.FC<PerformanceBreakdownProps> = ({
       {/* Insights Section */}
       {insights.length > 0 && (
         <div
-          className="border-t border-slate-200 p-6 bg-amber-50"
+          className="border-t border-[rgba(37,99,235,0.2)] p-6 bg-[rgba(245,158,11,0.05)]"
           data-testid="insights-section"
         >
-          <h3 className="text-lg font-semibold text-slate-900 mb-4 flex items-center gap-2">
-            <Lightbulb className="h-5 w-5 text-amber-500" aria-hidden="true" />
+          <h3 className="text-lg font-semibold text-[rgb(220,235,255)] mb-4 flex items-center gap-2">
+            <Lightbulb className="h-5 w-5 text-amber-400" aria-hidden="true" />
             Improvement Suggestions
           </h3>
 
           <ul className="space-y-2">
             {insights.map((insight, index) => (
-              <li key={index} className="flex items-start gap-2 text-sm text-slate-700">
+              <li key={index} className="flex items-start gap-2 text-sm text-[rgb(148,163,184)]">
                 <span className="text-amber-500 mt-0.5">&#8226;</span>
                 {insight}
               </li>

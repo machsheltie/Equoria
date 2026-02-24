@@ -127,19 +127,30 @@ const getBarColor = (value: number, isBase: boolean = false): string => {
  * Custom tooltip component for the bar chart
  * Displays detailed information about each score component
  */
-const CustomTooltip = ({ active, payload }: any) => {
+interface TooltipProps {
+  active?: boolean;
+  payload?: Array<{ payload: ChartDataPoint }>;
+}
+
+const CustomTooltip = ({ active, payload }: TooltipProps) => {
   if (active && payload && payload.length > 0) {
     const data = payload[0].payload as ChartDataPoint;
     const isPositive = data.value > 0;
-    const valueColor = data.value === 0 ? 'text-slate-600' : isPositive ? 'text-green-600' : 'text-red-600';
+    const valueColor =
+      data.value === 0
+        ? 'text-[rgb(148,163,184)]'
+        : isPositive
+          ? 'text-emerald-400'
+          : 'text-red-400';
 
     return (
-      <div className="bg-white border border-slate-200 rounded-lg p-3 shadow-lg max-w-xs">
-        <p className="font-semibold text-slate-900 mb-1">{data.name}</p>
+      <div className="glass-panel border border-[rgba(37,99,235,0.3)] rounded-lg p-3 shadow-lg max-w-xs">
+        <p className="font-semibold text-[rgb(220,235,255)] mb-1">{data.name}</p>
         <p className={`font-medium ${valueColor}`}>
-          {isPositive ? '+' : ''}{data.value.toFixed(1)} points
+          {isPositive ? '+' : ''}
+          {data.value.toFixed(1)} points
         </p>
-        <p className="text-sm text-slate-600 mt-1">{data.description}</p>
+        <p className="text-sm text-[rgb(148,163,184)] mt-1">{data.description}</p>
       </div>
     );
   }
@@ -149,10 +160,18 @@ const CustomTooltip = ({ active, payload }: any) => {
 /**
  * Custom label component for bar values
  */
-const CustomLabel = (props: any) => {
-  const { x, y, width, height, value } = props;
+interface LabelProps {
+  x?: number;
+  y?: number;
+  width?: number;
+  height?: number;
+  value?: number;
+}
+
+const CustomLabel = (props: LabelProps) => {
+  const { x = 0, y = 0, width = 0, height = 0, value = 0 } = props;
   const isPositive = value > 0;
-  const displayValue = value === 0 ? '0' : (isPositive ? `+${value.toFixed(1)}` : value.toFixed(1));
+  const displayValue = value === 0 ? '0' : isPositive ? `+${value.toFixed(1)}` : value.toFixed(1);
 
   // Position label at the end of the bar
   const labelX = width > 0 ? x + width + 5 : x - 5;
@@ -239,7 +258,8 @@ const ScoreBreakdownChart: React.FC<ScoreBreakdownChartProps> = ({
       name: 'Rider',
       value: breakdown.riderEffect,
       color: getBarColor(breakdown.riderEffect),
-      description: breakdown.riderEffect >= 0 ? 'Rider bonus percentage' : 'Rider penalty percentage',
+      description:
+        breakdown.riderEffect >= 0 ? 'Rider bonus percentage' : 'Rider penalty percentage',
     });
 
     // Health Modifier
@@ -293,35 +313,26 @@ const ScoreBreakdownChart: React.FC<ScoreBreakdownChartProps> = ({
           <XAxis
             type="number"
             domain={domain}
-            tick={{ fontSize: 11 }}
-            axisLine={{ stroke: '#e2e8f0' }}
+            tick={{ fontSize: 11, fill: 'rgb(148,163,184)' }}
+            axisLine={{ stroke: 'rgba(37,99,235,0.3)' }}
           />
           <YAxis
             type="category"
             dataKey="name"
             width={70}
-            tick={{ fontSize: 12 }}
-            axisLine={{ stroke: '#e2e8f0' }}
+            tick={{ fontSize: 12, fill: 'rgb(148,163,184)' }}
+            axisLine={{ stroke: 'rgba(37,99,235,0.3)' }}
           />
           <ReferenceLine x={0} stroke="#94a3b8" strokeDasharray="3 3" />
-          {interactive && <Tooltip content={<CustomTooltip />} cursor={{ fill: 'rgba(148, 163, 184, 0.1)' }} />}
-          {showLegend && (
-            <Legend
-              wrapperStyle={{ paddingTop: '10px' }}
-              iconType="square"
-            />
+          {interactive && (
+            <Tooltip content={<CustomTooltip />} cursor={{ fill: 'rgba(148, 163, 184, 0.1)' }} />
           )}
+          {showLegend && <Legend wrapperStyle={{ paddingTop: '10px' }} iconType="square" />}
           <Bar dataKey="value" radius={[0, 4, 4, 0]}>
             {chartData.map((entry, index) => (
-              <Cell
-                key={`cell-${index}`}
-                fill={entry.color}
-              />
+              <Cell key={`cell-${index}`} fill={entry.color} />
             ))}
-            <LabelList
-              dataKey="value"
-              content={<CustomLabel />}
-            />
+            <LabelList dataKey="value" content={<CustomLabel />} />
           </Bar>
         </BarChart>
       </ResponsiveContainer>

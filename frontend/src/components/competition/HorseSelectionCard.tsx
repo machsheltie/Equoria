@@ -56,7 +56,7 @@ export interface RelevantStat {
 export interface HorseSelectionCardProps {
   horse: Horse;
   isSelected: boolean;
-  onToggle: (horseId: number) => void;
+  onToggle: (_horseId: number) => void;
   eligibilityStatus: EligibilityStatus;
   ineligibilityReason?: string;
   relevantStats: RelevantStat[];
@@ -83,43 +83,43 @@ const statusConfigs: Record<EligibilityStatus, StatusConfig> = {
   eligible: {
     label: 'Eligible',
     icon: <CheckCircle className="h-3 w-3" aria-hidden="true" />,
-    bgColor: 'bg-green-100',
-    textColor: 'text-green-800',
+    bgColor: 'bg-[rgba(16,185,129,0.15)]',
+    textColor: 'text-emerald-400',
     showTooltip: false,
   },
   'too-young': {
     label: 'Too Young',
     icon: <Clock className="h-3 w-3" aria-hidden="true" />,
-    bgColor: 'bg-yellow-100',
-    textColor: 'text-yellow-800',
+    bgColor: 'bg-[rgba(245,158,11,0.15)]',
+    textColor: 'text-amber-400',
     showTooltip: true,
   },
   'too-old': {
     label: 'Too Old',
     icon: <AlertTriangle className="h-3 w-3" aria-hidden="true" />,
-    bgColor: 'bg-gray-100',
-    textColor: 'text-gray-800',
+    bgColor: 'bg-[rgba(15,35,70,0.5)]',
+    textColor: 'text-[rgb(148,163,184)]',
     showTooltip: true,
   },
   'wrong-level': {
     label: 'Wrong Level',
     icon: <AlertOctagon className="h-3 w-3" aria-hidden="true" />,
-    bgColor: 'bg-orange-100',
-    textColor: 'text-orange-800',
+    bgColor: 'bg-[rgba(249,115,22,0.15)]',
+    textColor: 'text-orange-400',
     showTooltip: true,
   },
   'already-entered': {
     label: 'Already Entered',
     icon: <XCircle className="h-3 w-3" aria-hidden="true" />,
-    bgColor: 'bg-red-100',
-    textColor: 'text-red-800',
+    bgColor: 'bg-[rgba(239,68,68,0.15)]',
+    textColor: 'text-red-400',
     showTooltip: false,
   },
   injured: {
     label: 'Injured',
     icon: <Bandage className="h-3 w-3" aria-hidden="true" />,
-    bgColor: 'bg-red-100',
-    textColor: 'text-red-800',
+    bgColor: 'bg-[rgba(239,68,68,0.15)]',
+    textColor: 'text-red-400',
     showTooltip: true,
   },
 };
@@ -178,7 +178,7 @@ const StatItem = memo(({ name, value }: { name: string; value: number }) => {
       data-testid="stat-item"
       className={cn(
         'flex justify-between items-center text-sm',
-        isHighStat ? 'text-green-600 font-medium' : 'text-slate-600'
+        isHighStat ? 'text-emerald-400 font-medium' : 'text-[rgb(148,163,184)]'
       )}
     >
       <span>{name}</span>
@@ -234,11 +234,11 @@ const HorseSelectionCard = memo(
         aria-label={`Horse selection card for ${horse.name}`}
         onKeyDown={handleKeyDown}
         className={cn(
-          'relative bg-white rounded-lg shadow p-4 transition-all duration-200',
+          'relative glass-panel rounded-lg p-4 transition-all duration-200',
           'focus:outline-none focus:ring-2 focus:ring-blue-400',
-          isSelected && 'ring-2 ring-blue-500 bg-blue-50',
+          isSelected && 'ring-2 ring-blue-500 bg-[rgba(37,99,235,0.1)]',
           disabled && 'opacity-60 cursor-not-allowed',
-          !disabled && 'cursor-pointer hover:shadow-md',
+          !disabled && 'cursor-pointer hover:shadow-lg',
           className
         )}
       >
@@ -256,12 +256,14 @@ const HorseSelectionCard = memo(
           {/* Horse Name and Badge */}
           <div className="flex-1 min-w-0">
             <div className="flex items-center justify-between gap-2 mb-1">
-              <h3 className="text-base font-semibold text-slate-900 truncate">{horse.name}</h3>
+              <h3 className="text-base font-semibold text-[rgb(220,235,255)] truncate">
+                {horse.name}
+              </h3>
               <EligibilityBadge status={eligibilityStatus} reason={ineligibilityReason} />
             </div>
 
             {/* Horse Details: Age, Sex, Level */}
-            <div className="flex items-center gap-3 text-xs text-slate-500">
+            <div className="flex items-center gap-3 text-xs text-[rgb(148,163,184)]">
               <span data-testid="horse-age">
                 <span className="font-medium">{horse.age}</span> yrs
               </span>
@@ -280,23 +282,23 @@ const HorseSelectionCard = memo(
               .slice(0, 3)
               .map((stat) => <StatItem key={stat.name} name={stat.name} value={stat.value} />)
           ) : (
-            <p className="text-sm text-slate-400 italic">No stats available</p>
+            <p className="text-sm text-[rgb(148,163,184)] italic">No stats available</p>
           )}
         </div>
 
         {/* Expected Performance */}
-        <div className="pt-2 border-t border-slate-100">
+        <div className="pt-2 border-t border-[rgba(37,99,235,0.2)]">
           <div className="flex items-center justify-between">
-            <span className="text-xs text-slate-500">Expected Performance</span>
+            <span className="text-xs text-[rgb(148,163,184)]">Expected Performance</span>
             <span
               data-testid="expected-performance"
               className={cn(
                 'text-sm font-semibold',
                 expectedPerformance !== undefined && expectedPerformance >= 80
-                  ? 'text-green-600'
+                  ? 'text-emerald-400'
                   : expectedPerformance !== undefined && expectedPerformance >= 60
-                    ? 'text-amber-600'
-                    : 'text-slate-600'
+                    ? 'text-amber-400'
+                    : 'text-[rgb(148,163,184)]'
               )}
             >
               {expectedPerformance !== undefined ? `${expectedPerformance}%` : 'N/A'}
@@ -305,15 +307,15 @@ const HorseSelectionCard = memo(
 
           {/* Performance bar indicator */}
           {expectedPerformance !== undefined && (
-            <div className="mt-1 h-1.5 bg-slate-100 rounded-full overflow-hidden">
+            <div className="mt-1 h-1.5 bg-[rgba(15,35,70,0.5)] rounded-full overflow-hidden">
               <div
                 className={cn(
                   'h-full rounded-full transition-all duration-300',
                   expectedPerformance >= 80
-                    ? 'bg-green-500'
+                    ? 'bg-emerald-400'
                     : expectedPerformance >= 60
-                      ? 'bg-amber-500'
-                      : 'bg-slate-400'
+                      ? 'bg-amber-400'
+                      : 'bg-[rgb(148,163,184)]'
                 )}
                 style={{ width: `${Math.min(100, expectedPerformance)}%` }}
               />
@@ -324,7 +326,7 @@ const HorseSelectionCard = memo(
         {/* Ineligible overlay indicator */}
         {!isEligible && (
           <div
-            className="absolute inset-0 bg-slate-50/30 rounded-lg pointer-events-none"
+            className="absolute inset-0 bg-[rgba(15,35,70,0.2)] rounded-lg pointer-events-none"
             aria-hidden="true"
           />
         )}

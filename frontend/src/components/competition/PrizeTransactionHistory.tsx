@@ -24,8 +24,6 @@ import {
   ChevronRight,
   TrendingUp,
   TrendingDown,
-  DollarSign,
-  Zap,
   Trophy,
   Award,
 } from 'lucide-react';
@@ -72,11 +70,11 @@ export interface PrizeTransactionHistoryProps {
   sortConfig?: SortConfig;
   currentPage?: number;
   pageSize?: number;
-  onFilterChange?: (filters: TransactionFilters) => void;
-  onSortChange?: (sort: SortConfig) => void;
-  onPageChange?: (page: number) => void;
-  onViewCompetition?: (competitionId: number) => void;
-  onViewHorse?: (horseId: number) => void;
+  onFilterChange?: (_filters: TransactionFilters) => void;
+  onSortChange?: (_sort: SortConfig) => void;
+  onPageChange?: (_page: number) => void;
+  onViewCompetition?: (_competitionId: number) => void;
+  onViewHorse?: (_horseId: number) => void;
   isLoading?: boolean;
   className?: string;
 }
@@ -125,14 +123,28 @@ const getDateThreshold = (dateRange: string): Date | null => {
  * Loading skeleton row component
  */
 const SkeletonRow = memo(() => (
-  <tr className="border-b border-slate-100" data-testid="transaction-skeleton">
-    <td className="px-4 py-3"><div className="h-4 bg-slate-200 rounded w-24 animate-pulse" /></td>
-    <td className="px-4 py-3"><div className="h-4 bg-slate-200 rounded w-40 animate-pulse" /></td>
-    <td className="px-4 py-3"><div className="h-4 bg-slate-200 rounded w-28 animate-pulse" /></td>
-    <td className="px-4 py-3"><div className="h-4 bg-slate-200 rounded w-20 animate-pulse" /></td>
-    <td className="px-4 py-3 text-center"><div className="h-6 bg-slate-200 rounded-full w-12 mx-auto animate-pulse" /></td>
-    <td className="px-4 py-3 text-right"><div className="h-4 bg-slate-200 rounded w-16 ml-auto animate-pulse" /></td>
-    <td className="px-4 py-3 text-right"><div className="h-4 bg-slate-200 rounded w-12 ml-auto animate-pulse" /></td>
+  <tr className="border-b border-[rgba(37,99,235,0.2)]" data-testid="transaction-skeleton">
+    <td className="px-4 py-3">
+      <div className="h-4 bg-[rgba(37,99,235,0.2)] rounded w-24 animate-pulse" />
+    </td>
+    <td className="px-4 py-3">
+      <div className="h-4 bg-[rgba(37,99,235,0.2)] rounded w-40 animate-pulse" />
+    </td>
+    <td className="px-4 py-3">
+      <div className="h-4 bg-[rgba(37,99,235,0.2)] rounded w-28 animate-pulse" />
+    </td>
+    <td className="px-4 py-3">
+      <div className="h-4 bg-[rgba(37,99,235,0.2)] rounded w-20 animate-pulse" />
+    </td>
+    <td className="px-4 py-3 text-center">
+      <div className="h-6 bg-[rgba(37,99,235,0.2)] rounded-full w-12 mx-auto animate-pulse" />
+    </td>
+    <td className="px-4 py-3 text-right">
+      <div className="h-4 bg-[rgba(37,99,235,0.2)] rounded w-16 ml-auto animate-pulse" />
+    </td>
+    <td className="px-4 py-3 text-right">
+      <div className="h-4 bg-[rgba(37,99,235,0.2)] rounded w-12 ml-auto animate-pulse" />
+    </td>
   </tr>
 ));
 
@@ -143,9 +155,9 @@ SkeletonRow.displayName = 'SkeletonRow';
  */
 const EmptyState = memo(() => (
   <div className="py-12 text-center" data-testid="empty-state">
-    <Trophy className="mx-auto h-16 w-16 text-slate-300 mb-4" aria-hidden="true" />
-    <h3 className="text-lg font-medium text-slate-900 mb-2">No transactions yet</h3>
-    <p className="text-sm text-slate-600 max-w-sm mx-auto">
+    <Trophy className="mx-auto h-16 w-16 text-[rgb(148,163,184)] mb-4" aria-hidden="true" />
+    <h3 className="text-lg font-medium text-[rgb(220,235,255)] mb-2">No transactions yet</h3>
+    <p className="text-sm text-[rgb(148,163,184)] max-w-sm mx-auto">
       Compete in events to start earning prizes. Your transaction history will appear here.
     </p>
   </div>
@@ -158,9 +170,11 @@ EmptyState.displayName = 'EmptyState';
  */
 const FilteredEmptyState = memo(() => (
   <div className="py-12 text-center" data-testid="filtered-empty-state">
-    <Filter className="mx-auto h-12 w-12 text-slate-300 mb-4" aria-hidden="true" />
-    <h3 className="text-lg font-medium text-slate-900 mb-2">No transactions match your filters</h3>
-    <p className="text-sm text-slate-600">
+    <Filter className="mx-auto h-12 w-12 text-[rgb(148,163,184)] mb-4" aria-hidden="true" />
+    <h3 className="text-lg font-medium text-[rgb(220,235,255)] mb-2">
+      No transactions match your filters
+    </h3>
+    <p className="text-sm text-[rgb(148,163,184)]">
       Try adjusting your filters to see more results.
     </p>
   </div>
@@ -171,255 +185,270 @@ FilteredEmptyState.displayName = 'FilteredEmptyState';
 /**
  * Sort button component for column headers
  */
-const SortButton = memo(({
-  field,
-  label,
-  currentSort,
-  onSort,
-  testId,
-}: {
-  field: SortConfig['field'];
-  label: string;
-  currentSort?: SortConfig;
-  onSort: (field: SortConfig['field']) => void;
-  testId: string;
-}) => {
-  const isActive = currentSort?.field === field;
-  const direction = isActive ? currentSort.direction : null;
+const SortButton = memo(
+  ({
+    field,
+    label,
+    currentSort,
+    onSort,
+    testId,
+  }: {
+    field: SortConfig['field'];
+    label: string;
+    currentSort?: SortConfig;
+    onSort: (_field: SortConfig['field']) => void;
+    testId: string;
+  }) => {
+    const isActive = currentSort?.field === field;
+    const direction = isActive ? currentSort.direction : null;
 
-  const handleClick = useCallback(() => {
-    onSort(field);
-  }, [field, onSort]);
+    const handleClick = useCallback(() => {
+      onSort(field);
+    }, [field, onSort]);
 
-  return (
-    <button
-      onClick={handleClick}
-      className={`flex items-center gap-1 text-xs font-semibold uppercase tracking-wide ${
-        isActive ? 'text-blue-600' : 'text-slate-500 hover:text-slate-700'
-      } focus:outline-none focus:ring-2 focus:ring-blue-500 rounded`}
-      data-testid={testId}
-      aria-label={`Sort by ${label} ${direction === 'asc' ? 'descending' : 'ascending'}`}
-    >
-      {label}
-      {isActive && direction === 'asc' && (
-        <TrendingUp className="h-3 w-3" aria-hidden="true" data-testid="sort-asc-indicator" />
-      )}
-      {isActive && direction === 'desc' && (
-        <TrendingDown className="h-3 w-3" aria-hidden="true" data-testid="sort-desc-indicator" />
-      )}
-    </button>
-  );
-});
+    return (
+      <button
+        onClick={handleClick}
+        className={`flex items-center gap-1 text-xs font-semibold uppercase tracking-wide ${
+          isActive ? 'text-blue-400' : 'text-[rgb(148,163,184)] hover:text-[rgb(220,235,255)]'
+        } focus:outline-none focus:ring-2 focus:ring-blue-500 rounded`}
+        data-testid={testId}
+        aria-label={`Sort by ${label} ${direction === 'asc' ? 'descending' : 'ascending'}`}
+      >
+        {label}
+        {isActive && direction === 'asc' && (
+          <TrendingUp className="h-3 w-3" aria-hidden="true" data-testid="sort-asc-indicator" />
+        )}
+        {isActive && direction === 'desc' && (
+          <TrendingDown className="h-3 w-3" aria-hidden="true" data-testid="sort-desc-indicator" />
+        )}
+      </button>
+    );
+  }
+);
 
 SortButton.displayName = 'SortButton';
 
 /**
  * Filter controls component
  */
-const FilterControls = memo(({
-  filters,
-  horses,
-  disciplines,
-  hasActiveFilters,
-  onFilterChange,
-  onClearFilters,
-}: {
-  filters: TransactionFilters;
-  horses?: HorseOption[];
-  disciplines?: string[];
-  hasActiveFilters: boolean;
-  onFilterChange: (key: keyof TransactionFilters, value: string | number) => void;
-  onClearFilters: () => void;
-}) => {
-  const handleDateRangeChange = useCallback((e: React.ChangeEvent<HTMLSelectElement>) => {
-    onFilterChange('dateRange', e.target.value);
-  }, [onFilterChange]);
+const FilterControls = memo(
+  ({
+    filters,
+    horses,
+    disciplines,
+    hasActiveFilters,
+    onFilterChange,
+    onClearFilters,
+  }: {
+    filters: TransactionFilters;
+    horses?: HorseOption[];
+    disciplines?: string[];
+    hasActiveFilters: boolean;
+    onFilterChange: (_key: keyof TransactionFilters, _value: string | number) => void;
+    onClearFilters: () => void;
+  }) => {
+    const handleDateRangeChange = useCallback(
+      (e: React.ChangeEvent<HTMLSelectElement>) => {
+        onFilterChange('dateRange', e.target.value);
+      },
+      [onFilterChange]
+    );
 
-  const handleHorseChange = useCallback((e: React.ChangeEvent<HTMLSelectElement>) => {
-    const value = e.target.value;
-    onFilterChange('horseId', value === 'all' ? 'all' : parseInt(value, 10));
-  }, [onFilterChange]);
+    const handleHorseChange = useCallback(
+      (e: React.ChangeEvent<HTMLSelectElement>) => {
+        const value = e.target.value;
+        onFilterChange('horseId', value === 'all' ? 'all' : parseInt(value, 10));
+      },
+      [onFilterChange]
+    );
 
-  const handleDisciplineChange = useCallback((e: React.ChangeEvent<HTMLSelectElement>) => {
-    onFilterChange('discipline', e.target.value);
-  }, [onFilterChange]);
+    const handleDisciplineChange = useCallback(
+      (e: React.ChangeEvent<HTMLSelectElement>) => {
+        onFilterChange('discipline', e.target.value);
+      },
+      [onFilterChange]
+    );
 
-  return (
-    <div className="bg-white rounded-lg shadow-sm border border-slate-200 p-4 mb-4">
-      <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
-        {/* Date Range Filter */}
-        <div>
-          <label
-            htmlFor="filter-date-range"
-            className="block text-sm font-medium text-slate-700 mb-1"
-          >
-            <Calendar className="inline h-4 w-4 mr-1" aria-hidden="true" />
-            Filter by Date
-          </label>
-          <select
-            id="filter-date-range"
-            value={filters.dateRange || 'all'}
-            onChange={handleDateRangeChange}
-            className="w-full px-3 py-2 border border-slate-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500 text-sm"
-            data-testid="filter-date-range"
-            aria-label="Filter by date range"
-          >
-            <option value="all">All Time</option>
-            <option value="7days">Last 7 Days</option>
-            <option value="30days">Last 30 Days</option>
-            <option value="90days">Last 90 Days</option>
-          </select>
-        </div>
+    return (
+      <div className="glass-panel rounded-lg p-4 mb-4">
+        <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
+          {/* Date Range Filter */}
+          <div>
+            <label
+              htmlFor="filter-date-range"
+              className="block text-sm font-medium text-[rgb(220,235,255)] mb-1"
+            >
+              <Calendar className="inline h-4 w-4 mr-1" aria-hidden="true" />
+              Filter by Date
+            </label>
+            <select
+              id="filter-date-range"
+              value={filters.dateRange || 'all'}
+              onChange={handleDateRangeChange}
+              className="celestial-input w-full"
+              data-testid="filter-date-range"
+              aria-label="Filter by date range"
+            >
+              <option value="all">All Time</option>
+              <option value="7days">Last 7 Days</option>
+              <option value="30days">Last 30 Days</option>
+              <option value="90days">Last 90 Days</option>
+            </select>
+          </div>
 
-        {/* Horse Filter */}
-        <div>
-          <label
-            htmlFor="filter-horse"
-            className="block text-sm font-medium text-slate-700 mb-1"
-          >
-            <Award className="inline h-4 w-4 mr-1" aria-hidden="true" />
-            Filter by Horse
-          </label>
-          <select
-            id="filter-horse"
-            value={filters.horseId === 'all' ? 'all' : String(filters.horseId || 'all')}
-            onChange={handleHorseChange}
-            className="w-full px-3 py-2 border border-slate-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500 text-sm"
-            data-testid="filter-horse"
-            aria-label="Filter by horse"
-          >
-            <option value="all">All Horses</option>
-            {horses?.map((horse) => (
-              <option key={horse.id} value={horse.id}>
-                {horse.name}
-              </option>
-            ))}
-          </select>
-        </div>
+          {/* Horse Filter */}
+          <div>
+            <label
+              htmlFor="filter-horse"
+              className="block text-sm font-medium text-[rgb(220,235,255)] mb-1"
+            >
+              <Award className="inline h-4 w-4 mr-1" aria-hidden="true" />
+              Filter by Horse
+            </label>
+            <select
+              id="filter-horse"
+              value={filters.horseId === 'all' ? 'all' : String(filters.horseId || 'all')}
+              onChange={handleHorseChange}
+              className="celestial-input w-full"
+              data-testid="filter-horse"
+              aria-label="Filter by horse"
+            >
+              <option value="all">All Horses</option>
+              {horses?.map((horse) => (
+                <option key={horse.id} value={horse.id}>
+                  {horse.name}
+                </option>
+              ))}
+            </select>
+          </div>
 
-        {/* Discipline Filter */}
-        <div>
-          <label
-            htmlFor="filter-discipline"
-            className="block text-sm font-medium text-slate-700 mb-1"
-          >
-            <Trophy className="inline h-4 w-4 mr-1" aria-hidden="true" />
-            Filter by Discipline
-          </label>
-          <select
-            id="filter-discipline"
-            value={filters.discipline || 'all'}
-            onChange={handleDisciplineChange}
-            className="w-full px-3 py-2 border border-slate-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500 text-sm"
-            data-testid="filter-discipline"
-            aria-label="Filter by discipline"
-          >
-            <option value="all">All Disciplines</option>
-            {disciplines?.map((discipline) => (
-              <option key={discipline} value={discipline}>
-                {discipline}
-              </option>
-            ))}
-          </select>
-        </div>
+          {/* Discipline Filter */}
+          <div>
+            <label
+              htmlFor="filter-discipline"
+              className="block text-sm font-medium text-[rgb(220,235,255)] mb-1"
+            >
+              <Trophy className="inline h-4 w-4 mr-1" aria-hidden="true" />
+              Filter by Discipline
+            </label>
+            <select
+              id="filter-discipline"
+              value={filters.discipline || 'all'}
+              onChange={handleDisciplineChange}
+              className="celestial-input w-full"
+              data-testid="filter-discipline"
+              aria-label="Filter by discipline"
+            >
+              <option value="all">All Disciplines</option>
+              {disciplines?.map((discipline) => (
+                <option key={discipline} value={discipline}>
+                  {discipline}
+                </option>
+              ))}
+            </select>
+          </div>
 
-        {/* Clear Filters */}
-        <div className="flex items-end">
-          <button
-            onClick={onClearFilters}
-            disabled={!hasActiveFilters}
-            className={`w-full px-4 py-2 rounded-lg font-medium text-sm transition-colors ${
-              hasActiveFilters
-                ? 'bg-red-100 text-red-700 hover:bg-red-200 focus:outline-none focus:ring-2 focus:ring-red-500 focus:ring-offset-2'
-                : 'bg-slate-100 text-slate-400 cursor-not-allowed'
-            }`}
-            data-testid="clear-filters"
-            aria-label="Clear all filters"
-          >
-            <X className="inline h-4 w-4 mr-1" aria-hidden="true" />
-            Clear Filters
-          </button>
+          {/* Clear Filters */}
+          <div className="flex items-end">
+            <button
+              onClick={onClearFilters}
+              disabled={!hasActiveFilters}
+              className={`w-full px-4 py-2 rounded-lg font-medium text-sm transition-colors ${
+                hasActiveFilters
+                  ? 'bg-[rgba(239,68,68,0.15)] text-red-400 hover:bg-[rgba(239,68,68,0.25)] focus:outline-none focus:ring-2 focus:ring-red-500 focus:ring-offset-2'
+                  : 'bg-[rgba(15,35,70,0.5)] text-[rgb(148,163,184)] cursor-not-allowed'
+              }`}
+              data-testid="clear-filters"
+              aria-label="Clear all filters"
+            >
+              <X className="inline h-4 w-4 mr-1" aria-hidden="true" />
+              Clear Filters
+            </button>
+          </div>
         </div>
       </div>
-    </div>
-  );
-});
+    );
+  }
+);
 
 FilterControls.displayName = 'FilterControls';
 
 /**
  * Pagination controls component
  */
-const PaginationControls = memo(({
-  currentPage,
-  totalPages,
-  totalTransactions,
-  onPageChange,
-}: {
-  currentPage: number;
-  totalPages: number;
-  totalTransactions: number;
-  onPageChange: (page: number) => void;
-}) => {
-  const handlePrevious = useCallback(() => {
-    if (currentPage > 1) {
-      onPageChange(currentPage - 1);
-    }
-  }, [currentPage, onPageChange]);
+const PaginationControls = memo(
+  ({
+    currentPage,
+    totalPages,
+    totalTransactions,
+    onPageChange,
+  }: {
+    currentPage: number;
+    totalPages: number;
+    totalTransactions: number;
+    onPageChange: (_page: number) => void;
+  }) => {
+    const handlePrevious = useCallback(() => {
+      if (currentPage > 1) {
+        onPageChange(currentPage - 1);
+      }
+    }, [currentPage, onPageChange]);
 
-  const handleNext = useCallback(() => {
-    if (currentPage < totalPages) {
-      onPageChange(currentPage + 1);
-    }
-  }, [currentPage, totalPages, onPageChange]);
+    const handleNext = useCallback(() => {
+      if (currentPage < totalPages) {
+        onPageChange(currentPage + 1);
+      }
+    }, [currentPage, totalPages, onPageChange]);
 
-  return (
-    <div
-      className="flex items-center justify-between px-4 py-3 bg-white border-t border-slate-200"
-      data-testid="pagination-controls"
-    >
-      <div className="text-sm text-slate-600">
-        <span data-testid="total-transactions">{totalTransactions}</span> transactions total
-      </div>
+    return (
+      <div
+        className="flex items-center justify-between px-4 py-3 bg-[rgba(15,35,70,0.5)] border-t border-[rgba(37,99,235,0.2)]"
+        data-testid="pagination-controls"
+      >
+        <div className="text-sm text-[rgb(148,163,184)]">
+          <span data-testid="total-transactions">{totalTransactions}</span> transactions total
+        </div>
 
-      <div className="flex items-center gap-4">
-        <span className="text-sm text-slate-600" data-testid="page-info">
-          Page {currentPage} of {totalPages}
-        </span>
+        <div className="flex items-center gap-4">
+          <span className="text-sm text-[rgb(148,163,184)]" data-testid="page-info">
+            Page {currentPage} of {totalPages}
+          </span>
 
-        <div className="flex items-center gap-2">
-          <button
-            onClick={handlePrevious}
-            disabled={currentPage <= 1}
-            className={`p-2 rounded-lg transition-colors ${
-              currentPage <= 1
-                ? 'text-slate-300 cursor-not-allowed'
-                : 'text-slate-600 hover:bg-slate-100 focus:outline-none focus:ring-2 focus:ring-blue-500'
-            }`}
-            data-testid="prev-page-btn"
-            aria-label="Previous page"
-          >
-            <ChevronLeft className="h-5 w-5" aria-hidden="true" />
-          </button>
+          <div className="flex items-center gap-2">
+            <button
+              onClick={handlePrevious}
+              disabled={currentPage <= 1}
+              className={`p-2 rounded-lg transition-colors ${
+                currentPage <= 1
+                  ? 'text-[rgb(148,163,184)]/40 cursor-not-allowed'
+                  : 'text-[rgb(148,163,184)] hover:bg-[rgba(37,99,235,0.1)] focus:outline-none focus:ring-2 focus:ring-blue-500'
+              }`}
+              data-testid="prev-page-btn"
+              aria-label="Previous page"
+            >
+              <ChevronLeft className="h-5 w-5" aria-hidden="true" />
+            </button>
 
-          <button
-            onClick={handleNext}
-            disabled={currentPage >= totalPages}
-            className={`p-2 rounded-lg transition-colors ${
-              currentPage >= totalPages
-                ? 'text-slate-300 cursor-not-allowed'
-                : 'text-slate-600 hover:bg-slate-100 focus:outline-none focus:ring-2 focus:ring-blue-500'
-            }`}
-            data-testid="next-page-btn"
-            aria-label="Next page"
-          >
-            <ChevronRight className="h-5 w-5" aria-hidden="true" />
-          </button>
+            <button
+              onClick={handleNext}
+              disabled={currentPage >= totalPages}
+              className={`p-2 rounded-lg transition-colors ${
+                currentPage >= totalPages
+                  ? 'text-[rgb(148,163,184)]/40 cursor-not-allowed'
+                  : 'text-[rgb(148,163,184)] hover:bg-[rgba(37,99,235,0.1)] focus:outline-none focus:ring-2 focus:ring-blue-500'
+              }`}
+              data-testid="next-page-btn"
+              aria-label="Next page"
+            >
+              <ChevronRight className="h-5 w-5" aria-hidden="true" />
+            </button>
+          </div>
         </div>
       </div>
-    </div>
-  );
-});
+    );
+  }
+);
 
 PaginationControls.displayName = 'PaginationControls';
 
@@ -465,22 +494,25 @@ const PrizeTransactionHistory: React.FC<PrizeTransactionHistoryProps> = ({
   );
 
   // Handle filter change
-  const handleFilterChange = useCallback((key: keyof TransactionFilters, value: string | number) => {
-    const newFilters = { ...filters, [key]: value };
+  const handleFilterChange = useCallback(
+    (key: keyof TransactionFilters, value: string | number) => {
+      const newFilters = { ...filters, [key]: value };
 
-    if (onFilterChange) {
-      onFilterChange(newFilters);
-    } else {
-      setInternalFilters(newFilters);
-    }
+      if (onFilterChange) {
+        onFilterChange(newFilters);
+      } else {
+        setInternalFilters(newFilters);
+      }
 
-    // Reset to first page when filters change
-    if (onPageChange) {
-      onPageChange(1);
-    } else {
-      setInternalCurrentPage(1);
-    }
-  }, [filters, onFilterChange, onPageChange]);
+      // Reset to first page when filters change
+      if (onPageChange) {
+        onPageChange(1);
+      } else {
+        setInternalCurrentPage(1);
+      }
+    },
+    [filters, onFilterChange, onPageChange]
+  );
 
   // Handle clear filters
   const handleClearFilters = useCallback(() => {
@@ -505,26 +537,32 @@ const PrizeTransactionHistory: React.FC<PrizeTransactionHistoryProps> = ({
   }, [onFilterChange, onPageChange]);
 
   // Handle sort change
-  const handleSortChange = useCallback((field: SortConfig['field']) => {
-    const newDirection =
-      sortConfig.field === field && sortConfig.direction === 'desc' ? 'asc' : 'desc';
-    const newSort: SortConfig = { field, direction: newDirection };
+  const handleSortChange = useCallback(
+    (field: SortConfig['field']) => {
+      const newDirection =
+        sortConfig.field === field && sortConfig.direction === 'desc' ? 'asc' : 'desc';
+      const newSort: SortConfig = { field, direction: newDirection };
 
-    if (onSortChange) {
-      onSortChange(newSort);
-    } else {
-      setInternalSortConfig(newSort);
-    }
-  }, [sortConfig, onSortChange]);
+      if (onSortChange) {
+        onSortChange(newSort);
+      } else {
+        setInternalSortConfig(newSort);
+      }
+    },
+    [sortConfig, onSortChange]
+  );
 
   // Handle page change
-  const handlePageChange = useCallback((page: number) => {
-    if (onPageChange) {
-      onPageChange(page);
-    } else {
-      setInternalCurrentPage(page);
-    }
-  }, [onPageChange]);
+  const handlePageChange = useCallback(
+    (page: number) => {
+      if (onPageChange) {
+        onPageChange(page);
+      } else {
+        setInternalCurrentPage(page);
+      }
+    },
+    [onPageChange]
+  );
 
   // Filter and sort transactions
   const processedTransactions = useMemo(() => {
@@ -581,19 +619,22 @@ const PrizeTransactionHistory: React.FC<PrizeTransactionHistoryProps> = ({
   const paginatedTransactions = processedTransactions.slice(startIndex, startIndex + pageSize);
 
   // Check if filtered results are empty but there are transactions
-  const isFilteredEmpty = hasActiveFilters && transactions.length > 0 && processedTransactions.length === 0;
+  const isFilteredEmpty =
+    hasActiveFilters && transactions.length > 0 && processedTransactions.length === 0;
 
   // Render loading state
   if (isLoading) {
     return (
       <div
-        className={`bg-white rounded-lg shadow ${className}`}
+        className={`glass-panel rounded-lg ${className}`}
         data-testid="prize-transaction-history"
         role="region"
         aria-label="Prize transaction history"
       >
         <div className="p-6">
-          <h2 className="text-lg font-semibold text-slate-900 mb-4">Prize Transaction History</h2>
+          <h2 className="text-lg font-semibold text-[rgb(220,235,255)] mb-4">
+            Prize Transaction History
+          </h2>
 
           <FilterControls
             filters={filters}
@@ -606,28 +647,42 @@ const PrizeTransactionHistory: React.FC<PrizeTransactionHistoryProps> = ({
 
           <div className="overflow-x-auto">
             <table className="w-full" data-testid="transactions-table">
-              <thead className="bg-slate-50 border-b border-slate-200">
+              <thead className="bg-[rgba(15,35,70,0.5)] border-b border-[rgba(37,99,235,0.2)]">
                 <tr>
                   <th className="px-4 py-3 text-left" data-testid="column-date">
-                    <span className="text-xs font-semibold text-slate-500 uppercase">Date</span>
+                    <span className="text-xs font-semibold text-[rgb(148,163,184)] uppercase">
+                      Date
+                    </span>
                   </th>
                   <th className="px-4 py-3 text-left" data-testid="column-competition">
-                    <span className="text-xs font-semibold text-slate-500 uppercase">Competition</span>
+                    <span className="text-xs font-semibold text-[rgb(148,163,184)] uppercase">
+                      Competition
+                    </span>
                   </th>
                   <th className="px-4 py-3 text-left" data-testid="column-horse">
-                    <span className="text-xs font-semibold text-slate-500 uppercase">Horse</span>
+                    <span className="text-xs font-semibold text-[rgb(148,163,184)] uppercase">
+                      Horse
+                    </span>
                   </th>
                   <th className="px-4 py-3 text-left">
-                    <span className="text-xs font-semibold text-slate-500 uppercase">Discipline</span>
+                    <span className="text-xs font-semibold text-[rgb(148,163,184)] uppercase">
+                      Discipline
+                    </span>
                   </th>
                   <th className="px-4 py-3 text-center" data-testid="column-placement">
-                    <span className="text-xs font-semibold text-slate-500 uppercase">Place</span>
+                    <span className="text-xs font-semibold text-[rgb(148,163,184)] uppercase">
+                      Place
+                    </span>
                   </th>
                   <th className="px-4 py-3 text-right" data-testid="column-prize">
-                    <span className="text-xs font-semibold text-slate-500 uppercase">Prize</span>
+                    <span className="text-xs font-semibold text-[rgb(148,163,184)] uppercase">
+                      Prize
+                    </span>
                   </th>
                   <th className="px-4 py-3 text-right" data-testid="column-xp">
-                    <span className="text-xs font-semibold text-slate-500 uppercase">XP</span>
+                    <span className="text-xs font-semibold text-[rgb(148,163,184)] uppercase">
+                      XP
+                    </span>
                   </th>
                 </tr>
               </thead>
@@ -647,13 +702,15 @@ const PrizeTransactionHistory: React.FC<PrizeTransactionHistoryProps> = ({
   if (transactions.length === 0) {
     return (
       <div
-        className={`bg-white rounded-lg shadow ${className}`}
+        className={`glass-panel rounded-lg ${className}`}
         data-testid="prize-transaction-history"
         role="region"
         aria-label="Prize transaction history"
       >
         <div className="p-6">
-          <h2 className="text-lg font-semibold text-slate-900 mb-4">Prize Transaction History</h2>
+          <h2 className="text-lg font-semibold text-[rgb(220,235,255)] mb-4">
+            Prize Transaction History
+          </h2>
           <EmptyState />
         </div>
       </div>
@@ -685,7 +742,7 @@ const PrizeTransactionHistory: React.FC<PrizeTransactionHistoryProps> = ({
           <>
             <div className="overflow-x-auto">
               <table className="w-full" data-testid="transactions-table">
-                <thead className="bg-slate-50 border-b border-slate-200">
+                <thead className="bg-[rgba(15,35,70,0.5)] border-b border-[rgba(37,99,235,0.2)]">
                   <tr>
                     <th className="px-4 py-3 text-left" data-testid="column-date">
                       <SortButton
@@ -697,13 +754,19 @@ const PrizeTransactionHistory: React.FC<PrizeTransactionHistoryProps> = ({
                       />
                     </th>
                     <th className="px-4 py-3 text-left" data-testid="column-competition">
-                      <span className="text-xs font-semibold text-slate-500 uppercase">Competition</span>
+                      <span className="text-xs font-semibold text-[rgb(148,163,184)] uppercase">
+                        Competition
+                      </span>
                     </th>
                     <th className="px-4 py-3 text-left" data-testid="column-horse">
-                      <span className="text-xs font-semibold text-slate-500 uppercase">Horse</span>
+                      <span className="text-xs font-semibold text-[rgb(148,163,184)] uppercase">
+                        Horse
+                      </span>
                     </th>
                     <th className="px-4 py-3 text-left">
-                      <span className="text-xs font-semibold text-slate-500 uppercase">Discipline</span>
+                      <span className="text-xs font-semibold text-[rgb(148,163,184)] uppercase">
+                        Discipline
+                      </span>
                     </th>
                     <th className="px-4 py-3 text-center" data-testid="column-placement">
                       <SortButton

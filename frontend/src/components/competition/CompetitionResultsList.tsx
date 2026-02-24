@@ -78,7 +78,7 @@ export interface CompetitionResultsListProps {
   results?: CompetitionResultSummary[];
   filters?: CompetitionResultsFilters;
   sortBy?: SortOption;
-  onResultClick: (competitionId: number) => void;
+  onResultClick: (_competitionId: number) => void;
   isLoading?: boolean;
   error?: string | null;
   onRetry?: () => void;
@@ -116,11 +116,11 @@ const getPlacementBadgeClasses = (rank: number): string => {
     case 1:
       return 'bg-yellow-400 text-yellow-900'; // Gold
     case 2:
-      return 'bg-gray-300 text-gray-900'; // Silver
+      return 'bg-[rgba(148,163,184,0.3)] text-[rgb(220,235,255)]'; // Silver
     case 3:
       return 'bg-orange-400 text-orange-900'; // Bronze
     default:
-      return 'bg-gray-200 text-gray-700'; // Other
+      return 'bg-[rgba(15,35,70,0.5)] text-[rgb(148,163,184)]'; // Other
   }
 };
 
@@ -148,7 +148,8 @@ const PlacementBadge = memo(({ rank }: { rank: number }) => {
       data-testid={`placement-badge-${rank}`}
     >
       <PlacementIcon rank={rank} />
-      {rank}{suffix}
+      {rank}
+      {suffix}
     </span>
   );
 });
@@ -163,15 +164,15 @@ const LoadingSkeletons = memo(() => (
     {Array.from({ length: 6 }).map((_, index) => (
       <div
         key={`skeleton-${index}`}
-        className="bg-white rounded-lg shadow p-4 animate-pulse"
+        className="glass-panel rounded-lg p-4 animate-pulse"
         data-testid="result-card-skeleton"
       >
-        <div className="h-6 bg-slate-200 rounded w-3/4 mb-2" />
-        <div className="h-4 bg-slate-200 rounded w-1/2 mb-4" />
+        <div className="h-6 bg-[rgba(37,99,235,0.2)] rounded w-3/4 mb-2" />
+        <div className="h-4 bg-[rgba(37,99,235,0.2)] rounded w-1/2 mb-4" />
         <div className="space-y-2">
-          <div className="h-4 bg-slate-200 rounded w-2/3" />
-          <div className="h-4 bg-slate-200 rounded w-1/2" />
-          <div className="h-4 bg-slate-200 rounded w-3/5" />
+          <div className="h-4 bg-[rgba(37,99,235,0.2)] rounded w-2/3" />
+          <div className="h-4 bg-[rgba(37,99,235,0.2)] rounded w-1/2" />
+          <div className="h-4 bg-[rgba(37,99,235,0.2)] rounded w-3/5" />
         </div>
       </div>
     ))}
@@ -185,11 +186,11 @@ LoadingSkeletons.displayName = 'LoadingSkeletons';
  */
 const EmptyState = memo(() => (
   <div className="py-12 text-center" data-testid="empty-state">
-    <Trophy className="mx-auto h-12 w-12 text-slate-400 mb-4" aria-hidden="true" />
-    <h3 className="text-lg font-medium text-slate-900 mb-2">No competition results found</h3>
-    <p className="text-sm text-slate-600">
-      Enter competitions to see your results here.
-    </p>
+    <Trophy className="mx-auto h-12 w-12 text-[rgb(148,163,184)] mb-4" aria-hidden="true" />
+    <h3 className="text-lg font-medium text-[rgb(220,235,255)] mb-2">
+      No competition results found
+    </h3>
+    <p className="text-sm text-[rgb(148,163,184)]">Enter competitions to see your results here.</p>
   </div>
 ));
 
@@ -201,8 +202,8 @@ EmptyState.displayName = 'EmptyState';
 const ErrorState = memo(({ message, onRetry }: { message: string; onRetry?: () => void }) => (
   <div className="py-12 text-center" data-testid="error-state">
     <AlertCircle className="mx-auto h-12 w-12 text-red-400 mb-4" aria-hidden="true" />
-    <h3 className="text-lg font-medium text-slate-900 mb-2">Unable to load results</h3>
-    <p className="text-sm text-slate-600 mb-4">{message}</p>
+    <h3 className="text-lg font-medium text-[rgb(220,235,255)] mb-2">Unable to load results</h3>
+    <p className="text-sm text-[rgb(148,163,184)] mb-4">{message}</p>
     {onRetry && (
       <button
         onClick={onRetry}
@@ -221,224 +222,230 @@ ErrorState.displayName = 'ErrorState';
 /**
  * Competition result card component
  */
-const ResultCard = memo(({
-  result,
-  onClick,
-}: {
-  result: CompetitionResultSummary;
-  onClick: (competitionId: number) => void;
-}) => {
-  const handleClick = useCallback(() => {
-    onClick(result.competitionId);
-  }, [onClick, result.competitionId]);
-
-  const handleKeyDown = useCallback((event: React.KeyboardEvent) => {
-    if (event.key === 'Enter' || event.key === ' ') {
-      event.preventDefault();
+const ResultCard = memo(
+  ({
+    result,
+    onClick,
+  }: {
+    result: CompetitionResultSummary;
+    onClick: (_competitionId: number) => void;
+  }) => {
+    const handleClick = useCallback(() => {
       onClick(result.competitionId);
-    }
-  }, [onClick, result.competitionId]);
+    }, [onClick, result.competitionId]);
 
-  // Get discipline display name
-  const disciplineInfo = DISCIPLINES.find((d) => d.id === result.discipline);
-  const disciplineName = disciplineInfo?.name || result.discipline;
+    const handleKeyDown = useCallback(
+      (event: React.KeyboardEvent) => {
+        if (event.key === 'Enter' || event.key === ' ') {
+          event.preventDefault();
+          onClick(result.competitionId);
+        }
+      },
+      [onClick, result.competitionId]
+    );
 
-  // Calculate total prize and XP won
-  const totalPrize = result.userResults.reduce((sum, r) => sum + r.prizeWon, 0);
-  const totalXp = result.userResults.reduce((sum, r) => sum + r.xpGained, 0);
-  const bestRank = Math.min(...result.userResults.map((r) => r.rank));
+    // Get discipline display name
+    const disciplineInfo = DISCIPLINES.find((d) => d.id === result.discipline);
+    const disciplineName = disciplineInfo?.name || result.discipline;
 
-  return (
-    <div
-      className="bg-white rounded-lg shadow p-4 cursor-pointer transition-shadow hover:shadow-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
-      data-testid="result-card"
-      role="button"
-      tabIndex={0}
-      onClick={handleClick}
-      onKeyDown={handleKeyDown}
-      aria-label={`View details for ${result.competitionName}`}
-    >
-      {/* Header */}
-      <div className="mb-3">
-        <h3 className="text-lg font-semibold text-slate-900 truncate">
-          {result.competitionName}
-        </h3>
-        <p className="text-sm text-slate-600">{disciplineName}</p>
-      </div>
+    // Calculate total prize and XP won
+    const totalPrize = result.userResults.reduce((sum, r) => sum + r.prizeWon, 0);
+    const totalXp = result.userResults.reduce((sum, r) => sum + r.xpGained, 0);
 
-      {/* Date */}
-      <div className="flex items-center mb-2 text-sm">
-        <Calendar className="h-4 w-4 text-slate-400 mr-2" aria-hidden="true" />
-        <span className="text-slate-700">{formatDate(result.date)}</span>
-      </div>
+    return (
+      <div
+        className="glass-panel rounded-lg p-4 cursor-pointer transition-shadow hover:shadow-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
+        data-testid="result-card"
+        role="button"
+        tabIndex={0}
+        onClick={handleClick}
+        onKeyDown={handleKeyDown}
+        aria-label={`View details for ${result.competitionName}`}
+      >
+        {/* Header */}
+        <div className="mb-3">
+          <h3 className="text-lg font-semibold text-[rgb(220,235,255)] truncate">
+            {result.competitionName}
+          </h3>
+          <p className="text-sm text-[rgb(148,163,184)]">{disciplineName}</p>
+        </div>
 
-      {/* Horse Results */}
-      <div className="space-y-2 mb-3">
-        {result.userResults.map((userResult) => (
-          <div
-            key={userResult.horseId}
-            className="flex items-center justify-between bg-slate-50 rounded p-2"
-          >
-            <span className="text-sm font-medium text-slate-800 truncate">
-              {userResult.horseName}
-            </span>
-            <PlacementBadge rank={userResult.rank} />
+        {/* Date */}
+        <div className="flex items-center mb-2 text-sm">
+          <Calendar className="h-4 w-4 text-[rgb(148,163,184)] mr-2" aria-hidden="true" />
+          <span className="text-[rgb(220,235,255)]">{formatDate(result.date)}</span>
+        </div>
+
+        {/* Horse Results */}
+        <div className="space-y-2 mb-3">
+          {result.userResults.map((userResult) => (
+            <div
+              key={userResult.horseId}
+              className="flex items-center justify-between bg-[rgba(15,35,70,0.5)] rounded p-2"
+            >
+              <span className="text-sm font-medium text-[rgb(220,235,255)] truncate">
+                {userResult.horseName}
+              </span>
+              <PlacementBadge rank={userResult.rank} />
+            </div>
+          ))}
+        </div>
+
+        {/* Summary Row */}
+        <div className="flex items-center justify-between border-t border-[rgba(37,99,235,0.2)] pt-3 text-sm">
+          <div className="flex items-center">
+            <DollarSign className="h-4 w-4 text-emerald-400 mr-1" aria-hidden="true" />
+            <span className="text-[rgb(220,235,255)]">{formatCurrency(totalPrize)}</span>
           </div>
-        ))}
-      </div>
-
-      {/* Summary Row */}
-      <div className="flex items-center justify-between border-t border-slate-100 pt-3 text-sm">
-        <div className="flex items-center">
-          <DollarSign className="h-4 w-4 text-green-500 mr-1" aria-hidden="true" />
-          <span className="text-slate-700">{formatCurrency(totalPrize)}</span>
-        </div>
-        <div className="flex items-center">
-          <Star className="h-4 w-4 text-purple-500 mr-1" aria-hidden="true" />
-          <span className="text-slate-700">{totalXp} XP</span>
+          <div className="flex items-center">
+            <Star className="h-4 w-4 text-purple-500 mr-1" aria-hidden="true" />
+            <span className="text-[rgb(220,235,255)]">{totalXp} XP</span>
+          </div>
         </div>
       </div>
-    </div>
-  );
-});
+    );
+  }
+);
 
 ResultCard.displayName = 'ResultCard';
 
 /**
  * Filter controls component
  */
-const FilterControls = memo(({
-  statusFilter,
-  disciplineFilter,
-  sortBy,
-  onStatusChange,
-  onDisciplineChange,
-  onSortChange,
-  onClearFilters,
-  hasActiveFilters,
-}: {
-  statusFilter: string;
-  disciplineFilter: string;
-  sortBy: SortOption;
-  onStatusChange: (value: StatusFilter) => void;
-  onDisciplineChange: (value: string) => void;
-  onSortChange: (value: SortOption) => void;
-  onClearFilters: () => void;
-  hasActiveFilters: boolean;
-}) => {
-  // Group disciplines by category
-  const disciplinesByCategory = useMemo(() => {
-    const grouped: Record<string, typeof DISCIPLINES> = {};
-    DISCIPLINES.forEach((discipline) => {
-      if (!grouped[discipline.category]) {
-        grouped[discipline.category] = [];
-      }
-      grouped[discipline.category].push(discipline);
-    });
-    return grouped;
-  }, []);
+const FilterControls = memo(
+  ({
+    statusFilter,
+    disciplineFilter,
+    sortBy,
+    onStatusChange,
+    onDisciplineChange,
+    onSortChange,
+    onClearFilters,
+    hasActiveFilters,
+  }: {
+    statusFilter: string;
+    disciplineFilter: string;
+    sortBy: SortOption;
+    onStatusChange: (_value: StatusFilter) => void;
+    onDisciplineChange: (_value: string) => void;
+    onSortChange: (_value: SortOption) => void;
+    onClearFilters: () => void;
+    hasActiveFilters: boolean;
+  }) => {
+    // Group disciplines by category
+    const disciplinesByCategory = useMemo(() => {
+      const grouped: Record<string, typeof DISCIPLINES> = {};
+      DISCIPLINES.forEach((discipline) => {
+        if (!grouped[discipline.category]) {
+          grouped[discipline.category] = [];
+        }
+        grouped[discipline.category].push(discipline);
+      });
+      return grouped;
+    }, []);
 
-  return (
-    <div className="bg-white rounded-lg shadow p-4 mb-4 sticky top-0 z-10">
-      <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
-        {/* Status Filter */}
-        <div>
-          <label
-            htmlFor="status-filter"
-            className="block text-sm font-medium text-slate-700 mb-1"
-          >
-            <Filter className="inline h-4 w-4 mr-1" aria-hidden="true" />
-            Filter by Status
-          </label>
-          <select
-            id="status-filter"
-            value={statusFilter}
-            onChange={(e) => onStatusChange(e.target.value as StatusFilter)}
-            className="w-full px-3 py-2 border border-slate-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
-            data-testid="filter-status"
-            aria-label="Filter by status"
-          >
-            <option value="all">All Results</option>
-            <option value="wins">Wins (1st Place)</option>
-            <option value="top3">Top 3</option>
-            <option value="participated">All Participated</option>
-          </select>
-        </div>
+    return (
+      <div className="glass-panel rounded-lg p-4 mb-4 sticky top-0 z-10">
+        <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
+          {/* Status Filter */}
+          <div>
+            <label
+              htmlFor="status-filter"
+              className="block text-sm font-medium text-[rgb(220,235,255)] mb-1"
+            >
+              <Filter className="inline h-4 w-4 mr-1" aria-hidden="true" />
+              Filter by Status
+            </label>
+            <select
+              id="status-filter"
+              value={statusFilter}
+              onChange={(e) => onStatusChange(e.target.value as StatusFilter)}
+              className="celestial-input w-full"
+              data-testid="filter-status"
+              aria-label="Filter by status"
+            >
+              <option value="all">All Results</option>
+              <option value="wins">Wins (1st Place)</option>
+              <option value="top3">Top 3</option>
+              <option value="participated">All Participated</option>
+            </select>
+          </div>
 
-        {/* Discipline Filter */}
-        <div>
-          <label
-            htmlFor="discipline-filter"
-            className="block text-sm font-medium text-slate-700 mb-1"
-          >
-            <Trophy className="inline h-4 w-4 mr-1" aria-hidden="true" />
-            Filter by Discipline
-          </label>
-          <select
-            id="discipline-filter"
-            value={disciplineFilter}
-            onChange={(e) => onDisciplineChange(e.target.value)}
-            className="w-full px-3 py-2 border border-slate-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
-            data-testid="filter-discipline"
-            aria-label="Filter by discipline"
-          >
-            <option value="all">All Disciplines</option>
-            {Object.entries(disciplinesByCategory).map(([category, disciplines]) => (
-              <optgroup key={category} label={category}>
-                {disciplines.map((discipline) => (
-                  <option key={discipline.id} value={discipline.id}>
-                    {discipline.name}
-                  </option>
-                ))}
-              </optgroup>
-            ))}
-          </select>
-        </div>
+          {/* Discipline Filter */}
+          <div>
+            <label
+              htmlFor="discipline-filter"
+              className="block text-sm font-medium text-[rgb(220,235,255)] mb-1"
+            >
+              <Trophy className="inline h-4 w-4 mr-1" aria-hidden="true" />
+              Filter by Discipline
+            </label>
+            <select
+              id="discipline-filter"
+              value={disciplineFilter}
+              onChange={(e) => onDisciplineChange(e.target.value)}
+              className="celestial-input w-full"
+              data-testid="filter-discipline"
+              aria-label="Filter by discipline"
+            >
+              <option value="all">All Disciplines</option>
+              {Object.entries(disciplinesByCategory).map(([category, disciplines]) => (
+                <optgroup key={category} label={category}>
+                  {disciplines.map((discipline) => (
+                    <option key={discipline.id} value={discipline.id}>
+                      {discipline.name}
+                    </option>
+                  ))}
+                </optgroup>
+              ))}
+            </select>
+          </div>
 
-        {/* Sort Dropdown */}
-        <div>
-          <label
-            htmlFor="sort-dropdown"
-            className="block text-sm font-medium text-slate-700 mb-1"
-          >
-            <Star className="inline h-4 w-4 mr-1" aria-hidden="true" />
-            Sort Results
-          </label>
-          <select
-            id="sort-dropdown"
-            value={sortBy}
-            onChange={(e) => onSortChange(e.target.value as SortOption)}
-            className="w-full px-3 py-2 border border-slate-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
-            data-testid="sort-dropdown"
-            aria-label="Sort results"
-          >
-            <option value="recent">Recent First</option>
-            <option value="prize">Highest Prize</option>
-            <option value="placement">Best Placement</option>
-          </select>
-        </div>
+          {/* Sort Dropdown */}
+          <div>
+            <label
+              htmlFor="sort-dropdown"
+              className="block text-sm font-medium text-[rgb(220,235,255)] mb-1"
+            >
+              <Star className="inline h-4 w-4 mr-1" aria-hidden="true" />
+              Sort Results
+            </label>
+            <select
+              id="sort-dropdown"
+              value={sortBy}
+              onChange={(e) => onSortChange(e.target.value as SortOption)}
+              className="celestial-input w-full"
+              data-testid="sort-dropdown"
+              aria-label="Sort results"
+            >
+              <option value="recent">Recent First</option>
+              <option value="prize">Highest Prize</option>
+              <option value="placement">Best Placement</option>
+            </select>
+          </div>
 
-        {/* Clear Filters */}
-        <div className="flex items-end">
-          <button
-            onClick={onClearFilters}
-            disabled={!hasActiveFilters}
-            className={`w-full px-4 py-2 rounded-lg font-medium transition-colors ${
-              hasActiveFilters
-                ? 'bg-red-100 text-red-700 hover:bg-red-200 focus:outline-none focus:ring-2 focus:ring-red-500 focus:ring-offset-2'
-                : 'bg-slate-100 text-slate-400 cursor-not-allowed'
-            }`}
-            data-testid="clear-filters"
-            aria-label="Clear all filters"
-          >
-            <X className="inline h-4 w-4 mr-1" aria-hidden="true" />
-            Clear Filters
-          </button>
+          {/* Clear Filters */}
+          <div className="flex items-end">
+            <button
+              onClick={onClearFilters}
+              disabled={!hasActiveFilters}
+              className={`w-full px-4 py-2 rounded-lg font-medium transition-colors ${
+                hasActiveFilters
+                  ? 'bg-[rgba(239,68,68,0.15)] text-red-400 hover:bg-[rgba(239,68,68,0.25)] focus:outline-none focus:ring-2 focus:ring-red-500 focus:ring-offset-2'
+                  : 'bg-[rgba(15,35,70,0.5)] text-[rgb(148,163,184)] cursor-not-allowed'
+              }`}
+              data-testid="clear-filters"
+              aria-label="Clear all filters"
+            >
+              <X className="inline h-4 w-4 mr-1" aria-hidden="true" />
+              Clear Filters
+            </button>
+          </div>
         </div>
       </div>
-    </div>
-  );
-});
+    );
+  }
+);
 
 FilterControls.displayName = 'FilterControls';
 
@@ -448,7 +455,7 @@ FilterControls.displayName = 'FilterControls';
  * Displays a filterable, sortable list of competition results.
  */
 const CompetitionResultsList = ({
-  userId,
+  userId: _userId,
   results = [],
   filters: initialFilters,
   sortBy: initialSortBy = 'recent',
@@ -460,9 +467,7 @@ const CompetitionResultsList = ({
 }: CompetitionResultsListProps) => {
   // Local state for filters and sorting
   const [statusFilter, setStatusFilter] = useState(initialFilters?.status || 'all');
-  const [disciplineFilter, setDisciplineFilter] = useState(
-    initialFilters?.discipline || 'all'
-  );
+  const [disciplineFilter, setDisciplineFilter] = useState(initialFilters?.discipline || 'all');
   const [sortBy, setSortBy] = useState<SortOption>(initialSortBy);
 
   // Check if any filters are active
@@ -483,13 +488,9 @@ const CompetitionResultsList = ({
 
     // Apply status filter
     if (statusFilter === 'wins') {
-      filtered = filtered.filter((r) =>
-        r.userResults.some((ur) => ur.rank === 1)
-      );
+      filtered = filtered.filter((r) => r.userResults.some((ur) => ur.rank === 1));
     } else if (statusFilter === 'top3') {
-      filtered = filtered.filter((r) =>
-        r.userResults.some((ur) => ur.rank <= 3)
-      );
+      filtered = filtered.filter((r) => r.userResults.some((ur) => ur.rank <= 3));
     }
     // 'participated' and 'all' show everything
 
@@ -507,9 +508,7 @@ const CompetitionResultsList = ({
 
     switch (sortBy) {
       case 'recent':
-        return sorted.sort(
-          (a, b) => new Date(b.date).getTime() - new Date(a.date).getTime()
-        );
+        return sorted.sort((a, b) => new Date(b.date).getTime() - new Date(a.date).getTime());
       case 'prize':
         return sorted.sort((a, b) => {
           const aPrize = a.userResults.reduce((sum, r) => sum + r.prizeWon, 0);
@@ -531,7 +530,7 @@ const CompetitionResultsList = ({
   if (isLoading) {
     return (
       <div
-        className={`bg-slate-50 rounded-lg ${className}`}
+        className={`bg-[rgba(15,35,70,0.4)] rounded-lg ${className}`}
         data-testid="competition-results-list"
         role="region"
         aria-label="Competition results"
@@ -560,7 +559,7 @@ const CompetitionResultsList = ({
   if (error) {
     return (
       <div
-        className={`bg-slate-50 rounded-lg ${className}`}
+        className={`bg-[rgba(15,35,70,0.4)] rounded-lg ${className}`}
         data-testid="competition-results-list"
         role="region"
         aria-label="Competition results"
@@ -574,7 +573,7 @@ const CompetitionResultsList = ({
   if (sortedResults.length === 0) {
     return (
       <div
-        className={`bg-slate-50 rounded-lg ${className}`}
+        className={`bg-[rgba(15,35,70,0.4)] rounded-lg ${className}`}
         data-testid="competition-results-list"
         role="region"
         aria-label="Competition results"
@@ -597,7 +596,7 @@ const CompetitionResultsList = ({
   // Render results list
   return (
     <div
-      className={`bg-slate-50 rounded-lg ${className}`}
+      className={`bg-[rgba(15,35,70,0.4)] rounded-lg ${className}`}
       data-testid="competition-results-list"
       role="region"
       aria-label="Competition results"
@@ -615,7 +614,7 @@ const CompetitionResultsList = ({
 
       {/* Results Count */}
       <div className="px-4 pb-2">
-        <p className="text-sm text-slate-600">
+        <p className="text-sm text-[rgb(148,163,184)]">
           {sortedResults.length} {sortedResults.length === 1 ? 'result' : 'results'} found
         </p>
       </div>
@@ -626,11 +625,7 @@ const CompetitionResultsList = ({
         data-testid="results-grid"
       >
         {sortedResults.map((result) => (
-          <ResultCard
-            key={result.competitionId}
-            result={result}
-            onClick={onResultClick}
-          />
+          <ResultCard key={result.competitionId} result={result} onClick={onResultClick} />
         ))}
       </div>
     </div>

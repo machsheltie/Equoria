@@ -106,7 +106,7 @@ const getPlacementBadgeClasses = (placement: 1 | 2 | 3): string => {
     case 1:
       return 'bg-yellow-400 text-yellow-900'; // Gold
     case 2:
-      return 'bg-gray-300 text-gray-900'; // Silver
+      return 'bg-[rgba(148,163,184,0.3)] text-[rgb(220,235,255)]'; // Silver
     case 3:
       return 'bg-orange-600 text-orange-50'; // Bronze
   }
@@ -240,7 +240,8 @@ const PrizeNotificationModal = memo(function PrizeNotificationModal({
     return null;
   }
 
-  const { horseName, competitionName, discipline, date, placement, prizeMoney, xpGained } = prizeData;
+  const { horseName, competitionName, discipline, date, placement, prizeMoney, xpGained } =
+    prizeData;
 
   const modalContent = (
     <div
@@ -254,7 +255,7 @@ const PrizeNotificationModal = memo(function PrizeNotificationModal({
         aria-modal="true"
         aria-labelledby="prize-modal-title"
         tabIndex={-1}
-        className="bg-white rounded-2xl shadow-2xl max-w-md w-full overflow-hidden flex flex-col focus:outline-none animate-fade-in animate-scale-up"
+        className="glass-panel rounded-2xl shadow-2xl max-w-md w-full overflow-hidden flex flex-col focus:outline-none animate-fade-in animate-scale-up"
         onClick={handleContentClick}
         data-testid="prize-notification-modal"
       >
@@ -313,49 +314,48 @@ const PrizeNotificationModal = memo(function PrizeNotificationModal({
           {/* Prize Breakdown */}
           <div className="space-y-4">
             {/* Prize Money */}
-            <div className="flex items-center justify-between p-4 bg-green-50 rounded-xl">
+            <div className="flex items-center justify-between p-4 bg-[rgba(16,185,129,0.1)] rounded-xl">
               <div className="flex items-center gap-3">
-                <div className="bg-green-100 p-2 rounded-full">
-                  <DollarSign className="h-5 w-5 text-green-600" aria-hidden="true" />
+                <div className="bg-[rgba(16,185,129,0.2)] p-2 rounded-full">
+                  <DollarSign className="h-5 w-5 text-emerald-400" aria-hidden="true" />
                 </div>
-                <span className="text-sm font-medium text-slate-700">Prize Money</span>
+                <span className="text-sm font-medium text-[rgb(220,235,255)]">Prize Money</span>
               </div>
-              <span
-                className="text-xl font-bold text-green-600"
-                data-testid="prize-money"
-              >
+              <span className="text-xl font-bold text-emerald-400" data-testid="prize-money">
                 {formatCurrency(prizeMoney)}
               </span>
             </div>
 
             {/* XP Gained */}
-            <div className="flex items-center justify-between p-4 bg-purple-50 rounded-xl">
+            <div className="flex items-center justify-between p-4 bg-[rgba(147,51,234,0.1)] rounded-xl">
               <div className="flex items-center gap-3">
-                <div className="bg-purple-100 p-2 rounded-full">
-                  <Zap className="h-5 w-5 text-purple-600" aria-hidden="true" />
+                <div className="bg-[rgba(147,51,234,0.2)] p-2 rounded-full">
+                  <Zap className="h-5 w-5 text-purple-400" aria-hidden="true" />
                 </div>
-                <span className="text-sm font-medium text-slate-700">Experience Gained</span>
+                <span className="text-sm font-medium text-[rgb(220,235,255)]">
+                  Experience Gained
+                </span>
               </div>
-              <span
-                className="text-xl font-bold text-purple-600"
-                data-testid="xp-gained"
-              >
+              <span className="text-xl font-bold text-purple-400" data-testid="xp-gained">
                 +{xpGained} XP
               </span>
             </div>
           </div>
 
           {/* Competition Context */}
-          <div className="mt-6 pt-4 border-t border-slate-200">
+          <div className="mt-6 pt-4 border-t border-[rgba(37,99,235,0.2)]">
             <div className="flex items-center gap-2 mb-2">
-              <Award className="h-4 w-4 text-slate-400" aria-hidden="true" />
-              <span className="text-sm font-medium text-slate-600" data-testid="competition-name">
+              <Award className="h-4 w-4 text-[rgb(148,163,184)]" aria-hidden="true" />
+              <span
+                className="text-sm font-medium text-[rgb(148,163,184)]"
+                data-testid="competition-name"
+              >
                 {competitionName}
               </span>
             </div>
-            <div className="flex items-center justify-between text-xs text-slate-500">
+            <div className="flex items-center justify-between text-xs text-[rgb(148,163,184)]">
               <span
-                className="bg-blue-100 text-blue-700 px-2 py-1 rounded-full"
+                className="bg-[rgba(37,99,235,0.1)] text-blue-400 px-2 py-1 rounded-full"
                 data-testid="competition-discipline"
               >
                 {discipline}
