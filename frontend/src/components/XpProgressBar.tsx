@@ -55,17 +55,14 @@ const XpProgressBar: React.FC<XpProgressBarProps> = React.memo(
     );
 
     return (
-      <div
-        data-testid="xp-progress-bar"
-        className={`w-full ${className ?? ''}`}
-      >
+      <div data-testid="xp-progress-bar" className={`w-full ${className ?? ''}`}>
         <div
           role="progressbar"
           aria-valuenow={ariaValueNow}
           aria-valuemin={0}
           aria-valuemax={100}
           aria-label={`XP Progress: ${currentXp} of ${xpToNextLevel} XP (${clampedPercent}%)`}
-          className="relative h-2 bg-gray-200 rounded-full overflow-hidden"
+          className="relative h-2 bg-[rgba(15,35,70,0.5)] rounded-full overflow-hidden"
         >
           <div
             data-testid="xp-progress-fill"
@@ -80,7 +77,7 @@ const XpProgressBar: React.FC<XpProgressBarProps> = React.memo(
         {showPercentage && (
           <span
             data-testid="xp-progress-percent-text"
-            className="text-xs text-gray-600 mt-1 block text-right"
+            className="text-xs text-[rgb(148,163,184)] mt-1 block text-right"
           >
             {clampedPercent}%
           </span>

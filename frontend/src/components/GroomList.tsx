@@ -20,7 +20,7 @@ import GroomPersonalityBadge from './groom/GroomPersonalityBadge';
 
 interface GroomListProps {
   userId: number;
-  onGroomHired?: (groom: MarketplaceGroom) => void;
+  onGroomHired?: (_groom: MarketplaceGroom) => void;
   // Optional data props for testing (NO MOCKING)
   marketplaceData?: MarketplaceData;
 }
@@ -140,10 +140,10 @@ const GroomList: React.FC<GroomListProps> = ({
 
   if (marketplaceLoading && !propMarketplaceData) {
     return (
-      <div data-testid="groom-list" className="min-h-screen bg-gray-50 p-4 lg:p-8">
+      <div data-testid="groom-list" className="min-h-screen bg-[rgba(15,35,70,0.3)] p-4 lg:p-8">
         <div className="max-w-7xl mx-auto flex items-center justify-center h-64">
-          <RefreshCw className="w-8 h-8 text-blue-600 animate-spin" />
-          <span className="ml-2 text-gray-600">Loading marketplace...</span>
+          <RefreshCw className="w-8 h-8 text-blue-400 animate-spin" />
+          <span className="ml-2 text-[rgb(148,163,184)]">Loading marketplace...</span>
         </div>
       </div>
     );
@@ -151,14 +151,14 @@ const GroomList: React.FC<GroomListProps> = ({
 
   if (marketplaceError) {
     return (
-      <div className="min-h-screen bg-gray-50 p-4 lg:p-8">
-        <div className="max-w-7xl mx-auto bg-red-50 border border-red-200 rounded-lg p-6 text-center">
-          <X className="w-12 h-12 text-red-500 mx-auto mb-4" />
-          <h3 className="text-xl font-bold text-red-900 mb-2">Error Loading Marketplace</h3>
-          <p className="text-red-700">{marketplaceError.message}</p>
+      <div className="min-h-screen bg-[rgba(15,35,70,0.3)] p-4 lg:p-8">
+        <div className="max-w-7xl mx-auto bg-[rgba(239,68,68,0.1)] border border-red-500/30 rounded-lg p-6 text-center">
+          <X className="w-12 h-12 text-red-400 mx-auto mb-4" />
+          <h3 className="text-xl font-bold text-red-300 mb-2">Error Loading Marketplace</h3>
+          <p className="text-red-400">{marketplaceError.message}</p>
           <button
             onClick={() => handleRefresh()}
-            className="mt-4 px-6 py-2 bg-red-600 text-white rounded-lg hover:bg-red-700"
+            className="mt-4 px-6 py-2 bg-red-700/50 text-red-200 rounded-lg hover:bg-red-700/70"
           >
             Retry
           </button>
@@ -173,14 +173,16 @@ const GroomList: React.FC<GroomListProps> = ({
       aria-label="Groom marketplace"
       data-testid="groom-list"
       data-layout={layout}
-      className="bg-gray-50 p-4 lg:p-8"
+      className="bg-[rgba(15,35,70,0.3)] p-4 lg:p-8"
     >
       <div className="max-w-7xl mx-auto space-y-6">
         {/* Header */}
         <div className="flex flex-col lg:flex-row lg:items-center lg:justify-between">
           <div>
-            <h1 className="text-3xl font-bold text-gray-900 mb-2">Groom Marketplace</h1>
-            <p className="text-gray-600">Hire professional grooms to care for your horses</p>
+            <h1 className="text-3xl font-bold text-[rgb(220,235,255)] mb-2">Groom Marketplace</h1>
+            <p className="text-[rgb(148,163,184)]">
+              Hire professional grooms to care for your horses
+            </p>
           </div>
 
           {/* Refresh Button */}
@@ -188,7 +190,7 @@ const GroomList: React.FC<GroomListProps> = ({
             data-testid="refresh-button"
             onClick={handleRefresh}
             disabled={refreshMutation.isPending}
-            className="mt-4 lg:mt-0 flex items-center space-x-2 px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors disabled:opacity-50"
+            className="mt-4 lg:mt-0 flex items-center space-x-2 btn-cobalt px-4 py-2 rounded-lg transition-colors disabled:opacity-50"
             aria-label="Refresh marketplace"
           >
             <RefreshCw className={`w-4 h-4 ${refreshMutation.isPending ? 'animate-spin' : ''}`} />
@@ -203,20 +205,20 @@ const GroomList: React.FC<GroomListProps> = ({
         {/* User Info & Refresh Status */}
         <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
           {marketplaceData?.nextFreeRefresh && (
-            <div className="bg-blue-50 border border-blue-200 rounded-lg p-4 flex items-center space-x-3">
-              <Clock className="w-5 h-5 text-blue-600" />
-              <span className="text-sm text-blue-900 font-medium">
+            <div className="bg-[rgba(37,99,235,0.1)] border border-blue-500/30 rounded-lg p-4 flex items-center space-x-3">
+              <Clock className="w-5 h-5 text-blue-400" />
+              <span className="text-sm text-blue-300 font-medium">
                 Next free refresh: {new Date(marketplaceData.nextFreeRefresh).toLocaleTimeString()}
               </span>
             </div>
           )}
           {user && (
-            <div className="bg-emerald-50 border border-emerald-200 rounded-lg p-4 flex items-center justify-between">
+            <div className="bg-[rgba(16,185,129,0.1)] border border-emerald-500/30 rounded-lg p-4 flex items-center justify-between">
               <div className="flex items-center space-x-2">
-                <DollarSign className="w-5 h-5 text-emerald-600" />
-                <span className="text-sm font-medium text-emerald-900">Your Balance</span>
+                <DollarSign className="w-5 h-5 text-emerald-400" />
+                <span className="text-sm font-medium text-emerald-300">Your Balance</span>
               </div>
-              <span className="text-lg font-bold text-emerald-900">
+              <span className="text-lg font-bold text-emerald-300">
                 ${user.money?.toLocaleString() || 0}
               </span>
             </div>
@@ -226,14 +228,14 @@ const GroomList: React.FC<GroomListProps> = ({
         {/* Filters and Sort */}
         <div
           data-testid="groom-filters"
-          className="bg-white rounded-lg shadow-sm border border-slate-200 p-4"
+          className="glass-panel rounded-lg border border-[rgba(37,99,235,0.3)] p-4"
         >
           <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
             {/* Skill Level Filter */}
             <div>
               <label
                 htmlFor="skill-level-filter"
-                className="block text-xs font-bold text-gray-500 uppercase tracking-wider mb-2"
+                className="block text-xs font-bold text-[rgb(148,163,184)] uppercase tracking-wider mb-2"
               >
                 Skill Level
               </label>
@@ -242,7 +244,7 @@ const GroomList: React.FC<GroomListProps> = ({
                 data-testid="skill-level-filter"
                 value={filterSkillLevel}
                 onChange={(e) => setFilterSkillLevel(e.target.value)}
-                className="w-full px-3 py-2 bg-white border border-slate-200 rounded-lg focus:ring-2 focus:ring-blue-500 focus:outline-none transition-shadow"
+                className="celestial-input w-full px-3 py-2 rounded-lg"
               >
                 <option value="all">All Levels</option>
                 <option value="novice">Novice</option>
@@ -256,7 +258,7 @@ const GroomList: React.FC<GroomListProps> = ({
             <div>
               <label
                 htmlFor="specialty-filter"
-                className="block text-xs font-bold text-gray-500 uppercase tracking-wider mb-2"
+                className="block text-xs font-bold text-[rgb(148,163,184)] uppercase tracking-wider mb-2"
               >
                 Specialty
               </label>
@@ -265,7 +267,7 @@ const GroomList: React.FC<GroomListProps> = ({
                 data-testid="specialty-filter"
                 value={filterSpecialty}
                 onChange={(e) => setFilterSpecialty(e.target.value)}
-                className="w-full px-3 py-2 bg-white border border-slate-200 rounded-lg focus:ring-2 focus:ring-blue-500 focus:outline-none transition-shadow"
+                className="celestial-input w-full px-3 py-2 rounded-lg"
               >
                 <option value="all">All Specialties</option>
                 <option value="foalCare">Foal Care</option>
@@ -279,7 +281,7 @@ const GroomList: React.FC<GroomListProps> = ({
             <div>
               <label
                 htmlFor="sort-select"
-                className="block text-xs font-bold text-gray-500 uppercase tracking-wider mb-2"
+                className="block text-xs font-bold text-[rgb(148,163,184)] uppercase tracking-wider mb-2"
               >
                 Sort By
               </label>
@@ -288,7 +290,7 @@ const GroomList: React.FC<GroomListProps> = ({
                 data-testid="sort-select"
                 value={sortBy}
                 onChange={(e) => setSortBy(e.target.value)}
-                className="w-full px-3 py-2 bg-white border border-slate-200 rounded-lg focus:ring-2 focus:ring-blue-500 focus:outline-none transition-shadow"
+                className="celestial-input w-full px-3 py-2 rounded-lg"
               >
                 <option value="name">Name</option>
                 <option value="price-asc">Price (Low to High)</option>
@@ -303,13 +305,17 @@ const GroomList: React.FC<GroomListProps> = ({
         {/* Groom Grid */}
         <div data-testid="groom-marketplace">
           {filteredAndSortedGrooms.length === 0 ? (
-            <div className="bg-white border border-slate-200 rounded-lg p-12 text-center">
-              <Users className="w-16 h-16 text-gray-300 mx-auto mb-4" />
-              <h3 className="text-xl font-semibold text-gray-900 mb-2">No Grooms Available</h3>
-              <p className="text-gray-600 mb-6">Try refreshing the marketplace to see new grooms</p>
+            <div className="glass-panel border border-[rgba(37,99,235,0.3)] rounded-lg p-12 text-center">
+              <Users className="w-16 h-16 text-[rgb(148,163,184)] mx-auto mb-4" />
+              <h3 className="text-xl font-semibold text-[rgb(220,235,255)] mb-2">
+                No Grooms Available
+              </h3>
+              <p className="text-[rgb(148,163,184)] mb-6">
+                Try refreshing the marketplace to see new grooms
+              </p>
               <button
                 onClick={handleRefresh}
-                className="px-6 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors"
+                className="btn-cobalt px-6 py-2 rounded-lg transition-colors"
               >
                 Refresh Marketplace
               </button>
@@ -327,19 +333,19 @@ const GroomList: React.FC<GroomListProps> = ({
                   <div
                     key={groom.marketplaceId}
                     data-testid={`groom-card-${groom.marketplaceId}`}
-                    className="bg-white border border-slate-200 rounded-lg p-6 hover:shadow-md transition-shadow"
+                    className="glass-panel border border-[rgba(37,99,235,0.3)] rounded-lg p-6 hover:shadow-md transition-shadow"
                   >
                     {/* Groom Header */}
                     <div className="flex items-start justify-between mb-4">
                       <div>
-                        <h3 className="text-xl font-bold text-gray-900">
+                        <h3 className="text-xl font-bold text-[rgb(220,235,255)]">
                           {groom.firstName} {groom.lastName}
                         </h3>
                         <div className="flex items-center gap-2 mt-1">
-                          <span className="px-2 py-0.5 bg-blue-50 text-blue-700 text-xs font-bold rounded uppercase">
+                          <span className="px-2 py-0.5 bg-[rgba(37,99,235,0.1)] text-blue-300 text-xs font-bold rounded uppercase border border-blue-500/30">
                             {groom.skillLevel}
                           </span>
-                          <span className="px-2 py-0.5 bg-emerald-50 text-emerald-700 text-xs font-bold rounded uppercase">
+                          <span className="px-2 py-0.5 bg-[rgba(16,185,129,0.1)] text-emerald-300 text-xs font-bold rounded uppercase border border-emerald-500/30">
                             {groom.specialty.replace(/([A-Z])/g, ' $1').trim()}
                           </span>
                         </div>
@@ -348,27 +354,29 @@ const GroomList: React.FC<GroomListProps> = ({
                     </div>
 
                     {/* Groom Details */}
-                    <div className="space-y-2 mb-4 text-sm border-y border-slate-50 py-4">
+                    <div className="space-y-2 mb-4 text-sm border-y border-[rgba(37,99,235,0.3)] py-4">
                       <div className="flex justify-between">
-                        <span className="text-slate-500">Experience:</span>
-                        <span className="font-semibold text-slate-900">
+                        <span className="text-[rgb(148,163,184)]">Experience:</span>
+                        <span className="font-semibold text-[rgb(220,235,255)]">
                           {groom.experience} years
                         </span>
                       </div>
                       <div className="flex justify-between items-center">
-                        <span className="text-slate-500">Personality:</span>
+                        <span className="text-[rgb(148,163,184)]">Personality:</span>
                         <GroomPersonalityBadge personality={groom.personality} />
                       </div>
                       <div className="flex justify-between">
-                        <span className="text-slate-500">Weekly Salary:</span>
-                        <span className="font-bold text-emerald-600">
+                        <span className="text-[rgb(148,163,184)]">Weekly Salary:</span>
+                        <span className="font-bold text-emerald-400">
                           ${groom.sessionRate}/week
                         </span>
                       </div>
                     </div>
 
                     {/* Bio */}
-                    <p className="text-sm text-slate-600 mb-6 line-clamp-2 italic">"{groom.bio}"</p>
+                    <p className="text-sm text-[rgb(148,163,184)] mb-6 line-clamp-2 italic">
+                      "{groom.bio}"
+                    </p>
 
                     {/* Hire Button */}
                     <button
@@ -376,8 +384,8 @@ const GroomList: React.FC<GroomListProps> = ({
                       disabled={!canAfford || hireMutation.isPending}
                       className={`w-full py-2.5 px-4 rounded-lg font-bold text-sm transition-colors ${
                         canAfford
-                          ? 'bg-blue-600 text-white hover:bg-blue-700'
-                          : 'bg-slate-100 text-slate-400 cursor-not-allowed border border-slate-200'
+                          ? 'btn-cobalt'
+                          : 'bg-[rgba(15,35,70,0.5)] text-[rgb(148,163,184)] cursor-not-allowed border border-[rgba(37,99,235,0.3)]'
                       }`}
                       aria-label={`Hire ${groom.firstName} ${groom.lastName}`}
                     >
@@ -397,11 +405,11 @@ const GroomList: React.FC<GroomListProps> = ({
 
         {/* Insufficient Funds Warning */}
         {user && (user.money || 0) < 500 && (
-          <div className="bg-amber-50 border border-amber-200 rounded-lg p-4 flex items-start space-x-3">
-            <AlertCircle className="w-5 h-5 text-amber-600 flex-shrink-0 mt-0.5" />
+          <div className="bg-[rgba(212,168,67,0.1)] border border-amber-500/30 rounded-lg p-4 flex items-start space-x-3">
+            <AlertCircle className="w-5 h-5 text-amber-400 flex-shrink-0 mt-0.5" />
             <div>
-              <h4 className="font-bold text-amber-900">Low Balance</h4>
-              <p className="text-sm text-amber-800 mt-1">
+              <h4 className="font-bold text-amber-300">Low Balance</h4>
+              <p className="text-sm text-amber-400/80 mt-1">
                 You might not have enough to hire top-tier grooms. Remember that hiring requires
                 paying the first week upfront.
               </p>
@@ -414,36 +422,38 @@ const GroomList: React.FC<GroomListProps> = ({
       {showHireModal && selectedGroom && (
         <div
           data-testid="hire-modal"
-          className="fixed inset-0 bg-slate-900/60 backdrop-blur-sm flex items-center justify-center p-4 z-50 animate-in fade-in duration-200"
+          className="fixed inset-0 bg-black/70 backdrop-blur-sm flex items-center justify-center p-4 z-50 animate-in fade-in duration-200"
           onClick={() => setShowHireModal(false)}
         >
           <div
-            className="bg-white rounded-xl shadow-2xl max-w-md w-full p-6 border border-slate-200 animate-in zoom-in-95 duration-200"
+            className="glass-panel rounded-xl shadow-2xl max-w-md w-full p-6 border border-[rgba(37,99,235,0.3)] animate-in zoom-in-95 duration-200"
             onClick={(e) => e.stopPropagation()}
           >
             <div className="flex items-center space-x-3 mb-4">
-              <div className="bg-blue-100 p-2 rounded-full">
-                <Users className="w-6 h-6 text-blue-600" />
+              <div className="bg-[rgba(37,99,235,0.15)] p-2 rounded-full">
+                <Users className="w-6 h-6 text-blue-400" />
               </div>
-              <h3 className="text-xl font-bold text-slate-900">Confirm Hire</h3>
+              <h3 className="text-xl font-bold text-[rgb(220,235,255)]">Confirm Hire</h3>
             </div>
 
-            <p className="text-slate-600 mb-6 leading-relaxed">
+            <p className="text-[rgb(148,163,184)] mb-6 leading-relaxed">
               Are you sure you want to hire{' '}
-              <strong>
+              <strong className="text-[rgb(220,235,255)]">
                 {selectedGroom.firstName} {selectedGroom.lastName}
               </strong>
               ? This professional will be added to your stable staff.
             </p>
 
-            <div className="bg-slate-50 rounded-xl p-5 mb-6 border border-slate-100">
+            <div className="bg-[rgba(15,35,70,0.5)] rounded-xl p-5 mb-6 border border-[rgba(37,99,235,0.3)]">
               <div className="flex items-center justify-between mb-3 text-sm">
-                <span className="text-slate-500">Weekly Salary:</span>
-                <span className="font-semibold text-slate-900">${selectedGroom.sessionRate}</span>
+                <span className="text-[rgb(148,163,184)]">Weekly Salary:</span>
+                <span className="font-semibold text-[rgb(220,235,255)]">
+                  ${selectedGroom.sessionRate}
+                </span>
               </div>
-              <div className="flex items-center justify-between pt-3 border-t border-slate-200">
-                <span className="text-sm font-bold text-slate-700">Total Upfront:</span>
-                <span className="text-2xl font-black text-blue-600">
+              <div className="flex items-center justify-between pt-3 border-t border-[rgba(37,99,235,0.3)]">
+                <span className="text-sm font-bold text-[rgb(148,163,184)]">Total Upfront:</span>
+                <span className="text-2xl font-black text-blue-400">
                   ${calculateHiringCost(selectedGroom.sessionRate)}
                 </span>
               </div>
@@ -452,14 +462,14 @@ const GroomList: React.FC<GroomListProps> = ({
             <div className="flex gap-3">
               <button
                 onClick={() => setShowHireModal(false)}
-                className="flex-1 px-4 py-2.5 border border-slate-200 rounded-lg text-slate-700 font-bold hover:bg-slate-50 transition-colors"
+                className="flex-1 px-4 py-2.5 border border-[rgba(37,99,235,0.3)] rounded-lg text-[rgb(148,163,184)] font-bold hover:bg-[rgba(15,35,70,0.5)] transition-colors"
               >
                 Cancel
               </button>
               <button
                 onClick={handleHireConfirm}
                 disabled={hireMutation.isPending}
-                className="flex-1 px-4 py-2.5 bg-blue-600 text-white rounded-lg font-bold hover:bg-blue-700 shadow-lg shadow-blue-200 transition-all active:scale-95 disabled:opacity-50"
+                className="flex-1 px-4 py-2.5 btn-cobalt rounded-lg font-bold transition-all active:scale-95 disabled:opacity-50"
               >
                 {hireMutation.isPending ? 'Hiring...' : 'Hire Groom'}
               </button>

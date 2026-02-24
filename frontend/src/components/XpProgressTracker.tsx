@@ -127,13 +127,13 @@ const XpProgressTracker: React.FC<XpProgressTrackerProps> = React.memo(
       >
         {/* Level and XP text row */}
         <div className="flex items-center justify-between">
-          <span className={`font-semibold text-gray-800 ${sizeStyles.levelText}`}>
-            <span className="text-gray-500">Level </span>
+          <span className={`font-semibold text-[rgb(220,235,255)] ${sizeStyles.levelText}`}>
+            <span className="text-[rgb(148,163,184)]">Level </span>
             <span data-testid="xp-tracker-level">{currentLevel}</span>
           </span>
           <span
             data-testid="xp-tracker-text"
-            className={`text-gray-600 ${sizeStyles.xpText}`}
+            className={`text-[rgb(148,163,184)] ${sizeStyles.xpText}`}
           >
             {safeXpForCurrentLevel}/{xpToNextLevel} XP
           </span>
@@ -169,19 +169,21 @@ const XpProgressTracker: React.FC<XpProgressTrackerProps> = React.memo(
             <div
               data-testid="xp-tracker-tooltip"
               role="tooltip"
-              className="absolute bottom-full left-1/2 -translate-x-1/2 mb-2 z-50 bg-gray-900 text-white text-xs rounded-lg px-3 py-2 shadow-lg whitespace-nowrap"
+              className="absolute bottom-full left-1/2 -translate-x-1/2 mb-2 z-50 bg-[rgba(5,15,40,0.95)] border border-[rgba(37,99,235,0.3)] text-[rgb(220,235,255)] text-xs rounded-lg px-3 py-2 shadow-lg whitespace-nowrap"
             >
               <div className="space-y-1">
                 <div className="font-semibold">Level {currentLevel}</div>
-                <div>Progress: {safeXpForCurrentLevel}/{xpToNextLevel} XP</div>
-                <div>Next level: {Math.max(0, xpToNextLevel - safeXpForCurrentLevel)} XP needed</div>
+                <div>
+                  Progress: {safeXpForCurrentLevel}/{xpToNextLevel} XP
+                </div>
+                <div>
+                  Next level: {Math.max(0, xpToNextLevel - safeXpForCurrentLevel)} XP needed
+                </div>
                 <div>{progressPercent}% to next level</div>
-                {totalXp !== undefined && (
-                  <div>Total XP: {totalXp}</div>
-                )}
+                {totalXp !== undefined && <div>Total XP: {totalXp}</div>}
               </div>
               {/* Tooltip arrow */}
-              <div className="absolute top-full left-1/2 -translate-x-1/2 w-0 h-0 border-l-4 border-r-4 border-t-4 border-transparent border-t-gray-900" />
+              <div className="absolute top-full left-1/2 -translate-x-1/2 w-0 h-0 border-l-4 border-r-4 border-t-4 border-transparent border-t-[rgba(5,15,40,0.95)]" />
             </div>
           )}
         </div>

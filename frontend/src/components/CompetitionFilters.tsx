@@ -30,9 +30,9 @@ export interface CompetitionFiltersProps {
   disciplineFilter: DisciplineFilter;
   dateRangeFilter: DateRangeFilter;
   entryFeeFilter: EntryFeeFilter;
-  onDisciplineChange: (discipline: DisciplineFilter) => void;
-  onDateRangeChange: (range: DateRangeFilter) => void;
-  onEntryFeeChange: (fee: EntryFeeFilter) => void;
+  onDisciplineChange: (_discipline: DisciplineFilter) => void;
+  onDateRangeChange: (_range: DateRangeFilter) => void;
+  onEntryFeeChange: (_fee: EntryFeeFilter) => void;
   onClearFilters: () => void;
   className?: string;
 }
@@ -54,30 +54,32 @@ const ENTRY_FEE_OPTIONS: readonly { value: EntryFeeFilter; label: string }[] = [
 ] as const;
 
 // Helper function to render filter button
-const FilterButton = memo(({
-  isActive,
-  onClick,
-  testId,
-  children,
-}: {
-  isActive: boolean;
-  onClick: () => void;
-  testId: string;
-  children: React.ReactNode;
-}) => (
-  <button
-    onClick={onClick}
-    className={`flex-1 px-1 py-2 rounded text-xs font-medium transition-colors ${
-      isActive
-        ? 'bg-blue-600 text-white'
-        : 'bg-slate-100 text-slate-700 hover:bg-slate-200'
-    }`}
-    data-testid={testId}
-    aria-pressed={isActive}
-  >
-    {children}
-  </button>
-));
+const FilterButton = memo(
+  ({
+    isActive,
+    onClick,
+    testId,
+    children,
+  }: {
+    isActive: boolean;
+    onClick: () => void;
+    testId: string;
+    children: React.ReactNode;
+  }) => (
+    <button
+      onClick={onClick}
+      className={`flex-1 px-1 py-2 rounded text-xs font-medium transition-colors ${
+        isActive
+          ? 'bg-blue-600 text-white'
+          : 'bg-[rgba(15,35,70,0.5)] text-[rgb(148,163,184)] hover:bg-[rgba(15,35,70,0.7)]'
+      }`}
+      data-testid={testId}
+      aria-pressed={isActive}
+    >
+      {children}
+    </button>
+  )
+);
 
 FilterButton.displayName = 'FilterButton';
 
@@ -100,7 +102,7 @@ const CompetitionFilters = ({
   const disciplinesByCategory = useMemo(() => {
     const grouped: Record<string, typeof DISCIPLINES> = {};
 
-    DISCIPLINES.forEach(discipline => {
+    DISCIPLINES.forEach((discipline) => {
       if (!grouped[discipline.category]) {
         grouped[discipline.category] = [];
       }
@@ -111,35 +113,31 @@ const CompetitionFilters = ({
   }, []);
 
   // Check if any filters are active
-  const hasActiveFilters = useMemo(() =>
-    disciplineFilter !== 'all' ||
-    dateRangeFilter !== 'all' ||
-    entryFeeFilter !== 'all',
-  [disciplineFilter, dateRangeFilter, entryFeeFilter]);
+  const hasActiveFilters = useMemo(
+    () => disciplineFilter !== 'all' || dateRangeFilter !== 'all' || entryFeeFilter !== 'all',
+    [disciplineFilter, dateRangeFilter, entryFeeFilter]
+  );
 
   return (
-    <div
-      className={`bg-white rounded-lg shadow p-4 ${className}`}
-      data-testid="competition-filters"
-    >
+    <div className={`glass-panel rounded-lg p-4 ${className}`} data-testid="competition-filters">
       <div className="grid gap-4 md:grid-cols-4">
         {/* Discipline Filter */}
         <div>
-          <label className="block text-sm font-medium text-slate-700 mb-2">
+          <label className="block text-sm font-medium text-[rgb(148,163,184)] mb-2">
             <Filter className="inline h-4 w-4 mr-1" aria-hidden="true" />
             Discipline
           </label>
           <select
             value={disciplineFilter}
             onChange={(e) => onDisciplineChange(e.target.value as DisciplineFilter)}
-            className="w-full px-3 py-2 border border-slate-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
+            className="celestial-input w-full px-3 py-2 rounded-lg"
             data-testid="filter-discipline"
             aria-label="Filter by discipline"
           >
             <option value="all">All Disciplines</option>
             {Object.entries(disciplinesByCategory).map(([category, disciplines]) => (
               <optgroup key={category} label={category}>
-                {disciplines.map(discipline => (
+                {disciplines.map((discipline) => (
                   <option key={discipline.id} value={discipline.id}>
                     {discipline.name}
                   </option>
@@ -151,12 +149,12 @@ const CompetitionFilters = ({
 
         {/* Date Range Filter */}
         <div>
-          <label className="block text-sm font-medium text-slate-700 mb-2">
+          <label className="block text-sm font-medium text-[rgb(148,163,184)] mb-2">
             <Calendar className="inline h-4 w-4 mr-1" aria-hidden="true" />
             Date Range
           </label>
           <div className="flex gap-1" role="group" aria-label="Date range filters">
-            {DATE_RANGE_OPTIONS.map(option => (
+            {DATE_RANGE_OPTIONS.map((option) => (
               <FilterButton
                 key={option.value}
                 isActive={dateRangeFilter === option.value}
@@ -171,12 +169,12 @@ const CompetitionFilters = ({
 
         {/* Entry Fee Filter */}
         <div>
-          <label className="block text-sm font-medium text-slate-700 mb-2">
+          <label className="block text-sm font-medium text-[rgb(148,163,184)] mb-2">
             <DollarSign className="inline h-4 w-4 mr-1" aria-hidden="true" />
             Entry Fee
           </label>
           <div className="flex gap-1" role="group" aria-label="Entry fee filters">
-            {ENTRY_FEE_OPTIONS.map(option => (
+            {ENTRY_FEE_OPTIONS.map((option) => (
               <FilterButton
                 key={option.value}
                 isActive={entryFeeFilter === option.value}
@@ -196,8 +194,8 @@ const CompetitionFilters = ({
             disabled={!hasActiveFilters}
             className={`w-full px-4 py-2 rounded-lg font-medium transition-colors ${
               hasActiveFilters
-                ? 'bg-red-100 text-red-700 hover:bg-red-200 focus:outline-none focus:ring-2 focus:ring-red-500 focus:ring-offset-2'
-                : 'bg-slate-100 text-slate-400 cursor-not-allowed'
+                ? 'bg-[rgba(239,68,68,0.1)] text-red-400 hover:bg-[rgba(239,68,68,0.2)] focus:outline-none focus:ring-2 focus:ring-red-500 focus:ring-offset-2'
+                : 'bg-[rgba(15,35,70,0.5)] text-[rgb(148,163,184)] cursor-not-allowed opacity-50'
             }`}
             data-testid="filter-clear"
             aria-label="Clear all filters"

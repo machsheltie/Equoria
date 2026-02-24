@@ -151,10 +151,7 @@ const LevelUpCelebrationModal = memo(function LevelUpCelebrationModal({
         document.body.style.overflow = '';
 
         // Restore focus to previous element
-        if (
-          previousActiveElement.current &&
-          previousActiveElement.current instanceof HTMLElement
-        ) {
+        if (previousActiveElement.current && previousActiveElement.current instanceof HTMLElement) {
           previousActiveElement.current.focus();
         }
       };
@@ -171,7 +168,7 @@ const LevelUpCelebrationModal = memo(function LevelUpCelebrationModal({
 
   const modalContent = (
     <div
-      className="fixed inset-0 bg-black/60 flex items-center justify-center z-50 p-4"
+      className="fixed inset-0 bg-black/70 flex items-center justify-center z-50 p-4"
       onClick={handleBackdropClick}
       data-testid="modal-backdrop"
     >
@@ -181,7 +178,7 @@ const LevelUpCelebrationModal = memo(function LevelUpCelebrationModal({
         aria-modal="true"
         aria-labelledby="levelup-modal-title"
         tabIndex={-1}
-        className="bg-white rounded-2xl shadow-2xl max-w-lg w-full overflow-hidden flex flex-col focus:outline-none animate-fade-in"
+        className="glass-panel rounded-2xl shadow-2xl max-w-lg w-full overflow-hidden flex flex-col focus:outline-none animate-fade-in border border-[rgba(37,99,235,0.3)]"
         onClick={handleContentClick}
         data-testid="levelup-celebration-modal"
       >
@@ -213,10 +210,7 @@ const LevelUpCelebrationModal = memo(function LevelUpCelebrationModal({
           {/* Trophy Icon */}
           <div className="flex justify-center mb-3">
             <div className="bg-white/20 rounded-full p-4">
-              <Trophy
-                className="h-10 w-10 text-yellow-100 drop-shadow-lg"
-                aria-hidden="true"
-              />
+              <Trophy className="h-10 w-10 text-yellow-100 drop-shadow-lg" aria-hidden="true" />
             </div>
           </div>
 
@@ -243,10 +237,7 @@ const LevelUpCelebrationModal = memo(function LevelUpCelebrationModal({
           </p>
 
           {/* Level Transition Text */}
-          <p
-            className="text-white/80 text-sm mt-1"
-            data-testid="level-transition"
-          >
+          <p className="text-white/80 text-sm mt-1" data-testid="level-transition">
             Level {oldLevel} → Level {newLevel}
           </p>
         </div>
@@ -258,7 +249,7 @@ const LevelUpCelebrationModal = memo(function LevelUpCelebrationModal({
             <div className="flex items-center justify-center mb-4">
               <span
                 data-testid="xp-gained-display"
-                className="inline-flex items-center gap-1 px-3 py-1 rounded-full bg-purple-100 text-purple-700 text-sm font-semibold"
+                className="inline-flex items-center gap-1 px-3 py-1 rounded-full bg-[rgba(139,92,246,0.15)] text-purple-300 border border-purple-500/30 text-sm font-semibold"
               >
                 +{totalXpGained} XP
               </span>
@@ -269,7 +260,7 @@ const LevelUpCelebrationModal = memo(function LevelUpCelebrationModal({
           <div data-testid="stat-changes-table" className="mb-4">
             {statChanges.length > 0 && (
               <>
-                <h3 className="text-sm font-semibold text-slate-600 mb-2 uppercase tracking-wide">
+                <h3 className="text-sm font-semibold text-[rgb(148,163,184)] mb-2 uppercase tracking-wide">
                   Stat Changes
                 </h3>
                 <div className="space-y-2">
@@ -281,23 +272,23 @@ const LevelUpCelebrationModal = memo(function LevelUpCelebrationModal({
                       <div
                         key={change.statName}
                         data-testid={`stat-row-${change.statName}`}
-                        className="flex items-center justify-between py-2 px-3 rounded-lg bg-slate-50"
+                        className="flex items-center justify-between py-2 px-3 rounded-lg bg-[rgba(15,35,70,0.4)] border border-[rgba(37,99,235,0.2)]"
                       >
                         {/* Stat Name */}
-                        <span className="text-sm font-medium text-slate-700 flex-1">
+                        <span className="text-sm font-medium text-[rgb(220,235,255)] flex-1">
                           {change.statName}
                         </span>
 
                         {/* Old Value */}
                         <span
                           data-testid="stat-old-value"
-                          className="text-sm text-slate-500 w-12 text-right"
+                          className="text-sm text-[rgb(148,163,184)] w-12 text-right"
                         >
                           {change.oldValue}
                         </span>
 
                         {/* Arrow separator */}
-                        <span className="mx-2 text-slate-400" aria-hidden="true">
+                        <span className="mx-2 text-[rgb(148,163,184)]" aria-hidden="true">
                           →
                         </span>
 
@@ -305,7 +296,7 @@ const LevelUpCelebrationModal = memo(function LevelUpCelebrationModal({
                         <span
                           data-testid="stat-new-value"
                           className={`text-sm font-semibold w-12 text-right ${
-                            hasIncreased ? 'text-green-600' : 'text-slate-600'
+                            hasIncreased ? 'text-emerald-400' : 'text-[rgb(148,163,184)]'
                           }`}
                         >
                           {change.newValue}
@@ -315,10 +306,9 @@ const LevelUpCelebrationModal = memo(function LevelUpCelebrationModal({
                         {hasIncreased && (
                           <span
                             data-testid="stat-increase-indicator"
-                            className="ml-2 inline-flex items-center gap-0.5 text-xs font-bold text-green-600"
+                            className="ml-2 inline-flex items-center gap-0.5 text-xs font-bold text-emerald-400"
                           >
-                            <ArrowUp className="h-3 w-3" aria-hidden="true" />
-                            +{gain}
+                            <ArrowUp className="h-3 w-3" aria-hidden="true" />+{gain}
                           </span>
                         )}
                       </div>
@@ -332,10 +322,10 @@ const LevelUpCelebrationModal = memo(function LevelUpCelebrationModal({
           {/* Total Stat Gain Summary */}
           <div
             data-testid="total-stat-gain"
-            className="flex items-center justify-between py-3 px-4 rounded-xl bg-green-50 border border-green-200 mb-6"
+            className="flex items-center justify-between py-3 px-4 rounded-xl bg-[rgba(16,185,129,0.1)] border border-emerald-500/30 mb-6"
           >
-            <span className="text-sm font-semibold text-slate-700">Total Stat Gain</span>
-            <span className="text-lg font-bold text-green-600">+{totalStatGain}</span>
+            <span className="text-sm font-semibold text-[rgb(220,235,255)]">Total Stat Gain</span>
+            <span className="text-lg font-bold text-emerald-400">+{totalStatGain}</span>
           </div>
 
           {/* Continue Button */}

@@ -18,19 +18,14 @@
  * - TypeScript for type safety
  */
 
-import React, { useState, useEffect, useMemo } from 'react';
+import React, { useState, useMemo } from 'react';
 import { useQuery, useMutation } from '@tanstack/react-query';
 import {
   FileText,
   Download,
-  Calendar,
-  TrendingUp,
   Brain,
   Settings,
   Eye,
-  Save,
-  Share2,
-  Filter,
   BarChart3,
   PieChart,
   LineChart,
@@ -109,7 +104,7 @@ interface ReportData {
   };
   trends: TrendData;
   insights: AIInsight[];
-  rawData: any[];
+  rawData: Record<string, unknown>[];
 }
 
 // API Base URL
@@ -167,7 +162,7 @@ const useGenerateReport = () => {
 const EnhancedReportingInterface: React.FC<EnhancedReportingInterfaceProps> = ({
   userId,
   selectedHorses = [],
-  reportType = 'individual',
+  reportType: _reportType = 'individual',
   className = '',
 }) => {
   const [reportConfig, setReportConfig] = useState<ReportConfig>({
@@ -190,9 +185,9 @@ const EnhancedReportingInterface: React.FC<EnhancedReportingInterfaceProps> = ({
   // Handle no user
   if (!userId) {
     return (
-      <div className="flex items-center justify-center h-64 text-gray-500">
+      <div className="flex items-center justify-center h-64 text-[rgb(148,163,184)]">
         <div className="text-center">
-          <FileText className="w-12 h-12 mx-auto mb-4 text-gray-400" />
+          <FileText className="w-12 h-12 mx-auto mb-4 text-[rgb(148,163,184)]" />
           <p>Please log in to access reporting features</p>
         </div>
       </div>
@@ -205,7 +200,7 @@ const EnhancedReportingInterface: React.FC<EnhancedReportingInterfaceProps> = ({
       <div className="flex items-center justify-center h-64">
         <div className="text-center">
           <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-blue-500 mx-auto mb-2"></div>
-          <p>Loading reporting interface...</p>
+          <p className="text-[rgb(148,163,184)]">Loading reporting interface...</p>
         </div>
       </div>
     );
@@ -216,11 +211,8 @@ const EnhancedReportingInterface: React.FC<EnhancedReportingInterfaceProps> = ({
     return (
       <div className="flex items-center justify-center h-64">
         <div className="text-center">
-          <p className="text-red-600 mb-4">Error loading reporting interface</p>
-          <button
-            onClick={() => metricsQuery.refetch()}
-            className="px-4 py-2 bg-blue-500 text-white rounded hover:bg-blue-600"
-          >
+          <p className="text-red-400 mb-4">Error loading reporting interface</p>
+          <button onClick={() => metricsQuery.refetch()} className="btn-cobalt px-4 py-2 rounded">
             Retry
           </button>
         </div>
@@ -286,20 +278,22 @@ const EnhancedReportingInterface: React.FC<EnhancedReportingInterfaceProps> = ({
       {/* Header */}
       <div className="flex items-center justify-between">
         <div>
-          <h2 className="text-2xl font-bold text-gray-900">Enhanced Reporting</h2>
-          <p className="text-gray-600">Create comprehensive epigenetic analysis reports</p>
+          <h2 className="text-2xl font-bold text-[rgb(220,235,255)]">Enhanced Reporting</h2>
+          <p className="text-[rgb(148,163,184)]">
+            Create comprehensive epigenetic analysis reports
+          </p>
         </div>
         <div className="flex space-x-2">
           <button
             onClick={() => setShowAdvanced(!showAdvanced)}
-            className="p-2 text-gray-500 hover:text-gray-700 hover:bg-gray-100 rounded"
+            className="p-2 text-[rgb(148,163,184)] hover:text-[rgb(220,235,255)] hover:bg-[rgba(15,35,70,0.5)] rounded"
           >
             <Settings className="w-5 h-5" />
           </button>
           <button
             onClick={handleGenerateReport}
             disabled={generateReportMutation.isPending || reportConfig.sections.length === 0}
-            className="px-4 py-2 bg-blue-500 text-white rounded hover:bg-blue-600 disabled:bg-gray-300 disabled:cursor-not-allowed flex items-center space-x-2"
+            className="btn-cobalt px-4 py-2 rounded disabled:opacity-50 disabled:cursor-not-allowed flex items-center space-x-2"
           >
             {generateReportMutation.isPending ? (
               <>
@@ -317,7 +311,7 @@ const EnhancedReportingInterface: React.FC<EnhancedReportingInterfaceProps> = ({
       </div>
 
       {/* Tab Navigation */}
-      <div className="border-b border-gray-200">
+      <div className="border-b border-[rgba(37,99,235,0.3)]">
         <nav className="-mb-px flex space-x-8">
           {[
             { id: 'builder', label: 'Report Builder', icon: Settings },
@@ -326,11 +320,11 @@ const EnhancedReportingInterface: React.FC<EnhancedReportingInterfaceProps> = ({
           ].map((tab) => (
             <button
               key={tab.id}
-              onClick={() => setActiveTab(tab.id as any)}
+              onClick={() => setActiveTab(tab.id as 'builder' | 'preview' | 'insights')}
               className={`py-2 px-1 border-b-2 font-medium text-sm flex items-center space-x-2 ${
                 activeTab === tab.id
-                  ? 'border-blue-500 text-blue-600'
-                  : 'border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300'
+                  ? 'border-blue-500 text-blue-400'
+                  : 'border-transparent text-[rgb(148,163,184)] hover:text-[rgb(220,235,255)] hover:border-[rgba(37,99,235,0.3)]'
               }`}
             >
               <tab.icon className="w-4 h-4" />
@@ -367,8 +361,8 @@ const EnhancedReportingInterface: React.FC<EnhancedReportingInterfaceProps> = ({
       )}
 
       {/* Export Manager */}
-      <div className="bg-white rounded-lg shadow p-6">
-        <h3 className="text-lg font-semibold mb-4 flex items-center space-x-2">
+      <div className="glass-panel rounded-lg p-6">
+        <h3 className="text-lg font-semibold text-[rgb(220,235,255)] mb-4 flex items-center space-x-2">
           <Download className="w-5 h-5" />
           <span>Export Manager</span>
         </h3>
@@ -393,15 +387,15 @@ const EnhancedReportingInterface: React.FC<EnhancedReportingInterfaceProps> = ({
             <button
               key={option.format}
               onClick={() => handleExport(option.format)}
-              className={`p-4 border rounded-lg hover:bg-gray-50 text-center transition-colors ${
+              className={`p-4 border rounded-lg hover:bg-[rgba(15,35,70,0.5)] text-center transition-colors ${
                 reportConfig.format === option.format
-                  ? 'border-blue-500 bg-blue-50'
-                  : 'border-gray-200'
+                  ? 'border-blue-500 bg-[rgba(37,99,235,0.1)]'
+                  : 'border-[rgba(37,99,235,0.3)]'
               }`}
             >
-              <option.icon className="w-6 h-6 mx-auto mb-2 text-gray-600" />
-              <div className="text-lg font-medium">{option.label}</div>
-              <div className="text-sm text-gray-500">{option.description}</div>
+              <option.icon className="w-6 h-6 mx-auto mb-2 text-[rgb(148,163,184)]" />
+              <div className="text-lg font-medium text-[rgb(220,235,255)]">{option.label}</div>
+              <div className="text-sm text-[rgb(148,163,184)]">{option.description}</div>
             </button>
           ))}
         </div>
@@ -413,10 +407,10 @@ const EnhancedReportingInterface: React.FC<EnhancedReportingInterfaceProps> = ({
 // Report Builder Tab Component
 interface ReportBuilderTabProps {
   reportConfig: ReportConfig;
-  setReportConfig: (config: ReportConfig) => void;
+  setReportConfig: (_config: ReportConfig) => void;
   metricsByCategory: Record<string, MetricDefinition[]>;
   showAdvanced: boolean;
-  onSectionToggle: (sectionId: string) => void;
+  onSectionToggle: (_sectionId: string) => void;
 }
 
 const ReportBuilderTab: React.FC<ReportBuilderTabProps> = ({
@@ -429,28 +423,34 @@ const ReportBuilderTab: React.FC<ReportBuilderTabProps> = ({
   return (
     <div className="space-y-6">
       {/* Report Configuration */}
-      <div className="bg-white rounded-lg shadow p-6">
-        <h3 className="text-lg font-semibold mb-4">Custom Report Builder</h3>
+      <div className="glass-panel rounded-lg p-6">
+        <h3 className="text-lg font-semibold text-[rgb(220,235,255)] mb-4">
+          Custom Report Builder
+        </h3>
 
         <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mb-6">
           <div>
-            <label className="block text-sm font-medium text-gray-700 mb-2">Report Title</label>
+            <label className="block text-sm font-medium text-[rgb(148,163,184)] mb-2">
+              Report Title
+            </label>
             <input
               type="text"
               value={reportConfig.title}
               onChange={(e) => setReportConfig({ ...reportConfig, title: e.target.value })}
-              className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+              className="celestial-input w-full px-3 py-2 rounded-lg"
               data-testid="report-title-input"
               placeholder="Enter report title..."
             />
           </div>
 
           <div>
-            <label className="block text-sm font-medium text-gray-700 mb-2">Date Range</label>
+            <label className="block text-sm font-medium text-[rgb(148,163,184)] mb-2">
+              Date Range
+            </label>
             <select
               value={reportConfig.dateRange}
               onChange={(e) => setReportConfig({ ...reportConfig, dateRange: e.target.value })}
-              className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500"
+              className="celestial-input w-full px-3 py-2 rounded-lg"
               data-testid="date-range-select"
             >
               <option value="last_7_days">Last 7 Days</option>
@@ -467,25 +467,29 @@ const ReportBuilderTab: React.FC<ReportBuilderTabProps> = ({
         {reportConfig.dateRange === 'custom' && (
           <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mb-6">
             <div>
-              <label className="block text-sm font-medium text-gray-700 mb-2">Start Date</label>
+              <label className="block text-sm font-medium text-[rgb(148,163,184)] mb-2">
+                Start Date
+              </label>
               <input
                 type="date"
                 value={reportConfig.customDateStart || ''}
                 onChange={(e) =>
                   setReportConfig({ ...reportConfig, customDateStart: e.target.value })
                 }
-                className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500"
+                className="celestial-input w-full px-3 py-2 rounded-lg"
               />
             </div>
             <div>
-              <label className="block text-sm font-medium text-gray-700 mb-2">End Date</label>
+              <label className="block text-sm font-medium text-[rgb(148,163,184)] mb-2">
+                End Date
+              </label>
               <input
                 type="date"
                 value={reportConfig.customDateEnd || ''}
                 onChange={(e) =>
                   setReportConfig({ ...reportConfig, customDateEnd: e.target.value })
                 }
-                className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500"
+                className="celestial-input w-full px-3 py-2 rounded-lg"
               />
             </div>
           </div>
@@ -494,13 +498,13 @@ const ReportBuilderTab: React.FC<ReportBuilderTabProps> = ({
         {/* Report Description */}
         {showAdvanced && (
           <div className="mb-6">
-            <label className="block text-sm font-medium text-gray-700 mb-2">
+            <label className="block text-sm font-medium text-[rgb(148,163,184)] mb-2">
               Description (Optional)
             </label>
             <textarea
               value={reportConfig.description || ''}
               onChange={(e) => setReportConfig({ ...reportConfig, description: e.target.value })}
-              className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500"
+              className="celestial-input w-full px-3 py-2 rounded-lg"
               rows={3}
               placeholder="Add a description for this report..."
             />
@@ -517,9 +521,9 @@ const ReportBuilderTab: React.FC<ReportBuilderTabProps> = ({
               onChange={(e) =>
                 setReportConfig({ ...reportConfig, includeCharts: e.target.checked })
               }
-              className="h-4 w-4 text-blue-600 focus:ring-blue-500 border-gray-300 rounded"
+              className="h-4 w-4 text-blue-600 focus:ring-blue-500 border-[rgba(37,99,235,0.3)] rounded"
             />
-            <label htmlFor="includeCharts" className="ml-2 block text-sm text-gray-700">
+            <label htmlFor="includeCharts" className="ml-2 block text-sm text-[rgb(148,163,184)]">
               Include Charts and Visualizations
             </label>
           </div>
@@ -532,9 +536,9 @@ const ReportBuilderTab: React.FC<ReportBuilderTabProps> = ({
               onChange={(e) =>
                 setReportConfig({ ...reportConfig, includeSummary: e.target.checked })
               }
-              className="h-4 w-4 text-blue-600 focus:ring-blue-500 border-gray-300 rounded"
+              className="h-4 w-4 text-blue-600 focus:ring-blue-500 border-[rgba(37,99,235,0.3)] rounded"
             />
-            <label htmlFor="includeSummary" className="ml-2 block text-sm text-gray-700">
+            <label htmlFor="includeSummary" className="ml-2 block text-sm text-[rgb(148,163,184)]">
               Include Executive Summary
             </label>
           </div>
@@ -542,13 +546,13 @@ const ReportBuilderTab: React.FC<ReportBuilderTabProps> = ({
       </div>
 
       {/* Available Metrics */}
-      <div className="bg-white rounded-lg shadow p-6">
-        <h4 className="font-medium text-gray-700 mb-4">Available Metrics</h4>
+      <div className="glass-panel rounded-lg p-6">
+        <h4 className="font-medium text-[rgb(148,163,184)] mb-4">Available Metrics</h4>
 
         <div className="space-y-6" data-testid="metrics-grid">
           {Object.entries(metricsByCategory).map(([category, metrics]) => (
             <div key={category}>
-              <h5 className="text-sm font-medium text-gray-600 uppercase tracking-wide mb-3">
+              <h5 className="text-sm font-medium text-[rgb(148,163,184)] uppercase tracking-wide mb-3">
                 {category.replace('_', ' ')}
               </h5>
               <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-3">
@@ -557,19 +561,21 @@ const ReportBuilderTab: React.FC<ReportBuilderTabProps> = ({
                     key={metric.id}
                     className={`p-3 border rounded-lg cursor-pointer transition-colors ${
                       reportConfig.sections.includes(metric.id)
-                        ? 'bg-blue-50 border-blue-300 ring-2 ring-blue-200'
-                        : 'hover:bg-gray-50 border-gray-200'
+                        ? 'bg-[rgba(37,99,235,0.1)] border-blue-500/30 ring-2 ring-blue-500/20'
+                        : 'hover:bg-[rgba(15,35,70,0.5)] border-[rgba(37,99,235,0.3)]'
                     }`}
                     onClick={() => onSectionToggle(metric.id)}
                     data-testid={`metric-${metric.id}`}
                   >
                     <div className="flex items-center justify-between mb-2">
-                      <span className="text-sm font-medium text-gray-900">{metric.label}</span>
+                      <span className="text-sm font-medium text-[rgb(220,235,255)]">
+                        {metric.label}
+                      </span>
                       <div
                         className={`w-4 h-4 rounded border-2 flex items-center justify-center ${
                           reportConfig.sections.includes(metric.id)
                             ? 'bg-blue-500 border-blue-500'
-                            : 'border-gray-300'
+                            : 'border-[rgba(37,99,235,0.3)]'
                         }`}
                       >
                         {reportConfig.sections.includes(metric.id) && (
@@ -577,14 +583,16 @@ const ReportBuilderTab: React.FC<ReportBuilderTabProps> = ({
                         )}
                       </div>
                     </div>
-                    <p className="text-xs text-gray-500 mb-2">{metric.description}</p>
+                    <p className="text-xs text-[rgb(148,163,184)] mb-2">{metric.description}</p>
                     <div className="flex items-center justify-between">
-                      <span className="text-xs text-gray-400 capitalize">{metric.dataType}</span>
+                      <span className="text-xs text-[rgb(148,163,184)] capitalize">
+                        {metric.dataType}
+                      </span>
                       <div className="flex space-x-1">
                         {metric.chartTypes.slice(0, 2).map((chartType) => (
                           <span
                             key={chartType}
-                            className="text-xs bg-gray-100 text-gray-600 px-1 rounded"
+                            className="text-xs bg-[rgba(15,35,70,0.5)] text-[rgb(148,163,184)] px-1 rounded"
                           >
                             {chartType}
                           </span>
@@ -600,8 +608,8 @@ const ReportBuilderTab: React.FC<ReportBuilderTabProps> = ({
       </div>
 
       {/* Selected Sections Summary */}
-      <div className="bg-white rounded-lg shadow p-6">
-        <h4 className="font-medium text-gray-700 mb-3">Selected Sections</h4>
+      <div className="glass-panel rounded-lg p-6">
+        <h4 className="font-medium text-[rgb(148,163,184)] mb-3">Selected Sections</h4>
         <div className="flex flex-wrap gap-2" data-testid="selected-sections">
           {reportConfig.sections.length > 0 ? (
             reportConfig.sections.map((sectionId) => {
@@ -611,12 +619,12 @@ const ReportBuilderTab: React.FC<ReportBuilderTabProps> = ({
               return (
                 <span
                   key={sectionId}
-                  className="px-3 py-1 bg-blue-100 text-blue-800 rounded-full text-sm flex items-center space-x-2"
+                  className="px-3 py-1 bg-[rgba(37,99,235,0.1)] text-blue-300 rounded-full text-sm flex items-center space-x-2 border border-blue-500/30"
                 >
                   <span>{metric?.label || sectionId}</span>
                   <button
                     onClick={() => onSectionToggle(sectionId)}
-                    className="text-blue-600 hover:text-blue-800"
+                    className="text-blue-400 hover:text-blue-200"
                   >
                     ×
                   </button>
@@ -624,12 +632,12 @@ const ReportBuilderTab: React.FC<ReportBuilderTabProps> = ({
               );
             })
           ) : (
-            <span className="text-gray-500 text-sm">No sections selected</span>
+            <span className="text-[rgb(148,163,184)] text-sm">No sections selected</span>
           )}
         </div>
 
         {reportConfig.sections.length > 0 && (
-          <div className="mt-3 text-sm text-gray-600">
+          <div className="mt-3 text-sm text-[rgb(148,163,184)]">
             {reportConfig.sections.length} section{reportConfig.sections.length !== 1 ? 's' : ''}{' '}
             selected
           </div>
@@ -649,12 +657,12 @@ interface ReportPreviewTabProps {
 const ReportPreviewTab: React.FC<ReportPreviewTabProps> = ({ reportData, isLoading, config }) => {
   if (isLoading) {
     return (
-      <div className="bg-white rounded-lg shadow p-6">
-        <h3 className="text-lg font-semibold mb-4">Report Preview</h3>
+      <div className="glass-panel rounded-lg p-6">
+        <h3 className="text-lg font-semibold text-[rgb(220,235,255)] mb-4">Report Preview</h3>
         <div className="animate-pulse space-y-4">
-          <div className="h-4 bg-gray-200 rounded w-3/4"></div>
-          <div className="h-4 bg-gray-200 rounded w-1/2"></div>
-          <div className="h-32 bg-gray-200 rounded"></div>
+          <div className="h-4 bg-[rgba(15,35,70,0.5)] rounded w-3/4"></div>
+          <div className="h-4 bg-[rgba(15,35,70,0.5)] rounded w-1/2"></div>
+          <div className="h-32 bg-[rgba(15,35,70,0.5)] rounded"></div>
         </div>
       </div>
     );
@@ -662,10 +670,10 @@ const ReportPreviewTab: React.FC<ReportPreviewTabProps> = ({ reportData, isLoadi
 
   if (!reportData) {
     return (
-      <div className="bg-white rounded-lg shadow p-6">
-        <h3 className="text-lg font-semibold mb-4">Report Preview</h3>
-        <div className="text-center py-8 text-gray-500">
-          <FileText className="w-12 h-12 mx-auto mb-4 text-gray-400" />
+      <div className="glass-panel rounded-lg p-6">
+        <h3 className="text-lg font-semibold text-[rgb(220,235,255)] mb-4">Report Preview</h3>
+        <div className="text-center py-8 text-[rgb(148,163,184)]">
+          <FileText className="w-12 h-12 mx-auto mb-4 text-[rgb(148,163,184)]" />
           <p>Select metrics to preview your report</p>
         </div>
       </div>
@@ -675,11 +683,13 @@ const ReportPreviewTab: React.FC<ReportPreviewTabProps> = ({ reportData, isLoadi
   return (
     <div className="space-y-6">
       {/* Report Header */}
-      <div className="bg-white rounded-lg shadow p-6">
-        <div className="border-b border-gray-200 pb-4 mb-4">
-          <h1 className="text-2xl font-bold text-gray-900">{config.title}</h1>
-          {config.description && <p className="text-gray-600 mt-2">{config.description}</p>}
-          <div className="flex items-center space-x-4 mt-3 text-sm text-gray-500">
+      <div className="glass-panel rounded-lg p-6">
+        <div className="border-b border-[rgba(37,99,235,0.3)] pb-4 mb-4">
+          <h1 className="text-2xl font-bold text-[rgb(220,235,255)]">{config.title}</h1>
+          {config.description && (
+            <p className="text-[rgb(148,163,184)] mt-2">{config.description}</p>
+          )}
+          <div className="flex items-center space-x-4 mt-3 text-sm text-[rgb(148,163,184)]">
             <span>Generated: {new Date().toLocaleDateString()}</span>
             <span>Period: {config.dateRange.replace('_', ' ')}</span>
             <span>Sections: {config.sections.length}</span>
@@ -689,31 +699,33 @@ const ReportPreviewTab: React.FC<ReportPreviewTabProps> = ({ reportData, isLoadi
         {/* Executive Summary */}
         {config.includeSummary && reportData.summary && (
           <div>
-            <h2 className="text-lg font-semibold text-gray-900 mb-3">Executive Summary</h2>
+            <h2 className="text-lg font-semibold text-[rgb(220,235,255)] mb-3">
+              Executive Summary
+            </h2>
             <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
-              <div className="text-center p-3 bg-blue-50 rounded">
-                <div className="text-2xl font-bold text-blue-600">
+              <div className="text-center p-3 bg-[rgba(37,99,235,0.1)] rounded border border-blue-500/30">
+                <div className="text-2xl font-bold text-blue-400">
                   {reportData.summary.totalHorses}
                 </div>
-                <div className="text-sm text-gray-600">Total Horses</div>
+                <div className="text-sm text-[rgb(148,163,184)]">Total Horses</div>
               </div>
-              <div className="text-center p-3 bg-green-50 rounded">
-                <div className="text-2xl font-bold text-green-600">
+              <div className="text-center p-3 bg-[rgba(16,185,129,0.1)] rounded border border-emerald-500/30">
+                <div className="text-2xl font-bold text-emerald-400">
                   {reportData.summary.averageScore}
                 </div>
-                <div className="text-sm text-gray-600">Average Score</div>
+                <div className="text-sm text-[rgb(148,163,184)]">Average Score</div>
               </div>
-              <div className="text-center p-3 bg-purple-50 rounded">
-                <div className="text-lg font-bold text-purple-600">
+              <div className="text-center p-3 bg-[rgba(15,35,70,0.5)] rounded border border-[rgba(37,99,235,0.3)]">
+                <div className="text-lg font-bold text-purple-400">
                   {reportData.summary.topPerformer}
                 </div>
-                <div className="text-sm text-gray-600">Top Performer</div>
+                <div className="text-sm text-[rgb(148,163,184)]">Top Performer</div>
               </div>
-              <div className="text-center p-3 bg-orange-50 rounded">
-                <div className="text-2xl font-bold text-orange-600">
+              <div className="text-center p-3 bg-[rgba(212,168,67,0.1)] rounded border border-amber-500/30">
+                <div className="text-2xl font-bold text-amber-400">
                   {reportData.summary.improvementRate}%
                 </div>
-                <div className="text-sm text-gray-600">Improvement Rate</div>
+                <div className="text-sm text-[rgb(148,163,184)]">Improvement Rate</div>
               </div>
             </div>
           </div>
@@ -721,29 +733,31 @@ const ReportPreviewTab: React.FC<ReportPreviewTabProps> = ({ reportData, isLoadi
       </div>
 
       {/* Trend Analysis Preview */}
-      <div className="bg-white rounded-lg shadow p-6">
-        <h3 className="text-lg font-semibold mb-4">Trend Analysis</h3>
+      <div className="glass-panel rounded-lg p-6">
+        <h3 className="text-lg font-semibold text-[rgb(220,235,255)] mb-4">Trend Analysis</h3>
 
         <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
           {/* Trait Development Trends */}
           <div>
-            <h4 className="font-medium text-gray-700 mb-3">Trait Development</h4>
+            <h4 className="font-medium text-[rgb(148,163,184)] mb-3">Trait Development</h4>
             <div className="space-y-2" data-testid="trait-trends">
               {reportData.trends.traitDevelopment.map((point, index) => (
                 <div
                   key={index}
-                  className="flex items-center justify-between p-2 bg-gray-50 rounded"
+                  className="flex items-center justify-between p-2 bg-[rgba(15,35,70,0.3)] rounded"
                 >
-                  <span className="text-sm">{point.date}</span>
+                  <span className="text-sm text-[rgb(220,235,255)]">{point.date}</span>
                   <div className="flex items-center space-x-2">
-                    <span className="text-sm font-medium">{point.value}%</span>
+                    <span className="text-sm font-medium text-[rgb(220,235,255)]">
+                      {point.value}%
+                    </span>
                     <span
                       className={`text-xs ${
                         point.trend === 'up'
-                          ? 'text-green-600'
+                          ? 'text-emerald-400'
                           : point.trend === 'down'
-                            ? 'text-red-600'
-                            : 'text-gray-600'
+                            ? 'text-red-400'
+                            : 'text-[rgb(148,163,184)]'
                       }`}
                     >
                       {point.trend === 'up' ? '↗' : point.trend === 'down' ? '↘' : '→'}
@@ -756,18 +770,18 @@ const ReportPreviewTab: React.FC<ReportPreviewTabProps> = ({ reportData, isLoadi
 
           {/* Performance Metrics */}
           <div>
-            <h4 className="font-medium text-gray-700 mb-3">Performance Changes</h4>
+            <h4 className="font-medium text-[rgb(148,163,184)] mb-3">Performance Changes</h4>
             <div className="space-y-2" data-testid="performance-trends">
               {reportData.trends.performanceScores.map((metric, index) => (
                 <div
                   key={index}
-                  className="flex items-center justify-between p-2 bg-gray-50 rounded"
+                  className="flex items-center justify-between p-2 bg-[rgba(15,35,70,0.3)] rounded"
                 >
-                  <span className="text-sm">{metric.metric}</span>
+                  <span className="text-sm text-[rgb(220,235,255)]">{metric.metric}</span>
                   <div className="flex items-center space-x-2">
-                    <span className="text-sm">{metric.current}</span>
+                    <span className="text-sm text-[rgb(220,235,255)]">{metric.current}</span>
                     <span
-                      className={`text-xs ${metric.change > 0 ? 'text-green-600' : 'text-red-600'}`}
+                      className={`text-xs ${metric.change > 0 ? 'text-emerald-400' : 'text-red-400'}`}
                     >
                       {metric.change > 0 ? '+' : ''}
                       {metric.change} ({metric.percentChange > 0 ? '+' : ''}
@@ -783,17 +797,19 @@ const ReportPreviewTab: React.FC<ReportPreviewTabProps> = ({ reportData, isLoadi
 
       {/* Charts Preview */}
       {config.includeCharts && (
-        <div className="bg-white rounded-lg shadow p-6">
-          <h3 className="text-lg font-semibold mb-4">Data Visualizations</h3>
+        <div className="glass-panel rounded-lg p-6">
+          <h3 className="text-lg font-semibold text-[rgb(220,235,255)] mb-4">
+            Data Visualizations
+          </h3>
           <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-            <div className="h-48 bg-gray-100 rounded flex items-center justify-center">
-              <div className="text-center text-gray-500">
+            <div className="h-48 bg-[rgba(15,35,70,0.3)] rounded flex items-center justify-center border border-[rgba(37,99,235,0.3)]">
+              <div className="text-center text-[rgb(148,163,184)]">
                 <BarChart3 className="w-8 h-8 mx-auto mb-2" />
                 <p className="text-sm">Trait Development Chart</p>
               </div>
             </div>
-            <div className="h-48 bg-gray-100 rounded flex items-center justify-center">
-              <div className="text-center text-gray-500">
+            <div className="h-48 bg-[rgba(15,35,70,0.3)] rounded flex items-center justify-center border border-[rgba(37,99,235,0.3)]">
+              <div className="text-center text-[rgb(148,163,184)]">
                 <LineChart className="w-8 h-8 mx-auto mb-2" />
                 <p className="text-sm">Performance Trends</p>
               </div>
@@ -814,13 +830,13 @@ interface AIInsightsTabProps {
 const AIInsightsTab: React.FC<AIInsightsTabProps> = ({ insights, isLoading }) => {
   if (isLoading) {
     return (
-      <div className="bg-white rounded-lg shadow p-6">
-        <h3 className="text-lg font-semibold mb-4">AI-Driven Insights</h3>
+      <div className="glass-panel rounded-lg p-6">
+        <h3 className="text-lg font-semibold text-[rgb(220,235,255)] mb-4">AI-Driven Insights</h3>
         <div className="animate-pulse space-y-4">
           {[1, 2, 3].map((i) => (
-            <div key={i} className="p-4 border rounded">
-              <div className="h-4 bg-gray-200 rounded w-3/4 mb-2"></div>
-              <div className="h-3 bg-gray-200 rounded w-1/2"></div>
+            <div key={i} className="p-4 border border-[rgba(37,99,235,0.3)] rounded">
+              <div className="h-4 bg-[rgba(15,35,70,0.5)] rounded w-3/4 mb-2"></div>
+              <div className="h-3 bg-[rgba(15,35,70,0.5)] rounded w-1/2"></div>
             </div>
           ))}
         </div>
@@ -830,10 +846,10 @@ const AIInsightsTab: React.FC<AIInsightsTabProps> = ({ insights, isLoading }) =>
 
   if (insights.length === 0) {
     return (
-      <div className="bg-white rounded-lg shadow p-6">
-        <h3 className="text-lg font-semibold mb-4">AI-Driven Insights</h3>
-        <div className="text-center py-8 text-gray-500">
-          <Brain className="w-12 h-12 mx-auto mb-4 text-gray-400" />
+      <div className="glass-panel rounded-lg p-6">
+        <h3 className="text-lg font-semibold text-[rgb(220,235,255)] mb-4">AI-Driven Insights</h3>
+        <div className="text-center py-8 text-[rgb(148,163,184)]">
+          <Brain className="w-12 h-12 mx-auto mb-4 text-[rgb(148,163,184)]" />
           <p>No insights available yet</p>
           <p className="text-sm">Generate a report to see AI-powered analysis</p>
         </div>
@@ -869,57 +885,57 @@ const AIInsightsTab: React.FC<AIInsightsTabProps> = ({ insights, isLoading }) =>
   const getInsightColor = (type: AIInsight['type']) => {
     switch (type) {
       case 'positive':
-        return 'bg-green-50 border-green-400 text-green-800';
+        return 'bg-[rgba(16,185,129,0.1)] border-emerald-500/30 text-emerald-300';
       case 'warning':
-        return 'bg-yellow-50 border-yellow-400 text-yellow-800';
+        return 'bg-[rgba(212,168,67,0.1)] border-amber-500/30 text-amber-300';
       case 'critical':
-        return 'bg-red-50 border-red-400 text-red-800';
+        return 'bg-[rgba(239,68,68,0.1)] border-red-500/30 text-red-300';
       default:
-        return 'bg-blue-50 border-blue-400 text-blue-800';
+        return 'bg-[rgba(37,99,235,0.1)] border-blue-500/30 text-blue-300';
     }
   };
 
   const getPriorityColor = (priority: string) => {
     switch (priority) {
       case 'high':
-        return 'bg-red-100 text-red-800';
+        return 'bg-[rgba(239,68,68,0.1)] text-red-300';
       case 'medium':
-        return 'bg-yellow-100 text-yellow-800';
+        return 'bg-[rgba(212,168,67,0.1)] text-amber-300';
       case 'low':
-        return 'bg-green-100 text-green-800';
+        return 'bg-[rgba(16,185,129,0.1)] text-emerald-300';
       default:
-        return 'bg-gray-100 text-gray-800';
+        return 'bg-[rgba(15,35,70,0.5)] text-[rgb(148,163,184)]';
     }
   };
 
   return (
     <div className="space-y-6">
       {/* Insights Overview */}
-      <div className="bg-white rounded-lg shadow p-6">
-        <h3 className="text-lg font-semibold mb-4 flex items-center space-x-2">
+      <div className="glass-panel rounded-lg p-6">
+        <h3 className="text-lg font-semibold text-[rgb(220,235,255)] mb-4 flex items-center space-x-2">
           <Brain className="w-5 h-5" />
           <span>AI-Driven Insights</span>
         </h3>
 
         <div className="grid grid-cols-1 md:grid-cols-3 gap-4 mb-6">
-          <div className="text-center p-4 bg-blue-50 rounded">
-            <div className="text-2xl font-bold text-blue-600">{insights.length}</div>
-            <div className="text-sm text-gray-600">Total Insights</div>
+          <div className="text-center p-4 bg-[rgba(37,99,235,0.1)] rounded border border-blue-500/30">
+            <div className="text-2xl font-bold text-blue-400">{insights.length}</div>
+            <div className="text-sm text-[rgb(148,163,184)]">Total Insights</div>
           </div>
-          <div className="text-center p-4 bg-green-50 rounded">
-            <div className="text-2xl font-bold text-green-600">
+          <div className="text-center p-4 bg-[rgba(16,185,129,0.1)] rounded border border-emerald-500/30">
+            <div className="text-2xl font-bold text-emerald-400">
               {Math.round(
                 (insights.reduce((sum, i) => sum + i.confidence, 0) / insights.length) * 100
               )}
               %
             </div>
-            <div className="text-sm text-gray-600">Avg Confidence</div>
+            <div className="text-sm text-[rgb(148,163,184)]">Avg Confidence</div>
           </div>
-          <div className="text-center p-4 bg-purple-50 rounded">
-            <div className="text-2xl font-bold text-purple-600">
+          <div className="text-center p-4 bg-[rgba(15,35,70,0.5)] rounded border border-[rgba(37,99,235,0.3)]">
+            <div className="text-2xl font-bold text-purple-400">
               {insightsByPriority.high?.length || 0}
             </div>
-            <div className="text-sm text-gray-600">High Priority</div>
+            <div className="text-sm text-[rgb(148,163,184)]">High Priority</div>
           </div>
         </div>
       </div>
@@ -930,14 +946,14 @@ const AIInsightsTab: React.FC<AIInsightsTabProps> = ({ insights, isLoading }) =>
         if (priorityInsights.length === 0) return null;
 
         return (
-          <div key={priority} className="bg-white rounded-lg shadow p-6">
-            <h4 className="font-medium text-gray-700 mb-4 flex items-center space-x-2">
+          <div key={priority} className="glass-panel rounded-lg p-6">
+            <h4 className="font-medium text-[rgb(148,163,184)] mb-4 flex items-center space-x-2">
               <span
                 className={`px-2 py-1 rounded text-xs font-medium ${getPriorityColor(priority)}`}
               >
                 {priority.toUpperCase()} PRIORITY
               </span>
-              <span>
+              <span className="text-[rgb(148,163,184)]">
                 ({priorityInsights.length} insight{priorityInsights.length !== 1 ? 's' : ''})
               </span>
             </h4>
@@ -954,24 +970,28 @@ const AIInsightsTab: React.FC<AIInsightsTabProps> = ({ insights, isLoading }) =>
                       <h5 className="font-medium">{insight.title}</h5>
                     </div>
                     <div className="flex items-center space-x-2 text-sm">
-                      <span className="text-gray-500">
+                      <span className="text-[rgb(148,163,184)]">
                         {Math.round(insight.confidence * 100)}% confidence
                       </span>
-                      <span className="text-gray-400">•</span>
-                      <span className="text-gray-500">{insight.dataPoints} data points</span>
+                      <span className="text-[rgb(148,163,184)]">•</span>
+                      <span className="text-[rgb(148,163,184)]">
+                        {insight.dataPoints} data points
+                      </span>
                     </div>
                   </div>
 
                   <p className="text-sm mb-3">{insight.description}</p>
 
-                  <div className="bg-white bg-opacity-50 p-3 rounded border">
-                    <h6 className="text-xs font-medium text-gray-600 uppercase tracking-wide mb-1">
+                  <div className="bg-[rgba(15,35,70,0.4)] p-3 rounded border border-[rgba(37,99,235,0.3)]">
+                    <h6 className="text-xs font-medium text-[rgb(148,163,184)] uppercase tracking-wide mb-1">
                       Recommendation
                     </h6>
-                    <p className="text-sm font-medium">{insight.recommendation}</p>
+                    <p className="text-sm font-medium text-[rgb(220,235,255)]">
+                      {insight.recommendation}
+                    </p>
                   </div>
 
-                  <div className="flex items-center justify-between mt-3 text-xs text-gray-500">
+                  <div className="flex items-center justify-between mt-3 text-xs text-[rgb(148,163,184)]">
                     <span>Category: {insight.category}</span>
                     <span>Updated: {new Date(insight.lastUpdated).toLocaleDateString()}</span>
                   </div>
@@ -983,8 +1003,8 @@ const AIInsightsTab: React.FC<AIInsightsTabProps> = ({ insights, isLoading }) =>
       })}
 
       {/* Insight Categories */}
-      <div className="bg-white rounded-lg shadow p-6">
-        <h4 className="font-medium text-gray-700 mb-4">Insights by Category</h4>
+      <div className="glass-panel rounded-lg p-6">
+        <h4 className="font-medium text-[rgb(148,163,184)] mb-4">Insights by Category</h4>
 
         <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
           {Object.entries(
@@ -996,9 +1016,14 @@ const AIInsightsTab: React.FC<AIInsightsTabProps> = ({ insights, isLoading }) =>
               {} as Record<string, number>
             )
           ).map(([category, count]) => (
-            <div key={category} className="text-center p-3 bg-gray-50 rounded">
-              <div className="text-lg font-bold text-gray-900">{count}</div>
-              <div className="text-sm text-gray-600 capitalize">{category.replace('_', ' ')}</div>
+            <div
+              key={category}
+              className="text-center p-3 bg-[rgba(15,35,70,0.3)] rounded border border-[rgba(37,99,235,0.3)]"
+            >
+              <div className="text-lg font-bold text-[rgb(220,235,255)]">{count}</div>
+              <div className="text-sm text-[rgb(148,163,184)] capitalize">
+                {category.replace('_', ' ')}
+              </div>
             </div>
           ))}
         </div>

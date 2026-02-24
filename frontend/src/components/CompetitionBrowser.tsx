@@ -21,7 +21,6 @@ import React, { useState, useMemo } from 'react';
 import { useQueryClient } from '@tanstack/react-query';
 import {
   Search,
-  Filter,
   Calendar,
   Trophy,
   DollarSign,
@@ -31,13 +30,7 @@ import {
   XCircle,
   AlertCircle,
 } from 'lucide-react';
-import {
-  useCompetitions,
-  useDisciplines,
-  useEnterCompetition,
-  type Competition,
-  type Discipline,
-} from '../hooks/api/useCompetitions';
+import { useCompetitions, useDisciplines, useEnterCompetition } from '../hooks/api/useCompetitions';
 import { useEligibilityForHorses } from '../hooks/api/useCompetitions';
 import { useHorses } from '../hooks/api/useHorses';
 
@@ -74,7 +67,7 @@ const CompetitionBrowser: React.FC = () => {
   const { data: horses = [] } = useHorses();
 
   // Fetch disciplines using centralized hook
-  const { data: disciplines = [], isLoading: disciplinesLoading } = useDisciplines();
+  const { data: disciplines = [] } = useDisciplines();
 
   const eligibilityQueries = useEligibilityForHorses(
     selectedCompetition ?? 0,
@@ -177,13 +170,13 @@ const CompetitionBrowser: React.FC = () => {
   const getStatusIcon = (status: string) => {
     switch (status) {
       case 'open':
-        return <CheckCircle className="w-4 h-4 text-green-500" />;
+        return <CheckCircle className="w-4 h-4 text-emerald-400" />;
       case 'closed':
         return <XCircle className="w-4 h-4 text-red-500" />;
       case 'upcoming':
         return <Clock className="w-4 h-4 text-yellow-500" />;
       default:
-        return <AlertCircle className="w-4 h-4 text-gray-500" />;
+        return <AlertCircle className="w-4 h-4 text-[rgb(148,163,184)]" />;
     }
   };
 
@@ -197,16 +190,16 @@ const CompetitionBrowser: React.FC = () => {
       data-testid="competition-browser"
     >
       <div className="mb-6">
-        <h1 className="text-3xl font-bold text-gray-900 mb-2">Competition Browser</h1>
-        <p className="text-gray-600">Find and enter competitions for your horses</p>
+        <h1 className="text-3xl font-bold text-[rgb(220,235,255)] mb-2">Competition Browser</h1>
+        <p className="text-[rgb(148,163,184)]">Find and enter competitions for your horses</p>
       </div>
 
       {/* Filters and Search */}
-      <div className="bg-white rounded-lg shadow-md p-6 mb-6" data-testid="competition-filters">
+      <div className="glass-panel rounded-lg p-6 mb-6" data-testid="competition-filters">
         <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
           {/* Search */}
           <div className="relative">
-            <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 w-4 h-4 text-gray-400" />
+            <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 w-4 h-4 text-[rgb(148,163,184)]" />
             <input
               type="search"
               role="searchbox"
@@ -214,7 +207,7 @@ const CompetitionBrowser: React.FC = () => {
               placeholder="Search competitions..."
               value={searchQuery}
               onChange={(e) => setSearchQuery(e.target.value)}
-              className="w-full pl-10 pr-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+              className="celestial-input w-full pl-10 pr-4 py-2 rounded-lg"
             />
           </div>
 
@@ -224,7 +217,7 @@ const CompetitionBrowser: React.FC = () => {
               data-testid="discipline-filter"
               value={selectedDiscipline}
               onChange={(e) => setSelectedDiscipline(e.target.value)}
-              className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+              className="celestial-input w-full px-3 py-2 rounded-lg"
             >
               <option value="all">All Disciplines</option>
               {disciplines
@@ -246,7 +239,7 @@ const CompetitionBrowser: React.FC = () => {
               data-testid="sort-options"
               value={sortBy}
               onChange={(e) => setSortBy(e.target.value)}
-              className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+              className="celestial-input w-full px-3 py-2 rounded-lg"
             >
               <option value="date">Sort by Date</option>
               <option value="prize">Sort by Prize Money</option>
@@ -264,23 +257,23 @@ const CompetitionBrowser: React.FC = () => {
         {competitionsLoading ? (
           <div className="text-center py-8">
             <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-blue-600 mx-auto"></div>
-            <p className="mt-4 text-gray-600">Loading competitions...</p>
+            <p className="mt-4 text-[rgb(148,163,184)]">Loading competitions...</p>
           </div>
         ) : competitionsError ? (
           <div className="text-center py-8">
             <XCircle className="w-12 h-12 text-red-500 mx-auto mb-4" />
-            <p className="text-red-600 mb-4">Failed to load competitions</p>
+            <p className="text-red-400 mb-4">Failed to load competitions</p>
             <button
               onClick={() => queryClient.invalidateQueries({ queryKey: ['competitions'] })}
-              className="px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700"
+              className="btn-cobalt px-4 py-2 rounded-lg"
             >
               Retry
             </button>
           </div>
         ) : filteredCompetitions.length === 0 ? (
           <div className="text-center py-8">
-            <Trophy className="w-12 h-12 text-gray-400 mx-auto mb-4" />
-            <p className="text-gray-600">No competitions found matching your criteria</p>
+            <Trophy className="w-12 h-12 text-[rgb(148,163,184)] mx-auto mb-4" />
+            <p className="text-[rgb(148,163,184)]">No competitions found matching your criteria</p>
           </div>
         ) : (
           <div
@@ -290,39 +283,47 @@ const CompetitionBrowser: React.FC = () => {
             {filteredCompetitions.map((competition) => (
               <div
                 key={competition.id}
-                className="bg-white rounded-lg shadow-md p-6 hover:shadow-lg transition-shadow"
+                className="glass-panel rounded-lg p-6 hover:shadow-lg transition-shadow"
               >
                 <div className="flex justify-between items-start mb-4">
                   <div>
-                    <h3 className="text-xl font-semibold text-gray-900 mb-1">{competition.name}</h3>
-                    <p className="text-gray-600 text-sm">{competition.discipline}</p>
+                    <h3 className="text-xl font-semibold text-[rgb(220,235,255)] mb-1">
+                      {competition.name}
+                    </h3>
+                    <p className="text-[rgb(148,163,184)] text-sm">{competition.discipline}</p>
                   </div>
                   <div className="flex items-center space-x-2" data-testid="competition-status">
                     {getStatusIcon(competition.status)}
-                    <span className="text-sm font-medium capitalize">{competition.status}</span>
+                    <span className="text-sm font-medium capitalize text-[rgb(220,235,255)]">
+                      {competition.status}
+                    </span>
                   </div>
                 </div>
 
-                <p className="text-gray-700 mb-4">{competition.description}</p>
+                <p className="text-[rgb(148,163,184)] mb-4">{competition.description}</p>
 
                 <div className="grid grid-cols-2 gap-4 mb-4 text-sm">
                   <div className="flex items-center">
-                    <Calendar className="w-4 h-4 text-gray-400 mr-2" />
-                    <span>{formatDate(competition.date)}</span>
+                    <Calendar className="w-4 h-4 text-[rgb(148,163,184)] mr-2" />
+                    <span className="text-[rgb(220,235,255)]">{formatDate(competition.date)}</span>
                   </div>
                   <div className="flex items-center">
-                    <DollarSign className="w-4 h-4 text-gray-400 mr-2" />
-                    <span>{formatCurrency(competition.prizePool)}</span>
+                    <DollarSign className="w-4 h-4 text-[rgb(148,163,184)] mr-2" />
+                    <span className="text-[rgb(220,235,255)]">
+                      {formatCurrency(competition.prizePool)}
+                    </span>
                   </div>
                   <div className="flex items-center" data-testid="entry-count">
-                    <Users className="w-4 h-4 text-gray-400 mr-2" />
-                    <span>
+                    <Users className="w-4 h-4 text-[rgb(148,163,184)] mr-2" />
+                    <span className="text-[rgb(220,235,255)]">
                       {competition.currentEntries}/{competition.maxEntries} entries
                     </span>
                   </div>
                   <div className="flex items-center">
-                    <Clock className="w-4 h-4 text-gray-400 mr-2" />
-                    <span>Entry: {formatDate(competition.entryDeadline)}</span>
+                    <Clock className="w-4 h-4 text-[rgb(148,163,184)] mr-2" />
+                    <span className="text-[rgb(220,235,255)]">
+                      Entry: {formatDate(competition.entryDeadline)}
+                    </span>
                   </div>
                 </div>
 
@@ -330,26 +331,30 @@ const CompetitionBrowser: React.FC = () => {
                   <div data-testid="eligibility-status">
                     {selectedCompetition === competition.id ? (
                       eligibilityLoading ? (
-                        <span className="text-sm text-gray-500">Checking eligibility...</span>
+                        <span className="text-sm text-[rgb(148,163,184)]">
+                          Checking eligibility...
+                        </span>
                       ) : eligibility ? (
                         <span
                           className={`text-sm font-medium ${
-                            eligibility.eligible ? 'text-green-600' : 'text-red-600'
+                            eligibility.eligible ? 'text-emerald-400' : 'text-red-400'
                           }`}
                         >
                           {eligibility.eligible ? 'Horses eligible' : 'No eligible horses'}
                         </span>
                       ) : (
-                        <span className="text-sm text-gray-500">No eligibility data</span>
+                        <span className="text-sm text-[rgb(148,163,184)]">No eligibility data</span>
                       )
                     ) : (
-                      <span className="text-sm text-gray-500">Click to check eligibility</span>
+                      <span className="text-sm text-[rgb(148,163,184)]">
+                        Click to check eligibility
+                      </span>
                     )}
                   </div>
 
                   <button
                     onClick={() => setSelectedCompetition(competition.id)}
-                    className="px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors"
+                    className="btn-cobalt px-4 py-2 rounded-lg transition-colors"
                     role="button"
                     aria-label="Enter Competition"
                   >
@@ -359,20 +364,25 @@ const CompetitionBrowser: React.FC = () => {
 
                 {/* Eligible Horses */}
                 {selectedCompetition === competition.id && eligibility && (
-                  <div className="mt-4 pt-4 border-t border-gray-200" data-testid="eligible-horses">
-                    <h4 className="font-medium text-gray-900 mb-2">Eligible Horses:</h4>
+                  <div
+                    className="mt-4 pt-4 border-t border-[rgba(37,99,235,0.3)]"
+                    data-testid="eligible-horses"
+                  >
+                    <h4 className="font-medium text-[rgb(220,235,255)] mb-2">Eligible Horses:</h4>
                     {eligibility.horses.length > 0 ? (
                       <div className="space-y-2">
                         {eligibility.horses.map((horse) => (
                           <div
                             key={horse.id}
-                            className="flex justify-between items-center p-2 bg-gray-50 rounded"
+                            className="flex justify-between items-center p-2 bg-[rgba(15,35,70,0.3)] rounded"
                           >
-                            <span className="font-medium">{horse.name}</span>
+                            <span className="font-medium text-[rgb(220,235,255)]">
+                              {horse.name}
+                            </span>
                             <button
                               onClick={() => handleEntry(competition.id, horse.id)}
                               disabled={entryMutation.isPending}
-                              className="px-3 py-1 bg-green-600 text-white text-sm rounded hover:bg-green-700 disabled:opacity-50"
+                              className="px-3 py-1 bg-emerald-600 text-white text-sm rounded hover:bg-emerald-700 disabled:opacity-50"
                             >
                               {entryMutation.isPending ? 'Entering...' : 'Enter'}
                             </button>
@@ -380,7 +390,7 @@ const CompetitionBrowser: React.FC = () => {
                         ))}
                       </div>
                     ) : (
-                      <p className="text-gray-600 text-sm">No eligible horses found</p>
+                      <p className="text-[rgb(148,163,184)] text-sm">No eligible horses found</p>
                     )}
                   </div>
                 )}
@@ -393,7 +403,7 @@ const CompetitionBrowser: React.FC = () => {
       {/* Entry Confirmation */}
       {entryMutation.isSuccess && (
         <div
-          className="fixed bottom-4 right-4 bg-green-600 text-white p-4 rounded-lg shadow-lg"
+          className="fixed bottom-4 right-4 bg-emerald-600 text-white p-4 rounded-lg shadow-lg"
           data-testid="entry-confirmation"
         >
           <CheckCircle className="w-5 h-5 inline mr-2" />

@@ -47,11 +47,7 @@ export interface BalanceUpdateIndicatorProps {
 /**
  * Format a number as currency with commas and specified decimal places
  */
-const formatCurrencyValue = (
-  value: number,
-  prefix: string,
-  decimals: number
-): string => {
+const formatCurrencyValue = (value: number, prefix: string, decimals: number): string => {
   const formatter = new Intl.NumberFormat('en-US', {
     minimumFractionDigits: decimals,
     maximumFractionDigits: decimals,
@@ -133,9 +129,7 @@ const BalanceUpdateIndicator = memo(function BalanceUpdateIndicator({
     }
 
     // Check for reduced motion preference
-    const prefersReducedMotion = window.matchMedia(
-      '(prefers-reduced-motion: reduce)'
-    ).matches;
+    const prefersReducedMotion = window.matchMedia('(prefers-reduced-motion: reduce)').matches;
 
     if (prefersReducedMotion) {
       // Instant update for reduced motion
@@ -147,9 +141,7 @@ const BalanceUpdateIndicator = memo(function BalanceUpdateIndicator({
           setShowOverlayState(false);
         }, overlayDuration);
       }
-      setAnnouncement(
-        `Balance updated to ${formatCurrencyValue(newValue, prefix, decimals)}`
-      );
+      setAnnouncement(`Balance updated to ${formatCurrencyValue(newValue, prefix, decimals)}`);
       onAnimationComplete?.();
       return;
     }
@@ -177,9 +169,7 @@ const BalanceUpdateIndicator = memo(function BalanceUpdateIndicator({
         // Animation complete
         setDisplayValue(newValue);
         setIsAnimating(false);
-        setAnnouncement(
-          `Balance updated to ${formatCurrencyValue(newValue, prefix, decimals)}`
-        );
+        setAnnouncement(`Balance updated to ${formatCurrencyValue(newValue, prefix, decimals)}`);
 
         // Call completion callback
         completionTimerRef.current = setTimeout(() => {
@@ -221,11 +211,7 @@ const BalanceUpdateIndicator = memo(function BalanceUpdateIndicator({
   const formattedValue = formatCurrencyValue(displayValue, prefix, decimals);
 
   // Format the change amount for overlay
-  const formattedChange = formatCurrencyValue(
-    Math.abs(changeAmount),
-    prefix,
-    decimals
-  );
+  const formattedChange = formatCurrencyValue(Math.abs(changeAmount), prefix, decimals);
   const changeText = isIncrease ? `+${formattedChange}` : `-${formattedChange}`;
 
   // Container classes
@@ -234,7 +220,7 @@ const BalanceUpdateIndicator = memo(function BalanceUpdateIndicator({
     'inline-flex',
     'items-center',
     isAnimating ? 'animate-pulse ring-2' : '',
-    isAnimating && isIncrease ? 'ring-green-400' : '',
+    isAnimating && isIncrease ? 'ring-emerald-400' : '',
     isAnimating && !isIncrease ? 'ring-red-400' : '',
     className,
   ]
@@ -265,7 +251,11 @@ const BalanceUpdateIndicator = memo(function BalanceUpdateIndicator({
             text-sm font-semibold
             animate-float-up
             pointer-events-none
-            ${isIncrease ? 'text-green-600 bg-green-100' : 'text-red-600 bg-red-100'}
+            ${
+              isIncrease
+                ? 'text-emerald-400 bg-[rgba(16,185,129,0.15)] border border-emerald-500/30'
+                : 'text-red-400 bg-[rgba(239,68,68,0.15)] border border-red-500/30'
+            }
           `}
         >
           {isIncrease ? (
@@ -278,12 +268,7 @@ const BalanceUpdateIndicator = memo(function BalanceUpdateIndicator({
       )}
 
       {/* Screen reader announcements */}
-      <div
-        role="status"
-        aria-live="polite"
-        aria-atomic="true"
-        className="sr-only"
-      >
+      <div role="status" aria-live="polite" aria-atomic="true" className="sr-only">
         {announcement}
       </div>
     </div>

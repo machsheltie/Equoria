@@ -17,25 +17,15 @@
  * - TypeScript for type safety
  */
 
-import React, { useState, useEffect, useMemo } from 'react';
+import React, { useState, useMemo } from 'react';
 import { useQuery } from '@tanstack/react-query';
-import {
-  Search,
-  Filter,
-  ArrowUpDown,
-  Download,
-  Save,
-  Eye,
-  EyeOff,
-  BarChart3,
-  TrendingUp,
-} from 'lucide-react';
+import { Search, Download, Save, Eye, EyeOff, BarChart3, TrendingUp } from 'lucide-react';
 
 // Types
 interface MultiHorseComparisonProps {
   userId: number | null;
   selectedHorses: number[];
-  onHorseSelectionChange: (horseIds: number[]) => void;
+  onHorseSelectionChange: (_horseIds: number[]) => void;
   className?: string;
 }
 
@@ -138,7 +128,7 @@ const MultiHorseComparison: React.FC<MultiHorseComparisonProps> = ({
   // Handle no user
   if (!userId) {
     return (
-      <div className="flex items-center justify-center h-64 text-gray-500">
+      <div className="flex items-center justify-center h-64 text-[rgb(148,163,184)]">
         <p>Please log in to compare horses</p>
       </div>
     );
@@ -150,7 +140,7 @@ const MultiHorseComparison: React.FC<MultiHorseComparisonProps> = ({
       <div className="flex items-center justify-center h-64">
         <div className="text-center">
           <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-blue-500 mx-auto mb-2"></div>
-          <p>Loading horses...</p>
+          <p className="text-[rgb(148,163,184)]">Loading horses...</p>
         </div>
       </div>
     );
@@ -161,11 +151,8 @@ const MultiHorseComparison: React.FC<MultiHorseComparisonProps> = ({
     return (
       <div className="flex items-center justify-center h-64">
         <div className="text-center">
-          <p className="text-red-600 mb-4">Error loading horses</p>
-          <button
-            onClick={() => horsesQuery.refetch()}
-            className="px-4 py-2 bg-blue-500 text-white rounded hover:bg-blue-600"
-          >
+          <p className="text-red-400 mb-4">Error loading horses</p>
+          <button onClick={() => horsesQuery.refetch()} className="btn-cobalt px-4 py-2 rounded">
             Retry
           </button>
         </div>
@@ -249,18 +236,18 @@ const MultiHorseComparison: React.FC<MultiHorseComparisonProps> = ({
     <div data-testid="multi-horse-comparison" className={`space-y-6 ${className}`}>
       {/* Header */}
       <div className="flex items-center justify-between">
-        <h2 className="text-2xl font-bold text-gray-900">Multi-Horse Comparison</h2>
+        <h2 className="text-2xl font-bold text-[rgb(220,235,255)]">Multi-Horse Comparison</h2>
         <div className="flex space-x-2">
           <button
             onClick={() => setViewMode(viewMode === 'grid' ? 'list' : 'grid')}
-            className="p-2 text-gray-500 hover:text-gray-700 hover:bg-gray-100 rounded"
+            className="p-2 text-[rgb(148,163,184)] hover:text-[rgb(220,235,255)] hover:bg-[rgba(15,35,70,0.5)] rounded"
           >
             <BarChart3 className="w-5 h-5" />
           </button>
           <button
             onClick={() => setShowComparison(!showComparison)}
             disabled={selectedHorses.length < 2}
-            className="px-4 py-2 bg-blue-500 text-white rounded hover:bg-blue-600 disabled:bg-gray-300 disabled:cursor-not-allowed flex items-center space-x-2"
+            className="btn-cobalt px-4 py-2 rounded disabled:opacity-50 disabled:cursor-not-allowed flex items-center space-x-2"
           >
             {showComparison ? <EyeOff className="w-4 h-4" /> : <Eye className="w-4 h-4" />}
             <span>{showComparison ? 'Hide Comparison' : 'Show Comparison'}</span>
@@ -269,11 +256,11 @@ const MultiHorseComparison: React.FC<MultiHorseComparisonProps> = ({
       </div>
 
       {/* Horse Selection Interface */}
-      <div className="bg-white rounded-lg shadow">
+      <div className="glass-panel rounded-lg">
         <div className="p-6">
           <div className="flex items-center justify-between mb-4">
-            <h3 className="text-lg font-semibold">Horse Selection</h3>
-            <button onClick={handleSelectAll} className="text-sm text-blue-600 hover:text-blue-800">
+            <h3 className="text-lg font-semibold text-[rgb(220,235,255)]">Horse Selection</h3>
+            <button onClick={handleSelectAll} className="text-sm text-blue-400 hover:text-blue-300">
               {selectedHorses.length === filteredAndSortedHorses.length
                 ? 'Deselect All'
                 : 'Select All'}
@@ -284,13 +271,13 @@ const MultiHorseComparison: React.FC<MultiHorseComparisonProps> = ({
           <div className="flex flex-wrap gap-4 mb-4">
             <div className="flex-1 min-w-64">
               <div className="relative">
-                <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400 w-4 h-4" />
+                <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-[rgb(148,163,184)] w-4 h-4" />
                 <input
                   type="text"
                   placeholder="Search horses by name, breed, or traits..."
                   value={searchTerm}
                   onChange={(e) => setSearchTerm(e.target.value)}
-                  className="w-full pl-10 pr-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                  className="celestial-input w-full pl-10 pr-4 py-2 rounded-lg"
                   data-testid="horse-search"
                 />
               </div>
@@ -298,8 +285,8 @@ const MultiHorseComparison: React.FC<MultiHorseComparisonProps> = ({
 
             <select
               value={sortBy}
-              onChange={(e) => setSortBy(e.target.value as any)}
-              className="px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500"
+              onChange={(e) => setSortBy(e.target.value as 'name' | 'age' | 'breed' | 'score')}
+              className="celestial-input px-3 py-2 rounded-lg"
               data-testid="sort-select"
             >
               <option value="name">Sort by Name</option>
@@ -310,8 +297,8 @@ const MultiHorseComparison: React.FC<MultiHorseComparisonProps> = ({
 
             <select
               value={filterBy}
-              onChange={(e) => setFilterBy(e.target.value as any)}
-              className="px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500"
+              onChange={(e) => setFilterBy(e.target.value as 'all' | 'breed' | 'age')}
+              className="celestial-input px-3 py-2 rounded-lg"
             >
               <option value="all">All Horses</option>
               <option value="breed">Group by Breed</option>
@@ -332,25 +319,25 @@ const MultiHorseComparison: React.FC<MultiHorseComparisonProps> = ({
             ))}
 
             {filteredAndSortedHorses.length === 0 && (
-              <div className="text-center py-8 text-gray-500">
+              <div className="text-center py-8 text-[rgb(148,163,184)]">
                 <p>No horses found matching your search criteria</p>
               </div>
             )}
           </div>
 
           {/* Selection Summary */}
-          <div className="mt-4 p-3 bg-gray-50 rounded-lg">
+          <div className="mt-4 p-3 bg-[rgba(15,35,70,0.3)] rounded-lg border border-[rgba(37,99,235,0.3)]">
             <div className="flex items-center justify-between">
-              <span className="text-sm text-gray-600">
+              <span className="text-sm text-[rgb(148,163,184)]">
                 Selected: {selectedHorses.length} of {filteredAndSortedHorses.length} horses
                 {selectedHorses.length >= 2 && (
-                  <span className="text-green-600 ml-2">✓ Ready for comparison</span>
+                  <span className="text-emerald-400 ml-2">Ready for comparison</span>
                 )}
               </span>
               {selectedHorses.length > 0 && (
                 <button
                   onClick={() => onHorseSelectionChange([])}
-                  className="text-sm text-red-600 hover:text-red-800"
+                  className="text-sm text-red-400 hover:text-red-300"
                 >
                   Clear Selection
                 </button>
@@ -382,21 +369,21 @@ const MultiHorseComparison: React.FC<MultiHorseComparisonProps> = ({
         <div className="flex flex-wrap gap-4">
           <button
             onClick={exportToPDF}
-            className="px-4 py-2 bg-red-500 text-white rounded-lg hover:bg-red-600 flex items-center space-x-2"
+            className="px-4 py-2 bg-red-700/50 text-red-200 rounded-lg hover:bg-red-700/70 flex items-center space-x-2"
           >
             <Download className="w-4 h-4" />
             <span>Export to PDF</span>
           </button>
           <button
             onClick={exportToCSV}
-            className="px-4 py-2 bg-green-500 text-white rounded-lg hover:bg-green-600 flex items-center space-x-2"
+            className="px-4 py-2 bg-[rgba(16,185,129,0.2)] text-emerald-300 rounded-lg hover:bg-[rgba(16,185,129,0.3)] flex items-center space-x-2"
           >
             <Download className="w-4 h-4" />
             <span>Export to CSV</span>
           </button>
           <button
             onClick={saveComparison}
-            className="px-4 py-2 bg-purple-500 text-white rounded-lg hover:bg-purple-600 flex items-center space-x-2"
+            className="px-4 py-2 bg-[rgba(15,35,70,0.5)] text-purple-300 rounded-lg hover:bg-[rgba(15,35,70,0.7)] flex items-center space-x-2 border border-[rgba(37,99,235,0.3)]"
           >
             <Save className="w-4 h-4" />
             <span>Save Comparison</span>
@@ -419,14 +406,14 @@ const HorseSelectionItem: React.FC<HorseSelectionItemProps> = ({
   horse,
   isSelected,
   onSelect,
-  viewMode,
+  viewMode: _viewMode,
 }) => {
   return (
     <div
       className={`p-3 border rounded-lg cursor-pointer transition-colors ${
         isSelected
-          ? 'bg-blue-50 border-blue-300 ring-2 ring-blue-200'
-          : 'hover:bg-gray-50 border-gray-200'
+          ? 'bg-[rgba(37,99,235,0.1)] border-blue-500/30 ring-2 ring-blue-500/20'
+          : 'hover:bg-[rgba(15,35,70,0.5)] border-[rgba(37,99,235,0.3)]'
       }`}
       onClick={onSelect}
       data-testid={`horse-item-${horse.id}`}
@@ -436,14 +423,14 @@ const HorseSelectionItem: React.FC<HorseSelectionItemProps> = ({
           <div className="flex items-center space-x-3">
             <div
               className={`w-4 h-4 rounded border-2 flex items-center justify-center ${
-                isSelected ? 'bg-blue-500 border-blue-500' : 'border-gray-300'
+                isSelected ? 'bg-blue-500 border-blue-500' : 'border-[rgba(37,99,235,0.3)]'
               }`}
             >
               {isSelected && <div className="w-2 h-2 bg-white rounded-full"></div>}
             </div>
             <div>
-              <span className="font-medium text-gray-900">{horse.name}</span>
-              <div className="text-sm text-gray-500">
+              <span className="font-medium text-[rgb(220,235,255)]">{horse.name}</span>
+              <div className="text-sm text-[rgb(148,163,184)]">
                 {horse.breed} • {horse.age} years old
               </div>
             </div>
@@ -453,10 +440,10 @@ const HorseSelectionItem: React.FC<HorseSelectionItemProps> = ({
         <div className="flex items-center space-x-4">
           {/* Stats Preview */}
           <div className="hidden md:flex space-x-2 text-xs">
-            <span className="px-2 py-1 bg-blue-100 text-blue-800 rounded">
+            <span className="px-2 py-1 bg-[rgba(37,99,235,0.1)] text-blue-300 rounded border border-blue-500/30">
               Speed: {horse.stats?.speed || 0}
             </span>
-            <span className="px-2 py-1 bg-green-100 text-green-800 rounded">
+            <span className="px-2 py-1 bg-[rgba(16,185,129,0.1)] text-emerald-300 rounded border border-emerald-500/30">
               Bond: {horse.bondScore || 0}
             </span>
           </div>
@@ -464,12 +451,15 @@ const HorseSelectionItem: React.FC<HorseSelectionItemProps> = ({
           {/* Traits */}
           <div className="flex flex-wrap gap-1 max-w-48">
             {horse.traits.slice(0, 3).map((trait) => (
-              <span key={trait} className="px-2 py-1 bg-gray-100 text-gray-700 text-xs rounded">
+              <span
+                key={trait}
+                className="px-2 py-1 bg-[rgba(15,35,70,0.5)] text-[rgb(148,163,184)] text-xs rounded border border-[rgba(37,99,235,0.3)]"
+              >
                 {trait}
               </span>
             ))}
             {horse.traits.length > 3 && (
-              <span className="px-2 py-1 bg-gray-100 text-gray-500 text-xs rounded">
+              <span className="px-2 py-1 bg-[rgba(15,35,70,0.5)] text-[rgb(148,163,184)] text-xs rounded">
                 +{horse.traits.length - 3}
               </span>
             )}
@@ -494,12 +484,12 @@ const ComparisonMatrix: React.FC<ComparisonMatrixProps> = ({
 }) => {
   if (isLoading) {
     return (
-      <div className="bg-white rounded-lg shadow p-6">
-        <h3 className="text-lg font-semibold mb-4">Comparison Matrix</h3>
+      <div className="glass-panel rounded-lg p-6">
+        <h3 className="text-lg font-semibold text-[rgb(220,235,255)] mb-4">Comparison Matrix</h3>
         <div className="animate-pulse space-y-3">
-          <div className="h-4 bg-gray-200 rounded w-full"></div>
-          <div className="h-4 bg-gray-200 rounded w-3/4"></div>
-          <div className="h-4 bg-gray-200 rounded w-1/2"></div>
+          <div className="h-4 bg-[rgba(15,35,70,0.5)] rounded w-full"></div>
+          <div className="h-4 bg-[rgba(15,35,70,0.5)] rounded w-3/4"></div>
+          <div className="h-4 bg-[rgba(15,35,70,0.5)] rounded w-1/2"></div>
         </div>
       </div>
     );
@@ -536,7 +526,11 @@ const ComparisonMatrix: React.FC<ComparisonMatrixProps> = ({
     }
   };
 
-  const getValueColor = (value: any, attribute: any, allValues: any[]) => {
+  const getValueColor = (
+    value: unknown,
+    attribute: { isNumeric?: boolean },
+    allValues: unknown[]
+  ) => {
     if (!attribute.isNumeric) return '';
 
     const numValue = typeof value === 'number' ? value : 0;
@@ -544,24 +538,24 @@ const ComparisonMatrix: React.FC<ComparisonMatrixProps> = ({
     const max = Math.max(...numValues);
     const min = Math.min(...numValues);
 
-    if (numValue === max && max !== min) return 'bg-green-100 text-green-800';
-    if (numValue === min && max !== min) return 'bg-red-100 text-red-800';
+    if (numValue === max && max !== min) return 'bg-[rgba(16,185,129,0.1)] text-emerald-300';
+    if (numValue === min && max !== min) return 'bg-[rgba(239,68,68,0.1)] text-red-300';
     return '';
   };
 
   return (
-    <div className="bg-white rounded-lg shadow p-6">
-      <h3 className="text-lg font-semibold mb-4">Comparison Matrix</h3>
+    <div className="glass-panel rounded-lg p-6">
+      <h3 className="text-lg font-semibold text-[rgb(220,235,255)] mb-4">Comparison Matrix</h3>
 
       <div className="overflow-x-auto">
         <table className="w-full" data-testid="comparison-matrix">
           <thead>
-            <tr className="border-b border-gray-200">
-              <th className="text-left py-3 px-4 font-medium text-gray-700">Attribute</th>
+            <tr className="border-b border-[rgba(37,99,235,0.3)]">
+              <th className="text-left py-3 px-4 font-medium text-[rgb(148,163,184)]">Attribute</th>
               {horses.slice(0, 4).map((horse) => (
                 <th
                   key={horse.id}
-                  className="text-center py-3 px-4 font-medium text-gray-700 min-w-32"
+                  className="text-center py-3 px-4 font-medium text-[rgb(148,163,184)] min-w-32"
                 >
                   {horse.name}
                 </th>
@@ -575,14 +569,19 @@ const ComparisonMatrix: React.FC<ComparisonMatrixProps> = ({
                 .map((horse) => getAttributeValue(horse, attribute.key));
 
               return (
-                <tr key={attribute.key} className="border-b border-gray-100">
-                  <td className="py-3 px-4 font-medium text-gray-600">{attribute.label}</td>
+                <tr key={attribute.key} className="border-b border-[rgba(37,99,235,0.3)]">
+                  <td className="py-3 px-4 font-medium text-[rgb(148,163,184)]">
+                    {attribute.label}
+                  </td>
                   {horses.slice(0, 4).map((horse, index) => {
                     const value = values[index];
                     const colorClass = getValueColor(value, attribute, values);
 
                     return (
-                      <td key={horse.id} className={`py-3 px-4 text-center ${colorClass} rounded`}>
+                      <td
+                        key={horse.id}
+                        className={`py-3 px-4 text-center text-[rgb(220,235,255)] ${colorClass} rounded`}
+                      >
                         {value}
                       </td>
                     );
@@ -596,14 +595,20 @@ const ComparisonMatrix: React.FC<ComparisonMatrixProps> = ({
 
       {/* Traits Comparison */}
       <div className="mt-6">
-        <h4 className="font-medium text-gray-700 mb-3">Traits Comparison</h4>
+        <h4 className="font-medium text-[rgb(148,163,184)] mb-3">Traits Comparison</h4>
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-4">
           {horses.slice(0, 4).map((horse) => (
-            <div key={horse.id} className="p-3 bg-gray-50 rounded">
-              <h5 className="font-medium text-sm mb-2">{horse.name}</h5>
+            <div
+              key={horse.id}
+              className="p-3 bg-[rgba(15,35,70,0.3)] rounded border border-[rgba(37,99,235,0.3)]"
+            >
+              <h5 className="font-medium text-sm text-[rgb(220,235,255)] mb-2">{horse.name}</h5>
               <div className="flex flex-wrap gap-1">
                 {horse.traits.map((trait) => (
-                  <span key={trait} className="px-2 py-1 bg-blue-100 text-blue-800 text-xs rounded">
+                  <span
+                    key={trait}
+                    className="px-2 py-1 bg-[rgba(37,99,235,0.1)] text-blue-300 text-xs rounded border border-blue-500/30"
+                  >
                     {trait}
                   </span>
                 ))}
@@ -618,17 +623,20 @@ const ComparisonMatrix: React.FC<ComparisonMatrixProps> = ({
         <div className="mt-6 grid grid-cols-1 md:grid-cols-2 gap-6">
           {/* Similarities */}
           <div>
-            <h4 className="font-medium text-gray-700 mb-3">Similarities</h4>
+            <h4 className="font-medium text-[rgb(148,163,184)] mb-3">Similarities</h4>
             <div className="space-y-2">
               {comparisonData.similarities.map((similarity, index) => (
-                <div key={index} className="p-3 bg-green-50 rounded border border-green-200">
+                <div
+                  key={index}
+                  className="p-3 bg-[rgba(16,185,129,0.1)] rounded border border-emerald-500/30"
+                >
                   <div className="flex items-center justify-between mb-1">
-                    <span className="text-sm font-medium text-green-800">Common Traits</span>
-                    <span className="text-sm text-green-600">
+                    <span className="text-sm font-medium text-emerald-300">Common Traits</span>
+                    <span className="text-sm text-emerald-400">
                       {Math.round(similarity.score * 100)}% match
                     </span>
                   </div>
-                  <div className="text-xs text-green-700">{similarity.traits.join(', ')}</div>
+                  <div className="text-xs text-emerald-400/70">{similarity.traits.join(', ')}</div>
                 </div>
               ))}
             </div>
@@ -636,15 +644,18 @@ const ComparisonMatrix: React.FC<ComparisonMatrixProps> = ({
 
           {/* Differences */}
           <div>
-            <h4 className="font-medium text-gray-700 mb-3">Key Differences</h4>
+            <h4 className="font-medium text-[rgb(148,163,184)] mb-3">Key Differences</h4>
             <div className="space-y-2">
               {comparisonData.differences.map((difference, index) => (
-                <div key={index} className="p-3 bg-orange-50 rounded border border-orange-200">
+                <div
+                  key={index}
+                  className="p-3 bg-[rgba(212,168,67,0.1)] rounded border border-amber-500/30"
+                >
                   <div className="flex items-center justify-between mb-1">
-                    <span className="text-sm font-medium text-orange-800">
+                    <span className="text-sm font-medium text-amber-300">
                       Variance in {difference.attributes.join(', ')}
                     </span>
-                    <span className="text-sm text-orange-600">
+                    <span className="text-sm text-amber-400">
                       {Math.round(difference.variance * 100)}% difference
                     </span>
                   </div>
@@ -701,10 +712,10 @@ const RankingDashboard: React.FC<RankingDashboardProps> = ({ horses, comparisonD
     }));
 
   return (
-    <div className="bg-white rounded-lg shadow p-6">
+    <div className="glass-panel rounded-lg p-6">
       <div className="flex items-center justify-between mb-4">
-        <h3 className="text-lg font-semibold">Ranking Dashboard</h3>
-        <div className="flex items-center space-x-2 text-sm text-gray-500">
+        <h3 className="text-lg font-semibold text-[rgb(220,235,255)]">Ranking Dashboard</h3>
+        <div className="flex items-center space-x-2 text-sm text-[rgb(148,163,184)]">
           <TrendingUp className="w-4 h-4" />
           <span>Based on overall performance metrics</span>
         </div>
@@ -719,13 +730,13 @@ const RankingDashboard: React.FC<RankingDashboardProps> = ({ horses, comparisonD
           const getRankStyling = (rank: number) => {
             switch (rank) {
               case 1:
-                return 'bg-yellow-100 text-yellow-800 border-yellow-300';
+                return 'bg-[rgba(212,168,67,0.1)] text-amber-300 border-amber-500/30';
               case 2:
-                return 'bg-gray-100 text-gray-800 border-gray-300';
+                return 'bg-[rgba(15,35,70,0.5)] text-[rgb(148,163,184)] border-[rgba(37,99,235,0.3)]';
               case 3:
-                return 'bg-orange-100 text-orange-800 border-orange-300';
+                return 'bg-[rgba(212,168,67,0.05)] text-amber-400/70 border-amber-500/20';
               default:
-                return 'bg-blue-50 text-blue-800 border-blue-200';
+                return 'bg-[rgba(37,99,235,0.1)] text-blue-300 border-blue-500/30';
             }
           };
 
@@ -734,13 +745,13 @@ const RankingDashboard: React.FC<RankingDashboardProps> = ({ horses, comparisonD
               <div className="flex items-center justify-between">
                 <div className="flex items-center space-x-4">
                   {/* Rank Badge */}
-                  <div className="flex items-center justify-center w-8 h-8 rounded-full bg-white shadow-sm">
+                  <div className="flex items-center justify-center w-8 h-8 rounded-full bg-[rgba(15,35,70,0.5)] shadow-sm">
                     <span className="font-bold text-lg">#{rank}</span>
                   </div>
 
                   {/* Horse Info */}
                   <div>
-                    <h4 className="font-semibold text-lg">{horse.name}</h4>
+                    <h4 className="font-semibold text-lg text-[rgb(220,235,255)]">{horse.name}</h4>
                     <p className="text-sm opacity-75">
                       {horse.breed} • {horse.age} years old
                     </p>
@@ -749,30 +760,38 @@ const RankingDashboard: React.FC<RankingDashboardProps> = ({ horses, comparisonD
 
                 {/* Score and Stats */}
                 <div className="text-right">
-                  <div className="text-2xl font-bold">
+                  <div className="text-2xl font-bold text-[rgb(220,235,255)]">
                     {horse.overallScore || ranking?.score || 0}
                   </div>
-                  <div className="text-sm opacity-75">Overall Score</div>
+                  <div className="text-sm opacity-75 text-[rgb(148,163,184)]">Overall Score</div>
                 </div>
               </div>
 
               {/* Detailed Metrics */}
               <div className="mt-4 grid grid-cols-2 md:grid-cols-4 gap-4">
                 <div className="text-center">
-                  <div className="text-lg font-semibold">{horse.stats?.speed || 0}</div>
-                  <div className="text-xs opacity-75">Speed</div>
+                  <div className="text-lg font-semibold text-[rgb(220,235,255)]">
+                    {horse.stats?.speed || 0}
+                  </div>
+                  <div className="text-xs text-[rgb(148,163,184)]">Speed</div>
                 </div>
                 <div className="text-center">
-                  <div className="text-lg font-semibold">{horse.stats?.stamina || 0}</div>
-                  <div className="text-xs opacity-75">Stamina</div>
+                  <div className="text-lg font-semibold text-[rgb(220,235,255)]">
+                    {horse.stats?.stamina || 0}
+                  </div>
+                  <div className="text-xs text-[rgb(148,163,184)]">Stamina</div>
                 </div>
                 <div className="text-center">
-                  <div className="text-lg font-semibold">{horse.bondScore || 0}</div>
-                  <div className="text-xs opacity-75">Bond</div>
+                  <div className="text-lg font-semibold text-[rgb(220,235,255)]">
+                    {horse.bondScore || 0}
+                  </div>
+                  <div className="text-xs text-[rgb(148,163,184)]">Bond</div>
                 </div>
                 <div className="text-center">
-                  <div className="text-lg font-semibold">{horse.traits.length}</div>
-                  <div className="text-xs opacity-75">Traits</div>
+                  <div className="text-lg font-semibold text-[rgb(220,235,255)]">
+                    {horse.traits.length}
+                  </div>
+                  <div className="text-xs text-[rgb(148,163,184)]">Traits</div>
                 </div>
               </div>
 
@@ -781,12 +800,14 @@ const RankingDashboard: React.FC<RankingDashboardProps> = ({ horses, comparisonD
                 <div className="mt-4 grid grid-cols-1 md:grid-cols-2 gap-4">
                   {ranking.strengths.length > 0 && (
                     <div>
-                      <h5 className="text-sm font-medium mb-2">Strengths</h5>
+                      <h5 className="text-sm font-medium text-[rgb(148,163,184)] mb-2">
+                        Strengths
+                      </h5>
                       <div className="flex flex-wrap gap-1">
                         {ranking.strengths.map((strength) => (
                           <span
                             key={strength}
-                            className="px-2 py-1 bg-green-100 text-green-800 text-xs rounded"
+                            className="px-2 py-1 bg-[rgba(16,185,129,0.1)] text-emerald-300 text-xs rounded border border-emerald-500/30"
                           >
                             {strength}
                           </span>
@@ -797,12 +818,14 @@ const RankingDashboard: React.FC<RankingDashboardProps> = ({ horses, comparisonD
 
                   {ranking.weaknesses.length > 0 && (
                     <div>
-                      <h5 className="text-sm font-medium mb-2">Areas for Improvement</h5>
+                      <h5 className="text-sm font-medium text-[rgb(148,163,184)] mb-2">
+                        Areas for Improvement
+                      </h5>
                       <div className="flex flex-wrap gap-1">
                         {ranking.weaknesses.map((weakness) => (
                           <span
                             key={weakness}
-                            className="px-2 py-1 bg-red-100 text-red-800 text-xs rounded"
+                            className="px-2 py-1 bg-[rgba(239,68,68,0.1)] text-red-300 text-xs rounded border border-red-500/30"
                           >
                             {weakness}
                           </span>
@@ -818,37 +841,37 @@ const RankingDashboard: React.FC<RankingDashboardProps> = ({ horses, comparisonD
       </div>
 
       {/* Summary Statistics */}
-      <div className="mt-6 p-4 bg-gray-50 rounded-lg">
-        <h4 className="font-medium text-gray-700 mb-3">Summary Statistics</h4>
+      <div className="mt-6 p-4 bg-[rgba(15,35,70,0.3)] rounded-lg border border-[rgba(37,99,235,0.3)]">
+        <h4 className="font-medium text-[rgb(148,163,184)] mb-3">Summary Statistics</h4>
         <div className="grid grid-cols-2 md:grid-cols-4 gap-4 text-center">
           <div>
-            <div className="text-lg font-semibold text-gray-900">
+            <div className="text-lg font-semibold text-[rgb(220,235,255)]">
               {Math.round(
                 rankedHorses.reduce((sum, h) => sum + (h.overallScore || 0), 0) /
                   rankedHorses.length
               )}
             </div>
-            <div className="text-sm text-gray-600">Average Score</div>
+            <div className="text-sm text-[rgb(148,163,184)]">Average Score</div>
           </div>
           <div>
-            <div className="text-lg font-semibold text-gray-900">
+            <div className="text-lg font-semibold text-[rgb(220,235,255)]">
               {Math.max(...rankedHorses.map((h) => h.overallScore || 0))}
             </div>
-            <div className="text-sm text-gray-600">Highest Score</div>
+            <div className="text-sm text-[rgb(148,163,184)]">Highest Score</div>
           </div>
           <div>
-            <div className="text-lg font-semibold text-gray-900">
+            <div className="text-lg font-semibold text-[rgb(220,235,255)]">
               {rankedHorses.reduce((sum, h) => sum + h.traits.length, 0)}
             </div>
-            <div className="text-sm text-gray-600">Total Traits</div>
+            <div className="text-sm text-[rgb(148,163,184)]">Total Traits</div>
           </div>
           <div>
-            <div className="text-lg font-semibold text-gray-900">
+            <div className="text-lg font-semibold text-[rgb(220,235,255)]">
               {Math.round(
                 rankedHorses.reduce((sum, h) => sum + (h.bondScore || 0), 0) / rankedHorses.length
               )}
             </div>
-            <div className="text-sm text-gray-600">Average Bond</div>
+            <div className="text-sm text-[rgb(148,163,184)]">Average Bond</div>
           </div>
         </div>
       </div>

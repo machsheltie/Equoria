@@ -60,10 +60,7 @@ const formatNumber = (value: number): string => {
 /**
  * Calculate progress bar percentage, clamped between 0 and 100
  */
-const calculateProgressPercent = (
-  xpForCurrentLevel: number,
-  xpToNextLevel: number
-): number => {
+const calculateProgressPercent = (xpForCurrentLevel: number, xpToNextLevel: number): number => {
   if (xpToNextLevel <= 0) {
     return 0;
   }
@@ -193,9 +190,9 @@ const XpGainNotification = memo(function XpGainNotification({
         fixed ${positionClasses}
         z-50
         w-72
-        bg-white
+        glass-panel
         shadow-lg rounded-lg
-        border border-gray-200
+        border border-[rgba(37,99,235,0.3)]
         p-4
         transition-all duration-300 ease-in-out
         animate-fade-in
@@ -209,7 +206,7 @@ const XpGainNotification = memo(function XpGainNotification({
           data-testid="xp-gained-text"
           className="
             text-lg font-bold
-            bg-gradient-to-r from-blue-600 to-purple-600
+            bg-gradient-to-r from-blue-400 to-purple-400
             bg-clip-text text-transparent
           "
         >
@@ -223,8 +220,8 @@ const XpGainNotification = memo(function XpGainNotification({
           aria-label="Close notification"
           className="
             p-1 rounded-full
-            text-gray-400 hover:text-gray-600
-            hover:bg-gray-100
+            text-[rgb(148,163,184)] hover:text-[rgb(220,235,255)]
+            hover:bg-[rgba(15,35,70,0.5)]
             transition-colors duration-150
             focus:outline-none focus:ring-2 focus:ring-blue-500
           "
@@ -238,7 +235,7 @@ const XpGainNotification = memo(function XpGainNotification({
         data-testid="xp-progress-bar"
         className="
           w-full h-2
-          bg-gray-200 rounded-full
+          bg-[rgba(15,35,70,0.5)] rounded-full
           overflow-hidden
           mb-2
         "
@@ -256,23 +253,18 @@ const XpGainNotification = memo(function XpGainNotification({
       </div>
 
       {/* Level and XP info text */}
-      <div
-        data-testid="xp-level-info"
-        className="text-sm text-gray-600"
-      >
+      <div data-testid="xp-level-info" className="text-sm text-[rgb(148,163,184)]">
         <span data-testid="xp-level-text">Level {currentLevel}</span>
         {' - '}
-        <span data-testid="xp-progress-text">{xpForCurrentLevel}/{xpToNextLevel} XP</span>
+        <span data-testid="xp-progress-text">
+          {xpForCurrentLevel}/{xpToNextLevel} XP
+        </span>
       </div>
 
       {/* Screen reader announcement */}
-      <div
-        role="status"
-        aria-live="polite"
-        aria-atomic="true"
-        className="sr-only"
-      >
-        You gained {xpGained} XP. Currently Level {currentLevel}, {xpForCurrentLevel} of {xpToNextLevel} XP to next level.
+      <div role="status" aria-live="polite" aria-atomic="true" className="sr-only">
+        You gained {xpGained} XP. Currently Level {currentLevel}, {xpForCurrentLevel} of{' '}
+        {xpToNextLevel} XP to next level.
       </div>
     </div>
   );

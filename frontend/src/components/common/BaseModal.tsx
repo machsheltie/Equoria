@@ -203,7 +203,7 @@ const BaseModal = memo(function BaseModal({
 
   const modalContent = (
     <div
-      className="fixed inset-0 bg-black/50 flex items-center justify-center z-50 p-4"
+      className="fixed inset-0 bg-black/60 flex items-center justify-center z-50 p-4"
       onClick={handleBackdropClick}
       data-testid={`${dataTestId}-backdrop`}
     >
@@ -214,15 +214,15 @@ const BaseModal = memo(function BaseModal({
         aria-labelledby={`${dataTestId}-title`}
         aria-describedby={ariaDescribedby}
         tabIndex={-1}
-        className={`bg-white rounded-lg shadow-xl ${sizeClasses} w-full max-h-[90vh] overflow-y-auto focus:outline-none ${className}`}
+        className={`glass-panel rounded-lg shadow-xl ${sizeClasses} w-full max-h-[90vh] overflow-y-auto focus:outline-none ${className}`}
         onClick={handleContentClick}
         data-testid={dataTestId}
       >
         {/* Header */}
-        <div className="flex items-start justify-between p-6 border-b border-gray-200">
+        <div className="flex items-start justify-between p-6 border-b border-[rgba(37,99,235,0.3)]">
           <h2
             id={`${dataTestId}-title`}
-            className="text-2xl font-bold text-gray-900 flex-1 pr-4"
+            className="text-2xl font-bold text-[rgb(220,235,255)] flex-1 pr-4"
             data-testid={`${dataTestId}-title`}
           >
             {title}
@@ -232,7 +232,7 @@ const BaseModal = memo(function BaseModal({
               type="button"
               onClick={onClose}
               disabled={isSubmitting}
-              className="text-gray-400 hover:text-gray-600 transition-colors disabled:opacity-50 disabled:cursor-not-allowed p-1 flex-shrink-0"
+              className="text-[rgb(148,163,184)] hover:text-[rgb(220,235,255)] transition-colors disabled:opacity-50 disabled:cursor-not-allowed p-1 flex-shrink-0"
               aria-label="Close modal"
               data-testid={`${dataTestId}-close-button`}
             >
@@ -249,7 +249,7 @@ const BaseModal = memo(function BaseModal({
         {/* Footer (optional) */}
         {footer && (
           <div
-            className="flex justify-end space-x-3 p-6 border-t border-gray-200 bg-gray-50"
+            className="flex justify-end space-x-3 p-6 border-t border-[rgba(37,99,235,0.3)] bg-[rgba(15,35,70,0.4)]"
             data-testid={`${dataTestId}-footer`}
           >
             {footer}
