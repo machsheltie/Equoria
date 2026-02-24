@@ -3381,13 +3381,19 @@ epic-9c:
 
   9c-5-wire-to-api:
     title: 'Wire Rider Hooks to Live API'
-    status: deferred
+    status: completed
     priority: P1
     epic: '9c'
     story: 5
     prerequisites: []
     created_date: '2026-02-23'
-    deferred_reason: 'Backend rider endpoints not yet implemented. Frontend hooks point to expected /api/riders/* paths.'
+    completed_date: '2026-02-24'
+    ac:
+      - riderController + riderMarketplaceController created
+      - riderRoutes + riderMarketplaceRoutes registered in app.mjs
+      - riderMarketplace service (in-memory Map, pool of 6)
+      - Tests: riderMarketplace.test.mjs + integration/riderAPI.test.mjs (18 tests)
+      - Frontend useRiders.ts hooks wired to live /api/riders/* endpoints
 
   # Epic 10: World Locations (Service Hubs) — COMPLETE
   epic-10:
@@ -3478,13 +3484,20 @@ epic-9c:
 
   10-5-wire-to-api:
     title: 'Wire World Locations to Live API'
-    status: deferred
+    status: completed
     priority: P1
     epic: '10'
     story: 5
     prerequisites: []
     created_date: '2026-02-23'
-    deferred_reason: 'Backend vet/farrier/feed-shop/tack-shop endpoints do not yet exist. All pages are mock-ready with disabled action buttons.'
+    completed_date: '2026-02-24'
+    ac:
+      - vetController + vetRoutes (GET /api/vet/services, POST /api/vet/book-appointment)
+      - tackShopController + tackShopRoutes (GET /api/tack-shop/inventory, POST /api/tack-shop/purchase)
+      - farrierController + farrierRoutes (GET /api/farrier/services, POST /api/farrier/book-service)
+      - feedShopController + feedShopRoutes (GET /api/feed-shop/catalog, POST /api/feed-shop/purchase)
+      - Horse schema: lastFarrierDate, hoofCondition, lastShod, currentFeed, lastFedDate, energyLevel
+      - Frontend hooks: useVet, useTackShop, useFarrier, useFeedShop all wired to live APIs
 
   # Epic 12: Stable Management Completions (COMPLETE)
   epic-12:
@@ -3585,7 +3598,7 @@ epic-9c:
     completed_date: '2026-02-23'
     priority: P2
     story_file: 'docs/sprint-artifacts/13-trainer-system.md'
-    note: 'Story 13-5 (API wire-up) deferred — no backend routes yet'
+    note: 'Story 13-5 (API wire-up) completed 2026-02-24 — backend routes + tests wired'
 
   13-1-trainer-hiring:
     title: 'Trainer Hiring Interface'
@@ -3639,11 +3652,17 @@ epic-9c:
 
   13-5-trainer-api-wire:
     title: 'Wire Trainer Hooks to Live API'
-    status: backlog
+    status: completed
     priority: P2
     epic: '13'
     story: '5'
-    blocked_by: 'No backend /api/trainers/* routes exist yet'
+    completed_date: '2026-02-24'
+    ac:
+      - trainerController + trainerMarketplaceController created
+      - trainerRoutes + trainerMarketplaceRoutes registered in app.mjs
+      - trainerMarketplace service (in-memory Map, pool of 5, 5 personalities)
+      - Tests: trainerMarketplace.test.mjs + integration/trainerAPI.test.mjs (19 tests)
+      - Frontend useTrainers.ts hooks wired to live /api/trainers/* endpoints
 
   # Epic 11: Community Features (P1 - COMPLETE)
   epic-11:
@@ -3813,11 +3832,11 @@ summary:
   current_epic: 'none'
   current_story: 'none'
   epics_completed: 16
-  stories_completed: 86
+  stories_completed: 89
   stories_in_progress: 0
   stories_ready_for_dev: 0
-  stories_backlog: 1
-  total_tests_passing: 1070
+  stories_backlog: 0
+  total_tests_passing: 3628
   action_items_total: 23
   action_items_completed: 11
   action_items_pending: 12
@@ -3832,7 +3851,10 @@ summary:
   epic_11_completed_date: '2026-02-23'
   epic_12_completed_date: '2026-02-23'
   epic_13_completed_date: '2026-02-23'
-  epic_13_note: 'Story 13-5 (API wire-up) in backlog — no backend routes yet'
+  epic_9c_5_completed_date: '2026-02-24'
+  epic_10_5_completed_date: '2026-02-24'
+  epic_13_5_completed_date: '2026-02-24'
+  deferred_stories_resolved: 'All 3 deferred API stories (9C-5, 10-5, 13-5) wired on 2026-02-24'
   epic_14_completed_date: '2026-02-23'
   epic_14_note: 'Railway monolithic deploy — Dockerfile, railway.toml, Sentry, Lighthouse'
   next_milestone: 'Epic 15 (Onboarding & Polish) or production launch'
