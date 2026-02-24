@@ -898,6 +898,229 @@ export const ridersApi = {
 };
 
 /**
+ * Trainer API surface (Epic 13-5)
+ *
+ * Path registry:
+ *   GET  /api/trainers/user/:userId        → Trainer[]
+ *   GET  /api/trainers/assignments         → TrainerAssignment[]
+ *   GET  /api/trainers/marketplace         → TrainerMarketplaceData
+ *   POST /api/trainers/marketplace/hire    → { success, data: { trainer, cost } }
+ *   POST /api/trainers/marketplace/refresh → TrainerMarketplaceData
+ *   POST /api/trainers/assignments         → { success }
+ *   DELETE /api/trainers/assignments/:id   → { success }
+ *   DELETE /api/trainers/:id/dismiss       → { success }
+ */
+
+export interface TrainerEntry {
+  id: number;
+  firstName: string;
+  lastName: string;
+  name: string;
+  skillLevel: string; // novice | developing | expert
+  personality: string; // focused | encouraging | technical | competitive | patient
+  speciality: string;
+  sessionRate: number;
+  experience: number;
+  level: number;
+  careerWeeks: number;
+  retired: boolean;
+  bio?: string;
+  assignedHorseId?: number | null;
+}
+
+export interface MarketplaceTrainer {
+  marketplaceId: string;
+  firstName: string;
+  lastName: string;
+  skillLevel: string;
+  personality: string;
+  speciality: string;
+  sessionRate: number;
+  bio: string;
+  availability: boolean;
+}
+
+export interface TrainerMarketplaceData {
+  trainers: MarketplaceTrainer[];
+  lastRefresh: string;
+  nextFreeRefresh: string;
+  refreshCost: number;
+  canRefreshFree: boolean;
+}
+
+export interface TrainerAssignmentEntry {
+  id: number;
+  trainerId: number;
+  horseId: number;
+  horseName: string;
+  trainerName: string;
+  startDate: string;
+  isActive: boolean;
+}
+
+export const trainersApi = {
+  getUserTrainers: (userId: string | number) =>
+    apiClient.get<TrainerEntry[]>(`/api/trainers/user/${userId}`),
+  getAssignments: () => apiClient.get<TrainerAssignmentEntry[]>('/api/trainers/assignments'),
+  getMarketplace: () => apiClient.get<TrainerMarketplaceData>('/api/trainers/marketplace'),
+  hireTrainer: (marketplaceId: string) =>
+    apiClient.post<{
+      success: boolean;
+      data: { trainer: TrainerEntry; cost: number; remainingMoney: number };
+    }>('/api/trainers/marketplace/hire', { marketplaceId }),
+  refreshMarketplace: (force: boolean = false) =>
+    apiClient.post<TrainerMarketplaceData>('/api/trainers/marketplace/refresh', { force }),
+  assignTrainer: (data: { trainerId: number; horseId: number; notes?: string }) =>
+    apiClient.post<{ success: boolean }>('/api/trainers/assignments', data),
+  deleteAssignment: (assignmentId: number) =>
+    apiClient.delete<{ success: boolean }>(`/api/trainers/assignments/${assignmentId}`),
+  dismissTrainer: (trainerId: number) =>
+    apiClient.delete<{ success: boolean }>(`/api/trainers/${trainerId}/dismiss`),
+};
+
+// ── Vet Clinic types ──────────────────────────────────────────────────────────
+
+export interface VetService {
+  id: string;
+  name: string;
+  description: string;
+  duration: string;
+  cost: number;
+  healthOutcome: string | null;
+}
+
+export interface VetAppointmentResult {
+  horse: { id: number; name: string; healthStatus: string | null; lastVettedDate: string | null };
+  service: VetService;
+  cost: number;
+  remainingMoney: number;
+}
+
+/**
+ * Vet Clinic API surface
+ *   GET  /api/vet/services          → VetService[]
+ *   POST /api/vet/book-appointment  → VetAppointmentResult
+ */
+export const vetApi = {
+  getServices: () => apiClient.get<VetService[]>('/api/vet/services'),
+  bookAppointment: (data: { horseId: number; serviceId: string }) =>
+    apiClient.post<{ success: boolean; data: VetAppointmentResult }>(
+      '/api/vet/book-appointment',
+      data
+    ),
+};
+
+// ── Tack Shop types ───────────────────────────────────────────────────────────
+
+export interface TackItem {
+  id: string;
+  category: 'saddle' | 'bridle';
+  name: string;
+  description: string;
+  cost: number;
+  bonus: string;
+  disciplines: string[];
+}
+
+export interface TackInventoryData {
+  items: TackItem[];
+  categories: { saddles: TackItem[]; bridles: TackItem[] };
+}
+
+export interface TackPurchaseResult {
+  horse: { id: number; name: string; tack: Record<string, string> };
+  item: TackItem;
+  cost: number;
+  remainingMoney: number;
+}
+
+/**
+ * Tack Shop API surface
+ *   GET  /api/tack-shop/inventory → TackInventoryData
+ *   POST /api/tack-shop/purchase  → TackPurchaseResult
+ */
+export const tackShopApi = {
+  getInventory: () => apiClient.get<TackInventoryData>('/api/tack-shop/inventory'),
+  purchaseItem: (data: { horseId: number; itemId: string }) =>
+    apiClient.post<{ success: boolean; data: TackPurchaseResult }>('/api/tack-shop/purchase', data),
+};
+
+// ── Farrier types ─────────────────────────────────────────────────────────────
+
+export interface FarrierService {
+  id: string;
+  name: string;
+  description: string;
+  duration: string;
+  cost: number;
+  hoofConditionOutcome: string;
+  includesShoing: boolean;
+}
+
+export interface FarrierBookingResult {
+  horse: {
+    id: number;
+    name: string;
+    hoofCondition: string | null;
+    lastFarrierDate: string | null;
+    lastShod: string | null;
+  };
+  service: FarrierService;
+  cost: number;
+  remainingMoney: number;
+}
+
+/**
+ * Farrier API surface
+ *   GET  /api/farrier/services     → FarrierService[]
+ *   POST /api/farrier/book-service → FarrierBookingResult
+ */
+export const farrierApi = {
+  getServices: () => apiClient.get<FarrierService[]>('/api/farrier/services'),
+  bookService: (data: { horseId: number; serviceId: string }) =>
+    apiClient.post<{ success: boolean; data: FarrierBookingResult }>(
+      '/api/farrier/book-service',
+      data
+    ),
+};
+
+// ── Feed Shop types ───────────────────────────────────────────────────────────
+
+export interface FeedItem {
+  id: string;
+  name: string;
+  description: string;
+  billing: string;
+  cost: number;
+  energyBoost: number;
+  feedType: string;
+}
+
+export interface FeedPurchaseResult {
+  horse: {
+    id: number;
+    name: string;
+    currentFeed: string | null;
+    lastFedDate: string | null;
+    energyLevel: number | null;
+  };
+  feed: FeedItem;
+  cost: number;
+  remainingMoney: number;
+}
+
+/**
+ * Feed Shop API surface
+ *   GET  /api/feed-shop/catalog  → FeedItem[]
+ *   POST /api/feed-shop/purchase → FeedPurchaseResult
+ */
+export const feedShopApi = {
+  getCatalog: () => apiClient.get<FeedItem[]>('/api/feed-shop/catalog'),
+  purchaseFeed: (data: { horseId: number; feedId: string }) =>
+    apiClient.post<{ success: boolean; data: FeedPurchaseResult }>('/api/feed-shop/purchase', data),
+};
+
+/**
  * User Progress API surface
  */
 export const userProgressApi = {

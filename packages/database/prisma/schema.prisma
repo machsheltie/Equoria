@@ -43,6 +43,10 @@ model User {
   groomPerformanceRecords GroomPerformanceRecord[]
   grooms                  Groom[]
   horses                  Horse[]
+  riders                  Rider[]
+  riderAssignments        RiderAssignment[]
+  trainers                Trainer[]
+  trainerAssignments      TrainerAssignment[]
   refreshTokens           RefreshToken[]
   shows                   Show[]
   xpEvents                XpEvent[]
@@ -153,6 +157,14 @@ model Horse {
   /// Horse XP System
   horseXp                 Int?                  @default(0)
   availableStatPoints     Int?                  @default(0)
+  /// Farrier fields
+  lastFarrierDate         DateTime?
+  hoofCondition           String?               @default("good")
+  lastShod                DateTime?
+  /// Feed Shop fields
+  currentFeed             String?               @default("basic")
+  lastFedDate             DateTime?
+  energyLevel             Int?                  @default(100)
   /// Timestamps
   createdAt               DateTime?             @default(now())
   updatedAt               DateTime?             @updatedAt
@@ -169,6 +181,8 @@ model Horse {
   ultraRareTraitEvents    UltraRareTraitEvent[]
   groomHorseSynergies     GroomHorseSynergy[]
   groomAssignmentLogs     GroomAssignmentLog[]
+  riderAssignments        RiderAssignment[]
+  trainerAssignments      TrainerAssignment[]
   breed                   Breed?                @relation(fields: [breedId], references: [id])
   dam                     Horse?                @relation("DamLineage", fields: [damId], references: [id])
   damOffspring            Horse[]               @relation("DamLineage")
@@ -879,6 +893,142 @@ model GroomTalentSelections {
 
   @@index([groomId])
   @@map("groom_talent_selections")
+}
+
+model Rider {
+  /// Unique identifier for each rider
+  id           Int               @id @default(autoincrement())
+  /// First name
+  firstName    String
+  /// Last name
+  lastName     String
+  /// Personality type (daring | methodical | intuitive | competitive)
+  personality  String
+  /// Skill level (rookie | developing | experienced)
+  skillLevel   String
+  /// Preferred discipline specialty
+  speciality   String
+  /// Weekly rate in game currency
+  weeklyRate   Int               @default(200)
+  /// Total XP accumulated
+  experience   Int               @default(0)
+  /// Current level (1–10)
+  level        Int               @default(1)
+  /// Career weeks accumulated
+  careerWeeks  Int               @default(0)
+  /// Total competition wins
+  totalWins    Int               @default(0)
+  /// Prestige score (0–100)
+  prestige     Int               @default(0)
+  /// Retirement status
+  retired      Boolean           @default(false)
+  /// Biography
+  bio          String?
+  /// User association
+  userId       String?
+  /// Timestamps
+  createdAt    DateTime          @default(now())
+  updatedAt    DateTime          @updatedAt
+  assignments  RiderAssignment[]
+  user         User?             @relation(fields: [userId], references: [id])
+
+  @@index([userId])
+  @@index([level])
+  @@index([retired])
+  @@map("riders")
+}
+
+model RiderAssignment {
+  /// Unique identifier for each assignment
+  id        Int      @id @default(autoincrement())
+  /// Assignment status
+  isActive  Boolean  @default(true)
+  /// Optional notes
+  notes     String?
+  /// When assignment started
+  startDate DateTime @default(now())
+  /// Foreign keys
+  riderId   Int
+  horseId   Int
+  userId    String?
+  /// Timestamps
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+  rider     Rider    @relation(fields: [riderId], references: [id], onDelete: Cascade)
+  horse     Horse    @relation(fields: [horseId], references: [id], onDelete: Cascade)
+  user      User?    @relation(fields: [userId], references: [id])
+
+  @@unique([riderId, horseId, isActive])
+  @@index([riderId])
+  @@index([horseId])
+  @@index([userId])
+  @@map("rider_assignments")
+}
+
+model Trainer {
+  /// Unique identifier for each trainer
+  id           Int                 @id @default(autoincrement())
+  /// First name
+  firstName    String
+  /// Last name
+  lastName     String
+  /// Personality type (focused | encouraging | technical | competitive | patient)
+  personality  String
+  /// Skill level (novice | developing | expert)
+  skillLevel   String
+  /// Preferred discipline specialty
+  speciality   String
+  /// Session rate in game currency
+  sessionRate  Int                 @default(150)
+  /// Total XP accumulated
+  experience   Int                 @default(0)
+  /// Current level (1–10)
+  level        Int                 @default(1)
+  /// Career weeks accumulated
+  careerWeeks  Int                 @default(0)
+  /// Retirement status
+  retired      Boolean             @default(false)
+  /// Biography
+  bio          String?
+  /// User association
+  userId       String?
+  /// Timestamps
+  createdAt    DateTime            @default(now())
+  updatedAt    DateTime            @updatedAt
+  assignments  TrainerAssignment[]
+  user         User?               @relation(fields: [userId], references: [id])
+
+  @@index([userId])
+  @@index([level])
+  @@index([retired])
+  @@map("trainers")
+}
+
+model TrainerAssignment {
+  /// Unique identifier for each assignment
+  id        Int      @id @default(autoincrement())
+  /// Assignment status
+  isActive  Boolean  @default(true)
+  /// Optional notes
+  notes     String?
+  /// When assignment started
+  startDate DateTime @default(now())
+  /// Foreign keys
+  trainerId Int
+  horseId   Int
+  userId    String?
+  /// Timestamps
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+  trainer   Trainer  @relation(fields: [trainerId], references: [id], onDelete: Cascade)
+  horse     Horse    @relation(fields: [horseId], references: [id], onDelete: Cascade)
+  user      User?    @relation(fields: [userId], references: [id])
+
+  @@unique([trainerId, horseId, isActive])
+  @@index([trainerId])
+  @@index([horseId])
+  @@index([userId])
+  @@map("trainer_assignments")
 }
 
 model Facility {

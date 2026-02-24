@@ -80,6 +80,12 @@ import userDocumentationRoutes from './routes/userDocumentationRoutes.mjs';
 import advancedBreedingGeneticsRoutes from './routes/advancedBreedingGeneticsRoutes.mjs';
 import environmentalRoutes from './routes/environmentalRoutes.mjs';
 import adminRoutes from './routes/adminRoutes.mjs';
+import riderRoutes from './routes/riderRoutes.mjs';
+import trainerRoutes from './routes/trainerRoutes.mjs';
+import vetRoutes from './routes/vetRoutes.mjs';
+import tackShopRoutes from './routes/tackShopRoutes.mjs';
+import farrierRoutes from './routes/farrierRoutes.mjs';
+import feedShopRoutes from './routes/feedShopRoutes.mjs';
 
 /**
  * 🔒 SECURITY ROUTER ARCHITECTURE
@@ -136,6 +142,14 @@ authRouter.use('/breeds', breedRoutes);
 authRouter.use('/foals', foalRoutes);
 authRouter.use('/trait-discovery', traitDiscoveryRoutes);
 authRouter.use('/traits', traitRoutes);
+
+// Rider and trainer systems
+authRouter.use('/riders', riderRoutes);
+authRouter.use('/trainers', trainerRoutes);
+authRouter.use('/vet', vetRoutes);
+authRouter.use('/tack-shop', tackShopRoutes);
+authRouter.use('/farrier', farrierRoutes);
+authRouter.use('/feed-shop', feedShopRoutes);
 
 // Groom management system
 authRouter.use('/grooms', groomRoutes);
