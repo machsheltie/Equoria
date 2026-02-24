@@ -13,6 +13,7 @@
 import { describe, it, expect, beforeAll, afterAll, beforeEach } from '@jest/globals';
 import request from 'supertest';
 import { createTestUser, cleanupTestData } from '../helpers/testAuth.mjs';
+import { forceExpireMarketplace } from '../../controllers/groomMarketplaceController.mjs';
 import app from '../../app.mjs';
 
 describe('🏪 INTEGRATION: Groom Marketplace API', () => {
@@ -115,8 +116,8 @@ describe('🏪 INTEGRATION: Groom Marketplace API', () => {
 
       const initialGrooms = initialResponse.body.data.grooms;
 
-      // Wait for free refresh to become available (test environment has 10 second interval)
-      await new Promise(resolve => setTimeout(resolve, 11000));
+      // Force-expire the marketplace so the free refresh window is available immediately
+      forceExpireMarketplace(_testUser.id);
 
       // Refresh marketplace
       const refreshResponse = await request(app)

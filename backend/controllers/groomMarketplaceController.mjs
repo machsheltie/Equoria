@@ -45,12 +45,16 @@ export async function getMarketplace(req, res) {
       };
       userMarketplaces.set(userId, userMarketplace);
 
-      logger.info(`[groomMarketplace] Generated new marketplace for user ${userId} with ${grooms.length} grooms`);
+      logger.info(
+        `[groomMarketplace] Generated new marketplace for user ${userId} with ${grooms.length} grooms`,
+      );
     }
 
     // Calculate next free refresh time
     const nextFreeRefresh = new Date(userMarketplace.lastRefresh);
-    nextFreeRefresh.setHours(nextFreeRefresh.getHours() + MARKETPLACE_CONFIG.REFRESH_INTERVAL_HOURS);
+    nextFreeRefresh.setHours(
+      nextFreeRefresh.getHours() + MARKETPLACE_CONFIG.REFRESH_INTERVAL_HOURS,
+    );
 
     // Calculate refresh cost
     const refreshCost = getRefreshCost(userMarketplace.lastRefresh);
@@ -67,7 +71,6 @@ export async function getMarketplace(req, res) {
         refreshCount: userMarketplace.refreshCount,
       },
     });
-
   } catch (error) {
     logger.error(`[groomMarketplace] Error getting marketplace: ${error.message}`);
     res.status(500).json({
@@ -134,7 +137,10 @@ export async function refreshMarketplace(req, res) {
         message: `Marketplace refresh costs $${refreshCost}. Set force=true to pay for refresh.`,
         data: {
           cost: refreshCost,
-          nextFreeRefresh: new Date(userMarketplace.lastRefresh.getTime() + (MARKETPLACE_CONFIG.REFRESH_INTERVAL_HOURS * 60 * 60 * 1000)),
+          nextFreeRefresh: new Date(
+            userMarketplace.lastRefresh.getTime() +
+              MARKETPLACE_CONFIG.REFRESH_INTERVAL_HOURS * 60 * 60 * 1000,
+          ),
         },
       });
     }
@@ -150,9 +156,13 @@ export async function refreshMarketplace(req, res) {
 
     // Calculate next free refresh time
     const nextFreeRefresh = new Date(newMarketplace.lastRefresh);
-    nextFreeRefresh.setHours(nextFreeRefresh.getHours() + MARKETPLACE_CONFIG.REFRESH_INTERVAL_HOURS);
+    nextFreeRefresh.setHours(
+      nextFreeRefresh.getHours() + MARKETPLACE_CONFIG.REFRESH_INTERVAL_HOURS,
+    );
 
-    logger.info(`[groomMarketplace] Refreshed marketplace for user ${userId} with ${grooms.length} new grooms`);
+    logger.info(
+      `[groomMarketplace] Refreshed marketplace for user ${userId} with ${grooms.length} new grooms`,
+    );
 
     res.status(200).json({
       success: true,
@@ -167,7 +177,6 @@ export async function refreshMarketplace(req, res) {
         paidRefresh: refreshCost > 0,
       },
     });
-
   } catch (error) {
     logger.error(`[groomMarketplace] Error refreshing marketplace: ${error.message}`);
     res.status(500).json({
@@ -288,7 +297,6 @@ export async function hireFromMarketplace(req, res) {
         remainingMoney: user.money - hiringCost,
       },
     });
-
   } catch (error) {
     logger.error(`[groomMarketplace] Error hiring groom: ${error.message}`);
     res.status(500).json({
@@ -296,6 +304,20 @@ export async function hireFromMarketplace(req, res) {
       message: 'Failed to hire groom',
       data: null,
     });
+  }
+}
+
+/**
+ * Test-only helper: backdates a user's marketplace lastRefresh to Unix epoch
+ * so the free-refresh window appears expired immediately, eliminating real-time waits.
+ * No-op outside of test environment.
+ * @param {string} userId - The user whose marketplace to expire
+ */
+export function forceExpireMarketplace(userId) {
+  if (process.env.NODE_ENV !== 'test') return;
+  const marketplace = userMarketplaces.get(userId);
+  if (marketplace) {
+    userMarketplaces.set(userId, { ...marketplace, lastRefresh: new Date(0) });
   }
 }
 
@@ -319,7 +341,9 @@ export async function getMarketplaceStats(req, res) {
         specialtyDistribution: {},
       };
 
-      logger.info(`[groomMarketplace.getStats] Returning empty stats: ${JSON.stringify(responseData)}`);
+      logger.info(
+        `[groomMarketplace.getStats] Returning empty stats: ${JSON.stringify(responseData)}`,
+      );
 
       return res.status(200).json({
         success: true,
@@ -353,7 +377,6 @@ export async function getMarketplaceStats(req, res) {
         },
       },
     });
-
   } catch (error) {
     logger.error(`[groomMarketplace] Error getting marketplace stats: ${error.message}`);
     res.status(500).json({
