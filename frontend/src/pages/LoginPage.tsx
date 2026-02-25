@@ -69,7 +69,7 @@ const LoginPage: React.FC = () => {
         <div className="glass-panel w-full px-6 py-7 space-y-4">
           {/* Card heading */}
           <div className="text-center space-y-1">
-            <h2 className="fantasy-header text-xl" style={{ color: 'rgb(212,168,67)' }}>
+            <h2 className="fantasy-header text-xl" style={{ color: 'var(--gold-500)' }}>
               Welcome Back
             </h2>
             <p className="text-xs text-[rgb(148,163,184)]">

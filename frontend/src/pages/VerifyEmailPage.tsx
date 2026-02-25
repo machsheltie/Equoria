@@ -96,13 +96,16 @@ const VerifyEmailPage: React.FC = () => {
         <div className="flex justify-center">
           <div
             className="w-16 h-16 rounded-full flex items-center justify-center magical-glow"
-            style={{ background: 'linear-gradient(135deg, #2563eb 0%, #1d4ed8 100%)' }}
+            style={{
+              background:
+                'linear-gradient(135deg, var(--electric-blue-500) 0%, var(--electric-blue-700) 100%)',
+            }}
           >
             <CheckCircle className="w-8 h-8 text-white" />
           </div>
         </div>
         <div className="space-y-2">
-          <h2 className="fantasy-header text-xl" style={{ color: 'rgb(212,168,67)' }}>
+          <h2 className="fantasy-header text-xl" style={{ color: 'var(--gold-500)' }}>
             Already Verified
           </h2>
           <p className="text-sm text-[rgb(220,235,255)]">
@@ -130,13 +133,16 @@ const VerifyEmailPage: React.FC = () => {
         <div className="flex justify-center">
           <div
             className="w-16 h-16 rounded-full flex items-center justify-center"
-            style={{ background: 'linear-gradient(135deg, #2563eb 0%, #1d4ed8 100%)' }}
+            style={{
+              background:
+                'linear-gradient(135deg, var(--electric-blue-500) 0%, var(--electric-blue-700) 100%)',
+            }}
           >
             <Loader2 className="w-8 h-8 text-white animate-spin" />
           </div>
         </div>
         <div className="space-y-2">
-          <h2 className="fantasy-header text-xl" style={{ color: 'rgb(212,168,67)' }}>
+          <h2 className="fantasy-header text-xl" style={{ color: 'var(--gold-500)' }}>
             Verifying Your Email
           </h2>
           <p className="text-sm text-[rgb(220,235,255)]">Please wait while we verify your email…</p>
@@ -152,13 +158,16 @@ const VerifyEmailPage: React.FC = () => {
         <div className="flex justify-center">
           <div
             className="w-16 h-16 rounded-full flex items-center justify-center magical-glow"
-            style={{ background: 'linear-gradient(135deg, #2563eb 0%, #1d4ed8 100%)' }}
+            style={{
+              background:
+                'linear-gradient(135deg, var(--electric-blue-500) 0%, var(--electric-blue-700) 100%)',
+            }}
           >
             <CheckCircle className="w-8 h-8 text-white" />
           </div>
         </div>
         <div className="space-y-2">
-          <h2 className="fantasy-header text-xl" style={{ color: 'rgb(212,168,67)' }}>
+          <h2 className="fantasy-header text-xl" style={{ color: 'var(--gold-500)' }}>
             Email Verified!
           </h2>
           <p className="text-sm text-[rgb(220,235,255)]">
@@ -171,7 +180,7 @@ const VerifyEmailPage: React.FC = () => {
             )}{' '}
             has been successfully verified.
           </p>
-          <p className="text-sm" style={{ color: 'rgb(37,99,235)' }}>
+          <p className="text-sm" style={{ color: 'var(--celestial-primary)' }}>
             You now have full access to Equoria!
           </p>
         </div>
@@ -189,13 +198,13 @@ const VerifyEmailPage: React.FC = () => {
         <div className="flex justify-center">
           <div
             className="w-16 h-16 rounded-full flex items-center justify-center"
-            style={{ background: 'linear-gradient(135deg, #dc2626 0%, #991b1b 100%)' }}
+            style={{ background: 'var(--status-error)' }}
           >
             <XCircle className="w-8 h-8 text-white" />
           </div>
         </div>
         <div className="space-y-2">
-          <h2 className="fantasy-header text-xl" style={{ color: 'rgb(212,168,67)' }}>
+          <h2 className="fantasy-header text-xl" style={{ color: 'var(--gold-500)' }}>
             Verification Failed
           </h2>
           <p className="text-sm text-[rgb(220,235,255)]">
@@ -227,7 +236,7 @@ const VerifyEmailPage: React.FC = () => {
               )}
             </button>
             {resendSuccess && (
-              <p className="text-sm" style={{ color: 'rgb(37,99,235)' }}>
+              <p className="text-sm" style={{ color: 'var(--celestial-primary)' }}>
                 A new verification email has been sent. Check your inbox!
               </p>
             )}
@@ -257,13 +266,16 @@ const VerifyEmailPage: React.FC = () => {
       <div className="flex justify-center">
         <div
           className="w-16 h-16 rounded-full flex items-center justify-center"
-          style={{ background: 'linear-gradient(135deg, #2563eb 0%, #1d4ed8 100%)' }}
+          style={{
+            background:
+              'linear-gradient(135deg, var(--electric-blue-500) 0%, var(--electric-blue-700) 100%)',
+          }}
         >
           <Mail className="w-8 h-8 text-white" />
         </div>
       </div>
       <div className="space-y-2">
-        <h2 className="fantasy-header text-xl" style={{ color: 'rgb(212,168,67)' }}>
+        <h2 className="fantasy-header text-xl" style={{ color: 'var(--gold-500)' }}>
           Verify Your Email
         </h2>
       </div>
@@ -292,7 +304,7 @@ const VerifyEmailPage: React.FC = () => {
             )}
           </button>
           {resendSuccess && (
-            <p className="text-sm" style={{ color: 'rgb(37,99,235)' }}>
+            <p className="text-sm" style={{ color: 'var(--celestial-primary)' }}>
               A new verification email has been sent. Check your inbox!
             </p>
           )}

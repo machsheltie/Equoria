@@ -70,7 +70,7 @@ const NewsCard = ({ newsItems }: NewsCardProps) => {
             <div
               key={item.id}
               className="pb-4 border-b last:border-b-0 hover:bg-[rgba(37,99,235,0.05)] transition-colors duration-200 rounded px-2 -mx-2"
-              style={{ borderColor: 'rgba(37,99,235,0.15)' }}
+              style={{ borderColor: 'var(--border-muted)' }}
             >
               <div className="flex items-start space-x-3">
                 <span className="text-lg mt-1 flex-shrink-0">{getTypeIcon(item.type)}</span>

@@ -31,11 +31,11 @@ const Sidebar = ({ isOpen, onClose }: SidebarProps) => {
         style={{
           background: 'rgba(10,22,40,0.97)',
           backdropFilter: 'blur(12px)',
-          borderRight: '1px solid rgba(37,99,235,0.3)',
+          borderRight: '1px solid var(--border-default)',
         }}
       >
         {/* Header */}
-        <div className="p-6 border-b relative" style={{ borderColor: 'rgba(37,99,235,0.3)' }}>
+        <div className="p-6 border-b relative" style={{ borderColor: 'var(--border-default)' }}>
           <h2 className="fantasy-title text-2xl">Equoria</h2>
         </div>
 
@@ -59,7 +59,7 @@ const Sidebar = ({ isOpen, onClose }: SidebarProps) => {
         {/* Footer */}
         <div
           className="absolute bottom-0 left-0 right-0 p-4 border-t"
-          style={{ borderColor: 'rgba(37,99,235,0.2)' }}
+          style={{ borderColor: 'var(--border-muted)' }}
         >
           <p className="text-xs text-center text-[rgb(100,130,165)]">&copy; 2025 Equoria</p>
         </div>

@@ -63,7 +63,7 @@ const RankChangeIndicator = ({ rankChange }: { rankChange?: number }) => {
     return (
       <span
         className="inline-flex items-center gap-0.5 text-sm"
-        style={{ color: '#10B981' }}
+        style={{ color: 'var(--status-success)' }}
         data-testid="rank-change"
       >
         <TrendingUp size={14} aria-hidden="true" />
@@ -76,7 +76,7 @@ const RankChangeIndicator = ({ rankChange }: { rankChange?: number }) => {
     return (
       <span
         className="inline-flex items-center gap-0.5 text-sm"
-        style={{ color: '#EF4444' }}
+        style={{ color: 'var(--status-error)' }}
         data-testid="rank-change"
       >
         <TrendingDown size={14} aria-hidden="true" />
@@ -89,7 +89,7 @@ const RankChangeIndicator = ({ rankChange }: { rankChange?: number }) => {
   return (
     <span
       className="inline-flex items-center gap-0.5 text-sm"
-      style={{ color: '#6B7280' }}
+      style={{ color: 'var(--text-muted)' }}
       data-testid="rank-change"
     >
       <Minus size={14} aria-hidden="true" />

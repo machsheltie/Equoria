@@ -121,14 +121,14 @@ const ResetPasswordPage: React.FC = () => {
         <div className="flex justify-center">
           <div
             className="w-16 h-16 rounded-full flex items-center justify-center"
-            style={{ background: 'linear-gradient(135deg, #dc2626 0%, #991b1b 100%)' }}
+            style={{ background: 'var(--status-error)' }}
           >
             <XCircle className="w-8 h-8 text-white" />
           </div>
         </div>
 
         <div className="space-y-2">
-          <h2 className="fantasy-header text-xl" style={{ color: 'rgb(212,168,67)' }}>
+          <h2 className="fantasy-header text-xl" style={{ color: 'var(--gold-500)' }}>
             Invalid Reset Link
           </h2>
           <p className="text-sm text-[rgb(220,235,255)]">
@@ -161,14 +161,17 @@ const ResetPasswordPage: React.FC = () => {
         <div className="flex justify-center">
           <div
             className="w-16 h-16 rounded-full flex items-center justify-center magical-glow"
-            style={{ background: 'linear-gradient(135deg, #2563eb 0%, #1d4ed8 100%)' }}
+            style={{
+              background:
+                'linear-gradient(135deg, var(--electric-blue-500) 0%, var(--electric-blue-700) 100%)',
+            }}
           >
             <CheckCircle className="w-8 h-8 text-white" />
           </div>
         </div>
 
         <div className="space-y-2">
-          <h2 className="fantasy-header text-xl" style={{ color: 'rgb(212,168,67)' }}>
+          <h2 className="fantasy-header text-xl" style={{ color: 'var(--gold-500)' }}>
             Password Reset!
           </h2>
           <p className="text-sm text-[rgb(220,235,255)]">
@@ -188,7 +191,7 @@ const ResetPasswordPage: React.FC = () => {
     <div className="space-y-5">
       {/* Heading */}
       <div className="text-center space-y-1">
-        <h2 className="fantasy-header text-xl" style={{ color: 'rgb(212,168,67)' }}>
+        <h2 className="fantasy-header text-xl" style={{ color: 'var(--gold-500)' }}>
           Create New Password
         </h2>
         <p className="text-xs text-[rgb(148,163,184)]">
@@ -244,7 +247,7 @@ const ResetPasswordPage: React.FC = () => {
               <div className="flex items-center gap-2">
                 <div
                   className="flex-1 h-1 rounded-full overflow-hidden"
-                  style={{ background: 'rgba(30,55,100,0.5)' }}
+                  style={{ background: 'var(--glass-surface-subtle-bg)' }}
                 >
                   <div
                     className="h-full transition-all duration-300 rounded-full"

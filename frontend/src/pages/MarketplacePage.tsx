@@ -115,7 +115,10 @@ const GroomCard = ({
         <div className="grid grid-cols-2 gap-3">
           <div
             className="flex items-center gap-2 rounded-lg px-3 py-2"
-            style={{ background: 'rgba(37,99,235,0.08)', border: '1px solid rgba(37,99,235,0.15)' }}
+            style={{
+              background: 'var(--glass-surface-subtle-bg)',
+              border: 'var(--glass-border-dim)',
+            }}
           >
             <Award className="w-4 h-4 text-[rgb(212,168,67)]" />
             <div className="flex-1">
@@ -127,7 +130,10 @@ const GroomCard = ({
           </div>
           <div
             className="flex items-center gap-2 rounded-lg px-3 py-2"
-            style={{ background: 'rgba(37,99,235,0.08)', border: '1px solid rgba(37,99,235,0.15)' }}
+            style={{
+              background: 'var(--glass-surface-subtle-bg)',
+              border: 'var(--glass-border-dim)',
+            }}
           >
             <Heart className={`w-4 h-4 ${getPersonalityColor(groom.personality)}`} />
             <div className="flex-1">
@@ -140,7 +146,10 @@ const GroomCard = ({
         {/* Bio preview */}
         <div
           className="rounded-lg p-3"
-          style={{ background: 'rgba(37,99,235,0.05)', border: '1px solid rgba(37,99,235,0.1)' }}
+          style={{
+            background: 'var(--glass-surface-subtle-bg)',
+            border: 'var(--glass-border-dim)',
+          }}
         >
           <p className="text-sm text-[rgb(148,163,184)] line-clamp-2 italic">"{groom.bio}"</p>
         </div>
@@ -148,7 +157,7 @@ const GroomCard = ({
         {/* Pricing */}
         <div
           className="flex items-center justify-between pt-2 border-t"
-          style={{ borderColor: 'rgba(37,99,235,0.2)' }}
+          style={{ borderColor: 'var(--border-muted)' }}
         >
           <div className="flex items-center gap-2">
             <Coins className="w-5 h-5 text-[rgb(212,168,67)]" />
@@ -212,8 +221,8 @@ const GroomCard = ({
                   key={label}
                   className="rounded-lg p-3"
                   style={{
-                    background: 'rgba(37,99,235,0.08)',
-                    border: '1px solid rgba(37,99,235,0.15)',
+                    background: 'var(--glass-surface-subtle-bg)',
+                    border: 'var(--glass-border-dim)',
                   }}
                 >
                   <div className="flex items-center gap-2 mb-1">
@@ -229,8 +238,8 @@ const GroomCard = ({
             <div
               className="rounded-lg p-4"
               style={{
-                background: 'rgba(37,99,235,0.05)',
-                border: '1px solid rgba(37,99,235,0.15)',
+                background: 'var(--glass-surface-subtle-bg)',
+                border: 'var(--glass-border-dim)',
               }}
             >
               <p className="text-xs text-[rgb(100,130,165)] uppercase mb-2">Biography</p>
@@ -241,8 +250,8 @@ const GroomCard = ({
             <div
               className="rounded-lg p-4"
               style={{
-                background: 'rgba(37,99,235,0.08)',
-                border: '1px solid rgba(37,99,235,0.2)',
+                background: 'var(--glass-surface-subtle-bg)',
+                border: 'var(--glass-border-dim)',
               }}
             >
               <p className="text-xs text-[rgb(100,130,165)] uppercase mb-2">Pricing</p>
@@ -257,7 +266,7 @@ const GroomCard = ({
                 </div>
                 <div
                   className="flex justify-between pt-2 border-t"
-                  style={{ borderColor: 'rgba(37,99,235,0.2)' }}
+                  style={{ borderColor: 'var(--border-muted)' }}
                 >
                   <span className="font-bold">Hiring Fee (1 week):</span>
                   <span className="font-bold text-[rgb(212,168,67)] text-base">${hiringCost}</span>

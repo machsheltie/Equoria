@@ -117,7 +117,7 @@ const RegisterPage: React.FC = () => {
         <div className="glass-panel w-full px-6 py-6 space-y-4">
           {/* Card heading — h2 required by a11y tests */}
           <div className="text-center space-y-1">
-            <h2 className="fantasy-header text-xl" style={{ color: 'rgb(212,168,67)' }}>
+            <h2 className="fantasy-header text-xl" style={{ color: 'var(--gold-500)' }}>
               Join the Realm
             </h2>
             <p className="text-xs text-[rgb(148,163,184)]">
@@ -275,7 +275,7 @@ const RegisterPage: React.FC = () => {
                   <div className="flex items-center gap-2">
                     <div
                       className="flex-1 h-1 rounded-full overflow-hidden"
-                      style={{ background: 'rgba(30,55,100,0.5)' }}
+                      style={{ background: 'var(--glass-surface-subtle-bg)' }}
                     >
                       <div
                         className="h-full transition-all duration-300 rounded-full"

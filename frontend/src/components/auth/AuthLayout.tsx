@@ -56,7 +56,7 @@ export interface AuthFooterLinkProps {
 export const AuthHeader: React.FC = () => (
   <header
     className="border-b relative"
-    style={{ background: 'rgba(10,22,40,0.9)', borderColor: 'rgba(37,99,235,0.3)' }}
+    style={{ background: 'var(--glass-surface-heavy-bg)', borderColor: 'var(--border-default)' }}
   >
     <div className="flex items-center justify-center p-4">
       <h1 className="fantasy-title text-3xl">Equoria</h1>
@@ -68,7 +68,7 @@ export const AuthHeader: React.FC = () => (
  * Authentication page footer
  */
 export const AuthFooter: React.FC = () => (
-  <footer className="p-4 text-center border-t" style={{ borderColor: 'rgba(37,99,235,0.2)' }}>
+  <footer className="p-4 text-center border-t" style={{ borderColor: 'var(--border-muted)' }}>
     <p className="text-xs text-[rgb(100,130,165)]">
       &copy; {new Date().getFullYear()} Equoria. All rights reserved.
     </p>
@@ -83,7 +83,10 @@ export const AuthCardHeader: React.FC<AuthCardHeaderProps> = ({ title, subtitle,
     <div className="flex justify-center">
       <div
         className="w-16 h-16 rounded-full flex items-center justify-center magical-glow"
-        style={{ background: 'linear-gradient(135deg, #2563eb 0%, #1d4ed8 100%)' }}
+        style={{
+          background:
+            'linear-gradient(135deg, var(--electric-blue-500) 0%, var(--electric-blue-700) 100%)',
+        }}
       >
         {icon || <Sparkles className="w-8 h-8 text-white" aria-hidden="true" />}
       </div>
@@ -114,7 +117,7 @@ export const AuthError: React.FC<AuthErrorProps> = ({
  */
 export const AuthFooterLink: React.FC<AuthFooterLinkProps> = ({ prompt, linkText, linkTo }) => {
   return (
-    <div className="text-center pt-4 border-t" style={{ borderColor: 'rgba(37,99,235,0.2)' }}>
+    <div className="text-center pt-4 border-t" style={{ borderColor: 'var(--border-muted)' }}>
       <p className="text-sm text-[rgb(148,163,184)]">
         {prompt}{' '}
         <a

@@ -193,7 +193,10 @@ const StableView = () => {
       {/* Player Info Bar */}
       <div
         className="sticky top-0 z-20 backdrop-blur-sm border-b"
-        style={{ background: 'rgba(10,22,40,0.9)', borderColor: 'rgba(37,99,235,0.3)' }}
+        style={{
+          background: 'var(--glass-surface-heavy-bg)',
+          borderColor: 'var(--border-default)',
+        }}
       >
         <div className="px-4 py-3">
           <div className="flex items-center justify-between">
@@ -201,11 +204,13 @@ const StableView = () => {
             <div className="flex items-center gap-2">
               <div
                 className="w-8 h-8 rounded-full flex items-center justify-center"
-                style={{ background: 'linear-gradient(135deg, rgb(212,168,67), rgb(100,130,165))' }}
+                style={{
+                  background: 'linear-gradient(135deg, var(--gold-500), var(--text-muted))',
+                }}
               >
                 <Coins className="w-4 h-4 text-white" />
               </div>
-              <span className="text-base font-semibold" style={{ color: 'rgb(212,168,67)' }}>
+              <span className="text-base font-semibold" style={{ color: 'var(--gold-500)' }}>
                 {playerStats.coins.toLocaleString()}
               </span>
             </div>
@@ -216,11 +221,11 @@ const StableView = () => {
                 <p className="text-xs text-[rgb(148,163,184)] mb-1">XP</p>
                 <div
                   className="w-24 h-1.5 rounded-full overflow-hidden"
-                  style={{ background: 'rgba(37,99,235,0.2)' }}
+                  style={{ background: 'var(--bg-surface)' }}
                 >
                   <div
                     className="h-full rounded-full magical-glow"
-                    style={{ width: '65%', background: 'rgb(37,99,235)' }}
+                    style={{ width: '65%', background: 'var(--celestial-primary)' }}
                   />
                 </div>
                 <p className="text-xs text-[rgb(220,235,255)] mt-1">
@@ -229,7 +234,7 @@ const StableView = () => {
               </div>
               <div className="text-center">
                 <p className="text-xs text-[rgb(148,163,184)]">Level</p>
-                <p className="text-xl font-bold" style={{ color: 'rgb(212,168,67)' }}>
+                <p className="text-xl font-bold" style={{ color: 'var(--gold-500)' }}>
                   {playerStats.level}
                 </p>
               </div>
@@ -243,13 +248,13 @@ const StableView = () => {
               </p>
               <div
                 className="w-16 h-1 rounded-full overflow-hidden mt-1"
-                style={{ background: 'rgba(37,99,235,0.2)' }}
+                style={{ background: 'var(--bg-surface)' }}
               >
                 <div
                   className="h-full rounded-full"
                   style={{
                     width: `${(playerStats.stableSlots.used / playerStats.stableSlots.total) * 100}%`,
-                    background: 'rgb(37,99,235)',
+                    background: 'var(--celestial-primary)',
                   }}
                 />
               </div>
@@ -267,13 +272,16 @@ const StableView = () => {
       <div className="fixed bottom-6 right-6 space-y-3 z-30">
         <button
           className="w-14 h-14 rounded-full flex items-center justify-center shadow-lg hover:scale-110 transition-transform magical-glow"
-          style={{ background: 'linear-gradient(135deg, #2563eb 0%, #1d4ed8 100%)' }}
+          style={{
+            background:
+              'linear-gradient(135deg, var(--electric-blue-500) 0%, var(--electric-blue-700) 100%)',
+          }}
         >
           <Plus className="w-6 h-6 text-white" />
         </button>
         <button
           className="w-11 h-11 rounded-full flex items-center justify-center shadow-lg hover:scale-110 transition-transform"
-          style={{ background: 'rgba(37,99,235,0.3)', border: '1px solid rgba(37,99,235,0.5)' }}
+          style={{ background: 'var(--bg-card)', border: 'var(--glass-border-bright)' }}
         >
           <Settings className="w-5 h-5 text-white" />
         </button>

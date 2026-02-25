@@ -21,7 +21,7 @@ const FeaturedHorseCard = ({
         <div className="text-center mb-4">
           <div className="flex justify-center items-center space-x-2 mb-2">
             <div className="w-8 h-0.5 bg-[rgba(37,99,235,0.5)]" />
-            <div className="w-2 h-2 rounded-full" style={{ background: 'rgb(212,168,67)' }} />
+            <div className="w-2 h-2 rounded-full" style={{ background: 'var(--gold-500)' }} />
             <div className="w-8 h-0.5 bg-[rgba(37,99,235,0.5)]" />
           </div>
           <h2 className="fantasy-caption text-[rgb(148,163,184)]">Featured Companion</h2>
@@ -31,7 +31,7 @@ const FeaturedHorseCard = ({
         <div className="relative mb-4">
           <div
             className="w-64 h-48 mx-auto rounded-lg overflow-hidden border"
-            style={{ borderColor: 'rgba(37,99,235,0.4)' }}
+            style={{ borderColor: 'var(--border-active)' }}
           >
             <img src={horseImage} alt={horseName} className="w-full h-full object-cover" />
             <div className="absolute inset-0 bg-gradient-to-t from-black/30 to-transparent" />

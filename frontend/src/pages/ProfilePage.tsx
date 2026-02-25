@@ -120,7 +120,10 @@ const ProfilePage: React.FC = () => {
         <div className="text-center space-y-3">
           <div
             className="w-12 h-12 rounded-full border-4 border-t-transparent animate-spin mx-auto"
-            style={{ borderColor: 'rgba(37,99,235,0.3)', borderTopColor: 'rgb(37,99,235)' }}
+            style={{
+              borderColor: 'var(--border-default)',
+              borderTopColor: 'var(--celestial-primary)',
+            }}
           />
           <p className="text-sm text-[rgb(148,163,184)]">Loading profile…</p>
         </div>
@@ -146,7 +149,7 @@ const ProfilePage: React.FC = () => {
       {/* Header */}
       <header
         className="relative border-b flex items-center justify-center p-4"
-        style={{ borderColor: 'rgba(37,99,235,0.3)', background: 'rgba(10,22,40,0.8)' }}
+        style={{ borderColor: 'var(--border-default)', background: 'var(--glass-surface-bg)' }}
       >
         <h1 className="fantasy-title text-2xl tracking-widest">{UI_TEXT.profile.title}</h1>
       </header>
@@ -161,7 +164,10 @@ const ProfilePage: React.FC = () => {
               <div className="flex justify-center">
                 <div
                   className="w-16 h-16 rounded-full flex items-center justify-center magical-glow"
-                  style={{ background: 'linear-gradient(135deg, #2563eb 0%, #1d4ed8 100%)' }}
+                  style={{
+                    background:
+                      'linear-gradient(135deg, var(--electric-blue-500) 0%, var(--electric-blue-700) 100%)',
+                  }}
                 >
                   <User className="w-8 h-8 text-white" />
                 </div>
@@ -171,7 +177,7 @@ const ProfilePage: React.FC = () => {
 
             {/* Success */}
             {isSuccess && (
-              <p className="text-sm text-center" style={{ color: 'rgb(37,99,235)' }}>
+              <p className="text-sm text-center" style={{ color: 'var(--celestial-primary)' }}>
                 {SUCCESS_MESSAGES.profile.updated}
               </p>
             )}
@@ -373,7 +379,7 @@ const ProfilePage: React.FC = () => {
       </main>
 
       {/* Footer */}
-      <footer className="p-4 text-center border-t" style={{ borderColor: 'rgba(37,99,235,0.2)' }}>
+      <footer className="p-4 text-center border-t" style={{ borderColor: 'var(--border-muted)' }}>
         <p className="text-xs text-[rgb(100,130,165)]">&copy; 2025 Equoria. All rights reserved.</p>
       </footer>
     </div>

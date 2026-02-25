@@ -38,7 +38,10 @@ const Index = () => {
       {/* Header */}
       <header
         className="sticky top-0 z-20 backdrop-blur-sm border-b"
-        style={{ background: 'rgba(10,22,40,0.9)', borderColor: 'rgba(37,99,235,0.3)' }}
+        style={{
+          background: 'var(--glass-surface-heavy-bg)',
+          borderColor: 'var(--border-default)',
+        }}
       >
         <div className="flex items-center justify-between p-4">
           <button
