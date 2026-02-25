@@ -17,11 +17,13 @@ import { ArrowLeft, GraduationCap, ShoppingBag } from 'lucide-react';
 import TrainerList from '@/components/TrainerList';
 import MyTrainersDashboard from '@/components/MyTrainersDashboard';
 import MainNavigation from '@/components/MainNavigation';
+import { useAuth } from '@/contexts/AuthContext';
 
 type TrainersTab = 'manage' | 'hire';
 
 const TrainersPage: React.FC = () => {
   const [activeTab, setActiveTab] = useState<TrainersTab>('manage');
+  const { user } = useAuth();
 
   return (
     <div className="min-h-screen">
@@ -92,7 +94,11 @@ const TrainersPage: React.FC = () => {
 
         {/* Tab Content */}
         <div role="tabpanel">
-          {activeTab === 'manage' ? <MyTrainersDashboard /> : <TrainerList />}
+          {activeTab === 'manage' ? (
+            <MyTrainersDashboard userId={user?.id ?? 0} />
+          ) : (
+            <TrainerList userId={user?.id ?? 0} />
+          )}
         </div>
 
         {/* Info Panel */}

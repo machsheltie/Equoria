@@ -1,5 +1,5 @@
 /**
- * MyTrainersDashboard Component (Epic 13 — Story 13-2)
+ * MyTrainersDashboard Component (Epic 13 — Story 13-2 / 13-5)
  *
  * Dashboard for managing all hired trainers and their horse assignments.
  * Displays:
@@ -8,8 +8,11 @@
  * - Retirement warnings
  * - Expandable career + discovery panels
  *
- * All data uses MOCK_MY_TRAINERS — replace with /api/trainers/user/:id endpoint.
- * Assign / unassign buttons disabled pending 13-5 auth wire-up.
+ * Data is wired to real API hooks:
+ *   useUserTrainers(userId)       → /api/trainers/user/:id
+ *   useTrainerAssignments()       → /api/trainers/assignments
+ *   useDeleteTrainerAssignment()  → DELETE /api/trainers/assignments/:id
+ *   useAssignTrainer()            → POST /api/trainers/assignments
  *
  * Mirrors MyRidersDashboard.tsx for the Trainer System.
  */
@@ -21,85 +24,18 @@ import TrainerCareerPanel, { type TrainerCareerData } from './trainer/TrainerCar
 import TrainerDiscoveryPanel, {
   buildEmptyTrainerDiscoveryProfile,
 } from './trainer/TrainerDiscoveryPanel';
-import TrainerAssignmentCard, { type TrainerAssignment } from './trainer/TrainerAssignmentCard';
+import TrainerAssignmentCard from './trainer/TrainerAssignmentCard';
+import {
+  useUserTrainers,
+  useTrainerAssignments,
+  useDeleteTrainerAssignment,
+  useAssignTrainer,
+  type TrainerEntry,
+  type TrainerAssignmentEntry,
+} from '@/hooks/api/useTrainers';
+import { useHorses } from '@/hooks/api/useHorses';
 
-// ─── Types ────────────────────────────────────────────────────────────────────
-
-interface HiredTrainer {
-  id: number;
-  firstName: string;
-  lastName: string;
-  personality: string;
-  skillLevel: 'novice' | 'developing' | 'expert';
-  level: number;
-  experience: number;
-  careerWeeks: number;
-  totalSessions: number;
-  totalHorses: number;
-  prestige: number;
-}
-
-// ─── Mock Data — replace with /api/trainers/user/:userId ─────────────────────
-
-const MOCK_MY_TRAINERS: HiredTrainer[] = [
-  {
-    id: 101,
-    firstName: 'Alex',
-    lastName: 'Rivera',
-    personality: 'technical',
-    skillLevel: 'developing',
-    level: 4,
-    experience: 600,
-    careerWeeks: 45,
-    totalSessions: 12,
-    totalHorses: 3,
-    prestige: 22,
-  },
-  {
-    id: 102,
-    firstName: 'Bree',
-    lastName: 'Callahan',
-    personality: 'patient',
-    skillLevel: 'novice',
-    level: 2,
-    experience: 100,
-    careerWeeks: 18,
-    totalSessions: 4,
-    totalHorses: 1,
-    prestige: 5,
-  },
-];
-
-const MOCK_ASSIGNMENTS: TrainerAssignment[] = [
-  {
-    id: 201,
-    trainerId: 101,
-    horseName: 'Silver Arrow',
-    startDate: '2025-11-01T00:00:00Z',
-    isActive: true,
-  },
-  {
-    id: 202,
-    trainerId: 101,
-    horseName: 'Midnight Star',
-    startDate: '2025-12-15T00:00:00Z',
-    isActive: true,
-  },
-  {
-    id: 203,
-    trainerId: 102,
-    horseName: 'Copper Dream',
-    startDate: '2026-01-10T00:00:00Z',
-    isActive: true,
-  },
-];
-
-// ─── Component ────────────────────────────────────────────────────────────────
-
-interface MyTrainersDashboardProps {
-  userId?: number;
-  trainerSlotCap?: number;
-}
+// ─── Constants ─────────────────────────────────────────────────────────────────
 
 const SKILL_LEVEL_VISIBILITY: Record<string, string> = {
   novice: 'Unknown potential',
@@ -107,12 +43,37 @@ const SKILL_LEVEL_VISIBILITY: Record<string, string> = {
   expert: 'Full reveal',
 };
 
-const MyTrainersDashboard: React.FC<MyTrainersDashboardProps> = ({ trainerSlotCap = 4 }) => {
+// ─── Component ────────────────────────────────────────────────────────────────
+
+interface MyTrainersDashboardProps {
+  userId: number;
+  trainerSlotCap?: number;
+}
+
+const MyTrainersDashboard: React.FC<MyTrainersDashboardProps> = ({
+  userId,
+  trainerSlotCap = 4,
+}) => {
   const [expandedTrainerId, setExpandedTrainerId] = useState<number | null>(null);
   const [expandedSection, setExpandedSection] = useState<'career' | 'discovery'>('career');
+  const [selectedTrainerIdForAssign, setSelectedTrainerIdForAssign] = useState<number | null>(null);
 
-  const finalTrainers = MOCK_MY_TRAINERS;
-  const finalAssignments = MOCK_ASSIGNMENTS;
+  const { data: trainers, isLoading: trainersLoading } = useUserTrainers(userId);
+  const { data: assignments, isLoading: assignmentsLoading } = useTrainerAssignments();
+  const unassignMutation = useDeleteTrainerAssignment();
+  const assignMutation = useAssignTrainer();
+  const { data: horses, isLoading: horsesLoading } = useHorses();
+
+  const finalTrainers: TrainerEntry[] = trainers ?? [];
+  const finalAssignments: TrainerAssignmentEntry[] = assignments ?? [];
+
+  if (!userId || trainersLoading || assignmentsLoading) {
+    return (
+      <div className="flex items-center justify-center min-h-64 text-white/40">
+        Loading trainers...
+      </div>
+    );
+  }
 
   if (finalTrainers.length === 0) {
     return (
@@ -129,13 +90,21 @@ const MyTrainersDashboard: React.FC<MyTrainersDashboardProps> = ({ trainerSlotCa
     );
   }
 
-  const getTrainerAssignments = (trainerId: number): TrainerAssignment[] =>
+  const getTrainerAssignments = (trainerId: number) =>
     finalAssignments.filter((a) => a.trainerId === trainerId && a.isActive);
 
   const unassignedCount = finalTrainers.filter(
     (t) => getTrainerAssignments(t.id).length === 0
   ).length;
   const slotsUsed = finalTrainers.length;
+
+  const handleUnassign = (assignmentId: number) => {
+    unassignMutation.mutate(assignmentId);
+  };
+
+  const handleAssignClick = (trainerId: number) => {
+    setSelectedTrainerIdForAssign(trainerId);
+  };
 
   return (
     <div className="space-y-5" data-testid="my-trainers-dashboard">
@@ -177,19 +146,19 @@ const MyTrainersDashboard: React.FC<MyTrainersDashboardProps> = ({ trainerSlotCa
         data-testid="trainer-grid"
       >
         {finalTrainers.map((trainer) => {
-          const assignments = getTrainerAssignments(trainer.id);
+          const trainerAssignments = getTrainerAssignments(trainer.id);
           const isExpanded = expandedTrainerId === trainer.id;
 
           const careerData: TrainerCareerData = {
             id: trainer.id,
-            name: `${trainer.firstName} ${trainer.lastName}`,
+            name: trainer.name ?? `${trainer.firstName} ${trainer.lastName}`,
             experience: trainer.experience,
             level: trainer.level,
             careerWeeks: trainer.careerWeeks,
-            hiredDate: new Date().toISOString(), // placeholder
-            retired: false,
-            totalSessions: trainer.totalSessions,
-            totalHorses: trainer.totalHorses,
+            hiredDate: new Date().toISOString(),
+            retired: trainer.retired,
+            totalSessions: 0,
+            totalHorses: trainerAssignments.length,
           };
 
           return (
@@ -225,8 +194,8 @@ const MyTrainersDashboard: React.FC<MyTrainersDashboardProps> = ({ trainerSlotCa
                   <p className="text-[10px] text-white/30">Level</p>
                 </div>
                 <div className="p-2 rounded-lg bg-white/5">
-                  <p className="text-sm font-bold text-white/80">{trainer.totalSessions}</p>
-                  <p className="text-[10px] text-white/30">Sessions</p>
+                  <p className="text-sm font-bold text-white/80">{trainerAssignments.length}</p>
+                  <p className="text-[10px] text-white/30">Assigned</p>
                 </div>
                 <div className="p-2 rounded-lg bg-white/5">
                   <p className="text-sm font-bold text-white/80">{trainer.careerWeeks}w</p>
@@ -237,27 +206,31 @@ const MyTrainersDashboard: React.FC<MyTrainersDashboardProps> = ({ trainerSlotCa
               {/* Assignments */}
               <div className="mb-4">
                 <h4 className="text-[10px] font-bold text-white/30 uppercase tracking-wider mb-2">
-                  Assigned Horse{assignments.length !== 1 ? 's' : ''}
+                  Assigned Horse{trainerAssignments.length !== 1 ? 's' : ''}
                 </h4>
-                {assignments.length === 0 ? (
+                {trainerAssignments.length === 0 ? (
                   <div className="py-3 text-center border-2 border-dashed border-white/10 rounded-lg">
                     <p className="text-xs text-white/30 italic">No horse assigned</p>
                   </div>
                 ) : (
                   <div className="space-y-2">
-                    {assignments.map((a) => (
-                      <TrainerAssignmentCard key={a.id} assignment={a} />
+                    {trainerAssignments.map((a) => (
+                      <TrainerAssignmentCard
+                        key={a.id}
+                        assignment={a}
+                        onUnassign={handleUnassign}
+                        isUnassigning={unassignMutation.isPending}
+                      />
                     ))}
                   </div>
                 )}
               </div>
 
-              {/* Assign Button — disabled, pending auth wire-up */}
+              {/* Assign Button */}
               <button
                 type="button"
-                disabled
-                title="Sign in to assign trainers"
-                className="w-full py-2 px-3 mb-3 text-sm font-medium rounded-lg bg-white/5 border border-white/10 text-white/30 cursor-not-allowed"
+                onClick={() => handleAssignClick(trainer.id)}
+                className="w-full py-2 px-3 mb-3 text-sm font-medium rounded-lg bg-celestial-gold/10 border border-celestial-gold/30 text-celestial-gold hover:bg-celestial-gold/20 transition-colors"
                 data-testid={`assign-button-${trainer.id}`}
               >
                 Assign to Horse
@@ -307,7 +280,10 @@ const MyTrainersDashboard: React.FC<MyTrainersDashboardProps> = ({ trainerSlotCa
                   </div>
 
                   {expandedSection === 'career' && (
-                    <TrainerCareerPanel trainer={careerData} assignmentCount={assignments.length} />
+                    <TrainerCareerPanel
+                      trainer={careerData}
+                      assignmentCount={trainerAssignments.length}
+                    />
                   )}
 
                   {expandedSection === 'discovery' && (
@@ -321,6 +297,56 @@ const MyTrainersDashboard: React.FC<MyTrainersDashboardProps> = ({ trainerSlotCa
           );
         })}
       </div>
+
+      {/* Horse Picker Modal */}
+      {selectedTrainerIdForAssign !== null && (
+        <div
+          className="fixed inset-0 bg-black/70 backdrop-blur-sm flex items-center justify-center p-4 z-50 animate-in fade-in duration-200"
+          onClick={() => setSelectedTrainerIdForAssign(null)}
+          data-testid="horse-picker-modal"
+        >
+          <div
+            className="bg-deep-space border border-white/10 rounded-xl shadow-2xl max-w-sm w-full p-6 animate-in zoom-in-95 duration-200"
+            onClick={(e) => e.stopPropagation()}
+          >
+            <h3 className="text-lg font-bold text-white/90 mb-4">Select a Horse to Assign</h3>
+            {horsesLoading && (
+              <p className="text-sm text-white/40 text-center py-4">Loading horses…</p>
+            )}
+            {!horsesLoading && (!horses || horses.length === 0) && (
+              <p className="text-sm text-white/40 text-center py-4">No horses available.</p>
+            )}
+            <div className="space-y-2 max-h-60 overflow-y-auto">
+              {horses?.map((horse) => (
+                <button
+                  key={horse.id}
+                  type="button"
+                  onClick={() => {
+                    assignMutation.mutate(
+                      { trainerId: selectedTrainerIdForAssign, horseId: horse.id },
+                      { onSuccess: () => setSelectedTrainerIdForAssign(null) }
+                    );
+                  }}
+                  disabled={assignMutation.isPending}
+                  className="w-full text-left px-4 py-3 rounded-lg bg-white/5 border border-white/10 hover:border-white/20 transition-all disabled:opacity-50"
+                >
+                  <p className="font-bold text-white/80">{horse.name}</p>
+                  <p className="text-xs text-white/40">
+                    {horse.breed} · Age {horse.age}
+                  </p>
+                </button>
+              ))}
+            </div>
+            <button
+              type="button"
+              onClick={() => setSelectedTrainerIdForAssign(null)}
+              className="mt-4 w-full py-2 text-sm text-white/40 hover:text-white/60 transition-colors"
+            >
+              Cancel
+            </button>
+          </div>
+        </div>
+      )}
     </div>
   );
 };

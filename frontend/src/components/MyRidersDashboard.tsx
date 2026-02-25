@@ -13,7 +13,6 @@
 
 import React, { useState } from 'react';
 import { Users, AlertCircle, ChevronDown, ChevronUp } from 'lucide-react';
-import AssignRiderModal from './AssignRiderModal';
 import RiderPersonalityBadge from './rider/RiderPersonalityBadge';
 import RiderCareerPanel from './rider/RiderCareerPanel';
 import RiderDiscoveryPanel from './rider/RiderDiscoveryPanel';
@@ -22,9 +21,11 @@ import {
   useUserRiders,
   useRiderAssignments,
   useDeleteRiderAssignment,
+  useAssignRider,
   type Rider,
   type RiderAssignment,
 } from '@/hooks/api/useRiders';
+import { useHorses } from '@/hooks/api/useHorses';
 import { calculateRiderRetirementStatus } from '@/types/riderCareer';
 import { buildEmptyDiscoveryProfile } from '@/types/riderDiscovery';
 
@@ -47,15 +48,15 @@ const MyRidersDashboard: React.FC<MyRidersDashboardProps> = ({
   assignmentsData,
   riderSlotCap = 5,
 }) => {
-  const [selectedHorseId, setSelectedHorseId] = useState<number | null>(null);
-  const [selectedHorseName, setSelectedHorseName] = useState<string>('');
-  const [isAssignModalOpen, setIsAssignModalOpen] = useState(false);
+  const [selectedRiderIdForAssign, setSelectedRiderIdForAssign] = useState<number | null>(null);
   const [expandedRiderId, setExpandedRiderId] = useState<number | null>(null);
   const [expandedSection, setExpandedSection] = useState<'career' | 'discovery'>('career');
 
   const { data: ridersResponse, isLoading: ridersLoading } = useUserRiders(userId);
   const { data: assignmentsResponse, isLoading: assignmentsLoading } = useRiderAssignments();
   const unassignMutation = useDeleteRiderAssignment();
+  const assignMutation = useAssignRider();
+  const { data: horses, isLoading: horsesLoading } = useHorses();
 
   const finalRiders = ridersData ?? ridersResponse ?? [];
   const finalAssignments = assignmentsData ?? assignmentsResponse ?? [];
@@ -93,10 +94,8 @@ const MyRidersDashboard: React.FC<MyRidersDashboardProps> = ({
     return status.isApproachingRetirement;
   });
 
-  const handleAssignClick = (_riderId: number) => {
-    setSelectedHorseId(101); // Placeholder — horse selection in v2
-    setSelectedHorseName('Select a horse');
-    setIsAssignModalOpen(true);
+  const handleAssignClick = (riderId: number) => {
+    setSelectedRiderIdForAssign(riderId);
   };
 
   const handleUnassign = (assignmentId: number) => {
@@ -314,20 +313,54 @@ const MyRidersDashboard: React.FC<MyRidersDashboardProps> = ({
         })}
       </div>
 
-      {/* Assign Rider Modal */}
-      {isAssignModalOpen && selectedHorseId && (
-        <AssignRiderModal
-          isOpen={isAssignModalOpen}
-          onClose={() => setIsAssignModalOpen(false)}
-          horseId={selectedHorseId}
-          horseName={selectedHorseName}
-          availableRiders={finalRiders.filter((r) => !r.assignedHorseId)}
-          onAssignmentComplete={() => {
-            setIsAssignModalOpen(false);
-            setSelectedHorseId(null);
-            setSelectedHorseName('');
-          }}
-        />
+      {/* Horse Picker Modal */}
+      {selectedRiderIdForAssign !== null && (
+        <div
+          className="fixed inset-0 bg-black/70 backdrop-blur-sm flex items-center justify-center p-4 z-50 animate-in fade-in duration-200"
+          onClick={() => setSelectedRiderIdForAssign(null)}
+          data-testid="horse-picker-modal"
+        >
+          <div
+            className="bg-deep-space border border-white/10 rounded-xl shadow-2xl max-w-sm w-full p-6 animate-in zoom-in-95 duration-200"
+            onClick={(e) => e.stopPropagation()}
+          >
+            <h3 className="text-lg font-bold text-white/90 mb-4">Select a Horse to Assign</h3>
+            {horsesLoading && (
+              <p className="text-sm text-white/40 text-center py-4">Loading horses…</p>
+            )}
+            {!horsesLoading && (!horses || horses.length === 0) && (
+              <p className="text-sm text-white/40 text-center py-4">No horses available.</p>
+            )}
+            <div className="space-y-2 max-h-60 overflow-y-auto">
+              {horses?.map((horse) => (
+                <button
+                  key={horse.id}
+                  type="button"
+                  onClick={() => {
+                    assignMutation.mutate(
+                      { riderId: selectedRiderIdForAssign, horseId: horse.id },
+                      { onSuccess: () => setSelectedRiderIdForAssign(null) }
+                    );
+                  }}
+                  disabled={assignMutation.isPending}
+                  className="w-full text-left px-4 py-3 rounded-lg bg-white/5 border border-white/10 hover:border-white/20 transition-all disabled:opacity-50"
+                >
+                  <p className="font-bold text-white/80">{horse.name}</p>
+                  <p className="text-xs text-white/40">
+                    {horse.breed} · Age {horse.age}
+                  </p>
+                </button>
+              ))}
+            </div>
+            <button
+              type="button"
+              onClick={() => setSelectedRiderIdForAssign(null)}
+              className="mt-4 w-full py-2 text-sm text-white/40 hover:text-white/60 transition-colors"
+            >
+              Cancel
+            </button>
+          </div>
+        </div>
       )}
     </div>
   );

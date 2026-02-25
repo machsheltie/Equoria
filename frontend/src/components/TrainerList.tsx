@@ -1,20 +1,26 @@
 /**
- * TrainerList Component — Trainer Marketplace (Epic 13 — Story 13-1)
+ * TrainerList Component — Trainer Marketplace (Epic 13 — Story 13-1 / 13-5)
  *
  * Trainer hiring marketplace interface:
  * - Fetches live data from /api/trainers/marketplace via useTrainerMarketplace()
- * - Loading/error/empty states handled inline
- * - Hire button disabled pending auth wire-up (Story 13-5)
+ * - Hire button wired via useHireTrainer() + confirmation modal
+ * - Refresh button wired via useRefreshTrainerMarketplace()
+ * - Real user balance from useAuth()
  * - Personality and skill-level filter controls
  *
  * Mirrors RiderList.tsx for the Trainer System.
  */
 
 import React, { useState, useMemo } from 'react';
-import { GraduationCap, DollarSign, RefreshCw } from 'lucide-react';
+import { GraduationCap, DollarSign, RefreshCw, AlertCircle } from 'lucide-react';
 import TrainerPersonalityBadge from './trainer/TrainerPersonalityBadge';
-import { useTrainerMarketplace } from '@/hooks/api/useTrainers';
-import type { MarketplaceTrainer } from '@/hooks/api/useTrainers';
+import {
+  useTrainerMarketplace,
+  useHireTrainer,
+  useRefreshTrainerMarketplace,
+  type MarketplaceTrainer,
+} from '@/hooks/api/useTrainers';
+import { useAuth } from '@/contexts/AuthContext';
 
 // ─── Constants ────────────────────────────────────────────────────────────────
 
@@ -46,13 +52,20 @@ interface TrainerListProps {
 }
 
 const TrainerList: React.FC<TrainerListProps> = () => {
+  const { user } = useAuth();
+  const [selectedTrainer, setSelectedTrainer] = useState<MarketplaceTrainer | null>(null);
+  const [showHireModal, setShowHireModal] = useState(false);
   const [filterSkillLevel, setFilterSkillLevel] = useState<string>('all');
   const [filterPersonality, setFilterPersonality] = useState<string>('all');
   const [sortBy, setSortBy] = useState<string>('name');
 
   const { data, isLoading, isError, error } = useTrainerMarketplace();
+  const hireMutation = useHireTrainer();
+  const refreshMutation = useRefreshTrainerMarketplace();
 
   const calculateHiringCost = (sessionRate: number) => sessionRate * 4; // 4-week upfront
+
+  const canAfford = (sessionRate: number) => (user?.money ?? 0) >= calculateHiringCost(sessionRate);
 
   const filteredAndSortedTrainers = useMemo(() => {
     const trainers: MarketplaceTrainer[] = data?.trainers ?? [];
@@ -79,6 +92,26 @@ const TrainerList: React.FC<TrainerListProps> = () => {
     return filtered;
   }, [data, filterSkillLevel, filterPersonality, sortBy]);
 
+  const handleHireClick = (trainer: MarketplaceTrainer) => {
+    setSelectedTrainer(trainer);
+    setShowHireModal(true);
+  };
+
+  const handleHireConfirm = () => {
+    if (!selectedTrainer) return;
+    hireMutation.mutate(selectedTrainer.marketplaceId, {
+      onSuccess: () => {
+        setShowHireModal(false);
+        setSelectedTrainer(null);
+      },
+    });
+  };
+
+  const handleRefresh = () => {
+    const force = !data?.canRefreshFree;
+    refreshMutation.mutate(force);
+  };
+
   return (
     <main
       role="main"
@@ -94,25 +127,29 @@ const TrainerList: React.FC<TrainerListProps> = () => {
         </div>
         <button
           type="button"
-          disabled
-          title="Marketplace refresh coming soon"
-          className="flex items-center gap-2 px-4 py-2 bg-white/5 border border-white/10 text-white/30 rounded-lg cursor-not-allowed text-sm"
+          data-testid="refresh-marketplace-button"
+          onClick={handleRefresh}
+          disabled={refreshMutation.isPending}
+          className="flex items-center gap-2 px-4 py-2 bg-white/10 border border-white/10 text-white/70 rounded-lg hover:bg-white/15 hover:text-white transition-all disabled:opacity-50 text-sm"
+          aria-label="Refresh marketplace"
         >
-          <RefreshCw className="w-4 h-4" />
-          Refresh Marketplace
+          <RefreshCw className={`w-4 h-4 ${refreshMutation.isPending ? 'animate-spin' : ''}`} />
+          {data?.canRefreshFree ? 'Free Refresh' : `Refresh (${data?.refreshCost ?? 0} Coins)`}
         </button>
       </div>
 
-      {/* Balance Placeholder */}
-      <div className="flex items-center justify-between px-4 py-2.5 rounded-lg bg-white/5 border border-white/10 text-sm">
-        <div className="flex items-center gap-2 text-white/50">
-          <DollarSign className="w-4 h-4" />
-          <span>Your Balance</span>
+      {/* User Balance */}
+      {user && (
+        <div className="flex items-center justify-between px-4 py-2.5 rounded-lg bg-white/5 border border-white/10 text-sm">
+          <div className="flex items-center gap-2 text-white/50">
+            <DollarSign className="w-4 h-4" />
+            <span>Your Balance</span>
+          </div>
+          <span className="font-bold text-celestial-gold">
+            {(user.money ?? 0).toLocaleString()} Coins
+          </span>
         </div>
-        <span className="font-bold text-celestial-gold text-white/30 italic text-xs">
-          Sign in to view balance
-        </span>
-      </div>
+      )}
 
       {/* Skill Level Transparency Note */}
       <div className="px-4 py-3 rounded-lg bg-blue-900/20 border border-blue-500/20 text-xs text-blue-300/80">
@@ -223,6 +260,7 @@ const TrainerList: React.FC<TrainerListProps> = () => {
           >
             {filteredAndSortedTrainers.map((trainer) => {
               const hiringCost = calculateHiringCost(trainer.sessionRate);
+              const affordable = canAfford(trainer.sessionRate);
               const skillMeta = SKILL_LEVEL_LABELS[trainer.skillLevel] ?? SKILL_LEVEL_LABELS.novice;
               const showSpeciality =
                 trainer.skillLevel === 'expert' && trainer.speciality.trim().length > 0;
@@ -285,15 +323,25 @@ const TrainerList: React.FC<TrainerListProps> = () => {
                     &ldquo;{trainer.bio}&rdquo;
                   </p>
 
-                  {/* Hire Button — disabled, pending auth wire-up (13-5) */}
+                  {/* Hire Button */}
                   <button
                     type="button"
-                    disabled
-                    title="Sign in to hire trainers"
-                    className="w-full py-2.5 px-4 rounded-lg font-bold text-sm bg-white/5 text-white/30 cursor-not-allowed border border-white/10"
+                    onClick={() => handleHireClick(trainer)}
+                    disabled={!affordable || hireMutation.isPending}
+                    className={`w-full py-2.5 px-4 rounded-lg font-bold text-sm transition-all ${
+                      affordable
+                        ? 'bg-celestial-gold/80 text-black hover:bg-celestial-gold'
+                        : 'bg-white/5 text-white/30 cursor-not-allowed border border-white/10'
+                    }`}
+                    aria-label={`Hire ${trainer.firstName} ${trainer.lastName}`}
                     data-testid={`hire-button-${trainer.marketplaceId}`}
                   >
-                    Hire — {hiringCost.toLocaleString()} Coins
+                    {hireMutation.isPending &&
+                    selectedTrainer?.marketplaceId === trainer.marketplaceId
+                      ? 'Hiring...'
+                      : affordable
+                        ? `Hire — ${hiringCost.toLocaleString()} Coins`
+                        : 'Insufficient Funds'}
                   </button>
                 </div>
               );
@@ -302,10 +350,74 @@ const TrainerList: React.FC<TrainerListProps> = () => {
         )}
       </div>
 
-      {/* API status note */}
-      <div className="px-4 py-3 rounded-lg bg-white/3 border border-white/8 text-xs text-white/30 text-center">
-        Live marketplace data — hire functionality requires auth wire-up (Story 13-5)
-      </div>
+      {/* Low balance warning */}
+      {user && (user.money ?? 0) < 5000 && (
+        <div className="flex items-start gap-2 px-4 py-3 rounded-lg bg-amber-900/20 border border-amber-500/30 text-sm text-amber-300">
+          <AlertCircle className="w-4 h-4 flex-shrink-0 mt-0.5" />
+          <p>Low balance — hiring requires a 4-week upfront payment.</p>
+        </div>
+      )}
+
+      {/* Hire Confirmation Modal */}
+      {showHireModal && selectedTrainer && (
+        <div
+          data-testid="hire-modal"
+          className="fixed inset-0 bg-black/70 backdrop-blur-sm flex items-center justify-center p-4 z-50 animate-in fade-in duration-200"
+          onClick={() => setShowHireModal(false)}
+        >
+          <div
+            className="bg-deep-space border border-white/10 rounded-xl shadow-2xl max-w-sm w-full p-6 animate-in zoom-in-95 duration-200"
+            onClick={(e) => e.stopPropagation()}
+          >
+            <div className="flex items-center gap-3 mb-4">
+              <div className="bg-celestial-gold/10 p-2 rounded-full">
+                <GraduationCap className="w-5 h-5 text-celestial-gold" />
+              </div>
+              <h3 className="text-lg font-bold text-white/90">Confirm Hire</h3>
+            </div>
+
+            <p className="text-white/60 text-sm mb-5 leading-relaxed">
+              Hire{' '}
+              <strong className="text-white/90">
+                {selectedTrainer.firstName} {selectedTrainer.lastName}
+              </strong>
+              ? They will join your training staff.
+            </p>
+
+            <div className="bg-white/5 rounded-xl p-4 mb-5 border border-white/10 space-y-2 text-sm">
+              <div className="flex justify-between text-white/60">
+                <span>Weekly Rate:</span>
+                <span>{selectedTrainer.sessionRate.toLocaleString()} Coins</span>
+              </div>
+              <div className="flex justify-between border-t border-white/10 pt-2">
+                <span className="font-bold text-white/80">Upfront (4 weeks):</span>
+                <span className="text-xl font-black text-celestial-gold">
+                  {calculateHiringCost(selectedTrainer.sessionRate).toLocaleString()}
+                </span>
+              </div>
+            </div>
+
+            <div className="flex gap-3">
+              <button
+                type="button"
+                onClick={() => setShowHireModal(false)}
+                className="flex-1 px-4 py-2.5 border border-white/10 rounded-lg text-white/60 font-medium hover:bg-white/5 transition-colors text-sm"
+              >
+                Cancel
+              </button>
+              <button
+                type="button"
+                onClick={handleHireConfirm}
+                disabled={hireMutation.isPending}
+                className="flex-1 px-4 py-2.5 bg-celestial-gold/80 text-black font-bold rounded-lg hover:bg-celestial-gold transition-all active:scale-95 disabled:opacity-50 text-sm"
+                data-testid="confirm-hire-button"
+              >
+                {hireMutation.isPending ? 'Hiring...' : 'Hire Trainer'}
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
     </main>
   );
 };
