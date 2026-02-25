@@ -269,16 +269,26 @@ const EnrichmentActivityPanel: React.FC<EnrichmentActivityPanelProps> = ({ foal 
               {enrichmentStatus.dailyActivitiesCompleted} / {enrichmentStatus.dailyActivitiesLimit}
             </span>
           </div>
-          <div className="w-full bg-[rgba(15,35,70,0.5)] rounded-full h-2 overflow-hidden">
+          <div
+            className="w-full rounded-full h-2 overflow-hidden"
+            style={{ background: 'var(--bg-surface)' }}
+          >
             <div
-              className="h-full bg-emerald-500 transition-all duration-500"
+              className="h-full rounded-full"
               style={{
                 width: `${
                   (enrichmentStatus.dailyActivitiesCompleted /
                     enrichmentStatus.dailyActivitiesLimit) *
                   100
                 }%`,
+                background: 'var(--status-success)',
+                transition: 'width var(--duration-reveal) var(--ease-out)',
               }}
+              role="progressbar"
+              aria-valuenow={enrichmentStatus.dailyActivitiesCompleted}
+              aria-valuemin={0}
+              aria-valuemax={enrichmentStatus.dailyActivitiesLimit}
+              aria-label={`Daily activities: ${enrichmentStatus.dailyActivitiesCompleted} of ${enrichmentStatus.dailyActivitiesLimit} completed`}
             />
           </div>
         </div>

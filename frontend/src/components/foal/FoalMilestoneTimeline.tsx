@@ -143,10 +143,17 @@ const FoalMilestoneTimeline: React.FC<FoalMilestoneTimelineProps> = ({ foal, mil
             </div>
             <span className="text-lg font-bold text-emerald-400">{overallProgress}%</span>
           </div>
-          <div className="w-full bg-[rgba(15,35,70,0.5)] rounded-full h-3 overflow-hidden">
+          <div
+            className="w-full rounded-full h-3 overflow-hidden"
+            style={{ background: 'var(--bg-surface)' }}
+          >
             <div
-              className="h-full bg-emerald-500 transition-all duration-500"
-              style={{ width: `${overallProgress}%` }}
+              className="h-full rounded-full"
+              style={{
+                width: `${overallProgress}%`,
+                background: 'var(--status-success)',
+                transition: 'width var(--duration-reveal) var(--ease-out)',
+              }}
               role="progressbar"
               aria-valuenow={overallProgress}
               aria-valuemin={0}

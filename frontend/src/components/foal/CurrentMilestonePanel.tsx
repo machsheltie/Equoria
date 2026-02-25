@@ -21,24 +21,25 @@ export interface CurrentMilestonePanelProps {
 }
 
 /**
- * Get progress bar color based on progress percentage
+ * Get progress bar fill color (CSS custom property) based on progress percentage.
+ * Uses --status-* tokens so colors are theme-consistent.
  */
-function getProgressColor(progress: number): string {
-  if (progress >= 75) return 'bg-emerald-500';
-  if (progress >= 50) return 'bg-blue-500';
-  if (progress >= 25) return 'bg-yellow-500';
-  return 'bg-amber-500';
+function getProgressFill(progress: number): string {
+  if (progress >= 75) return 'var(--status-success)';
+  if (progress >= 50) return 'var(--celestial-primary)';
+  if (progress >= 25) return 'var(--status-warning)';
+  return 'var(--status-warning)';
 }
 
 /**
- * Get enrichment completion status color
+ * Get enrichment completion status color (CSS custom property).
  */
 function getEnrichmentStatusColor(completed: number, total: number): string {
   const percentage = (completed / total) * 100;
-  if (percentage >= 80) return 'text-emerald-400';
-  if (percentage >= 60) return 'text-blue-400';
-  if (percentage >= 40) return 'text-yellow-400';
-  return 'text-amber-400';
+  if (percentage >= 80) return 'var(--status-success)';
+  if (percentage >= 60) return 'var(--celestial-primary)';
+  if (percentage >= 40) return 'var(--status-warning)';
+  return 'var(--status-warning)';
 }
 
 /**
@@ -53,7 +54,7 @@ const CurrentMilestonePanel: React.FC<CurrentMilestonePanelProps> = ({
 }) => {
   const { name, description, focus, ageWindow } = milestone;
   const progress = calculateMilestoneProgress(milestone, foalAge);
-  const progressColor = getProgressColor(progress);
+  const progressFill = getProgressFill(progress);
   const enrichmentPercentage = Math.round(
     (enrichmentActivitiesCompleted / totalEnrichmentActivities) * 100
   );
@@ -123,10 +124,17 @@ const CurrentMilestonePanel: React.FC<CurrentMilestonePanelProps> = ({
             <span className="text-sm font-bold text-[rgb(220,235,255)]">{progress}%</span>
           </div>
         </div>
-        <div className="w-full bg-[rgba(15,35,70,0.5)] rounded-full h-3 overflow-hidden">
+        <div
+          className="w-full rounded-full h-3 overflow-hidden"
+          style={{ background: 'var(--bg-surface)' }}
+        >
           <div
-            className={`h-full ${progressColor} transition-all duration-500 ease-out`}
-            style={{ width: `${progress}%` }}
+            className="h-full rounded-full"
+            style={{
+              width: `${progress}%`,
+              background: progressFill,
+              transition: 'width var(--duration-reveal) var(--ease-out)',
+            }}
             role="progressbar"
             aria-valuenow={progress}
             aria-valuemin={0}
@@ -142,20 +150,34 @@ const CurrentMilestonePanel: React.FC<CurrentMilestonePanelProps> = ({
       {/* Enrichment Activities */}
       <div className="rounded-lg border border-emerald-500/30 bg-[rgba(16,185,129,0.1)] p-3">
         <div className="flex items-center justify-between mb-2">
-          <p className="text-sm font-semibold text-emerald-300">Enrichment Activities</p>
+          <p className="text-sm font-semibold" style={{ color: 'var(--status-success)' }}>
+            Enrichment Activities
+          </p>
           <span
-            className={`text-sm font-bold ${getEnrichmentStatusColor(
-              enrichmentActivitiesCompleted,
-              totalEnrichmentActivities
-            )}`}
+            className="text-sm font-bold"
+            style={{
+              color: getEnrichmentStatusColor(
+                enrichmentActivitiesCompleted,
+                totalEnrichmentActivities
+              ),
+            }}
           >
             {enrichmentActivitiesCompleted} / {totalEnrichmentActivities}
           </span>
         </div>
-        <div className="w-full bg-[rgba(15,35,70,0.5)] rounded-full h-2">
+        <div className="w-full rounded-full h-2" style={{ background: 'var(--bg-surface)' }}>
           <div
-            className="h-full bg-emerald-500 rounded-full transition-all"
-            style={{ width: `${enrichmentPercentage}%` }}
+            className="h-full rounded-full"
+            style={{
+              width: `${enrichmentPercentage}%`,
+              background: 'var(--status-success)',
+              transition: 'width var(--duration-reveal) var(--ease-out)',
+            }}
+            role="progressbar"
+            aria-valuenow={enrichmentActivitiesCompleted}
+            aria-valuemin={0}
+            aria-valuemax={totalEnrichmentActivities}
+            aria-label={`Enrichment activities: ${enrichmentActivitiesCompleted} of ${totalEnrichmentActivities}`}
           />
         </div>
         <p className="text-xs text-emerald-300 mt-2">

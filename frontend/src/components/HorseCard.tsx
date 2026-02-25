@@ -42,6 +42,25 @@ const formatCareDate = (date: Date | string | null | undefined): string => {
   return `${daysAgo}d ago`;
 };
 
+/**
+ * Returns a CSS custom property color based on how long ago care was given.
+ * @param date      - last care date (null/undefined = never cared for → error)
+ * @param warnDays  - days until warning threshold
+ * @param errorDays - days until error/overdue threshold
+ */
+const getCareUrgencyColor = (
+  date: Date | string | null | undefined,
+  warnDays: number,
+  errorDays: number
+): string => {
+  if (!date) return 'var(--status-error)';
+  const d = typeof date === 'string' ? new Date(date) : date;
+  const daysAgo = Math.floor((Date.now() - d.getTime()) / (1000 * 60 * 60 * 24));
+  if (daysAgo >= errorDays) return 'var(--status-error)';
+  if (daysAgo >= warnDays) return 'var(--status-warning)';
+  return 'var(--status-success)';
+};
+
 const HorseCard = ({
   horseName,
   horseImage = '/placeholder.svg',
@@ -178,28 +197,61 @@ const HorseCard = ({
             ))}
         </div>
 
-        {/* Care Status Strip */}
+        {/* Care Status Strip — urgency colors via --status-* tokens */}
         {careStatus && (
           <div
             className="grid grid-cols-2 gap-x-3 gap-y-1 px-3 py-2 border-t border-white/5 bg-black/20"
             data-testid="care-status-strip"
           >
-            <div className="flex items-center justify-between text-[10px] text-white/50">
+            {/* Shod: warn at 7d, error at 14d */}
+            <div
+              className="flex items-center justify-between text-[10px]"
+              style={{ color: 'var(--text-muted)' }}
+            >
               <span>🔨 Shod</span>
-              <span className="text-white/70">{formatCareDate(careStatus.lastShod)}</span>
+              <span
+                style={{ color: getCareUrgencyColor(careStatus.lastShod, 7, 14) }}
+                data-testid="care-shod-date"
+              >
+                {formatCareDate(careStatus.lastShod)}
+              </span>
             </div>
-            <div className="flex items-center justify-between text-[10px] text-white/50">
+            {/* Fed: warn at 1d, error at 3d */}
+            <div
+              className="flex items-center justify-between text-[10px]"
+              style={{ color: 'var(--text-muted)' }}
+            >
               <span>🌾 Fed</span>
-              <span className="text-white/70">{formatCareDate(careStatus.lastFed)}</span>
+              <span
+                style={{ color: getCareUrgencyColor(careStatus.lastFed, 1, 3) }}
+                data-testid="care-fed-date"
+              >
+                {formatCareDate(careStatus.lastFed)}
+              </span>
             </div>
-            <div className="flex items-center justify-between text-[10px] text-white/50">
+            {/* Trained: warn at 7d, error at 14d */}
+            <div
+              className="flex items-center justify-between text-[10px]"
+              style={{ color: 'var(--text-muted)' }}
+            >
               <span>🏋️ Trained</span>
-              <span className="text-white/70">{formatCareDate(careStatus.lastTrained)}</span>
+              <span
+                style={{ color: getCareUrgencyColor(careStatus.lastTrained, 7, 14) }}
+                data-testid="care-trained-date"
+              >
+                {formatCareDate(careStatus.lastTrained)}
+              </span>
             </div>
+            {/* Foaled: mare-only, informational — no urgency threshold */}
             {sex === 'mare' && (
-              <div className="flex items-center justify-between text-[10px] text-white/50">
+              <div
+                className="flex items-center justify-between text-[10px]"
+                style={{ color: 'var(--text-muted)' }}
+              >
                 <span>🐣 Foaled</span>
-                <span className="text-white/70">{formatCareDate(careStatus.lastFoaled)}</span>
+                <span style={{ color: 'var(--text-secondary)' }} data-testid="care-foaled-date">
+                  {formatCareDate(careStatus.lastFoaled)}
+                </span>
               </div>
             )}
           </div>
