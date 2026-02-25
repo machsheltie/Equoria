@@ -244,6 +244,17 @@
 }
 
 /* ── Animations ─────────────────────────────────────────────────────── */
+
+/* Skeleton loading shimmer (UI-5) — sweeps background-position left→right */
+@keyframes skeleton-sweep {
+  0% {
+    background-position: -200% 0;
+  }
+  100% {
+    background-position: 200% 0;
+  }
+}
+
 @keyframes shimmer {
   0% {
     background-position: -200% 0;

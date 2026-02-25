@@ -106,24 +106,34 @@ const MainNavigation: React.FC = () => {
 
               {/* Desktop Navigation Links */}
               <div className="hidden md:flex space-x-1" data-testid="desktop-navigation">
-                {navigationItems.map((item) => (
-                  <Link
-                    key={item.name}
-                    to={item.href}
-                    className={cn(
-                      'group px-3 py-2 rounded-md text-sm font-medium transition-all duration-300 flex items-center gap-2',
-                      isActiveRoute(item.href)
-                        ? 'bg-white/10 text-celestial-gold shadow-[0_0_10px_rgba(255,215,0,0.1)] border border-white/5'
-                        : 'text-white/70 hover:text-white hover:bg-white/5'
-                    )}
-                    aria-current={isActiveRoute(item.href) ? 'page' : undefined}
-                  >
-                    <span className="opacity-70 group-hover:opacity-100 transition-opacity">
-                      {item.icon}
-                    </span>
-                    {item.name}
-                  </Link>
-                ))}
+                {navigationItems.map((item) => {
+                  const active = isActiveRoute(item.href);
+                  return (
+                    <Link
+                      key={item.name}
+                      to={item.href}
+                      className={cn(
+                        'group px-3 py-2 text-sm font-medium flex items-center gap-2',
+                        'transition-colors hover:bg-white/5 rounded-md',
+                        active ? 'rounded-none rounded-t-md' : ''
+                      )}
+                      style={
+                        active
+                          ? {
+                              color: 'var(--text-primary)',
+                              borderBottom: '2px solid var(--celestial-primary)',
+                            }
+                          : { color: 'rgba(255,255,255,0.7)' }
+                      }
+                      aria-current={active ? 'page' : undefined}
+                    >
+                      <span className="opacity-70 group-hover:opacity-100 transition-opacity">
+                        {item.icon}
+                      </span>
+                      {item.name}
+                    </Link>
+                  );
+                })}
               </div>
             </div>
 
@@ -266,22 +276,33 @@ const MainNavigation: React.FC = () => {
 
               {/* Mobile Navigation Links */}
               <div className="space-y-1">
-                {navigationItems.map((item) => (
-                  <Link
-                    key={item.name}
-                    to={item.href}
-                    className={cn(
-                      'block px-3 py-3 rounded-md text-base font-medium flex items-center gap-3',
-                      isActiveRoute(item.href)
-                        ? 'bg-celestial-gold/10 text-celestial-gold border border-celestial-gold/20'
-                        : 'text-white/70 hover:text-white hover:bg-white/5'
-                    )}
-                    onClick={() => setIsMobileMenuOpen(false)}
-                  >
-                    <span>{item.icon}</span>
-                    {item.name}
-                  </Link>
-                ))}
+                {navigationItems.map((item) => {
+                  const active = isActiveRoute(item.href);
+                  return (
+                    <Link
+                      key={item.name}
+                      to={item.href}
+                      className={cn(
+                        'block px-3 py-3 rounded-md text-base font-medium flex items-center gap-3',
+                        active ? 'bg-white/5' : 'text-white/70 hover:text-white hover:bg-white/5'
+                      )}
+                      style={
+                        active
+                          ? {
+                              color: 'var(--text-primary)',
+                              borderLeft: '4px solid var(--celestial-primary)',
+                              paddingLeft: '8px',
+                            }
+                          : undefined
+                      }
+                      aria-current={active ? 'page' : undefined}
+                      onClick={() => setIsMobileMenuOpen(false)}
+                    >
+                      <span>{item.icon}</span>
+                      {item.name}
+                    </Link>
+                  );
+                })}
               </div>
             </div>
           </div>
