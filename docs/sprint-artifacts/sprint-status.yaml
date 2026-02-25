@@ -3832,7 +3832,8 @@ epic-15:
 
 15-1-typescript-build-fix:
   title: 'TypeScript Build Fix'
-  status: backlog
+  status: completed
+  completed_date: '2026-02-25'
   priority: P0
   epic: '15'
   story: 1
@@ -3842,11 +3843,18 @@ epic-15:
     Resolve ~30 pre-existing TypeScript errors so npm run build (tsc + vite build) succeeds.
     Update Dockerfile to use npm run build instead of npx vite build.
   ac:
-    - tsc --noEmit in frontend/ produces zero errors
-    - npm run build in frontend/ succeeds (tsc + vite build both pass)
-    - Dockerfile updated to use npm run build
-    - No functional regressions
-    - All TS fixes use proper typing (no as any escalation)
+    - tsc --noEmit in frontend/ produces zero errors ✅
+    - npm run build in frontend/ succeeds (tsc + vite build both pass) ✅
+    - Dockerfile updated to use npm run build ✅
+    - No functional regressions ✅
+    - All TS fixes use proper typing (no as any escalation) ✅
+  completion_notes: >
+    Fixed 81 TypeScript errors across 9 files (BreedingPairSelection, BreedingPage,
+    HorseDetailPage, MilestoneEvaluationDisplay, TraitHistoryTimeline,
+    EnrichmentActivityPanel, AdvancedEpigeneticDashboard, api-client, filter-options.fixture).
+    Key fixes: breedingPredictionApi import, Foal interface fields, ConformationTab breedId
+    omission, refetchOnWindowFocus, EventDot unknown prop casting, categoryCounts return type.
+    Commit f223e810, pushed to cleanup-session-2026-01-30.
 
 15-2-new-player-onboarding:
   title: 'New Player Onboarding Flow'
@@ -3890,7 +3898,8 @@ epic-15:
 
 15-4-performance-optimization:
   title: 'Performance Optimization (Code Splitting)'
-  status: backlog
+  status: completed
+  completed_date: '2026-02-25'
   priority: P1
   epic: '15'
   story: 4
@@ -3960,12 +3969,12 @@ summary:
   p2_stories: 10
   fr_coverage: '44/44 (100%)'
   current_epic: '15'
-  current_story: '15-1-typescript-build-fix'
+  current_story: '15-3-loading-error-states-polish'
   epics_completed: 14
-  stories_completed: 89
-  stories_in_progress: 0
+  stories_completed: 91
+  stories_in_progress: 1
   stories_ready_for_dev: 0
-  stories_backlog: 6
+  stories_backlog: 5
   total_tests_passing: 3628
   action_items_total: 23
   action_items_completed: 11

@@ -24,4 +24,30 @@ export default defineConfig({
       },
     },
   },
+  build: {
+    rollupOptions: {
+      output: {
+        // Split large vendor libraries into cacheable separate chunks
+        manualChunks: {
+          // Core React runtime — smallest possible initial chunk
+          'vendor-react': ['react', 'react-dom', 'react-router-dom'],
+          // Data fetching / server state
+          'vendor-query': ['@tanstack/react-query'],
+          // Data visualization — recharts is large (~400KB), lazy routes keep it out of initial
+          'vendor-charts': ['recharts'],
+          // Radix UI primitives — shared across many components (only installed packages)
+          'vendor-radix': [
+            '@radix-ui/react-dialog',
+            '@radix-ui/react-label',
+            '@radix-ui/react-progress',
+            '@radix-ui/react-slot',
+            '@radix-ui/react-tabs',
+            '@radix-ui/react-tooltip',
+          ],
+          // Icon library
+          'vendor-icons': ['lucide-react'],
+        },
+      },
+    },
+  },
 });
