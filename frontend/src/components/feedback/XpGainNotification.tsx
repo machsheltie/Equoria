@@ -91,7 +91,7 @@ const getPositionClasses = (position: 'top-right' | 'bottom-right'): string => {
 const XpGainNotification = memo(function XpGainNotification({
   xpGained,
   currentLevel,
-  _currentXp,
+  currentXp: _currentXp,
   xpForCurrentLevel,
   xpToNextLevel,
   show = true,

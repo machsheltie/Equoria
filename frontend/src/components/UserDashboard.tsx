@@ -345,7 +345,7 @@ const UserDashboard: React.FC<UserDashboardProps> = ({
                     <p className="text-sm text-indigo-100/80 mb-2">
                       Expenses:{' '}
                       <span className="text-white font-bold">
-                        ${salarySummaryData.weeklyCost.toLocaleString()}
+                        ${salarySummaryData.totalWeeklyCost.toLocaleString()}
                       </span>{' '}
                       assigned to grooms.
                     </p>

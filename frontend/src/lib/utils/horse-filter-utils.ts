@@ -183,33 +183,34 @@ export function filterByTrainingStatus(
 /**
  * Apply all filters to a horse list
  * Filters are applied in sequence for optimal performance
+ * Generic signature preserves the caller's extended horse type through filtering
  */
-export function applyFilters(horses: Horse[], filters: HorseFilters): Horse[] {
-  let filtered = horses;
+export function applyFilters<T extends Horse>(horses: T[], filters: HorseFilters): T[] {
+  let filtered: T[] = horses;
 
   // Apply search filter (fastest to eliminate many results)
   if (filters.search) {
-    filtered = filterBySearch(filtered, filters.search);
+    filtered = filterBySearch(filtered as Horse[], filters.search) as T[];
   }
 
   // Apply breed filter
   if (filters.breedIds && filters.breedIds.length > 0) {
-    filtered = filterByBreed(filtered, filters.breedIds);
+    filtered = filterByBreed(filtered as Horse[], filters.breedIds) as T[];
   }
 
   // Apply age range filter
   if (filters.minAge !== undefined || filters.maxAge !== undefined) {
-    filtered = filterByAgeRange(filtered, filters.minAge, filters.maxAge);
+    filtered = filterByAgeRange(filtered as Horse[], filters.minAge, filters.maxAge) as T[];
   }
 
   // Apply discipline filter
   if (filters.disciplines && filters.disciplines.length > 0) {
-    filtered = filterByDiscipline(filtered, filters.disciplines);
+    filtered = filterByDiscipline(filtered as Horse[], filters.disciplines) as T[];
   }
 
   // Apply training status filter
   if (filters.trainingStatus && filters.trainingStatus !== 'all') {
-    filtered = filterByTrainingStatus(filtered, filters.trainingStatus);
+    filtered = filterByTrainingStatus(filtered as Horse[], filters.trainingStatus) as T[];
   }
 
   return filtered;

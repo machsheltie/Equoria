@@ -12,7 +12,7 @@ import React, { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { useAuth } from '@/contexts/AuthContext';
-import { breedingApi, horsesApi } from '@/lib/api-client';
+import { breedingApi, horsesApi, breedingPredictionApi } from '@/lib/api-client';
 import HorseSelector from '@/components/breeding/HorseSelector';
 import CompatibilityDisplay from '@/components/breeding/CompatibilityDisplay';
 import BreedingPredictionsPanel from './BreedingPredictionsPanel';
@@ -89,7 +89,7 @@ const BreedingPairSelection: React.FC<BreedingPairSelectionProps> = ({ userId: p
         throw new Error('Both horses must be selected');
       }
 
-      const response = await breedingApi.getBreedingCompatibility({
+      const response = await breedingPredictionApi.getBreedingCompatibility({
         stallionId: selectedSire.id,
         mareId: selectedDam.id,
       });
@@ -123,13 +123,13 @@ const BreedingPairSelection: React.FC<BreedingPairSelectionProps> = ({ userId: p
       const response = await breedingApi.breedFoal({
         sireId: selectedSire.id,
         damId: selectedDam.id,
-        userId,
+        userId: userId != null ? String(userId) : undefined,
       });
 
       return {
         foal: response.foal!,
         message: response.message || 'Breeding successful!',
-      };
+      } as unknown as BreedingResponse;
     },
     onSuccess: (data) => {
       // Invalidate queries

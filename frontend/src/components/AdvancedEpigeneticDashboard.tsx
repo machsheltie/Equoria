@@ -296,13 +296,18 @@ const AdvancedEpigeneticDashboard: React.FC<AdvancedEpigeneticDashboardProps> = 
           <div>Current Window</div>
           {developmentalData?.currentWindow ? (
             <>
-              <div>{developmentalData.currentWindow.name || 'Trust & Handling'}</div>
-              <div>{developmentalData.currentWindow.ageRange || '2-3 years'}</div>
-              <div>
-                {developmentalData.currentWindow.progress
-                  ? `${Math.round(developmentalData.currentWindow.progress * 100)}%`
-                  : '65%'}
-              </div>
+              {(() => {
+                const cw = developmentalData.currentWindow as Record<string, unknown>;
+                return (
+                  <>
+                    <div>{(cw.name as string) || 'Trust & Handling'}</div>
+                    <div>{(cw.ageRange as string) || '2-3 years'}</div>
+                    <div>
+                      {cw.progress ? `${Math.round((cw.progress as number) * 100)}%` : '65%'}
+                    </div>
+                  </>
+                );
+              })()}
             </>
           ) : (
             !isLoading && (
@@ -403,12 +408,17 @@ const AdvancedEpigeneticDashboard: React.FC<AdvancedEpigeneticDashboardProps> = 
           <div>Risk Assessment</div>
           {forecastData?.riskAssessment ? (
             <>
-              <div>
-                Overall Risk:{' '}
-                {forecastData.riskAssessment.overall.charAt(0).toUpperCase() +
-                  forecastData.riskAssessment.overall.slice(1)}
-              </div>
-              <div>{forecastData.riskAssessment.factors?.[0]}</div>
+              {(() => {
+                const ra = forecastData.riskAssessment as { overall: string; factors?: string[] };
+                return (
+                  <>
+                    <div>
+                      Overall Risk: {ra.overall.charAt(0).toUpperCase() + ra.overall.slice(1)}
+                    </div>
+                    <div>{ra.factors?.[0]}</div>
+                  </>
+                );
+              })()}
             </>
           ) : (
             !isLoading && (

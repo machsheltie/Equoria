@@ -156,7 +156,7 @@ const HorseDetailPage: React.FC = () => {
       <div className="min-h-screen flex items-center justify-center p-4">
         <div className="glass-panel max-w-md w-full px-6 py-7 text-center space-y-4">
           <AlertCircle className="w-12 h-12 text-red-400 mx-auto" />
-          <h2 className="fantasy-header text-xl" style={{ color: 'rgb(212,168,67)' }}>
+          <h2 className="fantasy-header text-xl" style={{ color: 'var(--gold-500)' }}>
             {error?.message === 'Horse not found' ? 'Horse Not Found' : 'Error Loading Horse'}
           </h2>
           <p className="text-sm text-[rgb(220,235,255)]">
@@ -340,9 +340,7 @@ const HorseDetailPage: React.FC = () => {
             {activeTab === 'overview' && <OverviewTab horse={horse} />}
             {activeTab === 'disciplines' && <DisciplinesTab horse={horse} />}
             {activeTab === 'genetics' && <GeneticsTab horse={horse} />}
-            {activeTab === 'conformation' && (
-              <ConformationTab horseId={horse.id} breedId={horse.breedId} />
-            )}
+            {activeTab === 'conformation' && <ConformationTab horseId={horse.id} />}
             {activeTab === 'progression' && <ProgressionTab horse={horse} />}
             {activeTab === 'training' && <TrainingTab horse={horse} />}
             {activeTab === 'competition' && <PlaceholderTab title="Competition Results" />}

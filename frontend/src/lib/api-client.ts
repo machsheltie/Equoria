@@ -98,6 +98,7 @@ interface BreedRequest {
   sireId: number;
   damId: number;
   userId?: string;
+  breedId?: number;
 }
 
 interface FoalDevelopment {
@@ -115,10 +116,14 @@ interface FoalDevelopment {
 
 interface Foal {
   id: number;
-  name?: string;
+  name: string;
   sireId?: number;
   damId?: number;
   ageDays?: number;
+  ageInDays?: number;
+  dateOfBirth?: string;
+  sex?: string;
+  userId?: string;
   traits?: string[];
   development?: FoalDevelopment;
 }
@@ -394,6 +399,10 @@ interface UserProgress {
   xpForCurrentLevel: number;
   progressPercentage: number;
   totalEarnings: number;
+  totalHorses?: number;
+  totalCompetitions?: number;
+  totalWins?: number;
+  winRate?: number;
 }
 
 interface DashboardData {
@@ -415,6 +424,7 @@ interface DashboardData {
     lastTrained: string;
     lastShowPlaced: string | null;
   };
+  recentShows?: Array<{ id: number; name: string; placement: number }>;
 }
 
 interface ActivityFeedItem {
@@ -440,6 +450,8 @@ interface Competition {
   entryFee: number;
   maxEntries?: number;
   currentEntries?: number;
+  status?: string;
+  entryDeadline?: string;
 }
 
 interface Discipline {
@@ -1020,6 +1032,7 @@ export interface TackItem {
   cost: number;
   bonus: string;
   disciplines: string[];
+  icon?: string;
 }
 
 export interface TackInventoryData {
@@ -1055,6 +1068,7 @@ export interface FarrierService {
   cost: number;
   hoofConditionOutcome: string;
   includesShoing: boolean;
+  icon?: string;
 }
 
 export interface FarrierBookingResult {

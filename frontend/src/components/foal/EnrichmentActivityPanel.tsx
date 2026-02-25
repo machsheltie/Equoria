@@ -175,7 +175,11 @@ const EnrichmentActivityPanel: React.FC<EnrichmentActivityPanelProps> = ({ foal 
 
   // Calculate category counts
   const categoryCounts = useMemo(() => {
-    if (!enrichmentStatus) return {};
+    if (!enrichmentStatus)
+      return { all: 0, trust: 0, desensitization: 0, exposure: 0, habituation: 0 } as Record<
+        EnrichmentCategory | 'all',
+        number
+      >;
     const counts: Record<EnrichmentCategory | 'all', number> = {
       all: enrichmentStatus.availableActivities.length,
       trust: 0,

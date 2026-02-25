@@ -16,10 +16,8 @@ import {
   useGroomAssignments,
   useGroomSalaries,
   useDeleteAssignment,
-  type Groom,
-  type GroomAssignment,
-  type SalarySummary,
 } from '../hooks/api/useGrooms';
+import type { Groom, GroomAssignment, SalarySummary } from '@/lib/api-client';
 
 interface MyGroomsDashboardProps {
   userId: number;
@@ -71,8 +69,8 @@ const MyGroomsDashboard: React.FC<MyGroomsDashboardProps> = ({
   const unassignMutation = useDeleteAssignment();
 
   // Unwrap data from API responses
-  const groomsFromAPI = groomsResponse?.data ?? [];
-  const assignmentsFromAPI = assignmentsResponse?.data ?? [];
+  const groomsFromAPI = groomsResponse ?? [];
+  const assignmentsFromAPI = assignmentsResponse ?? [];
   const salaryCostsFromAPI = salaryCostsResponse; // Already unwrapped - fetchSalarySummary returns SalarySummary directly
 
   // Use provided data or fetched data
@@ -259,7 +257,10 @@ const MyGroomsDashboard: React.FC<MyGroomsDashboardProps> = ({
           {/* Filters and Sort */}
           <div
             className="flex flex-wrap gap-6 mb-8 p-4 rounded-lg"
-            style={{ background: 'rgba(15,35,70,0.5)', border: '1px solid rgba(37,99,235,0.2)' }}
+            style={{
+              background: 'var(--glass-surface-subtle-bg)',
+              border: 'var(--glass-border-dim)',
+            }}
           >
             <div className="flex-1 min-w-[200px]">
               <label
@@ -411,15 +412,15 @@ const MyGroomsDashboard: React.FC<MyGroomsDashboardProps> = ({
                     </div>
                     <div
                       className="h-2 rounded-full overflow-hidden"
-                      style={{ background: 'rgba(37,99,235,0.15)' }}
+                      style={{ background: 'var(--bg-surface)' }}
                     >
                       <div
                         className="h-full transition-all duration-500"
                         style={{
                           width: `${(groomAssignments.length / maxAssignments) * 100}%`,
                           background: isFullyAssigned
-                            ? 'rgb(100,130,165)'
-                            : 'linear-gradient(90deg, rgb(37,99,235), rgb(29,78,216))',
+                            ? 'var(--text-muted)'
+                            : 'linear-gradient(90deg, var(--electric-blue-500), var(--electric-blue-700))',
                         }}
                       />
                     </div>
@@ -455,14 +456,14 @@ const MyGroomsDashboard: React.FC<MyGroomsDashboardProps> = ({
                 <div className="mb-6">
                   <h4
                     className="fantasy-caption text-[rgb(148,163,184)] mb-3 pb-1"
-                    style={{ borderBottom: '1px solid rgba(37,99,235,0.2)' }}
+                    style={{ borderBottom: '1px solid var(--border-muted)' }}
                   >
                     Current Assignments
                   </h4>
                   {groomAssignments.length === 0 ? (
                     <div
                       className="py-4 text-center rounded-lg border-2 border-dashed"
-                      style={{ borderColor: 'rgba(37,99,235,0.2)' }}
+                      style={{ borderColor: 'var(--border-muted)' }}
                     >
                       <p className="fantasy-body text-[rgb(100,130,165)] text-sm italic">
                         Available for Hire

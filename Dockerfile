@@ -10,9 +10,8 @@ RUN npm ci
 # Copy frontend source
 COPY frontend/ ./
 
-# Build — use vite build directly (tsc type-checking runs separately in CI)
-# VITE_API_URL intentionally unset: relative URLs (/api/...) for monolithic
-RUN npx vite build
+# Build — tsc + vite build (VITE_API_URL unset for relative /api/... URLs)
+RUN npm run build
 
 # ─── Stage 2: Production backend ────────────────────────────────────────────
 FROM node:18-alpine AS production

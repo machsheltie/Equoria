@@ -18,6 +18,7 @@
 import React, { useState, useEffect } from 'react';
 import { X, User, AlertCircle, CheckCircle } from 'lucide-react';
 import { useAssignGroom } from '../hooks/api/useGrooms';
+import type { ApiError } from '@/lib/api-client';
 
 // Type definitions
 interface Groom {
@@ -92,7 +93,7 @@ const AssignGroomModal: React.FC<AssignGroomModalProps> = ({
   };
 
   // Custom error handler
-  const handleMutationError = (err: Error) => {
+  const handleMutationError = (err: ApiError) => {
     setError(err.message);
     setSuccess(false);
   };

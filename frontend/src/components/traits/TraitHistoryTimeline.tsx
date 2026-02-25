@@ -21,7 +21,9 @@ export interface TraitHistoryTimelineProps {
  * Custom Timeline Event Dot
  */
 const EventDot: React.FC<Record<string, unknown>> = (props) => {
-  const { cx, cy, payload } = props;
+  const cx = props.cx as number | undefined;
+  const cy = props.cy as number | undefined;
+  const payload = props.payload as { eventType?: string } | null | undefined;
 
   if (!payload || !payload.eventType) return null;
 

@@ -15,7 +15,7 @@ import {
   ApiError,
   Groom,
   GroomAssignment,
-  MarketplaceGroom,
+  MarketplaceData,
   SalarySummary,
 } from '@/lib/api-client';
 
@@ -55,8 +55,8 @@ export function useGroomSalaries() {
   });
 }
 
-export function useGroomMarketplace(options: any = {}) {
-  return useQuery<MarketplaceGroom[], ApiError>({
+export function useGroomMarketplace(options: { enabled?: boolean } = {}) {
+  return useQuery<MarketplaceData, ApiError>({
     queryKey: groomKeys.marketplace(),
     queryFn: groomsApi.getMarketplace,
     staleTime: 60 * 1000, // 1 minute
@@ -67,7 +67,11 @@ export function useGroomMarketplace(options: any = {}) {
 export function useHireGroom() {
   const queryClient = useQueryClient();
 
-  return useMutation<{ success: boolean }, ApiError, string>({
+  return useMutation<
+    { success: boolean; data: { groom: Groom; cost: number; remainingMoney: number } },
+    ApiError,
+    string
+  >({
     mutationFn: (marketplaceId) => groomsApi.hireGroom(marketplaceId),
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: groomKeys.all });
@@ -78,7 +82,7 @@ export function useHireGroom() {
 export function useRefreshMarketplace() {
   const queryClient = useQueryClient();
 
-  return useMutation<{ success: boolean }, ApiError, boolean | undefined>({
+  return useMutation<MarketplaceData, ApiError, boolean | undefined>({
     mutationFn: (force) => groomsApi.refreshMarketplace(force),
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: groomKeys.marketplace() });

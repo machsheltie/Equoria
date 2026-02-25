@@ -135,11 +135,11 @@ const MilestoneEvaluationDisplay: React.FC<MilestoneEvaluationDisplayProps> = ({
     data: evaluationHistory,
     isLoading: historyLoading,
     error: historyError,
-  } = useQuery({
+  } = useQuery<MilestoneEvaluationHistory>({
     queryKey: ['milestone-evaluations', foalId],
     queryFn: () => mockApi.getEvaluationHistory(foalId),
     staleTime: 60000,
-    refetchOnFocus: true,
+    refetchOnWindowFocus: true,
   });
 
   // Fetch trait definitions

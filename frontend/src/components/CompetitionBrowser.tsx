@@ -67,10 +67,11 @@ const CompetitionBrowser: React.FC = () => {
   const { data: horses = [] } = useHorses();
 
   // Fetch disciplines using centralized hook
-  const { data: disciplines = [] } = useDisciplines();
+  const { data: disciplinesData } = useDisciplines();
+  const disciplines: string[] = disciplinesData?.disciplines ?? [];
 
   const eligibilityQueries = useEligibilityForHorses(
-    selectedCompetition ?? 0,
+    String(selectedCompetition ?? ''),
     horses.map((horse) => horse.id)
   );
 
@@ -220,16 +221,11 @@ const CompetitionBrowser: React.FC = () => {
               className="celestial-input w-full px-3 py-2 rounded-lg"
             >
               <option value="all">All Disciplines</option>
-              {disciplines
-                .map((discipline) =>
-                  typeof discipline === 'string' ? discipline : discipline.name
-                )
-                .filter(Boolean)
-                .map((discipline) => (
-                  <option key={discipline} value={discipline}>
-                    {discipline}
-                  </option>
-                ))}
+              {disciplines.filter(Boolean).map((discipline) => (
+                <option key={discipline} value={discipline}>
+                  {discipline}
+                </option>
+              ))}
             </select>
           </div>
 

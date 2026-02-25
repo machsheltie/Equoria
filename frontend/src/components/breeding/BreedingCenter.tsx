@@ -57,7 +57,6 @@ const BreedingCenter = () => {
     await breedFoal({
       sireId: Number(sireId),
       damId: Number(damId),
-      name: foalName.trim(),
       breedId: 946, // Default to Thoroughbred for now or get from parents
     });
     setFoalName('');

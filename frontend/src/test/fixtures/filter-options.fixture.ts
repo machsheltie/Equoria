@@ -87,9 +87,7 @@ export function categorizeFee(fee: number): EntryFeeValue {
  * Calculate date filter range from current date
  * Returns { startDate, endDate } for date range filtering
  */
-export function getDateRange(
-  range: DateRangeValue
-): { startDate: Date; endDate: Date } | null {
+export function getDateRange(range: DateRangeValue): { startDate: Date; endDate: Date } | null {
   const now = new Date();
   const today = new Date(now.getFullYear(), now.getMonth(), now.getDate());
 
@@ -104,18 +102,20 @@ export function getDateRange(
         endDate: new Date(today.getTime() + 7 * 24 * 60 * 60 * 1000),
       };
 
-    case 'this-week':
+    case 'this-week': {
       // Current week (Sunday to Saturday)
       const dayOfWeek = today.getDay();
       const startOfWeek = new Date(today.getTime() - dayOfWeek * 24 * 60 * 60 * 1000);
       const endOfWeek = new Date(startOfWeek.getTime() + 6 * 24 * 60 * 60 * 1000);
       return { startDate: startOfWeek, endDate: endOfWeek };
+    }
 
-    case 'this-month':
+    case 'this-month': {
       // Current month
       const startOfMonth = new Date(today.getFullYear(), today.getMonth(), 1);
       const endOfMonth = new Date(today.getFullYear(), today.getMonth() + 1, 0);
       return { startDate: startOfMonth, endDate: endOfMonth };
+    }
 
     default:
       return null;
@@ -126,7 +126,7 @@ export function getDateRange(
  * Filter options count verification (for testing)
  */
 export const DATE_RANGE_OPTIONS_COUNT = 4;
-export const ENTRY_FEE_OPTIONS_COUNT = 4;
+export const ENTRY_FEE_OPTIONS_COUNT = 5;
 
 // Verify fixture integrity
 if (DATE_RANGE_OPTIONS.length !== DATE_RANGE_OPTIONS_COUNT) {

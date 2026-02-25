@@ -130,10 +130,10 @@ const TrainingSessionModal = ({ horse, onClose, onCompleted }: TrainingSessionMo
 
   const { data: status } = useTrainingStatus(horse.id, discipline);
   const {
-    mutateAsync: checkEligibility,
     data: eligibility,
-    isPending: checking,
-  } = useTrainingEligibility();
+    isFetching: checking,
+    refetch: checkEligibility,
+  } = useTrainingEligibility(horse.id, discipline);
   const { mutateAsync: runTraining, isPending: isTraining } = useTrainingSession();
 
   // Base training gain constant
@@ -169,7 +169,7 @@ const TrainingSessionModal = ({ horse, onClose, onCompleted }: TrainingSessionMo
   const handleCheckEligibility = async () => {
     try {
       setErrorMessage(null);
-      await checkEligibility({ horseId: horse.id, discipline });
+      await checkEligibility();
     } catch (error) {
       setErrorMessage((error as { message?: string }).message ?? 'Unable to check eligibility');
     }

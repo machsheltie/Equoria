@@ -78,7 +78,7 @@ const sizeConfig = {
 const XpProgressTracker: React.FC<XpProgressTrackerProps> = React.memo(
   ({
     currentLevel,
-    _currentXp,
+    currentXp: _currentXp,
     xpForCurrentLevel,
     xpToNextLevel,
     totalXp,

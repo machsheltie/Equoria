@@ -31,7 +31,7 @@ const BreedingPage = () => {
   return (
     <div className="mx-auto max-w-7xl px-4 py-8">
       {/* Main Breeding Pair Selection (Story 6-1) */}
-      <BreedingPairSelection userId={user?.id} />
+      <BreedingPairSelection userId={user?.id != null ? String(user.id) : undefined} />
 
       {/* Legacy breeding components - will be deprecated */}
       <div className="mt-8 space-y-6 border-t border-[rgba(37,99,235,0.2)] pt-8">

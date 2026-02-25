@@ -45,8 +45,8 @@ const BreedingPairSelector: React.FC<BreedingPairSelectorProps> = ({ stallionId,
     return (
       <div className="rounded-lg border border-red-500/30 bg-[rgba(239,68,68,0.1)] p-6 shadow-sm">
         <p className="text-red-400">
-          {(stallionError as Error)?.message ||
-            (mareError as Error)?.message ||
+          {(stallionError as unknown as Error)?.message ||
+            (mareError as unknown as Error)?.message ||
             'Failed to fetch breeding data'}
         </p>
       </div>
