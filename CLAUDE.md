@@ -1,19 +1,31 @@
 # Equoria - Claude Code Configuration
 
-**Version:** 2.9.0
-**Last Updated:** 2026-02-23
+**Version:** 3.0.0
+**Last Updated:** 2026-02-26
 **Project:** Web browser-based horse breeding simulation game
 
 ---
 
 ## 🎯 Current Sprint
 
-### Active Priority: Epic 14 — Deployment & Production ✅ COMPLETE
+### Active Priority: Epic 16 — Remaining Feature Work ✅ COMPLETE
 
-- **Status:** Epic 14 (Deployment) → Complete ✅
-- **Stories:** 14-1 CI/CD Docker, 14-2 Railway Config, 14-3 Production Env, 14-4 DB Migration, 14-5 Sentry, 14-6 Lighthouse (all complete)
-- **Next:** Epic 15 (Onboarding & Polish) or production launch
+- **Status:** Epic 16 (Remaining Features) → Complete ✅
+- **Stories:** 16-1 Inventory Equip, 16-2 Onboarding Flow, 16-3 Art Assets (all complete)
+- **Next:** Production launch or Epic 17
 - **Branch:** `cleanup-session-2026-01-30`
+
+### Epic 16 Deliverables
+
+- `backend/controllers/inventoryController.mjs` — GET /api/inventory, POST /equip, POST /unequip (JSONB-based)
+- `backend/routes/inventoryRoutes.mjs` — Inventory routes with auth
+- `frontend/src/hooks/api/useInventory.ts` — useInventory / useEquipItem / useUnequipItem
+- `frontend/src/pages/InventoryPage.tsx` — Live API, HorsePicker modal for tack equip
+- `frontend/src/pages/OnboardingPage.tsx` — 3-step wizard (Welcome → Starter Kit → Ready)
+- `frontend/src/components/auth/OnboardingGuard.tsx` — Redirect if `completedOnboarding === false`
+- `frontend/src/App.tsx` — OnboardingGuard + `/onboarding` route added
+- `frontend/public/placeholder.svg` — Celestial Night horse silhouette SVG
+- `frontend/public/assets/horses/README.md` — Art asset naming conventions
 
 ### Epic 14 Deliverables
 
@@ -60,11 +72,11 @@
 
 ### Project Status
 
-- ✅ **Backend:** 100% complete — 3530+ tests passing, pre-push hook active
-- ✅ **Epics 1–14:** All complete (API integration + technical health + nav + riders + world + stable + community + trainers + deployment)
+- ✅ **Backend:** 100% complete — 3628 tests passing (225 suites), pre-push hook active
+- ✅ **Epics 1–16:** All complete (auth + horses + training + competition + breeding + grooms + riders + world + community + trainers + deployment + onboarding + inventory)
 - ✅ **E2E Tests:** Playwright suite passing (core-game-flows, auth, breeding)
 - ✅ **Deployment:** Railway-ready — multi-stage Docker, railway.toml, migrate deploy pipeline
-- ✅ **Frontend:** ~95% complete (React 19 + TypeScript in `/frontend/`)
+- ✅ **Frontend:** ~99% complete (React 19 + TypeScript in `/frontend/`)
 
 ### Session Start Checklist
 

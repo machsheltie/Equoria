@@ -3980,26 +3980,87 @@ epic-15-retrospective:
   completed_date: '2026-02-26'
   retro_file: 'docs/sprint-artifacts/epic-15-retro-2026-02-26.md'
 
+# ── Epic 16: Remaining Feature Work ──────────────────────────────────────────
+
+epic-16:
+  title: 'Remaining Feature Work'
+  status: completed
+  completed_date: '2026-02-26'
+  priority: P1
+  notes: 'Inventory equip/unequip live API, new-player onboarding wizard, art asset scaffolding'
+
+16-1-inventory-equip:
+  title: 'Inventory Equip / Unequip (Live API)'
+  status: completed
+  priority: P1
+  epic: 16
+  story: 1
+  prerequisites: []
+  story_file: 'docs/sprint-artifacts/16-remaining-features.md'
+  created_date: '2026-02-26'
+  completed_date: '2026-02-26'
+  completion_notes: >
+    inventoryController.mjs (GET /api/inventory, POST /equip, POST /unequip),
+    inventoryRoutes.mjs, useInventory.ts, InventoryPage.tsx wired with HorsePicker modal.
+    JSONB-based (User.settings.inventory + Horse.tack); first-time seed from Horse.tack.
+
+16-2-onboarding-flow:
+  title: 'New Player Onboarding Wizard'
+  status: completed
+  priority: P1
+  epic: 16
+  story: 2
+  prerequisites: []
+  story_file: 'docs/sprint-artifacts/16-remaining-features.md'
+  created_date: '2026-02-26'
+  completed_date: '2026-02-26'
+  completion_notes: >
+    POST /api/auth/complete-onboarding backend endpoint.
+    OnboardingPage.tsx (3-step wizard), OnboardingGuard.tsx (redirect if completedOnboarding===false),
+    App.tsx updated with guard + route. completedOnboarding seeded on register.
+
+16-3-art-assets:
+  title: 'Art Asset Scaffolding'
+  status: completed
+  priority: P2
+  epic: 16
+  story: 3
+  prerequisites: []
+  story_file: 'docs/sprint-artifacts/16-remaining-features.md'
+  created_date: '2026-02-26'
+  completed_date: '2026-02-26'
+  completion_notes: >
+    frontend/public/placeholder.svg (celestial dark background horse silhouette).
+    frontend/public/assets/horses/README.md (naming conventions).
+
+epic-16-retrospective:
+  title: 'Epic 16 Retrospective'
+  status: completed
+  epic: '16'
+  created_date: '2026-02-26'
+  completed_date: '2026-02-26'
+  retro_file: 'docs/sprint-artifacts/16-remaining-features.md'
+
 # Summary
 summary:
   total_epics: 16
-  total_stories: 93
+  total_stories: 96
   p0_stories: 47
-  p1_stories: 36
-  p2_stories: 10
+  p1_stories: 38
+  p2_stories: 11
   fr_coverage: '44/44 (100%)'
-  current_epic: '15'
-  current_story: 'epic-15-complete'
-  epics_completed: 15
-  stories_completed: 94
+  current_epic: '16'
+  current_story: 'epic-16-complete'
+  epics_completed: 16
+  stories_completed: 97
   stories_in_progress: 0
   stories_ready_for_dev: 0
-  stories_backlog: 3
+  stories_backlog: 0
   total_tests_passing: 3628
   action_items_total: 23
-  action_items_completed: 11
-  action_items_pending: 12
-  action_items_blocking: 4
+  action_items_completed: 14
+  action_items_pending: 9
+  action_items_blocking: 0
   epic_7_completed_date: '2026-02-17'
   epic_7_total_tests: 464
   epic_7_retro_file: 'docs/sprint-artifacts/epic-7-retro-2026-02-17.md'
@@ -4012,6 +4073,7 @@ summary:
   epic_12_retro_file: 'docs/sprint-artifacts/epic-12-retro-2026-02-25.md'
   epic_13_retro_file: 'docs/sprint-artifacts/epic-13-retro-2026-02-25.md'
   epic_14_retro_file: 'docs/sprint-artifacts/epic-14-retro-2026-02-25.md'
+  epic_16_retro_file: 'docs/sprint-artifacts/16-remaining-features.md'
   epic_9a_completed_date: '2026-02-23'
   epic_9b_completed_date: '2026-02-23'
   epic_9c_completed_date: '2026-02-23'
@@ -4027,4 +4089,6 @@ summary:
   epic_14_note: 'Railway monolithic deploy — Dockerfile, railway.toml, Sentry, Lighthouse'
   epic_15_planned_date: '2026-02-25'
   epic_15_story_file: 'docs/sprint-artifacts/15-onboarding-and-polish.md'
-  next_milestone: 'Epic 15 Story 15-1 (TypeScript Build Fix)'
+  epic_16_completed_date: '2026-02-26'
+  epic_16_note: 'Inventory equip API, onboarding wizard, art asset scaffolding — all complete'
+  next_milestone: 'Production launch or Epic 17'
