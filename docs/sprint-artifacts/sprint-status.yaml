@@ -3973,10 +3973,12 @@ epic-15:
     Mobile modals not applicable (no new modals introduced).
 
 epic-15-retrospective:
-  title: 'Epic 15 Retrospective'
-  status: optional
+  title: 'Epic 15 + UX Sprint Retrospective'
+  status: completed
   epic: '15'
   created_date: '2026-02-25'
+  completed_date: '2026-02-26'
+  retro_file: 'docs/sprint-artifacts/epic-15-retro-2026-02-26.md'
 
 # Summary
 summary:
