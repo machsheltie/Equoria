@@ -10,6 +10,7 @@
 
 import React, { useState } from 'react';
 import { Link } from 'react-router-dom';
+import { toast } from 'sonner';
 import { Package, Shield, Leaf, Sparkles, AlertCircle } from 'lucide-react';
 import MainNavigation from '@/components/MainNavigation';
 
@@ -223,55 +224,73 @@ const InventoryPage: React.FC = () => {
   );
 };
 
-const InventoryItemCard: React.FC<{ item: InventoryItem }> = ({ item }) => (
-  <div
-    className="bg-white/5 border border-white/10 rounded-xl p-5 hover:border-white/20 transition-all"
-    data-testid={`inventory-item-${item.id}`}
-  >
-    <div className="flex items-start justify-between mb-3">
-      <div className="flex items-center gap-3">
-        <span className="text-2xl" aria-hidden="true">
-          {item.icon}
-        </span>
-        <div>
-          <h3 className="font-bold text-white/90 text-sm">{item.name}</h3>
-          {item.bonus && (
-            <span className="text-xs text-violet-400/80 font-medium mt-0.5 block">
-              {item.bonus}
-            </span>
-          )}
+const InventoryItemCard: React.FC<{ item: InventoryItem }> = ({ item }) => {
+  const handleEquip = () => {
+    if (item.category === 'consumables') {
+      toast.info(
+        'Consumables are applied when purchased from the Feed Shop or Vet Clinic — visit there to use items on a specific horse.',
+        { duration: 5000 }
+      );
+    } else {
+      toast.info(
+        `To equip "${item.name}", purchase it from the Tack Shop for a specific horse — it will be applied directly during checkout.`,
+        { duration: 5000 }
+      );
+    }
+  };
+
+  return (
+    <div
+      className="bg-white/5 border border-white/10 rounded-xl p-5 hover:border-white/20 transition-all"
+      data-testid={`inventory-item-${item.id}`}
+    >
+      <div className="flex items-start justify-between mb-3">
+        <div className="flex items-center gap-3">
+          <span className="text-2xl" aria-hidden="true">
+            {item.icon}
+          </span>
+          <div>
+            <h3 className="font-bold text-white/90 text-sm">{item.name}</h3>
+            {item.bonus && (
+              <span className="text-xs text-violet-400/80 font-medium mt-0.5 block">
+                {item.bonus}
+              </span>
+            )}
+          </div>
         </div>
+        <span className="text-xs font-bold bg-white/10 text-white/60 rounded-full px-2 py-0.5">
+          ×{item.quantity}
+        </span>
       </div>
-      <span className="text-xs font-bold bg-white/10 text-white/60 rounded-full px-2 py-0.5">
-        ×{item.quantity}
-      </span>
-    </div>
 
-    <p className="text-xs text-white/50 mb-3">{item.description}</p>
+      <p className="text-xs text-white/50 mb-3">{item.description}</p>
 
-    {item.equippedTo ? (
-      <div className="flex items-center justify-between">
-        <span className="text-xs text-emerald-400 font-medium">Equipped: {item.equippedTo}</span>
+      {item.equippedTo ? (
+        <div className="flex items-center justify-between">
+          <span className="text-xs text-emerald-400 font-medium">Equipped: {item.equippedTo}</span>
+          <button
+            type="button"
+            onClick={() =>
+              toast.info('To unequip an item, go to the horse detail page — Stud / Sale tab.')
+            }
+            className="text-xs px-3 py-1 rounded-lg bg-white/5 border border-white/10 text-white/50 hover:text-white/70 hover:border-white/20 transition-colors"
+            title="See horse detail page to unequip"
+          >
+            Unequip
+          </button>
+        </div>
+      ) : (
         <button
           type="button"
-          disabled
-          className="text-xs px-3 py-1 rounded-lg bg-white/5 border border-white/10 text-white/30 cursor-not-allowed"
-          title="Unequip from horse detail page"
+          onClick={handleEquip}
+          className="w-full py-1.5 text-xs font-medium rounded-lg bg-violet-600/10 border border-violet-500/20 text-violet-400/80 hover:bg-violet-600/20 hover:text-violet-300 transition-colors"
+          title="How to equip this item"
         >
-          Unequip
+          {item.category === 'consumables' ? 'How to Use' : 'How to Equip'}
         </button>
-      </div>
-    ) : (
-      <button
-        type="button"
-        disabled
-        className="w-full py-1.5 text-xs font-medium rounded-lg bg-violet-600/10 border border-violet-500/20 text-violet-400/60 cursor-not-allowed"
-        title="Select a horse from your stable to equip"
-      >
-        {item.category === 'consumables' ? 'Use on Horse' : 'Equip to Horse'}
-      </button>
-    )}
-  </div>
-);
+      )}
+    </div>
+  );
+};
 
 export default InventoryPage;

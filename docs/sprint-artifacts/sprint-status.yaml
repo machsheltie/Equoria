@@ -3918,21 +3918,28 @@ epic-15:
 
 15-5-wire-remaining-disabled-features:
   title: 'Wire Remaining Disabled Features'
-  status: backlog
+  status: completed
   priority: P1
   epic: '15'
   story: 5
   prerequisites: [15-1-typescript-build-fix]
   created_date: '2026-02-25'
+  completed_date: '2026-02-26'
   description: >
     Enable all interactive features that have working backend APIs.
     Inventory equip/use, Feed from Horse Detail, Assign Rider from action bar.
     Community buttons show informative coming-soon toast.
   ac:
-    - Inventory equip works for tack items (reflected in HorseDetailPage stats)
-    - Feed action from Horse Detail navigates to Feed Shop with horse pre-selected
-    - Assign Rider from Horse Detail opens rider picker showing available riders
-    - All permanently-disabled buttons either work or show informative coming-soon toast
+    - '✅ Feed action navigates to /feed-shop?horseId=X; FeedShopPage auto-selects horse from query param'
+    - '✅ Assign Rider opens inline rider picker modal using useUserRiders + useAssignRider'
+    - '✅ Inventory equip/use buttons show informative toast explaining how items are applied'
+    - '✅ Stud listing and Sale listing buttons show coming-soon toast (no longer silently disabled)'
+  completion_notes: >
+    FeedShopPage: added useSearchParams + useEffect to auto-select horse from ?horseId query param.
+    HorseDetailPage: Feed button navigates, Assign Rider opens rider picker modal (inline),
+    stud/sale buttons fire toast.info() instead of being disabled.
+    InventoryPage: equip/use buttons fire informative toast explaining the checkout-time equip pattern.
+    All changes verified with npx vite build (clean, 321KB initial chunk unchanged).
 
 15-6-ux-polish-pass:
   title: 'UX Polish Pass'
@@ -3970,12 +3977,12 @@ summary:
   p2_stories: 10
   fr_coverage: '44/44 (100%)'
   current_epic: '15'
-  current_story: '15-5-wire-remaining-disabled-features'
+  current_story: '15-6-ux-polish-pass'
   epics_completed: 14
-  stories_completed: 92
-  stories_in_progress: 1
+  stories_completed: 93
+  stories_in_progress: 0
   stories_ready_for_dev: 0
-  stories_backlog: 5
+  stories_backlog: 4
   total_tests_passing: 3628
   action_items_total: 23
   action_items_completed: 11

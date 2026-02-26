@@ -15,6 +15,7 @@
 
 import React, { useState } from 'react';
 import { useParams, useNavigate, Link } from 'react-router-dom';
+import { toast } from 'sonner';
 import {
   Zap,
   Heart,
@@ -59,6 +60,8 @@ import ScoreProgressionPanel from '../components/training/ScoreProgressionPanel'
 import { useTrainHorse, useTrainingOverview } from '../hooks/api/useTraining';
 import { formatDisciplineName, canTrain, getDisciplineScore } from '../lib/utils/training-utils';
 import { SkeletonBase } from '@/components/ui/SkeletonCard';
+import { useAuth } from '@/contexts/AuthContext';
+import { useUserRiders, useAssignRider, type Rider } from '@/hooks/api/useRiders';
 
 // Types
 interface HorseStats {
@@ -135,6 +138,14 @@ const HorseDetailPage: React.FC = () => {
   const navigate = useNavigate();
   const [activeTab, setActiveTab] = useState<TabType>('overview');
   const [isEditing, setIsEditing] = useState(false);
+  const [showRiderPicker, setShowRiderPicker] = useState(false);
+
+  // Auth — needed to fetch user's riders
+  const { user } = useAuth();
+
+  // Rider assignment (Story 15-5)
+  const { data: riders, isLoading: ridersLoading } = useUserRiders(user?.id ?? 0);
+  const assignRiderMutation = useAssignRider();
 
   // Fetch horse data
   const { data: horse, isLoading, isError, error, refetch } = useHorse(Number(id));
@@ -373,6 +384,80 @@ const HorseDetailPage: React.FC = () => {
         </div>
       </div>
 
+      {/* Rider Picker Modal (Story 15-5) */}
+      {showRiderPicker && (
+        <div
+          className="fixed inset-0 bg-black/70 backdrop-blur-sm flex items-center justify-center p-4 z-50"
+          onClick={() => setShowRiderPicker(false)}
+          data-testid="rider-picker-modal"
+        >
+          <div
+            className="bg-[rgba(10,22,40,0.98)] border border-burnished-gold/40 rounded-xl shadow-2xl max-w-sm w-full p-6"
+            onClick={(e) => e.stopPropagation()}
+          >
+            <h3 className="fantasy-title text-lg text-[rgb(220,235,255)] mb-4">
+              Assign Rider to {horse.name}
+            </h3>
+            {ridersLoading && (
+              <p className="text-sm text-aged-bronze text-center py-4">Loading riders…</p>
+            )}
+            {!ridersLoading && (!riders || riders.length === 0) && (
+              <div className="text-center py-4">
+                <p className="text-sm text-aged-bronze mb-3">No riders hired yet.</p>
+                <Link
+                  to="/riders"
+                  className="inline-block px-4 py-2 rounded-lg text-sm font-medium text-white transition-opacity hover:opacity-85"
+                  style={{ background: 'var(--celestial-primary)' }}
+                  onClick={() => setShowRiderPicker(false)}
+                >
+                  Browse Rider Marketplace
+                </Link>
+              </div>
+            )}
+            <div className="space-y-2 max-h-60 overflow-y-auto">
+              {riders?.map((rider: Rider) => (
+                <button
+                  key={rider.id}
+                  type="button"
+                  onClick={() => {
+                    assignRiderMutation.mutate(
+                      { riderId: rider.id, horseId: horse.id },
+                      {
+                        onSuccess: () => {
+                          setShowRiderPicker(false);
+                          toast.success(
+                            `${rider.firstName} ${rider.lastName} assigned to ${horse.name}`
+                          );
+                        },
+                        onError: () => {
+                          toast.error('Failed to assign rider. Please try again.');
+                        },
+                      }
+                    );
+                  }}
+                  disabled={assignRiderMutation.isPending}
+                  className="w-full text-left px-4 py-3 rounded-lg bg-white/5 border border-white/10 hover:border-burnished-gold/40 transition-all disabled:opacity-50"
+                >
+                  <p className="font-bold text-[rgb(220,235,255)] text-sm">
+                    {rider.firstName} {rider.lastName}
+                  </p>
+                  <p className="text-xs text-aged-bronze capitalize">
+                    {rider.skillLevel} · {rider.speciality}
+                  </p>
+                </button>
+              ))}
+            </div>
+            <button
+              type="button"
+              onClick={() => setShowRiderPicker(false)}
+              className="mt-4 w-full py-2 text-sm text-aged-bronze hover:text-[rgb(220,235,255)] transition-colors"
+            >
+              Cancel
+            </button>
+          </div>
+        </div>
+      )}
+
       {/* Story 12-5 — Sticky Bottom Action Bar */}
       <div
         className="fixed bottom-0 left-0 right-0 z-40 bg-[rgba(10,22,40,0.95)] border-t border-burnished-gold/40 backdrop-blur-sm"
@@ -384,9 +469,9 @@ const HorseDetailPage: React.FC = () => {
           </span>
           <button
             type="button"
-            disabled
-            className="flex items-center gap-1.5 px-4 py-2 rounded-lg bg-[rgba(37,99,235,0.05)] border border-[rgba(37,99,235,0.2)] text-aged-bronze text-sm fantasy-body whitespace-nowrap cursor-not-allowed opacity-60"
-            title="Feed management — coming soon"
+            onClick={() => navigate(`/feed-shop?horseId=${horse.id}`)}
+            className="flex items-center gap-1.5 px-4 py-2 rounded-lg bg-[rgba(37,99,235,0.1)] border border-[rgba(37,99,235,0.3)] text-[rgb(220,235,255)] text-sm fantasy-body whitespace-nowrap hover:bg-[rgba(37,99,235,0.2)] transition-colors"
+            title="Go to Feed Shop"
             data-testid="action-feed"
           >
             <span aria-hidden="true">🌾</span>
@@ -412,9 +497,9 @@ const HorseDetailPage: React.FC = () => {
           </button>
           <button
             type="button"
-            disabled
-            className="flex items-center gap-1.5 px-4 py-2 rounded-lg bg-[rgba(37,99,235,0.05)] border border-[rgba(37,99,235,0.2)] text-aged-bronze text-sm fantasy-body whitespace-nowrap cursor-not-allowed opacity-60"
-            title="Rider assignment — coming soon"
+            onClick={() => setShowRiderPicker(true)}
+            className="flex items-center gap-1.5 px-4 py-2 rounded-lg bg-[rgba(37,99,235,0.1)] border border-[rgba(37,99,235,0.3)] text-[rgb(220,235,255)] text-sm fantasy-body whitespace-nowrap hover:bg-[rgba(37,99,235,0.2)] transition-colors"
+            title="Assign a rider to this horse"
             data-testid="action-assign-rider"
           >
             <Users className="w-3.5 h-3.5" />
@@ -1724,10 +1809,8 @@ const HealthVetTab: React.FC<{ horse: Horse }> = ({ horse }) => {
   );
 };
 
-// Stud / Sale Tab Component — Story 12-4
+// Stud / Sale Tab Component — Story 12-4 / 15-5
 const StudSaleTab: React.FC<{ horse: Horse }> = ({ horse }) => {
-  const [listingType, setListingType] = useState<'none' | 'stud' | 'sale'>('none');
-
   const isMale =
     horse.gender?.toLowerCase() === 'stallion' || horse.gender?.toLowerCase() === 'male';
   const isFemale =
@@ -1748,13 +1831,7 @@ const StudSaleTab: React.FC<{ horse: Horse }> = ({ horse }) => {
         <p className="fantasy-caption text-aged-bronze text-xs uppercase tracking-wider mb-1">
           Current Status
         </p>
-        <p className="fantasy-title text-lg text-[rgb(220,235,255)]">
-          {listingType === 'none'
-            ? 'Not Listed'
-            : listingType === 'stud'
-              ? 'Listed as Stud'
-              : 'Listed for Sale'}
-        </p>
+        <p className="fantasy-title text-lg text-[rgb(220,235,255)]">Not Listed</p>
       </div>
 
       {/* Listing Type Buttons */}
@@ -1762,10 +1839,9 @@ const StudSaleTab: React.FC<{ horse: Horse }> = ({ horse }) => {
         {isMale && (
           <button
             type="button"
-            onClick={() => setListingType(listingType === 'stud' ? 'none' : 'stud')}
-            disabled
-            className="w-full flex items-center justify-between p-4 bg-[rgba(15,35,70,0.3)] rounded-lg border border-[rgba(37,99,235,0.15)] text-left cursor-not-allowed opacity-60"
-            title="Stud listing — coming soon"
+            onClick={() => toast.info('Stud listing is coming in a future update. Stay tuned!')}
+            className="w-full flex items-center justify-between p-4 bg-[rgba(15,35,70,0.3)] rounded-lg border border-[rgba(37,99,235,0.15)] text-left hover:border-[rgba(37,99,235,0.3)] transition-colors"
+            title="Stud listing — coming in a future update"
             data-testid="stud-listing-btn"
           >
             <div>
@@ -1788,10 +1864,11 @@ const StudSaleTab: React.FC<{ horse: Horse }> = ({ horse }) => {
 
         <button
           type="button"
-          onClick={() => setListingType(listingType === 'sale' ? 'none' : 'sale')}
-          disabled
-          className="w-full flex items-center justify-between p-4 bg-[rgba(15,35,70,0.3)] rounded-lg border border-[rgba(37,99,235,0.15)] text-left cursor-not-allowed opacity-60"
-          title="Sale listing — coming soon"
+          onClick={() =>
+            toast.info('Horse marketplace listing is coming in a future update. Stay tuned!')
+          }
+          className="w-full flex items-center justify-between p-4 bg-[rgba(15,35,70,0.3)] rounded-lg border border-[rgba(37,99,235,0.15)] text-left hover:border-[rgba(37,99,235,0.3)] transition-colors"
+          title="Sale listing — coming in a future update"
           data-testid="sale-listing-btn"
         >
           <div>

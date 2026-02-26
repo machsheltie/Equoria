@@ -11,8 +11,8 @@
  *   usePurchaseFeed()  — POST /api/feed-shop/purchase
  */
 
-import React, { useState } from 'react';
-import { Link } from 'react-router-dom';
+import React, { useState, useEffect } from 'react';
+import { Link, useSearchParams } from 'react-router-dom';
 import { ArrowLeft, Heart, ShoppingCart, Clock, Loader2, AlertCircle, Zap } from 'lucide-react';
 import MainNavigation from '@/components/MainNavigation';
 import { useHorses } from '@/hooks/api/useHorses';
@@ -355,11 +355,23 @@ const ShopTab: React.FC<ShopTabProps> = ({
 // Page root
 // ---------------------------------------------------------------------------
 const FeedShopPage: React.FC = () => {
+  const [searchParams] = useSearchParams();
   const [activeTab, setActiveTab] = useState<FeedShopTab>('horses');
   const [purchaseState, setPurchaseState] = useState<PurchaseState>({
     horseId: null,
     feedId: null,
   });
+
+  // If navigated from Horse Detail with ?horseId=X, auto-select that horse
+  useEffect(() => {
+    const horseIdParam = searchParams.get('horseId');
+    if (horseIdParam) {
+      const parsed = parseInt(horseIdParam, 10);
+      if (!isNaN(parsed)) {
+        setPurchaseState({ horseId: parsed, feedId: null });
+      }
+    }
+  }, [searchParams]);
 
   // Pre-fetch catalog so it's ready when ShopTab mounts
   const { data: catalogPreload } = useFeedCatalog();
