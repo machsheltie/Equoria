@@ -13,6 +13,7 @@
 
 import React, { useState } from 'react';
 import { Link } from 'react-router-dom';
+import { toast } from 'sonner';
 import { ArrowLeft, Heart, ShoppingBag, Loader2, AlertCircle, CheckCircle } from 'lucide-react';
 import MainNavigation from '@/components/MainNavigation';
 import { useTackInventory, usePurchaseTackItem } from '@/hooks/api/useTackShop';
@@ -120,9 +121,12 @@ const ShopTab: React.FC<ShopTabProps> = ({ selectedHorse, onSwitchToHorses }) =>
       { horseId: selectedHorse.id, itemId: item.id },
       {
         onSuccess: (result) => {
-          setPurchaseSuccess(
-            `Purchased ${result.data.item.name} for ${result.data.horse.name}. Remaining balance: $${result.data.remainingMoney.toLocaleString()}`
-          );
+          const msg = `Purchased ${result.data.item.name} for ${result.data.horse.name}. Remaining balance: $${result.data.remainingMoney.toLocaleString()}`;
+          setPurchaseSuccess(msg);
+          toast.success(msg);
+        },
+        onError: () => {
+          toast.error('Purchase failed. Please try again.');
         },
       }
     );

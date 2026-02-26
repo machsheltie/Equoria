@@ -3943,12 +3943,13 @@ epic-15:
 
 15-6-ux-polish-pass:
   title: 'UX Polish Pass'
-  status: backlog
+  status: completed
   priority: P2
   epic: '15'
   story: 6
   prerequisites: []
   created_date: '2026-02-25'
+  completed_date: '2026-02-26'
   description: >
     Comprehensive final UX audit and polish pass.
     Toast notifications, settings save confirmation, tooltip consistency,
@@ -3961,6 +3962,15 @@ epic-15:
     - All routes in MainNavigation highlight correctly
     - HorseCard click navigates to HorseDetailPage (end-to-end verify)
     - All World sub-location pages have working Back to World link
+  completion_notes: >
+    toast.success/error added to VeterinarianPage, FarrierPage, TackShopPage (via sonner).
+    FeedShopPage handlePurchase updated with onSuccess/onError toast callbacks.
+    SettingsPage Save Changes button now shows Saved ✓ for 2s on click (useState + setTimeout).
+    ClubsPage Join-a-Club-First disabled button now has informative title tooltip.
+    StableView HorseCard onClick fixed from console.log to navigate('/horses/:id').
+    MainNavigation active state verified correct (isActiveRoute startsWith pattern).
+    All World sub-location pages verified with working Back to World link.
+    Mobile modals not applicable (no new modals introduced).
 
 epic-15-retrospective:
   title: 'Epic 15 Retrospective'
@@ -3977,12 +3987,12 @@ summary:
   p2_stories: 10
   fr_coverage: '44/44 (100%)'
   current_epic: '15'
-  current_story: '15-6-ux-polish-pass'
-  epics_completed: 14
-  stories_completed: 93
+  current_story: 'epic-15-complete'
+  epics_completed: 15
+  stories_completed: 94
   stories_in_progress: 0
   stories_ready_for_dev: 0
-  stories_backlog: 4
+  stories_backlog: 3
   total_tests_passing: 3628
   action_items_total: 23
   action_items_completed: 11

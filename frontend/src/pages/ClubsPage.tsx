@@ -424,6 +424,7 @@ const MyClubTab: React.FC = () => (
       <button
         type="button"
         disabled
+        title="Join a discipline or breed club to unlock governance features"
         className="px-6 py-2 text-sm font-medium rounded-xl bg-celestial-gold/10 border border-celestial-gold/20 text-celestial-gold/50 cursor-not-allowed"
       >
         Join a Club First

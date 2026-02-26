@@ -1,6 +1,6 @@
 import React from 'react';
 import { Coins, Star, Users, Plus, Settings } from 'lucide-react';
-import { Link } from 'react-router-dom';
+import { Link, useNavigate } from 'react-router-dom';
 import HorseCard from '../components/HorseCard';
 import { FantasyTabs } from '../components/FantasyTabs';
 import { SkeletonHorseCard } from '@/components/ui/SkeletonCard';
@@ -9,6 +9,7 @@ import { useHorses } from '../hooks/api/useHorses';
 import { useProfile } from '../hooks/useAuth';
 
 const StableView = () => {
+  const navigate = useNavigate();
   // Fetch horses from API
   const { data: horsesData, isLoading, isError, error, refetch } = useHorses();
   const { data: profileData } = useProfile();
@@ -157,7 +158,7 @@ const StableView = () => {
             isLegendary={horse.isLegendary}
             cooldownHours={horse.cooldownHours}
             stats={horse.stats}
-            onClick={() => console.log(`Viewing ${horse.name}`)}
+            onClick={() => navigate(`/horses/${horse.id}`)}
           />
         ))}
       </div>

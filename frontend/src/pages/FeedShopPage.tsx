@@ -13,6 +13,7 @@
 
 import React, { useState, useEffect } from 'react';
 import { Link, useSearchParams } from 'react-router-dom';
+import { toast } from 'sonner';
 import { ArrowLeft, Heart, ShoppingCart, Clock, Loader2, AlertCircle, Zap } from 'lucide-react';
 import MainNavigation from '@/components/MainNavigation';
 import { useHorses } from '@/hooks/api/useHorses';
@@ -384,7 +385,20 @@ const FeedShopPage: React.FC = () => {
 
   const handlePurchase = (horseId: number, feedId: string) => {
     setPurchaseState({ horseId, feedId });
-    purchaseMutation.mutate({ horseId, feedId });
+    purchaseMutation.mutate(
+      { horseId, feedId },
+      {
+        onSuccess: (result) => {
+          const horseName = result.data?.horse?.name ?? 'your horse';
+          toast.success(`Feed purchased for ${horseName}!`);
+        },
+        onError: (err) => {
+          toast.error(
+            (err as { message?: string })?.message ?? 'Purchase failed. Please try again.'
+          );
+        },
+      }
+    );
   };
 
   const handleSelectFeedFromShop = (feedId: string) => {

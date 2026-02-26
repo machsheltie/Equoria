@@ -13,6 +13,7 @@
 
 import React, { useState } from 'react';
 import { Link } from 'react-router-dom';
+import { toast } from 'sonner';
 import { ArrowLeft, Heart, Wrench, Clock, CheckCircle } from 'lucide-react';
 import MainNavigation from '@/components/MainNavigation';
 import { useHorses } from '@/hooks/api/useHorses';
@@ -332,13 +333,14 @@ const FarrierPage: React.FC = () => {
       { horseId: selectedHorseId, serviceId: service.id },
       {
         onSuccess: (result) => {
-          setBookingSuccess(
-            `${result.data.service.name} booked for ${result.data.horse.name}. Remaining balance: $${result.data.remainingMoney.toLocaleString()}.`
-          );
+          const msg = `${result.data.service.name} booked for ${result.data.horse.name}. Remaining balance: $${result.data.remainingMoney.toLocaleString()}.`;
+          setBookingSuccess(msg);
           setBookingServiceId(null);
+          toast.success(msg);
         },
         onError: () => {
           setBookingServiceId(null);
+          toast.error('Booking failed. Please try again.');
         },
       }
     );

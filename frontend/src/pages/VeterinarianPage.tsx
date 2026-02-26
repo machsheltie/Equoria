@@ -14,6 +14,7 @@
 
 import React, { useState } from 'react';
 import { Link } from 'react-router-dom';
+import { toast } from 'sonner';
 import { ArrowLeft, Heart, Activity, Clock, CheckCircle, Loader2 } from 'lucide-react';
 import MainNavigation from '@/components/MainNavigation';
 import { useHorses } from '@/hooks/api/useHorses';
@@ -302,9 +303,12 @@ const VeterinarianPage: React.FC = () => {
           setConfirmedHorseId(horseId);
           setConfirmedServiceId(serviceId);
           setBookingServiceId(null);
+          const service = services.find((s) => s.id === serviceId);
+          toast.success(`Appointment booked${service ? ` — ${service.name}` : ''}!`);
         },
         onError: () => {
           setBookingServiceId(null);
+          toast.error('Booking failed. Please try again.');
         },
       }
     );

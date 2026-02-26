@@ -67,6 +67,12 @@ const sections: SettingsSection[] = [
 
 const SettingsPage: React.FC = () => {
   const [activeSection, setActiveSection] = useState<string>('account');
+  const [savedAccount, setSavedAccount] = useState(false);
+
+  const handleSaveAccount = () => {
+    setSavedAccount(true);
+    setTimeout(() => setSavedAccount(false), 2000);
+  };
 
   const [notifications, setNotifications] = useState({
     emailCompetition: true,
@@ -172,10 +178,11 @@ const SettingsPage: React.FC = () => {
 
                 <button
                   type="button"
+                  onClick={handleSaveAccount}
                   className="px-4 py-2 rounded-lg bg-celestial-gold/10 border border-celestial-gold/30 text-celestial-gold text-sm font-medium hover:bg-celestial-gold/20 transition-colors"
                   data-testid="settings-save-account"
                 >
-                  Save Changes
+                  {savedAccount ? 'Saved ✓' : 'Save Changes'}
                 </button>
               </div>
 
