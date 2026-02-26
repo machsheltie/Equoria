@@ -1134,6 +1134,48 @@ export const feedShopApi = {
     apiClient.post<{ success: boolean; data: FeedPurchaseResult }>('/api/feed-shop/purchase', data),
 };
 
+// ── Inventory types ───────────────────────────────────────────────────────────
+
+export interface InventoryItem {
+  id: string;
+  itemId: string;
+  category: 'saddle' | 'bridle';
+  name: string;
+  bonus?: string;
+  quantity: number;
+  equippedToHorseId?: number | null;
+  equippedToHorseName?: string | null;
+}
+
+export interface InventoryData {
+  items: InventoryItem[];
+  total: number;
+}
+
+export interface EquipResult {
+  items: InventoryItem[];
+  equippedItem: InventoryItem;
+}
+
+export interface UnequipResult {
+  items: InventoryItem[];
+  unequippedItem: InventoryItem;
+}
+
+/**
+ * Inventory API surface
+ *   GET  /api/inventory         → InventoryData   (fetchWithAuth unwraps data.data)
+ *   POST /api/inventory/equip   → EquipResult
+ *   POST /api/inventory/unequip → UnequipResult
+ */
+export const inventoryApi = {
+  getInventory: () => apiClient.get<InventoryData>('/api/inventory'),
+  equipItem: (vars: { inventoryItemId: string; horseId: number }) =>
+    apiClient.post<EquipResult>('/api/inventory/equip', vars),
+  unequipItem: (vars: { inventoryItemId: string }) =>
+    apiClient.post<UnequipResult>('/api/inventory/unequip', vars),
+};
+
 /**
  * User Progress API surface
  */
