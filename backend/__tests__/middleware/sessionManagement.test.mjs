@@ -589,8 +589,9 @@ describe('Session Management Middleware', () => {
     });
 
     it("should NOT allow revoking another user's session", async () => {
-      const user1 = await createTestUser({ email: 'user1@example.com' });
-      const user2 = await createTestUser({ email: 'user2@example.com' });
+      const ts = Date.now();
+      const user1 = await createTestUser({ email: `user1-${ts}@example.com` });
+      const user2 = await createTestUser({ email: `user2-${ts}@example.com` });
       const user2Token = await createTestRefreshToken(user2.id);
 
       req.user = { id: user1.id }; // user1 trying to revoke user2's session
