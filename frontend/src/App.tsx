@@ -7,10 +7,12 @@ import { navItems } from './nav-items';
 import { AuthProvider } from './contexts/AuthContext';
 import { StarField } from '@/components/layout/StarField';
 import { ProtectedRoute } from '@/components/auth';
+import OnboardingGuard from '@/components/auth/OnboardingGuard';
 import { initSentry, SentryErrorBoundary } from '@/lib/sentry';
 
 // Auth pages — lazy loaded
 const StableView = lazy(() => import('./pages/StableView'));
+const OnboardingPage = lazy(() => import('./pages/OnboardingPage'));
 const LoginPage = lazy(() => import('./pages/LoginPage'));
 const RegisterPage = lazy(() => import('./pages/RegisterPage'));
 const VerifyEmailPage = lazy(() => import('./pages/VerifyEmailPage'));
@@ -48,8 +50,11 @@ const App = () => (
               v7_relativeSplatPath: true,
             }}
           >
+            {/* Redirects new users to /onboarding when completedOnboarding === false */}
+            <OnboardingGuard />
             <Suspense fallback={<PageLoader />}>
               <Routes>
+                <Route path="/onboarding" element={<OnboardingPage />} />
                 <Route path="/login" element={<LoginPage />} />
                 <Route path="/register" element={<RegisterPage />} />
                 <Route path="/verify-email" element={<VerifyEmailPage />} />

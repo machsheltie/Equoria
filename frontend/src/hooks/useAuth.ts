@@ -32,6 +32,8 @@ export interface User {
   xp?: number;
   /** User's role for access control. Defaults to 'user' if not set. */
   role?: UserRole;
+  /** Whether the player has completed the new-user onboarding wizard. Undefined for legacy accounts. */
+  completedOnboarding?: boolean;
 }
 
 /**

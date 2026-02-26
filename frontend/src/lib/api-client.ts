@@ -1378,6 +1378,12 @@ export const authApi = {
   },
 
   /**
+   * Mark authenticated user's onboarding as complete.
+   */
+  completeOnboarding: () =>
+    apiClient.post<{ completedOnboarding: boolean }>('/api/auth/complete-onboarding', {}),
+
+  /**
    * Request password reset email
    * Note: Requires backend endpoint (not yet implemented)
    */

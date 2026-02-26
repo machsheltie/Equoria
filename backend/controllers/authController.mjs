@@ -53,7 +53,7 @@ export const register = async (req, res, next) => {
         money: money === undefined ? 1000 : money, // Default starting money if not provided
         level: level === undefined ? 1 : level, // Default starting level if not provided
         xp: xp === undefined ? 0 : xp, // Default starting XP if not provided
-        settings: settings || {}, // Default empty settings object
+        settings: settings || { completedOnboarding: false }, // New users start with onboarding pending
       },
     });
 
@@ -314,6 +314,7 @@ export const getProfile = async (req, res, next) => {
         lastName: true,
         createdAt: true,
         updatedAt: true,
+        settings: true,
       },
     });
 
@@ -321,9 +322,25 @@ export const getProfile = async (req, res, next) => {
       throw new AppError('User not found', 404);
     }
 
+    // Extract completedOnboarding from settings and expose as a flat field
+    const settings =
+      typeof user.settings === 'object' && user.settings !== null ? user.settings : {};
+    const completedOnboarding = settings.completedOnboarding === true;
+
     res.status(200).json({
       status: 'success',
-      data: { user },
+      data: {
+        user: {
+          id: user.id,
+          username: user.username,
+          email: user.email,
+          firstName: user.firstName,
+          lastName: user.lastName,
+          createdAt: user.createdAt,
+          updatedAt: user.updatedAt,
+          completedOnboarding,
+        },
+      },
     });
   } catch (error) {
     logger.error('[authController.getProfile] Error retrieving profile:', error);
@@ -629,5 +646,46 @@ export const getVerificationStatus = async (req, res, next) => {
       return next(error);
     }
     next(new AppError('Failed to check verification status due to an unexpected error.', 500));
+  }
+};
+
+/**
+ * POST /api/auth/complete-onboarding
+ * Marks the authenticated user's onboarding as complete in User.settings.
+ */
+export const completeOnboarding = async (req, res, next) => {
+  try {
+    const userId = req.user.id;
+
+    const user = await prisma.user.findUnique({
+      where: { id: userId },
+      select: { settings: true },
+    });
+
+    if (!user) {
+      throw new AppError('User not found', 404);
+    }
+
+    const currentSettings =
+      typeof user.settings === 'object' && user.settings !== null ? user.settings : {};
+
+    await prisma.user.update({
+      where: { id: userId },
+      data: { settings: { ...currentSettings, completedOnboarding: true } },
+    });
+
+    logger.info(`[authController.completeOnboarding] User ${userId} completed onboarding`);
+
+    res.status(200).json({
+      status: 'success',
+      message: 'Onboarding completed',
+      data: { completedOnboarding: true },
+    });
+  } catch (error) {
+    logger.error('[authController.completeOnboarding] Error:', error);
+    if (error instanceof AppError) {
+      return next(error);
+    }
+    next(new AppError('Failed to complete onboarding.', 500));
   }
 };

@@ -687,4 +687,10 @@ router.post('/resend-verification', authenticateToken, authController.resendVeri
  */
 router.get('/verification-status', authenticateToken, authController.getVerificationStatus);
 
+/**
+ * POST /api/auth/complete-onboarding
+ * Marks authenticated user's onboarding as complete in User.settings.
+ */
+router.post('/complete-onboarding', authenticateToken, authController.completeOnboarding);
+
 export default router;
