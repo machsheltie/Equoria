@@ -8,7 +8,9 @@
 
 import React, { useState } from 'react';
 import { Users, DollarSign, AlertCircle, Calendar, Trash2 } from 'lucide-react';
+import { Link } from 'react-router-dom';
 import AssignGroomModal from './AssignGroomModal';
+import { SkeletonBase } from '@/components/ui/SkeletonCard';
 import GroomPersonalityBadge from './groom/GroomPersonalityBadge';
 import GroomPersonalityDisplay from './groom/GroomPersonalityDisplay';
 import {
@@ -84,24 +86,55 @@ const MyGroomsDashboard: React.FC<MyGroomsDashboardProps> = ({
       breakdown: [],
     };
 
-  // Loading state
+  // Loading state — skeleton rows
   if (!groomsData && (groomsLoading || assignmentsLoading || salaryCostsLoading)) {
     return (
-      <div className="flex items-center justify-center min-h-screen bg-background">
-        <div className="text-lg fantasy-body text-[rgb(148,163,184)]">Loading...</div>
+      <div className="space-y-3 p-4" aria-label="Loading grooms">
+        {[...Array(3)].map((_, i) => (
+          <div
+            key={i}
+            className="rounded-xl p-4 space-y-3"
+            style={{
+              background: 'var(--glass-surface-bg)',
+              border: '1px solid var(--border-muted)',
+            }}
+          >
+            <div className="flex items-center gap-3">
+              <SkeletonBase className="w-10 h-10 flex-shrink-0" rounded="full" />
+              <div className="flex-1 space-y-2">
+                <SkeletonBase className="h-4 w-1/3" rounded="full" />
+                <SkeletonBase className="h-3 w-1/4" rounded="full" />
+              </div>
+              <SkeletonBase className="h-6 w-16" rounded="full" />
+            </div>
+            <SkeletonBase className="h-2 w-full" rounded="full" />
+          </div>
+        ))}
       </div>
     );
   }
 
-  // Empty state
+  // Empty state — with CTA link to grooms marketplace
   if (finalGrooms.length === 0) {
     return (
-      <div className="flex flex-col items-center justify-center min-h-screen p-8 bg-background">
-        <Users className="w-16 h-16 text-[rgb(100,130,165)] mb-4" />
-        <h2 className="fantasy-title text-2xl text-[rgb(212,168,67)] mb-2">No Grooms Hired</h2>
-        <p className="fantasy-body text-[rgb(148,163,184)] text-center max-w-md">
-          You haven't hired any grooms yet. Visit the marketplace to hire your first groom!
+      <div className="flex flex-col items-center justify-center min-h-64 p-8 text-center">
+        <Users
+          className="w-14 h-14 mb-4 opacity-30"
+          style={{ color: 'var(--celestial-primary)' }}
+        />
+        <h2 className="text-lg font-semibold mb-2" style={{ color: 'var(--text-primary)' }}>
+          No Grooms Hired
+        </h2>
+        <p className="text-sm mb-4 max-w-sm" style={{ color: 'var(--text-muted)' }}>
+          Hire a groom to help care for your foals and improve their development.
         </p>
+        <Link
+          to="/grooms"
+          className="inline-block px-4 py-2 rounded-lg text-sm font-medium text-white transition-opacity hover:opacity-85"
+          style={{ background: 'var(--celestial-primary)' }}
+        >
+          Browse Groom Marketplace
+        </Link>
       </div>
     );
   }

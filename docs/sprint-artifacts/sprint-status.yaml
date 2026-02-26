@@ -3879,7 +3879,8 @@ epic-15:
 
 15-3-loading-error-states-polish:
   title: 'Loading & Error States Polish'
-  status: backlog
+  status: completed
+  completed_date: '2026-02-26'
   priority: P1
   epic: '15'
   story: 3
@@ -3969,9 +3970,9 @@ summary:
   p2_stories: 10
   fr_coverage: '44/44 (100%)'
   current_epic: '15'
-  current_story: '15-3-loading-error-states-polish'
+  current_story: '15-5-wire-remaining-disabled-features'
   epics_completed: 14
-  stories_completed: 91
+  stories_completed: 92
   stories_in_progress: 1
   stories_ready_for_dev: 0
   stories_backlog: 5

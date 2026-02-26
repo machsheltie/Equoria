@@ -19,6 +19,8 @@
 
 import React, { useState } from 'react';
 import { GraduationCap, AlertCircle, ChevronDown, ChevronUp } from 'lucide-react';
+import { Link } from 'react-router-dom';
+import { SkeletonBase } from '@/components/ui/SkeletonCard';
 import TrainerPersonalityBadge from './trainer/TrainerPersonalityBadge';
 import TrainerCareerPanel, { type TrainerCareerData } from './trainer/TrainerCareerPanel';
 import TrainerDiscoveryPanel, {
@@ -69,8 +71,27 @@ const MyTrainersDashboard: React.FC<MyTrainersDashboardProps> = ({
 
   if (!userId || trainersLoading || assignmentsLoading) {
     return (
-      <div className="flex items-center justify-center min-h-64 text-white/40">
-        Loading trainers...
+      <div className="space-y-3 p-4" aria-label="Loading trainers">
+        {[...Array(3)].map((_, i) => (
+          <div
+            key={i}
+            className="rounded-xl p-4 space-y-3"
+            style={{
+              background: 'var(--glass-surface-bg)',
+              border: '1px solid var(--border-muted)',
+            }}
+          >
+            <div className="flex items-center gap-3">
+              <SkeletonBase className="w-10 h-10 flex-shrink-0" rounded="full" />
+              <div className="flex-1 space-y-2">
+                <SkeletonBase className="h-4 w-1/3" rounded="full" />
+                <SkeletonBase className="h-3 w-1/4" rounded="full" />
+              </div>
+              <SkeletonBase className="h-6 w-16" rounded="full" />
+            </div>
+            <SkeletonBase className="h-2 w-full" rounded="full" />
+          </div>
+        ))}
       </div>
     );
   }
@@ -81,11 +102,23 @@ const MyTrainersDashboard: React.FC<MyTrainersDashboardProps> = ({
         className="flex flex-col items-center justify-center min-h-64 p-8 text-center"
         data-testid="no-trainers-state"
       >
-        <GraduationCap className="w-12 h-12 text-white/20 mb-3" />
-        <h2 className="text-lg font-bold text-white/60 mb-1">No Trainers Hired</h2>
-        <p className="text-sm text-white/40 max-w-sm">
-          Visit the Hire tab to browse the trainer marketplace and hire your first trainer.
+        <GraduationCap
+          className="w-14 h-14 mb-4 opacity-30"
+          style={{ color: 'var(--celestial-primary)' }}
+        />
+        <h2 className="text-lg font-semibold mb-2" style={{ color: 'var(--text-primary)' }}>
+          No Trainers Hired
+        </h2>
+        <p className="text-sm mb-4 max-w-sm" style={{ color: 'var(--text-muted)' }}>
+          Hire a specialist trainer to accelerate your horses' progress in their chosen discipline.
         </p>
+        <Link
+          to="/trainers"
+          className="inline-block px-4 py-2 rounded-lg text-sm font-medium text-white transition-opacity hover:opacity-85"
+          style={{ background: 'var(--celestial-primary)' }}
+        >
+          Browse Trainer Marketplace
+        </Link>
       </div>
     );
   }

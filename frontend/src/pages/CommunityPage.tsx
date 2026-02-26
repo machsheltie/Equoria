@@ -66,6 +66,19 @@ const communityCards: CommunityCard[] = [
       { label: 'Conversations', value: '8' },
     ],
   },
+  {
+    title: 'Hall of Fame',
+    description:
+      'Celebrate your greatest horses. Retired champions immortalised with career highlights and legacy records.',
+    href: '/my-stable',
+    icon: <Trophy className="w-7 h-7 text-amber-400" />,
+    accent: 'bg-amber-500/10 border-amber-500/30',
+    borderAccent: 'hover:border-amber-500/50',
+    stats: [
+      { label: 'Inductees', value: '3' },
+      { label: 'Total wins', value: '47' },
+    ],
+  },
 ];
 
 const MOCK_RECENT_ACTIVITY = [
@@ -159,7 +172,7 @@ const CommunityPage: React.FC = () => {
         </div>
 
         {/* Community Cards */}
-        <div className="grid grid-cols-1 sm:grid-cols-3 gap-5 mb-10">
+        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-5 mb-10">
           {communityCards.map((card) => (
             <Link
               key={card.href}

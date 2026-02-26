@@ -58,6 +58,7 @@ import TrainingResultModal from '../components/training/TrainingResultModal';
 import ScoreProgressionPanel from '../components/training/ScoreProgressionPanel';
 import { useTrainHorse, useTrainingOverview } from '../hooks/api/useTraining';
 import { formatDisciplineName, canTrain, getDisciplineScore } from '../lib/utils/training-utils';
+import { SkeletonBase } from '@/components/ui/SkeletonCard';
 
 // Types
 interface HorseStats {
@@ -138,13 +139,34 @@ const HorseDetailPage: React.FC = () => {
   // Fetch horse data
   const { data: horse, isLoading, isError, error, refetch } = useHorse(Number(id));
 
-  // Loading state
+  // Loading state — detail page skeleton (portrait left + tab area right)
   if (isLoading) {
     return (
-      <div className="min-h-screen flex items-center justify-center">
-        <div className="text-center space-y-3">
-          <Loader2 className="w-12 h-12 text-[rgb(37,99,235)] animate-spin mx-auto" />
-          <p className="text-sm text-[rgb(148,163,184)]">Loading horse details…</p>
+      <div className="min-h-screen" aria-label="Loading horse details">
+        <div className="max-w-6xl mx-auto px-4 py-8">
+          <div className="flex flex-col md:flex-row gap-6">
+            {/* Portrait skeleton */}
+            <div className="w-full md:w-64 flex-shrink-0 space-y-3">
+              <SkeletonBase className="w-full h-64" rounded="lg" />
+              <SkeletonBase className="h-5 w-2/3" rounded="full" />
+              <SkeletonBase className="h-4 w-1/2" rounded="full" />
+              <div className="space-y-2 pt-2">
+                {[...Array(5)].map((_, i) => (
+                  <SkeletonBase key={i} className="h-3 w-full" rounded="full" />
+                ))}
+              </div>
+            </div>
+            {/* Tab area skeleton */}
+            <div className="flex-1 space-y-4">
+              <div className="flex gap-2">
+                {[...Array(5)].map((_, i) => (
+                  <SkeletonBase key={i} className="h-9 w-20" rounded="md" />
+                ))}
+              </div>
+              <SkeletonBase className="h-48 w-full" rounded="lg" />
+              <SkeletonBase className="h-32 w-full" rounded="lg" />
+            </div>
+          </div>
         </div>
       </div>
     );

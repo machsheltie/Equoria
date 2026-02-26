@@ -1,7 +1,10 @@
 import React from 'react';
-import { Coins, Star, Users, Plus, Settings, AlertCircle, Loader2 } from 'lucide-react';
+import { Coins, Star, Users, Plus, Settings } from 'lucide-react';
+import { Link } from 'react-router-dom';
 import HorseCard from '../components/HorseCard';
 import { FantasyTabs } from '../components/FantasyTabs';
+import { SkeletonHorseCard } from '@/components/ui/SkeletonCard';
+import { ErrorCard } from '@/components/ui/ErrorCard';
 import { useHorses } from '../hooks/api/useHorses';
 import { useProfile } from '../hooks/useAuth';
 
@@ -77,14 +80,13 @@ const StableView = () => {
     })) ?? [];
 
   const renderHorseList = (category: string) => {
-    // Loading state
+    // Loading state — shape-matched skeleton grid
     if (isLoading) {
       return (
-        <div className="flex items-center justify-center p-12">
-          <div className="text-center space-y-3">
-            <Loader2 className="w-8 h-8 text-[rgb(37,99,235)] animate-spin mx-auto" />
-            <p className="text-sm text-[rgb(148,163,184)]">Loading your stable…</p>
-          </div>
+        <div className="grid grid-cols-2 gap-4 p-4" aria-label="Loading horses">
+          {[...Array(4)].map((_, i) => (
+            <SkeletonHorseCard key={i} />
+          ))}
         </div>
       );
     }
@@ -92,18 +94,11 @@ const StableView = () => {
     // Error state
     if (isError) {
       return (
-        <div className="flex items-center justify-center p-12">
-          <div className="text-center space-y-4 max-w-md">
-            <AlertCircle className="w-12 h-12 text-red-400 mx-auto" />
-            <h3 className="text-lg font-semibold text-[rgb(220,235,255)]">Unable to Load Horses</h3>
-            <p className="text-sm text-[rgb(148,163,184)]">
-              {error?.message || 'Failed to fetch horses. Please check your connection.'}
-            </p>
-            <button onClick={() => refetch()} className="btn-cobalt">
-              Try Again
-            </button>
-          </div>
-        </div>
+        <ErrorCard
+          title="Unable to Load Horses"
+          message={error?.message || 'Failed to fetch horses. Please check your connection.'}
+          onRetry={() => refetch()}
+        />
       );
     }
 
@@ -120,17 +115,31 @@ const StableView = () => {
 
     // Empty state
     if (!filtered.length) {
+      const isAll = category === 'all';
       return (
         <div className="flex items-center justify-center p-12">
-          <div className="text-center space-y-3">
-            <Star className="w-12 h-12 text-[rgb(37,99,235)] opacity-40 mx-auto" />
-            <p className="text-sm text-[rgb(148,163,184)]">No horses in this category</p>
-            <button
-              onClick={() => refetch()}
-              className="text-xs text-[rgb(212,168,67)] underline hover:text-white transition-colors"
-            >
-              Refresh List
-            </button>
+          <div className="text-center space-y-4 max-w-sm">
+            <Star
+              className="w-12 h-12 mx-auto opacity-30"
+              style={{ color: 'var(--celestial-primary)' }}
+            />
+            <h3 className="text-base font-semibold" style={{ color: 'var(--text-primary)' }}>
+              {isAll ? 'Your stable is empty' : `No ${category} yet`}
+            </h3>
+            <p className="text-sm" style={{ color: 'var(--text-muted)' }}>
+              {isAll
+                ? 'Breed or purchase your first horse to get started.'
+                : `You have no horses in this category yet.`}
+            </p>
+            {isAll && (
+              <Link
+                to="/breeding"
+                className="inline-block px-4 py-2 rounded-lg text-sm font-medium text-white transition-opacity hover:opacity-85"
+                style={{ background: 'var(--celestial-primary)' }}
+              >
+                Go to Breeding
+              </Link>
+            )}
           </div>
         </div>
       );
