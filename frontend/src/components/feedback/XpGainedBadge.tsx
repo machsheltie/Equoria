@@ -132,7 +132,7 @@ const XpGainedBadge = memo(function XpGainedBadge({
         rounded-full shadow-lg
         animate-scale-in animate-pulse
         pointer-events-none
-        z-10
+        z-[var(--z-raised)]
       `}
       role="status"
       aria-live="polite"

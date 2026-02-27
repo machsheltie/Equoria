@@ -59,7 +59,7 @@ const LoginPage: React.FC = () => {
       <div className="absolute inset-0 bg-black/30 pointer-events-none" />
 
       {/* Content — sits above overlay */}
-      <div className="relative z-10 w-full max-w-sm px-4 flex flex-col items-center gap-8">
+      <div className="relative z-[var(--z-raised)] w-full max-w-sm px-4 flex flex-col items-center gap-8">
         {/* Title */}
         <div className="text-center select-none">
           <h1 className="fantasy-title text-5xl tracking-widest">Equoria</h1>

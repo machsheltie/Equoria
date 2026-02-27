@@ -353,6 +353,24 @@
 }
 
 /* ─────────────────────────────────────────────────────────────────────────── */
+/*  ONBOARDING SPOTLIGHT                                                        */
+/* ─────────────────────────────────────────────────────────────────────────── */
+
+@keyframes onboarding-ring-pulse {
+  0%,
+  100% {
+    box-shadow:
+      0 0 0 3px var(--celestial-primary),
+      0 0 12px 6px rgba(var(--electric-blue-500-rgb, 99, 179, 237), 0.4);
+  }
+  50% {
+    box-shadow:
+      0 0 0 6px var(--celestial-primary),
+      0 0 24px 12px rgba(var(--electric-blue-500-rgb, 99, 179, 237), 0.2);
+  }
+}
+
+/* ─────────────────────────────────────────────────────────────────────────── */
 /*  BACKWARD-COMPAT ALIASES (bridges index.css legacy tokens → UX spec names) */
 /*  Remove after full migration to UX spec tokens is complete.                */
 /* ─────────────────────────────────────────────────────────────────────────── */

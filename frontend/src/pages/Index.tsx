@@ -37,7 +37,7 @@ const Index = () => {
     <div className="min-h-screen bg-background">
       {/* Header */}
       <header
-        className="sticky top-0 z-20 backdrop-blur-sm border-b"
+        className="sticky top-0 z-[var(--z-raised)] backdrop-blur-sm border-b"
         style={{
           background: 'var(--glass-surface-heavy-bg)',
           borderColor: 'var(--border-default)',

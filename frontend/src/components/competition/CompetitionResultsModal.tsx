@@ -561,7 +561,7 @@ const CompetitionResultsModal = memo(function CompetitionResultsModal({
       return (
         <div className="overflow-x-auto">
           <table className="min-w-full" role="table">
-            <thead className="sticky top-0 bg-[rgba(15,35,70,0.5)] z-10">
+            <thead className="sticky top-0 bg-[rgba(15,35,70,0.5)] z-[var(--z-raised)]">
               <tr>
                 <th
                   scope="col"
@@ -622,7 +622,7 @@ const CompetitionResultsModal = memo(function CompetitionResultsModal({
     return (
       <div className="overflow-x-auto" data-testid="results-table">
         <table className="min-w-full divide-y divide-[rgba(37,99,235,0.2)]" role="table">
-          <thead className="sticky top-0 bg-[rgba(15,35,70,0.5)] z-10 shadow-sm">
+          <thead className="sticky top-0 bg-[rgba(15,35,70,0.5)] z-[var(--z-raised)] shadow-sm">
             <tr>
               <th scope="col" className="px-4 py-3 text-left text-xs uppercase tracking-wider">
                 <SortHeader
@@ -766,7 +766,7 @@ const CompetitionResultsModal = memo(function CompetitionResultsModal({
 
   const modalContent = (
     <div
-      className="fixed inset-0 bg-black/50 flex items-center justify-center z-50 p-4"
+      className="fixed inset-0 bg-black/50 flex items-center justify-center z-[var(--z-modal)] p-4"
       onClick={handleBackdropClick}
       data-testid="modal-backdrop"
     >

@@ -162,6 +162,7 @@ const HorsesHealthTab: React.FC<HorsesHealthTabProps> = ({
                             : 'bg-white/5 border-white/10 text-white/70 hover:bg-white/10 hover:border-white/20 disabled:opacity-50 disabled:cursor-not-allowed'
                         }`}
                         data-testid={`book-btn-${horse.id}-${service.id}`}
+                        data-onboarding-target="vet-book-button"
                       >
                         <span className="flex items-center gap-2">
                           {isThisBooked && (

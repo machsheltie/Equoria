@@ -90,7 +90,7 @@ const MainNavigation: React.FC = () => {
       <nav
         role="navigation"
         aria-label="Main navigation"
-        className="sticky top-0 z-50 w-full border-b border-white/10 bg-black/20 backdrop-blur-md supports-[backdrop-filter]:bg-black/20"
+        className="sticky top-0 z-[var(--z-modal)] w-full border-b border-white/10 bg-black/20 backdrop-blur-md supports-[backdrop-filter]:bg-black/20"
         data-testid="main-navigation"
       >
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
@@ -198,7 +198,7 @@ const MainNavigation: React.FC = () => {
                 {isProfileDropdownOpen && (
                   <div
                     role="menu"
-                    className="absolute right-0 mt-2 w-56 rounded-xl border border-white/10 bg-black/90 backdrop-blur-xl shadow-2xl py-1 z-50 animate-in fade-in slide-in-from-top-2 duration-200"
+                    className="absolute right-0 mt-2 w-56 rounded-xl border border-white/10 bg-black/90 backdrop-blur-xl shadow-2xl py-1 z-[var(--z-modal)] animate-in fade-in slide-in-from-top-2 duration-200"
                   >
                     <div className="px-4 py-3 border-b border-white/10 mb-1">
                       <p className="text-sm text-white font-medium">{user.name}</p>

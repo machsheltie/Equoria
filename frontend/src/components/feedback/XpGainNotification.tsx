@@ -188,7 +188,7 @@ const XpGainNotification = memo(function XpGainNotification({
       data-testid="xp-gain-notification"
       className={`
         fixed ${positionClasses}
-        z-50
+        z-[var(--z-modal)]
         w-72
         glass-panel
         shadow-lg rounded-lg

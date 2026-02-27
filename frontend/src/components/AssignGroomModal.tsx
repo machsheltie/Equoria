@@ -133,7 +133,7 @@ const AssignGroomModal: React.FC<AssignGroomModalProps> = ({
 
   return (
     <div
-      className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4"
+      className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-[var(--z-modal)] p-4"
       onClick={onClose}
       data-testid="assign-groom-modal"
     >

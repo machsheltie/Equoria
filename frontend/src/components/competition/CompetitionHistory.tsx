@@ -518,7 +518,7 @@ const FilterControls = memo(
     }, []);
 
     return (
-      <div className="glass-panel rounded-lg p-4 mb-4 sticky top-0 z-10">
+      <div className="glass-panel rounded-lg p-4 mb-4 sticky top-0 z-[var(--z-raised)]">
         <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
           {/* Discipline Filter */}
           <div>

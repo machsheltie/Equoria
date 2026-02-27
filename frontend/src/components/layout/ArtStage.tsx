@@ -66,7 +66,9 @@ export const ArtStage = React.forwardRef<HTMLDivElement, ArtStageProps>(
         <div className="absolute inset-0 pointer-events-none bg-[url('/assets/noise.png')] opacity-[0.03] mix-blend-overlay"></div>
 
         {/* Content Layer (if any children are passed) */}
-        <div className="relative z-10 w-full h-full flex flex-col justify-end p-6">{children}</div>
+        <div className="relative z-[var(--z-raised)] w-full h-full flex flex-col justify-end p-6">
+          {children}
+        </div>
       </div>
     );
   }

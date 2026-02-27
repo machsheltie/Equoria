@@ -81,7 +81,7 @@ const LocationCard: React.FC<LocationCardProps> = ({
 
       {/* Icon centered in the upper painting area */}
       <div
-        className="relative z-10 flex flex-1 items-center justify-center pt-6 pb-3 text-5xl select-none"
+        className="relative z-[var(--z-raised)] flex flex-1 items-center justify-center pt-6 pb-3 text-5xl select-none"
         aria-hidden="true"
       >
         {icon}
@@ -91,7 +91,7 @@ const LocationCard: React.FC<LocationCardProps> = ({
       {/* No additional backdrop-filter here — the card wrapper already provides
           the single allowed blur layer per the one-blur-layer rule. */}
       <div
-        className="relative z-10 px-4 pb-4 pt-3"
+        className="relative z-[var(--z-raised)] px-4 pb-4 pt-3"
         style={{ background: 'var(--glass-surface-heavy-bg)' }}
       >
         {/* Location name */}

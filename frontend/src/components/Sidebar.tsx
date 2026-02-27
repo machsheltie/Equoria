@@ -23,11 +23,14 @@ const Sidebar = ({ isOpen, onClose }: SidebarProps) => {
   return (
     <>
       {/* Backdrop */}
-      <div className="fixed inset-0 bg-black/60 z-40 lg:hidden" onClick={onClose} />
+      <div
+        className="fixed inset-0 bg-black/60 z-[var(--z-dropdown)] lg:hidden"
+        onClick={onClose}
+      />
 
       {/* Sidebar */}
       <div
-        className="fixed left-0 top-0 h-full w-3/4 max-w-sm z-50 transform transition-transform duration-300 scroll-entrance"
+        className="fixed left-0 top-0 h-full w-3/4 max-w-sm z-[var(--z-modal)] transform transition-transform duration-300 scroll-entrance"
         style={{
           background: 'rgba(10,22,40,0.97)',
           backdropFilter: 'blur(12px)',

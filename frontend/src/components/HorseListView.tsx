@@ -795,7 +795,7 @@ const HorseListView: React.FC<HorseListViewProps> = ({ userId: _userId, horses: 
                     onClick={() => setCurrentPage(page)}
                     className={`relative inline-flex items-center px-4 py-2 border text-sm font-medium ${
                       page === currentPage
-                        ? 'z-10 bg-[rgba(37,99,235,0.1)] border-blue-500/30 text-blue-400'
+                        ? 'z-[var(--z-raised)] bg-[rgba(37,99,235,0.1)] border-blue-500/30 text-blue-400'
                         : 'bg-[rgba(15,35,70,0.4)] border-[rgba(37,99,235,0.3)] text-[rgb(148,163,184)] hover:bg-[rgba(15,35,70,0.6)]'
                     }`}
                   >

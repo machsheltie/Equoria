@@ -112,7 +112,7 @@ const XPProgressBar = ({ horseId }: XPProgressBarProps) => {
 
         {/* Tooltip */}
         {showTooltip && (
-          <div className="absolute left-1/2 top-full z-10 mt-2 w-64 -translate-x-1/2 rounded-lg border border-[rgba(37,99,235,0.3)] bg-[rgba(15,35,70,0.5)] p-3 shadow-lg">
+          <div className="absolute left-1/2 top-full z-[var(--z-raised)] mt-2 w-64 -translate-x-1/2 rounded-lg border border-[rgba(37,99,235,0.3)] bg-[rgba(15,35,70,0.5)] p-3 shadow-lg">
             <div className="mb-2 text-center text-xs font-semibold uppercase tracking-wide text-[rgb(148,163,184)]">
               XP Breakdown
             </div>

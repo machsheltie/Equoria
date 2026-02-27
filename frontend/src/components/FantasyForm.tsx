@@ -57,7 +57,7 @@ export const FantasyInput = ({ label, error, tooltip, className, ...props }: Fan
 
         {/* Tooltip */}
         {showTooltip && tooltip && (
-          <div className="absolute top-full left-0 mt-2 z-20 animate-fade-in">
+          <div className="absolute top-full left-0 mt-2 z-[var(--z-dropdown)] animate-fade-in">
             <div className="glass-panel text-[rgb(220,235,255)] px-3 py-2 rounded-lg text-sm fantasy-body shadow-xl max-w-xs border border-[rgba(37,99,235,0.3)]">
               {tooltip}
               <div className="absolute bottom-full left-4 border-4 border-transparent border-b-[rgba(15,35,70,0.9)]" />
@@ -161,7 +161,7 @@ export const FantasySelect = ({
         <div className="absolute inset-1 border border-burnished-gold/30 rounded-md pointer-events-none" />
 
         {isOpen && (
-          <div className="absolute top-full left-0 right-0 mt-1 glass-panel border border-[rgba(37,99,235,0.3)] rounded-lg shadow-xl z-10 max-h-40 overflow-y-auto">
+          <div className="absolute top-full left-0 right-0 mt-1 glass-panel border border-[rgba(37,99,235,0.3)] rounded-lg shadow-xl z-[var(--z-raised)] max-h-40 overflow-y-auto">
             {options.map((option) => (
               <button
                 key={option.value}

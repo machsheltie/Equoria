@@ -12,7 +12,7 @@ const DashboardLayout: React.FC = () => {
 
       <MainNavigation />
 
-      <main className="relative z-10 container mx-auto px-4 py-8 md:px-6 lg:px-8 max-w-7xl animate-fade-in-up">
+      <main className="relative z-[var(--z-raised)] container mx-auto px-4 py-8 md:px-6 lg:px-8 max-w-7xl animate-fade-in-up">
         <Outlet />
       </main>
     </div>

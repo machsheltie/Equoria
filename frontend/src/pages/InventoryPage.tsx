@@ -65,7 +65,7 @@ const HorsePicker: React.FC<HorsePickerProps> = ({ itemName, onConfirm, onClose,
 
   return (
     <div
-      className="fixed inset-0 z-50 flex items-center justify-center bg-black/60 p-4"
+      className="fixed inset-0 z-[var(--z-modal)] flex items-center justify-center bg-black/60 p-4"
       role="dialog"
       aria-modal="true"
       aria-label={`Equip ${itemName}`}
@@ -202,6 +202,7 @@ const InventoryItemCard: React.FC<ItemCardProps> = ({
         <button
           type="button"
           onClick={() => onEquipRequest(item)}
+          data-onboarding-target="inventory-equip-button"
           className="w-full py-1.5 text-xs font-medium rounded-lg bg-violet-600/10 border border-violet-500/20 text-violet-400/80 hover:bg-violet-600/20 hover:text-violet-300 transition-colors"
         >
           Equip

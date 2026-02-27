@@ -189,7 +189,7 @@ const HorseLevelBadge = memo(function HorseLevelBadge({
         <span
           data-testid="level-tooltip"
           role="tooltip"
-          className="absolute left-1/2 top-full z-10 mt-1 w-48 -translate-x-1/2 rounded-md border border-[rgba(37,99,235,0.3)] bg-[rgba(15,35,70,0.5)] p-2 text-left text-xs font-normal text-[rgb(220,235,255)] shadow-lg"
+          className="absolute left-1/2 top-full z-[var(--z-raised)] mt-1 w-48 -translate-x-1/2 rounded-md border border-[rgba(37,99,235,0.3)] bg-[rgba(15,35,70,0.5)] p-2 text-left text-xs font-normal text-[rgb(220,235,255)] shadow-lg"
         >
           <span className="block font-semibold text-[rgb(220,235,255)]">
             {tierInfo.tierName} Tier

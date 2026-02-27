@@ -82,7 +82,7 @@ const ConformationScoreCard = ({
               className="h-4 w-4 text-[rgb(148,163,184)] hover:text-[rgb(220,235,255)]"
               aria-hidden="true"
             />
-            <div className="absolute left-0 top-6 w-64 p-3 bg-[rgba(10,22,40,0.95)] text-[rgb(220,235,255)] text-xs rounded-lg shadow-lg opacity-0 invisible group-hover:opacity-100 group-hover:visible transition-all duration-200 z-10 border border-[rgba(37,99,235,0.3)]">
+            <div className="absolute left-0 top-6 w-64 p-3 bg-[rgba(10,22,40,0.95)] text-[rgb(220,235,255)] text-xs rounded-lg shadow-lg opacity-0 invisible group-hover:opacity-100 group-hover:visible transition-all duration-200 z-[var(--z-raised)] border border-[rgba(37,99,235,0.3)]">
               <p>{description}</p>
               <div className="absolute -top-1 left-4 w-2 h-2 bg-[rgba(10,22,40,0.95)] transform rotate-45" />
             </div>

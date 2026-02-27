@@ -245,7 +245,7 @@ const TraitModifierTooltip = ({
         <div
           id={fullTooltipId}
           role="tooltip"
-          className="absolute z-50 w-64 p-3 mt-2 glass-panel rounded-lg shadow-lg border border-[rgba(37,99,235,0.3)]"
+          className="absolute z-[var(--z-modal)] w-64 p-3 mt-2 glass-panel rounded-lg shadow-lg border border-[rgba(37,99,235,0.3)]"
           onMouseEnter={handleTooltipMouseEnter}
           onMouseLeave={handleTooltipMouseLeave}
         >

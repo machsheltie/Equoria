@@ -493,6 +493,7 @@ const FeedShopPage: React.FC = () => {
                 : 'text-white/40 hover:text-white/70'
             }`}
             data-testid="shop-tab"
+            data-onboarding-target="feed-shop-purchase-button"
           >
             <ShoppingCart className="w-4 h-4" />
             Shop

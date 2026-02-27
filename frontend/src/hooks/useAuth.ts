@@ -34,6 +34,8 @@ export interface User {
   role?: UserRole;
   /** Whether the player has completed the new-user onboarding wizard. Undefined for legacy accounts. */
   completedOnboarding?: boolean;
+  /** Current step in the 10-step onboarding spotlight tour (0 = not started, 1-10 = in progress, 10 = complete). */
+  onboardingStep?: number;
 }
 
 /**

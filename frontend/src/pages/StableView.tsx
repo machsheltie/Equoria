@@ -202,7 +202,7 @@ const StableView = () => {
     <div className="min-h-screen flex flex-col">
       {/* Player Info Bar */}
       <div
-        className="sticky top-0 z-20 backdrop-blur-sm border-b"
+        className="sticky top-0 z-[var(--z-raised)] backdrop-blur-sm border-b"
         style={{
           background: 'var(--glass-surface-heavy-bg)',
           borderColor: 'var(--border-default)',
@@ -279,7 +279,7 @@ const StableView = () => {
       </div>
 
       {/* Action buttons */}
-      <div className="fixed bottom-6 right-6 space-y-3 z-30">
+      <div className="fixed bottom-6 right-6 space-y-3 z-[30]">
         <button
           className="w-14 h-14 rounded-full flex items-center justify-center shadow-lg hover:scale-110 transition-transform magical-glow"
           style={{

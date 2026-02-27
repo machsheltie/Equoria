@@ -387,7 +387,7 @@ const HorseDetailPage: React.FC = () => {
       {/* Rider Picker Modal (Story 15-5) */}
       {showRiderPicker && (
         <div
-          className="fixed inset-0 bg-black/70 backdrop-blur-sm flex items-center justify-center p-4 z-50"
+          className="fixed inset-0 bg-black/70 backdrop-blur-sm flex items-center justify-center p-4 z-[var(--z-modal)]"
           onClick={() => setShowRiderPicker(false)}
           data-testid="rider-picker-modal"
         >
@@ -460,7 +460,7 @@ const HorseDetailPage: React.FC = () => {
 
       {/* Story 12-5 — Sticky Bottom Action Bar */}
       <div
-        className="fixed bottom-0 left-0 right-0 z-40 bg-[rgba(10,22,40,0.95)] border-t border-burnished-gold/40 backdrop-blur-sm"
+        className="fixed bottom-0 left-0 right-0 z-[var(--z-dropdown)] bg-[rgba(10,22,40,0.95)] border-t border-burnished-gold/40 backdrop-blur-sm"
         data-testid="horse-action-bar"
       >
         <div className="max-w-7xl mx-auto px-4 py-3 flex items-center gap-3 overflow-x-auto">

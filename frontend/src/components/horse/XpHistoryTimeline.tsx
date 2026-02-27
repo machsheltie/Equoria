@@ -81,7 +81,7 @@ const TimelineSkeleton = memo(() => (
     {/* Timeline connector column */}
     <div className="relative flex flex-col items-center" aria-hidden="true">
       <div className="w-0.5 flex-1 bg-[rgba(37,99,235,0.3)]" />
-      <div className="w-3 h-3 rounded-full bg-[rgba(15,35,70,0.5)] z-10" />
+      <div className="w-3 h-3 rounded-full bg-[rgba(15,35,70,0.5)] z-[var(--z-raised)]" />
       <div className="w-0.5 flex-1 bg-[rgba(37,99,235,0.3)]" />
     </div>
     {/* Skeleton card */}

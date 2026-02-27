@@ -209,7 +209,7 @@ const TrainingSessionModal = ({ horse, onClose, onCompleted }: TrainingSessionMo
   };
 
   return (
-    <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/60 p-4">
+    <div className="fixed inset-0 z-[var(--z-modal)] flex items-center justify-center bg-black/60 p-4">
       <div className="w-full max-w-xl rounded-xl glass-panel p-6 shadow-xl">
         {/* Show training results if available */}
         {trainingResult ? (

@@ -245,7 +245,7 @@ const PrizeNotificationModal = memo(function PrizeNotificationModal({
 
   const modalContent = (
     <div
-      className="fixed inset-0 bg-black/60 flex items-center justify-center z-50 p-4"
+      className="fixed inset-0 bg-black/60 flex items-center justify-center z-[var(--z-modal)] p-4"
       onClick={handleBackdropClick}
       data-testid="modal-backdrop"
     >

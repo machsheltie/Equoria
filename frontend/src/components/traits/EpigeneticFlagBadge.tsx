@@ -71,7 +71,7 @@ const EpigeneticFlagBadge: React.FC<EpigeneticFlagBadgeProps> = ({
 
       {/* Tooltip */}
       {showTooltip && isHovered && (
-        <div className="absolute z-50 left-1/2 -translate-x-1/2 bottom-full mb-2 w-64">
+        <div className="absolute z-[var(--z-modal)] left-1/2 -translate-x-1/2 bottom-full mb-2 w-64">
           <div className="bg-[rgba(15,35,70,0.95)] text-[rgb(220,235,255)] rounded-lg px-3 py-2 shadow-xl border border-[rgba(37,99,235,0.3)]">
             <p className={`${classes.tooltip} leading-relaxed`}>{flagDisplay.tooltip}</p>
             {/* Tooltip arrow */}

@@ -180,7 +180,7 @@ const CompetitionDetailModal = memo(function CompetitionDetailModal({
 
   const modalContent = (
     <div
-      className="fixed inset-0 bg-black/50 flex items-center justify-center z-50 p-4"
+      className="fixed inset-0 bg-black/50 flex items-center justify-center z-[var(--z-modal)] p-4"
       onClick={handleBackdropClick}
       data-testid="modal-backdrop"
     >
@@ -408,6 +408,7 @@ const CompetitionDetailModal = memo(function CompetitionDetailModal({
             className="px-6 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors disabled:opacity-50 disabled:cursor-not-allowed flex items-center"
             aria-busy={isSubmitting}
             data-testid="enter-button"
+            data-onboarding-target="competition-enter-button"
           >
             {isSubmitting ? (
               <>

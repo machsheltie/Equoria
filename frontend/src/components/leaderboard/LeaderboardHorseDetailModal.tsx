@@ -280,7 +280,7 @@ const LeaderboardHorseDetailModal = ({
     <div data-testid="horse-detail-modal">
       {/* Backdrop */}
       <div
-        className="fixed inset-0 z-50 flex items-center justify-center bg-black/70"
+        className="fixed inset-0 z-[var(--z-modal)] flex items-center justify-center bg-black/70"
         data-testid="modal-backdrop"
         onClick={handleBackdropClick}
       >

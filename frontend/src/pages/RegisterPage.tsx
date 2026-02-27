@@ -107,7 +107,7 @@ const RegisterPage: React.FC = () => {
       <div className="absolute inset-0 bg-black/40 pointer-events-none" />
 
       {/* Content */}
-      <div className="relative z-10 w-full max-w-sm px-4 flex flex-col items-center gap-6">
+      <div className="relative z-[var(--z-raised)] w-full max-w-sm px-4 flex flex-col items-center gap-6">
         {/* Title — h1 required by a11y tests */}
         <div className="text-center select-none">
           <h1 className="fantasy-title text-5xl tracking-widest">Equoria</h1>

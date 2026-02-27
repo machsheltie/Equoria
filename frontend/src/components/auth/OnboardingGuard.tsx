@@ -2,10 +2,12 @@
  * OnboardingGuard
  *
  * Redirects newly registered players to the /onboarding wizard when
- * their User.completedOnboarding flag is explicitly `false`.
+ * their User.completedOnboarding flag is explicitly `false` AND they
+ * haven't yet started the 10-step spotlight tour (onboardingStep === 0).
  *
  * Rules:
- *   - Only redirects if user.completedOnboarding === false (explicit false)
+ *   - Only redirects if completedOnboarding === false AND onboardingStep === 0
+ *   - Players mid-tour (onboardingStep >= 1) can navigate freely
  *   - Legacy accounts with undefined completedOnboarding are NOT redirected
  *   - Already on /onboarding → no redirect (avoids infinite loop)
  *   - Auth still loading → no redirect (wait for profile)
@@ -25,8 +27,9 @@ const OnboardingGuard: React.FC = () => {
     if (!user) return; // Not authenticated — ProtectedRoute handles login redirect
     if (location.pathname === '/onboarding') return; // Already on onboarding
 
-    // Only redirect when completedOnboarding is explicitly false
-    if (user.completedOnboarding === false) {
+    // Only redirect when completedOnboarding is explicitly false AND tour not yet started
+    // (onboardingStep >= 1 means player is mid-tour; let them navigate freely)
+    if (user.completedOnboarding === false && (user.onboardingStep ?? 0) === 0) {
       navigate('/onboarding', { replace: true });
     }
   }, [user, isLoading, location.pathname, navigate]);

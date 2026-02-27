@@ -1,14 +1,14 @@
 /**
  * OnboardingPage — New Player Onboarding Wizard (Epic 16 — Story 16-2)
  *
- * 3-step wizard shown to new players on first login.
- * On completion, calls POST /api/auth/complete-onboarding and
- * redirects to the home page.
+ * 3-step intro wizard shown to new players on first login.
+ * On completion, calls POST /api/auth/advance-onboarding (step 0 → 1)
+ * and redirects to /bank where the 10-step OnboardingSpotlight tour begins.
  *
  * Steps:
  *   1. Welcome — explain Equoria
  *   2. Starter kit — confirm starting resources (1 000 gold, stable slot)
- *   3. Ready — summary + CTA to start playing
+ *   3. Ready — summary + CTA to start guided tour
  *
  * Uses Celestial Night theme.
  */
@@ -153,17 +153,18 @@ const OnboardingPage: React.FC = () => {
   const [currentStep, setCurrentStep] = useState(0); // 0-indexed
 
   const completeMutation = useMutation({
-    mutationFn: () => authApi.completeOnboarding(),
+    // Advance step 0 → 1; OnboardingSpotlight picks up the tour from /bank
+    mutationFn: () => authApi.advanceOnboarding(),
     onSuccess: () => {
-      // Invalidate the profile query so ProtectedRoute re-reads completedOnboarding
+      // Refresh profile so OnboardingSpotlight reads onboardingStep: 1
       queryClient.invalidateQueries({ queryKey: ['profile'] });
-      toast.success("Welcome to Equoria! Let's get started.");
-      navigate('/', { replace: true });
+      toast.success('Welcome to Equoria! Starting your guided tour…');
+      navigate('/bank', { replace: true });
     },
     onError: () => {
-      // Even on error, allow the user to proceed — onboarding flag is best-effort
+      // On error, navigate to bank anyway — spotlight re-syncs from profile
       toast.info('Starting your adventure…');
-      navigate('/', { replace: true });
+      navigate('/bank', { replace: true });
     },
   });
 

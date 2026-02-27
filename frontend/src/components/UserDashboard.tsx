@@ -109,7 +109,7 @@ const UserDashboard: React.FC<UserDashboardProps> = ({
       <div className="flex items-center justify-center min-h-screen text-starlight-white">
         <div className="flex flex-col items-center">
           <Orb size="md" color="purple" className="relative" />
-          <div className="absolute z-10 flex flex-col items-center">
+          <div className="absolute z-[var(--z-raised)] flex flex-col items-center">
             <RefreshCw className="w-8 h-8 animate-spin mb-4 text-celestial-gold" />
             <p className="text-lg font-heading tracking-widest animate-pulse">
               Summoning Dashboard...
@@ -140,7 +140,7 @@ const UserDashboard: React.FC<UserDashboardProps> = ({
       <Orb size="xl" color="blue" blur="lg" className="-top-20 -right-20 opacity-30" />
       <Orb size="lg" color="gold" blur="md" className="top-40 -left-20 opacity-20" />
 
-      <div className="max-w-7xl mx-auto space-y-8 relative z-10">
+      <div className="max-w-7xl mx-auto space-y-8 relative z-[var(--z-raised)]">
         {/* Header Section */}
         <div className="flex flex-col lg:flex-row lg:items-end lg:justify-between mb-8 pb-6 border-b border-white/10">
           <div>
@@ -185,7 +185,7 @@ const UserDashboard: React.FC<UserDashboardProps> = ({
               <div className="absolute inset-0 bg-gradient-to-r from-deep-space via-deep-space/90 to-transparent" />
             </div>
 
-            <div className="relative z-10 p-6 space-y-6">
+            <div className="relative z-[var(--z-raised)] p-6 space-y-6">
               <div className="flex items-center justify-between">
                 <CardTitle className="flex items-center text-xl">
                   <TrendingUp className="w-5 h-5 mr-3 text-celestial-gold" /> Ascension Progress
@@ -278,7 +278,7 @@ const UserDashboard: React.FC<UserDashboardProps> = ({
                 className="w-full group relative flex items-center justify-between p-4 rounded-lg bg-white/5 hover:bg-white/10 border border-white/5 hover:border-white/20 transition-all duration-300 overflow-hidden"
               >
                 <div className="absolute inset-0 bg-gradient-to-r from-transparent via-white/5 to-transparent translate-x-[-100%] group-hover:translate-x-[100%] transition-transform duration-700" />
-                <div className="flex items-center relative z-10">
+                <div className="flex items-center relative z-[var(--z-raised)]">
                   <div
                     className={`p-3 rounded-md bg-black/40 ${action.color} ring-1 ring-white/10 group-hover:scale-110 transition-transform`}
                   >
@@ -340,7 +340,7 @@ const UserDashboard: React.FC<UserDashboardProps> = ({
                   <div className="absolute top-0 right-0 p-2 opacity-50">
                     <Sparkles className="w-12 h-12 text-indigo-500/20" />
                   </div>
-                  <div className="flex-1 relative z-10">
+                  <div className="flex-1 relative z-[var(--z-raised)]">
                     <h3 className="font-heading font-bold text-indigo-300 mb-1">Weekly Coffers</h3>
                     <p className="text-sm text-indigo-100/80 mb-2">
                       Expenses:{' '}

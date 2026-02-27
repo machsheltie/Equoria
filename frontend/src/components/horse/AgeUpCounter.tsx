@@ -110,7 +110,7 @@ const AgeUpCounter = ({ horseId }: AgeUpCounterProps) => {
             {ageData.currentAge.years} years, {ageData.currentAge.months} months
           </p>
           {showAgeTooltip && (
-            <div className="absolute z-10 mt-1 rounded-md bg-[rgba(10,22,40,0.95)] px-3 py-2 text-xs text-[rgb(220,235,255)] shadow-lg border border-[rgba(37,99,235,0.3)]">
+            <div className="absolute z-[var(--z-raised)] mt-1 rounded-md bg-[rgba(10,22,40,0.95)] px-3 py-2 text-xs text-[rgb(220,235,255)] shadow-lg border border-[rgba(37,99,235,0.3)]">
               Current age in game
             </div>
           )}
@@ -130,7 +130,7 @@ const AgeUpCounter = ({ horseId }: AgeUpCounterProps) => {
             {nextMilestone.name} ({nextMilestone.ageYears} years)
           </p>
           {showMilestoneTooltip && (
-            <div className="absolute z-10 mt-1 rounded-md bg-[rgba(10,22,40,0.95)] px-3 py-2 text-xs text-[rgb(220,235,255)] shadow-lg border border-[rgba(37,99,235,0.3)]">
+            <div className="absolute z-[var(--z-raised)] mt-1 rounded-md bg-[rgba(10,22,40,0.95)] px-3 py-2 text-xs text-[rgb(220,235,255)] shadow-lg border border-[rgba(37,99,235,0.3)]">
               Next age milestone
             </div>
           )}
@@ -174,7 +174,7 @@ const AgeUpCounter = ({ horseId }: AgeUpCounterProps) => {
           >
             <p className="text-sm text-[rgb(148,163,184)]">Expected Stat Changes</p>
             {showStatTooltip && (
-              <div className="absolute z-10 mt-1 rounded-md bg-[rgba(10,22,40,0.95)] px-3 py-2 text-xs text-[rgb(220,235,255)] shadow-lg border border-[rgba(37,99,235,0.3)] whitespace-nowrap">
+              <div className="absolute z-[var(--z-raised)] mt-1 rounded-md bg-[rgba(10,22,40,0.95)] px-3 py-2 text-xs text-[rgb(220,235,255)] shadow-lg border border-[rgba(37,99,235,0.3)] whitespace-nowrap">
                 Stats will change when horse ages up
               </div>
             )}

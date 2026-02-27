@@ -59,7 +59,7 @@ const FantasyModal = ({
           {/* Close button */}
           <button
             onClick={onClose}
-            className="absolute top-4 right-4 w-9 h-9 rounded-full flex items-center justify-center hover:scale-110 transition-transform z-20"
+            className="absolute top-4 right-4 w-9 h-9 rounded-full flex items-center justify-center hover:scale-110 transition-transform z-[var(--z-sticky)]"
             style={{
               background: 'rgba(37,99,235,0.2)',
               border: '1px solid rgba(37,99,235,0.4)',
@@ -69,7 +69,9 @@ const FantasyModal = ({
           </button>
 
           {/* Content area */}
-          <div className="relative z-10 max-h-[60vh] overflow-y-auto">{children}</div>
+          <div className="relative z-[var(--z-raised)] max-h-[60vh] overflow-y-auto">
+            {children}
+          </div>
         </div>
       </DialogContent>
     </Dialog>

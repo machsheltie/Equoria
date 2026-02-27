@@ -55,7 +55,7 @@ const QuickTrainModal = ({ isOpen, horses, onClose, onTrain }: QuickTrainModalPr
 
   return (
     <div
-      className="fixed inset-0 z-50 flex items-center justify-center bg-black/50"
+      className="fixed inset-0 z-[var(--z-modal)] flex items-center justify-center bg-black/50"
       data-testid="quick-train-modal"
       onClick={(e) => {
         if (e.target === e.currentTarget) onClose();

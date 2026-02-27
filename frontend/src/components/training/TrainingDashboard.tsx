@@ -128,6 +128,7 @@ const HorseCard = ({ horse, onTrainClick }: HorseCardProps): JSX.Element => {
         <button
           type="button"
           data-testid={`train-button-${horse.id}`}
+          data-onboarding-target="training-start-button"
           onClick={() => onTrainClick(horse)}
           className="mt-4 w-full rounded-md bg-blue-600 px-4 py-2 text-sm font-semibold text-white shadow hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-2"
         >

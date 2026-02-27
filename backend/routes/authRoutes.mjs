@@ -693,4 +693,10 @@ router.get('/verification-status', authenticateToken, authController.getVerifica
  */
 router.post('/complete-onboarding', authenticateToken, authController.completeOnboarding);
 
+/**
+ * POST /api/auth/advance-onboarding
+ * Increments the user's onboarding step. Sets completedOnboarding: true at step 10.
+ */
+router.post('/advance-onboarding', authenticateToken, authController.advanceOnboarding);
+
 export default router;

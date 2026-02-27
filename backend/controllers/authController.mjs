@@ -322,10 +322,12 @@ export const getProfile = async (req, res, next) => {
       throw new AppError('User not found', 404);
     }
 
-    // Extract completedOnboarding from settings and expose as a flat field
+    // Extract completedOnboarding and onboardingStep from settings and expose as flat fields
     const settings =
       typeof user.settings === 'object' && user.settings !== null ? user.settings : {};
     const completedOnboarding = settings.completedOnboarding === true;
+    const onboardingStep =
+      typeof settings.onboardingStep === 'number' ? settings.onboardingStep : 0;
 
     res.status(200).json({
       status: 'success',
@@ -339,6 +341,7 @@ export const getProfile = async (req, res, next) => {
           createdAt: user.createdAt,
           updatedAt: user.updatedAt,
           completedOnboarding,
+          onboardingStep,
         },
       },
     });
@@ -687,5 +690,60 @@ export const completeOnboarding = async (req, res, next) => {
       return next(error);
     }
     next(new AppError('Failed to complete onboarding.', 500));
+  }
+};
+
+/**
+ * POST /api/auth/advance-onboarding
+ * Increments the authenticated user's onboarding step.
+ * When the user reaches step 10, also sets completedOnboarding: true.
+ * Used by the OnboardingSpotlight component to drive the 10-step guided tour.
+ */
+export const advanceOnboarding = async (req, res, next) => {
+  try {
+    const userId = req.user.id;
+
+    const user = await prisma.user.findUnique({
+      where: { id: userId },
+      select: { settings: true },
+    });
+
+    if (!user) {
+      throw new AppError('User not found', 404);
+    }
+
+    const currentSettings =
+      typeof user.settings === 'object' && user.settings !== null ? user.settings : {};
+    const currentStep =
+      typeof currentSettings.onboardingStep === 'number' ? currentSettings.onboardingStep : 0;
+    const newStep = currentStep + 1;
+    const isComplete = newStep >= 10;
+
+    const updatedSettings = {
+      ...currentSettings,
+      onboardingStep: newStep,
+      ...(isComplete ? { completedOnboarding: true } : {}),
+    };
+
+    await prisma.user.update({
+      where: { id: userId },
+      data: { settings: updatedSettings },
+    });
+
+    logger.info(
+      `[authController.advanceOnboarding] User ${userId} advanced to step ${newStep}${isComplete ? ' (onboarding complete)' : ''}`,
+    );
+
+    res.status(200).json({
+      status: 'success',
+      message: isComplete ? 'Onboarding complete' : 'Onboarding step advanced',
+      data: { step: newStep, completed: isComplete },
+    });
+  } catch (error) {
+    logger.error('[authController.advanceOnboarding] Error:', error);
+    if (error instanceof AppError) {
+      return next(error);
+    }
+    next(new AppError('Failed to advance onboarding.', 500));
   }
 };

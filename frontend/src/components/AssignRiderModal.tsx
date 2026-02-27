@@ -60,7 +60,7 @@ const AssignRiderModal: React.FC<AssignRiderModalProps> = ({
 
   return (
     <div
-      className="fixed inset-0 bg-black/70 backdrop-blur-sm flex items-center justify-center p-4 z-50 animate-in fade-in duration-200"
+      className="fixed inset-0 bg-black/70 backdrop-blur-sm flex items-center justify-center p-4 z-[var(--z-modal)] animate-in fade-in duration-200"
       onClick={onClose}
       data-testid="assign-rider-modal"
     >

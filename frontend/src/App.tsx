@@ -8,6 +8,7 @@ import { AuthProvider } from './contexts/AuthContext';
 import { StarField } from '@/components/layout/StarField';
 import { ProtectedRoute } from '@/components/auth';
 import OnboardingGuard from '@/components/auth/OnboardingGuard';
+import OnboardingSpotlight from '@/components/onboarding/OnboardingSpotlight';
 import { initSentry, SentryErrorBoundary } from '@/lib/sentry';
 
 // Auth pages — lazy loaded
@@ -52,6 +53,8 @@ const App = () => (
           >
             {/* Redirects new users to /onboarding when completedOnboarding === false */}
             <OnboardingGuard />
+            {/* Guided 10-step spotlight tour — active when completedOnboarding === false && onboardingStep >= 1 */}
+            <OnboardingSpotlight />
             <Suspense fallback={<PageLoader />}>
               <Routes>
                 <Route path="/onboarding" element={<OnboardingPage />} />

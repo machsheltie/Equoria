@@ -150,6 +150,7 @@ const BankPage: React.FC = () => {
                   : 'bg-celestial-gold/20 border border-celestial-gold/40 text-celestial-gold hover:bg-celestial-gold/30'
               }`}
               data-testid="claim-button"
+              data-onboarding-target="bank-claim-button"
             >
               {claimed ? (
                 <>

@@ -193,9 +193,9 @@ const GroomCard = ({
 
       {/* Details Modal */}
       {showDetails && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center p-4">
+        <div className="fixed inset-0 z-[var(--z-modal)] flex items-center justify-center p-4">
           <div className="absolute inset-0 bg-black/60" onClick={() => setShowDetails(false)} />
-          <div className="glass-panel relative w-full max-w-md p-6 space-y-4 max-h-[80vh] overflow-y-auto z-10">
+          <div className="glass-panel relative w-full max-w-md p-6 space-y-4 max-h-[80vh] overflow-y-auto z-[var(--z-raised)]">
             {/* Modal header */}
             <div className="flex items-center justify-between mb-2">
               <h2 className="fantasy-header text-xl text-[rgb(212,168,67)]">

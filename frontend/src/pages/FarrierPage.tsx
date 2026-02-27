@@ -291,6 +291,7 @@ const ServicesTab: React.FC<ServicesTabProps> = ({
                     : 'bg-amber-600/10 border border-amber-500/20 text-amber-400/60 cursor-not-allowed'
                 }`}
                 title={canBook ? `Book ${service.name}` : 'Select a horse from My Horses to book'}
+                data-onboarding-target="farrier-book-button"
               >
                 {thisIsBooking
                   ? 'Booking...'

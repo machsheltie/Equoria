@@ -53,7 +53,7 @@ const FantasyButton = ({
       onMouseEnter={() => !disabled && setShowShimmer(true)}
       onMouseLeave={() => setShowShimmer(false)}
     >
-      <span className="relative z-10">{children}</span>
+      <span className="relative z-[var(--z-raised)]">{children}</span>
 
       {/* Shimmer effect */}
       {showShimmer && <div className="absolute inset-0 shimmer-effect opacity-60" />}

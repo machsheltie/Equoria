@@ -169,7 +169,7 @@ const XpProgressTracker: React.FC<XpProgressTrackerProps> = React.memo(
             <div
               data-testid="xp-tracker-tooltip"
               role="tooltip"
-              className="absolute bottom-full left-1/2 -translate-x-1/2 mb-2 z-50 bg-[rgba(5,15,40,0.95)] border border-[rgba(37,99,235,0.3)] text-[rgb(220,235,255)] text-xs rounded-lg px-3 py-2 shadow-lg whitespace-nowrap"
+              className="absolute bottom-full left-1/2 -translate-x-1/2 mb-2 z-[var(--z-modal)] bg-[rgba(5,15,40,0.95)] border border-[rgba(37,99,235,0.3)] text-[rgb(220,235,255)] text-xs rounded-lg px-3 py-2 shadow-lg whitespace-nowrap"
             >
               <div className="space-y-1">
                 <div className="font-semibold">Level {currentLevel}</div>

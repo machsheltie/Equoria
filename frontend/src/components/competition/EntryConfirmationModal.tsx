@@ -216,7 +216,7 @@ const EntryConfirmationModal = memo(function EntryConfirmationModal({
 
   const modalContent = (
     <div
-      className="fixed inset-0 bg-black/50 flex items-center justify-center z-50 p-4"
+      className="fixed inset-0 bg-black/50 flex items-center justify-center z-[var(--z-modal)] p-4"
       onClick={handleBackdropClick}
       data-testid="modal-backdrop"
     >

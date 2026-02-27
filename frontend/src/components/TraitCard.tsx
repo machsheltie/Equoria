@@ -234,7 +234,7 @@ export const TraitCard: React.FC<TraitCardProps> = ({
 
       {/* Tooltip on Hover */}
       {showTooltip && isHovered && (
-        <div className="absolute z-10 top-full left-0 mt-2 p-4 glass-panel rounded-lg shadow-xl border border-[rgba(37,99,235,0.3)] w-80 max-w-[90vw]">
+        <div className="absolute z-[var(--z-raised)] top-full left-0 mt-2 p-4 glass-panel rounded-lg shadow-xl border border-[rgba(37,99,235,0.3)] w-80 max-w-[90vw]">
           {/* Trait Description */}
           <p className="text-sm text-[rgb(220,235,255)] mb-3">{trait.description}</p>
 

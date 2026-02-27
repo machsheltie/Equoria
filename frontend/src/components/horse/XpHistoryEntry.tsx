@@ -114,8 +114,8 @@ const XpHistoryEntry: React.FC<XpHistoryEntryProps> = memo(
 
     // Determine timeline dot styling
     const dotClasses = isLevelUp
-      ? 'w-4 h-4 rounded-full bg-yellow-400 border-2 border-yellow-500 z-10'
-      : 'w-3 h-3 rounded-full bg-[rgb(148,163,184)] border-2 border-[rgba(37,99,235,0.3)] z-10';
+      ? 'w-4 h-4 rounded-full bg-yellow-400 border-2 border-yellow-500 z-[var(--z-raised)]'
+      : 'w-3 h-3 rounded-full bg-[rgb(148,163,184)] border-2 border-[rgba(37,99,235,0.3)] z-[var(--z-raised)]';
 
     return (
       <div

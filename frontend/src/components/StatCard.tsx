@@ -31,7 +31,7 @@ const StatCard = ({ label, value, icon, tooltip }: StatCardProps) => {
 
       {/* Tooltip */}
       {showTooltip && tooltip && (
-        <div className="absolute bottom-full left-1/2 transform -translate-x-1/2 mb-2 z-10">
+        <div className="absolute bottom-full left-1/2 transform -translate-x-1/2 mb-2 z-[var(--z-raised)]">
           <div className="bg-[rgba(5,15,40,0.95)] text-[rgb(220,235,255)] px-3 py-2 rounded-lg text-sm fantasy-body shadow-lg border border-[rgba(37,99,235,0.3)]">
             {tooltip}
             <div className="absolute top-full left-1/2 transform -translate-x-1/2">

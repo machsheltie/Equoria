@@ -121,7 +121,7 @@ const HorseCard = ({
       <CardContent className="p-0">
         {/* Image Section */}
         <div className="relative h-48 w-full overflow-hidden">
-          <div className="absolute inset-0 bg-gradient-to-t from-black/80 via-transparent to-transparent z-10" />
+          <div className="absolute inset-0 bg-gradient-to-t from-black/80 via-transparent to-transparent z-[var(--z-raised)]" />
           <img
             src={horseImage}
             alt={horseName}
@@ -130,7 +130,7 @@ const HorseCard = ({
 
           {/* Legend Badge */}
           {isLegendary && (
-            <div className="absolute top-2 right-2 z-20">
+            <div className="absolute top-2 right-2 z-[var(--z-raised)]">
               <Badge
                 variant="secondary"
                 className="bg-celestial-gold/20 text-celestial-gold border-celestial-gold/50 backdrop-blur-md"
@@ -143,7 +143,7 @@ const HorseCard = ({
 
           {/* Cooldown */}
           {cooldownHours > 0 && (
-            <div className="absolute top-2 left-2 z-20">
+            <div className="absolute top-2 left-2 z-[var(--z-raised)]">
               <Badge
                 variant="secondary"
                 className="bg-black/60 text-white border-white/10 backdrop-blur-md"
@@ -155,7 +155,7 @@ const HorseCard = ({
           )}
 
           {/* Name & Basic Info Overlay */}
-          <div className="absolute bottom-0 left-0 right-0 p-4 z-20">
+          <div className="absolute bottom-0 left-0 right-0 p-4 z-[var(--z-raised)]">
             <h3 className="text-lg font-bold text-white mb-1 leading-none tracking-tight">
               {horseName}
             </h3>

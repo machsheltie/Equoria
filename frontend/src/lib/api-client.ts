@@ -1298,6 +1298,8 @@ export const authApi = {
         email: string;
         firstName?: string;
         lastName?: string;
+        completedOnboarding?: boolean;
+        onboardingStep?: number;
       };
     }>('/api/auth/profile');
   },
@@ -1382,6 +1384,13 @@ export const authApi = {
    */
   completeOnboarding: () =>
     apiClient.post<{ completedOnboarding: boolean }>('/api/auth/complete-onboarding', {}),
+
+  /**
+   * Advance the authenticated user's onboarding step by 1.
+   * Sets completedOnboarding: true when step 10 is reached.
+   */
+  advanceOnboarding: () =>
+    apiClient.post<{ step: number; completed: boolean }>('/api/auth/advance-onboarding', {}),
 
   /**
    * Request password reset email

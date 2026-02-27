@@ -44,7 +44,7 @@ export const FantasyTabs = ({
             `}
           >
             {/* Tab content */}
-            <div className="flex items-center space-x-2 relative z-10">
+            <div className="flex items-center space-x-2 relative z-[var(--z-raised)]">
               {tab.icon && (
                 <span
                   className={`transition-transform duration-200 ${activeTab === tab.value ? 'scale-110' : ''}`}
@@ -82,7 +82,7 @@ export const FantasyTabs = ({
           <div className="absolute inset-2 border border-burnished-gold/20 rounded-md pointer-events-none" />
 
           {/* Content */}
-          <div className="relative z-10">{tab.content}</div>
+          <div className="relative z-[var(--z-raised)]">{tab.content}</div>
 
           {/* Decorative corner elements */}
           <div className="absolute top-3 right-3 w-4 h-4 border-r border-t border-burnished-gold/30 rounded-tr-md" />
@@ -139,7 +139,7 @@ export const FantasyAccordion = ({ items, type = 'single' }: FantasyAccordionPro
                 {/* Hover glow overlay */}
                 <div className="absolute inset-0 bg-gradient-to-r from-[rgba(37,99,235,0.05)] via-transparent to-[rgba(37,99,235,0.05)] rounded-lg opacity-0 group-hover:opacity-100 transition-opacity duration-200" />
 
-                <div className="flex items-center justify-between relative z-10">
+                <div className="flex items-center justify-between relative z-[var(--z-raised)]">
                   <div className="flex items-center space-x-3">
                     {item.icon && (
                       <span className="text-aged-bronze group-hover:text-burnished-gold transition-colors duration-200">
@@ -166,7 +166,7 @@ export const FantasyAccordion = ({ items, type = 'single' }: FantasyAccordionPro
                 {/* Inner accent border */}
                 <div className="absolute inset-2 border border-burnished-gold/10 rounded-md pointer-events-none" />
 
-                <div className="relative z-10 fantasy-body text-[rgb(220,235,255)]">
+                <div className="relative z-[var(--z-raised)] fantasy-body text-[rgb(220,235,255)]">
                   {item.content}
                 </div>
 

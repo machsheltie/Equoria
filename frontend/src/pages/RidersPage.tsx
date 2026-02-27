@@ -86,6 +86,7 @@ const RidersPage: React.FC = () => {
                 : 'text-white/40 hover:text-white/70'
             }`}
             data-testid="hire-tab"
+            data-onboarding-target="rider-hire-button"
           >
             <ShoppingBag className="w-4 h-4" />
             Hire Riders
