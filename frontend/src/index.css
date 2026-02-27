@@ -187,6 +187,7 @@
 
   /* Cobalt pill button */
   .btn-cobalt {
+    position: relative; /* required for ::before / ::after horseshoe arcs */
     background: linear-gradient(135deg, #2563eb 0%, #1d4ed8 100%);
     border: none;
     border-radius: 9999px;
@@ -203,6 +204,37 @@
       box-shadow 0.2s;
     box-shadow: 0 4px 20px rgba(37, 99, 235, 0.45);
     letter-spacing: 0.02em;
+  }
+
+  /* Horseshoe arc decorations — Story 18-5 */
+  .btn-cobalt::before,
+  .btn-cobalt::after {
+    content: '';
+    position: absolute;
+    top: 50%;
+    width: 12px;
+    height: 20px;
+    border: 2px solid var(--gold-500, #d4a017);
+    border-radius: 50%;
+    transform: translateY(-50%);
+    opacity: 0.5;
+    pointer-events: none;
+    transition: opacity var(--duration-fast, 0.15s) var(--ease-default, ease);
+  }
+
+  .btn-cobalt::before {
+    left: 12px;
+    border-right: none; /* left horseshoe arc */
+  }
+
+  .btn-cobalt::after {
+    right: 12px;
+    border-left: none; /* right horseshoe arc */
+  }
+
+  .btn-cobalt:hover:not(:disabled)::before,
+  .btn-cobalt:hover:not(:disabled)::after {
+    opacity: 1;
   }
 
   .btn-cobalt:hover:not(:disabled) {
@@ -310,4 +342,117 @@
 
 .sparkle-trail {
   animation: sparkleTrail 1s ease-out;
+}
+
+/* ── Story 18-1: Galloping Horse Loading Animation ────────────────── */
+
+@keyframes horse-gallop-bob {
+  0%,
+  100% {
+    transform: translateY(0px);
+  }
+  25% {
+    transform: translateY(-6px);
+  }
+  50% {
+    transform: translateY(-2px);
+  }
+  75% {
+    transform: translateY(-8px);
+  }
+}
+
+@keyframes horse-gallop-travel {
+  0% {
+    left: -80px;
+  }
+  100% {
+    left: calc(100% + 80px);
+  }
+}
+
+@keyframes gallop-dust {
+  0% {
+    opacity: 0.7;
+    transform: scale(1) translateX(0);
+  }
+  100% {
+    opacity: 0;
+    transform: scale(0.3) translateX(-8px);
+  }
+}
+
+.gallop-traveler {
+  position: absolute;
+  animation:
+    horse-gallop-travel 1.8s linear infinite,
+    horse-gallop-bob 0.4s ease-in-out infinite;
+}
+
+.gallop-dust-particle {
+  position: absolute;
+  border-radius: 50%;
+  animation: gallop-dust 0.55s ease-out infinite;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .gallop-traveler {
+    animation: none;
+    left: 50%;
+    transform: translateX(-50%);
+  }
+  .gallop-dust-particle {
+    display: none;
+  }
+}
+
+/* ── Story 18-2: Fence-Jump Progress Bars ─────────────────────────── */
+
+@keyframes fence-jump {
+  0% {
+    transform: translateY(0);
+  }
+  40% {
+    transform: translateY(-14px);
+  }
+  70% {
+    transform: translateY(-8px);
+  }
+  100% {
+    transform: translateY(0);
+  }
+}
+
+/* ── Story 18-3: Ribbon Unfurling Achievements ────────────────────── */
+
+@keyframes ribbon-unfurl {
+  0% {
+    transform: scaleX(0);
+    opacity: 0;
+  }
+  60% {
+    transform: scaleX(1.05);
+    opacity: 1;
+  }
+  100% {
+    transform: scaleX(1);
+    opacity: 0.85;
+  }
+}
+
+/* ── Story 18-4: Cinematic Moments ───────────────────────────────── */
+
+@keyframes cinematic-entrance {
+  0% {
+    transform: scale(0.7);
+    opacity: 0;
+  }
+  70% {
+    transform: scale(1.03);
+    opacity: 1;
+  }
+  100% {
+    transform: scale(1);
+    opacity: 1;
+  }
 }

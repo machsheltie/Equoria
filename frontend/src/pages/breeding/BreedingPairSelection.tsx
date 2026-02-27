@@ -19,6 +19,7 @@ import BreedingPredictionsPanel from './BreedingPredictionsPanel';
 import BreedingConfirmationModal from '@/components/breeding/BreedingConfirmationModal';
 import type { Horse, CompatibilityAnalysis, BreedingResponse } from '@/types/breeding';
 import { AlertCircle, CheckCircle } from 'lucide-react';
+import CinematicMoment from '@/components/feedback/CinematicMoment';
 
 export interface BreedingPairSelectionProps {
   userId?: string;
@@ -46,6 +47,7 @@ const BreedingPairSelection: React.FC<BreedingPairSelectionProps> = ({ userId: p
   const [showConfirmation, setShowConfirmation] = useState(false);
   const [errorMessage, setErrorMessage] = useState<string | null>(null);
   const [successMessage, setSuccessMessage] = useState<string | null>(null);
+  const [showFoalCinematic, setShowFoalCinematic] = useState(false);
 
   // Fetch user's horses
   const {
@@ -136,9 +138,10 @@ const BreedingPairSelection: React.FC<BreedingPairSelectionProps> = ({ userId: p
       queryClient.invalidateQueries({ queryKey: ['horses', userId] });
       queryClient.invalidateQueries({ queryKey: ['foals'] });
 
-      // Show success message
+      // Show success message and cinematic moment (Story 18-4)
       setSuccessMessage(data.message);
       setShowConfirmation(false);
+      setShowFoalCinematic(true);
 
       // Navigate to foal development page after delay
       setTimeout(() => {
@@ -300,6 +303,18 @@ const BreedingPairSelection: React.FC<BreedingPairSelectionProps> = ({ userId: p
           studFee={studFee}
           onConfirm={handleConfirmBreeding}
           isSubmitting={breedingMutation.isPending}
+        />
+      )}
+
+      {/* Cinematic foal birth moment (Story 18-4) */}
+      {showFoalCinematic && (
+        <CinematicMoment
+          variant="foal-birth"
+          title="A Foal is Born!"
+          subtitle={
+            breedingMutation.data?.foal?.name ? String(breedingMutation.data.foal.name) : undefined
+          }
+          onDismiss={() => setShowFoalCinematic(false)}
         />
       )}
     </div>

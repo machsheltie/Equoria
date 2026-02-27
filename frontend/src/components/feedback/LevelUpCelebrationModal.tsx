@@ -196,6 +196,26 @@ const LevelUpCelebrationModal = memo(function LevelUpCelebrationModal({
 
         {/* Celebration Header */}
         <div className="bg-gradient-to-r from-yellow-400 via-amber-500 to-yellow-600 p-6 text-center relative">
+          {/* Ribbon unfurl — animates behind the trophy icon (Story 18-3) */}
+          <div
+            aria-hidden="true"
+            className="absolute inset-x-6"
+            style={{ top: '50%', transform: 'translateY(-50%)', zIndex: 0, pointerEvents: 'none' }}
+          >
+            <div
+              style={{
+                height: '24px',
+                width: '100%',
+                background:
+                  'linear-gradient(90deg, transparent, rgba(255,255,255,0.35), rgba(255,255,255,0.65), rgba(255,255,255,0.35), transparent)',
+                borderRadius: '4px',
+                animation: 'ribbon-unfurl var(--duration-slow) var(--ease-bounce) forwards',
+                transformOrigin: 'center',
+                opacity: 0,
+              }}
+            />
+          </div>
+
           {/* Close Button */}
           <button
             type="button"

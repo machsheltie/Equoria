@@ -10,6 +10,7 @@ import { ProtectedRoute } from '@/components/auth';
 import OnboardingGuard from '@/components/auth/OnboardingGuard';
 import OnboardingSpotlight from '@/components/onboarding/OnboardingSpotlight';
 import { initSentry, SentryErrorBoundary } from '@/lib/sentry';
+import GallopingLoader from '@/components/ui/GallopingLoader';
 
 // Auth pages — lazy loaded
 const StableView = lazy(() => import('./pages/StableView'));
@@ -26,15 +27,6 @@ const HorseDetailPage = lazy(() => import('./pages/HorseDetailPage'));
 initSentry();
 
 const queryClient = new QueryClient();
-
-/** Loading spinner shown while a lazy route chunk is being fetched */
-function PageLoader() {
-  return (
-    <div className="flex items-center justify-center min-h-screen">
-      <div className="inline-block h-8 w-8 animate-spin rounded-full border-4 border-solid border-[var(--celestial-primary)] border-r-transparent" />
-    </div>
-  );
-}
 
 const App = () => (
   <SentryErrorBoundary fallback={<p className="text-white p-8">Something went wrong.</p>}>
@@ -55,7 +47,7 @@ const App = () => (
             <OnboardingGuard />
             {/* Guided 10-step spotlight tour — active when completedOnboarding === false && onboardingStep >= 1 */}
             <OnboardingSpotlight />
-            <Suspense fallback={<PageLoader />}>
+            <Suspense fallback={<GallopingLoader />}>
               <Routes>
                 <Route path="/onboarding" element={<OnboardingPage />} />
                 <Route path="/login" element={<LoginPage />} />

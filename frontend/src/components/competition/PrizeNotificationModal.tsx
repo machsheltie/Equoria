@@ -21,9 +21,10 @@
  * Story 5-3: Prize Notification System
  */
 
-import React, { memo, useCallback, useEffect, useRef } from 'react';
+import React, { memo, useCallback, useEffect, useRef, useState } from 'react';
 import { createPortal } from 'react-dom';
 import { Trophy, Medal, X, Calendar, Award, Zap, DollarSign } from 'lucide-react';
+import CinematicMoment from '@/components/feedback/CinematicMoment';
 
 /**
  * Prize data structure containing all information to display
@@ -167,6 +168,15 @@ const PrizeNotificationModal = memo(function PrizeNotificationModal({
   const modalRef = useRef<HTMLDivElement>(null);
   const previousActiveElement = useRef<Element | null>(null);
   const timerRef = useRef<NodeJS.Timeout | null>(null);
+
+  // Show cinematic moment for 1st-place wins (Story 18-4)
+  const [showCinematic, setShowCinematic] = useState(false);
+
+  useEffect(() => {
+    if (isOpen && prizeData.placement === 1) {
+      setShowCinematic(true);
+    }
+  }, [isOpen, prizeData.placement]);
 
   // Handle Escape key press
   const handleKeyDown = useCallback(
@@ -372,7 +382,19 @@ const PrizeNotificationModal = memo(function PrizeNotificationModal({
   );
 
   // Render via portal for proper stacking context
-  return createPortal(modalContent, document.body);
+  return (
+    <>
+      {showCinematic && (
+        <CinematicMoment
+          variant="cup-win"
+          title="Victory!"
+          subtitle={prizeData.competitionName}
+          onDismiss={() => setShowCinematic(false)}
+        />
+      )}
+      {createPortal(modalContent, document.body)}
+    </>
+  );
 });
 
 export default PrizeNotificationModal;

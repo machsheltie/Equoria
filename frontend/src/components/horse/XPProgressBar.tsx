@@ -12,6 +12,7 @@
 
 import { useState } from 'react';
 import { useHorseXP } from '@/hooks/api/useHorseXP';
+import FenceJumpBar from '@/components/ui/FenceJumpBar';
 
 interface XPProgressBarProps {
   horseId: number;
@@ -50,9 +51,6 @@ const XPProgressBar = ({ horseId }: XPProgressBarProps) => {
   const xpInCurrentLevel = xpData.currentXP - xpData.availableStatPoints * 100;
   const progressPercentage = Math.round((xpInCurrentLevel / 100) * 100);
 
-  // Milestone levels
-  const milestones = [5, 10, 15, 20, 25];
-
   return (
     <div className="rounded-lg border border-[rgba(37,99,235,0.3)] bg-[rgba(15,35,70,0.5)] p-4 shadow-sm">
       {/* Header: Level Display */}
@@ -78,37 +76,10 @@ const XPProgressBar = ({ horseId }: XPProgressBarProps) => {
         onBlur={() => setShowTooltip(false)}
         tabIndex={0}
       >
-        <div
-          role="progressbar"
-          aria-valuenow={progressPercentage}
-          aria-valuemin={0}
-          aria-valuemax={100}
-          aria-label={`Level ${level} progress: ${xpData.currentXP} of ${xpData.nextStatPointAt} XP to next stat point`}
-          className="relative h-6 w-full overflow-hidden rounded-full bg-[rgba(15,35,70,0.5)]"
-        >
-          {/* Progress fill */}
-          <div
-            data-testid="progress-fill"
-            className="h-full bg-gradient-to-r from-emerald-500 to-emerald-600 transition-all duration-300"
-            style={{ width: `${progressPercentage}%` }}
-          />
-
-          {/* Milestone markers */}
-          {milestones.map((milestone) => {
-            const isReached = level >= milestone;
-            return (
-              <div
-                key={milestone}
-                data-testid={`milestone-${milestone}`}
-                className={`absolute top-0 h-full w-0.5 ${
-                  isReached ? 'milestone-reached bg-amber-400' : 'bg-[rgba(37,99,235,0.3)]'
-                }`}
-                style={{ left: `${(milestone / 30) * 100}%` }}
-                title={`Level ${milestone}`}
-              />
-            );
-          })}
-        </div>
+        <FenceJumpBar
+          value={progressPercentage}
+          label={`Level ${level} progress: ${xpData.currentXP} of ${xpData.nextStatPointAt} XP to next stat point`}
+        />
 
         {/* Tooltip */}
         {showTooltip && (
