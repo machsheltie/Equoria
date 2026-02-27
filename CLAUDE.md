@@ -1,19 +1,36 @@
 # Equoria - Claude Code Configuration
 
-**Version:** 3.0.0
-**Last Updated:** 2026-02-26
+**Version:** 3.1.0
+**Last Updated:** 2026-02-27
 **Project:** Web browser-based horse breeding simulation game
 
 ---
 
 ## 🎯 Current Sprint
 
-### Active Priority: Epic 16 — Remaining Feature Work ✅ COMPLETE
+### Active Priority: Epic 18 — Visual Polish & Cinematic Moments ✅ COMPLETE
 
-- **Status:** Epic 16 (Remaining Features) → Complete ✅
-- **Stories:** 16-1 Inventory Equip, 16-2 Onboarding Flow, 16-3 Art Assets (all complete)
-- **Next:** Production launch or Epic 17
+- **Status:** Epics 1–18 all complete ✅ — production-ready
+- **Stories:** 18-1 GallopingLoader, 18-2 FenceJumpBar, 18-3 Ribbon Unfurl, 18-4 CinematicMoment, 18-5 Horseshoe Borders (all complete)
+- **Next:** Production launch (Railway deploy) or Epic 19
 - **Branch:** `cleanup-session-2026-01-30`
+
+### Epic 18 Deliverables
+
+- `frontend/src/components/ui/GallopingLoader.tsx` — Animated horse Suspense fallback (replaces CSS spinner in App.tsx)
+- `frontend/src/components/ui/FenceJumpBar.tsx` — XP progress bar with fence markers at 25/50/75/100% + jumping 🐎
+- `frontend/src/components/feedback/CinematicMoment.tsx` — Fullscreen overlay for trait-discovery / foal-birth / cup-win
+- `frontend/src/components/feedback/LevelUpCelebrationModal.tsx` — Ribbon unfurl banner behind trophy (18-3)
+- `frontend/src/components/horse/XPProgressBar.tsx` — Uses FenceJumpBar for XP fill (18-2)
+- `frontend/src/components/competition/PrizeNotificationModal.tsx` — CinematicMoment for 1st-place wins (18-4)
+- `frontend/src/components/foal/FoalDevelopmentTracker.tsx` — CinematicMoment on trait reveal (18-4)
+- `frontend/src/pages/breeding/BreedingPairSelection.tsx` — CinematicMoment on foal birth (18-4)
+- `frontend/src/index.css` — All 18 keyframes + .btn-cobalt horseshoe ::before/::after (18-5)
+
+### Epic 17 Deliverables (Hybrid Onboarding Tutorial + Z-Index Token System)
+
+- Z-index token system in `tokens.css` — `--z-*` variables replacing magic numbers
+- Onboarding tutorial overlay system integrated with Epic 16 OnboardingPage
 
 ### Epic 16 Deliverables
 
@@ -72,11 +89,11 @@
 
 ### Project Status
 
-- ✅ **Backend:** 100% complete — 3628 tests passing (225 suites), pre-push hook active
-- ✅ **Epics 1–16:** All complete (auth + horses + training + competition + breeding + grooms + riders + world + community + trainers + deployment + onboarding + inventory)
+- ✅ **Backend:** 100% complete — 3617 tests passing (226 suites), pre-push hook active
+- ✅ **Epics 1–18:** All complete (auth + horses + training + competition + breeding + grooms + riders + world + community + trainers + deployment + onboarding + inventory + visual polish)
 - ✅ **E2E Tests:** Playwright suite passing (core-game-flows, auth, breeding)
 - ✅ **Deployment:** Railway-ready — multi-stage Docker, railway.toml, migrate deploy pipeline
-- ✅ **Frontend:** ~99% complete (React 19 + TypeScript in `/frontend/`)
+- ✅ **Frontend:** 100% complete (React 19 + TypeScript in `/frontend/`)
 
 ### Session Start Checklist
 
