@@ -4043,64 +4043,156 @@ epic-16-retrospective:
 
 epic-17:
   title: 'Guided Onboarding & Design Tokens'
-  status: backlog
+  status: completed
+  completed_date: '2026-02-27'
   priority: P1
-  notes: 'Hybrid OnboardingSpotlight tutorial (10 steps) + z-index token system. Art assets owner-managed.'
+  notes: 'Hybrid OnboardingSpotlight tutorial (10 steps) + z-index token system. Commit beab9466.'
 
 17-1-hybrid-onboarding-tutorial:
   title: 'Hybrid Onboarding Tutorial — OnboardingSpotlight + Step Engine'
-  status: backlog
+  status: completed
   priority: P1
   epic: 17
   story: 1
   prerequisites: []
   story_file: 'docs/sprint-artifacts/future-epics-roadmap.md'
   created_date: '2026-02-27'
-  notes: >
-    OnboardingSpotlight App-level component: queries [data-onboarding-target],
-    renders pulsing --celestial-primary ring + anchored tooltip.
-    onboardingFlow: OnboardingStep[] stored in User.settings JSONB.
-    POST /api/auth/advance-onboarding increments step.
-    10 steps: Bank → Store → Farrier → Feed Shop → Vet → Riders → Grooms → Training → Competitions → Equip.
-    completionTrigger: route | api | manual.
+  completed_date: '2026-02-27'
+  completion_notes: >
+    POST /api/auth/advance-onboarding (advanceOnboarding controller, 3 tests).
+    OnboardingSpotlight.tsx (App-level): pulsing ring via getBoundingClientRect,
+    floating guide chip on wrong route, 10-step ONBOARDING_STEPS array.
+    useOnboarding.ts (useAdvanceOnboarding mutation).
+    OnboardingPage.tsx wizard → calls advanceOnboarding (step 0→1) → navigates /bank.
+    OnboardingGuard.tsx: skips redirect when onboardingStep >= 1.
+    10 data-onboarding-target attrs placed across all tour stops.
+    tokens.css: @keyframes onboarding-ring-pulse added.
 
 17-2-zindex-token-system:
   title: 'Z-Index Token System'
-  status: backlog
+  status: completed
   priority: P2
   epic: 17
   story: 2
   prerequisites: []
   story_file: 'docs/sprint-artifacts/future-epics-roadmap.md'
   created_date: '2026-02-27'
-  notes: >
-    Define CSS custom properties: --z-modal, --z-bottom-nav, --z-toast, --z-dropdown.
-    Replace all hard-coded z-index values in frontend/src/.
-    Third carry-forward from AI-15-3.
+  completed_date: '2026-02-27'
+  completion_notes: >
+    55+ files: z-10→z-[var(--z-raised)], z-20→z-[var(--z-sticky/dropdown)],
+    z-30→z-[30], z-40→z-[var(--z-dropdown)], z-50→z-[var(--z-modal)].
+    Zero raw z-* classes remaining. npx vite build clean.
 
 epic-17-retrospective:
   title: 'Epic 17 Retrospective'
-  status: optional
+  status: completed
   epic: '17'
+  created_date: '2026-02-27'
+  completed_date: '2026-02-27'
+  retro_file: 'docs/sprint-artifacts/epic-17-retro-2026-02-27.md'
+
+# ── Epic 18: Visual Polish & Cinematic Moments ────────────────────────────────
+
+epic-18:
+  title: 'Visual Polish & Cinematic Moments'
+  status: backlog
+  priority: P2
+  notes: 'All cosmetic — no backend changes. Ship post-launch or bundle with launch. Art assets owner-managed.'
+
+18-1-galloping-loader:
+  title: 'Galloping Horse Loading Animation'
+  status: backlog
+  priority: P1
+  epic: 18
+  story: 1
+  prerequisites: []
+  story_file: 'docs/sprint-artifacts/future-epics-roadmap.md'
+  created_date: '2026-02-27'
+  notes: >
+    Replace generic spinner with galloping horse silhouette animation.
+    Art asset from Heirr (owner-managed — no timeline constraint).
+    CSS @keyframes or Lottie. Used as route-level Suspense fallback.
+
+18-2-fence-jump-progress-bars:
+  title: 'Fence-Jump Progress Bars'
+  status: backlog
+  priority: P2
+  epic: 18
+  story: 2
+  prerequisites: []
+  story_file: 'docs/sprint-artifacts/future-epics-roadmap.md'
+  created_date: '2026-02-27'
+  notes: >
+    Replace generic progress bars with fence-jump themed animation.
+    Horse silhouette jumps as progress increases. CSS-only preferred.
+    Applies to XP bars, training progress, stat bars.
+
+18-3-ribbon-achievements:
+  title: 'Ribbon Unfurling Achievements'
+  status: backlog
+  priority: P2
+  epic: 18
+  story: 3
+  prerequisites: []
+  story_file: 'docs/sprint-artifacts/future-epics-roadmap.md'
+  created_date: '2026-02-27'
+  notes: >
+    Achievement unlock animation — ribbon unfurls from top with fanfare.
+    Triggered on: epic milestone, horse level-up, first competition win.
+    CSS @keyframes ribbon-unfurl. Accessible (prefers-reduced-motion respected).
+
+18-4-cinematic-moments:
+  title: 'Cinematic Moments'
+  status: backlog
+  priority: P2
+  epic: 18
+  story: 4
+  prerequisites: []
+  story_file: 'docs/sprint-artifacts/future-epics-roadmap.md'
+  created_date: '2026-02-27'
+  notes: >
+    Fullscreen or modal-overlay cinematic for: trait discovery, foal birth, cup win.
+    Each moment: darkened background, spotlight on key visual, sparkle particles,
+    dramatic title card with celestial-gold gradient. Auto-dismiss after 3s or tap.
+
+18-5-horseshoe-borders:
+  title: 'Horseshoe Button Borders'
+  status: backlog
+  priority: P3
+  epic: 18
+  story: 5
+  prerequisites: []
+  story_file: 'docs/sprint-artifacts/future-epics-roadmap.md'
+  created_date: '2026-02-27'
+  notes: >
+    Replace rectangular button borders with subtle horseshoe-shaped border accent.
+    SVG clip-path or border-radius trick. Primary CTA buttons only.
+    Must not reduce touch target size.
+
+epic-18-retrospective:
+  title: 'Epic 18 Retrospective'
+  status: optional
+  epic: '18'
 
 # Summary
 summary:
-  total_epics: 17
-  total_stories: 98
+  total_epics: 18
+  total_stories: 104
   p0_stories: 47
-  p1_stories: 39
-  p2_stories: 12
+  p1_stories: 40
+  p2_stories: 14
+  p3_stories: 3
   fr_coverage: '44/44 (100%)'
-  current_epic: '17'
-  current_story: '17-1-hybrid-onboarding-tutorial'
-  epics_completed: 16
-  stories_completed: 97
+  current_epic: '18'
+  current_story: 'production-launch-or-18-1-galloping-loader'
+  epics_completed: 17
+  stories_completed: 99
   stories_in_progress: 0
   stories_ready_for_dev: 0
-  stories_backlog: 2
+  stories_backlog: 5
   total_tests_passing: 3628
-  action_items_total: 25
-  action_items_completed: 14
+  action_items_total: 27
+  action_items_completed: 16
   action_items_pending: 11
   action_items_blocking: 0
   epic_7_completed_date: '2026-02-17'
@@ -4117,6 +4209,8 @@ summary:
   epic_14_retro_file: 'docs/sprint-artifacts/epic-14-retro-2026-02-25.md'
   epic_15_retro_file: 'docs/sprint-artifacts/epic-15-retro-2026-02-26.md'
   epic_16_retro_file: 'docs/sprint-artifacts/epic-16-retro-2026-02-27.md'
+  epic_17_completed_date: '2026-02-27'
+  epic_17_retro_file: 'docs/sprint-artifacts/epic-17-retro-2026-02-27.md'
   epic_9a_completed_date: '2026-02-23'
   epic_9b_completed_date: '2026-02-23'
   epic_9c_completed_date: '2026-02-23'
