@@ -4037,29 +4037,71 @@ epic-16-retrospective:
   title: 'Epic 16 Retrospective'
   status: completed
   epic: '16'
-  created_date: '2026-02-26'
-  completed_date: '2026-02-26'
-  retro_file: 'docs/sprint-artifacts/16-remaining-features.md'
+  created_date: '2026-02-27'
+  completed_date: '2026-02-27'
+  retro_file: 'docs/sprint-artifacts/epic-16-retro-2026-02-27.md'
+
+epic-17:
+  title: 'Guided Onboarding & Design Tokens'
+  status: backlog
+  priority: P1
+  notes: 'Hybrid OnboardingSpotlight tutorial (10 steps) + z-index token system. Art assets owner-managed.'
+
+17-1-hybrid-onboarding-tutorial:
+  title: 'Hybrid Onboarding Tutorial — OnboardingSpotlight + Step Engine'
+  status: backlog
+  priority: P1
+  epic: 17
+  story: 1
+  prerequisites: []
+  story_file: 'docs/sprint-artifacts/future-epics-roadmap.md'
+  created_date: '2026-02-27'
+  notes: >
+    OnboardingSpotlight App-level component: queries [data-onboarding-target],
+    renders pulsing --celestial-primary ring + anchored tooltip.
+    onboardingFlow: OnboardingStep[] stored in User.settings JSONB.
+    POST /api/auth/advance-onboarding increments step.
+    10 steps: Bank → Store → Farrier → Feed Shop → Vet → Riders → Grooms → Training → Competitions → Equip.
+    completionTrigger: route | api | manual.
+
+17-2-zindex-token-system:
+  title: 'Z-Index Token System'
+  status: backlog
+  priority: P2
+  epic: 17
+  story: 2
+  prerequisites: []
+  story_file: 'docs/sprint-artifacts/future-epics-roadmap.md'
+  created_date: '2026-02-27'
+  notes: >
+    Define CSS custom properties: --z-modal, --z-bottom-nav, --z-toast, --z-dropdown.
+    Replace all hard-coded z-index values in frontend/src/.
+    Third carry-forward from AI-15-3.
+
+epic-17-retrospective:
+  title: 'Epic 17 Retrospective'
+  status: optional
+  epic: '17'
 
 # Summary
 summary:
-  total_epics: 16
-  total_stories: 96
+  total_epics: 17
+  total_stories: 98
   p0_stories: 47
-  p1_stories: 38
-  p2_stories: 11
+  p1_stories: 39
+  p2_stories: 12
   fr_coverage: '44/44 (100%)'
-  current_epic: '16'
-  current_story: 'epic-16-complete'
+  current_epic: '17'
+  current_story: '17-1-hybrid-onboarding-tutorial'
   epics_completed: 16
   stories_completed: 97
   stories_in_progress: 0
   stories_ready_for_dev: 0
-  stories_backlog: 0
+  stories_backlog: 2
   total_tests_passing: 3628
-  action_items_total: 23
+  action_items_total: 25
   action_items_completed: 14
-  action_items_pending: 9
+  action_items_pending: 11
   action_items_blocking: 0
   epic_7_completed_date: '2026-02-17'
   epic_7_total_tests: 464
@@ -4073,7 +4115,8 @@ summary:
   epic_12_retro_file: 'docs/sprint-artifacts/epic-12-retro-2026-02-25.md'
   epic_13_retro_file: 'docs/sprint-artifacts/epic-13-retro-2026-02-25.md'
   epic_14_retro_file: 'docs/sprint-artifacts/epic-14-retro-2026-02-25.md'
-  epic_16_retro_file: 'docs/sprint-artifacts/16-remaining-features.md'
+  epic_15_retro_file: 'docs/sprint-artifacts/epic-15-retro-2026-02-26.md'
+  epic_16_retro_file: 'docs/sprint-artifacts/epic-16-retro-2026-02-27.md'
   epic_9a_completed_date: '2026-02-23'
   epic_9b_completed_date: '2026-02-23'
   epic_9c_completed_date: '2026-02-23'
@@ -4091,4 +4134,7 @@ summary:
   epic_15_story_file: 'docs/sprint-artifacts/15-onboarding-and-polish.md'
   epic_16_completed_date: '2026-02-26'
   epic_16_note: 'Inventory equip API, onboarding wizard, art asset scaffolding — all complete'
-  next_milestone: 'Production launch or Epic 17'
+  epic_16_retro_completed_date: '2026-02-27'
+  epic_17_planned_date: '2026-02-27'
+  epic_17_story_file: 'docs/sprint-artifacts/future-epics-roadmap.md'
+  next_milestone: 'Epic 17 — Guided Onboarding & Design Tokens'

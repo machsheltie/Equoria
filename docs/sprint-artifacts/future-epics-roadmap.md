@@ -230,53 +230,110 @@ This document captures the full planned roadmap beyond Epic 8. It was initiated 
 
 ---
 
-## Roadmap Summary
+## Epic 17: Guided Onboarding & Design Tokens
 
-| Epic   | Title                          | Priority | Prerequisite                 |
-| ------ | ------------------------------ | -------- | ---------------------------- |
-| **9A** | Technical Health Sprint        | P0       | —                            |
-| **9B** | Navigation & World Hub         | P0       | 9A                           |
-| **9C** | Rider System                   | P0       | 9A                           |
-| **10** | World Locations (Service Hubs) | P1       | 9B                           |
-| **11** | Community Features             | P1       | 9B                           |
-| **12** | Stable Management Completions  | P1       | 9B                           |
-| **13** | Trainer System                 | P2       | 9C                           |
-| **14** | Deployment & Production        | P0       | 9A (can parallel with 9B/9C) |
-| **15** | Onboarding & Polish            | P2       | 10, 11, 12                   |
+**Priority:** P1
+**Purpose:** Complete the onboarding experience with a guided step-by-step tutorial and resolve the persistent z-index token technical debt. Lean epic — 2 stories only. Visual polish deferred to Epic 18.
+
+**Designed during:** Epic 16 Retrospective — 2026-02-27
+
+### Stories
+
+| #    | Title                      | Priority | Description                                                                                                                                                                                                                                                                               |
+| ---- | -------------------------- | -------- | ----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| 17-1 | Hybrid Onboarding Tutorial | P1       | `OnboardingSpotlight` component + `onboardingFlow` step array in `User.settings`. 10 guided steps: Bank → Store → Farrier → Feed → Vet → Riders → Grooms → Training → Competitions → Equip. Pulsing `--celestial-primary` ring + anchored tooltip on `[data-onboarding-target]` elements. |
+| 17-2 | Z-Index Token System       | P2       | CSS custom properties: `--z-modal`, `--z-bottom-nav`, `--z-toast`, `--z-dropdown`. Replace all hard-coded z-index values in `frontend/src/`. Third carry-forward from AI-15-3.                                                                                                            |
+
+### Hybrid OnboardingSpotlight Architecture
+
+```typescript
+interface OnboardingStep {
+  step: number;
+  message: string;
+  route: string;
+  highlightTarget: string; // matches [data-onboarding-target] attribute
+  completionTrigger:
+    | { type: 'route'; path: string }
+    | { type: 'api'; endpoint: string }
+    | { type: 'manual' };
+}
+```
+
+- `User.settings.onboardingFlow`: `OnboardingStep[]` — persisted in JSONB
+- `POST /api/auth/advance-onboarding` — increments `settings.onboardingStep`
+- `completedOnboarding` flag set true after step 10 — replaces current 3-step wizard gate
 
 ---
 
-## Feature Completion Status (post-Epic 8)
+## Epic 18: Visual Polish & Cinematic Moments
 
-| System                    | Complete | Partial    | Missing                         |
-| ------------------------- | -------- | ---------- | ------------------------------- |
-| Authentication            | ✅       |            |                                 |
-| User Dashboard            | ✅       |            |                                 |
-| Horse Management          | ✅       |            | Care Status Strip               |
-| Training System           | ✅       |            |                                 |
-| Competition System        | ✅       |            |                                 |
-| Breeding System           | ✅       |            |                                 |
-| Foal Development          | ✅       |            |                                 |
-| Groom System              | ✅       |            |                                 |
-| Rider System              |          | ⚠️ ~40%    | Hire/Manage/Discover            |
-| Trainer System            |          |            | ❌ 0%                           |
-| World Hub                 |          |            | ❌ 0%                           |
-| Navigation (full)         |          | ⚠️ 71%     | World, Settings                 |
-| Horse Profile (full tabs) |          | ⚠️ Partial | Pedigree, Health/Vet, Stud/Sale |
-| Leaderboards              |          | ⚠️ 60%     | Rider view, time filters        |
-| Message Board             |          |            | ❌ 0%                           |
-| Clubs System              |          |            | ❌ 0%                           |
-| Notifications             |          |            | ❌ 0%                           |
-| Bank/Currency UI          |          |            | ❌ 0%                           |
-| Inventory                 |          |            | ❌ 0%                           |
-| Deployment Pipeline       |          | ⚠️ 10%     |                                 |
-| Onboarding Quest          |          |            | ❌ 0%                           |
-| Visual Polish (cinematic) |          |            | ❌ 0%                           |
+**Priority:** P2
+**Purpose:** Complete the Celestial Night visual identity with custom animations and cinematic moments for milestone events. Art assets are owner-managed (solo dev/artist) and will be added on personal timeline.
 
-**Overall estimate: ~72% feature complete toward full UX spec**
+### Stories
+
+| #    | Title                             | Priority | Description                                                                     |
+| ---- | --------------------------------- | -------- | ------------------------------------------------------------------------------- |
+| 18-1 | Galloping Horse Loading Animation | P2       | Replace standard spinner with galloping horse animation (CSS or Lottie)         |
+| 18-2 | Fence-Jump Progress Bars          | P2       | Custom progress bar style: horse jumps fence at completion                      |
+| 18-3 | Ribbon Unfurling Achievements     | P2       | Achievement unlock animation: ribbon unfurls with sound                         |
+| 18-4 | Cinematic Moments                 | P2       | Full-screen overlays for: ultra-rare trait discovery, foal birth, seasonal wins |
+| 18-5 | Horseshoe-Shaped Button Borders   | P2       | Custom button border style matching UX spec                                     |
+
+---
+
+## Roadmap Summary
+
+| Epic   | Title                          | Priority | Status      | Prerequisite                 |
+| ------ | ------------------------------ | -------- | ----------- | ---------------------------- |
+| **9A** | Technical Health Sprint        | P0       | ✅ Complete | —                            |
+| **9B** | Navigation & World Hub         | P0       | ✅ Complete | 9A                           |
+| **9C** | Rider System                   | P0       | ✅ Complete | 9A                           |
+| **10** | World Locations (Service Hubs) | P1       | ✅ Complete | 9B                           |
+| **11** | Community Features             | P1       | ✅ Complete | 9B                           |
+| **12** | Stable Management Completions  | P1       | ✅ Complete | 9B                           |
+| **13** | Trainer System                 | P2       | ✅ Complete | 9C                           |
+| **14** | Deployment & Production        | P0       | ✅ Complete | 9A (can parallel with 9B/9C) |
+| **15** | Onboarding & Polish            | P2       | ✅ Complete | 10, 11, 12                   |
+| **16** | Remaining Feature Work         | P1       | ✅ Complete | 15                           |
+| **17** | Guided Onboarding & Tokens     | P1       | 🔲 Backlog  | 16                           |
+| **18** | Visual Polish & Cinematics     | P2       | 🔲 Backlog  | 17                           |
+
+---
+
+## Feature Completion Status (post-Epic 16)
+
+| System                    | Complete | Partial | Missing                                     |
+| ------------------------- | -------- | ------- | ------------------------------------------- |
+| Authentication            | ✅       |         |                                             |
+| User Dashboard            | ✅       |         |                                             |
+| Horse Management          | ✅       |         |                                             |
+| Training System           | ✅       |         |                                             |
+| Competition System        | ✅       |         |                                             |
+| Breeding System           | ✅       |         |                                             |
+| Foal Development          | ✅       |         |                                             |
+| Groom System              | ✅       |         |                                             |
+| Rider System              | ✅       |         |                                             |
+| Trainer System            | ✅       |         |                                             |
+| World Hub                 | ✅       |         |                                             |
+| Navigation (full)         | ✅       |         |                                             |
+| Horse Profile (full tabs) | ✅       |         |                                             |
+| Leaderboards              | ✅       |         |                                             |
+| Message Board             | ✅       |         |                                             |
+| Clubs System              | ✅       |         |                                             |
+| Bank/Currency UI          | ✅       |         |                                             |
+| Inventory                 | ✅       |         |                                             |
+| Deployment Pipeline       | ✅       |         |                                             |
+| Onboarding Quest          |          | ⚠️ 30%  | Full step-by-step guided tutorial (Epic 17) |
+| Z-Index Token System      |          | ⚠️ 0%   | CSS custom properties (Epic 17)             |
+| Visual Polish (cinematic) |          |         | ❌ 0% (Epic 18)                             |
+| Art Assets                |          | ⚠️      | Owner-managed (solo dev/artist timeline)    |
+
+**Overall estimate: ~97% feature complete toward full UX spec**
 
 ---
 
 _Created during Epic 8 Retrospective — 2026-02-18_
+_Updated during Epic 16 Retrospective + Epic 17/18 Sprint Planning — 2026-02-27_
 _Source: UX Agent audit of `samples/` folder against `frontend/src/`_
 _Maintain this document: update % complete and epic statuses as work progresses_
