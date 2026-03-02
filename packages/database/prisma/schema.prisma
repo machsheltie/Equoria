@@ -52,6 +52,8 @@ model User {
   xpEvents                XpEvent[]
   facilities              Facility[]
   emailVerificationTokens EmailVerificationToken[]
+  forumThreads            ForumThread[]            @relation("ForumThreads")
+  forumPosts              ForumPost[]              @relation("ForumPosts")
 
   @@index([email])
   @@index([emailVerified])
@@ -1061,4 +1063,36 @@ model FacilityUpgrade {
   purchaseDate          DateTime @default(now())
 
   @@map("facility_upgrades")
+}
+
+enum BoardSection {
+  general
+  art
+  sales
+  services
+  venting
+}
+
+model ForumThread {
+  id             Int          @id @default(autoincrement())
+  section        BoardSection
+  title          String
+  authorId       String
+  author         User         @relation("ForumThreads", fields: [authorId], references: [id])
+  tags           String[]
+  isPinned       Boolean      @default(false)
+  viewCount      Int          @default(0)
+  lastActivityAt DateTime     @default(now())
+  createdAt      DateTime     @default(now())
+  posts          ForumPost[]
+}
+
+model ForumPost {
+  id        Int         @id @default(autoincrement())
+  threadId  Int
+  thread    ForumThread @relation(fields: [threadId], references: [id], onDelete: Cascade)
+  authorId  String
+  author    User        @relation("ForumPosts", fields: [authorId], references: [id])
+  content   String
+  createdAt DateTime    @default(now())
 }
