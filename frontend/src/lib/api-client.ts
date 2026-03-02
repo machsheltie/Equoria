@@ -1245,6 +1245,55 @@ export const forumApi = {
     apiClient.post<Record<string, never>>(`/api/forum/threads/${threadId}/view`, {}),
 };
 
+// ── Direct Message types ─────────────────────────────────────────────────────
+export interface DirectMessageUser {
+  id: string;
+  username: string;
+}
+
+export interface DirectMessage {
+  id: number;
+  senderId: string;
+  sender: DirectMessageUser;
+  recipientId: string;
+  recipient: DirectMessageUser;
+  subject: string;
+  content: string;
+  tag?: string;
+  isRead: boolean;
+  createdAt: string;
+}
+
+export interface InboxResponse {
+  messages: DirectMessage[];
+}
+
+export interface SendMessageRequest {
+  recipientId: string;
+  subject: string;
+  content: string;
+  tag?: string;
+}
+
+/**
+ * Messages API surface (Epic 19B-2)
+ *   GET   /api/messages/inbox         → InboxResponse
+ *   GET   /api/messages/sent          → InboxResponse
+ *   GET   /api/messages/unread-count  → { count: number }
+ *   GET   /api/messages/:id           → { message: DirectMessage }
+ *   POST  /api/messages               → { message: DirectMessage }
+ *   PATCH /api/messages/:id/read      → { success: boolean }
+ */
+export const messagesApi = {
+  getInbox: () => apiClient.get<InboxResponse>('/api/messages/inbox'),
+  getSent: () => apiClient.get<InboxResponse>('/api/messages/sent'),
+  getUnreadCount: () => apiClient.get<{ count: number }>('/api/messages/unread-count'),
+  getMessage: (id: number) => apiClient.get<{ message: DirectMessage }>(`/api/messages/${id}`),
+  sendMessage: (req: SendMessageRequest) =>
+    apiClient.post<{ message: DirectMessage }>('/api/messages', req),
+  markRead: (id: number) => apiClient.patch<{ success: boolean }>(`/api/messages/${id}/read`, {}),
+};
+
 /**
  * User Progress API surface
  */

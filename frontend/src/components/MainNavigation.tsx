@@ -21,6 +21,7 @@ import { Link, useLocation } from 'react-router-dom';
 import { Menu, X, Search, Bell, User, ChevronDown, LogOut, Settings } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { Input } from '@/components/ui/input';
+import { useUnreadCount } from '@/hooks/api/useMessages';
 
 interface UserData {
   id: string;
@@ -29,21 +30,12 @@ interface UserData {
   avatar?: string;
 }
 
-interface Notification {
-  id: string;
-  message: string;
-  read: boolean;
-}
-
 const MainNavigation: React.FC = () => {
   const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
   const [isProfileDropdownOpen, setIsProfileDropdownOpen] = useState(false);
   const [searchQuery, setSearchQuery] = useState('');
   const [user] = useState<UserData>({ id: '1', name: 'Test User', email: 'test@example.com' });
-  const [notifications] = useState<Notification[]>([
-    { id: '1', message: 'New competition available', read: false },
-    { id: '2', message: 'Training session completed', read: true },
-  ]);
+  const { data: unreadData } = useUnreadCount();
   const location = useLocation();
 
   const navigationItems = [
@@ -68,7 +60,7 @@ const MainNavigation: React.FC = () => {
   //   { name: 'Horses', href: '/stable/horses' },
   // ];
 
-  const unreadNotifications = notifications.filter((n) => !n.read).length;
+  const unreadNotifications = unreadData?.count ?? 0;
 
   const isActiveRoute = (href: string) => {
     if (href === '/') return location.pathname === '/';
