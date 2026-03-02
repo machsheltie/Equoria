@@ -54,6 +54,8 @@ model User {
   emailVerificationTokens EmailVerificationToken[]
   forumThreads            ForumThread[]            @relation("ForumThreads")
   forumPosts              ForumPost[]              @relation("ForumPosts")
+  sentMessages            DirectMessage[]          @relation("SentMessages")
+  receivedMessages        DirectMessage[]          @relation("ReceivedMessages")
 
   @@index([email])
   @@index([emailVerified])
@@ -1095,4 +1097,17 @@ model ForumPost {
   author    User        @relation("ForumPosts", fields: [authorId], references: [id])
   content   String
   createdAt DateTime    @default(now())
+}
+
+model DirectMessage {
+  id          Int      @id @default(autoincrement())
+  senderId    String
+  sender      User     @relation("SentMessages", fields: [senderId], references: [id])
+  recipientId String
+  recipient   User     @relation("ReceivedMessages", fields: [recipientId], references: [id])
+  subject     String
+  content     String
+  tag         String?
+  isRead      Boolean  @default(false)
+  createdAt   DateTime @default(now())
 }
