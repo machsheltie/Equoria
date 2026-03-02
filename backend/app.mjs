@@ -89,6 +89,7 @@ import feedShopRoutes from './routes/feedShopRoutes.mjs';
 import inventoryRoutes from './routes/inventoryRoutes.mjs';
 import forumRoutes from './routes/forumRoutes.mjs';
 import messageRoutes from './routes/messageRoutes.mjs';
+import clubRoutes from './routes/clubRoutes.mjs';
 
 /**
  * 🔒 SECURITY ROUTER ARCHITECTURE
@@ -156,6 +157,7 @@ authRouter.use('/feed-shop', feedShopRoutes);
 authRouter.use('/inventory', inventoryRoutes);
 authRouter.use('/forum', forumRoutes);
 authRouter.use('/messages', messageRoutes);
+authRouter.use('/clubs', clubRoutes);
 
 // Groom management system
 authRouter.use('/grooms', groomRoutes);

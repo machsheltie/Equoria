@@ -56,6 +56,10 @@ model User {
   forumPosts              ForumPost[]              @relation("ForumPosts")
   sentMessages            DirectMessage[]          @relation("SentMessages")
   receivedMessages        DirectMessage[]          @relation("ReceivedMessages")
+  clubsLed                Club[]                   @relation("ClubsLed")
+  clubMemberships         ClubMembership[]         @relation("ClubMemberships")
+  candidacies             ClubCandidate[]          @relation("ElectionCandidacies")
+  ballots                 ClubBallot[]             @relation("CastBallots")
 
   @@index([email])
   @@index([emailVerified])
@@ -1110,4 +1114,81 @@ model DirectMessage {
   tag         String?
   isRead      Boolean  @default(false)
   createdAt   DateTime @default(now())
+}
+
+enum ClubType {
+  discipline
+  breed
+}
+
+enum ClubRole {
+  member
+  officer
+  president
+}
+
+enum ElectionStatus {
+  upcoming
+  open
+  closed
+}
+
+model Club {
+  id          Int              @id @default(autoincrement())
+  name        String           @unique
+  type        ClubType
+  category    String
+  description String
+  leaderId    String
+  leader      User             @relation("ClubsLed", fields: [leaderId], references: [id])
+  createdAt   DateTime         @default(now())
+  members     ClubMembership[]
+  elections   ClubElection[]
+}
+
+model ClubMembership {
+  id       Int      @id @default(autoincrement())
+  clubId   Int
+  club     Club     @relation(fields: [clubId], references: [id], onDelete: Cascade)
+  userId   String
+  user     User     @relation("ClubMemberships", fields: [userId], references: [id])
+  role     ClubRole @default(member)
+  joinedAt DateTime @default(now())
+
+  @@unique([clubId, userId])
+}
+
+model ClubElection {
+  id         Int               @id @default(autoincrement())
+  clubId     Int
+  club       Club              @relation(fields: [clubId], references: [id])
+  position   String
+  status     ElectionStatus    @default(upcoming)
+  startsAt   DateTime
+  endsAt     DateTime
+  candidates ClubCandidate[]
+}
+
+model ClubCandidate {
+  id         Int          @id @default(autoincrement())
+  electionId Int
+  election   ClubElection @relation(fields: [electionId], references: [id])
+  userId     String
+  user       User         @relation("ElectionCandidacies", fields: [userId], references: [id])
+  statement  String
+  ballots    ClubBallot[]
+
+  @@unique([electionId, userId])
+}
+
+model ClubBallot {
+  id          Int           @id @default(autoincrement())
+  candidateId Int
+  candidate   ClubCandidate @relation(fields: [candidateId], references: [id])
+  voterId     String
+  voter       User          @relation("CastBallots", fields: [voterId], references: [id])
+  electionId  Int
+  createdAt   DateTime      @default(now())
+
+  @@unique([electionId, voterId])
 }
