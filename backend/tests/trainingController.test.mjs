@@ -113,9 +113,11 @@ describe('🏋️ UNIT: Training Controller - Horse Training Business Logic', ()
       },
     });
 
-    // Create young horse (2 years old)
+    // Create young horse (2 years old — add 2-day buffer so Math.floor reliably returns 2
+    // even near the anniversary date, where 730/365.25 < 2 without the buffer)
     const twoYearsAgo = new Date();
     twoYearsAgo.setFullYear(twoYearsAgo.getFullYear() - 2);
+    twoYearsAgo.setDate(twoYearsAgo.getDate() - 2);
 
     testHorseYoung = await prisma.horse.create({
       data: {

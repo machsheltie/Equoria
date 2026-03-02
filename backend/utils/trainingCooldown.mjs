@@ -67,9 +67,8 @@ export async function setCooldown(horseId) {
   }
 
   try {
-    // Calculate cooldown date (7 days from now)
-    const cooldownDate = new Date();
-    cooldownDate.setDate(cooldownDate.getDate() + 7);
+    // Calculate cooldown date (exactly 7 days in ms — avoids DST clock skew)
+    const cooldownDate = new Date(Date.now() + 7 * 24 * 60 * 60 * 1000);
 
     // Update the horse's training cooldown
     const updatedHorse = await prisma.horse.update({

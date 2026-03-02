@@ -327,9 +327,8 @@ describe('⏰ UNIT: Training Cooldown System - Horse Training Restrictions', () 
       expect(canTrain(testHorse)).toBe(true);
       expect(getCooldownTimeRemaining(testHorse)).toBeNull();
 
-      // 2. Mock setting cooldown
-      const futureDate = new Date();
-      futureDate.setDate(futureDate.getDate() + 7);
+      // 2. Mock setting cooldown (use ms arithmetic to avoid DST clock skew)
+      const futureDate = new Date(Date.now() + 7 * 24 * 60 * 60 * 1000);
 
       const updatedHorse = {
         ...testHorse,
