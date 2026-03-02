@@ -1294,6 +1294,92 @@ export const messagesApi = {
   markRead: (id: number) => apiClient.patch<{ success: boolean }>(`/api/messages/${id}/read`, {}),
 };
 
+// ── Club Types ─────────────────────────────────────────────────────────────────
+
+export type ClubType = 'discipline' | 'breed';
+export type ClubRole = 'member' | 'officer' | 'president';
+export type ElectionStatus = 'upcoming' | 'open' | 'closed';
+
+export interface Club {
+  id: number;
+  name: string;
+  type: ClubType;
+  category: string;
+  description: string;
+  leader: { id: string; username: string };
+  memberCount: number;
+  createdAt: string;
+}
+
+export interface ClubMembership {
+  id: number;
+  club: Club;
+  role: ClubRole;
+  joinedAt: string;
+}
+
+export interface ClubElection {
+  id: number;
+  clubId: number;
+  position: string;
+  status: ElectionStatus;
+  startsAt: string;
+  endsAt: string;
+}
+
+export interface ElectionCandidate {
+  id: number;
+  user: { id: string; username: string };
+  statement: string;
+  voteCount: number;
+}
+
+/**
+ * Clubs API surface
+ *   GET    /api/clubs                               → { clubs: Club[] }
+ *   GET    /api/clubs/mine                          → { memberships: ClubMembership[] }
+ *   GET    /api/clubs/:id                           → { club: Club }
+ *   POST   /api/clubs                               → { club: Club }
+ *   POST   /api/clubs/:id/join                      → { membership: ClubMembership }
+ *   DELETE /api/clubs/:id/leave                     → { success: true }
+ *   GET    /api/clubs/:id/elections                 → { elections: ClubElection[] }
+ *   POST   /api/clubs/:id/elections                 → { election: ClubElection }
+ *   POST   /api/clubs/elections/:id/nominate        → { candidate }
+ *   POST   /api/clubs/elections/:id/vote            → { ballot }
+ *   GET    /api/clubs/elections/:id/results         → { election, candidates: ElectionCandidate[] }
+ */
+export const clubsApi = {
+  getClubs: (type?: ClubType, category?: string) => {
+    const params = new URLSearchParams();
+    if (type) params.set('type', type);
+    if (category) params.set('category', category);
+    const qs = params.toString();
+    return apiClient.get<{ clubs: Club[] }>(`/api/clubs${qs ? `?${qs}` : ''}`);
+  },
+  getMyClubs: () => apiClient.get<{ memberships: ClubMembership[] }>('/api/clubs/mine'),
+  getClub: (id: number) =>
+    apiClient.get<{ club: Club & { members: ClubMembership[] } }>(`/api/clubs/${id}`),
+  createClub: (payload: { name: string; type: ClubType; category: string; description: string }) =>
+    apiClient.post<{ club: Club }>('/api/clubs', payload),
+  joinClub: (id: number) =>
+    apiClient.post<{ membership: ClubMembership }>(`/api/clubs/${id}/join`, {}),
+  leaveClub: (id: number) => apiClient.delete<void>(`/api/clubs/${id}/leave`),
+  getElections: (clubId: number) =>
+    apiClient.get<{ elections: ClubElection[] }>(`/api/clubs/${clubId}/elections`),
+  createElection: (
+    clubId: number,
+    payload: { position: string; startsAt: string; endsAt: string }
+  ) => apiClient.post<{ election: ClubElection }>(`/api/clubs/${clubId}/elections`, payload),
+  nominate: (electionId: number, statement: string) =>
+    apiClient.post<void>(`/api/clubs/elections/${electionId}/nominate`, { statement }),
+  vote: (electionId: number, candidateId: number) =>
+    apiClient.post<void>(`/api/clubs/elections/${electionId}/vote`, { candidateId }),
+  getResults: (electionId: number) =>
+    apiClient.get<{ election: ClubElection; candidates: ElectionCandidate[] }>(
+      `/api/clubs/elections/${electionId}/results`
+    ),
+};
+
 /**
  * User Progress API surface
  */

@@ -13,73 +13,9 @@ import React from 'react';
 import { Link } from 'react-router-dom';
 import { MessageSquare, Users, Mail, Trophy, ArrowRight, Globe } from 'lucide-react';
 import MainNavigation from '@/components/MainNavigation';
-
-interface CommunityCard {
-  title: string;
-  description: string;
-  href: string;
-  icon: React.ReactNode;
-  accent: string;
-  borderAccent: string;
-  stats: { label: string; value: string }[];
-  badge?: string;
-}
-
-const communityCards: CommunityCard[] = [
-  {
-    title: 'Message Board',
-    description:
-      'Join the conversation. General chat, art sharing, horse sales, services, and community venting.',
-    href: '/message-board',
-    icon: <MessageSquare className="w-7 h-7 text-violet-400" />,
-    accent: 'bg-violet-500/10 border-violet-500/30',
-    borderAccent: 'hover:border-violet-500/50',
-    stats: [
-      { label: 'Sections', value: '5' },
-      { label: 'Active threads', value: '142' },
-    ],
-  },
-  {
-    title: 'Clubs',
-    description:
-      'Find your tribe. Join discipline associations and breed clubs, participate in elections and leaderboards.',
-    href: '/clubs',
-    icon: <Users className="w-7 h-7 text-celestial-gold" />,
-    accent: 'bg-celestial-gold/10 border-celestial-gold/30',
-    borderAccent: 'hover:border-celestial-gold/50',
-    stats: [
-      { label: 'Discipline clubs', value: '5' },
-      { label: 'Breed clubs', value: '8' },
-    ],
-    badge: 'Elections open',
-  },
-  {
-    title: 'Messages',
-    description:
-      'Your inbox. Send and receive direct messages with other stable owners and community members.',
-    href: '/messages',
-    icon: <Mail className="w-7 h-7 text-emerald-400" />,
-    accent: 'bg-emerald-500/10 border-emerald-500/30',
-    borderAccent: 'hover:border-emerald-500/50',
-    stats: [
-      { label: 'Unread', value: '3' },
-      { label: 'Conversations', value: '8' },
-    ],
-  },
-  {
-    title: 'Hall of Fame',
-    description:
-      'Celebrate your greatest horses. Retired champions immortalised with career highlights and legacy records.',
-    href: '/my-stable',
-    icon: <Trophy className="w-7 h-7 text-amber-400" />,
-    accent: 'bg-amber-500/10 border-amber-500/30',
-    borderAccent: 'hover:border-amber-500/50',
-    stats: [
-      { label: 'Inductees', value: '3' },
-      { label: 'Total wins', value: '47' },
-    ],
-  },
-];
+import { useThreads } from '@/hooks/api/useForum';
+import { useUnreadCount } from '@/hooks/api/useMessages';
+import { useClubs } from '@/hooks/api/useClubs';
 
 const MOCK_RECENT_ACTIVITY = [
   {
@@ -144,6 +80,70 @@ const activityTypeLabel: Record<string, string> = {
 };
 
 const CommunityPage: React.FC = () => {
+  const { total: threadTotal } = useThreads();
+  const { data: unreadData } = useUnreadCount();
+  const { data: clubsData } = useClubs();
+
+  const unreadCount = unreadData?.count ?? 0;
+  const disciplineCount = clubsData?.clubs.filter((c) => c.type === 'discipline').length ?? 0;
+  const breedCount = clubsData?.clubs.filter((c) => c.type === 'breed').length ?? 0;
+
+  const communityCards = [
+    {
+      title: 'Message Board',
+      description:
+        'Join the conversation. General chat, art sharing, horse sales, services, and community venting.',
+      href: '/message-board',
+      icon: <MessageSquare className="w-7 h-7 text-violet-400" />,
+      accent: 'bg-violet-500/10 border-violet-500/30',
+      borderAccent: 'hover:border-violet-500/50',
+      stats: [
+        { label: 'Sections', value: '5' },
+        { label: 'Active threads', value: threadTotal > 0 ? String(threadTotal) : '…' },
+      ],
+    },
+    {
+      title: 'Clubs',
+      description:
+        'Find your tribe. Join discipline associations and breed clubs, participate in elections and leaderboards.',
+      href: '/clubs',
+      icon: <Users className="w-7 h-7 text-celestial-gold" />,
+      accent: 'bg-celestial-gold/10 border-celestial-gold/30',
+      borderAccent: 'hover:border-celestial-gold/50',
+      stats: [
+        { label: 'Discipline clubs', value: disciplineCount > 0 ? String(disciplineCount) : '…' },
+        { label: 'Breed clubs', value: breedCount > 0 ? String(breedCount) : '…' },
+      ],
+      badge: 'Elections open',
+    },
+    {
+      title: 'Messages',
+      description:
+        'Your inbox. Send and receive direct messages with other stable owners and community members.',
+      href: '/messages',
+      icon: <Mail className="w-7 h-7 text-emerald-400" />,
+      accent: 'bg-emerald-500/10 border-emerald-500/30',
+      borderAccent: 'hover:border-emerald-500/50',
+      stats: [
+        { label: 'Unread', value: String(unreadCount) },
+        { label: 'Conversations', value: '…' },
+      ],
+    },
+    {
+      title: 'Hall of Fame',
+      description:
+        'Celebrate your greatest horses. Retired champions immortalised with career highlights and legacy records.',
+      href: '/my-stable',
+      icon: <Trophy className="w-7 h-7 text-amber-400" />,
+      accent: 'bg-amber-500/10 border-amber-500/30',
+      borderAccent: 'hover:border-amber-500/50',
+      stats: [
+        { label: 'Inductees', value: '3' },
+        { label: 'Total wins', value: '47' },
+      ],
+    },
+  ];
+
   return (
     <div className="min-h-screen">
       <MainNavigation />
