@@ -87,6 +87,7 @@ import tackShopRoutes from './routes/tackShopRoutes.mjs';
 import farrierRoutes from './routes/farrierRoutes.mjs';
 import feedShopRoutes from './routes/feedShopRoutes.mjs';
 import inventoryRoutes from './routes/inventoryRoutes.mjs';
+import forumRoutes from './routes/forumRoutes.mjs';
 
 /**
  * 🔒 SECURITY ROUTER ARCHITECTURE
@@ -152,6 +153,7 @@ authRouter.use('/tack-shop', tackShopRoutes);
 authRouter.use('/farrier', farrierRoutes);
 authRouter.use('/feed-shop', feedShopRoutes);
 authRouter.use('/inventory', inventoryRoutes);
+authRouter.use('/forum', forumRoutes);
 
 // Groom management system
 authRouter.use('/grooms', groomRoutes);
