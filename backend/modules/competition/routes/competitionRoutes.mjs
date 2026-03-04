@@ -66,7 +66,7 @@ router.post('/enter-show', mutationRateLimiter, auth, validateEnterShow, async (
     const userId = req.user.id;
 
     // IDOR Protection: Batch ownership validation for all horses
-    const { validateBatchOwnership } = await import('../middleware/ownership.mjs');
+    const { validateBatchOwnership } = await import('../../../middleware/ownership.mjs');
     const ownedHorses = await validateBatchOwnership('horse', horseIds, userId);
 
     // Verify all horses are owned by the user

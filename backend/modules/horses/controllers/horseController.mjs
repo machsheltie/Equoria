@@ -537,7 +537,7 @@ export async function getHorsePersonalityImpact(req, res) {
 
     // Calculate compatibility for each groom
     const { getCompatibleGroomsForTemperament, calculatePersonalityCompatibility } = await import(
-      '../utils/groomPersonalityTraitBonus.mjs'
+      '../../../utils/groomPersonalityTraitBonus.mjs'
     );
 
     const groomCompatibility = grooms.map(groom => {
