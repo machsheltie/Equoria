@@ -1,0 +1,1208 @@
+/**
+ * Groom Management Routes
+ * API endpoints for groom assignments, interactions, and management
+ */
+
+import express from 'express';
+import { body, param, validationResult } from 'express-validator';
+import { authenticateToken } from '../../../middleware/auth.mjs';
+import { requireOwnership } from '../../../middleware/ownership.mjs';
+import {
+  assignGroom,
+  cleanupTestData,
+  ensureDefaultAssignment,
+  getFoalAssignments,
+  recordInteraction,
+  getUserGrooms,
+  hireGroom,
+  getGroomDefinitions,
+  getGroomProfile,
+  getGroomBonusTraits,
+  updateGroomBonusTraits,
+} from '../controllers/groomController.mjs';
+import {
+  checkRetirementEligibility,
+  processRetirement,
+  getGroomsApproachingRetirement,
+  getRetirementStatistics,
+} from '../../../services/groomRetirementService.mjs';
+import {
+  checkLegacyEligibility,
+  generateLegacyProtege,
+  getUserLegacyHistory,
+} from '../../../services/groomLegacyService.mjs';
+import {
+  getTalentTreeDefinitions,
+  getGroomTalentSelections,
+  selectTalent,
+  validateTalentSelection,
+} from '../../../services/groomTalentService.mjs';
+import { GROOM_CONFIG } from '../../../config/groomConfig.mjs';
+import {
+  GROOM_SPECIALTY_VALUES,
+  GROOM_SKILL_LEVEL_VALUES,
+  GROOM_PERSONALITY_VALUES,
+} from '../../../constants/schema.mjs';
+import logger from '../../../utils/logger.mjs';
+
+const router = express.Router();
+
+/**
+ * Get all valid interaction types from configuration
+ * @returns {Array} Array of all valid interaction type strings
+ */
+function getAllValidInteractionTypes() {
+  return [
+    // Legacy interaction types (for backward compatibility)
+    'daily_care',
+    'feeding',
+    'grooming',
+    'exercise',
+    'medical_check',
+    // New foal enrichment tasks (0-2 years)
+    ...GROOM_CONFIG.ELIGIBLE_FOAL_ENRICHMENT_TASKS,
+    // New foal grooming tasks (1-3 years)
+    ...GROOM_CONFIG.ELIGIBLE_FOAL_GROOMING_TASKS,
+    // New general grooming tasks (3+ years)
+    ...GROOM_CONFIG.ELIGIBLE_GENERAL_GROOMING_TASKS,
+  ];
+}
+
+/**
+ * Validation middleware for handling validation errors
+ */
+const handleValidationErrors = (req, res, next) => {
+  const errors = validationResult(req);
+  if (!errors.isEmpty()) {
+    logger.warn(`[groomRoutes] Validation errors: ${JSON.stringify(errors.array())}`);
+    return res.status(400).json({
+      success: false,
+      message: 'Validation failed',
+      errors: errors.array(),
+    });
+  }
+  next();
+};
+
+/**
+ * @swagger
+ * tags:
+ *   name: Grooms
+ *   description: Groom assignment and management endpoints
+ */
+
+/**
+ * @swagger
+ * /api/grooms/assign:
+ *   post:
+ *     summary: Assign a groom to a foal
+ *     tags: [Grooms]
+ *     requestBody:
+ *       required: true
+ *       content:
+ *         application/json:
+ *           schema:
+ *             type: object
+ *             required:
+ *               - foalId
+ *               - groomId
+ *             properties:
+ *               foalId:
+ *                 type: integer
+ *                 minimum: 1
+ *                 description: ID of the foal
+ *               groomId:
+ *                 type: integer
+ *                 minimum: 1
+ *                 description: ID of the groom
+ *               priority:
+ *                 type: integer
+ *                 minimum: 1
+ *                 maximum: 5
+ *                 default: 1
+ *                 description: Assignment priority (1 = primary)
+ *               notes:
+ *                 type: string
+ *                 maxLength: 500
+ *                 description: Optional assignment notes
+ *     responses:
+ *       200:
+ *         description: Groom assigned successfully
+ *       400:
+ *         description: Invalid request data
+ *       500:
+ *         description: Internal server error
+ */
+router.post(
+  '/assign',
+  authenticateToken,
+  [
+    body('foalId').isInt({ min: 1 }).withMessage('foalId must be a positive integer'),
+    body('groomId').isInt({ min: 1 }).withMessage('groomId must be a positive integer'),
+    body('priority')
+      .optional()
+      .isInt({ min: 1, max: 5 })
+      .withMessage('priority must be an integer between 1 and 5'),
+    body('notes')
+      .optional()
+      .isLength({ max: 500 })
+      .withMessage('notes must be 500 characters or less'),
+    handleValidationErrors,
+  ],
+  // Dual ownership validation middleware (IDOR protection)
+  async (req, res, next) => {
+    try {
+      const { foalId, groomId } = req.body;
+      const userId = req.user.id;
+
+      // Import findOwnedResource dynamically to avoid circular dependencies
+      const { findOwnedResource } = await import('../../../middleware/ownership.mjs');
+
+      // Validate foal ownership
+      const foal = await findOwnedResource('foal', foalId, userId);
+      if (!foal) {
+        return res.status(404).json({
+          success: false,
+          message: 'Foal not found',
+        });
+      }
+
+      // Validate groom ownership
+      const groom = await findOwnedResource('groom', groomId, userId);
+      if (!groom) {
+        return res.status(404).json({
+          success: false,
+          message: 'Groom not found',
+        });
+      }
+
+      // Attach validated resources for controller
+      req.foal = foal;
+      req.groom = groom;
+      next();
+    } catch (error) {
+      logger.error('[groomRoutes] Ownership validation error:', error);
+      return res.status(500).json({
+        success: false,
+        message: 'Internal server error',
+      });
+    }
+  },
+  assignGroom,
+);
+
+/**
+ * @swagger
+ * /api/grooms/ensure-default/{foalId}:
+ *   post:
+ *     summary: Ensure a foal has a default groom assignment
+ *     tags: [Grooms]
+ *     parameters:
+ *       - in: path
+ *         name: foalId
+ *         required: true
+ *         schema:
+ *           type: integer
+ *           minimum: 1
+ *         description: ID of the foal
+ *     responses:
+ *       200:
+ *         description: Default assignment ensured
+ *       400:
+ *         description: Invalid foal ID
+ *       500:
+ *         description: Internal server error
+ */
+router.post(
+  '/ensure-default/:foalId',
+  authenticateToken, // IDOR Protection: Require authentication
+  [
+    param('foalId').isInt({ min: 1 }).withMessage('foalId must be a positive integer'),
+    handleValidationErrors,
+  ],
+  requireOwnership('foal', { idParam: 'foalId' }), // IDOR Protection: Validate foal ownership
+  ensureDefaultAssignment,
+);
+
+/**
+ * @swagger
+ * /api/grooms/assignments/{foalId}:
+ *   get:
+ *     summary: Get all assignments for a foal
+ *     tags: [Grooms]
+ *     parameters:
+ *       - in: path
+ *         name: foalId
+ *         required: true
+ *         schema:
+ *           type: integer
+ *           minimum: 1
+ *         description: ID of the foal
+ *     responses:
+ *       200:
+ *         description: Assignments retrieved successfully
+ *       400:
+ *         description: Invalid foal ID
+ *       500:
+ *         description: Internal server error
+ */
+router.get(
+  '/assignments/:foalId',
+  authenticateToken, // IDOR Protection: Require authentication
+  [
+    param('foalId').isInt({ min: 1 }).withMessage('foalId must be a positive integer'),
+    handleValidationErrors,
+  ],
+  requireOwnership('foal', { idParam: 'foalId' }), // IDOR Protection: Validate foal ownership
+  getFoalAssignments,
+);
+
+/**
+ * @swagger
+ * /api/grooms/interact:
+ *   post:
+ *     summary: Record a groom interaction with a foal
+ *     tags: [Grooms]
+ *     requestBody:
+ *       required: true
+ *       content:
+ *         application/json:
+ *           schema:
+ *             type: object
+ *             required:
+ *               - foalId
+ *               - groomId
+ *               - interactionType
+ *               - duration
+ *             properties:
+ *               foalId:
+ *                 type: integer
+ *                 minimum: 1
+ *                 description: ID of the foal
+ *               groomId:
+ *                 type: integer
+ *                 minimum: 1
+ *                 description: ID of the groom
+ *               interactionType:
+ *                 type: string
+ *                 description: Type of interaction (includes legacy types, foal enrichment tasks, foal grooming tasks, and general grooming tasks)
+ *               duration:
+ *                 type: integer
+ *                 minimum: 5
+ *                 maximum: 480
+ *                 description: Duration in minutes
+ *               assignmentId:
+ *                 type: integer
+ *                 minimum: 1
+ *                 description: Optional assignment ID
+ *               notes:
+ *                 type: string
+ *                 maxLength: 500
+ *                 description: Optional interaction notes
+ *     responses:
+ *       200:
+ *         description: Interaction recorded successfully
+ *       400:
+ *         description: Invalid request data
+ *       404:
+ *         description: Foal or groom not found
+ *       500:
+ *         description: Internal server error
+ */
+router.post(
+  '/interact',
+  authenticateToken,
+  [
+    body('foalId').isInt({ min: 1 }).withMessage('foalId must be a positive integer'),
+    body('groomId').isInt({ min: 1 }).withMessage('groomId must be a positive integer'),
+    body('interactionType')
+      .isIn(getAllValidInteractionTypes())
+      .withMessage(`interactionType must be one of: ${getAllValidInteractionTypes().join(', ')}`),
+    body('duration')
+      .isInt({ min: 5, max: 480 })
+      .withMessage('duration must be between 5 and 480 minutes'),
+    body('assignmentId')
+      .optional()
+      .isInt({ min: 1 })
+      .withMessage('assignmentId must be a positive integer'),
+    body('notes')
+      .optional()
+      .isLength({ max: 500 })
+      .withMessage('notes must be 500 characters or less'),
+    handleValidationErrors,
+  ],
+  // Dual ownership validation middleware (IDOR protection)
+  async (req, res, next) => {
+    try {
+      const { foalId, groomId } = req.body;
+      const userId = req.user.id;
+
+      // Import findOwnedResource dynamically to avoid circular dependencies
+      const { findOwnedResource } = await import('../../../middleware/ownership.mjs');
+
+      // Validate foal ownership
+      const foal = await findOwnedResource('foal', foalId, userId);
+      if (!foal) {
+        return res.status(404).json({
+          success: false,
+          message: 'Foal not found',
+        });
+      }
+
+      // Validate groom ownership
+      const groom = await findOwnedResource('groom', groomId, userId);
+      if (!groom) {
+        return res.status(404).json({
+          success: false,
+          message: 'Groom not found',
+        });
+      }
+
+      // Attach validated resources for controller
+      req.foal = foal;
+      req.groom = groom;
+      next();
+    } catch (error) {
+      logger.error('[groomRoutes] Ownership validation error:', error);
+      return res.status(500).json({
+        success: false,
+        message: 'Internal server error',
+      });
+    }
+  },
+  recordInteraction,
+);
+
+/**
+ * @swagger
+ * /api/grooms/user/{userId}:
+ * /api/grooms/user/{userId}:
+ *   get:
+ *     summary: Get all grooms for a user
+ *     summary: Get all grooms for a user
+ *     tags: [Grooms]
+ *     parameters:
+ *       - in: path
+ *         name: userId
+ *         name: userId
+ *         required: true
+ *         schema:
+ *           type: string
+ *         description: ID of the user
+ *         description: ID of the user
+ *     responses:
+ *       200:
+ *         description: Grooms retrieved successfully
+ *       500:
+ *         description: Internal server error
+ */
+router.get(
+  '/user/:userId',
+  authenticateToken, // IDOR Protection: Require authentication
+  [param('userId').notEmpty().withMessage('userId is required'), handleValidationErrors],
+  // IDOR Protection: Self-access validation middleware
+  (req, res, next) => {
+    const targetUserId = req.params.userId;
+    const authenticatedUserId = req.user.id;
+
+    // Validate self-access: user can only access their own grooms
+    if (authenticatedUserId !== targetUserId) {
+      logger.warn(
+        `[groomRoutes] Self-access violation: user ${authenticatedUserId} attempted to access grooms for user ${targetUserId}`,
+      );
+      return res.status(404).json({
+        success: false,
+        message: 'User not found', // Return 404 to prevent user enumeration
+      });
+    }
+
+    next();
+  },
+  getUserGrooms,
+);
+
+/**
+ * @swagger
+ * /api/grooms/hire:
+ *   post:
+ *     summary: Hire a new groom for a user
+ *     summary: Hire a new groom for a user
+ *     tags: [Grooms]
+ *     requestBody:
+ *       required: true
+ *       content:
+ *         application/json:
+ *           schema:
+ *             type: object
+ *             required:
+ *               - name
+ *               - speciality
+ *               - skill_level
+ *               - personality
+ *             properties:
+ *               name:
+ *                 type: string
+ *                 minLength: 2
+ *                 maxLength: 100
+ *                 description: Groom's name
+ *               speciality:
+ *                 type: string
+ *                 enum: [foal_care, general, training, medical]
+ *                 description: Groom's speciality
+ *               experience:
+ *                 type: integer
+ *                 minimum: 1
+ *                 maximum: 20
+ *                 description: Years of experience
+ *               skill_level:
+ *                 type: string
+ *                 enum: [novice, intermediate, expert, master]
+ *                 description: Skill level
+ *               personality:
+ *                 type: string
+ *                 enum: [gentle, energetic, patient, strict]
+ *                 description: Personality trait
+ *               hourly_rate:
+ *                 type: number
+ *                 minimum: 5
+ *                 maximum: 100
+ *                 description: Hourly rate in currency
+ *               bio:
+ *                 type: string
+ *                 maxLength: 500
+ *                 description: Optional biography
+ *               availability:
+ *                 type: object
+ *                 description: Available days/hours
+ *     responses:
+ *       201:
+ *         description: Groom hired successfully
+ *       400:
+ *         description: Invalid request data
+ *       500:
+ *         description: Internal server error
+ */
+router.post(
+  '/hire',
+  [
+    body('name')
+      .isLength({ min: 2, max: 100 })
+      .withMessage('name must be between 2 and 100 characters'),
+    body('speciality')
+      .isIn(GROOM_SPECIALTY_VALUES)
+      .withMessage(`speciality must be one of: ${GROOM_SPECIALTY_VALUES.join(', ')}`),
+    body('experience')
+      .optional()
+      .isInt({ min: 1, max: 20 })
+      .withMessage('experience must be between 1 and 20 years'),
+    body('skill_level')
+      .isIn(GROOM_SKILL_LEVEL_VALUES)
+      .withMessage(`skill_level must be one of: ${GROOM_SKILL_LEVEL_VALUES.join(', ')}`),
+    body('personality')
+      .isIn(GROOM_PERSONALITY_VALUES)
+      .withMessage(`personality must be one of: ${GROOM_PERSONALITY_VALUES.join(', ')}`),
+    body('session_rate')
+      .optional()
+      .isFloat({ min: 5, max: 100 })
+      .withMessage('session_rate must be between 5 and 100'),
+    body('bio').optional().isLength({ max: 500 }).withMessage('bio must be 500 characters or less'),
+    body('availability').optional().isObject().withMessage('availability must be an object'),
+    handleValidationErrors,
+  ],
+  hireGroom,
+);
+
+/**
+ * @swagger
+ * /api/grooms/definitions:
+ *   get:
+ *     summary: Get groom system definitions
+ *     tags: [Grooms]
+ *     responses:
+ *       200:
+ *         description: Definitions retrieved successfully
+ *       500:
+ *         description: Internal server error
+ */
+router.get('/definitions', getGroomDefinitions);
+
+/**
+ * @swagger
+ * /api/grooms/{id}/profile:
+ *   get:
+ *     summary: Get groom profile including personality
+ *     tags: [Grooms]
+ *     parameters:
+ *       - in: path
+ *         name: id
+ *         required: true
+ *         schema:
+ *           type: integer
+ *         description: Groom ID
+ *     responses:
+ *       200:
+ *         description: Groom profile retrieved successfully
+ *       404:
+ *         description: Groom not found
+ *       500:
+ *         description: Internal server error
+ */
+router.get(
+  '/:id/profile',
+  param('id').isInt().withMessage('Groom ID must be an integer'),
+  requireOwnership('groom'),
+  getGroomProfile,
+);
+
+/**
+ * @swagger
+ * /api/grooms/{id}/bonus-traits:
+ *   get:
+ *     summary: Get groom bonus traits
+ *     tags: [Grooms]
+ *     parameters:
+ *       - in: path
+ *         name: id
+ *         required: true
+ *         schema:
+ *           type: integer
+ *         description: Groom ID
+ *     responses:
+ *       200:
+ *         description: Bonus traits retrieved successfully
+ *       404:
+ *         description: Groom not found
+ *       500:
+ *         description: Internal server error
+ */
+router.get(
+  '/:id/bonus-traits',
+  param('id').isInt().withMessage('Groom ID must be an integer'),
+  requireOwnership('groom'),
+  getGroomBonusTraits,
+);
+
+/**
+ * @swagger
+ * /api/grooms/{id}/bonus-traits:
+ *   put:
+ *     summary: Update groom bonus traits
+ *     tags: [Grooms]
+ *     parameters:
+ *       - in: path
+ *         name: id
+ *         required: true
+ *         schema:
+ *           type: integer
+ *         description: Groom ID
+ *     requestBody:
+ *       required: true
+ *       content:
+ *         application/json:
+ *           schema:
+ *             type: object
+ *             properties:
+ *               bonusTraits:
+ *                 type: object
+ *                 description: Object mapping trait names to bonus percentages
+ *     responses:
+ *       200:
+ *         description: Bonus traits updated successfully
+ *       400:
+ *         description: Invalid bonus traits
+ *       404:
+ *         description: Groom not found
+ *       500:
+ *         description: Internal server error
+ */
+router.put(
+  '/:id/bonus-traits',
+  param('id').isInt().withMessage('Groom ID must be an integer'),
+  body('bonusTraits').isObject().withMessage('Bonus traits must be an object'),
+  requireOwnership('groom'),
+  updateGroomBonusTraits,
+);
+
+// Test cleanup endpoint (for testing only)
+router.delete('/test/cleanup', cleanupTestData);
+
+// ===== RETIREMENT MANAGEMENT ENDPOINTS =====
+
+/**
+ * @swagger
+ * /api/grooms/{id}/retirement/eligibility:
+ *   get:
+ *     summary: Check retirement eligibility for a groom
+ *     tags: [Grooms]
+ *     security:
+ *       - bearerAuth: []
+ *     parameters:
+ *       - in: path
+ *         name: id
+ *         required: true
+ *         schema:
+ *           type: integer
+ *         description: Groom ID
+ *     responses:
+ *       200:
+ *         description: Retirement eligibility status
+ *       404:
+ *         description: Groom not found
+ *       500:
+ *         description: Internal server error
+ */
+router.get(
+  '/:id/retirement/eligibility',
+  param('id').isInt().withMessage('Groom ID must be an integer'),
+  handleValidationErrors,
+  requireOwnership('groom'),
+  async (req, res) => {
+    try {
+      const groomId = parseInt(req.params.id);
+      const eligibility = await checkRetirementEligibility(groomId);
+
+      res.json({
+        success: true,
+        data: eligibility,
+      });
+    } catch (error) {
+      logger.error('Error checking retirement eligibility:', error);
+      res.status(500).json({
+        success: false,
+        message: 'Failed to check retirement eligibility',
+        error: error.message,
+      });
+    }
+  },
+);
+
+/**
+ * @swagger
+ * /api/grooms/{id}/retirement/process:
+ *   post:
+ *     summary: Process retirement for a groom
+ *     tags: [Grooms]
+ *     security:
+ *       - bearerAuth: []
+ *     parameters:
+ *       - in: path
+ *         name: id
+ *         required: true
+ *         schema:
+ *           type: integer
+ *         description: Groom ID
+ *     requestBody:
+ *       required: false
+ *       content:
+ *         application/json:
+ *           schema:
+ *             type: object
+ *             properties:
+ *               reason:
+ *                 type: string
+ *                 description: Retirement reason
+ *               force:
+ *                 type: boolean
+ *                 description: Force retirement even if not eligible
+ *     responses:
+ *       200:
+ *         description: Retirement processed successfully
+ *       400:
+ *         description: Groom not eligible for retirement
+ *       404:
+ *         description: Groom not found
+ *       500:
+ *         description: Internal server error
+ */
+router.post(
+  '/:id/retirement/process',
+  param('id').isInt().withMessage('Groom ID must be an integer'),
+  body('reason').optional().isString().withMessage('Reason must be a string'),
+  body('force').optional().isBoolean().withMessage('Force must be a boolean'),
+  handleValidationErrors,
+  requireOwnership('groom'),
+  async (req, res) => {
+    try {
+      const groomId = parseInt(req.params.id);
+      const { reason, force } = req.body;
+
+      const result = await processRetirement(groomId, reason, force);
+
+      res.json({
+        success: true,
+        data: result,
+        message: 'Groom retirement processed successfully',
+      });
+    } catch (error) {
+      logger.error('Error processing retirement:', error);
+      res.status(400).json({
+        success: false,
+        message: error.message,
+      });
+    }
+  },
+);
+
+/**
+ * @swagger
+ * /api/grooms/retirement/approaching:
+ *   get:
+ *     summary: Get grooms approaching retirement for current user
+ *     tags: [Grooms]
+ *     security:
+ *       - bearerAuth: []
+ *     responses:
+ *       200:
+ *         description: List of grooms approaching retirement
+ *       500:
+ *         description: Internal server error
+ */
+router.get('/retirement/approaching', authenticateToken, async (req, res) => {
+  try {
+    const userId = req.user.id;
+    const grooms = await getGroomsApproachingRetirement(userId);
+
+    res.json({
+      success: true,
+      data: grooms,
+    });
+  } catch (error) {
+    logger.error('Error getting grooms approaching retirement:', error);
+    res.status(500).json({
+      success: false,
+      message: 'Failed to get grooms approaching retirement',
+      error: error.message,
+    });
+  }
+});
+
+/**
+ * @swagger
+ * /api/grooms/retirement/statistics:
+ *   get:
+ *     summary: Get retirement statistics for current user
+ *     tags: [Grooms]
+ *     security:
+ *       - bearerAuth: []
+ *     responses:
+ *       200:
+ *         description: Retirement statistics
+ *       500:
+ *         description: Internal server error
+ */
+router.get('/retirement/statistics', authenticateToken, async (req, res) => {
+  try {
+    const userId = req.user.id;
+    const stats = await getRetirementStatistics(userId);
+
+    res.json({
+      success: true,
+      data: stats,
+    });
+  } catch (error) {
+    logger.error('Error getting retirement statistics:', error);
+    res.status(500).json({
+      success: false,
+      message: 'Failed to get retirement statistics',
+      error: error.message,
+    });
+  }
+});
+
+// ===== LEGACY SYSTEM ENDPOINTS =====
+
+/**
+ * @swagger
+ * /api/grooms/{id}/legacy/eligibility:
+ *   get:
+ *     summary: Check legacy creation eligibility for a retired groom
+ *     tags: [Grooms]
+ *     security:
+ *       - bearerAuth: []
+ *     parameters:
+ *       - in: path
+ *         name: id
+ *         required: true
+ *         schema:
+ *           type: integer
+ *         description: Retired groom ID
+ *     responses:
+ *       200:
+ *         description: Legacy eligibility status
+ *       404:
+ *         description: Groom not found
+ *       500:
+ *         description: Internal server error
+ */
+router.get(
+  '/:id/legacy/eligibility',
+  param('id').isInt().withMessage('Groom ID must be an integer'),
+  handleValidationErrors,
+  requireOwnership('groom'),
+  async (req, res) => {
+    try {
+      const groomId = parseInt(req.params.id);
+      const eligibility = await checkLegacyEligibility(groomId);
+
+      res.json({
+        success: true,
+        data: eligibility,
+      });
+    } catch (error) {
+      logger.error('Error checking legacy eligibility:', error);
+      res.status(500).json({
+        success: false,
+        message: 'Failed to check legacy eligibility',
+        error: error.message,
+      });
+    }
+  },
+);
+
+/**
+ * @swagger
+ * /api/grooms/{id}/legacy/create:
+ *   post:
+ *     summary: Create a legacy protégé from a retired mentor groom
+ *     tags: [Grooms]
+ *     security:
+ *       - bearerAuth: []
+ *     parameters:
+ *       - in: path
+ *         name: id
+ *         required: true
+ *         schema:
+ *           type: integer
+ *         description: Mentor groom ID
+ *     requestBody:
+ *       required: true
+ *       content:
+ *         application/json:
+ *           schema:
+ *             type: object
+ *             required:
+ *               - name
+ *               - personality
+ *               - skillLevel
+ *               - speciality
+ *             properties:
+ *               name:
+ *                 type: string
+ *                 minLength: 2
+ *                 maxLength: 100
+ *               personality:
+ *                 type: string
+ *                 enum: [calm, energetic, methodical]
+ *               skillLevel:
+ *                 type: string
+ *                 enum: [novice, intermediate, expert]
+ *               speciality:
+ *                 type: string
+ *                 enum: [foal_care, general_grooming, specialized_disciplines]
+ *               sessionRate:
+ *                 type: number
+ *                 minimum: 5
+ *                 maximum: 100
+ *               bio:
+ *                 type: string
+ *                 maxLength: 500
+ *               availability:
+ *                 type: object
+ *     responses:
+ *       201:
+ *         description: Legacy protégé created successfully
+ *       400:
+ *         description: Invalid request data or mentor not eligible
+ *       404:
+ *         description: Mentor groom not found
+ *       500:
+ *         description: Internal server error
+ */
+router.post(
+  '/:id/legacy/create',
+  param('id').isInt().withMessage('Groom ID must be an integer'),
+  body('name')
+    .isLength({ min: 2, max: 100 })
+    .withMessage('Name must be between 2 and 100 characters'),
+  body('personality').isIn(['calm', 'energetic', 'methodical']).withMessage('Invalid personality'),
+  body('skillLevel').isIn(['novice', 'intermediate', 'expert']).withMessage('Invalid skill level'),
+  body('speciality')
+    .isIn(['foal_care', 'general_grooming', 'specialized_disciplines'])
+    .withMessage('Invalid speciality'),
+  body('sessionRate')
+    .optional()
+    .isFloat({ min: 5, max: 100 })
+    .withMessage('Session rate must be between 5 and 100'),
+  body('bio').optional().isLength({ max: 500 }).withMessage('Bio must be 500 characters or less'),
+  body('availability').optional().isObject().withMessage('Availability must be an object'),
+  handleValidationErrors,
+  requireOwnership('groom'),
+  async (req, res) => {
+    try {
+      const mentorGroomId = parseInt(req.params.id);
+      const userId = req.user.id;
+      const protegeData = req.body;
+
+      const result = await generateLegacyProtege(mentorGroomId, protegeData, userId);
+
+      res.status(201).json({
+        success: true,
+        data: result,
+        message: 'Legacy protégé created successfully',
+      });
+    } catch (error) {
+      logger.error('Error creating legacy protégé:', error);
+      res.status(400).json({
+        success: false,
+        message: error.message,
+      });
+    }
+  },
+);
+
+/**
+ * @swagger
+ * /api/grooms/legacy/history:
+ *   get:
+ *     summary: Get legacy history for current user
+ *     tags: [Grooms]
+ *     security:
+ *       - bearerAuth: []
+ *     responses:
+ *       200:
+ *         description: Legacy history
+ *       500:
+ *         description: Internal server error
+ */
+router.get('/legacy/history', authenticateToken, async (req, res) => {
+  try {
+    const userId = req.user.id;
+    const history = await getUserLegacyHistory(userId);
+
+    res.json({
+      success: true,
+      data: history,
+    });
+  } catch (error) {
+    logger.error('Error getting legacy history:', error);
+    res.status(500).json({
+      success: false,
+      message: 'Failed to get legacy history',
+      error: error.message,
+    });
+  }
+});
+
+// ===== TALENT TREE ENDPOINTS =====
+
+/**
+ * @swagger
+ * /api/grooms/talents/definitions:
+ *   get:
+ *     summary: Get talent tree definitions for all personality types
+ *     tags: [Grooms]
+ *     responses:
+ *       200:
+ *         description: Talent tree definitions
+ */
+router.get('/talents/definitions', (req, res) => {
+  try {
+    const definitions = getTalentTreeDefinitions();
+
+    res.json({
+      success: true,
+      data: definitions,
+    });
+  } catch (error) {
+    logger.error('Error getting talent definitions:', error);
+    res.status(500).json({
+      success: false,
+      message: 'Failed to get talent definitions',
+      error: error.message,
+    });
+  }
+});
+
+/**
+ * @swagger
+ * /api/grooms/{id}/talents:
+ *   get:
+ *     summary: Get talent selections for a groom
+ *     tags: [Grooms]
+ *     security:
+ *       - bearerAuth: []
+ *     parameters:
+ *       - in: path
+ *         name: id
+ *         required: true
+ *         schema:
+ *           type: integer
+ *         description: Groom ID
+ *     responses:
+ *       200:
+ *         description: Groom talent selections
+ *       404:
+ *         description: Groom not found
+ *       500:
+ *         description: Internal server error
+ */
+router.get(
+  '/:id/talents',
+  param('id').isInt().withMessage('Groom ID must be an integer'),
+  handleValidationErrors,
+  requireOwnership('groom'),
+  async (req, res) => {
+    try {
+      const groomId = parseInt(req.params.id);
+      const selections = await getGroomTalentSelections(groomId);
+
+      res.json({
+        success: true,
+        data: selections || 'none',
+      });
+    } catch (error) {
+      logger.error('Error getting talent selections:', error);
+      res.status(500).json({
+        success: false,
+        message: 'Failed to get talent selections',
+        error: error.message,
+      });
+    }
+  },
+);
+
+/**
+ * @swagger
+ * /api/grooms/{id}/talents/validate:
+ *   post:
+ *     summary: Validate a talent selection for a groom
+ *     tags: [Grooms]
+ *     security:
+ *       - bearerAuth: []
+ *     parameters:
+ *       - in: path
+ *         name: id
+ *         required: true
+ *         schema:
+ *           type: integer
+ *         description: Groom ID
+ *     requestBody:
+ *       required: true
+ *       content:
+ *         application/json:
+ *           schema:
+ *             type: object
+ *             required:
+ *               - tier
+ *               - talentId
+ *             properties:
+ *               tier:
+ *                 type: string
+ *                 enum: [tier1, tier2, tier3]
+ *               talentId:
+ *                 type: string
+ *     responses:
+ *       200:
+ *         description: Talent selection validation result
+ *       400:
+ *         description: Invalid request data
+ *       500:
+ *         description: Internal server error
+ */
+router.post(
+  '/:id/talents/validate',
+  param('id').isInt().withMessage('Groom ID must be an integer'),
+  body('tier').isIn(['tier1', 'tier2', 'tier3']).withMessage('Invalid tier'),
+  body('talentId').isString().withMessage('Talent ID must be a string'),
+  handleValidationErrors,
+  requireOwnership('groom'),
+  async (req, res) => {
+    try {
+      const groomId = parseInt(req.params.id);
+      const { tier, talentId } = req.body;
+
+      const validation = await validateTalentSelection(groomId, tier, talentId);
+
+      res.json({
+        success: true,
+        data: validation,
+      });
+    } catch (error) {
+      logger.error('Error validating talent selection:', error);
+      res.status(500).json({
+        success: false,
+        message: 'Failed to validate talent selection',
+        error: error.message,
+      });
+    }
+  },
+);
+
+/**
+ * @swagger
+ * /api/grooms/{id}/talents/select:
+ *   post:
+ *     summary: Select a talent for a groom
+ *     tags: [Grooms]
+ *     security:
+ *       - bearerAuth: []
+ *     parameters:
+ *       - in: path
+ *         name: id
+ *         required: true
+ *         schema:
+ *           type: integer
+ *         description: Groom ID
+ *     requestBody:
+ *       required: true
+ *       content:
+ *         application/json:
+ *           schema:
+ *             type: object
+ *             required:
+ *               - tier
+ *               - talentId
+ *             properties:
+ *               tier:
+ *                 type: string
+ *                 enum: [tier1, tier2, tier3]
+ *               talentId:
+ *                 type: string
+ *     responses:
+ *       200:
+ *         description: Talent selected successfully
+ *       400:
+ *         description: Invalid selection or groom not eligible
+ *       500:
+ *         description: Internal server error
+ */
+router.post(
+  '/:id/talents/select',
+  param('id').isInt().withMessage('Groom ID must be an integer'),
+  body('tier').isIn(['tier1', 'tier2', 'tier3']).withMessage('Invalid tier'),
+  body('talentId').isString().withMessage('Talent ID must be a string'),
+  handleValidationErrors,
+  requireOwnership('groom'),
+  async (req, res) => {
+    try {
+      const groomId = parseInt(req.params.id);
+      const { tier, talentId } = req.body;
+
+      const result = await selectTalent(groomId, tier, talentId);
+
+      res.json({
+        success: true,
+        data: result,
+        message: 'Talent selected successfully',
+      });
+    } catch (error) {
+      logger.error('Error selecting talent:', error);
+      res.status(400).json({
+        success: false,
+        message: error.message,
+      });
+    }
+  },
+);
+
+export default router;
