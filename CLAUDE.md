@@ -1,19 +1,26 @@
 # Equoria - Claude Code Configuration
 
-**Version:** 3.1.0
-**Last Updated:** 2026-02-27
+**Version:** 3.2.0
+**Last Updated:** 2026-03-05
 **Project:** Web browser-based horse breeding simulation game
 
 ---
 
 ## 🎯 Current Sprint
 
-### Active Priority: Epic 18 — Visual Polish & Cinematic Moments ✅ COMPLETE
+### Active Priority: Epic 20 — Backend Architecture Refactor ✅ COMPLETE
 
-- **Status:** Epics 1–18 all complete ✅ — production-ready
-- **Stories:** 18-1 GallopingLoader, 18-2 FenceJumpBar, 18-3 Ribbon Unfurl, 18-4 CinematicMoment, 18-5 Horseshoe Borders (all complete)
-- **Next:** Production launch (Railway deploy) or Epic 19
-- **Branch:** `cleanup-session-2026-01-30`
+- **Status:** Epics 1–20 all complete ✅ — production-ready
+- **Branch:** `master`
+- **Next:** Production launch (Railway deploy) or Epic 21
+
+### Epic 20 Deliverables (2026-03-05)
+
+- `backend/modules/` — 18 domain modules: auth, users, horses, breeding, traits, training, competition, grooms, riders, trainers, community, services, leaderboards, admin, docs, health, labs
+- Backward-compat shims at `backend/routes/` and `backend/controllers/` — zero test breakage
+- `backend/docs/swagger.yaml` — enhanced with `/api/v1` servers + community endpoints
+- `frontend/src/lib/api-client.ts` — all 57 endpoints updated to `/api/v1/` prefix
+- `docs/architecture/ARCH-01-Overview.md` — updated with new module structure
 
 ### Epic 18 Deliverables
 
