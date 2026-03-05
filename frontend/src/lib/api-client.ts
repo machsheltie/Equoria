@@ -484,7 +484,7 @@ async function refreshAccessToken(): Promise<boolean> {
   isRefreshing = true;
   refreshPromise = (async () => {
     try {
-      const response = await fetch(`${API_BASE_URL}/api/auth/refresh-token`, {
+      const response = await fetch(`${API_BASE_URL}/api/v1/auth/refresh-token`, {
         method: 'POST',
         credentials: 'include',
         headers: { 'Content-Type': 'application/json' },
@@ -681,10 +681,10 @@ export const trainingApi = {
     return apiClient.get<TrainableHorse[]>(`/api/training/trainable/${userId}`);
   },
   checkEligibility: (payload: TrainingRequest) => {
-    return apiClient.post<TrainingEligibility>('/api/training/check-eligibility', payload);
+    return apiClient.post<TrainingEligibility>('/api/v1/training/check-eligibility', payload);
   },
   train: async (payload: TrainingRequest): Promise<TrainingResult> => {
-    const result = await apiClient.post<TrainingResult>('/api/training/train', payload);
+    const result = await apiClient.post<TrainingResult>('/api/v1/training/train', payload);
 
     // Add backward-compatible fields for existing components
     if (result.updatedHorse && result.updatedHorse.discipline_scores) {
@@ -724,7 +724,7 @@ export const trainingApi = {
  */
 export const breedingApi = {
   breedFoal: (payload: BreedRequest) => {
-    return apiClient.post<BreedResponse>('/api/horses/foals', payload);
+    return apiClient.post<BreedResponse>('/api/v1/horses/foals', payload);
   },
   getFoal: (foalId: number) => {
     return apiClient.get<Foal>(`/api/foals/${foalId}`);
@@ -855,24 +855,24 @@ interface RiderDiscoveryData {
  */
 export const groomsApi = {
   getUserGrooms: (userId: string | number) => apiClient.get<Groom[]>(`/api/grooms/user/${userId}`),
-  getAssignments: () => apiClient.get<GroomAssignment[]>('/api/groom-assignments'),
-  getSalarySummary: () => apiClient.get<SalarySummary>('/api/groom-salaries/summary'),
-  getMarketplace: () => apiClient.get<MarketplaceData>('/api/groom-marketplace'),
-  getMarketplaceStats: () => apiClient.get<MarketplaceStats>('/api/groom-marketplace/stats'),
+  getAssignments: () => apiClient.get<GroomAssignment[]>('/api/v1/groom-assignments'),
+  getSalarySummary: () => apiClient.get<SalarySummary>('/api/v1/groom-salaries/summary'),
+  getMarketplace: () => apiClient.get<MarketplaceData>('/api/v1/groom-marketplace'),
+  getMarketplaceStats: () => apiClient.get<MarketplaceStats>('/api/v1/groom-marketplace/stats'),
   hireGroom: (marketplaceId: string) =>
     apiClient.post<{
       success: boolean;
       data: { groom: Groom; cost: number; remainingMoney: number };
-    }>('/api/groom-marketplace/hire', { marketplaceId }),
+    }>('/api/v1/groom-marketplace/hire', { marketplaceId }),
   refreshMarketplace: (force: boolean = false) =>
-    apiClient.post<MarketplaceData>('/api/groom-marketplace/refresh', { force }),
+    apiClient.post<MarketplaceData>('/api/v1/groom-marketplace/refresh', { force }),
   assignGroom: (data: {
     groomId: number;
     horseId: number;
     priority: number;
     notes?: string;
     replacePrimary?: boolean;
-  }) => apiClient.post<{ success: boolean }>('/api/groom-assignments', data),
+  }) => apiClient.post<{ success: boolean }>('/api/v1/groom-assignments', data),
   deleteAssignment: (assignmentId: number) =>
     apiClient.delete<{ success: boolean }>(`/api/groom-assignments/${assignmentId}`),
 };
@@ -892,17 +892,17 @@ export const groomsApi = {
  */
 export const ridersApi = {
   getUserRiders: (userId: string | number) => apiClient.get<Rider[]>(`/api/riders/user/${userId}`),
-  getAssignments: () => apiClient.get<RiderAssignment[]>('/api/riders/assignments'),
-  getMarketplace: () => apiClient.get<RiderMarketplaceData>('/api/riders/marketplace'),
+  getAssignments: () => apiClient.get<RiderAssignment[]>('/api/v1/riders/assignments'),
+  getMarketplace: () => apiClient.get<RiderMarketplaceData>('/api/v1/riders/marketplace'),
   hireRider: (marketplaceId: string) =>
     apiClient.post<{
       success: boolean;
       data: { rider: Rider; cost: number; remainingMoney: number };
-    }>('/api/riders/marketplace/hire', { marketplaceId }),
+    }>('/api/v1/riders/marketplace/hire', { marketplaceId }),
   refreshMarketplace: (force: boolean = false) =>
-    apiClient.post<RiderMarketplaceData>('/api/riders/marketplace/refresh', { force }),
+    apiClient.post<RiderMarketplaceData>('/api/v1/riders/marketplace/refresh', { force }),
   assignRider: (data: { riderId: number; horseId: number; notes?: string }) =>
-    apiClient.post<{ success: boolean }>('/api/riders/assignments', data),
+    apiClient.post<{ success: boolean }>('/api/v1/riders/assignments', data),
   deleteAssignment: (assignmentId: number) =>
     apiClient.delete<{ success: boolean }>(`/api/riders/assignments/${assignmentId}`),
   getDiscovery: (riderId: number) =>
@@ -973,17 +973,17 @@ export interface TrainerAssignmentEntry {
 export const trainersApi = {
   getUserTrainers: (userId: string | number) =>
     apiClient.get<TrainerEntry[]>(`/api/trainers/user/${userId}`),
-  getAssignments: () => apiClient.get<TrainerAssignmentEntry[]>('/api/trainers/assignments'),
-  getMarketplace: () => apiClient.get<TrainerMarketplaceData>('/api/trainers/marketplace'),
+  getAssignments: () => apiClient.get<TrainerAssignmentEntry[]>('/api/v1/trainers/assignments'),
+  getMarketplace: () => apiClient.get<TrainerMarketplaceData>('/api/v1/trainers/marketplace'),
   hireTrainer: (marketplaceId: string) =>
     apiClient.post<{
       success: boolean;
       data: { trainer: TrainerEntry; cost: number; remainingMoney: number };
-    }>('/api/trainers/marketplace/hire', { marketplaceId }),
+    }>('/api/v1/trainers/marketplace/hire', { marketplaceId }),
   refreshMarketplace: (force: boolean = false) =>
-    apiClient.post<TrainerMarketplaceData>('/api/trainers/marketplace/refresh', { force }),
+    apiClient.post<TrainerMarketplaceData>('/api/v1/trainers/marketplace/refresh', { force }),
   assignTrainer: (data: { trainerId: number; horseId: number; notes?: string }) =>
-    apiClient.post<{ success: boolean }>('/api/trainers/assignments', data),
+    apiClient.post<{ success: boolean }>('/api/v1/trainers/assignments', data),
   deleteAssignment: (assignmentId: number) =>
     apiClient.delete<{ success: boolean }>(`/api/trainers/assignments/${assignmentId}`),
   dismissTrainer: (trainerId: number) =>
@@ -1014,10 +1014,10 @@ export interface VetAppointmentResult {
  *   POST /api/vet/book-appointment  → VetAppointmentResult
  */
 export const vetApi = {
-  getServices: () => apiClient.get<VetService[]>('/api/vet/services'),
+  getServices: () => apiClient.get<VetService[]>('/api/v1/vet/services'),
   bookAppointment: (data: { horseId: number; serviceId: string }) =>
     apiClient.post<{ success: boolean; data: VetAppointmentResult }>(
-      '/api/vet/book-appointment',
+      '/api/v1/vet/book-appointment',
       data
     ),
 };
@@ -1053,9 +1053,12 @@ export interface TackPurchaseResult {
  *   POST /api/tack-shop/purchase  → TackPurchaseResult
  */
 export const tackShopApi = {
-  getInventory: () => apiClient.get<TackInventoryData>('/api/tack-shop/inventory'),
+  getInventory: () => apiClient.get<TackInventoryData>('/api/v1/tack-shop/inventory'),
   purchaseItem: (data: { horseId: number; itemId: string }) =>
-    apiClient.post<{ success: boolean; data: TackPurchaseResult }>('/api/tack-shop/purchase', data),
+    apiClient.post<{ success: boolean; data: TackPurchaseResult }>(
+      '/api/v1/tack-shop/purchase',
+      data
+    ),
 };
 
 // ── Farrier types ─────────────────────────────────────────────────────────────
@@ -1090,10 +1093,10 @@ export interface FarrierBookingResult {
  *   POST /api/farrier/book-service → FarrierBookingResult
  */
 export const farrierApi = {
-  getServices: () => apiClient.get<FarrierService[]>('/api/farrier/services'),
+  getServices: () => apiClient.get<FarrierService[]>('/api/v1/farrier/services'),
   bookService: (data: { horseId: number; serviceId: string }) =>
     apiClient.post<{ success: boolean; data: FarrierBookingResult }>(
-      '/api/farrier/book-service',
+      '/api/v1/farrier/book-service',
       data
     ),
 };
@@ -1129,9 +1132,12 @@ export interface FeedPurchaseResult {
  *   POST /api/feed-shop/purchase → FeedPurchaseResult
  */
 export const feedShopApi = {
-  getCatalog: () => apiClient.get<FeedItem[]>('/api/feed-shop/catalog'),
+  getCatalog: () => apiClient.get<FeedItem[]>('/api/v1/feed-shop/catalog'),
   purchaseFeed: (data: { horseId: number; feedId: string }) =>
-    apiClient.post<{ success: boolean; data: FeedPurchaseResult }>('/api/feed-shop/purchase', data),
+    apiClient.post<{ success: boolean; data: FeedPurchaseResult }>(
+      '/api/v1/feed-shop/purchase',
+      data
+    ),
 };
 
 // ── Inventory types ───────────────────────────────────────────────────────────
@@ -1169,11 +1175,11 @@ export interface UnequipResult {
  *   POST /api/inventory/unequip → UnequipResult
  */
 export const inventoryApi = {
-  getInventory: () => apiClient.get<InventoryData>('/api/inventory'),
+  getInventory: () => apiClient.get<InventoryData>('/api/v1/inventory'),
   equipItem: (vars: { inventoryItemId: string; horseId: number }) =>
-    apiClient.post<EquipResult>('/api/inventory/equip', vars),
+    apiClient.post<EquipResult>('/api/v1/inventory/equip', vars),
   unequipItem: (vars: { inventoryItemId: string }) =>
-    apiClient.post<UnequipResult>('/api/inventory/unequip', vars),
+    apiClient.post<UnequipResult>('/api/v1/inventory/unequip', vars),
 };
 
 // ─── Forum types ────────────────────────────────────────────────────────────
@@ -1236,7 +1242,7 @@ export const forumApi = {
   getThread: (id: number) => apiClient.get<ThreadDetailResponse>(`/api/forum/threads/${id}`),
 
   createThread: (req: CreateThreadRequest) =>
-    apiClient.post<{ thread: ForumThread; firstPost: ForumPost }>('/api/forum/threads', req),
+    apiClient.post<{ thread: ForumThread; firstPost: ForumPost }>('/api/v1/forum/threads', req),
 
   createPost: (threadId: number, content: string) =>
     apiClient.post<{ post: ForumPost }>(`/api/forum/threads/${threadId}/posts`, { content }),
@@ -1285,12 +1291,12 @@ export interface SendMessageRequest {
  *   PATCH /api/messages/:id/read      → { success: boolean }
  */
 export const messagesApi = {
-  getInbox: () => apiClient.get<InboxResponse>('/api/messages/inbox'),
-  getSent: () => apiClient.get<InboxResponse>('/api/messages/sent'),
-  getUnreadCount: () => apiClient.get<{ count: number }>('/api/messages/unread-count'),
+  getInbox: () => apiClient.get<InboxResponse>('/api/v1/messages/inbox'),
+  getSent: () => apiClient.get<InboxResponse>('/api/v1/messages/sent'),
+  getUnreadCount: () => apiClient.get<{ count: number }>('/api/v1/messages/unread-count'),
   getMessage: (id: number) => apiClient.get<{ message: DirectMessage }>(`/api/messages/${id}`),
   sendMessage: (req: SendMessageRequest) =>
-    apiClient.post<{ message: DirectMessage }>('/api/messages', req),
+    apiClient.post<{ message: DirectMessage }>('/api/v1/messages', req),
   markRead: (id: number) => apiClient.patch<{ success: boolean }>(`/api/messages/${id}/read`, {}),
 };
 
@@ -1356,11 +1362,11 @@ export const clubsApi = {
     const qs = params.toString();
     return apiClient.get<{ clubs: Club[] }>(`/api/clubs${qs ? `?${qs}` : ''}`);
   },
-  getMyClubs: () => apiClient.get<{ memberships: ClubMembership[] }>('/api/clubs/mine'),
+  getMyClubs: () => apiClient.get<{ memberships: ClubMembership[] }>('/api/v1/clubs/mine'),
   getClub: (id: number) =>
     apiClient.get<{ club: Club & { members: ClubMembership[] } }>(`/api/clubs/${id}`),
   createClub: (payload: { name: string; type: ClubType; category: string; description: string }) =>
-    apiClient.post<{ club: Club }>('/api/clubs', payload),
+    apiClient.post<{ club: Club }>('/api/v1/clubs', payload),
   joinClub: (id: number) =>
     apiClient.post<{ membership: ClubMembership }>(`/api/clubs/${id}/join`, {}),
   leaveClub: (id: number) => apiClient.delete<void>(`/api/clubs/${id}/leave`),
@@ -1405,17 +1411,17 @@ export const userProgressApi = {
  * Competitions API surface
  */
 export const competitionsApi = {
-  list: () => apiClient.get<Competition[]>('/api/competition'),
+  list: () => apiClient.get<Competition[]>('/api/v1/competition'),
   getDisciplines: () =>
     apiClient.get<{ disciplines: string[]; disciplineDetails: unknown[] }>(
-      '/api/competition/disciplines'
+      '/api/v1/competition/disciplines'
     ),
   checkEligibility: (horseId: number, discipline: string) =>
     apiClient.get<{ success: boolean; data: { eligibility: EligibilityResult } }>(
       `/api/competition/eligibility/${horseId}/${encodeURIComponent(discipline)}`
     ),
   enter: (data: { horseId: number; competitionId: number }) =>
-    apiClient.post<{ success: boolean; data: { entryId: number } }>('/api/competition/enter', {
+    apiClient.post<{ success: boolean; data: { entryId: number } }>('/api/v1/competition/enter', {
       horseId: data.horseId,
       showId: data.competitionId,
     }),
@@ -1429,7 +1435,7 @@ export const breedingPredictionApi = {
    * Calculate inbreeding coefficient for a breeding pair
    */
   getInbreedingAnalysis: (payload: { stallionId: number; mareId: number }) =>
-    apiClient.post<unknown>('/api/genetics/inbreeding-analysis', payload),
+    apiClient.post<unknown>('/api/v1/genetics/inbreeding-analysis', payload),
 
   /**
    * Get lineage analysis for a breeding pair
@@ -1441,13 +1447,13 @@ export const breedingPredictionApi = {
    * Calculate genetic probability for offspring
    */
   getGeneticProbability: (payload: { stallionId: number; mareId: number }) =>
-    apiClient.post<unknown>('/api/breeding/genetic-probability', payload),
+    apiClient.post<unknown>('/api/v1/breeding/genetic-probability', payload),
 
   /**
    * Get breeding compatibility score
    */
   getBreedingCompatibility: (payload: { stallionId: number; mareId: number }) =>
-    apiClient.post<unknown>('/api/genetics/breeding-compatibility', payload),
+    apiClient.post<unknown>('/api/v1/genetics/breeding-compatibility', payload),
 };
 
 /**
@@ -1460,7 +1466,7 @@ export const authApi = {
    */
   login: (credentials: { email: string; password: string }) => {
     return apiClient.post<{ user: { id: number; email: string; username: string } }>(
-      '/api/auth/login',
+      '/api/v1/auth/login',
       credentials
     );
   },
@@ -1487,7 +1493,7 @@ export const authApi = {
         level: number;
         xp: number;
       };
-    }>('/api/auth/register', userData);
+    }>('/api/v1/auth/register', userData);
   },
 
   /**
@@ -1505,7 +1511,7 @@ export const authApi = {
         completedOnboarding?: boolean;
         onboardingStep?: number;
       };
-    }>('/api/auth/profile');
+    }>('/api/v1/auth/profile');
   },
 
   /**
@@ -1526,7 +1532,7 @@ export const authApi = {
         bio?: string;
         avatarUrl?: string;
       };
-    }>('/api/auth/profile', updates);
+    }>('/api/v1/auth/profile', updates);
   },
 
   /**
@@ -1534,7 +1540,7 @@ export const authApi = {
    * Clears httpOnly cookies
    */
   logout: () => {
-    return apiClient.post<{ message: string }>('/api/auth/logout');
+    return apiClient.post<{ message: string }>('/api/v1/auth/logout');
   },
 
   /**
@@ -1542,7 +1548,7 @@ export const authApi = {
    * Uses httpOnly refresh token cookie automatically
    */
   refreshToken: () => {
-    return apiClient.post<{ message: string }>('/api/auth/refresh-token');
+    return apiClient.post<{ message: string }>('/api/v1/auth/refresh-token');
   },
 
   /**
@@ -1568,7 +1574,7 @@ export const authApi = {
     return apiClient.post<{
       emailSent: boolean;
       expiresAt: string;
-    }>('/api/auth/resend-verification');
+    }>('/api/v1/auth/resend-verification');
   },
 
   /**
@@ -1580,28 +1586,28 @@ export const authApi = {
       verified: boolean;
       email: string;
       verifiedAt: string | null;
-    }>('/api/auth/verification-status');
+    }>('/api/v1/auth/verification-status');
   },
 
   /**
    * Mark authenticated user's onboarding as complete.
    */
   completeOnboarding: () =>
-    apiClient.post<{ completedOnboarding: boolean }>('/api/auth/complete-onboarding', {}),
+    apiClient.post<{ completedOnboarding: boolean }>('/api/v1/auth/complete-onboarding', {}),
 
   /**
    * Advance the authenticated user's onboarding step by 1.
    * Sets completedOnboarding: true when step 10 is reached.
    */
   advanceOnboarding: () =>
-    apiClient.post<{ step: number; completed: boolean }>('/api/auth/advance-onboarding', {}),
+    apiClient.post<{ step: number; completed: boolean }>('/api/v1/auth/advance-onboarding', {}),
 
   /**
    * Request password reset email
    * Note: Requires backend endpoint (not yet implemented)
    */
   forgotPassword: (email: string) => {
-    return apiClient.post<{ message: string }>('/api/auth/forgot-password', { email });
+    return apiClient.post<{ message: string }>('/api/v1/auth/forgot-password', { email });
   },
 
   /**
@@ -1609,7 +1615,7 @@ export const authApi = {
    * Note: Requires backend endpoint (not yet implemented)
    */
   resetPassword: (token: string, newPassword: string) => {
-    return apiClient.post<{ message: string }>('/api/auth/reset-password', {
+    return apiClient.post<{ message: string }>('/api/v1/auth/reset-password', {
       token,
       newPassword,
     });
