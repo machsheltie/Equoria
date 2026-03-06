@@ -13,6 +13,27 @@ import {
 import { sendVerificationEmail, sendWelcomeEmail } from '../../../utils/emailService.mjs';
 import { COOKIE_OPTIONS, CLEAR_COOKIE_OPTIONS } from '../../../utils/cookieConfig.mjs';
 
+// Starter kit seeded for every new user at registration (Story 15-2)
+const STARTER_KIT_INVENTORY = [
+  {
+    id: 'starter-saddle',
+    itemId: 'training-saddle',
+    category: 'saddle',
+    name: 'Training Saddle',
+    bonus: 2,
+    quantity: 1,
+  },
+  {
+    id: 'starter-bridle',
+    itemId: 'standard-bridle',
+    category: 'bridle',
+    name: 'Standard Bridle',
+    bonus: 1,
+    quantity: 1,
+  },
+];
+const STARTER_BONUS_COINS = 500;
+
 /**
  * Register a new user and create a corresponding user record.
  */
@@ -42,20 +63,54 @@ export const register = async (req, res, next) => {
 
     // Name construction logic removed - was unused
 
-    // Create user
+    // Create user with starter kit in inventory and starter bonus coins
+    const startingMoney = (money === undefined ? 1000 : money) + STARTER_BONUS_COINS;
     const user = await prisma.user.create({
       data: {
         username,
         email,
         password: hashedPassword,
-        firstName: firstName || null, // Set to null if not provided
-        lastName: lastName || null, // Set to null if not provided
-        money: money === undefined ? 1000 : money, // Default starting money if not provided
-        level: level === undefined ? 1 : level, // Default starting level if not provided
-        xp: xp === undefined ? 0 : xp, // Default starting XP if not provided
-        settings: settings || { completedOnboarding: false }, // New users start with onboarding pending
+        firstName: firstName || null,
+        lastName: lastName || null,
+        money: startingMoney,
+        level: level === undefined ? 1 : level,
+        xp: xp === undefined ? 0 : xp,
+        settings: settings || {
+          completedOnboarding: false,
+          inventory: STARTER_KIT_INVENTORY,
+        },
       },
     });
+
+    // Create starter horse for the new user (age 3, basic balanced stats — Story 15-2)
+    try {
+      const today = new Date();
+      const dateOfBirth = new Date(today.getFullYear() - 3, today.getMonth(), today.getDate());
+      await prisma.horse.create({
+        data: {
+          name: `${username}'s First Horse`,
+          sex: 'Mare',
+          age: 3,
+          dateOfBirth,
+          userId: user.id,
+          speed: 20,
+          stamina: 20,
+          agility: 20,
+          balance: 20,
+          precision: 20,
+          intelligence: 20,
+          boldness: 20,
+          flexibility: 20,
+          obedience: 20,
+          focus: 20,
+          healthStatus: 'Excellent',
+        },
+      });
+      logger.info('[authController.register] Starter horse created', { userId: user.id });
+    } catch (horseError) {
+      // Non-fatal — user is registered even if starter horse creation fails
+      logger.error('[authController.register] Failed to create starter horse:', horseError);
+    }
 
     // Create new token family for this registration
     const tokenPair = await createTokenPair(user.id);
@@ -100,6 +155,7 @@ export const register = async (req, res, next) => {
           level: user.level,
           xp: user.xp,
           emailVerified: user.emailVerified,
+          isNewUser: true,
         },
         // Tokens now in httpOnly cookies, not in response body
         emailVerificationSent: true,

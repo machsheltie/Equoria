@@ -12,7 +12,7 @@
  * Uses Celestial Night theme.
  */
 
-import React, { useState } from 'react';
+import React, { useState, useCallback } from 'react';
 import { Link } from 'react-router-dom';
 import {
   MessageSquare,
@@ -24,6 +24,7 @@ import {
   Eye,
 } from 'lucide-react';
 import MainNavigation from '@/components/MainNavigation';
+import { toast } from 'sonner';
 import { useThreads } from '@/hooks/api/useForum';
 import type { ForumThread, ForumSection } from '@/lib/api-client';
 
@@ -87,6 +88,9 @@ function relativeTime(iso: string): string {
 
 const MessageBoardPage: React.FC = () => {
   const [activeSection, setActiveSection] = useState<ForumSection>('general');
+  const handleNewPost = useCallback(() => {
+    toast.info('Coming in next update — post creation is on the way!');
+  }, []);
 
   const { threads, total, isLoading, error } = useThreads(activeSection);
 
@@ -126,9 +130,9 @@ const MessageBoardPage: React.FC = () => {
           </div>
           <button
             type="button"
-            disabled
-            className="flex items-center gap-2 px-4 py-2 rounded-xl bg-violet-600/10 border border-violet-500/20 text-violet-400/60 text-sm font-medium cursor-not-allowed"
-            title="Sign in to post"
+            onClick={handleNewPost}
+            className="flex items-center gap-2 px-4 py-2 rounded-xl bg-violet-600/10 border border-violet-500/20 text-violet-400/60 text-sm font-medium hover:text-violet-400/80 transition-colors"
+            title="Coming in next update"
             data-testid="new-post-button"
           >
             <PlusCircle className="w-4 h-4" />

@@ -3,9 +3,10 @@
 **Epic Number:** 15
 **Title:** Onboarding & Polish
 **Priority:** P1
-**Status:** planned
+**Status:** done
 **Created Date:** 2026-02-25
-**Target Completion:** TBD
+**Target Completion:** 2026-02-26
+**Completed Date:** 2026-03-06
 
 ---
 
@@ -37,11 +38,11 @@ Epic 15 resolves all of these, leaving Equoria in a production-launch-ready stat
 
 **Acceptance Criteria:**
 
-- [ ] `tsc --noEmit` in frontend/ produces zero errors
-- [ ] `npm run build` in frontend/ succeeds (tsc + vite build both pass)
-- [ ] Dockerfile updated to use `npm run build` instead of `npx vite build`
-- [ ] No functional regressions (existing features all work)
-- [ ] All TS fixes use proper typing (no `as any` escalation)
+- [x] `tsc --noEmit` in frontend/ produces zero errors
+- [x] `npm run build` in frontend/ succeeds (tsc + vite build both pass)
+- [x] Dockerfile updated to use `npm run build` instead of `npx vite build`
+- [x] No functional regressions (existing features all work)
+- [x] All TS fixes use proper typing (no `as any` escalation)
 
 **Common error patterns to fix:**
 
@@ -64,14 +65,14 @@ Epic 15 resolves all of these, leaving Equoria in a production-launch-ready stat
 
 **Acceptance Criteria:**
 
-- [ ] New user registration triggers `isNewUser: true` flag in auth response
-- [ ] `OnboardingModal` or welcome page shown on first login
-- [ ] Onboarding covers: Stable (horses), World Hub (services), Staff (grooms/riders/trainers), Competition
-- [ ] Starter kit awarded on registration: 1× Training Saddle, 1× Standard Bridle, 500 coins bonus
-- [ ] Starter horse: new user receives 1 horse auto-generated on registration (age 3, basic stats)
-- [ ] "Skip tutorial" option available for returning/experienced players
-- [ ] Onboarding state persisted in user record (`completedOnboarding: true`)
-- [ ] Second login skips onboarding automatically
+- [x] New user registration triggers `isNewUser: true` flag in auth response
+- [x] `OnboardingModal` or welcome page shown on first login
+- [x] Onboarding covers: Stable (horses), World Hub (services), Staff (grooms/riders/trainers), Competition
+- [x] Starter kit awarded on registration: 1× Training Saddle, 1× Standard Bridle, 500 coins bonus
+- [x] Starter horse: new user receives 1 horse auto-generated on registration (age 3, basic stats)
+- [x] "Skip tutorial" option available for returning/experienced players
+- [x] Onboarding state persisted in user record (`completedOnboarding: true`)
+- [x] Second login skips onboarding automatically
 
 **Backend additions:**
 
@@ -93,12 +94,12 @@ Epic 15 resolves all of these, leaving Equoria in a production-launch-ready stat
 
 **Acceptance Criteria:**
 
-- [ ] **Loading skeletons** on: StableView (horse grid), MyTrainersDashboard, MyRidersDashboard, MyGroomsDashboard, HorseDetailPage
-- [ ] **Error state components**: Consistent `ErrorCard` with retry button for all useQuery failures
-- [ ] **Empty states**: All empty states have icon + heading + helpful CTA (e.g., "Get your first horse" → `/world`)
-- [ ] **Hall of Fame fix**: Empty state shows "No retired horses yet. Horses retire after 80–104 career weeks."
-- [ ] **Community Hub**: Hall of Fame card links fixed (either build basic `/hall-of-fame` page or link to `/my-stable#hall-of-fame`)
-- [ ] **Consistent skeleton style**: Use Tailwind `animate-pulse` shimmer on all skeleton elements
+- [x] **Loading skeletons** on: StableView (horse grid), MyTrainersDashboard, MyRidersDashboard, MyGroomsDashboard, HorseDetailPage
+- [x] **Error state components**: Consistent `ErrorCard` with retry button for all useQuery failures
+- [x] **Empty states**: All empty states have icon + heading + helpful CTA (e.g., "Get your first horse" → `/world`)
+- [x] **Hall of Fame fix**: Empty state shows "No retired horses yet. Horses retire after 80–104 career weeks."
+- [x] **Community Hub**: Hall of Fame card links fixed (either build basic `/hall-of-fame` page or link to `/my-stable#hall-of-fame`)
+- [x] **Consistent skeleton style**: Use Tailwind `animate-pulse` shimmer on all skeleton elements
 
 ---
 
@@ -114,12 +115,12 @@ Epic 15 resolves all of these, leaving Equoria in a production-launch-ready stat
 
 **Acceptance Criteria:**
 
-- [ ] All major route components converted to lazy loading via `React.lazy()` + `Suspense`
-- [ ] Routes to lazy-load: BreedingPage, HorseDetailPage, VeterinarianPage, FarrierPage, FeedShopPage, TackShopPage, ClubsPage, MessageBoardPage, MessagesPage, BankPage, InventoryPage, MyStablePage, TrainersPage, RidersPage, GroomsPage, SettingsPage
-- [ ] Initial bundle < 800KB (verified via `dist/bundle-stats.html`)
-- [ ] Lighthouse performance score improves to > 0.65 on CI
-- [ ] Loading spinner shown during lazy route loading (via Suspense fallback)
-- [ ] No functional regressions
+- [x] All major route components converted to lazy loading via `React.lazy()` + `Suspense`
+- [x] Routes to lazy-load: BreedingPage, HorseDetailPage, VeterinarianPage, FarrierPage, FeedShopPage, TackShopPage, ClubsPage, MessageBoardPage, MessagesPage, BankPage, InventoryPage, MyStablePage, TrainersPage, RidersPage, GroomsPage, SettingsPage
+- [x] Initial bundle < 800KB (verified via `dist/bundle-stats.html`)
+- [x] Lighthouse performance score improves to > 0.65 on CI
+- [x] Loading spinner shown during lazy route loading (via Suspense fallback)
+- [x] No functional regressions
 
 **Implementation pattern:**
 
@@ -146,29 +147,29 @@ const BreedingPage = React.lazy(() => import('@/pages/BreedingPage'));
 
 **Inventory Page:**
 
-- [ ] "Equip" button on tack items (call `POST /api/tack-shop/purchase` or a new `POST /api/inventory/equip` endpoint)
-- [ ] "Use" button on consumable items
+- [x] "Equip" button on tack items (call `POST /api/tack-shop/purchase` or a new `POST /api/inventory/equip` endpoint)
+- [x] "Use" button on consumable items
 
 **HorseDetailPage Action Bar:**
 
-- [ ] "Feed" button: triggers feed shop horse selection flow (opens Feed Shop modal or navigates to `/feed-shop?horseId=X`)
-- [ ] "Assign Rider" button: opens inline horse-rider assignment flow
+- [x] "Feed" button: triggers feed shop horse selection flow (opens Feed Shop modal or navigates to `/feed-shop?horseId=X`)
+- [x] "Assign Rider" button: opens inline horse-rider assignment flow
 
 **Riders/Trainers/Grooms pages:**
 
-- [ ] Hire buttons: all marketplace hire buttons are already wired but confirm they work end-to-end
+- [x] Hire buttons: all marketplace hire buttons are already wired but confirm they work end-to-end
 
 **Community (lower priority — backend API not yet built):**
 
-- [ ] New Post / Compose: show "Coming in next update" toast rather than silent disabled
-- [ ] Join Club: show "Club membership coming in next update" toast
+- [x] New Post / Compose: show "Coming in next update" toast rather than silent disabled
+- [x] Join Club: show "Club membership coming in next update" toast
 
 **Acceptance Criteria:**
 
-- [ ] Inventory equip works for tack items (reflected in HorseDetailPage stats)
-- [ ] Feed action from Horse Detail navigates to Feed Shop with horse pre-selected
-- [ ] Assign Rider from Horse Detail opens rider picker showing available (unassigned) riders
-- [ ] All remaining permanently-disabled buttons either work or show informative "coming soon" toast
+- [x] Inventory equip works for tack items (reflected in HorseDetailPage stats)
+- [x] Feed action from Horse Detail navigates to Feed Shop with horse pre-selected
+- [x] Assign Rider from Horse Detail opens rider picker showing available (unassigned) riders
+- [x] All remaining permanently-disabled buttons either work or show informative "coming soon" toast
 
 ---
 
@@ -190,13 +191,13 @@ const BreedingPage = React.lazy(() => import('@/pages/BreedingPage'));
 
 **Acceptance Criteria:**
 
-- [ ] **Toast notifications** on all successful mutations (vet booking, feed purchase, tack purchase, farrier booking — confirm they all toast)
-- [ ] **Settings save**: "Saved ✓" confirmation state after clicking save buttons
-- [ ] **Tooltip consistency**: All disabled buttons have `title="Coming soon"` or informative message
-- [ ] **Mobile modals**: Horse picker modal and all inline modals don't overflow viewport on 375px width
-- [ ] **Nav active states**: All routes in MainNavigation highlight correctly (verify riders, grooms, trainers, world sub-pages)
-- [ ] **Stable → Horse link**: HorseCard click navigates to HorseDetailPage (verify end-to-end)
-- [ ] **Back navigation**: All World sub-location pages have working "Back to World" arrow link
+- [x] **Toast notifications** on all successful mutations (vet booking, feed purchase, tack purchase, farrier booking — confirm they all toast)
+- [x] **Settings save**: "Saved ✓" confirmation state after clicking save buttons
+- [x] **Tooltip consistency**: All disabled buttons have `title="Coming soon"` or informative message
+- [x] **Mobile modals**: Horse picker modal and all inline modals don't overflow viewport on 375px width
+- [x] **Nav active states**: All routes in MainNavigation highlight correctly (verify riders, grooms, trainers, world sub-pages)
+- [x] **Stable → Horse link**: HorseCard click navigates to HorseDetailPage (verify end-to-end)
+- [x] **Back navigation**: All World sub-location pages have working "Back to World" arrow link
 
 ---
 

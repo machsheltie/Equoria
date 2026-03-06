@@ -180,8 +180,8 @@ const LegacyHallTab: React.FC = () => (
         <Trophy className="w-12 h-12 text-white/20 mb-4" />
         <h3 className="text-base font-semibold text-white/60 mb-2">No Retired Horses Yet</h3>
         <p className="text-white/40 text-sm max-w-xs">
-          Horses reach retirement at level 10 or after 104 weeks of competition. Retire a horse at
-          level 8 or higher to induct them into your Hall of Fame.
+          Horses reach retirement at level 10 or after 80–104 career weeks of competition. Retire a
+          horse at level 8 or higher to induct them into your Hall of Fame.
         </p>
       </div>
     ) : (
