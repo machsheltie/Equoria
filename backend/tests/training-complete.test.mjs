@@ -283,8 +283,8 @@ describe('🏋️ INTEGRATION: Training System Complete - End-to-End Workflow', 
       expect(response.body.success).toBe(true);
       expect(Array.isArray(response.body.data)).toBe(true);
 
-      // Should have 2 trainable horses (age 4 and 5, not the 2-year-old)
-      expect(response.body.data).toHaveLength(2);
+      // Should have 3 trainable horses (starter horse age 3 + explicit age 4 and 5, not the 2-year-old)
+      expect(response.body.data).toHaveLength(3);
 
       const [trainableHorse] = response.body.data;
       expect(trainableHorse.horseId).toBeDefined();

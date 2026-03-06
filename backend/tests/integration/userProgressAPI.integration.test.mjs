@@ -186,7 +186,7 @@ describe('🎯 INTEGRATION: User Progress API - Complete Progress Tracking', () 
         xpForNextLevel: 200, // Level 2 threshold
         xpForCurrentLevel: 0, // Level 1 threshold (0 XP)
         progressPercentage: 0,
-        totalEarnings: 1000,
+        totalEarnings: 1500, // 1000 default + 500 starter bonus (Story 15-2)
       });
     });
   });
@@ -260,7 +260,7 @@ describe('🎯 INTEGRATION: User Progress API - Complete Progress Tracking', () 
         xpForNextLevel: 200,
         xpForCurrentLevel: 0,
         progressPercentage: 3, // 5/200 * 100 = 2.5% rounded to 3%
-        totalEarnings: 1000,
+        totalEarnings: 1500, // 1000 default + 500 starter bonus (Story 15-2)
       });
     });
 
@@ -355,7 +355,7 @@ describe('🎯 INTEGRATION: User Progress API - Complete Progress Tracking', () 
         xpForNextLevel: 300, // Level 3 requires 300 XP total
         xpForCurrentLevel: 200, // Level 2 required 200 XP total
         progressPercentage: 0, // 0/200 progress toward level 3
-        totalEarnings: 1000,
+        totalEarnings: 1500, // 1000 default + 500 starter bonus (Story 15-2)
       });
     });
 
@@ -389,7 +389,7 @@ describe('🎯 INTEGRATION: User Progress API - Complete Progress Tracking', () 
         xpForNextLevel: 400,
         xpForCurrentLevel: 300, // Level 3 threshold
         progressPercentage: 50, // 50/100 * 100 = 50% progress toward level 4
-        totalEarnings: 1000,
+        totalEarnings: 1500, // 1000 default + 500 starter bonus (Story 15-2)
       });
     });
   });
@@ -408,10 +408,10 @@ describe('🎯 INTEGRATION: User Progress API - Complete Progress Tracking', () 
           username: testUser.username,
           level: 3,
           xp: 350, // Updated to match our manual setting
-          money: 1000,
+          money: 1500, // 1000 default + 500 starter bonus (Story 15-2)
         },
         horses: {
-          total: 1,
+          total: 2, // 1 starter horse (auto-created at registration) + 1 test horse
           trainable: expect.any(Number),
         },
         shows: {
