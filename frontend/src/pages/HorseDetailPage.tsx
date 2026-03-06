@@ -38,6 +38,8 @@ import {
   GitBranch,
   Stethoscope,
   Tag,
+  ShoppingCart,
+  X,
 } from 'lucide-react';
 import { useHorse } from '../hooks/api/useHorses';
 import TraitCard from '../components/TraitCard';
@@ -62,6 +64,7 @@ import { formatDisciplineName, canTrain, getDisciplineScore } from '../lib/utils
 import { SkeletonBase } from '@/components/ui/SkeletonCard';
 import { useAuth } from '@/contexts/AuthContext';
 import { useUserRiders, useAssignRider, type Rider } from '@/hooks/api/useRiders';
+import { useListHorse, useDelistHorse } from '@/hooks/api/useMarketplace';
 
 // Types
 interface HorseStats {
@@ -87,6 +90,9 @@ interface Horse {
   disciplineScores: Record<string, number>;
   traits?: string[];
   description?: string;
+  forSale?: boolean;
+  salePrice?: number;
+  userId?: string;
   parentIds?: {
     sireId?: number;
     damId?: number;
@@ -139,6 +145,11 @@ const HorseDetailPage: React.FC = () => {
   const [activeTab, setActiveTab] = useState<TabType>('overview');
   const [isEditing, setIsEditing] = useState(false);
   const [showRiderPicker, setShowRiderPicker] = useState(false);
+  const [showListModal, setShowListModal] = useState(false);
+  const [listPrice, setListPrice] = useState('');
+
+  const listHorseMutation = useListHorse();
+  const delistHorseMutation = useDelistHorse();
 
   // Auth — needed to fetch user's riders
   const { user } = useAuth();
@@ -271,6 +282,12 @@ const HorseDetailPage: React.FC = () => {
                       <span>•</span>
                       <span>Health: {horse.healthStatus}</span>
                     </div>
+                    {horse.forSale && (
+                      <div className="flex items-center gap-1.5 mt-2 px-3 py-1 rounded-full bg-emerald-900/30 border border-emerald-500/40 text-emerald-400 text-xs w-fit">
+                        <ShoppingCart className="w-3 h-3" />
+                        For Sale — {(horse.salePrice ?? 0).toLocaleString()} coins
+                      </div>
+                    )}
                   </div>
                   <button
                     onClick={() => setIsEditing(!isEditing)}
@@ -505,17 +522,98 @@ const HorseDetailPage: React.FC = () => {
             <Users className="w-3.5 h-3.5" />
             Assign Rider
           </button>
-          <button
-            type="button"
-            onClick={() => setActiveTab('stud-sale')}
-            className="flex items-center gap-1.5 px-4 py-2 rounded-lg bg-[rgba(37,99,235,0.1)] border border-[rgba(37,99,235,0.3)] text-[rgb(220,235,255)] text-sm fantasy-body whitespace-nowrap hover:bg-[rgba(37,99,235,0.2)] transition-colors"
-            data-testid="action-list-for-sale"
-          >
-            <Tag className="w-3.5 h-3.5" />
-            List / Stud
-          </button>
+          {horse.forSale ? (
+            <button
+              type="button"
+              onClick={() => delistHorseMutation.mutate(horse.id, { onSuccess: () => refetch() })}
+              disabled={delistHorseMutation.isPending}
+              className="flex items-center gap-1.5 px-4 py-2 rounded-lg bg-red-900/20 border border-red-500/40 text-red-300 text-sm fantasy-body whitespace-nowrap hover:bg-red-900/30 transition-colors disabled:opacity-50"
+              data-testid="action-delist"
+            >
+              <X className="w-3.5 h-3.5" />
+              Delist
+            </button>
+          ) : (
+            <button
+              type="button"
+              onClick={() => setShowListModal(true)}
+              className="flex items-center gap-1.5 px-4 py-2 rounded-lg bg-[rgba(37,99,235,0.1)] border border-[rgba(37,99,235,0.3)] text-[rgb(220,235,255)] text-sm fantasy-body whitespace-nowrap hover:bg-[rgba(37,99,235,0.2)] transition-colors"
+              data-testid="action-list-for-sale"
+            >
+              <Tag className="w-3.5 h-3.5" />
+              List for Sale
+            </button>
+          )}
         </div>
       </div>
+
+      {/* List for Sale Modal */}
+      {showListModal && (
+        <div className="fixed inset-0 z-[var(--z-modal)] flex items-center justify-center p-4 bg-black/60 backdrop-blur-sm">
+          <div className="w-full max-w-sm bg-[rgba(10,22,40,0.97)] border border-white/20 rounded-xl p-6 shadow-2xl">
+            <div className="flex items-center justify-between mb-4">
+              <h2 className="text-lg font-bold text-white/90">List for Sale</h2>
+              <button
+                type="button"
+                onClick={() => {
+                  setShowListModal(false);
+                  setListPrice('');
+                }}
+                className="p-1 rounded hover:bg-white/10 text-white/50 hover:text-white"
+              >
+                <X className="w-4 h-4" />
+              </button>
+            </div>
+            <p className="text-sm text-white/60 mb-4">
+              Set a price for <span className="text-white/90 font-medium">{horse.name}</span>. Other
+              players will be able to purchase this horse.
+            </p>
+            <div className="mb-5">
+              <label className="block text-xs text-white/50 mb-1.5">Price (coins)</label>
+              <input
+                type="number"
+                min={100}
+                max={9999999}
+                value={listPrice}
+                onChange={(e) => setListPrice(e.target.value)}
+                placeholder="Min 100 — Max 9,999,999"
+                className="w-full px-3 py-2 rounded-lg bg-white/5 border border-white/20 text-white/90 text-sm focus:outline-none focus:border-white/40"
+              />
+            </div>
+            <div className="flex gap-3">
+              <button
+                type="button"
+                onClick={() => {
+                  setShowListModal(false);
+                  setListPrice('');
+                }}
+                className="flex-1 px-4 py-2 rounded-lg bg-white/5 border border-white/10 text-white/60 text-sm hover:bg-white/10 transition-colors"
+              >
+                Cancel
+              </button>
+              <button
+                type="button"
+                disabled={listHorseMutation.isPending || !listPrice || Number(listPrice) < 100}
+                onClick={() => {
+                  listHorseMutation.mutate(
+                    { horseId: horse.id, price: Number(listPrice) },
+                    {
+                      onSuccess: () => {
+                        setShowListModal(false);
+                        setListPrice('');
+                        refetch();
+                      },
+                    }
+                  );
+                }}
+                className="flex-1 px-4 py-2 rounded-lg bg-emerald-600/80 border border-emerald-500/40 text-white text-sm hover:bg-emerald-600 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
+              >
+                {listHorseMutation.isPending ? 'Listing…' : 'Confirm'}
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   );
 };

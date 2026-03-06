@@ -60,6 +60,8 @@ model User {
   clubMemberships         ClubMembership[]         @relation("ClubMemberships")
   candidacies             ClubCandidate[]          @relation("ElectionCandidacies")
   ballots                 ClubBallot[]             @relation("CastBallots")
+  horsesSold              HorseSale[]              @relation("HorseSalesSold")
+  horsesBought            HorseSale[]              @relation("HorseSalesBought")
 
   @@index([email])
   @@index([emailVerified])
@@ -199,6 +201,7 @@ model Horse {
   stable                  Stable?               @relation(fields: [stableId], references: [id])
   user                    User?                 @relation(fields: [userId], references: [id])
   trainingLogs            TrainingLog[]
+  horseSales              HorseSale[]
 
   @@index([userId])
   @@index([breedId])
@@ -1191,4 +1194,29 @@ model ClubBallot {
   createdAt   DateTime      @default(now())
 
   @@unique([electionId, voterId])
+}
+
+model HorseSale {
+  /// Unique identifier for each sale record
+  id        Int      @id @default(autoincrement())
+  /// Horse that was sold
+  horseId   Int
+  horse     Horse    @relation(fields: [horseId], references: [id])
+  /// User who sold the horse
+  sellerId  String
+  seller    User     @relation("HorseSalesSold", fields: [sellerId], references: [id])
+  /// User who bought the horse
+  buyerId   String
+  buyer     User     @relation("HorseSalesBought", fields: [buyerId], references: [id])
+  /// Final sale price in coins
+  salePrice Int
+  /// Horse name snapshot at time of sale
+  horseName String
+  /// When the sale completed
+  soldAt    DateTime @default(now())
+
+  @@index([sellerId])
+  @@index([buyerId])
+  @@index([soldAt])
+  @@map("horse_sales")
 }

@@ -10,6 +10,7 @@ import {
   Settings,
   BarChart3,
   PersonStanding,
+  ShoppingCart,
 } from 'lucide-react';
 
 // Lazy page imports — each page becomes a separate JS chunk loaded on demand
@@ -34,6 +35,8 @@ const InventoryPage = lazy(() => import('./pages/InventoryPage'));
 const MyStablePage = lazy(() => import('./pages/MyStablePage'));
 // Epic 13 — Trainer System (World sub-location, route-only)
 const TrainersPage = lazy(() => import('./pages/TrainersPage'));
+// Epic 21 — Horse Marketplace
+const HorseMarketplacePage = lazy(() => import('./pages/HorseMarketplacePage'));
 // Epic 11 — Community pages
 const CommunityPage = lazy(() => import('./pages/CommunityPage'));
 const MessageBoardPage = lazy(() => import('./pages/MessageBoardPage'));
@@ -84,6 +87,12 @@ export const navItems = [
     to: '/world',
     icon: <Globe className="h-4 w-4" />,
     Page: WorldHubPage,
+  },
+  {
+    title: 'Marketplace',
+    to: '/marketplace',
+    icon: <ShoppingCart className="h-4 w-4" />,
+    Page: HorseMarketplacePage,
   },
   {
     title: 'Riders',

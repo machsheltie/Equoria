@@ -1,0 +1,361 @@
+/**
+ * Marketplace Controller — Epic 21
+ *
+ * Handles horse listing, delisting, browsing, purchasing, and sale history.
+ * All purchase operations use Prisma $transaction for atomicity.
+ */
+
+import prisma from '../../../db/index.mjs';
+import logger from '../../../utils/logger.mjs';
+
+/**
+ * GET /api/v1/marketplace
+ * Browse horses listed for sale (excludes requester's own horses).
+ * Supports filters: breed, minAge, maxAge, minPrice, maxPrice, discipline, sort, page, limit
+ */
+export async function browseListings(req, res) {
+  try {
+    const userId = req.user.id;
+    const {
+      breed,
+      minAge,
+      maxAge,
+      minPrice,
+      maxPrice,
+      sort = 'newest',
+      page = '1',
+      limit = '20',
+    } = req.query;
+
+    const pageNum = Math.max(1, parseInt(page, 10) || 1);
+    const pageSize = Math.min(100, Math.max(1, parseInt(limit, 10) || 20));
+    const skip = (pageNum - 1) * pageSize;
+
+    const where = {
+      forSale: true,
+      userId: { not: userId },
+    };
+
+    if (breed) {
+      where.breed = { name: { contains: breed, mode: 'insensitive' } };
+    }
+    if (minAge !== undefined) {
+      where.age = { ...where.age, gte: parseInt(minAge, 10) };
+    }
+    if (maxAge !== undefined) {
+      where.age = { ...where.age, lte: parseInt(maxAge, 10) };
+    }
+    if (minPrice !== undefined) {
+      where.salePrice = { ...where.salePrice, gte: parseInt(minPrice, 10) };
+    }
+    if (maxPrice !== undefined) {
+      where.salePrice = { ...where.salePrice, lte: parseInt(maxPrice, 10) };
+    }
+
+    let orderBy;
+    switch (sort) {
+      case 'price_asc':
+        orderBy = { salePrice: 'asc' };
+        break;
+      case 'price_desc':
+        orderBy = { salePrice: 'desc' };
+        break;
+      case 'youngest':
+        orderBy = { age: 'asc' };
+        break;
+      case 'newest':
+      default:
+        orderBy = { createdAt: 'desc' };
+    }
+
+    const [horses, total] = await Promise.all([
+      prisma.horse.findMany({
+        where,
+        orderBy,
+        skip,
+        take: pageSize,
+        include: {
+          breed: { select: { name: true } },
+          user: { select: { username: true } },
+        },
+      }),
+      prisma.horse.count({ where }),
+    ]);
+
+    const listings = horses.map(h => ({
+      id: h.id,
+      name: h.name,
+      breed: h.breed?.name ?? 'Unknown',
+      age: h.age,
+      sex: h.sex,
+      salePrice: h.salePrice,
+      seller: h.user?.username ?? 'Unknown',
+      stats: {
+        speed: h.speed ?? 0,
+        stamina: h.stamina ?? 0,
+        agility: h.agility ?? 0,
+        precision: h.precision ?? 0,
+        strength: h.strength ?? 0,
+        intelligence: h.intelligence ?? 0,
+        boldness: h.boldness ?? 0,
+      },
+      imageUrl: h.imageUrl,
+    }));
+
+    return res.json({
+      success: true,
+      data: {
+        listings,
+        pagination: {
+          page: pageNum,
+          limit: pageSize,
+          total,
+          totalPages: Math.ceil(total / pageSize),
+        },
+      },
+    });
+  } catch (err) {
+    logger.error('browseListings error:', err);
+    return res.status(500).json({ success: false, message: 'Internal server error' });
+  }
+}
+
+/**
+ * POST /api/v1/marketplace/list
+ * List a horse for sale. Body: { horseId, price }
+ */
+export async function listHorse(req, res) {
+  try {
+    const userId = req.user.id;
+    const { horseId, price } = req.body;
+
+    if (!horseId || price === undefined) {
+      return res.status(400).json({ success: false, message: 'horseId and price are required' });
+    }
+
+    const parsedPrice = parseInt(price, 10);
+    if (isNaN(parsedPrice) || parsedPrice < 100 || parsedPrice > 9_999_999) {
+      return res.status(400).json({
+        success: false,
+        message: 'Price must be between 100 and 9,999,999 coins',
+      });
+    }
+
+    const horse = await prisma.horse.findUnique({ where: { id: parseInt(horseId, 10) } });
+
+    if (!horse) {
+      return res.status(404).json({ success: false, message: 'Horse not found' });
+    }
+    if (horse.userId !== userId) {
+      return res.status(403).json({ success: false, message: 'You do not own this horse' });
+    }
+    if (horse.forSale) {
+      return res.status(400).json({ success: false, message: 'Horse is already listed for sale' });
+    }
+
+    const updated = await prisma.horse.update({
+      where: { id: horse.id },
+      data: { forSale: true, salePrice: parsedPrice },
+    });
+
+    return res.json({
+      success: true,
+      message: `${updated.name} is now listed for ${parsedPrice} coins`,
+      data: { horseId: updated.id, salePrice: updated.salePrice },
+    });
+  } catch (err) {
+    logger.error('listHorse error:', err);
+    return res.status(500).json({ success: false, message: 'Internal server error' });
+  }
+}
+
+/**
+ * DELETE /api/v1/marketplace/list/:horseId
+ * Delist a horse from the marketplace (owner only).
+ */
+export async function delistHorse(req, res) {
+  try {
+    const userId = req.user.id;
+    const horseId = parseInt(req.params.horseId, 10);
+
+    if (isNaN(horseId)) {
+      return res.status(400).json({ success: false, message: 'Invalid horseId' });
+    }
+
+    const horse = await prisma.horse.findUnique({ where: { id: horseId } });
+
+    if (!horse) {
+      return res.status(404).json({ success: false, message: 'Horse not found' });
+    }
+    if (horse.userId !== userId) {
+      return res.status(403).json({ success: false, message: 'You do not own this horse' });
+    }
+    if (!horse.forSale) {
+      return res.status(400).json({ success: false, message: 'Horse is not listed for sale' });
+    }
+
+    await prisma.horse.update({
+      where: { id: horseId },
+      data: { forSale: false, salePrice: 0 },
+    });
+
+    return res.json({ success: true, message: 'Listing removed' });
+  } catch (err) {
+    logger.error('delistHorse error:', err);
+    return res.status(500).json({ success: false, message: 'Internal server error' });
+  }
+}
+
+/**
+ * POST /api/v1/marketplace/buy/:horseId
+ * Purchase a horse atomically: deduct buyer coins, credit seller, transfer ownership.
+ */
+export async function buyHorse(req, res) {
+  try {
+    const buyerId = req.user.id;
+    const horseId = parseInt(req.params.horseId, 10);
+
+    if (isNaN(horseId)) {
+      return res.status(400).json({ success: false, message: 'Invalid horseId' });
+    }
+
+    const result = await prisma.$transaction(async tx => {
+      // Lock the horse row by fetching inside the transaction
+      const horse = await tx.horse.findUnique({
+        where: { id: horseId },
+        include: { user: { select: { id: true, username: true } } },
+      });
+
+      if (!horse) throw Object.assign(new Error('Horse not found'), { statusCode: 404 });
+      if (!horse.forSale)
+        throw Object.assign(new Error('Horse is not for sale'), { statusCode: 400 });
+      if (horse.userId === buyerId)
+        throw Object.assign(new Error('You already own this horse'), { statusCode: 400 });
+
+      const salePrice = horse.salePrice;
+      const sellerId = horse.userId;
+
+      // Check buyer balance
+      const buyer = await tx.user.findUnique({ where: { id: buyerId } });
+      if (!buyer) throw Object.assign(new Error('Buyer not found'), { statusCode: 404 });
+      if (buyer.money < salePrice) {
+        throw Object.assign(new Error('Insufficient funds'), { statusCode: 400 });
+      }
+
+      // Deduct from buyer
+      await tx.user.update({
+        where: { id: buyerId },
+        data: { money: { decrement: salePrice } },
+      });
+
+      // Credit seller
+      await tx.user.update({
+        where: { id: sellerId },
+        data: { money: { increment: salePrice } },
+      });
+
+      // Transfer horse ownership
+      await tx.horse.update({
+        where: { id: horseId },
+        data: { userId: buyerId, forSale: false, salePrice: 0 },
+      });
+
+      // Create sale record
+      const saleRecord = await tx.horseSale.create({
+        data: {
+          horseId,
+          sellerId,
+          buyerId,
+          salePrice,
+          horseName: horse.name,
+        },
+      });
+
+      return {
+        horseName: horse.name,
+        salePrice,
+        sellerUsername: horse.user?.username ?? 'Unknown',
+        saleId: saleRecord.id,
+        newBalance: buyer.money - salePrice,
+      };
+    });
+
+    return res.json({
+      success: true,
+      message: `You purchased ${result.horseName} for ${result.salePrice} coins!`,
+      data: result,
+    });
+  } catch (err) {
+    if (err.statusCode) {
+      return res.status(err.statusCode).json({ success: false, message: err.message });
+    }
+    logger.error('buyHorse error:', err);
+    return res.status(500).json({ success: false, message: 'Internal server error' });
+  }
+}
+
+/**
+ * GET /api/v1/marketplace/my-listings
+ * Return the current user's active listings.
+ */
+export async function myListings(req, res) {
+  try {
+    const userId = req.user.id;
+
+    const horses = await prisma.horse.findMany({
+      where: { userId, forSale: true },
+      include: { breed: { select: { name: true } } },
+      orderBy: { updatedAt: 'desc' },
+    });
+
+    const listings = horses.map(h => ({
+      id: h.id,
+      name: h.name,
+      breed: h.breed?.name ?? 'Unknown',
+      age: h.age,
+      sex: h.sex,
+      salePrice: h.salePrice,
+      imageUrl: h.imageUrl,
+    }));
+
+    return res.json({ success: true, data: listings });
+  } catch (err) {
+    logger.error('myListings error:', err);
+    return res.status(500).json({ success: false, message: 'Internal server error' });
+  }
+}
+
+/**
+ * GET /api/v1/marketplace/history
+ * Return the current user's buy + sell transaction history.
+ */
+export async function saleHistory(req, res) {
+  try {
+    const userId = req.user.id;
+
+    const sales = await prisma.horseSale.findMany({
+      where: {
+        OR: [{ sellerId: userId }, { buyerId: userId }],
+      },
+      include: {
+        seller: { select: { username: true } },
+        buyer: { select: { username: true } },
+      },
+      orderBy: { soldAt: 'desc' },
+    });
+
+    const history = sales.map(s => ({
+      id: s.id,
+      horseName: s.horseName,
+      salePrice: s.salePrice,
+      soldAt: s.soldAt,
+      type: s.sellerId === userId ? 'sold' : 'bought',
+      counterparty: s.sellerId === userId ? s.buyer.username : s.seller.username,
+    }));
+
+    return res.json({ success: true, data: history });
+  } catch (err) {
+    logger.error('saleHistory error:', err);
+    return res.status(500).json({ success: false, message: 'Internal server error' });
+  }
+}

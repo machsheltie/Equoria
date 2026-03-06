@@ -90,6 +90,7 @@ import inventoryRoutes from './routes/inventoryRoutes.mjs';
 import forumRoutes from './routes/forumRoutes.mjs';
 import messageRoutes from './routes/messageRoutes.mjs';
 import clubRoutes from './routes/clubRoutes.mjs';
+import marketplaceRoutes from './modules/marketplace/routes/marketplaceRoutes.mjs';
 
 /**
  * 🔒 SECURITY ROUTER ARCHITECTURE
@@ -158,6 +159,7 @@ authRouter.use('/inventory', inventoryRoutes);
 authRouter.use('/forum', forumRoutes);
 authRouter.use('/messages', messageRoutes);
 authRouter.use('/clubs', clubRoutes);
+authRouter.use('/marketplace', marketplaceRoutes);
 
 // Groom management system
 authRouter.use('/grooms', groomRoutes);
