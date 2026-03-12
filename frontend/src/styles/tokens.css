@@ -147,7 +147,7 @@
   /* Font families */
   --font-display: 'Cinzel Decorative', serif; /* EQUORIA wordmark only  */
   --font-heading: 'Cinzel', serif; /* Horse names, titles    */
-  --font-body: 'Jost', sans-serif; /* All UI text            */
+  --font-body: 'Inter', sans-serif; /* All UI text            */
   --font-mono: 'JetBrains Mono', monospace; /* Debug / data display   */
 
   /* Font sizes (rem — never px) */

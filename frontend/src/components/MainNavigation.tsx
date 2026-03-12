@@ -83,7 +83,7 @@ const MainNavigation: React.FC = () => {
       <nav
         role="navigation"
         aria-label="Main navigation"
-        className="sticky top-0 z-[var(--z-modal)] w-full border-b border-white/10 bg-black/20 backdrop-blur-md supports-[backdrop-filter]:bg-black/20"
+        className="sticky top-0 z-[var(--z-sticky)] w-full border-b border-[rgba(201,162,39,0.18)] bg-[var(--celestial-navy-800)]/85 backdrop-blur-md"
         data-testid="main-navigation"
       >
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
@@ -92,7 +92,8 @@ const MainNavigation: React.FC = () => {
             <div className="flex items-center">
               <Link
                 to="/"
-                className="text-2xl font-bold font-heading text-gradient-gold mr-8 tracking-tighter shadow-glow"
+                className="text-2xl font-bold mr-8 tracking-wide text-[var(--gold-400)]"
+                style={{ fontFamily: 'var(--font-display)' }}
               >
                 Equoria
               </Link>
@@ -191,11 +192,11 @@ const MainNavigation: React.FC = () => {
                 {isProfileDropdownOpen && (
                   <div
                     role="menu"
-                    className="absolute right-0 mt-2 w-56 rounded-xl border border-white/10 bg-black/90 backdrop-blur-xl shadow-2xl py-1 z-[var(--z-modal)] animate-in fade-in slide-in-from-top-2 duration-200"
+                    className="absolute right-0 mt-2 w-56 glass-panel-heavy py-1 z-[var(--z-dropdown)] animate-in fade-in slide-in-from-top-2 duration-200"
                   >
-                    <div className="px-4 py-3 border-b border-white/10 mb-1">
-                      <p className="text-sm text-white font-medium">{user.name}</p>
-                      <p className="text-xs text-white/50 truncate">{user.email}</p>
+                    <div className="px-4 py-3 border-b border-[rgba(201,162,39,0.2)] mb-1">
+                      <p className="text-sm text-[var(--cream)] font-medium">{user.name}</p>
+                      <p className="text-xs text-[var(--text-muted)] truncate">{user.email}</p>
                     </div>
 
                     <Link
@@ -217,7 +218,7 @@ const MainNavigation: React.FC = () => {
                       Account Settings
                     </Link>
 
-                    <div className="border-t border-white/10 my-1"></div>
+                    <div className="border-t border-[rgba(201,162,39,0.15)] my-1"></div>
 
                     <button
                       onClick={handleLogout}

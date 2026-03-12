@@ -1,0 +1,773 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Equoria — Direction 2: Command Center</title>
+    <style>
+      @import url('https://fonts.googleapis.com/css2?family=Cinzel:wght@400;500;600;700&family=Inter:wght@300;400;500;600;700&display=swap');
+
+      :root {
+        --bg-deep-space: #0a0e1a;
+        --bg-night-sky: #111827;
+        --bg-midnight: #1a2236;
+        --bg-twilight: #243154;
+        --glass-bg: rgba(15, 23, 42, 0.6);
+        --glass-border: rgba(148, 163, 184, 0.2);
+        --glass-hover: rgba(148, 163, 184, 0.3);
+        --glass-blur: 12px;
+        --gold-primary: #c8a84e;
+        --gold-light: #e8d48b;
+        --gold-dim: #8b7635;
+        --gold-bright: #f5e6a3;
+        --text-primary: #e2e8f0;
+        --text-secondary: #94a3b8;
+        --text-muted: #64748b;
+        --status-success: #22c55e;
+        --status-warning: #f59e0b;
+        --status-danger: #ef4444;
+        --status-info: #3b82f6;
+        --status-rare: #a78bfa;
+        --font-display: 'Cinzel', Georgia, serif;
+        --font-body: 'Inter', system-ui, sans-serif;
+        --radius-sm: 6px;
+        --radius-md: 12px;
+        --radius-lg: 16px;
+        --shadow-subtle: 0 1px 3px rgba(0, 0, 0, 0.4);
+        --shadow-raised: 0 4px 12px rgba(0, 0, 0, 0.5);
+        --glow-gold: 0 0 20px rgba(200, 168, 78, 0.25);
+      }
+
+      *,
+      *::before,
+      *::after {
+        box-sizing: border-box;
+        margin: 0;
+        padding: 0;
+      }
+
+      body {
+        font-family: var(--font-body);
+        color: var(--text-primary);
+        background: linear-gradient(180deg, #0a0e1a 0%, #111827 50%, #1a2236 100%);
+        min-height: 100vh;
+      }
+
+      .direction-badge {
+        position: fixed;
+        top: 16px;
+        right: 16px;
+        z-index: 100;
+        background: rgba(200, 168, 78, 0.15);
+        border: 1px solid var(--gold-dim);
+        border-radius: var(--radius-sm);
+        padding: 8px 16px;
+        font-size: 0.75rem;
+        color: var(--gold-light);
+        letter-spacing: 0.05em;
+        text-transform: uppercase;
+      }
+
+      /* ===== LAYOUT: Sidebar + Main ===== */
+      .layout {
+        display: flex;
+        min-height: 100vh;
+      }
+
+      /* ===== SIDEBAR ===== */
+      .sidebar {
+        width: 240px;
+        flex-shrink: 0;
+        background: rgba(10, 14, 26, 0.85);
+        backdrop-filter: blur(var(--glass-blur));
+        border-right: 1px solid var(--gold-dim);
+        display: flex;
+        flex-direction: column;
+        padding: 0;
+        position: sticky;
+        top: 0;
+        height: 100vh;
+      }
+      .sidebar__header {
+        padding: 24px 20px;
+        border-bottom: 1px solid rgba(200, 168, 78, 0.15);
+      }
+      .sidebar__logo {
+        font-family: var(--font-display);
+        font-size: 1.25rem;
+        font-weight: 700;
+        color: var(--gold-primary);
+        letter-spacing: 0.08em;
+      }
+      .sidebar__nav {
+        flex: 1;
+        padding: 12px 0;
+      }
+      .sidebar__item {
+        display: flex;
+        align-items: center;
+        gap: 12px;
+        padding: 12px 20px;
+        color: var(--text-secondary);
+        text-decoration: none;
+        font-size: 0.875rem;
+        transition: all 0.2s;
+        border-left: 3px solid transparent;
+      }
+      .sidebar__item:hover {
+        background: rgba(200, 168, 78, 0.08);
+        color: var(--text-primary);
+      }
+      .sidebar__item.active {
+        color: var(--gold-primary);
+        border-left-color: var(--gold-primary);
+        background: rgba(200, 168, 78, 0.1);
+      }
+      .sidebar__icon {
+        font-size: 1.1rem;
+        width: 24px;
+        text-align: center;
+      }
+      .sidebar__label {
+        font-family: var(--font-body);
+      }
+
+      .sidebar__user {
+        padding: 16px 20px;
+        border-top: 1px solid rgba(200, 168, 78, 0.15);
+        display: flex;
+        align-items: center;
+        gap: 10px;
+      }
+      .sidebar__avatar {
+        width: 32px;
+        height: 32px;
+        border-radius: 50%;
+        background: var(--bg-twilight);
+        border: 2px solid var(--gold-dim);
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        font-size: 0.7rem;
+        color: var(--gold-light);
+      }
+      .sidebar__user-info {
+        font-size: 0.8rem;
+      }
+      .sidebar__username {
+        color: var(--text-primary);
+        font-weight: 500;
+      }
+      .sidebar__user-level {
+        color: var(--gold-dim);
+        font-size: 0.7rem;
+      }
+
+      /* ===== MAIN CONTENT ===== */
+      .main {
+        flex: 1;
+        padding: 24px 32px;
+        overflow-y: auto;
+      }
+
+      /* ===== TOP BAR (in main) ===== */
+      .main-header {
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+        margin-bottom: 24px;
+      }
+      .main-header__title {
+        font-family: var(--font-display);
+        font-size: 1.953rem;
+        font-weight: 600;
+        color: var(--gold-primary);
+      }
+      .main-header__actions {
+        display: flex;
+        gap: 12px;
+      }
+      .btn {
+        padding: 8px 16px;
+        border-radius: var(--radius-md);
+        font-family: var(--font-body);
+        font-size: 0.8rem;
+        font-weight: 500;
+        cursor: pointer;
+        transition: all 0.2s;
+        border: 1px solid var(--glass-border);
+        background: var(--glass-bg);
+        color: var(--text-primary);
+      }
+      .btn:hover {
+        border-color: var(--glass-hover);
+        background: rgba(15, 23, 42, 0.8);
+      }
+      .btn--gold {
+        border-color: var(--gold-dim);
+        color: var(--gold-light);
+        background: rgba(200, 168, 78, 0.1);
+      }
+      .btn--gold:hover {
+        box-shadow: var(--glow-gold);
+        background: rgba(200, 168, 78, 0.15);
+      }
+
+      /* ===== DASHBOARD WIDGETS ===== */
+      .dashboard-row {
+        display: grid;
+        grid-template-columns: repeat(4, 1fr);
+        gap: 16px;
+        margin-bottom: 24px;
+      }
+      .widget {
+        background: var(--glass-bg);
+        backdrop-filter: blur(var(--glass-blur));
+        border: 1px solid var(--glass-border);
+        border-radius: var(--radius-md);
+        padding: 16px;
+      }
+      .widget__label {
+        font-size: 0.7rem;
+        text-transform: uppercase;
+        letter-spacing: 0.08em;
+        color: var(--text-muted);
+        margin-bottom: 6px;
+      }
+      .widget__value {
+        font-size: 1.5rem;
+        font-weight: 700;
+        color: var(--text-primary);
+        font-family: var(--font-body);
+      }
+      .widget__sub {
+        font-size: 0.75rem;
+        color: var(--text-secondary);
+        margin-top: 4px;
+      }
+      .widget__value--gold {
+        color: var(--gold-primary);
+      }
+      .widget__value--success {
+        color: var(--status-success);
+      }
+
+      /* ===== HORSE TABLE ===== */
+      .table-panel {
+        background: var(--glass-bg);
+        backdrop-filter: blur(var(--glass-blur));
+        border: 1px solid var(--glass-border);
+        border-radius: var(--radius-lg);
+        overflow: hidden;
+      }
+      .table-panel__header {
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+        padding: 16px 20px;
+        border-bottom: 1px solid var(--glass-border);
+      }
+      .table-panel__title {
+        font-family: var(--font-display);
+        font-size: 1.1rem;
+        font-weight: 600;
+        color: var(--text-primary);
+      }
+
+      table {
+        width: 100%;
+        border-collapse: collapse;
+      }
+      thead th {
+        text-align: left;
+        padding: 10px 16px;
+        font-size: 0.7rem;
+        text-transform: uppercase;
+        letter-spacing: 0.08em;
+        color: var(--text-muted);
+        border-bottom: 1px solid var(--glass-border);
+        font-weight: 500;
+      }
+      tbody tr {
+        transition: background 0.15s;
+        cursor: pointer;
+      }
+      tbody tr:hover {
+        background: rgba(200, 168, 78, 0.05);
+      }
+      tbody td {
+        padding: 12px 16px;
+        font-size: 0.875rem;
+        border-bottom: 1px solid rgba(148, 163, 184, 0.08);
+        vertical-align: middle;
+      }
+
+      .horse-name-cell {
+        display: flex;
+        align-items: center;
+        gap: 10px;
+      }
+      .horse-mini-avatar {
+        width: 36px;
+        height: 36px;
+        border-radius: var(--radius-sm);
+        background: var(--bg-twilight);
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        font-size: 1rem;
+      }
+      .horse-name-cell__name {
+        font-family: var(--font-display);
+        font-size: 0.9rem;
+        font-weight: 500;
+        color: var(--text-primary);
+      }
+      .horse-name-cell__breed {
+        font-size: 0.7rem;
+        color: var(--text-muted);
+      }
+
+      .level-pill {
+        display: inline-block;
+        padding: 2px 8px;
+        border-radius: var(--radius-sm);
+        font-size: 0.75rem;
+        font-weight: 600;
+        background: rgba(200, 168, 78, 0.12);
+        color: var(--gold-light);
+        border: 1px solid rgba(200, 168, 78, 0.2);
+      }
+
+      .stat-mini-bar {
+        width: 80px;
+        height: 6px;
+        background: rgba(255, 255, 255, 0.06);
+        border-radius: 3px;
+        overflow: hidden;
+        display: inline-block;
+        vertical-align: middle;
+        margin-right: 6px;
+      }
+      .stat-mini-bar__fill {
+        height: 100%;
+        background: linear-gradient(90deg, var(--gold-primary), var(--gold-light));
+        border-radius: 3px;
+      }
+
+      .status-dot {
+        width: 8px;
+        height: 8px;
+        border-radius: 50%;
+        display: inline-block;
+        margin-right: 6px;
+      }
+      .status-dot--good {
+        background: var(--status-success);
+      }
+      .status-dot--warn {
+        background: var(--status-warning);
+      }
+      .status-dot--bad {
+        background: var(--status-danger);
+      }
+
+      .trait-pill {
+        display: inline-block;
+        padding: 2px 8px;
+        border-radius: var(--radius-sm);
+        font-size: 0.65rem;
+        margin-right: 4px;
+      }
+      .trait-pill--rare {
+        background: rgba(167, 139, 250, 0.15);
+        color: var(--status-rare);
+      }
+      .trait-pill--legendary {
+        background: rgba(200, 168, 78, 0.15);
+        color: var(--gold-light);
+      }
+      .trait-pill--common {
+        background: rgba(148, 163, 184, 0.1);
+        color: var(--text-secondary);
+      }
+
+      /* ===== COOLDOWN PANEL ===== */
+      .side-panels {
+        display: grid;
+        grid-template-columns: 1fr 1fr;
+        gap: 16px;
+        margin-top: 24px;
+      }
+      .cooldown-item {
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+        padding: 10px 0;
+        border-bottom: 1px solid rgba(148, 163, 184, 0.08);
+        font-size: 0.8rem;
+      }
+      .cooldown-item:last-child {
+        border-bottom: none;
+      }
+      .cooldown-item__horse {
+        color: var(--text-primary);
+        font-weight: 500;
+      }
+      .cooldown-item__time {
+        color: var(--status-warning);
+        font-weight: 600;
+        font-size: 0.75rem;
+      }
+      .cooldown-item__time--ready {
+        color: var(--status-success);
+      }
+
+      .activity-item {
+        padding: 10px 0;
+        border-bottom: 1px solid rgba(148, 163, 184, 0.08);
+        font-size: 0.8rem;
+        color: var(--text-secondary);
+      }
+      .activity-item:last-child {
+        border-bottom: none;
+      }
+      .activity-item__time {
+        font-size: 0.65rem;
+        color: var(--text-muted);
+      }
+      .activity-item strong {
+        color: var(--text-primary);
+      }
+
+      /* ===== RESPONSIVE ===== */
+      @media (max-width: 1024px) {
+        .dashboard-row {
+          grid-template-columns: repeat(2, 1fr);
+        }
+        .side-panels {
+          grid-template-columns: 1fr;
+        }
+      }
+      @media (max-width: 768px) {
+        .sidebar {
+          display: none;
+        }
+        .main {
+          padding: 16px;
+        }
+        .dashboard-row {
+          grid-template-columns: 1fr 1fr;
+        }
+        .main-header__title {
+          font-size: 1.5rem;
+        }
+      }
+    </style>
+  </head>
+  <body>
+    <div class="direction-badge">Direction 2 — Command Center</div>
+
+    <div class="layout">
+      <!-- SIDEBAR -->
+      <aside class="sidebar">
+        <div class="sidebar__header">
+          <div class="sidebar__logo">Equoria</div>
+        </div>
+        <nav class="sidebar__nav">
+          <a href="#" class="sidebar__item active">
+            <span class="sidebar__icon">🏠</span>
+            <span class="sidebar__label">My Stable</span>
+          </a>
+          <a href="#" class="sidebar__item">
+            <span class="sidebar__icon">🏆</span>
+            <span class="sidebar__label">Competitions</span>
+          </a>
+          <a href="#" class="sidebar__item">
+            <span class="sidebar__icon">🧬</span>
+            <span class="sidebar__label">Breeding</span>
+          </a>
+          <a href="#" class="sidebar__item">
+            <span class="sidebar__icon">⚡</span>
+            <span class="sidebar__label">Training</span>
+          </a>
+          <a href="#" class="sidebar__item">
+            <span class="sidebar__icon">👥</span>
+            <span class="sidebar__label">Community</span>
+          </a>
+          <a href="#" class="sidebar__item">
+            <span class="sidebar__icon">🌍</span>
+            <span class="sidebar__label">World</span>
+          </a>
+          <a href="#" class="sidebar__item">
+            <span class="sidebar__icon">🏦</span>
+            <span class="sidebar__label">Bank</span>
+          </a>
+          <a href="#" class="sidebar__item">
+            <span class="sidebar__icon">📊</span>
+            <span class="sidebar__label">Leaderboards</span>
+          </a>
+          <a href="#" class="sidebar__item">
+            <span class="sidebar__icon">⚙️</span>
+            <span class="sidebar__label">Settings</span>
+          </a>
+        </nav>
+        <div class="sidebar__user">
+          <div class="sidebar__avatar">H</div>
+          <div class="sidebar__user-info">
+            <div class="sidebar__username">Heirr</div>
+            <div class="sidebar__user-level">Level 24 · 1,250 🪙</div>
+          </div>
+        </div>
+      </aside>
+
+      <!-- MAIN CONTENT -->
+      <main class="main">
+        <div class="main-header">
+          <h1 class="main-header__title">My Stable</h1>
+          <div class="main-header__actions">
+            <button class="btn">Filter</button>
+            <button class="btn">Sort</button>
+            <button class="btn btn--gold">+ Add Horse</button>
+          </div>
+        </div>
+
+        <!-- WIDGETS -->
+        <div class="dashboard-row">
+          <div class="widget">
+            <div class="widget__label">Total Horses</div>
+            <div class="widget__value">6</div>
+            <div class="widget__sub">2 foals · 4 adults</div>
+          </div>
+          <div class="widget">
+            <div class="widget__label">Balance</div>
+            <div class="widget__value widget__value--gold">1,250</div>
+            <div class="widget__sub">coins available</div>
+          </div>
+          <div class="widget">
+            <div class="widget__label">Ready to Train</div>
+            <div class="widget__value widget__value--success">3</div>
+            <div class="widget__sub">cooldowns complete</div>
+          </div>
+          <div class="widget">
+            <div class="widget__label">Active Competitions</div>
+            <div class="widget__value">2</div>
+            <div class="widget__sub">results pending</div>
+          </div>
+        </div>
+
+        <!-- HORSE TABLE -->
+        <div class="table-panel">
+          <div class="table-panel__header">
+            <div class="table-panel__title">All Horses</div>
+            <button class="btn" style="font-size: 0.7rem; padding: 5px 12px">View: Table</button>
+          </div>
+          <table>
+            <thead>
+              <tr>
+                <th>Horse</th>
+                <th>Level</th>
+                <th>Top Stat</th>
+                <th>Traits</th>
+                <th>Status</th>
+                <th>Cooldown</th>
+              </tr>
+            </thead>
+            <tbody>
+              <tr>
+                <td>
+                  <div class="horse-name-cell">
+                    <div class="horse-mini-avatar">🐴</div>
+                    <div>
+                      <div class="horse-name-cell__name">Stardust Sovereign</div>
+                      <div class="horse-name-cell__breed">Thoroughbred · Mare · 6y</div>
+                    </div>
+                  </div>
+                </td>
+                <td><span class="level-pill">18</span></td>
+                <td>
+                  <div class="stat-mini-bar">
+                    <div class="stat-mini-bar__fill" style="width: 82%"></div>
+                  </div>
+                  <span style="font-size: 0.8rem; font-weight: 600">82</span>
+                </td>
+                <td>
+                  <span class="trait-pill trait-pill--rare">Celestial Mane</span>
+                  <span class="trait-pill trait-pill--common">Steady Gait</span>
+                </td>
+                <td><span class="status-dot status-dot--good"></span>Healthy</td>
+                <td style="color: var(--status-warning); font-size: 0.8rem">2d 14h</td>
+              </tr>
+              <tr>
+                <td>
+                  <div class="horse-name-cell">
+                    <div class="horse-mini-avatar">🐴</div>
+                    <div>
+                      <div class="horse-name-cell__name">MoonDancer</div>
+                      <div class="horse-name-cell__breed">Arabian · Stallion · 5y</div>
+                    </div>
+                  </div>
+                </td>
+                <td><span class="level-pill">12</span></td>
+                <td>
+                  <div class="stat-mini-bar">
+                    <div class="stat-mini-bar__fill" style="width: 91%"></div>
+                  </div>
+                  <span style="font-size: 0.8rem; font-weight: 600">91</span>
+                </td>
+                <td><span class="trait-pill trait-pill--legendary">Eclipse Born</span></td>
+                <td><span class="status-dot status-dot--good"></span>Healthy</td>
+                <td style="color: var(--status-success); font-size: 0.8rem">Ready</td>
+              </tr>
+              <tr>
+                <td>
+                  <div class="horse-name-cell">
+                    <div class="horse-mini-avatar">🐴</div>
+                    <div>
+                      <div class="horse-name-cell__name">Twilight Empress</div>
+                      <div class="horse-name-cell__breed">Andalusian · Mare · 4y</div>
+                    </div>
+                  </div>
+                </td>
+                <td><span class="level-pill">7</span></td>
+                <td>
+                  <div class="stat-mini-bar">
+                    <div class="stat-mini-bar__fill" style="width: 63%"></div>
+                  </div>
+                  <span style="font-size: 0.8rem; font-weight: 600">63</span>
+                </td>
+                <td>
+                  <span class="trait-pill trait-pill--common">Bold Spirit</span>
+                  <span class="trait-pill trait-pill--common">Quick Learner</span>
+                </td>
+                <td><span class="status-dot status-dot--warn"></span>Hungry</td>
+                <td style="color: var(--status-success); font-size: 0.8rem">Ready</td>
+              </tr>
+              <tr>
+                <td>
+                  <div class="horse-name-cell">
+                    <div class="horse-mini-avatar">🐴</div>
+                    <div>
+                      <div class="horse-name-cell__name">Nebula's Pride</div>
+                      <div class="horse-name-cell__breed">Hanoverian · Stallion · 8y</div>
+                    </div>
+                  </div>
+                </td>
+                <td><span class="level-pill">22</span></td>
+                <td>
+                  <div class="stat-mini-bar">
+                    <div class="stat-mini-bar__fill" style="width: 94%"></div>
+                  </div>
+                  <span style="font-size: 0.8rem; font-weight: 600">94</span>
+                </td>
+                <td>
+                  <span class="trait-pill trait-pill--rare">Iron Will</span>
+                  <span class="trait-pill trait-pill--legendary">Starforged</span>
+                </td>
+                <td><span class="status-dot status-dot--good"></span>Healthy</td>
+                <td style="color: var(--status-success); font-size: 0.8rem">Ready</td>
+              </tr>
+              <tr>
+                <td>
+                  <div class="horse-name-cell">
+                    <div class="horse-mini-avatar">🐴</div>
+                    <div>
+                      <div class="horse-name-cell__name">Comet Foal</div>
+                      <div class="horse-name-cell__breed">Thoroughbred · Colt · 1y</div>
+                    </div>
+                  </div>
+                </td>
+                <td><span class="level-pill">3</span></td>
+                <td>
+                  <div class="stat-mini-bar">
+                    <div class="stat-mini-bar__fill" style="width: 35%"></div>
+                  </div>
+                  <span style="font-size: 0.8rem; font-weight: 600">35</span>
+                </td>
+                <td><span class="trait-pill trait-pill--common">Undiscovered</span></td>
+                <td><span class="status-dot status-dot--good"></span>Healthy</td>
+                <td style="color: var(--text-muted); font-size: 0.8rem">Too young</td>
+              </tr>
+              <tr>
+                <td>
+                  <div class="horse-name-cell">
+                    <div class="horse-mini-avatar">🐴</div>
+                    <div>
+                      <div class="horse-name-cell__name">Aurora Veil</div>
+                      <div class="horse-name-cell__breed">Friesian · Mare · 7y</div>
+                    </div>
+                  </div>
+                </td>
+                <td><span class="level-pill">15</span></td>
+                <td>
+                  <div class="stat-mini-bar">
+                    <div class="stat-mini-bar__fill" style="width: 85%"></div>
+                  </div>
+                  <span style="font-size: 0.8rem; font-weight: 600">85</span>
+                </td>
+                <td>
+                  <span class="trait-pill trait-pill--rare">Night Vision</span>
+                  <span class="trait-pill trait-pill--common">Gentle Soul</span>
+                </td>
+                <td><span class="status-dot status-dot--bad"></span>Injured</td>
+                <td style="color: var(--text-muted); font-size: 0.8rem">N/A</td>
+              </tr>
+            </tbody>
+          </table>
+        </div>
+
+        <!-- BOTTOM PANELS -->
+        <div class="side-panels">
+          <div class="table-panel">
+            <div class="table-panel__header">
+              <div class="table-panel__title">Cooldown Timers</div>
+            </div>
+            <div style="padding: 12px 20px">
+              <div class="cooldown-item">
+                <span class="cooldown-item__horse">Stardust Sovereign</span>
+                <span class="cooldown-item__time">2d 14h (Training)</span>
+              </div>
+              <div class="cooldown-item">
+                <span class="cooldown-item__horse">MoonDancer</span>
+                <span class="cooldown-item__time cooldown-item__time--ready">Ready to train</span>
+              </div>
+              <div class="cooldown-item">
+                <span class="cooldown-item__horse">Nebula's Pride</span>
+                <span class="cooldown-item__time cooldown-item__time--ready">Ready to train</span>
+              </div>
+              <div class="cooldown-item">
+                <span class="cooldown-item__horse">Aurora Veil</span>
+                <span class="cooldown-item__time" style="color: var(--status-danger)"
+                  >Injured — cannot train</span
+                >
+              </div>
+            </div>
+          </div>
+          <div class="table-panel">
+            <div class="table-panel__header">
+              <div class="table-panel__title">Recent Activity</div>
+            </div>
+            <div style="padding: 12px 20px">
+              <div class="activity-item">
+                <strong>Stardust</strong> entered Dressage Classic<br />
+                <span class="activity-item__time">2 hours ago</span>
+              </div>
+              <div class="activity-item">
+                <strong>MoonDancer</strong> completed speed training (+3 Speed)<br />
+                <span class="activity-item__time">5 hours ago</span>
+              </div>
+              <div class="activity-item">
+                <strong>Nebula's Pride</strong> won 1st place — Grand Prix<br />
+                <span class="activity-item__time">Yesterday</span>
+              </div>
+              <div class="activity-item">
+                <strong>Comet Foal</strong> discovered trait: ???<br />
+                <span class="activity-item__time">2 days ago</span>
+              </div>
+            </div>
+          </div>
+        </div>
+      </main>
+    </div>
+  </body>
+</html>

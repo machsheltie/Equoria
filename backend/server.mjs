@@ -23,6 +23,7 @@ import { validateEnvironment } from './utils/validateEnvironment.mjs';
 import app from './app.mjs';
 import logger from './utils/logger.mjs';
 import { initializeCronJobs, stopCronJobs } from './services/cronJobService.mjs';
+import { startShowScheduler, stopShowScheduler } from './utils/showScheduler.mjs';
 import prisma from '../packages/database/prismaClient.mjs';
 import { shutdownMemoryManagement } from './services/memoryResourceManagementService.mjs';
 import { closeRedis } from './middleware/rateLimiting.mjs';
@@ -50,10 +51,13 @@ const server = app.listen(PORT, () => {
     logger.info('⏰ Initializing cron jobs...');
     initializeCronJobs();
   }
+
+  // Start show execution scheduler (all environments)
+  startShowScheduler();
 });
 
 // Graceful shutdown handler
-const shutdown = async (signal) => {
+const shutdown = async signal => {
   logger.info(`\n${signal} received. Starting graceful shutdown...`);
 
   server.close(async () => {
@@ -65,6 +69,9 @@ const shutdown = async (signal) => {
         logger.info('Stopping cron jobs...');
         stopCronJobs();
       }
+
+      // Stop show scheduler
+      stopShowScheduler();
 
       // Shutdown memory management
       logger.info('Shutting down memory management...');
@@ -102,7 +109,7 @@ process.on('SIGTERM', () => shutdown('SIGTERM'));
 process.on('SIGINT', () => shutdown('SIGINT'));
 
 // Handle uncaught exceptions
-process.on('uncaughtException', (error) => {
+process.on('uncaughtException', error => {
   logger.error('Uncaught Exception:', error);
   shutdown('UNCAUGHT_EXCEPTION');
 });

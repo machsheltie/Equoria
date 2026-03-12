@@ -1,3 +1,4 @@
+/** ScrollArea — Celestial Night thin gold scrollbar (Task 22-6) */
 import * as React from 'react';
 import { cn } from '@/lib/utils';
 
@@ -8,7 +9,7 @@ const ScrollArea = React.forwardRef<HTMLDivElement, ScrollAreaProps>(
     return (
       <div
         ref={ref}
-        className={cn('relative overflow-auto custom-scrollbar', className)}
+        className={cn('relative overflow-auto scroll-area-celestial', className)}
         {...props}
       >
         {children}

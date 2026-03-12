@@ -1,14 +1,15 @@
 /**
- * ErrorCard — Consistent error display with optional retry button
+ * ErrorCard — Consistent error display with optional retry button (Epic 30-2)
  *
+ * Celestial Night restyle: glass panel, gold-outlined alert, amber palette.
  * Used for useQuery failure states across all major pages.
- * Replaces one-off error displays with a unified pattern.
  *
  * Story 15-3: Loading & Error States Polish
+ * Epic 30-2: Celestial Night restyle
  */
 
 import React from 'react';
-import { AlertCircle } from 'lucide-react';
+import { AlertTriangle, RefreshCw } from 'lucide-react';
 
 interface ErrorCardProps {
   /** Heading shown above the message */
@@ -27,24 +28,42 @@ export const ErrorCard: React.FC<ErrorCardProps> = ({
   onRetry,
   className,
 }) => (
-  <div className={`flex items-center justify-center p-12 ${className ?? ''}`}>
-    <div className="text-center space-y-4 max-w-md">
-      <AlertCircle className="w-12 h-12 mx-auto" style={{ color: 'var(--status-error)' }} />
-      <h3 className="text-lg font-semibold" style={{ color: 'var(--text-primary)' }}>
-        {title}
-      </h3>
-      <p className="text-sm" style={{ color: 'var(--text-muted)' }}>
-        {message}
-      </p>
+  <div className={`flex items-center justify-center p-8 sm:p-12 ${className ?? ''}`}>
+    <div
+      className="glass-panel rounded-2xl border border-[rgba(251,191,36,0.2)] px-6 py-6 text-center space-y-4 max-w-sm w-full"
+      role="alert"
+    >
+      {/* Icon */}
+      <div className="flex h-12 w-12 items-center justify-center rounded-full bg-[rgba(251,191,36,0.08)] border border-[rgba(251,191,36,0.2)] mx-auto">
+        <AlertTriangle className="h-6 w-6 text-amber-400" aria-hidden="true" />
+      </div>
+
+      {/* Text */}
+      <div className="space-y-1">
+        <h3
+          className="text-base font-semibold text-[var(--cream)]"
+          style={{ fontFamily: 'var(--font-heading)' }}
+        >
+          {title}
+        </h3>
+        <p className="text-sm text-[var(--text-muted)] font-[var(--font-body)] leading-relaxed">
+          {message}
+        </p>
+      </div>
+
+      {/* Retry */}
       {onRetry && (
         <button
           type="button"
           onClick={onRetry}
-          className="px-4 py-2 rounded-lg text-sm font-medium text-white transition-colors"
-          style={{ background: 'var(--celestial-primary)' }}
-          onMouseOver={(e) => ((e.currentTarget as HTMLButtonElement).style.opacity = '0.85')}
-          onMouseOut={(e) => ((e.currentTarget as HTMLButtonElement).style.opacity = '1')}
+          className={[
+            'inline-flex items-center gap-2 rounded-full px-5 py-2 text-sm font-bold transition-all',
+            'bg-gradient-to-r from-[var(--gold-700)] to-[var(--gold-400)] text-[var(--celestial-navy-900)]',
+            'hover:brightness-110 hover:shadow-[0_0_14px_rgba(201,162,39,0.3)]',
+            'font-[var(--font-heading)]',
+          ].join(' ')}
         >
+          <RefreshCw className="h-3.5 w-3.5" aria-hidden="true" />
           Try Again
         </button>
       )}

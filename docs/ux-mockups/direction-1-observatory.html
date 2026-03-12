@@ -1,0 +1,631 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Equoria — Direction 1: Observatory</title>
+    <style>
+      /* ===== FONTS ===== */
+      @import url('https://fonts.googleapis.com/css2?family=Cinzel:wght@400;500;600;700&family=Inter:wght@300;400;500;600;700&display=swap');
+
+      /* ===== DESIGN TOKENS ===== */
+      :root {
+        --bg-deep-space: #0a0e1a;
+        --bg-night-sky: #111827;
+        --bg-midnight: #1a2236;
+        --bg-twilight: #243154;
+        --glass-bg: rgba(15, 23, 42, 0.6);
+        --glass-border: rgba(148, 163, 184, 0.2);
+        --glass-hover: rgba(148, 163, 184, 0.3);
+        --glass-blur: 12px;
+        --glass-glow: rgba(200, 168, 78, 0.15);
+        --gold-primary: #c8a84e;
+        --gold-light: #e8d48b;
+        --gold-dim: #8b7635;
+        --gold-bright: #f5e6a3;
+        --text-primary: #e2e8f0;
+        --text-secondary: #94a3b8;
+        --text-muted: #64748b;
+        --text-gold: #c8a84e;
+        --status-success: #22c55e;
+        --status-warning: #f59e0b;
+        --status-danger: #ef4444;
+        --status-info: #3b82f6;
+        --status-rare: #a78bfa;
+        --font-display: 'Cinzel', Georgia, serif;
+        --font-body: 'Inter', system-ui, sans-serif;
+        --radius-sm: 6px;
+        --radius-md: 12px;
+        --radius-lg: 16px;
+        --radius-xl: 24px;
+        --shadow-subtle: 0 1px 3px rgba(0, 0, 0, 0.4);
+        --shadow-raised: 0 4px 12px rgba(0, 0, 0, 0.5);
+        --shadow-floating: 0 8px 24px rgba(0, 0, 0, 0.6);
+        --glow-gold: 0 0 20px rgba(200, 168, 78, 0.25);
+        --glow-gold-strong: 0 0 30px rgba(200, 168, 78, 0.4);
+      }
+
+      /* ===== RESET ===== */
+      *,
+      *::before,
+      *::after {
+        box-sizing: border-box;
+        margin: 0;
+        padding: 0;
+      }
+
+      body {
+        font-family: var(--font-body);
+        color: var(--text-primary);
+        background: var(--bg-deep-space);
+        min-height: 100vh;
+        overflow-x: hidden;
+      }
+
+      /* ===== STARFIELD ===== */
+      .starfield {
+        position: fixed;
+        inset: 0;
+        z-index: 0;
+        background:
+          radial-gradient(1px 1px at 10% 20%, rgba(255, 255, 255, 0.8) 0%, transparent 100%),
+          radial-gradient(1px 1px at 30% 60%, rgba(255, 255, 255, 0.6) 0%, transparent 100%),
+          radial-gradient(1.5px 1.5px at 50% 10%, rgba(255, 255, 255, 0.9) 0%, transparent 100%),
+          radial-gradient(1px 1px at 70% 40%, rgba(255, 255, 255, 0.5) 0%, transparent 100%),
+          radial-gradient(1.5px 1.5px at 90% 80%, rgba(255, 255, 255, 0.7) 0%, transparent 100%),
+          radial-gradient(1px 1px at 15% 85%, rgba(255, 255, 255, 0.6) 0%, transparent 100%),
+          radial-gradient(1px 1px at 45% 45%, rgba(200, 168, 78, 0.4) 0%, transparent 100%),
+          radial-gradient(1px 1px at 80% 15%, rgba(200, 168, 78, 0.3) 0%, transparent 100%),
+          radial-gradient(1px 1px at 25% 35%, rgba(255, 255, 255, 0.4) 0%, transparent 100%),
+          radial-gradient(1px 1px at 60% 70%, rgba(255, 255, 255, 0.5) 0%, transparent 100%),
+          radial-gradient(1px 1px at 85% 55%, rgba(255, 255, 255, 0.3) 0%, transparent 100%),
+          radial-gradient(2px 2px at 5% 50%, rgba(200, 168, 78, 0.5) 0%, transparent 100%),
+          radial-gradient(1px 1px at 95% 30%, rgba(255, 255, 255, 0.6) 0%, transparent 100%),
+          radial-gradient(1px 1px at 40% 90%, rgba(255, 255, 255, 0.4) 0%, transparent 100%),
+          radial-gradient(1.5px 1.5px at 75% 5%, rgba(167, 139, 250, 0.4) 0%, transparent 100%),
+          linear-gradient(180deg, #0a0e1a 0%, #111827 40%, #1a2236 70%, #0a0e1a 100%);
+      }
+
+      /* ===== DIRECTION BADGE ===== */
+      .direction-badge {
+        position: fixed;
+        top: 16px;
+        right: 16px;
+        z-index: 100;
+        background: rgba(200, 168, 78, 0.15);
+        border: 1px solid var(--gold-dim);
+        border-radius: var(--radius-sm);
+        padding: 8px 16px;
+        font-family: var(--font-body);
+        font-size: 0.75rem;
+        color: var(--gold-light);
+        letter-spacing: 0.05em;
+        text-transform: uppercase;
+      }
+
+      /* ===== LAYOUT ===== */
+      .page {
+        position: relative;
+        z-index: 1;
+        min-height: 100vh;
+      }
+
+      /* ===== TOP NAV ===== */
+      .top-nav {
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+        padding: 20px 48px;
+        background: rgba(10, 14, 26, 0.7);
+        backdrop-filter: blur(var(--glass-blur));
+        border-bottom: 1px solid var(--glass-border);
+      }
+      .top-nav__logo {
+        font-family: var(--font-display);
+        font-size: 1.5rem;
+        font-weight: 700;
+        color: var(--gold-primary);
+        letter-spacing: 0.08em;
+      }
+      .top-nav__links {
+        display: flex;
+        gap: 32px;
+        list-style: none;
+      }
+      .top-nav__links li a {
+        font-family: var(--font-display);
+        font-size: 0.875rem;
+        font-weight: 500;
+        color: var(--text-secondary);
+        text-decoration: none;
+        letter-spacing: 0.04em;
+        transition: color 0.2s;
+        padding-bottom: 4px;
+      }
+      .top-nav__links li a:hover,
+      .top-nav__links li a.active {
+        color: var(--gold-primary);
+        border-bottom: 2px solid var(--gold-primary);
+      }
+      .top-nav__user {
+        display: flex;
+        align-items: center;
+        gap: 12px;
+      }
+      .top-nav__avatar {
+        width: 36px;
+        height: 36px;
+        border-radius: 50%;
+        background: var(--bg-twilight);
+        border: 2px solid var(--gold-dim);
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        font-size: 0.75rem;
+        color: var(--gold-light);
+      }
+      .top-nav__username {
+        font-family: var(--font-display);
+        font-size: 0.875rem;
+        color: var(--text-primary);
+      }
+      .top-nav__level {
+        font-size: 0.7rem;
+        color: var(--gold-dim);
+        font-family: var(--font-body);
+      }
+
+      /* ===== PAGE HEADER ===== */
+      .page-header {
+        text-align: center;
+        padding: 64px 48px 24px;
+      }
+      .page-header__crescent {
+        font-size: 2rem;
+        margin-bottom: 8px;
+        opacity: 0.6;
+      }
+      .page-header__title {
+        font-family: var(--font-display);
+        font-size: 2.441rem;
+        font-weight: 700;
+        color: var(--gold-primary);
+        letter-spacing: 0.06em;
+        margin-bottom: 8px;
+      }
+      .page-header__subtitle {
+        font-size: 1rem;
+        color: var(--text-secondary);
+      }
+      .page-header__count {
+        color: var(--gold-light);
+        font-weight: 600;
+      }
+
+      /* ===== HORSE GRID — OBSERVATORY: Large, spacious ===== */
+      .horse-grid {
+        display: grid;
+        grid-template-columns: repeat(auto-fill, minmax(340px, 1fr));
+        gap: 32px;
+        padding: 40px 64px 80px;
+        max-width: 1440px;
+        margin: 0 auto;
+      }
+
+      /* ===== HORSE CARD ===== */
+      .horse-card {
+        background: var(--glass-bg);
+        backdrop-filter: blur(var(--glass-blur));
+        border: 1px solid var(--glass-border);
+        border-radius: var(--radius-xl);
+        padding: 28px;
+        transition: all 0.3s ease;
+        cursor: pointer;
+        position: relative;
+        overflow: hidden;
+      }
+      .horse-card::before {
+        content: '';
+        position: absolute;
+        inset: 0;
+        background: radial-gradient(
+          ellipse at 50% 0%,
+          rgba(200, 168, 78, 0.05) 0%,
+          transparent 70%
+        );
+        pointer-events: none;
+      }
+      .horse-card:hover {
+        border-color: var(--glass-hover);
+        box-shadow: var(--glow-gold);
+        transform: translateY(-4px);
+      }
+      .horse-card__portrait {
+        width: 100%;
+        height: 200px;
+        background: linear-gradient(135deg, var(--bg-midnight), var(--bg-twilight));
+        border-radius: var(--radius-lg);
+        margin-bottom: 20px;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        position: relative;
+        overflow: hidden;
+      }
+      .horse-card__portrait-icon {
+        font-size: 4rem;
+        opacity: 0.3;
+      }
+      .horse-card__level-badge {
+        position: absolute;
+        top: 12px;
+        right: 12px;
+        background: rgba(200, 168, 78, 0.2);
+        border: 1px solid var(--gold-dim);
+        border-radius: var(--radius-sm);
+        padding: 4px 10px;
+        font-family: var(--font-body);
+        font-size: 0.75rem;
+        font-weight: 600;
+        color: var(--gold-light);
+      }
+      .horse-card__name {
+        font-family: var(--font-display);
+        font-size: 1.563rem;
+        font-weight: 600;
+        color: var(--text-primary);
+        margin-bottom: 4px;
+      }
+      .horse-card__breed {
+        font-size: 0.875rem;
+        color: var(--text-secondary);
+        margin-bottom: 16px;
+      }
+
+      /* ===== STAT BAR ===== */
+      .stat-row {
+        display: flex;
+        align-items: center;
+        gap: 10px;
+        margin-bottom: 8px;
+      }
+      .stat-row__label {
+        font-size: 0.75rem;
+        color: var(--text-muted);
+        width: 60px;
+        text-align: right;
+        text-transform: uppercase;
+        letter-spacing: 0.05em;
+      }
+      .stat-row__bar {
+        flex: 1;
+        height: 8px;
+        background: rgba(255, 255, 255, 0.06);
+        border-radius: var(--radius-sm);
+        overflow: hidden;
+      }
+      .stat-row__fill {
+        height: 100%;
+        background: linear-gradient(90deg, var(--gold-primary), var(--gold-light));
+        border-radius: var(--radius-sm);
+        transition: width 0.6s ease;
+      }
+      .stat-row__value {
+        font-size: 0.875rem;
+        font-weight: 600;
+        color: var(--text-primary);
+        width: 30px;
+      }
+
+      /* ===== CARE STATUS ===== */
+      .care-strip {
+        display: flex;
+        gap: 8px;
+        margin-top: 16px;
+        padding-top: 16px;
+        border-top: 1px solid var(--glass-border);
+      }
+      .care-badge {
+        display: flex;
+        align-items: center;
+        gap: 4px;
+        font-size: 0.7rem;
+        padding: 3px 8px;
+        border-radius: var(--radius-sm);
+        background: rgba(255, 255, 255, 0.04);
+        border: 1px solid rgba(255, 255, 255, 0.08);
+      }
+      .care-badge--good {
+        color: var(--status-success);
+        border-color: rgba(34, 197, 94, 0.3);
+      }
+      .care-badge--warn {
+        color: var(--status-warning);
+        border-color: rgba(245, 158, 11, 0.3);
+      }
+      .care-badge--bad {
+        color: var(--status-danger);
+        border-color: rgba(239, 68, 68, 0.3);
+      }
+
+      /* ===== TRAIT BADGE ===== */
+      .trait-badge {
+        display: inline-block;
+        padding: 3px 10px;
+        border-radius: var(--radius-sm);
+        font-size: 0.7rem;
+        font-weight: 500;
+        margin-right: 6px;
+        margin-bottom: 6px;
+      }
+      .trait-badge--common {
+        background: rgba(148, 163, 184, 0.15);
+        color: var(--text-secondary);
+        border: 1px solid rgba(148, 163, 184, 0.2);
+      }
+      .trait-badge--rare {
+        background: rgba(167, 139, 250, 0.15);
+        color: var(--status-rare);
+        border: 1px solid rgba(167, 139, 250, 0.3);
+      }
+      .trait-badge--legendary {
+        background: rgba(200, 168, 78, 0.15);
+        color: var(--gold-light);
+        border: 1px solid rgba(200, 168, 78, 0.3);
+      }
+
+      /* ===== RESPONSIVE ===== */
+      @media (max-width: 1024px) {
+        .horse-grid {
+          padding: 32px;
+          gap: 24px;
+          grid-template-columns: repeat(auto-fill, minmax(300px, 1fr));
+        }
+        .top-nav {
+          padding: 16px 24px;
+        }
+        .page-header {
+          padding: 48px 24px 16px;
+        }
+      }
+      @media (max-width: 640px) {
+        .horse-grid {
+          padding: 16px;
+          gap: 16px;
+          grid-template-columns: 1fr;
+        }
+        .top-nav__links {
+          display: none;
+        }
+        .page-header__title {
+          font-size: 1.953rem;
+        }
+        .horse-card__portrait {
+          height: 160px;
+        }
+      }
+    </style>
+  </head>
+  <body>
+    <div class="starfield"></div>
+    <div class="direction-badge">Direction 1 — Observatory</div>
+
+    <div class="page">
+      <!-- TOP NAV -->
+      <nav class="top-nav">
+        <div class="top-nav__logo">Equoria</div>
+        <ul class="top-nav__links">
+          <li><a href="#" class="active">My Stable</a></li>
+          <li><a href="#">Competitions</a></li>
+          <li><a href="#">Breeding</a></li>
+          <li><a href="#">Training</a></li>
+          <li><a href="#">Community</a></li>
+          <li><a href="#">World</a></li>
+        </ul>
+        <div class="top-nav__user">
+          <div>
+            <div class="top-nav__username">Heirr</div>
+            <div class="top-nav__level">Level 24 · 1,250 coins</div>
+          </div>
+          <div class="top-nav__avatar">H</div>
+        </div>
+      </nav>
+
+      <!-- PAGE HEADER -->
+      <div class="page-header">
+        <div class="page-header__crescent">☽</div>
+        <h1 class="page-header__title">My Stable</h1>
+        <p class="page-header__subtitle">
+          <span class="page-header__count">6</span> horses under your care
+        </p>
+      </div>
+
+      <!-- HORSE GRID -->
+      <div class="horse-grid">
+        <!-- Horse 1 -->
+        <div class="horse-card">
+          <div class="horse-card__portrait">
+            <span class="horse-card__portrait-icon">🐴</span>
+            <span class="horse-card__level-badge">Lv. 18</span>
+          </div>
+          <div class="horse-card__name">Stardust Sovereign</div>
+          <div class="horse-card__breed">Thoroughbred · Mare · 6 yrs</div>
+          <div>
+            <span class="trait-badge trait-badge--rare">Celestial Mane</span>
+            <span class="trait-badge trait-badge--common">Steady Gait</span>
+          </div>
+          <div style="margin-top: 16px">
+            <div class="stat-row">
+              <span class="stat-row__label">Speed</span>
+              <div class="stat-row__bar"><div class="stat-row__fill" style="width: 82%"></div></div>
+              <span class="stat-row__value">82</span>
+            </div>
+            <div class="stat-row">
+              <span class="stat-row__label">Agility</span>
+              <div class="stat-row__bar"><div class="stat-row__fill" style="width: 74%"></div></div>
+              <span class="stat-row__value">74</span>
+            </div>
+          </div>
+          <div class="care-strip">
+            <span class="care-badge care-badge--good">✓ Fed</span>
+            <span class="care-badge care-badge--good">✓ Shod</span>
+            <span class="care-badge care-badge--warn">⏰ Train 2d</span>
+          </div>
+        </div>
+
+        <!-- Horse 2 -->
+        <div class="horse-card">
+          <div class="horse-card__portrait">
+            <span class="horse-card__portrait-icon">🐴</span>
+            <span class="horse-card__level-badge">Lv. 12</span>
+          </div>
+          <div class="horse-card__name">MoonDancer</div>
+          <div class="horse-card__breed">Arabian · Stallion · 5 yrs</div>
+          <div>
+            <span class="trait-badge trait-badge--legendary">Eclipse Born</span>
+          </div>
+          <div style="margin-top: 16px">
+            <div class="stat-row">
+              <span class="stat-row__label">Speed</span>
+              <div class="stat-row__bar"><div class="stat-row__fill" style="width: 68%"></div></div>
+              <span class="stat-row__value">68</span>
+            </div>
+            <div class="stat-row">
+              <span class="stat-row__label">Stamina</span>
+              <div class="stat-row__bar"><div class="stat-row__fill" style="width: 91%"></div></div>
+              <span class="stat-row__value">91</span>
+            </div>
+          </div>
+          <div class="care-strip">
+            <span class="care-badge care-badge--good">✓ Fed</span>
+            <span class="care-badge care-badge--good">✓ Shod</span>
+            <span class="care-badge care-badge--good">✓ Ready</span>
+          </div>
+        </div>
+
+        <!-- Horse 3 -->
+        <div class="horse-card">
+          <div class="horse-card__portrait">
+            <span class="horse-card__portrait-icon">🐴</span>
+            <span class="horse-card__level-badge">Lv. 7</span>
+          </div>
+          <div class="horse-card__name">Twilight Empress</div>
+          <div class="horse-card__breed">Andalusian · Mare · 4 yrs</div>
+          <div>
+            <span class="trait-badge trait-badge--common">Bold Spirit</span>
+            <span class="trait-badge trait-badge--common">Quick Learner</span>
+          </div>
+          <div style="margin-top: 16px">
+            <div class="stat-row">
+              <span class="stat-row__label">Balance</span>
+              <div class="stat-row__bar"><div class="stat-row__fill" style="width: 56%"></div></div>
+              <span class="stat-row__value">56</span>
+            </div>
+            <div class="stat-row">
+              <span class="stat-row__label">Focus</span>
+              <div class="stat-row__bar"><div class="stat-row__fill" style="width: 63%"></div></div>
+              <span class="stat-row__value">63</span>
+            </div>
+          </div>
+          <div class="care-strip">
+            <span class="care-badge care-badge--bad">✗ Hungry</span>
+            <span class="care-badge care-badge--warn">⏰ Shod 5d</span>
+            <span class="care-badge care-badge--good">✓ Ready</span>
+          </div>
+        </div>
+
+        <!-- Horse 4 -->
+        <div class="horse-card">
+          <div class="horse-card__portrait">
+            <span class="horse-card__portrait-icon">🐴</span>
+            <span class="horse-card__level-badge">Lv. 22</span>
+          </div>
+          <div class="horse-card__name">Nebula's Pride</div>
+          <div class="horse-card__breed">Hanoverian · Stallion · 8 yrs</div>
+          <div>
+            <span class="trait-badge trait-badge--rare">Iron Will</span>
+            <span class="trait-badge trait-badge--legendary">Starforged</span>
+          </div>
+          <div style="margin-top: 16px">
+            <div class="stat-row">
+              <span class="stat-row__label">Strength</span>
+              <div class="stat-row__bar"><div class="stat-row__fill" style="width: 94%"></div></div>
+              <span class="stat-row__value">94</span>
+            </div>
+            <div class="stat-row">
+              <span class="stat-row__label">Endure</span>
+              <div class="stat-row__bar"><div class="stat-row__fill" style="width: 88%"></div></div>
+              <span class="stat-row__value">88</span>
+            </div>
+          </div>
+          <div class="care-strip">
+            <span class="care-badge care-badge--good">✓ Fed</span>
+            <span class="care-badge care-badge--good">✓ Shod</span>
+            <span class="care-badge care-badge--good">✓ Ready</span>
+          </div>
+        </div>
+
+        <!-- Horse 5 -->
+        <div class="horse-card">
+          <div class="horse-card__portrait">
+            <span class="horse-card__portrait-icon">🐴</span>
+            <span class="horse-card__level-badge">Lv. 3</span>
+          </div>
+          <div class="horse-card__name">Comet Foal</div>
+          <div class="horse-card__breed">Thoroughbred · Colt · 1 yr</div>
+          <div>
+            <span class="trait-badge trait-badge--common">Undiscovered</span>
+          </div>
+          <div style="margin-top: 16px">
+            <div class="stat-row">
+              <span class="stat-row__label">Speed</span>
+              <div class="stat-row__bar"><div class="stat-row__fill" style="width: 35%"></div></div>
+              <span class="stat-row__value">35</span>
+            </div>
+            <div class="stat-row">
+              <span class="stat-row__label">Agility</span>
+              <div class="stat-row__bar"><div class="stat-row__fill" style="width: 28%"></div></div>
+              <span class="stat-row__value">28</span>
+            </div>
+          </div>
+          <div class="care-strip">
+            <span class="care-badge care-badge--good">✓ Fed</span>
+            <span class="care-badge care-badge--warn">⏰ Groom</span>
+            <span class="care-badge care-badge--good">✓ Healthy</span>
+          </div>
+        </div>
+
+        <!-- Horse 6 -->
+        <div class="horse-card">
+          <div class="horse-card__portrait">
+            <span class="horse-card__portrait-icon">🐴</span>
+            <span class="horse-card__level-badge">Lv. 15</span>
+          </div>
+          <div class="horse-card__name">Aurora Veil</div>
+          <div class="horse-card__breed">Friesian · Mare · 7 yrs</div>
+          <div>
+            <span class="trait-badge trait-badge--rare">Night Vision</span>
+            <span class="trait-badge trait-badge--common">Gentle Soul</span>
+          </div>
+          <div style="margin-top: 16px">
+            <div class="stat-row">
+              <span class="stat-row__label">Intel</span>
+              <div class="stat-row__bar"><div class="stat-row__fill" style="width: 79%"></div></div>
+              <span class="stat-row__value">79</span>
+            </div>
+            <div class="stat-row">
+              <span class="stat-row__label">Obey</span>
+              <div class="stat-row__bar"><div class="stat-row__fill" style="width: 85%"></div></div>
+              <span class="stat-row__value">85</span>
+            </div>
+          </div>
+          <div class="care-strip">
+            <span class="care-badge care-badge--good">✓ Fed</span>
+            <span class="care-badge care-badge--good">✓ Shod</span>
+            <span class="care-badge care-badge--bad">✗ Injured</span>
+          </div>
+        </div>
+      </div>
+    </div>
+  </body>
+</html>

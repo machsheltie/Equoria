@@ -62,6 +62,8 @@ model User {
   ballots                 ClubBallot[]             @relation("CastBallots")
   horsesSold              HorseSale[]              @relation("HorseSalesSold")
   horsesBought            HorseSale[]              @relation("HorseSalesBought")
+  showsCreated            Show[]                   @relation("ShowCreator")
+  showEntries             ShowEntry[]              @relation("ShowEntries")
 
   @@index([email])
   @@index([emailVerified])
@@ -180,7 +182,7 @@ model Horse {
   updatedAt               DateTime?             @updatedAt
   competitionResults      CompetitionResult[]
   foalActivities          FoalActivity[]
-  foalDevelopment         FoalDevelopment?
+  foalDevelopment         FoalDevelopment?      @relation("FoalDevelopmentFoal")
   foalTrainingHistory     FoalTrainingHistory[]
   groomAssignments        GroomAssignment[]
   groomInteractions       GroomInteraction[]
@@ -202,6 +204,7 @@ model Horse {
   user                    User?                 @relation(fields: [userId], references: [id])
   trainingLogs            TrainingLog[]
   horseSales              HorseSale[]
+  showEntries             ShowEntry[]
 
   @@index([userId])
   @@index([breedId])
@@ -368,12 +371,32 @@ model Show {
   runDate            DateTime
   /// Host user
   hostUserId         String?
+  /// Show lifecycle status (BA-1)
+  status             ShowStatus          @default(open)
+  /// When the show was opened for entries (BA-1)
+  openDate           DateTime?
+  /// When the show stops accepting entries — openDate + 7 days (BA-1)
+  closeDate          DateTime?
+  /// When the overnight execution completed (BA-1)
+  executedAt         DateTime?
+  /// User who created this show (BA-1)
+  createdByUserId    String?
+  /// Club that created this show (BA-1)
+  createdByClubId    Int?
+  /// Optional description (BA-2)
+  description        String?
+  /// Max entries allowed (BA-2)
+  maxEntries         Int?
   /// Timestamps
   createdAt          DateTime            @default(now())
   updatedAt          DateTime            @updatedAt
   competitionResults CompetitionResult[]
+  entries            ShowEntry[]
   hostUser           User?               @relation(fields: [hostUserId], references: [id])
+  createdByUser      User?               @relation("ShowCreator", fields: [createdByUserId], references: [id])
 
+  @@index([status])
+  @@index([closeDate])
   @@map("shows")
 }
 
@@ -415,19 +438,30 @@ model TrainingLog {
 
 model FoalDevelopment {
   /// Unique identifier for each foal development record
-  id                  Int      @id @default(autoincrement())
+  id                  Int       @id @default(autoincrement())
   /// Development progress
-  currentDay          Int      @default(0)
-  bondingLevel        Int      @default(50)
-  stressLevel         Int      @default(20)
-  completedActivities Json     @default("{}")
-  /// Foreign key
-  foalId              Int      @unique
+  currentDay          Int       @default(0)
+  bondingLevel        Int       @default(50)
+  bondScore           Int       @default(0)
+  stressLevel         Int       @default(20)
+  completedActivities Json      @default("{}")
+  /// BB-1: Age-based stage (derived from Horse.dateOfBirth but cached here)
+  ageStage            AgeStage  @default(newborn)
+  /// BB-3: Milestone tracking (firstBondLevel25, firstBondLevel50, etc.)
+  completedMilestones Json      @default("{}")
+  /// BB-4: Whether the foal window is still open
+  isActive            Boolean   @default(true)
+  /// Last interaction timestamp (for WYAG feed)
+  lastInteractionAt   DateTime?
+  /// Foreign key — foalId maps to horse.id for the foal
+  foalId              Int       @unique
+  horseId             Int?
   /// Timestamps
-  createdAt           DateTime @default(now())
-  updatedAt           DateTime @updatedAt
-  foal                Horse    @relation(fields: [foalId], references: [id], onDelete: Cascade)
+  createdAt           DateTime  @default(now())
+  updatedAt           DateTime  @updatedAt
+  foal                Horse     @relation("FoalDevelopmentFoal", fields: [foalId], references: [id], onDelete: Cascade)
 
+  @@index([isActive])
   @@map("foal_development")
 }
 
@@ -1219,4 +1253,47 @@ model HorseSale {
   @@index([buyerId])
   @@index([soldAt])
   @@map("horse_sales")
+}
+
+// ── BA-1: Show lifecycle enum ──────────────────────────────────────────────────
+
+enum ShowStatus {
+  open
+  closed
+  executing
+  completed
+}
+
+// ── BA-3: Show entry model ─────────────────────────────────────────────────────
+
+model ShowEntry {
+  /// Unique identifier for each entry
+  id        Int      @id @default(autoincrement())
+  /// Show this entry is for
+  showId    Int
+  show      Show     @relation(fields: [showId], references: [id], onDelete: Cascade)
+  /// Horse being entered
+  horseId   Int
+  horse     Horse    @relation(fields: [horseId], references: [id], onDelete: Cascade)
+  /// User who submitted the entry
+  userId    String
+  user      User     @relation("ShowEntries", fields: [userId], references: [id])
+  /// Entry fee paid (snapshot)
+  feePaid   Int      @default(0)
+  createdAt DateTime @default(now())
+
+  @@unique([showId, horseId])
+  @@index([showId])
+  @@index([horseId])
+  @@index([userId])
+  @@map("show_entries")
+}
+
+// ── BB-1: Foal age stage enum ──────────────────────────────────────────────────
+
+enum AgeStage {
+  newborn       // 0-4 weeks
+  weanling      // 4-26 weeks
+  yearling      // 26-52 weeks
+  two_year_old  // 52-104 weeks
 }

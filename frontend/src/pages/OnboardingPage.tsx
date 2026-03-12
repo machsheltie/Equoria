@@ -1,105 +1,178 @@
 /**
- * OnboardingPage — New Player Onboarding Wizard (Epic 16 — Story 16-2)
+ * OnboardingPage — Celestial Night Rebuild (Epic 25-2)
  *
- * 3-step intro wizard shown to new players on first login.
- * On completion, calls POST /api/auth/advance-onboarding (step 0 → 1)
- * and redirects to /bank where the 10-step OnboardingSpotlight tour begins.
+ * 3-step new-player wizard, fully restyled to Celestial Night.
+ * StarfieldBackground visible behind the wizard panel.
  *
  * Steps:
- *   1. Welcome — explain Equoria
- *   2. Starter kit — confirm starting resources (1 000 gold, stable slot)
- *   3. Ready — summary + CTA to start guided tour
+ *   0. Welcome     — atmospheric intro
+ *   1. Your Horse  — BreedSelector (breed, gender, name)
+ *   2. Ready       — stable preview + CTA to start guided tour
  *
- * Uses Celestial Night theme.
+ * On completion calls POST /api/auth/advance-onboarding (step 0 → 1)
+ * then navigates to /bank for the OnboardingSpotlight tour.
  */
 
 import React, { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useMutation, useQueryClient } from '@tanstack/react-query';
 import { toast } from 'sonner';
-import { ChevronRight, Star, Package, Sparkles, Loader2 } from 'lucide-react';
+import { ChevronRight, Sparkles, Loader2, Trophy, Swords, Dna } from 'lucide-react';
 import { authApi } from '@/lib/api-client';
-import { StarField } from '@/components/layout/StarField';
+import { StarfieldBackground } from '@/components/layout/StarfieldBackground';
+import {
+  BreedSelector,
+  BreedSelectorSkeleton,
+  type BreedSelectionValue,
+  type Gender,
+} from '@/components/onboarding/BreedSelector';
+import { useBreeds } from '@/hooks/api/useBreeds';
 
-// ── Step definitions ──────────────────────────────────────────────────────────
+// ── Step definitions ───────────────────────────────────────────────────────────
 
-interface Step {
-  id: number;
-  title: string;
-  subtitle: string;
-}
-
-const STEPS: Step[] = [
-  { id: 1, title: 'Welcome to Equoria', subtitle: 'Your horse breeding adventure begins' },
-  { id: 2, title: 'Your Starter Kit', subtitle: 'Everything you need to get started' },
-  { id: 3, title: "You're Ready!", subtitle: 'Time to build your legacy' },
+const STEPS = [
+  { title: 'Welcome to Equoria', subtitle: 'Your horse breeding adventure begins' },
+  { title: 'Choose Your Horse', subtitle: 'Pick a breed, name your companion' },
+  { title: "You're Ready!", subtitle: 'Your stable awaits' },
 ];
 
-// ── Step content components ───────────────────────────────────────────────────
+// ── Step 0: Welcome ────────────────────────────────────────────────────────────
 
 const WelcomeStep: React.FC = () => (
   <div className="text-center space-y-6">
-    <div className="text-6xl">🐎</div>
+    {/* Atmospheric icon */}
+    <div className="flex items-center justify-center">
+      <div className="relative">
+        <div className="absolute inset-0 rounded-full bg-[rgba(201,162,39,0.15)] blur-2xl scale-150" />
+        <div className="relative w-20 h-20 rounded-full flex items-center justify-center bg-[var(--celestial-navy-800)] border border-[rgba(201,162,39,0.3)] shadow-[0_0_24px_rgba(201,162,39,0.15)]">
+          <span className="text-4xl">🐎</span>
+        </div>
+      </div>
+    </div>
+
     <div>
-      <h2 className="text-xl font-bold text-white/90 mb-2">
+      <h2
+        className="text-lg font-bold text-[var(--cream)] mb-2"
+        style={{ fontFamily: 'var(--font-heading)' }}
+      >
         Welcome to the world of horse breeding
       </h2>
-      <p className="text-white/60 text-sm leading-relaxed max-w-sm mx-auto">
+      <p className="text-[var(--text-muted)] text-sm leading-relaxed max-w-sm mx-auto font-[var(--font-body)]">
         In Equoria you breed, train, and compete horses across disciplines — from Dressage to
         Cross-Country. Every horse is unique, with traits and genetics that shape its destiny.
       </p>
     </div>
-    <div className="grid grid-cols-3 gap-3 text-center">
+
+    {/* Feature pills */}
+    <div className="grid grid-cols-3 gap-3">
       {[
-        { icon: '🧬', label: 'Breed horses with unique genetics' },
-        { icon: '🏆', label: 'Compete in shows and earn prizes' },
-        { icon: '⭐', label: 'Level up your stable and riders' },
+        { icon: <Dna className="w-5 h-5" />, label: 'Breed unique genetics' },
+        { icon: <Trophy className="w-5 h-5" />, label: 'Win competitions' },
+        { icon: <Swords className="w-5 h-5" />, label: 'Train & master skills' },
       ].map(({ icon, label }) => (
-        <div key={label} className="p-3 rounded-lg bg-white/5 border border-white/10">
-          <div className="text-2xl mb-1">{icon}</div>
-          <p className="text-xs text-white/50 leading-tight">{label}</p>
+        <div
+          key={label}
+          className="p-3 rounded-xl bg-[rgba(10,22,50,0.5)] border border-[rgba(100,130,165,0.2)] flex flex-col items-center gap-2"
+        >
+          <span className="text-[var(--gold-400)]">{icon}</span>
+          <p className="text-[10px] text-[var(--text-muted)] font-[var(--font-body)] leading-tight text-center">
+            {label}
+          </p>
         </div>
       ))}
     </div>
   </div>
 );
 
-const StarterKitStep: React.FC = () => (
-  <div className="space-y-4">
-    <p className="text-white/60 text-sm text-center mb-2">
-      You&apos;ve been given everything you need to start your equestrian journey.
-    </p>
-    <ul className="space-y-3">
-      {[
-        {
-          icon: '💰',
-          title: '1,000 Gold',
-          desc: 'Starting funds for your first horses and equipment',
-        },
-        {
-          icon: '🏠',
-          title: 'Stable Slot',
-          desc: 'Your first stable space — ready for a horse',
-        },
-        {
-          icon: '🗓️',
-          title: 'Free Training Session',
-          desc: 'Train your first horse in any discipline at no cost',
-        },
-        {
-          icon: '🎒',
-          title: 'Basic Tack Set',
-          desc: 'A standard saddle and bridle ready for use',
-        },
-      ].map(({ icon, title, desc }) => (
-        <li
-          key={title}
-          className="flex items-center gap-4 p-3 rounded-lg bg-white/5 border border-white/10"
+// ── Step 1: Choose Your Horse ──────────────────────────────────────────────────
+
+interface HorseStepProps {
+  selection: Partial<BreedSelectionValue>;
+  onChange: (v: Partial<BreedSelectionValue>) => void;
+}
+
+const HorseStep: React.FC<HorseStepProps> = ({ selection, onChange }) => {
+  const { data: breeds, isLoading, isError } = useBreeds();
+
+  if (isError) {
+    return (
+      <div className="text-center py-6 space-y-2">
+        <p className="text-sm text-[var(--text-muted)] font-[var(--font-body)]">
+          Couldn&apos;t load breeds — you can choose later in the stable.
+        </p>
+      </div>
+    );
+  }
+
+  if (isLoading || !breeds) {
+    return <BreedSelectorSkeleton />;
+  }
+
+  return <BreedSelector breeds={breeds} value={selection} onChange={onChange} />;
+};
+
+// ── Step 2: Ready ──────────────────────────────────────────────────────────────
+
+interface ReadyStepProps {
+  horseName: string;
+  breedName: string;
+  gender: Gender | undefined;
+}
+
+const ReadyStep: React.FC<ReadyStepProps> = ({ horseName, breedName, gender }) => (
+  <div className="text-center space-y-5">
+    {/* Stable preview chip */}
+    {horseName && (
+      <div className="inline-flex flex-col items-center gap-1 px-5 py-3 rounded-2xl bg-[rgba(201,162,39,0.1)] border border-[rgba(201,162,39,0.25)] shadow-[0_0_18px_rgba(201,162,39,0.08)]">
+        <span
+          className="text-base font-bold text-[var(--gold-400)]"
+          style={{ fontFamily: 'var(--font-heading)' }}
         >
-          <span className="text-2xl flex-shrink-0">{icon}</span>
+          {horseName}
+        </span>
+        {(breedName || gender) && (
+          <span className="text-xs text-[var(--text-muted)] font-[var(--font-body)]">
+            {[gender, breedName].filter(Boolean).join(' · ')}
+          </span>
+        )}
+      </div>
+    )}
+
+    {!horseName && (
+      <div className="relative inline-flex items-center justify-center">
+        <div className="absolute inset-0 rounded-full bg-[rgba(201,162,39,0.15)] blur-xl" />
+        <Sparkles className="w-14 h-14 text-[var(--gold-400)] relative" aria-hidden="true" />
+      </div>
+    )}
+
+    <div>
+      <h2
+        className="text-lg font-bold text-[var(--cream)] mb-2"
+        style={{ fontFamily: 'var(--font-heading)' }}
+      >
+        Your stable awaits
+      </h2>
+      <p className="text-[var(--text-muted)] text-sm leading-relaxed max-w-sm mx-auto font-[var(--font-body)]">
+        Head to the Stable to acquire your first horse, then visit the Tack Shop to equip it. A
+        guided tour will show you the way — your legend begins now.
+      </p>
+    </div>
+
+    {/* Next steps */}
+    <ul className="space-y-2 text-sm text-left">
+      {[
+        { symbol: '🏠', path: '/my-stable', label: 'Visit your stable' },
+        { symbol: '🎒', path: '/inventory', label: 'Equip saddle & bridle' },
+        { symbol: '🏆', path: '/competitions', label: 'Enter your first show' },
+      ].map(({ symbol, path, label }) => (
+        <li
+          key={path}
+          className="flex items-center gap-3 px-3 py-2 rounded-xl bg-[rgba(10,22,50,0.5)] border border-[rgba(100,130,165,0.15)]"
+        >
+          <span className="text-lg flex-shrink-0">{symbol}</span>
           <div>
-            <p className="text-sm font-semibold text-white/90">{title}</p>
-            <p className="text-xs text-white/50 mt-0.5">{desc}</p>
+            <span className="text-[var(--cream)]/80 font-[var(--font-body)]">{label}</span>
+            <span className="ml-1.5 text-[10px] text-[var(--text-muted)]">{path}</span>
           </div>
         </li>
       ))}
@@ -107,62 +180,22 @@ const StarterKitStep: React.FC = () => (
   </div>
 );
 
-const ReadyStep: React.FC = () => (
-  <div className="text-center space-y-6">
-    <div className="relative inline-flex items-center justify-center">
-      <div className="absolute inset-0 rounded-full bg-violet-500/20 blur-xl" />
-      <Star className="w-16 h-16 text-violet-400 relative" />
-    </div>
-    <div>
-      <h2 className="text-xl font-bold text-white/90 mb-2">Your stable awaits</h2>
-      <p className="text-white/60 text-sm leading-relaxed max-w-sm mx-auto">
-        Head to the Stable to acquire your first horse, then visit the Tack Shop to equip it. When
-        you&apos;re ready, enter a competition and start building your legacy.
-      </p>
-    </div>
-    <div className="flex flex-col gap-2 text-sm text-white/50">
-      <div className="flex items-center gap-2">
-        <Sparkles className="w-4 h-4 text-violet-400 flex-shrink-0" />
-        <span>
-          Visit <strong className="text-white/70">/stable</strong> → Buy your first horse
-        </span>
-      </div>
-      <div className="flex items-center gap-2">
-        <Package className="w-4 h-4 text-violet-400 flex-shrink-0" />
-        <span>
-          Visit <strong className="text-white/70">/tack-shop</strong> → Equip saddle &amp; bridle
-        </span>
-      </div>
-      <div className="flex items-center gap-2">
-        <span className="text-violet-400 flex-shrink-0">🏆</span>
-        <span>
-          Visit <strong className="text-white/70">/competitions</strong> → Enter your first show
-        </span>
-      </div>
-    </div>
-  </div>
-);
-
-const stepComponents = [WelcomeStep, StarterKitStep, ReadyStep];
-
 // ── OnboardingPage ─────────────────────────────────────────────────────────────
 
 const OnboardingPage: React.FC = () => {
   const navigate = useNavigate();
   const queryClient = useQueryClient();
-  const [currentStep, setCurrentStep] = useState(0); // 0-indexed
+  const [currentStep, setCurrentStep] = useState(0);
+  const [horseSelection, setHorseSelection] = useState<Partial<BreedSelectionValue>>({});
 
   const completeMutation = useMutation({
-    // Advance step 0 → 1; OnboardingSpotlight picks up the tour from /bank
     mutationFn: () => authApi.advanceOnboarding(),
     onSuccess: () => {
-      // Refresh profile so OnboardingSpotlight reads onboardingStep: 1
       queryClient.invalidateQueries({ queryKey: ['profile'] });
       toast.success('Welcome to Equoria! Starting your guided tour…');
       navigate('/bank', { replace: true });
     },
     onError: () => {
-      // On error, navigate to bank anyway — spotlight re-syncs from profile
       toast.info('Starting your adventure…');
       navigate('/bank', { replace: true });
     },
@@ -170,93 +203,114 @@ const OnboardingPage: React.FC = () => {
 
   const totalSteps = STEPS.length;
   const isLastStep = currentStep === totalSteps - 1;
+  const step = STEPS[currentStep];
 
-  const handleNext = () => {
+  function handleNext() {
     if (isLastStep) {
       completeMutation.mutate();
     } else {
       setCurrentStep((s) => s + 1);
     }
-  };
-
-  const StepContent = stepComponents[currentStep];
-  const step = STEPS[currentStep];
+  }
 
   return (
-    <div className="min-h-screen flex flex-col items-center justify-center p-4">
-      {/* Background star field */}
-      <div className="fixed inset-0 z-[-1]">
-        <StarField density="medium" speed="slow" />
-      </div>
+    <div className="min-h-screen flex flex-col items-center justify-center p-4 relative">
+      {/* Starfield */}
+      <StarfieldBackground />
 
-      <div className="w-full max-w-md">
+      <div className="w-full max-w-md relative z-10">
         {/* Progress dots */}
-        <div className="flex justify-center gap-2 mb-8">
+        <div
+          className="flex justify-center gap-2 mb-6"
+          role="tablist"
+          aria-label="Onboarding steps"
+        >
           {STEPS.map((s, i) => (
             <div
-              key={s.id}
-              className={`h-2 rounded-full transition-all duration-300 ${
+              key={s.title}
+              role="tab"
+              aria-selected={i === currentStep}
+              aria-label={`Step ${i + 1}: ${s.title}`}
+              className={[
+                'h-1.5 rounded-full transition-all duration-300',
                 i === currentStep
-                  ? 'w-8 bg-violet-400'
+                  ? 'w-8 bg-[var(--gold-400)]'
                   : i < currentStep
-                    ? 'w-2 bg-violet-400/50'
-                    : 'w-2 bg-white/20'
-              }`}
+                    ? 'w-1.5 bg-[rgba(201,162,39,0.45)]'
+                    : 'w-1.5 bg-[rgba(100,130,165,0.25)]',
+              ].join(' ')}
             />
           ))}
         </div>
 
-        {/* Card */}
-        <div className="bg-[#0a1628]/90 backdrop-blur border border-white/10 rounded-2xl p-8 shadow-2xl">
+        {/* Main card */}
+        <div className="glass-panel-heavy rounded-2xl p-6 shadow-2xl border border-[rgba(201,162,39,0.18)]">
           {/* Header */}
-          <div className="text-center mb-6">
-            <p className="text-xs font-medium text-violet-400/80 uppercase tracking-widest mb-1">
+          <div className="text-center mb-5">
+            <p className="text-[10px] font-semibold text-[var(--gold-400)]/70 uppercase tracking-widest mb-1 font-[var(--font-body)]">
               Step {currentStep + 1} of {totalSteps}
             </p>
-            <h1 className="text-2xl font-bold text-white/90">{step.title}</h1>
-            <p className="text-sm text-white/50 mt-1">{step.subtitle}</p>
+            <h1
+              className="text-xl font-bold text-[var(--cream)]"
+              style={{ fontFamily: 'var(--font-heading)' }}
+            >
+              {step.title}
+            </h1>
+            <p className="text-xs text-[var(--text-muted)] mt-1 font-[var(--font-body)]">
+              {step.subtitle}
+            </p>
           </div>
 
           {/* Step content */}
-          <div className="mb-8">
-            <StepContent />
+          <div className="mb-6" role="tabpanel" aria-label={step.title}>
+            {currentStep === 0 && <WelcomeStep />}
+            {currentStep === 1 && (
+              <HorseStep selection={horseSelection} onChange={setHorseSelection} />
+            )}
+            {currentStep === 2 && (
+              <ReadyStep
+                horseName={horseSelection.horseName ?? ''}
+                breedName={horseSelection.breedName ?? ''}
+                gender={horseSelection.gender}
+              />
+            )}
           </div>
 
-          {/* Navigation */}
+          {/* CTA */}
           <button
             type="button"
             onClick={handleNext}
             disabled={completeMutation.isPending}
-            className="w-full py-3 px-6 rounded-xl bg-violet-600 hover:bg-violet-500 text-white font-semibold text-sm transition-colors disabled:opacity-60 disabled:cursor-not-allowed flex items-center justify-center gap-2"
             data-testid="onboarding-next"
+            className="w-full py-3 px-6 rounded-full bg-gradient-to-r from-[var(--gold-700)] to-[var(--gold-500)] hover:from-[var(--gold-600)] hover:to-[var(--gold-400)] text-[var(--celestial-navy-900)] font-bold text-sm transition-all duration-200 disabled:opacity-60 disabled:cursor-not-allowed flex items-center justify-center gap-2 shadow-[0_0_14px_rgba(201,162,39,0.25)] font-[var(--font-body)]"
           >
             {completeMutation.isPending ? (
               <>
-                <Loader2 className="w-4 h-4 animate-spin" />
+                <Loader2 className="w-4 h-4 animate-spin" aria-hidden="true" />
                 Starting your journey…
               </>
             ) : isLastStep ? (
               <>
-                <Sparkles className="w-4 h-4" />
-                Start Playing
+                <Sparkles className="w-4 h-4" aria-hidden="true" />
+                Let&apos;s Go!
               </>
             ) : (
               <>
                 Continue
-                <ChevronRight className="w-4 h-4" />
+                <ChevronRight className="w-4 h-4" aria-hidden="true" />
               </>
             )}
           </button>
 
-          {/* Skip link (for players who accidentally trigger it again) */}
+          {/* Skip link */}
           {currentStep === 0 && (
             <p className="text-center mt-3">
               <button
                 type="button"
                 onClick={() => completeMutation.mutate()}
                 disabled={completeMutation.isPending}
-                className="text-xs text-white/30 hover:text-white/50 transition-colors"
                 data-testid="onboarding-skip"
+                className="text-[11px] text-[var(--text-muted)] hover:text-[var(--cream)]/60 transition-colors focus-visible:outline-none font-[var(--font-body)]"
               >
                 Skip intro
               </button>

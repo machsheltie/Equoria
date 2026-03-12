@@ -750,6 +750,16 @@ export const breedingApi = {
   developFoal: (foalId: number, updates: Partial<FoalDevelopment>) => {
     return apiClient.put<FoalDevelopment>(`/api/foals/${foalId}/develop`, updates);
   },
+  graduateFoal: (foalId: number) => {
+    return apiClient.post<{
+      horse: { id: number; name: string; breed: string };
+      graduation: {
+        clearedAssignments: number;
+        bondScore: number;
+        isFirstGraduation: boolean;
+      };
+    }>(`/api/foals/${foalId}/graduate`);
+  },
 };
 
 /**

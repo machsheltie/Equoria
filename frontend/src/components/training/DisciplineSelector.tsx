@@ -1,36 +1,149 @@
-import React from 'react';
+/**
+ * DisciplineSelector (Epic 26-1 rebuild)
+ *
+ * Celestial Night styled discipline picker for the training flow.
+ * Features:
+ *  - Top 5 recommended disciplines (from server aptitude scores or static popular defaults)
+ *  - Expandable full list of all 23 disciplines
+ *  - Stat impact preview per discipline (primary/secondary/tertiary stats + predicted gain range)
+ *  - Backward compatible: same selectedDiscipline / onDisciplineChange interface
+ *
+ * Props:
+ *  - selectedDiscipline: currently selected discipline string
+ *  - onDisciplineChange: callback(discipline: string)
+ *  - recommendedDisciplines?: ordered list of recommended discipline names (top shown first)
+ *  - description?: helper text
+ */
 
-// All 23 disciplines supported by the backend (from backend/utils/statMap.mjs)
-// Must match exact case and spacing as backend expects
-const ALL_DISCIPLINES = [
-  'Barrel Racing',
-  'Combined Driving',
-  'Cross Country',
-  'Cutting',
-  'Dressage',
-  'Endurance',
-  'Eventing',
-  'Fine Harness',
-  'Gaited',
-  'Gymkhana',
-  'Harness Racing',
-  'Hunter',
-  'Polo',
-  'Racing',
-  'Reining',
-  'Rodeo',
-  'Roping',
-  'Saddleseat',
-  'Show Jumping',
-  'Steeplechase',
-  'Team Penning',
-  'Vaulting',
-  'Western Pleasure',
-];
+import React, { useState } from 'react';
+import { ChevronDown, ChevronUp, Zap } from 'lucide-react';
+
+// ── Discipline stat map (mirrors backend/utils/statMap.mjs) ───────────────────
+
+export const DISCIPLINE_STAT_MAP: Record<string, [string, string, string]> = {
+  'Western Pleasure': ['obedience', 'focus', 'precision'],
+  Reining: ['precision', 'agility', 'focus'],
+  Cutting: ['agility', 'intelligence', 'strength'],
+  'Barrel Racing': ['speed', 'agility', 'stamina'],
+  Roping: ['strength', 'precision', 'focus'],
+  'Team Penning': ['intelligence', 'agility', 'obedience'],
+  Rodeo: ['strength', 'agility', 'endurance'],
+  Hunter: ['precision', 'endurance', 'agility'],
+  Saddleseat: ['flexibility', 'obedience', 'precision'],
+  Endurance: ['endurance', 'stamina', 'speed'],
+  Eventing: ['endurance', 'precision', 'agility'],
+  Dressage: ['precision', 'obedience', 'focus'],
+  'Show Jumping': ['agility', 'precision', 'intelligence'],
+  Vaulting: ['strength', 'flexibility', 'endurance'],
+  Polo: ['speed', 'agility', 'intelligence'],
+  'Cross Country': ['endurance', 'intelligence', 'agility'],
+  'Combined Driving': ['obedience', 'strength', 'focus'],
+  'Fine Harness': ['precision', 'flexibility', 'obedience'],
+  Gaited: ['flexibility', 'obedience', 'focus'],
+  Gymkhana: ['speed', 'flexibility', 'stamina'],
+  Steeplechase: ['speed', 'endurance', 'stamina'],
+  Racing: ['speed', 'stamina', 'intelligence'],
+  'Harness Racing': ['speed', 'precision', 'stamina'],
+};
+
+export const ALL_DISCIPLINES = Object.keys(DISCIPLINE_STAT_MAP).sort();
+
+const DEFAULT_RECOMMENDED = ['Dressage', 'Show Jumping', 'Barrel Racing', 'Racing', 'Endurance'];
+
+// ── Gain range estimates (points per session per weight tier) ─────────────────
+
+const GAIN_RANGE = {
+  primary: { min: 4, max: 9 },
+  secondary: { min: 2, max: 5 },
+  tertiary: { min: 1, max: 3 },
+};
+
+// ── Stat display label ────────────────────────────────────────────────────────
+
+function capitalize(s: string): string {
+  return s.charAt(0).toUpperCase() + s.slice(1);
+}
+
+// ── Stat impact pill ─────────────────────────────────────────────────────────
+
+function StatPill({ stat, tier }: { stat: string; tier: 'primary' | 'secondary' | 'tertiary' }) {
+  const range = GAIN_RANGE[tier];
+  const colorClass =
+    tier === 'primary'
+      ? 'bg-[rgba(201,162,39,0.15)] border-[rgba(201,162,39,0.4)] text-[var(--gold-400)]'
+      : tier === 'secondary'
+        ? 'bg-[rgba(30,100,200,0.15)] border-[rgba(30,100,200,0.35)] text-[var(--electric-blue)]'
+        : 'bg-[rgba(100,130,165,0.12)] border-[rgba(100,130,165,0.25)] text-[var(--text-muted)]';
+
+  return (
+    <span
+      className={`inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-[10px] font-semibold border ${colorClass} font-[var(--font-body)] whitespace-nowrap`}
+      title={`${capitalize(stat)}: +${range.min}–${range.max} pts/session`}
+    >
+      {capitalize(stat)}
+      <span className="opacity-70">
+        +{range.min}–{range.max}
+      </span>
+    </span>
+  );
+}
+
+// ── Discipline option button ──────────────────────────────────────────────────
+
+function DisciplineOption({
+  discipline,
+  isSelected,
+  isRecommended,
+  onSelect,
+}: {
+  discipline: string;
+  isSelected: boolean;
+  isRecommended: boolean;
+  onSelect: () => void;
+}) {
+  const stats = DISCIPLINE_STAT_MAP[discipline];
+
+  return (
+    <button
+      type="button"
+      onClick={onSelect}
+      aria-pressed={isSelected}
+      className={[
+        'w-full text-left rounded-xl border p-3 transition-all duration-200 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[var(--electric-blue)] focus-visible:ring-offset-2 focus-visible:ring-offset-[var(--celestial-navy-900)]',
+        isSelected
+          ? 'border-[var(--gold-400)] bg-[rgba(201,162,39,0.1)] shadow-[0_0_12px_rgba(201,162,39,0.15)]'
+          : 'border-[rgba(100,130,165,0.2)] bg-[rgba(10,22,50,0.4)] hover:border-[rgba(201,162,39,0.35)] hover:bg-[rgba(10,22,50,0.65)]',
+      ].join(' ')}
+    >
+      <div className="flex items-center justify-between mb-2">
+        <span className="text-sm font-semibold text-[var(--cream)] font-[var(--font-heading)]">
+          {discipline}
+        </span>
+        {isRecommended && (
+          <span className="flex items-center gap-0.5 text-[9px] uppercase tracking-widest text-[var(--gold-400)] bg-[rgba(201,162,39,0.12)] border border-[rgba(201,162,39,0.25)] px-1.5 py-0.5 rounded-full">
+            <Zap className="w-2.5 h-2.5" aria-hidden="true" />
+            Rec.
+          </span>
+        )}
+      </div>
+      {stats && (
+        <div className="flex flex-wrap gap-1">
+          <StatPill stat={stats[0]} tier="primary" />
+          <StatPill stat={stats[1]} tier="secondary" />
+          <StatPill stat={stats[2]} tier="tertiary" />
+        </div>
+      )}
+    </button>
+  );
+}
+
+// ── Main DisciplineSelector ───────────────────────────────────────────────────
 
 interface DisciplineSelectorProps {
   selectedDiscipline: string;
   onDisciplineChange: (discipline: string) => void;
+  /** Ordered list of recommended disciplines for this horse. Defaults to popular 5. */
+  recommendedDisciplines?: string[];
   disciplines?: string[];
   description?: string;
 }
@@ -38,34 +151,102 @@ interface DisciplineSelectorProps {
 const DisciplineSelector: React.FC<DisciplineSelectorProps> = ({
   selectedDiscipline,
   onDisciplineChange,
+  recommendedDisciplines = DEFAULT_RECOMMENDED,
   disciplines = ALL_DISCIPLINES,
   description,
 }) => {
-  const handleChange = (event: React.ChangeEvent<HTMLSelectElement>) => {
-    onDisciplineChange(event.target.value);
-  };
+  const [showAll, setShowAll] = useState(false);
+
+  // Top 5 recommended (validated against known list)
+  const top5 = recommendedDisciplines.filter((d) => disciplines.includes(d)).slice(0, 5);
+
+  // Remaining disciplines not in top 5
+  const rest = disciplines.filter((d) => !top5.includes(d)).sort();
 
   return (
-    <div>
-      <label htmlFor="discipline-selector" className="text-sm font-medium text-[rgb(220,235,255)]">
-        Discipline
-      </label>
-      {description && <p className="mt-1 text-xs text-[rgb(148,163,184)]">{description}</p>}
-      <select
-        id="discipline-selector"
-        value={selectedDiscipline}
-        onChange={handleChange}
-        className="celestial-input w-full mt-2"
+    <div data-testid="discipline-selector">
+      {/* Label */}
+      <div className="mb-3">
+        <label className="text-xs text-[var(--text-muted)] font-[var(--font-body)] uppercase tracking-widest">
+          Discipline
+        </label>
+        {description && (
+          <p className="mt-0.5 text-xs text-[var(--text-muted)] font-[var(--font-body)]">
+            {description}
+          </p>
+        )}
+      </div>
+
+      {/* Recommended section */}
+      {top5.length > 0 && (
+        <div className="mb-3">
+          <p className="text-[9px] uppercase tracking-widest text-[var(--gold-400)]/70 font-[var(--font-body)] mb-2 flex items-center gap-1">
+            <Zap className="w-3 h-3" aria-hidden="true" />
+            Recommended for this horse
+          </p>
+          <div className="space-y-2">
+            {top5.map((d) => (
+              <DisciplineOption
+                key={d}
+                discipline={d}
+                isSelected={selectedDiscipline === d}
+                isRecommended
+                onSelect={() => onDisciplineChange(d)}
+              />
+            ))}
+          </div>
+        </div>
+      )}
+
+      {/* Expand / collapse full list */}
+      <button
+        type="button"
+        onClick={() => setShowAll((v) => !v)}
+        className="flex items-center gap-1 text-[11px] text-[var(--text-muted)] hover:text-[var(--cream)] transition-colors mb-2 focus-visible:outline-none"
       >
-        {disciplines.map((discipline) => (
-          <option key={discipline} value={discipline}>
-            {discipline}
-          </option>
-        ))}
-      </select>
+        {showAll ? (
+          <>
+            <ChevronUp className="w-3.5 h-3.5" aria-hidden="true" />
+            Hide all disciplines
+          </>
+        ) : (
+          <>
+            <ChevronDown className="w-3.5 h-3.5" aria-hidden="true" />
+            Browse all {rest.length} disciplines
+          </>
+        )}
+      </button>
+
+      {showAll && (
+        <div className="space-y-2 max-h-64 overflow-y-auto scroll-area-celestial pr-1">
+          {rest.map((d) => (
+            <DisciplineOption
+              key={d}
+              discipline={d}
+              isSelected={selectedDiscipline === d}
+              isRecommended={false}
+              onSelect={() => onDisciplineChange(d)}
+            />
+          ))}
+        </div>
+      )}
+
+      {/* Fallback: selected discipline not in recommended/visible → show it */}
+      {selectedDiscipline && !top5.includes(selectedDiscipline) && !showAll && (
+        <div className="mt-2">
+          <p className="text-[9px] uppercase tracking-widest text-[var(--text-muted)] font-[var(--font-body)] mb-1">
+            Currently selected
+          </p>
+          <DisciplineOption
+            discipline={selectedDiscipline}
+            isSelected
+            isRecommended={false}
+            onSelect={() => {}}
+          />
+        </div>
+      )}
     </div>
   );
 };
 
 export default DisciplineSelector;
-export { ALL_DISCIPLINES };

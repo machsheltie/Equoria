@@ -74,7 +74,7 @@ const CompetitionBrowserPage = (): JSX.Element => {
   if (isLoading) {
     return (
       <main
-        className="min-h-screen bg-background px-4 sm:px-6 lg:px-8 py-8"
+        className="min-h-screen px-4 sm:px-6 lg:px-8 py-8"
         role="status"
         aria-label="Loading competitions"
       >
@@ -94,7 +94,7 @@ const CompetitionBrowserPage = (): JSX.Element => {
   // Error state
   if (error) {
     return (
-      <main className="min-h-screen bg-background px-4 sm:px-6 lg:px-8 py-8">
+      <main className="min-h-screen px-4 sm:px-6 lg:px-8 py-8">
         <div className="mx-auto max-w-7xl">
           <div
             className="rounded-md border border-red-500/30 bg-[rgba(239,68,68,0.1)] p-6 text-center"
@@ -131,12 +131,17 @@ const CompetitionBrowserPage = (): JSX.Element => {
 
   // Success state
   return (
-    <div className="min-h-screen bg-background" data-testid="competition-browser-page">
+    <div className="min-h-screen" data-testid="competition-browser-page">
       <main className="mx-auto max-w-7xl px-4 sm:px-6 lg:px-8 py-8">
         {/* Page Header */}
         <header className="mb-8" data-testid="page-header">
-          <h1 className="text-3xl font-bold text-[rgb(220,235,255)] mb-2">Competitions</h1>
-          <p className="text-[rgb(148,163,184)]">
+          <h1
+            className="text-3xl font-bold text-[var(--cream)] mb-2"
+            style={{ fontFamily: 'var(--font-heading)' }}
+          >
+            Competitions
+          </h1>
+          <p className="text-[var(--text-muted)] font-[var(--font-body)]">
             Browse and enter horse competitions to test your skills and earn prizes
           </p>
         </header>

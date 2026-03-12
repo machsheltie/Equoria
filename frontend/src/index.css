@@ -66,9 +66,16 @@
     @apply border-border;
   }
 
+  /* ── Epic 30-5: Global focus indicator (WCAG 2.4.11 / 2.1 AA) ─── */
+  :focus-visible {
+    outline: 2px solid var(--gold-400, #c9a227);
+    outline-offset: 2px;
+    border-radius: 3px;
+  }
+
   body {
     @apply bg-background text-foreground;
-    font-family: 'Jost', sans-serif;
+    font-family: 'Inter', sans-serif;
     /* Subtle starfield gradient */
     background-image:
       radial-gradient(ellipse at 20% 10%, rgba(37, 99, 235, 0.08) 0%, transparent 50%),
@@ -81,7 +88,7 @@
 /* ── Typography ─────────────────────────────────────────────────────── */
 @layer components {
   .fantasy-title {
-    font-family: 'Yeseva One', serif;
+    font-family: 'Cinzel Decorative', serif;
     font-weight: 700;
     text-transform: uppercase;
     letter-spacing: 0.05em;
@@ -93,19 +100,19 @@
   }
 
   .fantasy-header {
-    font-family: 'Cormorant Garamond', serif;
+    font-family: 'Cinzel', serif;
     font-weight: 600;
     color: rgb(220, 235, 255);
   }
 
   .fantasy-body {
-    font-family: 'Jost', sans-serif;
+    font-family: 'Inter', sans-serif;
     font-weight: 400;
     color: rgb(220, 235, 255);
   }
 
   .fantasy-caption {
-    font-family: 'Jost', sans-serif;
+    font-family: 'Inter', sans-serif;
     font-weight: 400;
     text-transform: uppercase;
     letter-spacing: 0.1em;
@@ -116,15 +123,61 @@
 
 /* ── Glassmorphism panel ────────────────────────────────────────────── */
 @layer components {
+  /**
+   * .glass-panel — standard frosted glass surface
+   * Single-blur-layer rule: only ONE backdrop-filter: blur() visible per viewport stack.
+   * If a parent already has blur, add class `no-blur` to skip backdrop-filter here.
+   */
   .glass-panel {
-    background: rgba(10, 22, 40, 0.75);
-    backdrop-filter: blur(12px);
-    -webkit-backdrop-filter: blur(12px);
-    border: 1px solid rgba(37, 99, 235, 0.25);
+    background: var(--glass-surface-bg, rgba(10, 22, 40, 0.72));
+    backdrop-filter: var(--glass-blur, blur(12px));
+    -webkit-backdrop-filter: var(--glass-blur, blur(12px));
+    border: var(--glass-border, 1px solid rgba(201, 162, 39, 0.25));
     border-radius: 1rem;
     box-shadow:
       0 8px 32px rgba(0, 0, 0, 0.5),
       inset 0 1px 0 rgba(255, 255, 255, 0.05);
+    transition: box-shadow var(--duration-fast, 0.15s) var(--ease-default, ease);
+  }
+
+  .glass-panel:hover {
+    box-shadow:
+      0 12px 40px rgba(0, 0, 0, 0.6),
+      0 0 0 1px rgba(201, 162, 39, 0.35),
+      inset 0 1px 0 rgba(255, 255, 255, 0.07);
+  }
+
+  /**
+   * .glass-panel-heavy — high-opacity variant for modals and overlays.
+   * Use when content legibility is critical or when nested inside a blurred parent.
+   */
+  .glass-panel-heavy {
+    background: var(--glass-surface-heavy-bg, rgba(10, 22, 40, 0.88));
+    backdrop-filter: var(--glass-blur-heavy, blur(16px));
+    -webkit-backdrop-filter: var(--glass-blur-heavy, blur(16px));
+    border: var(--glass-border-bright, 1px solid rgba(201, 162, 39, 0.55));
+    border-radius: 1rem;
+    box-shadow:
+      0 16px 48px rgba(0, 0, 0, 0.7),
+      inset 0 1px 0 rgba(255, 255, 255, 0.08);
+  }
+
+  /**
+   * .glass-panel-subtle — light-touch variant for secondary cards.
+   */
+  .glass-panel-subtle {
+    background: var(--glass-surface-subtle-bg, rgba(10, 22, 40, 0.45));
+    backdrop-filter: var(--glass-blur-light, blur(6px));
+    -webkit-backdrop-filter: var(--glass-blur-light, blur(6px));
+    border: var(--glass-border-dim, 1px solid rgba(100, 130, 165, 0.3));
+    border-radius: 0.75rem;
+    box-shadow: 0 4px 16px rgba(0, 0, 0, 0.3);
+  }
+
+  /* Skip backdrop-filter when nested inside a blurred parent */
+  .no-blur {
+    backdrop-filter: none !important;
+    -webkit-backdrop-filter: none !important;
   }
 
   /* Legacy alias — keeps existing code working */
@@ -169,7 +222,7 @@
     color: rgb(220, 235, 255);
     padding: 0.75rem 1rem 0.75rem 2.75rem;
     width: 100%;
-    font-family: 'Jost', sans-serif;
+    font-family: 'Inter', sans-serif;
     transition:
       border-color 0.2s,
       box-shadow 0.2s;
@@ -192,7 +245,7 @@
     border: none;
     border-radius: 9999px;
     color: #fff;
-    font-family: 'Jost', sans-serif;
+    font-family: 'Inter', sans-serif;
     font-weight: 600;
     font-size: 1rem;
     padding: 0.8rem 1rem;
@@ -257,7 +310,7 @@
     border: 1px solid rgba(148, 163, 184, 0.4);
     border-radius: 9999px;
     color: rgb(220, 235, 255);
-    font-family: 'Jost', sans-serif;
+    font-family: 'Inter', sans-serif;
     font-weight: 500;
     font-size: 1rem;
     padding: 0.8rem 1rem;
@@ -437,6 +490,236 @@
   100% {
     transform: scaleX(1);
     opacity: 0.85;
+  }
+}
+
+/* ── Task 22-6: Celestial Night Scrollbar ────────────────────────── */
+.scroll-area-celestial {
+  scrollbar-width: thin;
+  scrollbar-color: rgba(201, 162, 39, 0.4) transparent;
+}
+
+.scroll-area-celestial::-webkit-scrollbar {
+  width: 4px;
+  height: 4px;
+}
+
+.scroll-area-celestial::-webkit-scrollbar-track {
+  background: transparent;
+}
+
+.scroll-area-celestial::-webkit-scrollbar-thumb {
+  background: rgba(201, 162, 39, 0.4);
+  border-radius: 9999px;
+}
+
+.scroll-area-celestial::-webkit-scrollbar-thumb:hover {
+  background: rgba(201, 162, 39, 0.7);
+}
+
+/* ── Task 22-3: CSS-only Starfield Background ─────────────────────── */
+
+/* Drift animation — layers move at different rates for parallax */
+@keyframes starfield-drift-sm {
+  from {
+    transform: translateY(0);
+  }
+  to {
+    transform: translateY(-100vh);
+  }
+}
+@keyframes starfield-drift-md {
+  from {
+    transform: translateY(0);
+  }
+  to {
+    transform: translateY(-100vh);
+  }
+}
+@keyframes starfield-drift-lg {
+  from {
+    transform: translateY(0);
+  }
+  to {
+    transform: translateY(-100vh);
+  }
+}
+
+.starfield-bg {
+  position: fixed;
+  inset: 0;
+  z-index: -2;
+  pointer-events: none;
+  overflow: hidden;
+}
+
+/* Each layer is a 1×1 element whose box-shadow creates the stars */
+.starfield-layer {
+  position: absolute;
+  top: 0;
+  left: 0;
+  width: 1px;
+  height: 1px;
+  border-radius: 50%;
+}
+
+/* Small stars — 120 dots, slow drift */
+.starfield-layer--sm {
+  background: transparent;
+  box-shadow:
+    14vw 8vh 0 0 rgba(255, 255, 255, 0.55),
+    7vw 22vh 0 0 rgba(255, 255, 255, 0.45),
+    91vw 15vh 0 0 rgba(255, 255, 255, 0.5),
+    37vw 44vh 0 0 rgba(255, 255, 255, 0.4),
+    63vw 71vh 0 0 rgba(255, 255, 255, 0.55),
+    82vw 38vh 0 0 rgba(255, 255, 255, 0.35),
+    28vw 59vh 0 0 rgba(255, 255, 255, 0.5),
+    55vw 92vh 0 0 rgba(255, 255, 255, 0.45),
+    46vw 3vh 0 0 rgba(255, 255, 255, 0.6),
+    73vw 55vh 0 0 rgba(255, 255, 255, 0.4),
+    5vw 47vh 0 0 rgba(255, 255, 255, 0.45),
+    96vw 79vh 0 0 rgba(255, 255, 255, 0.5),
+    19vw 33vh 0 0 rgba(255, 255, 255, 0.35),
+    43vw 68vh 0 0 rgba(255, 255, 255, 0.55),
+    68vw 12vh 0 0 rgba(255, 255, 255, 0.45),
+    84vw 96vh 0 0 rgba(255, 255, 255, 0.4),
+    31vw 85vh 0 0 rgba(255, 255, 255, 0.5),
+    57vw 29vh 0 0 rgba(255, 255, 255, 0.55),
+    78vw 62vh 0 0 rgba(255, 255, 255, 0.35),
+    2vw 74vh 0 0 rgba(255, 255, 255, 0.6),
+    49vw 18vh 0 0 rgba(255, 255, 255, 0.45),
+    22vw 90vh 0 0 rgba(255, 255, 255, 0.4),
+    87vw 45vh 0 0 rgba(255, 255, 255, 0.55),
+    11vw 56vh 0 0 rgba(255, 255, 255, 0.45),
+    34vw 27vh 0 0 rgba(255, 255, 255, 0.5),
+    60vw 82vh 0 0 rgba(255, 255, 255, 0.35),
+    75vw 37vh 0 0 rgba(255, 255, 255, 0.6),
+    17vw 64vh 0 0 rgba(255, 255, 255, 0.45),
+    41vw 49vh 0 0 rgba(255, 255, 255, 0.5),
+    93vw 21vh 0 0 rgba(255, 255, 255, 0.4),
+    8vw 88vh 0 0 rgba(255, 255, 255, 0.55),
+    26vw 11vh 0 0 rgba(255, 255, 255, 0.45),
+    52vw 75vh 0 0 rgba(255, 255, 255, 0.5),
+    69vw 42vh 0 0 rgba(255, 255, 255, 0.35),
+    80vw 24vh 0 0 rgba(255, 255, 255, 0.6),
+    3vw 35vh 0 0 rgba(255, 255, 255, 0.45),
+    38vw 95vh 0 0 rgba(255, 255, 255, 0.4),
+    65vw 7vh 0 0 rgba(255, 255, 255, 0.55),
+    16vw 78vh 0 0 rgba(255, 255, 255, 0.45),
+    88vw 53vh 0 0 rgba(255, 255, 255, 0.5);
+  animation: starfield-drift-sm 90s linear infinite;
+}
+
+/* Medium stars — 1.5px, medium speed */
+.starfield-layer--md {
+  width: 2px;
+  height: 2px;
+  background: transparent;
+  box-shadow:
+    24vw 18vh 0 0 rgba(200, 220, 255, 0.6),
+    71vw 6vh 0 0 rgba(200, 220, 255, 0.5),
+    48vw 37vh 0 0 rgba(200, 220, 255, 0.55),
+    13vw 72vh 0 0 rgba(200, 220, 255, 0.45),
+    85vw 53vh 0 0 rgba(200, 220, 255, 0.6),
+    36vw 88vh 0 0 rgba(200, 220, 255, 0.5),
+    59vw 24vh 0 0 rgba(200, 220, 255, 0.55),
+    92vw 41vh 0 0 rgba(200, 220, 255, 0.45),
+    6vw 65vh 0 0 rgba(200, 220, 255, 0.6),
+    77vw 93vh 0 0 rgba(200, 220, 255, 0.5),
+    44vw 13vh 0 0 rgba(200, 220, 255, 0.55),
+    28vw 57vh 0 0 rgba(200, 220, 255, 0.45),
+    62vw 79vh 0 0 rgba(200, 220, 255, 0.6),
+    97vw 32vh 0 0 rgba(200, 220, 255, 0.5),
+    18vw 46vh 0 0 rgba(200, 220, 255, 0.55),
+    53vw 61vh 0 0 rgba(200, 220, 255, 0.45),
+    39vw 84vh 0 0 rgba(200, 220, 255, 0.6),
+    81vw 17vh 0 0 rgba(200, 220, 255, 0.5),
+    1vw 28vh 0 0 rgba(200, 220, 255, 0.55),
+    67vw 48vh 0 0 rgba(200, 220, 255, 0.45);
+  animation: starfield-drift-md 60s linear infinite;
+}
+
+/* Large accent stars — 2px, fastest drift */
+.starfield-layer--lg {
+  width: 3px;
+  height: 3px;
+  background: transparent;
+  box-shadow:
+    33vw 25vh 0 0 rgba(160, 196, 255, 0.7),
+    76vw 14vh 0 0 rgba(160, 196, 255, 0.6),
+    54vw 66vh 0 0 rgba(160, 196, 255, 0.7),
+    9vw 83vh 0 0 rgba(160, 196, 255, 0.6),
+    89vw 39vh 0 0 rgba(160, 196, 255, 0.7),
+    21vw 52vh 0 0 rgba(160, 196, 255, 0.6),
+    47vw 9vh 0 0 rgba(160, 196, 255, 0.7),
+    66vw 77vh 0 0 rgba(160, 196, 255, 0.6),
+    12vw 31vh 0 0 rgba(160, 196, 255, 0.7),
+    94vw 58vh 0 0 rgba(160, 196, 255, 0.6);
+  animation: starfield-drift-lg 40s linear infinite;
+}
+
+/* prefers-reduced-motion — keep static dots, remove animation */
+@media (prefers-reduced-motion: reduce) {
+  .starfield-layer--sm,
+  .starfield-layer--md,
+  .starfield-layer--lg {
+    animation: none;
+  }
+}
+
+/* ── Epic 30-5: Global reduced-motion safety net ─────────────────── */
+@media (prefers-reduced-motion: reduce) {
+  .gold-corner-animate,
+  [style*='reward-toast-in'],
+  [style*='reward-toast-progress'],
+  [style*='cinematic-entrance'],
+  [style*='onboarding-ring-pulse'] {
+    animation: none !important;
+    transition: none !important;
+  }
+  /* Ensure focus indicators are always visible (WCAG 2.4.11) */
+  :focus-visible {
+    outline: 2px solid var(--gold-400) !important;
+    outline-offset: 2px !important;
+  }
+}
+
+/* ── Epic 30-1: GoldBorderFrame corner animate ───────────────────── */
+
+@keyframes gold-corner-in {
+  from {
+    opacity: 0;
+    transform: scale(0.6);
+  }
+  to {
+    opacity: 1;
+    transform: scale(1);
+  }
+}
+
+.gold-corner-animate {
+  animation: gold-corner-in 0.35s cubic-bezier(0.22, 1, 0.36, 1) both;
+}
+
+/* ── Epic 30-3: RewardToast ──────────────────────────────────────── */
+
+@keyframes reward-toast-in {
+  from {
+    opacity: 0;
+    transform: translateY(12px) scale(0.95);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0) scale(1);
+  }
+}
+
+@keyframes reward-toast-progress {
+  from {
+    width: 100%;
+  }
+  to {
+    width: 0%;
   }
 }
 

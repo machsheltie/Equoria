@@ -1,5 +1,5 @@
 generated: '2025-12-03T00:00:00Z'
-last_updated: '2026-03-05'
+last_updated: '2026-03-11'
 project: 'Equoria'
 project_type: 'web-simulation'
 selected_track: 'method'
@@ -11,7 +11,7 @@ phase: implementation
 phase_status: complete
 current_epic: 20
 current_story: ready-for-epic-21-or-production-launch
-last_completed_workflow: sprint-planning
+last_completed_workflow: create-ux-design
 last_completed_epic: 20
 last_completed_epic_date: '2026-03-05'
 sprint_planned_date: '2026-03-05'
@@ -72,6 +72,10 @@ workflow_status:
   - id: sprint-status
     status: docs/sprint-artifacts/sprint-status.yaml
     file: docs/sprint-artifacts/sprint-status.yaml
+  - id: ux-design
+    status: docs/ux-design-specification.md
+    file: docs/ux-design-specification.md
+    completed: '2026-03-11'
   - id: workflow-status
     status: docs/bmm-workflow-status.yaml
     file: docs/bmm-workflow-status.yaml

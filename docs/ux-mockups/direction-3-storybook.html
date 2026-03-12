@@ -1,0 +1,751 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Equoria — Direction 3: Storybook</title>
+    <style>
+      @import url('https://fonts.googleapis.com/css2?family=Cinzel:wght@400;500;600;700&family=Inter:wght@300;400;500;600;700&display=swap');
+
+      :root {
+        --bg-deep-space: #0a0e1a;
+        --bg-night-sky: #111827;
+        --bg-midnight: #1a2236;
+        --bg-twilight: #243154;
+        --glass-bg: rgba(15, 23, 42, 0.6);
+        --glass-border: rgba(148, 163, 184, 0.2);
+        --glass-hover: rgba(148, 163, 184, 0.3);
+        --glass-blur: 12px;
+        --gold-primary: #c8a84e;
+        --gold-light: #e8d48b;
+        --gold-dim: #8b7635;
+        --gold-bright: #f5e6a3;
+        --text-primary: #e2e8f0;
+        --text-secondary: #94a3b8;
+        --text-muted: #64748b;
+        --status-success: #22c55e;
+        --status-warning: #f59e0b;
+        --status-danger: #ef4444;
+        --status-rare: #a78bfa;
+        --font-display: 'Cinzel', Georgia, serif;
+        --font-body: 'Inter', system-ui, sans-serif;
+        --radius-sm: 6px;
+        --radius-md: 12px;
+        --radius-lg: 16px;
+        --radius-xl: 24px;
+        --glow-gold: 0 0 20px rgba(200, 168, 78, 0.25);
+      }
+
+      *,
+      *::before,
+      *::after {
+        box-sizing: border-box;
+        margin: 0;
+        padding: 0;
+      }
+
+      body {
+        font-family: var(--font-body);
+        color: var(--text-primary);
+        background: linear-gradient(180deg, #0a0e1a 0%, #111827 50%, #1a2236 100%);
+        min-height: 100vh;
+      }
+
+      .direction-badge {
+        position: fixed;
+        top: 16px;
+        right: 16px;
+        z-index: 100;
+        background: rgba(200, 168, 78, 0.15);
+        border: 1px solid var(--gold-dim);
+        border-radius: var(--radius-sm);
+        padding: 8px 16px;
+        font-size: 0.75rem;
+        color: var(--gold-light);
+        letter-spacing: 0.05em;
+        text-transform: uppercase;
+      }
+
+      /* ===== TOP TABS NAV ===== */
+      .tab-nav {
+        background: rgba(10, 14, 26, 0.8);
+        backdrop-filter: blur(var(--glass-blur));
+        border-bottom: 1px solid var(--glass-border);
+        padding: 0 32px;
+        display: flex;
+        align-items: stretch;
+        justify-content: space-between;
+      }
+      .tab-nav__brand {
+        display: flex;
+        align-items: center;
+        font-family: var(--font-display);
+        font-size: 1.25rem;
+        font-weight: 700;
+        color: var(--gold-primary);
+        letter-spacing: 0.08em;
+        padding: 16px 0;
+      }
+      .tab-nav__tabs {
+        display: flex;
+        align-items: stretch;
+        list-style: none;
+        gap: 0;
+      }
+      .tab-nav__tab {
+        display: flex;
+        align-items: center;
+        padding: 16px 20px;
+        font-family: var(--font-display);
+        font-size: 0.8rem;
+        font-weight: 500;
+        color: var(--text-secondary);
+        text-decoration: none;
+        border-bottom: 3px solid transparent;
+        transition: all 0.2s;
+        letter-spacing: 0.03em;
+      }
+      .tab-nav__tab:hover {
+        color: var(--text-primary);
+        background: rgba(200, 168, 78, 0.04);
+      }
+      .tab-nav__tab.active {
+        color: var(--gold-primary);
+        border-bottom-color: var(--gold-primary);
+      }
+      .tab-nav__user {
+        display: flex;
+        align-items: center;
+        gap: 10px;
+        padding: 12px 0;
+      }
+      .tab-nav__avatar {
+        width: 32px;
+        height: 32px;
+        border-radius: 50%;
+        background: var(--bg-twilight);
+        border: 2px solid var(--gold-dim);
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        font-size: 0.7rem;
+        color: var(--gold-light);
+      }
+      .tab-nav__user-name {
+        font-size: 0.8rem;
+        color: var(--text-primary);
+      }
+      .tab-nav__user-level {
+        font-size: 0.65rem;
+        color: var(--gold-dim);
+      }
+
+      /* ===== PAGE CONTENT ===== */
+      .page-content {
+        max-width: 1200px;
+        margin: 0 auto;
+        padding: 32px 32px 80px;
+      }
+
+      .page-title-row {
+        display: flex;
+        align-items: baseline;
+        justify-content: space-between;
+        margin-bottom: 32px;
+      }
+      .page-title {
+        font-family: var(--font-display);
+        font-size: 1.953rem;
+        font-weight: 600;
+        color: var(--gold-primary);
+      }
+      .page-count {
+        font-size: 0.9rem;
+        color: var(--text-secondary);
+      }
+      .page-count span {
+        color: var(--gold-light);
+        font-weight: 600;
+      }
+
+      /* ===== STORYBOOK CARD GRID ===== */
+      .story-grid {
+        display: grid;
+        grid-template-columns: repeat(auto-fill, minmax(360px, 1fr));
+        gap: 24px;
+      }
+
+      /* ===== STORY CARD ===== */
+      .story-card {
+        background: var(--glass-bg);
+        backdrop-filter: blur(var(--glass-blur));
+        border: 1px solid var(--glass-border);
+        border-radius: var(--radius-xl);
+        overflow: hidden;
+        transition: all 0.3s ease;
+        cursor: pointer;
+      }
+      .story-card:hover {
+        border-color: var(--glass-hover);
+        box-shadow: var(--glow-gold);
+        transform: translateY(-2px);
+      }
+
+      /* Portrait banner */
+      .story-card__banner {
+        height: 140px;
+        background: linear-gradient(135deg, var(--bg-midnight), var(--bg-twilight));
+        position: relative;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+      }
+      .story-card__banner-icon {
+        font-size: 3.5rem;
+        opacity: 0.25;
+      }
+      .story-card__level {
+        position: absolute;
+        top: 12px;
+        right: 12px;
+        background: rgba(200, 168, 78, 0.2);
+        border: 1px solid var(--gold-dim);
+        border-radius: var(--radius-sm);
+        padding: 3px 10px;
+        font-size: 0.7rem;
+        font-weight: 600;
+        color: var(--gold-light);
+      }
+      .story-card__care {
+        position: absolute;
+        bottom: 0;
+        left: 0;
+        right: 0;
+        display: flex;
+        gap: 0;
+        height: 4px;
+      }
+      .story-card__care-segment {
+        flex: 1;
+      }
+      .story-card__care-segment--good {
+        background: var(--status-success);
+      }
+      .story-card__care-segment--warn {
+        background: var(--status-warning);
+      }
+      .story-card__care-segment--bad {
+        background: var(--status-danger);
+      }
+
+      /* Body */
+      .story-card__body {
+        padding: 20px 24px;
+      }
+
+      .story-card__header {
+        display: flex;
+        align-items: baseline;
+        justify-content: space-between;
+        margin-bottom: 4px;
+      }
+      .story-card__name {
+        font-family: var(--font-display);
+        font-size: 1.25rem;
+        font-weight: 600;
+        color: var(--text-primary);
+      }
+      .story-card__breed {
+        font-size: 0.8rem;
+        color: var(--text-secondary);
+        margin-bottom: 12px;
+      }
+
+      /* Story narrative */
+      .story-card__narrative {
+        background: rgba(255, 255, 255, 0.03);
+        border: 1px solid rgba(148, 163, 184, 0.1);
+        border-radius: var(--radius-md);
+        padding: 12px 16px;
+        margin-bottom: 14px;
+      }
+      .story-card__event-label {
+        font-size: 0.65rem;
+        text-transform: uppercase;
+        letter-spacing: 0.08em;
+        color: var(--text-muted);
+        margin-bottom: 4px;
+      }
+      .story-card__event-text {
+        font-size: 0.85rem;
+        color: var(--text-primary);
+        line-height: 1.5;
+      }
+      .story-card__event-time {
+        font-size: 0.65rem;
+        color: var(--text-muted);
+        margin-top: 4px;
+      }
+
+      /* Stat preview */
+      .story-card__stats {
+        display: flex;
+        gap: 16px;
+        margin-bottom: 12px;
+      }
+      .story-stat {
+        flex: 1;
+      }
+      .story-stat__label {
+        font-size: 0.65rem;
+        text-transform: uppercase;
+        letter-spacing: 0.06em;
+        color: var(--text-muted);
+        margin-bottom: 4px;
+      }
+      .story-stat__bar {
+        height: 6px;
+        background: rgba(255, 255, 255, 0.06);
+        border-radius: 3px;
+        overflow: hidden;
+        margin-bottom: 2px;
+      }
+      .story-stat__fill {
+        height: 100%;
+        background: linear-gradient(90deg, var(--gold-primary), var(--gold-light));
+        border-radius: 3px;
+      }
+      .story-stat__value {
+        font-size: 0.75rem;
+        font-weight: 600;
+        color: var(--text-primary);
+      }
+
+      /* Traits row */
+      .story-card__traits {
+        display: flex;
+        flex-wrap: wrap;
+        gap: 6px;
+      }
+      .trait-tag {
+        padding: 3px 10px;
+        border-radius: var(--radius-sm);
+        font-size: 0.65rem;
+        font-weight: 500;
+      }
+      .trait-tag--common {
+        background: rgba(148, 163, 184, 0.12);
+        color: var(--text-secondary);
+      }
+      .trait-tag--rare {
+        background: rgba(167, 139, 250, 0.15);
+        color: var(--status-rare);
+      }
+      .trait-tag--legendary {
+        background: rgba(200, 168, 78, 0.15);
+        color: var(--gold-light);
+      }
+
+      /* ===== RESPONSIVE ===== */
+      @media (max-width: 768px) {
+        .tab-nav {
+          padding: 0 16px;
+        }
+        .tab-nav__tabs {
+          display: none;
+        }
+        .page-content {
+          padding: 24px 16px;
+        }
+        .story-grid {
+          grid-template-columns: 1fr;
+          gap: 16px;
+        }
+        .page-title {
+          font-size: 1.5rem;
+        }
+      }
+    </style>
+  </head>
+  <body>
+    <div class="direction-badge">Direction 3 — Storybook</div>
+
+    <!-- TAB NAV -->
+    <nav class="tab-nav">
+      <div class="tab-nav__brand">Equoria</div>
+      <ul class="tab-nav__tabs">
+        <a href="#" class="tab-nav__tab active">My Stable</a>
+        <a href="#" class="tab-nav__tab">Competitions</a>
+        <a href="#" class="tab-nav__tab">Breeding</a>
+        <a href="#" class="tab-nav__tab">Training</a>
+        <a href="#" class="tab-nav__tab">Community</a>
+        <a href="#" class="tab-nav__tab">World</a>
+      </ul>
+      <div class="tab-nav__user">
+        <div>
+          <div class="tab-nav__user-name">Heirr</div>
+          <div class="tab-nav__user-level">Level 24 · 1,250 coins</div>
+        </div>
+        <div class="tab-nav__avatar">H</div>
+      </div>
+    </nav>
+
+    <!-- PAGE -->
+    <div class="page-content">
+      <div class="page-title-row">
+        <h1 class="page-title">My Stable</h1>
+        <div class="page-count"><span>6</span> horses</div>
+      </div>
+
+      <div class="story-grid">
+        <!-- Horse 1 -->
+        <div class="story-card">
+          <div class="story-card__banner">
+            <span class="story-card__banner-icon">🐴</span>
+            <span class="story-card__level">Lv. 18</span>
+            <div class="story-card__care">
+              <div class="story-card__care-segment story-card__care-segment--good"></div>
+              <div class="story-card__care-segment story-card__care-segment--good"></div>
+              <div class="story-card__care-segment story-card__care-segment--warn"></div>
+            </div>
+          </div>
+          <div class="story-card__body">
+            <div class="story-card__header">
+              <div class="story-card__name">Stardust Sovereign</div>
+            </div>
+            <div class="story-card__breed">
+              Thoroughbred · Mare · 6 years · Gen. 2 of Stardust Line
+            </div>
+
+            <div class="story-card__narrative">
+              <div class="story-card__event-label">Latest Chapter</div>
+              <div class="story-card__event-text">
+                Entered the Dressage Classic at Celestial Arena. Currently awaiting results against
+                11 other competitors.
+              </div>
+              <div class="story-card__event-time">2 hours ago</div>
+            </div>
+
+            <div class="story-card__stats">
+              <div class="story-stat">
+                <div class="story-stat__label">Speed</div>
+                <div class="story-stat__bar">
+                  <div class="story-stat__fill" style="width: 82%"></div>
+                </div>
+                <div class="story-stat__value">82</div>
+              </div>
+              <div class="story-stat">
+                <div class="story-stat__label">Agility</div>
+                <div class="story-stat__bar">
+                  <div class="story-stat__fill" style="width: 74%"></div>
+                </div>
+                <div class="story-stat__value">74</div>
+              </div>
+              <div class="story-stat">
+                <div class="story-stat__label">Stamina</div>
+                <div class="story-stat__bar">
+                  <div class="story-stat__fill" style="width: 68%"></div>
+                </div>
+                <div class="story-stat__value">68</div>
+              </div>
+            </div>
+
+            <div class="story-card__traits">
+              <span class="trait-tag trait-tag--rare">Celestial Mane</span>
+              <span class="trait-tag trait-tag--common">Steady Gait</span>
+            </div>
+          </div>
+        </div>
+
+        <!-- Horse 2 -->
+        <div class="story-card">
+          <div class="story-card__banner">
+            <span class="story-card__banner-icon">🐴</span>
+            <span class="story-card__level">Lv. 12</span>
+            <div class="story-card__care">
+              <div class="story-card__care-segment story-card__care-segment--good"></div>
+              <div class="story-card__care-segment story-card__care-segment--good"></div>
+              <div class="story-card__care-segment story-card__care-segment--good"></div>
+            </div>
+          </div>
+          <div class="story-card__body">
+            <div class="story-card__header">
+              <div class="story-card__name">MoonDancer</div>
+            </div>
+            <div class="story-card__breed">Arabian · Stallion · 5 years</div>
+
+            <div class="story-card__narrative">
+              <div class="story-card__event-label">Latest Chapter</div>
+              <div class="story-card__event-text">
+                Completed speed training — gained +3 Speed! Training cooldown has ended. Ready for
+                the next session.
+              </div>
+              <div class="story-card__event-time">5 hours ago</div>
+            </div>
+
+            <div class="story-card__stats">
+              <div class="story-stat">
+                <div class="story-stat__label">Speed</div>
+                <div class="story-stat__bar">
+                  <div class="story-stat__fill" style="width: 68%"></div>
+                </div>
+                <div class="story-stat__value">68</div>
+              </div>
+              <div class="story-stat">
+                <div class="story-stat__label">Stamina</div>
+                <div class="story-stat__bar">
+                  <div class="story-stat__fill" style="width: 91%"></div>
+                </div>
+                <div class="story-stat__value">91</div>
+              </div>
+              <div class="story-stat">
+                <div class="story-stat__label">Intel</div>
+                <div class="story-stat__bar">
+                  <div class="story-stat__fill" style="width: 72%"></div>
+                </div>
+                <div class="story-stat__value">72</div>
+              </div>
+            </div>
+
+            <div class="story-card__traits">
+              <span class="trait-tag trait-tag--legendary">Eclipse Born</span>
+            </div>
+          </div>
+        </div>
+
+        <!-- Horse 3 -->
+        <div class="story-card">
+          <div class="story-card__banner">
+            <span class="story-card__banner-icon">🐴</span>
+            <span class="story-card__level">Lv. 22</span>
+            <div class="story-card__care">
+              <div class="story-card__care-segment story-card__care-segment--good"></div>
+              <div class="story-card__care-segment story-card__care-segment--good"></div>
+              <div class="story-card__care-segment story-card__care-segment--good"></div>
+            </div>
+          </div>
+          <div class="story-card__body">
+            <div class="story-card__header">
+              <div class="story-card__name">Nebula's Pride</div>
+            </div>
+            <div class="story-card__breed">
+              Hanoverian · Stallion · 8 years · Gen. 3 of Nebula Line
+            </div>
+
+            <div class="story-card__narrative">
+              <div class="story-card__event-label">Latest Chapter</div>
+              <div class="story-card__event-text">
+                Won 1st place at the Grand Prix! Earned 500 coins and +2 Strength. Your champion
+                stands tall among the stars.
+              </div>
+              <div class="story-card__event-time">Yesterday</div>
+            </div>
+
+            <div class="story-card__stats">
+              <div class="story-stat">
+                <div class="story-stat__label">Strength</div>
+                <div class="story-stat__bar">
+                  <div class="story-stat__fill" style="width: 94%"></div>
+                </div>
+                <div class="story-stat__value">94</div>
+              </div>
+              <div class="story-stat">
+                <div class="story-stat__label">Endure</div>
+                <div class="story-stat__bar">
+                  <div class="story-stat__fill" style="width: 88%"></div>
+                </div>
+                <div class="story-stat__value">88</div>
+              </div>
+              <div class="story-stat">
+                <div class="story-stat__label">Speed</div>
+                <div class="story-stat__bar">
+                  <div class="story-stat__fill" style="width: 76%"></div>
+                </div>
+                <div class="story-stat__value">76</div>
+              </div>
+            </div>
+
+            <div class="story-card__traits">
+              <span class="trait-tag trait-tag--rare">Iron Will</span>
+              <span class="trait-tag trait-tag--legendary">Starforged</span>
+            </div>
+          </div>
+        </div>
+
+        <!-- Horse 4 -->
+        <div class="story-card">
+          <div class="story-card__banner">
+            <span class="story-card__banner-icon">🐴</span>
+            <span class="story-card__level">Lv. 7</span>
+            <div class="story-card__care">
+              <div class="story-card__care-segment story-card__care-segment--bad"></div>
+              <div class="story-card__care-segment story-card__care-segment--warn"></div>
+              <div class="story-card__care-segment story-card__care-segment--good"></div>
+            </div>
+          </div>
+          <div class="story-card__body">
+            <div class="story-card__header">
+              <div class="story-card__name">Twilight Empress</div>
+            </div>
+            <div class="story-card__breed">Andalusian · Mare · 4 years</div>
+
+            <div class="story-card__narrative">
+              <div class="story-card__event-label">Needs Attention</div>
+              <div class="story-card__event-text">
+                Twilight Empress is hungry and needs to be fed. Her shoeing is due in 5 days. She's
+                ready to train whenever you are!
+              </div>
+              <div class="story-card__event-time">Now</div>
+            </div>
+
+            <div class="story-card__stats">
+              <div class="story-stat">
+                <div class="story-stat__label">Balance</div>
+                <div class="story-stat__bar">
+                  <div class="story-stat__fill" style="width: 56%"></div>
+                </div>
+                <div class="story-stat__value">56</div>
+              </div>
+              <div class="story-stat">
+                <div class="story-stat__label">Focus</div>
+                <div class="story-stat__bar">
+                  <div class="story-stat__fill" style="width: 63%"></div>
+                </div>
+                <div class="story-stat__value">63</div>
+              </div>
+              <div class="story-stat">
+                <div class="story-stat__label">Agility</div>
+                <div class="story-stat__bar">
+                  <div class="story-stat__fill" style="width: 45%"></div>
+                </div>
+                <div class="story-stat__value">45</div>
+              </div>
+            </div>
+
+            <div class="story-card__traits">
+              <span class="trait-tag trait-tag--common">Bold Spirit</span>
+              <span class="trait-tag trait-tag--common">Quick Learner</span>
+            </div>
+          </div>
+        </div>
+
+        <!-- Horse 5 -->
+        <div class="story-card">
+          <div class="story-card__banner">
+            <span class="story-card__banner-icon">🐴</span>
+            <span class="story-card__level">Lv. 3</span>
+            <div class="story-card__care">
+              <div class="story-card__care-segment story-card__care-segment--good"></div>
+              <div class="story-card__care-segment story-card__care-segment--warn"></div>
+              <div class="story-card__care-segment story-card__care-segment--good"></div>
+            </div>
+          </div>
+          <div class="story-card__body">
+            <div class="story-card__header">
+              <div class="story-card__name">Comet Foal</div>
+            </div>
+            <div class="story-card__breed">
+              Thoroughbred · Colt · 1 year · Gen. 3 of Stardust Line
+            </div>
+
+            <div class="story-card__narrative">
+              <div class="story-card__event-label">Growing Up</div>
+              <div class="story-card__event-text">
+                A mysterious trait is forming... discovery expected at 6 weeks. Your groom Ella is
+                nurturing him with gentle patience.
+              </div>
+              <div class="story-card__event-time">Ongoing</div>
+            </div>
+
+            <div class="story-card__stats">
+              <div class="story-stat">
+                <div class="story-stat__label">Speed</div>
+                <div class="story-stat__bar">
+                  <div class="story-stat__fill" style="width: 35%"></div>
+                </div>
+                <div class="story-stat__value">35</div>
+              </div>
+              <div class="story-stat">
+                <div class="story-stat__label">Agility</div>
+                <div class="story-stat__bar">
+                  <div class="story-stat__fill" style="width: 28%"></div>
+                </div>
+                <div class="story-stat__value">28</div>
+              </div>
+              <div class="story-stat">
+                <div class="story-stat__label">Intel</div>
+                <div class="story-stat__bar">
+                  <div class="story-stat__fill" style="width: 42%"></div>
+                </div>
+                <div class="story-stat__value">42</div>
+              </div>
+            </div>
+
+            <div class="story-card__traits">
+              <span class="trait-tag trait-tag--common" style="font-style: italic; opacity: 0.7"
+                >? Undiscovered</span
+              >
+            </div>
+          </div>
+        </div>
+
+        <!-- Horse 6 -->
+        <div class="story-card">
+          <div class="story-card__banner">
+            <span class="story-card__banner-icon">🐴</span>
+            <span class="story-card__level">Lv. 15</span>
+            <div class="story-card__care">
+              <div class="story-card__care-segment story-card__care-segment--good"></div>
+              <div class="story-card__care-segment story-card__care-segment--good"></div>
+              <div class="story-card__care-segment story-card__care-segment--bad"></div>
+            </div>
+          </div>
+          <div class="story-card__body">
+            <div class="story-card__header">
+              <div class="story-card__name">Aurora Veil</div>
+            </div>
+            <div class="story-card__breed">Friesian · Mare · 7 years</div>
+
+            <div class="story-card__narrative">
+              <div class="story-card__event-label">Recovering</div>
+              <div class="story-card__event-text">
+                Aurora Veil sustained a minor injury during cross-country. The vet says she'll be
+                ready in 4 days. Rest well, girl.
+              </div>
+              <div class="story-card__event-time">3 days ago</div>
+            </div>
+
+            <div class="story-card__stats">
+              <div class="story-stat">
+                <div class="story-stat__label">Intel</div>
+                <div class="story-stat__bar">
+                  <div class="story-stat__fill" style="width: 79%"></div>
+                </div>
+                <div class="story-stat__value">79</div>
+              </div>
+              <div class="story-stat">
+                <div class="story-stat__label">Obey</div>
+                <div class="story-stat__bar">
+                  <div class="story-stat__fill" style="width: 85%"></div>
+                </div>
+                <div class="story-stat__value">85</div>
+              </div>
+              <div class="story-stat">
+                <div class="story-stat__label">Focus</div>
+                <div class="story-stat__bar">
+                  <div class="story-stat__fill" style="width: 71%"></div>
+                </div>
+                <div class="story-stat__value">71</div>
+              </div>
+            </div>
+
+            <div class="story-card__traits">
+              <span class="trait-tag trait-tag--rare">Night Vision</span>
+              <span class="trait-tag trait-tag--common">Gentle Soul</span>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </body>
+</html>

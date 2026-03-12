@@ -1,18 +1,50 @@
+/** Badge — Celestial Night discipline-specific accents (Task 22-6) */
 import * as React from 'react';
 import { cva, type VariantProps } from 'class-variance-authority';
 import { cn } from '@/lib/utils';
 
 const badgeVariants = cva(
-  'inline-flex items-center rounded-full border px-2.5 py-0.5 text-xs font-semibold transition-colors focus:outline-none focus:ring-2 focus:ring-ring focus:ring-offset-2',
+  [
+    'inline-flex items-center rounded-full px-2.5 py-0.5',
+    'text-xs font-semibold tracking-wide uppercase',
+    'font-[var(--font-body)] border',
+    'transition-colors',
+    'focus:outline-none focus:ring-2 focus:ring-[var(--electric-blue-300)]',
+  ].join(' '),
   {
     variants: {
       variant: {
-        default: 'border-transparent bg-primary text-primary-foreground hover:bg-primary/80',
-        secondary:
-          'border-transparent bg-secondary text-secondary-foreground hover:bg-secondary/80',
-        destructive:
-          'border-transparent bg-destructive text-destructive-foreground hover:bg-destructive/80',
-        outline: 'text-foreground',
+        /** Gold accent — general status, unlocked, active */
+        default: [
+          'bg-[rgba(201,162,39,0.15)] border-[var(--gold-500)]',
+          'text-[var(--gold-400)]',
+        ].join(' '),
+        /** Muted — secondary labels, categories */
+        secondary: [
+          'bg-[rgba(100,130,165,0.15)] border-[rgba(100,130,165,0.4)]',
+          'text-[var(--text-muted)]',
+        ].join(' '),
+        /** Red — destructive, ineligible, overdue */
+        destructive: [
+          'bg-[rgba(224,90,90,0.15)] border-[var(--status-error)]',
+          'text-[var(--status-error)]',
+        ].join(' '),
+        /** Success — eligible, completed, healthy */
+        success: [
+          'bg-[rgba(76,175,130,0.15)] border-[var(--status-success)]',
+          'text-[var(--status-success)]',
+        ].join(' '),
+        /** Warning — cooldown, care needed */
+        warning: [
+          'bg-[rgba(212,168,67,0.15)] border-[var(--status-warning)]',
+          'text-[var(--status-warning)]',
+        ].join(' '),
+        /** Electric blue — primary type, discipline */
+        primary: [
+          'bg-[rgba(58,111,221,0.15)] border-[var(--electric-blue-500)]',
+          'text-[var(--electric-blue-300)]',
+        ].join(' '),
+        outline: ['bg-transparent border-[rgba(100,130,165,0.4)]', 'text-[var(--cream)]'].join(' '),
       },
     },
     defaultVariants: {

@@ -1,14 +1,28 @@
+/**
+ * FoalDevelopmentTracker (Epic 29-2 — Celestial Night restyle)
+ *
+ * Full foal development interface:
+ *  - DevelopmentTracker (age-stage timeline + bond score)
+ *  - Age-stage-grouped activity selection (out-of-stage activities disabled)
+ *  - Trait reveal with CinematicMoment (lifetime-first; Story 18-4 / Epic 29-3)
+ *  - Activity log
+ */
+
 import { useState, useEffect } from 'react';
+import { Sparkles, Dna, ChevronDown, ChevronUp, GraduationCap } from 'lucide-react';
 import {
   useDevelopFoal,
   useEnrichFoal,
   useFoal,
   useFoalActivities,
   useFoalDevelopment,
+  useGraduateFoal,
   useLogFoalActivity,
   useRevealFoalTraits,
 } from '@/hooks/api/useBreeding';
 import CinematicMoment from '@/components/feedback/CinematicMoment';
+import DevelopmentTracker from '@/components/foal/DevelopmentTracker';
+import type { Activity } from '@/components/foal/DevelopmentTracker';
 
 interface FoalDevelopmentTrackerProps {
   foalId: number;
@@ -23,180 +37,252 @@ const FoalDevelopmentTracker = ({ foalId }: FoalDevelopmentTrackerProps) => {
   const enrichFoal = useEnrichFoal(foalId);
   const revealTraits = useRevealFoalTraits(foalId);
   const developFoal = useDevelopFoal(foalId);
+  const graduateFoal = useGraduateFoal(foalId);
 
-  const [activityName, setActivityName] = useState('trust_building');
-  const [duration, setDuration] = useState<number | ''>(15);
+  const [showLog, setShowLog] = useState(false);
   const [showTraitCinematic, setShowTraitCinematic] = useState(false);
+  const [showGraduationCinematic, setShowGraduationCinematic] = useState(false);
+  const [pendingActivity, setPendingActivity] = useState<Activity | null>(null);
 
-  // Show cinematic moment when traits are successfully revealed (Story 18-4)
+  // Compute whether the foal is eligible for graduation (age >= 104 weeks)
+  const dateOfBirth = foal?.dateOfBirth ?? foal?.birthDate;
+  const ageInWeeks = dateOfBirth
+    ? Math.floor((Date.now() - new Date(dateOfBirth).getTime()) / (1000 * 60 * 60 * 24 * 7))
+    : 0;
+  const isGraduationEligible = ageInWeeks >= 104;
+
+  // Cinematic on trait reveal (Story 18-4 / Epic 29-3)
   useEffect(() => {
     if (revealTraits.isSuccess) {
       setShowTraitCinematic(true);
     }
   }, [revealTraits.isSuccess]);
 
+  // Cinematic on graduation (BB-4)
+  useEffect(() => {
+    if (graduateFoal.isSuccess && graduateFoal.data?.graduation?.isFirstGraduation) {
+      setShowGraduationCinematic(true);
+    }
+  }, [graduateFoal.isSuccess, graduateFoal.data]);
+
+  // Handle activity selection from DevelopmentTracker
+  const handleActivitySelect = (activity: Activity) => {
+    setPendingActivity(activity);
+  };
+
+  const handleConfirmActivity = () => {
+    if (!pendingActivity) return;
+    logActivity.mutate({ activity: pendingActivity.id, duration: pendingActivity.cooldownHours });
+    setPendingActivity(null);
+  };
+
+  const isLoading = loadingFoal || loadingDev;
+
   return (
     <>
-      <div className="space-y-4 rounded-lg border border-[rgba(37,99,235,0.2)] bg-[rgba(15,35,70,0.4)] p-6 shadow-sm">
-        <div className="flex items-center justify-between">
-          <div>
-            <p className="text-xs uppercase tracking-wide text-[rgb(148,163,184)]">
-              Foal Development
-            </p>
-            <h3 className="text-xl font-bold text-[rgb(220,235,255)]">Foal #{foalId}</h3>
-            {foal && (
-              <p className="text-sm text-[rgb(148,163,184)]">
-                {foal.name ?? 'Unnamed foal'} • Age {foal.ageDays ?? '—'} days
-              </p>
-            )}
+      <div className="space-y-4">
+        {/* Loading */}
+        {isLoading && (
+          <div className="flex items-center gap-2 py-4 text-sm text-[var(--text-muted)] font-[var(--font-body)]">
+            <span className="inline-block h-4 w-4 animate-spin rounded-full border-2 border-[var(--gold-400)] border-r-transparent" />
+            Loading foal details…
           </div>
-          <button
-            type="button"
-            onClick={() => developFoal.mutate({ progress: (development?.progress ?? 0) + 5 })}
-            className="rounded-md border border-[rgba(37,99,235,0.2)] px-3 py-2 text-sm font-semibold text-[rgb(220,235,255)] shadow-sm hover:bg-[rgba(37,99,235,0.08)]"
-            disabled={developFoal.isPending}
-          >
-            {developFoal.isPending ? 'Updating…' : 'Advance Stage'}
-          </button>
-        </div>
+        )}
 
+        {/* Error */}
         {devError && (
-          <div className="rounded-md border border-red-500/30 bg-[rgba(239,68,68,0.1)] px-3 py-2 text-sm text-red-400">
+          <div className="glass-panel rounded-xl border border-red-500/30 px-4 py-3 text-sm text-red-400 font-[var(--font-body)]">
             {devError.message}
           </div>
         )}
 
-        {(loadingFoal || loadingDev) && (
-          <div className="text-sm text-[rgb(148,163,184)]">
-            Loading foal details and development…
-          </div>
+        {/* DevelopmentTracker — shows stage timeline + bond score + activities */}
+        {foal && (
+          <DevelopmentTracker
+            foalName={foal.name ?? `Foal #${foalId}`}
+            dateOfBirth={foal.dateOfBirth ?? foal.birthDate ?? new Date().toISOString()}
+            bondScore={development?.bonding ?? 0}
+            completedMilestones={{}}
+            lastInteractionAt={undefined}
+            onActivitySelect={handleActivitySelect}
+          />
         )}
 
-        {development && (
-          <div className="grid gap-3 md:grid-cols-2">
-            <div className="rounded-md border border-[rgba(37,99,235,0.2)] bg-[rgba(15,35,70,0.5)] p-4">
-              <div className="text-sm font-semibold text-[rgb(220,235,255)]">Stage</div>
-              <div className="text-xl font-bold text-[rgb(220,235,255)]">
-                {development.stage ?? 'Unknown'}
-              </div>
-              <div className="text-xs text-[rgb(148,163,184)]">
-                Progress: {development.progress ?? 0}%
-              </div>
-            </div>
-            <div className="rounded-md border border-[rgba(37,99,235,0.2)] bg-[rgba(15,35,70,0.5)] p-4">
-              <div className="text-sm font-semibold text-[rgb(220,235,255)]">Wellbeing</div>
-              <div className="text-xs text-[rgb(148,163,184)]">
-                Bonding: {development.bonding ?? 0} • Stress: {development.stress ?? 0}
-              </div>
-              <div className="text-xs text-[rgb(148,163,184)]">
-                Enrichment: {development.enrichmentLevel ?? 0}
-              </div>
-            </div>
-          </div>
-        )}
-
-        <div className="grid gap-4 md:grid-cols-2">
-          <div className="space-y-3 rounded-md border border-[rgba(37,99,235,0.2)] bg-[rgba(15,35,70,0.5)] p-4">
-            <div className="text-sm font-semibold text-[rgb(220,235,255)]">Log Activity</div>
-            <input
-              type="text"
-              value={activityName}
-              onChange={(event) => setActivityName(event.target.value)}
-              className="celestial-input w-full"
-              placeholder="Activity name"
-            />
-            <input
-              type="number"
-              value={duration}
-              onChange={(event) =>
-                setDuration(event.target.value === '' ? '' : Number(event.target.value))
-              }
-              className="celestial-input w-full"
-              placeholder="Duration (minutes)"
-            />
+        {/* Pending activity confirmation */}
+        {pendingActivity && (
+          <div className="glass-panel rounded-2xl border border-[rgba(201,162,39,0.2)] px-4 py-4 space-y-3">
+            <p className="text-[10px] uppercase tracking-widest text-[var(--text-muted)] font-[var(--font-body)]">
+              Confirm Activity
+            </p>
+            <p className="text-sm font-semibold text-[var(--cream)] font-[var(--font-body)]">
+              {pendingActivity.label}
+            </p>
+            <p className="text-xs text-[var(--text-muted)] font-[var(--font-body)]">
+              {pendingActivity.description}
+            </p>
             <div className="flex gap-2">
               <button
                 type="button"
-                onClick={() =>
-                  logActivity.mutate({ activity: activityName, duration: Number(duration) })
-                }
-                disabled={logActivity.isPending || activityName.length === 0 || duration === ''}
-                className="w-full rounded-md bg-indigo-600 px-4 py-2 text-sm font-semibold text-white shadow hover:bg-indigo-500 focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:ring-offset-2 disabled:cursor-not-allowed disabled:opacity-70"
+                onClick={handleConfirmActivity}
+                disabled={logActivity.isPending}
+                className="flex-1 rounded-full py-2 text-xs font-bold bg-gradient-to-r from-[var(--gold-700)] to-[var(--gold-400)] text-[var(--celestial-navy-900)] disabled:opacity-40 font-[var(--font-heading)]"
               >
-                {logActivity.isPending ? 'Logging…' : 'Log Activity'}
+                {logActivity.isPending ? 'Logging…' : 'Confirm'}
               </button>
               <button
                 type="button"
-                onClick={() =>
-                  enrichFoal.mutate({ activity: 'enrichment', duration: Number(duration) })
-                }
-                disabled={enrichFoal.isPending || duration === ''}
-                className="w-full rounded-md border border-emerald-500/30 bg-[rgba(16,185,129,0.1)] px-4 py-2 text-sm font-semibold text-emerald-400 shadow-sm hover:bg-[rgba(16,185,129,0.2)] focus:outline-none focus:ring-2 focus:ring-emerald-500 focus:ring-offset-2 disabled:cursor-not-allowed disabled:opacity-70"
+                onClick={() => setPendingActivity(null)}
+                className="flex-1 rounded-full py-2 text-xs font-bold border border-[rgba(100,130,165,0.25)] text-[var(--text-muted)] hover:text-[var(--cream)] font-[var(--font-body)]"
               >
-                {enrichFoal.isPending ? 'Enriching…' : 'Enrich'}
+                Cancel
               </button>
             </div>
           </div>
+        )}
 
-          <div className="space-y-3 rounded-md border border-[rgba(37,99,235,0.2)] bg-[rgba(15,35,70,0.5)] p-4">
-            <div className="flex items-center justify-between">
-              <div>
-                <div className="text-sm font-semibold text-[rgb(220,235,255)]">Traits</div>
-                <div className="text-xs text-[rgb(148,163,184)]">
-                  Reveal traits once available; server computes inheritance.
-                </div>
-              </div>
-              <button
-                type="button"
-                onClick={() => revealTraits.mutate()}
-                disabled={revealTraits.isPending}
-                className="rounded-md border border-[rgba(37,99,235,0.2)] px-3 py-2 text-sm font-semibold text-[rgb(220,235,255)] shadow-sm hover:bg-[rgba(37,99,235,0.1)] disabled:cursor-not-allowed disabled:opacity-70"
+        {/* Development stats */}
+        {development && (
+          <div className="grid grid-cols-2 sm:grid-cols-4 gap-3">
+            {[
+              { label: 'Stage', value: development.stage ?? '—' },
+              { label: 'Progress', value: `${development.progress ?? 0}%` },
+              { label: 'Stress', value: development.stress ?? 0 },
+              { label: 'Enrichment', value: development.enrichmentLevel ?? 0 },
+            ].map(({ label, value }) => (
+              <div
+                key={label}
+                className="glass-panel rounded-xl border border-[rgba(100,130,165,0.12)] px-3 py-2.5"
               >
-                {revealTraits.isPending ? 'Revealing…' : 'Reveal Traits'}
-              </button>
-            </div>
-            <div className="rounded-md border border-[rgba(37,99,235,0.2)] bg-[rgba(15,35,70,0.4)] px-3 py-2 text-sm text-[rgb(220,235,255)] shadow-inner">
-              {foal?.traits && foal.traits.length > 0
-                ? foal.traits.join(', ')
-                : 'Traits pending discovery.'}
-            </div>
-
-            <div>
-              <div className="text-sm font-semibold text-[rgb(220,235,255)]">Activity Log</div>
-              <div className="text-xs text-[rgb(148,163,184)]">
-                Latest activities fetched from the API.
+                <p className="text-[10px] uppercase tracking-widest text-[var(--text-muted)] font-[var(--font-body)]">
+                  {label}
+                </p>
+                <p className="text-sm font-bold text-[var(--cream)] font-[var(--font-heading)] mt-0.5 capitalize">
+                  {String(value)}
+                </p>
               </div>
-              <div className="mt-2 space-y-2">
-                {activities?.map((activity) => (
+            ))}
+          </div>
+        )}
+
+        {/* Actions row */}
+        <div className="flex flex-wrap gap-2">
+          {/* Reveal traits */}
+          <button
+            type="button"
+            onClick={() => revealTraits.mutate()}
+            disabled={revealTraits.isPending}
+            className="flex items-center gap-1.5 rounded-full px-4 py-2 text-xs font-bold bg-[rgba(59,130,246,0.12)] border border-[rgba(59,130,246,0.25)] text-blue-400 hover:bg-[rgba(59,130,246,0.2)] disabled:opacity-40 transition-colors font-[var(--font-body)]"
+          >
+            <Dna className="h-3.5 w-3.5" />
+            {revealTraits.isPending ? 'Revealing…' : 'Reveal Traits'}
+          </button>
+
+          {/* Enrich */}
+          <button
+            type="button"
+            onClick={() => enrichFoal.mutate({ activity: 'enrichment', duration: 30 })}
+            disabled={enrichFoal.isPending}
+            className="flex items-center gap-1.5 rounded-full px-4 py-2 text-xs font-bold bg-[rgba(16,185,129,0.1)] border border-[rgba(16,185,129,0.2)] text-emerald-400 hover:bg-[rgba(16,185,129,0.2)] disabled:opacity-40 transition-colors font-[var(--font-body)]"
+          >
+            <Sparkles className="h-3.5 w-3.5" />
+            {enrichFoal.isPending ? 'Enriching…' : 'Enrich'}
+          </button>
+
+          {/* Advance stage (dev helper) */}
+          <button
+            type="button"
+            onClick={() => developFoal.mutate({ progress: (development?.progress ?? 0) + 5 })}
+            disabled={developFoal.isPending}
+            className="flex items-center gap-1.5 rounded-full px-4 py-2 text-xs font-bold border border-[rgba(100,130,165,0.2)] text-[var(--text-muted)] hover:text-[var(--cream)] disabled:opacity-40 transition-colors font-[var(--font-body)]"
+          >
+            {developFoal.isPending ? 'Updating…' : 'Advance Stage'}
+          </button>
+
+          {/* Graduate — BB-4: visible only when foal is 3+ years old */}
+          {isGraduationEligible && (
+            <button
+              type="button"
+              onClick={() => graduateFoal.mutate()}
+              disabled={graduateFoal.isPending || graduateFoal.isSuccess}
+              className="flex items-center gap-1.5 rounded-full px-4 py-2 text-xs font-bold bg-gradient-to-r from-[var(--gold-700)] to-[var(--gold-400)] text-[var(--celestial-navy-900)] disabled:opacity-40 transition-colors font-[var(--font-heading)]"
+            >
+              <GraduationCap className="h-3.5 w-3.5" />
+              {graduateFoal.isPending
+                ? 'Graduating…'
+                : graduateFoal.isSuccess
+                  ? 'Graduated!'
+                  : 'Graduate to Adult'}
+            </button>
+          )}
+        </div>
+
+        {/* Traits display */}
+        {foal?.traits && foal.traits.length > 0 && (
+          <div className="glass-panel rounded-xl border border-[rgba(100,130,165,0.15)] px-4 py-3">
+            <p className="text-[10px] uppercase tracking-widest text-[var(--text-muted)] font-[var(--font-body)] mb-2">
+              Discovered Traits
+            </p>
+            <div className="flex flex-wrap gap-1.5">
+              {foal.traits.map((trait, i) => (
+                <span
+                  key={i}
+                  className="rounded-full px-2 py-0.5 text-xs bg-[rgba(201,162,39,0.1)] border border-[rgba(201,162,39,0.2)] text-[var(--gold-400)] font-[var(--font-body)]"
+                >
+                  {String(trait)}
+                </span>
+              ))}
+            </div>
+          </div>
+        )}
+
+        {/* Activity log — collapsible */}
+        {activities && activities.length > 0 && (
+          <div className="glass-panel rounded-xl border border-[rgba(100,130,165,0.12)] overflow-hidden">
+            <button
+              type="button"
+              onClick={() => setShowLog((v) => !v)}
+              className="w-full flex items-center justify-between px-4 py-3 hover:bg-[rgba(201,162,39,0.03)] transition-colors"
+            >
+              <span className="text-xs font-semibold text-[var(--text-muted)] font-[var(--font-body)] uppercase tracking-wider">
+                Activity Log ({activities.length})
+              </span>
+              {showLog ? (
+                <ChevronUp className="h-4 w-4 text-[var(--text-muted)]" />
+              ) : (
+                <ChevronDown className="h-4 w-4 text-[var(--text-muted)]" />
+              )}
+            </button>
+            {showLog && (
+              <div className="border-t border-[rgba(100,130,165,0.1)] px-4 pb-3 space-y-2 max-h-48 overflow-y-auto">
+                {activities.map((activity) => (
                   <div
                     key={`${activity.activity}-${activity.createdAt ?? activity.id ?? 'pending'}`}
-                    className="rounded-md border border-[rgba(37,99,235,0.2)] bg-[rgba(15,35,70,0.4)] px-3 py-2 text-sm text-[rgb(220,235,255)] shadow-sm"
+                    className="flex items-center justify-between py-2 border-b border-[rgba(100,130,165,0.08)] last:border-0"
                   >
-                    <div className="flex items-center justify-between">
-                      <span className="font-semibold">{activity.activity}</span>
-                      <span className="text-xs text-[rgb(148,163,184)]">
-                        {activity.duration ? `${activity.duration} min` : '—'}
-                      </span>
-                    </div>
-                    <div className="text-xs text-[rgb(148,163,184)]">
-                      {activity.createdAt
-                        ? new Date(activity.createdAt).toLocaleString()
-                        : 'Timestamp pending'}
+                    <span className="text-xs text-[var(--cream)] font-[var(--font-body)] capitalize">
+                      {activity.activity}
+                    </span>
+                    <div className="flex items-center gap-3">
+                      {activity.duration && (
+                        <span className="text-[10px] text-[var(--text-muted)]">
+                          {activity.duration} min
+                        </span>
+                      )}
+                      {activity.createdAt && (
+                        <span className="text-[10px] text-[var(--text-muted)]">
+                          {new Date(activity.createdAt).toLocaleDateString()}
+                        </span>
+                      )}
                     </div>
                   </div>
                 ))}
-                {!activities?.length && (
-                  <div className="rounded-md border border-[rgba(37,99,235,0.2)] bg-[rgba(15,35,70,0.4)] px-3 py-2 text-sm text-[rgb(148,163,184)] shadow-sm">
-                    No activities logged yet.
-                  </div>
-                )}
               </div>
-            </div>
+            )}
           </div>
-        </div>
+        )}
       </div>
 
-      {/* Cinematic moment on trait reveal (Story 18-4) */}
+      {/* Cinematic trait reveal (Story 18-4 / Epic 29-3) */}
       {showTraitCinematic && (
         <CinematicMoment
           variant="trait-discovery"
@@ -207,6 +293,16 @@ const FoalDevelopmentTracker = ({ foalId }: FoalDevelopmentTrackerProps) => {
               : undefined
           }
           onDismiss={() => setShowTraitCinematic(false)}
+        />
+      )}
+
+      {/* Cinematic graduation (BB-4 — lifetime-first only) */}
+      {showGraduationCinematic && (
+        <CinematicMoment
+          variant="cup-win"
+          title="Graduation Day!"
+          subtitle={`${foal?.name ?? 'Your horse'} is now an adult — ready for training & competition!`}
+          onDismiss={() => setShowGraduationCinematic(false)}
         />
       )}
     </>

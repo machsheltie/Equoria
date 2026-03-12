@@ -6,7 +6,7 @@ info:
   contact:
     name: 'Equoria Team'
   x-generated:
-    timestamp: '2026-03-05T14:14:15.148Z'
+    timestamp: '2026-03-12T18:47:13.621Z'
     endpointCount: 0
     schemaCount: 2
     generator: ApiDocumentationService
@@ -157,12 +157,14 @@ paths:
       description: 'Get paginated threads, optionally filtered by section'
       security: [{ bearerAuth: [] }]
       parameters:
-        - {
+        [
+          {
             name: section,
             in: query,
             schema: { type: string, enum: [general, art, sales, services, venting] },
-          }
-        - { name: page, in: query, schema: { type: integer, default: 1 } }
+          },
+          { name: page, in: query, schema: { type: integer, default: 1 } },
+        ]
       responses:
         {
           '200': { description: 'Thread list with pagination' },
@@ -199,7 +201,7 @@ paths:
           '400': { description: 'Validation error' },
           '401': { description: Unauthorized },
         }
-  /forum/threads/{id}:
+  '/forum/threads/{id}':
     get:
       tags: [Forum]
       summary: 'Get thread with posts'
@@ -263,8 +265,10 @@ paths:
       summary: 'List clubs'
       security: [{ bearerAuth: [] }]
       parameters:
-        - { name: type, in: query, schema: { type: string } }
-        - { name: category, in: query, schema: { type: string } }
+        [
+          { name: type, in: query, schema: { type: string } },
+          { name: category, in: query, schema: { type: string } },
+        ]
       responses: { '200': { description: 'List of clubs' }, '401': { description: Unauthorized } }
     post:
       tags: [Clubs]
@@ -303,7 +307,7 @@ paths:
           '200': { description: 'Clubs the authenticated user belongs to' },
           '401': { description: Unauthorized },
         }
-  /clubs/{id}/join:
+  '/clubs/{id}/join':
     post:
       tags: [Clubs]
       summary: 'Join a club'
@@ -315,14 +319,14 @@ paths:
           '400': { description: 'Already a member' },
           '401': { description: Unauthorized },
         }
-  /clubs/{id}/leave:
+  '/clubs/{id}/leave':
     delete:
       tags: [Clubs]
       summary: 'Leave a club'
       security: [{ bearerAuth: [] }]
       parameters: [{ name: id, in: path, required: true, schema: { type: integer } }]
       responses: { '200': { description: 'Left club' }, '401': { description: Unauthorized } }
-  /clubs/elections/{id}/vote:
+  '/clubs/elections/{id}/vote':
     post:
       tags: [Clubs]
       summary: 'Vote in an election'
@@ -381,11 +385,11 @@ components:
     User:
       type: object
       properties: { id: { type: string } }
-      registeredAt: '2026-03-05T14:14:15.119Z'
+      registeredAt: '2026-03-12T18:47:13.566Z'
     Horse:
       type: object
       properties: { id: { type: string } }
-      registeredAt: '2026-03-05T14:14:15.133Z'
+      registeredAt: '2026-03-12T18:47:13.591Z'
     TestSchema:
       type: object
       properties:
@@ -395,8 +399,8 @@ components:
           timestamp: { type: string, format: date-time },
         }
       required: [id, name]
-      registeredAt: '2026-03-05T14:13:59.975Z'
+      registeredAt: '2026-03-12T18:42:20.382Z'
     CreateTestSchema:
       type: object
       properties: { name: { type: string } }
-      registeredAt: '2026-03-05T14:14:00.300Z'
+      registeredAt: '2026-03-12T18:42:20.967Z'

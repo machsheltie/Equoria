@@ -17,6 +17,23 @@ import { createContext, useContext, ReactNode, useMemo, useCallback } from 'reac
 import { useProfile, useLogout, useVerificationStatus, User, UserRole } from '../hooks/useAuth';
 import type { ApiError } from '../lib/api-client';
 
+/** Set VITE_DEV_BYPASS_AUTH=true in .env to skip login during local review */
+const DEV_BYPASS = import.meta.env.VITE_DEV_BYPASS_AUTH === 'true';
+
+const DEV_USER: User = {
+  id: 1,
+  username: 'DevUser',
+  email: 'dev@equoria.local',
+  firstName: 'Dev',
+  lastName: 'User',
+  role: 'admin',
+  money: 5000,
+  level: 5,
+  xp: 1000,
+  completedOnboarding: true,
+  onboardingStep: 10,
+};
+
 /**
  * Auth context value interface
  */
@@ -141,8 +158,26 @@ export function AuthProvider({ children }: AuthProviderProps) {
   }, [logoutMutate]);
 
   // Memoize context value to prevent unnecessary re-renders
-  const contextValue = useMemo<AuthContextValue>(
-    () => ({
+  const contextValue = useMemo<AuthContextValue>(() => {
+    // Dev bypass: return a mock admin user so login can be skipped during local review
+    if (DEV_BYPASS) {
+      return {
+        user: DEV_USER,
+        isLoading: false,
+        isAuthenticated: true,
+        isEmailVerified: true,
+        error: null,
+        logout: () => {},
+        isLoggingOut: false,
+        refetchProfile: () => {},
+        userRole: 'admin' as UserRole,
+        hasRole: (role: UserRole) => role === 'admin',
+        hasAnyRole: (roles: UserRole[]) => roles.includes('admin'),
+        isAdmin: true,
+        isModerator: true,
+      };
+    }
+    return {
       user,
       isLoading: isProfileLoading,
       isAuthenticated,
@@ -157,23 +192,22 @@ export function AuthProvider({ children }: AuthProviderProps) {
       hasAnyRole,
       isAdmin,
       isModerator,
-    }),
-    [
-      user,
-      isProfileLoading,
-      isAuthenticated,
-      isEmailVerified,
-      profileError,
-      logout,
-      isLoggingOut,
-      refetchProfile,
-      userRole,
-      hasRole,
-      hasAnyRole,
-      isAdmin,
-      isModerator,
-    ]
-  );
+    };
+  }, [
+    user,
+    isProfileLoading,
+    isAuthenticated,
+    isEmailVerified,
+    profileError,
+    logout,
+    isLoggingOut,
+    refetchProfile,
+    userRole,
+    hasRole,
+    hasAnyRole,
+    isAdmin,
+    isModerator,
+  ]);
 
   return <AuthContext.Provider value={contextValue}>{children}</AuthContext.Provider>;
 }

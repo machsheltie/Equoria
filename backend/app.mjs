@@ -91,6 +91,9 @@ import forumRoutes from './routes/forumRoutes.mjs';
 import messageRoutes from './routes/messageRoutes.mjs';
 import clubRoutes from './routes/clubRoutes.mjs';
 import marketplaceRoutes from './modules/marketplace/routes/marketplaceRoutes.mjs';
+import nextActionsRoutes from './routes/nextActionsRoutes.mjs';
+import wyagRoutes from './routes/wyagRoutes.mjs';
+import showRoutes from './routes/showRoutes.mjs';
 
 /**
  * 🔒 SECURITY ROUTER ARCHITECTURE
@@ -160,6 +163,9 @@ authRouter.use('/forum', forumRoutes);
 authRouter.use('/messages', messageRoutes);
 authRouter.use('/clubs', clubRoutes);
 authRouter.use('/marketplace', marketplaceRoutes);
+authRouter.use('/next-actions', nextActionsRoutes);
+authRouter.use('/while-you-were-gone', wyagRoutes);
+authRouter.use('/shows', showRoutes);
 
 // Groom management system
 authRouter.use('/grooms', groomRoutes);

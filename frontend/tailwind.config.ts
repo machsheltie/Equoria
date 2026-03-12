@@ -62,9 +62,9 @@ export default {
         },
       },
       fontFamily: {
-        'fantasy-title': ['Yeseva One', 'serif'],
-        'fantasy-header': ['Cormorant Garamond', 'serif'],
-        'fantasy-body': ['Jost', 'sans-serif'],
+        'fantasy-title': ['Cinzel Decorative', 'serif'],
+        'fantasy-header': ['Cinzel', 'serif'],
+        'fantasy-body': ['Inter', 'sans-serif'],
       },
       borderRadius: {
         lg: 'var(--radius)',

@@ -5,12 +5,14 @@ import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
 import { BrowserRouter, Routes, Route } from 'react-router-dom';
 import { navItems } from './nav-items';
 import { AuthProvider } from './contexts/AuthContext';
-import { StarField } from '@/components/layout/StarField';
+import { StarfieldBackground } from '@/components/layout/StarfieldBackground';
 import { ProtectedRoute } from '@/components/auth';
 import OnboardingGuard from '@/components/auth/OnboardingGuard';
 import OnboardingSpotlight from '@/components/onboarding/OnboardingSpotlight';
 import { initSentry, SentryErrorBoundary } from '@/lib/sentry';
 import GallopingLoader from '@/components/ui/GallopingLoader';
+import { CelestialThemeProvider } from '@/components/theme/CelestialThemeProvider';
+import { WhileYouWereGone } from '@/components/hub/WhileYouWereGone';
 
 // Auth pages — lazy loaded
 const StableView = lazy(() => import('./pages/StableView'));
@@ -34,15 +36,17 @@ const App = () => (
       <AuthProvider>
         <TooltipProvider>
           <Sonner />
-          <div className="fixed inset-0 z-[-1]">
-            <StarField density="medium" speed="slow" />
-          </div>
+          <StarfieldBackground />
           <BrowserRouter
             future={{
               v7_startTransition: true,
               v7_relativeSplatPath: true,
             }}
           >
+            {/* Applies body.celestial class — reads ?theme= URL param + localStorage */}
+            <CelestialThemeProvider />
+            {/* Return overlay — shown after 4+ hour absence (authenticated users only) */}
+            <WhileYouWereGone />
             {/* Redirects new users to /onboarding when completedOnboarding === false */}
             <OnboardingGuard />
             {/* Guided 10-step spotlight tour — active when completedOnboarding === false && onboardingStep >= 1 */}

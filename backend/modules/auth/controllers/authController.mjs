@@ -378,12 +378,13 @@ export const getProfile = async (req, res, next) => {
       throw new AppError('User not found', 404);
     }
 
-    // Extract completedOnboarding and onboardingStep from settings and expose as flat fields
+    // Extract completedOnboarding, onboardingStep, and milestones from settings
     const settings =
       typeof user.settings === 'object' && user.settings !== null ? user.settings : {};
     const completedOnboarding = settings.completedOnboarding === true;
     const onboardingStep =
       typeof settings.onboardingStep === 'number' ? settings.onboardingStep : 0;
+    const milestones = settings.milestones ?? {};
 
     res.status(200).json({
       status: 'success',
@@ -398,6 +399,7 @@ export const getProfile = async (req, res, next) => {
           updatedAt: user.updatedAt,
           completedOnboarding,
           onboardingStep,
+          milestones,
         },
       },
     });

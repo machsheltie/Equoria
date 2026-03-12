@@ -1,3 +1,4 @@
+/** Card — Celestial Night glass surface (Task 22-6) */
 import * as React from 'react';
 import { cn } from '@/lib/utils';
 
@@ -5,10 +6,7 @@ const Card = React.forwardRef<HTMLDivElement, React.HTMLAttributes<HTMLDivElemen
   ({ className, ...props }, ref) => (
     <div
       ref={ref}
-      className={cn(
-        'rounded-lg border bg-card text-card-foreground shadow-sm glass-panel',
-        className
-      )}
+      className={cn('glass-panel text-[var(--cream)] transition-shadow duration-200', className)}
       {...props}
     />
   )
@@ -27,7 +25,8 @@ const CardTitle = React.forwardRef<HTMLParagraphElement, React.HTMLAttributes<HT
     <h3
       ref={ref}
       className={cn(
-        'text-2xl font-semibold leading-none tracking-tight font-heading text-gradient-gold',
+        'text-xl font-semibold leading-snug tracking-wide',
+        'font-[var(--font-heading)] text-[var(--gold-400)]',
         className
       )}
       {...props}
@@ -40,7 +39,11 @@ const CardDescription = React.forwardRef<
   HTMLParagraphElement,
   React.HTMLAttributes<HTMLParagraphElement>
 >(({ className, ...props }, ref) => (
-  <p ref={ref} className={cn('text-sm text-muted-foreground font-body', className)} {...props} />
+  <p
+    ref={ref}
+    className={cn('text-sm text-[var(--text-muted)] font-[var(--font-body)]', className)}
+    {...props}
+  />
 ));
 CardDescription.displayName = 'CardDescription';
 
