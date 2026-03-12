@@ -308,10 +308,10 @@ describe('🏋️ UNIT: Training Controller - Horse Training Business Logic', ()
     });
 
     it('should calculate cooldown correctly for edge case (exactly 7 days)', async () => {
-      // Create a horse with training exactly 7 days and 1 second ago (just over 7 days)
-      const exactlySevenDaysAgo = new Date();
-      exactlySevenDaysAgo.setDate(exactlySevenDaysAgo.getDate() - 7);
-      exactlySevenDaysAgo.setSeconds(exactlySevenDaysAgo.getSeconds() - 1); // Just over 7 days
+      // Create a horse with training exactly 7 days and 2 seconds ago (just over 7 days)
+      // Use ms arithmetic to guarantee the timestamp is strictly > 7 * 24 * 60 * 60 * 1000 ms
+      // in the past regardless of test execution timing (avoids setDate/setSeconds drift)
+      const exactlySevenDaysAgo = new Date(Date.now() - (7 * 24 * 60 * 60 * 1000 + 2000));
 
       const edgeCaseHorse = await prisma.horse.create({
         data: {

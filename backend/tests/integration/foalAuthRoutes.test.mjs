@@ -22,6 +22,7 @@ const mockFoalModel = {
   completeActivity: jest.fn(),
   advanceDay: jest.fn(),
   completeEnrichmentActivity: jest.fn(),
+  graduateFoal: jest.fn(),
 };
 
 jest.unstable_mockModule('../../db/index.mjs', () => ({
@@ -37,6 +38,7 @@ jest.unstable_mockModule('../../models/foalModel.mjs', () => ({
   completeActivity: mockFoalModel.completeActivity,
   advanceDay: mockFoalModel.advanceDay,
   completeEnrichmentActivity: mockFoalModel.completeEnrichmentActivity,
+  graduateFoal: mockFoalModel.graduateFoal,
 }));
 
 jest.unstable_mockModule('../../utils/logger.mjs', () => ({
@@ -114,6 +116,11 @@ beforeEach(() => {
     foal: { id: 1, name: 'Test Foal' },
     levels: { bond_score: 50, stress_level: 20, bond_change: 0, stress_change: 0 },
     training_record_id: 'test-record-id',
+  });
+  mockFoalModel.graduateFoal.mockResolvedValue({
+    success: true,
+    horse: { id: 1, name: 'Test Foal', breed: 'Unknown' },
+    graduation: { clearedAssignments: 0, bondScore: 50, isFirstGraduation: false },
   });
 });
 
