@@ -1,0 +1,51 @@
+{
+  "name": "Celestial Night",
+  "colors": {
+    "background": "#0a0e1a",
+    "container": "#1a2341",
+    "containerHover": "#243061",
+    "border": "#c9a84c",
+    "borderSubtle": "#2a3a6b",
+    "text": "#f5f0e8",
+    "textMuted": "#8b9dc3",
+    "textAccent": "#c9a84c",
+    "primary": "#3b82f6",
+    "primaryGlow": "#60a5fa",
+    "success": "#22c55e",
+    "warning": "#f59e0b",
+    "error": "#ef4444",
+    "glass": "rgba(26, 35, 65, 0.72)",
+    "glassBorder": "rgba(201, 168, 76, 0.15)"
+  },
+  "typography": {
+    "display": "Cinzel Decorative",
+    "heading": "Cinzel",
+    "body": "Inter",
+    "sizes": {
+      "title": 28,
+      "heading": 20,
+      "subheading": 16,
+      "body": 14,
+      "caption": 12,
+      "label": 11
+    }
+  },
+  "spacing": {
+    "grid": 20,
+    "padding": 16,
+    "gap": 12,
+    "borderRadius": 12
+  },
+  "devices": {
+    "mobile": {
+      "width": 375,
+      "height": 812,
+      "label": "Mobile (375×812)"
+    },
+    "desktop": {
+      "width": 1440,
+      "height": 900,
+      "label": "Desktop (1440×900)"
+    }
+  }
+}

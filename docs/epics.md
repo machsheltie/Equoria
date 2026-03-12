@@ -1,17 +1,30 @@
-# Equoria - Epic Breakdown
+# Equoria - Epic Breakdown: Celestial Night Frontend Rebuild
 
 **Author:** Heirr
-**Date:** 2025-12-03
-**Project Level:** Medium Complexity (Brownfield)
-**Target Scale:** Web-based Horse Simulation Game
+**Date:** 2026-03-11
+**Project Level:** Brownfield (Epics 1-21 complete, backend 100%, frontend functional)
+**Target Scale:** Full visual transformation + backend model updates + UX flow redesign
 
 ---
 
 ## Overview
 
-This document provides the complete epic and story breakdown for Equoria, decomposing the requirements from the PRD into implementable stories.
+This document provides the complete epic and story breakdown for the Celestial Night frontend rebuild phase, transforming Equoria from generic developer UI into an immersive fantasy horse breeding game experience.
 
-**Living Document Notice:** This is the initial version aligned with completed Architecture decisions.
+**Prior Work:** Epics 1-21 delivered the complete game backend (3,651 tests, 229 suites) and functional frontend (80+ components, 29 pages, 44+ React Query hooks). The game works — it just doesn't _feel_ like a game yet.
+
+**This Phase:** Epics 22-30 + 2 backend epics deliver:
+
+- Complete "Celestial Night" visual identity (deep navy, frosted glass, gold accents, serif typography)
+- Hub-and-spoke dashboard with intelligent action suggestions
+- WhileYouWereGone return experience
+- Competition model rewrite (7-day entry windows, overnight execution)
+- Foal development expansion (0-2 year lifecycle)
+- 13 new custom components + 13 shadcn restylings
+- WCAG 2.1 AA accessibility throughout
+
+**Epics:** 11 total (22-30 frontend + BACKEND-A competition + BACKEND-B foal development)
+**Stories:** 35 total
 
 ---
 
@@ -19,1682 +32,1950 @@ This document provides the complete epic and story breakdown for Equoria, decomp
 
 ### Prerequisites Verified
 
-| Document         | Status       | Content Summary                                                                                                     |
-| ---------------- | ------------ | ------------------------------------------------------------------------------------------------------------------- |
-| **PRD**          | ✅ Found     | 4 documents (PRD-00 through PRD-04) covering brief, overview, core features, gameplay systems, and advanced systems |
-| **Architecture** | ✅ Found     | Comprehensive ADD with 8 ADRs, 15+ patterns, 62 files mapped                                                        |
-| **UX Design**    | ⚠️ Not Found | No UX design documents - will proceed without UI/UX specifications                                                  |
+| Document         | Status   | Content Summary                                                                                                 |
+| ---------------- | -------- | --------------------------------------------------------------------------------------------------------------- |
+| **PRD**          | ✅ Found | 5 documents (PRD-00 through PRD-04) covering brief, overview, core features, gameplay systems, advanced systems |
+| **Architecture** | ✅ Found | ARCH-01-Overview.md — 18 domain modules, 229 test suites, CI/CD pipeline                                        |
+| **UX Design**    | ✅ Found | Complete 14-step UX specification with Celestial Night design system, 2,021 lines                               |
+| **Tech Spec**    | ✅ Found | tech-spec-celestial-night-frontend-rebuild.md — 5 ADRs, implementation plan, 35 tasks                           |
+| **Wireframes**   | ✅ Found | wireframe-2026-03-11.excalidraw — 1,104 elements, 18 wireframes (9 screens × 2 breakpoints)                     |
 
 ### Documents Analyzed
 
 **PRD Documents:**
 
-1. **PRD-00-Brief.md** - Product purpose, personas, core value, constraints
-2. **PRD-01-Overview.md** - Vision, metrics, personas, feature priority framework
-3. **PRD-02-Core-Features.md** - User management, horse management, progression systems
-4. **PRD-03-Gameplay-Systems.md** - Training (23 disciplines), competition, grooms, breeding
-5. **PRD-04-Advanced-Systems.md** - Epigenetics, flags, ultra-rare traits, discovery system
+1. **PRD-00-Brief.md** — Product purpose, personas, core value, constraints
+2. **PRD-01-Overview.md** — Vision, metrics, personas, feature priority framework
+3. **PRD-02-Core-Features.md** — User management, horse management, XP/stat progression
+4. **PRD-03-Gameplay-Systems.md** — Training (23 disciplines), competition, grooms, breeding, economy
+5. **PRD-04-Advanced-Systems.md** — Epigenetics, flags, ultra-rare traits, discovery system
 
-**Architecture Document:**
+**Architecture:** ARCH-01-Overview.md — 18 domain modules under `backend/modules/`, versioned `/api/v1`, Prisma/PostgreSQL, Railway deploy
 
-- **architecture.md** - Complete Architecture Decision Document with:
-  - 8 ADRs (State Management, Form Handling, Auth Storage, API Client, Error Display, Loading States, File Organization, Test Organization)
-  - Implementation patterns for React Query, Zod, TailwindCSS
-  - Project structure (62 files mapped)
-  - API endpoints documented
+**UX Design:** Complete Celestial Night specification — design tokens, 8 core components, page-by-page transformation plan, implementation layers, pre-mortem risk prevention
 
-### Project Context
-
-| Aspect              | Detail                                            |
-| ------------------- | ------------------------------------------------- |
-| **Platform**        | Web browser-based (React 19 + Vite)               |
-| **Backend Status**  | 100% Production-Ready (942+ tests, 90.1% success) |
-| **Frontend Status** | ~60% Complete (19 components, 6,424 lines)        |
-| **Database**        | PostgreSQL 15+ with Prisma ORM (30+ tables)       |
-| **API Endpoints**   | 130+ documented endpoints                         |
-| **Testing**         | Jest + RTL, MSW for mocking                       |
+**Tech Spec:** Feature-Flag Hybrid migration strategy, 5 ADRs (WYAG server aggregation, NextActions hybrid, competition fetch-on-view, CinematicMoment server milestones, foal endpoint expansion), critical path dependency graph
 
 ---
 
 ## Functional Requirements Inventory
 
-### User Management (PRD-02)
+### NEW Functional Requirements (Celestial Night Phase)
 
-| FR ID     | Requirement                                      | Priority | Backend Status | Frontend Status |
-| --------- | ------------------------------------------------ | -------- | -------------- | --------------- |
-| **FR-U1** | User registration with email/password            | P0       | ✅ Complete    | ❌ Pending      |
-| **FR-U2** | JWT authentication with refresh tokens           | P0       | ✅ Complete    | ❌ Pending      |
-| **FR-U3** | Password reset and email verification            | P0       | ✅ Complete    | ❌ Pending      |
-| **FR-U4** | Role-based access control (User/Moderator/Admin) | P0       | ✅ Complete    | ❌ Pending      |
-| **FR-U5** | Profile management (avatar, display name, bio)   | P1       | ✅ Complete    | ❌ Pending      |
-| **FR-U6** | User level/XP progression system                 | P0       | ✅ Complete    | ❌ Pending      |
-| **FR-U7** | In-game currency management                      | P0       | ✅ Complete    | ❌ Pending      |
-| **FR-U8** | User dashboard with statistics                   | P0       | ✅ Complete    | ⚠️ Partial      |
+These FRs are specific to the visual transformation and UX redesign. They supplement the original PRD FRs (which are fully implemented in Epics 1-21).
 
-### Horse Management (PRD-02)
+| FR ID       | Category           | Requirement                                                                                                                                                       | Source                                     |
+| ----------- | ------------------ | ----------------------------------------------------------------------------------------------------------------------------------------------------------------- | ------------------------------------------ |
+| **FR-CN1**  | Visual Identity    | Complete Celestial Night theme: deep navy gradients, frosted glass panels, gold accents, serif typography across all 29 pages                                     | UX Spec §1-3                               |
+| **FR-CN2**  | Design System      | 8 core components (FrostedPanel, CelestialButton, GlassInput, GoldTabs, StatBar, SlotGrid, StarfieldBackground, CrescentDecoration) covering 90% of surfaces      | UX Spec §11.3                              |
+| **FR-CN3**  | Font System        | Cinzel Decorative (display), Cinzel (headings), Inter (body) replacing current fonts; preloaded, swap, Latin subset                                               | UX Spec §1, Tech Spec                      |
+| **FR-CN4**  | Feature Toggle     | `.celestial` CSS class scoping for progressive migration; `?theme=celestial` QA toggle                                                                            | Tech Spec ADR                              |
+| **FR-CN5**  | Hub Dashboard      | Hub-and-spoke constellation layout with NextActionsBar, NarrativeChips, stable card grid, aside/bottom sheet                                                      | UX Spec §5-6, Wireframe 1                  |
+| **FR-CN6**  | WhileYouWereGone   | Return overlay after 4+ hours absence; priority-sorted items (max 8); competition results highest priority                                                        | UX Spec §6, Tech Spec ADR-1                |
+| **FR-CN7**  | Next Actions       | Server-seeded action priority list with client narrative formatting; guides daily gameplay loop                                                                   | UX Spec §5, Tech Spec ADR-2                |
+| **FR-CN8**  | Competition Model  | Player/club-created shows with 7-day entry windows; overnight execution; browse-and-enter UX                                                                      | UX Spec §10.4, Tech Spec BA-1 through BA-5 |
+| **FR-CN9**  | Foal Development   | 0-2 year lifecycle with age-evolving groom activities; milestone tracking; graduation at age 3                                                                    | UX Spec §10.6, Tech Spec BB-1 through BB-4 |
+| **FR-CN10** | Cinematic Moments  | Lifetime-first achievements only (first win, first breed, first trait, first legendary, first max level, first graduation); repeat events use toast               | UX Spec §12, Tech Spec ADR-4               |
+| **FR-CN11** | Onboarding Rebuild | BreedSelector with grid/list toggle, breed previews with stat tendencies, gender selection, name input with preview                                               | UX Spec §10.1, Wireframe 3                 |
+| **FR-CN12** | Training Flow      | DisciplineSelector with top-5 server-ranked recommendations; CooldownTimer real-time countdown; stat impact preview                                               | UX Spec §10.3, Wireframe 4                 |
+| **FR-CN13** | Competition Flow   | CompetitionFieldPreview (scouting), 7-day entry window UX, ScoreBreakdownRadar, results via WYAG                                                                  | UX Spec §10.4, Wireframe 5                 |
+| **FR-CN14** | Breeding Flow      | CompatibilityPreview (4-tab: stats/traits/inbreeding/pedigree), bidirectional entry, cost breakdown                                                               | UX Spec §10.5, Wireframe 6                 |
+| **FR-CN15** | Horse Detail       | 10 stat bars with numeric overlays, trait badges, CareStatusStrip, tabbed sections, action bar                                                                    | UX Spec §10.7, Wireframe 7                 |
+| **FR-CN16** | Navigation         | Sidebar (desktop), hamburger + bottom nav (mobile), breadcrumbs, StarfieldBackground integration                                                                  | UX Spec §10.8, Wireframe 9                 |
+| **FR-CN17** | Accessibility      | WCAG 2.1 AA throughout: 4.5:1 text contrast, 44px touch targets, keyboard navigation, `prefers-reduced-motion`, screen reader support                             | UX Spec §7                                 |
+| **FR-CN18** | Performance        | Initial bundle < 400KB; fonts load with `font-display: swap`; LCP < 2.5s on 4G; lazy loading for Phase 2/3 components                                             | Tech Spec §Performance                     |
+| **FR-CN19** | shadcn Restyling   | 13 shadcn components restyled to Celestial Night: Button, Card, Dialog, Tabs, Badge, Input, Textarea, Progress, Checkbox, Label, Tooltip, ScrollArea, Collapsible | Tech Spec §shadcn                          |
+| **FR-CN20** | Milestones System  | `User.settings.milestones` JSONB tracking lifetime-first achievements; server-set, exposed in profile and competition responses                                   | Tech Spec ADR-4                            |
 
-| FR ID     | Requirement                                     | Priority | Backend Status | Frontend Status |
-| --------- | ----------------------------------------------- | -------- | -------------- | --------------- |
-| **FR-H1** | Horse CRUD operations                           | P0       | ✅ Complete    | ⚠️ Partial      |
-| **FR-H2** | Horse attributes (stats, disciplines, genetics) | P0       | ✅ Complete    | ⚠️ Partial      |
-| **FR-H3** | Horse XP and stat progression                   | P0       | ✅ Complete    | ❌ Pending      |
-| **FR-H4** | Conformation scoring system (8 regions)         | P1       | ✅ Complete    | ❌ Pending      |
-| **FR-H5** | Horse search and filtering                      | P1       | ✅ Complete    | ⚠️ Partial      |
+### Inherited PRD FRs (Already Implemented — Referenced for Coverage)
 
-### Training System (PRD-03)
-
-| FR ID     | Requirement                                     | Priority | Backend Status | Frontend Status |
-| --------- | ----------------------------------------------- | -------- | -------------- | --------------- |
-| **FR-T1** | Training sessions with 23 disciplines           | P0       | ✅ Complete    | ❌ Pending      |
-| **FR-T2** | Training eligibility (age 3-20, 7-day cooldown) | P0       | ✅ Complete    | ❌ Pending      |
-| **FR-T3** | Discipline score progression (+5 per session)   | P0       | ✅ Complete    | ❌ Pending      |
-| **FR-T4** | Trait integration (bonuses/penalties)           | P0       | ✅ Complete    | ❌ Pending      |
-| **FR-T5** | Training status dashboard                       | P1       | ✅ Complete    | ❌ Pending      |
-
-### Competition System (PRD-03)
-
-| FR ID     | Requirement                       | Priority | Backend Status | Frontend Status |
-| --------- | --------------------------------- | -------- | -------------- | --------------- |
-| **FR-C1** | Competition entry and eligibility | P0       | ✅ Complete    | ⚠️ Partial      |
-| **FR-C2** | Scoring algorithm with traits     | P0       | ✅ Complete    | ⚠️ Partial      |
-| **FR-C3** | Prize distribution (50%/30%/20%)  | P0       | ✅ Complete    | ⚠️ Partial      |
-| **FR-C4** | Horse/User XP awards              | P0       | ✅ Complete    | ⚠️ Partial      |
-| **FR-C5** | Leaderboards by discipline        | P1       | ✅ Complete    | ⚠️ Partial      |
-
-### Groom System (PRD-03)
-
-| FR ID     | Requirement                                  | Priority | Backend Status | Frontend Status |
-| --------- | -------------------------------------------- | -------- | -------------- | --------------- |
-| **FR-G1** | Groom hiring and assignment                  | P0       | ✅ Complete    | ⚠️ Partial      |
-| **FR-G2** | Personality-based trait influence            | P0       | ✅ Complete    | ⚠️ Partial      |
-| **FR-G3** | Age-based task system (enrichment, grooming) | P0       | ✅ Complete    | ⚠️ Partial      |
-| **FR-G4** | Career lifecycle and retirement              | P1       | ✅ Complete    | ❌ Pending      |
-| **FR-G5** | Legacy system (protégé generation)           | P2       | ✅ Complete    | ❌ Pending      |
-| **FR-G6** | Talent tree (3 tiers, 24 talents)            | P2       | ✅ Complete    | ❌ Pending      |
-| **FR-G7** | Conformation show handling                   | P1       | ✅ Complete    | ❌ Pending      |
-
-### Breeding System (PRD-03)
-
-| FR ID     | Requirement                                 | Priority | Backend Status | Frontend Status |
-| --------- | ------------------------------------------- | -------- | -------------- | --------------- |
-| **FR-B1** | Breeding mechanics (pairing, cooldowns)     | P0       | ✅ Complete    | ❌ Pending      |
-| **FR-B2** | Foal development (days 0-6 milestones)      | P0       | ✅ Complete    | ❌ Pending      |
-| **FR-B3** | Enrichment activities for foals             | P0       | ✅ Complete    | ❌ Pending      |
-| **FR-B4** | Milestone evaluation and trait confirmation | P0       | ✅ Complete    | ❌ Pending      |
-| **FR-B5** | Breeding predictions and insights           | P1       | ✅ Complete    | ❌ Pending      |
-
-### Epigenetic System (PRD-04)
-
-| FR ID     | Requirement                              | Priority | Backend Status | Frontend Status |
-| --------- | ---------------------------------------- | -------- | -------------- | --------------- |
-| **FR-E1** | Epigenetic trait assignment (10+ traits) | P0       | ✅ Complete    | ❌ Pending      |
-| **FR-E2** | Development windows (0-3 years)          | P0       | ✅ Complete    | ❌ Pending      |
-| **FR-E3** | Trait stacking rules (max 3 visible)     | P0       | ✅ Complete    | ❌ Pending      |
-| **FR-E4** | Epigenetic flag system (9 flags)         | P0       | ✅ Complete    | ❌ Pending      |
-| **FR-E5** | Flag assignment engine                   | P0       | ✅ Complete    | ❌ Pending      |
-
-### Ultra-Rare Traits (PRD-04)
-
-| FR ID     | Requirement                             | Priority | Backend Status | Frontend Status |
-| --------- | --------------------------------------- | -------- | -------------- | --------------- |
-| **FR-R1** | Ultra-rare traits (5 total, <3% chance) | P1       | ✅ Complete    | ❌ Pending      |
-| **FR-R2** | Exotic traits (5 total, conditional)    | P1       | ✅ Complete    | ❌ Pending      |
-| **FR-R3** | Groom perk influence on rare traits     | P2       | ✅ Complete    | ❌ Pending      |
-| **FR-R4** | Trait discovery system                  | P1       | ✅ Complete    | ❌ Pending      |
-
-### Non-Functional Requirements
-
-| NFR ID    | Requirement         | Target       | Status              |
-| --------- | ------------------- | ------------ | ------------------- |
-| **NFR-1** | API latency         | <200ms @ p95 | ✅ Backend enforced |
-| **NFR-2** | Dashboard load time | <500ms       | React Query caching |
-| **NFR-3** | Auth rate limiting  | 5 req/15 min | ✅ Backend enforced |
-| **NFR-4** | Test coverage       | 80% minimum  | CI/CD gate          |
-| **NFR-5** | Server uptime       | 99.9%        | Production target   |
+| PRD Section                  | Status      | Stories That Touch These                                  |
+| ---------------------------- | ----------- | --------------------------------------------------------- |
+| PRD-02 §1.1 Authentication   | ✅ Complete | Epic 22 restyles auth pages                               |
+| PRD-02 §1.2 User Progression | ✅ Complete | Epic 23 adds NarrativeChips on XP                         |
+| PRD-02 §2.1 Horse CRUD       | ✅ Complete | Epic 22 restyles horse cards; Epic 29 expands foal detail |
+| PRD-03 §1 Training System    | ✅ Complete | Epic 26 redesigns training flow UX                        |
+| PRD-03 §2 Competition System | ✅ Backend  | Epic BACKEND-A rewrites model; Epic 27 redesigns flow     |
+| PRD-03 §3 Groom System       | ✅ Complete | Epic 29 integrates grooms with foal development           |
+| PRD-03 §4 Breeding System    | ✅ Complete | Epic 28 redesigns breeding flow UX                        |
+| PRD-04 §1-7 Trait Systems    | ✅ Complete | Epic 29 adds trait discovery CinematicMoment              |
 
 ---
 
-## Epic Summary
+## Epic Structure Plan
 
-| Epic | Title                            | Priority | Stories | FRs Covered                                               | Status     |
-| ---- | -------------------------------- | -------- | ------- | --------------------------------------------------------- | ---------- |
-| 1    | Authentication & User Foundation | P0       | 6       | FR-U1, FR-U2, FR-U3, FR-U4                                | ❌ Pending |
-| 2    | User Dashboard & Profile         | P0       | 5       | FR-U5, FR-U6, FR-U7, FR-U8                                | ⚠️ Partial |
-| 3    | Horse Management                 | P0       | 6       | FR-H1, FR-H2, FR-H3, FR-H4, FR-H5                         | ⚠️ Partial |
-| 4    | Training System                  | P0       | 5       | FR-T1, FR-T2, FR-T3, FR-T4, FR-T5                         | ❌ Pending |
-| 5    | Competition System               | P0       | 5       | FR-C1, FR-C2, FR-C3, FR-C4, FR-C5                         | ⚠️ Partial |
-| 6    | Breeding & Foal Development      | P0       | 6       | FR-B1, FR-B2, FR-B3, FR-B4, FR-B5, FR-E1-E5               | ❌ Pending |
-| 7    | Groom System                     | P0/P1/P2 | 7       | FR-G1, FR-G2, FR-G3, FR-G4, FR-G5, FR-G6, FR-G7, FR-R1-R4 | ⚠️ Partial |
+### Dependency Graph
 
-**Total Stories:** 40 | **Total FRs Covered:** 44/44 (100%)
+```
+Epic 22: Foundation ──────────────────────────┐
+  (tokens, fonts, body restyle, StarfieldBg,  │
+   glass panel updates, button hierarchy,      │
+   CelestialThemeProvider, ?theme=celestial)   │
+                                                │
+Epic 23: Hub & Daily Loop ────────────────────┤ ← depends on Foundation
+  (NextActionsBar, NarrativeChip,              │
+   hub dashboard rebuild, aside/bottom sheet)  │
+                                                │
+┌─ Epic 24: WYAG ─────────────────────────────┤ ← depends on Hub
+│  (backend aggregation, overlay component,    │
+│   return detection, priority sorting)        │
+│                                               │
+│  Epic BACKEND-A: Competition Model ──────────┤ ← parallel with Hub
+│  (7-day windows, overnight execution,        │
+│   show creation, milestones JSONB)           │
+│                                               │
+├─ Epic 25: Onboarding ───────────────────────┤ ← depends on Foundation
+│  (BreedSelector, wizard restyle,             │
+│   breed preview with stat tendencies)        │
+│                                               │
+├─ Epic 26: Training Flow ────────────────────┤ ← depends on Foundation
+│  (DisciplineSelector, CooldownTimer,        │
+│   training result display restyle)           │
+│                                               │
+├─ Epic 27: Competition Flow ─────────────────┤ ← depends on BACKEND-A
+│  (CompetitionFieldPreview, 7-day UX,        │
+│   overnight results, ScoreBreakdownRadar)   │
+│                                               │
+│  Epic BACKEND-B: Foal Development Model ─────┤ ← parallel with Training
+│  (0-2yr lifecycle, age-evolving activities,  │
+│   milestone detection)                       │
+│                                               │
+├─ Epic 28: Breeding Flow ────────────────────┤ ← depends on Foundation
+│  (CompatibilityPreview, bidirectional entry, │
+│   cost breakdown, CinematicMoment scaling)  │
+│                                               │
+├─ Epic 29: Foal Development ─────────────────┤ ← depends on BACKEND-B
+│  (DevelopmentTracker, 0-2yr timeline,       │
+│   age-appropriate activities, milestones)    │
+│                                               │
+└─ Epic 30: Polish & Consistency ─────────────┘ ← last
+   (GoldBorderFrame, ErrorCard restyle,
+    RewardToast, empty states, a11y audit)
+```
 
----
+### Epic Summary Table
 
-## FR Coverage Map
+| Epic          | Title                            | User Value Statement                                                                                                                                                                                                                 | FRs Covered                             | Dependencies                  |
+| ------------- | -------------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------ | --------------------------------------- | ----------------------------- |
+| **22**        | Celestial Night Foundation       | Players see a transformed game world the moment they open Equoria — deep navy skies, gold accents, serif typography, animated starfield. The game stops looking like a dashboard and starts feeling like a fantasy world.            | FR-CN1, FR-CN2, FR-CN3, FR-CN4, FR-CN19 | None (entry point)            |
+| **23**        | Hub & Daily Loop                 | Players land on an intelligent hub that answers "What should I do next?" — no more wandering between pages guessing. The NextActionsBar guides them through training, competing, and breeding with contextual suggestions.           | FR-CN5, FR-CN7                          | Epic 22                       |
+| **24**        | WhileYouWereGone                 | Returning players see what happened while they were away — competition results, foal milestones, messages — in one prioritized overlay. No more manually checking 6 different pages after being offline.                             | FR-CN6                                  | Epic 23                       |
+| **BACKEND-A** | Competition Model Rewrite        | Players can create their own shows, browse open competitions with 7-day entry windows, scout the field before entering, and receive results after overnight execution. Competitions become strategic decisions, not instant buttons. | FR-CN8, FR-CN20                         | None (parallel with Hub)      |
+| **25**        | Onboarding Rebuild               | New players choose their first horse from a beautiful breed selector with stat previews and lore — not a dropdown. The first 5 minutes set the fantasy tone.                                                                         | FR-CN11                                 | Epic 22                       |
+| **26**        | Training Flow Redesign           | Players see intelligent discipline recommendations ranked by their horse's aptitude, with real-time cooldown timers and stat impact previews. Training becomes informed strategy, not guesswork.                                     | FR-CN12                                 | Epic 22                       |
+| **27**        | Competition Flow Redesign        | Players browse live competitions with entry windows, scout the field to evaluate competition strength, and receive beautifully presented results with score breakdowns. Competition entry feels like a strategic commitment.         | FR-CN13, FR-CN10                        | Epic BACKEND-A                |
+| **BACKEND-B** | Foal Development Model Expansion | Foal development expands from 6 days to a realistic 0-2 year lifecycle with age-appropriate activities, milestone tracking, and graduation at age 3. Raising foals becomes a meaningful long-term journey.                           | FR-CN9                                  | None (parallel with Training) |
+| **28**        | Breeding Flow Redesign           | Players see comprehensive compatibility previews (stat ranges, trait inheritance, inbreeding risk, pedigree overlap) before committing to a breeding. First foal birth triggers a cinematic celebration.                             | FR-CN14, FR-CN10                        | Epic 22                       |
+| **29**        | Foal Development Overhaul        | Players follow their foals through a 0-2 year timeline with age-evolving activities, milestone celebrations, and trait discovery moments. Foal care becomes the emotional heart of the game.                                         | FR-CN9, FR-CN10, FR-CN15                | Epic BACKEND-B                |
+| **30**        | Polish & Consistency             | Every surface in the game meets the same quality bar — decorative gold frames, atmospheric empty states, meaningful-only reward toasts, and verified WCAG 2.1 AA accessibility. No page feels like it belongs to a different app.    | FR-CN17, FR-CN18, FR-CN2                | All previous epics            |
 
-| FR ID    | Epic   | Story    | Implementation Notes                    |
-| -------- | ------ | -------- | --------------------------------------- |
-| FR-U1    | Epic 1 | 1.1      | Registration form with Zod validation   |
-| FR-U2    | Epic 1 | 1.2, 1.3 | HttpOnly cookies, React Query auth      |
-| FR-U3    | Epic 1 | 1.4, 1.5 | Password reset flow, email verification |
-| FR-U4    | Epic 1 | 1.6      | Role-based route protection             |
-| FR-U5    | Epic 2 | 2.1      | Profile editor with avatar upload       |
-| FR-U6    | Epic 2 | 2.2      | XP progress bar, level display          |
-| FR-U7    | Epic 2 | 2.3      | Currency balance, transaction history   |
-| FR-U8    | Epic 2 | 2.4, 2.5 | Statistics dashboard, charts            |
-| FR-H1    | Epic 3 | 3.1, 3.2 | Horse list, detail views                |
-| FR-H2    | Epic 3 | 3.3      | Attributes panel with genetics          |
-| FR-H3    | Epic 3 | 3.4      | XP/stat progression display             |
-| FR-H4    | Epic 3 | 3.5      | Conformation scoring UI (8 regions)     |
-| FR-H5    | Epic 3 | 3.6      | Search/filter with React Query          |
-| FR-T1    | Epic 4 | 4.1      | Training session interface              |
-| FR-T2    | Epic 4 | 4.2      | Eligibility checks (age, cooldown)      |
-| FR-T3    | Epic 4 | 4.3      | Score progression display               |
-| FR-T4    | Epic 4 | 4.4      | Trait bonus/penalty integration         |
-| FR-T5    | Epic 4 | 4.5      | Training dashboard overview             |
-| FR-C1    | Epic 5 | 5.1      | Competition entry form                  |
-| FR-C2    | Epic 5 | 5.2      | Scoring results display                 |
-| FR-C3    | Epic 5 | 5.3      | Prize distribution UI                   |
-| FR-C4    | Epic 5 | 5.4      | XP award notifications                  |
-| FR-C5    | Epic 5 | 5.5      | Leaderboard pages                       |
-| FR-B1    | Epic 6 | 6.1      | Breeding pair selection                 |
-| FR-B2    | Epic 6 | 6.2      | Foal milestone timeline                 |
-| FR-B3    | Epic 6 | 6.3      | Enrichment activity UI                  |
-| FR-B4    | Epic 6 | 6.4      | Milestone evaluation display            |
-| FR-B5    | Epic 6 | 6.5      | Breeding predictions panel              |
-| FR-E1-E5 | Epic 6 | 6.6      | Epigenetic trait visualization          |
-| FR-G1    | Epic 7 | 7.1      | Groom hiring interface                  |
-| FR-G2    | Epic 7 | 7.2      | Personality trait display               |
-| FR-G3    | Epic 7 | 7.3      | Task assignment UI                      |
-| FR-G4    | Epic 7 | 7.4      | Career lifecycle dashboard              |
-| FR-G5    | Epic 7 | 7.5      | Legacy/protégé system UI                |
-| FR-G6    | Epic 7 | 7.6      | Talent tree visualization               |
-| FR-G7    | Epic 7 | 7.7      | Show handling interface                 |
-| FR-R1-R4 | Epic 7 | 7.7      | Ultra-rare trait discovery              |
+### Technical Context per Epic
 
----
-
-## FR Summary
-
-| Category         | Total FRs | P0     | P1     | P2    | Backend Complete | Frontend Pending |
-| ---------------- | --------- | ------ | ------ | ----- | ---------------: | ---------------: |
-| User Management  | 8         | 7      | 1      | 0     |                8 |                7 |
-| Horse Management | 5         | 3      | 2      | 0     |                5 |                3 |
-| Training         | 5         | 4      | 1      | 0     |                5 |                5 |
-| Competition      | 5         | 4      | 1      | 0     |                5 |                0 |
-| Groom            | 7         | 3      | 2      | 2     |                7 |                4 |
-| Breeding         | 5         | 4      | 1      | 0     |                5 |                5 |
-| Epigenetics      | 5         | 5      | 0      | 0     |                5 |                5 |
-| Ultra-Rare       | 4         | 0      | 3      | 1     |                4 |                4 |
-| **TOTAL**        | **44**    | **30** | **11** | **3** |           **44** |           **33** |
-
----
-
-## Epic 1: Authentication & User Foundation
-
-**Goal:** Enable users to securely register, login, and access the application with role-based permissions.
-
-**Priority:** P0 (BLOCKING - No other features work without authentication)
-
-**Technical Context (from Architecture):**
-
-- Authentication via HttpOnly cookies with `credentials: 'include'`
-- React Query for auth state management
-- Zod for form validation
-- API endpoints: `POST /api/v1/auth/register`, `POST /api/v1/auth/login`, etc.
-
-**FRs Covered:** FR-U1, FR-U2, FR-U3, FR-U4
+| Epic   | Architecture Sections Referenced                                                              | UX Sections Referenced                                     |
+| ------ | --------------------------------------------------------------------------------------------- | ---------------------------------------------------------- |
+| **22** | tokens.css (380+ lines), tailwind.config.ts, index.css, App.tsx, 13 shadcn components         | UX §1 (Design Tokens), §3 (Typography), §11.3 (Components) |
+| **23** | `backend/modules/` (auth, horses, training, competition for next-actions data), api-client.ts | UX §5 (Hub), §6 (NextActions), Wireframe 1                 |
+| **24** | New WYAG endpoint (aggregation across 6 modules), localStorage for lastVisit                  | UX §6 (WYAG), Tech Spec ADR-1                              |
+| **BA** | `backend/modules/competition/`, Prisma schema (Show model), cron/scheduler                    | Tech Spec ADR-3, ADR-4; PRD-03 §2                          |
+| **25** | `backend/modules/horses/` (breeds endpoint), OnboardingPage.tsx, BreedSelector                | UX §10.1, Wireframe 3                                      |
+| **26** | `backend/modules/training/` (eligibility, cooldowns), DisciplineSelector, CooldownTimer       | UX §10.3, Wireframe 4                                      |
+| **27** | New show endpoints (browse, enter, results), CompetitionFieldPreview, ScoreBreakdownRadar     | UX §10.4, Wireframe 5                                      |
+| **BB** | `backend/modules/breeding/` (foal controller), Prisma schema (FoalDevelopment), milestones    | Tech Spec ADR-5; PRD-03 §4                                 |
+| **28** | `backend/modules/breeding/` (compatibility endpoint), CompatibilityPreview, CinematicMoment   | UX §10.5, Wireframe 6                                      |
+| **29** | Expanded foal development endpoint, DevelopmentTracker, age-stage activities                  | UX §10.6, Wireframe 8                                      |
+| **30** | All modules (visual audit), GoldBorderFrame, RewardToast, Lighthouse CI                       | UX §7 (Accessibility), §13 (Empty States)                  |
 
 ---
 
-### Story 1.1: User Registration
+## Epic 22: Celestial Night Foundation
 
-As a **new player**,
-I want to **register an account with email and password**,
-So that **I can start playing Equoria and manage my stable**.
+**Goal:** Transform Equoria's visual identity from generic developer UI to an immersive Celestial Night fantasy world. Every page should feel like a game the moment this epic ships — deep navy skies, gold accents, serif typography, animated starfield. This is the foundation that every subsequent epic builds upon.
+
+**User Value:** Players open Equoria and immediately feel they've entered a fantasy world — not a dashboard. The atmosphere is established before any UX flow changes.
+
+**FRs Covered:** FR-CN1, FR-CN2, FR-CN3, FR-CN4, FR-CN19
+
+**Dependencies:** None (entry point)
+
+### Story 22.1: Font Migration
+
+As a player,
+I want all text in Equoria to render in fantasy-appropriate fonts (Cinzel for headings, Inter for body),
+So that the typography signals "game world" instead of "web app."
 
 **Acceptance Criteria:**
 
-**Given** I am on the registration page
-**When** I enter a valid email, password (8+ chars, 1 uppercase, 1 number), and display name
-**Then** my account is created and I am redirected to email verification
-
-**And** I see validation errors for invalid inputs (inline, Zod-powered)
-**And** I cannot submit with duplicate email (API error displayed)
-**And** password strength indicator shows requirements met
-
-**Prerequisites:** None (entry point)
+**Given** the `.celestial` class is active on `<body>`
+**When** any page loads
+**Then** all `h1`-`h6` elements render in Cinzel font
+**And** all body text, form labels, and data values render in Inter font
+**And** hero text (horse names on detail pages, page titles) renders in Cinzel Decorative
+**And** fonts load with `font-display: swap` (no Flash of Invisible Text)
+**And** font files are preloaded via `<link rel="preconnect">` to Google Fonts
+**And** total font payload is ≤ 60KB (WOFF2, Latin subset)
+**And** `prefers-reduced-motion` has no impact (fonts are static)
+**And** fallback system fonts (Georgia, system-ui) are specified in font stack
 
 **Technical Notes:**
 
-- Use `RegisterForm` component with Zod schema
-- API: `POST /api/v1/auth/register`
-- Store auth state via React Query's `useAuth` hook
-- Follow ADR-002 (Form Handling) patterns
+- Update `frontend/src/styles/tokens.css`: `--font-display` → `'Cinzel Decorative'`, `--font-heading` → `'Cinzel'`, `--font-body` → `'Inter'` (currently Jost)
+- Update `frontend/tailwind.config.ts`: `fontFamily` section with Cinzel/Inter
+- Add Google Fonts `<link>` to `frontend/index.html` with `preconnect` + `font-display=swap`
+- Verify all 29 pages render correctly with new fonts (no layout shifts from different metrics)
+
+**Prerequisites:** None
 
 ---
 
-### Story 1.2: User Login
+### Story 22.2: CelestialThemeProvider
 
-As a **returning player**,
-I want to **login with my credentials**,
-So that **I can access my horses and continue playing**.
+As a developer,
+I want a zero-JS CSS class toggle (`<body class="celestial">`) with a QA URL param,
+So that Celestial Night styles can be progressively applied and instantly reverted.
 
 **Acceptance Criteria:**
 
-**Given** I am on the login page
-**When** I enter valid email and password
-**Then** I am authenticated and redirected to my dashboard
-
-**And** invalid credentials show a generic error (security: no email enumeration)
-**And** I can toggle password visibility
-**And** "Remember me" extends session duration
-
-**Prerequisites:** Story 1.1 (account exists)
-
-**Technical Notes:**
-
-- API: `POST /api/v1/auth/login`
-- HttpOnly cookie set by backend
-- React Query invalidates and refetches user data
-- Follow ADR-003 (Auth Storage) - cookies only, no localStorage
-
----
-
-### Story 1.3: Session Management
-
-As an **authenticated user**,
-I want to **stay logged in across browser sessions**,
-So that **I don't have to login repeatedly**.
-
-**Acceptance Criteria:**
-
-**Given** I have an active session
-**When** I close and reopen the browser
-**Then** I remain authenticated (if session valid)
-
-**And** expired sessions redirect to login with message
-**And** I can manually logout from any page
-**And** logout clears all session data
-
-**Prerequisites:** Story 1.2
-
-**Technical Notes:**
-
-- React Query `staleTime` for auth state
-- API: `GET /api/v1/auth/me` for session validation
-- API: `POST /api/v1/auth/logout`
-- Automatic token refresh via backend cookies
-
----
-
-### Story 1.4: Password Reset Request
-
-As a **user who forgot their password**,
-I want to **request a password reset email**,
-So that **I can regain access to my account**.
-
-**Acceptance Criteria:**
-
-**Given** I am on the forgot password page
-**When** I enter my registered email
-**Then** I see confirmation that reset email was sent (if account exists)
-
-**And** same message shown for non-existent emails (security)
-**And** rate limiting prevents abuse (5 requests/15 min)
-**And** email contains secure, time-limited reset link
-
-**Prerequisites:** Story 1.1 (account exists)
-
-**Technical Notes:**
-
-- API: `POST /api/v1/auth/forgot-password`
-- No email enumeration (always show success)
-- Backend handles email sending
-
----
-
-### Story 1.5: Password Reset Completion
-
-As a **user with a reset link**,
-I want to **set a new password**,
-So that **I can login with my new credentials**.
-
-**Acceptance Criteria:**
-
-**Given** I clicked a valid reset link from email
-**When** I enter and confirm a new valid password
-**Then** my password is updated and I am redirected to login
-
-**And** expired/invalid links show appropriate error
-**And** password must meet strength requirements
-**And** I cannot reuse the reset link after use
-
-**Prerequisites:** Story 1.4
-
-**Technical Notes:**
-
-- API: `POST /api/v1/auth/reset-password`
-- Token validation on page load
-- Redirect to login on success
-
----
-
-### Story 1.6: Role-Based Access Control
-
-As a **user with specific roles**,
-I want to **see only features I have permission to access**,
-So that **the interface is relevant to my role**.
-
-**Acceptance Criteria:**
-
-**Given** I am authenticated with a specific role (User/Moderator/Admin)
-**When** I navigate the application
-**Then** I only see menu items and pages for my role level
-
-**And** direct URL access to unauthorized pages shows 403
-**And** Admin can access all features
-**And** Moderator can access moderation tools
-**And** User has standard player access
-
-**Prerequisites:** Story 1.2
-
-**Technical Notes:**
-
-- React Router protected routes
-- Role checks in navigation components
-- API returns user role in auth response
-- Follow ADR-001 (State Management) for role storage
-
----
-
-## Epic 2: User Dashboard & Profile
-
-**Goal:** Provide users with a personalized dashboard showing their progress, currency, and profile management.
-
-**Priority:** P0
-
-**Technical Context:**
-
-- React Query for data fetching
-- Dashboard components already partially exist (enhance, don't rebuild)
-- API endpoints for user stats, currency, profile
-
-**FRs Covered:** FR-U5, FR-U6, FR-U7, FR-U8
-
----
-
-### Story 2.1: Profile Management
-
-As a **player**,
-I want to **edit my profile (avatar, display name, bio)**,
-So that **I can personalize my identity in the game**.
-
-**Acceptance Criteria:**
-
-**Given** I am on my profile page
-**When** I update my display name, bio, or avatar
-**Then** changes are saved and visible immediately
-
-**And** display name has 3-30 character limit
-**And** bio has 500 character limit with counter
-**And** avatar supports image upload (max 2MB, jpg/png)
-**And** changes are validated client-side before submission
-
-**Prerequisites:** Epic 1 complete
-
-**Technical Notes:**
-
-- API: `PATCH /api/v1/users/profile`
-- File upload for avatar
-- React Query mutation with optimistic updates
-- Form validation with Zod
-
----
-
-### Story 2.2: XP & Level Display
-
-As a **player**,
-I want to **see my current level and XP progress**,
-So that **I can track my advancement in the game**.
-
-**Acceptance Criteria:**
-
-**Given** I am on the dashboard
-**When** I view my profile section
-**Then** I see my current level, XP bar, and XP to next level
-
-**And** XP bar animates on XP gain
-**And** level-up shows celebration notification
-**And** clicking shows detailed XP history
-
-**Prerequisites:** Story 2.1
-
-**Technical Notes:**
-
-- API: `GET /api/v1/users/stats`
-- Progress bar component with animation
-- Toast notifications for level-up
-
----
-
-### Story 2.3: Currency Management
-
-As a **player**,
-I want to **see my in-game currency balance and transaction history**,
-So that **I can manage my spending**.
-
-**Acceptance Criteria:**
-
-**Given** I am on the dashboard
-**When** I view the currency section
-**Then** I see my current balance prominently displayed
-
-**And** I can view transaction history (paginated)
-**And** transactions show source (competition, breeding, etc.)
-**And** balance updates in real-time after transactions
-
-**Prerequisites:** Story 2.1
-
-**Technical Notes:**
-
-- API: `GET /api/v1/users/currency`
-- API: `GET /api/v1/users/transactions`
-- React Query for real-time balance
-
----
-
-### Story 2.4: Statistics Dashboard
-
-As a **player**,
-I want to **see my overall game statistics**,
-So that **I can track my achievements and progress**.
-
-**Acceptance Criteria:**
-
-**Given** I am on the dashboard
-**When** I view the statistics section
-**Then** I see key metrics: horses owned, competitions won, breeding count
-
-**And** statistics update in real-time
-**And** I can see trends (this week vs last week)
-**And** clicking a stat navigates to detailed view
-
-**Prerequisites:** Story 2.1
-
-**Technical Notes:**
-
-- API: `GET /api/v1/users/stats`
-- Chart.js or Recharts for visualizations
-- React Query with appropriate staleTime
-
----
-
-### Story 2.5: Activity Feed
-
-As a **player**,
-I want to **see recent activity on my account**,
-So that **I can track what's happening with my stable**.
-
-**Acceptance Criteria:**
-
-**Given** I am on the dashboard
-**When** I view the activity feed
-**Then** I see recent events: competition results, training completions, foal births
-
-**And** feed is chronologically ordered
-**And** each item links to relevant detail page
-**And** feed updates in real-time
-
-**Prerequisites:** Story 2.4
-
-**Technical Notes:**
-
-- API: `GET /api/v1/users/activity`
-- Infinite scroll pagination
-- WebSocket for real-time updates (optional enhancement)
-
----
-
-## Epic 3: Horse Management
-
-**Goal:** Allow users to view, manage, and search their horses with full attribute visibility.
-
-**Priority:** P0
-
-**Technical Context:**
-
-- Partial implementation exists (enhance existing components)
-- Horse data includes genetics, stats, disciplines, traits
-- 8-region conformation scoring system
-
-**FRs Covered:** FR-H1, FR-H2, FR-H3, FR-H4, FR-H5
-
----
-
-### Story 3.1: Horse List View
-
-As a **player**,
-I want to **see all my horses in a list**,
-So that **I can quickly find and select a horse to manage**.
-
-**Acceptance Criteria:**
-
-**Given** I am on the horses page
+**Given** the app loads
+**When** `localStorage.theme` is `'celestial'` OR no theme is stored (default)
+**Then** `<body>` has `class="celestial"` applied
+**And** all `.celestial`-scoped CSS rules activate
+
+**Given** a QA tester visits `?theme=celestial`
 **When** the page loads
-**Then** I see a paginated list of my horses with key info (name, age, breed)
+**Then** the celestial class is applied and persisted to localStorage
+**And** subsequent visits (without the param) retain the celestial theme
 
-**And** list supports grid and list view toggle
-**And** each horse shows thumbnail, name, age, primary discipline
-**And** clicking a horse navigates to detail view
-
-**Prerequisites:** Epic 1 complete
-
-**Technical Notes:**
-
-- API: `GET /api/v1/horses`
-- React Query with pagination
-- Existing HorseListView component - enhance
-
----
-
-### Story 3.2: Horse Detail View
-
-As a **player**,
-I want to **view detailed information about a specific horse**,
-So that **I can understand their capabilities and plan their development**.
-
-**Acceptance Criteria:**
-
-**Given** I am on a horse's detail page
+**Given** a QA tester visits `?theme=legacy`
 **When** the page loads
-**Then** I see comprehensive info: stats, disciplines, genetics, traits
+**Then** the celestial class is removed and localStorage is set to `'legacy'`
+**And** the original Tailwind/shadcn styling is visible
 
-**And** page has tabbed sections for organization
-**And** I can navigate to training, breeding from here
-**And** edit button allows name/description changes
-
-**Prerequisites:** Story 3.1
-
-**Technical Notes:**
-
-- API: `GET /api/v1/horses/:id`
-- Tab component for sections
-- Existing components - integrate and enhance
-
----
-
-### Story 3.3: Horse Attributes Panel
-
-As a **player**,
-I want to **see all horse attributes including genetics and traits**,
-So that **I can make informed breeding and training decisions**.
-
-**Acceptance Criteria:**
-
-**Given** I am viewing a horse's detail page
-**When** I view the attributes tab
-**Then** I see all stats, discipline scores, genetic traits
-
-**And** genetic traits show inheritance information
-**And** epigenetic traits show with discovery status
-**And** stats show with visual bars and numeric values
-
-**Prerequisites:** Story 3.2
+**And** NO React Context is created (pure CSS class, zero state management)
+**And** the implementation is a single `useEffect` in `App.tsx` using `document.body.classList`
+**And** removing the class reverts ALL Celestial Night styles (kill switch)
 
 **Technical Notes:**
 
-- Display genetic alleles and phenotypes
-- Trait cards with tooltips for details
-- Color-coded trait categories
+- Add `useEffect` to `frontend/src/App.tsx` (not a Context Provider)
+- Add `.celestial` scope prefix to `frontend/src/index.css` for new style blocks
+- Test: render with/without `.celestial` class, verify visual difference
+
+**Prerequisites:** None
 
 ---
 
-### Story 3.4: XP & Progression Display
+### Story 22.3: StarfieldBackground Upgrade
 
-As a **player**,
-I want to **see my horse's XP and stat progression**,
-So that **I can track their development over time**.
+As a player,
+I want an animated starfield background behind all game content,
+So that every page feels like I'm under a celestial night sky.
 
 **Acceptance Criteria:**
 
-**Given** I am viewing a horse's progression
-**When** the section loads
-**Then** I see XP progress bar, stat history, recent gains
-
-**And** graph shows stat progression over time
-**And** I can see when horse will age up
-**And** training recommendations based on potential
-
-**Prerequisites:** Story 3.2
+**Given** the `.celestial` class is active
+**When** any page loads
+**Then** a CSS-only starfield renders behind all content at `z-[var(--z-below)]`
+**And** 3 parallax star layers are visible (near: large slow, mid: medium, far: small fast)
+**And** optional shooting stars animate across the sky (CSS `@keyframes`)
+**And** `prefers-reduced-motion` users see static star dots only (no animation)
+**And** the starfield does not interfere with content readability (stars are subtle, 0.3-0.6 opacity)
+**And** performance: 0KB JavaScript, pure CSS with `background-image` or pseudo-elements
 
 **Technical Notes:**
 
-- API includes progression data
-- Chart.js for historical display
-- Calculate age-based recommendations
+- Replace current `components/layout/StarField.tsx` (or create new `StarfieldBackground.tsx`)
+- Mount in `App.tsx` as fixed-position layer at `z-[var(--z-below)]` (-1)
+- Use CSS `radial-gradient` or `background-image` for star dots
+- Use `@keyframes` for shooting star animation (translateX + opacity)
+- Test with DevTools "prefers-reduced-motion" emulation
+
+**Prerequisites:** Story 22.2 (CelestialThemeProvider)
 
 ---
 
-### Story 3.5: Conformation Scoring UI
+### Story 22.4: Glass Panel & Surface Updates
 
-As a **player**,
-I want to **view my horse's conformation scores across 8 body regions**,
-So that **I can prepare for conformation shows**.
+As a player,
+I want all content containers to have a frosted glass appearance with subtle borders,
+So that the UI feels like looking through celestial ice — not flat white cards.
 
 **Acceptance Criteria:**
 
-**Given** I am viewing horse conformation
-**When** the section loads
-**Then** I see scores for all 8 regions: Head, Neck, Shoulder, Back, Hindquarters, Legs, Hooves, Overall
+**Given** the `.celestial` class is active
+**When** any `.glass-panel` element renders
+**Then** it has `backdrop-filter: blur(12px)` with `rgba(15, 23, 42, 0.6)` background
+**And** a subtle border (`rgba(148, 163, 184, 0.2)`) with `border-radius: 12px`
+**And** hover state brightens the border to `rgba(148, 163, 184, 0.3)`
 
-**And** visual diagram highlights each region
-**And** scores show numeric value and quality rating
-**And** comparison to breed average available
-
-**Prerequisites:** Story 3.2
+**And** a `.glass-panel-heavy` variant exists for modals (higher opacity, stronger blur)
+**And** only ONE `backdrop-filter: blur()` is active per viewport stack (single-blur-layer rule)
+**And** nested glass panels use solid semi-transparent bg (no stacked blurs)
+**And** the single-blur-layer rule is documented in a CSS comment
 
 **Technical Notes:**
 
-- Horse silhouette SVG with clickable regions
-- Tooltips with detailed scores
-- API includes conformation data
+- Update `.glass-panel` in `frontend/src/index.css` under `.celestial` scope
+- Add `.glass-panel-heavy` variant for Dialog/Modal content
+- Refine `--glass-surface-bg` opacity values in `tokens.css`
+- Audit existing components for nested blur violations
+
+**Prerequisites:** Story 22.2
 
 ---
 
-### Story 3.6: Horse Search & Filter
+### Story 22.5: Button Hierarchy
 
-As a **player**,
-I want to **search and filter my horses**,
-So that **I can quickly find specific horses**.
+As a player,
+I want buttons to have distinct visual hierarchy — gold for primary actions, frosted for secondary, text for tertiary,
+So that I always know which button is the most important action on any screen.
 
 **Acceptance Criteria:**
 
-**Given** I am on the horses page
-**When** I use search or filters
-**Then** results update in real-time
+**Given** the `.celestial` class is active
+**When** a Primary button renders (default variant)
+**Then** it has a gold gradient background with horseshoe arc decorations (existing `::before/::after`)
+**And** gold text, rounded corners, subtle glow on hover
 
-**And** search works on name, breed, traits
-**And** filters include: age range, discipline, breed, training status
-**And** filters persist in URL for bookmarking
-**And** clear filters button resets all
+**When** a Secondary button renders (variant="secondary")
+**Then** it has a frosted glass background, navy border, cream text
+**And** border brightens on hover
 
-**Prerequisites:** Story 3.1
+**When** a Tertiary/Ghost button renders (variant="ghost")
+**Then** it has no background, gold text, underline on hover
+
+**When** a Destructive button renders (variant="destructive")
+**Then** it has a dark red background, lighter red text, no gold accents
+
+**And** all buttons have minimum 44×44px touch targets
+**And** focus indicators use gold `box-shadow` ring (not browser default)
+**And** disabled state uses `--text-muted` color with reduced opacity
 
 **Technical Notes:**
 
-- URL query params for filter state
-- React Query with dynamic filters
-- Debounced search input
-- Existing filtering - enhance
+- Restyle `frontend/src/components/ui/button.tsx` variants under `.celestial` scope
+- Horseshoe arcs already exist in `index.css` (`.btn-cobalt::before/::after` from Epic 18-5)
+- Ensure cva variants map correctly: default→gold, secondary→frosted, ghost→text, destructive→red
+
+**Prerequisites:** Story 22.2
 
 ---
 
-## Epic 4: Training System
+### Story 22.6: shadcn Component Restyling
 
-**Goal:** Enable users to train horses in 23 disciplines with full eligibility tracking and progression visualization.
-
-**Priority:** P0
-
-**Technical Context:**
-
-- 23 disciplines across 4 categories: Western, English, Racing, Specialty
-- Training eligibility: ages 3-20, 7-day cooldown per discipline
-- +5 score per training session
-- Trait bonuses/penalties affect outcomes
-
-**FRs Covered:** FR-T1, FR-T2, FR-T3, FR-T4, FR-T5
-
----
-
-### Story 4.1: Training Session Interface
-
-As a **player**,
-I want to **train my horse in a discipline**,
-So that **they can improve their competitive scores**.
+As a player,
+I want every UI element (cards, dialogs, tabs, badges, inputs, tooltips) to match the Celestial Night aesthetic,
+So that no element breaks the fantasy immersion.
 
 **Acceptance Criteria:**
 
-**Given** I am on the training page for an eligible horse
-**When** I select a discipline and start training
-**Then** training session executes and I see the results
+**Given** the `.celestial` class is active
+**When** any of the following 12 shadcn components render:
 
-**And** I can select from 23 disciplines (4 categories)
-**And** session shows score gain (+5 base + modifiers)
-**And** trait bonuses/penalties are clearly displayed
-**And** confirmation before starting session
+| Component       | Celestial Restyle                                                          |
+| --------------- | -------------------------------------------------------------------------- |
+| **Card**        | Glass surface bg, gold border on hover, shadow-card transition             |
+| **Dialog**      | Dark overlay (0.85 opacity), glass-panel-heavy content, gold header accent |
+| **Tabs**        | Gold underline indicator, frosted tab bar, active gold text                |
+| **Badge**       | Discipline-specific accent colors, rounded-pill, small-caps                |
+| **Input**       | Navy bg, blue border, gold placeholder, focus ring                         |
+| **Textarea**    | Match Input styling                                                        |
+| **Progress**    | Gold fill gradient, navy track, glow on completion                         |
+| **Checkbox**    | Gold checkmark, navy bg, electric-blue focus ring                          |
+| **Label**       | Inter font, cream color, small-caps variant option                         |
+| **Tooltip**     | Glass panel tooltip, gold border, navy bg                                  |
+| **ScrollArea**  | Thin gold scrollbar thumb, transparent track                               |
+| **Collapsible** | Chevron rotation animation, glass panel content area                       |
 
-**Prerequisites:** Epic 3 complete
+**Then** each component visually matches the Celestial Night design tokens
+**And** all components maintain their existing Radix accessibility attributes
+**And** WCAG 2.1 AA color contrast is maintained (4.5:1 text, 3:1 UI components)
 
 **Technical Notes:**
 
-- API: `POST /api/v1/training/sessions`
-- Discipline picker grouped by category
-- Result modal with score breakdown
+- Restyle each file in `frontend/src/components/ui/` under `.celestial` scope
+- Deliver in 3 sub-PRs: (1) Card, Dialog, Tabs, Badge — (2) Input, Textarea, Progress, Checkbox — (3) Label, Tooltip, ScrollArea, Collapsible
+- Use existing CSS custom properties from `tokens.css` — no raw hex values
+- Keep Radix `data-state` attribute selectors for state-based styling
+
+**Prerequisites:** Stories 22.2, 22.4
 
 ---
 
-### Story 4.2: Training Eligibility Display
+### Story 22.7: Body & Page Chrome
 
-As a **player**,
-I want to **see which horses are eligible for training**,
-So that **I know who can train and when**.
+As a player,
+I want the entire page background, navigation, and authentication pages to feel celestial,
+So that the atmosphere is consistent from login through gameplay.
 
 **Acceptance Criteria:**
 
-**Given** I am on the training page
-**When** I view horse eligibility
-**Then** I see which horses can train and why others cannot
-
-**And** ineligible horses show reason (too young, cooldown, too old)
-**And** cooldown shows time remaining
-**And** age requirements clearly displayed (3-20 years)
-
-**Prerequisites:** Story 4.1
+**Given** the `.celestial` class is active
+**When** any page loads
+**Then** the body background is a deep navy gradient (`#0a0e1a` → `#111827`) with subtle gold/blue radial accents
+**And** the `MainNavigation` component uses Celestial Night colors (navy bg, gold icons, Cinzel font for logo)
+**And** the active nav item has a gold border indicator (bottom on mobile, left on desktop)
+**And** auth pages (login/register) display the StarfieldBackground with a centered glass panel
+**And** the page feels immersive at all breakpoints (375px mobile through 1440px desktop)
 
 **Technical Notes:**
 
-- API returns eligibility status
-- Countdown timer for cooldowns
-- Filter to show only eligible horses
+- Update body gradient in `frontend/src/index.css` under `.celestial` scope
+- Update `MainNavigation.tsx` colors (currently uses `--celestial-navy-*` tokens — verify)
+- Update `AuthLayout` or equivalent wrapper for login/register pages
+- Verify DashboardLayout wrapper (if used) integrates with `.celestial` scope
+
+**Prerequisites:** Stories 22.2, 22.3, 22.4
 
 ---
 
-### Story 4.3: Score Progression Display
+**Epic 22 Complete: Celestial Night Foundation**
 
-As a **player**,
-I want to **see how my horse's discipline scores are progressing**,
-So that **I can plan their training strategy**.
-
-**Acceptance Criteria:**
-
-**Given** I am viewing a horse's training history
-**When** the section loads
-**Then** I see all discipline scores with progression over time
-
-**And** radar chart shows discipline distribution
-**And** I can see training history with dates
-**And** score caps and bonuses are explained
-
-**Prerequisites:** Story 4.1
-
-**Technical Notes:**
-
-- API: `GET /api/v1/horses/:id/training-history`
-- Radar/spider chart for discipline visualization
-- Training log table with pagination
+Stories Created: 7
+FR Coverage: FR-CN1, FR-CN2, FR-CN3, FR-CN4, FR-CN19
+Technical Context: tokens.css, tailwind.config.ts, index.css, App.tsx, 13 shadcn files, MainNavigation.tsx
+UX Patterns: UX §1 (Design Tokens), §3 (Typography), §11.3 (Core Components), Wireframe 9 (Navigation)
 
 ---
 
-### Story 4.4: Trait Bonus Integration
+## Epic 23: Hub & Daily Loop
 
-As a **player**,
-I want to **understand how traits affect training outcomes**,
-So that **I can leverage my horse's strengths**.
+**Goal:** Replace the generic dashboard with an intelligent hub that answers "What should I do next?" through server-seeded action suggestions and contextual horse status chips. The hub becomes the gravitational center of the daily gameplay loop.
 
-**Acceptance Criteria:**
+**User Value:** Players never wonder what to do — the NextActionsBar guides them through training, competing, breeding, and caring for foals with personalized, priority-ordered suggestions.
 
-**Given** I am about to train a horse
-**When** I view the training preview
-**Then** I see all trait modifiers that will apply
+**FRs Covered:** FR-CN5, FR-CN7
 
-**And** positive traits show green bonus indicators
-**And** negative traits show red penalty indicators
-**And** net effect is calculated and displayed
-**And** tooltip explains each trait's effect
+**Dependencies:** Epic 22 (Foundation)
 
-**Prerequisites:** Story 4.1, Epic 6 (traits)
+### Story 23.1: NextActionsBar Component
 
-**Technical Notes:**
-
-- API returns trait modifiers in training preview
-- Visual indicators for positive/negative
-- Link to trait documentation
-
----
-
-### Story 4.5: Training Dashboard
-
-As a **player**,
-I want to **see a training overview for all my horses**,
-So that **I can efficiently manage training schedules**.
+As a player,
+I want to see a priority-ordered bar of suggested actions when I land on the hub,
+So that I immediately know which horse needs training, which competition is closing soon, or which foal needs attention.
 
 **Acceptance Criteria:**
 
-**Given** I am on the training dashboard
+**Given** I am logged in and on the hub dashboard
 **When** the page loads
-**Then** I see all horses with training status at a glance
-
-**And** dashboard shows: ready to train, in cooldown, ineligible
-**And** quick-train buttons for eligible horses
-**And** bulk training recommendations
-**And** weekly training calendar view
-
-**Prerequisites:** Stories 4.1-4.4
+**Then** a NextActionsBar renders at the top of the page
+**And** it shows up to 5 suggested actions, priority-ordered (highest priority = gold accent)
+**And** each action shows: icon, horse name (if applicable), narrative text ("Luna is ready to train!"), and a CTA button
+**And** clicking a CTA navigates to the relevant page (training, competition, breeding, foal care)
+**And** on mobile (< 768px), actions display as horizontal scroll cards
+**And** on desktop (≥ 1024px), actions display as a grid row
+**And** if no actions are available, the bar shows "Your stable is resting — check back soon"
+**And** data refreshes every 60 seconds via React Query `refetchInterval`
 
 **Technical Notes:**
 
-- Summary view of all horses
-- Calendar component for schedule
-- Batch action support
+- Create `frontend/src/components/hub/NextActionsBar.tsx`
+- Create `frontend/src/hooks/api/useNextActions.ts` with `queryKey: ['next-actions']`
+- Server provides `NextAction[]` (type, priority, horseId, horseName, metadata); client formats narrative text
+- Action types: train, compete, breed, groom-foal, claim-prize, check-results, visit-vet
+
+**Prerequisites:** Epic 22 complete
 
 ---
 
-## Epic 5: Competition System
+### Story 23.2: NarrativeChip Component
 
-**Goal:** Allow users to enter competitions, view results, and climb leaderboards.
-
-**Priority:** P0
-
-**Technical Context:**
-
-- Competition entry with eligibility checks
-- Scoring algorithm incorporates traits
-- Prize distribution: 50%/30%/20% for 1st/2nd/3rd
-- XP awards for participation and placement
-
-**FRs Covered:** FR-C1, FR-C2, FR-C3, FR-C4, FR-C5
-
----
-
-### Story 5.1: Competition Entry
-
-As a **player**,
-I want to **enter my horse in competitions**,
-So that **I can win prizes and earn XP**.
+As a player,
+I want small contextual chips on my horse cards ("Ready to compete!", "Foal developing well", "Cooldown: 3d 4h"),
+So that I can quickly scan my stable and see each horse's status at a glance.
 
 **Acceptance Criteria:**
 
-**Given** I am on the competition page
-**When** I select a competition and enter an eligible horse
-**Then** my horse is registered for the competition
+**Given** a HorseCard renders on the hub dashboard
+**When** the horse has a notable status
+**Then** a NarrativeChip appears below the horse name
+**And** chip text is data-driven from horse state:
 
-**And** I see available competitions filtered by discipline
-**And** entry requirements are clearly displayed
-**And** entry fee (if any) is deducted from balance
-**And** I receive confirmation of successful entry
-
-**Prerequisites:** Epic 3, Epic 4 (trained horses)
+- Training cooldown active → "Cooldown: Xd Xh" (amber)
+- Ready to train → "Ready to train!" (green)
+- In competition → "Entered: [show name]" (blue)
+- Foal (age < 3) → "Age: X months — [stage]" (purple)
+- Injured → "Recovering" (red)
+  **And** chip color matches the status severity (tokens from `tokens.css`)
+  **And** chip is a `<span>` with `role="status"` for screen readers
 
 **Technical Notes:**
 
-- API: `POST /api/v1/competitions/entries`
-- Competition browser with filters
-- Horse eligibility check before entry
+- Create `frontend/src/components/hub/NarrativeChip.tsx`
+- Props: `{ status: string; variant: 'success' | 'warning' | 'info' | 'danger' | 'neutral' }`
+- Integrate into existing `HorseCard` component as optional `narrativeChip` prop or child slot
+
+**Prerequisites:** Epic 22 complete
 
 ---
 
-### Story 5.2: Competition Results
+### Story 23.3: Hub Dashboard Rebuild
 
-As a **player**,
-I want to **see detailed competition results**,
-So that **I can understand how my horse performed**.
+As a player,
+I want the main dashboard to be a hub-and-spoke constellation layout with my stable, actions, and quick details,
+So that everything I need is one click away from home base.
 
 **Acceptance Criteria:**
 
-**Given** a competition has completed
-**When** I view the results
-**Then** I see full rankings with scores and placements
+**Given** I am logged in
+**When** I navigate to the home page (`/`)
+**Then** the hub renders with:
 
-**And** my horse's position is highlighted
-**And** I can see score breakdown (base + modifiers)
-**And** trait influences are shown
-**And** I can compare to other participants
+1. **NextActionsBar** at the top (from Story 23.1)
+2. **Stable card grid** in the center — all my horses with NarrativeChips (from Story 23.2)
+3. **Aside panel** (desktop 1024px+) showing quick details for the selected horse (stats summary, next action, CareStatusStrip)
+4. **Bottom sheet** (mobile < 768px) replacing aside panel — swipe up to see horse details
 
-**Prerequisites:** Story 5.1
+**And** new users (completedOnboarding recently) see a "Getting Started" variant with guided actions
+**And** horses are sorted: actionable first (ready to train/compete), then by name
+**And** the grid is responsive: 1 col mobile, 2 col tablet, 3-4 col desktop
+**And** selecting a horse in the grid updates the aside/bottom sheet without page navigation
+**And** the page loads in < 1 second with existing cached data (React Query)
 
 **Technical Notes:**
 
-- API: `GET /api/v1/competitions/:id/results`
-- Results table with sorting
-- Score breakdown modal
+- Rewrite `frontend/src/pages/Index.tsx` or `UserDashboard.tsx`
+- Aside panel: new component, conditionally rendered at `lg:` breakpoint
+- Bottom sheet: use Radix `Sheet` or custom component, triggered by horse card tap on mobile
+- "Getting Started" mode: check `profile.onboardingStep` or `completedOnboarding` timestamp recency
+
+**Prerequisites:** Stories 23.1, 23.2
 
 ---
 
-### Story 5.3: Prize Distribution Display
+### Story 23.4: Backend — NextActions Endpoint
 
-As a **player**,
-I want to **see prizes earned from competitions**,
-So that **I know what I've won**.
+As a frontend developer,
+I want a `GET /api/v1/next-actions` endpoint that returns prioritized action suggestions,
+So that the NextActionsBar can display intelligent, server-computed recommendations.
 
 **Acceptance Criteria:**
 
-**Given** my horse placed in a competition
-**When** I view results
-**Then** I see prizes earned: currency, items, XP
+**Given** an authenticated user calls `GET /api/v1/next-actions`
+**When** the server processes the request
+**Then** it returns an array of `NextAction` objects, priority-sorted (1 = highest):
 
-**And** prize amounts match 50%/30%/20% distribution
-**And** prizes are automatically added to my account
-**And** prize history is viewable in profile
+| Priority | Condition                                                        | Action Type     |
+| -------- | ---------------------------------------------------------------- | --------------- |
+| 1        | Unclaimed competition prizes                                     | `claim-prize`   |
+| 2        | Competition results available (not yet viewed)                   | `check-results` |
+| 3        | Horse ready to train (cooldown expired)                          | `train`         |
+| 4        | Open competition closing within 24h (horse eligible)             | `compete`       |
+| 5        | Mare/stallion off breeding cooldown                              | `breed`         |
+| 6        | Foal needs enrichment activity (age-appropriate, not done today) | `groom-foal`    |
+| 7        | Horse health concern (if vet system active)                      | `visit-vet`     |
 
-**Prerequisites:** Story 5.2
+**And** max 10 actions returned
+**And** each action includes: `type`, `priority`, `horseId`, `horseName`, `metadata` (cooldownEndsAt, showId, foalAge, etc.)
+**And** response time < 200ms
+**And** unauthenticated requests return 401
 
 **Technical Notes:**
 
-- API includes prize data in results
-- Celebratory animation for wins
-- Link to transaction history
+- Create `backend/controllers/nextActionsController.mjs` and `backend/routes/nextActionsRoutes.mjs`
+- Query across: training cooldowns (horses table), competition entries (CompetitionResult), breeding cooldowns, foal ages, unread messages
+- Use single aggregation query where possible (avoid N+1)
+- Register route in `backend/app.mjs` under `/api/v1/next-actions`
+- Add `nextActionsApi` methods to `frontend/src/lib/api-client.ts`
+
+**Prerequisites:** None (backend-only, can develop in parallel with frontend)
 
 ---
 
-### Story 5.4: XP Award Notifications
+**Epic 23 Complete: Hub & Daily Loop**
 
-As a **player**,
-I want to **be notified when I earn XP from competitions**,
-So that **I can track my progression**.
+Stories Created: 4
+FR Coverage: FR-CN5 (hub dashboard), FR-CN7 (next actions)
+Technical Context: Index.tsx/UserDashboard.tsx rewrite, new NextActions endpoint, HorseCard integration
+UX Patterns: UX §5 (Hub), §6 (NextActions), Wireframe 1 (Hub Dashboard)
+
+---
+
+## Epic 24: WhileYouWereGone
+
+**Goal:** Create a delightful return experience that catches players up on everything that happened while they were away — competition results, foal milestones, messages, and more — in one prioritized overlay.
+
+**User Value:** Returning players instantly know what happened without manually checking 6 different pages. The surprise element builds anticipation for logging back in.
+
+**FRs Covered:** FR-CN6
+
+**Dependencies:** Epic 22 (Foundation) + Story 24.1 (WYAG backend)
+
+### Story 24.1: Backend — WYAG Aggregation Endpoint
+
+As a frontend developer,
+I want a `GET /api/v1/while-you-were-gone?since=<timestamp>` endpoint that aggregates all events since my last visit,
+So that the WYAG overlay can show prioritized updates in a single request.
 
 **Acceptance Criteria:**
 
-**Given** I participated in a competition
-**When** results are finalized
-**Then** I see XP earned for both horse and player
+**Given** an authenticated user calls `GET /api/v1/while-you-were-gone?since=2026-03-10T08:00:00Z`
+**When** the server processes the request
+**Then** it returns a `WYAGResponse` with:
 
-**And** toast notification shows XP gained
-**And** XP breakdown shows competition bonus, placement bonus
-**And** level-up triggers special notification
+- `items[]`: up to 8 events, priority-sorted
+- `since`: the requested timestamp
+- `hasMore`: true if more than 8 events exist
 
-**Prerequisites:** Story 5.2
+**And** event types aggregated (highest to lowest priority):
+
+1. `competition-result` — wins, placements, prizes earned
+2. `foal-milestone` — trait discoveries, bond milestones, graduation
+3. `message` — unread direct messages
+4. `club-activity` — election results, new members
+5. `training-complete` — cooldowns that expired (horse ready to train)
+6. `market-sale` — stud fee income, marketplace transactions
+
+**And** each item includes: `type`, `priority`, `title`, `description`, `timestamp`, `actionUrl` (deep link), optional `metadata`
+**And** response time < 300ms
+**And** unauthenticated requests return 401
 
 **Technical Notes:**
 
-- Toast notification system
-- API returns XP details
-- Integrate with Story 2.2 XP display
+- Create `backend/controllers/wyagController.mjs` and `backend/routes/wyagRoutes.mjs`
+- Aggregation queries across: CompetitionResult, FoalDevelopment/traits, DirectMessage, Club\*, training cooldowns, marketplace
+- Use `WHERE createdAt > $since` filters
+- Register route in `backend/app.mjs` under `/api/v1/while-you-were-gone`
+- Add `wyagApi` methods to `frontend/src/lib/api-client.ts`
+
+**Prerequisites:** None (backend-only)
 
 ---
 
-### Story 5.5: Leaderboards
+### Story 24.2: WhileYouWereGone Component
 
-As a **player**,
-I want to **view leaderboards by discipline**,
-So that **I can see top performers and my ranking**.
+As a returning player,
+I want a glass panel overlay showing me what happened while I was away,
+So that I feel caught up and excited to continue playing.
 
 **Acceptance Criteria:**
 
-**Given** I am on the leaderboards page
-**When** I select a discipline
-**Then** I see top-ranked horses and players
+**Given** I return to Equoria after 4+ hours away
+**When** the app loads
+**Then** a glass panel overlay appears above all content (z-index: `--z-modal`)
+**And** it shows a title "While You Were Gone..." in Cinzel Decorative
+**And** items are listed in priority order with icons per type:
 
-**And** leaderboards available for all 23 disciplines
-**And** player leaderboard shows overall points
-**And** my position is highlighted
-**And** filtering by time period (weekly, monthly, all-time)
-
-**Prerequisites:** Story 5.2
+- 🏆 Competition results (gold border if 1st place)
+- 🐴 Foal milestones (star icon)
+- 💬 Messages (envelope icon)
+- 🏛️ Club activity (building icon)
+- ⏱️ Training ready (clock icon)
+- 💰 Market activity (coin icon)
+  **And** max 8 items visible; "View all activity →" link if `hasMore` is true
+  **And** each item is clickable → navigates to `actionUrl`
+  **And** overlay dismisses on: "Continue to Stable" button click, Escape key, backdrop click
+  **And** overlay does NOT appear for new users (`completedOnboarding === false`)
+  **And** overlay does NOT appear if away < 4 hours
 
 **Technical Notes:**
 
-- API: `GET /api/v1/leaderboards/:discipline`
-- Paginated tables
-- Time-based filtering
+- Create `frontend/src/components/hub/WhileYouWereGone.tsx`
+- Create `frontend/src/hooks/api/useWYAG.ts`
+- Mount in `App.tsx` above `<Routes>`, conditionally rendered
+- Use `createPortal` to `document.body` for z-index isolation
+- Dismiss state: `useState(false)` — once dismissed, don't show again until next qualifying return
+
+**Prerequisites:** Story 24.1 (backend endpoint), Epic 22 (glass panel styling)
 
 ---
 
-## Epic 6: Breeding & Foal Development
+### Story 24.3: Return Detection
 
-**Goal:** Enable users to breed horses, raise foals through developmental milestones, and discover epigenetic traits.
-
-**Priority:** P0
-
-**Technical Context:**
-
-- Breeding mechanics with pairing and cooldowns
-- Foal development: 7 milestones (days 0-6)
-- Enrichment activities influence trait development
-- Epigenetic system: 10+ traits, 9 flags, development windows (0-3 years)
-
-**FRs Covered:** FR-B1, FR-B2, FR-B3, FR-B4, FR-B5, FR-E1, FR-E2, FR-E3, FR-E4, FR-E5
-
----
-
-### Story 6.1: Breeding Pair Selection
-
-As a **player**,
-I want to **select a mare and stallion for breeding**,
-So that **I can produce foals with desired traits**.
+As a system,
+I want to detect when a player returns after 4+ hours away,
+So that the WYAG overlay triggers automatically.
 
 **Acceptance Criteria:**
 
-**Given** I am on the breeding page
-**When** I select a mare and stallion
-**Then** I see compatibility analysis and can initiate breeding
+**Given** a player is using the app
+**When** they close the tab or navigate away
+**Then** the current timestamp is stored in `localStorage.lastVisit`
 
-**And** I can only select eligible horses (age, cooldown)
-**And** genetic compatibility preview is shown
-**And** breeding cost is displayed
-**And** confirmation required before breeding
+**Given** a player opens Equoria
+**When** `localStorage.lastVisit` exists AND `Date.now() - lastVisit > 4 hours`
+**Then** the WYAG endpoint is called with `since=lastVisit`
+**And** the WhileYouWereGone overlay is shown with the response data
+**And** `localStorage.lastVisit` is updated to current time after overlay dismissal
 
-**Prerequisites:** Epic 3 (own horses)
+**And** if `localStorage.lastVisit` does not exist (first visit), no overlay is shown
+**And** if user is not authenticated, no overlay is shown
+**And** if `completedOnboarding === false`, no overlay is shown
 
 **Technical Notes:**
 
-- API: `POST /api/v1/breeding/pairs`
-- Side-by-side horse comparison
-- Compatibility algorithm display
+- Store `lastVisit` via `beforeunload` event listener in `App.tsx`
+- On mount: check delta, if > 4h AND authenticated AND onboarded → fetch WYAG → show overlay
+- Threshold constant: `WYAG_THRESHOLD_MS = 4 * 60 * 60 * 1000`
+
+**Prerequisites:** Story 24.2
 
 ---
 
-### Story 6.2: Foal Milestone Timeline
+**Epic 24 Complete: WhileYouWereGone**
 
-As a **player**,
-I want to **track my foal's development through milestones**,
-So that **I can ensure optimal growth**.
+Stories Created: 3
+FR Coverage: FR-CN6 (return experience)
+Technical Context: New WYAG endpoint, localStorage return detection, App.tsx overlay mount
+UX Patterns: UX §6 (WYAG), Wireframe 2 (WhileYouWereGone)
+
+---
+
+## Epic BACKEND-A: Competition Model Rewrite
+
+**Goal:** Transform competitions from instant simulation into player-created shows with 7-day entry windows and overnight execution. This is a fundamental gameplay model change that makes competition entry a strategic commitment rather than an instant button press.
+
+**User Value:** Players create their own shows, browse open competitions, scout the field before entering, and receive results after overnight execution. Competitions become social, strategic events — not solo button clicks.
+
+**FRs Covered:** FR-CN8, FR-CN20
+
+**Dependencies:** None (parallel with frontend epics)
+
+### Story BA.1: Show Model Expansion
+
+As a developer,
+I want the Prisma schema updated to support show lifecycle states and ownership,
+So that competitions have entry windows, execution dates, and creator attribution.
 
 **Acceptance Criteria:**
 
-**Given** I have a foal
-**When** I view their development page
-**Then** I see a timeline with all 7 milestones (days 0-6)
+**Given** the database schema is updated
+**When** a migration runs
+**Then** the `Show` model has new fields:
 
-**And** completed milestones show outcomes
-**And** current/upcoming milestones are highlighted
-**And** I can see what's needed for each milestone
-**And** alerts for approaching milestones
+- `status` — enum: `open`, `closed`, `executing`, `completed` (default: `open`)
+- `openDate` — DateTime (when show was created/opened for entries)
+- `closeDate` — DateTime (7 days after openDate)
+- `executedAt` — DateTime? (null until overnight execution runs)
+- `createdByUserId` — UUID? (player who created the show)
+- `createdByClubId` — Int? (club that created the show, nullable)
+- `maxEntries` — Int? (cap on entries, nullable = unlimited)
+- `entryFee` — Int (default: 0)
 
-**Prerequisites:** Story 6.1
+**And** existing shows are migrated with `status: 'completed'`, `openDate = createdAt`, `closeDate = createdAt`
+**And** all existing tests pass without modification (backward compatibility)
+**And** the Prisma client regenerates successfully
 
 **Technical Notes:**
 
-- API: `GET /api/v1/foals/:id/milestones`
-- Timeline component
-- Push notifications for milestones
+- Update `packages/database/prisma/schema.prisma`
+- Create migration: `npx prisma migrate dev --name add-show-lifecycle`
+- Run against test DB: `DATABASE_URL=...equoria_test npx prisma migrate deploy`
+- Add `ShowStatus` enum to schema
+
+**Prerequisites:** None
 
 ---
 
-### Story 6.3: Enrichment Activity UI
+### Story BA.2: Show Creation Endpoint
 
-As a **player**,
-I want to **provide enrichment activities to my foals**,
-So that **I can influence their trait development**.
+As a player,
+I want to create my own competition shows with a name, discipline, and optional entry fee,
+So that I can organize events for the community.
 
 **Acceptance Criteria:**
 
-**Given** I have a foal in a development window
-**When** I select an enrichment activity
-**Then** the activity is applied and I see results
+**Given** I am authenticated
+**When** I call `POST /api/v1/shows/create` with `{ name, discipline, entryFee?, maxEntries?, description? }`
+**Then** a new Show is created with:
 
-**And** available activities depend on foal age
-**And** activity effects on traits are previewed
-**And** daily activity limits are displayed
-**And** history of completed activities shown
-
-**Prerequisites:** Story 6.2
+- `status: 'open'`
+- `openDate: now`
+- `closeDate: now + 7 days`
+- `createdByUserId: me`
+  **And** the response includes the created show object with `id`, `closeDate`, `status`
+  **And** validation rejects: invalid discipline, negative entry fee, entry fee > 10000, name < 3 or > 100 chars
+  **And** unauthenticated requests return 401
 
 **Technical Notes:**
 
-- API: `POST /api/v1/foals/:id/enrichment`
-- Activity picker with descriptions
-- Impact preview before confirmation
+- Add `createShow` to `backend/modules/competition/controllers/competitionController.mjs`
+- Add `POST /api/v1/shows/create` route
+- Reuse existing discipline validation logic
+- Add `showsApi.create()` to `frontend/src/lib/api-client.ts`
+
+**Prerequisites:** Story BA.1
 
 ---
 
-### Story 6.4: Milestone Evaluation Display
+### Story BA.3: Show Browse & Entry
 
-As a **player**,
-I want to **see the results of milestone evaluations**,
-So that **I understand how my foal is developing**.
+As a player,
+I want to browse open competitions and enter my eligible horses,
+So that I can find the right shows for my horses' disciplines and skill levels.
 
 **Acceptance Criteria:**
 
-**Given** a milestone has been evaluated
-**When** I view the results
-**Then** I see confirmed traits and attribute changes
+**Given** I call `GET /api/v1/shows?status=open`
+**When** open shows exist
+**Then** I receive a paginated list with: name, discipline, entryFee, closeDate, entryCount, maxEntries, createdBy
+**And** I can filter by: discipline, closing within 24h, entry fee range
+**And** results are sorted by closeDate ascending (closing soonest first)
 
-**And** newly discovered traits are highlighted
-**And** trait potential changes are shown
-**And** comparison to expected outcomes
-**And** recommendations for next steps
+**Given** I call `POST /api/v1/shows/:id/enter` with `{ horseId }`
+**When** the show is open AND horse is eligible AND not already entered AND I can afford the fee
+**Then** the entry is recorded, entry fee deducted, entry count incremented
+**And** response includes updated show info and confirmation
 
-**Prerequisites:** Story 6.2
+**And** validation rejects: closed show, ineligible horse (age/health/discipline), duplicate entry, insufficient funds
+**And** each rejection returns a specific error message explaining why
 
 **Technical Notes:**
 
-- Milestone result modal
-- Before/after comparison
-- Trait card animations for discoveries
+- Add `browseShows` and `enterShow` to competition controller
+- Reuse existing `checkEligibility` logic for horse validation
+- Money deduction via existing balance transaction pattern
+- Paginate with existing pagination helper
+
+**Prerequisites:** Story BA.1
 
 ---
 
-### Story 6.5: Breeding Predictions
+### Story BA.4: Overnight Execution Scheduler
 
-As a **player**,
-I want to **see predictions for potential offspring**,
-So that **I can make informed breeding decisions**.
+As a system,
+I want shows to automatically execute overnight after their entry window closes,
+So that results are available when players log in the next morning.
 
 **Acceptance Criteria:**
 
-**Given** I have selected a breeding pair
-**When** I view predictions
-**Then** I see probable trait outcomes and stat ranges
+**Given** a cron job or scheduled task runs (e.g., every hour, or daily at 2 AM)
+**When** it finds shows where `closeDate <= now AND status === 'open'`
+**Then** for each qualifying show:
 
-**And** predictions show probability percentages
-**And** rare trait chances are highlighted
-**And** genetic compatibility score displayed
-**And** historical breeding success shown
+1. Set `status = 'closed'` (prevent new entries)
+2. Execute competition scoring using existing `executeCompetitionScoring()` logic
+3. Distribute prizes per placement (existing prize distribution)
+4. Award XP to horses and users (existing XP award logic)
+5. Apply stat gains per placement (existing stat gain logic)
+6. Set `status = 'completed'` and `executedAt = now`
 
-**Prerequisites:** Story 6.1
+**And** if a show has < 2 entries, it is cancelled (`status = 'cancelled'`) and entry fees refunded
+**And** execution is idempotent (re-running on already-completed shows is a no-op)
+**And** errors during execution are logged but don't block other shows from executing
+**And** all competition results are queryable via existing results endpoints
 
 **Technical Notes:**
 
-- API: `GET /api/v1/breeding/predict`
-- Probability visualizations
-- Monte Carlo simulation results from backend
+- Preserve existing `executeCompetitionScoring()` as internal function — wrap with show lifecycle
+- Use `node-cron` or `node-schedule` for scheduling (or Railway cron if available)
+- Add `executeOverdueShows()` function to competition controller
+- Create startup hook in `app.mjs` to schedule the cron job
+- Test: mock Date.now for overnight execution, verify full lifecycle
+
+**Prerequisites:** Stories BA.1, BA.2, BA.3
 
 ---
 
-### Story 6.6: Epigenetic Trait System
+### Story BA.5: Milestones JSONB
 
-As a **player**,
-I want to **discover and track epigenetic traits on my horses**,
-So that **I can leverage unique abilities**.
+As a system,
+I want to track lifetime-first achievements in `User.settings.milestones`,
+So that CinematicMoments trigger only for truly special moments.
 
 **Acceptance Criteria:**
 
-**Given** I am viewing a horse's traits
-**When** epigenetic traits are present
-**Then** I see them with discovery status and effects
+**Given** a player wins their first-ever competition
+**When** prize distribution runs
+**Then** `User.settings.milestones.firstWin` is set to the ISO timestamp (if currently null/undefined)
+**And** the competition result response includes `isFirstEverWin: true`
 
-**And** undiscovered traits show as "???" with hints
-**And** trait discovery animations celebrate new finds
-**And** maximum 3 visible traits rule is enforced
-**And** 9 epigenetic flags are tracked and displayed
-**And** development window (0-3 years) progress shown
+**And** the same pattern applies for:
 
-**Prerequisites:** Epic 3, Story 6.4
+- `firstBreed` — set on first foal birth
+- `firstTrait` — set on first trait discovery
+- `firstLegendary` — set on first ultra-rare/exotic trait
+- `firstMaxLevel` — set on first horse reaching max level
+- `firstGraduation` — set on first foal graduating at age 3
+
+**And** milestones are WRITE-ONCE (if already set, never overwritten)
+**And** `GET /api/v1/auth/profile` includes `milestones` in the response
+**And** existing tests pass (milestones field is optional, defaults to `{}`)
 
 **Technical Notes:**
 
-- Trait cards with states: hidden, hinted, discovered
-- Flag badges for epigenetic status
-- Age-based trait lock visualization
+- User.settings is existing JSONB — add `milestones` key
+- Modify prize distribution in competition controller: check `!user.settings.milestones?.firstWin` before setting
+- Modify breeding controller: check `!user.settings.milestones?.firstBreed` on foal creation
+- Modify trait controller: similar pattern for firstTrait/firstLegendary
+- Expose in `getProfile` response (auth controller)
+
+**Prerequisites:** Story BA.1
 
 ---
 
-## Epic 7: Groom System
+**Epic BACKEND-A Complete: Competition Model Rewrite**
 
-**Goal:** Enable users to hire grooms, manage their careers, and leverage their abilities for horse development.
-
-**Priority:** Mixed (P0 core, P1/P2 advanced features)
-
-**Technical Context:**
-
-- Groom hiring with personality types
-- Task system varies by horse age
-- Career lifecycle with retirement
-- Talent tree: 3 tiers, 24 talents
-- Legacy system for protégé generation
-- Ultra-rare trait influence via perks
-
-**FRs Covered:** FR-G1, FR-G2, FR-G3, FR-G4, FR-G5, FR-G6, FR-G7, FR-R1, FR-R2, FR-R3, FR-R4
+Stories Created: 5
+FR Coverage: FR-CN8 (competition model), FR-CN20 (milestones)
+Technical Context: Prisma schema, competitionController, cron scheduling, User.settings JSONB
+Architecture Sections: `backend/modules/competition/`, `packages/database/prisma/schema.prisma`
 
 ---
 
-### Story 7.1: Groom Hiring Interface (P0)
+## Epic 25: Onboarding Rebuild
 
-As a **player**,
-I want to **hire grooms for my stable**,
-So that **I can improve horse care and training**.
+**Goal:** Transform the new player's first 5 minutes from a functional 3-step wizard into an atmospheric breed selection experience that sets the fantasy tone.
+
+**User Value:** New players choose their first horse from a beautiful, informative breed selector — not a dropdown. They see stat tendencies, lore, and a preview before committing. The first impression is "this game cares about its world."
+
+**FRs Covered:** FR-CN11
+
+**Dependencies:** Epic 22 (Foundation)
+
+### Story 25.1: BreedSelector Component
+
+As a new player,
+I want to browse horse breeds with previews showing stat tendencies and lore,
+So that I can make an informed, exciting choice for my first horse.
 
 **Acceptance Criteria:**
 
-**Given** I am on the groom marketplace
-**When** I browse available grooms
-**Then** I see their stats, personality, and hire cost
+**Given** I am on the onboarding wizard (Step 2: Choose Your Horse)
+**When** the BreedSelector renders
+**Then** all available breeds display as cards with:
 
-**And** I can filter by specialty and price range
-**And** personality traits are clearly displayed
-**And** hire confirmation shows ongoing costs
-**And** hired grooms appear in my stable
-
-**Prerequisites:** Epic 2 (currency)
+- Breed name (Cinzel font)
+- Portrait placeholder (placeholder.svg silhouette)
+- Stat tendency mini-radar (3-4 key stats: speed/stamina/agility/intelligence)
+- One-line lore blurb ("Bred for speed on open plains")
+  **And** I can toggle between grid view (mobile default) and list view (desktop default)
+  **And** selecting a breed highlights it with gold border and shows expanded info
+  **And** I can choose gender: Mare or Stallion (toggle buttons)
+  **And** I can enter a name (2-50 chars) with live preview of "Your horse: [name] the [breed] [gender]"
+  **And** the "Continue" button is disabled until breed + gender + valid name are selected
 
 **Technical Notes:**
 
-- API: `GET /api/v1/grooms/available`
-- API: `POST /api/v1/grooms/hire`
-- Existing groom components - enhance
+- Create `frontend/src/components/onboarding/BreedSelector.tsx`
+- Wire to `GET /api/v1/breeds` endpoint (existing)
+- Stat tendency radar: simplified Recharts RadarChart or CSS-only bar comparison
+- Grid/list toggle: persist to localStorage (existing pattern from Epic 3)
+
+**Prerequisites:** Epic 22 complete
 
 ---
 
-### Story 7.2: Groom Personality Display (P0)
+### Story 25.2: Onboarding Wizard Restyle
 
-As a **player**,
-I want to **understand my groom's personality and its effects**,
-So that **I can assign them to compatible horses**.
+As a new player,
+I want the onboarding wizard to feel like entering a fantasy world,
+So that my first experience of Equoria matches the celestial atmosphere.
 
 **Acceptance Criteria:**
 
-**Given** I am viewing a groom's profile
-**When** I view personality section
-**Then** I see personality type and trait influences
+**Given** I am a new user (`completedOnboarding === false`)
+**When** I land on `/onboarding`
+**Then** the wizard renders with 3 Celestial Night styled steps:
 
-**And** personality affects specific horse traits
-**And** compatibility with horse personalities shown
-**And** effectiveness ratings displayed
-**And** personality develops over career
-
-**Prerequisites:** Story 7.1
+1. **Welcome** — StarfieldBackground visible, atmospheric intro text in Cinzel, "Begin Your Journey" gold button
+2. **Choose Your Horse** — BreedSelector (from Story 25.1) in glass panels
+3. **Ready** — Stable preview showing my chosen horse card with NarrativeChip, "Enter the World" gold button
+   **And** step indicators show gold progress (filled dots for completed, outlined for upcoming)
+   **And** the wizard is full-height on mobile (no scrolling within steps)
+   **And** the existing `POST /api/auth/complete-onboarding` flow is preserved
 
 **Technical Notes:**
 
-- Personality type icons and descriptions
-- Compatibility matrix visualization
-- Tooltip explanations
+- Restyle `frontend/src/pages/OnboardingPage.tsx` with `.celestial` scope
+- Replace generic buttons with CelestialButton variants
+- Step indicators: use existing Progress component (restyled in 22.6) or custom dots
+- Ensure OnboardingGuard redirect still works
+
+**Prerequisites:** Story 25.1, Epic 22
 
 ---
 
-### Story 7.3: Task Assignment UI (P0)
+### Story 25.3: Breed Data Integration
 
-As a **player**,
-I want to **assign grooms to specific tasks**,
-So that **my horses receive appropriate care**.
+As a system,
+I want the breeds endpoint to include stat tendencies for each breed,
+So that the BreedSelector can show meaningful stat previews.
 
 **Acceptance Criteria:**
 
-**Given** I have hired grooms and horses
-**When** I assign tasks
-**Then** grooms are assigned and begin work
-
-**And** tasks vary by horse age (foal enrichment, adult grooming)
-**And** task duration and effects are displayed
-**And** I can reassign grooms as needed
-**And** task completion notifications
-
-**Prerequisites:** Stories 7.1, 7.2
+**Given** `GET /api/v1/breeds` is called
+**When** breeds are returned
+**Then** each breed includes `statTendencies`: min/max ranges for key stats (speed, stamina, agility, intelligence, obedience, boldness)
+**And** tendencies are based on breed base stats from the database
+**And** response is cached by React Query with `staleTime: 10 * 60 * 1000` (10 minutes)
+**And** existing breed endpoint consumers are not broken (tendencies are additive)
 
 **Technical Notes:**
 
-- API: `POST /api/v1/grooms/:id/assign`
-- Drag-and-drop assignment UI
-- Task queue visualization
+- Modify `backend/modules/horses/controllers/` breed handler to include stat ranges
+- If base stats aren't per-breed in schema, derive from breed characteristics or hardcode initial values
+- Add `statTendencies` to breed TypeScript interface in frontend
+
+**Prerequisites:** None (backend-only)
 
 ---
 
-### Story 7.4: Career Lifecycle Dashboard (P1)
+**Epic 25 Complete: Onboarding Rebuild**
 
-As a **player**,
-I want to **track my groom's career progression**,
-So that **I can plan for retirement and succession**.
-
-**Acceptance Criteria:**
-
-**Given** I am viewing groom management
-**When** I view career status
-**Then** I see experience, level, and retirement timeline
-
-**And** career milestones are tracked
-**And** retirement age and benefits displayed
-**And** performance history shown
-**And** warnings for approaching retirement
-
-**Prerequisites:** Story 7.3
-
-**Technical Notes:**
-
-- Career timeline component
-- XP progress visualization
-- Retirement countdown
+Stories Created: 3
+FR Coverage: FR-CN11 (onboarding)
+Technical Context: OnboardingPage.tsx restyle, new BreedSelector, breeds endpoint enhancement
+UX Patterns: UX §10.1 (Onboarding), Wireframe 3 (Onboarding Wizard)
 
 ---
 
-### Story 7.5: Legacy System UI (P2)
+## Epic 26: Training Flow Redesign
 
-As a **player**,
-I want to **manage groom legacy and protégés**,
-So that **experienced grooms can train successors**.
+**Goal:** Transform training from "pick a discipline from a dropdown" into an intelligent, guided experience where the game recommends disciplines based on horse aptitude and shows real-time impact previews.
+
+**User Value:** Players see smart discipline recommendations ranked by their horse's natural talents, real-time cooldown countdowns, and predicted stat gains — making training an informed strategic choice.
+
+**FRs Covered:** FR-CN12
+
+**Dependencies:** Epic 22 (Foundation)
+
+### Story 26.1: DisciplineSelector Component
+
+As a player training a horse,
+I want to see the top 5 recommended disciplines for this horse, with stat impact previews,
+So that I make informed training decisions that play to my horse's strengths.
 
 **Acceptance Criteria:**
 
-**Given** I have a senior groom
-**When** they mentor a new groom
-**Then** skills and traits transfer to the protégé
+**Given** I am on the training page with an eligible horse selected
+**When** the DisciplineSelector renders
+**Then** the top 5 disciplines are shown prominently, ranked by horse aptitude:
 
-**And** legacy trees show lineage
-**And** trait inheritance preview
-**And** mentorship period displayed
-**And** bonus effectiveness for legacy grooms
-
-**Prerequisites:** Story 7.4
+- Discipline name + icon
+- Match score (e.g., "92% match" based on primary stat alignment)
+- Stat impact preview: "Speed +5, Stamina +3 (15% chance)"
+- "Recommended" badge on the #1 match
+  **And** an "All Disciplines" expandable section shows all 23 disciplines below
+  **And** disciplines the horse is ineligible for are grayed out with a reason tooltip ("Requires Gaited trait")
+  **And** selecting a discipline highlights it with gold accent and enables the "Train" button
 
 **Technical Notes:**
 
-- API: `POST /api/v1/grooms/:id/mentor`
-- Family tree visualization
-- Trait transfer previews
+- Create `frontend/src/components/training/DisciplineSelector.tsx`
+- Aptitude ranking: compute client-side from horse stats × discipline primary stat weights (weights from PRD-03 §1.2)
+- Stat impact: reference base gain (+5 discipline score, 15% stat chance) from PRD-03 §1.1
+- Trait integration: show bonus/penalty indicators per PRD-03 §1.3
+
+**Prerequisites:** Epic 22 complete
 
 ---
 
-### Story 7.6: Talent Tree Visualization (P2)
+### Story 26.2: CooldownTimer Component
 
-As a **player**,
-I want to **develop my groom's talents**,
-So that **they gain specialized abilities**.
+As a player,
+I want to see a real-time countdown for training and breeding cooldowns,
+So that I know exactly when my horse will be available again.
 
 **Acceptance Criteria:**
 
-**Given** I am viewing groom development
-**When** I open the talent tree
-**Then** I see all 24 talents across 3 tiers
-
-**And** available talents are highlighted
-**And** talent effects are clearly explained
-**And** unlock requirements shown
-**And** talent point allocation is saved
-
-**Prerequisites:** Story 7.4
+**Given** a horse has an active training cooldown
+**When** the CooldownTimer renders
+**Then** it shows a real-time countdown: "Xd Xh Xm" updating every minute
+**And** when the countdown reaches zero, it transitions to a glowing green "Ready!" state
+**And** the timer works for both training cooldowns (7 days) and breeding cooldowns (30d mare / 14d stallion)
+**And** `prefers-reduced-motion` users see the glow as a static green state (no pulse animation)
+**And** the component uses `setInterval` with 60-second tick (not 1-second — unnecessary precision)
+**And** the component accepts a `targetDate: Date` prop and is reusable across pages
 
 **Technical Notes:**
 
-- Interactive talent tree component
-- API: `POST /api/v1/grooms/:id/talents`
-- Prerequisite visualization
+- Create `frontend/src/components/common/CooldownTimer.tsx`
+- Pattern matches existing countdown timer pattern from Epic 4 (Pattern Library)
+- Clear interval on unmount
+- Use `aria-label` for screen reader: "Training cooldown: 3 days 4 hours remaining"
+
+**Prerequisites:** None (reusable component)
 
 ---
 
-### Story 7.7: Show Handling & Rare Traits (P1)
+### Story 26.3: Training Page Restyle
 
-As a **player**,
-I want to **use grooms for conformation show handling and discover rare traits**,
-So that **I can maximize show performance and find unique abilities**.
+As a player,
+I want the training page to use Celestial Night styling with intelligent discipline selection and cooldown timers,
+So that training feels like a strategic coaching session, not a form submission.
 
 **Acceptance Criteria:**
 
-**Given** I am entering a conformation show
-**When** I assign a groom as handler
-**Then** their handling skills affect show results
+**Given** I navigate to `/training`
+**When** the page loads
+**Then** the layout shows:
 
-**And** groom perks influence rare trait discovery
-**And** ultra-rare traits (<3% chance) can appear
-**And** exotic traits require specific conditions
-**And** discovery system tracks all found traits
-
-**Prerequisites:** Stories 7.3, Epic 6
+1. **Horse selector** — eligible horses first (sorted by "ready to train"), each with CooldownTimer if on cooldown
+2. **DisciplineSelector** (from Story 26.1) — appears after horse selection
+3. **Training confirmation** — glass panel showing: horse name, discipline, predicted gains, "Train" gold button
+4. **Training result** — after submission: stat changes visualization, XP gained, cooldown set
+   **And** all elements use Celestial Night glass panels, gold accents, Cinzel headings
+   **And** horse selector shows NarrativeChips for status context
+   **And** the "Train" button is disabled with explanation if horse is on cooldown or ineligible
 
 **Technical Notes:**
 
-- Handler assignment in show entry
-- Trait discovery notifications
-- Rare trait collection tracking
+- Restyle `frontend/src/pages/TrainingPage.tsx`
+- Integrate DisciplineSelector and CooldownTimer components
+- Training result display: highlight changed stats with gold flash animation
+- Preserve existing training mutation hook (`useTrainHorse` or similar)
+
+**Prerequisites:** Stories 26.1, 26.2, Epic 22
+
+---
+
+**Epic 26 Complete: Training Flow Redesign**
+
+Stories Created: 3
+FR Coverage: FR-CN12 (training flow)
+Technical Context: TrainingPage.tsx restyle, new DisciplineSelector, CooldownTimer
+UX Patterns: UX §10.3 (Training), Wireframe 4 (Training Page)
+
+---
+
+## Epic 27: Competition Flow Redesign
+
+**Goal:** Transform the competition page from instant-entry to a strategic browse-scout-enter flow with 7-day windows, field scouting, and beautifully presented results with score breakdowns.
+
+**User Value:** Players browse competitions like scouting a field — they see who's entered, evaluate the competition, make a strategic entry decision, and receive results overnight with detailed score breakdowns.
+
+**FRs Covered:** FR-CN13, FR-CN10
+
+**Dependencies:** Epic BACKEND-A (competition model must be live)
+
+### Story 27.1: CompetitionFieldPreview Component
+
+As a player evaluating a competition,
+I want to scout the field — see who's entered, how strong they are, and how much time is left,
+So that I can make an informed decision about entering my horse.
+
+**Acceptance Criteria:**
+
+**Given** I click into a specific open competition
+**When** the CompetitionFieldPreview renders
+**Then** I see:
+
+- Entry count / max entries (e.g., "7 / 12 entries")
+- CooldownTimer counting down to `closeDate`
+- List of entered horses with: name, breed, owner, level badge
+- Stat comparison radar chart showing average field strength vs my horse (if I select one)
+- "Enter [Horse Name]" gold button
+  **And** the preview refreshes on focus (React Query `refetchOnWindowFocus`)
+  **And** if the show is closed/completed, a "Results" view replaces the entry form
+  **And** data is fetched via `GET /api/v1/shows/:id` (with entries populated)
+
+**Technical Notes:**
+
+- Create `frontend/src/components/competition/CompetitionFieldPreview.tsx`
+- Radar chart: reuse Recharts RadarChart pattern from existing ScoreBreakdownChart
+- Horse selection: dropdown or card picker from user's eligible horses
+- Fetch entries via new endpoint or extended show detail endpoint
+
+**Prerequisites:** Epic BACKEND-A complete
+
+---
+
+### Story 27.2: Competition Page Restyle
+
+As a player,
+I want to browse open competitions with filters, see entry windows, and enter with confidence,
+So that finding and joining competitions is enjoyable and strategic.
+
+**Acceptance Criteria:**
+
+**Given** I navigate to `/competitions`
+**When** the page loads
+**Then** I see a grid/list of open shows with:
+
+- Show name, discipline badge, entry fee, entry count
+- CooldownTimer showing time until close (gold accent if < 24h)
+- Creator name (player or club)
+- "View & Enter" button
+  **And** I can filter by: discipline, closing within 24h, entry fee range (free / paid)
+  **And** results are sorted: closing soonest first
+  **And** clicking a show opens CompetitionFieldPreview (from Story 27.1) in a detail panel or modal
+  **And** a "Create Show" gold button allows me to create my own competition (calls BA.2 endpoint)
+  **And** all elements use Celestial Night styling
+
+**Technical Notes:**
+
+- Restyle `frontend/src/pages/CompetitionBrowserPage.tsx` (or equivalent)
+- Wire filters to `GET /api/v1/shows?status=open&discipline=...` query params
+- Create show modal: simple form (name, discipline, entry fee, description)
+
+**Prerequisites:** Story 27.1, Epic 22
+
+---
+
+### Story 27.3: Results Page Restyle
+
+As a player,
+I want to see detailed competition results with score breakdowns and personal bests,
+So that I understand how my horse performed and what to improve.
+
+**Acceptance Criteria:**
+
+**Given** I view a completed competition's results
+**When** the results page renders
+**Then** I see:
+
+- Placement list: position, horse name, owner, final score, prize earned
+- My horse highlighted with gold border (if I entered)
+- ScoreBreakdownRadar (from Story 27.4) for each horse I own in the results
+- Personal best tracking: "New personal best in Dressage!" indicator if score exceeds previous best
+  **And** if this is my first-ever win (`isFirstEverWin: true` in response), CinematicMoment triggers ('cup-win' variant)
+  **And** subsequent wins show a RewardToast instead (not CinematicMoment)
+  **And** results are accessible via WYAG overlay (returning players see results there first)
+
+**Technical Notes:**
+
+- Restyle `frontend/src/pages/CompetitionResultsPage.tsx` (or create new)
+- CinematicMoment trigger: check `isFirstEverWin` flag in competition result response
+- Personal best: compare against `horse.disciplineScores[discipline]` or track in localStorage
+
+**Prerequisites:** Story 27.4, Epic BACKEND-A (BA.4 for overnight results, BA.5 for milestones)
+
+---
+
+### Story 27.4: ScoreBreakdownRadar Component
+
+As a player reviewing results,
+I want a radar chart showing how my horse scored across stat categories,
+So that I can see strengths and weaknesses visually.
+
+**Acceptance Criteria:**
+
+**Given** a competition result for my horse
+**When** the ScoreBreakdownRadar renders
+**Then** a Recharts RadarChart displays with:
+
+- Celestial Night styling: navy background, gold data line, gold-filled area (0.3 opacity)
+- 6-8 stat axes matching the discipline's primary/secondary stats
+- My horse's scores on each axis
+- Optional: electric-blue reference line for personal best overlay
+  **And** chart is responsive (shrinks gracefully on mobile)
+  **And** axes have readable labels (Inter font, cream color)
+  **And** tooltip shows exact values on hover
+
+**Technical Notes:**
+
+- Create `frontend/src/components/competition/ScoreBreakdownRadar.tsx`
+- Use existing Recharts dependency (already in vendor-charts chunk)
+- Style: `<PolarGrid stroke="rgba(148,163,184,0.2)">`; `<Radar fill="rgba(200,168,78,0.3)">`
+- Props: `{ scores: Array<{category: string, value: number}>, personalBest?: Array<...> }`
+
+**Prerequisites:** Epic 22 (styling foundation)
+
+---
+
+**Epic 27 Complete: Competition Flow Redesign**
+
+Stories Created: 4
+FR Coverage: FR-CN13 (competition flow), FR-CN10 (CinematicMoment for first win)
+Technical Context: CompetitionBrowserPage restyle, new CompetitionFieldPreview, ScoreBreakdownRadar
+UX Patterns: UX §10.4 (Competition), Wireframe 5 (Competition Page)
+
+---
+
+## Epic BACKEND-B: Foal Development Model Expansion
+
+**Goal:** Expand foal development from a 6-day enrichment window to a realistic 0-2 year lifecycle with age-evolving groom activities, milestone tracking, and graduation at age 3. Foal care becomes a meaningful long-term journey.
+
+**User Value:** Players raise their foals through distinct life stages (newborn → weanling → yearling → two-year-old) with age-appropriate activities at each stage. Milestones celebrate progress, and graduation at age 3 marks the transition to an adult horse ready for training and competition.
+
+**FRs Covered:** FR-CN9
+
+**Dependencies:** None (parallel with frontend epics)
+
+### Story BB.1: Age-Based Development
+
+As a developer,
+I want foal development to be age-aware with computed stages,
+So that the system knows what activities and milestones are appropriate for each foal.
+
+**Acceptance Criteria:**
+
+**Given** a foal exists with `Horse.dateOfBirth`
+**When** `GET /api/v1/foals/:id/development` is called
+**Then** the response includes:
+
+- `ageInWeeks`: computed from `dateOfBirth` to now
+- `ageStage`: enum based on weeks:
+  - `newborn`: 0-4 weeks
+  - `weanling`: 5-26 weeks
+  - `yearling`: 27-52 weeks
+  - `two-year-old`: 53-104 weeks
+  - `graduated`: 105+ weeks (age 3+)
+- `birthDate`: ISO string
+- All existing development fields preserved
+
+**And** the `ageStage` computation is a pure function (testable without DB)
+**And** existing foal development consumers are not broken (new fields are additive)
+
+**Technical Notes:**
+
+- Modify foal controller in `backend/modules/breeding/controllers/` (or `backend/modules/horses/`)
+- Add `computeAgeStage(birthDate)` utility function
+- No schema migration needed (computed from existing `dateOfBirth`)
+- Add tests for boundary conditions (exactly 4 weeks, 26 weeks, 52 weeks, 104 weeks)
+
+**Prerequisites:** None
+
+---
+
+### Story BB.2: Age-Evolving Activities
+
+As a player caring for a foal,
+I want age-appropriate activities that evolve as my foal grows,
+So that care feels realistic and I can't just repeat the same task forever.
+
+**Acceptance Criteria:**
+
+**Given** `GET /api/v1/foals/:id/development` is called
+**When** the foal is in a specific age stage
+**Then** `availableActivities` returns only activities appropriate for that stage:
+
+| Stage                       | Activities                                                                    |
+| --------------------------- | ----------------------------------------------------------------------------- |
+| **Newborn** (0-4wk)         | Imprinting, gentle handling, first touch, mare bonding                        |
+| **Weanling** (5-26wk)       | Desensitization, social exposure, halter introduction, paddock exploration    |
+| **Yearling** (27-52wk)      | Ground work, basic obstacles, leading practice, hoof handling                 |
+| **Two-year-old** (53-104wk) | Intro to tack, first lead walks, confidence building, pre-training assessment |
+| **Graduated** (105+wk)      | Empty array (development window closed)                                       |
+
+**And** each activity includes: `id`, `name`, `description`, `ageStage`, `bondImpact`, `stressImpact`
+**And** POST to perform an activity validates the foal is in the correct age stage
+**And** activities performed today are excluded (one per day limit, existing pattern)
+
+**Technical Notes:**
+
+- Define activity sets as constants (or database-seeded)
+- Filter `availableActivities` by `ageStage` before returning
+- Reuse existing groom interaction validation for daily limits
+- Add activities to existing enrichment endpoint or create new `POST /api/v1/foals/:id/activity`
+
+**Prerequisites:** Story BB.1
+
+---
+
+### Story BB.3: Milestone Detection
+
+As a system,
+I want to detect and record developmental milestones as foals grow,
+So that players can celebrate progress and the system can trigger CinematicMoments.
+
+**Acceptance Criteria:**
+
+**Given** a foal's development progresses
+**When** a milestone condition is met
+**Then** it is recorded in the foal's development data:
+
+| Milestone            | Condition                                 | One-time? |
+| -------------------- | ----------------------------------------- | --------- |
+| `bond-25`            | Bond level reaches 25                     | Yes       |
+| `bond-50`            | Bond level reaches 50                     | Yes       |
+| `bond-75`            | Bond level reaches 75                     | Yes       |
+| `bond-100`           | Bond level reaches 100                    | Yes       |
+| `first-trait`        | First epigenetic trait discovered         | Yes       |
+| `stage-weanling`     | Foal enters weanling stage (5 weeks)      | Yes       |
+| `stage-yearling`     | Foal enters yearling stage (27 weeks)     | Yes       |
+| `stage-two-year-old` | Foal enters two-year-old stage (53 weeks) | Yes       |
+| `graduation`         | Foal reaches age 3 (105 weeks)            | Yes       |
+
+**And** `GET /api/v1/foals/:id/development` includes `completedMilestones: Array<{ id, timestamp }>`
+**And** milestones are never duplicated (check before recording)
+**And** milestone detection runs after every activity/interaction and on age check
+
+**Technical Notes:**
+
+- Add `milestones` JSONB array to FoalDevelopment (or Horse) record
+- Check milestones after: groom interaction, enrichment activity, and age computation
+- Milestone event structure: `{ id: string, achievedAt: ISO }`
+
+**Prerequisites:** Story BB.1
+
+---
+
+### Story BB.4: Graduation Transition
+
+As a player,
+I want my foal to "graduate" at age 3, becoming an adult horse eligible for training and competition,
+So that raising a foal has a clear, satisfying endpoint.
+
+**Acceptance Criteria:**
+
+**Given** a foal reaches age 3 (105+ weeks)
+**When** the system detects this
+**Then** the `graduation` milestone is recorded
+**And** `availableActivities` returns empty array (development window closed)
+**And** the horse becomes eligible for training (existing age check: ≥ 3 years)
+**And** the horse becomes eligible for competition (existing age check: ≥ 3 years)
+**And** groom assignments for foal care are flagged for reassignment
+**And** the graduation milestone flag is set for CinematicMoment triggering (checked via BA.5 milestones)
+**And** `User.settings.milestones.firstGraduation` is set if this is the user's first foal to graduate
+
+**Technical Notes:**
+
+- Graduation detection: part of `computeAgeStage()` — when stage transitions to `graduated`
+- Training/competition eligibility already uses age checks (≥ 3 years) — no change needed
+- CinematicMoment: set `firstGraduation` in User.settings.milestones (pattern from BA.5)
+- Groom reassignment: flag or clear foal-specific assignments
+
+**Prerequisites:** Stories BB.1, BB.3, BA.5
+
+---
+
+**Epic BACKEND-B Complete: Foal Development Model Expansion**
+
+Stories Created: 4
+FR Coverage: FR-CN9 (foal development)
+Technical Context: Foal controller expansion, age computation, activity filtering, milestone detection
+Architecture Sections: `backend/modules/breeding/`, `packages/database/prisma/schema.prisma`
+
+---
+
+## Epic 28: Breeding Flow Redesign
+
+**Goal:** Transform breeding from a simple pair-and-click into a strategic decision supported by comprehensive compatibility previews showing stat ranges, trait inheritance, inbreeding risk, and pedigree overlap.
+
+**User Value:** Players make informed breeding decisions by seeing predicted offspring stat ranges, trait inheritance probabilities, and inbreeding warnings before committing. First foal birth triggers a cinematic celebration — repeat births get a respectful toast.
+
+**FRs Covered:** FR-CN14, FR-CN10
+
+**Dependencies:** Epic 22 (Foundation)
+
+### Story 28.1: CompatibilityPreview Component
+
+As a player evaluating a breeding pair,
+I want to see a comprehensive compatibility preview with stats, traits, inbreeding, and pedigree,
+So that I can make strategic breeding decisions based on data.
+
+**Acceptance Criteria:**
+
+**Given** I have selected a mare and stallion (or am viewing a horse detail's "Breed" action)
+**When** the CompatibilityPreview renders
+**Then** it shows 4 tabbed sections:
+
+| Tab             | Content                                                                                        |
+| --------------- | ---------------------------------------------------------------------------------------------- |
+| **Stat Ranges** | Predicted offspring min/max/average for all 10 stats, based on parent stats                    |
+| **Traits**      | Inherited trait probability per trait (parent traits, epigenetic flags, personality influence) |
+| **Inbreeding**  | Inbreeding coefficient (3-generation check); warning banner if coefficient > 6.25%             |
+| **Pedigree**    | Ancestor overlap visualization (shared ancestors highlighted in gold)                          |
+
+**And** tabs use GoldTabs styling (from Epic 22)
+**And** entry is bidirectional: can start from mare page, stallion page, or dedicated breeding page
+**And** stat ranges render as horizontal range bars (min–max with average marker)
+**And** loading state shows skeleton while data fetches
+
+**Technical Notes:**
+
+- Create `frontend/src/components/breeding/CompatibilityPreview.tsx`
+- Stat prediction: client-side computation from parent stats (average ± variance)
+- Trait inheritance: from `GET /api/v1/epigenetic-traits/breeding-insights/:horseId` (existing)
+- Inbreeding: compute from pedigree data (existing sire/dam chain)
+- Pedigree overlap: traverse 3-generation lineage from both parents
+
+**Prerequisites:** Epic 22 complete
+
+---
+
+### Story 28.2: Breeding Page Restyle
+
+As a player,
+I want the breeding page to use Celestial Night styling with the CompatibilityPreview integrated,
+So that breeding decisions feel strategic and the experience is immersive.
+
+**Acceptance Criteria:**
+
+**Given** I navigate to `/breeding` or use the "Breed" action from a horse detail page
+**When** the page loads
+**Then** I see:
+
+1. **Mare selector** — glass panel with my mares, CooldownTimer if on cooldown
+2. **Stallion selector** — glass panel with my stallions + public stud stallions
+3. **CompatibilityPreview** (from Story 28.1) — appears after both are selected
+4. **Cost breakdown** — stud fee + breeding fee, gold accent on total
+5. **"Breed" gold button** — disabled until pair selected and funds sufficient
+
+**And** all elements use Celestial Night glass panels, gold accents
+**And** CooldownTimer shows mare cooldown (30 days) and stallion cooldown (14 days)
+**And** the page supports bidirectional entry (deep-link with `?mare=123` or `?stallion=456`)
+
+**Technical Notes:**
+
+- Restyle `frontend/src/pages/breeding/BreedingPairSelection.tsx`
+- Integrate CompatibilityPreview and CooldownTimer
+- Bidirectional: check URL search params on mount, pre-select horse
+- Preserve existing breeding mutation hook
+
+**Prerequisites:** Story 28.1, Epic 22
+
+---
+
+### Story 28.3: CinematicMoment Scaling
+
+As a player,
+I want my first-ever foal birth to trigger a full cinematic celebration, but repeat births to use a respectful toast,
+So that special moments feel special without becoming annoying.
+
+**Acceptance Criteria:**
+
+**Given** a breeding succeeds and a foal is born
+**When** the result is displayed
+**Then** IF `User.settings.milestones.firstBreed` is null/undefined:
+
+- CinematicMoment renders with 'foal-birth' variant (fullscreen overlay, shooting stars, gold text)
+- `firstBreed` milestone is set to current timestamp
+  **And** IF `User.settings.milestones.firstBreed` already exists:
+- RewardToast renders instead ("Foal born: [name] the [breed]!", horse icon, gold accent, 4s auto-dismiss)
+- No CinematicMoment
+
+**And** the same scaling pattern applies to all CinematicMoment events (tech spec policy):
+
+- First-ever → CinematicMoment
+- Repeat → RewardToast
+  **And** CinematicMoment uses existing component from Epic 18 (`CinematicMoment.tsx`)
+
+**Technical Notes:**
+
+- Modify `frontend/src/pages/breeding/BreedingPairSelection.tsx` breeding success handler
+- Check milestones from profile data (cached in React Query: `['profile']`)
+- CinematicMoment already exists with 3 variants (trait-discovery, foal-birth, cup-win)
+- RewardToast: new component (built in Epic 30, or build minimal version here)
+
+**Prerequisites:** Epic BACKEND-A Story BA.5 (milestones JSONB), Epic 22
+
+---
+
+**Epic 28 Complete: Breeding Flow Redesign**
+
+Stories Created: 3
+FR Coverage: FR-CN14 (breeding flow), FR-CN10 (CinematicMoment scaling)
+Technical Context: BreedingPairSelection.tsx restyle, new CompatibilityPreview, milestone-based CinematicMoment
+UX Patterns: UX §10.5 (Breeding), Wireframe 6 (Breeding Page)
+
+---
+
+## Epic 29: Foal Development Overhaul
+
+**Goal:** Transform foal care from a simple daily task list into a long-term developmental journey with a visual timeline, age-stage activities, milestone celebrations, and trait discovery moments. This is the emotional heart of the game.
+
+**User Value:** Players follow their foals through a 0-2 year timeline, watching them grow through distinct life stages. Each milestone — first trait, first bond level, graduation — feels like a parenting triumph. Players will screenshot these moments and share them.
+
+**FRs Covered:** FR-CN9, FR-CN10, FR-CN15
+
+**Dependencies:** Epic BACKEND-B (foal development model)
+
+### Story 29.1: DevelopmentTracker Component
+
+As a player raising a foal,
+I want a visual timeline showing my foal's development journey from birth to graduation,
+So that I can see where they are, what they've achieved, and what's coming next.
+
+**Acceptance Criteria:**
+
+**Given** I view a foal's development page
+**When** the DevelopmentTracker renders
+**Then** on **desktop** (≥ 1024px): horizontal timeline with milestone markers:
+
+- Birth → Weanling (5wk) → Yearling (27wk) → Two-year-old (53wk) → Graduation (105wk)
+- Completed milestones shown as gold stars
+- Current position shown as glowing marker with age label
+- Upcoming milestones shown as dim outlined circles
+
+**And** on **mobile** (< 768px): stacked card view:
+
+- One card per age stage (completed, current, upcoming)
+- Current stage expanded with activities and progress
+- Completed stages collapsed with milestone count
+
+**And** below the timeline: current age stage name, available activities, completed milestones list
+**And** bond progress bar (0-100) with milestone markers at 25/50/75/100
+**And** trait status: discovered traits shown as badges, hidden traits as "?" placeholders
+
+**Technical Notes:**
+
+- Create `frontend/src/components/foal/DevelopmentTracker.tsx`
+- Wire to `GET /api/v1/foals/:id/development` (expanded in BACKEND-B)
+- Timeline: CSS flexbox with positioned markers, or Recharts timeline
+- Responsive: `useMediaQuery` or Tailwind breakpoints for desktop/mobile switch
+
+**Prerequisites:** Epic BACKEND-B complete, Epic 22
+
+---
+
+### Story 29.2: Age-Appropriate Activity UI
+
+As a player,
+I want to see and perform age-appropriate activities for my foal's current life stage,
+So that caring for my foal feels realistic and each stage has unique interactions.
+
+**Acceptance Criteria:**
+
+**Given** I am viewing my foal's development page
+**When** the activity section renders
+**Then** activities are grouped by the current age stage
+**And** each activity shows: name, description, bond impact (+X), stress impact (-Y), icon
+**And** activities outside the current stage are not shown (no spoilers for future stages)
+**And** activities already performed today are marked with a checkmark and disabled
+**And** clicking an activity triggers the groom interaction endpoint
+**And** after completion: bond/stress changes are shown with animation, NarrativeChip updates
+
+**And** if the foal has graduated (age 3+), the activity section shows:
+
+- "Your foal has graduated! Ready for training and competition."
+- Link to training page
+
+**Technical Notes:**
+
+- Modify existing foal activity UI or create new section in DevelopmentTracker
+- Wire to `POST /api/v1/foals/:id/activity` (or existing enrichment endpoint)
+- Activity completion: invalidate `['foal', foalId, 'development']` query
+- Bond/stress animation: use existing stat change pattern from training results
+
+**Prerequisites:** Story 29.1, Epic BACKEND-B (BB.2 for age-filtered activities)
+
+---
+
+### Story 29.3: Milestone CinematicMoment
+
+As a player,
+I want cinematic celebrations for my foal's first-ever trait discovery and graduation,
+So that raising foals has emotionally satisfying payoff moments.
+
+**Acceptance Criteria:**
+
+**Given** an activity triggers a trait discovery
+**When** it is the user's first-ever trait discovery (`User.settings.milestones.firstTrait === null`)
+**Then** CinematicMoment renders with 'trait-discovery' variant (constellation forming animation)
+**And** `firstTrait` milestone is set
+
+**And** for subsequent trait discoveries: RewardToast ("Trait Discovered: [trait name]!", star icon)
+
+**Given** a foal reaches age 3 (graduation)
+**When** it is the user's first-ever graduation (`User.settings.milestones.firstGraduation === null`)
+**Then** CinematicMoment renders with a graduation variant (gold burst, "Your foal has grown up!")
+**And** `firstGraduation` milestone is set
+
+**And** for subsequent graduations: RewardToast ("[horse name] has graduated!", trophy icon)
+**And** all CinematicMoment triggers respect `prefers-reduced-motion` (static overlay, no animation)
+
+**Technical Notes:**
+
+- Modify `frontend/src/components/foal/FoalDevelopmentTracker.tsx` (or DevelopmentTracker from 29.1)
+- Check milestones from cached profile data
+- Graduation detection: poll development endpoint or detect `ageStage === 'graduated'` transition
+- CinematicMoment already has 3 variants — may need to add 'graduation' variant or reuse 'foal-birth'
+
+**Prerequisites:** Stories 29.1, 29.2, Epic BACKEND-A Story BA.5 (milestones)
+
+---
+
+**Epic 29 Complete: Foal Development Overhaul**
+
+Stories Created: 3
+FR Coverage: FR-CN9 (foal development), FR-CN10 (CinematicMoment), FR-CN15 (horse detail)
+Technical Context: New DevelopmentTracker, activity UI integration, milestone CinematicMoment
+UX Patterns: UX §10.6 (Foal Development), Wireframe 8 (Foal Development)
+
+---
+
+## Epic 30: Polish & Consistency
+
+**Goal:** Ensure every surface in the game meets the Celestial Night quality bar — decorative frames, atmospheric empty states, meaningful-only reward toasts, and verified WCAG 2.1 AA accessibility across all pages.
+
+**User Value:** No page feels like it belongs to a different app. Empty states are beautiful, not broken. Rewards are meaningful, not spammy. The game is accessible to all players.
+
+**FRs Covered:** FR-CN17, FR-CN18, FR-CN2
+
+**Dependencies:** All previous epics (final pass)
+
+### Story 30.1: GoldBorderFrame Component
+
+As a player viewing hero content (achievements, hall of fame, horse portraits),
+I want decorative gold frames that make these displays feel premium,
+So that important content is visually elevated above normal UI.
+
+**Acceptance Criteria:**
+
+**Given** the `.celestial` class is active
+**When** a GoldBorderFrame wraps content
+**Then** an ornate gold border renders with animated corner flourishes
+**And** the frame uses CSS custom properties for gold color (`--gold-primary`, `--gold-light`)
+**And** corner flourishes are SVG or CSS pseudo-elements (not image files)
+**And** `prefers-reduced-motion` disables corner animation (static flourishes)
+**And** the frame component accepts `children` and optional `size` prop (sm/md/lg)
+
+**Technical Notes:**
+
+- Create `frontend/src/components/ui/GoldBorderFrame.tsx`
+- Use `::before`/`::after` for corner accents with `border-image` or positioned pseudo-elements
+- Apply to: hero panels on HorseDetailPage, achievement displays, Hall of Fame entries
+
+**Prerequisites:** Epic 22
+
+---
+
+### Story 30.2: ErrorCard Restyle
+
+As a player encountering an error,
+I want error messages to feel atmospheric and provide clear recovery actions,
+So that errors don't break the fantasy immersion.
+
+**Acceptance Criteria:**
+
+**Given** an error occurs (API failure, missing data, etc.)
+**When** an ErrorCard renders
+**Then** it uses Celestial Night styling: dark bg, red accent border (subtle, not alarming), cream text
+**And** the error message is human-readable (not stack traces)
+**And** a gold "Try Again" button is prominently displayed
+**And** optional "Go Home" secondary button returns to hub
+**And** the card integrates with Sentry (existing error boundary, no new setup)
+
+**Technical Notes:**
+
+- Restyle existing `frontend/src/components/ui/ErrorCard.tsx`
+- Apply `.celestial` scoped styles
+- Ensure all existing error boundary catch points render the restyled card
+
+**Prerequisites:** Epic 22
+
+---
+
+### Story 30.3: RewardToast
+
+As a player performing actions throughout the game,
+I want meaningful-only reward toasts that celebrate real achievements without spamming every click,
+So that notifications feel rewarding, not noisy.
+
+**Acceptance Criteria:**
+
+**Given** a meaningful event occurs (competition win, trait discovery, foal milestone, level up)
+**When** a RewardToast triggers
+**Then** it renders with:
+
+- Gold accent border, glass panel background
+- Icon by type: 🏆 (win), ⭐ (trait), 🐴 (foal), 💰 (money), 📈 (level)
+- Brief message: "[Achievement]: [detail]"
+- 4-second auto-dismiss with fade-out animation
+- Click to dismiss immediately
+
+**And** toasts do NOT fire for:
+
+- Routine mutations (save settings, equip item)
+- Navigation events
+- Form submissions (use inline success states instead)
+
+**And** max 3 toasts visible simultaneously (queue additional)
+**And** `prefers-reduced-motion` users see instant appear/disappear (no fade)
+**And** toasts stack vertically (bottom-right desktop, bottom-center mobile)
+
+**Technical Notes:**
+
+- Create `frontend/src/components/feedback/RewardToast.tsx`
+- Replace or extend current Sonner toast usage for game events
+- Meaningful-only policy: trigger from specific hooks (useTrainHorse, useEnterCompetition, etc.), not generic mutation callbacks
+- Use `createPortal` to body for consistent stacking context
+
+**Prerequisites:** Epic 22
+
+---
+
+### Story 30.4: Empty State Illustrations
+
+As a player viewing a page with no data yet,
+I want atmospheric empty states with Celestial Night visuals and helpful guidance,
+So that empty pages feel intentional and guide me toward the next action.
+
+**Acceptance Criteria:**
+
+**Given** a page has no data (no horses, no competitions, no messages, no results)
+**When** the empty state renders
+**Then** it shows:
+
+- Horse silhouette illustration (using `placeholder.svg` as base)
+- Atmospheric message in Cinzel: "No horses in your stable yet" / "No competitions entered" / etc.
+- Helpful subtext in Inter: "Visit the market to find your first horse" / "Browse open shows to enter"
+- CTA gold button linking to the relevant page
+  **And** empty states exist for: My Horses, Competitions, Messages, Results, Inventory, Breeding
+
+**Technical Notes:**
+
+- Create `frontend/src/components/common/EmptyState.tsx` (reusable)
+- Props: `{ icon?: ReactNode, title: string, description: string, ctaLabel?: string, ctaHref?: string }`
+- Apply to all pages that currently show bare "No data" text
+- Use existing `placeholder.svg` with CSS filter for tinting
+
+**Prerequisites:** Epic 22
+
+---
+
+### Story 30.5: Accessibility Audit
+
+As all players,
+I want the entire game to meet WCAG 2.1 AA accessibility standards,
+So that Equoria is playable by everyone regardless of ability.
+
+**Acceptance Criteria:**
+
+**Given** the Celestial Night restyle is complete across all pages
+**When** an accessibility audit is performed
+**Then** the following pass:
+
+| Check               | Standard   | Requirement                                                             |
+| ------------------- | ---------- | ----------------------------------------------------------------------- |
+| Color contrast      | WCAG 1.4.3 | ≥ 4.5:1 for normal text, ≥ 3:1 for large text and UI components         |
+| Touch targets       | WCAG 2.5.5 | ≥ 44×44px for all interactive elements on mobile                        |
+| Keyboard navigation | WCAG 2.1.1 | All interactive elements reachable via Tab, operable via Enter/Space    |
+| Focus indicators    | WCAG 2.4.7 | Visible gold `box-shadow` focus ring on all focusable elements          |
+| Screen reader       | WCAG 4.1.2 | ARIA labels on all interactive elements; live regions for state changes |
+| Reduced motion      | WCAG 2.3.3 | All animations disabled when `prefers-reduced-motion` is set            |
+| Forced colors       | Windows HC | Visible borders/outlines in `forced-colors: active` mode                |
+
+**And** Lighthouse accessibility score ≥ 0.85 on all pages
+**And** keyboard-only navigation completes all core flows: login → hub → train → compete → breed
+**And** audit findings documented with fix locations
+
+**Technical Notes:**
+
+- Run axe-core or Lighthouse on every page
+- Use Chrome DevTools "Rendering" tab to test `prefers-reduced-motion` and `forced-colors`
+- Test with NVDA or VoiceOver for screen reader flows
+- Fix findings in the relevant component files (not a separate a11y layer)
+- Update `.lighthouserc.yml` if thresholds need adjustment
+
+**Prerequisites:** All previous epics complete
+
+---
+
+### Story 30.6: Bundle Size Audit
+
+As a developer,
+I want to verify the Celestial Night additions stay within the performance budget,
+So that the game loads fast on all devices including mobile on 4G.
+
+**Acceptance Criteria:**
+
+**Given** all Celestial Night components are implemented
+**When** `npx vite build` is run
+**Then** initial bundle size is < 400KB (currently 321KB; budget allows 79KB growth)
+**And** fonts (Cinzel + Inter WOFF2) add ≤ 60KB
+**And** new components are lazy-loaded where possible (DevelopmentTracker, CompetitionFieldPreview, CompatibilityPreview)
+**And** LCP < 2.5s on simulated 4G connection (Lighthouse)
+**And** font loading uses `font-display: swap` (verified: no FOIT)
+**And** the `dist/bundle-stats.html` visualizer shows no unexpected large additions
+
+**Technical Notes:**
+
+- Run `npx vite build` and check `dist/` output
+- Open `dist/bundle-stats.html` (rollup-plugin-visualizer from Epic 14)
+- Check if Recharts usage in ScoreBreakdownRadar increases vendor-charts chunk
+- If over budget: identify candidates for lazy-loading or code splitting
+
+**Prerequisites:** All previous epics complete
+
+---
+
+**Epic 30 Complete: Polish & Consistency**
+
+Stories Created: 6
+FR Coverage: FR-CN17 (accessibility), FR-CN18 (performance), FR-CN2 (design system completeness)
+Technical Context: All component files, Lighthouse CI, bundle analysis
+UX Patterns: UX §7 (Accessibility), §13 (Empty States), Pre-mortem risk prevention
 
 ---
 
 ## FR Coverage Matrix
 
-| Epic                    | Stories | P0 FRs                                                        | P1 FRs                            | P2 FRs              | Coverage    |
-| ----------------------- | ------- | ------------------------------------------------------------- | --------------------------------- | ------------------- | ----------- |
-| Epic 1: Authentication  | 6       | FR-U1, FR-U2, FR-U3, FR-U4                                    | -                                 | -                   | 100%        |
-| Epic 2: Dashboard       | 5       | FR-U6, FR-U7, FR-U8                                           | FR-U5                             | -                   | 100%        |
-| Epic 3: Horses          | 6       | FR-H1, FR-H2, FR-H3                                           | FR-H4, FR-H5                      | -                   | 100%        |
-| Epic 4: Training        | 5       | FR-T1, FR-T2, FR-T3, FR-T4                                    | FR-T5                             | -                   | 100%        |
-| Epic 5: Competition     | 5       | FR-C1, FR-C2, FR-C3, FR-C4                                    | FR-C5                             | -                   | 100%        |
-| Epic 6: Breeding        | 6       | FR-B1, FR-B2, FR-B3, FR-B4, FR-E1-E5                          | FR-B5                             | -                   | 100%        |
-| Epic 7: Grooms          | 7       | FR-G1, FR-G2, FR-G3                                           | FR-G4, FR-G7, FR-R1, FR-R2, FR-R4 | FR-G5, FR-G6, FR-R3 | 100%        |
-| Epic 8: API Integration | 6       | FR-U1, FR-U2, FR-U4, FR-H1, FR-H2, FR-G1, FR-T1, FR-C1, FR-B1 | FR-U5, FR-U8, FR-G4, FR-C2, FR-B2 | -                   | Integration |
+| FR ID   | Requirement                                            | Epic(s)        | Story(ies)                     | Status     |
+| ------- | ------------------------------------------------------ | -------------- | ------------------------------ | ---------- |
+| FR-CN1  | Complete Celestial Night theme across all 29 pages     | 22, 30         | 22.1-22.7, 30.5                | ✅ Covered |
+| FR-CN2  | 8 core components covering 90% of surfaces             | 22, 30         | 22.3-22.6, 30.1, 30.3          | ✅ Covered |
+| FR-CN3  | Cinzel/Inter font system                               | 22             | 22.1                           | ✅ Covered |
+| FR-CN4  | `.celestial` CSS class scoping + QA toggle             | 22             | 22.2                           | ✅ Covered |
+| FR-CN5  | Hub dashboard with NextActionsBar                      | 23             | 23.1, 23.3                     | ✅ Covered |
+| FR-CN6  | WhileYouWereGone return overlay                        | 24             | 24.1, 24.2, 24.3               | ✅ Covered |
+| FR-CN7  | Server-seeded next actions                             | 23             | 23.1, 23.4                     | ✅ Covered |
+| FR-CN8  | Competition model: 7-day windows + overnight execution | BA             | BA.1-BA.4                      | ✅ Covered |
+| FR-CN9  | Foal development: 0-2yr lifecycle                      | BB, 29         | BB.1-BB.4, 29.1-29.2           | ✅ Covered |
+| FR-CN10 | CinematicMoment: lifetime-first only                   | BA, 27, 28, 29 | BA.5, 27.3, 28.3, 29.3         | ✅ Covered |
+| FR-CN11 | Onboarding rebuild with BreedSelector                  | 25             | 25.1-25.3                      | ✅ Covered |
+| FR-CN12 | Training flow with DisciplineSelector + CooldownTimer  | 26             | 26.1-26.3                      | ✅ Covered |
+| FR-CN13 | Competition flow with scouting + results               | 27             | 27.1-27.4                      | ✅ Covered |
+| FR-CN14 | Breeding flow with CompatibilityPreview                | 28             | 28.1-28.2                      | ✅ Covered |
+| FR-CN15 | Horse detail with stat bars + tabs + action bar        | 29             | 29.1 (foal detail integration) | ✅ Covered |
+| FR-CN16 | Navigation: sidebar/hamburger/bottom nav               | 22             | 22.7 (navigation restyle)      | ✅ Covered |
+| FR-CN17 | WCAG 2.1 AA accessibility                              | 30             | 30.5                           | ✅ Covered |
+| FR-CN18 | Performance: < 400KB, LCP < 2.5s                       | 30             | 30.6                           | ✅ Covered |
+| FR-CN19 | 13 shadcn component restylings                         | 22             | 22.5, 22.6                     | ✅ Covered |
+| FR-CN20 | User.settings.milestones JSONB                         | BA             | BA.5                           | ✅ Covered |
 
-**Total Coverage:** 44/44 FRs (100%) — Epic 8 closes all frontend-pending FRs
-
----
-
-## Epic 8: API Integration Layer
-
-**Goal:** Connect all built frontend components to the live backend API, transitioning Equoria from a prototype with mock data to a fully functional product.
-
-**Priority:** P0 (BLOCKING — zero frontend functionality without real API connections)
-
-**Technical Context (from Architecture):**
-
-- Auth via HttpOnly cookies with `credentials: 'include'` on all requests
-- React Query hooks already exist — swap MSW handlers for real API calls
-- API client at `frontend/src/lib/api-client.ts` — update `baseURL` to live backend
-- Backend 100% complete: 3,500+ tests, all endpoints documented in swagger.yaml
-- No new UI components — pure integration work
-
-**FRs Closed (Frontend column):** FR-U1, FR-U2, FR-U3, FR-U4, FR-U5, FR-U6, FR-U7, FR-U8, FR-H1, FR-H2, FR-H3, FR-H4, FR-H5, FR-T1–T5, FR-C1–C5, FR-G1–G7, FR-B1–B5, FR-R1–R4
-
-**Prerequisites:** Epics 1–7 complete ✅
+**Coverage: 20/20 FRs mapped to specific stories (100%)**
 
 ---
 
-### Story 8.1: Authentication End-to-End (P0)
+## Architecture Integration Validation
 
-As a **player**,
-I want to **log in with my real credentials and stay logged in**,
-So that **I can access my horses and stable data**.
+| Architecture Decision                      | Stories Implementing                     | Status |
+| ------------------------------------------ | ---------------------------------------- | ------ |
+| Feature-Flag Hybrid (.celestial CSS class) | 22.2                                     | ✅     |
+| tokens.css design token system             | 22.1, 22.4, 22.5                         | ✅     |
+| 18 backend domain modules structure        | BA.1-BA.5, BB.1-BB.4, 23.4, 24.1         | ✅     |
+| Prisma/PostgreSQL schema updates           | BA.1 (Show lifecycle), BB.3 (milestones) | ✅     |
+| API versioning (/api/v1/)                  | All backend stories                      | ✅     |
+| React Query caching strategy               | 23.1, 23.3, 25.3, 27.1                   | ✅     |
+| Lazy loading (React.lazy)                  | 30.6 (audit)                             | ✅     |
+| Vitest + MSW testing                       | All component stories (test in AC)       | ✅     |
+| Playwright E2E                             | 30.5 (accessibility flows)               | ✅     |
 
-**Acceptance Criteria:**
+## UX Integration Validation
 
-**Given** I am on the login page
-**When** I enter valid email and password
-**Then** I am authenticated via real `POST /api/auth/login`, HttpOnly cookie is set, and I am redirected to my dashboard
+| UX Design Section                  | Stories Implementing                                                            | Status    |
+| ---------------------------------- | ------------------------------------------------------------------------------- | --------- |
+| §1 Design Tokens (colors, spacing) | 22.1-22.7                                                                       | ✅        |
+| §3 Typography (Cinzel/Inter)       | 22.1                                                                            | ✅        |
+| §5 Hub Dashboard                   | 23.1, 23.3                                                                      | ✅        |
+| §6 NextActions + WYAG              | 23.4, 24.1-24.3                                                                 | ✅        |
+| §7 Accessibility                   | 30.5                                                                            | ✅        |
+| §10.1 Onboarding                   | 25.1-25.3                                                                       | ✅        |
+| §10.3 Training                     | 26.1-26.3                                                                       | ✅        |
+| §10.4 Competition                  | 27.1-27.4                                                                       | ✅        |
+| §10.5 Breeding                     | 28.1-28.3                                                                       | ✅        |
+| §10.6 Foal Development             | 29.1-29.3                                                                       | ✅        |
+| §10.7 Horse Detail                 | 29.1 (foal detail)                                                              | ✅        |
+| §10.8 Navigation                   | 22.7                                                                            | ✅        |
+| §11.3 New Components               | 22.3-22.6, 23.1-23.2, 24.2, 25.1, 26.1-26.2, 27.1, 27.4, 28.1, 29.1, 30.1, 30.3 | ✅ All 13 |
+| §12 CinematicMoment Policy         | 27.3, 28.3, 29.3                                                                | ✅        |
+| §13 Empty States                   | 30.4                                                                            | ✅        |
 
-**And** page refresh maintains session (cookie persists, `GET /api/auth/me` validates)
-**And** expired/invalid cookie redirects to login with "Session expired" message
-**And** `POST /api/auth/logout` clears cookie and redirects to login
-**And** invalid credentials return generic "Invalid credentials" error — no email enumeration
-**And** protected routes redirect unauthenticated users to login
-**And** role-based route access enforced (User/Moderator/Admin)
+## Story Quality Validation
 
-**Prerequisites:** None — entry point for Epic 8
-
-**Technical Notes:**
-
-- Update `api-client.ts`: `baseURL: 'http://localhost:3000'`, `withCredentials: true`
-- Wire `useAuth` hook to real `POST /api/auth/login` endpoint
-- Wire `ProtectedRoute` to validate against real session via `GET /api/auth/me`
-- Remove MSW auth handlers from test setup for integration tests
-- API: `POST /api/auth/login`, `GET /api/auth/me`, `POST /api/auth/logout`
-
----
-
-### Story 8.2: User Dashboard Live Data (P0)
-
-As a **player**,
-I want to **see my real stats, level, currency, and activity on the dashboard**,
-So that **my dashboard reflects my actual game progress**.
-
-**Acceptance Criteria:**
-
-**Given** I am authenticated and on the dashboard
-**When** the page loads
-**Then** I see my real username, level, XP, and currency balance from the API
-
-**And** horse count reflects actual horses I own
-**And** activity feed shows real recent events
-**And** data refreshes correctly on subsequent visits (React Query cache + staleTime)
-**And** loading states shown during data fetch
-**And** error states shown if API is unavailable
-
-**Prerequisites:** Story 8.1
-
-**Technical Notes:**
-
-- Wire `useUser`, `useDashboard` hooks to real endpoints
-- API: `GET /api/users/:id/progress`, `GET /api/dashboard/:userId`
-- React Query staleTime: 30s for balance, 2min for stats
-- Replace all mock fixtures in UserDashboard, XpProgressTracker
-
----
-
-### Story 8.3: Horse Management Live (P0)
-
-As a **player**,
-I want to **see and manage my real horses**,
-So that **I can plan training and breeding with accurate data**.
-
-**Acceptance Criteria:**
-
-**Given** I am authenticated
-**When** I navigate to the horses page
-**Then** I see my actual horses fetched from `GET /api/horses`
-
-**And** horse detail page loads real attributes, stats, and traits
-**And** search and filter work against real API query params
-**And** conformation scores load from real data
-**And** horse XP and progression data is accurate
-**And** pagination works correctly for large stables
-
-**Prerequisites:** Story 8.1
-
-**Technical Notes:**
-
-- Wire `useHorses`, `useHorse` hooks to real endpoints
-- API: `GET /api/horses`, `GET /api/horses/:id`
-- Replace MSW horse fixtures with real API responses
-- Existing HorseListView, HorseDetailPage components — no UI changes needed
-
----
-
-### Story 8.4: Groom System Live (P0)
-
-As a **player**,
-I want to **hire, assign, and manage grooms using real data**,
-So that **groom actions have real effects on my stable**.
-
-**Acceptance Criteria:**
-
-**Given** I am authenticated
-**When** I open the groom marketplace
-**Then** I see available grooms fetched from `GET /api/grooms/marketplace`
-
-**And** hiring a groom calls real `POST /api/grooms/hire` and deducts currency
-**And** my grooms list reflects real hired grooms from `GET /api/grooms/user/:userId`
-**And** assigning a groom calls real `POST /api/grooms/assign`
-**And** all 9 Epic 7 components (GroomHiringInterface, GroomPersonalityDisplay, GroomTaskPanel, GroomCareerPanel, GroomLegacyPanel, GroomTalentTree, GroomShowHandlerPanel, GroomBonusTraitPanel) display real API data
-**And** groom interactions record via real `POST /api/grooms/interact`
-
-**Prerequisites:** Stories 8.1, 8.2
-
-**Technical Notes:**
-
-- Wire `useGrooms` hook to real endpoints (already exists, points at MSW)
-- API: `GET /api/grooms/marketplace`, `POST /api/grooms/hire`, `GET /api/grooms/user/:userId`, `POST /api/grooms/assign`, `POST /api/grooms/interact`
-- Type files (groomPersonality.ts, groomTasks.ts, etc.) already match API response shapes
-
----
-
-### Story 8.5: Training & Competition Live (P0)
-
-As a **player**,
-I want to **train my horses and enter competitions with real results**,
-So that **my horses actually progress and earn prizes**.
-
-**Acceptance Criteria:**
-
-**Given** I am authenticated with eligible horses
-**When** I initiate a training session
-**Then** `POST /api/training/sessions` fires, discipline score updates, and I see real results
-
-**And** training eligibility (age, cooldown) reflects real backend validation
-**And** competition entry calls real `POST /api/competition/enter`
-**And** competition results display real scores and placements
-**And** XP awards and currency prizes update immediately after competition
-**And** leaderboards load real rankings from `GET /api/leaderboards/:discipline`
-
-**Prerequisites:** Stories 8.1, 8.3
-
-**Technical Notes:**
-
-- Wire `useTraining`, `useCompetitions` hooks to real endpoints
-- API: `POST /api/training/sessions`, `POST /api/competition/enter`, `GET /api/competitions/:id/results`
-- Optimistic updates for training score (show +5 immediately, confirm on response)
-- Error handling for eligibility failures (age, cooldown, health)
-
----
-
-### Story 8.6: Breeding Live (P0)
-
-As a **player**,
-I want to **breed horses and raise foals using real game mechanics**,
-So that **foal development and trait discovery are genuine gameplay**.
-
-**Acceptance Criteria:**
-
-**Given** I am authenticated with eligible horses
-**When** I initiate breeding
-**Then** `POST /api/breeding/pairs` fires and a foal is created with real genetics
-
-**And** foal milestone timeline loads from real `GET /api/foals/:id/milestones`
-**And** enrichment activities call real `POST /api/foals/:id/enrichment`
-**And** milestone evaluations reveal real trait discoveries
-**And** breeding predictions display real probability data from `GET /api/breeding/predict`
-**And** epigenetic trait system displays real discovery status and effects
-
-**Prerequisites:** Stories 8.1, 8.3
-
-**Technical Notes:**
-
-- Wire `useBreeding`, `useFoals` hooks to real endpoints
-- API: `POST /api/breeding/pairs`, `GET /api/foals/:id/milestones`, `POST /api/foals/:id/enrichment`, `GET /api/breeding/predict`
-- All Epic 6 foal components already built — no new UI needed
-
----
-
-## FR Coverage Matrix (Updated)
-
-| Epic                        | Stories | P0 FRs                               | P1 FRs                            | P2 FRs              | Coverage       |
-| --------------------------- | ------- | ------------------------------------ | --------------------------------- | ------------------- | -------------- |
-| Epic 1: Authentication      | 6       | FR-U1, FR-U2, FR-U3, FR-U4           | -                                 | -                   | 100%           |
-| Epic 2: Dashboard           | 5       | FR-U6, FR-U7, FR-U8                  | FR-U5                             | -                   | 100%           |
-| Epic 3: Horses              | 6       | FR-H1, FR-H2, FR-H3                  | FR-H4, FR-H5                      | -                   | 100%           |
-| Epic 4: Training            | 5       | FR-T1, FR-T2, FR-T3, FR-T4           | FR-T5                             | -                   | 100%           |
-| Epic 5: Competition         | 5       | FR-C1, FR-C2, FR-C3, FR-C4           | FR-C5                             | -                   | 100%           |
-| Epic 6: Breeding            | 6       | FR-B1, FR-B2, FR-B3, FR-B4, FR-E1-E5 | FR-B5                             | -                   | 100%           |
-| Epic 7: Grooms              | 7       | FR-G1, FR-G2, FR-G3                  | FR-G4, FR-G7, FR-R1, FR-R2, FR-R4 | FR-G5, FR-G6, FR-R3 | 100%           |
-| **Epic 8: API Integration** | **6**   | **All frontend-pending P0 FRs**      | **All frontend-pending P1 FRs**   | -                   | **Closes all** |
-
-**Total Coverage after Epic 8:** 44/44 FRs — 100% frontend + backend
+| Check                                     | Result                                                             |
+| ----------------------------------------- | ------------------------------------------------------------------ |
+| Each epic delivers user value?            | ✅ All 11 epics have clear user value statements                   |
+| All 20 FRs covered?                       | ✅ 20/20 (100%)                                                    |
+| Stories implement architecture decisions? | ✅ All ADRs from tech spec covered                                 |
+| Stories follow UX design patterns?        | ✅ All 14 UX sections mapped                                       |
+| Stories sized for single dev session?     | ✅ Max story is 22.6 (12 shadcn components) — split into 3 sub-PRs |
+| No forward dependencies?                  | ✅ All prerequisites reference only prior stories/epics            |
+| Foundation enables all subsequent work?   | ✅ Epic 22 is the single entry point                               |
+| Acceptance criteria are testable?         | ✅ BDD format with Given/When/Then throughout                      |
 
 ---
 
 ## Summary
 
-### Epic Breakdown Statistics
+| Metric                    | Value                                                                                   |
+| ------------------------- | --------------------------------------------------------------------------------------- |
+| **Total Epics**           | 11 (22-30 frontend + BACKEND-A + BACKEND-B)                                             |
+| **Total Stories**         | 35                                                                                      |
+| **FR Coverage**           | 20/20 (100%)                                                                            |
+| **New Components**        | 13 custom + 13 shadcn restylings                                                        |
+| **New Backend Endpoints** | 5 (NextActions, WYAG, show create/browse/enter)                                         |
+| **Schema Changes**        | 2 (Show lifecycle, milestones JSONB)                                                    |
+| **Parallelizable Epics**  | BACKEND-A, BACKEND-B, 25, 26, 28 (all only depend on Epic 22)                           |
+| **Critical Path**         | Epic 22 → 23 → 24 (hub flow); Epic 22 + BA → 27 (competition); Epic 22 + BB → 29 (foal) |
+| **Entry Point**           | Epic 22 (no dependencies)                                                               |
+| **Final Gate**            | Epic 30 (a11y audit + bundle audit)                                                     |
 
-| Metric            | Value        |
-| ----------------- | ------------ |
-| **Total Epics**   | 8            |
-| **Total Stories** | 46           |
-| **P0 Stories**    | 34           |
-| **P1 Stories**    | 9            |
-| **P2 Stories**    | 3            |
-| **FR Coverage**   | 44/44 (100%) |
-
-### Implementation Sequence (Recommended)
-
-1. **Epic 1: Authentication** (BLOCKING) - Must be first
-2. **Epic 2: Dashboard** - Foundation for user experience
-3. **Epic 3: Horses** - Core entity management
-4. **Epic 4: Training** - Primary gameplay loop
-5. **Epic 5: Competition** - Rewards and progression
-6. **Epic 6: Breeding** - Advanced gameplay
-7. **Epic 7: Grooms** - Enhancement features
-8. **Epic 8: API Integration** - Connect all frontend to live backend ← CURRENT
-
-### Effort Estimation
-
-| Epic       | Story Count | Notes                                             |
-| ---------- | ----------- | ------------------------------------------------- |
-| Epic 1     | 6           | Complete ✅                                       |
-| Epic 2     | 5           | Complete ✅                                       |
-| Epic 3     | 6           | Complete ✅                                       |
-| Epic 4     | 5           | Complete ✅                                       |
-| Epic 5     | 5           | Complete ✅                                       |
-| Epic 6     | 6           | Complete ✅                                       |
-| Epic 7     | 7           | Complete ✅                                       |
-| **Epic 8** | **6**       | **In progress — API integration only, no new UI** |
-
-### Dependencies
-
-```
-Epic 1 ──► Epic 2 ──► Epic 3 ──► Epic 4 ──► Epic 5
-                          │                      │
-                          └──► Epic 6 ──► Epic 7 ┘
-                                                  │
-                                             Epic 8 (all paths converge)
-```
+**Ready for Phase 4: Sprint Planning and Development Implementation**
 
 ---
 
 _For implementation: Use the `create-story` workflow to generate individual story implementation plans from this epic breakdown._
-
-_Epic 8 added 2026-02-17. All 6 stories are integration-only — no new UI components required._
