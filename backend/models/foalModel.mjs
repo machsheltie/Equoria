@@ -1,5 +1,6 @@
 import prisma from '../db/index.mjs';
 import logger from '../utils/logger.mjs';
+import { hasGraduated } from '../utils/foalAgeUtils.mjs';
 
 /**
  * Get foal development data including current status and activity history
@@ -592,10 +593,119 @@ function calculateActivityOutcome(activity) {
   };
 }
 
+/**
+ * Graduate a foal — closes the development window and clears groom assignments.
+ * Called when a foal reaches age 3 (104 weeks).
+ *
+ * @param {number} foalId - ID of the foal/horse
+ * @param {string} userId - Owner's user ID (for milestone tracking)
+ * @returns {Object} - Graduation result with horse data and milestone info
+ * @throws {Error} - If horse not found, not old enough, or already graduated
+ */
+async function graduateFoal(foalId, userId) {
+  try {
+    const parsedFoalId = parseInt(foalId, 10);
+    if (isNaN(parsedFoalId) || parsedFoalId <= 0) {
+      throw new Error('Foal ID must be a positive integer');
+    }
+
+    logger.info(`[foalModel.graduateFoal] Graduating foal ${parsedFoalId}`);
+
+    // Get horse with dateOfBirth
+    const horse = await prisma.horse.findUnique({
+      where: { id: parsedFoalId },
+      include: { breed: true, user: true },
+    });
+
+    if (!horse) {
+      throw new Error('Horse not found');
+    }
+
+    // Verify horse has reached graduation age (3 years / 104 weeks)
+    if (!hasGraduated(horse.dateOfBirth)) {
+      throw new Error('Horse has not reached graduation age (3 years)');
+    }
+
+    // Check if already graduated (FoalDevelopment.isActive === false)
+    const development = await prisma.foalDevelopment.findUnique({
+      where: { foalId: parsedFoalId },
+    });
+
+    if (development && !development.isActive) {
+      throw new Error('Horse has already graduated');
+    }
+
+    // Mark development window as closed
+    if (development) {
+      await prisma.foalDevelopment.update({
+        where: { foalId: parsedFoalId },
+        data: { isActive: false },
+      });
+    }
+
+    // Clear active groom assignments for this horse
+    const clearedAssignments = await prisma.groomAssignment.updateMany({
+      where: { foalId: parsedFoalId, isActive: true },
+      data: { isActive: false, endDate: new Date() },
+    });
+
+    logger.info(
+      `[foalModel.graduateFoal] Cleared ${clearedAssignments.count} groom assignments for horse ${parsedFoalId}`,
+    );
+
+    // Check and set firstGraduation milestone on user
+    let isFirstGraduation = false;
+    if (userId) {
+      const user = await prisma.user.findUnique({
+        where: { id: userId },
+        select: { settings: true },
+      });
+
+      const settings = user?.settings ?? {};
+      const milestones = settings.milestones ?? {};
+
+      if (!milestones.firstGraduation) {
+        isFirstGraduation = true;
+        await prisma.user.update({
+          where: { id: userId },
+          data: {
+            settings: {
+              ...settings,
+              milestones: {
+                ...milestones,
+                firstGraduation: new Date().toISOString(),
+              },
+            },
+          },
+        });
+        logger.info(`[foalModel.graduateFoal] Set firstGraduation milestone for user ${userId}`);
+      }
+    }
+
+    return {
+      success: true,
+      horse: {
+        id: horse.id,
+        name: horse.name,
+        breed: horse.breed?.name || 'Unknown',
+      },
+      graduation: {
+        clearedAssignments: clearedAssignments.count,
+        bondScore: development?.bondScore ?? development?.bondingLevel ?? 0,
+        isFirstGraduation,
+      },
+    };
+  } catch (error) {
+    logger.error(`[foalModel.graduateFoal] Error: ${error.message}`);
+    throw error;
+  }
+}
+
 export {
   getFoalDevelopment,
   completeActivity,
   advanceDay,
   getAvailableActivities,
   completeEnrichmentActivity,
+  graduateFoal,
 };

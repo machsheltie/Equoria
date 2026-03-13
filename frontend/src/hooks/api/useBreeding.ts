@@ -103,4 +103,24 @@ export const useDevelopFoal = (foalId: number) => {
   });
 };
 
+export const useGraduateFoal = (foalId: number) => {
+  const queryClient = useQueryClient();
+
+  return useMutation<
+    {
+      horse: { id: number; name: string; breed: string };
+      graduation: { clearedAssignments: number; bondScore: number; isFirstGraduation: boolean };
+    },
+    ApiError
+  >({
+    mutationFn: () => breedingApi.graduateFoal(foalId),
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: breedingKeys.foal(foalId) });
+      queryClient.invalidateQueries({ queryKey: breedingKeys.development(foalId) });
+      queryClient.invalidateQueries({ queryKey: ['horses'] });
+      queryClient.invalidateQueries({ queryKey: ['profile'] });
+    },
+  });
+};
+
 export const breedingQueryKeys = breedingKeys;

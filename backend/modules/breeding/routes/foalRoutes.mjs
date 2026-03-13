@@ -5,6 +5,7 @@ import {
   completeActivity,
   advanceDay,
   completeEnrichmentActivity,
+  graduateFoal,
 } from '../../../models/foalModel.mjs';
 import { enrichmentDiscoveryMiddleware } from '../../../middleware/traitDiscoveryMiddleware.mjs';
 import { ensureDefaultGroomAssignment } from '../../../utils/groomSystem.mjs';
@@ -265,6 +266,68 @@ router.post(
       }
 
       if (error.message.includes('not appropriate') || error.message.includes('must be between')) {
+        return res.status(400).json({
+          success: false,
+          message: error.message,
+        });
+      }
+
+      res.status(500).json({
+        success: false,
+        message: 'Internal server error',
+      });
+    }
+  },
+);
+
+/**
+ * POST /api/foals/:foalId/graduate
+ * Graduate a foal — closes development window and clears groom assignments.
+ * Called when a foal reaches age 3 (104 weeks).
+ *
+ * Security: Validates foal ownership before graduating
+ */
+router.post(
+  '/:foalId/graduate',
+  [param('foalId').isInt({ min: 1 }).withMessage('Foal ID must be a positive integer')],
+  requireOwnership('foal', { idParam: 'foalId' }),
+  async (req, res) => {
+    try {
+      const errors = validationResult(req);
+      if (!errors.isEmpty()) {
+        return res.status(400).json({
+          success: false,
+          message: 'Validation failed',
+          errors: errors.array(),
+        });
+      }
+
+      const { foalId } = req.params;
+      const userId = req.user?.id;
+
+      logger.info(`[foalRoutes] POST /api/foals/${foalId}/graduate`);
+
+      const result = await graduateFoal(foalId, userId);
+
+      res.json({
+        success: true,
+        message: `${result.horse.name} has graduated! Now eligible for training and competition.`,
+        data: result,
+      });
+    } catch (error) {
+      logger.error(`[foalRoutes] POST /api/foals/:foalId/graduate error: ${error.message}`);
+
+      if (error.message.includes('not found')) {
+        return res.status(404).json({
+          success: false,
+          message: error.message,
+        });
+      }
+
+      if (
+        error.message.includes('not reached graduation age') ||
+        error.message.includes('already graduated')
+      ) {
         return res.status(400).json({
           success: false,
           message: error.message,
