@@ -1685,4 +1685,52 @@ export const handlers = [
       },
     });
   }),
+
+  // ── Breeds ──────────────────────────────────────────────────────────────────
+  http.get(`${base}/api/v1/breeds`, () => {
+    return HttpResponse.json({
+      success: true,
+      data: [
+        { id: 1, name: 'Thoroughbred', description: 'A fast breed' },
+        { id: 2, name: 'Arabian', description: 'An endurance breed' },
+        { id: 3, name: 'Warmblood', description: 'A dressage breed' },
+      ],
+      count: 3,
+    });
+  }),
+
+  // ── Next Actions ────────────────────────────────────────────────────────────
+  http.get(`${base}/api/v1/next-actions`, () => {
+    return HttpResponse.json({
+      success: true,
+      data: {
+        actions: [
+          { type: 'train', priority: 1, horseId: 1, horseName: 'Thunder' },
+          { type: 'compete', priority: 2, horseId: 2, horseName: 'Lightning' },
+          { type: 'claim-prize', priority: 3 },
+        ],
+      },
+    });
+  }),
+
+  // ── While You Were Gone ─────────────────────────────────────────────────────
+  http.get(`${base}/api/v1/while-you-were-gone`, () => {
+    return HttpResponse.json({
+      success: true,
+      data: {
+        items: [
+          {
+            type: 'competition-result',
+            priority: 1,
+            title: 'Thunder won 1st place!',
+            description: 'Dressage Grand Prix',
+            timestamp: new Date().toISOString(),
+            actionUrl: '/competitions/1',
+          },
+        ],
+        since: new Date(Date.now() - 5 * 60 * 60 * 1000).toISOString(),
+        hasMore: false,
+      },
+    });
+  }),
 ];
