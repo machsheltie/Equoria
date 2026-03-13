@@ -4231,4 +4231,384 @@ summary:
   epic_16_retro_completed_date: '2026-02-27'
   epic_17_planned_date: '2026-02-27'
   epic_17_story_file: 'docs/sprint-artifacts/future-epics-roadmap.md'
-  next_milestone: 'Epic 17 — Guided Onboarding & Design Tokens'
+  next_milestone: 'Celestial Night Phase — Epics 22-30 + BACKEND-A/B'
+
+  # ============================================================
+  # CELESTIAL NIGHT PHASE — Epics 22-30 + BACKEND-A + BACKEND-B
+  # Generated: 2026-03-13
+  # Source: docs/epics.md (11 epics, 35 stories, 20 FRs)
+  # Implementation commits: 1b9dc9e1, dd9960c2
+  # ============================================================
+
+  # STATUS DEFINITIONS (Celestial Night Phase):
+  # Epic:  backlog → in-progress → done
+  # Story: backlog → drafted → in-progress → review → done
+  # Retro: optional → completed
+
+  # ----------------------------------------------------------
+  # Epic 22: Celestial Night Foundation
+  # FRs: FR-CN1, FR-CN2, FR-CN3, FR-CN4, FR-CN19
+  # Dependencies: None (entry point)
+  # ----------------------------------------------------------
+  epic-22:
+    title: 'Celestial Night Foundation'
+    status: in-progress
+    started_date: '2026-03-12'
+
+  22-1-font-migration:
+    title: 'Font Migration'
+    status: in-progress
+    notes: 'index.html + tokens.css modified; needs individual AC verification'
+
+  22-2-celestial-theme-provider:
+    title: 'CelestialThemeProvider'
+    status: in-progress
+    notes: 'CelestialThemeProvider.tsx created'
+
+  22-3-starfield-background-upgrade:
+    title: 'StarfieldBackground Upgrade'
+    status: in-progress
+    notes: 'StarfieldBackground.tsx created'
+
+  22-4-glass-panel-surface-updates:
+    title: 'Glass Panel & Surface Updates'
+    status: in-progress
+    notes: 'index.css glass-panel rules modified'
+
+  22-5-button-hierarchy:
+    title: 'Button Hierarchy'
+    status: in-progress
+    notes: 'button.tsx restyled'
+
+  22-6-shadcn-component-restyling:
+    title: 'shadcn Component Restyling'
+    status: in-progress
+    notes: '12 shadcn components modified; lint errors remain in input.tsx, textarea.tsx'
+
+  22-7-body-page-chrome:
+    title: 'Body & Page Chrome'
+    status: in-progress
+    notes: 'MainNavigation.tsx + index.css body gradient modified'
+
+  epic-22-retrospective:
+    status: optional
+
+  # ----------------------------------------------------------
+  # Epic 23: Hub & Daily Loop
+  # FRs: FR-CN5, FR-CN7
+  # Dependencies: Epic 22
+  # ----------------------------------------------------------
+  epic-23:
+    title: 'Hub & Daily Loop'
+    status: in-progress
+    started_date: '2026-03-12'
+
+  23-1-nextactionsbar-component:
+    title: 'NextActionsBar Component'
+    status: in-progress
+    notes: 'NextActionsBar.tsx created; lint warning (unused var)'
+
+  23-2-narrativechip-component:
+    title: 'NarrativeChip Component'
+    status: in-progress
+    notes: 'NarrativeChip.tsx created'
+
+  23-3-hub-dashboard-rebuild:
+    title: 'Hub Dashboard Rebuild'
+    status: in-progress
+    notes: 'Index.tsx heavily modified'
+
+  23-4-backend-nextactions-endpoint:
+    title: 'Backend — NextActions Endpoint'
+    status: in-progress
+    notes: 'nextActionsController.mjs + nextActionsRoutes.mjs created'
+
+  epic-23-retrospective:
+    status: optional
+
+  # ----------------------------------------------------------
+  # Epic 24: WhileYouWereGone
+  # FRs: FR-CN6
+  # Dependencies: Epic 22, Story 24.1
+  # ----------------------------------------------------------
+  epic-24:
+    title: 'WhileYouWereGone'
+    status: in-progress
+    started_date: '2026-03-12'
+
+  24-1-backend-wyag-aggregation-endpoint:
+    title: 'Backend — WYAG Aggregation Endpoint'
+    status: in-progress
+    notes: 'wyagController.mjs + wyagRoutes.mjs created'
+
+  24-2-whileyouweregone-component:
+    title: 'WhileYouWereGone Component'
+    status: in-progress
+    notes: 'WhileYouWereGone.tsx created'
+
+  24-3-return-detection:
+    title: 'Return Detection'
+    status: in-progress
+    notes: 'Needs AC verification (localStorage lastVisit, 4h threshold)'
+
+  epic-24-retrospective:
+    status: optional
+
+  # ----------------------------------------------------------
+  # Epic BACKEND-A: Competition Model Rewrite
+  # FRs: FR-CN8, FR-CN20
+  # Dependencies: None (parallel with frontend)
+  # ----------------------------------------------------------
+  epic-backend-a:
+    title: 'Competition Model Rewrite'
+    status: in-progress
+    started_date: '2026-03-12'
+
+  ba-1-show-model-expansion:
+    title: 'Show Model Expansion'
+    status: in-progress
+    notes: 'ShowStatus enum + ShowEntry table + migration 20260312180554 created and applied'
+
+  ba-2-show-creation-endpoint:
+    title: 'Show Creation Endpoint'
+    status: in-progress
+    notes: 'showController.mjs created with createShow'
+
+  ba-3-show-browse-entry:
+    title: 'Show Browse & Entry'
+    status: in-progress
+    notes: 'showController.mjs + showRoutes.mjs created'
+
+  ba-4-overnight-execution-scheduler:
+    title: 'Overnight Execution Scheduler'
+    status: in-progress
+    notes: 'showScheduler.mjs created'
+
+  ba-5-milestones-jsonb:
+    title: 'Milestones JSONB'
+    status: backlog
+    notes: 'Needs verification — User.settings.milestones not confirmed in schema'
+
+  epic-backend-a-retrospective:
+    status: optional
+
+  # ----------------------------------------------------------
+  # Epic 25: Onboarding Rebuild
+  # FRs: FR-CN11
+  # Dependencies: Epic 22
+  # ----------------------------------------------------------
+  epic-25:
+    title: 'Onboarding Rebuild'
+    status: in-progress
+    started_date: '2026-03-12'
+
+  25-1-breedselector-component:
+    title: 'BreedSelector Component'
+    status: in-progress
+    notes: 'BreedSelector.tsx created (440 lines); lint warning (unused var)'
+
+  25-2-onboarding-wizard-restyle:
+    title: 'Onboarding Wizard Restyle'
+    status: in-progress
+    notes: 'OnboardingPage.tsx modified'
+
+  25-3-breed-data-integration:
+    title: 'Breed Data Integration'
+    status: in-progress
+    notes: 'useBreeds.ts hook created'
+
+  epic-25-retrospective:
+    status: optional
+
+  # ----------------------------------------------------------
+  # Epic 26: Training Flow Redesign
+  # FRs: FR-CN12
+  # Dependencies: Epic 22
+  # ----------------------------------------------------------
+  epic-26:
+    title: 'Training Flow Redesign'
+    status: in-progress
+    started_date: '2026-03-12'
+
+  26-1-disciplineselector-component:
+    title: 'DisciplineSelector Component'
+    status: in-progress
+    notes: 'DisciplineSelector.tsx heavily modified; lint warning (unused var)'
+
+  26-2-cooldowntimer-component:
+    title: 'CooldownTimer Component'
+    status: in-progress
+    notes: 'CooldownTimer.tsx created; lint error (react-hooks/exhaustive-deps rule missing)'
+
+  26-3-training-page-restyle:
+    title: 'Training Page Restyle'
+    status: in-progress
+    notes: 'TrainingPage.tsx modified'
+
+  epic-26-retrospective:
+    status: optional
+
+  # ----------------------------------------------------------
+  # Epic 27: Competition Flow Redesign
+  # FRs: FR-CN13, FR-CN10
+  # Dependencies: Epic BACKEND-A
+  # ----------------------------------------------------------
+  epic-27:
+    title: 'Competition Flow Redesign'
+    status: in-progress
+    started_date: '2026-03-12'
+
+  27-1-competitionfieldpreview-component:
+    title: 'CompetitionFieldPreview Component'
+    status: in-progress
+    notes: 'CompetitionFieldPreview.tsx created'
+
+  27-2-competition-page-restyle:
+    title: 'Competition Page Restyle'
+    status: in-progress
+    notes: 'CompetitionBrowserPage.tsx modified'
+
+  27-3-results-page-restyle:
+    title: 'Results Page Restyle'
+    status: in-progress
+    notes: 'CompetitionResultsPage.tsx modified; lint warning (unused performanceView)'
+
+  27-4-scorebreakdownradar-component:
+    title: 'ScoreBreakdownRadar Component'
+    status: in-progress
+    notes: 'ScoreBreakdownRadar.tsx created'
+
+  epic-27-retrospective:
+    status: optional
+
+  # ----------------------------------------------------------
+  # Epic BACKEND-B: Foal Development Model Expansion
+  # FRs: FR-CN9
+  # Dependencies: None (parallel with Training)
+  # ----------------------------------------------------------
+  epic-backend-b:
+    title: 'Foal Development Model Expansion'
+    status: in-progress
+    started_date: '2026-03-12'
+
+  bb-1-age-based-development:
+    title: 'Age-Based Development'
+    status: in-progress
+    notes: 'Schema updated with AgeStage enum + foal_development cols; migration applied'
+
+  bb-2-age-evolving-activities:
+    title: 'Age-Evolving Activities'
+    status: backlog
+    notes: 'foalModel.mjs modified but age-activity logic needs verification'
+
+  bb-3-milestone-detection:
+    title: 'Milestone Detection'
+    status: backlog
+    notes: 'Needs backend milestone detection implementation verification'
+
+  bb-4-graduation-transition:
+    title: 'Graduation Transition'
+    status: in-progress
+    notes: 'graduateFoal function exists in foalModel.mjs (line 605)'
+
+  epic-backend-b-retrospective:
+    status: optional
+
+  # ----------------------------------------------------------
+  # Epic 28: Breeding Flow Redesign
+  # FRs: FR-CN14, FR-CN10
+  # Dependencies: Epic 22
+  # ----------------------------------------------------------
+  epic-28:
+    title: 'Breeding Flow Redesign'
+    status: in-progress
+    started_date: '2026-03-12'
+
+  28-1-compatibilitypreview-component:
+    title: 'CompatibilityPreview Component'
+    status: in-progress
+    notes: 'CompatibilityPreview.tsx created (341 lines)'
+
+  28-2-breeding-page-restyle:
+    title: 'Breeding Page Restyle'
+    status: in-progress
+    notes: 'BreedingPage.tsx + BreedingPairSelection.tsx modified'
+
+  28-3-cinematicmoment-scaling:
+    title: 'CinematicMoment Scaling'
+    status: in-progress
+    notes: 'CinematicMoment.tsx exists from Epic 18; scaling logic needs verification'
+
+  epic-28-retrospective:
+    status: optional
+
+  # ----------------------------------------------------------
+  # Epic 29: Foal Development Overhaul
+  # FRs: FR-CN9, FR-CN10, FR-CN15
+  # Dependencies: Epic BACKEND-B
+  # ----------------------------------------------------------
+  epic-29:
+    title: 'Foal Development Overhaul'
+    status: in-progress
+    started_date: '2026-03-12'
+
+  29-1-developmenttracker-component:
+    title: 'DevelopmentTracker Component'
+    status: in-progress
+    notes: 'DevelopmentTracker.tsx created (681 lines); multiple lint warnings'
+
+  29-2-age-appropriate-activity-ui:
+    title: 'Age-Appropriate Activity UI'
+    status: in-progress
+    notes: 'Integrated in DevelopmentTracker'
+
+  29-3-milestone-cinematicmoment:
+    title: 'Milestone CinematicMoment'
+    status: in-progress
+    notes: 'CinematicMoment integration needs verification'
+
+  epic-29-retrospective:
+    status: optional
+
+  # ----------------------------------------------------------
+  # Epic 30: Polish & Consistency
+  # FRs: FR-CN17, FR-CN18, FR-CN2
+  # Dependencies: All previous epics
+  # ----------------------------------------------------------
+  epic-30:
+    title: 'Polish & Consistency'
+    status: in-progress
+    started_date: '2026-03-12'
+
+  30-1-goldborderframe-component:
+    title: 'GoldBorderFrame Component'
+    status: in-progress
+    notes: 'GoldBorderFrame.tsx created (113 lines)'
+
+  30-2-errorcard-restyle:
+    title: 'ErrorCard Restyle'
+    status: in-progress
+    notes: 'ErrorCard.tsx modified'
+
+  30-3-rewardtoast:
+    title: 'RewardToast'
+    status: in-progress
+    notes: 'RewardToast.tsx created (156 lines)'
+
+  30-4-empty-state-illustrations:
+    title: 'Empty State Illustrations'
+    status: in-progress
+    notes: 'EmptyState.tsx created (149 lines)'
+
+  30-5-accessibility-audit:
+    title: 'Accessibility Audit'
+    status: backlog
+    notes: 'Requires full a11y audit — no automated run yet'
+
+  30-6-bundle-size-audit:
+    title: 'Bundle Size Audit'
+    status: backlog
+    notes: 'Requires Lighthouse CI + bundle analysis'
+
+  epic-30-retrospective:
+    status: optional
