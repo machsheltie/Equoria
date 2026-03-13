@@ -59,9 +59,9 @@ interface AuthContextValue {
   /** Current user's role (defaults to 'user' if not set) */
   userRole: UserRole;
   /** Check if user has a specific role */
-  hasRole: (role: UserRole) => boolean;
+  hasRole: (_role: UserRole) => boolean;
   /** Check if user has any of the given roles */
-  hasAnyRole: (roles: UserRole[]) => boolean;
+  hasAnyRole: (_roles: UserRole[]) => boolean;
   /** Convenience check for admin role */
   isAdmin: boolean;
   /** Convenience check for moderator role */

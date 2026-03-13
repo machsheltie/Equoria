@@ -28,7 +28,7 @@ export interface BreedSelectionValue {
 interface BreedSelectorProps {
   breeds: Breed[];
   value: Partial<BreedSelectionValue>;
-  onChange: (value: Partial<BreedSelectionValue>) => void;
+  onChange: (_value: Partial<BreedSelectionValue>) => void;
 }
 
 // ── Stat tendency mini bar ─────────────────────────────────────────────────────

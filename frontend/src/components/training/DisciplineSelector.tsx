@@ -16,7 +16,7 @@
  */
 
 import React, { useState } from 'react';
-import { ChevronDown, ChevronUp, Zap } from 'lucide-react';
+import { ChevronDown, ChevronUp, Zap, Lock } from 'lucide-react';
 
 // ── Discipline stat map (mirrors backend/utils/statMap.mjs) ───────────────────
 
@@ -94,11 +94,17 @@ function DisciplineOption({
   discipline,
   isSelected,
   isRecommended,
+  matchScore,
+  isIneligible,
+  ineligibleReason,
   onSelect,
 }: {
   discipline: string;
   isSelected: boolean;
   isRecommended: boolean;
+  matchScore?: number;
+  isIneligible?: boolean;
+  ineligibleReason?: string;
   onSelect: () => void;
 }) {
   const stats = DISCIPLINE_STAT_MAP[discipline];
@@ -106,26 +112,56 @@ function DisciplineOption({
   return (
     <button
       type="button"
-      onClick={onSelect}
+      onClick={isIneligible ? undefined : onSelect}
       aria-pressed={isSelected}
+      aria-disabled={isIneligible}
+      title={isIneligible ? ineligibleReason : undefined}
       className={[
         'w-full text-left rounded-xl border p-3 transition-all duration-200 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[var(--electric-blue)] focus-visible:ring-offset-2 focus-visible:ring-offset-[var(--celestial-navy-900)]',
-        isSelected
-          ? 'border-[var(--gold-400)] bg-[rgba(201,162,39,0.1)] shadow-[0_0_12px_rgba(201,162,39,0.15)]'
-          : 'border-[rgba(100,130,165,0.2)] bg-[rgba(10,22,50,0.4)] hover:border-[rgba(201,162,39,0.35)] hover:bg-[rgba(10,22,50,0.65)]',
+        isIneligible
+          ? 'border-[rgba(100,130,165,0.1)] bg-[rgba(10,22,50,0.2)] opacity-50 cursor-not-allowed'
+          : isSelected
+            ? 'border-[var(--gold-400)] bg-[rgba(201,162,39,0.1)] shadow-[0_0_12px_rgba(201,162,39,0.15)]'
+            : 'border-[rgba(100,130,165,0.2)] bg-[rgba(10,22,50,0.4)] hover:border-[rgba(201,162,39,0.35)] hover:bg-[rgba(10,22,50,0.65)]',
       ].join(' ')}
     >
       <div className="flex items-center justify-between mb-2">
-        <span className="text-sm font-semibold text-[var(--cream)] font-[var(--font-heading)]">
+        <span
+          className={`text-sm font-semibold font-[var(--font-heading)] ${isIneligible ? 'text-[var(--text-muted)]' : 'text-[var(--cream)]'}`}
+        >
+          {isIneligible && (
+            <Lock className="w-3 h-3 inline-block mr-1 -mt-0.5" aria-hidden="true" />
+          )}
           {discipline}
         </span>
-        {isRecommended && (
-          <span className="flex items-center gap-0.5 text-[9px] uppercase tracking-widest text-[var(--gold-400)] bg-[rgba(201,162,39,0.12)] border border-[rgba(201,162,39,0.25)] px-1.5 py-0.5 rounded-full">
-            <Zap className="w-2.5 h-2.5" aria-hidden="true" />
-            Rec.
-          </span>
-        )}
+        <div className="flex items-center gap-1.5">
+          {matchScore !== undefined && (
+            <span
+              className={[
+                'text-[10px] font-bold px-1.5 py-0.5 rounded-full border font-[var(--font-body)]',
+                matchScore >= 80
+                  ? 'text-emerald-400 bg-[rgba(16,185,129,0.12)] border-[rgba(16,185,129,0.3)]'
+                  : matchScore >= 50
+                    ? 'text-[var(--gold-400)] bg-[rgba(201,162,39,0.12)] border-[rgba(201,162,39,0.25)]'
+                    : 'text-[var(--text-muted)] bg-[rgba(100,130,165,0.1)] border-[rgba(100,130,165,0.2)]',
+              ].join(' ')}
+            >
+              {matchScore}%
+            </span>
+          )}
+          {isRecommended && (
+            <span className="flex items-center gap-0.5 text-[9px] uppercase tracking-widest text-[var(--gold-400)] bg-[rgba(201,162,39,0.12)] border border-[rgba(201,162,39,0.25)] px-1.5 py-0.5 rounded-full">
+              <Zap className="w-2.5 h-2.5" aria-hidden="true" />
+              Rec.
+            </span>
+          )}
+        </div>
       </div>
+      {isIneligible && ineligibleReason && (
+        <p className="text-[10px] text-red-400/70 mb-1.5 font-[var(--font-body)]">
+          {ineligibleReason}
+        </p>
+      )}
       {stats && (
         <div className="flex flex-wrap gap-1">
           <StatPill stat={stats[0]} tier="primary" />
@@ -141,11 +177,15 @@ function DisciplineOption({
 
 interface DisciplineSelectorProps {
   selectedDiscipline: string;
-  onDisciplineChange: (discipline: string) => void;
+  onDisciplineChange: (_discipline: string) => void;
   /** Ordered list of recommended disciplines for this horse. Defaults to popular 5. */
   recommendedDisciplines?: string[];
   disciplines?: string[];
   description?: string;
+  /** Match score percentages keyed by discipline name (e.g. { "Dressage": 92 }) */
+  matchScores?: Record<string, number>;
+  /** Disciplines the horse is ineligible for, with reason strings */
+  ineligibleDisciplines?: Record<string, string>;
 }
 
 const DisciplineSelector: React.FC<DisciplineSelectorProps> = ({
@@ -154,6 +194,8 @@ const DisciplineSelector: React.FC<DisciplineSelectorProps> = ({
   recommendedDisciplines = DEFAULT_RECOMMENDED,
   disciplines = ALL_DISCIPLINES,
   description,
+  matchScores,
+  ineligibleDisciplines,
 }) => {
   const [showAll, setShowAll] = useState(false);
 
@@ -191,6 +233,9 @@ const DisciplineSelector: React.FC<DisciplineSelectorProps> = ({
                 discipline={d}
                 isSelected={selectedDiscipline === d}
                 isRecommended
+                matchScore={matchScores?.[d]}
+                isIneligible={!!ineligibleDisciplines?.[d]}
+                ineligibleReason={ineligibleDisciplines?.[d]}
                 onSelect={() => onDisciplineChange(d)}
               />
             ))}
@@ -225,6 +270,9 @@ const DisciplineSelector: React.FC<DisciplineSelectorProps> = ({
               discipline={d}
               isSelected={selectedDiscipline === d}
               isRecommended={false}
+              matchScore={matchScores?.[d]}
+              isIneligible={!!ineligibleDisciplines?.[d]}
+              ineligibleReason={ineligibleDisciplines?.[d]}
               onSelect={() => onDisciplineChange(d)}
             />
           ))}
@@ -241,6 +289,7 @@ const DisciplineSelector: React.FC<DisciplineSelectorProps> = ({
             discipline={selectedDiscipline}
             isSelected
             isRecommended={false}
+            matchScore={matchScores?.[selectedDiscipline]}
             onSelect={() => {}}
           />
         </div>

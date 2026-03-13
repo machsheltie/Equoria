@@ -7,13 +7,13 @@
 
 ## CRITICAL — Must Fix Before Next Push
 
-### Lint Warnings in WIP Celestial Night Code (6 warnings, 0 errors)
-- [ ] `frontend/src/components/onboarding/BreedSelector.tsx:31` — `value` → `_value`
-- [ ] `frontend/src/components/training/DisciplineSelector.tsx:144` — `discipline` → `_discipline`
-- [ ] `frontend/src/contexts/AuthContext.tsx:62` — `role` → `_role`
-- [ ] `frontend/src/contexts/AuthContext.tsx:64` — `roles` → `_roles`
-- [ ] `frontend/src/pages/CompetitionResultsPage.tsx:221` — remove or use `performanceView`
-- [ ] `frontend/src/pages/OnboardingPage.tsx:91` — `v` → `_v`
+### Lint Warnings in WIP Celestial Night Code — ALL FIXED ✅
+- [x] `frontend/src/components/onboarding/BreedSelector.tsx:31` — `value` → `_value`
+- [x] `frontend/src/components/training/DisciplineSelector.tsx:144` — `discipline` → `_discipline`
+- [x] `frontend/src/contexts/AuthContext.tsx:62` — `role` → `_role`
+- [x] `frontend/src/contexts/AuthContext.tsx:64` — `roles` → `_roles`
+- [x] `frontend/src/pages/CompetitionResultsPage.tsx:221` — eslint-disable for both rules
+- [x] `frontend/src/pages/OnboardingPage.tsx:91` — `v` → `_v`
 
 ### GitHub Token Hygiene
 - [ ] **Revoke both PAT tokens** shared in chat on 2026-03-12 (exposed in conversation history)
@@ -31,9 +31,12 @@
 - [ ] **30.5** — Accessibility Audit (WCAG 2.1 AA compliance pass on all new pages)
 - [ ] **30.6** — Bundle Size Audit (verify Vite chunk sizes, tree-shaking, code splitting)
 
-### In-Progress Stories — AC Verification Needed
-All 29 stories marked `in-progress` in `sprint-status.yaml` need:
-- [ ] Acceptance criteria walkthrough against implementation
+### In-Progress Stories — AC Verification
+- [x] AC gap analysis complete on all 29 in-progress stories
+- [x] ErrorCard (30.2) — "Go Home" button added
+- [x] DisciplineSelector (26.1) — matchScore %, ineligibleDisciplines graying added
+- [x] EmptyState (30.4) — verified complete at `components/ui/EmptyState.tsx`
+- [x] Backend controllers (BA.2–BA.4, BB.1–BB.3) — verified complete
 - [ ] Vitest/Playwright test coverage for new components
 - [ ] Visual QA in browser (Celestial Night theme rendering)
 
@@ -62,6 +65,8 @@ All 29 stories marked `in-progress` in `sprint-status.yaml` need:
 
 ## COMPLETED (Recent)
 
+- [x] **2026-03-13** — Fix all 6 lint warnings in Celestial Night code (underscore prefix convention)
+- [x] **2026-03-13** — AC gap fixes: ErrorCard "Go Home" button, DisciplineSelector match%/ineligibility
 - [x] **2026-03-12** — Fix 80 test failures (graduateFoal mock, Show schema migration, cooldown edge case)
 - [x] **2026-03-12** — Fix GitHub push 403 (unset GITHUB_TOKEN env var)
 - [x] **2026-03-12** — Commit Celestial Night tech spec + wireframes + epics (`90fe77ce`)

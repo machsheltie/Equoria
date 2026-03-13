@@ -9,7 +9,7 @@
  */
 
 import React from 'react';
-import { AlertTriangle, RefreshCw } from 'lucide-react';
+import { AlertTriangle, RefreshCw, Home } from 'lucide-react';
 
 interface ErrorCardProps {
   /** Heading shown above the message */
@@ -18,6 +18,8 @@ interface ErrorCardProps {
   message?: string;
   /** When provided, shows a "Try Again" button that calls this */
   onRetry?: () => void;
+  /** When provided, shows a secondary "Go Home" button that calls this */
+  onGoHome?: () => void;
   /** Extra wrapper class — useful to constrain padding in tight contexts */
   className?: string;
 }
@@ -26,6 +28,7 @@ export const ErrorCard: React.FC<ErrorCardProps> = ({
   title = 'Unable to Load Data',
   message = 'Something went wrong. Please check your connection and try again.',
   onRetry,
+  onGoHome,
   className,
 }) => (
   <div className={`flex items-center justify-center p-8 sm:p-12 ${className ?? ''}`}>
@@ -51,22 +54,40 @@ export const ErrorCard: React.FC<ErrorCardProps> = ({
         </p>
       </div>
 
-      {/* Retry */}
-      {onRetry && (
-        <button
-          type="button"
-          onClick={onRetry}
-          className={[
-            'inline-flex items-center gap-2 rounded-full px-5 py-2 text-sm font-bold transition-all',
-            'bg-gradient-to-r from-[var(--gold-700)] to-[var(--gold-400)] text-[var(--celestial-navy-900)]',
-            'hover:brightness-110 hover:shadow-[0_0_14px_rgba(201,162,39,0.3)]',
-            'font-[var(--font-heading)]',
-          ].join(' ')}
-        >
-          <RefreshCw className="h-3.5 w-3.5" aria-hidden="true" />
-          Try Again
-        </button>
-      )}
+      {/* Action buttons */}
+      <div className="flex items-center justify-center gap-3">
+        {onRetry && (
+          <button
+            type="button"
+            onClick={onRetry}
+            className={[
+              'inline-flex items-center gap-2 rounded-full px-5 py-2 text-sm font-bold transition-all',
+              'bg-gradient-to-r from-[var(--gold-700)] to-[var(--gold-400)] text-[var(--celestial-navy-900)]',
+              'hover:brightness-110 hover:shadow-[0_0_14px_rgba(201,162,39,0.3)]',
+              'font-[var(--font-heading)]',
+            ].join(' ')}
+          >
+            <RefreshCw className="h-3.5 w-3.5" aria-hidden="true" />
+            Try Again
+          </button>
+        )}
+
+        {onGoHome && (
+          <button
+            type="button"
+            onClick={onGoHome}
+            className={[
+              'inline-flex items-center gap-2 rounded-full px-5 py-2 text-sm font-bold transition-all',
+              'border border-[rgba(251,191,36,0.3)] text-amber-400',
+              'hover:bg-[rgba(251,191,36,0.08)] hover:border-[rgba(251,191,36,0.5)]',
+              'font-[var(--font-heading)]',
+            ].join(' ')}
+          >
+            <Home className="h-3.5 w-3.5" aria-hidden="true" />
+            Go Home
+          </button>
+        )}
+      </div>
     </div>
   </div>
 );

@@ -217,7 +217,7 @@ const CompetitionResultsPage = (): JSX.Element => {
   // Modal state
   const [selectedCompetitionId, setSelectedCompetitionId] = useState<number | null>(null);
   // Performance view state is set but render usage pending for performance breakdown modal
-  // eslint-disable-next-line @typescript-eslint/no-unused-vars
+  // eslint-disable-next-line @typescript-eslint/no-unused-vars, no-unused-vars
   const [performanceView, setPerformanceView] = useState<PerformanceViewState | null>(null);
   const [activeTab, setActiveTab] = useState<'my-results' | 'browse'>('my-results');
 

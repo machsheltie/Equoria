@@ -88,7 +88,7 @@ const WelcomeStep: React.FC = () => (
 
 interface HorseStepProps {
   selection: Partial<BreedSelectionValue>;
-  onChange: (v: Partial<BreedSelectionValue>) => void;
+  onChange: (_v: Partial<BreedSelectionValue>) => void;
 }
 
 const HorseStep: React.FC<HorseStepProps> = ({ selection, onChange }) => {
