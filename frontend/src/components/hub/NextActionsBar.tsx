@@ -67,10 +67,10 @@ function ActionCard({ action, isTopPriority }: ActionCardProps) {
         'flex-shrink-0 w-48 lg:w-auto',
         'flex flex-col items-start gap-2 p-4 rounded-xl',
         'transition-all duration-150',
-        'focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[var(--electric-blue-300)]',
+        'focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[var(--status-info)]',
         isTopPriority
           ? [
-              'border border-[var(--gold-500)] bg-[rgba(201,162,39,0.1)]',
+              'border border-[var(--gold-primary)] bg-[rgba(201,162,39,0.1)]',
               'hover:bg-[rgba(201,162,39,0.18)] hover:shadow-[0_0_16px_rgba(201,162,39,0.3)]',
             ].join(' ')
           : [
@@ -84,8 +84,8 @@ function ActionCard({ action, isTopPriority }: ActionCardProps) {
         className={cn(
           'rounded-lg p-2',
           isTopPriority
-            ? 'text-[var(--gold-400)] bg-[rgba(201,162,39,0.15)]'
-            : 'text-[var(--electric-blue-300)] bg-[rgba(58,111,221,0.12)]'
+            ? 'text-[var(--gold-primary)] bg-[rgba(201,162,39,0.15)]'
+            : 'text-[var(--status-info)] bg-[rgba(58,111,221,0.12)]'
         )}
       >
         {icon}
@@ -94,7 +94,7 @@ function ActionCard({ action, isTopPriority }: ActionCardProps) {
       <p
         className={cn(
           'text-sm leading-snug',
-          isTopPriority ? 'text-[var(--gold-300)] font-medium' : 'text-[var(--cream)]'
+          isTopPriority ? 'text-[var(--gold-light)] font-medium' : 'text-[var(--text-primary)]'
         )}
       >
         {narrative}
@@ -103,7 +103,7 @@ function ActionCard({ action, isTopPriority }: ActionCardProps) {
       <ChevronRight
         className={cn(
           'w-4 h-4 self-end',
-          isTopPriority ? 'text-[var(--gold-500)]' : 'text-[var(--text-muted)]'
+          isTopPriority ? 'text-[var(--gold-primary)]' : 'text-[var(--text-muted)]'
         )}
       />
     </Link>

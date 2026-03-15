@@ -14,7 +14,7 @@
 | 05  | `05-frosted-panel-system.md`     | L2 scope + UI-3 ref   | done    | Layer 2: FrostedPanel replacing all Cards, glass system                   |
 | 06  | `06-typography-system.md`        | 827-859               | done    | Layer 3: Cinzel + Inter, type scale, typography rules                     |
 | 07  | `07-navigation-layout.md`        | 1828-1858, responsive | done    | Navigation: hamburger + breadcrumbs, hub-spoke, aside panel               |
-| 08  | `08-hub-dashboard.md`            | 563-754               | pending | Hub page: Next Actions bar, horse cards, aside panel, WYAG                |
+| 08  | `08-hub-dashboard.md`            | 563-754               | done    | Hub page: Next Actions bar, horse cards, aside panel, WYAG                |
 | 09  | `09-horse-card-design.md`        | focus group reqs      | pending | Horse cards: portrait, stats, traits, care strip, narrative chip, lineage |
 | 10  | `10-component-new-custom.md`     | 1477-1738             | pending | 13 new custom components: specs and implementation order                  |
 | 11  | `11-button-feedback-patterns.md` | 1739-1910             | pending | Button hierarchy, feedback tiers, form patterns, empty/loading states     |

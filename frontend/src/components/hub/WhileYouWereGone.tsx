@@ -46,12 +46,12 @@ function isLongAbsence(lastVisit: string | null): boolean {
 }
 
 const TYPE_ICONS: Record<WYAGItem['type'], React.ReactNode> = {
-  'competition-result': <Trophy className="w-4 h-4 text-[var(--gold-400)]" />,
-  'foal-milestone': <Star className="w-4 h-4 text-[var(--electric-blue-300)]" />,
-  message: <MessageCircle className="w-4 h-4 text-[var(--cream)]" />,
+  'competition-result': <Trophy className="w-4 h-4 text-[var(--gold-primary)]" />,
+  'foal-milestone': <Star className="w-4 h-4 text-[var(--status-info)]" />,
+  message: <MessageCircle className="w-4 h-4 text-[var(--text-primary)]" />,
   'club-activity': <Star className="w-4 h-4 text-[var(--text-muted)]" />,
   'training-complete': <Trophy className="w-4 h-4 text-[var(--status-success)]" />,
-  'market-sale': <Trophy className="w-4 h-4 text-[var(--gold-500)]" />,
+  'market-sale': <Trophy className="w-4 h-4 text-[var(--gold-primary)]" />,
 };
 
 /* ─── WYAGItem row ───────────────────────────────────────────────────────── */
@@ -62,7 +62,7 @@ function WYAGRow({ item, onClose }: { item: WYAGItem; onClose: () => void }) {
         {TYPE_ICONS[item.type]}
       </span>
       <div className="flex-1 min-w-0">
-        <p className="text-sm font-medium text-[var(--cream)] leading-snug">{item.title}</p>
+        <p className="text-sm font-medium text-[var(--text-primary)] leading-snug">{item.title}</p>
         {item.description && (
           <p className="text-xs text-[var(--text-muted)] mt-0.5 truncate">{item.description}</p>
         )}
@@ -136,7 +136,7 @@ export function WhileYouWereGone() {
     >
       {/* Backdrop */}
       <div
-        className="absolute inset-0 bg-[var(--celestial-navy-950)]/70"
+        className="absolute inset-0 bg-[var(--bg-deep-space)]/70"
         onClick={close}
         aria-hidden="true"
       />
@@ -151,7 +151,7 @@ export function WhileYouWereGone() {
         {/* Header */}
         <div className="flex items-center justify-between mb-4">
           <div>
-            <h2 className="text-lg font-semibold text-[var(--gold-400)] font-[var(--font-heading)]">
+            <h2 className="text-lg font-semibold text-[var(--gold-primary)] font-[var(--font-heading)]">
               While You Were Away
             </h2>
             <p className="text-xs text-[var(--text-muted)] mt-0.5">
@@ -161,7 +161,7 @@ export function WhileYouWereGone() {
           <button
             onClick={close}
             aria-label="Dismiss"
-            className="p-1.5 rounded-full text-[var(--text-muted)] hover:text-[var(--cream)] hover:bg-[rgba(201,162,39,0.1)] transition-colors"
+            className="p-1.5 rounded-full text-[var(--text-muted)] hover:text-[var(--text-primary)] hover:bg-[rgba(201,162,39,0.1)] transition-colors"
           >
             <X className="w-4 h-4" />
           </button>
