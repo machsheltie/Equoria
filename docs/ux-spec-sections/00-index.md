@@ -11,8 +11,8 @@
 | 02  | `02-4-layer-strategy.md`         | 496-562               | done    | Design system choice, 4-layer transformation, customization strategy      |
 | 03  | `03-shadcn-restyling.md`         | 1438-1458, 1695-1710  | done    | 13 shadcn components: exact visual overrides per component                |
 | 04  | `04-global-atmosphere.md`        | L1 scope + 1479-1491  | done    | Layer 1: StarfieldBackground, body gradient, global CSS                   |
-| 05  | `05-frosted-panel-system.md`     | L2 scope + UI-3 ref   | pending | Layer 2: FrostedPanel replacing all Cards, glass system                   |
-| 06  | `06-typography-system.md`        | 827-859               | pending | Layer 3: Cinzel + Inter, type scale, typography rules                     |
+| 05  | `05-frosted-panel-system.md`     | L2 scope + UI-3 ref   | done    | Layer 2: FrostedPanel replacing all Cards, glass system                   |
+| 06  | `06-typography-system.md`        | 827-859               | done    | Layer 3: Cinzel + Inter, type scale, typography rules                     |
 | 07  | `07-navigation-layout.md`        | 1828-1858, responsive | pending | Navigation: hamburger + breadcrumbs, hub-spoke, aside panel               |
 | 08  | `08-hub-dashboard.md`            | 563-754               | pending | Hub page: Next Actions bar, horse cards, aside panel, WYAG                |
 | 09  | `09-horse-card-design.md`        | focus group reqs      | pending | Horse cards: portrait, stats, traits, care strip, narrative chip, lineage |

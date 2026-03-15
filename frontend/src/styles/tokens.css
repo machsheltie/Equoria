@@ -239,7 +239,15 @@
   --font-body: 'Inter', sans-serif; /* All UI text            */
   --font-mono: 'JetBrains Mono', monospace; /* Debug / data display   */
 
-  /* Font sizes (rem — never px) */
+  /* ── Type Scale (spec: 8px base, 1.25 ratio) ──────────────────────── */
+  --text-display: 2.441rem; /* 39px — page titles: Cinzel 700              */
+  --text-h1: 1.953rem; /* 31px — section headers: Cinzel 600           */
+  --text-h2: 1.563rem; /* 25px — card titles, horse names: Cinzel 600  */
+  --text-h3: 1.25rem; /* 20px — sub-section, tab labels: Cinzel 500   */
+  --text-body: 1rem; /* 16px — body text: Inter 400                  */
+  --text-stat: 1.125rem; /* 18px — stat values, numbers: Inter 600       */
+
+  /* ── Font sizes (rem — legacy Tailwind-aligned scale) ────────────── */
   --text-xs: 0.75rem; /* 12px — captions, legal, micro labels         */
   --text-sm: 0.875rem; /* 14px — secondary labels, filter text         */
   --text-base: 1rem; /* 16px — body text, tab labels                 */

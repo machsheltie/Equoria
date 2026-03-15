@@ -85,7 +85,7 @@
 /* ── Typography ─────────────────────────────────────────────────────── */
 @layer components {
   .fantasy-title {
-    font-family: 'Cinzel Decorative', serif;
+    font-family: var(--font-display);
     font-weight: 700;
     text-transform: uppercase;
     letter-spacing: 0.05em;
@@ -97,24 +97,33 @@
   }
 
   .fantasy-header {
-    font-family: 'Cinzel', serif;
+    font-family: var(--font-heading);
     font-weight: 600;
-    color: rgb(220, 235, 255);
+    color: var(--text-gold);
   }
 
   .fantasy-body {
-    font-family: 'Inter', sans-serif;
+    font-family: var(--font-body);
     font-weight: 400;
-    color: rgb(220, 235, 255);
+    color: var(--text-primary);
   }
 
   .fantasy-caption {
-    font-family: 'Inter', sans-serif;
+    font-family: var(--font-body);
     font-weight: 400;
     text-transform: uppercase;
-    letter-spacing: 0.1em;
-    font-size: 0.75rem;
-    color: rgb(148, 163, 184);
+    letter-spacing: var(--tracking-wider);
+    font-size: var(--text-xs);
+    color: var(--text-secondary);
+  }
+
+  /* Stat numbers — tabular alignment for columns */
+  .stat-value {
+    font-family: var(--font-body);
+    font-size: var(--text-stat);
+    font-weight: 600;
+    font-variant-numeric: tabular-nums;
+    color: var(--text-primary);
   }
 }
 
@@ -126,22 +135,23 @@
    * If a parent already has blur, add class `no-blur` to skip backdrop-filter here.
    */
   .glass-panel {
-    background: var(--glass-surface-bg, rgba(10, 22, 40, 0.72));
+    background: var(--glass-bg);
     backdrop-filter: var(--glass-blur, blur(12px));
     -webkit-backdrop-filter: var(--glass-blur, blur(12px));
-    border: 1px solid var(--glass-border, rgba(148, 163, 184, 0.2));
-    border-radius: 1rem;
-    box-shadow:
-      0 8px 32px rgba(0, 0, 0, 0.5),
-      inset 0 1px 0 rgba(255, 255, 255, 0.05);
-    transition: box-shadow var(--duration-fast, 0.15s) var(--ease-default, ease);
+    border: 1px solid var(--glass-border);
+    border-radius: var(--radius-lg);
+    padding: var(--space-5);
+    box-shadow: var(--shadow-subtle);
+    transition:
+      box-shadow var(--duration-fast) var(--ease-default),
+      border-color var(--duration-fast) var(--ease-default),
+      transform var(--duration-fast) var(--ease-default);
   }
 
   .glass-panel:hover {
-    box-shadow:
-      0 12px 40px rgba(0, 0, 0, 0.6),
-      0 0 0 1px rgba(201, 162, 39, 0.35),
-      inset 0 1px 0 rgba(255, 255, 255, 0.07);
+    border-color: var(--glass-hover);
+    box-shadow: var(--glow-gold);
+    transform: translateY(-2px);
   }
 
   /**
@@ -149,26 +159,24 @@
    * Use when content legibility is critical or when nested inside a blurred parent.
    */
   .glass-panel-heavy {
-    background: var(--glass-surface-heavy-bg, rgba(10, 22, 40, 0.88));
+    background: var(--glass-surface-heavy-bg);
     backdrop-filter: var(--glass-blur-heavy, blur(16px));
     -webkit-backdrop-filter: var(--glass-blur-heavy, blur(16px));
-    border: var(--glass-border-bright, 1px solid rgba(201, 162, 39, 0.55));
-    border-radius: 1rem;
-    box-shadow:
-      0 16px 48px rgba(0, 0, 0, 0.7),
-      inset 0 1px 0 rgba(255, 255, 255, 0.08);
+    border: 1px solid var(--glass-hover);
+    border-radius: var(--radius-lg);
+    box-shadow: var(--shadow-floating);
   }
 
   /**
    * .glass-panel-subtle — light-touch variant for secondary cards.
    */
   .glass-panel-subtle {
-    background: var(--glass-surface-subtle-bg, rgba(10, 22, 40, 0.45));
+    background: var(--glass-surface-subtle-bg);
     backdrop-filter: var(--glass-blur-light, blur(6px));
     -webkit-backdrop-filter: var(--glass-blur-light, blur(6px));
-    border: var(--glass-border-dim, 1px solid rgba(100, 130, 165, 0.3));
-    border-radius: 0.75rem;
-    box-shadow: 0 4px 16px rgba(0, 0, 0, 0.3);
+    border: 1px solid var(--glass-border);
+    border-radius: var(--radius-md);
+    box-shadow: var(--shadow-subtle);
   }
 
   /* Skip backdrop-filter when nested inside a blurred parent */
