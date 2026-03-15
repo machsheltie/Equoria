@@ -38,7 +38,9 @@ import {
   RefreshCw,
   BarChart3,
   History,
+  Swords,
 } from 'lucide-react';
+import PageHero from '@/components/layout/PageHero';
 import { useAuth } from '@/contexts/AuthContext';
 import { useUserCompetitionStats } from '@/hooks/api/useUserCompetitionStats';
 import CompetitionResultsList from '@/components/competition/CompetitionResultsList';
@@ -294,46 +296,39 @@ const CompetitionResultsPage = (): JSX.Element => {
 
   return (
     <div className="min-h-screen" data-testid="competition-results-page">
-      <main className="mx-auto max-w-7xl px-4 sm:px-6 lg:px-8 py-8">
-        {/* Breadcrumb Navigation */}
-        <Breadcrumbs />
-
-        {/* Page Header */}
-        <header className="mb-8" data-testid="page-header">
-          <div className="flex items-center justify-between flex-wrap gap-4">
-            <div>
-              <h1
-                className="text-3xl font-bold text-[var(--cream)] mb-2"
-                style={{ fontFamily: 'var(--font-heading)' }}
-              >
-                Competition Results
-              </h1>
-              <p className="text-[var(--text-muted)] font-[var(--font-body)]">
-                View your competition history and performance
-              </p>
+      <PageHero
+        title="Competition Results"
+        subtitle="View your competition history and performance"
+        mood="competitive"
+        icon={<Swords className="w-7 h-7 text-[var(--gold-400)]" />}
+      >
+        {/* Breadcrumb + Balance */}
+        <div
+          className="flex items-center justify-between flex-wrap gap-4"
+          data-testid="page-header"
+        >
+          <Breadcrumbs />
+          <div className="flex items-center gap-4">
+            <div data-testid="balance-update-indicator">
+              <BalanceUpdateIndicator
+                oldValue={previousBalance}
+                newValue={currentBalance}
+                prefix="$"
+                decimals={0}
+              />
             </div>
-
-            {/* Balance and Prize History Link (Story 5-3) */}
-            <div className="flex items-center gap-4">
-              <div data-testid="balance-update-indicator">
-                <BalanceUpdateIndicator
-                  oldValue={previousBalance}
-                  newValue={currentBalance}
-                  prefix="$"
-                  decimals={0}
-                />
-              </div>
-              <Link
-                to="/prizes"
-                className="inline-flex items-center gap-2 text-blue-400 hover:text-blue-300 text-sm font-medium transition-colors"
-              >
-                <History className="h-4 w-4" aria-hidden="true" />
-                View Prize History
-              </Link>
-            </div>
+            <Link
+              to="/prizes"
+              className="inline-flex items-center gap-2 text-[var(--electric-blue-400)] hover:text-[var(--electric-blue-300)] text-sm font-medium transition-colors"
+            >
+              <History className="h-4 w-4" aria-hidden="true" />
+              View Prize History
+            </Link>
           </div>
-        </header>
+        </div>
+      </PageHero>
 
+      <main className="mx-auto max-w-7xl px-4 sm:px-6 lg:px-8 pb-8">
         {/* User Statistics Summary */}
         <section
           className="mb-8"

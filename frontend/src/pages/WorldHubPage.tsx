@@ -1,33 +1,15 @@
 /**
- * World Hub Page
+ * World Hub Page — The Realm of Equoria
  *
- * Story 9B-1: World Hub Page — 9 location cards for the game world.
- * Players visit locations to manage horse care, training, competitions,
- * breeding, and staff.
- *
- * Story UI-2: Upgraded to use LocationCard component with 3-layer
- * atmospheric painting backgrounds and gold hover glow.
- *
- * Locations:
- * 1. Vet Clinic          — horse health checks and treatment
- * 2. Farrier             — hoof care and shoeing
- * 3. Tack Shop           — equipment and gear
- * 4. Feed Shop           — nutrition and supplements
- * 5. Training Center     — training sessions
- * 6. Grooms              — groom hiring and management
- * 7. Riders              — jockey and rider management
- * 8. Breeding Specialist — breeding consultation
- * 9. Trainers            — trainer hiring and management
+ * 9 location cards for the game world with atmospheric header.
+ * This is the map screen — exploring the world should feel expansive.
  */
 
 import React from 'react';
+import { Globe } from 'lucide-react';
 import LocationCard, { type LocationCardProps } from '@/components/LocationCard';
+import PageHero from '@/components/layout/PageHero';
 
-/**
- * Location data — paintingGradient values are content-level constants unique
- * to each location. They are not design-system tokens because no semantic token
- * covers per-location atmospheric painting colours.
- */
 const worldLocations: LocationCardProps[] = [
   {
     id: 'vet',
@@ -115,30 +97,26 @@ const worldLocations: LocationCardProps[] = [
 ];
 
 const WorldHubPage: React.FC = () => (
-  <div className="space-y-8" data-testid="world-hub-page">
-    {/* Page Header */}
-    <header className="text-center space-y-3">
-      <h1
-        className="text-4xl md:text-5xl font-bold drop-shadow-lg"
-        style={{ fontFamily: 'var(--font-heading)', color: 'var(--text-primary)' }}
-      >
-        The World
-      </h1>
-      <p className="text-lg max-w-2xl mx-auto" style={{ color: 'var(--text-secondary)' }}>
-        Explore the realm and visit locations to care for your horses, train, compete, and breed.
-      </p>
-    </header>
+  <div className="min-h-screen" data-testid="world-hub-page">
+    <PageHero
+      title="The World of Equoria"
+      subtitle="Explore the realm — visit locations to care for your horses, train, compete, and forge your legacy."
+      mood="default"
+      icon={<Globe className="w-7 h-7 text-[var(--gold-400)]" aria-hidden="true" />}
+    />
 
     {/* Location Grid */}
-    <section
-      className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-5"
-      aria-label="World locations"
-      data-onboarding-target="world-hub-explore"
-    >
-      {worldLocations.map((location) => (
-        <LocationCard key={location.id} {...location} />
-      ))}
-    </section>
+    <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 pb-12">
+      <section
+        className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-5"
+        aria-label="World locations"
+        data-onboarding-target="world-hub-explore"
+      >
+        {worldLocations.map((location) => (
+          <LocationCard key={location.id} {...location} />
+        ))}
+      </section>
+    </div>
   </div>
 );
 

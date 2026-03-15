@@ -14,6 +14,7 @@
 import { useEffect, useMemo, useState } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
 import { ChevronRight, Home, Dumbbell, ArrowLeft } from 'lucide-react';
+import PageHero from '@/components/layout/PageHero';
 import { useAuth } from '@/contexts/AuthContext';
 import TrainingSummaryCards from '@/components/training/TrainingSummaryCards';
 import TrainingDashboardTable from '@/components/training/TrainingDashboardTable';
@@ -193,50 +194,31 @@ const TrainingDashboardPage = ({ className = '' }: TrainingDashboardPageProps): 
   }
 
   return (
-    <div
-      className={`min-h-screen bg-[rgba(15,35,70,0.3)] ${className}`}
-      data-testid="training-dashboard-page"
-    >
-      {/* Page Container */}
-      <main className="mx-auto max-w-7xl px-4 py-6 sm:px-6 lg:px-8">
-        {/* Breadcrumb Navigation */}
-        <div className="mb-4">
+    <div className={`min-h-screen ${className}`} data-testid="training-dashboard-page">
+      <PageHero
+        title="Training Dashboard"
+        subtitle="Manage your horses' training sessions, track eligibility status, and monitor progress across all disciplines."
+        mood="default"
+        icon={<Dumbbell className="w-7 h-7 text-[var(--gold-400)]" aria-hidden="true" />}
+      >
+        <div className="flex items-center justify-between">
           <Breadcrumb items={breadcrumbItems} />
-        </div>
-
-        {/* Back Button (Mobile) */}
-        <div className="mb-4 sm:hidden">
-          <button
-            type="button"
-            onClick={handleBackNavigation}
-            className="flex items-center text-sm text-[rgb(148,163,184)] hover:text-[rgb(220,235,255)] focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-2 rounded"
-            aria-label="Go back to previous page"
-            data-testid="back-button"
-          >
-            <ArrowLeft className="mr-1 h-4 w-4" aria-hidden="true" />
-            Back
-          </button>
-        </div>
-
-        {/* Page Header */}
-        <header className="mb-8">
-          <div className="flex items-center space-x-3 mb-2">
-            <div className="flex h-10 w-10 items-center justify-center rounded-lg bg-[rgba(37,99,235,0.1)] text-blue-400">
-              <Dumbbell className="h-5 w-5" aria-hidden="true" />
-            </div>
-            <h1
-              className="text-2xl font-bold text-[rgb(220,235,255)] sm:text-3xl"
-              data-testid="page-title"
+          <div className="sm:hidden">
+            <button
+              type="button"
+              onClick={handleBackNavigation}
+              className="flex items-center text-sm text-[var(--text-muted)] hover:text-[var(--cream)] transition-colors rounded"
+              aria-label="Go back to previous page"
+              data-testid="back-button"
             >
-              Training Dashboard
-            </h1>
+              <ArrowLeft className="mr-1 h-4 w-4" aria-hidden="true" />
+              Back
+            </button>
           </div>
-          <p className="mt-2 text-[rgb(148,163,184)]" data-testid="page-description">
-            Manage your horses' training sessions, track eligibility status, and monitor progress
-            across all disciplines. Ready horses can start training immediately.
-          </p>
-        </header>
+        </div>
+      </PageHero>
 
+      <main className="mx-auto max-w-7xl px-4 sm:px-6 lg:px-8 pb-8">
         {/* Training Dashboard Components */}
         <section aria-label="Training dashboard content">
           {/* Summary Cards */}

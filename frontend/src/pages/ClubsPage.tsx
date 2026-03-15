@@ -27,6 +27,7 @@ import {
   BarChart3,
   Trophy,
 } from 'lucide-react';
+import PageHero from '@/components/layout/PageHero';
 import { useClubs, useMyClubs, useJoinClub } from '@/hooks/api/useClubs';
 import type { Club } from '@/lib/api-client';
 
@@ -77,39 +78,33 @@ const ClubsPage: React.FC = () => {
 
   return (
     <div className="min-h-screen">
-      <div className="max-w-5xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
-        {/* Breadcrumb */}
-        <div className="flex items-center gap-2 text-sm text-white/40 mb-6">
-          <Link to="/" className="hover:text-white/70 transition-colors">
-            Home
-          </Link>
-          <span>/</span>
-          <Link to="/community" className="hover:text-white/70 transition-colors">
-            Community
-          </Link>
-          <span>/</span>
-          <span className="text-white/70">Clubs</span>
-        </div>
-
-        {/* Page Header */}
-        <div className="flex items-center justify-between mb-8">
-          <div className="flex items-center gap-4">
-            <div className="p-3 rounded-xl bg-celestial-gold/10 border border-celestial-gold/30">
-              <Users className="w-6 h-6 text-celestial-gold" />
-            </div>
-            <div>
-              <h1 className="text-2xl font-bold text-white/90">👥 Clubs</h1>
-              <p className="text-sm text-white/50 mt-0.5">
-                Join discipline associations and breed clubs
-              </p>
-            </div>
+      <PageHero
+        title="Clubs"
+        subtitle="Join discipline associations and breed clubs"
+        mood="default"
+        icon={<Users className="w-7 h-7 text-[var(--gold-400)]" />}
+      >
+        {/* Breadcrumb + club count */}
+        <div className="flex items-center justify-between">
+          <div className="flex items-center gap-2 text-sm text-[var(--text-muted)]">
+            <Link to="/" className="hover:text-[var(--cream)] transition-colors">
+              Home
+            </Link>
+            <span>/</span>
+            <Link to="/community" className="hover:text-[var(--cream)] transition-colors">
+              Community
+            </Link>
+            <span>/</span>
+            <span className="text-[var(--cream)]">Clubs</span>
           </div>
-          <div className="flex items-center gap-2 text-sm text-white/40 bg-white/5 border border-white/10 rounded-lg px-3 py-1.5">
+          <div className="flex items-center gap-2 text-sm text-[var(--text-muted)] glass-panel rounded-lg px-3 py-1.5">
             <Users className="w-4 h-4" />
-            <span>{totalClubs > 0 ? `${totalClubs} clubs total` : '…'}</span>
+            <span>{totalClubs > 0 ? `${totalClubs} clubs total` : '...'}</span>
           </div>
         </div>
+      </PageHero>
 
+      <div className="max-w-5xl mx-auto px-4 sm:px-6 lg:px-8 pb-8">
         {/* Tab Navigation */}
         <div
           className="flex gap-1 p-1 bg-white/5 border border-white/10 rounded-xl mb-6 w-fit"

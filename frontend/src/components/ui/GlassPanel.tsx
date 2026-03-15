@@ -69,7 +69,7 @@ const GlassPanel: React.FC<GlassPanelProps> = ({
     backdropFilter: blurValue,
     WebkitBackdropFilter: blurValue,
     borderRadius: 'var(--radius-panel)',
-    border: border ? 'var(--glass-border)' : undefined,
+    border: border ? '1px solid var(--glass-border)' : undefined,
     boxShadow: 'var(--shadow-panel)',
     ...style,
   };

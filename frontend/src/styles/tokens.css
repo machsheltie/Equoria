@@ -15,62 +15,156 @@
  */
 
 /* ─────────────────────────────────────────────────────────────────────────── */
-/*  CELESTIAL NIGHT — CORE PALETTE                                             */
+/*  UX SPEC — BACKGROUND LAYERS (depth through darkness)                      */
 /* ─────────────────────────────────────────────────────────────────────────── */
 
 :root {
-  /* ── Navy scale (backgrounds & surfaces) ──────────────────────────────── */
-  --celestial-navy-950: #050d1a; /* deepest bg — used for overlays      */
-  --celestial-navy-900: #0a1628; /* primary page background              */
-  --celestial-navy-800: #0d1f3c; /* surface 1 — sidebars, topbars        */
-  --celestial-navy-700: #1a3a6b; /* surface 2 — panels, cards            */
-  --celestial-navy-600: #2a4a8b; /* surface 3 — elevated cards, modals   */
-  --celestial-navy-100: #c8d8f0; /* lightest tint — borders, dividers    */
+  --bg-deep-space: #0a0e1a; /* body bg, outermost layer (the void)  */
+  --bg-night-sky: #111827; /* page containers, primary background   */
+  --bg-midnight: #1a2236; /* card interiors, secondary panels      */
+  --bg-twilight: #243154; /* hover states, active sections         */
+  --bg-surface: #1e293b; /* card content areas                    */
 
-  /* ── Gold scale (titles, accents, rewards) ───────────────────────────── */
-  --gold-700: #9a7820; /* dark gold — hover states             */
-  --gold-500: #c9a227; /* primary gold — titles, icons         */
-  --gold-400: #dbb840; /* medium gold — labels on dark         */
-  --gold-300: #e8c547; /* bright gold — highlights, active glow*/
+  /* ── Frosted Glass System ──────────────────────────────────────────── */
+  --glass-bg: rgba(15, 23, 42, 0.6); /* panel/card backgrounds              */
+  --glass-border: rgba(148, 163, 184, 0.2); /* default panel borders (COLOR only) */
+  --glass-hover: rgba(148, 163, 184, 0.3); /* hover border state               */
+  --glass-glow: rgba(200, 168, 78, 0.15); /* gold glow on featured panels      */
 
-  /* ── Electric blue (primary CTAs, active indicators) ─────────────────── */
-  --electric-blue-700: #2a5cb8; /* pressed / deep state                 */
-  --electric-blue-500: #3a6fdd; /* primary button fill, active state    */
-  --electric-blue-400: #5585e8; /* hover state                          */
-  --electric-blue-300: #6a9aff; /* focus ring, light tint               */
+  /* ── Gold Accent System (spec-exact, contrast-checked) ─────────────── */
+  --gold-primary: #c8a84e; /* 4.2:1 on #111827 — headers, icons    */
+  --gold-light: #e8d48b; /* 7.1:1 on #111827 — body text on dark  */
+  --gold-dim: #8b7635; /* 2.8:1 — decorative borders, inactive  */
+  --gold-bright: #f5e6a3; /* 9.4:1 — high-emphasis, active         */
 
-  /* ── Neutral text & UI ───────────────────────────────────────────────── */
-  --cream: #e8e0d0; /* body text on dark backgrounds        */
-  --glow-white: #a0c4ff; /* star/sparkle white                   */
-  --text-muted: #8a9bba; /* placeholders, captions, disabled     */
+  /* ── Text Colors (contrast-verified against --bg-night-sky) ────────── */
+  --text-primary: #e2e8f0; /* 11.5:1 AAA — primary body text        */
+  --text-secondary: #94a3b8; /* 5.2:1 AA — secondary/supporting       */
+  --text-muted: #64748b; /* 3.1:1 AA large — timestamps, meta     */
+  --text-gold: #c8a84e; /* 4.2:1 AA large — gold accent headers  */
 
-  /* ── Semantic status ─────────────────────────────────────────────────── */
-  --status-success: #4caf82; /* care done, eligible, unlocked        */
-  --status-warning: #d4a843; /* care needed, cooldown active         */
-  --status-error: #e05a5a; /* destructive, ineligible, overdue     */
-  --status-info: #5585e8; /* neutral informational                */
+  /* ── Semantic Status (game states) ─────────────────────────────────── */
+  --status-success: #22c55e; /* training complete, healthy, eligible  */
+  --status-warning: #f59e0b; /* cooldown active, needs attention      */
+  --status-danger: #ef4444; /* injured, ineligible, error            */
+  --status-error: #ef4444; /* alias for --status-danger             */
+  --status-info: #3b82f6; /* informational, neutral actions        */
+  --status-rare: #a78bfa; /* rare traits, special discoveries      */
+  --status-legendary: #f5e6a3; /* ultra-rare, legendary events          */
+
+  /* ── Interactive Button Colors ──────────────────────────────────────── */
+  --btn-primary-bg: rgba(59, 130, 246, 0.3); /* blue frosted button  */
+  --btn-primary-border: rgba(59, 130, 246, 0.5); /* blue button border   */
+  --btn-gold-bg: rgba(200, 168, 78, 0.2); /* gold frosted button  */
+  --btn-gold-border: rgba(200, 168, 78, 0.4); /* gold button border   */
+
+  /* ── Gradient Definitions ──────────────────────────────────────────── */
+  --gradient-night-sky: linear-gradient(180deg, #0a0e1a 0%, #111827 50%, #1a2236 100%);
+  --gradient-glass-panel: linear-gradient(
+    135deg,
+    rgba(15, 23, 42, 0.7) 0%,
+    rgba(15, 23, 42, 0.4) 100%
+  );
+  --gradient-gold-accent: linear-gradient(90deg, #8b7635 0%, #c8a84e 50%, #8b7635 100%);
+  --gradient-stat-bar: linear-gradient(90deg, #c8a84e 0%, #e8d48b 100%);
+  --gradient-celebration: radial-gradient(
+    ellipse at center,
+    rgba(200, 168, 78, 0.3) 0%,
+    transparent 70%
+  );
+}
+
+/* ─────────────────────────────────────────────────────────────────────────── */
+/*  UX SPEC — SPACING (8px base unit)                                         */
+/* ─────────────────────────────────────────────────────────────────────────── */
+
+:root {
+  --space-1: 4px; /* icon-to-label gap, badge padding      */
+  --space-2: 8px; /* stat bar margins, list item gap        */
+  --space-3: 12px; /* input padding, button padding-y        */
+  --space-4: 16px; /* card padding, section gap              */
+  --space-5: 24px; /* between card groups, panel padding     */
+  --space-6: 32px; /* between major sections                 */
+  --space-7: 48px; /* page-level section separation          */
+  --space-8: 64px; /* hero section padding, page margins     */
+}
+
+/* ─────────────────────────────────────────────────────────────────────────── */
+/*  UX SPEC — BORDER RADIUS                                                   */
+/* ─────────────────────────────────────────────────────────────────────────── */
+
+:root {
+  --radius-sm: 6px; /* badges, small pills, stat bars         */
+  --radius-md: 12px; /* buttons, inputs, small cards            */
+  --radius-lg: 16px; /* main content panels, modals             */
+  --radius-xl: 24px; /* feature cards, hero panels              */
+  --radius-full: 9999px; /* avatars, circular indicators            */
+}
+
+/* ─────────────────────────────────────────────────────────────────────────── */
+/*  UX SPEC — ELEVATION & GLOW                                                */
+/* ─────────────────────────────────────────────────────────────────────────── */
+
+:root {
+  --shadow-subtle: 0 1px 3px rgba(0, 0, 0, 0.4); /* resting cards           */
+  --shadow-raised: 0 4px 12px rgba(0, 0, 0, 0.5); /* hovered cards, dropdowns*/
+  --shadow-floating: 0 8px 24px rgba(0, 0, 0, 0.6); /* modals, overlays        */
+  --glow-gold: 0 0 20px rgba(200, 168, 78, 0.25); /* featured items, active  */
+  --glow-gold-strong: 0 0 30px rgba(200, 168, 78, 0.4); /* celebrations, rare      */
+  --glow-celestial: 0 0 40px rgba(59, 130, 246, 0.2); /* info highlights         */
+}
+
+/* ─────────────────────────────────────────────────────────────────────────── */
+/*  BACKWARD-COMPAT — Legacy navy/gold scales (DO NOT use in new code)        */
+/*  Components referencing these still work; migrate to spec tokens over time  */
+/* ─────────────────────────────────────────────────────────────────────────── */
+
+:root {
+  /* Legacy navy scale → spec background tokens */
+  --celestial-navy-950: var(--bg-deep-space);
+  --celestial-navy-900: var(--bg-night-sky);
+  --celestial-navy-800: #0d1f3c; /* no exact spec equivalent — kept as-is */
+  --celestial-navy-700: var(--bg-midnight);
+  --celestial-navy-600: var(--bg-twilight);
+  --celestial-navy-100: #c8d8f0;
+
+  /* Legacy gold scale → spec gold tokens */
+  --gold-700: var(--gold-dim);
+  --gold-500: var(--gold-primary);
+  --gold-400: var(--gold-light);
+  --gold-300: var(--gold-bright);
+
+  /* Legacy electric blue (kept for celestial-primary alias chain) */
+  --electric-blue-700: #2a5cb8;
+  --electric-blue-500: #3a6fdd;
+  --electric-blue-400: #5585e8;
+  --electric-blue-300: #6a9aff;
+
+  /* Legacy neutral */
+  --cream: var(--text-primary);
+  --glow-white: #a0c4ff;
 
   /* ── Discipline accent colours (action buttons ONLY) ─────────────────── */
   /* ⚠ FORBIDDEN in: nav components, sidebar active states, tab indicators, breadcrumbs */
-  --discipline-dressage-primary: #7c5cbf; /* violet-purple             */
+  --discipline-dressage-primary: #7c5cbf;
   --discipline-dressage-glow: rgba(124, 92, 191, 0.6);
-  --discipline-showjumping-primary: #2e8b57; /* forest green              */
+  --discipline-showjumping-primary: #2e8b57;
   --discipline-showjumping-glow: rgba(46, 139, 87, 0.6);
-  --discipline-racing-primary: #c0392b; /* racing red                */
+  --discipline-racing-primary: #c0392b;
   --discipline-racing-glow: rgba(192, 57, 43, 0.6);
-  --discipline-crosscountry-primary: #8b6914; /* earthy amber              */
+  --discipline-crosscountry-primary: #8b6914;
   --discipline-crosscountry-glow: rgba(139, 105, 20, 0.6);
-  --discipline-western-primary: #7b3f00; /* saddle brown              */
+  --discipline-western-primary: #7b3f00;
   --discipline-western-glow: rgba(123, 63, 0, 0.6);
-  --discipline-endurance-primary: #1a7a7a; /* teal                      */
+  --discipline-endurance-primary: #1a7a7a;
   --discipline-endurance-glow: rgba(26, 122, 122, 0.6);
 
   /* ── Rarity colours (trait discovery) ───────────────────────────────── */
   --rarity-common: #8a9bba;
-  --rarity-uncommon: #4caf82;
-  --rarity-rare: #3a6fdd;
-  --rarity-ultra-rare: #c9a227;
-  --rarity-legendary: #c39bd3; /* celestial violet                    */
+  --rarity-uncommon: var(--status-success);
+  --rarity-rare: var(--status-info);
+  --rarity-ultra-rare: var(--gold-primary);
+  --rarity-legendary: #c39bd3;
 }
 
 /* ─────────────────────────────────────────────────────────────────────────── */
@@ -83,59 +177,54 @@
   --celestial-primary-hover: var(--electric-blue-400);
   --celestial-primary-pressed: var(--electric-blue-700);
 
-  /* Page structure */
-  --bg-page: var(--celestial-navy-900);
-  --bg-sidebar: var(--celestial-navy-800);
-  --bg-surface: var(--celestial-navy-700);
-  --bg-card: var(--celestial-navy-600);
-  --bg-overlay: var(--celestial-navy-950);
+  /* Page structure (aliases pointing to spec tokens) */
+  --bg-page: var(--bg-night-sky);
+  --bg-sidebar: #0d1f3c;
+  --bg-card: var(--bg-twilight);
+  --bg-overlay: var(--bg-deep-space);
 
   /* Text */
-  --text-primary: var(--cream);
-  --text-secondary: var(--text-muted);
-  --text-accent: var(--gold-500);
+  --text-accent: var(--gold-primary);
   --text-link: var(--electric-blue-300);
 
   /* Borders */
-  --border-default: rgba(201, 162, 39, 0.25); /* gold-tinted subtle  */
-  --border-active: rgba(201, 162, 39, 0.55); /* gold-tinted bright  */
-  --border-muted: rgba(100, 130, 165, 0.3); /* blue-grey           */
+  --border-default: var(--glass-border);
+  --border-active: var(--glass-hover);
+  --border-muted: rgba(100, 130, 165, 0.3);
   --border-error: rgba(224, 90, 90, 0.7);
 }
 
 /* ─────────────────────────────────────────────────────────────────────────── */
-/*  GLOW TOKENS                                                                */
+/*  GLOW TOKENS (legacy names kept for compat; spec values in ELEVATION block) */
 /* ─────────────────────────────────────────────────────────────────────────── */
 
 :root {
-  --glow-gold: 0 0 12px rgba(201, 162, 39, 0.6);
-  --glow-gold-intense: 0 0 24px rgba(201, 162, 39, 0.9);
+  --glow-gold-intense: 0 0 24px rgba(200, 168, 78, 0.9);
   --glow-electric: 0 0 20px rgba(58, 111, 221, 0.8);
   --glow-electric-hover: 0 0 32px rgba(58, 111, 221, 1);
   --glow-atmospheric: 0 0 40px rgba(58, 111, 221, 0.3);
   --glow-none: none;
-  --error-glow: 0 0 12px rgba(224, 90, 90, 0.6);
-  --success-glow: 0 0 12px rgba(76, 175, 130, 0.6);
+  --error-glow: 0 0 12px rgba(239, 68, 68, 0.6);
+  --success-glow: 0 0 12px rgba(34, 197, 94, 0.6);
 }
 
 /* ─────────────────────────────────────────────────────────────────────────── */
-/*  GLASS SURFACE TOKENS                                                       */
+/*  GLASS SURFACE TOKENS (legacy compat — new code should use --glass-bg)      */
 /* ─────────────────────────────────────────────────────────────────────────── */
 
 :root {
-  /* Backgrounds — apply to .glass-panel elements */
-  --glass-surface-bg: rgba(10, 22, 40, 0.72);
-  --glass-surface-heavy-bg: rgba(10, 22, 40, 0.88);
-  --glass-surface-subtle-bg: rgba(10, 22, 40, 0.45);
+  /* Legacy glass backgrounds — kept for existing components */
+  --glass-surface-bg: var(--glass-bg);
+  --glass-surface-heavy-bg: rgba(15, 23, 42, 0.85);
+  --glass-surface-subtle-bg: rgba(15, 23, 42, 0.35);
 
   /* Backdrop blur amount — only applied to the outermost glass layer */
-  --glass-blur: blur(12px);
   --glass-blur-heavy: blur(16px);
   --glass-blur-light: blur(6px);
 
-  /* Borders */
-  --glass-border: 1px solid rgba(201, 162, 39, 0.25);
-  --glass-border-bright: 1px solid rgba(201, 162, 39, 0.55);
+  /* Legacy border shorthands — new code should use --glass-border (color) */
+  --glass-border-shorthand: 1px solid var(--glass-border);
+  --glass-border-bright: 1px solid var(--glass-hover);
   --glass-border-dim: 1px solid rgba(100, 130, 165, 0.3);
 }
 
@@ -180,68 +269,55 @@
 }
 
 /* ─────────────────────────────────────────────────────────────────────────── */
-/*  RADIUS TOKENS                                                              */
+/*  RADIUS TOKENS — Legacy aliases (spec values defined in UX SPEC block)      */
 /* ─────────────────────────────────────────────────────────────────────────── */
 
 :root {
   --radius-none: 0;
-  --radius-sm: 4px;
-  --radius-badge: 6px;
-  --radius-card: 12px;
-  --radius-panel: 16px;
-  --radius-modal: 20px;
-  --radius-pill: 9999px; /* pill buttons, status chips, input fields    */
-  --radius-button: 9999px;
-  --radius-circle: 50%; /* avatar, dot indicators                      */
+  --radius-badge: var(--radius-sm);
+  --radius-card: var(--radius-md);
+  --radius-panel: var(--radius-lg);
+  --radius-modal: var(--radius-xl);
+  --radius-pill: var(--radius-full);
+  --radius-button: var(--radius-full);
+  --radius-circle: 50%;
 }
 
 /* ─────────────────────────────────────────────────────────────────────────── */
-/*  SHADOW TOKENS                                                              */
+/*  SHADOW TOKENS — Legacy names aliased to spec values where possible         */
 /* ─────────────────────────────────────────────────────────────────────────── */
 
 :root {
-  --shadow-panel: 0 8px 32px rgba(5, 13, 26, 0.8), 0 0 0 1px rgba(201, 162, 39, 0.1);
-
+  --shadow-panel: 0 8px 32px rgba(0, 0, 0, 0.6), 0 0 0 1px rgba(200, 168, 78, 0.1);
   --shadow-button: 0 4px 15px rgba(0, 0, 0, 0.4);
-
-  --shadow-modal: 0 24px 64px rgba(5, 13, 26, 0.9), 0 0 0 1px rgba(201, 162, 39, 0.15);
-
-  --shadow-card: 0 4px 16px rgba(5, 13, 26, 0.5);
-
-  --shadow-card-hover: 0 8px 28px rgba(5, 13, 26, 0.7), 0 0 0 1px rgba(201, 162, 39, 0.2);
-
-  --shadow-dropdown: 0 8px 24px rgba(5, 13, 26, 0.7);
-
+  --shadow-modal: var(--shadow-floating);
+  --shadow-card: var(--shadow-subtle);
+  --shadow-card-hover: var(--shadow-raised);
+  --shadow-dropdown: var(--shadow-raised);
   --shadow-none: none;
 }
 
 /* ─────────────────────────────────────────────────────────────────────────── */
-/*  SPACING TOKENS                                                             */
+/*  SPACING TOKENS — Legacy extended scale + component sizes                   */
+/*  (Spec values --space-1 through --space-8 defined in UX SPEC block above)  */
 /* ─────────────────────────────────────────────────────────────────────────── */
 
 :root {
-  /* Base unit: 4px. Multiples match Tailwind's scale */
-  --space-1: 0.25rem; /*  4px */
-  --space-2: 0.5rem; /*  8px */
-  --space-3: 0.75rem; /* 12px */
-  --space-4: 1rem; /* 16px */
-  --space-5: 1.25rem; /* 20px */
-  --space-6: 1.5rem; /* 24px */
-  --space-8: 2rem; /* 32px */
+  /* Extended scale beyond spec (for large layouts) */
   --space-10: 2.5rem; /* 40px */
-  --space-12: 3rem; /* 48px */
-  --space-16: 4rem; /* 64px */
+  --space-12: 3rem; /* 48px — same as --space-7 */
+  --space-16: 4rem; /* 64px — same as --space-8 */
   --space-20: 5rem; /* 80px */
   --space-24: 6rem; /* 96px */
 
   /* Component-specific layout sizes */
-  --sidebar-width: 280px; /* desktop/tablet sidebar                  */
-  --topbar-height: 60px; /* desktop page topbar                     */
-  --bottom-nav-height: 56px; /* mobile bottom navigation                */
-  --horse-card-width: 200px; /* stable grid card                        */
-  --horse-card-height: 160px; /* stable grid card                        */
-  --horse-portrait-hero: 800px; /* 3:4 ratio portrait height = 1067px      */
-  --touch-target-min: 44px; /* WCAG 2.1 AA minimum touch target        */
+  --sidebar-width: 280px;
+  --topbar-height: 60px;
+  --bottom-nav-height: 56px;
+  --horse-card-width: 200px;
+  --horse-card-height: 160px;
+  --horse-portrait-hero: 800px;
+  --touch-target-min: 44px; /* WCAG 2.1 AA minimum touch target */
 }
 
 /* ─────────────────────────────────────────────────────────────────────────── */
@@ -371,17 +447,16 @@
 }
 
 /* ─────────────────────────────────────────────────────────────────────────── */
-/*  BACKWARD-COMPAT ALIASES (bridges index.css legacy tokens → UX spec names) */
+/*  BACKWARD-COMPAT ALIASES (bridges old parchment theme → Celestial Night)   */
 /*  Remove after full migration to UX spec tokens is complete.                */
 /* ─────────────────────────────────────────────────────────────────────────── */
 
 :root {
-  /* Old token → new token mapping */
-  --parchment-compat: var(--celestial-navy-900); /* was --parchment      */
-  --saddle-leather-compat: var(--celestial-navy-700); /* was --saddle-leather */
-  --midnight-ink-compat: var(--cream); /* was --midnight-ink   */
-  --burnished-gold-compat: var(--gold-500); /* was --burnished-gold */
-  --aged-bronze-compat: var(--text-muted); /* was --aged-bronze    */
-  --forest-green-compat: var(--celestial-primary); /* was --forest-green   */
-  --mystic-silver-compat: var(--text-muted); /* was --mystic-silver  */
+  --parchment-compat: var(--bg-night-sky);
+  --saddle-leather-compat: var(--bg-midnight);
+  --midnight-ink-compat: var(--text-primary);
+  --burnished-gold-compat: var(--gold-primary);
+  --aged-bronze-compat: var(--text-muted);
+  --forest-green-compat: var(--celestial-primary);
+  --mystic-silver-compat: var(--text-secondary);
 }

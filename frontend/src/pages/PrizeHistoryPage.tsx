@@ -22,6 +22,7 @@
 import React, { memo, useCallback, useMemo } from 'react';
 import { Link, useSearchParams } from 'react-router-dom';
 import { DollarSign, Star, Trophy, TrendingUp, ChevronRight, Home, RefreshCw } from 'lucide-react';
+import PageHero from '@/components/layout/PageHero';
 import { useAuth } from '@/contexts/AuthContext';
 import { usePrizeHistory } from '@/hooks/api/usePrizeHistory';
 import { type TransactionFilters } from '@/lib/api/prizes';
@@ -264,22 +265,17 @@ const PrizeHistoryPage = (): JSX.Element => {
   }, [refetch]);
 
   return (
-    <div className="min-h-screen bg-[rgba(15,35,70,0.3)]" data-testid="prize-history-page">
-      <main className="mx-auto max-w-7xl px-4 sm:px-6 lg:px-8 py-8">
-        {/* Breadcrumb Navigation */}
+    <div className="min-h-screen" data-testid="prize-history-page">
+      <PageHero
+        title="Prize History"
+        subtitle="View your competition earnings and prize transaction history"
+        mood="golden"
+        icon={<DollarSign className="w-7 h-7 text-[var(--gold-400)]" aria-hidden="true" />}
+      >
         <Breadcrumbs />
+      </PageHero>
 
-        {/* Page Header */}
-        <header
-          className="mb-6 border-b border-[rgba(37,99,235,0.3)] pb-4"
-          data-testid="page-header"
-        >
-          <h1 className="text-3xl font-bold text-[rgb(220,235,255)] mb-2">Prize History</h1>
-          <p className="text-[rgb(148,163,184)]">
-            View your competition earnings and prize transaction history
-          </p>
-        </header>
-
+      <main className="mx-auto max-w-7xl px-4 sm:px-6 lg:px-8 pb-8">
         {/* Error State */}
         {isError && error && (
           <StatsError

@@ -18,6 +18,7 @@
 import { useState, useCallback } from 'react';
 import { useSearchParams, useNavigate } from 'react-router-dom';
 import { Trophy } from 'lucide-react';
+import PageHero from '@/components/layout/PageHero';
 
 import { useAuth } from '@/contexts/AuthContext';
 import { useLeaderboard } from '@/hooks/api/useLeaderboard';
@@ -226,21 +227,15 @@ const LeaderboardsPage = () => {
     : null;
 
   return (
-    <main className="min-h-screen bg-[rgba(15,35,70,0.3)]">
-      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8 space-y-8">
-        {/* ---------------------------------------------------------------
-            Page Header
-        --------------------------------------------------------------- */}
-        <div className="flex items-center gap-3">
-          <Trophy size={32} className="text-yellow-400" aria-hidden="true" />
-          <div>
-            <h1 className="text-3xl font-bold text-[rgb(220,235,255)]">Leaderboards</h1>
-            <p className="text-[rgb(148,163,184)] mt-1">
-              View top performers across all categories
-            </p>
-          </div>
-        </div>
+    <div className="min-h-screen">
+      <PageHero
+        title="Leaderboards"
+        subtitle="View top performers across all categories — who reigns supreme in Equoria?"
+        mood="competitive"
+        icon={<Trophy className="w-7 h-7 text-[var(--gold-400)]" aria-hidden="true" />}
+      />
 
+      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 pb-12 space-y-8">
         {/* ---------------------------------------------------------------
             User Rankings Section
         --------------------------------------------------------------- */}
@@ -320,7 +315,7 @@ const LeaderboardsPage = () => {
           onViewFullProfile={handleViewFullProfile}
         />
       </div>
-    </main>
+    </div>
   );
 };
 

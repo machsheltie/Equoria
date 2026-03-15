@@ -14,7 +14,8 @@
 import React, { useState } from 'react';
 import { Link } from 'react-router-dom';
 import { toast } from 'sonner';
-import { ArrowLeft, Heart, ShoppingBag, Loader2, AlertCircle, CheckCircle } from 'lucide-react';
+import { Heart, ShoppingBag, Loader2, AlertCircle, CheckCircle } from 'lucide-react';
+import PageHero from '@/components/layout/PageHero';
 import { useTackInventory, usePurchaseTackItem } from '@/hooks/api/useTackShop';
 import { useHorses } from '@/hooks/api/useHorses';
 import type { TackItem } from '@/hooks/api/useTackShop';
@@ -396,33 +397,23 @@ const TackShopPage: React.FC = () => {
 
   return (
     <div className="min-h-screen">
-      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
+      <PageHero
+        title="Tack Shop"
+        subtitle="Saddles, bridles, and specialist gear to boost your horses in competition"
+        mood="golden"
+        icon={<ShoppingBag className="w-7 h-7 text-[var(--gold-400)]" />}
+      >
         {/* Breadcrumb */}
-        <div className="flex items-center gap-2 text-sm text-white/40 mb-6">
-          <Link to="/world" className="hover:text-white/70 transition-colors">
+        <div className="flex items-center gap-2 text-sm text-[var(--text-muted)]">
+          <Link to="/world" className="hover:text-[var(--cream)] transition-colors">
             World
           </Link>
           <span>/</span>
-          <span className="text-white/70">Tack Shop</span>
+          <span className="text-[var(--cream)]">Tack Shop</span>
         </div>
+      </PageHero>
 
-        {/* Page Header */}
-        <div className="flex items-center gap-4 mb-8">
-          <Link
-            to="/world"
-            className="p-2 rounded-lg bg-white/5 border border-white/10 text-white/50 hover:text-white hover:bg-white/10 transition-all"
-            aria-label="Back to World"
-          >
-            <ArrowLeft className="w-5 h-5" />
-          </Link>
-          <div>
-            <h1 className="text-2xl font-bold text-white/90">🧴 Tack Shop</h1>
-            <p className="text-sm text-white/50 mt-0.5">
-              Saddles, bridles, and specialist gear to boost your horses in competition
-            </p>
-          </div>
-        </div>
-
+      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 pb-8">
         {/* My Horses / Shop Tabs */}
         <div
           className="flex gap-1 p-1 bg-white/5 border border-white/10 rounded-xl mb-8 w-fit"
@@ -481,8 +472,8 @@ const TackShopPage: React.FC = () => {
         </div>
 
         {/* Info Panel */}
-        <div className="mt-10 p-5 rounded-xl bg-white/3 border border-white/8 text-sm text-white/40">
-          <h3 className="font-semibold text-white/60 mb-2">About the Tack Shop</h3>
+        <div className="mt-10 p-5 rounded-xl glass-panel text-sm text-[var(--text-muted)]">
+          <h3 className="font-semibold text-[var(--cream)] mb-2">About the Tack Shop</h3>
           <ul className="space-y-1 list-disc list-inside">
             <li>Only one saddle and one bridle can be equipped per horse at a time</li>
             <li>Competition gear provides direct bonuses to show scoring</li>

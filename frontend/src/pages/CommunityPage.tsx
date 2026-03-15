@@ -12,6 +12,7 @@
 import React from 'react';
 import { Link } from 'react-router-dom';
 import { MessageSquare, Users, Mail, Trophy, ArrowRight, Globe } from 'lucide-react';
+import PageHero from '@/components/layout/PageHero';
 import { useThreads } from '@/hooks/api/useForum';
 import { useUnreadCount } from '@/hooks/api/useMessages';
 import { useClubs } from '@/hooks/api/useClubs';
@@ -145,29 +146,23 @@ const CommunityPage: React.FC = () => {
 
   return (
     <div className="min-h-screen">
-      <div className="max-w-5xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
+      <PageHero
+        title="Community"
+        subtitle="Connect with stable owners, join clubs, and share your equestrian journey"
+        mood="default"
+        icon={<Globe className="w-7 h-7 text-[var(--gold-400)]" />}
+      >
         {/* Breadcrumb */}
-        <div className="flex items-center gap-2 text-sm text-white/40 mb-6">
-          <Link to="/" className="hover:text-white/70 transition-colors">
+        <div className="flex items-center gap-2 text-sm text-[var(--text-muted)]">
+          <Link to="/" className="hover:text-[var(--cream)] transition-colors">
             Home
           </Link>
           <span>/</span>
-          <span className="text-white/70">Community</span>
+          <span className="text-[var(--cream)]">Community</span>
         </div>
+      </PageHero>
 
-        {/* Page Header */}
-        <div className="flex items-center gap-4 mb-10">
-          <div className="p-3 rounded-xl bg-violet-500/10 border border-violet-500/30">
-            <Globe className="w-6 h-6 text-violet-400" />
-          </div>
-          <div>
-            <h1 className="text-2xl font-bold text-white/90">👥 Community</h1>
-            <p className="text-sm text-white/50 mt-0.5">
-              Connect with stable owners, join clubs, and share your equestrian journey
-            </p>
-          </div>
-        </div>
-
+      <div className="max-w-5xl mx-auto px-4 sm:px-6 lg:px-8 pb-8">
         {/* Community Cards */}
         <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-5 mb-10">
           {communityCards.map((card) => (

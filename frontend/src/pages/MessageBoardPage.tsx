@@ -23,6 +23,7 @@ import {
   PlusCircle,
   Eye,
 } from 'lucide-react';
+import PageHero from '@/components/layout/PageHero';
 import { toast } from 'sonner';
 import { useThreads } from '@/hooks/api/useForum';
 import type { ForumThread, ForumSection } from '@/lib/api-client';
@@ -98,32 +99,24 @@ const MessageBoardPage: React.FC = () => {
 
   return (
     <div className="min-h-screen">
-      <div className="max-w-5xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
-        {/* Breadcrumb */}
-        <div className="flex items-center gap-2 text-sm text-white/40 mb-6">
-          <Link to="/" className="hover:text-white/70 transition-colors">
-            Home
-          </Link>
-          <span>/</span>
-          <Link to="/community" className="hover:text-white/70 transition-colors">
-            Community
-          </Link>
-          <span>/</span>
-          <span className="text-white/70">Message Board</span>
-        </div>
-
-        {/* Page Header */}
-        <div className="flex items-center justify-between mb-8">
-          <div className="flex items-center gap-4">
-            <div className="p-3 rounded-xl bg-violet-500/10 border border-violet-500/30">
-              <MessageSquare className="w-6 h-6 text-violet-400" />
-            </div>
-            <div>
-              <h1 className="text-2xl font-bold text-white/90">💬 Message Board</h1>
-              <p className="text-sm text-white/50 mt-0.5">
-                {total} thread{total !== 1 ? 's' : ''} in {sectionConfig[activeSection].label}
-              </p>
-            </div>
+      <PageHero
+        title="Message Board"
+        subtitle={`${total} thread${total !== 1 ? 's' : ''} in ${sectionConfig[activeSection].label}`}
+        mood="default"
+        icon={<MessageSquare className="w-7 h-7 text-[var(--gold-400)]" />}
+      >
+        {/* Breadcrumb + New Post */}
+        <div className="flex items-center justify-between">
+          <div className="flex items-center gap-2 text-sm text-[var(--text-muted)]">
+            <Link to="/" className="hover:text-[var(--cream)] transition-colors">
+              Home
+            </Link>
+            <span>/</span>
+            <Link to="/community" className="hover:text-[var(--cream)] transition-colors">
+              Community
+            </Link>
+            <span>/</span>
+            <span className="text-[var(--cream)]">Message Board</span>
           </div>
           <button
             type="button"
@@ -136,7 +129,9 @@ const MessageBoardPage: React.FC = () => {
             New Post
           </button>
         </div>
+      </PageHero>
 
+      <div className="max-w-5xl mx-auto px-4 sm:px-6 lg:px-8 pb-8">
         {/* Section Tabs */}
         <div
           className="flex gap-1 p-1 bg-white/5 border border-white/10 rounded-xl mb-6 overflow-x-auto"

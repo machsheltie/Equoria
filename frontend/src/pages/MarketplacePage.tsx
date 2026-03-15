@@ -9,6 +9,7 @@ import React, { useState } from 'react';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { groomsApi, userProgressApi, type MarketplaceGroom } from '../lib/api-client';
 import { useProfile } from '../hooks/useAuth';
+import PageHero from '@/components/layout/PageHero';
 import {
   Coins,
   RefreshCw,
@@ -405,18 +406,19 @@ const MarketplacePage = () => {
   }
 
   return (
-    <div className="min-h-screen p-4 md:p-8">
-      <div className="max-w-7xl mx-auto">
-        {/* Page Header */}
-        <div className="glass-panel p-6 md:p-8 mb-8">
+    <div className="min-h-screen">
+      <PageHero
+        title="Groom Marketplace"
+        subtitle="Hire skilled grooms to care for your horses"
+        mood="nature"
+        icon={<Users className="w-7 h-7 text-[var(--gold-400)]" aria-hidden="true" />}
+      />
+
+      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 pb-8">
+        {/* Balance + Controls Header */}
+        <div className="glass-panel p-6 mb-8">
           <div className="flex flex-col md:flex-row items-start md:items-center justify-between gap-4">
-            <div>
-              <h1 className="fantasy-title text-3xl md:text-4xl mb-2 flex items-center gap-3">
-                <Users className="w-8 h-8" />
-                Groom Marketplace
-              </h1>
-              <p className="text-[rgb(148,163,184)]">Hire skilled grooms to care for your horses</p>
-            </div>
+            <div />
 
             {/* User balance */}
             {userData && (

@@ -9,6 +9,7 @@
 
 import React, { useState, useEffect } from 'react';
 import { User, FileText, Save, X } from 'lucide-react';
+import PageHero from '@/components/layout/PageHero';
 import XPLevelDisplay from '../components/XPLevelDisplay';
 import CurrencyDisplay from '../components/CurrencyDisplay';
 import StatisticsCard from '../components/StatisticsCard';
@@ -145,17 +146,15 @@ const ProfilePage: React.FC = () => {
   }
 
   return (
-    <div className="min-h-screen flex flex-col">
-      {/* Header */}
-      <header
-        className="relative border-b flex items-center justify-center p-4"
-        style={{ borderColor: 'var(--border-default)', background: 'var(--glass-surface-bg)' }}
-      >
-        <h1 className="fantasy-title text-2xl tracking-widest">{UI_TEXT.profile.title}</h1>
-      </header>
+    <div className="min-h-screen">
+      <PageHero
+        title={UI_TEXT.profile.title}
+        subtitle="View and edit your profile information"
+        mood="default"
+        icon={<User className="w-7 h-7 text-[var(--gold-400)]" aria-hidden="true" />}
+      />
 
-      {/* Main */}
-      <main className="flex-1 flex items-start justify-center p-4 pt-8">
+      <main className="flex-1 flex items-start justify-center px-4 sm:px-6 lg:px-8 pb-8">
         <div className="w-full max-w-md space-y-5">
           {/* Profile card */}
           <div className="glass-panel px-6 py-6 space-y-5">

@@ -11,10 +11,11 @@
 
 import React, { useState } from 'react';
 import { Link } from 'react-router-dom';
-import { ArrowLeft, Users, ShoppingBag } from 'lucide-react';
+import { Users, ShoppingBag, Leaf } from 'lucide-react';
 import { useAuth } from '@/contexts/AuthContext';
 import GroomList from '@/components/GroomList';
 import MyGroomsDashboard from '@/components/MyGroomsDashboard';
+import PageHero from '@/components/layout/PageHero';
 
 type GroomsTab = 'manage' | 'hire';
 
@@ -26,33 +27,23 @@ const GroomsPage: React.FC = () => {
 
   return (
     <div className="min-h-screen">
-      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
+      <PageHero
+        title="Groom Quarters"
+        subtitle="Hire and manage grooms for daily horse care"
+        mood="nature"
+        icon={<Leaf className="w-7 h-7 text-[var(--gold-400)]" />}
+      >
         {/* Breadcrumb */}
-        <div className="flex items-center gap-2 text-sm text-white/40 mb-6">
-          <Link to="/world" className="hover:text-white/70 transition-colors">
+        <div className="flex items-center gap-2 text-sm text-[var(--text-muted)]">
+          <Link to="/world" className="hover:text-[var(--cream)] transition-colors">
             World
           </Link>
           <span>/</span>
-          <span className="text-white/70">Grooms</span>
+          <span className="text-[var(--cream)]">Grooms</span>
         </div>
+      </PageHero>
 
-        {/* Page Header */}
-        <div className="flex items-center gap-4 mb-8">
-          <Link
-            to="/world"
-            className="p-2 rounded-lg bg-white/5 border border-white/10 text-white/50 hover:text-white hover:bg-white/10 transition-all"
-            aria-label="Back to World"
-          >
-            <ArrowLeft className="w-5 h-5" />
-          </Link>
-          <div>
-            <h1 className="text-2xl font-bold text-white/90">🧑‍🌾 Grooms</h1>
-            <p className="text-sm text-white/50 mt-0.5">
-              Hire and manage grooms for daily horse care
-            </p>
-          </div>
-        </div>
-
+      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 pb-8">
         {/* Manage / Hire Tabs */}
         <div
           className="flex gap-1 p-1 bg-white/5 border border-white/10 rounded-xl mb-8 w-fit"
@@ -100,8 +91,8 @@ const GroomsPage: React.FC = () => {
         </div>
 
         {/* Info Panel */}
-        <div className="mt-10 p-5 rounded-xl bg-white/3 border border-white/8 text-sm text-white/40">
-          <h3 className="font-semibold text-white/60 mb-2">About Grooms</h3>
+        <div className="mt-10 p-5 rounded-xl glass-panel text-sm text-[var(--text-muted)]">
+          <h3 className="font-semibold text-[var(--cream)] mb-2">About Grooms</h3>
           <ul className="space-y-1 list-disc list-inside">
             <li>Grooms perform daily care tasks: feeding, brushing, and bonding activities</li>
             <li>Foals benefit most from consistent groom care during development</li>

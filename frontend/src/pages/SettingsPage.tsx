@@ -11,7 +11,8 @@
  */
 
 import React, { useState } from 'react';
-import { User, Bell, Monitor, ChevronRight } from 'lucide-react';
+import { User, Bell, Monitor, ChevronRight, Settings } from 'lucide-react';
+import PageHero from '@/components/layout/PageHero';
 import { cn } from '@/lib/utils';
 
 interface ToggleProps {
@@ -96,16 +97,15 @@ const SettingsPage: React.FC = () => {
     setDisplay((prev) => ({ ...prev, [key]: val }));
 
   return (
-    <div className="space-y-8 max-w-4xl mx-auto" data-testid="settings-page">
-      {/* Page Header */}
-      <header className="animate-fade-in-up">
-        <h1 className="font-heading text-3xl font-bold text-starlight-white">Settings</h1>
-        <p className="text-starlight-white/60 mt-1 text-sm">
-          Manage your account preferences and application settings.
-        </p>
-      </header>
+    <div className="min-h-screen" data-testid="settings-page">
+      <PageHero
+        title="Settings"
+        subtitle="Manage your account preferences and application settings."
+        mood="default"
+        icon={<Settings className="w-7 h-7 text-[var(--gold-400)]" aria-hidden="true" />}
+      />
 
-      <div className="grid grid-cols-1 md:grid-cols-4 gap-6">
+      <div className="max-w-4xl mx-auto px-4 sm:px-6 lg:px-8 pb-12 grid grid-cols-1 md:grid-cols-4 gap-6">
         {/* Sidebar Nav */}
         <nav
           className="md:col-span-1 space-y-1"

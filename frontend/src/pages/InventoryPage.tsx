@@ -18,6 +18,7 @@ import { Link } from 'react-router-dom';
 import { toast } from 'sonner';
 import { Package, Shield, Leaf, Sparkles, AlertCircle, Loader2 } from 'lucide-react';
 import { useInventory, useEquipItem, useUnequipItem } from '@/hooks/api/useInventory';
+import PageHero from '@/components/layout/PageHero';
 import { horsesApi } from '@/lib/api-client';
 import type { InventoryItem } from '@/lib/api-client';
 import { useQuery } from '@tanstack/react-query';
@@ -288,37 +289,31 @@ const InventoryPage: React.FC = () => {
         />
       )}
 
-      <div className="max-w-5xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
-        {/* Breadcrumb */}
-        <div className="flex items-center gap-2 text-sm text-white/40 mb-6">
-          <Link to="/" className="hover:text-white/70 transition-colors">
-            Home
-          </Link>
-          <span>/</span>
-          <span className="text-white/70">Inventory</span>
-        </div>
-
-        {/* Page Header */}
-        <div className="flex items-center justify-between mb-8">
-          <div className="flex items-center gap-4">
-            <div className="p-3 rounded-xl bg-violet-500/10 border border-violet-500/30">
-              <Package className="w-6 h-6 text-violet-400" />
-            </div>
-            <div>
-              <h1 className="text-2xl font-bold text-white/90">🎒 Inventory</h1>
-              <p className="text-sm text-white/50 mt-0.5">
-                Manage your tack, consumables, and special items
-              </p>
-            </div>
+      <PageHero
+        title="Inventory"
+        subtitle="Manage your tack, consumables, and special items"
+        mood="golden"
+        icon={<Package className="w-7 h-7 text-[var(--gold-400)]" />}
+      >
+        {/* Breadcrumb + item count */}
+        <div className="flex items-center justify-between">
+          <div className="flex items-center gap-2 text-sm text-[var(--text-muted)]">
+            <Link to="/" className="hover:text-[var(--cream)] transition-colors">
+              Home
+            </Link>
+            <span>/</span>
+            <span className="text-[var(--cream)]">Inventory</span>
           </div>
           <div
-            className="px-4 py-2 bg-white/5 border border-white/10 rounded-lg text-sm text-white/60"
+            className="px-4 py-2 glass-panel rounded-lg text-sm text-[var(--text-muted)]"
             data-testid="item-count"
           >
-            {isLoading ? '…' : `${total} items`}
+            {isLoading ? '...' : `${total} items`}
           </div>
         </div>
+      </PageHero>
 
+      <div className="max-w-5xl mx-auto px-4 sm:px-6 lg:px-8 pb-8">
         {/* Category Filter */}
         <div
           className="flex gap-1 p-1 bg-white/5 border border-white/10 rounded-xl mb-6 w-fit"
@@ -390,8 +385,8 @@ const InventoryPage: React.FC = () => {
         </div>
 
         {/* Info Panel */}
-        <div className="mt-10 p-5 rounded-xl bg-white/3 border border-white/8 text-sm text-white/40">
-          <h3 className="font-semibold text-white/60 mb-2">About Inventory</h3>
+        <div className="mt-10 p-5 rounded-xl glass-panel text-sm text-[var(--text-muted)]">
+          <h3 className="font-semibold text-[var(--cream)] mb-2">About Inventory</h3>
           <ul className="space-y-1 list-disc list-inside">
             <li>Tack items can be equipped to one horse at a time</li>
             <li>Consumables are used once and removed from inventory</li>
