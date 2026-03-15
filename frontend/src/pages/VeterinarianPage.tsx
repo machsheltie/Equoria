@@ -16,7 +16,6 @@ import React, { useState } from 'react';
 import { Link } from 'react-router-dom';
 import { toast } from 'sonner';
 import { ArrowLeft, Heart, Activity, Clock, CheckCircle, Loader2 } from 'lucide-react';
-import MainNavigation from '@/components/MainNavigation';
 import { useHorses } from '@/hooks/api/useHorses';
 import { useVetServices, useBookVetAppointment } from '@/hooks/api/useVet';
 import type { VetService } from '@/hooks/api/useVet';
@@ -317,8 +316,6 @@ const VeterinarianPage: React.FC = () => {
 
   return (
     <div className="min-h-screen">
-      <MainNavigation />
-
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
         {/* Breadcrumb */}
         <div className="flex items-center gap-2 text-sm text-white/40 mb-6">

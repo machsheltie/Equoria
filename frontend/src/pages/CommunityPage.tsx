@@ -12,7 +12,6 @@
 import React from 'react';
 import { Link } from 'react-router-dom';
 import { MessageSquare, Users, Mail, Trophy, ArrowRight, Globe } from 'lucide-react';
-import MainNavigation from '@/components/MainNavigation';
 import { useThreads } from '@/hooks/api/useForum';
 import { useUnreadCount } from '@/hooks/api/useMessages';
 import { useClubs } from '@/hooks/api/useClubs';
@@ -146,8 +145,6 @@ const CommunityPage: React.FC = () => {
 
   return (
     <div className="min-h-screen">
-      <MainNavigation />
-
       <div className="max-w-5xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
         {/* Breadcrumb */}
         <div className="flex items-center gap-2 text-sm text-white/40 mb-6">

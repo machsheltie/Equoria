@@ -13,16 +13,15 @@ import { initSentry, SentryErrorBoundary } from '@/lib/sentry';
 import GallopingLoader from '@/components/ui/GallopingLoader';
 import { CelestialThemeProvider } from '@/components/theme/CelestialThemeProvider';
 import { WhileYouWereGone } from '@/components/hub/WhileYouWereGone';
+import DashboardLayout from '@/components/layout/DashboardLayout';
 
 // Auth pages — lazy loaded
-const StableView = lazy(() => import('./pages/StableView'));
 const OnboardingPage = lazy(() => import('./pages/OnboardingPage'));
 const LoginPage = lazy(() => import('./pages/LoginPage'));
 const RegisterPage = lazy(() => import('./pages/RegisterPage'));
 const VerifyEmailPage = lazy(() => import('./pages/VerifyEmailPage'));
 const ForgotPasswordPage = lazy(() => import('./pages/ForgotPasswordPage'));
 const ResetPasswordPage = lazy(() => import('./pages/ResetPasswordPage'));
-const ProfilePage = lazy(() => import('./pages/ProfilePage'));
 const HorseDetailPage = lazy(() => import('./pages/HorseDetailPage'));
 
 // Initialise Sentry once at module load (no-op if VITE_SENTRY_DSN not set)
@@ -53,47 +52,27 @@ const App = () => (
             <OnboardingSpotlight />
             <Suspense fallback={<GallopingLoader />}>
               <Routes>
+                {/* Public routes — no nav shell */}
                 <Route path="/onboarding" element={<OnboardingPage />} />
                 <Route path="/login" element={<LoginPage />} />
                 <Route path="/register" element={<RegisterPage />} />
                 <Route path="/verify-email" element={<VerifyEmailPage />} />
                 <Route path="/forgot-password" element={<ForgotPasswordPage />} />
                 <Route path="/reset-password" element={<ResetPasswordPage />} />
+
+                {/* Authenticated routes — DashboardLayout provides persistent nav */}
                 <Route
-                  path="/profile"
                   element={
                     <ProtectedRoute>
-                      <ProfilePage />
+                      <DashboardLayout />
                     </ProtectedRoute>
                   }
-                />
-                <Route
-                  path="/stable"
-                  element={
-                    <ProtectedRoute>
-                      <StableView />
-                    </ProtectedRoute>
-                  }
-                />
-                <Route
-                  path="/horses/:id"
-                  element={
-                    <ProtectedRoute>
-                      <HorseDetailPage />
-                    </ProtectedRoute>
-                  }
-                />
-                {navItems.map(({ to, Page }) => (
-                  <Route
-                    key={to}
-                    path={to}
-                    element={
-                      <ProtectedRoute>
-                        <Page />
-                      </ProtectedRoute>
-                    }
-                  />
-                ))}
+                >
+                  <Route path="/horses/:id" element={<HorseDetailPage />} />
+                  {navItems.map(({ to, Page }) => (
+                    <Route key={to} path={to} element={<Page />} />
+                  ))}
+                </Route>
               </Routes>
             </Suspense>
           </BrowserRouter>

@@ -15,7 +15,6 @@ import React, { useState, useEffect } from 'react';
 import { Link, useSearchParams } from 'react-router-dom';
 import { toast } from 'sonner';
 import { ArrowLeft, Heart, ShoppingCart, Clock, Loader2, AlertCircle, Zap } from 'lucide-react';
-import MainNavigation from '@/components/MainNavigation';
 import { useHorses } from '@/hooks/api/useHorses';
 import { useFeedCatalog, usePurchaseFeed, FeedItem } from '@/hooks/api/useFeedShop';
 import { HorseSummary } from '@/lib/api-client';
@@ -407,8 +406,6 @@ const FeedShopPage: React.FC = () => {
 
   return (
     <div className="min-h-screen">
-      <MainNavigation />
-
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
         {/* Breadcrumb */}
         <div className="flex items-center gap-2 text-sm text-white/40 mb-6">

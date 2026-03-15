@@ -17,7 +17,6 @@ import React, { useState } from 'react';
 import { Link } from 'react-router-dom';
 import { toast } from 'sonner';
 import { Package, Shield, Leaf, Sparkles, AlertCircle, Loader2 } from 'lucide-react';
-import MainNavigation from '@/components/MainNavigation';
 import { useInventory, useEquipItem, useUnequipItem } from '@/hooks/api/useInventory';
 import { horsesApi } from '@/lib/api-client';
 import type { InventoryItem } from '@/lib/api-client';
@@ -280,8 +279,6 @@ const InventoryPage: React.FC = () => {
 
   return (
     <div className="min-h-screen">
-      <MainNavigation />
-
       {equipTarget && (
         <HorsePicker
           itemName={equipTarget.name}
