@@ -74,14 +74,11 @@
   }
 
   body {
-    @apply bg-background text-foreground;
-    font-family: 'Inter', sans-serif;
-    /* Subtle starfield gradient */
-    background-image:
-      radial-gradient(ellipse at 20% 10%, rgba(37, 99, 235, 0.08) 0%, transparent 50%),
-      radial-gradient(ellipse at 80% 90%, rgba(212, 168, 67, 0.06) 0%, transparent 50%),
-      linear-gradient(180deg, rgb(10, 22, 40) 0%, rgb(6, 15, 28) 100%);
+    background: var(--gradient-night-sky);
     background-attachment: fixed;
+    color: var(--text-primary);
+    font-family: var(--font-body);
+    min-height: 100vh;
   }
 }
 
@@ -216,13 +213,13 @@
 
   /* Celestial input style */
   .celestial-input {
-    background: rgba(6, 15, 28, 0.6);
-    border: 1px solid rgba(37, 99, 235, 0.35);
-    border-radius: 9999px;
-    color: rgb(220, 235, 255);
+    background: var(--glass-bg);
+    border: 1px solid var(--glass-border);
+    border-radius: var(--radius-md);
+    color: var(--text-primary);
     padding: 0.75rem 1rem 0.75rem 2.75rem;
     width: 100%;
-    font-family: 'Inter', sans-serif;
+    font-family: var(--font-body);
     transition:
       border-color 0.2s,
       box-shadow 0.2s;
@@ -230,12 +227,12 @@
   }
 
   .celestial-input::placeholder {
-    color: rgb(100, 130, 165);
+    color: var(--text-muted);
   }
 
   .celestial-input:focus {
-    border-color: rgba(37, 99, 235, 0.7);
-    box-shadow: 0 0 0 3px rgba(37, 99, 235, 0.15);
+    border-color: var(--gold-primary);
+    box-shadow: 0 0 0 1px var(--gold-primary);
   }
 
   /* Cobalt pill button */
@@ -496,7 +493,7 @@
 /* ── Task 22-6: Celestial Night Scrollbar ────────────────────────── */
 .scroll-area-celestial {
   scrollbar-width: thin;
-  scrollbar-color: rgba(201, 162, 39, 0.4) transparent;
+  scrollbar-color: var(--gold-dim) transparent;
 }
 
 .scroll-area-celestial::-webkit-scrollbar {
@@ -509,12 +506,12 @@
 }
 
 .scroll-area-celestial::-webkit-scrollbar-thumb {
-  background: rgba(201, 162, 39, 0.4);
+  background: var(--gold-dim);
   border-radius: 9999px;
 }
 
 .scroll-area-celestial::-webkit-scrollbar-thumb:hover {
-  background: rgba(201, 162, 39, 0.7);
+  background: var(--gold-primary);
 }
 
 /* ── Task 22-3: CSS-only Starfield Background ─────────────────────── */

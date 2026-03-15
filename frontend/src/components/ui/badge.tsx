@@ -16,35 +16,63 @@ const badgeVariants = cva(
       variant: {
         /** Gold accent — general status, unlocked, active */
         default: [
-          'bg-[rgba(201,162,39,0.15)] border-[var(--gold-500)]',
-          'text-[var(--gold-400)]',
+          'bg-[rgba(200,168,78,0.15)] border-[var(--gold-primary)]',
+          'text-[var(--gold-light)]',
         ].join(' '),
         /** Muted — secondary labels, categories */
         secondary: [
-          'bg-[rgba(100,130,165,0.15)] border-[rgba(100,130,165,0.4)]',
-          'text-[var(--text-muted)]',
+          'bg-[var(--bg-twilight)]/20 border-[var(--glass-border)]',
+          'text-[var(--text-secondary)]',
         ].join(' '),
         /** Red — destructive, ineligible, overdue */
         destructive: [
-          'bg-[rgba(224,90,90,0.15)] border-[var(--status-error)]',
-          'text-[var(--status-error)]',
+          'bg-[rgba(239,68,68,0.15)] border-[var(--status-danger)]',
+          'text-[var(--status-danger)]',
         ].join(' '),
         /** Success — eligible, completed, healthy */
         success: [
-          'bg-[rgba(76,175,130,0.15)] border-[var(--status-success)]',
+          'bg-[rgba(34,197,94,0.15)] border-[var(--status-success)]',
           'text-[var(--status-success)]',
         ].join(' '),
         /** Warning — cooldown, care needed */
         warning: [
-          'bg-[rgba(212,168,67,0.15)] border-[var(--status-warning)]',
+          'bg-[rgba(245,158,11,0.15)] border-[var(--status-warning)]',
           'text-[var(--status-warning)]',
         ].join(' '),
         /** Electric blue — primary type, discipline */
         primary: [
-          'bg-[rgba(58,111,221,0.15)] border-[var(--electric-blue-500)]',
-          'text-[var(--electric-blue-300)]',
+          'bg-[rgba(59,130,246,0.15)] border-[var(--status-info)]',
+          'text-[var(--status-info)]',
         ].join(' '),
-        outline: ['bg-transparent border-[rgba(100,130,165,0.4)]', 'text-[var(--cream)]'].join(' '),
+        /** Outline — transparent bg, subtle border */
+        outline: ['bg-transparent border-[var(--glass-border)]', 'text-[var(--text-primary)]'].join(
+          ' '
+        ),
+        /** Common rarity — muted slate */
+        common: [
+          'bg-[rgba(138,155,186,0.15)] border-[var(--rarity-common)]',
+          'text-[var(--rarity-common)]',
+        ].join(' '),
+        /** Uncommon rarity — green */
+        uncommon: [
+          'bg-[rgba(34,197,94,0.15)] border-[var(--rarity-uncommon)]',
+          'text-[var(--rarity-uncommon)]',
+        ].join(' '),
+        /** Rare rarity — blue-violet */
+        rare: [
+          'bg-[rgba(167,139,250,0.2)] border-[var(--status-rare)]',
+          'text-[var(--status-rare)]',
+        ].join(' '),
+        /** Ultra-rare rarity — gold */
+        'ultra-rare': [
+          'bg-[rgba(200,168,78,0.2)] border-[var(--rarity-ultra-rare)]',
+          'text-[var(--gold-bright)]',
+        ].join(' '),
+        /** Legendary rarity — bright gold glow */
+        legendary: [
+          'bg-[rgba(245,230,163,0.15)] border-[var(--status-legendary)]',
+          'text-[var(--status-legendary)]',
+        ].join(' '),
       },
     },
     defaultVariants: {

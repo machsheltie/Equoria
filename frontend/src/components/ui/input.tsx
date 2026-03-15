@@ -11,8 +11,7 @@ const Input = React.forwardRef<HTMLInputElement, InputProps>(
         type={type}
         className={cn(
           'celestial-input',
-          // Override pill radius for standard input
-          'rounded-lg px-3 py-2 h-10 text-sm',
+          'rounded-[var(--radius-md)] px-3 py-2 h-10 text-sm',
           'file:border-0 file:bg-transparent file:text-sm file:font-medium',
           'disabled:cursor-not-allowed disabled:opacity-50',
           className
