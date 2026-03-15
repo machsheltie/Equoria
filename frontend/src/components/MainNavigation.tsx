@@ -1,307 +1,114 @@
 /**
- * Main Navigation Component
+ * MainNavigation — Compact top bar (Section 07)
  *
- * Primary navigation interface providing:
- * - Navigation menu with role-based access control
- * - Responsive design with mobile hamburger menu and desktop layout
- * - Active route highlighting and breadcrumb navigation
- * - User profile dropdown with logout functionality
- * - Global search functionality with suggestions
- * - Notification indicator with real-time updates
- * - Accessibility support with ARIA labels and keyboard navigation
- *
- * Integrates with backend APIs:
- * - GET /api/auth/profile - User profile data
- * - GET /api/notifications - User notifications
- * - POST /api/auth/logout - User logout
+ * Layout: [hamburger] [EQUORIA] [breadcrumb]  ...  [coins] [bell] [avatar]
+ * Matches direction-4-hybrid.html mockup.
  */
 
-import React, { useState } from 'react';
-import { Link, useLocation } from 'react-router-dom';
-import { Menu, X, Search, Bell, User, ChevronDown, LogOut, Settings } from 'lucide-react';
-import { cn } from '@/lib/utils';
-import { Input } from '@/components/ui/input';
+import { useState } from 'react';
+import { Link } from 'react-router-dom';
+import { Bell, User } from 'lucide-react';
 import { useUnreadCount } from '@/hooks/api/useMessages';
-
-interface UserData {
-  id: string;
-  name: string;
-  email: string;
-  avatar?: string;
-}
+import { useAuth } from '@/contexts/AuthContext';
+import { Breadcrumb } from '@/components/layout/Breadcrumb';
+import { NavPanel } from '@/components/layout/NavPanel';
 
 const MainNavigation: React.FC = () => {
-  const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
-  const [isProfileDropdownOpen, setIsProfileDropdownOpen] = useState(false);
-  const [searchQuery, setSearchQuery] = useState('');
-  const [user] = useState<UserData>({ id: '1', name: 'Test User', email: 'test@example.com' });
+  const [isNavOpen, setIsNavOpen] = useState(false);
   const { data: unreadData } = useUnreadCount();
-  const location = useLocation();
+  const { user } = useAuth();
 
-  const navigationItems = [
-    { name: 'Home', href: '/', icon: '🏠' },
-    { name: 'Stable', href: '/stable', icon: '🐎' },
-    { name: 'Training', href: '/training', icon: '🏋️' },
-    { name: 'Competitions', href: '/competitions', icon: '🏆' },
-    { name: 'Breeding', href: '/breeding', icon: '🧬' },
-    { name: 'World', href: '/world', icon: '🌍' },
-    { name: 'Marketplace', href: '/marketplace', icon: '🛒' },
-    { name: 'Community', href: '/community', icon: '💬' },
-    { name: 'Riders', href: '/riders', icon: '🏇' },
-    { name: 'Leaderboards', href: '/leaderboards', icon: '📊' },
-  ];
-
-  /*
-   * Note: Breadcrumbs are temporarily hidden in this design iteration
-   * to maintain a cleaner aesthetic. Can be re-enabled if user feedback requests it.
-   */
-  // const breadcrumbs = [
-  //   { name: 'Home', href: '/' },
-  //   { name: 'Stable', href: '/stable' },
-  //   { name: 'Horses', href: '/stable/horses' },
-  // ];
-
-  const unreadNotifications = unreadData?.count ?? 0;
-
-  const isActiveRoute = (href: string) => {
-    if (href === '/') return location.pathname === '/';
-    return location.pathname.startsWith(href);
-  };
-
-  const handleLogout = () => {
-    // Logout functionality
-    console.log('Logout clicked');
-  };
-
-  const handleSearch = (e: React.FormEvent) => {
-    e.preventDefault();
-    console.log('Search:', searchQuery);
-  };
+  const unreadCount = unreadData?.count ?? 0;
+  const displayMoney = user?.money?.toLocaleString() ?? '0';
 
   return (
     <>
-      <nav
-        role="navigation"
-        aria-label="Main navigation"
-        className="sticky top-0 z-[var(--z-sticky)] w-full border-b border-[rgba(201,162,39,0.18)] bg-[var(--celestial-navy-800)]/85 backdrop-blur-md"
+      <header
+        role="banner"
+        className="sticky top-0 z-[var(--z-sticky)] flex items-center justify-between px-4 md:px-8 py-3 bg-[rgba(10,14,26,0.75)] backdrop-blur-[var(--glass-blur)] border-b border-[var(--glass-border)]"
         data-testid="main-navigation"
       >
-        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-          <div className="flex justify-between h-16">
-            {/* Logo and Desktop Navigation */}
-            <div className="flex items-center">
-              <Link
-                to="/"
-                className="text-2xl font-bold mr-8 tracking-wide text-[var(--gold-400)]"
-                style={{ fontFamily: 'var(--font-display)' }}
-              >
-                Equoria
-              </Link>
+        {/* Left: hamburger + logo + breadcrumb */}
+        <div className="flex items-center gap-4 md:gap-6">
+          {/* Hamburger */}
+          <button
+            onClick={() => setIsNavOpen(true)}
+            className="w-8 h-8 flex flex-col items-center justify-center gap-1 rounded-[var(--radius-sm)] border border-[var(--glass-border)] text-[var(--text-secondary)] hover:text-[var(--text-primary)] hover:border-[var(--glass-hover)] transition-colors cursor-pointer"
+            aria-label="Open menu"
+            data-testid="hamburger-menu"
+            data-onboarding-target="nav-menu"
+          >
+            <span className="block w-4 h-0.5 bg-current rounded-sm" />
+            <span className="block w-4 h-0.5 bg-current rounded-sm" />
+            <span className="block w-4 h-0.5 bg-current rounded-sm" />
+          </button>
 
-              {/* Desktop Navigation Links */}
-              <div className="hidden md:flex space-x-1" data-testid="desktop-navigation">
-                {navigationItems.map((item) => {
-                  const active = isActiveRoute(item.href);
-                  return (
-                    <Link
-                      key={item.name}
-                      to={item.href}
-                      className={cn(
-                        'group px-3 py-2 text-sm font-medium flex items-center gap-2',
-                        'transition-colors hover:bg-white/5 rounded-md',
-                        active ? 'rounded-none rounded-t-md' : ''
-                      )}
-                      style={
-                        active
-                          ? {
-                              color: 'var(--text-primary)',
-                              borderBottom: '2px solid var(--celestial-primary)',
-                            }
-                          : { color: 'rgba(255,255,255,0.7)' }
-                      }
-                      aria-current={active ? 'page' : undefined}
-                    >
-                      <span className="opacity-70 group-hover:opacity-100 transition-opacity">
-                        {item.icon}
-                      </span>
-                      {item.name}
-                    </Link>
-                  );
-                })}
-              </div>
-            </div>
+          {/* Logo */}
+          <Link
+            to="/"
+            className="text-xl font-bold tracking-wider text-[var(--gold-primary)] hover:text-[var(--gold-light)] transition-colors"
+            style={{ fontFamily: 'var(--font-heading)', letterSpacing: '0.08em' }}
+            data-onboarding-target="nav-logo"
+          >
+            Equoria
+          </Link>
 
-            {/* Search, Notifications, and User Profile */}
-            <div className="flex items-center space-x-4">
-              {/* Search */}
-              <form onSubmit={handleSearch} className="hidden lg:flex relative w-64">
-                <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-white/40 w-4 h-4" />
-                <Input
-                  type="search"
-                  role="searchbox"
-                  placeholder="Search..."
-                  value={searchQuery}
-                  onChange={(e: React.ChangeEvent<HTMLInputElement>) =>
-                    setSearchQuery(e.target.value)
-                  }
-                  className="pl-9 bg-black/40 border-white/10 text-white placeholder:text-white/30 focus-visible:ring-celestial-gold/50 h-9"
-                />
-              </form>
-
-              {/* Notifications — links to /messages */}
-              <Link
-                to="/messages"
-                className="p-2 text-white/70 hover:text-celestial-gold hover:bg-white/5 rounded-full transition-colors relative"
-                data-testid="notification-indicator"
-                aria-label="Messages and notifications"
-              >
-                <Bell className="w-5 h-5" />
-                {unreadNotifications > 0 && (
-                  <span
-                    className="absolute top-1.5 right-1.5 bg-red-500 text-white text-[10px] font-bold rounded-full w-4 h-4 flex items-center justify-center border border-black"
-                    data-testid="notification-count"
-                  >
-                    {unreadNotifications}
-                  </span>
-                )}
-              </Link>
-
-              {/* User Profile Dropdown */}
-              <div className="relative" data-testid="user-profile-section">
-                <button
-                  onClick={() => setIsProfileDropdownOpen(!isProfileDropdownOpen)}
-                  className="flex items-center space-x-2 p-1.5 rounded-full hover:bg-white/5 border border-transparent hover:border-white/10 transition-all"
-                  aria-label="User profile"
-                >
-                  <div
-                    className="w-8 h-8 rounded-full bg-gradient-to-br from-indigo-500 to-purple-600 flex items-center justify-center shadow-inner border border-white/20"
-                    data-testid="user-avatar"
-                  >
-                    <User className="w-4 h-4 text-white" />
-                  </div>
-                  <span
-                    className="hidden md:block text-sm font-medium text-white/90 px-1"
-                    data-testid="user-name"
-                  >
-                    {user.name}
-                  </span>
-                  <ChevronDown className="w-4 h-4 text-white/50" />
-                </button>
-
-                {/* Profile Dropdown Menu */}
-                {isProfileDropdownOpen && (
-                  <div
-                    role="menu"
-                    className="absolute right-0 mt-2 w-56 glass-panel-heavy py-1 z-[var(--z-dropdown)] animate-in fade-in slide-in-from-top-2 duration-200"
-                  >
-                    <div className="px-4 py-3 border-b border-[rgba(201,162,39,0.2)] mb-1">
-                      <p className="text-sm text-[var(--cream)] font-medium">{user.name}</p>
-                      <p className="text-xs text-[var(--text-muted)] truncate">{user.email}</p>
-                    </div>
-
-                    <Link
-                      to="/profile"
-                      role="menuitem"
-                      className="flex items-center gap-2 px-4 py-2.5 text-sm text-white/80 hover:text-white hover:bg-white/10 transition-colors"
-                      onClick={() => setIsProfileDropdownOpen(false)}
-                    >
-                      <User className="w-4 h-4" />
-                      Profile Settings
-                    </Link>
-                    <Link
-                      to="/settings"
-                      role="menuitem"
-                      className="flex items-center gap-2 px-4 py-2.5 text-sm text-white/80 hover:text-white hover:bg-white/10 transition-colors"
-                      onClick={() => setIsProfileDropdownOpen(false)}
-                    >
-                      <Settings className="w-4 h-4" />
-                      Account Settings
-                    </Link>
-
-                    <div className="border-t border-[rgba(201,162,39,0.15)] my-1"></div>
-
-                    <button
-                      onClick={handleLogout}
-                      role="menuitem"
-                      className="flex w-full items-center gap-2 px-4 py-2.5 text-sm text-red-400 hover:text-red-300 hover:bg-red-500/10 transition-colors text-left"
-                    >
-                      <LogOut className="w-4 h-4" />
-                      Logout
-                    </button>
-                  </div>
-                )}
-              </div>
-
-              {/* Mobile Menu Button */}
-              <button
-                onClick={() => setIsMobileMenuOpen(!isMobileMenuOpen)}
-                className="md:hidden p-2 rounded-md text-white/70 hover:text-white hover:bg-white/10"
-                aria-label="Toggle menu"
-              >
-                {isMobileMenuOpen ? <X className="w-6 h-6" /> : <Menu className="w-6 h-6" />}
-              </button>
-            </div>
-          </div>
+          {/* Breadcrumb */}
+          <Breadcrumb />
         </div>
 
-        {/* Mobile Menu */}
-        {isMobileMenuOpen && (
-          <div
-            className="md:hidden bg-black/95 backdrop-blur-xl border-t border-white/10 absolute w-full"
-            data-testid="mobile-menu"
+        {/* Right: coins + bell + avatar */}
+        <div className="flex items-center gap-3 md:gap-4">
+          {/* Coins pill */}
+          <Link
+            to="/bank"
+            className="flex items-center gap-1.5 text-[0.8rem] font-semibold text-[var(--gold-light)] bg-[rgba(200,168,78,0.08)] px-3 py-1 rounded-[var(--radius-sm)] border border-[rgba(200,168,78,0.15)] hover:bg-[rgba(200,168,78,0.15)] transition-colors"
+            data-testid="coins-display"
+            data-onboarding-target="nav-coins"
           >
-            <div className="px-4 pt-4 pb-6 space-y-4">
-              {/* Mobile Search */}
-              <form onSubmit={handleSearch} className="mb-4">
-                <div className="relative">
-                  <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-white/40 w-4 h-4" />
-                  <Input
-                    type="search"
-                    role="searchbox"
-                    placeholder="Search..."
-                    value={searchQuery}
-                    onChange={(e: React.ChangeEvent<HTMLInputElement>) =>
-                      setSearchQuery(e.target.value)
-                    }
-                    className="pl-10 bg-white/5 border-white/10 text-white placeholder:text-white/30"
-                  />
-                </div>
-              </form>
+            <span aria-hidden="true">🪙</span>
+            <span>{displayMoney}</span>
+          </Link>
 
-              {/* Mobile Navigation Links */}
-              <div className="space-y-1">
-                {navigationItems.map((item) => {
-                  const active = isActiveRoute(item.href);
-                  return (
-                    <Link
-                      key={item.name}
-                      to={item.href}
-                      className={cn(
-                        'block px-3 py-3 rounded-md text-base font-medium flex items-center gap-3',
-                        active ? 'bg-white/5' : 'text-white/70 hover:text-white hover:bg-white/5'
-                      )}
-                      style={
-                        active
-                          ? {
-                              color: 'var(--text-primary)',
-                              borderLeft: '4px solid var(--celestial-primary)',
-                              paddingLeft: '8px',
-                            }
-                          : undefined
-                      }
-                      aria-current={active ? 'page' : undefined}
-                      onClick={() => setIsMobileMenuOpen(false)}
-                    >
-                      <span>{item.icon}</span>
-                      {item.name}
-                    </Link>
-                  );
-                })}
-              </div>
-            </div>
-          </div>
-        )}
-      </nav>
+          {/* Notification bell */}
+          <Link
+            to="/messages"
+            className="relative w-8 h-8 flex items-center justify-center rounded-[var(--radius-sm)] border border-[var(--glass-border)] text-[var(--text-secondary)] hover:text-[var(--text-primary)] hover:border-[var(--glass-hover)] transition-colors"
+            aria-label={`Notifications${unreadCount > 0 ? `, ${unreadCount} unread` : ''}`}
+            data-testid="notification-indicator"
+            data-onboarding-target="nav-notifications"
+          >
+            <Bell className="w-4 h-4" />
+            {unreadCount > 0 && (
+              <span
+                className="absolute -top-0.5 -right-0.5 w-2 h-2 bg-[var(--status-danger)] rounded-full border-2 border-[var(--bg-deep-space)]"
+                data-testid="notification-dot"
+              />
+            )}
+          </Link>
+
+          {/* Avatar */}
+          <Link
+            to="/settings"
+            className="w-8 h-8 rounded-full bg-[var(--bg-twilight)] border-2 border-[var(--gold-dim)] flex items-center justify-center text-[0.7rem] text-[var(--gold-light)] hover:border-[var(--gold-primary)] transition-colors cursor-pointer"
+            aria-label="User settings"
+            data-testid="user-avatar"
+          >
+            {user?.avatarUrl ? (
+              <img
+                src={user.avatarUrl}
+                alt=""
+                className="w-full h-full rounded-full object-cover"
+              />
+            ) : (
+              <User className="w-3.5 h-3.5" />
+            )}
+          </Link>
+        </div>
+      </header>
+
+      {/* Full nav panel overlay */}
+      <NavPanel isOpen={isNavOpen} onClose={() => setIsNavOpen(false)} />
     </>
   );
 };

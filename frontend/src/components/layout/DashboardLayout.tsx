@@ -1,23 +1,33 @@
 /**
- * DashboardLayout — App-level shell for all authenticated pages
+ * DashboardLayout — App-level shell for all authenticated pages (Section 07)
  *
- * Provides persistent MainNavigation + content area + atmospheric footer.
+ * Provides persistent compact top bar + content area with optional aside panel + footer.
  * StarfieldBackground is rendered at App level (above this).
  * Uses <Outlet /> from react-router-dom for nested route rendering.
  */
 
 import React from 'react';
-import { Outlet } from 'react-router-dom';
+import { Outlet, useLocation } from 'react-router-dom';
 import MainNavigation from '../MainNavigation';
+import { AsidePanel } from './AsidePanel';
+
+/** Routes that show the aside panel on desktop */
+const ASIDE_ROUTES = ['/', '/stable', '/my-stable'];
 
 const DashboardLayout: React.FC = () => {
+  const location = useLocation();
+  const showAside = ASIDE_ROUTES.includes(location.pathname);
+
   return (
     <div className="min-h-screen relative flex flex-col">
       <MainNavigation />
 
-      <main className="relative z-[var(--z-raised)] flex-1">
-        <Outlet />
-      </main>
+      <div className="relative z-[var(--z-raised)] flex-1 flex max-w-[1440px] mx-auto w-full px-4 md:px-8 gap-6">
+        <main className="flex-1 min-w-0">
+          <Outlet />
+        </main>
+        {showAside && <AsidePanel />}
+      </div>
 
       {/* Atmospheric footer — game world feel */}
       <footer className="relative z-[var(--z-raised)] mt-auto" aria-label="Game footer">
@@ -34,7 +44,7 @@ const DashboardLayout: React.FC = () => {
             className="text-sm tracking-[0.2em] uppercase opacity-30 select-none"
             style={{
               fontFamily: 'var(--font-display)',
-              color: 'var(--gold-500)',
+              color: 'var(--gold-primary)',
               textShadow: '0 0 20px rgba(201,162,39,0.3)',
             }}
           >
