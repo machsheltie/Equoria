@@ -44,7 +44,7 @@ const TYPE_CONFIG: Record<
 > = {
   prize: {
     Icon: Trophy,
-    accentColor: 'var(--gold-400)',
+    accentColor: 'var(--gold-primary)',
     bgColor: 'rgba(201,162,39,0.1)',
   },
   'level-up': {
@@ -114,7 +114,7 @@ export function RewardToast({
         {/* Text */}
         <div className="flex-1 min-w-0 pt-0.5">
           <p
-            className="text-sm font-bold text-[var(--cream)] leading-tight font-[var(--font-heading)] truncate"
+            className="text-sm font-bold text-[var(--text-primary)] leading-tight font-[var(--font-heading)] truncate"
             style={{ color: accentColor }}
           >
             {title}
@@ -131,7 +131,7 @@ export function RewardToast({
           type="button"
           aria-label="Dismiss notification"
           onClick={onDismiss}
-          className="flex-shrink-0 p-1 rounded-full text-[var(--text-muted)] hover:text-[var(--cream)] transition-colors"
+          className="flex-shrink-0 p-1 rounded-full text-[var(--text-muted)] hover:text-[var(--text-primary)] transition-colors"
         >
           <X className="h-3.5 w-3.5" />
         </button>

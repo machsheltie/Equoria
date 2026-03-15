@@ -16,7 +16,7 @@
 | 07  | `07-navigation-layout.md`        | 1828-1858, responsive | done    | Navigation: hamburger + breadcrumbs, hub-spoke, aside panel               |
 | 08  | `08-hub-dashboard.md`            | 563-754               | done    | Hub page: Next Actions bar, horse cards, aside panel, WYAG                |
 | 09  | `09-horse-card-design.md`        | focus group reqs      | done    | Horse cards: portrait, stats, traits, care strip, narrative chip, lineage |
-| 10  | `10-component-new-custom.md`     | 1477-1738             | pending | 13 new custom components: specs and implementation order                  |
+| 10  | `10-component-new-custom.md`     | 1477-1738             | done    | 13 new custom components: specs and implementation order                  |
 | 11  | `11-button-feedback-patterns.md` | 1739-1910             | pending | Button hierarchy, feedback tiers, form patterns, empty/loading states     |
 | 12  | `12-journey-flows.md`            | 1086-1436             | pending | 6 user journey flows with decision trees                                  |
 | 13  | `13-responsive-accessibility.md` | 1932-2120             | pending | Responsive breakpoints, a11y strategy, testing                            |

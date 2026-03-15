@@ -229,11 +229,11 @@ function ActivityCard({
         'w-full text-left rounded-xl px-3 py-3',
         'glass-panel border border-[rgba(100,130,165,0.15)]',
         'hover:border-[rgba(201,162,39,0.3)] hover:bg-[rgba(201,162,39,0.04)]',
-        'transition-all focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[var(--gold-400)]',
+        'transition-all focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[var(--gold-primary)]',
       ].join(' ')}
     >
       <div className="flex items-start justify-between gap-2">
-        <p className="text-xs font-bold text-[var(--cream)] font-[var(--font-body)]">
+        <p className="text-xs font-bold text-[var(--text-primary)] font-[var(--font-body)]">
           {activity.label}
         </p>
         <div className="flex items-center gap-1 flex-shrink-0">
@@ -242,7 +242,7 @@ function ActivityCard({
             className={[
               'rounded-full px-1.5 py-0.5 text-[10px] font-bold tabular-nums',
               bondPositive
-                ? 'bg-[rgba(201,162,39,0.15)] text-[var(--gold-400)]'
+                ? 'bg-[rgba(201,162,39,0.15)] text-[var(--gold-primary)]'
                 : 'bg-[rgba(239,68,68,0.1)] text-red-400',
             ].join(' ')}
           >
@@ -292,7 +292,7 @@ function DesktopTimeline({
         {/* Connector line */}
         <div className="absolute top-5 left-0 right-0 h-0.5 bg-[var(--celestial-navy-700)]" />
         <div
-          className="absolute top-5 left-0 h-0.5 bg-gradient-to-r from-[var(--gold-700)] to-[var(--gold-400)] transition-all duration-500"
+          className="absolute top-5 left-0 h-0.5 bg-gradient-to-r from-[var(--gold-700)] to-[var(--gold-primary)] transition-all duration-500"
           style={{
             width:
               currentIdx >= 4
@@ -316,10 +316,10 @@ function DesktopTimeline({
                   className={[
                     'relative z-10 flex h-10 w-10 items-center justify-center rounded-full text-lg border-2 transition-all',
                     isCurrent
-                      ? 'border-[var(--gold-400)] bg-[rgba(201,162,39,0.15)] shadow-[0_0_12px_rgba(201,162,39,0.4)]'
+                      ? 'border-[var(--gold-primary)] bg-[rgba(201,162,39,0.15)] shadow-[0_0_12px_rgba(201,162,39,0.4)]'
                       : isPast
                         ? 'border-[var(--gold-700)] bg-[rgba(201,162,39,0.08)]'
-                        : 'border-[var(--celestial-navy-600)] bg-[var(--celestial-navy-800)]',
+                        : 'border-[var(--celestial-navy-600)] bg-[var(--bg-midnight)]',
                   ].join(' ')}
                 >
                   {stage.icon}
@@ -330,9 +330,9 @@ function DesktopTimeline({
                     className={[
                       'text-xs font-semibold font-[var(--font-body)]',
                       isCurrent
-                        ? 'text-[var(--gold-400)]'
+                        ? 'text-[var(--gold-primary)]'
                         : isPast
-                          ? 'text-[var(--cream)]'
+                          ? 'text-[var(--text-primary)]'
                           : 'text-[var(--text-muted)]',
                     ].join(' ')}
                   >
@@ -408,7 +408,7 @@ function MobileCard({
           aria-label="Previous stage"
           onClick={() => setViewIdx((v) => Math.max(0, v - 1))}
           disabled={viewIdx === 0}
-          className="p-2 rounded-full text-[var(--text-muted)] hover:text-[var(--cream)] disabled:opacity-30 transition-colors"
+          className="p-2 rounded-full text-[var(--text-muted)] hover:text-[var(--text-primary)] disabled:opacity-30 transition-colors"
         >
           <ChevronLeft className="h-5 w-5" />
         </button>
@@ -419,9 +419,9 @@ function MobileCard({
             className={[
               'text-sm font-bold font-[var(--font-heading)] mt-1',
               isCurrentView
-                ? 'text-[var(--gold-400)]'
+                ? 'text-[var(--gold-primary)]'
                 : isPast
-                  ? 'text-[var(--cream)]'
+                  ? 'text-[var(--text-primary)]'
                   : 'text-[var(--text-muted)]',
             ].join(' ')}
           >
@@ -431,7 +431,7 @@ function MobileCard({
             {viewStage.weeksRange}
           </p>
           {isCurrentView && (
-            <span className="inline-block mt-1 rounded-full px-2 py-0.5 text-[9px] font-bold bg-[rgba(201,162,39,0.15)] text-[var(--gold-400)]">
+            <span className="inline-block mt-1 rounded-full px-2 py-0.5 text-[9px] font-bold bg-[rgba(201,162,39,0.15)] text-[var(--gold-primary)]">
               Current Stage
             </span>
           )}
@@ -447,7 +447,7 @@ function MobileCard({
           aria-label="Next stage"
           onClick={() => setViewIdx((v) => Math.min(STAGES.length - 1, v + 1))}
           disabled={viewIdx === STAGES.length - 1}
-          className="p-2 rounded-full text-[var(--text-muted)] hover:text-[var(--cream)] disabled:opacity-30 transition-colors"
+          className="p-2 rounded-full text-[var(--text-muted)] hover:text-[var(--text-primary)] disabled:opacity-30 transition-colors"
         >
           <ChevronRight className="h-5 w-5" />
         </button>
@@ -463,7 +463,9 @@ function MobileCard({
             onClick={() => setViewIdx(i)}
             className={[
               'h-1.5 rounded-full transition-all',
-              i === viewIdx ? 'w-4 bg-[var(--gold-400)]' : 'w-1.5 bg-[var(--celestial-navy-600)]',
+              i === viewIdx
+                ? 'w-4 bg-[var(--gold-primary)]'
+                : 'w-1.5 bg-[var(--celestial-navy-600)]',
             ].join(' ')}
           />
         ))}
@@ -506,12 +508,12 @@ function BondScoreBar({
     <div className="space-y-2">
       <div className="flex items-center justify-between">
         <div className="flex items-center gap-1.5">
-          <TrendingUp className="h-3.5 w-3.5 text-[var(--gold-400)]" aria-hidden="true" />
-          <span className="text-xs font-semibold text-[var(--cream)] font-[var(--font-body)]">
+          <TrendingUp className="h-3.5 w-3.5 text-[var(--gold-primary)]" aria-hidden="true" />
+          <span className="text-xs font-semibold text-[var(--text-primary)] font-[var(--font-body)]">
             Bond Score
           </span>
         </div>
-        <span className="text-sm font-bold text-[var(--gold-400)] font-[var(--font-heading)] tabular-nums">
+        <span className="text-sm font-bold text-[var(--gold-primary)] font-[var(--font-heading)] tabular-nums">
           {bondScore}
         </span>
       </div>
@@ -527,7 +529,7 @@ function BondScoreBar({
           aria-label={`Bond score: ${bondScore} out of 100`}
         >
           <div
-            className="h-full rounded-full bg-gradient-to-r from-[var(--gold-700)] to-[var(--gold-400)] transition-all duration-700"
+            className="h-full rounded-full bg-gradient-to-r from-[var(--gold-700)] to-[var(--gold-primary)] transition-all duration-700"
             style={{ width: `${pct}%` }}
           />
         </div>
@@ -547,7 +549,7 @@ function BondScoreBar({
                 <div
                   className={[
                     'w-0.5 h-full',
-                    achieved ? 'bg-[var(--gold-400)]' : 'bg-[var(--celestial-navy-600)]',
+                    achieved ? 'bg-[var(--gold-primary)]' : 'bg-[var(--celestial-navy-600)]',
                   ].join(' ')}
                 />
               </div>
@@ -566,7 +568,7 @@ function BondScoreBar({
               key={m}
               className={[
                 'absolute -translate-x-1/2 text-[9px] font-[var(--font-body)]',
-                achieved ? 'text-[var(--gold-400)]' : 'text-[var(--celestial-navy-500)]',
+                achieved ? 'text-[var(--gold-primary)]' : 'text-[var(--celestial-navy-500)]',
               ].join(' ')}
               style={{ left: `${m}%` }}
             >
@@ -603,13 +605,13 @@ export function DevelopmentTracker({
       {/* Header */}
       <div className="px-4 pt-4 pb-3 border-b border-[rgba(201,162,39,0.1)]">
         <div className="flex items-center gap-2">
-          <Baby className="h-4 w-4 text-[var(--gold-400)]" aria-hidden="true" />
+          <Baby className="h-4 w-4 text-[var(--gold-primary)]" aria-hidden="true" />
           <div>
             <p className="text-[10px] uppercase tracking-widest text-[var(--text-muted)] font-[var(--font-body)]">
               Development
             </p>
             <p
-              className="text-sm font-semibold text-[var(--cream)]"
+              className="text-sm font-semibold text-[var(--text-primary)]"
               style={{ fontFamily: 'var(--font-heading)' }}
             >
               {foalName}
@@ -621,7 +623,7 @@ export function DevelopmentTracker({
                 Graduated
               </span>
             ) : (
-              <span className="rounded-full px-2 py-1 text-[10px] font-bold bg-[rgba(201,162,39,0.12)] text-[var(--gold-400)] border border-[rgba(201,162,39,0.2)]">
+              <span className="rounded-full px-2 py-1 text-[10px] font-bold bg-[rgba(201,162,39,0.12)] text-[var(--gold-primary)] border border-[rgba(201,162,39,0.2)]">
                 Stage {currentIdx + 1} / {STAGES.length}
               </span>
             )}
@@ -644,7 +646,7 @@ export function DevelopmentTracker({
         <div className="px-4 py-6 text-center space-y-2">
           <p className="text-2xl">🏆</p>
           <p
-            className="text-sm font-semibold text-[var(--cream)]"
+            className="text-sm font-semibold text-[var(--text-primary)]"
             style={{ fontFamily: 'var(--font-heading)' }}
           >
             Development Complete

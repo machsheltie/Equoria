@@ -70,7 +70,7 @@ function StatPill({ stat, tier }: { stat: string; tier: 'primary' | 'secondary' 
   const range = GAIN_RANGE[tier];
   const colorClass =
     tier === 'primary'
-      ? 'bg-[rgba(201,162,39,0.15)] border-[rgba(201,162,39,0.4)] text-[var(--gold-400)]'
+      ? 'bg-[rgba(201,162,39,0.15)] border-[rgba(201,162,39,0.4)] text-[var(--gold-primary)]'
       : tier === 'secondary'
         ? 'bg-[rgba(30,100,200,0.15)] border-[rgba(30,100,200,0.35)] text-[var(--electric-blue)]'
         : 'bg-[rgba(100,130,165,0.12)] border-[rgba(100,130,165,0.25)] text-[var(--text-muted)]';
@@ -117,17 +117,17 @@ function DisciplineOption({
       aria-disabled={isIneligible}
       title={isIneligible ? ineligibleReason : undefined}
       className={[
-        'w-full text-left rounded-xl border p-3 transition-all duration-200 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[var(--electric-blue)] focus-visible:ring-offset-2 focus-visible:ring-offset-[var(--celestial-navy-900)]',
+        'w-full text-left rounded-xl border p-3 transition-all duration-200 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[var(--electric-blue)] focus-visible:ring-offset-2 focus-visible:ring-offset-[var(--bg-night-sky)]',
         isIneligible
           ? 'border-[rgba(100,130,165,0.1)] bg-[rgba(10,22,50,0.2)] opacity-50 cursor-not-allowed'
           : isSelected
-            ? 'border-[var(--gold-400)] bg-[rgba(201,162,39,0.1)] shadow-[0_0_12px_rgba(201,162,39,0.15)]'
+            ? 'border-[var(--gold-primary)] bg-[rgba(201,162,39,0.1)] shadow-[0_0_12px_rgba(201,162,39,0.15)]'
             : 'border-[rgba(100,130,165,0.2)] bg-[rgba(10,22,50,0.4)] hover:border-[rgba(201,162,39,0.35)] hover:bg-[rgba(10,22,50,0.65)]',
       ].join(' ')}
     >
       <div className="flex items-center justify-between mb-2">
         <span
-          className={`text-sm font-semibold font-[var(--font-heading)] ${isIneligible ? 'text-[var(--text-muted)]' : 'text-[var(--cream)]'}`}
+          className={`text-sm font-semibold font-[var(--font-heading)] ${isIneligible ? 'text-[var(--text-muted)]' : 'text-[var(--text-primary)]'}`}
         >
           {isIneligible && (
             <Lock className="w-3 h-3 inline-block mr-1 -mt-0.5" aria-hidden="true" />
@@ -142,7 +142,7 @@ function DisciplineOption({
                 matchScore >= 80
                   ? 'text-emerald-400 bg-[rgba(16,185,129,0.12)] border-[rgba(16,185,129,0.3)]'
                   : matchScore >= 50
-                    ? 'text-[var(--gold-400)] bg-[rgba(201,162,39,0.12)] border-[rgba(201,162,39,0.25)]'
+                    ? 'text-[var(--gold-primary)] bg-[rgba(201,162,39,0.12)] border-[rgba(201,162,39,0.25)]'
                     : 'text-[var(--text-muted)] bg-[rgba(100,130,165,0.1)] border-[rgba(100,130,165,0.2)]',
               ].join(' ')}
             >
@@ -150,7 +150,7 @@ function DisciplineOption({
             </span>
           )}
           {isRecommended && (
-            <span className="flex items-center gap-0.5 text-[9px] uppercase tracking-widest text-[var(--gold-400)] bg-[rgba(201,162,39,0.12)] border border-[rgba(201,162,39,0.25)] px-1.5 py-0.5 rounded-full">
+            <span className="flex items-center gap-0.5 text-[9px] uppercase tracking-widest text-[var(--gold-primary)] bg-[rgba(201,162,39,0.12)] border border-[rgba(201,162,39,0.25)] px-1.5 py-0.5 rounded-full">
               <Zap className="w-2.5 h-2.5" aria-hidden="true" />
               Rec.
             </span>
@@ -222,7 +222,7 @@ const DisciplineSelector: React.FC<DisciplineSelectorProps> = ({
       {/* Recommended section */}
       {top5.length > 0 && (
         <div className="mb-3">
-          <p className="text-[9px] uppercase tracking-widest text-[var(--gold-400)]/70 font-[var(--font-body)] mb-2 flex items-center gap-1">
+          <p className="text-[9px] uppercase tracking-widest text-[var(--gold-primary)]/70 font-[var(--font-body)] mb-2 flex items-center gap-1">
             <Zap className="w-3 h-3" aria-hidden="true" />
             Recommended for this horse
           </p>
@@ -247,7 +247,7 @@ const DisciplineSelector: React.FC<DisciplineSelectorProps> = ({
       <button
         type="button"
         onClick={() => setShowAll((v) => !v)}
-        className="flex items-center gap-1 text-[11px] text-[var(--text-muted)] hover:text-[var(--cream)] transition-colors mb-2 focus-visible:outline-none"
+        className="flex items-center gap-1 text-[11px] text-[var(--text-muted)] hover:text-[var(--text-primary)] transition-colors mb-2 focus-visible:outline-none"
       >
         {showAll ? (
           <>

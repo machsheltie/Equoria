@@ -68,8 +68,8 @@ function TabButton({
         'relative px-3 py-2 text-xs font-semibold transition-colors focus-visible:outline-none font-[var(--font-body)]',
         'after:absolute after:bottom-0 after:left-0 after:right-0 after:h-0.5 after:rounded-full after:transition-all',
         active
-          ? 'text-[var(--gold-400)] after:bg-[var(--gold-400)]'
-          : 'text-[var(--text-muted)] hover:text-[var(--cream)] after:bg-transparent',
+          ? 'text-[var(--gold-primary)] after:bg-[var(--gold-primary)]'
+          : 'text-[var(--text-muted)] hover:text-[var(--text-primary)] after:bg-transparent',
       ].join(' ')}
     >
       {label}
@@ -97,7 +97,7 @@ function StatRangesTab({ statRanges }: { statRanges: Record<string, StatRange> }
               />
               {/* Avg marker */}
               <div
-                className="absolute w-2 h-2 rounded-full bg-[var(--gold-400)] -top-0 -translate-y-0"
+                className="absolute w-2 h-2 rounded-full bg-[var(--gold-primary)] -top-0 -translate-y-0"
                 style={{ left: `calc(${range.avg}% - 4px)` }}
                 title={`Average: ${range.avg}`}
               />
@@ -131,7 +131,7 @@ function TraitsTab({ traits }: { traits: TraitPrediction[] }) {
           className="flex items-center gap-3 rounded-lg px-3 py-2 bg-[rgba(10,22,50,0.4)] border border-[rgba(100,130,165,0.15)]"
         >
           <div className="flex-1 min-w-0">
-            <p className="text-xs font-semibold text-[var(--cream)] font-[var(--font-body)] truncate">
+            <p className="text-xs font-semibold text-[var(--text-primary)] font-[var(--font-body)] truncate">
               {t.name}
             </p>
             <p className="text-[10px] text-[var(--text-muted)] capitalize font-[var(--font-body)]">
@@ -139,12 +139,12 @@ function TraitsTab({ traits }: { traits: TraitPrediction[] }) {
             </p>
           </div>
           <div className="flex flex-col items-end gap-1 flex-shrink-0 w-16">
-            <span className="text-xs font-bold text-[var(--gold-400)] font-[var(--font-heading)]">
+            <span className="text-xs font-bold text-[var(--gold-primary)] font-[var(--font-heading)]">
               {Math.round(t.probability * 100)}%
             </span>
             <div className="w-full h-1 rounded-full bg-[var(--celestial-navy-700)]">
               <div
-                className="h-full rounded-full bg-gradient-to-r from-[var(--gold-700)] to-[var(--gold-400)]"
+                className="h-full rounded-full bg-gradient-to-r from-[var(--gold-700)] to-[var(--gold-primary)]"
                 style={{ width: `${t.probability * 100}%` }}
               />
             </div>
@@ -168,7 +168,7 @@ function InbreedingTab({ coefficient }: { coefficient: number }) {
       {/* Score display */}
       <div className="text-center py-4">
         <p
-          className={`text-4xl font-bold tabular-nums ${isWarning ? 'text-amber-400' : 'text-[var(--cream)]'}`}
+          className={`text-4xl font-bold tabular-nums ${isWarning ? 'text-amber-400' : 'text-[var(--text-primary)]'}`}
           style={{ fontFamily: 'var(--font-heading)' }}
         >
           {pct}%
@@ -187,7 +187,7 @@ function InbreedingTab({ coefficient }: { coefficient: number }) {
         aria-valuemax={100}
       >
         <div
-          className={`h-full rounded-full transition-all ${isWarning ? 'bg-amber-400' : 'bg-gradient-to-r from-[var(--gold-700)] to-[var(--gold-400)]'}`}
+          className={`h-full rounded-full transition-all ${isWarning ? 'bg-amber-400' : 'bg-gradient-to-r from-[var(--gold-700)] to-[var(--gold-primary)]'}`}
           style={{ width: `${Math.min(100, pct)}%` }}
         />
       </div>
@@ -229,7 +229,7 @@ function PedigreeTab({
   if (overlap.length === 0) {
     return (
       <div className="text-center py-4 space-y-1">
-        <p className="text-sm font-semibold text-[var(--cream)] font-[var(--font-heading)]">
+        <p className="text-sm font-semibold text-[var(--text-primary)] font-[var(--font-heading)]">
           No common ancestors
         </p>
         <p className="text-xs text-[var(--text-muted)] font-[var(--font-body)]">
@@ -249,7 +249,7 @@ function PedigreeTab({
           key={a.ancestorName}
           className="flex items-center justify-between rounded-lg px-3 py-2 bg-[rgba(10,22,50,0.4)] border border-[rgba(100,130,165,0.15)]"
         >
-          <span className="text-xs text-[var(--cream)] font-[var(--font-body)]">
+          <span className="text-xs text-[var(--text-primary)] font-[var(--font-body)]">
             {a.ancestorName}
           </span>
           <span className="text-[10px] text-[var(--text-muted)] font-[var(--font-body)]">
@@ -266,9 +266,9 @@ function PedigreeTab({
 function LoadingSkeleton() {
   return (
     <div className="space-y-3 animate-pulse">
-      <div className="h-40 rounded-xl bg-[var(--celestial-navy-800)]" />
+      <div className="h-40 rounded-xl bg-[var(--bg-midnight)]" />
       {Array.from({ length: 4 }).map((_, i) => (
-        <div key={i} className="h-6 rounded bg-[var(--celestial-navy-800)] w-full" />
+        <div key={i} className="h-6 rounded bg-[var(--bg-midnight)] w-full" />
       ))}
     </div>
   );
@@ -295,8 +295,8 @@ export function CompatibilityPreview({
         <p className="text-[10px] uppercase tracking-widest text-[var(--text-muted)] font-[var(--font-body)] mb-0.5">
           Breeding Compatibility
         </p>
-        <p className="text-sm font-semibold text-[var(--cream)] font-[var(--font-heading)]">
-          {mareName} <span className="text-[var(--gold-400)]">×</span> {stallionName}
+        <p className="text-sm font-semibold text-[var(--text-primary)] font-[var(--font-heading)]">
+          {mareName} <span className="text-[var(--gold-primary)]">×</span> {stallionName}
         </p>
       </div>
 

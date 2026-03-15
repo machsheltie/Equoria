@@ -57,7 +57,7 @@ function Corner({
     [isLeft ? 'left' : 'right']: 0,
     width: '100%',
     height: thickness,
-    background: 'var(--gold-400)',
+    background: 'var(--gold-primary)',
     borderRadius: 2,
   };
 
@@ -68,7 +68,7 @@ function Corner({
     [isLeft ? 'left' : 'right']: 0,
     width: thickness,
     height: '100%',
-    background: 'var(--gold-400)',
+    background: 'var(--gold-primary)',
     borderRadius: 2,
   };
 

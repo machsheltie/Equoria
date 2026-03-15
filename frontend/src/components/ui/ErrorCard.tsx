@@ -44,7 +44,7 @@ export const ErrorCard: React.FC<ErrorCardProps> = ({
       {/* Text */}
       <div className="space-y-1">
         <h3
-          className="text-base font-semibold text-[var(--cream)]"
+          className="text-base font-semibold text-[var(--text-primary)]"
           style={{ fontFamily: 'var(--font-heading)' }}
         >
           {title}
@@ -62,7 +62,7 @@ export const ErrorCard: React.FC<ErrorCardProps> = ({
             onClick={onRetry}
             className={[
               'inline-flex items-center gap-2 rounded-full px-5 py-2 text-sm font-bold transition-all',
-              'bg-gradient-to-r from-[var(--gold-700)] to-[var(--gold-400)] text-[var(--celestial-navy-900)]',
+              'bg-gradient-to-r from-[var(--gold-700)] to-[var(--gold-primary)] text-[var(--bg-night-sky)]',
               'hover:brightness-110 hover:shadow-[0_0_14px_rgba(201,162,39,0.3)]',
               'font-[var(--font-heading)]',
             ].join(' ')}

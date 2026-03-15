@@ -67,7 +67,7 @@ function EntryCountBar({ count, max }: { count: number; max: number | null | und
           <Users className="w-3.5 h-3.5" aria-hidden="true" />
           Entries
         </span>
-        <span className={isFull ? 'text-red-400 font-semibold' : 'text-[var(--cream)]'}>
+        <span className={isFull ? 'text-red-400 font-semibold' : 'text-[var(--text-primary)]'}>
           {count} / {max}
         </span>
       </div>
@@ -79,7 +79,7 @@ function EntryCountBar({ count, max }: { count: number; max: number | null | und
         aria-valuemax={max}
       >
         <div
-          className={`h-full rounded-full transition-all ${isFull ? 'bg-red-500' : 'bg-gradient-to-r from-[var(--gold-700)] to-[var(--gold-400)]'}`}
+          className={`h-full rounded-full transition-all ${isFull ? 'bg-red-500' : 'bg-gradient-to-r from-[var(--gold-700)] to-[var(--gold-primary)]'}`}
           style={{ width: `${pct}%` }}
         />
       </div>
@@ -109,7 +109,7 @@ export function CompetitionFieldPreview({
           {show.discipline}
         </p>
         <h3
-          className="text-base font-bold text-[var(--cream)]"
+          className="text-base font-bold text-[var(--text-primary)]"
           style={{ fontFamily: 'var(--font-heading)' }}
         >
           {show.name}
@@ -128,7 +128,7 @@ export function CompetitionFieldPreview({
           <button
             type="button"
             onClick={() => setScouting((v) => !v)}
-            className="flex items-center gap-1.5 text-xs text-[var(--gold-400)] hover:text-[var(--gold-300)] transition-colors focus-visible:outline-none font-[var(--font-body)]"
+            className="flex items-center gap-1.5 text-xs text-[var(--gold-primary)] hover:text-[var(--gold-light)] transition-colors focus-visible:outline-none font-[var(--font-body)]"
             aria-expanded={scouting}
           >
             {scouting ? (
@@ -163,10 +163,10 @@ export function CompetitionFieldPreview({
                     key={e.id}
                     className="flex items-center gap-2 text-xs text-[var(--text-muted)] font-[var(--font-body)]"
                   >
-                    <span className="w-5 text-right text-[var(--gold-400)]/60 font-bold tabular-nums">
+                    <span className="w-5 text-right text-[var(--gold-primary)]/60 font-bold tabular-nums">
                       {i + 1}.
                     </span>
-                    <span className="text-[var(--cream)]">{e.name}</span>
+                    <span className="text-[var(--text-primary)]">{e.name}</span>
                     {e.breed && <span className="text-[var(--text-muted)]">· {e.breed}</span>}
                   </li>
                 ))}
@@ -180,7 +180,7 @@ export function CompetitionFieldPreview({
       {show.entryFee > 0 && (
         <div className="text-xs text-[var(--text-muted)] font-[var(--font-body)] border-t border-[rgba(100,130,165,0.15)] pt-3">
           Entry fee:{' '}
-          <span className="text-[var(--gold-400)] font-semibold">
+          <span className="text-[var(--gold-primary)] font-semibold">
             {show.entryFee.toLocaleString()} gold
           </span>
         </div>

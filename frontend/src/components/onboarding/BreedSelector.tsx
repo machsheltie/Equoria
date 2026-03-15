@@ -66,7 +66,7 @@ function StatBars({ tendencies }: { tendencies: BreedStatTendencies }) {
               role="presentation"
             >
               <div
-                className="h-full rounded-full bg-gradient-to-r from-[var(--gold-700)] to-[var(--gold-400)]"
+                className="h-full rounded-full bg-gradient-to-r from-[var(--gold-700)] to-[var(--gold-primary)]"
                 style={{ width: `${t.avg}%` }}
               />
             </div>
@@ -94,14 +94,14 @@ function BreedCard({
       onClick={onSelect}
       aria-pressed={isSelected}
       className={[
-        'text-left rounded-xl p-3 border transition-all duration-200 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[var(--electric-blue)] focus-visible:ring-offset-2 focus-visible:ring-offset-[var(--celestial-navy-900)]',
+        'text-left rounded-xl p-3 border transition-all duration-200 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[var(--electric-blue)] focus-visible:ring-offset-2 focus-visible:ring-offset-[var(--bg-night-sky)]',
         isSelected
-          ? 'border-[var(--gold-400)] bg-[rgba(201,162,39,0.12)] shadow-[0_0_14px_rgba(201,162,39,0.2)]'
+          ? 'border-[var(--gold-primary)] bg-[rgba(201,162,39,0.12)] shadow-[0_0_14px_rgba(201,162,39,0.2)]'
           : 'border-[rgba(100,130,165,0.25)] bg-[rgba(10,22,50,0.5)] hover:border-[rgba(201,162,39,0.4)] hover:bg-[rgba(10,22,50,0.7)]',
       ].join(' ')}
     >
       {/* Portrait placeholder */}
-      <div className="w-full aspect-square rounded-lg mb-2 flex items-center justify-center bg-[var(--celestial-navy-800)] border border-[rgba(100,130,165,0.2)] overflow-hidden">
+      <div className="w-full aspect-square rounded-lg mb-2 flex items-center justify-center bg-[var(--bg-midnight)] border border-[rgba(100,130,165,0.2)] overflow-hidden">
         <img
           src="/placeholder.svg"
           alt={breed.name}
@@ -111,7 +111,7 @@ function BreedCard({
       </div>
 
       {/* Name */}
-      <p className="text-xs font-semibold text-[var(--cream)] font-[var(--font-heading)] leading-tight mb-1 truncate">
+      <p className="text-xs font-semibold text-[var(--text-primary)] font-[var(--font-heading)] leading-tight mb-1 truncate">
         {breed.name}
       </p>
 
@@ -120,8 +120,8 @@ function BreedCard({
 
       {/* Selected indicator */}
       {isSelected && (
-        <div className="mt-2 flex items-center gap-1 text-[10px] text-[var(--gold-400)] font-semibold">
-          <Star className="w-3 h-3 fill-[var(--gold-400)]" aria-hidden="true" />
+        <div className="mt-2 flex items-center gap-1 text-[10px] text-[var(--gold-primary)] font-semibold">
+          <Star className="w-3 h-3 fill-[var(--gold-primary)]" aria-hidden="true" />
           Selected
         </div>
       )}
@@ -147,7 +147,7 @@ function BreedRow({
       className={[
         'rounded-xl border transition-all duration-200',
         isSelected
-          ? 'border-[var(--gold-400)] bg-[rgba(201,162,39,0.08)]'
+          ? 'border-[var(--gold-primary)] bg-[rgba(201,162,39,0.08)]'
           : 'border-[rgba(100,130,165,0.25)] bg-[rgba(10,22,50,0.4)] hover:border-[rgba(201,162,39,0.35)]',
       ].join(' ')}
     >
@@ -155,10 +155,10 @@ function BreedRow({
         type="button"
         onClick={onSelect}
         aria-pressed={isSelected}
-        className="w-full flex items-center gap-3 p-3 text-left focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[var(--electric-blue)] focus-visible:ring-offset-2 focus-visible:ring-offset-[var(--celestial-navy-900)] rounded-xl"
+        className="w-full flex items-center gap-3 p-3 text-left focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[var(--electric-blue)] focus-visible:ring-offset-2 focus-visible:ring-offset-[var(--bg-night-sky)] rounded-xl"
       >
         {/* Portrait thumbnail */}
-        <div className="w-12 h-12 flex-shrink-0 rounded-lg flex items-center justify-center bg-[var(--celestial-navy-800)] border border-[rgba(100,130,165,0.2)] overflow-hidden">
+        <div className="w-12 h-12 flex-shrink-0 rounded-lg flex items-center justify-center bg-[var(--bg-midnight)] border border-[rgba(100,130,165,0.2)] overflow-hidden">
           <img
             src="/placeholder.svg"
             alt={breed.name}
@@ -169,7 +169,7 @@ function BreedRow({
 
         {/* Name + lore preview */}
         <div className="flex-1 min-w-0">
-          <p className="text-sm font-semibold text-[var(--cream)] font-[var(--font-heading)] truncate">
+          <p className="text-sm font-semibold text-[var(--text-primary)] font-[var(--font-heading)] truncate">
             {breed.name}
           </p>
           <p className="text-xs text-[var(--text-muted)] line-clamp-1 font-[var(--font-body)] mt-0.5">
@@ -188,7 +188,7 @@ function BreedRow({
                 </span>
                 <div className="h-1 rounded-full bg-[var(--celestial-navy-700)] overflow-hidden">
                   <div
-                    className="h-full rounded-full bg-gradient-to-r from-[var(--gold-700)] to-[var(--gold-400)]"
+                    className="h-full rounded-full bg-gradient-to-r from-[var(--gold-700)] to-[var(--gold-primary)]"
                     style={{ width: `${t.avg}%` }}
                   />
                 </div>
@@ -200,7 +200,7 @@ function BreedRow({
         {/* Selected badge */}
         {isSelected && (
           <Star
-            className="w-4 h-4 fill-[var(--gold-400)] text-[var(--gold-400)] flex-shrink-0"
+            className="w-4 h-4 fill-[var(--gold-primary)] text-[var(--gold-primary)] flex-shrink-0"
             aria-label="Selected"
           />
         )}
@@ -212,13 +212,13 @@ function BreedRow({
           <button
             type="button"
             onClick={() => setExpanded((v) => !v)}
-            className="text-[10px] text-[var(--gold-400)] hover:text-[var(--gold-300)] mt-2 transition-colors focus-visible:outline-none"
+            className="text-[10px] text-[var(--gold-primary)] hover:text-[var(--gold-light)] mt-2 transition-colors focus-visible:outline-none"
           >
             {expanded ? '▲ Less detail' : '▼ More detail'}
           </button>
           {expanded && (
             <div className="mt-2 space-y-3">
-              <p className="text-xs text-[var(--cream)]/70 font-[var(--font-body)] italic leading-relaxed">
+              <p className="text-xs text-[var(--text-primary)]/70 font-[var(--font-body)] italic leading-relaxed">
                 {breed.loreBlurb}
               </p>
               <StatBars tendencies={breed.statTendencies} />
@@ -240,7 +240,7 @@ function GridSkeleton() {
           key={i}
           className="rounded-xl border border-[rgba(100,130,165,0.15)] bg-[rgba(10,22,50,0.4)] p-3 animate-pulse"
         >
-          <div className="w-full aspect-square rounded-lg bg-[var(--celestial-navy-800)] mb-2" />
+          <div className="w-full aspect-square rounded-lg bg-[var(--bg-midnight)] mb-2" />
           <div className="h-3 rounded bg-[var(--celestial-navy-700)] w-3/4 mb-2" />
           <div className="grid grid-cols-3 gap-1">
             {Array.from({ length: 6 }).map((_, j) => (
@@ -261,10 +261,10 @@ function ListSkeleton() {
           key={i}
           className="flex items-center gap-3 p-3 rounded-xl border border-[rgba(100,130,165,0.15)] bg-[rgba(10,22,50,0.4)] animate-pulse"
         >
-          <div className="w-12 h-12 rounded-lg bg-[var(--celestial-navy-800)] flex-shrink-0" />
+          <div className="w-12 h-12 rounded-lg bg-[var(--bg-midnight)] flex-shrink-0" />
           <div className="flex-1 space-y-1.5">
             <div className="h-3 rounded bg-[var(--celestial-navy-700)] w-1/3" />
-            <div className="h-2 rounded bg-[var(--celestial-navy-800)] w-2/3" />
+            <div className="h-2 rounded bg-[var(--bg-midnight)] w-2/3" />
           </div>
         </div>
       ))}
@@ -298,7 +298,7 @@ export function BreedSelector({ breeds, value, onChange }: BreedSelectorProps) {
         <p className="text-xs text-[var(--text-muted)] font-[var(--font-body)] uppercase tracking-widest">
           Choose a Breed
         </p>
-        <div className="flex items-center gap-1 p-1 rounded-lg bg-[var(--celestial-navy-800)] border border-[rgba(100,130,165,0.2)]">
+        <div className="flex items-center gap-1 p-1 rounded-lg bg-[var(--bg-midnight)] border border-[rgba(100,130,165,0.2)]">
           <button
             type="button"
             onClick={() => setViewMode('grid')}
@@ -307,8 +307,8 @@ export function BreedSelector({ breeds, value, onChange }: BreedSelectorProps) {
             className={[
               'p-1.5 rounded-md transition-colors focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-[var(--electric-blue)]',
               viewMode === 'grid'
-                ? 'bg-[var(--celestial-navy-600)] text-[var(--gold-400)]'
-                : 'text-[var(--text-muted)] hover:text-[var(--cream)]',
+                ? 'bg-[var(--celestial-navy-600)] text-[var(--gold-primary)]'
+                : 'text-[var(--text-muted)] hover:text-[var(--text-primary)]',
             ].join(' ')}
           >
             <LayoutGrid className="w-4 h-4" aria-hidden="true" />
@@ -321,8 +321,8 @@ export function BreedSelector({ breeds, value, onChange }: BreedSelectorProps) {
             className={[
               'p-1.5 rounded-md transition-colors focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-[var(--electric-blue)]',
               viewMode === 'list'
-                ? 'bg-[var(--celestial-navy-600)] text-[var(--gold-400)]'
-                : 'text-[var(--text-muted)] hover:text-[var(--cream)]',
+                ? 'bg-[var(--celestial-navy-600)] text-[var(--gold-primary)]'
+                : 'text-[var(--text-muted)] hover:text-[var(--text-primary)]',
             ].join(' ')}
           >
             <List className="w-4 h-4" aria-hidden="true" />
@@ -365,7 +365,7 @@ export function BreedSelector({ breeds, value, onChange }: BreedSelectorProps) {
       {/* ── Lore blurb for selected breed ── */}
       {selectedBreed && (
         <div className="rounded-xl p-3 bg-[rgba(201,162,39,0.06)] border border-[rgba(201,162,39,0.18)]">
-          <p className="text-xs italic text-[var(--cream)]/70 font-[var(--font-body)] leading-relaxed">
+          <p className="text-xs italic text-[var(--text-primary)]/70 font-[var(--font-body)] leading-relaxed">
             &ldquo;{selectedBreed.loreBlurb}&rdquo;
           </p>
         </div>
@@ -384,10 +384,10 @@ export function BreedSelector({ breeds, value, onChange }: BreedSelectorProps) {
               onClick={() => selectGender(g)}
               aria-pressed={value.gender === g}
               className={[
-                'py-2.5 rounded-xl border text-sm font-semibold transition-all duration-200 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[var(--electric-blue)] focus-visible:ring-offset-2 focus-visible:ring-offset-[var(--celestial-navy-900)]',
+                'py-2.5 rounded-xl border text-sm font-semibold transition-all duration-200 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[var(--electric-blue)] focus-visible:ring-offset-2 focus-visible:ring-offset-[var(--bg-night-sky)]',
                 value.gender === g
-                  ? 'border-[var(--gold-400)] bg-[rgba(201,162,39,0.12)] text-[var(--gold-400)]'
-                  : 'border-[rgba(100,130,165,0.25)] bg-[rgba(10,22,50,0.4)] text-[var(--text-muted)] hover:border-[rgba(201,162,39,0.35)] hover:text-[var(--cream)]',
+                  ? 'border-[var(--gold-primary)] bg-[rgba(201,162,39,0.12)] text-[var(--gold-primary)]'
+                  : 'border-[rgba(100,130,165,0.25)] bg-[rgba(10,22,50,0.4)] text-[var(--text-muted)] hover:border-[rgba(201,162,39,0.35)] hover:text-[var(--text-primary)]',
               ].join(' ')}
             >
               {g === 'Mare' ? '♀' : '♂'} {g}
@@ -421,7 +421,7 @@ export function BreedSelector({ breeds, value, onChange }: BreedSelectorProps) {
             <span className="text-xs text-[var(--text-muted)] font-[var(--font-body)]">
               Preview:
             </span>
-            <span className="px-3 py-1 rounded-full text-xs font-semibold bg-[rgba(201,162,39,0.12)] border border-[rgba(201,162,39,0.3)] text-[var(--gold-400)] font-[var(--font-heading)]">
+            <span className="px-3 py-1 rounded-full text-xs font-semibold bg-[rgba(201,162,39,0.12)] border border-[rgba(201,162,39,0.3)] text-[var(--gold-primary)] font-[var(--font-heading)]">
               {value.horseName}
               {value.breedName ? ` · ${value.breedName}` : ''}
               {value.gender ? ` · ${value.gender}` : ''}
