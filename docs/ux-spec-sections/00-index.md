@@ -5,21 +5,21 @@
 
 ## Section Files
 
-| #   | File                             | Spec Lines            | Status  | Description                                                               |
-| --- | -------------------------------- | --------------------- | ------- | ------------------------------------------------------------------------- |
-| 01  | `01-design-tokens.md`            | 80-155, 755-960       | done    | Color palette, typography, spacing, elevation, gradients                  |
-| 02  | `02-4-layer-strategy.md`         | 496-562               | done    | Design system choice, 4-layer transformation, customization strategy      |
-| 03  | `03-shadcn-restyling.md`         | 1438-1458, 1695-1710  | done    | 13 shadcn components: exact visual overrides per component                |
-| 04  | `04-global-atmosphere.md`        | L1 scope + 1479-1491  | done    | Layer 1: StarfieldBackground, body gradient, global CSS                   |
-| 05  | `05-frosted-panel-system.md`     | L2 scope + UI-3 ref   | done    | Layer 2: FrostedPanel replacing all Cards, glass system                   |
-| 06  | `06-typography-system.md`        | 827-859               | done    | Layer 3: Cinzel + Inter, type scale, typography rules                     |
-| 07  | `07-navigation-layout.md`        | 1828-1858, responsive | done    | Navigation: hamburger + breadcrumbs, hub-spoke, aside panel               |
-| 08  | `08-hub-dashboard.md`            | 563-754               | done    | Hub page: Next Actions bar, horse cards, aside panel, WYAG                |
-| 09  | `09-horse-card-design.md`        | focus group reqs      | done    | Horse cards: portrait, stats, traits, care strip, narrative chip, lineage |
-| 10  | `10-component-new-custom.md`     | 1477-1738             | done    | 13 new custom components: specs and implementation order                  |
-| 11  | `11-button-feedback-patterns.md` | 1739-1910             | done    | Button hierarchy, feedback tiers, form patterns, empty/loading states     |
-| 12  | `12-journey-flows.md`            | 1086-1436             | done    | 6 user journey flows with decision trees                                  |
-| 13  | `13-responsive-accessibility.md` | 1932-2120             | pending | Responsive breakpoints, a11y strategy, testing                            |
+| #   | File                             | Spec Lines            | Status | Description                                                               |
+| --- | -------------------------------- | --------------------- | ------ | ------------------------------------------------------------------------- |
+| 01  | `01-design-tokens.md`            | 80-155, 755-960       | done   | Color palette, typography, spacing, elevation, gradients                  |
+| 02  | `02-4-layer-strategy.md`         | 496-562               | done   | Design system choice, 4-layer transformation, customization strategy      |
+| 03  | `03-shadcn-restyling.md`         | 1438-1458, 1695-1710  | done   | 13 shadcn components: exact visual overrides per component                |
+| 04  | `04-global-atmosphere.md`        | L1 scope + 1479-1491  | done   | Layer 1: StarfieldBackground, body gradient, global CSS                   |
+| 05  | `05-frosted-panel-system.md`     | L2 scope + UI-3 ref   | done   | Layer 2: FrostedPanel replacing all Cards, glass system                   |
+| 06  | `06-typography-system.md`        | 827-859               | done   | Layer 3: Cinzel + Inter, type scale, typography rules                     |
+| 07  | `07-navigation-layout.md`        | 1828-1858, responsive | done   | Navigation: hamburger + breadcrumbs, hub-spoke, aside panel               |
+| 08  | `08-hub-dashboard.md`            | 563-754               | done   | Hub page: Next Actions bar, horse cards, aside panel, WYAG                |
+| 09  | `09-horse-card-design.md`        | focus group reqs      | done   | Horse cards: portrait, stats, traits, care strip, narrative chip, lineage |
+| 10  | `10-component-new-custom.md`     | 1477-1738             | done   | 13 new custom components: specs and implementation order                  |
+| 11  | `11-button-feedback-patterns.md` | 1739-1910             | done   | Button hierarchy, feedback tiers, form patterns, empty/loading states     |
+| 12  | `12-journey-flows.md`            | 1086-1436             | done   | 6 user journey flows with decision trees                                  |
+| 13  | `13-responsive-accessibility.md` | 1932-2120             | done   | Responsive breakpoints, a11y strategy, testing                            |
 
 ## How to Use
 

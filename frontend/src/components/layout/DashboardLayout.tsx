@@ -20,10 +20,17 @@ const DashboardLayout: React.FC = () => {
 
   return (
     <div className="min-h-screen relative flex flex-col">
+      {/* Skip-to-content link — visible on focus (WCAG 2.1 §13) */}
+      <a
+        href="#main-content"
+        className="sr-only focus:not-sr-only focus:fixed focus:top-2 focus:left-2 focus:z-[var(--z-modal)] focus:px-4 focus:py-2 focus:rounded-lg focus:bg-[var(--gold-primary)] focus:text-[var(--bg-deep-space)] focus:font-semibold focus:outline-none"
+      >
+        Skip to main content
+      </a>
       <MainNavigation />
 
       <div className="relative z-[var(--z-raised)] flex-1 flex max-w-[1440px] mx-auto w-full px-4 md:px-8 gap-6">
-        <main className="flex-1 min-w-0">
+        <main id="main-content" className="flex-1 min-w-0">
           <Outlet />
         </main>
         {showAside && <AsidePanel />}
