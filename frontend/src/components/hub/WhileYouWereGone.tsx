@@ -124,8 +124,10 @@ export function WhileYouWereGone() {
 
   if (!visible) return null;
 
-  const items = data?.items ?? [];
-  const hasMore = data?.hasMore ?? false;
+  const allItems = data?.items ?? [];
+  const WYAG_MAX_ITEMS = 8;
+  const items = allItems.slice(0, WYAG_MAX_ITEMS);
+  const hasMore = (data?.hasMore ?? false) || allItems.length > WYAG_MAX_ITEMS;
 
   return createPortal(
     <div
