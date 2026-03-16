@@ -342,7 +342,7 @@ const RegisterPage: React.FC = () => {
             </div>
 
             {/* Submit */}
-            <button type="submit" disabled={isPending} className="btn-cobalt mt-1">
+            <button type="submit" disabled={isPending} className="btn-primary-arcs mt-1">
               {isPending ? 'Creating Account...' : 'Begin Your Journey'}
             </button>
           </form>

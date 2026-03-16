@@ -243,36 +243,20 @@
     box-shadow: 0 0 0 1px var(--gold-primary);
   }
 
-  /* Cobalt pill button */
-  .btn-cobalt {
+  /* Primary button — horseshoe arc decorations + positioning (Section 11 / 18-5) */
+  /* Background gradient and colors are set by Tailwind classes in button.tsx */
+  .btn-primary-arcs {
     position: relative; /* required for ::before / ::after horseshoe arcs */
-    background: linear-gradient(135deg, #2563eb 0%, #1d4ed8 100%);
-    border: none;
-    border-radius: 9999px;
-    color: #fff;
-    font-family: 'Inter', sans-serif;
-    font-weight: 600;
-    font-size: 1rem;
-    padding: 0.8rem 1rem;
-    width: 100%;
-    cursor: pointer;
-    transition:
-      opacity 0.2s,
-      transform 0.1s,
-      box-shadow 0.2s;
-    box-shadow: 0 4px 20px rgba(37, 99, 235, 0.45);
-    letter-spacing: 0.02em;
   }
 
-  /* Horseshoe arc decorations — Story 18-5 */
-  .btn-cobalt::before,
-  .btn-cobalt::after {
+  .btn-primary-arcs::before,
+  .btn-primary-arcs::after {
     content: '';
     position: absolute;
     top: 50%;
     width: 12px;
     height: 20px;
-    border: 2px solid var(--gold-500, #d4a017);
+    border: 2px solid var(--gold-primary, #c8a84e);
     border-radius: 50%;
     transform: translateY(-50%);
     opacity: 0.5;
@@ -280,33 +264,19 @@
     transition: opacity var(--duration-fast, 0.15s) var(--ease-default, ease);
   }
 
-  .btn-cobalt::before {
+  .btn-primary-arcs::before {
     left: 12px;
     border-right: none; /* left horseshoe arc */
   }
 
-  .btn-cobalt::after {
+  .btn-primary-arcs::after {
     right: 12px;
     border-left: none; /* right horseshoe arc */
   }
 
-  .btn-cobalt:hover:not(:disabled)::before,
-  .btn-cobalt:hover:not(:disabled)::after {
+  .btn-primary-arcs:hover:not(:disabled)::before,
+  .btn-primary-arcs:hover:not(:disabled)::after {
     opacity: 1;
-  }
-
-  .btn-cobalt:hover:not(:disabled) {
-    opacity: 0.92;
-    box-shadow: 0 6px 28px rgba(37, 99, 235, 0.6);
-  }
-
-  .btn-cobalt:active:not(:disabled) {
-    transform: scale(0.98);
-  }
-
-  .btn-cobalt:disabled {
-    opacity: 0.5;
-    cursor: not-allowed;
   }
 
   /* Outlined secondary pill button */

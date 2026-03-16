@@ -217,7 +217,7 @@ const HorseDetailPage: React.FC = () => {
               Back to Horse List
             </button>
             {error?.message !== 'Horse not found' && (
-              <button type="button" className="btn-cobalt" onClick={() => refetch()}>
+              <button type="button" className="btn-primary-arcs" onClick={() => refetch()}>
                 Retry
               </button>
             )}
@@ -327,7 +327,7 @@ const HorseDetailPage: React.FC = () => {
         <div className="flex flex-wrap gap-3 mb-6">
           <button
             type="button"
-            className="btn-cobalt inline-flex items-center gap-2"
+            className="btn-primary-arcs inline-flex items-center gap-2"
             onClick={() => navigate(`/training?horseId=${horse.id}`)}
           >
             <Dumbbell className="w-4 h-4" />

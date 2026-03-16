@@ -192,7 +192,7 @@ export function WhileYouWereGone() {
         )}
 
         {/* Footer */}
-        <button onClick={close} className="mt-5 w-full btn-cobalt text-sm font-medium py-2.5">
+        <button onClick={close} className="mt-5 w-full btn-primary-arcs text-sm font-medium py-2.5">
           Continue to Stable
         </button>
       </div>

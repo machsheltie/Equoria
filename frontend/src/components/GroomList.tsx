@@ -190,7 +190,7 @@ const GroomList: React.FC<GroomListProps> = ({
             data-testid="refresh-button"
             onClick={handleRefresh}
             disabled={refreshMutation.isPending}
-            className="mt-4 lg:mt-0 flex items-center space-x-2 btn-cobalt px-4 py-2 rounded-lg transition-colors disabled:opacity-50"
+            className="mt-4 lg:mt-0 flex items-center space-x-2 btn-primary-arcs px-4 py-2 rounded-lg transition-colors disabled:opacity-50"
             aria-label="Refresh marketplace"
           >
             <RefreshCw className={`w-4 h-4 ${refreshMutation.isPending ? 'animate-spin' : ''}`} />
@@ -315,7 +315,7 @@ const GroomList: React.FC<GroomListProps> = ({
               </p>
               <button
                 onClick={handleRefresh}
-                className="btn-cobalt px-6 py-2 rounded-lg transition-colors"
+                className="btn-primary-arcs px-6 py-2 rounded-lg transition-colors"
               >
                 Refresh Marketplace
               </button>
@@ -384,7 +384,7 @@ const GroomList: React.FC<GroomListProps> = ({
                       disabled={!canAfford || hireMutation.isPending}
                       className={`w-full py-2.5 px-4 rounded-lg font-bold text-sm transition-colors ${
                         canAfford
-                          ? 'btn-cobalt'
+                          ? 'btn-primary-arcs'
                           : 'bg-[rgba(15,35,70,0.5)] text-[rgb(148,163,184)] cursor-not-allowed border border-[rgba(37,99,235,0.3)]'
                       }`}
                       aria-label={`Hire ${groom.firstName} ${groom.lastName}`}
@@ -469,7 +469,7 @@ const GroomList: React.FC<GroomListProps> = ({
               <button
                 onClick={handleHireConfirm}
                 disabled={hireMutation.isPending}
-                className="flex-1 px-4 py-2.5 btn-cobalt rounded-lg font-bold transition-all active:scale-95 disabled:opacity-50"
+                className="flex-1 px-4 py-2.5 btn-primary-arcs rounded-lg font-bold transition-all active:scale-95 disabled:opacity-50"
               >
                 {hireMutation.isPending ? 'Hiring...' : 'Hire Groom'}
               </button>

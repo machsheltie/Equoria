@@ -119,7 +119,7 @@ const VerifyEmailPage: React.FC = () => {
             is already verified.
           </p>
         </div>
-        <button type="button" className="btn-cobalt" onClick={() => navigate('/')}>
+        <button type="button" className="btn-primary-arcs" onClick={() => navigate('/')}>
           Continue to Home
         </button>
       </div>
@@ -184,7 +184,7 @@ const VerifyEmailPage: React.FC = () => {
             You now have full access to Equoria!
           </p>
         </div>
-        <button type="button" className="btn-cobalt" onClick={() => navigate('/')}>
+        <button type="button" className="btn-primary-arcs" onClick={() => navigate('/')}>
           Enter the Realm
         </button>
       </div>
@@ -219,7 +219,7 @@ const VerifyEmailPage: React.FC = () => {
             </p>
             <button
               type="button"
-              className="btn-cobalt"
+              className="btn-primary-arcs"
               onClick={handleResend}
               disabled={isResending}
             >
@@ -251,7 +251,7 @@ const VerifyEmailPage: React.FC = () => {
             <p className="text-xs text-[rgb(148,163,184)]">
               Please log in to request a new verification email.
             </p>
-            <button type="button" className="btn-cobalt" onClick={() => navigate('/login')}>
+            <button type="button" className="btn-primary-arcs" onClick={() => navigate('/login')}>
               Go to Login
             </button>
           </div>
@@ -287,7 +287,7 @@ const VerifyEmailPage: React.FC = () => {
           </p>
           <button
             type="button"
-            className="btn-cobalt"
+            className="btn-primary-arcs"
             onClick={handleResend}
             disabled={isResending}
           >
@@ -322,7 +322,7 @@ const VerifyEmailPage: React.FC = () => {
           <p className="text-sm text-[rgb(220,235,255)]">
             Please log in to verify your email or access your account.
           </p>
-          <button type="button" className="btn-cobalt" onClick={() => navigate('/login')}>
+          <button type="button" className="btn-primary-arcs" onClick={() => navigate('/login')}>
             Go to Login
           </button>
           <button

@@ -132,7 +132,7 @@ const StableView = () => {
                 : `You have no horses in this category yet.`}
             </p>
             {isAll && (
-              <Link to="/breeding" className="btn-cobalt inline-block text-sm px-8">
+              <Link to="/breeding" className="btn-primary-arcs inline-block text-sm px-8">
                 Go to Breeding
               </Link>
             )}

@@ -79,7 +79,7 @@ const HorseDetailView = ({ horseId: propHorseId }: HorseDetailViewProps) => {
             <button
               type="button"
               onClick={() => navigate('/horses')}
-              className="btn-cobalt mt-4 px-4 py-2 text-sm"
+              className="btn-primary-arcs mt-4 px-4 py-2 text-sm"
             >
               Back to Horse List
             </button>
@@ -99,7 +99,7 @@ const HorseDetailView = ({ horseId: propHorseId }: HorseDetailViewProps) => {
             <button
               type="button"
               onClick={() => navigate('/horses')}
-              className="btn-cobalt mt-4 px-4 py-2 text-sm"
+              className="btn-primary-arcs mt-4 px-4 py-2 text-sm"
             >
               Back to Horse List
             </button>
@@ -290,7 +290,7 @@ const HorseDetailView = ({ horseId: propHorseId }: HorseDetailViewProps) => {
         <div className="mt-6 flex flex-wrap gap-4">
           <button
             type="button"
-            className="btn-cobalt flex items-center space-x-2 px-4 py-2 text-sm"
+            className="btn-primary-arcs flex items-center space-x-2 px-4 py-2 text-sm"
           >
             <Dumbbell className="w-4 h-4" />
             <span>Train This Horse</span>

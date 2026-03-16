@@ -541,7 +541,9 @@ const MyGroomsDashboard: React.FC<MyGroomsDashboardProps> = ({
                   type="button"
                   onClick={() => handleAssignClick(groom.id)}
                   disabled={isFullyAssigned}
-                  className={isFullyAssigned ? 'btn-outline-celestial w-full' : 'btn-cobalt w-full'}
+                  className={
+                    isFullyAssigned ? 'btn-outline-celestial w-full' : 'btn-primary-arcs w-full'
+                  }
                 >
                   {isFullyAssigned ? 'Max Assignments' : 'Assign to Horse'}
                 </button>

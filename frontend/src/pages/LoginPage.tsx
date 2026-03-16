@@ -158,7 +158,7 @@ const LoginPage: React.FC = () => {
             </div>
 
             {/* Login CTA */}
-            <button type="submit" disabled={isPending} className="btn-cobalt">
+            <button type="submit" disabled={isPending} className="btn-primary-arcs">
               {isPending ? 'Entering the Realm…' : 'Enter the Realm'}
             </button>
           </form>

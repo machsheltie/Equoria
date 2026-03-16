@@ -105,7 +105,11 @@ const ForgotPasswordPage: React.FC = () => {
                 >
                   Try Another Email
                 </button>
-                <button type="button" className="btn-cobalt" onClick={() => navigate('/login')}>
+                <button
+                  type="button"
+                  className="btn-primary-arcs"
+                  onClick={() => navigate('/login')}
+                >
                   Return to Login
                 </button>
               </div>
@@ -167,7 +171,7 @@ const ForgotPasswordPage: React.FC = () => {
                   )}
                 </div>
 
-                <button type="submit" disabled={isPending} className="btn-cobalt">
+                <button type="submit" disabled={isPending} className="btn-primary-arcs">
                   {isPending ? 'Sending...' : 'Send Reset Link'}
                 </button>
               </form>

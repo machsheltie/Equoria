@@ -106,7 +106,7 @@ const CompetitionBrowserPage = (): JSX.Element => {
             <button
               type="button"
               onClick={() => refetch()}
-              className="btn-cobalt inline-block text-sm px-8"
+              className="btn-primary-arcs inline-block text-sm px-8"
             >
               Try Again
             </button>

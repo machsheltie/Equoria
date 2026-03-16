@@ -183,7 +183,7 @@ const GroomCard = ({
           <button
             onClick={() => onHire(groom.marketplaceId)}
             disabled={isHiring}
-            className="btn-cobalt flex-1"
+            className="btn-primary-arcs flex-1"
             style={{ padding: '0.6rem 1rem', fontSize: '0.875rem' }}
           >
             <Sparkles className="w-4 h-4 inline mr-1" />
@@ -282,7 +282,7 @@ const GroomCard = ({
                 onHire(groom.marketplaceId);
               }}
               disabled={isHiring}
-              className="btn-cobalt"
+              className="btn-primary-arcs"
             >
               <Sparkles className="w-4 h-4 inline mr-2" />
               Hire {groom.firstName} {groom.lastName}
@@ -491,7 +491,9 @@ const MarketplacePage = () => {
               onClick={handleRefresh}
               disabled={refreshMutation.isPending}
               className={
-                marketplace?.canRefreshFree ? 'btn-cobalt w-full' : 'btn-outline-celestial w-full'
+                marketplace?.canRefreshFree
+                  ? 'btn-primary-arcs w-full'
+                  : 'btn-outline-celestial w-full'
               }
             >
               <RefreshCw
@@ -528,7 +530,7 @@ const MarketplacePage = () => {
             <button
               onClick={handleRefresh}
               disabled={refreshMutation.isPending}
-              className="btn-cobalt"
+              className="btn-primary-arcs"
               style={{ maxWidth: '200px', margin: '0 auto' }}
             >
               <RefreshCw

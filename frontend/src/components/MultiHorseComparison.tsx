@@ -152,7 +152,10 @@ const MultiHorseComparison: React.FC<MultiHorseComparisonProps> = ({
       <div className="flex items-center justify-center h-64">
         <div className="text-center">
           <p className="text-red-400 mb-4">Error loading horses</p>
-          <button onClick={() => horsesQuery.refetch()} className="btn-cobalt px-4 py-2 rounded">
+          <button
+            onClick={() => horsesQuery.refetch()}
+            className="btn-primary-arcs px-4 py-2 rounded"
+          >
             Retry
           </button>
         </div>
@@ -247,7 +250,7 @@ const MultiHorseComparison: React.FC<MultiHorseComparisonProps> = ({
           <button
             onClick={() => setShowComparison(!showComparison)}
             disabled={selectedHorses.length < 2}
-            className="btn-cobalt px-4 py-2 rounded disabled:opacity-50 disabled:cursor-not-allowed flex items-center space-x-2"
+            className="btn-primary-arcs px-4 py-2 rounded disabled:opacity-50 disabled:cursor-not-allowed flex items-center space-x-2"
           >
             {showComparison ? <EyeOff className="w-4 h-4" /> : <Eye className="w-4 h-4" />}
             <span>{showComparison ? 'Hide Comparison' : 'Show Comparison'}</span>

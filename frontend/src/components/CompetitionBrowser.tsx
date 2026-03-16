@@ -261,7 +261,7 @@ const CompetitionBrowser: React.FC = () => {
             <p className="text-red-400 mb-4">Failed to load competitions</p>
             <button
               onClick={() => queryClient.invalidateQueries({ queryKey: ['competitions'] })}
-              className="btn-cobalt px-4 py-2 rounded-lg"
+              className="btn-primary-arcs px-4 py-2 rounded-lg"
             >
               Retry
             </button>
@@ -350,7 +350,7 @@ const CompetitionBrowser: React.FC = () => {
 
                   <button
                     onClick={() => setSelectedCompetition(competition.id)}
-                    className="btn-cobalt px-4 py-2 rounded-lg transition-colors"
+                    className="btn-primary-arcs px-4 py-2 rounded-lg transition-colors"
                     role="button"
                     aria-label="Enter Competition"
                   >

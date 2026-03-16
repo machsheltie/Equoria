@@ -212,7 +212,10 @@ const EnhancedReportingInterface: React.FC<EnhancedReportingInterfaceProps> = ({
       <div className="flex items-center justify-center h-64">
         <div className="text-center">
           <p className="text-red-400 mb-4">Error loading reporting interface</p>
-          <button onClick={() => metricsQuery.refetch()} className="btn-cobalt px-4 py-2 rounded">
+          <button
+            onClick={() => metricsQuery.refetch()}
+            className="btn-primary-arcs px-4 py-2 rounded"
+          >
             Retry
           </button>
         </div>
@@ -293,7 +296,7 @@ const EnhancedReportingInterface: React.FC<EnhancedReportingInterfaceProps> = ({
           <button
             onClick={handleGenerateReport}
             disabled={generateReportMutation.isPending || reportConfig.sections.length === 0}
-            className="btn-cobalt px-4 py-2 rounded disabled:opacity-50 disabled:cursor-not-allowed flex items-center space-x-2"
+            className="btn-primary-arcs px-4 py-2 rounded disabled:opacity-50 disabled:cursor-not-allowed flex items-center space-x-2"
           >
             {generateReportMutation.isPending ? (
               <>

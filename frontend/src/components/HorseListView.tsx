@@ -281,7 +281,7 @@ const HorseListView: React.FC<HorseListViewProps> = ({ userId: _userId, horses: 
         </div>
         <button
           onClick={() => refetch()}
-          className="btn-cobalt px-4 py-2 rounded-lg transition-colors"
+          className="btn-primary-arcs px-4 py-2 rounded-lg transition-colors"
         >
           Retry
         </button>

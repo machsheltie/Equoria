@@ -365,7 +365,7 @@ const ProfilePage: React.FC = () => {
                 </button>
                 <button
                   type="submit"
-                  className="btn-cobalt flex-1 inline-flex items-center justify-center gap-2"
+                  className="btn-primary-arcs flex-1 inline-flex items-center justify-center gap-2"
                   disabled={isPending}
                 >
                   <Save className="w-4 h-4" />

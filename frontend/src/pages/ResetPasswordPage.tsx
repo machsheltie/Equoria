@@ -138,7 +138,7 @@ const ResetPasswordPage: React.FC = () => {
 
         <div className="space-y-2 pt-1">
           <Link to="/forgot-password">
-            <button type="button" className="btn-cobalt">
+            <button type="button" className="btn-primary-arcs">
               Request New Reset Link
             </button>
           </Link>
@@ -179,7 +179,7 @@ const ResetPasswordPage: React.FC = () => {
           </p>
         </div>
 
-        <button type="button" className="btn-cobalt" onClick={() => navigate('/login')}>
+        <button type="button" className="btn-primary-arcs" onClick={() => navigate('/login')}>
           Go to Login
         </button>
       </div>
@@ -309,7 +309,7 @@ const ResetPasswordPage: React.FC = () => {
           )}
         </div>
 
-        <button type="submit" disabled={isPending} className="btn-cobalt mt-1">
+        <button type="submit" disabled={isPending} className="btn-primary-arcs mt-1">
           {isPending ? 'Resetting...' : 'Reset Password'}
         </button>
       </form>

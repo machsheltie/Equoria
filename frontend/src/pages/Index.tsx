@@ -77,7 +77,7 @@ function GettingStartedCard() {
           competition arena calls. Meet your first horse and begin forging a legacy among the stars.
         </p>
         <div className="flex flex-col sm:flex-row gap-3 pt-3">
-          <Link to="/stable" className="btn-cobalt text-center text-sm">
+          <Link to="/stable" className="btn-primary-arcs text-center text-sm">
             Enter the Stable
           </Link>
           <Link to="/world" className="btn-outline-celestial text-center text-sm">
@@ -171,7 +171,7 @@ const Index = () => {
             <p className="text-xs text-[var(--text-muted)] mb-4">
               Visit the stable to meet your first horse.
             </p>
-            <Link to="/stable" className="btn-cobalt inline-block text-sm px-8">
+            <Link to="/stable" className="btn-primary-arcs inline-block text-sm px-8">
               Go to Stable
             </Link>
           </div>
