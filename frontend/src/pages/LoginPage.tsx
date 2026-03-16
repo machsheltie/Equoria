@@ -10,6 +10,7 @@ import { useNavigate, Link } from 'react-router-dom';
 import { Mail, Lock, Eye, EyeOff } from 'lucide-react';
 import { loginSchema, type LoginFormData } from '../lib/validation-schemas';
 import { useLogin } from '../hooks/useAuth';
+import { Button } from '@/components/ui/button';
 
 const LoginPage: React.FC = () => {
   const navigate = useNavigate();
@@ -158,9 +159,9 @@ const LoginPage: React.FC = () => {
             </div>
 
             {/* Login CTA */}
-            <button type="submit" disabled={isPending} className="btn-primary-arcs">
+            <Button type="submit" disabled={isPending} size="lg" className="w-full">
               {isPending ? 'Entering the Realm…' : 'Enter the Realm'}
-            </button>
+            </Button>
           </form>
 
           {/* Register */}

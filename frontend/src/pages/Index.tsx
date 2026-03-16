@@ -15,7 +15,13 @@ import { useHorses } from '@/hooks/api/useHorses';
 function HorseMiniCard({
   horse,
 }: {
-  horse: { id: number; name: string; breed?: string; level?: number; age?: number };
+  horse: {
+    id: number;
+    name: string;
+    breed?: string | { id: number; name: string; description?: string };
+    level?: number;
+    age?: number;
+  };
 }) {
   return (
     <Link
@@ -42,7 +48,7 @@ function HorseMiniCard({
             {horse.name}
           </p>
           <p className="text-xs text-[var(--text-secondary)] truncate">
-            {horse.breed ?? 'Unknown breed'}
+            {typeof horse.breed === 'object' ? horse.breed?.name : (horse.breed ?? 'Unknown breed')}
             {horse.age != null ? ` · ${horse.age} yrs` : ''}
           </p>
         </div>

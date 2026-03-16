@@ -487,7 +487,7 @@ async function refreshAccessToken(): Promise<boolean> {
   isRefreshing = true;
   refreshPromise = (async () => {
     try {
-      const response = await fetch(`${API_BASE_URL}/api/v1/auth/refresh-token`, {
+      const response = await fetch(`${API_BASE_URL}/api/auth/refresh-token`, {
         method: 'POST',
         credentials: 'include',
         headers: { 'Content-Type': 'application/json' },
@@ -1585,7 +1585,7 @@ export const authApi = {
    */
   login: (credentials: { email: string; password: string }) => {
     return apiClient.post<{ user: { id: number; email: string; username: string } }>(
-      '/api/v1/auth/login',
+      '/api/auth/login',
       credentials
     );
   },
@@ -1612,7 +1612,7 @@ export const authApi = {
         level: number;
         xp: number;
       };
-    }>('/api/v1/auth/register', userData);
+    }>('/api/auth/register', userData);
   },
 
   /**
@@ -1630,7 +1630,7 @@ export const authApi = {
         completedOnboarding?: boolean;
         onboardingStep?: number;
       };
-    }>('/api/v1/auth/profile');
+    }>('/api/auth/profile');
   },
 
   /**
@@ -1651,7 +1651,7 @@ export const authApi = {
         bio?: string;
         avatarUrl?: string;
       };
-    }>('/api/v1/auth/profile', updates);
+    }>('/api/auth/profile', updates);
   },
 
   /**
@@ -1659,7 +1659,7 @@ export const authApi = {
    * Clears httpOnly cookies
    */
   logout: () => {
-    return apiClient.post<{ message: string }>('/api/v1/auth/logout');
+    return apiClient.post<{ message: string }>('/api/auth/logout');
   },
 
   /**
@@ -1667,7 +1667,7 @@ export const authApi = {
    * Uses httpOnly refresh token cookie automatically
    */
   refreshToken: () => {
-    return apiClient.post<{ message: string }>('/api/v1/auth/refresh-token');
+    return apiClient.post<{ message: string }>('/api/auth/refresh-token');
   },
 
   /**
@@ -1693,7 +1693,7 @@ export const authApi = {
     return apiClient.post<{
       emailSent: boolean;
       expiresAt: string;
-    }>('/api/v1/auth/resend-verification');
+    }>('/api/auth/resend-verification');
   },
 
   /**
@@ -1705,28 +1705,28 @@ export const authApi = {
       verified: boolean;
       email: string;
       verifiedAt: string | null;
-    }>('/api/v1/auth/verification-status');
+    }>('/api/auth/verification-status');
   },
 
   /**
    * Mark authenticated user's onboarding as complete.
    */
   completeOnboarding: () =>
-    apiClient.post<{ completedOnboarding: boolean }>('/api/v1/auth/complete-onboarding', {}),
+    apiClient.post<{ completedOnboarding: boolean }>('/api/auth/complete-onboarding', {}),
 
   /**
    * Advance the authenticated user's onboarding step by 1.
    * Sets completedOnboarding: true when step 10 is reached.
    */
   advanceOnboarding: () =>
-    apiClient.post<{ step: number; completed: boolean }>('/api/v1/auth/advance-onboarding', {}),
+    apiClient.post<{ step: number; completed: boolean }>('/api/auth/advance-onboarding', {}),
 
   /**
    * Request password reset email
    * Note: Requires backend endpoint (not yet implemented)
    */
   forgotPassword: (email: string) => {
-    return apiClient.post<{ message: string }>('/api/v1/auth/forgot-password', { email });
+    return apiClient.post<{ message: string }>('/api/auth/forgot-password', { email });
   },
 
   /**
@@ -1734,7 +1734,7 @@ export const authApi = {
    * Note: Requires backend endpoint (not yet implemented)
    */
   resetPassword: (token: string, newPassword: string) => {
-    return apiClient.post<{ message: string }>('/api/v1/auth/reset-password', {
+    return apiClient.post<{ message: string }>('/api/auth/reset-password', {
       token,
       newPassword,
     });

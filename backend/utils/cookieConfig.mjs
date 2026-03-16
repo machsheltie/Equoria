@@ -28,6 +28,13 @@ import config from '../config/config.mjs';
 const isProduction = config.env === 'production';
 
 /**
+ * SameSite policy:
+ * - Production: 'strict' (maximum CSRF protection)
+ * - Development: 'lax' (allows cross-port cookies between frontend:3000 and backend:3001)
+ */
+const SAME_SITE_POLICY = isProduction ? 'strict' : 'lax';
+
+/**
  * Cookie domain configuration
  * Set to undefined for same-domain cookies (default)
  * Set to '.yourdomain.com' for subdomain cookies
@@ -50,7 +57,7 @@ const COOKIE_DOMAIN = process.env.COOKIE_DOMAIN || undefined;
 export const ACCESS_TOKEN_COOKIE_OPTIONS = {
   httpOnly: true, // Cannot be accessed by JavaScript (XSS protection)
   secure: isProduction, // HTTPS only in production (MitM protection)
-  sameSite: 'strict', // CSRF protection (strictest policy)
+  sameSite: SAME_SITE_POLICY, // CSRF protection (strictest policy)
   maxAge: 15 * 60 * 1000, // 15 minutes (900,000ms)
   path: '/', // Available to all routes
   domain: COOKIE_DOMAIN, // Subdomain sharing (if configured)
@@ -68,7 +75,7 @@ export const ACCESS_TOKEN_COOKIE_OPTIONS = {
 export const REFRESH_TOKEN_COOKIE_OPTIONS = {
   httpOnly: true, // Cannot be accessed by JavaScript (XSS protection)
   secure: isProduction, // HTTPS only in production (MitM protection)
-  sameSite: 'strict', // CSRF protection (strictest policy)
+  sameSite: SAME_SITE_POLICY, // CSRF protection (strictest policy)
   maxAge: 7 * 24 * 60 * 60 * 1000, // 7 days (604,800,000ms)
   path: '/auth/refresh-token', // Only cookie-based refresh endpoint needs access (least privilege)
   domain: COOKIE_DOMAIN, // Subdomain sharing (if configured)
@@ -88,7 +95,7 @@ export const REFRESH_TOKEN_COOKIE_OPTIONS = {
 export const CSRF_TOKEN_COOKIE_OPTIONS = {
   httpOnly: false, // Client must read this to send X-CSRF-Token header
   secure: isProduction, // HTTPS only in production (MitM protection)
-  sameSite: 'strict', // CSRF protection (strictest policy)
+  sameSite: SAME_SITE_POLICY, // CSRF protection (strictest policy)
   maxAge: 15 * 60 * 1000, // 15 minutes (matches access token)
   path: '/', // Available to all routes
   domain: COOKIE_DOMAIN, // Subdomain sharing (if configured)
@@ -125,21 +132,21 @@ export const CLEAR_COOKIE_OPTIONS = {
   accessToken: {
     httpOnly: true,
     secure: isProduction,
-    sameSite: 'strict',
+    sameSite: SAME_SITE_POLICY,
     path: '/',
     domain: COOKIE_DOMAIN,
   },
   refreshToken: {
     httpOnly: true,
     secure: isProduction,
-    sameSite: 'strict',
+    sameSite: SAME_SITE_POLICY,
     path: '/auth/refresh-token',
     domain: COOKIE_DOMAIN,
   },
   csrfToken: {
     httpOnly: false,
     secure: isProduction,
-    sameSite: 'strict',
+    sameSite: SAME_SITE_POLICY,
     path: '/',
     domain: COOKIE_DOMAIN,
   },
@@ -161,21 +168,21 @@ export function getCookieConfigSummary() {
       path: '/',
       httpOnly: true,
       secure: isProduction,
-      sameSite: 'strict',
+      sameSite: SAME_SITE_POLICY,
     },
     refreshToken: {
       maxAge: '7 days',
       path: '/auth/refresh-token',
       httpOnly: true,
       secure: isProduction,
-      sameSite: 'strict',
+      sameSite: SAME_SITE_POLICY,
     },
     csrfToken: {
       maxAge: '15 minutes',
       path: '/',
       httpOnly: false,
       secure: isProduction,
-      sameSite: 'strict',
+      sameSite: SAME_SITE_POLICY,
     },
   };
 }
