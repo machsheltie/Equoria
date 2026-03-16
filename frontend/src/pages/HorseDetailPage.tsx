@@ -227,6 +227,26 @@ const HorseDetailPage: React.FC = () => {
     );
   }
 
+  // Normalize horse data — API returns flat stat fields, but components expect a nested stats object.
+  // Also guard disciplineScores which can be null from the API.
+  const rawHorse = horse as Record<string, unknown>;
+  if (!horse.stats) {
+    (horse as Record<string, unknown>).stats = {
+      speed: rawHorse.speed ?? 0,
+      stamina: rawHorse.stamina ?? 0,
+      agility: rawHorse.agility ?? 0,
+      strength: rawHorse.strength ?? 0,
+      intelligence: rawHorse.intelligence ?? 0,
+      health: rawHorse.endurance ?? 0,
+    };
+  }
+  if (!horse.disciplineScores) {
+    (horse as Record<string, unknown>).disciplineScores = {};
+  }
+  if (typeof horse.breed === 'object' && horse.breed !== null) {
+    (horse as Record<string, unknown>).breed = (horse.breed as { name: string }).name;
+  }
+
   // Tab configuration
   const tabs: { id: TabType; label: string; icon: React.ReactNode }[] = [
     { id: 'overview', label: 'Overview', icon: <Star className="w-4 h-4" /> },
