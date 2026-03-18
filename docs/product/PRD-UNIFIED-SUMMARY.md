@@ -13,7 +13,9 @@ Equoria is a web-based horse breeding and competition simulation where players m
 
 **Platform:** Web (React 19 + TypeScript + Vite frontend, Express backend, PostgreSQL + Prisma ORM)
 **Theme:** "Celestial Night" — deep navy, frosted glass panels, gold accents
-**Mobile:** Out of scope
+**UX Specification:** [`docs/ux-spec-sections/`](../ux-spec-sections/) — 13 sections covering design tokens, 4-layer visual strategy, component theming, typography, navigation, responsive breakpoints, and accessibility
+**Responsive:** 4 breakpoints — mobile (< 640px), tablet (640-1023px), desktop (1024-1279px), large desktop (1280px+). Mobile-native out of scope; responsive web required.
+**Mobile:** Out of scope (native apps)
 
 ---
 
@@ -173,3 +175,8 @@ Equoria is a web-based horse breeding and competition simulation where players m
 | [PRD-10](./PRD-10-Project-Milestones.md)    | Project Milestones    | v2.0.0 — Updated 2026-03-18 |
 
 **Note:** PRD-05 (Deployment), PRD-06 (Testing), and PRD-09 (Dev Standards) are covered by `docs/deployment/`, `docs/testing-architecture.md`, and `CLAUDE.md` / `_bmad-output/project-context.md` respectively.
+
+### Related Specifications
+
+- **UX Design:** [`docs/ux-spec-sections/`](../ux-spec-sections/) — 13 sections (design tokens, visual strategy, components, typography, navigation, responsive, accessibility)
+- **Validation Report:** [`docs/product/PRD-VALIDATION-REPORT.md`](./PRD-VALIDATION-REPORT.md) — BMAD validation (2026-03-18, 4/5 Good, Pass)

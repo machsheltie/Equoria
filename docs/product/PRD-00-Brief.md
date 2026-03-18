@@ -78,6 +78,22 @@ Build a deep, web-based horse simulation where players manage breeding, training
 - [PRD-08 Security Architecture](./PRD-08-Security-Architecture.md) - Security, exploit prevention
 - [PRD-09 Development Standards](./PRD-09-Development-Standards.md) - Code style, best practices
 
+### UX Design
+
+- [UX Spec — Design Tokens](../ux-spec-sections/01-design-tokens.md) - CSS custom properties, color palette, spacing
+- [UX Spec — 4-Layer Strategy](../ux-spec-sections/02-4-layer-strategy.md) - Starfield → gradient → glass → content
+- [UX Spec — shadcn Restyling](../ux-spec-sections/03-shadcn-restyling.md) - Component theming overrides
+- [UX Spec — Global Atmosphere](../ux-spec-sections/04-global-atmosphere.md) - Celestial Night visual system
+- [UX Spec — Frosted Panel System](../ux-spec-sections/05-frosted-panel-system.md) - Glass panel variants
+- [UX Spec — Typography](../ux-spec-sections/06-typography-system.md) - Font scale, hierarchy
+- [UX Spec — Navigation & Layout](../ux-spec-sections/07-navigation-layout.md) - Sidebar, breadcrumbs, responsive breakpoints
+- [UX Spec — Hub Dashboard](../ux-spec-sections/08-hub-dashboard.md) - World hub layout
+- [UX Spec — Horse Card Design](../ux-spec-sections/09-horse-card-design.md) - Card variants, care strip
+- [UX Spec — Custom Components](../ux-spec-sections/10-component-new-custom.md) - GallopingLoader, FenceJumpBar, CinematicMoment
+- [UX Spec — Button & Feedback](../ux-spec-sections/11-button-feedback-patterns.md) - Gold primary buttons, horseshoe borders
+- [UX Spec — Journey Flows](../ux-spec-sections/12-journey-flows.md) - User flow audit, WYAG cap
+- [UX Spec — Responsive & A11y](../ux-spec-sections/13-responsive-accessibility.md) - Breakpoints, skip-to-content, a11y audit
+
 ### Project Management
 
 - [PRD-10 Project Milestones](./PRD-10-Project-Milestones.md) - Achievements, roadmap

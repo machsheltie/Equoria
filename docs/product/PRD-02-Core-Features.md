@@ -314,7 +314,7 @@ Final Score = (Overall Score) × (1 + Breed Modifier)
 
 **Visual Features:**
 
-- Face markings with multiple types
+- Face markings: 5 types (star, stripe, blaze, snip, bald face)
 - Leg markings with variation
 - Coat sheen and condition indicators
 - Dynamic image generation based on attributes

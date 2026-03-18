@@ -53,7 +53,7 @@ This document specifies the core gameplay loops and systems that drive Equoria. 
 | Barrel Racing | Speed, Agility, Stamina | Timed pattern racing |
 | Roping | Strength, Precision, Focus | Cattle roping |
 | Team Penning | Intelligence, Agility, Obedience | Team cattle sorting |
-| Rodeo | Strength, Agility, Endurance | Multiple rodeo events |
+| Rodeo | Strength, Agility, Endurance | 5 events: bull riding, bronc riding, steer wrestling, team roping, tie-down roping |
 
 **English Disciplines:**
 | Discipline | Primary Stats | Description |
@@ -214,9 +214,12 @@ GET  /api/leaderboard/competition              - Leaderboards
 
 **Legacy System:**
 
-- Eligibility: Retired level 7+ grooms
-- Protégé generation: Inherit perks and bonuses
-- Perk inheritance: Personality-based selection
+- Eligibility: Retired level 7+ grooms with ≥50 XP
+- Protégé generation cost: 2,000 currency per protégé
+- Protégé starting level: parent groom level minus 6 (minimum level 1)
+- Perk inheritance: Up to 2 perks transfer, selected by personality match (groom personality determines which perk category transfers)
+- Stat bonus: +10% of parent groom's primary skill transferred to protégé
+- Limits: 1 protégé per retired groom, maximum 3 active legacy grooms per player
 
 ### 3.5 Talent Tree (3 Tiers)
 

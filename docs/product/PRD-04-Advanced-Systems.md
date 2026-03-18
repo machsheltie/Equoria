@@ -73,12 +73,12 @@ Traits develop during **early life (0-3 years)** based on care patterns:
 
 Certain traits cannot co-exist:
 
-| Trait A          | Conflicts With | Resolution                              |
-| ---------------- | -------------- | --------------------------------------- |
-| routineDependent | explorative    | Temperament check determines winner     |
-| secretive        | peopleOriented | Must pick one during bonding phase      |
-| stressProne      | resilient      | Dominant influence during foalhood wins |
-| burnoutImmune    | injuryProne    | Training care determines override       |
+| Trait A          | Conflicts With | Resolution                                                                                                                  |
+| ---------------- | -------------- | --------------------------------------------------------------------------------------------------------------------------- |
+| routineDependent | explorative    | Boldness stat check: ≥60 → explorative wins; <60 → routineDependent wins. Deterministic, evaluated once at age 1.           |
+| secretive        | peopleOriented | Resolved during bonding phase (weeks 4-8): if bond level ≥70 by week 8 → peopleOriented; otherwise → secretive.             |
+| stressProne      | resilient      | Dominant influence during foalhood wins: if ≥3 stress events before age 1 → stressProne; if ≥2 recoveries → resilient.      |
+| burnoutImmune    | injuryProne    | Training care determines override: if no missed training sessions by age 2 → burnoutImmune; any injury event → injuryProne. |
 
 ### 1.6 Hidden Trait: epigeneticEdge
 
@@ -169,17 +169,32 @@ Ultra-rare and exotic traits are prestige traits requiring specific hidden condi
 | Ultra-Rare | <3%         | Probability-based, can be nudged by groom perks |
 | Exotic     | Conditional | Multi-factor unlock (lineage + flags + care)    |
 
-### 3.3 Ultra-Rare Traits (5 Total)
+### 3.3 Event Definitions
+
+**Stress Events** (counted toward ultra-rare trigger conditions):
+
+1. Failed milestone (bonding, training, or care milestone scored below threshold)
+2. Missed care week (no groom interaction for 7+ consecutive days)
+3. Injury event (horse marked injured from training or competition)
+4. Groom reassignment (primary groom changed during foalhood)
+
+**Recovery Events** (counted toward ultra-rare trigger conditions):
+
+1. Successful milestone after a failed one (consecutive positive outcome)
+2. Full health restored after injury (vet treatment completed)
+3. Bond level increase of ≥10 points within 7 days of a stress event
+
+### 3.4 Ultra-Rare Traits (5 Total)
 
 | Trait               | Trigger Conditions                                       | Mechanical Perks                          | Groom Synergy                      |
 | ------------------- | -------------------------------------------------------- | ----------------------------------------- | ---------------------------------- |
-| **Phoenix-Born**    | 3+ stress events + 2 recoveries                          | +30% stress decay; 3-day burnout recovery | Mindful Handler, Guardian Instinct |
+| **Phoenix-Born**    | 3+ stress events + 2 recoveries (all before age 2)       | +30% stress decay; 3-day burnout recovery | Mindful Handler, Guardian Instinct |
 | **Iron-Willed**     | No skipped milestones + no negative traits by age 3      | Cannot be burned out; +5 stamina          | Methodical, Detail-Oriented        |
 | **Empathic Mirror** | Same groom birth-3yrs; high bond entire time             | Adopts companion mood; +5% team events    | Soft-Hearted, Affectionate         |
 | **Born Leader**     | Top bond + Steady temperament; always top 3 conformation | +2 discipline to nearby horses            | Confident Leader                   |
 | **Stormtouched**    | Reactive temperament + missed care week + novelty event  | +10% stat growth; 2x stress gain          | Novelty Trainer, Reserved          |
 
-### 3.4 Exotic Traits (5 Total)
+### 3.5 Exotic Traits (5 Total)
 
 | Trait               | Unlock Condition                                           | Mechanical Perks                                      | Groom Trigger               |
 | ------------------- | ---------------------------------------------------------- | ----------------------------------------------------- | --------------------------- |
@@ -189,22 +204,22 @@ Ultra-rare and exotic traits are prestige traits requiring specific hidden condi
 | **Fey-Kissed**      | Both parents have ultra-rare trait + perfect foal care     | All-stat bonus; visual aura effect                    | Any groom with 3 rare perks |
 | **Dreamtwin**       | Twin birth + raised together + same groom + matching flags | Sibling effect: mirrored changes; weaker if separated | Playful, Soft-Spoken        |
 
-### 3.5 Groom Perk Influence
+### 3.6 Groom Perk Influence
 
 **Rare Trait Booster Mechanic:**
 
 - +25% bonus if base chance exists
-- +15% bonus if multiple conditions met
+- +15% bonus if 2+ conditions met simultaneously
 - Perk revealed after 2 successful trait triggers
 
-### 3.6 UI Suggestions (Frontend)
+### 3.7 UI Suggestions (Frontend)
 
 - Gold border for ultra-rare traits
 - Purple border for exotic traits
 - "Lore" tab on horse profile
 - Discovery notifications with flair
 
-### 3.7 API Endpoints
+### 3.8 API Endpoints
 
 ```
 GET  /api/ultra-rare-traits/definitions
@@ -226,19 +241,20 @@ GET  /api/ultra-rare-traits/groom-perks/:groomId
 
 Traits can be:
 
-- **Unlocked automatically** when conditions met
-- **Hidden at first** and revealed through bonding/evaluation
-- **Earned dynamically** as horse performs/matures
+- **Unlocked automatically** when conditions met (evaluated server-side on each relevant event)
+- **Hidden at first** and revealed through bonding/evaluation (hidden until threshold reached)
+- **Earned dynamically** as horse performs/matures (checked after training/competition events)
 
 ### 4.2 Revelation Methods
 
-| Method                | Traits Revealed    |
-| --------------------- | ------------------ |
-| Bonding Milestones    | Social traits      |
-| Training Sessions     | Performance traits |
-| Competition Placement | Temperament traits |
-| Veterinary Evaluation | Hidden traits      |
-| Lineage Analysis      | epigeneticEdge     |
+| Method                | Traits Revealed    | Threshold / Timing                                                                                           |
+| --------------------- | ------------------ | ------------------------------------------------------------------------------------------------------------ |
+| Bonding Milestones    | Social traits      | Bond level ≥50 reveals first social trait; ≥80 reveals all. Checked after each groom interaction.            |
+| Training Sessions     | Performance traits | After 5+ training sessions in any discipline. Revealed at session completion.                                |
+| Competition Placement | Temperament traits | After 3+ competition entries. Top-3 placement accelerates reveal (immediate vs next event).                  |
+| Veterinary Evaluation | Hidden traits      | Player-initiated vet evaluation (costs 500 currency). Reveals 1 hidden trait per evaluation, 7-day cooldown. |
+| Lineage Analysis      | epigeneticEdge     | Automatic at age 1 if all early-life conditions met. No player action required.                              |
+| Age-Based Auto-Reveal | All remaining      | Any unrevealed traits auto-reveal at age 3 (maturity).                                                       |
 
 ### 4.3 API Endpoints
 
