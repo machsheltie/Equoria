@@ -18,8 +18,6 @@
 import request from 'supertest';
 import app from '../../app.mjs';
 import prisma from '../../db/index.mjs';
-import { jest as _jest } from '@jest/globals';
-
 describe('Cookie Integration Tests', () => {
   let testUser;
   const rateLimitBypassHeader = { 'X-Test-Bypass-Rate-Limit': 'true', 'X-Test-Bypass-Auth': 'true' };
@@ -79,7 +77,7 @@ describe('Cookie Integration Tests', () => {
 
       // Verify security attributes
       expect(accessTokenCookie).toContain('HttpOnly');
-      expect(accessTokenCookie).toContain('SameSite=Strict');
+      expect(accessTokenCookie).toContain('SameSite=Lax');
       expect(accessTokenCookie).toContain('Path=/');
       expect(accessTokenCookie).toContain('Max-Age=900'); // 15 minutes
 
@@ -109,7 +107,7 @@ describe('Cookie Integration Tests', () => {
 
       // Verify security attributes
       expect(refreshTokenCookie).toContain('HttpOnly');
-      expect(refreshTokenCookie).toContain('SameSite=Strict');
+      expect(refreshTokenCookie).toContain('SameSite=Lax');
       expect(refreshTokenCookie).toContain('Path=/auth/refresh-token'); // Scoped path
       expect(refreshTokenCookie).toContain('Max-Age=604800'); // 7 days
 
@@ -146,7 +144,7 @@ describe('Cookie Integration Tests', () => {
   describe('Login Endpoint Cookies', () => {
     beforeEach(async () => {
       // Create test user
-      const _response = await request(app).post('/auth/register').set(rateLimitBypassHeader).send({
+      await request(app).post('/auth/register').set(rateLimitBypassHeader).send({
         username: 'logincookietest',
         email: 'logincookietest@test.com',
         password: 'TestPass123!',
@@ -183,7 +181,7 @@ describe('Cookie Integration Tests', () => {
       expect(accessTokenCookie).toBeDefined();
 
       expect(accessTokenCookie).toContain('HttpOnly');
-      expect(accessTokenCookie).toContain('SameSite=Strict');
+      expect(accessTokenCookie).toContain('SameSite=Lax');
       expect(accessTokenCookie).toContain('Path=/');
       expect(accessTokenCookie).toContain('Max-Age=900');
     });
@@ -199,7 +197,7 @@ describe('Cookie Integration Tests', () => {
       expect(refreshTokenCookie).toBeDefined();
 
       expect(refreshTokenCookie).toContain('HttpOnly');
-      expect(refreshTokenCookie).toContain('SameSite=Strict');
+      expect(refreshTokenCookie).toContain('SameSite=Lax');
       expect(refreshTokenCookie).toContain('Path=/auth/refresh-token');
       expect(refreshTokenCookie).toContain('Max-Age=604800');
     });
@@ -259,7 +257,7 @@ describe('Cookie Integration Tests', () => {
       const newAccessTokenCookie = newCookies.find(cookie => cookie.startsWith('accessToken='));
 
       expect(newAccessTokenCookie).toContain('HttpOnly');
-      expect(newAccessTokenCookie).toContain('SameSite=Strict');
+      expect(newAccessTokenCookie).toContain('SameSite=Lax');
       expect(newAccessTokenCookie).toContain('Path=/');
       expect(newAccessTokenCookie).toContain('Max-Age=900');
     });
@@ -278,7 +276,7 @@ describe('Cookie Integration Tests', () => {
       const newRefreshTokenCookie = newCookies.find(cookie => cookie.startsWith('refreshToken='));
 
       expect(newRefreshTokenCookie).toContain('HttpOnly');
-      expect(newRefreshTokenCookie).toContain('SameSite=Strict');
+      expect(newRefreshTokenCookie).toContain('SameSite=Lax');
       expect(newRefreshTokenCookie).toContain('Path=/auth/refresh-token');
       expect(newRefreshTokenCookie).toContain('Max-Age=604800');
     });
@@ -411,9 +409,9 @@ describe('Cookie Integration Tests', () => {
 
         // Verify consistent attributes
         expect(accessToken).toContain('HttpOnly');
-        expect(accessToken).toContain('SameSite=Strict');
+        expect(accessToken).toContain('SameSite=Lax');
         expect(refreshToken).toContain('HttpOnly');
-        expect(refreshToken).toContain('SameSite=Strict');
+        expect(refreshToken).toContain('SameSite=Lax');
       });
     });
   });

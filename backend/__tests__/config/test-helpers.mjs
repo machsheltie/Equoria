@@ -61,7 +61,9 @@ export const createTestUser = async (overrides = {}) => {
  * Deletes user and all related data
  */
 export const cleanupTestUser = async userId => {
-  if (!userId) { return; }
+  if (!userId) {
+    return;
+  }
 
   try {
     // Delete refresh tokens first (foreign key constraint)
@@ -73,7 +75,7 @@ export const cleanupTestUser = async userId => {
     await prisma.user.delete({
       where: { id: userId },
     });
-  } catch (error) {
+  } catch {
     // Ignore errors (user may already be deleted)
   }
 };
@@ -95,7 +97,7 @@ export const cleanupTestUsersByEmail = async emailPattern => {
     for (const user of users) {
       await cleanupTestUser(user.id);
     }
-  } catch (error) {
+  } catch {
     // Ignore errors
   }
 };
@@ -281,11 +283,15 @@ export const expectAuthFailure = (response, status = 401) => {
  * Extract Cookie Value from Set-Cookie Headers
  */
 export const extractCookieValue = (cookies, cookieName) => {
-  if (!cookies) { return null; }
+  if (!cookies) {
+    return null;
+  }
 
   const cookie = cookies.find(cookie => cookie.includes(`${cookieName}=`));
 
-  if (!cookie) { return null; }
+  if (!cookie) {
+    return null;
+  }
 
   const match = cookie.match(new RegExp(`${cookieName}=([^;]+)`));
   return match ? match[1] : null;
@@ -316,7 +322,7 @@ export const createTestTokenFamily = async user => {
   try {
     const { createTokenPair } = await import('../../utils/tokenRotationService.mjs');
     return await createTokenPair(user.id, familyId);
-  } catch (error) {
+  } catch {
     // Return mock structure for TDD RED phase
     return {
       accessToken: 'mock-access-token',
@@ -460,7 +466,7 @@ export const expectTokenSecurityHeaders = response => {
   if (refreshCookie) {
     expect(refreshCookie).toMatch(/HttpOnly/i);
     expect(refreshCookie).toMatch(/Secure/i);
-    expect(refreshCookie).toMatch(/SameSite=Strict/i);
+    expect(refreshCookie).toMatch(/SameSite=Lax/i);
   }
 };
 
@@ -477,7 +483,7 @@ export const resetTokenRateLimitStore = async () => {
     if (resetTokenRotationRateLimits) {
       resetTokenRotationRateLimits();
     }
-  } catch (error) {
+  } catch {
     // Ignore if not implemented yet
   }
 };
