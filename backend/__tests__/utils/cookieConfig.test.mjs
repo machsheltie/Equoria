@@ -44,7 +44,7 @@ describe('Cookie Configuration Module', () => {
       expect(COOKIE_OPTIONS.accessToken).toEqual({
         httpOnly: true,
         secure: false, // Not secure in development
-        sameSite: 'strict',
+        sameSite: 'lax', // Lax in development, strict in production
         maxAge: 15 * 60 * 1000, // 15 minutes
         path: '/',
         domain: undefined,

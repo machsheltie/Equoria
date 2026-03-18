@@ -100,13 +100,13 @@ describe('Authentication with HttpOnly Cookies', () => {
       const accessTokenCookie = cookies.find(c => c.startsWith('accessToken='));
       expect(accessTokenCookie).toBeDefined();
       expect(accessTokenCookie).toContain('HttpOnly');
-      expect(accessTokenCookie).toContain('SameSite=Strict');
+      expect(accessTokenCookie).toContain('SameSite=Lax');
 
       // Verify refreshToken cookie
       const refreshTokenCookie = cookies.find(c => c.startsWith('refreshToken='));
       expect(refreshTokenCookie).toBeDefined();
       expect(refreshTokenCookie).toContain('HttpOnly');
-      expect(refreshTokenCookie).toContain('SameSite=Strict');
+      expect(refreshTokenCookie).toContain('SameSite=Lax');
 
       // Save test user for later tests
       await prisma.user.deleteMany({
@@ -167,7 +167,7 @@ describe('Authentication with HttpOnly Cookies', () => {
       expect(cookies.some(c => c.startsWith('refreshToken='))).toBe(true);
     });
 
-    it('should include SameSite=Strict for CSRF protection', async () => {
+    it('should include SameSite=Lax for CSRF protection', async () => {
       const response = await request(app)
         .post('/api/auth/login')
         .set(rateLimitBypassHeader)
@@ -181,7 +181,7 @@ describe('Authentication with HttpOnly Cookies', () => {
       const cookies = response.headers['set-cookie'];
       cookies.forEach(cookie => {
         if (cookie.startsWith('accessToken=') || cookie.startsWith('refreshToken=')) {
-          expect(cookie).toContain('SameSite=Strict');
+          expect(cookie).toContain('SameSite=Lax');
         }
       });
     });
@@ -368,7 +368,7 @@ describe('Authentication with HttpOnly Cookies', () => {
   });
 
   describe('Security: CSRF Protection Verification', () => {
-    it('should set SameSite=Strict on all auth cookies', async () => {
+    it('should set SameSite=Lax on all auth cookies', async () => {
       const loginResponse = await request(app)
         .post('/api/auth/login')
         .set(rateLimitBypassHeader)
@@ -383,7 +383,7 @@ describe('Authentication with HttpOnly Cookies', () => {
       const authCookies = cookies.filter(c => c.startsWith('accessToken=') || c.startsWith('refreshToken='));
 
       authCookies.forEach(cookie => {
-        expect(cookie).toContain('SameSite=Strict');
+        expect(cookie).toContain('SameSite=Lax');
       });
     });
   });
