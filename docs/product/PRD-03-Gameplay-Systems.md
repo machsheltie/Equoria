@@ -1,8 +1,8 @@
 # PRD-03: Gameplay Systems
 
-**Version:** 2.0.0
-**Last Updated:** 2025-12-01
-**Status:** Backend ✅ Complete | Frontend ❌ Pending
+**Version:** 2.1.0
+**Last Updated:** 2026-03-18
+**Status:** Backend ✅ Complete | Frontend ✅ Complete
 **Source Integration:** Consolidated from docs/history/claude-systems/
 
 ---
@@ -33,14 +33,14 @@ This document specifies the core gameplay loops and systems that drive Equoria. 
 
 ### 1.1 Core Mechanics
 
-| Parameter | Value | Description |
-|-----------|-------|-------------|
-| Minimum Age | 3 years | Horses must mature before training |
-| Maximum Age | 20 years | Training restricted for elderly horses |
-| Global Cooldown | 7 days | One training session per week (any discipline) |
-| Base Score Gain | +5 points | Discipline score increase per session |
-| Base XP Award | +5 XP | User XP per training session |
-| Stat Gain Chance | 15% | Random stat increase probability |
+| Parameter        | Value     | Description                                    |
+| ---------------- | --------- | ---------------------------------------------- |
+| Minimum Age      | 3 years   | Horses must mature before training             |
+| Maximum Age      | 20 years  | Training restricted for elderly horses         |
+| Global Cooldown  | 7 days    | One training session per week (any discipline) |
+| Base Score Gain  | +5 points | Discipline score increase per session          |
+| Base XP Award    | +5 XP     | User XP per training session                   |
+| Stat Gain Chance | 15%       | Random stat increase probability               |
 
 ### 1.2 Disciplines (23 Total)
 
@@ -121,6 +121,7 @@ GET  /api/horses/trainable/:userId    - Get user's trainable horses
 ### 2.1 Competition Mechanics
 
 **Entry Requirements:**
+
 - Minimum age: 3 years
 - Maximum age: 21 years (retirement)
 - Health status: Must be healthy
@@ -128,6 +129,7 @@ GET  /api/horses/trainable/:userId    - Get user's trainable horses
 - Level requirements: Shows have min/max level restrictions
 
 **Scoring Algorithm:**
+
 ```
 Base Score = weighted_average(discipline_stats) × trait_modifiers
 Age Factor = peak_at_6-8_years_curve
@@ -174,53 +176,55 @@ GET  /api/leaderboard/competition              - Leaderboards
 
 ### 3.1 Groom Attributes
 
-| Attribute | Options | Description |
-|-----------|---------|-------------|
-| Specialty | foal_care, general, training, medical | Area of expertise |
-| Skill Level | novice, intermediate, expert, master | Experience tier |
-| Personality | gentle, energetic, patient, strict | Affects care outcomes |
-| Level | 1-10 | Career progression |
-| Career Weeks | 0-104 | Time employed (max 2 years) |
+| Attribute    | Options                               | Description                 |
+| ------------ | ------------------------------------- | --------------------------- |
+| Specialty    | foal_care, general, training, medical | Area of expertise           |
+| Skill Level  | novice, intermediate, expert, master  | Experience tier             |
+| Personality  | gentle, energetic, patient, strict    | Affects care outcomes       |
+| Level        | 1-10                                  | Career progression          |
+| Career Weeks | 0-104                                 | Time employed (max 2 years) |
 
 ### 3.2 Personality Effects on Epigenetic Traits
 
-| Personality | Primary Bonus | Trait Influence |
-|-------------|---------------|-----------------|
-| GENTLE | +20% AFFECTIONATE | Enhances affectionate, confident |
-| ENERGETIC | +20% BRAVE | Boosts brave, social traits |
-| PATIENT | +20% RESILIENT | Develops resilient, confident |
-| FIRM | +20% CONFIDENT | Strengthens brave, confident |
-| BALANCED | +10% all | Moderate all positive traits |
+| Personality | Primary Bonus     | Trait Influence                  |
+| ----------- | ----------------- | -------------------------------- |
+| GENTLE      | +20% AFFECTIONATE | Enhances affectionate, confident |
+| ENERGETIC   | +20% BRAVE        | Boosts brave, social traits      |
+| PATIENT     | +20% RESILIENT    | Develops resilient, confident    |
+| FIRM        | +20% CONFIDENT    | Strengthens brave, confident     |
+| BALANCED    | +10% all          | Moderate all positive traits     |
 
 ### 3.3 Age-Based Task System
 
-| Age Range | Task Category | Activities |
-|-----------|---------------|------------|
-| 0-2 years | Enrichment | Trust building, desensitization, showground exposure |
-| 1-3 years | Foal Grooming | Early touch, hoof handling, tying practice |
-| 3+ years | General Grooming | Brushing, hand-walking, stall care, bathing |
+| Age Range | Task Category    | Activities                                           |
+| --------- | ---------------- | ---------------------------------------------------- |
+| 0-2 years | Enrichment       | Trust building, desensitization, showground exposure |
+| 1-3 years | Foal Grooming    | Early touch, hoof handling, tying practice           |
+| 3+ years  | General Grooming | Brushing, hand-walking, stall care, bathing          |
 
 **Daily Limits:** One interaction per horse per day (prevents stacking)
 
 ### 3.4 Career Lifecycle
 
 **Retirement System:**
+
 - Mandatory retirement: 104 weeks (2 years)
 - Early retirement: Level 10+ or 12+ assignments
 - Approaching retirement alerts
 
 **Legacy System:**
+
 - Eligibility: Retired level 7+ grooms
 - Protégé generation: Inherit perks and bonuses
 - Perk inheritance: Personality-based selection
 
 ### 3.5 Talent Tree (3 Tiers)
 
-| Tier | Level Req | Description |
-|------|-----------|-------------|
-| Tier 1 | Level 3+ | Basic talents |
-| Tier 2 | Level 5+ | Advanced talents |
-| Tier 3 | Level 8+ | Master talents |
+| Tier   | Level Req | Description      |
+| ------ | --------- | ---------------- |
+| Tier 1 | Level 3+  | Basic talents    |
+| Tier 2 | Level 5+  | Advanced talents |
+| Tier 3 | Level 8+  | Master talents   |
 
 - 24 unique talents across personalities
 - One talent per tier (permanent choice)
@@ -288,6 +292,7 @@ POST /api/grooms/:id/talents/select
 | Week 4 | Confidence vs Reactivity | Temperament settling |
 
 **Enrichment Activities:**
+
 - Trust building exercises
 - Desensitization training
 - Showground exposure
@@ -296,6 +301,7 @@ POST /api/grooms/:id/talents/select
 ### 4.3 Milestone Evaluation
 
 **Scoring Formula:**
+
 ```
 Milestone Score = Bond Modifier + Task Consistency + Care Quality
 - Bond Modifier: -2 to +2 based on bond level
@@ -324,16 +330,17 @@ GET  /api/traits/milestone-status/:id
 
 ### 5.1 Currency System
 
-| Source | Amount | Sink | Cost |
-|--------|--------|------|------|
-| Starting Money | $1,000 | Training | Variable |
-| Competition 1st | 50% prize | Groom Salary | Weekly |
-| Competition 2nd | 30% prize | Breeding Fee | Per breeding |
-| Competition 3rd | 20% prize | Entry Fees | Per competition |
+| Source          | Amount    | Sink         | Cost            |
+| --------------- | --------- | ------------ | --------------- |
+| Starting Money  | $1,000    | Training     | Variable        |
+| Competition 1st | 50% prize | Groom Salary | Weekly          |
+| Competition 2nd | 30% prize | Breeding Fee | Per breeding    |
+| Competition 3rd | 20% prize | Entry Fees   | Per competition |
 
 ### 5.2 User Progression
 
 **XP System:**
+
 ```
 Level 1: 0-199 XP
 Level 2+: 100 XP per level
@@ -390,7 +397,8 @@ GET /api/leaderboard/discipline/:disc     - Discipline leaderboard
 
 ## Document History
 
-| Version | Date | Changes |
-|---------|------|---------|
-| 1.0.0 | 2025-11-07 | Initial sparse version |
-| 2.0.0 | 2025-12-01 | Major expansion from historical docs consolidation |
+| Version | Date       | Changes                                            |
+| ------- | ---------- | -------------------------------------------------- |
+| 1.0.0   | 2025-11-07 | Initial sparse version                             |
+| 2.0.0   | 2025-12-01 | Major expansion from historical docs consolidation |
+| 2.1.0   | 2026-03-18 | Frontend marked complete (Epics 1-21 done)         |

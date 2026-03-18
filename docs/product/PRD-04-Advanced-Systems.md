@@ -1,8 +1,8 @@
 # PRD-04: Advanced Systems - Epigenetics & Traits
 
-**Version:** 1.0.0
-**Last Updated:** 2025-12-01
-**Status:** Backend ✅ Complete | Frontend ❌ Pending
+**Version:** 1.1.0
+**Last Updated:** 2026-03-18
+**Status:** Backend ✅ Complete | Frontend ✅ Complete
 **Source Integration:** Consolidated from docs/history/claude-systems/
 
 ---
@@ -21,6 +21,7 @@ This document covers the advanced trait and genetics systems that provide strate
 ### 1.1 Core Concept
 
 Epigenetic traits reflect developmental influences that shape a horse's behavior, performance, and adaptability. These traits are **not static** - they emerge based on:
+
 - Foalhood experiences
 - Early training patterns
 - Bonding quality
@@ -55,11 +56,11 @@ Epigenetic traits reflect developmental influences that shape a horse's behavior
 
 Traits develop during **early life (0-3 years)** based on care patterns:
 
-| Age Range | Influences | Potential Traits |
-|-----------|------------|------------------|
-| 0-1 year | Socialization, desensitization, foal handling | peopleOriented, desensitized, secretive |
-| 1-2 years | Routine care, curiosity, play | explorative, routineDependent, stressProne |
-| 2-3 years | Structured training, bonding, event exposure | confident, resilient, crowdReady, showCalm |
+| Age Range | Influences                                    | Potential Traits                           |
+| --------- | --------------------------------------------- | ------------------------------------------ |
+| 0-1 year  | Socialization, desensitization, foal handling | peopleOriented, desensitized, secretive    |
+| 1-2 years | Routine care, curiosity, play                 | explorative, routineDependent, stressProne |
+| 2-3 years | Structured training, bonding, event exposure  | confident, resilient, crowdReady, showCalm |
 
 ### 1.4 Trait Stacking Rules
 
@@ -72,22 +73,24 @@ Traits develop during **early life (0-3 years)** based on care patterns:
 
 Certain traits cannot co-exist:
 
-| Trait A | Conflicts With | Resolution |
-|---------|----------------|------------|
-| routineDependent | explorative | Temperament check determines winner |
-| secretive | peopleOriented | Must pick one during bonding phase |
-| stressProne | resilient | Dominant influence during foalhood wins |
-| burnoutImmune | injuryProne | Training care determines override |
+| Trait A          | Conflicts With | Resolution                              |
+| ---------------- | -------------- | --------------------------------------- |
+| routineDependent | explorative    | Temperament check determines winner     |
+| secretive        | peopleOriented | Must pick one during bonding phase      |
+| stressProne      | resilient      | Dominant influence during foalhood wins |
+| burnoutImmune    | injuryProne    | Training care determines override       |
 
 ### 1.6 Hidden Trait: epigeneticEdge
 
 Unlocked when **all ideal conditions** met during early life:
+
 - Optimal nutrition
 - Consistent bonding
 - Minimal stress
 - Appropriate training
 
 **Benefits:**
+
 - Subtle scoring bonuses
 - Enhanced stat growth
 - Increased genetic legacy value
@@ -126,6 +129,7 @@ Unlocked when **all ideal conditions** met during early life:
 ### 2.2 Flag Assignment Engine
 
 Flags are evaluated weekly based on:
+
 - Care pattern analysis (30-day window)
 - Groom personality effects
 - Milestone outcomes
@@ -160,34 +164,35 @@ Ultra-rare and exotic traits are prestige traits requiring specific hidden condi
 
 ### 3.2 Trait Tiers
 
-| Tier | Base Chance | Description |
-|------|-------------|-------------|
-| Ultra-Rare | <3% | Probability-based, can be nudged by groom perks |
-| Exotic | Conditional | Multi-factor unlock (lineage + flags + care) |
+| Tier       | Base Chance | Description                                     |
+| ---------- | ----------- | ----------------------------------------------- |
+| Ultra-Rare | <3%         | Probability-based, can be nudged by groom perks |
+| Exotic     | Conditional | Multi-factor unlock (lineage + flags + care)    |
 
 ### 3.3 Ultra-Rare Traits (5 Total)
 
-| Trait | Trigger Conditions | Mechanical Perks | Groom Synergy |
-|-------|-------------------|------------------|---------------|
-| **Phoenix-Born** | 3+ stress events + 2 recoveries | +30% stress decay; 3-day burnout recovery | Mindful Handler, Guardian Instinct |
-| **Iron-Willed** | No skipped milestones + no negative traits by age 3 | Cannot be burned out; +5 stamina | Methodical, Detail-Oriented |
-| **Empathic Mirror** | Same groom birth-3yrs; high bond entire time | Adopts companion mood; +5% team events | Soft-Hearted, Affectionate |
-| **Born Leader** | Top bond + Steady temperament; always top 3 conformation | +2 discipline to nearby horses | Confident Leader |
-| **Stormtouched** | Reactive temperament + missed care week + novelty event | +10% stat growth; 2x stress gain | Novelty Trainer, Reserved |
+| Trait               | Trigger Conditions                                       | Mechanical Perks                          | Groom Synergy                      |
+| ------------------- | -------------------------------------------------------- | ----------------------------------------- | ---------------------------------- |
+| **Phoenix-Born**    | 3+ stress events + 2 recoveries                          | +30% stress decay; 3-day burnout recovery | Mindful Handler, Guardian Instinct |
+| **Iron-Willed**     | No skipped milestones + no negative traits by age 3      | Cannot be burned out; +5 stamina          | Methodical, Detail-Oriented        |
+| **Empathic Mirror** | Same groom birth-3yrs; high bond entire time             | Adopts companion mood; +5% team events    | Soft-Hearted, Affectionate         |
+| **Born Leader**     | Top bond + Steady temperament; always top 3 conformation | +2 discipline to nearby horses            | Confident Leader                   |
+| **Stormtouched**    | Reactive temperament + missed care week + novelty event  | +10% stat growth; 2x stress gain          | Novelty Trainer, Reserved          |
 
 ### 3.4 Exotic Traits (5 Total)
 
-| Trait | Unlock Condition | Mechanical Perks | Groom Trigger |
-|-------|-----------------|------------------|---------------|
-| **Shadow-Follower** | 2+ missed socialization + late bond (after age 2) | +10 bond first handler; -20% others | Guardian Instinct |
-| **Ghostwalker** | Bond <30 throughout youth + resilient flag | Immune to stress; max bond 60; no reassignment | Reserved, Iron-Willed |
-| **Soulbonded** | Same groom all 4 milestones + >90 bond each | +10% show with same handler | Bondsmith |
-| **Fey-Kissed** | Both parents have ultra-rare trait + perfect foal care | All-stat bonus; visual aura effect | Any groom with 3 rare perks |
-| **Dreamtwin** | Twin birth + raised together + same groom + matching flags | Sibling effect: mirrored changes; weaker if separated | Playful, Soft-Spoken |
+| Trait               | Unlock Condition                                           | Mechanical Perks                                      | Groom Trigger               |
+| ------------------- | ---------------------------------------------------------- | ----------------------------------------------------- | --------------------------- |
+| **Shadow-Follower** | 2+ missed socialization + late bond (after age 2)          | +10 bond first handler; -20% others                   | Guardian Instinct           |
+| **Ghostwalker**     | Bond <30 throughout youth + resilient flag                 | Immune to stress; max bond 60; no reassignment        | Reserved, Iron-Willed       |
+| **Soulbonded**      | Same groom all 4 milestones + >90 bond each                | +10% show with same handler                           | Bondsmith                   |
+| **Fey-Kissed**      | Both parents have ultra-rare trait + perfect foal care     | All-stat bonus; visual aura effect                    | Any groom with 3 rare perks |
+| **Dreamtwin**       | Twin birth + raised together + same groom + matching flags | Sibling effect: mirrored changes; weaker if separated | Playful, Soft-Spoken        |
 
 ### 3.5 Groom Perk Influence
 
 **Rare Trait Booster Mechanic:**
+
 - +25% bonus if base chance exists
 - +15% bonus if multiple conditions met
 - Perk revealed after 2 successful trait triggers
@@ -220,19 +225,20 @@ GET  /api/ultra-rare-traits/groom-perks/:groomId
 ### 4.1 Discovery Mechanics
 
 Traits can be:
+
 - **Unlocked automatically** when conditions met
 - **Hidden at first** and revealed through bonding/evaluation
 - **Earned dynamically** as horse performs/matures
 
 ### 4.2 Revelation Methods
 
-| Method | Traits Revealed |
-|--------|-----------------|
-| Bonding Milestones | Social traits |
-| Training Sessions | Performance traits |
+| Method                | Traits Revealed    |
+| --------------------- | ------------------ |
+| Bonding Milestones    | Social traits      |
+| Training Sessions     | Performance traits |
 | Competition Placement | Temperament traits |
-| Veterinary Evaluation | Hidden traits |
-| Lineage Analysis | epigeneticEdge |
+| Veterinary Evaluation | Hidden traits      |
+| Lineage Analysis      | epigeneticEdge     |
 
 ### 4.3 API Endpoints
 
@@ -281,6 +287,7 @@ GET /api/traits/competition-comparison/:horseId
 ### 6.1 Trait History Logging
 
 Every trait assignment logged with:
+
 - Source (groom, milestone, competition)
 - Influence score
 - Horse age at assignment
@@ -289,6 +296,7 @@ Every trait assignment logged with:
 ### 6.2 Breeding Insights
 
 Analysis for breeding decisions:
+
 - Trait inheritance probability
 - Epigenetic flag compatibility
 - Ultra-rare trait potential
@@ -309,27 +317,30 @@ GET /api/epigenetic-traits/breeding-insights/:horseId
 
 ### 7.1 Milestone Types (5)
 
-| Milestone | Age Window | Focus |
-|-----------|------------|-------|
-| Imprinting | Day 1 | First bond formation |
-| Socialization | Week 1-4 | Social development |
-| Curiosity & Play | Week 1-4 | Exploration tendencies |
-| Trust & Handling | Week 1-4 | Handler relationships |
-| Confidence vs Reactivity | Week 1-4 | Temperament setting |
+| Milestone                | Age Window | Focus                  |
+| ------------------------ | ---------- | ---------------------- |
+| Imprinting               | Day 1      | First bond formation   |
+| Socialization            | Week 1-4   | Social development     |
+| Curiosity & Play         | Week 1-4   | Exploration tendencies |
+| Trust & Handling         | Week 1-4   | Handler relationships  |
+| Confidence vs Reactivity | Week 1-4   | Temperament setting    |
 
 ### 7.2 Scoring Components
 
 **Groom Care Integration:**
+
 - Bond consistency tracking
 - Task diversity scoring
 - 30-day care pattern analysis
 
 **Score Modifiers:**
+
 - Bond level: -2 to +2
 - Task consistency: 0 to +3
 - Care gaps: Penalty applied
 
 **Trait Confirmation Logic:**
+
 - Score ≥3: Confirms positive trait
 - Score ≤-3: Confirms negative trait
 - Otherwise: Randomized
@@ -354,6 +365,7 @@ GET  /api/traits/milestone-definitions
 
 ## Document History
 
-| Version | Date | Changes |
-|---------|------|---------|
-| 1.0.0 | 2025-12-01 | Initial creation from historical docs consolidation |
+| Version | Date       | Changes                                             |
+| ------- | ---------- | --------------------------------------------------- |
+| 1.0.0   | 2025-12-01 | Initial creation from historical docs consolidation |
+| 1.1.0   | 2026-03-18 | Frontend marked complete (Epics 1-21 done)          |

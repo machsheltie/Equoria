@@ -1,7 +1,7 @@
 # Equoria Documentation Index
 
-**Last Updated:** 2025-12-04 (Project Overview added; legacy claude docs referenced)
-**Version:** 2.2.0
+**Last Updated:** 2026-03-18 (Statistics refresh; UX spec + plans references added)
+**Version:** 3.0.0
 **Scan Level:** Exhaustive
 
 ---
@@ -11,7 +11,7 @@
 - **[architecture-backend.md](./architecture-backend.md)** - Express.js/Prisma backend architecture diagrams
 - **[architecture-frontend.md](./architecture-frontend.md)** - React/Vite frontend architecture diagrams
 - **[bmm-workflow-status.yaml](./bmm-workflow-status.yaml)** - BMAD workflow tracking and state
-- **[data-models.md](./data-models.md)** - Prisma entity relationships (29 models)
+- **[data-models.md](./data-models.md)** - Prisma entity relationships (43 models)
 - **[development-guide.md](./development-guide.md)** - Quick start setup for development
 - **[devops-cicd.md](./devops-cicd.md)** - CI/CD pipelines and DevOps documentation
 - **[integration-patterns.md](./integration-patterns.md)** - Frontend-backend integration patterns
@@ -26,6 +26,10 @@
 ### product/
 
 Product Requirements Documents (PRDs)
+
+#### Unified Summary
+
+- **[PRD-UNIFIED-SUMMARY.md](./product/PRD-UNIFIED-SUMMARY.md)** - Single-page overview of all systems, architecture, and status (start here)
 
 #### Core PRDs
 
@@ -95,6 +99,34 @@ Backend API Contracts (23 sharded sections)
 
 ---
 
+### ux-spec-sections/
+
+UX Specification Documents (13 sections)
+
+- **[01-design-tokens.md](./ux-spec-sections/01-design-tokens.md)** - Design token definitions
+- **[02-4-layer-strategy.md](./ux-spec-sections/02-4-layer-strategy.md)** - 4-layer styling strategy
+- **[03-shadcn-restyling.md](./ux-spec-sections/03-shadcn-restyling.md)** - shadcn/ui restyling guide
+- **[04-global-atmosphere.md](./ux-spec-sections/04-global-atmosphere.md)** - Global atmosphere and theming
+- **[05-frosted-panel-system.md](./ux-spec-sections/05-frosted-panel-system.md)** - Frosted panel system
+- **[06-typography-system.md](./ux-spec-sections/06-typography-system.md)** - Typography system
+- **[07-navigation-layout.md](./ux-spec-sections/07-navigation-layout.md)** - Navigation and layout
+- **[08-hub-dashboard.md](./ux-spec-sections/08-hub-dashboard.md)** - Hub dashboard design
+- **[09-horse-card-design.md](./ux-spec-sections/09-horse-card-design.md)** - Horse card design
+- **[10-component-new-custom.md](./ux-spec-sections/10-component-new-custom.md)** - New and custom components
+- **[11-button-feedback-patterns.md](./ux-spec-sections/11-button-feedback-patterns.md)** - Button and feedback patterns
+- **[12-journey-flows.md](./ux-spec-sections/12-journey-flows.md)** - Journey flow audit
+- **[13-responsive-accessibility.md](./ux-spec-sections/13-responsive-accessibility.md)** - Responsive design and accessibility
+
+---
+
+### plans/
+
+Epic Planning Documents
+
+- Contains epic planning and scoping docs for development sprints
+
+---
+
 ### architecture/
 
 Architecture Planning and Design
@@ -158,16 +190,16 @@ Historical Documentation (Archived)
 
 Content consolidated into PRD structure:
 
-| Historical Location | Consolidated Into |
-|---------------------|-------------------|
-| `claude-systems/` | PRD-03, PRD-04 |
-| `claude-api/` | api-contracts-backend/ |
-| `backend-docs/user-guide/` | PRD-07 |
-| `backend-docs/` | PRD-09 |
-| `claude-guides/` | PRD-06, PRD-09 |
-| `claude-rules/` | PRD-08 |
-| `claude-docs/` | PRD-09, PRD-10 |
-| `claude-planning/` | PRD-05 |
+| Historical Location        | Consolidated Into      |
+| -------------------------- | ---------------------- |
+| `claude-systems/`          | PRD-03, PRD-04         |
+| `claude-api/`              | api-contracts-backend/ |
+| `backend-docs/user-guide/` | PRD-07                 |
+| `backend-docs/`            | PRD-09                 |
+| `claude-guides/`           | PRD-06, PRD-09         |
+| `claude-rules/`            | PRD-08                 |
+| `claude-docs/`             | PRD-09, PRD-10         |
+| `claude-planning/`         | PRD-05                 |
 
 ---
 
@@ -198,34 +230,36 @@ Sprint Implementation Documents
 
 ## Quick Reference
 
-| Category | Location | Description |
-|----------|----------|-------------|
-| PRDs | `product/PRD-*.md` | Product requirements |
-| API Contracts | `api-contracts-backend/` | REST API documentation (130+ endpoints) |
-| Architecture | `architecture*.md` | System design |
-| **Tech Specs** | `technical/TECH-SPEC-*.md` | Implementation-ready specifications |
-| **Sprint Artifacts** | `sprint-artifacts/` | Active sprint implementation docs |
-| Integration | `integration-patterns.md` | Frontend-backend communication |
-| DevOps | `devops-cicd.md` | CI/CD and deployment |
-| Data Models | `data-models.md` | Database schema (29 models) |
-| Implementation | `implementation/` | Developer guides |
-| Historical | `history/` | Archived docs |
+| Category             | Location                   | Description                             |
+| -------------------- | -------------------------- | --------------------------------------- |
+| PRDs                 | `product/PRD-*.md`         | Product requirements                    |
+| API Contracts        | `api-contracts-backend/`   | REST API documentation (130+ endpoints) |
+| Architecture         | `architecture*.md`         | System design                           |
+| **Tech Specs**       | `technical/TECH-SPEC-*.md` | Implementation-ready specifications     |
+| **Sprint Artifacts** | `sprint-artifacts/`        | Active sprint implementation docs       |
+| Integration          | `integration-patterns.md`  | Frontend-backend communication          |
+| DevOps               | `devops-cicd.md`           | CI/CD and deployment                    |
+| Data Models          | `data-models.md`           | Database schema (43 models)             |
+| Implementation       | `implementation/`          | Developer guides                        |
+| Historical           | `history/`                 | Archived docs                           |
 
 ---
 
-## Codebase Statistics (2025-12-01 Scan)
+## Codebase Statistics (2026-03-18 Scan)
 
-| Component | Count |
-|-----------|-------|
-| Backend .mjs Files | 471 |
-| Backend Controllers | 23 |
-| Backend Routes | 35 |
-| Backend Services | 45 |
-| Backend Tests | 229 |
-| Frontend Components | 19 |
-| Frontend UI Primitives | 9 |
-| Database Models | 29 |
-| API Endpoints | 130+ |
+| Component              | Count               |
+| ---------------------- | ------------------- |
+| Backend .mjs Files     | 471                 |
+| Backend Controllers    | 23                  |
+| Backend Routes         | 35                  |
+| Backend Services       | 45                  |
+| Backend Tests          | 3651+ in 226 suites |
+| Frontend Components    | 80+                 |
+| Frontend UI Primitives | 20+                 |
+| Frontend Pages         | 37                  |
+| React Query Hooks      | 44+                 |
+| Database Models        | 43                  |
+| API Endpoints          | 130+                |
 
 ---
 
@@ -238,6 +272,6 @@ Sprint Implementation Documents
 
 ---
 
-*Generated: 2025-12-01*
-*Last Updated: 2025-12-02 (Comprehensive Frontend Tech Spec)*
-*Workflow: BMAD tech-spec creation*
+_Generated: 2025-12-01_
+_Last Updated: 2026-03-18_
+_Workflow: BMAD tech-spec creation_
