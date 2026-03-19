@@ -1,6 +1,6 @@
 # Equoria Documentation Index
 
-**Last Updated:** 2026-03-18 (Statistics refresh; UX spec + plans references added)
+**Last Updated:** 2026-03-19 (Full exhaustive rescan — all statistics verified)
 **Version:** 3.0.0
 **Scan Level:** Exhaustive
 
@@ -11,7 +11,7 @@
 - **[architecture-backend.md](./architecture-backend.md)** - Express.js/Prisma backend architecture diagrams
 - **[architecture-frontend.md](./architecture-frontend.md)** - React/Vite frontend architecture diagrams
 - **[bmm-workflow-status.yaml](./bmm-workflow-status.yaml)** - BMAD workflow tracking and state
-- **[data-models.md](./data-models.md)** - Prisma entity relationships (43 models)
+- **[data-models.md](./data-models.md)** - Prisma entity relationships (43 models, 6 enums)
 - **[development-guide.md](./development-guide.md)** - Quick start setup for development
 - **[devops-cicd.md](./devops-cicd.md)** - CI/CD pipelines and DevOps documentation
 - **[integration-patterns.md](./integration-patterns.md)** - Frontend-backend integration patterns
@@ -239,27 +239,30 @@ Sprint Implementation Documents
 | **Sprint Artifacts** | `sprint-artifacts/`        | Active sprint implementation docs       |
 | Integration          | `integration-patterns.md`  | Frontend-backend communication          |
 | DevOps               | `devops-cicd.md`           | CI/CD and deployment                    |
-| Data Models          | `data-models.md`           | Database schema (43 models)             |
+| Data Models          | `data-models.md`           | Database schema (43 models, 6 enums)    |
 | Implementation       | `implementation/`          | Developer guides                        |
 | Historical           | `history/`                 | Archived docs                           |
 
 ---
 
-## Codebase Statistics (2026-03-18 Scan)
+## Codebase Statistics (2026-03-19 Exhaustive Scan)
 
-| Component              | Count               |
-| ---------------------- | ------------------- |
-| Backend .mjs Files     | 471                 |
-| Backend Controllers    | 23                  |
-| Backend Routes         | 35                  |
-| Backend Services       | 45                  |
-| Backend Tests          | 3651+ in 226 suites |
-| Frontend Components    | 80+                 |
-| Frontend UI Primitives | 20+                 |
-| Frontend Pages         | 37                  |
-| React Query Hooks      | 44+                 |
-| Database Models        | 43                  |
-| API Endpoints          | 130+                |
+| Component           | Count               |
+| ------------------- | ------------------- |
+| Backend .mjs Files  | 721                 |
+| Backend Modules     | 18                  |
+| Backend Route Files | 43                  |
+| Backend Controllers | 36                  |
+| Backend Middleware  | 20                  |
+| Backend Utilities   | 65                  |
+| Backend Tests       | 3651+ in 226 suites |
+| Frontend Pages      | 53                  |
+| Frontend Components | 356                 |
+| Frontend API Hooks  | 47                  |
+| Database Models     | 43 models, 6 enums  |
+| Database Migrations | 45                  |
+| API Endpoints       | 130+                |
+| CI/CD Workflows     | 5                   |
 
 ---
 
@@ -273,5 +276,5 @@ Sprint Implementation Documents
 ---
 
 _Generated: 2025-12-01_
-_Last Updated: 2026-03-18_
-_Workflow: BMAD tech-spec creation_
+_Last Updated: 2026-03-19_
+_Workflow: BMAD Document Project — Full Exhaustive Rescan_
