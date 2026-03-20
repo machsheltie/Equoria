@@ -1,7 +1,7 @@
 ---
 project_name: 'Equoria'
 user_name: 'Heirr'
-date: '2026-03-18'
+date: '2026-03-19'
 sections_completed:
   [
     'technology_stack',
@@ -51,6 +51,14 @@ _This file contains critical rules and patterns that AI agents must follow when 
 - Vite dev server on port `3001`, proxies `/api` → `localhost:3000`
 - `@/` path alias maps to `./src/*` (frontend only)
 - Backend uses `"type": "module"` — all imports require `.js` extensions
+
+### Codebase Scale (2026-03-19)
+
+- Backend: 721 .mjs files, 18 domain modules, 130+ API endpoints
+- Frontend: 53 pages, 356 components, 47 React Query hooks
+- Database: 43 Prisma models, 6 enums, 45 migrations
+- Tests: 226 backend suites (3651+ tests), Vitest frontend, Playwright E2E
+- CI/CD: 5 GitHub Actions workflows
 
 ---
 
@@ -282,4 +290,4 @@ _This file contains critical rules and patterns that AI agents must follow when 
 - Review quarterly for outdated rules
 - Remove rules that become obvious over time
 
-Last Updated: 2026-03-18
+Last Updated: 2026-03-19
