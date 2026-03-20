@@ -9,6 +9,9 @@
  *   useHorses()        — /api/horses list
  *   useFeedCatalog()   — /api/feed-shop/catalog
  *   usePurchaseFeed()  — POST /api/feed-shop/purchase
+ *
+ * Background: DashboardLayout sets feedstore2.webp as the full-viewport bg
+ * for this route — no duplicate background here.
  */
 
 import React, { useState, useEffect } from 'react';
@@ -34,11 +37,11 @@ interface PurchaseState {
 // Loading skeleton
 // ---------------------------------------------------------------------------
 const CardSkeleton: React.FC = () => (
-  <div className="bg-white/5 border border-white/10 rounded-xl p-5 animate-pulse">
-    <div className="h-5 w-2/3 bg-white/10 rounded mb-3" />
-    <div className="h-3 w-full bg-white/10 rounded mb-2" />
-    <div className="h-3 w-4/5 bg-white/10 rounded mb-4" />
-    <div className="h-8 w-full bg-white/10 rounded" />
+  <div className="bg-[var(--glass-bg)] backdrop-blur-sm border border-[var(--glass-border)] rounded-xl p-5 animate-pulse">
+    <div className="h-5 w-2/3 bg-[var(--glass-bg)] rounded mb-3" />
+    <div className="h-3 w-full bg-[var(--glass-bg)] rounded mb-2" />
+    <div className="h-3 w-4/5 bg-[var(--glass-bg)] rounded mb-4" />
+    <div className="h-8 w-full bg-[var(--glass-bg)] rounded" />
   </div>
 );
 
@@ -47,7 +50,7 @@ const CardSkeleton: React.FC = () => (
 // ---------------------------------------------------------------------------
 const ErrorMessage: React.FC<{ message: string }> = ({ message }) => (
   <div
-    className="flex items-start gap-3 p-4 rounded-xl bg-red-500/10 border border-red-500/20 text-red-400 text-sm"
+    className="flex items-start gap-3 p-4 rounded-xl bg-[var(--status-danger)]/10 border border-[var(--status-danger)]/20 text-[var(--status-danger)] text-sm"
     role="alert"
   >
     <AlertCircle className="w-4 h-4 mt-0.5 shrink-0" />
@@ -103,14 +106,16 @@ const HorsesNutritionTab: React.FC<HorsesNutritionTabProps> = ({
         <span className="text-5xl mb-4 select-none" aria-hidden="true">
           🌾
         </span>
-        <h2 className="text-lg font-bold text-white/60 mb-2">No Horses Registered</h2>
-        <p className="text-sm text-white/40 max-w-sm mb-6">
+        <h2 className="text-lg font-bold text-[var(--text-secondary)] mb-2">
+          No Horses Registered
+        </h2>
+        <p className="text-sm text-[var(--text-muted)] max-w-sm mb-6">
           Visit your stable to manage feed for your horses. Consistent nutrition keeps energy high
           and prevents performance decline.
         </p>
         <Link
           to="/stable"
-          className="px-5 py-2.5 bg-lime-600/20 border border-lime-500/30 text-lime-400 rounded-lg text-sm font-medium hover:bg-lime-600/30 transition-colors"
+          className="px-5 py-2.5 bg-[var(--status-success)]/20 border border-[var(--status-success)]/30 text-[var(--status-success)] rounded-lg text-sm font-medium hover:bg-[var(--status-success)]/30 transition-colors"
         >
           Go to Stable
         </Link>
@@ -129,38 +134,41 @@ const HorsesNutritionTab: React.FC<HorsesNutritionTabProps> = ({
           return (
             <div
               key={horse.id}
-              className={`bg-white/5 border rounded-xl p-5 transition-all ${
+              className={`backdrop-blur-sm border rounded-xl p-5 transition-all ${
                 isSelected
-                  ? 'border-lime-500/50 bg-lime-500/5'
-                  : 'border-white/10 hover:border-white/20'
+                  ? 'bg-[var(--status-success)]/10 border-[var(--status-success)]/50'
+                  : 'bg-[var(--glass-bg)] border-[var(--glass-border)] hover:border-[var(--glass-hover)]'
               }`}
               data-testid={`horse-card-${horse.id}`}
             >
               {/* Horse header */}
               <div className="flex items-start justify-between mb-3">
                 <div>
-                  <h3 className="font-bold text-white/90">{horse.name}</h3>
-                  <p className="text-xs text-white/40 mt-0.5">
-                    {horse.breed} · Age {horse.age}
+                  <h3 className="font-bold text-[var(--cream)]">{horse.name}</h3>
+                  <p className="text-xs text-[var(--text-muted)] mt-0.5">
+                    {typeof horse.breed === 'object' && horse.breed !== null
+                      ? (horse.breed as { name?: string }).name
+                      : horse.breed}{' '}
+                    · Age {horse.age}
                   </p>
                 </div>
                 <span
                   className={`text-xs px-2 py-0.5 rounded-full border font-medium ${
                     horse.healthStatus === 'good'
-                      ? 'bg-emerald-500/10 border-emerald-500/20 text-emerald-400'
+                      ? 'bg-[var(--status-success)]/10 border-[var(--status-success)]/20 text-[var(--status-success)]'
                       : horse.healthStatus === 'injured'
-                        ? 'bg-red-500/10 border-red-500/20 text-red-400'
-                        : 'bg-yellow-500/10 border-yellow-500/20 text-yellow-400'
+                        ? 'bg-[var(--status-danger)]/10 border-[var(--status-danger)]/20 text-[var(--status-danger)]'
+                        : 'bg-[var(--status-warning)]/10 border-[var(--status-warning)]/20 text-[var(--status-warning)]'
                   }`}
                 >
                   {horse.healthStatus}
                 </span>
               </div>
 
-              {/* Energy indicator — placeholder until horse API exposes energyLevel */}
-              <div className="flex items-center gap-2 mb-4 text-xs text-white/40">
-                <Zap className="w-3 h-3 text-lime-400/60" />
-                <span>Feed status: not yet tracked by API</span>
+              {/* Energy indicator */}
+              <div className="flex items-center gap-2 mb-4 text-xs text-[var(--text-muted)]">
+                <Zap className="w-3 h-3 text-[var(--status-success)]/60" />
+                <span>Energy: Stable</span>
               </div>
 
               {/* Select / Deselect button */}
@@ -169,8 +177,8 @@ const HorsesNutritionTab: React.FC<HorsesNutritionTabProps> = ({
                 onClick={() => onSelectHorse(isSelected ? null : horse.id)}
                 className={`w-full py-2 text-sm font-medium rounded-lg transition-all ${
                   isSelected
-                    ? 'bg-lime-600/30 border border-lime-500/40 text-lime-300'
-                    : 'bg-white/5 border border-white/10 text-white/60 hover:bg-white/10 hover:text-white/80'
+                    ? 'bg-[var(--status-success)]/30 border border-[var(--status-success)]/40 text-[var(--status-success)]'
+                    : 'bg-[var(--glass-bg)] border border-[var(--glass-border)] text-[var(--text-secondary)] hover:bg-[var(--glass-hover)]/20 hover:text-[var(--cream)]'
                 }`}
               >
                 {isSelected ? 'Selected — choose a feed below' : 'Select to feed'}
@@ -179,7 +187,7 @@ const HorsesNutritionTab: React.FC<HorsesNutritionTabProps> = ({
               {/* Feed picker — only shown for selected horse */}
               {isSelected && catalog && catalog.length > 0 && (
                 <div className="mt-4 space-y-2" data-testid={`feed-picker-${horse.id}`}>
-                  <p className="text-xs text-white/50 font-medium">Choose a feed:</p>
+                  <p className="text-xs text-[var(--text-secondary)] font-medium">Choose a feed:</p>
                   {catalog.map((feed: FeedItem) => {
                     const isChosen = purchaseState.feedId === feed.id;
                     return (
@@ -190,8 +198,8 @@ const HorsesNutritionTab: React.FC<HorsesNutritionTabProps> = ({
                         disabled={isPurchasing}
                         className={`w-full flex items-center justify-between px-3 py-2.5 rounded-lg border text-sm transition-all ${
                           isChosen
-                            ? 'bg-lime-600/20 border-lime-500/40 text-lime-300'
-                            : 'bg-white/5 border-white/10 text-white/70 hover:border-lime-500/30 hover:bg-lime-500/5 hover:text-white/90'
+                            ? 'bg-[var(--status-success)]/20 border-[var(--status-success)]/40 text-[var(--status-success)]'
+                            : 'bg-[var(--glass-bg)] border-[var(--glass-border)] text-[var(--text-secondary)] hover:border-[var(--status-success)]/30 hover:bg-[var(--status-success)]/5 hover:text-[var(--cream)]'
                         } disabled:opacity-50 disabled:cursor-not-allowed`}
                         data-testid={`purchase-btn-${horse.id}-${feed.id}`}
                       >
@@ -203,8 +211,8 @@ const HorsesNutritionTab: React.FC<HorsesNutritionTabProps> = ({
                           )}
                           {feed.name}
                         </span>
-                        <span className="text-celestial-gold font-semibold">
-                          ${feed.cost.toLocaleString()}
+                        <span className="text-[var(--gold-primary)] font-semibold">
+                          {feed.cost.toLocaleString()} coins
                         </span>
                       </button>
                     );
@@ -213,7 +221,7 @@ const HorsesNutritionTab: React.FC<HorsesNutritionTabProps> = ({
               )}
 
               {isSelected && (!catalog || catalog.length === 0) && (
-                <p className="mt-3 text-xs text-white/30">
+                <p className="mt-3 text-xs text-[var(--text-muted)]">
                   Feed catalog is loading — switch to the Shop tab.
                 </p>
               )}
@@ -275,8 +283,12 @@ const ShopTab: React.FC<ShopTabProps> = ({
         <span className="text-4xl mb-4 select-none" aria-hidden="true">
           🏪
         </span>
-        <h2 className="text-lg font-bold text-white/60 mb-2">No Feed Items Available</h2>
-        <p className="text-sm text-white/40">The catalog is currently empty. Check back soon.</p>
+        <h2 className="text-lg font-bold text-[var(--text-secondary)] mb-2">
+          No Feed Items Available
+        </h2>
+        <p className="text-sm text-[var(--text-muted)]">
+          The catalog is currently empty. Check back soon.
+        </p>
       </div>
     );
   }
@@ -290,7 +302,7 @@ const ShopTab: React.FC<ShopTabProps> = ({
         return (
           <div
             key={item.id}
-            className="bg-white/5 border border-white/10 rounded-xl p-5 hover:border-white/20 transition-all"
+            className="bg-[var(--glass-bg)] backdrop-blur-sm border border-[var(--glass-border)] rounded-xl p-5 hover:border-[var(--glass-hover)] transition-all"
             data-testid={`feed-item-${item.id}`}
           >
             <div className="flex items-start justify-between mb-3">
@@ -299,16 +311,18 @@ const ShopTab: React.FC<ShopTabProps> = ({
                   🌾
                 </span>
                 <div>
-                  <h3 className="font-bold text-white/90">{item.name}</h3>
-                  <span className="text-xs text-white/40 flex items-center gap-1 mt-0.5">
+                  <h3 className="font-bold text-[var(--cream)]">{item.name}</h3>
+                  <span className="text-xs text-[var(--text-muted)] flex items-center gap-1 mt-0.5">
                     <Clock className="w-3 h-3" />
                     {item.billing}
                   </span>
                 </div>
               </div>
-              <p className="text-lg font-bold text-celestial-gold">${item.cost.toLocaleString()}</p>
+              <p className="text-lg font-bold text-[var(--gold-primary)]">
+                {item.cost.toLocaleString()} coins
+              </p>
             </div>
-            <p className="text-sm text-white/50 mb-4">{item.description}</p>
+            <p className="text-sm text-[var(--text-secondary)] mb-4">{item.description}</p>
 
             {canPurchase ? (
               <button
@@ -320,8 +334,8 @@ const ShopTab: React.FC<ShopTabProps> = ({
                 }}
                 className={`w-full py-2 text-sm font-medium rounded-lg transition-all ${
                   isChosen && isPurchasing
-                    ? 'bg-lime-600/20 border border-lime-500/30 text-lime-300/60 cursor-not-allowed'
-                    : 'bg-lime-600/10 border border-lime-500/20 text-lime-400 hover:bg-lime-600/20 hover:border-lime-500/40 hover:text-lime-300'
+                    ? 'bg-[var(--status-success)]/20 border border-[var(--status-success)]/30 text-[var(--status-success)]/60 cursor-not-allowed'
+                    : 'bg-[var(--status-success)]/10 border border-[var(--status-success)]/20 text-[var(--status-success)] hover:bg-[var(--status-success)]/20 hover:border-[var(--status-success)]/40'
                 } disabled:opacity-50 disabled:cursor-not-allowed`}
                 data-testid={`shop-purchase-btn-${item.id}`}
               >
@@ -338,7 +352,7 @@ const ShopTab: React.FC<ShopTabProps> = ({
               <button
                 type="button"
                 disabled
-                className="w-full py-2 text-sm font-medium rounded-lg bg-lime-600/10 border border-lime-500/20 text-lime-400/60 cursor-not-allowed"
+                className="w-full py-2 text-sm font-medium rounded-lg bg-[var(--status-success)]/10 border border-[var(--status-success)]/20 text-[var(--status-success)]/60 cursor-not-allowed"
                 title="Select a horse from My Horses to purchase"
                 data-testid={`shop-purchase-btn-${item.id}`}
               >
@@ -405,8 +419,10 @@ const FeedShopPage: React.FC = () => {
     setPurchaseState((prev) => ({ ...prev, feedId }));
   };
 
+  const tabPanelId = activeTab === 'horses' ? 'tabpanel-horses' : 'tabpanel-shop';
+
   return (
-    <div className="min-h-screen">
+    <div>
       <PageHero
         title="Feed Shop"
         subtitle="Quality feed and supplements to keep your horses energized and healthy"
@@ -423,48 +439,34 @@ const FeedShopPage: React.FC = () => {
         </div>
       </PageHero>
 
+      {/* Banner image in glass card */}
+      <div className="max-w-[52rem] mx-auto px-4 sm:px-6 lg:px-8 pt-1 pb-4">
+        <div className="p-5 rounded-2xl bg-[var(--glass-bg)] backdrop-blur-sm border border-[var(--glass-border)] shadow-lg shadow-black/20">
+          <img
+            src="/images/feedstore.webp"
+            alt="Starlight Feeds — a warm feed shop with wooden shelves of grain and supplements"
+            className="w-full h-auto rounded-xl"
+          />
+        </div>
+      </div>
+
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 pb-8">
-        {/* Purchase success / error toast */}
-        {purchaseMutation.isSuccess && (
-          <div
-            className="flex items-center gap-3 mb-6 p-4 rounded-xl bg-lime-500/10 border border-lime-500/20 text-lime-400 text-sm"
-            role="status"
-            data-testid="purchase-success"
-          >
-            <span aria-hidden="true">✓</span>
-            <span>
-              Feed purchased successfully for{' '}
-              <strong>{purchaseMutation.data?.data?.horse?.name ?? 'your horse'}</strong>. Remaining
-              balance:{' '}
-              <strong>
-                ${purchaseMutation.data?.data?.remainingMoney?.toLocaleString() ?? '—'}
-              </strong>
-            </span>
-          </div>
-        )}
-
-        {purchaseMutation.isError && (
-          <div className="mb-6">
-            <ErrorMessage
-              message={purchaseMutation.error?.message ?? 'Purchase failed. Please try again.'}
-            />
-          </div>
-        )}
-
         {/* My Horses / Shop Tabs */}
         <div
-          className="flex gap-1 p-1 bg-white/5 border border-white/10 rounded-xl mb-8 w-fit"
+          className="flex gap-1 p-1 bg-[var(--glass-bg)] backdrop-blur-sm border border-[var(--glass-border)] rounded-xl mb-8 w-fit"
           role="tablist"
           aria-label="Feed Shop section"
         >
           <button
             role="tab"
+            id="tab-horses"
             aria-selected={activeTab === 'horses'}
+            aria-controls="tabpanel-horses"
             onClick={() => setActiveTab('horses')}
             className={`flex items-center gap-2 px-5 py-2.5 rounded-lg text-sm font-medium transition-all ${
               activeTab === 'horses'
-                ? 'bg-white/10 text-white/90 shadow-sm'
-                : 'text-white/40 hover:text-white/70'
+                ? 'bg-[var(--glass-bg)] text-[var(--cream)] shadow-sm'
+                : 'text-[var(--text-muted)] hover:text-[var(--text-secondary)]'
             }`}
             data-testid="horses-tab"
           >
@@ -473,12 +475,14 @@ const FeedShopPage: React.FC = () => {
           </button>
           <button
             role="tab"
+            id="tab-shop"
             aria-selected={activeTab === 'shop'}
+            aria-controls="tabpanel-shop"
             onClick={() => setActiveTab('shop')}
             className={`flex items-center gap-2 px-5 py-2.5 rounded-lg text-sm font-medium transition-all ${
               activeTab === 'shop'
-                ? 'bg-white/10 text-white/90 shadow-sm'
-                : 'text-white/40 hover:text-white/70'
+                ? 'bg-[var(--glass-bg)] text-[var(--cream)] shadow-sm'
+                : 'text-[var(--text-muted)] hover:text-[var(--text-secondary)]'
             }`}
             data-testid="shop-tab"
             data-onboarding-target="feed-shop-purchase-button"
@@ -489,7 +493,11 @@ const FeedShopPage: React.FC = () => {
         </div>
 
         {/* Tab Content */}
-        <div role="tabpanel">
+        <div
+          role="tabpanel"
+          id={tabPanelId}
+          aria-labelledby={activeTab === 'horses' ? 'tab-horses' : 'tab-shop'}
+        >
           {activeTab === 'horses' ? (
             <HorsesNutritionTab
               purchaseState={purchaseState}

@@ -30,7 +30,10 @@ export function useCompetitions() {
 }
 
 export function useDisciplines() {
-  return useQuery<{ disciplines: string[]; disciplineDetails: any[] }, ApiError>({
+  return useQuery<
+    { disciplines: string[]; disciplineDetails: Record<string, unknown>[] },
+    ApiError
+  >({
     queryKey: competitionKeys.disciplines(),
     queryFn: competitionsApi.getDisciplines,
     staleTime: 30 * 60 * 1000, // 30 minutes (rarely changes)
@@ -41,8 +44,10 @@ export function useEligibility(horseId: number, discipline: string) {
   return useQuery<EligibilityResult, ApiError>({
     queryKey: competitionKeys.eligibility(horseId, discipline),
     queryFn: async () => {
+      // fetchWithAuth already unwraps the outer { success, data } envelope,
+      // so result is { horseId, horseName, discipline, eligibility }.
       const result = await competitionsApi.checkEligibility(horseId, discipline);
-      return result.data.eligibility;
+      return result.eligibility;
     },
     enabled: horseId > 0 && Boolean(discipline),
     staleTime: 60 * 1000, // 1 minute
@@ -54,8 +59,9 @@ export function useEligibilityForHorses(discipline: string, horseIds: number[]) 
     queries: horseIds.map((horseId) => ({
       queryKey: competitionKeys.eligibility(horseId, discipline),
       queryFn: async () => {
+        // fetchWithAuth already unwraps the outer { success, data } envelope.
         const result = await competitionsApi.checkEligibility(horseId, discipline);
-        return result.data.eligibility;
+        return result.eligibility;
       },
       enabled: horseId > 0 && Boolean(discipline),
       staleTime: 60 * 1000,

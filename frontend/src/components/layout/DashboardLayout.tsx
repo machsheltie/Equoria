@@ -10,16 +10,45 @@ import React from 'react';
 import { Outlet, useLocation } from 'react-router-dom';
 import MainNavigation from '../MainNavigation';
 import { AsidePanel } from './AsidePanel';
+import { useResponsiveBackground } from '@/hooks/useResponsiveBackground';
 
 /** Routes that show the aside panel on desktop */
 const ASIDE_ROUTES = ['/', '/stable', '/my-stable'];
 
+/** Routes that use the stable background instead of the default */
+const STABLE_BG_ROUTES = ['/stable', '/my-stable'];
+
+/** Routes that supply their own full-bleed background image */
+const CUSTOM_BG_ROUTES: Record<string, string> = {
+  '/feed-shop': '/images/feedstore2.webp',
+};
+
 const DashboardLayout: React.FC = () => {
   const location = useLocation();
   const showAside = ASIDE_ROUTES.includes(location.pathname);
+  const responsiveBg = useResponsiveBackground();
+
+  const isHorseDetail = location.pathname.startsWith('/horses/');
+  const customBg = CUSTOM_BG_ROUTES[location.pathname];
+  const bgImage = customBg
+    ? customBg
+    : isHorseDetail
+      ? '/images/bg-horse-detail.webp'
+      : STABLE_BG_ROUTES.includes(location.pathname)
+        ? '/images/bg-stable.webp'
+        : responsiveBg;
 
   return (
-    <div className="min-h-screen relative flex flex-col">
+    <div
+      className="min-h-screen relative flex flex-col"
+      style={{
+        backgroundImage: `url('${bgImage}')`,
+        backgroundSize: 'cover',
+        backgroundPosition: 'center center',
+        backgroundRepeat: 'no-repeat',
+        backgroundAttachment: 'fixed',
+      }}
+    >
       {/* Skip-to-content link — visible on focus (WCAG 2.1 §13) */}
       <a
         href="#main-content"
@@ -37,7 +66,15 @@ const DashboardLayout: React.FC = () => {
       </div>
 
       {/* Atmospheric footer — game world feel */}
-      <footer className="relative z-[var(--z-raised)] mt-auto" aria-label="Game footer">
+      <footer
+        className="relative z-[var(--z-raised)] mt-auto border-t border-[var(--glass-border)]"
+        aria-label="Game footer"
+        style={{
+          background: 'rgba(15, 25, 50, 0.55)',
+          backdropFilter: 'blur(10px) saturate(1.3) brightness(1.1)',
+          WebkitBackdropFilter: 'blur(10px) saturate(1.3) brightness(1.1)',
+        }}
+      >
         {/* Top gold fade line */}
         <div
           className="h-px w-full"
