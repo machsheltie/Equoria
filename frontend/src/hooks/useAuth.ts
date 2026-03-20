@@ -79,9 +79,9 @@ export function useLogin() {
 
   return useMutation<{ user: User }, ApiError, LoginCredentials>({
     mutationFn: authApi.login,
-    onSuccess: (data) => {
-      // Update profile cache
-      queryClient.setQueryData(['profile'], data);
+    onSuccess: () => {
+      // Force fresh profile fetch so balance, level, role etc. are correct
+      queryClient.invalidateQueries({ queryKey: ['profile'] });
     },
   });
 }
@@ -95,9 +95,9 @@ export function useRegister() {
 
   return useMutation<{ user: User }, ApiError, RegisterData>({
     mutationFn: authApi.register,
-    onSuccess: (data) => {
-      // Update profile cache
-      queryClient.setQueryData(['profile'], data);
+    onSuccess: () => {
+      // Force fresh profile fetch so balance, level, role etc. are correct
+      queryClient.invalidateQueries({ queryKey: ['profile'] });
     },
   });
 }
@@ -111,9 +111,13 @@ export function useLogout() {
 
   return useMutation<{ message: string }, ApiError>({
     mutationFn: authApi.logout,
-    onSuccess: () => {
-      // Clear all cached data on logout
+    onSettled: () => {
+      // Clear all cached data on logout (even if the API call fails,
+      // e.g. due to an already-expired token returning 401)
       queryClient.clear();
+      // Force redirect to login — ProtectedRoute may not re-evaluate
+      // quickly enough after cache clear, so navigate explicitly
+      window.location.href = '/login';
     },
   });
 }

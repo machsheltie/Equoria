@@ -2,13 +2,15 @@
  * BankPage — The Vault
  *
  * Gold-mood atmospheric page for coin management, weekly rewards,
- * and transaction history. Feels like entering a celestial treasury.
+ * and transaction history. Uses live user balance from auth context.
  */
 
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { Link } from 'react-router-dom';
 import { Coins, Gift, ArrowUpRight, ArrowDownLeft, Clock, CheckCircle } from 'lucide-react';
 import PageHero from '@/components/layout/PageHero';
+import { useAuth } from '@/contexts/AuthContext';
+import { bankApi } from '@/lib/api-client';
 
 interface Transaction {
   id: string;
@@ -18,60 +20,57 @@ interface Transaction {
   date: string;
 }
 
-const MOCK_TRANSACTIONS: Transaction[] = [
-  {
-    id: 'tx-001',
-    type: 'credit',
-    amount: 500,
-    description: 'Weekly reward claim',
-    date: '2026-02-20',
-  },
-  {
-    id: 'tx-002',
-    type: 'debit',
-    amount: 200,
-    description: 'Standard Shoeing — Farrier',
-    date: '2026-02-19',
-  },
-  {
-    id: 'tx-003',
-    type: 'credit',
-    amount: 1200,
-    description: 'Competition prize — 1st Place',
-    date: '2026-02-18',
-  },
-  {
-    id: 'tx-004',
-    type: 'debit',
-    amount: 500,
-    description: 'Training Saddle — Tack Shop',
-    date: '2026-02-17',
-  },
-  {
-    id: 'tx-005',
-    type: 'credit',
-    amount: 300,
-    description: 'Horse sale — Silver Mane',
-    date: '2026-02-15',
-  },
-  {
-    id: 'tx-006',
-    type: 'debit',
-    amount: 150,
-    description: 'Health Check — Vet Clinic',
-    date: '2026-02-14',
-  },
-];
-
-const MOCK_BALANCE = 4_850;
-
 const BankPage: React.FC = () => {
+  const { user, refetchProfile } = useAuth();
   const [claimed, setClaimed] = useState(false);
-  const [balance, setBalance] = useState(MOCK_BALANCE);
+  const [claiming, setClaiming] = useState(false);
+  const [claimError, setClaimError] = useState<string | null>(null);
+  const [recentClaims, setRecentClaims] = useState<Transaction[]>([]);
 
-  const handleClaim = () => {
-    setBalance((prev) => prev + 500);
-    setClaimed(true);
+  const balance = user?.money ?? 0;
+
+  // Check claim status on mount or user change
+  useEffect(() => {
+    if (!user?.id) return;
+    setClaimed(false); // Reset on user change
+    bankApi
+      .getClaimStatus()
+      .then((status) => {
+        if (!status.canClaim) setClaimed(true);
+      })
+      .catch(() => {
+        // Silently ignore — default to claimable
+      });
+  }, [user?.id]);
+
+  const handleClaim = async () => {
+    setClaiming(true);
+    setClaimError(null);
+    try {
+      await bankApi.claimWeekly();
+      setClaimed(true);
+      // Track this claim in the session transaction list
+      setRecentClaims((prev) => [
+        {
+          id: `claim-${Date.now()}`,
+          type: 'credit',
+          amount: 500,
+          description: 'Weekly reward claim',
+          date: new Date().toISOString(),
+        },
+        ...prev,
+      ]);
+      // Refresh profile so balance updates across the app immediately
+      await refetchProfile();
+    } catch (err: unknown) {
+      const msg =
+        err && typeof err === 'object' && 'message' in err
+          ? (err as { message: string }).message
+          : 'Failed to claim reward. Please try again.';
+      setClaimError(msg);
+    } finally {
+      setClaiming(false);
+    }
   };
 
   return (
@@ -140,16 +139,16 @@ const BankPage: React.FC = () => {
                 <p className="text-sm text-[var(--text-muted)] mt-0.5">
                   {claimed
                     ? 'Claimed! Come back next week for your next reward.'
-                    : 'Claim your 500 coin weekly reward. Resets every Monday.'}
+                    : 'Claim your 500 coin weekly reward. Resets every Sunday.'}
                 </p>
               </div>
             </div>
             <button
               type="button"
               onClick={handleClaim}
-              disabled={claimed}
+              disabled={claimed || claiming}
               className={`flex-shrink-0 flex items-center gap-2 px-5 py-2.5 rounded-full text-sm font-semibold transition-all ${
-                claimed
+                claimed || claiming
                   ? 'glass-panel-subtle text-[var(--text-muted)] cursor-not-allowed opacity-50'
                   : 'bg-gradient-to-r from-[var(--gold-700)] to-[var(--gold-400)] text-[var(--celestial-navy-900)] hover:brightness-110 hover:shadow-[0_0_14px_rgba(201,162,39,0.3)]'
               }`}
@@ -161,6 +160,11 @@ const BankPage: React.FC = () => {
                   <CheckCircle className="w-4 h-4" />
                   Claimed
                 </>
+              ) : claiming ? (
+                <>
+                  <Gift className="w-4 h-4 animate-pulse" />
+                  Claiming...
+                </>
               ) : (
                 <>
                   <Gift className="w-4 h-4" />
@@ -169,6 +173,7 @@ const BankPage: React.FC = () => {
               )}
             </button>
           </div>
+          {claimError && <p className="text-xs text-[var(--status-error)] mt-3">{claimError}</p>}
         </div>
 
         {/* Transaction History */}
@@ -180,7 +185,17 @@ const BankPage: React.FC = () => {
             </h2>
           </div>
           <div className="space-y-2">
-            {MOCK_TRANSACTIONS.map((tx) => (
+            {recentClaims.length === 0 && (
+              <div className="glass-panel-subtle rounded-xl p-6 text-center">
+                <p className="text-sm text-[var(--text-muted)]">
+                  No recent transactions this session.
+                </p>
+                <p className="text-xs text-[var(--text-muted)] mt-1 opacity-60">
+                  Full transaction history coming soon.
+                </p>
+              </div>
+            )}
+            {recentClaims.map((tx) => (
               <div
                 key={tx.id}
                 className="flex items-center justify-between p-4 glass-panel-subtle rounded-xl hover:border-[rgba(201,162,39,0.3)] transition-all"
@@ -234,7 +249,7 @@ const BankPage: React.FC = () => {
           </h3>
           <ul className="space-y-1 list-disc list-inside text-xs leading-relaxed">
             <li>Coins are earned through competitions, breeding sales, and weekly rewards</li>
-            <li>Weekly rewards of 500 coins reset every Monday at midnight</li>
+            <li>Weekly rewards of 500 coins reset every Sunday at midnight</li>
             <li>Transaction history shows the last 30 days of activity</li>
             <li>Coins are spent at the Tack Shop, Vet Clinic, Feed Shop, and Farrier</li>
             <li>Larger balances unlock access to premium auctions and breeding fees</li>

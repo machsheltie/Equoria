@@ -52,8 +52,8 @@ interface AuthContextValue {
   logout: () => void;
   /** Whether logout is in progress */
   isLoggingOut: boolean;
-  /** Refetch user profile */
-  refetchProfile: () => void;
+  /** Refetch user profile (returns promise so callers can await fresh data) */
+  refetchProfile: () => Promise<unknown>;
 
   // Role-based access helpers (Story 1-6)
   /** Current user's role (defaults to 'user' if not set) */
@@ -81,7 +81,7 @@ const defaultContextValue: AuthContextValue = {
     console.warn('AuthContext: logout called outside of AuthProvider');
   },
   isLoggingOut: false,
-  refetchProfile: () => {
+  refetchProfile: async () => {
     console.warn('AuthContext: refetchProfile called outside of AuthProvider');
   },
   // Role helpers (default to 'user' role)
@@ -169,7 +169,7 @@ export function AuthProvider({ children }: AuthProviderProps) {
         error: null,
         logout: () => {},
         isLoggingOut: false,
-        refetchProfile: () => {},
+        refetchProfile: async () => {},
         userRole: 'admin' as UserRole,
         hasRole: (role: UserRole) => role === 'admin',
         hasAnyRole: (roles: UserRole[]) => roles.includes('admin'),

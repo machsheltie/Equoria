@@ -211,6 +211,10 @@ export const login = async (req, res, next) => {
             id: user.id,
             username: user.username,
             email: user.email,
+            money: user.money,
+            level: user.level,
+            xp: user.xp,
+            role: user.role,
           },
         },
       });
@@ -218,7 +222,17 @@ export const login = async (req, res, next) => {
 
     const user = await prisma.user.findUnique({
       where: { email },
-      // include: { user: true } // User data not typically returned on login by default
+      select: {
+        id: true,
+        username: true,
+        email: true,
+        password: true,
+        money: true,
+        level: true,
+        xp: true,
+        role: true,
+        settings: true,
+      },
     });
 
     if (!user) {
@@ -249,6 +263,13 @@ export const login = async (req, res, next) => {
     const ip = req.ip || req.headers['x-forwarded-for'] || req.connection.remoteAddress;
     resetAuthRateLimit(ip);
 
+    // Extract onboarding state from settings
+    const loginSettings =
+      typeof user.settings === 'object' && user.settings !== null ? user.settings : {};
+    const loginCompletedOnboarding = loginSettings.completedOnboarding === true;
+    const loginOnboardingStep =
+      typeof loginSettings.onboardingStep === 'number' ? loginSettings.onboardingStep : 0;
+
     res.status(200).json({
       status: 'success',
       message: 'Login successful',
@@ -257,6 +278,12 @@ export const login = async (req, res, next) => {
           id: user.id,
           username: user.username,
           email: user.email,
+          money: user.money,
+          level: user.level,
+          xp: user.xp,
+          role: user.role,
+          completedOnboarding: loginCompletedOnboarding,
+          onboardingStep: loginOnboardingStep,
         },
         // Tokens now in httpOnly cookies, not in response body
       },
@@ -368,6 +395,10 @@ export const getProfile = async (req, res, next) => {
         email: true,
         firstName: true,
         lastName: true,
+        money: true,
+        level: true,
+        xp: true,
+        role: true,
         createdAt: true,
         updatedAt: true,
         settings: true,
@@ -395,6 +426,10 @@ export const getProfile = async (req, res, next) => {
           email: user.email,
           firstName: user.firstName,
           lastName: user.lastName,
+          money: user.money,
+          level: user.level,
+          xp: user.xp,
+          role: user.role,
           createdAt: user.createdAt,
           updatedAt: user.updatedAt,
           completedOnboarding,

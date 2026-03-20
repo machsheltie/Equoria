@@ -130,7 +130,7 @@ describe('useAuth Hooks - Cookie-Based Authentication', () => {
   });
 
   describe('useLogin - Login with Cookies', () => {
-    it('should login and update profile cache', async () => {
+    it('should login and invalidate profile cache', async () => {
       const mockResponse = {
         user: {
           id: 1,
@@ -140,6 +140,9 @@ describe('useAuth Hooks - Cookie-Based Authentication', () => {
       };
 
       vi.mocked(apiClient.authApi.login).mockResolvedValueOnce(mockResponse);
+
+      // Seed stale profile data to verify invalidation clears it
+      queryClient.setQueryData(['profile'], { user: { id: 99, username: 'stale' } });
 
       const { result } = renderHook(() => useLogin(), { wrapper });
 
@@ -154,9 +157,10 @@ describe('useAuth Hooks - Cookie-Based Authentication', () => {
 
       expect(result.current.data).toEqual(mockResponse);
 
-      // Verify profile cache was updated
-      const profileCache = queryClient.getQueryData(['profile']);
-      expect(profileCache).toEqual(mockResponse);
+      // Profile cache should be invalidated (not set to login response)
+      // React Query marks it stale so a fresh getProfile fetch will follow
+      const cacheState = queryClient.getQueryState(['profile']);
+      expect(cacheState?.isInvalidated).toBe(true);
     });
 
     it('should handle login errors (invalid credentials)', async () => {
@@ -212,7 +216,7 @@ describe('useAuth Hooks - Cookie-Based Authentication', () => {
   });
 
   describe('useRegister - Register with Cookies', () => {
-    it('should register and update profile cache', async () => {
+    it('should register and invalidate profile cache', async () => {
       const mockResponse = {
         user: {
           id: 1,
@@ -225,6 +229,9 @@ describe('useAuth Hooks - Cookie-Based Authentication', () => {
       };
 
       vi.mocked(apiClient.authApi.register).mockResolvedValueOnce(mockResponse);
+
+      // Seed stale profile data to verify invalidation clears it
+      queryClient.setQueryData(['profile'], { user: { id: 99, username: 'stale' } });
 
       const { result } = renderHook(() => useRegister(), { wrapper });
 
@@ -240,9 +247,9 @@ describe('useAuth Hooks - Cookie-Based Authentication', () => {
 
       expect(result.current.data).toEqual(mockResponse);
 
-      // Verify profile cache was updated
-      const profileCache = queryClient.getQueryData(['profile']);
-      expect(profileCache).toEqual(mockResponse);
+      // Profile cache should be invalidated (not set to register response)
+      const cacheState = queryClient.getQueryState(['profile']);
+      expect(cacheState?.isInvalidated).toBe(true);
     });
 
     it('should handle registration errors (duplicate email)', async () => {
