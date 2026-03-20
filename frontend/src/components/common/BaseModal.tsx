@@ -40,6 +40,9 @@ import React, { memo, useCallback, useEffect, useRef } from 'react';
 import { createPortal } from 'react-dom';
 import { X } from 'lucide-react';
 
+// Track how many modals are currently open so scroll lock persists until last closes
+let openModalCount = 0;
+
 /**
  * Modal size options
  */
@@ -179,12 +182,19 @@ const BaseModal = memo(function BaseModal({
         modalRef.current.focus();
       }
 
-      // Prevent body scroll when modal is open
+      // Prevent body scroll — reference-counted so nested modals don't conflict
+      openModalCount++;
       document.body.style.overflow = 'hidden';
 
       return () => {
         document.removeEventListener('keydown', handleKeyDown);
-        document.body.style.overflow = '';
+
+        // Only restore scroll when the last modal closes
+        openModalCount--;
+        if (openModalCount <= 0) {
+          openModalCount = 0;
+          document.body.style.overflow = '';
+        }
 
         // Restore focus to previous element
         if (previousActiveElement.current && previousActiveElement.current instanceof HTMLElement) {

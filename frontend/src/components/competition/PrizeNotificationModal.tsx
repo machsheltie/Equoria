@@ -168,6 +168,8 @@ const PrizeNotificationModal = memo(function PrizeNotificationModal({
   const modalRef = useRef<HTMLDivElement>(null);
   const previousActiveElement = useRef<Element | null>(null);
   const timerRef = useRef<NodeJS.Timeout | null>(null);
+  const onCloseRef = useRef(onClose);
+  onCloseRef.current = onClose;
 
   // Show cinematic moment for 1st-place wins (Story 18-4)
   const [showCinematic, setShowCinematic] = useState(false);
@@ -220,10 +222,10 @@ const PrizeNotificationModal = memo(function PrizeNotificationModal({
       // Prevent body scroll when modal is open
       document.body.style.overflow = 'hidden';
 
-      // Set up auto-dismiss timer
+      // Set up auto-dismiss timer — use ref to avoid restarting on onClose identity change
       if (autoDismiss) {
         timerRef.current = setTimeout(() => {
-          onClose();
+          onCloseRef.current();
         }, autoDismissDelay);
       }
 
@@ -243,7 +245,7 @@ const PrizeNotificationModal = memo(function PrizeNotificationModal({
         }
       };
     }
-  }, [isOpen, handleKeyDown, autoDismiss, autoDismissDelay, onClose]);
+  }, [isOpen, handleKeyDown, autoDismiss, autoDismissDelay]);
 
   // Don't render if not open
   if (!isOpen) {
@@ -278,7 +280,7 @@ const PrizeNotificationModal = memo(function PrizeNotificationModal({
           <button
             type="button"
             onClick={onClose}
-            className="absolute top-3 right-3 text-white/80 hover:text-white transition-colors p-1 rounded-full hover:bg-white/10"
+            className="absolute top-3 right-3 text-white/80 hover:text-[var(--text-primary)] transition-colors p-1 rounded-full hover:bg-white/10"
             aria-label="Close prize notification"
             data-testid="close-button"
           >
@@ -295,7 +297,7 @@ const PrizeNotificationModal = memo(function PrizeNotificationModal({
           {/* Congratulations Heading */}
           <h2
             id="prize-modal-title"
-            className="text-2xl font-bold text-white mb-1"
+            className="text-2xl font-bold text-[var(--text-primary)] mb-1"
             data-testid="congratulations-heading"
           >
             Congratulations! {getPlacementText(placement)}!

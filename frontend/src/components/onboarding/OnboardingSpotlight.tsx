@@ -14,7 +14,7 @@
  *   - "Next →" advances step; "Skip tutorial" calls complete-onboarding immediately
  */
 
-import React, { useEffect, useState } from 'react';
+import React, { useCallback, useEffect, useState } from 'react';
 import { useNavigate, useLocation } from 'react-router-dom';
 import { useAuth } from '@/contexts/AuthContext';
 import { useAdvanceOnboarding, useCompleteOnboarding } from '@/hooks/api/useOnboarding';
@@ -125,6 +125,23 @@ const OnboardingSpotlight: React.FC = () => {
   const stepIndex = isActive ? user!.onboardingStep! - 1 : 0;
   const activeStep = ONBOARDING_STEPS[stepIndex] ?? null;
 
+  // Keyboard: Escape skips tutorial
+  const handleKeyDown = useCallback(
+    (e: KeyboardEvent) => {
+      if (!isActive) return;
+      if (e.key === 'Escape') {
+        skipTutorial();
+      }
+    },
+    [isActive, skipTutorial]
+  );
+
+  useEffect(() => {
+    if (!isActive) return;
+    document.addEventListener('keydown', handleKeyDown);
+    return () => document.removeEventListener('keydown', handleKeyDown);
+  }, [isActive, handleKeyDown]);
+
   // Re-query target element whenever route or active step changes
   useEffect(() => {
     if (!isActive || !activeStep) {
@@ -174,8 +191,7 @@ const OnboardingSpotlight: React.FC = () => {
   if (!isOnCorrectRoute || targetRect === null) {
     return (
       <div
-        style={{ zIndex: 80 }}
-        className="fixed bottom-24 left-1/2 -translate-x-1/2 w-[calc(100%-2rem)] max-w-sm
+        className="fixed bottom-24 left-1/2 -translate-x-1/2 w-[calc(100%-2rem)] max-w-sm z-[var(--z-modal)]
           bg-[var(--celestial-navy-900)] border border-[var(--celestial-primary)]
           rounded-xl px-5 py-4 shadow-2xl"
       >
@@ -187,7 +203,7 @@ const OnboardingSpotlight: React.FC = () => {
           <button
             onClick={() => navigate(activeStep.route)}
             disabled={isPending}
-            className="flex-1 px-4 py-2 rounded-lg bg-[var(--celestial-primary)] text-white text-sm
+            className="flex-1 px-4 py-2 rounded-lg bg-[var(--celestial-primary)] text-[var(--text-primary)] text-sm
               font-semibold hover:opacity-90 transition-opacity disabled:opacity-50"
           >
             Go to {locationLabel} →
@@ -216,7 +232,7 @@ const OnboardingSpotlight: React.FC = () => {
     borderRadius: 10,
     pointerEvents: 'none',
     animation: 'onboarding-ring-pulse 1.8s ease-in-out infinite',
-    zIndex: 79, // just below the tooltip card
+    zIndex: 'var(--z-dropdown)' as unknown as number, // just below the tooltip card
   };
 
   // Position tooltip above or below the target element
@@ -228,7 +244,7 @@ const OnboardingSpotlight: React.FC = () => {
       ? { top: targetRect.bottom + RING_PAD + 8 }
       : { top: targetRect.top - RING_PAD - 8 - 120 }),
     width: 320,
-    zIndex: 80,
+    zIndex: 'var(--z-modal)' as unknown as number,
   };
 
   return (
@@ -252,7 +268,7 @@ const OnboardingSpotlight: React.FC = () => {
           <button
             onClick={() => advanceStep()}
             disabled={isPending}
-            className="flex-1 px-3 py-1.5 rounded-lg bg-[var(--celestial-primary)] text-white
+            className="flex-1 px-3 py-1.5 rounded-lg bg-[var(--celestial-primary)] text-[var(--text-primary)]
               text-sm font-semibold hover:opacity-90 transition-opacity disabled:opacity-50"
           >
             {isPending

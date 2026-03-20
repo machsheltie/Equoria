@@ -142,6 +142,7 @@ const getStatColor = (value: number) => {
 const HorseDetailPage: React.FC = () => {
   const { id } = useParams<{ id: string }>();
   const navigate = useNavigate();
+  const horseId = id ? parseInt(id, 10) : NaN;
   const [activeTab, setActiveTab] = useState<TabType>('overview');
   const [isEditing, setIsEditing] = useState(false);
   const [showRiderPicker, setShowRiderPicker] = useState(false);
@@ -159,7 +160,24 @@ const HorseDetailPage: React.FC = () => {
   const assignRiderMutation = useAssignRider();
 
   // Fetch horse data
-  const { data: horse, isLoading, isError, error, refetch } = useHorse(Number(id));
+  const { data: horse, isLoading, isError, error, refetch } = useHorse(horseId);
+
+  // Invalid horse ID guard
+  if (!id || isNaN(horseId)) {
+    return (
+      <div className="min-h-screen flex items-center justify-center">
+        <div className="text-center space-y-4">
+          <p className="text-lg text-[var(--text-muted)]">Invalid horse ID</p>
+          <button
+            onClick={() => navigate('/')}
+            className="text-[var(--celestial-primary)] underline"
+          >
+            Go Home
+          </button>
+        </div>
+      </div>
+    );
+  }
 
   // Loading state — detail page skeleton (portrait left + tab area right)
   if (isLoading) {
@@ -443,7 +461,7 @@ const HorseDetailPage: React.FC = () => {
                 <p className="text-sm text-aged-bronze mb-3">No riders hired yet.</p>
                 <Link
                   to="/riders"
-                  className="inline-block px-4 py-2 rounded-lg text-sm font-medium text-white transition-opacity hover:opacity-85"
+                  className="inline-block px-4 py-2 rounded-lg text-sm font-medium text-[var(--text-primary)] transition-opacity hover:opacity-85"
                   style={{ background: 'var(--celestial-primary)' }}
                   onClick={() => setShowRiderPicker(false)}
                 >
@@ -579,7 +597,7 @@ const HorseDetailPage: React.FC = () => {
                   setShowListModal(false);
                   setListPrice('');
                 }}
-                className="p-1 rounded hover:bg-white/10 text-white/50 hover:text-white"
+                className="p-1 rounded hover:bg-white/10 text-white/50 hover:text-[var(--text-primary)]"
               >
                 <X className="w-4 h-4" />
               </button>
@@ -626,7 +644,7 @@ const HorseDetailPage: React.FC = () => {
                     }
                   );
                 }}
-                className="flex-1 px-4 py-2 rounded-lg bg-emerald-600/80 border border-emerald-500/40 text-white text-sm hover:bg-emerald-600 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
+                className="flex-1 px-4 py-2 rounded-lg bg-emerald-600/80 border border-emerald-500/40 text-[var(--text-primary)] text-sm hover:bg-emerald-600 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
               >
                 {listHorseMutation.isPending ? 'Listing…' : 'Confirm'}
               </button>
@@ -1247,7 +1265,7 @@ const GeneticsTab: React.FC<{ horse: Horse }> = ({ horse }) => {
                     <div className="flex h-8 rounded-lg overflow-hidden border border-[rgba(37,99,235,0.3)] mb-3">
                       {sireTraits > 0 && (
                         <div
-                          className="bg-gradient-to-r from-blue-500 to-blue-600 flex items-center justify-center text-white text-xs font-semibold"
+                          className="bg-gradient-to-r from-blue-500 to-blue-600 flex items-center justify-center text-[var(--text-primary)] text-xs font-semibold"
                           style={{ width: `${sirePercentage}%` }}
                         >
                           {sirePercentage}%
@@ -1255,7 +1273,7 @@ const GeneticsTab: React.FC<{ horse: Horse }> = ({ horse }) => {
                       )}
                       {damTraits > 0 && (
                         <div
-                          className="bg-gradient-to-r from-purple-500 to-purple-600 flex items-center justify-center text-white text-xs font-semibold"
+                          className="bg-gradient-to-r from-purple-500 to-purple-600 flex items-center justify-center text-[var(--text-primary)] text-xs font-semibold"
                           style={{ width: `${damPercentage}%` }}
                         >
                           {damPercentage}%
