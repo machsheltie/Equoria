@@ -598,21 +598,29 @@ describe('🏋️ UNIT: Training Controller - Horse Training Business Logic', ()
   describe('getTrainableHorses', () => {
     // No mock setup needed - using real test data
 
-    it('should return trainable horses for user with eligible horses', async () => {
-      // Use test user with adult horses (both 3+ years old, no recent training)
+    it('should return all horses for user with eligibility info', async () => {
+      // Returns ALL horses (including young and on-cooldown) with eligibility data
       const result = await getTrainableHorses(testUser.id);
 
-      // Should return both adult horses since they meet all criteria
-      expect(result).toHaveLength(2);
+      // Should return all 4 horses with eligibility status
+      expect(result).toHaveLength(4);
 
-      // Verify the horses are the ones we expect (adult horses with no recent training)
+      // Verify all horses are present
       const horseIds = result.map(horse => horse.horseId).sort();
-      expect(horseIds).toEqual([testHorseAdult.id, testHorse4Years.id].sort());
+      expect(horseIds).toEqual(
+        [testHorseAdult.id, testHorse4Years.id, testHorseYoung.id, testHorseRecentTraining.id].sort(),
+      );
 
-      // Verify all horses have the expected disciplines (no Gaited trait requirement)
-      result.forEach(horse => {
-        expect(horse.trainableDisciplines).toEqual(['Racing', 'Show Jumping', 'Dressage', 'Cross Country', 'Western']);
-      });
+      // Eligible horses have disciplines and no nextEligibleAt
+      const adultHorse = result.find(h => h.horseId === testHorseAdult.id);
+      expect(adultHorse.trainableDisciplines).toEqual([
+        'Racing',
+        'Show Jumping',
+        'Dressage',
+        'Cross Country',
+        'Western',
+      ]);
+      expect(adultHorse.nextEligibleAt).toBeNull();
     });
 
     it('should return empty array for player with no horses', async () => {
@@ -649,39 +657,42 @@ describe('🏋️ UNIT: Training Controller - Horse Training Business Logic', ()
       expect(result).toEqual([]);
     });
 
-    it('should filter out horses under 3 years old', async () => {
-      // testHorseYoung (2 years old) should be filtered out
-      // testHorseAdult and testHorse4Years (both 3+ years) should be included
+    it('should include young horses with empty trainableDisciplines', async () => {
+      // testHorseYoung (2 years old) is included but marked ineligible
       const result = await getTrainableHorses(testUser.id);
 
-      // Only adult horses should be returned (testHorseYoung filtered out due to age)
-      expect(result).toHaveLength(2); // testHorseAdult and testHorse4Years
+      // All horses returned including young ones
+      expect(result).toHaveLength(4);
 
-      // Verify no young horses in results
-      result.forEach(horse => {
-        expect(horse.age).toBeGreaterThanOrEqual(3);
-      });
+      // Young horse is present but has empty trainableDisciplines
+      const youngHorse = result.find(h => h.horseId === testHorseYoung.id);
+      expect(youngHorse).toBeDefined();
+      expect(youngHorse.trainableDisciplines).toEqual([]);
+      expect(youngHorse.age).toBe(2);
 
-      // Verify adult horses are included
+      // Adult horses are included with full disciplines
       const horseIds = result.map(horse => horse.horseId);
       expect(horseIds).toContain(testHorseAdult.id);
       expect(horseIds).toContain(testHorse4Years.id);
-      expect(horseIds).not.toContain(testHorseYoung.id); // Young horse filtered out
     });
 
-    it('should exclude horses with recent training (global cooldown)', async () => {
+    it('should include horses with recent training but set nextEligibleAt', async () => {
       // testHorseRecentTraining has training from 3 days ago (within 7-day cooldown)
-      // Only horses without recent training should be returned
+      // It is included but with nextEligibleAt set to a future date
       const result = await getTrainableHorses(testUser.id);
 
-      // Should only include horses without recent training
-      // testHorseRecentTraining should be excluded due to 3-day-old training
-      expect(result).toHaveLength(2); // testHorseAdult and testHorse4Years (no recent training)
+      // All horses returned
+      expect(result).toHaveLength(4);
 
-      const horseIds = result.map(horse => horse.horseId);
-      expect(horseIds).toContain(testHorseAdult.id);
-      expect(horseIds).toContain(testHorse4Years.id);
-      expect(horseIds).not.toContain(testHorseRecentTraining.id); // Excluded due to recent training
+      // Recently trained horse is present with a future nextEligibleAt
+      const recentlyTrained = result.find(h => h.horseId === testHorseRecentTraining.id);
+      expect(recentlyTrained).toBeDefined();
+      expect(recentlyTrained.nextEligibleAt).not.toBeNull();
+      expect(new Date(recentlyTrained.nextEligibleAt).getTime()).toBeGreaterThan(Date.now());
+
+      // Untrained horses have null nextEligibleAt (ready to train)
+      const adultHorse = result.find(h => h.horseId === testHorseAdult.id);
+      expect(adultHorse.nextEligibleAt).toBeNull();
     });
 
     it('should handle database errors gracefully for individual horses', async () => {

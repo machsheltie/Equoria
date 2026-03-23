@@ -547,14 +547,18 @@ describe('🏋️ INTEGRATION: Training Controller Business Logic - Complete Tra
       );
     });
 
-    it('RETURNS empty array after training (horse in cooldown)', async () => {
+    it('RETURNS all horses with nextEligibleAt set after training (horse in cooldown)', async () => {
       // Train the horse to put it in cooldown
       await trainHorse(adultHorse.id, 'Dressage');
 
       const result = await getTrainableHorses(testUser.id);
 
-      // Fixed: After training, horse should be in cooldown and not trainable
-      expect(result).toEqual([]);
+      // All horses still returned, but trained horse has nextEligibleAt set
+      expect(result.length).toBeGreaterThan(0);
+      const trainedHorse = result.find(h => h.horseId === adultHorse.id);
+      expect(trainedHorse).toBeDefined();
+      expect(trainedHorse.nextEligibleAt).not.toBeNull();
+      expect(new Date(trainedHorse.nextEligibleAt).getTime()).toBeGreaterThan(Date.now());
     });
   });
 
