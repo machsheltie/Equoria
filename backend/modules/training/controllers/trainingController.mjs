@@ -14,6 +14,7 @@ import { logXpEvent } from '../../../models/xpLogModel.mjs';
 import { getCombinedTraitEffects } from '../../../utils/traitEffects.mjs';
 import { checkTraitRequirements } from '../../../utils/competitionLogic.mjs';
 import logger from '../../../utils/logger.mjs';
+import prisma from '../../../db/index.mjs';
 
 /**
  * Check if a horse is eligible to train in a specific discipline
@@ -337,6 +338,18 @@ async function trainHorse(horseId, discipline) {
 
     nextEligible.setDate(nextEligible.getDate() + cooldownDays);
 
+    // Persist the cooldown on the Horse record so the frontend can display it
+    try {
+      await prisma.horse.update({
+        where: { id: parseInt(horseId, 10) },
+        data: { trainingCooldown: nextEligible },
+      });
+    } catch (cooldownErr) {
+      logger.error(
+        `[trainingController.trainHorse] Failed to persist trainingCooldown: ${cooldownErr.message}`,
+      );
+    }
+
     logger.info(
       `[trainingController.trainHorse] Successfully trained horse ${horseId} in ${discipline} (Log ID: ${trainingLog.id}, Score +${disciplineScoreIncrease})`,
     );
@@ -487,66 +500,77 @@ async function getTrainableHorses(userId) {
     // Define all available disciplines
     const baseDisciplines = ['Racing', 'Show Jumping', 'Dressage', 'Cross Country', 'Western'];
 
-    const trainableHorses = [];
+    const allHorses = [];
 
     // Check each horse for training eligibility
     for (const horse of player.horses) {
-      // Skip horses under 3 years old
-      if (horse.age < 3) {
-        logger.debug(
-          `[trainingController.getTrainableHorses] Horse ${horse.id} (${horse.name}) is too young (${horse.age} years)`,
-        );
-        continue;
-      }
-
       try {
+        // Determine available disciplines for this horse
+        const availableDisciplines = [...baseDisciplines];
+        if (checkTraitRequirements(horse, 'Gaited')) {
+          availableDisciplines.push('Gaited');
+        }
+
+        // Build the response object with all fields the frontend expects
+        const horseData = {
+          id: horse.id,
+          horseId: horse.id,
+          name: horse.name,
+          age: horse.age,
+          ageYears: horse.age,
+          level: horse.horseXp?.level ?? 1,
+          breed: horse.breed?.name ?? null,
+          sex: horse.sex ?? null,
+          trainableDisciplines: availableDisciplines,
+          bestDisciplines: horse.disciplineScores
+            ? Object.entries(horse.disciplineScores)
+                .sort(([, a], [, b]) => b - a)
+                .slice(0, 3)
+                .map(([name]) => name)
+            : [],
+          nextEligibleAt: null,
+        };
+
+        // Skip horses under 3 years old (mark as ineligible but still include)
+        if (horse.age < 3) {
+          horseData.nextEligibleAt = null;
+          horseData.trainableDisciplines = [];
+          allHorses.push(horseData);
+          continue;
+        }
+
         // Check if horse has trained in ANY discipline within the last 7 days
         const lastTrainingDate = await getAnyRecentTraining(horse.id);
 
-        let isTrainable = false;
+        // Also check the Horse.trainingCooldown field as a fallback
+        const cooldownDate = horse.trainingCooldown ? new Date(horse.trainingCooldown) : null;
+        const now = new Date();
+        const sevenDays = 1000 * 60 * 60 * 24 * 7;
 
-        if (!lastTrainingDate) {
-          // Horse has never trained, so it's trainable in all disciplines
-          isTrainable = true;
-        } else {
-          // Check if 7-day cooldown has passed
-          const now = new Date();
+        if (lastTrainingDate) {
           const diff = now - new Date(lastTrainingDate);
-          const sevenDays = 1000 * 60 * 60 * 24 * 7; // 7 days in milliseconds
-
-          if (diff >= sevenDays) {
-            isTrainable = true;
+          if (diff < sevenDays) {
+            // Still on cooldown based on TrainingLog
+            const nextEligible = new Date(new Date(lastTrainingDate).getTime() + sevenDays);
+            horseData.nextEligibleAt = nextEligible.toISOString();
           }
+        } else if (cooldownDate && cooldownDate > now) {
+          // No TrainingLog but Horse.trainingCooldown is in the future
+          horseData.nextEligibleAt = cooldownDate.toISOString();
         }
 
-        // If horse is trainable, determine available disciplines
-        if (isTrainable) {
-          const availableDisciplines = [...baseDisciplines];
-
-          // Add Gaited discipline only if horse has the Gaited trait
-          if (checkTraitRequirements(horse, 'Gaited')) {
-            availableDisciplines.push('Gaited');
-          }
-
-          trainableHorses.push({
-            horseId: horse.id,
-            name: horse.name,
-            age: horse.age,
-            trainableDisciplines: availableDisciplines,
-          });
-        }
+        allHorses.push(horseData);
       } catch (error) {
         logger.warn(
           `[trainingController.getTrainableHorses] Error checking training eligibility for horse ${horse.id}: ${error.message}`,
         );
-        // Continue checking other horses even if one fails
       }
     }
 
     logger.info(
-      `[trainingController.getTrainableHorses] Found ${trainableHorses.length} trainable horses for user ${userId}`,
+      `[trainingController.getTrainableHorses] Returning ${allHorses.length} horses for user ${userId}`,
     );
-    return trainableHorses;
+    return allHorses;
   } catch (error) {
     logger.error(
       `[trainingController.getTrainableHorses] Error getting trainable horses: ${error.message}`,
