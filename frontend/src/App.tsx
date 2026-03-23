@@ -30,7 +30,9 @@ initSentry();
 const queryClient = new QueryClient();
 
 const App = () => (
-  <SentryErrorBoundary fallback={<p className="text-white p-8">Something went wrong.</p>}>
+  <SentryErrorBoundary
+    fallback={<p className="text-[var(--text-primary)] p-8">Something went wrong.</p>}
+  >
     <QueryClientProvider client={queryClient}>
       <AuthProvider>
         <TooltipProvider>

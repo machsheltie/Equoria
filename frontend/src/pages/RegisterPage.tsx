@@ -15,10 +15,13 @@ import {
   type RegisterFormData,
 } from '../lib/validation-schemas';
 import { useRegister } from '../hooks/useAuth';
+import { useResponsiveBackground } from '../hooks/useResponsiveBackground';
+import { Button } from '@/components/ui/button';
 
 const RegisterPage: React.FC = () => {
   const navigate = useNavigate();
   const { mutate: register, isPending, error } = useRegister();
+  const bgImage = useResponsiveBackground();
 
   const [formData, setFormData] = useState<RegisterFormData>({
     email: '',
@@ -97,9 +100,9 @@ const RegisterPage: React.FC = () => {
     <div
       className="min-h-screen w-full flex flex-col items-center justify-center relative overflow-hidden py-8"
       style={{
-        backgroundImage: "url('/equoriacelestial.png')",
+        backgroundImage: `url('${bgImage}')`,
         backgroundSize: 'cover',
-        backgroundPosition: 'center top',
+        backgroundPosition: 'center center',
         backgroundRepeat: 'no-repeat',
       }}
     >
@@ -342,9 +345,9 @@ const RegisterPage: React.FC = () => {
             </div>
 
             {/* Submit */}
-            <button type="submit" disabled={isPending} className="btn-primary-arcs mt-1">
+            <Button type="submit" disabled={isPending} className="w-full mt-1">
               {isPending ? 'Creating Account...' : 'Begin Your Journey'}
-            </button>
+            </Button>
           </form>
 
           {/* Login link */}

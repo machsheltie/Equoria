@@ -12,11 +12,14 @@ import { useSearchParams, Link, useNavigate } from 'react-router-dom';
 import { Mail, CheckCircle, XCircle, RefreshCw, Loader2 } from 'lucide-react';
 import { useVerifyEmail, useResendVerification, useVerificationStatus } from '../hooks/useAuth';
 import { useAuth } from '../contexts/AuthContext';
+import { useResponsiveBackground } from '../hooks/useResponsiveBackground';
+import { Button } from '@/components/ui/button';
 
 type VerificationState = 'idle' | 'verifying' | 'success' | 'error' | 'already-verified';
 
 const VerifyEmailPage: React.FC = () => {
   const navigate = useNavigate();
+  const bgImage = useResponsiveBackground();
   const [searchParams] = useSearchParams();
   const token = searchParams.get('token');
 
@@ -65,9 +68,9 @@ const VerifyEmailPage: React.FC = () => {
     <div
       className="min-h-screen w-full flex flex-col items-center justify-center relative overflow-hidden py-8"
       style={{
-        backgroundImage: "url('/equoriacelestial.png')",
+        backgroundImage: `url('${bgImage}')`,
         backgroundSize: 'cover',
-        backgroundPosition: 'center top',
+        backgroundPosition: 'center center',
         backgroundRepeat: 'no-repeat',
       }}
     >
@@ -119,9 +122,9 @@ const VerifyEmailPage: React.FC = () => {
             is already verified.
           </p>
         </div>
-        <button type="button" className="btn-primary-arcs" onClick={() => navigate('/')}>
+        <Button type="button" className="w-full" onClick={() => navigate('/')}>
           Continue to Home
-        </button>
+        </Button>
       </div>
     );
   }
@@ -184,9 +187,9 @@ const VerifyEmailPage: React.FC = () => {
             You now have full access to Equoria!
           </p>
         </div>
-        <button type="button" className="btn-primary-arcs" onClick={() => navigate('/')}>
+        <Button type="button" className="w-full" onClick={() => navigate('/')}>
           Enter the Realm
-        </button>
+        </Button>
       </div>
     );
   }
@@ -217,12 +220,7 @@ const VerifyEmailPage: React.FC = () => {
             <p className="text-xs text-[rgb(148,163,184)]">
               Would you like us to send a new verification email?
             </p>
-            <button
-              type="button"
-              className="btn-primary-arcs"
-              onClick={handleResend}
-              disabled={isResending}
-            >
+            <Button type="button" className="w-full" onClick={handleResend} disabled={isResending}>
               {isResending ? (
                 <span className="inline-flex items-center gap-2">
                   <RefreshCw className="w-4 h-4 animate-spin" />
@@ -234,7 +232,7 @@ const VerifyEmailPage: React.FC = () => {
                   Resend Verification Email
                 </span>
               )}
-            </button>
+            </Button>
             {resendSuccess && (
               <p className="text-sm" style={{ color: 'var(--celestial-primary)' }}>
                 A new verification email has been sent. Check your inbox!
@@ -251,9 +249,9 @@ const VerifyEmailPage: React.FC = () => {
             <p className="text-xs text-[rgb(148,163,184)]">
               Please log in to request a new verification email.
             </p>
-            <button type="button" className="btn-primary-arcs" onClick={() => navigate('/login')}>
+            <Button type="button" className="w-full" onClick={() => navigate('/login')}>
               Go to Login
-            </button>
+            </Button>
           </div>
         )}
       </div>
@@ -285,12 +283,7 @@ const VerifyEmailPage: React.FC = () => {
           <p className="text-sm text-[rgb(220,235,255)]">
             Please check your inbox for a verification email. Click the link to verify your account.
           </p>
-          <button
-            type="button"
-            className="btn-primary-arcs"
-            onClick={handleResend}
-            disabled={isResending}
-          >
+          <Button type="button" className="w-full" onClick={handleResend} disabled={isResending}>
             {isResending ? (
               <span className="inline-flex items-center gap-2">
                 <RefreshCw className="w-4 h-4 animate-spin" />
@@ -302,7 +295,7 @@ const VerifyEmailPage: React.FC = () => {
                 Resend Verification Email
               </span>
             )}
-          </button>
+          </Button>
           {resendSuccess && (
             <p className="text-sm" style={{ color: 'var(--celestial-primary)' }}>
               A new verification email has been sent. Check your inbox!
@@ -313,25 +306,31 @@ const VerifyEmailPage: React.FC = () => {
               {resendError.message || 'Failed to send verification email. Try again later.'}
             </p>
           )}
-          <button type="button" className="btn-outline-celestial" onClick={() => navigate('/')}>
+          <Button
+            type="button"
+            variant="secondary"
+            className="w-full"
+            onClick={() => navigate('/')}
+          >
             Continue to Home
-          </button>
+          </Button>
         </div>
       ) : (
         <div className="space-y-2">
           <p className="text-sm text-[rgb(220,235,255)]">
             Please log in to verify your email or access your account.
           </p>
-          <button type="button" className="btn-primary-arcs" onClick={() => navigate('/login')}>
+          <Button type="button" className="w-full" onClick={() => navigate('/login')}>
             Go to Login
-          </button>
-          <button
+          </Button>
+          <Button
             type="button"
-            className="btn-outline-celestial"
+            variant="secondary"
+            className="w-full"
             onClick={() => navigate('/register')}
           >
             Create Account
-          </button>
+          </Button>
         </div>
       )}
     </div>

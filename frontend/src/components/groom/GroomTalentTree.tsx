@@ -133,7 +133,7 @@ function TalentCard({
 
       {talent.isAvailable && !isSaving && (
         <button
-          className="mt-2 w-full text-xs bg-blue-600 text-white px-3 py-1.5 rounded hover:bg-blue-700 transition-colors"
+          className="mt-2 w-full text-xs bg-blue-600 text-[var(--text-primary)] px-3 py-1.5 rounded hover:bg-[var(--gold-dim)] transition-colors"
           data-testid={`talent-select-btn-${talent.id}`}
           onClick={(e) => {
             e.stopPropagation();
@@ -146,7 +146,7 @@ function TalentCard({
 
       {talent.isAvailable && isSaving && (
         <button
-          className="mt-2 w-full text-xs bg-blue-300 text-white px-3 py-1.5 rounded cursor-not-allowed"
+          className="mt-2 w-full text-xs bg-[var(--gold-dim)] text-[var(--text-primary)] px-3 py-1.5 rounded cursor-not-allowed"
           data-testid={`talent-saving-btn-${talent.id}`}
           disabled
         >

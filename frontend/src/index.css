@@ -50,7 +50,7 @@
     --accent: var(--burnished-gold);
     --accent-foreground: 10 22 40;
 
-    --destructive: 0 84.2% 60.2%;
+    --destructive: 220 38 38;
     --destructive-foreground: 255 255 255;
 
     --border: 30 55 100;
@@ -136,12 +136,12 @@
    */
   .glass-panel {
     background: var(--glass-bg);
-    backdrop-filter: var(--glass-blur, blur(12px));
-    -webkit-backdrop-filter: var(--glass-blur, blur(12px));
+    backdrop-filter: var(--glass-bg-filter);
+    -webkit-backdrop-filter: var(--glass-bg-filter);
     border: 1px solid var(--glass-border);
     border-radius: var(--radius-lg);
     padding: var(--space-5);
-    box-shadow: var(--shadow-subtle);
+    box-shadow: var(--glass-shadow, var(--shadow-subtle));
     transition:
       box-shadow var(--duration-fast) var(--ease-default),
       border-color var(--duration-fast) var(--ease-default),

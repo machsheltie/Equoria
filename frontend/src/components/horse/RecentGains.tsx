@@ -149,7 +149,7 @@ const RecentGains = ({ horseId }: RecentGainsProps) => {
         <div className="text-sm text-rose-400">{error?.message || 'Failed to fetch gains'}</div>
         <button
           onClick={() => refetch()}
-          className="mt-3 rounded-md bg-rose-600 px-4 py-2 text-sm text-white hover:bg-rose-700 focus:outline-none focus:ring-2 focus:ring-rose-500 focus:ring-offset-2"
+          className="mt-3 rounded-md bg-rose-600 px-4 py-2 text-sm text-[var(--text-primary)] hover:bg-rose-700 focus:outline-none focus:ring-2 focus:ring-rose-500 focus:ring-offset-2"
         >
           Retry
         </button>
@@ -201,7 +201,7 @@ const RecentGains = ({ horseId }: RecentGainsProps) => {
                 onClick={() => handleRangeChange(range)}
                 className={`rounded-md px-3 py-1.5 text-sm font-medium transition-colors ${
                   selectedRange === range
-                    ? 'bg-emerald-600 text-white'
+                    ? 'bg-emerald-600 text-[var(--text-primary)]'
                     : 'bg-[rgba(15,35,70,0.5)] text-[rgb(148,163,184)] hover:bg-[rgba(15,35,70,0.3)]'
                 }`}
                 aria-label={TIME_RANGE_LABELS[range]}

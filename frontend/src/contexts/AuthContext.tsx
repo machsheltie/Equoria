@@ -17,8 +17,10 @@ import { createContext, useContext, ReactNode, useMemo, useCallback } from 'reac
 import { useProfile, useLogout, useVerificationStatus, User, UserRole } from '../hooks/useAuth';
 import type { ApiError } from '../lib/api-client';
 
-/** Set VITE_DEV_BYPASS_AUTH=true in .env to skip login during local review */
-const DEV_BYPASS = import.meta.env.VITE_DEV_BYPASS_AUTH === 'true';
+/** Set VITE_DEV_BYPASS_AUTH=true in .env to skip login during local review.
+ *  Production guard: bypass is ONLY active in development mode to prevent
+ *  accidental admin impersonation if the env var leaks into a production build. */
+const DEV_BYPASS = import.meta.env.DEV === true && import.meta.env.VITE_DEV_BYPASS_AUTH === 'true';
 
 const DEV_USER: User = {
   id: 1,

@@ -244,7 +244,7 @@ describe('useClaimPrizes', () => {
 
     expect(invalidateSpy).toHaveBeenCalledWith(
       expect.objectContaining({
-        queryKey: ['user'],
+        queryKey: ['profile'],
       })
     );
   });
@@ -285,10 +285,7 @@ describe('useClaimPrizes', () => {
     });
 
     await act(async () => {
-      result.current.mutate(
-        { competitionId: 1 },
-        { onSuccess: onSuccessMock }
-      );
+      result.current.mutate({ competitionId: 1 }, { onSuccess: onSuccessMock });
     });
 
     await waitFor(() => expect(result.current.isSuccess).toBe(true));
@@ -314,10 +311,7 @@ describe('useClaimPrizes', () => {
     });
 
     await act(async () => {
-      result.current.mutate(
-        { competitionId: 999 },
-        { onError: onErrorMock }
-      );
+      result.current.mutate({ competitionId: 999 }, { onError: onErrorMock });
     });
 
     await waitFor(() => expect(result.current.isError).toBe(true));

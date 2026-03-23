@@ -181,7 +181,7 @@ const MilestoneEvaluationDisplay: React.FC<MilestoneEvaluationDisplayProps> = ({
   if (historyLoading || traitsLoading) {
     return (
       <div className="flex items-center justify-center py-12">
-        <div className="h-8 w-8 border-4 border-blue-600 border-t-transparent rounded-full animate-spin"></div>
+        <div className="h-8 w-8 border-4 border-[var(--gold-primary)] border-t-transparent rounded-full animate-spin"></div>
       </div>
     );
   }
@@ -315,7 +315,7 @@ const MilestoneEvaluationDisplay: React.FC<MilestoneEvaluationDisplayProps> = ({
             <div className="pt-4 border-t border-[rgba(37,99,235,0.3)]">
               <button
                 onClick={handleCloseModal}
-                className="w-full px-4 py-3 text-base font-medium text-white bg-blue-600 rounded-lg hover:bg-blue-700 transition-colors"
+                className="w-full px-4 py-3 text-base font-medium text-[var(--text-primary)] bg-blue-600 rounded-lg hover:bg-[var(--gold-dim)] transition-colors"
               >
                 Continue
               </button>

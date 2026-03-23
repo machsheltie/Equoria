@@ -244,7 +244,7 @@ const BreedingPredictionsPanel: React.FC<BreedingPredictionsPanelProps> = ({ sir
   if (isLoading) {
     return (
       <div className="flex items-center justify-center py-12">
-        <div className="h-8 w-8 border-4 border-blue-400 border-t-transparent rounded-full animate-spin"></div>
+        <div className="h-8 w-8 border-4 border-[var(--gold-light)] border-t-transparent rounded-full animate-spin"></div>
       </div>
     );
   }

@@ -165,7 +165,7 @@ interface SimpleHorseStats {
 interface HorseSummary {
   id: number;
   name: string;
-  breed: string;
+  breed: string | { id?: number; name?: string; description?: string };
   age: number;
   ageYears?: number;
   gender: string;

@@ -136,7 +136,7 @@ const EmptyStateBanner = memo(() => (
     </p>
     <Link
       to="/competitions"
-      className="inline-flex items-center px-6 py-3 bg-blue-600 text-white font-medium rounded-lg hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-2 transition-colors"
+      className="inline-flex items-center px-6 py-3 bg-blue-600 text-[var(--text-primary)] font-medium rounded-lg hover:bg-[var(--gold-dim)] focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-2 transition-colors"
     >
       <BarChart3 className="h-5 w-5 mr-2" aria-hidden="true" />
       Browse Competitions
@@ -406,7 +406,7 @@ const CompetitionResultsPage = (): JSX.Element => {
               onClick={() => setActiveTab('my-results')}
               className={`py-4 px-1 border-b-2 font-medium text-sm transition-colors ${
                 activeTab === 'my-results'
-                  ? 'border-blue-400 text-blue-400'
+                  ? 'border-[var(--gold-light)] text-blue-400'
                   : 'border-transparent text-[rgb(148,163,184)] hover:text-[rgb(220,235,255)] hover:border-[rgba(37,99,235,0.3)]'
               }`}
             >

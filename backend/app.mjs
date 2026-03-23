@@ -94,6 +94,7 @@ import marketplaceRoutes from './modules/marketplace/routes/marketplaceRoutes.mj
 import nextActionsRoutes from './routes/nextActionsRoutes.mjs';
 import wyagRoutes from './routes/wyagRoutes.mjs';
 import showRoutes from './routes/showRoutes.mjs';
+import bankRoutes from './routes/bankRoutes.mjs';
 
 /**
  * 🔒 SECURITY ROUTER ARCHITECTURE
@@ -166,6 +167,7 @@ authRouter.use('/marketplace', marketplaceRoutes);
 authRouter.use('/next-actions', nextActionsRoutes);
 authRouter.use('/while-you-were-gone', wyagRoutes);
 authRouter.use('/shows', showRoutes);
+authRouter.use('/bank', bankRoutes);
 
 // Groom management system
 authRouter.use('/grooms', groomRoutes);

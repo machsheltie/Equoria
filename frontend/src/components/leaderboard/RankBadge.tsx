@@ -56,7 +56,7 @@ const RankBadge = ({ rank, size = 'medium', className = '' }: RankBadgeProps) =>
 
   return (
     <span
-      className={`rank-badge-${size} inline-flex items-center justify-center rounded-full text-white font-bold ${className}`}
+      className={`rank-badge-${size} inline-flex items-center justify-center rounded-full text-[var(--text-primary)] font-bold ${className}`}
       style={{ backgroundColor }}
       data-testid={`rank-badge-${rank}`}
       aria-label={`Rank ${rank}`}

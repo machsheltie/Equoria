@@ -34,6 +34,10 @@ export interface LocationCardProps {
    * per-location painting colours).
    */
   paintingGradient: string;
+  /** Optional image URL to replace the gradient painting background */
+  backgroundImage?: string;
+  /** CSS object-position value for the background image (default: 'center') */
+  backgroundPosition?: string;
   /** Number of pending alerts — renders a red badge when > 0 */
   alertCount?: number;
   /** Label appended to alertCount (default: "alert") */
@@ -47,6 +51,8 @@ const LocationCard: React.FC<LocationCardProps> = ({
   icon,
   href,
   paintingGradient,
+  backgroundImage,
+  backgroundPosition = 'center',
   alertCount,
   alertLabel = 'alert',
 }) => {
@@ -73,19 +79,33 @@ const LocationCard: React.FC<LocationCardProps> = ({
       aria-label={`Visit ${name}`}
     >
       {/* ── Layer 1: Atmospheric painting background ─────────────────────── */}
-      <div
-        className="absolute inset-0"
-        style={{ background: paintingGradient }}
-        aria-hidden="true"
-      />
+      {backgroundImage ? (
+        <div
+          className="absolute inset-0 bg-cover"
+          style={{
+            backgroundImage: `url('${backgroundImage}')`,
+            backgroundPosition,
+          }}
+          aria-hidden="true"
+        />
+      ) : (
+        <div
+          className="absolute inset-0"
+          style={{ background: paintingGradient }}
+          aria-hidden="true"
+        />
+      )}
 
-      {/* Icon centered in the upper painting area */}
-      <div
-        className="relative z-[var(--z-raised)] flex flex-1 items-center justify-center pt-6 pb-3 text-5xl select-none"
-        aria-hidden="true"
-      >
-        {icon}
-      </div>
+      {/* Icon centered in the upper painting area (hidden when background image is used) */}
+      {!backgroundImage && (
+        <div
+          className="relative z-[var(--z-raised)] flex flex-1 items-center justify-center pt-6 pb-3 text-5xl select-none"
+          aria-hidden="true"
+        >
+          {icon}
+        </div>
+      )}
+      {backgroundImage && <div className="flex-1" />}
 
       {/* ── Layer 2 + 3: Glass chrome label overlay ───────────────────────── */}
       {/* No additional backdrop-filter here — the card wrapper already provides

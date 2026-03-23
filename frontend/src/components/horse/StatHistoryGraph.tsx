@@ -242,7 +242,7 @@ const StatHistoryGraph: React.FC<StatHistoryGraphProps> = ({ horseId }) => {
           </p>
           <button
             onClick={() => refetch()}
-            className="px-4 py-2 bg-emerald-600 text-white rounded hover:bg-emerald-700 focus:outline-none focus:ring-2 focus:ring-emerald-500"
+            className="px-4 py-2 bg-emerald-600 text-[var(--text-primary)] rounded hover:bg-emerald-700 focus:outline-none focus:ring-2 focus:ring-emerald-500"
           >
             Retry
           </button>
@@ -275,7 +275,7 @@ const StatHistoryGraph: React.FC<StatHistoryGraphProps> = ({ horseId }) => {
             onClick={() => setTimeRange('7d')}
             className={`px-3 py-1 text-sm rounded transition-colors focus:outline-none focus:ring-2 focus:ring-emerald-500 ${
               timeRange === '7d'
-                ? 'bg-emerald-600 text-white active'
+                ? 'bg-emerald-600 text-[var(--text-primary)] active'
                 : 'bg-[rgba(15,35,70,0.5)] text-[rgb(148,163,184)] hover:bg-[rgba(15,35,70,0.3)]'
             }`}
             aria-pressed={timeRange === '7d'}
@@ -286,7 +286,7 @@ const StatHistoryGraph: React.FC<StatHistoryGraphProps> = ({ horseId }) => {
             onClick={() => setTimeRange('30d')}
             className={`px-3 py-1 text-sm rounded transition-colors focus:outline-none focus:ring-2 focus:ring-emerald-500 ${
               timeRange === '30d'
-                ? 'bg-emerald-600 text-white active'
+                ? 'bg-emerald-600 text-[var(--text-primary)] active'
                 : 'bg-[rgba(15,35,70,0.5)] text-[rgb(148,163,184)] hover:bg-[rgba(15,35,70,0.3)]'
             }`}
             aria-pressed={timeRange === '30d'}
@@ -297,7 +297,7 @@ const StatHistoryGraph: React.FC<StatHistoryGraphProps> = ({ horseId }) => {
             onClick={() => setTimeRange('90d')}
             className={`px-3 py-1 text-sm rounded transition-colors focus:outline-none focus:ring-2 focus:ring-emerald-500 ${
               timeRange === '90d'
-                ? 'bg-emerald-600 text-white active'
+                ? 'bg-emerald-600 text-[var(--text-primary)] active'
                 : 'bg-[rgba(15,35,70,0.5)] text-[rgb(148,163,184)] hover:bg-[rgba(15,35,70,0.3)]'
             }`}
             aria-pressed={timeRange === '90d'}
@@ -308,7 +308,7 @@ const StatHistoryGraph: React.FC<StatHistoryGraphProps> = ({ horseId }) => {
             onClick={() => setTimeRange('all')}
             className={`px-3 py-1 text-sm rounded transition-colors focus:outline-none focus:ring-2 focus:ring-emerald-500 ${
               timeRange === 'all'
-                ? 'bg-emerald-600 text-white active'
+                ? 'bg-emerald-600 text-[var(--text-primary)] active'
                 : 'bg-[rgba(15,35,70,0.5)] text-[rgb(148,163,184)] hover:bg-[rgba(15,35,70,0.3)]'
             }`}
             aria-pressed={timeRange === 'all'}

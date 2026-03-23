@@ -121,7 +121,7 @@ const LeaderboardCategorySelector = ({
               disabled={isLoading}
               className={`px-4 py-2 rounded-t-lg text-sm font-medium whitespace-nowrap transition-colors ${
                 isActive
-                  ? 'bg-blue-500 text-white'
+                  ? 'bg-blue-500 text-[var(--text-primary)]'
                   : 'bg-[rgba(15,35,70,0.5)] text-[rgb(148,163,184)] hover:bg-[rgba(37,99,235,0.2)]'
               } ${isLoading ? 'opacity-50 cursor-not-allowed' : ''}`}
               data-testid={`category-${category}`}
@@ -170,7 +170,7 @@ const LeaderboardCategorySelector = ({
               disabled={isLoading}
               className={`px-3 py-1 rounded text-sm font-medium transition-colors ${
                 isActive
-                  ? 'bg-blue-500 text-white'
+                  ? 'bg-blue-500 text-[var(--text-primary)]'
                   : 'bg-[rgba(15,35,70,0.5)] text-[rgb(148,163,184)] hover:bg-[rgba(37,99,235,0.2)]'
               } ${isLoading ? 'opacity-50 cursor-not-allowed' : ''}`}
               data-testid={`period-${period}`}

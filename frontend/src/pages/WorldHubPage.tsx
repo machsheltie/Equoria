@@ -47,6 +47,8 @@ const worldLocations: LocationCardProps[] = [
     href: '/feed-shop',
     paintingGradient:
       'linear-gradient(160deg, rgba(45,78,10,0.85) 0%, rgba(28,48,5,0.95) 60%, rgba(5,13,26,0.98) 100%)',
+    backgroundImage: '/images/feedstore.webp',
+    backgroundPosition: '55% 35%',
   },
   {
     id: 'training-center',

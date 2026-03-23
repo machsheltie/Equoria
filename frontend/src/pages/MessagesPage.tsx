@@ -15,9 +15,9 @@
 
 import React, { useState } from 'react';
 import { Link } from 'react-router-dom';
-import { Mail, Send, PlusCircle, Circle, CheckCircle2, Clock, User } from 'lucide-react';
+import { Mail, Send, PlusCircle, Circle, CheckCircle2, Clock, User, X } from 'lucide-react';
 import PageHero from '@/components/layout/PageHero';
-import { useInbox, useSentMessages, useUnreadCount } from '@/hooks/api/useMessages';
+import { useInbox, useSentMessages, useUnreadCount, useSendMessage } from '@/hooks/api/useMessages';
 import type { DirectMessage } from '@/lib/api-client';
 
 type MessageTab = 'inbox' | 'sent';
@@ -45,6 +45,7 @@ function relativeTime(iso: string): string {
 
 const MessagesPage: React.FC = () => {
   const [activeTab, setActiveTab] = useState<MessageTab>('inbox');
+  const [composeOpen, setComposeOpen] = useState(false);
 
   const { data: inboxData, isLoading: inboxLoading } = useInbox();
   const { data: sentData, isLoading: sentLoading } = useSentMessages();
@@ -84,8 +85,8 @@ const MessagesPage: React.FC = () => {
           </div>
           <button
             type="button"
-            disabled
-            className="flex items-center gap-2 px-4 py-2 rounded-xl bg-emerald-600/10 border border-emerald-500/20 text-emerald-400/60 text-sm font-medium cursor-not-allowed"
+            onClick={() => setComposeOpen(true)}
+            className="flex items-center gap-2 px-4 py-2 rounded-xl bg-emerald-600/20 border border-emerald-500/30 text-emerald-400 text-sm font-medium hover:bg-emerald-600/30 hover:border-emerald-500/40 transition-all"
             title="Compose a new message"
             data-testid="compose-button"
           >
@@ -94,6 +95,9 @@ const MessagesPage: React.FC = () => {
           </button>
         </div>
       </PageHero>
+
+      {/* Compose Modal */}
+      {composeOpen && <ComposeModal onClose={() => setComposeOpen(false)} />}
 
       <div className="max-w-4xl mx-auto px-4 sm:px-6 lg:px-8 pb-8">
         {/* Tab Navigation */}
@@ -185,6 +189,143 @@ const MessagesPage: React.FC = () => {
             <li>System messages are sent automatically for competition results and events</li>
             <li>Visit the Message Board to post publicly in community sections</li>
           </ul>
+        </div>
+      </div>
+    </div>
+  );
+};
+
+/* ── Compose Modal ────────────────────────────────────────────────────── */
+const ComposeModal: React.FC<{ onClose: () => void }> = ({ onClose }) => {
+  const [recipientId, setRecipientId] = useState('');
+  const [subject, setSubject] = useState('');
+  const [content, setContent] = useState('');
+  const sendMessage = useSendMessage();
+
+  const canSend = recipientId.trim() && subject.trim() && content.trim();
+
+  const handleSend = () => {
+    if (!canSend) return;
+    sendMessage.mutate(
+      { recipientId: recipientId.trim(), subject: subject.trim(), content: content.trim() },
+      {
+        onSuccess: () => onClose(),
+      }
+    );
+  };
+
+  return (
+    <div
+      className="fixed inset-0 z-[var(--z-modal)] flex items-center justify-center p-4"
+      role="dialog"
+      aria-modal="true"
+      aria-label="Compose message"
+    >
+      {/* Backdrop */}
+      <div
+        className="absolute inset-0 bg-black/60 backdrop-blur-sm"
+        onClick={onClose}
+        aria-hidden="true"
+      />
+
+      {/* Panel */}
+      <div className="relative w-full max-w-lg glass-panel rounded-2xl border border-[rgba(200,168,78,0.2)] p-6 space-y-4">
+        {/* Header */}
+        <div className="flex items-center justify-between">
+          <h2
+            className="text-lg font-bold text-[var(--cream)]"
+            style={{ fontFamily: 'var(--font-heading)' }}
+          >
+            New Message
+          </h2>
+          <button
+            type="button"
+            onClick={onClose}
+            className="p-1.5 rounded-lg text-[var(--text-muted)] hover:text-[var(--cream)] hover:bg-white/10 transition-colors"
+            aria-label="Close"
+          >
+            <X className="w-5 h-5" />
+          </button>
+        </div>
+
+        {/* Fields */}
+        <div className="space-y-3">
+          <div>
+            <label
+              htmlFor="compose-recipient"
+              className="block text-xs text-[var(--text-muted)] uppercase tracking-wide mb-1"
+            >
+              Recipient (User ID)
+            </label>
+            <input
+              id="compose-recipient"
+              type="text"
+              value={recipientId}
+              onChange={(e) => setRecipientId(e.target.value)}
+              placeholder="Enter recipient's user ID"
+              className="w-full px-3 py-2 rounded-lg bg-[rgba(10,22,50,0.5)] border border-[rgba(100,130,165,0.25)] text-[var(--cream)] text-sm placeholder:text-[var(--text-muted)] focus:outline-none focus:border-[rgba(200,168,78,0.4)] transition-colors"
+            />
+          </div>
+          <div>
+            <label
+              htmlFor="compose-subject"
+              className="block text-xs text-[var(--text-muted)] uppercase tracking-wide mb-1"
+            >
+              Subject
+            </label>
+            <input
+              id="compose-subject"
+              type="text"
+              value={subject}
+              onChange={(e) => setSubject(e.target.value)}
+              placeholder="Message subject"
+              className="w-full px-3 py-2 rounded-lg bg-[rgba(10,22,50,0.5)] border border-[rgba(100,130,165,0.25)] text-[var(--cream)] text-sm placeholder:text-[var(--text-muted)] focus:outline-none focus:border-[rgba(200,168,78,0.4)] transition-colors"
+            />
+          </div>
+          <div>
+            <label
+              htmlFor="compose-content"
+              className="block text-xs text-[var(--text-muted)] uppercase tracking-wide mb-1"
+            >
+              Message
+            </label>
+            <textarea
+              id="compose-content"
+              value={content}
+              onChange={(e) => setContent(e.target.value)}
+              placeholder="Write your message..."
+              rows={5}
+              className="w-full px-3 py-2 rounded-lg bg-[rgba(10,22,50,0.5)] border border-[rgba(100,130,165,0.25)] text-[var(--cream)] text-sm placeholder:text-[var(--text-muted)] focus:outline-none focus:border-[rgba(200,168,78,0.4)] transition-colors resize-none"
+            />
+          </div>
+        </div>
+
+        {/* Error */}
+        {sendMessage.isError && (
+          <p className="text-xs text-[var(--status-error)]">
+            Failed to send message. Please try again.
+          </p>
+        )}
+
+        {/* Actions */}
+        <div className="flex justify-end gap-3 pt-1">
+          <button
+            type="button"
+            onClick={onClose}
+            className="px-4 py-2 rounded-lg text-sm text-[var(--text-muted)] hover:text-[var(--cream)] hover:bg-white/5 transition-colors"
+          >
+            Cancel
+          </button>
+          <button
+            type="button"
+            onClick={handleSend}
+            disabled={!canSend || sendMessage.isPending}
+            className="flex items-center gap-2 px-5 py-2 rounded-lg bg-gradient-to-r from-[var(--gold-700)] to-[var(--gold-400)] text-[var(--celestial-navy-900)] text-sm font-semibold hover:brightness-110 transition-all disabled:opacity-40 disabled:cursor-not-allowed"
+            data-testid="send-message-button"
+          >
+            <Send className="w-4 h-4" />
+            {sendMessage.isPending ? 'Sending...' : 'Send'}
+          </button>
         </div>
       </div>
     </div>

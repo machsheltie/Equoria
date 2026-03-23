@@ -20,6 +20,7 @@ import { useTackInventory, usePurchaseTackItem } from '@/hooks/api/useTackShop';
 import { useHorses } from '@/hooks/api/useHorses';
 import type { TackItem } from '@/hooks/api/useTackShop';
 import type { HorseSummary } from '@/lib/api-client';
+import { getBreedName } from '@/lib/utils';
 
 type TackShopTab = 'horses' | 'shop';
 
@@ -121,7 +122,7 @@ const ShopTab: React.FC<ShopTabProps> = ({ selectedHorse, onSwitchToHorses }) =>
       { horseId: selectedHorse.id, itemId: item.id },
       {
         onSuccess: (result) => {
-          const msg = `Purchased ${result.data.item.name} for ${result.data.horse.name}. Remaining balance: $${result.data.remainingMoney.toLocaleString()}`;
+          const msg = `Purchased ${result.item.name} for ${result.horse.name}. Remaining balance: $${result.remainingMoney.toLocaleString()}`;
           setPurchaseSuccess(msg);
           toast.success(msg);
         },
@@ -342,7 +343,7 @@ const HorsesTackTab: React.FC<HorsesTackTabProps> = ({
                     {horse.name}
                   </h3>
                   <p className="text-xs text-white/40 truncate">
-                    {horse.breed} · {horse.gender}
+                    {getBreedName(horse.breed)} · {horse.gender}
                   </p>
                 </div>
                 {isSelected && (

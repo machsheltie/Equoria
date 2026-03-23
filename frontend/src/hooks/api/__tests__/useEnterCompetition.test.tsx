@@ -304,7 +304,7 @@ describe('useEnterCompetition', () => {
 
     expect(invalidateSpy).toHaveBeenCalledWith(
       expect.objectContaining({
-        queryKey: ['user'],
+        queryKey: ['profile'],
       })
     );
   });

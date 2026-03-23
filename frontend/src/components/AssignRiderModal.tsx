@@ -79,7 +79,7 @@ const AssignRiderModal: React.FC<AssignRiderModalProps> = ({
           </div>
           <button
             onClick={onClose}
-            className="p-1.5 text-white/40 hover:text-white hover:bg-white/10 rounded-lg transition-colors"
+            className="p-1.5 text-white/40 hover:text-[var(--text-primary)] hover:bg-white/10 rounded-lg transition-colors"
             aria-label="Close modal"
           >
             <X className="w-5 h-5" />

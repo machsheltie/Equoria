@@ -57,7 +57,6 @@ const BreedingCenter = () => {
     await breedFoal({
       sireId: Number(sireId),
       damId: Number(damId),
-      breedId: 946, // Default to Thoroughbred for now or get from parents
     });
     setFoalName('');
   };
@@ -193,7 +192,7 @@ const BreedingCenter = () => {
                 type="button"
                 onClick={handleBreed}
                 disabled={isPending || sireId === '' || damId === '' || !foalName.trim()}
-                className="rounded-md bg-emerald-600 px-4 py-2 text-sm font-semibold text-white shadow hover:bg-emerald-500 focus:outline-none focus:ring-2 focus:ring-emerald-500 focus:ring-offset-2 disabled:cursor-not-allowed disabled:opacity-70"
+                className="rounded-md bg-emerald-600 px-4 py-2 text-sm font-semibold text-[var(--text-primary)] shadow hover:bg-emerald-500 focus:outline-none focus:ring-2 focus:ring-emerald-500 focus:ring-offset-2 disabled:cursor-not-allowed disabled:opacity-70"
               >
                 {isPending ? 'Breeding…' : 'Breed Now'}
               </button>

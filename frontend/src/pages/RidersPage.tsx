@@ -84,7 +84,7 @@ const RidersPage: React.FC = () => {
         {/* Tab Content */}
         <div role="tabpanel">
           {activeTab === 'manage' ? (
-            <MyRidersDashboard userId={userId} />
+            <MyRidersDashboard userId={userId} onBrowseMarketplace={() => setActiveTab('hire')} />
           ) : (
             <RiderList userId={userId} />
           )}

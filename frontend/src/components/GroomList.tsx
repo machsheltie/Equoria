@@ -17,6 +17,7 @@ import { useGroomMarketplace, useHireGroom, useRefreshMarketplace } from '../hoo
 import { useAuth } from '../contexts/AuthContext';
 import { MarketplaceGroom, MarketplaceData } from '../lib/api-client';
 import GroomPersonalityBadge from './groom/GroomPersonalityBadge';
+import { Button } from '@/components/ui/button';
 
 interface GroomListProps {
   userId: number;
@@ -186,11 +187,11 @@ const GroomList: React.FC<GroomListProps> = ({
           </div>
 
           {/* Refresh Button */}
-          <button
+          <Button
             data-testid="refresh-button"
             onClick={handleRefresh}
             disabled={refreshMutation.isPending}
-            className="mt-4 lg:mt-0 flex items-center space-x-2 btn-primary-arcs px-4 py-2 rounded-lg transition-colors disabled:opacity-50"
+            className="mt-4 lg:mt-0"
             aria-label="Refresh marketplace"
           >
             <RefreshCw className={`w-4 h-4 ${refreshMutation.isPending ? 'animate-spin' : ''}`} />
@@ -199,7 +200,7 @@ const GroomList: React.FC<GroomListProps> = ({
                 ? 'Free Refresh Available'
                 : `Refresh ($${marketplaceData?.refreshCost || 0})`}
             </span>
-          </button>
+          </Button>
         </div>
 
         {/* User Info & Refresh Status */}
@@ -313,12 +314,7 @@ const GroomList: React.FC<GroomListProps> = ({
               <p className="text-[rgb(148,163,184)] mb-6">
                 Try refreshing the marketplace to see new grooms
               </p>
-              <button
-                onClick={handleRefresh}
-                className="btn-primary-arcs px-6 py-2 rounded-lg transition-colors"
-              >
-                Refresh Marketplace
-              </button>
+              <Button onClick={handleRefresh}>Refresh Marketplace</Button>
             </div>
           ) : (
             <div
@@ -379,14 +375,11 @@ const GroomList: React.FC<GroomListProps> = ({
                     </p>
 
                     {/* Hire Button */}
-                    <button
+                    <Button
                       onClick={() => handleHireClick(groom)}
                       disabled={!canAfford || hireMutation.isPending}
-                      className={`w-full py-2.5 px-4 rounded-lg font-bold text-sm transition-colors ${
-                        canAfford
-                          ? 'btn-primary-arcs'
-                          : 'bg-[rgba(15,35,70,0.5)] text-[rgb(148,163,184)] cursor-not-allowed border border-[rgba(37,99,235,0.3)]'
-                      }`}
+                      variant={canAfford ? 'default' : 'outline'}
+                      className="w-full"
                       aria-label={`Hire ${groom.firstName} ${groom.lastName}`}
                     >
                       {hireMutation.isPending &&
@@ -395,7 +388,7 @@ const GroomList: React.FC<GroomListProps> = ({
                         : canAfford
                           ? 'Hire for $' + hiringCost
                           : 'Insufficient Funds'}
-                    </button>
+                    </Button>
                   </div>
                 );
               })}
@@ -466,13 +459,13 @@ const GroomList: React.FC<GroomListProps> = ({
               >
                 Cancel
               </button>
-              <button
+              <Button
                 onClick={handleHireConfirm}
                 disabled={hireMutation.isPending}
-                className="flex-1 px-4 py-2.5 btn-primary-arcs rounded-lg font-bold transition-all active:scale-95 disabled:opacity-50"
+                className="flex-1"
               >
                 {hireMutation.isPending ? 'Hiring...' : 'Hire Groom'}
-              </button>
+              </Button>
             </div>
           </div>
         </div>

@@ -35,15 +35,13 @@ export function useTackInventory() {
 export function usePurchaseTackItem() {
   const queryClient = useQueryClient();
 
-  return useMutation<
-    { success: boolean; data: TackPurchaseResult },
-    ApiError,
-    { horseId: number; itemId: string }
-  >({
+  return useMutation<TackPurchaseResult, ApiError, { horseId: number; itemId: string }>({
     mutationFn: (data) => tackShopApi.purchaseItem(data),
     onSuccess: () => {
       // Invalidate horse data so tack JSON refreshes
       queryClient.invalidateQueries({ queryKey: ['horses'] });
+      // Invalidate profile so balance updates in nav
+      queryClient.invalidateQueries({ queryKey: ['profile'] });
     },
   });
 }

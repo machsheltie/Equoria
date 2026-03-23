@@ -16,6 +16,7 @@
 
 import React from 'react';
 import { User, RefreshCw, CheckCircle, Heart } from 'lucide-react';
+import { Button } from '@/components/ui/button';
 import GroomPersonalityBadge from './GroomPersonalityBadge';
 import GroomTaskPanel from './GroomTaskPanel';
 
@@ -138,14 +139,14 @@ const GroomAssignmentCard: React.FC<GroomAssignmentCardProps> = ({
         <p className="text-sm text-[rgb(148,163,184)] mb-4">
           Assign a groom to {horseName} to begin task-based care and bonding.
         </p>
-        <button
+        <Button
+          size="sm"
           onClick={onAssign}
-          className="btn-primary-arcs px-4 py-2 text-sm font-medium"
           data-testid="assign-groom-button"
           aria-label={`Assign a groom to ${horseName}`}
         >
           Assign Groom
-        </button>
+        </Button>
       </div>
     );
   }

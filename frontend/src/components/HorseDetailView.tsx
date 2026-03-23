@@ -1,6 +1,8 @@
 import { useState } from 'react';
+import { getBreedName } from '@/lib/utils';
 import { useParams, useNavigate } from 'react-router-dom';
 import { useHorse, useHorseTrainingHistory } from '@/hooks/api/useHorses';
+import { Button } from '@/components/ui/button';
 import {
   Zap,
   Heart,
@@ -76,13 +78,9 @@ const HorseDetailView = ({ horseId: propHorseId }: HorseDetailViewProps) => {
         <div className="max-w-md w-full mx-4">
           <div className="glass-panel rounded-lg border border-rose-500/30 p-6">
             <div className="text-sm text-rose-400">{horseError.message}</div>
-            <button
-              type="button"
-              onClick={() => navigate('/horses')}
-              className="btn-primary-arcs mt-4 px-4 py-2 text-sm"
-            >
+            <Button type="button" size="sm" className="mt-4" onClick={() => navigate('/horses')}>
               Back to Horse List
-            </button>
+            </Button>
           </div>
         </div>
       </div>
@@ -96,13 +94,9 @@ const HorseDetailView = ({ horseId: propHorseId }: HorseDetailViewProps) => {
         <div className="max-w-md w-full mx-4">
           <div className="glass-panel rounded-lg p-6">
             <div className="text-sm text-[rgb(148,163,184)]">Horse not found</div>
-            <button
-              type="button"
-              onClick={() => navigate('/horses')}
-              className="btn-primary-arcs mt-4 px-4 py-2 text-sm"
-            >
+            <Button type="button" size="sm" className="mt-4" onClick={() => navigate('/horses')}>
               Back to Horse List
-            </button>
+            </Button>
           </div>
         </div>
       </div>
@@ -138,7 +132,7 @@ const HorseDetailView = ({ horseId: propHorseId }: HorseDetailViewProps) => {
             <div className="flex-1">
               <h1 className="fantasy-title text-3xl text-[rgb(220,235,255)] mb-2">{horse.name}</h1>
               <div className="flex flex-wrap items-center gap-4 text-sm text-aged-bronze mb-4">
-                {horse.breed && <span>Breed: {horse.breed}</span>}
+                {horse.breed && <span>Breed: {getBreedName(horse.breed)}</span>}
                 {horse.ageYears !== undefined && <span>Age: {horse.ageYears} years</span>}
                 {horse.sex && <span>Sex: {horse.sex}</span>}
                 {horse.level !== undefined && <span>Level: {horse.level}</span>}
@@ -288,27 +282,18 @@ const HorseDetailView = ({ horseId: propHorseId }: HorseDetailViewProps) => {
 
         {/* Quick Actions Bar */}
         <div className="mt-6 flex flex-wrap gap-4">
-          <button
-            type="button"
-            className="btn-primary-arcs flex items-center space-x-2 px-4 py-2 text-sm"
-          >
+          <Button type="button" size="sm">
             <Dumbbell className="w-4 h-4" />
             <span>Train This Horse</span>
-          </button>
-          <button
-            type="button"
-            className="btn-outline-celestial flex items-center space-x-2 px-4 py-2 text-sm"
-          >
+          </Button>
+          <Button type="button" variant="secondary" size="sm">
             <Award className="w-4 h-4" />
             <span>Enter Competition</span>
-          </button>
-          <button
-            type="button"
-            className="btn-outline-celestial flex items-center space-x-2 px-4 py-2 text-sm"
-          >
+          </Button>
+          <Button type="button" variant="secondary" size="sm">
             <Sparkles className="w-4 h-4" />
             <span>View Breeding Options</span>
-          </button>
+          </Button>
         </div>
       </div>
     </div>

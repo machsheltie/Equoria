@@ -77,9 +77,9 @@ export function useEnterCompetition() {
         queryKey: horseEligibilityQueryKeys.all,
       });
 
-      // Invalidate user data (balance has been deducted)
+      // Invalidate profile (balance has been deducted)
       queryClient.invalidateQueries({
-        queryKey: ['user'],
+        queryKey: ['profile'],
       });
     },
     onError: (error) => {

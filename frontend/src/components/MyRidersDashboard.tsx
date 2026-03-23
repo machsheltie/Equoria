@@ -13,7 +13,7 @@
 
 import React, { useState } from 'react';
 import { Users, AlertCircle, ChevronDown, ChevronUp } from 'lucide-react';
-import { Link } from 'react-router-dom';
+
 import { SkeletonBase } from '@/components/ui/SkeletonCard';
 import RiderPersonalityBadge from './rider/RiderPersonalityBadge';
 import RiderCareerPanel from './rider/RiderCareerPanel';
@@ -28,6 +28,7 @@ import {
   type RiderAssignment,
 } from '@/hooks/api/useRiders';
 import { useHorses } from '@/hooks/api/useHorses';
+import { getBreedName } from '@/lib/utils';
 import { calculateRiderRetirementStatus } from '@/types/riderCareer';
 import { buildEmptyDiscoveryProfile } from '@/types/riderDiscovery';
 
@@ -36,6 +37,7 @@ interface MyRidersDashboardProps {
   ridersData?: Rider[];
   assignmentsData?: RiderAssignment[];
   riderSlotCap?: number;
+  onBrowseMarketplace?: () => void;
 }
 
 const SKILL_LEVEL_VISIBILITY: Record<string, string> = {
@@ -49,6 +51,7 @@ const MyRidersDashboard: React.FC<MyRidersDashboardProps> = ({
   ridersData,
   assignmentsData,
   riderSlotCap = 5,
+  onBrowseMarketplace,
 }) => {
   const [selectedRiderIdForAssign, setSelectedRiderIdForAssign] = useState<number | null>(null);
   const [expandedRiderId, setExpandedRiderId] = useState<number | null>(null);
@@ -106,13 +109,17 @@ const MyRidersDashboard: React.FC<MyRidersDashboardProps> = ({
         <p className="text-sm mb-4 max-w-sm" style={{ color: 'var(--text-muted)' }}>
           Browse the rider marketplace to find skilled riders for your competition horses.
         </p>
-        <Link
-          to="/riders"
-          className="inline-block px-4 py-2 rounded-lg text-sm font-medium text-white transition-opacity hover:opacity-85"
-          style={{ background: 'var(--celestial-primary)' }}
+        <button
+          type="button"
+          onClick={onBrowseMarketplace}
+          className="inline-block px-5 py-2.5 rounded-lg text-sm font-semibold transition-all hover:brightness-110 hover:shadow-[0_0_16px_rgba(200,168,78,0.3)]"
+          style={{
+            background: 'linear-gradient(135deg, var(--gold-primary) 0%, var(--gold-light) 100%)',
+            color: 'var(--bg-deep-space)',
+          }}
         >
           Browse Rider Marketplace
-        </Link>
+        </button>
       </div>
     );
   }
@@ -380,7 +387,7 @@ const MyRidersDashboard: React.FC<MyRidersDashboardProps> = ({
                 >
                   <p className="font-bold text-white/80">{horse.name}</p>
                   <p className="text-xs text-white/40">
-                    {horse.breed} · Age {horse.age}
+                    {getBreedName(horse.breed)} · Age {horse.age}
                   </p>
                 </button>
               ))}

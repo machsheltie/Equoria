@@ -18,6 +18,7 @@ import CompetitionDetailModal, {
   type Competition as ModalCompetition,
 } from '@/components/competition/CompetitionDetailModal';
 import PageHero from '@/components/layout/PageHero';
+import { Button } from '@/components/ui/button';
 
 const CompetitionBrowserPage = (): JSX.Element => {
   const { data, isLoading, error, refetch } = useCompetitions();
@@ -103,13 +104,9 @@ const CompetitionBrowserPage = (): JSX.Element => {
             <p className="text-sm text-[var(--text-muted)] mb-5">
               Please check your connection and try again.
             </p>
-            <button
-              type="button"
-              onClick={() => refetch()}
-              className="btn-primary-arcs inline-block text-sm px-8"
-            >
+            <Button type="button" onClick={() => refetch()} size="lg">
               Try Again
-            </button>
+            </Button>
           </div>
         </main>
       </div>

@@ -70,7 +70,7 @@ const FilterButton = memo(
       onClick={onClick}
       className={`flex-1 px-1 py-2 rounded text-xs font-medium transition-colors ${
         isActive
-          ? 'bg-blue-600 text-white'
+          ? 'bg-blue-600 text-[var(--text-primary)]'
           : 'bg-[rgba(15,35,70,0.5)] text-[rgb(148,163,184)] hover:bg-[rgba(15,35,70,0.7)]'
       }`}
       data-testid={testId}

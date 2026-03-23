@@ -12,6 +12,7 @@ import { NextActionsBar } from '@/components/hub/NextActionsBar';
 import { useHorses } from '@/hooks/api/useHorses';
 import { Button } from '@/components/ui/button';
 import { getHorseImage } from '@/lib/breed-images';
+import { getBreedName } from '@/lib/utils';
 
 /* ─── Care helpers ────────────────────────────────────────────────────── */
 function careChipStatus(
@@ -73,8 +74,7 @@ function HorseCard({
     trainingCooldown?: unknown;
   };
 }) {
-  const breedName =
-    typeof horse.breed === 'object' ? horse.breed?.name : (horse.breed ?? 'Unknown breed');
+  const breedName = getBreedName(horse.breed);
   const sex = horse.sex ?? '';
   const ageStr = horse.age != null ? `${horse.age} yrs` : '';
   const subtitle = [breedName, sex, ageStr].filter(Boolean).join(' · ');

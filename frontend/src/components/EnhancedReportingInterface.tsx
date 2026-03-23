@@ -30,6 +30,8 @@ import {
   PieChart,
   LineChart,
 } from 'lucide-react';
+import { Button } from '@/components/ui/button';
+import { apiClient } from '@/lib/api-client';
 
 // Types
 interface EnhancedReportingInterfaceProps {
@@ -107,54 +109,26 @@ interface ReportData {
   rawData: Record<string, unknown>[];
 }
 
-// API Base URL
-const API_BASE_URL = import.meta.env.VITE_API_URL || 'http://localhost:3000/api';
-
-// Custom hooks for data fetching
+// Custom hooks for data fetching (uses centralized apiClient for auth + /api/v1/ prefix)
 const useReportMetrics = () => {
   return useQuery({
     queryKey: ['report-metrics'],
-    queryFn: async () => {
-      const response = await fetch(`${API_BASE_URL}/reports/metrics`);
-      if (!response.ok) throw new Error('Failed to fetch report metrics');
-      const result = await response.json();
-      return result.data as MetricDefinition[];
-    },
+    queryFn: () => apiClient.get<MetricDefinition[]>('/api/v1/reports/metrics'),
   });
 };
 
 const useReportData = (config: ReportConfig, horseIds: number[]) => {
   return useQuery({
     queryKey: ['report-data', config, horseIds],
-    queryFn: async () => {
-      if (config.sections.length === 0) return null;
-      const response = await fetch(`${API_BASE_URL}/reports/generate`, {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({
-          config,
-          horseIds,
-        }),
-      });
-      if (!response.ok) throw new Error('Failed to fetch report data');
-      const result = await response.json();
-      return result.data as ReportData;
-    },
+    queryFn: () => apiClient.post<ReportData>('/api/v1/reports/generate', { config, horseIds }),
     enabled: config.sections.length > 0,
   });
 };
 
 const useGenerateReport = () => {
   return useMutation({
-    mutationFn: async ({ config, horseIds }: { config: ReportConfig; horseIds: number[] }) => {
-      const response = await fetch(`${API_BASE_URL}/reports/export`, {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ config, horseIds }),
-      });
-      if (!response.ok) throw new Error('Failed to generate report');
-      return response.blob();
-    },
+    mutationFn: ({ config, horseIds }: { config: ReportConfig; horseIds: number[] }) =>
+      apiClient.post<Blob>('/api/v1/reports/export', { config, horseIds }),
   });
 };
 
@@ -212,12 +186,7 @@ const EnhancedReportingInterface: React.FC<EnhancedReportingInterfaceProps> = ({
       <div className="flex items-center justify-center h-64">
         <div className="text-center">
           <p className="text-red-400 mb-4">Error loading reporting interface</p>
-          <button
-            onClick={() => metricsQuery.refetch()}
-            className="btn-primary-arcs px-4 py-2 rounded"
-          >
-            Retry
-          </button>
+          <Button onClick={() => metricsQuery.refetch()}>Retry</Button>
         </div>
       </div>
     );
@@ -293,10 +262,9 @@ const EnhancedReportingInterface: React.FC<EnhancedReportingInterfaceProps> = ({
           >
             <Settings className="w-5 h-5" />
           </button>
-          <button
+          <Button
             onClick={handleGenerateReport}
             disabled={generateReportMutation.isPending || reportConfig.sections.length === 0}
-            className="btn-primary-arcs px-4 py-2 rounded disabled:opacity-50 disabled:cursor-not-allowed flex items-center space-x-2"
           >
             {generateReportMutation.isPending ? (
               <>
@@ -309,7 +277,7 @@ const EnhancedReportingInterface: React.FC<EnhancedReportingInterfaceProps> = ({
                 <span>Generate Report</span>
               </>
             )}
-          </button>
+          </Button>
         </div>
       </div>
 

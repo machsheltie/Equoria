@@ -161,7 +161,7 @@ const TrainingRecommendations = ({ horseId }: TrainingRecommendationsProps) => {
             </p>
             <button
               onClick={() => refetch()}
-              className="mt-3 rounded-md bg-rose-600 px-4 py-2 text-sm text-white hover:bg-rose-700"
+              className="mt-3 rounded-md bg-rose-600 px-4 py-2 text-sm text-[var(--text-primary)] hover:bg-rose-700"
             >
               Retry
             </button>
@@ -274,19 +274,19 @@ const TrainingRecommendations = ({ horseId }: TrainingRecommendationsProps) => {
               bg: 'bg-[rgba(239,68,68,0.1)]',
               border: 'border-red-500/30',
               text: 'text-red-300',
-              badge: 'bg-rose-600 text-white',
+              badge: 'bg-rose-600 text-[var(--text-primary)]',
             },
             medium: {
               bg: 'bg-[rgba(212,168,67,0.1)]',
               border: 'border-amber-500/30',
               text: 'text-amber-300',
-              badge: 'bg-amber-600 text-white',
+              badge: 'bg-amber-600 text-[var(--text-primary)]',
             },
             low: {
               bg: 'bg-[rgba(37,99,235,0.1)]',
               border: 'border-blue-500/30',
               text: 'text-blue-300',
-              badge: 'bg-blue-600 text-white',
+              badge: 'bg-blue-600 text-[var(--text-primary)]',
             },
           };
 

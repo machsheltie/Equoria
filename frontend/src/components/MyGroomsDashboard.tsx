@@ -8,7 +8,7 @@
 
 import React, { useState } from 'react';
 import { Users, DollarSign, AlertCircle, Calendar, Trash2 } from 'lucide-react';
-import { Link } from 'react-router-dom';
+import { Button } from '@/components/ui/button';
 import AssignGroomModal from './AssignGroomModal';
 import { SkeletonBase } from '@/components/ui/SkeletonCard';
 import GroomPersonalityBadge from './groom/GroomPersonalityBadge';
@@ -26,6 +26,7 @@ interface MyGroomsDashboardProps {
   groomsData?: Groom[];
   assignmentsData?: GroomAssignment[];
   salaryCostsData?: SalarySummary;
+  onBrowseMarketplace?: () => void;
 }
 
 // Helper function to get max assignments by skill level
@@ -49,6 +50,7 @@ const MyGroomsDashboard: React.FC<MyGroomsDashboardProps> = ({
   groomsData,
   assignmentsData,
   salaryCostsData,
+  onBrowseMarketplace,
 }) => {
   const [selectedHorseId, setSelectedHorseId] = useState<number | null>(null);
   const [selectedHorseName, setSelectedHorseName] = useState<string>('');
@@ -128,13 +130,17 @@ const MyGroomsDashboard: React.FC<MyGroomsDashboardProps> = ({
         <p className="text-sm mb-4 max-w-sm" style={{ color: 'var(--text-muted)' }}>
           Hire a groom to help care for your foals and improve their development.
         </p>
-        <Link
-          to="/grooms"
-          className="inline-block px-4 py-2 rounded-lg text-sm font-medium text-white transition-opacity hover:opacity-85"
-          style={{ background: 'var(--celestial-primary)' }}
+        <button
+          type="button"
+          onClick={onBrowseMarketplace}
+          className="inline-block px-5 py-2.5 rounded-lg text-sm font-semibold transition-all hover:brightness-110 hover:shadow-[0_0_16px_rgba(200,168,78,0.3)]"
+          style={{
+            background: 'linear-gradient(135deg, var(--gold-primary) 0%, var(--gold-light) 100%)',
+            color: 'var(--bg-deep-space)',
+          }}
         >
           Browse Groom Marketplace
-        </Link>
+        </button>
       </div>
     );
   }
@@ -537,16 +543,15 @@ const MyGroomsDashboard: React.FC<MyGroomsDashboardProps> = ({
                 </div>
 
                 {/* Assign Button */}
-                <button
+                <Button
                   type="button"
                   onClick={() => handleAssignClick(groom.id)}
                   disabled={isFullyAssigned}
-                  className={
-                    isFullyAssigned ? 'btn-outline-celestial w-full' : 'btn-primary-arcs w-full'
-                  }
+                  variant={isFullyAssigned ? 'secondary' : 'default'}
+                  className="w-full"
                 >
                   {isFullyAssigned ? 'Max Assignments' : 'Assign to Horse'}
-                </button>
+                </Button>
               </div>
             );
           })}

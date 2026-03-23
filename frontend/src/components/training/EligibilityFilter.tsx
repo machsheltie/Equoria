@@ -70,19 +70,19 @@ const filterConfigs: FilterConfig[] = [
     key: 'all',
     label: 'All',
     ariaLabel: 'Show all horses',
-    activeClass: 'bg-blue-600 text-white',
+    activeClass: 'bg-blue-600 text-[var(--text-primary)]',
   },
   {
     key: 'ready',
     label: 'Ready',
     ariaLabel: 'Show horses ready to train',
-    activeClass: 'bg-green-600 text-white',
+    activeClass: 'bg-green-600 text-[var(--text-primary)]',
   },
   {
     key: 'cooldown',
     label: 'Cooldown',
     ariaLabel: 'Show horses on cooldown',
-    activeClass: 'bg-amber-600 text-white',
+    activeClass: 'bg-amber-600 text-[var(--text-primary)]',
   },
   {
     key: 'ineligible',

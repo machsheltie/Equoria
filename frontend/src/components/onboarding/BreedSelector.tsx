@@ -218,7 +218,7 @@ function BreedRow({
           </button>
           {expanded && (
             <div className="mt-2 space-y-3">
-              <p className="text-xs text-[var(--text-primary)]/70 font-[var(--font-body)] italic leading-relaxed">
+              <p className="text-xs text-white/70 font-[var(--font-body)] italic leading-relaxed">
                 {breed.loreBlurb}
               </p>
               <StatBars tendencies={breed.statTendencies} />
@@ -365,7 +365,7 @@ export function BreedSelector({ breeds, value, onChange }: BreedSelectorProps) {
       {/* ── Lore blurb for selected breed ── */}
       {selectedBreed && (
         <div className="rounded-xl p-3 bg-[rgba(201,162,39,0.06)] border border-[rgba(201,162,39,0.18)]">
-          <p className="text-xs italic text-[var(--text-primary)]/70 font-[var(--font-body)] leading-relaxed">
+          <p className="text-xs italic text-white/70 font-[var(--font-body)] leading-relaxed">
             &ldquo;{selectedBreed.loreBlurb}&rdquo;
           </p>
         </div>

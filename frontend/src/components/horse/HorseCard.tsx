@@ -7,7 +7,8 @@
  */
 
 import { Link } from 'react-router-dom';
-import { cn } from '@/lib/utils';
+import { cn, getBreedName } from '@/lib/utils';
+import { getHorseImage } from '@/lib/breed-images';
 import { Badge } from '@/components/ui/badge';
 import { NarrativeChip, deriveHorseChip } from '@/components/hub/NarrativeChip';
 
@@ -115,15 +116,14 @@ export function HorseCard({ horse }: { horse: HorseCardData }) {
       <div className="flex gap-4 p-4 pb-0">
         {/* Portrait */}
         <div className="w-16 h-16 md:w-20 md:h-20 rounded-full flex-shrink-0 ring-2 ring-[var(--gold-primary)] bg-gradient-to-br from-[var(--bg-midnight)] to-[var(--bg-twilight)] flex items-center justify-center text-2xl md:text-3xl relative">
-          {horse.portraitUrl ? (
-            <img
-              src={horse.portraitUrl}
-              alt=""
-              className="w-full h-full rounded-full object-cover"
-            />
-          ) : (
-            <span>🐴</span>
-          )}
+          <img
+            src={getHorseImage(horse.portraitUrl, horse.breed)}
+            alt={horse.name}
+            className="w-full h-full rounded-full object-cover"
+            onError={(e) => {
+              (e.target as HTMLImageElement).src = '/images/horse-placeholder.png';
+            }}
+          />
           {horse.level != null && (
             <span className="absolute -bottom-1 -right-1 bg-[rgba(200,168,78,0.25)] border border-[var(--gold-dim)] rounded-[var(--radius-sm)] px-1.5 text-[0.6rem] font-bold text-[var(--gold-light)]">
               {horse.level}
@@ -140,7 +140,7 @@ export function HorseCard({ horse }: { horse: HorseCardData }) {
             {horse.name}
           </h3>
           <p className="text-xs text-[var(--text-secondary)] truncate">
-            {horse.breed ?? 'Unknown breed'}
+            {getBreedName(horse.breed)}
             {horse.sex ? ` · ${horse.sex}` : ''}
             {horse.age != null ? ` · ${horse.age} yrs` : ''}
           </p>

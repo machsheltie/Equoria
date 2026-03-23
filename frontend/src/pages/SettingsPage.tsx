@@ -45,7 +45,7 @@ const Toggle: React.FC<ToggleProps> = ({ checked, onChange, label, description, 
     >
       <span
         className={cn(
-          'pointer-events-none inline-block h-4 w-4 rounded-full bg-white shadow',
+          'pointer-events-none inline-block h-4 w-4 rounded-full bg-[var(--bg-night-sky)] shadow',
           'transition-transform duration-200 ease-in-out',
           checked ? 'translate-x-4' : 'translate-x-0'
         )}
@@ -120,7 +120,7 @@ const SettingsPage: React.FC = () => {
                 'w-full flex items-center justify-between px-4 py-2.5 rounded-lg text-sm font-medium transition-all',
                 activeSection === section.id
                   ? 'bg-white/10 text-celestial-gold border border-white/10'
-                  : 'text-white/60 hover:text-white hover:bg-white/5'
+                  : 'text-white/60 hover:text-[var(--text-primary)] hover:bg-white/5'
               )}
               data-testid={`settings-nav-${section.id}`}
             >
@@ -143,7 +143,7 @@ const SettingsPage: React.FC = () => {
               className="rounded-xl border border-white/10 bg-black/40 backdrop-blur-md p-6 space-y-6"
               data-testid="settings-account"
             >
-              <h2 className="text-lg font-semibold text-white">Account Settings</h2>
+              <h2 className="text-lg font-semibold text-[var(--text-primary)]">Account Settings</h2>
 
               <div className="space-y-4">
                 <div>
@@ -157,7 +157,7 @@ const SettingsPage: React.FC = () => {
                     id="settings-username"
                     type="text"
                     defaultValue="NobleRider"
-                    className="w-full rounded-lg bg-white/5 border border-white/10 px-3 py-2 text-sm text-white placeholder:text-white/30 focus:outline-none focus:ring-1 focus:ring-celestial-gold/50"
+                    className="w-full rounded-lg bg-white/5 border border-white/10 px-3 py-2 text-sm text-[var(--text-primary)] placeholder:text-white/30 focus:outline-none focus:ring-1 focus:ring-celestial-gold/50"
                   />
                 </div>
 
@@ -172,7 +172,7 @@ const SettingsPage: React.FC = () => {
                     id="settings-email"
                     type="email"
                     defaultValue="rider@equoria.com"
-                    className="w-full rounded-lg bg-white/5 border border-white/10 px-3 py-2 text-sm text-white placeholder:text-white/30 focus:outline-none focus:ring-1 focus:ring-celestial-gold/50"
+                    className="w-full rounded-lg bg-white/5 border border-white/10 px-3 py-2 text-sm text-[var(--text-primary)] placeholder:text-white/30 focus:outline-none focus:ring-1 focus:ring-celestial-gold/50"
                   />
                 </div>
 
@@ -218,7 +218,9 @@ const SettingsPage: React.FC = () => {
               className="rounded-xl border border-white/10 bg-black/40 backdrop-blur-md p-6 space-y-6"
               data-testid="settings-notifications"
             >
-              <h2 className="text-lg font-semibold text-white">Notification Preferences</h2>
+              <h2 className="text-lg font-semibold text-[var(--text-primary)]">
+                Notification Preferences
+              </h2>
 
               <div className="space-y-1">
                 <h3 className="text-xs uppercase tracking-widest text-white/40 font-medium mb-2 pb-1 border-b border-white/5">
@@ -282,7 +284,7 @@ const SettingsPage: React.FC = () => {
               className="rounded-xl border border-white/10 bg-black/40 backdrop-blur-md p-6 space-y-6"
               data-testid="settings-display"
             >
-              <h2 className="text-lg font-semibold text-white">Display Settings</h2>
+              <h2 className="text-lg font-semibold text-[var(--text-primary)]">Display Settings</h2>
 
               <div className="space-y-1">
                 <Toggle

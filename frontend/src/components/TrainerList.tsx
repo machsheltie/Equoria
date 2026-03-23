@@ -35,7 +35,7 @@ const SKILL_LEVEL_LABELS: Record<
   },
   developing: {
     label: 'Developing',
-    colorClass: 'bg-blue-900/60 text-blue-300',
+    colorClass: 'bg-[var(--bg-deep-space)]/60 text-blue-300',
     visibility: 'Some specializations revealed',
   },
   expert: {
@@ -130,7 +130,7 @@ const TrainerList: React.FC<TrainerListProps> = () => {
           data-testid="refresh-marketplace-button"
           onClick={handleRefresh}
           disabled={refreshMutation.isPending}
-          className="flex items-center gap-2 px-4 py-2 bg-white/10 border border-white/10 text-white/70 rounded-lg hover:bg-white/15 hover:text-white transition-all disabled:opacity-50 text-sm"
+          className="flex items-center gap-2 px-4 py-2 bg-white/10 border border-white/10 text-white/70 rounded-lg hover:bg-white/15 hover:text-[var(--text-primary)] transition-all disabled:opacity-50 text-sm"
           aria-label="Refresh marketplace"
         >
           <RefreshCw className={`w-4 h-4 ${refreshMutation.isPending ? 'animate-spin' : ''}`} />
@@ -152,7 +152,7 @@ const TrainerList: React.FC<TrainerListProps> = () => {
       )}
 
       {/* Skill Level Transparency Note */}
-      <div className="px-4 py-3 rounded-lg bg-blue-900/20 border border-blue-500/20 text-xs text-blue-300/80">
+      <div className="px-4 py-3 rounded-lg bg-[var(--bg-deep-space)]/20 border border-blue-500/20 text-xs text-blue-300/80">
         <strong>Level = Information, not quality.</strong> Novice trainers are affordable but their
         specializations are hidden — they could be exceptional. Expert trainers reveal all skills,
         good or bad.

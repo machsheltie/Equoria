@@ -12,6 +12,7 @@ import React from 'react';
 import BaseModal from '@/components/common/BaseModal';
 import { Heart, AlertTriangle, DollarSign, Clock, TrendingUp } from 'lucide-react';
 import type { Horse, CompatibilityAnalysis } from '@/types/breeding';
+import { getHorseImage } from '@/lib/breed-images';
 
 export interface BreedingConfirmationModalProps {
   isOpen: boolean;
@@ -47,13 +48,14 @@ const HorseCard: React.FC<HorseCardProps> = ({ horse, type }) => {
           <p className={`text-xs font-semibold uppercase tracking-wide ${labelColor}`}>{label}</p>
           <h4 className="text-lg font-bold text-[rgb(220,235,255)] mt-1">{horse.name}</h4>
         </div>
-        {horse.imageUrl && (
-          <img
-            src={horse.imageUrl}
-            alt={horse.name}
-            className="h-12 w-12 rounded-full object-cover border-2 border-[rgba(37,99,235,0.3)] shadow-sm"
-          />
-        )}
+        <img
+          src={getHorseImage(horse.imageUrl, horse.breedName)}
+          alt={horse.name}
+          className="h-12 w-12 rounded-full object-cover border-2 border-[rgba(37,99,235,0.3)] shadow-sm"
+          onError={(e) => {
+            (e.target as HTMLImageElement).src = '/images/horse-placeholder.png';
+          }}
+        />
       </div>
 
       <div className="space-y-2 text-sm">

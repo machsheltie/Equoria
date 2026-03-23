@@ -215,7 +215,7 @@ const EnrichmentActivityPanel: React.FC<EnrichmentActivityPanelProps> = ({ foal 
     return (
       <div className="space-y-6">
         <div className="flex items-center justify-center py-12">
-          <div className="h-8 w-8 border-4 border-blue-600 border-t-transparent rounded-full animate-spin"></div>
+          <div className="h-8 w-8 border-4 border-[var(--gold-primary)] border-t-transparent rounded-full animate-spin"></div>
         </div>
       </div>
     );
@@ -324,11 +324,13 @@ const EnrichmentActivityPanel: React.FC<EnrichmentActivityPanelProps> = ({ foal 
               );
               const isRecommended = enrichmentStatus.recommendedActivities.includes(activity.id);
 
+              if (!status) return null;
+
               return (
                 <ActivityCard
                   key={activity.id}
                   activity={activity}
-                  status={status!}
+                  status={status}
                   foal={foal}
                   onClick={() => handleActivityClick(activity)}
                   isRecommended={isRecommended}

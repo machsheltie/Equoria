@@ -146,7 +146,7 @@ const HorseCard = ({
             <div className="absolute top-2 left-2 z-[var(--z-raised)]">
               <Badge
                 variant="secondary"
-                className="bg-black/60 text-white border-white/10 backdrop-blur-md"
+                className="bg-black/60 text-[var(--text-primary)] border-white/10 backdrop-blur-md"
               >
                 <Clock className="w-3 h-3 mr-1" />
                 {cooldownHours}h
@@ -156,7 +156,7 @@ const HorseCard = ({
 
           {/* Name & Basic Info Overlay */}
           <div className="absolute bottom-0 left-0 right-0 p-4 z-[var(--z-raised)]">
-            <h3 className="text-lg font-bold text-white mb-1 leading-none tracking-tight">
+            <h3 className="text-lg font-bold text-[var(--text-primary)] mb-1 leading-none tracking-tight">
               {horseName}
             </h3>
             <div className="flex items-center space-x-2 text-xs text-white/80">

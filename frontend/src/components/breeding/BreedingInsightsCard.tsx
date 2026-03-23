@@ -134,7 +134,7 @@ const BreedingInsightsCard: React.FC<BreedingInsightsCardProps> = ({ insights })
           <ul className="space-y-2">
             {recommendations.map((recommendation, index) => (
               <li key={index} className="flex items-start gap-2 text-sm text-blue-400">
-                <span className="inline-block w-1.5 h-1.5 rounded-full bg-blue-400 mt-1.5 flex-shrink-0" />
+                <span className="inline-block w-1.5 h-1.5 rounded-full bg-[var(--gold-primary)] mt-1.5 flex-shrink-0" />
                 <span>{recommendation}</span>
               </li>
             ))}

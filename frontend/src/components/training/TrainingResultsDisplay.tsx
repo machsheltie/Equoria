@@ -108,14 +108,18 @@ const TrainingResultsDisplay: React.FC<TrainingResultsDisplayProps> = ({
         <button
           type="button"
           onClick={onClose}
-          className="rounded-md border border-[rgba(37,99,235,0.3)] px-4 py-2 text-sm font-semibold text-[rgb(148,163,184)] shadow-sm hover:bg-[rgba(15,35,70,0.5)] focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-2 focus:ring-offset-[rgba(15,35,70,0.9)]"
+          className="rounded-lg border border-white/20 px-4 py-2 text-sm font-semibold text-white/70 hover:text-white/90 hover:bg-white/10 transition-colors"
         >
           Close
         </button>
         <button
           type="button"
           onClick={onTrainAgain}
-          className="rounded-md bg-emerald-600 px-4 py-2 text-sm font-semibold text-white shadow hover:bg-emerald-500 focus:outline-none focus:ring-2 focus:ring-emerald-500 focus:ring-offset-2 focus:ring-offset-[rgba(15,35,70,0.9)]"
+          className="rounded-lg px-5 py-2 text-sm font-semibold transition-all hover:brightness-110 hover:shadow-[0_0_16px_rgba(200,168,78,0.3)]"
+          style={{
+            background: 'linear-gradient(135deg, var(--gold-primary) 0%, var(--gold-light) 100%)',
+            color: 'var(--bg-deep-space)',
+          }}
         >
           Train Again
         </button>

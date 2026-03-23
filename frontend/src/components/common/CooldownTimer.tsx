@@ -28,7 +28,9 @@ interface TimeRemaining {
 
 function getTimeRemaining(endsAt: string | null | undefined): TimeRemaining {
   if (!endsAt) return { total: 0, days: 0, hours: 0, minutes: 0, seconds: 0 };
-  const total = new Date(endsAt).getTime() - Date.now();
+  const endMs = new Date(endsAt).getTime();
+  if (Number.isNaN(endMs)) return { total: 0, days: 0, hours: 0, minutes: 0, seconds: 0 };
+  const total = endMs - Date.now();
   if (total <= 0) return { total: 0, days: 0, hours: 0, minutes: 0, seconds: 0 };
   return {
     total,
@@ -73,10 +75,12 @@ export function CooldownTimer({
 
   useEffect(() => {
     tick();
-    // Use 1s interval when < 60s remain; 60s otherwise to reduce redraws
-    const interval = setInterval(tick, time.total > 0 && time.total < 60_000 ? 1000 : 60_000);
+    // Use 1s interval when < 60s remain; 60s otherwise to reduce redraws.
+    // Re-run the effect when crossing the 60s threshold so the interval switches.
+    const ms = time.total > 0 && time.total < 60_000 ? 1000 : 60_000;
+    const interval = setInterval(tick, ms);
     return () => clearInterval(interval);
-  }, [endsAt]); // tick is stable (only depends on endsAt)
+  }, [endsAt, tick, time.total < 60_000]);
 
   const isReady = time.total <= 0;
   const displayText = isReady ? 'Ready!' : formatLabel(time);

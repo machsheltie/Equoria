@@ -57,7 +57,7 @@ export function getQualityRating(score: number): QualityRating {
   } else if (clampedScore >= 80) {
     return {
       label: 'Very Good',
-      color: 'text-blue-700',
+      color: 'text-[var(--gold-primary)]',
       bgColor: 'bg-blue-50 border-blue-200',
     };
   } else if (clampedScore >= 70) {
@@ -69,7 +69,7 @@ export function getQualityRating(score: number): QualityRating {
   } else if (clampedScore >= 60) {
     return {
       label: 'Average',
-      color: 'text-slate-700',
+      color: 'text-[var(--text-secondary)]',
       bgColor: 'bg-slate-50 border-slate-200',
     };
   } else if (clampedScore >= 50) {
@@ -216,7 +216,7 @@ export function getScoreColor(score: number): string {
   if (clampedScore >= 90) return 'bg-emerald-500';
   if (clampedScore >= 80) return 'bg-blue-500';
   if (clampedScore >= 70) return 'bg-amber-500';
-  if (clampedScore >= 60) return 'bg-slate-500';
+  if (clampedScore >= 60) return 'bg-slate-600';
   if (clampedScore >= 50) return 'bg-orange-500';
   return 'bg-rose-500';
 }

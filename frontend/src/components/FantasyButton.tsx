@@ -39,7 +39,7 @@ const FantasyButton = ({
 
   const variantClasses =
     variant === 'primary'
-      ? 'bg-[rgba(37,99,235,0.9)] text-white magical-glow hover:bg-[rgba(37,99,235,1)] hover:shadow-lg'
+      ? 'bg-[rgba(37,99,235,0.9)] text-[var(--text-primary)] magical-glow hover:bg-[rgba(37,99,235,1)] hover:shadow-lg'
       : 'bg-[rgba(15,35,70,0.5)] text-[rgb(220,235,255)] border border-[rgba(37,99,235,0.3)] hover:bg-[rgba(15,35,70,0.7)]';
 
   const pressedClasses = isPressed ? 'transform scale-95' : '';

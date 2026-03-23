@@ -170,7 +170,7 @@ const QuickTrainModal = ({ isOpen, horses, onClose, onTrain }: QuickTrainModalPr
           <div className="flex items-center justify-end gap-3 p-6 border-t border-[rgba(37,99,235,0.2)]">
             <button
               onClick={onClose}
-              className="px-4 py-2 text-[rgb(220,235,255)] hover:text-white focus:outline-none focus:ring-2 focus:ring-blue-500 rounded"
+              className="px-4 py-2 text-[rgb(220,235,255)] hover:text-[var(--text-primary)] focus:outline-none focus:ring-2 focus:ring-blue-500 rounded"
               data-testid="cancel-button"
             >
               Cancel
@@ -178,7 +178,7 @@ const QuickTrainModal = ({ isOpen, horses, onClose, onTrain }: QuickTrainModalPr
             <button
               onClick={handleTrain}
               disabled={!hasSelection}
-              className="px-6 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-blue-500 disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
+              className="px-6 py-2 bg-blue-600 text-[var(--text-primary)] rounded-lg hover:bg-[var(--gold-dim)] focus:outline-none focus:ring-2 focus:ring-blue-500 disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
               data-testid="train-selected-button"
             >
               Train Selected ({selectedIds.size})

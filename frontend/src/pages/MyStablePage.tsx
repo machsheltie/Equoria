@@ -146,7 +146,7 @@ const StableProfileTab: React.FC = () => (
       </div>
       <Link
         to="/stable"
-        className="flex items-center gap-2 px-4 py-2 bg-white/5 border border-white/10 rounded-lg text-sm text-white/60 hover:text-white hover:bg-white/10 transition-all"
+        className="flex items-center gap-2 px-4 py-2 bg-white/5 border border-white/10 rounded-lg text-sm text-white/60 hover:text-[var(--text-primary)] hover:bg-white/10 transition-all"
       >
         Go to Stable
         <ChevronRight className="w-4 h-4" />

@@ -17,6 +17,7 @@ import { useHorses } from '../hooks/api/useHorses';
 import { useProfile } from '../hooks/useAuth';
 import { getHorseImage } from '@/lib/breed-images';
 import { getXPProgressPercent } from '@/lib/xp-utils';
+import { getBreedName } from '@/lib/utils';
 import type { HorseSummary } from '@/lib/api-client';
 
 /* ─── Helpers ────────────────────────────────────────────────────────── */
@@ -77,7 +78,7 @@ function careStatus(
 function StableHorseCard({ horse, onClick }: { horse: HorseSummary; onClick: () => void }) {
   const age = horse.ageYears ?? horse.age ?? 0;
   const sex = horse.sex ?? horse.gender ?? '';
-  const subtitle = [horse.breed, sex, `${age} yrs`].filter(Boolean).join(' · ');
+  const subtitle = [getBreedName(horse.breed), sex, `${age} yrs`].filter(Boolean).join(' · ');
   const isLegendary = !!(horse as Record<string, unknown>).isLegendary;
 
   const traits = horse.traits ?? (horse.trait ? [horse.trait] : []);

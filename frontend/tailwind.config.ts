@@ -27,6 +27,7 @@ export default {
         parchment: 'rgb(var(--parchment) / <alpha-value>)',
         'midnight-ink': 'rgb(var(--midnight-ink) / <alpha-value>)',
         'mystic-silver': 'rgb(var(--mystic-silver) / <alpha-value>)',
+        'celestial-gold': 'rgb(var(--burnished-gold) / <alpha-value>)',
         border: 'rgb(var(--border) / <alpha-value>)',
         input: 'rgb(var(--input) / <alpha-value>)',
         ring: 'rgb(var(--ring) / <alpha-value>)',
@@ -41,7 +42,7 @@ export default {
           foreground: 'rgb(var(--secondary-foreground) / <alpha-value>)',
         },
         destructive: {
-          DEFAULT: 'hsl(var(--destructive))',
+          DEFAULT: 'rgb(var(--destructive) / <alpha-value>)',
           foreground: 'rgb(var(--destructive-foreground) / <alpha-value>)',
         },
         muted: {

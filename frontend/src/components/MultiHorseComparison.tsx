@@ -20,6 +20,8 @@
 import React, { useState, useMemo } from 'react';
 import { useQuery } from '@tanstack/react-query';
 import { Search, Download, Save, Eye, EyeOff, BarChart3, TrendingUp } from 'lucide-react';
+import { Button } from '@/components/ui/button';
+import { getBreedName } from '@/lib/utils';
 
 // Types
 interface MultiHorseComparisonProps {
@@ -152,12 +154,7 @@ const MultiHorseComparison: React.FC<MultiHorseComparisonProps> = ({
       <div className="flex items-center justify-center h-64">
         <div className="text-center">
           <p className="text-red-400 mb-4">Error loading horses</p>
-          <button
-            onClick={() => horsesQuery.refetch()}
-            className="btn-primary-arcs px-4 py-2 rounded"
-          >
-            Retry
-          </button>
+          <Button onClick={() => horsesQuery.refetch()}>Retry</Button>
         </div>
       </div>
     );
@@ -170,14 +167,16 @@ const MultiHorseComparison: React.FC<MultiHorseComparisonProps> = ({
     let filtered = horses.filter(
       (horse) =>
         horse.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
-        horse.breed.toLowerCase().includes(searchTerm.toLowerCase()) ||
+        getBreedName(horse.breed).toLowerCase().includes(searchTerm.toLowerCase()) ||
         horse.traits.some((trait) => trait.toLowerCase().includes(searchTerm.toLowerCase()))
     );
 
     // Apply additional filters
     if (filterBy === 'breed') {
       // Group by breed for easier selection
-      filtered = filtered.sort((a, b) => a.breed.localeCompare(b.breed));
+      filtered = filtered.sort((a, b) =>
+        getBreedName(a.breed).localeCompare(getBreedName(b.breed))
+      );
     } else if (filterBy === 'age') {
       // Group by age ranges
       filtered = filtered.sort((a, b) => a.age - b.age);
@@ -191,7 +190,7 @@ const MultiHorseComparison: React.FC<MultiHorseComparisonProps> = ({
         case 'age':
           return a.age - b.age;
         case 'breed':
-          return a.breed.localeCompare(b.breed);
+          return getBreedName(a.breed).localeCompare(getBreedName(b.breed));
         case 'score':
           return (b.overallScore || 0) - (a.overallScore || 0);
         default:
@@ -247,14 +246,13 @@ const MultiHorseComparison: React.FC<MultiHorseComparisonProps> = ({
           >
             <BarChart3 className="w-5 h-5" />
           </button>
-          <button
+          <Button
             onClick={() => setShowComparison(!showComparison)}
             disabled={selectedHorses.length < 2}
-            className="btn-primary-arcs px-4 py-2 rounded disabled:opacity-50 disabled:cursor-not-allowed flex items-center space-x-2"
           >
             {showComparison ? <EyeOff className="w-4 h-4" /> : <Eye className="w-4 h-4" />}
             <span>{showComparison ? 'Hide Comparison' : 'Show Comparison'}</span>
-          </button>
+          </Button>
         </div>
       </div>
 
@@ -434,7 +432,7 @@ const HorseSelectionItem: React.FC<HorseSelectionItemProps> = ({
             <div>
               <span className="font-medium text-[rgb(220,235,255)]">{horse.name}</span>
               <div className="text-sm text-[rgb(148,163,184)]">
-                {horse.breed} • {horse.age} years old
+                {getBreedName(horse.breed)} • {horse.age} years old
               </div>
             </div>
           </div>
@@ -512,7 +510,7 @@ const ComparisonMatrix: React.FC<ComparisonMatrixProps> = ({
   const getAttributeValue = (horse: Horse, attribute: string) => {
     switch (attribute) {
       case 'breed':
-        return horse.breed;
+        return getBreedName(horse.breed);
       case 'age':
         return `${horse.age} years`;
       case 'speed':
@@ -756,7 +754,7 @@ const RankingDashboard: React.FC<RankingDashboardProps> = ({ horses, comparisonD
                   <div>
                     <h4 className="font-semibold text-lg text-[rgb(220,235,255)]">{horse.name}</h4>
                     <p className="text-sm opacity-75">
-                      {horse.breed} • {horse.age} years old
+                      {getBreedName(horse.breed)} • {horse.age} years old
                     </p>
                   </div>
                 </div>

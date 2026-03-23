@@ -52,7 +52,7 @@ const AgeUpCounter = ({ horseId }: AgeUpCounterProps) => {
         <div className="text-sm text-rose-400">{error?.message || 'Failed to fetch age data'}</div>
         <button
           onClick={() => refetch()}
-          className="mt-3 rounded-md bg-rose-600 px-4 py-2 text-sm text-white hover:bg-rose-700"
+          className="mt-3 rounded-md bg-rose-600 px-4 py-2 text-sm text-[var(--text-primary)] hover:bg-rose-700"
         >
           Retry
         </button>

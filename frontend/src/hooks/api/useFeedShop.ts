@@ -29,15 +29,13 @@ export function useFeedCatalog() {
 export function usePurchaseFeed() {
   const queryClient = useQueryClient();
 
-  return useMutation<
-    { success: boolean; data: FeedPurchaseResult },
-    ApiError,
-    { horseId: number; feedId: string }
-  >({
+  return useMutation<FeedPurchaseResult, ApiError, { horseId: number; feedId: string }>({
     mutationFn: (data) => feedShopApi.purchaseFeed(data),
     onSuccess: () => {
       // Invalidate horse data so currentFeed / lastFedDate / energyLevel refresh
       queryClient.invalidateQueries({ queryKey: ['horses'] });
+      // Invalidate profile so balance updates in nav
+      queryClient.invalidateQueries({ queryKey: ['profile'] });
     },
   });
 }

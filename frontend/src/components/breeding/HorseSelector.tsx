@@ -207,7 +207,7 @@ const HorseSelector: React.FC<HorseSelectorProps> = ({
                   <div className="flex-shrink-0">
                     {isSelected ? (
                       <div className="h-6 w-6 rounded-full bg-emerald-500 flex items-center justify-center">
-                        <span className="text-white text-sm">✓</span>
+                        <span className="text-[var(--text-primary)] text-sm">✓</span>
                       </div>
                     ) : canBreed ? (
                       <div className="h-6 w-6 rounded-full border-2 border-[rgba(37,99,235,0.3)]" />

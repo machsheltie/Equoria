@@ -10,10 +10,13 @@ import { Link, useNavigate } from 'react-router-dom';
 import { Mail, ArrowLeft, CheckCircle } from 'lucide-react';
 import { forgotPasswordSchema, type ForgotPasswordFormData } from '../lib/validation-schemas';
 import { useForgotPassword } from '../hooks/useAuth';
+import { useResponsiveBackground } from '../hooks/useResponsiveBackground';
+import { Button } from '@/components/ui/button';
 
 const ForgotPasswordPage: React.FC = () => {
   const navigate = useNavigate();
   const { mutate: forgotPassword, isPending, isSuccess, error, reset } = useForgotPassword();
+  const bgImage = useResponsiveBackground();
 
   const [email, setEmail] = useState('');
   const [validationErrors, setValidationErrors] = useState<Record<string, string>>({});
@@ -43,9 +46,9 @@ const ForgotPasswordPage: React.FC = () => {
     <div
       className="min-h-screen w-full flex flex-col items-center justify-center relative overflow-hidden"
       style={{
-        backgroundImage: "url('/equoriacelestial.png')",
+        backgroundImage: `url('${bgImage}')`,
         backgroundSize: 'cover',
-        backgroundPosition: 'center top',
+        backgroundPosition: 'center center',
         backgroundRepeat: 'no-repeat',
       }}
     >
@@ -95,23 +98,20 @@ const ForgotPasswordPage: React.FC = () => {
               </p>
 
               <div className="space-y-2 pt-2">
-                <button
+                <Button
                   type="button"
-                  className="btn-outline-celestial"
+                  variant="secondary"
+                  className="w-full"
                   onClick={() => {
                     reset();
                     setEmail('');
                   }}
                 >
                   Try Another Email
-                </button>
-                <button
-                  type="button"
-                  className="btn-primary-arcs"
-                  onClick={() => navigate('/login')}
-                >
+                </Button>
+                <Button type="button" className="w-full" onClick={() => navigate('/login')}>
                   Return to Login
-                </button>
+                </Button>
               </div>
             </div>
           ) : (
@@ -171,9 +171,9 @@ const ForgotPasswordPage: React.FC = () => {
                   )}
                 </div>
 
-                <button type="submit" disabled={isPending} className="btn-primary-arcs">
+                <Button type="submit" disabled={isPending} className="w-full">
                   {isPending ? 'Sending...' : 'Send Reset Link'}
-                </button>
+                </Button>
               </form>
 
               {/* Sign in link */}

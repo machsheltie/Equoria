@@ -279,8 +279,9 @@ export const TASK_CATEGORY_INFO: Record<
   foal_grooming: {
     label: 'Foal Grooming',
     icon: '✨',
-    colorClass: 'text-blue-700',
-    badgeClass: 'bg-blue-50 text-blue-700 border border-blue-200',
+    colorClass: 'text-[var(--gold-primary)]',
+    badgeClass:
+      'bg-[rgba(37,99,235,0.15)] text-[var(--gold-primary)] border border-[rgba(37,99,235,0.3)]',
     description: 'Grooming preparation tasks for foals aged 1–3 years',
   },
   general_grooming: {

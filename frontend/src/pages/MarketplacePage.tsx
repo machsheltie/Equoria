@@ -10,6 +10,7 @@ import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { groomsApi, userProgressApi, type MarketplaceGroom } from '../lib/api-client';
 import { useProfile } from '../hooks/useAuth';
 import PageHero from '@/components/layout/PageHero';
+import { Button } from '@/components/ui/button';
 import {
   Coins,
   RefreshCw,
@@ -172,23 +173,24 @@ const GroomCard = ({
 
         {/* Action buttons */}
         <div className="flex gap-2 pt-2">
-          <button
+          <Button
+            variant="secondary"
+            size="sm"
+            className="flex-1"
             onClick={() => setShowDetails(true)}
-            className="btn-outline-celestial flex-1"
-            style={{ padding: '0.6rem 1rem', fontSize: '0.875rem' }}
           >
             <Info className="w-4 h-4 inline mr-1" />
             Details
-          </button>
-          <button
+          </Button>
+          <Button
+            size="sm"
+            className="flex-1"
             onClick={() => onHire(groom.marketplaceId)}
             disabled={isHiring}
-            className="btn-primary-arcs flex-1"
-            style={{ padding: '0.6rem 1rem', fontSize: '0.875rem' }}
           >
             <Sparkles className="w-4 h-4 inline mr-1" />
             {isHiring ? 'Hiring…' : 'Hire'}
-          </button>
+          </Button>
         </div>
       </div>
 
@@ -196,7 +198,7 @@ const GroomCard = ({
       {showDetails && (
         <div className="fixed inset-0 z-[var(--z-modal)] flex items-center justify-center p-4">
           <div className="absolute inset-0 bg-black/60" onClick={() => setShowDetails(false)} />
-          <div className="glass-panel relative w-full max-w-md p-6 space-y-4 max-h-[80vh] overflow-y-auto z-[var(--z-raised)]">
+          <div className="glass-panel relative w-full max-w-md p-6 space-y-4 max-h-[80vh] overflow-y-auto z-10">
             {/* Modal header */}
             <div className="flex items-center justify-between mb-2">
               <h2 className="fantasy-header text-xl text-[rgb(212,168,67)]">
@@ -276,17 +278,17 @@ const GroomCard = ({
             </div>
 
             {/* Hire button */}
-            <button
+            <Button
+              className="w-full"
               onClick={() => {
                 setShowDetails(false);
                 onHire(groom.marketplaceId);
               }}
               disabled={isHiring}
-              className="btn-primary-arcs"
             >
               <Sparkles className="w-4 h-4 inline mr-2" />
               Hire {groom.firstName} {groom.lastName}
-            </button>
+            </Button>
           </div>
         </div>
       )}
@@ -319,7 +321,7 @@ const MarketplacePage = () => {
   });
 
   const { data: userData } = useQuery({
-    queryKey: ['user', userId],
+    queryKey: ['profile'],
     queryFn: () => userProgressApi.getUser(userId!),
     enabled: !!userId,
   });
@@ -335,7 +337,7 @@ const MarketplacePage = () => {
     mutationFn: groomsApi.hireGroom,
     onSuccess: (data) => {
       queryClient.invalidateQueries({ queryKey: ['marketplace'] });
-      queryClient.invalidateQueries({ queryKey: ['user', userId] });
+      queryClient.invalidateQueries({ queryKey: ['profile'] });
       queryClient.invalidateQueries({ queryKey: ['grooms', userId] });
       setNotification({
         type: 'success',
@@ -357,7 +359,7 @@ const MarketplacePage = () => {
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['marketplace'] });
       queryClient.invalidateQueries({ queryKey: ['marketplaceStats'] });
-      queryClient.invalidateQueries({ queryKey: ['user', userId] });
+      queryClient.invalidateQueries({ queryKey: ['profile'] });
       setNotification({ type: 'success', message: 'Marketplace refreshed successfully!' });
       setTimeout(() => setNotification(null), 3000);
     },
@@ -487,14 +489,11 @@ const MarketplacePage = () => {
 
           {/* Refresh button */}
           <div className="glass-panel p-4 flex items-center justify-center">
-            <button
+            <Button
+              variant={marketplace?.canRefreshFree ? 'default' : 'secondary'}
+              className="w-full"
               onClick={handleRefresh}
               disabled={refreshMutation.isPending}
-              className={
-                marketplace?.canRefreshFree
-                  ? 'btn-primary-arcs w-full'
-                  : 'btn-outline-celestial w-full'
-              }
             >
               <RefreshCw
                 className={`w-4 h-4 inline mr-2 ${refreshMutation.isPending ? 'animate-spin' : ''}`}
@@ -502,7 +501,7 @@ const MarketplacePage = () => {
               {marketplace?.canRefreshFree
                 ? 'Free Refresh'
                 : `Refresh ($${marketplace?.refreshCost})`}
-            </button>
+            </Button>
           </div>
         </div>
 
@@ -527,17 +526,16 @@ const MarketplacePage = () => {
             <p className="text-[rgb(148,163,184)] mb-6">
               Refresh the marketplace to see new grooms
             </p>
-            <button
+            <Button
               onClick={handleRefresh}
               disabled={refreshMutation.isPending}
-              className="btn-primary-arcs"
               style={{ maxWidth: '200px', margin: '0 auto' }}
             >
               <RefreshCw
                 className={`w-4 h-4 inline mr-2 ${refreshMutation.isPending ? 'animate-spin' : ''}`}
               />
               Refresh Marketplace
-            </button>
+            </Button>
           </div>
         )}
       </div>

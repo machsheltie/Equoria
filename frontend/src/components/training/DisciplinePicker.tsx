@@ -95,10 +95,10 @@ const DisciplineCategory = ({
                 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-1
                 ${
                   isSelected
-                    ? 'bg-blue-600 text-white border-blue-600 shadow-md'
+                    ? 'bg-blue-600 text-[var(--text-primary)] border-[var(--gold-primary)] shadow-md'
                     : isDisabled
                       ? 'bg-[rgba(15,35,70,0.5)] text-[rgb(148,163,184)] border-[rgba(37,99,235,0.2)] cursor-not-allowed'
-                      : 'bg-[rgba(15,35,70,0.4)] text-[rgb(220,235,255)] border-[rgba(37,99,235,0.3)] hover:border-blue-400 hover:bg-[rgba(37,99,235,0.08)] cursor-pointer'
+                      : 'bg-[rgba(15,35,70,0.4)] text-[rgb(220,235,255)] border-[rgba(37,99,235,0.3)] hover:border-[var(--gold-light)] hover:bg-[rgba(37,99,235,0.08)] cursor-pointer'
                 }
               `}
             >
@@ -107,7 +107,7 @@ const DisciplineCategory = ({
                 <span
                   className={`text-xs font-semibold ${
                     isSelected
-                      ? 'text-blue-100'
+                      ? 'text-[var(--gold-light)]'
                       : isDisabled
                         ? 'text-[rgb(148,163,184)]'
                         : 'text-[rgb(148,163,184)]'

@@ -486,7 +486,7 @@ const LeaderboardHorseDetailModal = ({
                 <div className="flex items-center gap-3 pt-4 border-t border-[rgba(37,99,235,0.3)]">
                   {onViewFullProfile && (
                     <button
-                      className="inline-flex items-center gap-2 px-4 py-2 bg-blue-600 text-white text-sm font-medium rounded-lg hover:bg-blue-700 transition-colors"
+                      className="inline-flex items-center gap-2 px-4 py-2 bg-blue-600 text-[var(--text-primary)] text-sm font-medium rounded-lg hover:bg-[var(--gold-dim)] transition-colors"
                       onClick={() => onViewFullProfile(horseData.horseId)}
                       data-testid="view-full-profile-button"
                     >

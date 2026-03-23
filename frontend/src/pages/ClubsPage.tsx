@@ -227,7 +227,7 @@ const ClubGrid: React.FC<{
                 type="button"
                 onClick={() => joinClub.mutate(club.id)}
                 disabled={joinClub.isPending}
-                className="w-full py-2 text-xs font-medium rounded-lg bg-white/5 border border-white/10 text-white/60 hover:text-white hover:bg-white/10 transition-colors flex items-center justify-center gap-1.5 disabled:opacity-50 disabled:cursor-not-allowed"
+                className="w-full py-2 text-xs font-medium rounded-lg bg-white/5 border border-white/10 text-white/60 hover:text-[var(--text-primary)] hover:bg-white/10 transition-colors flex items-center justify-center gap-1.5 disabled:opacity-50 disabled:cursor-not-allowed"
                 data-testid={`join-button-${club.id}`}
               >
                 <ChevronRight className="w-3.5 h-3.5" />

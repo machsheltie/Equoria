@@ -118,7 +118,7 @@ const GroomShowHandlerPanel: React.FC<GroomShowHandlerPanelProps> = ({ groom }) 
           <ScoreWeightRow
             label="Horse Conformation"
             percent={Math.round(CONFORMATION_SHOW_WEIGHTS.conformationWeight * 100)}
-            color="bg-blue-400"
+            color="bg-[var(--gold-primary)]"
             testId="score-weight-conformation"
           />
           <ScoreWeightRow

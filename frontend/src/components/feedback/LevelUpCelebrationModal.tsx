@@ -220,7 +220,7 @@ const LevelUpCelebrationModal = memo(function LevelUpCelebrationModal({
           <button
             type="button"
             onClick={onClose}
-            className="absolute top-3 right-3 text-white/80 hover:text-white transition-colors p-1 rounded-full hover:bg-white/10"
+            className="absolute top-3 right-3 text-white/80 hover:text-[var(--text-primary)] transition-colors p-1 rounded-full hover:bg-white/10"
             aria-label="Close level up notification"
             data-testid="close-button"
           >
@@ -237,7 +237,7 @@ const LevelUpCelebrationModal = memo(function LevelUpCelebrationModal({
           {/* Level Badge with scale animation */}
           <div
             data-testid="level-badge"
-            className="inline-flex items-center justify-center w-16 h-16 rounded-full bg-white text-amber-600 text-2xl font-black shadow-lg mb-3 animate-scale-up"
+            className="inline-flex items-center justify-center w-16 h-16 rounded-full bg-[var(--bg-night-sky)] text-amber-600 text-2xl font-black shadow-lg mb-3 animate-scale-up"
           >
             {newLevel}
           </div>
@@ -245,7 +245,7 @@ const LevelUpCelebrationModal = memo(function LevelUpCelebrationModal({
           {/* Congratulations Heading */}
           <h2
             id="levelup-modal-title"
-            className="text-2xl font-bold text-white mb-1"
+            className="text-2xl font-bold text-[var(--text-primary)] mb-1"
             data-testid="congratulations-heading"
           >
             Level Up!
@@ -353,7 +353,7 @@ const LevelUpCelebrationModal = memo(function LevelUpCelebrationModal({
             type="button"
             onClick={handleContinue}
             data-testid="continue-button"
-            className="w-full py-3 px-6 bg-gradient-to-r from-amber-500 to-yellow-500 text-white font-bold rounded-xl shadow-md hover:from-amber-600 hover:to-yellow-600 transition-all duration-200 focus:outline-none focus:ring-2 focus:ring-amber-400 focus:ring-offset-2"
+            className="w-full py-3 px-6 bg-gradient-to-r from-amber-500 to-yellow-500 text-[var(--text-primary)] font-bold rounded-xl shadow-md hover:from-amber-600 hover:to-yellow-600 transition-all duration-200 focus:outline-none focus:ring-2 focus:ring-amber-400 focus:ring-offset-2"
           >
             Continue
           </button>

@@ -19,6 +19,7 @@ import PageHero from '@/components/layout/PageHero';
 import { useHorses } from '@/hooks/api/useHorses';
 import { useFarrierServices, useBookFarrierService } from '@/hooks/api/useFarrier';
 import type { FarrierService } from '@/hooks/api/useFarrier';
+import { getBreedName } from '@/lib/utils';
 
 type FarrierTab = 'horses' | 'services';
 
@@ -121,7 +122,7 @@ const HorsesHoofTab: React.FC<HorsesHoofTabProps> = ({
                 <div>
                   <h3 className="font-bold text-white/90">{horse.name}</h3>
                   <p className="text-xs text-white/40 mt-0.5">
-                    {horse.breed} &middot; Age {horse.age}
+                    {getBreedName(horse.breed)} &middot; Age {horse.age}
                   </p>
                 </div>
                 {isSelected && (

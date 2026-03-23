@@ -18,6 +18,7 @@
  */
 
 import React, { useState } from 'react';
+import { getBreedName } from '@/lib/utils';
 import { GraduationCap, AlertCircle, ChevronDown, ChevronUp } from 'lucide-react';
 import { Link } from 'react-router-dom';
 import { SkeletonBase } from '@/components/ui/SkeletonCard';
@@ -365,7 +366,7 @@ const MyTrainersDashboard: React.FC<MyTrainersDashboardProps> = ({
                 >
                   <p className="font-bold text-white/80">{horse.name}</p>
                   <p className="text-xs text-white/40">
-                    {horse.breed} · Age {horse.age}
+                    {getBreedName(horse.breed)} · Age {horse.age}
                   </p>
                 </button>
               ))}

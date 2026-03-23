@@ -90,8 +90,9 @@ export const PERSONALITY_DATA: Record<GroomPersonality, PersonalityInfo> = {
     effectivenessRating: 'high',
     developmentNote:
       'Patient grooms develop refined techniques over years, making them universally effective.',
-    colorClass: 'bg-blue-50 text-blue-700',
-    badgeClass: 'bg-blue-50 text-blue-700 border border-blue-200',
+    colorClass: 'bg-[rgba(37,99,235,0.15)] text-[var(--gold-primary)]',
+    badgeClass:
+      'bg-[rgba(37,99,235,0.15)] text-[var(--gold-primary)] border border-[rgba(37,99,235,0.3)]',
   },
   strict: {
     label: 'Strict',

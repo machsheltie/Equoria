@@ -45,7 +45,9 @@ const FeaturedHorseCard = ({
               borderColor: 'rgba(37,99,235,0.6)',
             }}
           >
-            <span className="fantasy-caption font-bold text-white">LVL {level}</span>
+            <span className="fantasy-caption font-bold text-[var(--text-primary)]">
+              LVL {level}
+            </span>
           </div>
         </div>
 

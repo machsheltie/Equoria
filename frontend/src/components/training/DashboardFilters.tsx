@@ -45,7 +45,7 @@ const DashboardFilters = ({
                 onClick={() => onStatusFilterChange(filter.value)}
                 className={`px-3 py-1 rounded text-sm font-medium transition-colors ${
                   statusFilter === filter.value
-                    ? 'bg-blue-600 text-white'
+                    ? 'bg-blue-600 text-[var(--text-primary)]'
                     : 'bg-[rgba(15,35,70,0.5)] text-[rgb(220,235,255)] hover:bg-[rgba(37,99,235,0.1)]'
                 }`}
                 data-testid={`filter-${filter.value}`}

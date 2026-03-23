@@ -19,6 +19,7 @@ import { ActivityType, type Activity } from '../lib/activity-utils';
 import { profileSchema, type ProfileFormData } from '../lib/validation-schemas';
 import { VALIDATION_RULES, UI_TEXT, SUCCESS_MESSAGES } from '../lib/constants';
 import { useProfile, useUpdateProfile } from '../hooks/useAuth';
+import { Button } from '@/components/ui/button';
 import { useActivityFeed, useUserProgress } from '../hooks/api/useUserProgress';
 
 const ProfilePage: React.FC = () => {
@@ -354,23 +355,20 @@ const ProfilePage: React.FC = () => {
 
               {/* Action buttons */}
               <div className="flex gap-3 pt-1">
-                <button
+                <Button
                   type="button"
-                  className="btn-outline-celestial flex-1 inline-flex items-center justify-center gap-2"
+                  variant="secondary"
+                  className="flex-1"
                   onClick={handleCancel}
                   disabled={isPending}
                 >
                   <X className="w-4 h-4" />
                   {UI_TEXT.profile.cancelButton}
-                </button>
-                <button
-                  type="submit"
-                  className="btn-primary-arcs flex-1 inline-flex items-center justify-center gap-2"
-                  disabled={isPending}
-                >
+                </Button>
+                <Button type="submit" className="flex-1" disabled={isPending}>
                   <Save className="w-4 h-4" />
                   {isPending ? UI_TEXT.profile.savingButton : UI_TEXT.profile.saveButton}
-                </button>
+                </Button>
               </div>
             </form>
           </div>

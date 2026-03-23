@@ -72,8 +72,9 @@ export const RIDER_PERSONALITY_DATA: Record<RiderPersonality, RiderPersonalityIn
     effectivenessRating: 'high',
     riderNote:
       'Methodical riders build consistency and reliability, excelling in judged disciplines.',
-    colorClass: 'bg-blue-50 text-blue-700',
-    badgeClass: 'bg-blue-50 text-blue-700 border border-blue-200',
+    colorClass: 'bg-[rgba(37,99,235,0.15)] text-[var(--gold-primary)]',
+    badgeClass:
+      'bg-[rgba(37,99,235,0.15)] text-[var(--gold-primary)] border border-[rgba(37,99,235,0.3)]',
   },
   intuitive: {
     label: 'Intuitive',

@@ -88,7 +88,7 @@ export const AuthCardHeader: React.FC<AuthCardHeaderProps> = ({ title, subtitle,
             'linear-gradient(135deg, var(--electric-blue-500) 0%, var(--electric-blue-700) 100%)',
         }}
       >
-        {icon || <Sparkles className="w-8 h-8 text-white" aria-hidden="true" />}
+        {icon || <Sparkles className="w-8 h-8 text-[var(--text-primary)]" aria-hidden="true" />}
       </div>
     </div>
     <h2 className="fantasy-header text-2xl text-[rgb(212,168,67)]">{title}</h2>
@@ -106,8 +106,8 @@ export const AuthError: React.FC<AuthErrorProps> = ({
   if (!error) return null;
 
   return (
-    <div className="bg-red-50 border border-red-200 rounded-lg p-3" role="alert">
-      <p className="text-red-700 text-sm text-center">{error.message || fallbackMessage}</p>
+    <div className="bg-[rgba(239,68,68,0.1)] border border-red-500/30 rounded-lg p-3" role="alert">
+      <p className="text-red-400 text-sm text-center">{error.message || fallbackMessage}</p>
     </div>
   );
 };
@@ -122,7 +122,7 @@ export const AuthFooterLink: React.FC<AuthFooterLinkProps> = ({ prompt, linkText
         {prompt}{' '}
         <a
           href={linkTo}
-          className="text-[rgb(212,168,67)] hover:text-white font-medium transition-colors"
+          className="text-[rgb(212,168,67)] hover:text-[var(--text-primary)] font-medium transition-colors"
         >
           {linkText}
         </a>

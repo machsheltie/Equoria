@@ -15,7 +15,8 @@
  * - TypeScript for type safety
  */
 
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useCallback } from 'react';
+import { apiClient } from '@/lib/api-client';
 
 // Types
 interface AdvancedEpigeneticDashboardProps {
@@ -55,6 +56,7 @@ const AdvancedEpigeneticDashboard: React.FC<AdvancedEpigeneticDashboardProps> = 
   const [isLoading, setIsLoading] = useState(
     !propEnvironmentalData && !propTraitData && !propDevelopmentalData && !propForecastData
   );
+  const [refreshCounter, setRefreshCounter] = useState(0);
 
   // Responsive design detection
   useEffect(() => {
@@ -103,10 +105,11 @@ const AdvancedEpigeneticDashboard: React.FC<AdvancedEpigeneticDashboardProps> = 
 
         // Fetch environmental data
         try {
-          const envResponse = await fetch(`/api/horses/${horseId}/environmental-analysis`);
-          if (envResponse && envResponse.ok) {
-            const envData = await envResponse.json();
-            setEnvironmentalData(envData.data);
+          const envData = await apiClient.get<unknown>(
+            `/api/v1/horses/${horseId}/environmental-analysis`
+          );
+          if (envData) {
+            setEnvironmentalData(envData);
           }
         } catch (e) {
           // Check if this is an explicit rejection (Error object)
@@ -120,11 +123,12 @@ const AdvancedEpigeneticDashboard: React.FC<AdvancedEpigeneticDashboardProps> = 
 
         // Fetch trait data
         try {
-          const traitResponse = await fetch(`/api/horses/${horseId}/trait-interactions`);
-          if (traitResponse && traitResponse.ok) {
-            const traitDataResponse = await traitResponse.json();
-            setTraitData(traitDataResponse.data);
-          } else if (traitResponse) {
+          const traitDataResponse = await apiClient.get<unknown>(
+            `/api/v1/horses/${horseId}/trait-interactions`
+          );
+          if (traitDataResponse) {
+            setTraitData(traitDataResponse);
+          } else {
             setPartialDataError(true);
           }
         } catch (e) {
@@ -139,10 +143,11 @@ const AdvancedEpigeneticDashboard: React.FC<AdvancedEpigeneticDashboardProps> = 
 
         // Fetch developmental data
         try {
-          const devResponse = await fetch(`/api/horses/${horseId}/developmental-timeline`);
-          if (devResponse && devResponse.ok) {
-            const devData = await devResponse.json();
-            setDevelopmentalData(devData.data);
+          const devData = await apiClient.get<Record<string, unknown>>(
+            `/api/v1/horses/${horseId}/developmental-timeline`
+          );
+          if (devData) {
+            setDevelopmentalData(devData);
           }
         } catch (e) {
           if (e instanceof Error && e.message === 'API Error') {
@@ -155,10 +160,11 @@ const AdvancedEpigeneticDashboard: React.FC<AdvancedEpigeneticDashboardProps> = 
 
         // Fetch forecast data
         try {
-          const forecastResponse = await fetch(`/api/horses/${horseId}/forecast`);
-          if (forecastResponse && forecastResponse.ok) {
-            const forecastDataResponse = await forecastResponse.json();
-            setForecastData(forecastDataResponse.data);
+          const forecastDataResponse = await apiClient.get<Record<string, unknown>>(
+            `/api/v1/horses/${horseId}/forecast`
+          );
+          if (forecastDataResponse) {
+            setForecastData(forecastDataResponse);
           }
         } catch (e) {
           if (e instanceof Error && e.message === 'API Error') {
@@ -180,7 +186,14 @@ const AdvancedEpigeneticDashboard: React.FC<AdvancedEpigeneticDashboardProps> = 
     };
 
     fetchData();
-  }, [horseId, propEnvironmentalData, propTraitData, propDevelopmentalData, propForecastData]);
+  }, [
+    horseId,
+    propEnvironmentalData,
+    propTraitData,
+    propDevelopmentalData,
+    propForecastData,
+    refreshCounter,
+  ]);
 
   // Panel expansion toggle
   const togglePanel = (panelId: string) => {
@@ -193,20 +206,15 @@ const AdvancedEpigeneticDashboard: React.FC<AdvancedEpigeneticDashboardProps> = 
     setExpandedPanels(newExpanded);
   };
 
-  // Refresh all data
-  const refreshData = () => {
+  // Refresh all data by bumping the counter to re-trigger the fetch effect
+  const refreshData = useCallback(() => {
     setIsRefreshing(true);
     setHasError(false);
     setPartialDataError(false);
-    // Trigger re-fetch by updating a dependency
-    setTimeout(() => {
-      setIsRefreshing(false);
-      // Re-run the fetch effect
-      if (horseId) {
-        window.location.reload();
-      }
-    }, 1000);
-  };
+    setRefreshCounter((c) => c + 1);
+    // Clear refreshing indicator after fetch completes (effect sets isLoading)
+    setTimeout(() => setIsRefreshing(false), 500);
+  }, []);
 
   // Retry after error
   const retryFetch = () => {
@@ -231,7 +239,7 @@ const AdvancedEpigeneticDashboard: React.FC<AdvancedEpigeneticDashboardProps> = 
         <p className="text-red-600 mb-4">Error loading epigenetic data</p>
         <button
           onClick={retryFetch}
-          className="px-4 py-2 bg-blue-600 text-white rounded hover:bg-blue-700"
+          className="px-4 py-2 bg-blue-600 text-[var(--text-primary)] rounded hover:bg-[var(--gold-dim)]"
         >
           Retry
         </button>

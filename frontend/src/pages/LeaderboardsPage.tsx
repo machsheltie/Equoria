@@ -278,7 +278,7 @@ const LeaderboardsPage = () => {
               Something went wrong while fetching the leaderboard. Please try again.
             </p>
             <button
-              className="mt-4 px-4 py-2 bg-red-600 text-white text-sm font-medium rounded-lg hover:bg-red-700 transition-colors"
+              className="mt-4 px-4 py-2 bg-red-600 text-[var(--text-primary)] text-sm font-medium rounded-lg hover:bg-red-700 transition-colors"
               onClick={() => refetchLeaderboard()}
               aria-label="Retry loading leaderboard"
             >

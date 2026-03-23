@@ -29,6 +29,7 @@ import {
   useBuyHorse,
 } from '@/hooks/api/useMarketplace';
 import type { MarketplaceListing, MarketplaceBrowseFilters, MyListing } from '@/lib/api-client';
+import { getHorseImage } from '@/lib/breed-images';
 
 // ─── Types ────────────────────────────────────────────────────────────────────
 
@@ -73,7 +74,7 @@ const ListingCard: React.FC<ListingCardProps> = ({ listing, onSelect }) => (
     <div className="flex gap-4 items-start">
       <div className="w-20 h-20 rounded-lg overflow-hidden bg-white/5 flex-shrink-0 border border-white/10">
         <img
-          src={listing.imageUrl ?? '/images/samplehorse.JPG'}
+          src={getHorseImage(listing.imageUrl, listing.breed)}
           alt={listing.name}
           className="w-full h-full object-cover"
         />
@@ -157,7 +158,7 @@ const DetailModal: React.FC<DetailModalProps> = ({
               <div className="flex gap-4 mb-5">
                 <div className="w-28 h-28 rounded-xl overflow-hidden bg-white/5 border border-white/10 flex-shrink-0">
                   <img
-                    src={listing.imageUrl ?? '/images/samplehorse.JPG'}
+                    src={getHorseImage(listing.imageUrl, listing.breed)}
                     alt={listing.name}
                     className="w-full h-full object-cover"
                   />
@@ -437,7 +438,7 @@ const MyListingsTab: React.FC = () => {
         >
           <div className="w-14 h-14 rounded-lg overflow-hidden bg-white/5 flex-shrink-0 border border-white/10">
             <img
-              src={l.imageUrl ?? '/images/samplehorse.JPG'}
+              src={getHorseImage(l.imageUrl, l.breed)}
               alt={l.name}
               className="w-full h-full object-cover"
             />

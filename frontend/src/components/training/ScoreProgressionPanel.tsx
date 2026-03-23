@@ -192,7 +192,7 @@ const ScoreProgressionPanel: React.FC<ScoreProgressionPanelProps> = ({
           <button
             type="button"
             onClick={handleRetry}
-            className="mt-4 rounded-md bg-red-600 px-4 py-2 text-sm font-medium text-white hover:bg-red-700 focus:outline-none focus:ring-2 focus:ring-red-500 focus:ring-offset-2"
+            className="mt-4 rounded-md bg-red-600 px-4 py-2 text-sm font-medium text-[var(--text-primary)] hover:bg-red-700 focus:outline-none focus:ring-2 focus:ring-red-500 focus:ring-offset-2"
           >
             Try Again
           </button>

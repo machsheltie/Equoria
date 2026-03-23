@@ -68,7 +68,7 @@ const TrainingDashboardTable = ({
                   onClick={() => setSortBy('name')}
                   className={`px-3 py-1 rounded text-sm font-medium transition-colors ${
                     sortBy === 'name'
-                      ? 'bg-blue-600 text-white'
+                      ? 'bg-blue-600 text-[var(--text-primary)]'
                       : 'bg-[rgba(15,35,70,0.5)] text-[rgb(220,235,255)] hover:bg-[rgba(37,99,235,0.1)]'
                   }`}
                   data-testid="sort-name"
@@ -80,7 +80,7 @@ const TrainingDashboardTable = ({
                   onClick={() => setSortBy('age')}
                   className={`px-3 py-1 rounded text-sm font-medium transition-colors ${
                     sortBy === 'age'
-                      ? 'bg-blue-600 text-white'
+                      ? 'bg-blue-600 text-[var(--text-primary)]'
                       : 'bg-[rgba(15,35,70,0.5)] text-[rgb(220,235,255)] hover:bg-[rgba(37,99,235,0.1)]'
                   }`}
                   data-testid="sort-age"
@@ -92,7 +92,7 @@ const TrainingDashboardTable = ({
                   onClick={() => setSortBy('status')}
                   className={`px-3 py-1 rounded text-sm font-medium transition-colors ${
                     sortBy === 'status'
-                      ? 'bg-blue-600 text-white'
+                      ? 'bg-blue-600 text-[var(--text-primary)]'
                       : 'bg-[rgba(15,35,70,0.5)] text-[rgb(220,235,255)] hover:bg-[rgba(37,99,235,0.1)]'
                   }`}
                   data-testid="sort-status"

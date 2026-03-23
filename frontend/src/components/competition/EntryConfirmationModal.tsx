@@ -444,8 +444,8 @@ const EntryConfirmationModal = memo(function EntryConfirmationModal({
               onClick={handleConfirmClick}
               disabled={isSubmitting || !hasSufficientBalance}
               className={cn(
-                'px-6 py-2 rounded-lg text-white transition-colors flex items-center',
-                'bg-blue-600 hover:bg-blue-700',
+                'px-6 py-2 rounded-lg text-[var(--text-primary)] transition-colors flex items-center',
+                'bg-blue-600 hover:bg-[var(--gold-dim)]',
                 'disabled:opacity-50 disabled:cursor-not-allowed'
               )}
               aria-busy={isSubmitting}

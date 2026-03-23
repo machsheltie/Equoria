@@ -14,9 +14,12 @@ import {
   type ResetPasswordFormData,
 } from '../lib/validations/auth';
 import { useResetPassword } from '../hooks/useAuth';
+import { useResponsiveBackground } from '../hooks/useResponsiveBackground';
+import { Button } from '@/components/ui/button';
 
 const ResetPasswordPage: React.FC = () => {
   const navigate = useNavigate();
+  const bgImage = useResponsiveBackground();
   const [searchParams] = useSearchParams();
   const token = searchParams.get('token');
 
@@ -90,9 +93,9 @@ const ResetPasswordPage: React.FC = () => {
     <div
       className="min-h-screen w-full flex flex-col items-center justify-center relative overflow-hidden py-8"
       style={{
-        backgroundImage: "url('/equoriacelestial.png')",
+        backgroundImage: `url('${bgImage}')`,
         backgroundSize: 'cover',
-        backgroundPosition: 'center top',
+        backgroundPosition: 'center center',
         backgroundRepeat: 'no-repeat',
       }}
     >
@@ -137,18 +140,17 @@ const ResetPasswordPage: React.FC = () => {
         </div>
 
         <div className="space-y-2 pt-1">
-          <Link to="/forgot-password">
-            <button type="button" className="btn-primary-arcs">
-              Request New Reset Link
-            </button>
-          </Link>
-          <button
+          <Button asChild className="w-full">
+            <Link to="/forgot-password">Request New Reset Link</Link>
+          </Button>
+          <Button
             type="button"
-            className="btn-outline-celestial"
+            variant="secondary"
+            className="w-full"
             onClick={() => navigate('/login')}
           >
             Return to Login
-          </button>
+          </Button>
         </div>
       </div>
     );
@@ -179,9 +181,9 @@ const ResetPasswordPage: React.FC = () => {
           </p>
         </div>
 
-        <button type="button" className="btn-primary-arcs" onClick={() => navigate('/login')}>
+        <Button type="button" className="w-full" onClick={() => navigate('/login')}>
           Go to Login
-        </button>
+        </Button>
       </div>
     );
   }
@@ -309,9 +311,9 @@ const ResetPasswordPage: React.FC = () => {
           )}
         </div>
 
-        <button type="submit" disabled={isPending} className="btn-primary-arcs mt-1">
+        <Button type="submit" disabled={isPending} className="w-full mt-1">
           {isPending ? 'Resetting...' : 'Reset Password'}
-        </button>
+        </Button>
       </form>
 
       {/* Sign in link */}

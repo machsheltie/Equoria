@@ -84,7 +84,7 @@ const GroomsPage: React.FC = () => {
         {/* Tab Content */}
         <div role="tabpanel">
           {activeTab === 'manage' ? (
-            <MyGroomsDashboard userId={userId} />
+            <MyGroomsDashboard userId={userId} onBrowseMarketplace={() => setActiveTab('hire')} />
           ) : (
             <GroomList userId={userId} />
           )}

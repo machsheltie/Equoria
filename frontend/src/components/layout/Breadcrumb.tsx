@@ -10,6 +10,11 @@
 
 import { Link, useLocation } from 'react-router-dom';
 
+/** Override href for segments that don't have their own route */
+const ROUTE_HREF_OVERRIDE: Record<string, string> = {
+  horses: '/stable',
+};
+
 /** Map route segments to display names */
 const ROUTE_LABELS: Record<string, string> = {
   stable: 'My Stable',
@@ -26,12 +31,20 @@ const ROUTE_LABELS: Record<string, string> = {
   profile: 'Profile',
   bank: 'Bank',
   inventory: 'Inventory',
-  horses: 'Horse',
+  horses: 'Stable',
   grooms: 'Grooms',
   trainers: 'Trainers',
   'message-board': 'Message Board',
   clubs: 'Clubs',
   'my-stable': 'My Stable',
+  'feed-shop': 'Feed Shop',
+  'tack-shop': 'Tack Shop',
+  farrier: 'Farrier',
+  veterinarian: 'Veterinarian',
+  'competition-browser': 'Competitions',
+  'forgot-password': 'Forgot Password',
+  'reset-password': 'Reset Password',
+  'verify-email': 'Verify Email',
 };
 
 interface Crumb {
@@ -52,7 +65,8 @@ export function Breadcrumb() {
   for (const segment of segments) {
     path += `/${segment}`;
     const label = ROUTE_LABELS[segment] || decodeURIComponent(segment);
-    crumbs.push({ label, href: path });
+    const href = ROUTE_HREF_OVERRIDE[segment] || path;
+    crumbs.push({ label, href });
   }
 
   // Parent for mobile back link

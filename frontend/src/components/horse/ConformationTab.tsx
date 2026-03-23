@@ -67,7 +67,7 @@ const ConformationTab = ({ horseId, breedId }: ConformationTabProps) => {
             </p>
             <button
               onClick={() => refetchConformation()}
-              className="mt-3 rounded-md bg-rose-600 px-4 py-2 text-sm text-white hover:bg-rose-700"
+              className="mt-3 rounded-md bg-rose-600 px-4 py-2 text-sm text-[var(--text-primary)] hover:bg-rose-700"
             >
               Retry
             </button>

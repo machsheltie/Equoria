@@ -14,8 +14,10 @@
  */
 
 import React, { useState } from 'react';
+import { createPortal } from 'react-dom';
 import { useParams, useNavigate, Link } from 'react-router-dom';
 import { toast } from 'sonner';
+import { Button } from '@/components/ui/button';
 import {
   Zap,
   Heart,
@@ -40,8 +42,14 @@ import {
   Tag,
   ShoppingCart,
   X,
+  Target,
+  Activity,
+  Scale,
+  Flame,
+  Wind,
+  Eye,
 } from 'lucide-react';
-import { useHorse } from '../hooks/api/useHorses';
+import { useHorse, useUpdateHorse } from '../hooks/api/useHorses';
 import TraitCard from '../components/TraitCard';
 import {
   useHorseEpigeneticInsights,
@@ -65,15 +73,23 @@ import { SkeletonBase } from '@/components/ui/SkeletonCard';
 import { useAuth } from '@/contexts/AuthContext';
 import { useUserRiders, useAssignRider, type Rider } from '@/hooks/api/useRiders';
 import { useListHorse, useDelistHorse } from '@/hooks/api/useMarketplace';
+import { getHorseImage } from '@/lib/breed-images';
+import { getBreedName } from '@/lib/utils';
 
 // Types
 interface HorseStats {
-  speed: number;
-  stamina: number;
-  agility: number;
+  precision: number;
   strength: number;
+  speed: number;
+  agility: number;
+  endurance: number;
   intelligence: number;
-  health: number;
+  stamina: number;
+  balance: number;
+  boldness: number;
+  flexibility: number;
+  obedience: number;
+  focus: number;
 }
 
 interface Horse {
@@ -111,21 +127,33 @@ type TabType =
   | 'health'
   | 'stud-sale';
 
-// Stat icon mapping (consistent with HorseCard)
+// Stat icon mapping for all 12 stats
 const getStatIcon = (statName: string) => {
   switch (statName) {
-    case 'speed':
-      return <Zap className="w-5 h-5" />;
-    case 'stamina':
-      return <Heart className="w-5 h-5" />;
-    case 'agility':
-      return <Star className="w-5 h-5" />;
+    case 'precision':
+      return <Target className="w-5 h-5" />;
     case 'strength':
       return <Shield className="w-5 h-5" />;
+    case 'speed':
+      return <Zap className="w-5 h-5" />;
+    case 'agility':
+      return <Star className="w-5 h-5" />;
+    case 'endurance':
+      return <Heart className="w-5 h-5" />;
     case 'intelligence':
       return <Trophy className="w-5 h-5" />;
-    case 'health':
-      return <Heart className="w-5 h-5" />;
+    case 'stamina':
+      return <Activity className="w-5 h-5" />;
+    case 'balance':
+      return <Scale className="w-5 h-5" />;
+    case 'boldness':
+      return <Flame className="w-5 h-5" />;
+    case 'flexibility':
+      return <Wind className="w-5 h-5" />;
+    case 'obedience':
+      return <CheckCircle className="w-5 h-5" />;
+    case 'focus':
+      return <Eye className="w-5 h-5" />;
     default:
       return <Star className="w-5 h-5" />;
   }
@@ -135,22 +163,23 @@ const getStatIcon = (statName: string) => {
 const getStatColor = (value: number) => {
   if (value >= 90) return 'text-burnished-gold';
   if (value >= 75) return 'text-emerald-400';
-  if (value >= 60) return 'text-aged-bronze';
+  if (value >= 60) return 'text-[rgb(180,195,215)]';
   return 'text-[rgb(148,163,184)]';
 };
 
 const HorseDetailPage: React.FC = () => {
   const { id } = useParams<{ id: string }>();
   const navigate = useNavigate();
-  const horseId = id ? parseInt(id, 10) : NaN;
   const [activeTab, setActiveTab] = useState<TabType>('overview');
   const [isEditing, setIsEditing] = useState(false);
+  const [editName, setEditName] = useState('');
   const [showRiderPicker, setShowRiderPicker] = useState(false);
   const [showListModal, setShowListModal] = useState(false);
   const [listPrice, setListPrice] = useState('');
 
   const listHorseMutation = useListHorse();
   const delistHorseMutation = useDelistHorse();
+  const updateHorseMutation = useUpdateHorse();
 
   // Auth — needed to fetch user's riders
   const { user } = useAuth();
@@ -159,25 +188,9 @@ const HorseDetailPage: React.FC = () => {
   const { data: riders, isLoading: ridersLoading } = useUserRiders(user?.id ?? 0);
   const assignRiderMutation = useAssignRider();
 
-  // Fetch horse data
-  const { data: horse, isLoading, isError, error, refetch } = useHorse(horseId);
-
-  // Invalid horse ID guard
-  if (!id || isNaN(horseId)) {
-    return (
-      <div className="min-h-screen flex items-center justify-center">
-        <div className="text-center space-y-4">
-          <p className="text-lg text-[var(--text-muted)]">Invalid horse ID</p>
-          <button
-            onClick={() => navigate('/')}
-            className="text-[var(--celestial-primary)] underline"
-          >
-            Go Home
-          </button>
-        </div>
-      </div>
-    );
-  }
+  // Fetch horse data — use `horseRaw` so the normalized copy can be named `horse` below,
+  // keeping all downstream JSX references unchanged.
+  const { data: horseRaw, isLoading, isError, error, refetch } = useHorse(Number(id));
 
   // Loading state — detail page skeleton (portrait left + tab area right)
   if (isLoading) {
@@ -213,7 +226,7 @@ const HorseDetailPage: React.FC = () => {
   }
 
   // Error state
-  if (isError || !horse) {
+  if (isError || !horseRaw) {
     return (
       <div className="min-h-screen flex items-center justify-center p-4">
         <div className="glass-panel max-w-md w-full px-6 py-7 text-center space-y-4">
@@ -227,17 +240,13 @@ const HorseDetailPage: React.FC = () => {
               : 'An error occurred while loading the horse details. Please try again.'}
           </p>
           <div className="flex gap-3 justify-center">
-            <button
-              type="button"
-              className="btn-outline-celestial"
-              onClick={() => navigate('/horses')}
-            >
+            <Button type="button" variant="secondary" onClick={() => navigate('/stable')}>
               Back to Horse List
-            </button>
+            </Button>
             {error?.message !== 'Horse not found' && (
-              <button type="button" className="btn-primary-arcs" onClick={() => refetch()}>
+              <Button type="button" onClick={() => refetch()}>
                 Retry
-              </button>
+              </Button>
             )}
           </div>
         </div>
@@ -245,25 +254,46 @@ const HorseDetailPage: React.FC = () => {
     );
   }
 
-  // Normalize horse data — API returns flat stat fields, but components expect a nested stats object.
-  // Also guard disciplineScores which can be null from the API.
-  const rawHorse = horse as Record<string, unknown>;
-  if (!horse.stats) {
-    (horse as Record<string, unknown>).stats = {
-      speed: rawHorse.speed ?? 0,
-      stamina: rawHorse.stamina ?? 0,
-      agility: rawHorse.agility ?? 0,
-      strength: rawHorse.strength ?? 0,
-      intelligence: rawHorse.intelligence ?? 0,
-      health: rawHorse.endurance ?? 0,
-    };
-  }
-  if (!horse.disciplineScores) {
-    (horse as Record<string, unknown>).disciplineScores = {};
-  }
-  if (typeof horse.breed === 'object' && horse.breed !== null) {
-    (horse as Record<string, unknown>).breed = (horse.breed as { name: string }).name;
-  }
+  // Normalize horse data — produce a NEW object so the React Query cache is never mutated.
+  const rawHorse = horseRaw as Record<string, unknown>;
+
+  // Resolve breed: API returns a Prisma relation object { id, name, ... } but the Horse
+  // interface and downstream components expect a plain string (the breed name).
+  const resolvedBreed =
+    typeof horseRaw.breed === 'object' && horseRaw.breed !== null
+      ? (horseRaw.breed as { name: string }).name
+      : (horseRaw.breed as string);
+
+  // Resolve gender: the Prisma model stores `sex` (e.g. "MARE") but the local Horse
+  // interface uses `gender`. Fall back to `sex` when `gender` is absent.
+  const resolvedGender = (horseRaw.gender || rawHorse.sex || '') as string;
+
+  // Resolve stats: API may return flat fields (speed, stamina, …) instead of a nested
+  // stats object when coming from a Prisma raw query.
+  const resolvedStats: HorseStats = horseRaw.stats ?? {
+    precision: (rawHorse.precision as number) ?? 0,
+    strength: (rawHorse.strength as number) ?? 0,
+    speed: (rawHorse.speed as number) ?? 0,
+    agility: (rawHorse.agility as number) ?? 0,
+    endurance: (rawHorse.endurance as number) ?? 0,
+    intelligence: (rawHorse.intelligence as number) ?? 0,
+    stamina: (rawHorse.stamina as number) ?? 0,
+    balance: (rawHorse.balance as number) ?? 0,
+    boldness: (rawHorse.boldness as number) ?? 0,
+    flexibility: (rawHorse.flexibility as number) ?? 0,
+    obedience: (rawHorse.obedience as number) ?? 0,
+    focus: (rawHorse.focus as number) ?? 0,
+  };
+
+  // Shadow `horse` with the normalized copy — all downstream JSX references remain unchanged.
+  // dateOfBirth passes through from horseRaw via spread (already an ISO string from the API).
+  const horse: typeof horseRaw = {
+    ...horseRaw,
+    breed: resolvedBreed,
+    gender: resolvedGender,
+    stats: resolvedStats,
+    disciplineScores: horseRaw.disciplineScores ?? {},
+  };
 
   // Tab configuration
   const tabs: { id: TabType; label: string; icon: React.ReactNode }[] = [
@@ -285,7 +315,7 @@ const HorseDetailPage: React.FC = () => {
         {/* Header */}
         <div className="mb-6">
           <button
-            onClick={() => navigate('/horses')}
+            onClick={() => navigate('/stable')}
             className="flex items-center gap-2 text-[rgb(148,163,184)] hover:text-[rgb(220,235,255)] transition-colors mb-4 text-sm"
           >
             <ArrowLeft className="w-4 h-4" />
@@ -298,9 +328,12 @@ const HorseDetailPage: React.FC = () => {
               {/* Horse Image */}
               <div className="w-full md:w-48 h-48 rounded-lg border border-[rgba(37,99,235,0.3)] overflow-hidden bg-[rgba(37,99,235,0.05)]">
                 <img
-                  src={horse.imageUrl || '/images/horse-placeholder.png'}
+                  src={getHorseImage(horse.imageUrl, horse.breed)}
                   alt={horse.name}
                   className="w-full h-full object-cover"
+                  onError={(e) => {
+                    (e.target as HTMLImageElement).src = '/images/horse-placeholder.png';
+                  }}
                 />
               </div>
 
@@ -308,11 +341,72 @@ const HorseDetailPage: React.FC = () => {
               <div className="flex-1">
                 <div className="flex items-start justify-between mb-4">
                   <div>
-                    <h1 className="fantasy-title text-3xl text-[rgb(220,235,255)] mb-2">
-                      {horse.name}
-                    </h1>
-                    <div className="flex flex-wrap gap-3 text-sm fantasy-body text-aged-bronze">
-                      <span>Breed: {horse.breed}</span>
+                    {isEditing ? (
+                      <form
+                        className="flex items-center gap-2 mb-2"
+                        onSubmit={(e) => {
+                          e.preventDefault();
+                          const trimmed = editName.trim();
+                          if (trimmed && trimmed !== horse.name) {
+                            updateHorseMutation.mutate(
+                              { horseId: horse.id, data: { name: trimmed } },
+                              {
+                                onSuccess: () => {
+                                  toast.success('Horse name updated!');
+                                  setIsEditing(false);
+                                  refetch();
+                                },
+                                onError: (err) => {
+                                  toast.error(err.message || 'Failed to update name');
+                                },
+                              }
+                            );
+                          } else {
+                            setIsEditing(false);
+                          }
+                        }}
+                      >
+                        <input
+                          type="text"
+                          value={editName}
+                          onChange={(e) => setEditName(e.target.value)}
+                          autoFocus
+                          maxLength={50}
+                          className="fantasy-title text-2xl text-[rgb(220,235,255)] bg-[rgba(15,35,70,0.6)] border border-burnished-gold/40 rounded-lg px-3 py-1 outline-none focus:border-burnished-gold/70 focus:shadow-[0_0_8px_rgba(200,168,78,0.2)]"
+                        />
+                        <button
+                          type="submit"
+                          disabled={updateHorseMutation.isPending}
+                          className="px-3 py-1.5 rounded-lg text-sm font-semibold transition-all hover:brightness-110"
+                          style={{
+                            background:
+                              'linear-gradient(135deg, var(--gold-primary) 0%, var(--gold-light) 100%)',
+                            color: 'var(--bg-deep-space)',
+                          }}
+                        >
+                          {updateHorseMutation.isPending ? 'Saving...' : 'Save'}
+                        </button>
+                        <button
+                          type="button"
+                          onClick={() => setIsEditing(false)}
+                          className="px-3 py-1.5 rounded-lg text-sm font-semibold text-white/60 hover:text-white/90 hover:bg-white/10 border border-white/20 transition-colors"
+                        >
+                          Cancel
+                        </button>
+                      </form>
+                    ) : (
+                      <h1 className="fantasy-title text-3xl text-[rgb(220,235,255)] mb-2">
+                        {horse.name}
+                      </h1>
+                    )}
+                    <div className="flex flex-wrap gap-3 text-sm fantasy-body text-[rgb(180,195,215)]">
+                      <span>Breed: {getBreedName(horse.breed)}</span>
+                      <span>•</span>
+                      <span>
+                        Color:{' '}
+                        {((horse as Record<string, unknown>).finalDisplayColor as string) ||
+                          'Unknown'}
+                      </span>
                       <span>•</span>
                       <span>Age: {horse.age}</span>
                       <span>•</span>
@@ -328,11 +422,18 @@ const HorseDetailPage: React.FC = () => {
                     )}
                   </div>
                   <button
-                    onClick={() => setIsEditing(!isEditing)}
-                    className="p-2 hover:bg-[rgba(37,99,235,0.1)] rounded transition-colors"
-                    aria-label="Edit horse details"
+                    onClick={() => {
+                      if (!isEditing) setEditName(horse.name);
+                      setIsEditing(!isEditing);
+                    }}
+                    className="p-2 hover:bg-[rgba(200,168,78,0.15)] rounded transition-colors"
+                    aria-label={isEditing ? 'Cancel editing' : 'Edit horse name'}
                   >
-                    <Edit className="w-5 h-5 text-aged-bronze" />
+                    {isEditing ? (
+                      <X className="w-5 h-5 text-white/60" />
+                    ) : (
+                      <Edit className="w-5 h-5 text-[rgb(160,175,200)]" />
+                    )}
                   </button>
                 </div>
 
@@ -342,14 +443,14 @@ const HorseDetailPage: React.FC = () => {
                 )}
 
                 {/* Quick Stats Summary */}
-                <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-6 gap-3">
+                <div className="grid grid-cols-3 sm:grid-cols-4 md:grid-cols-6 gap-3">
                   {Object.entries(horse.stats).map(([statName, value]) => (
                     <div
                       key={statName}
                       className="flex flex-col items-center p-3 bg-[rgba(15,35,70,0.4)] rounded border border-[rgba(37,99,235,0.2)]"
                     >
                       <div className={`mb-1 ${getStatColor(value)}`}>{getStatIcon(statName)}</div>
-                      <span className="text-xs fantasy-caption text-aged-bronze capitalize">
+                      <span className="text-xs fantasy-caption text-[rgb(160,175,200)] capitalize">
                         {statName}
                       </span>
                       <span className="text-lg fantasy-title text-[rgb(220,235,255)]">{value}</span>
@@ -362,39 +463,31 @@ const HorseDetailPage: React.FC = () => {
         </div>
 
         {/* Quick Actions Bar */}
-        <div className="flex flex-wrap gap-3 mb-6">
-          <button
-            type="button"
-            className="btn-primary-arcs inline-flex items-center gap-2"
-            onClick={() => navigate(`/training?horseId=${horse.id}`)}
-          >
+        <div className="flex flex-wrap justify-center gap-3 mb-6">
+          <Button type="button" onClick={() => navigate(`/training?horseId=${horse.id}`)}>
             <Dumbbell className="w-4 h-4" />
             Train This Horse
-          </button>
-          <button
-            type="button"
-            className="btn-outline-celestial inline-flex items-center gap-2"
-            onClick={() => navigate(`/competition?horseId=${horse.id}`)}
-          >
+          </Button>
+          <Button type="button" onClick={() => navigate(`/competitions?horseId=${horse.id}`)}>
             <Award className="w-4 h-4" />
             Enter Competition
-          </button>
+          </Button>
           {horse.parentIds?.sireId && (
-            <button
+            <Button
               type="button"
-              className="btn-outline-celestial inline-flex items-center gap-2"
+              variant="secondary"
               onClick={() => navigate(`/horses/${horse.parentIds!.sireId}`)}
             >
               <Users className="w-4 h-4" />
               View Parents
-            </button>
+            </Button>
           )}
         </div>
 
         {/* Tab Navigation */}
         <div className="glass-panel rounded-lg mb-6">
           <div
-            className="flex border-b border-[rgba(37,99,235,0.3)] overflow-x-auto"
+            className="flex border-b border-[rgba(37,99,235,0.3)] overflow-x-auto rounded-t-lg bg-[rgba(15,35,70,0.4)]"
             role="tablist"
             aria-label="Horse details tabs"
           >
@@ -408,8 +501,8 @@ const HorseDetailPage: React.FC = () => {
                 onClick={() => setActiveTab(tab.id)}
                 className={`flex items-center gap-2 px-6 py-3 fantasy-body transition-colors whitespace-nowrap ${
                   activeTab === tab.id
-                    ? 'bg-[rgba(37,99,235,0.15)] text-[rgb(220,235,255)] border-b-2 border-burnished-gold'
-                    : 'text-aged-bronze hover:bg-[rgba(37,99,235,0.1)] hover:text-[rgb(220,235,255)]'
+                    ? 'bg-[rgba(37,99,235,0.2)] text-[rgb(220,235,255)] border-b-2 border-burnished-gold'
+                    : 'text-[rgb(160,175,200)] hover:bg-[rgba(37,99,235,0.1)] hover:text-[rgb(220,235,255)]'
                 }`}
               >
                 {tab.icon}
@@ -454,14 +547,14 @@ const HorseDetailPage: React.FC = () => {
               Assign Rider to {horse.name}
             </h3>
             {ridersLoading && (
-              <p className="text-sm text-aged-bronze text-center py-4">Loading riders…</p>
+              <p className="text-sm text-[rgb(160,175,200)] text-center py-4">Loading riders…</p>
             )}
             {!ridersLoading && (!riders || riders.length === 0) && (
               <div className="text-center py-4">
-                <p className="text-sm text-aged-bronze mb-3">No riders hired yet.</p>
+                <p className="text-sm text-[rgb(160,175,200)] mb-3">No riders hired yet.</p>
                 <Link
                   to="/riders"
-                  className="inline-block px-4 py-2 rounded-lg text-sm font-medium text-[var(--text-primary)] transition-opacity hover:opacity-85"
+                  className="inline-block px-4 py-2 rounded-lg text-sm font-medium text-white transition-opacity hover:opacity-85"
                   style={{ background: 'var(--celestial-primary)' }}
                   onClick={() => setShowRiderPicker(false)}
                 >
@@ -496,7 +589,7 @@ const HorseDetailPage: React.FC = () => {
                   <p className="font-bold text-[rgb(220,235,255)] text-sm">
                     {rider.firstName} {rider.lastName}
                   </p>
-                  <p className="text-xs text-aged-bronze capitalize">
+                  <p className="text-xs text-[rgb(160,175,200)] capitalize">
                     {rider.skillLevel} · {rider.speciality}
                   </p>
                 </button>
@@ -505,7 +598,7 @@ const HorseDetailPage: React.FC = () => {
             <button
               type="button"
               onClick={() => setShowRiderPicker(false)}
-              className="mt-4 w-full py-2 text-sm text-aged-bronze hover:text-[rgb(220,235,255)] transition-colors"
+              className="mt-4 w-full py-2 text-sm text-[rgb(160,175,200)] hover:text-[rgb(220,235,255)] transition-colors"
             >
               Cancel
             </button>
@@ -513,77 +606,150 @@ const HorseDetailPage: React.FC = () => {
         </div>
       )}
 
-      {/* Story 12-5 — Sticky Bottom Action Bar */}
-      <div
-        className="fixed bottom-0 left-0 right-0 z-[var(--z-dropdown)] bg-[rgba(10,22,40,0.95)] border-t border-burnished-gold/40 backdrop-blur-sm"
-        data-testid="horse-action-bar"
-      >
-        <div className="max-w-7xl mx-auto px-4 py-3 flex items-center gap-3 overflow-x-auto">
-          <span className="text-xs fantasy-caption text-aged-bronze whitespace-nowrap mr-1 flex-shrink-0">
-            Quick Actions:
-          </span>
-          <button
-            type="button"
-            onClick={() => navigate(`/feed-shop?horseId=${horse.id}`)}
-            className="flex items-center gap-1.5 px-4 py-2 rounded-lg bg-[rgba(37,99,235,0.1)] border border-[rgba(37,99,235,0.3)] text-[rgb(220,235,255)] text-sm fantasy-body whitespace-nowrap hover:bg-[rgba(37,99,235,0.2)] transition-colors"
-            title="Go to Feed Shop"
-            data-testid="action-feed"
-          >
-            <span aria-hidden="true">🌾</span>
-            Feed
-          </button>
-          <button
-            type="button"
-            onClick={() => navigate(`/training?horseId=${horse.id}`)}
-            className="flex items-center gap-1.5 px-4 py-2 rounded-lg bg-burnished-gold/20 border border-burnished-gold/40 text-[rgb(220,235,255)] text-sm fantasy-body whitespace-nowrap hover:bg-burnished-gold/30 transition-colors"
-            data-testid="action-train"
-          >
-            <Dumbbell className="w-3.5 h-3.5" />
-            Train
-          </button>
-          <button
-            type="button"
-            onClick={() => navigate(`/breeding?horseId=${horse.id}`)}
-            className="flex items-center gap-1.5 px-4 py-2 rounded-lg bg-[rgba(37,99,235,0.1)] border border-[rgba(37,99,235,0.3)] text-[rgb(220,235,255)] text-sm fantasy-body whitespace-nowrap hover:bg-[rgba(37,99,235,0.2)] transition-colors"
-            data-testid="action-breed"
-          >
-            <Heart className="w-3.5 h-3.5" />
-            Breed
-          </button>
-          <button
-            type="button"
-            onClick={() => setShowRiderPicker(true)}
-            className="flex items-center gap-1.5 px-4 py-2 rounded-lg bg-[rgba(37,99,235,0.1)] border border-[rgba(37,99,235,0.3)] text-[rgb(220,235,255)] text-sm fantasy-body whitespace-nowrap hover:bg-[rgba(37,99,235,0.2)] transition-colors"
-            title="Assign a rider to this horse"
-            data-testid="action-assign-rider"
-          >
-            <Users className="w-3.5 h-3.5" />
-            Assign Rider
-          </button>
-          {horse.forSale ? (
+      {/* Story 12-5 — Sticky Bottom Action Bar (portal to escape stacking context) */}
+      {createPortal(
+        <div
+          className="fixed bottom-0 left-0 right-0 z-[var(--z-modal)] bg-[rgba(10,22,40,0.95)] border-t border-burnished-gold/40 backdrop-blur-sm"
+          data-testid="horse-action-bar"
+        >
+          <div className="max-w-7xl mx-auto px-4 py-3 flex items-center gap-3 overflow-x-auto">
+            <span className="text-xs fantasy-caption text-[rgb(160,175,200)] whitespace-nowrap mr-1 flex-shrink-0">
+              Quick Actions:
+            </span>
             <button
               type="button"
-              onClick={() => delistHorseMutation.mutate(horse.id, { onSuccess: () => refetch() })}
-              disabled={delistHorseMutation.isPending}
-              className="flex items-center gap-1.5 px-4 py-2 rounded-lg bg-red-900/20 border border-red-500/40 text-red-300 text-sm fantasy-body whitespace-nowrap hover:bg-red-900/30 transition-colors disabled:opacity-50"
-              data-testid="action-delist"
+              onClick={() => navigate(`/feed-shop?horseId=${horse.id}`)}
+              className="flex items-center gap-1.5 px-4 py-2 rounded-lg text-sm font-semibold whitespace-nowrap transition-all hover:brightness-110 hover:shadow-[0_0_16px_rgba(200,168,78,0.3)] active:brightness-95"
+              style={{
+                background:
+                  'linear-gradient(135deg, var(--gold-primary) 0%, var(--gold-light) 100%)',
+                color: 'var(--bg-deep-space)',
+              }}
+              title="Go to Feed Shop"
+              data-testid="action-feed"
             >
-              <X className="w-3.5 h-3.5" />
-              Delist
+              <span aria-hidden="true">🌾</span>
+              Feed
             </button>
-          ) : (
             <button
               type="button"
-              onClick={() => setShowListModal(true)}
-              className="flex items-center gap-1.5 px-4 py-2 rounded-lg bg-[rgba(37,99,235,0.1)] border border-[rgba(37,99,235,0.3)] text-[rgb(220,235,255)] text-sm fantasy-body whitespace-nowrap hover:bg-[rgba(37,99,235,0.2)] transition-colors"
-              data-testid="action-list-for-sale"
+              onClick={() => navigate(`/training?horseId=${horse.id}`)}
+              className="flex items-center gap-1.5 px-4 py-2 rounded-lg text-sm font-semibold whitespace-nowrap transition-all hover:brightness-110 hover:shadow-[0_0_16px_rgba(200,168,78,0.3)] active:brightness-95"
+              style={{
+                background:
+                  'linear-gradient(135deg, var(--gold-primary) 0%, var(--gold-light) 100%)',
+                color: 'var(--bg-deep-space)',
+              }}
+              data-testid="action-train"
             >
-              <Tag className="w-3.5 h-3.5" />
-              List for Sale
+              <Dumbbell className="w-3.5 h-3.5" />
+              Train
             </button>
-          )}
-        </div>
-      </div>
+            <button
+              type="button"
+              onClick={() => navigate(`/breeding?horseId=${horse.id}`)}
+              className="flex items-center gap-1.5 px-4 py-2 rounded-lg text-sm font-semibold whitespace-nowrap transition-all hover:brightness-110 hover:shadow-[0_0_16px_rgba(200,168,78,0.3)] active:brightness-95"
+              style={{
+                background:
+                  'linear-gradient(135deg, var(--gold-primary) 0%, var(--gold-light) 100%)',
+                color: 'var(--bg-deep-space)',
+              }}
+              data-testid="action-breed"
+            >
+              <Heart className="w-3.5 h-3.5" />
+              Breed
+            </button>
+            <button
+              type="button"
+              onClick={() => setShowRiderPicker(true)}
+              className="flex items-center gap-1.5 px-4 py-2 rounded-lg text-sm font-semibold whitespace-nowrap transition-all hover:brightness-110 hover:shadow-[0_0_16px_rgba(200,168,78,0.3)] active:brightness-95"
+              style={{
+                background:
+                  'linear-gradient(135deg, var(--gold-primary) 0%, var(--gold-light) 100%)',
+                color: 'var(--bg-deep-space)',
+              }}
+              title="Assign a rider to this horse"
+              data-testid="action-assign-rider"
+            >
+              <Users className="w-3.5 h-3.5" />
+              Assign Rider
+            </button>
+            <button
+              type="button"
+              onClick={() => navigate(`/grooms?horseId=${horse.id}`)}
+              className="flex items-center gap-1.5 px-4 py-2 rounded-lg text-sm font-semibold whitespace-nowrap transition-all hover:brightness-110 hover:shadow-[0_0_16px_rgba(200,168,78,0.3)] active:brightness-95"
+              style={{
+                background:
+                  'linear-gradient(135deg, var(--gold-primary) 0%, var(--gold-light) 100%)',
+                color: 'var(--bg-deep-space)',
+              }}
+              title="Assign a groom to this horse"
+              data-testid="action-assign-groom"
+            >
+              <span aria-hidden="true">🧹</span>
+              Assign Groom
+            </button>
+            <button
+              type="button"
+              onClick={() => navigate(`/tack-shop?horseId=${horse.id}`)}
+              className="flex items-center gap-1.5 px-4 py-2 rounded-lg text-sm font-semibold whitespace-nowrap transition-all hover:brightness-110 hover:shadow-[0_0_16px_rgba(200,168,78,0.3)] active:brightness-95"
+              style={{
+                background:
+                  'linear-gradient(135deg, var(--gold-primary) 0%, var(--gold-light) 100%)',
+                color: 'var(--bg-deep-space)',
+              }}
+              title="Equip tack for this horse"
+              data-testid="action-equip-tack"
+            >
+              <span aria-hidden="true">🎠</span>
+              Equip Tack
+            </button>
+            <button
+              type="button"
+              onClick={() => navigate(`/farrier?horseId=${horse.id}`)}
+              className="flex items-center gap-1.5 px-4 py-2 rounded-lg text-sm font-semibold whitespace-nowrap transition-all hover:brightness-110 hover:shadow-[0_0_16px_rgba(200,168,78,0.3)] active:brightness-95"
+              style={{
+                background:
+                  'linear-gradient(135deg, var(--gold-primary) 0%, var(--gold-light) 100%)',
+                color: 'var(--bg-deep-space)',
+              }}
+              title="Shoe this horse"
+              data-testid="action-shoe-horse"
+            >
+              <span aria-hidden="true">🔧</span>
+              Shoe Horse
+            </button>
+            {horse.forSale ? (
+              <button
+                type="button"
+                onClick={() => delistHorseMutation.mutate(horse.id, { onSuccess: () => refetch() })}
+                disabled={delistHorseMutation.isPending}
+                className="flex items-center gap-1.5 px-4 py-2 rounded-lg bg-red-900/20 border border-red-500/40 text-red-300 text-sm fantasy-body whitespace-nowrap hover:bg-red-900/30 transition-colors disabled:opacity-50"
+                data-testid="action-delist"
+              >
+                <X className="w-3.5 h-3.5" />
+                Delist
+              </button>
+            ) : (
+              <button
+                type="button"
+                onClick={() => setShowListModal(true)}
+                className="flex items-center gap-1.5 px-4 py-2 rounded-lg text-sm font-semibold whitespace-nowrap transition-all hover:brightness-110 hover:shadow-[0_0_16px_rgba(200,168,78,0.3)] active:brightness-95"
+                style={{
+                  background:
+                    'linear-gradient(135deg, var(--gold-primary) 0%, var(--gold-light) 100%)',
+                  color: 'var(--bg-deep-space)',
+                }}
+                data-testid="action-list-for-sale"
+              >
+                <Tag className="w-3.5 h-3.5" />
+                List for Sale
+              </button>
+            )}
+          </div>
+        </div>,
+        document.body
+      )}
 
       {/* List for Sale Modal */}
       {showListModal && (
@@ -597,7 +763,7 @@ const HorseDetailPage: React.FC = () => {
                   setShowListModal(false);
                   setListPrice('');
                 }}
-                className="p-1 rounded hover:bg-white/10 text-white/50 hover:text-[var(--text-primary)]"
+                className="p-1 rounded hover:bg-white/10 text-white/50 hover:text-white"
               >
                 <X className="w-4 h-4" />
               </button>
@@ -644,7 +810,7 @@ const HorseDetailPage: React.FC = () => {
                     }
                   );
                 }}
-                className="flex-1 px-4 py-2 rounded-lg bg-emerald-600/80 border border-emerald-500/40 text-[var(--text-primary)] text-sm hover:bg-emerald-600 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
+                className="flex-1 px-4 py-2 rounded-lg bg-emerald-600/80 border border-emerald-500/40 text-white text-sm hover:bg-emerald-600 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
               >
                 {listHorseMutation.isPending ? 'Listing…' : 'Confirm'}
               </button>
@@ -663,21 +829,27 @@ const OverviewTab: React.FC<{ horse: Horse }> = ({ horse }) => (
       <h3 className="fantasy-title text-xl text-[rgb(220,235,255)] mb-3">Current Status</h3>
       <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
         <div className="p-4 bg-[rgba(15,35,70,0.4)] rounded border border-[rgba(37,99,235,0.2)]">
-          <p className="fantasy-caption text-aged-bronze mb-1">Health Status</p>
+          <p className="fantasy-caption text-[rgb(160,175,200)] mb-1">Health Status</p>
           <p className="fantasy-body text-[rgb(220,235,255)]">{horse.healthStatus}</p>
         </div>
         <div className="p-4 bg-[rgba(15,35,70,0.4)] rounded border border-[rgba(37,99,235,0.2)]">
-          <p className="fantasy-caption text-aged-bronze mb-1">Age</p>
+          <p className="fantasy-caption text-[rgb(160,175,200)] mb-1">Age</p>
           <p className="fantasy-body text-[rgb(220,235,255)]">{horse.age} years old</p>
         </div>
         <div className="p-4 bg-[rgba(15,35,70,0.4)] rounded border border-[rgba(37,99,235,0.2)]">
-          <p className="fantasy-caption text-aged-bronze mb-1">Date of Birth</p>
+          <p className="fantasy-caption text-[rgb(160,175,200)] mb-1">Date of Birth</p>
           <p className="fantasy-body text-[rgb(220,235,255)]">
-            {new Date(horse.dateOfBirth).toLocaleDateString()}
+            {typeof horse.dateOfBirth === 'string' && !isNaN(new Date(horse.dateOfBirth).getTime())
+              ? new Date(horse.dateOfBirth).toLocaleDateString('en-US', {
+                  month: 'long',
+                  day: 'numeric',
+                  year: 'numeric',
+                })
+              : 'Not recorded'}
           </p>
         </div>
         <div className="p-4 bg-[rgba(15,35,70,0.4)] rounded border border-[rgba(37,99,235,0.2)]">
-          <p className="fantasy-caption text-aged-bronze mb-1">Gender</p>
+          <p className="fantasy-caption text-[rgb(160,175,200)] mb-1">Gender</p>
           <p className="fantasy-body text-[rgb(220,235,255)] capitalize">{horse.gender}</p>
         </div>
       </div>
@@ -708,7 +880,7 @@ const DisciplinesTab: React.FC<{ horse: Horse }> = ({ horse }) => {
   if (disciplines.length === 0) {
     return (
       <div className="text-center py-12">
-        <p className="fantasy-body text-aged-bronze">
+        <p className="fantasy-body text-[rgb(160,175,200)]">
           This horse has not trained in any disciplines yet.
         </p>
       </div>
@@ -822,7 +994,7 @@ const GeneticsTab: React.FC<{ horse: Horse }> = ({ horse }) => {
     return (
       <div className="flex items-center justify-center py-12">
         <Loader2 className="w-8 h-8 animate-spin text-burnished-gold" />
-        <span className="ml-3 text-aged-bronze">Loading genetics data...</span>
+        <span className="ml-3 text-[rgb(160,175,200)]">Loading genetics data...</span>
       </div>
     );
   }
@@ -847,14 +1019,14 @@ const GeneticsTab: React.FC<{ horse: Horse }> = ({ horse }) => {
       {/* Filters and Sorting */}
       <div className="bg-[rgba(15,35,70,0.4)] p-4 rounded-lg border border-[rgba(37,99,235,0.2)]">
         <div className="flex items-center mb-4">
-          <Filter className="w-5 h-5 text-aged-bronze mr-2" />
+          <Filter className="w-5 h-5 text-[rgb(160,175,200)] mr-2" />
           <h4 className="font-semibold text-[rgb(220,235,255)]">Filters & Sorting</h4>
         </div>
 
         <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
           {/* Type Filter */}
           <div>
-            <label className="block text-sm text-aged-bronze mb-2">Type</label>
+            <label className="block text-sm text-[rgb(160,175,200)] mb-2">Type</label>
             <select
               value={filterType}
               onChange={(e) => setFilterType(e.target.value as 'all' | 'genetic' | 'epigenetic')}
@@ -868,7 +1040,7 @@ const GeneticsTab: React.FC<{ horse: Horse }> = ({ horse }) => {
 
           {/* Rarity Filter */}
           <div>
-            <label className="block text-sm text-aged-bronze mb-2">Rarity</label>
+            <label className="block text-sm text-[rgb(160,175,200)] mb-2">Rarity</label>
             <select
               value={filterRarity}
               onChange={(e) =>
@@ -885,7 +1057,7 @@ const GeneticsTab: React.FC<{ horse: Horse }> = ({ horse }) => {
 
           {/* Source Filter */}
           <div>
-            <label className="block text-sm text-aged-bronze mb-2">Source</label>
+            <label className="block text-sm text-[rgb(160,175,200)] mb-2">Source</label>
             <select
               value={filterSource}
               onChange={(e) =>
@@ -902,7 +1074,7 @@ const GeneticsTab: React.FC<{ horse: Horse }> = ({ horse }) => {
 
           {/* Sort By */}
           <div>
-            <label className="block text-sm text-aged-bronze mb-2">Sort By</label>
+            <label className="block text-sm text-[rgb(160,175,200)] mb-2">Sort By</label>
             <select
               value={sortBy}
               onChange={(e) =>
@@ -929,7 +1101,7 @@ const GeneticsTab: React.FC<{ horse: Horse }> = ({ horse }) => {
           <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
             {/* Genetic Potential */}
             <div className="bg-[rgba(15,35,70,0.5)] p-4 rounded-lg border border-[rgba(37,99,235,0.2)]">
-              <div className="text-sm text-aged-bronze mb-2 flex items-center">
+              <div className="text-sm text-[rgb(160,175,200)] mb-2 flex items-center">
                 <TrendingUp className="w-4 h-4 mr-1" />
                 Genetic Potential
               </div>
@@ -974,14 +1146,14 @@ const GeneticsTab: React.FC<{ horse: Horse }> = ({ horse }) => {
                   }}
                 />
               </div>
-              <p className="text-xs text-aged-bronze mt-2">
+              <p className="text-xs text-[rgb(160,175,200)] mt-2">
                 Based on {allTraits.length} trait{allTraits.length !== 1 ? 's' : ''}
               </p>
             </div>
 
             {/* Trait Stability */}
             <div className="bg-[rgba(15,35,70,0.5)] p-4 rounded-lg border border-[rgba(37,99,235,0.2)]">
-              <div className="text-sm text-aged-bronze mb-2 flex items-center">
+              <div className="text-sm text-[rgb(160,175,200)] mb-2 flex items-center">
                 <Shield className="w-4 h-4 mr-1" />
                 Trait Stability
               </div>
@@ -1017,14 +1189,14 @@ const GeneticsTab: React.FC<{ horse: Horse }> = ({ horse }) => {
                   }}
                 />
               </div>
-              <p className="text-xs text-aged-bronze mt-2">
+              <p className="text-xs text-[rgb(160,175,200)] mt-2">
                 {geneticTraits.length} genetic / {allTraits.length} total
               </p>
             </div>
 
             {/* Breeding Value */}
             <div className="bg-[rgba(15,35,70,0.5)] p-4 rounded-lg border border-[rgba(37,99,235,0.2)]">
-              <div className="text-sm text-aged-bronze mb-2 flex items-center">
+              <div className="text-sm text-[rgb(160,175,200)] mb-2 flex items-center">
                 <Award className="w-4 h-4 mr-1" />
                 Breeding Value
               </div>
@@ -1069,26 +1241,26 @@ const GeneticsTab: React.FC<{ horse: Horse }> = ({ horse }) => {
                   }}
                 />
               </div>
-              <p className="text-xs text-aged-bronze mt-2">
+              <p className="text-xs text-[rgb(160,175,200)] mt-2">
                 {allTraits.filter((t) => t.rarity !== 'common').length} rare+ traits
               </p>
             </div>
 
             {/* Optimal Combinations */}
             <div className="bg-[rgba(15,35,70,0.5)] p-4 rounded-lg border border-[rgba(37,99,235,0.2)]">
-              <div className="text-sm text-aged-bronze mb-2 flex items-center">
+              <div className="text-sm text-[rgb(160,175,200)] mb-2 flex items-center">
                 <Sparkles className="w-4 h-4 mr-1" />
                 Optimal Combos
               </div>
               <div className="text-3xl font-bold text-[rgb(220,235,255)] mb-2">
                 {interactionsData?.interactions?.filter((i) => i.strength >= 75).length || 0}
               </div>
-              <div className="text-sm text-aged-bronze mb-2">
+              <div className="text-sm text-[rgb(160,175,200)] mb-2">
                 {interactionsData?.interactions?.filter((i) => i.strength >= 50 && i.strength < 75)
                   .length || 0}{' '}
                 good
               </div>
-              <p className="text-xs text-aged-bronze mt-2">High-value trait synergies</p>
+              <p className="text-xs text-[rgb(160,175,200)] mt-2">High-value trait synergies</p>
             </div>
           </div>
 
@@ -1207,7 +1379,7 @@ const GeneticsTab: React.FC<{ horse: Horse }> = ({ horse }) => {
                       {entry.traitName}
                     </span>
                   </div>
-                  <span className="text-xs text-aged-bronze">
+                  <span className="text-xs text-[rgb(160,175,200)]">
                     {new Date(entry.timestamp).toLocaleDateString()}
                   </span>
                 </div>
@@ -1216,7 +1388,7 @@ const GeneticsTab: React.FC<{ horse: Horse }> = ({ horse }) => {
                 )}
                 {entry.source && (
                   <div className="flex items-center gap-2">
-                    <span className="text-xs text-aged-bronze">
+                    <span className="text-xs text-[rgb(160,175,200)]">
                       Source: <span className="capitalize font-semibold">{entry.source}</span>
                     </span>
                   </div>
@@ -1229,7 +1401,7 @@ const GeneticsTab: React.FC<{ horse: Horse }> = ({ horse }) => {
 
       {/* No Traits Message */}
       {filteredTraits.length === 0 && (
-        <div className="text-center py-8 text-aged-bronze">
+        <div className="text-center py-8 text-[rgb(160,175,200)]">
           <p>No traits match the current filters.</p>
         </div>
       )}
@@ -1265,7 +1437,7 @@ const GeneticsTab: React.FC<{ horse: Horse }> = ({ horse }) => {
                     <div className="flex h-8 rounded-lg overflow-hidden border border-[rgba(37,99,235,0.3)] mb-3">
                       {sireTraits > 0 && (
                         <div
-                          className="bg-gradient-to-r from-blue-500 to-blue-600 flex items-center justify-center text-[var(--text-primary)] text-xs font-semibold"
+                          className="bg-gradient-to-r from-blue-500 to-blue-600 flex items-center justify-center text-white text-xs font-semibold"
                           style={{ width: `${sirePercentage}%` }}
                         >
                           {sirePercentage}%
@@ -1273,7 +1445,7 @@ const GeneticsTab: React.FC<{ horse: Horse }> = ({ horse }) => {
                       )}
                       {damTraits > 0 && (
                         <div
-                          className="bg-gradient-to-r from-purple-500 to-purple-600 flex items-center justify-center text-[var(--text-primary)] text-xs font-semibold"
+                          className="bg-gradient-to-r from-purple-500 to-purple-600 flex items-center justify-center text-white text-xs font-semibold"
                           style={{ width: `${damPercentage}%` }}
                         >
                           {damPercentage}%
@@ -1308,7 +1480,7 @@ const GeneticsTab: React.FC<{ horse: Horse }> = ({ horse }) => {
                     {/* Analysis */}
                     {inheritedTotal > 0 && (
                       <div className="mt-3 pt-3 border-t border-[rgba(37,99,235,0.2)]">
-                        <p className="text-xs text-aged-bronze">
+                        <p className="text-xs text-[rgb(160,175,200)]">
                           {sirePercentage > damPercentage + 10 ? (
                             <>
                               <strong>Sire-Dominant:</strong> This horse inherited significantly
@@ -1341,7 +1513,7 @@ const GeneticsTab: React.FC<{ horse: Horse }> = ({ horse }) => {
                 onClick={() => (window.location.href = `/horses/${horse.parentIds!.sireId}`)}
                 className="p-4 bg-[rgba(15,35,70,0.4)] rounded border border-[rgba(37,99,235,0.2)] hover:border-burnished-gold/50 transition-colors text-left"
               >
-                <p className="fantasy-caption text-aged-bronze mb-1">Sire</p>
+                <p className="fantasy-caption text-[rgb(160,175,200)] mb-1">Sire</p>
                 <p className="fantasy-body text-[rgb(220,235,255)]">View Sire Details →</p>
               </button>
             )}
@@ -1350,7 +1522,7 @@ const GeneticsTab: React.FC<{ horse: Horse }> = ({ horse }) => {
                 onClick={() => (window.location.href = `/horses/${horse.parentIds!.damId}`)}
                 className="p-4 bg-[rgba(15,35,70,0.4)] rounded border border-[rgba(37,99,235,0.2)] hover:border-burnished-gold/50 transition-colors text-left"
               >
-                <p className="fantasy-caption text-aged-bronze mb-1">Dam</p>
+                <p className="fantasy-caption text-[rgb(160,175,200)] mb-1">Dam</p>
                 <p className="fantasy-body text-[rgb(220,235,255)]">View Dam Details →</p>
               </button>
             )}
@@ -1570,12 +1742,15 @@ const TrainingTab: React.FC<{ horse: Horse }> = ({ horse }) => {
       {/* Training Status Section */}
       <div className="bg-[rgba(15,35,70,0.4)] rounded-lg border border-[rgba(37,99,235,0.2)] p-6">
         <h3 className="fantasy-title text-xl text-[rgb(220,235,255)] mb-3 flex items-center">
-          <Clock className="w-5 h-5 mr-2 text-aged-bronze" />
+          <Clock className="w-5 h-5 mr-2 text-[rgb(160,175,200)]" />
           Training Status
         </h3>
 
         {isStatusLoading ? (
-          <div className="flex items-center text-aged-bronze" data-testid="training-status-loading">
+          <div
+            className="flex items-center text-[rgb(160,175,200)]"
+            data-testid="training-status-loading"
+          >
             <Loader2 className="w-4 h-4 animate-spin mr-2" />
             Loading training status...
           </div>
@@ -1625,7 +1800,7 @@ const TrainingTab: React.FC<{ horse: Horse }> = ({ horse }) => {
       {(eligibility.eligible || isIneligibleDueToCooldown) && (
         <div className="glass-panel rounded-lg p-6">
           <h3 className="fantasy-title text-xl text-[rgb(220,235,255)] mb-4 flex items-center">
-            <Dumbbell className="w-5 h-5 mr-2 text-aged-bronze" />
+            <Dumbbell className="w-5 h-5 mr-2 text-[rgb(160,175,200)]" />
             Select Discipline
           </h3>
 
@@ -1737,7 +1912,7 @@ const ProgressionTab: React.FC<{ horse: Horse }> = ({ horse }) => (
 const PlaceholderTab: React.FC<{ title: string }> = ({ title }) => (
   <div className="text-center py-12">
     <h3 className="fantasy-title text-2xl text-[rgb(220,235,255)] mb-4">{title}</h3>
-    <p className="fantasy-body text-aged-bronze">
+    <p className="fantasy-body text-[rgb(160,175,200)]">
       This section is coming soon. Check back later for updates!
     </p>
   </div>
@@ -1747,81 +1922,67 @@ const PlaceholderTab: React.FC<{ title: string }> = ({ title }) => (
 const PedigreeTab: React.FC<{ horse: Horse }> = ({ horse }) => {
   const hasSire = Boolean(horse.parentIds?.sireId);
   const hasDam = Boolean(horse.parentIds?.damId);
-  const hasAnyParent = hasSire || hasDam;
+  const _hasAnyParent = hasSire || hasDam;
 
   return (
     <div className="space-y-6" data-testid="pedigree-tab">
       <div>
         <h3 className="fantasy-title text-xl text-[rgb(220,235,255)] mb-3">Family Tree</h3>
-        <p className="fantasy-body text-aged-bronze text-sm mb-6">
+        <p className="fantasy-body text-[rgb(160,175,200)] text-sm mb-6">
           Parentage and bloodline information for {horse.name}.
         </p>
       </div>
 
-      {hasAnyParent ? (
-        <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-          {/* Sire */}
-          <div
-            className="p-5 bg-[rgba(15,35,70,0.4)] rounded-lg border border-[rgba(37,99,235,0.2)]"
-            data-testid="pedigree-sire"
-          >
-            <p className="fantasy-caption text-aged-bronze mb-1 text-xs uppercase tracking-wider">
-              Sire (Father)
-            </p>
-            {hasSire ? (
-              <Link
-                to={`/horses/${horse.parentIds!.sireId}`}
-                className="fantasy-title text-lg text-burnished-gold hover:text-[rgb(220,235,255)] transition-colors flex items-center gap-2"
-              >
-                <GitBranch className="w-4 h-4" />
-                View Sire Profile
-              </Link>
-            ) : (
-              <p className="fantasy-body text-[rgb(148,163,184)] italic">Unknown</p>
-            )}
-          </div>
-
-          {/* Dam */}
-          <div
-            className="p-5 bg-[rgba(15,35,70,0.4)] rounded-lg border border-[rgba(37,99,235,0.2)]"
-            data-testid="pedigree-dam"
-          >
-            <p className="fantasy-caption text-aged-bronze mb-1 text-xs uppercase tracking-wider">
-              Dam (Mother)
-            </p>
-            {hasDam ? (
-              <Link
-                to={`/horses/${horse.parentIds!.damId}`}
-                className="fantasy-title text-lg text-burnished-gold hover:text-[rgb(220,235,255)] transition-colors flex items-center gap-2"
-              >
-                <GitBranch className="w-4 h-4" />
-                View Dam Profile
-              </Link>
-            ) : (
-              <p className="fantasy-body text-[rgb(148,163,184)] italic">Unknown</p>
-            )}
-          </div>
-        </div>
-      ) : (
+      <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+        {/* Sire */}
         <div
-          className="text-center py-10 bg-[rgba(15,35,70,0.4)] rounded-lg border border-[rgba(37,99,235,0.2)]"
-          data-testid="pedigree-empty"
+          className="p-5 bg-[rgba(15,35,70,0.4)] rounded-lg border border-[rgba(37,99,235,0.2)]"
+          data-testid="pedigree-sire"
         >
-          <GitBranch className="w-10 h-10 text-aged-bronze/40 mx-auto mb-3" />
-          <p className="fantasy-title text-lg text-[rgb(220,235,255)] mb-2">No Pedigree Recorded</p>
-          <p className="fantasy-body text-aged-bronze text-sm max-w-sm mx-auto">
-            This horse was not bred via the in-game breeding system. Parentage records are only
-            available for horses with a registered sire and dam.
+          <p className="fantasy-caption text-[rgb(160,175,200)] mb-1 text-xs uppercase tracking-wider">
+            Sire (Father)
           </p>
+          {hasSire ? (
+            <Link
+              to={`/horses/${horse.parentIds!.sireId}`}
+              className="fantasy-title text-lg text-burnished-gold hover:text-[rgb(220,235,255)] transition-colors flex items-center gap-2"
+            >
+              <GitBranch className="w-4 h-4" />
+              View Sire Profile
+            </Link>
+          ) : (
+            <p className="fantasy-title text-lg text-[rgb(148,163,184)]">Store Horse</p>
+          )}
         </div>
-      )}
+
+        {/* Dam */}
+        <div
+          className="p-5 bg-[rgba(15,35,70,0.4)] rounded-lg border border-[rgba(37,99,235,0.2)]"
+          data-testid="pedigree-dam"
+        >
+          <p className="fantasy-caption text-[rgb(160,175,200)] mb-1 text-xs uppercase tracking-wider">
+            Dam (Mother)
+          </p>
+          {hasDam ? (
+            <Link
+              to={`/horses/${horse.parentIds!.damId}`}
+              className="fantasy-title text-lg text-burnished-gold hover:text-[rgb(220,235,255)] transition-colors flex items-center gap-2"
+            >
+              <GitBranch className="w-4 h-4" />
+              View Dam Profile
+            </Link>
+          ) : (
+            <p className="fantasy-title text-lg text-[rgb(148,163,184)]">Store Horse</p>
+          )}
+        </div>
+      </div>
 
       {/* Offspring section — future expansion */}
       <div className="p-4 bg-[rgba(15,35,70,0.3)] rounded-lg border border-[rgba(37,99,235,0.15)]">
-        <p className="fantasy-caption text-aged-bronze text-xs uppercase tracking-wider mb-1">
+        <p className="fantasy-caption text-[rgb(160,175,200)] text-xs uppercase tracking-wider mb-1">
           Offspring
         </p>
-        <p className="fantasy-body text-aged-bronze text-sm italic">
+        <p className="fantasy-body text-[rgb(160,175,200)] text-sm italic">
           Offspring records are displayed once this horse has produced foals through the breeding
           system.
         </p>
@@ -1866,7 +2027,7 @@ const HealthVetTab: React.FC<{ horse: Horse }> = ({ horse }) => {
       ? 'text-emerald-400'
       : horse.healthStatus?.toLowerCase().includes('injured')
         ? 'text-burnished-gold'
-        : 'text-aged-bronze';
+        : 'text-[rgb(160,175,200)]';
 
   return (
     <div className="space-y-6" data-testid="health-vet-tab">
@@ -1877,13 +2038,13 @@ const HealthVetTab: React.FC<{ horse: Horse }> = ({ horse }) => {
         </h3>
         <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
           <div className="p-4 bg-[rgba(15,35,70,0.4)] rounded-lg border border-[rgba(37,99,235,0.2)]">
-            <p className="fantasy-caption text-aged-bronze mb-1 text-xs uppercase tracking-wider">
+            <p className="fantasy-caption text-[rgb(160,175,200)] mb-1 text-xs uppercase tracking-wider">
               Status
             </p>
             <p className={`fantasy-title text-xl ${healthColor}`}>{horse.healthStatus}</p>
           </div>
           <div className="p-4 bg-[rgba(15,35,70,0.4)] rounded-lg border border-[rgba(37,99,235,0.2)]">
-            <p className="fantasy-caption text-aged-bronze mb-1 text-xs uppercase tracking-wider">
+            <p className="fantasy-caption text-[rgb(160,175,200)] mb-1 text-xs uppercase tracking-wider">
               Next Recommended Check
             </p>
             <p className="fantasy-body text-[rgb(220,235,255)]">6 weeks from last visit</p>
@@ -1896,8 +2057,8 @@ const HealthVetTab: React.FC<{ horse: Horse }> = ({ horse }) => {
         <h3 className="fantasy-title text-xl text-[rgb(220,235,255)] mb-3">Veterinary History</h3>
         {MOCK_VET_HISTORY.length === 0 ? (
           <div className="text-center py-8 bg-[rgba(15,35,70,0.3)] rounded-lg border border-[rgba(37,99,235,0.15)]">
-            <Stethoscope className="w-8 h-8 text-aged-bronze/40 mx-auto mb-2" />
-            <p className="fantasy-body text-aged-bronze">No vet records on file.</p>
+            <Stethoscope className="w-8 h-8 text-[rgb(160,175,200)]/40 mx-auto mb-2" />
+            <p className="fantasy-body text-[rgb(160,175,200)]">No vet records on file.</p>
           </div>
         ) : (
           <div className="space-y-3">
@@ -1909,7 +2070,7 @@ const HealthVetTab: React.FC<{ horse: Horse }> = ({ horse }) => {
               >
                 <div className="flex items-start justify-between mb-1">
                   <p className="fantasy-title text-[rgb(220,235,255)] text-sm">{record.type}</p>
-                  <span className="text-xs fantasy-caption text-aged-bronze flex items-center gap-1">
+                  <span className="text-xs fantasy-caption text-[rgb(160,175,200)] flex items-center gap-1">
                     <Clock className="w-3 h-3" />
                     {new Date(record.date).toLocaleDateString('en-GB', {
                       day: 'numeric',
@@ -1919,7 +2080,7 @@ const HealthVetTab: React.FC<{ horse: Horse }> = ({ horse }) => {
                   </span>
                 </div>
                 <p className="fantasy-body text-[rgb(220,235,255)] text-sm mb-1">{record.result}</p>
-                <p className="fantasy-caption text-aged-bronze text-xs">Vet: {record.vet}</p>
+                <p className="fantasy-caption text-[rgb(160,175,200)] text-xs">Vet: {record.vet}</p>
               </div>
             ))}
           </div>
@@ -1930,13 +2091,13 @@ const HealthVetTab: React.FC<{ horse: Horse }> = ({ horse }) => {
       <div className="p-4 bg-[rgba(15,35,70,0.3)] rounded-lg border border-[rgba(37,99,235,0.15)] flex items-center justify-between">
         <div>
           <p className="fantasy-title text-[rgb(220,235,255)] text-sm">Need a Vet Appointment?</p>
-          <p className="fantasy-body text-aged-bronze text-sm">
+          <p className="fantasy-body text-[rgb(160,175,200)] text-sm">
             Visit the Vet Clinic to book a health check or treatment.
           </p>
         </div>
         <Link
           to="/vet"
-          className="px-4 py-2 bg-[rgba(37,99,235,0.1)] border border-[rgba(37,99,235,0.3)] rounded-lg text-sm fantasy-body text-aged-bronze hover:bg-[rgba(37,99,235,0.2)] transition-colors whitespace-nowrap"
+          className="px-4 py-2 bg-[rgba(37,99,235,0.1)] border border-[rgba(37,99,235,0.3)] rounded-lg text-sm fantasy-body text-[rgb(160,175,200)] hover:bg-[rgba(37,99,235,0.2)] transition-colors whitespace-nowrap"
         >
           Go to Vet Clinic
         </Link>
@@ -1956,7 +2117,7 @@ const StudSaleTab: React.FC<{ horse: Horse }> = ({ horse }) => {
     <div className="space-y-6" data-testid="stud-sale-tab">
       <div>
         <h3 className="fantasy-title text-xl text-[rgb(220,235,255)] mb-2">Listing Options</h3>
-        <p className="fantasy-body text-aged-bronze text-sm">
+        <p className="fantasy-body text-[rgb(160,175,200)] text-sm">
           List {horse.name} as a stud service or for outright sale. Pricing and listing management
           will be wired to the live API in a future update.
         </p>
@@ -1964,7 +2125,7 @@ const StudSaleTab: React.FC<{ horse: Horse }> = ({ horse }) => {
 
       {/* Current Listing Status */}
       <div className="p-4 bg-[rgba(15,35,70,0.4)] rounded-lg border border-[rgba(37,99,235,0.2)]">
-        <p className="fantasy-caption text-aged-bronze text-xs uppercase tracking-wider mb-1">
+        <p className="fantasy-caption text-[rgb(160,175,200)] text-xs uppercase tracking-wider mb-1">
           Current Status
         </p>
         <p className="fantasy-title text-lg text-[rgb(220,235,255)]">Not Listed</p>
@@ -1982,17 +2143,17 @@ const StudSaleTab: React.FC<{ horse: Horse }> = ({ horse }) => {
           >
             <div>
               <p className="fantasy-title text-[rgb(220,235,255)] text-sm">Offer as Stud Service</p>
-              <p className="fantasy-body text-aged-bronze text-xs mt-0.5">
+              <p className="fantasy-body text-[rgb(160,175,200)] text-xs mt-0.5">
                 Other players can pay a breeding fee to use {horse.name}
               </p>
             </div>
-            <span className="text-xs fantasy-caption text-aged-bronze">Coming Soon</span>
+            <span className="text-xs fantasy-caption text-[rgb(160,175,200)]">Coming Soon</span>
           </button>
         )}
 
         {!isFemale && !isMale && (
           <div className="p-4 bg-[rgba(15,35,70,0.3)] rounded-lg border border-[rgba(37,99,235,0.1)]">
-            <p className="fantasy-body text-aged-bronze text-sm italic">
+            <p className="fantasy-body text-[rgb(160,175,200)] text-sm italic">
               Stud listing is only available for stallions.
             </p>
           </div>
@@ -2009,11 +2170,11 @@ const StudSaleTab: React.FC<{ horse: Horse }> = ({ horse }) => {
         >
           <div>
             <p className="fantasy-title text-[rgb(220,235,255)] text-sm">List for Sale</p>
-            <p className="fantasy-body text-aged-bronze text-xs mt-0.5">
+            <p className="fantasy-body text-[rgb(160,175,200)] text-xs mt-0.5">
               Place {horse.name} on the Marketplace for other players to purchase
             </p>
           </div>
-          <span className="text-xs fantasy-caption text-aged-bronze">Coming Soon</span>
+          <span className="text-xs fantasy-caption text-[rgb(160,175,200)]">Coming Soon</span>
         </button>
       </div>
 
@@ -2021,13 +2182,13 @@ const StudSaleTab: React.FC<{ horse: Horse }> = ({ horse }) => {
       <div className="p-4 bg-[rgba(15,35,70,0.3)] rounded-lg border border-[rgba(37,99,235,0.15)] flex items-center justify-between">
         <div>
           <p className="fantasy-title text-[rgb(220,235,255)] text-sm">Browse the Marketplace</p>
-          <p className="fantasy-body text-aged-bronze text-sm">
+          <p className="fantasy-body text-[rgb(160,175,200)] text-sm">
             See horses listed for sale by other players.
           </p>
         </div>
         <Link
           to="/marketplace"
-          className="px-4 py-2 bg-[rgba(37,99,235,0.1)] border border-[rgba(37,99,235,0.3)] rounded-lg text-sm fantasy-body text-aged-bronze hover:bg-[rgba(37,99,235,0.2)] transition-colors whitespace-nowrap"
+          className="px-4 py-2 bg-[rgba(37,99,235,0.1)] border border-[rgba(37,99,235,0.3)] rounded-lg text-sm fantasy-body text-[rgb(160,175,200)] hover:bg-[rgba(37,99,235,0.2)] transition-colors whitespace-nowrap"
         >
           Marketplace
         </Link>

@@ -21,6 +21,7 @@ import { useHorses } from '@/hooks/api/useHorses';
 import { useVetServices, useBookVetAppointment } from '@/hooks/api/useVet';
 import type { VetService } from '@/hooks/api/useVet';
 import type { HorseSummary } from '@/lib/api-client';
+import { getBreedName } from '@/lib/utils';
 
 type VetTab = 'horses' | 'services';
 
@@ -128,7 +129,7 @@ const HorsesHealthTab: React.FC<HorsesHealthTabProps> = ({
                 <div>
                   <h3 className="font-bold text-white/90">{horse.name}</h3>
                   <p className="text-xs text-white/40 mt-0.5">
-                    {horse.breed} · Age {horse.age}
+                    {getBreedName(horse.breed)} · Age {horse.age}
                   </p>
                 </div>
                 <span

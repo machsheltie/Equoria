@@ -32,11 +32,7 @@
  */
 
 import { useMutation, useQueryClient } from '@tanstack/react-query';
-import {
-  claimCompetitionPrizes,
-  PrizeClaimResult,
-  PrizeApiError,
-} from '@/lib/api/prizes';
+import { claimCompetitionPrizes, PrizeClaimResult, PrizeApiError } from '@/lib/api/prizes';
 import { prizeHistoryQueryKeys } from './usePrizeHistory';
 import { horsePrizeSummaryQueryKeys } from './useHorsePrizeSummary';
 
@@ -74,9 +70,9 @@ export function useClaimPrizes() {
         queryKey: horsePrizeSummaryQueryKeys.all,
       });
 
-      // Invalidate user data (balance has been credited)
+      // Invalidate profile (balance has been credited)
       queryClient.invalidateQueries({
-        queryKey: ['user'],
+        queryKey: ['profile'],
       });
     },
     onError: (error) => {

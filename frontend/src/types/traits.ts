@@ -137,35 +137,35 @@ export function getTierStyle(tier: TraitTier): {
         borderColor: 'border-purple-400',
         bgColor: 'bg-gradient-to-br from-purple-50 via-pink-50 to-purple-50',
         textColor: 'text-purple-700',
-        badgeColor: 'bg-purple-600 text-white',
+        badgeColor: 'bg-purple-600 text-[var(--text-primary)]',
       };
     case 'ultra-rare':
       return {
         borderColor: 'border-amber-400',
         bgColor: 'bg-gradient-to-br from-amber-50 via-yellow-50 to-amber-50',
         textColor: 'text-amber-700',
-        badgeColor: 'bg-amber-600 text-white',
+        badgeColor: 'bg-amber-600 text-[var(--text-primary)]',
       };
     case 'rare':
       return {
         borderColor: 'border-blue-300',
         bgColor: 'bg-gradient-to-br from-blue-50 to-cyan-50',
-        textColor: 'text-blue-700',
-        badgeColor: 'bg-blue-600 text-white',
+        textColor: 'text-[var(--gold-primary)]',
+        badgeColor: 'bg-blue-600 text-[var(--text-primary)]',
       };
     case 'uncommon':
       return {
         borderColor: 'border-green-300',
         bgColor: 'bg-gradient-to-br from-green-50 to-emerald-50',
         textColor: 'text-green-700',
-        badgeColor: 'bg-green-600 text-white',
+        badgeColor: 'bg-green-600 text-[var(--text-primary)]',
       };
     case 'common':
       return {
-        borderColor: 'border-slate-300',
+        borderColor: 'border-[var(--glass-border)]',
         bgColor: 'bg-gradient-to-br from-slate-50 to-gray-50',
-        textColor: 'text-slate-700',
-        badgeColor: 'bg-slate-600 text-white',
+        textColor: 'text-[var(--text-secondary)]',
+        badgeColor: 'bg-[var(--bg-twilight)] text-[var(--text-primary)]',
       };
   }
 }

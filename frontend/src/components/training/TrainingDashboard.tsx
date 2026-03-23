@@ -25,6 +25,7 @@ import { useProfile } from '@/hooks/useAuth';
 import type { TrainableHorse } from '@/lib/api-client';
 import { canTrain } from '@/lib/utils/training-utils';
 import type { Horse } from '@/lib/utils/training-utils';
+import { getBreedName } from '@/lib/utils';
 import EligibilityIndicator from './EligibilityIndicator';
 import EligibilityFilter from './EligibilityFilter';
 import type { EligibilityFilterType } from './EligibilityFilter';
@@ -108,7 +109,9 @@ const HorseCard = ({ horse, onTrainClick }: HorseCardProps): JSX.Element => {
         </div>
 
         {/* Breed Info */}
-        {horse.breed && <p className="mt-1 text-sm text-[rgb(148,163,184)]">{horse.breed}</p>}
+        {horse.breed && (
+          <p className="mt-1 text-sm text-[rgb(148,163,184)]">{getBreedName(horse.breed)}</p>
+        )}
 
         {/* Best Disciplines */}
         {horse.bestDisciplines && horse.bestDisciplines.length > 0 && (
@@ -130,7 +133,11 @@ const HorseCard = ({ horse, onTrainClick }: HorseCardProps): JSX.Element => {
           data-testid={`train-button-${horse.id}`}
           data-onboarding-target="training-start-button"
           onClick={() => onTrainClick(horse)}
-          className="mt-4 w-full rounded-md bg-blue-600 px-4 py-2 text-sm font-semibold text-white shadow hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-2"
+          className="mt-4 w-full rounded-lg px-4 py-2.5 text-sm font-semibold transition-all hover:brightness-110 hover:shadow-[0_0_16px_rgba(200,168,78,0.3)]"
+          style={{
+            background: 'linear-gradient(135deg, var(--gold-primary) 0%, var(--gold-light) 100%)',
+            color: 'var(--bg-deep-space)',
+          }}
         >
           Train
         </button>
@@ -334,7 +341,7 @@ const TrainingDashboard = ({ userId: userIdProp }: TrainingDashboardProps): JSX.
         <button
           type="button"
           onClick={() => refetch()}
-          className="rounded-md border border-[rgba(37,99,235,0.3)] px-3 py-2 text-sm font-semibold text-[rgb(220,235,255)] hover:bg-[rgba(37,99,235,0.08)] focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-2"
+          className="rounded-lg border border-white/20 px-4 py-2 text-sm font-semibold text-white/70 hover:text-white/90 hover:bg-white/10 transition-colors"
         >
           Refresh
         </button>

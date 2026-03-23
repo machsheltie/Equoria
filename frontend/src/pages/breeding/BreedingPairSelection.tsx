@@ -19,6 +19,7 @@ import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { AlertCircle, CheckCircle, Dna, ChevronDown, ChevronUp } from 'lucide-react';
 import { useAuth } from '@/contexts/AuthContext';
 import { breedingApi, horsesApi, breedingPredictionApi } from '@/lib/api-client';
+import { getBreedName } from '@/lib/utils';
 import HorseSelector from '@/components/breeding/HorseSelector';
 import CompatibilityDisplay from '@/components/breeding/CompatibilityDisplay';
 import BreedingPredictionsPanel from './BreedingPredictionsPanel';
@@ -143,7 +144,7 @@ const BreedingPairSelection: React.FC<BreedingPairSelectionProps> = ({ userId: p
         name: horse.name,
         age: horse.ageYears || horse.age,
         sex: horse.sex || (horse.gender === 'male' ? 'Male' : 'Female'),
-        breedName: horse.breed,
+        breedName: getBreedName(horse.breed),
         healthStatus: horse.healthStatus,
         level: horse.level,
         dateOfBirth: horse.dateOfBirth,

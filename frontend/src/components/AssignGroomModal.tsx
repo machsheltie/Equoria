@@ -202,7 +202,7 @@ const AssignGroomModal: React.FC<AssignGroomModalProps> = ({
                         ? 'border-blue-500 bg-[rgba(37,99,235,0.15)]'
                         : groom.availableSlots === 0
                           ? 'border-[rgba(37,99,235,0.2)] bg-[rgba(15,35,70,0.3)] cursor-not-allowed opacity-60'
-                          : 'border-[rgba(37,99,235,0.3)] hover:border-blue-400 hover:bg-[rgba(37,99,235,0.1)]'
+                          : 'border-[rgba(37,99,235,0.3)] hover:border-[var(--gold-light)] hover:bg-[rgba(37,99,235,0.1)]'
                     }`}
                   >
                     <div className="flex items-start">
@@ -345,7 +345,7 @@ const AssignGroomModal: React.FC<AssignGroomModalProps> = ({
           <button
             onClick={handleAssign}
             disabled={!selectedGroomId || assignMutation.isPending || success}
-            className="px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
+            className="px-4 py-2 bg-blue-600 text-[var(--text-primary)] rounded-lg hover:bg-[var(--gold-dim)] transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
             aria-label="Assign groom"
           >
             {assignMutation.isPending ? 'Assigning...' : 'Assign Groom'}

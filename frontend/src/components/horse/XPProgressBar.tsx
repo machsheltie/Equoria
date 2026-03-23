@@ -38,7 +38,7 @@ const XPProgressBar = ({ horseId }: XPProgressBarProps) => {
         <div className="text-sm text-rose-400">{error?.message || 'Failed to fetch XP data'}</div>
         <button
           onClick={() => refetch()}
-          className="mt-2 rounded bg-rose-600 px-3 py-1 text-sm text-white hover:bg-rose-700 focus:outline-none focus:ring-2 focus:ring-rose-500 focus:ring-offset-2"
+          className="mt-2 rounded bg-rose-600 px-3 py-1 text-sm text-[var(--text-primary)] hover:bg-rose-700 focus:outline-none focus:ring-2 focus:ring-rose-500 focus:ring-offset-2"
         >
           Retry
         </button>

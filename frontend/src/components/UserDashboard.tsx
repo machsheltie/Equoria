@@ -127,7 +127,7 @@ const UserDashboard: React.FC<UserDashboardProps> = ({
           <p className="text-lg font-bold text-red-400">Connection Severed</p>
           <p className="text-sm opacity-70">The stars are clouded. Please try again.</p>
         </div>
-        <Button onClick={handleRefresh} variant="celestial">
+        <Button onClick={handleRefresh} variant="default">
           Reconnect
         </Button>
       </div>
@@ -285,7 +285,7 @@ const UserDashboard: React.FC<UserDashboardProps> = ({
                     <action.icon className="w-5 h-5" />
                   </div>
                   <div className="ml-4 text-left">
-                    <div className="font-heading font-semibold text-starlight-white group-hover:text-white transition-colors">
+                    <div className="font-heading font-semibold text-starlight-white group-hover:text-[var(--text-primary)] transition-colors">
                       {action.label}
                     </div>
                     <div className="text-xs text-starlight-white/50">{action.desc}</div>
@@ -316,7 +316,7 @@ const UserDashboard: React.FC<UserDashboardProps> = ({
                     <div className="text-xs font-mono text-starlight-white/40 min-w-[80px] pt-1">
                       {formatTimestamp(item.timestamp)}
                     </div>
-                    <div className="text-sm text-starlight-white/90 group-hover:text-white transition-colors">
+                    <div className="text-sm text-starlight-white/90 group-hover:text-[var(--text-primary)] transition-colors">
                       {item.description}
                     </div>
                   </div>
@@ -344,7 +344,7 @@ const UserDashboard: React.FC<UserDashboardProps> = ({
                     <h3 className="font-heading font-bold text-indigo-300 mb-1">Weekly Coffers</h3>
                     <p className="text-sm text-indigo-100/80 mb-2">
                       Expenses:{' '}
-                      <span className="text-white font-bold">
+                      <span className="text-[var(--text-primary)] font-bold">
                         ${salarySummaryData.totalWeeklyCost.toLocaleString()}
                       </span>{' '}
                       assigned to grooms.
@@ -358,7 +358,7 @@ const UserDashboard: React.FC<UserDashboardProps> = ({
                   </div>
                   <button
                     onClick={() => setIsSalaryReminderDismissed(true)}
-                    className="text-white/30 hover:text-white"
+                    className="text-white/30 hover:text-[var(--text-primary)]"
                   >
                     <div className="sr-only">Dismiss</div>×
                   </button>

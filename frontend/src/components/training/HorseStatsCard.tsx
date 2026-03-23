@@ -1,5 +1,6 @@
 import React from 'react';
 import type { TrainableHorse } from '@/lib/api-client';
+import { getBreedName } from '@/lib/utils';
 
 interface HorseStatsCardProps {
   horse: TrainableHorse;
@@ -39,7 +40,7 @@ const HorseStatsCard: React.FC<HorseStatsCardProps> = ({ horse }) => {
         {horse.breed && (
           <div className="flex justify-between text-sm">
             <span className="font-medium text-[rgb(148,163,184)]">Breed:</span>
-            <span className="text-[rgb(220,235,255)]">{horse.breed}</span>
+            <span className="text-[rgb(220,235,255)]">{getBreedName(horse.breed)}</span>
           </div>
         )}
 

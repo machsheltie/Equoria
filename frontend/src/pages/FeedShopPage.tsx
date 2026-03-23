@@ -22,6 +22,7 @@ import PageHero from '@/components/layout/PageHero';
 import { useHorses } from '@/hooks/api/useHorses';
 import { useFeedCatalog, usePurchaseFeed, FeedItem } from '@/hooks/api/useFeedShop';
 import { HorseSummary } from '@/lib/api-client';
+import { getBreedName } from '@/lib/utils';
 
 type FeedShopTab = 'horses' | 'shop';
 
@@ -146,10 +147,7 @@ const HorsesNutritionTab: React.FC<HorsesNutritionTabProps> = ({
                 <div>
                   <h3 className="font-bold text-[var(--cream)]">{horse.name}</h3>
                   <p className="text-xs text-[var(--text-muted)] mt-0.5">
-                    {typeof horse.breed === 'object' && horse.breed !== null
-                      ? (horse.breed as { name?: string }).name
-                      : horse.breed}{' '}
-                    · Age {horse.age}
+                    {getBreedName(horse.breed)} · Age {horse.age}
                   </p>
                 </div>
                 <span

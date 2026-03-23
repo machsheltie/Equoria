@@ -7,7 +7,7 @@
 
 import { useState } from 'react';
 import { Link } from 'react-router-dom';
-import { Bell, User } from 'lucide-react';
+import { Bell, LogOut, User } from 'lucide-react';
 import { useUnreadCount } from '@/hooks/api/useMessages';
 import { useAuth } from '@/contexts/AuthContext';
 import { Breadcrumb } from '@/components/layout/Breadcrumb';
@@ -16,7 +16,7 @@ import { NavPanel } from '@/components/layout/NavPanel';
 const MainNavigation: React.FC = () => {
   const [isNavOpen, setIsNavOpen] = useState(false);
   const { data: unreadData } = useUnreadCount();
-  const { user } = useAuth();
+  const { user, logout } = useAuth();
 
   const unreadCount = unreadData?.count ?? 0;
   const displayMoney = user?.money?.toLocaleString() ?? '0';
@@ -25,7 +25,12 @@ const MainNavigation: React.FC = () => {
     <>
       <header
         role="banner"
-        className="sticky top-0 z-[var(--z-sticky)] flex items-center justify-between px-4 md:px-8 py-3 bg-[rgba(10,14,26,0.75)] backdrop-blur-[var(--glass-blur)] border-b border-[var(--glass-border)]"
+        className="sticky top-0 z-[var(--z-sticky)] flex items-center justify-between px-4 md:px-8 py-3 border-b border-[var(--glass-border)]"
+        style={{
+          background: 'rgba(15, 25, 50, 0.55)',
+          backdropFilter: 'blur(10px) saturate(1.3) brightness(1.1)',
+          WebkitBackdropFilter: 'blur(10px) saturate(1.3) brightness(1.1)',
+        }}
         data-testid="main-navigation"
       >
         {/* Left: hamburger + logo + breadcrumb */}
@@ -104,6 +109,16 @@ const MainNavigation: React.FC = () => {
               <User className="w-3.5 h-3.5" />
             )}
           </Link>
+
+          {/* Logout */}
+          <button
+            onClick={() => logout()}
+            className="w-8 h-8 rounded-[var(--radius-sm)] border border-[var(--glass-border)] flex items-center justify-center text-[var(--text-secondary)] hover:text-[var(--status-danger)] hover:border-[var(--status-danger)] transition-colors cursor-pointer"
+            aria-label="Log out"
+            data-testid="logout-button"
+          >
+            <LogOut className="w-4 h-4" />
+          </button>
         </div>
       </header>
 

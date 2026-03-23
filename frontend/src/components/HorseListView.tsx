@@ -35,17 +35,20 @@ import {
   hasActiveFilters,
   getActiveFilterCount,
 } from '../lib/utils/horse-filter-utils';
+import { Button } from '@/components/ui/button';
 import HorseSearchBar from './horse/HorseSearchBar';
 import HorseFilters from './horse/HorseFilters';
 import EligibilityIndicator from './training/EligibilityIndicator';
 import EligibilityFilter, { EligibilityFilterType } from './training/EligibilityFilter';
 import { canTrain } from '../lib/utils/training-utils';
+import { getHorseImage } from '@/lib/breed-images';
+import { getBreedName } from '@/lib/utils';
 
 // Types
 interface Horse {
   id: number;
   name: string;
-  breed: string;
+  breed: string | { id?: number; name?: string; description?: string };
   age: number;
   level: number;
   health: number;
@@ -175,8 +178,8 @@ const HorseListView: React.FC<HorseListViewProps> = ({ userId: _userId, horses: 
   const transformedHorses = useMemo(() => {
     return horses.map((horse) => ({
       ...horse,
-      breedId: availableBreeds.find((b) => b.name === horse.breed)?.id,
-      breedName: horse.breed,
+      breedId: availableBreeds.find((b) => b.name === getBreedName(horse.breed))?.id,
+      breedName: getBreedName(horse.breed),
       disciplines: Object.keys(horse.disciplineScores || {}),
       traits: [], // Traits not available in current Horse type
       lastTrainedAt: horse.trainingCooldown ? new Date().toISOString() : null,
@@ -279,12 +282,7 @@ const HorseListView: React.FC<HorseListViewProps> = ({ userId: _userId, horses: 
           <p className="text-lg font-semibold">Error loading horses</p>
           <p className="text-sm">{error.message}</p>
         </div>
-        <button
-          onClick={() => refetch()}
-          className="btn-primary-arcs px-4 py-2 rounded-lg transition-colors"
-        >
-          Retry
-        </button>
+        <Button onClick={() => refetch()}>Retry</Button>
       </div>
     );
   }
@@ -377,7 +375,7 @@ const HorseListView: React.FC<HorseListViewProps> = ({ userId: _userId, horses: 
               >
                 {/* Horse Thumbnail */}
                 <img
-                  src={horse.imageUrl || '/images/horse-placeholder.png'}
+                  src={getHorseImage(horse.imageUrl, horse.breed)}
                   alt={horse.name}
                   className="w-full h-32 object-cover"
                 />
@@ -388,7 +386,7 @@ const HorseListView: React.FC<HorseListViewProps> = ({ userId: _userId, horses: 
                       <h3 className="text-lg font-semibold text-[rgb(220,235,255)]">
                         {horse.name}
                       </h3>
-                      <p className="text-sm text-[rgb(148,163,184)]">{horse.breed}</p>
+                      <p className="text-sm text-[rgb(148,163,184)]">{getBreedName(horse.breed)}</p>
                     </div>
                     <div className="text-right">
                       <p className="text-sm font-medium text-[rgb(220,235,255)]">
@@ -465,7 +463,7 @@ const HorseListView: React.FC<HorseListViewProps> = ({ userId: _userId, horses: 
             >
               {/* Horse Thumbnail */}
               <img
-                src={horse.imageUrl || '/images/horse-placeholder.png'}
+                src={getHorseImage(horse.imageUrl, horse.breed)}
                 alt={horse.name}
                 className="w-full h-32 object-cover rounded-t-lg"
               />
@@ -475,7 +473,7 @@ const HorseListView: React.FC<HorseListViewProps> = ({ userId: _userId, horses: 
                   <h3 className="text-lg font-semibold text-[rgb(220,235,255)] mb-1">
                     {horse.name}
                   </h3>
-                  <p className="text-sm text-[rgb(148,163,184)]">{horse.breed}</p>
+                  <p className="text-sm text-[rgb(148,163,184)]">{getBreedName(horse.breed)}</p>
                 </div>
 
                 <div className="space-y-1 text-sm mb-4">
@@ -665,7 +663,7 @@ const HorseListView: React.FC<HorseListViewProps> = ({ userId: _userId, horses: 
                 >
                   <td className="px-6 py-4 whitespace-nowrap">
                     <img
-                      src={horse.imageUrl || '/images/horse-placeholder.png'}
+                      src={getHorseImage(horse.imageUrl, horse.breed)}
                       alt={horse.name}
                       className="w-12 h-12 object-cover rounded"
                     />
@@ -674,7 +672,9 @@ const HorseListView: React.FC<HorseListViewProps> = ({ userId: _userId, horses: 
                     <div className="text-sm font-medium text-[rgb(220,235,255)]">{horse.name}</div>
                   </td>
                   <td className="px-6 py-4 whitespace-nowrap">
-                    <div className="text-sm text-[rgb(220,235,255)]">{horse.breed}</div>
+                    <div className="text-sm text-[rgb(220,235,255)]">
+                      {getBreedName(horse.breed)}
+                    </div>
                   </td>
                   <td className="px-6 py-4 whitespace-nowrap">
                     <div className="text-sm text-[rgb(220,235,255)]">{horse.age} years</div>

@@ -40,16 +40,19 @@ export function createCompressionMiddleware(options = {}) {
     level: 6, // Balanced compression level
     filter: (req, res) => {
       // Don't compress if client doesn't support it
-      if (!req.headers['accept-encoding']) { return false; }
+      if (!req.headers['accept-encoding']) {
+        return false;
+      }
 
       // Don't compress images, videos, or already compressed content
       const contentType = res.getHeader('content-type');
-      if (contentType && (
-        contentType.includes('image/') ||
-        contentType.includes('video/') ||
-        contentType.includes('application/zip') ||
-        contentType.includes('application/gzip')
-      )) {
+      if (
+        contentType &&
+        (contentType.includes('image/') ||
+          contentType.includes('video/') ||
+          contentType.includes('application/zip') ||
+          contentType.includes('application/gzip'))
+      ) {
         return false;
       }
 
@@ -103,12 +106,7 @@ export class PaginationService {
    * Create offset-based pagination with performance optimizations
    */
   static createOffsetPagination(options) {
-    const {
-      data,
-      page = 1,
-      limit = 20,
-      totalCount,
-    } = options;
+    const { data, page = 1, limit = 20, totalCount } = options;
 
     const totalPages = Math.ceil(totalCount / limit);
     const hasNextPage = page < totalPages;
@@ -133,13 +131,7 @@ export class PaginationService {
    * Generate optimized Prisma query for cursor pagination
    */
   static generateCursorQuery(options) {
-    const {
-      cursor,
-      limit = 20,
-      orderBy = 'id',
-      orderDirection = 'asc',
-      where = {},
-    } = options;
+    const { cursor, limit = 20, orderBy = 'id', orderDirection = 'asc', where = {} } = options;
 
     const query = {
       where,
@@ -166,12 +158,7 @@ export class SerializationService {
   static optimizeResponse(data, options = {}) {
     const startTime = Date.now();
 
-    const {
-      fields,
-      exclude,
-      transform,
-      compress = true,
-    } = options;
+    const { fields, exclude, transform, compress = true } = options;
 
     let optimizedData = data;
 
@@ -225,7 +212,9 @@ export class SerializationService {
    * Select fields from a single object
    */
   static selectFieldsFromObject(obj, fields) {
-    if (!obj || typeof obj !== 'object') { return obj; }
+    if (!obj || typeof obj !== 'object') {
+      return obj;
+    }
 
     const result = {};
     for (const field of fields) {
@@ -246,7 +235,9 @@ export class SerializationService {
    * Exclude fields from a single object
    */
   static excludeFieldsFromObject(obj, excludeFields) {
-    if (!obj || typeof obj !== 'object') { return obj; }
+    if (!obj || typeof obj !== 'object') {
+      return obj;
+    }
 
     const result = { ...obj };
     for (const field of excludeFields) {
@@ -268,7 +259,14 @@ export class SerializationService {
    */
   static compressDataStructure(data) {
     if (Array.isArray(data)) {
-      return data.map(item => this.compressDataStructure(item)).filter(item => item !== null && item !== undefined);
+      return data
+        .map(item => this.compressDataStructure(item))
+        .filter(item => item !== null && item !== undefined);
+    }
+
+    // Preserve Date objects — they serialize to ISO strings via toJSON()
+    if (data instanceof Date) {
+      return data;
     }
 
     if (data && typeof data === 'object') {
@@ -360,13 +358,19 @@ export class ResponseCacheService {
    */
   static shouldCache(req, res) {
     // Don't cache POST, PUT, DELETE requests
-    if (!['GET', 'HEAD'].includes(req.method)) { return false; }
+    if (!['GET', 'HEAD'].includes(req.method)) {
+      return false;
+    }
 
     // Don't cache error responses
-    if (res.statusCode >= 400) { return false; }
+    if (res.statusCode >= 400) {
+      return false;
+    }
 
     // Don't cache if explicitly disabled
-    if (res.getHeader('Cache-Control')?.includes('no-cache')) { return false; }
+    if (res.getHeader('Cache-Control')?.includes('no-cache')) {
+      return false;
+    }
 
     return true;
   }
@@ -381,7 +385,10 @@ export class ResponseCacheService {
       etag,
     } = options;
 
-    res.setHeader('Cache-Control', `public, max-age=${maxAge}, stale-while-revalidate=${staleWhileRevalidate}`);
+    res.setHeader(
+      'Cache-Control',
+      `public, max-age=${maxAge}, stale-while-revalidate=${staleWhileRevalidate}`,
+    );
 
     if (etag) {
       res.setHeader('ETag', etag);
@@ -397,7 +404,9 @@ export function getPerformanceMetrics() {
     compressionRatio: Object.fromEntries(performanceMetrics.compressionRatio),
     responseSize: Object.fromEntries(performanceMetrics.responseSize),
     serializationTime: Object.fromEntries(performanceMetrics.serializationTime),
-    cacheHitRate: performanceMetrics.cacheHits / (performanceMetrics.cacheHits + performanceMetrics.cacheMisses) || 0,
+    cacheHitRate:
+      performanceMetrics.cacheHits /
+        (performanceMetrics.cacheHits + performanceMetrics.cacheMisses) || 0,
     totalRequests: performanceMetrics.cacheHits + performanceMetrics.cacheMisses,
   };
 }

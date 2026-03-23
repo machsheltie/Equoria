@@ -10,7 +10,7 @@ const PlaceholderTab: React.FC<PlaceholderTabProps> = ({ title }) => (
     <div className="bg-white/5 p-4 rounded-full mb-4">
       <AlertCircle className="w-8 h-8 text-celestial-gold opacity-80" />
     </div>
-    <h3 className="font-heading text-2xl text-white mb-2">{title}</h3>
+    <h3 className="font-heading text-2xl text-[var(--text-primary)] mb-2">{title}</h3>
     <p className="font-body text-starlight-white/60 max-w-md">
       This section is currently being upgraded to the Celestial interface. Check back soon for
       enhanced features!

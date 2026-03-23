@@ -16,8 +16,8 @@ import { useEffect, useState, useCallback } from 'react';
 import { createPortal } from 'react-dom';
 import { Link } from 'react-router-dom';
 import { X, Trophy, MessageCircle, Star, ChevronRight } from 'lucide-react';
-import { cn } from '@/lib/utils';
 import { useAuth } from '@/contexts/AuthContext';
+import { Button } from '@/components/ui/button';
 import { useWhileYouWereGone, type WYAGItem } from '@/hooks/api/useWhileYouWereGone';
 
 const ABSENCE_THRESHOLD_MS = 4 * 60 * 60 * 1000; // 4 hours
@@ -64,11 +64,13 @@ function WYAGRow({ item, onClose }: { item: WYAGItem; onClose: () => void }) {
       <div className="flex-1 min-w-0">
         <p className="text-sm font-medium text-[var(--text-primary)] leading-snug">{item.title}</p>
         {item.description && (
-          <p className="text-xs text-[var(--text-muted)] mt-0.5 truncate">{item.description}</p>
+          <p className="text-xs text-[var(--cream)] mt-0.5 truncate opacity-70">
+            {item.description}
+          </p>
         )}
       </div>
       {item.actionUrl && (
-        <ChevronRight className="w-4 h-4 text-[var(--text-muted)] flex-shrink-0 mt-0.5" />
+        <ChevronRight className="w-4 h-4 text-[var(--gold-primary)] opacity-50 flex-shrink-0 mt-0.5" />
       )}
     </div>
   );
@@ -143,41 +145,50 @@ export function WhileYouWereGone() {
         aria-hidden="true"
       />
 
-      {/* Panel */}
+      {/* Panel — frosted glassmorphism card with strong contrast */}
       <div
-        className={cn(
-          'relative w-full max-w-md glass-panel-heavy p-6',
-          'animate-in slide-in-from-bottom-4 sm:slide-in-from-bottom-0 sm:zoom-in-95 duration-300'
-        )}
+        className="relative w-full max-w-md rounded-2xl p-6 border border-[rgba(201,162,39,0.3)] shadow-[0_8px_32px_rgba(0,0,0,0.6),0_0_60px_rgba(200,168,78,0.08)]"
+        style={{
+          background: 'rgba(10, 14, 26, 0.95)',
+          backdropFilter: 'blur(24px) saturate(1.4)',
+          WebkitBackdropFilter: 'blur(24px) saturate(1.4)',
+        }}
       >
-        {/* Header */}
-        <div className="flex items-center justify-between mb-4">
-          <div>
-            <h2 className="text-lg font-semibold text-[var(--gold-primary)] font-[var(--font-heading)]">
-              While You Were Away
-            </h2>
-            <p className="text-xs text-[var(--text-muted)] mt-0.5">
-              Here's what happened in your stable
-            </p>
-          </div>
-          <button
-            onClick={close}
-            aria-label="Dismiss"
-            className="p-1.5 rounded-full text-[var(--text-muted)] hover:text-[var(--text-primary)] hover:bg-[rgba(201,162,39,0.1)] transition-colors"
+        {/* Close button — top right */}
+        <button
+          onClick={close}
+          aria-label="Dismiss"
+          className="absolute top-4 right-4 p-1.5 rounded-full text-white/50 hover:text-white/90 hover:bg-white/10 transition-colors"
+        >
+          <X className="w-4 h-4" />
+        </button>
+
+        {/* Header — centered */}
+        <div className="text-center mb-5">
+          <h2
+            className="text-xl font-semibold text-[var(--gold-primary)]"
+            style={{ fontFamily: 'var(--font-heading)' }}
           >
-            <X className="w-4 h-4" />
-          </button>
+            While You Were Away
+          </h2>
+          <p className="text-xs text-[var(--cream)] mt-1 opacity-60">
+            Here&apos;s what happened in your stable
+          </p>
         </div>
 
         {/* Content */}
         {isLoading ? (
           <div className="space-y-3 py-2">
             {[1, 2, 3].map((i) => (
-              <div key={i} className="h-10 glass-panel-subtle rounded-lg animate-pulse" />
+              <div
+                key={i}
+                className="h-10 rounded-lg animate-pulse"
+                style={{ background: 'rgba(255,255,255,0.04)' }}
+              />
             ))}
           </div>
         ) : items.length === 0 ? (
-          <p className="text-sm text-[var(--text-muted)] py-4 text-center">
+          <p className="text-sm text-[var(--cream)] py-4 text-center opacity-60">
             Nothing new since your last visit. Your stable is resting peacefully.
           </p>
         ) : (
@@ -186,17 +197,17 @@ export function WhileYouWereGone() {
               <WYAGRow key={`${item.type}-${i}`} item={item} onClose={close} />
             ))}
             {hasMore && (
-              <p className="text-xs text-[var(--text-muted)] mt-2 text-center">
+              <p className="text-xs text-[var(--cream)] mt-2 text-center opacity-60">
                 + more activity — explore your stable
               </p>
             )}
           </div>
         )}
 
-        {/* Footer */}
-        <button onClick={close} className="mt-5 w-full btn-primary-arcs text-sm font-medium py-2.5">
+        {/* Footer — gold gradient button */}
+        <Button onClick={close} className="mt-5 w-full">
           Continue to Stable
-        </button>
+        </Button>
       </div>
     </div>,
     document.body

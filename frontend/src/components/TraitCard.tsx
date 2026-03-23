@@ -166,9 +166,9 @@ export const TraitCard: React.FC<TraitCardProps> = ({
             <span
               className={`text-xs px-2 py-1 rounded-full ${
                 trait.rarity === 'legendary'
-                  ? 'bg-gradient-to-r from-burnished-gold to-purple-500 text-white'
+                  ? 'bg-gradient-to-r from-burnished-gold to-purple-500 text-[var(--text-primary)]'
                   : trait.rarity === 'rare'
-                    ? 'bg-burnished-gold text-white'
+                    ? 'bg-burnished-gold text-[var(--text-primary)]'
                     : 'bg-[rgba(37,99,235,0.2)] text-[rgb(148,163,184)]'
               }`}
             >

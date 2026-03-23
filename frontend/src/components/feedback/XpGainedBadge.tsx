@@ -128,7 +128,7 @@ const XpGainedBadge = memo(function XpGainedBadge({
         inline-flex items-center gap-1
         px-3 py-1
         bg-gradient-to-r from-blue-500 to-purple-600
-        text-white font-semibold text-sm
+        text-[var(--text-primary)] font-semibold text-sm
         rounded-full shadow-lg
         animate-scale-in animate-pulse
         pointer-events-none
