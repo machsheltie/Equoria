@@ -16,8 +16,8 @@
 // Set VITE_API_URL only for split-deploy scenarios.
 const API_BASE_URL = import.meta.env.VITE_API_URL ?? '';
 
-// Track if a token refresh is in progress to avoid multiple concurrent refreshes
-let isRefreshing = false;
+// Single promise acts as deduplication lock — no separate boolean flag needed.
+// All concurrent 401 callers await the same promise until it settles.
 let refreshPromise: Promise<boolean> | null = null;
 
 interface ApiError {
@@ -35,13 +35,17 @@ interface ApiResponse<T> {
 
 interface TrainableHorse {
   id: number;
+  horseId?: number;
   name: string;
   level?: number;
-  breed?: string;
+  breed?: string | { name?: string };
   gender?: string;
   sex?: string;
+  age?: number;
   ageYears?: number;
+  canTrain?: boolean;
   bestDisciplines?: string[];
+  trainableDisciplines?: string[];
   nextEligibleAt?: string | null;
 }
 
@@ -142,14 +146,20 @@ interface FoalActivity {
   createdAt?: string;
 }
 
-// Simple stats object for components
+// Simple stats object for components — all 12 horse stats
 interface SimpleHorseStats {
-  speed: number;
-  stamina: number;
-  agility: number;
+  precision: number;
   strength: number;
+  speed: number;
+  agility: number;
+  endurance: number;
   intelligence: number;
-  health: number;
+  stamina: number;
+  balance: number;
+  boldness: number;
+  flexibility: number;
+  obedience: number;
+  focus: number;
 }
 
 interface HorseSummary {
@@ -167,6 +177,7 @@ interface HorseSummary {
   stats: SimpleHorseStats;
   disciplineScores: Record<string, number>;
   traits?: string[];
+  trait?: string;
   description?: string;
   forSale?: boolean;
   salePrice?: number;
@@ -175,6 +186,25 @@ interface HorseSummary {
     sireId?: number;
     damId?: number;
   };
+  // Care & cooldown fields from Prisma
+  lastFedDate?: string;
+  lastVettedDate?: string;
+  lastShod?: string;
+  lastGroomed?: string;
+  trainingCooldown?: string;
+  // Stats returned flat from API (all 12)
+  precision?: number;
+  strength?: number;
+  speed?: number;
+  agility?: number;
+  endurance?: number;
+  intelligence?: number;
+  stamina?: number;
+  balance?: number;
+  boldness?: number;
+  flexibility?: number;
+  obedience?: number;
+  focus?: number;
 }
 
 interface HorseTrainingHistoryEntry {
@@ -479,12 +509,13 @@ interface EligibilityResult {
  * Attempt to refresh the access token using the refresh token cookie
  */
 async function refreshAccessToken(): Promise<boolean> {
-  // If already refreshing, return the existing promise
-  if (isRefreshing && refreshPromise) {
+  // If a refresh is already in flight, every caller shares the same promise.
+  if (refreshPromise) {
     return refreshPromise;
   }
 
-  isRefreshing = true;
+  // Create the refresh promise *before* any async work so concurrent callers
+  // that arrive between now and the first await see it immediately.
   refreshPromise = (async () => {
     try {
       const response = await fetch(`${API_BASE_URL}/api/auth/refresh-token`, {
@@ -493,19 +524,18 @@ async function refreshAccessToken(): Promise<boolean> {
         headers: { 'Content-Type': 'application/json' },
       });
 
-      if (response.ok) {
-        return true;
-      }
-      return false;
+      return response.ok;
     } catch {
       return false;
-    } finally {
-      isRefreshing = false;
-      refreshPromise = null;
     }
   })();
 
-  return refreshPromise;
+  try {
+    return await refreshPromise;
+  } finally {
+    // Clear AFTER the promise settles so all concurrent awaiters resolve first.
+    refreshPromise = null;
+  }
 }
 
 /**
@@ -516,8 +546,36 @@ function sleep(ms: number): Promise<void> {
 }
 
 /**
+ * CSRF token cache — fetched once, reused for all mutations
+ */
+let _csrfToken: string | null = null;
+let _csrfFetching: Promise<string> | null = null;
+
+async function getCsrfToken(): Promise<string> {
+  if (_csrfToken) return _csrfToken;
+  if (_csrfFetching) return _csrfFetching;
+
+  _csrfFetching = (async () => {
+    try {
+      const res = await fetch(`${API_BASE_URL}/api/auth/csrf-token`, {
+        credentials: 'include',
+      });
+      const data = await res.json();
+      _csrfToken = data.csrfToken || '';
+      return _csrfToken;
+    } catch {
+      return '';
+    } finally {
+      _csrfFetching = null;
+    }
+  })();
+
+  return _csrfFetching;
+}
+
+/**
  * Base fetch wrapper with cookie credentials
- * Features: Auto-retry on 401, Rate limiting (429) handling
+ * Features: Auto-retry on 401, Rate limiting (429) handling, CSRF token injection
  */
 async function fetchWithAuth<T>(
   endpoint: string,
@@ -527,12 +585,22 @@ async function fetchWithAuth<T>(
   const url = `${API_BASE_URL}${endpoint}`;
 
   const isTestEnv = import.meta.env.MODE === 'test' || import.meta.env.VITE_E2E_TEST === 'true';
+  const isMutation = ['POST', 'PUT', 'DELETE', 'PATCH'].includes(
+    (options.method || 'GET').toUpperCase()
+  );
+
+  // Fetch CSRF token for mutations in non-test environments
+  const csrfHeader: Record<string, string> = {};
+  if (isMutation && !isTestEnv) {
+    const token = await getCsrfToken();
+    if (token) csrfHeader['X-CSRF-Token'] = token;
+  }
 
   const config: RequestInit = {
     ...options,
     headers: {
       'Content-Type': 'application/json',
-      ...(isTestEnv ? { 'x-test-skip-csrf': 'true' } : {}),
+      ...(isTestEnv ? { 'x-test-skip-csrf': 'true' } : csrfHeader),
       ...options.headers,
     },
     credentials: 'include', // CRITICAL: Send httpOnly cookies with request
@@ -557,6 +625,18 @@ async function fetchWithAuth<T>(
         status: 'error',
         statusCode: 401,
       } as ApiError;
+    }
+
+    // Handle 403 CSRF error — refresh token and retry once
+    if (response.status === 403 && retryCount === 0 && isMutation) {
+      const body = await response
+        .clone()
+        .json()
+        .catch(() => ({}));
+      if (body?.code === 'INVALID_CSRF_TOKEN') {
+        _csrfToken = null; // Invalidate cached token
+        return fetchWithAuth<T>(endpoint, options, retryCount + 1);
+      }
     }
 
     // Handle 429 Rate Limiting
@@ -788,6 +868,8 @@ export const horsesApi = {
     apiClient.get<StatHistory>(`/api/horses/${horseId}/stats/history?range=${timeRange}`),
   getRecentGains: (horseId: number, days = 30) =>
     apiClient.get<RecentGains>(`/api/horses/${horseId}/gains/recent?days=${days}`),
+  update: (horseId: number, data: { name?: string }) =>
+    apiClient.put<HorseSummary>(`/api/v1/horses/${horseId}`, data),
 };
 
 /**
@@ -1174,10 +1256,7 @@ export interface TackPurchaseResult {
 export const tackShopApi = {
   getInventory: () => apiClient.get<TackInventoryData>('/api/v1/tack-shop/inventory'),
   purchaseItem: (data: { horseId: number; itemId: string }) =>
-    apiClient.post<{ success: boolean; data: TackPurchaseResult }>(
-      '/api/v1/tack-shop/purchase',
-      data
-    ),
+    apiClient.post<TackPurchaseResult>('/api/v1/tack-shop/purchase', data),
 };
 
 // ── Farrier types ─────────────────────────────────────────────────────────────
@@ -1253,10 +1332,7 @@ export interface FeedPurchaseResult {
 export const feedShopApi = {
   getCatalog: () => apiClient.get<FeedItem[]>('/api/v1/feed-shop/catalog'),
   purchaseFeed: (data: { horseId: number; feedId: string }) =>
-    apiClient.post<{ success: boolean; data: FeedPurchaseResult }>(
-      '/api/v1/feed-shop/purchase',
-      data
-    ),
+    apiClient.post<FeedPurchaseResult>('/api/v1/feed-shop/purchase', data),
 };
 
 // ── Inventory types ───────────────────────────────────────────────────────────
@@ -1400,6 +1476,30 @@ export interface SendMessageRequest {
   tag?: string;
 }
 
+// ── Bank Types ──────────────────────────────────────────────────────────────────
+
+export interface WeeklyClaimResponse {
+  amount: number;
+  newBalance: number;
+  nextClaimDate: string;
+}
+
+export interface ClaimStatusResponse {
+  canClaim: boolean;
+  nextClaimDate: string | null;
+  rewardAmount: number;
+}
+
+/**
+ * Bank API surface
+ *   POST /api/v1/bank/claim        → Claim weekly reward
+ *   GET  /api/v1/bank/claim-status → Check claim availability
+ */
+export const bankApi = {
+  claimWeekly: () => apiClient.post<WeeklyClaimResponse>('/api/v1/bank/claim', {}),
+  getClaimStatus: () => apiClient.get<ClaimStatusResponse>('/api/v1/bank/claim-status'),
+};
+
 /**
  * Messages API surface (Epic 19B-2)
  *   GET   /api/messages/inbox         → InboxResponse
@@ -1536,9 +1636,12 @@ export const competitionsApi = {
       '/api/v1/competition/disciplines'
     ),
   checkEligibility: (horseId: number, discipline: string) =>
-    apiClient.get<{ success: boolean; data: { eligibility: EligibilityResult } }>(
-      `/api/competition/eligibility/${horseId}/${encodeURIComponent(discipline)}`
-    ),
+    apiClient.get<{
+      horseId: number;
+      horseName: string;
+      discipline: string;
+      eligibility: EligibilityResult;
+    }>(`/api/competition/eligibility/${horseId}/${encodeURIComponent(discipline)}`),
   enter: (data: { horseId: number; competitionId: number }) =>
     apiClient.post<{ success: boolean; data: { entryId: number } }>('/api/v1/competition/enter', {
       horseId: data.horseId,
@@ -1549,30 +1652,53 @@ export const competitionsApi = {
 /**
  * Breeding Prediction API surface
  */
+export interface InbreedingAnalysis {
+  coefficient: number;
+  risk: string;
+  commonAncestors: Array<{ name: string; generation: number }>;
+}
+
+export interface LineageAnalysis {
+  stallionLineage: Array<{ name: string; generation: number }>;
+  mareLineage: Array<{ name: string; generation: number }>;
+  commonAncestors: Array<{ name: string; generation: number }>;
+}
+
+export interface GeneticProbability {
+  traitProbabilities: Array<{ trait: string; probability: number }>;
+  statRanges: Record<string, { min: number; max: number; expected: number }>;
+}
+
+export interface BreedingCompatibility {
+  score: number;
+  rating: string;
+  factors: Array<{ name: string; impact: number; description: string }>;
+}
+
 export const breedingPredictionApi = {
   /**
    * Calculate inbreeding coefficient for a breeding pair
    */
   getInbreedingAnalysis: (payload: { stallionId: number; mareId: number }) =>
-    apiClient.post<unknown>('/api/v1/genetics/inbreeding-analysis', payload),
+    apiClient.post<InbreedingAnalysis>('/api/v1/genetics/inbreeding-analysis', payload),
 
   /**
    * Get lineage analysis for a breeding pair
    */
   getLineageAnalysis: (stallionId: number, mareId: number) =>
-    apiClient.get<unknown>(`/api/breeding/lineage-analysis/${stallionId}/${mareId}`),
+    apiClient.get<LineageAnalysis>(`/api/breeding/lineage-analysis/${stallionId}/${mareId}`),
 
   /**
    * Calculate genetic probability for offspring
    */
   getGeneticProbability: (payload: { stallionId: number; mareId: number }) =>
-    apiClient.post<unknown>('/api/v1/breeding/genetic-probability', payload),
+    apiClient.post<GeneticProbability>('/api/v1/breeding/genetic-probability', payload),
 
   /**
    * Get breeding compatibility score
    */
   getBreedingCompatibility: (payload: { stallionId: number; mareId: number }) =>
-    apiClient.post<unknown>('/api/v1/genetics/breeding-compatibility', payload),
+    apiClient.post<BreedingCompatibility>('/api/v1/genetics/breeding-compatibility', payload),
 };
 
 /**
@@ -1627,6 +1753,10 @@ export const authApi = {
         email: string;
         firstName?: string;
         lastName?: string;
+        money?: number;
+        level?: number;
+        xp?: number;
+        role?: string;
         completedOnboarding?: boolean;
         onboardingStep?: number;
       };

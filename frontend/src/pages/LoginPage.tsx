@@ -1,7 +1,7 @@
 /**
  * Login Page — Celestial Night design
  *
- * Full-bleed atmospheric background (equoriacelestial.png) with a
+ * Full-bleed atmospheric background (responsive webp) with a
  * glassmorphism login card. Matches the design samples exactly.
  */
 
@@ -10,11 +10,13 @@ import { useNavigate, Link } from 'react-router-dom';
 import { Mail, Lock, Eye, EyeOff } from 'lucide-react';
 import { loginSchema, type LoginFormData } from '../lib/validation-schemas';
 import { useLogin } from '../hooks/useAuth';
+import { useResponsiveBackground } from '../hooks/useResponsiveBackground';
 import { Button } from '@/components/ui/button';
 
 const LoginPage: React.FC = () => {
   const navigate = useNavigate();
   const { mutate: login, isPending, error } = useLogin();
+  const bgImage = useResponsiveBackground();
 
   const [formData, setFormData] = useState<LoginFormData>({ email: '', password: '' });
   const [showPassword, setShowPassword] = useState(false);
@@ -50,9 +52,9 @@ const LoginPage: React.FC = () => {
     <div
       className="min-h-screen w-full flex flex-col items-center justify-center relative overflow-hidden"
       style={{
-        backgroundImage: "url('/equoriacelestial.png')",
+        backgroundImage: `url('${bgImage}')`,
         backgroundSize: 'cover',
-        backgroundPosition: 'center top',
+        backgroundPosition: 'center center',
         backgroundRepeat: 'no-repeat',
       }}
     >
@@ -74,7 +76,7 @@ const LoginPage: React.FC = () => {
               Welcome Back
             </h2>
             <p className="text-xs text-[rgb(148,163,184)]">
-              Enter your credentials to continue your journey
+              Enter your credentials to continue playing
             </p>
           </div>
 
@@ -159,15 +161,15 @@ const LoginPage: React.FC = () => {
             </div>
 
             {/* Login CTA */}
-            <Button type="submit" disabled={isPending} size="lg" className="w-full">
-              {isPending ? 'Entering the Realm…' : 'Enter the Realm'}
+            <Button type="submit" disabled={isPending} size="default" className="w-full">
+              {isPending ? 'Entering…' : 'Enter'}
             </Button>
           </form>
 
           {/* Register */}
-          <Link to="/register" className="btn-outline-celestial block text-center">
-            Create an Account
-          </Link>
+          <Button asChild size="default" className="w-full">
+            <Link to="/register">Create an Account</Link>
+          </Button>
         </div>
 
         {/* Social icons */}
@@ -203,8 +205,10 @@ const LoginPage: React.FC = () => {
           ].map(({ label, icon }) => (
             <button
               key={label}
-              aria-label={`Sign in with ${label}`}
-              className="w-9 h-9 rounded-full flex items-center justify-center text-[rgb(148,163,184)] hover:text-white transition-colors"
+              disabled
+              aria-label={`Sign in with ${label} (coming soon)`}
+              title="Coming soon"
+              className="w-9 h-9 rounded-full flex items-center justify-center text-[rgb(148,163,184)] opacity-50 cursor-not-allowed transition-colors"
               style={{
                 background: 'rgba(10,22,40,0.6)',
                 border: '1px solid rgba(37,99,235,0.3)',

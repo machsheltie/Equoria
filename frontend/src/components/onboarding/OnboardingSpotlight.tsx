@@ -229,7 +229,7 @@ const OnboardingSpotlight: React.FC = () => {
     left: targetRect.left - RING_PAD,
     width: targetRect.width + RING_PAD * 2,
     height: targetRect.height + RING_PAD * 2,
-    borderRadius: 10,
+    borderRadius: 'var(--radius-md)',
     pointerEvents: 'none',
     animation: 'onboarding-ring-pulse 1.8s ease-in-out infinite',
     zIndex: 'var(--z-dropdown)' as unknown as number, // just below the tooltip card

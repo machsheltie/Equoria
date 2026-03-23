@@ -98,14 +98,10 @@ function StableHorseCard({ horse, onClick }: { horse: HorseSummary; onClick: () 
   ];
 
   return (
-    <div
-      role="button"
-      tabIndex={0}
+    <button
+      type="button"
       onClick={onClick}
-      onKeyDown={(e) => {
-        if (e.key === 'Enter' || e.key === ' ') onClick();
-      }}
-      className={`bg-[var(--glass-bg)] border rounded-[var(--radius-lg)] overflow-hidden transition-all duration-[250ms] hover:border-[var(--gold-primary)] hover:shadow-[var(--glow-gold-strong)] hover:-translate-y-1 hover:bg-[var(--glass-glow)] active:translate-y-0 active:shadow-[var(--glow-gold)] active:border-[var(--gold-primary)] cursor-pointer group [backdrop-filter:var(--glass-bg-filter)] shadow-[var(--shadow-card)] ${
+      className={`w-full text-left bg-[var(--glass-bg)] border rounded-[var(--radius-lg)] overflow-hidden transition-all duration-[250ms] hover:border-[var(--gold-primary)] hover:shadow-[var(--glow-gold-strong)] hover:-translate-y-1 hover:bg-[var(--glass-glow)] active:translate-y-0 active:shadow-[var(--glow-gold)] active:border-[var(--gold-primary)] cursor-pointer group [backdrop-filter:var(--glass-bg-filter)] shadow-[var(--shadow-card)] ${
         isLegendary ? 'border-[var(--gold-dim)]' : 'border-[var(--glass-border)]'
       }`}
       aria-label={`View ${horse.name}`}
@@ -173,7 +169,7 @@ function StableHorseCard({ horse, onClick }: { horse: HorseSummary; onClick: () 
         <CareChip label="Vetted" status={careStatus(horse.lastVettedDate, 7, 14)} />
         <CareChip label="Trained" status={trainingCooldownStatus(horse.trainingCooldown)} />
       </div>
-    </div>
+    </button>
   );
 }
 
