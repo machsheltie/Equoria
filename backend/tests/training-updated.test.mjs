@@ -63,6 +63,7 @@ describe('🏋️ INTEGRATION: Training System Updated - User Model Integration'
   let authToken;
   let testUserId;
   let testHorseId;
+  let secondHorseId; // Dedicated horse for the "allow training" test (avoids cooldown collision)
 
   beforeAll(async () => {
     const { user, token } = await createTestUser();
@@ -75,9 +76,20 @@ describe('🏋️ INTEGRATION: Training System Updated - User Model Integration'
       dateOfBirth: new Date(Date.now() - 5 * 365 * 24 * 60 * 60 * 1000),
     });
     testHorseId = testHorse.id;
+
+    // Second horse so the "allow training" test isn't blocked by a cooldown from earlier tests
+    const secondHorse = await createTestHorse({
+      userId: testUserId,
+      age: 5,
+      dateOfBirth: new Date(Date.now() - 5 * 365 * 24 * 60 * 60 * 1000),
+    });
+    secondHorseId = secondHorse.id;
   });
 
   afterAll(async () => {
+    if (secondHorseId) {
+      await prisma.horse.deleteMany({ where: { id: secondHorseId } });
+    }
     if (testHorseId) {
       await prisma.horse.deleteMany({ where: { id: testHorseId } });
     }
@@ -138,31 +150,13 @@ describe('🏋️ INTEGRATION: Training System Updated - User Model Integration'
     });
 
     it('should allow training for horse 3+ years old', async () => {
-      // Get trainable horses
-      const trainableResponse = await request(app)
-        .get(`/api/horses/trainable/${testUserId}`) // Use consistent testUserId
-        .set('Authorization', `Bearer ${authToken}`);
-
-      expect(trainableResponse.status).toBe(200);
-
-      if (trainableResponse.body.data.length === 0) {
-        // console.log('No trainable horses found, skipping training test');
-        return;
-      }
-
-      const adultHorse = trainableResponse.body.data.find(horse => horse.age >= 3);
-
-      if (!adultHorse) {
-        // console.log('No adult horses found, skipping training test');
-        return;
-      }
-
+      // Use the dedicated secondHorseId to avoid cooldown collision from the previous test
       const response = await request(app)
         .post('/api/training/train')
         .set('Authorization', `Bearer ${authToken}`)
         .set('x-test-skip-csrf', 'true')
         .send({
-          horseId: adultHorse.horseId,
+          horseId: secondHorseId,
           discipline: 'Racing',
         });
 
