@@ -7,7 +7,7 @@
  *
  * Pages tested:
  *  - Competition Browser (/competitions)
- *  - Training Center (/training)
+ *  - Training Dashboard (/training)
  *  - Breeding Hall (/breeding)
  *  - Community Hub (/community)
  *  - Messages (/messages)
@@ -24,7 +24,8 @@ test.describe('Celestial Night Feature Pages', () => {
     await expect(page.locator('[data-testid="competition-browser-page"]')).toBeVisible({
       timeout: 20000,
     });
-    await expect(page.locator('h1')).toContainText('Competitions', { timeout: 10000 });
+    // CompetitionBrowserPage PageHero title is "Competition Arena"
+    await expect(page.locator('h1')).toContainText('Competition Arena', { timeout: 10000 });
   });
 
   test('Competition Browser shows filter controls', async ({ page }) => {
@@ -41,23 +42,26 @@ test.describe('Celestial Night Feature Pages', () => {
     expect(hasFilters + hasFilterText).toBeGreaterThan(0);
   });
 
-  // ── Training Center ──────────────────────────────────────────────────────
-  test('Training Center loads with heading', async ({ page }) => {
+  // ── Training Dashboard ─────────────────────────────────────────────────
+  test('Training Dashboard loads with heading', async ({ page }) => {
     await page.goto('/training', { waitUntil: 'domcontentloaded' });
 
-    // TrainingPage renders h1 "Training Center"
-    await expect(page.locator('h1')).toContainText('Training Center', { timeout: 15000 });
+    // TrainingDashboardPage renders data-testid="training-dashboard-page"
+    await expect(page.locator('[data-testid="training-dashboard-page"]')).toBeVisible({
+      timeout: 20000,
+    });
+    // PageHero title is "Training Dashboard"
+    await expect(page.locator('h1')).toContainText('Training Dashboard', { timeout: 15000 });
   });
 
-  test('Training Center shows training dashboard', async ({ page }) => {
+  test('Training Dashboard shows content area', async ({ page }) => {
     await page.goto('/training', { waitUntil: 'domcontentloaded' });
 
-    // TrainingDashboard has data-testid="training-dashboard"
-    await expect(page.locator('[data-testid="training-dashboard"]')).toBeVisible({
+    await expect(page.locator('[data-testid="training-dashboard-page"]')).toBeVisible({
       timeout: 20000,
     });
 
-    // Should show "Training Dashboard" text within the component
+    // Should show "Training Dashboard" text within the page
     await expect(page.getByText('Training Dashboard')).toBeVisible({ timeout: 10000 });
   });
 
@@ -65,7 +69,7 @@ test.describe('Celestial Night Feature Pages', () => {
   test('Breeding Hall loads with heading', async ({ page }) => {
     await page.goto('/breeding', { waitUntil: 'domcontentloaded' });
 
-    // BreedingPage renders h1 "Breeding Hall"
+    // BreedingPage PageHero title is "Breeding Hall"
     await expect(page.locator('h1')).toContainText('Breeding Hall', { timeout: 15000 });
   });
 

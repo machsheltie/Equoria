@@ -7,21 +7,21 @@ test.describe('Authentication Flows', () => {
   test('Login Page - Layout and Navigation', async ({ page }) => {
     await page.goto('/login');
 
-    // CardTitle renders as <h3> in shadcn/ui — not <h2>
-    await expect(page.locator('h3')).toContainText('Welcome Back');
+    // LoginPage renders <h2> "Welcome Back"
+    await expect(page.locator('h2')).toContainText('Welcome Back');
 
-    // Login form uses type attributes — no name attributes on the Input elements
-    await expect(page.locator('input[type="email"]')).toBeVisible();
-    await expect(page.locator('input[type="password"]')).toBeVisible();
+    // Login form uses name attributes
+    await expect(page.locator('input[name="email"]')).toBeVisible();
+    await expect(page.locator('input[name="password"]')).toBeVisible();
 
-    // Actual button and link text from LoginPage.tsx
-    await expect(page.getByRole('button', { name: 'Enter Realm' })).toBeVisible();
-    await expect(page.getByText('Forgot password?')).toBeVisible();
+    // Button text is "Enter", link texts match LoginPage.tsx
+    await expect(page.getByRole('button', { name: 'Enter' })).toBeVisible();
+    await expect(page.getByText('Forgot Your Password?')).toBeVisible();
 
-    // Navigation to Register — link text is "Register Now"
-    await page.click('text=Register Now');
+    // Navigation to Register — link text is "Create an Account"
+    await page.click('text=Create an Account');
     await expect(page).toHaveURL(/\/register/);
-    // RegisterPage renders a real <h2> for "Join the Realm"
+    // RegisterPage renders <h2> "Join the Realm"
     await expect(page.locator('h2')).toContainText('Join the Realm');
   });
 
@@ -34,13 +34,13 @@ test.describe('Authentication Flows', () => {
 
     await page.goto('/login');
 
-    // Login form uses type selectors (no name attribute)
-    await page.fill('input[type="email"]', 'invalid@example.com');
-    await page.fill('input[type="password"]', 'WrongPass123!');
+    // Login form uses name selectors
+    await page.fill('input[name="email"]', 'invalid@example.com');
+    await page.fill('input[name="password"]', 'WrongPass123!');
     await page.click('button[type="submit"]');
 
-    // Error container becomes visible on failed login (text-red-200 class is unique to this element)
-    await expect(page.locator('.text-red-200')).toBeVisible({ timeout: 10000 });
+    // Error text uses text-red-400 class
+    await expect(page.locator('.text-red-400')).toBeVisible({ timeout: 10000 });
   });
 
   test('Register Page - Layout', async ({ page }) => {
@@ -48,7 +48,7 @@ test.describe('Authentication Flows', () => {
 
     await expect(page.locator('h2')).toContainText('Join the Realm');
 
-    // RegisterPage uses FantasyInput with name attributes — selectors are correct
+    // RegisterPage uses name attributes on all inputs
     await expect(page.locator('input[name="firstName"]')).toBeVisible();
     await expect(page.locator('input[name="lastName"]')).toBeVisible();
     await expect(page.locator('input[name="username"]')).toBeVisible();

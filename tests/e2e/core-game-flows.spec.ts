@@ -50,21 +50,22 @@ test.describe('AC1: Login Flow', () => {
 
     await page.goto('/login', { waitUntil: 'domcontentloaded' });
 
-    // Verify login page is rendered (CardTitle renders as h3 in shadcn/ui)
-    await expect(page.locator('h3')).toContainText('Welcome Back');
+    // LoginPage renders <h2> "Welcome Back"
+    await expect(page.locator('h2')).toContainText('Welcome Back');
 
-    // Fill credentials
-    await page.fill('input[type="email"]', email);
-    await page.fill('input[type="password"]', password);
+    // Fill credentials using name selectors
+    await page.fill('input[name="email"]', email);
+    await page.fill('input[name="password"]', password);
 
     // Submit
     await page.click('button[type="submit"]');
 
-    // After successful login, frontend navigates to /
+    // After successful login, frontend navigates to / (or /onboarding for new users)
+    // The global-setup user has already completed onboarding, so they go to /
     await page.waitForURL('/', { timeout: 20000 });
 
-    // Home dashboard should show the welcome heading
-    await expect(page.locator('h2').first()).toBeVisible({ timeout: 10000 });
+    // Home dashboard should show the h1 heading ("My Stable")
+    await expect(page.locator('h1').first()).toBeVisible({ timeout: 10000 });
   });
 });
 
@@ -152,7 +153,8 @@ test.describe('AC4: Training Session', () => {
 
   test('training dashboard loads with Training Dashboard heading', async ({ page }) => {
     await page.goto('/training', { waitUntil: 'domcontentloaded' });
-    await expect(page.locator('[data-testid="training-dashboard"]')).toBeVisible({
+    // TrainingDashboardPage uses data-testid="training-dashboard-page"
+    await expect(page.locator('[data-testid="training-dashboard-page"]')).toBeVisible({
       timeout: 20000,
     });
     await expect(page.getByText('Training Dashboard')).toBeVisible({ timeout: 10000 });
@@ -165,7 +167,7 @@ test.describe('AC4: Training Session', () => {
     }
 
     await page.goto('/training', { waitUntil: 'domcontentloaded' });
-    await page.waitForSelector('[data-testid="training-dashboard"]', { timeout: 20000 });
+    await page.waitForSelector('[data-testid="training-dashboard-page"]', { timeout: 20000 });
 
     // Wait for horses to load in the ready section
     const trainBtn = page.locator(`[data-testid="train-button-${trainingHorseId}"]`);
@@ -192,7 +194,7 @@ test.describe('AC4: Training Session', () => {
     }
 
     await page.goto('/training', { waitUntil: 'domcontentloaded' });
-    await page.waitForSelector('[data-testid="training-dashboard"]', { timeout: 20000 });
+    await page.waitForSelector('[data-testid="training-dashboard-page"]', { timeout: 20000 });
 
     const trainBtn = page.locator(`[data-testid="train-button-${trainingHorseId}"]`);
     const btnVisible = await trainBtn.isVisible({ timeout: 10000 }).catch(() => false);
@@ -220,14 +222,14 @@ test.describe('AC4: Training Session', () => {
 // AC5 — Competition Entry: select horse → confirm → result displayed
 // ─────────────────────────────────────────────────────────────────────────────
 test.describe('AC5: Competition Entry', () => {
-  test('competition browser loads and shows Competitions heading', async ({ page }) => {
+  test('competition browser loads and shows Competition Arena heading', async ({ page }) => {
     await page.goto('/competitions', { waitUntil: 'domcontentloaded' });
 
     // CompetitionBrowserPage renders with data-testid="competition-browser-page"
     await expect(page.locator('[data-testid="competition-browser-page"]')).toBeVisible({
       timeout: 20000,
     });
-    await expect(page.locator('h1')).toContainText('Competitions', { timeout: 10000 });
+    await expect(page.locator('h1')).toContainText('Competition Arena', { timeout: 10000 });
   });
 
   test('clicking a competition card opens the detail modal', async ({ page }) => {

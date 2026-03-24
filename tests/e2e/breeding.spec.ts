@@ -54,7 +54,7 @@ test.describe('Breeding Loop', () => {
     try {
       console.log('Waiting for Breeding Center heading');
       // Increased timeout and using role for better reliability
-      await expect(page.getByRole('heading', { name: 'Breeding Center' })).toBeVisible({
+      await expect(page.getByRole('heading', { name: 'Breeding Hall' })).toBeVisible({
         timeout: 30000,
       });
     } catch (e) {

@@ -2,8 +2,8 @@
  * Celestial Night Navigation — E2E Tests
  *
  * Tests the Celestial Night UI shell, navigation structure, and World Hub:
- *  - Home page loads with StarfieldBackground
- *  - Navigation menu shows all main sections
+ *  - Home page loads with "My Stable" heading
+ *  - Navigation menu (via hamburger) shows all main sections
  *  - World Hub loads with location cards
  *  - Location card navigation works
  *  - Protected routes redirect unauthenticated users to /login
@@ -14,31 +14,28 @@ import { test, expect } from '@playwright/test';
 // Authenticated Navigation Tests (uses storageState from global setup)
 // ─────────────────────────────────────────────────────────────────────────────
 test.describe('Celestial Night Navigation — Authenticated', () => {
-  test('home page loads and shows welcome heading', async ({ page }) => {
+  test('home page loads and shows My Stable heading', async ({ page }) => {
     await page.goto('/', { waitUntil: 'domcontentloaded' });
 
-    // Index page renders h1 with "Welcome" text
-    await expect(page.locator('h1')).toContainText('Welcome', { timeout: 15000 });
+    // Index.tsx renders h1 "My Stable"
+    await expect(page.locator('h1')).toContainText('My Stable', { timeout: 15000 });
   });
 
-  test('navigation menu shows core sections', async ({ page }) => {
+  test('navigation menu shows core sections via hamburger', async ({ page }) => {
     await page.goto('/', { waitUntil: 'domcontentloaded' });
 
     // Wait for page to load
     await expect(page.locator('h1')).toBeVisible({ timeout: 15000 });
 
-    // MainNavigation renders links for these core sections
-    const expectedNavLinks = [
-      'Home',
-      'Stable',
-      'Training',
-      'Competitions',
-      'Breeding',
-      'World',
-    ];
+    // MainNavigation requires hamburger click to show links
+    const hamburger = page.locator('[data-testid="hamburger-menu"]');
+    await expect(hamburger).toBeVisible({ timeout: 10000 });
+    await hamburger.click();
+
+    // NavPanel opens — check for core section links
+    const expectedNavLinks = ['Home', 'Stable', 'Training', 'Competitions', 'Breeding', 'World'];
 
     for (const linkName of expectedNavLinks) {
-      // Navigation links are <a> elements — check at least one instance exists
       const link = page.getByRole('link', { name: linkName }).first();
       await expect(link).toBeVisible({ timeout: 10000 });
     }
@@ -56,7 +53,6 @@ test.describe('Celestial Night Navigation — Authenticated', () => {
     await expect(page.locator('h1')).toContainText('The World', { timeout: 10000 });
 
     // Should show multiple location cards (at least 5 of the 9 locations)
-    // LocationCard renders with a link (<a>) to its href
     const locationLinks = page.locator('[data-testid="world-hub-page"] a');
     const count = await locationLinks.count();
     expect(count).toBeGreaterThanOrEqual(5);
@@ -87,7 +83,7 @@ test.describe('Celestial Night Navigation — Authenticated', () => {
   test('home page shows horse mini-cards or getting started state', async ({ page }) => {
     await page.goto('/', { waitUntil: 'domcontentloaded' });
 
-    await expect(page.locator('h1')).toContainText('Welcome', { timeout: 15000 });
+    await expect(page.locator('h1')).toContainText('My Stable', { timeout: 15000 });
 
     // Index page shows either horse cards (for users with horses) or a getting-started message
     const hasHorseLinks = await page.locator('a[aria-label*="View"]').count();

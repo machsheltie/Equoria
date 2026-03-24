@@ -46,14 +46,40 @@ async function globalSetup(config: FullConfig) {
     console.log('Clicking Submit...');
     await page.click('button[type="submit"]');
 
-    // ── 2. Wait for post-registration redirect to home ───────────────────────
-    console.log('Waiting for navigation to home...');
+    // ── 2. Wait for post-registration redirect ──────────────────────────────
+    // New users may land on / or /onboarding (OnboardingGuard redirects new users)
+    console.log('Waiting for navigation after registration...');
     try {
-      await page.waitForURL(baseURL + '/', { timeout: 30000 });
+      await page.waitForURL(
+        new RegExp(`^${baseURL.replace(/[.*+?^${}()|[\]\\]/g, '\\$&')}/(onboarding)?$`),
+        { timeout: 30000 }
+      );
     } catch (e) {
-      console.log('Navigation to home failed/timed out');
+      console.log('Navigation after registration failed/timed out, current URL:', page.url());
       await page.screenshot({ path: 'setup-failure.png' });
       throw e;
+    }
+
+    // If redirected to /onboarding, complete it so the user is fully set up
+    if (page.url().includes('/onboarding')) {
+      console.log('Completing onboarding wizard...');
+      // Step 1 → Step 2 → Step 3 → finish
+      for (let step = 0; step < 3; step++) {
+        const nextBtn = page.locator('[data-testid="onboarding-next"]');
+        if (await nextBtn.isVisible({ timeout: 5000 }).catch(() => false)) {
+          await nextBtn.click();
+          await page.waitForTimeout(1000);
+        }
+      }
+      // After onboarding completes, user navigates to /bank or /
+      try {
+        await page.waitForURL(
+          new RegExp(`${baseURL.replace(/[.*+?^${}()|[\]\\]/g, '\\$&')}/(bank)?$`),
+          { timeout: 15000 }
+        );
+      } catch {
+        console.log('Post-onboarding navigation URL:', page.url());
+      }
     }
 
     // ── 3. Save storageState (auth cookies) for all authenticated tests ──────
