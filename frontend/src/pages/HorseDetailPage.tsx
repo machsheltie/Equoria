@@ -255,7 +255,7 @@ const HorseDetailPage: React.FC = () => {
   }
 
   // Normalize horse data — produce a NEW object so the React Query cache is never mutated.
-  const rawHorse = horseRaw as Record<string, unknown>;
+  const rawHorse = horseRaw as unknown as Record<string, unknown>;
 
   // Resolve breed: API returns a Prisma relation object { id, name, ... } but the Horse
   // interface and downstream components expect a plain string (the breed name).
@@ -287,12 +287,24 @@ const HorseDetailPage: React.FC = () => {
 
   // Shadow `horse` with the normalized copy — all downstream JSX references remain unchanged.
   // dateOfBirth passes through from horseRaw via spread (already an ISO string from the API).
-  const horse: typeof horseRaw = {
-    ...horseRaw,
+  const horse: Horse = {
+    id: horseRaw.id,
+    name: horseRaw.name,
     breed: resolvedBreed,
+    breedId: (horseRaw as unknown as Record<string, unknown>).breedId as number | undefined,
+    age: horseRaw.age,
     gender: resolvedGender,
+    dateOfBirth: horseRaw.dateOfBirth,
+    healthStatus: horseRaw.healthStatus,
+    imageUrl: horseRaw.imageUrl,
     stats: resolvedStats,
     disciplineScores: horseRaw.disciplineScores ?? {},
+    traits: horseRaw.traits,
+    description: horseRaw.description,
+    forSale: horseRaw.forSale,
+    salePrice: horseRaw.salePrice,
+    userId: horseRaw.userId,
+    parentIds: horseRaw.parentIds,
   };
 
   // Tab configuration
@@ -404,8 +416,8 @@ const HorseDetailPage: React.FC = () => {
                       <span>•</span>
                       <span>
                         Color:{' '}
-                        {((horse as Record<string, unknown>).finalDisplayColor as string) ||
-                          'Unknown'}
+                        {((horse as unknown as Record<string, unknown>)
+                          .finalDisplayColor as string) || 'Unknown'}
                       </span>
                       <span>•</span>
                       <span>Age: {horse.age}</span>
@@ -590,7 +602,7 @@ const HorseDetailPage: React.FC = () => {
                     {rider.firstName} {rider.lastName}
                   </p>
                   <p className="text-xs text-[rgb(160,175,200)] capitalize">
-                    {rider.skillLevel} · {rider.speciality}
+                    {rider.skillLevel} · {rider.personality}
                   </p>
                 </button>
               ))}

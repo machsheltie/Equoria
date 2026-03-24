@@ -18,7 +18,7 @@
  */
 
 import React from 'react';
-import { Horse, Trophy, MessageSquare, SearchX } from 'lucide-react';
+import { Footprints, Trophy, MessageSquare, SearchX } from 'lucide-react';
 
 // ── Types ──────────────────────────────────────────────────────────────────────
 
@@ -62,12 +62,12 @@ function IllustrationRing({ children }: { children: React.ReactNode }) {
 
 const VARIANTS: Record<EmptyVariant, VariantConfig> = {
   'no-horses': {
-    Icon: Horse,
+    Icon: Footprints,
     title: 'No Horses Yet',
     subtitle: 'Your stable is empty. Browse available horses to begin your journey.',
     illustration: (
       <IllustrationRing>
-        <Horse className="h-8 w-8 text-[var(--gold-400)]" aria-hidden="true" />
+        <Footprints className="h-8 w-8 text-[var(--gold-400)]" aria-hidden="true" />
       </IllustrationRing>
     ),
   },

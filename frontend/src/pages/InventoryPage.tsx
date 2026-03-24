@@ -231,7 +231,7 @@ const InventoryPage: React.FC = () => {
   // ── Handlers ──
 
   const handleEquipRequest = (item: InventoryItem) => {
-    if (item.category === 'consumables' || item.category === 'special') {
+    if ((item.category as string) === 'consumables' || (item.category as string) === 'special') {
       toast.info(
         `To use "${item.name}", purchase it from the Feed Shop or Vet Clinic for a specific horse.`,
         { duration: 5000 }

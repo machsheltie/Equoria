@@ -79,7 +79,7 @@ function StableHorseCard({ horse, onClick }: { horse: HorseSummary; onClick: () 
   const age = horse.ageYears ?? horse.age ?? 0;
   const sex = horse.sex ?? horse.gender ?? '';
   const subtitle = [getBreedName(horse.breed), sex, `${age} yrs`].filter(Boolean).join(' · ');
-  const isLegendary = !!(horse as Record<string, unknown>).isLegendary;
+  const isLegendary = !!(horse as unknown as Record<string, unknown>).isLegendary;
 
   const traits = horse.traits ?? (horse.trait ? [horse.trait] : []);
 
@@ -168,7 +168,12 @@ function StableHorseCard({ horse, onClick }: { horse: HorseSummary; onClick: () 
         <CareChip label="Shod" status={careStatus(horse.lastShod, 7, 14)} />
         <CareChip label="Groomed" status={careStatus(horse.lastGroomed, 3, 7)} />
         <CareChip label="Vetted" status={careStatus(horse.lastVettedDate, 7, 14)} />
-        <CareChip label="Trained" status={trainingCooldownStatus(horse.trainingCooldown)} />
+        <CareChip
+          label={
+            trainingCooldownStatus(horse.trainingCooldown) === 'warn' ? 'Cooldown' : 'Can Train'
+          }
+          status={trainingCooldownStatus(horse.trainingCooldown)}
+        />
       </div>
     </button>
   );

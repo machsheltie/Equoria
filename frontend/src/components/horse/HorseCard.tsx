@@ -16,7 +16,7 @@ import { NarrativeChip, deriveHorseChip } from '@/components/hub/NarrativeChip';
 export interface HorseCardData {
   id: number;
   name: string;
-  breed?: string;
+  breed?: string | { id?: number; name?: string; description?: string };
   sex?: string;
   age?: number;
   level?: number;

@@ -153,7 +153,7 @@ const BreedingPairSelection: React.FC<BreedingPairSelectionProps> = ({ userId: p
         disciplineScores: horse.disciplineScores,
         traits: horse.traits,
         parentIds: horse.parentIds,
-      })) as Horse[];
+      })) as unknown as Horse[];
     },
     enabled: Boolean(userId),
     staleTime: 30000,
@@ -174,13 +174,13 @@ const BreedingPairSelection: React.FC<BreedingPairSelectionProps> = ({ userId: p
         mareId: selectedDam.id,
       });
 
+      const resp = response as unknown as Record<string, unknown>;
       return {
-        overall: ((response as Record<string, unknown>).overallScore as number) || 75,
-        temperamentMatch:
-          ((response as Record<string, unknown>).temperamentCompatibility as number) || 80,
-        traitSynergy: ((response as Record<string, unknown>).traitSynergy as number) || 70,
-        geneticDiversity: ((response as Record<string, unknown>).geneticDiversity as number) || 75,
-        recommendations: ((response as Record<string, unknown>).recommendations as string[]) || [
+        overall: (resp.overallScore as number) || 75,
+        temperamentMatch: (resp.temperamentCompatibility as number) || 80,
+        traitSynergy: (resp.traitSynergy as number) || 70,
+        geneticDiversity: (resp.geneticDiversity as number) || 75,
+        recommendations: (resp.recommendations as string[]) || [
           'Compatible temperaments for stable offspring',
           'Good genetic diversity reduces inbreeding risk',
           'Strong trait synergy for athletic abilities',
@@ -198,9 +198,10 @@ const BreedingPairSelection: React.FC<BreedingPairSelectionProps> = ({ userId: p
       : null;
 
   // Determine if this is the user's first-ever breed (milestone check)
-  const isFirstBreed = !(
-    (user as Record<string, unknown> | undefined)?.settings as Record<string, unknown> | undefined
-  )?.milestones?.firstBreed;
+  const userRecord = user as unknown as Record<string, unknown> | undefined;
+  const settingsRecord = userRecord?.settings as Record<string, unknown> | undefined;
+  const milestonesRecord = settingsRecord?.milestones as Record<string, unknown> | undefined;
+  const isFirstBreed = !milestonesRecord?.firstBreed;
 
   // Breeding mutation
   const breedingMutation = useMutation<BreedingResponse, Error, void>({

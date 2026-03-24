@@ -20,7 +20,7 @@ function careStatus(
     typeof dateStr === 'string'
       ? new Date(dateStr).getTime()
       : typeof dateStr === 'object' && dateStr !== null
-        ? new Date(dateStr as string).getTime()
+        ? new Date(String(dateStr)).getTime()
         : 0;
   if (!ts) return 'bad';
   const daysAgo = Math.floor((Date.now() - ts) / (1000 * 60 * 60 * 24));
@@ -48,7 +48,7 @@ export function AsidePanel() {
   const { data: horses } = useHorses();
 
   const balance = user?.money?.toLocaleString() ?? '0';
-  const horseList = (Array.isArray(horses) ? horses : []) as Record<string, unknown>[];
+  const horseList = (Array.isArray(horses) ? horses : []) as unknown as Record<string, unknown>[];
   const totalHorses = horseList.length;
   const readyCount = horseList.filter(isReadyToTrain).length;
   const needsCareCount = horseList.filter(horseNeedsCare).length;

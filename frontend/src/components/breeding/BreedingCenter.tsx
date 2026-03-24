@@ -2,6 +2,7 @@ import React, { useState } from 'react';
 import { useBreedFoal } from '@/hooks/api/useBreeding';
 import { useHorses } from '@/hooks/api/useHorses';
 import type { HorseSummary } from '@/lib/api-client';
+import { getBreedName } from '@/lib/utils';
 
 type TabType = 'my-mares' | 'stud-marketplace' | 'history';
 
@@ -237,7 +238,9 @@ const BreedingCenter = () => {
                   >
                     <h5 className="text-base font-bold text-[rgb(220,235,255)]">{stallion.name}</h5>
                     <div className="mt-2 space-y-1 text-sm text-[rgb(148,163,184)]">
-                      {stallion.breed && <p className="capitalize">{stallion.breed}</p>}
+                      {stallion.breed && (
+                        <p className="capitalize">{getBreedName(stallion.breed)}</p>
+                      )}
                       {stallion.level !== undefined && <p>Level {stallion.level}</p>}
                       {stallion.ageYears !== undefined && <p>{stallion.ageYears} years old</p>}
                     </div>

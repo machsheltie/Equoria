@@ -401,7 +401,7 @@ const FeedShopPage: React.FC = () => {
       { horseId, feedId },
       {
         onSuccess: (result) => {
-          const horseName = result.data?.horse?.name ?? 'your horse';
+          const horseName = result.horse?.name ?? 'your horse';
           toast.success(`Feed purchased for ${horseName}!`);
         },
         onError: (err) => {

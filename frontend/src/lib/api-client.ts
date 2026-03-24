@@ -126,6 +126,8 @@ interface Foal {
   ageDays?: number;
   ageInDays?: number;
   dateOfBirth?: string;
+  /** Alias for dateOfBirth — some API responses use this field name */
+  birthDate?: string;
   sex?: string;
   userId?: string;
   traits?: string[];
@@ -1632,7 +1634,7 @@ export const userProgressApi = {
 export const competitionsApi = {
   list: () => apiClient.get<Competition[]>('/api/v1/competition'),
   getDisciplines: () =>
-    apiClient.get<{ disciplines: string[]; disciplineDetails: unknown[] }>(
+    apiClient.get<{ disciplines: string[]; disciplineDetails: Record<string, unknown>[] }>(
       '/api/v1/competition/disciplines'
     ),
   checkEligibility: (horseId: number, discipline: string) =>
@@ -1756,7 +1758,7 @@ export const authApi = {
         money?: number;
         level?: number;
         xp?: number;
-        role?: string;
+        role?: 'user' | 'admin' | 'moderator';
         completedOnboarding?: boolean;
         onboardingStep?: number;
       };
