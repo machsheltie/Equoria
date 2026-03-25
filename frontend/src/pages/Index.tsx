@@ -13,28 +13,16 @@ import { useHorses } from '@/hooks/api/useHorses';
 import { Button } from '@/components/ui/button';
 import { getHorseImage } from '@/lib/breed-images';
 import { getBreedName } from '@/lib/utils';
+import { CooldownTimer } from '@/components/common/CooldownTimer';
+import {
+  careChipStatus,
+  trainingCooldownChip,
+  horseNeedsCare,
+  isReadyToTrain,
+} from '@/lib/utils/care-status-utils';
 
-/* ─── Care helpers ────────────────────────────────────────────────────── */
-function careChipStatus(
-  dateStr: unknown,
-  warnDays: number,
-  errorDays: number
-): 'good' | 'warn' | 'bad' {
-  if (!dateStr) return 'bad';
-  const ts =
-    typeof dateStr === 'string'
-      ? new Date(dateStr).getTime()
-      : typeof dateStr === 'object' && dateStr !== null
-        ? new Date(String(dateStr)).getTime()
-        : 0;
-  if (!ts) return 'bad';
-  const daysAgo = Math.floor((Date.now() - ts) / (1000 * 60 * 60 * 24));
-  if (daysAgo >= errorDays) return 'bad';
-  if (daysAgo >= warnDays) return 'warn';
-  return 'good';
-}
-
-function CareChip({ label, status }: { label: string; status: 'good' | 'warn' | 'bad' }) {
+function CareChip({ label, status }: { label: string; status: 'good' | 'warn' | 'bad' | 'none' }) {
+  if (status === 'none') return null;
   const colors = {
     good: 'text-[var(--status-success)]',
     warn: 'text-[var(--status-warning)]',
@@ -89,7 +77,7 @@ function HorseCard({
   return (
     <Link
       to={`/horses/${horse.id}`}
-      className="bg-[var(--glass-bg)] border border-[rgba(200,168,78,0.2)] rounded-[var(--radius-lg)] overflow-hidden transition-all duration-[250ms] hover:border-[rgba(200,168,78,0.45)] hover:shadow-[0_0_20px_rgba(200,168,78,0.15),0_0_40px_rgba(200,168,78,0.05)] hover:-translate-y-0.5 group [backdrop-filter:blur(10px)_saturate(1.3)_brightness(1.2)] shadow-[0_0_12px_rgba(200,168,78,0.06)]"
+      className="bg-[var(--glass-bg)] border border-[rgba(200,168,78,0.2)] rounded-[var(--radius-lg)] overflow-hidden transition-all duration-[250ms] hover:border-[var(--glass-hover)] hover:shadow-[var(--glow-gold)] hover:-translate-y-0.5 group [backdrop-filter:blur(10px)_saturate(1.3)_brightness(1.2)] shadow-[0_0_12px_rgba(200,168,78,0.06)]"
       aria-label={`View ${horse.name}`}
     >
       {/* Top: portrait + info */}
@@ -158,13 +146,23 @@ function HorseCard({
         </div>
       )}
 
+      {/* Inline cooldown timer (PRD Section 09: cooldown timers visible on card) */}
+      {horse.trainingCooldown && trainingCooldownChip(horse.trainingCooldown).status === 'warn' && (
+        <div className="px-4 pt-2">
+          <CooldownTimer endsAt={horse.trainingCooldown as string} label="Training" compact />
+        </div>
+      )}
+
       {/* Care strip */}
       <div className="flex flex-wrap gap-1.5 px-4 py-3 mt-2 border-t border-[rgba(148,163,184,0.08)]">
         <CareChip label="Fed" status={careChipStatus(horse.lastFedDate, 1, 3)} />
         <CareChip label="Shod" status={careChipStatus(horse.lastShod, 7, 14)} />
         <CareChip label="Groomed" status={careChipStatus(horse.lastGroomed, 3, 7)} />
         <CareChip label="Vetted" status={careChipStatus(horse.lastVettedDate, 7, 14)} />
-        <CareChip label="Trained" status={horse.trainingCooldown ? 'warn' : 'good'} />
+        <CareChip
+          label={trainingCooldownChip(horse.trainingCooldown).label}
+          status={trainingCooldownChip(horse.trainingCooldown).status}
+        />
       </div>
     </Link>
   );
@@ -224,19 +222,14 @@ const Index = () => {
   const isNewPlayer = !user?.completedOnboarding;
   const horseList = Array.isArray(horses) ? horses : [];
 
-  // Compute summary stats from horse data
-  const readyCount = horseList.filter((h) => {
-    if (!h.trainingCooldown) return true;
-    return new Date(h.trainingCooldown as string).getTime() <= Date.now();
-  }).length;
+  // Compute summary stats from horse data using shared helpers
+  const readyCount = horseList.filter((h) =>
+    isReadyToTrain(h as unknown as Record<string, unknown>)
+  ).length;
 
-  const needsCareCount = horseList.filter((h) => {
-    const needsFed = careChipStatus(h.lastFedDate, 1, 3) !== 'good';
-    const needsShod = careChipStatus(h.lastShod, 7, 14) !== 'good';
-    const needsGroomed = careChipStatus(h.lastGroomed, 3, 7) !== 'good';
-    const needsVetted = careChipStatus(h.lastVettedDate, 7, 14) !== 'good';
-    return needsFed || needsShod || needsGroomed || needsVetted;
-  }).length;
+  const needsCareCount = horseList.filter((h) =>
+    horseNeedsCare(h as unknown as Record<string, unknown>)
+  ).length;
 
   return (
     <div className="py-6 space-y-6">

@@ -8,40 +8,7 @@
 import { useAuth } from '@/contexts/AuthContext';
 import { useHorses } from '@/hooks/api/useHorses';
 import { CooldownTimer } from '@/components/common/CooldownTimer';
-
-/* ─── Care status helpers (same thresholds as Index.tsx horse cards) ────── */
-function careStatus(
-  dateStr: unknown,
-  warnDays: number,
-  errorDays: number
-): 'good' | 'warn' | 'bad' {
-  if (!dateStr) return 'bad';
-  const ts =
-    typeof dateStr === 'string'
-      ? new Date(dateStr).getTime()
-      : typeof dateStr === 'object' && dateStr !== null
-        ? new Date(String(dateStr)).getTime()
-        : 0;
-  if (!ts) return 'bad';
-  const daysAgo = Math.floor((Date.now() - ts) / (1000 * 60 * 60 * 24));
-  if (daysAgo >= errorDays) return 'bad';
-  if (daysAgo >= warnDays) return 'warn';
-  return 'good';
-}
-
-function horseNeedsCare(horse: Record<string, unknown>): boolean {
-  return (
-    careStatus(horse.lastFedDate, 1, 3) !== 'good' ||
-    careStatus(horse.lastShod, 7, 14) !== 'good' ||
-    careStatus(horse.lastGroomed, 3, 7) !== 'good' ||
-    careStatus(horse.lastVettedDate, 7, 14) !== 'good'
-  );
-}
-
-function isReadyToTrain(horse: Record<string, unknown>): boolean {
-  if (!horse.trainingCooldown) return true;
-  return new Date(horse.trainingCooldown as string).getTime() <= Date.now();
-}
+import { horseNeedsCare, isReadyToTrain } from '@/lib/utils/care-status-utils';
 
 export function AsidePanel() {
   const { user } = useAuth();

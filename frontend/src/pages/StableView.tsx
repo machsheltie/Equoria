@@ -6,8 +6,8 @@
  * medium-density cards (portrait + stats bars + trait chips + care strip).
  */
 
-import React from 'react';
-import { Award, Coins, Star, Users } from 'lucide-react';
+import React, { useState } from 'react';
+import { Award, Coins, Grid3X3, List, Star, Users } from 'lucide-react';
 import { Link, useNavigate } from 'react-router-dom';
 import { FantasyTabs } from '../components/FantasyTabs';
 import { SkeletonBase } from '@/components/ui/SkeletonCard';
@@ -18,6 +18,7 @@ import { useProfile } from '../hooks/useAuth';
 import { getHorseImage } from '@/lib/breed-images';
 import { getXPProgressPercent } from '@/lib/xp-utils';
 import { getBreedName } from '@/lib/utils';
+import { careChipStatus, trainingCooldownChip } from '@/lib/utils/care-status-utils';
 import type { HorseSummary } from '@/lib/api-client';
 
 /* ─── Helpers ────────────────────────────────────────────────────────── */
@@ -38,8 +39,9 @@ function getStat(horse: HorseSummary, stat: keyof HorseSummary['stats']): number
   return (horse[stat] as number | undefined) ?? horse.stats?.[stat] ?? 0;
 }
 
-// Care chip: icon + label, colored by status
-function CareChip({ label, status }: { label: string; status: 'good' | 'warn' | 'bad' }) {
+// Care chip: icon + label, colored by status. Hidden when 'none' (system not active).
+function CareChip({ label, status }: { label: string; status: 'good' | 'warn' | 'bad' | 'none' }) {
+  if (status === 'none') return null;
   const colors = {
     good: 'text-[var(--status-success)]',
     warn: 'text-[var(--status-warning)]',
@@ -53,24 +55,6 @@ function CareChip({ label, status }: { label: string; status: 'good' | 'warn' | 
       {icons[status]} {label}
     </span>
   );
-}
-
-// Determine care status from a date field
-function trainingCooldownStatus(cooldown: string | undefined): 'good' | 'warn' {
-  if (!cooldown) return 'good';
-  return new Date(cooldown).getTime() > Date.now() ? 'warn' : 'good';
-}
-
-function careStatus(
-  dateStr: string | undefined,
-  warnDays: number,
-  errorDays: number
-): 'good' | 'warn' | 'bad' {
-  if (!dateStr) return 'bad';
-  const daysAgo = Math.floor((Date.now() - new Date(dateStr).getTime()) / (1000 * 60 * 60 * 24));
-  if (daysAgo >= errorDays) return 'bad';
-  if (daysAgo >= warnDays) return 'warn';
-  return 'good';
 }
 
 /* ─── Horse Card — matches direction-4-hybrid.html mockup ─────────────── */
@@ -164,15 +148,13 @@ function StableHorseCard({ horse, onClick }: { horse: HorseSummary; onClick: () 
 
       {/* Care strip — matches mockup */}
       <div className="flex flex-wrap gap-1 px-3 py-3 mt-2 border-t border-[var(--glass-border)]">
-        <CareChip label="Fed" status={careStatus(horse.lastFedDate, 1, 3)} />
-        <CareChip label="Shod" status={careStatus(horse.lastShod, 7, 14)} />
-        <CareChip label="Groomed" status={careStatus(horse.lastGroomed, 3, 7)} />
-        <CareChip label="Vetted" status={careStatus(horse.lastVettedDate, 7, 14)} />
+        <CareChip label="Fed" status={careChipStatus(horse.lastFedDate, 1, 3)} />
+        <CareChip label="Shod" status={careChipStatus(horse.lastShod, 7, 14)} />
+        <CareChip label="Groomed" status={careChipStatus(horse.lastGroomed, 3, 7)} />
+        <CareChip label="Vetted" status={careChipStatus(horse.lastVettedDate, 7, 14)} />
         <CareChip
-          label={
-            trainingCooldownStatus(horse.trainingCooldown) === 'warn' ? 'Cooldown' : 'Can Train'
-          }
-          status={trainingCooldownStatus(horse.trainingCooldown)}
+          label={trainingCooldownChip(horse.trainingCooldown).label}
+          status={trainingCooldownChip(horse.trainingCooldown).status}
         />
       </div>
     </button>
@@ -185,10 +167,21 @@ function SkeletonHorseCard() {
 }
 
 /* ─── Main StableView ─────────────────────────────────────────────────── */
+const HORSES_PER_PAGE = 12;
+
 const StableView = () => {
   const navigate = useNavigate();
   const { data: horsesData, isLoading, isError, error, refetch } = useHorses();
   const { data: profileData } = useProfile();
+  const [viewMode, setViewMode] = useState<'grid' | 'list'>(
+    () => (localStorage.getItem('stableViewMode') as 'grid' | 'list') || 'grid'
+  );
+  const [currentPage, setCurrentPage] = useState(1);
+
+  const handleViewChange = (mode: 'grid' | 'list') => {
+    setViewMode(mode);
+    localStorage.setItem('stableViewMode', mode);
+  };
 
   const user = profileData?.user;
   const playerStats = {
@@ -280,15 +273,152 @@ const StableView = () => {
       );
     }
 
+    // Pagination
+    const totalPages = Math.ceil(filtered.length / HORSES_PER_PAGE);
+    const paginated = filtered.slice(
+      (currentPage - 1) * HORSES_PER_PAGE,
+      currentPage * HORSES_PER_PAGE
+    );
+
     return (
-      <div className="grid grid-cols-[repeat(auto-fill,minmax(300px,1fr))] gap-5 p-4">
-        {filtered.map(({ horse }) => (
-          <StableHorseCard
-            key={horse.id}
-            horse={horse}
-            onClick={() => navigate(`/horses/${horse.id}`)}
-          />
-        ))}
+      <div className="p-4 space-y-4">
+        {/* View toggle + count */}
+        <div className="flex items-center justify-between">
+          <p className="text-xs text-[var(--text-muted)]">
+            {filtered.length} horse{filtered.length !== 1 ? 's' : ''}
+            {totalPages > 1 && ` · Page ${currentPage} of ${totalPages}`}
+          </p>
+          <div className="flex gap-1">
+            <button
+              type="button"
+              onClick={() => handleViewChange('grid')}
+              className={`p-1.5 rounded-[var(--radius-sm)] transition-colors ${
+                viewMode === 'grid'
+                  ? 'bg-[var(--glass-glow)] text-[var(--gold-primary)]'
+                  : 'text-[var(--text-muted)] hover:text-[var(--text-primary)]'
+              }`}
+              aria-label="Grid view"
+              aria-pressed={viewMode === 'grid'}
+            >
+              <Grid3X3 className="w-4 h-4" />
+            </button>
+            <button
+              type="button"
+              onClick={() => handleViewChange('list')}
+              className={`p-1.5 rounded-[var(--radius-sm)] transition-colors ${
+                viewMode === 'list'
+                  ? 'bg-[var(--glass-glow)] text-[var(--gold-primary)]'
+                  : 'text-[var(--text-muted)] hover:text-[var(--text-primary)]'
+              }`}
+              aria-label="List view"
+              aria-pressed={viewMode === 'list'}
+            >
+              <List className="w-4 h-4" />
+            </button>
+          </div>
+        </div>
+
+        {/* Grid or List view */}
+        {viewMode === 'grid' ? (
+          <div className="grid grid-cols-[repeat(auto-fill,minmax(300px,1fr))] gap-5">
+            {paginated.map(({ horse }) => (
+              <StableHorseCard
+                key={horse.id}
+                horse={horse}
+                onClick={() => navigate(`/horses/${horse.id}`)}
+              />
+            ))}
+          </div>
+        ) : (
+          <div className="space-y-1">
+            {/* List header */}
+            <div className="grid grid-cols-[2fr_1fr_1fr_1fr_1fr] gap-2 px-3 py-2 text-[0.65rem] text-[var(--text-muted)] uppercase tracking-wider font-medium border-b border-[var(--glass-border)]">
+              <span>Horse</span>
+              <span>Level</span>
+              <span>Top Stat</span>
+              <span>Status</span>
+              <span>Cooldown</span>
+            </div>
+            {paginated.map(({ horse }) => {
+              const topStat = ['speed', 'agility', 'stamina', 'precision', 'strength'].reduce(
+                (best, stat) => {
+                  const val = getStat(horse, stat as keyof HorseSummary['stats']);
+                  return val > best.value ? { label: stat, value: val } : best;
+                },
+                { label: '', value: 0 }
+              );
+              const cooldown = trainingCooldownChip(horse.trainingCooldown);
+              return (
+                <button
+                  key={horse.id}
+                  type="button"
+                  onClick={() => navigate(`/horses/${horse.id}`)}
+                  className="grid grid-cols-[2fr_1fr_1fr_1fr_1fr] gap-2 px-3 py-2.5 items-center text-left rounded-[var(--radius-sm)] transition-colors hover:bg-[var(--glass-glow)] cursor-pointer border border-transparent hover:border-[var(--glass-border)]"
+                >
+                  <span className="flex items-center gap-2 min-w-0">
+                    <img
+                      src={getHorseImage(horse.imageUrl, horse.breed)}
+                      alt=""
+                      className="w-8 h-8 rounded-full object-cover flex-shrink-0"
+                      onError={(e) => {
+                        (e.target as HTMLImageElement).src = '/images/horse-placeholder.png';
+                      }}
+                    />
+                    <span className="truncate text-sm text-[var(--text-primary)] font-medium">
+                      {horse.name}
+                    </span>
+                  </span>
+                  <span className="text-sm text-[var(--gold-light)]">{horse.level ?? '—'}</span>
+                  <span className="text-sm text-[var(--text-primary)] capitalize">
+                    {topStat.label ? `${topStat.label} ${topStat.value}` : '—'}
+                  </span>
+                  <span className="text-xs">
+                    <CareChip label={cooldown.label} status={cooldown.status} />
+                  </span>
+                  <span className="text-xs text-[var(--text-muted)]">
+                    {cooldown.status === 'warn' ? 'On cooldown' : 'Ready'}
+                  </span>
+                </button>
+              );
+            })}
+          </div>
+        )}
+
+        {/* Pagination controls */}
+        {totalPages > 1 && (
+          <div className="flex items-center justify-center gap-2 pt-2">
+            <button
+              type="button"
+              onClick={() => setCurrentPage((p) => Math.max(1, p - 1))}
+              disabled={currentPage === 1}
+              className="px-3 py-1.5 text-xs rounded-[var(--radius-sm)] border border-[var(--glass-border)] text-[var(--text-secondary)] hover:border-[var(--gold-dim)] hover:text-[var(--gold-light)] disabled:opacity-30 disabled:cursor-not-allowed transition-colors"
+            >
+              Previous
+            </button>
+            {Array.from({ length: totalPages }, (_, i) => i + 1).map((page) => (
+              <button
+                key={page}
+                type="button"
+                onClick={() => setCurrentPage(page)}
+                className={`w-8 h-8 text-xs rounded-[var(--radius-sm)] transition-colors ${
+                  page === currentPage
+                    ? 'bg-[var(--glass-glow)] text-[var(--gold-primary)] border border-[var(--gold-dim)]'
+                    : 'text-[var(--text-muted)] hover:text-[var(--text-primary)] border border-transparent'
+                }`}
+              >
+                {page}
+              </button>
+            ))}
+            <button
+              type="button"
+              onClick={() => setCurrentPage((p) => Math.min(totalPages, p + 1))}
+              disabled={currentPage === totalPages}
+              className="px-3 py-1.5 text-xs rounded-[var(--radius-sm)] border border-[var(--glass-border)] text-[var(--text-secondary)] hover:border-[var(--gold-dim)] hover:text-[var(--gold-light)] disabled:opacity-30 disabled:cursor-not-allowed transition-colors"
+            >
+              Next
+            </button>
+          </div>
+        )}
       </div>
     );
   };

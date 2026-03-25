@@ -192,7 +192,10 @@ export function HorseCard({ horse }: { horse: HorseCardData }) {
           {horse.careStatus.fed && <CareChip label="Fed" status={horse.careStatus.fed} />}
           {horse.careStatus.shod && <CareChip label="Shod" status={horse.careStatus.shod} />}
           {horse.careStatus.trained && (
-            <CareChip label="Trained" status={horse.careStatus.trained} />
+            <CareChip
+              label={horse.careStatus.trained === 'warn' ? 'Cooldown' : 'Can Train'}
+              status={horse.careStatus.trained}
+            />
           )}
         </div>
       )}
