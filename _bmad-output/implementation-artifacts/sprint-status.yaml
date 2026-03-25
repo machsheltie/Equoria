@@ -1,0 +1,187 @@
+# generated: 2026-03-25
+# last_updated: 2026-03-25
+# project: Equoria
+# project_key: NOKEY
+# tracking_system: file-system
+# story_location: {project-root}/_bmad-output/implementation-artifacts
+
+# STATUS DEFINITIONS:
+# ==================
+# Epic Status:
+#   - backlog: Epic not yet started
+#   - in-progress: Epic actively being worked on
+#   - done: All stories in epic completed
+#
+# Epic Status Transitions:
+#   - backlog → in-progress: Automatically when first story is created (via create-story)
+#   - in-progress → done: Manually when all stories reach 'done' status
+#
+# Story Status:
+#   - backlog: Story only exists in epic file
+#   - ready-for-dev: Story file created in stories folder
+#   - in-progress: Developer actively working on implementation
+#   - review: Ready for code review (via Dev's code-review workflow)
+#   - done: Story completed
+#
+# Retrospective Status:
+#   - optional: Can be completed but not required
+#   - done: Retrospective has been completed
+#
+# WORKFLOW NOTES:
+# ===============
+# - Epic transitions to 'in-progress' automatically when first story is created
+# - Stories can be worked in parallel if team capacity allows
+# - SM typically creates next story after previous one is 'done' to incorporate learnings
+# - Dev moves story to 'review', then runs code-review (fresh context, different LLM recommended)
+
+generated: 2026-03-25
+last_updated: 2026-03-25
+project: Equoria
+project_key: NOKEY
+tracking_system: file-system
+story_location: '{project-root}/_bmad-output/implementation-artifacts'
+
+development_status:
+  # ============================================================
+  # Celestial Night Frontend Rebuild (Epics 22-30)
+  # Source: docs/epics.md
+  # ============================================================
+
+  # Epic 22: Design System Foundation
+  epic-22: backlog
+  22-1-design-tokens-and-css-custom-properties: backlog
+  22-2-frosted-panel-component: backlog
+  22-3-typography-system: backlog
+  22-4-button-and-feedback-patterns: backlog
+  22-5-navigation-shell-and-layout: backlog
+  22-6-responsive-breakpoint-system: backlog
+  22-7-accessibility-and-motion-preferences: backlog
+  epic-22-retrospective: optional
+
+  # Epic 23: Hub Dashboard
+  epic-23: backlog
+  23-1-hub-dashboard-layout-and-atmosphere: backlog
+  23-2-quick-action-cards: backlog
+  23-3-activity-feed: backlog
+  23-4-stable-summary-strip: backlog
+  epic-23-retrospective: optional
+
+  # Epic 24: Horse Card and Detail Redesign
+  epic-24: backlog
+  24-1-horse-card-component: backlog
+  24-2-horse-detail-page-redesign: backlog
+  24-3-horse-list-and-filtering: backlog
+  epic-24-retrospective: optional
+
+  # Epic 25: Training and Competition UI
+  epic-25: backlog
+  25-1-training-interface-redesign: backlog
+  25-2-competition-browser-and-entry: backlog
+  25-3-results-and-history-display: backlog
+  epic-25-retrospective: optional
+
+  # Epic 26: Breeding System UI
+  epic-26: backlog
+  26-1-breeding-pair-selection: backlog
+  26-2-foal-development-tracker: backlog
+  26-3-genetics-and-lineage-display: backlog
+  epic-26-retrospective: optional
+
+  # Epic 27: Social and Community Features
+  epic-27: backlog
+  27-1-community-hub-page: backlog
+  27-2-message-board-redesign: backlog
+  27-3-clubs-and-organizations: backlog
+  27-4-direct-messaging: backlog
+  epic-27-retrospective: optional
+
+  # Epic BACKEND-A: Backend API Alignment
+  epic-backend-a: backlog
+  ba-1-api-response-standardization: backlog
+  ba-2-pagination-and-filtering: backlog
+  ba-3-real-time-events-infrastructure: backlog
+  ba-4-image-upload-and-cdn: backlog
+  ba-5-notification-system: backlog
+  epic-backend-a-retrospective: optional
+
+  # Epic 28: Marketplace and Economy
+  epic-28: backlog
+  28-1-marketplace-browse-and-search: backlog
+  28-2-listing-creation-and-management: backlog
+  28-3-transaction-flow-and-bank-integration: backlog
+  epic-28-retrospective: optional
+
+  # Epic BACKEND-B: Advanced Backend Systems
+  epic-backend-b: backlog
+  bb-1-achievement-system-backend: backlog
+  bb-2-seasonal-event-framework: backlog
+  bb-3-advanced-analytics-and-reporting: backlog
+  bb-4-performance-optimization-and-caching: backlog
+  epic-backend-b-retrospective: optional
+
+  # Epic 29: Player Profile and Achievements
+  epic-29: backlog
+  29-1-player-profile-page: backlog
+  29-2-achievement-display-system: backlog
+  29-3-leaderboard-redesign: backlog
+  epic-29-retrospective: optional
+
+  # Epic 30: Polish, Performance, and Launch
+  epic-30: backlog
+  30-1-loading-and-error-states: backlog
+  30-2-animation-and-transition-polish: backlog
+  30-3-performance-optimization: backlog
+  30-4-accessibility-audit-and-fixes: backlog
+  30-5-cross-browser-testing: backlog
+  30-6-launch-readiness-checklist: backlog
+  epic-30-retrospective: optional
+
+  # ============================================================
+  # Horse Physical Systems & Genetics (Epics 31A-31F)
+  # Source: docs/epics-physical-systems.md
+  # ============================================================
+
+  # Epic 31A: Breed Genetic Profile Population
+  epic-31a: backlog
+  31a-1-populate-breed-genetic-profiles: backlog
+  epic-31a-retrospective: optional
+
+  # Epic 31B: Conformation Scoring System
+  epic-31b: backlog
+  31b-1-conformation-score-generation: backlog
+  31b-2-conformation-breeding-inheritance: backlog
+  31b-3-conformation-api-endpoints: backlog
+  epic-31b-retrospective: optional
+
+  # Epic 31C: Gait Quality System
+  epic-31c: backlog
+  31c-1-gait-score-generation: backlog
+  31c-2-gait-breeding-inheritance: backlog
+  31c-3-gait-api-endpoint: backlog
+  epic-31c-retrospective: optional
+
+  # Epic 31D: Breed Temperament System
+  epic-31d: backlog
+  31d-1-temperament-data-model-and-assignment: backlog
+  31d-2-temperament-training-modifiers: backlog
+  31d-3-temperament-competition-modifiers: backlog
+  31d-4-temperament-groom-synergy: backlog
+  31d-5-temperament-api-endpoints: backlog
+  epic-31d-retrospective: optional
+
+  # Epic 31E: Coat Color Genetics
+  epic-31e: backlog
+  31e-1a-genotype-generation-and-migration: backlog
+  31e-1b-phenotype-calculation-engine: backlog
+  31e-2-breed-allele-restrictions: backlog
+  31e-3-breeding-inheritance-and-lethal-filtering: backlog
+  31e-4-marking-system: backlog
+  31e-5-genetics-api-endpoints: backlog
+  epic-31e-retrospective: optional
+
+  # Epic 31F: Conformation Show Handling
+  epic-31f: backlog
+  31f-1-conformation-show-scoring-engine: backlog
+  31f-2-show-entry-and-eligibility: backlog
+  31f-3-rewards-and-title-progression: backlog
+  epic-31f-retrospective: optional
