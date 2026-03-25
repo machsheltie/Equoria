@@ -105,28 +105,29 @@ UX spec updates deferred to a follow-up phase. Sections to update:
 
 ### FR Coverage Map
 
-| FR                                | Epic | Story |
-| --------------------------------- | ---- | ----- |
-| FR-01, FR-02, FR-03               | 31A  | 31A-1 |
-| FR-04, FR-05, FR-06               | 31B  | 31B-1 |
-| FR-07                             | 31B  | 31B-2 |
-| FR-08, FR-09                      | 31B  | 31B-3 |
-| FR-10, FR-11, FR-12, FR-13, FR-14 | 31C  | 31C-1 |
-| FR-15, FR-16                      | 31C  | 31C-2 |
-| FR-17                             | 31C  | 31C-3 |
-| FR-18, FR-19, FR-24, FR-25        | 31D  | 31D-1 |
-| FR-20                             | 31D  | 31D-2 |
-| FR-21                             | 31D  | 31D-3 |
-| FR-22                             | 31D  | 31D-4 |
-| FR-23                             | 31D  | 31D-5 |
-| FR-26, FR-27, FR-28               | 31E  | 31E-1 |
-| FR-29, FR-30                      | 31E  | 31E-2 |
-| FR-31, FR-32                      | 31E  | 31E-3 |
-| FR-33, FR-34                      | 31E  | 31E-4 |
-| FR-35                             | 31E  | 31E-5 |
-| FR-36, FR-37, FR-38               | 31F  | 31F-1 |
-| FR-39, FR-40, FR-41               | 31F  | 31F-2 |
-| FR-42, FR-43, FR-44, FR-45        | 31F  | 31F-3 |
+| FR                                | Epic | Story  |
+| --------------------------------- | ---- | ------ |
+| FR-01, FR-02, FR-03               | 31A  | 31A-1  |
+| FR-04, FR-05, FR-06               | 31B  | 31B-1  |
+| FR-07                             | 31B  | 31B-2  |
+| FR-08, FR-09                      | 31B  | 31B-3  |
+| FR-10, FR-11, FR-12, FR-13, FR-14 | 31C  | 31C-1  |
+| FR-15, FR-16                      | 31C  | 31C-2  |
+| FR-17                             | 31C  | 31C-3  |
+| FR-18, FR-19, FR-24, FR-25        | 31D  | 31D-1  |
+| FR-20                             | 31D  | 31D-2  |
+| FR-21                             | 31D  | 31D-3  |
+| FR-22                             | 31D  | 31D-4  |
+| FR-23                             | 31D  | 31D-5  |
+| FR-26, FR-28                      | 31E  | 31E-1a |
+| FR-27                             | 31E  | 31E-1b |
+| FR-29, FR-30                      | 31E  | 31E-2  |
+| FR-31, FR-32                      | 31E  | 31E-3  |
+| FR-33, FR-34                      | 31E  | 31E-4  |
+| FR-35                             | 31E  | 31E-5  |
+| FR-36, FR-37, FR-38               | 31F  | 31F-1  |
+| FR-39, FR-40, FR-41               | 31F  | 31F-2  |
+| FR-42, FR-43, FR-44, FR-45        | 31F  | 31F-3  |
 
 ---
 
@@ -138,7 +139,7 @@ UX spec updates deferred to a follow-up phase. Sections to update:
 | 31B  | Conformation Scoring System      | 31A          | 3       |
 | 31C  | Gait Quality System              | 31A, 31B     | 3       |
 | 31D  | Breed Temperament System         | 31A          | 5       |
-| 31E  | Coat Color Genetics              | 31A          | 5       |
+| 31E  | Coat Color Genetics              | 31A          | 6       |
 | 31F  | Conformation Show Handling       | 31B, 31D     | 3       |
 
 **Dependency Graph:**
@@ -446,31 +447,38 @@ So that I understand how temperament affects my horse's performance.
 
 **Goal:** Implement full Mendelian color genetics with 17+ loci, breed restrictions, lethal filtering, phenotype calculation, marking system, and breeding color prediction.
 
-### Story 31E-1: Genotype Generation + Phenotype Calculation Service
+### Story 31E-1a: Genotype Generation Service + Migration
 
 As a developer,
-I want a service that generates a complete genotype across 17+ loci for a horse and deterministically calculates phenotype,
-So that every horse has genetically accurate coat color.
+I want a service that generates a complete genotype across 17+ loci for a horse based on breed allele weights,
+So that every horse has a genetically valid allele profile stored at creation.
 
 **Acceptance Criteria:**
 
 **Given** a horse is being created (new or foal birth, not via breeding)
-**When** the color genetics service runs
+**When** the genotype generation service runs
 **Then** allele pairs are generated for all 17+ loci using the breed's `allele_weights` probability distribution
 **And** the genotype is stored in `Horse.colorGenotype` JSONB: `{ E_Extension: "E/e", A_Agouti: "A/A", ... }`
 **And** breed allele restrictions are enforced — no alleles outside `allowed_alleles`
+**And** a Prisma migration adds `colorGenotype` JSONB and `phenotype` JSONB fields to the Horse model (nullable for existing horses)
 
-**Given** a complete genotype exists
-**When** the phenotype calculation runs
+### Story 31E-1b: Phenotype Calculation Engine
+
+As a developer,
+I want a deterministic phenotype calculation engine that converts any genotype into a display color, shade, and pattern description,
+So that genotypes produce accurate, consistent coat color names.
+
+**Acceptance Criteria:**
+
+**Given** a complete genotype exists (from 31E-1a)
+**When** the phenotype calculation engine runs
 **Then** base color is determined from Extension + Agouti interaction (Bay, Black, Chestnut)
 **And** dilutions applied in order: Cream → Dun → Silver → Champagne → Pearl → Mushroom
 **And** pattern overlays applied: Gray, Roan, Tobiano, Frame Overo, Sabino, Splash White, Leopard Complex + PATN1, Dominant White, Brindle
-**And** a display color name is assigned from 40+ possibilities
+**And** a display color name is assigned from 40+ possibilities (e.g., "Buckskin", "Grulla", "Silver Bay", "Gold Champagne")
 **And** a shade variant is selected from breed-specific `shade_bias` probabilities
 **And** phenotype is stored in `Horse.phenotype` JSONB
-
-**And** a Prisma migration adds `colorGenotype` JSONB and `phenotype` JSONB fields to the Horse model
-**And** same genotype always produces same phenotype (deterministic)
+**And** same genotype always produces same phenotype (deterministic — idempotent recalculation)
 
 ### Story 31E-2: Mendelian Breeding Inheritance + Lethal Filtering
 
