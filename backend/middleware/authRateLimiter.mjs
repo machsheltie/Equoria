@@ -13,7 +13,7 @@
  * - Graceful degradation (allows requests if Redis unavailable)
  *
  * Configuration:
- * - 5 failed attempts per 15 minutes per IP/user
+ * - 50 attempts per 15 minutes per IP/user
  * - Rate limit headers in all responses (RFC standard)
  * - Per-user rate limiting for authenticated requests
  * - IP-based rate limiting for unauthenticated requests
@@ -21,11 +21,7 @@
  * @see backend/middleware/rateLimiting.mjs for implementation details
  */
 
-import {
-  authRateLimiter,
-  isRedisConnected,
-  getRedisClient,
-} from './rateLimiting.mjs';
+import { authRateLimiter, isRedisConnected, getRedisClient } from './rateLimiting.mjs';
 import logger from '../utils/logger.mjs';
 
 /**
@@ -69,10 +65,7 @@ export function createAuthRateLimiter(_options = {}) {
  * @param {string} ip - IP address to reset
  */
 export function resetAuthRateLimit(ip) {
-  logger.warn(
-    '[AuthRateLimiter] resetAuthRateLimit() is deprecated with Redis',
-    { ip },
-  );
+  logger.warn('[AuthRateLimiter] resetAuthRateLimit() is deprecated with Redis', { ip });
   // Redis keys auto-expire, no manual reset needed
 }
 

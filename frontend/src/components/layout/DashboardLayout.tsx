@@ -21,6 +21,7 @@ const STABLE_BG_ROUTES = ['/stable', '/my-stable'];
 /** Routes that supply their own full-bleed background image */
 const CUSTOM_BG_ROUTES: Record<string, string> = {
   '/feed-shop': '/images/feedstore2.webp',
+  '/tack-shop': '/images/tackstore.webp',
 };
 
 const DashboardLayout: React.FC = () => {

@@ -20,18 +20,6 @@ export function AsidePanel() {
   const readyCount = horseList.filter(isReadyToTrain).length;
   const needsCareCount = horseList.filter(horseNeedsCare).length;
 
-  // Horses with active training cooldowns
-  const horsesWithCooldown = horseList
-    .filter((h) => {
-      if (!h.trainingCooldown) return false;
-      return new Date(h.trainingCooldown as string).getTime() > Date.now();
-    })
-    .map((h) => ({
-      id: h.id as number,
-      name: h.name as string,
-      cooldown: h.trainingCooldown as string,
-    }));
-
   return (
     <aside className="hidden lg:block w-[280px] flex-shrink-0 pt-6 space-y-4">
       {/* Stable Summary */}
@@ -62,30 +50,15 @@ export function AsidePanel() {
         >
           Cooldown Timers
         </h3>
-        {horsesWithCooldown.length === 0 ? (
-          <div className="space-y-2">
-            {horseList.length > 0 ? (
-              horseList.map((h) => (
-                <div key={h.id as number} className="flex items-center justify-between py-1">
-                  <span className="text-xs text-[var(--text-secondary)]">{h.name as string}</span>
-                  <CooldownTimer
-                    endsAt={h.trainingCooldown as string | null}
-                    label="Training"
-                    compact
-                  />
-                </div>
-              ))
-            ) : (
-              <p className="text-xs text-[var(--text-muted)]">No horses yet</p>
-            )}
-          </div>
+        {horseList.length === 0 ? (
+          <p className="text-xs text-[var(--text-muted)]">No horses yet</p>
         ) : (
           <div className="space-y-2">
             {horseList.map((h) => (
               <div key={h.id as number} className="flex items-center justify-between py-1">
                 <span className="text-xs text-[var(--text-secondary)]">{h.name as string}</span>
                 <CooldownTimer
-                  endsAt={h.trainingCooldown as string | null}
+                  endsAt={(h.trainingCooldown as string) ?? null}
                   label="Training"
                   compact
                 />

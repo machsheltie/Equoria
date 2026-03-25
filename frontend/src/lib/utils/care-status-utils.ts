@@ -16,9 +16,11 @@ export function careChipStatus(
   const ts =
     typeof dateStr === 'string'
       ? new Date(dateStr).getTime()
-      : typeof dateStr === 'object' && dateStr !== null
-        ? new Date(String(dateStr)).getTime()
-        : 0;
+      : typeof dateStr === 'number'
+        ? dateStr
+        : typeof dateStr === 'object' && dateStr !== null
+          ? new Date(String(dateStr)).getTime()
+          : 0;
   if (!ts) return 'bad';
   const daysAgo = Math.floor((Date.now() - ts) / (1000 * 60 * 60 * 24));
   if (daysAgo >= errorDays) return 'bad';
@@ -32,7 +34,14 @@ export function trainingCooldownChip(cooldown: unknown): {
   status: 'good' | 'warn';
 } {
   if (!cooldown) return { label: 'Can Train', status: 'good' };
-  const ts = typeof cooldown === 'string' ? new Date(cooldown).getTime() : 0;
+  const ts =
+    cooldown instanceof Date
+      ? cooldown.getTime()
+      : typeof cooldown === 'number'
+        ? cooldown
+        : typeof cooldown === 'string'
+          ? new Date(cooldown).getTime()
+          : 0;
   if (ts > Date.now()) return { label: 'Cooldown', status: 'warn' };
   return { label: 'Can Train', status: 'good' };
 }

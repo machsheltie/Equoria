@@ -6,7 +6,7 @@
  * medium-density cards (portrait + stats bars + trait chips + care strip).
  */
 
-import React, { useState } from 'react';
+import { useState } from 'react';
 import { Award, Coins, Grid3X3, List, Star, Users } from 'lucide-react';
 import { Link, useNavigate } from 'react-router-dom';
 import { FantasyTabs } from '../components/FantasyTabs';
@@ -19,11 +19,15 @@ import { getHorseImage } from '@/lib/breed-images';
 import { getXPProgressPercent } from '@/lib/xp-utils';
 import { getBreedName } from '@/lib/utils';
 import { careChipStatus, trainingCooldownChip } from '@/lib/utils/care-status-utils';
+import { CareChip } from '@/components/common/CareChip';
 import type { HorseSummary } from '@/lib/api-client';
 
 /* ─── Helpers ────────────────────────────────────────────────────────── */
 
-/** Determine horse category from age + sex */
+/**
+ * Determine horse category from age + sex.
+ * Note: Prisma schema only has 'stallion' and 'mare' sex values — no geldings.
+ */
 function getHorseCategory(horse: HorseSummary): string {
   const age = horse.ageYears ?? horse.age ?? 0;
   const sex = (horse.sex ?? horse.gender ?? '').toLowerCase();
@@ -37,24 +41,6 @@ function getHorseCategory(horse: HorseSummary): string {
 /** Resolve stat value from flat fields or nested stats object */
 function getStat(horse: HorseSummary, stat: keyof HorseSummary['stats']): number {
   return (horse[stat] as number | undefined) ?? horse.stats?.[stat] ?? 0;
-}
-
-// Care chip: icon + label, colored by status. Hidden when 'none' (system not active).
-function CareChip({ label, status }: { label: string; status: 'good' | 'warn' | 'bad' | 'none' }) {
-  if (status === 'none') return null;
-  const colors = {
-    good: 'text-[var(--status-success)]',
-    warn: 'text-[var(--status-warning)]',
-    bad: 'text-[var(--status-danger)]',
-  };
-  const icons = { good: '✓', warn: '⏰', bad: '✗' };
-  return (
-    <span
-      className={`flex items-center gap-1 text-[0.6rem] px-[7px] py-0.5 rounded-[var(--radius-sm)] bg-[rgba(255,255,255,0.03)] ${colors[status]}`}
-    >
-      {icons[status]} {label}
-    </span>
-  );
 }
 
 /* ─── Horse Card — matches direction-4-hybrid.html mockup ─────────────── */
@@ -147,23 +133,25 @@ function StableHorseCard({ horse, onClick }: { horse: HorseSummary; onClick: () 
       )}
 
       {/* Care strip — matches mockup */}
-      <div className="flex flex-wrap gap-1 px-3 py-3 mt-2 border-t border-[var(--glass-border)]">
-        <CareChip label="Fed" status={careChipStatus(horse.lastFedDate, 1, 3)} />
-        <CareChip label="Shod" status={careChipStatus(horse.lastShod, 7, 14)} />
-        <CareChip label="Groomed" status={careChipStatus(horse.lastGroomed, 3, 7)} />
-        <CareChip label="Vetted" status={careChipStatus(horse.lastVettedDate, 7, 14)} />
-        <CareChip
-          label={trainingCooldownChip(horse.trainingCooldown).label}
-          status={trainingCooldownChip(horse.trainingCooldown).status}
-        />
-      </div>
+      {(() => {
+        const cooldown = trainingCooldownChip(horse.trainingCooldown);
+        return (
+          <div className="flex gap-1 px-3 py-3 mt-2 border-t border-[var(--glass-border)] overflow-hidden">
+            <CareChip label="Fed" status={careChipStatus(horse.lastFedDate, 1, 3)} />
+            <CareChip label="Shod" status={careChipStatus(horse.lastShod, 7, 14)} />
+            <CareChip label="Groomed" status={careChipStatus(horse.lastGroomed, 3, 7)} />
+            <CareChip label="Vetted" status={careChipStatus(horse.lastVettedDate, 7, 14)} />
+            <CareChip label={cooldown.label} status={cooldown.status} />
+          </div>
+        );
+      })()}
     </button>
   );
 }
 
 /* ─── Skeleton card for loading state ─────────────────────────────────── */
 function SkeletonHorseCard() {
-  return <SkeletonBase className="h-40 rounded-[var(--radius-lg)]" />;
+  return <SkeletonBase className="h-64 rounded-[var(--radius-lg)]" />;
 }
 
 /* ─── Main StableView ─────────────────────────────────────────────────── */
@@ -173,9 +161,10 @@ const StableView = () => {
   const navigate = useNavigate();
   const { data: horsesData, isLoading, isError, error, refetch } = useHorses();
   const { data: profileData } = useProfile();
-  const [viewMode, setViewMode] = useState<'grid' | 'list'>(
-    () => (localStorage.getItem('stableViewMode') as 'grid' | 'list') || 'grid'
-  );
+  const [viewMode, setViewMode] = useState<'grid' | 'list'>(() => {
+    const stored = localStorage.getItem('stableViewMode');
+    return stored === 'grid' || stored === 'list' ? stored : 'grid';
+  });
   const [currentPage, setCurrentPage] = useState(1);
 
   const handleViewChange = (mode: 'grid' | 'list') => {
@@ -273,12 +262,10 @@ const StableView = () => {
       );
     }
 
-    // Pagination
+    // Pagination — clamp page to valid range when tab filter changes result count
     const totalPages = Math.ceil(filtered.length / HORSES_PER_PAGE);
-    const paginated = filtered.slice(
-      (currentPage - 1) * HORSES_PER_PAGE,
-      currentPage * HORSES_PER_PAGE
-    );
+    const safePage = currentPage > totalPages ? 1 : currentPage;
+    const paginated = filtered.slice((safePage - 1) * HORSES_PER_PAGE, safePage * HORSES_PER_PAGE);
 
     return (
       <div className="p-4 space-y-4">
@@ -286,7 +273,7 @@ const StableView = () => {
         <div className="flex items-center justify-between">
           <p className="text-xs text-[var(--text-muted)]">
             {filtered.length} horse{filtered.length !== 1 ? 's' : ''}
-            {totalPages > 1 && ` · Page ${currentPage} of ${totalPages}`}
+            {totalPages > 1 && ` · Page ${safePage} of ${totalPages}`}
           </p>
           <div className="flex gap-1">
             <button
@@ -340,9 +327,23 @@ const StableView = () => {
               <span>Cooldown</span>
             </div>
             {paginated.map(({ horse }) => {
-              const topStat = ['speed', 'agility', 'stamina', 'precision', 'strength'].reduce(
+              const allStats: (keyof HorseSummary['stats'])[] = [
+                'speed',
+                'agility',
+                'stamina',
+                'precision',
+                'strength',
+                'endurance',
+                'intelligence',
+                'balance',
+                'boldness',
+                'flexibility',
+                'obedience',
+                'focus',
+              ];
+              const topStat = allStats.reduce(
                 (best, stat) => {
-                  const val = getStat(horse, stat as keyof HorseSummary['stats']);
+                  const val = getStat(horse, stat);
                   return val > best.value ? { label: stat, value: val } : best;
                 },
                 { label: '', value: 0 }
@@ -372,7 +373,9 @@ const StableView = () => {
                   <span className="text-sm text-[var(--text-primary)] capitalize">
                     {topStat.label ? `${topStat.label} ${topStat.value}` : '—'}
                   </span>
-                  <span className="text-xs">
+                  <span className="flex gap-1 text-xs">
+                    <CareChip label="Fed" status={careChipStatus(horse.lastFedDate, 1, 3)} />
+                    <CareChip label="Shod" status={careChipStatus(horse.lastShod, 7, 14)} />
                     <CareChip label={cooldown.label} status={cooldown.status} />
                   </span>
                   <span className="text-xs text-[var(--text-muted)]">
@@ -384,35 +387,58 @@ const StableView = () => {
           </div>
         )}
 
-        {/* Pagination controls */}
+        {/* Pagination controls — truncated for large page counts */}
         {totalPages > 1 && (
           <div className="flex items-center justify-center gap-2 pt-2">
             <button
               type="button"
               onClick={() => setCurrentPage((p) => Math.max(1, p - 1))}
-              disabled={currentPage === 1}
+              disabled={safePage === 1}
               className="px-3 py-1.5 text-xs rounded-[var(--radius-sm)] border border-[var(--glass-border)] text-[var(--text-secondary)] hover:border-[var(--gold-dim)] hover:text-[var(--gold-light)] disabled:opacity-30 disabled:cursor-not-allowed transition-colors"
             >
               Previous
             </button>
-            {Array.from({ length: totalPages }, (_, i) => i + 1).map((page) => (
-              <button
-                key={page}
-                type="button"
-                onClick={() => setCurrentPage(page)}
-                className={`w-8 h-8 text-xs rounded-[var(--radius-sm)] transition-colors ${
-                  page === currentPage
-                    ? 'bg-[var(--glass-glow)] text-[var(--gold-primary)] border border-[var(--gold-dim)]'
-                    : 'text-[var(--text-muted)] hover:text-[var(--text-primary)] border border-transparent'
-                }`}
-              >
-                {page}
-              </button>
-            ))}
+            {(() => {
+              const pages: (number | 'ellipsis-start' | 'ellipsis-end')[] = [];
+              if (totalPages <= 7) {
+                for (let i = 1; i <= totalPages; i++) pages.push(i);
+              } else {
+                pages.push(1);
+                if (safePage > 3) pages.push('ellipsis-start');
+                const start = Math.max(2, safePage - 1);
+                const end = Math.min(totalPages - 1, safePage + 1);
+                for (let i = start; i <= end; i++) pages.push(i);
+                if (safePage < totalPages - 2) pages.push('ellipsis-end');
+                pages.push(totalPages);
+              }
+              return pages.map((page) =>
+                typeof page === 'string' ? (
+                  <span
+                    key={page}
+                    className="w-8 h-8 flex items-center justify-center text-xs text-[var(--text-muted)]"
+                  >
+                    ...
+                  </span>
+                ) : (
+                  <button
+                    key={page}
+                    type="button"
+                    onClick={() => setCurrentPage(page)}
+                    className={`w-8 h-8 text-xs rounded-[var(--radius-sm)] transition-colors ${
+                      page === safePage
+                        ? 'bg-[var(--glass-glow)] text-[var(--gold-primary)] border border-[var(--gold-dim)]'
+                        : 'text-[var(--text-muted)] hover:text-[var(--text-primary)] border border-transparent'
+                    }`}
+                  >
+                    {page}
+                  </button>
+                )
+              );
+            })()}
             <button
               type="button"
               onClick={() => setCurrentPage((p) => Math.min(totalPages, p + 1))}
-              disabled={currentPage === totalPages}
+              disabled={safePage === totalPages}
               className="px-3 py-1.5 text-xs rounded-[var(--radius-sm)] border border-[var(--glass-border)] text-[var(--text-secondary)] hover:border-[var(--gold-dim)] hover:text-[var(--gold-light)] disabled:opacity-30 disabled:cursor-not-allowed transition-colors"
             >
               Next

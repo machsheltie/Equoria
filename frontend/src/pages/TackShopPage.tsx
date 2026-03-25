@@ -59,7 +59,7 @@ const TackItemCard: React.FC<TackItemCardProps> = ({
 
   return (
     <div
-      className="bg-white/5 border border-white/10 rounded-xl p-5 hover:border-white/20 transition-all"
+      className="bg-[var(--glass-bg)] backdrop-blur-sm border border-[var(--glass-border)] rounded-xl p-5 hover:border-[var(--glass-hover)] transition-all"
       data-testid={`tack-item-${item.id}`}
     >
       <div className="flex items-start justify-between mb-3">
@@ -68,21 +68,23 @@ const TackItemCard: React.FC<TackItemCardProps> = ({
             {item.icon ?? categoryIcon(item.category)}
           </span>
           <div>
-            <h3 className="font-bold text-white/90">{item.name}</h3>
-            <span className="text-xs text-sky-400/80 font-medium mt-0.5 block">{item.bonus}</span>
+            <h3 className="font-bold text-[var(--cream)]">{item.name}</h3>
+            <span className="text-xs text-[var(--gold-400)] font-medium mt-0.5 block">
+              {item.bonus}
+            </span>
           </div>
         </div>
-        <p className="text-lg font-bold text-celestial-gold">${item.cost.toLocaleString()}</p>
+        <p className="text-lg font-bold text-[var(--gold-400)]">${item.cost.toLocaleString()}</p>
       </div>
-      <p className="text-sm text-white/50 mb-4">{item.description}</p>
+      <p className="text-sm text-[var(--text-muted)] mb-4">{item.description}</p>
       <button
         type="button"
         disabled={!canPurchase}
         onClick={() => canPurchase && onPurchase(item)}
-        className={`w-full py-2 text-sm font-medium rounded-lg transition-colors ${
+        className={`w-full py-2 text-sm font-medium rounded-lg transition-all ${
           canPurchase
-            ? 'bg-sky-600/20 border border-sky-500/30 text-sky-400 hover:bg-sky-600/30 cursor-pointer'
-            : 'bg-sky-600/10 border border-sky-500/20 text-sky-400/60 cursor-not-allowed'
+            ? 'bg-[var(--status-success)]/10 border border-[var(--status-success)]/20 text-[var(--status-success)] hover:bg-[var(--status-success)]/20 hover:border-[var(--status-success)]/40 cursor-pointer'
+            : 'bg-[var(--status-success)]/10 border border-[var(--status-success)]/20 text-[var(--status-success)]/60 cursor-not-allowed'
         }`}
         title={
           canPurchase
@@ -136,8 +138,8 @@ const ShopTab: React.FC<ShopTabProps> = ({ selectedHorse, onSwitchToHorses }) =>
   if (isLoading) {
     return (
       <div className="flex items-center justify-center min-h-64" data-testid="tack-shop-loading">
-        <Loader2 className="w-8 h-8 text-sky-400 animate-spin" />
-        <span className="ml-3 text-white/50 text-sm">Loading inventory…</span>
+        <Loader2 className="w-8 h-8 text-[var(--gold-400)] animate-spin" />
+        <span className="ml-3 text-[var(--text-muted)] text-sm">Loading inventory…</span>
       </div>
     );
   }
@@ -149,7 +151,7 @@ const ShopTab: React.FC<ShopTabProps> = ({ selectedHorse, onSwitchToHorses }) =>
         data-testid="tack-shop-error"
       >
         <AlertCircle className="w-10 h-10 text-red-400/60" />
-        <p className="text-white/60 text-sm">
+        <p className="text-[var(--text-secondary)] text-sm">
           {(error as { message?: string })?.message ?? 'Failed to load tack inventory.'}
         </p>
       </div>
@@ -163,25 +165,25 @@ const ShopTab: React.FC<ShopTabProps> = ({ selectedHorse, onSwitchToHorses }) =>
     <div className="space-y-8" data-testid="tack-shop-tab">
       {/* Selected horse banner */}
       {selectedHorse ? (
-        <div className="flex items-center justify-between p-3 rounded-lg bg-sky-600/10 border border-sky-500/20 text-sky-300 text-sm">
+        <div className="flex items-center justify-between p-3 rounded-lg bg-[var(--status-success)]/10 border border-[var(--status-success)]/20 text-[var(--status-success)] text-sm">
           <span>
             Purchasing for: <span className="font-semibold">{selectedHorse.name}</span>
           </span>
           <button
             type="button"
             onClick={onSwitchToHorses}
-            className="text-sky-400/70 hover:text-sky-300 underline text-xs transition-colors"
+            className="text-[var(--gold-400)] hover:text-[var(--cream)] underline text-xs transition-colors"
           >
             Change horse
           </button>
         </div>
       ) : (
-        <div className="flex items-center justify-between p-3 rounded-lg bg-white/5 border border-white/10 text-white/40 text-sm">
+        <div className="flex items-center justify-between p-3 rounded-lg bg-[var(--glass-bg)] border border-[var(--glass-border)] text-[var(--text-muted)] text-sm">
           <span>No horse selected — go to My Horses to pick one</span>
           <button
             type="button"
             onClick={onSwitchToHorses}
-            className="text-sky-400/70 hover:text-sky-300 underline text-xs transition-colors"
+            className="text-[var(--gold-400)] hover:text-[var(--cream)] underline text-xs transition-colors"
           >
             Select horse
           </button>
@@ -206,11 +208,11 @@ const ShopTab: React.FC<ShopTabProps> = ({ selectedHorse, onSwitchToHorses }) =>
 
       {/* Saddles */}
       <section>
-        <h2 className="text-sm font-semibold text-white/50 uppercase tracking-widest mb-4">
+        <h2 className="text-sm font-semibold text-[var(--text-muted)] uppercase tracking-widest mb-4">
           Saddles
         </h2>
         {saddles.length === 0 ? (
-          <p className="text-sm text-white/30 italic">No saddles available.</p>
+          <p className="text-sm text-[var(--text-muted)] italic">No saddles available.</p>
         ) : (
           <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
             {saddles.map((item) => (
@@ -228,11 +230,11 @@ const ShopTab: React.FC<ShopTabProps> = ({ selectedHorse, onSwitchToHorses }) =>
 
       {/* Bridles */}
       <section>
-        <h2 className="text-sm font-semibold text-white/50 uppercase tracking-widest mb-4">
+        <h2 className="text-sm font-semibold text-[var(--text-muted)] uppercase tracking-widest mb-4">
           Bridles
         </h2>
         {bridles.length === 0 ? (
-          <p className="text-sm text-white/30 italic">No bridles available.</p>
+          <p className="text-sm text-[var(--text-muted)] italic">No bridles available.</p>
         ) : (
           <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
             {bridles.map((item) => (
@@ -269,8 +271,8 @@ const HorsesTackTab: React.FC<HorsesTackTabProps> = ({
   if (isLoading) {
     return (
       <div className="flex items-center justify-center min-h-64" data-testid="horses-tack-loading">
-        <Loader2 className="w-8 h-8 text-sky-400 animate-spin" />
-        <span className="ml-3 text-white/50 text-sm">Loading your horses…</span>
+        <Loader2 className="w-8 h-8 text-[var(--gold-400)] animate-spin" />
+        <span className="ml-3 text-[var(--text-muted)] text-sm">Loading your horses…</span>
       </div>
     );
   }
@@ -282,7 +284,7 @@ const HorsesTackTab: React.FC<HorsesTackTabProps> = ({
         data-testid="horses-tack-error"
       >
         <AlertCircle className="w-10 h-10 text-red-400/60" />
-        <p className="text-white/60 text-sm">
+        <p className="text-[var(--text-secondary)] text-sm">
           {(error as { message?: string })?.message ?? 'Failed to load horses.'}
         </p>
       </div>
@@ -295,15 +297,17 @@ const HorsesTackTab: React.FC<HorsesTackTabProps> = ({
         className="flex flex-col items-center justify-center min-h-64 p-8 text-center"
         data-testid="horses-tack-tab"
       >
-        <ShoppingBag className="w-12 h-12 text-sky-400/30 mb-4" />
-        <h2 className="text-lg font-bold text-white/60 mb-2">No Horses Registered</h2>
-        <p className="text-sm text-white/40 max-w-sm mb-6">
+        <ShoppingBag className="w-12 h-12 text-[var(--gold-400)]/30 mb-4" />
+        <h2 className="text-lg font-bold text-[var(--text-secondary)] mb-2">
+          No Horses Registered
+        </h2>
+        <p className="text-sm text-[var(--text-muted)] max-w-sm mb-6">
           Visit your stable to equip tack on your horses. Quality saddles and bridles improve
           training and competition performance.
         </p>
         <Link
           to="/stable"
-          className="px-5 py-2.5 bg-sky-600/20 border border-sky-500/30 text-sky-400 rounded-lg text-sm font-medium hover:bg-sky-600/30 transition-colors"
+          className="px-5 py-2.5 bg-[var(--status-success)]/10 border border-[var(--status-success)]/20 text-[var(--status-success)] rounded-lg text-sm font-medium hover:bg-[var(--status-success)]/20 transition-all"
         >
           Go to Stable
         </Link>
@@ -313,7 +317,7 @@ const HorsesTackTab: React.FC<HorsesTackTabProps> = ({
 
   return (
     <div className="space-y-4" data-testid="horses-tack-tab">
-      <p className="text-sm text-white/40">
+      <p className="text-sm text-[var(--text-muted)]">
         Select a horse, then switch to the Shop tab to purchase tack.
       </p>
       <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
@@ -324,10 +328,10 @@ const HorsesTackTab: React.FC<HorsesTackTabProps> = ({
               key={horse.id}
               type="button"
               onClick={() => onSelectHorse(horse)}
-              className={`text-left p-4 rounded-xl border transition-all ${
+              className={`text-left p-4 rounded-xl border backdrop-blur-sm transition-all ${
                 isSelected
-                  ? 'bg-sky-600/15 border-sky-500/50 ring-1 ring-sky-500/30'
-                  : 'bg-white/5 border-white/10 hover:border-white/20 hover:bg-white/8'
+                  ? 'bg-[var(--status-success)]/10 border-[var(--status-success)]/50'
+                  : 'bg-[var(--glass-bg)] border-[var(--glass-border)] hover:border-[var(--glass-hover)]'
               }`}
               data-testid={`horse-card-${horse.id}`}
               aria-pressed={isSelected}
@@ -338,19 +342,19 @@ const HorsesTackTab: React.FC<HorsesTackTabProps> = ({
                 </span>
                 <div className="min-w-0">
                   <h3
-                    className={`font-bold truncate ${isSelected ? 'text-sky-300' : 'text-white/90'}`}
+                    className={`font-bold truncate ${isSelected ? 'text-[var(--status-success)]' : 'text-[var(--cream)]'}`}
                   >
                     {horse.name}
                   </h3>
-                  <p className="text-xs text-white/40 truncate">
+                  <p className="text-xs text-[var(--text-muted)] truncate">
                     {getBreedName(horse.breed)} · {horse.gender}
                   </p>
                 </div>
                 {isSelected && (
-                  <CheckCircle className="w-4 h-4 text-sky-400 flex-shrink-0 ml-auto" />
+                  <CheckCircle className="w-4 h-4 text-[var(--status-success)] flex-shrink-0 ml-auto" />
                 )}
               </div>
-              <div className="flex items-center justify-between text-xs text-white/40">
+              <div className="flex items-center justify-between text-xs text-[var(--text-muted)]">
                 <span>Age {horse.age}</span>
                 <span
                   className={
@@ -370,7 +374,7 @@ const HorsesTackTab: React.FC<HorsesTackTabProps> = ({
           <button
             type="button"
             onClick={onGoToShop}
-            className="px-5 py-2.5 bg-sky-600/20 border border-sky-500/30 text-sky-400 rounded-lg text-sm font-medium hover:bg-sky-600/30 transition-colors"
+            className="px-5 py-2.5 bg-[var(--status-success)]/10 border border-[var(--status-success)]/20 text-[var(--status-success)] rounded-lg text-sm font-medium hover:bg-[var(--status-success)]/20 hover:border-[var(--status-success)]/40 transition-all"
           >
             Continue to Shop →
           </button>
@@ -414,10 +418,21 @@ const TackShopPage: React.FC = () => {
         </div>
       </PageHero>
 
+      {/* Banner image in glass card */}
+      <div className="max-w-[52rem] mx-auto px-4 sm:px-6 lg:px-8 pt-1 pb-4">
+        <div className="p-5 rounded-2xl bg-[var(--glass-bg)] backdrop-blur-sm border border-[var(--glass-border)] shadow-lg shadow-black/20">
+          <img
+            src="/images/tackstoreclerk.webp"
+            alt="Starlight Tack & Supply — interior view with the shopkeeper and shelves of saddles and bridles"
+            className="w-full h-auto rounded-xl"
+          />
+        </div>
+      </div>
+
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 pb-8">
         {/* My Horses / Shop Tabs */}
         <div
-          className="flex gap-1 p-1 bg-white/5 border border-white/10 rounded-xl mb-8 w-fit"
+          className="flex gap-1 p-1 bg-[var(--glass-bg)] backdrop-blur-sm border border-[var(--glass-border)] rounded-xl mb-8 w-fit"
           role="tablist"
           aria-label="Tack Shop section"
         >
@@ -427,8 +442,8 @@ const TackShopPage: React.FC = () => {
             onClick={() => setActiveTab('horses')}
             className={`flex items-center gap-2 px-5 py-2.5 rounded-lg text-sm font-medium transition-all ${
               activeTab === 'horses'
-                ? 'bg-white/10 text-white/90 shadow-sm'
-                : 'text-white/40 hover:text-white/70'
+                ? 'bg-[var(--glass-bg)] text-[var(--cream)] shadow-sm'
+                : 'text-[var(--text-muted)] hover:text-[var(--text-secondary)]'
             }`}
             data-testid="horses-tab"
           >
@@ -441,15 +456,15 @@ const TackShopPage: React.FC = () => {
             onClick={() => setActiveTab('shop')}
             className={`flex items-center gap-2 px-5 py-2.5 rounded-lg text-sm font-medium transition-all ${
               activeTab === 'shop'
-                ? 'bg-white/10 text-white/90 shadow-sm'
-                : 'text-white/40 hover:text-white/70'
+                ? 'bg-[var(--glass-bg)] text-[var(--cream)] shadow-sm'
+                : 'text-[var(--text-muted)] hover:text-[var(--text-secondary)]'
             }`}
             data-testid="shop-tab"
           >
             <ShoppingBag className="w-4 h-4" />
             Shop
             {selectedHorse && (
-              <span className="ml-1 px-1.5 py-0.5 text-xs rounded-full bg-sky-500/20 text-sky-300">
+              <span className="ml-1 px-1.5 py-0.5 text-xs rounded-full bg-[var(--status-success)]/20 text-[var(--status-success)]">
                 {selectedHorse.name}
               </span>
             )}

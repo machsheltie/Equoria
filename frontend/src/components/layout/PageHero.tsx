@@ -20,6 +20,8 @@ interface PageHeroProps {
   subtitle?: string;
   mood?: PageMood;
   icon?: React.ReactNode;
+  /** Optional background image URL — covers the entire hero area */
+  backgroundImage?: string;
   /** Optional decorative element rendered on the right (desktop only) */
   decoration?: React.ReactNode;
   children?: React.ReactNode;
@@ -63,13 +65,32 @@ const PageHero: React.FC<PageHeroProps> = ({
   subtitle,
   mood = 'default',
   icon,
+  backgroundImage,
   decoration,
   children,
 }) => {
   const { orb1, orb2, accentLine } = moodConfig[mood];
 
   return (
-    <header className="relative overflow-hidden mb-8">
+    <header className={`relative overflow-hidden mb-8 ${backgroundImage ? 'min-h-[220px]' : ''}`}>
+      {/* Optional background image */}
+      {backgroundImage && (
+        <div
+          className="absolute inset-0 pointer-events-none bg-cover bg-center bg-no-repeat"
+          aria-hidden="true"
+          style={{ backgroundImage: `url('${backgroundImage}')` }}
+        />
+      )}
+      {/* Dark overlay to keep text readable over background image */}
+      {backgroundImage && (
+        <div
+          className="absolute inset-0 pointer-events-none"
+          aria-hidden="true"
+          style={{
+            background: 'linear-gradient(to right, rgba(5,12,30,0.85) 30%, rgba(5,12,30,0.5) 100%)',
+          }}
+        />
+      )}
       {/* Ambient glow orbs — purely decorative */}
       <div
         className="absolute inset-0 pointer-events-none"

@@ -11,68 +11,47 @@ import { useAuth } from '@/contexts/AuthContext';
 import { NextActionsBar } from '@/components/hub/NextActionsBar';
 import { useHorses } from '@/hooks/api/useHorses';
 import { Button } from '@/components/ui/button';
+import { ErrorCard } from '@/components/ui/ErrorCard';
 import { getHorseImage } from '@/lib/breed-images';
 import { getBreedName } from '@/lib/utils';
 import { CooldownTimer } from '@/components/common/CooldownTimer';
+import { CareChip } from '@/components/common/CareChip';
 import {
   careChipStatus,
   trainingCooldownChip,
   horseNeedsCare,
   isReadyToTrain,
 } from '@/lib/utils/care-status-utils';
+import type { HorseSummary } from '@/lib/api-client';
 
-function CareChip({ label, status }: { label: string; status: 'good' | 'warn' | 'bad' | 'none' }) {
-  if (status === 'none') return null;
-  const colors = {
-    good: 'text-[var(--status-success)]',
-    warn: 'text-[var(--status-warning)]',
-    bad: 'text-[var(--status-danger)]',
-  };
-  const icons = { good: '✓', warn: '⏰', bad: '✗' };
-  return (
-    <span
-      className={`flex items-center gap-1 text-[0.6rem] px-[7px] py-0.5 rounded-[var(--radius-sm)] bg-[rgba(255,255,255,0.03)] ${colors[status]}`}
-    >
-      {icons[status]} {label}
-    </span>
-  );
+/** Resolve stat value from flat fields or nested stats object */
+function getStat(horse: HorseSummary, stat: keyof HorseSummary['stats']): number {
+  return (horse[stat] as number | undefined) ?? horse.stats?.[stat] ?? 0;
 }
 
 /* ─── Horse Card — matches direction-4-hybrid.html mockup ─────────────── */
-function HorseCard({
-  horse,
-}: {
-  horse: {
-    id: number;
-    name: string;
-    breed?: string | { id?: number; name?: string; description?: string };
-    sex?: string;
-    level?: number;
-    age?: number;
-    speed?: number;
-    agility?: number;
-    stamina?: number;
-    imageUrl?: string | null;
-    trait?: string;
-    healthStatus?: string;
-    lastFedDate?: unknown;
-    lastVettedDate?: unknown;
-    lastShod?: unknown;
-    lastGroomed?: unknown;
-    trainingCooldown?: unknown;
-  };
-}) {
+function HorseCard({ horse }: { horse: HorseSummary }) {
   const breedName = getBreedName(horse.breed);
   const sex = horse.sex ?? '';
   const ageStr = horse.age != null ? `${horse.age} yrs` : '';
   const subtitle = [breedName, sex, ageStr].filter(Boolean).join(' · ');
 
-  // Pick two top stats to display as mini-bars (like mockup)
   const stats = [
-    { label: 'Speed', value: horse.speed ?? 0 },
-    { label: 'Agility', value: horse.agility ?? 0 },
-    { label: 'Stamina', value: horse.stamina ?? 0 },
-  ].slice(0, 2);
+    { label: 'PRC', value: getStat(horse, 'precision') },
+    { label: 'STR', value: getStat(horse, 'strength') },
+    { label: 'SPD', value: getStat(horse, 'speed') },
+    { label: 'AGI', value: getStat(horse, 'agility') },
+    { label: 'END', value: getStat(horse, 'endurance') },
+    { label: 'INT', value: getStat(horse, 'intelligence') },
+    { label: 'STA', value: getStat(horse, 'stamina') },
+    { label: 'BAL', value: getStat(horse, 'balance') },
+    { label: 'BLD', value: getStat(horse, 'boldness') },
+    { label: 'FLX', value: getStat(horse, 'flexibility') },
+    { label: 'OBD', value: getStat(horse, 'obedience') },
+    { label: 'FCS', value: getStat(horse, 'focus') },
+  ];
+
+  const cooldown = trainingCooldownChip(horse.trainingCooldown);
 
   return (
     <Link
@@ -110,27 +89,14 @@ function HorseCard({
         </div>
       </div>
 
-      {/* Stats mini-bars — matches mockup */}
-      <div className="px-4 pt-3">
+      {/* Stats — compact numeric grid, 4 per row */}
+      <div className="grid grid-cols-4 gap-x-3 gap-y-1 px-4 pt-3">
         {stats.map((s) => (
-          <div key={s.label} className="flex items-center gap-2 mb-1.5">
-            <span className="text-[0.65rem] text-[var(--text-muted)] w-12 text-right uppercase tracking-wider">
+          <div key={s.label} className="flex items-center justify-between">
+            <span className="text-[0.6rem] text-[var(--text-muted)] uppercase tracking-wider font-medium">
               {s.label}
             </span>
-            <div
-              className="flex-1 h-1.5 bg-[rgba(255,255,255,0.06)] rounded-full overflow-hidden"
-              role="progressbar"
-              aria-valuenow={s.value}
-              aria-valuemin={0}
-              aria-valuemax={100}
-              aria-label={`${s.label} stat`}
-            >
-              <div
-                className="h-full rounded-full bg-gradient-to-r from-[var(--gold-primary)] to-[var(--gold-light)]"
-                style={{ width: `${Math.min(s.value, 100)}%` }}
-              />
-            </div>
-            <span className="text-[0.75rem] font-semibold text-[var(--text-primary)] w-6">
+            <span className="text-[0.75rem] font-semibold text-[var(--text-primary)]">
               {s.value}
             </span>
           </div>
@@ -147,22 +113,23 @@ function HorseCard({
       )}
 
       {/* Inline cooldown timer (PRD Section 09: cooldown timers visible on card) */}
-      {horse.trainingCooldown && trainingCooldownChip(horse.trainingCooldown).status === 'warn' && (
+      {horse.trainingCooldown && cooldown.status === 'warn' && (
         <div className="px-4 pt-2">
-          <CooldownTimer endsAt={horse.trainingCooldown as string} label="Training" compact />
+          <CooldownTimer
+            endsAt={typeof horse.trainingCooldown === 'string' ? horse.trainingCooldown : null}
+            label="Training"
+            compact
+          />
         </div>
       )}
 
       {/* Care strip */}
-      <div className="flex flex-wrap gap-1.5 px-4 py-3 mt-2 border-t border-[rgba(148,163,184,0.08)]">
+      <div className="flex gap-1 px-3 py-3 mt-2 border-t border-[rgba(148,163,184,0.08)] overflow-hidden">
         <CareChip label="Fed" status={careChipStatus(horse.lastFedDate, 1, 3)} />
         <CareChip label="Shod" status={careChipStatus(horse.lastShod, 7, 14)} />
         <CareChip label="Groomed" status={careChipStatus(horse.lastGroomed, 3, 7)} />
         <CareChip label="Vetted" status={careChipStatus(horse.lastVettedDate, 7, 14)} />
-        <CareChip
-          label={trainingCooldownChip(horse.trainingCooldown).label}
-          status={trainingCooldownChip(horse.trainingCooldown).status}
-        />
+        <CareChip label={cooldown.label} status={cooldown.status} />
       </div>
     </Link>
   );
@@ -218,7 +185,7 @@ function GettingStartedCard() {
 /* ─── Main Hub ───────────────────────────────────────────────────────── */
 const Index = () => {
   const { user } = useAuth();
-  const { data: horses, isLoading: horsesLoading } = useHorses();
+  const { data: horses, isLoading: horsesLoading, isError, error, refetch } = useHorses();
   const isNewPlayer = !user?.completedOnboarding;
   const horseList = Array.isArray(horses) ? horses : [];
 
@@ -259,7 +226,7 @@ const Index = () => {
               <>
                 {' · '}
                 <span className="text-[var(--gold-light)] font-semibold">{needsCareCount}</span>
-                {' needs care'}
+                {' need care'}
               </>
             )}
           </p>
@@ -282,10 +249,16 @@ const Index = () => {
             {[1, 2, 3, 4, 5, 6].map((i) => (
               <div
                 key={i}
-                className="h-40 bg-[var(--glass-bg)] border border-[var(--glass-border)] rounded-[var(--radius-lg)] animate-pulse"
+                className="h-64 bg-[var(--glass-bg)] border border-[var(--glass-border)] rounded-[var(--radius-lg)] animate-pulse"
               />
             ))}
           </div>
+        ) : isError ? (
+          <ErrorCard
+            title="Unable to Load Horses"
+            message={error?.message || 'Failed to fetch horses. Please check your connection.'}
+            onRetry={() => refetch()}
+          />
         ) : horseList.length === 0 ? (
           <div className="bg-[var(--glass-bg)] border border-[var(--glass-border)] rounded-[var(--radius-lg)] p-8 text-center">
             <div className="w-16 h-16 mx-auto mb-4 rounded-2xl flex items-center justify-center bg-gradient-to-br from-[var(--bg-midnight)] to-[var(--bg-twilight)] border border-[rgba(200,168,78,0.2)]">

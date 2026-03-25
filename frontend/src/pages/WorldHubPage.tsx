@@ -38,6 +38,8 @@ const worldLocations: LocationCardProps[] = [
     href: '/tack-shop',
     paintingGradient:
       'linear-gradient(160deg, rgba(14,50,100,0.85) 0%, rgba(8,30,64,0.95) 60%, rgba(5,13,26,0.98) 100%)',
+    backgroundImage: '/images/tackstoreclerk.webp',
+    backgroundPosition: '50% 25%',
   },
   {
     id: 'feed-shop',

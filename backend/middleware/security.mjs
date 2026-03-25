@@ -96,7 +96,7 @@ export const helmetConfig = {
 // API-specific rate limiters
 export const apiLimiter = createRateLimiter(15 * 60 * 1000, 100); // 100 requests per 15 minutes
 export const strictLimiter = createRateLimiter(15 * 60 * 1000, 20); // 20 requests per 15 minutes
-export const authLimiter = createRateLimiter(15 * 60 * 1000, 5); // 5 requests per 15 minutes
+export const authLimiter = createRateLimiter(15 * 60 * 1000, 50); // 50 requests per 15 minutes
 
 /**
  * API Key validation middleware (CWE-942: Permissive Cross-domain Policy)
@@ -112,7 +112,9 @@ export const validateApiKey = (req, res, next) => {
 
     // If API_KEY is not configured, log warning but allow (backward compatibility)
     if (!validApiKey) {
-      logger.warn('[API Key] API_KEY not configured - requests with no origin are allowed (INSECURE)');
+      logger.warn(
+        '[API Key] API_KEY not configured - requests with no origin are allowed (INSECURE)',
+      );
       return next();
     }
 
@@ -200,11 +202,11 @@ export const addSecurityHeaders = (req, res, next) => {
 // Security middleware factory
 export const createSecurityMiddleware = () => {
   return [
-    enforceHttps,           // Redirect HTTP to HTTPS (production only)
-    addSecurityHeaders,     // Add security headers
-    helmet(helmetConfig),   // Helmet security headers
-    cors(corsOptions),      // CORS validation
-    validateApiKey,         // API key validation
-    apiLimiter,             // Rate limiting
+    enforceHttps, // Redirect HTTP to HTTPS (production only)
+    addSecurityHeaders, // Add security headers
+    helmet(helmetConfig), // Helmet security headers
+    cors(corsOptions), // CORS validation
+    validateApiKey, // API key validation
+    apiLimiter, // Rate limiting
   ];
 };

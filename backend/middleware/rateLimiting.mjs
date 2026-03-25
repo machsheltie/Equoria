@@ -267,7 +267,9 @@ export function createRateLimiter(options = {}) {
       : max;
 
   const shouldBypassRequest = req => {
-    if (!isTestEnv) { return false; }
+    if (!isTestEnv) {
+      return false;
+    }
     if (process.env.TEST_BYPASS_RATE_LIMIT === 'true') {
       return true;
     }
@@ -375,11 +377,11 @@ export function createRateLimiter(options = {}) {
 /**
  * Authentication Rate Limiter
  * Strict limits to prevent brute force attacks
- * 5 attempts per 15 minutes per user/IP
+ * 50 attempts per 15 minutes per user/IP
  */
 export const authRateLimiter = createRateLimiter({
   windowMs: 15 * 60 * 1000, // 15 minutes
-  max: 5, // 5 attempts
+  max: 50, // 50 attempts
   message: 'Too many authentication attempts. Please try again in 15 minutes.',
   skipSuccessfulRequests: false, // Count all auth attempts
   keyPrefix: 'rl:auth',
