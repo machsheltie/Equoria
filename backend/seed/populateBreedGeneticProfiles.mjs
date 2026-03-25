@@ -2,13 +2,11 @@
 // Ensures the canonical 12 breeds exist and populates breedGeneticProfile JSONB.
 // Idempotent: safe to run multiple times.
 
-import { PrismaClient } from '../../packages/database/node_modules/@prisma/client/index.js';
+import prisma from '../db/index.mjs';
 import {
   CANONICAL_BREEDS,
   BREED_GENETIC_PROFILES,
 } from '../modules/horses/data/breedGeneticProfiles.mjs';
-
-const prisma = new PrismaClient();
 
 /**
  * Ensures all 12 canonical breeds exist in the database.
@@ -103,5 +101,5 @@ if (isDirectRun) {
       console.error('Population failed:', error);
       process.exit(1);
     })
-    .finally(() => prisma.$disconnect());
+    .finally(() => prisma.$disconnect?.());
 }
