@@ -71,12 +71,14 @@ model User {
 
 model Breed {
   /// Unique identifier for each breed
-  id          Int     @id @default(autoincrement())
+  id                  Int     @id @default(autoincrement())
   /// Name of the breed
-  name        String
+  name                String
   /// Description of the breed
-  description String?
-  horses      Horse[]
+  description         String?
+  /// JSONB containing rating_profiles (conformation, gaits, gaited config) and temperament_weights
+  breedGeneticProfile Json?
+  horses              Horse[]
 
   @@map("breeds")
 }

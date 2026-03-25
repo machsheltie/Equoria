@@ -142,8 +142,8 @@ development_status:
   # ============================================================
 
   # Epic 31A: Breed Genetic Profile Population
-  epic-31a: backlog
-  31a-1-populate-breed-genetic-profiles: backlog
+  epic-31a: in-progress
+  31a-1-populate-breed-genetic-profiles: review
   epic-31a-retrospective: optional
 
   # Epic 31B: Conformation Scoring System
