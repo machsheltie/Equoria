@@ -1,8 +1,8 @@
 # PRD-10: Project Milestones & Roadmap
 
-**Version:** 2.0.0
-**Last Updated:** 2026-03-18
-**Status:** Living Document — Epics 1-21 Complete
+**Version:** 2.1.0
+**Last Updated:** 2026-03-25
+**Status:** Living Document — Epics 1-21 Complete, Epic 22 Specified
 **Source Integration:** Consolidated from docs/history/claude-docs/PROJECT_MILESTONES.md
 
 ---
@@ -312,112 +312,149 @@ This document tracks significant achievements, milestones, and the development r
 
 ## 3. Development Roadmap
 
-### 3.1 Immediate Priorities (Next 2-4 Weeks)
+### 3.1 Immediate Priority: Epic 22 — Horse Physical Systems & Genetics
 
-#### Priority 1: Frontend Development (40% remaining)
+**Status:** PRD specifications complete (PRD-02 §3.1-3.3, PRD-03 §3.6, §7). Ready for implementation.
 
-**Estimated Time:** 23-30 hours
+This epic adds the physical attribute layer that existing systems (training, competition, breeding, grooms) reference but do not yet implement.
 
-| Task                 | Hours | Dependencies |
-| -------------------- | ----- | ------------ |
-| Authentication Pages | 3-4   | None         |
-| Training UI          | 4-5   | Auth         |
-| Breeding UI          | 4-5   | Auth         |
-| API Integration      | 6-8   | All UI       |
-| Competition UI       | 3-4   | API          |
-| Marketplace UI       | 3-4   | API          |
+#### Phase 1: Foundation — Breed Genetic Profile Population
 
-**Quality Gates:**
+| Task                                                                        | Effort | Dependencies                       |
+| --------------------------------------------------------------------------- | ------ | ---------------------------------- |
+| Verify `Breed.breedGeneticProfile` JSONB field exists                       | Small  | None                               |
+| Populate `rating_profiles` (conformation + gaits) for 12 breeds             | Small  | SQL scripts exist in `samples/`    |
+| Populate `temperament_weights` for 12 breeds                                | Small  | SQL scripts exist in `samples/`    |
+| Populate `allowed_alleles`, `allele_weights`, coat color data for 12 breeds | Medium | `generichorse.txt` template exists |
 
-- 80%+ test coverage per component
-- All tests passing before next component
-- TypeScript errors = 0
-- ESLint errors = 0 (warnings OK)
-- Accessibility checks passing
+#### Phase 2a: Conformation Scoring (PRD-02 §3.1)
+
+| Task                                                             | Effort | Dependencies       |
+| ---------------------------------------------------------------- | ------ | ------------------ |
+| Conformation generation service (normal distribution, 8 regions) | Medium | Phase 1            |
+| Horse creation hook — generate conformation at birth             | Medium | Generation service |
+| Breeding inheritance (60/40 parent/breed + variance)             | Medium | Generation service |
+| `GET /api/v1/horses/:id/conformation` endpoint                   | Small  | Generation service |
+| `GET /api/v1/horses/:id/conformation/analysis` endpoint          | Small  | Conformation data  |
+| Tests — distribution validation, inheritance math, API           | Medium | All above          |
+
+#### Phase 2b: Gait Quality (PRD-02 §3.2)
+
+| Task                                                                      | Effort | Dependencies       |
+| ------------------------------------------------------------------------- | ------ | ------------------ |
+| Gait generation service (breed genetics + conformation influence)         | Medium | Phase 1 + 2a       |
+| Breed-specific gaited gait registry (named gaits per breed)               | Small  | Phase 1            |
+| Horse creation hook — generate gaits after conformation                   | Medium | Generation service |
+| Breeding inheritance with gaited breed cross-breeding rules               | Medium | Generation service |
+| `GET /api/v1/horses/:id/gaits` endpoint                                   | Small  | Gait data          |
+| Tests — non-gaited null check, conformation correlation, breed gait names | Medium | All above          |
+
+#### Phase 2c: Temperament System (PRD-03 §7)
+
+| Task                                                                | Effort | Dependencies       |
+| ------------------------------------------------------------------- | ------ | ------------------ |
+| Prisma migration — add `temperament` field to Horse model           | Small  | None               |
+| Temperament assignment service (weighted random from breed profile) | Small  | Phase 1            |
+| Horse creation hook — assign temperament at birth                   | Small  | Assignment service |
+| Training modifier integration                                       | Medium | Assignment service |
+| Competition modifier integration                                    | Medium | Assignment service |
+| Groom synergy modifier integration                                  | Medium | Assignment service |
+| `GET /api/v1/horses/temperament-definitions` endpoint               | Small  | Constants          |
+| Tests — distribution validation, modifier calculations              | Medium | All above          |
+
+#### Phase 3: Conformation Shows (PRD-03 §3.6)
+
+| Task                                                                            | Effort | Dependencies       |
+| ------------------------------------------------------------------------------- | ------ | ------------------ |
+| Conformation show scoring service (65/20/8/7 formula)                           | Medium | Phase 2a + 2c      |
+| Temperament synergy calculation                                                 | Medium | Phase 2c           |
+| Age class assignment (weanling through senior)                                  | Small  | Scoring service    |
+| Title point tracking and progression                                            | Medium | Scoring service    |
+| Breeding value boost application                                                | Medium | Scoring + breeding |
+| `POST /api/v1/competition/conformation/enter`                                   | Medium | Scoring service    |
+| `POST /api/v1/competition/conformation/execute`                                 | Medium | Scoring service    |
+| `GET /api/v1/competition/conformation/eligibility/:id`                          | Small  | Entry validation   |
+| Tests — scoring weights, age eligibility, title progression, breeding boost cap | Large  | All above          |
+
+#### Phase 4: Coat Color Genetics (PRD-02 §3.3)
+
+| Task                                                                              | Effort | Dependencies          |
+| --------------------------------------------------------------------------------- | ------ | --------------------- |
+| 17-locus allele system — genotype generation service                              | Large  | Phase 1               |
+| Phenotype calculation service (genotype → display color + shade)                  | Large  | Genotype service      |
+| Lethal combination filtering                                                      | Medium | Genotype service      |
+| Breed restriction enforcement                                                     | Medium | Phase 1               |
+| Marking system (face + legs + advanced)                                           | Medium | Genotype service      |
+| Boolean modifiers (sooty, flaxen, pangare, rabicano)                              | Small  | Phenotype service     |
+| Mendelian breeding inheritance                                                    | Large  | All genotype services |
+| Color prediction service (offspring probability chart)                            | Large  | Breeding inheritance  |
+| `GET /api/v1/horses/:id/genetics`                                                 | Small  | Genotype + phenotype  |
+| `GET /api/v1/horses/:id/color`                                                    | Small  | Phenotype             |
+| `POST /api/v1/breeding/color-prediction/:sireId/:damId`                           | Medium | Prediction service    |
+| Tests — Mendelian ratios, lethal filtering, breed restrictions, phenotype mapping | Large  | All above             |
+
+**Phase Parallelism:** Phases 2a, 2b, and 2c can partially overlap (shared birth-hook, otherwise independent). Phase 3 blocks on 2a + 2c. Phase 4 is independent after Phase 1.
 
 ---
 
-#### Priority 2: Production Deployment
+### 3.2 Short-Term Roadmap (After Epic 22)
 
-**Estimated Time:** 20-30 hours
+#### Production Launch Preparation
 
-| Task                          | Hours | Status  |
-| ----------------------------- | ----- | ------- |
-| Backend Hosting (AWS/Railway) | 10-12 | Pending |
-| Managed PostgreSQL            | 4-6   | Pending |
-| Redis Cache                   | 2-3   | Pending |
-| SSL/TLS Setup                 | 2-3   | Pending |
-| Environment Configuration     | 2-3   | Pending |
+- [x] Frontend authentication — ✅ Complete (Epic 2)
+- [x] All UI components — ✅ Complete (Epics 3-18)
+- [x] Deployment infrastructure — ✅ Railway-ready (Epic 14)
+- [x] Sentry error tracking — ✅ Integrated (Epic 14)
+- [ ] Production deployment to Railway — config ready, needs execution
+- [ ] Beta testing with live users
+- [ ] Performance monitoring setup (post-deploy)
 
----
-
-#### Priority 3: Monitoring & Observability
-
-**Estimated Time:** 8-10 hours
-
-| Task                | Hours |
-| ------------------- | ----- |
-| Sentry Integration  | 3-4   |
-| CloudWatch/DataDog  | 3-4   |
-| Alert Configuration | 2-3   |
-
----
-
-### 3.2 Short-Term Roadmap (Months 1-2)
-
-#### Phase 1: Launch Preparation
-
-- [ ] Complete frontend authentication
-- [ ] Complete remaining UI components
-- [ ] Production deployment
-- [ ] Monitoring setup
-- [ ] Beta testing
-
-#### Phase 2: Core Features
+#### Post-Launch Core Additions
 
 - [ ] Ultra-rare traits system
-- [ ] Advanced show management
-- [ ] Marketplace system
-- [ ] Real-time notifications
+- [ ] Advanced show management (show series, seasons, championships)
+- [ ] Real-time notifications (WebSocket or SSE)
 
 ---
 
-### 3.3 Medium-Term Roadmap (Months 3-6)
+### 3.3 Medium-Term Roadmap (Post-Launch)
 
-#### Phase 3: Enhanced Features
+#### Enhanced Authentication & Security
 
-- [ ] Biometric authentication
 - [ ] Social login (Google, Apple)
 - [ ] Two-factor authentication
 - [ ] Advanced analytics dashboard
-- [ ] Breeding planner tool
 
-#### Phase 4: Community Features
+#### Community Expansion
 
+- [x] Message board, clubs, DMs — ✅ Complete (Epic 19)
+- [x] Leaderboards — ✅ Complete (Epic 10)
 - [ ] Stable alliances/guilds
 - [ ] Trading system
-- [ ] Leaderboards v2
 - [ ] Achievement system expansion
-- [ ] Event system
+- [ ] Seasonal event system
+
+#### Breeding Intelligence
+
+- [ ] Breeding planner tool (with color prediction from Epic 22 Phase 4)
+- [ ] AI-powered breeding recommendations
+- [ ] Predictive analytics for offspring quality
 
 ---
 
-### 3.4 Long-Term Vision (6-12 Months)
+### 3.4 Long-Term Vision
 
-#### Phase 5: Platform Expansion
+#### Platform Expansion
 
-- [ ] Mobile app (React Native)
-- [ ] Cross-device sync
-- [ ] Offline support
+- [ ] Mobile-responsive optimization (current: web-first)
+- [ ] Progressive Web App (PWA) with offline support
 - [ ] Push notifications
 
-#### Phase 6: Advanced Systems
+#### Advanced Game Systems
 
-- [ ] AI-powered breeding recommendations
-- [ ] Predictive analytics
-- [ ] Tournament system
-- [ ] Spectator mode
-- [ ] Replay system
+- [ ] Tournament system (multi-round, brackets)
+- [ ] Spectator mode for live competitions
+- [ ] Replay system for past competitions
 
 ---
 
@@ -529,7 +566,8 @@ This document tracks significant achievements, milestones, and the development r
 
 ## Document History
 
-| Version | Date       | Changes                                                                                                  |
-| ------- | ---------- | -------------------------------------------------------------------------------------------------------- |
-| 1.0.0   | 2025-12-01 | Initial creation from PROJECT_MILESTONES.md                                                              |
-| 2.0.0   | 2026-03-18 | Updated to reflect Epics 1-21 complete; added all 2026 milestones; updated metrics and completion status |
+| Version | Date       | Changes                                                                                                             |
+| ------- | ---------- | ------------------------------------------------------------------------------------------------------------------- |
+| 1.0.0   | 2025-12-01 | Initial creation from PROJECT_MILESTONES.md                                                                         |
+| 2.1.0   | 2026-03-25 | Replaced stale roadmap with Epic 22 (conformation, gaits, temperament, coat color genetics); marked completed items |
+| 2.0.0   | 2026-03-18 | Updated to reflect Epics 1-21 complete; added all 2026 milestones; updated metrics and completion status            |
