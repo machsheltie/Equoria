@@ -13,6 +13,7 @@ import {
 } from '../../../utils/competitionRewards.mjs';
 import { updateHorseRewards } from '../../../utils/horseUpdates.mjs';
 import { transferEntryFees } from '../../../utils/userUpdates.mjs';
+import { resolveTackBonus } from '../../services/controllers/tackShopController.mjs';
 import logger from '../../../utils/logger.mjs';
 
 /**
@@ -96,10 +97,10 @@ function runEnhancedCompetition(horses, show) {
           // Additional factors
           stressLevel: horse.stress_level || 0,
           health: horse.health || 'Good',
-          tackBonuses: {
-            saddle: horse.tack?.saddleBonus || 0,
-            bridle: horse.tack?.bridleBonus || 0,
-          },
+          tackBonuses: (() => {
+            const resolved = resolveTackBonus(horse.tack);
+            return { saddle: resolved.saddleBonus, bridle: resolved.bridleBonus };
+          })(),
         },
       };
 

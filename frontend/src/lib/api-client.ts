@@ -1229,18 +1229,31 @@ export const horseMarketplaceApi = {
 
 export interface TackItem {
   id: string;
-  category: 'saddle' | 'bridle';
+  category:
+    | 'saddle'
+    | 'bridle'
+    | 'halter'
+    | 'saddle_pad'
+    | 'leg_wraps'
+    | 'reins'
+    | 'girth'
+    | 'breastplate';
   name: string;
   description: string;
   cost: number;
   bonus: string;
+  numericBonus: number;
+  tier: 'basic' | 'quality' | 'premium';
   disciplines: string[];
   icon?: string;
+  image?: string;
+  ageRestriction?: number;
 }
 
 export interface TackInventoryData {
   items: TackItem[];
-  categories: { saddles: TackItem[]; bridles: TackItem[] };
+  categories: Record<string, TackItem[]>;
+  categoryDisplayNames?: Record<string, string>;
 }
 
 export interface TackPurchaseResult {

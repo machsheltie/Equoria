@@ -3,7 +3,7 @@
  *
  * The Tack Shop location in the World hub. Two modes:
  * - My Horses: Select a horse to equip; shows equipped tack per horse
- * - Shop: Browse saddles and bridles from the live API; purchase for selected horse
+ * - Shop: Browse tack from the live API across all categories; purchase for selected horse
  *
  * Wired to real API hooks (Story 10-5 wire-up):
  *   useTackInventory()   — GET /api/tack-shop/inventory
@@ -11,10 +11,10 @@
  *   useHorses()          — GET /api/horses
  */
 
-import React, { useState } from 'react';
+import React, { useState, useMemo } from 'react';
 import { Link } from 'react-router-dom';
 import { toast } from 'sonner';
-import { Heart, ShoppingBag, Loader2, AlertCircle, CheckCircle } from 'lucide-react';
+import { Heart, ShoppingBag, Loader2, AlertCircle, CheckCircle, Filter } from 'lucide-react';
 import PageHero from '@/components/layout/PageHero';
 import { useTackInventory, usePurchaseTackItem } from '@/hooks/api/useTackShop';
 import { useHorses } from '@/hooks/api/useHorses';
@@ -25,13 +25,52 @@ import { getBreedName } from '@/lib/utils';
 type TackShopTab = 'horses' | 'shop';
 
 // ---------------------------------------------------------------------------
-// Helpers
+// Constants
 // ---------------------------------------------------------------------------
 
-/** Returns a fallback emoji icon based on the tack category. */
-function categoryIcon(category: 'saddle' | 'bridle'): string {
-  return category === 'saddle' ? '🪣' : '🔗';
-}
+/** Fallback display names if backend doesn't provide them */
+const DEFAULT_CATEGORY_NAMES: Record<string, string> = {
+  saddle: 'Saddles',
+  bridle: 'Bridles',
+  halter: 'Halters',
+  saddle_pad: 'Saddle Pads',
+  leg_wraps: 'Leg Wraps & Boots',
+  reins: 'Reins',
+  girth: 'Girths',
+  breastplate: 'Breastplates',
+};
+
+/** Fallback emoji icons per category */
+const CATEGORY_ICONS: Record<string, string> = {
+  saddle: '🪣',
+  bridle: '🔗',
+  halter: '🐴',
+  saddle_pad: '🟫',
+  leg_wraps: '🦿',
+  reins: '🪢',
+  girth: '🟤',
+  breastplate: '🛡️',
+};
+
+const DISCIPLINE_OPTIONS = [
+  'All',
+  'Dressage',
+  'Show Jumping',
+  'Cross-Country',
+  'Western Pleasure',
+  'Endurance',
+  'Racing',
+  'Eventing',
+  'Reining',
+  'Barrel Racing',
+  'Hunter',
+];
+
+const TIER_COLORS: Record<string, { bg: string; text: string; label: string }> = {
+  basic: { bg: 'bg-slate-500/20', text: 'text-slate-300', label: 'Basic' },
+  quality: { bg: 'bg-blue-500/20', text: 'text-blue-300', label: 'Quality' },
+  premium: { bg: 'bg-amber-500/20', text: 'text-amber-300', label: 'Premium' },
+};
 
 // ---------------------------------------------------------------------------
 // Sub-components
@@ -51,6 +90,8 @@ const TackItemCard: React.FC<TackItemCardProps> = ({
   isPurchasing,
 }) => {
   const canPurchase = selectedHorse !== null && !isPurchasing;
+  const tierStyle = TIER_COLORS[item.tier] ?? TIER_COLORS.basic;
+
   const buttonLabel = selectedHorse
     ? isPurchasing
       ? 'Purchasing…'
@@ -64,11 +105,22 @@ const TackItemCard: React.FC<TackItemCardProps> = ({
     >
       <div className="flex items-start justify-between mb-3">
         <div className="flex items-center gap-3">
-          <span className="text-2xl" aria-hidden="true">
-            {item.icon ?? categoryIcon(item.category)}
-          </span>
+          {item.image ? (
+            <img src={item.image} alt={item.name} className="w-12 h-12 object-contain" />
+          ) : (
+            <span className="text-2xl" aria-hidden="true">
+              {item.icon ?? CATEGORY_ICONS[item.category] ?? '🏷️'}
+            </span>
+          )}
           <div>
-            <h3 className="font-bold text-[var(--cream)]">{item.name}</h3>
+            <div className="flex items-center gap-2">
+              <h3 className="font-bold text-[var(--cream)]">{item.name}</h3>
+              <span
+                className={`text-[10px] font-semibold uppercase px-1.5 py-0.5 rounded ${tierStyle.bg} ${tierStyle.text}`}
+              >
+                {tierStyle.label}
+              </span>
+            </div>
             <span className="text-xs text-[var(--gold-400)] font-medium mt-0.5 block">
               {item.bonus}
             </span>
@@ -76,7 +128,32 @@ const TackItemCard: React.FC<TackItemCardProps> = ({
         </div>
         <p className="text-lg font-bold text-[var(--gold-400)]">${item.cost.toLocaleString()}</p>
       </div>
-      <p className="text-sm text-[var(--text-muted)] mb-4">{item.description}</p>
+
+      <p className="text-sm text-[var(--text-muted)] mb-2">{item.description}</p>
+
+      {/* Discipline tags */}
+      {item.disciplines.length > 0 && (
+        <div className="flex flex-wrap gap-1 mb-3">
+          {item.disciplines.map((d) => (
+            <span
+              key={d}
+              className="text-[10px] px-1.5 py-0.5 rounded bg-[var(--glass-bg)] border border-[var(--glass-border)] text-[var(--text-muted)]"
+            >
+              {d}
+            </span>
+          ))}
+        </div>
+      )}
+
+      {/* Age restriction badge */}
+      {item.ageRestriction && (
+        <div className="mb-3">
+          <span className="text-[10px] px-1.5 py-0.5 rounded bg-purple-500/20 text-purple-300 font-medium">
+            For horses age {item.ageRestriction} and under
+          </span>
+        </div>
+      )}
+
       <button
         type="button"
         disabled={!canPurchase}
@@ -116,6 +193,7 @@ const ShopTab: React.FC<ShopTabProps> = ({ selectedHorse, onSwitchToHorses }) =>
   const { data, isLoading, isError, error } = useTackInventory();
   const purchaseMutation = usePurchaseTackItem();
   const [purchaseSuccess, setPurchaseSuccess] = useState<string | null>(null);
+  const [disciplineFilter, setDisciplineFilter] = useState('All');
 
   const handlePurchase = (item: TackItem) => {
     if (!selectedHorse) return;
@@ -134,6 +212,27 @@ const ShopTab: React.FC<ShopTabProps> = ({ selectedHorse, onSwitchToHorses }) =>
       }
     );
   };
+
+  // Filter items by discipline
+  const filteredCategories = useMemo(() => {
+    if (!data?.categories) return {};
+    const result: Record<string, TackItem[]> = {};
+
+    for (const [cat, items] of Object.entries(data.categories)) {
+      const filtered =
+        disciplineFilter === 'All'
+          ? items
+          : items.filter(
+              (item) => item.disciplines.length === 0 || item.disciplines.includes(disciplineFilter)
+            );
+      if (filtered.length > 0) {
+        result[cat] = filtered;
+      }
+    }
+    return result;
+  }, [data?.categories, disciplineFilter]);
+
+  const categoryNames = data?.categoryDisplayNames ?? DEFAULT_CATEGORY_NAMES;
 
   if (isLoading) {
     return (
@@ -157,9 +256,6 @@ const ShopTab: React.FC<ShopTabProps> = ({ selectedHorse, onSwitchToHorses }) =>
       </div>
     );
   }
-
-  const saddles = data?.categories.saddles ?? [];
-  const bridles = data?.categories.bridles ?? [];
 
   return (
     <div className="space-y-8" data-testid="tack-shop-tab">
@@ -190,9 +286,35 @@ const ShopTab: React.FC<ShopTabProps> = ({ selectedHorse, onSwitchToHorses }) =>
         </div>
       )}
 
+      {/* Discipline filter */}
+      <div className="flex items-center gap-3">
+        <Filter className="w-4 h-4 text-[var(--text-muted)]" />
+        <select
+          value={disciplineFilter}
+          onChange={(e) => setDisciplineFilter(e.target.value)}
+          className="bg-[var(--glass-bg)] border border-[var(--glass-border)] text-[var(--cream)] text-sm rounded-lg px-3 py-1.5 focus:outline-none focus:border-[var(--gold-400)]"
+          aria-label="Filter by discipline"
+        >
+          {DISCIPLINE_OPTIONS.map((d) => (
+            <option key={d} value={d}>
+              {d === 'All' ? 'All Disciplines' : d}
+            </option>
+          ))}
+        </select>
+        {disciplineFilter !== 'All' && (
+          <button
+            type="button"
+            onClick={() => setDisciplineFilter('All')}
+            className="text-xs text-[var(--text-muted)] hover:text-[var(--cream)] underline transition-colors"
+          >
+            Clear filter
+          </button>
+        )}
+      </div>
+
       {/* Purchase success banner */}
       {purchaseSuccess && (
-        <div className="flex items-center gap-2 p-3 rounded-lg bg-emerald-600/10 border border-emerald-500/20 text-emerald-300 text-sm">
+        <div className="flex items-center gap-2 p-3 rounded-lg bg-[var(--status-success)]/10 border border-[var(--status-success)]/20 text-[var(--status-success)] text-sm">
           <CheckCircle className="w-4 h-4 flex-shrink-0" />
           {purchaseSuccess}
         </div>
@@ -200,22 +322,20 @@ const ShopTab: React.FC<ShopTabProps> = ({ selectedHorse, onSwitchToHorses }) =>
 
       {/* Purchase error banner */}
       {purchaseMutation.isError && (
-        <div className="flex items-center gap-2 p-3 rounded-lg bg-red-600/10 border border-red-500/20 text-red-300 text-sm">
+        <div className="flex items-center gap-2 p-3 rounded-lg bg-[var(--status-danger)]/10 border border-[var(--status-danger)]/20 text-[var(--status-danger)] text-sm">
           <AlertCircle className="w-4 h-4 flex-shrink-0" />
           {(purchaseMutation.error as { message?: string })?.message ?? 'Purchase failed.'}
         </div>
       )}
 
-      {/* Saddles */}
-      <section>
-        <h2 className="text-sm font-semibold text-[var(--text-muted)] uppercase tracking-widest mb-4">
-          Saddles
-        </h2>
-        {saddles.length === 0 ? (
-          <p className="text-sm text-[var(--text-muted)] italic">No saddles available.</p>
-        ) : (
+      {/* Dynamic category sections */}
+      {Object.entries(filteredCategories).map(([categoryKey, items]) => (
+        <section key={categoryKey}>
+          <h2 className="text-sm font-semibold text-[var(--text-muted)] uppercase tracking-widest mb-4">
+            {categoryNames[categoryKey] ?? categoryKey}
+          </h2>
           <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-            {saddles.map((item) => (
+            {items.map((item) => (
               <TackItemCard
                 key={item.id}
                 item={item}
@@ -225,29 +345,27 @@ const ShopTab: React.FC<ShopTabProps> = ({ selectedHorse, onSwitchToHorses }) =>
               />
             ))}
           </div>
-        )}
-      </section>
+        </section>
+      ))}
 
-      {/* Bridles */}
-      <section>
+      {Object.keys(filteredCategories).length === 0 && (
+        <p className="text-sm text-[var(--text-muted)] italic text-center py-8">
+          No items match the selected discipline filter.
+        </p>
+      )}
+
+      {/* Coming Soon — decorative tack stub (#10) */}
+      <section className="mt-4">
         <h2 className="text-sm font-semibold text-[var(--text-muted)] uppercase tracking-widest mb-4">
-          Bridles
+          Coming Soon
         </h2>
-        {bridles.length === 0 ? (
-          <p className="text-sm text-[var(--text-muted)] italic">No bridles available.</p>
-        ) : (
-          <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-            {bridles.map((item) => (
-              <TackItemCard
-                key={item.id}
-                item={item}
-                selectedHorse={selectedHorse}
-                onPurchase={handlePurchase}
-                isPurchasing={purchaseMutation.isPending}
-              />
-            ))}
-          </div>
-        )}
+        <div className="p-5 rounded-xl bg-[var(--glass-bg)] backdrop-blur-sm border border-[var(--glass-border)] border-dashed text-center">
+          <p className="text-sm text-[var(--text-muted)]">
+            Decorative tack, parade sets, and seasonal gear will be available in a future update.
+            Show off your horse&apos;s style with cosmetic equipment that doesn&apos;t affect
+            competition scoring.
+          </p>
+        </div>
       </section>
     </div>
   );
@@ -358,7 +476,9 @@ const HorsesTackTab: React.FC<HorsesTackTabProps> = ({
                 <span>Age {horse.age}</span>
                 <span
                   className={
-                    horse.healthStatus === 'Healthy' ? 'text-emerald-400/70' : 'text-amber-400/70'
+                    horse.healthStatus === 'Healthy'
+                      ? 'text-[var(--status-success)]/70'
+                      : 'text-[var(--status-warning)]/70'
                   }
                 >
                   {horse.healthStatus}
@@ -487,15 +607,26 @@ const TackShopPage: React.FC = () => {
           )}
         </div>
 
-        {/* Info Panel */}
+        {/* Info Panel (#7 — accurate descriptions) */}
         <div className="mt-10 p-5 rounded-xl glass-panel text-sm text-[var(--text-muted)]">
           <h3 className="font-semibold text-[var(--cream)] mb-2">About the Tack Shop</h3>
           <ul className="space-y-1 list-disc list-inside">
-            <li>Only one saddle and one bridle can be equipped per horse at a time</li>
-            <li>Competition gear provides direct bonuses to show scoring</li>
-            <li>Training saddles increase XP gain rate during training sessions</li>
-            <li>Higher-tier bridles improve obedience and rider communication</li>
-            <li>Tack can be swapped between horses at no cost</li>
+            <li>Saddles and bridles provide direct numeric bonuses to competition scoring</li>
+            <li>
+              Only one item per category can be equipped at a time — purchasing replaces the old
+              item
+            </li>
+            <li>Items with discipline tags give their full bonus in matching competitions</li>
+            <li>General items (no discipline tag) work across all events</li>
+            <li>
+              Manage equipped tack from the{' '}
+              <Link
+                to="/inventory"
+                className="text-[var(--gold-400)] hover:text-[var(--cream)] underline"
+              >
+                Inventory page
+              </Link>
+            </li>
           </ul>
         </div>
       </div>

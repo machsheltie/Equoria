@@ -3,6 +3,7 @@ import { getHealthModifier } from '../utils/healthBonus.mjs';
 import { applyRiderModifiers } from '../utils/riderBonus.mjs';
 import { calculateTraitCompetitionImpact } from '../utils/traitCompetitionImpact.mjs';
 import { getCombinedTraitEffects } from '../utils/traitEffects.mjs';
+import { resolveTackBonus } from '../modules/services/controllers/tackShopController.mjs';
 import logger from '../utils/logger.mjs';
 
 /**
@@ -61,9 +62,10 @@ function simulateCompetition(horses, show) {
       // 3. Add training score (0-100, default to 0 if not provided)
       const trainingScore = horse.trainingScore || 0;
 
-      // 4. Add tack bonuses (saddle + bridle)
-      const saddleBonus = (horse.tack && horse.tack.saddleBonus) || 0;
-      const bridleBonus = (horse.tack && horse.tack.bridleBonus) || 0;
+      // 4. Add tack bonuses (saddle + bridle) — resolve from catalog if stored as item IDs
+      const resolvedTack = resolveTackBonus(horse.tack);
+      const saddleBonus = resolvedTack.saddleBonus;
+      const bridleBonus = resolvedTack.bridleBonus;
       const tackBonus = saddleBonus + bridleBonus;
 
       // 5. Calculate subtotal before percentage modifiers
