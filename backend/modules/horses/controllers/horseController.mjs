@@ -2,7 +2,14 @@ import { getResultsByHorse } from '../../../models/resultModel.mjs';
 import { createHorse, getHorseById } from '../../../models/horseModel.mjs';
 import { getAnyRecentTraining } from '../../../models/trainingModel.mjs';
 import { applyEpigeneticTraitsAtBirth } from '../../../utils/applyEpigeneticTraitsAtBirth.mjs';
-import { generateConformationScores } from '../services/conformationService.mjs';
+import {
+  generateConformationScores,
+  generateInheritedConformationScores,
+  CONFORMATION_REGIONS,
+  calculateOverallConformation,
+} from '../services/conformationService.mjs';
+import { BREED_GENETIC_PROFILES, CANONICAL_BREEDS } from '../data/breedGeneticProfiles.mjs';
+import { generateGaitScores, generateInheritedGaitScores } from '../services/gaitService.mjs';
 import prisma from '../../../db/index.mjs';
 import logger from '../../../utils/logger.mjs';
 
@@ -146,10 +153,26 @@ export async function createFoal(req, res) {
       `[horseController.createFoal] Applied epigenetic traits: ${JSON.stringify(epigeneticTraits)}`,
     );
 
-    // Generate conformation scores from breed genetics
-    const conformationScores = generateConformationScores(breedId);
+    // Generate conformation scores — use inheritance if both parents have scores, else breed-only
+    const sireConformation = sire.conformationScores;
+    const damConformation = dam.conformationScores;
+    const conformationScores =
+      sireConformation && damConformation
+        ? generateInheritedConformationScores(breedId, sireConformation, damConformation)
+        : generateConformationScores(breedId);
     logger.info(
-      `[horseController.createFoal] Generated conformation scores for breed ${breedId}: overall=${conformationScores.overallConformation}`,
+      `[horseController.createFoal] Generated conformation scores for breed ${breedId} (${sireConformation && damConformation ? 'inherited' : 'breed-only'}): overall=${conformationScores.overallConformation}`,
+    );
+
+    // Generate gait scores — use inheritance if both parents have gait scores, else breed-only
+    const sireGaitScores = sire.gaitScores;
+    const damGaitScores = dam.gaitScores;
+    const gaitScores =
+      sireGaitScores && damGaitScores
+        ? generateInheritedGaitScores(breedId, sireGaitScores, damGaitScores, conformationScores)
+        : generateGaitScores(breedId, conformationScores);
+    logger.info(
+      `[horseController.createFoal] Generated gait scores for breed ${breedId} (${sireGaitScores && damGaitScores ? 'inherited' : 'breed-only'})`,
     );
 
     // Prepare horse data for creation
@@ -166,6 +189,7 @@ export async function createFoal(req, res) {
       healthStatus,
       dateOfBirth: new Date().toISOString(),
       conformationScores,
+      gaitScores,
       epigeneticModifiers: {
         positive: epigeneticTraits.positive || [],
         negative: epigeneticTraits.negative || [],
@@ -617,6 +641,184 @@ export async function getHorsePersonalityImpact(req, res) {
       success: false,
       message: 'Failed to calculate personality compatibility',
       error: process.env.NODE_ENV === 'development' ? error.message : 'Internal server error',
+    });
+  }
+}
+
+/**
+ * Get conformation scores for a horse.
+ * Returns all 8 region scores + overall conformation average.
+ * Horse is pre-attached to req.horse by requireOwnership middleware.
+ *
+ * @param {Object} req - Express request object (req.horse attached by middleware)
+ * @param {Object} res - Express response object
+ */
+export async function getConformation(req, res) {
+  try {
+    const horse = req.horse;
+    const scores = horse.conformationScores;
+
+    // Legacy horse without conformation scores
+    if (!scores) {
+      return res.status(200).json({
+        success: true,
+        message: 'No conformation scores available for this horse',
+        data: null,
+      });
+    }
+
+    // Build response with all 8 regions + overall (null for missing legacy regions)
+    const conformationScores = {};
+    for (const region of CONFORMATION_REGIONS) {
+      conformationScores[region] = scores[region] ?? null;
+    }
+    conformationScores.overallConformation =
+      scores.overallConformation ?? calculateOverallConformation(scores);
+
+    logger.info(
+      `[horseController.getConformation] Retrieved conformation for horse ${horse.id}: overall=${conformationScores.overallConformation}`,
+    );
+
+    res.status(200).json({
+      success: true,
+      message: 'Conformation scores retrieved successfully',
+      data: {
+        horseId: horse.id,
+        horseName: horse.name,
+        breedId: horse.breedId,
+        conformationScores,
+      },
+    });
+  } catch (error) {
+    logger.error(`[horseController.getConformation] Error: ${error.message}`);
+    res.status(500).json({
+      success: false,
+      message: 'Internal server error while retrieving conformation scores',
+      data: null,
+    });
+  }
+}
+
+/**
+ * Get conformation analysis with percentile rankings compared to the horse's breed.
+ * Percentile = percentage of same-breed horses scoring LOWER than this horse per region.
+ * Breed mean comes from BREED_GENETIC_PROFILES (designed profile mean, not database average).
+ *
+ * @param {Object} req - Express request object (req.horse attached by middleware)
+ * @param {Object} res - Express response object
+ */
+export async function getConformationAnalysis(req, res) {
+  try {
+    const horse = req.horse;
+    const scores = horse.conformationScores;
+
+    // Legacy horse without conformation scores
+    if (!scores) {
+      return res.status(200).json({
+        success: true,
+        message: 'No conformation scores available for this horse',
+        data: null,
+      });
+    }
+
+    // Guard: breedId must be defined for meaningful percentile analysis
+    if (!horse.breedId) {
+      return res.status(200).json({
+        success: true,
+        message: 'No breed assigned — percentile analysis unavailable',
+        data: null,
+      });
+    }
+
+    // Get all same-breed horses for percentile calculation
+    // TODO(scalability): When breed populations exceed ~10k, switch to a SQL percentile_cont()
+    // aggregate or pre-computed percentile table to avoid loading all horses into memory.
+    const sameBreedHorses = await prisma.horse.findMany({
+      where: { breedId: horse.breedId },
+      select: { conformationScores: true },
+    });
+
+    // Filter out horses without conformation scores
+    const validHorses = sameBreedHorses.filter(h => h.conformationScores != null);
+
+    // Get breed profile for designed means
+    const profile = BREED_GENETIC_PROFILES[horse.breedId];
+    const breedConformation = profile ? profile.rating_profiles.conformation : null;
+
+    // Get breed name from CANONICAL_BREEDS
+    const breed = CANONICAL_BREEDS.find(b => b.id === horse.breedId);
+    const breedName = breed ? breed.name : 'Unknown';
+
+    // Calculate analysis per region
+    const analysis = {};
+    for (const region of CONFORMATION_REGIONS) {
+      const score = scores[region] ?? 0;
+      const breedMean = breedConformation ? breedConformation[region].mean : 50;
+
+      // Percentile: count horses scoring lower / total
+      let percentile;
+      if (validHorses.length <= 1) {
+        // Only 1 horse of this breed → default to 50th percentile
+        percentile = 50;
+      } else {
+        const lowerCount = validHorses.filter(
+          h => h.conformationScores[region] != null && h.conformationScores[region] < score,
+        ).length;
+        percentile = Math.round((lowerCount / validHorses.length) * 100);
+      }
+
+      analysis[region] = { score, breedMean, percentile };
+    }
+
+    // Overall conformation analysis
+    const overallScore = scores.overallConformation ?? calculateOverallConformation(scores);
+    const overallBreedMean = breedConformation
+      ? Math.round(
+          CONFORMATION_REGIONS.reduce((sum, r) => sum + breedConformation[r].mean, 0) /
+            CONFORMATION_REGIONS.length,
+        )
+      : 50;
+
+    let overallPercentile;
+    if (validHorses.length <= 1) {
+      overallPercentile = 50;
+    } else {
+      const overallLowerCount = validHorses.filter(h => {
+        const hOverall =
+          h.conformationScores.overallConformation ??
+          calculateOverallConformation(h.conformationScores);
+        return hOverall < overallScore;
+      }).length;
+      overallPercentile = Math.round((overallLowerCount / validHorses.length) * 100);
+    }
+
+    logger.info(
+      `[horseController.getConformationAnalysis] Analysis for horse ${horse.id} (${breedName}): ${validHorses.length} same-breed horses`,
+    );
+
+    res.status(200).json({
+      success: true,
+      message: 'Conformation analysis retrieved successfully',
+      data: {
+        horseId: horse.id,
+        horseName: horse.name,
+        breedId: horse.breedId,
+        breedName,
+        totalHorsesInBreed: validHorses.length,
+        analysis,
+        overallConformation: {
+          score: overallScore,
+          breedMean: overallBreedMean,
+          percentile: overallPercentile,
+        },
+      },
+    });
+  } catch (error) {
+    logger.error(`[horseController.getConformationAnalysis] Error: ${error.message}`);
+    res.status(500).json({
+      success: false,
+      message: 'Internal server error while retrieving conformation analysis',
+      data: null,
     });
   }
 }

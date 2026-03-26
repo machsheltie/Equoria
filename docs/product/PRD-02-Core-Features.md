@@ -214,7 +214,7 @@ availableStatPoints = Math.floor(horse.totalXP / 100);
 
 ### 3.1 Conformation Scoring System (P1)
 
-**Status:** ❌ Not Implemented — Full Specification Ready
+**Status:** ✅ Implemented (Epic 31B-1, 31B-2, 31B-3)
 
 **Requirements:**
 
@@ -248,7 +248,7 @@ For each region:
 overallConformation = average of all 8 region scores
 ```
 
-Standard deviations from sample data: conformation std_dev = 8 for all breeds. This produces a bell curve where ~68% of horses score within ±8 of the breed mean and ~95% within ±16.
+Standard deviations: most breeds use std_dev = 8 per region; Lusitano has per-region values (5–7) based on BreedData source file. This produces a bell curve where ~68% of horses score within ±1 std_dev of the breed mean and ~95% within ±2 std_dev.
 
 **Breeding Inheritance:**
 
@@ -269,22 +269,22 @@ Parent contribution: 60%. Breed mean regression: 40%. Random variance from breed
 
 **Breed Rating Profile Data (12 breeds):**
 
-| Breed                   | Head | Neck | Shoulders | Back | Hindquarters | Legs | Hooves |
-| ----------------------- | ---- | ---- | --------- | ---- | ------------ | ---- | ------ |
-| Thoroughbred            | 78   | 75   | 72        | 70   | 76           | 74   | 70     |
-| Arabian                 | 85   | 82   | 70        | 68   | 72           | 70   | 75     |
-| American Saddlebred     | 80   | 78   | 72        | 70   | 74           | 72   | 70     |
-| National Show Horse     | 82   | 80   | 71        | 69   | 73           | 71   | 72     |
-| Pony of the Americas    | 75   | 70   | 68        | 65   | 70           | 68   | 68     |
-| Appaloosa               | 72   | 70   | 70        | 68   | 75           | 70   | 70     |
-| Tennessee Walking Horse | 75   | 74   | 72        | 70   | 78           | 72   | 70     |
-| Pura Raza Espanola      | 80   | 78   | 72        | 70   | 76           | 72   | 70     |
-| American Quarter Horse  | 75   | 72   | 74        | 70   | 78           | 74   | 72     |
-| Walkaloosa              | 74   | 72   | 70        | 68   | 75           | 70   | 70     |
-| Lusitano                | —    | —    | —         | —    | —            | —    | —      |
-| Paint Horse             | 75   | 76   | 75        | 74   | 78           | 73   | 73     |
+| Breed                   | Head | Neck | Shoulders | Back | Hindquarters | Legs | Hooves | Topline |
+| ----------------------- | ---- | ---- | --------- | ---- | ------------ | ---- | ------ | ------- |
+| Thoroughbred            | 78   | 75   | 72        | 70   | 76           | 74   | 70     | 73      |
+| Arabian                 | 85   | 82   | 70        | 68   | 72           | 70   | 75     | 72      |
+| American Saddlebred     | 80   | 78   | 72        | 70   | 74           | 72   | 70     | 74      |
+| National Show Horse     | 82   | 80   | 71        | 69   | 73           | 71   | 72     | 74      |
+| Pony Of The Americas    | 75   | 70   | 68        | 65   | 70           | 68   | 68     | 67      |
+| Appaloosa               | 72   | 70   | 70        | 68   | 75           | 70   | 70     | 70      |
+| Tennessee Walking Horse | 75   | 74   | 72        | 70   | 78           | 72   | 70     | 72      |
+| Andalusian              | 80   | 78   | 72        | 70   | 76           | 72   | 70     | 75      |
+| American Quarter Horse  | 75   | 72   | 74        | 70   | 78           | 74   | 72     | 72      |
+| Walkaloosa              | 74   | 72   | 70        | 68   | 75           | 70   | 70     | 70      |
+| Lusitano                | 84   | 90   | 82        | 84   | 88           | 82   | 80     | 83      |
+| Paint Horse             | 75   | 76   | 75        | 74   | 78           | 73   | 73     | 74      |
 
-_Note: Topline data TBD — will be added alongside breed profile population. Lusitano conformation ratings TBD (temperament data exists)._
+_All 12 breeds fully populated in `breedGeneticProfiles.mjs`. Lusitano has per-region std_dev values (5–7); all other breeds use std_dev = 8._
 
 **Technical Specifications:**
 
@@ -342,9 +342,9 @@ Gaited breeds have additional named gaits unique to their breed. The system chec
 | Walkaloosa (ID 10)             | Yes    | Indian Shuffle          |
 | Thoroughbred (ID 1)            | No     | —                       |
 | Arabian (ID 2)                 | No     | —                       |
-| Pony of the Americas (ID 5)    | No     | —                       |
+| Pony Of The Americas (ID 5)    | No     | —                       |
 | Appaloosa (ID 6)               | No     | —                       |
-| Pura Raza Espanola (ID 8)      | No     | —                       |
+| Andalusian (ID 8)              | No     | —                       |
 | American Quarter Horse (ID 9)  | No     | —                       |
 | Lusitano (ID 11)               | No     | —                       |
 | Paint Horse (ID 12)            | No     | —                       |
@@ -389,10 +389,10 @@ Conformation influence range: approximately -10 to +5 modifier (most horses near
 | Arabian                 | 70   | 78   | 75     | 80     | null    |
 | American Saddlebred     | 70   | 75   | 70     | 65     | 85      |
 | National Show Horse     | 70   | 76   | 72     | 70     | 82      |
-| Pony of the Americas    | 65   | 70   | 68     | 72     | null    |
+| Pony Of The Americas    | 65   | 70   | 68     | 72     | null    |
 | Appaloosa               | 65   | 70   | 72     | 75     | null    |
 | Tennessee Walking Horse | 72   | 65   | 70     | 65     | 85      |
-| Pura Raza Espanola      | 70   | 78   | 76     | 70     | null    |
+| Andalusian              | 70   | 78   | 76     | 70     | null    |
 | American Quarter Horse  | 65   | 70   | 74     | 80     | null    |
 | Walkaloosa              | 70   | 68   | 70     | 72     | 85      |
 | Lusitano                | —    | —    | —      | —      | null    |

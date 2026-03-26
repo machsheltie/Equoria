@@ -76,6 +76,15 @@ describe('generateConformationScores', () => {
     }
     expect(scores.overallConformation).toBe(50);
   });
+
+  // Edge cases: falsy breedId values should gracefully return defaults
+  test.each([0, null, undefined, NaN])('breedId=%p returns default scores of 50', breedId => {
+    const scores = generateConformationScores(breedId);
+    for (const region of CONFORMATION_REGIONS) {
+      expect(scores[region]).toBe(50);
+    }
+    expect(scores.overallConformation).toBe(50);
+  });
 });
 
 // === Task 3.4: overallConformation calculation ===
@@ -137,6 +146,36 @@ describe('calculateOverallConformation', () => {
       topline: 100,
     };
     expect(calculateOverallConformation(scores)).toBe(100);
+  });
+
+  test('handles partial scores (missing regions default to 0)', () => {
+    const scores = { head: 80, neck: 80 };
+    // (80 + 80 + 0*6) / 8 = 160/8 = 20
+    expect(calculateOverallConformation(scores)).toBe(20);
+  });
+
+  test('handles legacy scores without overallConformation key', () => {
+    // Legacy horses have { head: 20, neck: 20, ... } with no overallConformation
+    const legacyScores = {
+      head: 20,
+      neck: 20,
+      shoulders: 20,
+      back: 20,
+      hindquarters: 20,
+      legs: 20,
+      hooves: 20,
+      topline: 20,
+    };
+    expect(calculateOverallConformation(legacyScores)).toBe(20);
+  });
+
+  // Edge case: null/undefined scores parameter should not crash
+  test('returns 0 for null scores', () => {
+    expect(calculateOverallConformation(null)).toBe(0);
+  });
+
+  test('returns 0 for undefined scores', () => {
+    expect(calculateOverallConformation(undefined)).toBe(0);
   });
 });
 
@@ -253,9 +292,9 @@ describe('Statistical validation - normal distribution verification', () => {
 
       const percentage = (withinRange / sampleSize) * 100;
 
-      // Normal distribution: ~95.4% within 2 std_devs
-      // With clamping at 0 and 100, we may get slightly more in range
-      // Use 90% as a conservative lower bound to avoid test flakiness
+      // Normal distribution: ~95.4% within 2 std_devs (AC #5 specifies 95%)
+      // With clamping at 0 and 100, actual percentage is ≥95% in practice
+      // Threshold set to 90% to avoid rare flaky failures from random sampling
       expect(percentage).toBeGreaterThanOrEqual(90);
     }
   });

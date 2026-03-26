@@ -1,7 +1,12 @@
 import express from 'express';
 import { param, body, query, validationResult } from 'express-validator';
 import { getTrainableHorses } from '../../../controllers/trainingController.mjs';
-import { getHorseOverview, getHorsePersonalityImpact } from '../controllers/horseController.mjs';
+import {
+  getHorseOverview,
+  getHorsePersonalityImpact,
+  getConformation,
+  getConformationAnalysis,
+} from '../controllers/horseController.mjs';
 import { authenticateToken } from '../../../middleware/auth.mjs';
 import { requireOwnership } from '../../../middleware/ownership.mjs';
 import {
@@ -12,6 +17,7 @@ import {
 import * as horseXpController from '../controllers/horseXpController.mjs';
 import { createHorse } from '../../../models/horseModel.mjs';
 import { generateConformationScores } from '../services/conformationService.mjs';
+import { generateGaitScores } from '../services/gaitService.mjs';
 import prisma from '../../../db/index.mjs';
 import logger from '../../../utils/logger.mjs';
 
@@ -229,7 +235,7 @@ const validateUserId = [
  * GET /horses
  * Get all horses with optional filtering
  */
-router.get('/', queryRateLimiter, rejectPollutedRequest, async (req, res) => {
+router.get('/', queryRateLimiter, authenticateToken, rejectPollutedRequest, async (req, res) => {
   try {
     // Guard against overly long or malicious query strings
     const urlLength = (req.originalUrl || '').length;
@@ -349,6 +355,54 @@ router.get(
 );
 
 /**
+ * GET /horses/:id/conformation
+ * Get conformation scores for a specific horse (8 regions + overall)
+ *
+ * Security: Validates horse ownership before returning conformation data
+ */
+router.get(
+  '/:id/conformation',
+  queryRateLimiter,
+  validateHorseId,
+  requireOwnership('horse'),
+  async (req, res) => {
+    try {
+      await getConformation(req, res);
+    } catch (error) {
+      res.status(500).json({
+        success: false,
+        message: 'Internal server error',
+        error: process.env.NODE_ENV === 'development' ? error.message : 'Something went wrong',
+      });
+    }
+  },
+);
+
+/**
+ * GET /horses/:id/conformation/analysis
+ * Get conformation analysis with percentile rankings compared to breed
+ *
+ * Security: Validates horse ownership before returning analysis data
+ */
+router.get(
+  '/:id/conformation/analysis',
+  queryRateLimiter,
+  validateHorseId,
+  requireOwnership('horse'),
+  async (req, res) => {
+    try {
+      await getConformationAnalysis(req, res);
+    } catch (error) {
+      res.status(500).json({
+        success: false,
+        message: 'Internal server error',
+        error: process.env.NODE_ENV === 'development' ? error.message : 'Something went wrong',
+      });
+    }
+  },
+);
+
+/**
  * GET /horses/:id
  * Get a specific horse by ID
  *
@@ -394,17 +448,24 @@ router.post(
   validateHorseCreation,
   async (req, res) => {
     try {
-      // Generate conformation scores from breed genetics
-      const conformationScores = req.body.breedId
-        ? generateConformationScores(req.body.breedId)
-        : undefined;
+      // Generate conformation scores from breed genetics (always generate — falls back to 50s for unknown breed)
+      const conformationScores = generateConformationScores(req.body.breedId);
+      // Generate gait scores from breed genetics + conformation influence
+      const gaitScores = generateGaitScores(req.body.breedId, conformationScores);
 
+      // Whitelist creation fields to prevent mass-assignment of protected fields
+      // (e.g. totalEarnings, level, bondScore, stressLevel, epigeneticModifiers)
       const horseData = {
-        ...req.body,
-        userId: req.user.id, // Set the owner from the authenticated user
+        name: req.body.name,
+        breedId: req.body.breedId,
+        age: req.body.age,
+        sex: req.body.sex,
+        gender: req.body.gender,
+        userId: req.user.id,
         dateOfBirth: new Date().toISOString(),
         healthStatus: req.body.healthStatus || 'Good',
-        ...(conformationScores && { conformationScores }),
+        conformationScores,
+        gaitScores,
       };
 
       const newHorse = await createHorse(horseData);
@@ -714,6 +775,10 @@ const validateFoalCreation = [
 /**
  * POST /horses/foals
  * Create a new foal with epigenetic traits applied at birth
+ *
+ * NOTE: Currently validates sire/dam existence but NOT ownership.
+ * TODO(security): Add ownership validation for sireId/damId to prevent
+ * users from creating foals with other users' horses.
  */
 router.post(
   '/foals',

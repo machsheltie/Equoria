@@ -90,7 +90,8 @@ Use the Box-Muller transform for generating normally-distributed random numbers:
 ```javascript
 // Box-Muller transform — generates a normally distributed value
 function normalRandom(mean, stdDev) {
-  const u1 = Math.random();
+  let u1 = Math.random();
+  if (u1 === 0) u1 = Number.EPSILON; // Avoid Math.log(0) = -Infinity
   const u2 = Math.random();
   const z = Math.sqrt(-2 * Math.log(u1)) * Math.cos(2 * Math.PI * u2);
   return mean + z * stdDev;
@@ -104,15 +105,14 @@ No external library needed — pure JS math.
 **New file:** `backend/modules/horses/services/conformationService.mjs`
 
 ```javascript
-// Import pattern from module depth (4 levels):
-import prisma from '../../../db/index.mjs';
+// Import pattern (service does NOT use Prisma directly — no DB access needed):
 import logger from '../../../utils/logger.mjs';
 import { BREED_GENETIC_PROFILES } from '../data/breedGeneticProfiles.mjs';
 ```
 
 ### 8 Conformation Regions
 
-Regions and their breed mean ranges (all std_dev = 8):
+Regions and their breed mean ranges (std_dev = 8 for most breeds; Lusitano has per-region values 5–7):
 
 - `head`: 72-85
 - `neck`: 70-82
@@ -211,7 +211,7 @@ backend/modules/horses/
 
 - Import breed data from `backend/modules/horses/data/breedGeneticProfiles.mjs`
 - Access pattern: `BREED_GENETIC_PROFILES[breedId].rating_profiles.conformation`
-- Each region: `{ mean: number, std_dev: 8 }`
+- Each region: `{ mean: number, std_dev: number }` (default 8, Lusitano has per-region values 5-8)
 - Always use shared Prisma client: `import prisma from '../../../db/index.mjs'` (NOT direct @prisma/client)
 - Test naming: descriptive kebab-case `.test.mjs`
 
@@ -224,7 +224,7 @@ backend/modules/horses/
 **Code review caught:**
 
 - MEDIUM: Prisma import pattern violation (use shared client)
-- LOW: Data entry typo (POA gaited status) — double-check all breed ID mappings
+- LOW: Data entry typo (Pony Of The Americas gaited status) — double-check all breed ID mappings
 
 ### ES Module Requirements
 
@@ -266,23 +266,28 @@ None — all tests passed on first run.
 
 - [CR-HIGH] Fixed Box-Muller `Math.log(0)` edge case — `u1 === 0` guard + `clampScore` NaN fallback
 - Added test for NaN/Infinity/`-Infinity` inputs to `clampScore`
-- Final test count: 34 (was 33)
+- Final test count: 40 (was 33 → 34 → 36 → 40 across review passes)
 
 ### Completion Notes List
 
-- All 33 unit + statistical tests pass (conformationScoreGeneration.test.mjs)
+- All 40 unit + statistical tests pass (conformationScoreGeneration.test.mjs)
 - Full regression: 236 suites / 3940 tests (3923 passed, 17 skipped, 0 failures)
 - No Prisma migration needed — conformationScores JSONB field already exists with default 20s
 - AC #6 (immutability) satisfied by existing `validateHorseUpdatePayload` allowedFields whitelist
 - Integration via `horseData.conformationScores` passed to `createHorse()` — no separate DB update needed
 - Unknown breedId falls back to score 50 per region (graceful degradation)
+- POST /horses always generates conformation scores (falls back to 50s if no breedId)
+- Integration tests for POST/PUT are validated by code inspection (DB-dependent tests deferred)
+- Legacy horses missing `overallConformation` key handled by `?? 0` fallback in calculateOverallConformation
+- Missing parent region scores in inheritance now fall back to breed mean with warning log
 
 ### File List
 
 **New files:**
 
-1. `backend/modules/horses/services/conformationService.mjs` — Core service (normalRandom, clampScore, calculateOverallConformation, generateConformationScores)
-2. `backend/__tests__/conformationScoreGeneration.test.mjs` — 33 unit + statistical validation tests
+1. `backend/modules/horses/services/conformationService.mjs` — Core service (normalRandom, clampScore, calculateOverallConformation, generateConformationScores, generateInheritedConformationScores, CONFORMATION_REGIONS)
+2. `backend/__tests__/conformationScoreGeneration.test.mjs` — 40 unit + statistical validation tests
+3. `backend/__tests__/conformationBreedingInheritance.test.mjs` — 26 breeding inheritance tests (Story 31B-2)
 
 **Modified files:**
 
