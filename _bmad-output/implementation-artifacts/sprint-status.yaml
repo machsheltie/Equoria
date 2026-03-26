@@ -1,5 +1,5 @@
 # generated: 2026-03-25
-# last_updated: 2026-03-25
+# last_updated: 2026-03-26
 # project: Equoria
 # project_key: NOKEY
 # tracking_system: file-system
@@ -35,7 +35,7 @@
 # - Dev moves story to 'review', then runs code-review (fresh context, different LLM recommended)
 
 generated: 2026-03-25
-last_updated: 2026-03-25
+last_updated: 2026-03-26
 project: Equoria
 project_key: NOKEY
 tracking_system: file-system
@@ -147,8 +147,8 @@ development_status:
   epic-31a-retrospective: done
 
   # Epic 31B: Conformation Scoring System
-  epic-31b: backlog
-  31b-1-conformation-score-generation: backlog
+  epic-31b: in-progress
+  31b-1-conformation-score-generation: done
   31b-2-conformation-breeding-inheritance: backlog
   31b-3-conformation-api-endpoints: backlog
   epic-31b-retrospective: optional

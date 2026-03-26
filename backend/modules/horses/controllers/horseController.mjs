@@ -2,6 +2,7 @@ import { getResultsByHorse } from '../../../models/resultModel.mjs';
 import { createHorse, getHorseById } from '../../../models/horseModel.mjs';
 import { getAnyRecentTraining } from '../../../models/trainingModel.mjs';
 import { applyEpigeneticTraitsAtBirth } from '../../../utils/applyEpigeneticTraitsAtBirth.mjs';
+import { generateConformationScores } from '../services/conformationService.mjs';
 import prisma from '../../../db/index.mjs';
 import logger from '../../../utils/logger.mjs';
 
@@ -145,6 +146,12 @@ export async function createFoal(req, res) {
       `[horseController.createFoal] Applied epigenetic traits: ${JSON.stringify(epigeneticTraits)}`,
     );
 
+    // Generate conformation scores from breed genetics
+    const conformationScores = generateConformationScores(breedId);
+    logger.info(
+      `[horseController.createFoal] Generated conformation scores for breed ${breedId}: overall=${conformationScores.overallConformation}`,
+    );
+
     // Prepare horse data for creation
     const horseData = {
       name,
@@ -158,6 +165,7 @@ export async function createFoal(req, res) {
       stableId,
       healthStatus,
       dateOfBirth: new Date().toISOString(),
+      conformationScores,
       epigeneticModifiers: {
         positive: epigeneticTraits.positive || [],
         negative: epigeneticTraits.negative || [],

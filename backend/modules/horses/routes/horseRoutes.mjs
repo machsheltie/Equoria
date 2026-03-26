@@ -11,6 +11,7 @@ import {
 } from '../../../middleware/rateLimiting.mjs';
 import * as horseXpController from '../controllers/horseXpController.mjs';
 import { createHorse } from '../../../models/horseModel.mjs';
+import { generateConformationScores } from '../services/conformationService.mjs';
 import prisma from '../../../db/index.mjs';
 import logger from '../../../utils/logger.mjs';
 
@@ -393,11 +394,17 @@ router.post(
   validateHorseCreation,
   async (req, res) => {
     try {
+      // Generate conformation scores from breed genetics
+      const conformationScores = req.body.breedId
+        ? generateConformationScores(req.body.breedId)
+        : undefined;
+
       const horseData = {
         ...req.body,
         userId: req.user.id, // Set the owner from the authenticated user
         dateOfBirth: new Date().toISOString(),
         healthStatus: req.body.healthStatus || 'Good',
+        ...(conformationScores && { conformationScores }),
       };
 
       const newHorse = await createHorse(horseData);
