@@ -153,6 +153,26 @@ bd close ID           # Mark complete
 
 ---
 
+## 🔌 MCP Server Rules (Token Savings)
+
+**NEVER call these — irrelevant to Equoria, wastes ~14K tokens:**
+
+- `mcp__claude_ai_Stripe__*` (31 tools) — no payments in Equoria
+- `mcp__claude_ai_Supabase__*` (29 tools) — uses Prisma + PostgreSQL directly
+
+**NEVER call these — native tools are cheaper:**
+
+- `mcp__filesystem__*` → use `Read`/`Write`/`Edit`/`Glob`/`Bash(ls)`
+- `mcp__serena__*` → use `Read`/`Grep`/`Glob`/`Edit`
+- `mcp__git__*` → use `Bash(git ...)`
+- `mcp__task-manager__*` → use `bd` commands
+
+**Call only when needed:** `context7` (library docs), `github` (PRs/issues), `postgres` (debug SQL), `playwright` (screenshots), `sequential-thinking` (complex arch), `chrome-dev-tools` (live browser)
+
+Full guide: `/mcp-guide`
+
+---
+
 ## 📚 Documentation Skills (Call When Needed)
 
 Use `/` commands to load detailed docs:
