@@ -5,6 +5,7 @@ import { applyEpigeneticTraitsAtBirth } from '../../../utils/applyEpigeneticTrai
 import {
   generateConformationScores,
   generateInheritedConformationScores,
+  hasValidConformationScores,
   CONFORMATION_REGIONS,
   calculateOverallConformation,
 } from '../services/conformationService.mjs';
@@ -153,11 +154,14 @@ export async function createFoal(req, res) {
       `[horseController.createFoal] Applied epigenetic traits: ${JSON.stringify(epigeneticTraits)}`,
     );
 
-    // Generate conformation scores — use inheritance if both parents have scores, else breed-only
+    // Generate conformation scores — use inheritance if both parents have valid region scores, else breed-only.
+    // breedId comes from req.body (the foal's assigned breed). Crossbreeding is restricted to specific
+    // breed combinations (e.g., Thoroughbred x Arabian = Anglo Arabian) — validation happens upstream.
+    // The foal's breed determines breed mean regression, not the parents' breeds.
     const sireConformation = sire.conformationScores;
     const damConformation = dam.conformationScores;
     const conformationScores =
-      sireConformation && damConformation
+      hasValidConformationScores(sireConformation) && hasValidConformationScores(damConformation)
         ? generateInheritedConformationScores(breedId, sireConformation, damConformation)
         : generateConformationScores(breedId);
     logger.info(
@@ -818,6 +822,50 @@ export async function getConformationAnalysis(req, res) {
     res.status(500).json({
       success: false,
       message: 'Internal server error while retrieving conformation analysis',
+      data: null,
+    });
+  }
+}
+
+/**
+ * Get gait quality scores for a specific horse.
+ * Returns walk, trot, canter, gallop scores + gaiting entries for gaited breeds.
+ * Horse is pre-attached to req.horse by requireOwnership middleware.
+ *
+ * @param {Object} req - Express request object (req.horse attached by middleware)
+ * @param {Object} res - Express response object
+ */
+export async function getGaits(req, res) {
+  try {
+    const horse = req.horse;
+    const gaitScores = horse.gaitScores;
+
+    // Legacy horse without gait scores
+    if (!gaitScores) {
+      return res.status(200).json({
+        success: true,
+        message: 'No gait scores available for this horse',
+        data: null,
+      });
+    }
+
+    logger.info(`[horseController.getGaits] Retrieved gait scores for horse ${horse.id}`);
+
+    res.status(200).json({
+      success: true,
+      message: 'Gait scores retrieved successfully',
+      data: {
+        horseId: horse.id,
+        horseName: horse.name,
+        breedId: horse.breedId,
+        gaitScores,
+      },
+    });
+  } catch (error) {
+    logger.error(`[horseController.getGaits] Error: ${error.message}`);
+    res.status(500).json({
+      success: false,
+      message: 'Internal server error while retrieving gait scores',
       data: null,
     });
   }

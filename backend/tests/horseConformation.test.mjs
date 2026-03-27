@@ -80,6 +80,7 @@ describe('🐎 UNIT: Horse Conformation Scoring System', () => {
         hooves: 20,
         topline: 20,
         hindquarters: 20,
+        overallConformation: 20,
       };
 
       const mockCreatedHorse = {

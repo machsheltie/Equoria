@@ -1,6 +1,7 @@
 import prisma from '../db/index.mjs';
 import logger from '../utils/logger.mjs';
 import { applyEpigeneticTraitsAtBirth } from '../utils/atBirthTraits.mjs';
+import { validateConformationScores } from '../modules/horses/services/conformationService.mjs';
 
 async function createHorse(horseData) {
   try {
@@ -92,7 +93,7 @@ async function createHorse(horseData) {
       }
     }
 
-    // Set default conformation scores (1-100 scale, default 20)
+    // Set default conformation scores (1-100 scale, default 20 for store/legacy horses)
     const defaultConformationScores = {
       head: 20,
       neck: 20,
@@ -102,6 +103,7 @@ async function createHorse(horseData) {
       hooves: 20,
       topline: 20,
       hindquarters: 20,
+      overallConformation: 20,
     };
 
     // Apply at-birth traits if this is a newborn with parents
@@ -189,7 +191,9 @@ async function createHorse(horseData) {
         ...(lastVettedDate && { lastVettedDate: new Date(lastVettedDate) }),
         ...(tack && { tack }),
         epigeneticModifiers,
-        conformationScores: horseData.conformationScores || defaultConformationScores,
+        conformationScores: validateConformationScores(
+          horseData.conformationScores || defaultConformationScores,
+        ),
       },
       include: {
         breed: true,

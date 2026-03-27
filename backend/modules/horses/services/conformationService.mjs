@@ -161,4 +161,38 @@ export function generateInheritedConformationScores(breedId, sireScores, damScor
   return scores;
 }
 
+/**
+ * Check whether a conformation scores object has at least one valid numeric region score.
+ * Used to distinguish real parent scores from empty objects or corrupted data.
+ * @param {Object|null|undefined} scores - Conformation scores object to validate
+ * @returns {boolean} True if the object has at least one finite numeric region score
+ */
+export function hasValidConformationScores(scores) {
+  if (!scores || typeof scores !== 'object') return false;
+  return CONFORMATION_REGIONS.some(region => Number.isFinite(scores[region]));
+}
+
+/**
+ * Validate and normalize a conformation scores object for database persistence.
+ * Ensures all 8 regions are present as integers in [0, 100] and overallConformation is set.
+ * @param {Object} scores - Raw conformation scores object
+ * @returns {Object} Validated object with all 8 regions + overallConformation
+ */
+export function validateConformationScores(scores) {
+  if (!scores || typeof scores !== 'object') {
+    logger.warn(
+      '[conformationService] validateConformationScores received invalid input, using defaults',
+    );
+    return { ...DEFAULT_UNKNOWN_BREED_SCORES };
+  }
+
+  const validated = {};
+  for (const region of CONFORMATION_REGIONS) {
+    const val = scores[region];
+    validated[region] = Number.isFinite(val) ? clampScore(val) : 50;
+  }
+  validated.overallConformation = calculateOverallConformation(validated);
+  return validated;
+}
+
 export { CONFORMATION_REGIONS };
