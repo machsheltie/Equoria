@@ -52,10 +52,9 @@ function makeHorse(overrides = {}) {
     id: 1,
     name: 'Thunder',
     age: 5,
-    health: 'healthy',
-    lastTrainedAt: null,
-    cooldownEndsAt: null,
-    breedingCooldownEndsAt: null,
+    healthStatus: 'healthy',
+    trainingCooldown: null,
+    lastBredDate: null,
     sex: 'Stallion',
     ...overrides,
   };
@@ -90,7 +89,7 @@ describe('getNextActions', () => {
   });
 
   it('returns visit-vet action for an injured horse', async () => {
-    mockPrisma.horse.findMany.mockResolvedValue([makeHorse({ health: 'injured' })]);
+    mockPrisma.horse.findMany.mockResolvedValue([makeHorse({ healthStatus: 'injured' })]);
     const { req, res } = createMockReqRes();
     await getNextActions(req, res);
     const body = res.json.mock.calls[0][0];
@@ -100,7 +99,7 @@ describe('getNextActions', () => {
   });
 
   it('detects injured horse with uppercase INJURED', async () => {
-    mockPrisma.horse.findMany.mockResolvedValue([makeHorse({ health: 'INJURED' })]);
+    mockPrisma.horse.findMany.mockResolvedValue([makeHorse({ healthStatus: 'INJURED' })]);
     const { req, res } = createMockReqRes();
     await getNextActions(req, res);
     const body = res.json.mock.calls[0][0];
@@ -109,9 +108,7 @@ describe('getNextActions', () => {
 
   it('returns groom-foal action when active foal development exists', async () => {
     mockPrisma.horse.findMany.mockResolvedValue([]);
-    mockPrisma.foalDevelopment.findMany.mockResolvedValue([
-      { horseId: 10, horse: { name: 'Little Star' } },
-    ]);
+    mockPrisma.foalDevelopment.findMany.mockResolvedValue([{ horseId: 10, horse: { name: 'Little Star' } }]);
     const { req, res } = createMockReqRes();
     await getNextActions(req, res);
     const body = res.json.mock.calls[0][0];
@@ -136,7 +133,7 @@ describe('getNextActions', () => {
   });
 
   it('returns train action for eligible horse (age>=3, healthy, no cooldown)', async () => {
-    mockPrisma.horse.findMany.mockResolvedValue([makeHorse({ age: 5, health: 'healthy' })]);
+    mockPrisma.horse.findMany.mockResolvedValue([makeHorse({ age: 5, healthStatus: 'healthy' })]);
     const { req, res } = createMockReqRes();
     await getNextActions(req, res);
     const body = res.json.mock.calls[0][0];
@@ -153,9 +150,7 @@ describe('getNextActions', () => {
 
   it('does not return train action for horse with active cooldown', async () => {
     const futureDate = new Date(Date.now() + 3 * 24 * 60 * 60 * 1000).toISOString();
-    mockPrisma.horse.findMany.mockResolvedValue([
-      makeHorse({ cooldownEndsAt: futureDate }),
-    ]);
+    mockPrisma.horse.findMany.mockResolvedValue([makeHorse({ trainingCooldown: futureDate })]);
     const { req, res } = createMockReqRes();
     await getNextActions(req, res);
     const body = res.json.mock.calls[0][0];
@@ -164,9 +159,7 @@ describe('getNextActions', () => {
 
   it('returns train action when cooldown has expired', async () => {
     const pastDate = new Date(Date.now() - 1000).toISOString();
-    mockPrisma.horse.findMany.mockResolvedValue([
-      makeHorse({ cooldownEndsAt: pastDate }),
-    ]);
+    mockPrisma.horse.findMany.mockResolvedValue([makeHorse({ trainingCooldown: pastDate })]);
     const { req, res } = createMockReqRes();
     await getNextActions(req, res);
     const body = res.json.mock.calls[0][0];
@@ -182,7 +175,7 @@ describe('getNextActions', () => {
   });
 
   it('does not return compete action for injured horse', async () => {
-    mockPrisma.horse.findMany.mockResolvedValue([makeHorse({ age: 5, health: 'injured' })]);
+    mockPrisma.horse.findMany.mockResolvedValue([makeHorse({ age: 5, healthStatus: 'injured' })]);
     const { req, res } = createMockReqRes();
     await getNextActions(req, res);
     const body = res.json.mock.calls[0][0];
@@ -191,7 +184,7 @@ describe('getNextActions', () => {
 
   it('returns breed action for an eligible mare', async () => {
     mockPrisma.horse.findMany.mockResolvedValue([
-      makeHorse({ sex: 'Mare', age: 4, health: 'healthy', breedingCooldownEndsAt: null }),
+      makeHorse({ sex: 'Mare', age: 4, healthStatus: 'healthy', lastBredDate: null }),
     ]);
     const { req, res } = createMockReqRes();
     await getNextActions(req, res);
@@ -200,9 +193,7 @@ describe('getNextActions', () => {
   });
 
   it('handles mare sex check case-insensitively', async () => {
-    mockPrisma.horse.findMany.mockResolvedValue([
-      makeHorse({ sex: 'mare', age: 4 }),
-    ]);
+    mockPrisma.horse.findMany.mockResolvedValue([makeHorse({ sex: 'mare', age: 4 })]);
     const { req, res } = createMockReqRes();
     await getNextActions(req, res);
     const body = res.json.mock.calls[0][0];
@@ -210,9 +201,7 @@ describe('getNextActions', () => {
   });
 
   it('does not return breed action for a stallion', async () => {
-    mockPrisma.horse.findMany.mockResolvedValue([
-      makeHorse({ sex: 'Stallion', age: 5 }),
-    ]);
+    mockPrisma.horse.findMany.mockResolvedValue([makeHorse({ sex: 'Stallion', age: 5 })]);
     const { req, res } = createMockReqRes();
     await getNextActions(req, res);
     const body = res.json.mock.calls[0][0];
@@ -221,9 +210,7 @@ describe('getNextActions', () => {
 
   it('does not return breed action for mare with active breeding cooldown', async () => {
     const futureDate = new Date(Date.now() + 10 * 24 * 60 * 60 * 1000).toISOString();
-    mockPrisma.horse.findMany.mockResolvedValue([
-      makeHorse({ sex: 'Mare', age: 5, breedingCooldownEndsAt: futureDate }),
-    ]);
+    mockPrisma.horse.findMany.mockResolvedValue([makeHorse({ sex: 'Mare', age: 5, lastBredDate: futureDate })]);
     const { req, res } = createMockReqRes();
     await getNextActions(req, res);
     const body = res.json.mock.calls[0][0];
@@ -232,12 +219,10 @@ describe('getNextActions', () => {
 
   it('assigns ascending priority numbers starting from 1', async () => {
     mockPrisma.horse.findMany.mockResolvedValue([
-      makeHorse({ id: 1, health: 'injured' }),
-      makeHorse({ id: 2, sex: 'Mare', age: 5, health: 'healthy' }),
+      makeHorse({ id: 1, healthStatus: 'injured' }),
+      makeHorse({ id: 2, sex: 'Mare', age: 5, healthStatus: 'healthy' }),
     ]);
-    mockPrisma.foalDevelopment.findMany.mockResolvedValue([
-      { horseId: 3, horse: { name: 'Foal' } },
-    ]);
+    mockPrisma.foalDevelopment.findMany.mockResolvedValue([{ horseId: 3, horse: { name: 'Foal' } }]);
     const { req, res } = createMockReqRes();
     await getNextActions(req, res);
     const body = res.json.mock.calls[0][0];
@@ -250,15 +235,13 @@ describe('getNextActions', () => {
   it('limits output to 6 actions maximum', async () => {
     // Create enough data to produce more than 6 actions
     const horses = [
-      makeHorse({ id: 1, health: 'injured', name: 'Injured1' }),
-      makeHorse({ id: 2, health: 'injured', name: 'Injured2' }),
-      makeHorse({ id: 3, sex: 'Mare', age: 5, health: 'healthy', name: 'Mare1' }),
-      makeHorse({ id: 4, age: 5, health: 'healthy', name: 'Stallion1' }),
+      makeHorse({ id: 1, healthStatus: 'injured', name: 'Injured1' }),
+      makeHorse({ id: 2, healthStatus: 'injured', name: 'Injured2' }),
+      makeHorse({ id: 3, sex: 'Mare', age: 5, healthStatus: 'healthy', name: 'Mare1' }),
+      makeHorse({ id: 4, age: 5, healthStatus: 'healthy', name: 'Stallion1' }),
     ];
     mockPrisma.horse.findMany.mockResolvedValue(horses);
-    mockPrisma.foalDevelopment.findMany.mockResolvedValue([
-      { horseId: 10, horse: { name: 'Foal' } },
-    ]);
+    mockPrisma.foalDevelopment.findMany.mockResolvedValue([{ horseId: 10, horse: { name: 'Foal' } }]);
     const { req, res } = createMockReqRes();
     await getNextActions(req, res);
     const body = res.json.mock.calls[0][0];
@@ -289,9 +272,7 @@ describe('getNextActions', () => {
   });
 
   it('includes horseName in each action', async () => {
-    mockPrisma.horse.findMany.mockResolvedValue([
-      makeHorse({ id: 1, name: 'Starfire', age: 5 }),
-    ]);
+    mockPrisma.horse.findMany.mockResolvedValue([makeHorse({ id: 1, name: 'Starfire', age: 5 })]);
     const { req, res } = createMockReqRes();
     await getNextActions(req, res);
     const body = res.json.mock.calls[0][0];
