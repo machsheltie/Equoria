@@ -56,7 +56,7 @@ overallConformation = round(mean(all 8 region scores))
 **Formula breakdown:**
 
 - **60% parent contribution:** The average of both parents' scores for that region
-- **40% breed regression:** Pulls the score toward the breed's natural mean
+- **40% breed regression:** Pulls the score toward the breed's natural mean. This serves two game design purposes: (1) prevents runaway stat inflation across generations — even elite parents can't push scores far beyond breed potential, and (2) preserves breed identity — a Thoroughbred foal always reflects Thoroughbred conformation tendencies regardless of parent outliers
 - **Variance:** Normal distribution around the baseValue adds natural randomness
 - **Sire and dam contribute equally** (50/50 split of the parent portion)
 
@@ -111,6 +111,8 @@ Gait scores receive a bonus/penalty based on relevant conformation regions:
 ```
 conformationBonus = (avgOfMappedRegions - 70) × 0.15
 ```
+
+**Fallback:** If a conformation region is missing from the scores object, it defaults to 70 (neutral, contributing zero bonus). This prevents missing data from penalizing or inflating gait scores.
 
 **Conformation-to-gait mapping:**
 
@@ -281,6 +283,20 @@ Normalizes a scores object for safe database persistence:
 - Ensures overallConformation is calculated
 - Returns a clean 9-key object
 
+### hasValidGaitScores(scores)
+
+Returns `true` if the scores object has at least one finite numeric standard gait value (walk/trot/canter/gallop). Used to distinguish real parent gait data from empty/corrupted objects.
+
+### validateGaitScores(scores)
+
+Normalizes a gait scores object for safe database persistence:
+
+- Fills missing standard gaits with 50
+- Clamps all values to [0, 100]
+- Preserves valid gaiting array entries (name + clamped score)
+- Returns null gaiting for non-gaited data
+- Returns a clean object with walk/trot/canter/gallop + gaiting
+
 ---
 
 ## 6. Score Ranges & Defaults
@@ -306,5 +322,7 @@ Normalizes a scores object for safe database persistence:
 | `backend/modules/horses/controllers/horseController.mjs`     | createFoal() integration point                           |
 | `backend/models/horseModel.mjs`                              | Database persistence with validation                     |
 | `backend/logic/simulateCompetition.mjs`                      | Competition scoring formula                              |
-| `backend/__tests__/conformationBreedingInheritance.test.mjs` | Inheritance tests (40+ tests)                            |
-| `backend/__tests__/conformationScoreGeneration.test.mjs`     | Generation tests                                         |
+| `backend/__tests__/conformationBreedingInheritance.test.mjs` | Conformation inheritance tests (52 tests)                |
+| `backend/__tests__/conformationScoreGeneration.test.mjs`     | Conformation generation tests                            |
+| `backend/__tests__/gaitScoreGeneration.test.mjs`             | Gait generation + basic inheritance tests                |
+| `backend/__tests__/gaitBreedingInheritance.test.mjs`         | Gait inheritance edge cases + statistical validation     |

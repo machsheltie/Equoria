@@ -211,6 +211,7 @@ export async function createFoal(req, res) {
         negative: epigeneticTraits.negative || [],
         hidden: [], // Hidden traits are revealed later through trait discovery
       },
+      _epigeneticTraitsApplied: true, // Signal to horseModel that traits are already applied
     };
 
     // Create the foal

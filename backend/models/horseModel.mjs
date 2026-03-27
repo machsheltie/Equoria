@@ -2,6 +2,7 @@ import prisma from '../db/index.mjs';
 import logger from '../utils/logger.mjs';
 import { applyEpigeneticTraitsAtBirth } from '../utils/atBirthTraits.mjs';
 import { validateConformationScores } from '../modules/horses/services/conformationService.mjs';
+import { validateGaitScores } from '../modules/horses/services/gaitService.mjs';
 
 async function createHorse(horseData) {
   try {
@@ -41,6 +42,7 @@ async function createHorse(horseData) {
       healthStatus,
       lastVettedDate,
       tack,
+      gaitScores,
     } = horseData;
 
     // Validate required fields
@@ -106,14 +108,17 @@ async function createHorse(horseData) {
       overallConformation: 20,
     };
 
-    // Apply at-birth traits if this is a newborn with parents
+    // Use epigenetic modifiers from horseData if already applied by the controller (createFoal).
+    // Only apply at-birth traits here if the controller did NOT already apply them — prevents
+    // double trait application when createFoal already called applyEpigeneticTraitsAtBirth.
+    // The controller signals completion via _epigeneticTraitsApplied flag.
     let epigeneticModifiers = horseData.epigeneticModifiers || {
       positive: [],
       negative: [],
       hidden: [],
     };
 
-    if (age === 0 && sireId && damId) {
+    if (age === 0 && sireId && damId && !horseData._epigeneticTraitsApplied) {
       try {
         logger.info(
           `[horseModel.createHorse] Applying at-birth traits for newborn with sire ${sireId} and dam ${damId}`,
@@ -194,6 +199,7 @@ async function createHorse(horseData) {
         conformationScores: validateConformationScores(
           horseData.conformationScores || defaultConformationScores,
         ),
+        ...(gaitScores && { gaitScores: validateGaitScores(gaitScores) }),
       },
       include: {
         breed: true,
