@@ -10,7 +10,12 @@ import {
   calculateOverallConformation,
 } from '../services/conformationService.mjs';
 import { BREED_GENETIC_PROFILES, CANONICAL_BREEDS } from '../data/breedGeneticProfiles.mjs';
-import { generateGaitScores, generateInheritedGaitScores } from '../services/gaitService.mjs';
+import {
+  generateGaitScores,
+  generateInheritedGaitScores,
+  hasValidGaitScores,
+} from '../services/gaitService.mjs';
+import { generateTemperament } from '../services/temperamentService.mjs';
 import prisma from '../../../db/index.mjs';
 import logger from '../../../utils/logger.mjs';
 
@@ -165,18 +170,24 @@ export async function createFoal(req, res) {
         ? generateInheritedConformationScores(breedId, sireConformation, damConformation)
         : generateConformationScores(breedId);
     logger.info(
-      `[horseController.createFoal] Generated conformation scores for breed ${breedId} (${sireConformation && damConformation ? 'inherited' : 'breed-only'}): overall=${conformationScores.overallConformation}`,
+      `[horseController.createFoal] Generated conformation scores for breed ${breedId} (${hasValidConformationScores(sireConformation) && hasValidConformationScores(damConformation) ? 'inherited' : 'breed-only'}): overall=${conformationScores.overallConformation}`,
     );
 
-    // Generate gait scores — use inheritance if both parents have gait scores, else breed-only
+    // Generate gait scores — use inheritance if both parents have valid gait scores, else breed-only
     const sireGaitScores = sire.gaitScores;
     const damGaitScores = dam.gaitScores;
     const gaitScores =
-      sireGaitScores && damGaitScores
+      hasValidGaitScores(sireGaitScores) && hasValidGaitScores(damGaitScores)
         ? generateInheritedGaitScores(breedId, sireGaitScores, damGaitScores, conformationScores)
         : generateGaitScores(breedId, conformationScores);
     logger.info(
-      `[horseController.createFoal] Generated gait scores for breed ${breedId} (${sireGaitScores && damGaitScores ? 'inherited' : 'breed-only'})`,
+      `[horseController.createFoal] Generated gait scores for breed ${breedId} (${hasValidGaitScores(sireGaitScores) && hasValidGaitScores(damGaitScores) ? 'inherited' : 'breed-only'})`,
+    );
+
+    // Generate temperament — always a fresh breed-weighted random roll (not inherited from parents)
+    const temperament = generateTemperament(breedId);
+    logger.info(
+      `[horseController.createFoal] Assigned temperament "${temperament}" for breed ${breedId}`,
     );
 
     // Prepare horse data for creation
@@ -194,6 +205,7 @@ export async function createFoal(req, res) {
       dateOfBirth: new Date().toISOString(),
       conformationScores,
       gaitScores,
+      temperament,
       epigeneticModifiers: {
         positive: epigeneticTraits.positive || [],
         negative: epigeneticTraits.negative || [],

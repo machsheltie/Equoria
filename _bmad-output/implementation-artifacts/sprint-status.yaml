@@ -1,5 +1,5 @@
 # generated: 2026-03-25
-# last_updated: 2026-03-27
+# last_updated: 2026-03-28
 # project: Equoria
 # project_key: NOKEY
 # tracking_system: file-system
@@ -35,7 +35,7 @@
 # - Dev moves story to 'review', then runs code-review (fresh context, different LLM recommended)
 
 generated: 2026-03-25
-last_updated: 2026-03-27
+last_updated: 2026-03-28
 project: Equoria
 project_key: NOKEY
 tracking_system: file-system
@@ -172,8 +172,8 @@ development_status:
   # Epics 31B/31C/31D frontend work deferred — see backlog doc for checklist
 
   # Epic 31D: Breed Temperament System
-  epic-31d: backlog
-  31d-1-temperament-data-model-and-assignment: backlog
+  epic-31d: in-progress
+  31d-1-temperament-data-model-and-assignment: done
   31d-2-temperament-training-modifiers: backlog
   31d-3-temperament-competition-modifiers: backlog
   31d-4-temperament-groom-synergy: backlog

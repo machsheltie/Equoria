@@ -6,6 +6,7 @@ import {
   getHorsePersonalityImpact,
   getConformation,
   getConformationAnalysis,
+  getGaits,
 } from '../controllers/horseController.mjs';
 import { authenticateToken } from '../../../middleware/auth.mjs';
 import { requireOwnership } from '../../../middleware/ownership.mjs';
@@ -18,6 +19,7 @@ import * as horseXpController from '../controllers/horseXpController.mjs';
 import { createHorse } from '../../../models/horseModel.mjs';
 import { generateConformationScores } from '../services/conformationService.mjs';
 import { generateGaitScores } from '../services/gaitService.mjs';
+import { generateTemperament } from '../services/temperamentService.mjs';
 import prisma from '../../../db/index.mjs';
 import logger from '../../../utils/logger.mjs';
 
@@ -403,6 +405,30 @@ router.get(
 );
 
 /**
+ * GET /horses/:id/gaits
+ * Get gait quality scores for a specific horse (walk, trot, canter, gallop + gaiting)
+ *
+ * Security: Validates horse ownership before returning gait data
+ */
+router.get(
+  '/:id/gaits',
+  queryRateLimiter,
+  validateHorseId,
+  requireOwnership('horse'),
+  async (req, res) => {
+    try {
+      await getGaits(req, res);
+    } catch (error) {
+      res.status(500).json({
+        success: false,
+        message: 'Internal server error',
+        error: process.env.NODE_ENV === 'development' ? error.message : 'Something went wrong',
+      });
+    }
+  },
+);
+
+/**
  * GET /horses/:id
  * Get a specific horse by ID
  *
@@ -452,6 +478,8 @@ router.post(
       const conformationScores = generateConformationScores(req.body.breedId);
       // Generate gait scores from breed genetics + conformation influence
       const gaitScores = generateGaitScores(req.body.breedId, conformationScores);
+      // Generate temperament from breed-weighted random selection
+      const temperament = generateTemperament(req.body.breedId);
 
       // Whitelist creation fields to prevent mass-assignment of protected fields
       // (e.g. totalEarnings, level, bondScore, stressLevel, epigeneticModifiers)
@@ -466,6 +494,7 @@ router.post(
         healthStatus: req.body.healthStatus || 'Good',
         conformationScores,
         gaitScores,
+        temperament,
       };
 
       const newHorse = await createHorse(horseData);
