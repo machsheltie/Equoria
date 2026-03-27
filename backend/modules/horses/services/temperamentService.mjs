@@ -1,9 +1,51 @@
 // Temperament assignment service.
 // Assigns one of 11 temperaments to a horse at birth using breed-weighted random selection.
 // Temperament is permanent — assigned once at creation and never modified.
+// Also provides training modifier lookups used by trainingController.
 
 import { BREED_GENETIC_PROFILES, TEMPERAMENT_TYPES } from '../data/breedGeneticProfiles.mjs';
 import logger from '../../../utils/logger.mjs';
+
+/**
+ * Decimal multipliers applied to discipline score and XP during training.
+ * Values per PRD-03 §7.4. Applied as: value * (1 + modifier).
+ * @type {Object.<string, {xpModifier: number, scoreModifier: number}>}
+ */
+export const TEMPERAMENT_TRAINING_MODIFIERS = {
+  Spirited: { xpModifier: 0.1, scoreModifier: 0.05 },
+  Nervous: { xpModifier: -0.1, scoreModifier: -0.05 },
+  Calm: { xpModifier: 0.05, scoreModifier: 0.1 },
+  Bold: { xpModifier: 0.05, scoreModifier: 0.05 },
+  Steady: { xpModifier: 0.05, scoreModifier: 0.1 },
+  Independent: { xpModifier: -0.05, scoreModifier: 0.0 },
+  Reactive: { xpModifier: 0.0, scoreModifier: -0.05 },
+  Stubborn: { xpModifier: -0.15, scoreModifier: -0.1 },
+  Playful: { xpModifier: 0.05, scoreModifier: -0.05 },
+  Lazy: { xpModifier: -0.2, scoreModifier: -0.15 },
+  Aggressive: { xpModifier: -0.1, scoreModifier: -0.05 },
+};
+
+/**
+ * Return the training modifiers for a given temperament.
+ * Returns zero modifiers for null, undefined, or unknown temperament strings
+ * (backward compatible — horses without temperament are unaffected).
+ *
+ * @param {string|null} temperament - One of the 11 temperament types, or null
+ * @returns {{ xpModifier: number, scoreModifier: number }}
+ */
+export function getTemperamentTrainingModifiers(temperament) {
+  if (!temperament) {
+    return { xpModifier: 0, scoreModifier: 0 };
+  }
+  const mods = TEMPERAMENT_TRAINING_MODIFIERS[temperament];
+  if (!mods) {
+    logger.warn(
+      `[temperamentService] Unknown temperament "${temperament}" — returning zero modifiers`,
+    );
+    return { xpModifier: 0, scoreModifier: 0 };
+  }
+  return mods;
+}
 
 /**
  * Select a value from a weighted distribution.

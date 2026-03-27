@@ -13,6 +13,7 @@ import { getUserWithHorses, addXpToUser } from '../../../models/userModel.mjs';
 import { logXpEvent } from '../../../models/xpLogModel.mjs';
 import { getCombinedTraitEffects } from '../../../utils/traitEffects.mjs';
 import { checkTraitRequirements } from '../../../utils/competitionLogic.mjs';
+import { getTemperamentTrainingModifiers } from '../../horses/services/temperamentService.mjs';
 import logger from '../../../utils/logger.mjs';
 import prisma from '../../../db/index.mjs';
 
@@ -197,6 +198,17 @@ async function trainHorse(horseId, discipline) {
       );
     }
 
+    // Apply temperament modifier to discipline score
+    const temperamentMods = getTemperamentTrainingModifiers(horse.temperament);
+    if (temperamentMods.scoreModifier !== 0) {
+      disciplineScoreIncrease = Math.round(
+        disciplineScoreIncrease * (1 + temperamentMods.scoreModifier),
+      );
+      logger.info(
+        `[trainingController.trainHorse] Temperament "${horse.temperament}" score modifier: ${(temperamentMods.scoreModifier * 100).toFixed(0)}%`,
+      );
+    }
+
     // Ensure minimum gain of 1 point
     disciplineScoreIncrease = Math.max(1, disciplineScoreIncrease);
 
@@ -295,6 +307,15 @@ async function trainHorse(horseId, discipline) {
       baseXp = Math.round(baseXp * (1 + traitEffects.trainingXpModifier));
     }
 
+    // Apply temperament modifier to XP
+    if (temperamentMods.xpModifier !== 0) {
+      baseXp = Math.round(baseXp * (1 + temperamentMods.xpModifier));
+      logger.info(
+        `[trainingController.trainHorse] Temperament "${horse.temperament}" XP modifier: ${(temperamentMods.xpModifier * 100).toFixed(0)}%`,
+      );
+    }
+    baseXp = Math.max(1, baseXp);
+
     // Award XP to horse owner for training
     try {
       if (updatedHorse && updatedHorse.userId) {
@@ -367,6 +388,13 @@ async function trainHorse(horseId, discipline) {
         statGainChanceModifier: traitEffects.statGainChanceModifier || 0,
         baseStatBoost: traitEffects.baseStatBoost || 0,
       },
+      temperamentEffects: horse.temperament
+        ? {
+            temperament: horse.temperament,
+            xpModifier: temperamentMods.xpModifier,
+            scoreModifier: temperamentMods.scoreModifier,
+          }
+        : null,
     };
   } catch (error) {
     logger.error(`[trainingController.trainHorse] Training failed: ${error.message}`);

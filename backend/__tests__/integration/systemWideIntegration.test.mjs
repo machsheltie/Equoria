@@ -32,13 +32,12 @@ describe('System-Wide Integration Tests', () => {
   let testBreed;
 
   beforeAll(async () => {
-    // Create test breed for horse creation
-    testBreed = await prisma.breed.create({
-      data: {
-        name: 'Integration Test Breed',
-        description: 'Test breed for integration testing',
-      },
-    });
+    // Use a canonical breed (ID 1-12) so generateTemperament has a profile
+    testBreed =
+      (await prisma.breed.findFirst({ where: { id: { lte: 12 } } })) ??
+      (await prisma.breed.create({
+        data: { id: 1, name: 'Thoroughbred', description: 'Test breed for integration testing' },
+      }));
 
     // Create test user for global tests
     const timestamp = Date.now();
@@ -130,7 +129,7 @@ describe('System-Wide Integration Tests', () => {
       const registeredUser = registerResponse.body.data.user;
       // Extract token from cookies
       const cookies = registerResponse.headers['set-cookie'];
-      const accessTokenCookie = cookies.find((cookie) => cookie.startsWith('accessToken='));
+      const accessTokenCookie = cookies.find(cookie => cookie.startsWith('accessToken='));
       const registeredAuthToken = accessTokenCookie.split(';')[0].split('=')[1];
 
       // Step 2: Test Documentation System Integration
