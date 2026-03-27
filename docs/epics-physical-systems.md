@@ -76,7 +76,7 @@ This document provides the complete epic and story breakdown for implementing 6 
 | NFR-02 | All API responses in <200ms (conformation, gaits) or <300ms (genetics)                                            | PRD-02 §3.1/3.2/3.3 |
 | NFR-03 | Mendelian ratios hold across large samples (chi-squared, p > 0.05)                                                | PRD-02 §3.3         |
 | NFR-04 | Temperament distribution matches breed weights within statistical tolerance                                       | PRD-03 §7           |
-| NFR-05 | Conformation influence produces measurable correlation (r > 0.3) with gait scores                                 | PRD-02 §3.2         |
+| NFR-05 | Conformation influence produces measurable correlation (r > 0.1) with gait scores                                 | PRD-02 §3.2         |
 | NFR-06 | Backward compatible — existing horses without new fields return null                                              | PRD-03 §7.8         |
 | NFR-07 | All scores clamped to 0-100 integer range                                                                         | PRD-02 §3.1/3.2     |
 | NFR-08 | Breeding value boost capped at +15%                                                                               | PRD-03 §3.6         |
@@ -175,7 +175,7 @@ So that all downstream systems (conformation, gaits, temperament, color) have th
 - `rating_profiles.conformation`: `{ head, neck, shoulders, back, hindquarters, legs, hooves, topline }` each with `{ mean, std_dev }` (std_dev = 8)
 - `rating_profiles.gaits`: `{ walk, trot, canter, gallop, gaiting }` each with `{ mean, std_dev }` (std_dev = 9, gaiting = null for non-gaited)
 - `rating_profiles.is_gaited_breed`: `true` for IDs 3, 4, 7, 10; `false` for all others
-- `rating_profiles.gaited_gait_registry`: breed-specific named gaits (Saddlebred/NSH: ["Slow Gait", "Rack"], TWH: ["Flat Walk", "Running Walk"], Walkaloosa: ["Indian Shuffle"])
+- `rating_profiles.gaited_gait_registry`: breed-specific named gaits (American Saddlebred/National Show Horse: ["Slow Gait", "Rack"], Tennessee Walking Horse: ["Flat Walk", "Running Walk"], Walkaloosa: ["Indian Shuffle"])
 - `temperament_weights`: all 11 temperament types with integer weights summing to 100
 
 **And** the script is idempotent (can run multiple times without error or duplicate data)

@@ -19,15 +19,47 @@ const prisma = new PrismaClient();
 
 // ── Breed data ──────────────────────────────────────────────────────────────
 
+// Canonical 12 breeds — must match CANONICAL_BREEDS in breedGeneticProfiles.mjs
 const BREEDS = [
-  { name: 'Thoroughbred', description: 'Hot-blooded racing breed known for speed and agility' },
-  { name: 'Arabian', description: 'Ancient breed with exceptional endurance and intelligence' },
-  { name: 'Warmblood', description: 'Versatile sport horse excelling in dressage and jumping' },
-  { name: 'Quarter Horse', description: 'American breed renowned for sprinting and cattle work' },
-  { name: 'Friesian', description: 'Majestic black breed with flowing mane and feathered feet' },
-  { name: 'Andalusian', description: 'Noble Iberian breed prized for collection and presence' },
-  { name: 'Hanoverian', description: 'Elite German warmblood for top-level competition' },
-  { name: 'Appaloosa', description: 'Spotted American breed with distinctive coat patterns' },
+  {
+    name: 'Thoroughbred',
+    description: 'Athletic and versatile racing breed known for speed and stamina',
+  },
+  {
+    name: 'Arabian',
+    description: 'Ancient breed prized for endurance, intelligence, and refinement',
+  },
+  {
+    name: 'American Saddlebred',
+    description: 'Elegant five-gaited show horse with high-stepping action',
+  },
+  {
+    name: 'National Show Horse',
+    description: 'Arabian-Saddlebred cross combining showiness and sensitivity',
+  },
+  {
+    name: 'Pony Of The Americas',
+    description: 'Gentle, versatile pony breed ideal for youth riders',
+  },
+  { name: 'Appaloosa', description: 'Versatile breed known for distinctive spotted coat patterns' },
+  {
+    name: 'Tennessee Walking Horse',
+    description: 'Smooth-gaited breed famous for comfortable trail riding',
+  },
+  { name: 'Andalusian', description: 'Noble Iberian breed excelling in classical dressage' },
+  {
+    name: 'American Quarter Horse',
+    description: 'Steady, versatile breed dominating western disciplines',
+  },
+  {
+    name: 'Walkaloosa',
+    description: 'Gaited Appaloosa cross combining spotted patterns with smooth gait',
+  },
+  {
+    name: 'Lusitano',
+    description: 'Courageous Iberian breed known for agility and classical movements',
+  },
+  { name: 'Paint Horse', description: 'Colorful stock horse breed excelling in western events' },
 ];
 
 // ── User data ───────────────────────────────────────────────────────────────
@@ -102,7 +134,7 @@ const HORSES = [
     name: 'Silver Mist',
     sex: 'Mare',
     age: 3,
-    breed: 'Warmblood',
+    breed: 'American Saddlebred',
     userIdx: 0,
     trait: 'Quick Learner',
   },
@@ -110,7 +142,7 @@ const HORSES = [
     name: 'Eclipse',
     sex: 'Stallion',
     age: 6,
-    breed: 'Friesian',
+    breed: 'Lusitano',
     userIdx: 0,
     trait: 'Gentle Giant',
   },
@@ -127,13 +159,20 @@ const HORSES = [
     name: 'Storm Chaser',
     sex: 'Stallion',
     age: 5,
-    breed: 'Hanoverian',
+    breed: 'Paint Horse',
     userIdx: 1,
     trait: 'Speed Demon',
   },
   { name: 'Daisy Belle', sex: 'Mare', age: 2, breed: 'Appaloosa', userIdx: 1, trait: null },
   // newplayer's starter horse
-  { name: 'Lucky Clover', sex: 'Gelding', age: 3, breed: 'Quarter Horse', userIdx: 2, trait: null },
+  {
+    name: 'Lucky Clover',
+    sex: 'Gelding',
+    age: 3,
+    breed: 'American Quarter Horse',
+    userIdx: 2,
+    trait: null,
+  },
 ];
 
 // ── Show data ───────────────────────────────────────────────────────────────

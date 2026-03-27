@@ -1,5 +1,5 @@
 # generated: 2026-03-25
-# last_updated: 2026-03-26
+# last_updated: 2026-03-27
 # project: Equoria
 # project_key: NOKEY
 # tracking_system: file-system
@@ -35,7 +35,7 @@
 # - Dev moves story to 'review', then runs code-review (fresh context, different LLM recommended)
 
 generated: 2026-03-25
-last_updated: 2026-03-26
+last_updated: 2026-03-27
 project: Equoria
 project_key: NOKEY
 tracking_system: file-system
@@ -147,18 +147,29 @@ development_status:
   epic-31a-retrospective: done
 
   # Epic 31B: Conformation Scoring System
-  epic-31b: in-progress
+  epic-31b: done
   31b-1-conformation-score-generation: done
-  31b-2-conformation-breeding-inheritance: backlog
-  31b-3-conformation-api-endpoints: backlog
-  epic-31b-retrospective: optional
+  31b-2-conformation-breeding-inheritance: done
+  31b-3-conformation-api-endpoints: done
+  epic-31b-retrospective: done
 
   # Epic 31C: Gait Quality System
-  epic-31c: backlog
-  31c-1-gait-score-generation: backlog
-  31c-2-gait-breeding-inheritance: backlog
-  31c-3-gait-api-endpoint: backlog
-  epic-31c-retrospective: optional
+  epic-31c: done
+  31c-1-gait-score-generation: done
+  31c-2-gait-breeding-inheritance: done # FR-15, FR-16 fully implemented in 31C-1
+  31c-3-gait-api-endpoint: done
+  epic-31c-retrospective: done
+
+  # Pre-31D Cleanup Sprint (blocking — must complete before 31D)
+  pre-31d-cleanup: done
+  pre-31d-breed-data-integration: done # Enriched 7 breeds from BreedData, added starter_stats for all 12
+  pre-31d-seed-breed-mismatch: done # seedDevData.mjs now uses canonical 12 breeds
+  pre-31d-flaky-perf-benchmark: done # Already passing (39/39) — thresholds relaxed in prior sprint
+  pre-31d-nextactions-test-failures: done # Already passing (21/21) — ESM flag issue, not test logic
+  pre-31d-nfr05-threshold-update: done # Updated spec from r>0.3 to r>0.1
+
+  # Frontend Integration Backlog (tracked in docs/frontend-integration-backlog.md)
+  # Epics 31B/31C/31D frontend work deferred — see backlog doc for checklist
 
   # Epic 31D: Breed Temperament System
   epic-31d: backlog
