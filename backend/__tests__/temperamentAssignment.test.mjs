@@ -155,7 +155,7 @@ describe('Temperament Assignment Service', () => {
   describe('Statistical distribution (chi-squared, NFR-04)', () => {
     // Chi-squared critical value for df=10, p=0.05 is 18.307
     const CHI_SQUARED_CRITICAL = 18.307;
-    const SAMPLE_SIZE = 2000;
+    const SAMPLE_SIZE = 10000;
 
     /**
      * Calculate chi-squared statistic for observed vs expected frequencies.
