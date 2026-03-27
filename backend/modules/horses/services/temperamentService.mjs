@@ -77,22 +77,27 @@ export function weightedRandomSelect(weights) {
 /**
  * Generate a temperament for a horse based on its breed's temperament weights.
  * Uses weighted random selection from BREED_GENETIC_PROFILES[breedId].temperament_weights.
+ * Falls back to uniform random selection from TEMPERAMENT_TYPES for unknown breed IDs,
+ * matching the graceful-degradation pattern of conformationService and gaitService.
  *
  * @param {number} breedId - The breed ID (1-12)
  * @returns {string} One of the 11 temperament types
- * @throws {Error} If breedId is invalid or breed lacks temperament_weights
  */
 export function generateTemperament(breedId) {
   const profile = BREED_GENETIC_PROFILES[breedId];
   if (!profile) {
-    throw new Error(`generateTemperament: no breed genetic profile found for breedId ${breedId}`);
+    logger.warn(
+      `[temperamentService] No genetic profile found for breed ID ${breedId}, using uniform random temperament`,
+    );
+    return TEMPERAMENT_TYPES[Math.floor(Math.random() * TEMPERAMENT_TYPES.length)];
   }
 
   const weights = profile.temperament_weights;
   if (!weights || typeof weights !== 'object' || Object.keys(weights).length === 0) {
-    throw new Error(
-      `generateTemperament: breed ${breedId} has no temperament_weights in genetic profile`,
+    logger.warn(
+      `[temperamentService] Breed ID ${breedId} profile missing temperament_weights, using uniform random temperament`,
     );
+    return TEMPERAMENT_TYPES[Math.floor(Math.random() * TEMPERAMENT_TYPES.length)];
   }
 
   const temperament = weightedRandomSelect(weights);
