@@ -52,6 +52,7 @@ describe('🏆 UNIT: Competition Score Calculation - Scoring Algorithm Validatio
     balance: 55,
     coordination: 50,
     boldness: 50,
+    temperament: null, // explicit null — no temperament modifier applied in these baseline tests
     epigeneticModifiers: {
       positive: traits,
       negative: [],

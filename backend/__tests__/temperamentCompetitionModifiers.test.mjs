@@ -173,10 +173,19 @@ describe('calculateCompetitionScore() — temperament ridden modifiers', () => {
     expect(calculateCompetitionScore(horse, 'Racing')).toBe(86);
   });
 
-  it('defaults to ridden when showType is omitted', () => {
+  it('explicit showType="ridden" produces same result as omitting showType', () => {
     const horse = makeRacingHorse({ temperament: 'Bold' });
-    // Both calls should produce the same result
-    expect(calculateCompetitionScore(horse, 'Racing')).toBe(calculateCompetitionScore(horse, 'Racing', 'ridden'));
+    // Both must equal 95 — verifies the parameter is wired correctly, not just a tautological comparison
+    expect(calculateCompetitionScore(horse, 'Racing', 'ridden')).toBe(95);
+    expect(calculateCompetitionScore(horse, 'Racing')).toBe(95);
+  });
+
+  it('unrecognized showType logs a warning and defaults to ridden behavior', () => {
+    const horse = makeRacingHorse({ temperament: 'Bold' });
+    mockLogger.warn.mockClear();
+    // 'invalid' is not 'conformation', so riddenModifier (+5%) is used → 95
+    expect(calculateCompetitionScore(horse, 'Racing', 'invalid')).toBe(95);
+    expect(mockLogger.warn).toHaveBeenCalledWith(expect.stringContaining('Unrecognized showType "invalid"'));
   });
 });
 

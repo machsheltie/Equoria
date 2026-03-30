@@ -77,7 +77,7 @@ export const TEMPERAMENT_COMPETITION_MODIFIERS = Object.freeze({
  * @returns {{ riddenModifier: number, conformationModifier: number }}
  */
 export function getTemperamentCompetitionModifiers(temperament) {
-  if (!temperament) {
+  if (!temperament || typeof temperament !== 'string') {
     return { riddenModifier: 0, conformationModifier: 0 };
   }
   const mods = TEMPERAMENT_COMPETITION_MODIFIERS[temperament];
