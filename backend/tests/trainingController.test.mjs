@@ -613,13 +613,13 @@ describe('🏋️ UNIT: Training Controller - Horse Training Business Logic', ()
 
       // Eligible horses have disciplines and no nextEligibleAt
       const adultHorse = result.find(h => h.horseId === testHorseAdult.id);
-      expect(adultHorse.trainableDisciplines).toEqual([
-        'Racing',
-        'Show Jumping',
-        'Dressage',
-        'Cross Country',
-        'Western',
-      ]);
+      // All 22 standard disciplines (Gaited excluded — requires Gaited trait)
+      expect(adultHorse.trainableDisciplines).not.toContain('Gaited');
+      expect(adultHorse.trainableDisciplines.length).toBeGreaterThanOrEqual(20);
+      expect(adultHorse.trainableDisciplines).toContain('Racing');
+      expect(adultHorse.trainableDisciplines).toContain('Dressage');
+      expect(adultHorse.trainableDisciplines).toContain('Show Jumping');
+      expect(adultHorse.trainableDisciplines).toContain('Barrel Racing');
       expect(adultHorse.nextEligibleAt).toBeNull();
     });
 

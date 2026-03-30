@@ -13,6 +13,7 @@ import { getUserWithHorses, addXpToUser } from '../../../models/userModel.mjs';
 import { logXpEvent } from '../../../models/xpLogModel.mjs';
 import { getCombinedTraitEffects } from '../../../utils/traitEffects.mjs';
 import { checkTraitRequirements } from '../../../utils/competitionLogic.mjs';
+import { getAllDisciplines } from '../../../utils/statMap.mjs';
 import { getTemperamentTrainingModifiers } from '../../horses/services/temperamentService.mjs';
 import logger from '../../../utils/logger.mjs';
 import prisma from '../../../db/index.mjs';
@@ -167,7 +168,7 @@ async function trainHorse(horseId, discipline) {
     const traitEffects = getCombinedTraitEffects(allTraits);
 
     logger.info(
-      `[trainingController.trainHorse] Horse ${horseId} has traits: ${allTraits.join(', ')}`,
+      `[trainingController.trainHorse] Horse ${horseId} has traits: ${allTraits.length > 0 ? allTraits.join(', ') : 'none'}`,
     );
 
     // Check for training-blocking traits
@@ -216,7 +217,14 @@ async function trainHorse(horseId, discipline) {
     // Ensure minimum gain of 1 point
     disciplineScoreIncrease = Math.max(1, disciplineScoreIncrease);
 
-    // Check for stat gain chance with trait effects
+    // Update the horse's discipline score with trait-modified amount (primary write — must succeed)
+    const updatedHorse = await incrementDisciplineScore(
+      horseId,
+      discipline,
+      disciplineScoreIncrease,
+    );
+
+    // Check for stat gain chance with trait effects (secondary/bonus write — after primary)
     let statGainOccurred = false;
     let statGainDetails = null;
 
@@ -286,7 +294,7 @@ async function trainHorse(horseId, discipline) {
         traitModified: !!(traitEffects.statGainChanceModifier || traitEffects.baseStatBoost),
       };
 
-      // Update the horse's stat (this would need to be implemented in horseModel)
+      // Apply stat gain after discipline score is already committed
       try {
         await updateHorseStat(horseId, statToImprove, statGainAmount);
         logger.info(
@@ -298,13 +306,6 @@ async function trainHorse(horseId, discipline) {
         statGainDetails = null;
       }
     }
-
-    // Update the horse's discipline score with trait-modified amount
-    const updatedHorse = await incrementDisciplineScore(
-      horseId,
-      discipline,
-      disciplineScoreIncrease,
-    );
 
     // Calculate XP award with trait effects
     let baseXp = 5;
@@ -543,27 +544,27 @@ async function getTrainableHorses(userId) {
       return [];
     }
 
-    // Define all available disciplines
-    const baseDisciplines = ['Racing', 'Show Jumping', 'Dressage', 'Cross Country', 'Western'];
+    // All 23 disciplines — Gaited filtered per horse trait
+    const allDisciplines = getAllDisciplines();
 
     const allHorses = [];
 
-    // Check each horse for training eligibility
     for (const horse of player.horses) {
       try {
-        // Determine available disciplines for this horse
-        const availableDisciplines = [...baseDisciplines];
-        if (checkTraitRequirements(horse, 'Gaited')) {
-          availableDisciplines.push('Gaited');
-        }
+        // Compute age from dateOfBirth — same method used by canTrain/getHorseAge
+        const computedAge = await getHorseAge(horse.id);
 
-        // Build the response object with all fields the frontend expects
+        // Gaited is only available if horse has the required trait
+        const availableDisciplines = allDisciplines.filter(
+          d => d !== 'Gaited' || checkTraitRequirements(horse, 'Gaited'),
+        );
+
         const horseData = {
           id: horse.id,
           horseId: horse.id,
           name: horse.name,
-          age: horse.age,
-          ageYears: horse.age,
+          age: computedAge ?? horse.age ?? 0,
+          ageYears: computedAge ?? horse.age ?? 0,
           level: horse.horseXp?.level ?? 1,
           breed: horse.breed?.name ?? null,
           sex: horse.sex ?? null,
@@ -577,32 +578,24 @@ async function getTrainableHorses(userId) {
           nextEligibleAt: null,
         };
 
-        // Skip horses under 3 years old (mark as ineligible but still include)
-        if (horse.age < 3) {
-          horseData.nextEligibleAt = null;
+        // Under-age check using computed age from dateOfBirth (matches canTrain logic)
+        if (computedAge !== null && computedAge < 3) {
           horseData.trainableDisciplines = [];
           allHorses.push(horseData);
           continue;
         }
 
-        // Check if horse has trained in ANY discipline within the last 7 days
+        // Cooldown check: TrainingLog is the single source of truth
         const lastTrainingDate = await getAnyRecentTraining(horse.id);
-
-        // Also check the Horse.trainingCooldown field as a fallback
-        const cooldownDate = horse.trainingCooldown ? new Date(horse.trainingCooldown) : null;
         const now = new Date();
-        const sevenDays = 1000 * 60 * 60 * 24 * 7;
+        const sevenDays = 7 * 24 * 60 * 60 * 1000;
 
         if (lastTrainingDate) {
           const diff = now - new Date(lastTrainingDate);
           if (diff < sevenDays) {
-            // Still on cooldown based on TrainingLog
             const nextEligible = new Date(new Date(lastTrainingDate).getTime() + sevenDays);
             horseData.nextEligibleAt = nextEligible.toISOString();
           }
-        } else if (cooldownDate && cooldownDate > now) {
-          // No TrainingLog but Horse.trainingCooldown is in the future
-          horseData.nextEligibleAt = cooldownDate.toISOString();
         }
 
         allHorses.push(horseData);
