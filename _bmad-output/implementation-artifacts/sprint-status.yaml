@@ -1,5 +1,5 @@
 # generated: 2026-03-25
-# last_updated: 2026-03-29
+# last_updated: 2026-03-30
 # project: Equoria
 # project_key: NOKEY
 # tracking_system: file-system
@@ -35,7 +35,7 @@
 # - Dev moves story to 'review', then runs code-review (fresh context, different LLM recommended)
 
 generated: 2026-03-25
-last_updated: 2026-03-29
+last_updated: 2026-03-30
 project: Equoria
 project_key: NOKEY
 tracking_system: file-system
@@ -175,7 +175,7 @@ development_status:
   epic-31d: in-progress
   31d-1-temperament-data-model-and-assignment: done
   31d-2-temperament-training-modifiers: review
-  31d-3-temperament-competition-modifiers: ready-for-dev
+  31d-3-temperament-competition-modifiers: review
   31d-4-temperament-groom-synergy: backlog
   31d-5-temperament-api-endpoints: backlog
   epic-31d-retrospective: optional

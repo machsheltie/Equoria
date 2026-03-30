@@ -1,4 +1,5 @@
 import logger from './logger.mjs';
+import { getTemperamentCompetitionModifiers } from '../modules/horses/services/temperamentService.mjs';
 
 /**
  * Calculate competition score for a horse in a specific event type
@@ -6,7 +7,7 @@ import logger from './logger.mjs';
  * @param {string} eventType - Competition discipline (e.g., 'Racing', 'Show Jumping', 'Dressage')
  * @returns {number} Final rounded competition score
  */
-export function calculateCompetitionScore(horse, eventType) {
+export function calculateCompetitionScore(horse, eventType, showType = 'ridden') {
   try {
     // Input validation
     if (!horse || typeof horse !== 'object') {
@@ -35,10 +36,7 @@ export function calculateCompetitionScore(horse, eventType) {
         break;
 
       case 'Dressage':
-        baseScore =
-          (horse.precision || 0) +
-          (horse.focus || 0) +
-          (horse.coordination || 0);
+        baseScore = (horse.precision || 0) + (horse.focus || 0) + (horse.coordination || 0);
         break;
 
       case 'Cross Country':
@@ -77,6 +75,20 @@ export function calculateCompetitionScore(horse, eventType) {
     // Apply trait bonus
     const scoreWithTraitBonus = baseScore + traitBonus;
 
+    // Apply temperament modifier (pre-luck, per PRD-03 §7.5)
+    const temperamentMods = getTemperamentCompetitionModifiers(horse.temperament);
+    const tempMod =
+      showType === 'conformation'
+        ? temperamentMods.conformationModifier
+        : temperamentMods.riddenModifier;
+    const scoreAfterTemperament = scoreWithTraitBonus * (1 + tempMod);
+
+    if (tempMod !== 0) {
+      logger.info(
+        `[calculateCompetitionScore] Horse ${horse.name || horse.id}: Temperament "${horse.temperament}" ${showType} modifier: ${(tempMod * 100).toFixed(0)}%`,
+      );
+    }
+
     // Apply ±9% random luck modifier
     // Ensure the range is exactly -0.09 to +0.09 (±9%)
     const randomValue = Math.random(); // 0 to 1
@@ -84,7 +96,7 @@ export function calculateCompetitionScore(horse, eventType) {
 
     // Clamp to ensure we never exceed ±9% due to floating point precision
     const clampedLuckModifier = Math.max(-0.09, Math.min(0.09, luckModifier));
-    const luckAdjustment = scoreWithTraitBonus * clampedLuckModifier;
+    const luckAdjustment = scoreAfterTemperament * clampedLuckModifier;
 
     logger.info(
       `[calculateCompetitionScore] Horse ${horse.name || horse.id}: Luck modifier: ${(clampedLuckModifier * 100).toFixed(1)}%, adjustment: ${luckAdjustment.toFixed(1)}`,
@@ -92,12 +104,12 @@ export function calculateCompetitionScore(horse, eventType) {
     );
 
     // Calculate final score
-    const finalScore = scoreWithTraitBonus + luckAdjustment;
+    const finalScore = scoreAfterTemperament + luckAdjustment;
     const roundedScore = Math.round(finalScore);
 
     logger.info(
-      `[calculateCompetitionScore] Horse ${horse.name || horse.id}: Final score: ${roundedScore} (base: ${baseScore}, trait: +${traitBonus}, luck: ${luckAdjustment.toFixed(1)})`,
-      `[calculateCompetitionScore] Horse ${horse.name || horse.id}: Final score: ${roundedScore} (base: ${baseScore}, trait: +${traitBonus}, luck: ${luckAdjustment.toFixed(1)})`,
+      `[calculateCompetitionScore] Horse ${horse.name || horse.id}: Final score: ${roundedScore} (base: ${baseScore}, trait: +${traitBonus}, temperament: ${(tempMod * 100).toFixed(0)}%, luck: ${luckAdjustment.toFixed(1)})`,
+      `[calculateCompetitionScore] Horse ${horse.name || horse.id}: Final score: ${roundedScore} (base: ${baseScore}, trait: +${traitBonus}, temperament: ${(tempMod * 100).toFixed(0)}%, luck: ${luckAdjustment.toFixed(1)})`,
     );
 
     return roundedScore;

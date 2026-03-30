@@ -1,6 +1,6 @@
 # Story 31D.3: Competition Temperament Modifiers
 
-Status: ready-for-dev
+Status: review
 
 ## Story
 
@@ -31,27 +31,27 @@ So that horse personality affects performance in the ring.
 
 ## Tasks / Subtasks
 
-- [ ] Task 1: Create temperament competition modifier lookup (AC: #3, #5)
-  - [ ] 1.1 Add `TEMPERAMENT_COMPETITION_MODIFIERS` constant to `temperamentService.mjs` — object mapping all 11 types to `{ riddenModifier, conformationModifier }` decimal values
-  - [ ] 1.2 Add `getTemperamentCompetitionModifiers(temperament)` function — returns `{ riddenModifier, conformationModifier }` or `{ riddenModifier: 0, conformationModifier: 0 }` for null/unknown
-  - [ ] 1.3 Export both the constant and function
-- [ ] Task 2: Integrate into competition score function (AC: #1, #2, #4, #5, #6)
-  - [ ] 2.1 Import `getTemperamentCompetitionModifiers` in `competitionScore.mjs`
-  - [ ] 2.2 Add optional third parameter `showType = 'ridden'` to `calculateCompetitionScore(horse, eventType, showType = 'ridden')`
-  - [ ] 2.3 After `scoreWithTraitBonus` is computed (line ~78) but BEFORE the luck modifier (line ~82), apply the temperament modifier: `const scoreAfterTemperament = scoreWithTraitBonus * (1 + tempMod);`
-  - [ ] 2.4 Use `scoreAfterTemperament` instead of `scoreWithTraitBonus` for the luck adjustment calculation
-  - [ ] 2.5 Add `logger.info` for temperament modifier application (follow existing log pattern)
-  - [ ] 2.6 Update the final log line to include temperament modifier info
-- [ ] Task 3: Write comprehensive tests (AC: #1-#7)
-  - [ ] 3.1 Unit tests for `getTemperamentCompetitionModifiers()` — all 11 types return correct ridden and conformation values
-  - [ ] 3.2 Unit test — null temperament returns zero modifiers
-  - [ ] 3.3 Unit test — unknown string returns zero modifiers
-  - [ ] 3.4 Integration test — Bold horse (ridden): final score increased by 5% (AC #1)
-  - [ ] 3.5 Integration test — Nervous horse (ridden): final score decreased by 5% (AC #2)
-  - [ ] 3.6 Integration test — null temperament: score unchanged vs base (AC #5)
-  - [ ] 3.7 Integration test — conformation showType: Spirited gets -2% not +3%
-  - [ ] 3.8 Integration test — modifier stacks with trait bonus: both applied independently (AC #6)
-  - [ ] 3.9 Data integrity test — all 11 keys in `TEMPERAMENT_COMPETITION_MODIFIERS` match `TEMPERAMENT_TYPES`
+- [x] Task 1: Create temperament competition modifier lookup (AC: #3, #5)
+  - [x] 1.1 Add `TEMPERAMENT_COMPETITION_MODIFIERS` constant to `temperamentService.mjs` — object mapping all 11 types to `{ riddenModifier, conformationModifier }` decimal values
+  - [x] 1.2 Add `getTemperamentCompetitionModifiers(temperament)` function — returns `{ riddenModifier, conformationModifier }` or `{ riddenModifier: 0, conformationModifier: 0 }` for null/unknown
+  - [x] 1.3 Export both the constant and function
+- [x] Task 2: Integrate into competition score function (AC: #1, #2, #4, #5, #6)
+  - [x] 2.1 Import `getTemperamentCompetitionModifiers` in `competitionScore.mjs`
+  - [x] 2.2 Add optional third parameter `showType = 'ridden'` to `calculateCompetitionScore(horse, eventType, showType = 'ridden')`
+  - [x] 2.3 After `scoreWithTraitBonus` is computed (line ~78) but BEFORE the luck modifier (line ~82), apply the temperament modifier: `const scoreAfterTemperament = scoreWithTraitBonus * (1 + tempMod);`
+  - [x] 2.4 Use `scoreAfterTemperament` instead of `scoreWithTraitBonus` for the luck adjustment calculation
+  - [x] 2.5 Add `logger.info` for temperament modifier application (follow existing log pattern)
+  - [x] 2.6 Update the final log line to include temperament modifier info
+- [x] Task 3: Write comprehensive tests (AC: #1-#7)
+  - [x] 3.1 Unit tests for `getTemperamentCompetitionModifiers()` — all 11 types return correct ridden and conformation values
+  - [x] 3.2 Unit test — null temperament returns zero modifiers
+  - [x] 3.3 Unit test — unknown string returns zero modifiers
+  - [x] 3.4 Integration test — Bold horse (ridden): final score increased by 5% (AC #1)
+  - [x] 3.5 Integration test — Nervous horse (ridden): final score decreased by 5% (AC #2)
+  - [x] 3.6 Integration test — null temperament: score unchanged vs base (AC #5)
+  - [x] 3.7 Integration test — conformation showType: Spirited gets -2% not +3%
+  - [x] 3.8 Integration test — modifier stacks with trait bonus: both applied independently (AC #6)
+  - [x] 3.9 Data integrity test — all 11 keys in `TEMPERAMENT_COMPETITION_MODIFIERS` match `TEMPERAMENT_TYPES`
 
 ## Dev Notes
 
@@ -213,6 +213,22 @@ claude-sonnet-4-6
 
 ### Debug Log References
 
+_No blockers. All 30 tests passed on first run. 17 competition/temperament suites (296 tests) — zero regressions._
+
 ### Completion Notes List
 
+- Implemented `TEMPERAMENT_COMPETITION_MODIFIERS` (11 types × `{riddenModifier, conformationModifier}`) and `getTemperamentCompetitionModifiers()` in `temperamentService.mjs`
+- Integrated into `calculateCompetitionScore()` in `competitionScore.mjs`: added optional `showType = 'ridden'` param (backward-compatible), applied modifier as `scoreWithTraitBonus * (1 + tempMod)` post-trait-bonus, pre-luck
+- Luck adjustment now applies to `scoreAfterTemperament` (not `scoreWithTraitBonus`)
+- 30 tests written and passing: unit coverage of all 11 types, null/unknown guards, ridden/conformation integration, trait stacking
+- All ACs satisfied
+
 ### File List
+
+- `backend/modules/horses/services/temperamentService.mjs` — modified
+- `backend/utils/competitionScore.mjs` — modified
+- `backend/__tests__/temperamentCompetitionModifiers.test.mjs` — created
+
+## Change Log
+
+- 2026-03-30: Story 31D-3 implemented. Added competition temperament modifiers to `temperamentService.mjs` and integrated into `calculateCompetitionScore()` with `showType` param. 30 tests added, 0 regressions.
