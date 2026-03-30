@@ -28,6 +28,18 @@ describe('Ultra-Rare & Exotic Traits System', () => {
   let testGroom;
 
   beforeAll(async () => {
+    // Clean up any stale data from previous runs
+    const staleUser = await prisma.user.findUnique({ where: { email: 'ultrararetester@example.com' } });
+    if (staleUser) {
+      const staleHorses = await prisma.horse.findMany({ where: { userId: staleUser.id } });
+      for (const h of staleHorses) {
+        await prisma.ultraRareTraitEvent.deleteMany({ where: { horseId: h.id } }).catch(() => {});
+      }
+      await prisma.horse.deleteMany({ where: { userId: staleUser.id } });
+      await prisma.groom.deleteMany({ where: { userId: staleUser.id } });
+      await prisma.user.delete({ where: { id: staleUser.id } });
+    }
+
     // Create test user
     testUser = await prisma.user.create({
       data: {

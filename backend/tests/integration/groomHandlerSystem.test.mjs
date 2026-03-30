@@ -15,6 +15,15 @@ describe('Groom Handler System Integration Tests', () => {
   let testHorse;
 
   beforeAll(async () => {
+    // Clean up any stale data from previous runs
+    const existingUser = await prisma.user.findUnique({ where: { email: 'handler-test@example.com' } });
+    if (existingUser) {
+      await prisma.groomAssignment.deleteMany({ where: { userId: existingUser.id } });
+      await prisma.groom.deleteMany({ where: { userId: existingUser.id } });
+      await prisma.horse.deleteMany({ where: { userId: existingUser.id } });
+      await prisma.user.delete({ where: { id: existingUser.id } });
+    }
+
     // Create test user
     testUser = await prisma.user.create({
       data: {
