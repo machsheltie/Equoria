@@ -21,11 +21,16 @@ describe('Ownership Violation Attempts Integration Tests', () => {
   let groomB;
 
   beforeEach(async () => {
-    // Extra cleanup to avoid FK issues if a prior test aborts early
+    // Scoped cleanup: remove data from a previous iteration of this suite if it aborted early.
+    // Avoids wiping ALL records (which would break concurrently-running suites).
+    const staleUserIds = [userA?.id, userB?.id].filter(Boolean);
+    if (staleUserIds.length > 0) {
+      await prisma.groomAssignment.deleteMany({ where: { userId: { in: staleUserIds } } });
+      await prisma.groom.deleteMany({ where: { id: { in: [groomA?.id, groomB?.id].filter(Boolean) } } });
+      await prisma.horse.deleteMany({ where: { id: { in: [horseA?.id, horseB?.id].filter(Boolean) } } });
+      await prisma.user.deleteMany({ where: { id: { in: staleUserIds } } });
+    }
     await prisma.refreshToken.deleteMany({});
-    await prisma.groom.deleteMany({});
-    await prisma.horse.deleteMany({});
-    await prisma.user.deleteMany({});
 
     // Ensure auth middleware and tokens share the same secret in test runs
     process.env.JWT_SECRET = process.env.JWT_SECRET || 'test-jwt-secret-key-for-testing-only-32chars';
