@@ -5,7 +5,7 @@
  * Matches direction-4-hybrid.html mockup.
  */
 
-import { useState } from 'react';
+import React, { useState } from 'react';
 import { Link } from 'react-router-dom';
 import { Bell, LogOut, User } from 'lucide-react';
 import { useUnreadCount } from '@/hooks/api/useMessages';

@@ -1,7 +1,7 @@
 // Temperament assignment service.
 // Assigns one of 11 temperaments to a horse at birth using breed-weighted random selection.
 // Temperament is permanent — assigned once at creation and never modified.
-// Also provides training modifier lookups used by trainingController.
+// Also provides training and competition modifier lookups used by trainingController and competitionScore.
 
 import { BREED_GENETIC_PROFILES, TEMPERAMENT_TYPES } from '../data/breedGeneticProfiles.mjs';
 import logger from '../../../utils/logger.mjs';
@@ -43,6 +43,49 @@ export function getTemperamentTrainingModifiers(temperament) {
       `[temperamentService] Unknown temperament "${temperament}" — returning zero modifiers`,
     );
     return { xpModifier: 0, scoreModifier: 0 };
+  }
+  return mods;
+}
+
+/**
+ * Decimal multipliers applied to competition scores (pre-luck).
+ * Values per PRD-03 §7.5. Applied as: scoreWithTraitBonus * (1 + modifier).
+ * Ridden modifier: applies to ridden competitions (Racing, Show Jumping, Dressage, Cross Country).
+ * Conformation modifier: applies to conformation shows.
+ * @type {Object.<string, {riddenModifier: number, conformationModifier: number}>}
+ */
+export const TEMPERAMENT_COMPETITION_MODIFIERS = {
+  Spirited: { riddenModifier: 0.03, conformationModifier: -0.02 },
+  Nervous: { riddenModifier: -0.05, conformationModifier: -0.05 },
+  Calm: { riddenModifier: 0.02, conformationModifier: 0.05 },
+  Bold: { riddenModifier: 0.05, conformationModifier: 0.02 },
+  Steady: { riddenModifier: 0.03, conformationModifier: 0.03 },
+  Independent: { riddenModifier: -0.02, conformationModifier: -0.03 },
+  Reactive: { riddenModifier: -0.03, conformationModifier: -0.04 },
+  Stubborn: { riddenModifier: -0.04, conformationModifier: -0.03 },
+  Playful: { riddenModifier: 0.01, conformationModifier: -0.01 },
+  Lazy: { riddenModifier: -0.05, conformationModifier: 0.0 },
+  Aggressive: { riddenModifier: -0.03, conformationModifier: -0.05 },
+};
+
+/**
+ * Return the competition modifiers for a given temperament.
+ * Returns zero modifiers for null, undefined, or unknown temperament strings
+ * (backward compatible — horses without temperament are unaffected).
+ *
+ * @param {string|null} temperament - One of the 11 temperament types, or null
+ * @returns {{ riddenModifier: number, conformationModifier: number }}
+ */
+export function getTemperamentCompetitionModifiers(temperament) {
+  if (!temperament) {
+    return { riddenModifier: 0, conformationModifier: 0 };
+  }
+  const mods = TEMPERAMENT_COMPETITION_MODIFIERS[temperament];
+  if (!mods) {
+    logger.warn(
+      `[temperamentService] Unknown temperament "${temperament}" — returning zero competition modifiers`,
+    );
+    return { riddenModifier: 0, conformationModifier: 0 };
   }
   return mods;
 }

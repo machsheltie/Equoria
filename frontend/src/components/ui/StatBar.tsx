@@ -53,7 +53,7 @@ const StatBar: React.FC<StatBarProps> = ({
   value,
   max = 100,
   unit = '',
-  fillColor = 'var(--celestial-primary)',
+  fillColor = 'var(--gradient-stat-bar)',
   showValue = true,
   size = 'md',
   className = '',

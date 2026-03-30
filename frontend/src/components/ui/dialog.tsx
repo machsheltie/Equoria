@@ -16,7 +16,7 @@ const DialogOverlay = React.forwardRef<
   <DialogPrimitive.Overlay
     ref={ref}
     className={cn(
-      'fixed inset-0 z-[var(--z-modal)] bg-[var(--celestial-navy-950)]/85',
+      'fixed inset-0 z-[var(--z-modal)] bg-black/60 backdrop-blur-sm',
       'data-[state=open]:animate-in data-[state=closed]:animate-out',
       'data-[state=closed]:fade-out-0 data-[state=open]:fade-in-0',
       className
@@ -54,7 +54,7 @@ const DialogContent = React.forwardRef<
           'absolute right-4 top-4 rounded-full p-1',
           'text-[var(--text-muted)] hover:text-[var(--cream)]',
           'hover:bg-[rgba(201,162,39,0.1)] transition-colors',
-          'focus:outline-none focus:ring-2 focus:ring-[var(--electric-blue-300)]',
+          'focus:outline-none focus:ring-2 focus:ring-[var(--gold-bright)]',
           'disabled:pointer-events-none'
         )}
       >

@@ -19,8 +19,8 @@ const Checkbox = React.forwardRef<
       'data-[state=checked]:bg-[var(--gold-700)] data-[state=checked]:border-[var(--gold-500)]',
       // Focus ring
       'focus-visible:outline-none focus-visible:ring-2',
-      'focus-visible:ring-[var(--electric-blue-300)] focus-visible:ring-offset-1',
-      'focus-visible:ring-offset-[var(--celestial-navy-900)]',
+      'focus-visible:ring-[var(--gold-bright)] focus-visible:ring-offset-1',
+      'focus-visible:ring-offset-[var(--bg-deep-space)]',
       'disabled:cursor-not-allowed disabled:opacity-50',
       className
     )}

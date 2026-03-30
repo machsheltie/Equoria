@@ -25,20 +25,20 @@ const buttonVariants = cva(
     'inline-flex items-center justify-center gap-2 whitespace-nowrap',
     'rounded-full font-medium transition-all duration-150',
     'focus-visible:outline-none focus-visible:ring-2',
-    'focus-visible:ring-[var(--electric-blue-300)] focus-visible:ring-offset-2',
-    'focus-visible:ring-offset-[var(--celestial-navy-900)]',
+    'focus-visible:ring-[var(--gold-bright)] focus-visible:ring-offset-2',
+    'focus-visible:ring-offset-[var(--bg-deep-space)]',
     'disabled:pointer-events-none disabled:opacity-40',
     'font-[var(--font-body)]',
   ].join(' '),
   {
     variants: {
       variant: {
-        /** Primary — gold gradient, Cinzel font, horseshoe arcs; max ONE per screen */
+        /** Primary — gold gradient, Cinzel heading font, horseshoe arcs; max ONE per screen */
         default: [
-          'btn-primary-arcs',
+          'btn-cobalt',
           'bg-gradient-to-r from-[var(--gold-primary)] to-[var(--gold-light)]',
           'text-[var(--bg-deep-space)] font-semibold tracking-wide',
-          'font-[var(--font-display)]',
+          'font-[var(--font-heading)]',
           'shadow-[0_4px_20px_rgba(201,162,39,0.4)]',
           'hover:brightness-110 hover:shadow-[0_6px_28px_rgba(201,162,39,0.55)]',
           'active:scale-[0.98]',
@@ -67,11 +67,11 @@ const buttonVariants = cva(
           'underline-offset-4',
         ].join(' '),
 
-        /** Link — underline text link */
+        /** Link — underline text link (gold per Celestial Night identity) */
         link: [
-          'bg-transparent text-[var(--electric-blue-300)]',
+          'bg-transparent text-[var(--gold-primary)]',
           'underline underline-offset-4',
-          'hover:text-[var(--electric-blue-400)]',
+          'hover:text-[var(--gold-light)]',
           'rounded-none px-0',
         ].join(' '),
 

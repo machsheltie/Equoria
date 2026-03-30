@@ -15,7 +15,7 @@ const CollapsibleTrigger = React.forwardRef<
       'flex w-full items-center justify-between',
       'text-[var(--cream)] font-[var(--font-body)] text-sm font-medium',
       'hover:text-[var(--gold-400)] transition-colors duration-150',
-      'focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[var(--electric-blue-300)]',
+      'focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[var(--gold-bright)]',
       // Chevron rotation on open
       '[&[data-state=open]>svg]:rotate-180',
       className

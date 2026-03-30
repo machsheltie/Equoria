@@ -126,17 +126,17 @@ export function generateInheritedConformationScores(breedId, sireScores, damScor
   const profile = BREED_GENETIC_PROFILES[breedId];
   if (!profile) {
     logger.warn(
-      `[conformationService] No genetic profile found for breed ID ${breedId}, using defaults`,
+      `[conformationService] No genetic profile found for breed ID ${breedId}, falling back to breed-only generation`,
     );
-    return { ...DEFAULT_UNKNOWN_BREED_SCORES };
+    return generateConformationScores(breedId);
   }
 
   const conformation = profile.rating_profiles?.conformation;
   if (!conformation) {
     logger.warn(
-      `[conformationService] Breed ID ${breedId} profile missing conformation data, using defaults`,
+      `[conformationService] Breed ID ${breedId} profile missing conformation data, falling back to breed-only generation`,
     );
-    return { ...DEFAULT_UNKNOWN_BREED_SCORES };
+    return generateConformationScores(breedId);
   }
 
   const scores = {};

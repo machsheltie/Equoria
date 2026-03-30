@@ -319,7 +319,7 @@ const CompetitionResultsPage = (): JSX.Element => {
             </div>
             <Link
               to="/prizes"
-              className="inline-flex items-center gap-2 text-[var(--electric-blue-400)] hover:text-[var(--electric-blue-300)] text-sm font-medium transition-colors"
+              className="inline-flex items-center gap-2 text-[var(--gold-primary)] hover:text-[var(--gold-light)] text-sm font-medium transition-colors"
             >
               <History className="h-4 w-4" aria-hidden="true" />
               View Prize History

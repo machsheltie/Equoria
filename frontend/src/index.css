@@ -68,7 +68,7 @@
 
   /* ── Epic 30-5: Global focus indicator (WCAG 2.4.11 / 2.1 AA) ─── */
   :focus-visible {
-    outline: 2px solid var(--gold-400, #c9a227);
+    outline: 2px solid var(--gold-bright);
     outline-offset: 2px;
     border-radius: 3px;
   }
@@ -225,7 +225,7 @@
     border: 1px solid var(--glass-border);
     border-radius: var(--radius-md);
     color: var(--text-primary);
-    padding: 0.75rem 1rem 0.75rem 2.75rem;
+    padding: 0.75rem 1rem;
     width: 100%;
     font-family: var(--font-body);
     transition:
@@ -245,12 +245,12 @@
 
   /* Primary button — horseshoe arc decorations + positioning (Section 11 / 18-5) */
   /* Background gradient and colors are set by Tailwind classes in button.tsx */
-  .btn-primary-arcs {
+  .btn-cobalt {
     position: relative; /* required for ::before / ::after horseshoe arcs */
   }
 
-  .btn-primary-arcs::before,
-  .btn-primary-arcs::after {
+  .btn-cobalt::before,
+  .btn-cobalt::after {
     content: '';
     position: absolute;
     top: 50%;
@@ -264,18 +264,18 @@
     transition: opacity var(--duration-fast, 0.15s) var(--ease-default, ease);
   }
 
-  .btn-primary-arcs::before {
+  .btn-cobalt::before {
     left: 12px;
     border-right: none; /* left horseshoe arc */
   }
 
-  .btn-primary-arcs::after {
+  .btn-cobalt::after {
     right: 12px;
     border-left: none; /* right horseshoe arc */
   }
 
-  .btn-primary-arcs:hover:not(:disabled)::before,
-  .btn-primary-arcs:hover:not(:disabled)::after {
+  .btn-cobalt:hover:not(:disabled)::before,
+  .btn-cobalt:hover:not(:disabled)::after {
     opacity: 1;
   }
 

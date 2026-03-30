@@ -100,8 +100,7 @@ const VerifyEmailPage: React.FC = () => {
           <div
             className="w-16 h-16 rounded-full flex items-center justify-center magical-glow"
             style={{
-              background:
-                'linear-gradient(135deg, var(--electric-blue-500) 0%, var(--electric-blue-700) 100%)',
+              background: 'linear-gradient(135deg, var(--gold-primary) 0%, var(--gold-dim) 100%)',
             }}
           >
             <CheckCircle className="w-8 h-8 text-white" />
@@ -137,8 +136,7 @@ const VerifyEmailPage: React.FC = () => {
           <div
             className="w-16 h-16 rounded-full flex items-center justify-center"
             style={{
-              background:
-                'linear-gradient(135deg, var(--electric-blue-500) 0%, var(--electric-blue-700) 100%)',
+              background: 'linear-gradient(135deg, var(--gold-primary) 0%, var(--gold-dim) 100%)',
             }}
           >
             <Loader2 className="w-8 h-8 text-white animate-spin" />
@@ -162,8 +160,7 @@ const VerifyEmailPage: React.FC = () => {
           <div
             className="w-16 h-16 rounded-full flex items-center justify-center magical-glow"
             style={{
-              background:
-                'linear-gradient(135deg, var(--electric-blue-500) 0%, var(--electric-blue-700) 100%)',
+              background: 'linear-gradient(135deg, var(--gold-primary) 0%, var(--gold-dim) 100%)',
             }}
           >
             <CheckCircle className="w-8 h-8 text-white" />
@@ -265,8 +262,7 @@ const VerifyEmailPage: React.FC = () => {
         <div
           className="w-16 h-16 rounded-full flex items-center justify-center"
           style={{
-            background:
-              'linear-gradient(135deg, var(--electric-blue-500) 0%, var(--electric-blue-700) 100%)',
+            background: 'linear-gradient(135deg, var(--gold-primary) 0%, var(--gold-dim) 100%)',
           }}
         >
           <Mail className="w-8 h-8 text-white" />

@@ -72,7 +72,7 @@ function StatPill({ stat, tier }: { stat: string; tier: 'primary' | 'secondary' 
     tier === 'primary'
       ? 'bg-[rgba(201,162,39,0.15)] border-[rgba(201,162,39,0.4)] text-[var(--gold-primary)]'
       : tier === 'secondary'
-        ? 'bg-[rgba(30,100,200,0.15)] border-[rgba(30,100,200,0.35)] text-[var(--electric-blue)]'
+        ? 'bg-[rgba(200,168,78,0.1)] border-[rgba(200,168,78,0.25)] text-[var(--gold-dim)]'
         : 'bg-[rgba(100,130,165,0.12)] border-[rgba(100,130,165,0.25)] text-[var(--text-muted)]';
 
   return (
@@ -117,7 +117,7 @@ function DisciplineOption({
       aria-disabled={isIneligible}
       title={isIneligible ? ineligibleReason : undefined}
       className={[
-        'w-full text-left rounded-xl border p-3 transition-all duration-200 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[var(--electric-blue)] focus-visible:ring-offset-2 focus-visible:ring-offset-[var(--bg-night-sky)]',
+        'w-full text-left rounded-xl border p-3 transition-all duration-200 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[var(--gold-bright)] focus-visible:ring-offset-2 focus-visible:ring-offset-[var(--bg-night-sky)]',
         isIneligible
           ? 'border-[rgba(100,130,165,0.1)] bg-[rgba(10,22,50,0.2)] opacity-50 cursor-not-allowed'
           : isSelected

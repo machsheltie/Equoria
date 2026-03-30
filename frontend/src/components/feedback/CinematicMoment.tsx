@@ -34,7 +34,7 @@ const VARIANT_CONFIG: Record<
 > = {
   'trait-discovery': {
     icon: '✨',
-    accentColor: 'var(--electric-blue-500)',
+    accentColor: 'var(--status-rare)',
     ariaLabel: 'Trait discovery notification',
   },
   'foal-birth': {

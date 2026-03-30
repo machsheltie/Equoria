@@ -459,7 +459,7 @@ const MyGroomsDashboard: React.FC<MyGroomsDashboardProps> = ({
                           width: `${(groomAssignments.length / maxAssignments) * 100}%`,
                           background: isFullyAssigned
                             ? 'var(--text-muted)'
-                            : 'linear-gradient(90deg, var(--electric-blue-500), var(--electric-blue-700))',
+                            : 'var(--gradient-stat-bar)',
                         }}
                       />
                     </div>

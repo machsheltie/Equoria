@@ -88,6 +88,7 @@ export async function createFoal(req, res) {
       damId,
       sex,
       ownerId,
+      userId,
       playerId,
       stableId,
       healthStatus = 'Good',
@@ -199,6 +200,7 @@ export async function createFoal(req, res) {
       damId,
       sex,
       ownerId,
+      userId,
       playerId,
       stableId,
       healthStatus,
@@ -242,6 +244,7 @@ export async function createFoal(req, res) {
     res.status(500).json({
       success: false,
       message: 'Internal server error during foal creation',
+      error: process.env.NODE_ENV !== 'production' ? error.message : undefined,
       data: null,
     });
   }
@@ -657,7 +660,7 @@ export async function getHorsePersonalityImpact(req, res) {
     res.status(500).json({
       success: false,
       message: 'Failed to calculate personality compatibility',
-      error: process.env.NODE_ENV === 'development' ? error.message : 'Internal server error',
+      error: process.env.NODE_ENV !== 'production' ? error.message : 'Internal server error',
     });
   }
 }

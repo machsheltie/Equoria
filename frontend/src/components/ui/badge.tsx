@@ -9,7 +9,7 @@ const badgeVariants = cva(
     'text-xs font-semibold tracking-wide uppercase',
     'font-[var(--font-body)] border',
     'transition-colors',
-    'focus:outline-none focus:ring-2 focus:ring-[var(--electric-blue-300)]',
+    'focus:outline-none focus:ring-2 focus:ring-[var(--gold-bright)]',
   ].join(' '),
   {
     variants: {

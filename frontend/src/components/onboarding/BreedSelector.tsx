@@ -94,7 +94,7 @@ function BreedCard({
       onClick={onSelect}
       aria-pressed={isSelected}
       className={[
-        'text-left rounded-xl p-3 border transition-all duration-200 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[var(--electric-blue)] focus-visible:ring-offset-2 focus-visible:ring-offset-[var(--bg-night-sky)]',
+        'text-left rounded-xl p-3 border transition-all duration-200 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[var(--gold-bright)] focus-visible:ring-offset-2 focus-visible:ring-offset-[var(--bg-night-sky)]',
         isSelected
           ? 'border-[var(--gold-primary)] bg-[rgba(201,162,39,0.12)] shadow-[0_0_14px_rgba(201,162,39,0.2)]'
           : 'border-[rgba(100,130,165,0.25)] bg-[rgba(10,22,50,0.5)] hover:border-[rgba(201,162,39,0.4)] hover:bg-[rgba(10,22,50,0.7)]',
@@ -155,7 +155,7 @@ function BreedRow({
         type="button"
         onClick={onSelect}
         aria-pressed={isSelected}
-        className="w-full flex items-center gap-3 p-3 text-left focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[var(--electric-blue)] focus-visible:ring-offset-2 focus-visible:ring-offset-[var(--bg-night-sky)] rounded-xl"
+        className="w-full flex items-center gap-3 p-3 text-left focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[var(--gold-bright)] focus-visible:ring-offset-2 focus-visible:ring-offset-[var(--bg-night-sky)] rounded-xl"
       >
         {/* Portrait thumbnail */}
         <div className="w-12 h-12 flex-shrink-0 rounded-lg flex items-center justify-center bg-[var(--bg-midnight)] border border-[rgba(100,130,165,0.2)] overflow-hidden">
@@ -305,7 +305,7 @@ export function BreedSelector({ breeds, value, onChange }: BreedSelectorProps) {
             aria-pressed={viewMode === 'grid'}
             aria-label="Grid view"
             className={[
-              'p-1.5 rounded-md transition-colors focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-[var(--electric-blue)]',
+              'p-1.5 rounded-md transition-colors focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-[var(--gold-bright)]',
               viewMode === 'grid'
                 ? 'bg-[var(--celestial-navy-600)] text-[var(--gold-primary)]'
                 : 'text-[var(--text-muted)] hover:text-[var(--text-primary)]',
@@ -319,7 +319,7 @@ export function BreedSelector({ breeds, value, onChange }: BreedSelectorProps) {
             aria-pressed={viewMode === 'list'}
             aria-label="List view"
             className={[
-              'p-1.5 rounded-md transition-colors focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-[var(--electric-blue)]',
+              'p-1.5 rounded-md transition-colors focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-[var(--gold-bright)]',
               viewMode === 'list'
                 ? 'bg-[var(--celestial-navy-600)] text-[var(--gold-primary)]'
                 : 'text-[var(--text-muted)] hover:text-[var(--text-primary)]',
@@ -384,7 +384,7 @@ export function BreedSelector({ breeds, value, onChange }: BreedSelectorProps) {
               onClick={() => selectGender(g)}
               aria-pressed={value.gender === g}
               className={[
-                'py-2.5 rounded-xl border text-sm font-semibold transition-all duration-200 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[var(--electric-blue)] focus-visible:ring-offset-2 focus-visible:ring-offset-[var(--bg-night-sky)]',
+                'py-2.5 rounded-xl border text-sm font-semibold transition-all duration-200 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[var(--gold-bright)] focus-visible:ring-offset-2 focus-visible:ring-offset-[var(--bg-night-sky)]',
                 value.gender === g
                   ? 'border-[var(--gold-primary)] bg-[rgba(201,162,39,0.12)] text-[var(--gold-primary)]'
                   : 'border-[rgba(100,130,165,0.25)] bg-[rgba(10,22,50,0.4)] text-[var(--text-muted)] hover:border-[rgba(201,162,39,0.35)] hover:text-[var(--text-primary)]',

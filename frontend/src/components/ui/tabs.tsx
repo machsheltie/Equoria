@@ -41,7 +41,7 @@ const TabsTrigger = React.forwardRef<
       'data-[state=active]:after:h-[2px] data-[state=active]:after:bg-[var(--gold-500)]',
       'data-[state=active]:after:rounded-full',
       // Focus
-      'focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[var(--electric-blue-300)]',
+      'focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[var(--gold-bright)]',
       'disabled:pointer-events-none disabled:opacity-50',
       className
     )}
@@ -58,7 +58,7 @@ const TabsContent = React.forwardRef<
     ref={ref}
     className={cn(
       'mt-4',
-      'focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[var(--electric-blue-300)]',
+      'focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[var(--gold-bright)]',
       className
     )}
     {...props}

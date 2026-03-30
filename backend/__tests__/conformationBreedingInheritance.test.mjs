@@ -206,11 +206,11 @@ describe('Inheritance variance', () => {
 
 describe('Statistical validation - breeding inheritance', () => {
   // Task 4.1: High-scoring parents produce foals averaging above breed mean
-  test('high-scoring parents (head=95) produce foals with average head > breed mean', () => {
+  test('high-scoring parents (sire=95, dam=90) produce foals with average head > breed mean', () => {
     const breedId = 1; // Thoroughbred, head mean = 78
     const breedMean = BREED_GENETIC_PROFILES[breedId].rating_profiles.conformation.head.mean;
     const sire = { ...uniformScores(80), head: 95 };
-    const dam = { ...uniformScores(80), head: 95 };
+    const dam = { ...uniformScores(80), head: 90 };
     const headScores = [];
 
     for (let i = 0; i < 1000; i++) {
@@ -219,7 +219,7 @@ describe('Statistical validation - breeding inheritance', () => {
     }
 
     const avg = headScores.reduce((a, b) => a + b, 0) / headScores.length;
-    // Expected baseValue = (95*0.5 + 95*0.5)*0.6 + 78*0.4 = 57 + 31.2 = 88.2
+    // Expected baseValue = (95*0.5 + 90*0.5)*0.6 + 78*0.4 = 92.5*0.6 + 31.2 = 55.5 + 31.2 = 86.7
     // Average should be > breed mean (78) by at least 5 points
     expect(avg).toBeGreaterThan(breedMean + 5);
   });
@@ -275,7 +275,7 @@ describe('Statistical validation - breeding inheritance', () => {
     }
   });
 
-  // F-12: Statistical validation for a non-Thoroughbred breed (Appaloosa, ID 6)
+  // Statistical validation: non-Thoroughbred breed (Appaloosa, ID 6)
   test('Appaloosa (breed 6) high-scoring parents produce foals above breed mean', () => {
     const breedId = 6;
     const breedMean = BREED_GENETIC_PROFILES[breedId].rating_profiles.conformation.head.mean;
