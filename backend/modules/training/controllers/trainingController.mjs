@@ -198,6 +198,9 @@ async function trainHorse(horseId, discipline) {
       );
     }
 
+    // Capture post-trait, pre-temperament score for accurate traitEffects reporting
+    const traitAdjustedScore = disciplineScoreIncrease;
+
     // Apply temperament modifier to discipline score
     const temperamentMods = getTemperamentTrainingModifiers(horse.temperament);
     if (temperamentMods.scoreModifier !== 0) {
@@ -307,6 +310,9 @@ async function trainHorse(horseId, discipline) {
       baseXp = Math.round(baseXp * (1 + traitEffects.trainingXpModifier));
     }
 
+    // Capture post-trait, pre-temperament XP for accurate traitEffects reporting
+    const traitAdjustedXp = baseXp;
+
     // Apply temperament modifier to XP
     if (temperamentMods.xpModifier !== 0) {
       baseXp = Math.round(baseXp * (1 + temperamentMods.xpModifier));
@@ -378,13 +384,14 @@ async function trainHorse(horseId, discipline) {
     return {
       success: true,
       updatedHorse,
+      disciplineScoreIncrease,
       message: `Horse trained successfully in ${discipline}. +${disciplineScoreIncrease} added.${statGainOccurred ? ` Stat gain: ${statGainDetails.stat} +${statGainDetails.amount}` : ''}`,
       nextEligible: nextEligible.toISOString(),
       statGain: statGainOccurred ? statGainDetails : null,
       traitEffects: {
         appliedTraits: allTraits,
-        scoreModifier: disciplineScoreIncrease - 5, // Show the trait bonus/penalty
-        xpModifier: baseXp - 5, // Show the XP trait bonus/penalty
+        scoreModifier: traitAdjustedScore - 5, // trait-only delta (pre-temperament)
+        xpModifier: traitAdjustedXp - 5, // trait-only delta (pre-temperament)
         statGainChanceModifier: traitEffects.statGainChanceModifier || 0,
         baseStatBoost: traitEffects.baseStatBoost || 0,
       },
@@ -628,17 +635,17 @@ async function trainRouteHandler(req, res) {
       const disciplineScores = result.updatedHorse?.disciplineScores || {};
       const updatedScore = disciplineScores[discipline] || 0;
 
-      // Calculate actual score increase from trait effects
-      const baseIncrease = 5;
-      const actualIncrease = baseIncrease + (result.traitEffects?.scoreModifier || 0);
+      // Use actual discipline score increase computed by trainHorse
+      const actualIncrease = result.disciplineScoreIncrease ?? 5;
 
-      // Format response with trait effects information
+      // Format response with trait and temperament effects information
       res.json({
         success: true,
         message: `${result.updatedHorse.name} trained in ${discipline}. +${actualIncrease} added.`,
         updatedScore,
         nextEligibleDate: result.nextEligible,
         traitEffects: result.traitEffects,
+        temperamentEffects: result.temperamentEffects,
       });
     } else {
       // Return failure response for ineligible training

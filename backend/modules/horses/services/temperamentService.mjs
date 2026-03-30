@@ -11,19 +11,19 @@ import logger from '../../../utils/logger.mjs';
  * Values per PRD-03 §7.4. Applied as: value * (1 + modifier).
  * @type {Object.<string, {xpModifier: number, scoreModifier: number}>}
  */
-export const TEMPERAMENT_TRAINING_MODIFIERS = {
-  Spirited: { xpModifier: 0.1, scoreModifier: 0.05 },
-  Nervous: { xpModifier: -0.1, scoreModifier: -0.05 },
-  Calm: { xpModifier: 0.05, scoreModifier: 0.1 },
-  Bold: { xpModifier: 0.05, scoreModifier: 0.05 },
-  Steady: { xpModifier: 0.05, scoreModifier: 0.1 },
-  Independent: { xpModifier: -0.05, scoreModifier: 0.0 },
-  Reactive: { xpModifier: 0.0, scoreModifier: -0.05 },
-  Stubborn: { xpModifier: -0.15, scoreModifier: -0.1 },
-  Playful: { xpModifier: 0.05, scoreModifier: -0.05 },
-  Lazy: { xpModifier: -0.2, scoreModifier: -0.15 },
-  Aggressive: { xpModifier: -0.1, scoreModifier: -0.05 },
-};
+export const TEMPERAMENT_TRAINING_MODIFIERS = Object.freeze({
+  Spirited: Object.freeze({ xpModifier: 0.1, scoreModifier: 0.05 }),
+  Nervous: Object.freeze({ xpModifier: -0.1, scoreModifier: -0.05 }),
+  Calm: Object.freeze({ xpModifier: 0.05, scoreModifier: 0.1 }),
+  Bold: Object.freeze({ xpModifier: 0.05, scoreModifier: 0.05 }),
+  Steady: Object.freeze({ xpModifier: 0.05, scoreModifier: 0.1 }),
+  Independent: Object.freeze({ xpModifier: -0.05, scoreModifier: 0 }),
+  Reactive: Object.freeze({ xpModifier: 0, scoreModifier: -0.05 }),
+  Stubborn: Object.freeze({ xpModifier: -0.15, scoreModifier: -0.1 }),
+  Playful: Object.freeze({ xpModifier: 0.05, scoreModifier: -0.05 }),
+  Lazy: Object.freeze({ xpModifier: -0.2, scoreModifier: -0.15 }),
+  Aggressive: Object.freeze({ xpModifier: -0.1, scoreModifier: -0.05 }),
+});
 
 /**
  * Return the training modifiers for a given temperament.
@@ -34,7 +34,7 @@ export const TEMPERAMENT_TRAINING_MODIFIERS = {
  * @returns {{ xpModifier: number, scoreModifier: number }}
  */
 export function getTemperamentTrainingModifiers(temperament) {
-  if (!temperament) {
+  if (!temperament || typeof temperament !== 'string') {
     return { xpModifier: 0, scoreModifier: 0 };
   }
   const mods = TEMPERAMENT_TRAINING_MODIFIERS[temperament];
@@ -44,7 +44,7 @@ export function getTemperamentTrainingModifiers(temperament) {
     );
     return { xpModifier: 0, scoreModifier: 0 };
   }
-  return mods;
+  return { ...mods };
 }
 
 /**
@@ -54,19 +54,19 @@ export function getTemperamentTrainingModifiers(temperament) {
  * Conformation modifier: applies to conformation shows.
  * @type {Object.<string, {riddenModifier: number, conformationModifier: number}>}
  */
-export const TEMPERAMENT_COMPETITION_MODIFIERS = {
-  Spirited: { riddenModifier: 0.03, conformationModifier: -0.02 },
-  Nervous: { riddenModifier: -0.05, conformationModifier: -0.05 },
-  Calm: { riddenModifier: 0.02, conformationModifier: 0.05 },
-  Bold: { riddenModifier: 0.05, conformationModifier: 0.02 },
-  Steady: { riddenModifier: 0.03, conformationModifier: 0.03 },
-  Independent: { riddenModifier: -0.02, conformationModifier: -0.03 },
-  Reactive: { riddenModifier: -0.03, conformationModifier: -0.04 },
-  Stubborn: { riddenModifier: -0.04, conformationModifier: -0.03 },
-  Playful: { riddenModifier: 0.01, conformationModifier: -0.01 },
-  Lazy: { riddenModifier: -0.05, conformationModifier: 0.0 },
-  Aggressive: { riddenModifier: -0.03, conformationModifier: -0.05 },
-};
+export const TEMPERAMENT_COMPETITION_MODIFIERS = Object.freeze({
+  Spirited: Object.freeze({ riddenModifier: 0.03, conformationModifier: -0.02 }),
+  Nervous: Object.freeze({ riddenModifier: -0.05, conformationModifier: -0.05 }),
+  Calm: Object.freeze({ riddenModifier: 0.02, conformationModifier: 0.05 }),
+  Bold: Object.freeze({ riddenModifier: 0.05, conformationModifier: 0.02 }),
+  Steady: Object.freeze({ riddenModifier: 0.03, conformationModifier: 0.03 }),
+  Independent: Object.freeze({ riddenModifier: -0.02, conformationModifier: -0.03 }),
+  Reactive: Object.freeze({ riddenModifier: -0.03, conformationModifier: -0.04 }),
+  Stubborn: Object.freeze({ riddenModifier: -0.04, conformationModifier: -0.03 }),
+  Playful: Object.freeze({ riddenModifier: 0.01, conformationModifier: -0.01 }),
+  Lazy: Object.freeze({ riddenModifier: -0.05, conformationModifier: 0 }),
+  Aggressive: Object.freeze({ riddenModifier: -0.03, conformationModifier: -0.05 }),
+});
 
 /**
  * Return the competition modifiers for a given temperament.
@@ -87,7 +87,7 @@ export function getTemperamentCompetitionModifiers(temperament) {
     );
     return { riddenModifier: 0, conformationModifier: 0 };
   }
-  return mods;
+  return { ...mods };
 }
 
 /**

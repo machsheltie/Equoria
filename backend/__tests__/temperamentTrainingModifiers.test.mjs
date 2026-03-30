@@ -188,21 +188,24 @@ describe('trainHorse() — temperament modifier integration', () => {
   });
 
   // 3.4 — Stubborn horse: -15% XP, -10% score (AC #1)
-  test('Stubborn horse: XP reduced to 4 and response includes correct temperamentEffects', async () => {
+  // Uses trainingXpModifier: 1.0 to raise effective base to 10, avoiding the Math.round(4.5)=5
+  // edge case at base=5 that would make the -10% score reduction unverifiable.
+  test('Stubborn horse: XP and score both reduced with verifiable deltas (base boosted to 10)', async () => {
     const horse = makeHorse('Stubborn');
     setupEligibleMocks(horse);
+    // Raise effective base to 10 via +100% trait modifier so both reductions are unambiguous
+    mockGetCombinedTraitEffects.mockReturnValue({ trainingXpModifier: 1.0 });
 
     const result = await trainHorse(42, 'Racing');
 
     expect(result.success).toBe(true);
 
-    // XP: Math.round(5 * (1 - 0.15)) = Math.round(4.25) = 4
-    expect(mockAddXpToUser).toHaveBeenCalledWith('user-uuid-123', 4);
+    // Score: Math.round(5 * (1 + 1.0)) = 10, then Math.round(10 * (1 - 0.10)) = Math.round(9.0) = 9
+    expect(mockIncrementDisciplineScore).toHaveBeenCalledWith(42, 'Racing', 9);
 
-    // Discipline score: Math.round(5 * (1 - 0.10)) = Math.round(4.5) = 5 → Math.max(1,5) = 5
-    expect(mockIncrementDisciplineScore).toHaveBeenCalledWith(42, 'Racing', 5);
+    // XP: Math.round(5 * (1 + 1.0)) = 10, then Math.round(10 * (1 - 0.15)) = Math.round(8.5) = 9
+    expect(mockAddXpToUser).toHaveBeenCalledWith('user-uuid-123', 9);
 
-    // temperamentEffects field populated correctly
     expect(result.temperamentEffects).toEqual({
       temperament: 'Stubborn',
       xpModifier: -0.15,
@@ -241,13 +244,11 @@ describe('trainHorse() — temperament modifier integration', () => {
 
     expect(result.success).toBe(true);
 
-    // XP: Math.round(5 * (1 - 0.20)) = Math.round(4) = 4, Math.max(1, 4) = 4
-    const xpArg = mockAddXpToUser.mock.calls[0][1];
-    expect(xpArg).toBeGreaterThanOrEqual(1);
+    // XP: Math.round(5 * (1 - 0.20)) = Math.round(4.0) = 4, Math.max(1, 4) = 4
+    expect(mockAddXpToUser).toHaveBeenCalledWith('user-uuid-123', 4);
 
     // Discipline score: Math.round(5 * (1 - 0.15)) = Math.round(4.25) = 4, Math.max(1, 4) = 4
-    const scoreArg = mockIncrementDisciplineScore.mock.calls[0][2];
-    expect(scoreArg).toBeGreaterThanOrEqual(1);
+    expect(mockIncrementDisciplineScore).toHaveBeenCalledWith(42, 'Racing', 4);
 
     expect(result.temperamentEffects).toEqual({
       temperament: 'Lazy',
@@ -267,6 +268,13 @@ describe('trainHorse() — temperament modifier integration', () => {
     const result = await trainHorse(42, 'Racing');
 
     expect(result.success).toBe(true);
+
+    // Expected score (AC #6 — both trait and temperament apply independently):
+    //   base = 5
+    //   after trait: Math.round(5 * 1.25) = 6
+    //   after Spirited +5%: Math.round(6 * 1.05) = Math.round(6.3) = 6
+    //   Math.max(1, 6) = 6
+    expect(mockIncrementDisciplineScore).toHaveBeenCalledWith(42, 'Racing', 6);
 
     // Expected XP:
     //   base = 5
@@ -299,5 +307,29 @@ describe('trainHorse() — temperament modifier integration', () => {
 
     // temperamentEffects is null when horse has no temperament
     expect(result.temperamentEffects).toBeNull();
+  });
+
+  // F5 — Reactive (xpModifier=0): zero-modifier guard skips XP branch,
+  // temperamentEffects still returned non-null (AC #3, #4)
+  test('Reactive horse: xpModifier=0 guard skips XP branch, temperamentEffects still returned', async () => {
+    const horse = makeHorse('Reactive');
+    setupEligibleMocks(horse);
+
+    const result = await trainHorse(42, 'Racing');
+
+    expect(result.success).toBe(true);
+
+    // xpModifier=0: guard `if (temperamentMods.xpModifier !== 0)` skips, XP stays at 5
+    expect(mockAddXpToUser).toHaveBeenCalledWith('user-uuid-123', 5);
+
+    // scoreModifier=-0.05: Math.round(5 * 0.95) = Math.round(4.75) = 5 (rounding neutralizes at base=5)
+    expect(mockIncrementDisciplineScore).toHaveBeenCalledWith(42, 'Racing', 5);
+
+    // temperamentEffects is non-null even when xpModifier is 0
+    expect(result.temperamentEffects).toEqual({
+      temperament: 'Reactive',
+      xpModifier: 0.0,
+      scoreModifier: -0.05,
+    });
   });
 });
