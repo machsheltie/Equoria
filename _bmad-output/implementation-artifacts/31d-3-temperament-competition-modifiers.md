@@ -1,6 +1,6 @@
 # Story 31D.3: Competition Temperament Modifiers
 
-Status: review
+Status: done
 
 ## Story
 
