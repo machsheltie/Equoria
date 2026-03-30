@@ -6,7 +6,7 @@
 
 import React from 'react';
 import { render } from '@testing-library/react';
-import { vi, describe, it, expect, beforeEach, afterEach } from 'vitest';
+import { describe, it, expect, beforeEach, afterEach } from 'vitest';
 import { MemoryRouter } from '@/test/utils';
 import { CelestialThemeProvider } from '../CelestialThemeProvider';
 
