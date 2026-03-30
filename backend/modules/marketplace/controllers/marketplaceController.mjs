@@ -39,11 +39,16 @@ export async function browseListings(req, res) {
     if (breed) {
       where.breed = { name: { contains: breed, mode: 'insensitive' } };
     }
+    // Filter by dateOfBirth for accurate computed age (avoids stale stored age field)
     if (minAge !== undefined) {
-      where.age = { ...where.age, gte: parseInt(minAge, 10) };
+      const cutoff = new Date();
+      cutoff.setFullYear(cutoff.getFullYear() - parseInt(minAge, 10));
+      where.dateOfBirth = { ...where.dateOfBirth, lte: cutoff };
     }
     if (maxAge !== undefined) {
-      where.age = { ...where.age, lte: parseInt(maxAge, 10) };
+      const cutoff = new Date();
+      cutoff.setFullYear(cutoff.getFullYear() - parseInt(maxAge, 10));
+      where.dateOfBirth = { ...where.dateOfBirth, gte: cutoff };
     }
     if (minPrice !== undefined) {
       where.salePrice = { ...where.salePrice, gte: parseInt(minPrice, 10) };
@@ -271,12 +276,18 @@ export async function buyHorse(req, res) {
         },
       });
 
+      // Re-fetch buyer balance from within the transaction for an accurate post-purchase value
+      const postPurchaseBuyer = await tx.user.findUnique({
+        where: { id: buyerId },
+        select: { money: true },
+      });
+
       return {
         horseName: horse.name,
         salePrice,
         sellerUsername: horse.user?.username ?? 'Unknown',
         saleId: saleRecord.id,
-        newBalance: buyer.money - salePrice,
+        newBalance: postPurchaseBuyer.money,
       };
     });
 
@@ -350,7 +361,11 @@ export async function saleHistory(req, res) {
       salePrice: s.salePrice,
       soldAt: s.soldAt,
       type: s.sellerId === userId ? 'sold' : 'bought',
-      counterparty: s.sellerId === userId ? s.buyer.username : s.seller.username,
+      // buyer/seller may be null if the account was deleted after the transaction
+      counterparty:
+        s.sellerId === userId
+          ? (s.buyer?.username ?? '[deleted user]')
+          : (s.seller?.username ?? '[deleted user]'),
     }));
 
     return res.json({ success: true, data: history });

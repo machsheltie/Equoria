@@ -1,6 +1,6 @@
 # Story 31D.2: Training Temperament Modifiers
 
-Status: review
+Status: done
 
 ## Story
 

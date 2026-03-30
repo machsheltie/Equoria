@@ -8,8 +8,6 @@ import cron from 'node-cron';
 import logger from '../utils/logger.mjs';
 import { processWeeklySalaries } from './groomSalaryService.mjs';
 import { cleanupExpiredTokens } from '../utils/tokenRotationService.mjs';
-import _prisma from '../db/index.mjs';
-
 // Track running jobs
 const runningJobs = new Map();
 
@@ -21,22 +19,30 @@ export function initializeCronJobs() {
     logger.info('[cronJobService] Initializing cron jobs...');
 
     // Weekly salary processing - Every Monday at 9:00 AM
-    const salaryJob = cron.schedule('0 9 * * 1', async () => {
-      await runSalaryProcessing();
-    }, {
-      scheduled: false,
-      timezone: 'UTC',
-    });
+    const salaryJob = cron.schedule(
+      '0 9 * * 1',
+      async () => {
+        await runSalaryProcessing();
+      },
+      {
+        scheduled: false,
+        timezone: 'UTC',
+      },
+    );
 
     runningJobs.set('weeklySalaries', salaryJob);
 
     // Token cleanup - Daily at 3:00 AM (CWE-613: Insufficient Session Expiration)
-    const tokenCleanupJob = cron.schedule('0 3 * * *', async () => {
-      await runTokenCleanup();
-    }, {
-      scheduled: false,
-      timezone: 'UTC',
-    });
+    const tokenCleanupJob = cron.schedule(
+      '0 3 * * *',
+      async () => {
+        await runTokenCleanup();
+      },
+      {
+        scheduled: false,
+        timezone: 'UTC',
+      },
+    );
 
     runningJobs.set('tokenCleanup', tokenCleanupJob);
 
@@ -45,7 +51,6 @@ export function initializeCronJobs() {
     tokenCleanupJob.start();
 
     logger.info('[cronJobService] All cron jobs initialized and started');
-
   } catch (error) {
     logger.error(`[cronJobService] Error initializing cron jobs: ${error.message}`);
   }
@@ -60,11 +65,15 @@ async function runSalaryProcessing() {
 
     const results = await processWeeklySalaries();
 
-    logger.info(`[cronJobService] Weekly salary processing completed. Results: ${JSON.stringify(results)}`);
+    logger.info(
+      `[cronJobService] Weekly salary processing completed. Results: ${JSON.stringify(results)}`,
+    );
 
     // Log summary
     if (results.successful > 0) {
-      logger.info(`[cronJobService] Successfully processed $${results.totalAmount} in salaries for ${results.successful} users`);
+      logger.info(
+        `[cronJobService] Successfully processed $${results.totalAmount} in salaries for ${results.successful} users`,
+      );
     }
 
     if (results.failed > 0) {
@@ -73,7 +82,6 @@ async function runSalaryProcessing() {
         logger.warn(`[cronJobService] Salary processing error: ${error}`);
       });
     }
-
   } catch (error) {
     logger.error(`[cronJobService] Error in weekly salary processing: ${error.message}`);
   }
@@ -93,7 +101,6 @@ export function stopCronJobs() {
 
     runningJobs.clear();
     logger.info('[cronJobService] All cron jobs stopped');
-
   } catch (error) {
     logger.error(`[cronJobService] Error stopping cron jobs: ${error.message}`);
   }
@@ -118,7 +125,6 @@ export function getCronJobStatus() {
       totalJobs: runningJobs.size,
       jobs: status,
     };
-
   } catch (error) {
     logger.error(`[cronJobService] Error getting cron job status: ${error.message}`);
     return {
@@ -150,7 +156,9 @@ async function runTokenCleanup() {
       };
     }
 
-    logger.info(`[cronJobService] Token cleanup completed. Removed ${result.removedCount} expired/invalidated tokens`);
+    logger.info(
+      `[cronJobService] Token cleanup completed. Removed ${result.removedCount} expired/invalidated tokens`,
+    );
 
     return {
       removed: result.removedCount,
@@ -158,7 +166,6 @@ async function runTokenCleanup() {
       invalidated: result.invalidatedCount,
       timestamp: new Date().toISOString(),
     };
-
   } catch (error) {
     logger.error(`[cronJobService] Error in token cleanup: ${error.message}`);
     return {
@@ -182,7 +189,6 @@ export async function triggerSalaryProcessing() {
     logger.info(`[cronJobService] Manual salary processing completed: ${JSON.stringify(results)}`);
 
     return results;
-
   } catch (error) {
     logger.error(`[cronJobService] Error in manual salary processing: ${error.message}`);
     return {
@@ -209,7 +215,6 @@ export async function triggerTokenCleanup() {
     logger.info(`[cronJobService] Manual token cleanup completed: ${JSON.stringify(results)}`);
 
     return results;
-
   } catch (error) {
     logger.error(`[cronJobService] Error in manual token cleanup: ${error.message}`);
     return {

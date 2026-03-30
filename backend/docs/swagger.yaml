@@ -6,7 +6,7 @@ info:
   contact:
     name: 'Equoria Team'
   x-generated:
-    timestamp: '2026-03-13T11:57:26.875Z'
+    timestamp: '2026-03-30T16:26:21.598Z'
     endpointCount: 0
     schemaCount: 2
     generator: ApiDocumentationService
@@ -102,6 +102,88 @@ paths:
       summary: 'Logout user'
       security: [{ bearerAuth: [] }]
       responses: { '200': { description: 'Logout successful' } }
+  /api/v1/horses/temperament-definitions:
+    get:
+      tags: [Horses]
+      summary: 'Get all temperament type definitions with game effects'
+      description: 'Returns all 11 temperament types with descriptions, training modifiers, competition modifiers, and best groom personality matches. Public endpoint — no authentication required.'
+      responses:
+        {
+          '200':
+            {
+              description: 'Temperament definitions retrieved successfully',
+              content:
+                {
+                  application/json:
+                    {
+                      schema:
+                        {
+                          type: object,
+                          properties:
+                            {
+                              success: { type: boolean, example: true },
+                              message:
+                                {
+                                  type: string,
+                                  example: 'Temperament definitions retrieved successfully',
+                                },
+                              data:
+                                {
+                                  type: object,
+                                  properties:
+                                    {
+                                      count: { type: integer, example: 11 },
+                                      definitions:
+                                        {
+                                          type: array,
+                                          items:
+                                            {
+                                              type: object,
+                                              properties:
+                                                {
+                                                  name: { type: string, example: Spirited },
+                                                  description: { type: string },
+                                                  prevalenceNote: { type: string },
+                                                  trainingModifiers:
+                                                    {
+                                                      type: object,
+                                                      properties:
+                                                        {
+                                                          xpModifier:
+                                                            { type: number, example: 0.1 },
+                                                          scoreModifier:
+                                                            { type: number, example: 0.05 },
+                                                        },
+                                                    },
+                                                  competitionModifiers:
+                                                    {
+                                                      type: object,
+                                                      properties:
+                                                        {
+                                                          riddenModifier:
+                                                            { type: number, example: 0.03 },
+                                                          conformationModifier:
+                                                            { type: number, example: -0.02 },
+                                                        },
+                                                    },
+                                                  bestGroomPersonalities:
+                                                    {
+                                                      type: array,
+                                                      items: { type: string },
+                                                      example: [energetic],
+                                                    },
+                                                },
+                                            },
+                                        },
+                                    },
+                                },
+                            },
+                        },
+                    },
+                },
+            },
+          '500': { description: 'Internal server error' },
+        }
   /horses:
     get:
       tags: [Horses]
@@ -385,11 +467,11 @@ components:
     User:
       type: object
       properties: { id: { type: string } }
-      registeredAt: '2026-03-13T11:57:26.839Z'
+      registeredAt: '2026-03-30T16:26:21.584Z'
     Horse:
       type: object
       properties: { id: { type: string } }
-      registeredAt: '2026-03-13T11:57:26.854Z'
+      registeredAt: '2026-03-30T16:26:21.590Z'
     TestSchema:
       type: object
       properties:
@@ -399,8 +481,8 @@ components:
           timestamp: { type: string, format: date-time },
         }
       required: [id, name]
-      registeredAt: '2026-03-13T11:53:41.101Z'
+      registeredAt: '2026-03-30T15:50:11.901Z'
     CreateTestSchema:
       type: object
       properties: { name: { type: string } }
-      registeredAt: '2026-03-13T11:53:41.487Z'
+      registeredAt: '2026-03-30T15:50:12.741Z'

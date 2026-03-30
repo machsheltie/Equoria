@@ -177,7 +177,7 @@ development_status:
   31d-2-temperament-training-modifiers: done
   31d-3-temperament-competition-modifiers: done
   31d-4-temperament-groom-synergy: review
-  31d-5-temperament-api-endpoints: backlog
+  31d-5-temperament-api-endpoints: review
   epic-31d-retrospective: optional
 
   # Epic 31E: Coat Color Genetics

@@ -153,8 +153,10 @@ describe('Temperament Assignment Service', () => {
   // ── Statistical distribution validation (NFR-04) ───────────────────────
 
   describe('Statistical distribution (chi-squared, NFR-04)', () => {
-    // Chi-squared critical value for df=10, p=0.05 is 18.307
-    const CHI_SQUARED_CRITICAL = 18.307;
+    // Chi-squared critical value for df=10, p=0.001 is 29.588 (reduces false-positive rate
+    // from ~5% to ~0.1% per test; with 4 breeds tested the suite-level false-positive rate
+    // drops from ~19% to ~0.4%, preventing intermittent CI failures on a correct implementation)
+    const CHI_SQUARED_CRITICAL = 29.588;
     const SAMPLE_SIZE = 10000;
 
     /**
@@ -206,7 +208,7 @@ describe('Temperament Assignment Service', () => {
         // For variable df, use df=10 critical value as conservative bound
         const criticalValue = CHI_SQUARED_CRITICAL;
 
-        // Chi-squared stat should be below critical value for p > 0.05
+        // Chi-squared stat should be below critical value for p > 0.001
         expect(stat).toBeLessThan(criticalValue);
       });
     }

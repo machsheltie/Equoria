@@ -9,13 +9,22 @@ import {
   CONFORMATION_REGIONS,
   calculateOverallConformation,
 } from '../services/conformationService.mjs';
-import { BREED_GENETIC_PROFILES, CANONICAL_BREEDS } from '../data/breedGeneticProfiles.mjs';
+import {
+  BREED_GENETIC_PROFILES,
+  CANONICAL_BREEDS,
+  TEMPERAMENT_TYPES,
+} from '../data/breedGeneticProfiles.mjs';
 import {
   generateGaitScores,
   generateInheritedGaitScores,
   hasValidGaitScores,
 } from '../services/gaitService.mjs';
-import { generateTemperament } from '../services/temperamentService.mjs';
+import {
+  generateTemperament,
+  TEMPERAMENT_TRAINING_MODIFIERS,
+  TEMPERAMENT_COMPETITION_MODIFIERS,
+  TEMPERAMENT_GROOM_SYNERGY,
+} from '../services/temperamentService.mjs';
 import prisma from '../../../db/index.mjs';
 import logger from '../../../utils/logger.mjs';
 
@@ -882,6 +891,131 @@ export async function getGaits(req, res) {
     res.status(500).json({
       success: false,
       message: 'Internal server error while retrieving gait scores',
+      data: null,
+    });
+  }
+}
+
+/**
+ * Static descriptions and prevalence notes for all 11 temperament types.
+ * Kept in the controller layer — does NOT belong in temperamentService (data separation).
+ */
+const TEMPERAMENT_DESCRIPTIONS = Object.freeze({
+  Spirited: {
+    description:
+      'High-energy and excitable. Responds well to stimulation and performs impressively when engaged.',
+    prevalenceNote: 'Common in hot-blooded racing and performance breeds',
+  },
+  Nervous: {
+    description:
+      'Easily startled and prone to anxiety. Requires calm, patient handling to reach full potential.',
+    prevalenceNote: 'More common in sensitive light horse breeds',
+  },
+  Calm: {
+    description:
+      'Easygoing and unflappable. Performs consistently under pressure with minimal coaching.',
+    prevalenceNote: 'Common in draft and stock horse breeds',
+  },
+  Bold: {
+    description:
+      'Confident and courageous. Takes on challenges without hesitation and excels in ridden competition.',
+    prevalenceNote: 'Common in sport and jumping breeds',
+  },
+  Steady: {
+    description:
+      'Reliable and predictable. Rarely has exceptional or poor days — always performs as expected.',
+    prevalenceNote: 'Well-distributed across working and sport horse breeds',
+  },
+  Independent: {
+    description:
+      "Self-reliant and strong-willed. Doesn't always respond to rider cues, but thinks for itself.",
+    prevalenceNote: 'More common in gaited and semi-feral lineage breeds',
+  },
+  Reactive: {
+    description:
+      'Highly attuned to the environment. Quick to respond but easily distracted during training.',
+    prevalenceNote: 'Common in Arabians and sensitive hot-blood breeds',
+  },
+  Stubborn: {
+    description:
+      'Willful and resistant to direction. Training progress is slow but gains are permanent once made.',
+    prevalenceNote: 'More common in pony and mule-influenced breeds',
+  },
+  Playful: {
+    description:
+      'Enthusiastic and spirited, but struggles to maintain focus during structured training.',
+    prevalenceNote: 'Common in younger-spirited light horse breeds',
+  },
+  Lazy: {
+    description:
+      'Low energy and unmotivated. Requires consistent encouragement but is easy to handle.',
+    prevalenceNote: 'Common in easy-keeping draft and pony breeds',
+  },
+  Aggressive: {
+    description:
+      'Dominant and combative. Challenging to manage but can excel competitively with the right handler.',
+    prevalenceNote: 'Rare; more common in stallions and certain warmbloods',
+  },
+});
+
+/**
+ * Get all temperament type definitions with training/competition modifiers and groom synergy.
+ * Returns static game data — no DB query, no auth required.
+ * All data sourced from temperamentService constants.
+ *
+ * @param {Object} req - Express request object
+ * @param {Object} res - Express response object
+ */
+export async function getTemperamentDefinitions(req, res) {
+  try {
+    const CANONICAL_PERSONALITIES = ['gentle', 'energetic', 'patient', 'strict'];
+
+    const definitions = TEMPERAMENT_TYPES.map(name => {
+      const desc = TEMPERAMENT_DESCRIPTIONS[name] ?? { description: name, prevalenceNote: '' };
+      const trainingMods = TEMPERAMENT_TRAINING_MODIFIERS[name];
+      const competitionMods = TEMPERAMENT_COMPETITION_MODIFIERS[name];
+      const synergyMap = TEMPERAMENT_GROOM_SYNERGY[name] ?? {};
+
+      let bestGroomPersonalities;
+      if ('_any' in synergyMap) {
+        bestGroomPersonalities = CANONICAL_PERSONALITIES;
+      } else {
+        bestGroomPersonalities = Object.entries(synergyMap)
+          .filter(([, v]) => v > 0)
+          .map(([k]) => k);
+      }
+
+      return {
+        name,
+        description: desc.description,
+        prevalenceNote: desc.prevalenceNote,
+        trainingModifiers: {
+          xpModifier: trainingMods.xpModifier,
+          scoreModifier: trainingMods.scoreModifier,
+        },
+        competitionModifiers: {
+          riddenModifier: competitionMods.riddenModifier,
+          conformationModifier: competitionMods.conformationModifier,
+        },
+        bestGroomPersonalities,
+      };
+    });
+
+    logger.info('[horseController.getTemperamentDefinitions] Returned 11 temperament definitions');
+
+    res.status(200).json({
+      success: true,
+      message: 'Temperament definitions retrieved successfully',
+      data: {
+        count: definitions.length,
+        definitions,
+      },
+    });
+  } catch (error) {
+    logger.error(`[horseController.getTemperamentDefinitions] Error: ${error.message}`);
+    res.status(500).json({
+      success: false,
+      message: 'Internal server error while retrieving temperament definitions',
       data: null,
     });
   }

@@ -26,7 +26,7 @@ export const GROOM_PERSONALITY_TYPES = {
 };
 
 /**
- * Foal Temperament Types (from specification)
+ * Foal Temperament Types (from specification + temperamentService canonical set)
  * Stored in horses.temperament field
  */
 export const FOAL_TEMPERAMENT_TYPES = {
@@ -37,6 +37,11 @@ export const FOAL_TEMPERAMENT_TYPES = {
   LAZY: 'Lazy',
   PLAYFUL: 'Playful',
   AGGRESSIVE: 'Aggressive',
+  // Additional types from temperamentService — must be covered to avoid universal mismatch penalty
+  CALM: 'Calm',
+  BOLD: 'Bold',
+  NERVOUS: 'Nervous',
+  INDEPENDENT: 'Independent',
 };
 
 /**
@@ -54,35 +59,52 @@ export const FOAL_TEMPERAMENT_TYPES = {
  */
 export const PERSONALITY_TEMPERAMENT_COMPATIBILITY = {
   [GROOM_PERSONALITY_TYPES.CALM]: {
-    idealMatches: [FOAL_TEMPERAMENT_TYPES.REACTIVE, FOAL_TEMPERAMENT_TYPES.SPIRITED],
+    idealMatches: [
+      FOAL_TEMPERAMENT_TYPES.REACTIVE,
+      FOAL_TEMPERAMENT_TYPES.SPIRITED,
+      FOAL_TEMPERAMENT_TYPES.NERVOUS, // Calm groom is ideal for anxious foals
+    ],
     traitDevBonus: 1,
     stressMod: -15, // -15% stress
     bondModifier: 10,
-    description: 'Excels with reactive and spirited foals, providing calming influence',
+    description: 'Excels with reactive, spirited, and nervous foals, providing calming influence',
   },
 
   [GROOM_PERSONALITY_TYPES.ENERGETIC]: {
-    idealMatches: [FOAL_TEMPERAMENT_TYPES.LAZY, FOAL_TEMPERAMENT_TYPES.PLAYFUL],
+    idealMatches: [
+      FOAL_TEMPERAMENT_TYPES.LAZY,
+      FOAL_TEMPERAMENT_TYPES.PLAYFUL,
+      FOAL_TEMPERAMENT_TYPES.BOLD, // Energetic groom matches bold foal's confidence
+      FOAL_TEMPERAMENT_TYPES.CALM, // Energetic groom can stimulate calm foals
+    ],
     traitDevBonus: 1,
     stressMod: -5, // -5% stress
     bondModifier: 5,
-    description: 'Motivates lazy foals and matches energy with playful ones',
+    description: 'Motivates lazy foals, matches energy with playful and bold ones',
   },
 
   [GROOM_PERSONALITY_TYPES.SOFT_SPOKEN]: {
-    idealMatches: [FOAL_TEMPERAMENT_TYPES.AGGRESSIVE, FOAL_TEMPERAMENT_TYPES.SPIRITED],
+    idealMatches: [
+      FOAL_TEMPERAMENT_TYPES.AGGRESSIVE,
+      FOAL_TEMPERAMENT_TYPES.SPIRITED,
+      FOAL_TEMPERAMENT_TYPES.NERVOUS, // Quiet approach reduces anxiety in nervous foals
+    ],
     traitDevBonus: 0,
     stressMod: -10, // -10% stress
     bondModifier: 0,
-    description: 'Gentle approach helps aggressive and spirited foals feel secure',
+    description: 'Gentle approach helps aggressive, spirited, and nervous foals feel secure',
   },
 
   [GROOM_PERSONALITY_TYPES.ASSERTIVE]: {
-    idealMatches: [FOAL_TEMPERAMENT_TYPES.STUBBORN, FOAL_TEMPERAMENT_TYPES.AGGRESSIVE],
+    idealMatches: [
+      FOAL_TEMPERAMENT_TYPES.STUBBORN,
+      FOAL_TEMPERAMENT_TYPES.AGGRESSIVE,
+      FOAL_TEMPERAMENT_TYPES.BOLD, // Assertive groom matches bold foal's self-confidence
+    ],
     traitDevBonus: 1,
     stressMod: 0, // No stress modification
     bondModifier: 5,
-    description: 'Firm guidance works well with stubborn and aggressive personalities',
+    description: 'Firm guidance works well with stubborn, aggressive, and bold personalities',
   },
 
   [GROOM_PERSONALITY_TYPES.PLAYFUL]: {
@@ -94,11 +116,16 @@ export const PERSONALITY_TEMPERAMENT_COMPATIBILITY = {
   },
 
   [GROOM_PERSONALITY_TYPES.METHODICAL]: {
-    idealMatches: [FOAL_TEMPERAMENT_TYPES.REACTIVE, FOAL_TEMPERAMENT_TYPES.STUBBORN],
+    idealMatches: [
+      FOAL_TEMPERAMENT_TYPES.REACTIVE,
+      FOAL_TEMPERAMENT_TYPES.STUBBORN,
+      FOAL_TEMPERAMENT_TYPES.NERVOUS, // Routine reduces anxiety in nervous foals
+      FOAL_TEMPERAMENT_TYPES.INDEPENDENT, // Structure suits independent foals who need consistency
+    ],
     traitDevBonus: 1,
     stressMod: -5, // -5% stress
     bondModifier: 5,
-    description: 'Consistent approach helps reactive foals and manages stubborn behavior',
+    description: 'Consistent approach helps reactive, stubborn, nervous, and independent foals',
   },
 
   [GROOM_PERSONALITY_TYPES.AFFECTIONATE]: {
@@ -110,11 +137,16 @@ export const PERSONALITY_TEMPERAMENT_COMPATIBILITY = {
   },
 
   [GROOM_PERSONALITY_TYPES.RESERVED]: {
-    idealMatches: [FOAL_TEMPERAMENT_TYPES.SPIRITED, FOAL_TEMPERAMENT_TYPES.REACTIVE],
+    idealMatches: [
+      FOAL_TEMPERAMENT_TYPES.SPIRITED,
+      FOAL_TEMPERAMENT_TYPES.REACTIVE,
+      FOAL_TEMPERAMENT_TYPES.INDEPENDENT, // Reserved groom respects the independent foal's space
+    ],
     traitDevBonus: 0,
     stressMod: 5, // +5% stress (less effective)
     bondModifier: -5,
-    description: 'Quiet approach may not provide enough engagement for most foals',
+    description:
+      'Quiet approach may not provide enough engagement for most foals, but respects independent ones',
   },
 };
 
@@ -126,7 +158,11 @@ export const PERSONALITY_TEMPERAMENT_COMPATIBILITY = {
  * @param {number} bondScore - Current bond score between groom and foal
  * @returns {Object} Compatibility effects object
  */
-export function calculatePersonalityCompatibility(groomPersonality, foalTemperament, bondScore = 0) {
+export function calculatePersonalityCompatibility(
+  groomPersonality,
+  foalTemperament,
+  bondScore = 0,
+) {
   try {
     const compatibility = PERSONALITY_TEMPERAMENT_COMPATIBILITY[groomPersonality];
 

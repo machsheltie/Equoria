@@ -59,7 +59,7 @@ export async function incrementCareerWeeks(groomId) {
     logger.info(`Incremented career weeks for groom ${groomId} to ${updatedGroom.careerWeeks}`);
     return updatedGroom;
   } catch (error) {
-    logger.error(`Error incrementing career weeks for groom ${groomId}:`, error);
+    logger.error(`Error incrementing career weeks for groom ${groomId}: ${error.message}`);
     throw error;
   }
 }
@@ -136,9 +136,8 @@ export async function checkRetirementEligibility(groomId) {
       noticeRequired,
       mandatory: false,
     };
-
   } catch (error) {
-    logger.error(`Error checking retirement eligibility for groom ${groomId}:`, error);
+    logger.error(`Error checking retirement eligibility for groom ${groomId}: ${error.message}`);
     throw error;
   }
 }
@@ -190,9 +189,8 @@ export async function processRetirement(groomId, reason = null, voluntary = fals
       assignmentCount: retiredGroom.groomAssignmentLogs.length,
       synergyRecords: retiredGroom.groomHorseSynergies.length,
     };
-
   } catch (error) {
-    logger.error(`Error processing retirement for groom ${groomId}:`, error);
+    logger.error(`Error processing retirement for groom ${groomId}: ${error.message}`);
     throw error;
   }
 }
@@ -204,7 +202,8 @@ export async function processRetirement(groomId, reason = null, voluntary = fals
  */
 export async function getGroomsApproachingRetirement(userId) {
   try {
-    const noticeThreshold = CAREER_CONSTANTS.MANDATORY_RETIREMENT_WEEKS - CAREER_CONSTANTS.RETIREMENT_NOTICE_WEEKS;
+    const noticeThreshold =
+      CAREER_CONSTANTS.MANDATORY_RETIREMENT_WEEKS - CAREER_CONSTANTS.RETIREMENT_NOTICE_WEEKS;
 
     const grooms = await prisma.groom.findMany({
       where: {
@@ -220,7 +219,7 @@ export async function getGroomsApproachingRetirement(userId) {
     });
 
     const groomsWithEligibility = await Promise.all(
-      grooms.map(async (groom) => {
+      grooms.map(async groom => {
         const eligibility = await checkRetirementEligibility(groom.id);
         return {
           ...groom,
@@ -230,9 +229,10 @@ export async function getGroomsApproachingRetirement(userId) {
     );
 
     return groomsWithEligibility;
-
   } catch (error) {
-    logger.error(`Error getting grooms approaching retirement for user ${userId}:`, error);
+    logger.error(
+      `Error getting grooms approaching retirement for user ${userId}: ${error.message}`,
+    );
     throw error;
   }
 }
@@ -267,9 +267,11 @@ export async function getRetirementStatistics(userId) {
       select: { careerWeeks: true },
     });
 
-    const averageCareerLength = retiredGroomsData.length > 0
-      ? retiredGroomsData.reduce((sum, groom) => sum + groom.careerWeeks, 0) / retiredGroomsData.length
-      : 0;
+    const averageCareerLength =
+      retiredGroomsData.length > 0
+        ? retiredGroomsData.reduce((sum, groom) => sum + groom.careerWeeks, 0) /
+          retiredGroomsData.length
+        : 0;
 
     return {
       activeGrooms,
@@ -283,9 +285,8 @@ export async function getRetirementStatistics(userId) {
       }, {}),
       averageCareerLength: Math.round(averageCareerLength * 100) / 100,
     };
-
   } catch (error) {
-    logger.error(`Error getting retirement statistics for user ${userId}:`, error);
+    logger.error(`Error getting retirement statistics for user ${userId}: ${error.message}`);
     throw error;
   }
 }
@@ -331,8 +332,13 @@ export async function processWeeklyCareerProgression() {
         // Check retirement eligibility
         const eligibility = await checkRetirementEligibility(groom.id);
 
-        // Process automatic retirements
-        if (eligibility.eligible && (eligibility.mandatory || eligibility.reason === RETIREMENT_REASONS.EARLY_LEVEL_CAP)) {
+        // Process automatic retirements (mandatory, level cap, or assignment limit)
+        if (
+          eligibility.eligible &&
+          (eligibility.mandatory ||
+            eligibility.reason === RETIREMENT_REASONS.EARLY_LEVEL_CAP ||
+            eligibility.reason === RETIREMENT_REASONS.EARLY_ASSIGNMENT_LIMIT)
+        ) {
           await processRetirement(groom.id, eligibility.reason);
           results.retired++;
           results.retirements.push({
@@ -345,7 +351,6 @@ export async function processWeeklyCareerProgression() {
 
           logger.info(`Groom ${groom.name} (ID: ${groom.id}) retired: ${eligibility.reason}`);
         }
-
       } catch (error) {
         logger.error(`Error processing groom ${groom.id}:`, error);
         results.errors.push({
@@ -356,11 +361,13 @@ export async function processWeeklyCareerProgression() {
       }
     }
 
-    logger.info(`Weekly career progression completed: ${results.processed} processed, ${results.retired} retired, ${results.errors.length} errors`);
+    logger.info(
+      `Weekly career progression completed: ${results.processed} processed, ${results.retired} retired, ${results.errors.length} errors`,
+    );
 
     return results;
   } catch (error) {
-    logger.error('Error in weekly career progression:', error);
+    logger.error(`Error in weekly career progression: ${error.message}`);
     throw new Error('Failed to process weekly career progression');
   }
 }
