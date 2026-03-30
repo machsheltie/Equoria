@@ -36,6 +36,7 @@
  */
 
 import { GROOM_CONFIG } from '../config/groomConfig.mjs';
+import { getTemperamentGroomSynergy } from '../modules/horses/services/temperamentService.mjs';
 import prisma from '../db/index.mjs';
 import logger from './logger.mjs';
 
@@ -113,9 +114,16 @@ export function getAgeGroupDescription(ageInDays) {
  * Calculate bonding effects for a grooming session
  * @param {number} currentBondScore - Current bond score of the horse
  * @param {string} groomingTask - Type of grooming task
+ * @param {string|null} groomPersonality - Groom personality for synergy (optional, backward-compatible)
+ * @param {string|null} horseTemperament - Horse temperament for synergy (optional, backward-compatible)
  * @returns {Object} Bonding calculation results
  */
-export function calculateBondingEffects(currentBondScore, groomingTask) {
+export function calculateBondingEffects(
+  currentBondScore,
+  groomingTask,
+  groomPersonality = null,
+  horseTemperament = null,
+) {
   // Check if task is eligible for bonding (any grooming task can provide bonding)
   const taskCategory = categorizeTask(groomingTask);
   if (taskCategory !== GROOM_CONFIG.TASK_CATEGORIES.GROOMING) {
@@ -124,11 +132,22 @@ export function calculateBondingEffects(currentBondScore, groomingTask) {
       newBondScore: currentBondScore,
       eligible: false,
       reason: `Task '${groomingTask}' is not eligible for bonding (enrichment tasks don't provide bonding)`,
+      synergyModifier: 0,
     };
   }
 
+  // Compute temperament-groom synergy modifier
+  const synergyMod = getTemperamentGroomSynergy(horseTemperament, groomPersonality);
+  const effectiveGain = GROOM_CONFIG.DAILY_BOND_GAIN * (1 + synergyMod);
+
+  if (synergyMod !== 0) {
+    logger.info(
+      `[calculateBondingEffects] Temperament "${horseTemperament}" × groom "${groomPersonality}": synergy ${(synergyMod * 100).toFixed(0)}% → effective gain ${effectiveGain.toFixed(2)}`,
+    );
+  }
+
   // Calculate bond change with cap
-  const potentialNewScore = currentBondScore + GROOM_CONFIG.DAILY_BOND_GAIN;
+  const potentialNewScore = currentBondScore + effectiveGain;
   const newBondScore = Math.min(potentialNewScore, GROOM_CONFIG.BOND_SCORE_MAX);
   const actualBondChange = newBondScore - currentBondScore;
 
@@ -137,6 +156,7 @@ export function calculateBondingEffects(currentBondScore, groomingTask) {
     newBondScore,
     eligible: true,
     capped: newBondScore === GROOM_CONFIG.BOND_SCORE_MAX,
+    synergyModifier: synergyMod,
   };
 }
 
@@ -256,7 +276,7 @@ export function checkBurnoutImmunity(consecutiveDays) {
  * @param {number} duration - Duration in minutes
  * @returns {Object} Complete grooming session result
  */
-export async function processGroomingSession(horseId, _groomId, groomingTask, _duration) {
+export async function processGroomingSession(horseId, groomId, groomingTask, _duration) {
   try {
     // Get horse data
     const horse = await prisma.horse.findUnique({
@@ -268,12 +288,21 @@ export async function processGroomingSession(horseId, _groomId, groomingTask, _d
         bondScore: true,
         daysGroomedInARow: true,
         burnoutStatus: true,
+        temperament: true,
       },
     });
 
     if (!horse) {
       throw new Error(`Horse with ID ${horseId} not found`);
     }
+
+    // Fetch groom personality for synergy calculation (null if groomId not provided)
+    const groom = groomId
+      ? await prisma.groom.findUnique({
+          where: { id: groomId },
+          select: { personality: true },
+        })
+      : null;
 
     // Validate eligibility
     const eligibilityCheck = await validateGroomingEligibility(horse, groomingTask);
@@ -285,8 +314,13 @@ export async function processGroomingSession(horseId, _groomId, groomingTask, _d
       };
     }
 
-    // Calculate bonding effects
-    const bondingEffects = calculateBondingEffects(horse.bondScore || 0, groomingTask);
+    // Calculate bonding effects with temperament-groom synergy
+    const bondingEffects = calculateBondingEffects(
+      horse.bondScore || 0,
+      groomingTask,
+      groom?.personality ?? null,
+      horse.temperament ?? null,
+    );
 
     // Update consecutive days (assuming groomed today)
     const consecutiveDaysUpdate = updateConsecutiveDays(horse.daysGroomedInARow || 0, true);

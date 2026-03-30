@@ -91,6 +91,56 @@ export function getTemperamentCompetitionModifiers(temperament) {
 }
 
 /**
+ * Decimal multipliers applied to daily bond gain during grooming sessions.
+ * Values per PRD-03 §7.6. Applied as: DAILY_BOND_GAIN * (1 + synergyModifier).
+ * Calm and Steady use `_any` key for universal matching with any personality.
+ * @type {Object.<string, Object.<string, number>>}
+ */
+export const TEMPERAMENT_GROOM_SYNERGY = Object.freeze({
+  Spirited: Object.freeze({ energetic: 0.2 }),
+  Nervous: Object.freeze({ patient: 0.25, gentle: 0.25, strict: -0.15 }),
+  Calm: Object.freeze({ _any: 0.1 }),
+  Bold: Object.freeze({ energetic: 0.15, strict: 0.15 }),
+  Steady: Object.freeze({ _any: 0.1 }),
+  Independent: Object.freeze({ patient: 0.15 }),
+  Reactive: Object.freeze({ patient: 0.2, gentle: 0.2 }),
+  Stubborn: Object.freeze({ strict: 0.15 }),
+  Playful: Object.freeze({ energetic: 0.15 }),
+  Lazy: Object.freeze({ energetic: 0.1, strict: 0.1 }),
+  Aggressive: Object.freeze({ strict: 0.1, patient: 0.1 }),
+});
+
+/**
+ * Return the groom synergy modifier for a given temperament/personality combination.
+ * Returns 0 for null/unknown inputs (backward compatible).
+ *
+ * @param {string|null} temperament - Horse temperament, or null
+ * @param {string|null} groomPersonality - Groom personality (gentle/energetic/patient/strict), or null
+ * @returns {number} Decimal modifier (e.g., 0.25 = +25%) or 0 for no synergy
+ */
+export function getTemperamentGroomSynergy(temperament, groomPersonality) {
+  if (!temperament || typeof temperament !== 'string') return 0;
+  if (!groomPersonality || typeof groomPersonality !== 'string') return 0;
+
+  const synergyMap = TEMPERAMENT_GROOM_SYNERGY[temperament];
+  if (!synergyMap) {
+    logger.warn(
+      `[temperamentService] Unknown temperament "${temperament}" — returning zero groom synergy`,
+    );
+    return 0;
+  }
+
+  // Calm and Steady: universal bonus for any valid personality
+  if ('_any' in synergyMap) {
+    return synergyMap._any;
+  }
+
+  // Specific personality match
+  const modifier = synergyMap[groomPersonality.toLowerCase()];
+  return modifier !== undefined ? modifier : 0;
+}
+
+/**
  * Select a value from a weighted distribution.
  * @param {Object} weights - Object mapping names to integer weights (must sum > 0)
  * @returns {string} The selected key
