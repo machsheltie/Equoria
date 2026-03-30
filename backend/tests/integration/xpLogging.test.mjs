@@ -236,7 +236,7 @@ describe('📊 INTEGRATION: XP Logging Integration - Experience Point Workflow',
         reason: 'Trained horse Storm in Show Jumping',
       });
       expect(mockLogger.error).toHaveBeenCalledWith(
-        '[trainingController.trainHorse] Failed to award training XP: Database connection failed',
+        '[trainingController.trainHorse] Failed to log XP audit event: Database connection failed',
       );
     });
 

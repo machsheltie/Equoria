@@ -99,7 +99,7 @@ export async function getNextActions(req, res) {
 
     // Horses eligible to compete (age 3+, healthy, no active cooldown)
     const competitiveHorse = horses.find(
-      h => h.age >= 3 && h.health !== 'injured' && h.health !== 'INJURED',
+      h => h.age >= 3 && h.healthStatus !== 'injured' && h.healthStatus !== 'INJURED',
     );
     if (competitiveHorse) {
       actions.push({
