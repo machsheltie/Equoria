@@ -106,10 +106,10 @@ describe('Database Query Optimization', () => {
     await prisma.horse.deleteMany({
       where: { userId: testUserId }, // Correct schema field - userId not ownerId
     });
-    await prisma.user.delete({
+    await prisma.user.deleteMany({
       where: { id: testUserId },
     });
-    await prisma.breed.delete({
+    await prisma.breed.deleteMany({
       where: { id: testBreed.id },
     });
   });
@@ -320,8 +320,8 @@ describe('Database Query Optimization', () => {
         useCache: true,
       });
 
-      // Update horse data
-      await prisma.horse.update({
+      // Update horse data (updateMany is idempotent — no-op if horse was concurrently removed)
+      await prisma.horse.updateMany({
         where: { id: testHorseIds[0] },
         data: { bondScore: 95 },
       });

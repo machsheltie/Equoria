@@ -83,7 +83,7 @@ describe('Groom Retirement Service', () => {
       await prisma.groomTalentSelections.deleteMany({
         where: { groomId: testGroom.id },
       });
-      await prisma.groom.delete({
+      await prisma.groom.deleteMany({
         where: { id: testGroom.id },
       });
     }
@@ -92,12 +92,12 @@ describe('Groom Retirement Service', () => {
   afterAll(async () => {
     // Clean up test data
     if (testHorse) {
-      await prisma.horse.delete({
+      await prisma.horse.deleteMany({
         where: { id: testHorse.id },
       });
     }
     if (testUser) {
-      await prisma.user.delete({
+      await prisma.user.deleteMany({
         where: { id: testUser.id },
       });
     }
@@ -348,7 +348,7 @@ describe('Groom Retirement Service', () => {
           await prisma.groomTalentSelections.deleteMany({
             where: { groomId: groom.id },
           });
-          await prisma.groom.delete({
+          await prisma.groom.deleteMany({
             where: { id: groom.id },
           });
         }
