@@ -80,7 +80,7 @@ export function getTemperamentCompetitionModifiers(temperament) {
   if (!temperament || typeof temperament !== 'string') {
     return { riddenModifier: 0, conformationModifier: 0 };
   }
-  const mods = TEMPERAMENT_COMPETITION_MODIFIERS[temperament];
+  const mods = TEMPERAMENT_COMPETITION_MODIFIERS[temperament.trim()];
   if (!mods) {
     logger.warn(
       `[temperamentService] Unknown temperament "${temperament}" — returning zero competition modifiers`,

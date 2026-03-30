@@ -201,8 +201,14 @@ describe('calculateCompetitionScore() — temperament ridden modifiers (all 11 t
   });
 
   // Positive ridden modifiers
-  it('Bold (+5% ridden): Math.round(90 * 1.05) = 95', () => {
+  it('Bold (+5% ridden): 90 * 1.05 = 94.5 → Math.round = 95', () => {
     expect(calculateCompetitionScore(makeRacingHorse({ temperament: 'Bold' }), 'Racing')).toBe(95);
+  });
+
+  it('Bold temperament: logger.info emitted with modifier percentage "5.0%"', () => {
+    mockLogger.info.mockClear();
+    calculateCompetitionScore(makeRacingHorse({ temperament: 'Bold' }), 'Racing');
+    expect(mockLogger.info).toHaveBeenCalledWith(expect.stringContaining('Temperament "Bold" ridden modifier: 5.0%'));
   });
 
   it('Spirited (+3% ridden): Math.round(90 * 1.03) = 93', () => {
@@ -222,11 +228,11 @@ describe('calculateCompetitionScore() — temperament ridden modifiers (all 11 t
   });
 
   // Negative ridden modifiers
-  it('Nervous (-5% ridden): Math.round(90 * 0.95) = 86', () => {
+  it('Nervous (-5% ridden): 90 * 0.95 = 85.5 → Math.round = 86', () => {
     expect(calculateCompetitionScore(makeRacingHorse({ temperament: 'Nervous' }), 'Racing')).toBe(86);
   });
 
-  it('Lazy (-5% ridden): Math.round(90 * 0.95) = 86', () => {
+  it('Lazy (-5% ridden): 90 * 0.95 = 85.5 → Math.round = 86', () => {
     expect(calculateCompetitionScore(makeRacingHorse({ temperament: 'Lazy' }), 'Racing')).toBe(86);
   });
 
@@ -318,6 +324,7 @@ describe('calculateCompetitionScore() — minimum score floor (AC #7)', () => {
 
   beforeEach(() => {
     mathRandomSpy = jest.spyOn(Math, 'random').mockReturnValue(0.5);
+    mockLogger.warn.mockClear();
   });
 
   afterEach(() => {
@@ -371,6 +378,7 @@ describe('calculateCompetitionScore() — temperament + trait stacking', () => {
   beforeEach(() => {
     mathRandomSpy = jest.spyOn(Math, 'random').mockReturnValue(0.5);
     mockLogger.info.mockClear();
+    mockLogger.warn.mockClear();
   });
 
   afterEach(() => {

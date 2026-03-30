@@ -5,7 +5,9 @@ import { getTemperamentCompetitionModifiers } from '../modules/horses/services/t
  * Calculate competition score for a horse in a specific event type
  * @param {Object} horse - Horse object with stats and traits
  * @param {string} eventType - Competition discipline (e.g., 'Racing', 'Show Jumping', 'Dressage')
- * @param {string} [showType='ridden'] - Competition show type ('ridden' or 'conformation')
+ * @param {string} [showType='ridden'] - Competition show type: 'ridden' (Racing, Show Jumping,
+ *   Dressage, Cross Country) or 'conformation' (halter/in-hand shows). Unrecognized values
+ *   default to 'ridden' with a warning logged.
  * @returns {number} Final rounded competition score (minimum 0)
  */
 export function calculateCompetitionScore(horse, eventType, showType = 'ridden') {
@@ -58,13 +60,13 @@ export function calculateCompetitionScore(horse, eventType, showType = 'ridden')
     // Guard against non-finite stats (e.g. Infinity from corrupted data)
     if (!isFinite(baseScore)) {
       logger.warn(
-        `[calculateCompetitionScore] Horse ${horse.name || horse.id}: Non-finite base score (${baseScore}) — clamped to 0`,
+        `[calculateCompetitionScore] Horse ${horse.name || horse.id || '(unknown)'}: Non-finite base score (${baseScore}) — clamped to 0`,
       );
       baseScore = 0;
     }
 
     logger.info(
-      `[calculateCompetitionScore] Horse ${horse.name || horse.id}: Base score for ${normalizedEventType}: ${baseScore}`,
+      `[calculateCompetitionScore] Horse ${horse.name || horse.id || '(unknown)'}: Base score for ${normalizedEventType}: ${baseScore}`,
     );
 
     // Check for matching discipline affinity trait
@@ -78,7 +80,7 @@ export function calculateCompetitionScore(horse, eventType, showType = 'ridden')
       if (epigeneticModifiers.positive.includes(traitName)) {
         traitBonus = 5;
         logger.info(
-          `[calculateCompetitionScore] Horse ${horse.name || horse.id}: Discipline affinity bonus applied for ${traitName} (+${traitBonus} points)`,
+          `[calculateCompetitionScore] Horse ${horse.name || horse.id || '(unknown)'}: Discipline affinity bonus applied for ${traitName} (+${traitBonus} points)`,
         );
       }
     }
@@ -86,24 +88,28 @@ export function calculateCompetitionScore(horse, eventType, showType = 'ridden')
     // Apply trait bonus
     const scoreWithTraitBonus = baseScore + traitBonus;
 
-    // Validate showType — warn for unrecognized values (default to ridden behavior)
+    // Validate showType — normalize unrecognized values to 'ridden' (default behavior)
+    let effectiveShowType = showType;
     if (showType !== 'ridden' && showType !== 'conformation') {
       logger.warn(
         `[calculateCompetitionScore] Unrecognized showType "${showType}" — defaulting to ridden modifier`,
       );
+      effectiveShowType = 'ridden';
     }
 
     // Apply temperament modifier (pre-luck, per PRD-03 §7.5)
     const temperamentMods = getTemperamentCompetitionModifiers(horse.temperament);
     const tempMod =
-      showType === 'conformation'
+      effectiveShowType === 'conformation'
         ? temperamentMods.conformationModifier
         : temperamentMods.riddenModifier;
-    const scoreAfterTemperament = scoreWithTraitBonus * (1 + tempMod);
+    // Clamp modifier to [-1, 1] to guard against corrupted data (all valid values are ≤ ±0.1)
+    const clampedTempMod = Math.max(-1, Math.min(1, tempMod));
+    const scoreAfterTemperament = scoreWithTraitBonus * (1 + clampedTempMod);
 
-    if (tempMod !== 0) {
+    if (clampedTempMod !== 0) {
       logger.info(
-        `[calculateCompetitionScore] Horse ${horse.name || horse.id}: Temperament "${horse.temperament}" ${showType} modifier: ${(tempMod * 100).toFixed(0)}%`,
+        `[calculateCompetitionScore] Horse ${horse.name || horse.id || '(unknown)'}: Temperament "${horse.temperament}" ${effectiveShowType} modifier: ${(clampedTempMod * 100).toFixed(1)}%`,
       );
     }
 
@@ -117,7 +123,7 @@ export function calculateCompetitionScore(horse, eventType, showType = 'ridden')
     const luckAdjustment = scoreAfterTemperament * clampedLuckModifier;
 
     logger.info(
-      `[calculateCompetitionScore] Horse ${horse.name || horse.id}: Luck modifier: ${(clampedLuckModifier * 100).toFixed(1)}%, adjustment: ${luckAdjustment.toFixed(1)}`,
+      `[calculateCompetitionScore] Horse ${horse.name || horse.id || '(unknown)'}: Luck modifier: ${(clampedLuckModifier * 100).toFixed(1)}%, adjustment: ${luckAdjustment.toFixed(1)}`,
     );
 
     // Calculate final score — clamped to minimum 0
@@ -125,13 +131,13 @@ export function calculateCompetitionScore(horse, eventType, showType = 'ridden')
     const roundedScore = Math.max(0, Math.round(finalScore));
 
     logger.info(
-      `[calculateCompetitionScore] Horse ${horse.name || horse.id}: Final score: ${roundedScore} (base: ${baseScore}, trait: +${traitBonus}, temperament: ${(tempMod * 100).toFixed(0)}%, luck: ${luckAdjustment.toFixed(1)})`,
+      `[calculateCompetitionScore] Horse ${horse.name || horse.id || '(unknown)'}: Final score: ${roundedScore} (base: ${baseScore}, trait: +${traitBonus}, temperament: ${(clampedTempMod * 100).toFixed(1)}%, luck: ${luckAdjustment.toFixed(1)})`,
     );
 
     return roundedScore;
   } catch (error) {
     logger.error(
-      `[calculateCompetitionScore] Error calculating score for horse ${horse?.name || horse?.id}: ${error.message}`,
+      `[calculateCompetitionScore] Error calculating score for horse ${horse?.name || horse?.id || '(unknown)'}: ${error.message}`,
     );
     throw error;
   }
