@@ -72,39 +72,28 @@ describe('🔐 INTEGRATION: Authentication Controller Simple - Core Auth Workflo
     app = createTestApp();
   });
 
+  // Own test emails — keep scope narrow to avoid deleting users from parallel test suites
+  const TEST_EMAILS = ['test@example.com', 'login-test@example.com'];
+
   beforeEach(async () => {
     // Delete in order to avoid foreign key constraint violations
     // 1. Delete training logs first
     await prisma.trainingLog.deleteMany({
       where: {
         horse: {
-          user: {
-            email: {
-              contains: 'test',
-            },
-          },
+          user: { email: { in: TEST_EMAILS } },
         },
       },
     });
 
     // 2. Delete horses
     await prisma.horse.deleteMany({
-      where: {
-        user: {
-          email: {
-            contains: 'test',
-          },
-        },
-      },
+      where: { user: { email: { in: TEST_EMAILS } } },
     });
 
     // 3. Then delete users
     await prisma.user.deleteMany({
-      where: {
-        email: {
-          contains: 'test',
-        },
-      },
+      where: { email: { in: TEST_EMAILS } },
     });
   });
 
@@ -114,33 +103,19 @@ describe('🔐 INTEGRATION: Authentication Controller Simple - Core Auth Workflo
     await prisma.trainingLog.deleteMany({
       where: {
         horse: {
-          user: {
-            email: {
-              contains: 'test',
-            },
-          },
+          user: { email: { in: TEST_EMAILS } },
         },
       },
     });
 
     // 2. Delete horses
     await prisma.horse.deleteMany({
-      where: {
-        user: {
-          email: {
-            contains: 'test',
-          },
-        },
-      },
+      where: { user: { email: { in: TEST_EMAILS } } },
     });
 
     // 3. Then delete users
     await prisma.user.deleteMany({
-      where: {
-        email: {
-          contains: 'test',
-        },
-      },
+      where: { email: { in: TEST_EMAILS } },
     });
     await prisma.$disconnect();
   });
