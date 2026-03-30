@@ -25,12 +25,12 @@ describe('Ownership Violation Attempts Integration Tests', () => {
     // Avoids wiping ALL records (which would break concurrently-running suites).
     const staleUserIds = [userA?.id, userB?.id].filter(Boolean);
     if (staleUserIds.length > 0) {
+      await prisma.refreshToken.deleteMany({ where: { userId: { in: staleUserIds } } });
       await prisma.groomAssignment.deleteMany({ where: { userId: { in: staleUserIds } } });
       await prisma.groom.deleteMany({ where: { id: { in: [groomA?.id, groomB?.id].filter(Boolean) } } });
       await prisma.horse.deleteMany({ where: { id: { in: [horseA?.id, horseB?.id].filter(Boolean) } } });
       await prisma.user.deleteMany({ where: { id: { in: staleUserIds } } });
     }
-    await prisma.refreshToken.deleteMany({});
 
     // Ensure auth middleware and tokens share the same secret in test runs
     process.env.JWT_SECRET = process.env.JWT_SECRET || 'test-jwt-secret-key-for-testing-only-32chars';
@@ -102,7 +102,10 @@ describe('Ownership Violation Attempts Integration Tests', () => {
   });
 
   afterEach(async () => {
-    await prisma.refreshToken.deleteMany({});
+    const currentUserIds = [userA?.id, userB?.id].filter(Boolean);
+    if (currentUserIds.length > 0) {
+      await prisma.refreshToken.deleteMany({ where: { userId: { in: currentUserIds } } });
+    }
     await prisma.groom.deleteMany({
       where: { id: { in: [groomA?.id, groomB?.id].filter(Boolean) } },
     });
