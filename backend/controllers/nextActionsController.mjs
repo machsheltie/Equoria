@@ -38,16 +38,17 @@ export async function getNextActions(req, res) {
         id: true,
         name: true,
         age: true,
-        health: true,
-        lastTrainedAt: true,
-        cooldownEndsAt: true,
-        breedingCooldownEndsAt: true,
+        healthStatus: true,
+        trainingCooldown: true,
+        lastBredDate: true,
         sex: true,
       },
     });
 
     // Check for injured horses → visit-vet (priority 1 if present)
-    const injuredHorse = horses.find(h => h.health === 'injured' || h.health === 'INJURED');
+    const injuredHorse = horses.find(
+      h => h.healthStatus === 'injured' || h.healthStatus === 'INJURED',
+    );
     if (injuredHorse) {
       actions.push({
         type: 'visit-vet',
@@ -83,9 +84,9 @@ export async function getNextActions(req, res) {
     const trainableHorse = horses.find(
       h =>
         h.age >= 3 &&
-        h.health !== 'injured' &&
-        h.health !== 'INJURED' &&
-        (!h.cooldownEndsAt || new Date(h.cooldownEndsAt) <= now),
+        h.healthStatus !== 'injured' &&
+        h.healthStatus !== 'INJURED' &&
+        (!h.trainingCooldown || new Date(h.trainingCooldown) <= now),
     );
     if (trainableHorse) {
       actions.push({
@@ -114,9 +115,9 @@ export async function getNextActions(req, res) {
       h =>
         h.sex?.toLowerCase() === 'mare' &&
         h.age >= 3 &&
-        h.health !== 'injured' &&
-        h.health !== 'INJURED' &&
-        (!h.breedingCooldownEndsAt || new Date(h.breedingCooldownEndsAt) <= now),
+        h.healthStatus !== 'injured' &&
+        h.healthStatus !== 'INJURED' &&
+        (!h.lastBredDate || new Date(h.lastBredDate) <= now),
     );
     if (breedableMare) {
       actions.push({

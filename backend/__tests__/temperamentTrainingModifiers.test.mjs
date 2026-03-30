@@ -332,4 +332,37 @@ describe('trainHorse() — temperament modifier integration', () => {
       scoreModifier: -0.05,
     });
   });
+
+  // F6 — Stat gain branch + temperament interaction: both fire correctly when random < 0.15
+  // Verifies stat gain and temperament modifier are independent and both applied
+  test('Spirited horse triggers stat gain when Math.random < 0.15 and both paths succeed', async () => {
+    const horse = makeHorse('Spirited');
+    setupEligibleMocks(horse);
+
+    // Mock Math.random to return 0.05 — below 0.15 stat gain threshold
+    mathRandomSpy.mockReturnValue(0.05);
+
+    const result = await trainHorse(42, 'Racing');
+
+    expect(result.success).toBe(true);
+
+    // Stat gain should have occurred (random 0.05 < 0.15 threshold)
+    expect(result.statGain).not.toBeNull();
+    expect(result.statGain.stat).toBeTruthy(); // one of the Racing stats
+    expect(result.statGain.amount).toBeGreaterThanOrEqual(1);
+    expect(result.statGain.amount).toBeLessThanOrEqual(10); // capped at 10
+
+    // Spirited +5% score: Math.round(5 * 1.05) = Math.round(5.25) = 5
+    expect(mockIncrementDisciplineScore).toHaveBeenCalledWith(42, 'Racing', 5);
+
+    // Spirited +10% XP: Math.round(5 * 1.10) = Math.round(5.5) = 6
+    expect(mockAddXpToUser).toHaveBeenCalledWith('user-uuid-123', 6);
+
+    // temperamentEffects still reported
+    expect(result.temperamentEffects).toEqual({
+      temperament: 'Spirited',
+      xpModifier: 0.1,
+      scoreModifier: 0.05,
+    });
+  });
 });

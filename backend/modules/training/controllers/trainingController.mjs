@@ -188,13 +188,14 @@ async function trainHorse(horseId, discipline) {
     // Calculate base discipline score increase (default +5)
     let disciplineScoreIncrease = 5;
 
-    // Apply trait effects to training
-    if (traitEffects.trainingXpModifier) {
+    // Apply trait effects to discipline score.
+    // trainingXpModifier is the single trait training modifier (applies to both score and XP).
+    if (traitEffects.trainingXpModifier != null) {
       disciplineScoreIncrease = Math.round(
         disciplineScoreIncrease * (1 + traitEffects.trainingXpModifier),
       );
       logger.info(
-        `[trainingController.trainHorse] Trait XP modifier applied: ${(traitEffects.trainingXpModifier * 100).toFixed(1)}%`,
+        `[trainingController.trainHorse] Trait training modifier applied to discipline score: ${(traitEffects.trainingXpModifier * 100).toFixed(1)}%`,
       );
     }
 
@@ -267,7 +268,7 @@ async function trainHorse(horseId, discipline) {
       const relevantStats = disciplineStatMap[discipline] || ['speed', 'stamina', 'focus'];
       const statToImprove = relevantStats[Math.floor(Math.random() * relevantStats.length)];
 
-      // Calculate stat gain amount (base 1-3 points)
+      // Calculate stat gain amount (base 1-3 points, capped at 10 to prevent extreme trait values)
       let statGainAmount = Math.floor(Math.random() * 3) + 1;
 
       // Apply trait effects to stat gain amount
@@ -277,6 +278,7 @@ async function trainHorse(horseId, discipline) {
           `[trainingController.trainHorse] Stat gain boosted by traits: +${traitEffects.baseStatBoost}`,
         );
       }
+      statGainAmount = Math.min(10, statGainAmount);
 
       statGainDetails = {
         stat: statToImprove,
@@ -306,7 +308,7 @@ async function trainHorse(horseId, discipline) {
 
     // Calculate XP award with trait effects
     let baseXp = 5;
-    if (traitEffects.trainingXpModifier) {
+    if (traitEffects.trainingXpModifier != null) {
       baseXp = Math.round(baseXp * (1 + traitEffects.trainingXpModifier));
     }
 
@@ -323,29 +325,38 @@ async function trainHorse(horseId, discipline) {
     baseXp = Math.max(1, baseXp);
 
     // Award XP to horse owner for training
-    try {
-      if (updatedHorse && updatedHorse.userId) {
-        // Award XP using userModel.addXpToUser (leveling up is handled automatically)
-        const xpResult = await addXpToUser(updatedHorse.userId, baseXp);
+    if (updatedHorse && updatedHorse.userId) {
+      // Award XP — separate try-catch so audit log failure doesn't suppress XP errors
+      let xpResult = null;
+      try {
+        xpResult = await addXpToUser(updatedHorse.userId, baseXp);
+        logger.info(
+          `[trainingController.trainHorse] Awarded ${baseXp} XP to user ${updatedHorse.userId} for training${xpResult.leveledUp ? ` - LEVEL UP to ${xpResult.newLevel}!` : ''}`,
+        );
+      } catch (error) {
+        logger.error(
+          `[trainingController.trainHorse] Failed to award training XP: ${error.message}`,
+        );
+        // Continue with training completion even if XP award fails
+      }
 
-        // Log XP event for auditing
+      // Audit log — separate try-catch so a log failure never suppresses XP award
+      try {
         await logXpEvent({
           userId: updatedHorse.userId,
           amount: baseXp,
           reason: `Trained horse ${updatedHorse.name} in ${discipline}`,
         });
-
-        logger.info(
-          `[trainingController.trainHorse] Awarded ${baseXp} XP to user ${updatedHorse.userId} for training${xpResult.leveledUp ? ` - LEVEL UP to ${xpResult.newLevel}!` : ''}`,
+      } catch (error) {
+        logger.error(
+          `[trainingController.trainHorse] Failed to log XP audit event: ${error.message}`,
         );
-      } else if (updatedHorse && !updatedHorse.userId) {
-        logger.warn(
-          `[trainingController.trainHorse] Horse ${updatedHorse.id} (${updatedHorse.name}) has no userId - XP cannot be awarded`,
-        );
+        // Non-fatal — XP was already awarded above
       }
-    } catch (error) {
-      logger.error(`[trainingController.trainHorse] Failed to award training XP: ${error.message}`);
-      // Continue with training completion even if XP award fails
+    } else if (updatedHorse && !updatedHorse.userId) {
+      logger.warn(
+        `[trainingController.trainHorse] Horse ${updatedHorse.id} (${updatedHorse.name}) has no userId - XP cannot be awarded`,
+      );
     }
 
     // Calculate next eligible training date (7 days from now, potentially modified by traits)
