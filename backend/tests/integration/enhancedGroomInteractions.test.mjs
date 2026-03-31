@@ -15,6 +15,18 @@ describe('Enhanced Groom Interactions Integration Tests', () => {
   let testHorse;
 
   beforeAll(async () => {
+    // Pre-cleanup: remove any stale records from a previous run
+    const stale = await prisma.user.findUnique({
+      where: { username: 'enhanced-groom-test-user' },
+      select: { id: true },
+    });
+    if (stale) {
+      await prisma.groomInteraction.deleteMany({ where: { groom: { userId: stale.id } } });
+      await prisma.groom.deleteMany({ where: { userId: stale.id } });
+      await prisma.horse.deleteMany({ where: { userId: stale.id } });
+      await prisma.user.delete({ where: { id: stale.id } });
+    }
+
     // Create test user
     testUser = await prisma.user.create({
       data: {
@@ -420,6 +432,11 @@ describe('Enhanced Groom Interactions Integration Tests', () => {
     });
 
     it("should prevent access to other users' grooms and horses", async () => {
+      // Pre-cleanup: remove stale record from a previous run
+      const staleOther = await prisma.user.findUnique({ where: { email: 'other-enhanced-test@example.com' } });
+      if (staleOther) {
+        await prisma.user.delete({ where: { id: staleOther.id } });
+      }
       // Create another user
       const otherUser = await prisma.user.create({
         data: {
