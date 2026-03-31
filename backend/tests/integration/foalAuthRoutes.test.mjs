@@ -61,7 +61,7 @@ const buildToken = userId =>
 
 beforeAll(async () => {
   process.env.TEST_BYPASS_RATE_LIMIT = 'false';
-  process.env.TEST_RATE_LIMIT_WINDOW_MS = '1000';
+  process.env.TEST_RATE_LIMIT_WINDOW_MS = '10000'; // 10s window — wide enough that test execution timing can't span it
   process.env.TEST_RATE_LIMIT_MAX_REQUESTS = '2';
 
   authToken = jwt.sign({ id: 'test-user-id', email: 'test@example.com' }, process.env.JWT_SECRET, {

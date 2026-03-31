@@ -17,9 +17,16 @@ import {
   TackInventoryData,
   TackPurchaseResult,
   TackRepairResult,
+  TackUnequipDecorationResult,
 } from '@/lib/api-client';
 
-export type { TackItem, TackInventoryData, TackPurchaseResult, TackRepairResult };
+export type {
+  TackItem,
+  TackInventoryData,
+  TackPurchaseResult,
+  TackRepairResult,
+  TackUnequipDecorationResult,
+};
 
 export const tackShopKeys = {
   all: ['tack-shop'] as const,
@@ -58,6 +65,17 @@ export function useRepairTack() {
       queryClient.invalidateQueries({ queryKey: ['horses'] });
       // Refresh profile so balance updates in nav
       queryClient.invalidateQueries({ queryKey: ['profile'] });
+    },
+  });
+}
+
+export function useUnequipDecoration() {
+  const queryClient = useQueryClient();
+
+  return useMutation<TackUnequipDecorationResult, ApiError, { horseId: number; itemId: string }>({
+    mutationFn: (data) => tackShopApi.unequipDecoration(data),
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['horses'] });
     },
   });
 }

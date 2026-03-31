@@ -15,6 +15,7 @@ import {
   getTackInventory,
   purchaseTackItem,
   repairTackItem,
+  unequipDecoration,
 } from '../controllers/tackShopController.mjs';
 
 const router = express.Router();
@@ -50,6 +51,16 @@ router.post(
     handleValidationErrors,
   ],
   repairTackItem,
+);
+
+router.post(
+  '/unequip-decoration',
+  [
+    body('horseId').isInt({ min: 1 }).withMessage('horseId must be a positive integer'),
+    body('itemId').notEmpty().withMessage('itemId is required'),
+    handleValidationErrors,
+  ],
+  unequipDecoration,
 );
 
 export default router;

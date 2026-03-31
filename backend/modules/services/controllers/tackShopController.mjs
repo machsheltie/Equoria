@@ -590,16 +590,26 @@ export async function purchaseTackItem(req, res) {
 
     // Merge item into horse.tack JSON — store item ID, numeric bonuses, and initial condition
     const currentTack = typeof horse.tack === 'object' && horse.tack !== null ? horse.tack : {};
-    const updatedTack = { ...currentTack, [item.category]: item.id };
+    const updatedTack = { ...currentTack };
 
-    // Store initial condition = 100 for the newly purchased item
-    updatedTack[`${item.category}_condition`] = 100;
+    if (item.category === 'decorative') {
+      // Decorative items are additive — append to decorations array (no duplicates)
+      const existing = Array.isArray(updatedTack.decorations) ? updatedTack.decorations : [];
+      if (!existing.includes(item.id)) {
+        updatedTack.decorations = [...existing, item.id];
+      }
+    } else {
+      // Functional items replace the slot
+      updatedTack[item.category] = item.id;
+      // Store initial condition = 100 for the newly purchased item
+      updatedTack[`${item.category}_condition`] = 100;
 
-    // Also store numeric bonus fields for scoring compatibility
-    if (item.category === 'saddle') {
-      updatedTack.saddleBonus = item.numericBonus;
-    } else if (item.category === 'bridle') {
-      updatedTack.bridleBonus = item.numericBonus;
+      // Also store numeric bonus fields for scoring compatibility
+      if (item.category === 'saddle') {
+        updatedTack.saddleBonus = item.numericBonus;
+      } else if (item.category === 'bridle') {
+        updatedTack.bridleBonus = item.numericBonus;
+      }
     }
 
     const [updatedHorse] = await prisma.$transaction([
@@ -702,6 +712,58 @@ export async function degradeTackCondition(horseId, usedCategories = COMPETITION
       `[tackShopController] degradeTackCondition error for horse ${horseId}: ${error.message}`,
     );
     return { horseId, tackWear: [] };
+  }
+}
+
+/**
+ * POST /api/tack-shop/unequip-decoration
+ * Body: { horseId, itemId }
+ *
+ * Removes a decorative item from Horse.tack.decorations[] by item ID.
+ * Does not charge coins — this is purely a cosmetic management operation.
+ */
+export async function unequipDecoration(req, res) {
+  try {
+    const userId = req.user.id;
+    const { horseId, itemId } = req.body;
+
+    const horse = await prisma.horse.findFirst({ where: { id: horseId, userId } });
+    if (!horse) {
+      return res.status(404).json({ success: false, message: 'Horse not found', data: null });
+    }
+
+    const currentTack = typeof horse.tack === 'object' && horse.tack !== null ? horse.tack : {};
+    const existing = Array.isArray(currentTack.decorations) ? currentTack.decorations : [];
+
+    if (!existing.includes(itemId)) {
+      return res.status(400).json({
+        success: false,
+        message: `Decoration "${itemId}" is not equipped on this horse`,
+        data: null,
+      });
+    }
+
+    const updatedTack = { ...currentTack, decorations: existing.filter(id => id !== itemId) };
+    const updatedHorse = await prisma.horse.update({
+      where: { id: horseId },
+      data: { tack: updatedTack },
+    });
+
+    logger.info(
+      `[tackShopController] User ${userId} unequipped decoration "${itemId}" from horse ${horseId}`,
+    );
+
+    res.status(200).json({
+      success: true,
+      message: `Decoration removed successfully`,
+      data: {
+        horse: { id: updatedHorse.id, name: updatedHorse.name, tack: updatedHorse.tack },
+        removedItemId: itemId,
+      },
+    });
+  } catch (error) {
+    logger.error(`[tackShopController] unequipDecoration error: ${error.message}`);
+    res.status(500).json({ success: false, message: 'Failed to unequip decoration', data: null });
   }
 }
 
