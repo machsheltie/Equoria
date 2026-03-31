@@ -1,5 +1,6 @@
 #!/usr/bin/env sh
 
 # Run backend tests before push
+# --runInBand prevents DB contention from parallel integration tests
 cd backend
-npm test
+npm test -- --runInBand
