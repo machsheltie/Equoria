@@ -22,6 +22,7 @@ const STABLE_BG_ROUTES = ['/stable', '/my-stable'];
 const CUSTOM_BG_ROUTES: Record<string, string> = {
   '/feed-shop': '/images/feedstore2.webp',
   '/tack-shop': '/images/tackstore.webp',
+  '/farrier': '/assets/art/farrier.webp',
 };
 
 const DashboardLayout: React.FC = () => {
