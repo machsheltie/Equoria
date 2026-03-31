@@ -391,6 +391,8 @@ model Show {
   description        String?
   /// Max entries allowed (BA-2)
   maxEntries         Int?
+  /// Show type: 'ridden' (default discipline scoring), 'conformation', or 'parade' (presentation scoring)
+  showType           String              @default("ridden")
   /// Timestamps
   createdAt          DateTime            @default(now())
   updatedAt          DateTime            @updatedAt

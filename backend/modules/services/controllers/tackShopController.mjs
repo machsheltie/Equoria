@@ -345,6 +345,93 @@ export const TACK_INVENTORY = [
     disciplines: [],
     ageRestriction: 2,
   },
+
+  // ── Decorative & Parade Tack ─────────────────────────────────────────────
+  {
+    id: 'show-ribbon',
+    category: 'decorative',
+    name: 'Show Ribbon',
+    description: 'A silk ribbon braided into the mane. Adds elegance and charm to parade shows.',
+    cost: 120,
+    bonus: '+3 presentation',
+    numericBonus: 0,
+    presenceBonus: 3,
+    tier: 'basic',
+    disciplines: ['Parade'],
+    isCosmetic: true,
+  },
+  {
+    id: 'braided-mane-wrap',
+    category: 'decorative',
+    name: 'Braided Mane Wrap',
+    description:
+      'Intricate braided mane styling with gold thread accents. A staple for high-scoring parade entries.',
+    cost: 200,
+    bonus: '+4 presentation',
+    numericBonus: 0,
+    presenceBonus: 4,
+    tier: 'basic',
+    disciplines: ['Parade'],
+    isCosmetic: true,
+  },
+  {
+    id: 'parade-blanket',
+    category: 'decorative',
+    name: 'Parade Blanket',
+    description:
+      'Embroidered ceremonial blanket draped over the hindquarters. Impressive at full presentation speed.',
+    cost: 350,
+    bonus: '+5 presentation',
+    numericBonus: 0,
+    presenceBonus: 5,
+    tier: 'quality',
+    disciplines: ['Parade'],
+    isCosmetic: true,
+  },
+  {
+    id: 'glitter-spray',
+    category: 'decorative',
+    name: 'Glitter Spray',
+    description: 'Shimmering coat spray for that extra sparkle. Limited use — 3 applications.',
+    cost: 80,
+    bonus: '+2 presentation',
+    numericBonus: 0,
+    presenceBonus: 2,
+    tier: 'basic',
+    disciplines: ['Parade'],
+    isCosmetic: true,
+    limitedUse: 3,
+  },
+  {
+    id: 'floral-browband',
+    category: 'decorative',
+    name: 'Floral Browband',
+    description:
+      'Fresh flowers woven into the browband. A classic touch of nature for summer parade classes.',
+    cost: 160,
+    bonus: '+3 presentation',
+    numericBonus: 0,
+    presenceBonus: 3,
+    tier: 'basic',
+    disciplines: ['Parade'],
+    isCosmetic: true,
+  },
+  // Seasonal decorative item
+  {
+    id: 'snowflake-parade-tack',
+    category: 'decorative',
+    name: 'Snowflake Parade Tack',
+    description:
+      'A limited winter set with silver snowflake embroidery. Available during the frost season.',
+    cost: 500,
+    bonus: '+6 presentation',
+    numericBonus: 0,
+    presenceBonus: 6,
+    tier: 'premium',
+    disciplines: ['Parade'],
+    isCosmetic: true,
+    seasonalTag: 'winter',
+  },
 ];
 
 // ── Category display configuration ──────────────────────────────────────────
@@ -358,6 +445,7 @@ const CATEGORY_DISPLAY = {
   reins: 'Reins',
   girth: 'Girths',
   breastplate: 'Breastplates',
+  decorative: 'Decorative & Parade',
 };
 
 // ── Bonus resolution ────────────────────────────────────────────────────────
@@ -384,11 +472,12 @@ function applyConditionPenalty(rawBonus, condition) {
  * Applies condition penalties: bonus halved below 50%, zeroed at 0%.
  *
  * @param {Object} tack - Horse.tack JSON object
- * @returns {{ saddleBonus: number, bridleBonus: number }}
+ * @param {string} [showType='ridden'] - Show type: 'ridden' | 'conformation' | 'parade'
+ * @returns {{ saddleBonus: number, bridleBonus: number, presenceBonus: number }}
  */
-export function resolveTackBonus(tack) {
+export function resolveTackBonus(tack, showType = 'ridden') {
   if (!tack || typeof tack !== 'object') {
-    return { saddleBonus: 0, bridleBonus: 0 };
+    return { saddleBonus: 0, bridleBonus: 0, presenceBonus: 0 };
   }
 
   // If numeric fields already exist (test data / legacy), apply condition and return
@@ -397,6 +486,7 @@ export function resolveTackBonus(tack) {
     return {
       saddleBonus: applyConditionPenalty(tack.saddleBonus || 0, tack.saddle_condition),
       bridleBonus: applyConditionPenalty(tack.bridleBonus || 0, tack.bridle_condition),
+      presenceBonus: 0,
     };
   }
 
@@ -418,7 +508,19 @@ export function resolveTackBonus(tack) {
     }
   }
 
-  return { saddleBonus, bridleBonus };
+  // Decorative presence bonus — only applies to parade shows
+  let presenceBonus = 0;
+  if (showType === 'parade') {
+    const decorations = Array.isArray(tack.decorations) ? tack.decorations : [];
+    for (const itemId of decorations) {
+      const item = TACK_INVENTORY.find(i => i.id === itemId && i.category === 'decorative');
+      if (item && typeof item.presenceBonus === 'number') {
+        presenceBonus += item.presenceBonus;
+      }
+    }
+  }
+
+  return { saddleBonus, bridleBonus, presenceBonus };
 }
 
 // ── Route handlers ──────────────────────────────────────────────────────────

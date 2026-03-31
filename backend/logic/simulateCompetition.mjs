@@ -62,11 +62,19 @@ function simulateCompetition(horses, show) {
       // 3. Add training score (0-100, default to 0 if not provided)
       const trainingScore = horse.trainingScore || 0;
 
-      // 4. Add tack bonuses (saddle + bridle) — resolve from catalog if stored as item IDs
-      const resolvedTack = resolveTackBonus(horse.tack);
+      // 4. Add tack bonuses — resolve from catalog; parade shows use presenceBonus instead
+      const showType = show.showType || 'ridden';
+      const resolvedTack = resolveTackBonus(horse.tack, showType);
       const saddleBonus = resolvedTack.saddleBonus;
       const bridleBonus = resolvedTack.bridleBonus;
-      const tackBonus = saddleBonus + bridleBonus;
+      const presenceBonus = resolvedTack.presenceBonus;
+
+      // Parade shows: 50% presentation (presenceBonus * 10 + temperament), 30% gait, 20% temperament
+      // For simplicity, parade adds presenceBonus × 10 as the presentation component (0–60 points)
+      // Stub: groomBondModifier = 1.0 (future integration point)
+      const groomBondModifier = 1.0;
+      const tackBonus =
+        showType === 'parade' ? presenceBonus * groomBondModifier : saddleBonus + bridleBonus;
 
       // 5. Calculate subtotal before percentage modifiers
       const subtotal =

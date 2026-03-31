@@ -310,12 +310,13 @@ const ShopTab: React.FC<ShopTabProps> = ({ selectedHorse, onSwitchToHorses }) =>
     );
   };
 
-  // Filter items by discipline
+  // Filter functional items by discipline (excludes decorative category)
   const filteredCategories = useMemo(() => {
     if (!data?.categories) return {};
     const result: Record<string, TackItem[]> = {};
 
     for (const [cat, items] of Object.entries(data.categories)) {
+      if (cat === 'decorative') continue; // Rendered separately below
       const filtered =
         disciplineFilter === 'All'
           ? items
@@ -328,6 +329,14 @@ const ShopTab: React.FC<ShopTabProps> = ({ selectedHorse, onSwitchToHorses }) =>
     }
     return result;
   }, [data?.categories, disciplineFilter]);
+
+  // Decorative items — split into regular and seasonal sub-sections
+  const decorativeItems = useMemo(() => {
+    const all = (data?.categories?.['decorative'] ?? []) as TackItem[];
+    const regular = all.filter((i) => !i.seasonalTag);
+    const seasonal = all.filter((i) => !!i.seasonalTag);
+    return { regular, seasonal };
+  }, [data?.categories]);
 
   const categoryNames = data?.categoryDisplayNames ?? DEFAULT_CATEGORY_NAMES;
 
@@ -451,19 +460,53 @@ const ShopTab: React.FC<ShopTabProps> = ({ selectedHorse, onSwitchToHorses }) =>
         </p>
       )}
 
-      {/* Coming Soon — decorative tack stub (#10) */}
-      <section className="mt-4">
-        <h2 className="text-sm font-semibold text-[var(--text-muted)] uppercase tracking-widest mb-4">
-          Coming Soon
-        </h2>
-        <div className="p-5 rounded-xl bg-[var(--glass-bg)] backdrop-blur-sm border border-[var(--glass-border)] border-dashed text-center">
-          <p className="text-sm text-[var(--text-muted)]">
-            Decorative tack, parade sets, and seasonal gear will be available in a future update.
-            Show off your horse&apos;s style with cosmetic equipment that doesn&apos;t affect
-            competition scoring.
+      {/* Decorative & Parade section */}
+      {(decorativeItems.regular.length > 0 || decorativeItems.seasonal.length > 0) && (
+        <section className="mt-4" data-testid="decorative-tack-section">
+          <h2 className="text-sm font-semibold text-[var(--text-muted)] uppercase tracking-widest mb-1 flex items-center gap-2">
+            ✨ Decorative &amp; Parade
+          </h2>
+          <p className="text-xs text-[var(--text-muted)] mb-4">
+            Cosmetic items that boost parade presentation scores. No effect on regular competition
+            scoring.
           </p>
-        </div>
-      </section>
+
+          {/* Regular decorative items */}
+          {decorativeItems.regular.length > 0 && (
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 mb-6">
+              {decorativeItems.regular.map((item) => (
+                <TackItemCard
+                  key={item.id}
+                  item={item}
+                  selectedHorse={selectedHorse}
+                  onPurchase={handlePurchase}
+                  isPurchasing={purchaseMutation.isPending}
+                />
+              ))}
+            </div>
+          )}
+
+          {/* Seasonal sub-section */}
+          {decorativeItems.seasonal.length > 0 && (
+            <>
+              <h3 className="text-xs font-semibold text-amber-400 uppercase tracking-widest mb-3">
+                🍂 Seasonal
+              </h3>
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                {decorativeItems.seasonal.map((item) => (
+                  <TackItemCard
+                    key={item.id}
+                    item={item}
+                    selectedHorse={selectedHorse}
+                    onPurchase={handlePurchase}
+                    isPurchasing={purchaseMutation.isPending}
+                  />
+                ))}
+              </div>
+            </>
+          )}
+        </section>
+      )}
     </div>
   );
 };
@@ -599,6 +642,20 @@ const HorsesTackTab: React.FC<HorsesTackTabProps> = ({
                       />
                     );
                   })}
+                  {/* Decorations chip */}
+                  {Array.isArray((horse.tack as Record<string, unknown>)?.decorations) &&
+                    ((horse.tack as Record<string, unknown>).decorations as string[]).length >
+                      0 && (
+                      <span className="inline-flex items-center gap-1 text-xs bg-purple-900/40 text-purple-300 px-2 py-0.5 rounded-full">
+                        ✨{' '}
+                        {((horse.tack as Record<string, unknown>).decorations as string[]).length}{' '}
+                        Decoration
+                        {((horse.tack as Record<string, unknown>).decorations as string[]).length >
+                        1
+                          ? 's'
+                          : ''}
+                      </span>
+                    )}
                 </div>
               )}
             </button>

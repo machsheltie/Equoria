@@ -1239,17 +1239,26 @@ export interface TackItem {
     | 'leg_wraps'
     | 'reins'
     | 'girth'
-    | 'breastplate';
+    | 'breastplate'
+    | 'decorative';
   name: string;
   description: string;
   cost: number;
   bonus: string;
   numericBonus: number;
+  /** Presence bonus for parade shows (decorative items only) */
+  presenceBonus?: number;
   tier: 'basic' | 'quality' | 'premium';
   disciplines: string[];
   icon?: string;
   image?: string;
   ageRestriction?: number;
+  /** True for decorative/cosmetic items that affect parade presentation only */
+  isCosmetic?: boolean;
+  /** Limited-use count (e.g. Glitter Spray has 3 applications) */
+  limitedUse?: number;
+  /** Seasonal tag for grouping under seasonal sub-header (e.g. 'winter', 'summer') */
+  seasonalTag?: string;
 }
 
 export interface TackInventoryData {
