@@ -194,6 +194,8 @@ interface HorseSummary {
   lastShod?: string;
   lastGroomed?: string;
   trainingCooldown?: string;
+  // Coat color from genetics system
+  finalDisplayColor?: string;
   // Equipped tack (JSON field) — includes item IDs and <category>_condition values
   tack?: Record<string, unknown>;
   // Stats returned flat from API (all 12)

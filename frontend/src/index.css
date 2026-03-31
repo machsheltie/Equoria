@@ -1,3 +1,6 @@
+/* Equoria — Self-hosted font faces (must precede Tailwind base reset) */
+@import './styles/fonts.css';
+
 /* Equoria — Canonical design token system (UX spec §Design Token System) */
 @import './styles/tokens.css';
 
@@ -79,6 +82,17 @@
     color: var(--text-primary);
     font-family: var(--font-body);
     min-height: 100vh;
+  }
+
+  /* ── Story 22.1: Celestial heading typography ─────────────────────── */
+  /* Applies Cinzel to all heading elements when the celestial theme is active. */
+  .celestial h1,
+  .celestial h2,
+  .celestial h3,
+  .celestial h4,
+  .celestial h5,
+  .celestial h6 {
+    font-family: var(--font-heading);
   }
 }
 

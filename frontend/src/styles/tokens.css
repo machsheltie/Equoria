@@ -237,10 +237,10 @@
 /* ─────────────────────────────────────────────────────────────────────────── */
 
 :root {
-  /* Font families */
-  --font-display: 'Cinzel Decorative', serif; /* EQUORIA wordmark only  */
-  --font-heading: 'Cinzel', serif; /* Horse names, titles    */
-  --font-body: 'Inter', sans-serif; /* All UI text            */
+  /* Font families — Story 22.1: explicit Georgia/system-ui fallbacks (no FOIT) */
+  --font-display: 'Cinzel Decorative', Georgia, serif; /* EQUORIA wordmark only  */
+  --font-heading: 'Cinzel', Georgia, serif; /* Horse names, titles    */
+  --font-body: 'Inter', system-ui, sans-serif; /* All UI text            */
   --font-mono: 'JetBrains Mono', monospace; /* Debug / data display   */
 
   /* ── Type Scale (spec: 8px base, 1.25 ratio) ──────────────────────── */

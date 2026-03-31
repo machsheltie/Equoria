@@ -1,5 +1,5 @@
 # generated: 2026-03-25
-# last_updated: 2026-03-31
+# last_updated: 2026-03-31 pre-31e code review complete; all 4 blockers resolved
 # project: Equoria
 # project_key: NOKEY
 # tracking_system: file-system
@@ -35,7 +35,7 @@
 # - Dev moves story to 'review', then runs code-review (fresh context, different LLM recommended)
 
 generated: 2026-03-25
-last_updated: 2026-03-31
+last_updated: 2026-03-31 epic-31d closed
 project: Equoria
 project_key: NOKEY
 tracking_system: file-system
@@ -47,15 +47,16 @@ development_status:
   # Source: docs/epics.md
   # ============================================================
 
-  # Epic 22: Design System Foundation
-  epic-22: backlog
-  22-1-design-tokens-and-css-custom-properties: backlog
-  22-2-frosted-panel-component: backlog
-  22-3-typography-system: backlog
-  22-4-button-and-feedback-patterns: backlog
-  22-5-navigation-shell-and-layout: backlog
-  22-6-responsive-breakpoint-system: backlog
-  22-7-accessibility-and-motion-preferences: backlog
+  # Epic 22: Celestial Night Foundation (re-spec'd 2026-03-31 — stories match docs/epics.md §Epic22)
+  epic-22: in-progress
+  22-1-font-migration: review
+  22-2-celestial-theme-provider: backlog
+  22-3-painted-background-system: backlog
+  22-4-glass-panel-surface-updates: backlog
+  22-5-button-hierarchy: backlog
+  22-6-custom-game-component-library: backlog
+  22-7-body-and-page-chrome: backlog
+  22-8-navigation-structure: backlog
   epic-22-retrospective: optional
 
   # Epic 23: Hub Dashboard
@@ -172,13 +173,19 @@ development_status:
   # Epics 31B/31C/31D frontend work deferred — see backlog doc for checklist
 
   # Epic 31D: Breed Temperament System
-  epic-31d: in-progress
+  epic-31d: done
   31d-1-temperament-data-model-and-assignment: done
   31d-2-temperament-training-modifiers: done
   31d-3-temperament-competition-modifiers: done
-  31d-4-temperament-groom-synergy: review
-  31d-5-temperament-api-endpoints: review
-  epic-31d-retrospective: optional
+  31d-4-temperament-groom-synergy: done
+  31d-5-temperament-api-endpoints: done
+  epic-31d-retrospective: done
+
+  # Pre-31E Blocking Tasks (from 31D retro — code review 2026-03-31)
+  pre-31e-competition-controller-import-fix: done     # Was already fixed when closing 31D (sprint note: "competitionController import fix"). Verified: line 6 imports from competitionScore.mjs ✅
+  pre-31e-chi-squared-flakiness-fix: done             # Was already fixed before retro: SAMPLE_SIZE=10000, CHI_SQUARED_CRITICAL=29.588 (p=0.001), low-expected categories skipped ✅
+  pre-31e-temperament-drift-reconcile: done           # @deprecated notice updated to name both importers (traitIntegration.test.mjs + examples/); deletion deferred until importers are migrated ✅
+  pre-31e-frontend-integration-backlog-31d: done      # docs/frontend-integration-backlog.md updated with full 31D section: endpoints, response fields, component checklist ✅
 
   # Epic 31E: Coat Color Genetics
   epic-31e: backlog

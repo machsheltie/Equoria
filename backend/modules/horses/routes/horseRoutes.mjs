@@ -180,6 +180,11 @@ const validateHorseCreation = [
     .optional()
     .isLength({ min: 1, max: 50 })
     .withMessage('User ID must be between 1 and 50 characters'),
+  body('finalDisplayColor')
+    .optional()
+    .isString()
+    .isLength({ min: 1, max: 100 })
+    .withMessage('Final display color must be a string up to 100 characters'),
 
   (req, res, next) => {
     const errors = validationResult(req);
@@ -491,6 +496,18 @@ router.post(
 
       // Whitelist creation fields to prevent mass-assignment of protected fields
       // (e.g. totalEarnings, level, bondScore, stressLevel, epigeneticModifiers)
+
+      // Derive dateOfBirth from age so that getHorseAge() computes the correct game age.
+      // If the caller supplies an explicit dateOfBirth, honour it; otherwise compute from age
+      // so a horse created with age:5 gets a dateOfBirth 5 years in the past.
+      const horseAge = req.body.age ?? 0;
+      const computedDateOfBirth = (() => {
+        if (req.body.dateOfBirth) return new Date(req.body.dateOfBirth).toISOString();
+        const d = new Date();
+        d.setFullYear(d.getFullYear() - horseAge);
+        return d.toISOString();
+      })();
+
       const horseData = {
         name: req.body.name,
         breedId: req.body.breedId,
@@ -498,11 +515,12 @@ router.post(
         sex: req.body.sex,
         gender: req.body.gender,
         userId: req.user.id,
-        dateOfBirth: new Date().toISOString(),
+        dateOfBirth: computedDateOfBirth,
         healthStatus: req.body.healthStatus || 'Good',
         conformationScores,
         gaitScores,
         temperament,
+        ...(req.body.finalDisplayColor && { finalDisplayColor: req.body.finalDisplayColor }),
       };
 
       const newHorse = await createHorse(horseData);
