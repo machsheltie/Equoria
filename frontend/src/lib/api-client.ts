@@ -194,6 +194,8 @@ interface HorseSummary {
   lastShod?: string;
   lastGroomed?: string;
   trainingCooldown?: string;
+  // Equipped tack (JSON field) — includes item IDs and <category>_condition values
+  tack?: Record<string, unknown>;
   // Stats returned flat from API (all 12)
   precision?: number;
   strength?: number;
@@ -1257,9 +1259,19 @@ export interface TackInventoryData {
 }
 
 export interface TackPurchaseResult {
-  horse: { id: number; name: string; tack: Record<string, string> };
+  horse: { id: number; name: string; tack: Record<string, unknown> };
   item: TackItem;
   cost: number;
+  remainingMoney: number;
+}
+
+export interface TackRepairResult {
+  horse: { id: number; name: string; tack: Record<string, unknown> };
+  item: TackItem;
+  category: string;
+  repairCost: number;
+  previousCondition: number;
+  newCondition: number;
   remainingMoney: number;
 }
 
@@ -1267,11 +1279,14 @@ export interface TackPurchaseResult {
  * Tack Shop API surface
  *   GET  /api/tack-shop/inventory → TackInventoryData
  *   POST /api/tack-shop/purchase  → TackPurchaseResult
+ *   POST /api/tack-shop/repair    → TackRepairResult
  */
 export const tackShopApi = {
   getInventory: () => apiClient.get<TackInventoryData>('/api/v1/tack-shop/inventory'),
   purchaseItem: (data: { horseId: number; itemId: string }) =>
     apiClient.post<TackPurchaseResult>('/api/v1/tack-shop/purchase', data),
+  repairItem: (data: { horseId: number; category: string }) =>
+    apiClient.post<TackRepairResult>('/api/v1/tack-shop/repair', data),
 };
 
 // ── Farrier types ─────────────────────────────────────────────────────────────

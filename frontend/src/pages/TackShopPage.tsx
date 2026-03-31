@@ -14,9 +14,17 @@
 import React, { useState, useMemo } from 'react';
 import { Link } from 'react-router-dom';
 import { toast } from 'sonner';
-import { Heart, ShoppingBag, Loader2, AlertCircle, CheckCircle, Filter } from 'lucide-react';
+import {
+  Heart,
+  ShoppingBag,
+  Loader2,
+  AlertCircle,
+  CheckCircle,
+  Filter,
+  Wrench,
+} from 'lucide-react';
 import PageHero from '@/components/layout/PageHero';
-import { useTackInventory, usePurchaseTackItem } from '@/hooks/api/useTackShop';
+import { useTackInventory, usePurchaseTackItem, useRepairTack } from '@/hooks/api/useTackShop';
 import { useHorses } from '@/hooks/api/useHorses';
 import type { TackItem } from '@/hooks/api/useTackShop';
 import type { HorseSummary } from '@/lib/api-client';
@@ -70,6 +78,95 @@ const TIER_COLORS: Record<string, { bg: string; text: string; label: string }> =
   basic: { bg: 'bg-slate-500/20', text: 'text-slate-300', label: 'Basic' },
   quality: { bg: 'bg-blue-500/20', text: 'text-blue-300', label: 'Quality' },
   premium: { bg: 'bg-amber-500/20', text: 'text-amber-300', label: 'Premium' },
+};
+
+// ---------------------------------------------------------------------------
+// Condition helpers
+// ---------------------------------------------------------------------------
+
+/** Get Tailwind colour classes for a condition value (0–100) */
+function conditionColor(condition: number): { bar: string; text: string; label: string } {
+  if (condition >= 75) return { bar: 'bg-green-500', text: 'text-green-400', label: 'Good' };
+  if (condition >= 50) return { bar: 'bg-yellow-500', text: 'text-yellow-400', label: 'Fair' };
+  if (condition >= 25) return { bar: 'bg-orange-500', text: 'text-orange-400', label: 'Poor' };
+  return { bar: 'bg-red-500', text: 'text-red-400', label: condition <= 0 ? 'Broken' : 'Critical' };
+}
+
+/** Extract condition for a tack category from Horse.tack JSON */
+function getTackCondition(tack: Record<string, unknown> | undefined, category: string): number {
+  if (!tack) return 100;
+  const val = tack[`${category}_condition`];
+  return typeof val === 'number' ? val : 100;
+}
+
+interface TackConditionChipProps {
+  category: string;
+  itemId: string;
+  condition: number;
+  horseId: number;
+}
+
+/** Small condition chip with progress bar and optional repair button */
+const TackConditionChip: React.FC<TackConditionChipProps> = ({
+  category,
+  itemId,
+  condition,
+  horseId,
+}) => {
+  const repairMutation = useRepairTack();
+  const colors = conditionColor(condition);
+
+  const handleRepair = () => {
+    repairMutation.mutate(
+      { horseId, category },
+      {
+        onSuccess: (result) => {
+          toast.success(`Repaired ${result.item.name} for $${result.repairCost}`);
+        },
+        onError: (err) => {
+          toast.error((err as { message?: string })?.message ?? 'Repair failed.');
+        },
+      }
+    );
+  };
+
+  return (
+    <div className="flex items-center gap-2 mt-1" data-testid={`condition-chip-${category}`}>
+      <span className="text-[10px] text-[var(--text-muted)] capitalize w-12 shrink-0">
+        {category}
+      </span>
+      <div className="flex-1 h-1.5 bg-[var(--glass-bg)] rounded-full overflow-hidden border border-[var(--glass-border)]">
+        <div
+          className={`h-full transition-all ${colors.bar}`}
+          style={{ width: `${Math.max(0, Math.min(100, condition))}%` }}
+          role="progressbar"
+          aria-valuenow={condition}
+          aria-valuemin={0}
+          aria-valuemax={100}
+          aria-label={`${category} condition: ${condition}%`}
+        />
+      </div>
+      <span className={`text-[10px] font-medium w-8 text-right shrink-0 ${colors.text}`}>
+        {condition}%
+      </span>
+      {condition < 100 && (
+        <button
+          type="button"
+          onClick={handleRepair}
+          disabled={repairMutation.isPending}
+          title={`Repair ${itemId}`}
+          className="text-[var(--text-muted)] hover:text-[var(--gold-400)] transition-colors disabled:opacity-40"
+          aria-label={`Repair ${category}`}
+        >
+          {repairMutation.isPending ? (
+            <Loader2 className="w-3 h-3 animate-spin" />
+          ) : (
+            <Wrench className="w-3 h-3" />
+          )}
+        </button>
+      )}
+    </div>
+  );
 };
 
 // ---------------------------------------------------------------------------
@@ -472,7 +569,7 @@ const HorsesTackTab: React.FC<HorsesTackTabProps> = ({
                   <CheckCircle className="w-4 h-4 text-[var(--status-success)] flex-shrink-0 ml-auto" />
                 )}
               </div>
-              <div className="flex items-center justify-between text-xs text-[var(--text-muted)]">
+              <div className="flex items-center justify-between text-xs text-[var(--text-muted)] mb-2">
                 <span>Age {horse.age}</span>
                 <span
                   className={
@@ -484,6 +581,26 @@ const HorsesTackTab: React.FC<HorsesTackTabProps> = ({
                   {horse.healthStatus}
                 </span>
               </div>
+
+              {/* Tack condition bars for equipped saddle + bridle */}
+              {horse.tack && (
+                <div className="space-y-0.5">
+                  {(['saddle', 'bridle'] as const).map((cat) => {
+                    const itemId = horse.tack?.[cat];
+                    if (typeof itemId !== 'string') return null;
+                    const condition = getTackCondition(horse.tack as Record<string, unknown>, cat);
+                    return (
+                      <TackConditionChip
+                        key={cat}
+                        category={cat}
+                        itemId={itemId}
+                        condition={condition}
+                        horseId={horse.id}
+                      />
+                    );
+                  })}
+                </div>
+              )}
             </button>
           );
         })}

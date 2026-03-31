@@ -4,6 +4,7 @@
  * Centralized hooks for tack shop API calls:
  * - Get inventory (saddles + bridles)
  * - Purchase a tack item for a horse
+ * - Repair a tack item (restore condition to 100)
  *
  * Follows useGrooms.ts / useRiders.ts pattern.
  */
@@ -15,9 +16,10 @@ import {
   TackItem,
   TackInventoryData,
   TackPurchaseResult,
+  TackRepairResult,
 } from '@/lib/api-client';
 
-export type { TackItem, TackInventoryData, TackPurchaseResult };
+export type { TackItem, TackInventoryData, TackPurchaseResult, TackRepairResult };
 
 export const tackShopKeys = {
   all: ['tack-shop'] as const,
@@ -41,6 +43,20 @@ export function usePurchaseTackItem() {
       // Invalidate horse data so tack JSON refreshes
       queryClient.invalidateQueries({ queryKey: ['horses'] });
       // Invalidate profile so balance updates in nav
+      queryClient.invalidateQueries({ queryKey: ['profile'] });
+    },
+  });
+}
+
+export function useRepairTack() {
+  const queryClient = useQueryClient();
+
+  return useMutation<TackRepairResult, ApiError, { horseId: number; category: string }>({
+    mutationFn: (data) => tackShopApi.repairItem(data),
+    onSuccess: () => {
+      // Refresh horse data so condition values update
+      queryClient.invalidateQueries({ queryKey: ['horses'] });
+      // Refresh profile so balance updates in nav
       queryClient.invalidateQueries({ queryKey: ['profile'] });
     },
   });

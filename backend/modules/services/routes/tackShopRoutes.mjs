@@ -5,12 +5,17 @@
  * Path summary:
  *   GET  /inventory   → list available tack items
  *   POST /purchase    → purchase an item for a horse
+ *   POST /repair      → repair a tack item (restore condition to 100)
  */
 
 import express from 'express';
 import { body, validationResult } from 'express-validator';
 import logger from '../../../utils/logger.mjs';
-import { getTackInventory, purchaseTackItem } from '../controllers/tackShopController.mjs';
+import {
+  getTackInventory,
+  purchaseTackItem,
+  repairTackItem,
+} from '../controllers/tackShopController.mjs';
 
 const router = express.Router();
 
@@ -35,6 +40,16 @@ router.post(
     handleValidationErrors,
   ],
   purchaseTackItem,
+);
+
+router.post(
+  '/repair',
+  [
+    body('horseId').isInt({ min: 1 }).withMessage('horseId must be a positive integer'),
+    body('category').notEmpty().withMessage('category is required'),
+    handleValidationErrors,
+  ],
+  repairTackItem,
 );
 
 export default router;

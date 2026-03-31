@@ -1,12 +1,19 @@
 /**
  * Tack Shop Controller
- * Handles tack shop: listing inventory and purchasing items.
+ * Handles tack shop: listing inventory, purchasing items, condition tracking, and repairs.
  *
- * Uses existing Horse.tack (Json) field — no schema changes required (Phase 1).
+ * Uses existing Horse.tack (Json) field — no schema changes required.
  *
  * Routes:
  *   GET  /api/tack-shop/inventory   → list available tack items
  *   POST /api/tack-shop/purchase    → purchase an item for a horse
+ *   POST /api/tack-shop/repair      → repair a tack item (restore condition to 100)
+ *
+ * Condition system:
+ *   - Stored as <category>_condition in Horse.tack JSON (e.g. saddle_condition: 95)
+ *   - Default/initial condition: 100
+ *   - Degrades per competition: basic -5, quality -3, premium -2
+ *   - Bonus halved when condition < 50; no bonus when condition = 0
  */
 
 import prisma from '../../../../packages/database/prismaClient.mjs';
@@ -356,10 +363,25 @@ const CATEGORY_DISPLAY = {
 // ── Bonus resolution ────────────────────────────────────────────────────────
 
 /**
+ * Apply condition penalty to a raw bonus value.
+ * - condition >= 50: full bonus
+ * - condition < 50: halved bonus
+ * - condition == 0: no bonus
+ *
+ * @param {number} rawBonus - The item's base numeric bonus
+ * @param {number} condition - Item condition (0–100), defaults to 100
+ * @returns {number} Adjusted bonus
+ */
+function applyConditionPenalty(rawBonus, condition) {
+  const cond = typeof condition === 'number' ? condition : 100;
+  if (cond <= 0) return 0;
+  if (cond < 50) return Math.floor(rawBonus / 2);
+  return rawBonus;
+}
+
+/**
  * Resolve tack bonuses from a Horse.tack JSON object.
- * The purchase system stores item IDs (e.g. { saddle: 'dressage-saddle' })
- * but the scoring code needs numeric fields { saddleBonus, bridleBonus }.
- * This function bridges the gap.
+ * Applies condition penalties: bonus halved below 50%, zeroed at 0%.
  *
  * @param {Object} tack - Horse.tack JSON object
  * @returns {{ saddleBonus: number, bridleBonus: number }}
@@ -369,30 +391,30 @@ export function resolveTackBonus(tack) {
     return { saddleBonus: 0, bridleBonus: 0 };
   }
 
-  // If numeric fields already exist (test data / legacy), use them directly
+  // If numeric fields already exist (test data / legacy), apply condition and return
   const hasDirect = typeof tack.saddleBonus === 'number' || typeof tack.bridleBonus === 'number';
   if (hasDirect) {
     return {
-      saddleBonus: tack.saddleBonus || 0,
-      bridleBonus: tack.bridleBonus || 0,
+      saddleBonus: applyConditionPenalty(tack.saddleBonus || 0, tack.saddle_condition),
+      bridleBonus: applyConditionPenalty(tack.bridleBonus || 0, tack.bridle_condition),
     };
   }
 
-  // Look up item IDs in the catalog
+  // Look up item IDs in the catalog and apply condition penalties
   let saddleBonus = 0;
   let bridleBonus = 0;
 
   if (tack.saddle) {
     const saddleItem = TACK_INVENTORY.find(i => i.id === tack.saddle && i.category === 'saddle');
     if (saddleItem) {
-      saddleBonus = saddleItem.numericBonus;
+      saddleBonus = applyConditionPenalty(saddleItem.numericBonus, tack.saddle_condition);
     }
   }
 
   if (tack.bridle) {
     const bridleItem = TACK_INVENTORY.find(i => i.id === tack.bridle && i.category === 'bridle');
     if (bridleItem) {
-      bridleBonus = bridleItem.numericBonus;
+      bridleBonus = applyConditionPenalty(bridleItem.numericBonus, tack.bridle_condition);
     }
   }
 
@@ -464,9 +486,12 @@ export async function purchaseTackItem(req, res) {
       });
     }
 
-    // Merge item into horse.tack JSON — store both item ID and numeric bonuses
+    // Merge item into horse.tack JSON — store item ID, numeric bonuses, and initial condition
     const currentTack = typeof horse.tack === 'object' && horse.tack !== null ? horse.tack : {};
     const updatedTack = { ...currentTack, [item.category]: item.id };
+
+    // Store initial condition = 100 for the newly purchased item
+    updatedTack[`${item.category}_condition`] = 100;
 
     // Also store numeric bonus fields for scoring compatibility
     if (item.category === 'saddle') {
@@ -501,5 +526,175 @@ export async function purchaseTackItem(req, res) {
   } catch (error) {
     logger.error(`[tackShopController] purchaseTackItem error: ${error.message}`);
     res.status(500).json({ success: false, message: 'Failed to purchase tack item', data: null });
+  }
+}
+
+// ── Condition degradation rates per tier ────────────────────────────────────
+
+const DEGRADE_BY_TIER = {
+  basic: 5,
+  quality: 3,
+  premium: 2,
+};
+
+// ── Repair costs per tier ────────────────────────────────────────────────────
+
+const REPAIR_COST_BY_TIER = {
+  basic: 50,
+  quality: 150,
+  premium: 300,
+};
+
+// ── Categories that degrade during competition ───────────────────────────────
+
+const COMPETITION_WEAR_CATEGORIES = ['saddle', 'bridle'];
+
+/**
+ * Degrade tack condition for a horse after a competition event.
+ * Only saddle and bridle categories degrade during competition.
+ * Does nothing if the horse has no tack equipped in those categories.
+ *
+ * @param {number} horseId - ID of the horse
+ * @param {string[]} usedCategories - Categories that were used (default: saddle + bridle)
+ * @returns {Promise<{ horseId: number, tackWear: Array<{ category, previousCondition, newCondition, itemId }> }>}
+ */
+export async function degradeTackCondition(horseId, usedCategories = COMPETITION_WEAR_CATEGORIES) {
+  try {
+    const horse = await prisma.horse.findUnique({ where: { id: horseId }, select: { tack: true } });
+    if (!horse || !horse.tack || typeof horse.tack !== 'object') {
+      return { horseId, tackWear: [] };
+    }
+
+    const currentTack = horse.tack;
+    const updatedTack = { ...currentTack };
+    const tackWear = [];
+
+    for (const category of usedCategories) {
+      const itemId = currentTack[category];
+      if (!itemId) continue; // no item equipped in this category
+
+      const item = TACK_INVENTORY.find(i => i.id === itemId && i.category === category);
+      if (!item) continue;
+
+      const conditionKey = `${category}_condition`;
+      const previousCondition =
+        typeof currentTack[conditionKey] === 'number' ? currentTack[conditionKey] : 100;
+
+      const degradeAmount = DEGRADE_BY_TIER[item.tier] ?? 3;
+      const newCondition = Math.max(0, previousCondition - degradeAmount);
+
+      updatedTack[conditionKey] = newCondition;
+      tackWear.push({ category, itemId, previousCondition, newCondition, degradeAmount });
+    }
+
+    if (tackWear.length > 0) {
+      await prisma.horse.update({ where: { id: horseId }, data: { tack: updatedTack } });
+      logger.info(
+        `[tackShopController] Degraded tack for horse ${horseId}: ${tackWear.map(w => `${w.category} ${w.previousCondition}→${w.newCondition}`).join(', ')}`,
+      );
+    }
+
+    return { horseId, tackWear };
+  } catch (error) {
+    logger.error(
+      `[tackShopController] degradeTackCondition error for horse ${horseId}: ${error.message}`,
+    );
+    return { horseId, tackWear: [] };
+  }
+}
+
+/**
+ * POST /api/tack-shop/repair
+ * Body: { horseId, category }
+ *
+ * Restores condition for the equipped item in the given category to 100%.
+ * Charges coins proportional to item tier.
+ */
+export async function repairTackItem(req, res) {
+  try {
+    const userId = req.user.id;
+    const { horseId, category } = req.body;
+
+    const horse = await prisma.horse.findFirst({ where: { id: horseId, userId } });
+    if (!horse) {
+      return res.status(404).json({ success: false, message: 'Horse not found', data: null });
+    }
+
+    const tack = typeof horse.tack === 'object' && horse.tack !== null ? horse.tack : {};
+    const itemId = tack[category];
+    if (!itemId) {
+      return res.status(400).json({
+        success: false,
+        message: `No ${category} equipped on this horse`,
+        data: null,
+      });
+    }
+
+    const item = TACK_INVENTORY.find(i => i.id === itemId && i.category === category);
+    if (!item) {
+      return res.status(400).json({
+        success: false,
+        message: 'Equipped item not found in catalog',
+        data: null,
+      });
+    }
+
+    const conditionKey = `${category}_condition`;
+    const currentCondition = typeof tack[conditionKey] === 'number' ? tack[conditionKey] : 100;
+
+    if (currentCondition >= 100) {
+      return res.status(400).json({
+        success: false,
+        message: `${item.name} is already in perfect condition`,
+        data: { currentCondition },
+      });
+    }
+
+    const repairCost = REPAIR_COST_BY_TIER[item.tier] ?? 150;
+
+    const user = await prisma.user.findUnique({ where: { id: userId }, select: { money: true } });
+    if (!user) {
+      return res.status(404).json({ success: false, message: 'User not found', data: null });
+    }
+
+    if (user.money < repairCost) {
+      return res.status(400).json({
+        success: false,
+        message: `Insufficient funds. Repair costs $${repairCost}`,
+        data: { required: repairCost, available: user.money },
+      });
+    }
+
+    const updatedTack = { ...tack, [conditionKey]: 100 };
+
+    const [updatedHorse] = await prisma.$transaction([
+      prisma.horse.update({ where: { id: horseId }, data: { tack: updatedTack } }),
+      prisma.user.update({ where: { id: userId }, data: { money: { decrement: repairCost } } }),
+    ]);
+
+    logger.info(
+      `[tackShopController] User ${userId} repaired "${item.name}" (${category}) on horse ${horseId} — cost $${repairCost}`,
+    );
+
+    res.status(200).json({
+      success: true,
+      message: `${item.name} repaired successfully`,
+      data: {
+        horse: {
+          id: updatedHorse.id,
+          name: updatedHorse.name,
+          tack: updatedHorse.tack,
+        },
+        item,
+        category,
+        repairCost,
+        previousCondition: currentCondition,
+        newCondition: 100,
+        remainingMoney: user.money - repairCost,
+      },
+    });
+  } catch (error) {
+    logger.error(`[tackShopController] repairTackItem error: ${error.message}`);
+    res.status(500).json({ success: false, message: 'Failed to repair tack item', data: null });
   }
 }
