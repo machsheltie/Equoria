@@ -35,8 +35,10 @@ A progressive, page-by-page restyle using a **Feature-Flag Hybrid** migration st
 #### In Scope
 
 - Complete frontend visual rebuild (all 29 pages, 80+ components)
-- 13 shadcn component restylings (Button, Card, Dialog, Tabs, Badge, Input, Textarea, Progress, Checkbox, Label, Tooltip, ScrollArea, Collapsible)
-- 13 new custom components (see Section: New Components)
+- 1 shadcn component restyling: `button.tsx` (retains cva variants, gains Celestial Night styles under `.celestial` scope)
+- 12 shadcn files stripped to naked Radix accessibility skeletons (Card, Dialog, Tabs, Badge, Input, Textarea, Progress, Checkbox, Label, Tooltip, ScrollArea, Collapsible — all visual className strings removed)
+- 12 new game components in `frontend/src/components/ui/game/` (FrostedPanel, GameDialog, GoldTabs, GameBadge, GlassInput, GlassTextarea, StatBar audit, GameCheckbox, GameLabel, GameTooltip, GameScrollArea, GameCollapsible)
+- 13 new custom feature components (see Section: New Components)
 - Hub dashboard rebuild with NextActionsBar constellation model
 - WhileYouWereGone return overlay system
 - Onboarding wizard rebuild with BreedSelector
@@ -129,33 +131,53 @@ Already has comprehensive token coverage:
 
 #### Foundation Files (Modify)
 
-| File                             | What Changes                                                                                                |
-| -------------------------------- | ----------------------------------------------------------------------------------------------------------- |
-| `frontend/src/styles/tokens.css` | Update `--font-body` from Jost → Inter; add StarfieldBackground tokens; refine glass surface values         |
-| `frontend/src/index.css`         | Update body gradient; add `.celestial` class scope; update `.glass-panel`, `.btn-cobalt`; add new keyframes |
-| `frontend/tailwind.config.ts`    | Update fontFamily (Cinzel/Inter), add Celestial Night color aliases                                         |
-| `frontend/src/App.tsx`           | Add CelestialThemeProvider (CSS class toggle), WhileYouWereGone overlay mount point                         |
-| `frontend/src/main.tsx`          | Add Google Fonts link (Cinzel, Cinzel Decorative, Inter) or preload                                         |
-| `frontend/src/lib/api-client.ts` | Add WYAG, NextActions, milestones API methods                                                               |
-| `frontend/src/nav-items.tsx`     | Update nav structure for hub-and-spoke model                                                                |
+| File                             | What Changes                                                                                                                         |
+| -------------------------------- | ------------------------------------------------------------------------------------------------------------------------------------ |
+| `frontend/src/styles/tokens.css` | Update `--font-body` from Jost → Inter; add StarfieldBackground tokens; refine glass surface values                                  |
+| `frontend/src/index.css`         | Update body gradient; add `.celestial` class scope; update `.glass-panel`, `.btn-cobalt`; add new keyframes                          |
+| `frontend/tailwind.config.ts`    | Update fontFamily (Cinzel/Inter), add Celestial Night color aliases                                                                  |
+| `frontend/src/App.tsx`           | Add CelestialThemeProvider (CSS class toggle), WhileYouWereGone overlay mount point                                                  |
+| `frontend/index.html`            | Add Google Fonts `<link rel="preconnect">` + `<link rel="stylesheet">` for Cinzel, Cinzel Decorative, Inter with `font-display=swap` |
+| `frontend/src/lib/api-client.ts` | Add WYAG, NextActions, milestones API methods                                                                                        |
+| `frontend/src/nav-items.tsx`     | Update nav structure for hub-and-spoke model                                                                                         |
 
-#### shadcn Components to Restyle (13 files)
+#### shadcn Files — Strip to Radix Skeletons (12 files)
 
-| File                            | Restyle Focus                                                                              |
-| ------------------------------- | ------------------------------------------------------------------------------------------ |
-| `components/ui/button.tsx`      | Gold primary, frosted secondary, text tertiary, destructive red; horseshoe arcs on primary |
-| `components/ui/card.tsx`        | Glass surface bg, gold border on hover, shadow-card → shadow-card-hover                    |
-| `components/ui/dialog.tsx`      | Dark overlay (0.85 opacity), glass panel content, gold header accent                       |
-| `components/ui/tabs.tsx`        | Underline indicator (gold), frosted tab bar, active text color                             |
-| `components/ui/badge.tsx`       | Discipline-specific accent colors, rounded-pill, small-caps                                |
-| `components/ui/input.tsx`       | `.celestial-input` class (navy bg, blue border, focus ring)                                |
-| `components/ui/textarea.tsx`    | Match input styling                                                                        |
-| `components/ui/progress.tsx`    | Gold fill gradient, navy track, glow on completion                                         |
-| `components/ui/checkbox.tsx`    | Gold checkmark, navy bg, electric-blue focus ring                                          |
-| `components/ui/label.tsx`       | Inter font, cream color, small-caps variant                                                |
-| `components/ui/tooltip.tsx`     | Glass panel tooltip, gold border, navy bg                                                  |
-| `components/ui/scroll-area.tsx` | Thin gold scrollbar thumb, transparent track                                               |
-| `components/ui/collapsible.tsx` | Chevron rotation animation, glass panel content area                                       |
+These files lose ALL visual `className` strings. They become naked Radix primitive forwarders providing only accessibility behavior (aria-\*, data-state, keyboard handling, ref forwarding). `button.tsx` is NOT in this list.
+
+| File                            | Radix Primitive Kept       | Visual Styling Moved To    |
+| ------------------------------- | -------------------------- | -------------------------- |
+| `components/ui/card.tsx`        | None (div wrapper)         | `game/FrostedPanel.tsx`    |
+| `components/ui/dialog.tsx`      | Radix DialogPrimitive      | `game/GameDialog.tsx`      |
+| `components/ui/tabs.tsx`        | Radix TabsPrimitive        | `game/GoldTabs.tsx`        |
+| `components/ui/badge.tsx`       | span wrapper               | `game/GameBadge.tsx`       |
+| `components/ui/input.tsx`       | input element              | `game/GlassInput.tsx`      |
+| `components/ui/textarea.tsx`    | textarea element           | `game/GlassTextarea.tsx`   |
+| `components/ui/progress.tsx`    | Radix ProgressPrimitive    | `game/StatBar.tsx`         |
+| `components/ui/checkbox.tsx`    | Radix CheckboxPrimitive    | `game/GameCheckbox.tsx`    |
+| `components/ui/label.tsx`       | Radix LabelPrimitive       | `game/GameLabel.tsx`       |
+| `components/ui/tooltip.tsx`     | Radix TooltipPrimitive     | `game/GameTooltip.tsx`     |
+| `components/ui/scroll-area.tsx` | Radix ScrollAreaPrimitive  | `game/GameScrollArea.tsx`  |
+| `components/ui/collapsible.tsx` | Radix CollapsiblePrimitive | `game/GameCollapsible.tsx` |
+
+#### New Game Components (12 files — Story 22.6)
+
+All live in `frontend/src/components/ui/game/`. Exported from barrel `frontend/src/components/ui/game/index.ts`.
+
+| File                       | Replaces          | Key Visual Spec                                                       |
+| -------------------------- | ----------------- | --------------------------------------------------------------------- |
+| `game/FrostedPanel.tsx`    | `card.tsx`        | Glass surface, `backdrop-blur-[var(--glass-blur)]`, gold border hover |
+| `game/GameDialog.tsx`      | `dialog.tsx`      | Dark velvet backdrop, `.glass-panel-heavy` content, Cinzel title      |
+| `game/GoldTabs.tsx`        | `tabs.tsx`        | Animated gold underline 2px, Cinzel labels, transparent bg            |
+| `game/GameBadge.tsx`       | `badge.tsx`       | `rarity` prop: common/rare/legendary with token-based colors          |
+| `game/GlassInput.tsx`      | `input.tsx`       | Gold focus ring, glass bg, muted placeholder                          |
+| `game/GlassTextarea.tsx`   | `textarea.tsx`    | Matches GlassInput, resize-y only                                     |
+| `game/StatBar.tsx`         | `progress.tsx`    | Gold gradient fill, navy track, glow at 100% — audit existing         |
+| `game/GameCheckbox.tsx`    | `checkbox.tsx`    | Gold SVG checkmark, navy bg, electric-blue focus ring                 |
+| `game/GameLabel.tsx`       | `label.tsx`       | Inter, `--text-secondary`, optional `smallCaps` prop                  |
+| `game/GameTooltip.tsx`     | `tooltip.tsx`     | Glass panel, `--gold-dim` border, Radix positioning                   |
+| `game/GameScrollArea.tsx`  | `scroll-area.tsx` | `--gold-dim` thumb, hover → `--gold-primary`, transparent track       |
+| `game/GameCollapsible.tsx` | `collapsible.tsx` | Chevron rotates 180° on open, `.glass-panel-subtle` content           |
 
 #### New Custom Components (13 to build)
 
@@ -288,23 +310,31 @@ interface NextAction {
 
 **Toggle:**
 
-- `<body class="celestial">` added by `CelestialThemeProvider`
-- `?theme=celestial` URL param for QA (persists in localStorage)
-- Default: ON for converted pages, OFF for unconverted
+- `<body class="celestial">` added by `CelestialThemeProvider.tsx` (rendered inside Router)
+- `?theme=celestial` URL param for QA — applies and persists celestial theme
+- `?theme=default` URL param for QA — removes celestial and persists default theme (`?theme=legacy` is NOT a valid value)
+- localStorage key: `'equoria-theme'`, values: `'celestial'` | `'default'`
+- Default: celestial ON if no stored value (opt-out model)
 - Kill switch: remove class to instantly revert
 
 **CelestialThemeProvider** (NOT React Context — pure CSS class):
 
 ```typescript
-// In App.tsx or main.tsx
+// In CelestialThemeProvider.tsx (rendered inside <Router> in App.tsx)
+// Uses useSearchParams — must be inside Router boundary
+const [searchParams] = useSearchParams();
 useEffect(() => {
-  const stored = localStorage.getItem('theme');
-  const param = new URLSearchParams(window.location.search).get('theme');
-  if (param === 'celestial' || stored === 'celestial' || !stored) {
+  const stored = localStorage.getItem('equoria-theme');
+  const param = searchParams.get('theme');
+
+  if (param === 'default') {
+    document.body.classList.remove('celestial');
+    localStorage.setItem('equoria-theme', 'default');
+  } else if (param === 'celestial' || stored === 'celestial' || !stored) {
     document.body.classList.add('celestial');
-    localStorage.setItem('theme', 'celestial');
+    localStorage.setItem('equoria-theme', 'celestial');
   }
-}, []);
+}, [searchParams]);
 ```
 
 ### Critical Path & Task Ordering
@@ -364,9 +394,9 @@ Epic 23: Hub & Daily Loop ──────────────────
 - [ ] **22-2: CelestialThemeProvider** — Add `<body class="celestial">` toggle. `?theme=celestial` URL param persists to localStorage. Add `.celestial` CSS scope to `index.css`. Zero-JS: pure CSS class, no React Context.
 - [ ] **22-3: StarfieldBackground Upgrade** — Replace current `StarField` component in `components/layout/` with CSS-only `StarfieldBackground`. 3 parallax layers (near/mid/far stars), optional shooting stars (CSS animation), `prefers-reduced-motion` safe (static dots only). Mount in `App.tsx` at `z-[var(--z-below)]`.
 - [ ] **22-4: Glass Panel & Surface Updates** — Update `.glass-panel` in `index.css` for `.celestial` scope. Refine `--glass-surface-bg` opacity values. Add `.glass-panel-heavy` variant for modals. Ensure single-blur-layer rule documented in component JSDoc.
-- [ ] **22-5: Button Hierarchy** — Restyle `components/ui/button.tsx` variants: Primary (gold gradient, horseshoe arcs), Secondary (frosted glass, navy border), Tertiary (text-only, underline on hover), Destructive (red with dark bg). All under `.celestial` scope.
-- [ ] **22-6: shadcn Component Restyling** — Restyle remaining 12 shadcn components (Card, Dialog, Tabs, Badge, Input, Textarea, Progress, Checkbox, Label, Tooltip, ScrollArea, Collapsible) to Celestial Night under `.celestial` scope. One PR per 4 components.
-- [ ] **22-7: Body & Page Chrome** — Update body background gradient (deep navy + gold/blue radial accents). Update `DashboardLayout` (if used). Update `MainNavigation` colors/fonts. Update `AuthLayout` for login/register pages.
+- [ ] **22-5: Button Hierarchy** — Restyle `components/ui/button.tsx` variants: `default` (gold gradient, horseshoe arcs, min `h-11` 44px), `secondary` (frosted glass, navy border), `ghost` (transparent, `--gold-light` text for WCAG AA at small sizes), `outline` (navy border, cream text), `glass` (glass surface, cream text), `destructive` (red-tinted glass). All under `.celestial` scope.
+- [ ] **22-6: Custom Game Component Library** — Build 12 purpose-built game components in `frontend/src/components/ui/game/`: FrostedPanel, GameDialog, GoldTabs, GameBadge, GlassInput, GlassTextarea, StatBar (audit/fix), GameCheckbox, GameLabel, GameTooltip, GameScrollArea, GameCollapsible. Strip the 12 corresponding shadcn files to naked Radix skeletons. Deliver in 3 sub-PRs of 4 components each.
+- [ ] **22-7: Body & Page Chrome** — Update body background gradient (deep navy + gold/blue radial accents). Update `DashboardLayout` (if used). Update `MainNavigation` colors/fonts. Update `frontend/src/components/layout/AuthLayout.tsx` for login/register pages. Prerequisites: Stories 22.1, 22.2, 22.3, 22.4, 22.5.
 
 #### Epic 23: Hub & Daily Loop
 
@@ -440,12 +470,12 @@ Epic 23: Hub & Daily Loop ──────────────────
 
 #### Foundation (Epic 22)
 
-- [ ] AC-F1: `<body class="celestial">` applies Celestial Night theme; removing class reverts to legacy
-- [ ] AC-F2: `?theme=celestial` URL param toggles theme and persists in localStorage
+- [ ] AC-F1: `<body class="celestial">` applies Celestial Night theme; removing class reverts all styles
+- [ ] AC-F2: `?theme=celestial` applies and persists `localStorage.setItem('equoria-theme', 'celestial')`; `?theme=default` removes celestial and persists `'default'`; no other param values are valid
 - [ ] AC-F3: All text renders in Cinzel (headings) / Inter (body) when `.celestial` is active
 - [ ] AC-F4: StarfieldBackground renders 3 parallax star layers; static dots only when `prefers-reduced-motion` is set
 - [ ] AC-F5: Button hierarchy renders correctly: gold primary, frosted secondary, text tertiary, red destructive
-- [ ] AC-F6: All 13 shadcn components visually match Celestial Night under `.celestial` scope
+- [ ] AC-F6: All 12 game components in `components/ui/game/` render with Celestial Night visuals; all 12 corresponding shadcn skeleton files retain only Radix accessibility attributes with no visual className strings
 - [ ] AC-F7: Glass panels use single-blur-layer (no stacked blurs)
 - [ ] AC-F8: Body gradient is deep navy with subtle gold/blue radial accents
 

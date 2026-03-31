@@ -1,199 +1,265 @@
-# Section 03: shadcn Component Restyling Guide
+# Section 03: Game Component Library
 
-**Status:** implemented — see tokens.css, index.css, component overrides in src/components/ui/
+**Status:** in-progress — see `frontend/src/components/ui/game/`
 **Layer:** Layer 4 (Component Polish)
 **Source:** UX Spec lines 1438-1458, 539-548
+**Course Correction:** 2026-03-31 — shadcn restyling approach ABANDONED. This is a game, not a corporate dashboard. All game-native visual components are built from scratch.
 
 ---
 
-## Overview
+## Philosophy
 
-13 shadcn components need 100% visual override. Zero corporate DNA survives. Each component keeps its Radix behavioral skeleton but gets Celestial Night visual identity.
+Equoria uses Radix UI for **accessibility primitives only** (keyboard handling, aria attributes, focus management, data-state selectors). Radix provides zero visual styling. All visual identity comes from custom game components.
+
+The shadcn files in `frontend/src/components/ui/` are stripped to naked Radix forwarders. They export the same API (for backward compatibility with existing import sites) but contain no visual className strings.
+
+The game components in `frontend/src/components/ui/game/` provide all visual identity and compose over the naked Radix skeletons where needed.
 
 ---
 
-## Component-by-Component Restyling
+## Component Directory: `frontend/src/components/ui/game/`
 
-### 1. Button
+### Barrel export: `index.ts`
 
-**File:** `frontend/src/components/ui/button.tsx`
-**Usage:** All CTAs, confirms, navigation
+All 12 components exported from a single barrel:
 
-**Replace:**
+```typescript
+export { FrostedPanel } from './FrostedPanel';
+export { GameDialog, GameDialogContent, GameDialogHeader, GameDialogTitle } from './GameDialog';
+export { GoldTabs, GoldTabsList, GoldTabsTrigger, GoldTabsContent } from './GoldTabs';
+export { GameBadge } from './GameBadge';
+export { GlassInput } from './GlassInput';
+export { GlassTextarea } from './GlassTextarea';
+export { StatBar } from './StatBar';
+export { GameCheckbox } from './GameCheckbox';
+export { GameLabel } from './GameLabel';
+export { GameTooltip, GameTooltipContent, GameTooltipTrigger } from './GameTooltip';
+export { GameScrollArea } from './GameScrollArea';
+export { GameCollapsible, GameCollapsibleTrigger, GameCollapsibleContent } from './GameCollapsible';
+```
 
-- `bg-primary` → Gold gradient: `from-[var(--gold-primary)] to-[var(--gold-light)]`
-- `bg-secondary` → Frosted glass: `bg-[var(--glass-bg)] border-[var(--glass-border)]`
-- `hover:` states → Gold glow intensification: `hover:shadow-[var(--glow-gold)]`
-- `focus-visible:ring-*` → `focus-visible:ring-[var(--gold-bright)] ring-2 ring-offset-2 ring-offset-[var(--bg-deep-space)]`
-- Font: Primary buttons use Cinzel, secondary use Inter
-- Horseshoe border arcs on primary: `.btn-cobalt::before/::after` (already in index.css from Epic 18-5)
+---
 
-**Variants needed:**
+## Component Specifications
 
-- `gold` (primary action) — gold gradient bg, dark text
-- `glass` (secondary) — frosted glass, gold text
-- `ghost` (tertiary) — transparent, gold text, underline on hover
-- `destructive` — red-tinted glass, white text
+### 1. FrostedPanel
 
-### 2. Dialog/Modal
+**File:** `game/FrostedPanel.tsx`
+**Replaces visual role of:** `card.tsx`
+**Radix dependency:** None (plain div with forwarded ref)
 
-**File:** `frontend/src/components/ui/dialog.tsx`
-**Usage:** BaseModal, cinematic overlays
+**Visual spec:**
 
-**Replace:**
+- Background: `bg-[var(--glass-bg)] backdrop-blur-[var(--glass-blur)]` — this IS the blur layer
+- Border: `border border-[var(--glass-border)] rounded-[var(--radius-lg)]`
+- Hover: `hover:border-[var(--glass-hover)] hover:shadow-[var(--glow-gold)] hover:-translate-y-0.5`
+- Padding: `p-[var(--space-5)]` (24px) by default, overridable via `className`
+- Title child (if rendered with a heading): Cinzel font, `text-[var(--text-gold)]`
 
-- `bg-background` → `bg-[var(--glass-bg)] backdrop-blur-[var(--glass-blur)]`
-- `border` → `border-[var(--glass-border)]`
-- Title → Cinzel font, `text-[var(--text-gold)]`
-- Overlay → `bg-black/60 backdrop-blur-sm`
-- `rounded-lg` → `rounded-[var(--radius-lg)]`
-- Shadow → `shadow-[var(--shadow-floating)]`
+**Props:** `className`, `children`, `as` (default `div`) — no rarity, no variant
 
-### 3. Tabs
+**Single-blur-layer note:** FrostedPanel IS the blur layer. Any content inside it uses `.glass-panel-subtle` (solid bg, no blur) if it needs a surface treatment.
 
-**File:** `frontend/src/components/ui/tabs.tsx`
-**Usage:** Horse detail, competitions, community
+---
 
-**Replace:**
+### 2. GameDialog
 
-- Tab list bg → transparent
-- Inactive tab → `text-[var(--text-secondary)]`
-- Active tab → `text-[var(--text-gold)]` + animated gold underline (2px, transition 200ms)
-- Hover → `text-[var(--gold-light)]`
-- Font: Cinzel for tab labels
-- No background highlight on active — underline only (GoldTabs pattern)
+**File:** `game/GameDialog.tsx`
+**Replaces visual role of:** `dialog.tsx`
+**Radix dependency:** `@radix-ui/react-dialog` — composites over the stripped `dialog.tsx` skeleton
 
-### 4. Progress
+**Visual spec:**
 
-**File:** `frontend/src/components/ui/progress.tsx`
-**Usage:** XP bars, stat bars, cooldown timers
+- Overlay: `bg-black/85` — dark velvet, no blur on overlay (blur is only on content)
+- Content: `.glass-panel-heavy` — higher opacity, `backdrop-blur-[var(--glass-blur-heavy)]`
+- Title: Cinzel font, `text-[var(--text-gold)]`, `--text-h2` size
+- Description: Inter, `text-[var(--text-secondary)]`
+- Entry animation: scale from 0.95 + fade in (CSS `@keyframes`, 200ms, `prefers-reduced-motion` safe)
+- Close button: ghost variant of game button (X icon, `--text-muted`, gold on hover)
 
-**Replace:**
+---
 
-- Track → `bg-[var(--bar-bg)]` (rgba(30, 41, 59, 0.8))
-- Fill → `bg-gradient-to-r from-[var(--gold-primary)] to-[var(--gold-light)]` (or `--gradient-stat-bar`)
-- `rounded-full` stays
-- Add numeric overlay: stat value text centered on bar
-- Height: stat bars 8px, XP bars 12px
+### 3. GoldTabs
 
-### 5. Input
+**File:** `game/GoldTabs.tsx`
+**Replaces visual role of:** `tabs.tsx`
+**Radix dependency:** `@radix-ui/react-tabs`
 
-**File:** `frontend/src/components/ui/input.tsx`
-**Usage:** Search, forms, naming
+**Visual spec:**
 
-**Replace:**
+- Tab list: transparent bg, bottom border `1px solid var(--glass-border)`
+- Inactive trigger: `text-[var(--text-secondary)]` Inter or Cinzel (configurable via `font` prop)
+- Active trigger: `text-[var(--text-gold)]` + gold underline (2px solid `--gold-primary`, animated via CSS transition 200ms ease)
+- Hover: `text-[var(--gold-light)]`
+- No background highlight on active trigger — underline only
 
-- `bg-background` → `bg-[var(--glass-bg)]`
-- `border-input` → `border-[var(--glass-border)]`
-- Focus → `border-[var(--gold-primary)] ring-1 ring-[var(--gold-primary)]`
-- Text → `text-[var(--text-primary)]`
-- Placeholder → `text-[var(--text-muted)]`
-- `rounded-md` → `rounded-[var(--radius-md)]`
+---
 
-### 6. Select/Dropdown
+### 4. GameBadge
 
-**File:** `frontend/src/components/ui/select.tsx` (if exists)
-**Usage:** Discipline picker, breed picker, filters
+**File:** `game/GameBadge.tsx`
+**Replaces visual role of:** `badge.tsx`
+**Radix dependency:** None (span)
 
-**Replace:**
+**Props:** `rarity?: 'common' | 'rare' | 'legendary'`, `className`, `children`
 
-- Trigger → same as Input styling
-- Content → `bg-[var(--bg-midnight)] border-[var(--glass-border)] backdrop-blur-xl`
-- Item hover → `bg-[var(--bg-twilight)]`
-- Item selected → `text-[var(--gold-primary)]`
-- Check icon → gold colored
+**Visual spec by rarity:**
 
-### 7. Card
+- `common` (default): `bg-[var(--bg-twilight)] text-[var(--text-primary)] border-[var(--glass-border)]`
+- `rare`: `bg-[rgba(167,139,250,0.2)] text-[var(--status-rare)] border-[rgba(167,139,250,0.3)]`
+- `legendary`: `bg-[rgba(245,230,163,0.15)] text-[var(--status-legendary)] border-[rgba(245,230,163,0.3)]`
+- All: `rounded-full px-2 py-0.5 text-xs font-medium border`
 
-**File:** `frontend/src/components/ui/card.tsx`
-**Usage:** Horse cards, location cards, show cards
+---
 
-**Replace entire component with FrostedPanel pattern:**
+### 5. GlassInput
 
-- `bg-card` → `bg-[var(--glass-bg)] backdrop-blur-[var(--glass-blur)]`
-- `border` → `border-[var(--glass-border)]`
-- Hover → `border-[var(--glass-hover)] shadow-[var(--glow-gold)] translateY(-2px)`
-- `rounded-lg` → `rounded-[var(--radius-lg)]`
-- Padding → `p-[var(--space-5)]` (24px)
-- Card title → Cinzel, `text-[var(--text-gold)]`
+**File:** `game/GlassInput.tsx`
+**Replaces visual role of:** `input.tsx`
+**Radix dependency:** None (native `<input>` with forwarded ref)
 
-### 8. Tooltip
+**Visual spec:**
 
-**File:** `frontend/src/components/ui/tooltip.tsx`
-**Usage:** Stat explanations, discipline descriptions, trait details
+- Background: `bg-[var(--glass-bg)]`
+- Border: `border border-[var(--glass-border)] rounded-[var(--radius-md)]`
+- Focus: `focus:border-[var(--gold-primary)] focus:ring-1 focus:ring-[var(--gold-primary)] focus:outline-none`
+- Text: `text-[var(--text-primary)]`
+- Placeholder: `placeholder:text-[var(--text-muted)]`
+- Height: `h-10` (input fields are not primary CTAs — 40px acceptable; touch target met by surrounding label+input group)
 
-**Replace:**
+---
 
-- `bg-primary text-primary-foreground` → `bg-[var(--bg-midnight)] text-[var(--text-primary)] border border-[var(--gold-dim)]`
-- `rounded-md` → `rounded-[var(--radius-md)]`
-- Shadow → `shadow-[var(--shadow-raised)]`
+### 6. GlassTextarea
 
-### 9. Badge
+**File:** `game/GlassTextarea.tsx`
+**Replaces visual role of:** `textarea.tsx`
 
-**File:** `frontend/src/components/ui/badge.tsx`
-**Usage:** Trait badges, status indicators, personality labels
+**Visual spec:** Identical to GlassInput styling. `resize-y` only. Min height `h-20`.
 
-**Replace:**
+---
 
-- Default → `bg-[var(--bg-twilight)] text-[var(--text-primary)] border-[var(--glass-border)]`
-- Variants by rarity:
-  - Common: `bg-[var(--bg-twilight)]`
-  - Rare: `bg-[rgba(167,139,250,0.2)] text-[var(--status-rare)] border-[rgba(167,139,250,0.3)]`
-  - Legendary: `bg-[rgba(245,230,163,0.15)] text-[var(--status-legendary)] border-[rgba(245,230,163,0.3)]`
-- `rounded-full` for pills
+### 7. StatBar
 
-### 10. Skeleton
+**File:** `game/StatBar.tsx`
+**Replaces visual role of:** `progress.tsx`
+**Note:** May already exist from Epic 18 with correct styling. Audit first — patch if needed rather than rebuild.
 
-**File:** Already built as SkeletonCard (UI-5)
-**Status:** Done — verify uses Celestial Night colors
+**Visual spec:**
 
-### 11. Toast
+- Track: `bg-[var(--bar-bg)]` (rgba(30,41,59,0.8)), `rounded-full`
+- Fill: `bg-gradient-to-r from-[var(--gold-primary)] to-[var(--gold-light)]`
+- At 100%: adds `shadow-[var(--glow-gold)]`
+- Heights: `h-2` for stat bars (8px), `h-3` for XP bars (12px) — controlled via `size` prop
+- Optional numeric label centered on bar via absolute positioning
 
-**File:** Toast/Sonner config
-**Usage:** Notifications, XP gains, action confirmations
+---
 
-**Replace:**
+### 8. GameCheckbox
 
-- Background → `bg-[var(--glass-bg)] backdrop-blur-xl`
-- Border → `border-[var(--glass-border)]`
-- Text → `text-[var(--text-primary)]`
-- Success icon → gold colored
-- Gold accent strip on left edge
+**File:** `game/GameCheckbox.tsx`
+**Replaces visual role of:** `checkbox.tsx`
+**Radix dependency:** `@radix-ui/react-checkbox`
 
-### 12. ScrollArea
+**Visual spec:**
 
-**File:** `frontend/src/components/ui/scroll-area.tsx`
-**Usage:** Horse lists, competition fields, messages
+- Box: `h-5 w-5 rounded bg-[var(--bg-midnight)] border border-[var(--glass-border)]`
+- Checked state: gold SVG checkmark icon as `CheckboxPrimitive.Indicator` child
+- Focus ring: `focus-visible:ring-2 focus-visible:ring-[var(--electric-blue-400)]`
+- Disabled: opacity-50, cursor-not-allowed
 
-**Replace:**
+---
 
-- Scrollbar thumb → `bg-[var(--gold-dim)]`
-- Scrollbar track → `bg-transparent`
-- Thumb hover → `bg-[var(--gold-primary)]`
+### 9. GameLabel
 
-### 13. Avatar
+**File:** `game/GameLabel.tsx`
+**Replaces visual role of:** `label.tsx`
+**Radix dependency:** `@radix-ui/react-label`
 
-**Usage:** User profile, horse portraits
+**Props:** `smallCaps?: boolean`, `className`, standard label props
 
-**Replace:**
+**Visual spec:**
 
-- Border → `ring-2 ring-[var(--gold-primary)]`
-- Fallback bg → `bg-[var(--bg-midnight)]`
-- Fallback text → `text-[var(--gold-primary)]`
-- Shape → `rounded-full`
+- Font: Inter, `text-[var(--text-secondary)]`, `--text-sm` size (14px)
+- `smallCaps` prop: adds `font-variant: small-caps`
+- No gold color — labels are informational, not decorative
+
+---
+
+### 10. GameTooltip
+
+**File:** `game/GameTooltip.tsx`
+**Replaces visual role of:** `tooltip.tsx`
+**Radix dependency:** `@radix-ui/react-tooltip` — required for positioning, portal, and accessibility
+
+**Visual spec (content panel):**
+
+- Background: `bg-[var(--bg-midnight)]`
+- Border: `border border-[var(--gold-dim)]`
+- Text: `text-[var(--text-primary)]` Inter `--text-sm`
+- Border radius: `rounded-[var(--radius-md)]`
+- Shadow: `shadow-[var(--shadow-raised)]`
+- No `backdrop-filter` on tooltip — would violate single-blur-layer rule when shown over FrostedPanel
+
+---
+
+### 11. GameScrollArea
+
+**File:** `game/GameScrollArea.tsx`
+**Replaces visual role of:** `scroll-area.tsx`
+**Radix dependency:** `@radix-ui/react-scroll-area`
+
+**Visual spec:**
+
+- Scrollbar thumb: `bg-[var(--gold-dim)] rounded-full`
+- Thumb hover: `bg-[var(--gold-primary)]`
+- Track: `bg-transparent`
+- Scrollbar width: 6px
+- Fade masks at top/bottom optional via `showFades` prop
+
+---
+
+### 12. GameCollapsible
+
+**File:** `game/GameCollapsible.tsx`
+**Replaces visual role of:** `collapsible.tsx`
+**Radix dependency:** `@radix-ui/react-collapsible`
+
+**Visual spec:**
+
+- Trigger: chevron-down icon, rotates 180° when `data-state="open"` (CSS `transform: rotate(180deg)`, `transition: 200ms ease`, `prefers-reduced-motion` safe)
+- Content area: `.glass-panel-subtle` surface (solid bg, no blur — nested inside FrostedPanel which provides the blur)
+- Trigger label: Inter `--text-body`, `--text-primary`
+
+---
+
+## What Happens to the Old shadcn Files
+
+Each of the 12 stripped files is reduced to its Radix primitive skeleton. Retain:
+
+- The named export (same name, backward-compatible import sites)
+- The `forwardRef` / `displayName` pattern
+- The Radix primitive import and composition
+- `data-slot` attributes (for accessibility tooling)
+
+Remove:
+
+- All `cn(...)` calls with visual Tailwind classes
+- All `cva` variant definitions (move to game component if needed)
+- All default `className` strings with visual meaning
+
+`button.tsx` is NOT stripped — it keeps its full `cva` system and gains `.celestial`-scoped styles.
+
+---
 
 ## Implementation Checklist
 
-- [ ] Button: gold/glass/ghost/destructive variants
-- [ ] Dialog: frosted glass overlay
-- [ ] Tabs: gold underline animation
-- [ ] Progress: gradient fill + numeric overlay
-- [ ] Input: glass bg + gold focus ring
-- [ ] Select: dark glass dropdown
-- [ ] Card: FrostedPanel pattern
-- [ ] Tooltip: dark bg + gold border
-- [ ] Badge: rarity color variants
-- [ ] Skeleton: verify celestial colors
-- [ ] Toast: frosted glass + gold accent
-- [ ] ScrollArea: gold scrollbar
-- [ ] Avatar: gold ring border
+- [ ] Create `frontend/src/components/ui/game/` directory
+- [ ] Create barrel `frontend/src/components/ui/game/index.ts`
+- [ ] Sub-PR 1: FrostedPanel, GameDialog, GoldTabs, GameBadge
+- [ ] Sub-PR 2: GlassInput, GlassTextarea, StatBar (audit), GameCheckbox
+- [ ] Sub-PR 3: GameLabel, GameTooltip, GameScrollArea, GameCollapsible
+- [ ] Strip 12 shadcn source files to Radix skeletons (in same PRs, one per game component)
+- [ ] Update all import sites in pages/components that used old shadcn components — point to `game/` barrel
+- [ ] Run `npm run lint` in `frontend/` — zero errors
+- [ ] Run `npm test` — zero regressions in existing component tests
+- [ ] WCAG AA audit: axe-core on each game component (contrast ≥ 4.5:1 text, ≥ 3:1 UI)

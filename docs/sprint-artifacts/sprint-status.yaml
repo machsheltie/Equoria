@@ -4249,6 +4249,7 @@ summary:
   # Epic 22: Celestial Night Foundation
   # FRs: FR-CN1, FR-CN2, FR-CN3, FR-CN4, FR-CN19
   # Dependencies: None (entry point)
+  # No-shadcn course correction: 2026-03-31 — game components only, no shadcn visual styling
   # ----------------------------------------------------------
   epic-22:
     title: 'Celestial Night Foundation'
@@ -4263,7 +4264,7 @@ summary:
   22-2-celestial-theme-provider:
     title: 'CelestialThemeProvider'
     status: in-progress
-    notes: 'CelestialThemeProvider.tsx created'
+    notes: 'CelestialThemeProvider.tsx created. VERIFY: must use localStorage key equoria-theme (not theme), values celestial/default (not legacy). Must use useSearchParams — requires Router boundary. Verify ?theme=default removes class (not ?theme=legacy).'
 
   22-3-starfield-background-upgrade:
     title: 'StarfieldBackground Upgrade'
@@ -4280,10 +4281,10 @@ summary:
     status: in-progress
     notes: 'button.tsx restyled'
 
-  22-6-shadcn-component-restyling:
-    title: 'shadcn Component Restyling'
-    status: in-progress
-    notes: '12 shadcn components modified; lint errors remain in input.tsx, textarea.tsx'
+  22-6-custom-game-component-library:
+    title: 'Custom Game Component Library'
+    status: backlog
+    notes: 'COURSE CORRECTION 2026-03-31: shadcn restyling approach abandoned. Story rewritten as purpose-built game components in components/ui/game/. Previous shadcn modifications to input.tsx and textarea.tsx to be REVERTED — those files become naked Radix skeletons. Lint errors in input.tsx/textarea.tsx are a symptom of the wrong approach; fix is the revert. See docs/ux-spec-sections/03-shadcn-restyling.md for full game component spec.'
 
   22-7-body-page-chrome:
     title: 'Body & Page Chrome'

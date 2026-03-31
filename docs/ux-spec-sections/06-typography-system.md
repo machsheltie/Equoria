@@ -14,7 +14,7 @@
 | **Body**    | Inter          | system-ui, -apple-system, sans-serif | 300-700 |
 | **Mono**    | JetBrains Mono | Fira Code, Consolas, monospace       | 400-500 |
 
-**Loading:** Self-hosted via `@font-face` in `/frontend/public/fonts/`. No Google Fonts CDN. `font-display: swap`.
+**Loading:** Google Fonts CDN via `<link rel="preconnect" href="https://fonts.googleapis.com">` + `<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>` in `frontend/index.html`. Uses `font-display=swap` parameter on the fonts URL. No self-hosted font files — the `/frontend/public/fonts/` directory does NOT exist and should not be created.
 
 ## Type Scale (8px base, 1.25 ratio)
 
@@ -74,9 +74,9 @@
 
 ## Implementation Checklist
 
-- [ ] Self-host Cinzel fonts (subset Latin, ~25KB) in `public/fonts/`
-- [ ] Add `@font-face` declarations with `font-display: swap`
-- [ ] Preload Cinzel in `<head>` tag
+- [ ] Add Google Fonts `<link rel="preconnect">` tags and stylesheet link to `frontend/index.html` — see Story 22.1 technical notes for exact `<link>` markup
+- [ ] Verify `font-display=swap` is in the Google Fonts URL query string
+- [ ] Verify `<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>` is present (prevents FOIT on first load)
 - [ ] Add type scale tokens to `tokens.css`
 - [ ] Apply Cinzel to all h1/h2/h3 and page titles
 - [ ] Apply Inter to all body text, labels, stats
