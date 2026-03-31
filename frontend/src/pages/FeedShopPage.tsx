@@ -137,8 +137,8 @@ const HorsesNutritionTab: React.FC<HorsesNutritionTabProps> = ({
               key={horse.id}
               className={`backdrop-blur-sm border rounded-xl p-5 transition-all ${
                 isSelected
-                  ? 'bg-[var(--status-success)]/10 border-[var(--status-success)]/50'
-                  : 'bg-[var(--glass-bg)] border-[var(--glass-border)] hover:border-[var(--glass-hover)]'
+                  ? 'bg-[var(--status-success)]/20 border-[var(--status-success)]/60 shadow-[var(--glow-gold)]'
+                  : 'bg-[var(--glass-bg)] border-[var(--glass-border)] hover:border-[var(--glass-hover)] hover:shadow-[var(--glow-gold)]'
               }`}
               data-testid={`horse-card-${horse.id}`}
             >
