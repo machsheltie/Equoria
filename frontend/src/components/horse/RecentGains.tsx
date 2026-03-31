@@ -59,9 +59,10 @@ const RecentGains = ({ horseId }: RecentGainsProps) => {
     limit: TIME_RANGE_LIMITS[selectedRange],
   });
 
-  // Handle time range change
+  // Handle time range change — clear expanded rows so stale keys don't re-open
   const handleRangeChange = async (range: TimeRange) => {
     setSelectedRange(range);
+    setExpandedIds(new Set());
     await refetch();
   };
 

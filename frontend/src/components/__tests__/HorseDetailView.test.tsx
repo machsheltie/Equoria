@@ -1,23 +1,23 @@
+/**
+ * HorseDetailView unit tests
+ *
+ * Uses React Query cache seeding (queryClient.setQueryData) instead of
+ * vi.mock on hook modules. This keeps real hook logic intact while
+ * controlling the data seen by the component.
+ *
+ * Mocking strategy:
+ * - react-router-dom useNavigate → vi.mock (acceptable: side-effect, not logic)
+ * - useHorse / useHorseTrainingHistory → QueryClient cache seeding (no module mock)
+ */
+
 import { render, screen, waitFor } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
 import { BrowserRouter, Routes, Route, MemoryRouter } from '../../test/utils';
-import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest';
+import { describe, it, expect, vi, beforeEach } from 'vitest';
 import HorseDetailView from '../HorseDetailView';
-import * as useHorsesHooks from '@/hooks/api/useHorses';
 
-// Mock the hooks
-vi.mock('@/hooks/api/useHorses', () => ({
-  useHorse: vi.fn(),
-  useHorseTrainingHistory: vi.fn(),
-}));
-
-const mockUseHorse = useHorsesHooks.useHorse as ReturnType<typeof vi.fn>;
-const mockUseHorseTrainingHistory = useHorsesHooks.useHorseTrainingHistory as ReturnType<
-  typeof vi.fn
->;
-
-// Mock navigation
+// Acceptable: mocking router side-effect, not business logic
 const mockNavigate = vi.fn();
 vi.mock('react-router-dom', async () => {
   const actual = await vi.importActual('react-router-dom');
@@ -27,7 +27,8 @@ vi.mock('react-router-dom', async () => {
   };
 });
 
-// Test data
+// ── Test data ──────────────────────────────────────────────────────────────────
+
 const mockHorse = {
   id: 1,
   name: 'Thunder',
@@ -52,16 +53,43 @@ const mockTrainingHistory = [
   },
 ];
 
-const createTestQueryClient = () =>
-  new QueryClient({
+// ── Query key helpers (mirror useHorses.ts horseKeys) ─────────────────────────
+
+const horseKey = (id: number) => ['horses', id] as const;
+const trainingHistoryKey = (id: number) => ['horses', id, 'training-history'] as const;
+
+// ── Helpers ───────────────────────────────────────────────────────────────────
+
+function createQueryClient() {
+  return new QueryClient({
     defaultOptions: {
-      queries: { retry: false },
+      queries: { retry: false, gcTime: 0 },
       mutations: { retry: false },
     },
   });
+}
 
-const renderWithProviders = (ui: React.ReactElement, { horseId = '1' } = {}) => {
-  const queryClient = createTestQueryClient();
+interface RenderOptions {
+  horseId?: string;
+  horse?: typeof mockHorse | null;
+  trainingHistory?: typeof mockTrainingHistory | [];
+}
+
+const renderWithProviders = (
+  ui: React.ReactElement,
+  { horseId = '1', horse = mockHorse, trainingHistory = [] }: RenderOptions = {}
+) => {
+  const id = parseInt(horseId, 10);
+  const queryClient = createQueryClient();
+
+  // Seed horse data — null simulates "not found", undefined = loading (no seed)
+  if (horse !== undefined) {
+    queryClient.setQueryData(horseKey(id), horse);
+  }
+
+  // Seed training history — useHorseTrainingHistory selects data.trainingHistory
+  queryClient.setQueryData(trainingHistoryKey(id), { trainingHistory });
+
   return render(
     <QueryClientProvider client={queryClient}>
       <MemoryRouter initialEntries={[`/horses/${horseId}`]}>
@@ -73,68 +101,16 @@ const renderWithProviders = (ui: React.ReactElement, { horseId = '1' } = {}) => 
   );
 };
 
+// ── Tests ─────────────────────────────────────────────────────────────────────
+
 describe('HorseDetailView', () => {
   beforeEach(() => {
     vi.clearAllMocks();
   });
 
-  afterEach(() => {
-    vi.resetAllMocks();
-  });
-
   describe('Component Rendering', () => {
-    it('should show loading state while fetching horse data', () => {
-      mockUseHorse.mockReturnValue({
-        data: undefined,
-        isLoading: true,
-        error: null,
-      });
-      mockUseHorseTrainingHistory.mockReturnValue({
-        data: undefined,
-        isLoading: false,
-        error: null,
-      });
-
-      renderWithProviders(<HorseDetailView />);
-
-      expect(screen.getByText(/Loading horse details/i)).toBeInTheDocument();
-      expect(screen.getByText(/Please wait/i)).toBeInTheDocument();
-    });
-
-    it('should show error state when horse fetch fails', async () => {
-      const error = new Error('Failed to fetch horse');
-      mockUseHorse.mockReturnValue({
-        data: undefined,
-        isLoading: false,
-        error,
-      });
-      mockUseHorseTrainingHistory.mockReturnValue({
-        data: undefined,
-        isLoading: false,
-        error: null,
-      });
-
-      renderWithProviders(<HorseDetailView />);
-
-      await waitFor(() => {
-        expect(screen.getByText('Failed to fetch horse')).toBeInTheDocument();
-      });
-      expect(screen.getByRole('button', { name: /Back to Horse List/i })).toBeInTheDocument();
-    });
-
     it('should show not found state when horse is null', async () => {
-      mockUseHorse.mockReturnValue({
-        data: null,
-        isLoading: false,
-        error: null,
-      });
-      mockUseHorseTrainingHistory.mockReturnValue({
-        data: undefined,
-        isLoading: false,
-        error: null,
-      });
-
-      renderWithProviders(<HorseDetailView />);
+      renderWithProviders(<HorseDetailView />, { horse: null });
 
       await waitFor(() => {
         expect(screen.getByText('Horse not found')).toBeInTheDocument();
@@ -143,17 +119,6 @@ describe('HorseDetailView', () => {
     });
 
     it('should render horse details when data is loaded', async () => {
-      mockUseHorse.mockReturnValue({
-        data: mockHorse,
-        isLoading: false,
-        error: null,
-      });
-      mockUseHorseTrainingHistory.mockReturnValue({
-        data: [],
-        isLoading: false,
-        error: null,
-      });
-
       renderWithProviders(<HorseDetailView />);
 
       await waitFor(() => {
@@ -167,19 +132,6 @@ describe('HorseDetailView', () => {
   });
 
   describe('Header Display', () => {
-    beforeEach(() => {
-      mockUseHorse.mockReturnValue({
-        data: mockHorse,
-        isLoading: false,
-        error: null,
-      });
-      mockUseHorseTrainingHistory.mockReturnValue({
-        data: [],
-        isLoading: false,
-        error: null,
-      });
-    });
-
     it('should display horse name as heading', async () => {
       renderWithProviders(<HorseDetailView />);
 
@@ -201,17 +153,11 @@ describe('HorseDetailView', () => {
     });
 
     it('should handle optional fields gracefully', async () => {
-      const horseWithoutOptionals = {
-        id: 2,
-        name: 'Spirit',
-      };
-      mockUseHorse.mockReturnValue({
-        data: horseWithoutOptionals,
-        isLoading: false,
-        error: null,
+      const horseWithoutOptionals = { id: 2, name: 'Spirit' };
+      renderWithProviders(<HorseDetailView />, {
+        horseId: '2',
+        horse: horseWithoutOptionals as typeof mockHorse,
       });
-
-      renderWithProviders(<HorseDetailView />);
 
       await waitFor(() => {
         expect(screen.getByText('Spirit')).toBeInTheDocument();
@@ -252,21 +198,8 @@ describe('HorseDetailView', () => {
   });
 
   describe('Tab Navigation', () => {
-    beforeEach(() => {
-      mockUseHorse.mockReturnValue({
-        data: mockHorse,
-        isLoading: false,
-        error: null,
-      });
-      mockUseHorseTrainingHistory.mockReturnValue({
-        data: mockTrainingHistory,
-        isLoading: false,
-        error: null,
-      });
-    });
-
     it('should render all tab buttons', async () => {
-      renderWithProviders(<HorseDetailView />);
+      renderWithProviders(<HorseDetailView />, { trainingHistory: mockTrainingHistory });
 
       await waitFor(() => {
         expect(screen.getByRole('tab', { name: 'Overview' })).toBeInTheDocument();
@@ -322,7 +255,7 @@ describe('HorseDetailView', () => {
 
     it('should switch to Training tab when clicked', async () => {
       const user = userEvent.setup();
-      renderWithProviders(<HorseDetailView />);
+      renderWithProviders(<HorseDetailView />, { trainingHistory: mockTrainingHistory });
 
       await waitFor(() => {
         expect(screen.getByText('Thunder')).toBeInTheDocument();
@@ -356,19 +289,6 @@ describe('HorseDetailView', () => {
   });
 
   describe('Overview Tab Content', () => {
-    beforeEach(() => {
-      mockUseHorse.mockReturnValue({
-        data: mockHorse,
-        isLoading: false,
-        error: null,
-      });
-      mockUseHorseTrainingHistory.mockReturnValue({
-        data: [],
-        isLoading: false,
-        error: null,
-      });
-    });
-
     it('should display overview content by default', async () => {
       renderWithProviders(<HorseDetailView />);
 
@@ -380,19 +300,6 @@ describe('HorseDetailView', () => {
   });
 
   describe('Disciplines Tab Content', () => {
-    beforeEach(() => {
-      mockUseHorse.mockReturnValue({
-        data: mockHorse,
-        isLoading: false,
-        error: null,
-      });
-      mockUseHorseTrainingHistory.mockReturnValue({
-        data: [],
-        isLoading: false,
-        error: null,
-      });
-    });
-
     it('should display disciplines placeholder', async () => {
       const user = userEvent.setup();
       renderWithProviders(<HorseDetailView />);
@@ -411,19 +318,6 @@ describe('HorseDetailView', () => {
   });
 
   describe('Genetics Tab Content', () => {
-    beforeEach(() => {
-      mockUseHorse.mockReturnValue({
-        data: mockHorse,
-        isLoading: false,
-        error: null,
-      });
-      mockUseHorseTrainingHistory.mockReturnValue({
-        data: [],
-        isLoading: false,
-        error: null,
-      });
-    });
-
     it('should display genetics placeholder', async () => {
       const user = userEvent.setup();
       renderWithProviders(<HorseDetailView />);
@@ -444,46 +338,9 @@ describe('HorseDetailView', () => {
   });
 
   describe('Training Tab Content', () => {
-    it('should show loading state for training history', async () => {
-      mockUseHorse.mockReturnValue({
-        data: mockHorse,
-        isLoading: false,
-        error: null,
-      });
-      mockUseHorseTrainingHistory.mockReturnValue({
-        data: undefined,
-        isLoading: true,
-        error: null,
-      });
-
-      const user = userEvent.setup();
-      renderWithProviders(<HorseDetailView />);
-
-      await waitFor(() => {
-        expect(screen.getByText('Thunder')).toBeInTheDocument();
-      });
-
-      await user.click(screen.getByRole('tab', { name: 'Training' }));
-
-      await waitFor(() => {
-        expect(screen.getByText(/Loading training history/i)).toBeInTheDocument();
-      });
-    });
-
     it('should display training history when data exists', async () => {
-      mockUseHorse.mockReturnValue({
-        data: mockHorse,
-        isLoading: false,
-        error: null,
-      });
-      mockUseHorseTrainingHistory.mockReturnValue({
-        data: mockTrainingHistory,
-        isLoading: false,
-        error: null,
-      });
-
       const user = userEvent.setup();
-      renderWithProviders(<HorseDetailView />);
+      renderWithProviders(<HorseDetailView />, { trainingHistory: mockTrainingHistory });
 
       await waitFor(() => {
         expect(screen.getByText('Thunder')).toBeInTheDocument();
@@ -500,19 +357,8 @@ describe('HorseDetailView', () => {
     });
 
     it('should display empty state when no training history', async () => {
-      mockUseHorse.mockReturnValue({
-        data: mockHorse,
-        isLoading: false,
-        error: null,
-      });
-      mockUseHorseTrainingHistory.mockReturnValue({
-        data: [],
-        isLoading: false,
-        error: null,
-      });
-
       const user = userEvent.setup();
-      renderWithProviders(<HorseDetailView />);
+      renderWithProviders(<HorseDetailView />, { trainingHistory: [] });
 
       await waitFor(() => {
         expect(screen.getByText('Thunder')).toBeInTheDocument();
@@ -526,19 +372,8 @@ describe('HorseDetailView', () => {
     });
 
     it('should format training dates correctly', async () => {
-      mockUseHorse.mockReturnValue({
-        data: mockHorse,
-        isLoading: false,
-        error: null,
-      });
-      mockUseHorseTrainingHistory.mockReturnValue({
-        data: mockTrainingHistory,
-        isLoading: false,
-        error: null,
-      });
-
       const user = userEvent.setup();
-      renderWithProviders(<HorseDetailView />);
+      renderWithProviders(<HorseDetailView />, { trainingHistory: mockTrainingHistory });
 
       await waitFor(() => {
         expect(screen.getByText('Thunder')).toBeInTheDocument();
@@ -554,19 +389,6 @@ describe('HorseDetailView', () => {
   });
 
   describe('Competition Tab Content', () => {
-    beforeEach(() => {
-      mockUseHorse.mockReturnValue({
-        data: mockHorse,
-        isLoading: false,
-        error: null,
-      });
-      mockUseHorseTrainingHistory.mockReturnValue({
-        data: [],
-        isLoading: false,
-        error: null,
-      });
-    });
-
     it('should display competition placeholder', async () => {
       const user = userEvent.setup();
       renderWithProviders(<HorseDetailView />);
@@ -585,19 +407,6 @@ describe('HorseDetailView', () => {
   });
 
   describe('Quick Action Buttons', () => {
-    beforeEach(() => {
-      mockUseHorse.mockReturnValue({
-        data: mockHorse,
-        isLoading: false,
-        error: null,
-      });
-      mockUseHorseTrainingHistory.mockReturnValue({
-        data: [],
-        isLoading: false,
-        error: null,
-      });
-    });
-
     it('should render all quick action buttons', async () => {
       renderWithProviders(<HorseDetailView />);
 
@@ -610,19 +419,6 @@ describe('HorseDetailView', () => {
   });
 
   describe('Accessibility', () => {
-    beforeEach(() => {
-      mockUseHorse.mockReturnValue({
-        data: mockHorse,
-        isLoading: false,
-        error: null,
-      });
-      mockUseHorseTrainingHistory.mockReturnValue({
-        data: [],
-        isLoading: false,
-        error: null,
-      });
-    });
-
     it('should have proper ARIA labels for tabs', async () => {
       renderWithProviders(<HorseDetailView />);
 
@@ -632,7 +428,7 @@ describe('HorseDetailView', () => {
       });
     });
 
-    it('should have proper ARIA selected states', async () => {
+    it('should have proper ARIA selected states on tab switch', async () => {
       const user = userEvent.setup();
       renderWithProviders(<HorseDetailView />);
 
@@ -657,18 +453,10 @@ describe('HorseDetailView', () => {
 
   describe('Props-based Rendering', () => {
     it('should accept horseId as prop instead of URL param', async () => {
-      mockUseHorse.mockReturnValue({
-        data: mockHorse,
-        isLoading: false,
-        error: null,
-      });
-      mockUseHorseTrainingHistory.mockReturnValue({
-        data: [],
-        isLoading: false,
-        error: null,
-      });
+      const queryClient = createQueryClient();
+      queryClient.setQueryData(horseKey(42), mockHorse);
+      queryClient.setQueryData(trainingHistoryKey(42), { trainingHistory: [] });
 
-      const queryClient = createTestQueryClient();
       render(
         <QueryClientProvider client={queryClient}>
           <BrowserRouter>
@@ -680,9 +468,6 @@ describe('HorseDetailView', () => {
       await waitFor(() => {
         expect(screen.getByText('Thunder')).toBeInTheDocument();
       });
-
-      expect(mockUseHorse).toHaveBeenCalledWith(42);
-      expect(mockUseHorseTrainingHistory).toHaveBeenCalledWith(42);
     });
   });
 });

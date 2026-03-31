@@ -32,15 +32,21 @@ const TrainingRecommendations = ({ horseId }: TrainingRecommendationsProps) => {
   const { data: statsData, isLoading, error, isError, refetch } = useHorseStats(horseId);
   const [showDetails, setShowDetails] = useState(false);
 
-  // Training suggestions by stat type
+  // Training suggestions by stat type — covers all 10 game stats
   const getTrainingSuggestions = (stat: string, discipline?: string): string[] => {
     const suggestions: Record<string, string[]> = {
       speed: ['Sprint Practice', 'Racing', 'Speed Drills'],
       stamina: ['Endurance Rides', 'Long Distance', 'Cardio'],
-      agility: ['Obstacle Courses', 'Barrel Racing', 'Flexibility'],
+      agility: ['Obstacle Courses', 'Barrel Racing', 'Flexibility Work'],
       strength: ['Weight Pulling', 'Hill Climbing', 'Resistance Training'],
       intelligence: ['Problem Solving Exercises', 'Pattern Training', 'Command Practice'],
       temperament: ['Desensitization Work', 'Trust Building', 'Calm Exposure'],
+      balance: ['Pole Work', 'Lateral Movements', 'Collection Exercises'],
+      precision: ['Gymnastic Grids', 'Transition Drills', 'Accuracy Courses'],
+      boldness: ['Novel Environment Exposure', 'Trail Challenges', 'Confidence Building'],
+      flexibility: ['Stretching Routines', 'Cavaletti Work', 'Suppling Exercises'],
+      obedience: ['Ground Work', 'Voice Command Drills', 'Yielding Exercises'],
+      focus: ['Attention Exercises', 'Complex Pattern Work', 'Distractions Training'],
     };
 
     let baseSuggestions = suggestions[stat.toLowerCase()] || [];
@@ -64,14 +70,10 @@ const TrainingRecommendations = ({ horseId }: TrainingRecommendationsProps) => {
     if (!statsData) return [];
 
     const recommendations: StatRecommendation[] = [];
-    const statNames: Array<keyof typeof statsData.currentStats> = [
-      'speed',
-      'stamina',
-      'agility',
-      'strength',
-      'intelligence',
-      'temperament',
-    ];
+    // Derive stat list from the API response so new stats are handled automatically
+    const statNames = Object.keys(statsData.currentStats) as Array<
+      keyof typeof statsData.currentStats
+    >;
 
     for (const stat of statNames) {
       const currentValue = statsData.currentStats[stat];

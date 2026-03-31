@@ -54,22 +54,17 @@ const ConformationScoreCard = ({
     }
   };
 
-  const handleKeyDown = (e: React.KeyboardEvent) => {
-    if (e.key === 'Enter' || e.key === ' ') {
-      e.preventDefault();
-      handleClick();
-    }
-  };
+  // When interactive, render as a native <button> for correct WCAG semantics and
+  // built-in keyboard/focus handling. Fall back to a plain <div> when read-only.
+  const Tag = onRegionClick ? 'button' : 'div';
 
   return (
-    <div
-      className={`border border-[rgba(37,99,235,0.3)] rounded-lg p-4 bg-[rgba(15,35,70,0.5)] transition-all duration-200 hover:shadow-lg hover:scale-[1.02] ${
+    <Tag
+      type={onRegionClick ? 'button' : undefined}
+      className={`border border-[rgba(37,99,235,0.3)] rounded-lg p-4 bg-[rgba(15,35,70,0.5)] transition-all duration-200 hover:shadow-lg hover:scale-[1.02] text-left w-full ${
         onRegionClick ? 'cursor-pointer' : ''
       } ${className}`}
       onClick={handleClick}
-      onKeyDown={handleKeyDown}
-      role={onRegionClick ? 'button' : undefined}
-      tabIndex={onRegionClick ? 0 : undefined}
       aria-label={`${displayName} conformation score: ${formatScore(score)}, ${qualityRating.label}`}
       data-testid={`conformation-score-card-${region}`}
     >
@@ -148,7 +143,7 @@ const ConformationScoreCard = ({
           Breed avg: {formatScore(breedAverage)}
         </div>
       )}
-    </div>
+    </Tag>
   );
 };
 

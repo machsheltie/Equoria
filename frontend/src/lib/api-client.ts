@@ -876,6 +876,32 @@ export const horsesApi = {
     apiClient.get<RecentGains>(`/api/horses/${horseId}/gains/recent?days=${days}`),
   update: (horseId: number, data: { name?: string }) =>
     apiClient.put<HorseSummary>(`/api/v1/horses/${horseId}`, data),
+  getConformation: (horseId: number | string) =>
+    apiClient.get<{
+      head: number;
+      neck: number;
+      shoulder: number;
+      back: number;
+      hindquarters: number;
+      legs: number;
+      hooves: number;
+      overall: number;
+    }>(`/api/v1/horses/${horseId}/conformation`),
+  getBreedAverages: (breedId: number | string) =>
+    apiClient.get<{
+      breedId: string;
+      breedName: string;
+      averages: {
+        head: number;
+        neck: number;
+        shoulder: number;
+        back: number;
+        hindquarters: number;
+        legs: number;
+        hooves: number;
+        overall: number;
+      };
+    }>(`/api/v1/breeds/${breedId}/conformation-averages`),
 };
 
 /**

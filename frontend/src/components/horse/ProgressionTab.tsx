@@ -6,36 +6,7 @@ import RecentGains from './RecentGains';
 import AgeUpCounter from './AgeUpCounter';
 import TrainingRecommendations from './TrainingRecommendations';
 import ScoreProgressionPanel from '../training/ScoreProgressionPanel';
-
-// Temporary Horse interface until we have a shared type file
-interface HorseStats {
-  speed: number;
-  stamina: number;
-  agility: number;
-  strength: number;
-  intelligence: number;
-  health: number;
-}
-
-interface Horse {
-  id: number;
-  name: string;
-  breed: string;
-  breedId?: number;
-  age: number;
-  gender: string;
-  dateOfBirth: string;
-  healthStatus: string;
-  imageUrl?: string;
-  stats: HorseStats;
-  disciplineScores: Record<string, number>;
-  traits?: string[];
-  description?: string;
-  parentIds?: {
-    sireId?: number;
-    damId?: number;
-  };
-}
+import type { Horse } from '@/types/horse';
 
 const ProgressionTab: React.FC<{ horse: Horse }> = ({ horse }) => (
   <div className="space-y-6 animate-fade-in-up" data-testid="progression-tab">

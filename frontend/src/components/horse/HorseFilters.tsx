@@ -16,6 +16,7 @@
 
 import { Filter, ChevronDown, ChevronUp } from 'lucide-react';
 import { useState } from 'react';
+import { DISCIPLINE_VALUES } from '@/constants/disciplines';
 
 export interface HorseFiltersProps {
   /**
@@ -75,15 +76,8 @@ export interface HorseFiltersProps {
   className?: string;
 }
 
-// Default disciplines based on game design
-const DISCIPLINES = [
-  'Racing',
-  'Dressage',
-  'ShowJumping',
-  'Eventing',
-  'Endurance',
-  'Trail',
-] as const;
+// All 23 game disciplines — sourced from @/constants/disciplines
+const DISCIPLINES = DISCIPLINE_VALUES;
 
 // Training status options
 const TRAINING_STATUSES = [
@@ -146,7 +140,7 @@ const HorseFilters = ({
 
   return (
     <div
-      className={`bg-[rgba(15,35,70,0.5)] border border-[rgba(37,99,235,0.3)] rounded-lg ${className}`}
+      className={`relative bg-[rgba(15,35,70,0.5)] border border-[rgba(37,99,235,0.3)] rounded-lg ${className}`}
     >
       {/* Header */}
       <div className="flex items-center justify-between p-4 border-b border-[rgba(37,99,235,0.3)]">

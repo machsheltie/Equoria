@@ -1,3 +1,16 @@
+/**
+ * TraitCard — Legacy genetics/epigenetic display (Story 3-3)
+ *
+ * Used by HorseDetailPage to render basic genetic and epigenetic traits with
+ * rarity, source (sire/dam/mutation), and stat impact tooltips.
+ *
+ * NOTE: This is distinct from `components/traits/TraitCard.tsx` which is the
+ * Epic 6 tier-based epigenetic system using the EpigeneticTrait type.
+ * Do NOT conflate the two — they have different prop interfaces and use cases.
+ * If you're working with EpigeneticTrait (tier, competitionImpact, discoveryStatus),
+ * import from `@/components/traits/TraitCard` instead.
+ */
+
 import React, { useState } from 'react';
 import { Sparkles, Info, TrendingUp } from 'lucide-react';
 

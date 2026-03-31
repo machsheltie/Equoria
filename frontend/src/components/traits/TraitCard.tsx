@@ -1,11 +1,14 @@
 /**
- * TraitCard Component
+ * TraitCard — Epigenetic tier system (Story 6-6)
  *
- * Displays an individual trait with tier-specific styling, epigenetic flags,
- * discovery status, and competition impact preview. Provides click handler
- * for opening detailed view in modal.
+ * Renders EpigeneticTrait objects with tier-specific styling (ultra-rare, exotic, etc.),
+ * epigenetic flags (stress-induced, care-influenced, etc.), discovery status dots,
+ * and competition impact indicators.
  *
- * Story 6-6: Epigenetic Trait System
+ * NOTE: This is distinct from `components/TraitCard.tsx` which is the legacy Story 3-3
+ * genetics display using inline trait props (rarity, strength, source).
+ * If you're rendering a basic genetic/epigenetic trait from HorseDetailPage,
+ * import from `@/components/TraitCard` instead.
  */
 
 import React from 'react';

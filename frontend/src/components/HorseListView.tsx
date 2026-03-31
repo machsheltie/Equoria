@@ -29,6 +29,7 @@ import {
   List,
 } from 'lucide-react';
 import { useHorses } from '../hooks/api/useHorses';
+import { useBreeds } from '../hooks/api/useBreeds';
 import { useHorseFilters } from '../hooks/useHorseFilters';
 import {
   applyFilters,
@@ -43,32 +44,7 @@ import EligibilityFilter, { EligibilityFilterType } from './training/Eligibility
 import { canTrain } from '../lib/utils/training-utils';
 import { getHorseImage } from '@/lib/breed-images';
 import { getBreedName } from '@/lib/utils';
-
-// Types
-interface Horse {
-  id: number;
-  name: string;
-  breed: string | { id?: number; name?: string; description?: string };
-  age: number;
-  level: number;
-  health: number;
-  xp: number;
-  imageUrl?: string; // Optional horse thumbnail/avatar image URL
-  stats: {
-    speed: number;
-    stamina: number;
-    agility: number;
-    balance: number;
-    precision: number;
-    intelligence: number;
-    boldness: number;
-    flexibility: number;
-    obedience: number;
-    focus: number;
-  };
-  disciplineScores: Record<string, number>;
-  trainingCooldown?: string;
-}
+import type { Horse } from '@/types/horse';
 
 interface HorseListViewProps {
   userId: number;
@@ -123,8 +99,12 @@ const HorseListView: React.FC<HorseListViewProps> = ({ userId: _userId, horses: 
   const [isMobile, setIsMobile] = useState(window.innerWidth < 768);
   const [viewMode, setViewMode] = useState<ViewMode>(() => {
     // Load from localStorage, default to 'list'
-    const saved = localStorage.getItem('horseListViewMode');
-    return (saved as ViewMode) || 'list';
+    try {
+      const saved = localStorage.getItem('horseListViewMode');
+      return (saved as ViewMode) || 'list';
+    } catch {
+      return 'list';
+    }
   });
   const [eligibilityFilter, setEligibilityFilter] = useState<EligibilityFilterType>('all');
 
@@ -141,13 +121,9 @@ const HorseListView: React.FC<HorseListViewProps> = ({ userId: _userId, horses: 
 
   const itemsPerPage = 10;
 
-  // Mock breeds data (will be replaced with API call in future)
-  const availableBreeds = [
-    { id: '1', name: 'Arabian' },
-    { id: '2', name: 'Thoroughbred' },
-    { id: '3', name: 'Quarter Horse' },
-    { id: '4', name: 'Friesian' },
-  ];
+  // Fetch breeds from API for the breed filter
+  const { data: breedsData } = useBreeds();
+  const availableBreeds = (breedsData ?? []).map((b) => ({ id: String(b.id), name: b.name }));
 
   // React Query for data fetching (only if horses not provided as props)
   const { data: fetchedHorses, isLoading, error, refetch } = useHorses();
@@ -166,7 +142,11 @@ const HorseListView: React.FC<HorseListViewProps> = ({ userId: _userId, horses: 
 
   // Save viewMode to localStorage whenever it changes
   useEffect(() => {
-    localStorage.setItem('horseListViewMode', viewMode);
+    try {
+      localStorage.setItem('horseListViewMode', viewMode);
+    } catch {
+      // localStorage may be unavailable in private browsing or restricted environments
+    }
   }, [viewMode]);
 
   // Toggle view mode
