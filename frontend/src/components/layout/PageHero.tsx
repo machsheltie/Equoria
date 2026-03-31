@@ -130,7 +130,14 @@ const PageHero: React.FC<PageHeroProps> = ({
                 {title}
               </h1>
               {subtitle && (
-                <p className="mt-1 text-sm text-[var(--text-secondary)] font-[var(--font-body)] max-w-xl">
+                <p
+                  className="mt-1 text-sm text-[var(--text-secondary)] font-[var(--font-body)] max-w-xl"
+                  style={
+                    backgroundImage
+                      ? { textShadow: '0 1px 4px rgba(0,0,0,0.9), 0 0 12px rgba(0,0,0,0.7)' }
+                      : undefined
+                  }
+                >
                   {subtitle}
                 </p>
               )}
