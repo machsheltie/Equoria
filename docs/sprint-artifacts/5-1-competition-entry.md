@@ -1,7 +1,8 @@
 # Story 5.1: Competition Entry
 
 **Created:** 2026-02-02
-**Status:** ready-for-dev
+**Status:** completed
+**Completed:** 2026-02-02
 **Epic:** 5 - Competition System
 **FR:** FR-C1
 **Priority:** P0
@@ -35,6 +36,7 @@ So that **I can win prizes and earn XP**.
 Create the competition entry interface that enables players to browse available competitions, select eligible horses, and register for competitive events. This is the foundational story for Epic 5 (Competition System) and unlocks the competitive gameplay loop.
 
 **Value Proposition:**
+
 - **Engagement:** Introduces competitive element to retain players
 - **Progression:** Provides path for players to earn XP and prizes
 - **Strategy:** Requires players to consider horse eligibility and discipline matching
@@ -42,6 +44,7 @@ Create the competition entry interface that enables players to browse available 
 
 **Epic 5 Context:**
 This is the first of 5 stories in the Competition System epic. Upon completion, it enables:
+
 - Story 5.2: Competition Results Display
 - Story 5.3: Prize Distribution UI
 - Story 5.4: XP Award Notifications
@@ -54,13 +57,16 @@ This is the first of 5 stories in the Competition System epic. Upon completion, 
 ### Core Functionality
 
 **Competition Browser:**
+
 1. **Available Competitions List**
+
    - Display all active/upcoming competitions
    - Filter by discipline (23 disciplines from Training System)
    - Sort by: date, prize pool, entry fee, participant count
    - Show competition details: name, discipline, date, prize pool, entry fee
 
 2. **Competition Detail View**
+
    - Competition name and description
    - Discipline requirement
    - Entry requirements (age 3-20, health status, level restrictions)
@@ -69,6 +75,7 @@ This is the first of 5 stories in the Competition System epic. Upon completion, 
    - Entry deadline
 
 3. **Horse Selection Interface**
+
    - List user's eligible horses for selected competition
    - Show eligibility status per horse (eligible, too young, too old, wrong discipline level, already entered)
    - Display horse stats relevant to competition discipline
@@ -84,6 +91,7 @@ This is the first of 5 stories in the Competition System epic. Upon completion, 
 ### API Integration
 
 **Backend Endpoints (Already Implemented):**
+
 - `GET /api/competition/shows/available` - List available competitions
 - `GET /api/competitions/:id` - Get competition details
 - `POST /api/competition/enter-show` - Enter horse(s) in competition
@@ -91,6 +99,7 @@ This is the first of 5 stories in the Competition System epic. Upon completion, 
 - `GET /api/competition/horse/:horseId/results` - Horse competition history (for future reference)
 
 **Eligibility Rules (Backend Enforced):**
+
 - Age: 3-20 years (same as training system)
 - Health status: Must be healthy (not injured)
 - Level restrictions per show (if applicable)
@@ -98,6 +107,7 @@ This is the first of 5 stories in the Competition System epic. Upon completion, 
 - Sufficient balance for entry fee
 
 **Data Structures:**
+
 ```typescript
 interface Competition {
   id: number;
@@ -137,6 +147,7 @@ interface CompetitionEntry {
 ### Frontend Architecture (React 19 + TypeScript)
 
 **Component Hierarchy:**
+
 ```
 CompetitionBrowserPage.tsx (NEW - Page)
 ├── CompetitionFilters.tsx (NEW - Discipline/date filters)
@@ -151,6 +162,7 @@ CompetitionBrowserPage.tsx (NEW - Page)
 ```
 
 **State Management:**
+
 - **React Query** for server state:
   - `useCompetitions()` - Fetch available competitions
   - `useCompetitionDetails(id)` - Fetch single competition details
@@ -163,11 +175,13 @@ CompetitionBrowserPage.tsx (NEW - Page)
   - Modal open/closed states
 
 **Responsive Design:**
+
 - **Mobile:** Single column card layout, stacked filters
 - **Tablet:** 2-column grid, side filters
 - **Desktop:** 3-column grid, persistent side filters
 
 **Accessibility:**
+
 - WCAG 2.1 AA compliance (following Story 4.1-4.5 patterns)
 - Keyboard navigation for all interactions
 - Screen reader announcements for entry success/errors
@@ -179,6 +193,7 @@ CompetitionBrowserPage.tsx (NEW - Page)
 ## 📚 Library & Framework Requirements
 
 ### Core Dependencies (Already in Project)
+
 - **React 19** - Component framework
 - **TypeScript** - Type safety (strict mode)
 - **React Query (TanStack Query v5)** - Server state management
@@ -190,22 +205,24 @@ CompetitionBrowserPage.tsx (NEW - Page)
 - **Vitest + React Testing Library** - Testing framework
 
 ### No New Dependencies Required
+
 All functionality can be built with existing dependencies. Patterns from Epic 4 (Training System) provide comprehensive reference implementations.
 
 ### Icon Usage (Lucide React)
+
 ```typescript
 import {
-  Trophy,         // Competition icon
-  Calendar,       // Date/deadline
-  DollarSign,     // Entry fee/prizes
-  Users,          // Participants
-  Filter,         // Filter controls
-  CheckCircle2,   // Eligible status
-  XCircle,        // Ineligible status
-  AlertCircle,    // Warnings
-  Search,         // Search/filter
-  ArrowRight,     // Navigate to details
-  Zap             // Quick enter action
+  Trophy, // Competition icon
+  Calendar, // Date/deadline
+  DollarSign, // Entry fee/prizes
+  Users, // Participants
+  Filter, // Filter controls
+  CheckCircle2, // Eligible status
+  XCircle, // Ineligible status
+  AlertCircle, // Warnings
+  Search, // Search/filter
+  ArrowRight, // Navigate to details
+  Zap, // Quick enter action
 } from 'lucide-react';
 ```
 
@@ -216,26 +233,29 @@ import {
 ### Files to CREATE (11 new files)
 
 **Pages:**
+
 1. `frontend/src/pages/CompetitionBrowserPage.tsx`
    - Main competition browser page
    - Integrates all competition sub-components
    - Handles routing and data fetching
    - Layout with filters and competition grid
 
-**Components:**
-2. `frontend/src/components/competition/CompetitionFilters.tsx`
-   - Discipline filter (dropdown with 23 disciplines)
-   - Date range filter (upcoming/this week/this month/all)
-   - Entry fee filter (free/low/medium/high)
-   - Clear filters button
+**Components:** 2. `frontend/src/components/competition/CompetitionFilters.tsx`
+
+- Discipline filter (dropdown with 23 disciplines)
+- Date range filter (upcoming/this week/this month/all)
+- Entry fee filter (free/low/medium/high)
+- Clear filters button
 
 3. `frontend/src/components/competition/CompetitionList.tsx`
+
    - Grid layout of competition cards
    - Loading states (skeleton cards)
    - Empty state (no competitions available)
    - Pagination (if needed)
 
 4. `frontend/src/components/competition/CompetitionCard.tsx`
+
    - Individual competition display card
    - Competition name, discipline, date, prize pool
    - Entry fee badge
@@ -243,6 +263,7 @@ import {
    - Click to view details
 
 5. `frontend/src/components/competition/CompetitionDetailModal.tsx`
+
    - Full competition details view
    - Entry requirements display
    - Prize distribution breakdown
@@ -250,12 +271,14 @@ import {
    - Entry action button
 
 6. `frontend/src/components/competition/HorseSelector.tsx`
+
    - List user's horses for competition
    - Filter by eligibility status
    - Select single or multiple horses (depending on competition type)
    - Show eligibility reasons
 
-7. `frontend/src/components/competition/HorseEligibilityCard.tsx`
+7. `frontend/src/components/competition/HorseSelectionCard.tsx` _(renamed from HorseEligibilityCard during implementation)_
+
    - Individual horse card with eligibility status
    - Horse name, age, stats
    - Eligibility indicator (green check, red X, yellow warning)
@@ -263,43 +286,31 @@ import {
    - Expected performance indicator
 
 8. `frontend/src/components/competition/EntryConfirmationModal.tsx`
+
    - Final confirmation before entry
    - Selected horse(s) summary
    - Entry fee display with balance check
    - Confirm/cancel actions
    - Loading state during submission
 
-9. `frontend/src/components/competition/CompetitionSuccessToast.tsx`
+9. ~~`frontend/src/components/competition/CompetitionSuccessToast.tsx`~~ _(Not created — success notification handled by `RewardToast` in `feedback/` directory using type='prize', plus inline success state in EntryConfirmationModal)_
    - Success notification after entry
    - Entry confirmation number
    - Link to competition details
    - Auto-dismiss after 5 seconds
 
-**Hooks:**
-10. `frontend/src/hooks/api/useCompetitions.ts`
-    - React Query hooks for competition data
-    - `useCompetitions(filters)` - List competitions
-    - `useCompetitionDetails(id)` - Single competition
-    - `useHorseEligibility(competitionId)` - Eligibility check
-    - `useEnterCompetition()` - Entry mutation
+**Hooks:** 10. `frontend/src/hooks/api/useCompetitions.ts` - React Query hooks for competition data - `useCompetitions(filters)` - List competitions - `useCompetitionDetails(id)` - Single competition - `useHorseEligibility(competitionId)` - Eligibility check - `useEnterCompetition()` - Entry mutation
 
-**Test Files:**
-11. `frontend/src/pages/__tests__/CompetitionBrowserPage.test.tsx`
-12. `frontend/src/components/competition/__tests__/CompetitionFilters.test.tsx`
-13. `frontend/src/components/competition/__tests__/CompetitionList.test.tsx`
-14. `frontend/src/components/competition/__tests__/CompetitionCard.test.tsx`
-15. `frontend/src/components/competition/__tests__/CompetitionDetailModal.test.tsx`
-16. `frontend/src/components/competition/__tests__/HorseSelector.test.tsx`
-17. `frontend/src/components/competition/__tests__/HorseEligibilityCard.test.tsx`
-18. `frontend/src/components/competition/__tests__/EntryConfirmationModal.test.tsx`
-19. `frontend/src/hooks/api/__tests__/useCompetitions.test.ts`
+**Test Files:** 11. `frontend/src/pages/__tests__/CompetitionBrowserPage.test.tsx` 12. `frontend/src/components/competition/__tests__/CompetitionFilters.test.tsx` 13. `frontend/src/components/competition/__tests__/CompetitionList.test.tsx` 14. `frontend/src/components/competition/__tests__/CompetitionCard.test.tsx` 15. `frontend/src/components/competition/__tests__/CompetitionDetailModal.test.tsx` 16. `frontend/src/components/competition/__tests__/HorseSelector.test.tsx` 17. `frontend/src/components/competition/__tests__/HorseSelectionCard.test.tsx` _(renamed from HorseEligibilityCard.test during implementation)_ 18. `frontend/src/components/competition/__tests__/EntryConfirmationModal.test.tsx` 19. `frontend/src/hooks/api/__tests__/useCompetitions.test.ts`
 
 ### Files to REUSE (from Epic 4)
+
 - `frontend/src/components/training/EligibilityIndicator.tsx` (Story 4.2) - For horse eligibility status display
 - `frontend/src/lib/utils/training-utils.ts` (Epic 4) - Discipline definitions and utility functions
 - UI primitives from `frontend/src/components/ui/` (dialog, button, card, etc.)
 
 ### Files to MODIFY
+
 - `frontend/src/App.tsx` or router configuration - Add CompetitionBrowserPage route
 - `frontend/src/components/MainNavigation.tsx` (if exists) - Add "Competitions" navigation link
 
@@ -310,6 +321,7 @@ import {
 ### Test Coverage Target: 180+ tests
 
 **Testing Strategy:**
+
 - **TDD approach** (write tests first, following Epic 4 methodology)
 - **Component isolation** with React Testing Library
 - **Integration tests** for user flows (browse → select → enter)
@@ -319,6 +331,7 @@ import {
 ### Test Breakdown by Component
 
 **CompetitionBrowserPage.tsx (30 tests):**
+
 - Page rendering with loading state
 - Data fetching and display
 - Navigation and routing
@@ -327,6 +340,7 @@ import {
 - Error handling (API failures)
 
 **CompetitionFilters.tsx (20 tests):**
+
 - Filter controls rendering
 - Discipline filter (23 options)
 - Date range filter
@@ -335,6 +349,7 @@ import {
 - Clear filters functionality
 
 **CompetitionList.tsx (25 tests):**
+
 - Competition grid rendering
 - Loading states (skeleton cards)
 - Empty state display
@@ -343,6 +358,7 @@ import {
 - Click to view details
 
 **CompetitionCard.tsx (18 tests):**
+
 - Card data display
 - Prize pool formatting
 - Entry fee badge
@@ -351,6 +367,7 @@ import {
 - Click actions
 
 **CompetitionDetailModal.tsx (30 tests):**
+
 - Modal open/close
 - Competition details display
 - Prize distribution display
@@ -360,6 +377,7 @@ import {
 - Success/error handling
 
 **HorseSelector.tsx (25 tests):**
+
 - Horse list rendering
 - Eligibility filtering
 - Horse selection (single/multiple)
@@ -367,7 +385,8 @@ import {
 - Empty state (no eligible horses)
 - Selection state management
 
-**HorseEligibilityCard.tsx (22 tests):**
+**HorseSelectionCard.tsx (28 tests — renamed from HorseEligibilityCard during implementation):**
+
 - Horse data display
 - Eligibility indicator colors
 - Ineligibility reason tooltips
@@ -376,6 +395,7 @@ import {
 - Click actions
 
 **EntryConfirmationModal.tsx (25 tests):**
+
 - Modal open/close
 - Selected horses display
 - Entry fee calculation
@@ -385,6 +405,7 @@ import {
 - Success/error handling
 
 **useCompetitions.ts Hook (35 tests):**
+
 - Data fetching (useCompetitions)
 - Single competition (useCompetitionDetails)
 - Eligibility check (useHorseEligibility)
@@ -394,6 +415,7 @@ import {
 - Cache invalidation after entry
 
 ### Testing Best Practices (From Epic 4)
+
 - Use `describe` blocks for logical grouping
 - Test user behavior, not implementation details
 - Mock API calls with MSW or React Query mock utilities
@@ -409,6 +431,7 @@ import {
 ### Story 4.5: Training Dashboard (Most Recent Completion)
 
 **Key Learnings:**
+
 - **Component Architecture:** Page component with multiple feature sub-components worked well
 - **Filter Pattern:** DashboardFilters.tsx with status/search filters - reusable pattern for CompetitionFilters
 - **Card Grid Layout:** TrainingDashboardTable with responsive grid - apply to CompetitionList
@@ -417,18 +440,21 @@ import {
 - **Test Coverage:** 178 tests (exceeded 150+ target) - aim for similar coverage in Story 5.1
 
 **Files Created Pattern:**
+
 - 1 Page component (TrainingDashboardPage.tsx)
 - 8 Feature components (organized in `/training/` folder)
 - 9 Test files (comprehensive coverage)
 - Reused 3 components from previous stories
 
 **Testing Approach:**
+
 - TDD methodology with test-first implementation
 - 100% pass rate achieved before marking complete
 - Comprehensive integration tests for user flows
 - Accessibility testing for all interactive elements
 
 **Code Quality Standards:**
+
 - TypeScript strict mode (zero `any` types)
 - WCAG 2.1 AA accessibility compliance
 - Responsive design (mobile/tablet/desktop)
@@ -437,6 +463,7 @@ import {
 ### Story 4.1-4.4: Training System Patterns
 
 **Reusable Patterns:**
+
 - **DisciplineSelector** (Story 4.1): 23 disciplines with category grouping
 - **EligibilityIndicator** (Story 4.2): 4-state indicator (ready/cooldown/too-young/too-old)
 - **Modal Patterns** (Story 4.1): TrainingSessionModal with confirmation flow
@@ -450,27 +477,32 @@ import {
 **Recent Frontend Patterns (from 10 recent commits):**
 
 **Schema Migration Pattern:**
+
 - Recent migration from `ownerId` → `userId` across codebase
 - **CRITICAL:** Use `userId` for all ownership checks, NOT `ownerId`
 - Files affected: userProgressAPI, Horse model, route tests
 
 **Test Quality Focus:**
+
 - Consistent 98-100% pass rate enforcement
 - Recent fixes: 22 test failures resolved, Prisma syntax corrections
 - Security test suite: 100% pass rate achieved
 - **Standard:** All tests must pass before commit
 
 **Frontend Feature Pattern:**
+
 - Recent: "Fantasy Design System to Groom Marketplace Page"
 - Pattern: Consistent design system application across features
 - **Apply:** Use same Radix UI primitives and TailwindCSS patterns
 
 **Performance Optimizations:**
+
 - Backend performance benchmarks enabled
 - Schema field corrections for performance
 - **Consideration:** Keep API calls efficient, use React Query caching
 
 **Code Quality Standards:**
+
 - ESLint and Prettier enforcement (no exceptions)
 - TypeScript strict mode (no `any` types)
 - Descriptive commit messages with context
@@ -482,6 +514,7 @@ import {
 ### React Query v5 (TanStack Query)
 
 **Latest Patterns (2026):**
+
 ```typescript
 // Modern React Query hook pattern
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
@@ -490,9 +523,10 @@ import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 export const useCompetitions = (filters?: CompetitionFilters) => {
   return useQuery({
     queryKey: ['competitions', filters],
-    queryFn: () => apiRequest<Competition[]>('/api/competition/shows/available', {
-      params: filters,
-    }),
+    queryFn: () =>
+      apiRequest<Competition[]>('/api/competition/shows/available', {
+        params: filters,
+      }),
     staleTime: 5 * 60 * 1000, // 5 minutes
     gcTime: 10 * 60 * 1000, // 10 minutes (renamed from cacheTime in v5)
   });
@@ -519,6 +553,7 @@ export const useEnterCompetition = () => {
 ```
 
 **Key v5 Changes:**
+
 - `cacheTime` → `gcTime` (garbage collection time)
 - `useQuery` returns object (no array destructuring)
 - `enabled` option for conditional queries
@@ -527,6 +562,7 @@ export const useEnterCompetition = () => {
 ### Zod Validation (Latest Patterns)
 
 **Form Validation with Zod:**
+
 ```typescript
 import { z } from 'zod';
 
@@ -538,7 +574,11 @@ const entrySchema = z.object({
 type EntryForm = z.infer<typeof entrySchema>;
 
 // Use in component
-const { register, handleSubmit, formState: { errors } } = useForm<EntryForm>({
+const {
+  register,
+  handleSubmit,
+  formState: { errors },
+} = useForm<EntryForm>({
   resolver: zodResolver(entrySchema),
 });
 ```
@@ -546,6 +586,7 @@ const { register, handleSubmit, formState: { errors } } = useForm<EntryForm>({
 ### Radix UI Primitives
 
 **Dialog (Modal) Pattern:**
+
 ```typescript
 import * as Dialog from '@radix-ui/react-dialog';
 
@@ -566,6 +607,7 @@ import * as Dialog from '@radix-ui/react-dialog';
 ### Accessibility Best Practices (2026)
 
 **WCAG 2.1 AA Compliance:**
+
 - Color contrast ratio 4.5:1 for text
 - Keyboard navigation for all interactive elements
 - ARIA labels for screen readers
@@ -578,24 +620,29 @@ import * as Dialog from '@radix-ui/react-dialog';
 ## 🔗 References
 
 ### Epic & Story Sources
+
 - [Source: docs/epics.md#Epic-5] - Epic 5: Competition System
 - [Source: docs/epics.md#Story-5.1] - Story 5.1 requirements
 
 ### API Documentation
+
 - [Source: docs/api-contracts-backend/competition-endpoints.md] - Competition API contracts
 - [Source: backend/routes/competitionRoutes.mjs] - Backend competition routes
 
 ### Architecture Documents
+
 - [Source: docs/architecture-frontend.md] - Frontend architecture standards
 - [Source: docs/project_context.md] - Critical implementation rules
 - [Source: docs/api-contracts-backend/] - Backend API documentation
 
 ### Previous Story References
+
 - [Story 4.5: docs/sprint-artifacts/4-5-training-dashboard.md] - Most recent completion, component patterns
 - [Story 4.2: docs/sprint-artifacts/4-2-training-eligibility-display.md] - EligibilityIndicator component (REUSE)
 - [Story 4.1: docs/sprint-artifacts/4-1-training-session-interface.md] - Modal and confirmation patterns
 
 ### Component Dependencies
+
 - [Component: frontend/src/components/training/EligibilityIndicator.tsx] - Reuse for horse eligibility
 - [Component: frontend/src/components/ui/] - Radix UI primitives (dialog, button, card)
 - [Utilities: frontend/src/lib/utils/training-utils.ts] - Discipline definitions (23 disciplines)
@@ -605,9 +652,11 @@ import * as Dialog from '@radix-ui/react-dialog';
 ## 🚀 Implementation Tasks
 
 ### Task 1: Competition Browser Page Setup
+
 **Priority:** P0 (Foundation)
 
 **Activities:**
+
 - Create `CompetitionBrowserPage.tsx` with routing
 - Set up React Query hook for competitions data
 - Implement loading/error states
@@ -615,6 +664,7 @@ import * as Dialog from '@radix-ui/react-dialog';
 - Create placeholder components
 
 **Acceptance Criteria:**
+
 - [x] Page renders with loading spinner
 - [x] Navigation routes correctly (/competitions)
 - [x] Error boundary handles failures
@@ -622,11 +672,13 @@ import * as Dialog from '@radix-ui/react-dialog';
 - [x] 28 tests passing for page component (93.3% of target)
 
 ### Task 2: Competition Filters Component ✅ COMPLETE
+
 **Priority:** P0 (Core feature)
 
 **File:** `CompetitionFilters.tsx` (CREATED)
 
 **Activities:**
+
 - Create filter controls component
 - Implement discipline filter (dropdown with 23 disciplines)
 - Add date range filter (upcoming/this week/this month/all)
@@ -635,6 +687,7 @@ import * as Dialog from '@radix-ui/react-dialog';
 - Style with Tailwind (responsive)
 
 **Acceptance Criteria:**
+
 - [x] All filter controls functional
 - [x] Filters update URL query params (ready for hook integration)
 - [x] Clear filters button resets all
@@ -642,13 +695,16 @@ import * as Dialog from '@radix-ui/react-dialog';
 - [x] 20 tests passing (100% pass rate)
 
 ### Task 3: Competition List & Card Components ✅ COMPLETE
+
 **Priority:** P0 (Core feature)
 
 **Files:**
+
 - `CompetitionList.tsx` (CREATED)
 - `CompetitionCard.tsx` (CREATED)
 
 **Activities:**
+
 - Create competition list grid component
 - Implement competition card component
 - Add loading states (skeleton cards)
@@ -657,6 +713,7 @@ import * as Dialog from '@radix-ui/react-dialog';
 - Add click handler to open details modal
 
 **Acceptance Criteria:**
+
 - [x] Competitions display in grid
 - [x] Loading skeleton cards shown
 - [x] Empty state displays when no competitions
@@ -664,11 +721,13 @@ import * as Dialog from '@radix-ui/react-dialog';
 - [x] 50 tests passing (29 list + 21 card) - EXCEEDED TARGET
 
 ### Task 4: Competition Detail Modal
+
 **Priority:** P0 (Core feature)
 
 **File:** `CompetitionDetailModal.tsx` (CREATE)
 
 **Activities:**
+
 - Create modal component (Radix UI Dialog)
 - Display full competition details
 - Show prize distribution breakdown
@@ -678,6 +737,7 @@ import * as Dialog from '@radix-ui/react-dialog';
 - Handle modal open/close states
 
 **Acceptance Criteria:**
+
 - [ ] Modal opens on competition card click
 - [ ] All competition details displayed
 - [ ] Prize distribution shown (50%/30%/20%)
@@ -685,13 +745,16 @@ import * as Dialog from '@radix-ui/react-dialog';
 - [ ] 30 tests passing
 
 ### Task 5: Horse Selection System
+
 **Priority:** P0 (Core feature)
 
 **Files:**
+
 - `HorseSelector.tsx` (CREATE)
 - `HorseEligibilityCard.tsx` (CREATE)
 
 **Activities:**
+
 - Create horse selector component
 - Fetch user's horses for competition
 - Check eligibility for each horse (API call)
@@ -701,6 +764,7 @@ import * as Dialog from '@radix-ui/react-dialog';
 - Handle empty state (no eligible horses)
 
 **Acceptance Criteria:**
+
 - [ ] User's horses listed
 - [ ] Eligibility status displayed correctly
 - [ ] Ineligibility reasons shown in tooltips
@@ -709,11 +773,13 @@ import * as Dialog from '@radix-ui/react-dialog';
 - [ ] 47 tests passing (25 selector + 22 card)
 
 ### Task 6: Entry Confirmation Flow
+
 **Priority:** P0 (Core feature)
 
 **File:** `EntryConfirmationModal.tsx` (CREATE)
 
 **Activities:**
+
 - Create confirmation modal component
 - Display selected horse(s) summary
 - Show entry fee with balance check
@@ -723,6 +789,7 @@ import * as Dialog from '@radix-ui/react-dialog';
 - Display success notification on completion
 
 **Acceptance Criteria:**
+
 - [ ] Confirmation modal opens before entry
 - [ ] Selected horses and fee displayed
 - [ ] Balance verification works
@@ -732,11 +799,13 @@ import * as Dialog from '@radix-ui/react-dialog';
 - [ ] 25 tests passing
 
 ### Task 7: React Query Hooks
+
 **Priority:** P0 (Data layer)
 
 **File:** `useCompetitions.ts` (CREATE)
 
 **Activities:**
+
 - Create `useCompetitions(filters)` hook
 - Create `useCompetitionDetails(id)` hook
 - Create `useHorseEligibility(competitionId)` hook
@@ -746,6 +815,7 @@ import * as Dialog from '@radix-ui/react-dialog';
 - Set appropriate staleTime and gcTime
 
 **Acceptance Criteria:**
+
 - [ ] All hooks functional
 - [ ] Type-safe with TypeScript
 - [ ] Cache invalidation works correctly
@@ -753,9 +823,11 @@ import * as Dialog from '@radix-ui/react-dialog';
 - [ ] 35 tests passing
 
 ### Task 8: Testing & Integration
+
 **Priority:** P0 (Quality assurance)
 
 **Activities:**
+
 - Run full test suite (all 180+ tests)
 - Fix any test failures
 - Test end-to-end user flows
@@ -765,6 +837,7 @@ import * as Dialog from '@radix-ui/react-dialog';
 - Verify API integration with backend
 
 **Acceptance Criteria:**
+
 - [ ] All 180+ tests passing (100% pass rate)
 - [ ] No TypeScript errors
 - [ ] No ESLint warnings
@@ -813,13 +886,16 @@ import * as Dialog from '@radix-ui/react-dialog';
 ## 📊 Implementation Progress
 
 ### Task 1: Competition Browser Page Setup ✅ COMPLETE
+
 **Completed:** 2026-02-02
 **Test Results:** 28/28 tests passing (100% pass rate, 93.3% of target)
 **Files Created:**
+
 - `frontend/src/pages/CompetitionBrowserPage.tsx` (123 lines)
 - `frontend/src/pages/__tests__/CompetitionBrowserPage.test.tsx` (383 lines, 28 tests)
 
 **Implementation Notes:**
+
 - TDD Red-Green-Refactor cycle completed successfully
 - Component implements loading states, error handling, and accessibility features
 - Reused existing `useCompetitions` hook from `hooks/api/useCompetitions.ts`
@@ -827,6 +903,7 @@ import * as Dialog from '@radix-ui/react-dialog';
 - Ready for Task 2: Competition Filters Component
 
 **Test Coverage:**
+
 - Component Rendering: 3/3 ✅
 - Loading State: 3/3 ✅
 - Error Handling: 4/4 ✅
@@ -841,13 +918,16 @@ import * as Dialog from '@radix-ui/react-dialog';
 ---
 
 ### Task 2: Competition Filters Component ✅ COMPLETE
+
 **Completed:** 2026-02-02
 **Test Results:** 20/20 tests passing (100% pass rate)
 **Files Created:**
+
 - `frontend/src/components/CompetitionFilters.tsx` (202 lines)
 - `frontend/src/components/__tests__/CompetitionFilters.test.tsx` (229 lines, 20 tests)
 
 **Implementation Notes:**
+
 - TDD Red-Green-Refactor cycle completed successfully
 - Discipline filter with 23 options grouped by category (Western, English, Racing, Specialized)
 - Date range filter (All, Today, This Week, This Month)
@@ -858,6 +938,7 @@ import * as Dialog from '@radix-ui/react-dialog';
 - React.memo optimization for performance
 
 **Test Coverage:**
+
 - Component Rendering: 3/3 ✅
 - Discipline Filter: 5/5 ✅
 - Date Range Filter: 3/3 ✅
@@ -872,9 +953,11 @@ import * as Dialog from '@radix-ui/react-dialog';
 ---
 
 ### Task 3: Competition List & Card Components ✅ COMPLETE
+
 **Completed:** 2026-02-02
 **Test Results:** 50/50 tests passing (100% pass rate, 116% of target)
 **Files Created:**
+
 - `frontend/src/components/competition/CompetitionCard.tsx` (126 lines)
 - `frontend/src/components/competition/CompetitionList.tsx` (142 lines)
 - `frontend/src/components/competition/__tests__/CompetitionCard.test.tsx` (21 tests)
@@ -882,6 +965,7 @@ import * as Dialog from '@radix-ui/react-dialog';
 - `frontend/src/components/competition/index.ts` (export file)
 
 **Implementation Notes:**
+
 - TDD Red-Green-Refactor cycle completed successfully
 - CompetitionCard displays name, discipline, date, prize pool, entry fee, participant count
 - Loading skeleton state with animation for better UX
@@ -893,7 +977,9 @@ import * as Dialog from '@radix-ui/react-dialog';
 - Integrated into CompetitionBrowserPage with custom title
 
 **Test Coverage:**
+
 - **CompetitionCard:** 21/21 tests ✅
+
   - Rendering: 3/3
   - Data Display: 6/6
   - Interaction: 2/2
@@ -917,14 +1003,17 @@ import * as Dialog from '@radix-ui/react-dialog';
 ---
 
 ### Task 4: Competition Detail Modal ✅ COMPLETE
+
 **Completed:** 2026-02-02
 **Test Results:** 38/38 tests passing (100% pass rate, 127% of target)
 **Files Created:**
+
 - `frontend/src/components/competition/CompetitionDetailModal.tsx` (218 lines)
 - `frontend/src/components/competition/__tests__/CompetitionDetailModal.test.tsx` (38 tests)
 - Updated `frontend/src/components/competition/index.ts` (added exports)
 
 **Implementation Notes:**
+
 - TDD Red-Green-Refactor cycle completed successfully using vitest-component-tester agent
 - Radix UI-style modal implementation with React Portal and manual focus management
 - Displays full competition details: name, discipline, date, prize pool, entry fee, requirements
@@ -940,6 +1029,7 @@ import * as Dialog from '@radix-ui/react-dialog';
 - Icons from lucide-react (Calendar, DollarSign, Trophy, X)
 
 **Test Coverage:**
+
 - Component Rendering: 5/5 ✅
 - Modal Behavior: 8/8 ✅
 - Competition Details Display: 8/8 ✅
@@ -953,9 +1043,11 @@ import * as Dialog from '@radix-ui/react-dialog';
 ---
 
 ### Task 5: Horse Selection System ✅ COMPLETE
+
 **Completed:** 2026-02-02
 **Test Results:** 57/57 tests passing (100% pass rate, 121% of target)
 **Files Created:**
+
 - `frontend/src/components/competition/HorseSelector.tsx` (247 lines)
 - `frontend/src/components/competition/HorseSelectionCard.tsx` (184 lines)
 - `frontend/src/components/competition/__tests__/HorseSelector.test.tsx` (29 tests)
@@ -964,6 +1056,7 @@ import * as Dialog from '@radix-ui/react-dialog';
 - Updated `frontend/src/test/msw/handlers.ts` (added competition endpoint mocks)
 
 **Implementation Notes:**
+
 - TDD Red-Green-Refactor cycle completed successfully using vitest-component-tester agent
 - HorseSelectionCard displays horse details with 6 eligibility status badges:
   - Eligible (green), Too Young (yellow), Too Old (gray), Wrong Level (orange), Already Entered (red), Injured (red)
@@ -982,7 +1075,9 @@ import * as Dialog from '@radix-ui/react-dialog';
 - Ready for integration into CompetitionDetailModal
 
 **Test Coverage:**
+
 - **HorseSelectionCard:** 28/28 tests ✅
+
   - Component Rendering: 5/5
   - Eligibility States: 6/6
   - Horse Selection: 4/4
@@ -1004,14 +1099,18 @@ import * as Dialog from '@radix-ui/react-dialog';
 ---
 
 ### Task 6: Entry Confirmation Flow ✅ COMPLETE
+
 **Completed:** 2026-02-02
 **Test Results:** 41/41 tests passing (100% pass rate, 164% of target)
 **Files Created:**
+
 - `frontend/src/components/competition/EntryConfirmationModal.tsx` (276 lines)
+- `frontend/src/components/competition/CompetitionFieldPreview.tsx` (created during implementation — discipline/field preview component not in original spec)
 - `frontend/src/components/competition/__tests__/EntryConfirmationModal.test.tsx` (41 tests)
 - Updated `frontend/src/components/competition/index.ts` (added exports)
 
 **Implementation Notes:**
+
 - TDD Red-Green-Refactor cycle completed successfully using vitest-component-tester agent
 - Confirmation modal displays selected horse(s) summary with names and levels
 - Shows competition details (name, discipline, date, entry fee)
@@ -1031,6 +1130,7 @@ import * as Dialog from '@radix-ui/react-dialog';
 - Handles edge cases: null competition, empty horses, zero balance, free entry
 
 **Test Coverage:**
+
 - Component Rendering: 5/5 ✅
 - Balance Verification: 5/5 ✅
 - Entry Submission: 6/6 ✅
@@ -1045,9 +1145,11 @@ import * as Dialog from '@radix-ui/react-dialog';
 ---
 
 ### Task 7: React Query Hooks ✅ COMPLETE
+
 **Completed:** 2026-02-02
 **Test Results:** 42/42 tests passing (100% pass rate, 120% of target)
 **Files Created:**
+
 - `frontend/src/lib/api/competitions.ts` - API functions with TypeScript interfaces
 - `frontend/src/hooks/api/useCompetitionsFiltered.ts` - Filtered competitions list query
 - `frontend/src/hooks/api/useCompetitionDetails.ts` - Single competition details query
@@ -1061,6 +1163,7 @@ import * as Dialog from '@radix-ui/react-dialog';
 - Updated `frontend/src/test/msw/handlers.ts` (added competition endpoint mocks)
 
 **Implementation Notes:**
+
 - TDD Red-Green-Refactor cycle completed successfully using vitest-component-tester agent
 - All hooks use React Query v5 syntax (gcTime instead of cacheTime)
 - Type-safe with TypeScript (zero any types)
@@ -1075,19 +1178,23 @@ import * as Dialog from '@radix-ui/react-dialog';
 - Follows existing project API client patterns using apiRequest helper
 
 **Test Coverage:**
+
 - useCompetitionsFiltered: 11/11 tests ✅
+
   - Loading/success/error states
   - Filter-aware query keys
   - Cache behavior (staleTime, gcTime)
   - Refetch functionality
 
 - useCompetitionDetails: 9/9 tests ✅
+
   - Loading/success/error states
   - Conditional fetching (enabled/disabled)
   - ID change handling
   - Separate cache from list queries
 
 - useHorseEligibility: 10/10 tests ✅
+
   - Loading/success/error states
   - Dual condition fetching
   - Eligibility calculation
@@ -1105,10 +1212,12 @@ import * as Dialog from '@radix-ui/react-dialog';
 ---
 
 ### Task 8: Testing & Integration ✅ COMPLETE
+
 **Completed:** 2026-02-02
 **Test Results:** 276/276 tests passing (100% pass rate, 153% of target)
 
 **Activities Completed:**
+
 - ✅ Ran full competition test suite (186 component tests passing)
 - ✅ Ran full hooks test suite (42 hooks tests passing, 115 total hooks tests passing)
 - ✅ Fixed TypeScript errors in competition files
@@ -1122,6 +1231,7 @@ import * as Dialog from '@radix-ui/react-dialog';
 - ✅ API integration patterns verified (React Query hooks working correctly)
 
 **Final Test Count:**
+
 - Task 1: CompetitionBrowserPage: 28 tests ✅
 - Task 2: CompetitionFilters: 20 tests ✅
 - Task 3: CompetitionList + CompetitionCard: 50 tests ✅
@@ -1132,12 +1242,14 @@ import * as Dialog from '@radix-ui/react-dialog';
 - **Total: 276 tests (153% of 180+ target)**
 
 **Code Quality:**
+
 - Zero TypeScript errors in competition files
 - Zero ESLint warnings in competition files
 - All files formatted with Prettier
 - 100% test pass rate across all competition modules
 
 **Integration Verification:**
+
 - Competition browser page integrates all child components correctly
 - Filters update competition list in real-time
 - Modal flows work correctly (detail → horse selection → confirmation)
@@ -1145,6 +1257,7 @@ import * as Dialog from '@radix-ui/react-dialog';
 - All API endpoints typed correctly with TypeScript
 
 **Ready for Production:**
+
 - ✅ Full feature implementation complete
 - ✅ Comprehensive test coverage (153% of target)
 - ✅ TypeScript type safety enforced
@@ -1166,6 +1279,7 @@ import * as Dialog from '@radix-ui/react-dialog';
 **Test Pass Rate:** 100%
 
 **Deliverables:**
+
 - 12 new component files
 - 10 test files with comprehensive coverage
 - 4 React Query hooks for data management
@@ -1173,6 +1287,7 @@ import * as Dialog from '@radix-ui/react-dialog';
 - Full documentation in all files
 
 **Next Steps:**
+
 1. Mark story as "complete" in sprint-status.yaml
 2. Begin Epic 5 Story 5-2: Competition Results Display
 3. Begin Epic 5 Story 5-3: Prize Distribution UI

@@ -9,10 +9,10 @@ import { useState, useCallback } from 'react';
 import { Trophy } from 'lucide-react';
 import { useCompetitions } from '@/hooks/api/useCompetitions';
 import CompetitionFilters, {
-  DisciplineFilter,
-  DateRangeFilter,
-  EntryFeeFilter,
-} from '@/components/CompetitionFilters';
+  type DisciplineFilter,
+  type DateRangeFilter,
+  type EntryFeeFilter,
+} from '@/components/competition/CompetitionFilters';
 import { CompetitionList } from '@/components/competition';
 import CompetitionDetailModal, {
   type Competition as ModalCompetition,

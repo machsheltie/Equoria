@@ -1,7 +1,7 @@
 # Story 5.2: Competition Results Display
 
 **Created:** 2026-02-02
-**Status:** ready-for-dev
+**Status:** completed
 **Epic:** 5 - Competition System
 **FR:** FR-C2
 **Priority:** P0
@@ -36,6 +36,7 @@ So that **I can see how my horses performed and what prizes they won**.
 Display competition results to provide players with feedback on their horses' performance and rewards earned. This completes the competition gameplay loop started in Story 5-1 and provides the foundation for Stories 5-3 (Prize Distribution) and 5-4 (XP Awards).
 
 **Value Proposition:**
+
 - **Engagement:** Players see immediate feedback on competition performance
 - **Progression:** Clear visibility of prizes and XP earned
 - **Strategy:** Detailed breakdowns help players improve future entries
@@ -43,6 +44,7 @@ Display competition results to provide players with feedback on their horses' pe
 
 **Epic 5 Context:**
 Story 5-2 builds upon Story 5-1 (Competition Entry) and enables:
+
 - Story 5-3: Prize Distribution UI (showing earned rewards)
 - Story 5-4: XP Award Notifications (celebrating level-ups)
 - Story 5-5: Leaderboards (competitive rankings)
@@ -54,6 +56,7 @@ Story 5-2 builds upon Story 5-1 (Competition Entry) and enables:
 ### Core Functionality
 
 **1. Results List View**
+
 - Display completed competitions with user's entries
 - Show competition name, date, and participation status
 - Filter: All / Wins / Top 3 / Participated
@@ -61,6 +64,7 @@ Story 5-2 builds upon Story 5-1 (Competition Entry) and enables:
 - Visual indicators: 1st/2nd/3rd badges, participation ribbons
 
 **2. Competition Results Detail Modal**
+
 - Full competition results table with all participants
 - Columns: Rank, Horse Name, Owner, Score, Prize
 - Highlight user's horse(s) in results table
@@ -68,6 +72,7 @@ Story 5-2 builds upon Story 5-1 (Competition Entry) and enables:
 - Display competition details (name, discipline, date, total participants)
 
 **3. Individual Horse Performance View**
+
 - Horse's final score and ranking
 - Performance breakdown by stat contribution:
   - Base stats (50/30/20 weighted)
@@ -82,6 +87,7 @@ Story 5-2 builds upon Story 5-1 (Competition Entry) and enables:
 - XP gained
 
 **4. Results History**
+
 - List of all past competitions horse participated in
 - Quick stats: Total competitions, wins, top 3 finishes, win rate
 - Filter by discipline, date range, placement
@@ -90,6 +96,7 @@ Story 5-2 builds upon Story 5-1 (Competition Entry) and enables:
 ### API Integration
 
 **Backend Endpoints (Already Implemented):**
+
 - `GET /api/competitions/:id/results` - Get competition results with rankings
 - `GET /api/horses/:id/competition-history` - Get horse's competition history
 - `GET /api/users/:id/competition-stats` - Get user's competition statistics
@@ -170,12 +177,14 @@ interface CompetitionEntry {
 ## 📝 Implementation Tasks
 
 ### Task 1: Competition Results List Component
+
 **Priority:** P0 (Core feature)
 **Target:** 25 tests
 
 **File:** `CompetitionResultsList.tsx` (CREATE)
 
 **Activities:**
+
 - Create results list component
 - Implement filter controls (All/Wins/Top3/Participated)
 - Implement sort options (Recent/Prize/Placement)
@@ -185,6 +194,7 @@ interface CompetitionEntry {
 - Add loading and error states
 
 **Acceptance Criteria:**
+
 - [ ] Results list displays all completed competitions
 - [ ] Filters work correctly
 - [ ] Sorting works correctly
@@ -194,12 +204,14 @@ interface CompetitionEntry {
 - [ ] 25 tests passing
 
 ### Task 2: Results Detail Modal
+
 **Priority:** P0 (Core feature)
 **Target:** 30 tests
 
 **File:** `CompetitionResultsModal.tsx` (CREATE)
 
 **Activities:**
+
 - Create results detail modal
 - Display full results table with all participants
 - Highlight user's horse(s) in results
@@ -209,6 +221,7 @@ interface CompetitionEntry {
 - Add sorting by rank/score/name
 
 **Acceptance Criteria:**
+
 - [ ] Modal opens from results list
 - [ ] Full results table displayed
 - [ ] User's horses highlighted
@@ -218,14 +231,17 @@ interface CompetitionEntry {
 - [ ] 30 tests passing
 
 ### Task 3: Performance Breakdown Component
+
 **Priority:** P0 (Core feature)
 **Target:** 35 tests
 
 **Files:**
+
 - `PerformanceBreakdown.tsx` (CREATE)
 - `ScoreBreakdownChart.tsx` (CREATE)
 
 **Activities:**
+
 - Create performance breakdown component
 - Display score component breakdown (base/training/traits/equipment/etc.)
 - Create visual chart for score breakdown (bar chart or pie chart)
@@ -235,6 +251,7 @@ interface CompetitionEntry {
 - Add tooltips for each score component
 
 **Acceptance Criteria:**
+
 - [ ] All score components displayed
 - [ ] Visual chart shows breakdown
 - [ ] Comparisons to average and winner shown
@@ -243,12 +260,14 @@ interface CompetitionEntry {
 - [ ] 35 tests passing
 
 ### Task 4: Competition History Component
+
 **Priority:** P1 (Enhanced feature)
 **Target:** 20 tests
 
 **File:** `CompetitionHistory.tsx` (CREATE)
 
 **Activities:**
+
 - Create competition history component
 - Display list of past competitions for a horse
 - Show summary statistics (total/wins/win rate)
@@ -257,6 +276,7 @@ interface CompetitionEntry {
 - Link to detailed results for each competition
 
 **Acceptance Criteria:**
+
 - [ ] History list displays all past competitions
 - [ ] Summary statistics accurate
 - [ ] Filters work correctly
@@ -265,15 +285,18 @@ interface CompetitionEntry {
 - [ ] 20 tests passing
 
 ### Task 5: React Query Hooks for Results
+
 **Priority:** P0 (Data layer)
 **Target:** 30 tests
 
 **Files:**
+
 - `useCompetitionResults.ts` (CREATE)
 - `useHorseCompetitionHistory.ts` (CREATE)
 - `useCompetitionStats.ts` (CREATE)
 
 **Activities:**
+
 - Create `useCompetitionResults(competitionId)` hook
 - Create `useHorseCompetitionHistory(horseId)` hook
 - Create `useCompetitionStats(userId)` hook
@@ -282,6 +305,7 @@ interface CompetitionEntry {
 - Set appropriate staleTime and gcTime
 
 **Acceptance Criteria:**
+
 - [ ] All hooks functional
 - [ ] Type-safe with TypeScript
 - [ ] Caching works correctly
@@ -289,12 +313,14 @@ interface CompetitionEntry {
 - [ ] 30 tests passing
 
 ### Task 6: Results Page Integration
+
 **Priority:** P0 (Page component)
 **Target:** 20 tests
 
 **File:** `CompetitionResultsPage.tsx` (CREATE)
 
 **Activities:**
+
 - Create results page component
 - Integrate CompetitionResultsList
 - Add page header with stats summary
@@ -303,6 +329,7 @@ interface CompetitionEntry {
 - Integrate with React Query hooks
 
 **Acceptance Criteria:**
+
 - [ ] Page renders with all components
 - [ ] Routing works from competition browser
 - [ ] Stats summary displays
@@ -310,10 +337,12 @@ interface CompetitionEntry {
 - [ ] 20 tests passing
 
 ### Task 7: Visual Polish & Animations
+
 **Priority:** P1 (UX enhancement)
 **Target:** 15 tests
 
 **Activities:**
+
 - Add placement badge animations (gold/silver/bronze)
 - Implement score reveal animations
 - Add loading skeletons for results table
@@ -322,6 +351,7 @@ interface CompetitionEntry {
 - Implement responsive design refinements
 
 **Acceptance Criteria:**
+
 - [ ] Animations enhance UX without being distracting
 - [ ] Loading states use skeletons
 - [ ] Win celebration triggers for 1st place
@@ -329,10 +359,12 @@ interface CompetitionEntry {
 - [ ] 15 tests passing
 
 ### Task 8: Testing & Integration
+
 **Priority:** P0 (Quality assurance)
 **Target:** All tests (175+)
 
 **Activities:**
+
 - Run full test suite
 - Fix any test failures
 - Test end-to-end user flows
@@ -342,6 +374,7 @@ interface CompetitionEntry {
 - Performance testing (large result sets)
 
 **Acceptance Criteria:**
+
 - [ ] All 175+ tests passing (100% pass rate)
 - [ ] No TypeScript errors
 - [ ] No ESLint warnings
@@ -375,7 +408,7 @@ interface CompetitionEntry {
 - [x] No TypeScript errors
 - [x] No ESLint warnings
 - [x] Component documentation complete
-- [ ] Story marked as "complete" in sprint-status.yaml
+- [x] Story marked as "complete" in sprint-status.yaml
 
 ---
 
@@ -384,6 +417,7 @@ interface CompetitionEntry {
 ### Story 5.1: Competition Entry (Just Completed)
 
 **Key Learnings:**
+
 - **Component Architecture:** Page with multiple feature components worked excellently
 - **Modal Patterns:** CompetitionDetailModal and EntryConfirmationModal provide good patterns
 - **React Query Hooks:** useCompetitions, useHorseEligibility patterns to follow
@@ -391,17 +425,20 @@ interface CompetitionEntry {
 - **TDD Methodology:** Strict red-green-refactor with vitest-component-tester agent
 
 **Files Created Pattern:**
+
 - 8 component files (pages, modals, cards, lists)
 - 10 test files with comprehensive coverage
 - 4 React Query hooks for data management
 - 1 API layer file (competitions.ts)
 
 **Reusable Components:**
+
 - CompetitionCard: Can show results summary
 - CompetitionList: Can be adapted for results list
 - Modal patterns: Apply to ResultsModal
 
 **Code Quality Standards:**
+
 - TypeScript strict mode (zero `any` types)
 - WCAG 2.1 AA accessibility compliance
 - Responsive design (mobile/tablet/desktop breakpoints)
@@ -414,6 +451,7 @@ interface CompetitionEntry {
 ## 🔍 Technical Considerations
 
 ### Data Flow
+
 1. User navigates to results page or clicks "View Results" from competition browser
 2. useCompetitionResults hook fetches results for specific competition
 3. CompetitionResultsModal displays full rankings table
@@ -422,17 +460,20 @@ interface CompetitionEntry {
 6. CompetitionHistory accessible from horse detail view
 
 ### Caching Strategy
+
 - Competition results: 10 minute staleTime (rarely change)
 - Horse history: 5 minute staleTime
 - User stats: 2 minute staleTime (may update frequently)
 
 ### Performance Considerations
+
 - Large results tables (100+ participants): Virtual scrolling
 - Score breakdown calculations: Memoization
 - Chart rendering: Use lightweight chart library (Recharts)
 - Image optimization: Lazy load horse avatars
 
 ### Accessibility
+
 - Results table: Proper table semantics with thead/tbody
 - Placement badges: aria-label for screen readers
 - Score breakdown: Descriptive labels and ARIA attributes
@@ -440,6 +481,7 @@ interface CompetitionEntry {
 - Focus management: Return focus to trigger after modal close
 
 ### Responsive Design
+
 - Mobile: Stacked card layout for results
 - Tablet: 2-column grid
 - Desktop: Full table view with all columns
@@ -451,6 +493,7 @@ interface CompetitionEntry {
 ## 📊 Test Strategy
 
 ### Component Tests (Vitest + React Testing Library)
+
 - Results list rendering and filtering
 - Results modal display and interaction
 - Performance breakdown calculations
@@ -461,18 +504,21 @@ interface CompetitionEntry {
 - Accessibility compliance (aria labels, keyboard nav)
 
 ### Hook Tests
+
 - Results data fetching and caching
 - History data with proper query keys
 - Error handling and retries
 - Cache invalidation scenarios
 
 ### Integration Tests
+
 - Full user flow: Browse → Enter → View Results
 - Navigation between components
 - Data consistency across views
 - Modal open/close behavior
 
 ### Visual Regression (Optional)
+
 - Placement badges (gold/silver/bronze)
 - Score breakdown chart
 - Results table on various screen sizes
@@ -488,15 +534,19 @@ interface CompetitionEntry {
 **Actual Effort:** Successfully completed in TDD workflow
 
 ### Files Created (16 total)
+
 **Components (6 files):**
+
 - `frontend/src/components/competition/CompetitionResultsList.tsx` (29 tests)
 - `frontend/src/components/competition/CompetitionResultsModal.tsx` (39 tests)
 - `frontend/src/components/competition/PerformanceBreakdown.tsx` (22 tests)
 - `frontend/src/components/competition/ScoreBreakdownChart.tsx` (15 tests)
+- `frontend/src/components/competition/ScoreBreakdownRadar.tsx` (undocumented at time of writing — radar variant of score breakdown chart)
 - `frontend/src/components/competition/CompetitionHistory.tsx` (24 tests)
 - `frontend/src/pages/CompetitionResultsPage.tsx` (25 tests)
 
 **Tests (6 files):**
+
 - `frontend/src/components/competition/__tests__/CompetitionResultsList.test.tsx`
 - `frontend/src/components/competition/__tests__/CompetitionResultsModal.test.tsx`
 - `frontend/src/components/competition/__tests__/PerformanceBreakdown.test.tsx`
@@ -505,24 +555,29 @@ interface CompetitionEntry {
 - `frontend/src/pages/__tests__/CompetitionResultsPage.test.tsx`
 
 **React Query Hooks (3 files + 3 tests):**
+
 - `frontend/src/hooks/api/useCompetitionResults.ts` (12 tests)
 - `frontend/src/hooks/api/useHorseCompetitionHistory.ts` (12 tests)
 - `frontend/src/hooks/api/useUserCompetitionStats.ts` (12 tests)
 
 **API Layer:**
+
 - `frontend/src/lib/api/competitionResults.ts`
 
 **Updated:**
+
 - `frontend/src/components/competition/index.ts` (exports)
 - `frontend/src/test/msw/handlers.ts` (MSW handlers)
 
 ### Test Results
+
 - **Story 5-2 Tests:** 190 passing (exceeded 175+ target by 8.6%)
 - **Full Frontend Suite:** 3054 tests passing across 106 test files
 - **Pass Rate:** 100%
 - **Coverage:** All components, hooks, and integration paths tested
 
 ### Technical Achievements
+
 - ✅ React Query v5 integration with proper caching strategies
 - ✅ Recharts integration for data visualization
 - ✅ WCAG 2.1 AA accessibility compliance

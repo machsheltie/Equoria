@@ -10,6 +10,9 @@
  *
  * Story 5-1: Competition Entry System - Task 2
  * Target: 20 tests
+ *
+ * NOTE: Test relocated from frontend/src/components/__tests__/CompetitionFilters.test.tsx
+ * to this directory to match component relocation to competition/ subdirectory.
  */
 
 import { describe, it, expect, vi, beforeEach } from 'vitest';

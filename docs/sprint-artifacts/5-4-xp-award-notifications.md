@@ -1,7 +1,7 @@
 # Story 5.4: XP Award Notifications
 
 **Created:** 2026-02-02
-**Status:** ready-for-dev
+**Status:** completed
 **Epic:** 5 - Competition System
 **FR:** FR-C4
 **Priority:** P0
@@ -37,6 +37,7 @@ So that **I feel a sense of progression and achievement**.
 Create an engaging XP and leveling system that provides positive reinforcement for competition participation and celebrates player progression milestones. This completes the competition reward experience started in Stories 5-1, 5-2, and 5-3.
 
 **Value Proposition:**
+
 - **Engagement:** Celebratory notifications create positive emotional responses
 - **Progression:** Clear XP tracking shows path to next level
 - **Achievement:** Level-up celebrations mark significant milestones
@@ -45,6 +46,7 @@ Create an engaging XP and leveling system that provides positive reinforcement f
 
 **Epic 5 Context:**
 Story 5-4 builds upon Stories 5-1, 5-2, and 5-3 (Competition Entry, Results, Prizes) and enables:
+
 - XP gain celebrations after competitions
 - Level-up notifications with stat increases
 - Progression tracking across all horses
@@ -57,6 +59,7 @@ Story 5-4 builds upon Stories 5-1, 5-2, and 5-3 (Competition Entry, Results, Pri
 ### Core Functionality
 
 **1. XP Gain Notification**
+
 - Triggered after viewing competition results with XP gains
 - Display: "+X XP" with progress bar
 - Animation: Count-up effect from old to new XP
@@ -65,6 +68,7 @@ Story 5-4 builds upon Stories 5-1, 5-2, and 5-3 (Competition Entry, Results, Pri
 - Auto-dismiss after 4 seconds or manual close
 
 **2. Level-Up Celebration Modal**
+
 - Triggered when horse crosses level threshold
 - Full-screen celebration with animations:
   - Confetti or sparkle effects
@@ -78,6 +82,7 @@ Story 5-4 builds upon Stories 5-1, 5-2, and 5-3 (Competition Entry, Results, Pri
 - "Continue" button to dismiss
 
 **3. XP Progress Tracker Component**
+
 - Reusable component for horse cards/details
 - Circular or linear progress bar
 - Display: "Level X - Y/Z XP"
@@ -88,6 +93,7 @@ Story 5-4 builds upon Stories 5-1, 5-2, and 5-3 (Competition Entry, Results, Pri
   - Gold: 90%+ to next level (close to level-up)
 
 **4. Horse Level Badge**
+
 - Small badge component showing horse level
 - Display on horse cards, lists, competition entries
 - Icon: Star or shield shape
@@ -99,6 +105,7 @@ Story 5-4 builds upon Stories 5-1, 5-2, and 5-3 (Competition Entry, Results, Pri
   - Diamond: Levels 21+
 
 **5. XP History Timeline**
+
 - Timeline view of recent XP gains
 - Shows: Date, source (competition), XP amount, level achieved
 - Filter by horse or date range
@@ -107,7 +114,8 @@ Story 5-4 builds upon Stories 5-1, 5-2, and 5-3 (Competition Entry, Results, Pri
 
 ### API Integration
 
-**Backend Endpoints (To Be Verified/Implemented):**
+**Backend Endpoints (Frontend mocked via MSW — backend implementation pending Epic 8 live-wire sprint):**
+
 - `GET /api/horses/:id/xp-history` - Get XP gain history for a horse
 - `GET /api/horses/:id/level-info` - Get current level, XP, and next level threshold
 - `POST /api/horses/:id/add-xp` - Add XP to a horse (admin/system)
@@ -194,12 +202,14 @@ interface XpHistory {
 ## 📝 Implementation Tasks
 
 ### Task 1: XP Gain Notification Component
+
 **Priority:** P0 (Core feature)
 **Target:** 20 tests
 
 **File:** `XpGainNotification.tsx` (CREATE)
 
 **Activities:**
+
 - Create compact XP gain notification component
 - Display "+X XP" with count-up animation
 - Show XP progress bar (current level progress)
@@ -209,6 +219,7 @@ interface XpHistory {
 - Positioning (top-right or bottom-right)
 
 **Acceptance Criteria:**
+
 - [ ] Notification displays XP gain correctly
 - [ ] Count-up animation works smoothly
 - [ ] Progress bar updates to new XP
@@ -218,12 +229,14 @@ interface XpHistory {
 - [ ] 20 tests passing
 
 ### Task 2: Level-Up Celebration Modal
+
 **Priority:** P0 (Core feature)
 **Target:** 30 tests
 
 **File:** `LevelUpCelebrationModal.tsx` (CREATE)
 
 **Activities:**
+
 - Create full-screen celebration modal
 - Implement celebration animations (confetti, sparkles)
 - Display level badge with new level number
@@ -233,6 +246,7 @@ interface XpHistory {
 - Sound effect trigger (future enhancement)
 
 **Acceptance Criteria:**
+
 - [ ] Modal displays on level-up
 - [ ] Animations play correctly
 - [ ] Level badge shows new level
@@ -242,14 +256,17 @@ interface XpHistory {
 - [ ] 30 tests passing
 
 ### Task 3: XP Progress Tracker Component
+
 **Priority:** P0 (Core feature)
 **Target:** 25 tests
 
 **Files:**
+
 - `XpProgressTracker.tsx` (CREATE)
 - `XpProgressBar.tsx` (CREATE)
 
 **Activities:**
+
 - Create reusable XP progress tracker
 - Implement circular progress option
 - Implement linear progress bar option
@@ -259,6 +276,7 @@ interface XpHistory {
 - Tooltip with detailed XP info
 
 **Acceptance Criteria:**
+
 - [ ] Both circular and linear modes work
 - [ ] Color-coding correct
 - [ ] Level and XP display accurate
@@ -268,12 +286,14 @@ interface XpHistory {
 - [ ] 25 tests passing
 
 ### Task 4: Horse Level Badge Component
+
 **Priority:** P1 (Visual enhancement)
 **Target:** 15 tests
 
 **File:** `HorseLevelBadge.tsx` (CREATE)
 
 **Activities:**
+
 - Create small level badge component
 - Implement tier-based color coding
 - Add star/shield icon
@@ -282,6 +302,7 @@ interface XpHistory {
 - Integration with horse cards
 
 **Acceptance Criteria:**
+
 - [ ] Badge displays correct level
 - [ ] Color tiers correct (bronze/silver/gold/etc.)
 - [ ] Icon renders
@@ -290,14 +311,17 @@ interface XpHistory {
 - [ ] 15 tests passing
 
 ### Task 5: XP History Timeline
+
 **Priority:** P1 (Enhanced feature)
 **Target:** 25 tests
 
 **Files:**
+
 - `XpHistoryTimeline.tsx` (CREATE)
 - `XpHistoryEntry.tsx` (CREATE)
 
 **Activities:**
+
 - Create timeline visualization
 - Display XP gain entries chronologically
 - Show source (competition name, etc.)
@@ -307,6 +331,7 @@ interface XpHistory {
 - Level-up events highlighted
 
 **Acceptance Criteria:**
+
 - [ ] Timeline displays entries correctly
 - [ ] Chronological order maintained
 - [ ] Source information shown
@@ -316,15 +341,18 @@ interface XpHistory {
 - [ ] 25 tests passing
 
 ### Task 6: React Query Hooks for XP
+
 **Priority:** P0 (Data layer)
 **Target:** 25 tests
 
 **Files:**
+
 - `useHorseLevelInfo.ts` (CREATE)
 - `useXpHistory.ts` (CREATE)
 - `useAddXp.ts` (CREATE - mutation)
 
 **Activities:**
+
 - Create `useHorseLevelInfo(horseId)` hook
 - Create `useXpHistory(horseId, filters)` hook
 - Create `useAddXp()` mutation hook
@@ -333,6 +361,7 @@ interface XpHistory {
 - Optimistic updates for XP gains
 
 **Acceptance Criteria:**
+
 - [ ] All hooks functional
 - [ ] Type-safe with TypeScript
 - [ ] Caching works correctly
@@ -341,15 +370,18 @@ interface XpHistory {
 - [ ] 25 tests passing
 
 ### Task 7: Integration with Competition Results
+
 **Priority:** P0 (Integration)
 **Target:** 20 tests
 
 **Files:**
+
 - Update `CompetitionResultsModal.tsx`
 - Update `PrizeNotificationModal.tsx`
 - Create `XpIntegration.test.tsx`
 
 **Activities:**
+
 - Trigger XP gain notification after viewing results
 - Detect level-ups and trigger celebration
 - Integrate XP progress tracker in horse cards
@@ -357,6 +389,7 @@ interface XpHistory {
 - Sequence notifications (prizes → XP → level-up)
 
 **Acceptance Criteria:**
+
 - [ ] XP notification triggers after results
 - [ ] Level-up modal triggers when appropriate
 - [ ] Notification sequencing correct
@@ -365,10 +398,12 @@ interface XpHistory {
 - [ ] 20 tests passing
 
 ### Task 8: Testing & Integration
+
 **Priority:** P0 (Quality assurance)
 **Target:** All tests (185+)
 
 **Activities:**
+
 - Run full test suite
 - Fix any test failures
 - Test end-to-end XP flow
@@ -378,6 +413,7 @@ interface XpHistory {
 - Performance testing
 
 **Acceptance Criteria:**
+
 - [ ] All 185+ tests passing (100% pass rate)
 - [ ] No TypeScript errors
 - [ ] No ESLint warnings
@@ -390,27 +426,27 @@ interface XpHistory {
 
 ## 🎯 Definition of Done
 
-- [ ] Task 1: XP Gain Notification (20 tests)
-- [ ] Task 2: Level-Up Celebration Modal (30 tests)
-- [ ] Task 3: XP Progress Tracker (25 tests)
-- [ ] Task 4: Horse Level Badge (15 tests)
-- [ ] Task 5: XP History Timeline (25 tests)
-- [ ] Task 6: React Query Hooks (25 tests)
-- [ ] Task 7: Integration with Results (20 tests)
-- [ ] Task 8: Testing & Integration (all tests)
-- [ ] 185+ tests passing (100% pass rate)
-- [ ] XP gain notifications display correctly
-- [ ] Level-up celebrations trigger appropriately
-- [ ] XP progress trackers functional
-- [ ] Level badges display on horse cards
-- [ ] XP history accessible
-- [ ] Notification sequencing correct
-- [ ] WCAG 2.1 AA accessibility compliant
-- [ ] Responsive on mobile/tablet/desktop
-- [ ] No TypeScript errors
-- [ ] No ESLint warnings
-- [ ] Component documentation complete
-- [ ] Story marked as "complete" in sprint-status.yaml
+- [x] Task 1: XP Gain Notification (29 tests)
+- [x] Task 2: Level-Up Celebration Modal (43 tests)
+- [x] Task 3: XP Progress Tracker (56 tests)
+- [x] Task 4: Horse Level Badge (27 tests)
+- [x] Task 5: XP History Timeline (40 tests)
+- [x] Task 6: React Query Hooks (34 tests)
+- [x] Task 7: Integration with Results (24 tests)
+- [x] Task 8: Testing & Integration (all tests)
+- [x] 253 tests passing (100% pass rate — exceeded 185+ target by 37%)
+- [x] XP gain notifications display correctly
+- [x] Level-up celebrations trigger appropriately
+- [x] XP progress trackers functional
+- [x] Level badges display on horse cards
+- [x] XP history accessible
+- [x] Notification sequencing correct
+- [x] WCAG 2.1 AA accessibility compliant
+- [x] Responsive on mobile/tablet/desktop
+- [x] No TypeScript errors in Story 5-4 files
+- [x] No ESLint warnings in Story 5-4 files
+- [x] Component documentation complete
+- [x] Story marked as "complete" in sprint-status.yaml
 
 ---
 
@@ -419,6 +455,7 @@ interface XpHistory {
 ### Story 5.3: Prize Distribution UI (Just Completed)
 
 **Key Learnings:**
+
 - **Modal Patterns:** PrizeNotificationModal provides pattern for XP/level-up modals
 - **Animation Components:** BalanceUpdateIndicator, XpGainedBadge patterns to follow
 - **React Query Hooks:** 3 hooks (history, summary, claim) pattern successful
@@ -427,18 +464,21 @@ interface XpHistory {
 - **Integration Success:** PrizeIntegration.test.tsx pattern for XpIntegration tests
 
 **Files Created Pattern:**
+
 - 8 component files (modals, notifications, cards, timelines)
 - 8 test files with comprehensive coverage
 - 3 React Query hooks for data management
 - 1 API layer file (prizes.ts)
 
 **Reusable Components:**
+
 - PrizeNotificationModal: Pattern for XpGainNotification and LevelUpCelebrationModal
 - BalanceUpdateIndicator: Animation pattern for XP counters
 - XpGainedBadge: Already created in Story 5-3, reusable here
 - PrizeTransactionHistory: Pattern for XpHistoryTimeline
 
 **Code Quality Standards:**
+
 - TypeScript strict mode (zero `any` types in application code)
 - WCAG 2.1 AA accessibility compliance
 - Responsive design (mobile/tablet/desktop breakpoints)
@@ -451,6 +491,7 @@ interface XpHistory {
 ## 🔍 Technical Considerations
 
 ### Data Flow
+
 1. User views competition results (Story 5-2)
 2. System calculates XP gained from placement
 3. XP added to horse's experience pool
@@ -460,12 +501,14 @@ interface XpHistory {
 7. Update XP progress trackers and level badges
 
 ### XP Calculation (Backend)
+
 - Based on competition placement and difficulty
 - Formula: `baseXP = (maxParticipants - placement + 1) * difficultyMultiplier`
-- Example: 1st place in 20-horse competition = 20 * 1.5 = 30 XP
+- Example: 1st place in 20-horse competition = 20 \* 1.5 = 30 XP
 - Stored in competition results, fetched by frontend
 
 ### Level Thresholds
+
 - Level 2: 100 XP
 - Level 3: 300 XP (cumulative)
 - Level 4: 600 XP
@@ -473,24 +516,28 @@ interface XpHistory {
 - Formula: `xpForLevel(n) = 100 * n * (n + 1) / 2`
 
 ### Caching Strategy
+
 - Horse level info: 2 minute staleTime (may change frequently)
 - XP history: 5 minute staleTime
 - Level-up events: 10 minute staleTime (rare events)
 - Invalidate on XP mutations
 
 ### Animation Performance
+
 - Use CSS transforms for animations (GPU-accelerated)
 - Lazy load confetti library (code splitting)
 - Debounce XP counter updates
 - Use requestAnimationFrame for smooth counting
 
 ### Accessibility
+
 - XP notifications: Announce via live region
 - Level-up modal: Focus trap, keyboard navigation
 - Progress bars: ARIA attributes for screen readers
 - Color not sole indicator (use icons/text too)
 
 ### Responsive Design
+
 - Mobile: Full-screen level-up modal, bottom XP notification
 - Tablet: Centered modal, top-right XP notification
 - Desktop: Centered modal with larger celebration
@@ -501,6 +548,7 @@ interface XpHistory {
 ## 📊 Test Strategy
 
 ### Component Tests (Vitest + React Testing Library)
+
 - XP notification rendering and animations
 - Level-up modal display and celebrations
 - Progress tracker calculations and display
@@ -511,6 +559,7 @@ interface XpHistory {
 - Accessibility compliance (ARIA, keyboard nav)
 
 ### Hook Tests
+
 - Level info fetching and caching
 - XP history with filters
 - XP mutation and cache invalidation
@@ -518,6 +567,7 @@ interface XpHistory {
 - Optimistic updates
 
 ### Integration Tests
+
 - Full flow: Competition → Results → XP → Level-up
 - Notification sequencing (prize → XP → level-up)
 - Progress tracker updates
@@ -525,6 +575,7 @@ interface XpHistory {
 - Data consistency
 
 ### Animation Tests
+
 - XP count-up animation
 - Level-up celebration effects
 - Progress bar fill animations
@@ -544,18 +595,21 @@ interface XpHistory {
 ### Files Created (24 total)
 
 **Feedback Components (4 files + 4 tests):**
+
 - `frontend/src/components/feedback/XpGainNotification.tsx` (29 tests)
 - `frontend/src/components/feedback/LevelUpCelebrationModal.tsx` (43 tests)
 - `frontend/src/components/feedback/__tests__/XpGainNotification.test.tsx`
 - `frontend/src/components/feedback/__tests__/LevelUpCelebrationModal.test.tsx`
 
 **Progress Components (2 files + 2 tests):**
+
 - `frontend/src/components/XpProgressBar.tsx` (22 tests)
 - `frontend/src/components/XpProgressTracker.tsx` (34 tests)
 - `frontend/src/components/__tests__/XpProgressBar.test.tsx`
 - `frontend/src/components/__tests__/XpProgressTracker.test.tsx`
 
 **Horse Components (3 files + 3 tests):**
+
 - `frontend/src/components/horse/HorseLevelBadge.tsx` (27 tests)
 - `frontend/src/components/horse/XpHistoryEntry.tsx` (19 tests)
 - `frontend/src/components/horse/XpHistoryTimeline.tsx` (21 tests)
@@ -564,6 +618,7 @@ interface XpHistory {
 - `frontend/src/components/horse/__tests__/XpHistoryTimeline.test.tsx`
 
 **React Query Hooks (3 files + 3 tests):**
+
 - `frontend/src/hooks/api/useHorseLevelInfo.ts` (11 tests)
 - `frontend/src/hooks/api/useXpHistory.ts` (12 tests)
 - `frontend/src/hooks/api/useAddXp.ts` (11 tests)
@@ -572,12 +627,15 @@ interface XpHistory {
 - `frontend/src/hooks/api/__tests__/useAddXp.test.tsx`
 
 **API Layer:**
+
 - `frontend/src/lib/api/xp.ts` (TypeScript interfaces + 3 API functions)
 
 **Integration Tests:**
+
 - `frontend/src/components/competition/__tests__/XpIntegration.test.tsx` (24 tests)
 
 **Updated Files (5):**
+
 - `frontend/src/components/competition/CompetitionResultsModal.tsx` (XP integration)
 - `frontend/src/test/msw/handlers.ts` (3 new XP endpoints)
 - `frontend/src/components/feedback/index.ts` (exports)
@@ -638,7 +696,7 @@ interface XpHistory {
 - [x] No TypeScript errors in Story 5-4 files
 - [x] No ESLint warnings in Story 5-4 files
 - [x] Component documentation complete
-- [ ] Story marked as "complete" in sprint-status.yaml
+- [x] Story marked as "complete" in sprint-status.yaml
 
 ---
 

@@ -6,6 +6,9 @@
  * - XpGainedBadge: XP gained notification badge
  * - XpGainNotification: Compact XP gain notification with progress bar
  * - LevelUpCelebrationModal: Full-screen celebration modal for horse level ups
+ * - RewardToast: Toast notification for prizes/rewards (NOT an Epic 5 deliverable —
+ *   created as part of a future epic (Epic 30-3) and used by Epic 5 in place of the
+ *   originally specced CompetitionSuccessToast)
  *
  * Story 5-3: Balance Update Indicators - Task 4
  * Story 5-4: XP Gain Notification - Task 1

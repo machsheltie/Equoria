@@ -56,7 +56,7 @@ import {
   useHorseTraitInteractions,
   useHorseTraitTimeline,
 } from '../hooks/useHorseGenetics';
-import XPProgressBar from '../components/horse/XPProgressBar';
+import XpProgressBar from '../components/horse/XpProgressBar';
 import StatProgressionChart from '../components/horse/StatProgressionChart';
 import RecentGains from '../components/horse/RecentGains';
 import AgeUpCounter from '../components/horse/AgeUpCounter';
@@ -1894,7 +1894,7 @@ const ProgressionTab: React.FC<{ horse: Horse }> = ({ horse }) => (
   <div className="space-y-6" data-testid="progression-tab">
     {/* XP Progress Bar - Full Width */}
     <div className="col-span-full">
-      <XPProgressBar horseId={horse.id} />
+      <XpProgressBar horseId={horse.id} />
     </div>
 
     {/* Stat Progression Chart - Full Width */}

@@ -1,6 +1,6 @@
 import React from 'react';
 
-import XPProgressBar from './XPProgressBar';
+import XpProgressBar from './XpProgressBar';
 import StatProgressionChart from './StatProgressionChart';
 import RecentGains from './RecentGains';
 import AgeUpCounter from './AgeUpCounter';
@@ -12,7 +12,7 @@ const ProgressionTab: React.FC<{ horse: Horse }> = ({ horse }) => (
   <div className="space-y-6 animate-fade-in-up" data-testid="progression-tab">
     {/* XP Progress Bar - Full Width */}
     <div className="col-span-full">
-      <XPProgressBar horseId={horse.id} />
+      <XpProgressBar horseId={horse.id} />
     </div>
 
     {/* Stat Progression Chart - Full Width */}

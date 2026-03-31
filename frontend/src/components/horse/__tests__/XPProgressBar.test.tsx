@@ -1,5 +1,5 @@
 /**
- * XPProgressBar Component Tests
+ * XpProgressBar Component Tests (formerly XPProgressBar)
  *
  * Comprehensive tests for the XP Progress Bar component including:
  * - Current level display
@@ -15,7 +15,9 @@ import { describe, it, expect, vi, beforeEach } from 'vitest';
 import { render, screen, waitFor } from '@testing-library/react';
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
 import userEvent from '@testing-library/user-event';
-import XPProgressBar from '../XPProgressBar';
+import XpProgressBar from '../XpProgressBar';
+// NOTE: Previously imported as XPProgressBar — renamed to XpProgressBar following camelCase standards
+const XPProgressBar = XpProgressBar;
 import * as useHorseXPHook from '@/hooks/api/useHorseXP';
 import type { HorseXP } from '@/lib/api-client';
 
