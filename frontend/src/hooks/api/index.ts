@@ -1,3 +1,4 @@
+export * from '../useAuth';
 export * from './useTraining';
 export * from './useBreeding';
 export * from './useHorses';

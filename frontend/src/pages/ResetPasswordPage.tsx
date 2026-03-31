@@ -12,7 +12,7 @@ import {
   resetPasswordSchema,
   calculatePasswordStrength,
   type ResetPasswordFormData,
-} from '../lib/validations/auth';
+} from '../lib/validation-schemas';
 import { useResetPassword } from '../hooks/useAuth';
 import { useResponsiveBackground } from '../hooks/useResponsiveBackground';
 import { Button } from '@/components/ui/button';

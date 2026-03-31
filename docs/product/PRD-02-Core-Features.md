@@ -39,8 +39,8 @@
 
 **Implementation Files:**
 
-- Backend: [/backend/controllers/authController.mjs](../../backend/controllers/authController.mjs)
-- Routes: [/backend/routes/authRoutes.mjs](../../backend/routes/authRoutes.mjs)
+- Backend: [/backend/modules/auth/controllers/authController.mjs](../../backend/modules/auth/controllers/authController.mjs)
+- Routes: [/backend/modules/auth/routes/authRoutes.mjs](../../backend/modules/auth/routes/authRoutes.mjs)
 - Tests: 100% coverage for auth flows
 
 ---

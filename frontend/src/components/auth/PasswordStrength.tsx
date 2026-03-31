@@ -9,7 +9,7 @@
 
 import React, { useMemo } from 'react';
 import { Check, X } from 'lucide-react';
-import { calculatePasswordStrength } from '../../lib/validations/auth';
+import { calculatePasswordStrength } from '../../lib/validation-schemas';
 
 // =============================================================================
 // Types
@@ -29,6 +29,7 @@ export interface PasswordRequirements {
   hasLowercase: boolean;
   hasUppercase: boolean;
   hasNumber: boolean;
+  hasSpecial: boolean;
 }
 
 // =============================================================================
@@ -89,6 +90,7 @@ export const PasswordStrength: React.FC<PasswordStrengthProps> = ({
       hasLowercase: /[a-z]/.test(password),
       hasUppercase: /[A-Z]/.test(password),
       hasNumber: /[0-9]/.test(password),
+      hasSpecial: /[@$!%*?&]/.test(password),
     }),
     [password]
   );
@@ -137,6 +139,7 @@ export const PasswordStrength: React.FC<PasswordStrengthProps> = ({
           <RequirementCheck met={requirements.hasLowercase} label="Lowercase" />
           <RequirementCheck met={requirements.hasUppercase} label="Uppercase" />
           <RequirementCheck met={requirements.hasNumber} label="Number" />
+          <RequirementCheck met={requirements.hasSpecial} label="Special (@$!%*?&)" />
         </div>
       )}
     </div>
