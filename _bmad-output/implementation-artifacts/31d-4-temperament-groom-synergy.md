@@ -1,6 +1,6 @@
 # Story 31D.4: Groom Temperament Synergy
 
-Status: review
+Status: done
 
 ## Story
 
@@ -375,3 +375,4 @@ None — all tasks completed cleanly on first pass.
 ## Change Log
 
 - 2026-03-30: Implemented Story 31D.4 — added TEMPERAMENT_GROOM_SYNERGY constant + getTemperamentGroomSynergy() to temperamentService; extended calculateBondingEffects() with backward-compatible synergy params; wired processGroomingSession() to fetch and apply groom personality + horse temperament; added 37-test suite covering all ACs.
+- 2026-03-31: Code review fixes — added CANONICAL_GROOM_PERSONALITIES set to validate personality before \_any return (Calm/Steady no longer grant bonus to non-canonical personalities); added .trim() to both temperament and personality normalisation for robustness; added 6 new tests (cap boundary with synergy, \_any bypass with invalid personality, whitespace normalisation). 43 tests total, 0 regressions.

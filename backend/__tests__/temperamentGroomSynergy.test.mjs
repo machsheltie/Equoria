@@ -171,6 +171,25 @@ describe('Story 31D.4: Groom Temperament Synergy', () => {
       expect(() => getTemperamentGroomSynergy('Nervous', 'mystic')).not.toThrow();
       expect(getTemperamentGroomSynergy('Nervous', 'mystic')).toBe(0);
     });
+
+    // Review: _any bypass only fires for canonical personalities (Calm/Steady)
+    it('Calm + invalid personality (e.g. "methodical") → 0 (not a canonical personality)', () => {
+      expect(getTemperamentGroomSynergy('Calm', 'methodical')).toBe(0);
+    });
+
+    it('Steady + invalid personality (e.g. "balanced") → 0 (not a canonical personality)', () => {
+      expect(getTemperamentGroomSynergy('Steady', 'balanced')).toBe(0);
+    });
+
+    // Review: whitespace in personality is trimmed correctly
+    it('personality with leading/trailing whitespace is normalised (e.g. " patient ")', () => {
+      expect(getTemperamentGroomSynergy('Nervous', ' patient ')).toBe(0.25);
+    });
+
+    // Review: whitespace in temperament is trimmed correctly
+    it('temperament with leading/trailing whitespace is normalised (e.g. " Nervous ")', () => {
+      expect(getTemperamentGroomSynergy(' Nervous ', 'patient')).toBe(0.25);
+    });
   });
 
   // ─── Integration tests: calculateBondingEffects() ────────────────────────
@@ -230,6 +249,24 @@ describe('Story 31D.4: Groom Temperament Synergy', () => {
     it('does not log synergy info when modifier is zero (2-arg form)', () => {
       calculateBondingEffects(20, 'brushing');
       expect(mockLogger.info).not.toHaveBeenCalled();
+    });
+
+    // Review: cap behaviour with positive synergy — bond score near max
+    it('bond score near cap (99) with +25% synergy: bondChange capped, capped flag true', () => {
+      const result = calculateBondingEffects(99, 'brushing', 'patient', 'Nervous');
+      expect(result.eligible).toBe(true);
+      expect(result.capped).toBe(true);
+      expect(result.newBondScore).toBe(GROOM_CONFIG.BOND_SCORE_MAX);
+      expect(result.bondChange).toBe(GROOM_CONFIG.BOND_SCORE_MAX - 99); // 1 (not 2.5)
+    });
+
+    // Review: cap behaviour — bond score already at max
+    it('bond score at cap (100) with synergy: bondChange = 0, capped true', () => {
+      const result = calculateBondingEffects(GROOM_CONFIG.BOND_SCORE_MAX, 'brushing', 'patient', 'Nervous');
+      expect(result.eligible).toBe(true);
+      expect(result.capped).toBe(true);
+      expect(result.bondChange).toBe(0);
+      expect(result.newBondScore).toBe(GROOM_CONFIG.BOND_SCORE_MAX);
     });
   });
 

@@ -551,8 +551,15 @@ async function getTrainableHorses(userId) {
 
     for (const horse of player.horses) {
       try {
-        // Compute age from dateOfBirth — same method used by canTrain/getHorseAge
+        // Compute age from dateOfBirth — used as primary age signal when dateOfBirth is set
         const computedAge = await getHorseAge(horse.id);
+
+        // Effective age: prefer the stored integer `age` field (the "game age") when
+        // computedAge would incorrectly under-count due to a wrong dateOfBirth (e.g.
+        // horses created before the dateOfBirth-from-age fix).  Fall back to computedAge
+        // if horse.age is absent, then default to 0.
+        const effectiveAge =
+          horse.age !== null && horse.age !== undefined ? horse.age : (computedAge ?? 0);
 
         // Gaited is only available if horse has the required trait
         const availableDisciplines = allDisciplines.filter(
@@ -563,8 +570,8 @@ async function getTrainableHorses(userId) {
           id: horse.id,
           horseId: horse.id,
           name: horse.name,
-          age: computedAge ?? horse.age ?? 0,
-          ageYears: computedAge ?? horse.age ?? 0,
+          age: effectiveAge,
+          ageYears: effectiveAge,
           level: horse.horseXp?.level ?? 1,
           breed: horse.breed?.name ?? null,
           sex: horse.sex ?? null,
@@ -578,8 +585,9 @@ async function getTrainableHorses(userId) {
           nextEligibleAt: null,
         };
 
-        // Under-age check using computed age from dateOfBirth (matches canTrain logic)
-        if (computedAge !== null && computedAge < 3) {
+        // Under-age check: use effectiveAge so horses with a stale dateOfBirth
+        // but a correct stored age field are not incorrectly blocked
+        if (effectiveAge < 3) {
           horseData.trainableDisciplines = [];
           allHorses.push(horseData);
           continue;

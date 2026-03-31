@@ -118,11 +118,14 @@ export const TEMPERAMENT_GROOM_SYNERGY = Object.freeze({
  * @param {string|null} groomPersonality - Groom personality (gentle/energetic/patient/strict), or null
  * @returns {number} Decimal modifier (e.g., 0.25 = +25%) or 0 for no synergy
  */
+// Canonical groom personalities — used to validate inputs before synergy lookup.
+const CANONICAL_GROOM_PERSONALITIES = new Set(['gentle', 'energetic', 'patient', 'strict']);
+
 export function getTemperamentGroomSynergy(temperament, groomPersonality) {
   if (!temperament || typeof temperament !== 'string') return 0;
   if (!groomPersonality || typeof groomPersonality !== 'string') return 0;
 
-  const synergyMap = TEMPERAMENT_GROOM_SYNERGY[temperament];
+  const synergyMap = TEMPERAMENT_GROOM_SYNERGY[temperament.trim()];
   if (!synergyMap) {
     logger.warn(
       `[temperamentService] Unknown temperament "${temperament}" — returning zero groom synergy`,
@@ -130,13 +133,15 @@ export function getTemperamentGroomSynergy(temperament, groomPersonality) {
     return 0;
   }
 
-  // Calm and Steady: universal bonus for any valid personality
+  const normalizedPersonality = groomPersonality.trim().toLowerCase();
+
+  // Calm and Steady: universal bonus for any VALID canonical personality
   if ('_any' in synergyMap) {
-    return synergyMap._any;
+    return CANONICAL_GROOM_PERSONALITIES.has(normalizedPersonality) ? synergyMap._any : 0;
   }
 
   // Specific personality match
-  const modifier = synergyMap[groomPersonality.toLowerCase()];
+  const modifier = synergyMap[normalizedPersonality];
   return modifier !== undefined ? modifier : 0;
 }
 

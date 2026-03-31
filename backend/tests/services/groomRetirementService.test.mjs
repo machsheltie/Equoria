@@ -356,7 +356,7 @@ describe('Groom Retirement Service', () => {
     });
 
     test('should process weekly career progression for all active grooms', async () => {
-      const result = await processWeeklyCareerProgression();
+      const result = await processWeeklyCareerProgression(testUser.id);
 
       expect(result.processed).toBeGreaterThanOrEqual(4); // At least our test grooms
       expect(result.retired).toBeGreaterThanOrEqual(2); // Level 10 and 103-week grooms should retire
@@ -409,7 +409,7 @@ describe('Groom Retirement Service', () => {
         data: { userId: null }, // This will cause issues during processing
       });
 
-      const result = await processWeeklyCareerProgression();
+      const result = await processWeeklyCareerProgression(testUser.id);
 
       // Should still process other grooms despite errors
       expect(result.processed).toBeGreaterThan(0);
@@ -426,7 +426,7 @@ describe('Groom Retirement Service', () => {
         data: { retired: true },
       });
 
-      await processWeeklyCareerProgression();
+      await processWeeklyCareerProgression(testUser.id);
 
       // Verify retired groom was not processed
       const retiredGroom = await prisma.groom.findUnique({
@@ -436,7 +436,7 @@ describe('Groom Retirement Service', () => {
     });
 
     test('should provide detailed statistics', async () => {
-      await processWeeklyCareerProgression();
+      await processWeeklyCareerProgression(testUser.id);
 
       const stats = await getRetirementStatistics(testUser.id);
 

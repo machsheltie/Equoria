@@ -40,6 +40,7 @@ import { canTrain, trainHorse, getTrainingStatus, getTrainableHorses } from '../
 
 // Test data setup
 let testUser;
+let testBreedId;
 let testHorseEligible;
 let testHorseAdult;
 let testHorse4Years;
@@ -64,15 +65,14 @@ describe('🏋️ UNIT: Training Controller - Horse Training Business Logic', ()
     });
 
     // Create test breed (required for foreign key constraint)
-    const _testBreed = await prisma.breed.upsert({
-      where: { id: 1 },
-      update: {},
-      create: {
-        id: 1,
-        name: 'Test Breed',
+    // Use a unique name to avoid collisions with parallel test suites
+    const testBreed = await prisma.breed.create({
+      data: {
+        name: `TrainingTestBreed_${timestamp}`,
         description: 'Test breed for training tests',
       },
     });
+    testBreedId = testBreed.id;
 
     // Create eligible horse (4 years old)
     const fourYearsAgo = new Date();
@@ -85,7 +85,7 @@ describe('🏋️ UNIT: Training Controller - Horse Training Business Logic', ()
         age: 4,
         sex: 'M',
         userId: testUser.id,
-        breedId: 1,
+        breedId: testBreedId,
         speed: 50,
         stamina: 50,
         agility: 50,
@@ -105,7 +105,7 @@ describe('🏋️ UNIT: Training Controller - Horse Training Business Logic', ()
         age: 3,
         sex: 'F',
         userId: testUser.id,
-        breedId: 1,
+        breedId: testBreedId,
         speed: 45,
         stamina: 45,
         agility: 45,
@@ -126,7 +126,7 @@ describe('🏋️ UNIT: Training Controller - Horse Training Business Logic', ()
         age: 2,
         sex: 'F',
         userId: testUser.id,
-        breedId: 1,
+        breedId: testBreedId,
         speed: 40,
         stamina: 40,
         agility: 40,
@@ -142,7 +142,7 @@ describe('🏋️ UNIT: Training Controller - Horse Training Business Logic', ()
         age: 4,
         sex: 'M',
         userId: testUser.id,
-        breedId: 1,
+        breedId: testBreedId,
         speed: 60,
         stamina: 60,
         agility: 60,
@@ -179,15 +179,15 @@ describe('🏋️ UNIT: Training Controller - Horse Training Business Logic', ()
       },
     });
 
-    await prisma.breed.delete({
-      where: { id: 1 },
+    await prisma.breed.deleteMany({
+      where: { id: testBreedId },
     });
 
-    await prisma.user.delete({
+    await prisma.user.deleteMany({
       where: { id: testUser.id },
     });
-
-    await prisma.$disconnect();
+    // Do NOT call prisma.$disconnect() here — the global teardown handles disconnection.
+    // Calling it mid-run disconnects the shared ESM client for all parallel suites.
   });
 
   beforeEach(async () => {
@@ -246,7 +246,7 @@ describe('🏋️ UNIT: Training Controller - Horse Training Business Logic', ()
           dateOfBirth: new Date(new Date().setFullYear(new Date().getFullYear() - 4)),
           sex: 'M',
           userId: testUser.id,
-          breedId: 1,
+          breedId: testBreedId,
           speed: 50,
           stamina: 50,
           agility: 50,
@@ -319,7 +319,7 @@ describe('🏋️ UNIT: Training Controller - Horse Training Business Logic', ()
           dateOfBirth: new Date(new Date().setFullYear(new Date().getFullYear() - 4)),
           sex: 'F',
           userId: testUser.id,
-          breedId: 1,
+          breedId: testBreedId,
           speed: 50,
           stamina: 50,
           agility: 50,
@@ -475,7 +475,7 @@ describe('🏋️ UNIT: Training Controller - Horse Training Business Logic', ()
           dateOfBirth: new Date(new Date().setFullYear(new Date().getFullYear() - 4)),
           sex: 'M',
           userId: testUser.id,
-          breedId: 1,
+          breedId: testBreedId,
           speed: 50,
           stamina: 50,
           agility: 50,
@@ -556,7 +556,7 @@ describe('🏋️ UNIT: Training Controller - Horse Training Business Logic', ()
           dateOfBirth: new Date(new Date().setFullYear(new Date().getFullYear() - 4)),
           sex: 'M',
           userId: testUser.id,
-          breedId: 1,
+          breedId: testBreedId,
           speed: 50,
           stamina: 50,
           agility: 50,

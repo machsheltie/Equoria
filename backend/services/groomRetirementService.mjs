@@ -298,18 +298,20 @@ export async function getRetirementStatistics(userId) {
  * - Check for retirement eligibility
  * - Process automatic retirements
  *
+ * @param {string|null} userId - Optional user ID to scope processing (used in tests for isolation)
  * @returns {Promise<Object>} Processing results with statistics
  */
-export async function processWeeklyCareerProgression() {
+export async function processWeeklyCareerProgression(userId = null) {
   try {
     logger.info('Starting weekly career progression processing');
 
-    // Get all active (non-retired) grooms
+    // Get all active (non-retired) grooms, optionally scoped to a specific user
+    const whereClause = { retired: false, isActive: true };
+    if (userId) {
+      whereClause.userId = userId;
+    }
     const activeGrooms = await prisma.groom.findMany({
-      where: {
-        retired: false,
-        isActive: true,
-      },
+      where: whereClause,
       include: {
         groomAssignmentLogs: true,
       },

@@ -69,7 +69,7 @@ describe('Groom Retirement Routes', () => {
       await prisma.groomTalentSelections.deleteMany({
         where: { groomId: testGroom.id },
       });
-      await prisma.groom.delete({
+      await prisma.groom.deleteMany({
         where: { id: testGroom.id },
       });
     }
@@ -82,7 +82,7 @@ describe('Groom Retirement Routes', () => {
       await prisma.groomTalentSelections.deleteMany({
         where: { groomId: retiredGroom.id },
       });
-      await prisma.groom.delete({
+      await prisma.groom.deleteMany({
         where: { id: retiredGroom.id },
       });
     }

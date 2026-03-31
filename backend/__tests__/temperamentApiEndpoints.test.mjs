@@ -3,7 +3,7 @@
 // groom personality derivation, and field completeness.
 // No Prisma mock needed — getTemperamentDefinitions does no DB queries.
 
-import { jest } from '@jest/globals';
+import { jest, describe, it, expect, beforeEach } from '@jest/globals';
 
 // Mock logger to suppress output in tests
 const mockLogger = {
@@ -221,13 +221,9 @@ describe('getTemperamentDefinitions', () => {
     expect(actualOrder).toEqual(expectedOrder);
   });
 
-  // === F7: temperament with all-negative/zero synergies returns empty bestGroomPersonalities ===
+  // === F7: negative synergy values are excluded from bestGroomPersonalities ===
 
-  it('returns empty bestGroomPersonalities for temperament with no positive synergy entries', async () => {
-    // Stubborn: { strict: 0.15 } — only strict is positive, so result is ['strict']
-    // Independent: { patient: 0.15 } — only patient, so result is ['patient']
-    // Verify the filter correctly excludes zero/negative values by checking a known case:
-    // Nervous has strict: -0.15 which must be excluded
+  it('excludes negative-synergy personalities and keeps only positive entries', async () => {
     const req = {};
     const res = createMockRes();
 
@@ -238,12 +234,29 @@ describe('getTemperamentDefinitions', () => {
     for (const def of definitions) {
       expect(Array.isArray(def.bestGroomPersonalities)).toBe(true);
     }
-    // Nervous strict is -0.15 — confirm it is excluded (not just 'not equal to all 4')
+    // Nervous strict is -0.15 — must be excluded
     const nervous = definitions.find(d => d.name === 'Nervous');
     expect(nervous.bestGroomPersonalities).not.toContain('strict');
     // Stubborn only has strict: 0.15 — confirm single positive entry returned
     const stubborn = definitions.find(d => d.name === 'Stubborn');
     expect(stubborn.bestGroomPersonalities).toEqual(['strict']);
+  });
+
+  // === F8: description and prevalenceNote are non-empty strings ===
+
+  it('all definitions have non-empty description and prevalenceNote strings', async () => {
+    const req = {};
+    const res = createMockRes();
+
+    await getTemperamentDefinitions(req, res);
+
+    const { definitions } = res.json.mock.calls[0][0].data;
+    for (const def of definitions) {
+      expect(typeof def.description).toBe('string');
+      expect(def.description.length).toBeGreaterThan(0);
+      expect(typeof def.prevalenceNote).toBe('string');
+      expect(def.prevalenceNote.length).toBeGreaterThan(0);
+    }
   });
 
   // === F6: 500 error path — missing modifier throws and returns error response ===

@@ -3,7 +3,7 @@ import { saveResult, getResultsByShow } from '../../../models/resultModel.mjs';
 import { addXpToUser } from '../../../models/userModel.mjs';
 import { logXpEvent } from '../../../models/xpLogModel.mjs';
 import { awardCompetitionXp } from '../../../models/horseXpModel.mjs';
-import { calculateCompetitionScore } from '../../../utils/competitionLogic.mjs';
+import { calculateCompetitionScore } from '../../../utils/competitionScore.mjs';
 import { isHorseEligibleForShow } from '../../../utils/isHorseEligible.mjs';
 import {
   calculatePrizeDistribution,

@@ -410,7 +410,7 @@ describe('Gait Score Generation Service', () => {
 
   describe('Conformation influence correlation (NFR-05)', () => {
     const breedId = 1; // Thoroughbred
-    const sampleSize = 500;
+    const sampleSize = 3000; // increased from 500 — statistical test needs large n for stable r
 
     test('higher conformation scores correlate with higher gait scores (r > 0.1)', () => {
       const conformationValues = [];

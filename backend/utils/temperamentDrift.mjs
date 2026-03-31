@@ -2,6 +2,18 @@
  * Temperament Drift System
  * Handles gradual changes in horse temperament over time
  * Can be suppressed by certain traits like 'resilient' and 'calm'
+ *
+ * @deprecated This module uses a legacy 6-type temperament system (Calm, Spirited, Nervous,
+ * Aggressive, Docile, Unpredictable) that is incompatible with the canonical 11-type system
+ * defined in modules/horses/services/temperamentService.mjs (Epic 31D).
+ *
+ * CURRENT IMPORTERS (non-production):
+ *   - backend/tests/traitIntegration.test.mjs (3 tests use calculateTemperamentDrift)
+ *   - backend/examples/traitIntegrationExample.mjs (demo file)
+ *
+ * DELETION PLAN: This file can be removed once the two importers above are migrated or deleted.
+ * DO NOT import this module in any new application code.
+ * Canonical system: backend/modules/horses/services/temperamentService.mjs
  */
 
 import { getCombinedTraitEffects } from './traitEffects.mjs';

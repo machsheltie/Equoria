@@ -276,7 +276,7 @@ export function checkBurnoutImmunity(consecutiveDays) {
  * @param {number} duration - Duration in minutes
  * @returns {Object} Complete grooming session result
  */
-export async function processGroomingSession(horseId, groomId, groomingTask, _duration) {
+export async function processGroomingSession(horseId, groomId, groomingTask, duration) {
   try {
     // Get horse data
     const horse = await prisma.horse.findUnique({
@@ -289,6 +289,7 @@ export async function processGroomingSession(horseId, groomId, groomingTask, _du
         daysGroomedInARow: true,
         burnoutStatus: true,
         temperament: true,
+        taskLog: true,
       },
     });
 
@@ -328,8 +329,41 @@ export async function processGroomingSession(horseId, groomId, groomingTask, _du
     // Check burnout immunity
     const immunityCheck = checkBurnoutImmunity(consecutiveDaysUpdate.newConsecutiveDays);
 
-    // TODO: Create groom interaction record
-    // TODO: Update horse with new values
+    // Update task log with completed task
+    const taskLogUpdate = updateTaskLog(horse.taskLog, groomingTask);
+
+    // Create groom interaction record (only when a groom is assigned)
+    if (groomId) {
+      await prisma.groomInteraction.create({
+        data: {
+          foalId: horseId,
+          groomId,
+          interactionType: groomingTask,
+          duration: duration || 0,
+          bondingChange: Math.round(bondingEffects.bondChange),
+          stressChange: 0,
+          quality: 'good',
+          taskType: eligibilityCheck.taskType,
+          qualityScore: 0.75,
+        },
+      });
+    }
+
+    // Persist updated horse state
+    await prisma.horse.update({
+      where: { id: horseId },
+      data: {
+        bondScore: Math.round(bondingEffects.newBondScore),
+        daysGroomedInARow: consecutiveDaysUpdate.newConsecutiveDays,
+        burnoutStatus: immunityCheck.status,
+        lastGroomed: new Date(),
+        taskLog: taskLogUpdate.taskLog,
+      },
+    });
+
+    logger.info(
+      `[groomBondingSystem.processGroomingSession] Horse ${horseId}: bondScore → ${Math.round(bondingEffects.newBondScore)}, streak → ${consecutiveDaysUpdate.newConsecutiveDays}, burnout → ${immunityCheck.status}`,
+    );
 
     return {
       success: true,

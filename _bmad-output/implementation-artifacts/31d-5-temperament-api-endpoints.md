@@ -1,6 +1,6 @@
 # Story 31D.5: Temperament Definitions Endpoint
 
-Status: review
+Status: done
 
 ## Story
 
@@ -547,3 +547,4 @@ claude-sonnet-4-6
 ## Change Log
 
 - 2026-03-30: Implemented GET /api/v1/horses/temperament-definitions endpoint — getTemperamentDefinitions controller function, route registration, 13 unit tests, Swagger documentation (Story 31D-5)
+- 2026-03-31: Code review fixes — added explicit @jest/globals imports (describe/it/expect/beforeEach); renamed misleading empty-bestGroomPersonalities test; added F8 test validating non-empty description/prevalenceNote strings. 15 tests total, 0 regressions.

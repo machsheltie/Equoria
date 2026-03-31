@@ -6,7 +6,7 @@ info:
   contact:
     name: 'Equoria Team'
   x-generated:
-    timestamp: '2026-03-30T16:26:21.598Z'
+    timestamp: '2026-03-31T20:52:03.342Z'
     endpointCount: 0
     schemaCount: 2
     generator: ApiDocumentationService
@@ -102,6 +102,285 @@ paths:
       summary: 'Logout user'
       security: [{ bearerAuth: [] }]
       responses: { '200': { description: 'Logout successful' } }
+  '/api/v1/horses/{id}/conformation':
+    get:
+      tags: [Horses]
+      summary: 'Get conformation scores for a horse'
+      description: 'Returns all 8 conformation region scores (head, neck, shoulders, back, hindquarters, legs, hooves, topline) plus the overall average. Returns null data for legacy horses without conformation scores. Requires ownership of the horse.'
+      security: [{ bearerAuth: [] }]
+      parameters:
+        [
+          {
+            name: id,
+            in: path,
+            required: true,
+            schema: { type: integer, minimum: 1 },
+            description: 'Horse ID',
+          },
+        ]
+      responses:
+        {
+          '200':
+            {
+              description: 'Conformation scores retrieved successfully',
+              content:
+                {
+                  application/json:
+                    {
+                      schema:
+                        {
+                          type: object,
+                          properties:
+                            {
+                              success: { type: boolean, example: true },
+                              message: { type: string },
+                              data:
+                                {
+                                  type: object,
+                                  nullable: true,
+                                  properties:
+                                    {
+                                      horseId: { type: integer },
+                                      horseName: { type: string },
+                                      breedId: { type: integer },
+                                      conformationScores:
+                                        {
+                                          type: object,
+                                          properties:
+                                            {
+                                              head:
+                                                {
+                                                  type: integer,
+                                                  minimum: 0,
+                                                  maximum: 100,
+                                                  nullable: true,
+                                                },
+                                              neck:
+                                                {
+                                                  type: integer,
+                                                  minimum: 0,
+                                                  maximum: 100,
+                                                  nullable: true,
+                                                },
+                                              shoulders:
+                                                {
+                                                  type: integer,
+                                                  minimum: 0,
+                                                  maximum: 100,
+                                                  nullable: true,
+                                                },
+                                              back:
+                                                {
+                                                  type: integer,
+                                                  minimum: 0,
+                                                  maximum: 100,
+                                                  nullable: true,
+                                                },
+                                              hindquarters:
+                                                {
+                                                  type: integer,
+                                                  minimum: 0,
+                                                  maximum: 100,
+                                                  nullable: true,
+                                                },
+                                              legs:
+                                                {
+                                                  type: integer,
+                                                  minimum: 0,
+                                                  maximum: 100,
+                                                  nullable: true,
+                                                },
+                                              hooves:
+                                                {
+                                                  type: integer,
+                                                  minimum: 0,
+                                                  maximum: 100,
+                                                  nullable: true,
+                                                },
+                                              topline:
+                                                {
+                                                  type: integer,
+                                                  minimum: 0,
+                                                  maximum: 100,
+                                                  nullable: true,
+                                                },
+                                              overallConformation:
+                                                { type: integer, minimum: 0, maximum: 100 },
+                                            },
+                                        },
+                                    },
+                                },
+                            },
+                        },
+                    },
+                },
+            },
+          '400': { description: 'Invalid horse ID' },
+          '401': { description: Unauthorized },
+          '403': { description: 'Forbidden — horse belongs to another user' },
+          '404': { description: 'Horse not found' },
+          '500': { description: 'Internal server error' },
+        }
+  '/api/v1/horses/{id}/conformation/analysis':
+    get:
+      tags: [Horses]
+      summary: 'Get conformation analysis with breed percentile rankings'
+      description: 'Returns per-region percentile ranking compared to all same-breed horses in the database. Percentile = percentage of same-breed horses scoring lower. Breed mean comes from genetic profiles, not live database averages. Returns null data for legacy horses or horses without a breed assignment.'
+      security: [{ bearerAuth: [] }]
+      parameters:
+        [
+          {
+            name: id,
+            in: path,
+            required: true,
+            schema: { type: integer, minimum: 1 },
+            description: 'Horse ID',
+          },
+        ]
+      responses:
+        {
+          '200':
+            {
+              description: 'Conformation analysis retrieved successfully',
+              content:
+                {
+                  application/json:
+                    {
+                      schema:
+                        {
+                          type: object,
+                          properties:
+                            {
+                              success: { type: boolean, example: true },
+                              message: { type: string },
+                              data:
+                                {
+                                  type: object,
+                                  nullable: true,
+                                  properties:
+                                    {
+                                      horseId: { type: integer },
+                                      horseName: { type: string },
+                                      breedId: { type: integer },
+                                      breedName: { type: string },
+                                      totalHorsesInBreed: { type: integer },
+                                      analysis:
+                                        {
+                                          type: object,
+                                          description: 'Per-region score, breedMean, and percentile',
+                                        },
+                                      overallConformation:
+                                        {
+                                          type: object,
+                                          properties:
+                                            {
+                                              score: { type: integer },
+                                              breedMean: { type: integer },
+                                              percentile:
+                                                { type: integer, minimum: 0, maximum: 100 },
+                                            },
+                                        },
+                                    },
+                                },
+                            },
+                        },
+                    },
+                },
+            },
+          '400': { description: 'Invalid horse ID' },
+          '401': { description: Unauthorized },
+          '403': { description: 'Forbidden — horse belongs to another user' },
+          '404': { description: 'Horse not found' },
+          '500': { description: 'Internal server error' },
+        }
+  '/api/v1/horses/{id}/gaits':
+    get:
+      tags: [Horses]
+      summary: 'Get gait quality scores for a horse'
+      description: 'Returns walk, trot, canter, and gallop quality scores (0–100). For gaited breeds, also returns a gaiting array with named specialty gait entries. Returns null data for legacy horses without gait scores. Requires ownership of the horse.'
+      security: [{ bearerAuth: [] }]
+      parameters:
+        [
+          {
+            name: id,
+            in: path,
+            required: true,
+            schema: { type: integer, minimum: 1 },
+            description: 'Horse ID',
+          },
+        ]
+      responses:
+        {
+          '200':
+            {
+              description: 'Gait scores retrieved successfully',
+              content:
+                {
+                  application/json:
+                    {
+                      schema:
+                        {
+                          type: object,
+                          properties:
+                            {
+                              success: { type: boolean, example: true },
+                              message: { type: string },
+                              data:
+                                {
+                                  type: object,
+                                  nullable: true,
+                                  properties:
+                                    {
+                                      horseId: { type: integer },
+                                      horseName: { type: string },
+                                      breedId: { type: integer },
+                                      gaitScores:
+                                        {
+                                          type: object,
+                                          properties:
+                                            {
+                                              walk: { type: integer, minimum: 0, maximum: 100 },
+                                              trot: { type: integer, minimum: 0, maximum: 100 },
+                                              canter: { type: integer, minimum: 0, maximum: 100 },
+                                              gallop: { type: integer, minimum: 0, maximum: 100 },
+                                              gaiting:
+                                                {
+                                                  type: array,
+                                                  nullable: true,
+                                                  items:
+                                                    {
+                                                      type: object,
+                                                      properties:
+                                                        {
+                                                          name:
+                                                            {
+                                                              type: string,
+                                                              example: 'Running Walk',
+                                                            },
+                                                          score:
+                                                            {
+                                                              type: integer,
+                                                              minimum: 0,
+                                                              maximum: 100,
+                                                            },
+                                                        },
+                                                    },
+                                                },
+                                            },
+                                        },
+                                    },
+                                },
+                            },
+                        },
+                    },
+                },
+            },
+          '400': { description: 'Invalid horse ID' },
+          '401': { description: Unauthorized },
+          '403': { description: 'Forbidden — horse belongs to another user' },
+          '404': { description: 'Horse not found' },
+          '500': { description: 'Internal server error' },
+        }
   /api/v1/horses/temperament-definitions:
     get:
       tags: [Horses]
@@ -467,11 +746,11 @@ components:
     User:
       type: object
       properties: { id: { type: string } }
-      registeredAt: '2026-03-30T16:26:21.584Z'
+      registeredAt: '2026-03-31T20:52:03.249Z'
     Horse:
       type: object
       properties: { id: { type: string } }
-      registeredAt: '2026-03-30T16:26:21.590Z'
+      registeredAt: '2026-03-31T20:52:03.290Z'
     TestSchema:
       type: object
       properties:
@@ -481,8 +760,8 @@ components:
           timestamp: { type: string, format: date-time },
         }
       required: [id, name]
-      registeredAt: '2026-03-30T15:50:11.901Z'
+      registeredAt: '2026-03-31T20:42:54.056Z'
     CreateTestSchema:
       type: object
       properties: { name: { type: string } }
-      registeredAt: '2026-03-30T15:50:12.741Z'
+      registeredAt: '2026-03-31T20:42:54.619Z'

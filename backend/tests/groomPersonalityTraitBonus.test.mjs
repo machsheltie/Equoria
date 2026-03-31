@@ -104,20 +104,20 @@ describe('Groom Personality Trait Bonus System - REAL SYSTEM TESTS', () => {
       await prisma.groomInteraction.deleteMany({ where: { groomId: testGroom.id } });
       await prisma.groomAssignment.deleteMany({ where: { groomId: testGroom.id } });
       await prisma.milestoneTraitLog.deleteMany({ where: { groomId: testGroom.id } });
-      await prisma.groom.delete({ where: { id: testGroom.id } });
+      await prisma.groom.deleteMany({ where: { id: testGroom.id } });
     }
 
     if (testHorse) {
       await prisma.milestoneTraitLog.deleteMany({ where: { horseId: testHorse.id } });
-      await prisma.horse.delete({ where: { id: testHorse.id } });
+      await prisma.horse.deleteMany({ where: { id: testHorse.id } });
     }
 
     if (testUser) {
-      await prisma.user.delete({ where: { id: testUser.id } });
+      await prisma.user.deleteMany({ where: { id: testUser.id } });
     }
 
     if (testBreed) {
-      await prisma.breed.delete({ where: { id: testBreed.id } });
+      await prisma.breed.deleteMany({ where: { id: testBreed.id } });
     }
   });
 
