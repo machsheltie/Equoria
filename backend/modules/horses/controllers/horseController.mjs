@@ -897,6 +897,11 @@ export async function getGaits(req, res) {
 }
 
 /**
+ * Canonical groom personalities — defined once at module scope (not per-request).
+ */
+const CANONICAL_PERSONALITIES = Object.freeze(['gentle', 'energetic', 'patient', 'strict']);
+
+/**
  * Static descriptions and prevalence notes for all 11 temperament types.
  * Kept in the controller layer — does NOT belong in temperamentService (data separation).
  */
@@ -968,17 +973,30 @@ const TEMPERAMENT_DESCRIPTIONS = Object.freeze({
  */
 export async function getTemperamentDefinitions(req, res) {
   try {
-    const CANONICAL_PERSONALITIES = ['gentle', 'energetic', 'patient', 'strict'];
-
     const definitions = TEMPERAMENT_TYPES.map(name => {
-      const desc = TEMPERAMENT_DESCRIPTIONS[name] ?? { description: name, prevalenceNote: '' };
+      const desc = TEMPERAMENT_DESCRIPTIONS[name];
+      if (!desc) {
+        logger.warn(
+          `[horseController.getTemperamentDefinitions] Unknown temperament "${name}" — missing description`,
+        );
+      }
+      const { description = name, prevalenceNote = '' } = desc ?? {};
+
       const trainingMods = TEMPERAMENT_TRAINING_MODIFIERS[name];
+      if (!trainingMods) {
+        throw new Error(`Missing training modifiers for temperament: ${name}`);
+      }
+
       const competitionMods = TEMPERAMENT_COMPETITION_MODIFIERS[name];
+      if (!competitionMods) {
+        throw new Error(`Missing competition modifiers for temperament: ${name}`);
+      }
+
       const synergyMap = TEMPERAMENT_GROOM_SYNERGY[name] ?? {};
 
       let bestGroomPersonalities;
       if ('_any' in synergyMap) {
-        bestGroomPersonalities = CANONICAL_PERSONALITIES;
+        bestGroomPersonalities = [...CANONICAL_PERSONALITIES];
       } else {
         bestGroomPersonalities = Object.entries(synergyMap)
           .filter(([, v]) => v > 0)
@@ -987,8 +1005,8 @@ export async function getTemperamentDefinitions(req, res) {
 
       return {
         name,
-        description: desc.description,
-        prevalenceNote: desc.prevalenceNote,
+        description,
+        prevalenceNote,
         trainingModifiers: {
           xpModifier: trainingMods.xpModifier,
           scoreModifier: trainingMods.scoreModifier,
@@ -1001,7 +1019,9 @@ export async function getTemperamentDefinitions(req, res) {
       };
     });
 
-    logger.info('[horseController.getTemperamentDefinitions] Returned 11 temperament definitions');
+    logger.info(
+      `[horseController.getTemperamentDefinitions] Returned ${definitions.length} temperament definitions`,
+    );
 
     res.status(200).json({
       success: true,

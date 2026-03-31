@@ -362,17 +362,7 @@ router.get(
  * Get all temperament type definitions with modifiers and groom synergy
  * Public endpoint — no auth required (static game data)
  */
-router.get('/temperament-definitions', queryRateLimiter, async (req, res) => {
-  try {
-    await getTemperamentDefinitions(req, res);
-  } catch (error) {
-    res.status(500).json({
-      success: false,
-      message: 'Internal server error',
-      error: process.env.NODE_ENV === 'development' ? error.message : 'Something went wrong',
-    });
-  }
-});
+router.get('/temperament-definitions', queryRateLimiter, getTemperamentDefinitions);
 
 /**
  * GET /horses/:id/conformation
