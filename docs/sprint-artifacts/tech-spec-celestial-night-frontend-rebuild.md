@@ -35,26 +35,28 @@ A progressive, page-by-page restyle using a **Feature-Flag Hybrid** migration st
 #### In Scope
 
 - Complete frontend visual rebuild (all 29 pages, 80+ components)
-- 1 shadcn component restyling: `button.tsx` (retains cva variants, gains Celestial Night styles under `.celestial` scope)
-- 12 shadcn files stripped to naked Radix accessibility skeletons (Card, Dialog, Tabs, Badge, Input, Textarea, Progress, Checkbox, Label, Tooltip, ScrollArea, Collapsible — all visual className strings removed)
+- 1 shadcn component restyling: `button.tsx` — **already implemented with gold gradient + horseshoe arcs (btn-cobalt); Story 22.5 extends this consistently to all page surfaces**
+- 12 shadcn files stripped to naked Radix accessibility skeletons (Card, Dialog, Tabs, Badge, Input, Textarea, Progress, Checkbox, Label, Tooltip, ScrollArea, Collapsible — all visual className strings removed); `select.tsx` retained as-is (admin/settings fallback — see ADR-6 note in Story 22.6)
 - 12 new game components in `frontend/src/components/ui/game/` (FrostedPanel, GameDialog, GoldTabs, GameBadge, GlassInput, GlassTextarea, StatBar audit, GameCheckbox, GameLabel, GameTooltip, GameScrollArea, GameCollapsible)
-- 13 new custom feature components (see Section: New Components)
+- 14 new custom feature components (13 original + `PageBackground.tsx` for painted backgrounds)
 - Hub dashboard rebuild with NextActionsBar constellation model
 - WhileYouWereGone return overlay system
 - Onboarding wizard rebuild with BreedSelector
+- Navigation rebuild: SidebarNav (desktop), MobileNav + bottom bar (mobile), Breadcrumbs (Story 22.8)
+- **Background system: `PageBackground.tsx` loads owner-provided hand-painted WebP/JPEG scenes per route — replaces CSS starfield entirely**
 - Backend: Competition model rewrite (7-day windows, overnight execution, show creation)
 - Backend: Foal development model expansion (0-2 year lifecycle)
 - Backend: 3 new endpoints (WYAG aggregation, NextActions, milestones)
 - Backend: User.settings.milestones JSONB field
-- Font migration (Yeseva One/Cormorant Garamond/Jost → Cinzel Decorative/Cinzel/Inter)
-- Design token updates in tokens.css
+- Font migration (Yeseva One/Cormorant Garamond/Jost → Cinzel Decorative/Cinzel/Inter); **fonts self-hosted in `public/fonts/` — no Google Fonts CDN** (ADR-6)
+- Design token updates in tokens.css (including new `--gold-radar-fill` token)
 - Responsive design (mobile-first: 375px → tablet: 768px → desktop: 1024px+)
 - WCAG 2.1 Level AA compliance throughout
 - `prefers-reduced-motion` support on all new animations
 
 #### Out of Scope
 
-- Art asset creation (owner-created by Heirr — placeholder.svg fallback exists)
+- Art asset painting — owner-created by Heirr in Photoshop; dev provides `PageBackground.tsx` component + fallback gradient; art drops in via `public/assets/backgrounds/` whenever ready
 - Sound system implementation (OFF by default; Settings toggle is new but deferred)
 - Real-time WebSocket features (use polling/React Query refetch)
 - Native mobile app
@@ -131,15 +133,17 @@ Already has comprehensive token coverage:
 
 #### Foundation Files (Modify)
 
-| File                             | What Changes                                                                                                                         |
-| -------------------------------- | ------------------------------------------------------------------------------------------------------------------------------------ |
-| `frontend/src/styles/tokens.css` | Update `--font-body` from Jost → Inter; add StarfieldBackground tokens; refine glass surface values                                  |
-| `frontend/src/index.css`         | Update body gradient; add `.celestial` class scope; update `.glass-panel`, `.btn-cobalt`; add new keyframes                          |
-| `frontend/tailwind.config.ts`    | Update fontFamily (Cinzel/Inter), add Celestial Night color aliases                                                                  |
-| `frontend/src/App.tsx`           | Add CelestialThemeProvider (CSS class toggle), WhileYouWereGone overlay mount point                                                  |
-| `frontend/index.html`            | Add Google Fonts `<link rel="preconnect">` + `<link rel="stylesheet">` for Cinzel, Cinzel Decorative, Inter with `font-display=swap` |
-| `frontend/src/lib/api-client.ts` | Add WYAG, NextActions, milestones API methods                                                                                        |
-| `frontend/src/nav-items.tsx`     | Update nav structure for hub-and-spoke model                                                                                         |
+| File                                  | What Changes                                                                                                                                           |
+| ------------------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------ |
+| `frontend/src/styles/tokens.css`      | Update `--font-body` from Jost → Inter; add `--gold-radar-fill` token; refine glass surface values; remove starfield tokens                            |
+| `frontend/src/index.css`              | Update body gradient; add `.celestial` class scope; update `.glass-panel`, `.btn-cobalt`; remove starfield CSS keyframes/classes                       |
+| `frontend/tailwind.config.ts`         | Update fontFamily (Cinzel/Inter from `public/fonts/`), add Celestial Night color aliases                                                               |
+| `frontend/src/App.tsx`                | Add CelestialThemeProvider (CSS class toggle), WhileYouWereGone overlay mount point                                                                    |
+| `frontend/index.html`                 | Remove Google Fonts CDN links; add `<link rel="preload">` for self-hosted WOFF2 files in `public/fonts/`; remove Yeseva One + Cormorant Garamond links |
+| `frontend/src/lib/api-client.ts`      | Add WYAG, NextActions, milestones API methods                                                                                                          |
+| `frontend/src/nav-items.tsx`          | Update nav structure for hub-and-spoke model                                                                                                           |
+| `frontend/public/fonts/`              | **New directory** — Cinzel-Regular.woff2, CinzelDecorative-Regular.woff2, Inter-variable.woff2 (self-hosted; no Google CDN)                            |
+| `frontend/public/assets/backgrounds/` | **New directory** — WebP + JPEG background scenes (owner-provided Photoshop exports); deep navy fallback gradient is automatic                         |
 
 #### shadcn Files — Strip to Radix Skeletons (12 files)
 
@@ -181,21 +185,21 @@ All live in `frontend/src/components/ui/game/`. Exported from barrel `frontend/s
 
 #### New Custom Components (13 to build)
 
-| Component                   | Location                                             | Priority | Description                                                                                                                                                         |
-| --------------------------- | ---------------------------------------------------- | -------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| **StarfieldBackground**     | `components/layout/StarfieldBackground.tsx`          | P1       | CSS-only animated starfield replacing current StarField; parallax layers, shooting stars, `prefers-reduced-motion` safe                                             |
-| **NextActionsBar**          | `components/hub/NextActionsBar.tsx`                  | P1       | Constellation-model suggestion bar; server-seeded actions with client narrative text; priority ordering                                                             |
-| **WhileYouWereGone**        | `components/hub/WhileYouWereGone.tsx`                | P1       | Return overlay (trigger: 4+ hours away); prioritized item list (competition results → foal milestones → messages → club activity); max 8 items; dismiss interaction |
-| **BreedSelector**           | `components/onboarding/BreedSelector.tsx`            | P1       | Grid/list toggle breed picker; breed preview with stat tendencies; gender selection; name input with preview                                                        |
-| **NarrativeChip**           | `components/hub/NarrativeChip.tsx`                   | P2       | Contextual micro-story chip on horse/stable cards ("Ready to compete!", "Foal developing well")                                                                     |
-| **CooldownTimer**           | `components/common/CooldownTimer.tsx`                | P2       | Real-time countdown display; training/breeding cooldowns; "Ready!" state with glow                                                                                  |
-| **DisciplineSelector**      | `components/training/DisciplineSelector.tsx`         | P2       | Top 5 recommendations (server-ranked by horse aptitude) + expandable full list; stat impact preview                                                                 |
-| **CompetitionFieldPreview** | `components/competition/CompetitionFieldPreview.tsx` | P2       | Scouting view of entered horses; stat comparison radar; entry count; closing date countdown                                                                         |
-| **CompatibilityPreview**    | `components/breeding/CompatibilityPreview.tsx`       | P2       | Tabbed preview (stat ranges, traits, inbreeding coefficient, pedigree overlap); bidirectional entry                                                                 |
-| **DevelopmentTracker**      | `components/foal/DevelopmentTracker.tsx`             | P2       | 0-2yr timeline (desktop) / card view (mobile); age-appropriate activity list; milestone history; trait status                                                       |
-| **ScoreBreakdownRadar**     | `components/competition/ScoreBreakdownRadar.tsx`     | P3       | Recharts radar chart with Celestial Night styling; personal best overlay                                                                                            |
-| **RewardToast**             | `components/feedback/RewardToast.tsx`                | P3       | Meaningful-only toast (not for every click); gold accent, icon by type, 4s auto-dismiss                                                                             |
-| **GoldBorderFrame**         | `components/ui/GoldBorderFrame.tsx`                  | P3       | Decorative frame for hero panels, achievement cards; animated corner flourishes                                                                                     |
+| Component                   | Location                                             | Priority | Description                                                                                                                                                                                                               |
+| --------------------------- | ---------------------------------------------------- | -------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| **PageBackground**          | `components/layout/PageBackground.tsx`               | P1       | Renders owner-provided hand-painted WebP/JPEG scene for the current route; fixed-position, `object-fit: cover`, semi-transparent overlay, deep navy gradient fallback; replaces StarField.tsx and StarfieldBackground.tsx |
+| **NextActionsBar**          | `components/hub/NextActionsBar.tsx`                  | P1       | Constellation-model suggestion bar; server-seeded actions with client narrative text; priority ordering                                                                                                                   |
+| **WhileYouWereGone**        | `components/hub/WhileYouWereGone.tsx`                | P1       | Return overlay (trigger: 4+ hours away); prioritized item list (competition results → foal milestones → messages → club activity); max 8 items; dismiss interaction                                                       |
+| **BreedSelector**           | `components/onboarding/BreedSelector.tsx`            | P1       | Grid/list toggle breed picker; breed preview with stat tendencies; gender selection; name input with preview                                                                                                              |
+| **NarrativeChip**           | `components/hub/NarrativeChip.tsx`                   | P2       | Contextual micro-story chip on horse/stable cards ("Ready to compete!", "Foal developing well")                                                                                                                           |
+| **CooldownTimer**           | `components/common/CooldownTimer.tsx`                | P2       | Real-time countdown display; training/breeding cooldowns; "Ready!" state with glow                                                                                                                                        |
+| **DisciplineSelector**      | `components/training/DisciplineSelector.tsx`         | P2       | Top 5 recommendations (server-ranked by horse aptitude) + expandable full list; stat impact preview                                                                                                                       |
+| **CompetitionFieldPreview** | `components/competition/CompetitionFieldPreview.tsx` | P2       | Scouting view of entered horses; stat comparison radar; entry count; closing date countdown                                                                                                                               |
+| **CompatibilityPreview**    | `components/breeding/CompatibilityPreview.tsx`       | P2       | Tabbed preview (stat ranges, traits, inbreeding coefficient, pedigree overlap); bidirectional entry                                                                                                                       |
+| **DevelopmentTracker**      | `components/foal/DevelopmentTracker.tsx`             | P2       | 0-2yr timeline (desktop) / card view (mobile); age-appropriate activity list; milestone history; trait status                                                                                                             |
+| **ScoreBreakdownRadar**     | `components/competition/ScoreBreakdownRadar.tsx`     | P3       | Recharts radar chart with Celestial Night styling; personal best overlay                                                                                                                                                  |
+| **RewardToast**             | `components/feedback/RewardToast.tsx`                | P3       | Meaningful-only toast (not for every click); gold accent, icon by type, 4s auto-dismiss                                                                                                                                   |
+| **GoldBorderFrame**         | `components/ui/GoldBorderFrame.tsx`                  | P3       | Decorative frame for hero panels, achievement cards; animated corner flourishes                                                                                                                                           |
 
 #### Backend Files to Create/Modify
 
@@ -287,6 +291,18 @@ interface NextAction {
 
 **Decision:** Expand `GET /api/v1/foals/:id/development` to include age-aware milestones
 **Rationale:** Endpoint exists and works. Add `ageInWeeks`, `ageStage` (newborn/weanling/yearling/two-year-old), `availableActivities` (filtered by age), `completedMilestones` to response.
+
+#### ADR-6: Self-Hosted Fonts (No Google Fonts CDN)
+
+**Decision:** Export Cinzel, Cinzel Decorative, and Inter as WOFF2 from Google Fonts once; commit to `frontend/public/fonts/`; load via `<link rel="preload">` pointing to `/fonts/`.
+**Rationale:** Loading from the Google Fonts CDN transmits every user's IP address to Google on each page load. Equoria targets a global audience including EU/UK users — this constitutes data processing under GDPR with no consent mechanism. Self-hosting eliminates the third-party data transfer entirely. Font files are Apache 2.0 / OFL licensed and may be self-hosted freely. Performance is equivalent or better (one fewer DNS lookup, same CDN-level caching via browser cache-control headers).
+**Implementation:** Download WOFF2 variants (Latin subset, Regular + SemiBold where needed) from Google Fonts download page. Commit to `frontend/public/fonts/`. Update `frontend/index.html` to replace Google Fonts `<link>` with `<link rel="preload" as="font" type="font/woff2" crossorigin href="/fonts/Cinzel-Regular.woff2">` etc. Update `@font-face` declarations in `index.css` to point to `/fonts/` paths.
+
+#### ADR-7: Painted Backgrounds — PageBackground Component
+
+**Decision:** Replace CSS starfield (`StarfieldBackground.tsx`) with a `PageBackground.tsx` component that renders owner-provided hand-painted WebP/JPEG scenes per route.
+**Rationale:** The owner (Heirr) is creating hand-painted backgrounds in Photoshop. CSS-generated starfields were a placeholder approach. Painted backgrounds deliver a stronger fantasy identity that cannot be replicated with CSS box-shadows. The component provides a clean interface: pass a `scene` key, get the correct background. Deep navy gradient fallback ensures no broken layout during art asset production.
+**Migration:** `StarField.tsx` and `StarfieldBackground.tsx` are deleted once `PageBackground.tsx` is in place. All starfield CSS in `index.css` is removed.
 
 ---
 

@@ -64,28 +64,28 @@ This document provides the complete epic and story breakdown for the Celestial N
 
 These FRs are specific to the visual transformation and UX redesign. They supplement the original PRD FRs (which are fully implemented in Epics 1-21).
 
-| FR ID       | Category               | Requirement                                                                                                                                                                                                                                                                                                                  | Source                                     |
-| ----------- | ---------------------- | ---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | ------------------------------------------ |
-| **FR-CN1**  | Visual Identity        | Complete Celestial Night theme: deep navy gradients, frosted glass panels, gold accents, serif typography across all 29 pages                                                                                                                                                                                                | UX Spec §1-3                               |
-| **FR-CN2**  | Design System          | 8 core game components as real TypeScript files in `components/ui/game/`: FrostedPanel, GameDialog (CelestialButton alias), GlassInput, GoldTabs, StatBar, SlotGrid, StarfieldBackground, CrescentDecoration — covering 90% of surfaces. No shadcn visual styling.                                                           | UX Spec §11.3                              |
-| **FR-CN3**  | Font System            | Cinzel Decorative (display), Cinzel (headings), Inter (body) replacing current fonts; preloaded, swap, Latin subset                                                                                                                                                                                                          | UX Spec §1, Tech Spec                      |
-| **FR-CN4**  | Feature Toggle         | `.celestial` CSS class scoping for progressive migration; `?theme=celestial` QA toggle                                                                                                                                                                                                                                       | Tech Spec ADR                              |
-| **FR-CN5**  | Hub Dashboard          | Hub-and-spoke constellation layout with NextActionsBar, NarrativeChips, stable card grid, aside/bottom sheet                                                                                                                                                                                                                 | UX Spec §5-6, Wireframe 1                  |
-| **FR-CN6**  | WhileYouWereGone       | Return overlay after 4+ hours absence; priority-sorted items (max 8); competition results highest priority                                                                                                                                                                                                                   | UX Spec §6, Tech Spec ADR-1                |
-| **FR-CN7**  | Next Actions           | Server-seeded action priority list with client narrative formatting; guides daily gameplay loop                                                                                                                                                                                                                              | UX Spec §5, Tech Spec ADR-2                |
-| **FR-CN8**  | Competition Model      | Player/club-created shows with 7-day entry windows; overnight execution; browse-and-enter UX                                                                                                                                                                                                                                 | UX Spec §10.4, Tech Spec BA-1 through BA-5 |
-| **FR-CN9**  | Foal Development       | 0-2 year lifecycle with age-evolving groom activities; milestone tracking; graduation at age 3                                                                                                                                                                                                                               | UX Spec §10.6, Tech Spec BB-1 through BB-4 |
-| **FR-CN10** | Cinematic Moments      | Lifetime-first achievements only (first win, first breed, first trait, first legendary, first max level, first graduation); repeat events use toast                                                                                                                                                                          | UX Spec §12, Tech Spec ADR-4               |
-| **FR-CN11** | Onboarding Rebuild     | BreedSelector with grid/list toggle, breed previews with stat tendencies, gender selection, name input with preview                                                                                                                                                                                                          | UX Spec §10.1, Wireframe 3                 |
-| **FR-CN12** | Training Flow          | DisciplineSelector with top-5 server-ranked recommendations; CooldownTimer real-time countdown; stat impact preview                                                                                                                                                                                                          | UX Spec §10.3, Wireframe 4                 |
-| **FR-CN13** | Competition Flow       | CompetitionFieldPreview (scouting), 7-day entry window UX, ScoreBreakdownRadar, results via WYAG                                                                                                                                                                                                                             | UX Spec §10.4, Wireframe 5                 |
-| **FR-CN14** | Breeding Flow          | CompatibilityPreview (4-tab: stats/traits/inbreeding/pedigree), bidirectional entry, cost breakdown                                                                                                                                                                                                                          | UX Spec §10.5, Wireframe 6                 |
-| **FR-CN15** | Horse Detail           | 10 stat bars with numeric overlays, trait badges, CareStatusStrip, tabbed sections, action bar                                                                                                                                                                                                                               | UX Spec §10.7, Wireframe 7                 |
-| **FR-CN16** | Navigation             | Sidebar (desktop), hamburger + bottom nav (mobile), breadcrumbs, StarfieldBackground integration                                                                                                                                                                                                                             | UX Spec §10.8, Wireframe 9                 |
-| **FR-CN17** | Accessibility          | WCAG 2.1 AA throughout: 4.5:1 text contrast, 44px touch targets, keyboard navigation, `prefers-reduced-motion`, screen reader support                                                                                                                                                                                        | UX Spec §7                                 |
-| **FR-CN18** | Performance            | Initial bundle < 400KB; fonts load with `font-display: swap`; LCP < 2.5s on 4G; lazy loading for Phase 2/3 components                                                                                                                                                                                                        | Tech Spec §Performance                     |
-| **FR-CN19** | Game Component Library | `button.tsx` restyled with `.celestial` scope; 12 shadcn files stripped to naked Radix accessibility skeletons; 12 game components built in `components/ui/game/` (FrostedPanel, GameDialog, GoldTabs, GameBadge, GlassInput, GlassTextarea, StatBar, GameCheckbox, GameLabel, GameTooltip, GameScrollArea, GameCollapsible) | Tech Spec §game-components                 |
-| **FR-CN20** | Milestones System      | `User.settings.milestones` JSONB tracking lifetime-first achievements; server-set, exposed in profile and competition responses                                                                                                                                                                                              | Tech Spec ADR-4                            |
+| FR ID       | Category               | Requirement                                                                                                                                                                                                                                                                                                                                                              | Source                                     |
+| ----------- | ---------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------ | ------------------------------------------ |
+| **FR-CN1**  | Visual Identity        | Complete Celestial Night theme: deep navy gradients, frosted glass panels, gold accents, serif typography across all 29 pages                                                                                                                                                                                                                                            | UX Spec §1-3                               |
+| **FR-CN2**  | Design System          | 12 core game components as real TypeScript files in `components/ui/game/`: FrostedPanel, GameDialog, GoldTabs, GameBadge, GlassInput, GlassTextarea, StatBar, GameCheckbox, GameLabel, GameTooltip, GameScrollArea, GameCollapsible — covering 90% of surfaces. No shadcn visual styling. 12 corresponding shadcn files stripped to naked Radix accessibility skeletons. | UX Spec §11.3                              |
+| **FR-CN3**  | Font System            | Cinzel Decorative (display), Cinzel (headings), Inter (body) replacing current fonts; preloaded, swap, Latin subset                                                                                                                                                                                                                                                      | UX Spec §1, Tech Spec                      |
+| **FR-CN4**  | Feature Toggle         | `.celestial` CSS class scoping for progressive migration; `?theme=celestial` QA toggle                                                                                                                                                                                                                                                                                   | Tech Spec ADR                              |
+| **FR-CN5**  | Hub Dashboard          | Hub-and-spoke constellation layout with NextActionsBar, NarrativeChips, stable card grid, aside/bottom sheet                                                                                                                                                                                                                                                             | UX Spec §5-6, Wireframe 1                  |
+| **FR-CN6**  | WhileYouWereGone       | Return overlay after 4+ hours absence; priority-sorted items (max 8); competition results highest priority                                                                                                                                                                                                                                                               | UX Spec §6, Tech Spec ADR-1                |
+| **FR-CN7**  | Next Actions           | Server-seeded action priority list with client narrative formatting; guides daily gameplay loop                                                                                                                                                                                                                                                                          | UX Spec §5, Tech Spec ADR-2                |
+| **FR-CN8**  | Competition Model      | Player/club-created shows with 7-day entry windows; overnight execution; browse-and-enter UX                                                                                                                                                                                                                                                                             | UX Spec §10.4, Tech Spec BA-1 through BA-5 |
+| **FR-CN9**  | Foal Development       | 0-2 year lifecycle with age-evolving groom activities; milestone tracking; graduation at age 3                                                                                                                                                                                                                                                                           | UX Spec §10.6, Tech Spec BB-1 through BB-4 |
+| **FR-CN10** | Cinematic Moments      | Lifetime-first achievements only (first win, first breed, first trait, first legendary, first max level, first graduation); repeat events use toast                                                                                                                                                                                                                      | UX Spec §12, Tech Spec ADR-4               |
+| **FR-CN11** | Onboarding Rebuild     | BreedSelector with grid/list toggle, breed previews with stat tendencies, gender selection, name input with preview                                                                                                                                                                                                                                                      | UX Spec §10.1, Wireframe 3                 |
+| **FR-CN12** | Training Flow          | DisciplineSelector with top-5 server-ranked recommendations; CooldownTimer real-time countdown; stat impact preview                                                                                                                                                                                                                                                      | UX Spec §10.3, Wireframe 4                 |
+| **FR-CN13** | Competition Flow       | CompetitionFieldPreview (scouting), 7-day entry window UX, ScoreBreakdownRadar, results via WYAG                                                                                                                                                                                                                                                                         | UX Spec §10.4, Wireframe 5                 |
+| **FR-CN14** | Breeding Flow          | CompatibilityPreview (4-tab: stats/traits/inbreeding/pedigree), bidirectional entry, cost breakdown                                                                                                                                                                                                                                                                      | UX Spec §10.5, Wireframe 6                 |
+| **FR-CN15** | Horse Detail           | 10 stat bars with numeric overlays, trait badges, CareStatusStrip, tabbed sections, action bar                                                                                                                                                                                                                                                                           | UX Spec §10.7, Wireframe 7                 |
+| **FR-CN16** | Navigation             | Sidebar (desktop), hamburger + bottom nav (mobile), breadcrumbs, StarfieldBackground integration                                                                                                                                                                                                                                                                         | UX Spec §10.8, Wireframe 9                 |
+| **FR-CN17** | Accessibility          | WCAG 2.1 AA throughout: 4.5:1 text contrast, 44px touch targets, keyboard navigation, `prefers-reduced-motion`, screen reader support                                                                                                                                                                                                                                    | UX Spec §7                                 |
+| **FR-CN18** | Performance            | Initial bundle < 400KB; fonts load with `font-display: swap`; LCP < 2.5s on 4G; lazy loading for Phase 2/3 components                                                                                                                                                                                                                                                    | Tech Spec §Performance                     |
+| **FR-CN19** | Game Component Library | `button.tsx` restyled with `.celestial` scope; 12 shadcn files stripped to naked Radix accessibility skeletons; 12 game components built in `components/ui/game/` (FrostedPanel, GameDialog, GoldTabs, GameBadge, GlassInput, GlassTextarea, StatBar, GameCheckbox, GameLabel, GameTooltip, GameScrollArea, GameCollapsible)                                             | Tech Spec §game-components                 |
+| **FR-CN20** | Milestones System      | `User.settings.milestones` JSONB tracking lifetime-first achievements; server-set, exposed in profile and competition responses                                                                                                                                                                                                                                          | Tech Spec ADR-4                            |
 
 ### Inherited PRD FRs (Already Implemented — Referenced for Coverage)
 
@@ -215,6 +215,7 @@ So that the typography signals "game world" instead of "web app."
 **And** total font payload transferred from Google Fonts CDN is ≤ 60KB (WOFF2, Latin subset, measured in DevTools Network tab)
 **And** `prefers-reduced-motion` has no impact (fonts are static)
 **And** fallback system fonts (Georgia, system-ui) are specified in font stack
+**And** the existing Yeseva One and Cormorant Garamond `<link>` elements are removed from `frontend/index.html` (no orphaned CDN requests)
 **And** the file has zero ESLint errors (`npm run lint` exits 0 in `frontend/`)
 
 **Technical Notes:**
@@ -254,6 +255,7 @@ So that Celestial Night styles can be progressively applied and instantly revert
 **And** NO React Context is created (pure CSS class, zero state management)
 **And** the implementation uses `document.body.classList.add/remove` — either directly in `App.tsx` or in a dedicated `CelestialThemeProvider.tsx` rendered inside the `<Router>` boundary (required because `useSearchParams` needs Router context)
 **And** removing the class reverts ALL Celestial Night styles (kill switch)
+**And** existing users with no `equoria-theme` key in localStorage (pre-Epic-22 players) receive celestial on first load — an in-app toast displays once: "Equoria has a new look! Use ?theme=default in the URL to revert."
 **And** the file has zero ESLint errors (`npm run lint` exits 0 in `frontend/`)
 
 **Technical Notes:**
@@ -268,30 +270,49 @@ So that Celestial Night styles can be progressively applied and instantly revert
 
 ---
 
-### Story 22.3: StarfieldBackground Upgrade
+### Story 22.3: Painted Background System
 
 As a player,
-I want an animated starfield background behind all game content,
-So that every page feels like I'm under a celestial night sky.
+I want each area of the game to display a hand-painted background scene behind the content,
+So that every page feels visually distinct and immersive — not a uniform repeating texture.
 
 **Acceptance Criteria:**
 
 **Given** the `.celestial` class is active
 **When** any page loads
-**Then** a CSS-only starfield renders behind all content at `z-[var(--z-below)]`
-**And** 3 parallax star layers are visible (near: large slow, mid: medium, far: small fast)
-**And** optional shooting stars animate across the sky (CSS `@keyframes`)
-**And** `prefers-reduced-motion` users see static star dots only (no animation)
-**And** the starfield does not interfere with content readability (stars are subtle, 0.3-0.6 opacity)
-**And** performance: 0KB JavaScript, pure CSS with `background-image` or pseudo-elements
+**Then** a full-viewport background image renders behind all content at `z-[var(--z-below)]`
+**And** the image is the hand-painted scene for that page context (see scene map below)
+**And** the image uses `object-fit: cover` to fill all viewport sizes without distortion
+**And** a deep navy gradient fallback (`#0a0e1a → #111827`) displays while the image loads
+**And** content readability is preserved — a semi-transparent overlay (`rgba(5,10,20,0.45)`) sits between the background and content
+**And** `prefers-reduced-motion` has no impact (images are static)
+**And** background images are lazy-loaded on non-critical pages (hub and auth pages are preloaded; all others use `loading="lazy"`)
+**And** background images are served in WebP format with a JPEG fallback via `<picture>`
+
+**Scene Map (asset paths):**
+
+| Scene key      | Pages using it                         | Asset path                              |
+| -------------- | -------------------------------------- | --------------------------------------- |
+| `auth`         | Login, Register, Forgot Password       | `/assets/backgrounds/auth.webp`         |
+| `hub`          | Dashboard (`/`)                        | `/assets/backgrounds/hub.webp`          |
+| `stable`       | My Stable, Horse List                  | `/assets/backgrounds/stable.webp`       |
+| `horse-detail` | Horse Detail page                      | `/assets/backgrounds/horse-detail.webp` |
+| `training`     | Training pages                         | `/assets/backgrounds/training.webp`     |
+| `competition`  | Competition browser, results           | `/assets/backgrounds/competition.webp`  |
+| `breeding`     | Breeding pages, Foal Development       | `/assets/backgrounds/breeding.webp`     |
+| `world`        | World Hub, Community, Clubs            | `/assets/backgrounds/world.webp`        |
+| `default`      | All other pages (settings, bank, etc.) | `/assets/backgrounds/default.webp`      |
 
 **Technical Notes:**
 
-- Replace current `components/layout/StarField.tsx` (or create new `StarfieldBackground.tsx`)
-- Mount in `App.tsx` as fixed-position layer at `z-[var(--z-below)]` (-1)
-- Use CSS `radial-gradient` or `background-image` for star dots
-- Use `@keyframes` for shooting star animation (translateX + opacity)
-- Test with DevTools "prefers-reduced-motion" emulation
+- Replace `components/layout/StarField.tsx` and `components/layout/StarfieldBackground.tsx` with a single `components/layout/PageBackground.tsx`
+- Props: `{ scene: SceneKey }` where `SceneKey` is the union of keys in the scene map above
+- Mount in the root layout (App.tsx or DashboardLayout) — pass `scene` based on current route
+- `PageBackground` renders as a fixed-position `<picture>` element at `z-[var(--z-below)]` (-1)
+- CSS overlay: `::after` pseudo-element with `rgba(5,10,20,0.45)` at `z-[var(--z-below)]` + 1
+- Fallback: if asset file does not exist yet, CSS `background: linear-gradient(180deg, #0a0e1a 0%, #111827 100%)` ensures no broken layout
+- Art assets are owner-provided Photoshop exports — commit WebP + JPEG pairs to `frontend/public/assets/backgrounds/`
+- Remove all starfield CSS keyframes (`starfield-drift-sm/md/lg`) and `.starfield-*` classes from `index.css` once `PageBackground` is in place — they are superseded
 
 **Prerequisites:** Story 22.2 (CelestialThemeProvider)
 
@@ -389,26 +410,28 @@ So that the interface feels native to Equoria's world with no residual dashboard
 **Given** the `.celestial` class is active
 **When** any of the following 12 game components render:
 
-| Game Component      | File                       | Replaces (Radix skeleton) | Visual Description                                                                                                                                                               |
-| ------------------- | -------------------------- | ------------------------- | -------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| **FrostedPanel**    | `game/FrostedPanel.tsx`    | `card.tsx`                | Glass surface container — not a "card". `backdrop-filter: blur(12px)`, `rgba(15,23,42,0.6)` bg, gold border on hover, `border-radius: 12px`.                                     |
-| **GameDialog**      | `game/GameDialog.tsx`      | `dialog.tsx`              | Cinematic overlay. Dark velvet backdrop (`rgba(0,0,0,0.85)`), `.glass-panel-heavy` content area, Cinzel title in `--text-gold`, animated entrance (scale + fade).                |
-| **GoldTabs**        | `game/GoldTabs.tsx`        | `tabs.tsx`                | Transparent bg tab list. Active tab: `--text-gold` + animated 2px gold underline (200ms ease). Inactive: `--text-secondary`. Font: Cinzel. No background-fill on active.         |
-| **GameBadge**       | `game/GameBadge.tsx`       | `badge.tsx`               | Rarity-aware. `common`: `--bg-twilight` bg. `rare`: purple-tinted glass + `--status-rare` text. `legendary`: gold-tinted glass + `--status-legendary` text. `rounded-full` pill. |
-| **GlassInput**      | `game/GlassInput.tsx`      | `input.tsx`               | `--glass-bg` background, `--glass-border` border. Focus: gold ring. Placeholder: `--text-muted`.                                                                                 |
-| **GlassTextarea**   | `game/GlassTextarea.tsx`   | `textarea.tsx`            | Matches GlassInput styling exactly. Resizable vertically only.                                                                                                                   |
-| **StatBar**         | `game/StatBar.tsx`         | `progress.tsx`            | Already exists — audit uses gold gradient fill, navy track, glow at 100%. Fix if needed.                                                                                         |
-| **GameCheckbox**    | `game/GameCheckbox.tsx`    | `checkbox.tsx`            | Gold checkmark SVG on check. Navy bg, `--electric-blue` focus ring. Radix skeleton underneath.                                                                                   |
-| **GameLabel**       | `game/GameLabel.tsx`       | `label.tsx`               | Inter font, `--text-secondary` color, optional `smallCaps` prop adds `font-variant: small-caps`.                                                                                 |
-| **GameTooltip**     | `game/GameTooltip.tsx`     | `tooltip.tsx`             | Glass panel: `--bg-midnight` bg, `--gold-dim` border, `--text-primary` text. No `backdrop-filter` (single-blur rule).                                                            |
-| **GameScrollArea**  | `game/GameScrollArea.tsx`  | `scroll-area.tsx`         | Gold scrollbar thumb (`--gold-dim`, hover → `--gold-primary`), transparent track.                                                                                                |
-| **GameCollapsible** | `game/GameCollapsible.tsx` | `collapsible.tsx`         | Chevron icon rotates 180° on open (CSS 200ms). Content area is `.glass-panel-subtle`.                                                                                            |
+| Game Component      | File                       | Replaces (Radix skeleton) | Visual Description                                                                                                                                                                                                                                                                                                                                                                                      |
+| ------------------- | -------------------------- | ------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| **FrostedPanel**    | `game/FrostedPanel.tsx`    | `card.tsx`                | Glass surface container — not a "card". `backdrop-filter: blur(12px)`, `rgba(15,23,42,0.6)` bg, gold border on hover, `border-radius: 12px`.                                                                                                                                                                                                                                                            |
+| **GameDialog**      | `game/GameDialog.tsx`      | `dialog.tsx`              | Cinematic overlay. Dark velvet backdrop (`rgba(0,0,0,0.85)`), `.glass-panel-heavy` content area, Cinzel title in `--text-gold`, animated entrance (scale + fade).                                                                                                                                                                                                                                       |
+| **GoldTabs**        | `game/GoldTabs.tsx`        | `tabs.tsx`                | Transparent bg tab list. Active tab: `--text-gold` + animated 2px gold underline (200ms ease). Inactive: `--text-secondary`. Font: Cinzel. No background-fill on active.                                                                                                                                                                                                                                |
+| **GameBadge**       | `game/GameBadge.tsx`       | `badge.tsx`               | Rarity-aware. `common`: `--bg-twilight` bg. `rare`: purple-tinted glass + `--status-rare` text. `legendary`: gold-tinted glass + `--status-legendary` text. `rounded-full` pill.                                                                                                                                                                                                                        |
+| **GlassInput**      | `game/GlassInput.tsx`      | `input.tsx`               | `--glass-bg` background, `--glass-border` border. Focus: gold ring. Placeholder: `--text-muted`.                                                                                                                                                                                                                                                                                                        |
+| **GlassTextarea**   | `game/GlassTextarea.tsx`   | `textarea.tsx`            | Matches GlassInput styling exactly. Resizable vertically only.                                                                                                                                                                                                                                                                                                                                          |
+| **StatBar**         | `game/StatBar.tsx`         | `progress.tsx`            | Audit existing component against these three criteria: (1) fill uses a gold gradient (`from-[var(--gold-primary)] to-[var(--gold-light)]`), not a flat color; (2) track uses `var(--bg-midnight)` or `var(--celestial-navy-900)`; (3) a glow (`box-shadow`) activates when value ≥ 100. If all three pass, no change needed — document the audit result in a code comment. If any fail, patch to match. |
+| **GameCheckbox**    | `game/GameCheckbox.tsx`    | `checkbox.tsx`            | Gold checkmark SVG on check. Navy bg, `--electric-blue` focus ring. Radix skeleton underneath.                                                                                                                                                                                                                                                                                                          |
+| **GameLabel**       | `game/GameLabel.tsx`       | `label.tsx`               | Inter font, `--text-secondary` color, optional `smallCaps` prop adds `font-variant: small-caps`.                                                                                                                                                                                                                                                                                                        |
+| **GameTooltip**     | `game/GameTooltip.tsx`     | `tooltip.tsx`             | Glass panel: `--bg-midnight` bg, `--gold-dim` border, `--text-primary` text. No `backdrop-filter` (single-blur rule).                                                                                                                                                                                                                                                                                   |
+| **GameScrollArea**  | `game/GameScrollArea.tsx`  | `scroll-area.tsx`         | Gold scrollbar thumb (`--gold-dim`, hover → `--gold-primary`), transparent track.                                                                                                                                                                                                                                                                                                                       |
+| **GameCollapsible** | `game/GameCollapsible.tsx` | `collapsible.tsx`         | Chevron icon rotates 180° on open (CSS 200ms). Content area is `.glass-panel-subtle`.                                                                                                                                                                                                                                                                                                                   |
 
 **Then** each game component visually matches the Celestial Night design tokens
 **And** all game components compose over their corresponding Radix primitive for accessibility attributes (aria-\*, data-state, keyboard handling)
 **And** the 12 shadcn source files (`card.tsx`, `dialog.tsx`, `tabs.tsx`, `badge.tsx`, `input.tsx`, `textarea.tsx`, `progress.tsx`, `checkbox.tsx`, `label.tsx`, `tooltip.tsx`, `scroll-area.tsx`, `collapsible.tsx`) are stripped of all visual `className` defaults — they become naked Radix wrappers only
 **And** WCAG 2.1 AA is maintained: ≥ 4.5:1 for text, ≥ 3:1 for UI component boundaries
 **And** all interactive game components are keyboard-accessible (Tab/Enter/Space/Escape) via the Radix skeleton
+**And** each game component has a Vitest/RTL test file covering: (a) renders with correct token-based class names, (b) keyboard interaction (Tab/Enter/Space/Escape) reaches the expected state, (c) `data-state` attribute reflects open/closed/checked correctly
+**And** no raw hex or rgba literals appear in any game component file (`grep -r "rgba\|#[0-9a-f]" frontend/src/components/ui/game/` returns zero matches)
 **And** the files have zero ESLint errors (`npm run lint` exits 0 in `frontend/`)
 
 **Technical Notes:**
@@ -416,10 +439,11 @@ So that the interface feels native to Equoria's world with no residual dashboard
 - All 12 game components live in `frontend/src/components/ui/game/` (new folder)
 - Export a barrel file: `frontend/src/components/ui/game/index.ts`
 - Shadcn files in `frontend/src/components/ui/` become pure Radix forwarders — remove all `cn(...)` visual class strings. Keep: ref forwarding, `displayName`, Radix import, `data-slot` attributes
-- Deliver in 3 sub-PRs: (1) FrostedPanel, GameDialog, GoldTabs, GameBadge — (2) GlassInput, GlassTextarea, StatBar, GameCheckbox — (3) GameLabel, GameTooltip, GameScrollArea, GameCollapsible
+- **Sub-PR order (respects inter-component dependencies):** (1) GameLabel, FrostedPanel, GoldTabs, GameBadge — GameLabel must precede GameDialog since dialogs contain labels; GoldTabs depends on Story 22.1 font tokens being confirmed — (2) GlassInput, GlassTextarea, GameCheckbox, GameDialog — GameDialog uses `.glass-panel-heavy` (Story 22.4) and GameLabel (sub-PR 1) — (3) StatBar (audit), GameTooltip, GameScrollArea, GameCollapsible
 - Use only CSS custom properties from `tokens.css` — no raw hex or rgba literals in component files
 - Keep Radix `data-state` attribute selectors for state-driven CSS (open/closed, checked/unchecked)
-- `StatBar` may already have game styling from Epic 18 — audit first, patch if needed rather than rebuild
+- **14th shadcn component:** The current stack has 14 shadcn components (`select.tsx` is the 14th beyond the 13 explicitly handled). `select.tsx` is NOT stripped to skeleton — it retains its existing Radix styling as a functional fallback used in admin/settings forms. Add a code comment to `select.tsx`: "Not part of the game component library — retained as-is for admin/settings use."
+- **Google Fonts / privacy decision (ADR-6):** Fonts are self-hosted to avoid transmitting user IPs to Google servers on every page load (GDPR risk for EU/UK users). Export Cinzel, Cinzel Decorative, and Inter as WOFF2 files from Google Fonts, commit to `frontend/public/fonts/`, update `index.html` to use `<link rel="preload">` from `/fonts/`. Remove Google Fonts CDN links entirely.
 
 **Prerequisites:** Stories 22.1, 22.2, 22.4, 22.5
 
@@ -455,13 +479,57 @@ So that the atmosphere is consistent from login through gameplay.
 
 ---
 
+### Story 22.8: Navigation Structure (Sidebar / Hamburger / Bottom Nav)
+
+As a player,
+I want the navigation to feel native to the game with a sidebar on desktop and a hamburger + bottom nav on mobile,
+So that the layout chrome matches the fantasy world at every viewport.
+
+**Acceptance Criteria:**
+
+**Given** the `.celestial` class is active on a desktop viewport (≥ 1024px)
+**When** any page loads
+**Then** a collapsible left sidebar renders with Celestial Night styling (navy bg, gold icon accents, Cinzel font for nav labels)
+**And** the active route item has a 2px gold left-border indicator
+**And** the sidebar can collapse to an icon-only rail (64px wide) via a toggle button
+**And** the sidebar toggle state persists to localStorage (`equoria-sidebar-collapsed`)
+
+**Given** the `.celestial` class is active on a mobile viewport (< 768px)
+**When** any page loads
+**Then** a hamburger menu icon renders in the top header bar
+**And** tapping the hamburger opens a full-height slide-in nav panel (300ms ease, from left)
+**And** a bottom navigation bar renders with 5 icon items: Home, Horses, Compete, Breed, More
+**And** the active tab has a gold dot indicator below the icon
+**And** tapping an item closes the hamburger panel if open
+
+**And** breadcrumbs render on all pages (except the hub root `/`) showing the current path with Celestial Night styling (`--text-muted` / `--text-gold` for the active crumb)
+**And** keyboard navigation: sidebar/hamburger toggle reachable via Tab; Escape closes the open hamburger panel
+**And** PageBackground (`scene` prop) is passed based on the current route in the root layout
+**And** Playwright E2E test covers: sidebar toggle on desktop, hamburger open/close on mobile (375px viewport), bottom nav active state
+**And** the file has zero ESLint errors (`npm run lint` exits 0 in `frontend/`)
+
+**Technical Notes:**
+
+- Refactor `MainNavigation.tsx` into two layouts: `SidebarNav.tsx` (desktop) and `MobileNav.tsx` (hamburger + bottom bar)
+- Root layout component (create `DashboardLayout.tsx` if it doesn't exist) renders the correct nav based on a `useMediaQuery('(min-width: 1024px)')` hook
+- Sidebar collapse: toggle button uses `ChevronLeft` / `ChevronRight` from Lucide; icon-only state hides label text with `opacity-0 w-0 overflow-hidden` transition
+- Bottom nav items: Home (`/`), Horses (`/horses`), Compete (`/competition`), Breed (`/breeding`), More (opens slide-up drawer with remaining nav links)
+- Breadcrumbs: `components/layout/Breadcrumbs.tsx` — reads from `react-router-dom` `useMatches()` hook; renders as `<nav aria-label="breadcrumb">`
+- `PageBackground` scene routing: add a `routeSceneMap` in `DashboardLayout.tsx` mapping path prefixes to `SceneKey` values
+
+**Prerequisites:** Stories 22.1, 22.2, 22.3, 22.4, 22.5
+
+---
+
 **Epic 22 Complete: Celestial Night Foundation**
 
-Stories Created: 7
-FR Coverage: FR-CN1, FR-CN2, FR-CN3, FR-CN4, FR-CN19
-Technical Context: tokens.css, tailwind.config.ts, index.css, App.tsx, frontend/src/components/ui/game/ (12 new files), MainNavigation.tsx, AuthLayout.tsx
-UX Patterns: UX §1 (Design Tokens), §3 (Typography), §11.3 (Core Components), Wireframe 9 (Navigation)
+Stories Created: 8
+FR Coverage: FR-CN1, FR-CN2, FR-CN3, FR-CN4, FR-CN16, FR-CN19
+Technical Context: tokens.css, tailwind.config.ts, index.css, App.tsx, frontend/src/components/ui/game/ (12 new files), PageBackground.tsx, SidebarNav.tsx, MobileNav.tsx, Breadcrumbs.tsx, button.tsx (existing — gold standard confirmed), fonts self-hosted in `public/fonts/`
+UX Patterns: UX §1 (Design Tokens), §3 (Typography), §10.8 (Navigation), §11.3 (Core Components)
 No shadcn visual styling — Radix primitives used as accessibility skeletons only. All game visuals in components/ui/game/.
+Background: Hand-painted scenes replace CSS starfield — assets owner-provided as WebP/JPEG pairs in `public/assets/backgrounds/`.
+Buttons: Gold gradient + horseshoe arc pattern already live on login page — Story 22.5 extends this consistently to all surfaces.
 
 ---
 
@@ -1284,8 +1352,9 @@ So that I can see strengths and weaknesses visually.
 
 - Create `frontend/src/components/competition/ScoreBreakdownRadar.tsx`
 - Use existing Recharts dependency (already in vendor-charts chunk)
-- Style: `<PolarGrid stroke="rgba(148,163,184,0.2)">`; `<Radar fill="rgba(200,168,78,0.3)">`
+- Style: `<PolarGrid stroke="var(--glass-border)">` (maps to `rgba(148,163,184,0.2)` via token); `<Radar fill="var(--gold-radar-fill)">` where `--gold-radar-fill` is a new token in `tokens.css` defined as `rgba(200,168,78,0.3)` — **no raw rgba/hex literals in the component file**
 - Props: `{ scores: Array<{category: string, value: number}>, personalBest?: Array<...> }`
+- Add `--gold-radar-fill: rgba(200,168,78,0.3)` to the tokens.css navy/gold section
 
 **Prerequisites:** Epic 22 (styling foundation)
 
@@ -1695,12 +1764,43 @@ So that raising foals has emotionally satisfying payoff moments.
 
 ---
 
+### Story 29.4: Adult Horse Detail Page Restyle
+
+As a player,
+I want the horse detail page to display my horse's stats, traits, and history in full Celestial Night style,
+So that the most important page in the game matches the atmosphere of the rest of the redesign.
+
+**Acceptance Criteria:**
+
+**Given** the `.celestial` class is active
+**When** I navigate to a horse detail page (`/horses/:id`)
+**Then** 10 stat bars render as `StatBar` game components with numeric overlay values
+**And** trait badges render as `GameBadge` components with rarity-appropriate styling
+**And** the `CareStatusStrip` renders below the horse name with the appropriate `NarrativeChip` variant
+**And** the tabbed sections (Overview, Pedigree, Health & Vet, Training History, Stud/Sale) use `GoldTabs`
+**And** the sticky bottom action bar (Feed / Train / Breed / Assign / List) uses the gold `default` button variant
+**And** the horse name hero text renders in Cinzel Decorative (`--font-display`) at ≥ 28px
+**And** the `PageBackground` scene is `horse-detail`
+**And** the page is responsive: stat bars stack vertically on mobile, display in two columns on desktop
+**And** the file has zero ESLint errors
+
+**Technical Notes:**
+
+- Target file: `frontend/src/pages/HorseDetailPage.tsx` (existing)
+- Replace `Card` with `FrostedPanel`, `Tabs` with `GoldTabs`, `Badge` with `GameBadge`, `Progress` with `StatBar`
+- CareStatusStrip and NarrativeChip already exist — wire them in if not yet connected
+- Sticky action bar: `position: sticky; bottom: 0` within the page scroll container; uses `.glass-panel-heavy` background to float above content
+
+**Prerequisites:** Story 29.1, Epic 22
+
+---
+
 **Epic 29 Complete: Foal Development Overhaul**
 
-Stories Created: 3
-FR Coverage: FR-CN9 (foal development), FR-CN10 (CinematicMoment), FR-CN15 (horse detail)
-Technical Context: New DevelopmentTracker, activity UI integration, milestone CinematicMoment
-UX Patterns: UX §10.6 (Foal Development), Wireframe 8 (Foal Development)
+Stories Created: 4
+FR Coverage: FR-CN9 (foal development), FR-CN10 (CinematicMoment), FR-CN15 (horse detail — foal detail 29.1 + adult detail 29.4)
+Technical Context: New DevelopmentTracker, activity UI integration, milestone CinematicMoment, HorseDetailPage restyle
+UX Patterns: UX §10.6 (Foal Development), §10.7 (Horse Detail), Wireframe 7, Wireframe 8
 
 ---
 
@@ -1903,7 +2003,7 @@ So that the game loads fast on all devices including mobile on 4G.
 **Epic 30 Complete: Polish & Consistency**
 
 Stories Created: 6
-FR Coverage: FR-CN17 (accessibility), FR-CN18 (performance), FR-CN2 (design system completeness)
+FR Coverage: FR-CN17 (accessibility), FR-CN18 (performance)
 Technical Context: All component files, Lighthouse CI, bundle analysis
 UX Patterns: UX §7 (Accessibility), §13 (Empty States), Pre-mortem risk prevention
 
@@ -1911,28 +2011,28 @@ UX Patterns: UX §7 (Accessibility), §13 (Empty States), Pre-mortem risk preven
 
 ## FR Coverage Matrix
 
-| FR ID   | Requirement                                                                                                                         | Epic(s)        | Story(ies)                     | Status     |
-| ------- | ----------------------------------------------------------------------------------------------------------------------------------- | -------------- | ------------------------------ | ---------- |
-| FR-CN1  | Complete Celestial Night theme across all 29 pages                                                                                  | 22, 30         | 22.1-22.7, 30.5                | ✅ Covered |
-| FR-CN2  | 8 core components covering 90% of surfaces                                                                                          | 22, 30         | 22.3-22.6, 30.1, 30.3          | ✅ Covered |
-| FR-CN3  | Cinzel/Inter font system                                                                                                            | 22             | 22.1                           | ✅ Covered |
-| FR-CN4  | `.celestial` CSS class scoping + QA toggle                                                                                          | 22             | 22.2                           | ✅ Covered |
-| FR-CN5  | Hub dashboard with NextActionsBar                                                                                                   | 23             | 23.1, 23.3                     | ✅ Covered |
-| FR-CN6  | WhileYouWereGone return overlay                                                                                                     | 24             | 24.1, 24.2, 24.3               | ✅ Covered |
-| FR-CN7  | Server-seeded next actions                                                                                                          | 23             | 23.1, 23.4                     | ✅ Covered |
-| FR-CN8  | Competition model: 7-day windows + overnight execution                                                                              | BA             | BA.1-BA.4                      | ✅ Covered |
-| FR-CN9  | Foal development: 0-2yr lifecycle                                                                                                   | BB, 29         | BB.1-BB.4, 29.1-29.2           | ✅ Covered |
-| FR-CN10 | CinematicMoment: lifetime-first only                                                                                                | BA, 27, 28, 29 | BA.5, 27.3, 28.3, 29.3         | ✅ Covered |
-| FR-CN11 | Onboarding rebuild with BreedSelector                                                                                               | 25             | 25.1-25.3                      | ✅ Covered |
-| FR-CN12 | Training flow with DisciplineSelector + CooldownTimer                                                                               | 26             | 26.1-26.3                      | ✅ Covered |
-| FR-CN13 | Competition flow with scouting + results                                                                                            | 27             | 27.1-27.4                      | ✅ Covered |
-| FR-CN14 | Breeding flow with CompatibilityPreview                                                                                             | 28             | 28.1-28.2                      | ✅ Covered |
-| FR-CN15 | Horse detail with stat bars + tabs + action bar                                                                                     | 29             | 29.1 (foal detail integration) | ✅ Covered |
-| FR-CN16 | Navigation: sidebar/hamburger/bottom nav                                                                                            | 22             | 22.7 (navigation restyle)      | ✅ Covered |
-| FR-CN17 | WCAG 2.1 AA accessibility                                                                                                           | 30             | 30.5                           | ✅ Covered |
-| FR-CN18 | Performance: < 400KB, LCP < 2.5s                                                                                                    | 30             | 30.6                           | ✅ Covered |
-| FR-CN19 | Game Component Library: button.tsx restyled; 12 game components in components/ui/game/; 12 shadcn files stripped to Radix skeletons | 22             | 22.5, 22.6                     | ✅ Covered |
-| FR-CN20 | User.settings.milestones JSONB                                                                                                      | BA             | BA.5                           | ✅ Covered |
+| FR ID   | Requirement                                                                                                                         | Epic(s)        | Story(ies)                                            | Status     |
+| ------- | ----------------------------------------------------------------------------------------------------------------------------------- | -------------- | ----------------------------------------------------- | ---------- |
+| FR-CN1  | Complete Celestial Night theme across all 29 pages                                                                                  | 22, 30         | 22.1-22.7, 30.5                                       | ✅ Covered |
+| FR-CN2  | 12 core game components in `components/ui/game/`; 12 shadcn files stripped to Radix skeletons                                       | 22             | 22.5, 22.6                                            | ✅ Covered |
+| FR-CN3  | Cinzel/Inter font system                                                                                                            | 22             | 22.1                                                  | ✅ Covered |
+| FR-CN4  | `.celestial` CSS class scoping + QA toggle                                                                                          | 22             | 22.2                                                  | ✅ Covered |
+| FR-CN5  | Hub dashboard with NextActionsBar                                                                                                   | 23             | 23.1, 23.3                                            | ✅ Covered |
+| FR-CN6  | WhileYouWereGone return overlay                                                                                                     | 24             | 24.1, 24.2, 24.3                                      | ✅ Covered |
+| FR-CN7  | Server-seeded next actions                                                                                                          | 23             | 23.1, 23.4                                            | ✅ Covered |
+| FR-CN8  | Competition model: 7-day windows + overnight execution                                                                              | BA             | BA.1-BA.4                                             | ✅ Covered |
+| FR-CN9  | Foal development: 0-2yr lifecycle                                                                                                   | BB, 29         | BB.1-BB.4, 29.1-29.2                                  | ✅ Covered |
+| FR-CN10 | CinematicMoment: lifetime-first only                                                                                                | BA, 27, 28, 29 | BA.5, 27.3, 28.3, 29.3                                | ✅ Covered |
+| FR-CN11 | Onboarding rebuild with BreedSelector                                                                                               | 25             | 25.1-25.3                                             | ✅ Covered |
+| FR-CN12 | Training flow with DisciplineSelector + CooldownTimer                                                                               | 26             | 26.1-26.3                                             | ✅ Covered |
+| FR-CN13 | Competition flow with scouting + results                                                                                            | 27             | 27.1-27.4                                             | ✅ Covered |
+| FR-CN14 | Breeding flow with CompatibilityPreview                                                                                             | 28             | 28.1-28.2                                             | ✅ Covered |
+| FR-CN15 | Horse detail with stat bars + tabs + action bar (adult horses); foal detail integration                                             | 29             | 29.1 (foal detail), 29.4 (adult horse detail restyle) | ✅ Covered |
+| FR-CN16 | Navigation: sidebar/hamburger/bottom nav, breadcrumbs, PageBackground integration                                                   | 22             | 22.8                                                  | ✅ Covered |
+| FR-CN17 | WCAG 2.1 AA accessibility                                                                                                           | 30             | 30.5                                                  | ✅ Covered |
+| FR-CN18 | Performance: < 400KB, LCP < 2.5s                                                                                                    | 30             | 30.6                                                  | ✅ Covered |
+| FR-CN19 | Game Component Library: button.tsx restyled; 12 game components in components/ui/game/; 12 shadcn files stripped to Radix skeletons | 22             | 22.5, 22.6                                            | ✅ Covered |
+| FR-CN20 | User.settings.milestones JSONB                                                                                                      | BA             | BA.5                                                  | ✅ Covered |
 
 **Coverage: 20/20 FRs mapped to specific stories (100%)**
 
@@ -1974,33 +2074,33 @@ UX Patterns: UX §7 (Accessibility), §13 (Empty States), Pre-mortem risk preven
 
 ## Story Quality Validation
 
-| Check                                     | Result                                                             |
-| ----------------------------------------- | ------------------------------------------------------------------ |
-| Each epic delivers user value?            | ✅ All 11 epics have clear user value statements                   |
-| All 20 FRs covered?                       | ✅ 20/20 (100%)                                                    |
-| Stories implement architecture decisions? | ✅ All ADRs from tech spec covered                                 |
-| Stories follow UX design patterns?        | ✅ All 14 UX sections mapped                                       |
-| Stories sized for single dev session?     | ✅ Max story is 22.6 (12 shadcn components) — split into 3 sub-PRs |
-| No forward dependencies?                  | ✅ All prerequisites reference only prior stories/epics            |
-| Foundation enables all subsequent work?   | ✅ Epic 22 is the single entry point                               |
-| Acceptance criteria are testable?         | ✅ BDD format with Given/When/Then throughout                      |
+| Check                                     | Result                                                                               |
+| ----------------------------------------- | ------------------------------------------------------------------------------------ |
+| Each epic delivers user value?            | ✅ All 11 epics have clear user value statements                                     |
+| All 20 FRs covered?                       | ✅ 20/20 (100%)                                                                      |
+| Stories implement architecture decisions? | ✅ All ADRs from tech spec covered                                                   |
+| Stories follow UX design patterns?        | ✅ All 14 UX sections mapped                                                         |
+| Stories sized for single dev session?     | ✅ Max story is 22.6 (12 game components) — split into 3 sub-PRs in dependency order |
+| No forward dependencies?                  | ✅ All prerequisites reference only prior stories/epics                              |
+| Foundation enables all subsequent work?   | ✅ Epic 22 is the single entry point                                                 |
+| Acceptance criteria are testable?         | ✅ BDD format with Given/When/Then throughout                                        |
 
 ---
 
 ## Summary
 
-| Metric                    | Value                                                                                         |
-| ------------------------- | --------------------------------------------------------------------------------------------- |
-| **Total Epics**           | 11 (22-30 frontend + BACKEND-A + BACKEND-B)                                                   |
-| **Total Stories**         | 35                                                                                            |
-| **FR Coverage**           | 20/20 (100%)                                                                                  |
-| **New Components**        | 13 custom feature components + 12 game components (components/ui/game/) + button.tsx restyled |
-| **New Backend Endpoints** | 5 (NextActions, WYAG, show create/browse/enter)                                               |
-| **Schema Changes**        | 2 (Show lifecycle, milestones JSONB)                                                          |
-| **Parallelizable Epics**  | BACKEND-A, BACKEND-B, 25, 26, 28 (all only depend on Epic 22)                                 |
-| **Critical Path**         | Epic 22 → 23 → 24 (hub flow); Epic 22 + BA → 27 (competition); Epic 22 + BB → 29 (foal)       |
-| **Entry Point**           | Epic 22 (no dependencies)                                                                     |
-| **Final Gate**            | Epic 30 (a11y audit + bundle audit)                                                           |
+| Metric                    | Value                                                                                                                                                                                                            |
+| ------------------------- | ---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| **Total Epics**           | 11 (22-30 frontend + BACKEND-A + BACKEND-B)                                                                                                                                                                      |
+| **Total Stories**         | 37 (+Story 22.8 navigation, +Story 29.4 adult horse detail)                                                                                                                                                      |
+| **FR Coverage**           | 20/20 (100%)                                                                                                                                                                                                     |
+| **New Components**        | 13 custom feature components + 12 game components (components/ui/game/) + PageBackground.tsx + SidebarNav.tsx + MobileNav.tsx + Breadcrumbs.tsx; button.tsx already live (gold standard confirmed on login page) |
+| **New Backend Endpoints** | 5 (NextActions, WYAG, show create/browse/enter)                                                                                                                                                                  |
+| **Schema Changes**        | 2 (Show lifecycle, milestones JSONB)                                                                                                                                                                             |
+| **Parallelizable Epics**  | BACKEND-A, BACKEND-B, 25, 26, 28 (all only depend on Epic 22)                                                                                                                                                    |
+| **Critical Path**         | Epic 22 → 23 → 24 (hub flow); Epic 22 + BA → 27 (competition); Epic 22 + BB → 29 (foal)                                                                                                                          |
+| **Entry Point**           | Epic 22 (no dependencies)                                                                                                                                                                                        |
+| **Final Gate**            | Epic 30 (a11y audit + bundle audit)                                                                                                                                                                              |
 
 **Ready for Phase 4: Sprint Planning and Development Implementation**
 
