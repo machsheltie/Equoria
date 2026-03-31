@@ -124,7 +124,8 @@ const PageHero: React.FC<PageHeroProps> = ({
                 className="text-2xl sm:text-3xl font-bold text-[var(--gold-400)] tracking-wide"
                 style={{
                   fontFamily: 'var(--font-heading)',
-                  textShadow: '0 0 30px rgba(201, 162, 39, 0.3)',
+                  textShadow:
+                    '0 1px 6px rgba(0,0,0,1), 0 0 20px rgba(0,0,0,0.9), 0 0 30px rgba(201,162,39,0.3)',
                 }}
               >
                 {title}
