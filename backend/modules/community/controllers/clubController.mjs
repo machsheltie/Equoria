@@ -204,6 +204,14 @@ export async function nominate(req, res) {
     if (election.status === 'closed')
       return res.status(400).json({ success: false, message: 'Election is closed' });
 
+    const membership = await prisma.clubMembership.findUnique({
+      where: { clubId_userId: { clubId: election.clubId, userId } },
+    });
+    if (!membership)
+      return res
+        .status(403)
+        .json({ success: false, message: 'You must be a club member to nominate' });
+
     const existing = await prisma.clubCandidate.findUnique({
       where: { electionId_userId: { electionId, userId } },
     });
@@ -231,6 +239,12 @@ export async function vote(req, res) {
     if (!election) return res.status(404).json({ success: false, message: 'Election not found' });
     if (election.status !== 'open')
       return res.status(400).json({ success: false, message: 'Election is not open' });
+
+    const membership = await prisma.clubMembership.findUnique({
+      where: { clubId_userId: { clubId: election.clubId, userId: voterId } },
+    });
+    if (!membership)
+      return res.status(403).json({ success: false, message: 'You must be a club member to vote' });
 
     const candidate = await prisma.clubCandidate.findUnique({ where: { id: candidateId } });
     if (!candidate || candidate.electionId !== electionId) {

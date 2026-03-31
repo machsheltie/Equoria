@@ -305,14 +305,17 @@ So that every page feels visually distinct and immersive — not a uniform repea
 
 **Technical Notes:**
 
+- `useResponsiveBackground` hook **already exists** at `frontend/src/hooks/useResponsiveBackground.ts` — selects the closest-ratio webp from 6 aspect variants (21:9, 16:9, 3:2, 4:3, 1:1, 9:16), re-evaluates on resize. **Do not recreate this logic.**
+- Extend the hook to accept an optional `scene?: SceneKey` parameter. When provided, resolve paths as `/images/backgrounds/{scene}/bg-{ratio}.webp`. When absent, fall back to the current generic `/images/bg-{ratio}.webp` paths — backward-compatible.
 - Replace `components/layout/StarField.tsx` and `components/layout/StarfieldBackground.tsx` with a single `components/layout/PageBackground.tsx`
-- Props: `{ scene: SceneKey }` where `SceneKey` is the union of keys in the scene map above
-- Mount in the root layout (App.tsx or DashboardLayout) — pass `scene` based on current route
-- `PageBackground` renders as a fixed-position `<picture>` element at `z-[var(--z-below)]` (-1)
-- CSS overlay: `::after` pseudo-element with `rgba(5,10,20,0.45)` at `z-[var(--z-below)]` + 1
-- Fallback: if asset file does not exist yet, CSS `background: linear-gradient(180deg, #0a0e1a 0%, #111827 100%)` ensures no broken layout
-- Art assets are owner-provided Photoshop exports — commit WebP + JPEG pairs to `frontend/public/assets/backgrounds/`
-- Remove all starfield CSS keyframes (`starfield-drift-sm/md/lg`) and `.starfield-*` classes from `index.css` once `PageBackground` is in place — they are superseded
+- Props: `{ scene?: SceneKey }` — when omitted, the generic aspect-ratio backgrounds are used
+- Mount in the root layout; pass `scene` based on current route (see scene map above)
+- `PageBackground` renders as a fixed-position `<div>` at `z-[var(--z-below)]` (-1) with `backgroundImage: url(bgPath)`, `backgroundSize: cover`, `backgroundPosition: center`
+- Readability veil: an `::after` pseudo-element covering the full layer with `rgba(5,10,20,0.45)`
+- Fallback: `backgroundColor: var(--bg-deep-space)` (`#0a0e1a`) when asset doesn't yet exist
+- Existing assets already in place: generic ratio set at `/images/bg-*.webp`; `/images/bg-horse-detail.webp` and `/images/bg-stable.webp` map to `horse-detail` and `stable` scenes. `equorialogin.png` is the current login background — use it for `auth` scene until a WebP export is ready.
+- As new Photoshop scenes are painted, export as WebP and commit to `/images/backgrounds/{scene}/bg-{ratio}.webp`
+- Remove all `.starfield-*` CSS classes and `starfield-drift-*` keyframes from `index.css` once `PageBackground` is live
 
 **Prerequisites:** Story 22.2 (CelestialThemeProvider)
 

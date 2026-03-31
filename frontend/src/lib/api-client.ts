@@ -1284,11 +1284,17 @@ export interface TackRepairResult {
   remainingMoney: number;
 }
 
+export interface TackUnequipDecorationResult {
+  horse: { id: number; name: string; tack: Record<string, unknown> };
+  removedItemId: string;
+}
+
 /**
  * Tack Shop API surface
- *   GET  /api/tack-shop/inventory → TackInventoryData
- *   POST /api/tack-shop/purchase  → TackPurchaseResult
- *   POST /api/tack-shop/repair    → TackRepairResult
+ *   GET  /api/tack-shop/inventory              → TackInventoryData
+ *   POST /api/tack-shop/purchase               → TackPurchaseResult
+ *   POST /api/tack-shop/repair                 → TackRepairResult
+ *   POST /api/tack-shop/unequip-decoration     → TackUnequipDecorationResult
  */
 export const tackShopApi = {
   getInventory: () => apiClient.get<TackInventoryData>('/api/v1/tack-shop/inventory'),
@@ -1296,6 +1302,8 @@ export const tackShopApi = {
     apiClient.post<TackPurchaseResult>('/api/v1/tack-shop/purchase', data),
   repairItem: (data: { horseId: number; category: string }) =>
     apiClient.post<TackRepairResult>('/api/v1/tack-shop/repair', data),
+  unequipDecoration: (data: { horseId: number; itemId: string }) =>
+    apiClient.post<TackUnequipDecorationResult>('/api/v1/tack-shop/unequip-decoration', data),
 };
 
 // ── Farrier types ─────────────────────────────────────────────────────────────
@@ -1470,19 +1478,19 @@ export const forumApi = {
   getThreads: (section?: ForumSection, page = 1) => {
     const params = new URLSearchParams({ page: String(page) });
     if (section) params.set('section', section);
-    return apiClient.get<ThreadsResponse>(`/api/forum/threads?${params.toString()}`);
+    return apiClient.get<ThreadsResponse>(`/api/v1/forum/threads?${params.toString()}`);
   },
 
-  getThread: (id: number) => apiClient.get<ThreadDetailResponse>(`/api/forum/threads/${id}`),
+  getThread: (id: number) => apiClient.get<ThreadDetailResponse>(`/api/v1/forum/threads/${id}`),
 
   createThread: (req: CreateThreadRequest) =>
     apiClient.post<{ thread: ForumThread; firstPost: ForumPost }>('/api/v1/forum/threads', req),
 
   createPost: (threadId: number, content: string) =>
-    apiClient.post<{ post: ForumPost }>(`/api/forum/threads/${threadId}/posts`, { content }),
+    apiClient.post<{ post: ForumPost }>(`/api/v1/forum/threads/${threadId}/posts`, { content }),
 
   incrementView: (threadId: number) =>
-    apiClient.post<Record<string, never>>(`/api/forum/threads/${threadId}/view`, {}),
+    apiClient.post<Record<string, never>>(`/api/v1/forum/threads/${threadId}/view`, {}),
 };
 
 // ── Direct Message types ─────────────────────────────────────────────────────
@@ -1552,10 +1560,11 @@ export const messagesApi = {
   getInbox: () => apiClient.get<InboxResponse>('/api/v1/messages/inbox'),
   getSent: () => apiClient.get<InboxResponse>('/api/v1/messages/sent'),
   getUnreadCount: () => apiClient.get<{ count: number }>('/api/v1/messages/unread-count'),
-  getMessage: (id: number) => apiClient.get<{ message: DirectMessage }>(`/api/messages/${id}`),
+  getMessage: (id: number) => apiClient.get<{ message: DirectMessage }>(`/api/v1/messages/${id}`),
   sendMessage: (req: SendMessageRequest) =>
     apiClient.post<{ message: DirectMessage }>('/api/v1/messages', req),
-  markRead: (id: number) => apiClient.patch<{ success: boolean }>(`/api/messages/${id}/read`, {}),
+  markRead: (id: number) =>
+    apiClient.patch<{ success: boolean }>(`/api/v1/messages/${id}/read`, {}),
 };
 
 // ── Club Types ─────────────────────────────────────────────────────────────────
@@ -1618,24 +1627,24 @@ export const clubsApi = {
     if (type) params.set('type', type);
     if (category) params.set('category', category);
     const qs = params.toString();
-    return apiClient.get<{ clubs: Club[] }>(`/api/clubs${qs ? `?${qs}` : ''}`);
+    return apiClient.get<{ clubs: Club[] }>(`/api/v1/clubs${qs ? `?${qs}` : ''}`);
   },
   getMyClubs: () => apiClient.get<{ memberships: ClubMembership[] }>('/api/v1/clubs/mine'),
   getClub: (id: number) =>
-    apiClient.get<{ club: Club & { members: ClubMembership[] } }>(`/api/clubs/${id}`),
+    apiClient.get<{ club: Club & { members: ClubMembership[] } }>(`/api/v1/clubs/${id}`),
   createClub: (payload: { name: string; type: ClubType; category: string; description: string }) =>
     apiClient.post<{ club: Club }>('/api/v1/clubs', payload),
   joinClub: (id: number) =>
-    apiClient.post<{ membership: ClubMembership }>(`/api/clubs/${id}/join`, {}),
-  leaveClub: (id: number) => apiClient.delete<void>(`/api/clubs/${id}/leave`),
+    apiClient.post<{ membership: ClubMembership }>(`/api/v1/clubs/${id}/join`, {}),
+  leaveClub: (id: number) => apiClient.delete<void>(`/api/v1/clubs/${id}/leave`),
   getElections: (clubId: number) =>
-    apiClient.get<{ elections: ClubElection[] }>(`/api/clubs/${clubId}/elections`),
+    apiClient.get<{ elections: ClubElection[] }>(`/api/v1/clubs/${clubId}/elections`),
   createElection: (
     clubId: number,
     payload: { position: string; startsAt: string; endsAt: string }
-  ) => apiClient.post<{ election: ClubElection }>(`/api/clubs/${clubId}/elections`, payload),
+  ) => apiClient.post<{ election: ClubElection }>(`/api/v1/clubs/${clubId}/elections`, payload),
   nominate: (electionId: number, statement: string) =>
-    apiClient.post<void>(`/api/clubs/elections/${electionId}/nominate`, { statement }),
+    apiClient.post<void>(`/api/v1/clubs/elections/${electionId}/nominate`, { statement }),
   vote: (electionId: number, candidateId: number) =>
     apiClient.post<void>(`/api/clubs/elections/${electionId}/vote`, { candidateId }),
   getResults: (electionId: number) =>
@@ -1972,6 +1981,15 @@ export const authApi = {
       newPassword,
     });
   },
+};
+
+// ── User Search ───────────────────────────────────────────────────────────────
+
+export const usersApi = {
+  search: (username: string) =>
+    apiClient.get<{ users: { id: string; username: string }[] }>(
+      `/api/v1/users/search?username=${encodeURIComponent(username)}`
+    ),
 };
 
 /**

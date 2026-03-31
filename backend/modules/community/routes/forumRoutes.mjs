@@ -62,7 +62,12 @@ router.post(
       .withMessage('title is required')
       .isLength({ max: 200 })
       .withMessage('title max 200 chars'),
-    body('content').trim().notEmpty().withMessage('content is required'),
+    body('content')
+      .trim()
+      .notEmpty()
+      .withMessage('content is required')
+      .isLength({ max: 10000 })
+      .withMessage('content max 10000 chars'),
     body('tags').optional().isArray().withMessage('tags must be an array'),
     handleValidation,
   ],
@@ -71,7 +76,15 @@ router.post(
 
 router.post(
   '/threads/:id/posts',
-  [body('content').trim().notEmpty().withMessage('content is required'), handleValidation],
+  [
+    body('content')
+      .trim()
+      .notEmpty()
+      .withMessage('content is required')
+      .isLength({ max: 10000 })
+      .withMessage('content max 10000 chars'),
+    handleValidation,
+  ],
   createPost,
 );
 

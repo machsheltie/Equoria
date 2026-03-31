@@ -14,6 +14,10 @@
 import prisma from '../../../../packages/database/prismaClient.mjs';
 import logger from '../../../utils/logger.mjs';
 
+/** In-memory dedup map: key = `${userId}:${threadId}`, value = timestamp of last view increment */
+const _viewLog = new Map();
+const VIEW_COOLDOWN_MS = 60 * 60 * 1000; // 1 hour
+
 const VALID_SECTIONS = ['general', 'art', 'sales', 'services', 'venting'];
 const THREADS_PER_PAGE = 20;
 
@@ -160,11 +164,19 @@ export async function createPost(req, res) {
 
 /**
  * POST /api/forum/threads/:id/view
- * Increments viewCount by 1.
+ * Increments viewCount by 1, deduplicated per user per thread per hour.
  */
 export async function incrementView(req, res) {
   const id = parseInt(req.params.id, 10);
+  const userId = req.user.id;
   if (!id || id <= 0) return res.status(400).json({ success: false, message: 'Invalid thread ID' });
+
+  const key = `${userId}:${id}`;
+  const last = _viewLog.get(key);
+  if (last && Date.now() - last < VIEW_COOLDOWN_MS) {
+    return res.json({ success: true });
+  }
+  _viewLog.set(key, Date.now());
 
   try {
     await prisma.forumThread.update({

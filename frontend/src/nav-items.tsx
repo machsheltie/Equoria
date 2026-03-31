@@ -42,6 +42,7 @@ const CraftingPage = lazy(() => import('./pages/CraftingPage'));
 // Epic 11 — Community pages
 const CommunityPage = lazy(() => import('./pages/CommunityPage'));
 const MessageBoardPage = lazy(() => import('./pages/MessageBoardPage'));
+const MessageThreadPage = lazy(() => import('./pages/MessageThreadPage'));
 const ClubsPage = lazy(() => import('./pages/ClubsPage'));
 const MessagesPage = lazy(() => import('./pages/MessagesPage'));
 
@@ -195,6 +196,12 @@ export const navItems = [
     to: '/message-board',
     icon: null,
     Page: MessageBoardPage,
+  },
+  {
+    title: 'Thread',
+    to: '/message-board/:threadId',
+    icon: null,
+    Page: MessageThreadPage,
   },
   {
     title: 'Clubs',

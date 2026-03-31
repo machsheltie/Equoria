@@ -14,6 +14,7 @@ import {
   updateUserController,
   deleteUserController,
   addXpController,
+  searchUsers,
 } from '../controllers/userController.mjs';
 import { authenticateToken } from '../../../middleware/auth.mjs';
 import { queryRateLimiter, mutationRateLimiter } from '../../../middleware/rateLimiting.mjs';
@@ -108,6 +109,22 @@ const requireSelfAccess = (idParam = 'id') => {
     next();
   };
 };
+
+/** GET /api/users/search?username= — find users by username prefix (max 10) */
+router.get('/search', queryRateLimiter, authenticateToken, async (req, res) => {
+  const q = (req.query.username ?? '').trim();
+  if (!q || q.length < 2) {
+    return res
+      .status(400)
+      .json({ success: false, message: 'username query must be at least 2 chars' });
+  }
+  try {
+    const users = await searchUsers(q);
+    return res.json({ success: true, data: { users } });
+  } catch {
+    return res.status(500).json({ success: false, message: 'Search failed' });
+  }
+});
 
 /**
  * @swagger

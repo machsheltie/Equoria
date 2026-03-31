@@ -300,9 +300,10 @@ interface NextAction {
 
 #### ADR-7: Painted Backgrounds — PageBackground Component
 
-**Decision:** Replace CSS starfield (`StarfieldBackground.tsx`) with a `PageBackground.tsx` component that renders owner-provided hand-painted WebP/JPEG scenes per route.
-**Rationale:** The owner (Heirr) is creating hand-painted backgrounds in Photoshop. CSS-generated starfields were a placeholder approach. Painted backgrounds deliver a stronger fantasy identity that cannot be replicated with CSS box-shadows. The component provides a clean interface: pass a `scene` key, get the correct background. Deep navy gradient fallback ensures no broken layout during art asset production.
-**Migration:** `StarField.tsx` and `StarfieldBackground.tsx` are deleted once `PageBackground.tsx` is in place. All starfield CSS in `index.css` is removed.
+**Decision:** Replace CSS starfield (`StarfieldBackground.tsx`) with a `PageBackground.tsx` component that renders owner-provided hand-painted WebP scenes per route.
+**Rationale:** The owner (Heirr) is creating hand-painted backgrounds in Photoshop. CSS-generated starfields were a placeholder. Painted backgrounds deliver a stronger fantasy identity. Multiple aspect-ratio variants (21:9 through 9:16) are already in production. A `useResponsiveBackground` hook already exists at `hooks/useResponsiveBackground.ts` — it selects the closest-ratio image and re-evaluates on resize. `PageBackground.tsx` composes over this hook and adds an optional `scene` dimension.
+**Existing assets (already committed):** `/images/bg-{ratio}.webp` generic set; `/images/bg-horse-detail.webp`; `/images/bg-stable.webp`; `equorialogin.png` (auth page).
+**Migration:** `StarField.tsx` and `StarfieldBackground.tsx` deleted once `PageBackground.tsx` is live. All `.starfield-*` CSS and `starfield-drift-*` keyframes removed from `index.css`.
 
 ---
 

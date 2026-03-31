@@ -2,14 +2,9 @@
  * MessageBoardPage — Community Message Board (Epic 11 + 19B-1)
  *
  * Five-section community board backed by the live /api/forum API.
- *   1. 💬 General Chat
- *   2. 🎨 Art & Photography
- *   3. 🐴 Horse Sales
- *   4. 🛠️ Services
- *   5. 😤 Venting
+ * Features: thread list (paginated), create thread modal, clickable thread rows.
  *
- * Data source: ForumThread + ForumPost via useThreads() React Query hook.
- * Uses Celestial Night theme.
+ * Data source: ForumThread + ForumPost via useThreads() / useCreateThread() hooks.
  */
 
 import React, { useState, useCallback } from 'react';
@@ -22,11 +17,13 @@ import {
   ChevronRight,
   PlusCircle,
   Eye,
+  ChevronLeft,
 } from 'lucide-react';
 import PageHero from '@/components/layout/PageHero';
-import { toast } from 'sonner';
-import { useThreads } from '@/hooks/api/useForum';
+import { useThreads, useCreateThread } from '@/hooks/api/useForum';
 import type { ForumThread, ForumSection } from '@/lib/api-client';
+
+const THREADS_PER_PAGE = 20;
 
 const sectionConfig: Record<
   ForumSection,
@@ -74,7 +71,6 @@ const sectionAccent: Record<ForumSection, string> = {
 
 const sections: ForumSection[] = ['general', 'art', 'sales', 'services', 'venting'];
 
-/** Format ISO date string as relative time (e.g. "5 min ago") */
 function relativeTime(iso: string): string {
   const diff = Date.now() - new Date(iso).getTime();
   const m = Math.floor(diff / 60_000);
@@ -88,14 +84,35 @@ function relativeTime(iso: string): string {
 
 const MessageBoardPage: React.FC = () => {
   const [activeSection, setActiveSection] = useState<ForumSection>('general');
-  const handleNewPost = useCallback(() => {
-    toast.info('Coming in next update — post creation is on the way!');
-  }, []);
+  const [page, setPage] = useState(1);
+  const [showNewThread, setShowNewThread] = useState(false);
+  const [newTitle, setNewTitle] = useState('');
+  const [newContent, setNewContent] = useState('');
 
-  const { threads, total, isLoading, error } = useThreads(activeSection);
+  const { threads, total, isLoading, error } = useThreads(activeSection, page);
+  const createThread = useCreateThread();
 
+  const totalPages = Math.max(1, Math.ceil(total / THREADS_PER_PAGE));
   const pinnedThreads = threads.filter((t) => t.isPinned);
   const regularThreads = threads.filter((t) => !t.isPinned);
+
+  const handleSectionChange = useCallback((section: ForumSection) => {
+    setActiveSection(section);
+    setPage(1);
+  }, []);
+
+  const handlePost = async () => {
+    if (!newTitle.trim() || !newContent.trim() || createThread.isPending) return;
+    await createThread.mutateAsync({
+      section: activeSection,
+      title: newTitle.trim(),
+      content: newContent.trim(),
+    });
+    setShowNewThread(false);
+    setNewTitle('');
+    setNewContent('');
+    setPage(1);
+  };
 
   return (
     <div className="min-h-screen">
@@ -105,7 +122,6 @@ const MessageBoardPage: React.FC = () => {
         mood="default"
         icon={<MessageSquare className="w-7 h-7 text-[var(--gold-400)]" />}
       >
-        {/* Breadcrumb + New Post */}
         <div className="flex items-center justify-between">
           <div className="flex items-center gap-2 text-sm text-[var(--text-muted)]">
             <Link to="/" className="hover:text-[var(--cream)] transition-colors">
@@ -120,9 +136,8 @@ const MessageBoardPage: React.FC = () => {
           </div>
           <button
             type="button"
-            onClick={handleNewPost}
-            className="flex items-center gap-2 px-4 py-2 rounded-xl bg-violet-600/10 border border-violet-500/20 text-violet-400/60 text-sm font-medium hover:text-violet-400/80 transition-colors"
-            title="Coming in next update"
+            onClick={() => setShowNewThread(true)}
+            className="flex items-center gap-2 px-4 py-2 rounded-xl bg-violet-600/20 border border-violet-500/30 text-violet-400 text-sm font-medium hover:bg-violet-600/30 transition-colors"
             data-testid="new-post-button"
           >
             <PlusCircle className="w-4 h-4" />
@@ -146,7 +161,7 @@ const MessageBoardPage: React.FC = () => {
                 key={section}
                 role="tab"
                 aria-selected={activeSection === section}
-                onClick={() => setActiveSection(section)}
+                onClick={() => handleSectionChange(section)}
                 className={`flex items-center gap-2 px-4 py-2.5 rounded-lg text-sm font-medium transition-all whitespace-nowrap ${
                   activeSection === section
                     ? 'bg-white/10 text-white/90 shadow-sm'
@@ -190,7 +205,7 @@ const MessageBoardPage: React.FC = () => {
 
           {!isLoading && !error && threads.length === 0 && (
             <div className="text-center py-12 text-white/30">
-              No threads yet in {sectionConfig[activeSection].label}.
+              No threads yet in {sectionConfig[activeSection].label}. Be the first to post!
             </div>
           )}
 
@@ -211,7 +226,83 @@ const MessageBoardPage: React.FC = () => {
             </>
           )}
         </div>
+
+        {/* Pagination */}
+        {!isLoading && !error && totalPages > 1 && (
+          <div className="flex items-center justify-center gap-3 mt-6">
+            <button
+              type="button"
+              onClick={() => setPage((p) => Math.max(1, p - 1))}
+              disabled={page <= 1}
+              className="flex items-center gap-1 px-3 py-1.5 rounded-lg bg-white/5 border border-white/10 text-sm text-white/60 hover:text-white/90 disabled:opacity-30 disabled:cursor-not-allowed transition-colors"
+            >
+              <ChevronLeft className="w-4 h-4" />
+              Prev
+            </button>
+            <span className="text-sm text-white/40">
+              {page} / {totalPages}
+            </span>
+            <button
+              type="button"
+              onClick={() => setPage((p) => Math.min(totalPages, p + 1))}
+              disabled={page >= totalPages}
+              className="flex items-center gap-1 px-3 py-1.5 rounded-lg bg-white/5 border border-white/10 text-sm text-white/60 hover:text-white/90 disabled:opacity-30 disabled:cursor-not-allowed transition-colors"
+            >
+              Next
+              <ChevronRight className="w-4 h-4" />
+            </button>
+          </div>
+        )}
       </div>
+
+      {/* New Thread Modal */}
+      {showNewThread && (
+        <div className="fixed inset-0 bg-black/60 flex items-center justify-center z-50 px-4">
+          <div className="bg-[var(--space-dark,#0a1632)] border border-white/15 rounded-xl p-6 w-full max-w-lg shadow-2xl">
+            <h2 className="text-base font-semibold text-white mb-4">
+              New Thread in {sectionConfig[activeSection].label}
+            </h2>
+            <input
+              className="w-full bg-white/5 border border-white/10 rounded-lg px-3 py-2 text-sm text-white/80 placeholder:text-white/30 focus:outline-none focus:border-violet-500/40 mb-3"
+              placeholder="Thread title"
+              value={newTitle}
+              onChange={(e) => setNewTitle(e.target.value)}
+              maxLength={200}
+              data-testid="new-thread-title"
+            />
+            <textarea
+              className="w-full bg-white/5 border border-white/10 rounded-lg px-3 py-2 text-sm text-white/80 placeholder:text-white/30 focus:outline-none focus:border-violet-500/40 resize-none mb-4 h-32"
+              placeholder="Write your post…"
+              value={newContent}
+              onChange={(e) => setNewContent(e.target.value)}
+              maxLength={10000}
+              data-testid="new-thread-content"
+            />
+            <div className="flex gap-3 justify-end">
+              <button
+                type="button"
+                className="px-4 py-2 text-sm text-white/40 hover:text-white/70 transition-colors"
+                onClick={() => {
+                  setShowNewThread(false);
+                  setNewTitle('');
+                  setNewContent('');
+                }}
+              >
+                Cancel
+              </button>
+              <button
+                type="button"
+                disabled={!newTitle.trim() || !newContent.trim() || createThread.isPending}
+                onClick={handlePost}
+                className="px-4 py-2 rounded-lg bg-violet-600/20 border border-violet-500/30 text-violet-300 text-sm font-medium hover:bg-violet-600/30 transition-colors disabled:opacity-40 disabled:cursor-not-allowed"
+                data-testid="submit-new-thread"
+              >
+                {createThread.isPending ? 'Posting…' : 'Post Thread'}
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   );
 };
@@ -220,8 +311,9 @@ const ThreadRow: React.FC<{ thread: ForumThread; section: ForumSection }> = ({
   thread,
   section,
 }) => (
-  <div
-    className="group bg-white/5 border border-white/10 hover:border-white/20 rounded-xl p-4 transition-all"
+  <Link
+    to={`/message-board/${thread.id}`}
+    className="group block bg-white/5 border border-white/10 hover:border-white/20 rounded-xl p-4 transition-all"
     data-testid={`thread-${thread.id}`}
   >
     <div className="flex items-start gap-3">
@@ -280,7 +372,7 @@ const ThreadRow: React.FC<{ thread: ForumThread; section: ForumSection }> = ({
 
       <ChevronRight className="w-4 h-4 text-white/20 group-hover:text-white/50 transition-colors flex-shrink-0 mt-1" />
     </div>
-  </div>
+  </Link>
 );
 
 export default MessageBoardPage;

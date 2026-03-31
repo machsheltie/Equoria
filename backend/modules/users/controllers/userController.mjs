@@ -522,3 +522,16 @@ export const addXpController = async (req, res, next) => {
     next(error);
   }
 };
+
+/**
+ * Search users by username prefix (case-insensitive, max 10 results)
+ * Used by direct message compose to find recipients.
+ */
+export async function searchUsers(q) {
+  return prisma.user.findMany({
+    where: { username: { contains: q, mode: 'insensitive' } },
+    take: 10,
+    select: { id: true, username: true },
+    orderBy: { username: 'asc' },
+  });
+}
