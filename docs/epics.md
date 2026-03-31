@@ -256,6 +256,7 @@ So that Celestial Night styles can be progressively applied and instantly revert
 **And** the implementation uses `document.body.classList.add/remove` — either directly in `App.tsx` or in a dedicated `CelestialThemeProvider.tsx` rendered inside the `<Router>` boundary (required because `useSearchParams` needs Router context)
 **And** removing the class reverts ALL Celestial Night styles (kill switch)
 **And** existing users with no `equoria-theme` key in localStorage (pre-Epic-22 players) receive celestial on first load — an in-app toast displays once: "Equoria has a new look! Use ?theme=default in the URL to revert."
+**And** the toast shown-once state is tracked via `localStorage.setItem('equoria-theme-welcome-shown', 'true')` — checked before display, set immediately after, never shown again
 **And** the file has zero ESLint errors (`npm run lint` exits 0 in `frontend/`)
 
 **Technical Notes:**
@@ -287,34 +288,37 @@ So that every page feels visually distinct and immersive — not a uniform repea
 **And** content readability is preserved — a semi-transparent overlay (`rgba(5,10,20,0.45)`) sits between the background and content
 **And** `prefers-reduced-motion` has no impact (images are static)
 **And** background images are lazy-loaded on non-critical pages (hub and auth pages are preloaded; all others use `loading="lazy"`)
-**And** background images are served in WebP format with a JPEG fallback via `<picture>`
+**And** background images are served as WebP with a CSS-based JPEG fallback — `background-image: url('.jpg')` declared first (fallback for non-WebP browsers), then `background-image: url('.webp')` overriding it for all modern browsers. Both file types committed alongside each other.
 
-**Scene Map (asset paths):**
+**Scene Map:**
 
-| Scene key      | Pages using it                         | Asset path                              |
-| -------------- | -------------------------------------- | --------------------------------------- |
-| `auth`         | Login, Register, Forgot Password       | `/assets/backgrounds/auth.webp`         |
-| `hub`          | Dashboard (`/`)                        | `/assets/backgrounds/hub.webp`          |
-| `stable`       | My Stable, Horse List                  | `/assets/backgrounds/stable.webp`       |
-| `horse-detail` | Horse Detail page                      | `/assets/backgrounds/horse-detail.webp` |
-| `training`     | Training pages                         | `/assets/backgrounds/training.webp`     |
-| `competition`  | Competition browser, results           | `/assets/backgrounds/competition.webp`  |
-| `breeding`     | Breeding pages, Foal Development       | `/assets/backgrounds/breeding.webp`     |
-| `world`        | World Hub, Community, Clubs            | `/assets/backgrounds/world.webp`        |
-| `default`      | All other pages (settings, bank, etc.) | `/assets/backgrounds/default.webp`      |
+Not every page has a unique hand-painted scene — pages without dedicated art fall through to `default`. The `useResponsiveBackground` hook resolves the full file path by appending `bg-{ratio}.webp` to the scene directory.
+
+| Scene key      | Has unique painted art | Pages using it                         | Asset directory                     |
+| -------------- | ---------------------- | -------------------------------------- | ----------------------------------- |
+| `auth`         | ✅ Yes                 | Login, Register, Forgot Password       | `/images/backgrounds/auth/`         |
+| `hub`          | ✅ Yes                 | Dashboard (`/`)                        | `/images/backgrounds/hub/`          |
+| `stable`       | ✅ Yes                 | My Stable, Horse List                  | `/images/backgrounds/stable/`       |
+| `horse-detail` | ✅ Yes                 | Horse Detail page                      | `/images/backgrounds/horse-detail/` |
+| `training`     | ✅ Yes                 | Training pages                         | `/images/backgrounds/training/`     |
+| `competition`  | ✅ Yes                 | Competition browser, results           | `/images/backgrounds/competition/`  |
+| `breeding`     | ✅ Yes                 | Breeding pages, Foal Development       | `/images/backgrounds/breeding/`     |
+| `world`        | ✅ Yes                 | World Hub, Community, Clubs            | `/images/backgrounds/world/`        |
+| `default`      | ✅ Yes                 | All other pages (settings, bank, etc.) | `/images/backgrounds/default/`      |
+
+Full resolved path per request: `/images/backgrounds/{scene}/bg-{ratio}.webp` (e.g. `/images/backgrounds/stable/bg-16.9.webp`). As new Photoshop scenes are painted and exported, commit all 6 ratio variants to the scene directory. Until a scene's art is ready, `PageBackground` falls back to `var(--bg-deep-space)` gradient automatically.
 
 **Technical Notes:**
 
 - `useResponsiveBackground` hook **already exists** at `frontend/src/hooks/useResponsiveBackground.ts` — selects the closest-ratio webp from 6 aspect variants (21:9, 16:9, 3:2, 4:3, 1:1, 9:16), re-evaluates on resize. **Do not recreate this logic.**
-- Extend the hook to accept an optional `scene?: SceneKey` parameter. When provided, resolve paths as `/images/backgrounds/{scene}/bg-{ratio}.webp`. When absent, fall back to the current generic `/images/bg-{ratio}.webp` paths — backward-compatible.
+- Extend the hook to accept an optional `scene?: SceneKey` parameter. When provided, resolve paths as `/images/backgrounds/{scene}/bg-{ratio}.webp` and `/images/backgrounds/{scene}/bg-{ratio}.jpg` (JPEG fallback). When absent, fall back to the current generic `/images/bg-{ratio}.webp` paths — backward-compatible.
 - Replace `components/layout/StarField.tsx` and `components/layout/StarfieldBackground.tsx` with a single `components/layout/PageBackground.tsx`
-- Props: `{ scene?: SceneKey }` — when omitted, the generic aspect-ratio backgrounds are used
+- Props: `{ scene?: SceneKey }` — when omitted, generic aspect-ratio backgrounds are used
 - Mount in the root layout; pass `scene` based on current route (see scene map above)
-- `PageBackground` renders as a fixed-position `<div>` at `z-[var(--z-below)]` (-1) with `backgroundImage: url(bgPath)`, `backgroundSize: cover`, `backgroundPosition: center`
+- `PageBackground` renders as a fixed-position `<div>` at `z-[var(--z-below)]` (-1). Apply both `background-image: url(jpgPath)` then `background-image: url(webpPath)` in the inline style (or a CSS class pair) so modern browsers pick up WebP and older ones fall back to JPEG. `backgroundSize: cover`, `backgroundPosition: center`
 - Readability veil: an `::after` pseudo-element covering the full layer with `rgba(5,10,20,0.45)`
-- Fallback: `backgroundColor: var(--bg-deep-space)` (`#0a0e1a`) when asset doesn't yet exist
-- Existing assets already in place: generic ratio set at `/images/bg-*.webp`; `/images/bg-horse-detail.webp` and `/images/bg-stable.webp` map to `horse-detail` and `stable` scenes. `equorialogin.png` is the current login background — use it for `auth` scene until a WebP export is ready.
-- As new Photoshop scenes are painted, export as WebP and commit to `/images/backgrounds/{scene}/bg-{ratio}.webp`
+- Fallback: `backgroundColor: var(--bg-deep-space)` (`#0a0e1a`) for scenes whose art hasn't been painted yet — graceful degradation, no broken images
+- Asset delivery: as each Photoshop scene is finished, export as WebP + JPEG, resize to all 6 ratio variants, and commit to `/images/backgrounds/{scene}/`. Existing assets at `/images/bg-*.webp` and `equorialogin.png` remain as the current generic fallbacks until scene-specific art replaces them.
 - Remove all `.starfield-*` CSS classes and `starfield-drift-*` keyframes from `index.css` once `PageBackground` is live
 
 **Prerequisites:** Story 22.2 (CelestialThemeProvider)
@@ -422,7 +426,7 @@ So that the interface feels native to Equoria's world with no residual dashboard
 | **GlassInput**      | `game/GlassInput.tsx`      | `input.tsx`               | `--glass-bg` background, `--glass-border` border. Focus: gold ring. Placeholder: `--text-muted`.                                                                                                                                                                                                                                                                                                        |
 | **GlassTextarea**   | `game/GlassTextarea.tsx`   | `textarea.tsx`            | Matches GlassInput styling exactly. Resizable vertically only.                                                                                                                                                                                                                                                                                                                                          |
 | **StatBar**         | `game/StatBar.tsx`         | `progress.tsx`            | Audit existing component against these three criteria: (1) fill uses a gold gradient (`from-[var(--gold-primary)] to-[var(--gold-light)]`), not a flat color; (2) track uses `var(--bg-midnight)` or `var(--celestial-navy-900)`; (3) a glow (`box-shadow`) activates when value ≥ 100. If all three pass, no change needed — document the audit result in a code comment. If any fail, patch to match. |
-| **GameCheckbox**    | `game/GameCheckbox.tsx`    | `checkbox.tsx`            | Gold checkmark SVG on check. Navy bg, `--electric-blue` focus ring. Radix skeleton underneath.                                                                                                                                                                                                                                                                                                          |
+| **GameCheckbox**    | `game/GameCheckbox.tsx`    | `checkbox.tsx`            | Gold checkmark SVG on check. Navy bg, `--electric-blue-500` focus ring. Radix skeleton underneath.                                                                                                                                                                                                                                                                                                      |
 | **GameLabel**       | `game/GameLabel.tsx`       | `label.tsx`               | Inter font, `--text-secondary` color, optional `smallCaps` prop adds `font-variant: small-caps`.                                                                                                                                                                                                                                                                                                        |
 | **GameTooltip**     | `game/GameTooltip.tsx`     | `tooltip.tsx`             | Glass panel: `--bg-midnight` bg, `--gold-dim` border, `--text-primary` text. No `backdrop-filter` (single-blur rule).                                                                                                                                                                                                                                                                                   |
 | **GameScrollArea**  | `game/GameScrollArea.tsx`  | `scroll-area.tsx`         | Gold scrollbar thumb (`--gold-dim`, hover → `--gold-primary`), transparent track.                                                                                                                                                                                                                                                                                                                       |
@@ -496,6 +500,11 @@ So that the layout chrome matches the fantasy world at every viewport.
 **And** the active route item has a 2px gold left-border indicator
 **And** the sidebar can collapse to an icon-only rail (64px wide) via a toggle button
 **And** the sidebar toggle state persists to localStorage (`equoria-sidebar-collapsed`)
+
+**Given** the `.celestial` class is active on a tablet viewport (768–1023px)
+**When** any page loads
+**Then** the hamburger + top header layout renders (same as mobile)
+**And** the bottom navigation bar does NOT render (bottom nav is phone-only)
 
 **Given** the `.celestial` class is active on a mobile viewport (< 768px)
 **When** any page loads
