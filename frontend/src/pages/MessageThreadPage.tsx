@@ -92,7 +92,7 @@ const MessageThreadPage: React.FC = () => {
         mood="default"
         icon={<MessageSquare className="w-7 h-7 text-[var(--gold-400)]" />}
       >
-        <div className="flex items-center gap-2 text-sm text-[var(--text-muted)]">
+        <div className="flex items-center gap-2 text-sm text-[var(--cream)]/60">
           <Link to="/" className="hover:text-[var(--cream)] transition-colors">
             Home
           </Link>

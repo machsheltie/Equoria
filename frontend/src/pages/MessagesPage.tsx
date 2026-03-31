@@ -73,7 +73,7 @@ const MessagesPage: React.FC = () => {
       >
         {/* Breadcrumb + Compose */}
         <div className="flex items-center justify-between">
-          <div className="flex items-center gap-2 text-sm text-[var(--text-muted)]">
+          <div className="flex items-center gap-2 text-sm text-[var(--cream)]/60">
             <Link to="/" className="hover:text-[var(--cream)] transition-colors">
               Home
             </Link>
