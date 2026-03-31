@@ -523,7 +523,8 @@ describe('ProfilePage', () => {
       expect(displayNameInput).toHaveValue('johndoe');
     });
 
-    it('shows success message after successful update', async () => {
+    it('shows no inline success message after successful update (toast handles feedback)', async () => {
+      // AC-5: success feedback moved to toast notification (sonner) in useUpdateProfile hook
       vi.mocked(useAuthModule.useUpdateProfile).mockReturnValue({
         ...mockUpdateProfileMutation,
         isSuccess: true,
@@ -536,12 +537,16 @@ describe('ProfilePage', () => {
         </TestWrapper>
       );
 
-      expect(screen.getByText(/profile updated|success/i)).toBeInTheDocument();
+      // No inline success paragraph — toast is fired from useUpdateProfile onSuccess
+      expect(screen.queryByText(/profile updated successfully/i)).not.toBeInTheDocument();
+      // Form still renders correctly after success
+      expect(screen.getByLabelText(/display name/i)).toBeInTheDocument();
     });
   });
 
   describe('AC-6: Error Handling', () => {
-    it('displays server error message', () => {
+    it('shows no inline API error message (toast handles server errors)', () => {
+      // AC-6: error feedback moved to toast notification (sonner) in useUpdateProfile hook
       vi.mocked(useAuthModule.useUpdateProfile).mockReturnValue({
         ...mockUpdateProfileMutation,
         isError: true,
@@ -555,10 +560,14 @@ describe('ProfilePage', () => {
         </TestWrapper>
       );
 
-      expect(screen.getByText(/server error|failed to update/i)).toBeInTheDocument();
+      // No inline API error paragraph — toast is fired from useUpdateProfile onError
+      expect(screen.queryByText(/server error occurred/i)).not.toBeInTheDocument();
+      // Form still usable after error
+      expect(screen.getByLabelText(/display name/i)).toBeInTheDocument();
     });
 
-    it('displays network error with retry guidance', () => {
+    it('shows no inline network error message (toast handles network errors)', () => {
+      // AC-6: network errors are reported via toast from useUpdateProfile onError
       vi.mocked(useAuthModule.useUpdateProfile).mockReturnValue({
         ...mockUpdateProfileMutation,
         isError: true,
@@ -572,7 +581,10 @@ describe('ProfilePage', () => {
         </TestWrapper>
       );
 
-      expect(screen.getByText(/network error|try again/i)).toBeInTheDocument();
+      // No inline network error paragraph — toast handles it in the hook
+      expect(screen.queryByText(/network error/i)).not.toBeInTheDocument();
+      // Form still usable
+      expect(screen.getByLabelText(/display name/i)).toBeInTheDocument();
     });
 
     it('displays validation errors inline', async () => {

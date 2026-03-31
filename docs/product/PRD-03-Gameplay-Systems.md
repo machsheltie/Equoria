@@ -436,8 +436,8 @@ GET  /api/traits/milestone-status/:id
 **XP System:**
 
 ```
-Level 1: 0-199 XP
-Level 2+: 100 XP per level
+Level 1: 0-99 XP
+Level 2+: 100 XP per level (Level 2 = 100-199 XP, Level 3 = 200-299 XP, etc.)
 
 XP Sources:
 - Training: +5 XP per session

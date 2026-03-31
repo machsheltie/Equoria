@@ -20,26 +20,31 @@ So that **I can track my achievements and progress**.
 ## Acceptance Criteria
 
 ### AC-1: Key Metrics Display
+
 **Given** I am on the dashboard/profile page
 **When** I view the statistics section
 **Then** I see key metrics: horses owned, competitions won, breeding count
 
 ### AC-2: Real-Time Updates
+
 **Given** statistics are displayed
 **When** underlying data changes
 **Then** statistics update in real-time (via React Query)
 
 ### AC-3: Trend Indicators (Future Enhancement)
+
 **Given** I view statistics
 **When** data has historical context
 **Then** I can see trends (this week vs last week)
 
 ### AC-4: Navigation Links (Future Enhancement)
+
 **Given** I view a statistic
 **When** I click on it
 **Then** I navigate to the detailed view
 
 ### AC-5: Loading State
+
 **Given** statistics are loading
 **When** the component renders
 **Then** a loading skeleton is displayed
@@ -49,6 +54,7 @@ So that **I can track my achievements and progress**.
 ## Technical Notes
 
 ### Database Schema (Statistics derived from)
+
 ```prisma
 model User {
   horses        Horse[]           // Horses owned count
@@ -71,10 +77,12 @@ model BreedingRecord {
 ```
 
 ### API Endpoints (Future backend)
+
 - `GET /api/v1/users/stats` - Returns aggregated user statistics
 - Currently: Frontend calculates from available data
 
 ### Frontend Implementation
+
 1. **statistics-utils.ts** - Stats calculation helpers
 2. **StatisticsCard.tsx** - Individual stat card component
 3. **StatisticsDashboard.tsx** - Dashboard container
@@ -85,21 +93,25 @@ model BreedingRecord {
 ## Tasks
 
 ### Task 1: Statistics Utilities (TDD)
+
 - [x] Write tests for formatStatistic function
 - [x] Write tests for calculateTrend function
 - [x] Implement statistics-utils.ts
 
 ### Task 2: StatisticsCard Component (TDD)
+
 - [x] Write component tests (value display, loading, icon)
 - [x] Implement StatisticsCard.tsx with icon support
 - [x] Add size variants and trend indicator
 
 ### Task 3: ProfilePage Integration
+
 - [x] Add StatisticsCard components to ProfilePage
 - [x] Position below Currency display section
 - [x] Use mock data for now (API ready)
 
 ### Task 4: Documentation & Commit
+
 - [x] Update sprint-status.yaml
 - [x] Git commit with test results
 
@@ -107,11 +119,11 @@ model BreedingRecord {
 
 ## Test Coverage Target
 
-| File | Tests | Coverage |
-|------|-------|----------|
-| statistics-utils.test.ts | ~15 | 100% |
-| StatisticsCard.test.tsx | ~20 | 100% |
-| **Total** | ~35 | 100% |
+| File                     | Tests | Coverage |
+| ------------------------ | ----- | -------- |
+| statistics-utils.test.ts | ~15   | 100%     |
+| StatisticsCard.test.tsx  | ~20   | 100%     |
+| **Total**                | ~35   | 100%     |
 
 ---
 
@@ -122,3 +134,24 @@ model BreedingRecord {
 - [x] 100% coverage for new code
 - [x] StatisticsCard integrated into ProfilePage
 - [x] Git commit pushed to master
+
+---
+
+## Dev Agent Record
+
+### Agent Model Used
+
+Claude Opus 4.5 (claude-opus-4-5-20251101)
+
+### File List
+
+**To Create:**
+
+- `frontend/src/lib/statistics-utils.ts`
+- `frontend/src/lib/__tests__/statistics-utils.test.ts`
+- `frontend/src/components/StatisticsCard.tsx`
+- `frontend/src/components/__tests__/StatisticsCard.test.tsx`
+
+**To Modify:**
+
+- `frontend/src/pages/ProfilePage.tsx` — Add StatisticsCard components below Currency section

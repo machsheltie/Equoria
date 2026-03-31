@@ -17,20 +17,14 @@ import ActivityFeed from '../components/ActivityFeed';
 import { StatisticType } from '../lib/statistics-utils';
 import { ActivityType, type Activity } from '../lib/activity-utils';
 import { profileSchema, type ProfileFormData } from '../lib/validation-schemas';
-import { VALIDATION_RULES, UI_TEXT, SUCCESS_MESSAGES } from '../lib/constants';
+import { VALIDATION_RULES, UI_TEXT } from '../lib/constants';
 import { useProfile, useUpdateProfile } from '../hooks/useAuth';
 import { Button } from '@/components/ui/button';
 import { useActivityFeed, useUserProgress } from '../hooks/api/useUserProgress';
 
 const ProfilePage: React.FC = () => {
   const { data: profileData, isLoading, isError, error: profileError } = useProfile();
-  const {
-    mutate: updateProfile,
-    isPending,
-    isSuccess,
-    isError: isUpdateError,
-    error: updateError,
-  } = useUpdateProfile();
+  const { mutate: updateProfile, isPending } = useUpdateProfile();
   const userId = profileData?.user?.id ?? 0;
   const {
     data: activityItems = [],
@@ -175,19 +169,7 @@ const ProfilePage: React.FC = () => {
               <p className="text-xs text-[rgb(148,163,184)]">{UI_TEXT.profile.subtitle}</p>
             </div>
 
-            {/* Success */}
-            {isSuccess && (
-              <p className="text-sm text-center" style={{ color: 'var(--celestial-primary)' }}>
-                {SUCCESS_MESSAGES.profile.updated}
-              </p>
-            )}
-
-            {/* API error */}
-            {isUpdateError && (
-              <p className="text-red-400 text-sm text-center">
-                {updateError?.message || 'Failed to update profile. Please try again.'}
-              </p>
-            )}
+            {/* Success and error feedback handled via toast notifications (AC-5, AC-6) */}
 
             {/* Email (read-only) */}
             <div
@@ -365,7 +347,11 @@ const ProfilePage: React.FC = () => {
                   <X className="w-4 h-4" />
                   {UI_TEXT.profile.cancelButton}
                 </Button>
-                <Button type="submit" className="flex-1" disabled={isPending}>
+                <Button
+                  type="submit"
+                  className="flex-1"
+                  disabled={isPending || Object.keys(validationErrors).length > 0}
+                >
                   <Save className="w-4 h-4" />
                   {isPending ? UI_TEXT.profile.savingButton : UI_TEXT.profile.saveButton}
                 </Button>

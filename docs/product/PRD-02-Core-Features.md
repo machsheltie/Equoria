@@ -60,8 +60,8 @@
 
 **Game Mechanics:**
 
-- **Level 1:** 0-199 XP required
-- **Level 2+:** 100 XP per level (Level 2 = 100-199 XP, Level 3 = 200-299 XP, etc.)
+- **Level 1:** 0–99 XP required
+- **Level 2+:** 100 XP per level (Level 2 = 100–199 XP, Level 3 = 200–299 XP, etc.)
 - **Starting Money:** $1,000 default
 - **XP Sources:** Training (+5 XP), Competition wins (+10-20 XP), Breeding activities (+15 XP)
 

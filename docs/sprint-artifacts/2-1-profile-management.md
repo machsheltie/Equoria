@@ -12,25 +12,30 @@ so that **I can personalize my identity in the game**.
 ## Acceptance Criteria
 
 1. **AC-1: Profile Page Display**
+
    - Profile page displays current user information (display name, bio, avatar)
    - Page is accessible via `/profile` route
    - Proper loading and error states
 
 2. **AC-2: Display Name Editing**
+
    - User can edit display name (3-30 characters)
    - Validation errors shown inline
    - Changes persist after submission
 
 3. **AC-3: Bio Editing**
+
    - User can edit bio (max 500 characters)
    - Character counter shows remaining characters
    - Validation errors shown inline
 
 4. **AC-4: Avatar Upload** (P2 - Future)
+
    - Avatar upload (max 2MB, jpg/png) - Deferred to Phase 2
    - Default avatar shown when not set
 
 5. **AC-5: Form Submission**
+
    - Submit button disabled while form is invalid or submission in progress
    - Spinner shown on button during API call
    - Success toast notification on save
@@ -44,22 +49,26 @@ so that **I can personalize my identity in the game**.
 ## Tasks / Subtasks
 
 - [x] **Task 1: Extend User Interface** (AC: Foundation)
+
   - [x] Add `bio` field to User interface in useAuth.ts
   - [x] Update authApi.updateProfile to accept bio
   - [x] Update authApi.getProfile response type
 
 - [x] **Task 2: Profile Validation Schema** (AC: 2, 3)
-  - [x] Create profileSchema in lib/constants.ts
+
+  - [x] Add profileSchema to lib/validation-schemas.ts
   - [x] Display name: 3-30 characters
   - [x] Bio: max 500 characters
 
 - [x] **Task 3: ProfilePage Component** (AC: 1, 5)
+
   - [x] Create `pages/ProfilePage.tsx`
   - [x] Integrate useProfile and useUpdateProfile hooks
   - [x] Handle loading, error, and success states
   - [x] Add character counter for bio
 
 - [x] **Task 4: ProfilePage Tests** (AC: All)
+
   - [x] Create `pages/__tests__/ProfilePage.test.tsx`
   - [x] Test form rendering
   - [x] Test validation error display
@@ -68,14 +77,15 @@ so that **I can personalize my identity in the game**.
   - [x] Test cancel behavior
 
 - [x] **Task 5: Route Integration** (AC: 1)
-  - [x] Add `/profile` route to App.tsx
-  - [x] Protect route with RoleProtectedRoute
+  - [x] Add `/profile` to navItems (nav-items.tsx) — auto-registered in App.tsx
+  - [x] Route protected via `ProtectedRoute` wrapper that covers all navItems routes
 
 ## Completion Notes
 
 **Completed:** 2025-12-04
 **Test Results:** 32/32 tests passing (100%)
 **Implementation:**
+
 - ProfilePage.tsx implemented with Zod validation
 - useProfile and useUpdateProfile hooks integrated
 - Bio character counter (500 max) with live updates
@@ -83,28 +93,33 @@ so that **I can personalize my identity in the game**.
 - All acceptance criteria met
 
 **Files Created:**
+
 - `frontend/src/pages/ProfilePage.tsx`
 - `frontend/src/pages/__tests__/ProfilePage.test.tsx`
 
 **Files Modified:**
-- `frontend/src/hooks/useAuth.ts` - Added bio to User interface
+
+- `frontend/src/hooks/useAuth.ts` - Added bio to User interface; toast success/error on updateProfile
 - `frontend/src/lib/api-client.ts` - Updated profile types
-- `frontend/src/lib/constants.ts` - Added profileSchema
-- `frontend/src/App.tsx` - Added /profile route
+- `frontend/src/lib/validation-schemas.ts` - Added profileSchema (not constants.ts)
+- `frontend/src/nav-items.tsx` - Added /profile route via navItems
 
 ## Dev Notes
 
 ### Architecture Patterns (from ADD)
 
 **State Management (ADR-001):**
+
 - Use React Query's `useMutation` for profile update
 - Optimistic updates for better UX
 
 **Form Handling (ADR-002):**
+
 - `useState` for form data
 - Zod schema for validation
 
 **API Client (ADR-004):**
+
 - Use `authApi.updateProfile` from `lib/api-client.ts`
 
 ### API Endpoint
@@ -142,10 +157,7 @@ export const profileSchema = z.object({
     .string()
     .min(3, 'Display name must be at least 3 characters')
     .max(30, 'Display name must not exceed 30 characters'),
-  bio: z
-    .string()
-    .max(500, 'Bio must not exceed 500 characters')
-    .optional(),
+  bio: z.string().max(500, 'Bio must not exceed 500 characters').optional(),
 });
 ```
 
@@ -170,11 +182,13 @@ Claude Opus 4.5 (claude-opus-4-5-20251101)
 ### File List
 
 **To Create:**
+
 - `frontend/src/pages/ProfilePage.tsx`
 - `frontend/src/pages/__tests__/ProfilePage.test.tsx`
 
 **To Modify:**
-- `frontend/src/hooks/useAuth.ts` - Add bio to User interface
+
+- `frontend/src/hooks/useAuth.ts` - Add bio to User interface; toast success/error on updateProfile
 - `frontend/src/lib/api-client.ts` - Update profile types
-- `frontend/src/lib/constants.ts` - Add profileSchema
-- `frontend/src/App.tsx` - Add /profile route
+- `frontend/src/lib/validation-schemas.ts` - Add profileSchema
+- `frontend/src/nav-items.tsx` - Add /profile to navItems
