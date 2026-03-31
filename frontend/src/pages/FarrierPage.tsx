@@ -367,6 +367,17 @@ const FarrierPage: React.FC = () => {
         </div>
       </PageHero>
 
+      {/* Banner image in glass card */}
+      <div className="max-w-[52rem] mx-auto px-4 sm:px-6 lg:px-8 pt-1 pb-4">
+        <div className="p-5 rounded-2xl bg-[var(--glass-bg)] backdrop-blur-sm border border-[var(--glass-border)] shadow-lg shadow-black/20">
+          <img
+            src="/images/farriershop.webp"
+            alt="The Farrier — a skilled craftsman at work in a well-equipped forge and hoof care workshop"
+            className="w-full h-auto rounded-xl object-cover object-center"
+          />
+        </div>
+      </div>
+
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 pb-8">
         {/* Booking success banner */}
         {bookingSuccess && (

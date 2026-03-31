@@ -28,6 +28,8 @@ const worldLocations: LocationCardProps[] = [
     href: '/farrier',
     paintingGradient:
       'linear-gradient(160deg, rgba(92,52,8,0.85) 0%, rgba(64,36,5,0.95) 60%, rgba(5,13,26,0.98) 100%)',
+    backgroundImage: '/images/farriershop.webp',
+    backgroundPosition: '50% 50%',
   },
   {
     id: 'tack-shop',
