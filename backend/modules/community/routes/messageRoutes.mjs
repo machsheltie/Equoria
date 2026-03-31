@@ -45,7 +45,12 @@ router.post(
   [
     body('recipientId').notEmpty().withMessage('recipientId is required'),
     body('subject').trim().notEmpty().withMessage('subject is required').isLength({ max: 200 }),
-    body('content').trim().notEmpty().withMessage('content is required'),
+    body('content')
+      .trim()
+      .notEmpty()
+      .withMessage('content is required')
+      .isLength({ max: 10000 })
+      .withMessage('content max 10000 chars'),
     body('tag').optional().isString(),
     handleValidation,
   ],

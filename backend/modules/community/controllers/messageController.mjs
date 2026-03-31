@@ -16,32 +16,46 @@ import logger from '../../../utils/logger.mjs';
 
 const USER_SELECT = { id: true, username: true };
 
-/** GET /api/messages/inbox */
+const PAGE_SIZE = 50;
+
+/** GET /api/messages/inbox?page=1 */
 export async function getInbox(req, res) {
   const userId = req.user.id;
+  const page = Math.max(1, parseInt(req.query.page ?? '1', 10) || 1);
   try {
-    const messages = await prisma.directMessage.findMany({
-      where: { recipientId: userId },
-      orderBy: { createdAt: 'desc' },
-      include: { sender: { select: USER_SELECT } },
-    });
-    return res.json({ success: true, data: { messages } });
+    const [messages, total] = await prisma.$transaction([
+      prisma.directMessage.findMany({
+        where: { recipientId: userId },
+        orderBy: { createdAt: 'desc' },
+        include: { sender: { select: USER_SELECT } },
+        take: PAGE_SIZE,
+        skip: (page - 1) * PAGE_SIZE,
+      }),
+      prisma.directMessage.count({ where: { recipientId: userId } }),
+    ]);
+    return res.json({ success: true, data: { messages, total, page } });
   } catch (error) {
     logger.error(`[messageController.getInbox] ${error.message}`);
     return res.status(500).json({ success: false, message: 'Failed to fetch inbox' });
   }
 }
 
-/** GET /api/messages/sent */
+/** GET /api/messages/sent?page=1 */
 export async function getSent(req, res) {
   const userId = req.user.id;
+  const page = Math.max(1, parseInt(req.query.page ?? '1', 10) || 1);
   try {
-    const messages = await prisma.directMessage.findMany({
-      where: { senderId: userId },
-      orderBy: { createdAt: 'desc' },
-      include: { recipient: { select: USER_SELECT } },
-    });
-    return res.json({ success: true, data: { messages } });
+    const [messages, total] = await prisma.$transaction([
+      prisma.directMessage.findMany({
+        where: { senderId: userId },
+        orderBy: { createdAt: 'desc' },
+        include: { recipient: { select: USER_SELECT } },
+        take: PAGE_SIZE,
+        skip: (page - 1) * PAGE_SIZE,
+      }),
+      prisma.directMessage.count({ where: { senderId: userId } }),
+    ]);
+    return res.json({ success: true, data: { messages, total, page } });
   } catch (error) {
     logger.error(`[messageController.getSent] ${error.message}`);
     return res.status(500).json({ success: false, message: 'Failed to fetch sent messages' });

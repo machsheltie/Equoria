@@ -172,11 +172,17 @@ export async function incrementView(req, res) {
   if (!id || id <= 0) return res.status(400).json({ success: false, message: 'Invalid thread ID' });
 
   const key = `${userId}:${id}`;
+  const now = Date.now();
   const last = _viewLog.get(key);
-  if (last && Date.now() - last < VIEW_COOLDOWN_MS) {
+  if (last && now - last < VIEW_COOLDOWN_MS) {
     return res.json({ success: true });
   }
-  _viewLog.set(key, Date.now());
+  _viewLog.set(key, now);
+
+  // Prune entries older than the cooldown window to prevent unbounded growth
+  for (const [k, ts] of _viewLog) {
+    if (now - ts >= VIEW_COOLDOWN_MS) _viewLog.delete(k);
+  }
 
   try {
     await prisma.forumThread.update({

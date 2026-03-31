@@ -300,3 +300,67 @@ export async function getElectionResults(req, res) {
     return res.status(500).json({ success: false, message: 'Failed to fetch results' });
   }
 }
+
+/**
+ * PATCH /api/clubs/:id/transfer-leadership
+ * Body: { newPresidentId: string }
+ *
+ * Transfers president role to another member. Requester must be current president.
+ * After transfer: requester becomes 'member', newPresident becomes 'president',
+ * and club.leaderId is updated.
+ */
+export async function transferLeadership(req, res) {
+  const clubId = parseInt(req.params.id, 10);
+  const userId = req.user.id;
+  const { newPresidentId } = req.body;
+
+  if (!clubId || clubId <= 0)
+    return res.status(400).json({ success: false, message: 'Invalid club ID' });
+  if (!newPresidentId)
+    return res.status(400).json({ success: false, message: 'newPresidentId is required' });
+  if (userId === newPresidentId)
+    return res
+      .status(400)
+      .json({ success: false, message: 'Cannot transfer leadership to yourself' });
+
+  try {
+    const [currentMembership, targetMembership] = await Promise.all([
+      prisma.clubMembership.findUnique({ where: { clubId_userId: { clubId, userId } } }),
+      prisma.clubMembership.findUnique({
+        where: { clubId_userId: { clubId, userId: newPresidentId } },
+      }),
+    ]);
+
+    if (!currentMembership || currentMembership.role !== 'president') {
+      return res
+        .status(403)
+        .json({ success: false, message: 'Only the club president can transfer leadership' });
+    }
+    if (!targetMembership) {
+      return res.status(404).json({ success: false, message: 'Target user is not a club member' });
+    }
+
+    await prisma.$transaction([
+      prisma.clubMembership.update({
+        where: { clubId_userId: { clubId, userId } },
+        data: { role: 'member' },
+      }),
+      prisma.clubMembership.update({
+        where: { clubId_userId: { clubId, userId: newPresidentId } },
+        data: { role: 'president' },
+      }),
+      prisma.club.update({
+        where: { id: clubId },
+        data: { leaderId: newPresidentId },
+      }),
+    ]);
+
+    logger.info(
+      `[clubController.transferLeadership] Club ${clubId}: ${userId} → ${newPresidentId}`,
+    );
+    return res.json({ success: true });
+  } catch (error) {
+    logger.error(`[clubController.transferLeadership] ${error.message}`);
+    return res.status(500).json({ success: false, message: 'Failed to transfer leadership' });
+  }
+}

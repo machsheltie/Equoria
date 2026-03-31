@@ -89,6 +89,7 @@ export function useNominate(electionId: number) {
   return useMutation({
     mutationFn: (statement: string) => clubsApi.nominate(electionId, statement),
     onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['elections', electionId, 'results'] });
       queryClient.invalidateQueries({ queryKey: ['clubs'] });
     },
   });
@@ -99,6 +100,7 @@ export function useVote(electionId: number) {
   return useMutation({
     mutationFn: (candidateId: number) => clubsApi.vote(electionId, candidateId),
     onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['elections', electionId, 'results'] });
       queryClient.invalidateQueries({ queryKey: ['clubs'] });
     },
   });

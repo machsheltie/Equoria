@@ -355,6 +355,7 @@ const FarrierPage: React.FC = () => {
         subtitle="Hoof trimming, shoeing, and corrective care for your horses"
         mood="nature"
         icon={<Leaf className="w-7 h-7 text-[var(--gold-400)]" />}
+        backgroundImage="/assets/art/farrier.webp"
       >
         {/* Breadcrumb */}
         <div className="flex items-center gap-2 text-sm text-[var(--text-muted)]">

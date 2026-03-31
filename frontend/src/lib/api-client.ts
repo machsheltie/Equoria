@@ -1646,10 +1646,10 @@ export const clubsApi = {
   nominate: (electionId: number, statement: string) =>
     apiClient.post<void>(`/api/v1/clubs/elections/${electionId}/nominate`, { statement }),
   vote: (electionId: number, candidateId: number) =>
-    apiClient.post<void>(`/api/clubs/elections/${electionId}/vote`, { candidateId }),
+    apiClient.post<void>(`/api/v1/clubs/elections/${electionId}/vote`, { candidateId }),
   getResults: (electionId: number) =>
     apiClient.get<{ election: ClubElection; candidates: ElectionCandidate[] }>(
-      `/api/clubs/elections/${electionId}/results`
+      `/api/v1/clubs/elections/${electionId}/results`
     ),
 };
 

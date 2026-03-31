@@ -18,6 +18,7 @@ import {
   nominate,
   vote,
   getElectionResults,
+  transferLeadership,
 } from '../controllers/clubController.mjs';
 
 const router = express.Router();
@@ -74,6 +75,11 @@ router.post(
 
 router.post('/:id/join', joinClub);
 router.delete('/:id/leave', leaveClub);
+router.patch(
+  '/:id/transfer-leadership',
+  [body('newPresidentId').notEmpty().withMessage('newPresidentId is required'), handleValidation],
+  transferLeadership,
+);
 router.get('/:id/elections', getElections);
 
 router.post(

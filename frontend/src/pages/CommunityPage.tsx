@@ -229,11 +229,16 @@ const CommunityPage: React.FC = () => {
           ))}
         </div>
 
-        {/* Recent Activity Feed */}
+        {/* Recent Activity Feed — placeholder until live activity endpoint is implemented */}
         <div>
-          <h2 className="text-sm font-semibold text-white/60 uppercase tracking-wide mb-4">
-            Recent Community Activity
-          </h2>
+          <div className="flex items-center gap-3 mb-4">
+            <h2 className="text-sm font-semibold text-white/60 uppercase tracking-wide">
+              Recent Community Activity
+            </h2>
+            <span className="text-[10px] px-2 py-0.5 rounded-full bg-amber-500/15 border border-amber-500/30 text-amber-400 uppercase tracking-wide font-semibold">
+              Coming Soon
+            </span>
+          </div>
           <div className="space-y-2">
             {MOCK_RECENT_ACTIVITY.map((activity) => (
               <div
