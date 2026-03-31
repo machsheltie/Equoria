@@ -1,7 +1,7 @@
 /**
  * World Hub Page — The Realm of Equoria
  *
- * 9 location cards for the game world with atmospheric header.
+ * 10 location cards for the game world with atmospheric header.
  * This is the map screen — exploring the world should feel expansive.
  */
 
@@ -97,6 +97,16 @@ const worldLocations: LocationCardProps[] = [
     href: '/trainers',
     paintingGradient:
       'linear-gradient(160deg, rgba(40,25,90,0.85) 0%, rgba(25,14,60,0.95) 60%, rgba(5,13,26,0.98) 100%)',
+  },
+  {
+    id: 'crafting',
+    name: 'Leathersmith Workshop',
+    description:
+      'Craft custom tack from leather, metal, and rare materials. Upgrade your workshop for better recipes.',
+    icon: '🔧',
+    href: '/crafting',
+    paintingGradient:
+      'linear-gradient(160deg, rgba(80,45,10,0.85) 0%, rgba(55,30,5,0.95) 60%, rgba(5,13,26,0.98) 100%)',
   },
 ];
 

@@ -95,6 +95,7 @@ import nextActionsRoutes from './routes/nextActionsRoutes.mjs';
 import wyagRoutes from './routes/wyagRoutes.mjs';
 import showRoutes from './routes/showRoutes.mjs';
 import bankRoutes from './routes/bankRoutes.mjs';
+import craftingRoutes from './routes/craftingRoutes.mjs';
 
 /**
  * 🔒 SECURITY ROUTER ARCHITECTURE
@@ -168,6 +169,7 @@ authRouter.use('/next-actions', nextActionsRoutes);
 authRouter.use('/while-you-were-gone', wyagRoutes);
 authRouter.use('/shows', showRoutes);
 authRouter.use('/bank', bankRoutes);
+authRouter.use('/crafting', craftingRoutes);
 
 // Groom management system
 authRouter.use('/grooms', groomRoutes);

@@ -37,6 +37,8 @@ const MyStablePage = lazy(() => import('./pages/MyStablePage'));
 const TrainersPage = lazy(() => import('./pages/TrainersPage'));
 // Epic 21 — Horse Marketplace
 const HorseMarketplacePage = lazy(() => import('./pages/HorseMarketplacePage'));
+// Leathersmith Crafting Workshop
+const CraftingPage = lazy(() => import('./pages/CraftingPage'));
 // Epic 11 — Community pages
 const CommunityPage = lazy(() => import('./pages/CommunityPage'));
 const MessageBoardPage = lazy(() => import('./pages/MessageBoardPage'));
@@ -148,6 +150,12 @@ export const navItems = [
     to: '/tack-shop',
     icon: null,
     Page: TackShopPage,
+  },
+  {
+    title: 'Leathersmith Workshop',
+    to: '/crafting',
+    icon: null,
+    Page: CraftingPage,
   },
   // Epic 12 — Stable management pages (routes only, linked from dashboard/nav)
   {
