@@ -131,8 +131,8 @@ const PageHero: React.FC<PageHeroProps> = ({
               </h1>
               {subtitle && (
                 <p
-                  className="mt-1 text-sm text-[var(--text-secondary)] font-[var(--font-body)] max-w-xl"
-                  style={{ textShadow: '0 1px 4px rgba(0,0,0,0.9), 0 0 12px rgba(0,0,0,0.7)' }}
+                  className="mt-1 text-sm text-[var(--cream)]/80 font-[var(--font-body)] max-w-xl"
+                  style={{ textShadow: '0 1px 6px rgba(0,0,0,1), 0 0 20px rgba(0,0,0,0.9)' }}
                 >
                   {subtitle}
                 </p>
