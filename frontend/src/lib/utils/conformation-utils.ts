@@ -51,38 +51,38 @@ export function getQualityRating(score: number): QualityRating {
   if (clampedScore >= 90) {
     return {
       label: 'Excellent',
-      color: 'text-emerald-700',
-      bgColor: 'bg-emerald-50 border-emerald-200',
+      color: 'text-emerald-400',
+      bgColor: 'bg-[rgba(16,185,129,0.1)] border-emerald-500/30',
     };
   } else if (clampedScore >= 80) {
     return {
       label: 'Very Good',
       color: 'text-[var(--gold-primary)]',
-      bgColor: 'bg-blue-50 border-blue-200',
+      bgColor: 'bg-[rgba(201,162,39,0.1)] border-[rgba(201,162,39,0.3)]',
     };
   } else if (clampedScore >= 70) {
     return {
       label: 'Good',
-      color: 'text-amber-700',
-      bgColor: 'bg-amber-50 border-amber-200',
+      color: 'text-amber-400',
+      bgColor: 'bg-[rgba(245,158,11,0.1)] border-amber-500/30',
     };
   } else if (clampedScore >= 60) {
     return {
       label: 'Average',
       color: 'text-[var(--text-secondary)]',
-      bgColor: 'bg-slate-50 border-slate-200',
+      bgColor: 'bg-[rgba(148,163,184,0.08)] border-[rgba(148,163,184,0.3)]',
     };
   } else if (clampedScore >= 50) {
     return {
       label: 'Below Average',
-      color: 'text-orange-700',
-      bgColor: 'bg-orange-50 border-orange-200',
+      color: 'text-orange-400',
+      bgColor: 'bg-[rgba(249,115,22,0.1)] border-orange-500/30',
     };
   } else {
     return {
       label: 'Poor',
-      color: 'text-rose-700',
-      bgColor: 'bg-rose-50 border-rose-200',
+      color: 'text-rose-400',
+      bgColor: 'bg-[rgba(239,68,68,0.1)] border-rose-500/30',
     };
   }
 }

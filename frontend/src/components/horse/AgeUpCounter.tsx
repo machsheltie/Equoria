@@ -19,6 +19,11 @@ interface AgeUpCounterProps {
   horseId: number;
 }
 
+// Game-defined age milestones — update here if milestone years change in design
+const MILESTONE_AGES = [2, 4, 7, 15] as const;
+const PRIME_TRAINING_START = MILESTONE_AGES[0]; // 2
+const PRIME_TRAINING_END = MILESTONE_AGES[2]; // 7
+
 const AgeUpCounter = ({ horseId }: AgeUpCounterProps) => {
   const { data: ageData, isLoading, error, isError, refetch } = useHorseAge(horseId);
   const [showStatDetails, setShowStatDetails] = useState(false);
@@ -278,10 +283,13 @@ const AgeUpCounter = ({ horseId }: AgeUpCounterProps) => {
           <div className="flex-1">
             <p className="text-xs font-semibold text-[rgb(220,235,255)]">Age Mechanics:</p>
             <ul className="mt-2 space-y-1 text-xs text-[rgb(148,163,184)]">
-              <li>• Horses age up at specific milestones (2, 4, 7, 15 years)</li>
+              <li>• Horses age up at specific milestones ({MILESTONE_AGES.join(', ')} years)</li>
               <li>• Each milestone brings permanent stat changes</li>
               <li>• Some stats increase (maturity), others decrease (aging)</li>
-              <li>• Training is most effective during prime years (2-7)</li>
+              <li>
+                • Training is most effective during prime years ({PRIME_TRAINING_START}–
+                {PRIME_TRAINING_END})
+              </li>
               <li>• Horses gain stats rapidly when young and lose them in old age</li>
             </ul>
           </div>

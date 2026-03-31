@@ -19,6 +19,11 @@ interface TrainingRecommendationsProps {
   horseId: number;
 }
 
+// Minimum stat gap required before a training recommendation is generated
+const MIN_RECOMMENDATION_GAP = 5;
+const HIGH_PRIORITY_GAP = 20;
+const MEDIUM_PRIORITY_GAP = 10;
+
 interface StatRecommendation {
   stat: string;
   currentValue: number;
@@ -81,11 +86,11 @@ const TrainingRecommendations = ({ horseId }: TrainingRecommendationsProps) => {
       const gap = potentialValue - currentValue;
 
       // Only recommend if there's a gap of at least 5 points
-      if (gap >= 5) {
+      if (gap >= MIN_RECOMMENDATION_GAP) {
         let priority: 'high' | 'medium' | 'low';
-        if (gap >= 20) {
+        if (gap >= HIGH_PRIORITY_GAP) {
           priority = 'high';
-        } else if (gap >= 10) {
+        } else if (gap >= MEDIUM_PRIORITY_GAP) {
           priority = 'medium';
         } else {
           priority = 'low';
