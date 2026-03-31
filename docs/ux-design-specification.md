@@ -67,12 +67,12 @@ The game is fully functional (20 epics, 3,651 backend tests, ~30 frontend pages)
 
 ### Implementation Strategy (from War Room)
 
-| Layer                | What                                     | Impact                   | Effort |
-| -------------------- | ---------------------------------------- | ------------------------ | ------ |
-| 1. Global Atmosphere | Celestial gradient BG + star particles   | Every page transforms    | Low    |
-| 2. Container System  | FrostedPanel replaces all Cards          | Game-feel on all content | Medium |
-| 3. Typography        | Serif display font for headers           | Premium fantasy feel     | Low    |
-| 4. Component Polish  | Buttons, inputs, tabs, stat bars, modals | Complete experience      | High   |
+| Layer                | What                                                                        | Impact                   | Effort |
+| -------------------- | --------------------------------------------------------------------------- | ------------------------ | ------ |
+| 1. Global Atmosphere | Celestial gradient BG + hand-painted scene per route (`PageBackground.tsx`) | Every page transforms    | Low    |
+| 2. Container System  | FrostedPanel replaces all Cards                                             | Game-feel on all content | Medium |
+| 3. Typography        | Serif display font for headers                                              | Premium fantasy feel     | Low    |
+| 4. Component Polish  | Buttons, inputs, tabs, stat bars, modals                                    | Complete experience      | High   |
 
 Pages needing layout changes (not just reskin): Dashboard, HorseDetail, Competitions, Stable, Search, Inventory, Sidebar Nav (~7 pages). Remaining ~5 pages are reskin-only.
 
@@ -161,7 +161,7 @@ DECORATIVE:           Crescent moon headers, sparkle icons, horse silhouette bac
 | **Contrast failure**         | Critical   | Validate all color pairs against WCAG AA before coding; use `--gold-light` (#e8d48b) for body text (7.1:1 ratio), reserve `--gold-primary` for large headers only          | Color audit document |
 | **Performance (minor)**      | Low        | Use `backdrop-filter` on overlays/modals only; solid semi-transparent bg for cards; this is a simulation game, not a 3D renderer — static UI performs fine on any hardware | Common sense         |
 | **Inconsistent half-state**  | High       | Layers 1-3 ship atomically as single change; Layer 4 per-component not per-page; no partial deployment                                                                     | All-or-nothing gate  |
-| **Font loading flash**       | Medium     | Self-host Cinzel (subset Latin, ~25KB); preload in `<head>`; `font-display: optional`                                                                                      | First-paint test     |
+| **Font loading flash**       | Medium     | Self-host Cinzel (subset Latin, ~25KB); preload in `<head>`; `font-display: swap` (ensures Cinzel renders on slow connections — FOUT acceptable for a game)                | First-paint test     |
 | **Broken functionality**     | Critical   | Full test suite (3,651 + Playwright) after every page reskin; CSS-first changes before DOM restructuring; visual regression snapshots as baseline                          | All tests pass       |
 | **Accessibility regression** | Critical   | ARIA audit per replaced component; gold glow focus rings (`box-shadow`); keyboard navigation test; Lighthouse a11y >= 0.85                                                 | Lighthouse gate      |
 | **Rollback plan**            | Safety net | Each layer is one CSS import or one component swap — single-line revert if needed                                                                                          | Architecture review  |
@@ -198,7 +198,7 @@ Competition entry is deliberately per-competition — players must browse availa
 **Design implications:**
 
 - All interactive elements: minimum 44px touch targets
-- Navigation: hamburger menu on mobile, sidebar on desktop (already implemented)
+- Navigation: hamburger menu on mobile, sidebar on desktop — **built in Story 22.8** (`SidebarNav.tsx`, `MobileNav.tsx`, bottom nav bar). Current `MainNavigation.tsx` is a temporary shim pending Story 22.8.
 - Frosted panels: stack vertically on mobile, grid on desktop
 - Stat bars and horse detail tabs: must work in portrait phone width
 - No hover-only interactions — everything accessible via tap
@@ -517,12 +517,12 @@ We keep shadcn/Radix as the behavioral skeleton (focus traps, keyboard navigatio
 
 **4-Layer Transformation Strategy:**
 
-| Layer                          | Scope                                   | What Changes                                                                       | Risk                             |
-| ------------------------------ | --------------------------------------- | ---------------------------------------------------------------------------------- | -------------------------------- |
-| **Layer 1: Global Background** | `<body>`, layout wrappers               | Deep navy gradient replaces white; starfield particle canvas                       | Low — CSS only                   |
-| **Layer 2: FrostedPanel**      | Every Card, Dialog, Sheet, Popover      | `backdrop-filter: blur(12px)` + glass border + celestial glow replaces white cards | Medium — touches many components |
-| **Layer 3: Typography**        | All headings, labels, body text         | Cinzel serif for headings, Inter for body, gold/slate color palette                | Low — font + color tokens        |
-| **Layer 4: Component Polish**  | Buttons, Inputs, Tabs, StatBars, Badges | Gold borders, celestial hover states, game-specific components                     | Medium — component-by-component  |
+| Layer                          | Scope                                   | What Changes                                                                             | Risk                             |
+| ------------------------------ | --------------------------------------- | ---------------------------------------------------------------------------------------- | -------------------------------- |
+| **Layer 1: Global Background** | `<body>`, layout wrappers               | Deep navy gradient replaces white; hand-painted scene per route via `PageBackground.tsx` | Low — CSS only                   |
+| **Layer 2: FrostedPanel**      | Every Card, Dialog, Sheet, Popover      | `backdrop-filter: blur(12px)` + glass border + celestial glow replaces white cards       | Medium — touches many components |
+| **Layer 3: Typography**        | All headings, labels, body text         | Cinzel serif for headings, Inter for body, gold/slate color palette                      | Low — font + color tokens        |
+| **Layer 4: Component Polish**  | Buttons, Inputs, Tabs, StatBars, Badges | Gold borders, celestial hover states, game-specific components                           | Medium — component-by-component  |
 
 **Deployment:** Atomic layers, each independently deployable. Layer 1 alone transforms the feel. Each subsequent layer deepens the immersion.
 
@@ -554,7 +554,7 @@ We keep shadcn/Radix as the behavioral skeleton (focus traps, keyboard navigatio
 - `GoldTabs` — Underline-style tabs with gold active indicator
 - `StatBar` — Gradient fill bars for horse statistics
 - `SlotGrid` — Stable slot layout for horse management
-- `StarfieldBackground` — Animated particle canvas (respects prefers-reduced-motion)
+- `PageBackground` — Route-aware painted background; renders hand-painted WebP scene for current page context; `useResponsiveBackground` hook selects closest-ratio variant; fallback to `--bg-deep-space` gradient. Replaces CSS starfield.
 - `CrescentDecoration` — Crescent moon accent for section headers
 
 **Design Token Migration:**

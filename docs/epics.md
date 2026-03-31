@@ -193,7 +193,7 @@ Epic 23: Hub & Daily Loop ──────────────────
 
 **User Value:** Players open Equoria and immediately feel they've entered a fantasy world — not a dashboard. The atmosphere is established before any UX flow changes.
 
-**FRs Covered:** FR-CN1, FR-CN2, FR-CN3, FR-CN4, FR-CN19
+**FRs Covered:** FR-CN1, FR-CN2, FR-CN3, FR-CN4, FR-CN16, FR-CN19
 
 **Dependencies:** None (entry point)
 
@@ -211,8 +211,8 @@ So that the typography signals "game world" instead of "web app."
 **And** all body text, form labels, and data values render in Inter font
 **And** hero text (horse names on detail pages, page titles) renders in Cinzel Decorative
 **And** fonts load with `font-display: swap` (no Flash of Invisible Text)
-**And** font files are preloaded via `<link rel="preconnect">` to Google Fonts
-**And** total font payload transferred from Google Fonts CDN is ≤ 60KB (WOFF2, Latin subset, measured in DevTools Network tab)
+**And** WOFF2 font files exist in `frontend/public/fonts/` (Cinzel, Cinzel Decorative, Inter)
+**And** `<link rel="preload">` tags in `frontend/index.html` reference `/fonts/` paths — no Google Fonts CDN requests appear in DevTools Network tab
 **And** `prefers-reduced-motion` has no impact (fonts are static)
 **And** fallback system fonts (Georgia, system-ui) are specified in font stack
 **And** the existing Yeseva One and Cormorant Garamond `<link>` elements are removed from `frontend/index.html` (no orphaned CDN requests)
@@ -222,7 +222,7 @@ So that the typography signals "game world" instead of "web app."
 
 - Update `frontend/src/styles/tokens.css`: `--font-display` → `'Cinzel Decorative'`, `--font-heading` → `'Cinzel'`, `--font-body` → `'Inter'` (currently Jost)
 - Update `frontend/tailwind.config.ts`: `fontFamily` section with Cinzel/Inter
-- Add Google Fonts `<link>` to `frontend/index.html` with `preconnect` + `font-display=swap`
+- Add `<link rel="preload">` tags to `frontend/index.html` for self-hosted WOFF2 files in `public/fonts/` (ADR-6: no Google Fonts CDN — GDPR risk for EU/UK users)
 - Verify all 29 pages render correctly with new fonts (no layout shifts from different metrics)
 
 **Prerequisites:** None
@@ -465,7 +465,7 @@ So that the atmosphere is consistent from login through gameplay.
 **Then** the body background is a deep navy gradient (`#0a0e1a` → `#111827`) with subtle gold/blue radial accents
 **And** the `MainNavigation` component uses Celestial Night colors (navy bg, gold icons, Cinzel font for logo)
 **And** the active nav item has a gold border indicator (bottom on mobile, left on desktop)
-**And** auth pages (login/register) display the StarfieldBackground with a centered glass panel
+**And** auth pages (login/register) display `PageBackground` with `scene="auth"` and a centered glass panel
 **And** the page feels immersive at all breakpoints (375px mobile through 1440px desktop)
 
 **Technical Notes:**
@@ -475,7 +475,7 @@ So that the atmosphere is consistent from login through gameplay.
 - Update `frontend/src/components/layout/AuthLayout.tsx` for login/register pages
 - Verify DashboardLayout wrapper (if used) integrates with `.celestial` scope
 
-**And** Playwright E2E screenshot test covers the login page at 375px and 1440px breakpoints, confirming StarfieldBackground visible and glass panel centered
+**And** Playwright E2E screenshot test covers the login page at 375px and 1440px breakpoints, confirming `PageBackground` (`scene="auth"`) visible and glass panel centered
 **And** the file has zero ESLint errors (`npm run lint` exits 0 in `frontend/`)
 
 **Prerequisites:** Stories 22.1, 22.2, 22.3, 22.4, 22.5
@@ -533,6 +533,14 @@ UX Patterns: UX §1 (Design Tokens), §3 (Typography), §10.8 (Navigation), §11
 No shadcn visual styling — Radix primitives used as accessibility skeletons only. All game visuals in components/ui/game/.
 Background: Hand-painted scenes replace CSS starfield — assets owner-provided as WebP/JPEG pairs in `public/assets/backgrounds/`.
 Buttons: Gold gradient + horseshoe arc pattern already live on login page — Story 22.5 extends this consistently to all surfaces.
+
+Deferred Components (defined in UX §6.4/§11.1 — not built in Epic 22, tracked for future epics):
+
+- **SlotGrid** (`SlotGrid.tsx`): Stable slot layout for horse management — deferred to Epic 23 (Hub & Daily Loop)
+- **CrescentDecoration** (`CrescentDecoration.tsx`): Celestial section-header accent — deferred to Epic 27 (Horse Detail) or first epic needing decorative section headers
+- **GameSelect** (`game/GameSelect.tsx`): Custom dropdown restyling (UX §11.1 "Full restyling") — deferred; `select.tsx` retained as-is in Epic 22 (see Story 22.6 ADR note); assign to Epic 28 or 29
+- **GameAvatar** (`game/GameAvatar.tsx`): Gold-ring avatar for community/profile (UX §11.1 "Full restyling") — deferred to Epic 24 (Community) or Epic 25
+- **Toast (Sonner)**: Frosted glass toast overrides (UX §11.1 "Full restyling") — low-effort CSS; patch in Story 22.7 body chrome or as a standalone Story 22.9
 
 ---
 

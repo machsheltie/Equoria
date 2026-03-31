@@ -7,7 +7,7 @@
  * RULES (enforced at code review):
  *   - No raw hex / rgba values in component files — always use a token
  *   - --discipline-* tokens: action buttons only, NEVER nav/sidebar/breadcrumbs
- *   - --celestial-primary: default T1 buttons, active nav states, tab underlines
+ *   - --celestial-primary: focus rings, electric highlights, active nav accents (NOT T1 buttons — buttons use --gold-primary/--gold-light)
  *   - Max ONE active backdrop-filter: blur() layer visible at any time
  *
  * Usage:
@@ -56,8 +56,8 @@
   --status-legendary: #f5e6a3; /* ultra-rare, legendary events          */
 
   /* ── Interactive Button Colors ──────────────────────────────────────── */
-  --btn-primary-bg: rgba(59, 130, 246, 0.3); /* blue frosted button  */
-  --btn-primary-border: rgba(59, 130, 246, 0.5); /* blue button border   */
+  --btn-primary-bg: var(--gold-primary); /* T1 primary button bg (gold)  */
+  --btn-primary-border: var(--gold-light); /* T1 primary button border     */
   --btn-gold-bg: rgba(200, 168, 78, 0.2); /* gold frosted button  */
   --btn-gold-border: rgba(200, 168, 78, 0.4); /* gold button border   */
 
@@ -175,7 +175,8 @@
 /* ─────────────────────────────────────────────────────────────────────────── */
 
 :root {
-  /* Primary action colour — used for T1 buttons, active nav, tab underlines */
+  /* Celestial accent — focus rings, electric highlights, active nav accents.
+     NOTE: T1 action buttons use --gold-primary / --gold-light, NOT this token. */
   --celestial-primary: var(--electric-blue-500);
   --celestial-primary-hover: var(--electric-blue-400);
   --celestial-primary-pressed: var(--electric-blue-700);
