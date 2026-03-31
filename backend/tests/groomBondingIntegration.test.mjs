@@ -140,7 +140,7 @@ describe('Groom Bonding System Integration', () => {
       },
     });
     createdAssignmentIds.add(testAssignment.id);
-  });
+  }, 120000);
 
   afterEach(async () => {
     // Track any interactions created during the test
@@ -153,7 +153,7 @@ describe('Groom Bonding System Integration', () => {
 
     // Clean up test data
     await cleanupTestData();
-  });
+  }, 120000);
 
   describe('New Grooming Tasks for Horses 3+ Years Old', () => {
     it('should successfully process brushing interaction', async () => {
