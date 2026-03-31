@@ -93,18 +93,18 @@ describe('Trait Timeline System', () => {
   });
 
   afterEach(async () => {
-    // Clean up test data
+    // Clean up test data — use deleteMany to avoid P2025 when records are already gone
     if (testHorse) {
-      await prisma.horse.delete({ where: { id: testHorse.id } });
+      await prisma.horse.deleteMany({ where: { id: testHorse.id } });
     }
     if (testGroom) {
-      await prisma.groom.delete({ where: { id: testGroom.id } });
+      await prisma.groom.deleteMany({ where: { id: testGroom.id } });
     }
     if (testUser) {
-      await prisma.user.delete({ where: { id: testUser.id } });
+      await prisma.user.deleteMany({ where: { id: testUser.id } });
     }
     if (testBreed) {
-      await prisma.breed.delete({ where: { id: testBreed.id } });
+      await prisma.breed.deleteMany({ where: { id: testBreed.id } });
     }
   });
 
