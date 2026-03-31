@@ -27,9 +27,8 @@ export const withSeededPlayerAuth = (method, endpoint, userData = {}) => {
   if (typeof supertest(app)[method] !== 'function') {
     throw new Error(`Invalid HTTP method: ${method}`);
   }
-  return supertest(app)[method](endpoint)
-    .set('Authorization', `Bearer ${token}`)
-    .set('x-test-skip-csrf', 'true');
+  const req = supertest(app)[method](endpoint);
+  return req.set('Authorization', `Bearer ${token}`).set('x-test-skip-csrf', 'true');
 };
 
 // USAGE EXAMPLE (INSIDE TEST):
@@ -268,8 +267,7 @@ export async function cleanupTestData() {
     });
   } catch (error) {
     console.warn('Cleanup error:', error.message);
-  } finally {
-    // Ensure proper database connection cleanup
-    await prisma.$disconnect();
   }
+  // Do NOT call prisma.$disconnect() here — the global teardown handles disconnection.
+  // Calling it mid-run disconnects the shared client for all parallel suites.
 }

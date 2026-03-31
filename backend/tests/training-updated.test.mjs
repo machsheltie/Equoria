@@ -39,7 +39,8 @@
 import request from 'supertest';
 import app from '../app.mjs';
 import prisma from '../db/index.mjs';
-import { createTestUser, createTestHorse } from './helpers/testAuth.mjs';
+import bcrypt from 'bcryptjs';
+import jwt from 'jsonwebtoken';
 
 // Custom Jest matcher for toBeOneOf
 expect.extend({
@@ -66,22 +67,35 @@ describe('🏋️ INTEGRATION: Training System Updated - User Model Integration'
   let secondHorseId; // Dedicated horse for the "allow training" test (avoids cooldown collision)
 
   beforeAll(async () => {
-    const { user, token } = await createTestUser();
+    // Use 'trainupd_' prefix — not matched by cleanupTestData's 'testuser_' pattern,
+    // so parallel suites calling cleanupTestData won't wipe this suite's data.
+    const ts = `${Date.now()}_${Math.random().toString(36).slice(2, 8)}`;
+    const hashedPw = await bcrypt.hash('TestPassword123!', 10);
+    const user = await prisma.user.create({
+      data: {
+        username: `trainupd_${ts}`,
+        email: `trainupd_${ts}@example.com`,
+        password: hashedPw,
+        firstName: 'Train',
+        lastName: 'Updated',
+      },
+    });
     testUserId = user.id;
-    authToken = token;
+    authToken = jwt.sign(
+      { id: user.id, email: user.email, username: user.username, role: 'user' },
+      process.env.JWT_SECRET || 'test-jwt-secret-key-for-testing-only-32chars',
+      { expiresIn: '1h' },
+    );
 
-    const testHorse = await createTestHorse({
-      userId: testUserId,
-      age: 5,
-      dateOfBirth: new Date(Date.now() - 5 * 365 * 24 * 60 * 60 * 1000),
+    const dob5yr = new Date(Date.now() - 5 * 365 * 24 * 60 * 60 * 1000);
+    const testHorse = await prisma.horse.create({
+      data: { name: `TrainHorse_${ts}`, sex: 'Mare', dateOfBirth: dob5yr, userId: testUserId, age: 5 },
     });
     testHorseId = testHorse.id;
 
     // Second horse so the "allow training" test isn't blocked by a cooldown from earlier tests
-    const secondHorse = await createTestHorse({
-      userId: testUserId,
-      age: 5,
-      dateOfBirth: new Date(Date.now() - 5 * 365 * 24 * 60 * 60 * 1000),
+    const secondHorse = await prisma.horse.create({
+      data: { name: `TrainHorse2_${ts}`, sex: 'Mare', dateOfBirth: dob5yr, userId: testUserId, age: 5 },
     });
     secondHorseId = secondHorse.id;
   });
