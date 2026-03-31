@@ -6,14 +6,22 @@
 
 import React from 'react';
 import { render } from '@testing-library/react';
-import { describe, it, expect, beforeEach, afterEach } from 'vitest';
+import { describe, it, expect, beforeEach, afterEach, vi } from 'vitest';
 import { MemoryRouter } from '@/test/utils';
 import { CelestialThemeProvider } from '../CelestialThemeProvider';
+
+// Mock sonner so toast calls don't blow up in jsdom
+vi.mock('sonner', () => ({
+  toast: vi.fn(),
+}));
+
+import { toast } from 'sonner';
 
 describe('CelestialThemeProvider', () => {
   beforeEach(() => {
     localStorage.clear();
     document.body.classList.remove('celestial');
+    vi.clearAllMocks();
   });
 
   afterEach(() => {
@@ -78,5 +86,46 @@ describe('CelestialThemeProvider', () => {
       </MemoryRouter>
     );
     expect(container.innerHTML).toBe('');
+  });
+
+  it('shows welcome toast once when no prior theme is stored', () => {
+    // No THEME_KEY, no WELCOME_SHOWN_KEY in localStorage
+    render(
+      <MemoryRouter initialEntries={['/']}>
+        <CelestialThemeProvider />
+      </MemoryRouter>
+    );
+    expect(toast).toHaveBeenCalledTimes(1);
+    expect(toast).toHaveBeenCalledWith(expect.stringContaining('Equoria has a new look'));
+    expect(localStorage.getItem('equoria-theme-welcome-shown')).toBe('true');
+  });
+
+  it('does not show welcome toast a second time', () => {
+    localStorage.setItem('equoria-theme-welcome-shown', 'true');
+    render(
+      <MemoryRouter initialEntries={['/']}>
+        <CelestialThemeProvider />
+      </MemoryRouter>
+    );
+    expect(toast).not.toHaveBeenCalled();
+  });
+
+  it('does not show welcome toast when theme is explicitly set to celestial', () => {
+    localStorage.setItem('equoria-theme', 'celestial');
+    render(
+      <MemoryRouter initialEntries={['/']}>
+        <CelestialThemeProvider />
+      </MemoryRouter>
+    );
+    expect(toast).not.toHaveBeenCalled();
+  });
+
+  it('does not show welcome toast when ?theme=celestial param is used', () => {
+    render(
+      <MemoryRouter initialEntries={['/?theme=celestial']}>
+        <CelestialThemeProvider />
+      </MemoryRouter>
+    );
+    expect(toast).not.toHaveBeenCalled();
   });
 });
