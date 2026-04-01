@@ -62,7 +62,9 @@ export function clampScore(value) {
  * @returns {number} Integer arithmetic mean of all regions
  */
 export function calculateOverallConformation(scores) {
-  if (!scores || typeof scores !== 'object') return 0;
+  // CONF-2: return neutral midpoint (50) not 0 — a score of 0 is a real competitive value
+  // and would permanently disadvantage any horse created with corrupted scores
+  if (!scores || typeof scores !== 'object') return 50;
   const values = CONFORMATION_REGIONS.map(region => scores[region] ?? 0);
   const sum = values.reduce((acc, val) => acc + val, 0);
   return Math.round(sum / CONFORMATION_REGIONS.length);
@@ -95,6 +97,14 @@ export function generateConformationScores(breedId) {
 
   for (const region of CONFORMATION_REGIONS) {
     const regionProfile = conformation[region];
+    // CONF-1: guard against null/missing region entry in manually-maintained breed data
+    if (!regionProfile || !Number.isFinite(regionProfile.mean)) {
+      logger.warn(
+        `[conformationService] Missing profile for region "${region}" on breed ${breedId}, using neutral defaults`,
+      );
+      scores[region] = clampScore(normalRandom(50, 8));
+      continue;
+    }
     const rawScore = normalRandom(regionProfile.mean, regionProfile.std_dev);
     scores[region] = clampScore(rawScore);
   }
@@ -143,6 +153,14 @@ export function generateInheritedConformationScores(breedId, sireScores, damScor
 
   for (const region of CONFORMATION_REGIONS) {
     const regionProfile = conformation[region];
+    // CONF-1: guard against null/missing region entry in manually-maintained breed data
+    if (!regionProfile || !Number.isFinite(regionProfile.mean)) {
+      logger.warn(
+        `[conformationService] Missing profile for region "${region}" on breed ${breedId} (inherited), using neutral defaults`,
+      );
+      scores[region] = clampScore(normalRandom(50, 8));
+      continue;
+    }
     // Guard against NaN/non-finite parent scores from corrupted DB data
     const sireVal = Number.isFinite(sireScores[region]) ? sireScores[region] : undefined;
     const damVal = Number.isFinite(damScores[region]) ? damScores[region] : undefined;

@@ -17,14 +17,17 @@
  *
  * 🎯 FUNCTIONALITY TESTED:
  * 1. calculateBondingChange() - Trait-modified bonding for grooming/training/competition
- * 2. calculateTemperamentDrift() - Trait-based temperament drift suppression
- * 3. getCombinedTraitEffects() - Multi-trait effect combination and validation
- * 4. Bonding modifiers: social/calm bonuses, antisocial/nervous penalties
- * 5. Temperament suppression: resilient/calm traits prevent drift
- * 6. Competition stress resistance: trait-based stress impact reduction
- * 7. Error handling: missing traits, malformed data, invalid activities
- * 8. Edge cases: empty trait arrays, unknown traits, invalid inputs
- * 9. Integration workflows: complete trait effect application across systems
+ * 2. getCombinedTraitEffects() - Multi-trait effect combination and validation
+ * 3. Bonding modifiers: social/calm bonuses, antisocial/nervous penalties
+ * 4. Competition stress resistance: trait-based stress impact reduction
+ * 5. Error handling: missing traits, malformed data, invalid activities
+ * 6. Edge cases: empty trait arrays, unknown traits, invalid inputs
+ * 7. Integration workflows: complete trait effect application across systems
+ *
+ * NOTE: calculateTemperamentDrift() tests were removed (TEMP-3).
+ * temperamentDrift.mjs uses a legacy 6-type system incompatible with the
+ * canonical 11-type system in temperamentService.mjs (Epic 31D).
+ * The drift module is deprecated with no active importers.
  *
  * 🔄 BALANCED MOCKING APPROACH:
  * ✅ REAL: Complete trait integration logic, bonding calculations, temperament management
@@ -38,7 +41,7 @@
 import { jest, describe, it, expect, beforeEach } from '@jest/globals';
 import { getCombinedTraitEffects } from '../utils/traitEffects.mjs';
 import { calculateBondingChange } from '../utils/bondingModifiers.mjs';
-import { calculateTemperamentDrift } from '../utils/temperamentDrift.mjs';
+// TEMP-3: calculateTemperamentDrift import removed — temperamentDrift.mjs is deprecated (legacy 6-type system)
 
 describe('🎮 UNIT: Trait Integration System - Gameplay Effect Application', () => {
   beforeEach(() => {
@@ -101,78 +104,6 @@ describe('🎮 UNIT: Trait Integration System - Gameplay Effect Application', ()
 
       expect(result.modifiedChange).toBeGreaterThan(5); // Should be significant for 1st place
       expect(result.traitModifier).toBeGreaterThan(1); // Social bonus applied
-    });
-  });
-
-  describe('Temperament Drift Suppression', () => {
-    it('should suppress temperament drift for resilient horses', () => {
-      const horse = {
-        id: 1,
-        temperament: 'Calm',
-        stress_level: 80,
-        epigenetic_modifiers: {
-          positive: ['resilient'],
-          negative: [],
-          hidden: [],
-        },
-      };
-
-      const result = calculateTemperamentDrift(horse, {
-        stressLevel: 80,
-        recentCompetition: true,
-      });
-
-      expect(result.driftOccurred).toBe(false);
-      expect(result.reason).toBe('Suppressed by traits');
-      expect(result.suppressingTraits).toContain('resilient');
-    });
-
-    it('should allow temperament drift for horses without suppressing traits', () => {
-      const horse = {
-        id: 1,
-        temperament: 'Calm',
-        stress_level: 90,
-        epigenetic_modifiers: {
-          positive: [],
-          negative: ['nervous'],
-          hidden: [],
-        },
-      };
-
-      // Mock high random value to force drift
-      Math.random = jest.fn(() => 0.1);
-
-      const result = calculateTemperamentDrift(horse, {
-        stressLevel: 90,
-        recentCompetition: true,
-        bondScore: 20,
-      });
-
-      expect(result.driftProbability).toBeGreaterThan(0);
-      // Note: Actual drift depends on probability roll
-    });
-
-    it('should suppress drift completely for calm horses', () => {
-      const horse = {
-        id: 1,
-        temperament: 'Spirited',
-        stress_level: 60,
-        epigenetic_modifiers: {
-          positive: ['calm'],
-          negative: [],
-          hidden: [],
-        },
-      };
-
-      const result = calculateTemperamentDrift(horse, {
-        stressLevel: 60,
-        recentTraining: true,
-      });
-
-      // Calm trait should completely suppress temperament drift
-      expect(result.driftOccurred).toBe(false);
-      expect(result.reason).toBe('Suppressed by traits');
-      expect(result.suppressingTraits).toContain('calm');
     });
   });
 

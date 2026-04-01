@@ -170,12 +170,13 @@ describe('calculateOverallConformation', () => {
   });
 
   // Edge case: null/undefined scores parameter should not crash
-  test('returns 0 for null scores', () => {
-    expect(calculateOverallConformation(null)).toBe(0);
+  // CONF-2: returns neutral midpoint 50 (not 0) to avoid permanently disadvantaging a horse
+  test('returns 50 for null scores', () => {
+    expect(calculateOverallConformation(null)).toBe(50);
   });
 
-  test('returns 0 for undefined scores', () => {
-    expect(calculateOverallConformation(undefined)).toBe(0);
+  test('returns 50 for undefined scores', () => {
+    expect(calculateOverallConformation(undefined)).toBe(50);
   });
 });
 

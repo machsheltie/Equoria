@@ -37,7 +37,8 @@ export function getTemperamentTrainingModifiers(temperament) {
   if (!temperament || typeof temperament !== 'string') {
     return { xpModifier: 0, scoreModifier: 0 };
   }
-  const mods = TEMPERAMENT_TRAINING_MODIFIERS[temperament];
+  // TEMP-1: trim to match competition modifier's defensive behaviour; prevents whitespace in DB values silently zeroing training modifiers
+  const mods = TEMPERAMENT_TRAINING_MODIFIERS[temperament.trim()];
   if (!mods) {
     logger.warn(
       `[temperamentService] Unknown temperament "${temperament}" — returning zero modifiers`,
@@ -135,9 +136,18 @@ export function getTemperamentGroomSynergy(temperament, groomPersonality) {
 
   const normalizedPersonality = groomPersonality.trim().toLowerCase();
 
+  // TEMP-5: warn when personality is not canonical so DB data errors surface in logs
+  // (an unrecognised personality silently returns 0 for Calm/Steady _any synergy without this)
+  if (!CANONICAL_GROOM_PERSONALITIES.has(normalizedPersonality)) {
+    logger.warn(
+      `[temperamentService] Unrecognised groom personality "${groomPersonality}" — not in canonical set, returning zero synergy`,
+    );
+    return 0;
+  }
+
   // Calm and Steady: universal bonus for any VALID canonical personality
   if ('_any' in synergyMap) {
-    return CANONICAL_GROOM_PERSONALITIES.has(normalizedPersonality) ? synergyMap._any : 0;
+    return synergyMap._any;
   }
 
   // Specific personality match
@@ -155,6 +165,14 @@ export function weightedRandomSelect(weights) {
   const entries = Object.entries(weights);
   if (entries.length === 0) {
     throw new Error('weightedRandomSelect: weights object is empty');
+  }
+
+  // TEMP-2: guard against negative weights which would skew the distribution without throwing
+  const negativeEntry = entries.find(([, w]) => w < 0);
+  if (negativeEntry) {
+    throw new Error(
+      `weightedRandomSelect: negative weight detected for key "${negativeEntry[0]}" (${negativeEntry[1]})`,
+    );
   }
 
   const total = entries.reduce((sum, [, w]) => sum + w, 0);
@@ -200,11 +218,14 @@ export function generateTemperament(breedId) {
 
   const temperament = weightedRandomSelect(weights);
 
-  // Validate the result is a known temperament type
+  // TEMP-4: if weights contain a misspelled key, fall back to a valid type rather than
+  // persisting an unknown string that would silently zero all modifiers on every request
   if (!TEMPERAMENT_TYPES.includes(temperament)) {
+    const fallback = TEMPERAMENT_TYPES[Math.floor(Math.random() * TEMPERAMENT_TYPES.length)];
     logger.warn(
-      `[temperamentService] Generated unknown temperament "${temperament}" for breed ${breedId} — returning anyway`,
+      `[temperamentService] Generated unknown temperament "${temperament}" for breed ${breedId} — falling back to "${fallback}"`,
     );
+    return fallback;
   }
 
   logger.debug(`[temperamentService] Assigned temperament "${temperament}" to breed ${breedId}`);

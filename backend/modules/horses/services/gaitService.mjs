@@ -98,12 +98,25 @@ export function generateGaitScores(breedId, conformationScores) {
     return { ...DEFAULT_UNKNOWN_BREED_GAIT_SCORES };
   }
 
-  const gaits = profile.rating_profiles.gaits;
+  // GAIT-1: use optional chaining consistent with conformationService
+  const gaits = profile.rating_profiles?.gaits;
+  if (!gaits) {
+    logger.warn(`[gaitService] Breed ID ${breedId} profile missing gaits data, using defaults`);
+    return { ...DEFAULT_UNKNOWN_BREED_GAIT_SCORES };
+  }
   const scores = {};
 
   // Generate 4 standard gait scores
   for (const gait of STANDARD_GAITS) {
     const gaitProfile = gaits[gait];
+    // CONF-1 (gait side): guard against null/missing gait entry in manually-maintained breed data
+    if (!gaitProfile || !Number.isFinite(gaitProfile.mean)) {
+      logger.warn(
+        `[gaitService] Missing profile for gait "${gait}" on breed ${breedId}, using neutral defaults`,
+      );
+      scores[gait] = clampScore(normalRandom(50, 8));
+      continue;
+    }
     const bonus = calculateConformationBonus(conformationScores, gait);
     const rawScore = normalRandom(gaitProfile.mean, gaitProfile.std_dev) + bonus;
     scores[gait] = clampScore(rawScore);
@@ -157,12 +170,27 @@ export function generateInheritedGaitScores(
     return { ...DEFAULT_UNKNOWN_BREED_GAIT_SCORES };
   }
 
-  const gaits = profile.rating_profiles.gaits;
+  // GAIT-1 (inherited path): use optional chaining consistent with generateGaitScores
+  const gaits = profile.rating_profiles?.gaits;
+  if (!gaits) {
+    logger.warn(
+      `[gaitService] Breed ID ${breedId} profile missing gaits data (inherited), using defaults`,
+    );
+    return { ...DEFAULT_UNKNOWN_BREED_GAIT_SCORES };
+  }
   const scores = {};
 
   // Generate 4 standard gait scores with inheritance
   for (const gait of STANDARD_GAITS) {
     const gaitProfile = gaits[gait];
+    // CONF-1 (gait inherited): guard against null/missing gait entry
+    if (!gaitProfile || !Number.isFinite(gaitProfile.mean)) {
+      logger.warn(
+        `[gaitService] Missing profile for gait "${gait}" on breed ${breedId} (inherited), using neutral defaults`,
+      );
+      scores[gait] = clampScore(normalRandom(50, 8));
+      continue;
+    }
     // Guard against NaN/non-finite parent scores from corrupted DB data
     const sireVal = Number.isFinite(sireGaitScores[gait]) ? sireGaitScores[gait] : undefined;
     const damVal = Number.isFinite(damGaitScores[gait]) ? damGaitScores[gait] : undefined;
@@ -185,14 +213,17 @@ export function generateInheritedGaitScores(
     const gaitingProfile = gaits.gaiting;
     const bonus = calculateConformationBonus(conformationScores, 'gaiting');
 
-    // Use parent gaiting scores if both exist, else breed mean only
+    // GAIT-2: average ALL named gaiting scores per parent rather than using only index 0.
+    // Breeds with multiple named gaits (e.g. American Saddlebred: Slow Gait + Rack) would
+    // otherwise skew the inherited base value toward only the first-registered gait.
     const sireGaiting =
       sireGaitScores.gaiting && sireGaitScores.gaiting.length > 0
-        ? sireGaitScores.gaiting[0].score
+        ? sireGaitScores.gaiting.reduce((sum, e) => sum + e.score, 0) /
+          sireGaitScores.gaiting.length
         : null;
     const damGaiting =
       damGaitScores.gaiting && damGaitScores.gaiting.length > 0
-        ? damGaitScores.gaiting[0].score
+        ? damGaitScores.gaiting.reduce((sum, e) => sum + e.score, 0) / damGaitScores.gaiting.length
         : null;
 
     let inheritedBaseValue;

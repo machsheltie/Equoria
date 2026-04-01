@@ -7,11 +7,11 @@
  * Aggressive, Docile, Unpredictable) that is incompatible with the canonical 11-type system
  * defined in modules/horses/services/temperamentService.mjs (Epic 31D).
  *
- * CURRENT IMPORTERS (non-production):
- *   - backend/tests/traitIntegration.test.mjs (3 tests use calculateTemperamentDrift)
- *   - backend/examples/traitIntegrationExample.mjs (demo file)
+ * CURRENT IMPORTERS: NONE (TEMP-3 — all importers removed 2026-04-01)
+ *   - backend/tests/traitIntegration.test.mjs: drift tests removed
+ *   - backend/examples/traitIntegrationExample.mjs: deleted
  *
- * DELETION PLAN: This file can be removed once the two importers above are migrated or deleted.
+ * SAFE TO DELETE: This file has no active importers. It can be removed in a future cleanup.
  * DO NOT import this module in any new application code.
  * Canonical system: backend/modules/horses/services/temperamentService.mjs
  */
