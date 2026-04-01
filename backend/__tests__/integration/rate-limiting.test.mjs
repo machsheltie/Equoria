@@ -21,6 +21,7 @@ import prisma from '../../../packages/database/prismaClient.mjs';
 import {
   createTestUser,
   cleanupTestUser,
+  cleanupTestUsersByEmail,
   createUserData,
   sleep,
   expectRateLimitHeaders,
@@ -47,6 +48,9 @@ describe('Rate Limiting System', () => {
     process.env.TEST_BYPASS_RATE_LIMIT = 'false';
     // Start server once for all tests
     server = app.listen(0);
+
+    // Clean up any leftover user from a previous failed run before creating
+    await cleanupTestUsersByEmail('ratelimit@example.com');
 
     // Create test user for authentication tests
     testUser = await createTestUser({
