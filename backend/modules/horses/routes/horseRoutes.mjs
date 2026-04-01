@@ -21,6 +21,7 @@ import { createHorse } from '../../../models/horseModel.mjs';
 import { generateConformationScores } from '../services/conformationService.mjs';
 import { generateGaitScores } from '../services/gaitService.mjs';
 import { generateTemperament } from '../services/temperamentService.mjs';
+import { generateGenotype } from '../services/genotypeGenerationService.mjs';
 import prisma from '../../../db/index.mjs';
 import logger from '../../../utils/logger.mjs';
 
@@ -494,6 +495,18 @@ router.post(
       // Generate temperament from breed-weighted random selection
       const temperament = generateTemperament(req.body.breedId);
 
+      // Fetch breed genetic profile for coat color genotype generation
+      let breedGeneticProfile = null;
+      if (req.body.breedId) {
+        const breed = await prisma.breed.findUnique({
+          where: { id: req.body.breedId },
+          select: { breedGeneticProfile: true },
+        });
+        breedGeneticProfile = breed?.breedGeneticProfile ?? null;
+      }
+      // Generate coat color genotype from breed allele weights (31E-1a)
+      const colorGenotype = generateGenotype(breedGeneticProfile);
+
       // Whitelist creation fields to prevent mass-assignment of protected fields
       // (e.g. totalEarnings, level, bondScore, stressLevel, epigeneticModifiers)
 
@@ -502,7 +515,9 @@ router.post(
       // so a horse created with age:5 gets a dateOfBirth 5 years in the past.
       const horseAge = req.body.age ?? 0;
       const computedDateOfBirth = (() => {
-        if (req.body.dateOfBirth) return new Date(req.body.dateOfBirth).toISOString();
+        if (req.body.dateOfBirth) {
+          return new Date(req.body.dateOfBirth).toISOString();
+        }
         const d = new Date();
         d.setFullYear(d.getFullYear() - horseAge);
         return d.toISOString();
@@ -520,6 +535,7 @@ router.post(
         conformationScores,
         gaitScores,
         temperament,
+        colorGenotype,
         ...(req.body.finalDisplayColor && { finalDisplayColor: req.body.finalDisplayColor }),
       };
 

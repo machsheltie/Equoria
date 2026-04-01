@@ -188,8 +188,8 @@ development_status:
   pre-31e-frontend-integration-backlog-31d: done # docs/frontend-integration-backlog.md updated with full 31D section: endpoints, response fields, component checklist ✅
 
   # Epic 31E: Coat Color Genetics
-  epic-31e: backlog
-  31e-1a-genotype-generation-and-migration: backlog
+  epic-31e: in-progress
+  31e-1a-genotype-generation-and-migration: review
   31e-1b-phenotype-calculation-engine: backlog
   31e-2-breed-allele-restrictions: backlog
   31e-3-breeding-inheritance-and-lethal-filtering: backlog

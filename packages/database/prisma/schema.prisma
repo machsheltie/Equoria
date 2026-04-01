@@ -112,6 +112,9 @@ model Horse {
   /// Genetics and appearance
   genotype                Json?
   phenotypicMarkings      Json?
+  /// Coat color genetics (Epic 31E)
+  colorGenotype           Json?                 // Allele pairs per locus: { E_Extension: "E/e", ... }
+  phenotype               Json?                 // Calculated phenotype: { color, shade, markings, ... }
   finalDisplayColor       String?
   shade                   String?
   imageUrl                String?               @default("/images/samplehorse.JPG")
