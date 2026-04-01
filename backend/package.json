@@ -39,6 +39,7 @@
     "migrate": "node scripts/migrate.mjs",
     "seed": "node seed/seedDatabase.mjs",
     "seed:test": "NODE_ENV=test node seed/seedDatabase.mjs",
+    "seed:breeds": "node seed/populateBreedsFromSql.mjs",
     "seed:performance": "NODE_ENV=test node seed/seedPerformanceData.mjs",
     "health-check": "node scripts/health-check.mjs",
     "validate-env": "node scripts/validate-environment.mjs",

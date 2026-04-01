@@ -15,8 +15,8 @@
  *  - description?: helper text
  */
 
-import React, { useState } from 'react';
-import { ChevronDown, ChevronUp, Zap, Lock } from 'lucide-react';
+import React from 'react';
+import { Zap, Lock } from 'lucide-react';
 
 // ── Discipline stat map (mirrors backend/utils/statMap.mjs) ───────────────────
 
@@ -197,8 +197,6 @@ const DisciplineSelector: React.FC<DisciplineSelectorProps> = ({
   matchScores,
   ineligibleDisciplines,
 }) => {
-  const [showAll, setShowAll] = useState(false);
-
   // Top 5 recommended (validated against known list)
   const top5 = recommendedDisciplines.filter((d) => disciplines.includes(d)).slice(0, 5);
 
@@ -243,26 +241,8 @@ const DisciplineSelector: React.FC<DisciplineSelectorProps> = ({
         </div>
       )}
 
-      {/* Expand / collapse full list */}
-      <button
-        type="button"
-        onClick={() => setShowAll((v) => !v)}
-        className="flex items-center gap-1 text-[11px] text-[var(--text-muted)] hover:text-[var(--text-primary)] transition-colors mb-2 focus-visible:outline-none"
-      >
-        {showAll ? (
-          <>
-            <ChevronUp className="w-3.5 h-3.5" aria-hidden="true" />
-            Hide all disciplines
-          </>
-        ) : (
-          <>
-            <ChevronDown className="w-3.5 h-3.5" aria-hidden="true" />
-            Browse all {rest.length} disciplines
-          </>
-        )}
-      </button>
-
-      {showAll && (
+      {/* All remaining disciplines — always visible */}
+      {rest.length > 0 && (
         <div className="space-y-2 max-h-64 overflow-y-auto scroll-area-celestial pr-1">
           {rest.map((d) => (
             <DisciplineOption
@@ -276,22 +256,6 @@ const DisciplineSelector: React.FC<DisciplineSelectorProps> = ({
               onSelect={() => onDisciplineChange(d)}
             />
           ))}
-        </div>
-      )}
-
-      {/* Fallback: selected discipline not in recommended/visible → show it */}
-      {selectedDiscipline && !top5.includes(selectedDiscipline) && !showAll && (
-        <div className="mt-2">
-          <p className="text-[9px] uppercase tracking-widest text-[var(--text-muted)] font-[var(--font-body)] mb-1">
-            Currently selected
-          </p>
-          <DisciplineOption
-            discipline={selectedDiscipline}
-            isSelected
-            isRecommended={false}
-            matchScore={matchScores?.[selectedDiscipline]}
-            onSelect={() => {}}
-          />
         </div>
       )}
     </div>

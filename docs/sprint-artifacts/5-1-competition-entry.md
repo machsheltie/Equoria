@@ -1,8 +1,8 @@
 # Story 5.1: Competition Entry
 
 **Created:** 2026-02-02
-**Status:** completed
 **Completed:** 2026-02-02
+**Status:** completed
 **Epic:** 5 - Competition System
 **FR:** FR-C1
 **Priority:** P0
@@ -156,9 +156,9 @@ CompetitionBrowserPage.tsx (NEW - Page)
 ├── CompetitionDetailModal.tsx (NEW - Competition details view)
 │   ├── HorseSelector.tsx (NEW - Select eligible horses)
 │   │   ├── EligibilityIndicator.tsx (REUSE from Story 4.2)
-│   │   └── HorseEligibilityCard.tsx (NEW - Horse with eligibility status)
+│   │   └── HorseSelectionCard.tsx (NEW - Horse with eligibility status)
 │   └── EntryConfirmationModal.tsx (NEW - Final confirmation)
-└── CompetitionSuccessToast.tsx (NEW - Entry success notification)
+└── CompetitionSuccessToast.tsx (ABSORBED into RewardToast — not implemented as standalone)
 ```
 
 **State Management:**
@@ -277,13 +277,17 @@ import {
    - Select single or multiple horses (depending on competition type)
    - Show eligibility reasons
 
-7. `frontend/src/components/competition/HorseSelectionCard.tsx` _(renamed from HorseEligibilityCard during implementation)_
-
+7. `frontend/src/components/competition/HorseSelectionCard.tsx`
    - Individual horse card with eligibility status
    - Horse name, age, stats
    - Eligibility indicator (green check, red X, yellow warning)
    - Ineligibility reason tooltip
    - Expected performance indicator
+
+7a. `frontend/src/components/competition/CompetitionFieldPreview.tsx`
+
+- Preview of the competition field (other entrants)
+- Created during implementation, not in original spec
 
 8. `frontend/src/components/competition/EntryConfirmationModal.tsx`
 
@@ -293,15 +297,13 @@ import {
    - Confirm/cancel actions
    - Loading state during submission
 
-9. ~~`frontend/src/components/competition/CompetitionSuccessToast.tsx`~~ _(Not created — success notification handled by `RewardToast` in `feedback/` directory using type='prize', plus inline success state in EntryConfirmationModal)_
-   - Success notification after entry
-   - Entry confirmation number
-   - Link to competition details
-   - Auto-dismiss after 5 seconds
+9. ~~`frontend/src/components/competition/CompetitionSuccessToast.tsx`~~ (ABSORBED)
+   - Success notification was absorbed into the shared RewardToast component
+   - Not implemented as a standalone component
 
 **Hooks:** 10. `frontend/src/hooks/api/useCompetitions.ts` - React Query hooks for competition data - `useCompetitions(filters)` - List competitions - `useCompetitionDetails(id)` - Single competition - `useHorseEligibility(competitionId)` - Eligibility check - `useEnterCompetition()` - Entry mutation
 
-**Test Files:** 11. `frontend/src/pages/__tests__/CompetitionBrowserPage.test.tsx` 12. `frontend/src/components/competition/__tests__/CompetitionFilters.test.tsx` 13. `frontend/src/components/competition/__tests__/CompetitionList.test.tsx` 14. `frontend/src/components/competition/__tests__/CompetitionCard.test.tsx` 15. `frontend/src/components/competition/__tests__/CompetitionDetailModal.test.tsx` 16. `frontend/src/components/competition/__tests__/HorseSelector.test.tsx` 17. `frontend/src/components/competition/__tests__/HorseSelectionCard.test.tsx` _(renamed from HorseEligibilityCard.test during implementation)_ 18. `frontend/src/components/competition/__tests__/EntryConfirmationModal.test.tsx` 19. `frontend/src/hooks/api/__tests__/useCompetitions.test.ts`
+**Test Files:** 11. `frontend/src/pages/__tests__/CompetitionBrowserPage.test.tsx` 12. `frontend/src/components/competition/__tests__/CompetitionFilters.test.tsx` 13. `frontend/src/components/competition/__tests__/CompetitionList.test.tsx` 14. `frontend/src/components/competition/__tests__/CompetitionCard.test.tsx` 15. `frontend/src/components/competition/__tests__/CompetitionDetailModal.test.tsx` 16. `frontend/src/components/competition/__tests__/HorseSelector.test.tsx` 17. `frontend/src/components/competition/__tests__/HorseSelectionCard.test.tsx` 18. `frontend/src/components/competition/__tests__/EntryConfirmationModal.test.tsx` 19. `frontend/src/hooks/api/__tests__/useCompetitions.test.ts`
 
 ### Files to REUSE (from Epic 4)
 
@@ -385,7 +387,7 @@ import {
 - Empty state (no eligible horses)
 - Selection state management
 
-**HorseSelectionCard.tsx (28 tests — renamed from HorseEligibilityCard during implementation):**
+**HorseSelectionCard.tsx (22 tests):**
 
 - Horse data display
 - Eligibility indicator colors
@@ -751,7 +753,7 @@ import * as Dialog from '@radix-ui/react-dialog';
 **Files:**
 
 - `HorseSelector.tsx` (CREATE)
-- `HorseEligibilityCard.tsx` (CREATE)
+- `HorseSelectionCard.tsx` (CREATE) — renamed from HorseEligibilityCard during implementation
 
 **Activities:**
 
@@ -872,14 +874,13 @@ import * as Dialog from '@radix-ui/react-dialog';
 - [x] No TypeScript errors in competition files ✅
 - [x] No ESLint warnings in competition files ✅
 - [x] Component documentation complete ✅
-- [ ] Story marked as "complete" in sprint-status.yaml
+- [x] Story marked as "complete" in sprint-status.yaml
 
 ---
 
-**Status:** ready-for-dev ✅
+**Status:** completed ✅
 **Prerequisites:** Epic 3 ✅, Epic 4 ✅ (Training System complete)
-**Estimated Effort:** 18-24 hours total
-**Next Steps:** Run `dev-story 5-1-competition-entry` to begin TDD implementation
+**Completed:** 2026-02-02
 
 ---
 
@@ -1105,7 +1106,6 @@ import * as Dialog from '@radix-ui/react-dialog';
 **Files Created:**
 
 - `frontend/src/components/competition/EntryConfirmationModal.tsx` (276 lines)
-- `frontend/src/components/competition/CompetitionFieldPreview.tsx` (created during implementation — discipline/field preview component not in original spec)
 - `frontend/src/components/competition/__tests__/EntryConfirmationModal.test.tsx` (41 tests)
 - Updated `frontend/src/components/competition/index.ts` (added exports)
 

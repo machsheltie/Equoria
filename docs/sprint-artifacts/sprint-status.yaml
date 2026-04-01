@@ -861,7 +861,7 @@ development_status:
 
       Epic 5 Stories Complete: 5/5
       - Story 5-1: Competition Entry (276 tests) ✅
-      - Story 5-2: Competition Results (181 tests) ✅
+      - Story 5-2: Competition Results (190 tests) ✅
       - Story 5-3: Prize Distribution Display (197 tests) ✅
       - Story 5-4: XP Award Notifications (253 tests) ✅
       - Story 5-5: Leaderboards (217 tests) ✅
@@ -1019,7 +1019,7 @@ development_status:
       - Task 8: Integration tests (20 tests)
 
       Epic 5 Stories Complete: 4/5
-      - Story 5-2: Competition Results (181 tests)
+      - Story 5-2: Competition Results (190 tests)
       - Story 5-3: Prize Distribution Display (197 tests)
       - Story 5-4: XP Award Notifications (253 tests)
       - Story 5-5: Leaderboards (217 tests)
@@ -4613,4 +4613,213 @@ summary:
     notes: 'Requires Lighthouse CI + bundle analysis'
 
   epic-30-retrospective:
+    status: optional
+
+  # ----------------------------------------------------------
+  # PHYSICAL SYSTEMS SERIES (Epics 31A-31F)
+  # Source: docs/epics-physical-systems.md
+  # Last Updated: 2026-03-31
+  # Dependency: 31A -> 31B/31D/31E (parallel) -> 31C (after 31B) -> 31F (after 31B+31D)
+  # Breed data source: docs/BreedData/ (150+ breed SQL files)
+  # ----------------------------------------------------------
+
+  epic-31A:
+    title: 'Breed Genetic Profile Population'
+    status: in-progress
+    started_date: '2026-04-01'
+    notes: 'Data source docs/BreedData - Must complete before 31B/31D/31E'
+
+  31A-1-populate-breed-genetic-profile-data:
+    title: 'Populate Breed Genetic Profile Data'
+    status: review
+    started_date: '2026-04-01'
+    completed_date: '2026-04-01'
+    epic: 31A
+    story: 1
+    prerequisites: []
+    completion_notes: '16/16 tests passing; 310 breed SQL files processed; 320 total rows; idempotent; migration 20260401000000_add_breed_default_trait applied'
+
+  epic-31A-retrospective:
+    status: optional
+
+  epic-31B:
+    title: 'Conformation Scoring System'
+    status: backlog
+    notes: 'Depends on Epic 31A'
+
+  31B-1-conformation-score-generation-service:
+    title: 'Conformation Score Generation Service'
+    status: backlog
+    epic: 31B
+    story: 1
+    prerequisites: [31A-1-populate-breed-genetic-profile-data]
+
+  31B-2-conformation-breeding-inheritance:
+    title: 'Conformation Breeding Inheritance'
+    status: backlog
+    epic: 31B
+    story: 2
+    prerequisites: [31B-1-conformation-score-generation-service]
+
+  31B-3-conformation-api-endpoints:
+    title: 'Conformation API Endpoints'
+    status: backlog
+    epic: 31B
+    story: 3
+    prerequisites: [31B-1-conformation-score-generation-service]
+
+  epic-31B-retrospective:
+    status: optional
+
+  epic-31C:
+    title: 'Gait Quality System'
+    status: backlog
+    notes: 'Depends on Epics 31A and 31B'
+
+  31C-1-gait-score-generation-service:
+    title: 'Gait Score Generation Service'
+    status: backlog
+    epic: 31C
+    story: 1
+    prerequisites: [31B-1-conformation-score-generation-service]
+
+  31C-2-gait-breeding-inheritance:
+    title: 'Gait Breeding Inheritance'
+    status: backlog
+    epic: 31C
+    story: 2
+    prerequisites: [31C-1-gait-score-generation-service]
+
+  31C-3-gait-api-endpoint:
+    title: 'Gait API Endpoint'
+    status: backlog
+    epic: 31C
+    story: 3
+    prerequisites: [31C-1-gait-score-generation-service]
+
+  epic-31C-retrospective:
+    status: optional
+
+  epic-31D:
+    title: 'Breed Temperament System'
+    status: backlog
+    notes: 'Depends on Epic 31A - parallel with 31B and 31E'
+
+  31D-1-temperament-assignment-service-migration:
+    title: 'Temperament Assignment Service and Migration'
+    status: backlog
+    epic: 31D
+    story: 1
+    prerequisites: [31A-1-populate-breed-genetic-profile-data]
+
+  31D-2-training-temperament-modifiers:
+    title: 'Training Temperament Modifiers'
+    status: backlog
+    epic: 31D
+    story: 2
+    prerequisites: [31D-1-temperament-assignment-service-migration]
+
+  31D-3-competition-temperament-modifiers:
+    title: 'Competition Temperament Modifiers'
+    status: backlog
+    epic: 31D
+    story: 3
+    prerequisites: [31D-1-temperament-assignment-service-migration]
+
+  31D-4-groom-temperament-synergy:
+    title: 'Groom Temperament Synergy'
+    status: backlog
+    epic: 31D
+    story: 4
+    prerequisites: [31D-1-temperament-assignment-service-migration]
+
+  31D-5-temperament-definitions-endpoint:
+    title: 'Temperament Definitions Endpoint'
+    status: backlog
+    epic: 31D
+    story: 5
+    prerequisites: [31D-1-temperament-assignment-service-migration]
+
+  epic-31D-retrospective:
+    status: optional
+
+  # Epic 31E: Coat Color Genetics - PRIMARY TARGET
+  epic-31E:
+    title: 'Coat Color Genetics'
+    status: backlog
+    notes: 'Depends on Epic 31A - parallel with 31B/31D - breed genetics source docs/BreedData/'
+
+  31E-1a-genotype-generation-service-migration:
+    title: 'Genotype Generation Service and Migration'
+    status: backlog
+    epic: 31E
+    story: 1a
+    prerequisites: [31A-1-populate-breed-genetic-profile-data]
+
+  31E-1b-phenotype-calculation-engine:
+    title: 'Phenotype Calculation Engine'
+    status: backlog
+    epic: 31E
+    story: 1b
+    prerequisites: [31E-1a-genotype-generation-service-migration]
+
+  31E-2-mendelian-breeding-inheritance-lethal-filtering:
+    title: 'Mendelian Breeding Inheritance and Lethal Filtering'
+    status: backlog
+    epic: 31E
+    story: 2
+    prerequisites: [31E-1a-genotype-generation-service-migration]
+
+  31E-3-marking-system:
+    title: 'Marking System'
+    status: backlog
+    epic: 31E
+    story: 3
+    prerequisites: [31E-1a-genotype-generation-service-migration]
+
+  31E-4-color-genetics-api-endpoints:
+    title: 'Color Genetics API Endpoints'
+    status: backlog
+    epic: 31E
+    story: 4
+    prerequisites: [31E-1b-phenotype-calculation-engine, 31E-3-marking-system]
+
+  31E-5-breeding-color-prediction:
+    title: 'Breeding Color Prediction'
+    status: backlog
+    epic: 31E
+    story: 5
+    prerequisites: [31E-1b-phenotype-calculation-engine]
+
+  epic-31E-retrospective:
+    status: optional
+
+  epic-31F:
+    title: 'Conformation Show Handling'
+    status: backlog
+    notes: 'Depends on Epics 31B and 31D'
+
+  31F-1-conformation-show-scoring-engine:
+    title: 'Conformation Show Scoring Engine'
+    status: backlog
+    epic: 31F
+    story: 1
+    prerequisites:
+      [31B-1-conformation-score-generation-service, 31D-1-temperament-assignment-service-migration]
+
+  31F-2-rewards-titles-breeding-value-boost:
+    title: 'Rewards Titles and Breeding Value Boost'
+    status: backlog
+    epic: 31F
+    story: 2
+    prerequisites: [31F-1-conformation-show-scoring-engine]
+
+  31F-3-conformation-show-api-endpoints:
+    title: 'Conformation Show API Endpoints'
+    status: backlog
+    epic: 31F
+    story: 3
+    prerequisites: [31F-1-conformation-show-scoring-engine]
+
+  epic-31F-retrospective:
     status: optional

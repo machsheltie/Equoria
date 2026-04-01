@@ -72,10 +72,12 @@ model User {
 model Breed {
   /// Unique identifier for each breed
   id                  Int     @id @default(autoincrement())
-  /// Name of the breed
-  name                String
+  /// Name of the breed (unique constraint required for ON CONFLICT upserts)
+  name                String  @unique
   /// Description of the breed
   description         String?
+  /// Optional default trait associated with the breed
+  defaultTrait        String?
   /// JSONB containing rating_profiles (conformation, gaits, gaited config) and temperament_weights
   breedGeneticProfile Json?
   horses              Horse[]

@@ -376,14 +376,16 @@ export function createRateLimiter(options = {}) {
 
 /**
  * Authentication Rate Limiter
- * Strict limits to prevent brute force attacks
- * 50 attempts per 15 minutes per user/IP
+ * Limits failed auth attempts to prevent brute force attacks.
+ * Successful logins/refreshes are NOT counted so normal dev/testing
+ * workflows (many log-in/log-out cycles) are never blocked.
+ * 200 failed attempts per 15 minutes per user/IP.
  */
 export const authRateLimiter = createRateLimiter({
   windowMs: 15 * 60 * 1000, // 15 minutes
-  max: 50, // 50 attempts
-  message: 'Too many authentication attempts. Please try again in 15 minutes.',
-  skipSuccessfulRequests: false, // Count all auth attempts
+  max: 200, // 200 failed attempts before lockout
+  message: 'Too many failed authentication attempts. Please try again in 15 minutes.',
+  skipSuccessfulRequests: true, // Only count failures — prevents dev/test lockout
   keyPrefix: 'rl:auth',
 });
 
