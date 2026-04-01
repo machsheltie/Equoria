@@ -55,9 +55,11 @@ describe('Horse Aging System', () => {
   const createdUserIds = [];
   const createdBreedIds = [];
   const createdHorseIds = [];
+  let _savedDate; // Save Date so afterEach can restore it if a test times out mid-replacement
 
   beforeEach(async () => {
     jest.clearAllMocks();
+    _savedDate = global.Date;
 
     // Create test user
     testUser = await prisma.user.create({
@@ -85,6 +87,7 @@ describe('Horse Aging System', () => {
 
   afterEach(async () => {
     jest.restoreAllMocks();
+    global.Date = _savedDate; // Restore Date even if test timed out mid-replacement
 
     // Clean up test data (Scoped)
     if (createdHorseIds.length > 0) {
