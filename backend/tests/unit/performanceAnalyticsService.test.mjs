@@ -49,9 +49,11 @@ describe('Performance Analytics Service', () => {
       lastName: testUser.lastName,
     };
 
-    // Create test breed
-    testBreed = await prisma.breed.create({
-      data: {
+    // Create test breed (upsert to avoid collision with other test suites)
+    testBreed = await prisma.breed.upsert({
+      where: { name: 'Test Breed' },
+      update: {},
+      create: {
         name: 'Test Breed',
         description: 'Test breed for analytics',
       },
@@ -69,6 +71,9 @@ describe('Performance Analytics Service', () => {
         runDate: new Date(),
       },
     });
+
+    // Pre-clean leftover horse from previous failed run
+    await prisma.horse.deleteMany({ where: { name: 'Analytics Test Horse' } });
 
     // Create test horse
     testHorse = await prisma.horse.create({

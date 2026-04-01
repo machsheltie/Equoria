@@ -49,9 +49,11 @@ describe('Dynamic Compatibility Controller API', () => {
 
     testToken = generateTestToken({ id: testUser.id, email: testUser.email });
 
-    // Create test breed
-    const testBreed = await prisma.breed.create({
-      data: {
+    // Create test breed (upsert to avoid collision with other test suites)
+    const testBreed = await prisma.breed.upsert({
+      where: { name: 'Test Breed' },
+      update: {},
+      create: {
         name: 'Test Breed',
         description: 'Test breed for compatibility testing',
       },

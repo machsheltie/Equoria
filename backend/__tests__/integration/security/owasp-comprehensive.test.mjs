@@ -60,6 +60,9 @@ describe('🔒 OWASP Top 10 - Comprehensive Security Tests', () => {
       payload: { email: testUser.email, role: testUser.role },
     });
 
+    // Pre-clean leftover horse from previous failed run
+    await prisma.horse.deleteMany({ where: { name: 'OWASP Test Horse' } });
+
     // Create test horse
     testHorse = await prisma.horse.create({
       data: {

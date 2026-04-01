@@ -43,6 +43,9 @@ describe('Memory Management Routes', () => {
     process.env.NODE_ENV = 'development';
     delete process.env.JEST_WORKER_ID;
 
+    // Pre-clean leftover user from previous failed run
+    await prisma.user.deleteMany({ where: { email: 'memory@test.com' } });
+
     // Create test user
     testUser = await prisma.user.create({
       data: {
