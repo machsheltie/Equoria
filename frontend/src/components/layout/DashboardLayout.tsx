@@ -23,6 +23,7 @@ const CUSTOM_BG_ROUTES: Record<string, string> = {
   '/feed-shop': '/images/feedstore2.webp',
   '/tack-shop': '/images/tackstore.webp',
   '/farrier': '/assets/art/farrier.webp',
+  '/training': '/images/equinehospital.webp',
 };
 
 const DashboardLayout: React.FC = () => {

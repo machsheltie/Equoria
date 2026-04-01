@@ -1,5 +1,6 @@
 import express from 'express';
 import cronJobService from '../../../services/cronJobs.mjs';
+import { updateHorseAge } from '../../../utils/horseAgingSystem.mjs';
 import prisma from '../../../db/index.mjs';
 import logger from '../../../utils/logger.mjs';
 
@@ -174,6 +175,85 @@ router.get('/traits/definitions', async (req, res) => {
       success: false,
       message: 'Failed to retrieve trait definitions',
     });
+  }
+});
+
+/**
+ * POST /api/v1/admin/horses/age
+ * Manually trigger the aging process for ALL horses.
+ * Syncs every horse's stored age (in days) from its dateOfBirth.
+ * Use this after correcting dateOfBirth values to immediately reflect the change.
+ */
+router.post('/horses/age', async (req, res) => {
+  try {
+    logger.info('[adminRoutes] POST /api/v1/admin/horses/age — Manual horse aging triggered');
+
+    const result = await cronJobService.manualHorseAging();
+
+    res.json({
+      success: true,
+      message: 'Manual horse aging completed',
+      data: result,
+    });
+  } catch (error) {
+    logger.error(`[adminRoutes] POST /api/v1/admin/horses/age error: ${error.message}`);
+    res
+      .status(500)
+      .json({ success: false, message: 'Failed to run horse aging', error: error.message });
+  }
+});
+
+/**
+ * POST /api/v1/admin/horses/:id/set-age
+ * Set a horse's game age by deriving a correct dateOfBirth and re-running aging.
+ *
+ * This is the right way to adjust ages — it keeps dateOfBirth and horse.age in sync
+ * so future cron runs continue to work correctly.
+ *
+ * Body: { gameAge: number }  — desired age in game years (1 game year = 7 real days)
+ *
+ * Example: gameAge: 5 → dateOfBirth = today − 35 days → horse.age = 35
+ */
+router.post('/horses/:id/set-age', async (req, res) => {
+  try {
+    const horseId = parseInt(req.params.id, 10);
+    const { gameAge } = req.body;
+
+    if (!Number.isInteger(horseId) || horseId <= 0) {
+      return res.status(400).json({ success: false, message: 'Invalid horse ID' });
+    }
+    if (typeof gameAge !== 'number' || gameAge < 0 || gameAge > 30) {
+      return res
+        .status(400)
+        .json({ success: false, message: 'gameAge must be a number between 0 and 30' });
+    }
+
+    logger.info(`[adminRoutes] POST /api/v1/admin/horses/${horseId}/set-age — gameAge=${gameAge}`);
+
+    // 1 game year = 7 real days — derive the correct dateOfBirth
+    const DAYS_PER_GAME_YEAR = 7;
+    const dateOfBirth = new Date();
+    dateOfBirth.setDate(dateOfBirth.getDate() - Math.round(gameAge * DAYS_PER_GAME_YEAR));
+
+    // Update dateOfBirth so the aging cron stays consistent going forward
+    await prisma.horse.update({
+      where: { id: horseId },
+      data: { dateOfBirth },
+    });
+
+    // Re-run aging for this horse to immediately sync horse.age
+    const result = await updateHorseAge(horseId);
+
+    res.json({
+      success: true,
+      message: `Horse ${horseId} set to game age ${gameAge} (dateOfBirth: ${dateOfBirth.toISOString().split('T')[0]})`,
+      data: result,
+    });
+  } catch (error) {
+    logger.error(`[adminRoutes] POST /api/v1/admin/horses/:id/set-age error: ${error.message}`);
+    res
+      .status(500)
+      .json({ success: false, message: 'Failed to set horse age', error: error.message });
   }
 });
 

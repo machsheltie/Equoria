@@ -46,10 +46,9 @@ async function canTrain(horseId, discipline) {
       `[trainingController.canTrain] Checking training eligibility for horse ${parsedHorseId} in ${discipline}`,
     );
 
-    // Check horse age requirement (must be 3+ years old)
-    const age = await getHorseAge(parsedHorseId);
-
-    if (age === null) {
+    // Fetch horse upfront — needed for age check and trait requirements
+    const horse = await getHorseById(parsedHorseId);
+    if (!horse) {
       logger.warn(`[trainingController.canTrain] Horse ${parsedHorseId} not found`);
       return {
         eligible: false,
@@ -57,9 +56,17 @@ async function canTrain(horseId, discipline) {
       };
     }
 
-    if (age < 3) {
+    // Compute effective age: prefer stored game-year field over calendar-based fallback.
+    // Consistent with getTrainableHorses() — handles the case where dateOfBirth is set
+    // to the creation date while horse.age holds the correct game age (e.g. adult horses
+    // whose dateOfBirth was not back-dated, or horses aged via the horseAgingSystem cron).
+    const computedAge = await getHorseAge(parsedHorseId);
+    const effectiveAge =
+      horse.age !== null && horse.age !== undefined ? horse.age : (computedAge ?? 0);
+
+    if (effectiveAge < 3) {
       logger.info(
-        `[trainingController.canTrain] Horse ${parsedHorseId} is too young (${age} years old)`,
+        `[trainingController.canTrain] Horse ${parsedHorseId} is too young (effectiveAge=${effectiveAge})`,
       );
       return {
         eligible: false,
@@ -69,17 +76,6 @@ async function canTrain(horseId, discipline) {
 
     // Check trait requirements for specific disciplines (e.g., Gaited)
     if (discipline === 'Gaited') {
-      const horse = await getHorseById(parsedHorseId);
-      if (!horse) {
-        logger.warn(
-          `[trainingController.canTrain] Horse ${parsedHorseId} not found for trait check`,
-        );
-        return {
-          eligible: false,
-          reason: 'Horse not found',
-        };
-      }
-
       if (!checkTraitRequirements(horse, discipline)) {
         logger.info(
           `[trainingController.canTrain] Horse ${parsedHorseId} lacks required trait for ${discipline} training`,

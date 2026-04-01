@@ -1,10 +1,15 @@
 /**
- * TrainingPage — Training Grounds location
+ * TrainingPage — World > Training Grounds Location
  *
- * Atmospheric shell wrapping TrainingDashboard with Celestial Night depth.
- * Feels like entering a moonlit training arena, not a data dashboard.
+ * The Training Grounds location in the World hub. Follows the same layout
+ * pattern as TackShopPage, FarrierPage, and FeedShopPage:
+ *   - PageHero with breadcrumb (World / Training Grounds)
+ *   - Banner image in a glass card
+ *   - Content area wrapped in max-w-7xl container
+ *   - Info panel at the bottom
  */
 
+import { Link } from 'react-router-dom';
 import { Swords } from 'lucide-react';
 import TrainingDashboard from '@/components/training/TrainingDashboard';
 import PageHero from '@/components/layout/PageHero';
@@ -46,11 +51,33 @@ const TrainingPage = () => {
         subtitle="Hone your horses' skills across 23 disciplines. Each session pushes them closer to their potential."
         mood="default"
         icon={<Swords className="w-7 h-7 text-[var(--gold-400)]" aria-hidden="true" />}
-      />
+      >
+        {/* Breadcrumb */}
+        <div className="flex items-center gap-2 text-sm text-[var(--cream)]/60">
+          <Link to="/world" className="hover:text-[var(--cream)] transition-colors">
+            World
+          </Link>
+          <span>/</span>
+          <span className="text-[var(--cream)]">Training Grounds</span>
+        </div>
+      </PageHero>
 
-      <div className="mx-auto max-w-6xl px-4 sm:px-6 lg:px-8 pb-12">
-        <div className="glass-panel rounded-2xl p-4 sm:p-6">
-          <TrainingDashboard userId={user?.id ? String(user.id) : undefined} />
+      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 pb-8">
+        {/* Training Dashboard */}
+        <TrainingDashboard userId={user?.id ? String(user.id) : undefined} />
+
+        {/* Info Panel */}
+        <div className="mt-10 p-5 rounded-xl glass-panel text-sm text-[var(--text-muted)]">
+          <h3 className="font-semibold text-[var(--cream)] mb-2">About the Training Grounds</h3>
+          <ul className="space-y-1 list-disc list-inside">
+            <li>Horses must be at least 3 years old before they can begin formal training</li>
+            <li>Each discipline has a 7-day global cooldown to prevent stat stacking</li>
+            <li>Training improves the primary stats associated with each discipline</li>
+            <li>Injured horses cannot train — visit the Farrier or Vet first</li>
+            <li>
+              Consistent training over time unlocks higher performance ceilings in competition
+            </li>
+          </ul>
         </div>
       </div>
     </div>
