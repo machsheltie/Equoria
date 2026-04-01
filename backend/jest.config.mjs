@@ -11,6 +11,7 @@ export default {
 
   // Setup files
   setupFilesAfterEnv: ['<rootDir>/tests/setup.mjs'],
+  globalSetup: '<rootDir>/tests/globalSetup.mjs',
   globalTeardown: '<rootDir>/tests/teardown.mjs',
 
   // Test file patterns
