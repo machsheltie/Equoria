@@ -235,9 +235,13 @@ describe('POST /api/v1/horses — colorGenotype integration', () => {
   beforeAll(async () => {
     server = app.listen(0);
 
-    // Look up Arabian breed by name (ID differs between dev and test DBs)
-    const arabianBreed = await prisma.breed.findFirst({ where: { name: 'Arabian' } });
-    arabianBreedId = arabianBreed?.id;
+    // Upsert Arabian breed — creates it if absent in the test DB (no seed required)
+    const arabianBreed = await prisma.breed.upsert({
+      where: { name: 'Arabian' },
+      update: {},
+      create: { name: 'Arabian', description: 'Arabian breed for genotype tests' },
+    });
+    arabianBreedId = arabianBreed.id;
 
     const hashedPassword = await bcrypt.hash(testUserData.password, 10);
     const user = await prisma.user.create({
@@ -264,10 +268,6 @@ describe('POST /api/v1/horses — colorGenotype integration', () => {
   });
 
   it('created horse includes colorGenotype with all 17 CORE_LOCI', async () => {
-    if (!arabianBreedId) {
-      throw new Error('Arabian breed not found in test database — run seed first');
-    }
-
     const token = jwt.sign({ id: testUserId, email: testUserData.email, role: 'user' }, config.jwtSecret, {
       expiresIn: '1h',
     });
