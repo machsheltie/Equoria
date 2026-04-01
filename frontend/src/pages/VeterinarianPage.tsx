@@ -15,7 +15,7 @@
 import React, { useState } from 'react';
 import { Link } from 'react-router-dom';
 import { toast } from 'sonner';
-import { Heart, Activity, Clock, CheckCircle, Loader2, Leaf } from 'lucide-react';
+import { Heart, Activity, Clock, CheckCircle, Loader2, Leaf, AlertCircle } from 'lucide-react';
 import PageHero from '@/components/layout/PageHero';
 import { useHorses } from '@/hooks/api/useHorses';
 import { useVetServices, useBookVetAppointment } from '@/hooks/api/useVet';
@@ -30,10 +30,12 @@ type VetTab = 'horses' | 'services';
 function healthBadgeClasses(status: string): string {
   const s = status.toLowerCase();
   if (s === 'excellent' || s === 'good')
-    return 'bg-emerald-500/20 text-emerald-400 border-emerald-500/30';
-  if (s === 'fair') return 'bg-yellow-500/20 text-yellow-400 border-yellow-500/30';
-  if (s === 'poor' || s === 'injured') return 'bg-red-500/20 text-red-400 border-red-500/30';
-  return 'bg-white/10 text-white/50 border-white/10';
+    return 'bg-[var(--status-success)]/20 text-[var(--status-success)] border-[var(--status-success)]/30';
+  if (s === 'fair')
+    return 'bg-yellow-500/20 text-yellow-400 border-yellow-500/30';
+  if (s === 'poor' || s === 'injured')
+    return 'bg-[var(--status-danger)]/20 text-[var(--status-danger)] border-[var(--status-danger)]/30';
+  return 'bg-[var(--glass-bg)] text-[var(--text-muted)] border-[var(--glass-border)]';
 }
 
 // ─── My Horses Tab ────────────────────────────────────────────────────────────
@@ -66,11 +68,11 @@ const HorsesHealthTab: React.FC<HorsesHealthTabProps> = ({
   if (isLoading) {
     return (
       <div
-        className="flex flex-col items-center justify-center min-h-64 gap-4"
+        className="flex items-center justify-center min-h-64"
         data-testid="horses-health-tab"
       >
-        <Loader2 className="w-8 h-8 text-emerald-400/60 animate-spin" />
-        <p className="text-sm text-white/40">Loading your horses…</p>
+        <Loader2 className="w-8 h-8 text-[var(--gold-400)] animate-spin" />
+        <span className="ml-3 text-[var(--text-muted)] text-sm">Loading your horses…</span>
       </div>
     );
   }
@@ -78,10 +80,13 @@ const HorsesHealthTab: React.FC<HorsesHealthTabProps> = ({
   if (isError) {
     return (
       <div
-        className="flex flex-col items-center justify-center min-h-64 gap-3"
+        className="flex flex-col items-center justify-center min-h-64 gap-3 text-center"
         data-testid="horses-health-tab"
       >
-        <p className="text-sm text-red-400/80">Failed to load horses. Please try again.</p>
+        <AlertCircle className="w-10 h-10 text-[var(--status-danger)]/60" />
+        <p className="text-[var(--text-secondary)] text-sm">
+          Unable to load horses. Please try again later.
+        </p>
       </div>
     );
   }
@@ -92,15 +97,15 @@ const HorsesHealthTab: React.FC<HorsesHealthTabProps> = ({
         className="flex flex-col items-center justify-center min-h-64 p-8 text-center"
         data-testid="horses-health-tab"
       >
-        <Heart className="w-12 h-12 text-emerald-400/30 mb-4" />
-        <h2 className="text-lg font-bold text-white/60 mb-2">No Horses Registered</h2>
-        <p className="text-sm text-white/40 max-w-sm mb-6">
+        <Heart className="w-12 h-12 text-[var(--gold-400)]/30 mb-4" />
+        <h2 className="text-lg font-bold text-[var(--text-secondary)] mb-2">No Horses Registered</h2>
+        <p className="text-sm text-[var(--text-muted)] max-w-sm mb-6">
           Visit your stable to bring horses in for their first health check. Regular vetting keeps
           your horses at peak performance.
         </p>
         <Link
           to="/stable"
-          className="px-5 py-2.5 bg-emerald-600/20 border border-emerald-500/30 text-emerald-400 rounded-lg text-sm font-medium hover:bg-emerald-600/30 transition-colors"
+          className="px-5 py-2.5 bg-[var(--status-success)]/10 border border-[var(--status-success)]/20 text-[var(--status-success)] rounded-lg text-sm font-medium hover:bg-[var(--status-success)]/20 transition-all"
         >
           Go to Stable
         </Link>
@@ -109,27 +114,26 @@ const HorsesHealthTab: React.FC<HorsesHealthTabProps> = ({
   }
 
   return (
-    <div className="space-y-6" data-testid="horses-health-tab">
-      {/* Horse list */}
-      <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+    <div data-testid="horses-health-tab">
+      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
         {horses.map((horse: HorseSummary) => {
           const isSelected = selectedHorseId === horse.id;
           return (
             <div
               key={horse.id}
-              className={`bg-white/5 border rounded-xl p-5 transition-all cursor-pointer ${
+              className={`backdrop-blur-sm border rounded-xl p-5 transition-all cursor-pointer ${
                 isSelected
-                  ? 'border-emerald-500/50 bg-emerald-600/10'
-                  : 'border-white/10 hover:border-white/20'
+                  ? 'bg-[var(--status-success)]/10 border-[var(--status-success)]/50'
+                  : 'bg-[var(--glass-bg)] border-[var(--glass-border)] hover:border-[var(--glass-hover)]'
               }`}
               onClick={() => onSelectHorse(horse.id)}
               data-testid={`horse-card-${horse.id}`}
             >
               <div className="flex items-center justify-between mb-3">
                 <div>
-                  <h3 className="font-bold text-white/90">{horse.name}</h3>
-                  <p className="text-xs text-white/40 mt-0.5">
-                    {getBreedName(horse.breed)} · Age {horse.age}
+                  <h3 className="font-bold text-[var(--cream)]">{horse.name}</h3>
+                  <p className="text-xs text-[var(--text-muted)] mt-0.5">
+                    {getBreedName(horse.breed)} &middot; Age {horse.age}
                   </p>
                 </div>
                 <span
@@ -140,8 +144,8 @@ const HorsesHealthTab: React.FC<HorsesHealthTabProps> = ({
               </div>
 
               {isSelected && services.length > 0 && (
-                <div className="mt-3 space-y-2 border-t border-white/10 pt-3">
-                  <p className="text-xs text-white/50 mb-2">Select a service to book:</p>
+                <div className="mt-3 space-y-2 border-t border-[var(--glass-border)] pt-3">
+                  <p className="text-xs text-[var(--text-muted)] mb-2">Select a service to book:</p>
                   {services.map((service: VetService) => {
                     const isThisBooked =
                       confirmedHorseId === horse.id && confirmedServiceId === service.id;
@@ -159,22 +163,22 @@ const HorsesHealthTab: React.FC<HorsesHealthTabProps> = ({
                         }}
                         className={`w-full flex items-center justify-between px-3 py-2 rounded-lg text-sm border transition-all ${
                           isThisBooked
-                            ? 'bg-emerald-600/20 border-emerald-500/40 text-emerald-300'
-                            : 'bg-white/5 border-white/10 text-white/70 hover:bg-white/10 hover:border-white/20 disabled:opacity-50 disabled:cursor-not-allowed'
+                            ? 'bg-[var(--status-success)]/20 border-[var(--status-success)]/40 text-[var(--status-success)]'
+                            : 'bg-[var(--glass-bg)] border-[var(--glass-border)] text-[var(--text-secondary)] hover:bg-[var(--glass-hover)]/20 hover:text-[var(--cream)] disabled:opacity-50 disabled:cursor-not-allowed'
                         }`}
                         data-testid={`book-btn-${horse.id}-${service.id}`}
                         data-onboarding-target="vet-book-button"
                       >
                         <span className="flex items-center gap-2">
                           {isThisBooked && (
-                            <CheckCircle className="w-3.5 h-3.5 text-emerald-400 shrink-0" />
+                            <CheckCircle className="w-3.5 h-3.5 text-[var(--status-success)] shrink-0" />
                           )}
                           {isThisLoading && (
                             <Loader2 className="w-3.5 h-3.5 animate-spin shrink-0" />
                           )}
                           {service.name}
                         </span>
-                        <span className="text-celestial-gold font-semibold">
+                        <span className="text-[var(--gold-400)] font-semibold">
                           ${service.cost.toLocaleString()}
                         </span>
                       </button>
@@ -184,7 +188,7 @@ const HorsesHealthTab: React.FC<HorsesHealthTabProps> = ({
               )}
 
               {isSelected && services.length === 0 && (
-                <p className="text-xs text-white/40 mt-3 border-t border-white/10 pt-3">
+                <p className="text-xs text-[var(--text-muted)] mt-3 border-t border-[var(--glass-border)] pt-3">
                   Loading services…
                 </p>
               )}
@@ -194,7 +198,7 @@ const HorsesHealthTab: React.FC<HorsesHealthTabProps> = ({
       </div>
 
       {selectedHorseId === null && (
-        <p className="text-sm text-white/40 text-center">
+        <p className="text-sm text-[var(--text-muted)] text-center mt-4">
           Click a horse card to select it and choose a service.
         </p>
       )}
@@ -210,11 +214,11 @@ const ServicesTab: React.FC = () => {
   if (isLoading) {
     return (
       <div
-        className="flex flex-col items-center justify-center min-h-64 gap-4"
+        className="flex items-center justify-center min-h-64"
         data-testid="vet-services-tab"
       >
-        <Loader2 className="w-8 h-8 text-emerald-400/60 animate-spin" />
-        <p className="text-sm text-white/40">Loading services…</p>
+        <Loader2 className="w-8 h-8 text-[var(--gold-400)] animate-spin" />
+        <span className="ml-3 text-[var(--text-muted)] text-sm">Loading services…</span>
       </div>
     );
   }
@@ -222,10 +226,13 @@ const ServicesTab: React.FC = () => {
   if (isError || !services) {
     return (
       <div
-        className="flex flex-col items-center justify-center min-h-64"
+        className="flex flex-col items-center justify-center min-h-64 gap-3 text-center"
         data-testid="vet-services-tab"
       >
-        <p className="text-sm text-red-400/80">Failed to load services. Please try again.</p>
+        <AlertCircle className="w-10 h-10 text-[var(--status-danger)]/60" />
+        <p className="text-[var(--text-secondary)] text-sm">
+          Unable to load services. Please try again later.
+        </p>
       </div>
     );
   }
@@ -233,10 +240,14 @@ const ServicesTab: React.FC = () => {
   if (services.length === 0) {
     return (
       <div
-        className="flex flex-col items-center justify-center min-h-64"
+        className="flex flex-col items-center justify-center min-h-64 p-8 text-center"
         data-testid="vet-services-tab"
       >
-        <p className="text-sm text-white/40">No services are available at this time.</p>
+        <Activity className="w-12 h-12 text-[var(--gold-400)]/30 mb-4" />
+        <h2 className="text-lg font-bold text-[var(--text-secondary)] mb-2">No Services Available</h2>
+        <p className="text-sm text-[var(--text-muted)] max-w-sm">
+          No services are available at this time. Check back later.
+        </p>
       </div>
     );
   }
@@ -246,26 +257,26 @@ const ServicesTab: React.FC = () => {
       {services.map((service: VetService) => (
         <div
           key={service.id}
-          className="bg-white/5 border border-white/10 rounded-xl p-5 hover:border-white/20 transition-all"
+          className="bg-[var(--glass-bg)] backdrop-blur-sm border border-[var(--glass-border)] rounded-xl p-5 hover:border-[var(--glass-hover)] transition-all"
           data-testid={`vet-service-${service.id}`}
         >
           <div className="flex items-start justify-between mb-3">
             <div>
-              <h3 className="font-bold text-white/90">{service.name}</h3>
-              <span className="text-xs text-white/40 flex items-center gap-1 mt-0.5">
+              <h3 className="font-bold text-[var(--cream)]">{service.name}</h3>
+              <span className="text-xs text-[var(--text-muted)] flex items-center gap-1 mt-0.5">
                 <Clock className="w-3 h-3" />
                 {service.duration}
               </span>
             </div>
-            <p className="text-lg font-bold text-celestial-gold">
+            <p className="text-lg font-bold text-[var(--gold-400)]">
               ${service.cost.toLocaleString()}
             </p>
           </div>
-          <p className="text-sm text-white/50 mb-4">{service.description}</p>
+          <p className="text-sm text-[var(--text-muted)] mb-4">{service.description}</p>
           <button
             type="button"
             disabled
-            className="w-full py-2 text-sm font-medium rounded-lg bg-emerald-600/10 border border-emerald-500/20 text-emerald-400/60 cursor-not-allowed"
+            className="w-full py-2 text-sm font-medium rounded-lg bg-[var(--status-success)]/10 border border-[var(--status-success)]/20 text-[var(--status-success)]/60 cursor-not-allowed"
             title="Select a horse from My Horses to book"
           >
             Select a Horse to Book
@@ -334,10 +345,21 @@ const VeterinarianPage: React.FC = () => {
         </div>
       </PageHero>
 
+      {/* Banner image in glass card */}
+      <div className="max-w-[52rem] mx-auto px-4 sm:px-6 lg:px-8 pt-1 pb-4">
+        <div className="p-5 rounded-2xl bg-[var(--glass-bg)] backdrop-blur-sm border border-[var(--glass-border)] shadow-lg shadow-black/20">
+          <img
+            src="/images/veterinarian.webp"
+            alt="Vet Clinic — a professional veterinarian providing expert care and health assessments for horses"
+            className="w-full h-auto rounded-xl"
+          />
+        </div>
+      </div>
+
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 pb-8">
         {/* My Horses / Services Tabs */}
         <div
-          className="flex gap-1 p-1 bg-white/5 border border-white/10 rounded-xl mb-8 w-fit"
+          className="flex gap-1 p-1 bg-[var(--glass-bg)] backdrop-blur-sm border border-[var(--glass-border)] rounded-xl mb-8 w-fit"
           role="tablist"
           aria-label="Vet Clinic section"
         >
@@ -347,8 +369,8 @@ const VeterinarianPage: React.FC = () => {
             onClick={() => setActiveTab('horses')}
             className={`flex items-center gap-2 px-5 py-2.5 rounded-lg text-sm font-medium transition-all ${
               activeTab === 'horses'
-                ? 'bg-white/10 text-white/90 shadow-sm'
-                : 'text-white/40 hover:text-white/70'
+                ? 'bg-[var(--glass-bg)] text-[var(--cream)] shadow-sm'
+                : 'text-[var(--text-muted)] hover:text-[var(--text-secondary)]'
             }`}
             data-testid="horses-tab"
           >
@@ -361,8 +383,8 @@ const VeterinarianPage: React.FC = () => {
             onClick={() => setActiveTab('services')}
             className={`flex items-center gap-2 px-5 py-2.5 rounded-lg text-sm font-medium transition-all ${
               activeTab === 'services'
-                ? 'bg-white/10 text-white/90 shadow-sm'
-                : 'text-white/40 hover:text-white/70'
+                ? 'bg-[var(--glass-bg)] text-[var(--cream)] shadow-sm'
+                : 'text-[var(--text-muted)] hover:text-[var(--text-secondary)]'
             }`}
             data-testid="services-tab"
           >

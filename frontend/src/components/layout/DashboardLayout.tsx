@@ -24,6 +24,7 @@ const CUSTOM_BG_ROUTES: Record<string, string> = {
   '/tack-shop': '/images/tackstore.webp',
   '/farrier': '/assets/art/farrier.webp',
   '/training': '/images/equinehospital.webp',
+  '/vet': '/images/equinehospital.webp',
 };
 
 const DashboardLayout: React.FC = () => {

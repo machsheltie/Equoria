@@ -19,6 +19,8 @@ const worldLocations: LocationCardProps[] = [
     href: '/vet',
     paintingGradient:
       'linear-gradient(160deg, rgba(5,80,55,0.85) 0%, rgba(5,46,30,0.95) 60%, rgba(5,13,26,0.98) 100%)',
+    backgroundImage: '/images/veterinarian.webp',
+    backgroundPosition: '50% 40%',
   },
   {
     id: 'farrier',

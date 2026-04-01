@@ -213,32 +213,35 @@ describe('Rate Limiting System', () => {
       const baseData = createUserData();
       const ip = getUniqueIP(10);
 
-      // First 5 registrations should succeed
-      for (let i = 0; i < 5; i++) {
-        const response = await request(app)
-          .post('/api/auth/register')
-          .set('X-Forwarded-For', ip)
-          .send({
-            ...baseData,
-            email: `reg_${i}_${Date.now()}@example.com`,
-            username: `reguser_${i}_${Date.now()}`,
-          });
+      // Register once to establish a seed user (duplicate attempts below will fail and count)
+      const seedResponse = await request(app).post('/api/auth/register').set('X-Forwarded-For', ip).send(baseData);
+      // Seed may succeed (201) or already be rate-limited (429)
+      expect([201, 400, 429]).toContain(seedResponse.status);
+      if (seedResponse.status === 429) {
+        return;
+      }
 
-        expect([201, 429]).toContain(response.status);
+      // Make 5 failed registrations using the duplicate email — failures count toward rate limit
+      // because authRateLimiter uses skipSuccessfulRequests:true (only failures are counted).
+      // Duplicate registration returns 400 (AppError: 'User with this email or username already exists')
+      for (let i = 0; i < 5; i++) {
+        const response = await request(app).post('/api/auth/register').set('X-Forwarded-For', ip).send(baseData); // same data → duplicate → 400 failure → counts
+
+        expect([400, 429]).toContain(response.status);
         if (response.status === 429) {
-          // Stop early if limiter already triggered
+          // Rate limit triggered early — test still valid
           return;
         }
       }
 
-      // 6th registration should be rate limited
+      // After 5 failures the next request (even unique data) should be rate limited
       const response = await request(app)
         .post('/api/auth/register')
         .set('X-Forwarded-For', ip)
         .send({
           ...baseData,
-          email: `reg_6_${Date.now()}@example.com`,
-          username: `reguser_6_${Date.now()}`,
+          email: `reg_unique_${Date.now()}@example.com`,
+          username: `reguser_unique_${Date.now()}`,
         });
 
       expectRateLimitExceeded(response);
