@@ -30,12 +30,11 @@ describe('🔒 OWASP Top 10 - Comprehensive Security Tests', () => {
   let testHorse;
 
   beforeAll(async () => {
-    // Create test breed
-    await prisma.breed.upsert({
-      where: { id: 1 },
+    // Create test breed (upsert by name to avoid ID collision in test DB)
+    const testBreed = await prisma.breed.upsert({
+      where: { name: 'Test Breed' },
       update: {},
       create: {
-        id: 1,
         name: 'Test Breed',
         description: 'Test breed for OWASP security tests',
       },
@@ -67,7 +66,7 @@ describe('🔒 OWASP Top 10 - Comprehensive Security Tests', () => {
     testHorse = await prisma.horse.create({
       data: {
         name: 'OWASP Test Horse',
-        breed: { connect: { id: 1 } },
+        breed: { connect: { id: testBreed.id } },
         sex: 'Stallion',
         dateOfBirth: new Date(Date.now() - 5 * 365 * 24 * 60 * 60 * 1000), // 5 years old
         user: { connect: { id: testUser.id } },
@@ -397,10 +396,15 @@ describe('🔒 OWASP Top 10 - Comprehensive Security Tests', () => {
           },
         });
 
+        const ownershipTestBreed = await prisma.breed.upsert({
+          where: { name: 'OWASP Test Breed' },
+          update: {},
+          create: { name: 'OWASP Test Breed', description: 'Breed for OWASP ownership tests' },
+        });
         const otherHorse = await prisma.horse.create({
           data: {
             name: 'Other User Horse',
-            breed: { connect: { id: 1 } },
+            breed: { connect: { id: ownershipTestBreed.id } },
             sex: 'Mare',
             dateOfBirth: new Date(Date.now() - 5 * 365 * 24 * 60 * 60 * 1000),
             user: { connect: { id: otherUser.id } },

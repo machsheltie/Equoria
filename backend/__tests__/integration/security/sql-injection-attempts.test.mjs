@@ -58,6 +58,8 @@ describe('SQL Injection Attempts Integration Tests', () => {
 
   beforeEach(async () => {
     const uid = `${Date.now()}-${++_seq}`;
+    // Pre-clean: remove any leftover users from crashed prior runs with this pattern
+    await prisma.user.deleteMany({ where: { username: { startsWith: 'testuser-' } } });
     // Create test user in database
     testUser = await prisma.user.create({
       data: {
