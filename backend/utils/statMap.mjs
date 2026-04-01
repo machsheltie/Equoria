@@ -9,33 +9,28 @@
  * speed, stamina, agility, balance, precision, intelligence,
  * boldness, flexibility, obedience, focus
  */
-// TRAIN-7: replaced non-canonical stat names throughout.
-// Canonical stats: speed, stamina, agility, balance, precision,
-//                 intelligence, boldness, flexibility, obedience, focus
-// 'strength' → 'stamina'  (no strength column on Horse model)
-// 'endurance' → 'stamina' (no endurance column on Horse model)
 const statMap = {
   'Western Pleasure': ['obedience', 'focus', 'precision'],
   Reining: ['precision', 'agility', 'focus'],
-  Cutting: ['agility', 'stamina', 'intelligence'],
+  Cutting: ['agility', 'strength', 'intelligence'],
   'Barrel Racing': ['speed', 'agility', 'stamina'],
-  Roping: ['stamina', 'precision', 'focus'],
+  Roping: ['strength', 'precision', 'focus'],
   'Team Penning': ['intelligence', 'agility', 'obedience'],
-  Rodeo: ['stamina', 'agility', 'boldness'],
-  Hunter: ['precision', 'stamina', 'agility'],
+  Rodeo: ['strength', 'agility', 'boldness'],
+  Hunter: ['precision', 'endurance', 'agility'],
   Saddleseat: ['flexibility', 'obedience', 'precision'],
-  Endurance: ['stamina', 'speed', 'focus'],
-  Eventing: ['stamina', 'precision', 'agility'],
+  Endurance: ['endurance', 'speed', 'focus'],
+  Eventing: ['endurance', 'precision', 'agility'],
   Dressage: ['precision', 'obedience', 'focus'],
   'Show Jumping': ['agility', 'precision', 'intelligence'],
-  Vaulting: ['flexibility', 'stamina', 'balance'],
+  Vaulting: ['flexibility', 'strength', 'balance'],
   Polo: ['speed', 'agility', 'intelligence'],
-  'Cross Country': ['stamina', 'intelligence', 'agility'],
-  'Combined Driving': ['obedience', 'stamina', 'focus'],
+  'Cross Country': ['endurance', 'intelligence', 'agility'],
+  'Combined Driving': ['obedience', 'endurance', 'focus'],
   'Fine Harness': ['precision', 'flexibility', 'obedience'],
   Gaited: ['flexibility', 'obedience', 'focus'],
   Gymkhana: ['speed', 'flexibility', 'stamina'],
-  Steeplechase: ['speed', 'stamina', 'agility'],
+  Steeplechase: ['speed', 'endurance', 'agility'],
   Racing: ['speed', 'stamina', 'intelligence'],
   'Harness Racing': ['speed', 'precision', 'stamina'],
 };
