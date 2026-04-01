@@ -59,10 +59,14 @@ describe('🏆 INTEGRATION: Leaderboard API - Real Database Integration', () => 
         OR: [
           { horse: { name: { startsWith: 'TestLeaderboard' } } },
           { horse: { name: { contains: 'API Test' } } },
+          { horse: { name: 'Competition Integration Champion' } },
+          { horse: { name: 'TestHorse Nova' } },
           { showName: { contains: 'API Test' } },
           { showName: { contains: 'Grand Prix Classic' } },
           { showName: { contains: 'Regional Championship' } },
           { showName: { contains: 'Evening Classic' } },
+          { showName: { contains: 'Integration Test Championship' } },
+          { showName: { contains: 'Summer Invitational' } },
         ],
       },
     });
@@ -82,7 +86,12 @@ describe('🏆 INTEGRATION: Leaderboard API - Real Database Integration', () => 
     // Clean up horses
     await prisma.horse.deleteMany({
       where: {
-        OR: [{ name: { startsWith: 'TestLeaderboard' } }, { name: { contains: 'API Test' } }],
+        OR: [
+          { name: { startsWith: 'TestLeaderboard' } },
+          { name: { contains: 'API Test' } },
+          { name: 'Competition Integration Champion' },
+          { name: 'TestHorse Nova' },
+        ],
       },
     });
 
@@ -278,10 +287,14 @@ describe('🏆 INTEGRATION: Leaderboard API - Real Database Integration', () => 
         OR: [
           { horse: { name: { startsWith: 'TestLeaderboard' } } },
           { horse: { name: { contains: 'API Test' } } },
+          { horse: { name: 'Competition Integration Champion' } },
+          { horse: { name: 'TestHorse Nova' } },
           { showName: { contains: 'API Test' } },
           { showName: { contains: 'Grand Prix Classic' } },
           { showName: { contains: 'Regional Championship' } },
           { showName: { contains: 'Evening Classic' } },
+          { showName: { contains: 'Integration Test Championship' } },
+          { showName: { contains: 'Summer Invitational' } },
         ],
       },
     });
@@ -301,7 +314,12 @@ describe('🏆 INTEGRATION: Leaderboard API - Real Database Integration', () => 
     // Clean up horses
     await prisma.horse.deleteMany({
       where: {
-        OR: [{ name: { startsWith: 'TestLeaderboard' } }, { name: { contains: 'API Test' } }],
+        OR: [
+          { name: { startsWith: 'TestLeaderboard' } },
+          { name: { contains: 'API Test' } },
+          { name: 'Competition Integration Champion' },
+          { name: 'TestHorse Nova' },
+        ],
       },
     });
 

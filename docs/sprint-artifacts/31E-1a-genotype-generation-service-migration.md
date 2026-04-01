@@ -1,7 +1,7 @@
 # Story 31E-1a: Genotype Generation Service + Migration
 
 **Epic:** 31E — Coat Color Genetics
-**Status:** review
+**Status:** done
 **Prerequisites:** 31A-1-populate-breed-genetic-profile-data ✅ (complete)
 **Parallel with:** 31B, 31D (independent)
 **Blocks:** 31E-1b, 31E-2, 31E-3, 31E-4, 31E-5
@@ -237,3 +237,4 @@ All 7 ACs satisfied. 15 tests passing. No regressions in 57 related horse tests.
 ### Change Log
 
 - 2026-04-01: Story 31E-1a implemented — genotype generation service, migration, horse creation wiring, 15 tests
+- 2026-04-01: Code review complete — APPROVED. Two low-priority findings (redundant colorGenotype guard, 1 extra DB query) — non-blocking. Story closed.

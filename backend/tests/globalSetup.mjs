@@ -44,6 +44,8 @@ export default async function globalSetup() {
       'Global Test Horse',
       'Other Horse',
       'Trait Test Foal',
+      'Competition Integration Champion',
+      'TestHorse Nova',
     ];
     await prisma.horse.deleteMany({ where: { name: { in: testHorseNames } } });
 

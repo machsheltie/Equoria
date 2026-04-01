@@ -22,6 +22,7 @@ import { generateConformationScores } from '../services/conformationService.mjs'
 import { generateGaitScores } from '../services/gaitService.mjs';
 import { generateTemperament } from '../services/temperamentService.mjs';
 import { generateGenotype } from '../services/genotypeGenerationService.mjs';
+import { calculatePhenotype } from '../services/phenotypeCalculationService.mjs';
 import prisma from '../../../db/index.mjs';
 import logger from '../../../utils/logger.mjs';
 
@@ -506,6 +507,8 @@ router.post(
       }
       // Generate coat color genotype from breed allele weights (31E-1a)
       const colorGenotype = generateGenotype(breedGeneticProfile);
+      // Calculate phenotype (display color name + pattern flags) from genotype (31E-1b)
+      const phenotype = calculatePhenotype(colorGenotype, breedGeneticProfile?.shade_bias ?? null);
 
       // Whitelist creation fields to prevent mass-assignment of protected fields
       // (e.g. totalEarnings, level, bondScore, stressLevel, epigeneticModifiers)
@@ -536,6 +539,7 @@ router.post(
         gaitScores,
         temperament,
         colorGenotype,
+        phenotype,
         ...(req.body.finalDisplayColor && { finalDisplayColor: req.body.finalDisplayColor }),
       };
 

@@ -206,7 +206,7 @@ describe('Groom Bonding System Integration', () => {
           groomId: testGroom.id,
           assignmentId: testAssignment.id,
           interactionType: 'stall_care',
-          duration: 20,
+          duration: 60,
           notes: 'Stall cleaning and maintenance',
         });
 
