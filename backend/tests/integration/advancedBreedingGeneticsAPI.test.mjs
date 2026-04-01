@@ -59,12 +59,13 @@ describe('🧬 Advanced Breeding Genetics API Integration', () => {
 
     await cleanupUserHorses(testUser?.id);
 
-    // Find a canonical breed (ID 1-12) to guarantee generateTemperament has a profile
-    testBreed = await prisma.breed.findFirst({ where: { id: { lte: 12 } } });
+    // Find a canonical breed by name; fall back to upsert if not yet seeded in this DB
+    testBreed = await prisma.breed.findFirst({ where: { name: 'Thoroughbred' } });
     if (!testBreed) {
-      testBreed = await prisma.breed.create({
-        data: {
-          id: 1,
+      testBreed = await prisma.breed.upsert({
+        where: { name: 'Thoroughbred' },
+        update: {},
+        create: {
           name: 'Thoroughbred',
           description: 'Test breed for genetics API tests',
         },

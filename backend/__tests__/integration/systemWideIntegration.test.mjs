@@ -32,11 +32,14 @@ describe('System-Wide Integration Tests', () => {
   let testBreed;
 
   beforeAll(async () => {
-    // Use a canonical breed (ID 1-12) so generateTemperament has a profile
+    // Use a canonical breed by name so generateTemperament has a profile
+    // (test DB breeds have high IDs — don't rely on id <= 12)
     testBreed =
-      (await prisma.breed.findFirst({ where: { id: { lte: 12 } } })) ??
-      (await prisma.breed.create({
-        data: { id: 1, name: 'Thoroughbred', description: 'Test breed for integration testing' },
+      (await prisma.breed.findFirst({ where: { name: 'Thoroughbred' } })) ??
+      (await prisma.breed.upsert({
+        where: { name: 'Thoroughbred' },
+        update: {},
+        create: { name: 'Thoroughbred', description: 'Test breed for integration testing' },
       }));
 
     // Create test user for global tests
@@ -98,9 +101,7 @@ describe('System-Wide Integration Tests', () => {
     if (testUser) {
       await prisma.user.delete({ where: { id: testUser.id } });
     }
-    if (testBreed) {
-      await prisma.breed.delete({ where: { id: testBreed.id } });
-    }
+    // Note: testBreed is a canonical seed breed — do not delete it
   });
 
   describe('Complete User Journey: Registration to Competition', () => {
