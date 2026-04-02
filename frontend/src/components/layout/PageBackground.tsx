@@ -8,8 +8,12 @@
  *   /images/backgrounds/{scene}/bg-{ratio}.webp (WebP)
  *   /images/backgrounds/{scene}/bg-{ratio}.jpg  (JPEG fallback)
  *
- * When no art exists for a scene, the deep-space background-color
- * (var(--bg-deep-space)) shows — no broken images.
+ * When `src` is provided it is used as-is (bypasses scene lookup). Use this
+ * for routes that already have dedicated artwork at a fixed path — e.g.
+ * `/images/bg-stable.webp`. The jpg fallback is still derived automatically.
+ *
+ * When no art exists, the deep-space background-color (var(--bg-deep-space))
+ * shows — no broken images.
  *
  * A semi-transparent readability veil (rgba 5,10,20 at 0.45) overlays
  * the background to maintain content legibility.
@@ -19,6 +23,8 @@ import { useResponsiveBackground, type SceneKey } from '@/hooks/useResponsiveBac
 
 interface PageBackgroundProps {
   scene?: SceneKey;
+  /** Direct WebP path — overrides scene-based lookup when provided. */
+  src?: string;
   className?: string;
 }
 
@@ -41,8 +47,11 @@ function buildBackgroundImage(webpPath: string): string {
   return `image-set(url('${webpPath}') type('image/webp'), url('${jpgPath}') type('image/jpeg'))`;
 }
 
-export function PageBackground({ scene, className }: PageBackgroundProps) {
-  const webpPath = useResponsiveBackground(scene);
+export function PageBackground({ scene, src, className }: PageBackgroundProps) {
+  // Hook must always be called (React rules). When `src` is provided, its
+  // result is ignored in favour of the explicit path.
+  const hookPath = useResponsiveBackground(scene);
+  const webpPath = src ?? hookPath;
 
   return (
     <div

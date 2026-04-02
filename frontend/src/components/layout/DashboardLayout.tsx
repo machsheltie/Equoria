@@ -17,17 +17,29 @@ import type { SceneKey } from '@/hooks/useResponsiveBackground';
 const ASIDE_ROUTES = ['/', '/stable', '/my-stable'];
 
 /**
+ * Routes with dedicated artwork that must not be overridden by the scene
+ * system. These were established before Epic 22 and ship with real images.
+ */
+const STATIC_BG: Record<string, string> = {
+  '/stable': '/images/bg-stable.webp',
+  '/my-stable': '/images/bg-stable.webp',
+  '/farrier': '/assets/art/farrier.webp',
+  '/vet': '/images/equinehospital.webp',
+  '/feed-shop': '/images/feedstore2.webp',
+  '/tack-shop': '/images/tackstore.webp',
+};
+
+/**
  * Derive the PageBackground scene from the current route pathname.
+ * Only called for routes not covered by STATIC_BG or horse-detail.
  * Order matters — more specific prefixes checked before generic ones.
  */
 function getSceneForPath(pathname: string): SceneKey {
   if (pathname === '/') return 'hub';
-  if (pathname.startsWith('/horses/')) return 'horse-detail';
-  if (pathname === '/horses' || pathname === '/my-stable' || pathname === '/stable')
-    return 'stable';
   if (pathname.startsWith('/training')) return 'training';
   if (pathname.startsWith('/competition')) return 'competition';
   if (pathname.startsWith('/breeding') || pathname.startsWith('/foal')) return 'breeding';
+  if (pathname === '/horses') return 'stable';
   if (
     pathname.startsWith('/world') ||
     pathname.startsWith('/community') ||
@@ -42,11 +54,18 @@ function getSceneForPath(pathname: string): SceneKey {
 const DashboardLayout: React.FC = () => {
   const location = useLocation();
   const showAside = ASIDE_ROUTES.includes(location.pathname);
-  const scene = getSceneForPath(location.pathname);
+
+  // Static routes: use existing artwork as-is.
+  // Horse detail: fixed single image regardless of viewport ratio.
+  // Everything else: scene-based responsive background.
+  const staticSrc =
+    STATIC_BG[location.pathname] ??
+    (location.pathname.startsWith('/horses/') ? '/images/bg-horse-detail.webp' : undefined);
+  const scene = staticSrc ? undefined : getSceneForPath(location.pathname);
 
   return (
     <div className="min-h-screen relative flex flex-col">
-      <PageBackground scene={scene} />
+      <PageBackground scene={scene} src={staticSrc} />
 
       {/* Skip-to-content link — visible on focus (WCAG 2.1 §13) */}
       <a
