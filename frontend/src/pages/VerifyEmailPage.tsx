@@ -12,14 +12,13 @@ import { useSearchParams, Link, useNavigate } from 'react-router-dom';
 import { Mail, CheckCircle, XCircle, RefreshCw, Loader2 } from 'lucide-react';
 import { useVerifyEmail, useResendVerification, useVerificationStatus } from '../hooks/useAuth';
 import { useAuth } from '../contexts/AuthContext';
-import { useResponsiveBackground } from '../hooks/useResponsiveBackground';
+import { PageBackground } from '@/components/layout/PageBackground';
 import { Button } from '@/components/ui/button';
 
 type VerificationState = 'idle' | 'verifying' | 'success' | 'error' | 'already-verified';
 
 const VerifyEmailPage: React.FC = () => {
   const navigate = useNavigate();
-  const bgImage = useResponsiveBackground();
   const [searchParams] = useSearchParams();
   const token = searchParams.get('token');
 
@@ -65,16 +64,8 @@ const VerifyEmailPage: React.FC = () => {
   };
 
   const pageShell = (children: React.ReactNode) => (
-    <div
-      className="min-h-screen w-full flex flex-col items-center justify-center relative overflow-hidden py-8"
-      style={{
-        backgroundImage: `url('${bgImage}')`,
-        backgroundSize: 'cover',
-        backgroundPosition: 'center center',
-        backgroundRepeat: 'no-repeat',
-      }}
-    >
-      <div className="absolute inset-0 bg-black/40 pointer-events-none" />
+    <div className="min-h-screen w-full flex flex-col items-center justify-center relative overflow-hidden py-8">
+      <PageBackground scene="auth" />
       <div className="relative z-[var(--z-raised)] w-full max-w-sm px-4 flex flex-col items-center gap-8">
         <div className="text-center select-none">
           <Link

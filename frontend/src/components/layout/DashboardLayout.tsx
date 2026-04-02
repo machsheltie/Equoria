@@ -2,7 +2,7 @@
  * DashboardLayout — App-level shell for all authenticated pages (Section 07)
  *
  * Provides persistent compact top bar + content area with optional aside panel + footer.
- * StarfieldBackground is rendered at App level (above this).
+ * PageBackground renders the scene-appropriate background behind all content.
  * Uses <Outlet /> from react-router-dom for nested route rendering.
  */
 
@@ -10,49 +10,44 @@ import React from 'react';
 import { Outlet, useLocation } from 'react-router-dom';
 import MainNavigation from '../MainNavigation';
 import { AsidePanel } from './AsidePanel';
-import { useResponsiveBackground } from '@/hooks/useResponsiveBackground';
+import { PageBackground } from './PageBackground';
+import type { SceneKey } from '@/hooks/useResponsiveBackground';
 
 /** Routes that show the aside panel on desktop */
 const ASIDE_ROUTES = ['/', '/stable', '/my-stable'];
 
-/** Routes that use the stable background instead of the default */
-const STABLE_BG_ROUTES = ['/stable', '/my-stable'];
-
-/** Routes that supply their own full-bleed background image */
-const CUSTOM_BG_ROUTES: Record<string, string> = {
-  '/feed-shop': '/images/feedstore2.webp',
-  '/tack-shop': '/images/tackstore.webp',
-  '/farrier': '/assets/art/farrier.webp',
-  '/training': '/images/equinehospital.webp',
-  '/vet': '/images/equinehospital.webp',
-};
+/**
+ * Derive the PageBackground scene from the current route pathname.
+ * Order matters — more specific prefixes checked before generic ones.
+ */
+function getSceneForPath(pathname: string): SceneKey {
+  if (pathname === '/') return 'hub';
+  if (pathname.startsWith('/horses/')) return 'horse-detail';
+  if (pathname === '/horses' || pathname === '/my-stable' || pathname === '/stable')
+    return 'stable';
+  if (pathname.startsWith('/training')) return 'training';
+  if (pathname.startsWith('/competition')) return 'competition';
+  if (pathname.startsWith('/breeding') || pathname.startsWith('/foal')) return 'breeding';
+  if (
+    pathname.startsWith('/world') ||
+    pathname.startsWith('/community') ||
+    pathname.startsWith('/clubs') ||
+    pathname.startsWith('/messages') ||
+    pathname.startsWith('/message-board')
+  )
+    return 'world';
+  return 'default';
+}
 
 const DashboardLayout: React.FC = () => {
   const location = useLocation();
   const showAside = ASIDE_ROUTES.includes(location.pathname);
-  const responsiveBg = useResponsiveBackground();
-
-  const isHorseDetail = location.pathname.startsWith('/horses/');
-  const customBg = CUSTOM_BG_ROUTES[location.pathname];
-  const bgImage = customBg
-    ? customBg
-    : isHorseDetail
-      ? '/images/bg-horse-detail.webp'
-      : STABLE_BG_ROUTES.includes(location.pathname)
-        ? '/images/bg-stable.webp'
-        : responsiveBg;
+  const scene = getSceneForPath(location.pathname);
 
   return (
-    <div
-      className="min-h-screen relative flex flex-col"
-      style={{
-        backgroundImage: `url('${bgImage}')`,
-        backgroundSize: 'cover',
-        backgroundPosition: 'center center',
-        backgroundRepeat: 'no-repeat',
-        backgroundAttachment: 'fixed',
-      }}
-    >
+    <div className="min-h-screen relative flex flex-col">
+      <PageBackground scene={scene} />
+
       {/* Skip-to-content link — visible on focus (WCAG 2.1 §13) */}
       <a
         href="#main-content"

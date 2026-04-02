@@ -10,14 +10,12 @@ import { Link, useNavigate } from 'react-router-dom';
 import { Mail, ArrowLeft, CheckCircle } from 'lucide-react';
 import { forgotPasswordSchema, type ForgotPasswordFormData } from '../lib/validation-schemas';
 import { useForgotPassword } from '../hooks/useAuth';
-import { useResponsiveBackground } from '../hooks/useResponsiveBackground';
 import { Button } from '@/components/ui/button';
+import { PageBackground } from '@/components/layout/PageBackground';
 
 const ForgotPasswordPage: React.FC = () => {
   const navigate = useNavigate();
   const { mutate: forgotPassword, isPending, isSuccess, error, reset } = useForgotPassword();
-  const bgImage = useResponsiveBackground();
-
   const [email, setEmail] = useState('');
   const [validationErrors, setValidationErrors] = useState<Record<string, string>>({});
 
@@ -43,17 +41,8 @@ const ForgotPasswordPage: React.FC = () => {
   };
 
   return (
-    <div
-      className="min-h-screen w-full flex flex-col items-center justify-center relative overflow-hidden"
-      style={{
-        backgroundImage: `url('${bgImage}')`,
-        backgroundSize: 'cover',
-        backgroundPosition: 'center center',
-        backgroundRepeat: 'no-repeat',
-      }}
-    >
-      {/* Dark overlay */}
-      <div className="absolute inset-0 bg-black/40 pointer-events-none" />
+    <div className="min-h-screen w-full flex flex-col items-center justify-center relative overflow-hidden">
+      <PageBackground scene="auth" />
 
       {/* Content */}
       <div className="relative z-[var(--z-raised)] w-full max-w-sm px-4 flex flex-col items-center gap-8">

@@ -34,7 +34,10 @@ vi.mock('./pages/ForgotPasswordPage', () => ({
 vi.mock('./pages/ResetPasswordPage', () => ({
   default: () => <div data-testid="reset-password-page">Reset</div>,
 }));
-vi.mock('@/components/layout/StarField', () => ({ StarField: () => null }));
+vi.mock('@/components/layout/PageBackground', () => ({
+  PageBackground: () => null,
+  default: () => null,
+}));
 vi.mock('@/components/ui/sonner', () => ({ Toaster: () => null }));
 vi.mock('@/components/ui/tooltip', () => ({
   TooltipProvider: ({ children }: { children: React.ReactNode }) => <>{children}</>,

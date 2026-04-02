@@ -10,14 +10,12 @@ import { useNavigate, Link } from 'react-router-dom';
 import { Mail, Lock, Eye, EyeOff } from 'lucide-react';
 import { loginSchema, type LoginFormData } from '../lib/validation-schemas';
 import { useLogin } from '../hooks/useAuth';
-import { useResponsiveBackground } from '../hooks/useResponsiveBackground';
 import { Button } from '@/components/ui/button';
+import { PageBackground } from '@/components/layout/PageBackground';
 
 const LoginPage: React.FC = () => {
   const navigate = useNavigate();
   const { mutate: login, isPending, error } = useLogin();
-  const bgImage = useResponsiveBackground();
-
   const [formData, setFormData] = useState<LoginFormData>({ email: '', password: '' });
   const [showPassword, setShowPassword] = useState(false);
   const [validationErrors, setValidationErrors] = useState<Record<string, string>>({});
@@ -49,17 +47,8 @@ const LoginPage: React.FC = () => {
   };
 
   return (
-    <div
-      className="min-h-screen w-full flex flex-col items-center justify-center relative overflow-hidden"
-      style={{
-        backgroundImage: `url('${bgImage}')`,
-        backgroundSize: 'cover',
-        backgroundPosition: 'center center',
-        backgroundRepeat: 'no-repeat',
-      }}
-    >
-      {/* Subtle dark overlay to deepen contrast over the illustration */}
-      <div className="absolute inset-0 bg-black/30 pointer-events-none" />
+    <div className="min-h-screen w-full flex flex-col items-center justify-center relative overflow-hidden">
+      <PageBackground scene="auth" />
 
       {/* Content — sits above overlay */}
       <div className="relative z-[var(--z-raised)] w-full max-w-sm px-4 flex flex-col items-center gap-8">

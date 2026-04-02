@@ -5,7 +5,6 @@ import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
 import { BrowserRouter, Routes, Route } from 'react-router-dom';
 import { navItems } from './nav-items';
 import { AuthProvider } from './contexts/AuthContext';
-import { StarfieldBackground } from '@/components/layout/StarfieldBackground';
 import { ProtectedRoute } from '@/components/auth';
 import OnboardingGuard from '@/components/auth/OnboardingGuard';
 import OnboardingSpotlight from '@/components/onboarding/OnboardingSpotlight';
@@ -37,7 +36,6 @@ const App = () => (
       <AuthProvider>
         <TooltipProvider>
           <Sonner />
-          <StarfieldBackground />
           <BrowserRouter
             future={{
               v7_startTransition: true,

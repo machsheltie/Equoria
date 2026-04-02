@@ -14,12 +14,11 @@ import {
   type ResetPasswordFormData,
 } from '../lib/validation-schemas';
 import { useResetPassword } from '../hooks/useAuth';
-import { useResponsiveBackground } from '../hooks/useResponsiveBackground';
+import { PageBackground } from '@/components/layout/PageBackground';
 import { Button } from '@/components/ui/button';
 
 const ResetPasswordPage: React.FC = () => {
   const navigate = useNavigate();
-  const bgImage = useResponsiveBackground();
   const [searchParams] = useSearchParams();
   const token = searchParams.get('token');
 
@@ -90,16 +89,8 @@ const ResetPasswordPage: React.FC = () => {
   );
 
   const pageShell = (children: React.ReactNode) => (
-    <div
-      className="min-h-screen w-full flex flex-col items-center justify-center relative overflow-hidden py-8"
-      style={{
-        backgroundImage: `url('${bgImage}')`,
-        backgroundSize: 'cover',
-        backgroundPosition: 'center center',
-        backgroundRepeat: 'no-repeat',
-      }}
-    >
-      <div className="absolute inset-0 bg-black/40 pointer-events-none" />
+    <div className="min-h-screen w-full flex flex-col items-center justify-center relative overflow-hidden py-8">
+      <PageBackground scene="auth" />
       <div className="relative z-[var(--z-raised)] w-full max-w-sm px-4 flex flex-col items-center gap-8">
         <div className="text-center select-none">
           <Link

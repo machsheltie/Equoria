@@ -15,14 +15,12 @@ import {
   type RegisterFormData,
 } from '../lib/validation-schemas';
 import { useRegister } from '../hooks/useAuth';
-import { useResponsiveBackground } from '../hooks/useResponsiveBackground';
 import { Button } from '@/components/ui/button';
+import { PageBackground } from '@/components/layout/PageBackground';
 
 const RegisterPage: React.FC = () => {
   const navigate = useNavigate();
   const { mutate: register, isPending, error } = useRegister();
-  const bgImage = useResponsiveBackground();
-
   const [formData, setFormData] = useState<RegisterFormData>({
     email: '',
     username: '',
@@ -97,17 +95,8 @@ const RegisterPage: React.FC = () => {
   );
 
   return (
-    <div
-      className="min-h-screen w-full flex flex-col items-center justify-center relative overflow-hidden py-8"
-      style={{
-        backgroundImage: `url('${bgImage}')`,
-        backgroundSize: 'cover',
-        backgroundPosition: 'center center',
-        backgroundRepeat: 'no-repeat',
-      }}
-    >
-      {/* Dark overlay */}
-      <div className="absolute inset-0 bg-black/40 pointer-events-none" />
+    <div className="min-h-screen w-full flex flex-col items-center justify-center relative overflow-hidden py-8">
+      <PageBackground scene="auth" />
 
       {/* Content */}
       <div className="relative z-[var(--z-raised)] w-full max-w-sm px-4 flex flex-col items-center gap-6">
