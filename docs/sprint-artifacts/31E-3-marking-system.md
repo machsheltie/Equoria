@@ -2,7 +2,7 @@
 
 **Epic:** 31E — Coat Color Genetics
 **Story Key:** 31e-3-marking-system
-**Status:** review
+**Status:** done
 
 ---
 
