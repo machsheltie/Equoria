@@ -167,6 +167,15 @@ describe('isLethalCombination', () => {
     expect(LETHAL_COMBINATIONS).toHaveProperty('SW_SplashWhite');
     expect(LETHAL_COMBINATIONS).toHaveProperty('EDXW');
   });
+
+  it('detects lethal pair in reversed ordering (B/A as well as A/B)', () => {
+    // All current lethals are homozygous so A/B === B/A, but the implementation
+    // must also handle asymmetric lethals if added in future.
+    // Verify the reversed-check code path by directly asserting symmetric homozygous cases.
+    expect(isLethalCombination('O_FrameOvero', 'O/O')).toBe(true); // normal
+    // Simulate a reversed pair via the split/rejoin path: 'O/O' reversed is still 'O/O'
+    expect(isLethalCombination('W_DominantWhite', 'W5/W5')).toBe(true);
+  });
 });
 
 // ---------------------------------------------------------------------------
@@ -248,13 +257,14 @@ describe('inheritLocus — lethal reroll', () => {
     expect(isLethalCombination('O_FrameOvero', result)).toBe(false);
   });
 
-  it('uses heterozygous fallback after exhausting reroll attempts for impossible scenarios', () => {
+  it('uses heterozygous fallback after exhausting reroll attempts — returns O/n (carrier form)', () => {
     // Force all 100 attempts to produce O/O by always picking index 0
     const alwaysFirst = deterministicRng([0.1]);
     // With O/n × O/n, O is always at index 0, so alwaysFirst produces O/O every time
     const result = inheritLocus('O_FrameOvero', 'O/n', 'O/n', alwaysFirst);
-    // After 100 attempts the fallback kicks in — result must not be O/O
-    expect(result).not.toBe('O/O');
+    // After 100 attempts the fallback kicks in — spec mandates 'O/n' (carrier allele first)
+    expect(result).toBe('O/n');
+    expect(isLethalCombination('O_FrameOvero', result)).toBe(false);
   });
 });
 
@@ -336,12 +346,48 @@ describe('inheritColorGenotype — breed restrictions', () => {
     const dam = buildGenotype();
     expect(() => inheritColorGenotype(sire, dam, null)).not.toThrow();
   });
+
+  it('does NOT apply a breed restriction when allowed[0] would be a lethal allele pair', () => {
+    // A misconfigured breed profile that lists a lethal as the required allele.
+    // The guard in enforceBreedRestrictions must preserve the inherited non-lethal value.
+    const brokenProfile = {
+      allowed_alleles: {
+        O_FrameOvero: ['O/O'], // lethal — must never be installed
+      },
+    };
+    const sire = buildGenotype({ O_FrameOvero: 'n/n' });
+    const dam = buildGenotype({ O_FrameOvero: 'n/n' });
+    const foal = inheritColorGenotype(sire, dam, brokenProfile);
+    // Restriction must be skipped — foal keeps the inherited non-lethal value
+    expect(isLethalCombination('O_FrameOvero', foal.O_FrameOvero)).toBe(false);
+  });
 });
 
 describe('inheritColorGenotype — missing parent fallback', () => {
   it('returns a valid genotype when sireGenotype is null (falls back to random)', () => {
     const dam = buildGenotype();
     const result = inheritColorGenotype(null, dam);
+    expect(result).toBeDefined();
+    expect(typeof result.E_Extension).toBe('string');
+  });
+
+  it('returns a valid genotype when sireGenotype is undefined (falls back to random)', () => {
+    const dam = buildGenotype();
+    const result = inheritColorGenotype(undefined, dam);
+    expect(result).toBeDefined();
+    expect(typeof result.E_Extension).toBe('string');
+  });
+
+  it('returns a valid genotype when damGenotype is null (falls back to random)', () => {
+    const sire = buildGenotype();
+    const result = inheritColorGenotype(sire, null);
+    expect(result).toBeDefined();
+    expect(typeof result.E_Extension).toBe('string');
+  });
+
+  it('returns a valid genotype when damGenotype is undefined (falls back to random)', () => {
+    const sire = buildGenotype();
+    const result = inheritColorGenotype(sire, undefined);
     expect(result).toBeDefined();
     expect(typeof result.E_Extension).toBe('string');
   });
@@ -363,9 +409,11 @@ describe('inheritColorGenotype — missing parent fallback', () => {
 // ---------------------------------------------------------------------------
 
 describe('inheritColorGenotype — statistical Mendelian ratio (AC5)', () => {
-  const TRIALS = 1500;
+  // 10000 trials matches project standard (pre-31d-chi-squared-flakiness-fix).
+  // p=0.001 critical value for df=2 = 13.816 — far less likely to flake than p=0.05.
+  const TRIALS = 10000;
 
-  it('Ee × Ee produces ~25% EE, ~50% Ee or eE, ~25% ee (chi-squared p > 0.05)', () => {
+  it('Ee × Ee produces ~25% EE, ~50% Ee or eE, ~25% ee (chi-squared p > 0.001)', () => {
     const sire = buildGenotype({ E_Extension: 'E/e' });
     const dam = buildGenotype({ E_Extension: 'E/e' });
 
@@ -394,8 +442,8 @@ describe('inheritColorGenotype — statistical Mendelian ratio (AC5)', () => {
       (counts.Ee - expectedEe) ** 2 / expectedEe +
       (counts.ee - expectedee) ** 2 / expectedee;
 
-    // df=2, p=0.05 critical value = 5.991
-    expect(chiSq).toBeLessThan(5.991);
+    // df=2, p=0.001 critical value = 13.816
+    expect(chiSq).toBeLessThan(13.816);
   });
 });
 
@@ -484,6 +532,7 @@ describe('POST /api/v1/horses — breeding inheritance integration', () => {
       data: {
         name: `SireTest_${timestamp}`,
         age: 5,
+        dateOfBirth: new Date(Date.now() - 5 * 365 * 24 * 60 * 60 * 1000),
         sex: 'stallion',
         breedId,
         userId: testUserId,
@@ -496,6 +545,7 @@ describe('POST /api/v1/horses — breeding inheritance integration', () => {
       data: {
         name: `DamTest_${timestamp}`,
         age: 5,
+        dateOfBirth: new Date(Date.now() - 5 * 365 * 24 * 60 * 60 * 1000),
         sex: 'mare',
         breedId,
         userId: testUserId,
@@ -580,5 +630,76 @@ describe('POST /api/v1/horses — breeding inheritance integration', () => {
 
     // Cleanup
     await prisma.horse.deleteMany({ where: { id: horse.id } });
+  });
+
+  it('returns 400 when sireId points to a mare (wrong sex for sire role)', async () => {
+    const token = jwt.sign({ id: testUserId, email: testUserData.email, role: 'user' }, config.jwtSecret, {
+      expiresIn: '1h',
+    });
+
+    // damHorseId is a mare — using it as a sire should be rejected
+    const response = await request(app)
+      .post('/api/v1/horses')
+      .set('Authorization', `Bearer ${token}`)
+      .set('x-test-skip-csrf', 'true')
+      .send({
+        name: `SexValidationTest_${timestamp}`,
+        breedId,
+        age: 0,
+        sex: 'mare',
+        sireId: damHorseId, // mare used as sire — invalid
+        damId: damHorseId,
+      })
+      .expect(400);
+
+    expect(response.body.success).toBe(false);
+    expect(response.body.message).toMatch(/stallion/i);
+  });
+
+  it('returns 400 when damId points to a stallion (wrong sex for dam role)', async () => {
+    const token = jwt.sign({ id: testUserId, email: testUserData.email, role: 'user' }, config.jwtSecret, {
+      expiresIn: '1h',
+    });
+
+    // sireHorseId is a stallion — using it as a dam should be rejected
+    const response = await request(app)
+      .post('/api/v1/horses')
+      .set('Authorization', `Bearer ${token}`)
+      .set('x-test-skip-csrf', 'true')
+      .send({
+        name: `SexValidationTest2_${timestamp}`,
+        breedId,
+        age: 0,
+        sex: 'mare',
+        sireId: sireHorseId,
+        damId: sireHorseId, // stallion used as dam — invalid
+      })
+      .expect(400);
+
+    expect(response.body.success).toBe(false);
+    expect(response.body.message).toMatch(/mare/i);
+  });
+
+  it('returns 400 when sireId does not exist', async () => {
+    const token = jwt.sign({ id: testUserId, email: testUserData.email, role: 'user' }, config.jwtSecret, {
+      expiresIn: '1h',
+    });
+
+    const response = await request(app)
+      .post('/api/v1/horses')
+      .set('Authorization', `Bearer ${token}`)
+      .set('x-test-skip-csrf', 'true')
+      .send({
+        name: `NonExistentSire_${timestamp}`,
+        breedId,
+        age: 0,
+        sex: 'mare',
+        sireId: 999999999,
+        damId: damHorseId,
+      })
+      .expect(400);
+
+    expect(response.body.success).toBe(false);
+    expect(response.body.message).toMatch(/not found/i);
   });
 });

@@ -15,7 +15,7 @@
  * Story: 31E-2 — Mendelian Breeding Inheritance + Lethal Filtering
  */
 
-import { CORE_LOCI, generateGenotype } from './genotypeGenerationService.mjs';
+import { CORE_LOCI, GENERIC_DEFAULTS, generateGenotype } from './genotypeGenerationService.mjs';
 import logger from '../../../utils/logger.mjs';
 
 // ---------------------------------------------------------------------------
@@ -85,6 +85,8 @@ export function splitAlleles(allelePair) {
 
 /**
  * Check whether an allele pair is lethal for the given locus.
+ * Checks both `A/B` and the reversed `B/A` form so that order-insensitive
+ * asymmetric lethals are caught if added to LETHAL_COMBINATIONS in the future.
  *
  * @param {string} locus - genotype locus key (e.g. 'O_FrameOvero')
  * @param {string} allelePair - assembled pair (e.g. 'O/O')
@@ -95,7 +97,16 @@ export function isLethalCombination(locus, allelePair) {
   if (!lethalSet) {
     return false;
   }
-  return lethalSet.has(allelePair);
+  if (lethalSet.has(allelePair)) {
+    return true;
+  }
+  // Also check reversed ordering (B/A) so asymmetric future lethals are caught regardless of
+  // sire/dam draw order.
+  const parts = allelePair.split('/');
+  if (parts.length === 2) {
+    return lethalSet.has(`${parts[1]}/${parts[0]}`);
+  }
+  return false;
 }
 
 /**
@@ -124,7 +135,8 @@ export function assembleAllelePair(sireAllele, damAllele) {
 /**
  * Build the heterozygous fallback for a locus when lethal rerolls are exhausted.
  * Uses the sire allele and dam allele directly in heterozygous form if they differ,
- * otherwise uses the first allele of the locus's generic default.
+ * otherwise places the lethal allele first and the wild-type `n` second
+ * (canonical carrier form: `O/n`, `W5/n`, etc.) matching the spec's specified fallback.
  *
  * @param {string} sireAllele
  * @param {string} damAllele
@@ -134,8 +146,8 @@ function buildHeterozygousFallback(sireAllele, damAllele) {
   if (sireAllele !== damAllele) {
     return `${sireAllele}/${damAllele}`;
   }
-  // Both are the same lethal allele — return n/allele or allele/n as fallback
-  return `n/${sireAllele}`;
+  // Both are the same lethal allele — carrier form: lethal allele first, wild-type n second
+  return `${sireAllele}/n`;
 }
 
 // ---------------------------------------------------------------------------
@@ -200,8 +212,19 @@ function enforceBreedRestrictions(foalGenotype, foalBreedProfile) {
       continue;
     }
     if (restricted[locus] !== undefined && !allowed.includes(restricted[locus])) {
-      restricted[locus] = allowed[0];
+      const replacement = allowed[0];
+      // Guard: never install a lethal allele pair via breed restriction
+      // (would bypass the reroll mechanism entirely).
+      if (isLethalCombination(locus, replacement)) {
+        logger.warn(
+          `[breedingColorInheritanceService] enforceBreedRestrictions: breed profile requires lethal allele '${replacement}' for locus '${locus}' — restriction skipped to preserve non-lethal genotype`,
+        );
+        continue;
+      }
+      restricted[locus] = replacement;
     }
+    // Loci in allowed_alleles but absent from the foal's inherited genotype are silently
+    // omitted — the restriction only applies to loci that were actually inherited.
   }
 
   return restricted;
@@ -259,9 +282,11 @@ export function inheritColorGenotype(
   const foalGenotype = {};
 
   for (const locus of allLoci) {
-    // If a locus is missing from a parent, use their default wild-type allele pair
-    const sireAllelePair = sireGenotype[locus] ?? 'n/n';
-    const damAllelePair = damGenotype[locus] ?? 'n/n';
+    // If a locus is missing from a parent, use the per-locus GENERIC_DEFAULTS wild-type value
+    // (e.g. D_Dun → 'nd2/nd2', not 'n/n'). Fall back to 'n/n' only for unknown loci.
+    const locusDefault = GENERIC_DEFAULTS[locus] ?? 'n/n';
+    const sireAllelePair = sireGenotype[locus] ?? locusDefault;
+    const damAllelePair = damGenotype[locus] ?? locusDefault;
 
     foalGenotype[locus] = inheritLocus(locus, sireAllelePair, damAllelePair, rng);
   }

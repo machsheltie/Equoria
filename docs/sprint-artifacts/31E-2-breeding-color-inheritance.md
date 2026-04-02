@@ -73,7 +73,7 @@ Given 1000+ `Ee × Ee` Extension breedings run programmatically:
 **AC6 — Pure function service**
 
 - `inheritColorGenotype(sireGenotype, damGenotype, foalBreedProfile?, rng?)` is a pure function
-- No Prisma imports, no side effects
+- No Prisma imports, no DB or HTTP side effects (logger.warn calls are permitted — diagnostic only)
 - `rng` parameter enables deterministic testing
 
 **AC7 — Integration into horse creation with parents**
@@ -180,7 +180,8 @@ Test groups:
 - Normalization: `sireAllele/damAllele` order is fine — phenotype engine handles both orderings already (e.g. `Cr/n` and `n/Cr` both work).
 - Lethal filtering must happen **per locus** immediately after recombination. Don't assemble the full genotype first.
 - The `disallowed_combinations` field in breed profile is for breed-specific restrictions (e.g. Thoroughbreds can't have TO). `LETHAL_COMBINATIONS` is a hardcoded biological constant — not breed-specific.
-- Breed `allowed_alleles` restriction: only enforce if the foal's locus result is NOT in the allowed list. Do NOT restrict loci absent from `allowed_alleles` (treat as unrestricted).
+- Breed `allowed_alleles` restriction: only enforce if the foal's locus result is NOT in the allowed list. Do NOT restrict loci absent from `allowed_alleles` (treat as unrestricted). Loci present in `allowed_alleles` but absent from the inherited genotype are **silently omitted** — the restriction applies only to loci that were actually inherited (no injection of missing loci).
+- Breed restriction guard: if `allowed[0]` is itself a lethal combination, skip the restriction and preserve the non-lethal inherited value.
 - The `CORE_LOCI` export from `genotypeGenerationService.mjs` should be reused to ensure all 17 loci are produced.
 - When a parent locus is missing from their genotype (sparse genotype): treat as `GENERIC_DEFAULTS[locus]` for that parent.
 - For the integration test: the key check is that a locus known to differ from random (e.g. `E_Extension = 'e/e'` on both parents) produces only `e/e` in offspring — not the random breed distribution.

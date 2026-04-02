@@ -33,8 +33,10 @@ export const CORE_LOCI = [
 /**
  * Generic fallback alleles used when the breed has no profile or a locus is absent.
  * These represent the most common "wild-type" or homozygous non-expressing states.
+ * Exported so that breedingColorInheritanceService can use the correct per-locus default
+ * when a parent's sparse genotype is missing a locus (instead of hardcoding 'n/n').
  */
-const GENERIC_DEFAULTS = {
+export const GENERIC_DEFAULTS = {
   E_Extension: 'E/e',
   A_Agouti: 'A/a',
   Cr_Cream: 'n/n',

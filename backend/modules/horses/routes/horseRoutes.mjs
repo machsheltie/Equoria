@@ -525,24 +525,43 @@ router.post(
 
       if (sireId && damId) {
         const [sireHorse, damHorse] = await Promise.all([
-          prisma.horse.findUnique({ where: { id: sireId }, select: { colorGenotype: true } }),
-          prisma.horse.findUnique({ where: { id: damId }, select: { colorGenotype: true } }),
+          prisma.horse.findUnique({
+            where: { id: sireId },
+            select: { colorGenotype: true, sex: true },
+          }),
+          prisma.horse.findUnique({
+            where: { id: damId },
+            select: { colorGenotype: true, sex: true },
+          }),
         ]);
-        if (sireHorse?.colorGenotype && damHorse?.colorGenotype) {
-          colorGenotype = inheritColorGenotype(
-            sireHorse.colorGenotype,
-            damHorse.colorGenotype,
-            breedGeneticProfile,
-          );
-          logger.info(
-            `[horseRoutes] Used Mendelian inheritance for foal from sire ${sireId} + dam ${damId}`,
-          );
-        } else {
-          logger.warn(
-            '[horseRoutes] sireId/damId provided but parent genotypes missing — falling back to random generation',
-          );
-          colorGenotype = generateGenotype(breedGeneticProfile);
+
+        // Validate parent existence
+        if (!sireHorse) {
+          return res
+            .status(400)
+            .json({ success: false, message: `Sire horse with ID ${sireId} not found` });
         }
+        if (!damHorse) {
+          return res
+            .status(400)
+            .json({ success: false, message: `Dam horse with ID ${damId} not found` });
+        }
+
+        // Validate biological sex roles
+        if (sireHorse.sex !== 'stallion') {
+          return res.status(400).json({ success: false, message: 'Sire must be a stallion' });
+        }
+        if (damHorse.sex !== 'mare') {
+          return res.status(400).json({ success: false, message: 'Dam must be a mare' });
+        }
+
+        // Delegate entirely to the service — it handles missing/null genotypes internally
+        // (logs a warning and falls back to random generation when a parent lacks a genotype).
+        colorGenotype = inheritColorGenotype(
+          sireHorse.colorGenotype ?? null,
+          damHorse.colorGenotype ?? null,
+          breedGeneticProfile,
+        );
       } else {
         colorGenotype = generateGenotype(breedGeneticProfile);
       }
