@@ -4,13 +4,12 @@
  * Full-viewport fixed background that renders at z-[var(--z-below)] (-1)
  * behind all page content. Replaces StarField + StarfieldBackground.
  *
- * When `scene` is provided, resolves the WebP/JPEG art from:
- *   /images/backgrounds/{scene}/bg-{ratio}.webp (WebP)
- *   /images/backgrounds/{scene}/bg-{ratio}.jpg  (JPEG fallback)
+ * When `scene` is provided, resolves WebP art from:
+ *   /images/backgrounds/{scene}/bg-{ratio}.webp
  *
  * When `src` is provided it is used as-is (bypasses scene lookup). Use this
  * for routes that already have dedicated artwork at a fixed path — e.g.
- * `/images/bg-stable.webp`. The jpg fallback is still derived automatically.
+ * `/images/bg-stable.webp`.
  *
  * When no art exists, the deep-space background-color (var(--bg-deep-space))
  * shows — no broken images.
@@ -29,22 +28,12 @@ interface PageBackgroundProps {
 }
 
 /**
- * Derive the JPEG fallback path from a WebP path by replacing the extension.
- * /images/backgrounds/hub/bg-16.9.webp → /images/backgrounds/hub/bg-16.9.jpg
- */
-function toJpgPath(webpPath: string): string {
-  return webpPath.replace(/\.webp$/, '.jpg');
-}
-
-/**
- * Build the CSS background-image value using image-set() for WebP/JPEG
- * progressive enhancement. Falls back to background-color when art is missing.
+ * Build the CSS background-image value. Uses url() directly — WebP is
+ * universally supported in 2025+ browsers. The backgroundColor fallback
+ * (var(--bg-deep-space)) shows when the file doesn't exist yet.
  */
 function buildBackgroundImage(webpPath: string): string {
-  const jpgPath = toJpgPath(webpPath);
-  // image-set() — modern browsers pick WebP; older ones fall back to JPEG.
-  // When neither file exists the browser falls through to backgroundColor.
-  return `image-set(url('${webpPath}') type('image/webp'), url('${jpgPath}') type('image/jpeg'))`;
+  return `url('${webpPath}')`;
 }
 
 export function PageBackground({ scene, src, className }: PageBackgroundProps) {
@@ -55,7 +44,7 @@ export function PageBackground({ scene, src, className }: PageBackgroundProps) {
 
   return (
     <div
-      className={`fixed inset-0 z-[var(--z-below)] pointer-events-none ${className ?? ''}`}
+      className={`fixed inset-0 z-[var(--z-base)] pointer-events-none ${className ?? ''}`}
       aria-hidden="true"
       data-testid="page-background"
     >
