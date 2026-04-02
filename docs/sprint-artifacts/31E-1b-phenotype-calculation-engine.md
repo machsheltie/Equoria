@@ -1,7 +1,7 @@
 # Story 31E-1b: Phenotype Calculation Engine
 
 **Epic:** 31E — Coat Color Genetics
-**Status:** review
+**Status:** done
 **Prerequisites:** 31E-1a ✅ (colorGenotype generation + migration complete)
 **Blocks:** 31E-4 (GET /genetics endpoint), 31E-5 (breeding color prediction)
 
