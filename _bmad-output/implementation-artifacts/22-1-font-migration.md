@@ -2,7 +2,7 @@
 
 **Epic:** 22 — Celestial Night Foundation
 **Story Key:** 22-1-font-migration
-**Status:** review
+**Status:** done
 **Last Updated:** 2026-03-31
 
 ---
@@ -33,25 +33,30 @@ So that the typography signals "game world" instead of "web app."
 ## Tasks/Subtasks
 
 - [x] **T1: Download and place self-hosted WOFF2 font files**
+
   - [x] T1.1: Create `frontend/public/fonts/` directory
   - [x] T1.2: Download Cinzel variable font WOFF2 (latin + latin-ext) — 2 files
   - [x] T1.3: Download Cinzel Decorative WOFF2 (weights 400/700/900, latin + latin-ext) — 6 files
   - [x] T1.4: Download Inter variable font WOFF2 (latin + latin-ext) — 2 files
 
 - [x] **T2: Create self-hosted @font-face declarations**
+
   - [x] T2.1: Created `frontend/src/styles/fonts.css` with 10 @font-face blocks (all three families)
   - [x] T2.2: Each @font-face includes `font-display: swap`
   - [x] T2.3: Import `fonts.css` as first import in `frontend/src/index.css` (before Tailwind base)
 
 - [x] **T3: Update tokens.css font stack fallbacks**
+
   - [x] T3.1: Updated `--font-display` to `'Cinzel Decorative', Georgia, serif`
   - [x] T3.2: Updated `--font-heading` to `'Cinzel', Georgia, serif`
   - [x] T3.3: Updated `--font-body` to `'Inter', system-ui, sans-serif`
 
 - [x] **T4: Add `.celestial` scoped heading typography rules**
+
   - [x] T4.1: Added `.celestial h1` through `.celestial h6` rules using `var(--font-heading)` in `@layer base` in `index.css`
 
 - [x] **T5: Update frontend/index.html**
+
   - [x] T5.1: Removed Google Fonts `<link rel="preconnect">` tags (fonts.googleapis.com, fonts.gstatic.com)
   - [x] T5.2: Removed Google Fonts stylesheet `<link>` tag (css2?family=...)
   - [x] T5.3: Removed CDN-hosted `<link rel="preload">` pointing to fonts.gstatic.com
@@ -65,12 +70,14 @@ So that the typography signals "game world" instead of "web app."
 ## Dev Notes
 
 **Architecture:**
+
 - @font-face rules are in a dedicated `fonts.css` file imported FIRST in `index.css` (before Tailwind `@tailwind base` which resets font stacks)
 - Cinzel (v26) and Inter (v20) are variable fonts — one WOFF2 file covers all weights via `font-weight: 400 900` range syntax
 - Cinzel Decorative is NOT a variable font — separate files per weight (400, 700, 900)
 - `font-display: swap` ensures text is visible during font load (fallback → custom font swap)
 
 **Unicode subsets:**
+
 - `latin-ext`: U+0100-02BA + extended (for European languages)
 - `latin`: U+0000-00FF + common symbols (covers all English game UI)
 
@@ -106,6 +113,7 @@ So that the typography signals "game world" instead of "web app."
 ### Completion Notes
 
 Story 22.1 complete. The font migration is fully self-hosted:
+
 - 10 WOFF2 files in `frontend/public/fonts/` (total ~234KB)
 - @font-face rules with `font-display: swap` in `fonts.css`
 - Tokens updated with Georgia/system-ui fallbacks
@@ -137,6 +145,6 @@ Story 22.1 complete. The font migration is fully self-hosted:
 
 ## Change Log
 
-| Date       | Change                                      |
-|------------|---------------------------------------------|
+| Date       | Change                                                                       |
+| ---------- | ---------------------------------------------------------------------------- |
 | 2026-03-31 | Story created and implemented — font migration from CDN to self-hosted WOFF2 |

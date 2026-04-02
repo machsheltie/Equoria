@@ -195,13 +195,13 @@ interface CompetitionEntry {
 
 **Acceptance Criteria:**
 
-- [ ] Results list displays all completed competitions
-- [ ] Filters work correctly
-- [ ] Sorting works correctly
-- [ ] Placement badges show for top 3
-- [ ] User's participation clearly indicated
-- [ ] Empty state handled gracefully
-- [ ] 25 tests passing
+- [x] Results list displays all completed competitions
+- [x] Filters work correctly
+- [x] Sorting works correctly
+- [x] Placement badges show for top 3
+- [x] User's participation clearly indicated
+- [x] Empty state handled gracefully
+- [x] 25 tests passing
 
 ### Task 2: Results Detail Modal
 
@@ -222,13 +222,13 @@ interface CompetitionEntry {
 
 **Acceptance Criteria:**
 
-- [ ] Modal opens from results list
-- [ ] Full results table displayed
-- [ ] User's horses highlighted
-- [ ] Prize distribution shown
-- [ ] Sorting works correctly
-- [ ] Responsive on all devices
-- [ ] 30 tests passing
+- [x] Modal opens from results list
+- [x] Full results table displayed
+- [x] User's horses highlighted
+- [x] Prize distribution shown
+- [x] Sorting works correctly
+- [x] Responsive on all devices
+- [x] 30 tests passing
 
 ### Task 3: Performance Breakdown Component
 
@@ -239,6 +239,7 @@ interface CompetitionEntry {
 
 - `PerformanceBreakdown.tsx` (CREATE)
 - `ScoreBreakdownChart.tsx` (CREATE)
+- `ScoreBreakdownRadar.tsx` (CREATE — Recharts radar variant for stat overlay; added during implementation)
 
 **Activities:**
 
@@ -252,12 +253,12 @@ interface CompetitionEntry {
 
 **Acceptance Criteria:**
 
-- [ ] All score components displayed
-- [ ] Visual chart shows breakdown
-- [ ] Comparisons to average and winner shown
-- [ ] Prizes and XP displayed
-- [ ] Tooltips explain each component
-- [ ] 35 tests passing
+- [x] All score components displayed
+- [x] Visual chart shows breakdown
+- [x] Comparisons to average and winner shown
+- [x] Prizes and XP displayed
+- [x] Tooltips explain each component
+- [x] 35 tests passing
 
 ### Task 4: Competition History Component
 
@@ -277,12 +278,12 @@ interface CompetitionEntry {
 
 **Acceptance Criteria:**
 
-- [ ] History list displays all past competitions
-- [ ] Summary statistics accurate
-- [ ] Filters work correctly
-- [ ] Links to detailed results work
-- [ ] Empty state for horses with no history
-- [ ] 20 tests passing
+- [x] History list displays all past competitions
+- [x] Summary statistics accurate
+- [x] Filters work correctly
+- [x] Links to detailed results work
+- [x] Empty state for horses with no history
+- [x] 20 tests passing
 
 ### Task 5: React Query Hooks for Results
 
@@ -306,11 +307,11 @@ interface CompetitionEntry {
 
 **Acceptance Criteria:**
 
-- [ ] All hooks functional
-- [ ] Type-safe with TypeScript
-- [ ] Caching works correctly
-- [ ] Error handling implemented
-- [ ] 30 tests passing
+- [x] All hooks functional
+- [x] Type-safe with TypeScript
+- [x] Caching works correctly
+- [x] Error handling implemented
+- [x] 30 tests passing
 
 ### Task 6: Results Page Integration
 
@@ -330,11 +331,11 @@ interface CompetitionEntry {
 
 **Acceptance Criteria:**
 
-- [ ] Page renders with all components
-- [ ] Routing works from competition browser
-- [ ] Stats summary displays
-- [ ] Navigation works correctly
-- [ ] 20 tests passing
+- [x] Page renders with all components
+- [x] Routing works from competition browser
+- [x] Stats summary displays
+- [x] Navigation works correctly
+- [x] 20 tests passing
 
 ### Task 7: Visual Polish & Animations
 
@@ -352,11 +353,11 @@ interface CompetitionEntry {
 
 **Acceptance Criteria:**
 
-- [ ] Animations enhance UX without being distracting
-- [ ] Loading states use skeletons
-- [ ] Win celebration triggers for 1st place
-- [ ] Transitions are smooth
-- [ ] 15 tests passing
+- [x] Animations enhance UX without being distracting
+- [x] Loading states use skeletons
+- [x] Win celebration triggers for 1st place
+- [x] Transitions are smooth
+- [x] 15 tests passing
 
 ### Task 8: Testing & Integration
 
@@ -375,13 +376,13 @@ interface CompetitionEntry {
 
 **Acceptance Criteria:**
 
-- [ ] All 175+ tests passing (100% pass rate)
-- [ ] No TypeScript errors
-- [ ] No ESLint warnings
-- [ ] WCAG 2.1 AA compliance verified
-- [ ] Mobile/tablet/desktop tested
-- [ ] API integration verified
-- [ ] Performance acceptable (< 2s load time)
+- [x] All 175+ tests passing (100% pass rate)
+- [x] No TypeScript errors
+- [x] No ESLint warnings
+- [x] WCAG 2.1 AA compliance verified
+- [x] Mobile/tablet/desktop tested
+- [x] API integration verified
+- [x] Performance acceptable (< 2s load time)
 
 ---
 
@@ -389,7 +390,7 @@ interface CompetitionEntry {
 
 - [x] Task 1: Competition Results List (29 tests - exceeded target)
 - [x] Task 2: Results Detail Modal (39 tests - exceeded target)
-- [x] Task 3: Performance Breakdown (37 tests - exceeded target)
+- [x] Task 3: Performance Breakdown (37 tests - exceeded target; +11 ScoreBreakdownRadar tests added during implementation = 48 total for Task 3 scope)
 - [x] Task 4: Competition History (24 tests - exceeded target)
 - [x] Task 5: React Query Hooks (36 tests - exceeded target)
 - [x] Task 6: Results Page Integration (25 tests - exceeded target)
@@ -541,7 +542,7 @@ interface CompetitionEntry {
 - `frontend/src/components/competition/CompetitionResultsModal.tsx` (39 tests)
 - `frontend/src/components/competition/PerformanceBreakdown.tsx` (22 tests)
 - `frontend/src/components/competition/ScoreBreakdownChart.tsx` (15 tests)
-- `frontend/src/components/competition/ScoreBreakdownRadar.tsx` (undocumented at time of writing — radar variant of score breakdown chart)
+- `frontend/src/components/competition/ScoreBreakdownRadar.tsx` (11 tests — Recharts radar variant; supports optional personalBest overlay)
 - `frontend/src/components/competition/CompetitionHistory.tsx` (24 tests)
 - `frontend/src/pages/CompetitionResultsPage.tsx` (25 tests)
 

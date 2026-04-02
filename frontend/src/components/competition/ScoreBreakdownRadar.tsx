@@ -1,5 +1,5 @@
 /**
- * ScoreBreakdownRadar (Epic 27-4)
+ * ScoreBreakdownRadar (Epic 5 — Story 5-2)
  *
  * Recharts RadarChart with Celestial Night styling:
  *  - Navy background, gold data line for current horse

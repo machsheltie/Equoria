@@ -53,11 +53,7 @@ export type {
 } from './CompetitionResultsModal';
 
 export { default as ScoreBreakdownChart } from './ScoreBreakdownChart';
-export type {
-  ScoreBreakdownChartProps,
-  ScoreBreakdown,
-  TraitBonus,
-} from './ScoreBreakdownChart';
+export type { ScoreBreakdownChartProps, ScoreBreakdown, TraitBonus } from './ScoreBreakdownChart';
 
 export { default as PerformanceBreakdown } from './PerformanceBreakdown';
 export type {
@@ -77,7 +73,29 @@ export type {
 } from './CompetitionHistory';
 
 export { default as PrizeNotificationModal } from './PrizeNotificationModal';
+export type { PrizeNotificationModalProps, PrizeData } from './PrizeNotificationModal';
+
+export { default as PrizeSummaryCard } from './PrizeSummaryCard';
+export type { HorsePrize, PrizeSummaryCardProps } from './PrizeSummaryCard';
+
+export { default as PrizeTransactionRow } from './PrizeTransactionRow';
+export type { PrizeTransaction, PrizeTransactionRowProps } from './PrizeTransactionRow';
+
+export { default as PrizeTransactionHistory } from './PrizeTransactionHistory';
 export type {
-  PrizeNotificationModalProps,
-  PrizeData,
-} from './PrizeNotificationModal';
+  TransactionFilters,
+  SortConfig,
+  PrizeTransactionHistoryProps,
+} from './PrizeTransactionHistory';
+
+export { default as CompetitionFieldPreview } from './CompetitionFieldPreview';
+
+export { default as CompetitionFilters } from './CompetitionFilters';
+export type {
+  DisciplineFilter,
+  DateRangeFilter as FiltersDateRangeFilter,
+  EntryFeeFilter,
+  CompetitionFiltersProps,
+} from './CompetitionFilters';
+
+export { default as ScoreBreakdownRadar } from './ScoreBreakdownRadar';

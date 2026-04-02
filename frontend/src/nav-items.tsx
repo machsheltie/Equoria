@@ -20,6 +20,8 @@ const BreedingPage = lazy(() => import('./pages/BreedingPage'));
 const StableViewNav = lazy(() => import('./pages/StableView'));
 const ProfilePageNav = lazy(() => import('./pages/ProfilePage'));
 const CompetitionBrowserPage = lazy(() => import('./pages/CompetitionBrowserPage'));
+const CompetitionResultsPage = lazy(() => import('./pages/CompetitionResultsPage'));
+const PrizeHistoryPage = lazy(() => import('./pages/PrizeHistoryPage'));
 const WorldHubPage = lazy(() => import('./pages/WorldHubPage'));
 const SettingsPage = lazy(() => import('./pages/SettingsPage'));
 const LeaderboardsPage = lazy(() => import('./pages/LeaderboardsPage'));
@@ -183,6 +185,19 @@ export const navItems = [
     to: '/trainers',
     icon: null,
     Page: TrainersPage,
+  },
+  // Epic 5 — Competition results and prize history (route-only; linked from competition browser / results modal)
+  {
+    title: 'Competition Results',
+    to: '/competition-results',
+    icon: null,
+    Page: CompetitionResultsPage,
+  },
+  {
+    title: 'Prize History',
+    to: '/prizes',
+    icon: null,
+    Page: PrizeHistoryPage,
   },
   // Epic 11 — Community pages (Community linked from main nav; sub-pages route-only)
   {

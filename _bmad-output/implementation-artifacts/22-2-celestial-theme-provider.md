@@ -2,7 +2,7 @@
 
 **Epic:** 22 — Celestial Night Foundation
 **Story Key:** 22-2-celestial-theme-provider
-**Status:** review
+**Status:** done
 **Last Updated:** 2026-03-31
 
 ---
