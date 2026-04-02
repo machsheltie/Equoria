@@ -74,6 +74,16 @@ describe('sampleWeightedFromMap', () => {
   it('returns null for null input', () => {
     expect(sampleWeightedFromMap(null, Math.random)).toBeNull();
   });
+
+  it('D-2: normalises sub-1.0 weight map — proportions are preserved', () => {
+    // Weights sum to 0.2 (not 1.0). After normalisation, coronet should still
+    // dominate when the proportion calls for it.
+    const map = { coronet: 0.12, pastern: 0.08 }; // total = 0.2
+    // rng=0 → always picks first key regardless of total
+    expect(sampleWeightedFromMap(map, alwaysReturn(0))).toBe('coronet');
+    // rng=0.99 (scaled: 0.99 * 0.2 = 0.198) → above coronet's 0.12 cumulative → pastern
+    expect(sampleWeightedFromMap(map, alwaysReturn(0.99))).toBe('pastern');
+  });
 });
 
 // ---------------------------------------------------------------------------
@@ -205,6 +215,18 @@ describe('generateAdvancedMarkings', () => {
 
   it('all false when rng always returns 1 (above any probability)', () => {
     const result = generateAdvancedMarkings(null, alwaysReturn(1));
+    expect(result.bloodyShoulderPresent).toBe(false);
+    expect(result.snowflakePresent).toBe(false);
+    expect(result.frostPresent).toBe(false);
+  });
+
+  it('D-1: negative multiplier clamps to 0 probability — all flags false', () => {
+    const bias = {
+      bloody_shoulder_probability_multiplier: -10,
+      snowflake_probability_multiplier: -10,
+      frost_probability_multiplier: -10,
+    };
+    const result = generateAdvancedMarkings(bias, alwaysReturn(0));
     expect(result.bloodyShoulderPresent).toBe(false);
     expect(result.snowflakePresent).toBe(false);
     expect(result.frostPresent).toBe(false);
@@ -363,6 +385,26 @@ describe('inheritMarkings', () => {
     expect(valid).toContain(result.faceMarking);
   });
 
+  it('P-1: non-chestnut foal cannot inherit isFlaxen=true from chestnut parent', () => {
+    const chestnutSire = {
+      ...mockSireMarkings,
+      modifiers: { isSooty: false, isFlaxen: true, hasPangare: false, isRabicano: false },
+    };
+    // rng < 0.4 → sire path — but foal color is 'Bay' (not chestnut)
+    const result = inheritMarkings(chestnutSire, mockDamMarkings, null, 'Bay', alwaysReturn(0.1));
+    expect(result.modifiers.isFlaxen).toBe(false);
+  });
+
+  it('P-1: chestnut foal can inherit isFlaxen=true from chestnut parent', () => {
+    const chestnutSire = {
+      ...mockSireMarkings,
+      modifiers: { isSooty: false, isFlaxen: true, hasPangare: false, isRabicano: false },
+    };
+    // rng < 0.4 → sire path, foal color is 'Chestnut'
+    const result = inheritMarkings(chestnutSire, mockDamMarkings, null, 'Chestnut', alwaysReturn(0.1));
+    expect(result.modifiers.isFlaxen).toBe(true);
+  });
+
   it('does not throw when sire markings are null (fallback to random)', () => {
     expect(() => inheritMarkings(null, mockDamMarkings, null, 'Bay', Math.random)).not.toThrow();
   });
@@ -373,7 +415,7 @@ describe('inheritMarkings', () => {
 });
 
 // ---------------------------------------------------------------------------
-// Statistical: face marking chi-squared (AC5 proxy)
+// Statistical: face marking chi-squared (AC1 — default weight distribution)
 // ---------------------------------------------------------------------------
 
 describe('generateFaceMarking — statistical distribution (chi-squared)', () => {

@@ -76,12 +76,20 @@ export function sampleWeightedFromMap(weightMap, rng) {
     return null;
   }
 
-  const roll = rng();
+  // Normalize weights so sub-1.0 maps distribute correctly (D-2).
+  // Negative weights are clamped to 0 before summing (D-1 defence-in-depth).
+  const total = entries.reduce((sum, [, prob]) => sum + Math.max(0, prob), 0);
+  if (total <= 0) {
+    return entries[0][0];
+  }
+
+  const roll = rng() * total;
   let cumulative = 0;
 
   for (const [key, prob] of entries) {
-    cumulative += prob;
-    if (roll <= cumulative) {
+    cumulative += Math.max(0, prob);
+    if (roll < cumulative) {
+      // P-3: strict < (not <=) to avoid first-key boundary bias
       return key;
     }
   }
@@ -164,9 +172,13 @@ export function generateAdvancedMarkings(advancedMarkingsBias, rng) {
   const swMultiplier = advancedMarkingsBias?.snowflake_probability_multiplier ?? 1.0;
   const frMultiplier = advancedMarkingsBias?.frost_probability_multiplier ?? 1.0;
 
-  const bsProb = Math.min(1, ADVANCED_MARKING_BASE_RATES.bloody_shoulder * bsMultiplier);
-  const swProb = Math.min(1, ADVANCED_MARKING_BASE_RATES.snowflake * swMultiplier);
-  const frProb = Math.min(1, ADVANCED_MARKING_BASE_RATES.frost * frMultiplier);
+  // D-1: Math.max(0, ...) clamps negative multipliers to 0 probability
+  const bsProb = Math.min(
+    1,
+    Math.max(0, ADVANCED_MARKING_BASE_RATES.bloody_shoulder * bsMultiplier),
+  );
+  const swProb = Math.min(1, Math.max(0, ADVANCED_MARKING_BASE_RATES.snowflake * swMultiplier));
+  const frProb = Math.min(1, Math.max(0, ADVANCED_MARKING_BASE_RATES.frost * frMultiplier));
 
   return {
     bloodyShoulderPresent: rng() < bsProb,
@@ -341,22 +353,31 @@ export function inheritMarkings(
     );
   }
 
+  // P-2: Pre-compute per-flag probabilities so each reroll uses exactly 1 rng() draw
+  // (calling generateAdvancedMarkings() would consume 3 draws but discard 2)
+  const bsMult = advancedBias?.bloody_shoulder_probability_multiplier ?? 1.0;
+  const swMult = advancedBias?.snowflake_probability_multiplier ?? 1.0;
+  const frMult = advancedBias?.frost_probability_multiplier ?? 1.0;
+  const bsProb = Math.min(1, Math.max(0, ADVANCED_MARKING_BASE_RATES.bloody_shoulder * bsMult));
+  const swProb = Math.min(1, Math.max(0, ADVANCED_MARKING_BASE_RATES.snowflake * swMult));
+  const frProb = Math.min(1, Math.max(0, ADVANCED_MARKING_BASE_RATES.frost * frMult));
+
   // Advanced markings — inherit or reroll each flag independently
   const advancedMarkings = {
     bloodyShoulderPresent: pickInherited(
       sireMarkings?.advancedMarkings?.bloodyShoulderPresent,
       damMarkings?.advancedMarkings?.bloodyShoulderPresent,
-      () => generateAdvancedMarkings(advancedBias, rng).bloodyShoulderPresent,
+      () => rng() < bsProb,
     ),
     snowflakePresent: pickInherited(
       sireMarkings?.advancedMarkings?.snowflakePresent,
       damMarkings?.advancedMarkings?.snowflakePresent,
-      () => generateAdvancedMarkings(advancedBias, rng).snowflakePresent,
+      () => rng() < swProb,
     ),
     frostPresent: pickInherited(
       sireMarkings?.advancedMarkings?.frostPresent,
       damMarkings?.advancedMarkings?.frostPresent,
-      () => generateAdvancedMarkings(advancedBias, rng).frostPresent,
+      () => rng() < frProb,
     ),
   };
 
@@ -367,13 +388,15 @@ export function inheritMarkings(
       damMarkings?.modifiers?.isSooty,
       () => rng() < (modifierPrevalence?.sooty ?? MODIFIER_DEFAULTS.sooty),
     ),
-    isFlaxen: pickInherited(
-      sireMarkings?.modifiers?.isFlaxen,
-      damMarkings?.modifiers?.isFlaxen,
-      () =>
-        isBaseChestnut(colorName) &&
-        rng() < (modifierPrevalence?.flaxen ?? MODIFIER_DEFAULTS.flaxen),
-    ),
+    // P-1: Apply chestnut guard to inherited value too — a non-chestnut foal must
+    // never carry isFlaxen=true even if a chestnut parent had it.
+    isFlaxen: isBaseChestnut(colorName)
+      ? pickInherited(
+          sireMarkings?.modifiers?.isFlaxen,
+          damMarkings?.modifiers?.isFlaxen,
+          () => rng() < (modifierPrevalence?.flaxen ?? MODIFIER_DEFAULTS.flaxen),
+        )
+      : false,
     hasPangare: pickInherited(
       sireMarkings?.modifiers?.hasPangare,
       damMarkings?.modifiers?.hasPangare,
