@@ -421,7 +421,7 @@ const HorseDetailPage: React.FC = () => {
                     <div className="flex flex-wrap gap-3 text-sm fantasy-body text-[rgb(180,195,215)]">
                       <span>Breed: {getBreedName(horse.breed)}</span>
                       <span>•</span>
-                      <span>Color: {horse.finalDisplayColor || 'Unknown'}</span>
+                      <span>Color: {(horse as unknown as Record<string, string>).finalDisplayColor || 'Unknown'}</span>
                       <span>•</span>
                       <span>Age: {horse.age}</span>
                       <span>•</span>
