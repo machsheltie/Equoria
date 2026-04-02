@@ -4,20 +4,29 @@
  * Verifies:
  * - Component renders with aria-hidden
  * - Background and veil layers exist
- * - WebP + JPEG image-set() paths are constructed correctly
+ * - Body background is set via useEffect
  * - scene prop changes the background path
  * - No scene → generic /images/bg-* path
  */
 
 import React from 'react';
 import { render, screen } from '@testing-library/react';
-import { describe, it, expect, beforeEach } from 'vitest';
+import { describe, it, expect, beforeEach, afterEach } from 'vitest';
 import { PageBackground } from '../PageBackground';
 
 // Provide a stable window size so selectSuffix() returns 16.9
 beforeEach(() => {
   Object.defineProperty(window, 'innerWidth', { value: 1920, writable: true });
   Object.defineProperty(window, 'innerHeight', { value: 1080, writable: true });
+});
+
+afterEach(() => {
+  // Clean up body styles left by PageBackground useEffect
+  document.body.style.backgroundImage = '';
+  document.body.style.backgroundSize = '';
+  document.body.style.backgroundPosition = '';
+  document.body.style.backgroundRepeat = '';
+  document.body.style.backgroundAttachment = '';
 });
 
 describe('PageBackground', () => {
@@ -27,7 +36,7 @@ describe('PageBackground', () => {
     expect(root).toHaveAttribute('aria-hidden', 'true');
   });
 
-  it('renders background image layer and readability veil', () => {
+  it('renders image layer and readability veil', () => {
     render(<PageBackground />);
     expect(screen.getByTestId('page-background-image')).toBeInTheDocument();
     expect(screen.getByTestId('page-background-veil')).toBeInTheDocument();
@@ -36,9 +45,15 @@ describe('PageBackground', () => {
   it('uses generic /images/bg-* path when no scene is provided', () => {
     render(<PageBackground />);
     const imgLayer = screen.getByTestId('page-background-image');
-    // data-bg holds the webp path (jsdom doesn't parse image-set())
     expect(imgLayer.getAttribute('data-bg')).toContain('/images/bg-');
     expect(imgLayer.getAttribute('data-bg')).not.toContain('/images/backgrounds/');
+  });
+
+  it('sets body background-image via useEffect', () => {
+    render(<PageBackground />);
+    expect(document.body.style.backgroundImage).toContain('/images/bg-');
+    expect(document.body.style.backgroundSize).toBe('cover');
+    expect(document.body.style.backgroundAttachment).toBe('fixed');
   });
 
   it('uses scene-specific path when scene="auth"', () => {
@@ -53,25 +68,16 @@ describe('PageBackground', () => {
     expect(imgLayer.getAttribute('data-bg')).toContain('/images/backgrounds/hub/bg-');
   });
 
-  it('includes both webp and jpg variants in image-set()', () => {
+  it('data-bg path ends in .webp', () => {
     render(<PageBackground scene="stable" />);
     const imgLayer = screen.getByTestId('page-background-image');
-    // data-bg is the webp path; the jpg sibling differs only in extension
     const webpPath = imgLayer.getAttribute('data-bg') ?? '';
-    expect(webpPath).toContain('.webp');
-    expect(webpPath.replace('.webp', '.jpg')).toContain('.jpg');
-  });
-
-  it('has a deep-space background-color fallback', () => {
-    render(<PageBackground />);
-    const imgLayer = screen.getByTestId('page-background-image');
-    expect(imgLayer.style.backgroundColor).toBe('var(--bg-deep-space)');
+    expect(webpPath).toMatch(/\.webp$/);
   });
 
   it('veil has the correct rgba overlay color', () => {
     render(<PageBackground />);
     const veil = screen.getByTestId('page-background-veil');
-    // jsdom normalises rgba() values by adding spaces after commas
     expect(veil.style.backgroundColor).toBe('rgba(5, 10, 20, 0.45)');
   });
 
@@ -82,9 +88,8 @@ describe('PageBackground', () => {
     expect(root).toHaveClass('pointer-events-none');
   });
 
-  it('renders nothing visible (returns presentational div only)', () => {
+  it('renders 2 child divs (image layer + veil)', () => {
     const { container } = render(<PageBackground />);
-    // Should have 1 root div with 2 child divs (image layer + veil)
     expect(container.firstChild).toBeInTheDocument();
     expect(container.firstChild?.childNodes).toHaveLength(2);
   });

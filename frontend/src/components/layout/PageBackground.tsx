@@ -1,23 +1,23 @@
 /**
  * PageBackground — Story 22.3: Painted Background System
  *
- * Full-viewport fixed background that renders at z-[var(--z-below)] (-1)
- * behind all page content. Replaces StarField + StarfieldBackground.
+ * Sets the full-viewport background by writing directly to document.body
+ * inline styles, which overrides the CSS gradient and avoids z-index
+ * stacking-context conflicts with position:fixed elements.
  *
  * When `scene` is provided, resolves WebP art from:
  *   /images/backgrounds/{scene}/bg-{ratio}.webp
  *
  * When `src` is provided it is used as-is (bypasses scene lookup). Use this
- * for routes that already have dedicated artwork at a fixed path — e.g.
- * `/images/bg-stable.webp`.
+ * for routes that already have dedicated artwork at a fixed path.
  *
- * When no art exists, the deep-space background-color (var(--bg-deep-space))
- * shows — no broken images.
+ * When no art file exists the body keeps its CSS gradient fallback.
  *
- * A semi-transparent readability veil (rgba 5,10,20 at 0.45) overlays
- * the background to maintain content legibility.
+ * A semi-transparent readability veil (rgba 5,10,20 at 0.45) is rendered
+ * as a fixed overlay above the body background.
  */
 
+import { useEffect } from 'react';
 import { useResponsiveBackground, type SceneKey } from '@/hooks/useResponsiveBackground';
 
 interface PageBackgroundProps {
@@ -27,45 +27,42 @@ interface PageBackgroundProps {
   className?: string;
 }
 
-/**
- * Build the CSS background-image value. Uses url() directly — WebP is
- * universally supported in 2025+ browsers. The backgroundColor fallback
- * (var(--bg-deep-space)) shows when the file doesn't exist yet.
- */
-function buildBackgroundImage(webpPath: string): string {
-  return `url('${webpPath}')`;
-}
-
 export function PageBackground({ scene, src, className }: PageBackgroundProps) {
-  // Hook must always be called (React rules). When `src` is provided, its
-  // result is ignored in favour of the explicit path.
   const hookPath = useResponsiveBackground(scene);
   const webpPath = src ?? hookPath;
 
+  // Apply background directly to body — guaranteed to sit below all content
+  // regardless of stacking contexts, and overrides the CSS gradient rule.
+  useEffect(() => {
+    const body = document.body;
+    body.style.backgroundImage = `url('${webpPath}')`;
+    body.style.backgroundSize = 'cover';
+    body.style.backgroundPosition = 'center';
+    body.style.backgroundRepeat = 'no-repeat';
+    body.style.backgroundAttachment = 'fixed';
+    return () => {
+      body.style.backgroundImage = '';
+      body.style.backgroundSize = '';
+      body.style.backgroundPosition = '';
+      body.style.backgroundRepeat = '';
+      body.style.backgroundAttachment = '';
+    };
+  }, [webpPath]);
+
   return (
     <div
-      className={`fixed inset-0 z-[var(--z-base)] pointer-events-none ${className ?? ''}`}
+      className={`fixed inset-0 pointer-events-none ${className ?? ''}`}
       aria-hidden="true"
       data-testid="page-background"
+      style={{ zIndex: 1 }}
     >
-      {/* Background image layer — falls back to --bg-deep-space when art is absent */}
-      <div
-        className="absolute inset-0"
-        data-testid="page-background-image"
-        data-bg={webpPath}
-        style={{
-          backgroundColor: 'var(--bg-deep-space)',
-          backgroundImage: buildBackgroundImage(webpPath),
-          backgroundSize: 'cover',
-          backgroundPosition: 'center',
-          backgroundRepeat: 'no-repeat',
-        }}
-      />
-      {/* Readability veil — deepens contrast between background art and UI panels */}
+      {/* Invisible — holds data-bg for test inspection of resolved path */}
+      <div className="absolute inset-0" data-testid="page-background-image" data-bg={webpPath} />
+      {/* Readability veil — deepens contrast between background art and UI */}
       <div
         className="absolute inset-0"
         data-testid="page-background-veil"
-        style={{ backgroundColor: 'rgba(5,10,20,0.45)' }}
+        style={{ backgroundColor: 'rgba(5, 10, 20, 0.45)' }}
       />
     </div>
   );
