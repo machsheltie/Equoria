@@ -258,7 +258,7 @@ function applyDilutions(baseColor, genotype) {
         case 'chestnut':
           return 'Palomino'; // Cream takes priority for naming on chestnut+dun
         case 'bay':
-          return 'Buckskin'; // Dunskin maps to Buckskin for display
+          return 'Bay Dun'; // Dunskin: spec AC2 — Buckskin+Dun → 'Bay Dun' with Cream note in shade
         case 'black':
           return hasSilver ? 'Silver Grulla' : 'Grulla'; // smoky grulla = silver grulla
       }
@@ -347,34 +347,28 @@ function resolveChampagneColor(baseColor, hasCreamSingle, hasCreamDouble, hasDun
       black: 'Classic',
     }[baseColor] ?? 'Gold';
 
-  const parts = [base];
+  const hasAnyCream = hasCreamSingle || hasCreamDouble;
 
-  if (hasCreamDouble) {
-    parts.push('Cream');
-  } else if (hasCreamSingle) {
-    parts.push('Cream');
+  // Most specific: Silver + Dun + Champagne (must check before separate Silver or Dun branches)
+  if (hasSilver && baseColor !== 'chestnut' && hasDun) {
+    return hasAnyCream ? `Silver ${base} Cream Dun Champagne` : `Silver ${base} Dun Champagne`;
   }
 
-  if (hasDun) {
-    // Insert Dun before Champagne: "Gold Dun Champagne" / "Gold Cream Dun Champagne"
-    if (hasCreamSingle || hasCreamDouble) {
-      // Reorder to get "Gold Cream Dun Champagne"
-      return `${base} Cream Dun Champagne`;
-    }
-    return `${base} Dun Champagne`;
-  }
-
+  // Silver + Champagne (no dun)
   if (hasSilver && baseColor !== 'chestnut') {
-    // Silver + Champagne: "Silver Amber Champagne" etc.
-    if (hasCreamSingle) {
-      return `Silver ${base} Cream Champagne`;
-    }
-    if (hasDun) {
-      return `Silver ${base} Dun Champagne`;
-    }
-    return `Silver ${base} Champagne`;
+    return hasAnyCream ? `Silver ${base} Cream Champagne` : `Silver ${base} Champagne`;
   }
 
+  // Dun + Champagne (no silver)
+  if (hasDun) {
+    return hasAnyCream ? `${base} Cream Dun Champagne` : `${base} Dun Champagne`;
+  }
+
+  // Base Champagne (no silver, no dun)
+  const parts = [base];
+  if (hasAnyCream) {
+    parts.push('Cream');
+  }
   parts.push('Champagne');
   return parts.join(' ');
 }
@@ -517,7 +511,7 @@ function applyPatterns(genotype, colorName, genotypeHash) {
 
   // --- Brindle ---
   const br1 = genotype.BR1_Brindle1 ?? 'n/n';
-  if (br1 !== 'n/n') {
+  if (br1 !== 'n/n' && !result.isWhite) {
     result.isBrindle = true;
     result.colorName = 'Brindle (Female)';
   }

@@ -141,6 +141,14 @@ describe('calculatePhenotype — Dun dilutions', () => {
   it('nd2/nd2 (non-dun) does not produce dun color', () => {
     expect(calculatePhenotype(buildGenotype({ E_Extension: 'e/e', D_Dun: 'nd2/nd2' })).colorName).toBe('Chestnut');
   });
+
+  it('nd1/nd2 pseudo-dun on Bay → Bay Dun (P-5)', () => {
+    expect(calculatePhenotype(buildGenotype({ D_Dun: 'nd1/nd2' })).colorName).toBe('Bay Dun');
+  });
+
+  it('nd1/nd2 pseudo-dun + Cr/n on Bay → Bay Dun (P-5)', () => {
+    expect(calculatePhenotype(buildGenotype({ D_Dun: 'nd1/nd2', Cr_Cream: 'Cr/n' })).colorName).toBe('Bay Dun');
+  });
 });
 
 // ---------------------------------------------------------------------------
@@ -478,6 +486,14 @@ describe('calculatePhenotype — determinism', () => {
     const bay = calculatePhenotype(buildGenotype());
     const chestnut = calculatePhenotype(buildGenotype({ E_Extension: 'e/e' }));
     expect(bay.colorName).not.toBe(chestnut.colorName);
+  });
+
+  it('same key-values with different property insertion order produce identical output (P-4)', () => {
+    // Build two genotypes with identical alleles but different key ordering
+    const g1 = buildGenotype({ E_Extension: 'e/e', Cr_Cream: 'Cr/n', D_Dun: 'D/nd2' });
+    // Create g2 by re-inserting keys in reverse alphabetical order
+    const g2 = Object.fromEntries(Object.entries(g1).reverse());
+    expect(calculatePhenotype(g1)).toEqual(calculatePhenotype(g2));
   });
 });
 
