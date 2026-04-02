@@ -23,6 +23,7 @@ import { generateGaitScores } from '../services/gaitService.mjs';
 import { generateTemperament } from '../services/temperamentService.mjs';
 import { generateGenotype } from '../services/genotypeGenerationService.mjs';
 import { calculatePhenotype } from '../services/phenotypeCalculationService.mjs';
+import { inheritColorGenotype } from '../services/breedingColorInheritanceService.mjs';
 import prisma from '../../../db/index.mjs';
 import logger from '../../../utils/logger.mjs';
 
@@ -127,7 +128,15 @@ const validateHorseUpdatePayload = (req, res, next) => {
       .json({ success: false, message: 'Invalid horse payload: nested too deep' });
   }
 
-  const allowedFields = new Set(['name', 'sex', 'gender', 'dateOfBirth', 'breedId']);
+  const allowedFields = new Set([
+    'name',
+    'sex',
+    'gender',
+    'dateOfBirth',
+    'breedId',
+    'sireId',
+    'damId',
+  ]);
 
   for (const key of Object.keys(body)) {
     if (!allowedFields.has(key)) {
@@ -187,6 +196,8 @@ const validateHorseCreation = [
     .isString()
     .isLength({ min: 1, max: 100 })
     .withMessage('Final display color must be a string up to 100 characters'),
+  body('sireId').optional().isInt({ min: 1 }).withMessage('Sire ID must be a positive integer'),
+  body('damId').optional().isInt({ min: 1 }).withMessage('Dam ID must be a positive integer'),
 
   (req, res, next) => {
     const errors = validationResult(req);
@@ -505,8 +516,37 @@ router.post(
         });
         breedGeneticProfile = breed?.breedGeneticProfile ?? null;
       }
-      // Generate coat color genotype from breed allele weights (31E-1a)
-      const colorGenotype = generateGenotype(breedGeneticProfile);
+      // Generate coat color genotype (31E-1a / 31E-2)
+      // If sireId + damId provided and both have colorGenotype → use Mendelian inheritance (31E-2)
+      // Otherwise → random breed-weighted generation (31E-1a)
+      let colorGenotype;
+      const sireId = req.body.sireId ? parseInt(req.body.sireId, 10) : null;
+      const damId = req.body.damId ? parseInt(req.body.damId, 10) : null;
+
+      if (sireId && damId) {
+        const [sireHorse, damHorse] = await Promise.all([
+          prisma.horse.findUnique({ where: { id: sireId }, select: { colorGenotype: true } }),
+          prisma.horse.findUnique({ where: { id: damId }, select: { colorGenotype: true } }),
+        ]);
+        if (sireHorse?.colorGenotype && damHorse?.colorGenotype) {
+          colorGenotype = inheritColorGenotype(
+            sireHorse.colorGenotype,
+            damHorse.colorGenotype,
+            breedGeneticProfile,
+          );
+          logger.info(
+            `[horseRoutes] Used Mendelian inheritance for foal from sire ${sireId} + dam ${damId}`,
+          );
+        } else {
+          logger.warn(
+            '[horseRoutes] sireId/damId provided but parent genotypes missing — falling back to random generation',
+          );
+          colorGenotype = generateGenotype(breedGeneticProfile);
+        }
+      } else {
+        colorGenotype = generateGenotype(breedGeneticProfile);
+      }
+
       // Calculate phenotype (display color name + pattern flags) from genotype (31E-1b)
       const phenotype = calculatePhenotype(colorGenotype, breedGeneticProfile?.shade_bias ?? null);
 
@@ -540,6 +580,8 @@ router.post(
         temperament,
         colorGenotype,
         phenotype,
+        ...(sireId && { sireId }),
+        ...(damId && { damId }),
         ...(req.body.finalDisplayColor && { finalDisplayColor: req.body.finalDisplayColor }),
       };
 

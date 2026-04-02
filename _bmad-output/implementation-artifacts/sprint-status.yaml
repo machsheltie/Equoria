@@ -35,7 +35,7 @@
 # - Dev moves story to 'review', then runs code-review (fresh context, different LLM recommended)
 
 generated: 2026-03-25
-last_updated: 2026-04-02 31e-1b done (P-1..P-5 patches applied and approved)
+last_updated: 2026-04-02 22-1 and 22-2 code review approved and closed
 project: Equoria
 project_key: NOKEY
 tracking_system: file-system
@@ -49,8 +49,8 @@ development_status:
 
   # Epic 22: Celestial Night Foundation (re-spec'd 2026-03-31 — stories match docs/epics.md §Epic22)
   epic-22: in-progress
-  22-1-font-migration: review
-  22-2-celestial-theme-provider: review
+  22-1-font-migration: done
+  22-2-celestial-theme-provider: done
   22-3-painted-background-system: backlog
   22-4-glass-panel-surface-updates: backlog
   22-5-button-hierarchy: backlog
@@ -191,7 +191,7 @@ development_status:
   epic-31e: in-progress
   31e-1a-genotype-generation-and-migration: done
   31e-1b-phenotype-calculation-engine: done
-  31e-2-breed-allele-restrictions: backlog
+  31e-2-breeding-color-inheritance: review
   31e-3-breeding-inheritance-and-lethal-filtering: backlog
   31e-4-marking-system: backlog
   31e-5-genetics-api-endpoints: backlog
