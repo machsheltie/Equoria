@@ -24,6 +24,7 @@ import { generateTemperament } from '../services/temperamentService.mjs';
 import { generateGenotype } from '../services/genotypeGenerationService.mjs';
 import { calculatePhenotype } from '../services/phenotypeCalculationService.mjs';
 import { inheritColorGenotype } from '../services/breedingColorInheritanceService.mjs';
+import { generateMarkings, inheritMarkings } from '../services/markingGenerationService.mjs';
 import prisma from '../../../db/index.mjs';
 import logger from '../../../utils/logger.mjs';
 
@@ -522,16 +523,18 @@ router.post(
       let colorGenotype;
       const sireId = req.body.sireId ? parseInt(req.body.sireId, 10) : null;
       const damId = req.body.damId ? parseInt(req.body.damId, 10) : null;
+      let sireHorse = null;
+      let damHorse = null;
 
       if (sireId && damId) {
-        const [sireHorse, damHorse] = await Promise.all([
+        [sireHorse, damHorse] = await Promise.all([
           prisma.horse.findUnique({
             where: { id: sireId },
-            select: { colorGenotype: true, sex: true },
+            select: { colorGenotype: true, sex: true, phenotype: true },
           }),
           prisma.horse.findUnique({
             where: { id: damId },
-            select: { colorGenotype: true, sex: true },
+            select: { colorGenotype: true, sex: true, phenotype: true },
           }),
         ]);
 
@@ -567,7 +570,23 @@ router.post(
       }
 
       // Calculate phenotype (display color name + pattern flags) from genotype (31E-1b)
-      const phenotype = calculatePhenotype(colorGenotype, breedGeneticProfile?.shade_bias ?? null);
+      const baseColor = calculatePhenotype(colorGenotype, breedGeneticProfile?.shade_bias ?? null);
+
+      // Generate markings (31E-3): face, leg, advanced, modifiers
+      // When sireId+damId: inherit markings from parent phenotypes (40/40/20 rule)
+      // Otherwise: random generation from breed marking_bias
+      let markings;
+      if (sireId && damId && sireHorse?.phenotype && damHorse?.phenotype) {
+        markings = inheritMarkings(
+          sireHorse.phenotype,
+          damHorse.phenotype,
+          breedGeneticProfile,
+          baseColor.colorName,
+        );
+      } else {
+        markings = generateMarkings(breedGeneticProfile, baseColor.colorName);
+      }
+      const phenotype = { ...baseColor, ...markings };
 
       // Whitelist creation fields to prevent mass-assignment of protected fields
       // (e.g. totalEarnings, level, bondScore, stressLevel, epigeneticModifiers)
