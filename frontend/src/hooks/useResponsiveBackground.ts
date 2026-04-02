@@ -75,8 +75,12 @@ function selectSuffix(): string {
  *               (backward-compatible with pre-Story-22.3 consumers).
  */
 export function useResponsiveBackground(scene?: SceneKey): string {
+  // 'default' is a named sentinel meaning "use the generic /images/bg-*.webp set".
+  // Treat it identically to no scene so the viewport-ratio images are served.
   const buildPath = (suffix: string) =>
-    scene ? `/images/backgrounds/${scene}/bg-${suffix}.webp` : `/images/bg-${suffix}.webp`;
+    scene && scene !== 'default'
+      ? `/images/backgrounds/${scene}/bg-${suffix}.webp`
+      : `/images/bg-${suffix}.webp`;
 
   const [bg, setBg] = useState(() => buildPath(selectSuffix()));
 
