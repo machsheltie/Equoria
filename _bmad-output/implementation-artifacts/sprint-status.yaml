@@ -35,7 +35,7 @@
 # - Dev moves story to 'review', then runs code-review (fresh context, different LLM recommended)
 
 generated: 2026-03-25
-last_updated: 2026-04-01 31e-1a done, 31e-1b review
+last_updated: 2026-04-02 31e-1b done (P-1..P-5 patches applied and approved)
 project: Equoria
 project_key: NOKEY
 tracking_system: file-system
@@ -190,7 +190,7 @@ development_status:
   # Epic 31E: Coat Color Genetics
   epic-31e: in-progress
   31e-1a-genotype-generation-and-migration: done
-  31e-1b-phenotype-calculation-engine: review
+  31e-1b-phenotype-calculation-engine: done
   31e-2-breed-allele-restrictions: backlog
   31e-3-breeding-inheritance-and-lethal-filtering: backlog
   31e-4-marking-system: backlog
