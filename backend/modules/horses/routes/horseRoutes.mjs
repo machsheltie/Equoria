@@ -8,6 +8,8 @@ import {
   getConformationAnalysis,
   getGaits,
   getTemperamentDefinitions,
+  getGenetics,
+  getColor,
 } from '../controllers/horseController.mjs';
 import { authenticateToken } from '../../../middleware/auth.mjs';
 import { requireOwnership } from '../../../middleware/ownership.mjs';
@@ -450,6 +452,56 @@ router.get(
         success: false,
         message: 'Internal server error',
         error: process.env.NODE_ENV !== 'production' ? error.message : 'Something went wrong',
+      });
+    }
+  },
+);
+
+/**
+ * GET /horses/:id/genetics
+ * Get full color genotype + phenotype for a specific horse
+ *
+ * Security: Validates horse ownership before returning genetics data
+ */
+router.get(
+  '/:id/genetics',
+  queryRateLimiter,
+  rejectPollutedRequest,
+  validateHorseId,
+  requireOwnership('horse'),
+  async (req, res) => {
+    try {
+      await getGenetics(req, res);
+    } catch (error) {
+      logger.error(`[horseRoutes] Error in genetics endpoint: ${error.message}`);
+      res.status(500).json({
+        success: false,
+        message: 'Internal server error',
+      });
+    }
+  },
+);
+
+/**
+ * GET /horses/:id/color
+ * Get player-facing coat color and markings summary for a specific horse
+ *
+ * Security: Validates horse ownership before returning color data
+ */
+router.get(
+  '/:id/color',
+  queryRateLimiter,
+  rejectPollutedRequest,
+  validateHorseId,
+  requireOwnership('horse'),
+  async (req, res) => {
+    try {
+      await getColor(req, res);
+    } catch (error) {
+      logger.error(`[horseRoutes] Error in color endpoint: ${error.message}`);
+      res.status(500).json({
+        success: false,
+        message: 'Internal server error',
       });
     }
   },

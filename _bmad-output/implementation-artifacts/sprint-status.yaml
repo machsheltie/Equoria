@@ -35,7 +35,7 @@
 # - Dev moves story to 'review', then runs code-review (fresh context, different LLM recommended)
 
 generated: 2026-03-25
-last_updated: 2026-04-02 31e-3 code review patches applied; story done
+last_updated: 2026-04-02 31e-4 color genetics API endpoints done
 project: Equoria
 project_key: NOKEY
 tracking_system: file-system
@@ -193,7 +193,7 @@ development_status:
   31e-1b-phenotype-calculation-engine: done
   31e-2-breeding-color-inheritance: done
   31e-3-marking-system: done
-  31e-4-marking-system: backlog
+  31e-4-color-genetics-api-endpoints: done
   31e-5-genetics-api-endpoints: backlog
   epic-31e-retrospective: optional
 

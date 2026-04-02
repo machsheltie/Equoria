@@ -768,7 +768,9 @@ export async function getConformationAnalysis(req, res) {
     });
 
     // Filter out horses without conformation scores
-    const validHorses = sameBreedHorses.filter(h => h.conformationScores != null);
+    const validHorses = sameBreedHorses.filter(
+      h => h.conformationScores !== null && h.conformationScores !== undefined,
+    );
 
     // Get breed profile for designed means
     const profile = BREED_GENETIC_PROFILES[horse.breedId];
@@ -791,7 +793,10 @@ export async function getConformationAnalysis(req, res) {
         percentile = 50;
       } else {
         const lowerCount = validHorses.filter(
-          h => h.conformationScores[region] != null && h.conformationScores[region] < score,
+          h =>
+            h.conformationScores[region] !== null &&
+            h.conformationScores[region] !== undefined &&
+            h.conformationScores[region] < score,
         ).length;
         percentile = Math.round((lowerCount / validHorses.length) * 100);
       }
@@ -1036,6 +1041,133 @@ export async function getTemperamentDefinitions(req, res) {
     res.status(500).json({
       success: false,
       message: 'Internal server error while retrieving temperament definitions',
+      data: null,
+    });
+  }
+}
+
+/**
+ * Get full color genotype and phenotype for a horse.
+ * Pure pass-through — reads from req.horse set by requireOwnership middleware.
+ * No additional DB queries.
+ *
+ * @param {object} req - Express request (req.horse set by requireOwnership)
+ * @param {object} res - Express response
+ */
+export async function getGenetics(req, res) {
+  try {
+    // D-3: explicit guard — requireOwnership must have set req.horse
+    if (!req.horse) {
+      logger.error(
+        '[horseController.getGenetics] req.horse not set — requireOwnership middleware did not run',
+      );
+      return res.status(500).json({
+        success: false,
+        message: 'Internal server error while retrieving genetics data',
+        data: null,
+      });
+    }
+
+    const horse = req.horse;
+
+    // D-2: JSONB type guard — reject non-object values (arrays, scalars)
+    const hasGenotype =
+      horse.colorGenotype !== null &&
+      horse.colorGenotype !== undefined &&
+      typeof horse.colorGenotype === 'object' &&
+      !Array.isArray(horse.colorGenotype);
+
+    if (!hasGenotype) {
+      return res.status(200).json({
+        success: true,
+        message: 'No genetics data available for this horse',
+        data: null,
+      });
+    }
+
+    logger.info(`[horseController.getGenetics] Retrieved genetics for horse ${horse.id}`);
+
+    return res.status(200).json({
+      success: true,
+      message: 'Genetics data retrieved successfully',
+      data: {
+        horseId: horse.id,
+        horseName: horse.name,
+        colorGenotype: horse.colorGenotype,
+        phenotype: horse.phenotype ?? null,
+      },
+    });
+  } catch (error) {
+    logger.error(`[horseController.getGenetics] Unexpected error: ${error.message}`);
+    return res.status(500).json({
+      success: false,
+      message: 'Internal server error while retrieving genetics data',
+      data: null,
+    });
+  }
+}
+
+/**
+ * Get player-facing coat color and markings summary for a horse.
+ * Returns colorName, shade, markings, and modifiers — no genotype (player-safe).
+ * Pure pass-through — reads from req.horse set by requireOwnership middleware.
+ *
+ * @param {object} req - Express request (req.horse set by requireOwnership)
+ * @param {object} res - Express response
+ */
+export async function getColor(req, res) {
+  try {
+    // D-3: explicit guard — requireOwnership must have set req.horse
+    if (!req.horse) {
+      logger.error(
+        '[horseController.getColor] req.horse not set — requireOwnership middleware did not run',
+      );
+      return res.status(500).json({
+        success: false,
+        message: 'Internal server error while retrieving color data',
+        data: null,
+      });
+    }
+
+    const horse = req.horse;
+    const phenotype = horse.phenotype;
+
+    // D-2: JSONB type guard — reject non-object values (arrays, scalars)
+    const hasPhenotype =
+      phenotype !== null &&
+      phenotype !== undefined &&
+      typeof phenotype === 'object' &&
+      !Array.isArray(phenotype);
+
+    if (!hasPhenotype) {
+      return res.status(200).json({
+        success: true,
+        message: 'No color data available for this horse',
+        data: null,
+      });
+    }
+
+    logger.info(`[horseController.getColor] Retrieved color for horse ${horse.id}`);
+
+    return res.status(200).json({
+      success: true,
+      message: 'Color data retrieved successfully',
+      data: {
+        horseId: horse.id,
+        horseName: horse.name,
+        colorName: phenotype.colorName ?? null,
+        shade: phenotype.shade ?? null,
+        faceMarking: phenotype.faceMarking ?? null,
+        legMarkings: phenotype.legMarkings ?? null,
+        advancedMarkings: phenotype.advancedMarkings ?? null,
+        modifiers: phenotype.modifiers ?? null,
+      },
+    });
+  } catch (error) {
+    logger.error(`[horseController.getColor] Unexpected error: ${error.message}`);
+    return res.status(500).json({
+      success: false,
+      message: 'Internal server error while retrieving color data',
       data: null,
     });
   }
