@@ -32,7 +32,7 @@ export interface Competition {
  */
 export interface CompetitionCardProps {
   competition: Competition;
-  onClick: (competitionId: number) => void;
+  onClick: (_competitionId: number) => void;
   isLoading?: boolean;
   className?: string;
 }
