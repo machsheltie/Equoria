@@ -27,7 +27,7 @@ const buttonVariants = cva(
     'focus-visible:outline-none focus-visible:ring-2',
     'focus-visible:ring-[var(--gold-bright)] focus-visible:ring-offset-2',
     'focus-visible:ring-offset-[var(--bg-deep-space)]',
-    'disabled:pointer-events-none disabled:opacity-40',
+    'disabled:pointer-events-none disabled:opacity-40 disabled:text-[var(--text-muted)]',
     'font-[var(--font-body)]',
   ].join(' '),
   {
@@ -61,17 +61,21 @@ const buttonVariants = cva(
         ].join(' '),
 
         /** Ghost — text only; for icon buttons, inline list actions */
+        /** Ghost — text only; for icon buttons, inline list actions.
+         *  Uses --gold-light (7.1:1) not --gold-primary (4.2:1) per AC contrast requirement. */
         ghost: [
-          'bg-transparent text-[var(--cream)]',
-          'hover:bg-[rgba(201,162,39,0.08)] hover:text-[var(--gold-400)]',
-          'underline-offset-4',
+          'bg-transparent text-[var(--gold-light)]',
+          'hover:underline underline-offset-4',
+          'active:opacity-80',
         ].join(' '),
 
         /** Link — underline text link (gold per Celestial Night identity) */
+        /** Link — underline text link.
+         *  Uses --gold-light (7.1:1) — --gold-primary (4.2:1) is forbidden for body-size text. */
         link: [
-          'bg-transparent text-[var(--gold-primary)]',
+          'bg-transparent text-[var(--gold-light)]',
           'underline underline-offset-4',
-          'hover:text-[var(--gold-light)]',
+          'hover:text-[var(--gold-bright)]',
           'rounded-none px-0',
         ].join(' '),
 
@@ -92,11 +96,14 @@ const buttonVariants = cva(
         ].join(' '),
       },
       size: {
-        default: 'h-10 px-5 py-2 text-sm',
-        sm: 'h-8 px-3 py-1 text-xs',
+        // h-11 = 44px minimum touch target (WCAG 2.1 SC 2.5.5)
+        default: 'h-11 px-4 py-2 text-sm',
+        // h-9 = 36px visual; after:-inset-1 expands hit area to 44px
+        sm: 'h-9 px-3 text-xs relative after:absolute after:-inset-1 after:content-[""]',
         lg: 'h-12 px-8 py-3 text-base',
         xl: 'h-14 px-10 py-4 text-lg',
-        icon: 'h-10 w-10 p-0',
+        // h-11 w-11 = 44x44px minimum touch target
+        icon: 'h-11 w-11 p-0',
       },
     },
     defaultVariants: {
