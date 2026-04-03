@@ -291,7 +291,19 @@ async function seedHorses(users, breeds) {
   for (const horseData of HORSES) {
     const existing = await prisma.horse.findFirst({ where: { name: horseData.name } });
     if (existing) {
-      console.log(`  Skip existing horse: ${horseData.name}`);
+      // Re-link breedId in case it was nulled/corrupted by a migration cascade
+      const expectedBreedId = breedMap[horseData.breed] ?? null;
+      if (existing.breedId !== expectedBreedId) {
+        await prisma.horse.update({
+          where: { id: existing.id },
+          data: { breedId: expectedBreedId },
+        });
+        console.log(
+          `  Updated breed for existing horse: ${horseData.name} → ${horseData.breed} (ID ${expectedBreedId})`,
+        );
+      } else {
+        console.log(`  Skip existing horse: ${horseData.name}`);
+      }
       continue;
     }
 
