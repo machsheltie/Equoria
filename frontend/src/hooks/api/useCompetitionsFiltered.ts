@@ -8,8 +8,9 @@
  *
  * Features:
  * - Filter-aware caching with unique query keys per filter combination
- * - Configurable staleTime (5 minutes default)
- * - Configurable gcTime (10 minutes default)
+ * - Configurable staleTime (1 minute default)
+ * - Configurable gcTime (5 minutes default)
+ * - refetchOnWindowFocus enabled for fresh competition data
  * - Automatic refetch on filter changes
  *
  * @example
@@ -53,16 +54,18 @@ export const competitionFilteredQueryKeys = {
  * @returns Query result with data, loading states, error, and refetch function
  *
  * Query Options:
- * - staleTime: 5 minutes - Data considered fresh for 5 minutes
- * - gcTime: 10 minutes - Cache retained for 10 minutes after unmount
+ * - staleTime: 1 minute - Data considered fresh for 1 minute
+ * - gcTime: 5 minutes - Cache retained for 5 minutes after unmount
+ * - refetchOnWindowFocus: true - Refetches when window regains focus
  * - Enabled by default - Fetches immediately on mount
  */
 export function useCompetitionsFiltered(filters?: CompetitionFilters) {
   return useQuery<CompetitionData[], CompetitionApiError>({
     queryKey: competitionFilteredQueryKeys.list(filters),
     queryFn: () => fetchCompetitions(filters),
-    staleTime: 5 * 60 * 1000, // 5 minutes
-    gcTime: 10 * 60 * 1000, // 10 minutes
+    staleTime: 1 * 60 * 1000, // 1 minute
+    gcTime: 5 * 60 * 1000, // 5 minutes
+    refetchOnWindowFocus: true,
   });
 }
 

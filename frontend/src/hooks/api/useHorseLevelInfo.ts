@@ -12,7 +12,7 @@
  * Features:
  * - Conditional fetching (disabled when horseId is 0 or negative)
  * - 2 minute staleTime (XP may change frequently from competitions/training)
- * - 5 minute gcTime for cache retention
+ * - 10 minute gcTime for cache retention
  * - Auto-updates when horse ID changes
  *
  * @example
@@ -26,11 +26,7 @@
  */
 
 import { useQuery } from '@tanstack/react-query';
-import {
-  fetchHorseLevelInfo,
-  HorseLevelInfo,
-  XpApiError,
-} from '@/lib/api/xp';
+import { fetchHorseLevelInfo, HorseLevelInfo, XpApiError } from '@/lib/api/xp';
 
 /**
  * Query keys for horse level info queries
@@ -58,14 +54,14 @@ export const horseLevelInfoQueryKeys = {
  * Query Options:
  * - enabled: Only fetches when horseId > 0
  * - staleTime: 2 minutes - XP may change frequently
- * - gcTime: 5 minutes - Cache retained for 5 minutes after unmount
+ * - gcTime: 10 minutes - Cache retained for 10 minutes after unmount
  */
 export function useHorseLevelInfo(horseId: number) {
   return useQuery<HorseLevelInfo, XpApiError>({
     queryKey: horseLevelInfoQueryKeys.horse(horseId),
     queryFn: () => fetchHorseLevelInfo(horseId),
     staleTime: 2 * 60 * 1000, // 2 minutes - may change frequently
-    gcTime: 5 * 60 * 1000, // 5 minutes - cache retention
+    gcTime: 10 * 60 * 1000, // 10 minutes - cache retention
     enabled: horseId > 0, // Only run if valid horseId
   });
 }

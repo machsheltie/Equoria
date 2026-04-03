@@ -70,9 +70,9 @@ export function useClaimPrizes() {
         queryKey: horsePrizeSummaryQueryKeys.all,
       });
 
-      // Invalidate profile (balance has been credited)
+      // Invalidate user balance (balance has been credited)
       queryClient.invalidateQueries({
-        queryKey: ['profile'],
+        queryKey: ['user', 'balance'],
       });
     },
     onError: (error) => {

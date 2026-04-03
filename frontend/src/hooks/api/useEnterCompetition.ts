@@ -81,6 +81,11 @@ export function useEnterCompetition() {
       queryClient.invalidateQueries({
         queryKey: ['profile'],
       });
+
+      // Invalidate main competition list cache
+      queryClient.invalidateQueries({
+        queryKey: ['competitions', 'list'],
+      });
     },
     onError: (error) => {
       // Error is already properly structured by the API client

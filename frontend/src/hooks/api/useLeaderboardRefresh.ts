@@ -87,7 +87,7 @@ export function useLeaderboardRefresh(): UseLeaderboardRefreshResult {
       setIsRefreshing(true);
       try {
         await queryClient.invalidateQueries({
-          queryKey: ['leaderboards', _category, _period, _discipline],
+          queryKey: leaderboardQueryKeys.list(_category, _period, _discipline),
         });
       } finally {
         setIsRefreshing(false);

@@ -56,7 +56,7 @@ export const competitionDetailsQueryKeys = {
  */
 export function useCompetitionDetails(id: number | null) {
   return useQuery<CompetitionData, CompetitionApiError>({
-    queryKey: competitionDetailsQueryKeys.detail(id!),
+    queryKey: competitionDetailsQueryKeys.detail(id ?? 0),
     queryFn: () => fetchCompetitionDetails(id!),
     enabled: id !== null,
     staleTime: 5 * 60 * 1000, // 5 minutes

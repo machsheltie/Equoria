@@ -8,7 +8,7 @@
  * - Enter competition
  */
 
-import { useQuery, useMutation, useQueryClient, useQueries } from '@tanstack/react-query';
+import { useQuery, useQueries } from '@tanstack/react-query';
 import { competitionsApi, ApiError, Competition, EligibilityResult } from '@/lib/api-client';
 
 // Query Keys
@@ -25,7 +25,9 @@ export function useCompetitions() {
   return useQuery<Competition[], ApiError>({
     queryKey: competitionKeys.list(),
     queryFn: competitionsApi.list,
-    staleTime: 5 * 60 * 1000, // 5 minutes
+    staleTime: 1 * 60 * 1000, // 1 minute
+    gcTime: 5 * 60 * 1000, // 5 minutes
+    refetchOnWindowFocus: true,
   });
 }
 
@@ -66,23 +68,5 @@ export function useEligibilityForHorses(discipline: string, horseIds: number[]) 
       enabled: horseId > 0 && Boolean(discipline),
       staleTime: 60 * 1000,
     })),
-  });
-}
-
-export function useEnterCompetition() {
-  const queryClient = useQueryClient();
-
-  return useMutation<
-    { success: boolean; data: { entryId: number } },
-    ApiError,
-    {
-      horseId: number;
-      competitionId: number;
-    }
-  >({
-    mutationFn: (data) => competitionsApi.enter(data),
-    onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: competitionKeys.all });
-    },
   });
 }

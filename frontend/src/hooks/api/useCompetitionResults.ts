@@ -11,7 +11,7 @@
  * Features:
  * - Conditional fetching (disabled when ID is null)
  * - 10 minute staleTime (results rarely change)
- * - 15 minute gcTime for cache retention
+ * - 30 minute gcTime for cache retention
  * - Auto-updates when competition ID changes
  *
  * @example
@@ -61,7 +61,7 @@ export const competitionResultsQueryKeys = {
  * Query Options:
  * - enabled: Only fetches when competitionId is not null
  * - staleTime: 10 minutes - Results rarely change once finalized
- * - gcTime: 15 minutes - Cache retained for 15 minutes after unmount
+ * - gcTime: 30 minutes - Cache retained for 30 minutes after unmount
  *
  * @example
  * const { data, isLoading, isError, error, refetch } = useCompetitionResults(competitionId);
@@ -82,7 +82,7 @@ export function useCompetitionResults(competitionId: number | null) {
     queryFn: () => fetchCompetitionResults(competitionId!),
     enabled: competitionId !== null,
     staleTime: 10 * 60 * 1000, // 10 minutes - results rarely change
-    gcTime: 15 * 60 * 1000, // 15 minutes - cache retention
+    gcTime: 30 * 60 * 1000, // 30 minutes - cache retention
   });
 }
 

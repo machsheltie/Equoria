@@ -33,12 +33,11 @@
  */
 
 import { useQuery } from '@tanstack/react-query';
-import {
-  fetchLeaderboard,
-  LeaderboardResponse,
-  LeaderboardApiError,
-} from '@/lib/api/leaderboards';
-import type { LeaderboardCategory, TimePeriod } from '@/components/leaderboard/LeaderboardCategorySelector';
+import { fetchLeaderboard, LeaderboardResponse, LeaderboardApiError } from '@/lib/api/leaderboards';
+import type {
+  LeaderboardCategory,
+  TimePeriod,
+} from '@/components/leaderboard/LeaderboardCategorySelector';
 
 /**
  * Parameters for the useLeaderboard hook.
@@ -88,14 +87,7 @@ export const leaderboardQueryKeys = {
  * - gcTime: 10 minutes - cache retained after unmount
  */
 export function useLeaderboard(params: UseLeaderboardParams) {
-  const {
-    category,
-    period,
-    discipline,
-    page = 1,
-    limit = 50,
-    enabled = true,
-  } = params;
+  const { category, period, discipline, page = 1, limit = 50, enabled = true } = params;
 
   return useQuery<LeaderboardResponse, LeaderboardApiError>({
     queryKey: leaderboardQueryKeys.list(category, period, discipline, page, limit),
@@ -109,6 +101,7 @@ export function useLeaderboard(params: UseLeaderboardParams) {
       }),
     staleTime: 5 * 60 * 1000, // 5 minutes
     gcTime: 10 * 60 * 1000, // 10 minutes
+    refetchOnWindowFocus: false,
     enabled,
   });
 }
