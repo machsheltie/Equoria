@@ -220,7 +220,7 @@
   /* Legacy glass backgrounds — kept for existing components */
   --glass-surface-bg: var(--glass-bg);
   --glass-surface-heavy-bg: rgba(15, 23, 42, 0.85);
-  --glass-surface-subtle-bg: rgba(15, 23, 42, 0.35);
+  --glass-surface-subtle-bg: rgba(15, 23, 42, 0.4);
 
   /* Backdrop blur amount — only applied to the outermost glass layer */
   --glass-blur-heavy: blur(16px);
