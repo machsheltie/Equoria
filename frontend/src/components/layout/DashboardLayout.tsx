@@ -10,7 +10,7 @@ import React from 'react';
 import { Outlet, useLocation } from 'react-router-dom';
 import MainNavigation from '../MainNavigation';
 import { AsidePanel } from './AsidePanel';
-import { PageBackground } from './PageBackground';
+import { usePageBackground } from './PageBackground';
 import type { SceneKey } from '@/hooks/useResponsiveBackground';
 
 /** Routes that show the aside panel on desktop */
@@ -62,11 +62,10 @@ const DashboardLayout: React.FC = () => {
     STATIC_BG[location.pathname] ??
     (location.pathname.startsWith('/horses/') ? '/images/bg-horse-detail.webp' : undefined);
   const scene = staticSrc ? undefined : getSceneForPath(location.pathname);
+  const bgStyle = usePageBackground({ scene, src: staticSrc });
 
   return (
-    <div className="min-h-screen relative flex flex-col">
-      <PageBackground scene={scene} src={staticSrc} />
-
+    <div className="min-h-screen relative flex flex-col" style={bgStyle}>
       {/* Skip-to-content link — visible on focus (WCAG 2.1 §13) */}
       <a
         href="#main-content"

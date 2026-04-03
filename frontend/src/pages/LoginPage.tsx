@@ -11,7 +11,7 @@ import { Mail, Lock, Eye, EyeOff } from 'lucide-react';
 import { loginSchema, type LoginFormData } from '../lib/validation-schemas';
 import { useLogin } from '../hooks/useAuth';
 import { Button } from '@/components/ui/button';
-import { PageBackground } from '@/components/layout/PageBackground';
+import { usePageBackground } from '@/components/layout/PageBackground';
 
 const LoginPage: React.FC = () => {
   const navigate = useNavigate();
@@ -46,10 +46,13 @@ const LoginPage: React.FC = () => {
     login(result.data, { onSuccess: () => navigate('/') });
   };
 
-  return (
-    <div className="min-h-screen w-full flex flex-col items-center justify-center relative overflow-hidden">
-      <PageBackground scene="auth" />
+  const bgStyle = usePageBackground({ scene: 'auth' });
 
+  return (
+    <div
+      className="min-h-screen w-full flex flex-col items-center justify-center relative overflow-hidden"
+      style={bgStyle}
+    >
       {/* Content — sits above overlay */}
       <div className="relative z-[var(--z-raised)] w-full max-w-sm px-4 flex flex-col items-center gap-8">
         {/* Title */}

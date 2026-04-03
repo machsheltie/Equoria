@@ -36,6 +36,7 @@ vi.mock('./pages/ResetPasswordPage', () => ({
 }));
 vi.mock('@/components/layout/PageBackground', () => ({
   PageBackground: () => null,
+  usePageBackground: () => ({}),
   default: () => null,
 }));
 vi.mock('@/components/ui/sonner', () => ({ Toaster: () => null }));

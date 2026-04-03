@@ -12,7 +12,7 @@ import { useSearchParams, Link, useNavigate } from 'react-router-dom';
 import { Mail, CheckCircle, XCircle, RefreshCw, Loader2 } from 'lucide-react';
 import { useVerifyEmail, useResendVerification, useVerificationStatus } from '../hooks/useAuth';
 import { useAuth } from '../contexts/AuthContext';
-import { PageBackground } from '@/components/layout/PageBackground';
+import { usePageBackground } from '@/components/layout/PageBackground';
 import { Button } from '@/components/ui/button';
 
 type VerificationState = 'idle' | 'verifying' | 'success' | 'error' | 'already-verified';
@@ -63,9 +63,12 @@ const VerifyEmailPage: React.FC = () => {
     resendVerification();
   };
 
+  const bgStyle = usePageBackground({ scene: 'auth' });
   const pageShell = (children: React.ReactNode) => (
-    <div className="min-h-screen w-full flex flex-col items-center justify-center relative overflow-hidden py-8">
-      <PageBackground scene="auth" />
+    <div
+      className="min-h-screen w-full flex flex-col items-center justify-center relative overflow-hidden py-8"
+      style={bgStyle}
+    >
       <div className="relative z-[var(--z-raised)] w-full max-w-sm px-4 flex flex-col items-center gap-8">
         <div className="text-center select-none">
           <Link

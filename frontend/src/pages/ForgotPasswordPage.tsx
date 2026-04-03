@@ -11,7 +11,7 @@ import { Mail, ArrowLeft, CheckCircle } from 'lucide-react';
 import { forgotPasswordSchema, type ForgotPasswordFormData } from '../lib/validation-schemas';
 import { useForgotPassword } from '../hooks/useAuth';
 import { Button } from '@/components/ui/button';
-import { PageBackground } from '@/components/layout/PageBackground';
+import { usePageBackground } from '@/components/layout/PageBackground';
 
 const ForgotPasswordPage: React.FC = () => {
   const navigate = useNavigate();
@@ -40,10 +40,12 @@ const ForgotPasswordPage: React.FC = () => {
     forgotPassword(result.data.email);
   };
 
+  const bgStyle = usePageBackground({ scene: 'auth' });
   return (
-    <div className="min-h-screen w-full flex flex-col items-center justify-center relative overflow-hidden">
-      <PageBackground scene="auth" />
-
+    <div
+      className="min-h-screen w-full flex flex-col items-center justify-center relative overflow-hidden"
+      style={bgStyle}
+    >
       {/* Content */}
       <div className="relative z-[var(--z-raised)] w-full max-w-sm px-4 flex flex-col items-center gap-8">
         {/* Title — must be a link per tests */}

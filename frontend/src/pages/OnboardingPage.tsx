@@ -19,7 +19,7 @@ import { useMutation, useQueryClient } from '@tanstack/react-query';
 import { toast } from 'sonner';
 import { ChevronRight, Sparkles, Loader2, Trophy, Swords, Dna } from 'lucide-react';
 import { authApi } from '@/lib/api-client';
-import { PageBackground } from '@/components/layout/PageBackground';
+import { usePageBackground } from '@/components/layout/PageBackground';
 import {
   BreedSelector,
   BreedSelectorSkeleton,
@@ -213,11 +213,12 @@ const OnboardingPage: React.FC = () => {
     }
   }
 
+  const bgStyle = usePageBackground({ scene: 'auth' });
   return (
-    <div className="min-h-screen flex flex-col items-center justify-center p-4 relative">
-      {/* Background */}
-      <PageBackground scene="auth" />
-
+    <div
+      className="min-h-screen flex flex-col items-center justify-center p-4 relative"
+      style={bgStyle}
+    >
       <div className="w-full max-w-md relative z-10">
         {/* Progress dots */}
         <div

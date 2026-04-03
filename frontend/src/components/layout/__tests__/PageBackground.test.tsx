@@ -1,18 +1,19 @@
 /**
- * PageBackground Component Tests — Story 22.3
+ * PageBackground / usePageBackground Tests — Story 22.3
  *
  * Verifies:
- * - Component renders with aria-hidden
- * - Background and veil layers exist
- * - Body background is set via useEffect
- * - scene prop changes the background path
- * - No scene → generic /images/bg-* path
+ * - usePageBackground returns correct CSS properties
+ * - Scene paths resolve correctly
+ * - Static src overrides scene
+ * - Default scene falls back to /images/bg-*
+ * - PageBackground marker component renders data-bg
  */
 
 import React from 'react';
 import { render, screen } from '@testing-library/react';
-import { describe, it, expect, beforeEach, afterEach } from 'vitest';
-import { PageBackground } from '../PageBackground';
+import { renderHook } from '@testing-library/react';
+import { describe, it, expect, beforeEach } from 'vitest';
+import { PageBackground, usePageBackground } from '../PageBackground';
 
 // Provide a stable window size so selectSuffix() returns 16.9
 beforeEach(() => {
@@ -20,77 +21,58 @@ beforeEach(() => {
   Object.defineProperty(window, 'innerHeight', { value: 1080, writable: true });
 });
 
-afterEach(() => {
-  // Clean up body styles left by PageBackground useEffect
-  document.body.style.backgroundImage = '';
-  document.body.style.backgroundSize = '';
-  document.body.style.backgroundPosition = '';
-  document.body.style.backgroundRepeat = '';
-  document.body.style.backgroundAttachment = '';
-});
-
-describe('PageBackground', () => {
-  it('renders with aria-hidden', () => {
-    render(<PageBackground />);
-    const root = screen.getByTestId('page-background');
-    expect(root).toHaveAttribute('aria-hidden', 'true');
-  });
-
-  it('renders image layer and readability veil', () => {
-    render(<PageBackground />);
-    expect(screen.getByTestId('page-background-image')).toBeInTheDocument();
-    expect(screen.getByTestId('page-background-veil')).toBeInTheDocument();
+describe('usePageBackground', () => {
+  it('returns background style with cover and fixed attachment', () => {
+    const { result } = renderHook(() => usePageBackground());
+    expect(result.current.backgroundSize).toBe('cover');
+    expect(result.current.backgroundAttachment).toBe('fixed');
+    expect(result.current.backgroundPosition).toBe('center center');
+    expect(result.current.backgroundColor).toBe('var(--bg-deep-space)');
   });
 
   it('uses generic /images/bg-* path when no scene is provided', () => {
-    render(<PageBackground />);
-    const imgLayer = screen.getByTestId('page-background-image');
-    expect(imgLayer.getAttribute('data-bg')).toContain('/images/bg-');
-    expect(imgLayer.getAttribute('data-bg')).not.toContain('/images/backgrounds/');
-  });
-
-  it('sets body background-image via useEffect', () => {
-    render(<PageBackground />);
-    expect(document.body.style.backgroundImage).toContain('/images/bg-');
-    expect(document.body.style.backgroundSize).toBe('cover');
-    expect(document.body.style.backgroundAttachment).toBe('fixed');
+    const { result } = renderHook(() => usePageBackground());
+    const bg = result.current.backgroundImage as string;
+    expect(bg).toContain('/images/bg-');
+    expect(bg).not.toContain('/images/backgrounds/');
   });
 
   it('uses scene-specific path when scene="auth"', () => {
-    render(<PageBackground scene="auth" />);
-    const imgLayer = screen.getByTestId('page-background-image');
-    expect(imgLayer.getAttribute('data-bg')).toContain('/images/backgrounds/auth/bg-');
+    const { result } = renderHook(() => usePageBackground({ scene: 'auth' }));
+    expect(result.current.backgroundImage).toContain('/images/backgrounds/auth/bg-');
   });
 
   it('uses scene-specific path when scene="hub"', () => {
-    render(<PageBackground scene="hub" />);
-    const imgLayer = screen.getByTestId('page-background-image');
-    expect(imgLayer.getAttribute('data-bg')).toContain('/images/backgrounds/hub/bg-');
+    const { result } = renderHook(() => usePageBackground({ scene: 'hub' }));
+    expect(result.current.backgroundImage).toContain('/images/backgrounds/hub/bg-');
   });
 
-  it('data-bg path ends in .webp', () => {
+  it('prefers src over scene when both provided', () => {
+    const { result } = renderHook(() =>
+      usePageBackground({ scene: 'hub', src: '/images/bg-stable.webp' })
+    );
+    expect(result.current.backgroundImage).toContain('bg-stable.webp');
+    expect(result.current.backgroundImage).not.toContain('backgrounds/hub');
+  });
+
+  it('default scene resolves to generic path (not /backgrounds/default/)', () => {
+    const { result } = renderHook(() => usePageBackground({ scene: 'default' }));
+    const bg = result.current.backgroundImage as string;
+    expect(bg).toContain('/images/bg-');
+    expect(bg).not.toContain('/backgrounds/default/');
+  });
+});
+
+describe('PageBackground marker', () => {
+  it('renders data-testid and data-bg for test inspection', () => {
     render(<PageBackground scene="stable" />);
-    const imgLayer = screen.getByTestId('page-background-image');
-    const webpPath = imgLayer.getAttribute('data-bg') ?? '';
-    expect(webpPath).toMatch(/\.webp$/);
+    const el = screen.getByTestId('page-background');
+    expect(el.getAttribute('data-bg')).toContain('.webp');
   });
 
-  it('veil has the correct rgba overlay color', () => {
+  it('uses generic path when no scene', () => {
     render(<PageBackground />);
-    const veil = screen.getByTestId('page-background-veil');
-    expect(veil.style.backgroundColor).toBe('rgba(5, 10, 20, 0.45)');
-  });
-
-  it('is fixed-position and pointer-events-none', () => {
-    render(<PageBackground />);
-    const root = screen.getByTestId('page-background');
-    expect(root).toHaveClass('fixed');
-    expect(root).toHaveClass('pointer-events-none');
-  });
-
-  it('renders 2 child divs (image layer + veil)', () => {
-    const { container } = render(<PageBackground />);
-    expect(container.firstChild).toBeInTheDocument();
-    expect(container.firstChild?.childNodes).toHaveLength(2);
+    const el = screen.getByTestId('page-background');
+    expect(el.getAttribute('data-bg')).toContain('/images/bg-');
   });
 });
