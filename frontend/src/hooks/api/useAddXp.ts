@@ -32,23 +32,18 @@
  */
 
 import { useMutation, useQueryClient } from '@tanstack/react-query';
-import {
-  addXp,
-  AddXpResult,
-  XpApiError,
-} from '@/lib/api/xp';
+import { addXp, AddXpResult, XpApiError, AddXpRequest } from '@/lib/api/xp';
 import { horseLevelInfoQueryKeys } from './useHorseLevelInfo';
 import { xpHistoryQueryKeys } from './useXpHistory';
 
 /**
- * Variables for the add XP mutation
+ * Variables for the add XP mutation.
+ * horseId goes in the URL; amount + reason go in the body.
  */
 export interface AddXpVariables {
   horseId: number;
-  xpAmount: number;
-  source: 'competition' | 'training' | 'achievement' | 'bonus';
-  sourceId: number;
-  sourceName: string;
+  amount: number;
+  reason: string;
 }
 
 /**
@@ -65,7 +60,10 @@ export function useAddXp() {
   const queryClient = useQueryClient();
 
   return useMutation<AddXpResult, XpApiError, AddXpVariables>({
-    mutationFn: (variables: AddXpVariables) => addXp(variables),
+    mutationFn: (variables: AddXpVariables) => {
+      const { horseId, ...body } = variables;
+      return addXp(horseId, body as AddXpRequest);
+    },
     onSuccess: (data, variables) => {
       // Invalidate horse level info (XP and level changed)
       queryClient.invalidateQueries({

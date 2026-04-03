@@ -1383,4 +1383,75 @@ router.get(
   },
 );
 
+/**
+ * GET /api/horses/:id/prize-summary
+ * Return aggregated prize statistics for a horse.
+ * Includes totalPrizeMoney, firstPlaces, secondPlaces, thirdPlaces, bestPlacement.
+ *
+ * Security: Validates horse ownership before returning data.
+ */
+router.get(
+  '/:id/prize-summary',
+  queryRateLimiter,
+  validateHorseId,
+  requireOwnership('horse'),
+  async (req, res) => {
+    try {
+      const horseId = parseInt(req.params.id, 10);
+
+      const results = await prisma.competitionResult.findMany({
+        where: { horseId },
+        select: {
+          placement: true,
+          prizeWon: true,
+        },
+      });
+
+      let totalPrizeMoney = 0;
+      let firstPlaces = 0;
+      let secondPlaces = 0;
+      let thirdPlaces = 0;
+      let bestPlacement = null;
+
+      for (const result of results) {
+        totalPrizeMoney += Number(result.prizeWon) || 0;
+
+        const placement = parseInt(result.placement);
+        if (!isNaN(placement)) {
+          if (placement === 1) { firstPlaces++; }
+          if (placement === 2) { secondPlaces++; }
+          if (placement === 3) { thirdPlaces++; }
+          if (bestPlacement === null || placement < bestPlacement) {
+            bestPlacement = placement;
+          }
+        }
+      }
+
+      logger.info(
+        `[horseRoutes.GET /:id/prize-summary] Retrieved prize summary for horse ${horseId}`,
+      );
+
+      return res.json({
+        success: true,
+        data: {
+          horseId,
+          totalPrizeMoney,
+          firstPlaces,
+          secondPlaces,
+          thirdPlaces,
+          bestPlacement,
+          totalCompetitions: results.length,
+        },
+      });
+    } catch (error) {
+      logger.error(`[horseRoutes.GET /:id/prize-summary] Error: ${error.message}`);
+      return res.status(500).json({
+        success: false,
+        message: 'Internal server error',
+        error: process.env.NODE_ENV !== 'production' ? error.message : 'Something went wrong',
+      });
+    }
+  },
+);
+
 export default router;

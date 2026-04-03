@@ -13,17 +13,15 @@ import { apiClient } from '@/lib/api-client';
 
 /**
  * Horse level and XP progress information
+ * Matches GET /api/horses/:horseId/xp backend response shape.
  */
 export interface HorseLevelInfo {
   horseId: number;
   horseName: string;
-  currentLevel: number;
-  currentXp: number;
-  xpForCurrentLevel: number;
-  xpToNextLevel: number;
-  totalXp: number;
-  progressPercent: number;
-  levelThresholds: { [level: number]: number };
+  currentXP: number;
+  availableStatPoints: number;
+  nextStatPointAt: number;
+  xpToNextStatPoint: number;
 }
 
 /**
@@ -54,25 +52,26 @@ export interface XpHistoryFilters {
 }
 
 /**
- * Request payload for adding XP to a horse
+ * Request payload for adding XP to a horse.
+ * Matches POST /api/horses/:horseId/award-xp backend body.
  */
 export interface AddXpRequest {
-  horseId: number;
-  xpAmount: number;
-  source: 'competition' | 'training' | 'achievement' | 'bonus';
-  sourceId: number;
-  sourceName: string;
+  amount: number;
+  reason: string;
 }
 
 /**
- * Result of adding XP to a horse
+ * Result of adding XP to a horse.
+ * Matches POST /api/horses/:horseId/award-xp backend response.
  */
 export interface AddXpResult {
   success: boolean;
-  xpGain: XpGain;
-  leveledUp: boolean;
-  newLevel: number;
-  message: string;
+  data: {
+    currentXP: number;
+    availableStatPoints: number;
+    xpGained: number;
+    statPointsGained: number;
+  };
 }
 
 /**
@@ -102,7 +101,7 @@ export class XpApiError extends Error {
  * console.log(`Level ${levelInfo.currentLevel}: ${levelInfo.progressPercent}% to next`);
  */
 export async function fetchHorseLevelInfo(horseId: number): Promise<HorseLevelInfo> {
-  return apiClient.get<HorseLevelInfo>(`/api/horses/${horseId}/level-info`);
+  return apiClient.get<HorseLevelInfo>(`/api/horses/${horseId}/xp`);
 }
 
 /**
@@ -146,21 +145,14 @@ export async function fetchXpHistory(
  * Submits a request to add XP from a specific source.
  * Returns the result including whether a level-up occurred.
  *
- * @param request - XP addition request details
+ * @param horseId - Horse ID to add XP to
+ * @param request - XP addition request details (amount + reason)
  * @returns Promise<AddXpResult> - Result of the XP addition
  *
  * @example
- * const result = await addXp({
- *   horseId: 123,
- *   xpAmount: 50,
- *   source: 'competition',
- *   sourceId: 456,
- *   sourceName: 'Spring Championship',
- * });
- * if (result.leveledUp) {
- *   console.log(`Leveled up to ${result.newLevel}!`);
- * }
+ * const result = await addXp(123, { amount: 50, reason: 'competition win' });
+ * console.log(`XP gained: ${result.data.xpGained}`);
  */
-export async function addXp(request: AddXpRequest): Promise<AddXpResult> {
-  return apiClient.post<AddXpResult>('/api/horses/add-xp', request);
+export async function addXp(horseId: number, request: AddXpRequest): Promise<AddXpResult> {
+  return apiClient.post<AddXpResult>(`/api/horses/${horseId}/award-xp`, request);
 }

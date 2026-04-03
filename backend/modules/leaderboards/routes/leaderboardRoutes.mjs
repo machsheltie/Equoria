@@ -633,4 +633,134 @@ router.get(
   },
 );
 
+/**
+ * @swagger
+ * /api/leaderboards/horse/{horseId}:
+ *   get:
+ *     summary: Get horse leaderboard profile
+ *     tags: [Leaderboard]
+ *     security:
+ *       - bearerAuth: []
+ *     parameters:
+ *       - in: path
+ *         name: horseId
+ *         required: true
+ *         schema:
+ *           type: integer
+ *         description: Horse ID
+ *     responses:
+ *       200:
+ *         description: Horse profile with stats and competition history
+ */
+router.get(
+  '/horse/:horseId',
+  auth,
+  [
+    query('horseId')
+      .optional()
+      .isInt({ min: 1 })
+      .withMessage('Horse ID must be a positive integer'),
+  ],
+  async (req, res) => {
+    try {
+      const horseId = parseInt(req.params.horseId, 10);
+
+      if (isNaN(horseId) || horseId <= 0) {
+        return res.status(400).json({
+          success: false,
+          message: 'Horse ID must be a positive integer',
+        });
+      }
+
+      logger.info(`[leaderboardRoutes.GET /horse/:horseId] Fetching profile for horse ${horseId}`);
+
+      const horse = await prisma.horse.findUnique({
+        where: { id: horseId },
+        select: {
+          id: true,
+          name: true,
+          dateOfBirth: true,
+          sex: true,
+          speed: true,
+          stamina: true,
+          agility: true,
+          balance: true,
+          precision: true,
+          intelligence: true,
+          boldness: true,
+          flexibility: true,
+          obedience: true,
+          focus: true,
+          totalEarnings: true,
+          breed: {
+            select: { name: true },
+          },
+          competitionResults: {
+            select: { placement: true },
+            where: { placement: { not: null } },
+          },
+        },
+      });
+
+      if (!horse) {
+        return res.status(404).json({
+          success: false,
+          message: 'Horse not found',
+        });
+      }
+
+      // Calculate age in years from dateOfBirth
+      const ageMs = Date.now() - new Date(horse.dateOfBirth).getTime();
+      const ageYears = Math.floor(ageMs / (1000 * 60 * 60 * 24 * 365.25));
+
+      // Aggregate competition wins and top-three finishes
+      let competitionWins = 0;
+      let topThreeFinishes = 0;
+
+      for (const result of horse.competitionResults) {
+        const p = parseInt(result.placement);
+        if (p === 1) { competitionWins++; }
+        if (p <= 3) { topThreeFinishes++; }
+      }
+
+      logger.info(
+        `[leaderboardRoutes.GET /horse/:horseId] Retrieved profile for horse ${horse.name} (ID: ${horseId})`,
+      );
+
+      return res.status(200).json({
+        success: true,
+        data: {
+          horseId: horse.id,
+          name: horse.name,
+          breed: horse.breed?.name || null,
+          age: ageYears,
+          sex: horse.sex,
+          stats: {
+            speed: horse.speed,
+            stamina: horse.stamina,
+            agility: horse.agility,
+            balance: horse.balance,
+            precision: horse.precision,
+            intelligence: horse.intelligence,
+            boldness: horse.boldness,
+            flexibility: horse.flexibility,
+            obedience: horse.obedience,
+            focus: horse.focus,
+          },
+          totalEarnings: Number(horse.totalEarnings) || 0,
+          competitionWins,
+          topThreeFinishes,
+        },
+      });
+    } catch (error) {
+      logger.error(`[leaderboardRoutes.GET /horse/:horseId] Error: ${error.message}`);
+      return res.status(500).json({
+        success: false,
+        message: 'Internal server error',
+        error: process.env.NODE_ENV === 'development' ? error.message : 'Something went wrong',
+      });
+    }
+  },
+);
+
 export default router;

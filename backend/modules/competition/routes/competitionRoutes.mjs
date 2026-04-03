@@ -558,6 +558,95 @@ router.get(
 );
 
 /**
+ * POST /api/competition/:competitionId/claim-prizes
+ * Claim prizes from a competition result.
+ * Validates the competition result belongs to a horse owned by the calling user.
+ *
+ * Security: Only the horse's owner may claim prizes.
+ */
+router.post(
+  '/:competitionId/claim-prizes',
+  mutationRateLimiter,
+  auth,
+  [param('competitionId').isInt({ min: 1 }).withMessage('Competition ID must be a positive integer')],
+  async (req, res) => {
+    try {
+      const errors = validationResult(req);
+      if (!errors.isEmpty()) {
+        logger.warn(
+          `[competitionRoutes.POST /:competitionId/claim-prizes] Validation errors: ${JSON.stringify(errors.array())}`,
+        );
+        return res.status(400).json({
+          success: false,
+          message: 'Validation failed',
+          errors: errors.array(),
+        });
+      }
+
+      const competitionId = parseInt(req.params.competitionId, 10);
+      const userId = req.user.id;
+
+      // Fetch the competition result and verify the horse belongs to the calling user
+      const result = await prisma.competitionResult.findUnique({
+        where: { id: competitionId },
+        include: {
+          horse: {
+            select: { id: true, name: true, userId: true },
+          },
+        },
+      });
+
+      if (!result) {
+        return res.status(404).json({
+          success: false,
+          message: 'Competition result not found',
+        });
+      }
+
+      if (result.horse.userId !== userId) {
+        logger.warn(
+          `[competitionRoutes.POST /:competitionId/claim-prizes] Ownership violation: user ${userId} attempted to claim prizes for competition ${competitionId}`,
+        );
+        return res.status(404).json({
+          success: false,
+          message: 'Competition result not found', // Prevent ownership disclosure
+        });
+      }
+
+      const prizeAmount = Number(result.prizeWon) || 0;
+
+      logger.info(
+        `[competitionRoutes.POST /:competitionId/claim-prizes] User ${userId} claimed $${prizeAmount} for competition result ${competitionId}`,
+      );
+
+      return res.status(200).json({
+        success: true,
+        message: 'Prizes claimed successfully',
+        data: {
+          competitionResultId: result.id,
+          competitionName: result.showName,
+          horseName: result.horse.name,
+          horseId: result.horse.id,
+          placement: result.placement,
+          prizeMoney: prizeAmount,
+          discipline: result.discipline,
+          runDate: result.runDate,
+        },
+      });
+    } catch (error) {
+      logger.error(
+        `[competitionRoutes.POST /:competitionId/claim-prizes] Error: ${error.message}`,
+      );
+      return res.status(500).json({
+        success: false,
+        message: 'Internal server error',
+        error: process.env.NODE_ENV === 'development' ? error.message : 'Something went wrong',
+      });
+    }
+  },
+);
+
+/**
  * GET /api/competition/disciplines
  * Get all available competition disciplines
  */

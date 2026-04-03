@@ -348,6 +348,107 @@ router.delete(
   deleteUserController,
 );
 
+/**
+ * GET /api/users/:userId/prize-history
+ * Retrieve paginated competition prize history for a user.
+ * Returns competition results where a horse owned by the user placed.
+ *
+ * Query params: limit (default 20, max 100), offset (default 0)
+ * Security: User can only access their own prize history.
+ */
+router.get(
+  '/:userId/prize-history',
+  queryRateLimiter,
+  [
+    param('userId')
+      .isUUID()
+      .withMessage('User ID must be a valid UUID')
+      .notEmpty()
+      .withMessage('User ID is required'),
+    (req, res, next) => {
+      const errors = validationResult(req);
+      if (!errors.isEmpty()) {
+        logger.warn(
+          `[userRoutes] Validation errors for /:userId/prize-history: ${JSON.stringify(errors.array())}`,
+        );
+        return res.status(400).json({
+          success: false,
+          message: 'Validation failed',
+          errors: errors.array(),
+        });
+      }
+      next();
+    },
+  ],
+  authenticateToken,
+  requireSelfAccess('userId'),
+  async (req, res) => {
+    try {
+      const { userId } = req.params;
+      const limit = Math.min(parseInt(req.query.limit) || 20, 100);
+      const offset = Math.max(parseInt(req.query.offset) || 0, 0);
+
+      // Dynamically import prisma to keep consistent with the rest of the module
+      const { default: prisma } = await import('../../../db/index.mjs');
+
+      // Count total for pagination
+      const total = await prisma.competitionResult.count({
+        where: {
+          horse: { userId },
+        },
+      });
+
+      const results = await prisma.competitionResult.findMany({
+        where: {
+          horse: { userId },
+        },
+        orderBy: { runDate: 'desc' },
+        take: limit,
+        skip: offset,
+        include: {
+          horse: {
+            select: { id: true, name: true },
+          },
+        },
+      });
+
+      const formatted = results.map(r => ({
+        competitionResultId: r.id,
+        competitionName: r.showName,
+        horseName: r.horse.name,
+        horseId: r.horse.id,
+        placement: r.placement,
+        prizeMoney: Number(r.prizeWon) || 0,
+        discipline: r.discipline,
+        runDate: r.runDate,
+      }));
+
+      logger.info(
+        `[userRoutes.GET /:userId/prize-history] Retrieved ${formatted.length} results for user ${userId}`,
+      );
+
+      return res.json({
+        success: true,
+        data: {
+          prizeHistory: formatted,
+          pagination: {
+            total,
+            limit,
+            offset,
+            hasMore: offset + limit < total,
+          },
+        },
+      });
+    } catch (error) {
+      logger.error(`[userRoutes.GET /:userId/prize-history] Error: ${error.message}`);
+      return res.status(500).json({
+        success: false,
+        message: 'Internal server error',
+      });
+    }
+  },
+);
+
 // XP management
 router.post(
   '/:id/add-xp',

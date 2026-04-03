@@ -143,9 +143,7 @@ export async function fetchPrizeHistory(
  * const summary = await fetchHorsePrizeSummary(123);
  * console.log(`Total prize money: $${summary.totalPrizeMoney}`);
  */
-export async function fetchHorsePrizeSummary(
-  horseId: number
-): Promise<HorsePrizeSummary> {
+export async function fetchHorsePrizeSummary(horseId: number): Promise<HorsePrizeSummary> {
   return apiClient.get<HorsePrizeSummary>(`/api/horses/${horseId}/prize-summary`);
 }
 
@@ -165,8 +163,6 @@ export async function fetchHorsePrizeSummary(
  *   console.log(`New balance: $${result.newBalance}`);
  * }
  */
-export async function claimCompetitionPrizes(
-  competitionId: number
-): Promise<PrizeClaimResult> {
-  return apiClient.post<PrizeClaimResult>(`/api/competitions/${competitionId}/claim-prizes`);
+export async function claimCompetitionPrizes(competitionId: number): Promise<PrizeClaimResult> {
+  return apiClient.post<PrizeClaimResult>(`/api/competition/${competitionId}/claim-prizes`);
 }
