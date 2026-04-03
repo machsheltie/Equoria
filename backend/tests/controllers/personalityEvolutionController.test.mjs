@@ -38,6 +38,9 @@ describe('Personality Evolution Controller API', () => {
   let authToken;
 
   beforeAll(async () => {
+    // Clean up any leftover data from a previous interrupted run
+    await prisma.breed.deleteMany({ where: { name: 'Test Breed API' } });
+
     // Create test user
     testUser = await prisma.user.create({
       data: {
