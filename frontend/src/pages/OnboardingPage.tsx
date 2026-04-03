@@ -213,7 +213,7 @@ const OnboardingPage: React.FC = () => {
     }
   }
 
-  const bgStyle = usePageBackground({ scene: 'auth' });
+  const bgStyle = usePageBackground({ scene: 'default' });
   return (
     <div
       className="min-h-screen flex flex-col items-center justify-center p-4 relative"

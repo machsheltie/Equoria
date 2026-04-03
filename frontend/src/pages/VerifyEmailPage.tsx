@@ -63,7 +63,7 @@ const VerifyEmailPage: React.FC = () => {
     resendVerification();
   };
 
-  const bgStyle = usePageBackground({ scene: 'auth' });
+  const bgStyle = usePageBackground({ scene: 'default' });
   const pageShell = (children: React.ReactNode) => (
     <div
       className="min-h-screen w-full flex flex-col items-center justify-center relative overflow-hidden py-8"

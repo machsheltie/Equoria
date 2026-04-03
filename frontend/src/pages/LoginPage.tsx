@@ -52,7 +52,7 @@ const LoginPage: React.FC = () => {
     });
   };
 
-  const bgStyle = usePageBackground({ scene: 'auth' });
+  const bgStyle = usePageBackground({ scene: 'default' });
 
   return (
     <div

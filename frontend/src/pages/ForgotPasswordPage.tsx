@@ -40,7 +40,7 @@ const ForgotPasswordPage: React.FC = () => {
     forgotPassword(result.data.email);
   };
 
-  const bgStyle = usePageBackground({ scene: 'auth' });
+  const bgStyle = usePageBackground({ scene: 'default' });
   return (
     <div
       className="min-h-screen w-full flex flex-col items-center justify-center relative overflow-hidden"
