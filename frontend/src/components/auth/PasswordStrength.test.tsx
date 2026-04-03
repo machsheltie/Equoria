@@ -37,7 +37,7 @@ describe('PasswordStrength', () => {
     expect(screen.getByTestId('requirement-lowercase')).toBeInTheDocument();
     expect(screen.getByTestId('requirement-uppercase')).toBeInTheDocument();
     expect(screen.getByTestId('requirement-number')).toBeInTheDocument();
-    expect(screen.getByTestId('requirement-special-')).toBeInTheDocument();
+    expect(screen.getByTestId('requirement-special-(@$!%*?&)')).toBeInTheDocument();
   });
 
   it('hides requirement checklist when showRequirements is false', () => {
@@ -57,12 +57,12 @@ describe('PasswordStrength', () => {
     // strength bar is rendered
     expect(screen.getByTestId('password-strength-bar')).toBeInTheDocument();
     // requirement row exists
-    expect(screen.getByTestId('requirement-special-')).toBeInTheDocument();
+    expect(screen.getByTestId('requirement-special-(@$!%*?&)')).toBeInTheDocument();
   });
 
   it('marks special character requirement met for password with special char', () => {
     render(<PasswordStrength password="SecurePass1!" />);
-    expect(screen.getByTestId('requirement-special-')).toBeInTheDocument();
+    expect(screen.getByTestId('requirement-special-(@$!%*?&)')).toBeInTheDocument();
   });
 
   it('has accessible progressbar role on the strength bar', () => {

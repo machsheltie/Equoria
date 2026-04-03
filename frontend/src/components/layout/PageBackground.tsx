@@ -12,6 +12,7 @@
  *   <div style={bgStyle}> ... </div>
  */
 
+import type { CSSProperties } from 'react';
 import { useResponsiveBackground, type SceneKey } from '@/hooks/useResponsiveBackground';
 
 interface UsePageBackgroundOptions {
@@ -25,13 +26,17 @@ interface UsePageBackgroundOptions {
  * image to a container div. Includes cover sizing, fixed attachment, and
  * deep-space fallback color.
  */
-export function usePageBackground(options?: UsePageBackgroundOptions): React.CSSProperties {
+export function usePageBackground(options?: UsePageBackgroundOptions): CSSProperties {
   const hookPath = useResponsiveBackground(options?.scene);
   const webpPath = options?.src ?? hookPath;
 
   return {
     backgroundColor: 'var(--bg-deep-space)',
-    backgroundImage: `url('${webpPath}')`,
+    // P-3: readability veil layered over the image (AC5: rgba(5,10,20,0.45))
+    // P-4: guard against url('undefined') when webpPath is empty
+    backgroundImage: webpPath
+      ? `linear-gradient(rgba(5,10,20,0.45), rgba(5,10,20,0.45)), url('${webpPath}')`
+      : undefined,
     backgroundSize: 'cover',
     backgroundPosition: 'center center',
     backgroundRepeat: 'no-repeat',
@@ -44,7 +49,6 @@ export function usePageBackground(options?: UsePageBackgroundOptions): React.CSS
 interface PageBackgroundProps {
   scene?: SceneKey;
   src?: string;
-  className?: string;
 }
 
 /**

@@ -6,7 +6,7 @@
  */
 
 import React, { useState } from 'react';
-import { useNavigate, Link } from 'react-router-dom';
+import { useNavigate, useLocation, Link } from 'react-router-dom';
 import { Mail, Lock, Eye, EyeOff } from 'lucide-react';
 import { loginSchema, type LoginFormData } from '../lib/validation-schemas';
 import { useLogin } from '../hooks/useAuth';
@@ -15,6 +15,7 @@ import { usePageBackground } from '@/components/layout/PageBackground';
 
 const LoginPage: React.FC = () => {
   const navigate = useNavigate();
+  const location = useLocation();
   const { mutate: login, isPending, error } = useLogin();
   const [formData, setFormData] = useState<LoginFormData>({ email: '', password: '' });
   const [showPassword, setShowPassword] = useState(false);
@@ -43,7 +44,12 @@ const LoginPage: React.FC = () => {
       setValidationErrors(errors);
       return;
     }
-    login(result.data, { onSuccess: () => navigate('/') });
+    login(result.data, {
+      onSuccess: () => {
+        const from = (location.state as { from?: string })?.from ?? '/';
+        navigate(from, { replace: true });
+      },
+    });
   };
 
   const bgStyle = usePageBackground({ scene: 'auth' });

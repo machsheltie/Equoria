@@ -27,13 +27,15 @@ vi.mock('../../lib/api-client', () => ({
   },
 }));
 
-// Mock useNavigate
+// Mock useNavigate and useLocation
 const mockNavigate = vi.fn();
+const mockUseLocation = vi.fn(() => ({ pathname: '/login', state: null }));
 vi.mock('react-router-dom', async () => {
   const actual = await vi.importActual('react-router-dom');
   return {
     ...actual,
     useNavigate: () => mockNavigate,
+    useLocation: () => mockUseLocation(),
   };
 });
 
@@ -58,6 +60,8 @@ describe('LoginPage', () => {
 
   beforeEach(() => {
     vi.clearAllMocks();
+    // Reset location mock to the default (no redirect state) before each test
+    mockUseLocation.mockReturnValue({ pathname: '/login', state: null });
   });
 
   afterEach(() => {
@@ -86,7 +90,7 @@ describe('LoginPage', () => {
         </TestWrapper>
       );
 
-      expect(screen.getByRole('button', { name: /enter the realm/i })).toBeInTheDocument();
+      expect(screen.getByRole('button', { name: /^enter$/i })).toBeInTheDocument();
     });
 
     it('displays page title and description', () => {
@@ -221,7 +225,7 @@ describe('LoginPage', () => {
       // Only fill email, leave password empty
       await user.type(screen.getByLabelText(/email address/i), 'test@example.com');
 
-      const submitButton = screen.getByRole('button', { name: /enter the realm/i });
+      const submitButton = screen.getByRole('button', { name: /^enter$/i });
       await user.click(submitButton);
 
       await waitFor(() => {
@@ -282,7 +286,7 @@ describe('LoginPage', () => {
       await user.type(screen.getByLabelText(/email address/i), 'test@example.com');
       await user.type(screen.getByLabelText(/^password$/i), 'password123');
 
-      const submitButton = screen.getByRole('button', { name: /enter the realm/i });
+      const submitButton = screen.getByRole('button', { name: /^enter$/i });
       await user.click(submitButton);
 
       // Button should be disabled during submission
@@ -309,18 +313,19 @@ describe('LoginPage', () => {
       await user.type(screen.getByLabelText(/email address/i), 'test@example.com');
       await user.type(screen.getByLabelText(/^password$/i), 'password123');
 
-      const submitButton = screen.getByRole('button', { name: /enter the realm/i });
+      const submitButton = screen.getByRole('button', { name: /^enter$/i });
       await user.click(submitButton);
 
       await waitFor(() => {
-        expect(screen.getByText(/entering the realm/i)).toBeInTheDocument();
+        expect(screen.getByText(/entering…/i)).toBeInTheDocument();
       });
     });
 
-    it('navigates to home on successful login', async () => {
+    it('navigates to / on successful login when no from state', async () => {
       const user = userEvent.setup();
       const TestWrapper = createTestWrapper();
 
+      // default state already set in beforeEach; explicit here for clarity
       vi.mocked(apiClient.authApi.login).mockResolvedValueOnce({
         user: {
           id: 1,
@@ -339,11 +344,42 @@ describe('LoginPage', () => {
       await user.type(screen.getByLabelText(/email address/i), 'john@example.com');
       await user.type(screen.getByLabelText(/^password$/i), 'password123');
 
-      const submitButton = screen.getByRole('button', { name: /enter the realm/i });
+      const submitButton = screen.getByRole('button', { name: /^enter$/i });
       await user.click(submitButton);
 
       await waitFor(() => {
-        expect(mockNavigate).toHaveBeenCalledWith('/');
+        expect(mockNavigate).toHaveBeenCalledWith('/', { replace: true });
+      });
+    });
+
+    it('navigates to location.state.from on successful login when guard redirected here', async () => {
+      const user = userEvent.setup();
+      const TestWrapper = createTestWrapper();
+
+      // Set for ALL calls during this test (re-renders on typing also call useLocation)
+      mockUseLocation.mockReturnValue({ pathname: '/login', state: { from: '/stable' } });
+      vi.mocked(apiClient.authApi.login).mockResolvedValueOnce({
+        user: {
+          id: 1,
+          username: 'johndoe',
+          email: 'john@example.com',
+        },
+      });
+
+      render(
+        <TestWrapper>
+          <LoginPage />
+        </TestWrapper>
+      );
+
+      await user.type(screen.getByLabelText(/email address/i), 'john@example.com');
+      await user.type(screen.getByLabelText(/^password$/i), 'password123');
+
+      const submitButton = screen.getByRole('button', { name: /^enter$/i });
+      await user.click(submitButton);
+
+      await waitFor(() => {
+        expect(mockNavigate).toHaveBeenCalledWith('/stable', { replace: true });
       });
     });
 
@@ -364,7 +400,7 @@ describe('LoginPage', () => {
       await user.type(screen.getByLabelText(/email address/i), 'john@example.com');
       await user.type(screen.getByLabelText(/^password$/i), 'SecurePass123');
 
-      const submitButton = screen.getByRole('button', { name: /enter the realm/i });
+      const submitButton = screen.getByRole('button', { name: /^enter$/i });
       await user.click(submitButton);
 
       await waitFor(() => {
@@ -400,7 +436,7 @@ describe('LoginPage', () => {
       await user.type(screen.getByLabelText(/email address/i), 'wrong@example.com');
       await user.type(screen.getByLabelText(/^password$/i), 'wrongpassword');
 
-      await user.click(screen.getByRole('button', { name: /enter the realm/i }));
+      await user.click(screen.getByRole('button', { name: /^enter$/i }));
 
       await waitFor(() => {
         expect(screen.getByText(/invalid email or password/i)).toBeInTheDocument();
@@ -426,7 +462,7 @@ describe('LoginPage', () => {
       await user.type(screen.getByLabelText(/email address/i), 'john@example.com');
       await user.type(screen.getByLabelText(/^password$/i), 'password123');
 
-      await user.click(screen.getByRole('button', { name: /enter the realm/i }));
+      await user.click(screen.getByRole('button', { name: /^enter$/i }));
 
       await waitFor(() => {
         expect(screen.getByText(/internal server error|login failed/i)).toBeInTheDocument();
@@ -449,7 +485,7 @@ describe('LoginPage', () => {
       await user.type(screen.getByLabelText(/email address/i), 'john@example.com');
       await user.type(screen.getByLabelText(/^password$/i), 'password123');
 
-      await user.click(screen.getByRole('button', { name: /enter the realm/i }));
+      await user.click(screen.getByRole('button', { name: /^enter$/i }));
 
       await waitFor(() => {
         expect(screen.getByText(/network error|login failed/i)).toBeInTheDocument();
@@ -472,7 +508,7 @@ describe('LoginPage', () => {
       await user.type(screen.getByLabelText(/email address/i), 'john@example.com');
       await user.type(screen.getByLabelText(/^password$/i), 'password123');
 
-      await user.click(screen.getByRole('button', { name: /enter the realm/i }));
+      await user.click(screen.getByRole('button', { name: /^enter$/i }));
 
       await waitFor(() => {
         expect(screen.getByText(/login failed/i)).toBeInTheDocument();
@@ -557,7 +593,7 @@ describe('LoginPage', () => {
       );
 
       // Submit empty form
-      const submitButton = screen.getByRole('button', { name: /enter the realm/i });
+      const submitButton = screen.getByRole('button', { name: /^enter$/i });
       await user.click(submitButton);
 
       // API should not be called
@@ -584,7 +620,7 @@ describe('LoginPage', () => {
       await user.type(screen.getByLabelText(/email address/i), 'john@example.com');
       await user.type(screen.getByLabelText(/^password$/i), 'password123');
 
-      const submitButton = screen.getByRole('button', { name: /enter the realm/i });
+      const submitButton = screen.getByRole('button', { name: /^enter$/i });
 
       // Click multiple times rapidly
       await user.click(submitButton);
@@ -686,7 +722,7 @@ describe('LoginPage', () => {
         </TestWrapper>
       );
 
-      const submitButton = screen.getByRole('button', { name: /enter the realm/i });
+      const submitButton = screen.getByRole('button', { name: /^enter$/i });
       submitButton.focus();
       expect(document.activeElement).toBe(submitButton);
     });

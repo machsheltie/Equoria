@@ -49,7 +49,8 @@ const RATIO_OPTIONS = [
 
 /** Pick the closest-ratio suffix to the current viewport */
 function selectSuffix(): string {
-  const viewportRatio = window.innerWidth / window.innerHeight;
+  // D-2: guard against innerHeight === 0 (abnormal browser state) to prevent Infinity ratio
+  const viewportRatio = window.innerWidth / (window.innerHeight || 1);
 
   let best = RATIO_OPTIONS[0];
   let bestDiff = Math.abs(viewportRatio - best.ratio);
@@ -85,12 +86,23 @@ export function useResponsiveBackground(scene?: SceneKey): string {
   const [bg, setBg] = useState(() => buildPath(selectSuffix()));
 
   useEffect(() => {
+    // P-2: update immediately on scene change (navigation doesn't trigger resize)
+    setBg(buildPath(selectSuffix()));
+
+    // D-1: debounce resize — avoids per-pixel re-renders when dragging window edge
+    let debounceId: ReturnType<typeof setTimeout>;
     const onResize = () => {
-      setBg(buildPath(selectSuffix()));
+      clearTimeout(debounceId);
+      debounceId = setTimeout(() => {
+        setBg(buildPath(selectSuffix()));
+      }, 150);
     };
 
     window.addEventListener('resize', onResize);
-    return () => window.removeEventListener('resize', onResize);
+    return () => {
+      window.removeEventListener('resize', onResize);
+      clearTimeout(debounceId);
+    };
   }, [scene]);
 
   return bg;

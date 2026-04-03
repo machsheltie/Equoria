@@ -10,9 +10,9 @@
  */
 
 import React from 'react';
-import { render, screen } from '@testing-library/react';
+import { render, screen, act } from '@testing-library/react';
 import { renderHook } from '@testing-library/react';
-import { describe, it, expect, beforeEach } from 'vitest';
+import { describe, it, expect, beforeEach, vi } from 'vitest';
 import { PageBackground, usePageBackground } from '../PageBackground';
 
 // Provide a stable window size so selectSuffix() returns 16.9
@@ -60,6 +60,32 @@ describe('usePageBackground', () => {
     const bg = result.current.backgroundImage as string;
     expect(bg).toContain('/images/bg-');
     expect(bg).not.toContain('/backgrounds/default/');
+  });
+});
+
+describe('useResponsiveBackground resize', () => {
+  it('re-evaluates path on window resize (debounced)', async () => {
+    // D-3: verify the resize handler updates the background URL
+    vi.useFakeTimers();
+    try {
+      const { result } = renderHook(() => usePageBackground({ scene: 'hub' }));
+      expect(result.current.backgroundImage).toContain('bg-16.9.webp');
+
+      // Simulate portrait resize
+      act(() => {
+        Object.defineProperty(window, 'innerWidth', { value: 375, writable: true });
+        Object.defineProperty(window, 'innerHeight', { value: 812, writable: true });
+        window.dispatchEvent(new Event('resize'));
+        vi.advanceTimersByTime(200);
+      });
+
+      expect(result.current.backgroundImage).toContain('bg-9.16.webp');
+    } finally {
+      vi.useRealTimers();
+      // restore to beforeEach defaults
+      Object.defineProperty(window, 'innerWidth', { value: 1920, writable: true });
+      Object.defineProperty(window, 'innerHeight', { value: 1080, writable: true });
+    }
   });
 });
 

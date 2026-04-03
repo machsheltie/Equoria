@@ -45,6 +45,7 @@ const RegisterPage: React.FC = () => {
       hasLowercase: /[a-z]/.test(p),
       hasUppercase: /[A-Z]/.test(p),
       hasNumber: /[0-9]/.test(p),
+      hasSpecialChar: /[@$!%*?&]/.test(p),
     };
   }, [formData.password]);
 
@@ -79,18 +80,28 @@ const RegisterPage: React.FC = () => {
         firstName: result.data.firstName,
         lastName: result.data.lastName,
       },
-      { onSuccess: () => navigate('/') }
+      {
+        onSuccess: () => navigate('/verify-email'),
+        onError: (err) => {
+          const message = (err.message ?? '').toLowerCase();
+          if (message.includes('email') && message.includes('taken')) {
+            setValidationErrors({ email: 'This email address is already registered.' });
+          } else if (message.includes('username')) {
+            setValidationErrors({ username: 'This username is already taken.' });
+          }
+        },
+      }
     );
   };
 
   const RequirementCheck = ({ met, label }: { met: boolean; label: string }) => (
     <div className="flex items-center gap-1.5 text-xs">
       {met ? (
-        <Check className="w-3 h-3 text-[rgb(37,99,235)]" />
+        <Check className="w-3 h-3" style={{ color: 'var(--gold-500)' }} />
       ) : (
         <X className="w-3 h-3 text-red-400" />
       )}
-      <span className={met ? 'text-[rgb(37,99,235)]' : 'text-[rgb(148,163,184)]'}>{label}</span>
+      <span style={{ color: met ? 'var(--gold-500)' : 'var(--text-muted)' }}>{label}</span>
     </div>
   );
 
@@ -291,6 +302,10 @@ const RegisterPage: React.FC = () => {
                     <RequirementCheck met={passwordRequirements.hasLowercase} label="Lowercase" />
                     <RequirementCheck met={passwordRequirements.hasUppercase} label="Uppercase" />
                     <RequirementCheck met={passwordRequirements.hasNumber} label="Number" />
+                    <RequirementCheck
+                      met={passwordRequirements.hasSpecialChar}
+                      label="Special character (@$!%*?&)"
+                    />
                   </div>
                 </div>
               )}

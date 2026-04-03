@@ -162,8 +162,8 @@ describe('RegisterPage', () => {
       await user.type(screen.getByLabelText(/last name/i), 'Doe');
       await user.type(screen.getByLabelText(/username/i), 'johndoe');
       await user.type(screen.getByLabelText(/email/i), 'invalid-email');
-      await user.type(screen.getByLabelText(/^password$/i), 'SecurePass123');
-      await user.type(screen.getByLabelText(/confirm password/i), 'SecurePass123');
+      await user.type(screen.getByLabelText(/^password$/i), 'SecurePass123@');
+      await user.type(screen.getByLabelText(/confirm password/i), 'SecurePass123@');
 
       // Submit the form directly
       const form = container.querySelector('form');
@@ -183,25 +183,19 @@ describe('RegisterPage', () => {
         </TestWrapper>
       );
 
-      // Fill in all fields with valid data except password (too short, missing uppercase, missing number)
+      // Fill in all fields with valid data except password (too short but has uppercase, lowercase, number, special char)
       await user.type(screen.getByLabelText(/first name/i), 'John');
       await user.type(screen.getByLabelText(/last name/i), 'Doe');
       await user.type(screen.getByLabelText(/username/i), 'johndoe');
       await user.type(screen.getByLabelText(/email/i), 'john@example.com');
-      await user.type(screen.getByLabelText(/^password$/i), 'short');
-      await user.type(screen.getByLabelText(/confirm password/i), 'short');
+      await user.type(screen.getByLabelText(/^password$/i), 'Sh0@t1');
+      await user.type(screen.getByLabelText(/confirm password/i), 'Sh0@t1');
 
       const submitButton = screen.getByRole('button', { name: /begin your journey/i });
       await user.click(submitButton);
 
-      // Zod reports multiple errors, just check that one of them appears
       await waitFor(() => {
-        // "short" password fails: min(8), uppercase, and number requirements
-        // Any of these error messages is acceptable
-        const errorText = screen.getByText(
-          /password must be at least 8 characters|password must contain at least one uppercase|password must contain at least one number/i
-        );
-        expect(errorText).toBeInTheDocument();
+        expect(screen.getByText(/password must be at least 8 characters/i)).toBeInTheDocument();
       });
     });
 
@@ -214,13 +208,13 @@ describe('RegisterPage', () => {
         </TestWrapper>
       );
 
-      // Fill in all fields with valid data except password (missing uppercase)
+      // Fill in all fields with valid data except password (missing uppercase — has number + special char)
       await user.type(screen.getByLabelText(/first name/i), 'John');
       await user.type(screen.getByLabelText(/last name/i), 'Doe');
       await user.type(screen.getByLabelText(/username/i), 'johndoe');
       await user.type(screen.getByLabelText(/email/i), 'john@example.com');
-      await user.type(screen.getByLabelText(/^password$/i), 'password123');
-      await user.type(screen.getByLabelText(/confirm password/i), 'password123');
+      await user.type(screen.getByLabelText(/^password$/i), 'password123@');
+      await user.type(screen.getByLabelText(/confirm password/i), 'password123@');
 
       const submitButton = screen.getByRole('button', { name: /begin your journey/i });
       await user.click(submitButton);
@@ -241,13 +235,13 @@ describe('RegisterPage', () => {
         </TestWrapper>
       );
 
-      // Fill in all fields with valid data except password (missing number)
+      // Fill in all fields with valid data except password (missing number — has uppercase, lowercase, special char)
       await user.type(screen.getByLabelText(/first name/i), 'John');
       await user.type(screen.getByLabelText(/last name/i), 'Doe');
       await user.type(screen.getByLabelText(/username/i), 'johndoe');
       await user.type(screen.getByLabelText(/email/i), 'john@example.com');
-      await user.type(screen.getByLabelText(/^password$/i), 'PasswordOnly');
-      await user.type(screen.getByLabelText(/confirm password/i), 'PasswordOnly');
+      await user.type(screen.getByLabelText(/^password$/i), 'PasswordOnly@');
+      await user.type(screen.getByLabelText(/confirm password/i), 'PasswordOnly@');
 
       const submitButton = screen.getByRole('button', { name: /begin your journey/i });
       await user.click(submitButton);
@@ -271,8 +265,8 @@ describe('RegisterPage', () => {
       await user.type(screen.getByLabelText(/last name/i), 'Doe');
       await user.type(screen.getByLabelText(/username/i), 'johndoe');
       await user.type(screen.getByLabelText(/email/i), 'john@example.com');
-      await user.type(screen.getByLabelText(/^password$/i), 'SecurePass123');
-      await user.type(screen.getByLabelText(/confirm password/i), 'DifferentPass123');
+      await user.type(screen.getByLabelText(/^password$/i), 'SecurePass123@');
+      await user.type(screen.getByLabelText(/confirm password/i), 'DifferentPass123@');
 
       const submitButton = screen.getByRole('button', { name: /begin your journey/i });
       await user.click(submitButton);
@@ -296,8 +290,8 @@ describe('RegisterPage', () => {
       await user.type(screen.getByLabelText(/last name/i), 'Doe');
       await user.type(screen.getByLabelText(/username/i), 'ab');
       await user.type(screen.getByLabelText(/email/i), 'john@example.com');
-      await user.type(screen.getByLabelText(/^password$/i), 'SecurePass123');
-      await user.type(screen.getByLabelText(/confirm password/i), 'SecurePass123');
+      await user.type(screen.getByLabelText(/^password$/i), 'SecurePass123@');
+      await user.type(screen.getByLabelText(/confirm password/i), 'SecurePass123@');
 
       const submitButton = screen.getByRole('button', { name: /begin your journey/i });
       await user.click(submitButton);
@@ -321,8 +315,8 @@ describe('RegisterPage', () => {
       await user.type(screen.getByLabelText(/last name/i), 'Doe');
       await user.type(screen.getByLabelText(/username/i), 'user@name!');
       await user.type(screen.getByLabelText(/email/i), 'john@example.com');
-      await user.type(screen.getByLabelText(/^password$/i), 'SecurePass123');
-      await user.type(screen.getByLabelText(/confirm password/i), 'SecurePass123');
+      await user.type(screen.getByLabelText(/^password$/i), 'SecurePass123@');
+      await user.type(screen.getByLabelText(/confirm password/i), 'SecurePass123@');
 
       const submitButton = screen.getByRole('button', { name: /begin your journey/i });
       await user.click(submitButton);
@@ -349,8 +343,8 @@ describe('RegisterPage', () => {
       await user.type(screen.getByLabelText(/username/i), 'johndoe');
       const emailInput = screen.getByLabelText(/email/i);
       await user.type(emailInput, 'invalid-email');
-      await user.type(screen.getByLabelText(/^password$/i), 'SecurePass123');
-      await user.type(screen.getByLabelText(/confirm password/i), 'SecurePass123');
+      await user.type(screen.getByLabelText(/^password$/i), 'SecurePass123@');
+      await user.type(screen.getByLabelText(/confirm password/i), 'SecurePass123@');
 
       // Submit form directly
       const form = container.querySelector('form');
@@ -415,6 +409,73 @@ describe('RegisterPage', () => {
       });
     });
 
+    it('renders exactly 5 requirement rows including special character', async () => {
+      const user = userEvent.setup();
+      const TestWrapper = createTestWrapper();
+      render(
+        <TestWrapper>
+          <RegisterPage />
+        </TestWrapper>
+      );
+
+      const passwordInput = screen.getByLabelText(/^password$/i);
+      await user.type(passwordInput, 'test');
+
+      await waitFor(() => {
+        expect(screen.getByText(/8\+ characters/i)).toBeInTheDocument();
+        expect(screen.getByText(/lowercase/i)).toBeInTheDocument();
+        expect(screen.getByText(/uppercase/i)).toBeInTheDocument();
+        expect(screen.getByText(/number/i)).toBeInTheDocument();
+        expect(screen.getByText(/special character/i)).toBeInTheDocument();
+      });
+    });
+
+    it('special character requirement is met for allowed chars (@$!%*?&)', async () => {
+      const user = userEvent.setup();
+      const TestWrapper = createTestWrapper();
+      render(
+        <TestWrapper>
+          <RegisterPage />
+        </TestWrapper>
+      );
+
+      const passwordInput = screen.getByLabelText(/^password$/i);
+      await user.type(passwordInput, 'SecurePass1@');
+
+      await waitFor(() => {
+        // The special char requirement label should be present
+        expect(screen.getByText(/special character/i)).toBeInTheDocument();
+      });
+    });
+
+    it('hash (#) does NOT satisfy the special character requirement', async () => {
+      const user = userEvent.setup();
+      const TestWrapper = createTestWrapper();
+      const { container } = render(
+        <TestWrapper>
+          <RegisterPage />
+        </TestWrapper>
+      );
+
+      // Fill a password with # (not in allowed set) but meeting all other requirements
+      await user.type(screen.getByLabelText(/first name/i), 'John');
+      await user.type(screen.getByLabelText(/last name/i), 'Doe');
+      await user.type(screen.getByLabelText(/username/i), 'johndoe');
+      await user.type(screen.getByLabelText(/email/i), 'john@example.com');
+      await user.type(screen.getByLabelText(/^password$/i), 'SecurePass1#');
+      await user.type(screen.getByLabelText(/confirm password/i), 'SecurePass1#');
+
+      // Submit the form — should fail with special char validation error
+      const form = container.querySelector('form');
+      fireEvent.submit(form!);
+
+      await waitFor(() => {
+        expect(
+          screen.getByText(/password must contain at least one special character/i)
+        ).toBeInTheDocument();
+      });
+    });
+
     it('updates strength as password gets stronger', async () => {
       const user = userEvent.setup();
       const TestWrapper = createTestWrapper();
@@ -473,8 +534,8 @@ describe('RegisterPage', () => {
       await user.type(screen.getByLabelText(/last name/i), 'Doe');
       await user.type(screen.getByLabelText(/username/i), 'johndoe');
       await user.type(screen.getByLabelText(/email/i), 'john@example.com');
-      await user.type(screen.getByLabelText(/^password$/i), 'SecurePass123');
-      await user.type(screen.getByLabelText(/confirm password/i), 'SecurePass123');
+      await user.type(screen.getByLabelText(/^password$/i), 'SecurePass123@');
+      await user.type(screen.getByLabelText(/confirm password/i), 'SecurePass123@');
 
       const submitButton = screen.getByRole('button', { name: /begin your journey/i });
       await user.click(submitButton);
@@ -504,8 +565,8 @@ describe('RegisterPage', () => {
       await user.type(screen.getByLabelText(/last name/i), 'Doe');
       await user.type(screen.getByLabelText(/username/i), 'johndoe');
       await user.type(screen.getByLabelText(/email/i), 'john@example.com');
-      await user.type(screen.getByLabelText(/^password$/i), 'SecurePass123');
-      await user.type(screen.getByLabelText(/confirm password/i), 'SecurePass123');
+      await user.type(screen.getByLabelText(/^password$/i), 'SecurePass123@');
+      await user.type(screen.getByLabelText(/confirm password/i), 'SecurePass123@');
 
       const submitButton = screen.getByRole('button', { name: /begin your journey/i });
       await user.click(submitButton);
@@ -515,7 +576,7 @@ describe('RegisterPage', () => {
       });
     });
 
-    it('navigates to home on successful registration', async () => {
+    it('navigates to /verify-email on successful registration', async () => {
       const user = userEvent.setup();
       const TestWrapper = createTestWrapper();
 
@@ -538,14 +599,14 @@ describe('RegisterPage', () => {
       await user.type(screen.getByLabelText(/last name/i), 'Doe');
       await user.type(screen.getByLabelText(/username/i), 'johndoe');
       await user.type(screen.getByLabelText(/email/i), 'john@example.com');
-      await user.type(screen.getByLabelText(/^password$/i), 'SecurePass123');
-      await user.type(screen.getByLabelText(/confirm password/i), 'SecurePass123');
+      await user.type(screen.getByLabelText(/^password$/i), 'SecurePass123@');
+      await user.type(screen.getByLabelText(/confirm password/i), 'SecurePass123@');
 
       const submitButton = screen.getByRole('button', { name: /begin your journey/i });
       await user.click(submitButton);
 
       await waitFor(() => {
-        expect(mockNavigate).toHaveBeenCalledWith('/');
+        expect(mockNavigate).toHaveBeenCalledWith('/verify-email');
       });
     });
 
@@ -567,8 +628,8 @@ describe('RegisterPage', () => {
       await user.type(screen.getByLabelText(/last name/i), 'Doe');
       await user.type(screen.getByLabelText(/username/i), 'johndoe');
       await user.type(screen.getByLabelText(/email/i), 'john@example.com');
-      await user.type(screen.getByLabelText(/^password$/i), 'SecurePass123');
-      await user.type(screen.getByLabelText(/confirm password/i), 'SecurePass123');
+      await user.type(screen.getByLabelText(/^password$/i), 'SecurePass123@');
+      await user.type(screen.getByLabelText(/confirm password/i), 'SecurePass123@');
 
       // Submit via button click (matches other passing tests)
       const submitButton = screen.getByRole('button', { name: /begin your journey/i });
@@ -584,7 +645,7 @@ describe('RegisterPage', () => {
       expect(mockCall).toMatchObject({
         email: 'john@example.com',
         username: 'johndoe',
-        password: 'SecurePass123',
+        password: 'SecurePass123@',
         firstName: 'John',
         lastName: 'Doe',
       });
@@ -612,13 +673,71 @@ describe('RegisterPage', () => {
       await user.type(screen.getByLabelText(/last name/i), 'Doe');
       await user.type(screen.getByLabelText(/username/i), 'johndoe');
       await user.type(screen.getByLabelText(/email/i), 'existing@example.com');
-      await user.type(screen.getByLabelText(/^password$/i), 'SecurePass123');
-      await user.type(screen.getByLabelText(/confirm password/i), 'SecurePass123');
+      await user.type(screen.getByLabelText(/^password$/i), 'SecurePass123@');
+      await user.type(screen.getByLabelText(/confirm password/i), 'SecurePass123@');
 
       await user.click(screen.getByRole('button', { name: /begin your journey/i }));
 
       await waitFor(() => {
         expect(screen.getByText(/already exists/i)).toBeInTheDocument();
+      });
+    });
+
+    it('maps "email taken" server error to inline email field error', async () => {
+      const user = userEvent.setup();
+      const TestWrapper = createTestWrapper();
+
+      vi.mocked(apiClient.authApi.register).mockRejectedValueOnce({
+        message: 'Email is already taken',
+        statusCode: 400,
+      });
+
+      render(
+        <TestWrapper>
+          <RegisterPage />
+        </TestWrapper>
+      );
+
+      await user.type(screen.getByLabelText(/first name/i), 'John');
+      await user.type(screen.getByLabelText(/last name/i), 'Doe');
+      await user.type(screen.getByLabelText(/username/i), 'johndoe');
+      await user.type(screen.getByLabelText(/email/i), 'existing@example.com');
+      await user.type(screen.getByLabelText(/^password$/i), 'SecurePass123@');
+      await user.type(screen.getByLabelText(/confirm password/i), 'SecurePass123@');
+
+      await user.click(screen.getByRole('button', { name: /begin your journey/i }));
+
+      await waitFor(() => {
+        expect(screen.getByText(/this email address is already registered/i)).toBeInTheDocument();
+      });
+    });
+
+    it('maps "username" server error to inline username field error', async () => {
+      const user = userEvent.setup();
+      const TestWrapper = createTestWrapper();
+
+      vi.mocked(apiClient.authApi.register).mockRejectedValueOnce({
+        message: 'Username is already taken',
+        statusCode: 400,
+      });
+
+      render(
+        <TestWrapper>
+          <RegisterPage />
+        </TestWrapper>
+      );
+
+      await user.type(screen.getByLabelText(/first name/i), 'John');
+      await user.type(screen.getByLabelText(/last name/i), 'Doe');
+      await user.type(screen.getByLabelText(/username/i), 'takenuser');
+      await user.type(screen.getByLabelText(/email/i), 'john@example.com');
+      await user.type(screen.getByLabelText(/^password$/i), 'SecurePass123@');
+      await user.type(screen.getByLabelText(/confirm password/i), 'SecurePass123@');
+
+      await user.click(screen.getByRole('button', { name: /begin your journey/i }));
+
+      await waitFor(() => {
+        expect(screen.getByText(/this username is already taken/i)).toBeInTheDocument();
       });
     });
 
@@ -642,8 +761,8 @@ describe('RegisterPage', () => {
       await user.type(screen.getByLabelText(/last name/i), 'Doe');
       await user.type(screen.getByLabelText(/username/i), 'johndoe');
       await user.type(screen.getByLabelText(/email/i), 'john@example.com');
-      await user.type(screen.getByLabelText(/^password$/i), 'SecurePass123');
-      await user.type(screen.getByLabelText(/confirm password/i), 'SecurePass123');
+      await user.type(screen.getByLabelText(/^password$/i), 'SecurePass123@');
+      await user.type(screen.getByLabelText(/confirm password/i), 'SecurePass123@');
 
       await user.click(screen.getByRole('button', { name: /begin your journey/i }));
 
@@ -669,8 +788,8 @@ describe('RegisterPage', () => {
       await user.type(screen.getByLabelText(/last name/i), 'Doe');
       await user.type(screen.getByLabelText(/username/i), 'johndoe');
       await user.type(screen.getByLabelText(/email/i), 'john@example.com');
-      await user.type(screen.getByLabelText(/^password$/i), 'SecurePass123');
-      await user.type(screen.getByLabelText(/confirm password/i), 'SecurePass123');
+      await user.type(screen.getByLabelText(/^password$/i), 'SecurePass123@');
+      await user.type(screen.getByLabelText(/confirm password/i), 'SecurePass123@');
 
       await user.click(screen.getByRole('button', { name: /begin your journey/i }));
 
@@ -791,8 +910,8 @@ describe('RegisterPage', () => {
       await user.type(screen.getByLabelText(/last name/i), 'Doe');
       await user.type(screen.getByLabelText(/username/i), 'johndoe');
       await user.type(screen.getByLabelText(/email/i), 'john@example.com');
-      await user.type(screen.getByLabelText(/^password$/i), 'SecurePass123');
-      await user.type(screen.getByLabelText(/confirm password/i), 'SecurePass123');
+      await user.type(screen.getByLabelText(/^password$/i), 'SecurePass123@');
+      await user.type(screen.getByLabelText(/confirm password/i), 'SecurePass123@');
 
       const submitButton = screen.getByRole('button', { name: /begin your journey/i });
 
@@ -861,8 +980,8 @@ describe('RegisterPage', () => {
       await user.type(screen.getByLabelText(/last name/i), 'Doe');
       await user.type(screen.getByLabelText(/username/i), 'johndoe');
       await user.type(screen.getByLabelText(/email/i), 'invalid-email');
-      await user.type(screen.getByLabelText(/^password$/i), 'SecurePass123');
-      await user.type(screen.getByLabelText(/confirm password/i), 'SecurePass123');
+      await user.type(screen.getByLabelText(/^password$/i), 'SecurePass123@');
+      await user.type(screen.getByLabelText(/confirm password/i), 'SecurePass123@');
 
       // Submit form directly
       const form = container.querySelector('form');

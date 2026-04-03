@@ -381,7 +381,7 @@ export function calculatePasswordStrength(password: string): {
   // Character type checks
   if (/[a-z]/.test(password) && /[A-Z]/.test(password)) score++;
   if (/[0-9]/.test(password)) score++;
-  if (/[^a-zA-Z0-9]/.test(password)) score++;
+  if (/[@$!%*?&]/.test(password)) score++; // matches passwordSchema exactly
 
   // Normalize to 0-4
   score = Math.min(4, score);
