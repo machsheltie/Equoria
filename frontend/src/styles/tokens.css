@@ -226,6 +226,8 @@
   --glass-blur-heavy: blur(16px);
   --glass-blur-light: blur(6px);
 
+  --glass-border-gold-subtle: rgba(200, 168, 78, 0.1); /* .glass-panel-subtle gold border */
+
   /* Legacy border shorthands — new code should use --glass-border (color) */
   --glass-border-shorthand: 1px solid var(--glass-border);
   --glass-border-bright: 1px solid var(--glass-hover);

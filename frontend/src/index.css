@@ -148,23 +148,24 @@
    * ─────────────────────────────────────────────────────────────────────
    * Only ONE `backdrop-filter: blur()` may be active per viewport stack.
    *
-   * Hierarchy:
-   *   .glass-panel        → applies blur (outermost container layer)
-   *   .glass-panel-heavy  → applies blur (modal/overlay — never nest inside .glass-panel)
-   *   .glass-panel-subtle → NO blur  (solid semi-transparent bg only, safe to nest)
+   * Architecture: base styles are UNSCOPED — panels are readable with or without
+   * the Celestial Night theme. The frosted-glass blur is a PROGRESSIVE ENHANCEMENT
+   * added via .celestial scope. This means:
+   *   - No flash of unstyled content on first render before theme class is applied
+   *   - Panels degrade gracefully when `?theme=default` removes .celestial
+   *   - .no-blur works globally, not just inside .celestial contexts
    *
-   * If a blurred parent already exists, add `.no-blur` to suppress blur on
-   * a child .glass-panel or .glass-panel-heavy.
+   * Hierarchy:
+   *   .glass-panel        → base: solid dark panel; +celestial: frosted blur
+   *   .glass-panel-heavy  → base: opaque panel; +celestial: stronger blur
+   *   .glass-panel-subtle → NEVER blurs — solid semi-transparent, always safe to nest
    */
 
   /**
-   * .glass-panel — standard frosted glass surface.
-   * Scoped to .celestial so it only activates when Celestial Night theme is on.
+   * .glass-panel — base: solid dark panel with border + transitions.
    */
-  .celestial .glass-panel {
+  .glass-panel {
     background: var(--glass-bg); /* rgba(15, 23, 42, 0.6) */
-    backdrop-filter: var(--glass-bg-filter); /* blur(12px) saturate(1.3) brightness(1.2) */
-    -webkit-backdrop-filter: var(--glass-bg-filter);
     border: 1px solid var(--glass-border); /* rgba(148, 163, 184, 0.2) */
     border-radius: var(--radius-md); /* 12px — spec §22.4 */
     padding: var(--space-5);
@@ -175,43 +176,51 @@
       transform var(--duration-fast) var(--ease-default);
   }
 
-  .celestial .glass-panel:hover {
+  .glass-panel:hover {
     border-color: var(--glass-hover); /* rgba(148, 163, 184, 0.3) brightened */
     box-shadow: var(--glow-gold);
     transform: translateY(-2px);
   }
 
   /**
-   * .glass-panel-heavy — high-opacity variant for modals and overlays.
-   * Applies its own blur — never nest inside another blurred container.
+   * .glass-panel-heavy — base: high-opacity panel for modals and overlays.
    */
-  .celestial .glass-panel-heavy {
+  .glass-panel-heavy {
     background: var(--glass-surface-heavy-bg); /* rgba(15, 23, 42, 0.85) */
-    backdrop-filter: var(--glass-blur-heavy, blur(16px));
-    -webkit-backdrop-filter: var(--glass-blur-heavy, blur(16px));
     border: 1px solid var(--glass-hover);
     border-radius: var(--radius-lg);
     box-shadow: var(--shadow-floating);
   }
 
   /**
-   * .glass-panel-subtle — solid semi-transparent surface for nested/secondary panels.
-   * NO backdrop-filter — safe to use inside any blurred parent without stacking blurs.
-   * Gold border at 0.1 opacity distinguishes it from the blurred variants.
+   * .glass-panel-subtle — solid surface for nested/secondary panels.
+   * Gold border at 0.1 opacity. NEVER blurs — safe to nest inside any blurred parent.
    */
-  .celestial .glass-panel-subtle {
+  .glass-panel-subtle {
     background: var(--glass-surface-subtle-bg); /* rgba(15, 23, 42, 0.4) */
     /* No backdrop-filter — single-blur-layer rule: this layer must stay blur-free */
-    border: 1px solid rgba(200, 168, 78, 0.1); /* gold border, 0.1 opacity */
+    border: 1px solid var(--glass-border-gold-subtle);
     border-radius: var(--radius-md);
     box-shadow: var(--shadow-subtle);
   }
 
-  /* Skip backdrop-filter when a blurred parent is already present */
-  .celestial .no-blur {
+  /* Suppress blur on a child when a blurred parent is already active — works globally */
+  .no-blur {
     backdrop-filter: none !important;
     -webkit-backdrop-filter: none !important;
   }
+
+  /* Progressive enhancement — frosted glass blur when Celestial Night theme is active */
+  .celestial .glass-panel {
+    backdrop-filter: var(--glass-bg-filter); /* blur(12px) saturate(1.3) brightness(1.2) */
+    -webkit-backdrop-filter: var(--glass-bg-filter);
+  }
+
+  .celestial .glass-panel-heavy {
+    backdrop-filter: var(--glass-blur-heavy, blur(16px));
+    -webkit-backdrop-filter: var(--glass-blur-heavy, blur(16px));
+  }
+  /* .celestial .glass-panel-subtle — intentionally NO blur enhancement; rule enforced above */
 
   /* Legacy alias — keeps existing code working */
   .parchment-texture {
