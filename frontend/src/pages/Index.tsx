@@ -113,15 +113,13 @@ function HorseCard({ horse }: { horse: HorseSummary }) {
       )}
 
       {/* Inline cooldown timer (PRD Section 09: cooldown timers visible on card) */}
-      {horse.trainingCooldown && cooldown.status === 'warn' && (
-        <div className="px-4 pt-2">
-          <CooldownTimer
-            endsAt={typeof horse.trainingCooldown === 'string' ? horse.trainingCooldown : null}
-            label="Training"
-            compact
-          />
-        </div>
-      )}
+      <div className="px-4 pt-2">
+        <CooldownTimer
+          endsAt={typeof horse.trainingCooldown === 'string' ? horse.trainingCooldown : null}
+          label="Training"
+          compact
+        />
+      </div>
 
       {/* Care strip */}
       <div className="flex gap-1 px-3 py-3 mt-2 border-t border-[rgba(148,163,184,0.08)] overflow-hidden">

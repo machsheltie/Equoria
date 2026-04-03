@@ -6,13 +6,13 @@
  */
 
 /** Determine care urgency from a date field and day thresholds.
- *  Returns 'none' if the field was never set (system not yet active). */
+ *  Returns 'bad' if the field was never set (horse needs care). */
 export function careChipStatus(
   dateStr: unknown,
   warnDays: number,
   errorDays: number
 ): 'good' | 'warn' | 'bad' | 'none' {
-  if (!dateStr) return 'none';
+  if (!dateStr) return 'bad';
   const ts =
     typeof dateStr === 'string'
       ? new Date(dateStr).getTime()
@@ -47,7 +47,7 @@ export function trainingCooldownChip(cooldown: unknown): {
 }
 
 /** Check if a horse needs any care (for summary counts).
- *  'none' (never set) is not counted — only active overdue statuses count. */
+ *  Horses with no care data (never fed/shod/etc.) are counted as needing care. */
 export function horseNeedsCare(horse: Record<string, unknown>): boolean {
   const statuses = [
     careChipStatus(horse.lastFedDate, 1, 3),
