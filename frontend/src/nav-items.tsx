@@ -37,8 +37,10 @@ const InventoryPage = lazy(() => import('./pages/InventoryPage'));
 const MyStablePage = lazy(() => import('./pages/MyStablePage'));
 // Epic 13 — Trainer System (World sub-location, route-only)
 const TrainersPage = lazy(() => import('./pages/TrainersPage'));
-// Epic 21 — Horse Marketplace
+// Epic 21 — Marketplace Hub + sub-routes
+const MarketplaceHubPage = lazy(() => import('./pages/MarketplaceHubPage'));
 const HorseMarketplacePage = lazy(() => import('./pages/HorseMarketplacePage'));
+const HorseTraderPage = lazy(() => import('./pages/HorseTraderPage'));
 // Leathersmith Crafting Workshop
 const CraftingPage = lazy(() => import('./pages/CraftingPage'));
 // Epic 11 — Community pages
@@ -97,7 +99,7 @@ export const navItems = [
     title: 'Marketplace',
     to: '/marketplace',
     icon: <ShoppingCart className="h-4 w-4" />,
-    Page: HorseMarketplacePage,
+    Page: MarketplaceHubPage,
   },
   {
     title: 'Riders',
@@ -185,6 +187,19 @@ export const navItems = [
     to: '/trainers',
     icon: null,
     Page: TrainersPage,
+  },
+  // Epic 21 — Marketplace sub-routes (hub at /marketplace; sub-pages linked from hub cards)
+  {
+    title: 'Horse Marketplace',
+    to: '/marketplace/horses',
+    icon: null,
+    Page: HorseMarketplacePage,
+  },
+  {
+    title: 'Horse Trader',
+    to: '/marketplace/horse-trader',
+    icon: null,
+    Page: HorseTraderPage,
   },
   // Epic 5 — Competition results and prize history (route-only; linked from competition browser / results modal)
   {

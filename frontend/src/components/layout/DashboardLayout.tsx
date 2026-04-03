@@ -32,22 +32,27 @@ const STATIC_BG: Record<string, string> = {
 /**
  * Derive the PageBackground scene from the current route pathname.
  * Only called for routes not covered by STATIC_BG or horse-detail.
- * Order matters — more specific prefixes checked before generic ones.
+ *
+ * NOTE: Scene-specific art lives under /images/backgrounds/{scene}/.
+ * Until those directories are populated, every route must return 'default'
+ * so the hook resolves to /images/bg-{ratio}.webp (which exists).
+ * Restore the per-route returns below when the corresponding art is committed.
  */
-function getSceneForPath(pathname: string): SceneKey {
-  if (pathname === '/') return 'hub';
-  if (pathname.startsWith('/training')) return 'training';
-  if (pathname.startsWith('/competition')) return 'competition';
-  if (pathname.startsWith('/breeding') || pathname.startsWith('/foal')) return 'breeding';
-  if (pathname === '/horses') return 'stable';
-  if (
-    pathname.startsWith('/world') ||
-    pathname.startsWith('/community') ||
-    pathname.startsWith('/clubs') ||
-    pathname.startsWith('/messages') ||
-    pathname.startsWith('/message-board')
-  )
-    return 'world';
+function getSceneForPath(_pathname: string): SceneKey {
+  // Uncomment each line when the matching scene art is deployed:
+  // if (_pathname === '/') return 'hub';
+  // if (_pathname.startsWith('/training')) return 'training';
+  // if (_pathname.startsWith('/competition')) return 'competition';
+  // if (_pathname.startsWith('/breeding') || _pathname.startsWith('/foal')) return 'breeding';
+  // if (_pathname === '/horses') return 'stable';
+  // if (
+  //   _pathname.startsWith('/world') ||
+  //   _pathname.startsWith('/community') ||
+  //   _pathname.startsWith('/clubs') ||
+  //   _pathname.startsWith('/messages') ||
+  //   _pathname.startsWith('/message-board')
+  // )
+  //   return 'world';
   return 'default';
 }
 

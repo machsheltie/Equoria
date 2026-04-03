@@ -1229,7 +1229,25 @@ export interface BuyHorseResult {
  *   POST   /api/v1/marketplace/buy/:id    → purchase horse
  *   GET    /api/v1/marketplace/my-listings → seller's active listings
  *   GET    /api/v1/marketplace/history     → sale history
+ *   POST   /api/v1/marketplace/store/buy  → buy store horse (Horse Trader)
  */
+
+// ── Breed types ───────────────────────────────────────────────────────────────
+
+export interface Breed {
+  id: number;
+  name: string;
+  description?: string;
+}
+
+/**
+ * Breeds API surface
+ *   GET /api/breeds → Breed[]  (all 320 breeds, sorted A–Z)
+ */
+export const breedsApi = {
+  list: () => apiClient.get<Breed[]>('/api/breeds'),
+};
+
 export const horseMarketplaceApi = {
   browse: (filters?: MarketplaceBrowseFilters) => {
     const params = new URLSearchParams();
@@ -1253,6 +1271,11 @@ export const horseMarketplaceApi = {
     apiClient.post<BuyHorseResult>(`/api/v1/marketplace/buy/${horseId}`, {}),
   myListings: () => apiClient.get<MyListing[]>('/api/v1/marketplace/my-listings'),
   saleHistory: () => apiClient.get<SaleHistoryEntry[]>('/api/v1/marketplace/history'),
+  buyStoreHorse: (breedId: number, sex: 'mare' | 'stallion') =>
+    apiClient.post<{ horse: HorseSummary; pricePaid: number; newBalance: number }>(
+      '/api/v1/marketplace/store/buy',
+      { breedId, sex }
+    ),
 };
 
 // ── Tack Shop types ───────────────────────────────────────────────────────────

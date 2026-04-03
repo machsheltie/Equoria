@@ -13,6 +13,7 @@ import {
   buyHorse,
   myListings,
   saleHistory,
+  buyStoreHorse,
 } from '../controllers/marketplaceController.mjs';
 
 const router = express.Router();
@@ -31,7 +32,10 @@ router.delete('/list/:horseId', delistHorse);
 router.get('/my-listings', myListings);
 router.get('/history', saleHistory);
 
-// Buyer flow
+// Store flow — static path before :horseId to avoid route conflict
+router.post('/store/buy', buyStoreHorse);
+
+// Buyer flow (user-to-user)
 router.post('/buy/:horseId', buyHorse);
 
 export default router;
