@@ -10,6 +10,7 @@ import {
   getTemperamentDefinitions,
   getGenetics,
   getColor,
+  getBreedingColorPrediction,
 } from '../controllers/horseController.mjs';
 import { authenticateToken } from '../../../middleware/auth.mjs';
 import { requireOwnership } from '../../../middleware/ownership.mjs';
@@ -499,6 +500,55 @@ router.get(
       await getColor(req, res);
     } catch (error) {
       logger.error(`[horseRoutes] Error in color endpoint: ${error.message}`);
+      res.status(500).json({
+        success: false,
+        message: 'Internal server error',
+      });
+    }
+  },
+);
+
+/**
+ * POST /horses/breeding/color-prediction
+ * Calculate breeding color prediction for two parent horses.
+ * Returns probability chart of possible offspring coat colors.
+ *
+ * Security: Validates ownership of both sire and dam in controller
+ */
+router.post(
+  '/breeding/color-prediction',
+  mutationRateLimiter,
+  rejectPollutedRequest,
+  authenticateToken,
+  [
+    body('sireId').isInt({ min: 1 }).withMessage('sireId must be a positive integer'),
+    body('damId').isInt({ min: 1 }).withMessage('damId must be a positive integer'),
+    body('foalBreedId')
+      .optional()
+      .isInt({ min: 1 })
+      .withMessage('foalBreedId must be a positive integer'),
+  ],
+  async (req, res) => {
+    const errors = validationResult(req);
+    if (!errors.isEmpty()) {
+      return res.status(400).json({
+        success: false,
+        message: 'Validation failed',
+        errors: errors.array(),
+      });
+    }
+
+    // Convert string body values to integers
+    req.body.sireId = parseInt(req.body.sireId, 10);
+    req.body.damId = parseInt(req.body.damId, 10);
+    if (req.body.foalBreedId) {
+      req.body.foalBreedId = parseInt(req.body.foalBreedId, 10);
+    }
+
+    try {
+      await getBreedingColorPrediction(req, res);
+    } catch (error) {
+      logger.error(`[horseRoutes] Error in breeding color prediction: ${error.message}`);
       res.status(500).json({
         success: false,
         message: 'Internal server error',

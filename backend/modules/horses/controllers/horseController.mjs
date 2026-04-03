@@ -1172,3 +1172,111 @@ export async function getColor(req, res) {
     });
   }
 }
+
+/**
+ * Validate that a colorGenotype value is a proper JSONB object.
+ * Rejects null, undefined, arrays, and scalar values.
+ *
+ * @param {*} genotype - value from horse.colorGenotype
+ * @returns {boolean}
+ */
+function isValidGenotype(genotype) {
+  return (
+    genotype !== null &&
+    genotype !== undefined &&
+    typeof genotype === 'object' &&
+    !Array.isArray(genotype)
+  );
+}
+
+/**
+ * Calculate breeding color prediction for two parent horses.
+ * Returns a probability chart of possible offspring coat colors.
+ * Controller handles DB fetching and ownership — calls pure-function service.
+ *
+ * @param {object} req - Express request with body { sireId, damId, foalBreedId? }
+ * @param {object} res - Express response
+ */
+export async function getBreedingColorPrediction(req, res) {
+  try {
+    const { sireId, damId, foalBreedId } = req.body;
+
+    // Fetch both horses with ownership validation
+    const [sire, dam] = await Promise.all([
+      prisma.horse.findUnique({
+        where: { id: sireId },
+        select: { id: true, name: true, colorGenotype: true, userId: true, breedId: true },
+      }),
+      prisma.horse.findUnique({
+        where: { id: damId },
+        select: { id: true, name: true, colorGenotype: true, userId: true, breedId: true },
+      }),
+    ]);
+
+    // AC5: Ownership enforcement — 404 for both not-found and not-owned
+    if (!sire || sire.userId !== req.user.id) {
+      return res.status(404).json({
+        success: false,
+        message: 'Horse not found',
+      });
+    }
+    if (!dam || dam.userId !== req.user.id) {
+      return res.status(404).json({
+        success: false,
+        message: 'Horse not found',
+      });
+    }
+
+    // AC6: Legacy horse handling — both parents must have genetics data
+    if (!isValidGenotype(sire.colorGenotype) || !isValidGenotype(dam.colorGenotype)) {
+      return res.status(200).json({
+        success: true,
+        message: 'Color prediction requires both parents to have genetics data',
+        data: null,
+      });
+    }
+
+    // Resolve foal breed profile (default to dam's breed)
+    const resolvedBreedId = foalBreedId || dam.breedId;
+    let foalBreedProfile = null;
+    if (resolvedBreedId) {
+      const breed = await prisma.breed.findUnique({
+        where: { id: resolvedBreedId },
+        select: { breedGeneticProfile: true },
+      });
+      foalBreedProfile = breed?.breedGeneticProfile ?? null;
+    }
+
+    // Import and call the pure prediction service
+    const { predictBreedingColors } = await import(
+      '../services/breedingColorPredictionService.mjs'
+    );
+
+    const prediction = predictBreedingColors(
+      sire.colorGenotype,
+      dam.colorGenotype,
+      foalBreedProfile,
+    );
+
+    logger.info(
+      `[horseController.getBreedingColorPrediction] Predicted ${prediction.possibleColors.length} colors for sire=${sire.id} dam=${dam.id}`,
+    );
+
+    return res.status(200).json({
+      success: true,
+      message: 'Breeding color prediction calculated successfully',
+      data: {
+        sireId: sire.id,
+        damId: dam.id,
+        ...prediction,
+      },
+    });
+  } catch (error) {
+    logger.error(`[horseController.getBreedingColorPrediction] Error: ${error.message}`);
+    return res.status(500).json({
+      success: false,
+      message: 'Internal server error while calculating breeding color prediction',
+      data: null,
+    });
+  }
+}
