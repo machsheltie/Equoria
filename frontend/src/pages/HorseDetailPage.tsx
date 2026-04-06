@@ -75,6 +75,9 @@ import { useUserRiders, useAssignRider, type Rider } from '@/hooks/api/useRiders
 import { useListHorse, useDelistHorse } from '@/hooks/api/useMarketplace';
 import { getHorseImage } from '@/lib/breed-images';
 import { getBreedName } from '@/lib/utils';
+// Competition history (Story 5-3)
+import CompetitionHistory from '@/components/competition/CompetitionHistory';
+import { useHorseCompetitionHistory } from '@/hooks/api/useHorseCompetitionHistory';
 
 // Types
 interface HorseStats {
@@ -313,6 +316,10 @@ const HorseDetailPage: React.FC = () => {
       | undefined,
   };
 
+  // Fetch competition history only when the competition tab is active (Story 5-3)
+  const { data: competitionHistoryData, isLoading: isCompHistoryLoading } =
+    useHorseCompetitionHistory(activeTab === 'competition' ? horse.id : null);
+
   // Tab configuration
   const tabs: { id: TabType; label: string; icon: React.ReactNode }[] = [
     { id: 'overview', label: 'Overview', icon: <Star className="w-4 h-4" /> },
@@ -421,7 +428,11 @@ const HorseDetailPage: React.FC = () => {
                     <div className="flex flex-wrap gap-3 text-sm fantasy-body text-[rgb(180,195,215)]">
                       <span>Breed: {getBreedName(horse.breed)}</span>
                       <span>•</span>
-                      <span>Color: {(horse as unknown as Record<string, string>).finalDisplayColor || 'Unknown'}</span>
+                      <span>
+                        Color:{' '}
+                        {(horse as unknown as Record<string, string>).finalDisplayColor ||
+                          'Unknown'}
+                      </span>
                       <span>•</span>
                       <span>Age: {horse.age}</span>
                       <span>•</span>
@@ -539,7 +550,14 @@ const HorseDetailPage: React.FC = () => {
             {activeTab === 'conformation' && <ConformationTab horseId={horse.id} />}
             {activeTab === 'progression' && <ProgressionTab horse={horse} />}
             {activeTab === 'training' && <TrainingTab horse={horse} />}
-            {activeTab === 'competition' && <PlaceholderTab title="Competition Results" />}
+            {activeTab === 'competition' && (
+              <CompetitionHistory
+                horseId={horse.id}
+                horseName={horse.name}
+                data={isCompHistoryLoading ? undefined : competitionHistoryData}
+                isLoading={isCompHistoryLoading}
+              />
+            )}
             {activeTab === 'pedigree' && <PedigreeTab horse={horse} />}
             {activeTab === 'health' && <HealthVetTab horse={horse} />}
             {activeTab === 'tack' && <TackTab horse={horse} />}
@@ -1924,16 +1942,6 @@ const ProgressionTab: React.FC<{ horse: Horse }> = ({ horse }) => (
   </div>
 );
 
-// Placeholder Tab Component
-const PlaceholderTab: React.FC<{ title: string }> = ({ title }) => (
-  <div className="text-center py-12">
-    <h3 className="fantasy-title text-2xl text-[rgb(220,235,255)] mb-4">{title}</h3>
-    <p className="fantasy-body text-[rgb(160,175,200)]">
-      This section is coming soon. Check back later for updates!
-    </p>
-  </div>
-);
-
 // Pedigree Tab Component — Story 12-4
 const PedigreeTab: React.FC<{ horse: Horse }> = ({ horse }) => {
   const hasSire = Boolean(horse.parentIds?.sireId);
@@ -2203,7 +2211,7 @@ const StudSaleTab: React.FC<{ horse: Horse }> = ({ horse }) => {
           </p>
         </div>
         <Link
-          to="/marketplace"
+          to="/marketplace/horses"
           className="px-4 py-2 bg-[rgba(37,99,235,0.1)] border border-[rgba(37,99,235,0.3)] rounded-lg text-sm fantasy-body text-[rgb(160,175,200)] hover:bg-[rgba(37,99,235,0.2)] transition-colors whitespace-nowrap"
         >
           Marketplace
