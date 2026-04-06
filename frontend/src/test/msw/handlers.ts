@@ -43,6 +43,8 @@
  * POST   /api/horses/add-xp                       manually add XP
  * POST   /api/horses/foals                        create foal
  * GET    /api/horses/user/eligible                horses eligible for competition
+ * GET    /api/v1/horses/:id/conformation          conformation scores (8 regions)
+ * GET    /api/v1/breeds/:id/conformation-averages breed average conformation scores
  *
  * ── Training ─────────────────────────────────────────────────────────────
  * POST   /api/training/check-eligibility          eligibility check
@@ -1730,6 +1732,67 @@ export const handlers = [
         ],
         since: new Date(Date.now() - 5 * 60 * 60 * 1000).toISOString(),
         hasMore: false,
+      },
+    });
+  }),
+
+  // ── Conformation ──────────────────────────────────────────────────────────
+  // GET /api/v1/horses/:horseId/conformation
+  http.get(`${base}/api/v1/horses/:horseId/conformation`, ({ params }) => {
+    const horseId = parseInt(params.horseId as string) || 0;
+    const seed = horseId % 20;
+    const head = 70 + seed;
+    const neck = 68 + seed;
+    const shoulders = 72 + seed;
+    const back = 65 + seed;
+    const hindquarters = 75 + seed;
+    const legs = 71 + seed;
+    const hooves = 69 + seed;
+    const topline = 67 + seed;
+    const overallConformation =
+      Math.round(
+        ((head + neck + shoulders + back + hindquarters + legs + hooves + topline) / 8) * 10,
+      ) / 10;
+    return HttpResponse.json({
+      success: true,
+      data: {
+        horseId,
+        horseName: `Horse ${horseId}`,
+        breedId: 1,
+        conformationScores: {
+          head,
+          neck,
+          shoulders,
+          back,
+          hindquarters,
+          legs,
+          hooves,
+          topline,
+          overallConformation,
+        },
+      },
+    });
+  }),
+
+  // GET /api/v1/breeds/:breedId/conformation-averages
+  http.get(`${base}/api/v1/breeds/:breedId/conformation-averages`, ({ params }) => {
+    return HttpResponse.json({
+      success: true,
+      data: {
+        breedId: String(params.breedId),
+        breedName: 'Arabian',
+        averages: {
+          head: 75,
+          neck: 73,
+          shoulders: 77,
+          back: 72,
+          hindquarters: 76,
+          legs: 74,
+          hooves: 73,
+          topline: 71,
+          overallConformation: 73.9,
+        },
+        horseCount: 5,
       },
     });
   }),
