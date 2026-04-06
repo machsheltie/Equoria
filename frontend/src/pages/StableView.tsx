@@ -253,7 +253,7 @@ const StableView = () => {
                   <Link to="/breeding">Go to Breeding</Link>
                 </Button>
                 <Button asChild variant="outline">
-                  <Link to="/marketplace">Browse Marketplace</Link>
+                  <Link to="/marketplace/horses">Browse Marketplace</Link>
                 </Button>
               </div>
             )}

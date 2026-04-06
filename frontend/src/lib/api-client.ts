@@ -1245,7 +1245,7 @@ export interface Breed {
  *   GET /api/breeds → Breed[]  (all 320 breeds, sorted A–Z)
  */
 export const breedsApi = {
-  list: () => apiClient.get<Breed[]>('/api/breeds'),
+  list: () => apiClient.get<Breed[]>('/api/v1/breeds'),
 };
 
 export const horseMarketplaceApi = {

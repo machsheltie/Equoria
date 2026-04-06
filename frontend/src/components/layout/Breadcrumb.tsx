@@ -15,6 +15,12 @@ const ROUTE_HREF_OVERRIDE: Record<string, string> = {
   horses: '/stable',
 };
 
+/** Full-path label overrides — checked before segment lookup to resolve ambiguous segments */
+const PATH_LABEL_OVERRIDES: Record<string, string> = {
+  '/marketplace/horses': 'Horse Marketplace',
+  '/marketplace/horse-trader': 'Horse Trader',
+};
+
 /** Map route segments to display names */
 const ROUTE_LABELS: Record<string, string> = {
   stable: 'My Stable',
@@ -64,7 +70,8 @@ export function Breadcrumb() {
 
   for (const segment of segments) {
     path += `/${segment}`;
-    const label = ROUTE_LABELS[segment] || decodeURIComponent(segment);
+    const label =
+      PATH_LABEL_OVERRIDES[path] || ROUTE_LABELS[segment] || decodeURIComponent(segment);
     const href = ROUTE_HREF_OVERRIDE[segment] || path;
     crumbs.push({ label, href });
   }

@@ -30,9 +30,11 @@ const STAT_KEYS = [
   'endurance',
 ];
 
-/** Sample a single stat from a normal distribution (Box-Muller approximation). */
+/** Sample a single stat using a proper Box-Muller transform for a true normal distribution. */
 function sampleStat({ mean, std_dev }) {
-  const z = (Math.random() + Math.random() - 1) * 1.41;
+  const u1 = Math.random() || Number.EPSILON; // guard against log(0)
+  const u2 = Math.random();
+  const z = Math.sqrt(-2 * Math.log(u1)) * Math.cos(2 * Math.PI * u2);
   return Math.max(1, Math.min(100, Math.round(mean + std_dev * z)));
 }
 
@@ -443,7 +445,7 @@ export async function buyStoreHorse(req, res) {
     coinDeducted = true;
 
     // Generate horse name and stats
-    const horseName = `${breed.name} #${String(Math.floor(1000 + Math.random() * 9000))}`;
+    const horseName = `${breed.name} #${String(Math.floor(100000 + Math.random() * 900000))}`;
     const stats = generateStoreStats(parsedBreedId);
     const dateOfBirth = new Date();
     dateOfBirth.setFullYear(dateOfBirth.getFullYear() - 3);
@@ -477,6 +479,9 @@ export async function buyStoreHorse(req, res) {
     if (err.statusCode) {
       return res.status(err.statusCode).json({ success: false, message: err.message });
     }
+
+    // Log the original error before branching — ensures root cause is always captured
+    logger.error('[marketplace] buyStoreHorse unexpected error:', err);
 
     // F1 fix: createHorse failed after coins were deducted — attempt compensating refund
     if (coinDeducted) {
