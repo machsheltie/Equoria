@@ -180,11 +180,11 @@ export function getConformationAgeClass(ageInYears) {
 
 /**
  * Calculate temperament synergy between horse and groom — AC2.
- * Returns a 0-115 scale value (per PRD-03 §3.6 table).
+ * Returns a [0, 100] scale value (normalized from PRD-03 §3.6 0.80–1.15 range).
  *
- * @param {string} temperament - Horse temperament (calm|spirited|nervous|aggressive)
+ * @param {string} temperament - Horse temperament (calm|spirited|nervous|aggressive, case-insensitive)
  * @param {string} personality - Groom personality
- * @returns {number} Synergy score (80-115 typical range)
+ * @returns {number} Synergy score [0, 100]
  */
 export function calculateSynergy(temperament, personality) {
   // Normalize temperament to lowercase — DB stores title-case ('Calm') but table uses lowercase
