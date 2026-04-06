@@ -1,5 +1,5 @@
 # generated: 2026-03-25
-# last_updated: 2026-04-06 22-5 button hierarchy done
+# last_updated: 2026-04-06 22-6 custom game component library done
 # project: Equoria
 # project_key: NOKEY
 # tracking_system: file-system
@@ -54,7 +54,7 @@ development_status:
   22-3-painted-background-system: done
   22-4-glass-panel-surface-updates: done
   22-5-button-hierarchy: done
-  22-6-custom-game-component-library: backlog
+  22-6-custom-game-component-library: done
   22-7-body-and-page-chrome: backlog
   22-8-navigation-structure: backlog
   epic-22-retrospective: optional
