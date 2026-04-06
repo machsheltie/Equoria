@@ -27,7 +27,7 @@ describe('🐴 INTEGRATION: Horse Trader Store API', () => {
   let richUser, richToken;
   let brokeUser, brokeToken;
   let testBreed;
-  let createdHorseIds = [];
+  const createdHorseIds = [];
 
   beforeAll(async () => {
     const ts = Date.now();
