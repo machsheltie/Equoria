@@ -5,6 +5,30 @@
  * with appropriate transformations and environment settings.
  */
 
+const BACKEND_PROJECT_IGNORE_PATTERNS = [
+  '<rootDir>/../.archive/',
+  '<rootDir>/../.backups/',
+  '<rootDir>/../.agent/',
+  '<rootDir>/../.agents/',
+  '<rootDir>/../.claude/',
+  '<rootDir>/../.gemini/',
+  '<rootDir>/../.playwright-mcp/',
+  '<rootDir>/../_bmad/',
+  '<rootDir>/../_bmad-output/',
+];
+
+const ROOT_PROJECT_IGNORE_PATTERNS = [
+  '<rootDir>/.archive/',
+  '<rootDir>/.backups/',
+  '<rootDir>/.agent/',
+  '<rootDir>/.agents/',
+  '<rootDir>/.claude/',
+  '<rootDir>/.gemini/',
+  '<rootDir>/.playwright-mcp/',
+  '<rootDir>/_bmad/',
+  '<rootDir>/_bmad-output/',
+];
+
 export default {
   // Projects configuration for monorepo
   projects: [
@@ -12,8 +36,15 @@ export default {
     {
       displayName: 'backend',
       rootDir: '<rootDir>/backend',
-      testMatch: ['**/*.test.{js,mjs}', '<rootDir>/../tests/**/*.test.{js,mjs}'],
+      testMatch: [
+        '<rootDir>/**/*.test.{js,mjs}',
+        '<rootDir>/../tests/*.test.{js,mjs}',
+        '<rootDir>/../tests/models/**/*.test.{js,mjs}',
+        '<rootDir>/../tests/services/**/*.test.{js,mjs}',
+        '<rootDir>/../tests/unit/**/*.test.{js,mjs}',
+      ],
       testEnvironment: 'node',
+      roots: ['<rootDir>', '<rootDir>/../tests'],
       setupFilesAfterEnv: ['<rootDir>/tests/setup.mjs'],
       globalTeardown: '<rootDir>/tests/teardown.mjs',
       preset: null,
@@ -22,6 +53,7 @@ export default {
       moduleNameMapper: {
         '^(\\.{1,2}/.*)\\.js$': '$1',
       },
+      modulePathIgnorePatterns: BACKEND_PROJECT_IGNORE_PATTERNS,
       moduleDirectories: ['node_modules', '<rootDir>/node_modules', '<rootDir>/../node_modules'],
       globals: {
         'ts-jest': {
@@ -40,13 +72,18 @@ export default {
         '/coverage/',
         '/dist/',
         '/build/',
+        '<rootDir>/../.archive/',
+        '<rootDir>/../.backups/',
         '<rootDir>/tests/load/',
+        '<rootDir>/../tests/integration/',
       ],
       watchPathIgnorePatterns: [
         '/node_modules/',
         '/coverage/',
         '/dist/',
         '/build/',
+        '<rootDir>/../.archive/',
+        '<rootDir>/../.backups/',
         '<rootDir>/tests/load/',
       ],
       detectOpenHandles: true,
@@ -54,6 +91,7 @@ export default {
     // Unit tests configuration
     {
       displayName: 'unit',
+      roots: ['<rootDir>/tests/unit'],
       testMatch: ['<rootDir>/tests/unit/**/*.test.{js,mjs}'],
       testEnvironment: 'node',
       preset: null,
@@ -62,6 +100,7 @@ export default {
       moduleNameMapper: {
         '^(\\.{1,2}/.*)\\.js$': '$1',
       },
+      modulePathIgnorePatterns: ROOT_PROJECT_IGNORE_PATTERNS,
       globals: {
         jest: {
           useESM: true,

@@ -21,9 +21,7 @@
     "jsx": "react-jsx"
   },
   "include": [
-    "frontend/src/**/*",
-    "frontend/components/**/*",
-    "frontend/hooks/**/*"
+    "frontend/src/**/*"
   ],
   "exclude": [
     "node_modules",

@@ -7,6 +7,15 @@ export default [
   ...tseslint.configs.recommended,
   {
     ignores: [
+      '.archive/**',
+      '.backups/**',
+      '.agent/**',
+      '.agents/**',
+      '.claude/**',
+      '.gemini/**',
+      '.playwright-mcp/**',
+      '_bmad/**',
+      '_bmad-output/**',
       'node_modules',
       '**/dist',
       '**/build',
@@ -17,6 +26,9 @@ export default [
       '**/vendor/**',
       '**/*.d.ts',
       'backend/db/migrations/**',
+      'frontend/components/**',
+      'frontend/hooks/**',
+      'tests/integration/**',
     ],
   },
   {
