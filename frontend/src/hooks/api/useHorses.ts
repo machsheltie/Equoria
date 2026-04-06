@@ -44,6 +44,7 @@ export const useUpdateHorse = () => {
     onSuccess: (_result, { horseId }) => {
       queryClient.invalidateQueries({ queryKey: horseKeys.detail(horseId) });
       queryClient.invalidateQueries({ queryKey: horseKeys.all });
+      queryClient.invalidateQueries({ queryKey: ['next-actions'] });
     },
   });
 };

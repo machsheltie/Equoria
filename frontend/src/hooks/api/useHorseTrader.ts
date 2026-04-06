@@ -29,6 +29,7 @@ export function useBuyStoreHorse() {
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['horses'] }); // refresh My Stable
       queryClient.invalidateQueries({ queryKey: ['profile'] }); // refresh coin balance
+      queryClient.invalidateQueries({ queryKey: ['next-actions'] }); // refresh notification bar
     },
   });
 }
