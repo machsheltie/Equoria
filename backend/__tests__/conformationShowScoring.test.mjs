@@ -41,6 +41,7 @@ const {
 } = await import('../services/conformationShowService.mjs');
 
 const { default: prisma } = await import('../db/index.mjs');
+const { CONFORMATION_CLASSES } = await import('../constants/schema.mjs');
 
 // ---------------------------------------------------------------------------
 // Shared test fixtures
@@ -58,9 +59,7 @@ const FULL_CONFORMATION_SCORES = {
 };
 
 /** Arithmetic mean of FULL_CONFORMATION_SCORES = (70+80+60+75+65+85+70+75) / 8 = 580/8 = 72.5 → rounded = 73 */
-const EXPECTED_CONFORMATION_MEAN = Math.round(
-  (70 + 80 + 60 + 75 + 65 + 85 + 70 + 75) / 8,
-);
+const EXPECTED_CONFORMATION_MEAN = Math.round((70 + 80 + 60 + 75 + 65 + 85 + 70 + 75) / 8);
 
 // ---------------------------------------------------------------------------
 // Task 4.2: calculateConformationScore — arithmetic mean of 8 regions
@@ -103,7 +102,16 @@ describe('calculateConformationScore', () => {
   });
 
   test('works when all regions are 100', () => {
-    const maxes = { head: 100, neck: 100, shoulders: 100, back: 100, hindquarters: 100, legs: 100, hooves: 100, topline: 100 };
+    const maxes = {
+      head: 100,
+      neck: 100,
+      shoulders: 100,
+      back: 100,
+      hindquarters: 100,
+      legs: 100,
+      hooves: 100,
+      topline: 100,
+    };
     expect(calculateConformationScore(maxes)).toBe(100);
   });
 });
@@ -199,6 +207,18 @@ describe('getConformationAgeClass', () => {
   test('CONFORMATION_AGE_CLASSES has 5 entries', () => {
     expect(Object.keys(CONFORMATION_AGE_CLASSES)).toHaveLength(5);
   });
+
+  test('age -1 (negative) → Weanling (guarded, not SENIOR)', () => {
+    expect(getConformationAgeClass(-1)).toBe(CONFORMATION_AGE_CLASSES.WEANLING);
+  });
+
+  test('NaN → Weanling (guarded, not SENIOR)', () => {
+    expect(getConformationAgeClass(NaN)).toBe(CONFORMATION_AGE_CLASSES.WEANLING);
+  });
+
+  test('Infinity → Weanling (guarded, not SENIOR)', () => {
+    expect(getConformationAgeClass(Infinity)).toBe(CONFORMATION_AGE_CLASSES.WEANLING);
+  });
 });
 
 // ---------------------------------------------------------------------------
@@ -207,101 +227,109 @@ describe('getConformationAgeClass', () => {
 
 describe('calculateSynergy', () => {
   // Calm temperament
-  test('calm + gentle → 110 (beneficial)', () => {
-    expect(calculateSynergy('calm', 'gentle')).toBe(110);
+  // Synergy values are on a [0, 100] scale (normalized from PRD-03 §3.6 0.80–1.15 range).
+  // Formula: Math.round((oldMultiplier * 100 - 80) / 35 * 100)
+
+  test('calm + gentle → 86 (beneficial)', () => {
+    expect(calculateSynergy('calm', 'gentle')).toBe(86);
   });
 
-  test('calm + patient → 110 (beneficial)', () => {
-    expect(calculateSynergy('calm', 'patient')).toBe(110);
+  test('calm + patient → 86 (beneficial)', () => {
+    expect(calculateSynergy('calm', 'patient')).toBe(86);
   });
 
-  test('calm + calm → 110 (beneficial)', () => {
-    expect(calculateSynergy('calm', 'calm')).toBe(110);
+  test('calm + calm → 86 (beneficial)', () => {
+    expect(calculateSynergy('calm', 'calm')).toBe(86);
   });
 
-  test('calm + energetic → 88 (detrimental)', () => {
-    expect(calculateSynergy('calm', 'energetic')).toBe(88);
+  test('calm + energetic → 23 (detrimental)', () => {
+    expect(calculateSynergy('calm', 'energetic')).toBe(23);
   });
 
-  test('calm + strict → 88 (detrimental)', () => {
-    expect(calculateSynergy('calm', 'strict')).toBe(88);
+  test('calm + strict → 23 (detrimental)', () => {
+    expect(calculateSynergy('calm', 'strict')).toBe(23);
+  });
+
+  // Title-case temperament (as stored in DB) should match lowercase table
+  test('Calm (title-case from DB) + gentle → 86 (beneficial)', () => {
+    expect(calculateSynergy('Calm', 'gentle')).toBe(86);
   });
 
   // Spirited temperament
-  test('spirited + energetic → 112 (beneficial)', () => {
-    expect(calculateSynergy('spirited', 'energetic')).toBe(112);
+  test('spirited + energetic → 91 (beneficial)', () => {
+    expect(calculateSynergy('spirited', 'energetic')).toBe(91);
   });
 
-  test('spirited + confident → 112 (beneficial)', () => {
-    expect(calculateSynergy('spirited', 'confident')).toBe(112);
+  test('spirited + confident → 91 (beneficial)', () => {
+    expect(calculateSynergy('spirited', 'confident')).toBe(91);
   });
 
-  test('spirited + strict → 112 (beneficial)', () => {
-    expect(calculateSynergy('spirited', 'strict')).toBe(112);
+  test('spirited + strict → 91 (beneficial)', () => {
+    expect(calculateSynergy('spirited', 'strict')).toBe(91);
   });
 
-  test('spirited + gentle → 88 (detrimental)', () => {
-    expect(calculateSynergy('spirited', 'gentle')).toBe(88);
+  test('spirited + gentle → 23 (detrimental)', () => {
+    expect(calculateSynergy('spirited', 'gentle')).toBe(23);
   });
 
-  test('spirited + patient → 88 (detrimental)', () => {
-    expect(calculateSynergy('spirited', 'patient')).toBe(88);
+  test('spirited + patient → 23 (detrimental)', () => {
+    expect(calculateSynergy('spirited', 'patient')).toBe(23);
   });
 
   // Nervous temperament
-  test('nervous + gentle → 115 (beneficial)', () => {
-    expect(calculateSynergy('nervous', 'gentle')).toBe(115);
+  test('nervous + gentle → 100 (beneficial)', () => {
+    expect(calculateSynergy('nervous', 'gentle')).toBe(100);
   });
 
-  test('nervous + patient → 115 (beneficial)', () => {
-    expect(calculateSynergy('nervous', 'patient')).toBe(115);
+  test('nervous + patient → 100 (beneficial)', () => {
+    expect(calculateSynergy('nervous', 'patient')).toBe(100);
   });
 
-  test('nervous + calm → 115 (beneficial)', () => {
-    expect(calculateSynergy('nervous', 'calm')).toBe(115);
+  test('nervous + calm → 100 (beneficial)', () => {
+    expect(calculateSynergy('nervous', 'calm')).toBe(100);
   });
 
-  test('nervous + energetic → 85 (detrimental)', () => {
-    expect(calculateSynergy('nervous', 'energetic')).toBe(85);
+  test('nervous + energetic → 14 (detrimental)', () => {
+    expect(calculateSynergy('nervous', 'energetic')).toBe(14);
   });
 
-  test('nervous + strict → 85 (detrimental)', () => {
-    expect(calculateSynergy('nervous', 'strict')).toBe(85);
+  test('nervous + strict → 14 (detrimental)', () => {
+    expect(calculateSynergy('nervous', 'strict')).toBe(14);
   });
 
-  test('nervous + confident → 85 (detrimental)', () => {
-    expect(calculateSynergy('nervous', 'confident')).toBe(85);
+  test('nervous + confident → 14 (detrimental)', () => {
+    expect(calculateSynergy('nervous', 'confident')).toBe(14);
   });
 
   // Aggressive temperament
-  test('aggressive + strict → 108 (beneficial)', () => {
-    expect(calculateSynergy('aggressive', 'strict')).toBe(108);
+  test('aggressive + strict → 80 (beneficial)', () => {
+    expect(calculateSynergy('aggressive', 'strict')).toBe(80);
   });
 
-  test('aggressive + confident → 108 (beneficial)', () => {
-    expect(calculateSynergy('aggressive', 'confident')).toBe(108);
+  test('aggressive + confident → 80 (beneficial)', () => {
+    expect(calculateSynergy('aggressive', 'confident')).toBe(80);
   });
 
-  test('aggressive + gentle → 92 (detrimental)', () => {
-    expect(calculateSynergy('aggressive', 'gentle')).toBe(92);
+  test('aggressive + gentle → 34 (detrimental)', () => {
+    expect(calculateSynergy('aggressive', 'gentle')).toBe(34);
   });
 
-  test('aggressive + patient → 92 (detrimental)', () => {
-    expect(calculateSynergy('aggressive', 'patient')).toBe(92);
+  test('aggressive + patient → 34 (detrimental)', () => {
+    expect(calculateSynergy('aggressive', 'patient')).toBe(34);
   });
 
   // Neutral
-  test('calm + unknown personality → 80 (neutral)', () => {
-    expect(calculateSynergy('calm', 'mysterious')).toBe(80);
+  test('calm + unknown personality → 0 (neutral)', () => {
+    expect(calculateSynergy('calm', 'mysterious')).toBe(0);
   });
 
-  test('unknown temperament → 80 (neutral)', () => {
-    expect(calculateSynergy('stoic', 'gentle')).toBe(80);
+  test('unknown temperament → 0 (neutral)', () => {
+    expect(calculateSynergy('stoic', 'gentle')).toBe(0);
   });
 
-  test('null/undefined temperament → 80 (neutral)', () => {
-    expect(calculateSynergy(null, 'gentle')).toBe(80);
-    expect(calculateSynergy(undefined, 'patient')).toBe(80);
+  test('null/undefined temperament → 0 (neutral)', () => {
+    expect(calculateSynergy(null, 'gentle')).toBe(0);
+    expect(calculateSynergy(undefined, 'patient')).toBe(0);
   });
 });
 
@@ -322,11 +350,11 @@ describe('calculateConformationShowScore', () => {
     id: 10,
     name: 'Alice',
     showHandlingSkill: 'expert', // → 80
-    personality: 'gentle',       // calm + gentle → 110
+    personality: 'gentle', // calm + gentle → 110
   };
 
-  // className must be a real CONFORMATION_CLASSES value — use Mares
-  const validClass = 'Mares';
+  // Use the schema constant instead of a string literal — immune to schema renames
+  const validClass = CONFORMATION_CLASSES.MARES;
 
   test('produces an integer finalScore in [0, 100]', () => {
     const result = calculateConformationShowScore(horse, groom, validClass);
@@ -340,15 +368,15 @@ describe('calculateConformationShowScore', () => {
      * conformationScore = 73 (mean of FULL_CONFORMATION_SCORES)
      * handlerScore      = 80 (expert)
      * bondScore         = 60
-     * synergyScore      = 110 (calm + gentle)
+     * synergyScore      = 86 (calm + gentle, normalized [0,100])
      *
-     * rawScore = 73*0.65 + 80*0.20 + 60*0.08 + 110*0.07
-     *          = 47.45   + 16.00   + 4.80    + 7.70
-     *          = 75.95
-     * finalScore = Math.round(75.95) = 76
+     * rawScore = 73*0.65 + 80*0.20 + 60*0.08 + 86*0.07
+     *          = 47.45   + 16.00   + 4.80    + 6.02
+     *          = 74.27
+     * finalScore = Math.round(74.27) = 74
      */
     const result = calculateConformationShowScore(horse, groom, validClass);
-    expect(result.finalScore).toBe(76);
+    expect(result.finalScore).toBe(74);
   });
 
   test('breakdown contains all expected fields', () => {
@@ -365,26 +393,35 @@ describe('calculateConformationShowScore', () => {
     const horseNoBond = { ...horse, bondScore: 0 };
     const result = calculateConformationShowScore(horseNoBond, groom, validClass);
     /**
-     * rawScore = 73*0.65 + 80*0.20 + 0*0.08 + 110*0.07
-     *          = 47.45   + 16.00   + 0.00   + 7.70
-     *          = 71.15 → 71
+     * rawScore = 73*0.65 + 80*0.20 + 0*0.08 + 86*0.07
+     *          = 47.45   + 16.00   + 0.00   + 6.02
+     *          = 69.47 → 69
      */
-    expect(result.finalScore).toBe(71);
+    expect(result.finalScore).toBe(69);
     expect(result.breakdown.bondScore).toBe(0);
   });
 
-  test('maximum possible score (all 100, master handler, nervous+gentle → 115)', () => {
+  test('maximum possible score (all 100, master handler, nervous+gentle → 100)', () => {
     const perfectHorse = {
       id: 2,
       name: 'Perfect',
-      conformationScores: { head: 100, neck: 100, shoulders: 100, back: 100, hindquarters: 100, legs: 100, hooves: 100, topline: 100 },
+      conformationScores: {
+        head: 100,
+        neck: 100,
+        shoulders: 100,
+        back: 100,
+        hindquarters: 100,
+        legs: 100,
+        hooves: 100,
+        topline: 100,
+      },
       bondScore: 100,
       temperament: 'nervous',
     };
     const perfectGroom = { id: 11, name: 'Bob', showHandlingSkill: 'master', personality: 'gentle' };
     /**
-     * rawScore = 100*0.65 + 100*0.20 + 100*0.08 + 115*0.07
-     *          = 65 + 20 + 8 + 8.05 = 101.05 → clamped to 100
+     * rawScore = 100*0.65 + 100*0.20 + 100*0.08 + 100*0.07
+     *          = 65 + 20 + 8 + 7 = 100
      */
     const result = calculateConformationShowScore(perfectHorse, perfectGroom, validClass);
     expect(result.finalScore).toBe(100);
@@ -393,13 +430,23 @@ describe('calculateConformationShowScore', () => {
   test('null conformationScores defaults gracefully (returns 50 neutral)', () => {
     const horseNoScores = { ...horse, conformationScores: null };
     const result = calculateConformationShowScore(horseNoScores, groom, validClass);
-    // conformationScore = 50, handler = 80, bond = 60, synergy = 110
-    // 50*0.65 + 80*0.20 + 60*0.08 + 110*0.07 = 32.5+16+4.8+7.7 = 61 → 61
-    expect(result.finalScore).toBe(61);
+    // conformationScore = 50, handler = 80, bond = 60, synergy = 86 (calm+gentle)
+    // 50*0.65 + 80*0.20 + 60*0.08 + 86*0.07 = 32.5+16+4.8+6.02 = 59.32 → 59
+    expect(result.finalScore).toBe(59);
   });
 
   test('throws and returns 0 for invalid class name', () => {
     const result = calculateConformationShowScore(horse, groom, 'InvalidClass');
+    expect(result.finalScore).toBe(0);
+  });
+
+  test('returns 0 for null horse', () => {
+    const result = calculateConformationShowScore(null, groom, validClass);
+    expect(result.finalScore).toBe(0);
+  });
+
+  test('returns 0 for null groom', () => {
+    const result = calculateConformationShowScore(horse, null, validClass);
     expect(result.finalScore).toBe(0);
   });
 
@@ -438,7 +485,7 @@ describe('validateConformationEntry', () => {
     personality: 'gentle',
   };
 
-  const validClass = 'Mares';
+  const validClass = CONFORMATION_CLASSES.MARES;
 
   const mockAssignment = {
     id: 999,
@@ -470,9 +517,7 @@ describe('validateConformationEntry', () => {
     prisma.groomAssignment.findFirst.mockResolvedValue(null);
     const result = await validateConformationEntry(horse, groom, validClass, userId);
     expect(result.valid).toBe(false);
-    expect(result.errors).toContain(
-      'Groom must be assigned to this horse before entering conformation shows',
-    );
+    expect(result.errors).toContain('Groom must be assigned to this horse before entering conformation shows');
   });
 
   test('rejects when groom assigned too recently (< 2 days)', async () => {
@@ -568,7 +613,7 @@ describe('CONFORMATION_SHOW_CONFIG', () => {
   });
 
   test('HANDLER_WEIGHT is 0.20', () => {
-    expect(CONFORMATION_SHOW_CONFIG.HANDLER_WEIGHT).toBe(0.20);
+    expect(CONFORMATION_SHOW_CONFIG.HANDLER_WEIGHT).toBe(0.2);
   });
 
   test('BOND_WEIGHT is 0.08', () => {

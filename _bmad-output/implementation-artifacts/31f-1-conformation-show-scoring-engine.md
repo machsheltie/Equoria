@@ -1,6 +1,6 @@
 # Story 31F.1: Conformation Show Scoring Engine
 
-Status: review
+Status: done
 
 ## Story
 
@@ -251,3 +251,47 @@ None — all tasks implemented cleanly on first pass.
 ### Change Log
 
 - 2026-04-03: Implemented Story 31F-1 — conformation show scoring engine (65/20/8/7 formula, age classes, synergy table, 77 tests)
+
+---
+
+### Review Findings
+
+_Code review conducted 2026-04-06 — 3 layers (Blind Hunter, Edge Case Hunter, Acceptance Auditor)_
+
+#### Decision-Needed
+
+- [x] [Review][Decision] Synergy output range 80-115 violates AC1 "returning 0-100 scale" — SYNERGY_TABLE beneficialScore=110/112/115 and NEUTRAL=80; AC1 specifies synergyScore on 0-100 scale; the neutral floor of 80 means synergy never contributes less than 5.6 points (7%×80). Decide: (A) normalize output to [0,100] by rescaling (e.g., map 80→0, 115→100), or (B) acknowledge 80-115 as intentional per PRD-03 §3.6 (add inline comment citing PRD). [conformationShowService.mjs:80-107]
+
+- [x] [Review][Decision] SYNERGY_TABLE references 'confident' and 'calm' groom personalities that don't exist in GROOM_PERSONALITIES schema (only gentle/energetic/patient/strict are valid) — spirited.beneficial and nervous.detrimental include 'confident'; calm.beneficial and nervous.beneficial include 'calm'. These entries can never trigger for real groom data. Decide: (A) remove 'confident'/'calm' from SYNERGY_TABLE, or (B) add them to GROOM_PERSONALITIES in schema. [conformationShowService.mjs:80-107]
+
+#### Patches
+
+- [x] [Review][Patch] Critical: `horse.health` field name mismatch — Prisma schema column is `healthStatus` but service reads `horse.health`; every real DB horse will have `horse.health = undefined`, making health check always reject [conformationShowService.mjs:346]
+
+- [x] [Review][Patch] Critical: Temperament case mismatch — SYNERGY_TABLE keys are lowercase ('calm','spirited','nervous','aggressive') but HORSE_TEMPERAMENT stores title-case ('Calm','Spirited','Nervous','Aggressive'); `SYNERGY_TABLE[horse.temperament]` always returns undefined; all synergy lookups return NEUTRAL (80) in production [conformationShowService.mjs:173]
+
+- [x] [Review][Patch] `getConformationAgeClass` not guarded against NaN input — `NaN < 1` is false; function falls through all branches and returns SENIOR for any non-numeric age [conformationShowService.mjs:157-163]
+
+- [x] [Review][Patch] `assignment.createdAt` null/undefined not guarded — `new Date(undefined).getTime()` returns NaN; `daysSinceAssignment` becomes NaN; `NaN < 2` is false so minimum-days check silently passes for invalid assignment records [conformationShowService.mjs:327-328]
+
+- [x] [Review][Patch] `horse.bondScore` not clamped before multiplication — values > 100 inflate rawScore beyond spec intent; clamp to [0,100] before applying weight [conformationShowService.mjs:211]
+
+- [x] [Review][Patch] No null guard for `horse`/`groom` in `validateConformationEntry` — null/undefined arguments cause TypeError caught by outer catch, returning generic 'Validation error occurred' with no diagnostic info [conformationShowService.mjs:307]
+
+- [x] [Review][Patch] No null guard for `horse`/`groom` in `calculateConformationShowScore` — null arguments throw TypeError caught by catch, returning `finalScore: 0` silently [conformationShowService.mjs:196]
+
+- [x] [Review][Patch] `groom.id`/`horse.id` undefined not guarded before Prisma query — `findFirst({ where: { groomId: undefined, foalId: undefined } })` has undefined behavior; guard with explicit id checks [conformationShowService.mjs:315-322]
+
+- [x] [Review][Patch] Test: Use `CONFORMATION_CLASSES.MARES` constant instead of string literal `'Mares'` — schema string rename would silently decouple test from live constant [conformationShowScoring.test.mjs:329,441]
+
+- [x] [Review][Patch] Test: Add `getConformationAgeClass(NaN)` and `getConformationAgeClass(-1)` edge case tests — both return SENIOR (incorrect) with no guard [conformationShowScoring.test.mjs:154-202]
+
+- [x] [Review][Patch] Test: Add `calculateConformationShowScore(null, groom, validClass)` and `calculateConformationShowScore(horse, null, validClass)` tests — null objects throw TypeError caught silently as finalScore=0 [conformationShowScoring.test.mjs:330-433]
+
+#### Deferred
+
+- [x] [Review][Defer] `finalScore: 0` returned on error is indistinguishable from a genuine 0 score — pre-existing pattern across service layer; architectural decision needed at a higher level [conformationShowService.mjs:248-269] — deferred, pre-existing codebase pattern
+
+- [x] [Review][Defer] `CONFORMATION_SHOW_CONFIG` not Object.freeze'd — mutable exported config consistent with all other config objects in codebase [conformationShowService.mjs:27] — deferred, pre-existing pattern
+
+- [x] [Review][Defer] `synergyScore` in breakdown can exceed 100 (up to 115) — misleading to downstream consumers; blocked by decision on synergy scale above [conformationShowService.mjs:228-238] — deferred pending decision on synergy range

@@ -26,7 +26,7 @@ import { calculateOverallConformation } from '../modules/horses/services/conform
 /** Scoring weights per spec (must sum to 1.00) */
 export const CONFORMATION_SHOW_CONFIG = {
   CONFORMATION_WEIGHT: 0.65,
-  HANDLER_WEIGHT: 0.20,
+  HANDLER_WEIGHT: 0.2,
   BOND_WEIGHT: 0.08,
   TEMPERAMENT_WEIGHT: 0.07,
 
@@ -77,34 +77,37 @@ export const CONFORMATION_AGE_CLASSES = {
 // Returns 0-100+ scale value; the finalScore formula clamps the aggregate to [0, 100].
 // ---------------------------------------------------------------------------
 
+// Synergy scores are on a [0, 100] scale (normalized from PRD-03 §3.6 0.80–1.15 multiplier range).
+// Formula: Math.round((oldMultiplier * 100 - 80) / 35 * 100)
+// neutral (0.80) → 0, nervous+beneficial (1.15) → 100
 const SYNERGY_TABLE = {
   calm: {
     beneficial: ['gentle', 'patient', 'calm'],
     detrimental: ['energetic', 'strict'],
-    beneficialScore: 110,
-    detrimentalScore: 88,
+    beneficialScore: 86,
+    detrimentalScore: 23,
   },
   spirited: {
     beneficial: ['energetic', 'confident', 'strict'],
     detrimental: ['gentle', 'patient'],
-    beneficialScore: 112,
-    detrimentalScore: 88,
+    beneficialScore: 91,
+    detrimentalScore: 23,
   },
   nervous: {
     beneficial: ['gentle', 'patient', 'calm'],
     detrimental: ['energetic', 'strict', 'confident'],
-    beneficialScore: 115,
-    detrimentalScore: 85,
+    beneficialScore: 100,
+    detrimentalScore: 14,
   },
   aggressive: {
     beneficial: ['strict', 'confident'],
     detrimental: ['gentle', 'patient'],
-    beneficialScore: 108,
-    detrimentalScore: 92,
+    beneficialScore: 80,
+    detrimentalScore: 34,
   },
 };
 
-const NEUTRAL_SYNERGY_SCORE = 80;
+const NEUTRAL_SYNERGY_SCORE = 0;
 
 // ---------------------------------------------------------------------------
 // Pure scoring functions
@@ -135,7 +138,9 @@ export function calculateConformationScore(conformationScores) {
     }
     return calculateOverallConformation(conformationScores);
   } catch (error) {
-    logger.error(`[conformationShowService] Error calculating conformation score: ${error.message}`);
+    logger.error(
+      `[conformationShowService] Error calculating conformation score: ${error.message}`,
+    );
     return 50;
   }
 }
@@ -155,10 +160,21 @@ export function getHandlerScore(showHandlingSkill) {
  * @returns {string} One of CONFORMATION_AGE_CLASSES values
  */
 export function getConformationAgeClass(ageInYears) {
-  if (ageInYears < 1) return CONFORMATION_AGE_CLASSES.WEANLING;
-  if (ageInYears < 2) return CONFORMATION_AGE_CLASSES.YEARLING;
-  if (ageInYears < 3) return CONFORMATION_AGE_CLASSES.YOUNGSTOCK;
-  if (ageInYears < 6) return CONFORMATION_AGE_CLASSES.JUNIOR;
+  if (!Number.isFinite(ageInYears) || ageInYears < 0) {
+    return CONFORMATION_AGE_CLASSES.WEANLING;
+  }
+  if (ageInYears < 1) {
+    return CONFORMATION_AGE_CLASSES.WEANLING;
+  }
+  if (ageInYears < 2) {
+    return CONFORMATION_AGE_CLASSES.YEARLING;
+  }
+  if (ageInYears < 3) {
+    return CONFORMATION_AGE_CLASSES.YOUNGSTOCK;
+  }
+  if (ageInYears < 6) {
+    return CONFORMATION_AGE_CLASSES.JUNIOR;
+  }
   return CONFORMATION_AGE_CLASSES.SENIOR;
 }
 
@@ -171,10 +187,18 @@ export function getConformationAgeClass(ageInYears) {
  * @returns {number} Synergy score (80-115 typical range)
  */
 export function calculateSynergy(temperament, personality) {
-  const config = SYNERGY_TABLE[temperament];
-  if (!config) return NEUTRAL_SYNERGY_SCORE;
-  if (config.beneficial.includes(personality)) return config.beneficialScore;
-  if (config.detrimental.includes(personality)) return config.detrimentalScore;
+  // Normalize temperament to lowercase — DB stores title-case ('Calm') but table uses lowercase
+  const config = SYNERGY_TABLE[typeof temperament === 'string' ? temperament.toLowerCase() : ''];
+  if (!config) {
+    return NEUTRAL_SYNERGY_SCORE;
+  }
+  const p = typeof personality === 'string' ? personality : '';
+  if (config.beneficial.includes(p)) {
+    return config.beneficialScore;
+  }
+  if (config.detrimental.includes(p)) {
+    return config.detrimentalScore;
+  }
   return NEUTRAL_SYNERGY_SCORE;
 }
 
@@ -195,6 +219,9 @@ export function calculateSynergy(temperament, personality) {
  */
 export function calculateConformationShowScore(horse, groom, className) {
   try {
+    if (!horse || !groom) {
+      throw new Error('horse and groom are required');
+    }
     if (!isValidConformationClass(className)) {
       throw new Error(`${className} is not a valid conformation show class`);
     }
@@ -207,8 +234,8 @@ export function calculateConformationShowScore(horse, groom, className) {
     const handlerScore = getHandlerScore(groom.showHandlingSkill);
     const handlerComponent = handlerScore * CONFORMATION_SHOW_CONFIG.HANDLER_WEIGHT;
 
-    // 3. Bond component (8%) — horse.bondScore used directly (0-100)
-    const bondScore = horse.bondScore ?? 0;
+    // 3. Bond component (8%) — horse.bondScore used directly (0-100), clamped to valid range
+    const bondScore = Math.min(100, Math.max(0, horse.bondScore ?? 0));
     const bondComponent = bondScore * CONFORMATION_SHOW_CONFIG.BOND_WEIGHT;
 
     // 4. Temperament synergy component (7%)
@@ -244,7 +271,6 @@ export function calculateConformationShowScore(horse, groom, className) {
         temperament: CONFORMATION_SHOW_CONFIG.TEMPERAMENT_WEIGHT,
       },
     };
-
   } catch (error) {
     logger.error(`[conformationShowService] Error calculating show score: ${error.message}`);
     return {
@@ -295,6 +321,16 @@ export function calculateConformationShowScore(horse, groom, className) {
  */
 export async function validateConformationEntry(horse, groom, className, userId) {
   try {
+    if (!horse || !groom) {
+      return {
+        valid: false,
+        errors: ['Horse and groom are required'],
+        warnings: [],
+        assignment: null,
+        ageClass: null,
+      };
+    }
+
     const errors = [];
     const warnings = [];
 
@@ -311,25 +347,32 @@ export async function validateConformationEntry(horse, groom, className, userId)
       errors.push('You do not own this groom');
     }
 
-    // Groom assignment to horse
-    const assignment = await prisma.groomAssignment.findFirst({
-      where: {
-        groomId: groom.id,
-        foalId: horse.id,
-        userId,
-        isActive: true,
-      },
-    });
+    // Groom assignment to horse — guard undefined IDs before querying
+    let assignment = null;
+    if (horse.id != null && groom.id != null) {
+      assignment = await prisma.groomAssignment.findFirst({
+        where: {
+          groomId: groom.id,
+          foalId: horse.id,
+          userId,
+          isActive: true,
+        },
+      });
+    }
 
     if (!assignment) {
       errors.push('Groom must be assigned to this horse before entering conformation shows');
     } else {
-      const assignmentDate = new Date(assignment.createdAt);
-      const daysSinceAssignment = (Date.now() - assignmentDate.getTime()) / (1000 * 60 * 60 * 24);
-      if (daysSinceAssignment < CONFORMATION_SHOW_CONFIG.MIN_GROOM_ASSIGNMENT_DAYS) {
-        errors.push(
-          `Groom must be assigned to horse for at least ${CONFORMATION_SHOW_CONFIG.MIN_GROOM_ASSIGNMENT_DAYS} days before show entry`,
-        );
+      const createdAtTime = assignment.createdAt ? new Date(assignment.createdAt).getTime() : NaN;
+      if (!Number.isFinite(createdAtTime)) {
+        errors.push('Groom assignment record is missing a valid date');
+      } else {
+        const daysSinceAssignment = (Date.now() - createdAtTime) / (1000 * 60 * 60 * 24);
+        if (daysSinceAssignment < CONFORMATION_SHOW_CONFIG.MIN_GROOM_ASSIGNMENT_DAYS) {
+          errors.push(
+            `Groom must be assigned to horse for at least ${CONFORMATION_SHOW_CONFIG.MIN_GROOM_ASSIGNMENT_DAYS} days before show entry`,
+          );
+        }
       }
     }
 
@@ -343,7 +386,9 @@ export async function validateConformationEntry(horse, groom, className, userId)
     const ageClass = age >= 0 ? getConformationAgeClass(age) : null;
 
     // Health — "Excellent" or "Good" map to healthy; all others rejected — AC3
-    if (horse.health !== 'Excellent' && horse.health !== 'Good') {
+    // Note: Prisma schema field is `healthStatus`; handle both for compatibility
+    const healthValue = horse.healthStatus ?? horse.health;
+    if (healthValue !== 'Excellent' && healthValue !== 'Good') {
       errors.push('Horse must be healthy (Excellent or Good health) to enter conformation shows');
     }
 
@@ -364,7 +409,6 @@ export async function validateConformationEntry(horse, groom, className, userId)
       assignment,
       ageClass,
     };
-
   } catch (error) {
     logger.error(`[conformationShowService] Error validating conformation entry: ${error.message}`);
     return {

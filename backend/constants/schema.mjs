@@ -149,6 +149,8 @@ export const GROOM_PERSONALITIES = {
   ENERGETIC: 'energetic',
   PATIENT: 'patient',
   STRICT: 'strict',
+  CONFIDENT: 'confident',
+  CALM: 'calm',
 };
 
 export const GROOM_PERSONALITY_VALUES = Object.values(GROOM_PERSONALITIES);
@@ -245,22 +247,25 @@ export const SCORE_RANGES = {
 /**
  * Validation helper functions
  */
-export const isValidHorseSex = (sex) => HORSE_SEX_VALUES.includes(sex);
-export const isValidTemperament = (temperament) => HORSE_TEMPERAMENT_VALUES.includes(temperament);
-export const isValidHealthStatus = (status) => HORSE_HEALTH_STATUS_VALUES.includes(status);
-export const isValidDiscipline = (discipline) => DISCIPLINE_VALUES.includes(discipline);
-export const isValidPlacement = (placement) => COMPETITION_PLACEMENT_VALUES.includes(placement);
-export const isValidGroomSpecialty = (specialty) => GROOM_SPECIALTY_VALUES.includes(specialty);
-export const isValidGroomSkillLevel = (level) => GROOM_SKILL_LEVEL_VALUES.includes(level);
-export const isValidGroomPersonality = (personality) => GROOM_PERSONALITY_VALUES.includes(personality);
-export const isValidInteractionType = (type) => GROOM_INTERACTION_TYPE_VALUES.includes(type);
-export const isValidHorseStat = (stat) => HORSE_STAT_VALUES.includes(stat);
+export const isValidHorseSex = sex => HORSE_SEX_VALUES.includes(sex);
+export const isValidTemperament = temperament => HORSE_TEMPERAMENT_VALUES.includes(temperament);
+export const isValidHealthStatus = status => HORSE_HEALTH_STATUS_VALUES.includes(status);
+export const isValidDiscipline = discipline => DISCIPLINE_VALUES.includes(discipline);
+export const isValidPlacement = placement => COMPETITION_PLACEMENT_VALUES.includes(placement);
+export const isValidGroomSpecialty = specialty => GROOM_SPECIALTY_VALUES.includes(specialty);
+export const isValidGroomSkillLevel = level => GROOM_SKILL_LEVEL_VALUES.includes(level);
+export const isValidGroomPersonality = personality =>
+  GROOM_PERSONALITY_VALUES.includes(personality);
+export const isValidInteractionType = type => GROOM_INTERACTION_TYPE_VALUES.includes(type);
+export const isValidHorseStat = stat => HORSE_STAT_VALUES.includes(stat);
 
 /**
  * Age validation helpers
  */
-export const isTrainingAge = (age) => age >= TRAINING_LIMITS.MIN_AGE && age <= TRAINING_LIMITS.MAX_AGE;
-export const isCompetitionAge = (age) => age >= COMPETITION_LIMITS.MIN_AGE && age <= COMPETITION_LIMITS.MAX_AGE;
+export const isTrainingAge = age =>
+  age >= TRAINING_LIMITS.MIN_AGE && age <= TRAINING_LIMITS.MAX_AGE;
+export const isCompetitionAge = age =>
+  age >= COMPETITION_LIMITS.MIN_AGE && age <= COMPETITION_LIMITS.MAX_AGE;
 export const isBreedingAge = (age, sex) => {
   if (sex === HORSE_SEX.STALLION) {
     return age >= BREEDING_LIMITS.MIN_STALLION_AGE && age <= BREEDING_LIMITS.MAX_STALLION_AGE;
@@ -270,25 +275,33 @@ export const isBreedingAge = (age, sex) => {
   }
   return false;
 };
-export const isFoalAge = (age) => age < FOAL_LIMITS.MAX_TRAIT_DISCOVERY_AGE;
-export const isAdultAge = (age) => age >= FOAL_LIMITS.ADULT_AGE;
+export const isFoalAge = age => age < FOAL_LIMITS.MAX_TRAIT_DISCOVERY_AGE;
+export const isAdultAge = age => age >= FOAL_LIMITS.ADULT_AGE;
 
 /**
  * Score validation helpers
  */
-export const isValidScore = (score) => score >= SCORE_RANGES.MIN_SCORE && score <= SCORE_RANGES.MAX_SCORE;
-export const isValidDisciplineScore = (score) => score >= SCORE_RANGES.MIN_DISCIPLINE_SCORE && score <= SCORE_RANGES.MAX_DISCIPLINE_SCORE;
+export const isValidScore = score =>
+  score >= SCORE_RANGES.MIN_SCORE && score <= SCORE_RANGES.MAX_SCORE;
+export const isValidDisciplineScore = score =>
+  score >= SCORE_RANGES.MIN_DISCIPLINE_SCORE && score <= SCORE_RANGES.MAX_DISCIPLINE_SCORE;
 
 /**
  * User progression helpers
  */
-export const calculateXpForLevel = (level) => {
-  if (level <= 1) { return 0; }
-  return Math.floor(USER_PROGRESSION.LEVEL_XP_BASE * Math.pow(USER_PROGRESSION.LEVEL_XP_MULTIPLIER, level - 2));
+export const calculateXpForLevel = level => {
+  if (level <= 1) {
+    return 0;
+  }
+  return Math.floor(
+    USER_PROGRESSION.LEVEL_XP_BASE * Math.pow(USER_PROGRESSION.LEVEL_XP_MULTIPLIER, level - 2),
+  );
 };
 
-export const calculateLevelFromXp = (xp) => {
-  if (xp < 0) { return 1; }
+export const calculateLevelFromXp = xp => {
+  if (xp < 0) {
+    return 1;
+  }
 
   let level = 1;
   let totalXpSpent = 0;

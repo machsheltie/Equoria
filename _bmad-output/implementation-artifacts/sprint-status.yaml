@@ -1,5 +1,5 @@
 # generated: 2026-03-25
-# last_updated: 2026-04-06 22-6 custom game component library done
+# last_updated: 2026-04-06 31f-1 code review complete → done
 # project: Equoria
 # project_key: NOKEY
 # tracking_system: file-system
@@ -199,7 +199,7 @@ development_status:
 
   # Epic 31F: Conformation Show Handling
   epic-31f: in-progress
-  31f-1-conformation-show-scoring-engine: review
+  31f-1-conformation-show-scoring-engine: done
   31f-2-show-entry-and-eligibility: backlog
   31f-3-rewards-and-title-progression: backlog
   epic-31f-retrospective: optional
