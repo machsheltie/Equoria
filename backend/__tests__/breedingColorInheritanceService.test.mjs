@@ -487,11 +487,9 @@ describe('POST /api/v1/horses — breeding inheritance integration', () => {
   beforeAll(async () => {
     server = app.listen(0);
 
-    const breed = await prisma.breed.upsert({
-      where: { name: 'Arabian' },
-      update: {},
-      create: { name: 'Arabian', description: 'Arabian breed for inheritance tests' },
-    });
+    const breed =
+      (await prisma.breed.findFirst({ where: { name: 'Arabian' } })) ??
+      (await prisma.breed.create({ data: { name: 'Arabian', description: 'Arabian breed for inheritance tests' } }));
     breedId = breed.id;
 
     const hashedPassword = await bcrypt.hash(testUserData.password, 10);

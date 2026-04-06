@@ -30,15 +30,15 @@ describe('🔒 OWASP Top 10 - Comprehensive Security Tests', () => {
   let testHorse;
 
   beforeAll(async () => {
-    // Create test breed (upsert by name to avoid ID collision in test DB)
-    const testBreed = await prisma.breed.upsert({
-      where: { name: 'Test Breed' },
-      update: {},
-      create: {
-        name: 'Test Breed',
-        description: 'Test breed for OWASP security tests',
-      },
-    });
+    // Create test breed (findFirst + create to avoid ID collision in test DB)
+    const testBreed =
+      (await prisma.breed.findFirst({ where: { name: 'Test Breed' } })) ??
+      (await prisma.breed.create({
+        data: {
+          name: 'Test Breed',
+          description: 'Test breed for OWASP security tests',
+        },
+      }));
 
     // Create test user
     const hashedPassword = await bcrypt.hash('TestPassword123!', 12);
@@ -396,11 +396,11 @@ describe('🔒 OWASP Top 10 - Comprehensive Security Tests', () => {
           },
         });
 
-        const ownershipTestBreed = await prisma.breed.upsert({
-          where: { name: 'OWASP Test Breed' },
-          update: {},
-          create: { name: 'OWASP Test Breed', description: 'Breed for OWASP ownership tests' },
-        });
+        const ownershipTestBreed =
+          (await prisma.breed.findFirst({ where: { name: 'OWASP Test Breed' } })) ??
+          (await prisma.breed.create({
+            data: { name: 'OWASP Test Breed', description: 'Breed for OWASP ownership tests' },
+          }));
         const otherHorse = await prisma.horse.create({
           data: {
             name: 'Other User Horse',

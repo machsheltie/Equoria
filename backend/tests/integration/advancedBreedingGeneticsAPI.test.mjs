@@ -62,10 +62,8 @@ describe('🧬 Advanced Breeding Genetics API Integration', () => {
     // Find a canonical breed by name; fall back to upsert if not yet seeded in this DB
     testBreed = await prisma.breed.findFirst({ where: { name: 'Thoroughbred' } });
     if (!testBreed) {
-      testBreed = await prisma.breed.upsert({
-        where: { name: 'Thoroughbred' },
-        update: {},
-        create: {
+      testBreed = await prisma.breed.create({
+        data: {
           name: 'Thoroughbred',
           description: 'Test breed for genetics API tests',
         },

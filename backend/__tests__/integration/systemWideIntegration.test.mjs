@@ -36,10 +36,8 @@ describe('System-Wide Integration Tests', () => {
     // (test DB breeds have high IDs — don't rely on id <= 12)
     testBreed =
       (await prisma.breed.findFirst({ where: { name: 'Thoroughbred' } })) ??
-      (await prisma.breed.upsert({
-        where: { name: 'Thoroughbred' },
-        update: {},
-        create: { name: 'Thoroughbred', description: 'Test breed for integration testing' },
+      (await prisma.breed.create({
+        data: { name: 'Thoroughbred', description: 'Test breed for integration testing' },
       }));
 
     // Create test user for global tests

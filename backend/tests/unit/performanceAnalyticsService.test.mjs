@@ -49,15 +49,12 @@ describe('Performance Analytics Service', () => {
       lastName: testUser.lastName,
     };
 
-    // Create test breed (upsert to avoid collision with other test suites)
-    testBreed = await prisma.breed.upsert({
-      where: { name: 'Test Breed' },
-      update: {},
-      create: {
-        name: 'Test Breed',
-        description: 'Test breed for analytics',
-      },
-    });
+    // Create test breed (findFirst to avoid collision with other test suites)
+    testBreed =
+      (await prisma.breed.findFirst({ where: { name: 'Test Breed' } })) ??
+      (await prisma.breed.create({
+        data: { name: 'Test Breed', description: 'Test breed for analytics' },
+      }));
 
     // Create test show
     testShow = await prisma.show.create({
