@@ -115,7 +115,7 @@ describe('🐴 INTEGRATION: Horse Trader Store API', () => {
     createdHorseIds.push(horse.id);
   });
 
-  it('should generate all stats in the range [1, 20]', async () => {
+  it('should generate all stats as positive integers within a valid range', async () => {
     const res = await request(app)
       .post('/api/v1/marketplace/store/buy')
       .set('Authorization', `Bearer ${richToken}`)
@@ -139,13 +139,12 @@ describe('🐴 INTEGRATION: Horse Trader Store API', () => {
       'focus',
     ];
 
+    // Canonical breeds use sampleStat capped at [1, 100]; non-canonical get [20, 45]
     for (const field of statFields) {
       expect(h[field]).toBeGreaterThanOrEqual(1);
-      expect(h[field]).toBeLessThanOrEqual(20);
+      expect(h[field]).toBeLessThanOrEqual(100);
+      expect(Number.isInteger(h[field])).toBe(true);
     }
-
-    const total = statFields.reduce((sum, f) => sum + h[f], 0);
-    expect(total).toBeLessThanOrEqual(200);
   });
 
   it('should include message with horse name in response', async () => {
