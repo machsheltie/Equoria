@@ -24,7 +24,7 @@ import { calculateOverallConformation } from '../modules/horses/services/conform
 // ---------------------------------------------------------------------------
 
 /** Scoring weights per spec (must sum to 1.00) */
-export const CONFORMATION_SHOW_CONFIG = {
+export const CONFORMATION_SHOW_CONFIG = Object.freeze({
   CONFORMATION_WEIGHT: 0.65,
   HANDLER_WEIGHT: 0.2,
   BOND_WEIGHT: 0.08,
@@ -38,7 +38,7 @@ export const CONFORMATION_SHOW_CONFIG = {
    * Reject only age < 0 (negative age is invalid).
    */
   MIN_AGE: 0,
-};
+});
 
 // ---------------------------------------------------------------------------
 // showHandlingSkill → handler score (0-100) — AC5
@@ -275,6 +275,7 @@ export function calculateConformationShowScore(horse, groom, className) {
     logger.error(`[conformationShowService] Error calculating show score: ${error.message}`);
     return {
       finalScore: 0,
+      error: error.message,
       breakdown: {
         conformationScore: 0,
         conformationComponent: 0,

@@ -435,19 +435,27 @@ describe('calculateConformationShowScore', () => {
     expect(result.finalScore).toBe(59);
   });
 
-  test('throws and returns 0 for invalid class name', () => {
+  test('returns finalScore 0 with error field for invalid class name', () => {
     const result = calculateConformationShowScore(horse, groom, 'InvalidClass');
     expect(result.finalScore).toBe(0);
+    expect(result.error).toMatch(/not a valid conformation show class/i);
   });
 
-  test('returns 0 for null horse', () => {
+  test('returns finalScore 0 with error field for null horse', () => {
     const result = calculateConformationShowScore(null, groom, validClass);
     expect(result.finalScore).toBe(0);
+    expect(typeof result.error).toBe('string');
   });
 
-  test('returns 0 for null groom', () => {
+  test('returns finalScore 0 with error field for null groom', () => {
     const result = calculateConformationShowScore(horse, null, validClass);
     expect(result.finalScore).toBe(0);
+    expect(typeof result.error).toBe('string');
+  });
+
+  test('success path has no error field', () => {
+    const result = calculateConformationShowScore(horse, groom, validClass);
+    expect(result.error).toBeUndefined();
   });
 
   test('no random factor — same inputs always produce same score', () => {
@@ -626,5 +634,9 @@ describe('CONFORMATION_SHOW_CONFIG', () => {
 
   test('MIN_AGE is 0 (Weanlings allowed)', () => {
     expect(CONFORMATION_SHOW_CONFIG.MIN_AGE).toBe(0);
+  });
+
+  test('config is frozen — cannot be mutated at runtime', () => {
+    expect(Object.isFrozen(CONFORMATION_SHOW_CONFIG)).toBe(true);
   });
 });
