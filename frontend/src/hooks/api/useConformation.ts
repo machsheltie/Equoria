@@ -15,12 +15,13 @@ import { horsesApi } from '@/lib/api-client';
 export interface HorseConformation {
   head: number;
   neck: number;
-  shoulder: number;
+  shoulders: number;
   back: number;
   hindquarters: number;
   legs: number;
   hooves: number;
-  overall: number; // Calculated average
+  topline: number;
+  overallConformation: number;
 }
 
 export interface BreedAverages {
@@ -38,7 +39,10 @@ export function useHorseConformation(
 ): UseQueryResult<HorseConformation, Error> {
   return useQuery({
     queryKey: ['horse', String(horseId), 'conformation'],
-    queryFn: () => horsesApi.getConformation(horseId),
+    queryFn: async () => {
+      const response = await horsesApi.getConformation(horseId);
+      return response.conformationScores;
+    },
     enabled: horseId !== null && horseId !== undefined && horseId !== '',
     staleTime: 5 * 60 * 1000, // 5 minutes
     gcTime: 30 * 60 * 1000, // 30 minutes

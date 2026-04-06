@@ -94,12 +94,13 @@ const ConformationTab = ({ horseId, breedId }: ConformationTabProps) => {
   const regions = [
     { key: 'head', label: 'Head', score: conformation.head },
     { key: 'neck', label: 'Neck', score: conformation.neck },
-    { key: 'shoulder', label: 'Shoulder', score: conformation.shoulder },
+    { key: 'shoulders', label: 'Shoulders', score: conformation.shoulders },
     { key: 'back', label: 'Back', score: conformation.back },
     { key: 'hindquarters', label: 'Hindquarters', score: conformation.hindquarters },
     { key: 'legs', label: 'Legs', score: conformation.legs },
     { key: 'hooves', label: 'Hooves', score: conformation.hooves },
-    { key: 'overall', label: 'Overall', score: conformation.overall },
+    { key: 'topline', label: 'Topline', score: conformation.topline },
+    { key: 'overallConformation', label: 'Overall', score: conformation.overallConformation },
   ];
 
   const canShowComparison = showComparison && breedId && breedData && !breedError;

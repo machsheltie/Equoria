@@ -29,12 +29,13 @@ import { useHorseConformation, useBreedAverages } from '@/hooks/api/useConformat
 const mockConformation = {
   head: 85,
   neck: 78,
-  shoulder: 92,
+  shoulders: 92,
   back: 88,
   hindquarters: 90,
   legs: 82,
   hooves: 86,
-  overall: 86,
+  topline: 79,
+  overallConformation: 85,
 };
 
 const mockBreedData = {
@@ -43,12 +44,13 @@ const mockBreedData = {
   averages: {
     head: 75,
     neck: 73,
-    shoulder: 78,
+    shoulders: 78,
     back: 76,
     hindquarters: 77,
     legs: 74,
     hooves: 75,
-    overall: 75.4,
+    topline: 72,
+    overallConformation: 75,
   },
 };
 
@@ -199,15 +201,16 @@ describe('ConformationTab', () => {
       expect(screen.getByTestId('conformation-tab')).toBeInTheDocument();
       expect(screen.getByText('Conformation Scores')).toBeInTheDocument();
 
-      // Should have 8 score cards (7 regions + overall)
+      // Should have 9 score cards (8 regions + overall)
       expect(screen.getByTestId('conformation-score-card-head')).toBeInTheDocument();
       expect(screen.getByTestId('conformation-score-card-neck')).toBeInTheDocument();
-      expect(screen.getByTestId('conformation-score-card-shoulder')).toBeInTheDocument();
+      expect(screen.getByTestId('conformation-score-card-shoulders')).toBeInTheDocument();
       expect(screen.getByTestId('conformation-score-card-back')).toBeInTheDocument();
       expect(screen.getByTestId('conformation-score-card-hindquarters')).toBeInTheDocument();
       expect(screen.getByTestId('conformation-score-card-legs')).toBeInTheDocument();
       expect(screen.getByTestId('conformation-score-card-hooves')).toBeInTheDocument();
-      expect(screen.getByTestId('conformation-score-card-overall')).toBeInTheDocument();
+      expect(screen.getByTestId('conformation-score-card-topline')).toBeInTheDocument();
+      expect(screen.getByTestId('conformation-score-card-overallConformation')).toBeInTheDocument();
     });
 
     it('should display correct scores for each region', () => {
@@ -215,8 +218,8 @@ describe('ConformationTab', () => {
 
       expect(screen.getByTestId('score-display-head')).toHaveTextContent('85');
       expect(screen.getByTestId('score-display-neck')).toHaveTextContent('78');
-      expect(screen.getByTestId('score-display-shoulder')).toHaveTextContent('92');
-      expect(screen.getByTestId('score-display-overall')).toHaveTextContent('86');
+      expect(screen.getByTestId('score-display-shoulders')).toHaveTextContent('92');
+      expect(screen.getByTestId('score-display-overallConformation')).toHaveTextContent('85');
     });
 
     it('should display educational footer', () => {
@@ -364,12 +367,13 @@ describe('ConformationTab', () => {
         data: {
           head: 0,
           neck: 0,
-          shoulder: 0,
+          shoulders: 0,
           back: 0,
           hindquarters: 0,
           legs: 0,
           hooves: 0,
-          overall: 0,
+          topline: 0,
+          overallConformation: 0,
         },
         isLoading: false,
         error: null,
@@ -394,12 +398,13 @@ describe('ConformationTab', () => {
         data: {
           head: 100,
           neck: 100,
-          shoulder: 100,
+          shoulders: 100,
           back: 100,
           hindquarters: 100,
           legs: 100,
           hooves: 100,
-          overall: 100,
+          topline: 100,
+          overallConformation: 100,
         },
         isLoading: false,
         error: null,

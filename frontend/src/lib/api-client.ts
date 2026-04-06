@@ -878,14 +878,20 @@ export const horsesApi = {
     apiClient.put<HorseSummary>(`/api/v1/horses/${horseId}`, data),
   getConformation: (horseId: number | string) =>
     apiClient.get<{
-      head: number;
-      neck: number;
-      shoulder: number;
-      back: number;
-      hindquarters: number;
-      legs: number;
-      hooves: number;
-      overall: number;
+      horseId: number;
+      horseName: string;
+      breedId: number;
+      conformationScores: {
+        head: number;
+        neck: number;
+        shoulders: number;
+        back: number;
+        hindquarters: number;
+        legs: number;
+        hooves: number;
+        topline: number;
+        overallConformation: number;
+      };
     }>(`/api/v1/horses/${horseId}/conformation`),
   getBreedAverages: (breedId: number | string) =>
     apiClient.get<{
@@ -894,12 +900,13 @@ export const horsesApi = {
       averages: {
         head: number;
         neck: number;
-        shoulder: number;
+        shoulders: number;
         back: number;
         hindquarters: number;
         legs: number;
         hooves: number;
-        overall: number;
+        topline: number;
+        overallConformation: number;
       };
     }>(`/api/v1/breeds/${breedId}/conformation-averages`),
 };

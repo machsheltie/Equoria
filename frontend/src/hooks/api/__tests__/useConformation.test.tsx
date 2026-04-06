@@ -70,12 +70,13 @@ describe('useHorseConformation', () => {
       expect(result.current.data).toBeDefined();
       expect(result.current.data).toHaveProperty('head');
       expect(result.current.data).toHaveProperty('neck');
-      expect(result.current.data).toHaveProperty('shoulder');
+      expect(result.current.data).toHaveProperty('shoulders');
       expect(result.current.data).toHaveProperty('back');
       expect(result.current.data).toHaveProperty('hindquarters');
       expect(result.current.data).toHaveProperty('legs');
       expect(result.current.data).toHaveProperty('hooves');
-      expect(result.current.data).toHaveProperty('overall');
+      expect(result.current.data).toHaveProperty('topline');
+      expect(result.current.data).toHaveProperty('overallConformation');
     });
 
     it('should return scores in valid range (0-100)', async () => {
@@ -90,8 +91,8 @@ describe('useHorseConformation', () => {
       expect(data!.head).toBeLessThanOrEqual(100);
       expect(data!.neck).toBeGreaterThanOrEqual(0);
       expect(data!.neck).toBeLessThanOrEqual(100);
-      expect(data!.overall).toBeGreaterThanOrEqual(0);
-      expect(data!.overall).toBeLessThanOrEqual(100);
+      expect(data!.overallConformation).toBeGreaterThanOrEqual(0);
+      expect(data!.overallConformation).toBeLessThanOrEqual(100);
     });
 
     it('should calculate overall score as average of 7 regions', async () => {
@@ -105,14 +106,15 @@ describe('useHorseConformation', () => {
       const calculatedAverage =
         (data!.head +
           data!.neck +
-          data!.shoulder +
+          data!.shoulders +
           data!.back +
           data!.hindquarters +
           data!.legs +
-          data!.hooves) /
-        7;
+          data!.hooves +
+          data!.topline) /
+        8;
 
-      expect(data!.overall).toBeCloseTo(calculatedAverage, 1);
+      expect(data!.overallConformation).toBeCloseTo(calculatedAverage, 1);
     });
 
     it('should generate different scores for different horse IDs', async () => {
@@ -261,12 +263,13 @@ describe('useBreedAverages', () => {
       const { averages } = result.current.data!;
       expect(averages).toHaveProperty('head');
       expect(averages).toHaveProperty('neck');
-      expect(averages).toHaveProperty('shoulder');
+      expect(averages).toHaveProperty('shoulders');
       expect(averages).toHaveProperty('back');
       expect(averages).toHaveProperty('hindquarters');
       expect(averages).toHaveProperty('legs');
       expect(averages).toHaveProperty('hooves');
-      expect(averages).toHaveProperty('overall');
+      expect(averages).toHaveProperty('topline');
+      expect(averages).toHaveProperty('overallConformation');
     });
 
     it('should return scores in valid range (0-100)', async () => {
@@ -279,8 +282,8 @@ describe('useBreedAverages', () => {
       const { averages } = result.current.data!;
       expect(averages.head).toBeGreaterThanOrEqual(0);
       expect(averages.head).toBeLessThanOrEqual(100);
-      expect(averages.overall).toBeGreaterThanOrEqual(0);
-      expect(averages.overall).toBeLessThanOrEqual(100);
+      expect(averages.overallConformation).toBeGreaterThanOrEqual(0);
+      expect(averages.overallConformation).toBeLessThanOrEqual(100);
     });
   });
 
