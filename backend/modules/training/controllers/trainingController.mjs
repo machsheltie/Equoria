@@ -187,7 +187,7 @@ async function trainHorse(horseId, discipline) {
 
     // Apply trait effects to discipline score.
     // trainingXpModifier is the single trait training modifier (applies to both score and XP).
-    if (traitEffects.trainingXpModifier != null) {
+    if (traitEffects.trainingXpModifier !== null && traitEffects.trainingXpModifier !== undefined) {
       disciplineScoreIncrease = Math.round(
         disciplineScoreIncrease * (1 + traitEffects.trainingXpModifier),
       );
@@ -305,7 +305,7 @@ async function trainHorse(horseId, discipline) {
 
     // Calculate XP award with trait effects
     let baseXp = 5;
-    if (traitEffects.trainingXpModifier != null) {
+    if (traitEffects.trainingXpModifier !== null && traitEffects.trainingXpModifier !== undefined) {
       baseXp = Math.round(baseXp * (1 + traitEffects.trainingXpModifier));
     }
 
@@ -405,10 +405,10 @@ async function trainHorse(horseId, discipline) {
       },
       temperamentEffects: horse.temperament
         ? {
-            temperament: horse.temperament,
-            xpModifier: temperamentMods.xpModifier,
-            scoreModifier: temperamentMods.scoreModifier,
-          }
+          temperament: horse.temperament,
+          xpModifier: temperamentMods.xpModifier,
+          scoreModifier: temperamentMods.scoreModifier,
+        }
         : null,
     };
   } catch (error) {
@@ -574,9 +574,9 @@ async function getTrainableHorses(userId) {
           trainableDisciplines: availableDisciplines,
           bestDisciplines: horse.disciplineScores
             ? Object.entries(horse.disciplineScores)
-                .sort(([, a], [, b]) => b - a)
-                .slice(0, 3)
-                .map(([name]) => name)
+              .sort(([, a], [, b]) => b - a)
+              .slice(0, 3)
+              .map(([name]) => name)
             : [],
           nextEligibleAt: null,
         };

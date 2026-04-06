@@ -79,6 +79,95 @@ export async function getAllBreeds(req, res, next) {
 }
 
 // Get a single breed by ID
+const CONFORMATION_REGIONS = [
+  'head',
+  'neck',
+  'shoulders',
+  'back',
+  'hindquarters',
+  'legs',
+  'hooves',
+  'topline',
+  'overallConformation',
+];
+
+/**
+ * Get average conformation scores for all horses of a given breed.
+ * Endpoint: GET /api/v1/breeds/:id/conformation-averages
+ */
+export async function getConformationAverages(req, res, next) {
+  const { id } = req.params;
+
+  try {
+    const breedId = parseInt(id, 10);
+
+    if (isNaN(breedId) || breedId <= 0) {
+      throw new ValidationError('Invalid breed ID', 'id', id);
+    }
+
+    const breed = await prisma.breed.findUnique({ where: { id: breedId } });
+
+    if (!breed) {
+      throw new NotFoundError('Breed', breedId);
+    }
+
+    const horses = await prisma.horse.findMany({
+      where: {
+        breedId,
+        conformationScores: { not: null },
+      },
+      select: { conformationScores: true },
+    });
+
+    // Compute per-region averages from real data; return 0 when no horses exist
+    const totals = Object.fromEntries(CONFORMATION_REGIONS.map(r => [r, 0]));
+    let count = 0;
+
+    for (const horse of horses) {
+      const scores = horse.conformationScores;
+      if (!scores || typeof scores !== 'object') {
+        continue;
+      }
+      CONFORMATION_REGIONS.forEach(region => {
+        const val = scores[region];
+        if (typeof val === 'number') {
+          totals[region] += val;
+        }
+      });
+      count++;
+    }
+
+    const averages = Object.fromEntries(
+      CONFORMATION_REGIONS.map(region => [
+        region,
+        count > 0 ? Math.round((totals[region] / count) * 10) / 10 : 0,
+      ]),
+    );
+
+    logger.info(
+      `[breedController.getConformationAverages] breed ${breedId} (${breed.name}): ${count} horses`,
+    );
+
+    res.status(200).json({
+      success: true,
+      data: {
+        breedId: String(breedId),
+        breedName: breed.name,
+        averages,
+        horseCount: count,
+      },
+    });
+  } catch (error) {
+    logger.error(`Error getting conformation averages for breed ${id}: ${error.message}`);
+
+    if (error instanceof ValidationError || error instanceof NotFoundError) {
+      return next(error);
+    }
+
+    next(new DatabaseError('Failed to retrieve conformation averages', error));
+  }
+}
+
 export async function getBreedById(req, res, next) {
   const { id } = req.params;
 

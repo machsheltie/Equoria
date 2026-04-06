@@ -154,4 +154,15 @@ router.get(
   breedController.getBreedById,
 );
 
+/**
+ * GET /api/v1/breeds/:id/conformation-averages
+ * Returns average conformation scores across all horses of the given breed.
+ */
+router.get(
+  '/:id/conformation-averages',
+  [param('id').isInt({ min: 1 }).withMessage('Breed ID must be a positive integer.')],
+  handleValidationErrors,
+  breedController.getConformationAverages,
+);
+
 export default router;
