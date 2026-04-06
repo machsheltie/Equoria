@@ -1,8 +1,11 @@
 import React from 'react';
 import { Clock, Zap, Shield, Heart, Star, Trophy, Sparkles } from 'lucide-react';
 import { cn } from '@/lib/utils';
-import { Card, CardContent } from '@/components/ui/card';
-import { Badge } from '@/components/ui/badge';
+import {
+  FrostedPanel as Card,
+  FrostedPanelContent as CardContent,
+  GameBadge as Badge,
+} from '@/components/ui/game';
 import { Progress } from '@/components/ui/progress';
 
 interface CareStatus {

@@ -1,14 +1,14 @@
 /**
- * StatBar — Game-native stat progress bar (Story 22.6)
+ * StatBar — Game-native stat progress bar (Story 22-6)
  *
- * Audit criteria (all three must pass):
+ * Audit criteria (all three pass):
  *  ✅ Fill: gold gradient from-[var(--gold-primary)] to-[var(--gold-light)]
  *  ✅ Track: var(--bg-midnight) background
- *  ✅ Glow: box-shadow activates when value >= max (100%)
+ *  ✅ Glow: box-shadow activates when value >= max (uses --glow-stat-max token)
  *
+ * All colours use CSS custom property tokens — no raw rgba literals (spec AC).
  * Composites over @radix-ui/react-progress for accessibility.
  */
-
 import * as React from 'react';
 import * as ProgressPrimitive from '@radix-ui/react-progress';
 import { cn } from '@/lib/utils';
@@ -44,17 +44,14 @@ export function StatBar({
 
   return (
     <div className={cn('flex items-center gap-2 w-full', className)}>
-      <span className="text-xs shrink-0 w-20 truncate text-[var(--text-secondary)]">
-        {label}
-      </span>
+      <span className="text-xs shrink-0 w-20 truncate text-[var(--text-secondary)]">{label}</span>
 
       <ProgressPrimitive.Root
         className={cn(
           'relative flex-1 overflow-hidden rounded-full',
           sizeMap[size],
-          // ✅ Audit criterion 2: track uses --bg-midnight
           'bg-[var(--bg-midnight)]',
-          'border border-[rgba(100,130,165,0.2)]'
+          'border border-[var(--stat-bar-track-border)]'
         )}
         value={clamped}
         max={max}
@@ -63,11 +60,8 @@ export function StatBar({
         <ProgressPrimitive.Indicator
           className={cn(
             'h-full transition-all duration-500',
-            // ✅ Audit criterion 1: gold gradient fill
             'bg-gradient-to-r from-[var(--gold-primary)] to-[var(--gold-light)]',
-            // ✅ Audit criterion 3: glow at 100%
-            // rgba(201,162,39,0.6) is the gold glow — no token exists for shadow values
-            atMax && 'shadow-[0_0_8px_rgba(201,162,39,0.6)]'
+            atMax && 'shadow-[var(--glow-stat-max)]'
           )}
           style={{ transform: `translateX(-${100 - pct}%)` }}
         />

@@ -14,8 +14,13 @@
 
 import React, { useCallback, memo } from 'react';
 import { cn } from '@/lib/utils';
-import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from '@/components/ui/tooltip';
-import { Checkbox } from '@/components/ui/checkbox';
+import {
+  GameTooltip as Tooltip,
+  GameTooltipContent as TooltipContent,
+  GameTooltipProvider as TooltipProvider,
+  GameTooltipTrigger as TooltipTrigger,
+  GameCheckbox as Checkbox,
+} from '@/components/ui/game';
 import { CheckCircle, Clock, AlertTriangle, XCircle, AlertOctagon, Bandage } from 'lucide-react';
 
 /**

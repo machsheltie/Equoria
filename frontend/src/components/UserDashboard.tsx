@@ -19,7 +19,12 @@ import type {
   ActivityFeedItem,
   SalarySummary,
 } from '@/lib/api-client';
-import { Card, CardHeader, CardTitle, CardContent } from '@/components/ui/card';
+import {
+  FrostedPanel as Card,
+  FrostedPanelHeader as CardHeader,
+  FrostedPanelTitle as CardTitle,
+  FrostedPanelContent as CardContent,
+} from '@/components/ui/game';
 import { Button } from '@/components/ui/button';
 import { ArtStage } from '@/components/layout/ArtStage';
 import { Orb } from '@/components/layout/Orb';

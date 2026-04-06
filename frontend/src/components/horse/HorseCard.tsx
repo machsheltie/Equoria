@@ -9,7 +9,7 @@
 import { Link } from 'react-router-dom';
 import { cn, getBreedName } from '@/lib/utils';
 import { getHorseImage } from '@/lib/breed-images';
-import { Badge } from '@/components/ui/badge';
+import { GameBadge as Badge } from '@/components/ui/game';
 import { NarrativeChip, deriveHorseChip } from '@/components/hub/NarrativeChip';
 
 /* ─── Types ──────────────────────────────────────────────────────────────── */

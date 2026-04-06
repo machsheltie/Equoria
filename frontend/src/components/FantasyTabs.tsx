@@ -1,7 +1,14 @@
 import React, { useState } from 'react';
 import { ChevronDown } from 'lucide-react';
-import { Tabs, TabsList, TabsTrigger, TabsContent } from '@/components/ui/tabs';
-import { Collapsible, CollapsibleTrigger, CollapsibleContent } from '@/components/ui/collapsible';
+import {
+  GoldTabs as Tabs,
+  GoldTabsList as TabsList,
+  GoldTabsTrigger as TabsTrigger,
+  GoldTabsContent as TabsContent,
+  GameCollapsible as Collapsible,
+  GameCollapsibleTrigger as CollapsibleTrigger,
+  GameCollapsibleContent as CollapsibleContent,
+} from '@/components/ui/game';
 
 interface FantasyTabsProps {
   tabs: {

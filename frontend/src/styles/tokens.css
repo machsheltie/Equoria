@@ -473,4 +473,22 @@
   --aged-bronze-compat: var(--text-muted);
   --forest-green-compat: var(--celestial-primary);
   --mystic-silver-compat: var(--text-secondary);
+
+  /* ── Game Component Library — badge tints, dialog/form/statbar tokens ── */
+  /* These replace raw rgba() literals in game/ components (spec AC). */
+  --badge-gold-bg: var(--glass-glow);           /* rgba(200,168,78,0.15) */
+  --badge-danger-bg: rgba(239, 68, 68, 0.15);
+  --badge-success-bg: rgba(34, 197, 94, 0.15);
+  --badge-warning-bg: rgba(245, 158, 11, 0.15);
+  --badge-info-bg: rgba(59, 130, 246, 0.15);
+  --badge-common-bg: rgba(138, 155, 186, 0.15);
+  --badge-rare-bg: rgba(167, 139, 250, 0.2);
+  --badge-ultra-rare-bg: var(--btn-gold-bg);    /* rgba(200,168,78,0.2) */
+  --badge-legendary-bg: rgba(245, 230, 163, 0.15);
+  --stat-bar-track-border: rgba(100, 130, 165, 0.2);
+  --glow-stat-max: 0 0 8px rgba(200, 168, 78, 0.6);
+  --dialog-header-border: rgba(200, 168, 78, 0.2);
+  --dialog-footer-border: rgba(200, 168, 78, 0.15);
+  --dialog-close-hover-bg: rgba(200, 168, 78, 0.1);
+  --checkbox-border-color: rgba(100, 130, 165, 0.5);
 }

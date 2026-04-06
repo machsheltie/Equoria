@@ -12,9 +12,9 @@
  */
 
 import React from 'react';
-import { render, screen, fireEvent, waitFor } from '@testing-library/react';
+import { render, screen, waitFor } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
-import { describe, it, expect, vi } from 'vitest';
+import { describe, it, expect } from 'vitest';
 
 import {
   FrostedPanel,
@@ -63,7 +63,7 @@ describe('FrostedPanel', () => {
     expect(panel.className).toContain('glass-panel');
   });
 
-  it('(a) CardTitle uses --gold-400 token', () => {
+  it('(a) FrostedPanelTitle uses --gold-400 token', () => {
     render(
       <FrostedPanel>
         <FrostedPanelHeader>
@@ -73,6 +73,12 @@ describe('FrostedPanel', () => {
     );
     const title = screen.getByTestId('title');
     expect(title.className).toContain('text-[var(--gold-400)]');
+  });
+
+  it('(a) FrostedPanel has hover gold border class', () => {
+    render(<FrostedPanel data-testid="panel">content</FrostedPanel>);
+    const panel = screen.getByTestId('panel');
+    expect(panel.className).toContain('hover:border-[var(--gold-dim)]');
   });
 
   it('(b) is reachable by Tab', async () => {
@@ -93,7 +99,7 @@ describe('FrostedPanel', () => {
 // GameDialog
 // ---------------------------------------------------------------------------
 describe('GameDialog', () => {
-  it('(a) dialog content has glass-panel class when open', async () => {
+  it('(a) dialog content has glass-panel-heavy class when open', async () => {
     const user = userEvent.setup();
     render(
       <GameDialog>
@@ -106,7 +112,7 @@ describe('GameDialog', () => {
     );
     await user.click(screen.getByRole('button', { name: 'Open' }));
     const content = screen.getByTestId('dlg-content');
-    expect(content.className).toContain('glass-panel');
+    expect(content.className).toContain('glass-panel-heavy');
   });
 
   it('(c) dialog is open after trigger click', async () => {
@@ -174,28 +180,16 @@ describe('GoldTabs', () => {
 
   it('(c) initial tab has data-state=active', () => {
     renderTabs();
-    expect(screen.getByRole('tab', { name: 'Tab 1' })).toHaveAttribute(
-      'data-state',
-      'active'
-    );
-    expect(screen.getByRole('tab', { name: 'Tab 2' })).toHaveAttribute(
-      'data-state',
-      'inactive'
-    );
+    expect(screen.getByRole('tab', { name: 'Tab 1' })).toHaveAttribute('data-state', 'active');
+    expect(screen.getByRole('tab', { name: 'Tab 2' })).toHaveAttribute('data-state', 'inactive');
   });
 
   it('(b) clicking Tab 2 switches data-state to active', async () => {
     const user = userEvent.setup();
     renderTabs();
     await user.click(screen.getByRole('tab', { name: 'Tab 2' }));
-    expect(screen.getByRole('tab', { name: 'Tab 2' })).toHaveAttribute(
-      'data-state',
-      'active'
-    );
-    expect(screen.getByRole('tab', { name: 'Tab 1' })).toHaveAttribute(
-      'data-state',
-      'inactive'
-    );
+    expect(screen.getByRole('tab', { name: 'Tab 2' })).toHaveAttribute('data-state', 'active');
+    expect(screen.getByRole('tab', { name: 'Tab 1' })).toHaveAttribute('data-state', 'inactive');
   });
 
   it('(b) ArrowRight key navigates between tabs', async () => {
@@ -211,12 +205,57 @@ describe('GoldTabs', () => {
 // GameBadge
 // ---------------------------------------------------------------------------
 describe('GameBadge', () => {
-  it('(a) renders with default badge token classes', () => {
+  it('(a) default variant has gold bg and gold-light text tokens', () => {
     render(<GameBadge data-testid="badge">Champion</GameBadge>);
     const badge = screen.getByTestId('badge');
-    // Badge base has inline-flex, rounded-full styling
-    expect(badge.className).toContain('inline-flex');
+    expect(badge.className).toContain('bg-[var(--badge-gold-bg)]');
+    expect(badge.className).toContain('text-[var(--gold-light)]');
     expect(screen.getByText('Champion')).toBeInTheDocument();
+  });
+
+  it('(a) rare variant uses --status-rare text token', () => {
+    render(
+      <GameBadge data-testid="badge" variant="rare">
+        Rare
+      </GameBadge>
+    );
+    expect(screen.getByTestId('badge').className).toContain('text-[var(--status-rare)]');
+  });
+
+  it('(a) legendary variant uses --status-legendary token', () => {
+    render(
+      <GameBadge data-testid="badge" variant="legendary">
+        Legendary
+      </GameBadge>
+    );
+    expect(screen.getByTestId('badge').className).toContain('text-[var(--status-legendary)]');
+  });
+
+  it('(a) common variant uses --rarity-common token', () => {
+    render(
+      <GameBadge data-testid="badge" variant="common">
+        Common
+      </GameBadge>
+    );
+    expect(screen.getByTestId('badge').className).toContain('text-[var(--rarity-common)]');
+  });
+
+  it('(a) destructive variant uses --status-danger token', () => {
+    render(
+      <GameBadge data-testid="badge" variant="destructive">
+        Error
+      </GameBadge>
+    );
+    expect(screen.getByTestId('badge').className).toContain('text-[var(--status-danger)]');
+  });
+
+  it('(a) ultra-rare variant uses --gold-bright text token', () => {
+    render(
+      <GameBadge data-testid="badge" variant="ultra-rare">
+        Ultra Rare
+      </GameBadge>
+    );
+    expect(screen.getByTestId('badge').className).toContain('text-[var(--gold-bright)]');
   });
 });
 
@@ -227,7 +266,6 @@ describe('GlassInput', () => {
   it('(a) renders with celestial-input token class', () => {
     render(<GlassInput data-testid="input" placeholder="Horse name" />);
     const input = screen.getByTestId('input');
-    // From input.tsx: celestial-input is the Celestial Night token class
     expect(input.className).toContain('celestial-input');
   });
 
@@ -310,13 +348,31 @@ describe('GameCheckbox', () => {
 // GameLabel
 // ---------------------------------------------------------------------------
 describe('GameLabel', () => {
-  it('(a) renders with cream/gold text token', () => {
+  it('(a) renders with cream text token by default', () => {
     render(<GameLabel data-testid="lbl">Horse Name</GameLabel>);
     const lbl = screen.getByTestId('lbl');
-    // label.tsx uses text-[var(--cream)] or --text-secondary
-    expect(lbl.textContent).toBe('Horse Name');
-    // Should be a label element
+    expect(lbl.className).toContain('text-[var(--cream)]');
     expect(lbl.tagName).toBe('LABEL');
+  });
+
+  it('(a) smallCaps prop applies uppercase tracking class', () => {
+    render(
+      <GameLabel data-testid="lbl" smallCaps>
+        Group Header
+      </GameLabel>
+    );
+    const lbl = screen.getByTestId('lbl');
+    expect(lbl.className).toContain('uppercase');
+    expect(lbl.className).toContain('tracking-widest');
+  });
+
+  it('(a) required prop applies --gold-400 text token', () => {
+    render(
+      <GameLabel data-testid="lbl" required>
+        Required Field
+      </GameLabel>
+    );
+    expect(screen.getByTestId('lbl').className).toContain('text-[var(--gold-400)]');
   });
 
   it('(b) associates with input via htmlFor', () => {
@@ -386,7 +442,6 @@ describe('GameScrollArea', () => {
       </GameScrollArea>
     );
     const sa = screen.getByTestId('scroll');
-    // From scroll-area.tsx: scroll-area-celestial is the Celestial Night token class
     expect(sa.className).toContain('scroll-area-celestial');
     expect(sa.className).toContain('overflow-auto');
     expect(screen.getByText('tall content')).toBeInTheDocument();
@@ -435,6 +490,11 @@ describe('GameCollapsible', () => {
     await user.keyboard('{Enter}');
     expect(trigger).toHaveAttribute('data-state', 'closed');
   });
+
+  it('(a) content area has glass-panel-subtle class', () => {
+    renderCollapsible(true);
+    expect(screen.getByTestId('content').className).toContain('glass-panel-subtle');
+  });
 });
 
 // ---------------------------------------------------------------------------
@@ -443,7 +503,6 @@ describe('GameCollapsible', () => {
 describe('StatBar', () => {
   it('(a) AC1: fill indicator has gold gradient classes', () => {
     render(<StatBar label="Speed" value={75} />);
-    // Find the indicator div (child of progress root)
     const indicator = document.querySelector('[class*="from-[var(--gold-primary)]"]');
     expect(indicator).not.toBeNull();
     expect(indicator!.className).toContain('from-[var(--gold-primary)]');
@@ -457,16 +516,22 @@ describe('StatBar', () => {
     expect(track!.className).toContain('bg-[var(--bg-midnight)]');
   });
 
-  it('(a) AC3: glow class appears when value equals max', () => {
+  it('(a) AC3: glow token class appears when value equals max', () => {
     render(<StatBar label="Agility" value={100} max={100} />);
-    const indicator = document.querySelector('[class*="shadow-[0_0_8px"]');
+    const indicator = document.querySelector('[class*="shadow-[var(--glow-stat-max)]"]');
     expect(indicator).not.toBeNull();
   });
 
   it('(a) AC3: no glow class when value is below max', () => {
     render(<StatBar label="Agility" value={99} max={100} />);
-    const indicator = document.querySelector('[class*="shadow-[0_0_8px"]');
+    const indicator = document.querySelector('[class*="shadow-[var(--glow-stat-max)]"]');
     expect(indicator).toBeNull();
+  });
+
+  it('(a) track uses --stat-bar-track-border token', () => {
+    render(<StatBar label="Speed" value={50} />);
+    const track = document.querySelector('[class*="stat-bar-track-border"]');
+    expect(track).not.toBeNull();
   });
 
   it('(a) label text is rendered', () => {

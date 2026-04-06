@@ -1,6 +1,11 @@
 import React from 'react';
 import { X } from 'lucide-react';
-import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/ui/dialog';
+import {
+  GameDialog as Dialog,
+  GameDialogContent as DialogContent,
+  GameDialogHeader as DialogHeader,
+  GameDialogTitle as DialogTitle,
+} from '@/components/ui/game';
 
 interface FantasyModalProps {
   isOpen: boolean;

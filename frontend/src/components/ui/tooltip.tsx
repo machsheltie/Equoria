@@ -1,7 +1,6 @@
-/** Tooltip — Celestial Night glass panel tooltip (Task 22-6) */
+/** Tooltip — Naked Radix forwarder. Visual styling lives in game/GameTooltip.tsx (Story 22-6) */
 import * as React from 'react';
 import * as TooltipPrimitive from '@radix-ui/react-tooltip';
-import { cn } from '@/lib/utils';
 
 const TooltipProvider = TooltipPrimitive.Provider;
 const Tooltip = TooltipPrimitive.Root;
@@ -11,22 +10,7 @@ const TooltipContent = React.forwardRef<
   React.ElementRef<typeof TooltipPrimitive.Content>,
   React.ComponentPropsWithoutRef<typeof TooltipPrimitive.Content>
 >(({ className, sideOffset = 6, ...props }, ref) => (
-  <TooltipPrimitive.Content
-    ref={ref}
-    sideOffset={sideOffset}
-    className={cn(
-      'z-[var(--z-tooltip)] max-w-[240px] px-3 py-2 text-xs',
-      'bg-[var(--bg-midnight)] border border-[var(--gold-dim)] rounded-[var(--radius-md)]',
-      'shadow-[var(--shadow-raised)]',
-      'text-[var(--text-primary)] font-[var(--font-body)]',
-      'animate-in fade-in-0 zoom-in-95',
-      'data-[state=closed]:animate-out data-[state=closed]:fade-out-0 data-[state=closed]:zoom-out-95',
-      'data-[side=bottom]:slide-in-from-top-2 data-[side=left]:slide-in-from-right-2',
-      'data-[side=right]:slide-in-from-left-2 data-[side=top]:slide-in-from-bottom-2',
-      className
-    )}
-    {...props}
-  />
+  <TooltipPrimitive.Content ref={ref} sideOffset={sideOffset} className={className} {...props} />
 ));
 TooltipContent.displayName = TooltipPrimitive.Content.displayName;
 
