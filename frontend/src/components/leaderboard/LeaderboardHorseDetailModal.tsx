@@ -7,20 +7,17 @@
  * action buttons.
  *
  * Features:
- * - Modal overlay with backdrop click to close
- * - Escape key to close
- * - Body scroll lock when open
+ * - Uses BaseModal for portal rendering, scroll lock, escape key, and focus management
  * - Loading state with skeleton placeholders
  * - Null horse data error state
  * - Accessible dialog role with aria-modal and aria-labelledby
- * - Focus trap via aria-modal
  * - Responsive design (desktop/tablet/mobile)
  *
  * Story 5-5: Leaderboards - Task 4
  */
 
-import { useEffect, useCallback } from 'react';
-import { X, Trophy, User, Award } from 'lucide-react';
+import { Trophy, User, Award } from 'lucide-react';
+import BaseModal from '@/components/common/BaseModal';
 
 // ---------------------------------------------------------------------------
 // TypeScript Interfaces
@@ -211,6 +208,7 @@ const SummaryStatCard = ({ label, value }: { label: string; value: string }) => 
 /**
  * LeaderboardHorseDetailModal displays a detailed horse profile in a
  * full-screen modal overlay, accessible from leaderboard entries.
+ * Uses BaseModal for portal rendering, scroll lock, escape key, and focus management.
  */
 const LeaderboardHorseDetailModal = ({
   isOpen,
@@ -220,52 +218,7 @@ const LeaderboardHorseDetailModal = ({
   onViewFullProfile,
   className = '',
 }: LeaderboardHorseDetailModalProps) => {
-  // -------------------------------------------------------------------------
-  // Escape key handler
-  // -------------------------------------------------------------------------
-  const handleKeyDown = useCallback(
-    (event: KeyboardEvent) => {
-      if (event.key === 'Escape') {
-        onClose();
-      }
-    },
-    [onClose]
-  );
-
-  // -------------------------------------------------------------------------
-  // Body scroll lock and keyboard listener
-  // -------------------------------------------------------------------------
-  useEffect(() => {
-    if (isOpen) {
-      document.body.style.overflow = 'hidden';
-      document.addEventListener('keydown', handleKeyDown);
-    } else {
-      document.body.style.overflow = '';
-    }
-
-    return () => {
-      document.body.style.overflow = '';
-      document.removeEventListener('keydown', handleKeyDown);
-    };
-  }, [isOpen, handleKeyDown]);
-
-  // Do not render anything when the modal is closed
-  if (!isOpen) {
-    return null;
-  }
-
-  // -------------------------------------------------------------------------
-  // Backdrop click handler (only fires on the backdrop itself)
-  // -------------------------------------------------------------------------
-  const handleBackdropClick = (e: React.MouseEvent<HTMLDivElement>) => {
-    if (e.target === e.currentTarget) {
-      onClose();
-    }
-  };
-
-  // -------------------------------------------------------------------------
   // Stat definitions grouped by category
-  // -------------------------------------------------------------------------
   const physicalStats = ['speed', 'stamina', 'agility', 'balance'] as const;
   const mentalStats = [
     'precision',
@@ -276,236 +229,203 @@ const LeaderboardHorseDetailModal = ({
     'focus',
   ] as const;
 
+  // Footer action buttons
+  const footer = (
+    <div className="flex items-center gap-3 w-full">
+      {onViewFullProfile && horseData && (
+        <button
+          className="inline-flex items-center gap-2 px-4 py-2 bg-blue-600 text-[var(--text-primary)] text-sm font-medium rounded-lg hover:bg-[var(--gold-dim)] transition-colors"
+          onClick={() => onViewFullProfile(horseData.horseId)}
+          data-testid="view-full-profile-button"
+        >
+          <Trophy size={16} aria-hidden="true" />
+          View Full Profile
+        </button>
+      )}
+      <button
+        className="inline-flex items-center gap-2 px-4 py-2 bg-[rgba(15,35,70,0.5)] text-[rgb(220,235,255)] text-sm font-medium rounded-lg hover:bg-[rgba(37,99,235,0.2)] transition-colors"
+        onClick={onClose}
+      >
+        Close
+      </button>
+    </div>
+  );
+
   return (
     <div data-testid="horse-detail-modal">
-      {/* Backdrop */}
-      <div
-        className="fixed inset-0 z-[var(--z-modal)] flex items-center justify-center bg-black/70"
-        data-testid="modal-backdrop"
-        onClick={handleBackdropClick}
+      <BaseModal
+        isOpen={isOpen}
+        onClose={onClose}
+        title={horseData?.horseName ?? 'Horse Details'}
+        size="lg"
+        className={className}
+        footer={footer}
       >
-        {/* Dialog */}
-        <div
-          role="dialog"
-          aria-modal="true"
-          aria-labelledby="horse-detail-title"
-          className={`relative glass-panel rounded-2xl shadow-xl w-full max-w-3xl max-h-[90vh] overflow-y-auto mx-4 ${className}`}
-          onClick={(e) => e.stopPropagation()}
-        >
-          {/* Close Button */}
-          <button
-            className="absolute top-4 right-4 p-1 rounded-full text-[rgb(148,163,184)] hover:text-[rgb(220,235,255)] hover:bg-[rgba(37,99,235,0.2)] transition-colors"
-            onClick={onClose}
-            data-testid="modal-close-button"
-            aria-label="Close horse details"
-          >
-            <X size={24} aria-hidden="true" />
-          </button>
+        {/* Loading State */}
+        {isLoading && <LoadingSkeleton />}
 
-          {/* Modal Content */}
-          <div className="p-6 md:p-8">
-            {/* Loading State */}
-            {isLoading && <LoadingSkeleton />}
+        {/* Empty State */}
+        {!isLoading && !horseData && <EmptyHorseState />}
 
-            {/* Empty State */}
-            {!isLoading && !horseData && <EmptyHorseState />}
-
-            {/* Horse Details */}
-            {!isLoading && horseData && (
-              <div className="space-y-6">
-                {/* --------------------------------------------------------
-                    Horse Header
-                -------------------------------------------------------- */}
-                <div className="flex items-start gap-4">
-                  <div className="flex-1">
-                    <h2
-                      id="horse-detail-title"
-                      className="text-3xl font-bold text-[rgb(220,235,255)]"
-                    >
-                      {horseData.horseName}
-                    </h2>
-                    <p className="text-sm text-[rgb(148,163,184)] mt-1">
-                      {horseData.breed} &middot; {horseData.age} years old &middot; {horseData.sex}
-                    </p>
-                    <div className="flex items-center gap-2 mt-2">
-                      <span
-                        className="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-bold bg-[rgba(37,99,235,0.2)] text-blue-300"
-                        data-testid="level-badge"
-                      >
-                        Lvl {horseData.level}
-                      </span>
-                      {horseData.primaryDiscipline && (
-                        <span className="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-[rgba(139,92,246,0.2)] text-purple-300">
-                          {horseData.primaryDiscipline}
-                        </span>
-                      )}
-                    </div>
-                  </div>
-                  {/* Owner Info */}
-                  <div className="flex items-center gap-1.5 text-sm text-[rgb(148,163,184)]">
-                    <User size={16} aria-hidden="true" />
-                    <span>{horseData.owner.ownerName}</span>
-                  </div>
-                </div>
-
-                {/* --------------------------------------------------------
-                    Stats Section
-                -------------------------------------------------------- */}
-                <div data-testid="stats-section">
-                  <h3 className="text-lg font-semibold text-[rgb(220,235,255)] mb-3">Stats</h3>
-
-                  {/* Physical Stats */}
-                  <h4 className="text-sm font-medium text-[rgb(148,163,184)] mb-2">Physical</h4>
-                  <div className="space-y-2 mb-4">
-                    {physicalStats.map((stat) => (
-                      <StatBar key={stat} label={stat} value={horseData.stats[stat]} />
-                    ))}
-                  </div>
-
-                  {/* Mental Stats */}
-                  <h4 className="text-sm font-medium text-[rgb(148,163,184)] mb-2">Mental</h4>
-                  <div className="space-y-2">
-                    {mentalStats.map((stat) => (
-                      <StatBar key={stat} label={stat} value={horseData.stats[stat]} />
-                    ))}
-                  </div>
-                </div>
-
-                {/* --------------------------------------------------------
-                    Competition History Section
-                -------------------------------------------------------- */}
-                <div data-testid="competition-history-section">
-                  <h3 className="text-lg font-semibold text-[rgb(220,235,255)] mb-3">
-                    Competition History
-                  </h3>
-
-                  {/* Summary Cards */}
-                  <div className="grid grid-cols-2 md:grid-cols-4 gap-3 mb-4">
-                    <SummaryStatCard
-                      label="Total Competitions"
-                      value={String(horseData.competitionHistory.total)}
-                    />
-                    <SummaryStatCard
-                      label="Wins"
-                      value={String(horseData.competitionHistory.wins)}
-                    />
-                    <SummaryStatCard
-                      label="Top 3 Finishes"
-                      value={String(horseData.competitionHistory.top3Finishes)}
-                    />
-                    <SummaryStatCard
-                      label="Win Rate"
-                      value={`${horseData.competitionHistory.winRate}%`}
-                    />
-                  </div>
-
-                  {/* Total Prize Money */}
-                  <p className="text-sm text-[rgb(148,163,184)] mb-4">
-                    Total Prize Money:{' '}
-                    <span className="font-semibold text-[rgb(220,235,255)]">
-                      {formatCurrency(horseData.competitionHistory.totalPrizeMoney)}
-                    </span>
-                  </p>
-
-                  {/* Recent Competitions Table */}
-                  {horseData.competitionHistory.recentCompetitions.length > 0 ? (
-                    <div className="overflow-x-auto" data-testid="recent-competitions-table">
-                      <table className="w-full text-sm">
-                        <thead>
-                          <tr className="bg-[rgba(15,35,70,0.5)] text-left text-[rgb(148,163,184)]">
-                            <th className="px-3 py-2 font-medium">Date</th>
-                            <th className="px-3 py-2 font-medium">Competition</th>
-                            <th className="px-3 py-2 font-medium">Discipline</th>
-                            <th className="px-3 py-2 font-medium text-right">Rank</th>
-                            <th className="px-3 py-2 font-medium text-right">Prize</th>
-                          </tr>
-                        </thead>
-                        <tbody>
-                          {horseData.competitionHistory.recentCompetitions.map((comp, index) => (
-                            <tr
-                              key={comp.competitionId}
-                              className={index % 2 === 1 ? 'bg-[rgba(15,35,70,0.3)]' : ''}
-                            >
-                              <td className="px-3 py-2 whitespace-nowrap text-[rgb(220,235,255)]">
-                                {formatDate(comp.date)}
-                              </td>
-                              <td className="px-3 py-2 text-[rgb(220,235,255)]">
-                                {comp.competitionName}
-                              </td>
-                              <td className="px-3 py-2 text-[rgb(220,235,255)]">
-                                {comp.discipline}
-                              </td>
-                              <td className="px-3 py-2 text-right text-[rgb(220,235,255)]">
-                                {comp.rank}/{comp.totalParticipants}
-                              </td>
-                              <td className="px-3 py-2 text-right text-[rgb(220,235,255)]">
-                                {formatCurrency(comp.prizeWon)}
-                              </td>
-                            </tr>
-                          ))}
-                        </tbody>
-                      </table>
-                    </div>
-                  ) : (
-                    <div
-                      className="text-center text-[rgb(148,163,184)] py-6"
-                      data-testid="no-recent-competitions"
-                    >
-                      <p>No recent competitions</p>
-                    </div>
-                  )}
-                </div>
-
-                {/* --------------------------------------------------------
-                    Achievements Section
-                -------------------------------------------------------- */}
-                <div data-testid="achievements-section">
-                  <h3 className="text-lg font-semibold text-[rgb(220,235,255)] mb-3">
-                    Achievements
-                  </h3>
-                  {horseData.achievements.length > 0 ? (
-                    <div className="flex flex-wrap gap-2">
-                      {horseData.achievements.map((achievement) => (
-                        <span
-                          key={achievement}
-                          className="inline-flex items-center gap-1 px-3 py-1.5 rounded-full text-xs font-medium bg-[rgba(212,168,67,0.1)] text-amber-300 border border-amber-500/30"
-                        >
-                          <Award size={14} aria-hidden="true" />
-                          {achievement}
-                        </span>
-                      ))}
-                    </div>
-                  ) : (
-                    <p className="text-sm text-[rgb(148,163,184)]">No achievements yet</p>
-                  )}
-                </div>
-
-                {/* --------------------------------------------------------
-                    Action Buttons
-                -------------------------------------------------------- */}
-                <div className="flex items-center gap-3 pt-4 border-t border-[rgba(37,99,235,0.3)]">
-                  {onViewFullProfile && (
-                    <button
-                      className="inline-flex items-center gap-2 px-4 py-2 bg-blue-600 text-[var(--text-primary)] text-sm font-medium rounded-lg hover:bg-[var(--gold-dim)] transition-colors"
-                      onClick={() => onViewFullProfile(horseData.horseId)}
-                      data-testid="view-full-profile-button"
-                    >
-                      <Trophy size={16} aria-hidden="true" />
-                      View Full Profile
-                    </button>
-                  )}
-                  <button
-                    className="inline-flex items-center gap-2 px-4 py-2 bg-[rgba(15,35,70,0.5)] text-[rgb(220,235,255)] text-sm font-medium rounded-lg hover:bg-[rgba(37,99,235,0.2)] transition-colors"
-                    onClick={onClose}
+        {/* Horse Details */}
+        {!isLoading && horseData && (
+          <div className="space-y-6">
+            {/* --------------------------------------------------------
+                Horse Header
+            -------------------------------------------------------- */}
+            <div className="flex items-start gap-4">
+              <div className="flex-1">
+                <p className="text-sm text-[rgb(148,163,184)] mt-1">
+                  {horseData.breed} &middot; {horseData.age} years old &middot; {horseData.sex}
+                </p>
+                <div className="flex items-center gap-2 mt-2">
+                  <span
+                    className="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-bold bg-[rgba(37,99,235,0.2)] text-blue-300"
+                    data-testid="level-badge"
                   >
-                    Close
-                  </button>
+                    Lvl {horseData.level}
+                  </span>
+                  {horseData.primaryDiscipline && (
+                    <span className="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-[rgba(139,92,246,0.2)] text-purple-300">
+                      {horseData.primaryDiscipline}
+                    </span>
+                  )}
                 </div>
               </div>
-            )}
+              {/* Owner Info */}
+              <div className="flex items-center gap-1.5 text-sm text-[rgb(148,163,184)]">
+                <User size={16} aria-hidden="true" />
+                <span>{horseData.owner.ownerName}</span>
+              </div>
+            </div>
+
+            {/* --------------------------------------------------------
+                Stats Section
+            -------------------------------------------------------- */}
+            <div data-testid="stats-section">
+              <h3 className="text-lg font-semibold text-[rgb(220,235,255)] mb-3">Stats</h3>
+
+              {/* Physical Stats */}
+              <h4 className="text-sm font-medium text-[rgb(148,163,184)] mb-2">Physical</h4>
+              <div className="space-y-2 mb-4">
+                {physicalStats.map((stat) => (
+                  <StatBar key={stat} label={stat} value={horseData.stats[stat]} />
+                ))}
+              </div>
+
+              {/* Mental Stats */}
+              <h4 className="text-sm font-medium text-[rgb(148,163,184)] mb-2">Mental</h4>
+              <div className="space-y-2">
+                {mentalStats.map((stat) => (
+                  <StatBar key={stat} label={stat} value={horseData.stats[stat]} />
+                ))}
+              </div>
+            </div>
+
+            {/* --------------------------------------------------------
+                Competition History Section
+            -------------------------------------------------------- */}
+            <div data-testid="competition-history-section">
+              <h3 className="text-lg font-semibold text-[rgb(220,235,255)] mb-3">
+                Competition History
+              </h3>
+
+              {/* Summary Cards */}
+              <div className="grid grid-cols-2 md:grid-cols-4 gap-3 mb-4">
+                <SummaryStatCard
+                  label="Total Competitions"
+                  value={String(horseData.competitionHistory.total)}
+                />
+                <SummaryStatCard label="Wins" value={String(horseData.competitionHistory.wins)} />
+                <SummaryStatCard
+                  label="Top 3 Finishes"
+                  value={String(horseData.competitionHistory.top3Finishes)}
+                />
+                <SummaryStatCard
+                  label="Win Rate"
+                  value={`${horseData.competitionHistory.winRate}%`}
+                />
+              </div>
+
+              {/* Total Prize Money */}
+              <p className="text-sm text-[rgb(148,163,184)] mb-4">
+                Total Prize Money:{' '}
+                <span className="font-semibold text-[rgb(220,235,255)]">
+                  {formatCurrency(horseData.competitionHistory.totalPrizeMoney)}
+                </span>
+              </p>
+
+              {/* Recent Competitions Table */}
+              {horseData.competitionHistory.recentCompetitions.length > 0 ? (
+                <div className="overflow-x-auto" data-testid="recent-competitions-table">
+                  <table className="w-full text-sm">
+                    <thead>
+                      <tr className="bg-[rgba(15,35,70,0.5)] text-left text-[rgb(148,163,184)]">
+                        <th className="px-3 py-2 font-medium">Date</th>
+                        <th className="px-3 py-2 font-medium">Competition</th>
+                        <th className="px-3 py-2 font-medium">Discipline</th>
+                        <th className="px-3 py-2 font-medium text-right">Rank</th>
+                        <th className="px-3 py-2 font-medium text-right">Prize</th>
+                      </tr>
+                    </thead>
+                    <tbody>
+                      {horseData.competitionHistory.recentCompetitions.map((comp, index) => (
+                        <tr
+                          key={comp.competitionId}
+                          className={index % 2 === 1 ? 'bg-[rgba(15,35,70,0.3)]' : ''}
+                        >
+                          <td className="px-3 py-2 whitespace-nowrap text-[rgb(220,235,255)]">
+                            {formatDate(comp.date)}
+                          </td>
+                          <td className="px-3 py-2 text-[rgb(220,235,255)]">
+                            {comp.competitionName}
+                          </td>
+                          <td className="px-3 py-2 text-[rgb(220,235,255)]">{comp.discipline}</td>
+                          <td className="px-3 py-2 text-right text-[rgb(220,235,255)]">
+                            {comp.rank}/{comp.totalParticipants}
+                          </td>
+                          <td className="px-3 py-2 text-right text-[rgb(220,235,255)]">
+                            {formatCurrency(comp.prizeWon)}
+                          </td>
+                        </tr>
+                      ))}
+                    </tbody>
+                  </table>
+                </div>
+              ) : (
+                <div
+                  className="text-center text-[rgb(148,163,184)] py-6"
+                  data-testid="no-recent-competitions"
+                >
+                  <p>No recent competitions</p>
+                </div>
+              )}
+            </div>
+
+            {/* --------------------------------------------------------
+                Achievements Section
+            -------------------------------------------------------- */}
+            <div data-testid="achievements-section">
+              <h3 className="text-lg font-semibold text-[rgb(220,235,255)] mb-3">Achievements</h3>
+              {horseData.achievements.length > 0 ? (
+                <div className="flex flex-wrap gap-2">
+                  {horseData.achievements.map((achievement) => (
+                    <span
+                      key={achievement}
+                      className="inline-flex items-center gap-1 px-3 py-1.5 rounded-full text-xs font-medium bg-[rgba(212,168,67,0.1)] text-amber-300 border border-amber-500/30"
+                    >
+                      <Award size={14} aria-hidden="true" />
+                      {achievement}
+                    </span>
+                  ))}
+                </div>
+              ) : (
+                <p className="text-sm text-[rgb(148,163,184)]">No achievements yet</p>
+              )}
+            </div>
           </div>
-        </div>
-      </div>
+        )}
+      </BaseModal>
     </div>
   );
 };

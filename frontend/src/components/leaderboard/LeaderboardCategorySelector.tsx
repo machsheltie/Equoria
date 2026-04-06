@@ -8,6 +8,7 @@
  * Story 5-5: Leaderboards - Task 1
  */
 
+import { useRef, useCallback } from 'react';
 import { DISCIPLINES } from '../../lib/utils/training-utils';
 
 /**
@@ -101,6 +102,27 @@ const LeaderboardCategorySelector = ({
   isLoading = false,
   className = '',
 }: LeaderboardCategorySelectorProps) => {
+  // Refs to each tab button for keyboard focus management
+  const tabRefs = useRef<(HTMLButtonElement | null)[]>([]);
+
+  /**
+   * Handle Left/Right arrow key navigation between tabs.
+   */
+  const handleTabKeyDown = useCallback(
+    (event: React.KeyboardEvent<HTMLButtonElement>, index: number) => {
+      if (event.key === 'ArrowRight') {
+        event.preventDefault();
+        const nextIndex = (index + 1) % CATEGORIES.length;
+        tabRefs.current[nextIndex]?.focus();
+      } else if (event.key === 'ArrowLeft') {
+        event.preventDefault();
+        const prevIndex = (index - 1 + CATEGORIES.length) % CATEGORIES.length;
+        tabRefs.current[prevIndex]?.focus();
+      }
+    },
+    []
+  );
+
   return (
     <div
       className={`glass-panel rounded-lg p-4 ${className}`}
@@ -112,12 +134,16 @@ const LeaderboardCategorySelector = ({
         role="tablist"
         aria-label="Leaderboard categories"
       >
-        {CATEGORIES.map((category) => {
+        {CATEGORIES.map((category, index) => {
           const isActive = selectedCategory === category;
           return (
             <button
               key={category}
+              ref={(el) => {
+                tabRefs.current[index] = el;
+              }}
               onClick={() => onCategoryChange(category)}
+              onKeyDown={(e) => handleTabKeyDown(e, index)}
               disabled={isLoading}
               className={`px-4 py-2 rounded-t-lg text-sm font-medium whitespace-nowrap transition-colors ${
                 isActive
@@ -125,9 +151,10 @@ const LeaderboardCategorySelector = ({
                   : 'bg-[rgba(15,35,70,0.5)] text-[rgb(148,163,184)] hover:bg-[rgba(37,99,235,0.2)]'
               } ${isLoading ? 'opacity-50 cursor-not-allowed' : ''}`}
               data-testid={`category-${category}`}
-              aria-pressed={isActive}
               role="tab"
               aria-selected={isActive}
+              aria-controls="leaderboard-panel"
+              id={`tab-${category}`}
             >
               {CATEGORY_LABELS[category]}
             </button>
@@ -135,29 +162,37 @@ const LeaderboardCategorySelector = ({
         })}
       </div>
 
-      {/* Discipline Selector -- only visible when discipline category is active */}
-      {selectedCategory === 'discipline' && (
-        <div className="mt-3">
-          <label htmlFor="discipline-select" className="sr-only">
-            Select discipline
-          </label>
-          <select
-            id="discipline-select"
-            value={selectedDiscipline || ''}
-            onChange={(e) => onDisciplineChange?.(e.target.value)}
-            disabled={isLoading}
-            className="celestial-input w-full md:w-64"
-            data-testid="discipline-selector"
-            aria-label="Select discipline"
-          >
-            {DISCIPLINES.map((disc) => (
-              <option key={disc.id} value={disc.id}>
-                {disc.name}
-              </option>
-            ))}
-          </select>
-        </div>
-      )}
+      {/* Tabpanel region for the active category content */}
+      <div
+        role="tabpanel"
+        id="leaderboard-panel"
+        aria-labelledby={`tab-${selectedCategory}`}
+        className="mt-3"
+      >
+        {/* Discipline Selector -- only visible when discipline category is active */}
+        {selectedCategory === 'discipline' && (
+          <div>
+            <label htmlFor="discipline-select" className="sr-only">
+              Select discipline
+            </label>
+            <select
+              id="discipline-select"
+              value={selectedDiscipline || ''}
+              onChange={(e) => onDisciplineChange?.(e.target.value)}
+              disabled={isLoading}
+              className="celestial-input w-full md:w-64"
+              data-testid="discipline-selector"
+              aria-label="Select discipline"
+            >
+              {DISCIPLINES.map((disc) => (
+                <option key={disc.id} value={disc.id}>
+                  {disc.name}
+                </option>
+              ))}
+            </select>
+          </div>
+        )}
+      </div>
 
       {/* Time Period Filter */}
       <div className="flex gap-2 mt-3" role="group" aria-label="Time period filter">

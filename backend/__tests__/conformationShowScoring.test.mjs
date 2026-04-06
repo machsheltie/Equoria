@@ -38,7 +38,6 @@ const {
   CONFORMATION_SHOW_CONFIG,
   SHOW_HANDLING_SKILL_SCORES,
   CONFORMATION_AGE_CLASSES,
-  isValidConformationClass,
 } = await import('../services/conformationShowService.mjs');
 
 const { default: prisma } = await import('../db/index.mjs');
