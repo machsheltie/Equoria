@@ -198,8 +198,8 @@ development_status:
   epic-31e-retrospective: optional
 
   # Epic 31F: Conformation Show Handling
-  epic-31f: backlog
-  31f-1-conformation-show-scoring-engine: backlog
+  epic-31f: in-progress
+  31f-1-conformation-show-scoring-engine: review
   31f-2-show-entry-and-eligibility: backlog
   31f-3-rewards-and-title-progression: backlog
   epic-31f-retrospective: optional
