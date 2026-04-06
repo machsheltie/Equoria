@@ -36,10 +36,10 @@ jobs:
 
     steps:
       - name: Checkout code
-        uses: actions/checkout@v3
+        uses: actions/checkout@v4
 
       - name: Setup Node.js
-        uses: actions/setup-node@v3
+        uses: actions/setup-node@v4
         with:
           node-version: '18'
           cache: 'npm'
@@ -49,12 +49,16 @@ jobs:
         working-directory: backend
         run: npm ci
 
+      - name: Install database dependencies
+        working-directory: packages/database
+        run: npm ci
+
       - name: Run database migrations
-        working-directory: backend
+        working-directory: packages/database
         env:
           DATABASE_URL: postgresql://postgres:postgres@localhost:5432/equoria_test
           NODE_ENV: test
-        run: npx prisma migrate deploy
+        run: npx prisma migrate deploy --schema=prisma/schema.prisma
 
       - name: Run httpOnly cookie authentication tests
         working-directory: backend
@@ -77,10 +81,10 @@ jobs:
 
     steps:
       - name: Checkout code
-        uses: actions/checkout@v3
+        uses: actions/checkout@v4
 
       - name: Setup Node.js
-        uses: actions/setup-node@v3
+        uses: actions/setup-node@v4
         with:
           node-version: '18'
           cache: 'npm'
@@ -92,11 +96,11 @@ jobs:
 
       - name: Run API client tests
         working-directory: frontend
-        run: npm test -- src/lib/__tests__/api-client.test.ts
+        run: npm run test:run -- src/lib/__tests__/api-client.test.ts
 
       - name: Run useAuth hooks tests
         working-directory: frontend
-        run: npm test -- src/hooks/__tests__/useAuth.test.ts
+        run: npm run test:run -- src/hooks/__tests__/useAuth.test.ts
 
       - name: Upload frontend test results
         if: always()
@@ -112,7 +116,7 @@ jobs:
 
     steps:
       - name: Checkout code
-        uses: actions/checkout@v3
+        uses: actions/checkout@v4
 
       - name: Verify httpOnly cookie configuration
         run: |
@@ -184,10 +188,10 @@ jobs:
 
     steps:
       - name: Checkout code
-        uses: actions/checkout@v3
+        uses: actions/checkout@v4
 
       - name: Setup Node.js
-        uses: actions/setup-node@v3
+        uses: actions/setup-node@v4
         with:
           node-version: '18'
 
@@ -199,11 +203,15 @@ jobs:
         working-directory: frontend
         run: npm ci
 
+      - name: Install database dependencies
+        working-directory: packages/database
+        run: npm ci
+
       - name: Run database migrations
-        working-directory: backend
+        working-directory: packages/database
         env:
           DATABASE_URL: postgresql://postgres:postgres@localhost:5432/equoria_test
-        run: npx prisma migrate deploy
+        run: npx prisma migrate deploy --schema=prisma/schema.prisma
 
       - name: Start backend server
         working-directory: backend

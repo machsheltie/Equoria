@@ -23,6 +23,19 @@ import PrizeTransactionRow, {
   type PrizeTransaction,
 } from '../PrizeTransactionRow';
 
+/**
+ * Wraps a table-row component in a valid <table><tbody> context to avoid
+ * invalid DOM nesting warnings (a <tr> must be a descendant of <table>).
+ */
+const renderInTable = (ui: React.ReactElement) =>
+  render(ui, {
+    wrapper: ({ children }) => (
+      <table>
+        <tbody>{children}</tbody>
+      </table>
+    ),
+  });
+
 describe('PrizeTransactionRow', () => {
   const mockOnViewCompetition = vi.fn();
   const mockOnViewHorse = vi.fn();
@@ -74,7 +87,7 @@ describe('PrizeTransactionRow', () => {
   // =========================================
   describe('Rendering Tests', () => {
     it('renders all transaction data correctly', () => {
-      render(<PrizeTransactionRow {...defaultProps} />);
+      renderInTable(<PrizeTransactionRow {...defaultProps} />);
 
       expect(screen.getByTestId('prize-transaction-row')).toBeInTheDocument();
       expect(screen.getByText('Spring Derby Championship')).toBeInTheDocument();
@@ -83,21 +96,21 @@ describe('PrizeTransactionRow', () => {
     });
 
     it('formats date properly', () => {
-      render(<PrizeTransactionRow {...defaultProps} />);
+      renderInTable(<PrizeTransactionRow {...defaultProps} />);
 
       // Should format as "Jan 24, 2026" or "Jan 25, 2026" depending on timezone
       expect(screen.getByTestId('transaction-date')).toHaveTextContent(/Jan 2[45], 2026/);
     });
 
     it('formats prize money with currency', () => {
-      render(<PrizeTransactionRow {...defaultProps} />);
+      renderInTable(<PrizeTransactionRow {...defaultProps} />);
 
       // Uses DollarSign icon plus formatted number (without $ prefix in text)
       expect(screen.getByTestId('prize-money')).toHaveTextContent('5,000');
     });
 
     it('shows placement badge with correct color', () => {
-      render(<PrizeTransactionRow {...defaultProps} />);
+      renderInTable(<PrizeTransactionRow {...defaultProps} />);
 
       const badge = screen.getByTestId('placement-badge');
       expect(badge).toBeInTheDocument();
@@ -105,7 +118,7 @@ describe('PrizeTransactionRow', () => {
     });
 
     it('shows XP with proper formatting', () => {
-      render(<PrizeTransactionRow {...defaultProps} />);
+      renderInTable(<PrizeTransactionRow {...defaultProps} />);
 
       const xpElement = screen.getByTestId('xp-gained');
       expect(xpElement).toHaveTextContent('150');
@@ -113,7 +126,7 @@ describe('PrizeTransactionRow', () => {
     });
 
     it('displays discipline correctly', () => {
-      render(<PrizeTransactionRow {...defaultProps} />);
+      renderInTable(<PrizeTransactionRow {...defaultProps} />);
 
       expect(screen.getByTestId('discipline-badge')).toHaveTextContent('Racing');
     });
@@ -124,7 +137,7 @@ describe('PrizeTransactionRow', () => {
   // =========================================
   describe('Layout Tests', () => {
     it('renders table layout by default (desktop)', () => {
-      render(<PrizeTransactionRow {...defaultProps} layout="table" />);
+      renderInTable(<PrizeTransactionRow {...defaultProps} layout="table" />);
 
       const row = screen.getByTestId('prize-transaction-row');
       expect(row).toHaveAttribute('data-layout', 'table');
@@ -148,7 +161,7 @@ describe('PrizeTransactionRow', () => {
   describe('Interaction Tests', () => {
     it('competition name is clickable and calls onViewCompetition', async () => {
       const user = userEvent.setup();
-      render(<PrizeTransactionRow {...defaultProps} />);
+      renderInTable(<PrizeTransactionRow {...defaultProps} />);
 
       const competitionLink = screen.getByTestId('competition-link');
       await user.click(competitionLink);
@@ -158,7 +171,7 @@ describe('PrizeTransactionRow', () => {
 
     it('horse name is clickable and calls onViewHorse', async () => {
       const user = userEvent.setup();
-      render(<PrizeTransactionRow {...defaultProps} />);
+      renderInTable(<PrizeTransactionRow {...defaultProps} />);
 
       const horseLink = screen.getByTestId('horse-link');
       await user.click(horseLink);
@@ -172,7 +185,7 @@ describe('PrizeTransactionRow', () => {
   // =========================================
   describe('Visual Tests', () => {
     it('1st place has gold badge styling', () => {
-      render(<PrizeTransactionRow {...defaultProps} />);
+      renderInTable(<PrizeTransactionRow {...defaultProps} />);
 
       const badge = screen.getByTestId('placement-badge');
       expect(badge).toHaveClass('bg-yellow-400');
@@ -180,7 +193,7 @@ describe('PrizeTransactionRow', () => {
 
     it('2nd place has silver badge and 3rd has bronze badge', () => {
       // Test 2nd place
-      const { rerender } = render(
+      const { rerender } = renderInTable(
         <PrizeTransactionRow {...defaultProps} transaction={secondPlaceTransaction} />
       );
 

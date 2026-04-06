@@ -92,7 +92,7 @@ const getPlacementBadgeClasses = (rank: number): string => {
     case 1:
       return 'bg-yellow-400 text-yellow-900';
     case 2:
-      return 'bg-[rgba(148,163,184,0.3)] text-[rgb(220,235,255)]';
+      return 'bg-gray-300 text-gray-800';
     case 3:
       return 'bg-orange-400 text-orange-900';
     default:
