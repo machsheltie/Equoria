@@ -14,19 +14,14 @@
  * Features:
  * - React.memo for performance
  * - useCallback for event handlers
- * - Focus trap when open
- * - Scroll lock when open
- * - Escape key to close (when not submitting)
- * - Backdrop click to close (when not submitting)
+ * - Uses BaseModal for portal, focus trap, scroll lock, escape key, backdrop click
  * - WCAG 2.1 AA compliance
  *
  * Story 5-1: Competition Entry System - Task 6
  */
 
-import React, { memo, useCallback, useEffect, useRef } from 'react';
-import { createPortal } from 'react-dom';
+import React, { memo, useCallback } from 'react';
 import {
-  X,
   DollarSign,
   Calendar,
   CheckCircle,
@@ -35,6 +30,7 @@ import {
   Loader2,
   Trophy,
 } from 'lucide-react';
+import BaseModal from '@/components/common/BaseModal';
 import { cn } from '@/lib/utils';
 
 /**
@@ -118,7 +114,7 @@ const formatDate = (dateString: string): string => {
  * EntryConfirmationModal Component
  *
  * Displays confirmation dialog before submitting competition entry.
- * Optimized with React.memo for performance.
+ * Delegates portal, focus trap, scroll lock, and keyboard handling to BaseModal.
  */
 const EntryConfirmationModal = memo(function EntryConfirmationModal({
   isOpen,
@@ -131,33 +127,10 @@ const EntryConfirmationModal = memo(function EntryConfirmationModal({
   submitError,
   submitSuccess = false,
 }: EntryConfirmationModalProps) {
-  const modalRef = useRef<HTMLDivElement>(null);
-  const previousActiveElement = useRef<Element | null>(null);
-
   // Calculate balance values
   const entryFee = competition?.entryFee ?? 0;
   const newBalance = userBalance - entryFee;
   const hasSufficientBalance = userBalance >= entryFee;
-
-  // Handle Escape key press
-  const handleKeyDown = useCallback(
-    (event: KeyboardEvent) => {
-      if (event.key === 'Escape' && !isSubmitting) {
-        onClose();
-      }
-    },
-    [onClose, isSubmitting]
-  );
-
-  // Handle backdrop click
-  const handleBackdropClick = useCallback(
-    (event: React.MouseEvent<HTMLDivElement>) => {
-      if (event.target === event.currentTarget && !isSubmitting) {
-        onClose();
-      }
-    },
-    [onClose, isSubmitting]
-  );
 
   // Handle confirm button click
   const handleConfirmClick = useCallback(async () => {
@@ -173,88 +146,70 @@ const EntryConfirmationModal = memo(function EntryConfirmationModal({
     }
   }, [isSubmitting, onClose]);
 
-  // Handle close button click
-  const handleCloseClick = useCallback(() => {
-    if (!isSubmitting) {
-      onClose();
-    }
-  }, [isSubmitting, onClose]);
-
-  // Focus management and keyboard handler
-  useEffect(() => {
-    if (isOpen && competition) {
-      // Store previously focused element
-      previousActiveElement.current = document.activeElement;
-
-      // Add keyboard listener
-      document.addEventListener('keydown', handleKeyDown);
-
-      // Focus the modal container for accessibility
-      if (modalRef.current) {
-        modalRef.current.focus();
-      }
-
-      // Prevent body scroll when modal is open
-      document.body.style.overflow = 'hidden';
-
-      return () => {
-        document.removeEventListener('keydown', handleKeyDown);
-        document.body.style.overflow = '';
-
-        // Restore focus to previous element
-        if (previousActiveElement.current && previousActiveElement.current instanceof HTMLElement) {
-          previousActiveElement.current.focus();
-        }
-      };
-    }
-  }, [isOpen, competition, handleKeyDown]);
-
-  // Don't render if not open or no competition
-  if (!isOpen || !competition) {
+  // Don't render if no competition
+  if (!competition && isOpen) {
     return null;
   }
 
-  const modalContent = (
-    <div
-      className="fixed inset-0 bg-black/50 flex items-center justify-center z-[var(--z-modal)] p-4"
-      onClick={handleBackdropClick}
-      data-testid="modal-backdrop"
-    >
-      <div
-        ref={modalRef}
-        role="dialog"
-        aria-modal="true"
-        aria-labelledby="entry-confirmation-title"
-        aria-describedby="entry-confirmation-description"
-        tabIndex={-1}
-        className="glass-panel rounded-lg shadow-xl max-w-lg w-full max-h-[90vh] overflow-y-auto focus:outline-none"
-        onClick={(e) => e.stopPropagation()}
-        data-testid="entry-confirmation-modal"
+  const footerContent = (
+    <>
+      <button
+        type="button"
+        onClick={handleCancelClick}
+        disabled={isSubmitting}
+        className="px-4 py-2 border border-[rgba(37,99,235,0.3)] rounded-lg text-[rgb(220,235,255)] hover:bg-[rgba(37,99,235,0.1)] transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
+        data-testid="cancel-button"
       >
-        {/* Header */}
-        <div className="flex items-start justify-between p-6 border-b border-[rgba(37,99,235,0.2)]">
-          <div className="flex-1 pr-4">
-            <h2 id="entry-confirmation-title" className="text-xl font-bold text-[rgb(220,235,255)]">
-              Confirm Entry
-            </h2>
-            <p id="entry-confirmation-description" className="text-sm text-[rgb(148,163,184)] mt-1">
-              Review your competition entry details before submitting
-            </p>
-          </div>
-          <button
-            type="button"
-            onClick={handleCloseClick}
-            disabled={isSubmitting}
-            className="text-[rgb(148,163,184)] hover:text-[rgb(220,235,255)] transition-colors disabled:opacity-50 disabled:cursor-not-allowed p-1"
-            aria-label="Close modal"
-            data-testid="close-modal-button"
-          >
-            <X className="h-6 w-6" aria-hidden="true" />
-          </button>
-        </div>
+        {submitSuccess ? 'Close' : 'Cancel'}
+      </button>
+      {!submitSuccess && (
+        <button
+          type="button"
+          onClick={handleConfirmClick}
+          disabled={isSubmitting || !hasSufficientBalance}
+          className={cn(
+            'px-6 py-2 rounded-lg text-[var(--text-primary)] transition-colors flex items-center',
+            'bg-blue-600 hover:bg-[var(--gold-dim)]',
+            'disabled:opacity-50 disabled:cursor-not-allowed'
+          )}
+          aria-busy={isSubmitting}
+          data-testid="confirm-button"
+        >
+          {isSubmitting ? (
+            <>
+              <Loader2
+                className="animate-spin -ml-1 mr-2 h-4 w-4"
+                data-testid="loading-spinner"
+                aria-hidden="true"
+              />
+              <span>Submitting...</span>
+            </>
+          ) : (
+            'Confirm Entry'
+          )}
+        </button>
+      )}
+    </>
+  );
 
-        {/* Content */}
-        <div className="p-6 space-y-6">
+  return (
+    <BaseModal
+      isOpen={isOpen}
+      onClose={onClose}
+      title="Confirm Entry"
+      size="md"
+      isSubmitting={isSubmitting}
+      footer={footerContent}
+      data-testid="entry-confirmation-modal"
+      aria-describedby="entry-confirmation-description"
+    >
+      {competition && (
+        <div className="space-y-6">
+          {/* Subtitle */}
+          <p id="entry-confirmation-description" className="text-sm text-[rgb(148,163,184)] -mt-2">
+            Review your competition entry details before submitting
+          </p>
+
           {/* Success State */}
           {submitSuccess && (
             <div
@@ -426,52 +381,9 @@ const EntryConfirmationModal = memo(function EntryConfirmationModal({
             </div>
           </div>
         </div>
-
-        {/* Footer */}
-        <div className="flex justify-end space-x-3 p-6 border-t border-[rgba(37,99,235,0.2)] bg-[rgba(15,35,70,0.5)]">
-          <button
-            type="button"
-            onClick={handleCancelClick}
-            disabled={isSubmitting}
-            className="px-4 py-2 border border-[rgba(37,99,235,0.3)] rounded-lg text-[rgb(220,235,255)] hover:bg-[rgba(37,99,235,0.1)] transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
-            data-testid="cancel-button"
-          >
-            {submitSuccess ? 'Close' : 'Cancel'}
-          </button>
-          {!submitSuccess && (
-            <button
-              type="button"
-              onClick={handleConfirmClick}
-              disabled={isSubmitting || !hasSufficientBalance}
-              className={cn(
-                'px-6 py-2 rounded-lg text-[var(--text-primary)] transition-colors flex items-center',
-                'bg-blue-600 hover:bg-[var(--gold-dim)]',
-                'disabled:opacity-50 disabled:cursor-not-allowed'
-              )}
-              aria-busy={isSubmitting}
-              data-testid="confirm-button"
-            >
-              {isSubmitting ? (
-                <>
-                  <Loader2
-                    className="animate-spin -ml-1 mr-2 h-4 w-4"
-                    data-testid="loading-spinner"
-                    aria-hidden="true"
-                  />
-                  <span>Submitting...</span>
-                </>
-              ) : (
-                'Confirm Entry'
-              )}
-            </button>
-          )}
-        </div>
-      </div>
-    </div>
+      )}
+    </BaseModal>
   );
-
-  // Render via portal for proper stacking context
-  return createPortal(modalContent, document.body);
 });
 
 export default EntryConfirmationModal;

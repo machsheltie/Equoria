@@ -11,20 +11,16 @@
  * - Entry action button with loading/error states
  *
  * Features:
- * - Radix UI Dialog for accessibility
- * - Focus trap when open
- * - Scroll lock when open
- * - Escape key to close
- * - Backdrop click to close
+ * - Uses BaseModal for portal, focus trap, scroll lock, escape key, backdrop click
  * - Responsive design (mobile/tablet/desktop)
  * - WCAG 2.1 AA compliance
  *
  * Story 5-1: Competition Entry System - Task 4
  */
 
-import React, { memo, useCallback, useEffect, useRef } from 'react';
-import { createPortal } from 'react-dom';
-import { Calendar, DollarSign, Trophy, X, Users, AlertCircle, Loader2 } from 'lucide-react';
+import React, { memo, useCallback } from 'react';
+import { Calendar, DollarSign, Trophy, Users, AlertCircle, Loader2 } from 'lucide-react';
+import BaseModal from '@/components/common/BaseModal';
 
 /**
  * Competition data structure for the modal
@@ -102,6 +98,7 @@ const calculatePrizeDistribution = (
  * CompetitionDetailModal Component
  *
  * Displays detailed competition information with entry functionality.
+ * Delegates portal, focus trap, scroll lock, and keyboard handling to BaseModal.
  */
 const CompetitionDetailModal = memo(function CompetitionDetailModal({
   isOpen,
@@ -111,29 +108,6 @@ const CompetitionDetailModal = memo(function CompetitionDetailModal({
   isSubmitting = false,
   error,
 }: CompetitionDetailModalProps) {
-  const modalRef = useRef<HTMLDivElement>(null);
-  const previousActiveElement = useRef<Element | null>(null);
-
-  // Handle Escape key press
-  const handleKeyDown = useCallback(
-    (event: KeyboardEvent) => {
-      if (event.key === 'Escape' && !isSubmitting) {
-        onClose();
-      }
-    },
-    [onClose, isSubmitting]
-  );
-
-  // Handle backdrop click
-  const handleBackdropClick = useCallback(
-    (event: React.MouseEvent<HTMLDivElement>) => {
-      if (event.target === event.currentTarget && !isSubmitting) {
-        onClose();
-      }
-    },
-    [onClose, isSubmitting]
-  );
-
   // Handle entry button click
   const handleEnterClick = useCallback(() => {
     if (competition && onEnter) {
@@ -141,91 +115,71 @@ const CompetitionDetailModal = memo(function CompetitionDetailModal({
     }
   }, [competition, onEnter]);
 
-  // Focus management and keyboard handler
-  useEffect(() => {
-    if (isOpen && competition) {
-      // Store previously focused element
-      previousActiveElement.current = document.activeElement;
-
-      // Add keyboard listener
-      document.addEventListener('keydown', handleKeyDown);
-
-      // Focus the modal container for accessibility
-      if (modalRef.current) {
-        modalRef.current.focus();
-      }
-
-      // Prevent body scroll when modal is open
-      document.body.style.overflow = 'hidden';
-
-      return () => {
-        document.removeEventListener('keydown', handleKeyDown);
-        document.body.style.overflow = '';
-
-        // Restore focus to previous element
-        if (previousActiveElement.current && previousActiveElement.current instanceof HTMLElement) {
-          previousActiveElement.current.focus();
-        }
-      };
-    }
-  }, [isOpen, competition, handleKeyDown]);
-
-  // Don't render if not open or no competition
-  if (!isOpen || !competition) {
+  // Don't render if no competition
+  if (!competition && isOpen) {
     return null;
   }
 
-  const prizeDistribution = calculatePrizeDistribution(competition.prizePool);
-  const hasRequirements = competition.entryRequirements && competition.entryRequirements.length > 0;
+  const prizeDistribution = competition ? calculatePrizeDistribution(competition.prizePool) : null;
+  const hasRequirements =
+    competition?.entryRequirements && competition.entryRequirements.length > 0;
 
-  const modalContent = (
-    <div
-      className="fixed inset-0 bg-black/50 flex items-center justify-center z-[var(--z-modal)] p-4"
-      onClick={handleBackdropClick}
-      data-testid="modal-backdrop"
-    >
-      <div
-        ref={modalRef}
-        role="dialog"
-        aria-modal="true"
-        aria-labelledby="competition-modal-title"
-        aria-describedby="competition-modal-description"
-        tabIndex={-1}
-        className="glass-panel rounded-lg shadow-xl max-w-2xl w-full max-h-[90vh] overflow-y-auto focus:outline-none"
-        onClick={(e) => e.stopPropagation()}
-        data-testid="competition-detail-modal"
+  const footerContent = (
+    <>
+      <button
+        type="button"
+        onClick={onClose}
+        disabled={isSubmitting}
+        className="px-4 py-2 border border-[rgba(37,99,235,0.3)] rounded-lg text-[rgb(220,235,255)] hover:bg-[rgba(37,99,235,0.1)] transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
       >
-        {/* Header */}
-        <div className="flex items-start justify-between p-6 border-b border-[rgba(37,99,235,0.2)]">
-          <div className="flex-1 pr-4">
-            <h2
-              id="competition-modal-title"
-              className="text-2xl font-bold text-[rgb(220,235,255)] truncate"
-              data-testid="competition-name"
-            >
-              {competition.name}
-            </h2>
-            <span
-              className="inline-block mt-2 px-3 py-1 bg-[rgba(37,99,235,0.1)] text-blue-400 text-sm font-medium rounded-full border border-blue-500/30"
-              data-testid="competition-discipline"
-            >
-              {competition.discipline}
-            </span>
-          </div>
-          <button
-            type="button"
-            onClick={onClose}
-            disabled={isSubmitting}
-            className="text-[rgb(148,163,184)] hover:text-[rgb(220,235,255)] transition-colors disabled:opacity-50 disabled:cursor-not-allowed p-1"
-            aria-label="Close modal"
-            data-testid="close-modal-button"
-          >
-            <X className="h-6 w-6" aria-hidden="true" />
-          </button>
-        </div>
+        Cancel
+      </button>
+      <button
+        type="button"
+        onClick={handleEnterClick}
+        disabled
+        className="px-6 py-2 bg-blue-600 text-[var(--text-primary)] rounded-lg hover:bg-[var(--gold-dim)] transition-colors disabled:opacity-50 disabled:cursor-not-allowed flex items-center"
+        aria-busy={isSubmitting}
+        data-testid="enter-button"
+        data-onboarding-target="competition-enter-button"
+      >
+        {isSubmitting ? (
+          <>
+            <Loader2
+              className="animate-spin -ml-1 mr-2 h-4 w-4"
+              data-testid="loading-spinner"
+              aria-hidden="true"
+            />
+            <span>Entering...</span>
+          </>
+        ) : (
+          'Enter Competition'
+        )}
+      </button>
+    </>
+  );
 
-        {/* Content */}
-        <div className="p-6 space-y-6">
+  return (
+    <BaseModal
+      isOpen={isOpen}
+      onClose={onClose}
+      title={competition?.name ?? ''}
+      size="lg"
+      isSubmitting={isSubmitting}
+      footer={footerContent}
+      data-testid="competition-detail-modal"
+      aria-describedby={competition?.description ? 'competition-modal-description' : undefined}
+    >
+      {competition && (
+        <div className="space-y-6">
+          {/* Discipline badge */}
+          <span
+            className="inline-block px-3 py-1 bg-[rgba(37,99,235,0.1)] text-blue-400 text-sm font-medium rounded-full border border-blue-500/30"
+            data-testid="competition-discipline"
+          >
+            {competition.discipline}
+          </span>
+
           {/* Description */}
           {competition.description && (
             <p
@@ -303,38 +257,40 @@ const CompetitionDetailModal = memo(function CompetitionDetailModal({
           </div>
 
           {/* Prize Distribution */}
-          <div
-            className="bg-[rgba(212,168,67,0.1)] border border-amber-500/30 rounded-lg p-4"
-            data-testid="prize-distribution"
-          >
-            <h3 className="text-sm font-semibold text-[rgb(220,235,255)] mb-3 flex items-center">
-              <Trophy className="h-4 w-4 text-amber-500 mr-2" aria-hidden="true" />
-              Prize Distribution
-            </h3>
-            <div className="grid grid-cols-3 gap-3">
-              <div className="text-center" data-testid="prize-1st">
-                <div className="text-2xl mb-1">1st</div>
-                <div className="text-amber-400 font-bold">
-                  {formatCurrency(prizeDistribution.first)}
+          {prizeDistribution && (
+            <div
+              className="bg-[rgba(212,168,67,0.1)] border border-amber-500/30 rounded-lg p-4"
+              data-testid="prize-distribution"
+            >
+              <h3 className="text-sm font-semibold text-[rgb(220,235,255)] mb-3 flex items-center">
+                <Trophy className="h-4 w-4 text-amber-500 mr-2" aria-hidden="true" />
+                Prize Distribution
+              </h3>
+              <div className="grid grid-cols-3 gap-3">
+                <div className="text-center" data-testid="prize-1st">
+                  <div className="text-2xl mb-1">1st</div>
+                  <div className="text-amber-400 font-bold">
+                    {formatCurrency(prizeDistribution.first)}
+                  </div>
+                  <div className="text-xs text-[rgb(148,163,184)]">50%</div>
                 </div>
-                <div className="text-xs text-[rgb(148,163,184)]">50%</div>
-              </div>
-              <div className="text-center" data-testid="prize-2nd">
-                <div className="text-2xl mb-1">2nd</div>
-                <div className="text-[rgb(148,163,184)] font-bold">
-                  {formatCurrency(prizeDistribution.second)}
+                <div className="text-center" data-testid="prize-2nd">
+                  <div className="text-2xl mb-1">2nd</div>
+                  <div className="text-[rgb(148,163,184)] font-bold">
+                    {formatCurrency(prizeDistribution.second)}
+                  </div>
+                  <div className="text-xs text-[rgb(148,163,184)]">30%</div>
                 </div>
-                <div className="text-xs text-[rgb(148,163,184)]">30%</div>
-              </div>
-              <div className="text-center" data-testid="prize-3rd">
-                <div className="text-2xl mb-1">3rd</div>
-                <div className="text-orange-600 font-bold">
-                  {formatCurrency(prizeDistribution.third)}
+                <div className="text-center" data-testid="prize-3rd">
+                  <div className="text-2xl mb-1">3rd</div>
+                  <div className="text-orange-600 font-bold">
+                    {formatCurrency(prizeDistribution.third)}
+                  </div>
+                  <div className="text-xs text-[rgb(148,163,184)]">20%</div>
                 </div>
-                <div className="text-xs text-[rgb(148,163,184)]">20%</div>
               </div>
             </div>
-          </div>
+          )}
 
           {/* Entry Requirements */}
           <div data-testid="entry-requirements">
@@ -390,46 +346,9 @@ const CompetitionDetailModal = memo(function CompetitionDetailModal({
             </div>
           )}
         </div>
-
-        {/* Footer */}
-        <div className="flex justify-end space-x-3 p-6 border-t border-[rgba(37,99,235,0.2)] bg-[rgba(15,35,70,0.5)]">
-          <button
-            type="button"
-            onClick={onClose}
-            disabled={isSubmitting}
-            className="px-4 py-2 border border-[rgba(37,99,235,0.3)] rounded-lg text-[rgb(220,235,255)] hover:bg-[rgba(37,99,235,0.1)] transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
-          >
-            Cancel
-          </button>
-          <button
-            type="button"
-            onClick={handleEnterClick}
-            disabled
-            className="px-6 py-2 bg-blue-600 text-[var(--text-primary)] rounded-lg hover:bg-[var(--gold-dim)] transition-colors disabled:opacity-50 disabled:cursor-not-allowed flex items-center"
-            aria-busy={isSubmitting}
-            data-testid="enter-button"
-            data-onboarding-target="competition-enter-button"
-          >
-            {isSubmitting ? (
-              <>
-                <Loader2
-                  className="animate-spin -ml-1 mr-2 h-4 w-4"
-                  data-testid="loading-spinner"
-                  aria-hidden="true"
-                />
-                <span>Entering...</span>
-              </>
-            ) : (
-              'Enter Competition'
-            )}
-          </button>
-        </div>
-      </div>
-    </div>
+      )}
+    </BaseModal>
   );
-
-  // Render via portal for proper stacking context
-  return createPortal(modalContent, document.body);
 });
 
 export default CompetitionDetailModal;

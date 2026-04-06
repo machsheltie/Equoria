@@ -18,11 +18,7 @@
  * - HorseLevelBadge next to horse names (Story 5-4)
  *
  * Features:
- * - Portal rendering for proper stacking context
- * - Focus trap when open
- * - Scroll lock when open
- * - Escape key to close
- * - Backdrop click to close
+ * - Uses BaseModal for portal, focus trap, scroll lock, escape key, backdrop click
  * - Responsive design (table collapses to cards on mobile)
  * - WCAG 2.1 AA compliance
  * - Virtual scrolling ready for large datasets
@@ -33,13 +29,11 @@
  * Story 5-4: XP System Integration - Task 7 (Integration with Competition Results)
  */
 
-import React, { memo, useCallback, useEffect, useRef, useState, useMemo } from 'react';
-import { createPortal } from 'react-dom';
+import React, { memo, useCallback, useEffect, useState, useMemo } from 'react';
 import { Link } from 'react-router-dom';
 import {
   Trophy,
   Medal,
-  X,
   Calendar,
   Users,
   AlertCircle,
@@ -49,6 +43,7 @@ import {
   ArrowDown,
   History,
 } from 'lucide-react';
+import BaseModal from '@/components/common/BaseModal';
 import PrizeSummaryCard, { type HorsePrize } from './PrizeSummaryCard';
 import PrizeNotificationModal, { type PrizeData } from './PrizeNotificationModal';
 import XpGainNotification from '../feedback/XpGainNotification';
@@ -317,6 +312,7 @@ SortHeader.displayName = 'SortHeader';
  * CompetitionResultsModal Component
  *
  * Displays full competition results with a sortable rankings table.
+ * Delegates portal, focus trap, scroll lock, and keyboard handling to BaseModal.
  */
 const CompetitionResultsModal = memo(function CompetitionResultsModal({
   isOpen,
@@ -336,9 +332,6 @@ const CompetitionResultsModal = memo(function CompetitionResultsModal({
   _testLoading = false,
   _testError = null,
 }: CompetitionResultsModalProps) {
-  const modalRef = useRef<HTMLDivElement>(null);
-  const previousActiveElement = useRef<Element | null>(null);
-
   // Sort state
   const [sortField, setSortField] = useState<SortField>('rank');
   const [sortDirection, setSortDirection] = useState<SortDirection>('asc');
@@ -490,26 +483,6 @@ const CompetitionResultsModal = memo(function CompetitionResultsModal({
     return sorted;
   }, [results?.results, sortField, sortDirection]);
 
-  // Handle Escape key press
-  const handleKeyDown = useCallback(
-    (event: KeyboardEvent) => {
-      if (event.key === 'Escape') {
-        onClose();
-      }
-    },
-    [onClose]
-  );
-
-  // Handle backdrop click
-  const handleBackdropClick = useCallback(
-    (event: React.MouseEvent<HTMLDivElement>) => {
-      if (event.target === event.currentTarget) {
-        onClose();
-      }
-    },
-    [onClose]
-  );
-
   // Handle row click for user's horses
   const handleRowClick = useCallback(
     (result: ParticipantResult) => {
@@ -519,40 +492,6 @@ const CompetitionResultsModal = memo(function CompetitionResultsModal({
     },
     [onViewPerformance]
   );
-
-  // Focus management and keyboard handler
-  useEffect(() => {
-    if (isOpen) {
-      // Store previously focused element
-      previousActiveElement.current = document.activeElement;
-
-      // Add keyboard listener
-      document.addEventListener('keydown', handleKeyDown);
-
-      // Focus the modal container for accessibility
-      if (modalRef.current) {
-        modalRef.current.focus();
-      }
-
-      // Prevent body scroll when modal is open
-      document.body.style.overflow = 'hidden';
-
-      return () => {
-        document.removeEventListener('keydown', handleKeyDown);
-        document.body.style.overflow = '';
-
-        // Restore focus to previous element
-        if (previousActiveElement.current && previousActiveElement.current instanceof HTMLElement) {
-          previousActiveElement.current.focus();
-        }
-      };
-    }
-  }, [isOpen, handleKeyDown]);
-
-  // Don't render if not open
-  if (!isOpen) {
-    return null;
-  }
 
   // Render content based on state
   const renderContent = () => {
@@ -764,109 +703,103 @@ const CompetitionResultsModal = memo(function CompetitionResultsModal({
     );
   };
 
-  const modalContent = (
-    <div
-      className="fixed inset-0 bg-black/50 flex items-center justify-center z-[var(--z-modal)] p-4"
-      onClick={handleBackdropClick}
-      data-testid="modal-backdrop"
-    >
-      <div
-        ref={modalRef}
-        role="dialog"
-        aria-modal="true"
-        aria-labelledby="results-modal-title"
-        tabIndex={-1}
-        className="glass-panel rounded-lg shadow-xl max-w-4xl w-full max-h-[90vh] overflow-hidden flex flex-col focus:outline-none"
-        onClick={(e) => e.stopPropagation()}
+  const footerContent = (
+    <div className="flex justify-between items-center w-full">
+      {/* Prize History Link - Story 5-3 */}
+      <Link
+        to="/prizes"
+        className="inline-flex items-center gap-2 text-blue-400 hover:text-blue-300 text-sm font-medium transition-colors"
+      >
+        <History className="h-4 w-4" aria-hidden="true" />
+        Prize History
+      </Link>
+      <button
+        type="button"
+        onClick={onClose}
+        className="px-4 py-2 border border-[rgba(37,99,235,0.3)] rounded-lg text-[rgb(220,235,255)] hover:bg-[rgba(37,99,235,0.1)] transition-colors"
+      >
+        Close
+      </button>
+    </div>
+  );
+
+  return (
+    <>
+      <BaseModal
+        isOpen={isOpen}
+        onClose={onClose}
+        title={results?.competitionName ?? 'Competition Results'}
+        size="xl"
+        footer={footerContent}
         data-testid="competition-results-modal"
       >
-        {/* Header */}
-        <div className="flex items-start justify-between p-6 border-b border-[rgba(37,99,235,0.2)] flex-shrink-0">
-          <div className="flex-1 pr-4">
-            <h2
-              id="results-modal-title"
-              className="text-2xl font-bold text-[rgb(220,235,255)] truncate"
-              data-testid="competition-name"
+        <div className="space-y-6">
+          {/* Subtitle row: discipline, date, participants */}
+          <div className="flex items-center gap-4 flex-wrap -mt-2">
+            <span
+              className="inline-block px-3 py-1 bg-[rgba(37,99,235,0.1)] text-blue-400 text-sm font-medium rounded-full border border-blue-500/30"
+              data-testid="competition-discipline"
             >
-              {results?.competitionName || 'Competition Results'}
-            </h2>
-            <div className="flex items-center gap-4 mt-2 flex-wrap">
-              <span
-                className="inline-block px-3 py-1 bg-[rgba(37,99,235,0.1)] text-blue-400 text-sm font-medium rounded-full border border-blue-500/30"
-                data-testid="competition-discipline"
-              >
-                {results?.discipline || 'N/A'}
-              </span>
-              <div
-                className="flex items-center text-sm text-[rgb(148,163,184)]"
-                data-testid="competition-date"
-              >
-                <Calendar className="h-4 w-4 mr-1" aria-hidden="true" />
-                {results?.date ? formatDate(results.date) : 'N/A'}
-              </div>
-              <div className="flex items-center text-sm text-[rgb(148,163,184)]">
-                <Users className="h-4 w-4 mr-1" aria-hidden="true" />
-                <span data-testid="total-participants">{results?.totalParticipants || 0}</span>
-                <span className="ml-1">participants</span>
-              </div>
+              {results?.discipline || 'N/A'}
+            </span>
+            <div
+              className="flex items-center text-sm text-[rgb(148,163,184)]"
+              data-testid="competition-date"
+            >
+              <Calendar className="h-4 w-4 mr-1" aria-hidden="true" />
+              {results?.date ? formatDate(results.date) : 'N/A'}
+            </div>
+            <div className="flex items-center text-sm text-[rgb(148,163,184)]">
+              <Users className="h-4 w-4 mr-1" aria-hidden="true" />
+              <span data-testid="total-participants">{results?.totalParticipants || 0}</span>
+              <span className="ml-1">participants</span>
             </div>
           </div>
-          <button
-            type="button"
-            onClick={onClose}
-            className="text-[rgb(148,163,184)] hover:text-[rgb(220,235,255)] transition-colors p-1"
-            aria-label="Close modal"
-            data-testid="close-modal-button"
-          >
-            <X className="h-6 w-6" aria-hidden="true" />
-          </button>
-        </div>
 
-        {/* Prize Distribution */}
-        {results && (
-          <div
-            className="bg-[rgba(212,168,67,0.1)] border-b border-[rgba(37,99,235,0.2)] p-4 flex-shrink-0"
-            data-testid="prize-distribution"
-          >
-            <div className="flex items-center mb-3">
-              <Trophy className="h-5 w-5 text-amber-500 mr-2" aria-hidden="true" />
-              <h3 className="text-sm font-semibold text-[rgb(220,235,255)]">
-                Prize Pool: {formatCurrency(results.prizePool)}
-              </h3>
-            </div>
-            <div className="grid grid-cols-3 gap-4">
-              <div className="text-center" data-testid="prize-1st">
-                <div className="text-lg font-bold text-amber-400">1st</div>
-                <div className="text-sm text-[rgb(148,163,184)]">50%</div>
-                <div className="font-semibold text-[rgb(220,235,255)]">
-                  {formatCurrency(results.prizeDistribution.first)}
-                </div>
+          {/* Prize Distribution */}
+          {results && (
+            <div
+              className="bg-[rgba(212,168,67,0.1)] border border-amber-500/20 rounded-lg p-4"
+              data-testid="prize-distribution"
+            >
+              <div className="flex items-center mb-3">
+                <Trophy className="h-5 w-5 text-amber-500 mr-2" aria-hidden="true" />
+                <h3 className="text-sm font-semibold text-[rgb(220,235,255)]">
+                  Prize Pool: {formatCurrency(results.prizePool)}
+                </h3>
               </div>
-              <div className="text-center" data-testid="prize-2nd">
-                <div className="text-lg font-bold text-[rgb(148,163,184)]">2nd</div>
-                <div className="text-sm text-[rgb(148,163,184)]">30%</div>
-                <div className="font-semibold text-[rgb(220,235,255)]">
-                  {formatCurrency(results.prizeDistribution.second)}
+              <div className="grid grid-cols-3 gap-4">
+                <div className="text-center" data-testid="prize-1st">
+                  <div className="text-lg font-bold text-amber-400">1st</div>
+                  <div className="text-sm text-[rgb(148,163,184)]">50%</div>
+                  <div className="font-semibold text-[rgb(220,235,255)]">
+                    {formatCurrency(results.prizeDistribution.first)}
+                  </div>
                 </div>
-              </div>
-              <div className="text-center" data-testid="prize-3rd">
-                <div className="text-lg font-bold text-orange-600">3rd</div>
-                <div className="text-sm text-[rgb(148,163,184)]">20%</div>
-                <div className="font-semibold text-orange-600">
-                  {formatCurrency(results.prizeDistribution.third)}
+                <div className="text-center" data-testid="prize-2nd">
+                  <div className="text-lg font-bold text-[rgb(148,163,184)]">2nd</div>
+                  <div className="text-sm text-[rgb(148,163,184)]">30%</div>
+                  <div className="font-semibold text-[rgb(220,235,255)]">
+                    {formatCurrency(results.prizeDistribution.second)}
+                  </div>
+                </div>
+                <div className="text-center" data-testid="prize-3rd">
+                  <div className="text-lg font-bold text-orange-600">3rd</div>
+                  <div className="text-sm text-[rgb(148,163,184)]">20%</div>
+                  <div className="font-semibold text-orange-600">
+                    {formatCurrency(results.prizeDistribution.third)}
+                  </div>
                 </div>
               </div>
             </div>
-          </div>
-        )}
+          )}
 
-        {/* Content Area */}
-        <div className="flex-1 overflow-y-auto p-6">
+          {/* Results table / loading / error / empty */}
           {renderContent()}
 
           {/* Prize Summary Card - Story 5-3: Show when user has prizes */}
           {hasUserPrizes && results && (
-            <div className="mt-6">
+            <div className="mt-2">
               <PrizeSummaryCard
                 competitionId={results.competitionId}
                 competitionName={results.competitionName}
@@ -879,26 +812,7 @@ const CompetitionResultsModal = memo(function CompetitionResultsModal({
             </div>
           )}
         </div>
-
-        {/* Footer */}
-        <div className="flex justify-between items-center p-4 border-t border-[rgba(37,99,235,0.2)] bg-[rgba(15,35,70,0.5)] flex-shrink-0">
-          {/* Prize History Link - Story 5-3 */}
-          <Link
-            to="/prizes"
-            className="inline-flex items-center gap-2 text-blue-400 hover:text-blue-300 text-sm font-medium transition-colors"
-          >
-            <History className="h-4 w-4" aria-hidden="true" />
-            Prize History
-          </Link>
-          <button
-            type="button"
-            onClick={onClose}
-            className="px-4 py-2 border border-[rgba(37,99,235,0.3)] rounded-lg text-[rgb(220,235,255)] hover:bg-[rgba(37,99,235,0.1)] transition-colors"
-          >
-            Close
-          </button>
-        </div>
-      </div>
+      </BaseModal>
 
       {/* Prize Notification Modal - Story 5-3 */}
       {showPrizeNotification && bestPrize && (
@@ -937,11 +851,8 @@ const CompetitionResultsModal = memo(function CompetitionResultsModal({
           totalXpGained={levelUpData.totalXpGained}
         />
       )}
-    </div>
+    </>
   );
-
-  // Render via portal for proper stacking context
-  return createPortal(modalContent, document.body);
 });
 
 export default CompetitionResultsModal;
