@@ -424,10 +424,10 @@ const CompetitionResultsModal = memo(function CompetitionResultsModal({
     }
     return {
       xpGained: userPrizes.length > 0 ? Math.round(userPrizes[0].xpGained ?? 50) : 50,
-      currentLevel: horseLevelData.currentLevel,
-      currentXp: horseLevelData.currentXp,
-      xpForCurrentLevel: horseLevelData.xpForCurrentLevel,
-      xpToNextLevel: horseLevelData.xpToNextLevel,
+      currentLevel: horseLevelData.availableStatPoints,
+      currentXp: horseLevelData.currentXP,
+      xpForCurrentLevel: horseLevelData.nextStatPointAt - horseLevelData.xpToNextStatPoint,
+      xpToNextLevel: horseLevelData.nextStatPointAt,
     };
   }, [horseLevelData, userPrizes]);
 
@@ -660,7 +660,7 @@ const CompetitionResultsModal = memo(function CompetitionResultsModal({
                       >
                         {result.horseName}
                       </span>
-                      <HorseLevelBadge level={horseLevelData?.currentLevel ?? 1} size="small" />
+                      <HorseLevelBadge level={horseLevelData?.availableStatPoints ?? 1} size="small" />
                     </div>
                   </td>
                   <td className="px-4 py-3 whitespace-nowrap">
@@ -687,10 +687,10 @@ const CompetitionResultsModal = memo(function CompetitionResultsModal({
                   </td>
                   <td className="px-4 py-3">
                     <XpProgressTracker
-                      currentLevel={horseLevelData?.currentLevel ?? 1}
-                      currentXp={horseLevelData?.currentXp ?? 0}
-                      xpForCurrentLevel={horseLevelData?.xpForCurrentLevel ?? 0}
-                      xpToNextLevel={horseLevelData?.xpToNextLevel ?? 100}
+                      currentLevel={horseLevelData?.availableStatPoints ?? 1}
+                      currentXp={horseLevelData?.currentXP ?? 0}
+                      xpForCurrentLevel={horseLevelData ? horseLevelData.nextStatPointAt - horseLevelData.xpToNextStatPoint : 0}
+                      xpToNextLevel={horseLevelData?.nextStatPointAt ?? 100}
                       size="small"
                     />
                   </td>

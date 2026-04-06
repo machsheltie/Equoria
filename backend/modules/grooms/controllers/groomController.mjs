@@ -603,7 +603,10 @@ export async function hireGroom(req, res) {
       bio,
       availability,
     } = req.body;
-    const userId = req.user?.id || '83970fb4-f086-46b3-9e76-ae71720d2918'; // TODO: Get from auth
+    const userId = req.user?.id;
+    if (!userId) {
+      return res.status(401).json({ success: false, message: 'Authentication required' });
+    }
 
     logger.info(`[groomController.hireGroom] Hiring new groom ${name} for user ${userId}`);
 

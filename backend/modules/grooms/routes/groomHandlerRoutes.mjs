@@ -167,29 +167,22 @@ router.get('/statistics', async (req, res) => {
     for (const result of results) {
       const placement = parseInt(result.placement) || 999;
 
-      // Check if this result had handler info (stored in statGains or other field)
-      // For now, we'll simulate this check - in production, you'd store handler info in results
-      const hadHandler = Math.random() > 0.3; // Simulate 70% had handlers
+      // Handler tracking is not yet stored in competition results.
+      // All results are counted without-handler until the schema is extended.
+      handlerStats.competitionsWithoutHandlers++;
+      placementSumWithoutHandler += placement;
 
-      if (hadHandler) {
-        handlerStats.competitionsWithHandlers++;
-        placementSumWithHandler += placement;
-
-        // Track discipline performance
-        const { discipline } = result.show;
-        if (!handlerStats.disciplinePerformance[discipline]) {
-          handlerStats.disciplinePerformance[discipline] = {
-            competitions: 0,
-            averagePlacement: 0,
-            totalPlacement: 0,
-          };
-        }
-        handlerStats.disciplinePerformance[discipline].competitions++;
-        handlerStats.disciplinePerformance[discipline].totalPlacement += placement;
-      } else {
-        handlerStats.competitionsWithoutHandlers++;
-        placementSumWithoutHandler += placement;
+      // Track discipline performance for all competitions
+      const { discipline } = result.show;
+      if (!handlerStats.disciplinePerformance[discipline]) {
+        handlerStats.disciplinePerformance[discipline] = {
+          competitions: 0,
+          averagePlacement: 0,
+          totalPlacement: 0,
+        };
       }
+      handlerStats.disciplinePerformance[discipline].competitions++;
+      handlerStats.disciplinePerformance[discipline].totalPlacement += placement;
     }
 
     // Calculate averages

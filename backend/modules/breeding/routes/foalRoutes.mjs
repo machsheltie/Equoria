@@ -41,14 +41,15 @@ router.get(
 
       const developmentData = await getFoalDevelopment(foalId);
 
-      // Ensure foal has a groom assignment
-      try {
-        const playerId = req.user?.id || 'default-player'; // TODO: Get from auth
-        await ensureDefaultGroomAssignment(parseInt(foalId, 10), playerId);
-      } catch (groomError) {
-        logger.warn(
-          `[foalRoutes] Failed to ensure groom assignment for foal ${foalId}: ${groomError.message}`,
-        );
+      // Ensure foal has a groom assignment (requires authenticated user)
+      if (req.user?.id) {
+        try {
+          await ensureDefaultGroomAssignment(parseInt(foalId, 10), req.user.id);
+        } catch (groomError) {
+          logger.warn(
+            `[foalRoutes] Failed to ensure groom assignment for foal ${foalId}: ${groomError.message}`,
+          );
+        }
       }
 
       res.json({
