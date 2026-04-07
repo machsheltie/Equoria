@@ -32,10 +32,11 @@ export function usePageBackground(options?: UsePageBackgroundOptions): CSSProper
 
   return {
     backgroundColor: 'var(--bg-deep-space)',
-    // P-3: readability veil layered over the image (AC5: rgba(5,10,20,0.45))
-    // P-4: guard against url('undefined') when webpPath is empty
+    // Readability veil layered over the image (AC5: rgba(5,10,20,0.45)).
+    // image-set() provides WebP + JPEG fallback for browsers that don't support WebP.
+    // Guard against url('undefined') when webpPath is empty.
     backgroundImage: webpPath
-      ? `linear-gradient(rgba(5,10,20,0.45), rgba(5,10,20,0.45)), url('${webpPath}')`
+      ? `linear-gradient(rgba(5,10,20,0.45), rgba(5,10,20,0.45)), image-set(url('${webpPath}') type('image/webp'), url('${webpPath.replace(/\.webp$/, '.jpg')}') type('image/jpeg'))`
       : undefined,
     backgroundSize: 'cover',
     backgroundPosition: 'center center',
@@ -52,9 +53,11 @@ interface PageBackgroundProps {
 }
 
 /**
- * Renders an invisible marker div (for tests) and applies background to
- * the document body via inline styles. Kept for pages that render
- * PageBackground as a child (OnboardingPage, auth pages).
+ * Renders an invisible marker div carrying the resolved WebP path in
+ * `data-bg` (used by tests to assert scene paths without relying on
+ * jsdom's incomplete image-set() parsing). Does NOT apply any style to
+ * document.body — callers that need the background should use
+ * `usePageBackground()` instead.
  */
 export function PageBackground({ scene, src }: PageBackgroundProps) {
   const hookPath = useResponsiveBackground(scene);

@@ -169,7 +169,7 @@ export function useSessionGuard(options: SessionGuardOptions = {}): SessionGuard
         sessionMessage,
         redirectPath: loginPath,
         redirectState: {
-          from: location.pathname,
+          from: location.pathname + location.search + location.hash,
           message: sessionMessage || undefined,
         },
       };
@@ -183,7 +183,7 @@ export function useSessionGuard(options: SessionGuardOptions = {}): SessionGuard
         sessionMessage: 'Please verify your email to access this page.',
         redirectPath: '/verify-email',
         redirectState: {
-          from: location.pathname,
+          from: location.pathname + location.search + location.hash,
           message: 'Please verify your email to access this page.',
         },
       };

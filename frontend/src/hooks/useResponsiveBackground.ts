@@ -76,20 +76,27 @@ function selectSuffix(): string {
  *               (backward-compatible with pre-Story-22.3 consumers).
  */
 export function useResponsiveBackground(scene?: SceneKey): string {
-  // 'default' is a named sentinel meaning "use the generic /images/bg-*.webp set".
-  // Treat it identically to no scene so the viewport-ratio images are served.
-  const buildPath = (suffix: string) =>
-    scene && scene !== 'default'
+  const [bg, setBg] = useState(() => {
+    // 'default' is a named sentinel meaning "use the generic /images/bg-*.webp set".
+    const suffix = selectSuffix();
+    return scene && scene !== 'default'
       ? `/images/backgrounds/${scene}/bg-${suffix}.webp`
       : `/images/bg-${suffix}.webp`;
-
-  const [bg, setBg] = useState(() => buildPath(selectSuffix()));
+  });
 
   useEffect(() => {
-    // P-2: update immediately on scene change (navigation doesn't trigger resize)
+    // buildPath defined inside the effect so the resize debounce always closes
+    // over the scene value that was current when this effect ran — preventing
+    // in-flight debounces from firing with a previous scene's path.
+    const buildPath = (suffix: string) =>
+      scene && scene !== 'default'
+        ? `/images/backgrounds/${scene}/bg-${suffix}.webp`
+        : `/images/bg-${suffix}.webp`;
+
+    // Update immediately on scene change (navigation doesn't trigger resize)
     setBg(buildPath(selectSuffix()));
 
-    // D-1: debounce resize — avoids per-pixel re-renders when dragging window edge
+    // Debounce resize — avoids per-pixel re-renders when dragging window edge
     let debounceId: ReturnType<typeof setTimeout>;
     const onResize = () => {
       clearTimeout(debounceId);

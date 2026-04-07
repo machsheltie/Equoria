@@ -88,7 +88,7 @@ const ResetPasswordPage: React.FC = () => {
     </div>
   );
 
-  const bgStyle = usePageBackground({ scene: 'default' });
+  const bgStyle = usePageBackground({ scene: 'auth' });
   const pageShell = (children: React.ReactNode) => (
     <div
       className="min-h-screen w-full flex flex-col items-center justify-center relative overflow-hidden py-8"

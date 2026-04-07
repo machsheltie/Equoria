@@ -2,7 +2,7 @@
 
 **Epic:** 22 — Celestial Night Foundation
 **Story Key:** 22-3-painted-background-system
-**Status:** review
+**Status:** done
 **Last Updated:** 2026-04-02
 
 ---
@@ -182,8 +182,25 @@ All 8 tasks complete. Key decisions:
 
 ---
 
+### Review Findings
+
+- [x] [Review][Decision] PageBackground rendered as hidden marker div — **ACCEPTED**: hook-based bg on parent div. No structural change.
+- [x] [Review][Decision] Readability veil implemented as CSS `linear-gradient()` — **ACCEPTED**: gradient is sounder than nested div.
+- [x] [Review][Patch] Auth pages pass `scene: 'default'` — **FIXED**: all 5 auth pages now use `scene: 'auth'`
+- [x] [Review][Patch] No JPEG fallback via `image-set()` — **FIXED**: `PageBackground.tsx` `usePageBackground` now emits `image-set()` with WebP + JPEG
+- [x] [Review][Patch] Stale `buildPath` closure in resize debounce — **FIXED**: `buildPath` moved inside `useEffect` in `useResponsiveBackground.ts`
+- [x] [Review][Patch] Auth redirect drops query string — **FIXED**: `useSessionGuard.ts` now stores `pathname + search + hash`
+- [x] [Review][Patch] `PageBackground` JSDoc claims it applies background to `document.body` — **FIXED**: JSDoc updated to accurately describe the marker div
+- [x] [Review][Patch] `getSceneForPath` entirely commented out — **FIXED**: DashboardLayout.tsx now has prominent ARTIST HOLD block with migration checklist; `competition-results` prefix order documented
+- [x] [Review][Patch] `STATIC_BG` undocumented artist-hold — **FIXED**: per-route art status and do-not-touch rules documented in DashboardLayout.tsx
+- [x] [Review][Patch] `RegisterPage` `onError` fragile substring check — **FIXED**: checks `'already exists'`/`'already in use'` matching actual backend error strings
+
+---
+
 ## Change Log
 
 | Date       | Change                        |
 | ---------- | ----------------------------- |
 | 2026-04-02 | Story created and implemented |
+| 2026-04-07 | Code review — 2 decisions, 5 patches, 5 deferred, 2 dismissed |
+| 2026-04-07 | All review findings resolved — story closed |

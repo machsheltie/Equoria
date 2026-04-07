@@ -84,7 +84,14 @@ const RegisterPage: React.FC = () => {
         onSuccess: () => navigate('/verify-email'),
         onError: (err) => {
           const message = (err.message ?? '').toLowerCase();
-          if (message.includes('email') && message.includes('taken')) {
+          // Backend returns 'already exists' or 'already in use' for duplicate email/username
+          if (message.includes('already exists') || message.includes('already in use')) {
+            if (message.includes('email')) {
+              setValidationErrors({ email: 'This email address is already registered.' });
+            } else {
+              setValidationErrors({ username: 'This username is already taken.' });
+            }
+          } else if (message.includes('email')) {
             setValidationErrors({ email: 'This email address is already registered.' });
           } else if (message.includes('username')) {
             setValidationErrors({ username: 'This username is already taken.' });
@@ -105,7 +112,7 @@ const RegisterPage: React.FC = () => {
     </div>
   );
 
-  const bgStyle = usePageBackground({ scene: 'default' });
+  const bgStyle = usePageBackground({ scene: 'auth' });
   return (
     <div
       className="min-h-screen w-full flex flex-col items-center justify-center relative overflow-hidden py-8"
