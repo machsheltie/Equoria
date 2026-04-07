@@ -143,6 +143,35 @@ test.describe('Auth page chrome — 375px', () => {
 ### Story 22-6 Context (Previous Story)
 Story 22-6 delivered 12 game-native UI components under `frontend/src/components/ui/game/`. No direct overlap with 22-7 — this story is purely about body chrome, nav polish, and auth layout tokens.
 
+### ATDD Run Results (2026-04-07)
+
+Ran 10 tests × 3 browsers = 30 total. **15 failing** (correct), **15 passing** (already implemented):
+
+**Failing — needs implementation:**
+- E2E-001/002/004/005: `[data-testid="page-background"]` NOT in DOM on login page.
+  **Root cause:** Auth pages call `usePageBackground()` hook only — the `<PageBackground>` component
+  (which renders the marker `<div data-testid="page-background">`) is never mounted.
+  **Fix required:** Render `<PageBackground scene="auth" />` as a child element inside each auth page's
+  JSX root, alongside the existing `usePageBackground` hook call. Example:
+  ```tsx
+  const bgStyle = usePageBackground({ scene: 'auth' });
+  return (
+    <div className="min-h-screen ..." style={bgStyle}>
+      <PageBackground scene="auth" />   {/* marker div for tests */}
+      ...
+    </div>
+  );
+  ```
+- E2E-009: NavPanel active item uses `border border-[rgba(...)]` — `border-l-2` not applied yet.
+
+**Already passing — no work needed:**
+- E2E-003/006: Glass panel visible + centered ✓ (shadcn centering already correct)
+- E2E-007/008: Body background is dark ✓ (`--gradient-night-sky` already applied)
+- E2E-010: Cinzel font on login title ✓ (`fantasy-title` class already uses Cinzel)
+
+**Implication for T1 (radial accents):** The body background tests already pass — the radial accent
+layers are additive polish. They won't cause test failure but are still required per AC1.
+
 ### Prerequisites Already Met
 - ✅ `--gradient-night-sky` token defined in `tokens.css`
 - ✅ `--font-heading` (Cinzel) applied to logo
