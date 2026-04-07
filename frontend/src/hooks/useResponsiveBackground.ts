@@ -12,10 +12,11 @@
  *    1:1  → iPad split-view, foldables
  *    9:16 → phones (portrait)
  *
- * When `scene` is provided, paths resolve to:
+ * When `scene` is in SCENES_WITH_ART, paths resolve to:
  *   /images/backgrounds/{scene}/bg-{ratio}.webp
- * When omitted, falls back to the generic:
- *   /images/bg-{ratio}.webp  (backward-compatible)
+ * Otherwise (no scene, scene='default', or scene art not yet delivered),
+ * ALWAYS falls back to the generic set that is guaranteed to exist:
+ *   /images/bg-{ratio}.webp
  */
 
 import { useState, useEffect } from 'react';
@@ -23,8 +24,6 @@ import { useState, useEffect } from 'react';
 /**
  * Scene keys for painted background art — Story 22.3.
  * Each key maps to a directory under /images/backgrounds/{scene}/.
- * Art assets are committed as they are painted; missing scenes fall
- * back to var(--bg-deep-space) background-color in PageBackground.
  */
 export type SceneKey =
   | 'auth'
@@ -36,6 +35,34 @@ export type SceneKey =
   | 'breeding'
   | 'world'
   | 'default';
+
+/**
+ * SCENES WITH ART ASSETS — the only scenes that have image files in
+ * /public/images/backgrounds/{scene}/bg-{ratio}.webp.
+ *
+ * ⚠️  IMPORTANT: When new scene art is delivered, ADD THE SCENE KEY HERE.
+ * Any scene NOT in this set falls back to the generic /images/bg-{ratio}.webp
+ * files so a background is always shown rather than a blank page.
+ *
+ * Current state (2026-04-07):
+ *   - 'auth'        → ❌ No art yet — falls back to generic
+ *   - 'hub'         → ❌ No art yet — falls back to generic
+ *   - 'stable'      → ❌ No art yet — falls back to generic
+ *   - 'horse-detail'→ ❌ No art yet — falls back to generic
+ *   - 'training'    → ❌ No art yet — falls back to generic
+ *   - 'competition' → ❌ No art yet — falls back to generic
+ *   - 'breeding'    → ❌ No art yet — falls back to generic
+ *   - 'world'       → ❌ No art yet — falls back to generic
+ *
+ * Generic files that DO exist (always used as fallback):
+ *   /images/bg-16.9.webp, bg-21.9.webp, bg-3.2.webp, bg-4.3.webp,
+ *   bg-1.1.webp, bg-9.16.webp
+ */
+const SCENES_WITH_ART = new Set<SceneKey>([
+  // Add scene keys here as art assets are committed:
+  // 'auth',
+  // 'hub',
+]);
 
 /** Ratio descriptor — numeric value + file suffix */
 const RATIO_OPTIONS = [
@@ -70,16 +97,18 @@ function selectSuffix(): string {
  * Returns the WebP URL for the background image that best matches the
  * current viewport aspect ratio. Re-evaluates on window resize.
  *
- * @param scene  Optional scene key. When provided, resolves to
- *               `/images/backgrounds/{scene}/bg-{ratio}.webp`.
- *               When omitted, resolves to `/images/bg-{ratio}.webp`
- *               (backward-compatible with pre-Story-22.3 consumers).
+ * @param scene  Optional scene key. When a scene is in SCENES_WITH_ART,
+ *               resolves to `/images/backgrounds/{scene}/bg-{ratio}.webp`.
+ *               Otherwise (scene missing, 'default', or not yet delivered)
+ *               falls back to `/images/bg-{ratio}.webp` — the generic set
+ *               that always exists. This guarantees a background is always
+ *               shown even when scene-specific art hasn't been created yet.
  */
 export function useResponsiveBackground(scene?: SceneKey): string {
   const [bg, setBg] = useState(() => {
-    // 'default' is a named sentinel meaning "use the generic /images/bg-*.webp set".
     const suffix = selectSuffix();
-    return scene && scene !== 'default'
+    const useScene = scene && scene !== 'default' && SCENES_WITH_ART.has(scene);
+    return useScene
       ? `/images/backgrounds/${scene}/bg-${suffix}.webp`
       : `/images/bg-${suffix}.webp`;
   });
@@ -88,10 +117,9 @@ export function useResponsiveBackground(scene?: SceneKey): string {
     // buildPath defined inside the effect so the resize debounce always closes
     // over the scene value that was current when this effect ran — preventing
     // in-flight debounces from firing with a previous scene's path.
+    const useScene = scene && scene !== 'default' && SCENES_WITH_ART.has(scene);
     const buildPath = (suffix: string) =>
-      scene && scene !== 'default'
-        ? `/images/backgrounds/${scene}/bg-${suffix}.webp`
-        : `/images/bg-${suffix}.webp`;
+      useScene ? `/images/backgrounds/${scene}/bg-${suffix}.webp` : `/images/bg-${suffix}.webp`;
 
     // Update immediately on scene change (navigation doesn't trigger resize)
     setBg(buildPath(selectSuffix()));

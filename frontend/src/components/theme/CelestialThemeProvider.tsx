@@ -24,50 +24,76 @@ import { toast } from 'sonner';
 const THEME_KEY = 'equoria-theme';
 const WELCOME_SHOWN_KEY = 'equoria-theme-welcome-shown';
 
+/**
+ * Read a localStorage value safely — returns null on access error
+ * (iOS private browsing, sandboxed iframes, storage quota exceeded).
+ */
+function safeLocalStorageGet(key: string): string | null {
+  try {
+    return localStorage.getItem(key);
+  } catch {
+    return null;
+  }
+}
+
+/**
+ * Derive whether the Celestial Night theme should be active from the
+ * URL param and stored preference. Single source of truth used by both
+ * useLayoutEffect (DOM class) and useEffect (side effects).
+ */
+function deriveTheme(themeParam: string | null): 'celestial' | 'default' {
+  const stored = safeLocalStorageGet(THEME_KEY);
+  if (themeParam === 'celestial') return 'celestial';
+  if (themeParam === 'default') return 'default';
+  if (stored === 'default') return 'default';
+  return 'celestial'; // default-on
+}
+
 export function CelestialThemeProvider() {
   const [searchParams, setSearchParams] = useSearchParams();
+  const themeParam = searchParams.get('theme');
 
-  // Apply body.celestial synchronously before first paint — prevents FOUC
+  // Apply body.celestial synchronously before first paint — prevents FOUC.
+  // Depends on themeParam only (not the full searchParams object) so unrelated
+  // URL param changes (pagination, filters) do not trigger a layout-blocking DOM op.
   useLayoutEffect(() => {
-    const param = searchParams.get('theme');
-    const stored = localStorage.getItem(THEME_KEY);
-    const shouldBeCelestial =
-      param === 'celestial' || (param !== 'default' && stored !== 'default');
-
-    if (shouldBeCelestial) {
+    const theme = deriveTheme(themeParam);
+    if (theme === 'celestial') {
       document.body.classList.add('celestial');
     } else {
       document.body.classList.remove('celestial');
     }
-  }, [searchParams]);
+  }, [themeParam]);
 
   // Side effects: localStorage writes, URL cleanup, welcome toast
   useEffect(() => {
-    const param = searchParams.get('theme');
-
-    if (param === 'celestial') {
+    if (themeParam === 'celestial') {
       localStorage.setItem(THEME_KEY, 'celestial');
       const next = new URLSearchParams(searchParams);
       next.delete('theme');
       setSearchParams(next, { replace: true });
-    } else if (param === 'default') {
+    } else if (themeParam === 'default') {
       localStorage.setItem(THEME_KEY, 'default');
       const next = new URLSearchParams(searchParams);
       next.delete('theme');
       setSearchParams(next, { replace: true });
     } else {
-      const stored = localStorage.getItem(THEME_KEY);
+      const stored = safeLocalStorageGet(THEME_KEY);
 
       // First-time visitor with no stored preference — show welcome toast once
       if (stored === null) {
-        const alreadyShown = localStorage.getItem(WELCOME_SHOWN_KEY);
+        const alreadyShown = safeLocalStorageGet(WELCOME_SHOWN_KEY);
         if (!alreadyShown) {
-          localStorage.setItem(WELCOME_SHOWN_KEY, 'true');
+          try {
+            localStorage.setItem(WELCOME_SHOWN_KEY, 'true');
+          } catch {
+            // Storage write failure is non-fatal — toast may re-appear on next visit
+          }
           toast('Equoria has a new look! Use ?theme=default in the URL to revert.');
         }
       }
     }
-  }, [searchParams, setSearchParams]);
+  }, [themeParam, searchParams, setSearchParams]);
 
   return null;
 }

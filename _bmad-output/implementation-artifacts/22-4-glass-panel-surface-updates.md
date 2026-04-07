@@ -2,12 +2,12 @@
 id: 22-4
 title: Glass Panel & Surface Updates
 epic: 22
-status: review
+status: done
 ---
 
 # Story 22-4: Glass Panel & Surface Updates
 
-**Status:** review
+**Status:** done
 
 ## Acceptance Criteria
 
@@ -31,3 +31,9 @@ status: review
 ### Completion Notes
 
 All three glass panel variants are now properly scoped under `.celestial`. The critical fix is `.glass-panel-subtle` which previously had `backdrop-filter: blur(6px)` — violating the single-blur-layer rule. It now uses a solid semi-transparent background with a gold border, making it safe to nest inside any blurred parent container without performance or visual stacking issues.
+
+### Review Findings
+
+- [x] [Review][Patch] Duplicated `shouldBeCelestial` derivation between `useLayoutEffect` and `useEffect` — extracted `deriveTheme()` helper, single source of truth [CelestialThemeProvider.tsx]
+- [x] [Review][Patch] `useLayoutEffect` fired on every `searchParams` change — now depends on `themeParam` only [CelestialThemeProvider.tsx]
+- [x] [Review][Patch] `localStorage.getItem` inside `useLayoutEffect` without try/catch — extracted `safeLocalStorageGet()` helper with try/catch fallback [CelestialThemeProvider.tsx]
