@@ -1,0 +1,164 @@
+# Story 22-7: Body & Page Chrome
+
+**Epic:** 22 — Celestial Night Foundation
+**Story Key:** 22-7-body-and-page-chrome
+**Status:** ready-for-dev
+**Last Updated:** 2026-04-07
+
+---
+
+## User Story
+
+As a player,
+I want the entire page background, navigation, and authentication pages to feel celestial,
+So that the atmosphere is consistent from login through gameplay.
+
+---
+
+## Acceptance Criteria
+
+- [ ] **AC1:** Given the `.celestial` class is active, when any page loads, the body background is a deep navy gradient (`#0a0e1a` → `#111827`) with subtle gold/blue radial accents layered in CSS
+- [ ] **AC2:** The `MainNavigation` component uses Celestial Night colors: navy blur background, gold text for the logo rendered in Cinzel, gold-tinted icons for bell/avatar actions
+- [ ] **AC3:** The active nav item in `NavPanel` has a 2px solid gold left-border indicator on desktop, and a 2px solid gold bottom-border indicator on mobile (≤ 767px)
+- [ ] **AC4:** Auth pages (Login, Register, ForgotPassword, ResetPassword, VerifyEmail) display `PageBackground` with `scene="auth"` and a centered glass panel — already implemented in Story 22-3; **verify** no regression
+- [ ] **AC5:** `AuthLayout.tsx` is updated to Celestial Night styling: no old `bg-background` wrapper, header uses `var(--font-heading)` for the logo, footer uses `--text-muted` coloring
+- [ ] **AC6:** The page feels immersive at all breakpoints: 375px mobile through 1440px desktop — no white flashes, no unstyled sections visible
+- [ ] **AC7:** Playwright E2E screenshot test covers the login page at 375px and 1440px, confirming `PageBackground` (`scene="auth"`) is present (`data-testid="page-background"`) and the glass panel is centered
+- [ ] **AC8:** `npm run lint` exits 0 for all modified files
+
+---
+
+## Tasks/Subtasks
+
+- [ ] **T1: Body background radial accents** (`frontend/src/index.css`)
+  - [ ] T1.1: Under `.celestial body` (or `body` if already under `.celestial` scope), add two radial accent layers: a gold one (`rgba(201,162,39,0.04)` at top-left ellipse) and a blue one (`rgba(37,99,235,0.03)` at bottom-right ellipse) as CSS `background` layers stacked over `--gradient-night-sky`
+  - [ ] T1.2: Keep `background-attachment: fixed` on body so the gradient stays anchored during scroll
+
+- [ ] **T2: MainNavigation gold active indicator** (`frontend/src/components/layout/NavPanel.tsx`)
+  - [ ] T2.1: Replace the current active item's `border border-[rgba(200,168,78,0.2)]` with a left-side 2px gold border: `border-l-2 border-l-[var(--gold-primary)] border-r-0 border-t-0 border-b-0`
+  - [ ] T2.2: Add a responsive bottom-indicator at mobile (< 768px) — use a Tailwind responsive class or a CSS media query to swap to `border-b-2 border-b-[var(--gold-primary)] border-l-0`
+  - [ ] T2.3: Keep the gold tinted background `bg-[rgba(200,168,78,0.1)]` on active — only change the border shape
+
+- [ ] **T3: AuthLayout.tsx Celestial Night update** (`frontend/src/components/auth/AuthLayout.tsx`)
+  - [ ] T3.1: Remove `bg-background` from the outer wrapper div — the auth pages that use `AuthLayout` should inherit the PageBackground or have their own background styling
+  - [ ] T3.2: In `AuthHeader`, change logo styling to use `fantasy-title` class + `var(--font-heading)` (matches all other page headers)
+  - [ ] T3.3: In `AuthFooter`, update the copyright text color from hardcoded `rgb(100,130,165)` to `var(--text-muted)` token
+  - [ ] T3.4: In `AuthFooterLink`, update link text from hardcoded `rgb(212,168,67)` to `var(--gold-primary)` token
+  - [ ] T3.5: In `AuthCardHeader`, update `text-[rgb(212,168,67)]` → `text-[var(--gold-primary)]` and `text-[rgb(148,163,184)]` → `text-[var(--text-secondary)]`
+
+- [ ] **T4: Playwright E2E screenshot test** (`tests/e2e/`)
+  - [ ] T4.1: Create `tests/e2e/auth-page-chrome.spec.ts`
+  - [ ] T4.2: Test 1 — login page at 375px: navigate to `/login`, assert `data-testid="page-background"` is present, assert `.glass-panel` or `data-testid="login-card"` is visible and within the viewport center
+  - [ ] T4.3: Test 2 — login page at 1440px: same assertions at wide viewport
+  - [ ] T4.4: Tests should NOT require actual auth — just render assertions on the public login page
+
+- [ ] **T5: Lint pass**
+  - [ ] T5.1: Run `npm run lint:fix` in `frontend/`; resolve any remaining errors
+
+---
+
+## Dev Notes
+
+### Current State of Each Area
+
+#### Body background (`index.css`)
+The body currently has:
+```css
+body {
+  background: var(--gradient-night-sky);  /* linear-gradient(180deg, #0a0e1a 0%, #111827 50%, #1a2236 100%) */
+  background-attachment: fixed;
+}
+```
+The gradient token is already defined in `tokens.css:65`. **Only add the radial accent layers** — do NOT change or replace the gradient itself.
+
+Multi-layer background syntax example:
+```css
+body {
+  background:
+    radial-gradient(ellipse 60% 40% at 15% 10%, rgba(201,162,39,0.04) 0%, transparent 70%),
+    radial-gradient(ellipse 50% 35% at 85% 90%, rgba(37,99,235,0.03) 0%, transparent 70%),
+    var(--gradient-night-sky);
+  background-attachment: fixed;
+}
+```
+
+#### MainNavigation (`MainNavigation.tsx`)
+Already correct: navy blur bg, Cinzel logo, gold color tokens. No changes needed to `MainNavigation.tsx` itself. Only `NavPanel.tsx` needs the border-indicator change.
+
+**Do NOT refactor MainNavigation — it is a working, tested component. Touch only the active-indicator border class in NavPanel.**
+
+#### NavPanel active state (current — `NavPanel.tsx:115-118`)
+```tsx
+active
+  ? 'bg-[rgba(200,168,78,0.1)] border border-[rgba(200,168,78,0.2)] text-[var(--gold-light)]'
+  : 'text-[var(--text-secondary)] hover:text-[var(--text-primary)] hover:bg-[var(--glass-bg)] border border-transparent'
+```
+Change the active branch to use a left-side border indicator. Use Tailwind responsive variants:
+```tsx
+active
+  ? 'bg-[rgba(200,168,78,0.1)] border-l-2 border-l-[var(--gold-primary)] border-r-0 border-t-0 border-b-0 md:border-b-0 text-[var(--gold-light)]'
+  : 'text-[var(--text-secondary)] hover:text-[var(--text-primary)] hover:bg-[var(--glass-bg)] border border-transparent'
+```
+Note: The NavPanel is always a left-side overlay (slide-in from left). "Bottom on mobile" means the visual accent is on the bottom-border when the item is in a horizontal layout — but since NavPanel is always vertical, a left border is appropriate for all cases. **Ask yourself**: does this story actually require separate mobile/desktop border directions or is the left border already the correct treatment given the vertical panel layout? The left-border approach is correct for a vertical sidebar nav. Keep it consistent.
+
+#### AuthLayout.tsx
+This is from the original Epic 1 implementation and has hardcoded color values instead of CSS tokens. Auth pages that were redesigned in later epics (Login, Register, ForgotPassword, etc.) **do not use AuthLayout** — they render their own full-page layout with `usePageBackground`. However, `AuthLayout` may still be used by other pages or tests. Update it to use tokens throughout (T3.1-T3.5) so it renders correctly in Celestial Night context if ever displayed.
+
+**Check if any pages still import `AuthLayout`:**
+```bash
+grep -r "AuthLayout\|from.*AuthLayout" frontend/src --include="*.tsx" --include="*.ts" | grep -v test | grep -v AuthLayout.tsx
+```
+
+#### Playwright test pattern
+The existing E2E tests use `page.goto()` with base URL. See `tests/e2e/auth.spec.ts` for the login page navigation pattern. The new test only needs to assert DOM presence, not visual screenshot comparison (screenshot comparison requires committed baseline images). Use attribute/visibility assertions instead.
+
+Example structure:
+```typescript
+test.describe('Auth page chrome — 375px', () => {
+  test.use({ viewport: { width: 375, height: 812 } });
+
+  test('login page shows PageBackground and centered glass panel', async ({ page }) => {
+    await page.goto('/login');
+    await expect(page.locator('[data-testid="page-background"]')).toBeAttached();
+    await expect(page.locator('.glass-panel').first()).toBeVisible();
+  });
+});
+```
+
+### Files to Create/Modify
+
+| File | Action | Notes |
+|---|---|---|
+| `frontend/src/index.css` | Modify | Add radial accent layers to body background (T1) |
+| `frontend/src/components/layout/NavPanel.tsx` | Modify | Active item left-border indicator (T2) |
+| `frontend/src/components/auth/AuthLayout.tsx` | Modify | Token cleanup (T3) |
+| `tests/e2e/auth-page-chrome.spec.ts` | Create | Login page viewport tests (T4) |
+
+### What NOT to Touch
+- `MainNavigation.tsx` — already correct, no changes
+- `DashboardLayout.tsx` — already integrates with `.celestial`; ARTIST HOLD on `STATIC_BG` (do not touch)
+- `usePageBackground` / `useResponsiveBackground` — patched in 22-3 code review, stable
+- Auth page files (LoginPage, RegisterPage, etc.) — already use `scene: 'auth'` from 22-3 patches
+
+### Story 22-6 Context (Previous Story)
+Story 22-6 delivered 12 game-native UI components under `frontend/src/components/ui/game/`. No direct overlap with 22-7 — this story is purely about body chrome, nav polish, and auth layout tokens.
+
+### Prerequisites Already Met
+- ✅ `--gradient-night-sky` token defined in `tokens.css`
+- ✅ `--font-heading` (Cinzel) applied to logo
+- ✅ `--gold-primary`, `--text-muted`, `--text-secondary` tokens available
+- ✅ Auth pages use `scene: 'auth'` (22-3 code review patch)
+- ✅ NavPanel has `isActive()` logic and applies active classes
+- ✅ Playwright E2E infrastructure in `tests/e2e/`
+
+---
+
+## Dev Agent Record
+
+### Debug Log
+
+_(filled during implementation)_
+
+### Completion Notes
+
+_(filled during implementation)_

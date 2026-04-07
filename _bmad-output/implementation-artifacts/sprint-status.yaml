@@ -1,5 +1,5 @@
 # generated: 2026-03-25
-# last_updated: 2026-04-06 31f-1 code review complete → done
+# last_updated: 2026-04-07 epic-21 test quality sprint added from TD audit
 # project: Equoria
 # project_key: NOKEY
 # tracking_system: file-system
@@ -35,13 +35,38 @@
 # - Dev moves story to 'review', then runs code-review (fresh context, different LLM recommended)
 
 generated: 2026-03-25
-last_updated: 2026-04-02 31e-4 color genetics API endpoints done
+last_updated: 2026-04-07 22-4 code review complete → done
 project: Equoria
 project_key: NOKEY
 tracking_system: file-system
 story_location: '{project-root}/_bmad-output/implementation-artifacts'
 
 development_status:
+  # ============================================================
+  # Epic 21: Test Architecture Quality Sprint
+  # Source: docs/epic-21-test-quality-sprint.md
+  # TD Audit: _bmad-output/test-artifacts/test-design/TD-equoria-test-architecture-2026-04-07.md
+  # Pre-sprint TEA steps: TEA:TR (traceability) then TEA:CI (pipeline audit) before 21-1 begins
+  # ============================================================
+
+  epic-21: backlog
+  # --- Pre-sprint TEA workflow steps (not stories — run before 21-1) ---
+  # tea-tr-requirements-traceability: pending  # /bmad-tea → TR
+  # tea-ci-pipeline-audit: pending             # /bmad-tea → CI
+  # --- P0 stories (BLOCK/MITIGATE — required before production deploy) ---
+  21-1-establish-module-test-convention: backlog
+  21-2-fix-redis-circuit-breaker-flaky-tests: backlog
+  21-3-community-trainers-riders-api-tests: backlog
+  # --- P1 stories (HIGH risk — complete before Epic 22 resumes) ---
+  21-4-fix-e2e-breeding-spec-quality: backlog
+  21-5-react-query-hook-tests: backlog
+  21-6-reclassify-supertest-integration-tests: backlog
+  # --- P2 stories (MONITOR — complete before Railway launch) ---
+  21-7-performance-test-pipeline-separation: backlog
+  21-8-e2e-credential-strategy-migration: backlog
+  21-9-e2e-coverage-missing-features: backlog
+  epic-21-retrospective: optional
+
   # ============================================================
   # Celestial Night Frontend Rebuild (Epics 22-30)
   # Source: docs/epics.md
@@ -55,7 +80,7 @@ development_status:
   22-4-glass-panel-surface-updates: done
   22-5-button-hierarchy: done
   22-6-custom-game-component-library: done
-  22-7-body-and-page-chrome: backlog
+  22-7-body-and-page-chrome: ready-for-dev
   22-8-navigation-structure: backlog
   epic-22-retrospective: optional
 
@@ -200,6 +225,6 @@ development_status:
   # Epic 31F: Conformation Show Handling
   epic-31f: in-progress
   31f-1-conformation-show-scoring-engine: done
-  31f-2-show-entry-and-eligibility: backlog
+  31f-2-show-entry-and-eligibility: done
   31f-3-rewards-and-title-progression: backlog
   epic-31f-retrospective: optional
