@@ -59,7 +59,9 @@ export const AuthHeader: React.FC = () => (
     style={{ background: 'var(--glass-surface-heavy-bg)', borderColor: 'var(--border-default)' }}
   >
     <div className="flex items-center justify-center p-4">
-      <h1 className="fantasy-title text-3xl">Equoria</h1>
+      <h1 className="fantasy-title text-3xl" style={{ fontFamily: 'var(--font-heading)' }}>
+        Equoria
+      </h1>
     </div>
   </header>
 );
@@ -69,7 +71,7 @@ export const AuthHeader: React.FC = () => (
  */
 export const AuthFooter: React.FC = () => (
   <footer className="p-4 text-center border-t" style={{ borderColor: 'var(--border-muted)' }}>
-    <p className="text-xs text-[rgb(100,130,165)]">
+    <p className="text-xs text-[var(--text-muted)]">
       &copy; {new Date().getFullYear()} Equoria. All rights reserved.
     </p>
   </footer>
@@ -90,8 +92,8 @@ export const AuthCardHeader: React.FC<AuthCardHeaderProps> = ({ title, subtitle,
         {icon || <Sparkles className="w-8 h-8 text-[var(--text-primary)]" aria-hidden="true" />}
       </div>
     </div>
-    <h2 className="fantasy-header text-2xl text-[rgb(212,168,67)]">{title}</h2>
-    <p className="text-sm text-[rgb(148,163,184)]">{subtitle}</p>
+    <h2 className="fantasy-header text-2xl text-[var(--gold-primary)]">{title}</h2>
+    <p className="text-sm text-[var(--text-secondary)]">{subtitle}</p>
   </div>
 );
 
@@ -117,11 +119,11 @@ export const AuthError: React.FC<AuthErrorProps> = ({
 export const AuthFooterLink: React.FC<AuthFooterLinkProps> = ({ prompt, linkText, linkTo }) => {
   return (
     <div className="text-center pt-4 border-t" style={{ borderColor: 'var(--border-muted)' }}>
-      <p className="text-sm text-[rgb(148,163,184)]">
+      <p className="text-sm text-[var(--text-secondary)]">
         {prompt}{' '}
         <a
           href={linkTo}
-          className="text-[rgb(212,168,67)] hover:text-[var(--text-primary)] font-medium transition-colors"
+          className="text-[var(--gold-primary)] hover:text-[var(--text-primary)] font-medium transition-colors"
         >
           {linkText}
         </a>
@@ -160,7 +162,7 @@ export const AuthLayout: React.FC<AuthLayoutProps> = ({
   testId = 'auth-layout',
 }) => {
   return (
-    <div className="min-h-screen bg-background flex flex-col" data-testid={testId}>
+    <div className="min-h-screen flex flex-col" data-testid={testId}>
       <AuthHeader />
 
       {/* Main Content */}

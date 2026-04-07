@@ -77,7 +77,11 @@
   }
 
   body {
-    background: var(--gradient-night-sky);
+    /* Story 22-7: Deep navy gradient with subtle gold/blue radial accent layers */
+    background:
+      radial-gradient(ellipse 60% 40% at 15% 10%, rgba(201, 162, 39, 0.04) 0%, transparent 70%),
+      radial-gradient(ellipse 50% 35% at 85% 90%, rgba(37, 99, 235, 0.03) 0%, transparent 70%),
+      var(--gradient-night-sky);
     background-attachment: fixed;
     color: var(--text-primary);
     font-family: var(--font-body);

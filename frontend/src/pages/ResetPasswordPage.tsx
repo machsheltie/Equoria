@@ -14,7 +14,7 @@ import {
   type ResetPasswordFormData,
 } from '../lib/validation-schemas';
 import { useResetPassword } from '../hooks/useAuth';
-import { usePageBackground } from '@/components/layout/PageBackground';
+import { usePageBackground, PageBackground } from '@/components/layout/PageBackground';
 import { Button } from '@/components/ui/button';
 
 const ResetPasswordPage: React.FC = () => {
@@ -94,6 +94,7 @@ const ResetPasswordPage: React.FC = () => {
       className="min-h-screen w-full flex flex-col items-center justify-center relative overflow-hidden py-8"
       style={bgStyle}
     >
+      <PageBackground scene="auth" />
       <div className="relative z-[var(--z-raised)] w-full max-w-sm px-4 flex flex-col items-center gap-8">
         <div className="text-center select-none">
           <Link

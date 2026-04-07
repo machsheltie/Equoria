@@ -45,7 +45,7 @@ export type SceneKey =
  * files so a background is always shown rather than a blank page.
  *
  * Current state (2026-04-07):
- *   - 'auth'        → ❌ No art yet — falls back to generic
+ *   - 'auth'        → ✅ Art committed (story 22-7 placeholders)
  *   - 'hub'         → ❌ No art yet — falls back to generic
  *   - 'stable'      → ❌ No art yet — falls back to generic
  *   - 'horse-detail'→ ❌ No art yet — falls back to generic
@@ -60,7 +60,7 @@ export type SceneKey =
  */
 const SCENES_WITH_ART = new Set<SceneKey>([
   // Add scene keys here as art assets are committed:
-  // 'auth',
+  'auth',
   // 'hub',
 ]);
 

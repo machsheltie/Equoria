@@ -147,6 +147,10 @@ test.describe('NavPanel active item — gold border indicator', () => {
   test.use({ storageState: 'storageState.json' });
 
   test('22-7-E2E-009: active nav item has gold left-border indicator', async ({ page }) => {
+    // Ensure onboarding is completed so OnboardingGuard does not redirect
+    // away from '/'. page.request carries the storageState auth cookies.
+    await page.request.post('/api/auth/complete-onboarding').catch(() => {});
+
     await page.goto('/', { waitUntil: 'domcontentloaded' });
 
     // Open nav panel via hamburger

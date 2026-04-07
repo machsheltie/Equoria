@@ -16,7 +16,7 @@ import {
 } from '../lib/validation-schemas';
 import { useRegister } from '../hooks/useAuth';
 import { Button } from '@/components/ui/button';
-import { usePageBackground } from '@/components/layout/PageBackground';
+import { usePageBackground, PageBackground } from '@/components/layout/PageBackground';
 
 const RegisterPage: React.FC = () => {
   const navigate = useNavigate();
@@ -118,6 +118,7 @@ const RegisterPage: React.FC = () => {
       className="min-h-screen w-full flex flex-col items-center justify-center relative overflow-hidden py-8"
       style={bgStyle}
     >
+      <PageBackground scene="auth" />
       {/* Content */}
       <div className="relative z-[var(--z-raised)] w-full max-w-sm px-4 flex flex-col items-center gap-6">
         {/* Title — h1 required by a11y tests */}

@@ -113,7 +113,7 @@ export function NavPanel({ isOpen, onClose }: NavPanelProps) {
                   'flex items-center gap-3 px-3 py-3 rounded-[var(--radius-md)] mb-0.5',
                   'text-sm transition-all',
                   active
-                    ? 'bg-[rgba(200,168,78,0.1)] border border-[rgba(200,168,78,0.2)] text-[var(--gold-light)]'
+                    ? 'bg-[rgba(200,168,78,0.1)] border-l-2 border-l-[var(--gold-primary)] border-r-0 border-t-0 border-b-0 text-[var(--gold-light)]'
                     : 'text-[var(--text-secondary)] hover:text-[var(--text-primary)] hover:bg-[var(--glass-bg)] border border-transparent'
                 )}
                 aria-current={active ? 'page' : undefined}
