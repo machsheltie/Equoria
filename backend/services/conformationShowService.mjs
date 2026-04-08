@@ -421,3 +421,197 @@ export async function validateConformationEntry(horse, groom, className, userId)
     };
   }
 }
+
+// ---------------------------------------------------------------------------
+// Reward table and title thresholds (PRD-03 §3.6 / FR-40)
+// ---------------------------------------------------------------------------
+
+/**
+ * Reward by placement.
+ * Placement 1/2/3 = podium; 4+ = participation.
+ */
+export const REWARD_TABLE = Object.freeze({
+  1: { ribbon: 'Blue', titlePoints: 10, breedingBoostDelta: 0.05 },
+  2: { ribbon: 'Red', titlePoints: 7, breedingBoostDelta: 0.03 },
+  3: { ribbon: 'Yellow', titlePoints: 5, breedingBoostDelta: 0.01 },
+  default: { ribbon: 'White', titlePoints: 2, breedingBoostDelta: 0 },
+});
+
+/** Maximum breedingValueBoost a horse can accumulate (FR-41). */
+export const BREEDING_BOOST_CAP = 0.15;
+
+/**
+ * Title thresholds — sorted descending so we find the highest reached.
+ * @type {Array<{points: number, title: string}>}
+ */
+export const TITLE_THRESHOLDS = Object.freeze([
+  { points: 200, title: 'Grand Champion' },
+  { points: 100, title: 'Champion' },
+  { points: 50, title: 'Distinguished' },
+  { points: 25, title: 'Noteworthy' },
+]);
+
+// ---------------------------------------------------------------------------
+// Pure reward helpers
+// ---------------------------------------------------------------------------
+
+/**
+ * Return ribbon, titlePoints, and breedingBoostDelta for a given placement.
+ * @param {number} placement - 1-indexed ranking (1 = first)
+ * @returns {{ ribbon: string, titlePoints: number, breedingBoostDelta: number }}
+ */
+export function resolveReward(placement) {
+  return REWARD_TABLE[placement] ?? REWARD_TABLE.default;
+}
+
+/**
+ * Return the highest title string earned for accumulated points, or null.
+ * Titles are permanent — once the threshold is passed the title is granted.
+ *
+ * @param {number} accumulatedPoints - Total title points after this show
+ * @returns {string|null}
+ */
+export function resolveTitle(accumulatedPoints) {
+  for (const { points, title } of TITLE_THRESHOLDS) {
+    if (accumulatedPoints >= points) {
+      return title;
+    }
+  }
+  return null;
+}
+
+/**
+ * Apply breeding value boost increment, capped at BREEDING_BOOST_CAP.
+ *
+ * @param {number} currentBoost - Horse's existing breedingValueBoost (0.0 – 0.15)
+ * @param {number} delta - Boost amount to add (0.05 / 0.03 / 0.01 / 0)
+ * @returns {number} New capped boost value
+ */
+export function applyBreedingValueBoost(currentBoost, delta) {
+  if (delta <= 0) return currentBoost;
+  return Math.min(BREEDING_BOOST_CAP, currentBoost + delta);
+}
+
+// ---------------------------------------------------------------------------
+// executeConformationShow (AC1)
+// ---------------------------------------------------------------------------
+
+/**
+ * Execute a conformation show: score all entries, rank, distribute rewards,
+ * persist CompetitionResult per horse, update Horse title fields.
+ *
+ * Returns the full results array so the controller can build the HTTP response.
+ *
+ * @param {number} showId
+ * @returns {Promise<Array<{horseId, placement, score, ribbon, titlePoints, newTitle, breedingValueBoost}>>}
+ * @throws {Error} with .statusCode set to 400 for bad showId / wrong show type
+ */
+export async function executeConformationShow(showId) {
+  // Load show
+  const show = await prisma.show.findUnique({ where: { id: showId } });
+  if (!show) {
+    const err = new Error('Show not found');
+    err.statusCode = 400;
+    throw err;
+  }
+  if (show.showType !== 'conformation') {
+    const err = new Error('Show is not a conformation show');
+    err.statusCode = 400;
+    throw err;
+  }
+
+  // Load all entries with horse + active groom assignment + groom
+  const entries = await prisma.showEntry.findMany({
+    where: { showId },
+    include: {
+      horse: true,
+    },
+    orderBy: { createdAt: 'asc' },
+  });
+
+  if (entries.length === 0) {
+    return [];
+  }
+
+  // Score each entry
+  const scored = await Promise.all(
+    entries.map(async entry => {
+      const horse = entry.horse;
+
+      // Resolve active groom assignment for this horse
+      const assignment = await prisma.groomAssignment.findFirst({
+        where: { foalId: horse.id, isActive: true },
+        include: { groom: true },
+      });
+
+      const groom = assignment?.groom ?? null;
+
+      // Use a minimal placeholder groom when none is assigned
+      const effectiveGroom = groom ?? {
+        showHandlingSkill: 'novice',
+        personality: 'gentle',
+      };
+
+      // Use first valid conformation class as placeholder (class doesn't affect score)
+      const { finalScore } = calculateConformationShowScore(horse, effectiveGroom, 'Mares');
+
+      return { entry, horse, finalScore };
+    }),
+  );
+
+  // Rank by score descending, ties broken by entry creation order (already asc)
+  scored.sort((a, b) => b.finalScore - a.finalScore);
+
+  // Build results and persist via transaction
+  const results = [];
+
+  await prisma.$transaction(async tx => {
+    for (let i = 0; i < scored.length; i++) {
+      const { horse, finalScore } = scored[i];
+      const placement = i + 1;
+      const { ribbon, titlePoints: tpAwarded, breedingBoostDelta } = resolveReward(placement);
+
+      // Accumulate title points
+      const newTitlePoints = (horse.titlePoints ?? 0) + tpAwarded;
+      const newTitle = resolveTitle(newTitlePoints);
+      const newBoost = applyBreedingValueBoost(horse.breedingValueBoost ?? 0, breedingBoostDelta);
+
+      // Update horse title fields
+      await tx.horse.update({
+        where: { id: horse.id },
+        data: {
+          titlePoints: newTitlePoints,
+          currentTitle: newTitle,
+          breedingValueBoost: newBoost,
+        },
+      });
+
+      // Create CompetitionResult — no prizeWon (AC4)
+      await tx.competitionResult.create({
+        data: {
+          horseId: horse.id,
+          showId,
+          score: finalScore,
+          placement: String(placement),
+          discipline: 'conformation',
+          runDate: new Date(),
+          showName: show.name ?? `Show #${showId}`,
+          prizeWon: null,
+          statGains: { ribbon, titlePoints: tpAwarded },
+        },
+      });
+
+      results.push({
+        horseId: horse.id,
+        placement,
+        score: finalScore,
+        ribbon,
+        titlePoints: tpAwarded,
+        newTitle,
+        breedingValueBoost: newBoost,
+      });
+    }
+  });
+
+  return results;
+}

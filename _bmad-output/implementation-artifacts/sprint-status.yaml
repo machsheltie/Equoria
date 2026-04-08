@@ -1,0 +1,230 @@
+# generated: 2026-03-25
+# last_updated: 2026-04-08 31f-3-rewards-and-title-progression → review
+# project: Equoria
+# project_key: NOKEY
+# tracking_system: file-system
+# story_location: {project-root}/_bmad-output/implementation-artifacts
+
+# STATUS DEFINITIONS:
+# ==================
+# Epic Status:
+#   - backlog: Epic not yet started
+#   - in-progress: Epic actively being worked on
+#   - done: All stories in epic completed
+#
+# Epic Status Transitions:
+#   - backlog → in-progress: Automatically when first story is created (via create-story)
+#   - in-progress → done: Manually when all stories reach 'done' status
+#
+# Story Status:
+#   - backlog: Story only exists in epic file
+#   - ready-for-dev: Story file created in stories folder
+#   - in-progress: Developer actively working on implementation
+#   - review: Ready for code review (via Dev's code-review workflow)
+#   - done: Story completed
+#
+# Retrospective Status:
+#   - optional: Can be completed but not required
+#   - done: Retrospective has been completed
+#
+# WORKFLOW NOTES:
+# ===============
+# - Epic transitions to 'in-progress' automatically when first story is created
+# - Stories can be worked in parallel if team capacity allows
+# - SM typically creates next story after previous one is 'done' to incorporate learnings
+# - Dev moves story to 'review', then runs code-review (fresh context, different LLM recommended)
+
+generated: 2026-03-25
+last_updated: 2026-04-08 31f-3-rewards-and-title-progression → review
+project: Equoria
+project_key: NOKEY
+tracking_system: file-system
+story_location: '{project-root}/_bmad-output/implementation-artifacts'
+
+development_status:
+  # ============================================================
+  # Epic 21: Test Architecture Quality Sprint
+  # Source: docs/epic-21-test-quality-sprint.md
+  # TD Audit: _bmad-output/test-artifacts/test-design/TD-equoria-test-architecture-2026-04-07.md
+  # Pre-sprint TEA steps: TEA:TR (traceability) then TEA:CI (pipeline audit) before 21-1 begins
+  # ============================================================
+
+  epic-21: in-progress
+  # --- Pre-sprint TEA workflow steps (not stories — run before 21-1) ---
+  # tea-tr-requirements-traceability: pending  # /bmad-tea → TR
+  # tea-ci-pipeline-audit: pending             # /bmad-tea → CI
+  # --- P0 stories (BLOCK/MITIGATE — required before production deploy) ---
+  21-1-establish-module-test-convention: review
+  21-2-fix-redis-circuit-breaker-flaky-tests: backlog
+  21-3-community-trainers-riders-api-tests: backlog
+  # --- P1 stories (HIGH risk — complete before Epic 22 resumes) ---
+  21-4-fix-e2e-breeding-spec-quality: backlog
+  21-5-react-query-hook-tests: backlog
+  21-6-reclassify-supertest-integration-tests: backlog
+  # --- P2 stories (MONITOR — complete before Railway launch) ---
+  21-7-performance-test-pipeline-separation: backlog
+  21-8-e2e-credential-strategy-migration: backlog
+  21-9-e2e-coverage-missing-features: backlog
+  epic-21-retrospective: optional
+
+  # ============================================================
+  # Celestial Night Frontend Rebuild (Epics 22-30)
+  # Source: docs/epics.md
+  # ============================================================
+
+  # Epic 22: Celestial Night Foundation (re-spec'd 2026-03-31 — stories match docs/epics.md §Epic22)
+  epic-22: in-progress
+  22-1-font-migration: done
+  22-2-celestial-theme-provider: done
+  22-3-painted-background-system: done
+  22-4-glass-panel-surface-updates: done
+  22-5-button-hierarchy: done
+  22-6-custom-game-component-library: done
+  22-7-body-and-page-chrome: in-progress
+  22-8-navigation-structure: backlog
+  epic-22-retrospective: optional
+
+  # Epic 23: Hub Dashboard
+  epic-23: backlog
+  23-1-hub-dashboard-layout-and-atmosphere: backlog
+  23-2-quick-action-cards: backlog
+  23-3-activity-feed: backlog
+  23-4-stable-summary-strip: backlog
+  epic-23-retrospective: optional
+
+  # Epic 24: Horse Card and Detail Redesign
+  epic-24: backlog
+  24-1-horse-card-component: backlog
+  24-2-horse-detail-page-redesign: backlog
+  24-3-horse-list-and-filtering: backlog
+  epic-24-retrospective: optional
+
+  # Epic 25: Training and Competition UI
+  epic-25: backlog
+  25-1-training-interface-redesign: backlog
+  25-2-competition-browser-and-entry: backlog
+  25-3-results-and-history-display: backlog
+  epic-25-retrospective: optional
+
+  # Epic 26: Breeding System UI
+  epic-26: backlog
+  26-1-breeding-pair-selection: backlog
+  26-2-foal-development-tracker: backlog
+  26-3-genetics-and-lineage-display: backlog
+  epic-26-retrospective: optional
+
+  # Epic 27: Social and Community Features
+  epic-27: backlog
+  27-1-community-hub-page: backlog
+  27-2-message-board-redesign: backlog
+  27-3-clubs-and-organizations: backlog
+  27-4-direct-messaging: backlog
+  epic-27-retrospective: optional
+
+  # Epic BACKEND-A: Backend API Alignment
+  epic-backend-a: backlog
+  ba-1-api-response-standardization: backlog
+  ba-2-pagination-and-filtering: backlog
+  ba-3-real-time-events-infrastructure: backlog
+  ba-4-image-upload-and-cdn: backlog
+  ba-5-notification-system: backlog
+  epic-backend-a-retrospective: optional
+
+  # Epic 28: Marketplace and Economy
+  epic-28: backlog
+  28-1-marketplace-browse-and-search: backlog
+  28-2-listing-creation-and-management: backlog
+  28-3-transaction-flow-and-bank-integration: backlog
+  epic-28-retrospective: optional
+
+  # Epic BACKEND-B: Advanced Backend Systems
+  epic-backend-b: backlog
+  bb-1-achievement-system-backend: backlog
+  bb-2-seasonal-event-framework: backlog
+  bb-3-advanced-analytics-and-reporting: backlog
+  bb-4-performance-optimization-and-caching: backlog
+  epic-backend-b-retrospective: optional
+
+  # Epic 29: Player Profile and Achievements
+  epic-29: backlog
+  29-1-player-profile-page: backlog
+  29-2-achievement-display-system: backlog
+  29-3-leaderboard-redesign: backlog
+  epic-29-retrospective: optional
+
+  # Epic 30: Polish, Performance, and Launch
+  epic-30: backlog
+  30-1-loading-and-error-states: backlog
+  30-2-animation-and-transition-polish: backlog
+  30-3-performance-optimization: backlog
+  30-4-accessibility-audit-and-fixes: backlog
+  30-5-cross-browser-testing: backlog
+  30-6-launch-readiness-checklist: backlog
+  epic-30-retrospective: optional
+
+  # ============================================================
+  # Horse Physical Systems & Genetics (Epics 31A-31F)
+  # Source: docs/epics-physical-systems.md
+  # ============================================================
+
+  # Epic 31A: Breed Genetic Profile Population
+  epic-31a: done
+  31a-1-populate-breed-genetic-profiles: done
+  epic-31a-retrospective: done
+
+  # Epic 31B: Conformation Scoring System
+  epic-31b: done
+  31b-1-conformation-score-generation: done
+  31b-2-conformation-breeding-inheritance: done
+  31b-3-conformation-api-endpoints: done
+  epic-31b-retrospective: done
+
+  # Epic 31C: Gait Quality System
+  epic-31c: done
+  31c-1-gait-score-generation: done
+  31c-2-gait-breeding-inheritance: done # FR-15, FR-16 fully implemented in 31C-1
+  31c-3-gait-api-endpoint: done
+  epic-31c-retrospective: done
+
+  # Pre-31D Cleanup Sprint (blocking — must complete before 31D)
+  pre-31d-cleanup: done
+  pre-31d-breed-data-integration: done # Enriched 7 breeds from BreedData, added starter_stats for all 12
+  pre-31d-seed-breed-mismatch: done # seedDevData.mjs now uses canonical 12 breeds
+  pre-31d-flaky-perf-benchmark: done # Already passing (39/39) — thresholds relaxed in prior sprint
+  pre-31d-nextactions-test-failures: done # Already passing (21/21) — ESM flag issue, not test logic
+  pre-31d-nfr05-threshold-update: done # Updated spec from r>0.3 to r>0.1
+
+  # Frontend Integration Backlog (tracked in docs/frontend-integration-backlog.md)
+  # Epics 31B/31C/31D frontend work deferred — see backlog doc for checklist
+
+  # Epic 31D: Breed Temperament System
+  epic-31d: done
+  31d-1-temperament-data-model-and-assignment: done
+  31d-2-temperament-training-modifiers: done
+  31d-3-temperament-competition-modifiers: done
+  31d-4-temperament-groom-synergy: done
+  31d-5-temperament-api-endpoints: done
+  epic-31d-retrospective: done
+
+  # Pre-31E Blocking Tasks (from 31D retro — code review 2026-03-31)
+  pre-31e-competition-controller-import-fix: done # Was already fixed when closing 31D (sprint note: "competitionController import fix"). Verified: line 6 imports from competitionScore.mjs ✅
+  pre-31e-chi-squared-flakiness-fix: done # Was already fixed before retro: SAMPLE_SIZE=10000, CHI_SQUARED_CRITICAL=29.588 (p=0.001), low-expected categories skipped ✅
+  pre-31e-temperament-drift-reconcile: done # @deprecated notice updated to name both importers (traitIntegration.test.mjs + examples/); deletion deferred until importers are migrated ✅
+  pre-31e-frontend-integration-backlog-31d: done # docs/frontend-integration-backlog.md updated with full 31D section: endpoints, response fields, component checklist ✅
+
+  # Epic 31E: Coat Color Genetics
+  epic-31e: in-progress
+  31e-1a-genotype-generation-and-migration: done
+  31e-1b-phenotype-calculation-engine: done
+  31e-2-breeding-color-inheritance: done
+  31e-3-marking-system: done
+  31e-4-color-genetics-api-endpoints: done
+  31e-5-genetics-api-endpoints: backlog
+  epic-31e-retrospective: optional
+
+  # Epic 31F: Conformation Show Handling
+  epic-31f: in-progress
+  31f-1-conformation-show-scoring-engine: done
+  31f-2-show-entry-and-eligibility: done
+  31f-3-rewards-and-title-progression: review
+  epic-31f-retrospective: optional

@@ -186,6 +186,10 @@ model Horse {
   currentFeed             String?               @default("basic")
   lastFedDate             DateTime?
   energyLevel             Int?                  @default(100)
+  /// Conformation show title progression (Epic 31F-3)
+  titlePoints             Int                   @default(0)
+  currentTitle            String?
+  breedingValueBoost      Float                 @default(0.0)
   /// Timestamps
   createdAt               DateTime?             @default(now())
   updatedAt               DateTime?             @updatedAt
