@@ -179,7 +179,8 @@ export const login = async (req, res, next) => {
     }
 
     // Test-only bypass to stabilize integration tests
-    if (process.env.NODE_ENV === 'test' && req.headers['x-test-bypass-auth'] === 'true') {
+    // Gated on JEST_WORKER_ID — cannot fire in production even if NODE_ENV is misconfigured
+    if (process.env.JEST_WORKER_ID !== undefined && req.headers['x-test-bypass-auth'] === 'true') {
       let user = await prisma.user.findUnique({ where: { email } });
       if (!user) {
         user = await prisma.user.create({

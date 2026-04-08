@@ -38,6 +38,7 @@ export async function getWhileYouWereGone(req, res) {
     }
 
     const items = [];
+    const dataWarnings = [];
 
     // 1. Competition results since last visit
     try {
@@ -62,8 +63,11 @@ export async function getWhileYouWereGone(req, res) {
           metadata: { resultId: result.id, placement: result.placement, prize: result.prize },
         });
       }
-    } catch {
-      // CompetitionResult table may not exist in all migrations — skip gracefully
+    } catch (err) {
+      logger.warn('WYAGController: competitionResult query failed — schema may be missing', {
+        error: err.message,
+      });
+      dataWarnings.push('competition_results_unavailable');
     }
 
     // 2. Unread messages
@@ -86,8 +90,11 @@ export async function getWhileYouWereGone(req, res) {
           metadata: { messageId: msg.id },
         });
       }
-    } catch {
-      // DirectMessage not yet in DB — skip
+    } catch (err) {
+      logger.warn('WYAGController: directMessage query failed — schema may be missing', {
+        error: err.message,
+      });
+      dataWarnings.push('messages_unavailable');
     }
 
     // 3. Foal development milestones (bond level increases)
@@ -113,13 +120,18 @@ export async function getWhileYouWereGone(req, res) {
           metadata: { foalId: foal.foalId },
         });
       }
-    } catch {
-      // FoalDevelopment may not have these fields yet — skip
+    } catch (err) {
+      logger.warn('WYAGController: foalDevelopment query failed — schema may be missing', {
+        error: err.message,
+      });
+      dataWarnings.push('foal_milestones_unavailable');
     }
 
     // Sort by priority then by timestamp (newest first within same priority)
     items.sort((a, b) => {
-      if (a.priority !== b.priority) return a.priority - b.priority;
+      if (a.priority !== b.priority) {
+        return a.priority - b.priority;
+      }
       return new Date(b.timestamp).getTime() - new Date(a.timestamp).getTime();
     });
 
@@ -131,6 +143,7 @@ export async function getWhileYouWereGone(req, res) {
         items: limited,
         since: since.toISOString(),
         hasMore: items.length > MAX_ITEMS,
+        ...(dataWarnings.length > 0 && { dataWarnings }),
       },
     });
   } catch (error) {

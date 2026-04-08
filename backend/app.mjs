@@ -282,16 +282,21 @@ const corsOptions = {
     'Authorization',
     'X-Requested-With',
     'X-CSRF-Token',
-    'x-test-skip-csrf',
+    // x-test-skip-csrf only exposed in test environments (JEST_WORKER_ID is set by Jest runner)
+    ...(process.env.JEST_WORKER_ID !== undefined ? ['x-test-skip-csrf'] : []),
   ],
 };
 
 app.use(cors(corsOptions));
 
 // Rate limiting - using factory for consistency and test support
+// ⚠️ DEV WORKFLOW NOTE: Limits are intentionally high for local development.
+// DO NOT reduce the development/test limits — they exist to prevent lockouts
+// during active dev and testing sessions.
+// Production: 100 req / 15 min | Development: 500 req / 15 min | Test: 1000 req / 15 min
 const apiLimiter = createRateLimiter({
   windowMs: 15 * 60 * 1000,
-  max: process.env.NODE_ENV === 'test' ? 1000 : 100, // Lenient in tests to avoid interference
+  max: process.env.NODE_ENV === 'test' ? 1000 : process.env.NODE_ENV === 'development' ? 500 : 100,
   keyPrefix: 'rl:global',
   useEnvOverride: false, // Don't let tests override the global limit
 });
@@ -347,7 +352,7 @@ app.use(requestTimeoutMiddleware(30000)); // 30 second timeout
  */
 
 // PUBLIC ROUTES - No authentication required
-// Health check endpoint
+// Health check endpoint — performs a real DB ping so "database: healthy" is never a lie
 publicRouter.get('/health', async (req, res) => {
   // Check Redis connection status
   const redisConnected = isRedisConnected();
@@ -361,11 +366,9 @@ publicRouter.get('/health', async (req, res) => {
   // Try to get Redis server info if connected
   if (redisConnected && redisClient) {
     try {
-      // Add a timeout to avoid hanging if Redis is unstable (e.g. during E2E tests)
       const timeoutPromise = new Promise((_, reject) =>
         setTimeout(() => reject(new Error('Redis info timeout')), 2000),
       );
-
       const info = await Promise.race([redisClient.info('server'), timeoutPromise]);
       const version = info.match(/redis_version:([^\r\n]+)/)?.[1];
       redisInfo.version = version || 'unknown';
@@ -377,22 +380,32 @@ publicRouter.get('/health', async (req, res) => {
     }
   }
 
-  // Overall health status
-  // Server is "healthy" even if Redis is down (graceful degradation)
-  // But we report the Redis status for monitoring
-  const overallStatus = 'healthy';
-  const statusCode = 200;
+  // Real database liveness check — SELECT 1 confirms Postgres is reachable
+  let dbInfo = { status: 'healthy' };
+  let overallStatus = 'healthy';
+  let statusCode = 200;
+
+  try {
+    const dbStart = Date.now();
+    await prisma.$queryRaw`SELECT 1`;
+    dbInfo.responseTime = `${Date.now() - dbStart}ms`;
+  } catch (error) {
+    dbInfo = { status: 'unhealthy', error: error.message };
+    overallStatus = 'unhealthy';
+    statusCode = 503;
+    logger.error(`[HealthCheck] Database unreachable: ${error.message}`);
+  }
 
   res.status(statusCode).json({
-    success: true,
+    success: statusCode === 200,
     status: overallStatus,
-    message: 'Server is healthy',
+    message: statusCode === 200 ? 'Server is healthy' : 'Database unreachable',
     timestamp: new Date().toISOString(),
     uptime: process.uptime(),
     environment: config.env,
     services: {
       api: 'healthy',
-      database: 'healthy', // Assumes DB is healthy if app is running
+      database: dbInfo,
       redis: redisInfo,
     },
   });

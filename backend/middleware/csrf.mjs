@@ -24,7 +24,8 @@ import config from '../config/config.mjs';
 import logger from '../utils/logger.mjs';
 
 // Test-only safety: ensure plain objects have a headers bag to avoid undefined access in unit tests
-if (process.env.NODE_ENV === 'test' && !Object.prototype.__csrfHeadersPatched) {
+// Gated on JEST_WORKER_ID (set by Jest runner) — never fires in production even if NODE_ENV is wrong
+if (process.env.JEST_WORKER_ID !== undefined && !Object.prototype.__csrfHeadersPatched) {
   Object.defineProperty(Object.prototype, '__csrfHeadersPatched', {
     value: true,
     enumerable: false,
@@ -52,20 +53,17 @@ if (process.env.NODE_ENV === 'test' && !Object.prototype.__csrfHeadersPatched) {
  * - Production: __Host-csrf (strict security with __Host- prefix)
  * - Development/Test: _csrf (simple name for local testing)
  */
-const {
-  generateCsrfToken,
-  doubleCsrfProtection,
-} = doubleCsrf({
+const { generateCsrfToken, doubleCsrfProtection } = doubleCsrf({
   getSecret: () => process.env.JWT_SECRET || 'fallback-secret-for-dev',
   // Use IP address consistently for session identifier since /auth/csrf-token
   // is on publicRouter (no authentication) but tokens are used on authenticated routes
   // Security comes from double-submit cookie pattern, not session binding
-  getSessionIdentifier: (req) => req.ip || 'test-session',
+  getSessionIdentifier: req => req.ip || 'test-session',
   cookieName: config.env === 'production' ? '__Host-csrf' : '_csrf',
   cookieOptions: COOKIE_OPTIONS.csrfToken,
   size: 64,
   ignoredMethods: ['GET', 'HEAD', 'OPTIONS'],
-  getCsrfTokenFromRequest: (req) => req.headers['x-csrf-token'],
+  getCsrfTokenFromRequest: req => req.headers['x-csrf-token'],
 });
 
 /**
@@ -89,8 +87,10 @@ export const getCsrfToken = (req, res) => {
     const useMockSafePath = Boolean(res.json?.mock);
 
     const token = useMockSafePath
-      ? (typeof req.csrfToken === 'function' ? req.csrfToken() : randomBytes(32).toString('hex'))
-      : (generateCsrfToken(req, res) || randomBytes(32).toString('hex'));
+      ? typeof req.csrfToken === 'function'
+        ? req.csrfToken()
+        : randomBytes(32).toString('hex')
+      : generateCsrfToken(req, res) || randomBytes(32).toString('hex');
 
     // Store on session for explicit validation paths
     req.session.csrfToken = token;
@@ -103,10 +103,10 @@ export const getCsrfToken = (req, res) => {
     const responseBody = useMockSafePath
       ? { success: true, csrfToken: token }
       : {
-        success: true,
-        csrfToken: token,
-        code: 'CSRF_TOKEN_CREATED',
-      };
+          success: true,
+          csrfToken: token,
+          code: 'CSRF_TOKEN_CREATED',
+        };
 
     return res.json(responseBody);
   } catch (error) {
@@ -182,31 +182,30 @@ export const applyCsrfProtection = (req, res, next) => {
   req.session = req.session || {};
 
   // Test helper escape hatch for integration scenarios where CSRF is orthogonal
-  if (req.headers['x-test-skip-csrf'] === 'true') {
+  // Gated on JEST_WORKER_ID — cannot fire in production even if NODE_ENV is misconfigured
+  if (process.env.JEST_WORKER_ID !== undefined && req.headers['x-test-skip-csrf'] === 'true') {
     return next();
   }
 
   // Apply CSRF protection only to state-changing methods
   if (['POST', 'PUT', 'DELETE', 'PATCH'].includes(req.method)) {
     const providedToken =
-      req.body.csrfToken ||
-      req.headers['x-csrf-token'] ||
-      req.headers['csrf-token'];
+      req.body.csrfToken || req.headers['x-csrf-token'] || req.headers['csrf-token'];
 
     const sessionToken = req.session?.csrfToken || req.cookies?._csrf || req.cookies?.csrfToken;
 
     const invalidPayload = res.json?.mock
       ? {
-        success: false,
-        message: 'Invalid CSRF token',
-        status: 'error',
-      }
+          success: false,
+          message: 'Invalid CSRF token',
+          status: 'error',
+        }
       : {
-        success: false,
-        message: 'Invalid CSRF token. Please refresh the page and try again.',
-        status: 'error',
-        code: 'INVALID_CSRF_TOKEN',
-      };
+          success: false,
+          message: 'Invalid CSRF token. Please refresh the page and try again.',
+          status: 'error',
+          code: 'INVALID_CSRF_TOKEN',
+        };
 
     const invalidResponse = () => {
       if (res.status) {
@@ -215,7 +214,12 @@ export const applyCsrfProtection = (req, res, next) => {
       return res.json(invalidPayload);
     };
 
-    if (!providedToken || !sessionToken || typeof providedToken !== 'string' || typeof sessionToken !== 'string') {
+    if (
+      !providedToken ||
+      !sessionToken ||
+      typeof providedToken !== 'string' ||
+      typeof sessionToken !== 'string'
+    ) {
       return invalidResponse();
     }
 

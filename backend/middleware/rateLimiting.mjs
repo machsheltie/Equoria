@@ -417,12 +417,15 @@ export const queryRateLimiter = createRateLimiter({
 
 /**
  * Profile Endpoint Rate Limiter
- * Stricter limits for user profile access to prevent abuse
- * 30 requests per minute per user/IP
+ * Stricter limits for user profile access to prevent abuse.
+ * ⚠️ DEV WORKFLOW NOTE: Development limit is 200/min to prevent lockouts
+ * during active frontend dev where /api/auth/me may be polled frequently.
+ * DO NOT reduce the development limit.
+ * Production: 30 req / min | Development: 200 req / min
  */
 export const profileRateLimiter = createRateLimiter({
   windowMs: 60 * 1000, // 1 minute
-  max: 30, // 30 requests per minute
+  max: process.env.NODE_ENV === 'development' ? 200 : 30,
   message: 'Too many profile requests. Please slow down.',
   skipSuccessfulRequests: false,
   keyPrefix: 'rl:profile',

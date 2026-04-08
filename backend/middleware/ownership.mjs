@@ -82,11 +82,7 @@ function getResourceConfig(resourceType) {
  * @returns {Function} Express middleware function
  */
 export const requireOwnership = (resourceType, options = {}) => {
-  const {
-    idParam = 'id',
-    required = true,
-    include = [],
-  } = options;
+  const { idParam = 'id', required = true, include = [] } = options;
 
   return async (req, res, next) => {
     try {
@@ -96,7 +92,8 @@ export const requireOwnership = (resourceType, options = {}) => {
       const resourceId = isNumericId ? parseInt(rawId, 10) : NaN;
 
       // Test-only override to stabilize integration tests by forcing a specific user context
-      if (process.env.NODE_ENV === 'test' && headers['x-test-user-id']) {
+      // Gated on JEST_WORKER_ID — cannot fire in production even if NODE_ENV is misconfigured
+      if (process.env.JEST_WORKER_ID !== undefined && headers['x-test-user-id']) {
         const overrideUserId = headers['x-test-user-id'];
         req.user = { ...(req.user || {}), id: overrideUserId };
       }
@@ -106,11 +103,15 @@ export const requireOwnership = (resourceType, options = {}) => {
       const { model: modelName, ownerField } = resourceConfig;
 
       // Test-only bypass to allow ownership checks to proceed without user match (used by integration suites)
-      const bypassOwnership = process.env.NODE_ENV === 'test' && headers['x-test-bypass-ownership'] === 'true';
+      // Gated on JEST_WORKER_ID — cannot fire in production even if NODE_ENV is misconfigured
+      const bypassOwnership =
+        process.env.JEST_WORKER_ID !== undefined && headers['x-test-bypass-ownership'] === 'true';
 
       if (bypassOwnership) {
         if (!isNumericId || isNaN(resourceId) || resourceId < 0) {
-          logger.warn(`[ownership] Invalid ${resourceType} ID (bypass mode): ${req.params[idParam]}`);
+          logger.warn(
+            `[ownership] Invalid ${resourceType} ID (bypass mode): ${req.params[idParam]}`,
+          );
         } else {
           const queryOptions = { where: { id: resourceId } };
           if (include.length > 0) {
@@ -122,7 +123,10 @@ export const requireOwnership = (resourceType, options = {}) => {
           const resource = await prisma[modelName].findFirst(queryOptions);
           if (resource) {
             req[resourceType] = resource;
-            req.validatedResources = { ...(req.validatedResources || {}), [resourceType]: resource };
+            req.validatedResources = {
+              ...(req.validatedResources || {}),
+              [resourceType]: resource,
+            };
             return next();
           }
         }
@@ -179,7 +183,10 @@ export const requireOwnership = (resourceType, options = {}) => {
         logger.warn(
           `[ownership] ${resourceType} ${resourceId} not found or not owned by user ${req.user.id}`,
         );
-        throw new AppError(`${resourceType.charAt(0).toUpperCase() + resourceType.slice(1)} not found`, 404);
+        throw new AppError(
+          `${resourceType.charAt(0).toUpperCase() + resourceType.slice(1)} not found`,
+          404,
+        );
       }
 
       // Attach resource to request for use in route handler
@@ -240,7 +247,8 @@ export async function findOwnedResource(resourceType, resourceId, userId, option
     const resourceConfig = getResourceConfig(resourceType);
     const { model: modelName, ownerField } = resourceConfig;
 
-    const bypassOwnership = process.env.NODE_ENV === 'test' && process.env.TEST_BYPASS_OWNERSHIP === 'true';
+    const bypassOwnership =
+      process.env.NODE_ENV === 'test' && process.env.TEST_BYPASS_OWNERSHIP === 'true';
 
     const queryOptions = {
       where: {
@@ -271,9 +279,7 @@ export async function findOwnedResource(resourceType, resourceId, userId, option
 
     // Resource not found OR user doesn't own it
     if (resource) {
-      logger.info(
-        `[ownership] Found owned ${resourceType} ${resourceId} for user ${userId}`,
-      );
+      logger.info(`[ownership] Found owned ${resourceType} ${resourceId} for user ${userId}`);
     } else {
       logger.warn(
         `[ownership] ${resourceType} ${resourceId} not found or not owned by user ${userId}`,
