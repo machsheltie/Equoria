@@ -89,12 +89,7 @@ export const register = async (req, res, next) => {
     try {
       const today = new Date();
       const dateOfBirth = new Date(today.getFullYear() - 3, today.getMonth(), today.getDate());
-      // Generate coat color for the starter horse (no breed → uses base defaults)
-      const starterGenotype = generateGenotype(null);
-      const starterBaseColor = calculatePhenotype(starterGenotype, null);
-      const starterMarkings = generateMarkings(null, starterBaseColor.colorName);
-      const starterPhenotype = { ...starterBaseColor, ...starterMarkings };
-      await prisma.horse.create({
+      const starterHorse = await prisma.horse.create({
         data: {
           name: `${username}'s First Horse`,
           sex: 'Mare',
@@ -112,11 +107,34 @@ export const register = async (req, res, next) => {
           obedience: 20,
           focus: 20,
           healthStatus: 'Excellent',
-          colorGenotype: starterGenotype,
-          phenotype: starterPhenotype,
         },
       });
       logger.info('[authController.register] Starter horse created', { userId: user.id });
+
+      // Apply coat color via raw SQL — bypasses stale Prisma client schema that uses old
+      // field names (genotype/phenotypicMarkings) instead of current (colorGenotype/phenotype).
+      try {
+        const starterGenotype = generateGenotype(null);
+        const starterBaseColor = calculatePhenotype(starterGenotype, null);
+        const starterMarkings = generateMarkings(null, starterBaseColor.colorName);
+        const starterPhenotype = { ...starterBaseColor, ...starterMarkings };
+        await prisma.$executeRaw`
+          UPDATE horses
+          SET "colorGenotype" = ${JSON.stringify(starterGenotype)}::jsonb,
+              phenotype = ${JSON.stringify(starterPhenotype)}::jsonb
+          WHERE id = ${starterHorse.id}
+        `;
+        logger.info('[authController.register] Starter horse color applied', {
+          horseId: starterHorse.id,
+          color: starterBaseColor.colorName,
+        });
+      } catch (colorError) {
+        // Non-fatal — horse exists, color can be backfilled later
+        logger.warn(
+          '[authController.register] Could not apply starter horse color:',
+          colorError.message,
+        );
+      }
     } catch (horseError) {
       // Non-fatal — user is registered even if starter horse creation fails
       logger.error('[authController.register] Failed to create starter horse:', horseError);
