@@ -73,7 +73,7 @@ import { SkeletonBase } from '@/components/ui/SkeletonCard';
 import { useAuth } from '@/contexts/AuthContext';
 import { useUserRiders, useAssignRider, type Rider } from '@/hooks/api/useRiders';
 import { useListHorse, useDelistHorse } from '@/hooks/api/useMarketplace';
-import { getHorseImage } from '@/lib/breed-images';
+import { getHorseImage, getHorseImageStyle } from '@/lib/breed-images';
 import { getBreedName } from '@/lib/utils';
 // Competition history (Story 5-3)
 import CompetitionHistory from '@/components/competition/CompetitionHistory';
@@ -118,6 +118,8 @@ interface Horse {
   };
   // Equipped tack — JSON field from Prisma; includes item IDs + <category>_condition values
   tack?: Record<string, unknown>;
+  // Resolved coat color — finalDisplayColor string, or colorName from phenotype JSONB
+  finalDisplayColor?: string;
 }
 
 type TabType =
@@ -197,6 +199,13 @@ const HorseDetailPage: React.FC = () => {
   // Fetch horse data — use `horseRaw` so the normalized copy can be named `horse` below,
   // keeping all downstream JSX references unchanged.
   const { data: horseRaw, isLoading, isError, error, refetch } = useHorse(Number(id));
+
+  // Fetch competition history — must be called before any early returns (Rules of Hooks).
+  // Disabled until horse is loaded and competition tab is active.
+  const { data: competitionHistoryData, isLoading: isCompHistoryLoading } =
+    useHorseCompetitionHistory(
+      !isLoading && !isError && !!horseRaw && activeTab === 'competition' ? Number(id) : null
+    );
 
   // Loading state — detail page skeleton (portrait left + tab area right)
   if (isLoading) {
@@ -314,11 +323,12 @@ const HorseDetailPage: React.FC = () => {
     tack: (horseRaw as unknown as Record<string, unknown>).tack as
       | Record<string, unknown>
       | undefined,
+    // Resolve coat color: prefer the flat string field; fall back to phenotype.colorName
+    // (horses created before the color-genetics system may only have the JSONB phenotype).
+    finalDisplayColor:
+      (rawHorse.finalDisplayColor as string | undefined) ||
+      ((rawHorse.phenotype as { colorName?: string } | null)?.colorName ?? undefined),
   };
-
-  // Fetch competition history only when the competition tab is active (Story 5-3)
-  const { data: competitionHistoryData, isLoading: isCompHistoryLoading } =
-    useHorseCompetitionHistory(activeTab === 'competition' ? horse.id : null);
 
   // Tab configuration
   const tabs: { id: TabType; label: string; icon: React.ReactNode }[] = [
@@ -357,6 +367,7 @@ const HorseDetailPage: React.FC = () => {
                   src={getHorseImage(horse.imageUrl, horse.breed)}
                   alt={horse.name}
                   className="w-full h-full object-cover"
+                  style={getHorseImageStyle(horse.imageUrl, horse.breed)}
                   onError={(e) => {
                     (e.target as HTMLImageElement).src = '/images/horse-placeholder.png';
                   }}
@@ -428,11 +439,7 @@ const HorseDetailPage: React.FC = () => {
                     <div className="flex flex-wrap gap-3 text-sm fantasy-body text-[rgb(180,195,215)]">
                       <span>Breed: {getBreedName(horse.breed)}</span>
                       <span>•</span>
-                      <span>
-                        Color:{' '}
-                        {(horse as unknown as Record<string, string>).finalDisplayColor ||
-                          'Unknown'}
-                      </span>
+                      <span>Color: {horse.finalDisplayColor || 'Unknown'}</span>
                       <span>•</span>
                       <span>Age: {horse.age}</span>
                       <span>•</span>
