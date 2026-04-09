@@ -367,7 +367,10 @@ const TrainingDashboard = ({ userId: userIdProp }: TrainingDashboardProps): JSX.
           horse={selectedHorse}
           onClose={() => setSelectedHorse(null)}
           onCompleted={() => {
-            setSelectedHorse(null);
+            // Trigger data refresh. Do NOT close the modal here — the modal
+            // stays open showing the training results so the user can read
+            // them. The Close button inside the results view calls onClose,
+            // which sets selectedHorse to null and unmounts the modal.
             refetch();
           }}
         />

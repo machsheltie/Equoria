@@ -110,7 +110,24 @@ export const useTrainHorse = (userIdForInvalidate?: string) => {
 
   return useMutation<TrainingResult, ApiError, TrainingRequest>({
     mutationFn: (payload) => trainingApi.train(payload),
-    onSuccess: (_data, variables) => {
+    onSuccess: (data, variables) => {
+      // Optimistic cache update: immediately mark the trained horse as on cooldown
+      // so the UI flips to "On Cooldown" without waiting for the async refetch.
+      if (data.nextEligible) {
+        queryClient.setQueriesData(
+          { queryKey: ['training', 'trainable-horses'] },
+          (old: unknown) => {
+            if (!Array.isArray(old)) return old;
+            return (old as Array<{ id: number; [key: string]: unknown }>).map((horse) => {
+              if (horse.id === variables.horseId) {
+                return { ...horse, nextEligibleAt: data.nextEligible, canTrain: false };
+              }
+              return horse;
+            });
+          }
+        );
+      }
+
       // Invalidate horse queries to refresh updated stats
       queryClient.invalidateQueries({
         queryKey: horseQueryKeys.detail(variables.horseId),
