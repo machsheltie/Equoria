@@ -175,29 +175,103 @@ The following **Epic 31B conformation frontend work was built ahead of schedule*
 
 ## Epic 31E: Coat Color Genetics
 
-**Backend:** In progress (31E-1a done, 31E-1b done, 31E-2 through 31E-5 backlog as of 2026-04-02)
+**Backend:** Complete (6 stories, 2026-04-09)
 **Frontend Status:** ⏸ PAUSED — not started
 
-### Anticipated Frontend Work
+### New Backend Endpoints
 
-- [ ] Display coat color name on HorseCard
-- [ ] Genetics viewer on HorseDetailPage (genotype + phenotype)
-- [ ] Breeding color prediction UI (Punnett square or probability chart)
-- [ ] Visual color swatch or horse silhouette coloring
+| Endpoint                                 | Auth             | Returns                                                                                                         |
+| ---------------------------------------- | ---------------- | --------------------------------------------------------------------------------------------------------------- |
+| `GET /api/v1/horses/:id/genetics`        | requireOwnership | `{ horseId, horseName, colorGenotype, phenotype }` — full genetics including allele pairs per locus             |
+| `GET /api/v1/horses/:id/color`           | requireOwnership | Display fields only: colorName, shade, faceMarking, legMarkings, advancedMarkings, modifiers (no colorGenotype) |
+| `POST /api/v1/breeding/color-prediction` | Auth required    | Probability breakdown by phenotype for a sire × dam cross                                                       |
+
+### New / Changed Response Fields
+
+| Response                      | Field Added                            | Notes                                                                                                |
+| ----------------------------- | -------------------------------------- | ---------------------------------------------------------------------------------------------------- |
+| `GET /api/v1/horses/:id`      | `horse.phenotype` (object \| null)     | `{ colorName, shade, faceMarking, legMarkings, advancedMarkings, sooty, flaxen, pangare, rabicano }` |
+| `GET /api/v1/horses/:id`      | `horse.colorGenotype` (object \| null) | Full 17-locus allele pairs — not shown to players, for breeding prediction only                      |
+| `POST /api/v1/breeding/breed` | `foal.colorGenotype`                   | Generated at foal creation                                                                           |
+| `POST /api/v1/breeding/breed` | `foal.phenotype`                       | Calculated from colorGenotype at foal creation                                                       |
+
+### Lethal Combination UX Design Notes
+
+Some genotypes are lethal (cause foal death in reality). The backend filters these from breeding predictions and renormalizes probabilities. The frontend does NOT need to warn about individual lethal genotypes — they are invisible to players. However, if a cross has an unusually low foal survival probability (renormalization reduced totals by >5%), consider displaying: "Some color combinations from this cross are not viable — displayed probabilities reflect live-foal outcomes only."
+
+Known lethal combinations (backend-filtered, player-invisible):
+
+- `O/O` (Splashed White homozygous)
+- `W20/W20` (specific White allele homozygous)
+- `SW3/SW3` (Splashed White 3 homozygous)
+- `EDXW1/EDXW1` (Extension dominant white homozygous)
+
+### API Client Updates (`frontend/src/lib/api-client.ts`)
+
+- [ ] Add `getHorseGenetics(horseId: number)` — returns `{ colorGenotype, phenotype }` or null for legacy
+- [ ] Add `getHorseColor(horseId: number)` — returns display color object or null for legacy
+- [ ] Add `getBreedingColorPrediction(sireId: number, damId: number)` — returns probability map by phenotype name
+- [ ] Add `phenotype` to `HorseSummary` interface (already done in `61a5c708` — verify it's complete)
+
+### HorseCard (`frontend/src/components/horse/HorseCard.tsx`)
+
+- [ ] Display `horse.phenotype.colorName` as color chip/badge (null = hide gracefully, no "Unknown")
+- [ ] Display shade variant as subtitle under color name (e.g., "Bay" + "Dark Bay")
+- [ ] Consider small color swatch circle using CSS color approximation (not blocking)
+
+### Horse Detail Page (`frontend/src/pages/HorseDetailPage.tsx`)
+
+- [ ] Add "Genetics" tab (or "Color & Genetics" section within existing tabs)
+- [ ] Display full phenotype: base color, shade, face marking, leg markings, advanced markings
+- [ ] Display boolean modifiers: sooty, flaxen (chestnut only), pangare, rabicano — as chips when true
+- [ ] Display colorGenotype as collapsible "Advanced / Breeding" section (locus-by-locus allele pairs)
+- [ ] Legacy horse handling: if phenotype is null, show "Color genetics not available for this horse" — do NOT show "Unknown"
+- [ ] Handle JSONB type guard on client side: if response.data is null, render legacy message
+
+### Breeding Color Prediction UI
+
+- [ ] In breeding pair selection modal/page, add "Color Prediction" panel after sire + dam are selected
+- [ ] Call `getBreedingColorPrediction(sireId, damId)` when both are selected
+- [ ] Display probability chart (bar chart or donut) sorted by probability descending
+- [ ] Group low-probability outcomes (<1%) as "Other colors: X%"
+- [ ] If any lethal filtering occurred (backend indicates via `lethalFilterApplied: true`), show disclaimer note
+- [ ] Legacy horse handling: if sire or dam has no colorGenotype, show "Color prediction unavailable — one or both horses have no genetics data"
+
+### React Query Hooks
+
+- [ ] Create `useHorseGenetics(horseId)` — wraps `getHorseGenetics`, `staleTime: 10 * 60 * 1000` (immutable after generation)
+- [ ] Create `useHorseColor(horseId)` — wraps `getHorseColor`, `staleTime: 10 * 60 * 1000`
+- [ ] Create `useBreedingColorPrediction(sireId, damId)` — enabled only when both IDs present, `staleTime: 5 * 60 * 1000`
+
+### Performance Notes
+
+- colorGenotype is a 17-locus JSON object (~500 bytes) — not heavy, but avoid fetching it on list views
+- The `/color` endpoint returns only display fields and is the correct endpoint for HorseCard and HorseDetail display
+- The `/genetics` endpoint should only be called when the player explicitly opens the genetics/breeding section
+- Breeding prediction uses per-locus Punnett square algorithm (not brute-force) — backend is O(loci × 4) not O(2^loci)
+
+### Notes
+
+- `phenotype` is available in `GET /api/v1/horses/:id` — no separate call needed for basic color display
+- colorGenotype is immutable (birth-assigned) — no edit UI required
+- `staleTime: Infinity` is appropriate for colorGenotype and phenotype — they never change after generation
+- Legacy horses (pre-31E) have `colorGenotype: null` and `phenotype: null` — handle gracefully everywhere; never show "Unknown"
 
 ---
 
 ## Epic 31F: Conformation Show Handling
 
-**Backend:** Not started
+**Backend:** Complete (3 stories, 2026-04-09)
 **Frontend Status:** ⏸ PAUSED — not started
 
 ### Anticipated Frontend Work
 
-- [ ] "Conformation Shows" section in competition browser
-- [ ] Conformation show entry UI (handler/groom selection)
-- [ ] Conformation show results display
-- [ ] Age eligibility display (youngstock class at age 1)
+- [ ] "Conformation Shows" section in competition browser (separate from ridden shows)
+- [ ] Conformation show entry UI (handler + groom selection, eligibility check)
+- [ ] Age eligibility display (youngstock class at age 1; open class requires age 3+)
+- [ ] Conformation show results display (score breakdown, rank, title earned)
+- [ ] Title progression display on HorseCard/HorseDetail (currentTitle field)
+- [ ] Handler/groom synergy preview in entry modal
 
 ---
 
@@ -212,6 +286,6 @@ When Epics 22–30 are complete, tackle in this order (integrate with the corres
 
 ---
 
-**Last Updated:** 2026-04-02
-**Updated By:** Audit session — orphaned 31B work documented, all 31 frontend integration formally paused pending Epics 22–30
+**Last Updated:** 2026-04-09
+**Updated By:** Epic 31E retrospective — full 31E frontend spec added, 31F backend status corrected to complete
 **Next Review:** When Epic 24 (Horse Card and Detail Redesign) is being planned
