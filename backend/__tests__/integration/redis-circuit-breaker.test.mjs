@@ -11,14 +11,21 @@
  * - Metrics accuracy and health monitoring
  * - Concurrent request handling during failures
  *
- * NOTE: Some tests are skipped (.skip) due to timing-sensitive async event handlers.
- * These tests verify circuit state transitions that depend on event emitter callbacks
- * executing before assertions run. Event handlers are async and don't guarantee
- * completion timing, making these tests inherently flaky. The circuit breaker
- * functionality is validated in production via rate limiting integration tests (22/22 passing).
+ * ── Timing technique ──────────────────────────────────────────────────────────
+ * All tests use jest.useFakeTimers() so that opossum's internal resetTimeout
+ * (30 s by default) can be advanced instantly with jest.advanceTimersByTime().
+ * setImmediate/nextTick/performance are NOT faked so Node.js async plumbing works.
+ *
+ * ── Error types ───────────────────────────────────────────────────────────────
+ * DEFAULT_CIRCUIT_OPTIONS.errorFilter behaviour in test env:
+ *   - ECONNREFUSED errors → returns false (not filtered) → counted as failure → can trip circuit
+ *   - Plain errors (no code) → returns true (filtered) → treated as success → do NOT count
+ *
+ * Therefore: always use connRefusedError() when you need the circuit to count a failure.
+ * Use plain new Error() only when testing that filtered errors are propagated but not counted.
  */
 
-import { jest } from '@jest/globals';
+import { jest, describe, beforeEach, afterEach, it, expect } from '@jest/globals';
 import { createRedisCircuitBreaker, DEFAULT_CIRCUIT_OPTIONS } from '../../utils/redisCircuitBreaker.mjs';
 
 // Mock logger to avoid console pollution during tests
@@ -31,12 +38,62 @@ jest.mock('../../utils/logger.mjs', () => ({
   },
 }));
 
+// ── Module-scope helpers ───────────────────────────────────────────────────────
+
+/**
+ * Drain residual microtasks.
+ * opossum's EventEmitter callbacks are synchronous within the microtask chain,
+ * so two Promise.resolve() ticks are enough to let metrics settle.
+ */
+async function flushMicrotasks() {
+  await Promise.resolve();
+  await Promise.resolve();
+}
+
+/**
+ * Fire one circuit-breaker operation and wait for metrics to settle.
+ * Swallows the rejection so callers don't need try/catch.
+ */
+async function fire(breaker, key = 'k') {
+  await breaker.fire(key).catch(() => {});
+  await flushMicrotasks();
+}
+
+/**
+ * Open a circuit by firing `count` consecutive failures.
+ * count must exceed the breaker's volumeThreshold.
+ */
+async function openCircuit(circuitBreaker, operation = 'get', count = 12) {
+  for (let i = 0; i < count; i++) {
+    await fire(circuitBreaker.operations[operation]);
+  }
+}
+
+/**
+ * Create an ECONNREFUSED error that is counted as a real failure in test env.
+ *
+ * DEFAULT_CIRCUIT_OPTIONS.errorFilter in test env:
+ *   ECONNREFUSED → err.code !== 'ECONNREFUSED' = false → NOT filtered → counted as failure
+ *   plain error  → err.code !== 'ECONNREFUSED' = true  → filtered    → treated as success
+ *
+ * Always use connRefusedError() when you need failureCount to increment.
+ */
+function connRefusedError(msg = 'Connection refused') {
+  const err = new Error(msg);
+  err.code = 'ECONNREFUSED';
+  return err;
+}
+
+// ── Test suite ────────────────────────────────────────────────────────────────
+
 describe('Redis Circuit Breaker Integration Tests', () => {
   let mockRedisClient;
   let circuitBreaker;
 
   beforeEach(() => {
-    // Create mock Redis client with common operations
+    // Fake timers — setImmediate/nextTick/performance left real so async plumbing works.
+    jest.useFakeTimers({ doNotFake: ['setImmediate', 'nextTick', 'performance'] });
+
     mockRedisClient = {
       get: jest.fn(),
       set: jest.fn(),
@@ -49,17 +106,18 @@ describe('Redis Circuit Breaker Integration Tests', () => {
       exists: jest.fn(),
     };
 
-    // Clear all mock calls
     jest.clearAllMocks();
   });
 
   afterEach(async () => {
-    // Reset circuit breaker state if it exists
     if (circuitBreaker) {
       circuitBreaker.resetCircuit();
       circuitBreaker = null;
     }
+    jest.useRealTimers();
   });
+
+  // ── Circuit Breaker Initialization ─────────────────────────────────────────
 
   describe('Circuit Breaker Initialization', () => {
     it('should create circuit breaker with default configuration', () => {
@@ -99,6 +157,8 @@ describe('Redis Circuit Breaker Integration Tests', () => {
     });
   });
 
+  // ── Circuit State Transitions ───────────────────────────────────────────────
+
   describe('Circuit State Transitions', () => {
     it('should start in CLOSED state', () => {
       circuitBreaker = createRedisCircuitBreaker(mockRedisClient);
@@ -108,113 +168,81 @@ describe('Redis Circuit Breaker Integration Tests', () => {
       expect(circuitBreaker.isCircuitOpen()).toBe(false);
     });
 
-    it.skip('should open circuit after 50% error rate over 10 requests (default threshold)', async () => {
+    it('should open circuit after 50% error rate over 10 requests (default threshold)', async () => {
       circuitBreaker = createRedisCircuitBreaker(mockRedisClient, {
         errorThresholdPercentage: 50,
         volumeThreshold: 10,
         timeout: 3000,
       });
 
-      // Mock consistent failures (100% error rate to guarantee circuit opens)
-      mockRedisClient.get.mockRejectedValue(new Error('Connection failed'));
+      // ECONNREFUSED errors are counted as failures in test env (errorFilter returns false).
+      mockRedisClient.get.mockRejectedValue(connRefusedError('Connection failed'));
 
-      // Execute 11 requests to exceed volumeThreshold and open circuit
-      for (let i = 0; i < 11; i++) {
-        try {
-          await circuitBreaker.operations.get.fire('test-key');
-        } catch {
-          // Expected failures
-        }
-        // Longer delay between requests for event handlers
-        await new Promise(resolve => setTimeout(resolve, 100));
-      }
+      // 11 failures → exceeds volumeThreshold=10 at 100% error rate → circuit opens.
+      await openCircuit(circuitBreaker, 'get', 11);
 
-      // Wait much longer for circuit breaker to evaluate state and event handlers to complete
-      await new Promise(resolve => setTimeout(resolve, 1000));
-
-      // Circuit should now be OPEN due to high error rate
       const metrics = circuitBreaker.getMetrics();
-      expect(metrics.failureCount).toBeGreaterThan(0); // At least some failures tracked
-      // Note: Circuit may not show OPEN in shared state due to per-operation tracking
-      // but we can verify high failure count and that operations are being rejected
+      expect(metrics.failureCount).toBeGreaterThanOrEqual(10);
+      expect(metrics.currentState).toBe('OPEN');
+      expect(circuitBreaker.isCircuitOpen()).toBe(true);
     });
 
-    it.skip('should enter HALF_OPEN state after reset timeout', async () => {
-      const shortResetTimeout = 500; // 500ms for faster testing
+    it('should enter HALF_OPEN state after reset timeout', async () => {
+      const resetTimeout = 500;
       circuitBreaker = createRedisCircuitBreaker(mockRedisClient, {
         errorThresholdPercentage: 50,
-        resetTimeout: shortResetTimeout,
+        resetTimeout,
         volumeThreshold: 5,
       });
 
-      // Force circuit to open with 5 failures
-      mockRedisClient.get.mockRejectedValue(new Error('Connection failed'));
-      for (let i = 0; i < 5; i++) {
-        try {
-          await circuitBreaker.operations.get.fire('test-key');
-        } catch {
-          // Expected failures
-        }
-        await new Promise(resolve => setTimeout(resolve, 20));
-      }
+      mockRedisClient.get.mockRejectedValue(connRefusedError('Connection failed'));
+      await openCircuit(circuitBreaker, 'get', 6); // exceed volumeThreshold=5
+      expect(circuitBreaker.getMetrics().currentState).toBe('OPEN');
 
-      // Wait for event handlers to complete
-      await new Promise(resolve => setTimeout(resolve, 300));
+      // Advance past resetTimeout — fires opossum's internal _halfOpen timer synchronously.
+      jest.advanceTimersByTime(resetTimeout + 100);
+      await flushMicrotasks();
 
-      // Circuit may or may not be OPEN (timing-dependent) - just verify failures tracked
-      const metricsAfterFailures = circuitBreaker.getMetrics();
-      expect(metricsAfterFailures.failureCount).toBeGreaterThan(0);
-
-      // Wait for reset timeout (plus buffer)
-      await new Promise(resolve => setTimeout(resolve, shortResetTimeout + 300));
-
-      // Circuit should now be in HALF_OPEN or CLOSED state
       const metrics = circuitBreaker.getMetrics();
-      // Circuit state transitions are async - just verify some state changes occurred
-      expect(metrics.failureCount).toBeGreaterThan(0);
-    }, 10000); // Increase Jest timeout for this test
+      expect(metrics.currentState).toBe('HALF_OPEN');
+      expect(metrics.circuitHalfOpenCount).toBeGreaterThanOrEqual(1);
+    });
 
-    it.skip('should close circuit after successful recovery in HALF_OPEN state', async () => {
-      const shortResetTimeout = 500;
+    it('should close circuit after successful recovery in HALF_OPEN state', async () => {
+      const resetTimeout = 500;
       circuitBreaker = createRedisCircuitBreaker(mockRedisClient, {
         errorThresholdPercentage: 50,
-        resetTimeout: shortResetTimeout,
+        resetTimeout,
         volumeThreshold: 5,
         halfOpenRequests: 3,
       });
 
-      // Force circuit to open
-      mockRedisClient.get.mockRejectedValue(new Error('Connection failed'));
-      for (let i = 0; i < 5; i++) {
-        try {
-          await circuitBreaker.operations.get.fire('test-key');
-        } catch {
-          // Expected failures
-        }
-        await new Promise(resolve => setTimeout(resolve, 20));
-      }
+      // Force OPEN
+      mockRedisClient.get.mockRejectedValue(connRefusedError('Connection failed'));
+      await openCircuit(circuitBreaker, 'get', 6);
+      expect(circuitBreaker.getMetrics().currentState).toBe('OPEN');
 
-      // Wait for event handlers and potential HALF_OPEN state
-      await new Promise(resolve => setTimeout(resolve, shortResetTimeout + 400));
+      // Advance to HALF_OPEN
+      jest.advanceTimersByTime(resetTimeout + 100);
+      await flushMicrotasks();
+      expect(circuitBreaker.getMetrics().currentState).toBe('HALF_OPEN');
 
-      // Mock successful recovery (3 consecutive successes)
-      mockRedisClient.get.mockResolvedValue('success');
-
-      // Execute 3 successful requests to trigger recovery
+      // Succeed in HALF_OPEN → CLOSED
+      mockRedisClient.get.mockResolvedValue('recovered');
       for (let i = 0; i < 3; i++) {
-        await circuitBreaker.operations.get.fire('test-key');
-        await new Promise(resolve => setTimeout(resolve, 20));
+        await fire(circuitBreaker.operations.get);
       }
 
-      // Wait for circuit to close and event handlers to complete
-      await new Promise(resolve => setTimeout(resolve, 300));
-
-      // Circuit recovery is async - just verify we tracked both failures and successes
       const metrics = circuitBreaker.getMetrics();
-      expect(metrics.failureCount).toBeGreaterThan(0);
+      expect(metrics.currentState).toBe('CLOSED');
+      expect(metrics.circuitOpenCount).toBeGreaterThanOrEqual(1);
+      expect(metrics.circuitHalfOpenCount).toBeGreaterThanOrEqual(1);
+      expect(metrics.circuitCloseCount).toBeGreaterThanOrEqual(1);
       expect(metrics.successCount).toBeGreaterThan(0);
-    }, 10000); // Increase Jest timeout for this test
+    });
   });
+
+  // ── Redis Failure Scenarios ─────────────────────────────────────────────────
 
   describe('Redis Failure Scenarios', () => {
     beforeEach(() => {
@@ -222,95 +250,96 @@ describe('Redis Circuit Breaker Integration Tests', () => {
     });
 
     it('should handle Redis connection refused errors', async () => {
-      const connectionError = new Error('Connection refused');
-      connectionError.code = 'ECONNREFUSED';
+      // In test env, ECONNREFUSED errors ARE counted as failures (errorFilter returns false).
+      // The error is re-thrown to the caller AND increments failureCount.
+      // The circuit does not open yet because default volumeThreshold=10 requires more failures.
+      const connectionError = connRefusedError('Connection refused');
       mockRedisClient.get.mockRejectedValue(connectionError);
 
+      // Error is propagated to the caller.
       await expect(circuitBreaker.operations.get.fire('test-key')).rejects.toThrow('Connection refused');
+      await flushMicrotasks();
 
+      // ECONNREFUSED is counted as a failure (not filtered) in test env.
       const metrics = circuitBreaker.getMetrics();
       expect(metrics.failureCount).toBeGreaterThan(0);
+      expect(metrics.successCount).toBe(0);
+      expect(circuitBreaker.isCircuitOpen()).toBe(false); // only 1 failure, need 10 to open
     });
 
     it('should handle Redis operation timeout (> 3s)', async () => {
+      // DEFAULT_CIRCUIT_OPTIONS.timeout = 3000 ms.
+      // With fake timers: start the operation, advance time past the timeout,
+      // then await the rejection so metrics settle.
       let timeoutHandle;
-      // Mock a slow operation that exceeds timeout
       mockRedisClient.get.mockImplementation(() => {
         return new Promise(resolve => {
-          timeoutHandle = setTimeout(() => resolve('too-slow'), 5000); // 5 seconds, exceeds 3s timeout
+          // 5 s — deliberately longer than opossum's 3 s timeout.
+          timeoutHandle = setTimeout(() => resolve('too-slow'), 5000);
         });
       });
 
-      try {
-        await circuitBreaker.operations.get.fire('test-key');
-      } catch {
-        // Expected timeout error
-      }
+      const firePromise = circuitBreaker.operations.get.fire('test-key');
+      jest.advanceTimersByTime(3100); // fire opossum's 3 000 ms timeout synchronously
+      await firePromise.catch(() => {});
+      await flushMicrotasks();
 
-      // Clear the timeout to prevent open handles
+      // Cancel the mock's 5 s timer (still in fake-timer queue, not yet fired).
       if (timeoutHandle) {
         clearTimeout(timeoutHandle);
       }
 
       const metrics = circuitBreaker.getMetrics();
       expect(metrics.timeoutCount).toBeGreaterThan(0);
-    }, 10000); // Increase Jest timeout
+    });
 
-    it.skip('should handle intermittent Redis failures', async () => {
-      // Mock intermittent failures (success, fail, success, fail)
+    it('should handle intermittent Redis failures', async () => {
+      // ECONNREFUSED errors are counted as failures in test env.
       mockRedisClient.get
         .mockResolvedValueOnce('success1')
-        .mockRejectedValueOnce(new Error('Intermittent failure'))
+        .mockRejectedValueOnce(connRefusedError('Intermittent failure'))
         .mockResolvedValueOnce('success2')
-        .mockRejectedValueOnce(new Error('Intermittent failure'));
+        .mockRejectedValueOnce(connRefusedError('Intermittent failure'));
 
-      // Execute requests with delays for event handlers
       const result1 = await circuitBreaker.operations.get.fire('key1');
       expect(result1).toBe('success1');
-      await new Promise(resolve => setTimeout(resolve, 50));
+      await flushMicrotasks();
 
       await expect(circuitBreaker.operations.get.fire('key2')).rejects.toThrow('Intermittent failure');
-      await new Promise(resolve => setTimeout(resolve, 50));
+      await flushMicrotasks();
 
       const result3 = await circuitBreaker.operations.get.fire('key3');
       expect(result3).toBe('success2');
-      await new Promise(resolve => setTimeout(resolve, 50));
+      await flushMicrotasks();
 
       await expect(circuitBreaker.operations.get.fire('key4')).rejects.toThrow('Intermittent failure');
-      await new Promise(resolve => setTimeout(resolve, 50));
+      await flushMicrotasks();
 
-      // Wait for all event handlers to complete
-      await new Promise(resolve => setTimeout(resolve, 200));
-
-      // Verify metrics tracked correctly (both successes and failures)
       const metrics = circuitBreaker.getMetrics();
-      expect(metrics.successCount).toBeGreaterThan(0);
-      expect(metrics.failureCount).toBeGreaterThan(0);
+      expect(metrics.successCount).toBe(2);
+      expect(metrics.failureCount).toBe(2);
     });
 
-    it.skip('should handle multiple operation types failing simultaneously', async () => {
-      // Mock failures for different operations
-      mockRedisClient.get.mockRejectedValue(new Error('Get failed'));
-      mockRedisClient.set.mockRejectedValue(new Error('Set failed'));
-      mockRedisClient.del.mockRejectedValue(new Error('Del failed'));
+    it('should handle multiple operation types failing simultaneously', async () => {
+      mockRedisClient.get.mockRejectedValue(connRefusedError('Get failed'));
+      mockRedisClient.set.mockRejectedValue(connRefusedError('Set failed'));
+      mockRedisClient.del.mockRejectedValue(connRefusedError('Del failed'));
 
-      // Execute different operations with delays for event handlers
       await expect(circuitBreaker.operations.get.fire('key')).rejects.toThrow('Get failed');
-      await new Promise(resolve => setTimeout(resolve, 50));
+      await flushMicrotasks();
 
       await expect(circuitBreaker.operations.set.fire('key', 'value')).rejects.toThrow('Set failed');
-      await new Promise(resolve => setTimeout(resolve, 50));
+      await flushMicrotasks();
 
       await expect(circuitBreaker.operations.del.fire('key')).rejects.toThrow('Del failed');
-      await new Promise(resolve => setTimeout(resolve, 50));
-
-      // Wait for all event handlers to complete
-      await new Promise(resolve => setTimeout(resolve, 200));
+      await flushMicrotasks();
 
       const metrics = circuitBreaker.getMetrics();
-      expect(metrics.failureCount).toBeGreaterThan(0);
+      expect(metrics.failureCount).toBe(3);
     });
   });
+
+  // ── Fallback Strategies ─────────────────────────────────────────────────────
 
   describe('Fallback Strategies', () => {
     beforeEach(() => {
@@ -321,74 +350,51 @@ describe('Redis Circuit Breaker Integration Tests', () => {
     });
 
     it('should allow operations to fail when circuit is CLOSED', async () => {
-      mockRedisClient.get.mockRejectedValue(new Error('Redis error'));
+      mockRedisClient.get.mockRejectedValue(connRefusedError('Redis error'));
 
       await expect(circuitBreaker.operations.get.fire('test-key')).rejects.toThrow('Redis error');
+      await flushMicrotasks();
 
-      // Circuit should still be CLOSED (not enough failures yet)
+      // One failure is not enough to open with volumeThreshold=5.
       expect(circuitBreaker.isCircuitOpen()).toBe(false);
     });
 
-    it.skip('should reject operations immediately when circuit is OPEN', async () => {
-      // Force circuit to open
-      mockRedisClient.get.mockRejectedValue(new Error('Connection failed'));
-      for (let i = 0; i < 5; i++) {
-        try {
-          await circuitBreaker.operations.get.fire('test-key');
-        } catch {
-          // Expected failures
-        }
-        await new Promise(resolve => setTimeout(resolve, 20));
-      }
+    it('should reject operations immediately when circuit is OPEN', async () => {
+      // Open the circuit with ECONNREFUSED failures (counted in test env).
+      mockRedisClient.get.mockRejectedValue(connRefusedError('Connection failed'));
+      await openCircuit(circuitBreaker, 'get', 6); // exceed volumeThreshold=5
 
-      // Wait for event handlers to complete
-      await new Promise(resolve => setTimeout(resolve, 300));
+      expect(circuitBreaker.getMetrics().currentState).toBe('OPEN');
 
-      // Circuit state is per-operation and async - just verify failures were tracked
-      const metrics = circuitBreaker.getMetrics();
-      expect(metrics.failureCount).toBeGreaterThan(0);
+      // Track Redis call count before the next attempt.
+      const callsBefore = mockRedisClient.get.mock.calls.length;
 
-      // Attempt operation - may or may not be rejected depending on circuit state
-      try {
-        await circuitBreaker.operations.get.fire('test-key');
-      } catch {
-        // Expected if circuit is open
-      }
+      // An operation fired at OPEN is short-circuited — Redis is NOT called.
+      await fire(circuitBreaker.operations.get);
+
+      // Redis was not called (request was rejected by open circuit, not forwarded).
+      expect(mockRedisClient.get.mock.calls.length).toBe(callsBefore);
+      // Circuit remains open (no fallback function registered, so no auto-recovery here).
+      expect(circuitBreaker.isCircuitOpen()).toBe(true);
     });
 
-    it.skip('should track fallback count when circuit is open', async () => {
-      // Force circuit to open
-      mockRedisClient.get.mockRejectedValue(new Error('Connection failed'));
-      for (let i = 0; i < 5; i++) {
-        try {
-          await circuitBreaker.operations.get.fire('test-key');
-        } catch {
-          // Expected failures
-        }
-        await new Promise(resolve => setTimeout(resolve, 20));
-      }
+    it('should remain OPEN and keep rejecting when circuit is open', async () => {
+      // Open circuit.
+      mockRedisClient.get.mockRejectedValue(connRefusedError('Connection failed'));
+      await openCircuit(circuitBreaker, 'get', 6);
+      expect(circuitBreaker.getMetrics().currentState).toBe('OPEN');
 
-      // Wait for event handlers to complete
-      await new Promise(resolve => setTimeout(resolve, 300));
-
-      // Attempt multiple operations
+      // Fire 3 more times — circuit stays OPEN, Redis is never called.
+      const callsBefore = mockRedisClient.get.mock.calls.length;
       for (let i = 0; i < 3; i++) {
-        try {
-          await circuitBreaker.operations.get.fire('test-key');
-        } catch {
-          // Expected fallback rejections or failures
-        }
-        await new Promise(resolve => setTimeout(resolve, 20));
+        await fire(circuitBreaker.operations.get);
       }
-
-      // Wait for event handlers
-      await new Promise(resolve => setTimeout(resolve, 200));
-
-      const metrics = circuitBreaker.getMetrics();
-      // At minimum, failures should be tracked
-      expect(metrics.failureCount).toBeGreaterThan(0);
+      expect(mockRedisClient.get.mock.calls.length).toBe(callsBefore);
+      expect(circuitBreaker.isCircuitOpen()).toBe(true);
     });
   });
+
+  // ── Concurrent Request Handling ─────────────────────────────────────────────
 
   describe('Concurrent Request Handling', () => {
     beforeEach(() => {
@@ -398,49 +404,45 @@ describe('Redis Circuit Breaker Integration Tests', () => {
     it('should handle concurrent successful requests', async () => {
       mockRedisClient.get.mockResolvedValue('success');
 
-      // Execute 10 concurrent requests
+      // 10 concurrent fires — all resolve immediately.
       const promises = Array(10)
         .fill(null)
         .map((_, i) => circuitBreaker.operations.get.fire(`key${i}`));
 
       const results = await Promise.all(promises);
+      await flushMicrotasks();
 
-      // All should succeed
       expect(results.every(r => r === 'success')).toBe(true);
 
-      // Wait for event handlers to complete
-      await new Promise(resolve => setTimeout(resolve, 300));
-
       const metrics = circuitBreaker.getMetrics();
-      expect(metrics.successCount).toBeGreaterThan(0);
+      expect(metrics.successCount).toBe(10);
     });
 
-    it.skip('should handle concurrent requests during circuit opening', async () => {
-      // Mock failures for first 5 requests, then successes
+    it('should handle concurrent requests during circuit opening', async () => {
+      // First 5 calls fail (ECONNREFUSED = counted); remainder succeed.
       let callCount = 0;
       mockRedisClient.get.mockImplementation(() => {
         callCount++;
         if (callCount <= 5) {
-          return Promise.reject(new Error('Connection failed'));
+          return Promise.reject(connRefusedError('Connection failed'));
         }
         return Promise.resolve('success');
       });
 
-      // Execute 10 concurrent requests
       const promises = Array(10)
         .fill(null)
         .map((_, i) => circuitBreaker.operations.get.fire(`key${i}`).catch(e => e.message));
 
       await Promise.all(promises);
-
-      // Wait for all event handlers to complete
-      await new Promise(resolve => setTimeout(resolve, 300));
+      await flushMicrotasks();
 
       const metrics = circuitBreaker.getMetrics();
-      // At least one of each should be tracked
-      expect(metrics.failureCount + metrics.successCount).toBeGreaterThan(0);
+      // Some mix of failures, successes, and possibly fallbacks (if circuit opened mid-batch).
+      expect(metrics.failureCount + metrics.successCount + metrics.fallbackCount).toBeGreaterThan(0);
     });
   });
+
+  // ── Metrics and Health Monitoring ───────────────────────────────────────────
 
   describe('Metrics and Health Monitoring', () => {
     beforeEach(() => {
@@ -450,83 +452,58 @@ describe('Redis Circuit Breaker Integration Tests', () => {
     it('should accurately track success count', async () => {
       mockRedisClient.get.mockResolvedValue('success');
 
-      await circuitBreaker.operations.get.fire('key1');
-      await new Promise(resolve => setTimeout(resolve, 50));
-      await circuitBreaker.operations.get.fire('key2');
-      await new Promise(resolve => setTimeout(resolve, 50));
-      await circuitBreaker.operations.get.fire('key3');
-      await new Promise(resolve => setTimeout(resolve, 50));
-
-      // Wait for all event handlers to complete
-      await new Promise(resolve => setTimeout(resolve, 200));
+      await fire(circuitBreaker.operations.get);
+      await fire(circuitBreaker.operations.get);
+      await fire(circuitBreaker.operations.get);
 
       const metrics = circuitBreaker.getMetrics();
-      expect(metrics.successCount).toBeGreaterThan(0);
+      expect(metrics.successCount).toBe(3);
     });
 
-    it.skip('should accurately track failure count', async () => {
-      // Clear any previous state
-      circuitBreaker = createRedisCircuitBreaker(mockRedisClient);
+    it('should accurately track failure count', async () => {
+      // Fresh circuit with high threshold so it stays CLOSED throughout.
+      circuitBreaker = createRedisCircuitBreaker(mockRedisClient, {
+        volumeThreshold: 20,
+        errorThresholdPercentage: 90,
+      });
 
-      mockRedisClient.get.mockRejectedValue(new Error('Redis error'));
+      // ECONNREFUSED = counted as failure in test env.
+      mockRedisClient.get.mockRejectedValue(connRefusedError('Redis error'));
 
       for (let i = 0; i < 4; i++) {
-        try {
-          await circuitBreaker.operations.get.fire(`key${i}`);
-        } catch {
-          // Expected failures
-        }
-        await new Promise(resolve => setTimeout(resolve, 50));
+        await fire(circuitBreaker.operations.get);
       }
 
-      // Wait for all event handlers to complete
-      await new Promise(resolve => setTimeout(resolve, 200));
-
       const metrics = circuitBreaker.getMetrics();
-      expect(metrics.failureCount).toBeGreaterThan(0);
+      expect(metrics.failureCount).toBe(4);
+      expect(metrics.successCount).toBe(0);
     });
 
-    it.skip('should calculate error rate correctly', async () => {
-      // Create fresh circuit breaker for this test
-      circuitBreaker = createRedisCircuitBreaker(mockRedisClient);
+    it('should calculate error rate correctly', async () => {
+      // Fresh circuit with high thresholds so it stays CLOSED.
+      circuitBreaker = createRedisCircuitBreaker(mockRedisClient, {
+        volumeThreshold: 20,
+        errorThresholdPercentage: 90,
+      });
 
-      // 3 successes, 2 failures = 40% error rate
+      // 3 successes, 2 failures → 40% error rate.
       mockRedisClient.get
         .mockResolvedValueOnce('success1')
         .mockResolvedValueOnce('success2')
-        .mockRejectedValueOnce(new Error('failure1'))
+        .mockRejectedValueOnce(connRefusedError('failure1'))
         .mockResolvedValueOnce('success3')
-        .mockRejectedValueOnce(new Error('failure2'));
+        .mockRejectedValueOnce(connRefusedError('failure2'));
 
-      // Execute requests with delays for event handlers
-      await circuitBreaker.operations.get.fire('key1');
-      await new Promise(resolve => setTimeout(resolve, 50));
-      await circuitBreaker.operations.get.fire('key2');
-      await new Promise(resolve => setTimeout(resolve, 50));
-      try {
-        await circuitBreaker.operations.get.fire('key3');
-      } catch {
-        /* expected */
-      }
-      await new Promise(resolve => setTimeout(resolve, 50));
-      await circuitBreaker.operations.get.fire('key4');
-      await new Promise(resolve => setTimeout(resolve, 50));
-      try {
-        await circuitBreaker.operations.get.fire('key5');
-      } catch {
-        /* expected */
-      }
-      await new Promise(resolve => setTimeout(resolve, 50));
-
-      // Wait for all event handlers to complete
-      await new Promise(resolve => setTimeout(resolve, 300));
+      await fire(circuitBreaker.operations.get);
+      await fire(circuitBreaker.operations.get);
+      await fire(circuitBreaker.operations.get);
+      await fire(circuitBreaker.operations.get);
+      await fire(circuitBreaker.operations.get);
 
       const healthStatus = circuitBreaker.getHealthStatus();
-      // Verify we tracked operations (event handlers are async so exact counts may vary)
-      expect(healthStatus.metrics.successCount + healthStatus.metrics.failureCount).toBeGreaterThan(0);
-      expect(healthStatus.metrics.totalRequests).toBeGreaterThan(0);
-      // Error rate should be a valid percentage string
-      expect(healthStatus.metrics.errorRate).toMatch(/\d+\.\d{2}%/);
+      expect(healthStatus.metrics.successCount + healthStatus.metrics.failureCount).toBe(5);
+      expect(healthStatus.metrics.totalRequests).toBe(5);
+      expect(healthStatus.metrics.errorRate).toBe('40.00%');
     });
 
     it('should return correct health status based on circuit state', () => {
@@ -539,85 +516,67 @@ describe('Redis Circuit Breaker Integration Tests', () => {
       expect(healthStatus.configuration).toBeDefined();
     });
 
-    it.skip('should return degraded health status when circuit is OPEN', async () => {
-      // Create circuit breaker with very low threshold to guarantee opening
+    it('should return degraded health status when circuit is OPEN', async () => {
+      // Custom low threshold so few failures open the circuit.
       circuitBreaker = createRedisCircuitBreaker(mockRedisClient, {
         errorThresholdPercentage: 50,
-        volumeThreshold: 3, // Very low threshold
+        volumeThreshold: 3,
         timeout: 1000,
       });
 
-      // Force circuit to open with consistent failures
-      mockRedisClient.get.mockRejectedValue(new Error('Connection failed'));
-      for (let i = 0; i < 5; i++) {
-        try {
-          await circuitBreaker.operations.get.fire('test-key');
-        } catch {
-          // Expected failures
-        }
-        await new Promise(resolve => setTimeout(resolve, 50));
-      }
-
-      // Wait longer for circuit to evaluate and all event handlers to complete
-      await new Promise(resolve => setTimeout(resolve, 500));
+      mockRedisClient.get.mockRejectedValue(connRefusedError('Connection failed'));
+      await openCircuit(circuitBreaker, 'get', 4); // 4 > volumeThreshold=3
 
       const healthStatus = circuitBreaker.getHealthStatus();
-      // Verify we tracked failures (async event handlers may not all complete)
-      expect(healthStatus.metrics.failureCount).toBeGreaterThan(0);
+      expect(healthStatus.status).toBe('degraded');
+      expect(healthStatus.circuitState).toBe('OPEN');
+      expect(healthStatus.metrics.failureCount).toBeGreaterThanOrEqual(3);
     });
   });
+
+  // ── Manual Circuit Control ──────────────────────────────────────────────────
 
   describe('Manual Circuit Control', () => {
     beforeEach(() => {
       circuitBreaker = createRedisCircuitBreaker(mockRedisClient);
     });
 
-    it.skip('should allow manual circuit reset', async () => {
-      // Create circuit breaker
-      circuitBreaker = createRedisCircuitBreaker(mockRedisClient);
+    it('should allow manual circuit reset', async () => {
+      // Create circuit breaker with low threshold and open it.
+      circuitBreaker = createRedisCircuitBreaker(mockRedisClient, {
+        errorThresholdPercentage: 50,
+        volumeThreshold: 3,
+      });
 
-      // Execute some operations to build up metrics
-      mockRedisClient.get.mockRejectedValue(new Error('Connection failed'));
-      for (let i = 0; i < 5; i++) {
-        try {
-          await circuitBreaker.operations.get.fire('test-key');
-        } catch {
-          // Expected failures
-        }
-        await new Promise(resolve => setTimeout(resolve, 50));
-      }
+      mockRedisClient.get.mockRejectedValue(connRefusedError('Connection failed'));
+      await openCircuit(circuitBreaker, 'get', 4); // open with 4 failures
+      expect(circuitBreaker.getMetrics().failureCount).toBeGreaterThan(0);
+      expect(circuitBreaker.getMetrics().currentState).toBe('OPEN');
 
-      // Wait for all event handlers to complete
-      await new Promise(resolve => setTimeout(resolve, 300));
-
-      // Verify we have failure counts
-      let metrics = circuitBreaker.getMetrics();
-      const failuresBefore = metrics.failureCount;
-      expect(failuresBefore).toBeGreaterThan(0);
-
-      // Manually reset circuit
+      // Manually reset circuit.
       circuitBreaker.resetCircuit();
+      await flushMicrotasks();
 
-      // Wait for reset to take effect
-      await new Promise(resolve => setTimeout(resolve, 100));
-
-      // Circuit should be CLOSED and metrics reset
-      metrics = circuitBreaker.getMetrics();
+      // Circuit should be CLOSED and all metrics zeroed.
+      const metrics = circuitBreaker.getMetrics();
       expect(metrics.currentState).toBe('CLOSED');
-      expect(metrics.successCount).toBe(0); // Metrics reset
-      expect(metrics.failureCount).toBe(0); // Metrics reset
+      expect(metrics.successCount).toBe(0);
+      expect(metrics.failureCount).toBe(0);
     });
 
     it('should access raw Redis client for unwrapped operations', () => {
       expect(circuitBreaker.rawClient).toBe(mockRedisClient);
-
-      // Can call Redis operations directly (not recommended, but available)
       expect(typeof circuitBreaker.rawClient.get).toBe('function');
     });
   });
 
+  // ── Error Filtering ─────────────────────────────────────────────────────────
+
   describe('Error Filtering', () => {
-    it('should filter ECONNREFUSED errors in test environment', () => {
+    it('should count ECONNREFUSED errors as failures in test environment', () => {
+      // In test env, errorFilter returns false for ECONNREFUSED:
+      //   err.code !== 'ECONNREFUSED' → 'ECONNREFUSED' !== 'ECONNREFUSED' → false
+      // opossum: false = "not filtered" = counted as failure (contributes to threshold)
       const originalEnv = process.env.NODE_ENV;
       process.env.NODE_ENV = 'test';
 
@@ -625,13 +584,28 @@ describe('Redis Circuit Breaker Integration Tests', () => {
       const testError = new Error('Connection refused');
       testError.code = 'ECONNREFUSED';
 
-      // Should NOT count as failure in test environment
-      expect(errorFilter(testError)).toBe(false);
+      expect(errorFilter(testError)).toBe(false); // not filtered → counted as failure
 
       process.env.NODE_ENV = originalEnv;
     });
 
-    it('should count ECONNREFUSED errors in production environment', () => {
+    it('should filter plain errors as successes in test environment', () => {
+      // In test env, errorFilter returns true for errors without ECONNREFUSED code:
+      //   err.code !== 'ECONNREFUSED' → undefined !== 'ECONNREFUSED' → true
+      // opossum: true = "filtered" = treated as success (does not count toward threshold)
+      const originalEnv = process.env.NODE_ENV;
+      process.env.NODE_ENV = 'test';
+
+      const errorFilter = DEFAULT_CIRCUIT_OPTIONS.errorFilter;
+      const testError = new Error('Some other error'); // no .code property
+
+      expect(errorFilter(testError)).toBe(true); // filtered → treated as success
+
+      process.env.NODE_ENV = originalEnv;
+    });
+
+    it('should count all errors as failures in production environment', () => {
+      // In production, errorFilter always returns false (not filtered = counted as failure).
       const originalEnv = process.env.NODE_ENV;
       process.env.NODE_ENV = 'production';
 
@@ -639,8 +613,7 @@ describe('Redis Circuit Breaker Integration Tests', () => {
       const testError = new Error('Connection refused');
       testError.code = 'ECONNREFUSED';
 
-      // Should count as failure in production
-      expect(errorFilter(testError)).toBe(true);
+      expect(errorFilter(testError)).toBe(false); // not filtered → counted as failure
 
       process.env.NODE_ENV = originalEnv;
     });

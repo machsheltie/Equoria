@@ -32,12 +32,16 @@ const DEFAULT_CIRCUIT_OPTIONS = {
   halfOpenRequests: 3, // Test recovery with 3 requests
 
   // Error detection
+  // opossum semantics: return true = filtered/ignored (don't count); return false = count as failure
   errorFilter: err => {
-    // Don't count certain errors as failures (e.g., connection refused during shutdown)
-    if (err?.code === 'ECONNREFUSED' && process.env.NODE_ENV === 'test') {
-      return false;
+    // In test env: only ECONNREFUSED counts as a real circuit failure; all other errors are filtered
+    // (prevents unrelated teardown noise from tripping the circuit while still letting
+    //  ATDD acceptance tests exercise the CLOSED→OPEN transition via connection-refused mocks).
+    // In production: every error counts toward the failure threshold.
+    if (process.env.NODE_ENV === 'test') {
+      return err?.code !== 'ECONNREFUSED'; // true=filtered(ignored), false=counted
     }
-    return true;
+    return false; // not filtered — count as a real failure
   },
 };
 

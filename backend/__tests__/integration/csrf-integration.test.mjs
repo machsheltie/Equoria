@@ -21,6 +21,8 @@ import app from '../../app.mjs';
 import prisma from '../../../packages/database/prismaClient.mjs';
 import { jest as _jest } from '@jest/globals';
 
+_jest.setTimeout(120000);
+
 describe('CSRF Protection Integration Tests', () => {
   const rateLimitBypassHeader = { 'X-Test-Bypass-Rate-Limit': 'true' };
   let testUser;

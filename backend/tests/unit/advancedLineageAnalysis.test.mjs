@@ -242,7 +242,7 @@ describe('🌳 Advanced Lineage Analysis System', () => {
     });
 
     test('should handle missing lineage data gracefully', async () => {
-      const tree = await generateLineageTree(999, 998, 3);
+      const tree = await generateLineageTree(999999, 999998, 3);
 
       expect(tree).toHaveProperty('root');
       expect(tree.totalHorses).toBe(0);

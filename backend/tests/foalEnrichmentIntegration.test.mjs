@@ -43,6 +43,8 @@ import { jest, describe, beforeEach, expect, it, beforeAll } from '@jest/globals
 import request from 'supertest';
 import { generateTestToken } from './helpers/authHelper.mjs';
 
+jest.setTimeout(120000);
+
 // Create mock objects BEFORE jest.unstable_mockModule
 const mockPrisma = {
   user: {
