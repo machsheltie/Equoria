@@ -30,3 +30,7 @@
 *.woff2 binary
 *.ttf binary
 *.otf binary
+
+# Native Node.js addons — mark as binary to prevent text normalization
+# Fixes Windows lint-staged stash-pop failure when rollup native binary is held by a process
+*.node binary

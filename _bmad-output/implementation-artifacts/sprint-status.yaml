@@ -1,5 +1,5 @@
 # generated: 2026-03-25
-# last_updated: 2026-04-08 31f-3-rewards-and-title-progression → review
+# last_updated: 2026-04-09 epic-31e done, epic-31f done, epic-31e retrospective done, story artifacts reconstructed
 # project: Equoria
 # project_key: NOKEY
 # tracking_system: file-system
@@ -35,7 +35,7 @@
 # - Dev moves story to 'review', then runs code-review (fresh context, different LLM recommended)
 
 generated: 2026-03-25
-last_updated: 2026-04-08 31f-3-rewards-and-title-progression → review
+last_updated: 2026-04-09 epic-31e done, epic-31f done, epic-31e retrospective done, story artifacts reconstructed
 project: Equoria
 project_key: NOKEY
 tracking_system: file-system
@@ -54,8 +54,8 @@ development_status:
   # tea-tr-requirements-traceability: pending  # /bmad-tea → TR
   # tea-ci-pipeline-audit: pending             # /bmad-tea → CI
   # --- P0 stories (BLOCK/MITIGATE — required before production deploy) ---
-  21-1-establish-module-test-convention: review
-  21-2-fix-redis-circuit-breaker-flaky-tests: backlog
+  21-1-establish-module-test-convention: done
+  21-2-fix-redis-circuit-breaker-flaky-tests: in-progress
   21-3-community-trainers-riders-api-tests: backlog
   # --- P1 stories (HIGH risk — complete before Epic 22 resumes) ---
   21-4-fix-e2e-breeding-spec-quality: backlog
@@ -213,18 +213,18 @@ development_status:
   pre-31e-frontend-integration-backlog-31d: done # docs/frontend-integration-backlog.md updated with full 31D section: endpoints, response fields, component checklist ✅
 
   # Epic 31E: Coat Color Genetics
-  epic-31e: in-progress
+  epic-31e: done
   31e-1a-genotype-generation-and-migration: done
   31e-1b-phenotype-calculation-engine: done
   31e-2-breeding-color-inheritance: done
   31e-3-marking-system: done
   31e-4-color-genetics-api-endpoints: done
-  31e-5-genetics-api-endpoints: backlog
-  epic-31e-retrospective: optional
+  31e-5-breeding-color-prediction: done
+  epic-31e-retrospective: done
 
   # Epic 31F: Conformation Show Handling
-  epic-31f: in-progress
+  epic-31f: done
   31f-1-conformation-show-scoring-engine: done
   31f-2-show-entry-and-eligibility: done
-  31f-3-rewards-and-title-progression: review
-  epic-31f-retrospective: optional
+  31f-3-rewards-and-title-progression: done
+  epic-31f-retrospective: done

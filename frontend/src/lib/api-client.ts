@@ -196,6 +196,8 @@ interface HorseSummary {
   trainingCooldown?: string;
   // Coat color from genetics system
   finalDisplayColor?: string;
+  // Full phenotype JSONB — returned by GET /horses/:id; colorName is the player-visible color
+  phenotype?: { colorName?: string; [key: string]: unknown } | null;
   // Equipped tack (JSON field) — includes item IDs and <category>_condition values
   tack?: Record<string, unknown>;
   // Stats returned flat from API (all 12)

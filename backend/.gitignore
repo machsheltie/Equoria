@@ -24,6 +24,8 @@ next-env.d.ts
 
 #markdown
 *.md
+# Exception: CONTRIBUTING.md is a mandatory developer reference, not a generated doc
+!CONTRIBUTING.md
 # prettier
 .prettierrc
 .prettierignore 

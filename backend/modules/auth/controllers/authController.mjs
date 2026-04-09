@@ -3,6 +3,9 @@ import { AppError, ValidationError } from '../../../errors/index.mjs';
 import logger from '../../../utils/logger.mjs';
 import prisma from '../../../db/index.mjs';
 import { resetAuthRateLimit } from '../../../middleware/authRateLimiter.mjs';
+import { generateGenotype } from '../../horses/services/genotypeGenerationService.mjs';
+import { calculatePhenotype } from '../../horses/services/phenotypeCalculationService.mjs';
+import { generateMarkings } from '../../horses/services/markingGenerationService.mjs';
 import { createTokenPair, rotateRefreshToken } from '../../../utils/tokenRotationService.mjs';
 import {
   createVerificationToken,
@@ -86,6 +89,11 @@ export const register = async (req, res, next) => {
     try {
       const today = new Date();
       const dateOfBirth = new Date(today.getFullYear() - 3, today.getMonth(), today.getDate());
+      // Generate coat color for the starter horse (no breed → uses base defaults)
+      const starterGenotype = generateGenotype(null);
+      const starterBaseColor = calculatePhenotype(starterGenotype, null);
+      const starterMarkings = generateMarkings(null, starterBaseColor.colorName);
+      const starterPhenotype = { ...starterBaseColor, ...starterMarkings };
       await prisma.horse.create({
         data: {
           name: `${username}'s First Horse`,
@@ -104,6 +112,8 @@ export const register = async (req, res, next) => {
           obedience: 20,
           focus: 20,
           healthStatus: 'Excellent',
+          colorGenotype: starterGenotype,
+          phenotype: starterPhenotype,
         },
       });
       logger.info('[authController.register] Starter horse created', { userId: user.id });
