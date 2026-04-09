@@ -1,5 +1,5 @@
 # ─── Stage 1: Build frontend ────────────────────────────────────────────────
-FROM node:18-alpine AS frontend-builder
+FROM node:22-alpine AS frontend-builder
 
 WORKDIR /app/frontend
 
@@ -14,7 +14,7 @@ COPY frontend/ ./
 RUN npm run build
 
 # ─── Stage 2: Production backend ────────────────────────────────────────────
-FROM node:18-alpine AS production
+FROM node:22-alpine AS production
 
 # curl needed for health check
 RUN apk add --no-cache curl
@@ -22,12 +22,12 @@ RUN apk add --no-cache curl
 # Install backend dependencies
 WORKDIR /app/backend
 COPY backend/package*.json ./
-RUN npm ci --only=production
+RUN npm ci --omit=dev --ignore-scripts
 
 # Install database package dependencies
 WORKDIR /app/packages/database
 COPY packages/database/package*.json ./
-RUN npm ci --only=production
+RUN npm ci --omit=dev --ignore-scripts
 
 # Copy application source
 WORKDIR /app
