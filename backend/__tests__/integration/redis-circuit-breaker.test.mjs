@@ -578,15 +578,17 @@ describe('Redis Circuit Breaker Integration Tests', () => {
       //   err.code !== 'ECONNREFUSED' → 'ECONNREFUSED' !== 'ECONNREFUSED' → false
       // opossum: false = "not filtered" = counted as failure (contributes to threshold)
       const originalEnv = process.env.NODE_ENV;
-      process.env.NODE_ENV = 'test';
+      try {
+        process.env.NODE_ENV = 'test';
 
-      const errorFilter = DEFAULT_CIRCUIT_OPTIONS.errorFilter;
-      const testError = new Error('Connection refused');
-      testError.code = 'ECONNREFUSED';
+        const errorFilter = DEFAULT_CIRCUIT_OPTIONS.errorFilter;
+        const testError = new Error('Connection refused');
+        testError.code = 'ECONNREFUSED';
 
-      expect(errorFilter(testError)).toBe(false); // not filtered → counted as failure
-
-      process.env.NODE_ENV = originalEnv;
+        expect(errorFilter(testError)).toBe(false); // not filtered → counted as failure
+      } finally {
+        process.env.NODE_ENV = originalEnv;
+      }
     });
 
     it('should filter plain errors as successes in test environment', () => {
@@ -594,28 +596,32 @@ describe('Redis Circuit Breaker Integration Tests', () => {
       //   err.code !== 'ECONNREFUSED' → undefined !== 'ECONNREFUSED' → true
       // opossum: true = "filtered" = treated as success (does not count toward threshold)
       const originalEnv = process.env.NODE_ENV;
-      process.env.NODE_ENV = 'test';
+      try {
+        process.env.NODE_ENV = 'test';
 
-      const errorFilter = DEFAULT_CIRCUIT_OPTIONS.errorFilter;
-      const testError = new Error('Some other error'); // no .code property
+        const errorFilter = DEFAULT_CIRCUIT_OPTIONS.errorFilter;
+        const testError = new Error('Some other error'); // no .code property
 
-      expect(errorFilter(testError)).toBe(true); // filtered → treated as success
-
-      process.env.NODE_ENV = originalEnv;
+        expect(errorFilter(testError)).toBe(true); // filtered → treated as success
+      } finally {
+        process.env.NODE_ENV = originalEnv;
+      }
     });
 
     it('should count all errors as failures in production environment', () => {
       // In production, errorFilter always returns false (not filtered = counted as failure).
       const originalEnv = process.env.NODE_ENV;
-      process.env.NODE_ENV = 'production';
+      try {
+        process.env.NODE_ENV = 'production';
 
-      const errorFilter = DEFAULT_CIRCUIT_OPTIONS.errorFilter;
-      const testError = new Error('Connection refused');
-      testError.code = 'ECONNREFUSED';
+        const errorFilter = DEFAULT_CIRCUIT_OPTIONS.errorFilter;
+        const testError = new Error('Connection refused');
+        testError.code = 'ECONNREFUSED';
 
-      expect(errorFilter(testError)).toBe(false); // not filtered → counted as failure
-
-      process.env.NODE_ENV = originalEnv;
+        expect(errorFilter(testError)).toBe(false); // not filtered → counted as failure
+      } finally {
+        process.env.NODE_ENV = originalEnv;
+      }
     });
   });
 });

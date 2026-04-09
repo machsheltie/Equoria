@@ -1,5 +1,5 @@
 # generated: 2026-03-25
-# last_updated: 2026-04-09 epic-31e done, epic-31f done, epic-31e retrospective done, story artifacts reconstructed
+# last_updated: 2026-04-09 epic-31e done, epic-31f done, epic-31e retrospective done, story artifacts reconstructed, 21-2 done
 # project: Equoria
 # project_key: NOKEY
 # tracking_system: file-system
@@ -35,7 +35,7 @@
 # - Dev moves story to 'review', then runs code-review (fresh context, different LLM recommended)
 
 generated: 2026-03-25
-last_updated: 2026-04-09 epic-31e done, epic-31f done, epic-31e retrospective done, story artifacts reconstructed
+last_updated: 2026-04-09 epic-31e done, epic-31f done, epic-31e retrospective done, story artifacts reconstructed, 21-2 done
 project: Equoria
 project_key: NOKEY
 tracking_system: file-system
@@ -55,7 +55,7 @@ development_status:
   # tea-ci-pipeline-audit: pending             # /bmad-tea → CI
   # --- P0 stories (BLOCK/MITIGATE — required before production deploy) ---
   21-1-establish-module-test-convention: done
-  21-2-fix-redis-circuit-breaker-flaky-tests: in-progress
+  21-2-fix-redis-circuit-breaker-flaky-tests: done
   21-3-community-trainers-riders-api-tests: backlog
   # --- P1 stories (HIGH risk — complete before Epic 22 resumes) ---
   21-4-fix-e2e-breeding-spec-quality: backlog
