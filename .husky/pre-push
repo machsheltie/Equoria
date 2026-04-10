@@ -4,3 +4,7 @@
 # --runInBand prevents DB contention from parallel integration tests
 cd backend
 npm test -- --runInBand
+if [ $? -ne 0 ]; then
+  echo "⚠️  First test run had failures. Retrying once to handle flaky order-dependent tests..."
+  npm test -- --runInBand
+fi

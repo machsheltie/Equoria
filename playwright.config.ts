@@ -24,7 +24,11 @@ export default defineConfig({
   },
   webServer: [
     {
-      command: 'set "PORT=3001" && set "NODE_ENV=test" && node backend/server.mjs',
+      // Cross-platform: Windows uses set, Unix uses inline env assignment
+      command:
+        process.platform === 'win32'
+          ? 'set "PORT=3001" && set "NODE_ENV=test" && node backend/server.mjs'
+          : 'PORT=3001 NODE_ENV=test node backend/server.mjs',
       url: 'http://localhost:3001/health',
       reuseExistingServer: !process.env.CI,
       stdout: 'pipe',
