@@ -17,6 +17,20 @@ describe('Enhanced Groom Assignment System Integration Tests', () => {
   let testHorse2;
 
   beforeAll(async () => {
+    // Clean up any stale data from interrupted previous runs
+    const staleUser = await prisma.user.findUnique({ where: { username: 'assignment-test-user' } });
+    if (staleUser) {
+      await prisma.groomAssignment.deleteMany({ where: { userId: staleUser.id } });
+      await prisma.groom.deleteMany({ where: { userId: staleUser.id } });
+      await prisma.horse.deleteMany({ where: { userId: staleUser.id } });
+      await prisma.user.delete({ where: { id: staleUser.id } });
+    }
+    const staleOtherUser = await prisma.user.findUnique({ where: { username: 'other-assignment-user' } });
+    if (staleOtherUser) {
+      await prisma.horse.deleteMany({ where: { userId: staleOtherUser.id } });
+      await prisma.user.delete({ where: { id: staleOtherUser.id } });
+    }
+
     // Create test user
     testUser = await prisma.user.create({
       data: {
