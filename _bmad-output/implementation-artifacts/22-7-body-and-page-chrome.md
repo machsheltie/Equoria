@@ -2,8 +2,8 @@
 
 **Epic:** 22 — Celestial Night Foundation
 **Story Key:** 22-7-body-and-page-chrome
-**Status:** review
-**Last Updated:** 2026-04-07
+**Status:** done
+**Last Updated:** 2026-04-10
 
 ---
 
@@ -220,6 +220,17 @@ Coverage adequate for story risk profile (CSS/visual story). E2E is correct leve
 
 No HIGH or CRITICAL risks. Story clear for Code Review.
 
+### Code Review (2026-04-10)
+
+**Verdict: PASS — 4 findings, all resolved.**
+
+- [x] [Review][Patch] **NavPanel active border idiom** — `border-l-2 border-r-0 border-t-0 border-b-0` is redundant; replaced with idiomatic `border-0 border-l-2` (single reset then add). [`frontend/src/components/layout/NavPanel.tsx:116`]
+- [x] [Review][Decision] **No JPEG fallback in PageBackground** — `usePageBackground` emits WebP-only `backgroundImage`. Decision: **ACCEPTED — WebP-only**. All target browsers (Chrome 85+, Safari 14+, Firefox 65+) support WebP. JPEG fallback adds complexity without meaningful user impact. [`frontend/src/components/layout/PageBackground.tsx`]
+- [x] [Review][Patch] **iOS Safari `background-attachment: fixed` silently ignored** — Both `body` CSS rule and `usePageBackground` inline style used `fixed`, which iOS Safari ignores on touch devices, causing the background to not fill correctly. Fixed with CSS `@media (hover: none) and (pointer: coarse)` override to `scroll` in `index.css`, and a `window.matchMedia` check in `usePageBackground` to emit `'scroll'` on touch devices. [`frontend/src/index.css:93-97`, `frontend/src/components/layout/PageBackground.tsx:46-51`]
+- [x] [Review][Patch] **E2E-009 fire-and-forget async call** — `page.request.post('/api/auth/complete-onboarding').catch(() => {})` silently swallowed all failures. Replaced with null-return catch + `console.warn` on non-ok status. [`tests/e2e/auth-page-chrome.spec.ts:153-158`]
+
+---
+
 ### Change Log
 
 | Date | Change | Files |
@@ -228,6 +239,7 @@ No HIGH or CRITICAL risks. Story clear for Code Review.
 | 2026-04-07 | ATDD run documented: 15 fail / 15 pass | `22-7-body-and-page-chrome.md` |
 | 2026-04-07 | Implementation: all tasks complete, all tests green | `index.css`, `NavPanel.tsx`, `AuthLayout.tsx`, `useResponsiveBackground.ts`, 5 auth pages |
 | 2026-04-10 | TEA:TA + TEA:RV complete — all 3 TEA gates pass | `22-7-body-and-page-chrome.md` |
+| 2026-04-10 | Code review complete — 2 patches, 1 decision, 1 patch applied; story closed done | `NavPanel.tsx`, `index.css`, `PageBackground.tsx`, `auth-page-chrome.spec.ts` |
 
 ### File List
 
