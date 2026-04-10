@@ -245,7 +245,7 @@ router.get(
           orderBy: { createdAt: 'asc' },
           include: {
             groom: {
-              select: { name: true, groomPersonality: true },
+              select: { name: true, epigeneticInfluenceType: true },
             },
           },
         }),

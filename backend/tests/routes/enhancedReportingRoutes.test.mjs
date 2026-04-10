@@ -49,7 +49,7 @@ describe('Enhanced Reporting API Routes', () => {
         data: {
           name: `Test Groom Report ${Date.now()}`,
           personality: 'calm',
-          groomPersonality: 'calm',
+          epigeneticInfluenceType: 'calm',
           skillLevel: 'expert',
           speciality: 'foal_care',
           userId: testUser.id,

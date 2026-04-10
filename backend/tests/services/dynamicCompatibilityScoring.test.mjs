@@ -55,7 +55,7 @@ describe('Dynamic Compatibility Scoring', () => {
           data: {
             name: `Expert Calm Groom ${Date.now()}`,
             personality: 'calm',
-            groomPersonality: 'calm',
+            epigeneticInfluenceType: 'calm',
             skillLevel: 'expert',
             speciality: 'foal_care',
             userId: testUser.id,
@@ -69,7 +69,7 @@ describe('Dynamic Compatibility Scoring', () => {
           data: {
             name: `Novice Energetic Groom ${Date.now()}`,
             personality: 'energetic',
-            groomPersonality: 'energetic',
+            epigeneticInfluenceType: 'energetic',
             skillLevel: 'novice',
             speciality: 'general_grooming',
             userId: testUser.id,
@@ -83,7 +83,7 @@ describe('Dynamic Compatibility Scoring', () => {
           data: {
             name: `Experienced Methodical Groom ${Date.now()}`,
             personality: 'methodical',
-            groomPersonality: 'methodical',
+            epigeneticInfluenceType: 'methodical',
             skillLevel: 'experienced',
             speciality: 'foal_care',
             userId: testUser.id,
@@ -388,7 +388,7 @@ describe('Dynamic Compatibility Scoring', () => {
       expect(topGroom.groomId).toBeDefined();
       expect(topGroom.groomName).toBeDefined();
       expect(topGroom.compatibilityScore).toBeGreaterThan(0);
-      expect(topGroom.groomPersonality).toBeDefined();
+      expect(topGroom.epigeneticInfluenceType).toBeDefined();
       expect(topGroom.skillLevel).toBeDefined();
       expect(topGroom.reasoning).toBeDefined();
     });

@@ -229,7 +229,7 @@ describe('Flag Effect Integration', () => {
         discipline: 'showJumping',
         baseEffectiveness: 1.0,
         duration: 60,
-        groomPersonality: 'calm',
+        epigeneticInfluenceType: 'calm',
       };
 
       const result = await applyFlagEffectsToTraining(horse, trainingSession);
@@ -247,7 +247,7 @@ describe('Flag Effect Integration', () => {
         discipline: 'dressage',
         baseEffectiveness: 1.0,
         duration: 60,
-        groomPersonality: 'energetic',
+        epigeneticInfluenceType: 'energetic',
       };
 
       const result = await applyFlagEffectsToTraining(horse, trainingSession);

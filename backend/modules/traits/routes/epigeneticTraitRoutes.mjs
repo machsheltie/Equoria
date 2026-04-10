@@ -88,7 +88,7 @@ router.post(
                 select: {
                   id: true,
                   name: true,
-                  groomPersonality: true,
+                  epigeneticInfluenceType: true,
                   speciality: true,
                   experience: true,
                 },
@@ -370,7 +370,7 @@ async function getGroomCareHistory(horseId) {
         select: {
           id: true,
           name: true,
-          groomPersonality: true,
+          epigeneticInfluenceType: true,
           speciality: true,
         },
       },
@@ -386,7 +386,7 @@ async function getGroomCareHistory(horseId) {
         select: {
           id: true,
           name: true,
-          groomPersonality: true,
+          epigeneticInfluenceType: true,
         },
       },
     },

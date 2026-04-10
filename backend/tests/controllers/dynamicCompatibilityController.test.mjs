@@ -94,7 +94,7 @@ describe('Dynamic Compatibility Controller API', () => {
           name: data.name,
           speciality: data.speciality,
           personality: data.personality,
-          groomPersonality: data.personality,
+          epigeneticInfluenceType: data.personality,
           skillLevel: data.skillLevel,
           experience: data.experience,
           level: data.level,
@@ -362,7 +362,7 @@ describe('Dynamic Compatibility Controller API', () => {
       expect(topGroom.groomId).toBeDefined();
       expect(topGroom.groomName).toBeDefined();
       expect(topGroom.compatibilityScore).toBeGreaterThan(0);
-      expect(topGroom.groomPersonality).toBeDefined();
+      expect(topGroom.epigeneticInfluenceType).toBeDefined();
       expect(topGroom.skillLevel).toBeDefined();
       expect(topGroom.reasoning).toBeDefined();
     });

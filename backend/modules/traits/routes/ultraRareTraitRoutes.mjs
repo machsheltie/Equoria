@@ -248,7 +248,7 @@ router.post(
           name: true,
           experience: true,
           personality: true,
-          groomPersonality: true,
+          epigeneticInfluenceType: true,
           bonusTraitMap: true,
         },
       });

@@ -73,7 +73,7 @@ describe('Personality Evolution Controller API', () => {
         name: 'API Test Groom',
         speciality: 'foal_care',
         personality: 'calm',
-        groomPersonality: 'calm',
+        epigeneticInfluenceType: 'calm',
         skillLevel: 'intermediate',
         experience: 100,
         level: 5,

@@ -53,7 +53,7 @@ describe('Developmental Window System', () => {
         data: {
           name: `Developmental Groom ${Date.now()}`,
           personality: 'calm',
-          groomPersonality: 'calm',
+          epigeneticInfluenceType: 'calm',
           skillLevel: 'expert',
           speciality: 'foal_care',
           userId: testUser.id,

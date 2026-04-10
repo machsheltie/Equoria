@@ -143,31 +143,8 @@ Story 22.1 complete. The font migration is fully self-hosted:
 
 ---
 
----
-
-## TEA Quality Gates (2026-04-10 — retroactive)
-
-**TEA:ATDD** — SKIPPED (pre-mandate 2026-04-09). Story predates TEA requirement. This is a pure CSS/HTML asset story with no JavaScript logic — the appropriate ATDD artifact would be an E2E network-interception test asserting no CDN requests. Partial retroactive coverage exists via Story 22-7 E2E-010 (Cinzel font renders on login page).
-
-**TEA:TA** — PASS. Static asset story: 10 WOFF2 files, CSS `@font-face` declarations, HTML preload tags. No JavaScript testable units. Cinzel font rendering validated in E2E-010. One documented gap: no automated assertion that Google Fonts CDN links remain absent from `index.html` (low risk — removed at the HTML level, not a runtime decision). Risk: LOW.
-
-**TEA:RV** — PASS. No unit tests to review. `fonts.css` is clean and correct: 10 `@font-face` blocks, all with `font-display: swap`, correct `unicode-range` subsets matching Google Fonts originals. `index.html` preload tags have correct `as="font"`, `type="font/woff2"`, and `crossorigin` attributes. No issues found.
-
----
-
-## Code Review (2026-04-10 — retroactive)
-
-**Verdict: PASS — 0 material findings.**
-
-- `fonts.css`: Correct @font-face declarations, well-commented, proper unicode ranges, `font-display: swap` on all faces. ✅
-- `index.html`: CDN links removed, 3 self-hosted preload tags with correct attributes. ✅
-- `tokens.css` font stacks: Georgia + system-ui fallbacks correct per spec. ✅
-
----
-
 ## Change Log
 
 | Date       | Change                                                                       |
 | ---------- | ---------------------------------------------------------------------------- |
 | 2026-03-31 | Story created and implemented — font migration from CDN to self-hosted WOFF2 |
-| 2026-04-10 | Retroactive TEA audit + code review — PASS, 0 findings |

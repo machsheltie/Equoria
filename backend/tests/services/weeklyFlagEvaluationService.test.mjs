@@ -45,7 +45,7 @@ describe('Weekly Flag Evaluation Service', () => {
         data: {
           name: `Test Groom Calm ${Date.now()}`,
           personality: 'calm',
-          groomPersonality: 'calm',
+          epigeneticInfluenceType: 'calm',
           skillLevel: 'experienced',
           speciality: 'foal_care',
           userId: testUser.id,
@@ -56,7 +56,7 @@ describe('Weekly Flag Evaluation Service', () => {
         data: {
           name: `Test Groom Energetic ${Date.now()}`,
           personality: 'energetic',
-          groomPersonality: 'energetic',
+          epigeneticInfluenceType: 'energetic',
           skillLevel: 'experienced',
           speciality: 'general_grooming',
           userId: testUser.id,

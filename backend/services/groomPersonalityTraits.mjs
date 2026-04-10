@@ -231,7 +231,7 @@ export async function getGroomPersonalityTraits(groomId) {
       select: {
         id: true,
         name: true,
-        groomPersonality: true,
+        epigeneticInfluenceType: true,
         experience: true,
         level: true,
         skillLevel: true,
@@ -242,9 +242,9 @@ export async function getGroomPersonalityTraits(groomId) {
       throw new Error(`Groom not found: ${groomId}`);
     }
 
-    const personalityDef = PERSONALITY_TRAIT_DEFINITIONS[groom.groomPersonality];
+    const personalityDef = PERSONALITY_TRAIT_DEFINITIONS[groom.epigeneticInfluenceType];
     if (!personalityDef) {
-      throw new Error(`Unknown personality type: ${groom.groomPersonality}`);
+      throw new Error(`Unknown personality type: ${groom.epigeneticInfluenceType}`);
     }
 
     // Calculate experience level and trait strength
@@ -261,7 +261,7 @@ export async function getGroomPersonalityTraits(groomId) {
     return {
       groomId: groom.id,
       groomName: groom.name,
-      primaryPersonality: groom.groomPersonality,
+      primaryPersonality: groom.epigeneticInfluenceType,
       experienceLevel,
       traitStrength,
       traits: enhancedTraits,
@@ -358,7 +358,7 @@ export async function calculatePersonalityModifiers(groomId, horseId, taskType) 
       qualityModifier: Math.max(0.3, qualityModifier),
       taskEffectiveness: Math.max(0.3, taskEffectiveness),
       compatibilityScore,
-      groomPersonality: groomTraits.primaryPersonality,
+      epigeneticInfluenceType: groomTraits.primaryPersonality,
       horseFlags: horse.epigeneticFlags,
     };
   } catch (error) {
@@ -434,7 +434,7 @@ export async function analyzePersonalityCompatibility(groomId, horseId) {
     return {
       groomId,
       horseId,
-      groomPersonality: groomTraits.primaryPersonality,
+      epigeneticInfluenceType: groomTraits.primaryPersonality,
       horseFlags: horse.epigeneticFlags,
       overallScore,
       strengths,
@@ -461,7 +461,7 @@ export async function updatePersonalityTraits(groomId) {
         id: true,
         experience: true,
         level: true,
-        groomPersonality: true,
+        epigeneticInfluenceType: true,
       },
     });
 

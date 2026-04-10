@@ -37,7 +37,7 @@ export async function calculateDynamicCompatibility(groomId, horseId, context) {
     // Get groom and horse details
     const groom = await prisma.groom.findUnique({
       where: { id: groomId },
-      select: { experience: true, level: true, skillLevel: true, groomPersonality: true },
+      select: { experience: true, level: true, skillLevel: true, epigeneticInfluenceType: true },
     });
 
     const horse = await prisma.horse.findUnique({
@@ -81,7 +81,7 @@ export async function calculateDynamicCompatibility(groomId, horseId, context) {
 
     // Apply additional cap for moderate compatibility scenarios (methodical grooms only)
     if (baseCompatibility <= 0.5 && overallScore > 0.75) {
-      const groomPersonality = groom?.groomPersonality;
+      const groomPersonality = groom?.epigeneticInfluenceType;
       if (groomPersonality === 'methodical') {
         overallScore = Math.min(0.75, overallScore);
       }
@@ -337,7 +337,7 @@ export async function getOptimalGroomRecommendations(horseId, context) {
       select: {
         id: true,
         name: true,
-        groomPersonality: true,
+        epigeneticInfluenceType: true,
         skillLevel: true,
         experience: true,
         level: true,
@@ -361,7 +361,7 @@ export async function getOptimalGroomRecommendations(horseId, context) {
         return {
           groomId: groom.id,
           groomName: groom.name,
-          groomPersonality: groom.groomPersonality,
+          epigeneticInfluenceType: groom.epigeneticInfluenceType,
           skillLevel: groom.skillLevel,
           experience: groom.experience,
           sessionRate: groom.sessionRate,
@@ -515,7 +515,7 @@ function calculateStressSituationModifier(horse, context) {
  */
 function calculateTaskSpecificModifier(groom, context) {
   const { taskType } = context;
-  const personality = groom.groomPersonality;
+  const personality = groom.epigeneticInfluenceType;
 
   const taskCompatibility = {
     trust_building: { calm: 1.3, methodical: 1.1, energetic: 0.8 },
@@ -666,7 +666,7 @@ function analyzePersonalityMatch(groomTraits, horseTemperament) {
 
   return {
     score,
-    groomPersonality: personality,
+    epigeneticInfluenceType: personality,
     horseTemperament: temperament,
     matchQuality: score > 0.7 ? 'excellent' : score > 0.5 ? 'good' : score > 0.3 ? 'fair' : 'poor',
   };
@@ -706,7 +706,7 @@ function analyzeStressCompatibility(groomTraits, horse) {
   return {
     score,
     horseStressLevel: stressLevel,
-    groomPersonality: personality,
+    epigeneticInfluenceType: personality,
     recommendation: score > 0.7 ? 'excellent_match' : score > 0.5 ? 'good_match' : 'poor_match',
   };
 }

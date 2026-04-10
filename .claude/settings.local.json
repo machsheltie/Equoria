@@ -242,7 +242,8 @@
       "Read(//tmp/**)",
       "Read(//c/Users/heirr/OneDrive/Desktop/Equoria/backend/$TEMP/**)",
       "Bash(sed -n '45,70p' frontend/src/hooks/useConformation.ts)",
-      "Bash(sed -n '45,70p' frontend/src/utils/conformation-utils.ts)"
+      "Bash(sed -n '45,70p' frontend/src/utils/conformation-utils.ts)",
+      "Bash(DATABASE_URL=\"postgresql://postgres:JimpkpNnVF2o%23DaX1Qx0@localhost:5432/equoria_test\" npx prisma migrate deploy)"
     ],
     "deny": [],
     "ask": [],

@@ -38,9 +38,7 @@ export async function logTraitAssignment(traitData) {
     throw new Error(`Horse with ID ${horseId} not found`);
   }
 
-  const ageInDays = Math.floor(
-    (Date.now() - new Date(horse.dateOfBirth)) / (1000 * 60 * 60 * 24),
-  );
+  const ageInDays = Math.floor((Date.now() - new Date(horse.dateOfBirth)) / (1000 * 60 * 60 * 24));
 
   // Create the trait history log entry
   const historyEntry = await prisma.traitHistoryLog.create({
@@ -62,7 +60,7 @@ export async function logTraitAssignment(traitData) {
         select: { name: true, dateOfBirth: true },
       },
       groom: {
-        select: { name: true, groomPersonality: true },
+        select: { name: true, epigeneticInfluenceType: true },
       },
     },
   });
@@ -100,8 +98,12 @@ export async function getTraitHistory(horseId, options = {}) {
 
   if (startDate || endDate) {
     whereClause.timestamp = {};
-    if (startDate) { whereClause.timestamp.gte = new Date(startDate); }
-    if (endDate) { whereClause.timestamp.lte = new Date(endDate); }
+    if (startDate) {
+      whereClause.timestamp.gte = new Date(startDate);
+    }
+    if (endDate) {
+      whereClause.timestamp.lte = new Date(endDate);
+    }
   }
 
   const history = await prisma.traitHistoryLog.findMany({
@@ -111,7 +113,7 @@ export async function getTraitHistory(horseId, options = {}) {
         select: { name: true, dateOfBirth: true },
       },
       groom: {
-        select: { name: true, groomPersonality: true, speciality: true },
+        select: { name: true, epigeneticInfluenceType: true, speciality: true },
       },
     },
     orderBy: { timestamp: 'desc' },
@@ -161,13 +163,14 @@ export async function getTraitDevelopmentSummary(horseId) {
 
   // Analyze source breakdown
   history.forEach(entry => {
-    summary.sourceBreakdown[entry.sourceType] = (summary.sourceBreakdown[entry.sourceType] || 0) + 1;
+    summary.sourceBreakdown[entry.sourceType] =
+      (summary.sourceBreakdown[entry.sourceType] || 0) + 1;
   });
 
   // Analyze groom contributions
   history.forEach(entry => {
     if (entry.groom) {
-      const groomKey = `${entry.groom.name} (${entry.groom.groomPersonality})`;
+      const groomKey = `${entry.groom.name} (${entry.groom.epigeneticInfluenceType})`;
       if (!summary.groomContributions[groomKey]) {
         summary.groomContributions[groomKey] = {
           traits: 0,
@@ -240,7 +243,9 @@ export async function getBreedingInsights(horseId) {
 
   if (negativeTraits.length > 2) {
     insights.inheritanceRisk = 'high';
-    insights.breedingNotes.push('High concentration of negative epigenetic traits may affect offspring');
+    insights.breedingNotes.push(
+      'High concentration of negative epigenetic traits may affect offspring',
+    );
   } else if (negativeTraits.length > 0) {
     insights.inheritanceRisk = 'moderate';
     insights.breedingNotes.push('Some negative traits present - consider mate selection carefully');
@@ -287,13 +292,14 @@ export async function analyzeTraitPatterns(horseIds) {
     // Analyze epigenetic trends
     const epigeneticTraits = history.filter(h => h.isEpigenetic);
     epigeneticTraits.forEach(entry => {
-      patterns.epigeneticTrends[entry.traitName] = (patterns.epigeneticTrends[entry.traitName] || 0) + 1;
+      patterns.epigeneticTrends[entry.traitName] =
+        (patterns.epigeneticTrends[entry.traitName] || 0) + 1;
     });
 
     // Analyze groom effectiveness
     history.forEach(entry => {
       if (entry.groom) {
-        const groomKey = entry.groom.groomPersonality;
+        const groomKey = entry.groom.epigeneticInfluenceType;
         if (!patterns.groomEffectiveness[groomKey]) {
           patterns.groomEffectiveness[groomKey] = {
             totalTraits: 0,
@@ -319,8 +325,9 @@ export async function analyzeTraitPatterns(horseIds) {
   });
 
   // Generate recommendations
-  const [mostEffectivePersonality] = Object.entries(patterns.groomEffectiveness)
-    .sort(([, a], [, b]) => b.averageInfluence - a.averageInfluence);
+  const [mostEffectivePersonality] = Object.entries(patterns.groomEffectiveness).sort(
+    ([, a], [, b]) => b.averageInfluence - a.averageInfluence,
+  );
 
   if (mostEffectivePersonality) {
     patterns.recommendations.push(
@@ -337,12 +344,24 @@ export async function analyzeTraitPatterns(horseIds) {
  * @returns {string} Age stage name
  */
 function getAgeStage(ageInDays) {
-  if (ageInDays < 30) { return 'imprinting'; }
-  if (ageInDays < 90) { return 'socialization'; }
-  if (ageInDays < 180) { return 'fear_period'; }
-  if (ageInDays < 365) { return 'juvenile'; }
-  if (ageInDays < 730) { return 'adolescent'; }
-  if (ageInDays < 1095) { return 'young_adult'; }
+  if (ageInDays < 30) {
+    return 'imprinting';
+  }
+  if (ageInDays < 90) {
+    return 'socialization';
+  }
+  if (ageInDays < 180) {
+    return 'fear_period';
+  }
+  if (ageInDays < 365) {
+    return 'juvenile';
+  }
+  if (ageInDays < 730) {
+    return 'adolescent';
+  }
+  if (ageInDays < 1095) {
+    return 'young_adult';
+  }
   return 'mature';
 }
 

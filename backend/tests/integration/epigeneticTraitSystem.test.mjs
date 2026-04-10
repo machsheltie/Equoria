@@ -100,7 +100,7 @@ describe('Epigenetic Trait System Integration Tests', () => {
         experience: 15,
         skillLevel: 'expert',
         personality: 'calm',
-        groomPersonality: 'gentle',
+        epigeneticInfluenceType: 'gentle',
         sessionRate: 25.0,
         userId: testUser.id,
       },
@@ -399,7 +399,7 @@ describe('Epigenetic Trait System Integration Tests', () => {
 
       const { milestoneResult } = response.body.data;
       expect(milestoneResult).toHaveProperty('enhancementFactors');
-      expect(milestoneResult.enhancementFactors).toHaveProperty('groomPersonality', 'gentle');
+      expect(milestoneResult.enhancementFactors).toHaveProperty('epigeneticInfluenceType', 'gentle');
       expect(milestoneResult.enhancementFactors).toHaveProperty('careQuality');
       expect(milestoneResult.enhancementFactors).toHaveProperty('bondStability');
     });
@@ -439,7 +439,7 @@ describe('Trait History Service', () => {
         experience: 10,
         skillLevel: 'intermediate',
         personality: 'patient',
-        groomPersonality: 'patient',
+        epigeneticInfluenceType: 'patient',
         sessionRate: 20.0,
         userId: testUser.id,
       },

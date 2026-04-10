@@ -6,7 +6,7 @@ info:
   contact:
     name: 'Equoria Team'
   x-generated:
-    timestamp: '2026-04-10T10:06:14.446Z'
+    timestamp: '2026-04-10T16:35:46.737Z'
     endpointCount: 2
     schemaCount: 2
     generator: ApiDocumentationService
@@ -746,11 +746,11 @@ components:
     User:
       type: object
       properties: { id: { type: string } }
-      registeredAt: '2026-04-10T10:03:24.341Z'
+      registeredAt: '2026-04-10T16:31:50.651Z'
     Horse:
       type: object
       properties: { id: { type: string } }
-      registeredAt: '2026-04-10T10:03:24.358Z'
+      registeredAt: '2026-04-10T16:31:50.670Z'
     TestSchema:
       type: object
       properties:
@@ -760,8 +760,8 @@ components:
           timestamp: { type: string, format: date-time },
         }
       required: [id, name]
-      registeredAt: '2026-04-10T10:06:14.093Z'
+      registeredAt: '2026-04-10T16:35:46.263Z'
     CreateTestSchema:
       type: object
       properties: { name: { type: string } }
-      registeredAt: '2026-04-10T10:06:14.429Z'
+      registeredAt: '2026-04-10T16:35:46.700Z'

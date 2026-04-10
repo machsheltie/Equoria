@@ -1,6 +1,6 @@
 generator client {
   provider = "prisma-client-js"
-  binaryTargets = ["native", "debian-openssl-3.0.x"]
+  binaryTargets = ["native", "debian-openssl-3.0.x", "windows"]
 }
 
 datasource db {
@@ -241,7 +241,7 @@ model Groom {
   /// Personality type for trait development bonuses
   personality       String
   /// Groom personality type for epigenetic trait influence
-  groomPersonality  String             @default("balanced")
+  epigeneticInfluenceType  String             @default("balanced")
   /// Bonus trait map for rare trait acquisition (JSON object with trait names and probability bonuses)
   bonusTraitMap     Json               @default("{}")
   /// Rare trait booster perks for ultra-rare and exotic traits (JSON object with perk definitions)

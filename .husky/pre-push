@@ -2,9 +2,6 @@
 
 # Run backend tests before push
 # --runInBand prevents DB contention from parallel integration tests
+# --retryTimes=1 handles flaky order-dependent tests that pass in isolation
 cd backend
-npm test -- --runInBand
-if [ $? -ne 0 ]; then
-  echo "⚠️  First test run had failures. Retrying once to handle flaky order-dependent tests..."
-  npm test -- --runInBand
-fi
+npm test -- --runInBand --retryTimes=1

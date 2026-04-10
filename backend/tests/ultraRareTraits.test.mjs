@@ -91,7 +91,7 @@ describe('Ultra-Rare & Exotic Traits System', () => {
         experience: 8,
         skillLevel: 'expert',
         personality: 'mindful',
-        groomPersonality: 'guardian',
+        epigeneticInfluenceType: 'guardian',
         bonusTraitMap: {
           'phoenix-born': 0.15,
           resilient: 0.1,

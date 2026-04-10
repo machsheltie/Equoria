@@ -54,7 +54,7 @@ describe('Enhanced Flag Assignment Engine', () => {
           data: {
             name: `Test Groom Calm ${Date.now()}`,
             personality: 'calm',
-            groomPersonality: 'calm',
+            epigeneticInfluenceType: 'calm',
             skillLevel: 'experienced',
             speciality: 'foal_care',
             userId: testUser.id,
@@ -65,7 +65,7 @@ describe('Enhanced Flag Assignment Engine', () => {
           data: {
             name: `Test Groom Energetic ${Date.now()}`,
             personality: 'energetic',
-            groomPersonality: 'energetic',
+            epigeneticInfluenceType: 'energetic',
             skillLevel: 'experienced',
             speciality: 'general_grooming',
             userId: testUser.id,
@@ -76,7 +76,7 @@ describe('Enhanced Flag Assignment Engine', () => {
           data: {
             name: `Test Groom Methodical ${Date.now()}`,
             personality: 'methodical',
-            groomPersonality: 'methodical',
+            epigeneticInfluenceType: 'methodical',
             skillLevel: 'expert',
             speciality: 'foal_care',
             userId: testUser.id,

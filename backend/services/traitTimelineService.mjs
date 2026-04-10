@@ -38,13 +38,29 @@ const AGE_RANGES = {
 
 // Trait categorization
 const RARE_TRAITS = [
-  'sensitive', 'noble', 'legacy_talent', 'exceptional', 'prodigy',
-  'natural_leader', 'empathic', 'intuitive', 'charismatic', 'legendary',
+  'sensitive',
+  'noble',
+  'legacy_talent',
+  'exceptional',
+  'prodigy',
+  'natural_leader',
+  'empathic',
+  'intuitive',
+  'charismatic',
+  'legendary',
 ];
 
 const NEGATIVE_TRAITS = [
-  'stubborn', 'anxious', 'aggressive', 'fearful', 'lazy', 'unpredictable',
-  'difficult', 'nervous', 'spooky', 'resistant',
+  'stubborn',
+  'anxious',
+  'aggressive',
+  'fearful',
+  'lazy',
+  'unpredictable',
+  'difficult',
+  'nervous',
+  'spooky',
+  'resistant',
 ];
 
 /**
@@ -54,7 +70,9 @@ const NEGATIVE_TRAITS = [
  */
 export async function generateTraitTimeline(horseId) {
   try {
-    logger.info(`[traitTimelineService.generateTraitTimeline] Generating trait timeline for horse ${horseId}`);
+    logger.info(
+      `[traitTimelineService.generateTraitTimeline] Generating trait timeline for horse ${horseId}`,
+    );
 
     // Get trait history for traits gained before age 4
     const traitHistory = await prisma.traitHistoryLog.findMany({
@@ -66,7 +84,7 @@ export async function generateTraitTimeline(horseId) {
       },
       include: {
         groom: {
-          select: { id: true, name: true, speciality: true, groomPersonality: true },
+          select: { id: true, name: true, speciality: true, epigeneticInfluenceType: true },
         },
       },
       orderBy: { ageInDays: 'asc' },
@@ -114,21 +132,25 @@ export async function generateTraitTimeline(horseId) {
         bondScore: trait.bondScore,
         stressLevel: trait.stressLevel,
         timestamp: trait.timestamp,
-        groomContext: trait.groom ? {
-          groomId: trait.groom.id,
-          groomName: trait.groom.name,
-          speciality: trait.groom.speciality,
-          personality: trait.groom.groomPersonality,
-          bondScore: trait.bondScore,
-          stressLevel: trait.stressLevel,
-        } : null,
-        milestoneContext: milestoneContext ? {
-          milestoneType: milestoneContext.milestoneType,
-          score: milestoneContext.score,
-          taskConsistency: milestoneContext.taskConsistency,
-          taskDiversity: milestoneContext.taskDiversity,
-          bondScore: milestoneContext.bondScore,
-        } : null,
+        groomContext: trait.groom
+          ? {
+              groomId: trait.groom.id,
+              groomName: trait.groom.name,
+              speciality: trait.groom.speciality,
+              personality: trait.groom.epigeneticInfluenceType,
+              bondScore: trait.bondScore,
+              stressLevel: trait.stressLevel,
+            }
+          : null,
+        milestoneContext: milestoneContext
+          ? {
+              milestoneType: milestoneContext.milestoneType,
+              score: milestoneContext.score,
+              taskConsistency: milestoneContext.taskConsistency,
+              taskDiversity: milestoneContext.taskDiversity,
+              bondScore: milestoneContext.bondScore,
+            }
+          : null,
       };
     });
 
@@ -161,11 +183,15 @@ export async function generateTraitTimeline(horseId) {
       generatedAt: new Date(),
     };
 
-    logger.info(`[traitTimelineService.generateTraitTimeline] Generated timeline with ${timelineEvents.length} events for horse ${horseId}`);
+    logger.info(
+      `[traitTimelineService.generateTraitTimeline] Generated timeline with ${timelineEvents.length} events for horse ${horseId}`,
+    );
 
     return result;
   } catch (error) {
-    logger.error(`[traitTimelineService.generateTraitTimeline] Error generating timeline for horse ${horseId}: ${error.message}`);
+    logger.error(
+      `[traitTimelineService.generateTraitTimeline] Error generating timeline for horse ${horseId}: ${error.message}`,
+    );
     throw error;
   }
 }
@@ -176,10 +202,18 @@ export async function generateTraitTimeline(horseId) {
  * @returns {string} Human-readable age description
  */
 function formatAgeDescription(ageInDays) {
-  if (ageInDays <= 7) { return `Day ${ageInDays}`; }
-  if (ageInDays <= 30) { return `${Math.floor(ageInDays / 7)} weeks`; }
-  if (ageInDays <= 90) { return `${Math.floor(ageInDays / 30)} months`; }
-  if (ageInDays <= 365) { return `${Math.floor(ageInDays / 30)} months`; }
+  if (ageInDays <= 7) {
+    return `Day ${ageInDays}`;
+  }
+  if (ageInDays <= 30) {
+    return `${Math.floor(ageInDays / 7)} weeks`;
+  }
+  if (ageInDays <= 90) {
+    return `${Math.floor(ageInDays / 30)} months`;
+  }
+  if (ageInDays <= 365) {
+    return `${Math.floor(ageInDays / 30)} months`;
+  }
   return `${Math.floor(ageInDays / 365)} years`;
 }
 
@@ -226,15 +260,19 @@ function calculateTimelineSummary(timelineEvents, excludedTraits) {
     negativeTraits,
     sourceTypes: Array.from(sourceTypes),
     sourceTypeCount: sourceTypes.size,
-    averageInfluenceScore: timelineEvents.length > 0
-      ? timelineEvents.reduce((sum, e) => sum + (e.influenceScore || 0), 0) / timelineEvents.length
-      : 0,
-    averageBondScore: timelineEvents.length > 0
-      ? timelineEvents.reduce((sum, e) => sum + (e.bondScore || 50), 0) / timelineEvents.length
-      : 50,
-    averageStressLevel: timelineEvents.length > 0
-      ? timelineEvents.reduce((sum, e) => sum + (e.stressLevel || 50), 0) / timelineEvents.length
-      : 50,
+    averageInfluenceScore:
+      timelineEvents.length > 0
+        ? timelineEvents.reduce((sum, e) => sum + (e.influenceScore || 0), 0) /
+          timelineEvents.length
+        : 0,
+    averageBondScore:
+      timelineEvents.length > 0
+        ? timelineEvents.reduce((sum, e) => sum + (e.bondScore || 50), 0) / timelineEvents.length
+        : 50,
+    averageStressLevel:
+      timelineEvents.length > 0
+        ? timelineEvents.reduce((sum, e) => sum + (e.stressLevel || 50), 0) / timelineEvents.length
+        : 50,
   };
 }
 
@@ -294,13 +332,15 @@ function analyzeBondStressTrend(timelineEvents) {
   const firstStress = dataPoints[0].stressLevel;
   const lastStress = dataPoints[dataPoints.length - 1].stressLevel;
 
-  const bondTrend = lastBond > firstBond + 5 ? 'improving'
-    : lastBond < firstBond - 5 ? 'declining'
-      : 'stable';
+  const bondTrend =
+    lastBond > firstBond + 5 ? 'improving' : lastBond < firstBond - 5 ? 'declining' : 'stable';
 
-  const stressTrend = lastStress < firstStress - 5 ? 'decreasing'
-    : lastStress > firstStress + 5 ? 'increasing'
-      : 'stable';
+  const stressTrend =
+    lastStress < firstStress - 5
+      ? 'decreasing'
+      : lastStress > firstStress + 5
+        ? 'increasing'
+        : 'stable';
 
   return {
     bondTrend,
@@ -318,7 +358,9 @@ function analyzeBondStressTrend(timelineEvents) {
  */
 export async function getTraitTimelineSummary(horseId) {
   try {
-    logger.info(`[traitTimelineService.getTraitTimelineSummary] Getting timeline summary for horse ${horseId}`);
+    logger.info(
+      `[traitTimelineService.getTraitTimelineSummary] Getting timeline summary for horse ${horseId}`,
+    );
 
     const timeline = await generateTraitTimeline(horseId);
 
@@ -334,11 +376,15 @@ export async function getTraitTimelineSummary(horseId) {
       developmentQuality: calculateDevelopmentQuality(timeline),
     };
 
-    logger.info(`[traitTimelineService.getTraitTimelineSummary] Generated summary for horse ${horseId}`);
+    logger.info(
+      `[traitTimelineService.getTraitTimelineSummary] Generated summary for horse ${horseId}`,
+    );
 
     return summary;
   } catch (error) {
-    logger.error(`[traitTimelineService.getTraitTimelineSummary] Error generating summary for horse ${horseId}: ${error.message}`);
+    logger.error(
+      `[traitTimelineService.getTraitTimelineSummary] Error generating summary for horse ${horseId}: ${error.message}`,
+    );
     throw error;
   }
 }
@@ -349,33 +395,65 @@ export async function getTraitTimelineSummary(horseId) {
  * @returns {string} Development quality assessment
  */
 function calculateDevelopmentQuality(timeline) {
-  if (timeline.isEmpty) { return 'no_development'; }
+  if (timeline.isEmpty) {
+    return 'no_development';
+  }
 
   const { summary, bondStressTrend } = timeline;
   let score = 0;
 
   // Trait quantity (max 3 points)
-  if (summary.totalTraits >= 5) { score += 3; } else if (summary.totalTraits >= 3) { score += 2; } else if (summary.totalTraits >= 1) { score += 1; }
+  if (summary.totalTraits >= 5) {
+    score += 3;
+  } else if (summary.totalTraits >= 3) {
+    score += 2;
+  } else if (summary.totalTraits >= 1) {
+    score += 1;
+  }
 
   // Trait diversity (max 2 points)
-  if (summary.sourceTypeCount >= 3) { score += 2; } else if (summary.sourceTypeCount >= 2) { score += 1; }
+  if (summary.sourceTypeCount >= 3) {
+    score += 2;
+  } else if (summary.sourceTypeCount >= 2) {
+    score += 1;
+  }
 
   // Rare traits (max 2 points)
-  if (summary.rareTraits >= 2) { score += 2; } else if (summary.rareTraits >= 1) { score += 1; }
+  if (summary.rareTraits >= 2) {
+    score += 2;
+  } else if (summary.rareTraits >= 1) {
+    score += 1;
+  }
 
   // Bond trend (max 2 points)
-  if (bondStressTrend.bondTrend === 'improving') { score += 2; } else if (bondStressTrend.bondTrend === 'stable') { score += 1; }
+  if (bondStressTrend.bondTrend === 'improving') {
+    score += 2;
+  } else if (bondStressTrend.bondTrend === 'stable') {
+    score += 1;
+  }
 
   // Stress trend (max 1 point)
-  if (bondStressTrend.stressTrend === 'decreasing') { score += 1; }
+  if (bondStressTrend.stressTrend === 'decreasing') {
+    score += 1;
+  }
 
   // Negative trait penalty
-  if (summary.negativeTraits > 0) { score -= summary.negativeTraits; }
+  if (summary.negativeTraits > 0) {
+    score -= summary.negativeTraits;
+  }
 
   // Determine quality level
-  if (score >= 8) { return 'exceptional'; }
-  if (score >= 6) { return 'excellent'; }
-  if (score >= 4) { return 'good'; }
-  if (score >= 2) { return 'fair'; }
+  if (score >= 8) {
+    return 'exceptional';
+  }
+  if (score >= 6) {
+    return 'excellent';
+  }
+  if (score >= 4) {
+    return 'good';
+  }
+  if (score >= 2) {
+    return 'fair';
+  }
   return 'poor';
 }

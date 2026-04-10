@@ -106,7 +106,7 @@ describe('Groom Progression System', () => {
           level: 1,
           skillLevel: 'novice',
           personality: 'gentle',
-          groomPersonality: 'calm',
+          epigeneticInfluenceType: 'calm',
           sessionRate: 25.0,
           userId: testUser.id,
         },

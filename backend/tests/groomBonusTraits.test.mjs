@@ -59,7 +59,7 @@ describe('Groom Bonus Traits System', () => {
         experience: 10,
         skillLevel: 'expert',
         personality: 'calm',
-        groomPersonality: 'calm',
+        epigeneticInfluenceType: 'calm',
         sessionRate: 25.0,
         bonusTraitMap: {
           sensitive: 0.2,

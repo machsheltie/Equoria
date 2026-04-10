@@ -62,7 +62,7 @@ describe('Breeding Prediction System', () => {
         experience: 10,
         skillLevel: 'expert',
         personality: 'calm',
-        groomPersonality: 'calm',
+        epigeneticInfluenceType: 'calm',
         sessionRate: 25.0,
         userId: testUser.id,
       },

@@ -34,37 +34,26 @@
  */
 
 import { jest, describe, beforeEach, expect, it, beforeAll } from '@jest/globals';
+
 const mockPrisma = {
   horse: {
     update: jest.fn(),
     findUnique: jest.fn(),
   },
-  breed: {
-    create: jest.fn(),
-    delete: jest.fn(),
-  },
   $disconnect: jest.fn(),
 };
 
-const mockCreateHorse = jest.fn();
-const mockGetHorseById = jest.fn();
-
-// Mock the database module BEFORE importing other modules
+// Mock ONLY the database client — permitted infrastructure boundary.
+// horseModel is NOT mocked: canTrain/getCooldownTimeRemaining/formatCooldown are
+// pure functions that operate on plain horse objects; setCooldown calls prisma directly.
 jest.unstable_mockModule('../db/index.mjs', () => ({
   default: mockPrisma,
-}));
-
-// Mock the horse model
-jest.unstable_mockModule('../models/horseModel.mjs', () => ({
-  createHorse: mockCreateHorse,
-  getHorseById: mockGetHorseById,
 }));
 
 // Now import the modules
 const { canTrain, getCooldownTimeRemaining, setCooldown, formatCooldown } = await import(
   '../utils/trainingCooldown.mjs'
 );
-const { createHorse, getHorseById } = await import('../models/horseModel.mjs');
 
 describe('⏰ UNIT: Training Cooldown System - Horse Training Restrictions', () => {
   let testHorse;
@@ -95,9 +84,7 @@ describe('⏰ UNIT: Training Cooldown System - Horse Training Restrictions', () 
       trainingCooldown: null,
     };
 
-    // Setup default mock responses
-    createHorse.mockResolvedValue(testHorse);
-    getHorseById.mockResolvedValue(testHorse);
+    // Setup default prisma mock responses
     mockPrisma.horse.update.mockResolvedValue(testHorse);
     mockPrisma.horse.findUnique.mockResolvedValue(testHorse);
   });
@@ -356,10 +343,10 @@ describe('⏰ UNIT: Training Cooldown System - Horse Training Restrictions', () 
       expect(formatted).toContain('remaining');
     });
 
-    it('should work with horse retrieved from database', async () => {
-      // Mock setting cooldown
-      const futureDate = new Date();
-      futureDate.setDate(futureDate.getDate() + 7);
+    it('should work with horse object returned from setCooldown', async () => {
+      // setCooldown returns the updated horse from prisma — verify the returned
+      // object is immediately usable by the pure cooldown functions.
+      const futureDate = new Date(Date.now() + 7 * 24 * 60 * 60 * 1000);
 
       const horseWithCooldown = {
         ...testHorse,
@@ -367,17 +354,12 @@ describe('⏰ UNIT: Training Cooldown System - Horse Training Restrictions', () 
       };
 
       mockPrisma.horse.update.mockResolvedValueOnce(horseWithCooldown);
-      getHorseById.mockResolvedValueOnce(horseWithCooldown);
 
-      // Set cooldown
-      await setCooldown(testHorse.id);
+      const updatedHorse = await setCooldown(testHorse.id);
 
-      // Retrieve horse from database
-      const retrievedHorse = await getHorseById(testHorse.id);
-
-      // Verify cooldown functions work with retrieved horse
-      expect(canTrain(retrievedHorse)).toBe(false);
-      expect(getCooldownTimeRemaining(retrievedHorse)).toBeGreaterThan(0);
+      // Verify cooldown functions work with the returned horse object
+      expect(canTrain(updatedHorse)).toBe(false);
+      expect(getCooldownTimeRemaining(updatedHorse)).toBeGreaterThan(0);
     });
   });
 });

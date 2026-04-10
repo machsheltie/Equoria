@@ -49,7 +49,7 @@ describe('Horse Temperament Analysis', () => {
         data: {
           name: `Calm Groom ${Date.now()}`,
           personality: 'calm',
-          groomPersonality: 'calm',
+          epigeneticInfluenceType: 'calm',
           skillLevel: 'expert',
           speciality: 'foal_care',
           userId: testUser.id,
@@ -60,7 +60,7 @@ describe('Horse Temperament Analysis', () => {
         data: {
           name: `Energetic Groom ${Date.now()}`,
           personality: 'energetic',
-          groomPersonality: 'energetic',
+          epigeneticInfluenceType: 'energetic',
           skillLevel: 'expert',
           speciality: 'general_grooming',
           userId: testUser.id,

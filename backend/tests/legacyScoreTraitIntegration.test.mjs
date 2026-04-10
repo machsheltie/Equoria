@@ -59,7 +59,7 @@ describe('Legacy Score Trait Integration System', () => {
         experience: 10,
         skillLevel: 'expert',
         personality: 'calm',
-        groomPersonality: 'calm',
+        epigeneticInfluenceType: 'calm',
         sessionRate: 25.0,
         userId: testUser.id,
       },

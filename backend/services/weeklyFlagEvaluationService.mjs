@@ -40,7 +40,7 @@ export async function getEligibleHorsesForFlagEvaluation() {
         groomAssignments: {
           include: {
             groom: {
-              select: { id: true, name: true, groomPersonality: true },
+              select: { id: true, name: true, epigeneticInfluenceType: true },
             },
           },
           orderBy: { createdAt: 'desc' },
@@ -146,7 +146,9 @@ export async function processHorseForFlagEvaluation(horseId) {
         },
       });
 
-      logger.info(`Assigned ${newFlags.length} new flags to horse ${horse.name}: ${newFlags.join(', ')}`);
+      logger.info(
+        `Assigned ${newFlags.length} new flags to horse ${horse.name}: ${newFlags.join(', ')}`,
+      );
     }
 
     return {
@@ -161,7 +163,6 @@ export async function processHorseForFlagEvaluation(horseId) {
       bondScore: horse.bondScore,
       stressLevel: horse.stressLevel,
     };
-
   } catch (error) {
     logger.error(`Error processing horse ${horseId} for flag evaluation:`, error);
     return {
@@ -209,9 +210,10 @@ export async function evaluateWeeklyFlags() {
       }
     }
 
-    logger.info(`Weekly flag evaluation completed: ${results.flagsAssigned} flags assigned to ${results.totalHorsesEvaluated} horses`);
+    logger.info(
+      `Weekly flag evaluation completed: ${results.flagsAssigned} flags assigned to ${results.totalHorsesEvaluated} horses`,
+    );
     return results;
-
   } catch (error) {
     logger.error('Error in weekly flag evaluation:', error);
     throw error;

@@ -54,7 +54,7 @@ describe('Groom Personality Trait System', () => {
           data: {
             name: `Calm Expert Groom ${Date.now()}`,
             personality: 'calm',
-            groomPersonality: 'calm',
+            epigeneticInfluenceType: 'calm',
             skillLevel: 'expert',
             speciality: 'foal_care',
             userId: testUser.id,
@@ -68,7 +68,7 @@ describe('Groom Personality Trait System', () => {
           data: {
             name: `Energetic Novice Groom ${Date.now()}`,
             personality: 'energetic',
-            groomPersonality: 'energetic',
+            epigeneticInfluenceType: 'energetic',
             skillLevel: 'novice',
             speciality: 'general_grooming',
             userId: testUser.id,
@@ -82,7 +82,7 @@ describe('Groom Personality Trait System', () => {
           data: {
             name: `Methodical Experienced Groom ${Date.now()}`,
             personality: 'methodical',
-            groomPersonality: 'methodical',
+            epigeneticInfluenceType: 'methodical',
             skillLevel: 'experienced',
             speciality: 'foal_care',
             userId: testUser.id,

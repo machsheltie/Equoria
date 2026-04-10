@@ -930,7 +930,7 @@ export async function getGroomProfile(req, res) {
       experience: groom.experience,
       skillLevel: groom.skillLevel,
       personality: groom.personality,
-      groomPersonality: groom.groomPersonality,
+      epigeneticInfluenceType: groom.epigeneticInfluenceType,
       sessionRate: groom.sessionRate,
       bio: groom.bio,
       imageUrl: groom.imageUrl,

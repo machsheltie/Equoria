@@ -48,7 +48,7 @@ describe('Enhanced Care Pattern Analyzer', () => {
         data: {
           name: `Expert Calm Groom ${Date.now()}`,
           personality: 'calm',
-          groomPersonality: 'calm',
+          epigeneticInfluenceType: 'calm',
           skillLevel: 'expert',
           speciality: 'foal_care',
           userId: testUser.id,
@@ -59,7 +59,7 @@ describe('Enhanced Care Pattern Analyzer', () => {
         data: {
           name: `Novice Energetic Groom ${Date.now()}`,
           personality: 'energetic',
-          groomPersonality: 'energetic',
+          epigeneticInfluenceType: 'energetic',
           skillLevel: 'novice',
           speciality: 'general_grooming',
           userId: testUser.id,
@@ -70,7 +70,7 @@ describe('Enhanced Care Pattern Analyzer', () => {
         data: {
           name: `Experienced Methodical Groom ${Date.now()}`,
           personality: 'methodical',
-          groomPersonality: 'methodical',
+          epigeneticInfluenceType: 'methodical',
           skillLevel: 'experienced',
           speciality: 'foal_care',
           userId: testUser.id,

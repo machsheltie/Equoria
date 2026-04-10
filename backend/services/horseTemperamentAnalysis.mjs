@@ -130,7 +130,7 @@ export async function analyzeHorseTemperament(horseId) {
       },
       include: {
         groom: {
-          select: { groomPersonality: true, skillLevel: true },
+          select: { epigeneticInfluenceType: true, skillLevel: true },
         },
       },
       orderBy: { createdAt: 'asc' },
@@ -172,7 +172,6 @@ export async function analyzeHorseTemperament(horseId) {
       interactionCount: interactions.length,
       flagCount: horse.epigeneticFlags.length,
     };
-
   } catch (error) {
     logger.error(`Error analyzing horse temperament for horse ${horseId}:`, error);
     throw error;
@@ -240,8 +239,12 @@ export async function classifyTemperamentFromFlags(flags) {
     }
 
     // Check for conflicting flags
-    const positiveFlags = flags.filter(flag => ['brave', 'confident', 'social', 'calm'].includes(flag));
-    const negativeFlags = flags.filter(flag => ['fearful', 'insecure', 'reactive', 'fragile'].includes(flag));
+    const positiveFlags = flags.filter(flag =>
+      ['brave', 'confident', 'social', 'calm'].includes(flag),
+    );
+    const negativeFlags = flags.filter(flag =>
+      ['fearful', 'insecure', 'reactive', 'fragile'].includes(flag),
+    );
 
     if (positiveFlags.length > 0 && negativeFlags.length > 0) {
       bestMatch = 'complex';
@@ -258,7 +261,6 @@ export async function classifyTemperamentFromFlags(flags) {
       totalFlags: flags.length,
       reasoning: `Based on ${flags.length} flags with ${temperamentScores[bestMatch]?.matches || 0} matches`,
     };
-
   } catch (error) {
     logger.error('Error classifying temperament from flags:', error);
     throw error;
@@ -303,7 +305,13 @@ export async function analyzeBehavioralTrends(horseId) {
     const avgTrendScore = trendScores.reduce((sum, score) => sum + score, 0) / trendScores.length;
 
     let overallDirection;
-    if (avgTrendScore > 0.3) { overallDirection = 'positive'; } else if (avgTrendScore < -0.3) { overallDirection = 'negative'; } else { overallDirection = 'stable'; }
+    if (avgTrendScore > 0.3) {
+      overallDirection = 'positive';
+    } else if (avgTrendScore < -0.3) {
+      overallDirection = 'negative';
+    } else {
+      overallDirection = 'stable';
+    }
 
     const trendStrength = Math.abs(avgTrendScore);
 
@@ -321,7 +329,6 @@ export async function analyzeBehavioralTrends(horseId) {
       dataPoints: interactions.length,
       analysisWindow: 30, // days
     };
-
   } catch (error) {
     logger.error(`Error analyzing behavioral trends for horse ${horseId}:`, error);
     throw error;
@@ -343,7 +350,7 @@ export async function identifyStressResponsePatterns(horseId) {
     const interactions = await prisma.groomInteraction.findMany({
       where: { foalId: horseId },
       include: {
-        groom: { select: { groomPersonality: true } },
+        groom: { select: { epigeneticInfluenceType: true } },
       },
       orderBy: { createdAt: 'desc' },
       take: 50, // Last 50 interactions
@@ -351,23 +358,25 @@ export async function identifyStressResponsePatterns(horseId) {
 
     // Analyze stress responses
     const stressChanges = interactions.map(i => i.stressChange || 0);
-    const avgStressChange = stressChanges.reduce((sum, change) => sum + change, 0) / stressChanges.length;
+    const avgStressChange =
+      stressChanges.reduce((sum, change) => sum + change, 0) / stressChanges.length;
     const stressSpikes = stressChanges.filter(change => change >= 3).length;
     const stressReductions = stressChanges.filter(change => change <= -2).length;
 
     // Identify trigger factors
     const triggerFactors = [];
-    const groomPersonalityStress = {};
+    const epigeneticInfluenceTypeStress = {};
 
     interactions.forEach(interaction => {
-      const personality = interaction.groom?.groomPersonality;
+      const personality = interaction.groom?.epigeneticInfluenceType;
       if (personality && interaction.stressChange > 1) {
-        groomPersonalityStress[personality] = (groomPersonalityStress[personality] || 0) + 1;
+        epigeneticInfluenceTypeStress[personality] =
+          (epigeneticInfluenceTypeStress[personality] || 0) + 1;
       }
     });
 
     // Identify problematic groom personalities
-    Object.entries(groomPersonalityStress).forEach(([personality, count]) => {
+    Object.entries(epigeneticInfluenceTypeStress).forEach(([personality, count]) => {
       if (count >= 2) {
         triggerFactors.push(`${personality}_groom_personality`);
       }
@@ -376,7 +385,12 @@ export async function identifyStressResponsePatterns(horseId) {
     // Determine stress threshold and response type
     const stressThreshold = calculateStressThreshold(horse, interactions);
     const recoveryRate = calculateRecoveryRate(interactions);
-    const responseType = determineStressResponseType(horse, avgStressChange, stressSpikes, stressReductions);
+    const responseType = determineStressResponseType(
+      horse,
+      avgStressChange,
+      stressSpikes,
+      stressReductions,
+    );
 
     return {
       stressThreshold,
@@ -389,7 +403,6 @@ export async function identifyStressResponsePatterns(horseId) {
       copingMechanisms: identifyCopingMechanisms(interactions),
       analysisDepth: interactions.length,
     };
-
   } catch (error) {
     logger.error(`Error identifying stress response patterns for horse ${horseId}:`, error);
     throw error;
@@ -407,7 +420,7 @@ export async function analyzeBondingPreferences(horseId) {
       where: { foalId: horseId },
       include: {
         groom: {
-          select: { groomPersonality: true, skillLevel: true },
+          select: { epigeneticInfluenceType: true, skillLevel: true },
         },
       },
     });
@@ -428,7 +441,7 @@ export async function analyzeBondingPreferences(horseId) {
     const interactionTypePerformance = {};
 
     interactions.forEach(interaction => {
-      const personality = interaction.groom?.groomPersonality;
+      const personality = interaction.groom?.epigeneticInfluenceType;
       const { interactionType } = interaction;
       const bondingChange = interaction.bondingChange || 0;
 
@@ -438,7 +451,8 @@ export async function analyzeBondingPreferences(horseId) {
         }
         groomTypePerformance[personality].total += bondingChange;
         groomTypePerformance[personality].count += 1;
-        groomTypePerformance[personality].avg = groomTypePerformance[personality].total / groomTypePerformance[personality].count;
+        groomTypePerformance[personality].avg =
+          groomTypePerformance[personality].total / groomTypePerformance[personality].count;
       }
 
       if (interactionType) {
@@ -447,7 +461,9 @@ export async function analyzeBondingPreferences(horseId) {
         }
         interactionTypePerformance[interactionType].total += bondingChange;
         interactionTypePerformance[interactionType].count += 1;
-        interactionTypePerformance[interactionType].avg = interactionTypePerformance[interactionType].total / interactionTypePerformance[interactionType].count;
+        interactionTypePerformance[interactionType].avg =
+          interactionTypePerformance[interactionType].total /
+          interactionTypePerformance[interactionType].count;
       }
     });
 
@@ -461,7 +477,8 @@ export async function analyzeBondingPreferences(horseId) {
       .map(([type, _]) => type);
 
     // Calculate bonding metrics
-    const avgBondingChange = interactions.reduce((sum, i) => sum + (i.bondingChange || 0), 0) / interactions.length;
+    const avgBondingChange =
+      interactions.reduce((sum, i) => sum + (i.bondingChange || 0), 0) / interactions.length;
     const bondingSpeed = Math.max(0, Math.min(1, (avgBondingChange + 2) / 4)); // Normalize -2 to +2 range
 
     const positiveInteractions = interactions.filter(i => (i.bondingChange || 0) > 0).length;
@@ -480,7 +497,6 @@ export async function analyzeBondingPreferences(horseId) {
       totalInteractions: interactions.length,
       dataAvailable: true,
     };
-
   } catch (error) {
     logger.error(`Error analyzing bonding preferences for horse ${horseId}:`, error);
     throw error;
@@ -528,7 +544,13 @@ export async function detectTemperamentChanges(horseId) {
     const changeStrength = Math.abs(overallChange);
 
     let changeDirection;
-    if (overallChange > 0.5) { changeDirection = 'positive'; } else if (overallChange < -0.5) { changeDirection = 'negative'; } else { changeDirection = 'neutral'; }
+    if (overallChange > 0.5) {
+      changeDirection = 'positive';
+    } else if (overallChange < -0.5) {
+      changeDirection = 'negative';
+    } else {
+      changeDirection = 'neutral';
+    }
 
     const changeDetected = changeStrength > 0.3;
 
@@ -538,14 +560,21 @@ export async function detectTemperamentChanges(horseId) {
       contributingFactors.push(bondingChange > 0 ? 'improved_bonding' : 'declining_bonding');
     }
     if (Math.abs(stressChange) > 0.5) {
-      contributingFactors.push(stressChange > 0 ? 'better_stress_management' : 'increased_stress_sensitivity');
+      contributingFactors.push(
+        stressChange > 0 ? 'better_stress_management' : 'increased_stress_sensitivity',
+      );
     }
     if (Math.abs(qualityChange) > 0.3) {
-      contributingFactors.push(qualityChange > 0 ? 'improved_care_quality' : 'declining_care_quality');
+      contributingFactors.push(
+        qualityChange > 0 ? 'improved_care_quality' : 'declining_care_quality',
+      );
     }
 
     // Determine timeframe
-    const totalDays = Math.floor((interactions[interactions.length - 1].createdAt - interactions[0].createdAt) / (1000 * 60 * 60 * 24));
+    const totalDays = Math.floor(
+      (interactions[interactions.length - 1].createdAt - interactions[0].createdAt) /
+        (1000 * 60 * 60 * 24),
+    );
     const timeframe = totalDays > 30 ? 'long_term' : totalDays > 14 ? 'medium_term' : 'short_term';
 
     return {
@@ -566,7 +595,6 @@ export async function detectTemperamentChanges(horseId) {
       dataPoints: interactions.length,
       analysisPeriod: totalDays,
     };
-
   } catch (error) {
     logger.error(`Error detecting temperament changes for horse ${horseId}:`, error);
     throw error;
@@ -598,10 +626,16 @@ async function performTemperamentAnalysis(horse, interactions, dataSource) {
     // Supplement with basic stats
     analysis.confidenceLevel = Math.max(0.1, Math.min(0.9, horse.bondScore / 40));
     analysis.stressResilience = Math.max(0.1, Math.min(0.9, (10 - horse.stressLevel) / 10));
-    analysis.socialTendency = horse.epigeneticFlags.includes('social') ? 0.8 :
-      horse.epigeneticFlags.includes('antisocial') ? 0.2 : 0.5;
-    analysis.adaptability = horse.epigeneticFlags.includes('curious') ? 0.7 :
-      horse.epigeneticFlags.includes('fearful') ? 0.3 : 0.5;
+    analysis.socialTendency = horse.epigeneticFlags.includes('social')
+      ? 0.8
+      : horse.epigeneticFlags.includes('antisocial')
+        ? 0.2
+        : 0.5;
+    analysis.adaptability = horse.epigeneticFlags.includes('curious')
+      ? 0.7
+      : horse.epigeneticFlags.includes('fearful')
+        ? 0.3
+        : 0.5;
   } else {
     // Basic stats only
     analysis.confidenceLevel = Math.max(0.1, Math.min(0.9, horse.bondScore / 40));
@@ -616,10 +650,13 @@ async function performTemperamentAnalysis(horse, interactions, dataSource) {
  * Analyze temperament from interaction patterns
  */
 function analyzeFromInteractions(horse, interactions) {
-  const avgBonding = interactions.reduce((sum, i) => sum + (i.bondingChange || 0), 0) / interactions.length;
-  const avgStressChange = interactions.reduce((sum, i) => sum + (i.stressChange || 0), 0) / interactions.length;
+  const avgBonding =
+    interactions.reduce((sum, i) => sum + (i.bondingChange || 0), 0) / interactions.length;
+  const avgStressChange =
+    interactions.reduce((sum, i) => sum + (i.stressChange || 0), 0) / interactions.length;
   const qualityScores = { poor: 1, fair: 2, good: 3, excellent: 4 };
-  const avgQuality = interactions.reduce((sum, i) => sum + (qualityScores[i.quality] || 2), 0) / interactions.length;
+  const avgQuality =
+    interactions.reduce((sum, i) => sum + (qualityScores[i.quality] || 2), 0) / interactions.length;
 
   // Calculate temperament characteristics
   const confidenceLevel = Math.max(0.1, Math.min(0.9, (avgBonding + 2) / 4));
@@ -671,7 +708,13 @@ function calculateTrend(values) {
   const slope = (n * sumXY - sumX * sumY) / (n * sumXX - sumX * sumX);
 
   let direction;
-  if (slope > 0.1) { direction = 'improving'; } else if (slope < -0.1) { direction = 'declining'; } else { direction = 'stable'; }
+  if (slope > 0.1) {
+    direction = 'improving';
+  } else if (slope < -0.1) {
+    direction = 'declining';
+  } else {
+    direction = 'stable';
+  }
 
   return {
     direction,
@@ -695,19 +738,23 @@ function calculateQualityTrend(interactions) {
 function calculateStressThreshold(horse, interactions) {
   const baseThreshold = (10 - horse.stressLevel) / 10; // Higher stress = lower threshold
 
-  if (interactions.length === 0) { return baseThreshold; }
+  if (interactions.length === 0) {
+    return baseThreshold;
+  }
 
   const stressSpikes = interactions.filter(i => (i.stressChange || 0) >= 3).length;
   const spikeRatio = stressSpikes / interactions.length;
 
-  return Math.max(0.1, baseThreshold - (spikeRatio * 0.3));
+  return Math.max(0.1, baseThreshold - spikeRatio * 0.3);
 }
 
 /**
  * Calculate recovery rate
  */
 function calculateRecoveryRate(interactions) {
-  if (interactions.length === 0) { return 0.5; }
+  if (interactions.length === 0) {
+    return 0.5;
+  }
 
   const stressReductions = interactions.filter(i => (i.stressChange || 0) <= -2).length;
   return Math.min(1.0, stressReductions / (interactions.length * 0.3)); // Expect 30% to be stress-reducing
@@ -751,7 +798,9 @@ function identifyCopingMechanisms(interactions) {
  * Calculate trust level
  */
 function calculateTrustLevel(interactions) {
-  if (interactions.length === 0) { return 0.5; }
+  if (interactions.length === 0) {
+    return 0.5;
+  }
 
   const positiveInteractions = interactions.filter(i => (i.bondingChange || 0) > 0).length;
   const excellentInteractions = interactions.filter(i => i.quality === 'excellent').length;
@@ -770,11 +819,14 @@ function calculatePeriodMetrics(interactions) {
     return { avgBonding: 0, avgStress: 0, avgQuality: 2 };
   }
 
-  const avgBonding = interactions.reduce((sum, i) => sum + (i.bondingChange || 0), 0) / interactions.length;
-  const avgStress = interactions.reduce((sum, i) => sum + (i.stressChange || 0), 0) / interactions.length;
+  const avgBonding =
+    interactions.reduce((sum, i) => sum + (i.bondingChange || 0), 0) / interactions.length;
+  const avgStress =
+    interactions.reduce((sum, i) => sum + (i.stressChange || 0), 0) / interactions.length;
 
   const qualityScores = { poor: 1, fair: 2, good: 3, excellent: 4 };
-  const avgQuality = interactions.reduce((sum, i) => sum + (qualityScores[i.quality] || 2), 0) / interactions.length;
+  const avgQuality =
+    interactions.reduce((sum, i) => sum + (qualityScores[i.quality] || 2), 0) / interactions.length;
 
   return { avgBonding, avgStress, avgQuality };
 }

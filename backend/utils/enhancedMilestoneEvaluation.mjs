@@ -7,7 +7,11 @@
  */
 
 import logger from './logger.mjs';
-import { EPIGENETIC_FLAGS, GROOM_PERSONALITIES, evaluateEpigeneticFlags } from './epigeneticFlags.mjs';
+import {
+  EPIGENETIC_FLAGS,
+  GROOM_PERSONALITIES,
+  evaluateEpigeneticFlags,
+} from './epigeneticFlags.mjs';
 import { evaluateUltraRareTriggers, evaluateExoticUnlocks } from './ultraRareTriggerEngine.mjs';
 // Note: Using existing trait effects system instead of separate definitions
 
@@ -19,7 +23,12 @@ import { evaluateUltraRareTriggers, evaluateExoticUnlocks } from './ultraRareTri
  * @param {Object} milestoneData - Standard milestone evaluation data
  * @returns {Object} Enhanced milestone results with trait recommendations
  */
-export async function evaluateEnhancedMilestone(horse, groomCareHistory, currentGroom, milestoneData) {
+export async function evaluateEnhancedMilestone(
+  horse,
+  groomCareHistory,
+  currentGroom,
+  milestoneData,
+) {
   const ageInDays = Math.floor((Date.now() - new Date(horse.dateOfBirth)) / (1000 * 60 * 60 * 24));
 
   // Base milestone evaluation
@@ -72,7 +81,9 @@ export async function evaluateEnhancedMilestone(horse, groomCareHistory, current
     };
   } catch (error) {
     // Log error but don't fail milestone evaluation
-    logger.warn('[enhancedMilestoneEvaluation] Ultra-rare trait evaluation failed', { error: error.message });
+    logger.warn('[enhancedMilestoneEvaluation] Ultra-rare trait evaluation failed', {
+      error: error.message,
+    });
     ultraRareEvaluation = {
       ultraRareTriggered: [],
       exoticUnlocked: [],
@@ -89,7 +100,7 @@ export async function evaluateEnhancedMilestone(horse, groomCareHistory, current
     personalityBonuses,
     ultraRareEvaluation,
     enhancementFactors: {
-      groomPersonality: currentGroom?.groomPersonality || 'balanced',
+      epigeneticInfluenceType: currentGroom?.epigeneticInfluenceType || 'balanced',
       careQuality: calculateCareQuality(groomCareHistory),
       bondStability: calculateBondStability(groomCareHistory),
       stressManagement: calculateStressManagement(groomCareHistory),
@@ -122,10 +133,10 @@ function calculateCareConsistencyBonus(groomCareHistory) {
   const qualityScore = calculateAverageQuality(recentInteractions);
 
   // Combine consistency and quality for bonus
-  const baseBonus = (consistencyScore * 0.6) + (qualityScore * 0.4);
+  const baseBonus = consistencyScore * 0.6 + qualityScore * 0.4;
 
   // Convert to multiplier (0.8 to 1.3 range)
-  return Math.max(0.8, Math.min(1.3, 0.8 + (baseBonus * 0.5)));
+  return Math.max(0.8, Math.min(1.3, 0.8 + baseBonus * 0.5));
 }
 
 /**
@@ -136,11 +147,11 @@ function calculateCareConsistencyBonus(groomCareHistory) {
  * @returns {Object} Personality bonus modifiers
  */
 function calculatePersonalityBonuses(currentGroom, horse, groomCareHistory) {
-  if (!currentGroom?.groomPersonality) {
+  if (!currentGroom?.epigeneticInfluenceType) {
     return {};
   }
 
-  const personality = GROOM_PERSONALITIES[currentGroom.groomPersonality.toUpperCase()];
+  const personality = GROOM_PERSONALITIES[currentGroom.epigeneticInfluenceType.toUpperCase()];
   if (!personality) {
     return {};
   }
@@ -164,7 +175,7 @@ function calculatePersonalityBonuses(currentGroom, horse, groomCareHistory) {
 
   // Factor in care duration - longer relationships get stronger bonuses
   const careDuration = calculateCareDuration(groomCareHistory, currentGroom.id);
-  const durationMultiplier = Math.min(1.5, 1.0 + (careDuration / 90)); // Max 1.5x after 90 days
+  const durationMultiplier = Math.min(1.5, 1.0 + careDuration / 90); // Max 1.5x after 90 days
 
   Object.keys(bonuses).forEach(flagName => {
     bonuses[flagName] *= durationMultiplier;
@@ -213,7 +224,9 @@ function applyEnhancedScoring(baseTraits, epigeneticFlags, careBonus, personalit
   // Add new traits from epigenetic flags
   epigeneticFlags.forEach(flagName => {
     const flag = EPIGENETIC_FLAGS[flagName];
-    if (!flag?.effects?.traitProbability) { return; }
+    if (!flag?.effects?.traitProbability) {
+      return;
+    }
 
     Object.entries(flag.effects.traitProbability).forEach(([traitName, probability]) => {
       // Check if trait already exists in recommendations
@@ -242,9 +255,7 @@ function applyEnhancedScoring(baseTraits, epigeneticFlags, careBonus, personalit
   });
 
   // Sort by final score and return top candidates
-  return enhancedTraits
-    .sort((a, b) => b.score - a.score)
-    .slice(0, 10); // Return top 10 trait candidates
+  return enhancedTraits.sort((a, b) => b.score - a.score).slice(0, 10); // Return top 10 trait candidates
 }
 
 /**
@@ -283,23 +294,28 @@ function calculateDailyInteractionCounts(interactions) {
 
 function calculateConsistencyScore(dailyCounts) {
   const days = Object.keys(dailyCounts);
-  if (days.length === 0) { return 0; }
+  if (days.length === 0) {
+    return 0;
+  }
 
   const totalDays = 30; // Evaluate over 30 days
   const activeDays = days.length;
   const consistencyRatio = activeDays / totalDays;
 
   // Bonus for regular daily care
-  const averageInteractionsPerDay = Object.values(dailyCounts).reduce((a, b) => a + b, 0) / activeDays;
+  const averageInteractionsPerDay =
+    Object.values(dailyCounts).reduce((a, b) => a + b, 0) / activeDays;
   const regularityBonus = averageInteractionsPerDay >= 1 ? 0.2 : 0;
 
   return Math.min(1.0, consistencyRatio + regularityBonus);
 }
 
 function calculateAverageQuality(interactions) {
-  if (interactions.length === 0) { return 0; }
+  if (interactions.length === 0) {
+    return 0;
+  }
 
-  const qualityMap = { 'excellent': 1.0, 'good': 0.8, 'fair': 0.6, 'poor': 0.4 };
+  const qualityMap = { excellent: 1.0, good: 0.8, fair: 0.6, poor: 0.4 };
   const totalQuality = interactions.reduce((sum, interaction) => {
     return sum + (qualityMap[interaction.quality] || 0.5);
   }, 0);
@@ -308,49 +324,79 @@ function calculateAverageQuality(interactions) {
 }
 
 function calculateCareQuality(groomCareHistory) {
-  if (!groomCareHistory?.interactions) { return 'unknown'; }
+  if (!groomCareHistory?.interactions) {
+    return 'unknown';
+  }
 
   const avgQuality = calculateAverageQuality(groomCareHistory.interactions);
 
-  if (avgQuality >= 0.9) { return 'excellent'; }
-  if (avgQuality >= 0.7) { return 'good'; }
-  if (avgQuality >= 0.5) { return 'fair'; }
+  if (avgQuality >= 0.9) {
+    return 'excellent';
+  }
+  if (avgQuality >= 0.7) {
+    return 'good';
+  }
+  if (avgQuality >= 0.5) {
+    return 'fair';
+  }
   return 'poor';
 }
 
 function calculateBondStability(groomCareHistory) {
-  if (!groomCareHistory?.bondHistory) { return 'stable'; }
+  if (!groomCareHistory?.bondHistory) {
+    return 'stable';
+  }
 
   // Analyze bond score trends for stability
   const bondScores = groomCareHistory.bondHistory.map(entry => entry.bondScore);
-  if (bondScores.length < 2) { return 'stable'; }
+  if (bondScores.length < 2) {
+    return 'stable';
+  }
 
   const variance = calculateVariance(bondScores);
 
-  if (variance < 5) { return 'very_stable'; }
-  if (variance < 15) { return 'stable'; }
-  if (variance < 30) { return 'fluctuating'; }
+  if (variance < 5) {
+    return 'very_stable';
+  }
+  if (variance < 15) {
+    return 'stable';
+  }
+  if (variance < 30) {
+    return 'fluctuating';
+  }
   return 'unstable';
 }
 
 function calculateStressManagement(groomCareHistory) {
-  if (!groomCareHistory?.stressHistory) { return 'good'; }
+  if (!groomCareHistory?.stressHistory) {
+    return 'good';
+  }
 
   // Analyze stress recovery patterns
   const stressLevels = groomCareHistory.stressHistory.map(entry => entry.stressLevel);
   const avgStress = stressLevels.reduce((a, b) => a + b, 0) / stressLevels.length;
 
-  if (avgStress < 3) { return 'excellent'; }
-  if (avgStress < 5) { return 'good'; }
-  if (avgStress < 7) { return 'fair'; }
+  if (avgStress < 3) {
+    return 'excellent';
+  }
+  if (avgStress < 5) {
+    return 'good';
+  }
+  if (avgStress < 7) {
+    return 'fair';
+  }
   return 'poor';
 }
 
 function calculateCareDuration(groomCareHistory, groomId) {
-  if (!groomCareHistory?.assignments) { return 0; }
+  if (!groomCareHistory?.assignments) {
+    return 0;
+  }
 
   const groomAssignments = groomCareHistory.assignments.filter(a => a.groomId === groomId);
-  if (groomAssignments.length === 0) { return 0; }
+  if (groomAssignments.length === 0) {
+    return 0;
+  }
 
   const [firstAssignment] = groomAssignments;
   const daysSinceAssignment = Math.floor(
@@ -384,20 +430,38 @@ async function evaluateBaseMilestone(horse, _milestoneData) {
 function getAgeCategory(horse) {
   const ageInDays = Math.floor((Date.now() - new Date(horse.dateOfBirth)) / (1000 * 60 * 60 * 24));
 
-  if (ageInDays < 180) { return 'foal'; }
-  if (ageInDays < 365) { return 'weanling'; }
-  if (ageInDays < 730) { return 'yearling'; }
-  if (ageInDays < 1095) { return 'two_year_old'; }
+  if (ageInDays < 180) {
+    return 'foal';
+  }
+  if (ageInDays < 365) {
+    return 'weanling';
+  }
+  if (ageInDays < 730) {
+    return 'yearling';
+  }
+  if (ageInDays < 1095) {
+    return 'two_year_old';
+  }
   return 'mature';
 }
 
 function getDevelopmentalStage(horse) {
   const ageInDays = Math.floor((Date.now() - new Date(horse.dateOfBirth)) / (1000 * 60 * 60 * 24));
 
-  if (ageInDays < 30) { return 'imprinting'; }
-  if (ageInDays < 90) { return 'socialization'; }
-  if (ageInDays < 180) { return 'fear_period'; }
-  if (ageInDays < 365) { return 'juvenile'; }
-  if (ageInDays < 730) { return 'adolescent'; }
+  if (ageInDays < 30) {
+    return 'imprinting';
+  }
+  if (ageInDays < 90) {
+    return 'socialization';
+  }
+  if (ageInDays < 180) {
+    return 'fear_period';
+  }
+  if (ageInDays < 365) {
+    return 'juvenile';
+  }
+  if (ageInDays < 730) {
+    return 'adolescent';
+  }
   return 'young_adult';
 }

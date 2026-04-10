@@ -65,7 +65,6 @@ export async function evaluateFlagTriggers(horse, carePatterns) {
       evaluatedFlags: Object.keys(EPIGENETIC_FLAG_DEFINITIONS).length,
       currentFlagCount: currentFlags.length,
     };
-
   } catch (error) {
     logger.error('Error evaluating flag triggers:', error);
     throw error;
@@ -147,7 +146,6 @@ function evaluateTriggerConditions(flagDef, carePatterns, horse) {
         // Generic evaluation for undefined flags
         return evaluateGenericTriggers(flagDef, carePatterns, horse);
     }
-
   } catch (error) {
     logger.error(`Error evaluating triggers for flag ${flagDef.name}:`, error);
     return { triggered: false, reason: 'Evaluation error', conditions: {} };
@@ -170,7 +168,9 @@ function evaluateBraveTriggers(conditions, carePatterns, _horse) {
 
   return {
     triggered,
-    reason: triggered ? 'Consistent care with good stress management and task diversity' : 'Conditions not met',
+    reason: triggered
+      ? 'Consistent care with good stress management and task diversity'
+      : 'Conditions not met',
     conditions: {
       consistentCare,
       goodStressManagement,
@@ -196,7 +196,9 @@ function evaluateAffectionateTriggers(conditions, carePatterns, _horse) {
 
   return {
     triggered,
-    reason: triggered ? 'Frequent positive interactions with consistent groom care' : 'Conditions not met',
+    reason: triggered
+      ? 'Frequent positive interactions with consistent groom care'
+      : 'Conditions not met',
     conditions: {
       frequentCare,
       positiveBondTrend,
@@ -222,7 +224,9 @@ function evaluateConfidentTriggers(conditions, carePatterns, horse) {
 
   return {
     triggered,
-    reason: triggered ? 'Strong bond growth with diverse, high-quality experiences' : 'Conditions not met',
+    reason: triggered
+      ? 'Strong bond growth with diverse, high-quality experiences'
+      : 'Conditions not met',
     conditions: {
       strongBondGrowth,
       lowStress,
@@ -274,7 +278,9 @@ function evaluateInsecureTriggers(conditions, carePatterns, _horse) {
 
   return {
     triggered,
-    reason: triggered ? 'Frequent groom changes with declining bond or neglect' : 'Conditions not met',
+    reason: triggered
+      ? 'Frequent groom changes with declining bond or neglect'
+      : 'Conditions not met',
     conditions: {
       frequentGroomChanges,
       decliningBond,
@@ -351,7 +357,7 @@ export async function evaluatePersonalityModifiedTriggers(horse, carePatterns) {
       },
       include: {
         groom: {
-          select: { groomPersonality: true, skillLevel: true },
+          select: { epigeneticInfluenceType: true, skillLevel: true },
         },
       },
       orderBy: { createdAt: 'desc' },
@@ -372,7 +378,6 @@ export async function evaluatePersonalityModifiedTriggers(horse, carePatterns) {
       personalityStats,
       originalPatterns: carePatterns,
     };
-
   } catch (error) {
     logger.error('Error evaluating personality modified triggers:', error);
     throw error;
@@ -424,7 +429,6 @@ export async function calculateFlagAssignmentScore(horse, flagName, carePatterns
       flagName,
       flagType: flagDef.type,
     };
-
   } catch (error) {
     logger.error(`Error calculating flag assignment score for ${flagName}:`, error);
     throw error;
@@ -473,7 +477,6 @@ export async function analyzeTemporalPatterns(horseId) {
       totalInteractions: interactions.length,
       analysisWindow: 60, // days
     };
-
   } catch (error) {
     logger.error(`Error analyzing temporal patterns for horse ${horseId}:`, error);
     throw error;
@@ -488,7 +491,7 @@ function analyzeGroomPersonalities(interactions) {
   const personalityEffects = {};
 
   interactions.forEach(interaction => {
-    const personality = interaction.groom?.groomPersonality || 'unknown';
+    const personality = interaction.groom?.epigeneticInfluenceType || 'unknown';
     personalityCount[personality] = (personalityCount[personality] || 0) + 1;
 
     if (!personalityEffects[personality]) {
@@ -528,8 +531,8 @@ function calculatePersonalityModifiers(personalityStats, _horse) {
   if (personalityStats.effects.calm) {
     const calmEffects = personalityStats.effects.calm;
     modifiers.calm = {
-      stressReduction: Math.max(0.8, 1 + (calmEffects.avgStressChange / 10)), // Better stress management
-      bondingBonus: Math.max(0.9, 1 + (calmEffects.avgBondChange / 20)), // Steady bonding
+      stressReduction: Math.max(0.8, 1 + calmEffects.avgStressChange / 10), // Better stress management
+      bondingBonus: Math.max(0.9, 1 + calmEffects.avgBondChange / 20), // Steady bonding
       flagBias: ['confident', 'calm', 'social'], // Favors positive flags
     };
   }
@@ -627,15 +630,21 @@ function calculateBaseScore(flagDef, carePatterns) {
  * Calculate age-based sensitivity modifier
  */
 function calculateAgeModifier(horse) {
-  const ageInDays = Math.floor(
-    (Date.now() - new Date(horse.dateOfBirth)) / (1000 * 60 * 60 * 24),
-  );
+  const ageInDays = Math.floor((Date.now() - new Date(horse.dateOfBirth)) / (1000 * 60 * 60 * 24));
 
   // Younger horses are more sensitive to flag triggers
-  if (ageInDays <= 30) { return 1.5; } // Very young (0-1 month)
-  if (ageInDays <= 90) { return 1.3; } // Young (1-3 months)
-  if (ageInDays <= 180) { return 1.1; } // Moderate (3-6 months)
-  if (ageInDays <= 365) { return 1.0; } // Older (6-12 months)
+  if (ageInDays <= 30) {
+    return 1.5;
+  } // Very young (0-1 month)
+  if (ageInDays <= 90) {
+    return 1.3;
+  } // Young (1-3 months)
+  if (ageInDays <= 180) {
+    return 1.1;
+  } // Moderate (3-6 months)
+  if (ageInDays <= 365) {
+    return 1.0;
+  } // Older (6-12 months)
   return 0.8; // Mature (1+ years)
 }
 
@@ -653,11 +662,13 @@ async function calculatePersonalityModifier(horse, flagName) {
         },
       },
       include: {
-        groom: { select: { groomPersonality: true } },
+        groom: { select: { epigeneticInfluenceType: true } },
       },
     });
 
-    if (recentInteractions.length === 0) { return 1.0; }
+    if (recentInteractions.length === 0) {
+      return 1.0;
+    }
 
     const personalityStats = analyzeGroomPersonalities(recentInteractions);
     const modifiers = calculatePersonalityModifiers(personalityStats, horse);
@@ -687,8 +698,10 @@ async function calculateTemporalModifier(horseId, flagName) {
 
     // Positive flags benefit from improving trends
     if (['brave', 'confident', 'affectionate', 'social', 'calm'].includes(flagName)) {
-      if (patterns.trendAnalysis.bondTrend === 'improving' &&
-          patterns.trendAnalysis.stressTrend === 'decreasing') {
+      if (
+        patterns.trendAnalysis.bondTrend === 'improving' &&
+        patterns.trendAnalysis.stressTrend === 'decreasing'
+      ) {
         return 1.3;
       }
       if (patterns.trendAnalysis.qualityTrend === 'improving') {
@@ -698,8 +711,10 @@ async function calculateTemporalModifier(horseId, flagName) {
 
     // Negative flags benefit from declining trends
     if (['fearful', 'insecure', 'antisocial', 'fragile', 'reactive'].includes(flagName)) {
-      if (patterns.trendAnalysis.bondTrend === 'declining' ||
-          patterns.trendAnalysis.stressTrend === 'increasing') {
+      if (
+        patterns.trendAnalysis.bondTrend === 'declining' ||
+        patterns.trendAnalysis.stressTrend === 'increasing'
+      ) {
         return 1.3;
       }
       if (patterns.criticalPeriods.length > 0) {
@@ -728,9 +743,7 @@ function calculateAssignmentThreshold(flagDef, horse) {
   }
 
   // Adjust based on horse age (younger horses have lower thresholds)
-  const ageInDays = Math.floor(
-    (Date.now() - new Date(horse.dateOfBirth)) / (1000 * 60 * 60 * 24),
-  );
+  const ageInDays = Math.floor((Date.now() - new Date(horse.dateOfBirth)) / (1000 * 60 * 60 * 24));
 
   if (ageInDays <= 30) {
     baseThreshold *= 0.8; // Very young
@@ -767,16 +780,30 @@ function analyzeTrends(interactions) {
 
   // Quality scoring
   const qualityScore = { poor: 1, fair: 2, good: 3, excellent: 4 };
-  const earlyQuality = early.reduce((sum, i) => sum + (qualityScore[i.quality] || 2), 0) / early.length;
-  const lateQuality = late.reduce((sum, i) => sum + (qualityScore[i.quality] || 2), 0) / late.length;
+  const earlyQuality =
+    early.reduce((sum, i) => sum + (qualityScore[i.quality] || 2), 0) / early.length;
+  const lateQuality =
+    late.reduce((sum, i) => sum + (qualityScore[i.quality] || 2), 0) / late.length;
 
   return {
-    bondTrend: lateBond > earlyBond + 0.5 ? 'improving' :
-      lateBond < earlyBond - 0.5 ? 'declining' : 'stable',
-    stressTrend: lateStress < earlyStress - 0.5 ? 'decreasing' :
-      lateStress > earlyStress + 0.5 ? 'increasing' : 'stable',
-    qualityTrend: lateQuality > earlyQuality + 0.3 ? 'improving' :
-      lateQuality < earlyQuality - 0.3 ? 'declining' : 'stable',
+    bondTrend:
+      lateBond > earlyBond + 0.5
+        ? 'improving'
+        : lateBond < earlyBond - 0.5
+          ? 'declining'
+          : 'stable',
+    stressTrend:
+      lateStress < earlyStress - 0.5
+        ? 'decreasing'
+        : lateStress > earlyStress + 0.5
+          ? 'increasing'
+          : 'stable',
+    qualityTrend:
+      lateQuality > earlyQuality + 0.3
+        ? 'improving'
+        : lateQuality < earlyQuality - 0.3
+          ? 'declining'
+          : 'stable',
   };
 }
 
@@ -791,17 +818,20 @@ function identifyPeriodicPatterns(interactions) {
   const dayGroups = {};
   interactions.forEach(interaction => {
     const dayOfWeek = interaction.createdAt.getDay();
-    if (!dayGroups[dayOfWeek]) { dayGroups[dayOfWeek] = []; }
+    if (!dayGroups[dayOfWeek]) {
+      dayGroups[dayOfWeek] = [];
+    }
     dayGroups[dayOfWeek].push(interaction);
   });
 
   // Identify days with consistently high or low quality
   Object.entries(dayGroups).forEach(([day, dayInteractions]) => {
     if (dayInteractions.length >= 2) {
-      const avgQuality = dayInteractions.reduce((sum, i) => {
-        const qualityScore = { poor: 1, fair: 2, good: 3, excellent: 4 };
-        return sum + (qualityScore[i.quality] || 2);
-      }, 0) / dayInteractions.length;
+      const avgQuality =
+        dayInteractions.reduce((sum, i) => {
+          const qualityScore = { poor: 1, fair: 2, good: 3, excellent: 4 };
+          return sum + (qualityScore[i.quality] || 2);
+        }, 0) / dayInteractions.length;
 
       if (avgQuality >= 3.5) {
         patterns.push({
