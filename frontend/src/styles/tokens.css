@@ -61,6 +61,14 @@
   --btn-gold-bg: rgba(200, 168, 78, 0.2); /* gold frosted button  */
   --btn-gold-border: rgba(200, 168, 78, 0.4); /* gold button border   */
 
+  /* ── Button border opacity variants (Story 22-5) ────────────────────── */
+  /* Opacity tiers of --gold-primary (200,168,78) and --bg-deep-space navy */
+  --btn-secondary-border: rgba(200, 168, 78, 0.3); /* secondary btn border default */
+  --btn-secondary-border-hover: rgba(200, 168, 78, 0.55); /* secondary btn border hover   */
+  --btn-secondary-bg-hover: rgba(10, 22, 40, 0.65); /* secondary btn bg on hover    */
+  --btn-glass-border: rgba(200, 168, 78, 0.2); /* glass btn border default     */
+  --btn-glass-border-hover: rgba(200, 168, 78, 0.5); /* glass btn border hover       */
+
   /* ── Gradient Definitions ──────────────────────────────────────────── */
   --gradient-night-sky: linear-gradient(180deg, #0a0e1a 0%, #111827 50%, #1a2236 100%);
   --gradient-glass-panel: linear-gradient(
@@ -476,14 +484,14 @@
 
   /* ── Game Component Library — badge tints, dialog/form/statbar tokens ── */
   /* These replace raw rgba() literals in game/ components (spec AC). */
-  --badge-gold-bg: var(--glass-glow);           /* rgba(200,168,78,0.15) */
+  --badge-gold-bg: var(--glass-glow); /* rgba(200,168,78,0.15) */
   --badge-danger-bg: rgba(239, 68, 68, 0.15);
   --badge-success-bg: rgba(34, 197, 94, 0.15);
   --badge-warning-bg: rgba(245, 158, 11, 0.15);
   --badge-info-bg: rgba(59, 130, 246, 0.15);
   --badge-common-bg: rgba(138, 155, 186, 0.15);
   --badge-rare-bg: rgba(167, 139, 250, 0.2);
-  --badge-ultra-rare-bg: var(--btn-gold-bg);    /* rgba(200,168,78,0.2) */
+  --badge-ultra-rare-bg: var(--btn-gold-bg); /* rgba(200,168,78,0.2) */
   --badge-legendary-bg: rgba(245, 230, 163, 0.15);
   --stat-bar-track-border: rgba(100, 130, 165, 0.2);
   --glow-stat-max: 0 0 8px rgba(200, 168, 78, 0.6);

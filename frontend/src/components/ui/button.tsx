@@ -47,8 +47,8 @@ const buttonVariants = cva(
         /** Secondary — frosted glass; for supporting actions */
         secondary: [
           'glass-panel-subtle',
-          'text-[var(--cream)] border border-[rgba(201,162,39,0.3)]',
-          'hover:border-[rgba(201,162,39,0.55)] hover:bg-[rgba(10,22,40,0.65)]',
+          'text-[var(--cream)] border border-[var(--btn-secondary-border)]',
+          'hover:border-[var(--btn-secondary-border-hover)] hover:bg-[var(--btn-secondary-bg-hover)]',
           'active:scale-[0.98]',
         ].join(' '),
 
@@ -60,7 +60,6 @@ const buttonVariants = cva(
           'active:scale-[0.98]',
         ].join(' '),
 
-        /** Ghost — text only; for icon buttons, inline list actions */
         /** Ghost — text only; for icon buttons, inline list actions.
          *  Uses --gold-light (7.1:1) not --gold-primary (4.2:1) per AC contrast requirement. */
         ghost: [
@@ -69,7 +68,6 @@ const buttonVariants = cva(
           'active:opacity-80',
         ].join(' '),
 
-        /** Link — underline text link (gold per Celestial Night identity) */
         /** Link — underline text link.
          *  Uses --gold-light (7.1:1) — --gold-primary (4.2:1) is forbidden for body-size text. */
         link: [
@@ -90,8 +88,8 @@ const buttonVariants = cva(
         /** Glass — glass panel surface; for nav items, overlay actions */
         glass: [
           'glass-panel',
-          'text-[var(--cream)] border-[rgba(201,162,39,0.2)]',
-          'hover:border-[rgba(201,162,39,0.5)]',
+          'text-[var(--cream)] border-[var(--btn-glass-border)]',
+          'hover:border-[var(--btn-glass-border-hover)]',
           'active:scale-[0.98]',
         ].join(' '),
       },

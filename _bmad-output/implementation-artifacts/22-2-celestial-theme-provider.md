@@ -100,8 +100,30 @@ Story 22.2 complete. All 10 tests pass.
 
 ---
 
+---
+
+## TEA Quality Gates (2026-04-10 — retroactive)
+
+**TEA:ATDD** — ACCEPTABLE. Tests were included as a named task (T2) in the story's implementation plan alongside the implementation (T1), indicating test-first intent even if not strictly commits-first. All 10 tests were written before the story was marked done.
+
+**TEA:TA** — PASS with minor notes. All 8 ACs have test coverage. Documented gaps (LOW risk):
+- No test verifying URL param cleanup (that `?theme=celestial` is removed from the address bar after processing)
+- No test for `safeLocalStorageGet` throwing (private browsing / quota) in the `THEME_KEY` read path
+- No test for the `WELCOME_SHOWN_KEY` localStorage write failing silently
+
+**TEA:RV** — PASS. Tests are well-structured: `beforeEach`/`afterEach` properly clean `localStorage` and `document.body.classList`. `vi.clearAllMocks()` prevents cross-test bleed. `MemoryRouter` with `initialEntries` is the correct approach for `useSearchParams`. Toast mock via `vi.mock('sonner')` is correct and minimal.
+
+---
+
+## Code Review (2026-04-10 — retroactive)
+
+- [x] [Review][Patch] **`localStorage.setItem(THEME_KEY)` unprotected** — `safeLocalStorageGet` wraps reads in try/catch, but the two `localStorage.setItem(THEME_KEY, ...)` calls in the `?theme=celestial` and `?theme=default` branches are bare (no try/catch). Inconsistent with `WELCOME_SHOWN_KEY` write which IS wrapped. In iOS private browsing, `setItem` throws a `QuotaExceededError`. PATCHED: wrapped in try/catch. [`frontend/src/components/theme/CelestialThemeProvider.tsx:71,76`]
+
+---
+
 ## Change Log
 
 | Date       | Change                                                      |
 | ---------- | ----------------------------------------------------------- |
 | 2026-03-31 | Story created and implemented — welcome toast + tests added |
+| 2026-04-10 | Retroactive TEA audit + code review — 1 patch applied (localStorage.setItem safety) |

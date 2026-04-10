@@ -182,6 +182,16 @@ All 8 tasks complete. Key decisions:
 
 ---
 
+### TEA Quality Gates (2026-04-10 — retroactive)
+
+**TEA:ATDD** — SKIPPED (pre-mandate). No commits-first evidence. Tests were included as task T2.6 in the implementation plan and written alongside the code.
+
+**TEA:TA** — PASS. `PageBackground.test.tsx` covers: scene path resolution, generic fallback, `src` override, `default` scene, resize debounce re-evaluation, `data-bg` marker attribute. All major hook paths covered. `DashboardLayout` route-to-scene mapping is not unit-tested (tested implicitly through E2E).
+
+**TEA:RV** — PASS. Tests correctly work around jsdom's `image-set()` limitation using `data-bg` attribute. `beforeEach` window size stub ensures deterministic suffix selection. `vi.useFakeTimers()` used correctly for debounce test with `finally` block restoring real timers and window dimensions. Resize test is well-structured.
+
+---
+
 ### Review Findings
 
 - [x] [Review][Decision] PageBackground rendered as hidden marker div — **ACCEPTED**: hook-based bg on parent div. No structural change.

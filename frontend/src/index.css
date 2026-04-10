@@ -88,6 +88,14 @@
     min-height: 100vh;
   }
 
+  /* Story 22-7: Touch devices (iOS Safari) ignore background-attachment: fixed —
+   * override to scroll so background behaves consistently on all touch devices. */
+  @media (hover: none) and (pointer: coarse) {
+    body {
+      background-attachment: scroll;
+    }
+  }
+
   /* ── Story 22.1: Celestial heading typography ─────────────────────── */
   /* Applies Cinzel to all heading elements when the celestial theme is active. */
   .celestial h1,

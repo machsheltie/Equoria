@@ -149,7 +149,17 @@ test.describe('NavPanel active item — gold border indicator', () => {
   test('22-7-E2E-009: active nav item has gold left-border indicator', async ({ page }) => {
     // Ensure onboarding is completed so OnboardingGuard does not redirect
     // away from '/'. page.request carries the storageState auth cookies.
-    await page.request.post('/api/auth/complete-onboarding').catch(() => {});
+    // Non-fatal: 404 = not deployed, 400/409 = already done — log 5xx for visibility.
+    const onboardingRes = await page.request
+      .post('/api/auth/complete-onboarding')
+      .catch(() => null);
+    if (onboardingRes && !onboardingRes.ok()) {
+      console.warn(
+        '[22-7-E2E-009] complete-onboarding returned',
+        onboardingRes.status(),
+        '(non-fatal)'
+      );
+    }
 
     await page.goto('/', { waitUntil: 'domcontentloaded' });
 

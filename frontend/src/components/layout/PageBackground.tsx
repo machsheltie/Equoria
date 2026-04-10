@@ -41,7 +41,13 @@ export function usePageBackground(options?: UsePageBackgroundOptions): CSSProper
     backgroundSize: 'cover',
     backgroundPosition: 'center center',
     backgroundRepeat: 'no-repeat',
-    backgroundAttachment: 'fixed',
+    // iOS Safari ignores background-attachment: fixed — use scroll on touch devices
+    // so the background behaves consistently rather than silently falling back.
+    backgroundAttachment:
+      typeof window !== 'undefined' &&
+      window.matchMedia('(hover: none) and (pointer: coarse)').matches
+        ? 'scroll'
+        : 'fixed',
   };
 }
 

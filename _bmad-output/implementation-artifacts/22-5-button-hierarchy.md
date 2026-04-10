@@ -75,8 +75,29 @@ So that I always know which button is the most important action on any screen.
 
 ---
 
+---
+
+## TEA Quality Gates (2026-04-10 — retroactive)
+
+**TEA:ATDD** — ACCEPTABLE. Task T2 (write tests) is listed alongside T1 (implement), indicating tests were part of the story. 18 tests written covering all 7 variants, all 4 sizes, accessibility (focus ring, disabled, keyboard), and `asChild` forwarding.
+
+**TEA:TA** — PASS. All ACs have test coverage. Tests assert both class presence and absence (e.g. ghost uses `--gold-light`, NOT `--gold-primary`). Keyboard tests cover Enter, Space, and disabled non-fire. `asChild` forwarding verified. One minor gap: no test for the `xl` size variant (xl is in the implementation but not tested).
+
+**TEA:RV** — PASS. Tests are clean, readable, and focused. Class-based assertions are appropriate for a styling-heavy component where jsdom doesn't compute Tailwind CSS. `userEvent.setup()` used correctly for async keyboard interactions. `toBeDisabled()` assertion correctly tests the HTML disabled attribute.
+
+---
+
+## Code Review (2026-04-10 — retroactive)
+
+- [x] [Review][Decision] **Raw rgba values in `secondary` and `glass` variants** — **RESOLVED (Option B — tokenize)**: Added 5 named tokens to `tokens.css` (`--btn-secondary-border`, `--btn-secondary-border-hover`, `--btn-secondary-bg-hover`, `--btn-glass-border`, `--btn-glass-border-hover`) using canonical `rgba(200,168,78,...)` values. `button.tsx` migrated to use tokens. [`frontend/src/styles/tokens.css`, `frontend/src/components/ui/button.tsx`]
+- [x] [Review][Decision] **Duplicate JSDoc comment blocks on `ghost` and `link` variants** — **RESOLVED (A — clean up)**: Removed leading stub JSDoc block from each; kept the informative second block with contrast-ratio rationale. [`frontend/src/components/ui/button.tsx`]
+
+---
+
 ## Change Log
 
 | Date       | Change                                     |
 | ---------- | ------------------------------------------ |
 | 2026-04-03 | Story implemented; spec gaps patched; tests written |
+| 2026-04-10 | Retroactive TEA audit + code review — 2 decisions pending |
+| 2026-04-10 | Code review decisions resolved — tokenized button rgba values, cleaned duplicate comments |

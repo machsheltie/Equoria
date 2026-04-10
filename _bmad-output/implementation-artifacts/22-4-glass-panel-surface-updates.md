@@ -32,6 +32,16 @@ status: done
 
 All three glass panel variants are now properly scoped under `.celestial`. The critical fix is `.glass-panel-subtle` which previously had `backdrop-filter: blur(6px)` — violating the single-blur-layer rule. It now uses a solid semi-transparent background with a gold border, making it safe to nest inside any blurred parent container without performance or visual stacking issues.
 
+### TEA Quality Gates (2026-04-10 — retroactive)
+
+**TEA:ATDD** — SKIPPED (pre-mandate). No commits-first evidence. E2E tests in `glass-panel-surface.spec.ts` were written as part of the story's deliverables.
+
+**TEA:TA** — PASS. E2E tests cover: no backdrop-filter on `.glass-panel-subtle` (single-blur-layer rule), `.glass-panel` has backdrop-filter blur, login page at 1440px screenshot, login page at 375px screenshot. All three glass variants verified simultaneously. Screenshot regression tests guard against visual regressions.
+
+**TEA:RV** — PASS. Tests use DOM injection (`page.evaluate`) to add fixture panels without depending on a specific page route — smart approach that isolates the CSS logic. `hasCelestial` assertion ensures test context is valid before proceeding. Screenshot tests use `maxDiffPixelRatio: 0.02` — appropriate tolerance for pixel-level rendering differences. No flakiness concerns identified.
+
+---
+
 ### Review Findings
 
 - [x] [Review][Patch] Duplicated `shouldBeCelestial` derivation between `useLayoutEffect` and `useEffect` — extracted `deriveTheme()` helper, single source of truth [CelestialThemeProvider.tsx]

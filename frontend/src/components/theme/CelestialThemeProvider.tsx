@@ -68,12 +68,20 @@ export function CelestialThemeProvider() {
   // Side effects: localStorage writes, URL cleanup, welcome toast
   useEffect(() => {
     if (themeParam === 'celestial') {
-      localStorage.setItem(THEME_KEY, 'celestial');
+      try {
+        localStorage.setItem(THEME_KEY, 'celestial');
+      } catch {
+        /* quota / private browsing */
+      }
       const next = new URLSearchParams(searchParams);
       next.delete('theme');
       setSearchParams(next, { replace: true });
     } else if (themeParam === 'default') {
-      localStorage.setItem(THEME_KEY, 'default');
+      try {
+        localStorage.setItem(THEME_KEY, 'default');
+      } catch {
+        /* quota / private browsing */
+      }
       const next = new URLSearchParams(searchParams);
       next.delete('theme');
       setSearchParams(next, { replace: true });
