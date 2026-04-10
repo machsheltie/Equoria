@@ -24,7 +24,7 @@ export default async function globalSetup() {
       override: true,
     });
 
-    const { default: prisma } = await import('../../../packages/database/prismaClient.mjs');
+    const { default: prisma } = await import('../../packages/database/prismaClient.mjs');
 
     // Remove hardcoded test horses by name (collected from all test suites)
     const testHorseNames = [
