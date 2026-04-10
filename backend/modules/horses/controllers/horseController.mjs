@@ -1240,11 +1240,11 @@ export async function getBreedingColorPrediction(req, res) {
     const resolvedBreedId = foalBreedId || dam.breedId;
     let foalBreedProfile = null;
     if (resolvedBreedId) {
-      const breed = await prisma.breed.findUnique({
-        where: { id: resolvedBreedId },
-        select: { breedGeneticProfile: true },
-      });
-      foalBreedProfile = breed?.breedGeneticProfile ?? null;
+      // Use raw SQL to bypass stale Prisma client DMMF that may not include breedGeneticProfile
+      const breedRows = await prisma.$queryRaw`
+        SELECT "breedGeneticProfile" FROM breeds WHERE id = ${resolvedBreedId}
+      `;
+      foalBreedProfile = breedRows[0]?.breedGeneticProfile ?? null;
     }
 
     // Import and call the pure prediction service

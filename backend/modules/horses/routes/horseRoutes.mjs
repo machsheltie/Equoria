@@ -611,13 +611,13 @@ router.post(
       const temperament = generateTemperament(req.body.breedId);
 
       // Fetch breed genetic profile for coat color genotype generation
+      // Use raw SQL to bypass stale Prisma client DMMF that may not include breedGeneticProfile
       let breedGeneticProfile = null;
       if (req.body.breedId) {
-        const breed = await prisma.breed.findUnique({
-          where: { id: req.body.breedId },
-          select: { breedGeneticProfile: true },
-        });
-        breedGeneticProfile = breed?.breedGeneticProfile ?? null;
+        const breedRows = await prisma.$queryRaw`
+          SELECT "breedGeneticProfile" FROM breeds WHERE id = ${req.body.breedId}
+        `;
+        breedGeneticProfile = breedRows[0]?.breedGeneticProfile ?? null;
       }
       // Generate coat color genotype (31E-1a / 31E-2)
       // If sireId + damId provided and both have colorGenotype → use Mendelian inheritance (31E-2)
@@ -1418,9 +1418,15 @@ router.get(
 
         const placement = parseInt(result.placement);
         if (!isNaN(placement)) {
-          if (placement === 1) { firstPlaces++; }
-          if (placement === 2) { secondPlaces++; }
-          if (placement === 3) { thirdPlaces++; }
+          if (placement === 1) {
+            firstPlaces++;
+          }
+          if (placement === 2) {
+            secondPlaces++;
+          }
+          if (placement === 3) {
+            thirdPlaces++;
+          }
           if (bestPlacement === null || placement < bestPlacement) {
             bestPlacement = placement;
           }
