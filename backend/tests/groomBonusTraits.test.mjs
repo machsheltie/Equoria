@@ -96,18 +96,46 @@ describe('Groom Bonus Traits System', () => {
   });
 
   afterEach(async () => {
-    // Clean up test data
+    // Clean up dependent records first to avoid FK constraint violations.
+    // groomInteraction and groomAssignment reference horse/groom/user, so they must go first.
     if (testHorse) {
-      await prisma.horse.delete({ where: { id: testHorse.id } });
+      try {
+        await prisma.groomInteraction.deleteMany({ where: { foalId: testHorse.id } });
+      } catch {
+        /* already gone */
+      }
+      try {
+        await prisma.groomAssignment.deleteMany({ where: { foalId: testHorse.id } });
+      } catch {
+        /* already gone */
+      }
+      try {
+        await prisma.horse.delete({ where: { id: testHorse.id } });
+      } catch {
+        /* already gone */
+      }
     }
+    // Groom must be deleted before user because groom has a userId FK
     if (testGroom) {
-      await prisma.groom.delete({ where: { id: testGroom.id } });
+      try {
+        await prisma.groom.delete({ where: { id: testGroom.id } });
+      } catch {
+        /* already gone */
+      }
     }
     if (testUser) {
-      await prisma.user.delete({ where: { id: testUser.id } });
+      try {
+        await prisma.user.delete({ where: { id: testUser.id } });
+      } catch {
+        /* already gone */
+      }
     }
     if (testBreed) {
-      await prisma.breed.delete({ where: { id: testBreed.id } });
+      try {
+        await prisma.breed.delete({ where: { id: testBreed.id } });
+      } catch {
+        /* already gone */
+      }
     }
   });
 
