@@ -1,260 +1,767 @@
 openapi: 3.0.3
 info:
-    title: 'Equoria API'
-    description: 'Backend API for Equoria horse breeding and competition game'
-    version: 1.0.0
-    contact:
-        name: 'Equoria Team'
-    x-generated:
-        timestamp: '2026-04-01T12:59:16.031Z'
-        endpointCount: 0
-        schemaCount: 2
-        generator: ApiDocumentationService
+  title: 'Equoria API'
+  description: 'Backend API for Equoria horse breeding and competition game'
+  version: 1.0.0
+  contact:
+    name: 'Equoria Team'
+  x-generated:
+    timestamp: '2026-04-10T10:06:14.446Z'
+    endpointCount: 2
+    schemaCount: 2
+    generator: ApiDocumentationService
 servers:
-    -
-        url: 'http://localhost:3000/api'
-        description: 'Development server (legacy base path)'
-    -
-        url: 'http://localhost:3000/api/v1'
-        description: 'Development server (v1 versioned path)'
-    -
-        url: 'https://equoria.up.railway.app/api/v1'
-        description: 'Production server'
+  - url: 'http://localhost:3000/api'
+    description: 'Development server (legacy base path)'
+  - url: 'http://localhost:3000/api/v1'
+    description: 'Development server (v1 versioned path)'
+  - url: 'https://equoria.up.railway.app/api/v1'
+    description: 'Production server'
 tags:
-    -
-        name: Auth
-        description: 'Authentication endpoints'
-    -
-        name: Horses
-        description: 'Horse management endpoints'
-    -
-        name: Breeding
-        description: 'Breeding operations'
-    -
-        name: Competitions
-        description: 'Competition endpoints'
-    -
-        name: Health
-        description: 'Health check endpoints'
-    -
-        name: Forum
-        description: 'Community forum threads and posts'
-    -
-        name: Messages
-        description: 'Direct messages between users'
-    -
-        name: Clubs
-        description: 'Clubs, memberships, and elections'
+  - name: Auth
+    description: 'Authentication endpoints'
+  - name: Horses
+    description: 'Horse management endpoints'
+  - name: Breeding
+    description: 'Breeding operations'
+  - name: Competitions
+    description: 'Competition endpoints'
+  - name: Health
+    description: 'Health check endpoints'
+  - name: Forum
+    description: 'Community forum threads and posts'
+  - name: Messages
+    description: 'Direct messages between users'
+  - name: Clubs
+    description: 'Clubs, memberships, and elections'
 paths:
-    /health:
-        get:
-            tags: [Health]
-            summary: 'Health check'
-            description: 'Returns API health status'
-            responses: {'200': {description: 'API is healthy', content: {application/json: {schema: {type: object, properties: {status: {type: string, example: ok}, timestamp: {type: string, format: date-time}}}}}}}
-    /auth/register:
-        post:
-            tags: [Auth]
-            summary: 'Register a new user'
-            requestBody: {required: true, content: {application/json: {schema: {$ref: '#/components/schemas/RegisterRequest'}}}}
-            responses: {'201': {description: 'User registered successfully'}, '400': {description: 'Validation error'}}
-    /auth/login:
-        post:
-            tags: [Auth]
-            summary: 'Login user'
-            requestBody: {required: true, content: {application/json: {schema: {$ref: '#/components/schemas/LoginRequest'}}}}
-            responses: {'200': {description: 'Login successful', content: {application/json: {schema: {$ref: '#/components/schemas/AuthResponse'}}}}, '401': {description: 'Invalid credentials'}}
-    /auth/logout:
-        post:
-            tags: [Auth]
-            summary: 'Logout user'
-            security: [{bearerAuth: []}]
-            responses: {'200': {description: 'Logout successful'}}
-    '/api/v1/horses/{id}/conformation':
-        get:
-            tags: [Horses]
-            summary: 'Get conformation scores for a horse'
-            description: 'Returns all 8 conformation region scores (head, neck, shoulders, back, hindquarters, legs, hooves, topline) plus the overall average. Returns null data for legacy horses without conformation scores. Requires ownership of the horse.'
-            security: [{bearerAuth: []}]
-            parameters: [{name: id, in: path, required: true, schema: {type: integer, minimum: 1}, description: 'Horse ID'}]
-            responses: {'200': {description: 'Conformation scores retrieved successfully', content: {application/json: {schema: {type: object, properties: {success: {type: boolean, example: true}, message: {type: string}, data: {type: object, nullable: true, properties: {horseId: {type: integer}, horseName: {type: string}, breedId: {type: integer}, conformationScores: {type: object, properties: {head: {type: integer, minimum: 0, maximum: 100, nullable: true}, neck: {type: integer, minimum: 0, maximum: 100, nullable: true}, shoulders: {type: integer, minimum: 0, maximum: 100, nullable: true}, back: {type: integer, minimum: 0, maximum: 100, nullable: true}, hindquarters: {type: integer, minimum: 0, maximum: 100, nullable: true}, legs: {type: integer, minimum: 0, maximum: 100, nullable: true}, hooves: {type: integer, minimum: 0, maximum: 100, nullable: true}, topline: {type: integer, minimum: 0, maximum: 100, nullable: true}, overallConformation: {type: integer, minimum: 0, maximum: 100}}}}}}}}}}, '400': {description: 'Invalid horse ID'}, '401': {description: Unauthorized}, '403': {description: 'Forbidden — horse belongs to another user'}, '404': {description: 'Horse not found'}, '500': {description: 'Internal server error'}}
-    '/api/v1/horses/{id}/conformation/analysis':
-        get:
-            tags: [Horses]
-            summary: 'Get conformation analysis with breed percentile rankings'
-            description: 'Returns per-region percentile ranking compared to all same-breed horses in the database. Percentile = percentage of same-breed horses scoring lower. Breed mean comes from genetic profiles, not live database averages. Returns null data for legacy horses or horses without a breed assignment.'
-            security: [{bearerAuth: []}]
-            parameters: [{name: id, in: path, required: true, schema: {type: integer, minimum: 1}, description: 'Horse ID'}]
-            responses: {'200': {description: 'Conformation analysis retrieved successfully', content: {application/json: {schema: {type: object, properties: {success: {type: boolean, example: true}, message: {type: string}, data: {type: object, nullable: true, properties: {horseId: {type: integer}, horseName: {type: string}, breedId: {type: integer}, breedName: {type: string}, totalHorsesInBreed: {type: integer}, analysis: {type: object, description: 'Per-region score, breedMean, and percentile'}, overallConformation: {type: object, properties: {score: {type: integer}, breedMean: {type: integer}, percentile: {type: integer, minimum: 0, maximum: 100}}}}}}}}}}, '400': {description: 'Invalid horse ID'}, '401': {description: Unauthorized}, '403': {description: 'Forbidden — horse belongs to another user'}, '404': {description: 'Horse not found'}, '500': {description: 'Internal server error'}}
-    '/api/v1/horses/{id}/gaits':
-        get:
-            tags: [Horses]
-            summary: 'Get gait quality scores for a horse'
-            description: 'Returns walk, trot, canter, and gallop quality scores (0–100). For gaited breeds, also returns a gaiting array with named specialty gait entries. Returns null data for legacy horses without gait scores. Requires ownership of the horse.'
-            security: [{bearerAuth: []}]
-            parameters: [{name: id, in: path, required: true, schema: {type: integer, minimum: 1}, description: 'Horse ID'}]
-            responses: {'200': {description: 'Gait scores retrieved successfully', content: {application/json: {schema: {type: object, properties: {success: {type: boolean, example: true}, message: {type: string}, data: {type: object, nullable: true, properties: {horseId: {type: integer}, horseName: {type: string}, breedId: {type: integer}, gaitScores: {type: object, properties: {walk: {type: integer, minimum: 0, maximum: 100}, trot: {type: integer, minimum: 0, maximum: 100}, canter: {type: integer, minimum: 0, maximum: 100}, gallop: {type: integer, minimum: 0, maximum: 100}, gaiting: {type: array, nullable: true, items: {type: object, properties: {name: {type: string, example: 'Running Walk'}, score: {type: integer, minimum: 0, maximum: 100}}}}}}}}}}}}}, '400': {description: 'Invalid horse ID'}, '401': {description: Unauthorized}, '403': {description: 'Forbidden — horse belongs to another user'}, '404': {description: 'Horse not found'}, '500': {description: 'Internal server error'}}
-    /api/v1/horses/temperament-definitions:
-        get:
-            tags: [Horses]
-            summary: 'Get all temperament type definitions with game effects'
-            description: 'Returns all 11 temperament types with descriptions, training modifiers, competition modifiers, and best groom personality matches. Public endpoint — no authentication required.'
-            responses: {'200': {description: 'Temperament definitions retrieved successfully', content: {application/json: {schema: {type: object, properties: {success: {type: boolean, example: true}, message: {type: string, example: 'Temperament definitions retrieved successfully'}, data: {type: object, properties: {count: {type: integer, example: 11}, definitions: {type: array, items: {type: object, properties: {name: {type: string, example: Spirited}, description: {type: string}, prevalenceNote: {type: string}, trainingModifiers: {type: object, properties: {xpModifier: {type: number, example: 0.1}, scoreModifier: {type: number, example: 0.05}}}, competitionModifiers: {type: object, properties: {riddenModifier: {type: number, example: 0.03}, conformationModifier: {type: number, example: -0.02}}}, bestGroomPersonalities: {type: array, items: {type: string}, example: [energetic]}}}}}}}}}}}, '500': {description: 'Internal server error'}}
-    /horses:
-        get:
-            tags: [Horses]
-            summary: 'Get all horses'
-            security: [{bearerAuth: []}]
-            responses: {'200': {description: 'List of horses', content: {application/json: {schema: {type: array, items: {$ref: '#/components/schemas/Horse'}}}}}}
-    /api/users:
-        get:
-            tags: [Users]
-            summary: 'List users'
-            description: 'Get all users'
-            parameters: []
-            requestBody: null
-            responses: {'200': {description: Success}}
-            security: []
-            deprecated: false
-    /api/test/integration:
-        get:
-            tags: [Testing]
-            summary: 'Integration test endpoint'
-            description: 'Test endpoint for documentation integration'
-            parameters: []
-            requestBody: null
-            responses: {'200': {description: 'Success response'}, '401': {description: Unauthorized}}
-            security: []
-            deprecated: false
-    /api/test/create:
-        post:
-            tags: [Testing]
-            summary: 'Create test resource'
-            description: ""
-            parameters: []
-            requestBody: null
-            responses: {'201': {description: Created}}
-            security: []
-            deprecated: false
-    /forum/threads:
-        get:
-            tags: [Forum]
-            summary: 'List forum threads'
-            description: 'Get paginated threads, optionally filtered by section'
-            security: [{bearerAuth: []}]
-            parameters: [{name: section, in: query, schema: {type: string, enum: [general, art, sales, services, venting]}}, {name: page, in: query, schema: {type: integer, default: 1}}]
-            responses: {'200': {description: 'Thread list with pagination'}, '401': {description: Unauthorized}}
-        post:
-            tags: [Forum]
-            summary: 'Create a new thread'
-            security: [{bearerAuth: []}]
-            requestBody: {required: true, content: {application/json: {schema: {type: object, required: [title, content, section], properties: {title: {type: string}, content: {type: string}, section: {type: string}}}}}}
-            responses: {'201': {description: 'Thread created'}, '400': {description: 'Validation error'}, '401': {description: Unauthorized}}
-    '/forum/threads/{id}':
-        get:
-            tags: [Forum]
-            summary: 'Get thread with posts'
-            security: [{bearerAuth: []}]
-            parameters: [{name: id, in: path, required: true, schema: {type: integer}}]
-            responses: {'200': {description: 'Thread detail'}, '404': {description: 'Thread not found'}}
-    /messages/inbox:
-        get:
-            tags: [Messages]
-            summary: 'Get inbox'
-            security: [{bearerAuth: []}]
-            responses: {'200': {description: 'List of received messages'}, '401': {description: Unauthorized}}
-    /messages/sent:
-        get:
-            tags: [Messages]
-            summary: 'Get sent messages'
-            security: [{bearerAuth: []}]
-            responses: {'200': {description: 'List of sent messages'}, '401': {description: Unauthorized}}
-    /messages/unread-count:
-        get:
-            tags: [Messages]
-            summary: 'Get unread message count'
-            security: [{bearerAuth: []}]
-            responses: {'200': {description: 'Unread count'}, '401': {description: Unauthorized}}
-    /messages:
-        post:
-            tags: [Messages]
-            summary: 'Send a message'
-            security: [{bearerAuth: []}]
-            requestBody: {required: true, content: {application/json: {schema: {type: object, required: [recipientId, content], properties: {recipientId: {type: string}, content: {type: string}}}}}}
-            responses: {'201': {description: 'Message sent'}, '400': {description: 'Validation error'}, '401': {description: Unauthorized}}
-    /clubs:
-        get:
-            tags: [Clubs]
-            summary: 'List clubs'
-            security: [{bearerAuth: []}]
-            parameters: [{name: type, in: query, schema: {type: string}}, {name: category, in: query, schema: {type: string}}]
-            responses: {'200': {description: 'List of clubs'}, '401': {description: Unauthorized}}
-        post:
-            tags: [Clubs]
-            summary: 'Create a club'
-            security: [{bearerAuth: []}]
-            requestBody: {required: true, content: {application/json: {schema: {type: object, required: [name, type], properties: {name: {type: string}, type: {type: string}, category: {type: string}, description: {type: string}}}}}}
-            responses: {'201': {description: 'Club created'}, '401': {description: Unauthorized}}
-    /clubs/me:
-        get:
-            tags: [Clubs]
-            summary: 'Get my clubs'
-            security: [{bearerAuth: []}]
-            responses: {'200': {description: 'Clubs the authenticated user belongs to'}, '401': {description: Unauthorized}}
-    '/clubs/{id}/join':
-        post:
-            tags: [Clubs]
-            summary: 'Join a club'
-            security: [{bearerAuth: []}]
-            parameters: [{name: id, in: path, required: true, schema: {type: integer}}]
-            responses: {'200': {description: 'Joined club'}, '400': {description: 'Already a member'}, '401': {description: Unauthorized}}
-    '/clubs/{id}/leave':
-        delete:
-            tags: [Clubs]
-            summary: 'Leave a club'
-            security: [{bearerAuth: []}]
-            parameters: [{name: id, in: path, required: true, schema: {type: integer}}]
-            responses: {'200': {description: 'Left club'}, '401': {description: Unauthorized}}
-    '/clubs/elections/{id}/vote':
-        post:
-            tags: [Clubs]
-            summary: 'Vote in an election'
-            security: [{bearerAuth: []}]
-            parameters: [{name: id, in: path, required: true, schema: {type: integer}}]
-            requestBody: {required: true, content: {application/json: {schema: {type: object, required: [candidateId], properties: {candidateId: {type: integer}}}}}}
-            responses: {'200': {description: 'Vote cast'}, '400': {description: 'Already voted or election closed'}, '401': {description: Unauthorized}}
+  /health:
+    get:
+      tags: [Health]
+      summary: 'Health check'
+      description: 'Returns API health status'
+      responses:
+        {
+          '200':
+            {
+              description: 'API is healthy',
+              content:
+                {
+                  application/json:
+                    {
+                      schema:
+                        {
+                          type: object,
+                          properties:
+                            {
+                              status: { type: string, example: ok },
+                              timestamp: { type: string, format: date-time },
+                            },
+                        },
+                    },
+                },
+            },
+        }
+  /auth/register:
+    post:
+      tags: [Auth]
+      summary: 'Register a new user'
+      requestBody:
+        {
+          required: true,
+          content:
+            { application/json: { schema: { $ref: '#/components/schemas/RegisterRequest' } } },
+        }
+      responses:
+        {
+          '201': { description: 'User registered successfully' },
+          '400': { description: 'Validation error' },
+        }
+  /auth/login:
+    post:
+      tags: [Auth]
+      summary: 'Login user'
+      requestBody:
+        {
+          required: true,
+          content: { application/json: { schema: { $ref: '#/components/schemas/LoginRequest' } } },
+        }
+      responses:
+        {
+          '200':
+            {
+              description: 'Login successful',
+              content:
+                { application/json: { schema: { $ref: '#/components/schemas/AuthResponse' } } },
+            },
+          '401': { description: 'Invalid credentials' },
+        }
+  /auth/logout:
+    post:
+      tags: [Auth]
+      summary: 'Logout user'
+      security: [{ bearerAuth: [] }]
+      responses: { '200': { description: 'Logout successful' } }
+  '/api/v1/horses/{id}/conformation':
+    get:
+      tags: [Horses]
+      summary: 'Get conformation scores for a horse'
+      description: 'Returns all 8 conformation region scores (head, neck, shoulders, back, hindquarters, legs, hooves, topline) plus the overall average. Returns null data for legacy horses without conformation scores. Requires ownership of the horse.'
+      security: [{ bearerAuth: [] }]
+      parameters:
+        [
+          {
+            name: id,
+            in: path,
+            required: true,
+            schema: { type: integer, minimum: 1 },
+            description: 'Horse ID',
+          },
+        ]
+      responses:
+        {
+          '200':
+            {
+              description: 'Conformation scores retrieved successfully',
+              content:
+                {
+                  application/json:
+                    {
+                      schema:
+                        {
+                          type: object,
+                          properties:
+                            {
+                              success: { type: boolean, example: true },
+                              message: { type: string },
+                              data:
+                                {
+                                  type: object,
+                                  nullable: true,
+                                  properties:
+                                    {
+                                      horseId: { type: integer },
+                                      horseName: { type: string },
+                                      breedId: { type: integer },
+                                      conformationScores:
+                                        {
+                                          type: object,
+                                          properties:
+                                            {
+                                              head:
+                                                {
+                                                  type: integer,
+                                                  minimum: 0,
+                                                  maximum: 100,
+                                                  nullable: true,
+                                                },
+                                              neck:
+                                                {
+                                                  type: integer,
+                                                  minimum: 0,
+                                                  maximum: 100,
+                                                  nullable: true,
+                                                },
+                                              shoulders:
+                                                {
+                                                  type: integer,
+                                                  minimum: 0,
+                                                  maximum: 100,
+                                                  nullable: true,
+                                                },
+                                              back:
+                                                {
+                                                  type: integer,
+                                                  minimum: 0,
+                                                  maximum: 100,
+                                                  nullable: true,
+                                                },
+                                              hindquarters:
+                                                {
+                                                  type: integer,
+                                                  minimum: 0,
+                                                  maximum: 100,
+                                                  nullable: true,
+                                                },
+                                              legs:
+                                                {
+                                                  type: integer,
+                                                  minimum: 0,
+                                                  maximum: 100,
+                                                  nullable: true,
+                                                },
+                                              hooves:
+                                                {
+                                                  type: integer,
+                                                  minimum: 0,
+                                                  maximum: 100,
+                                                  nullable: true,
+                                                },
+                                              topline:
+                                                {
+                                                  type: integer,
+                                                  minimum: 0,
+                                                  maximum: 100,
+                                                  nullable: true,
+                                                },
+                                              overallConformation:
+                                                { type: integer, minimum: 0, maximum: 100 },
+                                            },
+                                        },
+                                    },
+                                },
+                            },
+                        },
+                    },
+                },
+            },
+          '400': { description: 'Invalid horse ID' },
+          '401': { description: Unauthorized },
+          '403': { description: 'Forbidden — horse belongs to another user' },
+          '404': { description: 'Horse not found' },
+          '500': { description: 'Internal server error' },
+        }
+  '/api/v1/horses/{id}/conformation/analysis':
+    get:
+      tags: [Horses]
+      summary: 'Get conformation analysis with breed percentile rankings'
+      description: 'Returns per-region percentile ranking compared to all same-breed horses in the database. Percentile = percentage of same-breed horses scoring lower. Breed mean comes from genetic profiles, not live database averages. Returns null data for legacy horses or horses without a breed assignment.'
+      security: [{ bearerAuth: [] }]
+      parameters:
+        [
+          {
+            name: id,
+            in: path,
+            required: true,
+            schema: { type: integer, minimum: 1 },
+            description: 'Horse ID',
+          },
+        ]
+      responses:
+        {
+          '200':
+            {
+              description: 'Conformation analysis retrieved successfully',
+              content:
+                {
+                  application/json:
+                    {
+                      schema:
+                        {
+                          type: object,
+                          properties:
+                            {
+                              success: { type: boolean, example: true },
+                              message: { type: string },
+                              data:
+                                {
+                                  type: object,
+                                  nullable: true,
+                                  properties:
+                                    {
+                                      horseId: { type: integer },
+                                      horseName: { type: string },
+                                      breedId: { type: integer },
+                                      breedName: { type: string },
+                                      totalHorsesInBreed: { type: integer },
+                                      analysis:
+                                        {
+                                          type: object,
+                                          description: 'Per-region score, breedMean, and percentile',
+                                        },
+                                      overallConformation:
+                                        {
+                                          type: object,
+                                          properties:
+                                            {
+                                              score: { type: integer },
+                                              breedMean: { type: integer },
+                                              percentile:
+                                                { type: integer, minimum: 0, maximum: 100 },
+                                            },
+                                        },
+                                    },
+                                },
+                            },
+                        },
+                    },
+                },
+            },
+          '400': { description: 'Invalid horse ID' },
+          '401': { description: Unauthorized },
+          '403': { description: 'Forbidden — horse belongs to another user' },
+          '404': { description: 'Horse not found' },
+          '500': { description: 'Internal server error' },
+        }
+  '/api/v1/horses/{id}/gaits':
+    get:
+      tags: [Horses]
+      summary: 'Get gait quality scores for a horse'
+      description: 'Returns walk, trot, canter, and gallop quality scores (0–100). For gaited breeds, also returns a gaiting array with named specialty gait entries. Returns null data for legacy horses without gait scores. Requires ownership of the horse.'
+      security: [{ bearerAuth: [] }]
+      parameters:
+        [
+          {
+            name: id,
+            in: path,
+            required: true,
+            schema: { type: integer, minimum: 1 },
+            description: 'Horse ID',
+          },
+        ]
+      responses:
+        {
+          '200':
+            {
+              description: 'Gait scores retrieved successfully',
+              content:
+                {
+                  application/json:
+                    {
+                      schema:
+                        {
+                          type: object,
+                          properties:
+                            {
+                              success: { type: boolean, example: true },
+                              message: { type: string },
+                              data:
+                                {
+                                  type: object,
+                                  nullable: true,
+                                  properties:
+                                    {
+                                      horseId: { type: integer },
+                                      horseName: { type: string },
+                                      breedId: { type: integer },
+                                      gaitScores:
+                                        {
+                                          type: object,
+                                          properties:
+                                            {
+                                              walk: { type: integer, minimum: 0, maximum: 100 },
+                                              trot: { type: integer, minimum: 0, maximum: 100 },
+                                              canter: { type: integer, minimum: 0, maximum: 100 },
+                                              gallop: { type: integer, minimum: 0, maximum: 100 },
+                                              gaiting:
+                                                {
+                                                  type: array,
+                                                  nullable: true,
+                                                  items:
+                                                    {
+                                                      type: object,
+                                                      properties:
+                                                        {
+                                                          name:
+                                                            {
+                                                              type: string,
+                                                              example: 'Running Walk',
+                                                            },
+                                                          score:
+                                                            {
+                                                              type: integer,
+                                                              minimum: 0,
+                                                              maximum: 100,
+                                                            },
+                                                        },
+                                                    },
+                                                },
+                                            },
+                                        },
+                                    },
+                                },
+                            },
+                        },
+                    },
+                },
+            },
+          '400': { description: 'Invalid horse ID' },
+          '401': { description: Unauthorized },
+          '403': { description: 'Forbidden — horse belongs to another user' },
+          '404': { description: 'Horse not found' },
+          '500': { description: 'Internal server error' },
+        }
+  /api/v1/horses/temperament-definitions:
+    get:
+      tags: [Horses]
+      summary: 'Get all temperament type definitions with game effects'
+      description: 'Returns all 11 temperament types with descriptions, training modifiers, competition modifiers, and best groom personality matches. Public endpoint — no authentication required.'
+      responses:
+        {
+          '200':
+            {
+              description: 'Temperament definitions retrieved successfully',
+              content:
+                {
+                  application/json:
+                    {
+                      schema:
+                        {
+                          type: object,
+                          properties:
+                            {
+                              success: { type: boolean, example: true },
+                              message:
+                                {
+                                  type: string,
+                                  example: 'Temperament definitions retrieved successfully',
+                                },
+                              data:
+                                {
+                                  type: object,
+                                  properties:
+                                    {
+                                      count: { type: integer, example: 11 },
+                                      definitions:
+                                        {
+                                          type: array,
+                                          items:
+                                            {
+                                              type: object,
+                                              properties:
+                                                {
+                                                  name: { type: string, example: Spirited },
+                                                  description: { type: string },
+                                                  prevalenceNote: { type: string },
+                                                  trainingModifiers:
+                                                    {
+                                                      type: object,
+                                                      properties:
+                                                        {
+                                                          xpModifier:
+                                                            { type: number, example: 0.1 },
+                                                          scoreModifier:
+                                                            { type: number, example: 0.05 },
+                                                        },
+                                                    },
+                                                  competitionModifiers:
+                                                    {
+                                                      type: object,
+                                                      properties:
+                                                        {
+                                                          riddenModifier:
+                                                            { type: number, example: 0.03 },
+                                                          conformationModifier:
+                                                            { type: number, example: -0.02 },
+                                                        },
+                                                    },
+                                                  bestGroomPersonalities:
+                                                    {
+                                                      type: array,
+                                                      items: { type: string },
+                                                      example: [energetic],
+                                                    },
+                                                },
+                                            },
+                                        },
+                                    },
+                                },
+                            },
+                        },
+                    },
+                },
+            },
+          '500': { description: 'Internal server error' },
+        }
+  /horses:
+    get:
+      tags: [Horses]
+      summary: 'Get all horses'
+      security: [{ bearerAuth: [] }]
+      responses:
+        {
+          '200':
+            {
+              description: 'List of horses',
+              content:
+                {
+                  application/json:
+                    { schema: { type: array, items: { $ref: '#/components/schemas/Horse' } } },
+                },
+            },
+        }
+  /api/users:
+    get:
+      tags: [Users]
+      summary: 'List users'
+      description: 'Get all users'
+      parameters: []
+      requestBody: null
+      responses: { '200': { description: Success } }
+      security: []
+      deprecated: false
+  /api/test/integration:
+    get:
+      tags: [Testing]
+      summary: 'Integration test endpoint'
+      description: 'Test endpoint for documentation integration'
+      parameters: []
+      requestBody: null
+      responses:
+        { '200': { description: 'Success response' }, '401': { description: Unauthorized } }
+      security: []
+      deprecated: false
+  /api/test/create:
+    post:
+      tags: [Testing]
+      summary: 'Create test resource'
+      description: ''
+      parameters: []
+      requestBody: null
+      responses: { '201': { description: Created } }
+      security: []
+      deprecated: false
+  /forum/threads:
+    get:
+      tags: [Forum]
+      summary: 'List forum threads'
+      description: 'Get paginated threads, optionally filtered by section'
+      security: [{ bearerAuth: [] }]
+      parameters:
+        [
+          {
+            name: section,
+            in: query,
+            schema: { type: string, enum: [general, art, sales, services, venting] },
+          },
+          { name: page, in: query, schema: { type: integer, default: 1 } },
+        ]
+      responses:
+        {
+          '200': { description: 'Thread list with pagination' },
+          '401': { description: Unauthorized },
+        }
+    post:
+      tags: [Forum]
+      summary: 'Create a new thread'
+      security: [{ bearerAuth: [] }]
+      requestBody:
+        {
+          required: true,
+          content:
+            {
+              application/json:
+                {
+                  schema:
+                    {
+                      type: object,
+                      required: [title, content, section],
+                      properties:
+                        {
+                          title: { type: string },
+                          content: { type: string },
+                          section: { type: string },
+                        },
+                    },
+                },
+            },
+        }
+      responses:
+        {
+          '201': { description: 'Thread created' },
+          '400': { description: 'Validation error' },
+          '401': { description: Unauthorized },
+        }
+  '/forum/threads/{id}':
+    get:
+      tags: [Forum]
+      summary: 'Get thread with posts'
+      security: [{ bearerAuth: [] }]
+      parameters: [{ name: id, in: path, required: true, schema: { type: integer } }]
+      responses:
+        { '200': { description: 'Thread detail' }, '404': { description: 'Thread not found' } }
+  /messages/inbox:
+    get:
+      tags: [Messages]
+      summary: 'Get inbox'
+      security: [{ bearerAuth: [] }]
+      responses:
+        {
+          '200': { description: 'List of received messages' },
+          '401': { description: Unauthorized },
+        }
+  /messages/sent:
+    get:
+      tags: [Messages]
+      summary: 'Get sent messages'
+      security: [{ bearerAuth: [] }]
+      responses:
+        { '200': { description: 'List of sent messages' }, '401': { description: Unauthorized } }
+  /messages/unread-count:
+    get:
+      tags: [Messages]
+      summary: 'Get unread message count'
+      security: [{ bearerAuth: [] }]
+      responses: { '200': { description: 'Unread count' }, '401': { description: Unauthorized } }
+  /messages:
+    post:
+      tags: [Messages]
+      summary: 'Send a message'
+      security: [{ bearerAuth: [] }]
+      requestBody:
+        {
+          required: true,
+          content:
+            {
+              application/json:
+                {
+                  schema:
+                    {
+                      type: object,
+                      required: [recipientId, content],
+                      properties: { recipientId: { type: string }, content: { type: string } },
+                    },
+                },
+            },
+        }
+      responses:
+        {
+          '201': { description: 'Message sent' },
+          '400': { description: 'Validation error' },
+          '401': { description: Unauthorized },
+        }
+  /clubs:
+    get:
+      tags: [Clubs]
+      summary: 'List clubs'
+      security: [{ bearerAuth: [] }]
+      parameters:
+        [
+          { name: type, in: query, schema: { type: string } },
+          { name: category, in: query, schema: { type: string } },
+        ]
+      responses: { '200': { description: 'List of clubs' }, '401': { description: Unauthorized } }
+    post:
+      tags: [Clubs]
+      summary: 'Create a club'
+      security: [{ bearerAuth: [] }]
+      requestBody:
+        {
+          required: true,
+          content:
+            {
+              application/json:
+                {
+                  schema:
+                    {
+                      type: object,
+                      required: [name, type],
+                      properties:
+                        {
+                          name: { type: string },
+                          type: { type: string },
+                          category: { type: string },
+                          description: { type: string },
+                        },
+                    },
+                },
+            },
+        }
+      responses: { '201': { description: 'Club created' }, '401': { description: Unauthorized } }
+  /clubs/me:
+    get:
+      tags: [Clubs]
+      summary: 'Get my clubs'
+      security: [{ bearerAuth: [] }]
+      responses:
+        {
+          '200': { description: 'Clubs the authenticated user belongs to' },
+          '401': { description: Unauthorized },
+        }
+  '/clubs/{id}/join':
+    post:
+      tags: [Clubs]
+      summary: 'Join a club'
+      security: [{ bearerAuth: [] }]
+      parameters: [{ name: id, in: path, required: true, schema: { type: integer } }]
+      responses:
+        {
+          '200': { description: 'Joined club' },
+          '400': { description: 'Already a member' },
+          '401': { description: Unauthorized },
+        }
+  '/clubs/{id}/leave':
+    delete:
+      tags: [Clubs]
+      summary: 'Leave a club'
+      security: [{ bearerAuth: [] }]
+      parameters: [{ name: id, in: path, required: true, schema: { type: integer } }]
+      responses: { '200': { description: 'Left club' }, '401': { description: Unauthorized } }
+  '/clubs/elections/{id}/vote':
+    post:
+      tags: [Clubs]
+      summary: 'Vote in an election'
+      security: [{ bearerAuth: [] }]
+      parameters: [{ name: id, in: path, required: true, schema: { type: integer } }]
+      requestBody:
+        {
+          required: true,
+          content:
+            {
+              application/json:
+                {
+                  schema:
+                    {
+                      type: object,
+                      required: [candidateId],
+                      properties: { candidateId: { type: integer } },
+                    },
+                },
+            },
+        }
+      responses:
+        {
+          '200': { description: 'Vote cast' },
+          '400': { description: 'Already voted or election closed' },
+          '401': { description: Unauthorized },
+        }
 components:
-    securitySchemes:
-        bearerAuth:
-            type: http
-            scheme: bearer
-            bearerFormat: JWT
-    schemas:
-        RegisterRequest:
-            type: object
-            required: [email, password, username]
-            properties: {email: {type: string, format: email}, password: {type: string, minLength: 8}, username: {type: string}}
-        LoginRequest:
-            type: object
-            required: [email, password]
-            properties: {email: {type: string, format: email}, password: {type: string}}
-        AuthResponse:
-            type: object
-            properties: {token: {type: string}, refreshToken: {type: string}, user: {$ref: '#/components/schemas/User'}}
-        User:
-            type: object
-            properties: {id: {type: string}}
-            registeredAt: '2026-04-01T12:59:15.764Z'
-        Horse:
-            type: object
-            properties: {id: {type: string}}
-            registeredAt: '2026-04-01T12:59:15.925Z'
-        TestSchema:
-            type: object
-            properties: {id: {type: string, description: 'Unique identifier'}, name: {type: string, description: 'Test name'}, timestamp: {type: string, format: date-time}}
-            required: [id, name]
-            registeredAt: '2026-04-01T12:51:03.525Z'
-        CreateTestSchema:
-            type: object
-            properties: {name: {type: string}}
-            registeredAt: '2026-04-01T12:51:04.439Z'
+  securitySchemes:
+    bearerAuth:
+      type: http
+      scheme: bearer
+      bearerFormat: JWT
+  schemas:
+    RegisterRequest:
+      type: object
+      required: [email, password, username]
+      properties:
+        {
+          email: { type: string, format: email },
+          password: { type: string, minLength: 8 },
+          username: { type: string },
+        }
+    LoginRequest:
+      type: object
+      required: [email, password]
+      properties: { email: { type: string, format: email }, password: { type: string } }
+    AuthResponse:
+      type: object
+      properties:
+        {
+          token: { type: string },
+          refreshToken: { type: string },
+          user: { $ref: '#/components/schemas/User' },
+        }
+    User:
+      type: object
+      properties: { id: { type: string } }
+      registeredAt: '2026-04-10T10:03:24.341Z'
+    Horse:
+      type: object
+      properties: { id: { type: string } }
+      registeredAt: '2026-04-10T10:03:24.358Z'
+    TestSchema:
+      type: object
+      properties:
+        {
+          id: { type: string, description: 'Unique identifier' },
+          name: { type: string, description: 'Test name' },
+          timestamp: { type: string, format: date-time },
+        }
+      required: [id, name]
+      registeredAt: '2026-04-10T10:06:14.093Z'
+    CreateTestSchema:
+      type: object
+      properties: { name: { type: string } }
+      registeredAt: '2026-04-10T10:06:14.429Z'

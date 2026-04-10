@@ -188,8 +188,60 @@ layers are additive polish. They won't cause test failure but are still required
 
 ### Debug Log
 
-_(filled during implementation)_
+- Cinzel font already applied via `.celestial h1-h6` rules from 22-1; no conflict with AuthLayout `--font-heading` update
+- `SCENES_WITH_ART` in `useResponsiveBackground.ts` — added `'auth'` to array; placeholder webp images created at `public/images/backgrounds/auth/` (6 ratios)
+- `AuthLayout.tsx` had 5 hardcoded color values replaced with tokens; no logic changes, pure token substitution
+- NavPanel: changed active border from `border border-[rgba(200,168,78,0.2)]` to `border-l-2 border-l-[var(--gold-primary)] border-r-0 border-t-0 border-b-0`
+- All 5 auth pages: added `import { PageBackground } from '@/components/ui/PageBackground'` + `<PageBackground scene="auth" />` in JSX root alongside existing `usePageBackground` hook call
+- E2E-009 gold regex confirmed: `--gold-primary` resolves to `rgb(200, 168, 78)` → `20[0-9], 16[0-9], 7[0-9]` passes ✅
 
 ### Completion Notes
 
-_(filled during implementation)_
+Story 22-7 complete. All 8 ACs satisfied. ATDD cycle followed:
+
+- **ATDD commit** `3e823a48`: 10 failing acceptance tests written before implementation
+- **ATDD doc commit** `6d9d00fd`: 15 fail/15 pass run recorded; root cause (missing `<PageBackground>` mount + missing `border-l-2`) documented
+- **Implementation commit** `6ae364da`: All failing tests made green
+
+### TEA Quality Gates (2026-04-10)
+
+**TEA:ATDD ✅ PASS**
+Tests written first per ATDD discipline. Commits prove chronological order: tests (3e823a48) → ATDD run (6d9d00fd) → implementation (6ae364da).
+
+**TEA:TA ✅ PASS**
+Coverage adequate for story risk profile (CSS/visual story). E2E is correct level.
+- E2E: `tests/e2e/auth-page-chrome.spec.ts` — 10 tests × 3 browsers = 30 total
+- Unit: `AuthLayout.test.tsx` covers component rendering
+- Accepted gaps: (1) `useResponsiveBackground` 'auth' branch — no unit test, E2E-002/005 mitigate; (2) 4 non-login auth pages not explicitly exercised — same code path, LOW risk
+
+**TEA:RV ✅ PASS — 2 LOW-risk findings, no blockers**
+- RISK-001 TECH/LOW (score 2): `.glass-panel` CSS selector in E2E-003/006; acceptable, class is semantic contract
+- RISK-002 TECH/LOW (score 2): Only LoginPage exercised in viewport tests; other 4 pages covered by identical code path
+
+No HIGH or CRITICAL risks. Story clear for Code Review.
+
+### Change Log
+
+| Date | Change | Files |
+|---|---|---|
+| 2026-04-07 | ATDD: 10 failing E2E tests written | `tests/e2e/auth-page-chrome.spec.ts` |
+| 2026-04-07 | ATDD run documented: 15 fail / 15 pass | `22-7-body-and-page-chrome.md` |
+| 2026-04-07 | Implementation: all tasks complete, all tests green | `index.css`, `NavPanel.tsx`, `AuthLayout.tsx`, `useResponsiveBackground.ts`, 5 auth pages |
+| 2026-04-10 | TEA:TA + TEA:RV complete — all 3 TEA gates pass | `22-7-body-and-page-chrome.md` |
+
+### File List
+
+| File | Action |
+|---|---|
+| `frontend/src/index.css` | Modified — radial accent layers on body background |
+| `frontend/src/components/layout/NavPanel.tsx` | Modified — active item left-border gold indicator |
+| `frontend/src/components/auth/AuthLayout.tsx` | Modified — token cleanup (5 hardcoded values → CSS tokens) |
+| `frontend/src/hooks/useResponsiveBackground.ts` | Modified — add `'auth'` to `SCENES_WITH_ART` |
+| `frontend/src/pages/LoginPage.tsx` | Modified — add `<PageBackground scene="auth" />` |
+| `frontend/src/pages/RegisterPage.tsx` | Modified — add `<PageBackground scene="auth" />` |
+| `frontend/src/pages/ForgotPasswordPage.tsx` | Modified — add `<PageBackground scene="auth" />` |
+| `frontend/src/pages/ResetPasswordPage.tsx` | Modified — add `<PageBackground scene="auth" />` |
+| `frontend/src/pages/VerifyEmailPage.tsx` | Modified — add `<PageBackground scene="auth" />` |
+| `frontend/public/images/backgrounds/auth/bg-*.webp` | Created — 6 placeholder art images |
+| `tests/e2e/auth-page-chrome.spec.ts` | Created — 10 ATDD acceptance tests (30 across 3 browsers) |
+| `_bmad-output/implementation-artifacts/22-7-body-and-page-chrome.md` | Modified — Dev Agent Record, TEA gates |
