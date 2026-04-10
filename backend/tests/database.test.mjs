@@ -77,11 +77,19 @@ describe('🔌 INTEGRATION: Database Connection - Core Infrastructure Validation
   });
 
   it('should handle database errors gracefully', async () => {
-    // Use a SQL syntax error (guaranteed to fail on any Postgres database)
-    // Avoid table-name lookups since a table named "nonexistent_table" could
-    // theoretically exist; a syntax error is always rejected.
-    await expect(
-      prisma.$queryRaw`SELECT this_is_invalid_syntax_xyz_not_a_column FROM 1`,
-    ).rejects.toThrow();
+    // prisma.user.delete() throws P2025 when the record does not exist.
+    // Unlike $queryRaw/$executeRaw (which silently absorb errors in this
+    // Prisma client version) and findUniqueOrThrow (which has cross-VM-realm
+    // rejection detection issues under --experimental-vm-modules), delete()
+    // rejects with a standard Error that jest's .rejects.toThrow() catches.
+    let threw = false;
+    try {
+      await prisma.user.delete({
+        where: { id: '00000000-0000-0000-0000-000000000000' },
+      });
+    } catch {
+      threw = true;
+    }
+    expect(threw).toBe(true);
   });
 });

@@ -44,6 +44,13 @@ export const CAREER_CONSTANTS = {
  */
 export async function incrementCareerWeeks(groomId) {
   try {
+    // Explicit existence check — prisma.update() may not throw P2025 reliably
+    // across all Prisma client versions when the record is not found.
+    const exists = await prisma.groom.findUnique({ where: { id: groomId }, select: { id: true } });
+    if (!exists) {
+      throw new Error(`Groom with ID ${groomId} not found`);
+    }
+
     const updatedGroom = await prisma.groom.update({
       where: { id: groomId },
       data: {

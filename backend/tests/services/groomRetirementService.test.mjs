@@ -128,8 +128,17 @@ describe('Groom Retirement Service', () => {
     });
 
     test('should throw error for non-existent groom', async () => {
-      // Use max INT value (2147483647) — guaranteed never reached by autoincrement in tests
-      await expect(incrementCareerWeeks(2147483647)).rejects.toThrow();
+      // Use try/catch — .rejects.toThrow() has cross-VM context issues with
+      // --experimental-vm-modules where Prisma's PrismaClientKnownRequestError
+      // rejection from the application VM isn't caught by Jest's .rejects handler.
+      let threw = false;
+      try {
+        await incrementCareerWeeks(2147483647);
+      } catch (e) {
+        threw = true;
+        expect(e).toBeDefined();
+      }
+      expect(threw).toBe(true);
     });
   });
 
