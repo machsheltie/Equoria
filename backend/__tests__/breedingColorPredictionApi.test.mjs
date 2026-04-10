@@ -8,9 +8,7 @@ const mockPrisma = {
   horse: {
     findUnique: jest.fn(),
   },
-  breed: {
-    findUnique: jest.fn(),
-  },
+  $queryRaw: jest.fn(),
 };
 jest.unstable_mockModule('../db/index.mjs', () => ({ default: mockPrisma }));
 
@@ -81,7 +79,7 @@ describe('getBreedingColorPrediction controller', () => {
       }
       return null;
     });
-    mockPrisma.breed.findUnique.mockResolvedValue({ breedGeneticProfile: null });
+    mockPrisma.$queryRaw.mockResolvedValue([{ breedGeneticProfile: null }]);
 
     const { req, res } = createMockReqRes();
     await getBreedingColorPrediction(req, res);
