@@ -34,11 +34,12 @@
  *
  * ── Important: errorFilter and error types ──
  *
- * DEFAULT_CIRCUIT_OPTIONS.errorFilter returns `true` (filtered/ignored = success) for
- * ECONNREFUSED errors in test env (these are treated as shutdown noise, not real failures).
- * All other errors return `false` (not filtered = counted as failure).
- * Therefore, mock rejection errors must NOT have `.code = 'ECONNREFUSED'` — use plain
- * `new Error('...')` so opossum counts them as real failures and can open the circuit.
+ * DEFAULT_CIRCUIT_OPTIONS.errorFilter (redisCircuitBreaker.mjs):
+ *   - ECONNREFUSED errors → returns false (not filtered) → counted as FAILURE → can trip circuit
+ *   - Plain errors (no code) → returns true (filtered) → treated as SUCCESS → do NOT count
+ *
+ * Therefore: always use connRefusedError() when you need the circuit to count a failure.
+ * Use plain new Error() only when testing that filtered errors are propagated but not counted.
  */
 
 import { jest, describe, beforeEach, afterEach, it, expect } from '@jest/globals';

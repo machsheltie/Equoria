@@ -164,7 +164,14 @@ backend/__tests__/integration/redis-circuit-breaker.test.mjs
 
 ## Definition of Done
 
-- [ ] AC1–AC5 all pass
-- [ ] TEA:TA + TEA:RV completed
-- [ ] `/bmad-code-review` passes all 3 layers
-- [ ] `sprint-status.yaml` updated to `done`
+- [x] AC1–AC5 all pass
+- [x] TEA:TA + TEA:RV completed
+- [x] `/bmad-code-review` passes all 3 layers — clean review, 0 findings (13 dismissed)
+- [x] `sprint-status.yaml` updated to `done`
+
+### Review Findings
+
+**Code review complete.** 0 `decision-needed`, 0 `patch`, 0 deferred, 13 dismissed as noise.
+
+All three review layers (Blind Hunter, Edge Case Hunter, Acceptance Auditor) returned clean.
+Story 21-2 is **done**. ✅
