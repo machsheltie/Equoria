@@ -39,7 +39,8 @@ COPY packages/ ./packages/
 
 # Generate Prisma client (must run after source copy)
 WORKDIR /app/packages/database
-RUN npx prisma generate
+# Call prisma via node directly — avoids shell wrapper permission issues on Alpine
+RUN node node_modules/prisma/build/index.js generate --schema=prisma/schema.prisma
 
 # Embed the frontend build into the backend's public folder
 # Express will serve these as static assets in production

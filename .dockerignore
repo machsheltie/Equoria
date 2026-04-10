@@ -1,4 +1,7 @@
-# Dependencies
+# Dependencies — exclude ALL node_modules at every depth, not just root level.
+# Without **/node_modules, nested dirs like packages/database/node_modules/ get
+# sent in the build context and COPY overwrites the freshly installed Linux ones.
+**/node_modules
 node_modules
 npm-debug.log*
 yarn-debug.log*
