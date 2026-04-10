@@ -1,5 +1,5 @@
 # generated: 2026-03-25
-# last_updated: 2026-04-09 epic-31e done, epic-31f done, epic-31e retrospective done, story artifacts reconstructed, 21-2 done
+# last_updated: 2026-04-10 22-7 done, 22-1 through 22-7 TEA+code review complete, 22-5 button decisions resolved
 # project: Equoria
 # project_key: NOKEY
 # tracking_system: file-system
@@ -80,7 +80,7 @@ development_status:
   22-4-glass-panel-surface-updates: done
   22-5-button-hierarchy: done
   22-6-custom-game-component-library: done
-  22-7-body-and-page-chrome: in-progress
+  22-7-body-and-page-chrome: done
   22-8-navigation-structure: backlog
   epic-22-retrospective: optional
 
