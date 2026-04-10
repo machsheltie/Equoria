@@ -132,9 +132,6 @@ test.describe('Breeding Loop', () => {
     console.log('Navigating to Stable...');
     await page.goto('/stable', { waitUntil: 'networkidle' });
 
-    // Give it a moment to render
-    await page.waitForTimeout(2000);
-
     // Select "All" tab to be sure
     console.log('Selecting "All" tab in stable');
     const allTab = page.getByRole('tab', { name: 'All', exact: true });

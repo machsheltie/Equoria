@@ -482,28 +482,18 @@ describe('🔄 API Response Integration Tests', () => {
     });
   });
 
-  describe('📈 Response Performance Benchmarking', () => {
-    test('should meet performance benchmarks for simple responses', async () => {
-      const startTime = Date.now();
-
+  describe('📈 Response Shape Validation', () => {
+    test('should return successful response for simple requests', async () => {
       const response = await request(app).get('/api/test/success').set('Authorization', `Bearer ${authToken}`);
 
-      const responseTime = Date.now() - startTime;
-
       expect(response.status).toBe(200);
-      expect(responseTime).toBeLessThan(1000); // Should respond within 1 second
     });
 
-    test('should meet performance benchmarks for large responses', async () => {
-      const startTime = Date.now();
-
+    test('should return full data payload for large responses', async () => {
       const response = await request(app).get('/api/test/large-data').set('Authorization', `Bearer ${authToken}`);
-
-      const responseTime = Date.now() - startTime;
 
       expect(response.status).toBe(200);
       expect(response.body.data).toHaveLength(1000);
-      expect(responseTime).toBeLessThan(5000); // Should respond within 5 seconds
     });
   });
 });

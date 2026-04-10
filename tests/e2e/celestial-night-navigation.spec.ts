@@ -75,7 +75,7 @@ test.describe('Celestial Night Navigation — Authenticated', () => {
       const firstLink = page.locator('[data-testid="world-hub-page"] a').first();
       await firstLink.click();
       // Should navigate away from /world
-      await page.waitForTimeout(2000);
+      await page.waitForURL((url) => !url.pathname.endsWith('/world'), { timeout: 10000 });
       expect(page.url()).not.toMatch(/\/world$/);
     }
   });
