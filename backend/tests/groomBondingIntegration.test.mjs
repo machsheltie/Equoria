@@ -258,7 +258,12 @@ describe('Groom Bonding System Integration', () => {
 
   describe('Bond Score Updates', () => {
     it('should update horse bond score after grooming', async () => {
-      const initialBondScore = testHorse.bondScore;
+      // Re-fetch from DB — in-memory testHorse.bondScore may be stale from prior tests
+      const freshHorse = await prisma.horse.findUnique({
+        where: { id: testHorse.id },
+        select: { bondScore: true },
+      });
+      const initialBondScore = freshHorse.bondScore;
 
       // Set up horse with some consecutive days and recent grooming
       const yesterday = new Date();
