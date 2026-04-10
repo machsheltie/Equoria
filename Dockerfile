@@ -25,12 +25,11 @@ COPY backend/package*.json ./
 RUN npm ci --omit=dev --ignore-scripts
 
 # Install database package dependencies
-# Note: must NOT use --omit=dev or --ignore-scripts here — prisma and
-# @prisma/client are devDependencies in this package, and Prisma's postinstall
-# script must run to set correct execute permissions on the query engine binary.
+# --omit=dev: skip test deps (jest etc.) for a fast, lean build
+# No --ignore-scripts: Prisma's postinstall must run to set query engine permissions
 WORKDIR /app/packages/database
 COPY packages/database/package*.json ./
-RUN npm ci
+RUN npm ci --omit=dev
 
 # Copy application source
 WORKDIR /app
